@@ -47,17 +47,33 @@
     },
     "2.1": {
       "number": "2.1",
-      "status": "not_started",
+      "status": "done",
       "name": "Mario physics and movement",
       "milestone": "Mario",
-      "milestone_number": "2"
+      "milestone_number": "2",
+      "summary": {
+        "done": "Created mario.js with full physics: gravity, acceleration/deceleration, variable-speed (walk/run), variable-height jumping, coyote time, jump buffering, death animation, grow/shrink states, walk animation frames.",
+        "lessons_learned": "None",
+        "failures": "None",
+        "tradeoffs": "Used coyote time and jump buffering for forgiving controls instead of strict input timing. Terminal velocity cap at 600px/s.",
+        "decisions": "Arrow keys + Z for jump, Shift for run. 100ms coyote + jump buffer window. Big Mario is 32px tall (2 tile rows).",
+        "confidence": "high"
+      }
     },
     "2.2": {
       "number": "2.2",
-      "status": "not_started",
+      "status": "done",
       "name": "Mario jumping and states",
       "milestone": "Mario",
-      "milestone_number": "2"
+      "milestone_number": "2",
+      "summary": {
+        "confidence": "high",
+        "decisions": "States: small | big | invulnerable | dead. Invulnerability lasts 2s with blink effect. Mushroom grows Mario from 16 to 32px.",
+        "tradeoffs": "Combined 2.1 and 2.2 into a single file since they're tightly coupled. State machine uses string states: small, big, invulnerable, dead.",
+        "failures": "None",
+        "done": "Jumping and state machine already implemented in mario.js during task 2.1: variable-height jump, grow/shrink states, mushroom powerup, death animation, invulnerability blink.",
+        "lessons_learned": "Tasks 2.1 and 2.2 overlap heavily \u2014 physics and states are inseparable for Mario."
+      }
     },
     "3.1": {
       "number": "3.1",
