@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mario Bros 1-1</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #6b8cff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #game {
+            border: 2px solid #000;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="game" width="800" height="480"></canvas>
+    <script src="js/sprites.js"></script>
+    <script src="js/sfx.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/camera.js"></script>
+    <script src="js/entity.js"></script>
+    <script src="js/level-data.js"></script>
+    <script src="js/level.js"></script>
+    <script src="js/collision.js"></script>
+    <script src="js/mario.js"></script>
+    <script src="js/goomba.js"></script>
+    <script src="js/koopa.js"></script>
+    <script src="js/block.js"></script>
+    <script src="js/mushroom.js"></script>
+    <script src="js/coin.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+{
+  "tasks": {
+    "1.1": {
+      "number": "1.1",
+      "status": "done",
+      "name": "Canvas setup and game loop",
+      "milestone": "Engine",
+      "milestone_number": "1",
+      "summary": {
+        "done": "Created index.html with canvas (800x480) and js/main.js with requestAnimationFrame game loop, dt capping, and stub update/render functions.",
+        "confidence": "high",
+        "decisions": "Script loading order in HTML follows dependency chain: input -> camera -> entity -> sprites -> sfx -> game objects -> level -> collision -> game -> main",
+        "tradeoffs": "Capped dt at 0.05s to prevent physics explosion on tab switch. Used inline styles instead of external CSS for simplicity.",
+        "failures": "None",
+        "lessons_learned": "None"
+      }
+    },
+    "1.2": {
+      "number": "1.2",
+      "status": "not_started",
+      "name": "Input handling and camera system",
+      "milestone": "Engine",
+      "milestone_number": "1"
+    },
+    "1.3": {
+      "number": "1.3",
+      "status": "not_started",
+      "name": "Entity base class and sprite system",
+      "milestone": "Engine",
+      "milestone_number": "1"
+    },
+    "2.1": {
+      "number": "2.1",
+      "status": "not_started",
+      "name": "Mario physics and movement",
+      "milestone": "Mario",
+      "milestone_number": "2"
+    },
+    "2.2": {
+      "number": "2.2",
+      "status": "not_started",
+      "name": "Mario jumping and states",
+      "milestone": "Mario",
+      "milestone_number": "2"
+    },
+    "3.1": {
+      "number": "3.1",
+      "status": "not_started",
+      "name": "Tilemap parser and ground rendering",
+      "milestone": "Level",
+      "milestone_number": "3"
+    },
+    "3.2": {
+      "number": "3.2",
+      "status": "not_started",
+      "name": "World 1-1 layout data",
+      "milestone": "Level",
+      "milestone_number": "3"
+    },
+    "3.3": {
+      "number": "3.3",
+      "status": "not_started",
+      "name": "Tile collision system",
+      "milestone": "Level",
+      "milestone_number": "3"
+    },
+    "4.1": {
+      "number": "4.1",
+      "status": "not_started",
+      "name": "Goomba enemy",
+      "milestone": "Enemies",
+      "milestone_number": "4"
+    },
+    "4.2": {
+      "number": "4.2",
+      "status": "not_started",
+      "name": "Koopa enemy",
+      "milestone": "Enemies",
+      "milestone_number": "4"
+    },
+    "5.1": {
+      "number": "5.1",
+      "status": "not_started",
+      "name": "Block interaction and powerups",
+      "milestone": "Gameplay",
+      "milestone_number": "5"
+    },
+    "5.2": {
+      "number": "5.2",
+      "status": "not_started",
+      "name": "HUD, scoring, and game states",
+      "milestone": "Gameplay",
+      "milestone_number": "5"
+    },
+    "6.1": {
+      "number": "6.1",
+      "status": "not_started",
+      "name": "Sprite sheet and pixel art assets",
+      "milestone": "Polish",
+      "milestone_number": "6"
+    },
+    "6.2": {
+      "number": "6.2",
+      "status": "not_started",
+      "name": "Sound effects",
+      "milestone": "Polish",
+      "milestone_number": "6"
+    }
+  }
+}
