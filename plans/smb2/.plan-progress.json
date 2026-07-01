@@ -77,24 +77,48 @@
     },
     "3.1": {
       "number": "3.1",
-      "status": "not_started",
+      "status": "done",
       "name": "Tilemap parser and ground rendering",
       "milestone": "Level",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "done": "Created tilemap.js (tile ID constants, isSolid check, tileToSprite mapping, drawTile function) and level.js (Level class with getTile, setTile, render with view culling).",
+        "decisions": "Tile IDs are named constants in T object. Sprite mapping function routes tile IDs to sprite sheet coordinates.",
+        "lessons_learned": "None",
+        "confidence": "high",
+        "failures": "None",
+        "tradeoffs": "Simple 2D array for tile storage. View culling limits rendering to visible tile columns only."
+      }
     },
     "3.2": {
       "number": "3.2",
-      "status": "not_started",
+      "status": "done",
       "name": "World 1-1 layout data",
       "milestone": "Level",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "tradeoffs": "Level uses dense 2D array (222x15 tiles = 3330 entries) \u2014 memory heavy but simple to access. Simplified from exact NES layout but captures all key sections.",
+        "lessons_learned": "None",
+        "decisions": "15 rows tall, 222 cols wide. Ground at rows 13-14. 3 pit gaps. 4 staircases including final approach. Enemy spawns use separate array with type+position.",
+        "failures": "None",
+        "done": "Created level-data.js with full World 1-1 layout: ground with 3 pits, 5+ pipes, question blocks with mushrooms/coins, brick formations, staircases, flag pole at col 202, and enemy spawn positions (12 Goombas, 2 Koopas).",
+        "confidence": "high"
+      }
     },
     "3.3": {
       "number": "3.3",
-      "status": "not_started",
+      "status": "done",
       "name": "Tile collision system",
       "milestone": "Level",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "tradeoffs": "Separate X/Y collision passes for proper platform behavior (slide along walls, land on top, bump ceiling). Block bounce uses sine-wave offset animation.",
+        "lessons_learned": "None",
+        "failures": "None",
+        "confidence": "high",
+        "done": "Created collision.js with resolveTileCollisionX/Y (separate axis resolution for platform physics), handleBlockHit (question blocks spawn mushrooms/coins, bricks break when big Mario hits them), block bounce animation, and brick particle effects. Patches Level.render to show bouncy blocks offset.",
+        "decisions": "X collision checked before Y to prevent tunneling. Block hit triggers on upward velocity only. Big Mario breaks bricks, small Mario only bounces."
+      }
     },
     "4.1": {
       "number": "4.1",
