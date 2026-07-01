@@ -122,17 +122,33 @@
     },
     "4.1": {
       "number": "4.1",
-      "status": "not_started",
+      "status": "done",
       "name": "Goomba enemy",
       "milestone": "Enemies",
-      "milestone_number": "4"
+      "milestone_number": "4",
+      "summary": {
+        "failures": "None",
+        "confidence": "high",
+        "lessons_learned": "None",
+        "decisions": "Goombas only activate when within 500px of camera. Stomped goomba becomes 8px tall and disappears after 0.4s.",
+        "done": "Created goomba.js with Goomba class: walks left at -40px/s, gravity, tile collision, direction reversal on walls, stomp mechanic (flattens for 0.4s, awards 100 points), lazy activation when near camera, walk animation.",
+        "tradeoffs": "Lazy activation avoids updating off-screen enemies. Simple constant velocity walk instead of acceleration."
+      }
     },
     "4.2": {
       "number": "4.2",
-      "status": "not_started",
+      "status": "done",
       "name": "Koopa enemy",
       "milestone": "Enemies",
-      "milestone_number": "4"
+      "milestone_number": "4",
+      "summary": {
+        "lessons_learned": "None",
+        "done": "Created koopa.js with Koopa class: walking state (32px tall, walks left, reverses at walls), stomp turns into idle shell (16px), kick sends shell moving at 300px/s that kills other enemies on contact, lazy activation, fall-into-pit death.",
+        "decisions": "Koopa is 32px tall when walking (2 tile rows). Shell is 16px. Kick direction follows Mario's facing.",
+        "failures": "None",
+        "tradeoffs": "Shell-moving state ignores wall collision (knocks through pipes like original). Moving shell kills all enemy types, not just Goombas.",
+        "confidence": "high"
+      }
     },
     "5.1": {
       "number": "5.1",
