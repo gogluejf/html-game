@@ -32,10 +32,18 @@
     },
     "1.3": {
       "number": "1.3",
-      "status": "not_started",
+      "status": "done",
       "name": "Entity base class and sprite system",
       "milestone": "Engine",
-      "milestone_number": "1"
+      "milestone_number": "1",
+      "summary": {
+        "done": "Created entity.js (base Entity class with position, velocity, AABB collision, overlaps method), sprites.js (sprite sheet loader, drawSprite, getSprite helpers, fallback rendering), and generated assets/sprites.png (6x6 tile sheet with Mario, Goomba, Koopa, blocks, pipes, items, and background elements).",
+        "tradeoffs": "Generated sprite art programmatically via Python/PIL instead of hand-crafting PNG. Simple grid-based pixel art \u2014 functional but not perfect NES accuracy.",
+        "decisions": "Entity class uses simple AABB bounding. Sprite sheet is 16x16 tile grid. Fallback colored rectangles when sprites aren't loaded.",
+        "failures": "None",
+        "confidence": "high",
+        "lessons_learned": "PIL sprite generation is faster than hand-editing PNG for functional pixel art."
+      }
     },
     "2.1": {
       "number": "2.1",
