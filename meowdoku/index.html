@@ -469,6 +469,7 @@ let seconds = 0;
 let invalidCats = new Set();
 let lastPlacedKey = null;
 let popKeys = new Set();
+let solutionRevealed = false;
 
 // ── INIT ──
 function init() {
@@ -517,6 +518,7 @@ function newGame() {
   invalidCats.clear();
   lastPlacedKey = null;
   popKeys.clear();
+  solutionRevealed = false;
 
   // Build grid state
   grid = [];
@@ -823,7 +825,7 @@ function render() {
       if (cell.locked) el.classList.add('locked');
       const key = `${r},${c}`;
       if (invalidCats.has(key)) el.classList.add('invalid-cat');
-      if (lastPlacedKey === key || popKeys.has(key)) el.classList.add('cat-pop');
+      if (popKeys.has(key)) el.classList.add('cat-pop');
 
       // Cat card for flip effect
       el.innerHTML = `
@@ -835,15 +837,18 @@ function render() {
         </div>
       `;
 
-      // Instant cycle: empty -> X -> cat -> empty.
+      // Instant cycle: empty -> X -> cat -> empty. After Solution, any board click reshuffles.
       el.addEventListener('click', (e) => {
+        if (solutionRevealed) {
+          newGame();
+          return;
+        }
         if (cell.locked) return;
         const key = `${r},${c}`;
 
         if (!cell.xmark && !cell.cat) {
           cell.xmark = true;
           cell.cat = false;
-          lastPlacedKey = null;
           updateConflicts(false);
           render();
           return;
@@ -852,23 +857,16 @@ function render() {
         if (cell.xmark) {
           cell.xmark = false;
           cell.cat = true;
-          lastPlacedKey = key;
-          popKeys.add(key);
+          playCatPop([key]);
           updateConflicts(true);
           render();
           checkWin();
-          setTimeout(() => {
-            popKeys.delete(key);
-            if (lastPlacedKey === key) lastPlacedKey = null;
-            render();
-          }, 260);
           return;
         }
 
         if (cell.cat) {
           cell.cat = false;
           cell.xmark = false;
-          lastPlacedKey = null;
           updateConflicts(false);
           render();
         }
@@ -915,6 +913,15 @@ function checkWin() {
 
 
 
+
+function playCatPop(keys) {
+  for (const key of keys) popKeys.add(key);
+  setTimeout(() => {
+    for (const key of keys) popKeys.delete(key);
+    render();
+  }, 260);
+}
+
 function updateConflicts(withFeedback) {
   const d = DIFF[difficulty];
   const conflicts = new Set();
@@ -955,32 +962,33 @@ function triggerBoardError() {
 function revealSolution() {
   const d = DIFF[difficulty];
   clearInterval(timerInterval);
+  solutionRevealed = true;
   invalidCats.clear();
-  lastPlacedKey = null;
   popKeys.clear();
 
-  const cats = [];
+  const wrongCats = [];
+  const solutionCats = [];
+
   for (let r = 0; r < d.rows; r++) {
     for (let c = 0; c < d.cols; c++) {
-      grid[r][c].cat = false;
+      const key = `${r},${c}`;
+      const wasWrongCat = grid[r][c].cat && !solution[r][c];
+      if (wasWrongCat) wrongCats.push(key);
+      if (solution[r][c]) solutionCats.push(key);
+
+      // Show right solution cats, keep wrong cats visible too, clear X marks.
+      grid[r][c].cat = !!solution[r][c] || wasWrongCat;
       grid[r][c].xmark = false;
-      if (solution[r][c]) cats.push({ r, c });
     }
   }
-  render();
 
-  popKeys.clear();
-  lastPlacedKey = null;
-  for (const { r, c } of cats) {
-    grid[r][c].cat = true;
-    grid[r][c].xmark = false;
-    popKeys.add(`${r},${c}`);
-  }
+  // Forbidden signs on the player's wrong cats.
+  invalidCats = new Set(wrongCats);
+
+  // Same exact pop function as single-cat placement, applied to all right cats.
+  playCatPop(solutionCats);
+  if (wrongCats.length) triggerBoardError();
   render();
-  setTimeout(() => {
-    popKeys.clear();
-    render();
-  }, 260);
 }
 
 // ── TIMER ──
