@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meowdoku — Ocicat Edition</title>
+<style>
+  /* ── RESET & BASE ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #1a1018;
+    --surface: #2a1f28;
+    --card: #352830;
+    --gold: #f0c040;
+    --gold-dim: #b8922a;
+    --text: #f4e8e0;
+    --text-dim: #a09098;
+    --danger: #e04050;
+    --success: #40d880;
+    --radius: 12px;
+    --shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    width: 100%;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #2a1f28 0%, #1a1018 100%);
+    border-bottom: 1px solid rgba(240,192,64,0.15);
+    display: flex;
+    justify-content: center;
+  }
+
+  .topbar {
+    width: min(1180px, calc(100vw - 48px));
+    max-width: 1180px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-cat {
+    width: 58px;
+    height: 58px;
+    border-radius: 14px;
+    object-fit: cover;
+    object-position: center;
+    border: 2px solid var(--gold-dim);
+  }
+
+  .logo span {
+    background: linear-gradient(135deg, var(--gold) 0%, #e8a020 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* ── CONTROLS BAR ── */
+  .controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 8px 18px;
+    border: 2px solid var(--gold-dim);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .btn:hover { background: rgba(240,192,64,0.1); border-color: var(--gold); }
+  .btn.active { background: var(--gold); color: #1a1018; border-color: var(--gold); }
+  .btn-res { border-color: var(--danger); color: var(--danger); }
+  .btn-res:hover { background: rgba(224,64,80,0.15); border-color: #ff5060; }
+  .btn-sol { border-color: var(--success); color: var(--success); }
+  .btn-sol:hover { background: rgba(64,216,128,0.15); border-color: #62f59d; }
+
+  /* ── INFO BAR ── */
+  .info-bar {
+    width: min(1180px, calc(100vw - 48px));
+    max-width: 1180px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 32px;
+    margin-top: 8px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid rgba(240,192,64,0.1);
+  }
+
+  .info-item {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .info-item .val {
+    display: block;
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: var(--gold);
+    margin-top: 2px;
+  }
+
+  .timer-val { font-variant-numeric: tabular-nums; }
+
+  /* ── BOARD ── */
+  .board-wrap {
+    width: fit-content;
+    max-width: min(1180px, calc(100vw - 48px));
+    margin: 18px auto;
+    padding: 34px;
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid rgba(240,192,64,0.12);
+    box-shadow: var(--shadow);
+  }
+
+  .board {
+    display: grid;
+    gap: 7px;
+    margin: 0 auto;
+  }
+
+  .cell {
+    width: 120px;
+    height: 120px;
+    border-radius: 20px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .cell:hover {
+    transform: scale(1.04);
+    box-shadow: 0 0 12px rgba(240,192,64,0.3);
+  }
+
+  .cell.invalid-cat::after {
+    content: "";
+    position: absolute;
+    inset: 9%;
+    border: 7px solid rgba(255, 45, 70, 0.92);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 5;
+    box-shadow: 0 0 18px rgba(255, 45, 70, 0.65);
+  }
+
+  .cell.invalid-cat::before {
+    content: "";
+    position: absolute;
+    left: 14%;
+    right: 14%;
+    top: 50%;
+    height: 7px;
+    border-radius: 99px;
+    background: rgba(255, 45, 70, 0.94);
+    transform: rotate(-38deg);
+    pointer-events: none;
+    z-index: 6;
+    box-shadow: 0 0 16px rgba(255, 45, 70, 0.7);
+  }
+
+  .board.error-flash {
+    animation: boardShake 170ms linear 0s 2, redFlash 420ms ease-out;
+  }
+
+  .cell.cat-pop {
+    animation: catStamp 220ms cubic-bezier(.2,1.6,.35,1);
+  }
+
+  .cell.cat-pop .cat-back::after {
+    content: "✦";
+    position: absolute;
+    right: 8px;
+    top: 4px;
+    color: #fff6ba;
+    font-size: 1.15rem;
+    text-shadow: 0 0 8px #f0c040;
+    animation: sparklePop 260ms ease-out forwards;
+  }
+
+  @keyframes boardShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-7px); }
+    75% { transform: translateX(7px); }
+  }
+
+  @keyframes redFlash {
+    0% { filter: drop-shadow(0 0 0 rgba(255,0,40,0)); }
+    35% { filter: drop-shadow(0 0 22px rgba(255,0,40,.8)); }
+    100% { filter: drop-shadow(0 0 0 rgba(255,0,40,0)); }
+  }
+
+  @keyframes catStamp {
+    0% { transform: scale(.82) rotate(-2deg); }
+    65% { transform: scale(1.08) rotate(1deg); }
+    100% { transform: scale(1) rotate(0); }
+  }
+
+  @keyframes sparklePop {
+    0% { opacity: 0; transform: scale(.4) translateY(4px); }
+    45% { opacity: 1; }
+    100% { opacity: 0; transform: scale(1.4) translateY(-8px); }
+  }
+
+  .cell.region-A { background: linear-gradient(135deg, #e8845a, #f0a060); }
+  .cell.region-B { background: linear-gradient(135deg, #5a9ee8, #60b0f0); }
+  .cell.region-C { background: linear-gradient(135deg, #a0e85a, #b0f060); }
+  .cell.region-D { background: linear-gradient(135deg, #e85a9e, #f060b0); }
+  .cell.region-E { background: linear-gradient(135deg, #5ae8d8, #60f0e0); }
+  .cell.region-F { background: linear-gradient(135deg, #c8a0e8, #d0b0f0); }
+  .cell.region-G { background: linear-gradient(135deg, #e8d85a, #f0e060); }
+  .cell.region-H { background: linear-gradient(135deg, #e85a5a, #f06060); }
+  .cell.region-I { background: linear-gradient(135deg, #7ae85a, #80f060); }
+  .cell.region-J { background: linear-gradient(135deg, #5a7ae8, #6080f0); }
+
+  /* ── CAT CARD (FLIP) ── */
+  .cat-card {
+    width: 100%;
+    height: 100%;
+    perspective: 600px;
+    pointer-events: none;
+  }
+
+  .cat-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+
+  .cat-card.flipped .cat-card-inner {
+    transform: rotateY(180deg);
+  }
+
+  .cat-front, .cat-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cat-front {
+    background: rgba(0,0,0,0.15);
+  }
+
+  .cat-front .x-mark {
+    font-size: 3.4rem;
+    font-weight: 900;
+    color: rgba(255,255,255,0.7);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  .cat-back {
+    transform: rotateY(180deg);
+    background: transparent;
+  }
+
+  .cat-back img {
+    width: 78%;
+    height: 78%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 12px;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.5);
+    display: block;
+  }
+
+  /* ── LOCKED CAT ── */
+  .cell.locked {
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 16px rgba(240,192,64,0.4) !important;
+  }
+
+  .cell.locked .cat-card { pointer-events: none; }
+
+  /* ── WIN OVERLAY ── */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,5,12,0.88);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .overlay.show { display: flex; }
+
+  .overlay-box {
+    background: var(--surface);
+    border: 2px solid var(--gold);
+    border-radius: 20px;
+    padding: 40px 50px;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(240,192,64,0.2);
+    animation: popIn 0.4s ease-out;
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .overlay-box h2 {
+    font-size: 2rem;
+    background: linear-gradient(135deg, var(--gold), #e8a020);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .overlay-box p { color: var(--text-dim); margin-bottom: 20px; }
+
+  .btn-go {
+    padding: 12px 32px;
+    background: var(--gold);
+    color: #1a1018;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-go:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(240,192,64,0.4); }
+
+  /* ── FOOTER ── */
+  .footer-info {
+    margin: 8px 0 20px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 700px) {
+    header { padding: 14px 10px; }
+    .topbar { justify-content: center; gap: 14px; }
+    .logo { font-size: 1.45rem; }
+    .logo-cat { width: 44px; height: 44px; }
+    .btn { padding: 7px 12px; font-size: 0.72rem; }
+    .cell { width: 54px; height: 54px; }
+    .cat-front .x-mark { font-size: 1.35rem; }
+    .board-wrap { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+  <div class="logo">
+    <img class="logo-cat" id="logoCat" alt="Ocicat">
+    <span>Meowdoku</span>
+  </div>
+  <div class="controls">
+    <button class="btn active" data-diff="easy">Easy</button>
+    <button class="btn" data-diff="hard">Hard</button>
+    <button class="btn" data-diff="ultra">Ultra</button>
+    <button class="btn btn-sol" id="btnSolution">Solution</button>
+    <button class="btn btn-res" id="btnReshuffle">Reshuffle</button>
+  </div>
+  </div>
+</header>
+
+<div class="info-bar">
+  <div class="info-item">
+    Timer
+    <span class="val timer-val" id="timer">00:00</span>
+  </div>
+  <div class="info-item">
+    Cats
+    <span class="val" id="catCount">0 / 0</span>
+  </div>
+  <div class="info-item">
+    Level
+    <span class="val" id="levelNum">1</span>
+  </div>
+</div>
+
+<div class="board-wrap">
+  <div class="board" id="board"></div>
+</div>
+
+<p class="footer-info">Click cycles: empty → ✕ → 🐱 → empty · Solution reveals answer</p>
+
+<!-- WIN OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="overlay-box">
+    <h2>🎉 Brilliant!</h2>
+    <p id="winMsg">All cats placed correctly!</p>
+    <button class="btn-go" id="btnNext">Next Level</button>
+  </div>
+</div>
+
+<script>
+// ── OCICAT IMAGE ──
+const OCICAT_SRC = "./ocicat-fill.jpg";
+document.getElementById('logoCat').src = OCICAT_SRC;
+
+// ── REGION COLORS ──
+const REGION_NAMES = ['A','B','C','D','E','F','G','H','I','J'];
+const REGION_CSS  = ['region-A','region-B','region-C','region-D','region-E','region-F','region-G','region-H','region-I','region-J'];
+
+// ── DIFFICULTY SETTINGS ──
+const DIFF = {
+  easy:  { rows: 6, cols: 6, regions: 6, locked: 1 },
+  hard:  { rows: 8, cols: 8, regions: 8, locked: 0 },
+  ultra: { rows: 10, cols: 10, regions: 10, locked: 0 }
+};
+
+let difficulty = 'easy';
+let level = 1;
+let grid = [];         // 2D: { region, cat, xmark, locked }
+let solution = [];     // 2D: true/false for cat position
+let boardEl, timerEl, catCountEl, levelEl;
+let timerInterval = null;
+let seconds = 0;
+let invalidCats = new Set();
+let lastPlacedKey = null;
+let popKeys = new Set();
+
+// ── INIT ──
+function init() {
+  boardEl = document.getElementById('board');
+  timerEl = document.getElementById('timer');
+  catCountEl = document.getElementById('catCount');
+  levelEl = document.getElementById('levelNum');
+
+  document.querySelectorAll('.btn[data-diff]').forEach(b => {
+    b.addEventListener('click', () => {
+      difficulty = b.dataset.diff;
+      document.querySelectorAll('.btn[data-diff]').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      level = 1;
+      newGame();
+    });
+  });
+
+  document.getElementById('btnReshuffle').addEventListener('click', () => newGame());
+  document.getElementById('btnSolution').addEventListener('click', () => revealSolution());
+  document.getElementById('btnNext').addEventListener('click', () => {
+    document.getElementById('overlay').classList.remove('show');
+    level++;
+    newGame();
+  });
+
+  newGame();
+}
+
+// ── NEW GAME ──
+function newGame() {
+  clearInterval(timerInterval);
+  seconds = 0;
+  updateTimer();
+
+  const d = DIFF[difficulty];
+  const { rows, cols, regions: numRegions } = d;
+
+  // Generate a guaranteed-valid puzzle: first cats, then connected regions grown from cats.
+  const puzzle = generatePuzzle(rows, cols, numRegions);
+  if (!puzzle) { newGame(); return; }
+  const regionMap = puzzle.regionMap;
+  const sol = puzzle.solution;
+
+  solution = sol;
+  invalidCats.clear();
+  lastPlacedKey = null;
+  popKeys.clear();
+
+  // Build grid state
+  grid = [];
+  for (let r = 0; r < rows; r++) {
+    grid[r] = [];
+    for (let c = 0; c < cols; c++) {
+      grid[r][c] = {
+        region: regionMap[r][c],
+        cat: false,
+        xmark: false,
+        locked: false
+      };
+    }
+  }
+
+  // Place locked cat
+  if (d.locked > 0) {
+    const lockedPos = pickRandomSolutionCell(rows, cols, sol);
+    grid[lockedPos.r][lockedPos.c].cat = true;
+    grid[lockedPos.r][lockedPos.c].locked = true;
+  }
+
+  render();
+  startTimer();
+}
+
+
+// ── GUARANTEED VALID PUZZLE GENERATOR ──
+function generatePuzzle(rows, cols, numRegions) {
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const catPositions = generateCatPositions(rows, cols, numRegions);
+    if (!catPositions) continue;
+
+    const regionMap = growConnectedRegions(rows, cols, catPositions);
+    if (!regionMap) continue;
+
+    const sol = Array.from({ length: rows }, () => Array(cols).fill(false));
+    for (const { r, c } of catPositions) sol[r][c] = true;
+    return { regionMap, solution: sol };
+  }
+  return null;
+}
+
+function generateCatPositions(rows, cols, count) {
+  // One cat per row, one per column, no diagonal/touching. For square boards count=rows=cols.
+  const rowOrder = shuffle(Array.from({ length: rows }, (_, i) => i));
+  const usedCols = new Set();
+  const placed = [];
+
+  function legal(r, c) {
+    if (usedCols.has(c)) return false;
+    for (const p of placed) {
+      if (Math.abs(p.r - r) <= 1 && Math.abs(p.c - c) <= 1) return false;
+    }
+    return true;
+  }
+
+  function backtrack(i) {
+    if (placed.length === count) return true;
+    if (i >= rowOrder.length) return false;
+    const r = rowOrder[i];
+    const colsOrder = shuffle(Array.from({ length: cols }, (_, c) => c));
+    for (const c of colsOrder) {
+      if (!legal(r, c)) continue;
+      placed.push({ r, c, region: placed.length });
+      usedCols.add(c);
+      if (backtrack(i + 1)) return true;
+      usedCols.delete(c);
+      placed.pop();
+    }
+    return false;
+  }
+
+  return backtrack(0) ? placed : null;
+}
+
+function growConnectedRegions(rows, cols, catPositions) {
+  const map = Array.from({ length: rows }, () => Array(cols).fill(-1));
+  const fronts = [];
+
+  for (let i = 0; i < catPositions.length; i++) {
+    const { r, c } = catPositions[i];
+    map[r][c] = i;
+    fronts[i] = [[r, c]];
+  }
+
+  let remaining = rows * cols - catPositions.length;
+  while (remaining > 0) {
+    const order = shuffle(Array.from({ length: catPositions.length }, (_, i) => i));
+    let changed = false;
+
+    for (const id of order) {
+      const candidates = [];
+      for (const [r, c] of fronts[id]) {
+        for (const [nr, nc] of getNeighbors(r, c, rows, cols)) {
+          if (map[nr][nc] === -1) candidates.push([nr, nc]);
+        }
+      }
+      if (!candidates.length) continue;
+      const [r, c] = candidates[Math.floor(Math.random() * candidates.length)];
+      map[r][c] = id;
+      fronts[id].push([r, c]);
+      remaining--;
+      changed = true;
+      if (remaining <= 0) break;
+    }
+
+    if (!changed) return null;
+  }
+
+  return map;
+}
+
+// ── REGION GENERATION (flood-fill with random splits) ──
+function generateRegions(rows, cols, numRegions) {
+  const map = Array.from({ length: rows }, () => Array(cols).fill(-1));
+  const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+
+  // Random walk to create contiguous regions
+  let regionId = 0;
+  let attempts = 0;
+  const maxAttempts = 500;
+
+  while (regionId < numRegions && attempts < maxAttempts) {
+    attempts++;
+
+    // Find an unvisited cell
+    let sr = -1, sc = -1;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (!visited[r][c]) { sr = r; sc = c; break; }
+      }
+      if (sr !== -1) break;
+    }
+    if (sr === -1) break;
+
+    // BFS flood fill, but limit size based on how many regions remain
+    const cellsRemaining = countUnvisited(visited, rows, cols);
+    const regionsRemaining = numRegions - regionId;
+    const targetSize = Math.max(2, Math.floor(cellsRemaining / regionsRemaining) + Math.floor(Math.random() * 3));
+
+    const queue = [[sr, sc]];
+    const regionCells = [];
+    visited[sr][sc] = true;
+
+    while (regionCells.length < targetSize && queue.length > 0) {
+      // Pick random from queue
+      const idx = Math.floor(Math.random() * queue.length);
+      const [r, c] = queue.splice(idx, 1)[0];
+      regionCells.push([r, c]);
+      map[r][c] = regionId;
+
+      const neighbors = getNeighbors(r, c, rows, cols);
+      for (const [nr, nc] of neighbors) {
+        if (!visited[nr][nc]) {
+          visited[nr][nc] = true;
+          queue.push([nr, nc]);
+        }
+      }
+    }
+
+    // Remove excess from queue
+    queue.length = 0;
+
+    regionId++;
+  }
+
+  // Assign any remaining unvisited cells to the last region
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (map[r][c] === -1) map[r][c] = (numRegions - 1);
+    }
+  }
+
+  // Verify: each region has at least 1 cell
+  for (let i = 0; i < numRegions; i++) {
+    let has = false;
+    for (let r = 0; r < rows && !has; r++)
+      for (let c = 0; c < cols && !has; c++)
+        if (map[r][c] === i) has = true;
+    if (!has) return null;
+  }
+
+  return map;
+}
+
+function countUnvisited(visited, rows, cols) {
+  let n = 0;
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      if (!visited[r][c]) n++;
+  return n;
+}
+
+function getNeighbors(r, c, rows, cols) {
+  const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+  const res = [];
+  for (const [dr, dc] of dirs) {
+    const nr = r + dr, nc = c + dc;
+    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) res.push([nr, nc]);
+  }
+  return res;
+}
+
+// ── SOLVE PLACEMENT (backtracking) ──
+function solvePlacement(rows, cols, regionMap) {
+  // For each region, find candidate cells
+  const numRegions = Math.max(...regionMap.flat()) + 1;
+  const regionCells = {};
+  for (let i = 0; i < numRegions; i++) regionCells[i] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      regionCells[regionMap[r][c]].push([r, c]);
+    }
+  }
+
+  const sol = Array.from({ length: rows }, () => Array(cols).fill(false));
+  const usedRows = new Set();
+  const usedCols = new Set();
+  const catPositions = [];
+
+  // Sort regions by number of cells (smallest first for pruning)
+  const regionOrder = Array.from({ length: numRegions }, (_, i) => i);
+  regionOrder.sort((a, b) => regionCells[a].length - regionCells[b].length);
+
+  function isAdjacent(r1, c1, r2, c2) {
+    return Math.abs(r1 - r2) <= 1 && Math.abs(c1 - c2) <= 1 && !(r1 === r2 && c1 === c2);
+  }
+
+  function isValid(r, c) {
+    if (usedRows.has(r) || usedCols.has(c)) return false;
+    for (const [cr, cc] of catPositions) {
+      if (isAdjacent(r, c, cr, cc)) return false;
+    }
+    return true;
+  }
+
+  function backtrack(idx) {
+    if (idx === regionOrder.length) return true;
+    const region = regionOrder[idx];
+    // Shuffle cells for variety
+    const cells = shuffle([...regionCells[region]]);
+    for (const [r, c] of cells) {
+      if (isValid(r, c)) {
+        sol[r][c] = true;
+        usedRows.add(r);
+        usedCols.add(c);
+        catPositions.push([r, c]);
+        if (backtrack(idx + 1)) return true;
+        sol[r][c] = false;
+        usedRows.delete(r);
+        usedCols.delete(c);
+        catPositions.pop();
+      }
+    }
+    return false;
+  }
+
+  if (backtrack(0)) return sol;
+  return null;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function pickRandomSolutionCell(rows, cols, sol) {
+  const positions = [];
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      if (sol[r][c]) positions.push({ r, c });
+  return positions[Math.floor(Math.random() * positions.length)];
+}
+
+// ── RENDER ──
+function render() {
+  const d = DIFF[difficulty];
+  const { rows, cols } = d;
+
+  // Adjust cell size responsively. Easy can grow large; hard/ultra shrink to fit.
+  const containerW = Math.min(window.innerWidth - 48, 1180);
+  const innerW = containerW - 68; // board-wrap left/right padding
+  const cellSize = Math.floor((innerW - (cols - 1) * 7) / cols);
+  const maxCell = difficulty === 'easy' ? 170 : 144;
+  const clampedSize = Math.max(54, Math.min(maxCell, cellSize));
+
+  boardEl.style.gridTemplateColumns = `repeat(${cols}, ${clampedSize}px)`;
+  boardEl.innerHTML = '';
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cell = grid[r][c];
+      const el = document.createElement('div');
+      el.className = `cell ${REGION_CSS[cell.region]}`;
+      el.style.width = clampedSize + 'px';
+      el.style.height = clampedSize + 'px';
+      el.dataset.r = r;
+      el.dataset.c = c;
+
+      if (cell.locked) el.classList.add('locked');
+      const key = `${r},${c}`;
+      if (invalidCats.has(key)) el.classList.add('invalid-cat');
+      if (lastPlacedKey === key || popKeys.has(key)) el.classList.add('cat-pop');
+
+      // Cat card for flip effect
+      el.innerHTML = `
+        <div class="cat-card ${cell.cat ? 'flipped' : ''}" data-r="${r}" data-c="${c}">
+          <div class="cat-card-inner">
+            <div class="cat-front">${cell.xmark ? '<span class="x-mark">✕</span>' : ''}</div>
+            <div class="cat-back"><img src="${OCICAT_SRC}" alt="Ocicat"></div>
+          </div>
+        </div>
+      `;
+
+      // Instant cycle: empty -> X -> cat -> empty.
+      el.addEventListener('click', (e) => {
+        if (cell.locked) return;
+        const key = `${r},${c}`;
+
+        if (!cell.xmark && !cell.cat) {
+          cell.xmark = true;
+          cell.cat = false;
+          lastPlacedKey = null;
+          updateConflicts(false);
+          render();
+          return;
+        }
+
+        if (cell.xmark) {
+          cell.xmark = false;
+          cell.cat = true;
+          lastPlacedKey = key;
+          popKeys.add(key);
+          updateConflicts(true);
+          render();
+          checkWin();
+          setTimeout(() => {
+            popKeys.delete(key);
+            if (lastPlacedKey === key) lastPlacedKey = null;
+            render();
+          }, 260);
+          return;
+        }
+
+        if (cell.cat) {
+          cell.cat = false;
+          cell.xmark = false;
+          lastPlacedKey = null;
+          updateConflicts(false);
+          render();
+        }
+      });
+
+      boardEl.appendChild(el);
+    }
+  }
+
+  updateCounts();
+}
+
+// ── CHECK WIN ──
+function checkWin() {
+  const d = DIFF[difficulty];
+  const { rows, cols } = d;
+
+  // Count placed cats
+  let placed = 0;
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      if (grid[r][c].cat) placed++;
+
+  const totalCats = d.regions;
+
+  if (placed < totalCats) return;
+
+  // Verify against solution
+  let correct = true;
+  for (let r = 0; r < rows && correct; r++) {
+    for (let c = 0; c < cols && correct; c++) {
+      if (grid[r][c].cat !== solution[r][c]) correct = false;
+    }
+  }
+
+  if (correct) {
+    clearInterval(timerInterval);
+    const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const secs = String(seconds % 60).padStart(2, '0');
+    document.getElementById('winMsg').textContent = `Level ${level} solved in ${mins}:${secs}!`;
+    document.getElementById('overlay').classList.add('show');
+  }
+}
+
+
+
+function updateConflicts(withFeedback) {
+  const d = DIFF[difficulty];
+  const conflicts = new Set();
+  const cats = [];
+  for (let r = 0; r < d.rows; r++) {
+    for (let c = 0; c < d.cols; c++) {
+      if (grid[r][c].cat) cats.push({ r, c, region: grid[r][c].region });
+    }
+  }
+
+  for (let i = 0; i < cats.length; i++) {
+    for (let j = i + 1; j < cats.length; j++) {
+      const a = cats[i];
+      const b = cats[j];
+      const sameRow = a.r === b.r;
+      const sameCol = a.c === b.c;
+      const sameRegion = a.region === b.region;
+      const touching = Math.abs(a.r - b.r) <= 1 && Math.abs(a.c - b.c) <= 1;
+      if (sameRow || sameCol || sameRegion || touching) {
+        conflicts.add(`${a.r},${a.c}`);
+        conflicts.add(`${b.r},${b.c}`);
+      }
+    }
+  }
+
+  invalidCats = conflicts;
+  if (withFeedback && conflicts.size) triggerBoardError();
+}
+
+function triggerBoardError() {
+  boardEl.classList.remove('error-flash');
+  // force animation restart
+  void boardEl.offsetWidth;
+  boardEl.classList.add('error-flash');
+  setTimeout(() => boardEl.classList.remove('error-flash'), 460);
+}
+
+function revealSolution() {
+  const d = DIFF[difficulty];
+  clearInterval(timerInterval);
+  invalidCats.clear();
+  lastPlacedKey = null;
+  popKeys.clear();
+
+  const cats = [];
+  for (let r = 0; r < d.rows; r++) {
+    for (let c = 0; c < d.cols; c++) {
+      grid[r][c].cat = false;
+      grid[r][c].xmark = false;
+      if (solution[r][c]) cats.push({ r, c });
+    }
+  }
+  render();
+
+  popKeys.clear();
+  lastPlacedKey = null;
+  for (const { r, c } of cats) {
+    grid[r][c].cat = true;
+    grid[r][c].xmark = false;
+    popKeys.add(`${r},${c}`);
+  }
+  render();
+  setTimeout(() => {
+    popKeys.clear();
+    render();
+  }, 260);
+}
+
+// ── TIMER ──
+function startTimer() {
+  timerInterval = setInterval(() => {
+    seconds++;
+    updateTimer();
+  }, 1000);
+}
+
+function updateTimer() {
+  const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+  const s = String(seconds % 60).padStart(2, '0');
+  timerEl.textContent = `${m}:${s}`;
+}
+
+function updateCounts() {
+  const d = DIFF[difficulty];
+  let placed = 0;
+  for (let r = 0; r < d.rows; r++)
+    for (let c = 0; c < d.cols; c++)
+      if (grid[r][c] && grid[r][c].cat) placed++;
+  catCountEl.textContent = `${placed} / ${d.regions}`;
+  levelEl.textContent = level;
+}
+
+// ── GO ──
+window.addEventListener('DOMContentLoaded', init);
+window.addEventListener('resize', () => render());
+</script>
+</body>
+</html>
