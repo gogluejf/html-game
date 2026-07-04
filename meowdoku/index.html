@@ -627,6 +627,9 @@ function init() {
   document.getElementById('btnSolution').addEventListener('click', () => revealSolution());
   document.getElementById('btnNext').addEventListener('click', () => {
     document.getElementById('overlay').classList.remove('show');
+    activeHintKey = null;
+    hintKey = null;
+    hintedKeys.clear();
     level++;
     newGame();
   });
@@ -651,7 +654,7 @@ function newGame() {
 
   solution = sol;
   currentPuzzleUnique = puzzle.unique !== false;
-  hintKey = pickHintKey(rows, cols, sol);
+  hintKey = null;
   activeHintKey = null;
   hintedKeys.clear();
   invalidCats.clear();
@@ -680,6 +683,8 @@ function newGame() {
     grid[lockedPos.r][lockedPos.c].cat = true;
     grid[lockedPos.r][lockedPos.c].locked = true;
   }
+
+  hintKey = pickHintKey(rows, cols, sol);
 
   render();
   startTimer();
@@ -1102,6 +1107,7 @@ function checkWin() {
   if (isCurrentBoardValidSolution()) {
     clearInterval(timerInterval);
     invalidCats.clear();
+    activeHintKey = null;
     const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
     const secs = String(seconds % 60).padStart(2, '0');
     document.getElementById('winMsg').textContent = `Level ${level} solved in ${mins}:${secs}!`;
