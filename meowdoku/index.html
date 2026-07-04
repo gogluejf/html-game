@@ -459,6 +459,8 @@ const DIFF = {
   ultra: { rows: 10, cols: 10, regions: 10, locked: 0 }
 };
 
+const UNIQUE_ATTEMPTS = { easy: 100, hard: 50, ultra: 20 };
+
 let difficulty = 'easy';
 let level = 1;
 let grid = [];         // 2D: { region, cat, xmark, locked }
@@ -508,8 +510,8 @@ function newGame() {
   const d = DIFF[difficulty];
   const { rows, cols, regions: numRegions } = d;
 
-  // Generate a guaranteed-valid puzzle: first cats, then connected regions grown from cats.
-  const puzzle = generatePuzzle(rows, cols, numRegions);
+  // Generate a guaranteed-valid puzzle, then prefer one with exactly one solution.
+  const puzzle = generateUniquePuzzle(rows, cols, numRegions, UNIQUE_ATTEMPTS[difficulty]);
   if (!puzzle) { newGame(); return; }
   const regionMap = puzzle.regionMap;
   const sol = puzzle.solution;
@@ -547,6 +549,23 @@ function newGame() {
 
 
 // ── GUARANTEED VALID PUZZLE GENERATOR ──
+function generateUniquePuzzle(rows, cols, numRegions, attempts) {
+  let fallback = null;
+  for (let i = 0; i < attempts; i++) {
+    const puzzle = generatePuzzle(rows, cols, numRegions);
+    if (!puzzle) continue;
+    if (!fallback) fallback = puzzle;
+    const count = countSolutions(puzzle.regionMap, 2);
+    if (count === 1) {
+      puzzle.unique = true;
+      return puzzle;
+    }
+  }
+  // Fallback is allowed because win checking accepts any valid complete solution.
+  if (fallback) fallback.unique = false;
+  return fallback;
+}
+
 function generatePuzzle(rows, cols, numRegions) {
   for (let attempt = 0; attempt < 200; attempt++) {
     const catPositions = generateCatPositions(rows, cols, numRegions);
@@ -880,40 +899,6 @@ function render() {
 }
 
 // ── CHECK WIN ──
-function checkWin() {
-  const d = DIFF[difficulty];
-  const { rows, cols } = d;
-
-  // Count placed cats
-  let placed = 0;
-  for (let r = 0; r < rows; r++)
-    for (let c = 0; c < cols; c++)
-      if (grid[r][c].cat) placed++;
-
-  const totalCats = d.regions;
-
-  if (placed < totalCats) return;
-
-  // Verify against solution
-  let correct = true;
-  for (let r = 0; r < rows && correct; r++) {
-    for (let c = 0; c < cols && correct; c++) {
-      if (grid[r][c].cat !== solution[r][c]) correct = false;
-    }
-  }
-
-  if (correct) {
-    clearInterval(timerInterval);
-    const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
-    const secs = String(seconds % 60).padStart(2, '0');
-    document.getElementById('winMsg').textContent = `Level ${level} solved in ${mins}:${secs}!`;
-    document.getElementById('overlay').classList.add('show');
-  }
-}
-
-
-
-
 function playCatPop(keys) {
   for (const key of keys) popKeys.add(key);
   setTimeout(() => {
@@ -953,42 +938,119 @@ function updateConflicts(withFeedback) {
 
 function triggerBoardError() {
   boardEl.classList.remove('error-flash');
-  // force animation restart
   void boardEl.offsetWidth;
   boardEl.classList.add('error-flash');
   setTimeout(() => boardEl.classList.remove('error-flash'), 460);
 }
 
-function revealSolution() {
+function checkWin() {
   const d = DIFF[difficulty];
-  clearInterval(timerInterval);
-  solutionRevealed = true;
-  invalidCats.clear();
-  popKeys.clear();
+  const { rows, cols, regions: totalCats } = d;
 
-  const wrongCats = [];
-  const solutionCats = [];
-
-  for (let r = 0; r < d.rows; r++) {
-    for (let c = 0; c < d.cols; c++) {
-      const key = `${r},${c}`;
-      const wasWrongCat = grid[r][c].cat && !solution[r][c];
-      if (wasWrongCat) wrongCats.push(key);
-      if (solution[r][c]) solutionCats.push(key);
-
-      // Show right solution cats, keep wrong cats visible too, clear X marks.
-      grid[r][c].cat = !!solution[r][c] || wasWrongCat;
-      grid[r][c].xmark = false;
+  let placed = 0;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (grid[r][c].cat) placed++;
     }
   }
 
-  // Forbidden signs on the player's wrong cats.
-  invalidCats = new Set(wrongCats);
+  if (placed < totalCats) return;
 
-  // Same exact pop function as single-cat placement, applied to all right cats.
-  playCatPop(solutionCats);
-  if (wrongCats.length) triggerBoardError();
-  render();
+  if (isCurrentBoardValidSolution()) {
+    clearInterval(timerInterval);
+    invalidCats.clear();
+    const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const secs = String(seconds % 60).padStart(2, '0');
+    document.getElementById('winMsg').textContent = `Level ${level} solved in ${mins}:${secs}!`;
+    document.getElementById('overlay').classList.add('show');
+  } else {
+    updateConflicts(true);
+    render();
+  }
+}
+
+function isCurrentBoardValidSolution() {
+  const d = DIFF[difficulty];
+  const { rows, cols, regions } = d;
+  const rowCats = Array(rows).fill(0);
+  const colCats = Array(cols).fill(0);
+  const regionCats = Array(regions).fill(0);
+  const cats = [];
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (!grid[r][c].cat) continue;
+      rowCats[r]++;
+      colCats[c]++;
+      regionCats[grid[r][c].region]++;
+      cats.push({ r, c });
+    }
+  }
+
+  if (cats.length !== regions) return false;
+  if (rowCats.some(n => n !== 1)) return false;
+  if (colCats.some(n => n !== 1)) return false;
+  if (regionCats.some(n => n !== 1)) return false;
+
+  for (let i = 0; i < cats.length; i++) {
+    for (let j = i + 1; j < cats.length; j++) {
+      if (Math.abs(cats[i].r - cats[j].r) <= 1 && Math.abs(cats[i].c - cats[j].c) <= 1) return false;
+    }
+  }
+
+  return true;
+}
+
+function countSolutions(regionMap, limit = 2) {
+  const rows = regionMap.length;
+  const cols = regionMap[0].length;
+  const numRegions = Math.max(...regionMap.flat()) + 1;
+  const regionCells = Array.from({ length: numRegions }, () => []);
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      regionCells[regionMap[r][c]].push([r, c]);
+    }
+  }
+
+  const order = Array.from({ length: numRegions }, (_, i) => i)
+    .sort((a, b) => regionCells[a].length - regionCells[b].length);
+  const usedRows = new Set();
+  const usedCols = new Set();
+  const cats = [];
+  let count = 0;
+
+  function legal(r, c) {
+    if (usedRows.has(r) || usedCols.has(c)) return false;
+    for (const p of cats) {
+      if (Math.abs(p.r - r) <= 1 && Math.abs(p.c - c) <= 1) return false;
+    }
+    return true;
+  }
+
+  function backtrack(i) {
+    if (count >= limit) return;
+    if (i === order.length) {
+      count++;
+      return;
+    }
+
+    const region = order[i];
+    for (const [r, c] of regionCells[region]) {
+      if (!legal(r, c)) continue;
+      usedRows.add(r);
+      usedCols.add(c);
+      cats.push({ r, c });
+      backtrack(i + 1);
+      cats.pop();
+      usedRows.delete(r);
+      usedCols.delete(c);
+      if (count >= limit) return;
+    }
+  }
+
+  backtrack(0);
+  return count;
 }
 
 // ── TIMER ──
