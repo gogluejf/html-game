@@ -373,6 +373,105 @@
 
   .btn-go:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(240,192,64,0.4); }
 
+
+  .btn-icon {
+    min-width: 44px;
+    padding: 8px 12px;
+    font-size: 1rem;
+  }
+
+  .puzzle-note {
+    width: min(1180px, calc(100vw - 48px));
+    min-height: 24px;
+    margin-top: 8px;
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    color: #ffd86b;
+    text-shadow: 0 0 16px rgba(240,192,64,0.28);
+  }
+
+  .cell.hint-pulse {
+    animation: hintShake 320ms ease-in-out 0s 1;
+    box-shadow: 0 0 0 5px rgba(255,216,107,0.65), 0 0 24px rgba(255,216,107,0.64) !important;
+    z-index: 4;
+  }
+
+  @keyframes hintShake {
+    0%, 100% { transform: translateX(0) scale(1); }
+    20% { transform: translateX(-5px) scale(1.04); }
+    40% { transform: translateX(5px) scale(1.04); }
+    60% { transform: translateX(-3px) scale(1.03); }
+    80% { transform: translateX(3px) scale(1.03); }
+  }
+
+  .rules-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10,5,12,0.78);
+    backdrop-filter: blur(5px);
+  }
+
+  .rules-overlay.show { display: flex; }
+
+  .rules-card {
+    width: min(560px, calc(100vw - 32px));
+    border-radius: 24px;
+    padding: 30px;
+    background: radial-gradient(circle at top left, rgba(255,216,107,0.18), transparent 40%), linear-gradient(145deg, #352830, #1f151d);
+    border: 2px solid rgba(240,192,64,0.8);
+    box-shadow: 0 20px 80px rgba(0,0,0,0.55), 0 0 40px rgba(240,192,64,0.18);
+    color: #ffe28a;
+    font-weight: 800;
+    animation: popIn 0.22s ease-out;
+  }
+
+  .rules-card h2 {
+    font-size: 2rem;
+    margin-bottom: 16px;
+    color: #ffd86b;
+    text-shadow: 0 0 20px rgba(240,192,64,0.35);
+  }
+
+  .rules-list {
+    display: grid;
+    gap: 14px;
+    margin: 18px 0 24px;
+  }
+
+  .rule-item {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 12px;
+    align-items: center;
+    padding: 14px;
+    border-radius: 16px;
+    background: rgba(255,216,107,0.08);
+    border: 1px solid rgba(255,216,107,0.18);
+  }
+
+  .rule-icon {
+    font-size: 1.55rem;
+    text-align: center;
+  }
+
+  .rules-close {
+    width: 100%;
+    padding: 13px 18px;
+    border: none;
+    border-radius: 14px;
+    background: #ffd86b;
+    color: #211515;
+    font-weight: 900;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
   /* ── FOOTER ── */
   .footer-info {
     margin: 8px 0 20px;
@@ -404,11 +503,13 @@
     <span>Meowdoku</span>
   </div>
   <div class="controls">
+    <button class="btn btn-icon" id="btnHint" title="Hint">💡</button>
     <button class="btn active" data-diff="easy">Easy</button>
     <button class="btn" data-diff="hard">Hard</button>
     <button class="btn" data-diff="ultra">Ultra</button>
     <button class="btn btn-sol" id="btnSolution">Solution</button>
     <button class="btn btn-res" id="btnReshuffle">Reshuffle</button>
+    <button class="btn btn-icon" id="btnRules" title="Rules">?</button>
   </div>
   </div>
 </header>
@@ -423,6 +524,10 @@
     <span class="val" id="catCount">0 / 0</span>
   </div>
   <div class="info-item">
+    Hints
+    <span class="val" id="hintCount">0 / 0</span>
+  </div>
+  <div class="info-item">
     Level
     <span class="val" id="levelNum">1</span>
   </div>
@@ -432,6 +537,7 @@
   <div class="board" id="board"></div>
 </div>
 
+<div class="puzzle-note" id="puzzleNote"></div>
 <p class="footer-info">Click cycles: empty → ✕ → 🐱 → empty · Solution reveals answer</p>
 
 <!-- WIN OVERLAY -->
@@ -440,6 +546,20 @@
     <h2>🎉 Brilliant!</h2>
     <p id="winMsg">All cats placed correctly!</p>
     <button class="btn-go" id="btnNext">Next Level</button>
+  </div>
+</div>
+
+<div class="rules-overlay" id="rulesOverlay">
+  <div class="rules-card">
+    <h2>How to Play</h2>
+    <div class="rules-list">
+      <div class="rule-item"><div class="rule-icon">🎨</div><div>Place exactly <strong>one cat in each color</strong>.</div></div>
+      <div class="rule-item"><div class="rule-icon">↔️</div><div>Only <strong>one cat per row</strong>.</div></div>
+      <div class="rule-item"><div class="rule-icon">↕️</div><div>Only <strong>one cat per column</strong>.</div></div>
+      <div class="rule-item"><div class="rule-icon">🚫</div><div>Cats cannot touch, even diagonally.</div></div>
+      <div class="rule-item"><div class="rule-icon">✨</div><div>Click cycles: empty → ✕ → cat → empty.</div></div>
+    </div>
+    <button class="rules-close" id="btnCloseRules">Got it</button>
   </div>
 </div>
 
@@ -465,20 +585,33 @@ let difficulty = 'easy';
 let level = 1;
 let grid = [];         // 2D: { region, cat, xmark, locked }
 let solution = [];     // 2D: true/false for cat position
-let boardEl, timerEl, catCountEl, levelEl;
+let boardEl, timerEl, catCountEl, hintCountEl, levelEl, puzzleNoteEl;
 let timerInterval = null;
 let seconds = 0;
 let invalidCats = new Set();
 let lastPlacedKey = null;
 let popKeys = new Set();
 let solutionRevealed = false;
+let currentPuzzleUnique = true;
+let hintKey = null;
+let activeHintKey = null;
+let hintedKeys = new Set();
 
 // ── INIT ──
 function init() {
   boardEl = document.getElementById('board');
   timerEl = document.getElementById('timer');
   catCountEl = document.getElementById('catCount');
+  hintCountEl = document.getElementById('hintCount');
   levelEl = document.getElementById('levelNum');
+  puzzleNoteEl = document.getElementById('puzzleNote');
+
+  document.getElementById('btnHint').addEventListener('click', () => showHint());
+  document.getElementById('btnRules').addEventListener('click', () => showRules());
+  document.getElementById('btnCloseRules').addEventListener('click', () => hideRules());
+  document.getElementById('rulesOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'rulesOverlay') hideRules();
+  });
 
   document.querySelectorAll('.btn[data-diff]').forEach(b => {
     b.addEventListener('click', () => {
@@ -517,9 +650,14 @@ function newGame() {
   const sol = puzzle.solution;
 
   solution = sol;
+  currentPuzzleUnique = puzzle.unique !== false;
+  hintKey = pickHintKey(rows, cols, sol);
+  activeHintKey = null;
+  hintedKeys.clear();
   invalidCats.clear();
   lastPlacedKey = null;
   popKeys.clear();
+  activeHintKey = null;
   solutionRevealed = false;
 
   // Build grid state
@@ -845,6 +983,7 @@ function render() {
       const key = `${r},${c}`;
       if (invalidCats.has(key)) el.classList.add('invalid-cat');
       if (popKeys.has(key)) el.classList.add('cat-pop');
+      if (activeHintKey === key && !cell.cat) el.classList.add('hint-pulse');
 
       // Cat card for flip effect
       el.innerHTML = `
@@ -876,6 +1015,10 @@ function render() {
         if (cell.xmark) {
           cell.xmark = false;
           cell.cat = true;
+          if (hintKey === key) {
+            hintKey = pickHintKey(d.rows, d.cols, solution);
+            activeHintKey = null;
+          }
           playCatPop([key]);
           updateConflicts(true);
           render();
@@ -1053,6 +1196,43 @@ function countSolutions(regionMap, limit = 2) {
   return count;
 }
 
+
+function pickHintKey(rows, cols, sol) {
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (!sol[r][c]) continue;
+      if (grid[r] && grid[r][c] && (grid[r][c].cat || grid[r][c].locked)) continue;
+      return `${r},${c}`;
+    }
+  }
+  return null;
+}
+
+function showHint() {
+  if (solutionRevealed) return;
+  const d = DIFF[difficulty];
+  if (!hintKey) hintKey = pickHintKey(d.rows, d.cols, solution);
+  if (!hintKey) return;
+  activeHintKey = hintKey;
+  const [hr, hc] = hintKey.split(',').map(Number);
+  if (!grid[hr][hc].locked) hintedKeys.add(hintKey);
+  render();
+  setTimeout(() => {
+    if (activeHintKey === hintKey) {
+      activeHintKey = null;
+      render();
+    }
+  }, 360);
+}
+
+function showRules() {
+  document.getElementById('rulesOverlay').classList.add('show');
+}
+
+function hideRules() {
+  document.getElementById('rulesOverlay').classList.remove('show');
+}
+
 // ── TIMER ──
 function startTimer() {
   timerInterval = setInterval(() => {
@@ -1074,7 +1254,20 @@ function updateCounts() {
     for (let c = 0; c < d.cols; c++)
       if (grid[r][c] && grid[r][c].cat) placed++;
   catCountEl.textContent = `${placed} / ${d.regions}`;
+  if (hintCountEl) {
+    let lockedCats = 0;
+    for (let r = 0; r < d.rows; r++) {
+      for (let c = 0; c < d.cols; c++) {
+        if (grid[r][c] && grid[r][c].locked && solution[r][c]) lockedCats++;
+      }
+    }
+    const hintTotal = Math.max(0, d.regions - lockedCats);
+    hintCountEl.textContent = `${hintedKeys.size} / ${hintTotal}`;
+  }
   levelEl.textContent = level;
+  if (puzzleNoteEl) {
+    puzzleNoteEl.textContent = currentPuzzleUnique ? '' : 'More than 1 solution exists for this puzzle';
+  }
 }
 
 // ── GO ──
