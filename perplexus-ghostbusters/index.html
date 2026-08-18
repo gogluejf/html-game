@@ -126,7 +126,7 @@
     const SPHERE_R = 2.0;
     const BALL_R = 0.07;
     const TRACK_H = 0.04; // rail height
-    const GRAVITY = -4.0; // world-space gravity (always down)
+    const GRAVITY = -9.8; // world-space gravity (always down), realistic
     const DAMPING = 0.995;
     const RESTITUTION = 0.4; // bounce energy retention
 
@@ -319,122 +319,157 @@
     );
     scene.add(ballGlow);
 
-    // ─── Ball Physics (proper 3D) ──────────────────────────────────────────────
-    // Ball position and velocity are in WORLD space.
-    // The sphere tilts (rotates) based on mouse. Tracks are children of sphereGroup.
-    // Gravity always pulls down in world space (-Y).
-    // Ball bounces off the inner sphere surface and slides on tracks.
+    // ─── Ball Physics ──────────────────────────────────────────────────────────
+    // Ball is constrained to the sphere's inner surface.
+    // Position is defined in SPHERE-LOCAL spherical coords (phi, theta).
+    // When sphere tilts, ball's world position changes automatically.
+    // Gravity pulls ball toward world-down, which in sphere-local frame
+    // depends on the sphere's current rotation.
 
     const ballState = {
-      pos: new THREE.Vector3(0, SPHERE_R * 0.7, 0), // start near top
-      vel: new THREE.Vector3(0, 0, 0),
+      phi: Math.PI * 0.4,  // polar angle (0=top, PI=bottom) in sphere-local
+      theta: 0,            // azimuthal angle
+      vPhi: 0,
+      vTheta: 0,
       score: 0,
       level: 0,
       won: false,
     };
-    window.__debug = { get ballState() { return ballState; }, get trackSegments() { return trackSegments; }, get sphereGroup() { return sphereGroup; } };
+    window.__debug = {
+      get ballState() { return ballState; },
+      get trackSegments() { return trackSegments; },
+      get sphereGroup() { return sphereGroup; },
+    };
 
     // Sphere tilt state
     const tiltState = { x: 0, y: 0 };
 
-    function getWorldPos(localPos) {
-      return localPos.applyMatrix4(sphereGroup.matrixWorld);
-    }
-
-    function getLocalPos(worldPos) {
-      const inv = new THREE.Matrix4().copy(sphereGroup.matrixWorld).invert();
-      return worldPos.clone().applyMatrix4(inv);
+    function getBallWorldPos() {
+      const r = SPHERE_R - BALL_R;
+      const local = new THREE.Vector3(
+        r * Math.sin(ballState.phi) * Math.cos(ballState.theta),
+        r * Math.cos(ballState.phi),
+        r * Math.sin(ballState.phi) * Math.sin(ballState.theta)
+      );
+      return local.applyMatrix4(sphereGroup.matrixWorld);
     }
 
     function updateBall(dt) {
       if (ballState.won) return;
 
-      // Gravity (world space, always down)
-      ballState.vel.y += GRAVITY * dt;
+      // Gravity in world space, projected onto sphere surface tangent.
+      // In sphere-local frame, "down" is the world-down direction rotated
+      // by the inverse of the sphere's rotation.
+      const invMatrix = new THREE.Matrix4().copy(sphereGroup.matrixWorld).invert();
+      const worldDown = new THREE.Vector3(0, -1, 0);
+      const localDown = worldDown.clone().transformDirection(invMatrix);
+
+      // At the ball's position on the sphere, the tangent plane is
+      // perpendicular to the radial direction (phi, theta).
+      // The radial direction in local space:
+      const radial = new THREE.Vector3(
+        Math.sin(ballState.phi) * Math.cos(ballState.theta),
+        Math.cos(ballState.phi),
+        Math.sin(ballState.phi) * Math.sin(ballState.theta)
+      );
+
+      // Project localDown onto the tangent plane (remove radial component)
+      const radialComp = localDown.dot(radial);
+      const tangentDown = localDown.clone().sub(radial.clone().multiplyScalar(radialComp));
+
+      // Convert tangent direction to phi/theta acceleration
+      // phi direction (increasing phi = toward bottom):
+      const phiDir = new THREE.Vector3(
+        Math.cos(ballState.phi) * Math.cos(ballState.theta),
+        -Math.sin(ballState.phi),
+        Math.cos(ballState.phi) * Math.sin(ballState.theta)
+      );
+      // theta direction (increasing theta = around):
+      const thetaDir = new THREE.Vector3(
+        -Math.sin(ballState.theta),
+        0,
+        Math.cos(ballState.theta)
+      );
+
+      const accelPhi = tangentDown.dot(phiDir) * 9.8;
+      const accelTheta = tangentDown.dot(thetaDir) * 9.8 / Math.max(0.1, Math.sin(ballState.phi));
+
+      // Apply acceleration
+      ballState.vPhi += accelPhi * dt;
+      ballState.vTheta += accelTheta * dt;
 
       // Damping
-      ballState.vel.multiplyScalar(DAMPING);
+      ballState.vPhi *= 0.995;
+      ballState.vTheta *= 0.995;
 
       // Integrate
-      ballState.pos.add(ballState.vel.clone().multiplyScalar(dt));
+      ballState.phi += ballState.vPhi * dt;
+      ballState.theta += ballState.vTheta * dt;
 
-      // ── Collision with inner sphere surface ──
-      // Ball must stay INSIDE the sphere. If it goes past the inner surface,
-      // push it back and reflect velocity.
-      const invMatrix = new THREE.Matrix4().copy(sphereGroup.matrixWorld).invert();
-      const localPos = ballState.pos.clone().applyMatrix4(invMatrix);
-      const localDist = localPos.length();
-      const maxDist = SPHERE_R - BALL_R;
+      // Clamp phi
+      ballState.phi = Math.max(0.05, Math.min(Math.PI - 0.05, ballState.phi));
 
-      if (localDist > maxDist) {
-        // Ball hit the inner sphere wall — push back and bounce
-        const localNormal = localPos.clone().normalize(); // points from center to ball
-        const worldNormal = localNormal.clone().transformDirection(sphereGroup.matrixWorld);
+      // ── Track collisions (in sphere-local space) ──
+      const ballLocal = new THREE.Vector3(
+        (SPHERE_R - BALL_R) * Math.sin(ballState.phi) * Math.cos(ballState.theta),
+        (SPHERE_R - BALL_R) * Math.cos(ballState.phi),
+        (SPHERE_R - BALL_R) * Math.sin(ballState.phi) * Math.sin(ballState.theta)
+      );
 
-        // Project ball back onto inner surface
-        ballState.pos.copy(
-          ballState.pos.clone().sub(worldNormal.clone().multiplyScalar(localDist - maxDist))
-        );
-
-        // Reflect velocity (bounce off inner wall)
-        const velDotN = ballState.vel.dot(worldNormal);
-        if (velDotN > 0) {
-          ballState.vel.sub(worldNormal.clone().multiplyScalar(velDotN * (1 + RESTITUTION)));
-          ballState.vel.multiplyScalar(0.95); // friction
-        }
-      }
-
-      // ── Collision with track rails ──
       for (let si = 0; si < trackSegments.length; si++) {
         const seg = trackSegments[si];
-        const aW = seg.a.clone().applyMatrix4(sphereGroup.matrixWorld);
-        const bW = seg.b.clone().applyMatrix4(sphereGroup.matrixWorld);
-        const normalW = seg.normal.clone().transformDirection(sphereGroup.matrixWorld);
+        const aL = seg.a; // already in local space
+        const bL = seg.b;
 
         // Closest point on segment to ball
-        const ab = bW.clone().sub(aW);
-        const ap = ballState.pos.clone().sub(aW);
+        const ab = bL.clone().sub(aL);
+        const ap = ballLocal.clone().sub(aL);
         const t = Math.max(0, Math.min(1, ap.dot(ab) / ab.lengthSq()));
-        const closest = aW.clone().add(ab.clone().multiplyScalar(t));
-        const dist = ballState.pos.distanceTo(closest);
+        const closest = aL.clone().add(ab.clone().multiplyScalar(t));
+        const dist = ballLocal.distanceTo(closest);
 
         const collisionDist = TRACK_H * 0.5 + BALL_R;
         if (dist < collisionDist) {
-          // Ball is on the rail — push to rail surface and slide
-          const toBall = ballState.pos.clone().sub(closest);
+          // Ball hits rail — push it and add friction
+          const toBall = ballLocal.clone().sub(closest);
           if (toBall.lengthSq() < 0.0001) continue;
           toBall.normalize();
 
-          ballState.pos.copy(closest.clone().add(toBall.multiplyScalar(collisionDist)));
+          // Reduce velocity (friction on rail)
+          ballState.vPhi *= 0.9;
+          ballState.vTheta *= 0.9;
 
-          // Bounce: remove velocity component into rail
-          const velDotN = ballState.vel.dot(toBall);
-          if (velDotN < 0) {
-            ballState.vel.sub(toBall.clone().multiplyScalar(velDotN * (1 + RESTITUTION * 0.5)));
-            ballState.vel.multiplyScalar(0.97); // friction on rail
-          }
+          // Nudge ball position
+          const nudgePhi = toBall.y * 0.01;
+          const nudgeTheta = toBall.x * 0.01;
+          ballState.phi += nudgePhi;
+          ballState.theta += nudgeTheta;
         }
       }
 
-      // ── Goal check (world space) ──
+      // ── Goal check ──
+      const ballWorld = getBallWorldPos();
       const goalWorld = goal.position.clone().applyMatrix4(sphereGroup.matrixWorld);
-      if (ballState.pos.distanceTo(goalWorld) < 0.15) {
+      if (ballWorld.distanceTo(goalWorld) < 0.15) {
         ballState.won = true;
         ballState.score += 500;
-        spawnParticles(ballState.pos, C.proton, 30);
+        spawnParticles(ballWorld, C.proton, 30);
       }
 
-      // ── Ball fell way below (safety) ──
-      if (ballState.pos.y < -SPHERE_R * 2) {
+      // ── Ball at bottom (reset) ──
+      if (ballState.phi > Math.PI - 0.1) {
         ballState.score = Math.max(0, ballState.score - 50);
-        ballState.pos.set(0, SPHERE_R * 0.7, 0);
-        ballState.vel.set(0, 0, 0);
-        spawnParticles(ballState.pos, C.bubble, 15);
+        ballState.phi = Math.PI * 0.4;
+        ballState.theta = 0;
+        ballState.vPhi = 0;
+        ballState.vTheta = 0;
+        spawnParticles(getBallWorldPos(), C.bubble, 15);
       }
 
       // Update mesh
-      ball.position.copy(ballState.pos);
-      ballGlow.position.copy(ballState.pos);
+      const worldPos = getBallWorldPos();
+      ball.position.copy(worldPos);
+      ballGlow.position.copy(worldPos);
     }
 
     // ─── Ghosts ────────────────────────────────────────────────────────────────
@@ -513,11 +548,14 @@
 
         // Ghost-ball collision (world space)
         const ghostWorld = g.mesh.position.clone().applyMatrix4(sphereGroup.matrixWorld);
-        if (ballState.pos.distanceTo(ghostWorld) < 0.2) {
+        const ballWorld = getBallWorldPos();
+        if (ballWorld.distanceTo(ghostWorld) < 0.2) {
           ballState.score = Math.max(0, ballState.score - 100);
-          ballState.pos.set(0, SPHERE_R * 0.7, 0);
-          ballState.vel.set(0, 0, 0);
-          spawnParticles(ballState.pos, C.ghost, 20);
+          ballState.phi = Math.PI * 0.4;
+          ballState.theta = 0;
+          ballState.vPhi = 0;
+          ballState.vTheta = 0;
+          spawnParticles(ballWorld, C.ghost, 20);
           g.phi = Math.random() * Math.PI;
           g.theta = Math.random() * Math.PI * 2;
         }
@@ -609,8 +647,10 @@
         ballState.won = false;
         ballState.score += 100;
         generateMaze(ballState.level);
-        ballState.pos.set(0, SPHERE_R * 0.7, 0);
-        ballState.vel.set(0, 0, 0);
+        ballState.phi = Math.PI * 0.4;
+        ballState.theta = 0;
+        ballState.vPhi = 0;
+        ballState.vTheta = 0;
         updateUI();
       }
     });
@@ -635,10 +675,13 @@
       time += dt;
 
       // Tilt sphere based on mouse (smooth)
-      const targetTiltX = (mouseY - 0.5) * 1.2; // tilt around X (left/right)
-      const targetTiltY = (mouseX - 0.5) * 1.2; // tilt around Y (up/down)
-      tiltState.x += (targetTiltX - tiltState.x) * 0.05;
-      tiltState.y += (targetTiltY - tiltState.y) * 0.05;
+      // Tilting the sphere changes which direction is "down" relative to the tracks.
+      // The ball always falls in world -Y, but the sphere rotates so different
+      // parts of the maze become the "low" point.
+      const targetTiltX = (mouseY - 0.5) * 2.5; // tilt around X (left/right) — stronger
+      const targetTiltY = (mouseX - 0.5) * 2.5; // tilt around Y (up/down) — stronger
+      tiltState.x += (targetTiltX - tiltState.x) * 0.08;
+      tiltState.y += (targetTiltY - tiltState.y) * 0.08;
       sphereGroup.rotation.x = tiltState.x;
       sphereGroup.rotation.y = tiltState.y;
 
