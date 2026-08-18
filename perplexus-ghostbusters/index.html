@@ -332,6 +332,7 @@
       level: 0,
       won: false,
     };
+    window.__debug = { get ballState() { return ballState; }, get trackSegments() { return trackSegments; }, get sphereGroup() { return sphereGroup; } };
 
     // Sphere tilt state
     const tiltState = { x: 0, y: 0 };
@@ -341,7 +342,8 @@
     }
 
     function getLocalPos(worldPos) {
-      return worldPos.clone().applyMatrix4(sphereGroup.matrixWorldInverse);
+      const inv = new THREE.Matrix4().copy(sphereGroup.matrixWorld).invert();
+      return worldPos.clone().applyMatrix4(inv);
     }
 
     function updateBall(dt) {
@@ -357,36 +359,34 @@
       ballState.pos.add(ballState.vel.clone().multiplyScalar(dt));
 
       // ── Collision with inner sphere surface ──
-      // Ball must stay inside the sphere (in local space)
-      const localPos = ballState.pos.clone().applyMatrix4(sphereGroup.matrixWorldInverse);
+      // Ball must stay INSIDE the sphere. If it goes past the inner surface,
+      // push it back and reflect velocity.
+      const invMatrix = new THREE.Matrix4().copy(sphereGroup.matrixWorld).invert();
+      const localPos = ballState.pos.clone().applyMatrix4(invMatrix);
       const localDist = localPos.length();
       const maxDist = SPHERE_R - BALL_R;
 
       if (localDist > maxDist) {
-        // Push back to surface
-        const localNormal = localPos.clone().normalize();
+        // Ball hit the inner sphere wall — push back and bounce
+        const localNormal = localPos.clone().normalize(); // points from center to ball
         const worldNormal = localNormal.clone().transformDirection(sphereGroup.matrixWorld);
 
-        // Project ball back onto surface
+        // Project ball back onto inner surface
         ballState.pos.copy(
           ballState.pos.clone().sub(worldNormal.clone().multiplyScalar(localDist - maxDist))
         );
 
-        // Reflect velocity
+        // Reflect velocity (bounce off inner wall)
         const velDotN = ballState.vel.dot(worldNormal);
         if (velDotN > 0) {
           ballState.vel.sub(worldNormal.clone().multiplyScalar(velDotN * (1 + RESTITUTION)));
-          // Add friction
-          ballState.vel.multiplyScalar(0.95);
+          ballState.vel.multiplyScalar(0.95); // friction
         }
       }
 
       // ── Collision with track rails ──
-      // For each track segment, check if ball is close to the rail line
-      // If so, push ball up along the rail normal and reflect velocity
       for (let si = 0; si < trackSegments.length; si++) {
         const seg = trackSegments[si];
-        // Transform segment to world space
         const aW = seg.a.clone().applyMatrix4(sphereGroup.matrixWorld);
         const bW = seg.b.clone().applyMatrix4(sphereGroup.matrixWorld);
         const normalW = seg.normal.clone().transformDirection(sphereGroup.matrixWorld);
@@ -400,17 +400,18 @@
 
         const collisionDist = TRACK_H * 0.5 + BALL_R;
         if (dist < collisionDist) {
-          // Ball is on the rail — slide along it
-          const toBall = ballState.pos.clone().sub(closest).normalize();
-          // Push ball to surface of rail
+          // Ball is on the rail — push to rail surface and slide
+          const toBall = ballState.pos.clone().sub(closest);
+          if (toBall.lengthSq() < 0.0001) continue;
+          toBall.normalize();
+
           ballState.pos.copy(closest.clone().add(toBall.multiplyScalar(collisionDist)));
 
-          // Remove velocity component into the rail (bounce)
+          // Bounce: remove velocity component into rail
           const velDotN = ballState.vel.dot(toBall);
           if (velDotN < 0) {
             ballState.vel.sub(toBall.clone().multiplyScalar(velDotN * (1 + RESTITUTION * 0.5)));
-            // Friction — reduce tangential velocity slightly
-            ballState.vel.multiplyScalar(0.97);
+            ballState.vel.multiplyScalar(0.97); // friction on rail
           }
         }
       }
@@ -423,8 +424,8 @@
         spawnParticles(ballState.pos, C.proton, 30);
       }
 
-      // ── Ball fell out (below sphere) ──
-      if (ballState.pos.y < -SPHERE_R - 0.5) {
+      // ── Ball fell way below (safety) ──
+      if (ballState.pos.y < -SPHERE_R * 2) {
         ballState.score = Math.max(0, ballState.score - 50);
         ballState.pos.set(0, SPHERE_R * 0.7, 0);
         ballState.vel.set(0, 0, 0);
