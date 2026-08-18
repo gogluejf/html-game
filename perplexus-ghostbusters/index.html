@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perplexus: Ghostbusters Edition</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; background: #0a0a1a; }
+    canvas { display: block; }
+    #ui {
+      position: fixed; top: 20px; left: 20px;
+      color: #00ffcc; font-family: 'Courier New', monospace; font-size: 18px;
+      text-shadow: 0 0 10px #00ffcc; pointer-events: none; z-index: 10;
+    }
+    #title {
+      position: fixed; top: 20px; right: 20px;
+      color: #cc9900; font-family: 'Courier New', monospace; font-size: 14px;
+      text-shadow: 0 0 10px #cc9900; pointer-events: none; z-index: 10;
+    }
+    #hint {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      color: #008866; font-family: 'Courier New', monospace; font-size: 14px;
+      pointer-events: none; z-index: 10; white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="ui"></div>
+  <div id="title">PERPLEXUS: GHOSTBUSTERS EDITION</div>
+  <div id="hint">Move mouse to tilt &bull; Drag to orbit camera &bull; Guide proton ball to top &bull; Avoid ghosts!</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+    // Simple OrbitControls replacement
+    class SimpleOrbit {
+      constructor(camera, dom) {
+        this.camera = camera;
+        this.dom = dom;
+        this.target = new THREE.Vector3();
+        this.enableDamping = true;
+        this.dampingFactor = 0.05;
+        this.minDistance = 3;
+        this.maxDistance = 10;
+        this.spherical = new THREE.Spherical();
+        this.sphericalDelta = new THREE.Spherical();
+        this.scale = 1;
+        this.rotateSpeed = 1.0;
+        this.panSpeed = 1.0;
+        this._isDragging = false;
+        this._prevX = 0;
+        this._prevY = 0;
+        this._panOffset = new THREE.Vector3();
+
+        const offset = new THREE.Vector3();
+        offset.copy(camera.position).sub(this.target);
+        this.spherical.setFromVector3(offset);
+
+        dom.addEventListener('mousedown', (e) => {
+          this._isDragging = true;
+          this._prevX = e.clientX;
+          this._prevY = e.clientY;
+        });
+        dom.addEventListener('mousemove', (e) => {
+          if (!this._isDragging) return;
+          const dx = (e.clientX - this._prevX) * 0.005 * this.rotateSpeed;
+          const dy = (e.clientY - this._prevY) * 0.005 * this.rotateSpeed;
+          this.sphericalDelta.theta -= dx;
+          this.sphericalDelta.phi -= dy;
+          this._prevX = e.clientX;
+          this._prevY = e.clientY;
+        });
+        dom.addEventListener('mouseup', () => { this._isDragging = false; });
+        dom.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          this.scale *= (e.deltaY > 0 ? 1.05 : 0.95);
+        }, { passive: false });
+      }
+      update() {
+        if (this.enableDamping) {
+          this.spherical.theta += this.sphericalDelta.theta * this.dampingFactor;
+          this.spherical.phi += this.sphericalDelta.phi * this.dampingFactor;
+          this.sphericalDelta.theta *= (1 - this.dampingFactor);
+          this.sphericalDelta.phi *= (1 - this.dampingFactor);
+        } else {
+          this.spherical.theta += this.sphericalDelta.theta;
+          this.spherical.phi += this.sphericalDelta.phi;
+          this.sphericalDelta.set(0, 0, 0);
+        }
+        this.spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, this.spherical.phi));
+        this.spherical.radius = Math.max(this.minDistance, Math.min(this.maxDistance, this.spherical.radius * this.scale));
+        this.scale = 1;
+        const offset = new THREE.Vector3().setFromSpherical(this.spherical);
+        this.camera.position.copy(this.target).add(offset);
+        this.camera.lookAt(this.target);
+      }
+    }
+    THREE.SimpleOrbit = SimpleOrbit;
+
+    window.addEventListener('load', function() {
+    // ─── Scene Setup ───────────────────────────────────────────────────────────
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a1a);
+    scene.fog = new THREE.Fog(0x0a0a1a, 5, 15);
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 2, 6);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new THREE.SimpleOrbit(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 3;
+    controls.maxDistance = 10;
+    controls.target.set(0, 0, 0);
+
+    // ─── Lighting ──────────────────────────────────────────────────────────────
+    scene.add(new THREE.AmbientLight(0x222244, 2));
+
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    mainLight.position.set(5, 10, 5);
+    mainLight.castShadow = true;
+    scene.add(mainLight);
+
+    const protonLight = new THREE.PointLight(0xff4400, 3, 5);
+    protonLight.position.set(0, 0, 0);
+    scene.add(protonLight);
+
+    const bubbleLight = new THREE.PointLight(0x00ccff, 2, 4);
+    bubbleLight.position.set(0, 1, 0);
+    scene.add(bubbleLight);
+
+    // ─── Ghostbuster Colors ────────────────────────────────────────────────────
+    const C = {
+      proton: 0xff4400, protonGlow: 0xff6600,
+      bubble: 0x00ccff, bubbleBright: 0x00ffff,
+      track: 0x00aaff, trackDark: 0x006699,
+      trackPurple: 0x9933ff, trackYellow: 0xffcc00,
+      ghost: 0xffffff, frame: 0xcc9900, frameDark: 0x886600,
+      slime: 0x44ff44, bg: 0x0a0a1a,
+    };
+
+    // ─── Constants ─────────────────────────────────────────────────────────────
+    const SPHERE_R = 2.0;
+    const BALL_R = 0.08;
+    const TRACK_W = 0.06;
+
+    // ─── Sphere Frame (Ghostbusters Gold) ──────────────────────────────────────
+    const sphereGroup = new THREE.Group();
+    scene.add(sphereGroup);
+
+    // Outer transparent shell
+    const shell = new THREE.Mesh(
+      new THREE.SphereGeometry(SPHERE_R, 64, 64),
+      new THREE.MeshPhysicalMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.08,
+        roughness: 0.1, metalness: 0.1, side: THREE.DoubleSide,
+      })
+    );
+    sphereGroup.add(shell);
+
+    // Gold frame rings
+    function makeFrameRing(radius, tubeR, color) {
+      return new THREE.Mesh(
+        new THREE.TorusGeometry(radius, tubeR, 16, 100),
+        new THREE.MeshStandardMaterial({ color, metalness: 0.8, roughness: 0.3 })
+      );
+    }
+
+    sphereGroup.add(makeFrameRing(SPHERE_R, 0.04, C.frame));
+
+    for (let i = 0; i < 3; i++) {
+      const capR = SPHERE_R * (0.3 + i * 0.2);
+      const cap = makeFrameRing(capR, 0.03, C.frame);
+      cap.position.y = SPHERE_R * 0.8 - i * SPHERE_R * 0.3;
+      cap.rotation.x = Math.PI / 2;
+      sphereGroup.add(cap);
+      const cap2 = makeFrameRing(capR, 0.03, C.frame);
+      cap2.position.y = -SPHERE_R * 0.8 + i * SPHERE_R * 0.3;
+      cap2.rotation.x = Math.PI / 2;
+      sphereGroup.add(cap2);
+    }
+
+    // Vertical frame bars
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2;
+      const bar = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.03, 0.03, SPHERE_R * 2, 8),
+        new THREE.MeshStandardMaterial({ color: C.frame, metalness: 0.7, roughness: 0.4 })
+      );
+      bar.position.set(Math.cos(angle) * SPHERE_R * 0.5, 0, Math.sin(angle) * SPHERE_R * 0.5);
+      bar.lookAt(0, 0, 0);
+      bar.rotateX(Math.PI / 2);
+      sphereGroup.add(bar);
+    }
+
+    // Corner bolts
+    for (let i = 0; i < 12; i++) {
+      const phi = Math.acos(1 - 2 * (i + 0.5) / 12);
+      const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+      const bolt = new THREE.Mesh(
+        new THREE.SphereGeometry(0.04, 8, 8),
+        new THREE.MeshStandardMaterial({ color: 0xffcc00, metalness: 0.9, roughness: 0.2 })
+      );
+      bolt.position.setFromSphericalCoords(SPHERE_R, phi, theta);
+      sphereGroup.add(bolt);
+    }
+
+    // ─── Maze Tracks (3D on sphere surface) ───────────────────────────────────
+    const trackGroup = new THREE.Group();
+    sphereGroup.add(trackGroup);
+
+    function createTrackPath(points, color, width) {
+      if (width === undefined) width = TRACK_W;
+      if (points.length < 2) return;
+      const mat = new THREE.MeshStandardMaterial({
+        color, emissive: color, emissiveIntensity: 0.3,
+        metalness: 0.3, roughness: 0.5,
+      });
+      const curvePoints = points.map(function(p) {
+        var r = SPHERE_R - 0.05;
+        return new THREE.Vector3(
+          r * Math.sin(p.phi) * Math.cos(p.theta),
+          r * Math.cos(p.phi),
+          r * Math.sin(p.phi) * Math.sin(p.theta)
+        );
+      });
+      var curve = new THREE.CatmullRomCurve3(curvePoints);
+      var tubeGeo = new THREE.TubeGeometry(curve, Math.max(points.length * 4, 20), width, 8, false);
+      var tube = new THREE.Mesh(tubeGeo, mat);
+      trackGroup.add(tube);
+      return tube;
+    }
+
+    function generateMaze(level) {
+      var numRings = 4 + Math.min(level, 3);
+      for (var ring = 0; ring < numRings; ring++) {
+        var phi = (ring + 1) / (numRings + 1) * Math.PI;
+        var segments = 3 + ring + Math.floor(Math.random() * 2);
+        for (var seg = 0; seg < segments; seg++) {
+          var startTheta = (seg / segments) * Math.PI * 2 + Math.random() * 0.3;
+          var endTheta = startTheta + (Math.PI * 2 / segments) * (0.5 + Math.random() * 0.3);
+          var points = [];
+          var steps = 20;
+          for (var i = 0; i <= steps; i++) {
+            var t = i / steps;
+            points.push({ phi: phi, theta: startTheta + t * (endTheta - startTheta) });
+          }
+          var colors = [C.track, C.trackPurple, C.trackYellow, C.bubble];
+          createTrackPath(points, colors[ring % colors.length], TRACK_W);
+        }
+        if (ring < numRings - 1) {
+          var nextPhi = (ring + 2) / (numRings + 1) * Math.PI;
+          var bridgeTheta = Math.random() * Math.PI * 2;
+          var bridgePoints = [];
+          for (var i = 0; i <= 10; i++) {
+            var t = i / 10;
+            bridgePoints.push({ phi: phi + t * (nextPhi - phi), theta: bridgeTheta });
+          }
+          createTrackPath(bridgePoints, C.trackYellow, TRACK_W * 0.8);
+        }
+      }
+      // Central spiral
+      var spiralPoints = [];
+      var spiralTurns = 3;
+      for (var i = 0; i <= spiralTurns * 30; i++) {
+        var t = i / (spiralTurns * 30);
+        spiralPoints.push({ phi: t * Math.PI * 0.3 + 0.1, theta: t * spiralTurns * Math.PI * 2 });
+      }
+      createTrackPath(spiralPoints, C.proton, TRACK_W * 0.7);
+    }
+
+    generateMaze(0);
+
+    // ─── Goal (Top Center) ─────────────────────────────────────────────────────
+    var goal = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 16, 16),
+      new THREE.MeshStandardMaterial({ color: C.proton, emissive: C.proton, emissiveIntensity: 1.0 })
+    );
+    goal.position.set(0, SPHERE_R - 0.1, 0);
+    sphereGroup.add(goal);
+
+    var goalGlow = new THREE.Mesh(
+      new THREE.SphereGeometry(0.2, 16, 16),
+      new THREE.MeshBasicMaterial({ color: C.proton, transparent: true, opacity: 0.3 })
+    );
+    goalGlow.position.copy(goal.position);
+    sphereGroup.add(goalGlow);
+
+    // ─── Ball (Proton Ball) ────────────────────────────────────────────────────
+    var ball = new THREE.Mesh(
+      new THREE.SphereGeometry(BALL_R, 32, 32),
+      new THREE.MeshStandardMaterial({
+        color: C.proton, emissive: C.proton, emissiveIntensity: 0.5,
+        metalness: 0.5, roughness: 0.3,
+      })
+    );
+    scene.add(ball);
+
+    var ballGlow = new THREE.Mesh(
+      new THREE.SphereGeometry(BALL_R * 2, 16, 16),
+      new THREE.MeshBasicMaterial({ color: C.bubbleBright, transparent: true, opacity: 0.2 })
+    );
+    scene.add(ballGlow);
+
+    // ─── Ball Physics ──────────────────────────────────────────────────────────
+    var ballState = {
+      phi: Math.PI * 0.3,
+      theta: 0,
+      vPhi: 0,
+      vTheta: 0,
+      pos: new THREE.Vector3(),
+      tiltX: 0,
+      tiltY: 0,
+      score: 0,
+      level: 0,
+      won: false,
+      gameOver: false,
+    };
+
+    function getBallPosition() {
+      var r = SPHERE_R - BALL_R - 0.05;
+      return new THREE.Vector3(
+        r * Math.sin(ballState.phi) * Math.cos(ballState.theta),
+        r * Math.cos(ballState.phi),
+        r * Math.sin(ballState.phi) * Math.sin(ballState.theta)
+      );
+    }
+
+    function updateBall(dt) {
+      if (ballState.won || ballState.gameOver) return;
+
+      var gravity = 2.0;
+      var damping = 0.98;
+
+      var gPhi = gravity * Math.sin(ballState.phi) * dt;
+      var tiltEffectX = ballState.tiltY * gravity * 0.5 * dt;
+      var tiltEffectY = ballState.tiltX * gravity * 0.5 * dt;
+
+      ballState.vPhi += gPhi + tiltEffectY;
+      ballState.vTheta += tiltEffectX;
+
+      ballState.vPhi *= damping;
+      ballState.vTheta *= damping;
+
+      ballState.phi += ballState.vPhi * dt * 10;
+      ballState.theta += ballState.vTheta * dt * 10;
+      ballState.phi = Math.max(0.1, Math.min(Math.PI - 0.1, ballState.phi));
+
+      // Track collisions
+      var ballPos = getBallPosition();
+      var ballDir = ballPos.clone().normalize();
+
+      for (var ti = 0; ti < trackGroup.children.length; ti++) {
+        var track = trackGroup.children[ti];
+        if (!track.geometry || !track.geometry.attributes) continue;
+        var positions = track.geometry.attributes.position;
+        if (!positions) continue;
+
+        var sampleStep = Math.max(1, Math.floor(positions.count / 5));
+        for (var i = 0; i < positions.count; i += sampleStep) {
+          var tp = new THREE.Vector3().fromBufferAttribute(positions, i);
+          var dist = ballPos.distanceTo(tp);
+
+          if (dist < TRACK_W + BALL_R) {
+            var trackDir = tp.clone().normalize();
+            var ballTrackDot = ballDir.dot(trackDir);
+
+            if (ballTrackDot > 0.9) {
+              ballState.vPhi *= 0.95;
+              ballState.vTheta *= 0.95;
+
+              var targetPhi = Math.acos(tp.y / tp.length());
+              var targetTheta = Math.atan2(tp.z, tp.x);
+
+              ballState.phi += (targetPhi - ballState.phi) * 0.1;
+              ballState.theta += (targetTheta - ballState.theta) * 0.1;
+            }
+          }
+        }
+      }
+
+      // Goal check
+      var goalPos = new THREE.Vector3(0, SPHERE_R - 0.1, 0);
+      if (ballPos.distanceTo(goalPos) < 0.15) {
+        ballState.won = true;
+        ballState.score += 500;
+        spawnParticles(ballPos, C.proton, 30);
+      }
+
+      // Fell to bottom
+      if (ballState.phi > Math.PI - 0.15) {
+        ballState.score = Math.max(0, ballState.score - 50);
+        ballState.phi = Math.PI * 0.3;
+        ballState.theta = 0;
+        ballState.vPhi = 0;
+        ballState.vTheta = 0;
+        spawnParticles(ballPos, C.bubble, 15);
+      }
+
+      var newPos = getBallPosition();
+      ball.position.copy(newPos);
+      ballGlow.position.copy(newPos);
+
+      sphereGroup.rotation.x = ballState.tiltX * 0.3;
+      sphereGroup.rotation.y = ballState.tiltY * 0.3;
+    }
+
+    // ─── Ghosts ────────────────────────────────────────────────────────────────
+    var ghosts = [];
+    var ghostGroup = new THREE.Group();
+    sphereGroup.add(ghostGroup);
+
+    function createGhost() {
+      var group = new THREE.Group();
+
+      var bodyMat = new THREE.MeshStandardMaterial({
+        color: C.ghost, transparent: true, opacity: 0.8,
+        emissive: 0xaaaaff, emissiveIntensity: 0.3,
+      });
+
+      var body = new THREE.Mesh(
+        new THREE.SphereGeometry(0.15, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.6),
+        bodyMat
+      );
+      group.add(body);
+
+      var bottom = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.15, 0.12, 0.1, 16),
+        bodyMat.clone()
+      );
+      bottom.position.y = -0.1;
+      group.add(bottom);
+
+      var eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+      var eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), eyeMat);
+      eye1.position.set(-0.05, 0.02, 0.12);
+      group.add(eye1);
+      var eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), eyeMat);
+      eye2.position.set(0.05, 0.02, 0.12);
+      group.add(eye2);
+
+      var mouth = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), eyeMat);
+      mouth.position.set(0, -0.05, 0.13);
+      group.add(mouth);
+
+      var ghostLight = new THREE.PointLight(0xaaaaff, 0.5, 1);
+      group.add(ghostLight);
+
+      var phi = Math.random() * Math.PI;
+      var theta = Math.random() * Math.PI * 2;
+      var r = SPHERE_R * (0.5 + Math.random() * 0.3);
+
+      group.position.set(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.cos(phi),
+        r * Math.sin(phi) * Math.sin(theta)
+      );
+      group.scale.setScalar(0.8 + Math.random() * 0.4);
+
+      var ghost = {
+        mesh: group, phi: phi, theta: theta, r: r,
+        vPhi: (Math.random() - 0.5) * 0.5,
+        vTheta: (Math.random() - 0.5) * 0.5,
+        phase: Math.random() * Math.PI * 2,
+      };
+      ghostGroup.add(group);
+      ghosts.push(ghost);
+      return ghost;
+    }
+
+    for (var i = 0; i < 3; i++) createGhost();
+
+    function updateGhosts(dt, time) {
+      for (var gi = 0; gi < ghosts.length; gi++) {
+        var g = ghosts[gi];
+        g.phase += dt * 2;
+        g.vPhi += (Math.random() - 0.5) * 0.1 * dt;
+        g.vTheta += (Math.random() - 0.5) * 0.1 * dt;
+        g.vPhi *= 0.98;
+        g.vTheta *= 0.98;
+        g.phi += g.vPhi * dt;
+        g.theta += g.vTheta * dt;
+
+        if (g.phi < 0.3) g.vPhi = Math.abs(g.vPhi);
+        if (g.phi > Math.PI - 0.3) g.vPhi = -Math.abs(g.vPhi);
+
+        g.mesh.position.set(
+          g.r * Math.sin(g.phi) * Math.cos(g.theta),
+          g.r * Math.cos(g.phi),
+          g.r * Math.sin(g.phi) * Math.sin(g.theta)
+        );
+        g.mesh.rotation.z = Math.sin(time * 3 + g.phase) * 0.2;
+        g.mesh.position.y += Math.sin(time * 2 + g.phase) * 0.02;
+
+        var ballPos = getBallPosition();
+        if (ballPos.distanceTo(g.mesh.position) < 0.2) {
+          ballState.score = Math.max(0, ballState.score - 100);
+          ballState.phi = Math.PI * 0.3;
+          ballState.theta = 0;
+          ballState.vPhi = 0;
+          ballState.vTheta = 0;
+          spawnParticles(ballPos, C.ghost, 20);
+          g.phi = Math.random() * Math.PI;
+          g.theta = Math.random() * Math.PI * 2;
+        }
+      }
+    }
+
+    // ─── Bubbles ───────────────────────────────────────────────────────────────
+    var bubbles = [];
+    var bubbleGeo = new THREE.SphereGeometry(0.05, 8, 8);
+
+    function spawnBubble() {
+      var mesh = new THREE.Mesh(bubbleGeo, new THREE.MeshBasicMaterial({
+        color: C.bubbleBright, transparent: true, opacity: 0.4,
+      }));
+      var phi = Math.random() * Math.PI;
+      var theta = Math.random() * Math.PI * 2;
+      var r = SPHERE_R * (0.3 + Math.random() * 0.5);
+      mesh.position.set(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.cos(phi),
+        r * Math.sin(phi) * Math.sin(theta)
+      );
+      mesh.scale.setScalar(0.5 + Math.random() * 1.5);
+      sphereGroup.add(mesh);
+      bubbles.push({ mesh: mesh, life: 1.0, decay: 0.002 + Math.random() * 0.005 });
+    }
+
+    function updateBubbles(dt) {
+      for (var i = bubbles.length - 1; i >= 0; i--) {
+        var b = bubbles[i];
+        b.life -= b.decay;
+        b.mesh.material.opacity = b.life * 0.4;
+        b.mesh.position.y += dt * 0.1;
+        if (b.life <= 0) {
+          sphereGroup.remove(b.mesh);
+          b.mesh.material.dispose();
+          bubbles.splice(i, 1);
+        }
+      }
+      if (Math.random() > 0.95 && bubbles.length < 20) spawnBubble();
+    }
+
+    // ─── Particles ─────────────────────────────────────────────────────────────
+    var particles = [];
+    var particleGeo = new THREE.SphereGeometry(0.03, 8, 8);
+
+    function spawnParticles(pos, color, count) {
+      for (var i = 0; i < count; i++) {
+        var mesh = new THREE.Mesh(particleGeo, new THREE.MeshBasicMaterial({
+          color: color, transparent: true, opacity: 1.0,
+        }));
+        mesh.position.copy(pos);
+        var vel = new THREE.Vector3(
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2
+        );
+        scene.add(mesh);
+        particles.push({ mesh: mesh, vel: vel, life: 1.0, decay: 0.02 + Math.random() * 0.03 });
+      }
+    }
+
+    function updateParticles(dt) {
+      for (var i = particles.length - 1; i >= 0; i--) {
+        var p = particles[i];
+        p.life -= p.decay;
+        p.vel.multiplyScalar(0.98);
+        p.mesh.position.add(p.vel.clone().multiplyScalar(dt));
+        p.mesh.material.opacity = p.life;
+        if (p.life <= 0) {
+          scene.remove(p.mesh);
+          p.mesh.material.dispose();
+          particles.splice(i, 1);
+        }
+      }
+    }
+
+    // ─── Input ─────────────────────────────────────────────────────────────────
+    var mouseX = 0.5, mouseY = 0.5;
+    document.addEventListener('mousemove', function(e) {
+      mouseX = e.clientX / window.innerWidth;
+      mouseY = e.clientY / window.innerHeight;
+    });
+
+    document.addEventListener('click', function() {
+      if (ballState.won) {
+        ballState.level++;
+        ballState.won = false;
+        ballState.score += 100;
+        // Clear old tracks
+        while (trackGroup.children.length > 0) {
+          var child = trackGroup.children[0];
+          trackGroup.remove(child);
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) child.material.dispose();
+        }
+        generateMaze(ballState.level);
+        ballState.phi = Math.PI * 0.3;
+        ballState.theta = 0;
+        ballState.vPhi = 0;
+        ballState.vTheta = 0;
+        updateUI();
+      }
+    });
+
+    // ─── UI ────────────────────────────────────────────────────────────────────
+    var uiDiv = document.getElementById('ui');
+    function updateUI() {
+      uiDiv.innerHTML =
+        'SCORE: ' + ballState.score + '<br>' +
+        'LEVEL: ' + (ballState.level + 1) + '<br>' +
+        'GHOSTS: ' + ghosts.length +
+        (ballState.won ? '<br><span style="color:#ff4400;font-size:24px">LEVEL COMPLETE! Click to continue</span>' : '');
+    }
+
+    // ─── Animation Loop ────────────────────────────────────────────────────────
+    var clock = new THREE.Clock();
+    var time = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      var dt = Math.min(clock.getDelta(), 0.05);
+      time += dt;
+
+      ballState.tiltX = (mouseX - 0.5) * 2;
+      ballState.tiltY = (mouseY - 0.5) * 2;
+
+      updateBall(dt);
+      updateGhosts(dt, time);
+      updateBubbles(dt);
+      updateParticles(dt);
+
+      var pulse = 1 + Math.sin(time * 3) * 0.2;
+      goal.scale.setScalar(pulse);
+      goalGlow.scale.setScalar(pulse * 1.5);
+      protonLight.intensity = 2 + Math.sin(time * 3) * 1;
+      ballGlow.scale.setScalar(1 + Math.sin(time * 5) * 0.1);
+
+      for (var gi = 0; gi < ghosts.length; gi++) {
+        var g = ghosts[gi];
+        var light = null;
+        for (var ci = 0; ci < g.mesh.children.length; ci++) {
+          if (g.mesh.children[ci].isPointLight) { light = g.mesh.children[ci]; break; }
+        }
+        if (light) light.intensity = 0.3 + Math.sin(time * 5 + g.phase) * 0.2;
+      }
+
+      controls.update();
+      updateUI();
+      renderer.render(scene, camera);
+    }
+
+    // ─── Resize ────────────────────────────────────────────────────────────────
+    window.addEventListener('resize', function() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    updateUI();
+    animate();
+    console.log('Perplexus: Ghostbusters Edition (Three.js 3D) loaded!');
+    }); // end load handler
+  </script>
+</body>
+</html>
