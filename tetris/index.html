@@ -396,9 +396,10 @@ function render() {
     ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(COLS * CELL, y * CELL); ctx.stroke();
   }
   // settled blocks
-  for (let y = 0; y < ROWS; y++)
-    for (let x = 0; x < COLS; x++)
-      if (grid[y][x]) drawCell(ctx, x, y, CELL, COLORS[grid[y][x]]);
+  if (grid)
+    for (let y = 0; y < ROWS; y++)
+      for (let x = 0; x < COLS; x++)
+        if (grid[y][x]) drawCell(ctx, x, y, CELL, COLORS[grid[y][x]]);
 
   if (current) {
     // ghost
@@ -435,16 +436,17 @@ function drawHold() { drawMini(holdCtx, holdType); }
 // ---------- Loop ----------
 function loop(now) {
   requestAnimationFrame(loop);
-  if (!running || paused) { lastTime = now; return; }
-  const dt = now - lastTime;
+  const dt = Math.min(100, now - lastTime); // clamp: avoid jumps after tab switch
   lastTime = now;
-  dropTimer += dt;
-  if (dropTimer >= dropInterval) {
-    dropTimer = 0;
-    if (!tryMove(0, 1)) {
-      merge();
-      clearLines();
-      spawn();
+  if (running && !paused) {
+    dropTimer += dt;
+    if (dropTimer >= dropInterval) {
+      dropTimer = 0;
+      if (!tryMove(0, 1)) {
+        merge();
+        clearLines();
+        spawn();
+      }
     }
   }
   render();
