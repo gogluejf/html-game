@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Train Bridge Collapse</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+background: #1a1a2e;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+min-height: 100vh;
+font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+color: #e0e0e0;
+overflow: hidden;
+}
+canvas {
+border-radius: 8px;
+box-shadow: 0 0 40px rgba(0,0,0,0.5);
+cursor: pointer;
+}
+.controls {
+margin-top: 15px;
+display: flex;
+gap: 12px;
+align-items: center;
+}
+button {
+padding: 10px 24px;
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+color: white;
+border: none;
+border-radius: 6px;
+font-size: 15px;
+cursor: pointer;
+transition: transform 0.15s, box-shadow 0.15s;
+box-shadow: 0 4px 15px rgba(102,126,234,0.3);
+}
+button:hover {
+transform: translateY(-2px);
+box-shadow: 0 6px 20px rgba(102,126,234,0.5);
+}
+.info {
+margin-top: 10px;
+font-size: 13px;
+opacity: 0.6;
+}
+</style>
+</head>
+<body>
+<canvas id="canvas" width="1200" height="700"></canvas>
+<div class="controls">
+<button id="restartBtn">🔄 Restart</button>
+<button id="pauseBtn">⏸ Pause</button>
+<button id="speedBtn">🚀 1x Speed</button>
+</div>
+<div class="info">Click to restart · Wagons detach when the bridge breaks and fall into the water</div>
+<script>
+// ============================================================
+// TRAIN BRIDGE COLLAPSE SIMULATION
+// ============================================================
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width;
+const H = canvas.height;
+
+// --- Physics constants ---
+const GRAVITY = 9.81;
+const DT = 1/60;
+const PIXELS_PER_METER = 30;
+
+// --- Water parameters ---
+const WATER_LEVEL = H - 120;
+const WATER_DEPTH = 120;
+
+// --- Bridge parameters ---
+const BRIDGE_START_X = 250;
+const BRIDGE_END_X = 950;
+const BRIDGE_Y = H - 200;
+const BRIDGE_THICKNESS = 14;
+const BRIDGE_GAP_START = 550;  // Where the rail breaks (in pixels)
+const BRIDGE_GAP_END = 650;    // Gap spans ~100px
+
+// --- Train parameters ---
+const WAGON_COUNT = 5;
+const WAGON_WIDTH = 80;
+const WAGON_HEIGHT = 45;
+const WAGON_MASS = 800; // kg
+const WAGON_WHEEL_RADIUS = 8;
+const WAGON_SPACING = 20;
+const TRAIN_SPEED = 120; // pixels per second
+
+// --- State ---
+let trainSpeed = TRAIN_SPEED;
+let paused = false;
+let speedMultiplier = 1;
+let time = 0;
+let wagons = [];
+let engine = null;
+let particles = [];
+let splashes = [];
+let sparks = [];
+let bridgeBroken = false;
+let breakTime = 0;
+let breakTriggered = false;
+let debris = [];
+let waterWaves = [];
+let collisionFlash = 0;
+let camera = { x: 0, y: 0 };
+
+// ============================================================
+// WAGON CLASS
+// ============================================================
+class Wagon {
+    constructor(x, y, type = 'cargo') {
+        this.x = x;
+        this.y = y;
+        this.vx = trainSpeed;
+        this.vy = 0;
+        this.angle = 0;
+        this.angularVel = 0;
+        this.mass = WAGON_MASS;
+        this.width = WAGON_WIDTH;
+        this.height = WAGON_HEIGHT;
+        this.type = type;
+        this.onBridge = true;
+        this.fallen = false;
+        this.inWater = false;
+        this.waterTime = 0;
+        this.buoyancy = 0;
+        this.trail = [];
+        this.wheelAngle = 0;
+        this.color = this.randomColor();
+        this.cargoColor = this.randomCargoColor();
+        this.cracked = false;
+        this.detached = false;
+    }
+
+    randomColor() {
+        const colors = ['#c0392b', '#2980b9', '#27ae60', '#f39c12', '#8e44ad', '#16a085', '#d35400'];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    randomCargoColor() {
+        const colors = ['#7f8c8d', '#95a5a6', '#bdc3c7', '#d5d8dc', '#2c3e50'];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    update(dt) {
+        if (this.inWater) {
+            this.waterTime += dt;
+        }
+
+        // Track position for trails
+        if (this.fallen && !this.inWater) {
+            this.trail.push({ x: this.x, y: this.y + this.height / 2, alpha: 1.0 });
+            if (this.trail.length > 15) this.trail.shift();
+        }
+
+        if (!this.detached) {
+            // Still attached to train, move forward
+            this.x += this.vx * dt;
+            this.wheelAngle += (this.vx / WAGON_WHEEL_RADIUS) * dt;
+        } else {
+            // Physics: gravity + air resistance
+            this.vy += GRAVITY * PIXELS_PER_METER * dt;
+
+            // Air resistance
+            this.vx *= (1 - 0.005 * dt);
+            this.vy *= (1 - 0.003 * dt);
+
+            this.x += this.vx * dt;
+            this.y += this.vy * dt;
+
+            // Rotation based on falling dynamics
+            this.angularVel += (Math.random() - 0.5) * 2 * dt;
+            this.angle += this.angularVel * dt;
+
+            // Check water entry
+            if (this.y + this.height / 2 > WATER_LEVEL && !this.inWater) {
+                this.inWater = true;
+                this.fallen = true;
+                this.onBridge = false;
+                createSplash(this.x, WATER_LEVEL, this.vy);
+                collisionFlash = 1.0;
+            }
+
+            if (this.inWater) {
+                // Buoyancy and drag in water
+                const submergedRatio = Math.min(1, (this.y + this.height/2 - WATER_LEVEL) / this.height);
+                this.buoyancy = submergedRatio * this.mass * GRAVITY * 0.8;
+
+                const netForceY = this.mass * GRAVITY - this.buoyancy;
+                this.vy += (netForceY / this.mass) * PIXELS_PER_METER * dt;
+
+                // Water drag
+                this.vx *= (1 - 0.02 * dt * (1 + submergedRatio));
+                this.vy *= (1 - 0.03 * dt * (1 + submergedRatio));
+
+                // Slow rotation in water
+                this.angularVel *= (1 - 0.02 * dt);
+
+                // Create small bubbles
+                if (this.waterTime < 3 && Math.random() < 0.3) {
+                    particles.push({
+                        x: this.x + (Math.random() - 0.5) * this.width,
+                        y: WATER_LEVEL + Math.random() * 20,
+                        vx: (Math.random() - 0.5) * 20,
+                        vy: -30 - Math.random() * 40,
+                        life: 1.0,
+                        size: 2 + Math.random() * 4,
+                        type: 'bubble'
+                    });
+                }
+            }
+
+            // Check if hit bottom of water
+            if (this.y > H - 30) {
+                this.y = H - 30;
+                this.vy = -this.vy * 0.2;
+                this.vx *= 0.5;
+            }
+        }
+
+        // Fade trail
+        for (let t of this.trail) {
+            t.alpha -= dt * 0.5;
+        }
+        this.trail = this.trail.filter(t => t.alpha > 0);
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+
+        // Draw trail (smoke/dust when falling)
+        if (!this.detached && this.onBridge) {
+            // Wheels on rail - draw small motion lines
+        }
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.ellipse(0, this.height / 2 + 5, this.width / 2, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw cargo body
+        const bodyGrad = ctx.createLinearGradient(-this.width/2, -this.height/2, -this.width/2, this.height/2);
+        bodyGrad.addColorStop(0, this.lightenColor(this.color, 30));
+        bodyGrad.addColorStop(0.5, this.color);
+        bodyGrad.addColorStop(1, this.darkenColor(this.color, 30));
+        ctx.fillStyle = bodyGrad;
+
+        // Main body (rounded rectangle)
+        roundRect(ctx, -this.width/2, -this.height/2, this.width, this.height, 4);
+        ctx.fill();
+
+        // Body outline
+        ctx.strokeStyle = this.darkenColor(this.color, 50);
+        ctx.lineWidth = 1.5;
+        roundRect(ctx, -this.width/2, -this.height/2, this.width, this.height, 4);
+        ctx.stroke();
+
+        // Cargo details based on type
+        if (this.type === 'cargo') {
+            // Crate/box details
+            ctx.fillStyle = this.cargoColor;
+            ctx.fillRect(-this.width/2 + 8, -this.height/2 + 6, this.width - 16, this.height - 20);
+
+            // X pattern on crate
+            ctx.strokeStyle = this.darkenColor(this.cargoColor, 40);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(-this.width/2 + 12, -this.height/2 + 10);
+            ctx.lineTo(this.width/2 - 12, this.height/2 - 14);
+            ctx.moveTo(this.width/2 - 12, -this.height/2 + 10);
+            ctx.lineTo(-this.width/2 + 12, this.height/2 - 14);
+            ctx.stroke();
+        } else if (this.type === 'flat') {
+            // Flatbed with barrels
+            ctx.fillStyle = '#5d4037';
+            ctx.fillRect(-this.width/2 + 2, -this.height/2 + 8, this.width - 4, this.height - 22);
+
+            // Barrels
+            for (let i = -1; i <= 1; i++) {
+                ctx.fillStyle = '#795548';
+                ctx.beginPath();
+                ctx.ellipse(i * 20, 2, 8, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#5d4037';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                // Barrel band
+                ctx.strokeStyle = '#9e9e9e';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.ellipse(i * 20, -3, 8, 2, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.ellipse(i * 20, 7, 8, 2, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        } else if (this.type === 'tank') {
+            // Tank car
+            ctx.fillStyle = '#607d8b';
+            ctx.beginPath();
+            ctx.ellipse(0, -2, this.width/2 - 6, this.height/2 - 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#455a64';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Hazard stripe
+            ctx.fillStyle = '#ff9800';
+            ctx.fillRect(-this.width/2 + 6, -4, this.width - 12, 3);
+        }
+
+        // Coupling (connector)
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(this.width/2 - 2, -4, 8, 8);
+        ctx.fillRect(-this.width/2 - 6, -4, 8, 8);
+
+        // Wheels
+        this.drawWheel(-this.width/3, this.height/2);
+        this.drawWheel(this.width/3, this.height/2);
+
+        // Undercarriage
+        ctx.fillStyle = '#34495e';
+        ctx.fillRect(-this.width/2 + 5, this.height/2 - 4, this.width - 10, 4);
+
+        ctx.restore();
+
+        // Draw trail particles
+        for (let t of this.trail) {
+            ctx.fillStyle = `rgba(180, 160, 140, ${t.alpha * 0.3})`;
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    drawWheel(offsetX, offsetY) {
+        const wheelX = offsetX;
+        const wheelY = offsetY + WAGON_WHEEL_RADIUS;
+
+        ctx.save();
+        ctx.translate(wheelX, wheelY);
+
+        if (!this.detached) {
+            ctx.rotate(this.wheelAngle);
+        }
+
+        // Wheel body
+        ctx.fillStyle = '#2c3e50';
+        ctx.beginPath();
+        ctx.arc(0, 0, WAGON_WHEEL_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Wheel rim
+        ctx.strokeStyle = '#546e7a';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, WAGON_WHEEL_RADIUS, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Spokes
+        ctx.strokeStyle = '#7f8c8d';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+            const a = (i / 4) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(Math.cos(a) * (WAGON_WHEEL_RADIUS - 1), Math.sin(a) * (WAGON_WHEEL_RADIUS - 1));
+            ctx.stroke();
+        }
+
+        // Axle
+        ctx.fillStyle = '#95a5a6';
+        ctx.beginPath();
+        ctx.arc(0, 0, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    lightenColor(hex, amount) {
+        const num = parseInt(hex.slice(1), 16);
+        const r = Math.min(255, (num >> 16) + amount);
+        const g = Math.min(255, ((num >> 8) & 0x00FF) + amount);
+        const b = Math.min(255, (num & 0x0000FF) + amount);
+        return `rgb(${r},${g},${b})`;
+    }
+
+    darkenColor(hex, amount) {
+        const num = parseInt(hex.slice(1), 16);
+        const r = Math.max(0, (num >> 16) - amount);
+        const g = Math.max(0, ((num >> 8) & 0x00FF) - amount);
+        const b = Math.max(0, (num & 0x0000FF) - amount);
+        return `rgb(${r},${g},${b})`;
+    }
+}
+
+// ============================================================
+// ENGINE (LOCOMOTIVE) CLASS
+// ============================================================
+class Engine {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.vx = trainSpeed;
+        this.width = 110;
+        this.height = 55;
+        this.wheelAngle = 0;
+        this.smokeTimer = 0;
+    }
+
+    update(dt) {
+        this.x += this.vx * dt;
+        this.wheelAngle += (this.vx / WAGON_WHEEL_RADIUS) * dt * 3;
+
+        // Smoke from chimney
+        this.smokeTimer += dt;
+        if (this.smokeTimer > 0.1) {
+            this.smokeTimer = 0;
+            particles.push({
+                x: this.x + 15 + Math.random() * 10,
+                y: this.y - this.height/2 - 20,
+                vx: -20 + Math.random() * 10,
+                vy: -40 - Math.random() * 30,
+                life: 2.0,
+                size: 5 + Math.random() * 8,
+                type: 'smoke'
+            });
+        }
+
+        // Sparks when approaching broken section
+        if (!bridgeBroken && this.x > BRIDGE_GAP_START - 150 && this.x < BRIDGE_GAP_START) {
+            if (Math.random() < 0.4) {
+                sparks.push({
+                    x: this.x + this.width/2 + Math.random() * 10,
+                    y: this.y + this.height/2,
+                    vx: 50 + Math.random() * 80,
+                    vy: -30 - Math.random() * 40,
+                    life: 0.5 + Math.random() * 0.5,
+                    size: 1 + Math.random() * 2
+                });
+            }
+        }
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.beginPath();
+        ctx.ellipse(0, this.height/2 + 8, this.width/2, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Engine body
+        const bodyGrad = ctx.createLinearGradient(0, -this.height/2, 0, this.height/2);
+        bodyGrad.addColorStop(0, '#c0392b');
+        bodyGrad.addColorStop(0.4, '#e74c3c');
+        bodyGrad.addColorStop(1, '#a93226');
+        ctx.fillStyle = bodyGrad;
+
+        // Main body shape
+        ctx.beginPath();
+        ctx.moveTo(-this.width/2, this.height/2);
+        ctx.lineTo(-this.width/2, -this.height/2 + 10);
+        ctx.lineTo(-this.width/2 + 15, -this.height/2);
+        ctx.lineTo(this.width/2, -this.height/2);
+        ctx.lineTo(this.width/2 + 10, -this.height/2 + 5);
+        ctx.lineTo(this.width/2 + 10, this.height/2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#922b21';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Cabin window
+        ctx.fillStyle = '#85c1e9';
+        roundRect(ctx, -this.width/2 + 5, -this.height/2 + 5, 25, 20, 3);
+        ctx.fill();
+        ctx.strokeStyle = '#5dade2';
+        ctx.lineWidth = 1;
+        roundRect(ctx, -this.width/2 + 5, -this.height/2 + 5, 25, 20, 3);
+        ctx.stroke();
+
+        // Window reflection
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(-this.width/2 + 8, -this.height/2 + 7, 8, 15);
+
+        // Chimney
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(this.width/2 - 30, -this.height/2 - 18, 12, 20);
+        ctx.fillStyle = '#34495e';
+        ctx.fillRect(this.width/2 - 33, -this.height/2 - 20, 18, 5);
+
+        // Headlight
+        ctx.fillStyle = '#f9e79f';
+        ctx.beginPath();
+        ctx.arc(this.width/2 + 8, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(249, 231, 159, 0.3)';
+        ctx.beginPath();
+        ctx.arc(this.width/2 + 8, 0, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Buffers
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(this.width/2 + 5, this.height/2 - 10, 8, 8);
+        ctx.fillRect(this.width/2 + 5, this.height/2 - 2, 8, 8);
+
+        // Decorative stripe
+        ctx.fillStyle = '#f39c12';
+        ctx.fillRect(-this.width/2, this.height/2 - 18, this.width, 3);
+
+        // Wheels
+        this.drawEngineWheel(-this.width/3, this.height/2);
+        this.drawEngineWheel(0, this.height/2);
+        this.drawEngineWheel(this.width/3, this.height/2);
+
+        ctx.restore();
+    }
+
+    drawEngineWheel(offsetX, offsetY) {
+        const r = WAGON_WHEEL_RADIUS + 2;
+        ctx.save();
+        ctx.translate(offsetX, offsetY + r);
+        ctx.rotate(this.wheelAngle);
+
+        ctx.fillStyle = '#1a252f';
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#5d6d7e';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Spokes
+        ctx.strokeStyle = '#85929e';
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(Math.cos(a) * (r - 2), Math.sin(a) * (r - 2));
+            ctx.stroke();
+        }
+
+        ctx.fillStyle = '#bdc3c7';
+        ctx.beginPath();
+        ctx.arc(0, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+}
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
+function createSplash(x, y, impactVel) {
+    const intensity = Math.min(30, Math.abs(impactVel) / 20);
+
+    // Big splash particles
+    for (let i = 0; i < 15 + intensity; i++) {
+        const angle = -Math.PI * (0.1 + Math.random() * 0.8);
+        const speed = 50 + Math.random() * (100 + intensity * 5);
+        splashes.push({
+            x: x + (Math.random() - 0.5) * 30,
+            y: y,
+            vx: Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1),
+            vy: Math.sin(angle) * speed,
+            life: 0.5 + Math.random() * 0.8,
+            size: 2 + Math.random() * 5
+        });
+    }
+
+    // Ring splash
+    splashes.push({
+        x: x,
+        y: y,
+        vx: 0,
+        vy: 0,
+        life: 1.0,
+        size: 5,
+        type: 'ring',
+        radius: 0,
+        maxRadius: 60 + Math.abs(impactVel) / 5
+    });
+
+    // Water droplets
+    for (let i = 0; i < 20; i++) {
+        particles.push({
+            x: x + (Math.random() - 0.5) * 40,
+            y: y - Math.random() * 10,
+            vx: (Math.random() - 0.5) * 100,
+            vy: -50 - Math.random() * 100,
+            life: 0.8 + Math.random() * 0.5,
+            size: 1 + Math.random() * 3,
+            type: 'droplet'
+        });
+    }
+}
+
+function createDebris() {
+    // Bridge breaking - create debris particles
+    for (let x = BRIDGE_GAP_START; x < BRIDGE_GAP_END; x += 8) {
+        for (let i = 0; i < 3; i++) {
+            debris.push({
+                x: x + Math.random() * 8,
+                y: BRIDGE_Y + Math.random() * BRIDGE_THICKNESS,
+                vx: -50 + Math.random() * 100,
+                vy: -100 - Math.random() * 200,
+                life: 2 + Math.random() * 2,
+                size: 3 + Math.random() * 6,
+                angle: Math.random() * Math.PI * 2,
+                angVel: (Math.random() - 0.5) * 10
+            });
+        }
+    }
+
+    // Sparks from breaking
+    for (let i = 0; i < 30; i++) {
+        sparks.push({
+            x: BRIDGE_GAP_START + Math.random() * (BRIDGE_GAP_END - BRIDGE_GAP_START),
+            y: BRIDGE_Y + Math.random() * BRIDGE_THICKNESS,
+            vx: -100 + Math.random() * 200,
+            vy: -150 - Math.random() * 200,
+            life: 0.3 + Math.random() * 0.7,
+            size: 1 + Math.random() * 2
+        });
+    }
+}
+
+// ============================================================
+// DRAWING FUNCTIONS
+// ============================================================
+function drawSky() {
+    const grad = ctx.createLinearGradient(0, 0, 0, WATER_LEVEL);
+    grad.addColorStop(0, '#1a1a2e');
+    grad.addColorStop(0.3, '#16213e');
+    grad.addColorStop(0.6, '#0f3460');
+    grad.addColorStop(0.85, '#e94560');
+    grad.addColorStop(0.95, '#f39c12');
+    grad.addColorStop(1, '#f5b041');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, WATER_LEVEL);
+
+    // Stars
+    drawStars();
+
+    // Sun/moon
+    drawSun();
+}
+
+let starPositions = [];
+function initStars() {
+    starPositions = [];
+    for (let i = 0; i < 80; i++) {
+        starPositions.push({
+            x: Math.random() * W,
+            y: Math.random() * (WATER_LEVEL * 0.4),
+            size: 0.5 + Math.random() * 1.5,
+            twinkle: Math.random() * Math.PI * 2
+        });
+    }
+}
+initStars();
+
+function drawStars() {
+    for (let s of starPositions) {
+        const alpha = 0.3 + 0.7 * Math.abs(Math.sin(time * 2 + s.twinkle));
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function drawSun() {
+    const sunX = W * 0.75;
+    const sunY = WATER_LEVEL - 30;
+
+    // Glow
+    const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 80);
+    glow.addColorStop(0, 'rgba(243, 156, 18, 0.4)');
+    glow.addColorStop(0.5, 'rgba(243, 156, 18, 0.1)');
+    glow.addColorStop(1, 'rgba(243, 156, 18, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, 80, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sun
+    const sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 25);
+    sunGrad.addColorStop(0, '#f9e79f');
+    sunGrad.addColorStop(0.7, '#f39c12');
+    sunGrad.addColorStop(1, '#e67e22');
+    ctx.fillStyle = sunGrad;
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, 25, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawMountains() {
+    // Far mountains
+    ctx.fillStyle = '#1a2a3a';
+    ctx.beginPath();
+    ctx.moveTo(0, WATER_LEVEL - 30);
+    for (let x = 0; x <= W; x += 20) {
+        const y = WATER_LEVEL - 40 - Math.sin(x * 0.008) * 50 - Math.sin(x * 0.015) * 30;
+        ctx.lineTo(x, y);
+    }
+    ctx.lineTo(W, WATER_LEVEL);
+    ctx.lineTo(0, WATER_LEVEL);
+    ctx.closePath();
+    ctx.fill();
+
+    // Near mountains
+    ctx.fillStyle = '#152238';
+    ctx.beginPath();
+    ctx.moveTo(0, WATER_LEVEL);
+    for (let x = 0; x <= W; x += 15) {
+        const y = WATER_LEVEL - 15 - Math.sin(x * 0.012 + 1) * 30 - Math.sin(x * 0.02) * 15;
+        ctx.lineTo(x, y);
+    }
+    ctx.lineTo(W, WATER_LEVEL);
+    ctx.lineTo(0, WATER_LEVEL);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawWater() {
+    // Water body
+    const waterGrad = ctx.createLinearGradient(0, WATER_LEVEL, 0, H);
+    waterGrad.addColorStop(0, 'rgba(22, 60, 100, 0.85)');
+    waterGrad.addColorStop(0.3, 'rgba(15, 45, 80, 0.9)');
+    waterGrad.addColorStop(0.7, 'rgba(10, 35, 65, 0.95)');
+    waterGrad.addColorStop(1, 'rgba(5, 20, 45, 1)');
+    ctx.fillStyle = waterGrad;
+    ctx.fillRect(0, WATER_LEVEL, W, WATER_DEPTH);
+
+    // Animated waves on surface
+    ctx.strokeStyle = 'rgba(100, 180, 255, 0.3)';
+    ctx.lineWidth = 1.5;
+    for (let wave = 0; wave < 3; wave++) {
+        ctx.beginPath();
+        for (let x = 0; x <= W; x += 3) {
+            const y = WATER_LEVEL + wave * 8 +
+                Math.sin(x * 0.03 + time * 2 + wave) * 3 +
+                Math.sin(x * 0.05 + time * 1.5 + wave * 2) * 2;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = `rgba(100, 180, 255, ${0.3 - wave * 0.08})`;
+        ctx.stroke();
+    }
+
+    // Light reflections on water
+    const reflX = W * 0.75;
+    const reflGrad = ctx.createRadialGradient(reflX, WATER_LEVEL + 10, 0, reflX, WATER_LEVEL + 10, 100);
+    reflGrad.addColorStop(0, 'rgba(243, 156, 18, 0.15)');
+    reflGrad.addColorStop(1, 'rgba(243, 156, 18, 0)');
+    ctx.fillStyle = reflGrad;
+    ctx.fillRect(reflX - 100, WATER_LEVEL, 200, 80);
+
+    // Shimmering light dots on water
+    for (let i = 0; i < 15; i++) {
+        const dx = (i * 83 + time * 20) % W;
+        const dy = WATER_LEVEL + 10 + (i * 37) % (WATER_DEPTH - 20);
+        const alpha = 0.1 + 0.15 * Math.sin(time * 3 + i);
+        ctx.fillStyle = `rgba(150, 200, 255, ${alpha})`;
+        ctx.fillRect(dx, dy, 15, 1);
+    }
+
+    // Submerged wagon glow
+    for (let w of wagons) {
+        if (w.inWater && w.waterTime < 5) {
+            const glowAlpha = Math.max(0, 1 - w.waterTime / 5) * 0.2;
+            const glow = ctx.createRadialGradient(w.x, w.y, 0, w.x, w.y, 40);
+            glow.addColorStop(0, `rgba(100, 200, 255, ${glowAlpha})`);
+            glow.addColorStop(1, 'rgba(100, 200, 255, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(w.x, w.y, 40, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+}
+
+function drawBridge() {
+    // Bridge pillars
+    drawPillar(BRIDGE_START_X + 40);
+    drawPillar(BRIDGE_GAP_END - 40);
+    drawPillar((BRIDGE_START_X + BRIDGE_GAP_START) / 2);
+    drawPillar((BRIDGE_GAP_START + BRIDGE_GAP_END) / 2);
+
+    // Bridge deck - left section (intact)
+    drawBridgeSection(BRIDGE_START_X, BRIDGE_GAP_START);
+
+    // Bridge deck - right section (intact, broken edge)
+    if (bridgeBroken) {
+        drawBrokenBridgeSection(BRIDGE_GAP_END, BRIDGE_END_X);
+        drawBrokenEdge(BRIDGE_GAP_START, BRIDGE_GAP_END);
+    } else {
+        drawBridgeSection(BRIDGE_GAP_END, BRIDGE_END_X);
+    }
+
+    // Rail
+    if (bridgeBroken) {
+        // Draw broken rail
+        drawRail(BRIDGE_START_X, BRIDGE_GAP_START);
+        drawBrokenRail(BRIDGE_GAP_END, BRIDGE_END_X);
+    } else {
+        drawRail(BRIDGE_START_X, BRIDGE_END_X);
+    }
+}
+
+function drawPillar(x) {
+    const pillarW = 18;
+    const pillarTop = BRIDGE_Y - 30;
+    const pillarBottom = WATER_LEVEL;
+
+    // Pillar body
+    const grad = ctx.createLinearGradient(x - pillarW/2, 0, x + pillarW/2, 0);
+    grad.addColorStop(0, '#5d6d7e');
+    grad.addColorStop(0.5, '#85929e');
+    grad.addColorStop(1, '#5d6d7e');
+    ctx.fillStyle = grad;
+
+    // Slight taper
+    ctx.beginPath();
+    ctx.moveTo(x - pillarW/2 - 2, pillarBottom);
+    ctx.lineTo(x - pillarW/2, pillarTop);
+    ctx.lineTo(x + pillarW/2, pillarTop);
+    ctx.lineTo(x + pillarW/2 + 2, pillarBottom);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#34495e';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Water around pillar
+    ctx.fillStyle = 'rgba(22, 60, 100, 0.5)';
+    ctx.fillRect(x - pillarW, WATER_LEVEL - 5, pillarW * 2, 15);
+}
+
+function drawBridgeSection(startX, endX) {
+    // Main bridge deck
+    const grad = ctx.createLinearGradient(0, BRIDGE_Y - BRIDGE_THICKNESS, 0, BRIDGE_Y + BRIDGE_THICKNESS);
+    grad.addColorStop(0, '#85929e');
+    grad.addColorStop(0.3, '#95a5a6');
+    grad.addColorStop(0.7, '#7f8c8d');
+    grad.addColorStop(1, '#606c78');
+    ctx.fillStyle = grad;
+    ctx.fillRect(startX, BRIDGE_Y - BRIDGE_THICKNESS/2, endX - startX, BRIDGE_THICKNESS);
+
+    // Steel beams pattern
+    ctx.strokeStyle = '#606c78';
+    ctx.lineWidth = 0.5;
+    for (let x = startX + 10; x < endX; x += 20) {
+        ctx.beginPath();
+        ctx.moveTo(x, BRIDGE_Y - BRIDGE_THICKNESS/2);
+        ctx.lineTo(x, BRIDGE_Y + BRIDGE_THICKNESS/2);
+        ctx.stroke();
+    }
+
+    // Top edge highlight
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(startX, BRIDGE_Y - BRIDGE_THICKNESS/2);
+    ctx.lineTo(endX, BRIDGE_Y - BRIDGE_THICKNESS/2);
+    ctx.stroke();
+
+    // Bottom shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(startX, BRIDGE_Y + BRIDGE_THICKNESS/2, endX - startX, 3);
+}
+
+function drawBrokenBridgeSection(startX, endX) {
+    drawBridgeSection(startX, endX);
+
+    // Add cracks on the broken edge
+    ctx.strokeStyle = '#34495e';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(startX, BRIDGE_Y - BRIDGE_THICKNESS/2 + Math.random() * BRIDGE_THICKNESS);
+        ctx.lineTo(startX + 10 + Math.random() * 20, BRIDGE_Y + (Math.random() - 0.5) * BRIDGE_THICKNESS);
+        ctx.stroke();
+    }
+}
+
+function drawBrokenEdge(gapStart, gapEnd) {
+    // Jagged broken edges
+    ctx.fillStyle = '#606c78';
+
+    // Left broken edge
+    ctx.beginPath();
+    ctx.moveTo(gapStart, BRIDGE_Y - BRIDGE_THICKNESS/2);
+    for (let y = BRIDGE_GAP_START; y < BRIDGE_THICKNESS; y += 4) {
+        ctx.lineTo(gapStart + (Math.random() - 0.5) * 6, BRIDGE_Y - BRIDGE_THICKNESS/2 + y);
+    }
+    ctx.lineTo(gapStart, BRIDGE_Y + BRIDGE_THICKNESS/2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Exposed rebar/metal
+    ctx.strokeStyle = '#e74c3c';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(gapStart, BRIDGE_Y - BRIDGE_THICKNESS/2 + 5 + i * 4);
+        ctx.lineTo(gapStart + 8 + Math.random() * 8, BRIDGE_Y + (Math.random() - 0.5) * 6);
+        ctx.stroke();
+    }
+}
+
+function drawRail(startX, endX) {
+    const railY = BRIDGE_Y - BRIDGE_THICKNESS / 2 - 4;
+
+    // Rail
+    ctx.fillStyle = '#95a5a6';
+    ctx.fillRect(startX, railY, endX - startX, 3);
+
+    // Rail highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillRect(startX, railY, endX - startX, 1);
+
+    // Sleepers (ties)
+    ctx.fillStyle = '#5d4037';
+    for (let x = startX; x < endX; x += 15) {
+        ctx.fillRect(x, railY - 2, 8, BRIDGE_THICKNESS + 4);
+    }
+}
+
+function drawBrokenRail(startX, endX) {
+    drawRail(startX, endX);
+
+    // Broken rail end - jagged
+    ctx.fillStyle = '#e74c3c';
+    ctx.beginPath();
+    ctx.moveTo(startX, BRIDGE_Y - BRIDGE_THICKNESS/2 - 6);
+    ctx.lineTo(startX + 5, BRIDGE_Y - BRIDGE_THICKNESS/2 - 4);
+    ctx.lineTo(startX + 3, BRIDGE_Y - BRIDGE_THICKNESS/2 - 2);
+    ctx.lineTo(startX + 8, BRIDGE_Y - BRIDGE_THICKNESS/2);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawParticles() {
+    // Smoke
+    for (let p of particles) {
+        if (p.type === 'smoke') {
+            const alpha = p.life / 2;
+            const size = p.size * (1 + (2 - p.life));
+            ctx.fillStyle = `rgba(100, 100, 110, ${alpha * 0.4})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (p.type === 'droplet') {
+            ctx.fillStyle = `rgba(150, 200, 255, ${p.life * 0.6})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (p.type === 'bubble') {
+            ctx.strokeStyle = `rgba(150, 200, 255, ${p.life * 0.5})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = `rgba(150, 200, 255, ${p.life * 0.15})`;
+            ctx.fill();
+        }
+    }
+
+    // Splash drops
+    for (let s of splashes) {
+        if (s.type === 'ring') {
+            const alpha = s.life;
+            ctx.strokeStyle = `rgba(150, 200, 255, ${alpha * 0.5})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = `rgba(180, 220, 255, ${s.life * 0.7})`;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.size * s.life, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // Sparks
+    for (let s of sparks) {
+        const alpha = s.life;
+        ctx.fillStyle = `rgba(255, ${150 + Math.random() * 100}, 50, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Spark glow
+        ctx.fillStyle = `rgba(255, 200, 100, ${alpha * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size * 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Debris
+    for (let d of debris) {
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        ctx.rotate(d.angle);
+        ctx.fillStyle = `rgba(${100 + Math.random() * 50}, ${90 + Math.random() * 40}, ${80 + Math.random() * 40}, ${d.life / 3})`;
+        ctx.fillRect(-d.size/2, -d.size/2, d.size, d.size);
+        ctx.restore();
+    }
+}
+
+function drawCollisionFlash() {
+    if (collisionFlash > 0) {
+        ctx.fillStyle = `rgba(200, 230, 255, ${collisionFlash * 0.3})`;
+        ctx.fillRect(0, 0, W, H);
+        collisionFlash -= 0.05;
+    }
+}
+
+function drawUI() {
+    // Status text
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.font = '13px monospace';
+    ctx.fillText(`Wagons on bridge: ${wagons.filter(w => w.onBridge).length}/${WAGON_COUNT}`, 15, 20);
+
+    if (bridgeBroken) {
+        const fallen = wagons.filter(w => w.fallen).length;
+        const inWater = wagons.filter(w => w.inWater).length;
+        ctx.fillText(`Fallen: ${fallen} | In water: ${inWater}`, 15, 38);
+    }
+
+    // Speed indicator
+    ctx.fillText(`Speed: ${speedMultiplier}x`, W - 100, 20);
+    if (paused) {
+        ctx.fillStyle = 'rgba(255,255,0,0.8)';
+        ctx.font = '18px sans-serif';
+        ctx.fillText('⏸ PAUSED', W/2 - 30, 30);
+    }
+}
+
+function drawWarningSign() {
+    if (!bridgeBroken) {
+        // Warning sign near broken section
+        const signX = BRIDGE_GAP_START - 80;
+        const signY = BRIDGE_Y - BRIDGE_THICKNESS/2 - 30;
+
+        // Pole
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(signX + 12, signY, 3, 30);
+
+        // Sign board
+        ctx.fillStyle = '#f39c12';
+        ctx.beginPath();
+        ctx.moveTo(signX, signY);
+        ctx.lineTo(signX + 28, signY + 5);
+        ctx.lineTo(signX + 14, signY + 20);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#e67e22';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Exclamation
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText('!', signX + 9, signY + 14);
+    }
+}
+
+// ============================================================
+// UPDATE FUNCTIONS
+// ============================================================
+function updateParticles(dt) {
+    for (let p of particles) {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
+
+        if (p.type === 'smoke') {
+            p.vy -= 10 * dt;
+            p.vx *= (1 - 0.5 * dt);
+            p.size += dt * 2;
+        } else if (p.type === 'droplet') {
+            p.vy += GRAVITY * PIXELS_PER_METER * 0.3 * dt;
+        } else if (p.type === 'bubble') {
+            p.vy -= 20 * dt;
+        }
+    }
+    particles = particles.filter(p => p.life > 0);
+
+    for (let s of splashes) {
+        if (s.type === 'ring') {
+            s.life -= dt * 1.5;
+            s.radius += 80 * dt;
+        } else {
+            s.x += s.vx * dt;
+            s.y += s.vy * dt;
+            s.vy += GRAVITY * PIXELS_PER_METER * 0.5 * dt;
+            s.life -= dt * 1.2;
+        }
+    }
+    splashes = splashes.filter(s => s.life > 0);
+
+    for (let s of sparks) {
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.vy += GRAVITY * PIXELS_PER_METER * dt;
+        s.life -= dt * 2;
+    }
+    sparks = sparks.filter(s => s.life > 0);
+
+    for (let d of debris) {
+        d.x += d.vx * dt;
+        d.y += d.vy * dt;
+        d.vy += GRAVITY * PIXELS_PER_METER * dt;
+        d.angle += d.angVel * dt;
+        d.life -= dt * 0.8;
+    }
+    debris = debris.filter(d => d.life > 0);
+}
+
+function checkBridgeBreak() {
+    if (breakTriggered) return;
+
+    // Check if any wagon wheel is over the gap
+    for (let w of wagons) {
+        if (w.x - w.width/2 > BRIDGE_GAP_START && w.x - w.width/2 < BRIDGE_GAP_END) {
+            triggerBridgeBreak();
+            return;
+        }
+    }
+
+    // Also check if engine is approaching the gap - start breaking
+    if (engine.x + engine.width/2 > BRIDGE_GAP_START - 30 && engine.x + engine.width/2 < BRIDGE_GAP_START) {
+        // Pre-break: sparks and cracks
+        if (Math.random() < 0.15) {
+            sparks.push({
+                x: BRIDGE_GAP_START + Math.random() * 20,
+                y: BRIDGE_Y + Math.random() * BRIDGE_THICKNESS,
+                vx: 30 + Math.random() * 50,
+                vy: -20 - Math.random() * 30,
+                life: 0.3 + Math.random() * 0.3,
+                size: 1 + Math.random()
+            });
+        }
+    }
+}
+
+function triggerBridgeBreak() {
+    breakTriggered = true;
+    bridgeBroken = true;
+    breakTime = time;
+    createDebris();
+
+    // Detach wagons that are over or approaching the gap
+    for (let w of wagons) {
+        if (w.x > BRIDGE_GAP_START - 20) {
+            detachWagon(w);
+        }
+    }
+
+    // Engine might survive if it hasn't reached the gap
+    if (engine.x + engine.width/2 > BRIDGE_GAP_START) {
+        // Engine starts falling too
+        engine.detached = true;
+    }
+}
+
+function detachWagon(wagon) {
+    wagon.detached = true;
+    wagon.onBridge = false;
+    wagon.fallen = true;
+
+    // Initial velocity - keep forward momentum, add slight random
+    wagon.vx = trainSpeed * (0.7 + Math.random() * 0.3);
+    wagon.vy = -20 - Math.random() * 40; // slight upward bounce
+    wagon.angularVel = (Math.random() - 0.5) * 3;
+
+    // Impact sparks
+    for (let i = 0; i < 5; i++) {
+        sparks.push({
+            x: wagon.x + (Math.random() - 0.5) * wagon.width,
+            y: wagon.y + wagon.height/2,
+            vx: -50 + Math.random() * 100,
+            vy: -30 - Math.random() * 60,
+            life: 0.3 + Math.random() * 0.4,
+            size: 1 + Math.random() * 1.5
+        });
+    }
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+function init() {
+    wagons = [];
+    particles = [];
+    splashes = [];
+    sparks = [];
+    debris = [];
+    bridgeBroken = false;
+    breakTriggered = false;
+    breakTime = 0;
+    collisionFlash = 0;
+    time = 0;
+    trainSpeed = TRAIN_SPEED;
+
+    // Create engine
+    engine = new Engine(100, BRIDGE_Y - BRIDGE_THICKNESS/2 - WAGON_WHEEL_RADIUS - WAGON_HEIGHT/2 + 5);
+
+    // Create wagons
+    const types = ['cargo', 'flat', 'tank', 'cargo', 'flat'];
+    for (let i = 0; i < WAGON_COUNT; i++) {
+        const x = engine.x + engine.width/2 + 20 + i * (WAGON_WIDTH + WAGON_SPACING);
+        const y = engine.y;
+        const wagon = new Wagon(x, y, types[i]);
+        wagons.push(wagon);
+    }
+}
+
+// ============================================================
+// MAIN LOOP
+// ============================================================
+function update(dt) {
+    dt *= speedMultiplier;
+
+    if (paused) return;
+
+    time += dt;
+
+    // Update engine
+    if (engine) {
+        if (!engine.detached) {
+            engine.update(dt);
+        } else {
+            // Simple physics for engine falling
+            engine.vy = (engine.vy || 0) + GRAVITY * PIXELS_PER_METER * dt;
+            engine.vx *= (1 - 0.005 * dt);
+            engine.vy *= (1 - 0.003 * dt);
+            engine.x += engine.vx * dt;
+            engine.y += engine.vy * dt;
+            engine.wheelAngle += (engine.vx / (WAGON_WHEEL_RADIUS + 2)) * dt;
+
+            if (engine.y + engine.height/2 > WATER_LEVEL && !engine.inWater) {
+                engine.inWater = true;
+                createSplash(engine.x, WATER_LEVEL, engine.vy);
+                collisionFlash = 1.0;
+            }
+
+            if (engine.inWater) {
+                engine.vx *= (1 - 0.02 * dt);
+                engine.vy *= (1 - 0.03 * dt);
+            }
+        }
+    }
+
+    // Update wagons
+    for (let w of wagons) {
+        w.update(dt);
+    }
+
+    // Check bridge break condition
+    checkBridgeBreak();
+
+    // Update particles
+    updateParticles(dt);
+
+    // Detach remaining wagons that reach the gap after bridge breaks
+    if (bridgeBroken) {
+        for (let w of wagons) {
+            if (!w.detached && w.x - w.width/2 > BRIDGE_GAP_START - 10) {
+                detachWagon(w);
+            }
+        }
+    }
+
+    // Sync non-detached wagons
+    for (let w of wagons) {
+        if (!w.detached) {
+            w.vx = trainSpeed;
+        }
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    drawSky();
+    drawMountains();
+    drawBridge();
+    drawWarningSign();
+    drawWater();
+
+    // Draw engine
+    if (engine) {
+        engine.draw();
+    }
+
+    // Draw wagons (sorted by y for depth)
+    const sortedWagons = [...wagons].sort((a, b) => a.y - b.y);
+    for (let w of sortedWagons) {
+        w.draw();
+    }
+
+    drawParticles();
+    drawCollisionFlash();
+    drawUI();
+}
+
+function gameLoop(timestamp) {
+    const dt = DT; // Fixed timestep
+    update(dt);
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+// CONTROLS
+// ============================================================
+document.getElementById('restartBtn').addEventListener('click', () => {
+    init();
+});
+
+document.getElementById('pauseBtn').addEventListener('click', function() {
+    paused = !paused;
+    this.textContent = paused ? '▶ Play' : '⏸ Pause';
+});
+
+document.getElementById('speedBtn').addEventListener('click', function() {
+    if (speedMultiplier === 1) {
+        speedMultiplier = 2;
+        this.textContent = '🚀 2x Speed';
+    } else if (speedMultiplier === 2) {
+        speedMultiplier = 0.5;
+        this.textContent = '🐌 0.5x Speed';
+    } else {
+        speedMultiplier = 1;
+        this.textContent = '🚀 1x Speed';
+    }
+});
+
+canvas.addEventListener('click', () => {
+    init();
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        paused = !paused;
+        document.getElementById('pauseBtn').textContent = paused ? '▶ Play' : '⏸ Pause';
+    } else if (e.code === 'KeyR') {
+        init();
+    }
+});
+
+// ============================================================
+// START
+// ============================================================
+init();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
