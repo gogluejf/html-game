@@ -1239,6 +1239,36 @@ function hideRules() {
   document.getElementById('rulesOverlay').classList.remove('show');
 }
 
+
+function revealSolution() {
+  const d = DIFF[difficulty];
+  clearInterval(timerInterval);
+  solutionRevealed = true;
+  invalidCats.clear();
+  popKeys.clear();
+  activeHintKey = null;
+
+  const wrongCats = [];
+  const solutionCats = [];
+
+  for (let r = 0; r < d.rows; r++) {
+    for (let c = 0; c < d.cols; c++) {
+      const key = `${r},${c}`;
+      const wasWrongCat = grid[r][c].cat && !solution[r][c];
+      if (wasWrongCat) wrongCats.push(key);
+      if (solution[r][c]) solutionCats.push(key);
+
+      grid[r][c].cat = !!solution[r][c] || wasWrongCat;
+      grid[r][c].xmark = false;
+    }
+  }
+
+  invalidCats = new Set(wrongCats);
+  playCatPop(solutionCats);
+  if (wrongCats.length) triggerBoardError();
+  render();
+}
+
 // ── TIMER ──
 function startTimer() {
   timerInterval = setInterval(() => {
