@@ -1,0 +1,228 @@
+{
+  "plan_name": "galaga-38",
+  "title": "Galaga 3.8 \u2014 High-Fidelity Arcade",
+  "why": "Create a brand-new, self-contained Galaga clone with high-fidelity synthesized audio, rich canvas graphics, and faithful arcade gameplay.",
+  "outcomes": "Single HTML file playable in any browser; Web Audio API synthesized SFX and music; procedural sprite rendering with animation; multi-wave enemy formations, boss battles, power-ups, score/lives system",
+  "milestones": [
+    {
+      "number": "1",
+      "name": "Audio Engine",
+      "pattern": [
+        "Web Audio API Synthesis"
+      ],
+      "objective": "Procedural sound effects and background music via Web Audio API oscillators, filters, and envelopes",
+      "success": "All SFX (shoot, explode, enemy dive, power-up, wave start, game over) and looping BGM audible with no external assets",
+      "diagram": "graph TD\n    A[Game Event] --> B{SFX or Music}\n    B -->|SFX| C[Oscillator + Envelope]\n    B -->|Music| D[Pattern Sequencer]\n    C --> E[Filter Chain]\n    D --> E\n    E --> F[Master Gain]\n    F --> G[Speaker]",
+      "tasks": [
+        {
+          "number": "1.1",
+          "name": "SFX Synthesizer",
+          "type": "feature",
+          "what": "Implement Web Audio API SFX engine with oscillator-based sound effects for all game events (shoot, explosion, enemy dive, power-up, wave intro, game over).",
+          "why": "Provides high-fidelity procedural audio without external files.",
+          "files": [
+            "+ galaga-38/index.html"
+          ],
+          "snippet": [
+            "class SfxEngine {\n  constructor(ctx) // AudioContext\n  shoot()        // short square-wave blip w/ pitch drop\n  explode(size)  // noise burst + low sine thump\n  enemyDive()    // descending sawtooth sweep\n  powerUp()      // ascending arpeggio\n  waveIntro()    // dramatic chord hit\n  gameOver()     // long descending tone\n}"
+          ],
+          "acceptance": [
+            "Each SFX method produces distinct audible sound via Web Audio API",
+            "No external audio files required"
+          ],
+          "verify": [
+            "open in browser, trigger each event, confirm audio plays"
+          ]
+        },
+        {
+          "number": "1.2",
+          "name": "Music Sequencer",
+          "type": "feature",
+          "what": "Implement looping background music sequencer with tempo-based pattern playback, intensity scaling per wave, and mute toggle.",
+          "why": "Immersive arcade atmosphere that escalates with difficulty.",
+          "files": [
+            "+ galaga-38/index.html"
+          ],
+          "snippet": [
+            "class MusicSequencer {\n  constructor(sfx) // references SfxEngine\n  start(wave)      // begin loop at wave-appropriate tempo\n  stop()\n  setIntensity(n)  // 1-5, affects note density & filter cutoff\n  // internal: setInterval-driven step sequencer\n  // bass line + lead melody + hi-hat noise ticks\n}"
+          ],
+          "acceptance": [
+            "Music loops seamlessly without gaps",
+            "Tempo/intensity increases with wave number",
+            "Mute/unmute via M key"
+          ],
+          "verify": [
+            "play game through 2+ waves, confirm music evolves"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "2",
+      "name": "Graphics & Sprites",
+      "pattern": [
+        "Procedural Canvas Rendering"
+      ],
+      "objective": "High-fidelity sprite rendering, particle effects, and visual polish using Canvas 2D with procedural pixel-art sprites",
+      "success": "All entities rendered as animated multi-frame sprites; explosions use particle systems; background has parallax starfield; no external image assets",
+      "diagram": "graph TD\n    A[Game Loop] --> B[Render Pipeline]\n    B --> C[Starfield Layer]\n    B --> D[Entity Sprites]\n    B --> E[Particle System]\n    B --> F[UI / HUD]\n    D --> G[Sprite Atlas - procedural]\n    G --> H[Frame Animation]",
+      "tasks": [
+        {
+          "number": "2.1",
+          "name": "Sprite System & Starfield",
+          "type": "feature",
+          "what": "Implement procedural pixel-art sprite atlas (player, 3 enemy types, boss, power-ups) with multi-frame animation, plus parallax starfield background.",
+          "why": "All visual identity without external assets; animated sprites give arcade feel.",
+          "files": [
+            "+ galaga-38/index.html"
+          ],
+          "snippet": [
+            "const SPRITES = {\n  player:   { frames: [2], w: 24, h: 20 },\n  bee:      { frames: [2], w: 20, h: 16 },\n  butterfly:{ frames: [2], w: 24, h: 20 },\n  fighter:  { frames: [2], w: 28, h: 24 },\n  boss:     { frames: [2], w: 48, h: 40 },\n}\n// Each frame = array of color-indexed rows\n// drawSprite(ctx, name, frame, x, y, scale)\n\nclass Starfield {\n  layers: [{speed, density, size}] // 3 parallax layers\n  update(dt); render(ctx)\n}"
+          ],
+          "acceptance": [
+            "Player and all 3 enemy types render as distinct animated sprites",
+            "Boss renders at 2x scale with unique design",
+            "3-layer parallax starfield scrolls continuously"
+          ],
+          "verify": [
+            "open in browser, confirm all sprites visible and animating"
+          ]
+        },
+        {
+          "number": "2.2",
+          "name": "Particle & VFX System",
+          "type": "feature",
+          "what": "Implement particle-based explosion effects, screen shake, muzzle flash, and entity death animations.",
+          "why": "Juice and feedback that makes hits feel impactful.",
+          "files": [
+            "+ galaga-38/index.html"
+          ],
+          "snippet": [
+            "class ParticleSystem {\n  particles: [] // {x,y,vx,vy,life,color,size}\n  explode(x, y, color, count)\n  update(dt); render(ctx)\n}\n\n// ScreenShake: intensity decays over time\n// MuzzleFlash: brief bright sprite at player cannon tip\n// DeathAnim: entity flashes white then bursts into particles"
+          ],
+          "acceptance": [
+            "Explosions produce 20+ colored particles with gravity and fade",
+            "Screen shakes on player hit (intensity ~8px, decay 300ms)",
+            "Muzzle flash visible for 1 frame on shoot"
+          ],
+          "verify": [
+            "shoot enemies, confirm particle burst + shake on player hit"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "3",
+      "name": "Core Gameplay",
+      "pattern": [
+        "Entity Component (lightweight)"
+      ],
+      "objective": "Player ship, enemy AI with dive patterns, collision detection, scoring, lives, and game state machine",
+      "success": "Full playable loop: start \u2192 waves \u2192 boss \u2192 power-ups \u2192 game over \u2192 restart; all collisions correct; score/lives tracked",
+      "diagram": "stateDiagram-v2\n    [*] --> Title\n    Title --> WaveIntro : Enter\n    WaveIntro --> Playing : animation done\n    Playing --> BossFight : wave 4+\n    BossFight --> Playing : boss defeated\n    Playing --> GameOver : lives = 0\n    GameOver --> Title : Enter\n    Playing --> Paused : P\n    Paused --> Playing : P",
+      "tasks": [
+        {
+          "number": "3.1",
+          "name": "Player Ship & Input",
+          "type": "feature",
+          "what": "Implement player ship with keyboard/touch controls (left/right/up/down), shooting with cooldown, invincibility frames after hit, and 3 lives.",
+          "why": "Core player interaction; must feel responsive at 60fps.",
+          "files": [
+            "+ galaga-38/index.html"
+          ],
+          "snippet": [
+            "class Player {\n  x, y, w, h\n  speed: 280        // px/s horizontal\n  shootCooldown: 0.15\n  invincible: 0     // seconds remaining\n  lives: 3\n\n  update(dt, input)\n  shoot() // returns bullet entity\n  hit()   // decrement lives, set invincible=2s\n}"
+          ],
+          "acceptance": [
+            "Arrow keys / WASD move ship smoothly at 60fps",
+            "Space fires bullets with 150ms cooldown",
+            "After being hit, ship blinks for 2s (invincible)",
+            "Lives display in HUD; game over at 0"
+          ],
+          "verify": [
+            "play 30s, confirm movement is smooth, shooting works, hit reduces life"
+          ]
+        },
+        {
+          "number": "3.2",
+          "name": "Enemy AI & Formations",
+          "type": "feature",
+          "what": "Implement 3 enemy types (bee, butterfly, fighter) with formation entry animation, idle bobbing, and dive attacks; boss appears every 4 waves.",
+          "why": "Faithful Galaga enemy behavior: coordinated dives, different point values, escalating difficulty.",
+          "files": [
+            "+ galaga-38/index.html"
+          ],
+          "snippet": [
+            "// Formation: grid of slots, enemies enter via spiral path\nclass Enemy {\n  type: 'bee'|'butterfly'|'fighter'\n  state: 'entering'|'idle'|'diving'|'returning'\n  points: 100|200|400\n\n  update(dt, player, wave)\n  // entering: follow bezier to slot\n  // idle: bob in place, periodic dive decision\n  // diving: chase player with sine-wave path\n  // returning: fly back to slot or exit screen\n}\n\n// Boss: large entity, fires spread shots, 10 HP\nclass Boss {\n  hp: 10\n  fireRate: 0.8 // seconds between spread volleys\n}"
+          ],
+          "acceptance": [
+            "Enemies enter formation via animated spiral path",
+            "Bee=100pts, Butterfly=200pts, Fighter=400pts",
+            "Dive frequency increases with wave number",
+            "Boss spawns on waves 4, 8, 12... with unique sprite"
+          ],
+          "verify": [
+            "play through wave 4, confirm boss appears and can be defeated"
+          ]
+        },
+        {
+          "number": "3.3",
+          "name": "Collision, Scoring & Power-ups",
+          "type": "feature",
+          "what": "Implement AABB collision detection (bullets vs enemies, enemies vs player, enemy bullets vs player), score tracking with high-score persistence, and 4 power-up types.",
+          "why": "Game loop completion: hits register, score accumulates, power-ups add depth.",
+          "files": [
+            "+ galaga-38/index.html"
+          ],
+          "snippet": [
+            "// Collision: circle-based for fairness\nfunction hitTest(a, b) // returns bool\n\n// Score: combo multiplier for rapid kills (x1\u2192x2\u2192x3)\n// HighScore: localStorage 'galaga38_high'\n\n// Power-ups (drop from destroyed fighters):\n//   SHIELD - 5s invincibility bubble\n//   TRIPLE - 3-way spread shot for 8s\n//   SLOW   - enemies move 50% slower for 6s\n//   BOMB   - clear all enemies on screen (1 use)\nclass PowerUp {\n  type: 'shield'|'triple'|'slow'|'bomb'\n  update(dt); render(ctx)\n}"
+          ],
+          "acceptance": [
+            "Bullet-enemy collision destroys enemy, awards points",
+            "Enemy-player collision costs a life",
+            "Combo multiplier resets after 2s without kill",
+            "High score persists across page reloads via localStorage",
+            "All 4 power-ups spawn and have correct effects"
+          ],
+          "verify": [
+            "play 2 min, confirm scoring, combo, power-up pickup, high-score save"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "4",
+      "name": "Game Shell & Polish",
+      "pattern": [
+        "Single-File HTML5 App"
+      ],
+      "objective": "Title screen, HUD, pause, game-over screen, responsive canvas sizing, and final polish pass",
+      "success": "Complete game shell: title \u2192 play \u2192 pause \u2192 game over flow; HUD shows score/lives/wave/power-up timer; canvas scales to viewport; 60fps stable",
+      "diagram": "flowchart LR\n    A[Canvas] --> B[HUD Layer]\n    A --> C[Entity Layer]\n    A --> D[VFX Layer]\n    E[Input] --> F[State Machine]\n    F --> G[Title / Play / Pause / Over]",
+      "tasks": [
+        {
+          "number": "4.1",
+          "name": "Game Shell & HUD",
+          "type": "feature",
+          "what": "Implement title screen, pause overlay, game-over screen with stats, HUD (score, high-score, lives icons, wave number, active power-up timer), and responsive canvas scaling.",
+          "why": "Complete game presentation; player needs clear state feedback.",
+          "files": [
+            "+ galaga-38/index.html"
+          ],
+          "snippet": [
+            "// Title: logo text + 'PRESS ENTER' + high score\n// Pause: dimmed overlay + 'PAUSED'\n// GameOver: final score, high score, 'NEW HIGH!' if applicable\n\nclass HUD {\n  render(ctx) // top bar: SCORE | WAVE | LIVES | POWER-UP TIMER\n}\n\n// Canvas: fixed internal res 480x640, CSS-scaled to fit viewport\n// Input: Enter=start/resume, P=pause, M=mute"
+          ],
+          "acceptance": [
+            "Title screen shows game name, high score, and start prompt",
+            "Pause freezes all entities and music",
+            "Game over shows final score and restarts on Enter",
+            "Canvas maintains aspect ratio at any window size"
+          ],
+          "verify": [
+            "full play session: title\u2192play\u2192pause\u2192resume\u2192game over\u2192restart"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "tasks": {
+    "1.1": {
+      "number": "1.1",
+      "status": "done",
+      "name": "SFX Synthesizer",
+      "milestone": "Audio Engine",
+      "milestone_number": "1"
+    },
+    "1.2": {
+      "number": "1.2",
+      "status": "done",
+      "name": "Music Sequencer",
+      "milestone": "Audio Engine",
+      "milestone_number": "1"
+    },
+    "2.1": {
+      "number": "2.1",
+      "status": "done",
+      "name": "Sprite System & Starfield",
+      "milestone": "Graphics & Sprites",
+      "milestone_number": "2"
+    },
+    "2.2": {
+      "number": "2.2",
+      "status": "done",
+      "name": "Particle & VFX System",
+      "milestone": "Graphics & Sprites",
+      "milestone_number": "2"
+    },
+    "3.1": {
+      "number": "3.1",
+      "status": "done",
+      "name": "Player Ship & Input",
+      "milestone": "Core Gameplay",
+      "milestone_number": "3"
+    },
+    "3.2": {
+      "number": "3.2",
+      "status": "done",
+      "name": "Enemy AI & Formations",
+      "milestone": "Core Gameplay",
+      "milestone_number": "3"
+    },
+    "3.3": {
+      "number": "3.3",
+      "status": "done",
+      "name": "Collision, Scoring & Power-ups",
+      "milestone": "Core Gameplay",
+      "milestone_number": "3"
+    },
+    "4.1": {
+      "number": "4.1",
+      "status": "done",
+      "name": "Game Shell & HUD",
+      "milestone": "Game Shell & Polish",
+      "milestone_number": "4"
+    }
+  }
+}
