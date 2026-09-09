@@ -278,7 +278,7 @@ class SfxEngine {
 }
 
 /* ---------------------------------------------------------------------------
- * MusicSequencer
+ * MusicSequencer  (4-track synth engine)
  * -------------------------------------------------------------------------
  * A looping background-music sequencer built on top of the SfxEngine's shared
  * AudioContext + master gain (so the M-key mute silences music too).
@@ -286,216 +286,376 @@ class SfxEngine {
  * Architecture: a setInterval "scheduler" runs at a fixed cadence and looks
  * `lookahead` seconds ahead of `audioContext.currentTime`, scheduling every
  * step that falls in that window with sample-accurate start times. Because we
- * schedule slightly ahead of time rather than firing notes "now", playback is
+ * schedule slightly ahead rather than firing notes "now", playback is
  * gap-free even if the interval jitters.
  *
- * Three voices per 16th-note step:
- *   - bass line      (low square/sawtooth)
- *   - lead melody    (triangle, gated by intensity for density)
- *   - hi-hat ticks   (short filtered noise bursts)
+ * Four full tracks, each a 32-step (2-bar) loop with its own tempo, drum
+ * pattern, bass line, chord pad, and lead melody:
+ *   0  punk      — 80s punk rock, driving E-root chug          (normal play)
+ *   1  metal     — E-minor power-chord metal                   (escalating)
+ *   2  synthwave — dark retro-horror arps + gated drums        (late game)
+ *   3  acidjazz  — laid-back syncopated groove                 (boss fights)
  *
- * Intensity (1..5) drives tempo, note density, and a lowpass cutoff so higher
- * waves sound faster / denser / brighter.
+ * Public API (kept stable for the rest of the game):
+ *   start(trackIndex)  /  stop()  /  setTrack(i)  /  current
+ * Legacy helpers still work:
+ *   intensityForWave(wave) -> track index by wave number
+ *   setIntensity(n)        -> no-op (intensity scaling deferred)
  * ------------------------------------------------------------------------- */
+
+// ---- note helpers ----------------------------------------------------------
+const _NOTE = {
+  C1:32.70,D1:36.71,E1:41.20,F1:43.65,G1:49.00,A1:55.00,B1:61.74,
+  C2:65.41,D2:73.42,E2:82.41,F2:87.31,G2:98.00,A2:110.00,B2:123.47,
+  C3:130.81,D3:146.83,E3:164.81,F3:174.61,G3:196.00,A3:220.00,B3:246.94,
+  C4:261.63,D4:293.66,E4:329.63,F4:349.23,G4:392.00,A4:440.00,B4:493.88,
+  C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99,A5:880.00,B5:987.77,
+};
+const R = null; // rest
+
 class MusicSequencer {
   constructor(sfx) {
     this.sfx = sfx;
     this.ctx = sfx.ctx;
-    this.master = sfx.master; // shared master gain -> M mute affects us too
-
-    // Reuse the SfxEngine's pre-built white-noise buffer for hi-hats.
+    this.master = sfx.master;
     this.noiseBuffer = sfx.noiseBuffer;
 
-    // --- Musical data -------------------------------------------------------
-    // Bass root pattern over 2 bars (16 steps each), in Hz. A-minor-ish groove.
-    this.bassLine = [
-      55.00, 55.00, 110.00, 55.00,  65.41, 65.41, 130.81, 65.41, // bar 1 (A1/E2)
-      73.42, 73.42, 146.83, 73.42,  82.41, 82.41, 164.81, 82.41, // bar 2 (D2/G2)
-    ];
-    // Lead melody: null = rest. Frequencies in Hz (A minor pentatonic-ish).
-    this.leadLine = [
-      440.00, null, 523.25, 440.00,  659.25, null, 587.33, null,
-      523.25, 440.00, null, 392.00,  440.00, null, 523.25, null,
-    ];
+    this.tracks = [this._punk(), this._metal(), this._synthwave(), this._acidjazz()];
 
-    // --- Scheduler state ----------------------------------------------------
     this.playing = false;
-    this.intensity = 1;
+    this.current = 0;         // active track index
     this.stepIndex = 0;       // next 16th-note to schedule
     this.nextNoteTime = 0;    // audio-clock time of next step
     this.timerId = null;
-    this._liveOscs = new Set(); // scheduled-but-not-yet-finished sources (for stop())
+    this._liveOscs = new Set();
 
-    // Cadence/lookahead tuned for sample-accurate, gap-free playback.
-    this.lookahead = 0.12;    // seconds we schedule ahead
-    this.tickMs = 25;         // how often the scheduler wakes up
+    this.lookahead = 0.12;
+    this.tickMs = 25;
   }
 
-  /** Map wave number (>=1) to an intensity 1..5. */
+  /* -- public API ---------------------------------------------------------- */
+
+  /** Map wave number (>=1) to a track index (0..3). Intensity scaling deferred. */
   static intensityForWave(wave) {
-    return Math.max(1, Math.min(5, Math.round(wave)));
+    const w = Math.max(1, wave);
+    if (w <= 3) return 0;      // punk
+    if (w <= 6) return 1;      // metal
+    if (w <= 9) return 2;      // synthwave
+    return 2;                  // stay on synthwave past wave 9
   }
 
-  /** Tempo (BPM) for a given intensity — rises as intensity climbs. */
-  _tempoFor(intensity) {
-    // 90 BPM at intensity 1, up to ~168 BPM at intensity 5.
-    return 90 + (intensity - 1) * 19.5;
-  }
-
-  /** Lowpass cutoff for the music bus — brighter at higher intensity. */
-  _cutoffFor(intensity) {
-    return 900 + (intensity - 1) * 1400; // 900 .. 6500 Hz
-  }
-
-  /** Start (or restart) the loop at a wave-appropriate tempo. */
-  start(wave) {
-    const intensity = MusicSequencer.intensityForWave(wave);
-    this.stop(); // clean slate if already running
-    this.intensity = intensity;
+  /** Start (or restart) the loop on a given track. */
+  start(trackIndex) {
+    trackIndex = (trackIndex == null) ? this.current : trackIndex;
+    this.stop();
+    this.current = Math.max(0, Math.min(this.tracks.length - 1, trackIndex | 0));
     this.playing = true;
     this.stepIndex = 0;
-    this.nextNoteTime = this.ctx.currentTime + 0.06; // small head start
+    this.nextNoteTime = this.ctx.currentTime + 0.06;
 
-    // Build a persistent music bus: source -> filter -> gain -> master.
-    // We create the filter once so setIntensity can sweep its cutoff smoothly.
+    // Persistent music bus: filter -> gain -> master.
     this._busFilter = this.ctx.createBiquadFilter();
     this._busFilter.type = "lowpass";
-    this._busFilter.frequency.value = this._cutoffFor(intensity);
-    this._busFilter.Q.value = 0.8;
+    this._busFilter.frequency.value = 12000;
+    this._busFilter.Q.value = 0.6;
     this._busGain = this.ctx.createGain();
-    this._busGain.gain.value = 0.5; // keep music under the SFX level
+    this._busGain.gain.value = 0.5;
     this._busFilter.connect(this._busGain);
     this._busGain.connect(this.master);
 
     this.timerId = setInterval(() => this._schedule(), this.tickMs);
   }
 
-  /** Stop cleanly: clear the timer and silence any still-scheduled voices. */
+  /** Stop cleanly: clear timer, silence scheduled voices, tear down the bus. */
   stop() {
-    if (this.timerId !== null) {
-      clearInterval(this.timerId);
-      this.timerId = null;
-    }
+    if (this.timerId !== null) { clearInterval(this.timerId); this.timerId = null; }
     this.playing = false;
-    // Kill any oscillators/noise we scheduled but haven't finished yet.
     const t = this.ctx.currentTime;
-    this._liveOscs.forEach((node) => {
-      try { node.stop(t + 0.02); } catch (e) { /* already stopped */ }
-    });
+    this._liveOscs.forEach((n) => { try { n.stop(t + 0.02); } catch (e) {} });
     this._liveOscs.clear();
-    // Tear down the bus (if present) so no dangling nodes linger.
-    if (this._busFilter) {
-      try { this._busFilter.disconnect(); } catch (e) {}
-      this._busFilter = null;
-    }
-    if (this._busGain) {
-      try { this._busGain.disconnect(); } catch (e) {}
-      this._busGain = null;
+    if (this._busFilter) { try { this._busFilter.disconnect(); } catch (e) {} this._busFilter = null; }
+    if (this._busGain)   { try { this._busGain.disconnect(); } catch (e) {} this._busGain = null; }
+  }
+
+  /** Switch track live without dropping the loop. */
+  setTrack(i) {
+    i = Math.max(0, Math.min(this.tracks.length - 1, i | 0));
+    this.current = i;
+    // Restart the scheduler phase so the new track begins cleanly from step 0.
+    if (this.playing) {
+      this.stepIndex = 0;
+      this.nextNoteTime = this.ctx.currentTime + 0.04;
     }
   }
 
-  /**
-   * Change musical intensity live (1..5). Adjusts tempo, density, and the
-   * bus filter cutoff without restarting the loop.
-   */
-  setIntensity(n) {
-    n = Math.max(1, Math.min(5, Math.round(n)));
-    this.intensity = n;
-    if (this._busFilter) {
-      const t = this.ctx.currentTime;
-      this._busFilter.frequency.cancelScheduledValues(t);
-      this._busFilter.frequency.setTargetAtTime(this._cutoffFor(n), t, 0.1);
-    }
-  }
+  /** Legacy no-op (intensity scaling deferred per design). */
+  setIntensity(_n) { /* deferred */ }
 
   /* -- internal ------------------------------------------------------------ */
 
-  /** Scheduler tick: schedule every step falling within the lookahead window. */
   _schedule() {
+    const trk = this.tracks[this.current];
     while (this.nextNoteTime < this.ctx.currentTime + this.lookahead) {
-      this._playStep(this.stepIndex, this.nextNoteTime);
-      const spb = 60.0 / this._tempoFor(this.intensity); // sec per beat
-      this.nextNoteTime += spb / 4;                      // one 16th note
-      this.stepIndex = (this.stepIndex + 1) % this.bassLine.length;
+      this._playStep(trk, this.stepIndex, this.nextNoteTime);
+      const spb = 60.0 / trk.bpm;
+      this.nextNoteTime += spb / 4;              // one 16th note
+      this.stepIndex = (this.stepIndex + 1) % trk.steps;
     }
   }
 
-  /** Schedule one 16th-note step at exact audio-clock time `t`. */
-  _playStep(step, t) {
-    const i = this.intensity;
-    // Hi-hat: every 8th note at low intensity, every 16th at high intensity.
-    const hatEvery = i >= 4 ? 1 : 2;
-    if (step % hatEvery === 0) this._hat(t, i);
-    // Bass: play on the step's root; gate some off at low intensity for space.
-    const bassFreq = this.bassLine[step];
-    if (bassFreq && (i >= 3 || step % 2 === 0)) this._bass(t, bassFreq, i);
-    // Lead: only when the slot has a note AND density allows it.
-    const leadFreq = this.leadLine[step];
-    // Density gate: at low intensity play fewer lead notes (every other step).
-    const leadGate = i >= 3 ? 1 : 2;
-    if (leadFreq && step % leadGate === 0) this._lead(t, leadFreq, i);
+  _playStep(trk, step, t) {
+    // Drums.
+    const d = trk.drums[step];
+    if (d.k) this._kick(t, trk);
+    if (d.s) this._snare(t, trk);
+    if (d.h) this._hat(t, trk);
+    // Bass.
+    const b = trk.bass[step];
+    if (b) this._bass(t, b, trk);
+    // Pad chords (only on chord-change steps, sustained).
+    if (trk.pads && trk.pads[step]) this._pad(t, trk.pads[step], trk);
+    // Lead.
+    const l = trk.lead[step];
+    if (l) this._lead(t, l, trk);
   }
 
-  /** Low square/sawtooth bass note through the music bus. */
-  _bass(t, freq, i) {
+  /* -- voices -------------------------------------------------------------- */
+
+  _kick(t, trk) {
     const osc = this.ctx.createOscillator();
-    osc.type = i >= 4 ? "sawtooth" : "square";
-    osc.frequency.setValueAtTime(freq, t);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(trk.kickTop || 140, t);
+    osc.frequency.exponentialRampToValueAtTime(trk.kickBot || 45, t + 0.12);
     const g = this.ctx.createGain();
-    const dur = 0.16;
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.35, t + 0.005);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g);
-    g.connect(this._busFilter);
-    osc.start(t);
-    osc.stop(t + dur + 0.02);
-    this._track(osc, t + dur + 0.05);
+    g.gain.linearRampToValueAtTime(0.9, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    osc.connect(g); g.connect(this._busFilter);
+    osc.start(t); osc.stop(t + 0.18);
+    this._track(osc, t + 0.2);
   }
 
-  /** Triangle lead note, slightly detuned for movement, through the bus. */
-  _lead(t, freq, i) {
-    const osc = this.ctx.createOscillator();
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(freq, t);
-    // Subtle vibrato-like pitch drift for a livelier tone at high intensity.
-    if (i >= 4) osc.frequency.linearRampToValueAtTime(freq * 1.02, t + 0.1);
+  _snare(t, trk) {
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+    const hp = this.ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 1400;
+    const bp = this.ctx.createBiquadFilter();
+    bp.type = "bandpass"; bp.frequency.value = 2200; bp.Q.value = 0.8;
     const g = this.ctx.createGain();
     const dur = 0.14;
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.22, t + 0.008);
+    g.gain.linearRampToValueAtTime(0.5, t + 0.003);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g);
-    g.connect(this._busFilter);
-    osc.start(t);
-    osc.stop(t + dur + 0.02);
-    this._track(osc, t + dur + 0.05);
-  }
-
-  /** Short filtered-noise hi-hat tick through the bus. */
-  _hat(t, i) {
-    const src = this.ctx.createBufferSource();
-    src.buffer = this.noiseBuffer;
-    const filt = this.ctx.createBiquadFilter();
-    filt.type = "highpass";
-    filt.frequency.value = 6000 + i * 800; // brighter hats at higher intensity
-    const g = this.ctx.createGain();
-    const dur = 0.04;
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.12, t + 0.002);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(filt);
-    filt.connect(g);
-    g.connect(this._busFilter);
-    src.start(t);
-    src.stop(t + dur + 0.02);
+    src.connect(hp); hp.connect(bp); bp.connect(g); g.connect(this._busFilter);
+    src.start(t); src.stop(t + dur + 0.02);
     this._track(src, t + dur + 0.05);
   }
 
-  /** Track a scheduled source so stop() can kill it; auto-remove after done. */
+  _hat(t, trk) {
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+    const hp = this.ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 7000;
+    const g = this.ctx.createGain();
+    const dur = 0.03;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.16, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(hp); hp.connect(g); g.connect(this._busFilter);
+    src.start(t); src.stop(t + dur + 0.02);
+    this._track(src, t + dur + 0.05);
+  }
+
+  _bass(t, freq, trk) {
+    const osc = this.ctx.createOscillator();
+    osc.type = trk.bassType || "sawtooth";
+    osc.frequency.setValueAtTime(freq, t);
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(trk.bassCut || 900, t);
+    lp.Q.value = 1.2;
+    const g = this.ctx.createGain();
+    const dur = (trk.bassDur || 0.18);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.4, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(lp); lp.connect(g); g.connect(this._busFilter);
+    osc.start(t); osc.stop(t + dur + 0.02);
+    this._track(osc, t + dur + 0.05);
+  }
+
+  _pad(t, freqs, trk) {
+    const dur = (trk.padDur || 0.6);
+    for (let i = 0; i < freqs.length; i++) {
+      const osc = this.ctx.createOscillator();
+      osc.type = trk.padType || "sawtooth";
+      osc.frequency.setValueAtTime(freqs[i], t);
+      osc.detune.value = (i === 0 ? -6 : i === 1 ? 6 : 0);
+      const lp = this.ctx.createBiquadFilter();
+      lp.type = "lowpass"; lp.frequency.value = trk.padCut || 1600;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.09, t + 0.05);
+      g.gain.setValueAtTime(0.09, t + dur - 0.08);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(lp); lp.connect(g); g.connect(this._busFilter);
+      osc.start(t); osc.stop(t + dur + 0.02);
+      this._track(osc, t + dur + 0.05);
+    }
+  }
+
+  _lead(t, freq, trk) {
+    const osc = this.ctx.createOscillator();
+    osc.type = trk.leadType || "square";
+    osc.frequency.setValueAtTime(freq, t);
+    // Gentle vibrato via detune LFO for richness.
+    const lfo = this.ctx.createOscillator();
+    lfo.type = "sine"; lfo.frequency.value = 5.5;
+    const lfoGain = this.ctx.createGain();
+    lfoGain.gain.value = trk.vib || 8;
+    lfo.connect(lfoGain); lfoGain.connect(osc.detune);
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = trk.leadCut || 4000;
+    const g = this.ctx.createGain();
+    const dur = (trk.leadDur || 0.2);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.24, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(lp); lp.connect(g); g.connect(this._busFilter);
+    osc.start(t); osc.stop(t + dur + 0.02);
+    lfo.start(t); lfo.stop(t + dur + 0.02);
+    this._track(osc, t + dur + 0.05);
+    this._track(lfo, t + dur + 0.05);
+  }
+
   _track(node, doneAt) {
     this._liveOscs.add(node);
     setTimeout(() => { this._liveOscs.delete(node); }, (doneAt - this.ctx.currentTime) * 1000 + 50);
+  }
+
+  /* -- track definitions --------------------------------------------------- */
+  /* Each: bpm, steps(32), drums[{k,s,h}], bass[32], pads{step:[freqs]},
+     lead[32], and voice timbre params. All arrays exactly 32 long. */
+
+  _punk() {
+    const E1=_NOTE.E1,E2=_NOTE.E2,B2=_NOTE.B2,A2=_NOTE.A2,D2=_NOTE.D2;
+    const E4=_NOTE.E4,B4=_NOTE.B4,A4=_NOTE.A4,D4=_NOTE.D4,C5=_NOTE.C5,G4=_NOTE.G4,R4=R;
+    // Driving 8th-note chug: kick+snare four-on-floor-ish, hats every 16th.
+    const drums=[];
+    for(let i=0;i<32;i++){drums.push({k:(i%4===0),s:(i%8===4),h:true});}
+    // Bass: constant E root, octave pops on offbeats.
+    const bass=[];
+    for(let i=0;i<32;i++){bass.push(i%4===2?E2:E1);}
+    // Power-chord pads (E + B) change each bar.
+    const pads={0:[_NOTE.E2,_NOTE.B2,_NOTE.E3],16:[_NOTE.A2,_NOTE.E3,_NOTE.A3]};
+    // Melodic riff over E minor pentatonic.
+    const lead=[
+      E4,R4,B4,R4, E4,R4,A4,R4, G4,R4,A4,R4, B4,R4,E5_,R4,
+      E4,R4,B4,R4, A4,R4,B4,R4, E4,R4,G4,R4, A4,R4,B4,R4
+    ];
+    function E5_(){return _NOTE.E5;}
+    return {
+      name:"PUNK", bpm:182, steps:32, drums, bass, pads, lead,
+      bassType:"sawtooth", bassCut:1100, bassDur:0.16,
+      padType:"sawtooth", padCut:1800, padDur:0.5,
+      leadType:"square", leadCut:4200, leadDur:0.18, vib:10,
+      kickTop:150, kickBot:48,
+    };
+  }
+
+  _metal() {
+    const E1=_NOTE.E1,E2=_NOTE.E2,B1=_NOTE.B1,B2=_NOTE.B2;
+    const E4=_NOTE.E4,B4=_NOTE.B4,A4=_NOTE.A4,D4=_NOTE.D4,G4=_NOTE.G4,F4=_NOTE.F4,R4=R;
+    // Heavier groove: kick 1&3, snare 2&4, double-kick feel at high density.
+    const drums=[];
+    for(let i=0;i<32;i++){drums.push({k:(i%4===0||i%8===6),s:(i%8===4),h:(i%2===0)});}
+    // Palm-muted power-chord chug with octave jumps (E1->E2).
+    const bass=[];
+    for(let i=0;i<32;i++){bass.push(i%8===0?E2:(i%4===2?E2:E1));}
+    // Power chords (root+fifth) shift: E then D.
+    const pads={0:[_NOTE.E2,_NOTE.B2],8:[_NOTE.E2,_NOTE.B2],16:[_NOTE.D2,_NOTE.A2],24:[_NOTE.D2,_NOTE.A2]};
+    // Riffing lead: E minor scale run.
+    const lead=[
+      E4,R4,E4,B4, A4,R4,B4,R4, G4,R4,A4,R4, B4,R4,E4,R4,
+      D4,R4,D4,A4, G4,R4,A4,R4, E4,R4,G4,R4, B4,R4,A4,R4
+    ];
+    return {
+      name:"METAL", bpm:158, steps:32, drums, bass, pads, lead,
+      bassType:"sawtooth", bassCut:950, bassDur:0.17,
+      padType:"sawtooth", padCut:1500, padDur:0.4,
+      leadType:"sawtooth", leadCut:3600, leadDur:0.2, vib:14,
+      kickTop:130, kickBot:42,
+    };
+  }
+
+  _synthwave() {
+    const A1=_NOTE.A1,A2=_NOTE.A2,E2=_NOTE.E2,F2=_NOTE.F2,G2=_NOTE.G2;
+    const A3=_NOTE.A3,E4=_NOTE.E4,G4=_NOTE.G4,F4=_NOTE.F4,A4=_NOTE.A4,C5=_NOTE.C5,D5=_NOTE.D5,E5=_NOTE.E5,R4=R;
+    // Four-on-the-floor pulse, open hats on offbeats.
+    const drums=[];
+    for(let i=0;i<32;i++){drums.push({k:(i%4===0),s:(i%8===4),h:(i%2===1)});}
+    // Pulsing synth bass: 8th-note root drive (A minor).
+    const bass=[];
+    for(let i=0;i<32;i++){bass.push(i%2===0?A1:A2);}
+    // Dark arpeggiated pads: Am - F - C - G progression (one chord per beat group).
+    const pads={
+      0:[_NOTE.A2,_NOTE.C4,_NOTE.E4], 4:[_NOTE.A2,_NOTE.C4,_NOTE.E4],
+      8:[_NOTE.F2,_NOTE.A3,_NOTE.C4], 12:[_NOTE.F2,_NOTE.A3,_NOTE.C4],
+      16:[_NOTE.G2,_NOTE.C4,_NOTE.E4], 20:[_NOTE.G2,_NOTE.C4,_NOTE.E4],
+      24:[_NOTE.A2,_NOTE.C4,_NOTE.E4], 28:[_NOTE.A2,_NOTE.C4,_NOTE.E4],
+    };
+    // Arpeggiated horror lead (descending minor arps).
+    const lead=[
+      A4,E4,C5,E4, A4,E4,C5,E4, F4,A4,C5,A4, F4,A4,C5,A4,
+      G4,C5,E5,C5, G4,C5,E5,C5, A4,E4,C5,E4, A4,E4,C5,R4
+    ];
+    return {
+      name:"SYNTHWAVE", bpm:118, steps:32, drums, bass, pads, lead,
+      bassType:"sawtooth", bassCut:800, bassDur:0.22,
+      padType:"sawtooth", padCut:2200, padDur:0.5,
+      leadType:"square", leadCut:3200, leadDur:0.16, vib:6,
+      kickTop:120, kickBot:40,
+    };
+  }
+
+  _acidjazz() {
+    const A1=_NOTE.A1,D2=_NOTE.D2,E2=_NOTE.E2,G2=_NOTE.G2,C2=_NOTE.C2;
+    const A3=_NOTE.A3,C4=_NOTE.C4,E4=_NOTE.E4,G4=_NOTE.G4,D4=_NOTE.D4,F4=_NOTE.F4,A4=_NOTE.A4,C5=_NOTE.C5,E5=_NOTE.E5,D5=_NOTE.D5,R4=R;
+    // Loose swung-ish groove: kick on 1 & the "and of 2", rim snare, brushy hats.
+    const drums=[];
+    for(let i=0;i<32;i++){
+      const k=(i===0||i===10||i===24||i===30);
+      const s=(i===8||i===20);
+      const h=(i%2===0);
+      drums.push({k,s,h});
+    }
+    // Slap-ish walking bass over ii-V-I-ish jazz changes.
+    const bass=[
+      A1,R4,D2,R4, E2,R4,G2,R4, A1,R4,C2,R4, D2,R4,R4,R4,
+      A1,R4,D2,R4, E2,R4,G2,R4, C2,R4,E2,R4, G2,R4,R4,R4
+    ];
+    // Electric-piano style comping chords (maj7/min7 flavor), sparse.
+    const pads={
+      0:[_NOTE.A2,_NOTE.C4,_NOTE.E4], 6:[_NOTE.D2,_NOTE.F4,_NOTE.A3],
+      12:[_NOTE.E2,_NOTE.G4,_NOTE.B3], 18:[_NOTE.G2,_NOTE.C4,_NOTE.E4],
+      24:[_NOTE.A2,_NOTE.C4,_NOTE.E4], 30:[_NOTE.D2,_NOTE.F4,_NOTE.A3],
+    };
+    // Smooth melodic horn-like lead.
+    const lead=[
+      A4,R4,C5,R4, E5,R4,D5,R4, C5,R4,A4,R4, G4,R4,R4,R4,
+      A4,R4,C5,R4, E5,R4,G5_,R4, F5_,R4,E5_,R4, D5,R4,C5,R4
+    ];
+    function G5_(){return _NOTE.G5;}
+    function F5_(){return _NOTE.F5;}
+    function E5_(){return _NOTE.E5;}
+    return {
+      name:"ACID JAZZ", bpm:104, steps:32, drums, bass, pads, lead,
+      bassType:"triangle", bassCut:700, bassDur:0.24,
+      padType:"triangle", padCut:2600, padDur:0.7,
+      leadType:"triangle", leadCut:3800, leadDur:0.3, vib:10,
+      kickTop:110, kickBot:44,
+    };
   }
 }
 
@@ -523,9 +683,12 @@ const Input = {
         if (e.code === "Enter") {
           if (s === "title" || s === "gameOver") Game.startGame();
         }
-        // P: pause / resume during active play.
+        // P: pause / resume during active play; jukebox preview on the title.
         if (e.code === "KeyP") {
-          if (s === "playing" || s === "bossFight") Game.pause();
+          if (s === "title") {
+            // Jukebox: cycle through the four tracks, wrapping around.
+            if (music) music.start((music.current + 1) % music.tracks.length);
+          } else if (s === "playing" || s === "bossFight") Game.pause();
           else if (s === "paused") Game.resume();
         }
         // M: mute / unmute across every state.
@@ -1744,18 +1907,26 @@ const Game = {
   _tripleTimer: null,             // remaining seconds of TRIPLE power-up
   _slowTimer: null,               // remaining seconds of SLOW power-up
 
-  /* -- Music lifecycle stubs ------------------------------------------------
-   * The full game state machine lands in a later task; for now these give us
-   * clean entry/exit points so gameplay can start/stop the background loop. */
+  /* -- Music lifecycle ------------------------------------------------------
+   * Clean entry/exit points so gameplay can start/stop the background loop.
+   * Track selection is wave-driven (see _trackForWave); boss fights override
+   * with the acid-jazz track and revert on clear. */
   startMusic() {
-    if (music) music.start(this.wave);
+    if (music) music.start(this._trackForWave());
   },
   stopMusic() {
     if (music) music.stop();
   },
+  /** Pick a track index for normal (non-boss) play based on the current wave. */
+  _trackForWave() {
+    return MusicSequencer.intensityForWave(this.wave);
+  },
   setWave(n) {
     this.wave = Math.max(1, n);
-    if (music && music.playing) music.setIntensity(MusicSequencer.intensityForWave(this.wave));
+    // If we're mid-play (not in a boss fight), switch to the wave's track live.
+    if (music && music.playing && !this._anyBossAlive()) {
+      music.setTrack(this._trackForWave());
+    }
   },
 
   /**
@@ -1795,6 +1966,8 @@ const Game = {
     }
     this.bosses = bosses;
     if (sfx) sfx.waveIntro();
+    // Boss fight begins: switch to the acid-jazz track.
+    if (music && music.playing) music.setTrack(3);
   },
 
   // The real Player instance is created in start() (Task 3.1).
@@ -1901,7 +2074,7 @@ const Game = {
   /** Advance the wave number and refresh music intensity live. */
   _advanceWave() {
     this.stats.wavesCleared += 1;
-    this.setWave(this.wave + 1);
+    this.setWave(this.wave + 1);   // reverts to the new wave's track (bosses cleared)
     this.setupWave();
     // Every wave has bosses that arrive after the enemy formation forms, so
     // we always play the short intro before dropping into active play.
