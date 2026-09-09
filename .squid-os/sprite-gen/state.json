@@ -1,0 +1,13 @@
+{
+  "chat_url": "https://chatgpt.com/c/6aa0f79a-6b08-83e9-8a7a-2e1ec9464f08",
+  "style_name": "aquatic neo-arcade deep-sea",
+  "palette": ["cyan", "teal", "magenta", "poison-green", "orange", "purple"],
+  "sheets": {
+    "enemies": {"file": "assets/enemies_sheet.png", "size": "1024x1536", "rows": 6, "cols": 4},
+    "bosses": {"file": "assets/bosses_sheet.png", "size": "1448x1086", "rows": 3, "cols": 4},
+    "powerups": {"file": "assets/powerups_sheet.png", "size": "1254x1254", "rows": 4, "cols": 4},
+    "player": {"file": "assets/player_sheet.png", "size": "2172x724", "rows": 1, "cols": 4},
+    "background": {"file": "assets/background.png", "size": "1586x992"}
+  },
+  "updated": "2026-09-09T02:32:00"
+}
