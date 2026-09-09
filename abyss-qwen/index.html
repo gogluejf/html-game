@@ -656,6 +656,10 @@ loadPngSprite("player", "player", "manta_ray", 4, 56);
 loadPngSprite("bee", "enemies", "jellyfish", 4, 40);
 loadPngSprite("butterfly", "enemies", "pufferfish", 4, 44);
 loadPngSprite("fighter", "enemies", "sea_dragon", 4, 48);
+// Extra tiers so all 6 aquatic enemies appear in the formation.
+loadPngSprite("shooter", "enemies", "anglerfish", 4, 42);
+loadPngSprite("brute", "enemies", "mantis_crab", 4, 46);
+loadPngSprite("raider", "enemies", "mech_shark", 4, 50);
 
 // Power-up pickups (4-frame animations). Keyed by powerup type.
 loadPngSprite("pu_shield", "powerups", "shield", 4, 34);
@@ -701,13 +705,14 @@ function drawPngSprite(ctx, name, frame, cx, cy) {
  * @param {number} scale  integer pixel scale (default 1)
  */
 function drawSprite(ctx, name, frame, x, y, scale = 1) {
-  // Prefer the PNG asset when available; fall back to procedural pixel art.
-  const def = SPRITES[name];
-  if (def) {
-    const pw = def.frames[0].length * scale;
-    const ph = def.frames[0].length * scale;
-    if (drawPngSprite(ctx, name, frame, x + pw / 2, y + ph / 2)) return;
+  // Prefer the PNG asset when available.
+  const pngDef = PNG_SPRITES[name];
+  if (pngDef && pngDef.frames.length && pngDef.frames[0].complete) {
+    if (drawPngSprite(ctx, name, frame, x + (pngDef.scaleW || 48) / 2, y + (pngDef.scaleW || 48) / 2)) return;
   }
+  // Fallback to procedural pixel art (only exists for legacy names).
+  const def = SPRITES[name];
+  if (!def) return;
   const rows = _normalizeFrame(def.frames[Math.max(0, Math.min(frame | 0, def.frames.length - 1))]);
   const px = Math.round(x);
   const py = Math.round(y);
@@ -1589,7 +1594,25 @@ const ENEMY_TYPES = {
   bee:       { w: 20, h: 16, points: 100, entrySpeed: 260, diveSpeed: 220, weaveAmp: 26, weaveFreq: 5,  fireEvery: 0.8 },
   butterfly: { w: 24, h: 20, points: 200, entrySpeed: 230, diveSpeed: 250, weaveAmp: 40, weaveFreq: 3.5, fireEvery: 0.65 },
   fighter:   { w: 28, h: 24, points: 400, entrySpeed: 200, diveSpeed: 300, weaveAmp: 54, weaveFreq: 2.5, fireEvery: 0.5 },
+  // Extra tiers so all 6 aquatic enemies appear across waves.
+  shooter:   { w: 22, h: 18, points: 150, entrySpeed: 245, diveSpeed: 235, weaveAmp: 32, weaveFreq: 4.2, fireEvery: 0.72 },
+  brute:     { w: 26, h: 22, points: 300, entrySpeed: 215, diveSpeed: 270, weaveAmp: 46, weaveFreq: 3,   fireEvery: 0.58 },
+  raider:    { w: 30, h: 26, points: 450, entrySpeed: 190, diveSpeed: 320, weaveAmp: 58, weaveFreq: 2.2, fireEvery: 0.48 },
 };
+
+/**
+ * Creature roster for wave rotation, weakest -> strongest. Each maps to an
+ * ENEMY_TYPES key (which carries its sprite + stats). Waves rotate through
+ * this list so all 6 creatures get used over a 6-wave cycle.
+ */
+const CREATURES = [
+  { type: "bee",       name: "jellyfish" },    // weakest
+  { type: "butterfly", name: "pufferfish" },
+  { type: "shooter",   name: "mantis_crab" },
+  { type: "brute",     name: "anglerfish" },
+  { type: "raider",    name: "mech_shark" },
+  { type: "fighter",   name: "sea_dragon" },   // strongest
+];
 
 class Enemy {
   /**
@@ -1914,8 +1937,17 @@ function buildFormation(wave) {
   const gapX = 56;
   const gapY = 44;
 
-  // Type per row (top->bottom): fighter, butterfly, bee, bee.
-  const rowTypes = ["fighter", "butterfly", "bee", "bee"];
+  // Wave rotation: 3 distinct creatures fill the 4 rows (rows 3+4 share).
+  //   Row 1 (top, most points) = X, Row 2 = Y, Rows 3+4 (bottom) = Z.
+  // Each wave shifts the selection down the CREATURES list by one (conveyor),
+  // so a new creature enters and all 6 are used over a 6-wave cycle.
+  // Wave 1 opens with jellyfish (weakest) as the bottom pair.
+  const N = CREATURES.length;
+  const w = ((wave - 1) % N + N) % N; // 0-based wave offset
+  // Slot bases chosen so wave 1 => row1=anglerfish, row2=mech_shark, row3/4=jellyfish.
+  const slotBase = [3, 4, 0]; // index into CREATURES for slots X, Y, Z at wave offset 0
+  const pick = (slot) => CREATURES[(slotBase[slot] + w) % N].type;
+  const rowTypes = [pick(0), pick(1), pick(2), pick(2)];
 
   let order = 0;
   for (let r = 0; r < rows; r++) {
