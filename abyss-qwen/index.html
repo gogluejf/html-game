@@ -623,7 +623,7 @@ function _normalizeFrame(rows) {
 }
 
 /* ---- PNG sprite system (AI-generated assets) -----------------------------
- * Backs the procedural sprites with real image files from ../assets/galaga/.
+ * Backs the procedural sprites with real image files from ../assets/abyss-qwen/.
  * Each entry: { frames: [HTMLImageElement, ...], w, h } — natural pixel size.
  * drawSprite() is patched below so existing call sites keep working.
  * ==========================================================================*/
@@ -645,7 +645,7 @@ function loadPngSprite(name, dir, prefix, frameCount, scaleW) {
     img.onerror = () => { pngLoadCount++; }; // count failures so we never hang
     // Resolve asset base relative to this page so it works from file:// and http.
     const base = new URL("../", document.baseURI).href.replace(/[^/]*$/, "");
-    img.src = `${base}assets/galaga/${dir}/${prefix}_f${i}.png`;
+    img.src = `${base}assets/abyss-qwen/${dir}/${prefix}_f${i}.png`;
     def.frames.push(img);
   }
 }
@@ -1028,7 +1028,7 @@ const SPRITES = {
 /* ---------------------------------------------------------------------------
  * Background
  * -------------------------------------------------------------------------
- * A single wide underwater image (assets/galaga/background.png) drawn scaled to
+ * A single wide underwater image (assets/abyss-qwen/background.png) drawn scaled to
  * cover the canvas height, then panned horizontally. It drifts very slowly in
  * one direction and reverses at the image's edge (ping-pong), so the scene
  * gently sways side to side forever. Replaces the old procedural starfield as
@@ -1040,7 +1040,7 @@ class Background {
     this.h = height;
     this.img = new Image();
     const base = new URL("../", document.baseURI).href.replace(/[^/]*$/, "");
-    this.img.src = `${base}assets/galaga/background.png`;
+    this.img.src = `${base}assets/abyss-qwen/background.png`;
     this.loaded = false;
     this.img.onload = () => { this.loaded = true; };
     // Pan state: offset in source-image pixels, moving left (negative dir).
@@ -2145,7 +2145,7 @@ const Game = {
     // Splash art for the title screen.
     this.splash = new Image();
     const base = new URL("../", document.baseURI).href.replace(/[^/]*$/, "");
-    this.splash.src = `${base}assets/galaga/splash_sheet.png`;
+    this.splash.src = `${base}assets/abyss-qwen/splash_sheet.png`;
     requestAnimationFrame((t) => this.loop(t));
   },
 
