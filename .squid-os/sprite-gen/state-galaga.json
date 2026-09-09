@@ -97,7 +97,7 @@
           "row_y": null,
           "frame_size": null
         },
-        "frames_dir": "assets/galaga/aquatic-neo-arcade/enemies",
+        "frames_dir": "assets/galaga/enemies",
         "bg_tol": 8
       }
     },
@@ -189,6 +189,5 @@
     }
   },
   "updated": "2026-09-09T02:54:48",
-  "assets_dir": "assets/galaga",
-  "palette_slug": "aquatic-neo-arcade"
+  "assets_dir": "assets/galaga"
 }
