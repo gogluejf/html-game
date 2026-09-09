@@ -2024,6 +2024,19 @@ class PowerUp {
 const W = 480;   // internal canvas width
 const H = 640;   // internal canvas height
 
+/** Trace a horizontal hexagon (pointed left/right) centered at (cx, cy). */
+function _hexPath(c, cx, cy, w, h) {
+    const hw = w / 2, hh = h / 2;
+    c.beginPath();
+    c.moveTo(cx - hw * 0.5, cy - hh);   // top-left slant start
+    c.lineTo(cx + hw * 0.5, cy - hh);   // top edge
+    c.lineTo(cx + hw, cy);              // right point
+    c.lineTo(cx + hw * 0.5, cy + hh);   // bottom edge
+    c.lineTo(cx - hw * 0.5, cy + hh);
+    c.lineTo(cx - hw, cy);              // left point
+    c.closePath();
+}
+
 const Game = {
   canvas: document.getElementById("game"),
   ctx: null,
@@ -2555,24 +2568,46 @@ const Game = {
     c.fillText("QWEN", W / 2, cy + 34);
     c.restore();
 
-    // Version tag — a clean pill badge under the wordmark.
-    const vy = cy + 74;
-    c.font = "bold 22px 'Courier New', monospace";
+    // Version tag — a glowing hexagonal emblem under the wordmark.
+    const vy = cy + 84;
     const vText = "3.8";
-    const vW = c.measureText(vText).width + 28;
+    c.font = "bold 30px 'Courier New', monospace";
+    const tw = c.measureText(vText).width;
+    const hexW = tw + 44;
+    const hexH = 46;
+    const cx0 = W / 2;
+    // Pulsing glow.
+    const vpulse = 0.5 + 0.5 * Math.sin(t * 3);
     c.save();
-    c.fillStyle = "rgba(10, 20, 40, 0.75)";
+    // Outer glow ring.
+    c.globalAlpha = 0.25 + 0.35 * vpulse;
     c.strokeStyle = "#ffe23e";
-    c.lineWidth = 2;
-    const vx = W / 2 - vW / 2;
-    c.beginPath();
-    c.roundRect ? c.roundRect(vx, vy - 16, vW, 32, 8) : c.rect(vx, vy - 16, vW, 32);
+    c.lineWidth = 6;
+    _hexPath(c, cx0, vy, hexW + 10, hexH + 10);
+    c.stroke();
+    // Solid hex body.
+    c.globalAlpha = 1;
+    c.fillStyle = "rgba(8, 16, 34, 0.9)";
+    c.strokeStyle = "#ffe23e";
+    c.lineWidth = 2.5;
+    c.shadowColor = "#ffe23e";
+    c.shadowBlur = 14 + 10 * vpulse;
+    _hexPath(c, cx0, vy, hexW, hexH);
     c.fill();
     c.stroke();
+    // Inner accent line.
+    c.shadowBlur = 0;
+    c.globalAlpha = 0.5;
+    c.strokeStyle = "#fff2a0";
+    c.lineWidth = 1;
+    _hexPath(c, cx0, vy, hexW - 8, hexH - 8);
+    c.stroke();
+    // Text.
+    c.globalAlpha = 1;
     c.fillStyle = "#ffe23e";
     c.shadowColor = "#ffe23e";
-    c.shadowBlur = 10;
-    c.fillText(vText, W / 2, vy + 1);
+    c.shadowBlur = 12;
+    c.fillText(vText, cx0, vy + 1);
     c.restore();
 
     // High score (in the darker upper-mid zone for contrast).
