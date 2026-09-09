@@ -623,6 +623,57 @@ function _normalizeFrame(rows) {
   return rows.map((r) => (r.length < w ? r + ".".repeat(w - r.length) : r.slice(0, w)));
 }
 
+/* ---- PNG sprite system (AI-generated assets) -----------------------------
+ * Backs the procedural sprites with real image files from ../assets/galaga/.
+ * Each entry: { frames: [HTMLImageElement, ...], w, h } — natural pixel size.
+ * drawSprite() is patched below so existing call sites keep working.
+ * ==========================================================================*/
+const PNG_SPRITES = {};   // name -> { frames: [...], w, h }
+let pngLoadCount = 0;
+let pngTotal = 0;
+
+/** Register a PNG sprite set and preload all its frames. */
+function loadPngSprite(name, dir, prefix, frameCount, scaleW) {
+  const def = { frames: [], w: 0, h: 0, scaleW: scaleW || 48 };
+  PNG_SPRITES[name] = def;
+  for (let i = 1; i <= frameCount; i++) {
+    pngTotal++;
+    const img = new Image();
+    img.onload = () => {
+      if (!def.w) { def.w = img.naturalWidth; def.h = img.naturalHeight; }
+      pngLoadCount++;
+    };
+    img.onerror = () => { pngLoadCount++; }; // count failures so we never hang
+    // Resolve asset base relative to this page so it works from file:// and http.
+    const base = new URL("../", document.baseURI).href.replace(/[^/]*$/, "");
+    img.src = `${base}assets/galaga/${dir}/${prefix}_f${i}.png`;
+    def.frames.push(img);
+  }
+}
+
+// Player + enemy/boss sets (all 4-frame animations).
+// Internal game key -> actual asset file prefix.
+loadPngSprite("player", "player", "manta_ray", 4, 56);
+loadPngSprite("bee", "enemies", "jellyfish", 4, 40);
+loadPngSprite("butterfly", "enemies", "pufferfish", 4, 44);
+loadPngSprite("fighter", "enemies", "sea_dragon", 4, 48);
+loadPngSprite("boss", "bosses", "kraken", 4, 120);
+
+/**
+ * Draw a PNG sprite centered on (cx, cy), scaled so its width matches `scaleW`.
+ * Falls back to the procedural grid sprite if the images haven't loaded yet.
+ */
+function drawPngSprite(ctx, name, frame, cx, cy) {
+  const def = PNG_SPRITES[name];
+  if (!def || !def.frames.length || !def.frames[0].complete) return false;
+  const img = def.frames[Math.max(0, Math.min(frame | 0, def.frames.length - 1))];
+  if (!img.complete || !img.naturalWidth) return false;
+  const dw = def.scaleW;
+  const dh = Math.round(dw * (def.h / def.w));
+  ctx.drawImage(img, Math.round(cx - dw / 2), Math.round(cy - dh / 2), dw, dh);
+  return true;
+}
+
 /**
  * Render a named sprite at the given frame/position/scale.
  * @param {CanvasRenderingContext2D} ctx
@@ -633,8 +684,13 @@ function _normalizeFrame(rows) {
  * @param {number} scale  integer pixel scale (default 1)
  */
 function drawSprite(ctx, name, frame, x, y, scale = 1) {
+  // Prefer the PNG asset when available; fall back to procedural pixel art.
   const def = SPRITES[name];
-  if (!def) return;
+  if (def) {
+    const pw = def.frames[0].length * scale;
+    const ph = def.frames[0].length * scale;
+    if (drawPngSprite(ctx, name, frame, x + pw / 2, y + ph / 2)) return;
+  }
   const rows = _normalizeFrame(def.frames[Math.max(0, Math.min(frame | 0, def.frames.length - 1))]);
   const px = Math.round(x);
   const py = Math.round(y);
@@ -1301,8 +1357,8 @@ class Player {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.w = 24;
-    this.h = 20;
+    this.w = 40;            // hitbox width (sprite draws ~56px wide)
+    this.h = 32;            // hitbox height
     this.speed = 280;          // px/s horizontal & vertical
     this.shootCooldown = 0;    // seconds until next shot allowed
     this.cooldownMax = 0.15;   // base cooldown duration
@@ -1404,7 +1460,7 @@ class Player {
       if (phase === 0) return; // skip drawing this half-cycle (invisible)
     }
 
-    const frame = Math.floor((this.time ?? 0) * 6) % 2; // engine flame flicker
+    const frame = Math.floor((this.time ?? 0) * 8) % 4; // manta ray wing cycle
     drawSprite(ctx, "player", frame, this.x, this.y, 1);
 
     // Shield bubble (future power-up hook): translucent ring while active.
@@ -1936,13 +1992,15 @@ const Game = {
 
   start() {
     this.ctx = this.canvas.getContext("2d");
+    // Crisp pixel-art scaling for the PNG sprites.
+    this.ctx.imageSmoothingEnabled = false;
     // Task 2.2: instantiate the particle / VFX systems.
     this.particleSystem = new ParticleSystem();
     this.screenshake = new ScreenShake();
     this.muzzleFlash = new MuzzleFlash();
     this.deathAnim = new DeathAnim(this.particleSystem);
     // Task 3.1: create the real player ship + clear any leftover bullets.
-    this.player = new Player(W / 2 - 12, H - 60);
+    this.player = new Player(W / 2 - 20, H - 70);
     this.bullets = [];
     // Task 3.3: reset scoring state + load persisted high score.
     this.score = 0;
@@ -1974,7 +2032,7 @@ const Game = {
    */
   startGame() {
     // Reset player: full lives, centered position, no lingering power-ups.
-    this.player = new Player(W / 2 - 12, H - 60);
+    this.player = new Player(W / 2 - 20, H - 70);
     this.bullets = [];
     this.enemyBullets = [];
     this.powerUps = [];
@@ -2430,18 +2488,19 @@ const Game = {
     c.font = "bold 13px 'Courier New', monospace";
     c.fillStyle = "#3ef0ff";
     c.fillText(`LIVES ${Math.max(0, this.player.lives)}`, W - 10, 8);
-    // Ship icons (one per remaining life).
+    // Ship icons (one per remaining life) — manta ray thumbnails.
     const lives = Math.max(0, this.player.lives);
+    const pDef = PNG_SPRITES["player"];
     for (let i = 0; i < lives; i++) {
-      const ix = W - 14 - (i + 1) * 16;
-      const iy = 28;
-      c.fillStyle = "#3e7bff";
-      c.beginPath();
-      c.moveTo(ix + 5, iy);
-      c.lineTo(ix, iy + 12);
-      c.lineTo(ix + 10, iy + 12);
-      c.closePath();
-      c.fill();
+      const ix = W - 24 - (i + 1) * 22;
+      const iy = 36;
+      const f0 = pDef.frames[0];
+      if (f0 && f0.complete && f0.naturalWidth > 0) {
+        c.drawImage(f0, ix - 8, iy - 8, 16, 16);
+      } else {
+        c.fillStyle = "#3e7bff";
+        c.fillRect(ix - 6, iy - 6, 12, 12);
+      }
     }
 
     // --- Active power-up timers (below the bar) ------------------------------
