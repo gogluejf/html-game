@@ -657,13 +657,25 @@ loadPngSprite("player", "player", "manta_ray", 4, 56);
 loadPngSprite("bee", "enemies", "jellyfish", 4, 40);
 loadPngSprite("butterfly", "enemies", "pufferfish", 4, 44);
 loadPngSprite("fighter", "enemies", "sea_dragon", 4, 48);
-loadPngSprite("boss", "bosses", "kraken", 4, 120);
 
 // Power-up pickups (4-frame animations). Keyed by powerup type.
 loadPngSprite("pu_shield", "powerups", "shield", 4, 34);
 loadPngSprite("pu_triple", "powerups", "triple_shot", 4, 34);
 loadPngSprite("pu_slow", "powerups", "slow_mo", 4, 34);
 loadPngSprite("pu_bomb", "powerups", "bomb", 4, 34);
+
+/**
+ * Boss roster — cycled in order on every 4th wave.
+ *   wave 4 -> kraken, 8 -> megalodon, 12 -> octopus, 16 -> kraken, ...
+ * Each entry tunes the shared Boss behavior + picks its sprite.
+ */
+const BOSS_ROSTER = [
+  { name: "kraken",    sprite: "boss_kraken",    hp: 10, points: 5000, fireRate: 0.8, scaleW: 130 },
+  { name: "megalodon", sprite: "boss_megalodon", hp: 14, points: 7500, fireRate: 0.65, scaleW: 150 },
+  { name: "octopus",   sprite: "boss_octopus",   hp: 18, points: 10000, fireRate: 0.5, scaleW: 130 },
+];
+// Register each boss sprite set (4-frame animations).
+BOSS_ROSTER.forEach((b) => loadPngSprite(b.sprite, "bosses", b.name, 4, b.scaleW));
 
 /**
  * Draw a PNG sprite centered on (cx, cy), scaled so its width matches `scaleW`.
@@ -1764,20 +1776,24 @@ class Enemy {
  * shake + high point award.
  * ------------------------------------------------------------------------- */
 class Boss {
-  constructor() {
-    this.w = 48 * 2;   // 2x scale
-    this.h = 40 * 2;
-    this.scale = 2;
-    this.hp = 10;
-    this.maxHp = 10;
-    this.points = 5000;
+  constructor(spec) {
+    // spec: an entry from BOSS_ROSTER (name, sprite, hp, points, fireRate, scaleW).
+    const s = spec || BOSS_ROSTER[0];
+    this.sprite = s.sprite;
+    this.name = s.name;
+    // On-screen size driven by the sprite's target width.
+    this.w = s.scaleW;
+    this.h = Math.round(s.scaleW * 0.85); // boss art is roughly square-ish
+    this.hp = s.hp;
+    this.maxHp = s.hp;
+    this.points = s.points;
     this.x = W / 2 - this.w / 2;
     this.y = -this.h;
     this.state = "entering"; // entering -> active
     this.time = 0;
     this.hoverY = 90;        // vertical band the boss hovers around
     this.strafeX = 0;        // strafe phase
-    this.fireRate = 0.8;     // seconds between spread volleys
+    this.fireRate = s.fireRate; // seconds between spread volleys
     this.fireTimer = 1.2;
     this.dead = false;
     this.deathT = 0;         // drives the multi-burst death sequence
@@ -1872,10 +1888,13 @@ class Boss {
     return this.deathT >= burstInterval * bursts;
   }
 
-  /** Draw the boss sprite at 2x scale with animated frames. */
+  /** Draw the boss sprite with animated frames. */
   render(ctx) {
-    const frame = Math.floor(this.time * 6) % 2;
-    drawSprite(ctx, "boss", frame, this.x, this.y, this.scale);
+    const frame = Math.floor(this.time * 6) % 4;
+    // PNG path: draw centered on the boss's center at its target width.
+    if (drawPngSprite(ctx, this.sprite, frame, this.cx, this.cy)) return;
+    // Fallback: procedural 'boss' grid at 2x (legacy).
+    drawSprite(ctx, "boss", frame, this.x, this.y, 2);
   }
 }
 
@@ -2069,8 +2088,14 @@ const Game = {
   setupWave() {
     this.enemies = buildFormation(this.wave);
     this.enemyBullets = [];
-    // Boss appears every 4th wave (wave % 4 === 0).
-    this.boss = (this.wave % 4 === 0) ? new Boss() : null;
+    // Boss appears every 4th wave (wave % 4 === 0), cycling through the roster:
+    //   wave 4 -> kraken, 8 -> megalodon, 12 -> octopus, 16 -> kraken, ...
+    if (this.wave % 4 === 0) {
+      const bossIdx = Math.floor((this.wave / 4 - 1) % BOSS_ROSTER.length);
+      this.boss = new Boss(BOSS_ROSTER[bossIdx]);
+    } else {
+      this.boss = null;
+    }
   },
 
   // The real Player instance is created in start() (Task 3.1).
@@ -2870,6 +2895,8 @@ const Game = {
  * ------------------------------------------------------------------------- */
 Input.init();
 Game.start();
+// Debug handle for console inspection (harmless in production).
+window.__dbg = { Game, BOSS_ROSTER, PNG_SPRITES };
 </script>
 </body>
 </html>
