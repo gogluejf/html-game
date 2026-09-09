@@ -335,13 +335,13 @@ class MusicSequencer {
 
   /* -- public API ---------------------------------------------------------- */
 
-  /** Map wave number (>=1) to a track index (0..3). Intensity scaling deferred. */
+  /** Map wave number (>=1) to a track index (1..3) for normal play.
+   *   wave 1 -> track 1 (metal), wave 2 -> track 2 (synthwave),
+   *   wave 3 -> track 3 (acid jazz), then cycles (wave 4 -> metal, ...).
+   * Boss fights always override to track 0 (punk). */
   static intensityForWave(wave) {
     const w = Math.max(1, wave);
-    if (w <= 3) return 0;      // punk
-    if (w <= 6) return 1;      // metal
-    if (w <= 9) return 2;      // synthwave
-    return 2;                  // stay on synthwave past wave 9
+    return ((w - 1) % 3) + 1;  // 1, 2, 3, 1, 2, 3, ...
   }
 
   /** Start (or restart) the loop on a given track. */
@@ -693,8 +693,14 @@ const Input = {
         // P: pause / resume during active play; jukebox preview on the title.
         if (e.code === "KeyP") {
           if (s === "title") {
-            // Jukebox: cycle through the four tracks, wrapping around.
-            if (music) music.start((music.current + 1) % music.tracks.length);
+            // Jukebox: first P starts on song 1 (track 0); each next P advances.
+            if (music) {
+              const started = music.playing;
+              const next = started ? (music.current + 1) % music.tracks.length : 0;
+              music.start(next);
+              Game.jukeboxLabel = "#" + (next + 1) + "  " + music.tracks[next].name;
+              console.log("[jukebox] P -> #" + (next + 1), music.tracks[next].name);
+            }
           } else if (s === "playing" || s === "bossFight") Game.pause();
           else if (s === "paused") Game.resume();
         }
@@ -1889,6 +1895,7 @@ const Game = {
   /* -- Task 4.1: game state machine ---------------------------------------- */
   state: "title",        // 'title' | 'waveIntro' | 'playing' | 'bossFight' | 'paused' | 'gameOver'
   prevState: null,       // state we were in before pausing (for resume)
+  jukeboxLabel: null,    // current jukebox track name shown on the title screen
   waveIntroTimer: 0,     // countdown for the "WAVE N" interstitial (~2s)
   gameOverTimer: 0,      // short delay before accepting restart on game-over
   newHighScore: false,   // set when this run beat the stored high score
@@ -1925,7 +1932,11 @@ const Game = {
    * Track selection is wave-driven (see _trackForWave); boss fights override
    * with the acid-jazz track and revert on clear. */
   startMusic() {
-    if (music) music.start(this._trackForWave());
+    if (music) {
+      const t = this._trackForWave();
+      music.start(t);
+      console.log("[game] wave", this.wave, "->", t + 1, music.tracks[t].name);
+    }
   },
   stopMusic() {
     if (music) music.stop();
@@ -1979,8 +1990,11 @@ const Game = {
     }
     this.bosses = bosses;
     if (sfx) sfx.waveIntro();
-    // Boss fight begins: switch to the acid-jazz track.
-    if (music && music.playing) music.setTrack(3);
+    // Boss fight begins: switch to the punk track (track 0).
+    if (music && music.playing) {
+      music.setTrack(0);
+      console.log("[game] BOSS ->", 1, music.tracks[0].name);
+    }
   },
 
   // The real Player instance is created in start() (Task 3.1).
@@ -2503,6 +2517,16 @@ const Game = {
       c.shadowColor = "#3ef0ff";
       c.shadowBlur = 12;
       c.fillText("PRESS ENTER TO START", W / 2, H * 0.78);
+      c.shadowBlur = 0;
+    }
+
+    // Jukebox track name (shown after pressing P to preview a song).
+    if (this.jukeboxLabel) {
+      c.font = "bold 16px 'Courier New', monospace";
+      c.fillStyle = "#ffe23e";
+      c.shadowColor = "#000";
+      c.shadowBlur = 8;
+      c.fillText("\u25cf NOW PLAYING: " + this.jukeboxLabel, W / 2, H * 0.78 - 34);
       c.shadowBlur = 0;
     }
 
