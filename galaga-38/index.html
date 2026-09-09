@@ -1015,6 +1015,78 @@ const SPRITES = {
 };
 
 /* ---------------------------------------------------------------------------
+ * Background
+ * -------------------------------------------------------------------------
+ * A single wide underwater image (assets/galaga/background.png) drawn scaled to
+ * cover the canvas height, then panned horizontally. It drifts very slowly in
+ * one direction and reverses at the image's edge (ping-pong), so the scene
+ * gently sways side to side forever. Replaces the old procedural starfield as
+ * the visual backdrop; stars are kept only as a faint twinkle overlay.
+ * ------------------------------------------------------------------------- */
+class Background {
+  constructor(width, height) {
+    this.w = width;
+    this.h = height;
+    this.img = new Image();
+    const base = new URL("../", document.baseURI).href.replace(/[^/]*$/, "");
+    this.img.src = `${base}assets/galaga/background.png`;
+    this.loaded = false;
+    this.img.onload = () => { this.loaded = true; };
+    // Pan state: offset in source-image pixels, moving left (negative dir).
+    this.speed = 8;        // px/s of horizontal drift (very slow)
+    this.dir = -1;         // -1 = scrolling left, +1 = scrolling right
+    this.offset = 0;       // current x position of the image's left edge
+    // Faint star twinkle overlay for a bit of life on top of the art.
+    this.stars = [];
+    for (let i = 0; i < 40; i++) {
+      this.stars.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        tw: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+
+  /** How many source-pixels wide the image renders at (covering canvas height). */
+  _drawW() { return this.img.naturalWidth * (this.h / this.img.naturalHeight); }
+  _drawH() { return this.h; }
+
+  update(dt) {
+    if (!this.loaded) return;
+    const dw = this._drawW();
+    // The image's left edge can range from (w - dw) [fully right] up to 0 [left].
+    const minOff = this.w - dw;   // negative when image is wider than canvas
+    const maxOff = 0;
+    this.offset += this.dir * this.speed * dt;
+    // Ping-pong at the bounds.
+    if (this.offset <= minOff) { this.offset = minOff; this.dir = 1; }
+    else if (this.offset >= maxOff) { this.offset = maxOff; this.dir = -1; }
+    for (const s of this.stars) s.tw += dt * 3;
+  }
+
+  render(ctx) {
+    // Base fill so there's never a flash of white before the image loads.
+    ctx.fillStyle = "#000010";
+    ctx.fillRect(0, 0, this.w, this.h);
+
+    if (this.loaded) {
+      const dw = this._drawW();
+      const dh = this._drawH();
+      ctx.drawImage(this.img, Math.round(this.offset), 0, Math.round(dw), dh);
+    }
+
+    // Faint twinkling specks over the art for subtle motion.
+    for (const s of this.stars) {
+      const a = 0.15 + 0.2 * (0.5 + 0.5 * Math.sin(s.tw));
+      ctx.globalAlpha = a;
+      ctx.fillStyle = "#bff";
+      ctx.fillRect(Math.round(s.x), Math.round(s.y), 1, 1);
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
  * Starfield
  * -------------------------------------------------------------------------
  * Three parallax layers (far / mid / near), each with its own speed, density,
@@ -1939,7 +2011,8 @@ const Game = {
   running: false,
   lastTime: 0,
   wave: 1, // current wave number (drives music intensity)
-  starfield: new Starfield(W, H), // parallax background layer
+  starfield: new Starfield(W, H), // parallax background layer (kept for stars)
+  background: null,               // scrolling underwater image backdrop
   time: 0,                        // accumulated game time (for sprite animation)
 
   /* -- Task 4.1: game state machine ---------------------------------------- */
@@ -2031,6 +2104,7 @@ const Game = {
     this.state = "title";
     this.running = true;
     this.lastTime = performance.now();
+    this.background = new Background(W, H); // scrolling underwater backdrop
     requestAnimationFrame((t) => this.loop(t));
   },
 
@@ -2124,7 +2198,8 @@ const Game = {
    * keeps drifting for ambiance on title/pause/game-over screens.
    */
   update(dt) {
-    // Starfield always animates (ambiance on every screen).
+    // Background + starfield always animate (ambiance on every screen).
+    if (this.background) this.background.update(dt);
     this.starfield.update(dt);
     this._updateByState(dt);
   },
@@ -2332,8 +2407,8 @@ const Game = {
     c.fillStyle = "#000";
     c.fillRect(0, 0, W, H);
 
-    // Background layer: parallax starfield (always drawn, never shaken).
-    this.starfield.render(c);
+    // Background layer: scrolling underwater image (always drawn, never shaken).
+    if (this.background) this.background.render(c);
 
     // ---- World entities (inside the screen-shake translate) ----------------
     // Only draw gameplay entities when we're in an active or transitional state.
