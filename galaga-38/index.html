@@ -49,7 +49,6 @@
 </head>
 <body>
 <canvas id="game" width="480" height="640"></canvas>
-<div id="hint">ENTER start &nbsp; &middot; &nbsp; &larr;/&rarr;/WASD move &nbsp; &middot; &nbsp; SPACE shoot &nbsp; &middot; &nbsp; P pause &nbsp; &middot; &nbsp; M mute</div>
 
 <script>
 "use strict";
@@ -2628,15 +2627,27 @@ const Game = {
       c.shadowBlur = 0;
     }
 
-    // Controls hint at the very bottom, on a dark strip for legibility.
+    // Controls hint at the bottom, on a translucent rounded panel for legibility.
     c.save();
-    c.globalAlpha = 0.55;
-    c.fillStyle = "#000";
-    c.fillRect(0, H - 34, W, 34);
-    c.restore();
     c.font = "12px 'Courier New', monospace";
-    c.fillStyle = "#9fb8d8";
-    c.fillText("\u2190/\u2192/WASD move \u00b7 SPACE shoot \u00b7 P pause \u00b7 M mute", W / 2, H - 18);
+    const hintText = "\u2190/\u2192/WASD move \u00b7 SPACE shoot \u00b7 P pause \u00b7 M mute";
+    const hw = c.measureText(hintText).width + 28;
+    const hh = 24;
+    const hx = W / 2 - hw / 2;
+    const hy = H - 46;
+    c.globalAlpha = 0.65;
+    c.fillStyle = "#000";
+    if (c.roundRect) {
+      c.beginPath();
+      c.roundRect(hx, hy, hw, hh, 6);
+      c.fill();
+    } else {
+      c.fillRect(hx, hy, hw, hh);
+    }
+    c.globalAlpha = 1;
+    c.fillStyle = "#bcd0f0";
+    c.fillText(hintText, W / 2, hy + hh / 2 + 1);
+    c.restore();
 
     c.textAlign = "left";
     c.textBaseline = "alphabetic";
