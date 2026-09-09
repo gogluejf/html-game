@@ -1317,6 +1317,8 @@ class Player {
 
   /** Center-x helper (used for muzzle flash / bullet spawn). */
   get cx() { return this.x + this.w / 2; }
+  /** Center-y helper (used by collision / VFX). */
+  get cy() { return this.y + this.h / 2; }
 
   /**
    * Advance the ship by dt seconds using held input keys.
@@ -1483,7 +1485,8 @@ class Enemy {
   _startDive(player) {
     this.state = "diving";
     this.weavePhase = 0;
-    this.fireTimer = ENEMY_TYPES[this.type].fireEvery * (0.5 + Math.random() * 0.5);
+    // Fire soon after the dive starts so the shot is visible mid-descent.
+    this.fireTimer = 0.25 + Math.random() * 0.3;
     if (sfx) sfx.enemyDive();
   }
 
@@ -1523,19 +1526,16 @@ class Enemy {
         const bob = Math.sin(this.time * 2 + this.bobPhase) * 3;
         this.x = this.slot.x - this.w / 2;
         this.y = this.slot.y - this.h / 2 + bob;
-        // Occasionally fire an aimed shot while holding position (so missiles
-        // are visible even before a dive). Scales up with the wave number.
-        this.idleFireTimer -= dt;
-        if (this.idleFireTimer <= 0 && player) {
-          if (Math.random() < Math.min(0.7, 0.25 + wave * 0.08)) this._fireBullet();
-          this.idleFireTimer = 1.6 + Math.random() * 3.4;
-        }
-        // Periodic dive decision: probability rises with the wave number.
+        // Each enemy keeps its own randomized dive timer, so dives are
+        // staggered across the formation (no synchronized mass-dive) while
+        // still happening often enough to feel active. Aggression rises with
+        // the wave number.
         this.diveTimer -= dt;
-        if (this.diveTimer <= 0) {
-          const p = Math.min(0.95, 0.45 + wave * 0.1);
-          if (Math.random() < p && player) this._startDive(player);
-          this.diveTimer = 0.8 + Math.random() * 1.6;
+        if (this.diveTimer <= 0 && player) {
+          const p = Math.min(0.55, 0.28 + wave * 0.06);
+          if (Math.random() < p) this._startDive(player);
+          // Randomized next-check window breaks up any synchronization.
+          this.diveTimer = 2.4 + Math.random() * 3.6;
         }
         break;
       }
@@ -1554,11 +1554,13 @@ class Enemy {
         this.fireTimer -= dt;
         if (this.fireTimer <= 0) {
           this._fireBullet();
-          this.fireTimer = t.fireEvery * (0.7 + Math.random() * 0.6);
+          this.fireTimer = t.fireEvery * (1.3 + Math.random() * 1.0);
         }
-        // Exit the bottom -> remove.
-        if (this.y > H + this.h) {
-          this.dead = true;
+        // Reached the bottom: instead of vanishing (which let waves clear
+        // themselves), turn around and fly back to the formation slot. This
+        // keeps the enemy alive so only a player shot can remove it.
+        if (this.y > H - 40) {
+          this.state = "returning";
         }
         break;
       }
@@ -2089,7 +2091,10 @@ const Game = {
   /** Derive an {x,y,w,h} box from an entity (center+radius -> bounding box). */
   _boxOf(e) {
     if (e.w != null && e.h != null) {
-      if (e.cx != null) return { x: e.cx - e.w / 2, y: e.cy - e.h / 2, w: e.w, h: e.h };
+      // Only use center-based math when BOTH cx and cy are present; some
+      // entities (e.g. Player) expose cx but not cy, which would otherwise
+      // produce a NaN/null y and break every collision involving them.
+      if (e.cx != null && e.cy != null) return { x: e.cx - e.w / 2, y: e.cy - e.h / 2, w: e.w, h: e.h };
       return { x: e.x, y: e.y, w: e.w, h: e.h };
     }
     // Circle-only entity: synthesize a square box around its center.
@@ -2687,10 +2692,18 @@ const Game = {
       if (this.enemies[i].dead) this.enemies.splice(i, 1);
     }
 
-    // Wave progression via the state machine.
+    // Wave progression via the state machine. A short hold after the last
+    // enemy is gone prevents an instant, jarring auto-advance.
     if (this.enemies.length === 0 && !this.boss) {
-      this._advanceWave();
-    } else if (this.state === "playing" && this.boss && !this.boss.dead) {
+      this._clearHold = (this._clearHold || 0) + dt;
+      if (this._clearHold >= 1.2) {
+        this._clearHold = 0;
+        this._advanceWave();
+      }
+    } else {
+      this._clearHold = 0;
+    }
+    if (this.state === "playing" && this.boss && !this.boss.dead) {
       this._enterBossFight();
     }
 
