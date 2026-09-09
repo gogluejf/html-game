@@ -3,11 +3,74 @@
   "style_name": "aquatic neo-arcade deep-sea",
   "palette": ["cyan", "teal", "magenta", "poison-green", "orange", "purple"],
   "sheets": {
-    "enemies": {"file": "assets/enemies_sheet.png", "size": "1024x1536", "rows": 6, "cols": 4},
-    "bosses": {"file": "assets/bosses_sheet.png", "size": "1448x1086", "rows": 3, "cols": 4},
-    "powerups": {"file": "assets/powerups_sheet.png", "size": "1254x1254", "rows": 4, "cols": 4},
-    "player": {"file": "assets/player_sheet.png", "size": "2172x724", "rows": 1, "cols": 4},
-    "background": {"file": "assets/background.png", "size": "1586x992"}
+    "enemies": {
+      "file": "assets/enemies_sheet.png",
+      "size": "1024x1536",
+      "rows": 6,
+      "cols": 4,
+      "cell": 256,
+      "purpose": "Regular enemies - 6 types x 4 animation frames",
+      "entities": [
+        {"row": 1, "name": "Pufferfish", "points": 100, "anim": "puff cycle: small->mid->big spikes->mid"},
+        {"row": 2, "name": "Mantis Crab", "points": 100, "anim": "pincers: open->closing->snap->open"},
+        {"row": 3, "name": "Jellyfish", "points": 200, "anim": "tentacle sway phase 1-4"},
+        {"row": 4, "name": "Anglerfish", "points": 200, "anim": "jaw: open->bite->closed->lure flicker"},
+        {"row": 5, "name": "Mech-Shark", "points": 400, "anim": "fin flick + mouth open/close"},
+        {"row": 6, "name": "Sea Dragon", "points": 400, "anim": "tentacle wave + horn glow pulse"}
+      ],
+      "prompt_summary": "6 rows x 4 cols, 256px cells, aquatic neon pixel art, black bg, bioluminescent colors"
+    },
+    "bosses": {
+      "file": "assets/bosses_sheet.png",
+      "size": "1448x1086",
+      "rows": 3,
+      "cols": 4,
+      "cell": 512,
+      "purpose": "Boss fights every 4 waves - 3 bosses x 4 frames, rotating",
+      "entities": [
+        {"row": 1, "name": "Giant Evil Octopus", "wave": 4, "hp": 10, "anim": "tentacle spread: wide->mid->tight->mid"},
+        {"row": 2, "name": "Megalodon Leviathan Shark", "wave": 8, "hp": 15, "anim": "jaw: closed->opening->wide open->closing"},
+        {"row": 3, "name": "Abyssal Kraken Dreadnought", "wave": 12, "hp": 20, "anim": "tentacle wave + core glow pulse"}
+      ],
+      "prompt_summary": "3 rows x 4 cols, 512px cells, large menacing bosses, same style as enemies"
+    },
+    "powerups": {
+      "file": "assets/powerups_sheet.png",
+      "size": "1254x1254",
+      "rows": 4,
+      "cols": 4,
+      "cell": 256,
+      "purpose": "Collectible drops - bubbly sausage/popper capsules with tied knots",
+      "entities": [
+        {"row": 1, "name": "Shield", "color": "cyan", "weight": 0.35, "effect": "5s invincibility bubble"},
+        {"row": 2, "name": "Triple Shot", "color": "gold", "weight": 0.20, "effect": "3-way spread shot 8s"},
+        {"row": 3, "name": "Slow-Mo", "color": "purple", "weight": 0.35, "effect": "enemies 50% slower 6s"},
+        {"row": 4, "name": "Bomb", "color": "red", "weight": 0.10, "effect": "destroy all on-screen enemies"}
+      ],
+      "anim": "bubbly inflate/squeeze: fat->slight squish->thin/wide->slight squish",
+      "prompt_summary": "4 rows x 4 cols, 256px cells, BUBBLY SAUSAGE/POPPER shapes with TIED KNOTS both ends, glossy gelatinous"
+    },
+    "player": {
+      "file": "assets/player_sheet.png",
+      "size": "2172x724",
+      "rows": 1,
+      "cols": 4,
+      "cell": 256,
+      "purpose": "Player hero ship - Manta Ray fighter viewed from below, pointing up",
+      "entities": [
+        {"row": 1, "name": "Manta Ray Hero", "anim": "wing fins: spread wide->swept back->most swept->swept back"}
+      ],
+      "colors": "brown/bronze body, blue/cyan gradient wing tips, bioluminescent dots, cyan cockpit glow",
+      "prompt_summary": "1 row x 4 cols, 256px cells, manta ray from below, exotic brown-to-cyan with glowing dots"
+    },
+    "background": {
+      "file": "assets/background.png",
+      "size": "1586x992",
+      "purpose": "Static scrolling backdrop - dark biomech deep-sea abyss",
+      "content": "biomech tower silhouettes, kelp tendrils, bioluminescent nodes, depth gradient",
+      "rules": "below 20% brightness, tileable horizontally, black top to dark teal bottom",
+      "prompt_summary": "single image 1024x640 target, very dark, no bright colors, parallax scroll L/R"
+    }
   },
-  "updated": "2026-09-09T02:32:00"
+  "updated": "2026-09-09T02:35:00"
 }
