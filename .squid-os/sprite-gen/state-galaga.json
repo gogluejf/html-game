@@ -125,7 +125,54 @@
           "anim": "tentacle wave + core glow pulse"
         }
       ],
-      "original_prompt": "Now generate a sprite sheet of 3 huge retro arcade BOSS sprites for the SAME game, continuing the exact same AQUATIC / deep-sea alien theme and pixel-art style as the enemy sheet above (same neon palette, same black background, same crisp 16-bit look). These are large menacing final-boss creatures, bigger and more detailed than the regular enemies. LAYOUT: 3 rows x 4 columns on a solid pure black background. Each row is one unique boss; the 4 columns in that row are its 4 animation frames shown left-to-right. All cells exactly the same size (512x512 px), evenly spaced, no text, no labels, no borders between cells. Image 2048 wide x 1536 tall. STYLE: identical to the enemy sheet - crisp 16-bit neo-arcade pixel art, underwater bioluminescent neon colors (cyan, teal, magenta, poison-green, orange, red) glowing against dark abyss-black. Sharp hard edges, NO anti-aliasing, NO gradients, flat shading with highlight + shadow steps, high contrast, symmetrical, front-facing, no perspective. Glowing accent eyes/cores. 1px dark rim outline. Large intimidating bosses filling most of each cell. ROWS (top to bottom), 4 distinct loopable frames each: 1. GIANT EVIL OCTOPUS - massive purple/magenta octopus with many long writhing tentacles, huge glowing red eyes, menacing open maw with teeth. Frames: tentacle spread cycle (wide -> mid -> tight -> mid). 2. MEGALODON LEVIATHAN SHARK - colossal armored cyan/teal mega-shark with metallic plating, glowing green eyes, rows of huge teeth, dorsal fin. Frames: jaw open/close + fin flick cycle (closed -> opening -> wide open -> closing). 3. ABYSSAL KRAKEN DREADNOUGHT - enormous dark teal kraken with thick armored tentacles, multiple glowing orange eyes, crown of spikes, central glowing core. Frames: tentacle wave + core glow pulse cycle (phase 1 -> 2 -> 3 -> 4). Frames within each row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable, consistent scale so all three read as same-tier bosses matching the enemy sheet style."
+      "original_prompt": "Now generate a sprite sheet of 3 huge retro arcade BOSS sprites for the SAME game, continuing the exact same AQUATIC / deep-sea alien theme and pixel-art style as the enemy sheet above (same neon palette, same black background, same crisp 16-bit look). These are large menacing final-boss creatures, bigger and more detailed than the regular enemies. LAYOUT: 3 rows x 4 columns on a solid pure black background. Each row is one unique boss; the 4 columns in that row are its 4 animation frames shown left-to-right. All cells exactly the same size (512x512 px), evenly spaced, no text, no labels, no borders between cells. Image 2048 wide x 1536 tall. STYLE: identical to the enemy sheet - crisp 16-bit neo-arcade pixel art, underwater bioluminescent neon colors (cyan, teal, magenta, poison-green, orange, red) glowing against dark abyss-black. Sharp hard edges, NO anti-aliasing, NO gradients, flat shading with highlight + shadow steps, high contrast, symmetrical, front-facing, no perspective. Glowing accent eyes/cores. 1px dark rim outline. Large intimidating bosses filling most of each cell. ROWS (top to bottom), 4 distinct loopable frames each: 1. GIANT EVIL OCTOPUS - massive purple/magenta octopus with many long writhing tentacles, huge glowing red eyes, menacing open maw with teeth. Frames: tentacle spread cycle (wide -> mid -> tight -> mid). 2. MEGALODON LEVIATHAN SHARK - colossal armored cyan/teal mega-shark with metallic plating, glowing green eyes, rows of huge teeth, dorsal fin. Frames: jaw open/close + fin flick cycle (closed -> opening -> wide open -> closing). 3. ABYSSAL KRAKEN DREADNOUGHT - enormous dark teal kraken with thick armored tentacles, multiple glowing orange eyes, crown of spikes, central glowing core. Frames: tentacle wave + core glow pulse cycle (phase 1 -> 2 -> 3 -> 4). Frames within each row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable, consistent scale so all three read as same-tier bosses matching the enemy sheet style.",
+      "crop": {
+        "bg_color": [
+          0,
+          0,
+          0
+        ],
+        "bg_tol": 8,
+        "bands_file_params": {
+          "rows": [
+            [
+              0,
+              351
+            ],
+            [
+              360,
+              723
+            ],
+            [
+              724,
+              1086
+            ]
+          ],
+          "col_centers_per_row": [
+            [
+              361,
+              724,
+              1087
+            ],
+            [
+              361,
+              724,
+              1087
+            ],
+            [
+              361,
+              724,
+              1087
+            ]
+          ]
+        },
+        "final_overrides": {
+          "col_x": null,
+          "row_y": "0-351,360-723,724-1086",
+          "frame_size": null
+        },
+        "frames_dir": "assets/galaga/bosses"
+      }
     },
     "powerups": {
       "file": "assets/galaga/powerups_sheet.png",
@@ -160,7 +207,49 @@
           "anim": "inflate/squeeze cycle"
         }
       ],
-      "original_prompt": "Make a NEW sprite sheet of 4 power-up items. IMPORTANT: these must be BUBBLY SAUSAGE / POPPER shapes - like a plump inflated pill or party-cracker with a small TIED KNOT/BAND on EACH END (like a tied sausage link). Round glossy gelatinous body with a bright highlight. NOT ornate badges - simple round bubbly capsules. LAYOUT: 4 rows x 4 columns, pure black background, each cell 256x256px, evenly spaced, no text/borders. Image 1024x1024. CRITICAL ANIMATION: Each row must show 4 CLEARLY DIFFERENT frames of a squeeze/inflate cycle: frame 1 = fully inflated (fat/round), frame 2 = slightly squished, frame 3 = most squished (thin/wide), frame 4 = slightly squished. The capsule visibly changes shape between frames. Do NOT make all 4 frames identical. STYLE: same crisp 16-bit neon pixel art as the enemy/boss sheets above, black bg, hard edges, no anti-aliasing, flat shading + highlight, glowing center icon, 1px dark rim. ROWS top to bottom: 1. CYAN capsule, tied knots both ends, center icon = shield hexagon 2. YELLOW/GOLD capsule, tied knots both ends, center icon = three arrows fanning up 3. PURPLE capsule, tied knots both ends, center icon = hourglass 4. RED/ORANGE capsule, tied knots both ends, center icon = bomb/explosion star. Each row: 4 distinct inflate/squeeze frames. Clean and croppable."
+      "original_prompt": "Make a NEW sprite sheet of 4 power-up items. IMPORTANT: these must be BUBBLY SAUSAGE / POPPER shapes - like a plump inflated pill or party-cracker with a small TIED KNOT/BAND on EACH END (like a tied sausage link). Round glossy gelatinous body with a bright highlight. NOT ornate badges - simple round bubbly capsules. LAYOUT: 4 rows x 4 columns, pure black background, each cell 256x256px, evenly spaced, no text/borders. Image 1024x1024. CRITICAL ANIMATION: Each row must show 4 CLEARLY DIFFERENT frames of a squeeze/inflate cycle: frame 1 = fully inflated (fat/round), frame 2 = slightly squished, frame 3 = most squished (thin/wide), frame 4 = slightly squished. The capsule visibly changes shape between frames. Do NOT make all 4 frames identical. STYLE: same crisp 16-bit neon pixel art as the enemy/boss sheets above, black bg, hard edges, no anti-aliasing, flat shading + highlight, glowing center icon, 1px dark rim. ROWS top to bottom: 1. CYAN capsule, tied knots both ends, center icon = shield hexagon 2. YELLOW/GOLD capsule, tied knots both ends, center icon = three arrows fanning up 3. PURPLE capsule, tied knots both ends, center icon = hourglass 4. RED/ORANGE capsule, tied knots both ends, center icon = bomb/explosion star. Each row: 4 distinct inflate/squeeze frames. Clean and croppable.",
+      "crop": {
+        "bg_color": [
+          0,
+          0,
+          0
+        ],
+        "bg_tol": 8,
+        "bands_file_params": {
+          "rows": [
+            [
+              0,
+              279
+            ],
+            [
+              345,
+              560
+            ],
+            [
+              636,
+              849
+            ],
+            [
+              915,
+              1254
+            ]
+          ],
+          "col_centers_per_row": [
+            [
+              157,
+              471,
+              783,
+              1096
+            ]
+          ]
+        },
+        "final_overrides": {
+          "col_x": null,
+          "row_y": null,
+          "frame_size": null
+        },
+        "frames_dir": "assets/galaga/powerups"
+      }
     },
     "player": {
       "file": "assets/galaga/player_sheet.png",
@@ -177,7 +266,37 @@
           "anim": "wing fins: spread wide->swept back->most swept->swept back"
         }
       ],
-      "original_prompt": "Generate a sprite sheet of the PLAYER HERO ship for this same aquatic Galaga game. Same 16-bit neon pixel-art style and black background as the other sheets. THE HERO: A sleek MANTA RAY fighter craft, viewed from BELOW (so we see its underside), pointing UP (nose at top). It has wide sweeping wings/fins that look like a spaceship when seen from below. Exotic color scheme: brown/bronze body with a blue/cyan gradient toward the wing tips, scattered small glowing dots (bioluminescent spots) across the body. A bright cyan cockpit/core glow in the center. Two small thruster glows at the rear. LAYOUT: 1 row x 4 columns on pure black background. The 4 columns are 4 animation frames showing the manta ray's wing fins flapping/swimming: frame 1 = wings fully spread wide, frame 2 = wings slightly swept back, frame 3 = wings most swept (narrow), frame 4 = wings slightly swept back. Subtle but clearly distinct fin positions between frames. Each cell 256x256px, evenly spaced, no text/borders. Image 1024x256 pixels. STYLE: crisp 16-bit neo-arcade pixel art, hard edges, no anti-aliasing, flat shading + highlight steps, high contrast, symmetrical, front-facing (from below looking up). Glowing accents. 1px dark rim outline. The manta should read clearly as a fast elegant player ship."
+      "original_prompt": "Generate a sprite sheet of the PLAYER HERO ship for this same aquatic Galaga game. Same 16-bit neon pixel-art style and black background as the other sheets. THE HERO: A sleek MANTA RAY fighter craft, viewed from BELOW (so we see its underside), pointing UP (nose at top). It has wide sweeping wings/fins that look like a spaceship when seen from below. Exotic color scheme: brown/bronze body with a blue/cyan gradient toward the wing tips, scattered small glowing dots (bioluminescent spots) across the body. A bright cyan cockpit/core glow in the center. Two small thruster glows at the rear. LAYOUT: 1 row x 4 columns on pure black background. The 4 columns are 4 animation frames showing the manta ray's wing fins flapping/swimming: frame 1 = wings fully spread wide, frame 2 = wings slightly swept back, frame 3 = wings most swept (narrow), frame 4 = wings slightly swept back. Subtle but clearly distinct fin positions between frames. Each cell 256x256px, evenly spaced, no text/borders. Image 1024x256 pixels. STYLE: crisp 16-bit neo-arcade pixel art, hard edges, no anti-aliasing, flat shading + highlight steps, high contrast, symmetrical, front-facing (from below looking up). Glowing accents. 1px dark rim outline. The manta should read clearly as a fast elegant player ship.",
+      "crop": {
+        "bg_color": [
+          0,
+          0,
+          0
+        ],
+        "bg_tol": 8,
+        "bands_file_params": {
+          "rows": [
+            [
+              0,
+              724
+            ]
+          ],
+          "col_centers_per_row": [
+            [
+              156,
+              470,
+              783,
+              1097
+            ]
+          ]
+        },
+        "final_overrides": {
+          "col_x": null,
+          "row_y": null,
+          "frame_size": "540x724"
+        },
+        "frames_dir": "assets/galaga/player"
+      }
     },
     "background": {
       "file": "assets/galaga/background.png",
