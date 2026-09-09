@@ -98,7 +98,7 @@
           "frame_size": null
         },
         "frames_dir": "assets/galaga/aquatic-neo-arcade/enemies",
-        "bg_tol": 15
+        "bg_tol": 8
       }
     },
     "bosses": {
