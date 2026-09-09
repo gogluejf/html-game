@@ -1937,17 +1937,19 @@ function buildFormation(wave) {
   const gapX = 56;
   const gapY = 44;
 
-  // Wave rotation: 3 distinct creatures fill the 4 rows (rows 3+4 share).
-  //   Row 1 (top, most points) = X, Row 2 = Y, Rows 3+4 (bottom) = Z.
-  // Each wave shifts the selection down the CREATURES list by one (conveyor),
-  // so a new creature enters and all 6 are used over a 6-wave cycle.
-  // Wave 1 opens with jellyfish (weakest) as the bottom pair.
-  const N = CREATURES.length;
-  const w = ((wave - 1) % N + N) % N; // 0-based wave offset
-  // Slot bases chosen so wave 1 => row1=anglerfish, row2=mech_shark, row3/4=jellyfish.
-  const slotBase = [3, 4, 0]; // index into CREATURES for slots X, Y, Z at wave offset 0
-  const pick = (slot) => CREATURES[(slotBase[slot] + w) % N].type;
-  const rowTypes = [pick(0), pick(1), pick(2), pick(2)];
+  // Wave rotation: 4 rows = X / Y / Z / Z (rows 3+4 share). Explicit per-wave
+  // table (loops every 6 waves). Row 2 is a fixed pufferfish mid-tier; row 1
+  // cycles shark->angler->seadragon; rows 3+4 alternate jelly<->crab.
+  const WAVE_TABLE = [
+    ["raider",    "butterfly", "bee"],       // wave 1: shark / puff / jelly
+    ["brute",     "butterfly", "shooter"],   // wave 2: angler / puff / crab
+    ["fighter",   "butterfly", "bee"],       // wave 3: seadragon / puff / jelly
+    ["raider",    "butterfly", "shooter"],   // wave 4: shark / puff / crab
+    ["brute",     "butterfly", "bee"],       // wave 5: angler / puff / jelly
+    ["fighter",   "butterfly", "shooter"],   // wave 6: seadragon / puff / crab
+  ];
+  const pick3 = WAVE_TABLE[((wave - 1) % 6 + 6) % 6];
+  const rowTypes = [pick3[0], pick3[1], pick3[2], pick3[2]];
 
   let order = 0;
   for (let r = 0; r < rows; r++) {
