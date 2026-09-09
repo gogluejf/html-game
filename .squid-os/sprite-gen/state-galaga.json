@@ -49,7 +49,56 @@
           "anim": "tentacle wave + horn glow pulse"
         }
       ],
-      "original_prompt": "Generate a sprite sheet of retro arcade space-invasion enemy sprites for a Galaga-style game, but with an AQUATIC / deep-sea alien theme. LAYOUT: 6 rows x 4 columns on a solid pure black background. Each row is one unique aquatic enemy; the 4 columns in that row are its 4 animation frames shown left-to-right. All cells exactly the same size (256x256 px), evenly spaced, no text, no labels, no borders between cells. Square image 1024 wide x 1536 tall. STYLE: crisp 16-bit neo-arcade pixel art, underwater bioluminescent neon colors (cyan, teal, magenta, poison-green, orange) glowing against dark abyss-black. Sharp hard edges, NO anti-aliasing, NO gradients, flat shading with one highlight + one shadow step, high contrast, symmetrical, front-facing, no perspective. Consistent style across every sprite. Each enemy centered in its cell with consistent scale. Add glowing accent cores/eyes. 1px dark rim outline so sprites pop off black. ROWS (top to bottom), 4 distinct loopable frames each: 1. Pufferfish (spiky round fish) - puff cycle: small -> mid -> big with spikes out -> mid 2. Flying Mantis Crab (hovering crustacean with big pincers) - pincers: open -> closing -> snap shut -> opening 3. Jellyfish (dome with trailing tentacles) - tentacle sway: phase 1 -> 2 -> 3 -> 4 4. Anglerfish (dark fish with glowing lure on stalk and big toothy jaw) - jaw: open -> biting -> closed -> lure flicker 5. Mech-Shark / Orca (sleek armored fast diver) - fin flick + mouth open/close cycle, 4 poses 6. Sea Dragon (horned serpent-like beast with small tentacles) - tentacle wave + horn glow pulse, 4 phases. Frames within each row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable."
+      "original_prompt": "Generate a sprite sheet of retro arcade space-invasion enemy sprites for a Galaga-style game, but with an AQUATIC / deep-sea alien theme. LAYOUT: 6 rows x 4 columns on a solid pure black background. Each row is one unique aquatic enemy; the 4 columns in that row are its 4 animation frames shown left-to-right. All cells exactly the same size (256x256 px), evenly spaced, no text, no labels, no borders between cells. Square image 1024 wide x 1536 tall. STYLE: crisp 16-bit neo-arcade pixel art, underwater bioluminescent neon colors (cyan, teal, magenta, poison-green, orange) glowing against dark abyss-black. Sharp hard edges, NO anti-aliasing, NO gradients, flat shading with one highlight + one shadow step, high contrast, symmetrical, front-facing, no perspective. Consistent style across every sprite. Each enemy centered in its cell with consistent scale. Add glowing accent cores/eyes. 1px dark rim outline so sprites pop off black. ROWS (top to bottom), 4 distinct loopable frames each: 1. Pufferfish (spiky round fish) - puff cycle: small -> mid -> big with spikes out -> mid 2. Flying Mantis Crab (hovering crustacean with big pincers) - pincers: open -> closing -> snap shut -> opening 3. Jellyfish (dome with trailing tentacles) - tentacle sway: phase 1 -> 2 -> 3 -> 4 4. Anglerfish (dark fish with glowing lure on stalk and big toothy jaw) - jaw: open -> biting -> closed -> lure flicker 5. Mech-Shark / Orca (sleek armored fast diver) - fin flick + mouth open/close cycle, 4 poses 6. Sea Dragon (horned serpent-like beast with small tentacles) - tentacle wave + horn glow pulse, 4 phases. Frames within each row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable.",
+      "crop": {
+        "bg_color": [
+          0,
+          0,
+          0
+        ],
+        "bands_file_params": {
+          "rows": [
+            [
+              0,
+              239
+            ],
+            [
+              275,
+              468
+            ],
+            [
+              487,
+              745
+            ],
+            [
+              756,
+              968
+            ],
+            [
+              992,
+              1206
+            ],
+            [
+              1239,
+              1536
+            ]
+          ],
+          "col_centers_per_row": [
+            [
+              128,
+              385,
+              641,
+              896
+            ]
+          ]
+        },
+        "final_overrides": {
+          "col_x": null,
+          "row_y": null,
+          "frame_size": null
+        },
+        "frames_dir": "assets/galaga/aquatic-neo-arcade/enemies"
+      }
     },
     "bosses": {
       "file": "assets/galaga/bosses_sheet.png",
