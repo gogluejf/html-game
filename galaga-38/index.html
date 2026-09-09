@@ -2130,6 +2130,10 @@ const Game = {
     this.running = true;
     this.lastTime = performance.now();
     this.background = new Background(W, H); // scrolling underwater backdrop
+    // Splash art for the title screen.
+    this.splash = new Image();
+    const base = new URL("../", document.baseURI).href.replace(/[^/]*$/, "");
+    this.splash.src = `${base}assets/galaga/splash_sheet.png`;
     requestAnimationFrame((t) => this.loop(t));
   },
 
@@ -2508,51 +2512,81 @@ const Game = {
   _renderTitle(c) {
     const t = performance.now() / 1000;
 
-    // Animated flourish: a slow pulsing ring behind the logo.
-    const pulse = 0.5 + 0.5 * Math.sin(t * 2);
-    c.save();
-    c.globalAlpha = 0.12 + 0.08 * pulse;
-    c.strokeStyle = "#3e7bff";
-    c.lineWidth = 3;
-    c.beginPath();
-    c.arc(W / 2, 220, 90 + 12 * pulse, 0, Math.PI * 2);
-    c.stroke();
-    c.restore();
+    // Splash art as the title backdrop (covers the whole canvas).
+    if (this.splash && this.splash.complete && this.splash.naturalWidth > 0) {
+      c.drawImage(this.splash, 0, 0, W, H);
+    } else {
+      // Fallback until the image loads: dark gradient.
+      const g = c.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, "#000010");
+      g.addColorStop(1, "#001018");
+      c.fillStyle = g;
+      c.fillRect(0, 0, W, H);
+    }
 
-    // Logo text with a subtle vertical bob.
-    const bob = Math.sin(t * 1.5) * 4;
+    // Darken the top third so the logo reads clearly over the kraken.
+    const shade = c.createLinearGradient(0, 0, 0, H * 0.42);
+    shade.addColorStop(0, "rgba(0,0,0,0.72)");
+    shade.addColorStop(1, "rgba(0,0,0,0)");
+    c.fillStyle = shade;
+    c.fillRect(0, 0, W, H * 0.42);
+
+    // ---- Logo lockup -------------------------------------------------------
+    const bob = Math.sin(t * 1.5) * 3;
+    const cy = 150 + bob;
     c.textAlign = "center";
     c.textBaseline = "middle";
 
-    // Shadow layer for depth.
-    c.font = "bold 52px 'Courier New', monospace";
-    c.fillStyle = "#1b3fbf";
-    c.fillText("GALAGA", W / 2 + 3, 210 + bob + 3);
+    // Glow behind the wordmark.
+    c.save();
+    c.shadowColor = "#3ef0ff";
+    c.shadowBlur = 24;
+    // ABYSS
+    c.font = "bold 64px 'Courier New', monospace";
+    c.fillStyle = "#0a1830";
+    c.fillText("ABYSS", W / 2 + 3, cy - 28 + 3);
     c.fillStyle = "#3ef0ff";
-    c.fillText("GALAGA", W / 2, 210 + bob);
+    c.fillText("ABYSS", W / 2, cy - 28);
+    // QWEN
+    c.font = "bold 64px 'Courier New', monospace";
+    c.fillStyle = "#0a1830";
+    c.fillText("QWEN", W / 2 + 3, cy + 34 + 3);
+    c.fillStyle = "#ff5fd0";
+    c.fillText("QWEN", W / 2, cy + 34);
+    c.restore();
 
-    c.font = "bold 36px 'Courier New', monospace";
-    c.fillStyle = "#1b3fbf";
-    c.fillText("3.8", W / 2 + 2, 262 + bob + 2);
+    // Version tag.
+    c.font = "bold 26px 'Courier New', monospace";
     c.fillStyle = "#ffe23e";
-    c.fillText("3.8", W / 2, 262 + bob);
+    c.fillText("3 . 8", W / 2, cy + 78);
 
-    // High score.
-    c.font = "16px 'Courier New', monospace";
-    c.fillStyle = "#8fa0d0";
-    c.fillText(`HIGH SCORE: ${this.highScore || 0}`, W / 2, 340);
+    // High score (in the darker upper-mid zone for contrast).
+    c.font = "15px 'Courier New', monospace";
+    c.fillStyle = "#cfe4ff";
+    c.shadowColor = "#000";
+    c.shadowBlur = 6;
+    c.fillText(`HIGH SCORE: ${this.highScore || 0}`, W / 2, cy + 116);
+    c.shadowBlur = 0;
 
     // Blinking "PRESS ENTER" prompt (on/off every ~500ms).
     if (Math.floor(t * 2) % 2 === 0) {
-      c.font = "bold 18px 'Courier New', monospace";
+      c.font = "bold 20px 'Courier New', monospace";
       c.fillStyle = "#ffffff";
-      c.fillText("PRESS ENTER TO START", W / 2, 420);
+      c.shadowColor = "#3ef0ff";
+      c.shadowBlur = 12;
+      c.fillText("PRESS ENTER TO START", W / 2, H * 0.78);
+      c.shadowBlur = 0;
     }
 
-    // Controls hint at the bottom.
+    // Controls hint at the very bottom, on a dark strip for legibility.
+    c.save();
+    c.globalAlpha = 0.55;
+    c.fillStyle = "#000";
+    c.fillRect(0, H - 34, W, 34);
+    c.restore();
     c.font = "12px 'Courier New', monospace";
-    c.fillStyle = "#5a6a9a";
-    c.fillText("\u2190/\u2192/WASD move \u00b7 SPACE shoot \u00b7 P pause \u00b7 M mute", W / 2, H - 40);
+    c.fillStyle = "#9fb8d8";
+    c.fillText("\u2190/\u2192/WASD move \u00b7 SPACE shoot \u00b7 P pause \u00b7 M mute", W / 2, H - 18);
 
     c.textAlign = "left";
     c.textBaseline = "alphabetic";
