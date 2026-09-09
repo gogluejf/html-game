@@ -2555,10 +2555,25 @@ const Game = {
     c.fillText("QWEN", W / 2, cy + 34);
     c.restore();
 
-    // Version tag.
-    c.font = "bold 26px 'Courier New', monospace";
+    // Version tag — a clean pill badge under the wordmark.
+    const vy = cy + 74;
+    c.font = "bold 22px 'Courier New', monospace";
+    const vText = "3.8";
+    const vW = c.measureText(vText).width + 28;
+    c.save();
+    c.fillStyle = "rgba(10, 20, 40, 0.75)";
+    c.strokeStyle = "#ffe23e";
+    c.lineWidth = 2;
+    const vx = W / 2 - vW / 2;
+    c.beginPath();
+    c.roundRect ? c.roundRect(vx, vy - 16, vW, 32, 8) : c.rect(vx, vy - 16, vW, 32);
+    c.fill();
+    c.stroke();
     c.fillStyle = "#ffe23e";
-    c.fillText("3 . 8", W / 2, cy + 78);
+    c.shadowColor = "#ffe23e";
+    c.shadowBlur = 10;
+    c.fillText(vText, W / 2, vy + 1);
+    c.restore();
 
     // High score (in the darker upper-mid zone for contrast).
     c.font = "15px 'Courier New', monospace";
