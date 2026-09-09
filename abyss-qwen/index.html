@@ -568,66 +568,13 @@ function ensureAudio() {
 
 // Click anywhere on the canvas also unlocks audio (useful for touch/click).
 document.getElementById("game").addEventListener("click", ensureAudio);
-
 /* ---------------------------------------------------------------------------
- * Sprite System
+ * PNG Sprite System
  * -------------------------------------------------------------------------
- * Procedural pixel-art sprites defined as arrays of color-indexed strings.
- * Each character in a row maps to a palette color via `SPRITE_PALETTE`;
- * "." (or any char not in the palette) is transparent.
- *
- * Sizes: player 24x20, bee 20x16, butterfly 24x20, fighter 28x24, boss 48x40.
- * Every enemy type has 2 animation frames (wing flap / leg pose change).
- * ------------------------------------------------------------------------- */
-
-// Shared palette: single-char key -> CSS color. Kept arcade-bright.
-const SPRITE_PALETTE = {
-  // Whites / grays
-  w: "#ffffff",
-  g: "#c8c8d8",
-  s: "#8a8aa0",
-  // Blues / cyans (player)
-  b: "#3e7bff",
-  c: "#3ef0ff",
-  d: "#1b3fbf",
-  // Yellows / oranges (bee)
-  y: "#ffe23e",
-  o: "#ff9a1e",
-  k: "#3a2a10",
-  // Pinks / magentas (butterfly)
-  p: "#ff5fd0",
-  m: "#c020a0",
-  f: "#ff9de0",
-  // Reds (fighter)
-  r: "#ff3b30",
-  e: "#ff7a1e",
-  n: "#7a1010",
-  // Greens / purples (boss)
-  v: "#39d353",
-  u: "#1f8f3a",
-  q: "#9b3fe0",
-  t: "#5a1fa0",
-  l: "#e0ffea",
-};
-
-/**
- * Normalize a frame's rows to a uniform width: pad short rows with "." and
- * truncate long ones. Guarantees clean rectangular sprites regardless of any
- * minor authoring width drift. Returns a new array of strings.
- */
-function _normalizeFrame(rows) {
-  // Target width = the widest row (the intended design width).
-  let w = 0;
-  for (const r of rows) if (r.length > w) w = r.length;
-  return rows.map((r) => (r.length < w ? r + ".".repeat(w - r.length) : r.slice(0, w)));
-}
-
-/* ---- PNG sprite system (AI-generated assets) -----------------------------
- * Backs the procedural sprites with real image files from ../assets/abyss-qwen/.
- * Each entry: { frames: [HTMLImageElement, ...], w, h } — natural pixel size.
- * drawSprite() is patched below so existing call sites keep working.
+ * Loads AI-generated sprite sheets from ../assets/abyss-qwen/ and provides
+ * drawSprite() / drawPngSprite() for rendering animated frames.
  * ==========================================================================*/
-const PNG_SPRITES = {};   // name -> { frames: [...], w, h }
+const PNG_SPRITES = {};   // name -> { frames: [...], w, h, scaleW }
 let pngLoadCount = 0;
 let pngTotal = 0;
 
@@ -642,26 +589,23 @@ function loadPngSprite(name, dir, prefix, frameCount, scaleW) {
       if (!def.w) { def.w = img.naturalWidth; def.h = img.naturalHeight; }
       pngLoadCount++;
     };
-    img.onerror = () => { pngLoadCount++; }; // count failures so we never hang
-    // Resolve asset base relative to this page so it works from file:// and http.
+    img.onerror = () => { pngLoadCount++; };
     const base = new URL("../", document.baseURI).href.replace(/[^/]*$/, "");
     img.src = `${base}assets/abyss-qwen/${dir}/${prefix}_f${i}.png`;
     def.frames.push(img);
   }
 }
 
-// Player + enemy/boss sets (all 4-frame animations).
-// Internal game key -> actual asset file prefix.
+// Player + enemy sets (all 4-frame animations).
 loadPngSprite("player", "player", "manta_ray", 4, 56);
 loadPngSprite("bee", "enemies", "jellyfish", 4, 40);
 loadPngSprite("butterfly", "enemies", "pufferfish", 4, 44);
 loadPngSprite("fighter", "enemies", "sea_dragon", 4, 48);
-// Extra tiers so all 6 aquatic enemies appear in the formation.
 loadPngSprite("shooter", "enemies", "anglerfish", 4, 42);
 loadPngSprite("brute", "enemies", "mantis_crab", 4, 46);
 loadPngSprite("raider", "enemies", "mech_shark", 4, 50);
 
-// Power-up pickups (4-frame animations). Keyed by powerup type.
+// Power-up pickups (4-frame animations).
 loadPngSprite("pu_shield", "powerups", "shield", 4, 34);
 loadPngSprite("pu_triple", "powerups", "triple_shot", 4, 34);
 loadPngSprite("pu_slow", "powerups", "slow_mo", 4, 34);
@@ -670,20 +614,17 @@ loadPngSprite("pu_bomb", "powerups", "bomb", 4, 34);
 /**
  * Boss roster — cycled in order on every 4th wave.
  *   wave 4 -> octopus, 8 -> megalodon, 12 -> kraken, 16 -> octopus, ...
- * Ordered by ascending difficulty: octopus (easiest) -> megalodon -> kraken (hardest).
- * Each entry tunes the shared Boss behavior + picks its sprite.
  */
 const BOSS_ROSTER = [
   { name: "octopus",   sprite: "boss_octopus",   hp: 10, points: 5000, fireRate: 0.8, scaleW: 130 },
   { name: "megalodon", sprite: "boss_megalodon", hp: 14, points: 7500, fireRate: 0.65, scaleW: 150 },
   { name: "kraken",    sprite: "boss_kraken",    hp: 18, points: 10000, fireRate: 0.5, scaleW: 130 },
 ];
-// Register each boss sprite set (4-frame animations).
 BOSS_ROSTER.forEach((b) => loadPngSprite(b.sprite, "bosses", b.name, 4, b.scaleW));
 
 /**
  * Draw a PNG sprite centered on (cx, cy), scaled so its width matches `scaleW`.
- * Falls back to the procedural grid sprite if the images haven't loaded yet.
+ * Returns true if drawn, false if the image isn't ready yet.
  */
 function drawPngSprite(ctx, name, frame, cx, cy) {
   const def = PNG_SPRITES[name];
@@ -697,339 +638,15 @@ function drawPngSprite(ctx, name, frame, cx, cy) {
 }
 
 /**
- * Render a named sprite at the given frame/position/scale.
- * @param {CanvasRenderingContext2D} ctx
- * @param {string} name  one of: player, bee, butterfly, fighter, boss
- * @param {number} frame  frame index (clamped to available frames)
- * @param {number} x      top-left x in canvas pixels
- * @param {number} y      top-left y in canvas pixels
- * @param {number} scale  integer pixel scale (default 1)
+ * Render a named sprite at the given frame/position.
+ * Uses the PNG asset when available; no-op otherwise.
  */
 function drawSprite(ctx, name, frame, x, y, scale = 1) {
-  // Prefer the PNG asset when available.
   const pngDef = PNG_SPRITES[name];
   if (pngDef && pngDef.frames.length && pngDef.frames[0].complete) {
-    if (drawPngSprite(ctx, name, frame, x + (pngDef.scaleW || 48) / 2, y + (pngDef.scaleW || 48) / 2)) return;
-  }
-  // Fallback to procedural pixel art (only exists for legacy names).
-  const def = SPRITES[name];
-  if (!def) return;
-  const rows = _normalizeFrame(def.frames[Math.max(0, Math.min(frame | 0, def.frames.length - 1))]);
-  const px = Math.round(x);
-  const py = Math.round(y);
-  for (let ry = 0; ry < rows.length; ry++) {
-    const row = rows[ry];
-    for (let rx = 0; rx < row.length; rx++) {
-      const ch = row[rx];
-      if (ch === "." || ch === " ") continue;
-      const col = SPRITE_PALETTE[ch];
-      if (!col) continue;
-      ctx.fillStyle = col;
-      ctx.fillRect(px + rx * scale, py + ry * scale, scale, scale);
-    }
+    drawPngSprite(ctx, name, frame, x + (pngDef.scaleW || 48) / 2, y + (pngDef.scaleW || 48) / 2);
   }
 }
-
-/* ---- Sprite definitions ---------------------------------------------------
- * Each entry: { frames: [ [row strings], ... ] }. Rows are equal-length strings.
- * ==========================================================================*/
-const SPRITES = {
-  /* Player: white/blue rocket ship pointing up. 24 wide x 20 tall.
-   * Frame difference: engine flame flickers (rows near the bottom). */
-  player: {
-    frames: [
-      [
-        "......................",
-        "..........ww..........",
-        ".........wwww.........",
-        ".........wccw.........",
-        ".........wccw.........",
-        "........wccccw..........",
-        ".......wbbcccbw.........",
-        ".......wbbcccbw.......",
-        ".......wbbbbbbw.......",
-        "......wwbbbbbbww......",
-        "......wbbbbbbbbw......",
-        ".....wwbbbbbbbbww.....",
-        ".....wbbbbbbbbbbw.....",
-        "....wwbbbbbbbbbbww....",
-        "....wbbbbbbbbbbbbw....",
-        "...wwbbbbbbbbbbbbww...",
-        "..wwbbbbbbbbbbbbbbww..",
-        ".wwbbbbbbbbbbbbbbbbww.",
-        "wwbbbbbbbbbbbbbbbbbbww",
-        "....oo..oooooo..oo....",
-      ],
-      [
-        "......................",
-        "..........ww..........",
-        ".........wwww.........",
-        ".........wccw.........",
-        ".........wccw.........",
-        "........wccccw........",
-        "........wbccb w.......",
-        ".......wbbcccbw.......",
-        ".......wbbbbbbw.......",
-        "......wwbbbbbbww......",
-        "......wbbbbbbbbw......",
-        ".....wwbbbbbbbbww.....",
-        ".....wbbbbbbbbbbw.....",
-        "....wwbbbbbbbbbbww....",
-        "....wbbbbbbbbbbbbw....",
-        "...wwbbbbbbbbbbbbww...",
-        "..wwbbbbbbbbbbbbbbww..",
-        ".wwbbbbbbbbbbbbbbbbww.",
-        "wwbbbbbbbbbbbbbbbbbbww",
-        "...o...oooooooo..o....",
-      ],
-    ],
-  },
-
-  /* Bee: small yellow insect. 20 wide x 16 tall.
-   * Frame difference: wings raised vs lowered (top rows). */
-  bee: {
-    frames: [
-      [
-        "....................",
-        "..pp..........pp....",
-        ".pppp........pppp...",
-        ".ppppp......ppppp...",
-        "..ppppp....ppppp....",
-        "....kkkkkkkkkkk.....",
-        "...kkyyyyykyyyyk....",
-        "..kyyyyyykyyyyyyk...",
-        "..kyyyyykyyyyyyyk...",
-        "..kkyyyyykyyyykk....",
-        "...kkkkkkkkkkk......",
-        "....k.k...k.k.......",
-        "....k.k...k.k.......",
-        "....................",
-        "....................",
-        "....................",
-      ],
-      [
-        "....................",
-        "....................",
-        "..pp..........pp....",
-        ".pppp........pppp...",
-        ".ppppp......ppppp...",
-        "..ppppp....ppppp....",
-        "....kkkkkkkkkkk.....",
-        "...kkyyyyykyyyyk....",
-        "..kyyyyyykyyyyyyk...",
-        "..kyyyyykyyyyyyyk...",
-        "..kkyyyyykyyyykk....",
-        "...kkkkkkkkkkk......",
-        "....k.k...k.k.......",
-        "....k.k...k.k.......",
-        "....................",
-        "....................",
-      ],
-    ],
-  },
-
-  /* Butterfly: pink/magenta winged creature. 24 wide x 20 tall.
-   * Frame difference: wings spread wide vs folded inward. */
-  butterfly: {
-    frames: [
-      [
-        "........................",
-        ".mm..............mm.....",
-        "mpmmp..........mpmmp....",
-        "mpppmpp......mpppmpp....",
-        "mpppppmpp....mpppppmpp..",
-        ".mppppppppp.mppppppppp.",
-        "..mpppppppppmppppppppp.",
-        "...mmppppppppppppppmmm.",
-        "....mmppppppppppppmm....",
-        ".....mmmmmmmmmmmmmm.....",
-        "......mmmmmmmmmmmm......",
-        ".......mmmmmmmmmm.......",
-        "........mmmmmmmm........",
-        ".........mmmmmm.........",
-        "..........mmmm..........",
-        "...........mm...........",
-        "............m...........",
-        "........................",
-        "........................",
-        "........................",
-      ],
-      [
-        "........................",
-        "......mm......mm........",
-        ".....mpmmp..mpmmp.......",
-        "....mpppmppmpppmpp......",
-        "....mpppppmpppppppp.....",
-        "...mppppppppppppppp.....",
-        "...mmppppppppppppppmm...",
-        "....mmppppppppppppmm....",
-        ".....mmmmmmmmmmmmmm.....",
-        "......mmmmmmmmmmmm......",
-        ".......mmmmmmmmmm.......",
-        "........mmmmmmmm........",
-        ".........mmmmmm.........",
-        "..........mmmm..........",
-        "...........mm...........",
-        "............m...........",
-        "........................",
-        "........................",
-        "........................",
-        "........................",
-      ],
-    ],
-  },
-
-  /* Fighter: red/orange angular craft. 28 wide x 24 tall.
-   * Frame difference: side thrusters pulse (outer columns). */
-  fighter: {
-    frames: [
-      [
-        "............................",
-        "..........rrrrrrrr..........",
-        ".........rrrrrrrrrr.........",
-        "........rrrreeeerrrr........",
-        "........rreeeeeeeerr........",
-        ".......rreeeeeeeeeerr.......",
-        ".......rrreeeeeeerrrr.......",
-        "......rrrreeeeeerrrrr.......",
-        "......rrrreeeeeerrrrr.......",
-        ".....rrrrreeeeeerrrrr.......",
-        ".....rrrrreeeeeerrrrr.......",
-        "....rrrrrreeeeeerrrrr.......",
-        "....rrrrrreeeeeerrrrr.......",
-        "...rrrrrrreeeeeerrrrrrr.....",
-        "...rrrrrrreeeeeerrrrrrr.....",
-        "..rrrrrrrrreeeeeerrrrrrrr...",
-        "..rrrrrrrrreeeeeerrrrrrrr...",
-        ".rrrrrrrrrrreeeeeerrrrrrrrr.",
-        ".rrrrrrrrrrreeeeeerrrrrrrrr.",
-        "nnnnnnnnnnnneeeennnnnnnnnnn.",
-        "nnnnnnnnnnnneeeennnnnnnnnnn.",
-        ".....ee......ee......ee.....",
-        "....eee......eee......eee...",
-        "............................",
-      ],
-      [
-        "............................",
-        "..........rrrrrrrr..........",
-        ".........rrrrrrrrrr.........",
-        "........rrrreeeerrrr........",
-        "........rreeeeeeeerr........",
-        ".......rreeeeeeeeeerr.......",
-        ".......rrreeeeeeerrrr.......",
-        "......rrrreeeeeerrrrr.......",
-        "......rrrreeeeeerrrrr.......",
-        ".....rrrrreeeeeerrrrr.......",
-        ".....rrrrreeeeeerrrrr.......",
-        "....rrrrrreeeeeerrrrr.......",
-        "....rrrrrreeeeeerrrrr.......",
-        "...rrrrrrreeeeeerrrrrrr.....",
-        "...rrrrrrreeeeeerrrrrrr.....",
-        "..rrrrrrrrreeeeeerrrrrrrr...",
-        "..rrrrrrrrreeeeeerrrrrrrr...",
-        ".rrrrrrrrrrreeeeeerrrrrrrrr.",
-        ".rrrrrrrrrrreeeeeerrrrrrrrr.",
-        "nnnnnnnnnnnneeeennnnnnnnnnn.",
-        "nnnnnnnnnnnneeeennnnnnnnnnn.",
-        "....e........e........e.....",
-        "...eee......eee......eee....",
-        "............................",
-      ],
-    ],
-  },
-
-  /* Boss: large green/purple dragon-like creature. 48 wide x 40 tall.
-   * Visually distinct and larger than all other sprites.
-   * Frame difference: jaw open/closed + wing spread. */
-  boss: {
-    frames: [
-      [
-        "................................................",
-        "................................................",
-        "....................qqqqqqqq....................",
-        "....................qvvvvvvq....................",
-        "....................qvvvvvvq....................",
-        "..urr...............qrwvvwrq...............rru..",
-        "...uul..............qvvvvvvq..............luu...",
-        "....uuv.............qvvvvvvq.............vuu....",
-        ".....uul............qvvvvvvq............luu.....",
-        "......uuv...........qtnttntq...........vuu......",
-        ".......uuv........quuuuuuuuuuq........vuu.......",
-        "........uul.......quuuuuuuuuuq.......luu........",
-        ".........uuv......quuuulluuuuq......vuu.........",
-        "..........uuv.....quuuulluuuuq......vuu.........",
-        "..........uuv.....quuuulluuuuq.....vuu..........",
-        "...........uul....quuuulluuuuq....luu...........",
-        "............uuv...quuuulluuuuq...vuu............",
-        ".............uuv..quuuulluuuuq..vuu.............",
-        "..............uul.quuuulluuuuq.luu..............",
-        "..................quuuuuuuuuuq..................",
-        "..................quuuuuuuuuuq..................",
-        "..................quuuuuuuuuuq..................",
-        "..................quuuuuuuuuuq..................",
-        "..................quuuuuuuuuuq..................",
-        "...................quuuuuuuuq...................",
-        "...................quuuuuuuuq...................",
-        "...................quuuuuuuuq...................",
-        "....................quuuuuuq....................",
-        "....................quuuuuuq....................",
-        "....................quuuuuuq....................",
-        ".....................quuuuq.....................",
-        ".......................tt.......................",
-        ".......................qq.......................",
-        "................................................",
-        "................................................",
-        "................................................",
-        "................................................",
-        "................................................",
-        "................................................",
-        "................................................"
-      ],
-      [
-        "................................................",
-        "................................................",
-        "....................qqqqqqqq....................",
-        "....................qvvvvvvq....................",
-        "....................qvvvvvvq....................",
-        "....................qrwvvwrq....................",
-        "....................qvvvvvvq....................",
-        "....................qvvvvvvq....................",
-        "....................qvvvvvvq....................",
-        "....................qtnttntq....................",
-        "..................quuuuuuuuuuq..................",
-        "..................quuuuuuuuuuq..................",
-        "..................quuuulluuuuq..................",
-        "..................quuuulluuuuq..................",
-        "..................quuuulluuuuq..................",
-        "..................quuuulluuuuq..................",
-        "..................quuuulluuuuq..................",
-        "..................quuuulluuuuq..................",
-        "..................quuuulluuuuq..................",
-        "..................quuuuuuuuuuq..................",
-        "..............uul.quuuuuuuuuuq.luu..............",
-        "............uuv...quuuuuuuuuuq..vuu.............",
-        "...........uul....quuuuuuuuuuq....luu...........",
-        "..........uuv.....quuuuuuuuuuq.....vuu..........",
-        ".........uuv.......quuuuuuuuq.......vuu.........",
-        "........uul........quuuuuuuuq........luu........",
-        ".......uuv.........quuuuuuuuq.........vuu.......",
-        "......uuv...........quuuuuuq...........vuu......",
-        ".....uul............quuuuuuq............luu.....",
-        "....uuv.............quuuuuuq.............vuu....",
-        "...uul...............quuuuq...............luu...",
-        "..urr..................tt..................rru..",
-        ".......................qq.......................",
-        "................................................",
-        "................................................",
-        "................................................",
-        "................................................",
-        "................................................",
-        "................................................",
-        "................................................"
-      ],
-    ],
-  },
-};
 
 /* ---------------------------------------------------------------------------
  * Background
@@ -1774,7 +1391,7 @@ class Enemy {
 
   /** Draw the enemy sprite; rotate toward travel direction while diving. */
   render(ctx) {
-    const frame = Math.floor(this.time * 8) % 2;
+    const frame = Math.floor(this.time * 4) % 2;
     ctx.save();
     if (this.state === "diving" || this.state === "returning") {
       // Point the sprite along its velocity vector.
@@ -1814,12 +1431,23 @@ class Boss {
     this.y = -this.h;
     this.state = "entering"; // entering -> active
     this.time = 0;
+    this.hoverX = W / 2;     // horizontal center the boss strafes around
     this.hoverY = 90;        // vertical band the boss hovers around
     this.strafeX = 0;        // strafe phase
     this.fireRate = s.fireRate; // seconds between spread volleys
     this.fireTimer = 1.2;
     this.dead = false;
     this.deathT = 0;         // drives the multi-burst death sequence
+  }
+
+  /** Reposition the boss's hover center (used to spread multiple bosses). */
+  setHover(x, y) {
+    this.hoverX = x;
+    this.hoverY = y;
+    if (this.state === "entering") {
+      this.x = x - this.w / 2;
+      this.y = -this.h;
+    }
   }
 
   get cx() { return this.x + this.w / 2; }
@@ -1861,8 +1489,9 @@ class Boss {
 
     // Active: hover with a gentle vertical bob and horizontal strafe.
     this.strafeX += dt * 0.8;
-    const strafe = Math.sin(this.strafeX) * (W / 2 - this.w / 2 - 20);
-    this.x = W / 2 - this.w / 2 + strafe;
+    const range = Math.max(10, this.hoverX - this.w / 2 - 16);
+    const strafe = Math.sin(this.strafeX) * range;
+    this.x = this.hoverX - this.w / 2 + strafe;
     this.y = this.hoverY + Math.sin(this.time * 1.5) * 12;
 
     // Volley timer.
@@ -2078,7 +1707,7 @@ const Game = {
   lastTime: 0,
   wave: 1, // current wave number (drives music intensity)
   starfield: new Starfield(W, H), // parallax background layer (kept for stars)
-  background: null,               // scrolling underwater image backdrop
+  background: new Background(W, H), // scrolling underwater image backdrop
   time: 0,                        // accumulated game time (for sprite animation)
 
   /* -- Task 4.1: game state machine ---------------------------------------- */
@@ -2089,29 +1718,31 @@ const Game = {
   newHighScore: false,   // set when this run beat the stored high score
   stats: { kills: 0, wavesCleared: 0 }, // per-run stats shown on game-over
 
-  /* -- Task 2.2: VFX systems ------------------------------------------------ */
-  particleSystem: null,           // ParticleSystem (assigned in start())
-  screenshake: null,              // ScreenShake
-  muzzleFlash: null,              // MuzzleFlash
-  deathAnim: null,                // DeathAnim
+  /* -- Task 2.2: VFX systems (initialized in start()) ----------------------- */
+  particleSystem: null,
+  screenshake: new ScreenShake(),
+  muzzleFlash: new MuzzleFlash(),
+  deathAnim: null,
 
   /* -- Task 3.1: player + projectiles -------------------------------------- */
-  player: null,                   // real Player instance (assigned in start())
+  player: new Player(W / 2 - 20, H - 70),  // default ship; replaced on restart
   bullets: [],                    // active player bullets
 
   /* -- Task 3.2: enemies + boss -------------------------------------------- */
   enemies: [],                    // active Enemy instances (formation)
   enemyBullets: [],               // active enemy bullets (move downward)
-  boss: null,                     // current Boss instance (or null)
+  powerUps: [],                   // active PowerUp instances
+  bosses: [],                    // active Boss instances for this wave
 
   /* -- Task 3.3: scoring, combo & power-ups -------------------------------- */
   score: 0,                       // running score for this run
   highScore: 0,                   // persisted best (localStorage 'galaga38_high')
   combo: 1,                       // current multiplier x1..x3
   comboTimer: 0,                  // seconds since last kill (resets combo at >2s)
-  powerUps: [],                   // active PowerUp instances on screen
   slowFactor: 1,                  // global enemy speed multiplier (SLOW power-up)
   _powerCycle: 0,                 // round-robin index so all 4 types appear
+  _tripleTimer: null,             // remaining seconds of TRIPLE power-up
+  _slowTimer: null,               // remaining seconds of SLOW power-up
 
   /* -- Music lifecycle stubs ------------------------------------------------
    * The full game state machine lands in a later task; for now these give us
@@ -2128,21 +1759,42 @@ const Game = {
   },
 
   /**
-   * Build a fresh enemy formation for the current wave and spawn a boss when
-   * the wave is a multiple of 4. Called at gameplay start and after clearing
-   * a wave.
+   * How many bosses appear on a given wave. Every wave has at least one boss.
+   * The count steps up every 3 waves: waves 1-3 -> 1, 4-6 -> 2, 7-9 -> 3, ...
+   */
+  _bossCountFor(wave) {
+    return Math.floor((wave - 1) / 3) + 1;
+  },
+
+  /**
+   * Build a fresh enemy formation for the current wave. Called at gameplay
+   * start and after clearing a wave. Bosses are NOT spawned here — they
+   * arrive only after the enemy wave is wiped out (see _spawnBosses).
    */
   setupWave() {
     this.enemies = buildFormation(this.wave);
     this.enemyBullets = [];
-    // Boss appears every 4th wave (wave % 4 === 0), cycling through the roster:
-    //   wave 4 -> octopus, 8 -> megalodon, 12 -> kraken, 16 -> octopus, ...
-    if (this.wave % 4 === 0) {
-      const bossIdx = Math.floor((this.wave / 4 - 1) % BOSS_ROSTER.length);
-      this.boss = new Boss(BOSS_ROSTER[bossIdx]);
-    } else {
-      this.boss = null;
+    this.bosses = [];
+  },
+
+  /**
+   * Spawn this wave's boss group. Called once the enemy formation is cleared.
+   * The count steps up every 3 waves (waves 1-3 -> 1, 4-6 -> 2, ...).
+   */
+  _spawnBosses() {
+    const count = this._bossCountFor(this.wave);
+    const bosses = [];
+    for (let i = 0; i < count; i++) {
+      // Cycle the roster so consecutive slots get different species.
+      const idx = ((this.wave - 1) + i) % BOSS_ROSTER.length;
+      const b = new Boss(BOSS_ROSTER[idx]);
+      // Spread bosses across the top: single boss centers, multiples fan out.
+      const frac = count === 1 ? 0.5 : (i + 1) / (count + 1);
+      b.setHover(frac * W, 90);
+      bosses.push(b);
     }
+    this.bosses = bosses;
+    if (sfx) sfx.waveIntro();
   },
 
   // The real Player instance is created in start() (Task 3.1).
@@ -2152,7 +1804,7 @@ const Game = {
     this.ctx = this.canvas.getContext("2d");
     // Crisp pixel-art scaling for the PNG sprites.
     this.ctx.imageSmoothingEnabled = false;
-    // Task 2.2: instantiate the particle / VFX systems.
+    // Task 2.2: instantiate VFX systems (deathAnim shares particleSystem).
     this.particleSystem = new ParticleSystem();
     this.screenshake = new ScreenShake();
     this.muzzleFlash = new MuzzleFlash();
@@ -2160,6 +1812,8 @@ const Game = {
     // Task 3.1: create the real player ship + clear any leftover bullets.
     this.player = new Player(W / 2 - 20, H - 70);
     this.bullets = [];
+    this.enemyBullets = [];
+    this.powerUps = [];
     // Task 3.3: reset scoring state + load persisted high score.
     this.score = 0;
     this.combo = 1;
@@ -2176,7 +1830,7 @@ const Game = {
     this.state = "title";
     this.running = true;
     this.lastTime = performance.now();
-    this.background = new Background(W, H); // scrolling underwater backdrop
+    this.background = new Background(W, H); // reset backdrop for fresh run
     // Splash art for the title screen.
     this.splash = new Image();
     const base = new URL("../", document.baseURI).href.replace(/[^/]*$/, "");
@@ -2200,7 +1854,7 @@ const Game = {
     this.enemyBullets = [];
     this.powerUps = [];
     this.enemies = [];
-    this.boss = null;
+    this.bosses = [];
     this.score = 0;
     this.combo = 1;
     this.comboTimer = 0;
@@ -2239,24 +1893,26 @@ const Game = {
     this.startMusic();
   },
 
+  /** True while any boss on the current wave is still alive. */
+  _anyBossAlive() {
+    return this.bosses.some((b) => !b.dead);
+  },
+
   /** Advance the wave number and refresh music intensity live. */
   _advanceWave() {
     this.stats.wavesCleared += 1;
     this.setWave(this.wave + 1);
     this.setupWave();
-    // Boss waves go straight to bossFight; normal waves replay the intro.
-    if (this.wave % 4 === 0) {
-      this.state = "bossFight";
-    } else {
-      this.state = "waveIntro";
-      this.waveIntroTimer = 2.0;
-      if (sfx) sfx.waveIntro();
-    }
+    // Every wave has bosses that arrive after the enemy formation forms, so
+    // we always play the short intro before dropping into active play.
+    this.state = "waveIntro";
+    this.waveIntroTimer = 2.0;
+    if (sfx) sfx.waveIntro();
   },
 
-  /** Transition into the boss fight when a boss is active and enemies are gone. */
+  /** Enter the boss-fight HUD state once at least one boss is alive. */
   _enterBossFight() {
-    if (this.boss && !this.boss.dead) this.state = "bossFight";
+    if (this._anyBossAlive()) this.state = "bossFight";
   },
 
   /** Handle game-over: play SFX, stop music, record stats, enter gameOver. */
@@ -2425,14 +2081,16 @@ const Game = {
       const b = this.bullets[bi];
       let consumed = false;
 
-      // Check boss first (it's bigger / more important).
-      if (this.boss && !this.boss.dead && this.hitTest(b, this.boss)) {
-        const died = this.boss.hit();
+      // Check bosses first (they're bigger / more important).
+      for (const boss of this.bosses) {
+        if (boss.dead || !this.hitTest(b, boss)) continue;
+        const died = boss.hit();
         if (!died && Game.particleSystem) {
           // Small spark where the bullet struck the hull.
           Game.particleSystem.explode(b.x, b.y, "#9b3fe0", 4);
         }
         consumed = true;
+        break;
       }
 
       // Check each enemy.
@@ -2492,11 +2150,11 @@ const Game = {
                       this.state === "waveIntro" || this.state === "paused";
     if (showWorld) {
       this.screenshake.render(c, () => {
-        for (const e of this.enemies) e.render(c);
-        if (this.boss && !this.boss.dead) this.boss.render(c);
+        if (this.enemies) for (const e of this.enemies) e.render(c);
+        for (const boss of this.bosses) if (!boss.dead) boss.render(c);
 
         // Enemy bullets.
-        for (const b of this.enemyBullets) {
+        if (this.enemyBullets) for (const b of this.enemyBullets) {
           c.fillStyle = "#ff5a1e";
           c.fillRect(b.x - b.w / 2, b.y, b.w, b.h);
           c.fillStyle = "#ffe23e";
@@ -2504,10 +2162,10 @@ const Game = {
         }
 
         // Player ship.
-        this.player.render(c);
+        if (this.player) this.player.render(c);
 
         // Player bullets.
-        for (const b of this.bullets) {
+        if (this.bullets) for (const b of this.bullets) {
           c.fillStyle = "#3ef0ff";
           c.fillRect(b.x - b.w / 2, b.y, b.w, b.h);
           c.fillStyle = "#ffffff";
@@ -2515,16 +2173,16 @@ const Game = {
         }
 
         // Power-ups.
-        for (const pu of this.powerUps) pu.render(c);
+        if (this.powerUps) for (const pu of this.powerUps) pu.render(c);
 
         // Death-flash overlays.
-        this.deathAnim.render(c);
+        if (this.deathAnim) this.deathAnim.render(c);
 
         // Particles.
-        this.particleSystem.render(c);
+        if (this.particleSystem) this.particleSystem.render(c);
 
         // Muzzle flash.
-        this.muzzleFlash.render(c);
+        if (this.muzzleFlash) this.muzzleFlash.render(c);
       });
     }
 
@@ -2715,8 +2373,9 @@ const Game = {
     // --- Center: WAVE --------------------------------------------------------
     c.textAlign = "center";
     c.font = "bold 13px 'Courier New', monospace";
-    c.fillStyle = this.state === "bossFight" ? "#ff3b30" : "#3ef0ff";
-    const waveLabel = this.state === "bossFight" ? "BOSS" : `WAVE ${this.wave}`;
+    const bossCount = this.bosses.filter((b) => !b.dead).length;
+    c.fillStyle = bossCount > 0 ? "#ff3b30" : "#3ef0ff";
+    const waveLabel = bossCount > 0 ? `WAVE ${this.wave} · BOSS x${bossCount}` : `WAVE ${this.wave}`;
     c.fillText(waveLabel, W / 2, 8);
 
     // Combo indicator (only when above x1).
@@ -2790,11 +2449,12 @@ const Game = {
     c.translate(W / 2, H / 2);
     c.scale(scale, scale);
 
-    const label = (this.boss && !this.boss.dead) ? "BOSS BATTLE" : `WAVE ${this.wave}`;
+    const bossCount = this.bosses.filter((b) => !b.dead).length;
+    const label = `WAVE ${this.wave}`;
     c.font = "bold 48px 'Courier New', monospace";
     c.fillStyle = "#1b3fbf";
     c.fillText(label, 3, 3);
-    c.fillStyle = this.boss && !this.boss.dead ? "#ff3b30" : "#3ef0ff";
+    c.fillStyle = bossCount > 0 ? "#ff3b30" : "#3ef0ff";
     c.fillText(label, 0, 0);
 
     c.restore();
@@ -2893,10 +2553,12 @@ const Game = {
         break;
 
       case "waveIntro": {
-        // Count down the interstitial, then drop into active play.
+        // Count down the interstitial, then drop into active play. Bosses only
+        // spawn after the enemy wave is cleared, so the intro always leads to
+        // the normal 'playing' state.
         this.waveIntroTimer -= dt;
         if (this.waveIntroTimer <= 0) {
-          this.state = (this.boss && !this.boss.dead) ? "bossFight" : "playing";
+          this.state = "playing";
         }
         break;
       }
@@ -2912,10 +2574,10 @@ const Game = {
 
       case "gameOver":
         // Let lingering particles/shake finish for a clean fade, but freeze gameplay.
-        this.particleSystem.update(dt);
-        this.screenshake.update(dt);
-        this.deathAnim.update(dt);
-        this.muzzleFlash.update(dt);
+        if (this.particleSystem) this.particleSystem.update(dt);
+        if (this.screenshake) this.screenshake.update(dt);
+        if (this.deathAnim) this.deathAnim.update(dt);
+        if (this.muzzleFlash) this.muzzleFlash.update(dt);
         if (this.gameOverTimer > 0) this.gameOverTimer -= dt;
         break;
     }
@@ -2949,15 +2611,15 @@ const Game = {
     const sdt = dt * this.slowFactor;
     for (const e of this.enemies) e.update(sdt, this.player, this.wave);
 
-    if (this.boss) {
-      if (this.boss.dead) {
-        if (this.boss.updateDeath(dt)) {
+    // Bosses: advance each; play out death sequences and award points.
+    for (const boss of this.bosses) {
+      if (boss.dead) {
+        if (boss.updateDeath(dt)) {
           if (Game.screenshake) Game.screenshake.add(16);
-          this._awardPoints(this.boss.points, this.boss.cx, this.boss.cy);
-          this.boss = null;
+          this._awardPoints(boss.points, boss.cx, boss.cy);
         }
       } else {
-        this.boss.update(sdt, this.player);
+        boss.update(sdt, this.player);
       }
     }
 
@@ -2997,26 +2659,37 @@ const Game = {
       if (this.enemies[i].dead) this.enemies.splice(i, 1);
     }
 
-    // Wave progression via the state machine. A short hold after the last
-    // enemy is gone prevents an instant, jarring auto-advance.
-    if (this.enemies.length === 0 && !this.boss) {
-      this._clearHold = (this._clearHold || 0) + dt;
-      if (this._clearHold >= 1.2) {
+    // Wave progression in two phases:
+    //   Phase A — enemy formation still on screen: just fight them.
+    //   Phase B — enemies wiped out: spawn the boss group (once), then fight it.
+    // The wave advances only after the bosses are also destroyed. A short hold
+    // after each phase's final kill prevents an instant, jarring transition.
+    if (this.enemies.length === 0) {
+      // Enemies gone. If we haven't spawned this wave's bosses yet, do it now.
+      if (this.bosses.length === 0) {
+        this._spawnBosses();
         this._clearHold = 0;
-        this._advanceWave();
+      } else if (!this._anyBossAlive()) {
+        // Bosses dead too -> advance to the next wave.
+        this._clearHold = (this._clearHold || 0) + dt;
+        if (this._clearHold >= 1.2) {
+          this._clearHold = 0;
+          this._advanceWave();
+        }
       }
     } else {
       this._clearHold = 0;
     }
-    if (this.state === "playing" && this.boss && !this.boss.dead) {
+    // Show the boss-fight HUD while any boss is alive.
+    if (this.state === "playing" && this._anyBossAlive()) {
       this._enterBossFight();
     }
 
     // VFX systems.
-    this.particleSystem.update(dt);
-    this.screenshake.update(dt);
-    this.muzzleFlash.update(dt);
-    this.deathAnim.update(dt);
+    if (this.particleSystem) this.particleSystem.update(dt);
+    if (this.screenshake) this.screenshake.update(dt);
+    if (this.muzzleFlash) this.muzzleFlash.update(dt);
+    if (this.deathAnim) this.deathAnim.update(dt);
   },
 };
 
