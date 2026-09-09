@@ -1,0 +1,2704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Galaga 3.8 — SFX Scaffold</title>
+<style>
+  /* ---- Minimal page styling: center the canvas on a dark arcade backdrop ---- */
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #05060a;
+    color: #cfd8ff;
+    font-family: "Courier New", monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  #game {
+    /* Internal resolution stays fixed at 480x640 (canvas width/height attrs).
+       We CSS-scale the element to fit the viewport while preserving the 3:4
+       aspect ratio (letterboxed by the flex-centered body). The logical
+       coordinate system never changes — rendering always happens in 480x640. */
+    image-rendering: pixelated;
+    border: 2px solid #2b3a7a;
+    box-shadow: 0 0 40px rgba(60, 90, 255, 0.35);
+    background: #000;
+    aspect-ratio: 3 / 4;
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 48px);
+    width: auto;
+    height: auto;
+    /* Default size before either constraint kicks in. */
+    width: min(calc((100vh - 48px) * 0.75), calc(100vw - 48px));
+  }
+  #hint {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    opacity: 0.6;
+    letter-spacing: 1px;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="game" width="480" height="640"></canvas>
+<div id="hint">ENTER start &nbsp; &middot; &nbsp; &larr;/&rarr;/WASD move &nbsp; &middot; &nbsp; SPACE shoot &nbsp; &middot; &nbsp; P pause &nbsp; &middot; &nbsp; M mute</div>
+
+<script>
+"use strict";
+
+/* ============================================================================
+ * Galaga 3.8 — Milestone 1, Task 1.1: SFX Synthesizer + Game Scaffold
+ * ----------------------------------------------------------------------------
+ * A single self-contained HTML file. All audio is synthesized at runtime with
+ * the Web Audio API (oscillators, gain envelopes, filters) — no external files.
+ * ==========================================================================*/
+
+/* ---------------------------------------------------------------------------
+ * SfxEngine
+ * -------------------------------------------------------------------------
+ * Wraps an AudioContext and exposes one method per game event. Every sound is
+ * built from oscillators / noise buffers routed through a gain envelope into a
+ * shared master gain node (which also carries the mute flag).
+ *
+ * Envelope helper: `env(gainNode, t0, peak, attack, decay)` shapes a gain
+ * param over time using linear ramps so there are no clicks.
+ * ------------------------------------------------------------------------- */
+class SfxEngine {
+  constructor(ctx) {
+    this.ctx = ctx;
+
+    // Master gain: single volume knob for everything we synthesize.
+    this.master = ctx.createGain();
+    this.master.gain.value = 0.6;          // overall volume (0..1)
+    this.master.connect(ctx.destination);
+
+    this.muted = false;
+
+    // Pre-build a short white-noise buffer reused by every noise-based SFX.
+    // 1 second of random samples is plenty for bursts; we slice it per use.
+    const len = Math.floor(ctx.sampleRate * 1.0);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    this.noiseBuffer = buf;
+  }
+
+  /** Toggle global mute. Returns current muted state. */
+  setMute(on) {
+    this.muted = !!on;
+    // Ramp to avoid a hard click when toggling mid-sound.
+    const t = this.ctx.currentTime;
+    this.master.gain.cancelScheduledValues(t);
+    this.master.gain.setTargetAtTime(this.muted ? 0 : 0.6, t, 0.01);
+    return this.muted;
+  }
+
+  /* -- internal helpers ---------------------------------------------------- */
+
+  /**
+   * Apply a simple ADSR-ish envelope to a GainNode starting at time t0.
+   * Linear ramp up to `peak` over `attack`, then exponential decay to ~0
+   * over `decay`. ExponentialRampToValueAtTime can't target 0, so we floor it.
+   */
+  _env(g, t0, peak, attack, decay) {
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + attack + decay);
+  }
+
+  /** Create a source->gain chain connected to master; returns the gain node. */
+  _chain(source) {
+    const g = this.ctx.createGain();
+    source.connect(g);
+    g.connect(this.master);
+    return g;
+  }
+
+  /** Play a white-noise burst through an optional lowpass filter. */
+  _noiseBurst({ duration = 0.3, peak = 0.5, cutoff = 4000, q = 0.7 } = {}) {
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+    const filt = this.ctx.createBiquadFilter();
+    filt.type = "lowpass";
+    filt.frequency.value = cutoff;
+    filt.Q.value = q;
+    const g = this._chain(src);
+    g.connect(filt);
+    // Re-route: source -> filter -> gain -> master
+    src.disconnect();
+    src.connect(filt);
+    filt.connect(g);
+
+    const t0 = this.ctx.currentTime;
+    this._env(g, t0, peak, 0.005, duration);
+    src.start(t0);
+    src.stop(t0 + duration + 0.05);
+  }
+
+  /* -- public SFX methods -------------------------------------------------- */
+
+  /** Short square-wave blip with a pitch drop — player laser fire. */
+  shoot() {
+    const t0 = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(880, t0);            // start high
+    osc.frequency.exponentialRampToValueAtTime(220, t0 + 0.12); // drop fast
+    const g = this._chain(osc);
+    this._env(g, t0, 0.25, 0.005, 0.12);
+    osc.start(t0);
+    osc.stop(t0 + 0.16);
+  }
+
+  /**
+   * Explosion: filtered noise burst + a low sine thump.
+   * `size` (default 1) scales both loudness and duration so small enemy
+   * pops differ audibly from big boss blasts.
+   */
+  explode(size = 1) {
+    size = Math.max(0.25, Math.min(size, 3)); // clamp for sanity
+    const dur = 0.25 + 0.25 * size;           // longer for bigger booms
+    const vol = 0.35 * size;
+
+    // Noise component, lowpassed so it reads as "boom" not "crackle".
+    this._noiseBurst({
+      duration: dur,
+      peak: vol,
+      cutoff: 1200 + 800 * size,
+      q: 0.8,
+    });
+
+    // Low sine thump that gives the explosion its weight.
+    const t0 = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(160, t0);
+    osc.frequency.exponentialRampToValueAtTime(40, t0 + dur);
+    const g = this._chain(osc);
+    this._env(g, t0, vol, 0.01, dur);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.05);
+  }
+
+  /** Descending sawtooth sweep — an enemy breaking formation to dive. */
+  enemyDive() {
+    const t0 = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(1200, t0);
+    osc.frequency.exponentialRampToValueAtTime(150, t0 + 0.5);
+    // Light lowpass keeps the saw from being too harsh.
+    const filt = this.ctx.createBiquadFilter();
+    filt.type = "lowpass";
+    filt.frequency.value = 3000;
+    const g = this._chain(osc);
+    osc.connect(filt);
+    filt.connect(g);
+    this._env(g, t0, 0.22, 0.02, 0.5);
+    osc.start(t0);
+    osc.stop(t0 + 0.55);
+  }
+
+  /** Ascending 4-note arpeggio — power-up collected. */
+  powerUp() {
+    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
+    const step = 0.09;                              // seconds between notes
+    const t0 = this.ctx.currentTime;
+    notes.forEach((freq, i) => {
+      const t = t0 + i * step;
+      const osc = this.ctx.createOscillator();
+      osc.type = "triangle";                        // warm, pleasant timbre
+      osc.frequency.value = freq;
+      const g = this._chain(osc);
+      this._env(g, t, 0.3, 0.01, 0.18);
+      osc.start(t);
+      osc.stop(t + 0.22);
+    });
+  }
+
+  /**
+   * Dramatic chord hit — wave intro. Several oscillators struck together
+   * with slightly different waveforms for a rich, percussive stab.
+   */
+  waveIntro() {
+    const t0 = this.ctx.currentTime;
+    // A minor-ish power chord with a fifth and octave for drama.
+    const voices = [
+      { type: "sawtooth", freq: 110.00, peak: 0.18 }, // A2
+      { type: "sawtooth", freq: 164.81, peak: 0.14 }, // E3
+      { type: "square",   freq: 220.00, peak: 0.12 }, // A3
+      { type: "sine",     freq: 440.00, peak: 0.10 }, // A4 sparkle
+    ];
+    // Shared lowpass so the stacked saws don't alias harshly.
+    const filt = this.ctx.createBiquadFilter();
+    filt.type = "lowpass";
+    filt.frequency.setValueAtTime(6000, t0);
+    filt.frequency.exponentialRampToValueAtTime(800, t0 + 0.8);
+    filt.Q.value = 1.2;
+    filt.connect(this.master);
+
+    voices.forEach((v) => {
+      const osc = this.ctx.createOscillator();
+      osc.type = v.type;
+      osc.frequency.value = v.freq;
+      const g = this.ctx.createGain();
+      osc.connect(g);
+      g.connect(filt);
+      this._env(g, t0, v.peak, 0.01, 0.8);
+      osc.start(t0);
+      osc.stop(t0 + 0.85);
+    });
+  }
+
+  /** Long descending tone — game over. */
+  gameOver() {
+    const t0 = this.ctx.currentTime;
+    const dur = 1.6;
+    const osc = this.ctx.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(440, t0);
+    osc.frequency.exponentialRampToValueAtTime(55, t0 + dur);
+    const filt = this.ctx.createBiquadFilter();
+    filt.type = "lowpass";
+    filt.frequency.value = 2000;
+    const g = this._chain(osc);
+    osc.connect(filt);
+    filt.connect(g);
+    this._env(g, t0, 0.3, 0.05, dur);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.1);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * MusicSequencer
+ * -------------------------------------------------------------------------
+ * A looping background-music sequencer built on top of the SfxEngine's shared
+ * AudioContext + master gain (so the M-key mute silences music too).
+ *
+ * Architecture: a setInterval "scheduler" runs at a fixed cadence and looks
+ * `lookahead` seconds ahead of `audioContext.currentTime`, scheduling every
+ * step that falls in that window with sample-accurate start times. Because we
+ * schedule slightly ahead of time rather than firing notes "now", playback is
+ * gap-free even if the interval jitters.
+ *
+ * Three voices per 16th-note step:
+ *   - bass line      (low square/sawtooth)
+ *   - lead melody    (triangle, gated by intensity for density)
+ *   - hi-hat ticks   (short filtered noise bursts)
+ *
+ * Intensity (1..5) drives tempo, note density, and a lowpass cutoff so higher
+ * waves sound faster / denser / brighter.
+ * ------------------------------------------------------------------------- */
+class MusicSequencer {
+  constructor(sfx) {
+    this.sfx = sfx;
+    this.ctx = sfx.ctx;
+    this.master = sfx.master; // shared master gain -> M mute affects us too
+
+    // Reuse the SfxEngine's pre-built white-noise buffer for hi-hats.
+    this.noiseBuffer = sfx.noiseBuffer;
+
+    // --- Musical data -------------------------------------------------------
+    // Bass root pattern over 2 bars (16 steps each), in Hz. A-minor-ish groove.
+    this.bassLine = [
+      55.00, 55.00, 110.00, 55.00,  65.41, 65.41, 130.81, 65.41, // bar 1 (A1/E2)
+      73.42, 73.42, 146.83, 73.42,  82.41, 82.41, 164.81, 82.41, // bar 2 (D2/G2)
+    ];
+    // Lead melody: null = rest. Frequencies in Hz (A minor pentatonic-ish).
+    this.leadLine = [
+      440.00, null, 523.25, 440.00,  659.25, null, 587.33, null,
+      523.25, 440.00, null, 392.00,  440.00, null, 523.25, null,
+    ];
+
+    // --- Scheduler state ----------------------------------------------------
+    this.playing = false;
+    this.intensity = 1;
+    this.stepIndex = 0;       // next 16th-note to schedule
+    this.nextNoteTime = 0;    // audio-clock time of next step
+    this.timerId = null;
+    this._liveOscs = new Set(); // scheduled-but-not-yet-finished sources (for stop())
+
+    // Cadence/lookahead tuned for sample-accurate, gap-free playback.
+    this.lookahead = 0.12;    // seconds we schedule ahead
+    this.tickMs = 25;         // how often the scheduler wakes up
+  }
+
+  /** Map wave number (>=1) to an intensity 1..5. */
+  static intensityForWave(wave) {
+    return Math.max(1, Math.min(5, Math.round(wave)));
+  }
+
+  /** Tempo (BPM) for a given intensity — rises as intensity climbs. */
+  _tempoFor(intensity) {
+    // 90 BPM at intensity 1, up to ~168 BPM at intensity 5.
+    return 90 + (intensity - 1) * 19.5;
+  }
+
+  /** Lowpass cutoff for the music bus — brighter at higher intensity. */
+  _cutoffFor(intensity) {
+    return 900 + (intensity - 1) * 1400; // 900 .. 6500 Hz
+  }
+
+  /** Start (or restart) the loop at a wave-appropriate tempo. */
+  start(wave) {
+    const intensity = MusicSequencer.intensityForWave(wave);
+    this.stop(); // clean slate if already running
+    this.intensity = intensity;
+    this.playing = true;
+    this.stepIndex = 0;
+    this.nextNoteTime = this.ctx.currentTime + 0.06; // small head start
+
+    // Build a persistent music bus: source -> filter -> gain -> master.
+    // We create the filter once so setIntensity can sweep its cutoff smoothly.
+    this._busFilter = this.ctx.createBiquadFilter();
+    this._busFilter.type = "lowpass";
+    this._busFilter.frequency.value = this._cutoffFor(intensity);
+    this._busFilter.Q.value = 0.8;
+    this._busGain = this.ctx.createGain();
+    this._busGain.gain.value = 0.5; // keep music under the SFX level
+    this._busFilter.connect(this._busGain);
+    this._busGain.connect(this.master);
+
+    this.timerId = setInterval(() => this._schedule(), this.tickMs);
+  }
+
+  /** Stop cleanly: clear the timer and silence any still-scheduled voices. */
+  stop() {
+    if (this.timerId !== null) {
+      clearInterval(this.timerId);
+      this.timerId = null;
+    }
+    this.playing = false;
+    // Kill any oscillators/noise we scheduled but haven't finished yet.
+    const t = this.ctx.currentTime;
+    this._liveOscs.forEach((node) => {
+      try { node.stop(t + 0.02); } catch (e) { /* already stopped */ }
+    });
+    this._liveOscs.clear();
+    // Tear down the bus (if present) so no dangling nodes linger.
+    if (this._busFilter) {
+      try { this._busFilter.disconnect(); } catch (e) {}
+      this._busFilter = null;
+    }
+    if (this._busGain) {
+      try { this._busGain.disconnect(); } catch (e) {}
+      this._busGain = null;
+    }
+  }
+
+  /**
+   * Change musical intensity live (1..5). Adjusts tempo, density, and the
+   * bus filter cutoff without restarting the loop.
+   */
+  setIntensity(n) {
+    n = Math.max(1, Math.min(5, Math.round(n)));
+    this.intensity = n;
+    if (this._busFilter) {
+      const t = this.ctx.currentTime;
+      this._busFilter.frequency.cancelScheduledValues(t);
+      this._busFilter.frequency.setTargetAtTime(this._cutoffFor(n), t, 0.1);
+    }
+  }
+
+  /* -- internal ------------------------------------------------------------ */
+
+  /** Scheduler tick: schedule every step falling within the lookahead window. */
+  _schedule() {
+    while (this.nextNoteTime < this.ctx.currentTime + this.lookahead) {
+      this._playStep(this.stepIndex, this.nextNoteTime);
+      const spb = 60.0 / this._tempoFor(this.intensity); // sec per beat
+      this.nextNoteTime += spb / 4;                      // one 16th note
+      this.stepIndex = (this.stepIndex + 1) % this.bassLine.length;
+    }
+  }
+
+  /** Schedule one 16th-note step at exact audio-clock time `t`. */
+  _playStep(step, t) {
+    const i = this.intensity;
+    // Hi-hat: every 8th note at low intensity, every 16th at high intensity.
+    const hatEvery = i >= 4 ? 1 : 2;
+    if (step % hatEvery === 0) this._hat(t, i);
+    // Bass: play on the step's root; gate some off at low intensity for space.
+    const bassFreq = this.bassLine[step];
+    if (bassFreq && (i >= 3 || step % 2 === 0)) this._bass(t, bassFreq, i);
+    // Lead: only when the slot has a note AND density allows it.
+    const leadFreq = this.leadLine[step];
+    // Density gate: at low intensity play fewer lead notes (every other step).
+    const leadGate = i >= 3 ? 1 : 2;
+    if (leadFreq && step % leadGate === 0) this._lead(t, leadFreq, i);
+  }
+
+  /** Low square/sawtooth bass note through the music bus. */
+  _bass(t, freq, i) {
+    const osc = this.ctx.createOscillator();
+    osc.type = i >= 4 ? "sawtooth" : "square";
+    osc.frequency.setValueAtTime(freq, t);
+    const g = this.ctx.createGain();
+    const dur = 0.16;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.35, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g);
+    g.connect(this._busFilter);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+    this._track(osc, t + dur + 0.05);
+  }
+
+  /** Triangle lead note, slightly detuned for movement, through the bus. */
+  _lead(t, freq, i) {
+    const osc = this.ctx.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(freq, t);
+    // Subtle vibrato-like pitch drift for a livelier tone at high intensity.
+    if (i >= 4) osc.frequency.linearRampToValueAtTime(freq * 1.02, t + 0.1);
+    const g = this.ctx.createGain();
+    const dur = 0.14;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.22, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g);
+    g.connect(this._busFilter);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+    this._track(osc, t + dur + 0.05);
+  }
+
+  /** Short filtered-noise hi-hat tick through the bus. */
+  _hat(t, i) {
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+    const filt = this.ctx.createBiquadFilter();
+    filt.type = "highpass";
+    filt.frequency.value = 6000 + i * 800; // brighter hats at higher intensity
+    const g = this.ctx.createGain();
+    const dur = 0.04;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.12, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(filt);
+    filt.connect(g);
+    g.connect(this._busFilter);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+    this._track(src, t + dur + 0.05);
+  }
+
+  /** Track a scheduled source so stop() can kill it; auto-remove after done. */
+  _track(node, doneAt) {
+    this._liveOscs.add(node);
+    setTimeout(() => { this._liveOscs.delete(node); }, (doneAt - this.ctx.currentTime) * 1000 + 50);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Input handler
+ * -------------------------------------------------------------------------
+ * Tracks currently-held keys in a Set. Keydown fires once per press
+ * (auto-repeat ignored via e.repeat) which is what we want for actions like
+ * shooting; held movement reads from the Set each frame.
+ * ------------------------------------------------------------------------- */
+const Input = {
+  keys: new Set(),
+  init() {
+    window.addEventListener("keydown", (e) => {
+      // First interaction unlocks audio (browser autoplay policy).
+      ensureAudio();
+
+      // Space / arrows prevent page scroll.
+      if (e.code === "Space" || e.code.startsWith("Arrow")) e.preventDefault();
+
+      // --- State transitions (fire once per press, ignore auto-repeat) -----
+      if (!e.repeat) {
+        const s = Game.state;
+        // ENTER: start from title, restart from game-over.
+        if (e.code === "Enter") {
+          if (s === "title" || s === "gameOver") Game.startGame();
+        }
+        // P: pause / resume during active play.
+        if (e.code === "KeyP") {
+          if (s === "playing" || s === "bossFight") Game.pause();
+          else if (s === "paused") Game.resume();
+        }
+        // M: mute / unmute across every state.
+        if (e.code === "KeyM" && sfx) {
+          sfx.setMute(!sfx.muted);
+        }
+      }
+
+      Input.keys.add(e.code);
+    });
+    window.addEventListener("keyup", (e) => {
+      Input.keys.delete(e.code);
+    });
+  },
+  down(code) { return Input.keys.has(code); },
+};
+
+/* ---------------------------------------------------------------------------
+ * Audio bootstrap
+ * -------------------------------------------------------------------------
+ * Browsers block AudioContext until a user gesture. We create the context and
+ * SfxEngine lazily on the first keydown or click, then resume it if suspended.
+ * ------------------------------------------------------------------------- */
+let sfx = null;
+let music = null;
+
+function ensureAudio() {
+  if (sfx) {
+    if (sfx.ctx.state === "suspended") sfx.ctx.resume();
+    return;
+  }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC();
+  sfx = new SfxEngine(ctx);
+  // Create the background-music sequencer on the same context/master gain so
+  // the M-key mute (which ramps sfx.master to 0) silences music as well.
+  music = new MusicSequencer(sfx);
+  if (ctx.state === "suspended") ctx.resume();
+}
+
+// Click anywhere on the canvas also unlocks audio (useful for touch/click).
+document.getElementById("game").addEventListener("click", ensureAudio);
+
+/* ---------------------------------------------------------------------------
+ * Sprite System
+ * -------------------------------------------------------------------------
+ * Procedural pixel-art sprites defined as arrays of color-indexed strings.
+ * Each character in a row maps to a palette color via `SPRITE_PALETTE`;
+ * "." (or any char not in the palette) is transparent.
+ *
+ * Sizes: player 24x20, bee 20x16, butterfly 24x20, fighter 28x24, boss 48x40.
+ * Every enemy type has 2 animation frames (wing flap / leg pose change).
+ * ------------------------------------------------------------------------- */
+
+// Shared palette: single-char key -> CSS color. Kept arcade-bright.
+const SPRITE_PALETTE = {
+  // Whites / grays
+  w: "#ffffff",
+  g: "#c8c8d8",
+  s: "#8a8aa0",
+  // Blues / cyans (player)
+  b: "#3e7bff",
+  c: "#3ef0ff",
+  d: "#1b3fbf",
+  // Yellows / oranges (bee)
+  y: "#ffe23e",
+  o: "#ff9a1e",
+  k: "#3a2a10",
+  // Pinks / magentas (butterfly)
+  p: "#ff5fd0",
+  m: "#c020a0",
+  f: "#ff9de0",
+  // Reds (fighter)
+  r: "#ff3b30",
+  e: "#ff7a1e",
+  n: "#7a1010",
+  // Greens / purples (boss)
+  v: "#39d353",
+  u: "#1f8f3a",
+  q: "#9b3fe0",
+  t: "#5a1fa0",
+  l: "#e0ffea",
+};
+
+/**
+ * Normalize a frame's rows to a uniform width: pad short rows with "." and
+ * truncate long ones. Guarantees clean rectangular sprites regardless of any
+ * minor authoring width drift. Returns a new array of strings.
+ */
+function _normalizeFrame(rows) {
+  // Target width = the widest row (the intended design width).
+  let w = 0;
+  for (const r of rows) if (r.length > w) w = r.length;
+  return rows.map((r) => (r.length < w ? r + ".".repeat(w - r.length) : r.slice(0, w)));
+}
+
+/**
+ * Render a named sprite at the given frame/position/scale.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {string} name  one of: player, bee, butterfly, fighter, boss
+ * @param {number} frame  frame index (clamped to available frames)
+ * @param {number} x      top-left x in canvas pixels
+ * @param {number} y      top-left y in canvas pixels
+ * @param {number} scale  integer pixel scale (default 1)
+ */
+function drawSprite(ctx, name, frame, x, y, scale = 1) {
+  const def = SPRITES[name];
+  if (!def) return;
+  const rows = _normalizeFrame(def.frames[Math.max(0, Math.min(frame | 0, def.frames.length - 1))]);
+  const px = Math.round(x);
+  const py = Math.round(y);
+  for (let ry = 0; ry < rows.length; ry++) {
+    const row = rows[ry];
+    for (let rx = 0; rx < row.length; rx++) {
+      const ch = row[rx];
+      if (ch === "." || ch === " ") continue;
+      const col = SPRITE_PALETTE[ch];
+      if (!col) continue;
+      ctx.fillStyle = col;
+      ctx.fillRect(px + rx * scale, py + ry * scale, scale, scale);
+    }
+  }
+}
+
+/* ---- Sprite definitions ---------------------------------------------------
+ * Each entry: { frames: [ [row strings], ... ] }. Rows are equal-length strings.
+ * ==========================================================================*/
+const SPRITES = {
+  /* Player: white/blue rocket ship pointing up. 24 wide x 20 tall.
+   * Frame difference: engine flame flickers (rows near the bottom). */
+  player: {
+    frames: [
+      [
+        "......................",
+        "..........ww..........",
+        ".........wwww.........",
+        ".........wccw.........",
+        ".........wccw.........",
+        "........wccccw..........",
+        ".......wbbcccbw.........",
+        ".......wbbcccbw.......",
+        ".......wbbbbbbw.......",
+        "......wwbbbbbbww......",
+        "......wbbbbbbbbw......",
+        ".....wwbbbbbbbbww.....",
+        ".....wbbbbbbbbbbw.....",
+        "....wwbbbbbbbbbbww....",
+        "....wbbbbbbbbbbbbw....",
+        "...wwbbbbbbbbbbbbww...",
+        "..wwbbbbbbbbbbbbbbww..",
+        ".wwbbbbbbbbbbbbbbbbww.",
+        "wwbbbbbbbbbbbbbbbbbbww",
+        "....oo..oooooo..oo....",
+      ],
+      [
+        "......................",
+        "..........ww..........",
+        ".........wwww.........",
+        ".........wccw.........",
+        ".........wccw.........",
+        "........wccccw........",
+        "........wbccb w.......",
+        ".......wbbcccbw.......",
+        ".......wbbbbbbw.......",
+        "......wwbbbbbbww......",
+        "......wbbbbbbbbw......",
+        ".....wwbbbbbbbbww.....",
+        ".....wbbbbbbbbbbw.....",
+        "....wwbbbbbbbbbbww....",
+        "....wbbbbbbbbbbbbw....",
+        "...wwbbbbbbbbbbbbww...",
+        "..wwbbbbbbbbbbbbbbww..",
+        ".wwbbbbbbbbbbbbbbbbww.",
+        "wwbbbbbbbbbbbbbbbbbbww",
+        "...o...oooooooo..o....",
+      ],
+    ],
+  },
+
+  /* Bee: small yellow insect. 20 wide x 16 tall.
+   * Frame difference: wings raised vs lowered (top rows). */
+  bee: {
+    frames: [
+      [
+        "....................",
+        "..pp..........pp....",
+        ".pppp........pppp...",
+        ".ppppp......ppppp...",
+        "..ppppp....ppppp....",
+        "....kkkkkkkkkkk.....",
+        "...kkyyyyykyyyyk....",
+        "..kyyyyyykyyyyyyk...",
+        "..kyyyyykyyyyyyyk...",
+        "..kkyyyyykyyyykk....",
+        "...kkkkkkkkkkk......",
+        "....k.k...k.k.......",
+        "....k.k...k.k.......",
+        "....................",
+        "....................",
+        "....................",
+      ],
+      [
+        "....................",
+        "....................",
+        "..pp..........pp....",
+        ".pppp........pppp...",
+        ".ppppp......ppppp...",
+        "..ppppp....ppppp....",
+        "....kkkkkkkkkkk.....",
+        "...kkyyyyykyyyyk....",
+        "..kyyyyyykyyyyyyk...",
+        "..kyyyyykyyyyyyyk...",
+        "..kkyyyyykyyyykk....",
+        "...kkkkkkkkkkk......",
+        "....k.k...k.k.......",
+        "....k.k...k.k.......",
+        "....................",
+        "....................",
+      ],
+    ],
+  },
+
+  /* Butterfly: pink/magenta winged creature. 24 wide x 20 tall.
+   * Frame difference: wings spread wide vs folded inward. */
+  butterfly: {
+    frames: [
+      [
+        "........................",
+        ".mm..............mm.....",
+        "mpmmp..........mpmmp....",
+        "mpppmpp......mpppmpp....",
+        "mpppppmpp....mpppppmpp..",
+        ".mppppppppp.mppppppppp.",
+        "..mpppppppppmppppppppp.",
+        "...mmppppppppppppppmmm.",
+        "....mmppppppppppppmm....",
+        ".....mmmmmmmmmmmmmm.....",
+        "......mmmmmmmmmmmm......",
+        ".......mmmmmmmmmm.......",
+        "........mmmmmmmm........",
+        ".........mmmmmm.........",
+        "..........mmmm..........",
+        "...........mm...........",
+        "............m...........",
+        "........................",
+        "........................",
+        "........................",
+      ],
+      [
+        "........................",
+        "......mm......mm........",
+        ".....mpmmp..mpmmp.......",
+        "....mpppmppmpppmpp......",
+        "....mpppppmpppppppp.....",
+        "...mppppppppppppppp.....",
+        "...mmppppppppppppppmm...",
+        "....mmppppppppppppmm....",
+        ".....mmmmmmmmmmmmmm.....",
+        "......mmmmmmmmmmmm......",
+        ".......mmmmmmmmmm.......",
+        "........mmmmmmmm........",
+        ".........mmmmmm.........",
+        "..........mmmm..........",
+        "...........mm...........",
+        "............m...........",
+        "........................",
+        "........................",
+        "........................",
+        "........................",
+      ],
+    ],
+  },
+
+  /* Fighter: red/orange angular craft. 28 wide x 24 tall.
+   * Frame difference: side thrusters pulse (outer columns). */
+  fighter: {
+    frames: [
+      [
+        "............................",
+        "..........rrrrrrrr..........",
+        ".........rrrrrrrrrr.........",
+        "........rrrreeeerrrr........",
+        "........rreeeeeeeerr........",
+        ".......rreeeeeeeeeerr.......",
+        ".......rrreeeeeeerrrr.......",
+        "......rrrreeeeeerrrrr.......",
+        "......rrrreeeeeerrrrr.......",
+        ".....rrrrreeeeeerrrrr.......",
+        ".....rrrrreeeeeerrrrr.......",
+        "....rrrrrreeeeeerrrrr.......",
+        "....rrrrrreeeeeerrrrr.......",
+        "...rrrrrrreeeeeerrrrrrr.....",
+        "...rrrrrrreeeeeerrrrrrr.....",
+        "..rrrrrrrrreeeeeerrrrrrrr...",
+        "..rrrrrrrrreeeeeerrrrrrrr...",
+        ".rrrrrrrrrrreeeeeerrrrrrrrr.",
+        ".rrrrrrrrrrreeeeeerrrrrrrrr.",
+        "nnnnnnnnnnnneeeennnnnnnnnnn.",
+        "nnnnnnnnnnnneeeennnnnnnnnnn.",
+        ".....ee......ee......ee.....",
+        "....eee......eee......eee...",
+        "............................",
+      ],
+      [
+        "............................",
+        "..........rrrrrrrr..........",
+        ".........rrrrrrrrrr.........",
+        "........rrrreeeerrrr........",
+        "........rreeeeeeeerr........",
+        ".......rreeeeeeeeeerr.......",
+        ".......rrreeeeeeerrrr.......",
+        "......rrrreeeeeerrrrr.......",
+        "......rrrreeeeeerrrrr.......",
+        ".....rrrrreeeeeerrrrr.......",
+        ".....rrrrreeeeeerrrrr.......",
+        "....rrrrrreeeeeerrrrr.......",
+        "....rrrrrreeeeeerrrrr.......",
+        "...rrrrrrreeeeeerrrrrrr.....",
+        "...rrrrrrreeeeeerrrrrrr.....",
+        "..rrrrrrrrreeeeeerrrrrrrr...",
+        "..rrrrrrrrreeeeeerrrrrrrr...",
+        ".rrrrrrrrrrreeeeeerrrrrrrrr.",
+        ".rrrrrrrrrrreeeeeerrrrrrrrr.",
+        "nnnnnnnnnnnneeeennnnnnnnnnn.",
+        "nnnnnnnnnnnneeeennnnnnnnnnn.",
+        "....e........e........e.....",
+        "...eee......eee......eee....",
+        "............................",
+      ],
+    ],
+  },
+
+  /* Boss: large green/purple dragon-like creature. 48 wide x 40 tall.
+   * Visually distinct and larger than all other sprites.
+   * Frame difference: jaw open/closed + wing spread. */
+  boss: {
+    frames: [
+      [
+        "................................................",
+        "..........qq................qq..................",
+        ".........qvqq.............qvqq.................",
+        "........qvvvqq..........qvvvqq..................",
+        ".......qvuuuvqq........qvuuuvqq.................",
+        ".......qvuuuvqq........qvuuuvqq.................",
+        "......qvuuuuuvqq......qvuuuuuvqq................",
+        "......qvuuuuuvqq......qvuuuuuvqq................",
+        ".....qvuuuuuuuvqq....qvuuuuuuuvqq................",
+        ".....qvuuuuuuuvqq....qvuuuuuuuvqq................",
+        "....qvuuuuuuuuuvqq..qvuuuuuuuuuvqq................",
+        "....qvuuuuuuuuuvqq..qvuuuuuuuuuvqq................",
+        "...qvuuuuuuuuuuuvqq.qvuuuuuuuuuuuvqq..............",
+        "...qvuuuuuuuuuuuvqq.qvuuuuuuuuuuuvqq..............",
+        "..qvuuuuuuuuuuuuuvqqqvuuuuuuuuuuuuuvqq............",
+        "..qvuuuuuuuuuuuuuvqqqvuuuuuuuuuuuuuvqq............",
+        ".qvuuuuuuuuuuuuuuuvqqqvuuuuuuuuuuuuuuuvqq.........",
+        ".qvuuuuuuuuuuuuuuuvqqqvuuuuuuuuuuuuuuuvqq.........",
+        "qvuuuuuuuuuuuuuuuuuvqqqvuuuuuuuuuuuuuuuuuvqq......",
+        "qvuuuuuuuuuuuuuuuuuvqqqvuuuuuuuuuuuuuuuuuvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+      ],
+      [
+        "................................................",
+        "..........qq................qq..................",
+        ".........qvqq.............qvqq.................",
+        "........qvvvqq..........qvvvqq..................",
+        ".......qvuuuvqq........qvuuuvqq.................",
+        ".......qvuuuvqq........qvuuuvqq.................",
+        "......qvuuuuuvqq......qvuuuuuvqq................",
+        "......qvuuuuuvqq......qvuuuuuvqq................",
+        ".....qvuuuuuuuvqq....qvuuuuuuuvqq................",
+        ".....qvuuuuuuuvqq....qvuuuuuuuvqq................",
+        "....qvuuuuuuuuuvqq..qvuuuuuuuuuvqq................",
+        "....qvuuuuuuuuuvqq..qvuuuuuuuuuvqq................",
+        "...qvuuuuuuuuuuuvqq.qvuuuuuuuuuuuvqq..............",
+        "...qvuuuuuuuuuuuvqq.qvuuuuuuuuuuuvqq..............",
+        "..qvuuuuuuuuuuuuuvqqqvuuuuuuuuuuuuuvqq............",
+        "..qvuuuuuuuuuuuuuvqqqvuuuuuuuuuuuuuvqq............",
+        ".qvuuuuuuuuuuuuuuuvqqqvuuuuuuuuuuuuuuuvqq.........",
+        ".qvuuuuuuuuuuuuuuuvqqqvuuuuuuuuuuuuuuuvqq.........",
+        "qvuuuuuuuuuuuuuuuuuvqqqvuuuuuuuuuuuuuuuuuvqq......",
+        "qvuuuuuuuuuuuuuuuuuvqqqvuuuuuuuuuuuuuuuuuvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+        "qvlllllllllllllllllvqqqvlllllllllllllllllvqq......",
+      ],
+    ],
+  },
+};
+
+/* ---------------------------------------------------------------------------
+ * Starfield
+ * -------------------------------------------------------------------------
+ * Three parallax layers (far / mid / near), each with its own speed, density,
+ * and star size. Stars scroll downward and wrap around when they leave the
+ * screen. Different layer speeds create depth.
+ * ------------------------------------------------------------------------- */
+class Starfield {
+  constructor(width, height) {
+    this.w = width;
+    this.h = height;
+    // Layers from far (slowest, smallest, dimmest) to near (fastest, biggest).
+    this.layers = [
+      { speed: 20,  density: 60, size: 1, stars: [] }, // far
+      { speed: 55,  density: 35, size: 2, stars: [] }, // mid
+      { speed: 120, density: 18, size: 3, stars: [] }, // near
+    ];
+    this._init();
+  }
+
+  _init() {
+    for (const layer of this.layers) {
+      layer.stars = [];
+      for (let i = 0; i < layer.density; i++) {
+        layer.stars.push({
+          x: Math.random() * this.w,
+          y: Math.random() * this.h,
+          twinkle: Math.random() * Math.PI * 2,
+        });
+      }
+    }
+  }
+
+  /** Scroll all layers downward by dt seconds; wrap stars that exit. */
+  update(dt) {
+    for (const layer of this.layers) {
+      for (const s of layer.stars) {
+        s.y += layer.speed * dt;
+        s.twinkle += dt * 3;
+        if (s.y > this.h) {
+          s.y -= this.h;
+          s.x = Math.random() * this.w;
+        }
+      }
+    }
+  }
+
+  /** Draw all star layers (call first, as the background). */
+  render(ctx) {
+    const brightness = [0.35, 0.6, 1.0]; // far dimmest, near brightest
+    for (let li = 0; li < this.layers.length; li++) {
+      const layer = this.layers[li];
+      const baseAlpha = brightness[li];
+      const sz = layer.size;
+      for (const s of layer.stars) {
+        // Subtle twinkle modulates alpha per-star.
+        const a = baseAlpha * (0.7 + 0.3 * Math.sin(s.twinkle));
+        ctx.globalAlpha = a;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(Math.round(s.x), Math.round(s.y), sz, sz);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * ParticleSystem (Task 2.2)
+ * -------------------------------------------------------------------------
+ * A lightweight, allocation-light particle pool for explosions and bursts.
+ * Each particle: { x, y, vx, vy, life, maxLife, color, size }.
+ *   - explode(x, y, color, count) spawns `count` particles radiating outward
+ *     with random speed/angle; gravity is applied over time in update();
+ *     alpha fades as life/maxLife -> 0.
+ *   - update(dt) advances positions, applies gravity, decrements life, culls.
+ *   - render(ctx) draws each surviving particle with alpha = life/maxLife.
+ * ------------------------------------------------------------------------- */
+class ParticleSystem {
+  constructor() {
+    this.particles = [];
+    // Downward pull so debris arcs and falls; tuned to feel "weighty".
+    this.gravity = 380;
+    // Soft cap so a screen full of simultaneous deaths stays performant.
+    this.maxParticles = 900;
+  }
+
+  /**
+   * Spawn an explosion at (x, y).
+   * @param {number} x       center x
+   * @param {number} y       center y
+   * @param {string} color   base CSS color (brightened per-particle)
+   * @param {number} count   number of particles (default 24)
+   */
+  explode(x, y, color = "#ffe23e", count = 24) {
+    const room = Math.min(count, this.maxParticles - this.particles.length);
+    if (room <= 0) return;
+    for (let i = 0; i < room; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      // Speed spread: mostly mid-fast, a few slow embers and a few fast sparks.
+      const speed = 60 + Math.random() * 320;
+      const maxLife = 0.35 + Math.random() * 0.55; // 0.35s .. 0.9s
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 40, // slight upward bias reads better
+        life: maxLife,
+        maxLife,
+        color: this._shade(color, Math.random() * 0.6), // brighten some
+        size: 1 + Math.random() * 3,
+      });
+    }
+  }
+
+  /** Advance every particle by dt seconds; apply gravity; cull the dead. */
+  update(dt) {
+    const g = this.gravity;
+    const ps = this.particles;
+    for (let i = ps.length - 1; i >= 0; i--) {
+      const p = ps[i];
+      p.life -= dt;
+      if (p.life <= 0) {
+        // Swap-remove: O(1) cull without shifting the whole array.
+        ps[i] = ps[ps.length - 1];
+        ps.pop();
+        continue;
+      }
+      p.vy += g * dt;          // gravity pulls down
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      // Mild air drag so fast sparks decelerate naturally.
+      p.vx *= (1 - 0.9 * dt);
+    }
+  }
+
+  /** Draw all surviving particles; alpha tracks remaining life fraction. */
+  render(ctx) {
+    for (const p of this.particles) {
+      const a = Math.max(0, Math.min(1, p.life / p.maxLife));
+      ctx.globalAlpha = a;
+      ctx.fillStyle = p.color;
+      const s = Math.max(1, p.size * (0.4 + 0.6 * a)); // shrink as it dies
+      ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /**
+   * Lighten a hex color toward white by factor f (0..1). Returns a CSS color.
+   * Used to give each explosion a mix of base-color and hot-white sparks.
+   */
+  _shade(hex, f) {
+    if (!/^#([0-9a-f]{6})$/i.test(hex)) return hex;
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    r = Math.round(r + (255 - r) * f);
+    g = Math.round(g + (255 - g) * f);
+    b = Math.round(b + (255 - b) * f);
+    return "#" + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * ScreenShake (Task 2.2)
+ * -------------------------------------------------------------------------
+ * A decaying camera offset. add(intensity) bumps the current shake level;
+ * update(dt) decays it toward zero over ~300ms; render() wraps world drawing
+ * in a random ctx.translate proportional to the current intensity and resets
+ * the transform afterwards. On a player hit we call add(8) for ~8px shake.
+ * ------------------------------------------------------------------------- */
+class ScreenShake {
+  constructor() {
+    this.intensity = 0;      // current shake magnitude (pixels)
+    this.decayMs = 300;      // how long a single impulse takes to fade
+    this._offsetX = 0;
+    this._offsetY = 0;
+  }
+
+  /** Raise the shake level (clamped to a sane max). */
+  add(amount) {
+    this.intensity = Math.min(24, this.intensity + amount);
+  }
+
+  /** Decay the shake toward zero over ~decayMs. */
+  update(dt) {
+    if (this.intensity > 0) {
+      // Exponential-ish decay scaled so it reaches ~0 in about decayMs.
+      const k = dt * 1000 / this.decayMs;
+      this.intensity *= Math.pow(0.001, k); // ~1/1000 per decay window
+      if (this.intensity < 0.05) this.intensity = 0;
+      // Recompute a fresh random offset each frame (jitter).
+      this._offsetX = (Math.random() * 2 - 1) * this.intensity;
+      this._offsetY = (Math.random() * 2 - 1) * this.intensity;
+    } else {
+      this._offsetX = 0;
+      this._offsetY = 0;
+    }
+  }
+
+  /**
+   * Apply the shake translate to ctx, draw the world via `drawWorld`, then
+   * restore the transform. Keeps the caller's context state clean.
+   */
+  render(ctx, drawWorld) {
+    if (this.intensity > 0) {
+      ctx.save();
+      ctx.translate(this._offsetX, this._offsetY);
+      drawWorld();
+      ctx.restore();
+    } else {
+      drawWorld();
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * MuzzleFlash (Task 2.2)
+ * -------------------------------------------------------------------------
+ * A brief bright burst drawn at the player cannon tip when they fire. We track
+ * a short timer (~50ms); while active, render() paints a yellow/white glow at
+ * the ship's nose. Triggered from the shoot handler.
+ * ------------------------------------------------------------------------- */
+class MuzzleFlash {
+  constructor() {
+    this.timer = 0;         // seconds remaining
+    this.duration = 0.05;   // ~50ms flash
+    this.x = 0;
+    this.y = 0;
+  }
+
+  /** Start a flash centered on (x, y). */
+  trigger(x, y) {
+    this.timer = this.duration;
+    this.x = x;
+    this.y = y;
+  }
+
+  get active() { return this.timer > 0; }
+
+  update(dt) {
+    if (this.timer > 0) this.timer -= dt;
+  }
+
+  /** Draw a radial yellow->white burst at the stored position. */
+  render(ctx) {
+    if (!this.active) return;
+    const t = this.timer / this.duration; // 1 -> 0
+    const r = 6 + 10 * t;                 // grows as it fades out
+    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r);
+    grad.addColorStop(0, `rgba(255,255,255,${t})`);
+    grad.addColorStop(0.4, `rgba(255,240,120,${0.9 * t})`);
+    grad.addColorStop(1, "rgba(255,180,40,0)");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * DeathAnim (Task 2.2)
+ * -------------------------------------------------------------------------
+ * When an entity dies it flashes white briefly (~100ms) then bursts into
+ * particles. We implement this as a small list of "dying" records that the
+ * game updates each frame:
+ *   - start(entity) marks it dying and schedules its burst.
+ *   - update(dt) counts down the flash phase; when it ends it calls
+ *     particleSystem.explode at the entity's position and removes the record.
+ *   - render(ctx) paints a white flash rect over the entity during the phase.
+ * The helper `killEntity(entity, opts)` wires everything together in one call.
+ * ------------------------------------------------------------------------- */
+class DeathAnim {
+  constructor(particleSystem) {
+    this.ps = particleSystem;
+    this.dying = []; // { x, y, w, h, color, t, dur, exploded }
+  }
+
+  /**
+   * Begin a death animation for an entity ({x,y,w,h,color}).
+   * Returns the record so callers can remove the entity from their own lists.
+   */
+  start(entity, opts = {}) {
+    const rec = {
+      x: entity.x,
+      y: entity.y,
+      w: entity.w,
+      h: entity.h,
+      color: entity.color || "#ffffff",
+      t: 0,
+      dur: opts.flashTime ?? 0.1,   // ~100ms white flash
+      exploded: false,
+    };
+    this.dying.push(rec);
+    return rec;
+  }
+
+  /** One-shot convenience: mark dying, schedule burst, return the record. */
+  killEntity(entity, opts = {}) {
+    return this.start(entity, opts);
+  }
+
+  /** Count down each flash; fire the particle burst when the phase completes. */
+  update(dt) {
+    for (let i = this.dying.length - 1; i >= 0; i--) {
+      const d = this.dying[i];
+      d.t += dt;
+      if (!d.exploded && d.t >= d.dur) {
+        // Burst at the entity's center using its own color.
+        this.ps.explode(d.x + d.w / 2, d.y + d.h / 2, d.color, 28);
+        d.exploded = true;
+      }
+      // Remove once the flash has fully played (burst already fired).
+      if (d.t >= d.dur) {
+        this.dying.splice(i, 1);
+      }
+    }
+  }
+
+  /** Paint a white flash over each entity still in its flash phase. */
+  render(ctx) {
+    for (const d of this.dying) {
+      const a = Math.max(0, 1 - d.t / d.dur); // 1 -> 0 across the flash
+      ctx.globalAlpha = a;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(d.x, d.y, d.w, d.h);
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Player (Task 3.1)
+ * -------------------------------------------------------------------------
+ * The real player ship: keyboard/touch movement, shooting with cooldown,
+ * invincibility frames after a hit, and a lives counter. Replaces the old
+ * placeholder rect that lived on the Game object.
+ *
+ *   - x, y, w, h        position + hitbox (top-left origin)
+ *   - speed             horizontal (and vertical) movement in px/s
+ *   - shootCooldown     seconds between shots
+ *   - invincible        seconds of remaining invincibility (blinks while >0)
+ *   - lives             remaining lives (game over at 0)
+ *   - spread            hook for a future 'triple' power-up (3-way fire)
+ *   - shieldTimer       hook for a future shield bubble (drawn when >0)
+ * ------------------------------------------------------------------------- */
+class Player {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.w = 24;
+    this.h = 20;
+    this.speed = 280;          // px/s horizontal & vertical
+    this.shootCooldown = 0;    // seconds until next shot allowed
+    this.cooldownMax = 0.15;   // base cooldown duration
+    this.invincible = 0;       // seconds of remaining invincibility
+    this.lives = 3;
+    this.spread = false;       // true -> 3-way spread shot (power-up hook)
+    this.shieldTimer = 0;      // >0 -> draw a shield bubble around the ship
+    // Vertical band: the ship may drift up/down only within this lower region.
+    this.minY = H - 160;
+    this.maxY = H - this.h;
+  }
+
+  /** Center-x helper (used for muzzle flash / bullet spawn). */
+  get cx() { return this.x + this.w / 2; }
+
+  /**
+   * Advance the ship by dt seconds using held input keys.
+   * @param {number} dt      frame delta (seconds)
+   * @param {object} input   an Input-like object exposing down(code)
+   */
+  update(dt, input) {
+    // Horizontal movement (arrows / A-D).
+    let dx = 0;
+    if (input.down("ArrowLeft") || input.down("KeyA")) dx -= 1;
+    if (input.down("ArrowRight") || input.down("KeyD")) dx += 1;
+    this.x += dx * this.speed * dt;
+
+    // Vertical movement (arrows / W-S), clamped to a bounded band near bottom.
+    let dy = 0;
+    if (input.down("ArrowUp") || input.down("KeyW")) dy -= 1;
+    if (input.down("ArrowDown") || input.down("KeyS")) dy += 1;
+    this.y += dy * this.speed * dt;
+
+    // Clamp to canvas bounds (horizontal) and the vertical band.
+    this.x = Math.max(0, Math.min(W - this.w, this.x));
+    this.y = Math.max(this.minY, Math.min(this.maxY, this.y));
+
+    // Decrement timers (floor at 0).
+    if (this.shootCooldown > 0) this.shootCooldown -= dt;
+    if (this.invincible > 0) this.invincible -= dt;
+    if (this.shieldTimer > 0) this.shieldTimer -= dt;
+  }
+
+  /**
+   * Fire a bullet if the cooldown has elapsed.
+   * @returns {Array<object>} bullets spawned this call (empty if on cooldown)
+   */
+  shoot() {
+    if (this.shootCooldown > 0) return [];
+    this.shootCooldown = this.cooldownMax;
+
+    const bx = this.cx;
+    const by = this.y;           // spawn at the nose
+    const speed = 720;           // upward px/s
+    const out = [];
+
+    if (this.spread) {
+      // 3-way spread: center plus two angled side shots.
+      const ang = 0.35;          // radians off-vertical
+      out.push({ x: bx, y: by, vx: 0, vy: -speed, w: 3, h: 8 });
+      out.push({ x: bx, y: by, vx: -Math.sin(ang) * speed, vy: -Math.cos(ang) * speed, w: 3, h: 8 });
+      out.push({ x: bx, y: by, vx: Math.sin(ang) * speed, vy: -Math.cos(ang) * speed, w: 3, h: 8 });
+    } else {
+      out.push({ x: bx, y: by, vx: 0, vy: -speed, w: 3, h: 8 });
+    }
+
+    // Muzzle flash at the cannon tip + laser SFX.
+    if (Game.muzzleFlash) Game.muzzleFlash.trigger(bx, by);
+    if (sfx) sfx.shoot();
+    return out;
+  }
+
+  /**
+   * Register a hit on the ship.
+   * @returns {boolean} true if the game is now over (no lives left)
+   */
+  hit() {
+    if (this.invincible > 0) return false; // still protected from the last hit
+    this.lives -= 1;
+    this.invincible = 2; // 2 seconds of blinking invincibility
+
+    // Screen shake (~8px) + explosion burst at the ship's position.
+    if (Game.screenshake) Game.screenshake.add(8);
+    if (Game.particleSystem) {
+      Game.particleSystem.explode(this.cx, this.y + this.h / 2, "#3ef0ff", 40);
+    }
+    if (sfx) sfx.explode(1);
+    return this.lives <= 0;
+  }
+
+  /** Draw the ship sprite; blink while invincible; show shield bubble if active. */
+  render(ctx) {
+    // Invincibility blink: toggle visibility every ~100ms.
+    if (this.invincible > 0 && Math.floor(this.time ?? 0) % 2 === 0) {
+      // Use a time-based blink so it reads as a steady flicker.
+      const phase = Math.floor((performance.now() / 100)) % 2;
+      if (phase === 0) return; // skip drawing this half-cycle (invisible)
+    }
+
+    const frame = Math.floor((this.time ?? 0) * 6) % 2; // engine flame flicker
+    drawSprite(ctx, "player", frame, this.x, this.y, 1);
+
+    // Shield bubble (future power-up hook): translucent ring while active.
+    if (this.shieldTimer > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.5 + 0.3 * Math.sin((this.time ?? 0) * 12);
+      ctx.strokeStyle = "#3ef0ff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(this.cx, this.y + this.h / 2, this.w * 0.9, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Enemy (Task 3.2)
+ * -------------------------------------------------------------------------
+ * A single Galaga-style enemy with a four-state machine:
+ *   entering  -> spiral/bezier path from off-screen top down to its slot
+ *   idle      -> gentle sine bob around the slot; periodic dive decisions
+ *   diving    -> chase the player on a weaving (sine-oscillating) descent,
+ *                firing an enemy bullet occasionally while diving
+ *   returning -> fly back up to its slot (or exit the screen if it has none)
+ *
+ * Fields:
+ *   type       'bee' | 'butterfly' | 'fighter'
+ *   state      one of the four states above
+ *   points     bee=100, butterfly=200, fighter=400
+ *   x,y,w,h    hitbox (top-left origin)
+ *   slot       {x,y} home position in the formation grid
+ * ------------------------------------------------------------------------- */
+
+// Per-type tuning: sprite size, entry speed, dive speed, fire cadence.
+const ENEMY_TYPES = {
+  bee:       { w: 20, h: 16, points: 100, entrySpeed: 260, diveSpeed: 220, weaveAmp: 26, weaveFreq: 5,  fireEvery: 1.1 },
+  butterfly: { w: 24, h: 20, points: 200, entrySpeed: 230, diveSpeed: 250, weaveAmp: 40, weaveFreq: 3.5, fireEvery: 0.9 },
+  fighter:   { w: 28, h: 24, points: 400, entrySpeed: 200, diveSpeed: 300, weaveAmp: 54, weaveFreq: 2.5, fireEvery: 0.7 },
+};
+
+class Enemy {
+  /**
+   * @param {string} type   'bee' | 'butterfly' | 'fighter'
+   * @param {{x:number,y:number}} slot  home position (center) in the grid
+   */
+  constructor(type, slot) {
+    const t = ENEMY_TYPES[type];
+    this.type = type;
+    this.w = t.w;
+    this.h = t.h;
+    this.points = t.points;
+    this.slot = { x: slot.x, y: slot.y };
+
+    // Start off-screen at the top so the entry path spirals down into place.
+    this.x = slot.x - this.w / 2;
+    this.y = -this.h - Math.random() * 40;
+
+    this.state = "entering";
+    this.time = 0;          // per-enemy animation clock
+    this.entryT = 0;        // progress along the entry path (0..1)
+    this.entryDur = 1.4 + Math.random() * 0.6; // seconds to reach the slot
+    this.bobPhase = Math.random() * Math.PI * 2;
+    this.diveTimer = 0;     // countdown to next dive decision
+    this.fireTimer = 0;     // countdown to next dive-shot
+    this.weavePhase = 0;    // phase for the weaving dive path
+    this.vx = 0;            // last-frame velocity (for render rotation)
+    this.vy = 0;
+    this.hasSlot = true;    // false once destroyed-without-replacement
+    this.dead = false;
+  }
+
+  get cx() { return this.x + this.w / 2; }
+  get cy() { return this.y + this.h / 2; }
+
+  /** Begin a dive toward the player. Plays the dive SFX once. */
+  _startDive(player) {
+    this.state = "diving";
+    this.weavePhase = 0;
+    this.fireTimer = ENEMY_TYPES[this.type].fireEvery * (0.5 + Math.random() * 0.5);
+    if (sfx) sfx.enemyDive();
+  }
+
+  /**
+   * Advance the enemy by dt seconds.
+   * @param {number} dt         frame delta (seconds)
+   * @param {object} player     the Player instance (chase target)
+   * @param {number} wave       current wave number (drives dive aggression)
+   */
+  update(dt, player, wave) {
+    this.time += dt;
+    let px = this.x, py = this.y;
+
+    switch (this.state) {
+      case "entering": {
+        // Spiral/bezier-ish approach: ease progress, arc sideways then settle.
+        this.entryT += dt / this.entryDur;
+        const t = Math.min(1, this.entryT);
+        // Ease-out so the enemy decelerates as it settles into the slot.
+        const e = 1 - Math.pow(1 - t, 3);
+        // Lateral swing that peaks mid-entry (a curved path, not a straight drop).
+        const swing = Math.sin(t * Math.PI) * 60;
+        const targetX = this.slot.x - this.w / 2 + swing * (1 - e);
+        const startY = -this.h;
+        const targetY = this.slot.y - this.h / 2;
+        this.x = targetX;
+        this.y = startY + (targetY - startY) * e;
+        if (t >= 1) {
+          this.state = "idle";
+          this.diveTimer = 1.5 + Math.random() * 2.5;
+        }
+        break;
+      }
+
+      case "idle": {
+        // Gentle bobbing around the slot.
+        const bob = Math.sin(this.time * 2 + this.bobPhase) * 3;
+        this.x = this.slot.x - this.w / 2;
+        this.y = this.slot.y - this.h / 2 + bob;
+        // Periodic dive decision: probability rises with the wave number.
+        this.diveTimer -= dt;
+        if (this.diveTimer <= 0) {
+          const p = Math.min(0.85, 0.12 + wave * 0.06);
+          if (Math.random() < p && player) this._startDive(player);
+          this.diveTimer = 2 + Math.random() * 3;
+        }
+        break;
+      }
+
+      case "diving": {
+        // Weaving descent chasing the player: move downward, oscillate horizontally.
+        const t = ENEMY_TYPES[this.type];
+        this.weavePhase += dt * t.weaveFreq;
+        const baseX = player ? player.cx : W / 2;
+        const weave = Math.sin(this.weavePhase) * t.weaveAmp;
+        const desiredX = baseX + weave - this.w / 2;
+        // Steer toward the weaving target; keep falling.
+        this.x += (desiredX - this.x) * Math.min(1, dt * 6);
+        this.y += t.diveSpeed * dt;
+        // Fire an enemy bullet occasionally while diving.
+        this.fireTimer -= dt;
+        if (this.fireTimer <= 0) {
+          this._fireBullet();
+          this.fireTimer = t.fireEvery * (0.7 + Math.random() * 0.6);
+        }
+        // Exit the bottom -> remove.
+        if (this.y > H + this.h) {
+          this.dead = true;
+        }
+        break;
+      }
+
+      case "returning": {
+        // Fly back up to the slot (straight line, eased).
+        const dx = (this.slot.x - this.w / 2) - this.x;
+        const dy = (this.slot.y - this.h / 2) - this.y;
+        const dist = Math.hypot(dx, dy);
+        const speed = 320;
+        if (dist < 4) {
+          this.x = this.slot.x - this.w / 2;
+          this.y = this.slot.y - this.h / 2;
+          this.state = "idle";
+          this.diveTimer = 2 + Math.random() * 3;
+        } else {
+          this.x += (dx / dist) * speed * dt;
+          this.y += (dy / dist) * speed * dt;
+        }
+        break;
+      }
+    }
+
+    // Record velocity for render-time rotation.
+    this.vx = (this.x - px) / Math.max(dt, 0.0001);
+    this.vy = (this.y - py) / Math.max(dt, 0.0001);
+  }
+
+  /** Spawn an enemy bullet aimed roughly at the player (downward bias). */
+  _fireBullet() {
+    if (!Game || !Game.player) return;
+    const p = Game.player;
+    const bx = this.cx;
+    const by = this.y + this.h;
+    const speed = 300;
+    // Aim toward the player but always keep a strong downward component.
+    const ang = Math.atan2(p.cy - this.cy, p.cx - this.cx);
+    let vx = Math.cos(ang) * speed;
+    let vy = Math.abs(Math.sin(ang)) * speed + 120; // force downward
+    Game.enemyBullets.push({ x: bx, y: by, vx, vy, w: 3, h: 8 });
+  }
+
+  /** Draw the enemy sprite; rotate toward travel direction while diving. */
+  render(ctx) {
+    const frame = Math.floor(this.time * 8) % 2;
+    ctx.save();
+    if (this.state === "diving" || this.state === "returning") {
+      // Point the sprite along its velocity vector.
+      const angle = Math.atan2(this.vy, this.vx);
+      ctx.translate(this.cx, this.cy);
+      ctx.rotate(angle + Math.PI / 2); // sprites face "up", so offset by 90deg
+      drawSprite(ctx, this.type, frame, -this.w / 2, -this.h / 2, 1);
+    } else {
+      drawSprite(ctx, this.type, frame, this.x, this.y, 1);
+    }
+    ctx.restore();
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Boss (Task 3.2)
+ * -------------------------------------------------------------------------
+ * A large boss entity using the 'boss' sprite at ~2x scale. Appears every 4th
+ * wave (wave % 4 === 0). Enters from the top, hovers near the upper area, and
+ * strafes side to side. Fires spread volleys (3-5 bullets in a fan) toward the
+ * player every `fireRate` seconds. On death: multiple particle bursts + big
+ * shake + high point award.
+ * ------------------------------------------------------------------------- */
+class Boss {
+  constructor() {
+    this.w = 48 * 2;   // 2x scale
+    this.h = 40 * 2;
+    this.scale = 2;
+    this.hp = 10;
+    this.maxHp = 10;
+    this.points = 5000;
+    this.x = W / 2 - this.w / 2;
+    this.y = -this.h;
+    this.state = "entering"; // entering -> active
+    this.time = 0;
+    this.hoverY = 90;        // vertical band the boss hovers around
+    this.strafeX = 0;        // strafe phase
+    this.fireRate = 0.8;     // seconds between spread volleys
+    this.fireTimer = 1.2;
+    this.dead = false;
+    this.deathT = 0;         // drives the multi-burst death sequence
+  }
+
+  get cx() { return this.x + this.w / 2; }
+  get cy() { return this.y + this.h / 2; }
+
+  /** Fire a fan of 3-5 bullets toward the player. */
+  _fireVolley(player) {
+    if (!player) return;
+    const n = 3 + Math.floor(Math.random() * 3); // 3..5
+    const spread = 0.5;                          // total fan width (radians)
+    const baseAng = Math.atan2(player.cy - this.cy, player.cx - this.cx);
+    const speed = 260;
+    for (let i = 0; i < n; i++) {
+      const f = n === 1 ? 0 : (i / (n - 1)) - 0.5; // -0.5 .. 0.5
+      const a = baseAng + f * spread;
+      Game.enemyBullets.push({
+        x: this.cx,
+        y: this.y + this.h * 0.7,
+        vx: Math.cos(a) * speed,
+        vy: Math.abs(Math.sin(a)) * speed + 140,
+        w: 4,
+        h: 10,
+      });
+    }
+  }
+
+  /** Advance the boss by dt seconds. */
+  update(dt, player) {
+    this.time += dt;
+
+    if (this.state === "entering") {
+      this.y += 120 * dt;
+      if (this.y >= this.hoverY) {
+        this.y = this.hoverY;
+        this.state = "active";
+      }
+      return;
+    }
+
+    // Active: hover with a gentle vertical bob and horizontal strafe.
+    this.strafeX += dt * 0.8;
+    const strafe = Math.sin(this.strafeX) * (W / 2 - this.w / 2 - 20);
+    this.x = W / 2 - this.w / 2 + strafe;
+    this.y = this.hoverY + Math.sin(this.time * 1.5) * 12;
+
+    // Volley timer.
+    this.fireTimer -= dt;
+    if (this.fireTimer <= 0) {
+      this._fireVolley(player);
+      this.fireTimer = this.fireRate;
+    }
+  }
+
+  /** Take a hit. Returns true if the boss just died. */
+  hit() {
+    this.hp -= 1;
+    if (this.hp <= 0) {
+      this.dead = true;
+      this.deathT = 0;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Play out the death sequence over ~0.6s: several staggered particle bursts
+   * plus a big screen shake. Call each frame while dead until fully done.
+   * @returns {boolean} true when the death animation is complete
+   */
+  updateDeath(dt) {
+    this.deathT += dt;
+    const bursts = 5;
+    const burstInterval = 0.12;
+    const idx = Math.floor(this.deathT / burstInterval);
+    if (idx < bursts && idx !== this._lastBurst) {
+      this._lastBurst = idx;
+      const ox = (Math.random() - 0.5) * this.w;
+      const oy = (Math.random() - 0.5) * this.h;
+      const colors = ["#39d353", "#9b3fe0", "#ffe23e", "#ff3b30"];
+      if (Game.particleSystem) {
+        Game.particleSystem.explode(
+          this.cx + ox, this.cy + oy,
+          colors[idx % colors.length], 30
+        );
+      }
+      if (Game.screenshake) Game.screenshake.add(10);
+      if (sfx) sfx.explode(1.5 + idx * 0.3);
+    }
+    return this.deathT >= burstInterval * bursts;
+  }
+
+  /** Draw the boss sprite at 2x scale with animated frames. */
+  render(ctx) {
+    const frame = Math.floor(this.time * 6) % 2;
+    drawSprite(ctx, "boss", frame, this.x, this.y, this.scale);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Formation builder (Task 3.2)
+ * -------------------------------------------------------------------------
+ * Builds the grid of slots near the top of the screen and assigns a type to
+ * each slot following the classic Galaga layout: fighters on top (most points),
+ * butterflies in the middle, bees on the bottom. Returns an array of Enemy
+ * instances, staggered so they enter one-by-one.
+ * ------------------------------------------------------------------------- */
+function buildFormation(wave) {
+  const enemies = [];
+  const cols = 8;
+  const rows = 4;
+  const startX = W / 2 - ((cols - 1) * 56) / 2;
+  const startY = 70;
+  const gapX = 56;
+  const gapY = 44;
+
+  // Type per row (top->bottom): fighter, butterfly, bee, bee.
+  const rowTypes = ["fighter", "butterfly", "bee", "bee"];
+
+  let order = 0;
+  for (let r = 0; r < rows; r++) {
+    for (let cIdx = 0; cIdx < cols; cIdx++) {
+      const sx = startX + cIdx * gapX;
+      const sy = startY + r * gapY;
+      const type = rowTypes[r];
+      const e = new Enemy(type, { x: sx, y: sy });
+      // Stagger the entry so enemies arrive one-by-one (spiral cascade).
+      e.entryDur = 1.2 + order * 0.12;
+      // Delay start by holding them higher up initially.
+      e.y = -e.h - order * 18;
+      enemies.push(e);
+      order++;
+    }
+  }
+  return enemies;
+}
+
+/* ---------------------------------------------------------------------------
+ * PowerUp (Task 3.3)
+ * -------------------------------------------------------------------------
+ * A collectible that drops from destroyed fighters and falls slowly toward the
+ * bottom of the screen. Four types, each with a distinct color + letter glyph:
+ *   shield -> 5s invincibility bubble around the player
+ *   triple -> 8s 3-way spread shot (player.spread = true while active)
+ *   slow   -> 6s global enemy slowFactor (enemies move at 50% speed)
+ *   bomb   -> single use: clears every enemy currently on screen
+ * ------------------------------------------------------------------------- */
+const POWERUP_TYPES = {
+  shield: { color: "#3ef0ff", letter: "S", label: "SHIELD" },
+  triple: { color: "#ffe23e", letter: "T", label: "TRIPLE" },
+  slow:   { color: "#9b3fe0", letter: "S", label: "SLOW" },
+  bomb:   { color: "#ff3b30", letter: "B", label: "BOMB" },
+};
+
+class PowerUp {
+  /**
+   * @param {string} type one of 'shield' | 'triple' | 'slow' | 'bomb'
+   * @param {number} x    center-x spawn position
+   * @param {number} y    top spawn position
+   */
+  constructor(type, x, y) {
+    this.type = type;
+    const t = POWERUP_TYPES[type];
+    this.color = t.color;
+    this.letter = t.letter;
+    this.label = t.label;
+    this.x = x;          // center-x
+    this.y = y;          // center-y
+    this.r = 11;         // collision radius
+    this.vy = 70;        // slow downward fall (px/s)
+    this.wobblePhase = Math.random() * Math.PI * 2;
+    this.time = 0;
+    this.dead = false;
+  }
+
+  update(dt) {
+    this.time += dt;
+    this.y += this.vy * dt;
+    // Gentle horizontal wobble so it reads as a floating pickup.
+    this.x += Math.sin(this.time * 3 + this.wobblePhase) * 14 * dt;
+    if (this.y - this.r > H) this.dead = true; // fell off the bottom
+  }
+
+  render(ctx) {
+    ctx.save();
+    // Soft pulsing glow ring.
+    const pulse = 0.6 + 0.4 * Math.sin(this.time * 8);
+    ctx.globalAlpha = 0.35 * pulse;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r + 4, 0, Math.PI * 2);
+    ctx.fill();
+    // Solid core disc.
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fill();
+    // Letter glyph.
+    ctx.fillStyle = "#000";
+    ctx.font = "bold 13px 'Courier New', monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(this.letter, this.x, this.y + 1);
+    ctx.restore();
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Game object skeleton
+ * -------------------------------------------------------------------------
+ * Provides the start()/update(dt)/render() contract the rest of the milestones
+ * will build on. Drives the real Player ship (Task 3.1), its bullet array,
+ * the parallax starfield background, and the VFX systems from Task 2.2.
+ * ------------------------------------------------------------------------- */
+const W = 480;   // internal canvas width
+const H = 640;   // internal canvas height
+
+const Game = {
+  canvas: document.getElementById("game"),
+  ctx: null,
+  running: false,
+  lastTime: 0,
+  wave: 1, // current wave number (drives music intensity)
+  starfield: new Starfield(W, H), // parallax background layer
+  time: 0,                        // accumulated game time (for sprite animation)
+
+  /* -- Task 4.1: game state machine ---------------------------------------- */
+  state: "title",        // 'title' | 'waveIntro' | 'playing' | 'bossFight' | 'paused' | 'gameOver'
+  prevState: null,       // state we were in before pausing (for resume)
+  waveIntroTimer: 0,     // countdown for the "WAVE N" interstitial (~2s)
+  gameOverTimer: 0,      // short delay before accepting restart on game-over
+  newHighScore: false,   // set when this run beat the stored high score
+  stats: { kills: 0, wavesCleared: 0 }, // per-run stats shown on game-over
+
+  /* -- Task 2.2: VFX systems ------------------------------------------------ */
+  particleSystem: null,           // ParticleSystem (assigned in start())
+  screenshake: null,              // ScreenShake
+  muzzleFlash: null,              // MuzzleFlash
+  deathAnim: null,                // DeathAnim
+
+  /* -- Task 3.1: player + projectiles -------------------------------------- */
+  player: null,                   // real Player instance (assigned in start())
+  bullets: [],                    // active player bullets
+
+  /* -- Task 3.2: enemies + boss -------------------------------------------- */
+  enemies: [],                    // active Enemy instances (formation)
+  enemyBullets: [],               // active enemy bullets (move downward)
+  boss: null,                     // current Boss instance (or null)
+
+  /* -- Task 3.3: scoring, combo & power-ups -------------------------------- */
+  score: 0,                       // running score for this run
+  highScore: 0,                   // persisted best (localStorage 'galaga38_high')
+  combo: 1,                       // current multiplier x1..x3
+  comboTimer: 0,                  // seconds since last kill (resets combo at >2s)
+  powerUps: [],                   // active PowerUp instances on screen
+  slowFactor: 1,                  // global enemy speed multiplier (SLOW power-up)
+  _powerCycle: 0,                 // round-robin index so all 4 types appear
+
+  /* -- Music lifecycle stubs ------------------------------------------------
+   * The full game state machine lands in a later task; for now these give us
+   * clean entry/exit points so gameplay can start/stop the background loop. */
+  startMusic() {
+    if (music) music.start(this.wave);
+  },
+  stopMusic() {
+    if (music) music.stop();
+  },
+  setWave(n) {
+    this.wave = Math.max(1, n);
+    if (music && music.playing) music.setIntensity(MusicSequencer.intensityForWave(this.wave));
+  },
+
+  /**
+   * Build a fresh enemy formation for the current wave and spawn a boss when
+   * the wave is a multiple of 4. Called at gameplay start and after clearing
+   * a wave.
+   */
+  setupWave() {
+    this.enemies = buildFormation(this.wave);
+    this.enemyBullets = [];
+    // Boss appears every 4th wave (wave % 4 === 0).
+    this.boss = (this.wave % 4 === 0) ? new Boss() : null;
+  },
+
+  // The real Player instance is created in start() (Task 3.1).
+  // (Kept as a field so Input's shoot hook can read Game.player safely.)
+
+  start() {
+    this.ctx = this.canvas.getContext("2d");
+    // Task 2.2: instantiate the particle / VFX systems.
+    this.particleSystem = new ParticleSystem();
+    this.screenshake = new ScreenShake();
+    this.muzzleFlash = new MuzzleFlash();
+    this.deathAnim = new DeathAnim(this.particleSystem);
+    // Task 3.1: create the real player ship + clear any leftover bullets.
+    this.player = new Player(W / 2 - 12, H - 60);
+    this.bullets = [];
+    // Task 3.3: reset scoring state + load persisted high score.
+    this.score = 0;
+    this.combo = 1;
+    this.comboTimer = 0;
+    this.powerUps = [];
+    this.slowFactor = 1;
+    this._powerCycle = 0;
+    try {
+      const hs = parseInt(localStorage.getItem("galaga38_high"), 10);
+      this.highScore = isNaN(hs) ? 0 : hs;
+    } catch (e) { this.highScore = 0; }
+    // Begin on the title screen. The render loop always runs so the starfield
+    // animates for ambiance; gameplay entities only update in playing states.
+    this.state = "title";
+    this.running = true;
+    this.lastTime = performance.now();
+    requestAnimationFrame((t) => this.loop(t));
+  },
+
+  /* =========================================================================
+   * Task 4.1 — Game state machine
+   * ------------------------------------------------------------------------- */
+
+  /**
+   * Begin a fresh run from the title or game-over screen.
+   * Resets the player, clears all entities, sets wave 1, builds the formation,
+   * and transitions into the wave-intro interstitial with music started.
+   */
+  startGame() {
+    // Reset player: full lives, centered position, no lingering power-ups.
+    this.player = new Player(W / 2 - 12, H - 60);
+    this.bullets = [];
+    this.enemyBullets = [];
+    this.powerUps = [];
+    this.enemies = [];
+    this.boss = null;
+    this.score = 0;
+    this.combo = 1;
+    this.comboTimer = 0;
+    this.slowFactor = 1;
+    this._tripleTimer = null;
+    this._slowTimer = null;
+    this._powerCycle = 0;
+    this.newHighScore = false;
+    this.stats = { kills: 0, wavesCleared: 0 };
+
+    // First wave of the run.
+    this.setWave(1);
+    this.setupWave();
+
+    // Music starts as soon as gameplay begins.
+    this.startMusic();
+
+    // Enter the "WAVE N" interstitial; it auto-advances to 'playing'.
+    this.state = "waveIntro";
+    this.waveIntroTimer = 2.0;
+    if (sfx) sfx.waveIntro();
+  },
+
+  /** Freeze gameplay: stop updating entities and silence the music. */
+  pause() {
+    if (this.state !== "playing" && this.state !== "bossFight") return;
+    this.prevState = this.state;
+    this.state = "paused";
+    this.stopMusic();
+  },
+
+  /** Resume from pause: restart the music at the current wave's intensity. */
+  resume() {
+    if (this.state !== "paused") return;
+    this.state = this.prevState || "playing";
+    this.startMusic();
+  },
+
+  /** Advance the wave number and refresh music intensity live. */
+  _advanceWave() {
+    this.stats.wavesCleared += 1;
+    this.setWave(this.wave + 1);
+    this.setupWave();
+    // Boss waves go straight to bossFight; normal waves replay the intro.
+    if (this.wave % 4 === 0) {
+      this.state = "bossFight";
+    } else {
+      this.state = "waveIntro";
+      this.waveIntroTimer = 2.0;
+      if (sfx) sfx.waveIntro();
+    }
+  },
+
+  /** Transition into the boss fight when a boss is active and enemies are gone. */
+  _enterBossFight() {
+    if (this.boss && !this.boss.dead) this.state = "bossFight";
+  },
+
+  /** Handle game-over: play SFX, stop music, record stats, enter gameOver. */
+  _onGameOver() {
+    this.newHighScore = this.score > 0 && this.score >= this.highScore;
+    if (sfx) sfx.gameOver();
+    this.stopMusic();
+    this.state = "gameOver";
+    this.gameOverTimer = 0.6; // brief lockout so we don't instantly restart
+  },
+
+  /**
+   * Master update entry point. Delegates to the state machine so gameplay
+   * entities only advance during 'playing' / 'bossFight', while the starfield
+   * keeps drifting for ambiance on title/pause/game-over screens.
+   */
+  update(dt) {
+    // Starfield always animates (ambiance on every screen).
+    this.starfield.update(dt);
+    this._updateByState(dt);
+  },
+
+  /**
+   * Fairness-oriented collision test. Accepts any mix of circle-based entities
+   * ({x,y,r} or {cx,cy,r}) and AABB boxes ({x,y,w,h}), and returns true when
+   * they overlap. Circles use a center-distance check; boxes use AABB overlap.
+   */
+  hitTest(a, b) {
+    const ac = this._circleOf(a);
+    const bc = this._circleOf(b);
+    if (ac && bc) {
+      // Circle vs circle: compare distance to summed radii.
+      const dx = ac.x - bc.x, dy = ac.y - bc.y;
+      const rr = ac.r + bc.r;
+      return dx * dx + dy * dy <= rr * rr;
+    }
+    // Fall back to AABB for box/box or box/circle (approximated as its box).
+    const ab = this._boxOf(a);
+    const bb = this._boxOf(b);
+    return ab.x < bb.x + bb.w && ab.x + ab.w > bb.x &&
+           ab.y < bb.y + bb.h && ab.y + ab.h > bb.y;
+  },
+
+  /** Derive a {x,y,r} circle from an entity, or null if it's box-only. */
+  _circleOf(e) {
+    if (e.r != null) {
+      if (e.cx != null) return { x: e.cx, y: e.cy, r: e.r };
+      return { x: e.x, y: e.y, r: e.r }; // x/y treated as center
+    }
+    return null;
+  },
+
+  /** Derive an {x,y,w,h} box from an entity (center+radius -> bounding box). */
+  _boxOf(e) {
+    if (e.w != null && e.h != null) {
+      if (e.cx != null) return { x: e.cx - e.w / 2, y: e.cy - e.h / 2, w: e.w, h: e.h };
+      return { x: e.x, y: e.y, w: e.w, h: e.h };
+    }
+    // Circle-only entity: synthesize a square box around its center.
+    const c = this._circleOf(e);
+    return { x: c.x - c.r, y: c.y - c.r, w: c.r * 2, h: c.r * 2 };
+  },
+
+  /**
+   * Award points for a kill, advancing the combo multiplier (x1 -> x2 -> x3).
+   * A kill within 2s of the previous one raises/maintains the combo; otherwise
+   * it starts fresh at x1. Persists the high score whenever it is exceeded.
+   */
+  _awardPoints(base, x, y) {
+    // Combo: each kill resets the timer; multiplier climbs up to x3.
+    this.comboTimer = 0;
+    if (this.combo < 3) this.combo += 1; // first kill after idle bumps toward x2/x3
+    const pts = base * this.combo;
+    this.score += pts;
+    this.stats.kills += 1;
+    if (this.score > this.highScore) {
+      this.highScore = this.score;
+      try { localStorage.setItem("galaga38_high", String(this.highScore)); } catch (e) {}
+    }
+    // Floating score popup via particles (visual feedback only).
+    if (Game.particleSystem) Game.particleSystem.explode(x, y, "#ffe23e", 6);
+  },
+
+  /** Spawn a power-up drop from a destroyed fighter (~25% chance). */
+  _maybeDropPowerUp(x, y) {
+    if (Math.random() > 0.25) return;
+    // Round-robin cycle guarantees all four types appear over time.
+    const order = ["shield", "triple", "slow", "bomb"];
+    const type = order[this._powerCycle % order.length];
+    this._powerCycle += 1;
+    this.powerUps.push(new PowerUp(type, x, y));
+  },
+
+  /** Apply a collected power-up's effect to the game/player state. */
+  _applyPowerUp(pu) {
+    if (sfx) sfx.powerUp();
+    switch (pu.type) {
+      case "shield":
+        // 5s invincibility bubble (rendered by Player while shieldTimer > 0).
+        this.player.shieldTimer = Math.max(this.player.shieldTimer, 5);
+        break;
+      case "triple":
+        // 8s 3-way spread shot.
+        this.player.spread = true;
+        this._tripleTimer = 8;
+        break;
+      case "slow":
+        // 6s global enemy slow (enemies move at 50% speed).
+        this.slowFactor = 0.5;
+        this._slowTimer = 6;
+        break;
+      case "bomb":
+        // Single use: clear every enemy currently on screen.
+        this._triggerBomb();
+        break;
+    }
+  },
+
+  /** BOMB: multi-explosion that destroys all on-screen enemies. */
+  _triggerBomb() {
+    if (Game.screenshake) Game.screenshake.add(14);
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      e.dead = true;
+      if (Game.deathAnim) Game.deathAnim.killEntity(e, { flashTime: 0.08 });
+      if (Game.particleSystem) Game.particleSystem.explode(e.cx, e.cy, "#ff9a1e", 20);
+      this._awardPoints(e.points, e.cx, e.cy);
+    }
+    if (sfx) sfx.explode(2);
+  },
+
+  /** Tick active power-up timers (spread/slow durations) once per frame. */
+  _tickPowerTimers(dt) {
+    if (this._tripleTimer != null) {
+      this._tripleTimer -= dt;
+      if (this._tripleTimer <= 0) {
+        this._tripleTimer = null;
+        if (this.player) this.player.spread = false;
+      }
+    }
+    if (this._slowTimer != null) {
+      this._slowTimer -= dt;
+      if (this._slowTimer <= 0) {
+        this._slowTimer = null;
+        this.slowFactor = 1;
+      }
+    }
+  },
+
+  /**
+   * Resolve player-bullet vs enemy/boss collisions (award points, kill), and
+   * enemy-bullet / enemy-body vs player collisions (register hits).
+   */
+  _resolveCollisions() {
+    const p = this.player;
+
+    // Player bullets hitting enemies / boss.
+    for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+      const b = this.bullets[bi];
+      let consumed = false;
+
+      // Check boss first (it's bigger / more important).
+      if (this.boss && !this.boss.dead && this.hitTest(b, this.boss)) {
+        const died = this.boss.hit();
+        if (!died && Game.particleSystem) {
+          // Small spark where the bullet struck the hull.
+          Game.particleSystem.explode(b.x, b.y, "#9b3fe0", 4);
+        }
+        consumed = true;
+      }
+
+      // Check each enemy.
+      if (!consumed) {
+        for (let ei = this.enemies.length - 1; ei >= 0; ei--) {
+          const e = this.enemies[ei];
+          if (e.dead) continue;
+          if (this.hitTest(b, e)) {
+            e.dead = true;
+            if (Game.deathAnim) Game.deathAnim.killEntity(e, { flashTime: 0.08 });
+            if (sfx) sfx.explode(0.6);
+            this._awardPoints(e.points, e.cx, e.cy);
+            this._maybeDropPowerUp(e.cx, e.cy);
+            consumed = true;
+            break;
+          }
+        }
+      }
+
+      if (consumed) this.bullets.splice(bi, 1);
+    }
+
+    // Enemy bullets hitting the player (blocked while shielded/invincible).
+    for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
+      const b = this.enemyBullets[i];
+      if (this.hitTest(b, p)) {
+        this.enemyBullets.splice(i, 1);
+        if (p.shieldTimer > 0 || p.invincible > 0) continue; // shield absorbs it
+        if (p.hit()) this._onGameOver();
+      }
+    }
+
+    // Diving enemies colliding with the player (ramming).
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      if (e.state === "diving" && this.hitTest(e, p)) {
+        e.dead = true;
+        if (Game.deathAnim) Game.deathAnim.killEntity(e, { flashTime: 0.08 });
+        if (p.shieldTimer > 0 || p.invincible > 0) continue; // shield absorbs it
+        if (p.hit()) this._onGameOver();
+      }
+    }
+  },
+
+  render() {
+    const c = this.ctx;
+    // Clear to black.
+    c.fillStyle = "#000";
+    c.fillRect(0, 0, W, H);
+
+    // Background layer: parallax starfield (always drawn, never shaken).
+    this.starfield.render(c);
+
+    // ---- World entities (inside the screen-shake translate) ----------------
+    // Only draw gameplay entities when we're in an active or transitional state.
+    const showWorld = this.state === "playing" || this.state === "bossFight" ||
+                      this.state === "waveIntro" || this.state === "paused";
+    if (showWorld) {
+      this.screenshake.render(c, () => {
+        for (const e of this.enemies) e.render(c);
+        if (this.boss && !this.boss.dead) this.boss.render(c);
+
+        // Enemy bullets.
+        for (const b of this.enemyBullets) {
+          c.fillStyle = "#ff5a1e";
+          c.fillRect(b.x - b.w / 2, b.y, b.w, b.h);
+          c.fillStyle = "#ffe23e";
+          c.fillRect(b.x - b.w / 4, b.y + 1, b.w / 2, b.h - 2);
+        }
+
+        // Player ship.
+        this.player.render(c);
+
+        // Player bullets.
+        for (const b of this.bullets) {
+          c.fillStyle = "#3ef0ff";
+          c.fillRect(b.x - b.w / 2, b.y, b.w, b.h);
+          c.fillStyle = "#ffffff";
+          c.fillRect(b.x - b.w / 4, b.y + 1, b.w / 2, b.h - 2);
+        }
+
+        // Power-ups.
+        for (const pu of this.powerUps) pu.render(c);
+
+        // Death-flash overlays.
+        this.deathAnim.render(c);
+
+        // Particles.
+        this.particleSystem.render(c);
+
+        // Muzzle flash.
+        this.muzzleFlash.render(c);
+      });
+    }
+
+    // ---- State-specific screens & HUD ---------------------------------------
+    switch (this.state) {
+      case "title":
+        this._renderTitle(c);
+        break;
+      case "waveIntro":
+        this._renderHUD(c);
+        this._renderWaveIntro(c);
+        break;
+      case "playing":
+      case "bossFight":
+        this._renderHUD(c);
+        break;
+      case "paused":
+        this._renderHUD(c);
+        this._renderPause(c);
+        break;
+      case "gameOver":
+        this._renderGameOver(c);
+        break;
+    }
+  },
+
+  /* =========================================================================
+   * Task 4.1 — Screen renderers
+   * ------------------------------------------------------------------------- */
+
+  /** Arcade-style title screen: big logo, high score, blinking start prompt. */
+  _renderTitle(c) {
+    const t = performance.now() / 1000;
+
+    // Animated flourish: a slow pulsing ring behind the logo.
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2);
+    c.save();
+    c.globalAlpha = 0.12 + 0.08 * pulse;
+    c.strokeStyle = "#3e7bff";
+    c.lineWidth = 3;
+    c.beginPath();
+    c.arc(W / 2, 220, 90 + 12 * pulse, 0, Math.PI * 2);
+    c.stroke();
+    c.restore();
+
+    // Logo text with a subtle vertical bob.
+    const bob = Math.sin(t * 1.5) * 4;
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+
+    // Shadow layer for depth.
+    c.font = "bold 52px 'Courier New', monospace";
+    c.fillStyle = "#1b3fbf";
+    c.fillText("GALAGA", W / 2 + 3, 210 + bob + 3);
+    c.fillStyle = "#3ef0ff";
+    c.fillText("GALAGA", W / 2, 210 + bob);
+
+    c.font = "bold 36px 'Courier New', monospace";
+    c.fillStyle = "#1b3fbf";
+    c.fillText("3.8", W / 2 + 2, 262 + bob + 2);
+    c.fillStyle = "#ffe23e";
+    c.fillText("3.8", W / 2, 262 + bob);
+
+    // High score.
+    c.font = "16px 'Courier New', monospace";
+    c.fillStyle = "#8fa0d0";
+    c.fillText(`HIGH SCORE: ${this.highScore || 0}`, W / 2, 340);
+
+    // Blinking "PRESS ENTER" prompt (on/off every ~500ms).
+    if (Math.floor(t * 2) % 2 === 0) {
+      c.font = "bold 18px 'Courier New', monospace";
+      c.fillStyle = "#ffffff";
+      c.fillText("PRESS ENTER TO START", W / 2, 420);
+    }
+
+    // Controls hint at the bottom.
+    c.font = "12px 'Courier New', monospace";
+    c.fillStyle = "#5a6a9a";
+    c.fillText("\u2190/\u2192/WASD move \u00b7 SPACE shoot \u00b7 P pause \u00b7 M mute", W / 2, H - 40);
+
+    c.textAlign = "left";
+    c.textBaseline = "alphabetic";
+  },
+
+  /** Top-bar HUD: SCORE | HI | WAVE | LIVES icons | active power-up timer. */
+  _renderHUD(c) {
+    c.save();
+    c.font = "bold 13px 'Courier New', monospace";
+    c.textBaseline = "top";
+
+    // Background strip for readability.
+    c.fillStyle = "rgba(0,0,0,0.45)";
+    c.fillRect(0, 0, W, 52);
+    c.strokeStyle = "#2b3a7a";
+    c.lineWidth = 1;
+    c.beginPath();
+    c.moveTo(0, 52);
+    c.lineTo(W, 52);
+    c.stroke();
+
+    // --- Left column: SCORE / HI -------------------------------------------
+    c.textAlign = "left";
+    c.fillStyle = "#ffe23e";
+    c.fillText(`SCORE ${String(this.score || 0).padStart(7, "0")}`, 10, 8);
+    c.fillStyle = "#8fa0d0";
+    c.font = "11px 'Courier New', monospace";
+    c.fillText(`HI ${String(this.highScore || 0).padStart(7, "0")}`, 10, 26);
+
+    // --- Center: WAVE --------------------------------------------------------
+    c.textAlign = "center";
+    c.font = "bold 13px 'Courier New', monospace";
+    c.fillStyle = this.state === "bossFight" ? "#ff3b30" : "#3ef0ff";
+    const waveLabel = this.state === "bossFight" ? "BOSS" : `WAVE ${this.wave}`;
+    c.fillText(waveLabel, W / 2, 8);
+
+    // Combo indicator (only when above x1).
+    if (this.combo > 1) {
+      c.font = "11px 'Courier New', monospace";
+      c.fillStyle = this.combo >= 3 ? "#ff3b30" : "#3ef0ff";
+      c.fillText(`COMBO x${this.combo}`, W / 2, 26);
+    }
+
+    // --- Right: LIVES icons --------------------------------------------------
+    c.textAlign = "right";
+    c.font = "bold 13px 'Courier New', monospace";
+    c.fillStyle = "#3ef0ff";
+    c.fillText(`LIVES ${Math.max(0, this.player.lives)}`, W - 10, 8);
+    // Ship icons (one per remaining life).
+    const lives = Math.max(0, this.player.lives);
+    for (let i = 0; i < lives; i++) {
+      const ix = W - 14 - (i + 1) * 16;
+      const iy = 28;
+      c.fillStyle = "#3e7bff";
+      c.beginPath();
+      c.moveTo(ix + 5, iy);
+      c.lineTo(ix, iy + 12);
+      c.lineTo(ix + 10, iy + 12);
+      c.closePath();
+      c.fill();
+    }
+
+    // --- Active power-up timers (below the bar) ------------------------------
+    let py = 58;
+    c.textAlign = "left";
+    c.font = "11px 'Courier New', monospace";
+    if (this.player && this.player.shieldTimer > 0) {
+      c.fillStyle = POWERUP_TYPES.shield.color;
+      c.fillText(`\u25cf SHIELD ${this.player.shieldTimer.toFixed(1)}s`, 10, py);
+      py += 14;
+    }
+    if (this._tripleTimer != null && this._tripleTimer > 0) {
+      c.fillStyle = POWERUP_TYPES.triple.color;
+      c.fillText(`\u25cf TRIPLE ${this._tripleTimer.toFixed(1)}s`, 10, py);
+      py += 14;
+    }
+    if (this._slowTimer != null && this._slowTimer > 0) {
+      c.fillStyle = POWERUP_TYPES.slow.color;
+      c.fillText(`\u25cf SLOW ${this._slowTimer.toFixed(1)}s`, 10, py);
+      py += 14;
+    }
+
+    // Mute indicator (small, top-right corner).
+    if (sfx && sfx.muted) {
+      c.textAlign = "right";
+      c.fillStyle = "#5a6a9a";
+      c.font = "10px 'Courier New', monospace";
+      c.fillText("[MUTED]", W - 10, 44);
+    }
+
+    c.restore();
+  },
+
+  /** Big centered "WAVE N" text that fades/scales in over ~2s. */
+  _renderWaveIntro(c) {
+    const elapsed = 2.0 - this.waveIntroTimer; // 0 -> 2
+    const alpha = Math.min(1, elapsed / 0.5);  // fade in over first 0.5s
+    const scale = 0.8 + 0.2 * Math.min(1, elapsed / 0.8); // slight zoom-in
+
+    c.save();
+    c.globalAlpha = alpha;
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.translate(W / 2, H / 2);
+    c.scale(scale, scale);
+
+    const label = (this.boss && !this.boss.dead) ? "BOSS BATTLE" : `WAVE ${this.wave}`;
+    c.font = "bold 48px 'Courier New', monospace";
+    c.fillStyle = "#1b3fbf";
+    c.fillText(label, 3, 3);
+    c.fillStyle = this.boss && !this.boss.dead ? "#ff3b30" : "#3ef0ff";
+    c.fillText(label, 0, 0);
+
+    c.restore();
+  },
+
+  /** Dimmed semi-transparent overlay with "PAUSED" and resume hint. */
+  _renderPause(c) {
+    c.save();
+    // Dim overlay.
+    c.fillStyle = "rgba(0,0,0,0.6)";
+    c.fillRect(0, 0, W, H);
+
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.font = "bold 42px 'Courier New', monospace";
+    c.fillStyle = "#ffffff";
+    c.fillText("PAUSED", W / 2, H / 2 - 20);
+
+    c.font = "16px 'Courier New', monospace";
+    c.fillStyle = "#8fa0d0";
+    c.fillText("Press P to resume", W / 2, H / 2 + 24);
+    c.restore();
+  },
+
+  /** Game-over screen: final score, high score, NEW HIGH banner, restart prompt. */
+  _renderGameOver(c) {
+    const t = performance.now() / 1000;
+
+    // Dim overlay.
+    c.fillStyle = "rgba(0,0,0,0.7)";
+    c.fillRect(0, 0, W, H);
+
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+
+    // "GAME OVER" header.
+    c.font = "bold 44px 'Courier New', monospace";
+    c.fillStyle = "#1b3fbf";
+    c.fillText("GAME OVER", W / 2 + 3, 180 + 3);
+    c.fillStyle = "#ff3b30";
+    c.fillText("GAME OVER", W / 2, 180);
+
+    // Stats block.
+    c.font = "16px 'Courier New', monospace";
+    c.fillStyle = "#cfd8ff";
+    c.fillText(`FINAL SCORE: ${this.score}`, W / 2, 260);
+    c.fillStyle = "#8fa0d0";
+    c.fillText(`HIGH SCORE: ${this.highScore}`, W / 2, 288);
+    c.fillText(`WAVES CLEARED: ${this.stats.wavesCleared}`, W / 2, 316);
+    c.fillText(`ENEMIES DESTROYED: ${this.stats.kills}`, W / 2, 344);
+
+    // "NEW HIGH!" banner (pulsing) if applicable.
+    if (this.newHighScore) {
+      const pulse = 0.6 + 0.4 * Math.sin(t * 4);
+      c.save();
+      c.globalAlpha = pulse;
+      c.font = "bold 28px 'Courier New', monospace";
+      c.fillStyle = "#ffe23e";
+      c.fillText("\u2605 NEW HIGH! \u2605", W / 2, 400);
+      c.restore();
+    }
+
+    // Restart prompt (blinking).
+    if (this.gameOverTimer <= 0 && Math.floor(t * 2) % 2 === 0) {
+      c.font = "bold 18px 'Courier New', monospace";
+      c.fillStyle = "#ffffff";
+      c.fillText("PRESS ENTER", W / 2, 470);
+    }
+
+    c.textAlign = "left";
+    c.textBaseline = "alphabetic";
+  },
+
+  loop(now) {
+    if (!this.running) return;
+    const dt = Math.min((now - this.lastTime) / 1000, 0.05); // cap dt (tab-switch safety)
+    this.lastTime = now;
+    this.update(dt);
+    this.render();
+    requestAnimationFrame((t) => this.loop(t));
+  },
+
+  /* =========================================================================
+   * Task 4.1 — State-gated update & render
+   * ------------------------------------------------------------------------- */
+
+  /**
+   * Master update: routes to the right per-state logic. The starfield always
+   * animates for ambiance (title/pause/game-over); gameplay entities only
+   * update during 'playing' and 'bossFight'.
+   */
+  _updateByState(dt) {
+    switch (this.state) {
+      case "title":
+        // Ambient only: starfield scrolls, nothing else.
+        break;
+
+      case "waveIntro": {
+        // Count down the interstitial, then drop into active play.
+        this.waveIntroTimer -= dt;
+        if (this.waveIntroTimer <= 0) {
+          this.state = (this.boss && !this.boss.dead) ? "bossFight" : "playing";
+        }
+        break;
+      }
+
+      case "playing":
+      case "bossFight":
+        this._updateGameplay(dt);
+        break;
+
+      case "paused":
+        // Fully frozen: no entity updates, no VFX advancement. Music already stopped.
+        break;
+
+      case "gameOver":
+        // Let lingering particles/shake finish for a clean fade, but freeze gameplay.
+        this.particleSystem.update(dt);
+        this.screenshake.update(dt);
+        this.deathAnim.update(dt);
+        this.muzzleFlash.update(dt);
+        if (this.gameOverTimer > 0) this.gameOverTimer -= dt;
+        break;
+    }
+  },
+
+  /**
+   * Full gameplay tick (player, bullets, enemies, boss, power-ups, collisions,
+   * VFX). Called only from 'playing' / 'bossFight'.
+   */
+  _updateGameplay(dt) {
+    this.time += dt;
+    this.starfield.update(dt);
+
+    // Player ship movement + shooting.
+    this.player.time = this.time;
+    this.player.update(dt, Input);
+    if (Input.down("Space")) {
+      const fired = this.player.shoot();
+      for (const b of fired) this.bullets.push(b);
+    }
+
+    // Advance player bullets upward and cull off-screen ones.
+    for (let i = this.bullets.length - 1; i >= 0; i--) {
+      const b = this.bullets[i];
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      if (b.y + b.h < 0 || b.x + b.w < 0 || b.x > W) this.bullets.splice(i, 1);
+    }
+
+    // Enemies + boss (with the global SLOW factor applied to enemy motion).
+    const sdt = dt * this.slowFactor;
+    for (const e of this.enemies) e.update(sdt, this.player, this.wave);
+
+    if (this.boss) {
+      if (this.boss.dead) {
+        if (this.boss.updateDeath(dt)) {
+          if (Game.screenshake) Game.screenshake.add(16);
+          this._awardPoints(this.boss.points, this.boss.cx, this.boss.cy);
+          this.boss = null;
+        }
+      } else {
+        this.boss.update(sdt, this.player);
+      }
+    }
+
+    // Enemy bullets downward + cull.
+    for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
+      const b = this.enemyBullets[i];
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      if (b.y > H || b.x < 0 || b.x > W) this.enemyBullets.splice(i, 1);
+    }
+
+    // Collisions: player bullets vs enemies/boss, enemy bullets/body vs player.
+    this._resolveCollisions();
+
+    // Power-ups: advance, cull, and apply pickups.
+    for (let i = this.powerUps.length - 1; i >= 0; i--) {
+      const pu = this.powerUps[i];
+      pu.update(dt);
+      if (pu.dead) { this.powerUps.splice(i, 1); continue; }
+      if (this.hitTest(pu, this.player)) {
+        this._applyPowerUp(pu);
+        this.powerUps.splice(i, 1);
+      }
+    }
+
+    // Combo decay.
+    if (this.comboTimer > 0) {
+      this.comboTimer += dt;
+      if (this.comboTimer > 2 && this.combo > 1) this.combo = 1;
+    }
+
+    // Tick power-up duration timers.
+    this._tickPowerTimers(dt);
+
+    // Cull dead enemies.
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      if (this.enemies[i].dead) this.enemies.splice(i, 1);
+    }
+
+    // Wave progression via the state machine.
+    if (this.enemies.length === 0 && !this.boss) {
+      this._advanceWave();
+    } else if (this.state === "playing" && this.boss && !this.boss.dead) {
+      this._enterBossFight();
+    }
+
+    // VFX systems.
+    this.particleSystem.update(dt);
+    this.screenshake.update(dt);
+    this.muzzleFlash.update(dt);
+    this.deathAnim.update(dt);
+  },
+};
+
+/* ---------------------------------------------------------------------------
+ * Boot
+ * ------------------------------------------------------------------------- */
+Input.init();
+Game.start();
+</script>
+</body>
+</html>
