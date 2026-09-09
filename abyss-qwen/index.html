@@ -391,6 +391,16 @@ class MusicSequencer {
   /** Legacy no-op (intensity scaling deferred per design). */
   setIntensity(_n) { /* deferred */ }
 
+  /**
+   * Re-sync the scheduler's lookahead clock to "now". Called after the
+   * AudioContext resumes from a suspended state so notes don't burst or stall
+   * against a stale/frozen timeline.
+   */
+  _rearm() {
+    if (!this.playing) return;
+    this.nextNoteTime = this.ctx.currentTime + 0.05;
+  }
+
   /* -- internal ------------------------------------------------------------ */
 
   _schedule() {
@@ -551,10 +561,9 @@ class MusicSequencer {
     const pads={0:[_NOTE.E2,_NOTE.B2,_NOTE.E3],16:[_NOTE.A2,_NOTE.E3,_NOTE.A3]};
     // Melodic riff over E minor pentatonic.
     const lead=[
-      E4,R4,B4,R4, E4,R4,A4,R4, G4,R4,A4,R4, B4,R4,E5_,R4,
+      E4,R4,B4,R4, E4,R4,A4,R4, G4,R4,A4,R4, B4,R4,_NOTE.E5,R4,
       E4,R4,B4,R4, A4,R4,B4,R4, E4,R4,G4,R4, A4,R4,B4,R4
     ];
-    function E5_(){return _NOTE.E5;}
     return {
       name:"PUNK", bpm:182, steps:32, drums, bass, pads, lead,
       bassType:"sawtooth", bassCut:1100, bassDur:0.16,
@@ -608,7 +617,7 @@ class MusicSequencer {
     // Arpeggiated horror lead (descending minor arps).
     const lead=[
       A4,E4,C5,E4, A4,E4,C5,E4, F4,A4,C5,A4, F4,A4,C5,A4,
-      G4,C5,E5,C5, G4,C5,E5,C5, A4,E4,C5,E4, A4,E4,C5,R4
+      G4,C5,E5,C5, G4,C5,E5,C5, A4,E4,C5,E4, A4,E4,C5,E4
     ];
     return {
       name:"SYNTHWAVE", bpm:118, steps:32, drums, bass, pads, lead,
@@ -622,33 +631,31 @@ class MusicSequencer {
   _acidjazz() {
     const A1=_NOTE.A1,D2=_NOTE.D2,E2=_NOTE.E2,G2=_NOTE.G2,C2=_NOTE.C2;
     const A3=_NOTE.A3,C4=_NOTE.C4,E4=_NOTE.E4,G4=_NOTE.G4,D4=_NOTE.D4,F4=_NOTE.F4,A4=_NOTE.A4,C5=_NOTE.C5,E5=_NOTE.E5,D5=_NOTE.D5,R4=R;
-    // Loose swung-ish groove: kick on 1 & the "and of 2", rim snare, brushy hats.
+    // Loose swung-ish groove: syncopated kicks, rim snare, steady brushy hats.
     const drums=[];
     for(let i=0;i<32;i++){
-      const k=(i===0||i===10||i===24||i===30);
+      const k=(i===0||i===3||i===8||i===10||i===16||i===19||i===24||i===27);
       const s=(i===8||i===20);
       const h=(i%2===0);
       drums.push({k,s,h});
     }
-    // Slap-ish walking bass over ii-V-I-ish jazz changes.
+    // Slap-ish walking bass over ii-V-I-ish jazz changes (continuous).
     const bass=[
-      A1,R4,D2,R4, E2,R4,G2,R4, A1,R4,C2,R4, D2,R4,R4,R4,
-      A1,R4,D2,R4, E2,R4,G2,R4, C2,R4,E2,R4, G2,R4,R4,R4
+      A1,R4,D2,R4, E2,R4,G2,R4, A1,R4,C2,R4, D2,R4,E2,R4,
+      A1,R4,D2,R4, E2,R4,G2,R4, C2,R4,E2,R4, G2,R4,A1,R4
     ];
-    // Electric-piano style comping chords (maj7/min7 flavor), sparse.
+    // Electric-piano style comping chords (maj7/min7 flavor), one per beat.
     const pads={
-      0:[_NOTE.A2,_NOTE.C4,_NOTE.E4], 6:[_NOTE.D2,_NOTE.F4,_NOTE.A3],
-      12:[_NOTE.E2,_NOTE.G4,_NOTE.B3], 18:[_NOTE.G2,_NOTE.C4,_NOTE.E4],
-      24:[_NOTE.A2,_NOTE.C4,_NOTE.E4], 30:[_NOTE.D2,_NOTE.F4,_NOTE.A3],
+      0:[_NOTE.A2,_NOTE.C4,_NOTE.E4], 4:[_NOTE.D2,_NOTE.F4,_NOTE.A3],
+      8:[_NOTE.E2,_NOTE.G4,_NOTE.B3], 12:[_NOTE.G2,_NOTE.C4,_NOTE.E4],
+      16:[_NOTE.A2,_NOTE.C4,_NOTE.E4], 20:[_NOTE.D2,_NOTE.F4,_NOTE.A3],
+      24:[_NOTE.E2,_NOTE.G4,_NOTE.B3], 28:[_NOTE.G2,_NOTE.C4,_NOTE.E4],
     };
-    // Smooth melodic horn-like lead.
+    // Smooth melodic horn-like lead (continuous).
     const lead=[
-      A4,R4,C5,R4, E5,R4,D5,R4, C5,R4,A4,R4, G4,R4,R4,R4,
-      A4,R4,C5,R4, E5,R4,G5_,R4, F5_,R4,E5_,R4, D5,R4,C5,R4
+      A4,R4,C5,R4, E5,R4,D5,R4, C5,R4,A4,R4, G4,R4,A4,R4,
+      A4,R4,C5,R4, E5,R4,_NOTE.G5,R4, _NOTE.F5,R4,_NOTE.E5,R4, D5,R4,C5,R4
     ];
-    function G5_(){return _NOTE.G5;}
-    function F5_(){return _NOTE.F5;}
-    function E5_(){return _NOTE.E5;}
     return {
       name:"ACID JAZZ", bpm:104, steps:32, drums, bass, pads, lead,
       bassType:"triangle", bassCut:700, bassDur:0.24,
@@ -717,7 +724,13 @@ let music = null;
 
 function ensureAudio() {
   if (sfx) {
-    if (sfx.ctx.state === "suspended") sfx.ctx.resume();
+    // Context may still be suspended (autoplay policy). Resume it and, once
+    // running, re-arm any active music loop so its lookahead clock is correct.
+    if (sfx.ctx.state === "suspended") {
+      sfx.ctx.resume().then(() => {
+        if (music && music.playing) music._rearm();
+      }).catch(() => {});
+    }
     return;
   }
   const AC = window.AudioContext || window.webkitAudioContext;
