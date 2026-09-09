@@ -669,13 +669,14 @@ loadPngSprite("pu_bomb", "powerups", "bomb", 4, 34);
 
 /**
  * Boss roster — cycled in order on every 4th wave.
- *   wave 4 -> kraken, 8 -> megalodon, 12 -> octopus, 16 -> kraken, ...
+ *   wave 4 -> octopus, 8 -> megalodon, 12 -> kraken, 16 -> octopus, ...
+ * Ordered by ascending difficulty: octopus (easiest) -> megalodon -> kraken (hardest).
  * Each entry tunes the shared Boss behavior + picks its sprite.
  */
 const BOSS_ROSTER = [
-  { name: "kraken",    sprite: "boss_kraken",    hp: 10, points: 5000, fireRate: 0.8, scaleW: 130 },
+  { name: "octopus",   sprite: "boss_octopus",   hp: 10, points: 5000, fireRate: 0.8, scaleW: 130 },
   { name: "megalodon", sprite: "boss_megalodon", hp: 14, points: 7500, fireRate: 0.65, scaleW: 150 },
-  { name: "octopus",   sprite: "boss_octopus",   hp: 18, points: 10000, fireRate: 0.5, scaleW: 130 },
+  { name: "kraken",    sprite: "boss_kraken",    hp: 18, points: 10000, fireRate: 0.5, scaleW: 130 },
 ];
 // Register each boss sprite set (4-frame animations).
 BOSS_ROSTER.forEach((b) => loadPngSprite(b.sprite, "bosses", b.name, 4, b.scaleW));
@@ -2135,7 +2136,7 @@ const Game = {
     this.enemies = buildFormation(this.wave);
     this.enemyBullets = [];
     // Boss appears every 4th wave (wave % 4 === 0), cycling through the roster:
-    //   wave 4 -> kraken, 8 -> megalodon, 12 -> octopus, 16 -> kraken, ...
+    //   wave 4 -> octopus, 8 -> megalodon, 12 -> kraken, 16 -> octopus, ...
     if (this.wave % 4 === 0) {
       const bossIdx = Math.floor((this.wave / 4 - 1) % BOSS_ROSTER.length);
       this.boss = new Boss(BOSS_ROSTER[bossIdx]);
