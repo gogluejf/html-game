@@ -137,11 +137,11 @@
           "rows": [
             [
               0,
-              351
+              352
             ],
             [
               360,
-              723
+              714
             ],
             [
               724,
@@ -150,28 +150,32 @@
           ],
           "col_centers_per_row": [
             [
-              361,
-              724,
-              1087
+              179,
+              534,
+              892,
+              1250
             ],
             [
-              361,
-              724,
-              1087
+              179,
+              534,
+              892,
+              1250
             ],
             [
-              361,
-              724,
-              1087
+              179,
+              534,
+              892,
+              1250
             ]
           ]
         },
         "final_overrides": {
-          "col_x": null,
-          "row_y": "0-351,360-723,724-1086",
-          "frame_size": null
+          "col_x": "179,534,892,1250|179,534,892,1250|179,534,892,1250",
+          "row_y": "0-352,360-714,724-1086",
+          "frame_size": "356x360"
         },
-        "frames_dir": "assets/abyss-qwen/bosses"
+        "frames_dir": "assets/abyss-qwen/bosses",
+        "post_process": "erase disconnected ink components below y=335 in megalodon frames (fin-tip fragments overlapping row 3)"
       }
     },
     "powerups": {
