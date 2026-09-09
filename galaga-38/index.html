@@ -659,6 +659,12 @@ loadPngSprite("butterfly", "enemies", "pufferfish", 4, 44);
 loadPngSprite("fighter", "enemies", "sea_dragon", 4, 48);
 loadPngSprite("boss", "bosses", "kraken", 4, 120);
 
+// Power-up pickups (4-frame animations). Keyed by powerup type.
+loadPngSprite("pu_shield", "powerups", "shield", 4, 34);
+loadPngSprite("pu_triple", "powerups", "triple_shot", 4, 34);
+loadPngSprite("pu_slow", "powerups", "slow_mo", 4, 34);
+loadPngSprite("pu_bomb", "powerups", "bomb", 4, 34);
+
 /**
  * Draw a PNG sprite centered on (cx, cy), scaled so its width matches `scaleW`.
  * Falls back to the procedural grid sprite if the images haven't loaded yet.
@@ -1850,10 +1856,10 @@ function buildFormation(wave) {
  *   bomb   -> single use: clears every enemy currently on screen
  * ------------------------------------------------------------------------- */
 const POWERUP_TYPES = {
-  shield: { color: "#3ef0ff", letter: "S", label: "SHIELD" },
-  triple: { color: "#ffe23e", letter: "T", label: "TRIPLE" },
-  slow:   { color: "#9b3fe0", letter: "S", label: "SLOW" },
-  bomb:   { color: "#ff3b30", letter: "B", label: "BOMB" },
+  shield: { color: "#3ef0ff", letter: "S", label: "SHIELD", sprite: "pu_shield" },
+  triple: { color: "#ffe23e", letter: "T", label: "TRIPLE", sprite: "pu_triple" },
+  slow:   { color: "#9b3fe0", letter: "S", label: "SLOW",   sprite: "pu_slow" },
+  bomb:   { color: "#ff3b30", letter: "B", label: "BOMB",   sprite: "pu_bomb" },
 };
 
 class PowerUp {
@@ -1868,6 +1874,7 @@ class PowerUp {
     this.color = t.color;
     this.letter = t.letter;
     this.label = t.label;
+    this.sprite = t.sprite;
     this.x = x;          // center-x
     this.y = y;          // center-y
     this.r = 11;         // collision radius
@@ -1887,6 +1894,12 @@ class PowerUp {
 
   render(ctx) {
     ctx.save();
+    // Prefer the animated PNG pickup; fall back to the colored disc + letter.
+    const frame = Math.floor(this.time * 8) % 4;
+    if (drawPngSprite(ctx, this.sprite, frame, this.x, this.y)) {
+      ctx.restore();
+      return;
+    }
     // Soft pulsing glow ring.
     const pulse = 0.6 + 0.4 * Math.sin(this.time * 8);
     ctx.globalAlpha = 0.35 * pulse;
