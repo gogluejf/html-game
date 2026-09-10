@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SPRITE VIEWER — abyss-qwen</title>
+<style>
+  html,body{margin:0;height:100%;background:#0a0c14;color:#cfe4ff;font-family:'Courier New',monospace;}
+  #app{display:flex;height:100%;}
+  #side{width:260px;border-right:1px solid #1b2540;padding:16px;overflow-y:auto;background:#070912;}
+  #side h1{font-size:18px;color:#3ef0ff;letter-spacing:2px;margin:0 0 4px;text-transform:uppercase;}
+  #side .sub{font-size:11px;color:#5a6a90;margin-bottom:14px;}
+  .label{color:#ffe23e;font-size:13px;margin:12px 0 4px;letter-spacing:1px;}
+  .ent{font-size:14px;padding:6px 10px;border-radius:6px;cursor:pointer;color:#8fa0d0;user-select:none;}
+  .ent:hover{background:rgba(62,240,255,.08);color:#cfe4ff;}
+  .ent.on{background:rgba(255,226,62,.12);color:#fff;}
+  .ent .cnt{float:right;color:#5a6a90;font-size:11px;margin-left:8px;}
+  .ent.on .cnt{color:#ffe23e;}
+  #main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px;}
+  #stage{position:relative;display:flex;align-items:center;justify-content:center;}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid #1b2540;border-radius:8px;max-width:60vmin;max-height:55vmin;}
+  #name{font-size:26px;color:#3ef0ff;font-weight:bold;letter-spacing:2px;text-shadow:0 0 14px #3ef0ff;text-transform:uppercase;}
+  #meta{font-size:15px;color:#8fa0d0;margin-top:-12px;letter-spacing:1px;}
+  #controls{display:flex;align-items:center;gap:16px;font-size:18px;}
+  button{font-family:inherit;font-size:22px;width:48px;height:48px;border-radius:8px;border:2px solid #1b2540;
+          background:#0d1120;color:#cfe4ff;cursor:pointer;transition:all .1s;}
+  button:hover{border-color:#3ef0ff;color:#3ef0ff;}
+  #fps{min-width:90px;text-align:center;font-size:20px;color:#ffe23e;font-weight:bold;}
+  #bgrow{display:flex;align-items:center;gap:10px;font-size:14px;color:#8fa0d0;}
+  input[type=color]{width:44px;height:32px;border:2px solid #1b2540;border-radius:6px;background:#0d1120;cursor:pointer;padding:2px;}
+  #hint{font-size:12px;color:#5a6a90;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="side">
+    <h1>Sprite Viewer</h1>
+    <div class="sub">abyss-qwen</div>
+    <div id="tree"></div>
+  </div>
+  <div id="main">
+    <div id="name">&nbsp;</div>
+    <div id="meta">&nbsp;</div>
+    <div id="stage"><canvas id="cv" width="256" height="256"></canvas></div>
+    <div id="controls">
+      <button id="slower" title="slower">&#8722;</button>
+      <div id="fps">-- fps</div>
+      <button id="faster" title="faster">&#43;</button>
+    </div>
+    <div id="bgrow">
+      <span>background</span>
+      <input type="color" id="bg" value="#000000">
+      <span id="bgval">#000000</span>
+    </div>
+    <div id="hint">click an entity &middot; &#8592;/&#8594; or &#8722;/&#43; change speed &middot; space play/pause</div>
+  </div>
+</div>
+<script>
+const MANIFEST = {"labels": [{"name": "bosses", "entities": [{"name": "kraken", "frames": ["../../assets/abyss-qwen/bosses/kraken_f1.png", "../../assets/abyss-qwen/bosses/kraken_f2.png", "../../assets/abyss-qwen/bosses/kraken_f3.png", "../../assets/abyss-qwen/bosses/kraken_f4.png"]}, {"name": "megalodon", "frames": ["../../assets/abyss-qwen/bosses/megalodon_f1.png", "../../assets/abyss-qwen/bosses/megalodon_f2.png", "../../assets/abyss-qwen/bosses/megalodon_f3.png", "../../assets/abyss-qwen/bosses/megalodon_f4.png"]}, {"name": "octopus", "frames": ["../../assets/abyss-qwen/bosses/octopus_f1.png", "../../assets/abyss-qwen/bosses/octopus_f2.png", "../../assets/abyss-qwen/bosses/octopus_f3.png", "../../assets/abyss-qwen/bosses/octopus_f4.png"]}]}, {"name": "enemies", "entities": [{"name": "anglerfish", "frames": ["../../assets/abyss-qwen/enemies/anglerfish_f1.png", "../../assets/abyss-qwen/enemies/anglerfish_f2.png", "../../assets/abyss-qwen/enemies/anglerfish_f3.png", "../../assets/abyss-qwen/enemies/anglerfish_f4.png"]}, {"name": "jellyfish", "frames": ["../../assets/abyss-qwen/enemies/jellyfish_f1.png", "../../assets/abyss-qwen/enemies/jellyfish_f2.png", "../../assets/abyss-qwen/enemies/jellyfish_f3.png", "../../assets/abyss-qwen/enemies/jellyfish_f4.png"]}, {"name": "mantis_crab", "frames": ["../../assets/abyss-qwen/enemies/mantis_crab_f1.png", "../../assets/abyss-qwen/enemies/mantis_crab_f2.png", "../../assets/abyss-qwen/enemies/mantis_crab_f3.png", "../../assets/abyss-qwen/enemies/mantis_crab_f4.png"]}, {"name": "mech_shark", "frames": ["../../assets/abyss-qwen/enemies/mech_shark_f1.png", "../../assets/abyss-qwen/enemies/mech_shark_f2.png", "../../assets/abyss-qwen/enemies/mech_shark_f3.png", "../../assets/abyss-qwen/enemies/mech_shark_f4.png"]}, {"name": "pufferfish", "frames": ["../../assets/abyss-qwen/enemies/pufferfish_f1.png", "../../assets/abyss-qwen/enemies/pufferfish_f2.png", "../../assets/abyss-qwen/enemies/pufferfish_f3.png", "../../assets/abyss-qwen/enemies/pufferfish_f4.png"]}, {"name": "sea_dragon", "frames": ["../../assets/abyss-qwen/enemies/sea_dragon_f1.png", "../../assets/abyss-qwen/enemies/sea_dragon_f2.png", "../../assets/abyss-qwen/enemies/sea_dragon_f3.png", "../../assets/abyss-qwen/enemies/sea_dragon_f4.png"]}]}, {"name": "player", "entities": [{"name": "manta_ray", "frames": ["../../assets/abyss-qwen/player/manta_ray_f1.png", "../../assets/abyss-qwen/player/manta_ray_f2.png", "../../assets/abyss-qwen/player/manta_ray_f3.png", "../../assets/abyss-qwen/player/manta_ray_f4.png"]}]}, {"name": "powerups", "entities": [{"name": "bomb", "frames": ["../../assets/abyss-qwen/powerups/bomb_f1.png", "../../assets/abyss-qwen/powerups/bomb_f2.png", "../../assets/abyss-qwen/powerups/bomb_f3.png", "../../assets/abyss-qwen/powerups/bomb_f4.png"]}, {"name": "shield", "frames": ["../../assets/abyss-qwen/powerups/shield_f1.png", "../../assets/abyss-qwen/powerups/shield_f2.png", "../../assets/abyss-qwen/powerups/shield_f3.png", "../../assets/abyss-qwen/powerups/shield_f4.png"]}, {"name": "slow_mo", "frames": ["../../assets/abyss-qwen/powerups/slow_mo_f1.png", "../../assets/abyss-qwen/powerups/slow_mo_f2.png", "../../assets/abyss-qwen/powerups/slow_mo_f3.png", "../../assets/abyss-qwen/powerups/slow_mo_f4.png"]}, {"name": "triple_shot", "frames": ["../../assets/abyss-qwen/powerups/triple_shot_f1.png", "../../assets/abyss-qwen/powerups/triple_shot_f2.png", "../../assets/abyss-qwen/powerups/triple_shot_f3.png", "../../assets/abyss-qwen/powerups/triple_shot_f4.png"]}]}]};   // {labels:[{name, entities:[{name, frames:["path",...]}]}], bg:"#hex"}
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const nameEl = document.getElementById('name');
+const metaEl = document.getElementById('meta');
+const fpsEl = document.getElementById('fps');
+const bgInput = document.getElementById('bg');
+const bgVal = document.getElementById('bgval');
+const tree = document.getElementById('tree');
+
+let current = null;      // {name, frames:[Image]}
+let frameIdx = 0;
+let fps = 8;
+let playing = true;
+let lastT = 0;
+let acc = 0;
+
+// Build the sidebar tree.
+MANIFEST.labels.forEach((lbl, li) => {
+  const hd = document.createElement('div'); hd.className='label'; hd.textContent = lbl.name.toUpperCase();
+  tree.appendChild(hd);
+  lbl.entities.forEach((en, ei) => {
+    const row = document.createElement('div'); row.className='ent';
+    row.innerHTML = `<span>${en.name}</span><span class="cnt">${en.frames.length}f</span>`;
+    row.addEventListener('click', () => selectEntity(li, ei));
+    en._el = row;
+    tree.appendChild(row);
+  });
+});
+
+function loadFrames(paths){
+  return Promise.all(paths.map(p => new Promise(res => {
+    const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = p;
+  })));
+}
+
+async function selectEntity(li, ei){
+  const en = MANIFEST.labels[li].entities[ei];
+  document.querySelectorAll('.ent').forEach(e=>e.classList.remove('on'));
+  en._el.classList.add('on');
+  const imgs = await loadFrames(en.frames);
+  current = { name: en.name, frames: imgs.filter(Boolean) };
+  frameIdx = 0; acc = 0; playing = true;
+  nameEl.textContent = current.name;
+  metaEl.textContent = current.frames.length + ' frames';
+  if (current.frames.length && current.frames[0]) {
+    cv.width = current.frames[0].naturalWidth || 256;
+    cv.height = current.frames[0].naturalHeight || 256;
+  }
+  draw();
+}
+
+function draw(){
+  const bg = bgInput.value;
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  if (current && current.frames.length){
+    const im = current.frames[frameIdx % current.frames.length];
+    if (im) ctx.drawImage(im, 0, 0, cv.width, cv.height);
+  }
+}
+
+function tick(t){
+  requestAnimationFrame(tick);
+  if (!current || !playing) { lastT = t; return; }
+  const dt = (t - lastT) / 1000; lastT = t;
+  acc += dt;
+  const step = 1 / Math.max(1, fps);
+  if (acc >= step){
+    acc = acc % step;
+    frameIdx = (frameIdx + 1) % current.frames.length;
+    draw();
+  }
+}
+requestAnimationFrame(tick);
+
+function setFps(v){
+  fps = Math.max(1, Math.min(60, v));
+  fpsEl.textContent = fps + ' fps';
+}
+setFps(fps);
+document.getElementById('faster').addEventListener('click', ()=>setFps(fps+1));
+document.getElementById('slower').addEventListener('click', ()=>setFps(fps-1));
+bgInput.addEventListener('input', ()=>{ bgVal.textContent = bgInput.value; draw(); });
+window.addEventListener('keydown', (e)=>{
+  if (e.code==='ArrowRight'){ e.preventDefault(); setFps(fps+1); }
+  else if (e.code==='ArrowLeft'){ e.preventDefault(); setFps(fps-1); }
+  else if (e.code==='Space'){ e.preventDefault(); playing=!playing; }
+});
+// Auto-select first entity.
+if (MANIFEST.labels.length){ selectEntity(0, 0); }
+</script>
+</body>
+</html>
