@@ -1675,7 +1675,7 @@ class Player {
     if (Game.particleSystem) {
       Game.particleSystem.explode(this.cx, this.y + this.h / 2, "#3ef0ff", 40);
     }
-    if (sfx) sfx.explode(1);
+    if (sfx) sfx.boom(0.7);
     return this.lives <= 0;
   }
 
