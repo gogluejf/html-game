@@ -10,16 +10,17 @@
   #side h1{font-size:18px;color:#3ef0ff;letter-spacing:2px;margin:0 0 4px;text-transform:uppercase;}
   #side .sub{font-size:11px;color:#5a6a90;margin-bottom:14px;}
   .label{color:#ffe23e;font-size:13px;margin:12px 0 4px;letter-spacing:1px;}
-  .ent{font-size:14px;padding:6px 10px;border-radius:6px;cursor:pointer;color:#8fa0d0;user-select:none;}
+  .ent{font-size:14px;padding:6px 10px;border-radius:6px;cursor:pointer;color:#8fa0d0;user-select:none;display:flex;justify-content:space-between;align-items:center;}
   .ent:hover{background:rgba(62,240,255,.08);color:#cfe4ff;}
   .ent.on{background:rgba(255,226,62,.12);color:#fff;}
-  .ent .cnt{float:right;color:#5a6a90;font-size:11px;margin-left:8px;}
+  .ent .cnt{color:#5a6a90;font-size:11px;margin-left:8px;white-space:nowrap;}
   .ent.on .cnt{color:#ffe23e;}
   #main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px;}
   #stage{position:relative;display:flex;align-items:center;justify-content:center;}
   canvas{image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid #1b2540;border-radius:8px;max-width:60vmin;max-height:55vmin;}
   #name{font-size:26px;color:#3ef0ff;font-weight:bold;letter-spacing:2px;text-shadow:0 0 14px #3ef0ff;text-transform:uppercase;}
   #meta{font-size:15px;color:#8fa0d0;margin-top:-12px;letter-spacing:1px;}
+  #frameinfo{font-size:12px;color:#5a6a90;margin-top:4px;letter-spacing:.5px;font-family:'Courier New',monospace;}
   #controls{display:flex;align-items:center;gap:16px;font-size:18px;}
   button{font-family:inherit;font-size:22px;width:48px;height:48px;border-radius:8px;border:2px solid #1b2540;
           background:#0d1120;color:#cfe4ff;cursor:pointer;transition:all .1s;}
@@ -40,6 +41,7 @@
   <div id="main">
     <div id="name">&nbsp;</div>
     <div id="meta">&nbsp;</div>
+    <div id="frameinfo">&nbsp;</div>
     <div id="stage"><canvas id="cv" width="256" height="256"></canvas></div>
     <div id="controls">
       <button id="slower" title="slower">&#8722;</button>
@@ -61,6 +63,7 @@ const ctx = cv.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 const nameEl = document.getElementById('name');
 const metaEl = document.getElementById('meta');
+const frameInfoEl = document.getElementById('frameinfo');
 const fpsEl = document.getElementById('fps');
 const bgInput = document.getElementById('bg');
 const bgVal = document.getElementById('bgval');
@@ -97,7 +100,7 @@ async function selectEntity(li, ei){
   document.querySelectorAll('.ent').forEach(e=>e.classList.remove('on'));
   en._el.classList.add('on');
   const imgs = await loadFrames(en.frames);
-  current = { name: en.name, frames: imgs.filter(Boolean) };
+  current = { name: en.name, frames: imgs.filter(Boolean), framePaths: en.frames };
   frameIdx = 0; acc = 0; playing = true;
   nameEl.textContent = current.name;
   metaEl.textContent = current.frames.length + ' frames';
@@ -113,8 +116,15 @@ function draw(){
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, cv.width, cv.height);
   if (current && current.frames.length){
-    const im = current.frames[frameIdx % current.frames.length];
+    const idx = frameIdx % current.frames.length;
+    const im = current.frames[idx];
     if (im) ctx.drawImage(im, 0, 0, cv.width, cv.height);
+    // Show current frame filename
+    if (current.framePaths && current.framePaths.length){
+      const fn = current.framePaths[idx] || '';
+      const basename = fn.split('/').pop();
+      frameInfoEl.textContent = (idx+1) + '/' + current.frames.length + '  —  ' + basename;
+    }
   }
 }
 
