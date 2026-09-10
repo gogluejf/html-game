@@ -10,7 +10,7 @@ Interacts with ChatGPT's image generation to produce pixel-art sprite sheets for
 ## Variables
 - `<skill-folder>` — directory containing this SKILL.md
 - `<working-dir>` — active working directory and project root for the current session
-- `<assets-dir>` — where generated sprite sheets are saved: `<working-dir>/assets/<PROJECT>/` (one folder per project/game, e.g. `assets/galaga/`). Persisted in the state file as `assets_dir`.
+- `<assets-dir>` — where generated sprite sheets are saved: `<working-dir>/<PROJECT>/assets/` (one folder per project/game, e.g. `galaga/assets/`). Persisted in the state file as `assets_dir`.
 - `<chat-url>` — the ChatGPT conversation URL to use for style consistency (created on first run, reused thereafter)
 
 ## Instructions
@@ -206,7 +206,7 @@ On first run for a new project, determine the name from the user's request (e.g.
 Field meanings:
 - `chat_url` — the ChatGPT conversation to resume
 - `style_name` — human-readable style anchor for prompts
-- `assets_dir` — project asset folder, always `<working-dir>/assets/<PROJECT>/`; sheets are saved here
+- `assets_dir` — project asset folder, always `<working-dir>/<PROJECT>/assets/`; sheets are saved here
 - `file` — path relative to `<working-dir>`
 - `size` — actual image dimensions `WxH`
 - `rows` — number of entities (one per row)
@@ -219,7 +219,7 @@ Field meanings:
 **On skill invocation:**
 1. Check if `<working-dir>/.squid-os/sprite-gen/state-<PROJECT>.json` exists.
 2. If yes → load it. Use `chat_url` to navigate to the existing conversation. Read `style_name`, `palette`, and `assets_dir` for prompt construction and save location. Know which sheets are already done.
-3. If no → fresh project. Start a new chat, set `assets_dir` to `assets/<PROJECT>`, create the state file after first successful generation.
+3. If no → fresh project. Start a new chat, set `assets_dir` to `<PROJECT>/assets`, create the state file after first successful generation.
 
 **After each verified generation:** update the sheet entry via the CLI `state --add-sheet` (step 7). Never hand-edit the JSON.
 
@@ -235,7 +235,7 @@ This means if you close Squid-OS and come back tomorrow, the skill picks up the 
 - **No hardcoded credentials:** Read CDP websocket URL from `~/.config/squid-os/browser-use.json` at runtime.
 - **Poll patiently:** Image generation takes 30-90s. Poll every 5s, max 24 iterations (2 min). Don't give up early.
 - **Download via page fetch:** Always use in-page `fetch()` with `credentials:'include'` to download images — direct curl won't have auth cookies.
-- **Save to assets dir:** All generated sheets go to `<assets-dir>` = `<working-dir>/assets/<PROJECT>/` (create it if missing, persist as `assets_dir` in state). Descriptive names: `enemies_sheet.png`, `bosses_sheet.png`, `powerups_sheet.png`, `player_sheet.png`, `background.png`. Cropped frames are saved by the sprite-crop skill under `<assets-dir>/<label>/`.
+- **Save to assets dir:** All generated sheets go to `<assets-dir>` = `<working-dir>/<PROJECT>/assets/` (create it if missing, persist as `assets_dir` in state). Descriptive names: `enemies_sheet.png`, `bosses_sheet.png`, `powerups_sheet.png`, `player_sheet.png`, `background.png`. Cropped frames are saved by the sprite-crop skill under `<assets-dir>/<label>/`.
 - **Open for user:** After saving, always `open` the file so the user can see it full-size immediately.
 - **Style template for first prompt:** When starting a fresh project (no prior sprites), include this style block: "crisp 16-bit neo-arcade pixel art, [theme] neon colors ([list colors]) glowing against dark abyss-black. Sharp hard edges, NO anti-aliasing, NO gradients, flat shading with one highlight + one shadow step, high contrast, symmetrical, front-facing, no perspective. Consistent style across every sprite. Glowing accent cores/eyes. 1px dark rim outline."
 - **Subsequent prompts:** Say "continuing the exact same [style] as the [prior entity] sheets above" — do NOT repeat the full style description. This keeps GPT anchored to the established look.
@@ -250,7 +250,7 @@ This means if you close Squid-OS and come back tomorrow, the skill picks up the 
 - **Layout:** [R] rows x [C] cols, [CELL]px cells
 - **Frames per entity:** [C] distinct animation frames
 - **Quality check:** [PASS/FAIL - brief note on what was verified]
-- **File saved:** `<assets-dir>/<filename>.png` ([W]x[H]) — e.g. `assets/galaga/enemies_sheet.png`
+- **File saved:** `<assets-dir>/<filename>.png` ([W]x[H]) — e.g. `galaga/assets/enemies_sheet.png`
 - **Status:** [DONE / NEEDS REGENERATION - reason]
 ```
 

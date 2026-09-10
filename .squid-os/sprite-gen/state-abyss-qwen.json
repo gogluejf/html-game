@@ -11,7 +11,7 @@
   ],
   "sheets": {
     "enemies": {
-      "file": "assets/abyss-qwen/enemies_sheet.png",
+      "file": "abyss-qwen/assets/enemies_sheet.png",
       "size": "1024x1536",
       "rows": 6,
       "cols": 4,
@@ -97,12 +97,12 @@
           "row_y": null,
           "frame_size": null
         },
-        "frames_dir": "assets/abyss-qwen/enemies",
+        "frames_dir": "abyss-qwen/assets/enemies",
         "bg_tol": 8
       }
     },
     "bosses": {
-      "file": "assets/abyss-qwen/bosses_sheet.png",
+      "file": "abyss-qwen/assets/bosses_sheet.png",
       "size": "1448x1086",
       "rows": 3,
       "cols": 4,
@@ -174,12 +174,12 @@
           "row_y": "0-352,360-714,724-1086",
           "frame_size": "356x360"
         },
-        "frames_dir": "assets/abyss-qwen/bosses",
+        "frames_dir": "abyss-qwen/assets/bosses",
         "post_process": "erase disconnected ink components below y=335 in megalodon frames (fin-tip fragments overlapping row 3)"
       }
     },
     "powerups": {
-      "file": "assets/abyss-qwen/powerups_sheet.png",
+      "file": "abyss-qwen/assets/powerups_sheet.png",
       "size": "1254x1254",
       "rows": 4,
       "cols": 4,
@@ -252,11 +252,11 @@
           "row_y": null,
           "frame_size": null
         },
-        "frames_dir": "assets/abyss-qwen/powerups"
+        "frames_dir": "abyss-qwen/assets/powerups"
       }
     },
     "player": {
-      "file": "assets/abyss-qwen/player_sheet.png",
+      "file": "abyss-qwen/assets/player_sheet.png",
       "size": "2172x724",
       "rows": 1,
       "cols": 4,
@@ -299,11 +299,11 @@
           "row_y": null,
           "frame_size": "540x724"
         },
-        "frames_dir": "assets/abyss-qwen/player"
+        "frames_dir": "abyss-qwen/assets/player"
       }
     },
     "background": {
-      "file": "assets/abyss-qwen/background.png",
+      "file": "abyss-qwen/assets/background.png",
       "size": "1586x992",
       "description": "Static scrolling backdrop - dark biomech deep-sea abyss, tileable horizontally",
       "content": "biomech tower silhouettes, kelp tendrils, bioluminescent nodes, depth gradient",
@@ -311,7 +311,7 @@
       "original_prompt": "Now generate a BACKGROUND image for the SAME aquatic Galaga game, matching the exact same 16-bit neo-arcade pixel-art style and neon palette as the enemy/boss/powerup sheets above. This is a dark atmospheric deep-sea backdrop that bright sprites will be drawn on top of. CONTENT: A vast underwater abyss scene. Distant biomech alien structures - huge silhouettes of organic-mechanical towers, coral-like spires, and tentacle-wrapped pillars in the far background (very dim). Mid-ground has swaying kelp tendrils and scattered bioluminescent nodes (dim glowing dots in cyan/magenta). Overall mood: dark, mysterious, deep ocean. CRITICAL RULES: Keep EVERYTHING VERY DARK (below 20% brightness) so bright neon sprites pop against it. The background must NOT compete with foreground sprites. Color palette limited to: near-black, very dark teal, deep purple, faint dim cyan. NO bright colors. No text, no borders, no UI elements. Pure black at the top fading to very dark teal/navy at the bottom (depth gradient). Tileable horizontally (left and right edges should match seamlessly for parallax scrolling). DIMENSIONS: 1024 wide x 640 tall pixels (matching the game canvas aspect ratio). Style: crisp 16-bit pixel art, hard edges, no anti-aliasing, flat shading, consistent with the other sheets."
     },
     "splash": {
-      "file": "assets/abyss-qwen/splash_sheet.png",
+      "file": "abyss-qwen/assets/splash_sheet.png",
       "size": "1024x1536",
       "rows": 1,
       "cols": 1,
@@ -321,5 +321,5 @@
     }
   },
   "updated": "2026-09-09T03:59:52",
-  "assets_dir": "assets/abyss-qwen"
+  "assets_dir": "abyss-qwen/assets"
 }

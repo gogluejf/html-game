@@ -1,0 +1,507 @@
+{
+  "project": "petal-panic",
+  "assets_dir": "assets/petal-panic",
+  "sheets": {
+    "enemies/flower_clown": {
+      "label": "enemies",
+      "entity": "Evil Flower Clown",
+      "file": "assets/petal-panic/enemies/flower_clown_sheet.png",
+      "rows": 3,
+      "cols": 5,
+      "entities": [
+        "flower_clown"
+      ],
+      "crop": {
+        "bg_color": [
+          160,
+          124,
+          83
+        ],
+        "bg_tol": 15,
+        "note": "Sheet has light-tan grid separator lines (~rgb 205,170,122) that survive flood-fill; remove them (alpha->0 where r190-235,g150-195,b105-150) before scanning. Row bands and col centers below measured on the de-grided sheet.",
+        "bands_file_params": {
+          "rows": [
+            [
+              12,
+              315
+            ],
+            [
+              355,
+              623
+            ],
+            [
+              655,
+              946
+            ]
+          ],
+          "col_centers_per_row": [
+            [
+              162,
+              486,
+              808,
+              1133,
+              1457
+            ],
+            [
+              162,
+              486,
+              808,
+              1133,
+              1457
+            ],
+            [
+              162,
+              486,
+              808,
+              1133,
+              1457
+            ]
+          ]
+        },
+        "final_overrides": {
+          "col_x": null,
+          "row_y": "12-315,355-623,655-946",
+          "frame_size": "320x300"
+        },
+        "frames_dir": "assets/petal-panic/enemies/flower_clown",
+        "frame_names": {
+          "idle": [
+            "idle_1",
+            "idle_2",
+            "idle_3",
+            "idle_4",
+            "idle_5"
+          ],
+          "attack": [
+            "attack_reach",
+            "attack_extend",
+            "lunge_1",
+            "lunge_2",
+            "attack_recover"
+          ],
+          "death": [
+            "death_1",
+            "death_2",
+            "death_3",
+            "death_4",
+            "death_5"
+          ]
+        }
+      }
+    },
+    "enemies/jackolantern": {
+      "label": "enemies",
+      "entity": "Jack-o'-Lantern Circus",
+      "file": "assets/petal-panic/enemies/jackolantern_sheet.png",
+      "rows": 3,
+      "cols": 5,
+      "entities": [
+        "roll",
+        "attack",
+        "death"
+      ],
+      "crop": {
+        "bg_color": [
+          166,
+          129,
+          86
+        ],
+        "bg_tol": 15,
+        "degrid": "alpha->0 where r175-240,g138-200,b95-160 (tan grid + cell fill)",
+        "note": "Tan background with visible grid lines and row-label strip on left (x<60). De-grid first, then prep at tol 15 (ink audit 1.7%). Row scan fails (sprites touch vertically); use explicit row-y and col-x below.",
+        "bands_file_params": {
+          "rows": [
+            [
+              30,
+              292
+            ],
+            [
+              369,
+              597
+            ],
+            [
+              663,
+              932
+            ]
+          ],
+          "col_centers_per_row": [
+            [
+              180,
+              490,
+              800,
+              1130,
+              1450
+            ],
+            [
+              180,
+              490,
+              800,
+              1130,
+              1450
+            ],
+            [
+              180,
+              490,
+              800,
+              1130,
+              1450
+            ]
+          ]
+        },
+        "final_overrides": {
+          "col_x": "180,490,800,1130,1450|180,490,800,1130,1450|180,490,800,1130,1450",
+          "row_y": "30-292,369-597,663-932",
+          "frame_size": null
+        },
+        "frames_dir": "assets/petal-panic/enemies/jackolantern",
+        "frame_names": {
+          "roll": [
+            "idle_walk_in",
+            "idle_crouch",
+            "roll_spin_1",
+            "roll_spin_2",
+            "idle_walk_out"
+          ],
+          "attack": [
+            "attack_windup_1",
+            "attack_windup_2",
+            "launch_1",
+            "launch_2",
+            "impact"
+          ],
+          "death": [
+            "death_stand",
+            "death_crack",
+            "death_shatter",
+            "death_explode",
+            "death_debris"
+          ]
+        }
+      }
+    },
+    "enemies/vine_hound": {
+      "label": "enemies",
+      "entity": "Vine Hound",
+      "file": "assets/petal-panic/enemies/vine_hound_sheet.png",
+      "rows": 3,
+      "cols": 5,
+      "entities": [
+        "run",
+        "attack",
+        "death"
+      ],
+      "crop": {
+        "bg_color": [
+          138,
+          112,
+          74
+        ],
+        "bg_tol": 40,
+        "note": "Tan/parchment sheet with wide (~20px) grid separator lines that survive flood-fill (ink audit 1.2%). De-grid before scan: zero alpha where r185-235,g145-195,b95-160. Row bands and col centers measured on de-gridded sheet. Attack row frame 3 is a WIDE lunge pose spanning ~x625-1265 (crosses into cell 4); crop it separately at full width then trim.",
+        "bands_file_params": {
+          "rows": [
+            [
+              55,
+              285
+            ],
+            [
+              336,
+              616
+            ],
+            [
+              626,
+              927
+            ]
+          ],
+          "col_centers_per_row": [
+            [
+              174,
+              504,
+              814,
+              1132,
+              1457
+            ],
+            [
+              174,
+              504,
+              814,
+              1132,
+              1457
+            ],
+            [
+              174,
+              504,
+              814,
+              1132,
+              1457
+            ]
+          ]
+        },
+        "final_overrides": {
+          "col_x": "174,504,814,1132,1457|174,504,814,1132,1457|174,504,814,1132,1457",
+          "row_y": "55-285,336-616,626-927",
+          "frame_size": "320x300",
+          "special_frames": {
+            "attack_f3": {
+              "box": [
+                615,
+                330,
+                1275,
+                622
+              ],
+              "reason": "wide lunge pose spans two cells"
+            }
+          }
+        },
+        "frames_dir": "assets/petal-panic/enemies/vine_hound",
+        "frame_names": {
+          "run": [
+            "run_1",
+            "run_2",
+            "run_3",
+            "run_4",
+            "run_5"
+          ],
+          "attack": [
+            "attack_windup",
+            "attack_snarl",
+            "attack_lunge",
+            "attack_mouth",
+            "attack_recover"
+          ],
+          "death": [
+            "death_1",
+            "death_2",
+            "death_3",
+            "death_4",
+            "death_5"
+          ]
+        }
+      }
+    },
+    "scarlet_vale": {
+      "label": "heroes",
+      "entity": "Scarlet Vale (Masked Rose Heroine)",
+      "file": "assets/scarlet_vale_sheet.png",
+      "size": [
+        1619,
+        971
+      ],
+      "rows": 3,
+      "cols": 5,
+      "cell_estimate": "~324x323 uniform grid; 5 cols x 3 rows",
+      "entities": [
+        {
+          "row": 1,
+          "name": "scarlet_vale",
+          "anim": "run"
+        },
+        {
+          "row": 2,
+          "name": "scarlet_vale",
+          "anim": "jump"
+        },
+        {
+          "row": 3,
+          "name": "scarlet_vale",
+          "anim": "attack"
+        }
+      ],
+      "description": "Hand-drawn cartoon heroine sprite sheet on a tan/parchment background with faint darker-tan grid lines. A masked rose heroine: long wavy black hair, white feathered headdress, red rose in hair, black domino mask, crimson leotard bodysuit with gold trim, thigh-high black stockings, red high heels, flowing red ribbon sash. Row1=running cycle (5 frames), Row2=leap/jump cycle (5 frames), Row3=ribbon-flourish attack cycle (5 frames).",
+      "prompt": "\"Sprite sheet of a masked rose heroine video game character, hand-drawn cartoon style with bold ink outlines and cel shading. Tan parchment background divided into a clean 3-row by 5-column grid with thin darker-tan separator lines. The character has long flowing wavy black hair, a tall white feathered headdress, a large red rose tucked in her hair, a black domino eye mask, a fitted crimson-red leotard bodysuit with gold accents, sheer thigh-high black stockings, and red high-heeled shoes, plus a long flowing red ribbon sash. Row 1: a running animation cycle showing 5 progressive poses. Row 2: a jumping/leaping animation cycle showing 5 poses mid-air. Row 3: an attack animation cycle where she whips her long red ribbon through 5 dramatic flourish poses. Consistent character design across all 15 frames, side/three-quarter view facing right, even spacing, no text.\"",
+      "crop": {
+        "bg_color": [
+          145,
+          112,
+          75
+        ],
+        "bg_tol": 40,
+        "note": "Tan/parchment bg rgb(145,112,75); cell fill ~rgb(201,170,127). Flood-fill prep at tol 40 (ink audit 1.9%) only clears border-connected bg - MUST de-grid interior tan afterward or frames keep opaque parchment. Uniform 5-col grid, col centers 162/486/808/1133/1457. Row bands from alpha profile. Faint tan ground-shadow ellipses at bottom of each frame are intentional sheet design (kept).",
+        "bands_file_params": {
+          "rows": [
+            [
+              3,
+              321
+            ],
+            [
+              324,
+              647
+            ],
+            [
+              650,
+              968
+            ]
+          ],
+          "col_centers_per_row": [
+            [
+              162,
+              486,
+              808,
+              1133,
+              1457
+            ],
+            [
+              162,
+              486,
+              808,
+              1133,
+              1457
+            ],
+            [
+              162,
+              486,
+              808,
+              1133,
+              1457
+            ]
+          ]
+        },
+        "final_overrides": {
+          "col_x": "162,486,808,1133,1457|162,486,808,1133,1457|162,486,808,1133,1457",
+          "row_y": "3-321,324-647,650-968",
+          "frame_size": "340x320"
+        },
+        "frames_dir": "assets/heroes/scarlet_vale",
+        "degrid": "alpha->0 where r185-240,g145-200,b100-160 AND (r-b)>=45 (tan cell fill + grid lines; keeps crimson/red sprite pixels)",
+        "frame_names": {
+          "run": [
+            "run_f1",
+            "run_f2",
+            "run_f3",
+            "run_f4",
+            "run_f5"
+          ],
+          "jump": [
+            "jump_f1",
+            "jump_f2",
+            "jump_f3",
+            "jump_f4",
+            "jump_f5"
+          ],
+          "attack": [
+            "attack_f1",
+            "attack_f2",
+            "attack_f3",
+            "attack_f4",
+            "attack_f5"
+          ]
+        }
+      }
+    },
+    "balthazar": {
+      "label": "heroes",
+      "entity": "Balthazar (Dapper Tiger)",
+      "file": "assets/balthazar_sheet.png",
+      "size": [
+        1619,
+        971
+      ],
+      "rows": 3,
+      "cols": 5,
+      "cell_estimate": "~324x323 uniform grid; 5 cols x 3 rows",
+      "entities": [
+        {
+          "row": 1,
+          "name": "balthazar",
+          "anim": "run"
+        },
+        {
+          "row": 2,
+          "name": "balthazar",
+          "anim": "jump"
+        },
+        {
+          "row": 3,
+          "name": "balthazar",
+          "anim": "attack"
+        }
+      ],
+      "description": "Hand-drawn cartoon sprite sheet on a tan/parchment background with faint darker-tan grid separator lines. Character: Balthazar, a dapper anthropomorphic tiger in a black tuxedo suit with white shirt, red bow tie, and a red sash/cummerbund. Orange-and-black striped tail curls behind him; orange paws. Row 1: running cycle (5 frames) facing right. Row 2: jumping/pouncing leap cycle (5 frames) with arms raised. Row 3: cane-swinging attack cycle (5 frames) - stance, swing arc, strike, impact splash, idle-with-cane.",
+      "prompt": "\"Sprite sheet of a dapper anthropomorphic tiger video game hero character, hand-drawn cartoon style with bold ink outlines and cel shading. Tan parchment background divided into a clean 3-row by 5-column grid with thin darker-tan separator lines. The character is an orange tiger with black stripes wearing a formal black tuxedo suit, white dress shirt, red bow tie, and a red sash around his waist, with a long striped tail curling behind him and large orange paws. Row 1: a running animation cycle showing 5 progressive poses moving to the right. Row 2: a jumping/pouncing animation cycle showing 5 leaping poses with arms raised. Row 3: a cane-fencing attack animation cycle showing 5 poses including a ready stance, a wide cane swing with motion arc, a striking pose, an impact splash, and a composed idle holding the cane upright. Consistent character design across all 15 frames, side/three-quarter view facing right, even spacing, no text.\"",
+      "crop": {
+        "bg_color": [
+          150,
+          114,
+          78
+        ],
+        "bg_tol": 40,
+        "degrid": "alpha->0 where r185-240,g145-200,b95-160 AND (r-b)>=45 (tan cell fill ~rgb(205,175,126) + grid lines; keeps orange/red/black sprite pixels)",
+        "note": "Tan/parchment sheet rgb(150,114,78) border with lighter tan cell fill rgb(205,175,126). Flood-fill prep at tol 40 only clears border-connected bg (ink audit 2.0%); MUST de-grid interior tan afterward or frames keep opaque parchment. Uniform 5-col grid, col centers 162/486/808/1133/1457. Row bands from alpha profile on de-gridded sheet. No cross-cell bleed: row3 cells cleanly separated (cane arcs stay within cells). Faint tan ground-shadow ellipses at bottom of each frame are intentional sheet design (kept).",
+        "bands_file_params": {
+          "rows": [
+            [
+              0,
+              294
+            ],
+            [
+              319,
+              630
+            ],
+            [
+              652,
+              948
+            ]
+          ],
+          "col_centers_per_row": [
+            [
+              162,
+              486,
+              808,
+              1133,
+              1457
+            ],
+            [
+              162,
+              486,
+              808,
+              1133,
+              1457
+            ],
+            [
+              162,
+              486,
+              808,
+              1133,
+              1457
+            ]
+          ]
+        },
+        "final_overrides": {
+          "col_x": "162,486,808,1133,1457|162,486,808,1133,1457|162,486,808,1133,1457",
+          "row_y": "0-294,319-630,652-948",
+          "frame_size": null
+        },
+        "frames_dir": "assets/heroes/balthazar",
+        "trim_pad": 4,
+        "trimmed_sizes": {
+          "run": "264x302",
+          "jump": "264x319",
+          "attack": "264x304"
+        },
+        "frame_names": {
+          "run": [
+            "run_f1",
+            "run_f2",
+            "run_f3",
+            "run_f4",
+            "run_f5"
+          ],
+          "jump": [
+            "jump_f1",
+            "jump_f2",
+            "jump_f3",
+            "jump_f4",
+            "jump_f5"
+          ],
+          "attack": [
+            "attack_f1",
+            "attack_f2",
+            "attack_f3",
+            "attack_f4",
+            "attack_f5"
+          ]
+        }
+      }
+    }
+  }
+}

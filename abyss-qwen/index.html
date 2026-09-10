@@ -1087,7 +1087,7 @@ window.addEventListener("pointerdown", ensureAudio);
 /* ---------------------------------------------------------------------------
  * PNG Sprite System
  * -------------------------------------------------------------------------
- * Loads AI-generated sprite sheets from ../assets/abyss-qwen/ and provides
+ * Loads AI-generated sprite sheets from ../assets/ and provides
  * drawSprite() / drawPngSprite() for rendering animated frames.
  * ==========================================================================*/
 const PNG_SPRITES = {};   // name -> { frames: [...], w, h, scaleW }
@@ -1106,8 +1106,8 @@ function loadPngSprite(name, dir, prefix, frameCount, scaleW) {
       pngLoadCount++;
     };
     img.onerror = () => { pngLoadCount++; };
-    const base = new URL("../", document.baseURI).href.replace(/[^/]*$/, "");
-    img.src = `${base}assets/abyss-qwen/${dir}/${prefix}_f${i}.png`;
+    const base = "";
+    img.src = `${base}assets/${dir}/${prefix}_f${i}.png`;
     def.frames.push(img);
   }
 }
@@ -1167,7 +1167,7 @@ function drawSprite(ctx, name, frame, x, y, scale = 1) {
 /* ---------------------------------------------------------------------------
  * Background
  * -------------------------------------------------------------------------
- * A single wide underwater image (assets/abyss-qwen/background.png) drawn scaled to
+ * A single wide underwater image (assets/background.png) drawn scaled to
  * cover the canvas height, then panned horizontally. It drifts very slowly in
  * one direction and reverses at the image's edge (ping-pong), so the scene
  * gently sways side to side forever. Replaces the old procedural starfield as
@@ -1178,8 +1178,8 @@ class Background {
     this.w = width;
     this.h = height;
     this.img = new Image();
-    const base = new URL("../", document.baseURI).href.replace(/[^/]*$/, "");
-    this.img.src = `${base}assets/abyss-qwen/background.png`;
+    const base = "";
+    this.img.src = `${base}assets/background.png`;
     this.loaded = false;
     this.img.onload = () => { this.loaded = true; };
     // Pan state: offset in source-image pixels, moving left (negative dir).
@@ -2432,8 +2432,8 @@ const Game = {
     this.background = new Background(W, H); // reset backdrop for fresh run
     // Splash art for the title screen.
     this.splash = new Image();
-    const base = new URL("../", document.baseURI).href.replace(/[^/]*$/, "");
-    this.splash.src = `${base}assets/abyss-qwen/splash_sheet.png`;
+    const base = "";
+    this.splash.src = `${base}assets/splash_sheet.png`;
     requestAnimationFrame((t) => this.loop(t));
   },
 

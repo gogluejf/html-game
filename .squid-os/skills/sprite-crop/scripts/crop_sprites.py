@@ -474,7 +474,7 @@ if (MANIFEST.labels.length){ selectEntity(0, 0); }
 def build_manifest(assets_dir, project, prefix=""):
     """Scan <assets_dir>/<label>/<entity>_f<N>.png -> manifest for the viewer.
     prefix: path prefix prepended to each frame so it resolves relative to the
-    viewer HTML's location (e.g. '../../../assets/abyss-qwen/')."""
+    viewer HTML's location (e.g. '../../../abyss-qwen/assets/')."""
     import re
     labels = []
     if not os.path.isdir(assets_dir):

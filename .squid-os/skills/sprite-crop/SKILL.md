@@ -11,7 +11,7 @@ Turns AI-generated sprite sheets into clean, transparent, individually-cropped a
 - `<skill-folder>` — directory containing this SKILL.md
 - `<working-dir>` — active working directory and project root for the current session
 - `<state-file>` — the sprite-gen state file `<working-dir>/.squid-os/sprite-gen/state-<PROJECT>.json` (source of truth for sheet paths, rows/cols, entity names)
-- `<assets-dir>` — project asset folder from state (`assets_dir`, e.g. `assets/galaga`)
+- `<assets-dir>` — project asset folder from state (`assets_dir`, e.g. `galaga/assets`)
 
 ## Instructions
 
@@ -57,7 +57,8 @@ python3 <skill-folder>/scripts/crop_sprites.py crop \
 ```
 - `--names`: one kebab/snake name per row (from state `entities[].name`).
 - `--cols`: frames per row (from state `cols`).
-- Frame files: `<name>_f1.png` ... `<name>_f<C>.png`, sized to the measured row height × 256px (override with `--frame-size WxH` if needed).
+- Frame files: `<entity>_<action>_f<N>.png` (e.g. `pumpkin_run_f1.png`, `pumpkin_attack_f3.png`). One action label per row, frames numbered sequentially within that row. Sized to the measured row height × 256px (override with `--frame-size WxH` if needed).
+- **CRITICAL NAMING RULE:** Every filename MUST be `<entity>_<action>_f<N>.png`. The entity name is consistent across all rows for that sprite. The action is a single short word per row (run, jump, attack, death, idle, etc.). N is 1-based sequential within that row. No freeform names, no missing entity prefix, no missing _fN suffix.
 
 Then run `report --dir <out>` and confirm the count equals `rows × cols`.
 
@@ -137,6 +138,7 @@ python3 <skill-folder>/scripts/crop_sprites.py viewer --assets-dir <assets-dir> 
 - **Iterate until perfect, max 4 passes.** Each pass uses fresh overrides derived from what the inspection reported (which edge bled which direction). After 4 failed passes, stop and escalate to the user with evidence.
 - **Normalize before verify.** Always run `trim` on a crop pass before inspecting — oversized empty margins and non-uniform frame sizes within an entity are failure modes, not cosmetic.
 - **Uniform frames per entity.** All frames of one entity MUST end up identical in size with aligned content origin (the trim step guarantees this). Never install mixed-size frames for one entity.
+- **Filenames are ALWAYS `<entity>_<action>_f<N>.png`.** Entity prefix on every file, one action word per row, _fN sequential within that row. No freeform names, no missing parts. Game code loads by pattern `<entity>_<action>_f1..fN`.
 - **Fresh tmp dir per pass.** `<label>-v1`, `-v2`, ... so a bad pass can never contaminate the good one.
 - **Only verified frames reach the project.** Nothing is copied into `<assets-dir>` until its pass passed inspection AND corner-alpha check.
 - **State is the memory.** Final crop params always get written back to the state file. A re-crop request should complete in: load state → crop with stored params → quick inspect → done.
