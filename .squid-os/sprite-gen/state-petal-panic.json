@@ -5,7 +5,7 @@
   "assets_dir": "panic-petal/assets",
   "sheets": {
     "heroes": {
-      "file": "panic-petal/assets/scarlet_vale_sheet.png",
+      "file": "panic-petal/assets/scarlet_vale_sheet_1.png",
       "size": "1620x971",
       "rows": 3,
       "cols": 5,
@@ -77,7 +77,7 @@
       }
     },
     "balthazar": {
-      "file": "panic-petal/assets/balthazar_sheet.png",
+      "file": "panic-petal/assets/balthazar_sheet_1.png",
       "size": "1619x971",
       "rows": 3,
       "cols": 5,
