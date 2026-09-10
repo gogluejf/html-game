@@ -2571,11 +2571,7 @@ const Game = {
    */
   _previewSfx() {
     if (!sfx) return;
-    // Remember music state so we can restore it afterwards.
-    const wasPlaying = !!(music && music.playing);
-    const savedTrack = music ? music.current : 0;
-    if (wasPlaying) music.stop();
-
+    // One effect per press, advancing each time — exactly like the P jukebox.
     const seq = [
       ["SHOOT",        () => sfx.shoot()],
       ["ENEMY POP",    () => sfx.pop()],
@@ -2588,21 +2584,21 @@ const Game = {
       ["GAME OVER",    () => sfx.gameOver()],
     ];
 
-    // Stagger each effect ~500ms apart; label updates just before each plays.
-    const step = 500;
-    seq.forEach(([name, fn], i) => {
-      setTimeout(() => { this.jukeboxLabel = name; }, i * step);
-      setTimeout(fn, i * step + 20);
-    });
+    // First F starts at effect 0; each next F advances and wraps around.
+    const started = this._sfxPreviewActive;
+    this._sfxPreviewIndex = started ? (this._sfxPreviewIndex + 1) % seq.length : 0;
+    this._sfxPreviewActive = true;
 
-    // After the last effect finishes, clear the label and restore music.
-    const total = seq.length * step + 900;
-    setTimeout(() => {
-      this.jukeboxLabel = null;
-      if (wasPlaying) music.start(savedTrack);
-    }, total);
+    const i = this._sfxPreviewIndex;
+    const [name, fn] = seq[i];
+    this.jukeboxLabel = name;
+    fn();
 
-    console.log("[sfx] F -> preview sequence (" + seq.length + " effects)");
+    // Clear the label after the effect has had time to be heard.
+    clearTimeout(this._sfxLabelTimer);
+    this._sfxLabelTimer = setTimeout(() => { this.jukeboxLabel = null; }, 900);
+
+    console.log("[sfx] F -> #" + (i + 1), name);
   },
 
   /** Tick active power-up timers (spread/slow durations) once per frame. */
@@ -2760,17 +2756,6 @@ const Game = {
       case "gameOver":
         this._renderGameOver(c);
         break;
-    }
-
-    // ---- Global SFX preview label (F key) — shown over any state -----------
-    if (this.jukeboxLabel) {
-      c.font = "bold 22px 'Courier New', monospace";
-      c.textAlign = "center";
-      c.fillStyle = "#ffe23e";
-      c.shadowColor = "#000";
-      c.shadowBlur = 10;
-      c.fillText("\u25cf SFX: " + this.jukeboxLabel, W / 2, 60);
-      c.shadowBlur = 0;
     }
   },
 
