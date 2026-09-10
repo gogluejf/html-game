@@ -661,12 +661,60 @@ if (MANIFEST.labels.length){ selectEntity(0, 0); }
 """
 
 
-def build_manifest(assets_dir, project, prefix=""):
-    """Scan <assets_dir>/<label>/ for frames matching <entity>[_<action>]_f<N>.png.
-    Groups by entity (first token before _<action>_fN or _fN).
+def build_manifest(assets_dir, project, prefix="", state_file=None):
+    """Build manifest from state JSON (preferred) or scan disk (fallback).
+    
+    If state_file is provided and exists, reads entities/frames from it.
+    Otherwise falls back to scanning <assets_dir>/<label>/ for _f<N>.png files.
     prefix: path prefix prepended to each frame so it resolves relative to the
-    viewer HTML's location (e.g. '../../../panic-petal/assets/')."""
+    viewer HTML's location."""
     import re
+    
+    # Try state JSON first
+    if state_file and os.path.isfile(state_file):
+        with open(state_file) as f:
+            state = json.load(f)
+        labels = []
+        seen_labels = set()
+        for sheet_key, sheet in state.get('sheets', {}).items():
+            crop = sheet.get('crop', {})
+            frames_dir = crop.get('frames_dir', '')
+            if not frames_dir:
+                continue
+            # Derive label from frames_dir (last path component)
+            label = os.path.basename(frames_dir)
+            if label in seen_labels:
+                # Append entities to existing label
+                for lbl in labels:
+                    if lbl['name'] == label:
+                        for entity in sheet.get('entities', []):
+                            name = entity['name']
+                            anim = entity.get('anim', '')
+                            ent_name = f"{name}_{anim}" if anim else name
+                            frames = entity.get('frames', [])
+                            if frames:
+                                full_frames = [prefix + os.path.join(label, fn) for fn in frames]
+                                lbl['entities'].append({"name": ent_name, "frames": [p.replace(os.sep, "/") for p in full_frames]})
+                        break
+                continue
+            seen_labels.add(label)
+            
+            entities = []
+            for entity in sheet.get('entities', []):
+                name = entity['name']
+                anim = entity.get('anim', '')
+                ent_name = f"{name}_{anim}" if anim else name
+                frames = entity.get('frames', [])
+                if frames:
+                    full_frames = [prefix + os.path.join(label, fn) for fn in frames]
+                    entities.append({"name": ent_name, "frames": [p.replace(os.sep, "/") for p in full_frames]})
+            if entities:
+                labels.append({"name": label, "entities": entities})
+        
+        if labels:
+            return labels
+    
+    # Fallback: scan disk
     labels = []
     if not os.path.isdir(assets_dir):
         return labels
@@ -675,10 +723,7 @@ def build_manifest(assets_dir, project, prefix=""):
         if not os.path.isdir(ldir):
             continue
         files = [f for f in os.listdir(ldir) if f.endswith(".png")]
-        # Match both patterns:
-        #   <entity>_f<N>.png          (abyss style: one action per entity)
-        #   <entity>_<action>_f<N>.png (petal style: multiple actions per entity)
-        groups = {}  # entity_name -> {action_or_None -> [(N, filename)]}
+        groups = {}
         for f in files:
             m1 = re.match(r"^(.+?)_f(\d+)\.png$", f)
             m2 = re.match(r"^(.+?)_(.+)_f(\d+)\.png$", f)
@@ -709,7 +754,16 @@ def cmd_viewer(args):
     prefix = os.path.relpath(assets_abs, out_dir).replace(os.sep, "/")
     if not prefix.endswith("/"):
         prefix += "/"
-    manifest = build_manifest(args.assets_dir, args.project, prefix)
+    # Find state file: look for state-<project>.json in .squid-os/sprite-gen/
+    state_file = None
+    if args.state:
+        state_file = args.state
+    else:
+        # Auto-detect: .squid-os/sprite-gen/state-<project>.json relative to cwd
+        candidate = os.path.join(".squid-os", "sprite-gen", f"state-{args.project}.json")
+        if os.path.isfile(candidate):
+            state_file = candidate
+    manifest = build_manifest(args.assets_dir, args.project, prefix, state_file=state_file)
     if not manifest:
         print("ERROR: no cropped frames found under %s (expected <label>/<entity>_fN.png)" % args.assets_dir, file=sys.stderr)
         sys.exit(1)
@@ -796,7 +850,7 @@ def main():
     sc = sub.add_parser("crop"); sc.add_argument("--sheet", required=True); sc.add_argument("--out", required=True); sc.add_argument("--names", required=True); sc.add_argument("--cols", type=int, default=4); sc.add_argument("--bands"); sc.add_argument("--row-y"); sc.add_argument("--col-x"); sc.add_argument("--frame-size"); sc.add_argument("--inset", type=int, default=3)
     sr = sub.add_parser("report"); sr.add_argument("--dir", required=True)
     st = sub.add_parser("trim"); st.add_argument("--dir", required=True); st.add_argument("--out"); st.add_argument("--pad", type=int, default=4)
-    sv = sub.add_parser("viewer"); sv.add_argument("--assets-dir", required=True); sv.add_argument("--project", required=True); sv.add_argument("--out", required=True); sv.add_argument("--bg")
+    sv = sub.add_parser("viewer"); sv.add_argument("--assets-dir", required=True); sv.add_argument("--project", required=True); sv.add_argument("--out", required=True); sv.add_argument("--bg"); sv.add_argument("--state", help="Path to state JSON (auto-detected if omitted)")
     rc = sub.add_parser("record-crop"); rc.add_argument("--state", required=True); rc.add_argument("--sheet", required=True); rc.add_argument("--bg-color"); rc.add_argument("--bg-tol", type=int); rc.add_argument("--row-y"); rc.add_argument("--col-x"); rc.add_argument("--frame-size"); rc.add_argument("--frames-dir")
     args = p.parse_args()
     {"scan": cmd_scan, "degrid": cmd_degrid, "prep": cmd_prep, "crop": cmd_crop, "report": cmd_report, "trim": cmd_trim, "viewer": cmd_viewer, "record-crop": cmd_record_crop}[args.cmd](args)
