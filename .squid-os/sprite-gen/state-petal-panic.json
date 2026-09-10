@@ -1,947 +1,930 @@
 {
-  "chat_url": null,
+  "project": "petal-panic",
   "style_name": "hand-painted circus",
-  "palette": [],
-  "assets_dir": "panic-petal/assets",
-  "sheets": {
+  "folders": {
     "heroes": {
-      "file": "panic-petal/assets/scarlet_vale_sheet_1.png",
-      "size": "1620x971",
-      "rows": 3,
-      "cols": 5,
-      "cell": 324,
-      "description": "Scarlet Vale hero, 3 actions x 5 frames",
-      "entities": [
+      "path": "panic-petal/assets/heroes",
+      "sheets": [
         {
-          "row": 1,
-          "name": "scarlet_vale",
-          "anim": "run",
-          "frames": [
-            "scarlet_vale_run_f1.png",
-            "scarlet_vale_run_f2.png",
-            "scarlet_vale_run_f3.png",
-            "scarlet_vale_run_f4.png",
-            "scarlet_vale_run_f5.png"
-          ]
+          "file": "panic-petal/assets/scarlet_vale_sheet_1.png",
+          "rows": 3,
+          "cols": 5,
+          "description": "Scarlet Vale hero, 3 actions x 5 frames",
+          "entities": [
+            {
+              "row": 1,
+              "name": "scarlet_vale",
+              "anim": "run",
+              "frames": [
+                "scarlet_vale_run_f1.png",
+                "scarlet_vale_run_f2.png",
+                "scarlet_vale_run_f3.png",
+                "scarlet_vale_run_f4.png",
+                "scarlet_vale_run_f5.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "scarlet_vale",
+              "anim": "jump",
+              "frames": [
+                "scarlet_vale_jump_f1.png",
+                "scarlet_vale_jump_f2.png",
+                "scarlet_vale_jump_f3.png",
+                "scarlet_vale_jump_f4.png",
+                "scarlet_vale_jump_f5.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "scarlet_vale",
+              "anim": "attack",
+              "frames": [
+                "scarlet_vale_attack_f1.png",
+                "scarlet_vale_attack_f2.png",
+                "scarlet_vale_attack_f3.png",
+                "scarlet_vale_attack_f4.png",
+                "scarlet_vale_attack_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              250,
+              152,
+              173
+            ],
+            "bg_tol": 25,
+            "row_y": [
+              [
+                0,
+                323
+              ],
+              [
+                324,
+                647
+              ],
+              [
+                648,
+                970
+              ]
+            ],
+            "col_x": [
+              [
+                162,
+                486,
+                810,
+                1134,
+                1458
+              ],
+              [
+                162,
+                486,
+                810,
+                1134,
+                1458
+              ],
+              [
+                162,
+                486,
+                810,
+                1134,
+                1458
+              ]
+            ],
+            "frame_size": "324x324"
+          }
         },
         {
-          "row": 2,
-          "name": "scarlet_vale",
-          "anim": "jump",
-          "frames": [
-            "scarlet_vale_jump_f1.png",
-            "scarlet_vale_jump_f2.png",
-            "scarlet_vale_jump_f3.png",
-            "scarlet_vale_jump_f4.png",
-            "scarlet_vale_jump_f5.png"
-          ]
-        },
-        {
-          "row": 3,
-          "name": "scarlet_vale",
-          "anim": "attack",
-          "frames": [
-            "scarlet_vale_attack_f1.png",
-            "scarlet_vale_attack_f2.png",
-            "scarlet_vale_attack_f3.png",
-            "scarlet_vale_attack_f4.png",
-            "scarlet_vale_attack_f5.png"
-          ]
+          "file": "panic-petal/assets/balthazar_sheet_1.png",
+          "rows": 3,
+          "cols": 5,
+          "description": "Balthazar tiger ringmaster hero, 3 actions x 5 frames",
+          "entities": [
+            {
+              "row": 1,
+              "name": "balthazar",
+              "anim": "run",
+              "frames": [
+                "balthazar_run_f1.png",
+                "balthazar_run_f2.png",
+                "balthazar_run_f3.png",
+                "balthazar_run_f4.png",
+                "balthazar_run_f5.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "balthazar",
+              "anim": "jump",
+              "frames": [
+                "balthazar_jump_f1.png",
+                "balthazar_jump_f2.png",
+                "balthazar_jump_f3.png",
+                "balthazar_jump_f4.png",
+                "balthazar_jump_f5.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "balthazar",
+              "anim": "attack",
+              "frames": [
+                "balthazar_attack_f1.png",
+                "balthazar_attack_f2.png",
+                "balthazar_attack_f3.png",
+                "balthazar_attack_f4.png",
+                "balthazar_attack_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              248,
+              148,
+              167
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                323
+              ],
+              [
+                324,
+                647
+              ],
+              [
+                648,
+                970
+              ]
+            ],
+            "col_x": [
+              [
+                162,
+                486,
+                810,
+                1134,
+                1458
+              ],
+              [
+                162,
+                486,
+                810,
+                1134,
+                1458
+              ],
+              [
+                162,
+                486,
+                810,
+                1134,
+                1458
+              ]
+            ],
+            "frame_size": "324x324"
+          },
+          "original_prompt": "Hand-painted circus-style sprite sheet of \"Balthazar\", an anthropomorphic orange-and-black striped tiger dressed as a ringmaster/master of ceremonies. He wears a fitted black tuxedo jacket with satin lapels, a white dress shirt, a red bow tie, a red sash/sash-tie at the waist, and dark trousers; he has large expressive paws (orange with black stripes and cream claws), a long striped tail, and a confident, theatrical expression. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors, dynamic poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells. Each row is one action, left to right:\n\nRow 1 \u2014 Run cycle (5 frames): full sprint across the frame, contact -> down -> passing -> up -> contact, legs striding wide, tail streaming behind, body leaning forward.\n\nRow 2 \u2014 Jump/leap arc (5 frames): rising -> apex -> falling, both arms raised in a triumphant ringmaster gesture, coat tails flaring, big bounding leap.\n\nRow 3 \u2014 Attack with cane (5 frames): wind-up -> overhead swing -> follow-through -> impact -> recovery, wielding a gold-tipped cane/baton that leaves a glowing tan whip-like motion trail; final frame shows him standing upright resting on the cane, composed.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
         }
-      ],
-      "crop": {
-        "bg_color": [
-          250,
-          152,
-          173
-        ],
-        "bg_tol": 25,
-        "row_y": [
-          [
-            0,
-            323
-          ],
-          [
-            324,
-            647
-          ],
-          [
-            648,
-            970
-          ]
-        ],
-        "col_x": [
-          [
-            162,
-            486,
-            810,
-            1134,
-            1458
-          ],
-          [
-            162,
-            486,
-            810,
-            1134,
-            1458
-          ],
-          [
-            162,
-            486,
-            810,
-            1134,
-            1458
-          ]
-        ],
-        "frame_size": "324x324",
-        "frames_dir": "panic-petal/assets/heroes"
-      }
+      ]
     },
-    "balthazar": {
-      "file": "panic-petal/assets/balthazar_sheet_1.png",
-      "size": "1619x971",
-      "rows": 3,
-      "cols": 5,
-      "cell": 324,
-      "description": "Balthazar tiger ringmaster hero, 3 actions x 5 frames",
-      "entities": [
+    "enemies": {
+      "path": "panic-petal/assets/enemies",
+      "sheets": [
         {
-          "row": 1,
-          "name": "balthazar",
-          "anim": "run",
-          "frames": [
-            "balthazar_run_f1.png",
-            "balthazar_run_f2.png",
-            "balthazar_run_f3.png",
-            "balthazar_run_f4.png",
-            "balthazar_run_f5.png"
-          ]
+          "file": "panic-petal/assets/jester_sheet_1.png",
+          "rows": 2,
+          "cols": 5,
+          "description": "Jester skull-clown enemy, 2 actions x 5 frames",
+          "entities": [
+            {
+              "row": 1,
+              "name": "jester",
+              "anim": "run",
+              "frames": [
+                "jester_run_f1.png",
+                "jester_run_f2.png",
+                "jester_run_f3.png",
+                "jester_run_f4.png",
+                "jester_run_f5.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "jester",
+              "anim": "jump",
+              "frames": [
+                "jester_jump_f1.png",
+                "jester_jump_f2.png",
+                "jester_jump_f3.png",
+                "jester_jump_f4.png",
+                "jester_jump_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              250,
+              152,
+              169
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                395
+              ],
+              [
+                396,
+                792
+              ]
+            ],
+            "col_x": [
+              [
+                205,
+                621,
+                990,
+                1389,
+                1806
+              ],
+              [
+                198,
+                594,
+                990,
+                1386,
+                1782
+              ]
+            ],
+            "frame_size": "396x396"
+          },
+          "original_prompt": "Hand-painted circus-style sprite sheet of \"Jester\", a sinister clown-jester enemy for a side-scrolling game. He has a gaunt white skull-like face with hollow black eye sockets, a wide grinning mouth full of sharp teeth, and a small red clown nose; his skin is pale bone-white with dark shading. Around his head/shoulders he wears a large ruff collar made of glossy deep-red flower petals (like a blooming poppy or peony), each petal tipped with a tiny gold bead. His costume is a tattered jester outfit: a red-and-cream vertically striped bodice and puffed striped legs/trousers, ragged frilled cuffs and hem in cream and gold, dark leather boots with curled pointed toes and gold bells at the tips, and long clawed black-gloved hands with exaggerated fingers. His expression is menacing and theatrical \u2014 a twisted grin, glowing red eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone white, gold accents, dark browns), dynamic hunched forward-leaning poses, subtle motion smears on fast moves.\n\nSheet layout: 2 rows x 5 columns on a solid pink background with a faint light grid dividing the cells. Each row is one action, left to right:\n\nRow 1 \u2014 Run cycle (5 frames): a loping, hunched sprint across the frame, body leaning forward, arms pumping with clawed hands, striped legs striding, petal-ruff swaying, contact -> down -> passing -> up -> contact.\n\nRow 2 \u2014 Attack/lunge (5 frames): a leaping, lunging attack \u2014 rising -> apex -> falling toward the player, both clawed arms flung out wide, then a final impact frame showing him slamming down low with a splash/burst of red petal debris and dust at his feet.\n\nCharacter faces right, consistent proportions and palette across all 10 frames."
         },
         {
-          "row": 2,
-          "name": "balthazar",
-          "anim": "jump",
-          "frames": [
-            "balthazar_jump_f1.png",
-            "balthazar_jump_f2.png",
-            "balthazar_jump_f3.png",
-            "balthazar_jump_f4.png",
-            "balthazar_jump_f5.png"
-          ]
+          "file": "panic-petal/assets/jester_sheet_2.png",
+          "rows": 3,
+          "cols": 5,
+          "description": "Jester skull-clown enemy sheet 2, 3 actions x 5 frames (idle/whip/death)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "jester",
+              "anim": "idle",
+              "frames": [
+                "jester_idle_f1.png",
+                "jester_idle_f2.png",
+                "jester_idle_f3.png",
+                "jester_idle_f4.png",
+                "jester_idle_f5.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "jester",
+              "anim": "whip",
+              "frames": [
+                "jester_whip_f1.png",
+                "jester_whip_f2.png",
+                "jester_whip_f3.png",
+                "jester_whip_f4.png",
+                "jester_whip_f5.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "jester",
+              "anim": "death",
+              "frames": [
+                "jester_death_f1.png",
+                "jester_death_f2.png",
+                "jester_death_f3.png",
+                "jester_death_f4.png",
+                "jester_death_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              251,
+              149,
+              175
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                323
+              ],
+              [
+                324,
+                647
+              ],
+              [
+                648,
+                970
+              ]
+            ],
+            "col_x": [
+              [
+                162,
+                486,
+                810,
+                1134,
+                1458
+              ],
+              [
+                162,
+                486,
+                810,
+                1134,
+                1458
+              ],
+              [
+                162,
+                486,
+                810,
+                1134,
+                1458
+              ]
+            ],
+            "frame_size": "324x324"
+          },
+          "original_prompt": "Hand-painted circus-style sprite sheet of \"Jester\", the same sinister clown-jester enemy as before: gaunt white skull-like face, hollow black eye sockets, wide grinning mouth full of sharp teeth, small red clown nose, pale bone-white skin; a large ruff collar of glossy deep-red flower petals each tipped with a tiny gold bead; tattered jester costume in red-and-cream vertical stripes with ragged frilled cuffs/hem in cream and gold; dark leather boots with curled pointed toes and gold bells; long clawed black-gloved hands. Menacing theatrical expression, glowing red eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone white, gold accents, dark browns), dynamic poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells. Each row is one action, left to right:\n\nRow 1 \u2014 Idle/hover (5 frames): a menacing crouched idle stance, body swaying subtly side to side, arms hanging low with clawed hands, petal-ruff shifting slightly, weight shifting between feet \u2014 a looping threat pose.\n\nRow 2 \u2014 Whip attack (5 frames): he wields a long thorny stem ending in a huge open-mouthed carnivorous flower head (a snapping venus-flytrap-like bloom with ringed teeth). Wind-up -> extending the thorn whip forward -> full extension with the flower head flung out to the right -> a sweeping arc with a glowing tan/pink motion trail behind the flower -> recovery back to a ready stance.\n\nRow 3 \u2014 Death/dissolve (5 frames): the jester bursts apart into a spray of loose red petals and fragments that scatter outward and fade \u2014 frame 1 intact, then progressively disintegrating until only drifting petals remain by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
         },
         {
-          "row": 3,
-          "name": "balthazar",
-          "anim": "attack",
-          "frames": [
-            "balthazar_attack_f1.png",
-            "balthazar_attack_f2.png",
-            "balthazar_attack_f3.png",
-            "balthazar_attack_f4.png",
-            "balthazar_attack_f5.png"
-          ]
+          "file": "panic-petal/assets/jackolantern_sheet.png",
+          "rows": 3,
+          "cols": 5,
+          "description": "Jack-O-Lantern pumpkin clown enemy, 3 actions x 5 frames (roll/launch/explode)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "jackolantern",
+              "anim": "roll",
+              "frames": [
+                "jackolantern_roll_f1.png",
+                "jackolantern_roll_f2.png",
+                "jackolantern_roll_f3.png",
+                "jackolantern_roll_f4.png",
+                "jackolantern_roll_f5.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "jackolantern",
+              "anim": "launch",
+              "frames": [
+                "jackolantern_launch_f1.png",
+                "jackolantern_launch_f2.png",
+                "jackolantern_launch_f3.png",
+                "jackolantern_launch_f4.png",
+                "jackolantern_launch_f5.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "jackolantern",
+              "anim": "explode",
+              "frames": [
+                "jackolantern_explode_f1.png",
+                "jackolantern_explode_f2.png",
+                "jackolantern_explode_f3.png",
+                "jackolantern_explode_f4.png",
+                "jackolantern_explode_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              250,
+              154,
+              175
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                300
+              ],
+              [
+                324,
+                620
+              ],
+              [
+                648,
+                945
+              ]
+            ],
+            "col_x": [
+              [
+                195,
+                520,
+                824,
+                1143,
+                1461
+              ],
+              [
+                195,
+                520,
+                824,
+                1143,
+                1461
+              ],
+              [
+                195,
+                520,
+                824,
+                1143,
+                1461
+              ]
+            ],
+            "frame_size": "296x300"
+          },
+          "original_prompt": "Hand-painted circus-style sprite sheet of \"Jack-O-Lantern\", a sinister jack-o-lantern enemy for a side-scrolling game. Its head is a big glossy orange pumpkin with a classic carved grin \u2014 jagged triangular teeth, glowing yellow-orange eyes, and a crooked nose cut-out that glows from within; a thick dark-green curled stem sprouts from the top, bent into a hook. The pumpkin wears a tattered circus costume: a red-and-cream vertically striped ruffled collar/bodice around its midsection, ragged frilled cuffs and hem in cream with tiny gold beads, and two long black-gloved clawed hands with exaggerated fingers. Its legs are thin dark leather boots with curled pointed toes and small gold bells at the tips. Expression is menacing and theatrical \u2014 a twisted grinning face, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep orange, crimson red, bone/cream white, gold accents, dark browns and greens), dynamic poses, subtle motion smears and speed lines on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action). Each row is one action, left to right:\n\nRow 1 \u2014 Move / Roll (5 frames): the pumpkin sprints across the frame, then tumbles end-over-end into a rolling ball (frames 3-4 show it fully rounded with circular motion-smear trails and a few flying debris bits), then pops back upright into a stride. Legs striding wide, arms pumping with clawed hands, body leaning forward.\n\nRow 2 \u2014 Attack / Launch (5 frames): a leaping, lunging attack \u2014 crouched wind-up -> rising -> apex -> falling toward the player with both clawed arms flung out wide and tan/pink speed-line trails behind, ending in a final impact frame where he slams down low with a splash/burst of orange debris and dust at his feet.\n\nRow 3 \u2014 Death / Explode (5 frames): the pumpkin bursts apart \u2014 frame 1 intact, then progressively cracking open until it detonates into a radial spray of loose orange pumpkin chunks, seeds, and fragments that scatter outward and fade, leaving only drifting shards by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
+        },
+        {
+          "file": "panic-petal/assets/vine_hound_sheet.png",
+          "rows": 3,
+          "cols": 5,
+          "description": "Vine Hound plant-beast enemy, 3 actions x 5 frames (run/attack/death)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "vine_hound",
+              "anim": "run",
+              "frames": [
+                "vine_hound_run_f1.png",
+                "vine_hound_run_f2.png",
+                "vine_hound_run_f3.png",
+                "vine_hound_run_f4.png",
+                "vine_hound_run_f5.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "vine_hound",
+              "anim": "attack",
+              "frames": [
+                "vine_hound_attack_f1.png",
+                "vine_hound_attack_f2.png",
+                "vine_hound_attack_f3.png",
+                "vine_hound_attack_f4.png",
+                "vine_hound_attack_f5.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "vine_hound",
+              "anim": "death",
+              "frames": [
+                "vine_hound_death_f1.png",
+                "vine_hound_death_f2.png",
+                "vine_hound_death_f3.png",
+                "vine_hound_death_f4.png",
+                "vine_hound_death_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              251,
+              148,
+              174
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                61,
+                303
+              ],
+              [
+                332,
+                607
+              ],
+              [
+                659,
+                907
+              ]
+            ],
+            "col_x": [
+              [
+                194,
+                489,
+                804,
+                1117,
+                1441
+              ],
+              [
+                194,
+                489,
+                804,
+                1117,
+                1441
+              ],
+              [
+                194,
+                489,
+                804,
+                1117,
+                1441
+              ]
+            ],
+            "frame_size": "300x250"
+          },
+          "original_prompt": "Hand-painted circus-style sprite sheet of \"Vine Hound\", a sinister plant-hybrid beast enemy for a side-scrolling game. It is a four-legged canine/hound body made of twisted dark olive-green and brown vine-stem flesh \u2014 gnarled woody legs with clawed paws, a long sinuous tail ending in a small red flower bud, thorny tendrils and leafy growths sprouting along its spine and flanks. Its head is a pale bone-white skull-like hound face with glowing yellow eyes and a wide open maw full of sharp fangs; erupting from its neck/shoulders is a large blooming deep-red flower (a peony/poppy-like bloom) whose petals fan out like a mane or ruff collar, each petal glossy crimson with darker shading and tiny highlights. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, olive/brown greens, bone white, gold-yellow eye glow), dynamic poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action). Each row is one action, left to right:\n\nRow 1 \u2014 Run cycle (5 frames): a low, striding sprint across the frame, legs pumping wide, tail streaming behind, the red flower mane swaying, body leaning forward \u2014 contact -> down -> passing -> up -> contact.\n\nRow 2 \u2014 Attack (5 frames): the hound rears/lunges to strike \u2014 crouched wind-up -> rising into an aggressive lunge with jaws wide open -> full extended lunge where the body stretches out into a long thorn-vine whip ending in a huge open-mouthed carnivorous flower head (snapping venus-flytrap-like bloom with ringed teeth) flung out to the right, shedding loose red petals/debris -> recovery back to a ready stance.\n\nRow 3 \u2014 Death (5 frames): the hound collapses and dissolves apart \u2014 frame 1 intact but staggering, then progressively breaking down into a heap of vines, stems, and a spray of loose red petals that scatter outward and fade until only a tangle of greenery and drifting petals remain by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
+        },
+        {
+          "file": "panic-petal/assets/boris_loon_sheet.png",
+          "rows": 3,
+          "cols": 5,
+          "description": "Boris Loon bat-clown ball enemy, 3 actions x 5 frames (fly/attack/death)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "boris_loon",
+              "anim": "fly",
+              "frames": [
+                "boris_loon_fly_f1.png",
+                "boris_loon_fly_f2.png",
+                "boris_loon_fly_f3.png",
+                "boris_loon_fly_f4.png",
+                "boris_loon_fly_f5.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "boris_loon",
+              "anim": "attack",
+              "frames": [
+                "boris_loon_attack_f1.png",
+                "boris_loon_attack_f2.png",
+                "boris_loon_attack_f3.png",
+                "boris_loon_attack_f4.png",
+                "boris_loon_attack_f5.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "boris_loon",
+              "anim": "death",
+              "frames": [
+                "boris_loon_death_f1.png",
+                "boris_loon_death_f2.png",
+                "boris_loon_death_f3.png",
+                "boris_loon_death_f4.png",
+                "boris_loon_death_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              251,
+              152,
+              170
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                323
+              ],
+              [
+                324,
+                647
+              ],
+              [
+                648,
+                970
+              ]
+            ],
+            "col_x": [
+              [
+                194,
+                489,
+                804,
+                1117,
+                1441
+              ],
+              [
+                194,
+                489,
+                804,
+                1117,
+                1441
+              ],
+              [
+                194,
+                489,
+                804,
+                1117,
+                1441
+              ]
+            ],
+            "frame_size": "300x324"
+          },
+          "original_prompt": "Hand-painted circus-style sprite sheet of \"Boris Loon\", a sinister flying bat-clown enemy for a side-scrolling game. Its body is a big glossy red-and-white striped clown ball (like a juggling ball / beach-ball) with a classic menacing clown face painted on it: hollow black eye sockets with glowing yellow eyes, a wide grinning mouth full of sharp jagged teeth, a small round red clown nose, and white star shapes scattered across the red panels. On top of the ball sits a tiny red-and-cream striped conical party hat tipped with a gold bell/finial. Around the lower half of the ball is a ruffled collar made of glossy deep-red flower petals (a peony/poppy-like bloom), each petal tipped with a tiny gold bead. Two large dark crimson bat wings sprout from the sides of the ball, membranous with visible finger-bone struts. Hanging below the ball are two thin spindly legs ending in little red tassel/foot bells. Expression is menacing and theatrical \u2014 a twisted grin, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone/cream white, gold accents, dark browns), dynamic poses, subtle motion smears and speed lines on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action: \"1. FLY\", \"2. ATTACK\", \"3. DEATH\"). Each row is one action, left to right:\n\nRow 1 \u2014 Fly (5 frames): a hovering flight cycle, the clown ball drifting up and down with its bat wings flapping through a full open->half->open beat, body bobbing gently, legs dangling, a looping hover.\n\nRow 2 \u2014 Attack (5 frames): a lunging shriek attack \u2014 wind-up with a swirling tan/pink motion trail around the ball -> crouch/rise -> the clown face opens into a huge gaping maw with a long tongue and ringed teeth flung out to the right, spraying a burst of red droplets/debris -> follow-through -> recovery back to a ready hover.\n\nRow 3 \u2014 Death (5 frames): the clown ball bursts apart \u2014 frame 1 intact but cracking, then progressively disintegrating into a radial spray of loose red shards, petals, and fragments that scatter outward and fade, leaving only drifting debris by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
+        },
+        {
+          "file": "panic-petal/assets/boris_loon_baby_sheet.png",
+          "rows": 3,
+          "cols": 5,
+          "description": "Boris Loon Baby bat-clown enemy, 3 actions x 5 frames (fly/attack/death)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "boris_loon_baby",
+              "anim": "fly_1",
+              "frames": [
+                "boris_loon_baby_fly_1_f1.png",
+                "boris_loon_baby_fly_1_f2.png",
+                "boris_loon_baby_fly_1_f3.png",
+                "boris_loon_baby_fly_1_f4.png",
+                "boris_loon_baby_fly_1_f5.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "boris_loon_baby",
+              "anim": "fly_2",
+              "frames": [
+                "boris_loon_baby_fly_2_f1.png",
+                "boris_loon_baby_fly_2_f2.png",
+                "boris_loon_baby_fly_2_f3.png",
+                "boris_loon_baby_fly_2_f4.png",
+                "boris_loon_baby_fly_2_f5.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "boris_loon_baby",
+              "anim": "fly_3",
+              "frames": [
+                "boris_loon_baby_fly_3_f1.png",
+                "boris_loon_baby_fly_3_f2.png",
+                "boris_loon_baby_fly_3_f3.png",
+                "boris_loon_baby_fly_3_f4.png",
+                "boris_loon_baby_fly_3_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              250,
+              149,
+              165
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                320
+              ],
+              [
+                416,
+                645
+              ],
+              [
+                760,
+                963
+              ]
+            ],
+            "col_x": [
+              [
+                200,
+                475,
+                762,
+                1048,
+                1365
+              ],
+              [
+                200,
+                475,
+                762,
+                1048,
+                1365
+              ],
+              [
+                200,
+                475,
+                762,
+                1048,
+                1365
+              ]
+            ],
+            "frame_size": "270x300"
+          },
+          "original_prompt": "Hand-painted circus-style sprite sheet of \"Boris Loon Baby\" (Baby Bat), a small sinister flying bat-clown enemy for a side-scrolling game. Its body is a big glossy red-and-white striped clown ball (like a juggling ball / beach-ball) with a classic menacing clown face painted on it: hollow black eye sockets with glowing yellow eyes, a wide grinning mouth full of sharp jagged teeth, a small round red clown nose, and white star shapes scattered across the red panels. On top of the ball sits a tiny red-and-cream striped conical party hat tipped with a gold bell/finial. Around the lower half of the ball is a ruffled collar made of glossy deep-red flower petals (a peony/poppy-like bloom), each petal tipped with a tiny gold bead. Two large dark crimson bat wings sprout from the sides of the ball, membranous with visible finger-bone struts and little gold stars on the wing membranes. Hanging below the ball are two thin spindly legs ending in little red tassel/foot bells. Expression is menacing and theatrical \u2014 a twisted grin, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone/cream white, gold accents, dark browns), dynamic poses, subtle motion smears and speed lines on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action: \"1. BABY BAT A\", \"2. BABY BAT B\", \"3. BABY BAT C\"). Each row is one action, left to right:\n\nRow 1 \u2014 Fly (5 frames): a hovering flight cycle, the clown ball drifting up and down with its bat wings flapping through a full open->half->open beat, body bobbing gently, legs dangling, a looping hover.\n\nRow 2 \u2014 Attack (5 frames): a lunging shriek attack \u2014 wind-up with a swirling tan/pink motion trail around the ball -> crouch/rise -> the clown face opens into a huge gaping maw with a long tongue and ringed teeth flung out to the right, spraying a burst of red droplets/debris -> follow-through -> recovery back to a ready hover.\n\nRow 3 \u2014 Death (5 frames): the clown ball bursts apart \u2014 frame 1 intact but cracking, then progressively disintegrating into a radial spray of loose red shards, petals, and fragments that scatter outward and fade, leaving only drifting debris by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
+        },
+        {
+          "file": "panic-petal/assets/violetta_marionetta_sheet.png",
+          "rows": 3,
+          "cols": 5,
+          "description": "Violetta Marionetta puppet-maiden enemy, 3 actions x 5 frames (walk/attack/death)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "violetta_marionetta",
+              "anim": "walk",
+              "frames": [
+                "violetta_marionetta_walk_f1.png",
+                "violetta_marionetta_walk_f2.png",
+                "violetta_marionetta_walk_f3.png",
+                "violetta_marionetta_walk_f4.png",
+                "violetta_marionetta_walk_f5.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "violetta_marionetta",
+              "anim": "attack",
+              "frames": [
+                "violetta_marionetta_attack_f1.png",
+                "violetta_marionetta_attack_f2.png",
+                "violetta_marionetta_attack_f3.png",
+                "violetta_marionetta_attack_f4.png",
+                "violetta_marionetta_attack_f5.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "violetta_marionetta",
+              "anim": "death",
+              "frames": [
+                "violetta_marionetta_death_f1.png",
+                "violetta_marionetta_death_f2.png",
+                "violetta_marionetta_death_f3.png",
+                "violetta_marionetta_death_f4.png",
+                "violetta_marionetta_death_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              250,
+              156,
+              169
+            ],
+            "bg_tol": 15,
+            "row_y": [
+              [
+                0,
+                342
+              ],
+              [
+                343,
+                675
+              ],
+              [
+                676,
+                1024
+              ]
+            ],
+            "col_x": [
+              [
+                248,
+                540,
+                832,
+                1124,
+                1416
+              ],
+              [
+                248,
+                540,
+                832,
+                1124,
+                1416
+              ],
+              [
+                248,
+                540,
+                832,
+                1124,
+                1416
+              ]
+            ],
+            "frame_size": "304x332"
+          },
+          "original_prompt": "Hand-painted circus-style sprite sheet of \"Violetta Marionetta\", a sinister puppet-maiden enemy for a side-scrolling game. She is a gaunt, emaciated marionette with a pale bone-white skull-like face: hollow black eye sockets with small glowing eyes, a wide grinning mouth full of sharp teeth, and fine dark cracks/veining across her skin like aged porcelain. Her head is crowned with a deep-red rose (a blooming crimson bloom) set into a small red-and-cream jester/party cap with curled tips. Around her neck/shoulders is a large ruff collar made of glossy deep-red flower petals (a peony/poppy-like bloom), each petal tipped with a tiny gold bead. Her costume is a tattered red-and-cream striped bodice with ragged frilled cuffs and hem in cream and gold; thin spindly bone-white limbs end in long clawed black-gloved hands with exaggerated fingers, and she wears dark high-heeled boots with curled pointed toes and small gold bells at the tips. Thin puppet strings hang from above her head and dangle from her joints. Expression is menacing and theatrical \u2014 a twisted grin, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone white, gold accents, dark browns), dynamic hunched forward-leaning poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action: \"1. WALK\", \"2. ATTACK\", \"3. DEATH\"). Each row is one action, left to right:\n\nRow 1 \u2014 Walk (5 frames): a loping, hunched puppet walk cycle across the frame, body leaning forward, arms swinging with clawed hands, thin legs striding, petal-ruff and ribbons swaying, contact -> down -> passing -> up -> contact.\n\nRow 2 \u2014 Attack (5 frames): a lunging whip attack \u2014 crouched wind-up -> rising into an aggressive lunge with both clawed arms flung out wide -> full extended reach where her arms stretch into long thorn-vine whips flung out to the right, shedding loose red petals/debris with a swirling tan/pink motion trail -> follow-through -> recovery back to a ready stance.\n\nRow 3 \u2014 Death (5 frames): the marionette collapses and dissolves apart \u2014 frame 1 intact but staggering, then progressively breaking down, slumping to the ground, until she lies crumpled in a heap of scattered red petals, broken fragments, and dangling strings by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
         }
-      ],
-      "original_prompt": "Hand-painted circus-style sprite sheet of \"Balthazar\", an anthropomorphic orange-and-black striped tiger dressed as a ringmaster/master of ceremonies. He wears a fitted black tuxedo jacket with satin lapels, a white dress shirt, a red bow tie, a red sash/sash-tie at the waist, and dark trousers; he has large expressive paws (orange with black stripes and cream claws), a long striped tail, and a confident, theatrical expression. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors, dynamic poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells. Each row is one action, left to right:\n\nRow 1 \u2014 Run cycle (5 frames): full sprint across the frame, contact -> down -> passing -> up -> contact, legs striding wide, tail streaming behind, body leaning forward.\n\nRow 2 \u2014 Jump/leap arc (5 frames): rising -> apex -> falling, both arms raised in a triumphant ringmaster gesture, coat tails flaring, big bounding leap.\n\nRow 3 \u2014 Attack with cane (5 frames): wind-up -> overhead swing -> follow-through -> impact -> recovery, wielding a gold-tipped cane/baton that leaves a glowing tan whip-like motion trail; final frame shows him standing upright resting on the cane, composed.\n\nCharacter faces right, consistent proportions and palette across all 15 frames.",
-      "crop": {
-        "bg_color": [
-          248,
-          148,
-          167
-        ],
-        "bg_tol": 20,
-        "row_y": [
-          [
-            0,
-            323
-          ],
-          [
-            324,
-            647
-          ],
-          [
-            648,
-            970
-          ]
-        ],
-        "col_x": [
-          [
-            162,
-            486,
-            810,
-            1134,
-            1458
-          ],
-          [
-            162,
-            486,
-            810,
-            1134,
-            1458
-          ],
-          [
-            162,
-            486,
-            810,
-            1134,
-            1458
-          ]
-        ],
-        "frame_size": "324x324",
-        "frames_dir": "panic-petal/assets/heroes"
-      }
-    },
-    "jester": {
-      "file": "panic-petal/assets/jester_sheet_1.png",
-      "size": "1983x793",
-      "rows": 2,
-      "cols": 5,
-      "cell": 396,
-      "description": "Jester skull-clown enemy, 2 actions x 5 frames",
-      "entities": [
-        {
-          "row": 1,
-          "name": "jester",
-          "anim": "run",
-          "frames": [
-            "jester_run_f1.png",
-            "jester_run_f2.png",
-            "jester_run_f3.png",
-            "jester_run_f4.png",
-            "jester_run_f5.png"
-          ]
-        },
-        {
-          "row": 2,
-          "name": "jester",
-          "anim": "jump",
-          "frames": [
-            "jester_jump_f1.png",
-            "jester_jump_f2.png",
-            "jester_jump_f3.png",
-            "jester_jump_f4.png",
-            "jester_jump_f5.png"
-          ]
-        }
-      ],
-      "original_prompt": "Hand-painted circus-style sprite sheet of \"Jester\", a sinister clown-jester enemy for a side-scrolling game. He has a gaunt white skull-like face with hollow black eye sockets, a wide grinning mouth full of sharp teeth, and a small red clown nose; his skin is pale bone-white with dark shading. Around his head/shoulders he wears a large ruff collar made of glossy deep-red flower petals (like a blooming poppy or peony), each petal tipped with a tiny gold bead. His costume is a tattered jester outfit: a red-and-cream vertically striped bodice and puffed striped legs/trousers, ragged frilled cuffs and hem in cream and gold, dark leather boots with curled pointed toes and gold bells at the tips, and long clawed black-gloved hands with exaggerated fingers. His expression is menacing and theatrical \u2014 a twisted grin, glowing red eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone white, gold accents, dark browns), dynamic hunched forward-leaning poses, subtle motion smears on fast moves.\n\nSheet layout: 2 rows x 5 columns on a solid pink background with a faint light grid dividing the cells. Each row is one action, left to right:\n\nRow 1 \u2014 Run cycle (5 frames): a loping, hunched sprint across the frame, body leaning forward, arms pumping with clawed hands, striped legs striding, petal-ruff swaying, contact -> down -> passing -> up -> contact.\n\nRow 2 \u2014 Attack/lunge (5 frames): a leaping, lunging attack \u2014 rising -> apex -> falling toward the player, both clawed arms flung out wide, then a final impact frame showing him slamming down low with a splash/burst of red petal debris and dust at his feet.\n\nCharacter faces right, consistent proportions and palette across all 10 frames.",
-      "crop": {
-        "bg_color": [
-          250,
-          152,
-          169
-        ],
-        "bg_tol": 20,
-        "row_y": [
-          [
-            0,
-            395
-          ],
-          [
-            396,
-            792
-          ]
-        ],
-        "col_x": [
-          [
-            205,
-            621,
-            990,
-            1389,
-            1806
-          ],
-          [
-            198,
-            594,
-            990,
-            1386,
-            1782
-          ]
-        ],
-        "frame_size": "396x396",
-        "frames_dir": "panic-petal/assets/enemies"
-      }
-    },
-    "jester_sheet_2": {
-      "file": "panic-petal/assets/jester_sheet_2.png",
-      "size": "1620x971",
-      "rows": 3,
-      "cols": 5,
-      "cell": 324,
-      "description": "Jester skull-clown enemy sheet 2, 3 actions x 5 frames (idle/whip/death)",
-      "entities": [
-        {
-          "row": 1,
-          "name": "jester",
-          "anim": "idle",
-          "frames": [
-            "jester_idle_f1.png",
-            "jester_idle_f2.png",
-            "jester_idle_f3.png",
-            "jester_idle_f4.png",
-            "jester_idle_f5.png"
-          ]
-        },
-        {
-          "row": 2,
-          "name": "jester",
-          "anim": "whip",
-          "frames": [
-            "jester_whip_f1.png",
-            "jester_whip_f2.png",
-            "jester_whip_f3.png",
-            "jester_whip_f4.png",
-            "jester_whip_f5.png"
-          ]
-        },
-        {
-          "row": 3,
-          "name": "jester",
-          "anim": "death",
-          "frames": [
-            "jester_death_f1.png",
-            "jester_death_f2.png",
-            "jester_death_f3.png",
-            "jester_death_f4.png",
-            "jester_death_f5.png"
-          ]
-        }
-      ],
-      "original_prompt": "Hand-painted circus-style sprite sheet of \"Jester\", the same sinister clown-jester enemy as before: gaunt white skull-like face, hollow black eye sockets, wide grinning mouth full of sharp teeth, small red clown nose, pale bone-white skin; a large ruff collar of glossy deep-red flower petals each tipped with a tiny gold bead; tattered jester costume in red-and-cream vertical stripes with ragged frilled cuffs/hem in cream and gold; dark leather boots with curled pointed toes and gold bells; long clawed black-gloved hands. Menacing theatrical expression, glowing red eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone white, gold accents, dark browns), dynamic poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells. Each row is one action, left to right:\n\nRow 1 \u2014 Idle/hover (5 frames): a menacing crouched idle stance, body swaying subtly side to side, arms hanging low with clawed hands, petal-ruff shifting slightly, weight shifting between feet \u2014 a looping threat pose.\n\nRow 2 \u2014 Whip attack (5 frames): he wields a long thorny stem ending in a huge open-mouthed carnivorous flower head (a snapping venus-flytrap-like bloom with ringed teeth). Wind-up -> extending the thorn whip forward -> full extension with the flower head flung out to the right -> a sweeping arc with a glowing tan/pink motion trail behind the flower -> recovery back to a ready stance.\n\nRow 3 \u2014 Death/dissolve (5 frames): the jester bursts apart into a spray of loose red petals and fragments that scatter outward and fade \u2014 frame 1 intact, then progressively disintegrating until only drifting petals remain by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames.",
-      "crop": {
-        "bg_color": [
-          251,
-          149,
-          175
-        ],
-        "bg_tol": 20,
-        "row_y": [
-          [
-            0,
-            323
-          ],
-          [
-            324,
-            647
-          ],
-          [
-            648,
-            970
-          ]
-        ],
-        "col_x": [
-          [
-            162,
-            486,
-            810,
-            1134,
-            1458
-          ],
-          [
-            162,
-            486,
-            810,
-            1134,
-            1458
-          ],
-          [
-            162,
-            486,
-            810,
-            1134,
-            1458
-          ]
-        ],
-        "frame_size": "324x324",
-        "frames_dir": "panic-petal/assets/enemies"
-      }
-    },
-    "jackolantern": {
-      "file": "panic-petal/assets/jackolantern_sheet.png",
-      "size": "1622x970",
-      "rows": 3,
-      "cols": 5,
-      "cell": 324,
-      "description": "Jack-O-Lantern pumpkin clown enemy, 3 actions x 5 frames (roll/launch/explode)",
-      "entities": [
-        {
-          "row": 1,
-          "name": "jackolantern",
-          "anim": "roll",
-          "frames": [
-            "jackolantern_roll_f1.png",
-            "jackolantern_roll_f2.png",
-            "jackolantern_roll_f3.png",
-            "jackolantern_roll_f4.png",
-            "jackolantern_roll_f5.png"
-          ]
-        },
-        {
-          "row": 2,
-          "name": "jackolantern",
-          "anim": "launch",
-          "frames": [
-            "jackolantern_launch_f1.png",
-            "jackolantern_launch_f2.png",
-            "jackolantern_launch_f3.png",
-            "jackolantern_launch_f4.png",
-            "jackolantern_launch_f5.png"
-          ]
-        },
-        {
-          "row": 3,
-          "name": "jackolantern",
-          "anim": "explode",
-          "frames": [
-            "jackolantern_explode_f1.png",
-            "jackolantern_explode_f2.png",
-            "jackolantern_explode_f3.png",
-            "jackolantern_explode_f4.png",
-            "jackolantern_explode_f5.png"
-          ]
-        }
-      ],
-      "original_prompt": "Hand-painted circus-style sprite sheet of \"Jack-O-Lantern\", a sinister jack-o-lantern enemy for a side-scrolling game. Its head is a big glossy orange pumpkin with a classic carved grin \u2014 jagged triangular teeth, glowing yellow-orange eyes, and a crooked nose cut-out that glows from within; a thick dark-green curled stem sprouts from the top, bent into a hook. The pumpkin wears a tattered circus costume: a red-and-cream vertically striped ruffled collar/bodice around its midsection, ragged frilled cuffs and hem in cream with tiny gold beads, and two long black-gloved clawed hands with exaggerated fingers. Its legs are thin dark leather boots with curled pointed toes and small gold bells at the tips. Expression is menacing and theatrical \u2014 a twisted grinning face, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep orange, crimson red, bone/cream white, gold accents, dark browns and greens), dynamic poses, subtle motion smears and speed lines on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action). Each row is one action, left to right:\n\nRow 1 \u2014 Move / Roll (5 frames): the pumpkin sprints across the frame, then tumbles end-over-end into a rolling ball (frames 3-4 show it fully rounded with circular motion-smear trails and a few flying debris bits), then pops back upright into a stride. Legs striding wide, arms pumping with clawed hands, body leaning forward.\n\nRow 2 \u2014 Attack / Launch (5 frames): a leaping, lunging attack \u2014 crouched wind-up -> rising -> apex -> falling toward the player with both clawed arms flung out wide and tan/pink speed-line trails behind, ending in a final impact frame where he slams down low with a splash/burst of orange debris and dust at his feet.\n\nRow 3 \u2014 Death / Explode (5 frames): the pumpkin bursts apart \u2014 frame 1 intact, then progressively cracking open until it detonates into a radial spray of loose orange pumpkin chunks, seeds, and fragments that scatter outward and fade, leaving only drifting shards by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames.",
-      "crop": {
-        "bg_color": [
-          250,
-          154,
-          175
-        ],
-        "bg_tol": 20,
-        "row_y": [
-          [
-            0,
-            300
-          ],
-          [
-            324,
-            620
-          ],
-          [
-            648,
-            945
-          ]
-        ],
-        "col_x": [
-          [
-            195,
-            520,
-            824,
-            1143,
-            1461
-          ],
-          [
-            195,
-            520,
-            824,
-            1143,
-            1461
-          ],
-          [
-            195,
-            520,
-            824,
-            1143,
-            1461
-          ]
-        ],
-        "frame_size": "296x300",
-        "frames_dir": "panic-petal/assets/enemies"
-      }
-    },
-    "vine_hound": {
-      "file": "panic-petal/assets/vine_hound_sheet.png",
-      "size": "1619x971",
-      "rows": 3,
-      "cols": 5,
-      "cell": 308,
-      "description": "Vine Hound plant-beast enemy, 3 actions x 5 frames (run/attack/death)",
-      "entities": [
-        {
-          "row": 1,
-          "name": "vine_hound",
-          "anim": "run",
-          "frames": [
-            "vine_hound_run_f1.png",
-            "vine_hound_run_f2.png",
-            "vine_hound_run_f3.png",
-            "vine_hound_run_f4.png",
-            "vine_hound_run_f5.png"
-          ]
-        },
-        {
-          "row": 2,
-          "name": "vine_hound",
-          "anim": "attack",
-          "frames": [
-            "vine_hound_attack_f1.png",
-            "vine_hound_attack_f2.png",
-            "vine_hound_attack_f3.png",
-            "vine_hound_attack_f4.png",
-            "vine_hound_attack_f5.png"
-          ]
-        },
-        {
-          "row": 3,
-          "name": "vine_hound",
-          "anim": "death",
-          "frames": [
-            "vine_hound_death_f1.png",
-            "vine_hound_death_f2.png",
-            "vine_hound_death_f3.png",
-            "vine_hound_death_f4.png",
-            "vine_hound_death_f5.png"
-          ]
-        }
-      ],
-      "original_prompt": "Hand-painted circus-style sprite sheet of \"Vine Hound\", a sinister plant-hybrid beast enemy for a side-scrolling game. It is a four-legged canine/hound body made of twisted dark olive-green and brown vine-stem flesh \u2014 gnarled woody legs with clawed paws, a long sinuous tail ending in a small red flower bud, thorny tendrils and leafy growths sprouting along its spine and flanks. Its head is a pale bone-white skull-like hound face with glowing yellow eyes and a wide open maw full of sharp fangs; erupting from its neck/shoulders is a large blooming deep-red flower (a peony/poppy-like bloom) whose petals fan out like a mane or ruff collar, each petal glossy crimson with darker shading and tiny highlights. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, olive/brown greens, bone white, gold-yellow eye glow), dynamic poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action). Each row is one action, left to right:\n\nRow 1 \u2014 Run cycle (5 frames): a low, striding sprint across the frame, legs pumping wide, tail streaming behind, the red flower mane swaying, body leaning forward \u2014 contact -> down -> passing -> up -> contact.\n\nRow 2 \u2014 Attack (5 frames): the hound rears/lunges to strike \u2014 crouched wind-up -> rising into an aggressive lunge with jaws wide open -> full extended lunge where the body stretches out into a long thorn-vine whip ending in a huge open-mouthed carnivorous flower head (snapping venus-flytrap-like bloom with ringed teeth) flung out to the right, shedding loose red petals/debris -> recovery back to a ready stance.\n\nRow 3 \u2014 Death (5 frames): the hound collapses and dissolves apart \u2014 frame 1 intact but staggering, then progressively breaking down into a heap of vines, stems, and a spray of loose red petals that scatter outward and fade until only a tangle of greenery and drifting petals remain by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames.",
-      "crop": {
-        "bg_color": [
-          251,
-          148,
-          174
-        ],
-        "bg_tol": 20,
-        "row_y": [
-          [
-            61,
-            303
-          ],
-          [
-            332,
-            607
-          ],
-          [
-            659,
-            907
-          ]
-        ],
-        "col_x": [
-          [
-            194,
-            489,
-            804,
-            1117,
-            1441
-          ],
-          [
-            194,
-            489,
-            804,
-            1117,
-            1441
-          ],
-          [
-            194,
-            489,
-            804,
-            1117,
-            1441
-          ]
-        ],
-        "frame_size": "300x250",
-        "frames_dir": "panic-petal/assets/enemies"
-      }
-    },
-    "boris_loon": {
-      "file": "panic-petal/assets/boris_loon_sheet.png",
-      "size": "1619x971",
-      "rows": 3,
-      "cols": 5,
-      "cell": 324,
-      "description": "Boris Loon bat-clown ball enemy, 3 actions x 5 frames (fly/attack/death)",
-      "entities": [
-        {
-          "row": 1,
-          "name": "boris_loon",
-          "anim": "fly",
-          "frames": [
-            "boris_loon_fly_f1.png",
-            "boris_loon_fly_f2.png",
-            "boris_loon_fly_f3.png",
-            "boris_loon_fly_f4.png",
-            "boris_loon_fly_f5.png"
-          ]
-        },
-        {
-          "row": 2,
-          "name": "boris_loon",
-          "anim": "attack",
-          "frames": [
-            "boris_loon_attack_f1.png",
-            "boris_loon_attack_f2.png",
-            "boris_loon_attack_f3.png",
-            "boris_loon_attack_f4.png",
-            "boris_loon_attack_f5.png"
-          ]
-        },
-        {
-          "row": 3,
-          "name": "boris_loon",
-          "anim": "death",
-          "frames": [
-            "boris_loon_death_f1.png",
-            "boris_loon_death_f2.png",
-            "boris_loon_death_f3.png",
-            "boris_loon_death_f4.png",
-            "boris_loon_death_f5.png"
-          ]
-        }
-      ],
-      "original_prompt": "Hand-painted circus-style sprite sheet of \"Boris Loon\", a sinister flying bat-clown enemy for a side-scrolling game. Its body is a big glossy red-and-white striped clown ball (like a juggling ball / beach-ball) with a classic menacing clown face painted on it: hollow black eye sockets with glowing yellow eyes, a wide grinning mouth full of sharp jagged teeth, a small round red clown nose, and white star shapes scattered across the red panels. On top of the ball sits a tiny red-and-cream striped conical party hat tipped with a gold bell/finial. Around the lower half of the ball is a ruffled collar made of glossy deep-red flower petals (a peony/poppy-like bloom), each petal tipped with a tiny gold bead. Two large dark crimson bat wings sprout from the sides of the ball, membranous with visible finger-bone struts. Hanging below the ball are two thin spindly legs ending in little red tassel/foot bells. Expression is menacing and theatrical \u2014 a twisted grin, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone/cream white, gold accents, dark browns), dynamic poses, subtle motion smears and speed lines on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action: \"1. FLY\", \"2. ATTACK\", \"3. DEATH\"). Each row is one action, left to right:\n\nRow 1 \u2014 Fly (5 frames): a hovering flight cycle, the clown ball drifting up and down with its bat wings flapping through a full open->half->open beat, body bobbing gently, legs dangling, a looping hover.\n\nRow 2 \u2014 Attack (5 frames): a lunging shriek attack \u2014 wind-up with a swirling tan/pink motion trail around the ball -> crouch/rise -> the clown face opens into a huge gaping maw with a long tongue and ringed teeth flung out to the right, spraying a burst of red droplets/debris -> follow-through -> recovery back to a ready hover.\n\nRow 3 \u2014 Death (5 frames): the clown ball bursts apart \u2014 frame 1 intact but cracking, then progressively disintegrating into a radial spray of loose red shards, petals, and fragments that scatter outward and fade, leaving only drifting debris by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames.",
-      "crop": {
-        "bg_color": [
-          251,
-          152,
-          170
-        ],
-        "bg_tol": 20,
-        "row_y": [
-          [
-            0,
-            323
-          ],
-          [
-            324,
-            647
-          ],
-          [
-            648,
-            970
-          ]
-        ],
-        "col_x": [
-          [
-            194,
-            489,
-            804,
-            1117,
-            1441
-          ],
-          [
-            194,
-            489,
-            804,
-            1117,
-            1441
-          ],
-          [
-            194,
-            489,
-            804,
-            1117,
-            1441
-          ]
-        ],
-        "frame_size": "300x324",
-        "frames_dir": "panic-petal/assets/enemies"
-      }
-    },
-    "boris_loon_baby": {
-      "file": "panic-petal/assets/boris_loon_baby_sheet.png",
-      "size": "1536x1024",
-      "rows": 3,
-      "cols": 5,
-      "cell": 307,
-      "description": "Boris Loon Baby bat-clown enemy, 3 actions x 5 frames (fly/attack/death)",
-      "entities": [
-        {
-          "row": 1,
-          "name": "boris_loon_baby",
-          "anim": "fly_1",
-          "frames": [
-            "boris_loon_baby_fly_1_f1.png",
-            "boris_loon_baby_fly_1_f2.png",
-            "boris_loon_baby_fly_1_f3.png",
-            "boris_loon_baby_fly_1_f4.png",
-            "boris_loon_baby_fly_1_f5.png"
-          ]
-        },
-        {
-          "row": 2,
-          "name": "boris_loon_baby",
-          "anim": "fly_2",
-          "frames": [
-            "boris_loon_baby_fly_2_f1.png",
-            "boris_loon_baby_fly_2_f2.png",
-            "boris_loon_baby_fly_2_f3.png",
-            "boris_loon_baby_fly_2_f4.png",
-            "boris_loon_baby_fly_2_f5.png"
-          ]
-        },
-        {
-          "row": 3,
-          "name": "boris_loon_baby",
-          "anim": "fly_3",
-          "frames": [
-            "boris_loon_baby_fly_3_f1.png",
-            "boris_loon_baby_fly_3_f2.png",
-            "boris_loon_baby_fly_3_f3.png",
-            "boris_loon_baby_fly_3_f4.png",
-            "boris_loon_baby_fly_3_f5.png"
-          ]
-        }
-      ],
-      "original_prompt": "Hand-painted circus-style sprite sheet of \"Boris Loon Baby\" (Baby Bat), a small sinister flying bat-clown enemy for a side-scrolling game. Its body is a big glossy red-and-white striped clown ball (like a juggling ball / beach-ball) with a classic menacing clown face painted on it: hollow black eye sockets with glowing yellow eyes, a wide grinning mouth full of sharp jagged teeth, a small round red clown nose, and white star shapes scattered across the red panels. On top of the ball sits a tiny red-and-cream striped conical party hat tipped with a gold bell/finial. Around the lower half of the ball is a ruffled collar made of glossy deep-red flower petals (a peony/poppy-like bloom), each petal tipped with a tiny gold bead. Two large dark crimson bat wings sprout from the sides of the ball, membranous with visible finger-bone struts and little gold stars on the wing membranes. Hanging below the ball are two thin spindly legs ending in little red tassel/foot bells. Expression is menacing and theatrical \u2014 a twisted grin, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone/cream white, gold accents, dark browns), dynamic poses, subtle motion smears and speed lines on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action: \"1. BABY BAT A\", \"2. BABY BAT B\", \"3. BABY BAT C\"). Each row is one action, left to right:\n\nRow 1 \u2014 Fly (5 frames): a hovering flight cycle, the clown ball drifting up and down with its bat wings flapping through a full open->half->open beat, body bobbing gently, legs dangling, a looping hover.\n\nRow 2 \u2014 Attack (5 frames): a lunging shriek attack \u2014 wind-up with a swirling tan/pink motion trail around the ball -> crouch/rise -> the clown face opens into a huge gaping maw with a long tongue and ringed teeth flung out to the right, spraying a burst of red droplets/debris -> follow-through -> recovery back to a ready hover.\n\nRow 3 \u2014 Death (5 frames): the clown ball bursts apart \u2014 frame 1 intact but cracking, then progressively disintegrating into a radial spray of loose red shards, petals, and fragments that scatter outward and fade, leaving only drifting debris by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames.",
-      "crop": {
-        "bg_color": [
-          250,
-          149,
-          165
-        ],
-        "bg_tol": 20,
-        "row_y": [
-          [
-            0,
-            320
-          ],
-          [
-            416,
-            645
-          ],
-          [
-            760,
-            963
-          ]
-        ],
-        "col_x": [
-          [
-            200,
-            475,
-            762,
-            1048,
-            1365
-          ],
-          [
-            200,
-            475,
-            762,
-            1048,
-            1365
-          ],
-          [
-            200,
-            475,
-            762,
-            1048,
-            1365
-          ]
-        ],
-        "frame_size": "270x300",
-        "frames_dir": "panic-petal/assets/enemies"
-      }
-    },
-    "violetta_marionetta": {
-      "file": "panic-petal/assets/violetta_marionetta_sheet.png",
-      "size": "1536x1024",
-      "rows": 3,
-      "cols": 5,
-      "cell": 307,
-      "description": "Violetta Marionetta puppet-maiden enemy, 3 actions x 5 frames (walk/attack/death)",
-      "entities": [
-        {
-          "row": 1,
-          "name": "violetta_marionetta",
-          "anim": "walk",
-          "frames": [
-            "violetta_marionetta_walk_f1.png",
-            "violetta_marionetta_walk_f2.png",
-            "violetta_marionetta_walk_f3.png",
-            "violetta_marionetta_walk_f4.png",
-            "violetta_marionetta_walk_f5.png"
-          ]
-        },
-        {
-          "row": 2,
-          "name": "violetta_marionetta",
-          "anim": "attack",
-          "frames": [
-            "violetta_marionetta_attack_f1.png",
-            "violetta_marionetta_attack_f2.png",
-            "violetta_marionetta_attack_f3.png",
-            "violetta_marionetta_attack_f4.png",
-            "violetta_marionetta_attack_f5.png"
-          ]
-        },
-        {
-          "row": 3,
-          "name": "violetta_marionetta",
-          "anim": "death",
-          "frames": [
-            "violetta_marionetta_death_f1.png",
-            "violetta_marionetta_death_f2.png",
-            "violetta_marionetta_death_f3.png",
-            "violetta_marionetta_death_f4.png",
-            "violetta_marionetta_death_f5.png"
-          ]
-        }
-      ],
-      "original_prompt": "Hand-painted circus-style sprite sheet of \"Violetta Marionetta\", a sinister puppet-maiden enemy for a side-scrolling game. She is a gaunt, emaciated marionette with a pale bone-white skull-like face: hollow black eye sockets with small glowing eyes, a wide grinning mouth full of sharp teeth, and fine dark cracks/veining across her skin like aged porcelain. Her head is crowned with a deep-red rose (a blooming crimson bloom) set into a small red-and-cream jester/party cap with curled tips. Around her neck/shoulders is a large ruff collar made of glossy deep-red flower petals (a peony/poppy-like bloom), each petal tipped with a tiny gold bead. Her costume is a tattered red-and-cream striped bodice with ragged frilled cuffs and hem in cream and gold; thin spindly bone-white limbs end in long clawed black-gloved hands with exaggerated fingers, and she wears dark high-heeled boots with curled pointed toes and small gold bells at the tips. Thin puppet strings hang from above her head and dangle from her joints. Expression is menacing and theatrical \u2014 a twisted grin, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone white, gold accents, dark browns), dynamic hunched forward-leaning poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action: \"1. WALK\", \"2. ATTACK\", \"3. DEATH\"). Each row is one action, left to right:\n\nRow 1 \u2014 Walk (5 frames): a loping, hunched puppet walk cycle across the frame, body leaning forward, arms swinging with clawed hands, thin legs striding, petal-ruff and ribbons swaying, contact -> down -> passing -> up -> contact.\n\nRow 2 \u2014 Attack (5 frames): a lunging whip attack \u2014 crouched wind-up -> rising into an aggressive lunge with both clawed arms flung out wide -> full extended reach where her arms stretch into long thorn-vine whips flung out to the right, shedding loose red petals/debris with a swirling tan/pink motion trail -> follow-through -> recovery back to a ready stance.\n\nRow 3 \u2014 Death (5 frames): the marionette collapses and dissolves apart \u2014 frame 1 intact but staggering, then progressively breaking down, slumping to the ground, until she lies crumpled in a heap of scattered red petals, broken fragments, and dangling strings by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames.",
-      "crop": {
-        "bg_color": [
-          250,
-          156,
-          169
-        ],
-        "bg_tol": 15,
-        "row_y": [
-          [
-            0,
-            342
-          ],
-          [
-            343,
-            675
-          ],
-          [
-            676,
-            1024
-          ]
-        ],
-        "col_x": [
-          [
-            248,
-            540,
-            832,
-            1124,
-            1416
-          ],
-          [
-            248,
-            540,
-            832,
-            1124,
-            1416
-          ],
-          [
-            248,
-            540,
-            832,
-            1124,
-            1416
-          ]
-        ],
-        "frame_size": "304x332",
-        "frames_dir": "panic-petal/assets/enemies"
-      }
+      ]
     },
     "boss": {
-      "file": "panic-petal/assets/overgrown_elephant_sheet.png",
-      "size": "1619x971",
-      "rows": 4,
-      "cols": 5,
-      "cell": 324,
-      "description": "Overgrown Elephant boss, 4 actions x 5 frames (charge, stomp, trunk blast, death)",
-      "entities": [
+      "path": "panic-petal/assets/boss",
+      "sheets": [
         {
-          "row": 1,
-          "name": "overgrown_elephant",
-          "anim": "charge",
-          "frames": [
-            "overgrown_elephant_charge_f1.png",
-            "overgrown_elephant_charge_f2.png",
-            "overgrown_elephant_charge_f3.png",
-            "overgrown_elephant_charge_f4.png",
-            "overgrown_elephant_charge_f5.png"
-          ]
-        },
-        {
-          "row": 2,
-          "name": "overgrown_elephant",
-          "anim": "stomp",
-          "frames": [
-            "overgrown_elephant_stomp_f1.png",
-            "overgrown_elephant_stomp_f2.png",
-            "overgrown_elephant_stomp_f3.png",
-            "overgrown_elephant_stomp_f4.png",
-            "overgrown_elephant_stomp_f5.png"
-          ]
-        },
-        {
-          "row": 3,
-          "name": "overgrown_elephant",
-          "anim": "trunk_blast",
-          "frames": [
-            "overgrown_elephant_trunk_blast_f1.png",
-            "overgrown_elephant_trunk_blast_f2.png",
-            "overgrown_elephant_trunk_blast_f3.png",
-            "overgrown_elephant_trunk_blast_f4.png",
-            "overgrown_elephant_trunk_blast_f5.png"
-          ]
-        },
-        {
-          "row": 4,
-          "name": "overgrown_elephant",
-          "anim": "death",
-          "frames": [
-            "overgrown_elephant_death_f1.png",
-            "overgrown_elephant_death_f2.png",
-            "overgrown_elephant_death_f3.png",
-            "overgrown_elephant_death_f4.png",
-            "overgrown_elephant_death_f5.png"
-          ]
+          "file": "panic-petal/assets/overgrown_elephant_sheet.png",
+          "rows": 4,
+          "cols": 5,
+          "description": "Overgrown Elephant boss, 4 actions x 5 frames (charge, stomp, trunk blast, death)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "overgrown_elephant",
+              "anim": "charge",
+              "frames": [
+                "overgrown_elephant_charge_f1.png",
+                "overgrown_elephant_charge_f2.png",
+                "overgrown_elephant_charge_f3.png",
+                "overgrown_elephant_charge_f4.png",
+                "overgrown_elephant_charge_f5.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "overgrown_elephant",
+              "anim": "stomp",
+              "frames": [
+                "overgrown_elephant_stomp_f1.png",
+                "overgrown_elephant_stomp_f2.png",
+                "overgrown_elephant_stomp_f3.png",
+                "overgrown_elephant_stomp_f4.png",
+                "overgrown_elephant_stomp_f5.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "overgrown_elephant",
+              "anim": "trunk_blast",
+              "frames": [
+                "overgrown_elephant_trunk_blast_f1.png",
+                "overgrown_elephant_trunk_blast_f2.png",
+                "overgrown_elephant_trunk_blast_f3.png",
+                "overgrown_elephant_trunk_blast_f4.png",
+                "overgrown_elephant_trunk_blast_f5.png"
+              ]
+            },
+            {
+              "row": 4,
+              "name": "overgrown_elephant",
+              "anim": "death",
+              "frames": [
+                "overgrown_elephant_death_f1.png",
+                "overgrown_elephant_death_f2.png",
+                "overgrown_elephant_death_f3.png",
+                "overgrown_elephant_death_f4.png",
+                "overgrown_elephant_death_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              250,
+              154,
+              164
+            ],
+            "bg_tol": 25,
+            "row_y": [
+              [
+                0,
+                242
+              ],
+              [
+                243,
+                485
+              ],
+              [
+                486,
+                728
+              ],
+              [
+                729,
+                970
+              ]
+            ],
+            "col_x": [
+              [
+                187,
+                507,
+                816,
+                1132,
+                1453
+              ],
+              [
+                187,
+                507,
+                816,
+                1132,
+                1453
+              ],
+              [
+                187,
+                507,
+                816,
+                1132,
+                1453
+              ],
+              [
+                187,
+                507,
+                816,
+                1132,
+                1453
+              ]
+            ],
+            "frame_size": "300x243"
+          }
         }
-      ],
-      "crop": {
-        "bg_color": [
-          250,
-          154,
-          164
-        ],
-        "bg_tol": 25,
-        "row_y": [
-          [
-            0,
-            242
-          ],
-          [
-            243,
-            485
-          ],
-          [
-            486,
-            728
-          ],
-          [
-            729,
-            970
-          ]
-        ],
-        "col_x": [
-          [
-            187,
-            507,
-            816,
-            1132,
-            1453
-          ],
-          [
-            187,
-            507,
-            816,
-            1132,
-            1453
-          ],
-          [
-            187,
-            507,
-            816,
-            1132,
-            1453
-          ],
-          [
-            187,
-            507,
-            816,
-            1132,
-            1453
-          ]
-        ],
-        "frame_size": "300x243",
-        "frames_dir": "panic-petal/assets/boss"
-      }
+      ]
     }
   },
-  "updated": "2026-09-10T14:21:59"
+  "updated": "2026-09-10T18:35:00"
 }

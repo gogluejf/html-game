@@ -662,57 +662,54 @@ if (MANIFEST.labels.length){ selectEntity(0, 0); }
 
 
 def build_manifest(assets_dir, project, prefix="", state_file=None):
-    """Build manifest from state JSON (preferred) or scan disk (fallback).
+    """Build manifest from state JSON tree structure (folders > sheets > entities).
     
-    If state_file is provided and exists, reads entities/frames from it.
-    Otherwise falls back to scanning <assets_dir>/<label>/ for _f<N>.png files.
-    prefix: path prefix prepended to each frame so it resolves relative to the
-    viewer HTML's location."""
+    Expected JSON structure:
+    {
+      "folders": {
+        "<label>": {
+          "path": "project/assets/<label>",
+          "sheets": [
+            {
+              "file": "...",
+              "entities": [
+                {"name": "...", "anim": "...", "frames": ["..._f1.png", ...]}
+              ]
+            }
+          ]
+        }
+      }
+    }
+    
+    Falls back to disk scan if no state file or no 'folders' key found.
+    prefix: path prefix so frames resolve relative to viewer HTML location."""
     import re
     
-    # Try state JSON first
+    # Try state JSON with new tree structure
     if state_file and os.path.isfile(state_file):
         with open(state_file) as f:
             state = json.load(f)
-        labels = []
-        seen_labels = set()
-        for sheet_key, sheet in state.get('sheets', {}).items():
-            crop = sheet.get('crop', {})
-            frames_dir = crop.get('frames_dir', '')
-            if not frames_dir:
-                continue
-            # Derive label from frames_dir (last path component)
-            label = os.path.basename(frames_dir)
-            if label in seen_labels:
-                # Append entities to existing label
-                for lbl in labels:
-                    if lbl['name'] == label:
-                        for entity in sheet.get('entities', []):
-                            name = entity['name']
-                            anim = entity.get('anim', '')
-                            ent_name = f"{name}_{anim}" if anim else name
-                            frames = entity.get('frames', [])
-                            if frames:
-                                full_frames = [prefix + os.path.join(label, fn) for fn in frames]
-                                lbl['entities'].append({"name": ent_name, "frames": [p.replace(os.sep, "/") for p in full_frames]})
-                        break
-                continue
-            seen_labels.add(label)
-            
-            entities = []
-            for entity in sheet.get('entities', []):
-                name = entity['name']
-                anim = entity.get('anim', '')
-                ent_name = f"{name}_{anim}" if anim else name
-                frames = entity.get('frames', [])
-                if frames:
-                    full_frames = [prefix + os.path.join(label, fn) for fn in frames]
-                    entities.append({"name": ent_name, "frames": [p.replace(os.sep, "/") for p in full_frames]})
-            if entities:
-                labels.append({"name": label, "entities": entities})
         
-        if labels:
-            return labels
+        folders = state.get('folders', {})
+        if folders:
+            labels = []
+            for label_name in sorted(folders.keys()):
+                folder = folders[label_name]
+                entities = []
+                for sheet in folder.get('sheets', []):
+                    for entity in sheet.get('entities', []):
+                        name = entity['name']
+                        anim = entity.get('anim', '')
+                        ent_name = f"{name}_{anim}" if anim else name
+                        frames = entity.get('frames', [])
+                        if frames:
+                            full_frames = [prefix + os.path.join(label_name, fn) for fn in frames]
+                            entities.append({"name": ent_name, "frames": [p.replace(os.sep, "/") for p in full_frames]})
+                if entities:
+                    labels.append({"name": label_name, "entities": entities})
+            
+            if labels:
+                return labels
     
     # Fallback: scan disk
     labels = []
