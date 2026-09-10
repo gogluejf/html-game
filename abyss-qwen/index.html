@@ -344,6 +344,7 @@ class MusicSequencer {
     this.playing = true;
     this.stepIndex = 0;
     this.barCount = 0;
+    this.phraseCount = 0;   // total phrase-events played (drives drum level)
     this.nextNoteTime = this.ctx.currentTime + 0.06;
 
     this._busFilter = this.ctx.createBiquadFilter();
@@ -374,6 +375,7 @@ class MusicSequencer {
     if (this.playing) {
       this.stepIndex = 0;
       this.barCount = 0;
+      this.phraseCount = 0;
       this.nextNoteTime = this.ctx.currentTime + 0.04;
     }
   }
@@ -394,7 +396,7 @@ class MusicSequencer {
       const spb = 60.0 / trk.bpm;
       this.nextNoteTime += spb / 4;              // one 16th note
       this.stepIndex = (this.stepIndex + 1) % trk.steps;
-      if (this.stepIndex === 0) this.barCount++; // finished a 2-bar block
+      if (this.stepIndex === 0) { this.barCount++; this.phraseCount++; } // finished a 2-bar block (= one phrase)
     }
   }
 
@@ -416,11 +418,27 @@ class MusicSequencer {
     return 0;
   }
 
+  /**
+   * Drum/arrangement intensity level, locked to the current phrase:
+   *   phrase 0 -> level 0 (no drums)
+   *   phrase 1 -> level 1 (light)
+   *   phrase 2 -> level 2 (medium)
+   *   phrase 3 -> level 3 (full)
+   * Real-music logic: the big drum hit lands on the climax phrase every time,
+   * while the accumulating lead layers (see _leadLayer) keep each pass fresh.
+   */
+  _drumLevel(trk) {
+    return this._phraseIndex(trk);
+  }
+
   _playStep(trk, step, t) {
     const pi = this._phraseIndex(trk);
+    const lvl = this._drumLevel(trk);
     const leadPhrase = trk.leads[pi];
     const padPhrase  = trk.pads[pi];
-    const d = trk.drums[step];
+    // Phrase-count-driven drums: light -> medium -> full (drifts across phrases).
+    const drumSet = (trk.drums[lvl] != null) ? trk.drums[lvl] : trk.drums;
+    const d = drumSet[step];
     if (d.k) this._kick(t, trk);
     if (d.s) this._snare(t, trk);
     if (d.h) this._hat(t, trk);
@@ -429,6 +447,11 @@ class MusicSequencer {
     if (padPhrase && padPhrase[step]) this._pad(t, padPhrase[step], trk);
     const l = leadPhrase[step];
     if (l) this._lead(t, l, trk);
+    // Extra lead layer builds with the same level (absent at level 0).
+    if (trk.leadLayers && trk.leadLayers[lvl] && trk.leadLayers[lvl][pi]) {
+      const xl = trk.leadLayers[lvl][pi][step];
+      if (xl) this._leadLayer(t, xl, trk, lvl);
+    }
   }
 
   /* -- voices -------------------------------------------------------------- */
@@ -540,6 +563,25 @@ class MusicSequencer {
     this._track(lfo, t + dur + 0.05);
   }
 
+  /** Softer harmony/counter line that layers over the main lead on later cycles. */
+  _leadLayer(t, freq, trk, cyc) {
+    const osc = this.ctx.createOscillator();
+    osc.type = trk.layerType || "triangle";
+    osc.frequency.setValueAtTime(freq, t);
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = (trk.layerCut || 3000);
+    const g = this.ctx.createGain();
+    // Quieter than the main lead so it sits underneath; slightly louder each cycle.
+    const peak = 0.12 + cyc * 0.04;
+    const dur = (trk.layerDur || 0.24);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(peak, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(lp); lp.connect(g); g.connect(this._busFilter);
+    osc.start(t); osc.stop(t + dur + 0.02);
+    this._track(osc, t + dur + 0.05);
+  }
+
   _track(node, doneAt) {
     this._liveOscs.add(node);
     setTimeout(() => { this._liveOscs.delete(node); }, (doneAt - this.ctx.currentTime) * 1000 + 50);
@@ -552,8 +594,14 @@ class MusicSequencer {
     const E1=_NOTE.E1,E2=_NOTE.E2;
     const E4=_NOTE.E4,B4=_NOTE.B4,A4=_NOTE.A4,D4=_NOTE.D4,G4=_NOTE.G4,R4=R;
     const C5=_NOTE.C5,F4=_NOTE.F4,E5=_NOTE.E5,D5=_NOTE.D5,G5=_NOTE.G5;
-    const drums=[];
-    for(let i=0;i<32;i++){drums.push({k:(i%4===0),s:(i%8===4),h:true});}
+    // Cycle-aware drums: [sparse, fuller, fullest] across the 3 arrangement cycles.
+    const drums=[[],[],[],[]]; // [none, light=snare, medium=+kick, full=+16th hats/ghosts]
+    for(let i=0;i<32;i++){
+      drums[0].push({k:false,s:false,h:false});                              // p0: silence
+      drums[1].push({k:false,s:(i%8===4),h:false});                          // p1: SNARE backbeat only
+      drums[2].push({k:(i%4===0),s:(i%8===4),h:false});                      // p2: + KICK quarters
+      drums[3].push({k:(i%4===0||i%8===6),s:(i%8===4||i%16===14),h:true});   // p3: + busy 16th hats & ghost snare
+    }
     const bass=[];
     for(let i=0;i<32;i++){bass.push(i%4===2?E2:E1);}
     const leads=[
@@ -572,11 +620,38 @@ class MusicSequencer {
       {0:[_NOTE.G2,_NOTE.B3,_NOTE.D4],16:[_NOTE.A2,_NOTE.C4,_NOTE.E4]},
       {0:[_NOTE.E2,_NOTE.B2,_NOTE.E3],16:[_NOTE.E2,_NOTE.B2,_NOTE.E3]},
     ];
+    // Extra harmony layer: plays on cycles 1 & 2 (index 1,2), one per phrase.
+    const leadLayers=[
+      null, // p0: no layer
+      null, // p1: no layer
+      [ // cycle 1: simple octave/third doubling of the riff
+        [R4,R4,B4,R4, R4,R4,A4,R4, G4,R4,R4,R4, B4,R4,R4,R4,
+         R4,R4,B4,R4, A4,R4,R4,R4, R4,R4,G4,R4, A4,R4,R4,R4],
+        [R4,R4,B4,R4, C5,R4,R4,R4, A4,R4,R4,R4, R4,R4,R4,R4,
+         R4,R4,B4,R4, E5,R4,R4,R4, B4,R4,C5,R4, R4,R4,R4,R4],
+        [R4,R4,A4,R4, B4,R4,R4,R4, G4,R4,F4,R4, R4,R4,R4,R4,
+         B4,R4,C5,R4, R4,R4,C5,R4, R4,R4,A4,R4, G4,R4,R4,R4],
+        [E5,R4,R4,R4, C5,R4,R4,R4, B4,R4,C5,R4, R4,R4,A4,R4,
+         R4,R4,C5,R4, D5,R4,E5,R4, G5,R4,R4,R4, R4,R4,C5,R4],
+      ],
+      [ // cycle 2: busier counter-line filling the gaps
+        [E4,R4,B4,R4, A4,R4,A4,R4, G4,R4,A4,R4, B4,R4,E5,R4,
+         A4,R4,B4,R4, A4,R4,B4,R4, E4,R4,G4,R4, A4,R4,B4,R4],
+        [A4,R4,B4,R4, C5,R4,B4,R4, A4,R4,G4,R4, F4,R4,G4,R4,
+         A4,R4,B4,R4, E5,R4,D5,R4, B4,R4,C5,R4, D5,R4,E5,R4],
+        [G4,R4,A4,R4, B4,R4,A4,R4, G4,R4,F4,R4, G4,R4,A4,R4,
+         B4,R4,C5,R4, D5,R4,C5,R4, B4,R4,A4,R4, G4,R4,A4,R4],
+        [E5,R4,D5,R4, C5,R4,D5,R4, B4,R4,C5,R4, B4,R4,A4,R4,
+         B4,R4,C5,R4, D5,R4,E5,R4, G5,R4,E5,R4, D5,R4,C5,R4],
+      ],
+    ];
     return {
       name:"PUNK", bpm:182, steps:32, drums, bass, leads, pads, phraseLens:[2,2,1,1],
+      numCycles:3, leadLayers,
       bassType:"sawtooth", bassCut:1100, bassDur:0.16,
       padType:"sawtooth", padCut:1800, padDur:0.5,
       leadType:"square", leadCut:4200, leadDur:0.18, vib:10,
+      layerType:"triangle", layerCut:3200, layerDur:0.18,
       kickTop:150, kickBot:48,
     };
   }
@@ -585,8 +660,14 @@ class MusicSequencer {
     const E1=_NOTE.E1,E2=_NOTE.E2;
     const E4=_NOTE.E4,B4=_NOTE.B4,A4=_NOTE.A4,D4=_NOTE.D4,G4=_NOTE.G4,F4=_NOTE.F4,R4=R;
     const C5=_NOTE.C5,D5=_NOTE.D5,E5=_NOTE.E5,G5=_NOTE.G5;
-    const drums=[];
-    for(let i=0;i<32;i++){drums.push({k:(i%4===0||i%8===6),s:(i%8===4),h:(i%2===0)});}
+    // Cycle-aware drums: [sparse, fuller, fullest].
+    const drums=[[],[],[],[]]; // [none, light=snare, medium=+kick, full=+16th hats/ghosts]
+    for(let i=0;i<32;i++){
+      drums[0].push({k:false,s:false,h:false});                                     // p0: silence
+      drums[1].push({k:false,s:(i%8===4),h:false});                                 // p1: SNARE backbeat only
+      drums[2].push({k:(i%4===0||i%8===6),s:(i%8===4),h:false});                    // p2: + KICK (double feel)
+      drums[3].push({k:(i%4===0||i%8===2||i%8===6),s:(i%8===4||i%16===14),h:true}); // p3: + 16th hats & ghost snare
+    }
     const bass=[];
     for(let i=0;i<32;i++){bass.push(i%8===0?E2:(i%4===2?E2:E1));}
     const leads=[
@@ -605,11 +686,37 @@ class MusicSequencer {
       {0:[_NOTE.E2,_NOTE.B2],8:[_NOTE.C3,_NOTE.G3],16:[_NOTE.D2,_NOTE.A2],24:[_NOTE.B1,_NOTE.E2]},
       {0:[_NOTE.E2,_NOTE.B2],8:[_NOTE.E2,_NOTE.B2],16:[_NOTE.E2,_NOTE.B2],24:[_NOTE.E2,_NOTE.B2]},
     ];
+    const leadLayers=[
+      null, // p0: no layer
+      null, // p1: no layer
+      [ // cycle 1: power-chord fifth doubling
+        [R4,R4,E4,B4, A4,R4,R4,R4, G4,R4,A4,R4, B4,R4,R4,R4,
+         D4,R4,D4,R4, G4,R4,R4,R4, E4,R4,G4,R4, B4,R4,R4,R4],
+        [B4,R4,A4,R4, G4,R4,R4,R4, B4,R4,C5,R4, R4,R4,C5,R4,
+         B4,R4,A4,R4, G4,R4,F4,R4, G4,R4,A4,R4, B4,R4,R4,R4],
+        [C5,R4,D5,R4, E5,R4,R4,R4, C5,R4,B4,R4, A4,R4,R4,R4,
+         C5,R4,D5,R4, E5,R4,G5,R4, R4,R4,D5,R4, C5,R4,R4,R4],
+        [G5,R4,E5,R4, D5,R4,R4,R4, C5,R4,D5,R4, R4,R4,D5,R4,
+         C5,R4,B4,R4, A4,R4,B4,R4, G4,R4,A4,R4, B4,R4,R4,R4],
+      ],
+      [ // cycle 2: busy counter-riff
+        [E4,R4,E4,B4, A4,R4,B4,R4, G4,R4,A4,R4, B4,R4,E4,R4,
+         D4,R4,D4,A4, G4,R4,A4,R4, E4,R4,G4,R4, B4,R4,A4,R4],
+        [B4,R4,A4,R4, G4,R4,A4,R4, B4,R4,C5,R4, D5,R4,C5,R4,
+         B4,R4,A4,R4, G4,R4,F4,R4, G4,R4,A4,R4, B4,R4,A4,R4],
+        [C5,R4,D5,R4, E5,R4,D5,R4, C5,R4,B4,R4, A4,R4,B4,R4,
+         C5,R4,D5,R4, E5,R4,G5,R4, E5,R4,D5,R4, C5,R4,B4,R4],
+        [G5,R4,E5,R4, D5,R4,E5,R4, C5,R4,D5,R4, E5,R4,D5,R4,
+         C5,R4,B4,R4, A4,R4,B4,R4, G4,R4,A4,R4, B4,R4,A4,R4],
+      ],
+    ];
     return {
       name:"METAL", bpm:158, steps:32, drums, bass, leads, pads, phraseLens:[2,2,1,1],
+      numCycles:3, leadLayers,
       bassType:"sawtooth", bassCut:950, bassDur:0.17,
       padType:"sawtooth", padCut:1500, padDur:0.4,
       leadType:"sawtooth", leadCut:3600, leadDur:0.2, vib:14,
+      layerType:"sawtooth", layerCut:2800, layerDur:0.2,
       kickTop:130, kickBot:42,
     };
   }
@@ -618,9 +725,14 @@ class MusicSequencer {
     const A1=_NOTE.A1,A2=_NOTE.A2;
     const E4=_NOTE.E4,G4=_NOTE.G4,F4=_NOTE.F4,A4=_NOTE.A4,C5=_NOTE.C5,D5=_NOTE.D5,E5=_NOTE.E5,R4=R;
     const B4=_NOTE.B4,G5=_NOTE.G5,A3=_NOTE.A3,C4=_NOTE.C4,E3=_NOTE.E3;
-    // Four-on-the-floor pulse, open hats on offbeats.
-    const drums=[];
-    for(let i=0;i<32;i++){drums.push({k:(i%4===0),s:(i%8===4),h:(i%2===1)});}
+    // Cycle-aware drums: [sparse, fuller, fullest] -- four-on-the-floor builds up.
+    const drums=[[],[],[],[]]; // [none, light=snare, medium=+kick, full=+16th hats/ghosts]
+    for(let i=0;i<32;i++){
+      drums[0].push({k:false,s:false,h:false});                                  // p0: silence
+      drums[1].push({k:false,s:(i%8===4),h:false});                              // p1: SNARE backbeat only
+      drums[2].push({k:(i%4===0),s:(i%8===4),h:false});                          // p2: + four-on-floor KICK
+      drums[3].push({k:(i%4===0||i%16===14),s:(i%8===4||i%16===10),h:true});     // p3: + 16th open hats & ghost kick
+    }
     // Pulsing synth bass: 8th-note root drive (A minor).
     const bass=[];
     for(let i=0;i<32;i++){bass.push(i%2===0?A1:A2);}
@@ -649,11 +761,37 @@ class MusicSequencer {
       {0:[_NOTE.E3,_NOTE.G4,_NOTE.B4],4:[_NOTE.E3,_NOTE.G4,_NOTE.B4],8:[_NOTE.D3,_NOTE.F4,_NOTE.A3],12:[_NOTE.D3,_NOTE.F4,_NOTE.A3],16:[_NOTE.C3,_NOTE.E4,_NOTE.G4],20:[_NOTE.C3,_NOTE.E4,_NOTE.G4],24:[_NOTE.E3,_NOTE.G4,_NOTE.B4],28:[_NOTE.D3,_NOTE.F4,_NOTE.A3]},
       {0:[_NOTE.A2,_NOTE.C4,_NOTE.E4],4:[_NOTE.A2,_NOTE.C4,_NOTE.E4],8:[_NOTE.A2,_NOTE.C4,_NOTE.E4],12:[_NOTE.A2,_NOTE.C4,_NOTE.E4],16:[_NOTE.C3,_NOTE.E4,_NOTE.G4],20:[_NOTE.C3,_NOTE.E4,_NOTE.G4],24:[_NOTE.A2,_NOTE.C4,_NOTE.E4],28:[_NOTE.A2,_NOTE.C4,_NOTE.E4]},
     ];
+    const leadLayers=[
+      null, // p0: no layer
+      null, // p1: no layer
+      [ // cycle 1: echoing harmony a third below the hook/build/climax/drop
+        [R4,R4,C5,R4, R4,R4,E5,R4, A4,R4,R4,R4, C5,R4,R4,R4,
+         R4,R4,D5,R4, B4,R4,R4,R4, G4,R4,R4,R4, A4,R4,R4,R4],
+        [A4,R4,R4,R4, C5,R4,R4,R4, E5,R4,R4,R4, G5,R4,R4,R4,
+         _NOTE.A5,R4,R4,R4, G5,R4,R4,R4, E5,R4,D5,R4, R4,R4,R4,R4],
+        [E5,R4,R4,R4, G5,R4,R4,R4, _NOTE.A5,R4,R4,R4, G5,R4,R4,R4,
+         E5,R4,R4,R4, D5,R4,R4,R4, E5,R4,G5,R4, R4,R4,R4,R4],
+        [C4,R4,R4,R4, E4,R4,R4,R4, R4,R4,R4,R4, R4,R4,R4,R4,
+         C4,R4,R4,R4, _NOTE.B3,R4,R4,R4, G4,R4,R4,R4, A4,R4,R4,R4],
+      ],
+      [ // cycle 2: arpeggiated counter-line filling the space
+        [A4,R4,C5,R4, E5,R4,C5,R4, A4,R4,B4,R4, C5,R4,E5,R4,
+         D5,R4,C5,R4, B4,R4,A4,R4, G4,R4,A4,R4, A4,R4,C5,R4],
+        [A4,B4,C5,D5, E5,D5,C5,D5, E5,_NOTE.F5,G5,E5, _NOTE.F5,G5,_NOTE.A5,G5,
+         G5,_NOTE.A5,G5,E5, D5,E5,_NOTE.F5,G5, E5,D5,C5,D5, R4,R4,R4,R4],
+        [_NOTE.A5,R4,G5,R4, E5,R4,G5,R4, _NOTE.A5,R4,_NOTE.A5,R4, G5,R4,E5,R4,
+         _NOTE.A5,R4,G5,R4, E5,R4,G5,R4, _NOTE.A5,R4,G5,R4, _NOTE.A5,R4,E5,R4],
+        [A3,R4,C4,R4, E4,R4,C4,R4, A3,R4,_NOTE.B3,R4, C4,R4,E4,R4,
+         _NOTE.D4,R4,C4,R4, _NOTE.B3,R4,A3,R4, G4,R4,A4,R4, A4,R4,C5,R4],
+      ],
+    ];
     return {
       name:"SYNTHWAVE", bpm:118, steps:32, drums, bass, leads, pads, phraseLens:[2,2,1,1],
+      numCycles:3, leadLayers,
       bassType:"sawtooth", bassCut:800, bassDur:0.22,
       padType:"sawtooth", padCut:2200, padDur:0.5,
       leadType:"square", leadCut:3400, leadDur:0.22, vib:6,
+      layerType:"triangle", layerCut:3000, layerDur:0.22,
       kickTop:120, kickBot:40,
     };
   }
@@ -662,12 +800,13 @@ class MusicSequencer {
     const A1=_NOTE.A1,D2=_NOTE.D2,E2=_NOTE.E2,G2=_NOTE.G2,C2=_NOTE.C2;
     const C4=_NOTE.C4,E4=_NOTE.E4,G4=_NOTE.G4,D4=_NOTE.D4,F4=_NOTE.F4,A4=_NOTE.A4,C5=_NOTE.C5,E5=_NOTE.E5,D5=_NOTE.D5,R4=R;
     const B4=_NOTE.B4,G5=_NOTE.G5,F5=_NOTE.F5;
-    const drums=[];
+    // Cycle-aware drums: [sparse, fuller, fullest] -- loose jazz groove builds.
+    const drums=[[],[],[],[]]; // [none, light=rim/snare, medium=+kick, full=+shaker 16ths]
     for(let i=0;i<32;i++){
-      const k=(i===0||i===3||i===8||i===10||i===16||i===19||i===24||i===27);
-      const s=(i===8||i===20);
-      const h=(i%2===0);
-      drums.push({k,s,h});
+      drums[0].push({k:false,s:false,h:false});                                                                              // p0: silence
+      drums[1].push({k:false,s:(i===8||i===20),h:false});                                                                    // p1: RIM/snare on 2&4 only
+      drums[2].push({k:(i===0||i===8||i===16||i===24),s:(i===8||i===20),h:false});                                           // p2: + loose KICK
+      drums[3].push({k:(i===0||i===3||i===8||i===10||i===16||i===19||i===24||i===27),s:(i===8||i===20||i===14||i===26),h:(i%2===0)}); // p3: + busy syncopated kick & 16th shaker
     }
     const bass=[
       A1,R4,D2,R4, E2,R4,G2,R4, A1,R4,C2,R4, D2,R4,E2,R4,
@@ -689,11 +828,37 @@ class MusicSequencer {
       {0:[_NOTE.D2,_NOTE.F4,_NOTE.A3],4:[_NOTE.E2,_NOTE.G4,_NOTE.B3],8:[_NOTE.A2,_NOTE.C4,_NOTE.E4],12:[_NOTE.G2,_NOTE.B3,_NOTE.D4],16:[_NOTE.D2,_NOTE.F4,_NOTE.A3],20:[_NOTE.E2,_NOTE.G4,_NOTE.B3],24:[_NOTE.A2,_NOTE.C4,_NOTE.E4],28:[_NOTE.G2,_NOTE.B3,_NOTE.D4]},
       {0:[_NOTE.A2,_NOTE.C4,_NOTE.E4],4:[_NOTE.G2,_NOTE.B3,_NOTE.D4],8:[_NOTE.D2,_NOTE.F4,_NOTE.A3],12:[_NOTE.E2,_NOTE.G4,_NOTE.B3],16:[_NOTE.A2,_NOTE.C4,_NOTE.E4],20:[_NOTE.G2,_NOTE.B3,_NOTE.D4],24:[_NOTE.D2,_NOTE.F4,_NOTE.A3],28:[_NOTE.E2,_NOTE.G4,_NOTE.B3]},
     ];
+    const leadLayers=[
+      null, // p0: no layer
+      null, // p1: no layer
+      [ // cycle 1: soft horn doubling a third above the main line
+        [R4,R4,C5,R4, E5,R4,R4,R4, C5,R4,A4,R4, R4,R4,R4,R4,
+         A4,R4,C5,R4, E5,R4,G5,R4, R4,R4,E5,R4, D5,R4,R4,R4],
+        [G4,R4,A4,R4, C5,R4,B4,R4, R4,R4,R4,R4, F4,R4,R4,R4,
+         A4,R4,C5,R4, D5,R4,E5,R4, R4,R4,C5,R4, R4,R4,G4,R4],
+        [C5,R4,B4,R4, A4,R4,R4,R4, G4,R4,A4,R4, C5,R4,R4,R4,
+         R4,R4,G4,R4, F4,R4,R4,R4, A4,R4,C5,R4, D5,R4,R4,R4],
+        [E5,R4,D5,R4, C5,R4,R4,R4, B4,R4,C5,R4, R4,R4,B4,R4,
+         C5,R4,D5,R4, E5,R4,G5,R4, F5,R4,R4,R4, D5,R4,R4,R4],
+      ],
+      [ // cycle 2: walking counter-melody filling the gaps
+        [A4,R4,C5,R4, E5,R4,D5,R4, C5,R4,A4,R4, G4,R4,A4,R4,
+         A4,R4,C5,R4, E5,R4,G5,R4, F5,R4,E5,R4, D5,R4,C5,R4],
+        [G4,R4,A4,R4, C5,R4,B4,R4, A4,R4,G4,R4, F4,R4,G4,R4,
+         A4,R4,C5,R4, D5,R4,E5,R4, D5,R4,C5,R4, A4,R4,G4,R4],
+        [C5,R4,B4,R4, A4,R4,B4,R4, G4,R4,A4,R4, C5,R4,B4,R4,
+         A4,R4,G4,R4, F4,R4,G4,R4, A4,R4,C5,R4, D5,R4,C5,R4],
+        [E5,R4,D5,R4, C5,R4,D5,R4, B4,R4,C5,R4, A4,R4,B4,R4,
+         C5,R4,D5,R4, E5,R4,G5,R4, F5,R4,E5,R4, D5,R4,C5,R4],
+      ],
+    ];
     return {
       name:"ACID JAZZ", bpm:104, steps:32, drums, bass, leads, pads, phraseLens:[2,2,1,1],
+      numCycles:3, leadLayers,
       bassType:"triangle", bassCut:700, bassDur:0.24,
       padType:"triangle", padCut:2600, padDur:0.7,
       leadType:"triangle", leadCut:3800, leadDur:0.3, vib:10,
+      layerType:"triangle", layerCut:3400, layerDur:0.3,
       kickTop:110, kickBot:44,
     };
   }
@@ -2594,6 +2759,7 @@ const Game = {
     c.save();
     c.font = "bold 13px 'Courier New', monospace";
     c.textBaseline = "top";
+
 
     // Background strip for readability.
     c.fillStyle = "rgba(0,0,0,0.45)";
