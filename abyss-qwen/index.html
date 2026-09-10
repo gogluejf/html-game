@@ -88,6 +88,27 @@ class SfxEngine {
     const data = buf.getChannelData(0);
     for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
     this.noiseBuffer = buf;
+
+    // Pre-render a real explosion: white noise through a decaying lowpass, so
+    // the "boom" has a sharp attack and a rumbling tail baked into the samples.
+    // This is far more reliable than live oscillators for big blasts.
+    const expLen = Math.floor(ctx.sampleRate * 1.2);
+    const expBuf = ctx.createBuffer(1, expLen, ctx.sampleRate);
+    const ed = expBuf.getChannelData(0);
+    // Simple one-pole lowpass over white noise, amplitude decays exponentially.
+    let lp = 0;
+    const cutoff = 900;                       // rumble corner frequency
+    const rc = 1 / (2 * Math.PI * cutoff);
+    const dt = 1 / ctx.sampleRate;
+    const alpha = dt / (rc + dt);
+    for (let i = 0; i < expLen; i++) {
+      const n = Math.random() * 2 - 1;
+      lp += alpha * (n - lp);                 // lowpassed noise
+      const t = i / ctx.sampleRate;
+      const env = Math.exp(-t * 4.5);         // fast attack, long decay
+      ed[i] = lp * env * 3.0;                 // boost to use full headroom
+    }
+    this.explosionBuffer = expBuf;
   }
 
   /** Toggle global mute. Returns current muted state. */
@@ -266,25 +287,29 @@ class SfxEngine {
   boom(size = 1) {
     this._wake();
     size = Math.max(0.1, Math.min(size, 1));
-    const dur = 0.2 + 0.5 * size;                 // longer as it grows
-    const vol = 0.25 + 0.55 * size;               // louder as it grows
+    const vol = 0.4 + 0.6 * size;             // louder as it grows
     const t0 = this.ctx.currentTime;
-    // Bright crackle — higher cutoff for bigger booms reads as more violent.
-    this._noiseBurst({
-      duration: dur,
-      peak: vol,
-      cutoff: 1500 + 3500 * size,
-      q: 0.8,
-    });
-    // Sub-bass thump — deeper start frequency for bigger booms.
+
+    // Play the pre-rendered explosion (noise + decay baked in). Bigger booms
+    // start earlier into the buffer's tail and run longer.
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.explosionBuffer;
+    src.playbackRate.value = 1.2 - 0.5 * size; // bigger = slower, deeper
+    const g = this._chain(src);
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.9);
+    src.start(t0);
+    src.stop(t0 + 1.0);
+
+    // Sub-bass sine thump for extra weight on the low end.
     const osc = this.ctx.createOscillator();
     osc.type = "sine";
-    osc.frequency.setValueAtTime(90 + 90 * size, t0);
-    osc.frequency.exponentialRampToValueAtTime(30 - 10 * size, t0 + dur);
-    const g = this._chain(osc);
-    this._env(g, t0, vol, 0.008, dur);
+    osc.frequency.setValueAtTime(80 + 60 * size, t0);
+    osc.frequency.exponentialRampToValueAtTime(35, t0 + 0.5);
+    const og = this._chain(osc);
+    this._env(og, t0, vol * 0.7, 0.008, 0.5);
     osc.start(t0);
-    osc.stop(t0 + dur + 0.05);
+    osc.stop(t0 + 0.55);
   }
 
   /** Descending sawtooth sweep — an enemy breaking formation to dive. */
