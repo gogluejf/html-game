@@ -38,7 +38,7 @@ Build a structured prompt with these sections (adapt to user's request):
 ```
 Generate a sprite sheet of [N] [entity type] sprites for [game description], continuing the exact same [style] as the [prior sheets] above.
 
-LAYOUT: [R] rows x [C] columns on a solid pure black background. Each row is one unique [entity]; the [C] columns are its [C] animation frames shown left-to-right. All cells exactly the same size ([CELL]x[CELL] px), evenly spaced, no text, no labels, no borders between cells. Image [W] wide x [H] tall.
+LAYOUT: [R] rows x [C] columns on a solid uniform pink background (rgb 255,182,193). Each row is one unique [entity]; the [C] columns are its [C] animation frames shown left-to-right. All cells exactly the same size ([CELL]x[CELL] px), evenly spaced, separated by thin light-pink grid lines (rgb 255,210,220, 2px wide). No text, no labels, no dark borders between cells. Image [W] wide x [H] tall.
 
 STYLE: [detailed style description - see Style Template below].
 
