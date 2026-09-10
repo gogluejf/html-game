@@ -1000,6 +1000,8 @@ function ensureAudio() {
 
 // Click anywhere on the canvas also unlocks audio (useful for touch/click).
 document.getElementById("game").addEventListener("click", ensureAudio);
+// Pointer-down fires earlier than click and covers touch; unlock on any press.
+window.addEventListener("pointerdown", ensureAudio);
 /* ---------------------------------------------------------------------------
  * PNG Sprite System
  * -------------------------------------------------------------------------
@@ -2768,6 +2770,18 @@ const Game = {
       c.shadowColor = "#3ef0ff";
       c.shadowBlur = 12;
       c.fillText("PRESS ENTER TO START", W / 2, H * 0.78);
+      c.shadowBlur = 0;
+    }
+
+    // If audio is not unlocked yet, nudge the user — browsers block sound
+    // until a real interaction creates/resumes the AudioContext.
+    const audioReady = sfx && sfx.ctx.state === "running";
+    if (!audioReady) {
+      c.font = "bold 14px 'Courier New', monospace";
+      c.fillStyle = "#ffe23e";
+      c.shadowColor = "#ff9a1e";
+      c.shadowBlur = 8;
+      c.fillText("CLICK OR PRESS ANY KEY TO UNLOCK SOUND", W / 2, H * 0.84);
       c.shadowBlur = 0;
     }
 
