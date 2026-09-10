@@ -2565,24 +2565,44 @@ const Game = {
   },
 
   /**
-   * F-key SFX preview: play every sound effect in a short sequence so you can
-   * audition them without starting a game. Mirrors the P jukebox on the title.
+   * F-key SFX preview: play every sound effect one at a time, showing its name
+   * on screen (like the P jukebox). Music is stopped for the duration so the
+   * effects are heard clearly, then resumed if it was playing before.
    */
   _previewSfx() {
     if (!sfx) return;
+    // Remember music state so we can restore it afterwards.
+    const wasPlaying = !!(music && music.playing);
+    const savedTrack = music ? music.current : 0;
+    if (wasPlaying) music.stop();
+
     const seq = [
-      [0.00, () => sfx.shoot()],
-      [0.15, () => sfx.pop()],
-      [0.35, () => sfx.enemyDive()],
-      [0.60, () => sfx.powerUp()],
-      [0.90, () => sfx.boom(0.4)],
-      [1.10, () => sfx.boom(0.7)],
-      [1.30, () => sfx.boom(1.0)],
-      [1.60, () => sfx.waveIntro()],
-      [2.20, () => sfx.gameOver()],
+      ["SHOOT",        () => sfx.shoot()],
+      ["ENEMY POP",    () => sfx.pop()],
+      ["ENEMY DIVE",   () => sfx.enemyDive()],
+      ["POWER-UP",     () => sfx.powerUp()],
+      ["BOOM (SMALL)", () => sfx.boom(0.4)],
+      ["BOOM (MID)",   () => sfx.boom(0.7)],
+      ["BOOM (BIG)",   () => sfx.boom(1.0)],
+      ["WAVE INTRO",   () => sfx.waveIntro()],
+      ["GAME OVER",    () => sfx.gameOver()],
     ];
-    seq.forEach(([t, fn]) => setTimeout(fn, t * 1000));
-    console.log("[sfx] F -> preview sequence");
+
+    // Stagger each effect ~500ms apart; label updates just before each plays.
+    const step = 500;
+    seq.forEach(([name, fn], i) => {
+      setTimeout(() => { this.jukeboxLabel = name; }, i * step);
+      setTimeout(fn, i * step + 20);
+    });
+
+    // After the last effect finishes, clear the label and restore music.
+    const total = seq.length * step + 900;
+    setTimeout(() => {
+      this.jukeboxLabel = null;
+      if (wasPlaying) music.start(savedTrack);
+    }, total);
+
+    console.log("[sfx] F -> preview sequence (" + seq.length + " effects)");
   },
 
   /** Tick active power-up timers (spread/slow durations) once per frame. */
@@ -2740,6 +2760,17 @@ const Game = {
       case "gameOver":
         this._renderGameOver(c);
         break;
+    }
+
+    // ---- Global SFX preview label (F key) — shown over any state -----------
+    if (this.jukeboxLabel) {
+      c.font = "bold 22px 'Courier New', monospace";
+      c.textAlign = "center";
+      c.fillStyle = "#ffe23e";
+      c.shadowColor = "#000";
+      c.shadowBlur = 10;
+      c.fillText("\u25cf SFX: " + this.jukeboxLabel, W / 2, 60);
+      c.shadowBlur = 0;
     }
   },
 
