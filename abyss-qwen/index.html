@@ -144,17 +144,29 @@ class SfxEngine {
 
   /* -- public SFX methods -------------------------------------------------- */
 
-  /** Short square-wave blip with a pitch drop — player laser fire. */
+  /**
+   * Player laser fire: a short, low, punchy burst. Low-frequency sawtooth
+   * with a fast pitch drop plus a tiny noise "crack" for bite — reads as a
+   * heavy blaster shot without the piercing high end that fatigues the ear.
+   */
   shoot() {
     const t0 = this.ctx.currentTime;
+    // Low saw body with a quick downward sweep (punchy, not shrill).
     const osc = this.ctx.createOscillator();
-    osc.type = "square";
-    osc.frequency.setValueAtTime(880, t0);            // start high
-    osc.frequency.exponentialRampToValueAtTime(220, t0 + 0.12); // drop fast
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(320, t0);
+    osc.frequency.exponentialRampToValueAtTime(70, t0 + 0.11);
+    const filt = this.ctx.createBiquadFilter();
+    filt.type = "lowpass";
+    filt.frequency.value = 900;
     const g = this._chain(osc);
-    this._env(g, t0, 0.25, 0.005, 0.12);
+    osc.connect(filt);
+    filt.connect(g);
+    this._env(g, t0, 0.1, 0.004, 0.11);
     osc.start(t0);
-    osc.stop(t0 + 0.16);
+    osc.stop(t0 + 0.15);
+    // Short bright noise crack layered on top for attack/bite.
+    this._noiseBurst({ duration: 0.05, peak: 0.06, cutoff: 2200, q: 0.9 });
   }
 
   /**
@@ -185,6 +197,46 @@ class SfxEngine {
     this._env(g, t0, vol, 0.01, dur);
     osc.start(t0);
     osc.stop(t0 + dur + 0.05);
+  }
+
+  /**
+   * Small crisp "pop" — a single enemy taking a hit. A very short bright
+   * noise click plus a quick high blip gives that snappy arcade burst without
+   * the low thump of a full explosion. Kept brief so rapid fire stays clean.
+   */
+  pop() {
+    const t0 = this.ctx.currentTime;
+    // Bright, very short noise crackle (the "crack").
+    this._noiseBurst({ duration: 0.08, peak: 0.32, cutoff: 6000, q: 0.7 });
+    // Tiny descending square blip for body.
+    const osc = this.ctx.createOscillator();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(660, t0);
+    osc.frequency.exponentialRampToValueAtTime(180, t0 + 0.09);
+    const g = this._chain(osc);
+    this._env(g, t0, 0.2, 0.004, 0.09);
+    osc.start(t0);
+    osc.stop(t0 + 0.13);
+  }
+
+  /**
+   * Big chunky NES-style explosion — boss death. Layers a loud, long bright
+   * noise crackle with a deep sub-bass boom and a few staggered "detonation"
+   * cracks so it reads as a heavy multi-hit blast rather than one muffled thud.
+   */
+  bigBoom() {
+    const t0 = this.ctx.currentTime;
+    // One long, loud bright crackle for the "brick/boom" body.
+    this._noiseBurst({ duration: 0.9, peak: 0.75, cutoff: 4500, q: 0.8 });
+    // Deep sub-bass boom for weight, slow roll-off so it lingers.
+    const boom = this.ctx.createOscillator();
+    boom.type = "sine";
+    boom.frequency.setValueAtTime(150, t0);
+    boom.frequency.exponentialRampToValueAtTime(25, t0 + 0.8);
+    const bg = this._chain(boom);
+    this._env(bg, t0, 0.7, 0.01, 0.8);
+    boom.start(t0);
+    boom.stop(t0 + 0.85);
   }
 
   /** Descending sawtooth sweep — an enemy breaking formation to dive. */
@@ -1915,7 +1967,8 @@ class Boss {
         );
       }
       if (Game.screenshake) Game.screenshake.add(10);
-      if (sfx) sfx.explode(1.5 + idx * 0.3);
+      // First burst is the heavy multi-hit blast; later ones are lighter cracks.
+      if (sfx) { idx === 0 ? sfx.bigBoom() : sfx.pop(); }
     }
     return this.deathT >= burstInterval * bursts;
   }
@@ -2499,7 +2552,7 @@ const Game = {
           if (this.hitTest(b, e)) {
             e.dead = true;
             if (Game.deathAnim) Game.deathAnim.killEntity(e, { flashTime: 0.08 });
-            if (sfx) sfx.explode(0.6);
+            if (sfx) sfx.pop();
             this._awardPoints(e.points, e.cx, e.cy);
             this._maybeDropPowerUp(e.cx, e.cy);
             consumed = true;
