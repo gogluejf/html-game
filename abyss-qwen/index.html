@@ -1496,6 +1496,63 @@ class MuzzleFlash {
 }
 
 /* ---------------------------------------------------------------------------
+ * DamageVignette (CoD-style)
+ * -------------------------------------------------------------------------
+ * A red radial vignette that fades in from the screen edges when the player
+ * takes damage, peaks, then fades out. Repeated hits re-trigger and stack a
+ * little so sustained damage keeps the warning visible. Drawn last, over the
+ * world but under state screens, so it never obscures the center of play.
+ * ------------------------------------------------------------------------- */
+class DamageVignette {
+  constructor() {
+    this.timer = 0;        // seconds remaining
+    this.duration = 0.6;   // full fade-in/out window
+    this.intensity = 0;    // 0..1 current strength (peaks at trigger value)
+    this.peak = 0.55;      // how strong a single hit reads
+  }
+
+  /** Trigger (or re-trigger) the vignette. Stacks up to a max intensity. */
+  trigger(strength = 0.55) {
+    this.peak = Math.min(0.9, Math.max(this.intensity, strength));
+    this.timer = this.duration;
+  }
+
+  get active() { return this.timer > 0 && this.intensity > 0.01; }
+
+  update(dt) {
+    if (this.timer <= 0) { this.intensity = 0; return; }
+    this.timer -= dt;
+    // Ease: quick rise to peak in first ~20%, then decay to zero.
+    const t = Math.max(0, this.timer / this.duration); // 1 -> 0
+    const attack = 0.2;                                 // fraction of window for the rise
+    let env;
+    if (t > 1 - attack) {
+      // rising edge (just got hit): map [1-attack,1] -> [0,1]
+      env = (1 - t) / attack;
+    } else {
+      // falling edge: smooth decay
+      env = t / (1 - attack);
+    }
+    this.intensity = this.peak * Math.max(0, Math.min(1, env));
+  }
+
+  /** Draw a red radial gradient hugging the screen edges. */
+  render(ctx) {
+    if (!this.active) return;
+    const a = this.intensity;
+    const cx = W / 2, cy = H / 2;
+    // Radius large enough that the inner (clear) zone covers the play area.
+    const r = Math.hypot(W, H) * 0.62;
+    const grad = ctx.createRadialGradient(cx, cy, r * 0.45, cx, cy, r);
+    grad.addColorStop(0, "rgba(180,0,0,0)");
+    grad.addColorStop(0.7, `rgba(150,0,0,${0.35 * a})`);
+    grad.addColorStop(1, `rgba(120,0,0,${0.85 * a})`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+/* ---------------------------------------------------------------------------
  * DeathAnim (Task 2.2)
  * -------------------------------------------------------------------------
  * When an entity dies it flashes white briefly (~100ms) then bursts into
@@ -1671,10 +1728,11 @@ class Player {
     this.invincible = 2; // 2 seconds of blinking invincibility
 
     // Screen shake (~8px) + explosion burst at the ship's position.
-    if (Game.screenshake) Game.screenshake.add(8);
+    if (Game.screenshake) Game.screenshake.add(14);
     if (Game.particleSystem) {
       Game.particleSystem.explode(this.cx, this.y + this.h / 2, "#3ef0ff", 40);
     }
+    if (Game.damageVignette) Game.damageVignette.trigger(0.6);
     if (sfx) sfx.boom(0.7);
     return this.lives <= 0;
   }
@@ -2347,6 +2405,7 @@ const Game = {
     this.screenshake = new ScreenShake();
     this.muzzleFlash = new MuzzleFlash();
     this.deathAnim = new DeathAnim(this.particleSystem);
+    this.damageVignette = new DamageVignette();
     // Task 3.1: create the real player ship + clear any leftover bullets.
     this.player = new Player(W / 2 - 20, H - 70);
     this.bullets = [];
@@ -2760,6 +2819,9 @@ const Game = {
         if (this.muzzleFlash) this.muzzleFlash.render(c);
       });
     }
+
+    // CoD-style red damage vignette — over the world, under the HUD/screens.
+    if (this.damageVignette) this.damageVignette.render(c);
 
     // ---- State-specific screens & HUD ---------------------------------------
     switch (this.state) {
@@ -3294,6 +3356,7 @@ const Game = {
     if (this.screenshake) this.screenshake.update(dt);
     if (this.muzzleFlash) this.muzzleFlash.update(dt);
     if (this.deathAnim) this.deathAnim.update(dt);
+    if (this.damageVignette) this.damageVignette.update(dt);
   },
 };
 
