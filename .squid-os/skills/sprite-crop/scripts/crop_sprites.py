@@ -106,8 +106,26 @@ def cmd_scan(args):
             json.dump(result, f, indent=2)
         print(f"BANDS SAVED: {args.save}", file=sys.stderr)
 
-def crop_grid(im, rows, cols_centers, names, out_dir, frame_size=None):
-    """rows: [[y0,y1]]; cols_centers: [x_center per col]; saves frames."""
+def crop_grid(im, rows, cols_centers, names, out_dir, frame_size=None, inset=3):
+    """rows: [[y0,y1]]; cols_centers: [x_center per col]; saves frames.
+
+    inset: pull each crop box inward by N px (default 3) so the sheet's outer
+    edge / separator-line slivers don't bleed into outer frames as a visible
+    border.
+
+    TRADEOFF / RISK:
+      - PRO: removes the 1-2px dark edge + grid-line residue that otherwise
+        shows up as a square outline on outer frames (f1 left, f5 right, etc).
+      - CON: we permanently discard a 3px ring from every frame. If a sprite's
+        content (hair, ribbon, weapon tip, foot) extends within 3px of the cell
+        boundary in the SOURCE sheet, that sliver gets cut off.
+      - This is safe when sprites are composed with a small margin inside their
+        cell (the normal case for AI-generated sheets). It is NOT safe if a
+        sprite deliberately bleeds to the cell edge — in that case pass inset=0
+        and instead fix the source (re-generate with margin, or widen the cell).
+      - The inset shrinks every frame uniformly by 2*inset in W and H, so all
+        frames of an entity stay the same size (no jitter).
+    """
     os.makedirs(out_dir, exist_ok=True)
     W, H = im.size
     fw, fh = frame_size if frame_size else (256, None)
@@ -118,22 +136,47 @@ def crop_grid(im, rows, cols_centers, names, out_dir, frame_size=None):
         yy0 = max(0, min(H - h, y0))  # top-aligned within measured band
         for c, cx in enumerate(cols_centers):
             x0 = max(0, min(W - fw, cx - fw // 2))
-            box = (x0, yy0, x0 + fw, yy0 + h)
+            # inset the box (see tradeoff above)
+            ix0 = x0 + inset
+            iy0 = yy0 + inset
+            iw = fw - 2 * inset
+            ih = h - 2 * inset
+            box = (ix0, iy0, ix0 + iw, iy0 + ih)
             fn = f"{names[r]}_f{c+1}.png"
             im.crop(box).save(os.path.join(out_dir, fn))
             saved.append(fn)
     return saved
 
 def detect_bg(px, W, H):
-    """Sample corners + edges to estimate the background color."""
-    from collections import Counter
+    """Sample a ring just INSIDE the border to estimate the background color.
+
+    Skips the outer ~4px so painted edge frames / anti-aliased borders don't
+    fool detection. Buckets samples by color distance (hand-painted bgs are
+    not flat — exact-match counting fails on them) and returns the centroid
+    of the dominant cluster.
+    """
+    skip = min(4, W // 10, H // 10)
     samples = []
-    for x in range(0, W, max(1, W // 40)):
-        samples += [px[x, 0], px[x, 1], px[x, H - 2], px[x, H - 1]]
-    for y in range(0, H, max(1, H // 40)):
-        samples += [px[0, y], px[1, y], px[W - 2, y], px[W - 1, y]]
-    c = Counter(samples)
-    return c.most_common(1)[0][0]
+    for x in range(skip, W - skip, max(1, W // 40)):
+        samples += [px[x, skip][:3], px[x, H - 1 - skip][:3]]
+    for y in range(skip, H - skip, max(1, H // 40)):
+        samples += [px[skip, y][:3], px[W - 1 - skip, y][:3]]
+    # find the dominant color cluster by distance
+    best_center, best_count = None, 0
+    for r, g, b in samples:
+        count = sum(1 for r2, g2, b2 in samples
+                    if abs(r - r2) < 30 and abs(g - g2) < 30 and abs(b - b2) < 30)
+        if count > best_count:
+            best_center, best_count = (r, g, b), count
+    if best_center is None:
+        return samples[0] + (255,)
+    cluster = [(r, g, b) for r, g, b in samples
+               if abs(r - best_center[0]) < 30 and abs(g - best_center[1]) < 30
+               and abs(b - best_center[2]) < 30]
+    cr = sum(c[0] for c in cluster) // len(cluster)
+    cg = sum(c[1] for c in cluster) // len(cluster)
+    cb = sum(c[2] for c in cluster) // len(cluster)
+    return (cr, cg, cb, 255)
 
 def make_transparent(im, bg, tol=40):
     """Flood-fill from all border pixels matching bg color -> alpha 0.
@@ -156,12 +199,19 @@ def make_transparent(im, bg, tol=40):
         return abs(r - br) <= tol and abs(g - bgc) <= tol and abs(b - bb) <= tol
     seen = bytearray(W * H)
     q = deque()
-    for x in range(W):
-        for y in (0, H - 1):
+    # Seed from border AND from interior points every ~100px (hand-painted sheets
+    # may have edge artifacts that block border-only seeding)
+    for x in range(0, W, max(1, W // 20)):
+        for y in (0, 1, 2, H - 3, H - 2, H - 1):
             if not seen[y * W + x] and is_bg(x, y):
                 seen[y * W + x] = 1; q.append((x, y))
-    for y in range(H):
-        for x in (0, W - 1):
+    for y in range(0, H, max(1, H // 20)):
+        for x in (0, 1, 2, W - 3, W - 2, W - 1):
+            if not seen[y * W + x] and is_bg(x, y):
+                seen[y * W + x] = 1; q.append((x, y))
+    # Interior seeds: sample a grid of points, seed any that match bg
+    for y in range(H // 4, H - H // 4, max(1, H // 8)):
+        for x in range(W // 4, W - W // 4, max(1, W // 8)):
             if not seen[y * W + x] and is_bg(x, y):
                 seen[y * W + x] = 1; q.append((x, y))
     while q:
@@ -169,9 +219,132 @@ def make_transparent(im, bg, tol=40):
         px[x, y] = (0, 0, 0, 0)
         for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             nx, ny = x + dx, y + dy
-            if 0 <= nx < W and 0 <= ny < H and not seen[ny * W + nx] and is_bg(nx, ny):
-                seen[ny * W + nx] = 1; q.append((nx, ny))
+            if 0 <= nx < W and 0 <= ny < H and not seen[ny * W + nx]:
+                nr, ng, nb, na = px[nx, ny]
+                # passable if already transparent OR matches bg color
+                if na == 0 or (abs(nr - br) <= tol and abs(ng - bgc) <= tol and abs(nb - bb) <= tol):
+                    seen[ny * W + nx] = 1; q.append((nx, ny))
     return im
+
+def cmd_degrid(args):
+    """Remove grid separator lines from a sprite sheet.
+    
+    Detects horizontal and vertical lines by scanning for rows/columns where
+    >95% of pixels share a very similar color (the line color) AND the line
+    is thin (1-6px thick). Clears only those line pixels to transparent.
+    Does NOT remove the background fill between lines.
+    """
+    from PIL import Image
+    im = Image.open(args.sheet).convert("RGBA")
+    px = im.load()
+    W, H = im.size
+
+    # --- Detect horizontal grid lines ---
+    # A grid line: a thin band (1-6px) where >95% of pixels are very uniform
+    # AND darker than the surrounding background (real separators are drawn darker).
+    h_lines = []
+    y = 0
+    while y < H:
+        colors = [px[x, y][:3] for x in range(0, W, max(1, W // 200))]
+        if len(colors) < 10:
+            y += 1
+            continue
+        avg_r = sum(c[0] for c in colors) // len(colors)
+        avg_g = sum(c[1] for c in colors) // len(colors)
+        avg_b = sum(c[2] for c in colors) // len(colors)
+        # Very strict: >95% within 10 of average
+        uniform = sum(1 for c in colors if abs(c[0]-avg_r)<10 and abs(c[1]-avg_g)<10 and abs(c[2]-avg_b)<10)
+        if uniform > len(colors) * 0.95:
+            # Measure how thick this uniform band is
+            thickness = 1
+            while y + thickness < H and thickness < 8:
+                next_colors = [px[x, y+thickness][:3] for x in range(0, W, max(1, W // 200))]
+                next_uniform = sum(1 for c in next_colors if abs(c[0]-avg_r)<10 and abs(c[1]-avg_g)<10 and abs(c[2]-avg_b)<10)
+                if next_uniform > len(next_colors) * 0.95:
+                    thickness += 1
+                else:
+                    break
+            # Must be a thin line (1-8px), not a large flat region
+            if 1 <= thickness <= 8 and 10 < y < H - 10:
+                # Line must be DARKER than the bg above it (not just uniform pink)
+                if y >= 2:
+                    bg_above = [px[x, max(0, y-2)][:3] for x in range(0, W, max(1, W // 50))]
+                    bg_sum = sum(sum(c) for c in bg_above) // len(bg_above)
+                    line_sum = avg_r + avg_g + avg_b
+                    if line_sum < bg_sum - 30:
+                        h_lines.append((y, y + thickness))
+            y += thickness
+        else:
+            y += 1
+
+    # --- Detect vertical grid lines ---
+    v_lines = []
+    x = 0
+    while x < W:
+        colors = [px[x, y][:3] for y in range(0, H, max(1, H // 200))]
+        if len(colors) < 10:
+            x += 1
+            continue
+        avg_r = sum(c[0] for c in colors) // len(colors)
+        avg_g = sum(c[1] for c in colors) // len(colors)
+        avg_b = sum(c[2] for c in colors) // len(colors)
+        uniform = sum(1 for c in colors if abs(c[0]-avg_r)<10 and abs(c[1]-avg_g)<10 and abs(c[2]-avg_b)<10)
+        if uniform > len(colors) * 0.95:
+            thickness = 1
+            while x + thickness < W and thickness < 8:
+                next_colors = [px[x+thickness, y][:3] for y in range(0, H, max(1, H // 200))]
+                next_uniform = sum(1 for c in next_colors if abs(c[0]-avg_r)<10 and abs(c[1]-avg_g)<10 and abs(c[2]-avg_b)<10)
+                if next_uniform > len(next_colors) * 0.95:
+                    thickness += 1
+                else:
+                    break
+            if 1 <= thickness <= 8 and 10 < x < W - 10:
+                # Line must be DARKER than the bg to its left
+                if x >= 2:
+                    bg_left = [px[max(0, x-2), y][:3] for y in range(0, H, max(1, H // 50))]
+                    bg_sum = sum(sum(c) for c in bg_left) // len(bg_left)
+                    line_sum = avg_r + avg_g + avg_b
+                    if line_sum < bg_sum - 30:
+                        v_lines.append((x, x + thickness))
+            x += thickness
+        else:
+            x += 1
+
+    # --- Clear ONLY pixels matching the grid line color (not entire rows/cols) ---
+    # Clear the line core + 2px padding above/below with looser tol to kill AA halos
+    cleared = 0
+    for y0, y1 in h_lines:
+        # Get the line color from this band
+        sample_colors = [px[x, y0][:3] for x in range(0, W, max(1, W // 50))]
+        lr = sum(c[0] for c in sample_colors) // len(sample_colors)
+        lg = sum(c[1] for c in sample_colors) // len(sample_colors)
+        lb = sum(c[2] for c in sample_colors) // len(sample_colors)
+        pad = 3
+        for y in range(max(0, y0 - pad), min(H, y1 + pad)):
+            for x in range(W):
+                r, g, b, a = px[x, y]
+                if a > 0 and abs(r-lr)<40 and abs(g-lg)<40 and abs(b-lb)<40:
+                    px[x, y] = (0, 0, 0, 0)
+                    cleared += 1
+    for x0, x1 in v_lines:
+        sample_colors = [px[x0, y][:3] for y in range(0, H, max(1, H // 50))]
+        lr = sum(c[0] for c in sample_colors) // len(sample_colors)
+        lg = sum(c[1] for c in sample_colors) // len(sample_colors)
+        lb = sum(c[2] for c in sample_colors) // len(sample_colors)
+        pad = 3
+        for x in range(max(0, x0 - pad), min(W, x1 + pad)):
+            for y in range(H):
+                r, g, b, a = px[x, y]
+                if a > 0 and abs(r-lr)<40 and abs(g-lg)<40 and abs(b-lb)<40:
+                    px[x, y] = (0, 0, 0, 0)
+                    cleared += 1
+
+    os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+    im.save(args.out)
+    print(f"DEGRID: removed {len(h_lines)} horizontal + {len(v_lines)} vertical lines ({cleared} px cleared)")
+    print(f"OUTPUT: {args.out}")
+    if not h_lines and not v_lines:
+        print("NOTE: No grid lines detected. Sheet may not need degrid.")
 
 def cmd_prep(args):
     im, px = load_img(args.sheet)
@@ -190,6 +363,8 @@ def cmd_prep(args):
     lost = sum(1 for (x, y) in orig_ink if px[x, y][3] == 0)
     total = len(orig_ink)
     pct = 100.0 * lost / max(1, total)
+    # FAIL LOUD: if almost nothing became transparent, bg detection was wrong
+    trans_pct = 100.0 * sum(1 for y in range(0, H, 4) for x in range(0, W, 4) if px[x, y][3] == 0) / ((W // 4 + 1) * (H // 4 + 1))
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     im.save(args.out)
     print(f"PREPARED (transparent bg) -> {args.out}")
@@ -197,6 +372,9 @@ def cmd_prep(args):
     if pct > 2.0:
         print(f"WARN: fill likely leaked into sprite bodies. Re-run with lower --tol "
               f"(try {max(10, args.tol - 15)}) and re-audit.", file=sys.stderr)
+    if trans_pct < 10.0:
+        print(f"FAIL: only {trans_pct:.1f}% of image became transparent — background was NOT removed. "
+              f"Detected bg {bg[:3]} is probably wrong. Do NOT continue. Re-detect bg or use a different method.", file=sys.stderr)
     if args.save_bg:
         with open(args.save_bg, "w") as f:
             json.dump({"bg_color": list(bg)}, f)
@@ -249,7 +427,7 @@ def cmd_crop(args):
         frame_size = (w, h)
     saved = []
     for r in range(len(rows)):
-        saved += crop_grid(im, [rows[r]], per_row[r], [names[r]], args.out, frame_size)
+        saved += crop_grid(im, [rows[r]], per_row[r], [names[r]], args.out, frame_size, inset=args.inset)
     print(f"CROPPED {len(saved)} frames -> {args.out}")
     for f in sorted(saved):
         print(" ", f)
@@ -601,14 +779,15 @@ def main():
     p = argparse.ArgumentParser(description="Sprite sheet cropping CLI")
     sub = p.add_subparsers(dest="cmd")
     sp = sub.add_parser("scan"); sp.add_argument("--sheet", required=True); sp.add_argument("--min-gap", type=int, default=8); sp.add_argument("--save")
+    sd = sub.add_parser("degrid"); sd.add_argument("--sheet", required=True); sd.add_argument("--out", required=True)
     spr = sub.add_parser("prep"); spr.add_argument("--sheet", required=True); spr.add_argument("--out", required=True); spr.add_argument("--tol", type=int, default=40); spr.add_argument("--save-bg")
-    sc = sub.add_parser("crop"); sc.add_argument("--sheet", required=True); sc.add_argument("--out", required=True); sc.add_argument("--names", required=True); sc.add_argument("--cols", type=int, default=4); sc.add_argument("--bands"); sc.add_argument("--row-y"); sc.add_argument("--col-x"); sc.add_argument("--frame-size")
+    sc = sub.add_parser("crop"); sc.add_argument("--sheet", required=True); sc.add_argument("--out", required=True); sc.add_argument("--names", required=True); sc.add_argument("--cols", type=int, default=4); sc.add_argument("--bands"); sc.add_argument("--row-y"); sc.add_argument("--col-x"); sc.add_argument("--frame-size"); sc.add_argument("--inset", type=int, default=3)
     sr = sub.add_parser("report"); sr.add_argument("--dir", required=True)
     st = sub.add_parser("trim"); st.add_argument("--dir", required=True); st.add_argument("--out"); st.add_argument("--pad", type=int, default=4)
     sv = sub.add_parser("viewer"); sv.add_argument("--assets-dir", required=True); sv.add_argument("--project", required=True); sv.add_argument("--out", required=True); sv.add_argument("--bg")
     rc = sub.add_parser("record-crop"); rc.add_argument("--state", required=True); rc.add_argument("--sheet", required=True); rc.add_argument("--bg-color"); rc.add_argument("--bg-tol", type=int); rc.add_argument("--row-y"); rc.add_argument("--col-x"); rc.add_argument("--frame-size"); rc.add_argument("--frames-dir")
     args = p.parse_args()
-    {"scan": cmd_scan, "prep": cmd_prep, "crop": cmd_crop, "report": cmd_report, "trim": cmd_trim, "viewer": cmd_viewer, "record-crop": cmd_record_crop}[args.cmd](args)
+    {"scan": cmd_scan, "degrid": cmd_degrid, "prep": cmd_prep, "crop": cmd_crop, "report": cmd_report, "trim": cmd_trim, "viewer": cmd_viewer, "record-crop": cmd_record_crop}[args.cmd](args)
 
 if __name__ == "__main__":
     main()

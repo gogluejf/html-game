@@ -297,19 +297,15 @@ def cmd_state(args):
             "sheets": {},
             "updated": time.strftime("%Y-%m-%dT%H:%M:%S")
         }
-        outdir = os.path.dirname(path)
-        if outdir: os.makedirs(outdir, exist_ok=True)
-        with open(path, "w") as f:
-            json.dump(state, f, indent=2)
-        print(f"STATE INITIALIZED: {path}")
-        return
+        # fall through: --add-sheet (if given) is processed below, then saved once
 
-    # --- load or error ---
-    if not os.path.exists(path):
-        print(f"ERROR: {path} does not exist. Run 'state --init' first.", file=sys.stderr)
-        sys.exit(1)
-    with open(path) as f:
-        state = json.load(f)
+    # --- load or error (skip if we just built a fresh state via --init) ---
+    if not args.init:
+        if not os.path.exists(path):
+            print(f"ERROR: {path} does not exist. Run 'state --init' first.", file=sys.stderr)
+            sys.exit(1)
+        with open(path) as f:
+            state = json.load(f)
 
     # --- set root fields ---
     if args.set:

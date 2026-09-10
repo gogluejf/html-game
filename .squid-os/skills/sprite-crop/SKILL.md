@@ -27,20 +27,36 @@ Subcommands: `prep` (bg detect + transparency), `scan` (measure real grid), `cro
 2. If no state file exists, ask the user for the sheet path, number of rows, number of frames per row, and one name per row.
 3. Determine output dir: `<working-dir>/<assets-dir>/<label>/` (create if missing). Single-image sheets (backgrounds) go directly in `<assets-dir>/` as one transparent PNG.
 
-### 2. Prep — Background Detection + Transparency
+### 2. De-grid (if applicable) — Remove Grid Separator Lines
 
-**BEFORE prep:** Inspect the sheet. Note which sprite colors are close to the background (pale faces, cream clothing, light fur, tan skin). These are at RISK of being eaten by the flood-fill.
+**Check first:** Does the sheet have visible grid separator lines between cells? (Common in AI-generated sheets with tan/parchment backgrounds — thin darker or lighter lines dividing the grid.)
 
-Run ONCE per sheet before cropping:
+If YES, remove them BEFORE the normal prep step:
 ```bash
-python3 <skill-folder>/scripts/crop_sprites.py prep --sheet <sheet.png> --out /tmp/sprite-crop/<project>/<label>_prepared.png --save-bg /tmp/sprite-crop/<project>/<label>_bg.json
+python3 <skill-folder>/scripts/crop_sprites.py degrid --sheet <sheet.png> --out /tmp/sprite-crop/<project>/<label>_degridded.png
 ```
-- Detects the actual background color from edge pixels (never assume pure black).
-- Flood-fills from image borders only → true alpha transparency WITHOUT eating dark pixels inside sprites.
-- **Reads the INK AUDIT line in the output.** It counts real sprite pixels the fill removed. `> 2%` = the fill leaked into sprite bodies (holes/eaten shading) → re-run with lower `--tol` (step down by ~10) until the audit is near 0%. Default tol is 40; sheets with very dark sprite shading on black often need 15-25.
-- **AFTER prep:** Visually verify that the at-risk colors you noted (faces, pale cloth, light fur) are still intact. If they're transparent/missing → tol was too HIGH, lower it and re-prep.
-- All subsequent steps use the PREPARED sheet, not the original.
-- Store the detected `bg_color` AND the working `bg_tol` in the sheet's state entry later (step 7).
+
+This step:
+- Detects horizontal and vertical separator lines by scanning for rows/columns of uniform color that span most of the image width/height
+- Clears ONLY those line pixels (narrow geometric target, not a global color clear)
+- Does NOT touch the background fill between lines — that's the next step's job
+- Safe to use aggressive matching here because we're targeting thin line-shaped regions, not areas near sprites
+
+If NO grid lines visible, skip this step and go straight to prep.
+
+### 3. Prep — Background Removal (TIGHT tolerance)
+
+Run on the de-gridded sheet (or original if no grid):
+```bash
+python3 <skill-folder>/scripts/crop_sprites.py prep --sheet <degridded.png> --out /tmp/sprite-crop/<project>/<label>_prepared.png --save-bg /tmp/sprite-crop/<project>/<label>_bg.json --tol 20
+```
+
+- **TOLERANCE: Use 15-25 for high-contrast sheets (pink bg, black bg). NEVER above 25.** The grid is already gone. We're only removing flat background pixels now. Higher tol gives cleaner edges (no ugly residue around contours) without eating sprite bodies — as long as the bg color does NOT appear in the sprite palette. If face/skin gets eaten → the bg color overlaps sprite colors, that's a generation problem not a tolerance problem.
+- Detects the actual background color from edge pixels.
+- Flood-fills from image borders only → true alpha transparency.
+- **Reads the INK AUDIT line.** `> 2%` = fill leaked into sprites → lower tol and re-run.
+- If background has texture/gradient and won't clear at tol 12: that's OK. A slight residual halo is acceptable. Do NOT raise tol to fix it. The de-grid handled the hard part.
+- **AFTER prep:** Visually verify with inspect_media that the background is GONE (or nearly gone). Verify at-risk sprite colors (faces, pale cloth) are INTACT. If face is see-through → tol was still too high, lower to 4-6 and re-prep.
 
 ### 3. Scan — Measure the Real Grid
 
@@ -134,10 +150,13 @@ python3 <skill-folder>/scripts/crop_sprites.py viewer --assets-dir <assets-dir> 
 - **Always run this after cropping a new label** and open the viewer so the user can confirm the animation looks right. Re-run it if you re-crop (it rebuilds the manifest from disk).
 
 ## Rules
+- **USE THE SCRIPTS. Do NOT write custom Python/PIL for pixel operations.** All background removal, grid detection, cropping, and trimming goes through `crop_sprites.py` subcommands. If the script output isn't right, adjust the PARAMETERS (tol, row-y, col-x, frame-size) and re-run the script. Never bypass it with inline Python.
 - **Never trust uniform grid math.** AI sheets have variable row heights and drifting column centers. Always `scan` first; use measured bands, not `rows*cell`.
 - **Prep before crop.** Always run `prep` on the raw sheet first; crop from the prepared (transparent) version. Never deliver black-background frames when transparency was requested.
+- **Always continue down the chain — never go back to the original.** If you ran degrid, every subsequent step (prep, scan, crop) uses the degrid output. If you ran prep, crop uses the prep output. If a step fails, fix THAT step (adjust its params or input) and re-run it — do NOT fall back to the original sheet and do it by hand. The chain is: degrid → prep → scan → crop → adjust → trim. Each step eats the previous step's output.
 - **Flood-fill only, never global color delete.** The script only removes border-connected background — do not "help" by deleting all pixels near the bg color; that punches holes in dark-bodied sprites.
-- **Tight tolerance, always audit.** Flood-fill `--tol` defaults to 40 but MUST be validated with the prep INK AUDIT line: >2% real-ink loss means the fill leaked into sprite bodies (visible as holes/eaten dark shading). Step tol down until the audit is ~0%, then verify corners are still transparent. Record the working tol in state (`crop.bg_tol`). **CRITICAL:** Before prep, note which sprite colors are close to bg (pale faces, cream cloth, light fur). After prep, verify those specific areas survived. If face/skin/cloth pixels are transparent → tol too HIGH, lower and re-prep. If bg residue remains → tol too LOW, raise slightly.
+- **Tight tolerance, always audit.** Flood-fill `--tol` defaults to 20, hard cap at 25. Validate with the prep INK AUDIT line: >2% real-ink loss means the fill leaked into sprite bodies. Step tol down until audit is ~0%. For high-contrast sheets (pink/black bg where sprites don't share that color), tol 20-25 gives clean edges with no residue. Record the working tol in state (`crop.bg_tol`). **HARD LIMIT: tol must NEVER exceed 25.** If tol 25 cannot clear the background cleanly, the problem is color overlap between bg and sprite — that's a generation issue, not a tolerance issue.
+- **De-grid before flood-fill.** If the sheet has visible grid separator lines (common in AI-generated sheets with tan/parchment backgrounds), remove them FIRST with a targeted pass: identify the grid line color (sample the separator pixels between cells) and clear only pixels matching that specific narrow range. Then run the normal flood-fill at low tol (15-30) for the remaining background. This prevents agents from cranking tol to absurd levels to kill grid lines.
 - **Inspect after EVERY crop pass.** One inspection pass = look at ≥4 frames (corners + middles). Do not declare success without inspecting the pass you're shipping.
 - **Iterate until perfect, max 4 passes.** Each pass uses fresh overrides derived from what the inspection reported (which edge bled which direction). After 4 failed passes, stop and escalate to the user with evidence.
 - **Normalize before verify.** Always run `trim` on a crop pass before inspecting — oversized empty margins and non-uniform frame sizes within an entity are failure modes, not cosmetic.
