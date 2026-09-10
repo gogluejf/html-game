@@ -549,7 +549,7 @@ VIEWER_TMPL = """<!DOCTYPE html>
       <input type="color" id="bg" value="__BGCOLOR__">
       <span id="bgval">__BGCOLOR__</span>
     </div>
-    <div id="hint">click an entity &middot; &#8722;/&#43; change speed &middot; space play/pause &middot; &#8592;/&#8594; step frame (paused)</div>
+    <div id="hint">click an entity &middot; &#8593;/&#8595; next/prev animation &middot; &#8722;/&#43; speed &middot; space play/pause &middot; &#8592;/&#8594; step frame (paused)</div>
   </div>
 </div>
 <script>
@@ -571,6 +571,8 @@ let fps = 8;
 let playing = true;
 let lastT = 0;
 let acc = 0;
+let flatList = [];       // [{li, ei}] flattened entity list
+let flatIdx = -1;        // current position in flatList
 
 // Build the sidebar tree.
 MANIFEST.labels.forEach((lbl, li) => {
@@ -582,6 +584,7 @@ MANIFEST.labels.forEach((lbl, li) => {
     row.addEventListener('click', () => selectEntity(li, ei));
     en._el = row;
     tree.appendChild(row);
+    flatList.push({li, ei});
   });
 });
 
@@ -595,6 +598,7 @@ async function selectEntity(li, ei){
   const en = MANIFEST.labels[li].entities[ei];
   document.querySelectorAll('.ent').forEach(e=>e.classList.remove('on'));
   en._el.classList.add('on');
+  flatIdx = flatList.findIndex(f => f.li === li && f.ei === ei);
   const imgs = await loadFrames(en.frames);
   current = { name: en.name, frames: imgs.filter(Boolean), framePaths: en.frames };
   frameIdx = 0; acc = 0; playing = true;
@@ -649,6 +653,8 @@ bgInput.addEventListener('input', ()=>{ bgVal.textContent = bgInput.value; draw(
 window.addEventListener('keydown', (e)=>{
   if (e.code==='ArrowRight'){ e.preventDefault(); if(playing) setFps(fps+1); else { frameIdx=(frameIdx+1)%current.frames.length; draw(); } }
   else if (e.code==='ArrowLeft'){ e.preventDefault(); if(playing) setFps(fps-1); else { frameIdx=(frameIdx-1+current.frames.length)%current.frames.length; draw(); } }
+  else if (e.code==='ArrowUp'){ e.preventDefault(); if(flatIdx>0){ flatIdx--; const f=flatList[flatIdx]; selectEntity(f.li, f.ei); } }
+  else if (e.code==='ArrowDown'){ e.preventDefault(); if(flatIdx<flatList.length-1){ flatIdx++; const f=flatList[flatIdx]; selectEntity(f.li, f.ei); } }
   else if (e.code==='Minus'||e.code==='NumpadSubtract'){ e.preventDefault(); setFps(fps-1); }
   else if (e.code==='Equal'||e.code==='NumpadAdd'){ e.preventDefault(); setFps(fps+1); }
   else if (e.code==='Space'){ e.preventDefault(); playing=!playing; }
@@ -705,6 +711,7 @@ def build_manifest(assets_dir, project, prefix="", state_file=None):
                         if frames:
                             full_frames = [prefix + os.path.join(label_name, fn) for fn in frames]
                             entities.append({"name": ent_name, "frames": [p.replace(os.sep, "/") for p in full_frames]})
+                entities.sort(key=lambda e: e["name"])
                 if entities:
                     labels.append({"name": label_name, "entities": entities})
             
