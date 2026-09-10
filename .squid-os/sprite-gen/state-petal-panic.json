@@ -185,6 +185,106 @@
             "frame_size": "324x324"
           },
           "original_prompt": "Hand-painted circus-style sprite sheet of \"Balthazar\", an anthropomorphic orange-and-black striped tiger dressed as a ringmaster/master of ceremonies. He wears a fitted black tuxedo jacket with satin lapels, a white dress shirt, a red bow tie, a red sash/sash-tie at the waist, and dark trousers; he has large expressive paws (orange with black stripes and cream claws), a long striped tail, and a confident, theatrical expression. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors, dynamic poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells. Each row is one action, left to right:\n\nRow 1 \u2014 Run cycle (5 frames): full sprint across the frame, contact -> down -> passing -> up -> contact, legs striding wide, tail streaming behind, body leaning forward.\n\nRow 2 \u2014 Jump/leap arc (5 frames): rising -> apex -> falling, both arms raised in a triumphant ringmaster gesture, coat tails flaring, big bounding leap.\n\nRow 3 \u2014 Attack with cane (5 frames): wind-up -> overhead swing -> follow-through -> impact -> recovery, wielding a gold-tipped cane/baton that leaves a glowing tan whip-like motion trail; final frame shows him standing upright resting on the cane, composed.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
+        },
+        {
+          "file": "panic-petal/assets/scarlet_vale_sheet_2.png",
+          "rows": 1,
+          "cols": 8,
+          "description": "Scarlet Vale hero sheet 2, idle x 8 frames",
+          "entities": [
+            {
+              "row": 1,
+              "name": "scarlet_vale",
+              "anim": "idle",
+              "frames": [
+                "scarlet_vale_idle_f1.png",
+                "scarlet_vale_idle_f2.png",
+                "scarlet_vale_idle_f3.png",
+                "scarlet_vale_idle_f4.png",
+                "scarlet_vale_idle_f5.png",
+                "scarlet_vale_idle_f6.png",
+                "scarlet_vale_idle_f7.png",
+                "scarlet_vale_idle_f8.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              250,
+              147,
+              167
+            ],
+            "bg_tol": 8,
+            "row_y": [
+              [
+                0,
+                396
+              ]
+            ],
+            "col_x": [
+              [
+                190,
+                430,
+                676,
+                918,
+                1160,
+                1402,
+                1644,
+                1866
+              ]
+            ],
+            "frame_size": "244x384"
+          }
+        },
+        {
+          "file": "panic-petal/assets/balthazar_sheet_2.png",
+          "rows": 1,
+          "cols": 8,
+          "description": "Balthazar tiger ringmaster hero sheet 2, idle x 8 frames",
+          "entities": [
+            {
+              "row": 1,
+              "name": "balthazar",
+              "anim": "idle",
+              "frames": [
+                "balthazar_idle_f1.png",
+                "balthazar_idle_f2.png",
+                "balthazar_idle_f3.png",
+                "balthazar_idle_f4.png",
+                "balthazar_idle_f5.png",
+                "balthazar_idle_f6.png",
+                "balthazar_idle_f7.png",
+                "balthazar_idle_f8.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              250,
+              148,
+              168
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                397
+              ]
+            ],
+            "col_x": [
+              [
+                167,
+                409,
+                656,
+                889,
+                1128,
+                1368,
+                1613,
+                1852
+              ]
+            ],
+            "frame_size": "240x397"
+          }
         }
       ]
     },
@@ -924,7 +1024,172 @@
           }
         }
       ]
+    },
+    "hud": {
+      "path": "panic-petal/assets/hud",
+      "sheets": [
+        {
+          "file": "panic-petal/assets/select_balthazar.png",
+          "rows": 1,
+          "cols": 1,
+          "description": "Balthazar character-select HUD panel (single image)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "select_balthazar",
+              "anim": "idle",
+              "frames": [
+                "select_balthazar_f1.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": null,
+            "bg_tol": 0,
+            "row_y": [
+              [
+                0,
+                1296
+              ]
+            ],
+            "col_x": [
+              [
+                0
+              ]
+            ],
+            "frame_size": "1212x1297"
+          }
+        },
+        {
+          "file": "panic-petal/assets/select_none.png",
+          "rows": 1,
+          "cols": 1,
+          "description": "No-character-selected HUD panel (single image)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "select_none",
+              "anim": "idle",
+              "frames": [
+                "select_none_f1.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": null,
+            "bg_tol": 0,
+            "row_y": [
+              [
+                0,
+                1296
+              ]
+            ],
+            "col_x": [
+              [
+                0
+              ]
+            ],
+            "frame_size": "1212x1297"
+          }
+        },
+        {
+          "file": "panic-petal/assets/select_scarlet_vale.png",
+          "rows": 1,
+          "cols": 1,
+          "description": "Scarlet Vale character-select HUD panel (single image)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "select_scarlet_vale",
+              "anim": "idle",
+              "frames": [
+                "select_scarlet_vale_f1.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": null,
+            "bg_tol": 0,
+            "row_y": [
+              [
+                0,
+                1296
+              ]
+            ],
+            "col_x": [
+              [
+                0
+              ]
+            ],
+            "frame_size": "1212x1297"
+          }
+        },
+        {
+          "file": "panic-petal/assets/cover.png",
+          "rows": 1,
+          "cols": 1,
+          "description": "Game cover art (single image)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "cover",
+              "anim": "idle",
+              "frames": [
+                "cover_f1.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": null,
+            "bg_tol": 0,
+            "row_y": [
+              [
+                0,
+                1535
+              ]
+            ],
+            "col_x": [
+              [
+                0
+              ]
+            ],
+            "frame_size": "1024x1536"
+          }
+        },
+        {
+          "file": "panic-petal/assets/logo.png",
+          "rows": 1,
+          "cols": 1,
+          "description": "Game logo (single image)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "logo",
+              "anim": "idle",
+              "frames": [
+                "logo_f1.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": null,
+            "bg_tol": 0,
+            "row_y": [
+              [
+                0,
+                1023
+              ]
+            ],
+            "col_x": [
+              [
+                0
+              ]
+            ],
+            "frame_size": "1536x1024"
+          }
+        }
+      ]
     }
   },
-  "updated": "2026-09-10T18:35:00"
+  "updated": "2026-09-10T18:39:09"
 }
