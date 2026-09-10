@@ -9,8 +9,8 @@ Interacts with ChatGPT's image generation to produce pixel-art sprite sheets for
 
 ## Variables
 - `<skill-folder>` — directory containing this SKILL.md
-- `<working-dir>` — active working directory and project root for the current session
-- `<assets-dir>` — where generated sprite sheets are saved: `<working-dir>/<PROJECT>/assets/` (one folder per project/game, e.g. `galaga/assets/`). Persisted in the state file as `assets_dir`.
+- `<working-dir>` — the REPO ROOT (e.g. `~/src/html-game`). NOT the game subfolder. All paths in state are relative to this.
+- `<assets-dir>` — where generated sprite sheets are saved: `<working-dir>/<PROJECT>/assets/` (one folder per project/game, e.g. `panic-petal/assets/`). Persisted in the state file as `assets_dir`.
 - `<chat-url>` — the ChatGPT conversation URL to use for style consistency (created on first run, reused thereafter)
 
 ## Instructions
@@ -156,16 +156,26 @@ If quality is poor, tell the user what's wrong and offer to regenerate with a re
 
 ### 7. Record in State
 
-After verification passes, record the sheet via the CLI:
-
+**First time for a project — initialize:**
 ```bash
 python3 <skill-folder>/scripts/sprite_gen.py state \
   --state <working-dir>/.squid-os/sprite-gen/state-<PROJECT>.json \
-  --add-sheet name=<label> file=<relative/path.png> size="<W>x<H>" rows=<R> cols=<C> cell=<CELL> description="<what it is visually>" \
+  --init --chat-url "<URL>" --style-name "<style>" --assets-dir "<PROJECT>/assets"
+```
+
+**After each verified generation (or pre-existing sheet) — add entry:**
+```bash
+python3 <skill-folder>/scripts/sprite_gen.py state \
+  --state <working-dir>/.squid-os/sprite-gen/state-<PROJECT>.json \
+  --add-sheet name=<label> file=<relative/path.png> size="<W>x<H>" rows=<R> cols=<C> cell=<CELL> \
+  description="<what it is visually>" \
+  entities='[{"row":1,"name":"entity_name","anim":"frame cycle description"},...]' \
   --prompt-file /tmp/<label>_prompt.txt
 ```
 
-`<label>` is a free-form key (`enemies`, `bosses`, `player`, `background`, `tileset`, ...). The CLI appends the entry and updates `updated`. See "Project State File" below for the schema.
+The CLI enforces the schema. `entities` MUST be a JSON array where every object has `row` (int), `name` (string), `anim` (string). For single-image sheets (logo, cover, background): `rows=1 cols=1 cell=<width>`.
+
+**NEVER hand-edit the state JSON.** All writes go through this CLI.
 
 ### 8. Open for User Review
 
@@ -177,53 +187,58 @@ Maintain a JSON state file at `<working-dir>/.squid-os/sprite-gen/state-<PROJECT
 
 On first run for a new project, determine the name from the user's request (e.g. "make sprites for my galaga game" → `state-galaga.json`). If ambiguous, ask once.
 
-**Schema — pure visual asset data only:**
+**Schema — pure visual asset data only (enforced by CLI):**
 
 ```json
 {
   "chat_url": "https://chatgpt.com/c/<uuid>",
-  "style_name": "aquatic neo-arcade",
-  "assets_dir": "assets/galaga",
-  "palette": ["cyan", "teal", "magenta", "poison-green", "orange"],
+  "style_name": "hand-painted circus parchment",
+  "palette": ["crimson", "gold", "cream", "black"],
+  "assets_dir": "panic-petal/assets",
   "sheets": {
-    "<label>": {
-      "file": "relative/path/to/sheet.png",
-      "size": "1024x1536",
-      "rows": 6,
-      "cols": 4,
-      "cell": 256,
-      "description": "what it is visually",
+    "<entity_name>": {
+      "file": "panic-petal/assets/scarlet_vale_sheet.png",
+      "size": "1619x971",
+      "rows": 3,
+      "cols": 5,
+      "cell": 324,
+      "description": "Scarlet Vale heroine animations on tan parchment",
       "entities": [
-        {"row": 1, "name": "Pufferfish", "anim": "puff cycle: small->mid->big spikes->mid"}
+        {"row": 1, "name": "scarlet_vale", "anim": "run cycle: stride->contact->push->stride->contact"},
+        {"row": 2, "name": "scarlet_vale", "anim": "jump: takeoff->rise->apex->fall->land"},
+        {"row": 3, "name": "scarlet_vale", "anim": "attack: windup->swing->extend->impact->recover"}
       ],
-      "original_prompt": "exact prompt sent to GPT"
+      "original_prompt": "exact prompt sent to GPT or reverse-engineered",
+      "crop": {
+        "bg_color": [203, 170, 122],
+        "bg_tol": 40,
+        "row_y": [[0, 325], [326, 649], [650, 971]],
+        "col_x": [[162, 489, 811, 1133, 1457], [162, 489, 811, 1133, 1457], [162, 489, 811, 1133, 1457]],
+        "frame_size": "324x324",
+        "frames_dir": "panic-petal/assets/heroes"
+      }
     }
   },
-  "updated": "2026-09-09T02:32:00"
+  "updated": "2026-09-10T03:48:11"
 }
 ```
 
 Field meanings:
-- `chat_url` — the ChatGPT conversation to resume
+- `chat_url` — the ChatGPT conversation to resume (null if sheets were pre-existing)
 - `style_name` — human-readable style anchor for prompts
-- `assets_dir` — project asset folder, always `<working-dir>/<PROJECT>/assets/`; sheets are saved here
-- `file` — path relative to `<working-dir>`
+- `palette` — dominant color names
+- `assets_dir` — project asset folder relative to `<working-dir>`
+- `file` — sheet path relative to `<working-dir>`
 - `size` — actual image dimensions `WxH`
-- `rows` — number of entities (one per row)
-- `cols` — animation frames per entity (left→right)
+- `rows` — number of entity rows (one per row)
+- `cols` — animation frames per row (left→right)
 - `cell` — px per cell; frame N of row R crops at `(N*cell, R*cell)` with size `cell x cell`
 - `description` — one-liner of what the sheet is visually
-- `entities[]` — per row: `row`, `name`, `anim` (frame cycle description); optional `icon`/`colors` for visual detail
-- `original_prompt` — exact prompt as sent to GPT (for regeneration)
+- `entities[]` — per row: `row` (int), `name` (string, entity key), `anim` (frame cycle description)
+- `original_prompt` — exact prompt as sent to GPT, or reverse-engineered from image inspection
+- `crop` — written by `crop_sprites.py record-crop`, NOT hand-edited
 
-**On skill invocation:**
-1. Check if `<working-dir>/.squid-os/sprite-gen/state-<PROJECT>.json` exists.
-2. If yes → load it. Use `chat_url` to navigate to the existing conversation. Read `style_name`, `palette`, and `assets_dir` for prompt construction and save location. Know which sheets are already done.
-3. If no → fresh project. Start a new chat, set `assets_dir` to `<PROJECT>/assets`, create the state file after first successful generation.
-
-**After each verified generation:** update the sheet entry via the CLI `state --add-sheet` (step 7). Never hand-edit the JSON.
-
-This means if you close Squid-OS and come back tomorrow, the skill picks up the same ChatGPT conversation and knows exactly what's been generated already.
+**Frame naming convention:** `<entity>_<action>_f<N>.png` (e.g. `scarlet_vale_run_f1.png`). For single-action entities (abyss style): `<entity>_f<N>.png`. Frames go FLAT in `assets/<label>/` — no per-entity subfolders.
 
 ## Rules
 - **Same conversation always:** Never start a new chat mid-project. Style consistency depends on GPT seeing prior sprites in context.

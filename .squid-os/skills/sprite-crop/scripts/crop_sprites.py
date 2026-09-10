@@ -15,7 +15,7 @@ Subcommands:
   report --dir DIR
          Print dimensions + count of every PNG in dir.
 """
-import argparse, json, os, sys
+import argparse, json, os, sys, time
 
 def load_img(path):
     from PIL import Image
@@ -472,9 +472,10 @@ if (MANIFEST.labels.length){ selectEntity(0, 0); }
 
 
 def build_manifest(assets_dir, project, prefix=""):
-    """Scan <assets_dir>/<label>/<entity>_f<N>.png -> manifest for the viewer.
+    """Scan <assets_dir>/<label>/ for frames matching <entity>[_<action>]_f<N>.png.
+    Groups by entity (first token before _<action>_fN or _fN).
     prefix: path prefix prepended to each frame so it resolves relative to the
-    viewer HTML's location (e.g. '../../../abyss-qwen/assets/')."""
+    viewer HTML's location (e.g. '../../../panic-petal/assets/')."""
     import re
     labels = []
     if not os.path.isdir(assets_dir):
@@ -484,11 +485,22 @@ def build_manifest(assets_dir, project, prefix=""):
         if not os.path.isdir(ldir):
             continue
         files = [f for f in os.listdir(ldir) if f.endswith(".png")]
-        groups = {}
+        # Match both patterns:
+        #   <entity>_f<N>.png          (abyss style: one action per entity)
+        #   <entity>_<action>_f<N>.png (petal style: multiple actions per entity)
+        groups = {}  # entity_name -> {action_or_None -> [(N, filename)]}
         for f in files:
-            m = re.match(r"^(.+)_f(\d+)\.png$", f)
-            key = (m.group(1), int(m.group(2))) if m else (f, 0)
-            groups.setdefault(key[0], []).append((key[1], f))
+            m1 = re.match(r"^(.+?)_f(\d+)\.png$", f)
+            m2 = re.match(r"^(.+?)_(.+)_f(\d+)\.png$", f)
+            if m2:
+                entity, action, num = m2.group(1), m2.group(2), int(m2.group(3))
+                key = f"{entity}_{action}"
+            elif m1:
+                entity, num = m1.group(1), int(m1.group(2))
+                key = entity
+            else:
+                continue
+            groups.setdefault(key, []).append((num, f))
         if not groups:
             continue
         entities = []
@@ -529,6 +541,62 @@ def cmd_viewer(args):
     n_ent = sum(len(l["entities"]) for l in manifest)
     print("PASS: wrote %s (%d labels, %d entities)" % (args.out, len(manifest), n_ent))
 
+def cmd_record_crop(args):
+    """Write crop params to the state file in strict format."""
+    state_path = args.state
+    if not os.path.exists(state_path):
+        print(f"ERROR: {state_path} does not exist.", file=sys.stderr)
+        sys.exit(1)
+    with open(state_path) as f:
+        state = json.load(f)
+
+    if args.sheet not in state.get("sheets", {}):
+        print(f"ERROR: sheet '{args.sheet}' not found in state. Run sprite_gen.py state --add-sheet first.", file=sys.stderr)
+        sys.exit(1)
+
+    # Parse row-y: "y0-y1,y0-y1,..." -> [[y0,y1],...]
+    row_y = None
+    if args.row_y:
+        row_y = [list(map(int, p.split("-"))) for p in args.row_y.split(",")]
+
+    # Parse col-x: "x1,x2,x3|x1,x2,x3|..." -> [[x1,x2,x3],...]
+    col_x = None
+    if args.col_x:
+        col_x = [list(map(int, p.split(","))) for p in args.col_x.split("|")]
+
+    # Parse bg-color: "R,G,B" -> [R,G,B]
+    bg_color = None
+    if args.bg_color:
+        bg_color = list(map(int, args.bg_color.split(",")))
+
+    frame_size = None
+    if args.frame_size:
+        w, h = map(int, args.frame_size.split("x"))
+        frame_size = f"{w}x{h}"
+
+    crop_block = {}
+    if bg_color is not None:
+        crop_block["bg_color"] = bg_color
+    if args.bg_tol is not None:
+        crop_block["bg_tol"] = args.bg_tol
+    if row_y is not None:
+        crop_block["row_y"] = row_y
+    if col_x is not None:
+        crop_block["col_x"] = col_x
+    if frame_size is not None:
+        crop_block["frame_size"] = frame_size
+    if args.frames_dir:
+        crop_block["frames_dir"] = args.frames_dir
+
+    state["sheets"][args.sheet]["crop"] = crop_block
+    state["updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+    with open(state_path, "w") as f:
+        json.dump(state, f, indent=2)
+    print(f"CROP PARAMS RECORDED for '{args.sheet}' -> {state_path}")
+    print(json.dumps(crop_block, indent=2))
+
+
 def main():
     p = argparse.ArgumentParser(description="Sprite sheet cropping CLI")
     sub = p.add_subparsers(dest="cmd")
@@ -538,8 +606,9 @@ def main():
     sr = sub.add_parser("report"); sr.add_argument("--dir", required=True)
     st = sub.add_parser("trim"); st.add_argument("--dir", required=True); st.add_argument("--out"); st.add_argument("--pad", type=int, default=4)
     sv = sub.add_parser("viewer"); sv.add_argument("--assets-dir", required=True); sv.add_argument("--project", required=True); sv.add_argument("--out", required=True); sv.add_argument("--bg")
+    rc = sub.add_parser("record-crop"); rc.add_argument("--state", required=True); rc.add_argument("--sheet", required=True); rc.add_argument("--bg-color"); rc.add_argument("--bg-tol", type=int); rc.add_argument("--row-y"); rc.add_argument("--col-x"); rc.add_argument("--frame-size"); rc.add_argument("--frames-dir")
     args = p.parse_args()
-    {"scan": cmd_scan, "prep": cmd_prep, "crop": cmd_crop, "report": cmd_report, "trim": cmd_trim, "viewer": cmd_viewer}[args.cmd](args)
+    {"scan": cmd_scan, "prep": cmd_prep, "crop": cmd_crop, "report": cmd_report, "trim": cmd_trim, "viewer": cmd_viewer, "record-crop": cmd_record_crop}[args.cmd](args)
 
 if __name__ == "__main__":
     main()

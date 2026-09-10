@@ -283,33 +283,102 @@ def cmd_screenshot(args):
 
 def cmd_state(args):
     path = args.state
-    if os.path.exists(path):
-        with open(path) as f:
-            state = json.load(f)
-    else:
-        state = {"chat_url": None, "style_name": None, "palette": [], "sheets": {}, "updated": ""}
+
+    # --- init subcommand ---
+    if args.init:
+        if os.path.exists(path):
+            print(f"ERROR: {path} already exists. Use --set to update.", file=sys.stderr)
+            sys.exit(1)
+        state = {
+            "chat_url": args.chat_url or None,
+            "style_name": args.style_name or None,
+            "palette": [],
+            "assets_dir": args.assets_dir or "",
+            "sheets": {},
+            "updated": time.strftime("%Y-%m-%dT%H:%M:%S")
+        }
+        outdir = os.path.dirname(path)
+        if outdir: os.makedirs(outdir, exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(state, f, indent=2)
+        print(f"STATE INITIALIZED: {path}")
+        return
+
+    # --- load or error ---
+    if not os.path.exists(path):
+        print(f"ERROR: {path} does not exist. Run 'state --init' first.", file=sys.stderr)
+        sys.exit(1)
+    with open(path) as f:
+        state = json.load(f)
+
+    # --- set root fields ---
     if args.set:
         for kv in args.set:
             key, val = kv.split("=", 1)
-            state[key] = val.split(",") if key == "palette" else val
+            allowed = {"chat_url", "style_name", "palette", "assets_dir"}
+            if key not in allowed:
+                print(f"ERROR: cannot set '{key}'. Allowed root fields: {allowed}", file=sys.stderr)
+                sys.exit(1)
+            if key == "palette":
+                state[key] = val.split(",")
+            else:
+                state[key] = val
         state["updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # --- add-sheet (strict schema) ---
     if args.add_sheet:
         parts = dict(kv.split("=", 1) for kv in args.add_sheet)
         name = parts.pop("name")
+
+        # Required fields
+        required = ["file", "size", "rows", "cols", "cell", "description", "entities"]
+        missing = [r for r in required if r not in parts]
+        if missing:
+            print(f"ERROR: missing required fields: {missing}", file=sys.stderr)
+            print(f"  Usage: --add-sheet name=X file=X size=WxH rows=N cols=N cell=N description=\"...\" entities='[{{\"row\":1,\"name\":\"X\",\"anim\":\"...\"}},...]'", file=sys.stderr)
+            sys.exit(1)
+
         sheet = {}
-        for k, v in parts.items():
-            sheet[k] = int(v) if k in ("rows", "cols", "cell") else v
+        sheet["file"] = parts["file"]
+        sheet["size"] = parts["size"]
+        sheet["rows"] = int(parts["rows"])
+        sheet["cols"] = int(parts["cols"])
+        sheet["cell"] = int(parts["cell"])
+        sheet["description"] = parts["description"]
+
+        # Parse entities JSON array
+        try:
+            entities = json.loads(parts["entities"])
+            if not isinstance(entities, list):
+                raise ValueError("entities must be a JSON array")
+            for i, e in enumerate(entities):
+                if not isinstance(e, dict) or "row" not in e or "name" not in e or "anim" not in e:
+                    print(f"ERROR: entities[{i}] must have 'row', 'name', 'anim' keys", file=sys.stderr)
+                    sys.exit(1)
+            sheet["entities"] = entities
+        except json.JSONDecodeError as je:
+            print(f"ERROR: entities must be valid JSON array: {je}", file=sys.stderr)
+            sys.exit(1)
+
+        # Optional: original_prompt from file
         if getattr(args, "prompt_file", None):
             with open(args.prompt_file) as pf:
                 sheet["original_prompt"] = pf.read().strip()
+
+        # Reject unknown fields
+        allowed_sheet_fields = {"file", "size", "rows", "cols", "cell", "description", "entities", "original_prompt", "crop"}
+        extra = set(parts.keys()) - allowed_sheet_fields
+        if extra:
+            print(f"WARNING: ignoring unknown fields: {extra}", file=sys.stderr)
+
         state["sheets"][name] = sheet
         state["updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+
     outdir = os.path.dirname(path)
     if outdir: os.makedirs(outdir, exist_ok=True)
     with open(path, "w") as f:
         json.dump(state, f, indent=2)
     print(f"STATE SAVED: {path}")
-    print(json.dumps(state, indent=2))
 
 
 def main():
@@ -319,7 +388,7 @@ def main():
     p = sub.add_parser("wait"); p.add_argument("--timeout", type=int, default=120); p.add_argument("--expected-srcs", type=int)
     p = sub.add_parser("download"); p.add_argument("--output", required=True)
     p = sub.add_parser("screenshot"); p.add_argument("--output", required=True)
-    p = sub.add_parser("state"); p.add_argument("--state", required=True); p.add_argument("--set", nargs="+"); p.add_argument("--add-sheet", nargs="+"); p.add_argument("--prompt-file")
+    p = sub.add_parser("state"); p.add_argument("--state", required=True); p.add_argument("--init", action="store_true"); p.add_argument("--chat-url"); p.add_argument("--style-name"); p.add_argument("--assets-dir"); p.add_argument("--set", nargs="+"); p.add_argument("--add-sheet", nargs="+"); p.add_argument("--prompt-file")
     args = parser.parse_args()
     if not args.cmd:
         parser.print_help(); sys.exit(1)

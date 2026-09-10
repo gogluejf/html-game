@@ -9,9 +9,9 @@ Turns AI-generated sprite sheets into clean, transparent, individually-cropped a
 
 ## Variables
 - `<skill-folder>` — directory containing this SKILL.md
-- `<working-dir>` — active working directory and project root for the current session
+- `<working-dir>` — the REPO ROOT (e.g. `~/src/html-game`). NOT the game subfolder.
 - `<state-file>` — the sprite-gen state file `<working-dir>/.squid-os/sprite-gen/state-<PROJECT>.json` (source of truth for sheet paths, rows/cols, entity names)
-- `<assets-dir>` — project asset folder from state (`assets_dir`, e.g. `galaga/assets`)
+- `<assets-dir>` — project asset folder from state (`assets_dir`, e.g. `panic-petal/assets`)
 
 ## Instructions
 
@@ -29,6 +29,8 @@ Subcommands: `prep` (bg detect + transparency), `scan` (measure real grid), `cro
 
 ### 2. Prep — Background Detection + Transparency
 
+**BEFORE prep:** Inspect the sheet. Note which sprite colors are close to the background (pale faces, cream clothing, light fur, tan skin). These are at RISK of being eaten by the flood-fill.
+
 Run ONCE per sheet before cropping:
 ```bash
 python3 <skill-folder>/scripts/crop_sprites.py prep --sheet <sheet.png> --out /tmp/sprite-crop/<project>/<label>_prepared.png --save-bg /tmp/sprite-crop/<project>/<label>_bg.json
@@ -36,6 +38,7 @@ python3 <skill-folder>/scripts/crop_sprites.py prep --sheet <sheet.png> --out /t
 - Detects the actual background color from edge pixels (never assume pure black).
 - Flood-fills from image borders only → true alpha transparency WITHOUT eating dark pixels inside sprites.
 - **Reads the INK AUDIT line in the output.** It counts real sprite pixels the fill removed. `> 2%` = the fill leaked into sprite bodies (holes/eaten shading) → re-run with lower `--tol` (step down by ~10) until the audit is near 0%. Default tol is 40; sheets with very dark sprite shading on black often need 15-25.
+- **AFTER prep:** Visually verify that the at-risk colors you noted (faces, pale cloth, light fur) are still intact. If they're transparent/missing → tol was too HIGH, lower it and re-prep.
 - All subsequent steps use the PREPARED sheet, not the original.
 - Store the detected `bg_color` AND the working `bg_tol` in the sheet's state entry later (step 7).
 
@@ -97,26 +100,27 @@ All four corners must be 0. If not, increase `--tol` in step 2 (small steps) and
 
 ### 7. Install Verified Frames
 
-Copy the FINAL verified pass to the project:
+Copy the FINAL verified pass to the project (FLAT structure, no per-entity subfolders):
 ```bash
 mkdir -p <working-dir>/<assets-dir>/<label>
 cp /tmp/sprite-crop/<project>/<label>-v<N>/*.png <working-dir>/<assets-dir>/<label>/
 ```
 Use @tool:open on the destination folder so the user can review.
 
-### 8. Record Crop Params in State
+### 8. Record Crop Params in State (via CLI — NEVER hand-edit JSON)
 
-Update the sheet entry in `<state-file>` so future re-crops are one command. Add/replace these fields on the sheet object (edit the JSON directly — sprite-gen's CLI manages its own fields, crop params are additive):
-```json
-"crop": {
-  "bg_color": [0, 0, 0],
-  "bg_tol": 15,
-  "bands_file_params": {"rows": [[0, 240], [272, 468]], "col_centers_per_row": [[128, 384, 640, 896]]},
-  "final_overrides": {"col_x": null, "row_y": null, "frame_size": null},
-  "frames_dir": "<assets-dir>/<label>"
-}
+```bash
+python3 <skill-folder>/scripts/crop_sprites.py record-crop \
+  --state <working-dir>/.squid-os/sprite-gen/state-<PROJECT>.json \
+  --sheet <entity_name> \
+  --bg-color "R,G,B" --bg-tol <N> \
+  --row-y "y0-y1,y0-y1,..." \
+  --col-x "x1,x2,x3|x1,x2,x3|..." \
+  --frame-size "WxH" \
+  --frames-dir "<assets-dir>/<label>"
 ```
-If the sheet already has a `crop` entry, reuse its params as the starting point (skip step 3 if `bands_file_params` matches the sheet's `size`).
+
+This writes the `crop` block into the state file in the correct strict format. If the sheet already has a `crop` entry, it gets replaced.
 
 ### 9. Emit the Animation Viewer (after frames are verified)
 
@@ -133,7 +137,7 @@ python3 <skill-folder>/scripts/crop_sprites.py viewer --assets-dir <assets-dir> 
 - **Never trust uniform grid math.** AI sheets have variable row heights and drifting column centers. Always `scan` first; use measured bands, not `rows*cell`.
 - **Prep before crop.** Always run `prep` on the raw sheet first; crop from the prepared (transparent) version. Never deliver black-background frames when transparency was requested.
 - **Flood-fill only, never global color delete.** The script only removes border-connected background — do not "help" by deleting all pixels near the bg color; that punches holes in dark-bodied sprites.
-- **Tight tolerance, always audit.** Flood-fill `--tol` defaults to 40 but MUST be validated with the prep INK AUDIT line: >2% real-ink loss means the fill leaked into sprite bodies (visible as holes/eaten dark shading). Step tol down until the audit is ~0%, then verify corners are still transparent. Record the working tol in state (`crop.bg_tol`).
+- **Tight tolerance, always audit.** Flood-fill `--tol` defaults to 40 but MUST be validated with the prep INK AUDIT line: >2% real-ink loss means the fill leaked into sprite bodies (visible as holes/eaten dark shading). Step tol down until the audit is ~0%, then verify corners are still transparent. Record the working tol in state (`crop.bg_tol`). **CRITICAL:** Before prep, note which sprite colors are close to bg (pale faces, cream cloth, light fur). After prep, verify those specific areas survived. If face/skin/cloth pixels are transparent → tol too HIGH, lower and re-prep. If bg residue remains → tol too LOW, raise slightly.
 - **Inspect after EVERY crop pass.** One inspection pass = look at ≥4 frames (corners + middles). Do not declare success without inspecting the pass you're shipping.
 - **Iterate until perfect, max 4 passes.** Each pass uses fresh overrides derived from what the inspection reported (which edge bled which direction). After 4 failed passes, stop and escalate to the user with evidence.
 - **Normalize before verify.** Always run `trim` on a crop pass before inspecting — oversized empty margins and non-uniform frame sizes within an entity are failure modes, not cosmetic.
@@ -141,7 +145,8 @@ python3 <skill-folder>/scripts/crop_sprites.py viewer --assets-dir <assets-dir> 
 - **Filenames are ALWAYS `<entity>_<action>_f<N>.png`.** Entity prefix on every file, one action word per row, _fN sequential within that row. No freeform names, no missing parts. Game code loads by pattern `<entity>_<action>_f1..fN`.
 - **Fresh tmp dir per pass.** `<label>-v1`, `-v2`, ... so a bad pass can never contaminate the good one.
 - **Only verified frames reach the project.** Nothing is copied into `<assets-dir>` until its pass passed inspection AND corner-alpha check.
-- **State is the memory.** Final crop params always get written back to the state file. A re-crop request should complete in: load state → crop with stored params → quick inspect → done.
+- **State is written ONLY via CLI.** `sprite_gen.py state --init` / `--add-sheet` for sheet entries. `crop_sprites.py record-crop` for crop params. NEVER hand-edit the JSON file. The CLI enforces schema and rejects invalid fields.
+- **Flat frame structure.** Frames go in `assets/<label>/` directly (e.g. `assets/heroes/scarlet_vale_run_f1.png`). NO per-entity subfolders. The entity name is in the filename, not the folder path.
 - **No game data.** Crop params and asset paths only — never points/wave/hp/effect in state.
 - **Backgrounds/single-image sheets** (no grid): skip scan/crop; just run `prep` and save the transparent PNG to `<assets-dir>/`.
 
