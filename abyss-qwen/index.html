@@ -256,6 +256,37 @@ class SfxEngine {
     boom.stop(t0 + 0.85);
   }
 
+  /**
+   * Scaled explosion used by the boss death sequence. `size` (0..1) drives
+   * loudness, duration, noise brightness and sub-bass depth so a series of
+   * calls can build from small cracks into a huge final detonation. Kept to
+   * one noise burst + one oscillator per call (low node count) so rapid
+   * bursts never exhaust the AudioContext's node budget.
+   */
+  boom(size = 1) {
+    this._wake();
+    size = Math.max(0.1, Math.min(size, 1));
+    const dur = 0.2 + 0.5 * size;                 // longer as it grows
+    const vol = 0.25 + 0.55 * size;               // louder as it grows
+    const t0 = this.ctx.currentTime;
+    // Bright crackle — higher cutoff for bigger booms reads as more violent.
+    this._noiseBurst({
+      duration: dur,
+      peak: vol,
+      cutoff: 1500 + 3500 * size,
+      q: 0.8,
+    });
+    // Sub-bass thump — deeper start frequency for bigger booms.
+    const osc = this.ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(90 + 90 * size, t0);
+    osc.frequency.exponentialRampToValueAtTime(30 - 10 * size, t0 + dur);
+    const g = this._chain(osc);
+    this._env(g, t0, vol, 0.008, dur);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.05);
+  }
+
   /** Descending sawtooth sweep — an enemy breaking formation to dive. */
   enemyDive() {
     this._wake();
@@ -1990,8 +2021,11 @@ class Boss {
         );
       }
       if (Game.screenshake) Game.screenshake.add(10);
-      // First burst is the heavy multi-hit blast; later ones are lighter cracks.
-      if (sfx) { idx === 0 ? sfx.bigBoom() : sfx.pop(); }
+      // Escalating explosion: small cracks build into a huge final detonation.
+      // size ramps 0.25 -> 1.0 across the 5 bursts; shake grows with it too.
+      const size = 0.25 + (idx / (bursts - 1)) * 0.75;
+      if (sfx) sfx.boom(size);
+      if (Game.screenshake) Game.screenshake.add(6 + Math.round(size * 14));
     }
     return this.deathT >= burstInterval * bursts;
   }
