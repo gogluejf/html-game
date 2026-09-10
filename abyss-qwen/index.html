@@ -1506,14 +1506,14 @@ class MuzzleFlash {
 class DamageVignette {
   constructor() {
     this.timer = 0;        // seconds remaining
-    this.duration = 0.6;   // full fade-in/out window
+    this.duration = 0.7;   // full fade-in/out window
     this.intensity = 0;    // 0..1 current strength (peaks at trigger value)
-    this.peak = 0.55;      // how strong a single hit reads
+    this.peak = 0.85;      // how strong a single hit reads
   }
 
   /** Trigger (or re-trigger) the vignette. Stacks up to a max intensity. */
-  trigger(strength = 0.55) {
-    this.peak = Math.min(0.9, Math.max(this.intensity, strength));
+  trigger(strength = 0.85) {
+    this.peak = Math.min(1, Math.max(this.intensity, strength));
     this.timer = this.duration;
   }
 
@@ -1541,12 +1541,14 @@ class DamageVignette {
     if (!this.active) return;
     const a = this.intensity;
     const cx = W / 2, cy = H / 2;
-    // Radius large enough that the inner (clear) zone covers the play area.
-    const r = Math.hypot(W, H) * 0.62;
-    const grad = ctx.createRadialGradient(cx, cy, r * 0.45, cx, cy, r);
-    grad.addColorStop(0, "rgba(180,0,0,0)");
-    grad.addColorStop(0.7, `rgba(150,0,0,${0.35 * a})`);
-    grad.addColorStop(1, `rgba(120,0,0,${0.85 * a})`);
+    // Radius large enough that the inner (clear) zone covers the play area,
+    // but the red reaches well past mid-screen so it's clearly visible.
+    const r = Math.hypot(W, H) * 0.75;
+    const grad = ctx.createRadialGradient(cx, cy, r * 0.30, cx, cy, r);
+    grad.addColorStop(0, "rgba(200,0,0,0)");
+    grad.addColorStop(0.55, `rgba(190,10,10,${0.45 * a})`);
+    grad.addColorStop(0.85, `rgba(160,0,0,${0.75 * a})`);
+    grad.addColorStop(1, `rgba(140,0,0,${0.95 * a})`);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
   }
@@ -1732,7 +1734,7 @@ class Player {
     if (Game.particleSystem) {
       Game.particleSystem.explode(this.cx, this.y + this.h / 2, "#3ef0ff", 40);
     }
-    if (Game.damageVignette) Game.damageVignette.trigger(0.6);
+    if (Game.damageVignette) Game.damageVignette.trigger(0.85);
     if (sfx) sfx.boom(0.7);
     return this.lives <= 0;
   }
