@@ -121,6 +121,19 @@ class SfxEngine {
     return g;
   }
 
+  /**
+   * If the AudioContext is suspended (autoplay policy, tab lost focus, etc.),
+   * kick a resume. Sounds scheduled while suspended play silently, so we try
+   * to wake the context on every SFX. Browsers only allow resume from a user
+   * gesture, but calling it here is harmless and catches the common case where
+   * the context dropped back to suspended mid-game.
+   */
+  _wake() {
+    if (this.ctx.state === "suspended") {
+      this.ctx.resume().catch(() => {});
+    }
+  }
+
   /** Play a white-noise burst through an optional lowpass filter. */
   _noiseBurst({ duration = 0.3, peak = 0.5, cutoff = 4000, q = 0.7 } = {}) {
     const src = this.ctx.createBufferSource();
@@ -150,6 +163,7 @@ class SfxEngine {
    * heavy blaster shot without the piercing high end that fatigues the ear.
    */
   shoot() {
+    this._wake();
     const t0 = this.ctx.currentTime;
     // Low saw body with a quick downward sweep (punchy, not shrill).
     const osc = this.ctx.createOscillator();
@@ -175,6 +189,7 @@ class SfxEngine {
    * pops differ audibly from big boss blasts.
    */
   explode(size = 1) {
+    this._wake();
     size = Math.max(0.25, Math.min(size, 3)); // clamp for sanity
     const dur = 0.25 + 0.25 * size;           // longer for bigger booms
     const vol = 0.35 * size;
@@ -205,6 +220,7 @@ class SfxEngine {
    * the low thump of a full explosion. Kept brief so rapid fire stays clean.
    */
   pop() {
+    this._wake();
     const t0 = this.ctx.currentTime;
     // Bright, very short noise crackle (the "crack").
     this._noiseBurst({ duration: 0.08, peak: 0.32, cutoff: 6000, q: 0.7 });
@@ -225,6 +241,7 @@ class SfxEngine {
    * cracks so it reads as a heavy multi-hit blast rather than one muffled thud.
    */
   bigBoom() {
+    this._wake();
     const t0 = this.ctx.currentTime;
     // One long, loud bright crackle for the "brick/boom" body.
     this._noiseBurst({ duration: 0.9, peak: 0.75, cutoff: 4500, q: 0.8 });
@@ -241,6 +258,7 @@ class SfxEngine {
 
   /** Descending sawtooth sweep — an enemy breaking formation to dive. */
   enemyDive() {
+    this._wake();
     const t0 = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     osc.type = "sawtooth";
@@ -260,6 +278,7 @@ class SfxEngine {
 
   /** Ascending 4-note arpeggio — power-up collected. */
   powerUp() {
+    this._wake();
     const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
     const step = 0.09;                              // seconds between notes
     const t0 = this.ctx.currentTime;
@@ -280,6 +299,7 @@ class SfxEngine {
    * with slightly different waveforms for a rich, percussive stab.
    */
   waveIntro() {
+    this._wake();
     const t0 = this.ctx.currentTime;
     // A minor-ish power chord with a fifth and octave for drama.
     const voices = [
@@ -311,6 +331,7 @@ class SfxEngine {
 
   /** Long descending tone — game over. */
   gameOver() {
+    this._wake();
     const t0 = this.ctx.currentTime;
     const dur = 1.6;
     const osc = this.ctx.createOscillator();
