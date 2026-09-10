@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SPRITE VIEWER — petal-panic</title>
+<style>
+  html,body{margin:0;height:100%;background:#0a0c14;color:#cfe4ff;font-family:'Courier New',monospace;}
+  #app{display:flex;height:100%;}
+  #side{width:260px;border-right:1px solid #1b2540;padding:16px;overflow-y:auto;background:#070912;}
+  #side h1{font-size:18px;color:#3ef0ff;letter-spacing:2px;margin:0 0 4px;text-transform:uppercase;}
+  #side .sub{font-size:11px;color:#5a6a90;margin-bottom:14px;}
+  .label{color:#ffe23e;font-size:13px;margin:12px 0 4px;letter-spacing:1px;}
+  .ent{font-size:14px;padding:6px 10px;border-radius:6px;cursor:pointer;color:#8fa0d0;user-select:none;}
+  .ent:hover{background:rgba(62,240,255,.08);color:#cfe4ff;}
+  .ent.on{background:rgba(255,226,62,.12);color:#fff;}
+  .ent .cnt{float:right;color:#5a6a90;font-size:11px;margin-left:8px;}
+  .ent.on .cnt{color:#ffe23e;}
+  #main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px;}
+  #stage{position:relative;display:flex;align-items:center;justify-content:center;}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid #1b2540;border-radius:8px;max-width:60vmin;max-height:55vmin;}
+  #name{font-size:26px;color:#3ef0ff;font-weight:bold;letter-spacing:2px;text-shadow:0 0 14px #3ef0ff;text-transform:uppercase;}
+  #meta{font-size:15px;color:#8fa0d0;margin-top:-12px;letter-spacing:1px;}
+  #controls{display:flex;align-items:center;gap:16px;font-size:18px;}
+  button{font-family:inherit;font-size:22px;width:48px;height:48px;border-radius:8px;border:2px solid #1b2540;
+          background:#0d1120;color:#cfe4ff;cursor:pointer;transition:all .1s;}
+  button:hover{border-color:#3ef0ff;color:#3ef0ff;}
+  #fps{min-width:90px;text-align:center;font-size:20px;color:#ffe23e;font-weight:bold;}
+  #bgrow{display:flex;align-items:center;gap:10px;font-size:14px;color:#8fa0d0;}
+  input[type=color]{width:44px;height:32px;border:2px solid #1b2540;border-radius:6px;background:#0d1120;cursor:pointer;padding:2px;}
+  #hint{font-size:12px;color:#5a6a90;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="side">
+    <h1>Sprite Viewer</h1>
+    <div class="sub">petal-panic</div>
+    <div id="tree"></div>
+  </div>
+  <div id="main">
+    <div id="name">&nbsp;</div>
+    <div id="meta">&nbsp;</div>
+    <div id="stage"><canvas id="cv" width="256" height="256"></canvas></div>
+    <div id="controls">
+      <button id="slower" title="slower">&#8722;</button>
+      <div id="fps">-- fps</div>
+      <button id="faster" title="faster">&#43;</button>
+    </div>
+    <div id="bgrow">
+      <span>background</span>
+      <input type="color" id="bg" value="#fa9aa4">
+      <span id="bgval">#fa9aa4</span>
+    </div>
+    <div id="hint">click an entity &middot; &#8592;/&#8594; or &#8722;/&#43; change speed &middot; space play/pause</div>
+  </div>
+</div>
+<script>
+const MANIFEST = {"labels": [{"name": "boss", "entities": [{"name": "overgrown_elephant_charge", "frames": ["../../panic-petal/assets/boss/overgrown_elephant_charge_f1.png", "../../panic-petal/assets/boss/overgrown_elephant_charge_f2.png", "../../panic-petal/assets/boss/overgrown_elephant_charge_f3.png", "../../panic-petal/assets/boss/overgrown_elephant_charge_f4.png", "../../panic-petal/assets/boss/overgrown_elephant_charge_f5.png"]}, {"name": "overgrown_elephant_death", "frames": ["../../panic-petal/assets/boss/overgrown_elephant_death_f1.png", "../../panic-petal/assets/boss/overgrown_elephant_death_f2.png", "../../panic-petal/assets/boss/overgrown_elephant_death_f3.png", "../../panic-petal/assets/boss/overgrown_elephant_death_f4.png", "../../panic-petal/assets/boss/overgrown_elephant_death_f5.png"]}, {"name": "overgrown_elephant_stomp", "frames": ["../../panic-petal/assets/boss/overgrown_elephant_stomp_f1.png", "../../panic-petal/assets/boss/overgrown_elephant_stomp_f2.png", "../../panic-petal/assets/boss/overgrown_elephant_stomp_f3.png", "../../panic-petal/assets/boss/overgrown_elephant_stomp_f4.png", "../../panic-petal/assets/boss/overgrown_elephant_stomp_f5.png"]}, {"name": "overgrown_elephant_trunk_blast", "frames": ["../../panic-petal/assets/boss/overgrown_elephant_trunk_blast_f1.png", "../../panic-petal/assets/boss/overgrown_elephant_trunk_blast_f2.png", "../../panic-petal/assets/boss/overgrown_elephant_trunk_blast_f3.png", "../../panic-petal/assets/boss/overgrown_elephant_trunk_blast_f4.png", "../../panic-petal/assets/boss/overgrown_elephant_trunk_blast_f5.png"]}]}, {"name": "enemies", "entities": [{"name": "boris_loon_attack", "frames": ["../../panic-petal/assets/enemies/boris_loon_attack_f1.png", "../../panic-petal/assets/enemies/boris_loon_attack_f2.png", "../../panic-petal/assets/enemies/boris_loon_attack_f3.png", "../../panic-petal/assets/enemies/boris_loon_attack_f4.png", "../../panic-petal/assets/enemies/boris_loon_attack_f5.png"]}, {"name": "boris_loon_baby_attack", "frames": ["../../panic-petal/assets/enemies/boris_loon_baby_attack_f1.png", "../../panic-petal/assets/enemies/boris_loon_baby_attack_f2.png", "../../panic-petal/assets/enemies/boris_loon_baby_attack_f3.png", "../../panic-petal/assets/enemies/boris_loon_baby_attack_f4.png", "../../panic-petal/assets/enemies/boris_loon_baby_attack_f5.png"]}, {"name": "boris_loon_baby_death", "frames": ["../../panic-petal/assets/enemies/boris_loon_baby_death_f1.png", "../../panic-petal/assets/enemies/boris_loon_baby_death_f2.png", "../../panic-petal/assets/enemies/boris_loon_baby_death_f3.png", "../../panic-petal/assets/enemies/boris_loon_baby_death_f4.png", "../../panic-petal/assets/enemies/boris_loon_baby_death_f5.png"]}, {"name": "boris_loon_baby_fly", "frames": ["../../panic-petal/assets/enemies/boris_loon_baby_fly_f1.png", "../../panic-petal/assets/enemies/boris_loon_baby_fly_f2.png", "../../panic-petal/assets/enemies/boris_loon_baby_fly_f3.png", "../../panic-petal/assets/enemies/boris_loon_baby_fly_f4.png", "../../panic-petal/assets/enemies/boris_loon_baby_fly_f5.png"]}, {"name": "boris_loon_death", "frames": ["../../panic-petal/assets/enemies/boris_loon_death_f1.png", "../../panic-petal/assets/enemies/boris_loon_death_f2.png", "../../panic-petal/assets/enemies/boris_loon_death_f3.png", "../../panic-petal/assets/enemies/boris_loon_death_f4.png", "../../panic-petal/assets/enemies/boris_loon_death_f5.png"]}, {"name": "boris_loon_fly", "frames": ["../../panic-petal/assets/enemies/boris_loon_fly_f1.png", "../../panic-petal/assets/enemies/boris_loon_fly_f2.png", "../../panic-petal/assets/enemies/boris_loon_fly_f3.png", "../../panic-petal/assets/enemies/boris_loon_fly_f4.png", "../../panic-petal/assets/enemies/boris_loon_fly_f5.png"]}, {"name": "jackolantern_explode", "frames": ["../../panic-petal/assets/enemies/jackolantern_explode_f1.png", "../../panic-petal/assets/enemies/jackolantern_explode_f2.png", "../../panic-petal/assets/enemies/jackolantern_explode_f3.png", "../../panic-petal/assets/enemies/jackolantern_explode_f4.png", "../../panic-petal/assets/enemies/jackolantern_explode_f5.png"]}, {"name": "jackolantern_launch", "frames": ["../../panic-petal/assets/enemies/jackolantern_launch_f1.png", "../../panic-petal/assets/enemies/jackolantern_launch_f2.png", "../../panic-petal/assets/enemies/jackolantern_launch_f3.png", "../../panic-petal/assets/enemies/jackolantern_launch_f4.png", "../../panic-petal/assets/enemies/jackolantern_launch_f5.png"]}, {"name": "jackolantern_roll", "frames": ["../../panic-petal/assets/enemies/jackolantern_roll_f1.png", "../../panic-petal/assets/enemies/jackolantern_roll_f2.png", "../../panic-petal/assets/enemies/jackolantern_roll_f3.png", "../../panic-petal/assets/enemies/jackolantern_roll_f4.png", "../../panic-petal/assets/enemies/jackolantern_roll_f5.png"]}, {"name": "jester_attack", "frames": ["../../panic-petal/assets/enemies/jester_attack_f1.png", "../../panic-petal/assets/enemies/jester_attack_f2.png", "../../panic-petal/assets/enemies/jester_attack_f3.png", "../../panic-petal/assets/enemies/jester_attack_f4.png", "../../panic-petal/assets/enemies/jester_attack_f5.png"]}, {"name": "jester_death", "frames": ["../../panic-petal/assets/enemies/jester_death_f1.png", "../../panic-petal/assets/enemies/jester_death_f2.png", "../../panic-petal/assets/enemies/jester_death_f3.png", "../../panic-petal/assets/enemies/jester_death_f4.png", "../../panic-petal/assets/enemies/jester_death_f5.png"]}, {"name": "jester_idle", "frames": ["../../panic-petal/assets/enemies/jester_idle_f1.png", "../../panic-petal/assets/enemies/jester_idle_f2.png", "../../panic-petal/assets/enemies/jester_idle_f3.png", "../../panic-petal/assets/enemies/jester_idle_f4.png", "../../panic-petal/assets/enemies/jester_idle_f5.png"]}, {"name": "jester_run", "frames": ["../../panic-petal/assets/enemies/jester_run_f1.png", "../../panic-petal/assets/enemies/jester_run_f2.png", "../../panic-petal/assets/enemies/jester_run_f3.png", "../../panic-petal/assets/enemies/jester_run_f4.png", "../../panic-petal/assets/enemies/jester_run_f5.png"]}, {"name": "jester_whip", "frames": ["../../panic-petal/assets/enemies/jester_whip_f1.png", "../../panic-petal/assets/enemies/jester_whip_f2.png", "../../panic-petal/assets/enemies/jester_whip_f3.png", "../../panic-petal/assets/enemies/jester_whip_f4.png", "../../panic-petal/assets/enemies/jester_whip_f5.png"]}, {"name": "vine_hound_attack", "frames": ["../../panic-petal/assets/enemies/vine_hound_attack_f1.png", "../../panic-petal/assets/enemies/vine_hound_attack_f2.png", "../../panic-petal/assets/enemies/vine_hound_attack_f3.png", "../../panic-petal/assets/enemies/vine_hound_attack_f4.png", "../../panic-petal/assets/enemies/vine_hound_attack_f5.png"]}, {"name": "vine_hound_death", "frames": ["../../panic-petal/assets/enemies/vine_hound_death_f1.png", "../../panic-petal/assets/enemies/vine_hound_death_f2.png", "../../panic-petal/assets/enemies/vine_hound_death_f3.png", "../../panic-petal/assets/enemies/vine_hound_death_f4.png", "../../panic-petal/assets/enemies/vine_hound_death_f5.png"]}, {"name": "vine_hound_run", "frames": ["../../panic-petal/assets/enemies/vine_hound_run_f1.png", "../../panic-petal/assets/enemies/vine_hound_run_f2.png", "../../panic-petal/assets/enemies/vine_hound_run_f3.png", "../../panic-petal/assets/enemies/vine_hound_run_f4.png", "../../panic-petal/assets/enemies/vine_hound_run_f5.png"]}, {"name": "violetta_marionetta_attack", "frames": ["../../panic-petal/assets/enemies/violetta_marionetta_attack_f1.png", "../../panic-petal/assets/enemies/violetta_marionetta_attack_f2.png", "../../panic-petal/assets/enemies/violetta_marionetta_attack_f3.png", "../../panic-petal/assets/enemies/violetta_marionetta_attack_f4.png", "../../panic-petal/assets/enemies/violetta_marionetta_attack_f5.png"]}, {"name": "violetta_marionetta_death", "frames": ["../../panic-petal/assets/enemies/violetta_marionetta_death_f1.png", "../../panic-petal/assets/enemies/violetta_marionetta_death_f2.png", "../../panic-petal/assets/enemies/violetta_marionetta_death_f3.png", "../../panic-petal/assets/enemies/violetta_marionetta_death_f4.png", "../../panic-petal/assets/enemies/violetta_marionetta_death_f5.png"]}, {"name": "violetta_marionetta_walk", "frames": ["../../panic-petal/assets/enemies/violetta_marionetta_walk_f1.png", "../../panic-petal/assets/enemies/violetta_marionetta_walk_f2.png", "../../panic-petal/assets/enemies/violetta_marionetta_walk_f3.png", "../../panic-petal/assets/enemies/violetta_marionetta_walk_f4.png", "../../panic-petal/assets/enemies/violetta_marionetta_walk_f5.png"]}]}, {"name": "heroes", "entities": [{"name": "balthazar_attack", "frames": ["../../panic-petal/assets/heroes/balthazar_attack_f1.png", "../../panic-petal/assets/heroes/balthazar_attack_f2.png", "../../panic-petal/assets/heroes/balthazar_attack_f3.png", "../../panic-petal/assets/heroes/balthazar_attack_f4.png", "../../panic-petal/assets/heroes/balthazar_attack_f5.png"]}, {"name": "balthazar_jump", "frames": ["../../panic-petal/assets/heroes/balthazar_jump_f1.png", "../../panic-petal/assets/heroes/balthazar_jump_f2.png", "../../panic-petal/assets/heroes/balthazar_jump_f3.png", "../../panic-petal/assets/heroes/balthazar_jump_f4.png", "../../panic-petal/assets/heroes/balthazar_jump_f5.png"]}, {"name": "balthazar_run", "frames": ["../../panic-petal/assets/heroes/balthazar_run_f1.png", "../../panic-petal/assets/heroes/balthazar_run_f2.png", "../../panic-petal/assets/heroes/balthazar_run_f3.png", "../../panic-petal/assets/heroes/balthazar_run_f4.png", "../../panic-petal/assets/heroes/balthazar_run_f5.png"]}, {"name": "scarlet_vale_attack", "frames": ["../../panic-petal/assets/heroes/scarlet_vale_attack_f1.png", "../../panic-petal/assets/heroes/scarlet_vale_attack_f2.png", "../../panic-petal/assets/heroes/scarlet_vale_attack_f3.png", "../../panic-petal/assets/heroes/scarlet_vale_attack_f4.png", "../../panic-petal/assets/heroes/scarlet_vale_attack_f5.png"]}, {"name": "scarlet_vale_jump", "frames": ["../../panic-petal/assets/heroes/scarlet_vale_jump_f1.png", "../../panic-petal/assets/heroes/scarlet_vale_jump_f2.png", "../../panic-petal/assets/heroes/scarlet_vale_jump_f3.png", "../../panic-petal/assets/heroes/scarlet_vale_jump_f4.png", "../../panic-petal/assets/heroes/scarlet_vale_jump_f5.png"]}, {"name": "scarlet_vale_run", "frames": ["../../panic-petal/assets/heroes/scarlet_vale_run_f1.png", "../../panic-petal/assets/heroes/scarlet_vale_run_f2.png", "../../panic-petal/assets/heroes/scarlet_vale_run_f3.png", "../../panic-petal/assets/heroes/scarlet_vale_run_f4.png", "../../panic-petal/assets/heroes/scarlet_vale_run_f5.png"]}]}]};   // {labels:[{name, entities:[{name, frames:["path",...]}]}], bg:"#hex"}
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const nameEl = document.getElementById('name');
+const metaEl = document.getElementById('meta');
+const fpsEl = document.getElementById('fps');
+const bgInput = document.getElementById('bg');
+const bgVal = document.getElementById('bgval');
+const tree = document.getElementById('tree');
+
+let current = null;      // {name, frames:[Image]}
+let frameIdx = 0;
+let fps = 8;
+let playing = true;
+let lastT = 0;
+let acc = 0;
+
+// Build the sidebar tree.
+MANIFEST.labels.forEach((lbl, li) => {
+  const hd = document.createElement('div'); hd.className='label'; hd.textContent = lbl.name.toUpperCase();
+  tree.appendChild(hd);
+  lbl.entities.forEach((en, ei) => {
+    const row = document.createElement('div'); row.className='ent';
+    row.innerHTML = `<span>${en.name}</span><span class="cnt">${en.frames.length}f</span>`;
+    row.addEventListener('click', () => selectEntity(li, ei));
+    en._el = row;
+    tree.appendChild(row);
+  });
+});
+
+function loadFrames(paths){
+  return Promise.all(paths.map(p => new Promise(res => {
+    const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = p;
+  })));
+}
+
+async function selectEntity(li, ei){
+  const en = MANIFEST.labels[li].entities[ei];
+  document.querySelectorAll('.ent').forEach(e=>e.classList.remove('on'));
+  en._el.classList.add('on');
+  const imgs = await loadFrames(en.frames);
+  current = { name: en.name, frames: imgs.filter(Boolean) };
+  frameIdx = 0; acc = 0; playing = true;
+  nameEl.textContent = current.name;
+  metaEl.textContent = current.frames.length + ' frames';
+  if (current.frames.length && current.frames[0]) {
+    cv.width = current.frames[0].naturalWidth || 256;
+    cv.height = current.frames[0].naturalHeight || 256;
+  }
+  draw();
+}
+
+function draw(){
+  const bg = bgInput.value;
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  if (current && current.frames.length){
+    const im = current.frames[frameIdx % current.frames.length];
+    if (im) ctx.drawImage(im, 0, 0, cv.width, cv.height);
+  }
+}
+
+function tick(t){
+  requestAnimationFrame(tick);
+  if (!current || !playing) { lastT = t; return; }
+  const dt = (t - lastT) / 1000; lastT = t;
+  acc += dt;
+  const step = 1 / Math.max(1, fps);
+  if (acc >= step){
+    acc = acc % step;
+    frameIdx = (frameIdx + 1) % current.frames.length;
+    draw();
+  }
+}
+requestAnimationFrame(tick);
+
+function setFps(v){
+  fps = Math.max(1, Math.min(60, v));
+  fpsEl.textContent = fps + ' fps';
+}
+setFps(fps);
+document.getElementById('faster').addEventListener('click', ()=>setFps(fps+1));
+document.getElementById('slower').addEventListener('click', ()=>setFps(fps-1));
+bgInput.addEventListener('input', ()=>{ bgVal.textContent = bgInput.value; draw(); });
+window.addEventListener('keydown', (e)=>{
+  if (e.code==='ArrowRight'){ e.preventDefault(); setFps(fps+1); }
+  else if (e.code==='ArrowLeft'){ e.preventDefault(); setFps(fps-1); }
+  else if (e.code==='Space'){ e.preventDefault(); playing=!playing; }
+});
+// Auto-select first entity.
+if (MANIFEST.labels.length){ selectEntity(0, 0); }
+</script>
+</body>
+</html>
