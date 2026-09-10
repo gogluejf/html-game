@@ -284,7 +284,7 @@ class SfxEngine {
  * AudioContext + master gain (so the M-key mute silences music too).
  *
  * PROGRESSION: each track stores a bank of lead phrases and pad phrases (each
- * phrase = one 32-step / 2-bar block). Every `phraseBars` bars the sequencer
+ * phrase = one 32-step / 2-bar block). Using each track's per-phrase length table (in bars) the sequencer
  * advances to the next phrase in the bank (wrapping), so the melody keeps
  * developing instead of repeating the same two bars forever. Bass and drums
  * stay on their steady groove.
@@ -398,9 +398,22 @@ class MusicSequencer {
     }
   }
 
+  /**
+   * Map the current bar-block count to a phrase index using each track's
+   * per-phrase length table (in bars). e.g. lengths [2,2,1,1] means:
+   *   phrase0 for 2 blocks, phrase1 for 2 blocks, phrase2 for 1, phrase3 for 1,
+   * then the whole cycle repeats. This gives a build-up feel (long phrases
+   * first, quick hits last) instead of a flat round-robin.
+   */
   _phraseIndex(trk) {
-    const every = trk.phraseBars || 4;
-    return Math.floor(this.barCount / every) % trk.leads.length;
+    const lens = trk.phraseLens || trk.leads.map(() => 1);
+    const total = lens.reduce((a, b) => a + b, 0);
+    let pos = this.barCount % total;
+    for (let i = 0; i < lens.length; i++) {
+      if (pos < lens[i]) return i;
+      pos -= lens[i];
+    }
+    return 0;
   }
 
   _playStep(trk, step, t) {
@@ -533,7 +546,7 @@ class MusicSequencer {
   }
 
   /* -- track definitions --------------------------------------------------- */
-  /* leads/pads are banks of 32-step phrases; phraseBars = change every N blocks. */
+  /* leads/pads are banks of 32-step phrases; phraseLens = bars per phrase. */
 
   _punk() {
     const E1=_NOTE.E1,E2=_NOTE.E2;
@@ -560,7 +573,7 @@ class MusicSequencer {
       {0:[_NOTE.E2,_NOTE.B2,_NOTE.E3],16:[_NOTE.E2,_NOTE.B2,_NOTE.E3]},
     ];
     return {
-      name:"PUNK", bpm:182, steps:32, drums, bass, leads, pads, phraseBars:2,
+      name:"PUNK", bpm:182, steps:32, drums, bass, leads, pads, phraseLens:[2,2,1,1],
       bassType:"sawtooth", bassCut:1100, bassDur:0.16,
       padType:"sawtooth", padCut:1800, padDur:0.5,
       leadType:"square", leadCut:4200, leadDur:0.18, vib:10,
@@ -593,7 +606,7 @@ class MusicSequencer {
       {0:[_NOTE.E2,_NOTE.B2],8:[_NOTE.E2,_NOTE.B2],16:[_NOTE.E2,_NOTE.B2],24:[_NOTE.E2,_NOTE.B2]},
     ];
     return {
-      name:"METAL", bpm:158, steps:32, drums, bass, leads, pads, phraseBars:2,
+      name:"METAL", bpm:158, steps:32, drums, bass, leads, pads, phraseLens:[2,2,1,1],
       bassType:"sawtooth", bassCut:950, bassDur:0.17,
       padType:"sawtooth", padCut:1500, padDur:0.4,
       leadType:"sawtooth", leadCut:3600, leadDur:0.2, vib:14,
@@ -626,7 +639,7 @@ class MusicSequencer {
       {0:[_NOTE.A2,_NOTE.C4,_NOTE.E4],4:[_NOTE.C3,_NOTE.E4,_NOTE.G4],8:[_NOTE.E3,_NOTE.G4,_NOTE.B4],12:[_NOTE.G2,_NOTE.B3,_NOTE.D4],16:[_NOTE.A2,_NOTE.C4,_NOTE.E4],20:[_NOTE.C3,_NOTE.E4,_NOTE.G4],24:[_NOTE.E3,_NOTE.G4,_NOTE.B4],28:[_NOTE.G2,_NOTE.B3,_NOTE.D4]},
     ];
     return {
-      name:"SYNTHWAVE", bpm:118, steps:32, drums, bass, leads, pads, phraseBars:2,
+      name:"SYNTHWAVE", bpm:118, steps:32, drums, bass, leads, pads, phraseLens:[2,2,1,1],
       bassType:"sawtooth", bassCut:800, bassDur:0.22,
       padType:"sawtooth", padCut:2200, padDur:0.5,
       leadType:"square", leadCut:3200, leadDur:0.16, vib:6,
@@ -666,7 +679,7 @@ class MusicSequencer {
       {0:[_NOTE.A2,_NOTE.C4,_NOTE.E4],4:[_NOTE.G2,_NOTE.B3,_NOTE.D4],8:[_NOTE.D2,_NOTE.F4,_NOTE.A3],12:[_NOTE.E2,_NOTE.G4,_NOTE.B3],16:[_NOTE.A2,_NOTE.C4,_NOTE.E4],20:[_NOTE.G2,_NOTE.B3,_NOTE.D4],24:[_NOTE.D2,_NOTE.F4,_NOTE.A3],28:[_NOTE.E2,_NOTE.G4,_NOTE.B3]},
     ];
     return {
-      name:"ACID JAZZ", bpm:104, steps:32, drums, bass, leads, pads, phraseBars:2,
+      name:"ACID JAZZ", bpm:104, steps:32, drums, bass, leads, pads, phraseLens:[2,2,1,1],
       bassType:"triangle", bassCut:700, bassDur:0.24,
       padType:"triangle", padCut:2600, padDur:0.7,
       leadType:"triangle", leadCut:3800, leadDur:0.3, vib:10,
