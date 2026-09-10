@@ -1010,6 +1010,11 @@ const Input = {
         if (e.code === "KeyM" && sfx) {
           sfx.setMute(!sfx.muted);
         }
+        // F: play a quick SFX preview (like P for music). Works on any state so
+        // you can audition sounds without starting a game.
+        if (e.code === "KeyF" && sfx) {
+          Game._previewSfx();
+        }
       }
 
       Input.keys.add(e.code);
@@ -2559,6 +2564,27 @@ const Game = {
     if (sfx) sfx.explode(2);
   },
 
+  /**
+   * F-key SFX preview: play every sound effect in a short sequence so you can
+   * audition them without starting a game. Mirrors the P jukebox on the title.
+   */
+  _previewSfx() {
+    if (!sfx) return;
+    const seq = [
+      [0.00, () => sfx.shoot()],
+      [0.15, () => sfx.pop()],
+      [0.35, () => sfx.enemyDive()],
+      [0.60, () => sfx.powerUp()],
+      [0.90, () => sfx.boom(0.4)],
+      [1.10, () => sfx.boom(0.7)],
+      [1.30, () => sfx.boom(1.0)],
+      [1.60, () => sfx.waveIntro()],
+      [2.20, () => sfx.gameOver()],
+    ];
+    seq.forEach(([t, fn]) => setTimeout(fn, t * 1000));
+    console.log("[sfx] F -> preview sequence");
+  },
+
   /** Tick active power-up timers (spread/slow durations) once per frame. */
   _tickPowerTimers(dt) {
     if (this._tripleTimer != null) {
@@ -2849,6 +2875,12 @@ const Game = {
       c.fillText("\u25cf NOW PLAYING: " + this.jukeboxLabel, W / 2, H * 0.78 - 34);
       c.shadowBlur = 0;
     }
+
+    // Key hints for the audio preview shortcuts.
+    c.font = "13px 'Courier New', monospace";
+    c.fillStyle = "#8fb8d8";
+    c.textAlign = "center";
+    c.fillText("[P] MUSIC   [F] SOUND FX   [M] MUTE", W / 2, H * 0.90);
 
     // Controls hint at the bottom, on a translucent rounded panel for legibility.
     c.save();
