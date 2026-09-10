@@ -617,32 +617,43 @@ class MusicSequencer {
   _synthwave() {
     const A1=_NOTE.A1,A2=_NOTE.A2;
     const E4=_NOTE.E4,G4=_NOTE.G4,F4=_NOTE.F4,A4=_NOTE.A4,C5=_NOTE.C5,D5=_NOTE.D5,E5=_NOTE.E5,R4=R;
-    const B4=_NOTE.B4,G5=_NOTE.G5;
+    const B4=_NOTE.B4,G5=_NOTE.G5,A3=_NOTE.A3,C4=_NOTE.C4,E3=_NOTE.E3;
+    // Four-on-the-floor pulse, open hats on offbeats.
     const drums=[];
     for(let i=0;i<32;i++){drums.push({k:(i%4===0),s:(i%8===4),h:(i%2===1)});}
+    // Pulsing synth bass: 8th-note root drive (A minor).
     const bass=[];
     for(let i=0;i<32;i++){bass.push(i%2===0?A1:A2);}
+    // EMOTIONAL ARC across the 0-0-1-1-2-3 cycle:
+    //   phrase0 = big SLOW hook (quarter notes, wide intervals) -- the "good" one
+    //   phrase1 = building rising run into the chorus
+    //   phrase2 = HIGH climax (peak register, driving 8ths)
+    //   phrase3 = dark LOW drop + resolve back to the hook
     const leads=[
-      [A4,E4,C5,E4, A4,E4,C5,E4, F4,A4,C5,A4, F4,A4,C5,A4,
-       G4,C5,E5,C5, G4,C5,E5,C5, A4,E4,C5,E4, A4,E4,C5,E4],
-      [C5,E4,A4,E4, C5,E4,A4,E4, B4,D5,E5,D5, B4,D5,E5,D5,
-       A4,C5,E5,C5, A4,C5,E5,C5, G4,B4,D5,B4, G4,B4,D5,B4],
-      [E5,C5,A4,C5, E5,C5,A4,C5, D5,B4,G4,B4, D5,B4,G4,B4,
-       C5,A4,F4,A4, C5,A4,F4,A4, E5,C5,A4,C5, D5,B4,G4,B4],
-      [A4,C5,E5,G5, E5,C5,A4,C5, A4,C5,E5,G5, E5,C5,A4,C5,
-       B4,D5,G5,E5, D5,B4,G4,B4, A4,C5,E5,C5, A4,E4,C5,E4],
+      // 0: the hook -- spacious, singable, memorable
+      [A4,R4,C5,R4, E5,R4,C5,R4, A4,R4,B4,R4, C5,R4,E5,R4,
+       D5,R4,C5,R4, B4,R4,A4,R4, G4,R4,A4,R4, A4,R4,R4,R4],
+      // 1: build -- rising chromatic-ish run, climbing each bar
+      [A4,B4,C5,D5, E5,D5,C5,D5, E5,_NOTE.F5,G5,E5, _NOTE.F5,G5,_NOTE.A5,G5,
+       G5,_NOTE.A5,G5,E5, D5,E5,_NOTE.F5,G5, E5,D5,C5,D5, E5,R4,R4,R4],
+      // 2: climax -- peak register, relentless 8ths
+      [_NOTE.A5,G5,E5,G5, _NOTE.A5,G5,E5,G5, _NOTE.A5,_NOTE.A5,_NOTE.A5,G5, _NOTE.A5,G5,E5,G5,
+       _NOTE.A5,_NOTE.A5,G5,E5, _NOTE.A5,G5,E5,D5, _NOTE.A5,G5,E5,G5, _NOTE.A5,G5,E5,R4],
+      // 3: dark drop -- low register stabs then resolve up into the hook
+      [A3,R4,C4,R4, E4,R4,C4,R4, A3,R4,_NOTE.B3,R4, C4,R4,E4,R4,
+       _NOTE.D4,R4,C4,R4, _NOTE.B3,R4,A3,R4, G4,R4,A4,R4, A4,R4,C5,R4],
     ];
     const pads=[
       {0:[_NOTE.A2,_NOTE.C4,_NOTE.E4],4:[_NOTE.A2,_NOTE.C4,_NOTE.E4],8:[_NOTE.F2,_NOTE.A3,_NOTE.C4],12:[_NOTE.F2,_NOTE.A3,_NOTE.C4],16:[_NOTE.G2,_NOTE.C4,_NOTE.E4],20:[_NOTE.G2,_NOTE.C4,_NOTE.E4],24:[_NOTE.A2,_NOTE.C4,_NOTE.E4],28:[_NOTE.A2,_NOTE.C4,_NOTE.E4]},
       {0:[_NOTE.C3,_NOTE.E4,_NOTE.G4],4:[_NOTE.C3,_NOTE.E4,_NOTE.G4],8:[_NOTE.B1,_NOTE.D4,_NOTE.F4],12:[_NOTE.B1,_NOTE.D4,_NOTE.F4],16:[_NOTE.A2,_NOTE.C4,_NOTE.E4],20:[_NOTE.A2,_NOTE.C4,_NOTE.E4],24:[_NOTE.G2,_NOTE.B3,_NOTE.D4],28:[_NOTE.G2,_NOTE.B3,_NOTE.D4]},
       {0:[_NOTE.E3,_NOTE.G4,_NOTE.B4],4:[_NOTE.E3,_NOTE.G4,_NOTE.B4],8:[_NOTE.D3,_NOTE.F4,_NOTE.A3],12:[_NOTE.D3,_NOTE.F4,_NOTE.A3],16:[_NOTE.C3,_NOTE.E4,_NOTE.G4],20:[_NOTE.C3,_NOTE.E4,_NOTE.G4],24:[_NOTE.E3,_NOTE.G4,_NOTE.B4],28:[_NOTE.D3,_NOTE.F4,_NOTE.A3]},
-      {0:[_NOTE.A2,_NOTE.C4,_NOTE.E4],4:[_NOTE.C3,_NOTE.E4,_NOTE.G4],8:[_NOTE.E3,_NOTE.G4,_NOTE.B4],12:[_NOTE.G2,_NOTE.B3,_NOTE.D4],16:[_NOTE.A2,_NOTE.C4,_NOTE.E4],20:[_NOTE.C3,_NOTE.E4,_NOTE.G4],24:[_NOTE.E3,_NOTE.G4,_NOTE.B4],28:[_NOTE.G2,_NOTE.B3,_NOTE.D4]},
+      {0:[_NOTE.A2,_NOTE.C4,_NOTE.E4],4:[_NOTE.A2,_NOTE.C4,_NOTE.E4],8:[_NOTE.A2,_NOTE.C4,_NOTE.E4],12:[_NOTE.A2,_NOTE.C4,_NOTE.E4],16:[_NOTE.C3,_NOTE.E4,_NOTE.G4],20:[_NOTE.C3,_NOTE.E4,_NOTE.G4],24:[_NOTE.A2,_NOTE.C4,_NOTE.E4],28:[_NOTE.A2,_NOTE.C4,_NOTE.E4]},
     ];
     return {
       name:"SYNTHWAVE", bpm:118, steps:32, drums, bass, leads, pads, phraseLens:[2,2,1,1],
       bassType:"sawtooth", bassCut:800, bassDur:0.22,
       padType:"sawtooth", padCut:2200, padDur:0.5,
-      leadType:"square", leadCut:3200, leadDur:0.16, vib:6,
+      leadType:"square", leadCut:3400, leadDur:0.22, vib:6,
       kickTop:120, kickBot:40,
     };
   }
