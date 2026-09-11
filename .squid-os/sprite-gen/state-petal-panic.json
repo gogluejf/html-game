@@ -13,7 +13,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "scarlet_vale",
+              "name": "scarlet_vale_run",
               "anim": "run",
               "frames": [
                 "scarlet_vale_run_f1.png",
@@ -25,7 +25,7 @@
             },
             {
               "row": 2,
-              "name": "scarlet_vale",
+              "name": "scarlet_vale_jump",
               "anim": "jump",
               "frames": [
                 "scarlet_vale_jump_f1.png",
@@ -37,7 +37,7 @@
             },
             {
               "row": 3,
-              "name": "scarlet_vale",
+              "name": "scarlet_vale_attack",
               "anim": "attack",
               "frames": [
                 "scarlet_vale_attack_f1.png",
@@ -103,7 +103,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "balthazar",
+              "name": "balthazar_run",
               "anim": "run",
               "frames": [
                 "balthazar_run_f1.png",
@@ -115,7 +115,7 @@
             },
             {
               "row": 2,
-              "name": "balthazar",
+              "name": "balthazar_jump",
               "anim": "jump",
               "frames": [
                 "balthazar_jump_f1.png",
@@ -127,7 +127,7 @@
             },
             {
               "row": 3,
-              "name": "balthazar",
+              "name": "balthazar_attack",
               "anim": "attack",
               "frames": [
                 "balthazar_attack_f1.png",
@@ -349,7 +349,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "jester",
+              "name": "jester_run",
               "anim": "run",
               "frames": [
                 "jester_run_f1.png",
@@ -361,7 +361,7 @@
             },
             {
               "row": 2,
-              "name": "jester",
+              "name": "jester_jump",
               "anim": "jump",
               "frames": [
                 "jester_jump_f1.png",
@@ -417,7 +417,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "jester",
+              "name": "jester_idle",
               "anim": "idle",
               "frames": [
                 "jester_idle_f1.png",
@@ -429,7 +429,7 @@
             },
             {
               "row": 2,
-              "name": "jester",
+              "name": "jester_whip",
               "anim": "whip",
               "frames": [
                 "jester_whip_f1.png",
@@ -441,7 +441,7 @@
             },
             {
               "row": 3,
-              "name": "jester",
+              "name": "jester_death",
               "anim": "death",
               "frames": [
                 "jester_death_f1.png",
@@ -508,7 +508,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "jackolantern",
+              "name": "jackolantern_roll",
               "anim": "roll",
               "frames": [
                 "jackolantern_roll_f1.png",
@@ -520,7 +520,7 @@
             },
             {
               "row": 2,
-              "name": "jackolantern",
+              "name": "jackolantern_launch",
               "anim": "launch",
               "frames": [
                 "jackolantern_launch_f1.png",
@@ -532,7 +532,7 @@
             },
             {
               "row": 3,
-              "name": "jackolantern",
+              "name": "jackolantern_explode",
               "anim": "explode",
               "frames": [
                 "jackolantern_explode_f1.png",
@@ -599,7 +599,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "vine_hound",
+              "name": "vine_hound_run",
               "anim": "run",
               "frames": [
                 "vine_hound_run_f1.png",
@@ -611,7 +611,7 @@
             },
             {
               "row": 2,
-              "name": "vine_hound",
+              "name": "vine_hound_attack",
               "anim": "attack",
               "frames": [
                 "vine_hound_attack_f1.png",
@@ -623,7 +623,7 @@
             },
             {
               "row": 3,
-              "name": "vine_hound",
+              "name": "vine_hound_death",
               "anim": "death",
               "frames": [
                 "vine_hound_death_f1.png",
@@ -690,7 +690,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "boris_loon",
+              "name": "boris_loon_fly",
               "anim": "fly",
               "frames": [
                 "boris_loon_fly_f1.png",
@@ -702,7 +702,7 @@
             },
             {
               "row": 2,
-              "name": "boris_loon",
+              "name": "boris_loon_attack",
               "anim": "attack",
               "frames": [
                 "boris_loon_attack_f1.png",
@@ -714,7 +714,7 @@
             },
             {
               "row": 3,
-              "name": "boris_loon",
+              "name": "boris_loon_death",
               "anim": "death",
               "frames": [
                 "boris_loon_death_f1.png",
@@ -781,7 +781,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "boris_loon_baby",
+              "name": "boris_loon_baby_fly_1",
               "anim": "fly_1",
               "frames": [
                 "boris_loon_baby_fly_1_f1.png",
@@ -793,7 +793,7 @@
             },
             {
               "row": 2,
-              "name": "boris_loon_baby",
+              "name": "boris_loon_baby_fly_2",
               "anim": "fly_2",
               "frames": [
                 "boris_loon_baby_fly_2_f1.png",
@@ -805,7 +805,7 @@
             },
             {
               "row": 3,
-              "name": "boris_loon_baby",
+              "name": "boris_loon_baby_fly_3",
               "anim": "fly_3",
               "frames": [
                 "boris_loon_baby_fly_3_f1.png",
@@ -872,7 +872,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "violetta_marionetta",
+              "name": "violetta_marionetta_walk",
               "anim": "walk",
               "frames": [
                 "violetta_marionetta_walk_f1.png",
@@ -884,7 +884,7 @@
             },
             {
               "row": 2,
-              "name": "violetta_marionetta",
+              "name": "violetta_marionetta_attack",
               "anim": "attack",
               "frames": [
                 "violetta_marionetta_attack_f1.png",
@@ -896,7 +896,7 @@
             },
             {
               "row": 3,
-              "name": "violetta_marionetta",
+              "name": "violetta_marionetta_death",
               "anim": "death",
               "frames": [
                 "violetta_marionetta_death_f1.png",
@@ -968,7 +968,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "overgrown_elephant",
+              "name": "overgrown_elephant_charge",
               "anim": "charge",
               "frames": [
                 "overgrown_elephant_charge_f1.png",
@@ -980,7 +980,7 @@
             },
             {
               "row": 2,
-              "name": "overgrown_elephant",
+              "name": "overgrown_elephant_stomp",
               "anim": "stomp",
               "frames": [
                 "overgrown_elephant_stomp_f1.png",
@@ -992,7 +992,7 @@
             },
             {
               "row": 3,
-              "name": "overgrown_elephant",
+              "name": "overgrown_elephant_trunk_blast",
               "anim": "trunk_blast",
               "frames": [
                 "overgrown_elephant_trunk_blast_f1.png",
@@ -1004,7 +1004,7 @@
             },
             {
               "row": 4,
-              "name": "overgrown_elephant",
+              "name": "overgrown_elephant_death",
               "anim": "death",
               "frames": [
                 "overgrown_elephant_death_f1.png",
@@ -1460,7 +1460,7 @@
             {
               "row": 2,
               "name": "coin_silver",
-              "anim": "flip",
+              "anim": "flip_2",
               "frames": [
                 "coin_silver_f1.png",
                 "coin_silver_f2.png",
@@ -1471,7 +1471,7 @@
             {
               "row": 3,
               "name": "coin_gold",
-              "anim": "flip",
+              "anim": "flip_3",
               "frames": [
                 "coin_gold_f1.png",
                 "coin_gold_f2.png",
@@ -1651,114 +1651,6 @@
             ],
             "frame_size": "332x525"
           }
-        },
-        {
-          "file": "panic-petal/assets/projectiles_sheet.png",
-          "rows": 3,
-          "cols": 8,
-          "description": "Projectiles: thorn missile w/ petal trail (row1), bomb fuse + explosion burst (row2), spinning petal saw (row3); 3 rows x 8 frames",
-          "entities": [
-            {
-              "row": 1,
-              "name": "thorn_missile",
-              "anim": "thorn_missile",
-              "frames": [
-                "thorn_missile_f1.png",
-                "thorn_missile_f2.png",
-                "thorn_missile_f3.png",
-                "thorn_missile_f4.png",
-                "thorn_missile_f5.png",
-                "thorn_missile_f6.png",
-                "thorn_missile_f7.png",
-                "thorn_missile_f8.png"
-              ]
-            },
-            {
-              "row": 2,
-              "name": "bomb",
-              "anim": "bomb",
-              "frames": [
-                "bomb_f1.png",
-                "bomb_f2.png",
-                "bomb_f3.png",
-                "bomb_f4.png",
-                "bomb_f5.png",
-                "bomb_f6.png",
-                "bomb_f7.png",
-                "bomb_f8.png"
-              ]
-            },
-            {
-              "row": 3,
-              "name": "petal_saw",
-              "anim": "petal_saw",
-              "frames": [
-                "petal_saw_f1.png",
-                "petal_saw_f2.png",
-                "petal_saw_f3.png",
-                "petal_saw_f4.png",
-                "petal_saw_f5.png",
-                "petal_saw_f6.png",
-                "petal_saw_f7.png",
-                "petal_saw_f8.png"
-              ]
-            }
-          ],
-          "crop": {
-            "bg_color": [
-              249,
-              173,
-              185
-            ],
-            "bg_tol": 30,
-            "row_y": [
-              [
-                0,
-                190
-              ],
-              [
-                190,
-                460
-              ],
-              [
-                460,
-                724
-              ]
-            ],
-            "col_x": [
-              [
-                0,
-                271,
-                543,
-                814,
-                1086,
-                1357,
-                1629,
-                1900
-              ],
-              [
-                0,
-                271,
-                543,
-                814,
-                1086,
-                1357,
-                1629,
-                1900
-              ],
-              [
-                0,
-                271,
-                543,
-                814,
-                1086,
-                1357,
-                1629,
-                1900
-              ]
-            ],
-            "frame_size": "238x252"
-          }
         }
       ]
     },
@@ -1774,7 +1666,7 @@
             {
               "row": 1,
               "name": "scarlet_1up",
-              "anim": "scarlet_1up",
+              "anim": "idle",
               "frames": [
                 "scarlet_1up_f1.png",
                 "scarlet_1up_f2.png",
@@ -1785,7 +1677,7 @@
             {
               "row": 2,
               "name": "balthazar_1up",
-              "anim": "balthazar_1up",
+              "anim": "idle",
               "frames": [
                 "balthazar_1up_f1.png",
                 "balthazar_1up_f2.png",
@@ -1796,7 +1688,7 @@
             {
               "row": 3,
               "name": "rapid_fire",
-              "anim": "rapid_fire",
+              "anim": "idle",
               "frames": [
                 "rapid_fire_f1.png",
                 "rapid_fire_f2.png",
@@ -1807,7 +1699,7 @@
             {
               "row": 4,
               "name": "invincibility",
-              "anim": "invincibility",
+              "anim": "idle",
               "frames": [
                 "invincibility_f1.png",
                 "invincibility_f2.png",
@@ -1818,7 +1710,7 @@
             {
               "row": 5,
               "name": "panic_clear",
-              "anim": "panic_clear",
+              "anim": "idle",
               "frames": [
                 "panic_clear_f1.png",
                 "panic_clear_f2.png",
@@ -1900,7 +1792,7 @@
             {
               "row": 1,
               "name": "energy",
-              "anim": "energy",
+              "anim": "idle",
               "frames": [
                 "energy_f1.png",
                 "energy_f2.png",
@@ -1911,7 +1803,7 @@
             {
               "row": 2,
               "name": "bomb",
-              "anim": "bomb",
+              "anim": "idle",
               "frames": [
                 "bomb_f1.png",
                 "bomb_f2.png",
@@ -1922,7 +1814,7 @@
             {
               "row": 3,
               "name": "petal_saw",
-              "anim": "petal_saw",
+              "anim": "idle",
               "frames": [
                 "petal_saw_f1.png",
                 "petal_saw_f2.png",
@@ -1933,7 +1825,7 @@
             {
               "row": 4,
               "name": "thorn_missile",
-              "anim": "thorn_missile",
+              "anim": "idle",
               "frames": [
                 "thorn_missile_f1.png",
                 "thorn_missile_f2.png",
@@ -1944,7 +1836,7 @@
             {
               "row": 5,
               "name": "shield",
-              "anim": "shield",
+              "anim": "idle",
               "frames": [
                 "shield_f1.png",
                 "shield_f2.png",
@@ -2018,7 +1910,120 @@
           }
         }
       ]
+    },
+    "projectiles": {
+      "path": "panic-petal/assets/projectiles",
+      "sheets": [
+        {
+          "file": "panic-petal/assets/projectiles_sheet.png",
+          "rows": 3,
+          "cols": 8,
+          "description": "Projectiles: thorn missile w/ petal trail (row1), bomb fuse + explosion burst (row2), spinning petal saw (row3); 3 rows x 8 frames",
+          "entities": [
+            {
+              "row": 1,
+              "name": "thorn_missile",
+              "anim": "idle",
+              "frames": [
+                "thorn_missile_f1.png",
+                "thorn_missile_f2.png",
+                "thorn_missile_f3.png",
+                "thorn_missile_f4.png",
+                "thorn_missile_f5.png",
+                "thorn_missile_f6.png",
+                "thorn_missile_f7.png",
+                "thorn_missile_f8.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "bomb",
+              "anim": "idle",
+              "frames": [
+                "bomb_f1.png",
+                "bomb_f2.png",
+                "bomb_f3.png",
+                "bomb_f4.png",
+                "bomb_f5.png",
+                "bomb_f6.png",
+                "bomb_f7.png",
+                "bomb_f8.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "petal_saw",
+              "anim": "idle",
+              "frames": [
+                "petal_saw_f1.png",
+                "petal_saw_f2.png",
+                "petal_saw_f3.png",
+                "petal_saw_f4.png",
+                "petal_saw_f5.png",
+                "petal_saw_f6.png",
+                "petal_saw_f7.png",
+                "petal_saw_f8.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              249,
+              173,
+              185
+            ],
+            "bg_tol": 30,
+            "row_y": [
+              [
+                0,
+                190
+              ],
+              [
+                190,
+                460
+              ],
+              [
+                460,
+                724
+              ]
+            ],
+            "col_x": [
+              [
+                0,
+                271,
+                543,
+                814,
+                1086,
+                1357,
+                1629,
+                1900
+              ],
+              [
+                0,
+                271,
+                543,
+                814,
+                1086,
+                1357,
+                1629,
+                1900
+              ],
+              [
+                0,
+                271,
+                543,
+                814,
+                1086,
+                1357,
+                1629,
+                1900
+              ]
+            ],
+            "frame_size": "238x252"
+          }
+        }
+      ]
     }
   },
-  "updated": "2026-09-11T01:10:23"
+  "updated": "2026-09-11T01:15:50"
 }
