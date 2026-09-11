@@ -10,7 +10,7 @@
 import { VIEW_W, VIEW_H } from '../view.js';
 import { Entity } from '../entity.js';
 import { LAYER } from '../consts.js';
-import { CollisionWorld, resolve } from '../collision.js';
+import { CollisionWorld, resolve, aabbOverlap } from '../collision.js';
 import { Camera } from '../camera.js';
 import { Anim, makeTestFrame } from '../anim.js';
 import { Hero } from '../hero.js';
@@ -18,6 +18,8 @@ import { HEROES } from '../heroDefs.js';
 import { projectilePool, aimFromInput, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
 import { S, getState, STATE_NAMES, tryTransition } from '../state.js';
+import { Jester } from '../jester.js';
+import { particles, coins } from '../particles.js';
 
 // --- Tunables for the test rig ---------------------------------------------
 // (Hero movement feel lives in js/hero.js; level geometry below.)
@@ -105,6 +107,11 @@ for (const e of enemies) {
   e.hitFlash = 0;         // white-flash timer when struck (Task 3.2)
 }
 
+// Task 3.3 — real Jester enemy replacing one of the placeholder targets.
+// The jester has full AI (idle/chase/whip), contact damage, and a death
+// pipeline (shrink → fade → sparkle burst → coin drop).
+const jester = new Jester(1100, FLOOR_TOP_ENEMY - 48);
+
 // Task 2.1 — Non-looping anim test. Kept off the live targets (above) so the
 // animation cycle doesn't obscure their destruction; attached to a separate
 // decorative placeholder that never takes damage.
@@ -173,6 +180,8 @@ world.add(hero);
 // thorns can hit them (the anim box has no hp, so it's damage-immune).
 for (const e of enemies) world.add(e);
 world.add(animTestEnemy);
+// Task 3.3 — jester participates in collisions (thorn hits, contact damage).
+world.add(jester);
 
 // Rule-action handlers — the declarative dispatch path. For this task we only
 // need to observe events; damage/pickup logic arrives with later tasks.
@@ -191,9 +200,34 @@ world.on('hit', (a, b) => {
   const dealt = damage(hero, target, proj.damage, 'projectile');
   if (dealt > 0) target.hitFlash = 0.1; // brief white flash on impact
   proj.alive = false;                   // thorn is consumed on impact
-  if (!target.alive) {                  // target destroyed — drop it from play
+  // Task 3.3 — Enemy instances trigger their death pipeline via die().
+  // damage() already set alive=false when hp<=0; we call die() to start the
+  // shrink/fade sequence and restore alive=true so the anim plays.
+  // The entity is removed from the world when the anim completes (in updateJester).
+  if (typeof target.die === 'function' && target.hp <= 0 && target.aiState !== 'dead') {
+    target.die();
+    target.alive = true; // keep alive during death anim
+  } else if (!target.alive) {
+    // Placeholder targets (plain Entity, no death pipeline): remove immediately.
     world.remove(target);
   }
+});
+
+// Task 3.3 — ENEMY × HERO contact damage (jester body touching hero drains energy).
+// The COLLISION_RULES table has {a:HERO, b:ENEMY, action:'contact'}; this fires
+// when the hero overlaps an enemy's body box. We drain the hero's energy via
+// central damage() (enemy as source, hero as target). A per-enemy cooldown
+// prevents multi-hit drain every frame while overlapping.
+const CONTACT_COOLDOWN = 0.5; // seconds between contact hits from same enemy
+world.on('contact', (a, b) => {
+  const enemyEnt = a.layer === LAYER.ENEMY ? a : (b.layer === LAYER.ENEMY ? b : null);
+  const heroEnt = a.layer === LAYER.HERO ? a : (b.layer === LAYER.HERO ? b : null);
+  if (!enemyEnt || !heroEnt) return;
+  if (!enemyEnt.alive || enemyEnt.aiState === 'dead') return; // dead enemies don't hurt
+  if (enemyEnt._contactCd > 0) return;
+  enemyEnt._contactCd = CONTACT_COOLDOWN;
+  const amt = enemyEnt.stats?.attack ?? 10;
+  damage(enemyEnt, heroEnt, amt, 'contact');
 });
 
 // --- Camera --------------------------------------------------------------------
@@ -211,6 +245,10 @@ export function getAnimTestEnemy() { return animTestEnemy; }
 export function getProjectiles() { return projectilePool.activeItems; }
 export function getPickups() { return pickups; }
 export function getCamera() { return camera; }
+// Task 3.3 — jester + particle/coin pools for render.
+export function getJester() { return jester; }
+export function getParticles() { return particles; }
+export function getCoins() { return coins; }
 
 // --- Per-frame step ------------------------------------------------------------
 export function update(dt) {
@@ -234,6 +272,12 @@ export function update(dt) {
   for (const e of enemies) {
     if (e.hitFlash > 0) e.hitFlash -= dt;
   }
+
+  // 1e. Task 3.3 — Jester AI + physics + whip damage + death pipeline.
+  updateJester(dt);
+
+  // 1f. Task 3.3 — particle + coin pool advancement.
+  updateEffects(dt);
 
   // 2b. advance animations for any entity that has one attached.
   // (Hero.update already ticks its own anim; tick the decorative anim-test box.)
@@ -354,6 +398,92 @@ function applyMeleeDamage(h, _dt) {
         if (!e.alive) world.remove(e); // destroyed — drop from play
       }
     }
+  }
+
+  // Task 3.3 — melee also hits the jester (Enemy instance with takeDamage).
+  if (jester.alive && !h._meleeHitSet.has(jester)) {
+    const jb = jester.worldBox();
+    if (hb.x < jb.x + jb.w && hb.x + hb.w > jb.x &&
+        hb.y < jb.y + jb.h && hb.y + hb.h > jb.y) {
+      const dealt = jester.takeDamage(h.stats.attack, h, 'melee');
+      if (dealt > 0) {
+        h._meleeHitSet.add(jester);
+        if (!jester.alive) {
+          // Death pipeline completed (shouldn't happen instantly, but guard).
+          world.remove(jester);
+        }
+      }
+    }
+  }
+}
+
+// --- Jester update (Task 3.3) -------------------------------------------------
+// Drives the jester's AI state machine, physics integration, whip damage check,
+// solid collision, and death pipeline (sparkle burst + coin drop on full death).
+
+/**
+ * Per-frame jester step. Called from update() after hero movement.
+ * @param {number} dt seconds
+ */
+function updateJester(dt) {
+  // Decay contact cooldown.
+  if (jester._contactCd > 0) jester._contactCd -= dt;
+
+  // AI + gravity + integrate (base Enemy.update handles all of this).
+  jester.update(dt, hero, world);
+
+  // Resolve against solids so the jester doesn't walk through platforms.
+  if (jester.alive && jester.aiState !== 'dead') {
+    resolve(jester, SOLIDS);
+  }
+
+  // Whip damage check: if the whip hitbox overlaps the hero, deal damage.
+  // Only one hit per whip swing (tracked via _whipHitDone flag).
+  const whipHb = jester.whipHitboxWorld;
+  if (whipHb && !jester._whipHitDone) {
+    const hb = hero.worldBox();
+    if (aabbOverlap(whipHb, hb)) {
+      const dealt = damage(jester, hero, jester.stats.attack, 'melee');
+      if (dealt > 0) {
+        jester._whipHitDone = true; // one hit per whip
+        hero.invincibleTimer = Math.max(hero.invincibleTimer, 0.3); // brief i-frames
+      }
+    }
+  }
+  // Reset the whip-hit flag when the whip ends.
+  if (!jester.whipActive) jester._whipHitDone = false;
+
+  // Death pipeline completion: when alive flips to false after the anim,
+  // spawn sparkles + coins and remove from the collision world.
+  if (!jester.alive && !jester._deathHandled) {
+    jester._deathHandled = true;
+    const cx = jester.x + jester.w / 2;
+    const cy = jester.y + jester.h / 2;
+    // Sparkle burst (6-8 particles, sprite-sized).
+    particles.spawnBurst(cx, cy, 7);
+    // Coin drop based on coinDrop config.
+    coins.dropCoins(jester.coinDrop, cx, cy);
+    // Remove from collision world.
+    world.remove(jester);
+  }
+}
+
+// Advance particle + coin pools (called each frame regardless of jester state).
+function updateEffects(dt) {
+  particles.updateAll(dt);
+  coins.updateAll(dt, FLOOR_TOP, LEVEL_LENGTH);
+  // Sync coins into the collision world so HERO×COIN collect works.
+  syncCoinsToWorld();
+}
+
+/** Keep the collision world's coin set in sync with the pool. */
+function syncCoinsToWorld() {
+  const live = coins.activeItems;
+  for (const e of world.entities) {
+    if (e.layer === LAYER.COIN && !live.includes(e)) world.remove(e);
+  }
+  for (const c of live) {
+    if (!world.entities.has(c)) world.add(c);
   }
 }
 
