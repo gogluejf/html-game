@@ -1601,6 +1601,114 @@
             ],
             "frame_size": "332x525"
           }
+        },
+        {
+          "file": "panic-petal/assets/projectiles_sheet.png",
+          "rows": 3,
+          "cols": 8,
+          "description": "Projectiles: thorn missile w/ petal trail (row1), bomb fuse + explosion burst (row2), spinning petal saw (row3); 3 rows x 8 frames",
+          "entities": [
+            {
+              "row": 1,
+              "name": "thorn_missile",
+              "anim": "thorn_missile",
+              "frames": [
+                "thorn_missile_f1.png",
+                "thorn_missile_f2.png",
+                "thorn_missile_f3.png",
+                "thorn_missile_f4.png",
+                "thorn_missile_f5.png",
+                "thorn_missile_f6.png",
+                "thorn_missile_f7.png",
+                "thorn_missile_f8.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "bomb",
+              "anim": "bomb",
+              "frames": [
+                "bomb_f1.png",
+                "bomb_f2.png",
+                "bomb_f3.png",
+                "bomb_f4.png",
+                "bomb_f5.png",
+                "bomb_f6.png",
+                "bomb_f7.png",
+                "bomb_f8.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "petal_saw",
+              "anim": "petal_saw",
+              "frames": [
+                "petal_saw_f1.png",
+                "petal_saw_f2.png",
+                "petal_saw_f3.png",
+                "petal_saw_f4.png",
+                "petal_saw_f5.png",
+                "petal_saw_f6.png",
+                "petal_saw_f7.png",
+                "petal_saw_f8.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              249,
+              173,
+              185
+            ],
+            "bg_tol": 30,
+            "row_y": [
+              [
+                0,
+                241
+              ],
+              [
+                241,
+                482
+              ],
+              [
+                482,
+                724
+              ]
+            ],
+            "col_x": [
+              [
+                0,
+                271,
+                543,
+                814,
+                1086,
+                1357,
+                1629,
+                1900
+              ],
+              [
+                0,
+                271,
+                543,
+                814,
+                1086,
+                1357,
+                1629,
+                1900
+              ],
+              [
+                0,
+                271,
+                543,
+                814,
+                1086,
+                1357,
+                1629,
+                1900
+              ]
+            ],
+            "frame_size": "238x252"
+          }
         }
       ]
     },
@@ -1862,5 +1970,5 @@
       ]
     }
   },
-  "updated": "2026-09-11T00:14:30"
+  "updated": "2026-09-11T00:30:00"
 }
