@@ -1972,47 +1972,54 @@
           "entities": [
             {
               "row": 1,
-              "name": "thorn_missile",
-              "anim": "idle",
+              "name": "thorn",
+              "anim": "shoot",
               "frames": [
-                "thorn_missile_f1.png",
-                "thorn_missile_f2.png",
-                "thorn_missile_f3.png",
-                "thorn_missile_f4.png",
-                "thorn_missile_f5.png",
-                "thorn_missile_f6.png",
-                "thorn_missile_f7.png",
-                "thorn_missile_f8.png"
+                "thorn_shoot_f1.png",
+                "thorn_shoot_f2.png",
+                "thorn_shoot_f3.png",
+                "thorn_shoot_f4.png",
+                "thorn_shoot_f5.png",
+                "thorn_shoot_f6.png",
+                "thorn_shoot_f7.png",
+                "thorn_shoot_f8.png"
               ]
             },
             {
               "row": 2,
               "name": "bomb",
-              "anim": "idle",
+              "anim": "shoot",
               "frames": [
-                "bomb_f1.png",
-                "bomb_f2.png",
-                "bomb_f3.png",
-                "bomb_f4.png",
-                "bomb_f5.png",
-                "bomb_f6.png",
-                "bomb_f7.png",
-                "bomb_f8.png"
+                "bomb_shoot_f1.png",
+                "bomb_shoot_f2.png",
+                "bomb_shoot_f3.png",
+                "bomb_shoot_f4.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "boom",
+              "anim": "explose",
+              "frames": [
+                "boom_explose_f1.png",
+                "boom_explose_f2.png",
+                "boom_explose_f3.png",
+                "boom_explose_f4.png"
               ]
             },
             {
               "row": 3,
-              "name": "petal_saw",
-              "anim": "idle",
+              "name": "saw",
+              "anim": "shoot",
               "frames": [
-                "petal_saw_f1.png",
-                "petal_saw_f2.png",
-                "petal_saw_f3.png",
-                "petal_saw_f4.png",
-                "petal_saw_f5.png",
-                "petal_saw_f6.png",
-                "petal_saw_f7.png",
-                "petal_saw_f8.png"
+                "saw_shoot_f1.png",
+                "saw_shoot_f2.png",
+                "saw_shoot_f3.png",
+                "saw_shoot_f4.png",
+                "saw_shoot_f5.png",
+                "saw_shoot_f6.png",
+                "saw_shoot_f7.png",
+                "saw_shoot_f8.png"
               ]
             }
           ],
@@ -2075,5 +2082,5 @@
       ]
     }
   },
-  "updated": "2026-09-11T01:24:53"
+  "updated": "2026-09-11T01:41:33"
 }
