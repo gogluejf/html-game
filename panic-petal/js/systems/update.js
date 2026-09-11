@@ -331,6 +331,19 @@ function resetWorldForF3() {
   console.log('[debug] world reset for F3 boot');
 }
 
+/**
+ * Enable the full debug experience: visual overlay (F3) + harness (F1) + log.
+ * Idempotent — safe to call multiple times. Used by both F3 paths (boot + toggle).
+ */
+function enableFullDebug(source) {
+  setDebugEnabled(true);
+  if (!Debug.enabled) Debug.toggle();
+  if (!Debug.showLog) {
+    Debug.showLog = true;
+    Debug.logEvent(`${source}: debug + harness ON`);
+  }
+}
+
 window.addEventListener('keydown', (e) => {
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','KeyG','KeyJ'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
@@ -338,19 +351,21 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault();
     const s = getState();
     if (s !== S.PLAY) {
-      // Dev boot shortcut: jump to PLAY with Scarlet + debug ON. No reload.
+      // Dev boot shortcut: jump to PLAY with Scarlet + full debug. No reload.
       window.__selectedHero = 'scarlet';
-      setDebugEnabled(true);
       hero.x = 80;
       hero.y = FLOOR_TOP - hero.h;
       hero.vx = 0; hero.vy = 0;
       hero.alive = true;
       hero.dying = false;
       hero.deathTimer = 0;
+      enableFullDebug('F3');
       tryTransition(S.PLAY);
       console.log(`[debug] F3: ${STATE_NAMES[s]} → PLAY`);
     } else {
-      setDebugEnabled(!isDebugEnabled());
+      const turningOn = !isDebugEnabled();
+      setDebugEnabled(turningOn);
+      if (turningOn) enableFullDebug('F3');
     }
     return;
   }
@@ -358,7 +373,13 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'F1') {
     e.preventDefault();
     const on = Debug.toggle();
-    if (!on) Debug.reset();
+    if (on) {
+      setDebugEnabled(true);
+      Debug.showLog = true;
+      Debug.logEvent('F1: harness ON');
+    } else {
+      Debug.reset();
+    }
     console.log(`[debug] harness ${on ? 'ON' : 'OFF'}`);
     return;
   }
