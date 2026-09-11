@@ -15,13 +15,18 @@ export const MAX_FALL_SPEED = 800;
 export const AIR_DRAG = 0.995;
 
 // --- Collision layers (bitmask) --------------------------------------------
-// Each entity sets `layer` to one or more of these bits; collision checks
-// AND the two masks to decide whether a pair interacts.
+// Each entity sets `layer` to one or more of these bits; collision rules in
+// js/collision.js AND the masks to decide whether a pair interacts.
 export const LAYER = {
-  NONE:       0b00000000,
-  PLAYER:     0b00000001,
-  ENEMY:      0b00000010,
-  PROJECTILE: 0b00000100,
-  OBJECT:     0b00001000,   // barrels, coins, powerups, terrain
-  HAZARD:     0b00010000,
+  NONE:       0b0000000000,
+  HERO:       0b0000000001,
+  ENEMY:      0b0000000010,
+  BOSS:       0b0000000100,
+  SOLID:      0b0000001000,   // platforms, barrels (destructible solids)
+  PICKUP:     0b0000010000,   // powerups
+  PROJ_ALLY:  0b0000100000,   // hero projectiles
+  PROJ_FOE:   0b0001000000,   // enemy/boss projectiles
+  COIN:       0b0010000000,
+  CHECKPOINT: 0b0100000000,
+  HAZARD:     0b1000000000,   // spikes, shockwaves, explosion AoE
 };
