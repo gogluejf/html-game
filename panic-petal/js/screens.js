@@ -27,6 +27,7 @@ export function loadImages() {
     homeCrowd: 'assets/home/home_crowd_f1.png',
     homeStage: 'assets/home/home_stage_f1.png',
     homePortrait: 'assets/home/home_scarlet_portrait_f1.png',
+    squidLogo: 'assets/home/squid_os_logo_f1.png',
     logo: 'assets/interface/logo_f1.png',
     selectScarlet: 'assets/interface/select_scarlet_vale_f1.png',
     selectBalthazar: 'assets/interface/select_balthazar_f1.png',
@@ -73,6 +74,32 @@ function drawPlaceholder(ctx, x, y, w, h, label) {
 // HOME SCREEN
 // =============================================================================
 
+// --- Home-screen full viewport ---------------------------------------------
+// Uses the full 960×540 logical viewport. No letterbox bars.
+const HOME_W = VIEW_W;                   // 960
+const HOME_H = VIEW_H;                   // 540
+const HOME_X = 0;
+const HOME_Y = 0;
+
+// Wide layers (bigtop/stage/crowd) are 1536×1024 (3:2). Scale to COVER the
+// 960×540 box: scale = max(960/1536, 540/1024) = max(0.625, 0.5273) = 0.625.
+// Display = 960×640 → fills box width exactly, overflows 100px vertically.
+const WIDE_SCALE = Math.max(HOME_W / 1536, HOME_H / 1024); // 0.625
+const DW = 1536 * WIDE_SCALE;            // 960
+const DH = 1024 * WIDE_SCALE;            // 640
+const OVERFLOW_X = DW - HOME_W;          // 0 — no horizontal pan room
+
+/**
+ * One-directional pan that STOPS at the far edge (no bounce/ping-pong).
+ * Eases from `start` toward `end` over `duration` seconds (ease-in-out), then
+ * clamps at `end` forever. Returns a value between start and end.
+ */
+function oneWayPan(t, duration, start, end) {
+  const p = Math.min(1, t / duration);
+  const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; // easeInOutQuad
+  return start + (end - start) * ease;
+}
+
 export const Home = {
   parallaxOffset: 0,
 
@@ -82,88 +109,248 @@ export const Home = {
   },
 
   draw(ctx) {
-    // Background gradient (night sky).
+    const t = this.parallaxOffset;
+
+    // Smooth scaling for the large art assets.
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // --- Background (always black during intro, dark gradient after) ---------
     const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    grad.addColorStop(0, '#0d0d1a');
-    grad.addColorStop(0.6, '#1a1a2e');
-    grad.addColorStop(1, '#2a1a3e');
+    grad.addColorStop(0, '#020208');
+    grad.addColorStop(0.5, '#060312');
+    grad.addColorStop(1, '#0a0518');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
-    // Parallax layers: bigtop (back), crowd (mid), stage (front).
-    // Each scrolls horizontally at a different speed for depth.
-    const t = this.parallaxOffset;
+    // ========================================================================
+    // INTRO SEQUENCE (t < 12s): text cards on black, then layer fades
+    // ========================================================================
+    const INTRO_END = 9.5;
+    if (t < INTRO_END) {
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
 
-    // Back layer: bigtop tent — slowest.
-    if (images.homeBigtop?.complete && images.homeBigtop.naturalWidth > 0) {
-      const speed = 8; // px/s
-      const offset = (t * speed) % (images.homeBigtop.naturalWidth + VIEW_W);
-      ctx.globalAlpha = 0.5;
-      const y1 = 120;
-      const h1 = 320;
-      ctx.drawImage(images.homeBigtop, -offset, y1, VIEW_W + 200, h1);
-      ctx.drawImage(images.homeBigtop, VIEW_W + 200 - offset, y1, VIEW_W + 200, h1);
-      ctx.globalAlpha = 1;
-    } else {
-      drawPlaceholder(ctx, 100, 150, VIEW_W - 200, 280, 'bigtop');
+      // Helper: fade in/out a text card between [start, end]
+      const drawCard = (text, start, end, font, color) => {
+        if (t < start || t > end) return;
+        const fadeIn = Math.min(1, (t - start) / 0.5);
+        const fadeOut = Math.min(1, (end - t) / 0.5);
+        const alpha = Math.min(fadeIn, fadeOut);
+        ctx.globalAlpha = alpha;
+        ctx.font = font;
+        ctx.fillStyle = color;
+        ctx.shadowColor = '#000';
+        ctx.shadowBlur = 4;
+        ctx.fillText(text, VIEW_W / 2, VIEW_H / 2);
+      };
+
+      // Card 1: "JF Rene presents" (1s – 3.5s)
+      drawCard('JF Rene presents', 1, 3.5, 'bold 36px monospace', '#ffffff');
+
+      // Card 2: "AI Qwen 3.8 7B AI Slop production" (4s – 6.5s)
+      drawCard('AI Qwen 3.8 7B AI Slop production', 4, 6.5, 'bold 28px monospace', '#aaa');
+
+      // Card 3: "Built with [squid logo]" (7s – 9.5s) — small, humble
+      if (t >= 7 && t <= 9.5) {
+        const fadeIn = Math.min(1, (t - 7) / 0.5);
+        const fadeOut = Math.min(1, (9.5 - t) / 0.5);
+        const alpha = Math.min(fadeIn, fadeOut);
+        ctx.globalAlpha = alpha;
+        ctx.font = '16px monospace';
+        ctx.fillStyle = '#888';
+        ctx.fillText('built with', VIEW_W / 2, VIEW_H / 2 - 20);
+        const sq = images.squidLogo;
+        if (sq?.complete && sq.naturalWidth > 0) {
+          const lw = 120;
+          const lh = lw * (sq.naturalHeight / sq.naturalWidth);
+          ctx.drawImage(sq, VIEW_W / 2 - lw / 2, VIEW_H / 2 + 5, lw, lh);
+        }
+      }
+
+      ctx.restore();
+      return; // skip all game layers during intro
     }
 
-    // Mid layer: crowd silhouettes — medium speed.
-    if (images.homeCrowd?.complete && images.homeCrowd.naturalWidth > 0) {
-      const speed = 18;
-      const offset = (t * speed) % (images.homeCrowd.naturalWidth + VIEW_W);
-      ctx.globalAlpha = 0.7;
-      const y2 = 280;
-      const h2 = 200;
-      ctx.drawImage(images.homeCrowd, -offset, y2, VIEW_W + 200, h2);
-      ctx.drawImage(images.homeCrowd, VIEW_W + 200 - offset, y2, VIEW_W + 200, h2);
-      ctx.globalAlpha = 1;
-    } else {
-      drawPlaceholder(ctx, 50, 300, VIEW_W - 100, 160, 'crowd');
+    // Game time: everything below uses gt (game time) starting from 0
+    const gt = t - INTRO_END;
+
+    // Clip to the box and translate origin.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(HOME_X, HOME_Y, HOME_W, HOME_H);
+    ctx.clip();
+    ctx.translate(HOME_X, HOME_Y);
+
+    // Fade-in for layers: bigtop 0–1s, stage+crowd 0–0.5s
+    const bigtopAlpha = Math.min(1, gt / 1.0);
+    const frontAlpha = Math.min(1, gt / 0.5);
+
+    // --- Screen shake (logo stamp impact at t=2s) ----------------------------
+    const STAMP_T = 2.2;
+    let shakeX = 0, shakeY = 0;
+    if (gt >= STAMP_T && gt < STAMP_T + 0.35) {
+      const sp = (gt - STAMP_T) / 0.35; // 0→1 over 350ms
+      const intensity = 12 * (1 - sp); // 12px → 0
+      shakeX = (Math.random() - 0.5) * 2 * intensity;
+      shakeY = (Math.random() - 0.5) * 2 * intensity;
+    }
+    ctx.translate(shakeX, shakeY);
+
+    // --- Layer 1: BIGTOP (elephant bg) — slow vertical parallax --------------
+    // Subtle up/down drift (±4px) over 60s. Background moves least.
+    {
+      const src = images.homeBigtop;
+      const osc = Math.max(0, gt - 2) * 2 * Math.PI / 60;
+      const vOsc = -(Math.cos(osc) * 0.7 + Math.sin(osc) * 0.3) * 10; // blended: gentle start, same peak
+      const vDrift = -100 + (-8 * (1 - Math.pow(1 - Math.min(1, gt / 2), 3))) + vOsc;
+      if (src?.complete && src.naturalWidth > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.65 * bigtopAlpha;
+        ctx.drawImage(src, 0, vDrift, DW, DH);
+        ctx.restore();
+      } else {
+        drawPlaceholder(ctx, 20, 130, HOME_W - 40, 280, 'bigtop');
+      }
     }
 
-    // Front layer: stage — fastest.
-    if (images.homeStage?.complete && images.homeStage.naturalWidth > 0) {
-      const speed = 30;
-      const offset = (t * speed) % (images.homeStage.naturalWidth + VIEW_W);
-      ctx.globalAlpha = 0.9;
-      const y3 = 380;
-      const h3 = 160;
-      ctx.drawImage(images.homeStage, -offset, y3, VIEW_W + 200, h3);
-      ctx.drawImage(images.homeStage, VIEW_W + 200 - offset, y3, VIEW_W + 200, h3);
-      ctx.globalAlpha = 1;
-    } else {
-      drawPlaceholder(ctx, 0, 400, VIEW_W, 140, 'stage');
+    // --- Layer 2: STAGE (tiger) — opposite vertical parallax -----------------
+    // ±8px, opposite direction to bigtop. Midground.
+    {
+      const src = images.homeStage;
+      const ready = src?.complete && src.naturalWidth > 0;
+      const osc = Math.max(0, gt - 2) * 2 * Math.PI / 60;
+      const vOsc = (Math.cos(osc) * 0.7 + Math.sin(osc) * 0.3) * 20; // blended: gentle start, same peak
+      const vDrift = -15 * (1 - Math.pow(1 - Math.min(1, gt / 2), 3)) + vOsc;
+      if (ready) {
+        ctx.save();
+        ctx.globalAlpha = frontAlpha;
+        ctx.drawImage(src, -20, vDrift, DW, DH);
+        ctx.restore();
+      } else {
+        drawPlaceholder(ctx, 0, 380, HOME_W, 160, 'stage');
+      }
     }
 
-    // Logo centered (above the parallax scene).
-    if (images.logo?.complete && images.logo.naturalWidth > 0) {
-      const lw = 320;
-      const lh = lw * (images.logo.naturalHeight / images.logo.naturalWidth);
-      ctx.drawImage(images.logo, (VIEW_W - lw) / 2, 50, lw, lh);
-    } else {
-      drawPlaceholder(ctx, (VIEW_W - 320) / 2, 50, 320, 80, 'logo');
+    // --- Layer 3: CROWD — foreground vertical parallax -----------------------
+    // ±15px, same direction as stage (opposite to bigtop). Foreground moves most.
+    {
+      const src = images.homeCrowd;
+      const cx = (HOME_W - DW) / 2;   // centered
+      const maxDrop = 0.05 * DH;      // 5% settle
+      const settleT = Math.min(1, gt / 2);
+      const easeOut = 1 - Math.pow(1 - settleT, 3);
+      const osc = Math.max(0, gt - 2) * 2 * Math.PI / 60;
+      const vOsc = (Math.cos(osc) * 0.7 + Math.sin(osc) * 0.3) * 30; // blended: gentle start, same peak
+      const cy = maxDrop * easeOut - 40 + vOsc;
+      if (src?.complete && src.naturalWidth > 0) {
+        ctx.save();
+        ctx.globalAlpha = frontAlpha;
+        ctx.drawImage(src, cx, cy, DW, DH);
+        ctx.restore();
+      } else {
+        drawPlaceholder(ctx, 30, 380, HOME_W - 60, 140, 'crowd');
+      }
     }
 
-    // "Press Enter" hint (blinking).
-    if (Math.floor(Date.now() / 500) % 2 === 0) {
+    // --- Layer 4: SCARLET — trapeze swing entrance + idle pendulum -----------
+    // Timeline:
+    //   t < 1.5s: invisible (waiting for vertical parallax to settle)
+    //   t = 1.5–2.5s: swings IN from -45° (off-screen left) with damped pendulum
+    //   t > 2.5s: settles into gentle ±9° idle pendulum
+    // The damped swing uses a real pendulum formula: θ(t) = A·e^(-λt)·cos(ωt)
+    // giving natural overshoot and decay like a human on a rope.
+    {
+      const portrait = images.homePortrait;
+      if (portrait?.complete && portrait.naturalHeight > 0) {
+        const ph = HOME_H * 0.68;
+        const pw = ph * (portrait.naturalWidth / portrait.naturalHeight);
+        const ax = HOME_W * 0.18;
+        const ay = -5;
+
+        let angle, alpha = 1;
+
+        if (gt < 0.95) {
+          // Not visible yet
+          angle = -Math.PI / 4;
+          alpha = 0;
+        } else {
+          // Single continuous pendulum. Amplitude decays 45°→9°, frequency
+          // ramps 4.0→0.4. Slow decay so she swings many times before settling.
+          const st = gt - 0.95;
+          const startAmp = 45 * Math.PI / 180;
+          const finalAmp = 9 * Math.PI / 180;
+          const lambda = 0.25; // slow decay — many bounces before settling
+          const amp = finalAmp + (startAmp - finalAmp) * Math.exp(-lambda * st);
+          const fFinal = 0.4;
+          const fStart = 4.0;
+          const phase = fFinal * st + (fStart - fFinal) * (1 - Math.exp(-lambda * st)) / lambda;
+          angle = -amp * Math.cos(phase);
+          alpha = Math.min(1, st / 0.3);
+        }
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(ax, ay);
+        ctx.rotate(angle);
+        ctx.drawImage(portrait, -pw / 2, 0, pw, ph);
+        ctx.restore();
+      } else {
+        drawPlaceholder(ctx, HOME_W * 0.18 - 70, 20, 140, 340, 'scarlet');
+      }
+    }
+
+    // --- Layer 5: LOGO — upper area, clear of the tiger ----------------------
+    // Width ~35% of HOME_W (≈252px). Brutal stamp: appears at t=2s with a
+    // fast zoom-in + screen shake on all layers.
+    {
+      const logo = images.logo;
+      if (logo?.complete && logo.naturalWidth > 0) {
+        const STAMP_T = 2.2;       // when the stamp hits
+        const p = Math.min(1, Math.max(0, (gt - STAMP_T) / 0.1)); // 100ms appear
+        if (p > 0) {
+          const lw = HOME_W * 0.31;
+          const lh = lw * (logo.naturalHeight / logo.naturalWidth);
+          const lx = (HOME_W - lw) / 2;
+          const ly = HOME_H * 0.02;
+          ctx.save();
+          ctx.globalAlpha = Math.min(1, p * 5); // instant pop
+          ctx.drawImage(logo, lx, ly, lw, lh);
+          ctx.restore();
+        }
+      } else {
+        drawPlaceholder(ctx, (HOME_W - 252) / 2, 20, 252, 40, 'logo');
+      }
+    }
+
+    // --- Layer 6: "PRESS ENTER" hint — bottom center of the box, blinking ----
+    if (Math.floor(gt * 2) % 2 === 0) {
       ctx.save();
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 22px monospace';
+      ctx.font = 'bold 20px monospace';
       ctx.textAlign = 'center';
       ctx.shadowColor = '#000';
       ctx.shadowBlur = 4;
-      ctx.fillText('PRESS ENTER TO CONTINUE', VIEW_W / 2, VIEW_H - 40);
+      ctx.fillText('PRESS ENTER', HOME_W / 2, HOME_H - 18);
       ctx.restore();
     }
+
+    ctx.restore(); // end 4:3 clip
   },
 
-  /** Handle key input. Any key advances to SELECT. */
+  /** Handle key input. During intro: skip to next card. After intro: go to SELECT. */
   onKey(code) {
-    if (code === 'Enter' || code === 'Space') {
-      if (tryTransition(S.SELECT)) {
-        console.log('[screens] HOME → SELECT');
-      }
+    if (code !== 'Enter' && code !== 'Space') return;
+    const t = this.parallaxOffset;
+    // Skip through intro cards on press
+    if (t < 1) { this.parallaxOffset = 1; return; }       // black → JF Rene
+    if (t < 4) { this.parallaxOffset = 4; return; }       // JF Rene → Qwen
+    if (t < 7) { this.parallaxOffset = 7; return; }       // Qwen → Squid
+    if (t < 9.5) { this.parallaxOffset = 9.5; return; }   // Squid → scene
+    // After intro: go to SELECT
+    if (tryTransition(S.SELECT)) {
+      console.log('[screens] HOME → SELECT');
     }
   },
 };

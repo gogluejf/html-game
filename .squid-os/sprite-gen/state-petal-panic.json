@@ -1484,6 +1484,22 @@
             ],
             "frame_size": "1024x1536"
           }
+        },
+        {
+          "file": "panic-petal/assets/home_squid_os_logo.png",
+          "rows": 1,
+          "cols": 1,
+          "description": "Squid OS logo for credits splash (single image)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "squid_os_logo",
+              "anim": "idle",
+              "frames": [
+                "squid_os_logo_f1.png"
+              ]
+            }
+          ]
         }
       ]
     },
