@@ -18,7 +18,7 @@ import { HEROES } from '../heroDefs.js';
 import { projectilePool, aimFromInput, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
 import { S, getState, STATE_NAMES, tryTransition, onTransition } from '../state.js';
-import { screenOnKey, screenOnKeyUp } from '../screens.js';
+import { screenOnKey, screenOnKeyUp, screenReset } from '../screens.js';
 import { Jester } from '../jester.js';
 import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
 import { Violetta, VIOLETTA_DEF } from '../violetta.js';
@@ -818,6 +818,9 @@ onTransition((from, to) => {
     dumpStats(hero.runStats, hero);
   }
 });
+
+// Reset per-screen transient state (held keys, focus) on entry.
+onTransition((from, to) => { screenReset(to); });
 
 // Milestone 8 — When SELECT → PLAY, rebuild the hero with the chosen definition.
 // The Select screen sets window.__selectedHero before calling tryTransition(S.PLAY).

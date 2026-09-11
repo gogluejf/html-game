@@ -889,6 +889,11 @@ export function screenOnKeyUp(code) {
   if (getState() === S.SELECT) Select.onKeyUp(code);
 }
 
+/** Reset per-screen transient state on entry (held keys, focus, flashes). */
+export function screenReset(s) {
+  if (s === S.SELECT) Select.reset();
+}
+
 /** Update screen-specific per-frame logic (parallax, etc.). */
 export function screenUpdate(dt) {
   const s = getState();
