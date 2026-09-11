@@ -231,7 +231,7 @@ pre { margin:5px 0 0 0; font-family:Consolas,monospace; color:#ce9178; font-size
                 </div>
                 <span class="pattern-tag">Fixed-timestep loop, Entity base class, layer/mask collision</span> 
                 <p class="ms-count">4 Task(s)</p>
-                <ul class="ms-task-list"><li>1.1 - Game loop + canvas scaffold</li><li>1.2 - Entity base + transform</li><li>1.3 - AABB collision + layer masks</li><li>1.4 - Camera + debug overlay</li></ul>
+                <ul class="ms-task-list"><li>1.1 - Game loop + canvas scaffold (responsive)</li><li>1.2 - Entity base + transform</li><li>1.3 - AABB collision + layer masks</li><li>1.4 - Camera + debug overlay</li></ul>
             </div>
         </a>
         <a href="#hero-movement" class="milestone-card-link">
@@ -349,18 +349,18 @@ E --> F[Render + debug overlay]</pre>
                 <div class="task-header">
                     <div class="task-title-row">
                         <span class="task-num"># 1.1</span>
-                        <span class="task-name">Game loop + canvas scaffold</span>
+                        <span class="task-name">Game loop + canvas scaffold (responsive)</span>
                         <span class="layer-badge" style="background:#569cd6">feature</span>
                     </div>
                 </div>
                 <div class="task-grid">
                     <div class="task-cell">
                         <span class="cell-label">What</span>
-                        <span class="cell-value">Create project scaffold (index.html, main.js, module layout) with a fixed 60Hz accumulator loop and canvas render.</span>
+                        <span class="cell-value">Create project scaffold (index.html, main.js, module layout) with a fixed 60Hz accumulator loop and a fully responsive canvas per design §0 &#x27;Rendering &amp; scaling&#x27;: fixed 960x540 logical resolution, single GAME_SCALE knob, fit-to-viewport 16:9 letterbox on resize, dpr-aware crisp rendering.</span>
                     </div>
                     <div class="task-cell">
                         <span class="cell-label">Why</span>
-                        <span class="cell-value">Deterministic physics independent of refresh rate; clean module structure for all later systems.</span>
+                        <span class="cell-value">Deterministic physics independent of refresh rate; clean module structure for all later systems; PNG sprites must scale cleanly to any window size without touching logic.</span>
                     </div>
                     
                 <div class="task-cell full-width">
@@ -371,16 +371,18 @@ E --> F[Render + debug overlay]</pre>
                 <div class="task-cell full-width snippet-block">
                     <span class="cell-label">Snippet</span>
                     <pre><code class="language-markup">// main.js
-const FIXED_DT = 1/60; let acc=0,last=0;
-function frame(t){ acc+=t-last; last=t; while(acc&gt;=FIXED_DT){ update(FIXED_DT); acc-=FIXED_DT; } render(); requestAnimationFrame(frame); }</code></pre>
+const FIXED_DT = 1/60, VIEW_W=960, VIEW_H=540; let GAME_SCALE=1, acc=0,last=0;
+function fitCanvas(){ /* dpr-aware, 16:9 letterbox, setTransform into 960x540 */ }
+addEventListener(&#x27;resize&#x27;,fitCanvas);
+function frame(t){ acc+=Math.min(0.25,(t-last)/1000); last=t; while(acc&gt;=FIXED_DT){ update(FIXED_DT); acc-=FIXED_DT; } render(); requestAnimationFrame(frame); }</code></pre>
                 </div>
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Acceptance Criteria</span>
-                    <ul class="acceptance-list"><li>Canvas renders at stable 60Hz physics steps</li><li>Module files exist and load without errors</li></ul>
+                    <ul class="acceptance-list"><li>Canvas renders at stable 60Hz physics steps</li><li>Module files exist and load without errors</li><li>Resizing the window rescales the whole game live, keeps 16:9 (letterboxed), stays crisp (dpr-aware)</li><li>Changing GAME_SCALE uniformly upscales the entire game</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> <span class="task-verify">✔ drag window edge; confirm no distortion/stretch</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">

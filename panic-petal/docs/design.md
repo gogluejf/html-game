@@ -58,6 +58,24 @@ Fixed timestep (accumulator) so physics is deterministic regardless of display r
 - Pixels + seconds. Physics runs at fixed 60 Hz steps.
 - Global consts (tunable): `GRAVITY`, `MAX_FALL_SPEED`, per-hero `JUMP_IMPULSE`, ground friction/deceleration.
 
+### Rendering & scaling (fully responsive)
+The game is drawn from **PNG sprites** (cropped sheets, §11) and must look crisp at any size the player chooses — small window, fullscreen, or between. Scaling is therefore a **pure render-layer concern**: physics, collision, AI, and all logic run in a fixed internal resolution and never know about display size.
+
+- **Fixed internal resolution:** all game logic and drawing use a constant logical viewport of `VIEW_W × VIEW_H` = **960 × 540** (16:9). Every coordinate in this doc (positions, boxes, camera, level length) is in these logical pixels.
+- **Single scale knob:** one constant `GAME_SCALE` (default `1`) multiplies the whole game's on-screen size. Bumping `GAME_SCALE` upscales the entire game uniformly (sprites, UI, HUD) with no other code changes. This is the "one variable" tool for global upscaling; combined with fit-to-window it lets the game fill any screen.
+- **Fit-to-viewport:** the canvas element is sized by CSS to fill the available window while preserving 16:9 (letterbox with black bars when the aspect differs; centered). A `resize` listener re-fits live, so dragging the window rescales the game instantly.
+- **Crisp rendering / devicePixelRatio:** the backing store is sized to `displaySize × devicePixelRatio`; the context transform maps the 960×540 logical space onto it. Sprites are drawn with `imageSmoothingEnabled` chosen per art style (pixel art → `false` for hard edges when integer-scaling; settable via the same scale config). Because sprites are PNGs, sub-pixel scaling can blur — prefer near-integer effective scales for pixel-art sharpness, but fractional is acceptable for fluid resize.
+- **No logic impact:** because everything renders through one logical→screen transform, camera follow, parallax, debug overlay (§16/§19), and HUD (§20) all just draw in 960×540 coords and are scaled for free. Input (mouse) is inverse-mapped from screen → logical coords for any click-based interaction.
+
+```js
+// render layer only — logic never touches these
+const VIEW_W = 960, VIEW_H = 540;   // logical resolution (all game units)
+let GAME_SCALE = 1;                  // global upscale knob (uniform)
+function fitCanvas(){ /* size canvas to window, keep 16:9, letterbox, dpr-aware */ }
+window.addEventListener('resize', fitCanvas);
+// each frame: ctx.setTransform(dpr*fitScale*GAME_SCALE, 0,0, ..., offsetX, offsetY) then draw in 960x540
+```
+
 ---
 
 ## 1. State Machine
@@ -424,6 +442,7 @@ Toggle (F3 or similar) draws semi-transparent boxes:
 - General params (tunable constants): max enemies on screen, max active projectiles, max particles.
 - Enemies-per-level defined on the level struct.
 - Object pooling for projectiles, coins, particles.
+- Scaling is render-only (§0 "Rendering & scaling") — it must not add per-entity cost; the logical→screen transform is applied once per frame, so resize/scale has zero impact on physics or collision performance.
 
 ---
 

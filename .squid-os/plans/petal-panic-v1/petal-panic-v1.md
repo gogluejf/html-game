@@ -13,16 +13,19 @@ Diagram: graph TD
   D --> E[Camera follow]
   E --> F[Render + debug overlay]
 
-### TASK: 1.1 - Game loop + canvas scaffold
+### TASK: 1.1 - Game loop + canvas scaffold (responsive)
 Type: feature
-What: Create project scaffold (index.html, main.js, module layout) with a fixed 60Hz accumulator loop and canvas render.
-Why: Deterministic physics independent of refresh rate; clean module structure for all later systems.
+What: Create project scaffold (index.html, main.js, module layout) with a fixed 60Hz accumulator loop and a fully responsive canvas per design §0 'Rendering & scaling': fixed 960x540 logical resolution, single GAME_SCALE knob, fit-to-viewport 16:9 letterbox on resize, dpr-aware crisp rendering.
+Why: Deterministic physics independent of refresh rate; clean module structure for all later systems; PNG sprites must scale cleanly to any window size without touching logic.
 Files: + panic-petal/index.html
 Files: + panic-petal/js/main.js
-Snippet: // main.js\nconst FIXED_DT = 1/60; let acc=0,last=0;\nfunction frame(t){ acc+=t-last; last=t; while(acc>=FIXED_DT){ update(FIXED_DT); acc-=FIXED_DT; } render(); requestAnimationFrame(frame); }
+Snippet: // main.js\nconst FIXED_DT = 1/60, VIEW_W=960, VIEW_H=540; let GAME_SCALE=1, acc=0,last=0;\nfunction fitCanvas(){ /* dpr-aware, 16:9 letterbox, setTransform into 960x540 */ }\naddEventListener('resize',fitCanvas);\nfunction frame(t){ acc+=Math.min(0.25,(t-last)/1000); last=t; while(acc>=FIXED_DT){ update(FIXED_DT); acc-=FIXED_DT; } render(); requestAnimationFrame(frame); }
 Acceptance: Canvas renders at stable 60Hz physics steps
 Acceptance: Module files exist and load without errors
+Acceptance: Resizing the window rescales the whole game live, keeps 16:9 (letterboxed), stays crisp (dpr-aware)
+Acceptance: Changing GAME_SCALE uniformly upscales the entire game
 Verification: open panic-petal/index.html
+Verification: drag window edge; confirm no distortion/stretch
 
 ### TASK: 1.2 - Entity base + transform
 Type: feature
