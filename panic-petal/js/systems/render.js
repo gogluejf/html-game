@@ -653,18 +653,19 @@ function drawEventLog(ctx) {
  * @param {CanvasRenderingContext2D} ctx
  */
 function drawHarnessHint(ctx) {
-  const line1 = 'F1 harness | 1-9 spawn | F god | Z speed | T telemetry | Y hero | L log | E dump | C collision-only';
-  const line2 = 'RMB select | LMB force-state | arrows scrub | X deselect';
+  const line1 = 'F1 | 1-9 spawn | F god | Z spd | T tele | Y hero | L log | E dump | C view';
+  const line2 = 'RMB sel | LMB force | arrows scrub | X desel';
   ctx.save();
-  ctx.font = '11px monospace';
-  ctx.textAlign = 'center';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'left';
+  const x = 8, y = VIEW_H - 34;
   const w1 = ctx.measureText(line1).width;
   const w2 = ctx.measureText(line2).width;
   const w = Math.max(w1, w2);
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(VIEW_W / 2 - w / 2 - 4, VIEW_H - 36, w + 8, 30);
+  ctx.fillRect(x, y, w + 8, 30);
   ctx.fillStyle = '#00e5ff';
-  ctx.fillText(line1, VIEW_W / 2, VIEW_H - 27);
-  ctx.fillText(line2, VIEW_W / 2, VIEW_H - 11);
+  ctx.fillText(line1, x + 4, y + 12);
+  ctx.fillText(line2, x + 4, y + 26);
   ctx.restore();
 }
