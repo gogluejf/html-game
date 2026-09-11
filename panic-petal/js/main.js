@@ -2,6 +2,7 @@
 // All logic runs in a fixed 960x540 logical space; the render layer maps it
 // to the screen (dpr-aware, 16:9 letterbox, GAME_SCALE knob).
 
+import { VIEW_W, VIEW_H } from './view.js';
 import { update } from './systems/update.js';
 import { render } from './systems/render.js';
 
@@ -10,8 +11,6 @@ const ctx = canvas.getContext('2d');
 
 // --- Fixed-timestep config -------------------------------------------------
 export const FIXED_DT = 1 / 60;      // physics step (s) — deterministic at any refresh rate
-export const VIEW_W = 960;           // logical resolution (all game units)
-export const VIEW_H = 540;
 
 // Single global upscale knob: multiplies the whole game's on-screen size
 // uniformly (sprites, UI, HUD). Set from the console or a debug menu.
