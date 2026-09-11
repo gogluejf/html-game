@@ -678,6 +678,10 @@ world.on('hit', (a, b) => {
       } else {
         allyProj.alive = false; // hit an already-destroyed solid — still consumed
       }
+      // Specials explode/fizzle on barrel contact too.
+      if (allyProj.type === 'saw' || allyProj.type === 'bomb') {
+        explodeSpecial(allyProj);
+      }
       return;
     }
 
@@ -710,22 +714,9 @@ world.on('hit', (a, b) => {
       if (Debug.enabled) Debug.logEvent(`${srcName} → ${target.type ?? '?'} dmg ${dealt}`);
     }
     allyProj.alive = false;               // projectile is consumed on impact
-    // Bomb explodes on contact (not just TTL expiry).
-    if (allyProj.type === 'bomb' && !allyProj.exploded) {
-      allyProj.exploded = true;
-      const bcx = allyProj.x + allyProj.w / 2, bcy = allyProj.y + allyProj.h / 2;
-      for (const t of [hero, ...realEnemies]) {
-        if (!t.alive || t === hero) continue;
-        const dx = (t.x + t.w / 2) - bcx;
-        const dy = (t.y + t.h / 2) - bcy;
-        if (Math.sqrt(dx * dx + dy * dy) <= allyProj.radius) {
-          damage(allyProj, t, allyProj.damage, 'special');
-        }
-      }
-      spawnExplosionVFX(bcx, bcy, allyProj.radius);
-      Effects.bigExplosion();
-      triggerShake(6);
-      if (Debug.enabled) Debug.logEvent('bomb exploded (contact)');
+    // Specials explode/fizzle on contact via the single explodeSpecial().
+    if (allyProj.type === 'saw' || allyProj.type === 'bomb') {
+      explodeSpecial(allyProj);
     }
     // Task 3.3 — Enemy instances trigger their death pipeline via die().
     // damage() already set alive=false when hp<=0; we call die() to start the
@@ -1143,23 +1134,12 @@ export function update(dt) {
     }
   }
   syncSpecialsToWorld();
-  for (const s of specialPool.activeItems) {
-    if (!s.alive && s.type === 'bomb' && s.exploded) {
-      // Bomb fuse expired — AoE damage in radius.
-      const targets = [hero, ...realEnemies];
-      const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
-      for (const t of targets) {
-        if (!t.alive || t === hero) continue; // don't self-damage on own bomb
-        const dx = (t.x + t.w / 2) - cx;
-        const dy = (t.y + t.h / 2) - cy;
-        if (Math.sqrt(dx * dx + dy * dy) <= s.radius) {
-          damage(s, t, s.damage, 'special');
-        }
-      }
-      spawnExplosionVFX(cx, cy, s.radius);
-      Effects.bigExplosion();
-      triggerShake(6);
-      if (Debug.enabled) Debug.logEvent('bomb exploded');
+  // TTL expiry: check the FULL pool (not just activeItems, which already
+  // spliced dead items) for specials that just died from TTL this frame.
+  for (const s of specialPool.items) {
+    if (s.ttlExpired && !s.exploded) {
+      explodeSpecial(s);
+      s.ttlExpired = false;
     }
   }
 
@@ -1287,6 +1267,37 @@ function trySpecial(h, input, dt) {
   specialCooldown = h.stats.special_freq; // seconds between specials
 
   if (Debug.enabled) Debug.logEvent(`special ${type} fired`);
+}
+
+/**
+ * Explode a special projectile (bomb AoE or saw fizzle). Called from ANY death
+ * path: TTL expiry, enemy contact, barrel contact, off-screen cull. Single
+ * source of truth so VFX + damage are identical regardless of trigger.
+ */
+function explodeSpecial(s) {
+  if (s.exploded) return; // already exploded (idempotent)
+  s.exploded = true;
+  const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
+
+  if (s.type === 'bomb' && s.radius > 0) {
+    // AoE damage to all live entities in radius (enemies only — no self-damage).
+    for (const t of realEnemies) {
+      if (!t.alive) continue;
+      const dx = (t.x + t.w / 2) - cx;
+      const dy = (t.y + t.h / 2) - cy;
+      if (Math.sqrt(dx * dx + dy * dy) <= s.radius) {
+        damage(s, t, s.damage, 'special');
+        if (Debug.enabled) Debug.logEvent(`bomb → ${t.type} dmg ${s.damage}`);
+      }
+    }
+    spawnExplosionVFX(cx, cy, s.radius);
+    Effects.bigExplosion();
+    triggerShake(6);
+    if (Debug.enabled) Debug.logEvent('bomb exploded');
+  } else {
+    // Saw: small fizzle spark, no AoE.
+    particles.spawnBurst(cx, cy, 4);
+  }
 }
 
 // --- Melee attack (Task 3.2) -------------------------------------------------

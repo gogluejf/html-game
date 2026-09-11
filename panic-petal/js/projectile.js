@@ -218,12 +218,11 @@ export class Special extends Entity {
     this.y += this.vy * dt;
 
     // TTL countdown.
+    const wasAlive = this.alive;
     this.tickTtl(dt);
-    if (!this.alive) {
-      // Bomb exploded (fuse ran out).
-      if (this.type === 'bomb' && !this.exploded) {
-        this.exploded = true;
-      }
+    // If we just died from TTL, flag it so the update loop can call explodeSpecial().
+    if (wasAlive && !this.alive) {
+      this.ttlExpired = true;
     }
   }
 

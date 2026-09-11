@@ -297,6 +297,31 @@ export class Hero extends Entity {
     this.meleeFrame = 0;
     this.meleeCooldown = 0;
   }
+
+  /**
+   * Draw the hero. When crouching, scale the sprite to match the crouch box
+   * height so the visual matches the collision box (no "two boxes" artifact).
+   */
+  draw(ctx) {
+    ctx.save();
+    const cx = this.x + this.w / 2;
+    const cy = this.y + this.h / 2;
+    ctx.translate(cx, cy);
+    if (this.mirrorX) ctx.scale(-1, 1);
+    if (this.mirrorY) ctx.scale(1, -1);
+    ctx.rotate(this.rotation);
+    // Crouch: shrink vertical extent to match crouchBox.
+    const scaleY = this.crouching ? 0.6 : 1;
+    ctx.scale(this.scale, this.scale * scaleY);
+
+    if (this.anim && this.anim.frames.length > 0) {
+      this.anim.draw(ctx, this);
+    } else {
+      ctx.fillStyle = this.debugColor;
+      ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+    }
+    ctx.restore();
+  }
 }
 
 // Seconds of invincibility granted on respawn (design §1 / Task 5.2). Static so

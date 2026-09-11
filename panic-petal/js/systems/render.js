@@ -173,6 +173,7 @@ export function render(ctx) {
       if (h && !h.dying) {
         let animName = 'idle';
         if (h.dying) animName = 'dead';
+        else if (h.crouching) animName = 'crouch';
         else if (h.meleeFrame > 0) animName = 'melee';
         else if (h.vy < -10 || h.vy > 50) animName = 'jump';
         else if (Math.abs(h.vx) > 20) animName = 'run';
