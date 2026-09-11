@@ -6,7 +6,7 @@
 // overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../view.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getJester, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, CONTINUE_COST } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getJester, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, CONTINUE_COST } from './update.js';
 import { getState, STATE_NAMES, S } from '../state.js';
 
 export function render(ctx) {
@@ -61,6 +61,17 @@ export function render(ctx) {
     if (e.hp != null && e.maxHp > 0 && e.aiState !== 'dead') {
       drawHpBar(ctx, e);
     }
+  }
+
+  // Task 6.1 — boss (Overgrown Elephant). Drawn with a wide HP bar above it so
+  // the fight's progress reads clearly; F3 adds phase name + weak-point box.
+  const boss = getBoss();
+  if (boss && boss.alive) {
+    boss.draw(ctx);
+    if (boss.hp != null && boss.maxHp > 0 && boss.aiState !== 'dead') {
+      drawBossHpBar(ctx, boss);
+    }
+    if (isDebugEnabled()) drawBossDebug(ctx, boss);
   }
 
   // Task 3.3 — sparkle particles + dropped coins.
@@ -396,6 +407,68 @@ function drawHpBar(ctx, e) {
   ctx.fillRect(x, y, w, h);
   ctx.fillStyle = '#2ecc71';
   ctx.fillRect(x, y, w * frac, h);
+}
+
+// --- Task 6.1 — boss debug + HP helpers --------------------------------------
+
+/**
+ * Wide HP bar for the boss (design §9). Spans the full body width with a thick
+ * fill so the fight's progress reads at a glance.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {import('../boss.js').Elephant} b
+ */
+function drawBossHpBar(ctx, b) {
+  const frac = Math.max(0, b.hp / b.maxHp);
+  const w = b.w + 40; // wider than the body for legibility
+  const h = 8;
+  const x = b.x + b.w / 2 - w / 2;
+  const y = b.y - 16;
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+  ctx.fillStyle = '#5a3d8a';
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = frac > 0.5 ? '#2ecc71' : (frac > 0.25 ? '#f39c12' : '#e74c3c');
+  ctx.fillRect(x, y, w * frac, h);
+  ctx.restore();
+}
+
+/**
+ * F3 debug overlay for the boss: phase name + escalation above its head, the
+ * weak-point box highlighted in gold, and the arena bounds as dashed lines.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {import('../boss.js').Elephant} b
+ */
+function drawBossDebug(ctx, b) {
+  const cx = b.x + b.w / 2;
+
+  // Arena bounds (dashed verticals).
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  ctx.strokeStyle = '#8e6bbf';
+  ctx.setLineDash([6, 6]);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(b.arenaX, 0); ctx.lineTo(b.arenaX, VIEW_H);
+  ctx.moveTo(b.arenaX + b.arenaW, 0); ctx.lineTo(b.arenaX + b.arenaW, VIEW_H);
+  ctx.stroke();
+  ctx.restore();
+
+  // Weak point box (gold outline).
+  const wp = b.weakPointWorld();
+  ctx.save();
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(wp.x, wp.y, wp.w, wp.h);
+  ctx.restore();
+
+  // Phase + escalation label.
+  ctx.save();
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffd700';
+  ctx.fillText(`BOSS ${b.phase.toUpperCase()} ×${b.escalation.toFixed(2)}`, cx, b.y - 24);
+  ctx.restore();
 }
 
 // --- Task 3.3 + 5.1 — per-enemy debug overlay (F3) ---------------------------

@@ -21,7 +21,8 @@ import { S, getState, STATE_NAMES, tryTransition } from '../state.js';
 import { Jester } from '../jester.js';
 import { VINE_HOUND_DEF } from '../vine_hound.js';
 import { VIOLETTA_DEF } from '../violetta.js';
-import { JackOLantern, explodeJackolantern } from '../jackolantern.js';import { particles, coins } from '../particles.js';
+import { JackOLantern, explodeJackolantern } from '../jackolantern.js';
+import { Elephant, makeElephant, BOSS_TRIGGER_RADIUS, WEAK_POINT_MULT } from '../boss.js';import { particles, coins } from '../particles.js';
 import { makeBarrel, makeCoinBarrel, explodeBarrel, BARREL_DAMAGE, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
@@ -125,6 +126,13 @@ for (const e of enemies) {
 // (jester/vine_hound/violetta/jackolantern/boris_loon/boris_loon_baby) is
 // instantiated per the level's spawn budget.
 const realEnemies = generated.enemies;
+
+// Task 6.1 — Overgrown Elephant boss (design §9). Spawned at the far end of the
+// level in the boss arena (last 500px stay clear of regular spawns). The camera
+// locks to its arena once the hero gets within BOSS_TRIGGER_RADIUS; defeating it
+// transitions to S.WIN. Tracked separately from realEnemies so the generic
+// enemy loop never drives the boss's phase machine.
+export const boss = makeElephant(LEVEL_LENGTH - 300, FLOOR_TOP);
 
 // Task 2.1 — Non-looping anim test. Kept off the live targets (above) so the
 // animation cycle doesn't obscure their destruction; attached to a separate
@@ -325,6 +333,9 @@ world.add(animTestEnemy);
 // Task 5.1 — remaining enemies participate in collisions (thorn hits, contact,
 // foe projectiles). Flyers use gravity 0 so they never fall; grounders do not.
 for (const e of realEnemies) world.add(e);
+// Task 6.1 — boss participates in collisions (PROJ_ALLY×BOSS → 'hit',
+// HERO×BOSS → contact). Added after the regular enemies.
+world.add(boss);
 // Task 4.1 — barrels are SOLID: they block hero + enemy (resolve) and can be
 // hit by friendly thorns (PROJ_ALLY×SOLID → 'hit'). Added now; destroyed ones
 // are removed from the world when their HP hits 0. Both explosive barrels AND
@@ -364,6 +375,21 @@ world.on('hit', (a, b) => {
 
     if (target.layer !== LAYER.ENEMY && target.layer !== LAYER.BOSS) return;
     if (target.hp == null) return;       // non-target placeholder (e.g. anim test box)
+    // Task 6.1 — boss weak point: thorns landing in the head/trunk zone deal
+    // WEAK_POINT_MULT× damage. Compute the impact point from the projectile's
+    // center and route through the boss's takeDamage() for the bonus.
+    if (target.isBoss && typeof target.isWeakPointHit === 'function') {
+      const px = allyProj.x + allyProj.w / 2;
+      const py = allyProj.y + allyProj.h / 2;
+      const dealt = target.takeDamage(allyProj.damage, hero, 'projectile', { x: px, y: py });
+      if (dealt > 0) target.hitFlash = 0.1;
+      allyProj.alive = false;
+      if (typeof target.die === 'function' && target.hp <= 0 && target.aiState !== 'dead') {
+        target.die();
+        target.alive = true; // keep alive during death anim
+      }
+      return;
+    }
     // Central damage routing: defense + telemetry in one place (Task 3.2).
     const dealt = damage(hero, target, allyProj.damage, 'projectile');
     if (dealt > 0) target.hitFlash = 0.1; // brief white flash on impact
@@ -410,16 +436,20 @@ world.on('hit', (a, b) => {
 // prevents multi-hit drain every frame while overlapping.
 const CONTACT_COOLDOWN = 0.5; // seconds between contact hits from same enemy
 world.on('contact', (a, b) => {
+  // Task 6.1 — the boss is a BOSS-layer entity; treat it like an enemy for
+  // contact damage (touching the elephant drains hero energy at its high attack).
   const enemyEnt = a.layer === LAYER.ENEMY ? a : (b.layer === LAYER.ENEMY ? b : null);
+  const bossEnt = a.layer === LAYER.BOSS ? a : (b.layer === LAYER.BOSS ? b : null);
   const heroEnt = a.layer === LAYER.HERO ? a : (b.layer === LAYER.HERO ? b : null);
-  if (!enemyEnt || !heroEnt) return;
+  const source = enemyEnt || bossEnt;
+  if (!source || !heroEnt) return;
   // Task 5.2 — no contact damage while the hero is mid-death.
   if (heroEnt.dying) return;
-  if (!enemyEnt.alive || enemyEnt.aiState === 'dead') return; // dead enemies don't hurt
-  if (enemyEnt._contactCd > 0) return;
-  enemyEnt._contactCd = CONTACT_COOLDOWN;
-  const amt = enemyEnt.stats?.attack ?? 10;
-  damage(enemyEnt, heroEnt, amt, 'contact');
+  if (!source.alive || source.aiState === 'dead') return; // dead enemies don't hurt
+  if (source._contactCd > 0) return;
+  source._contactCd = CONTACT_COOLDOWN;
+  const amt = source.stats?.attack ?? 10;
+  damage(source, heroEnt, amt, 'contact');
 });
 
 // Task 4.2 — HERO × COIN collection (design §14). Fires when the hero's box
@@ -567,10 +597,10 @@ export function getAnimTestEnemy() { return animTestEnemy; }
 export function getProjectiles() { return projectilePool.activeItems; }
 export function getPickups() { return pickups; }
 export function getCamera() { return camera; }
-// Task 2.1 — decorative anim-test box (damage-immune placeholder).
-export function getAnimTestEnemy() { return animTestEnemy; }
 // Task 5.3 — full real-enemy list (from generateLevel) for render/F3.
 export function getRealEnemies() { return realEnemies; }
+// Task 6.1 — the boss entity for render + F3 debug.
+export function getBoss() { return boss; }
 export function getParticles() { return particles; }
 export function getCoins() { return coins; }
 // Task 4.1 + 5.3 — barrels (explosive + coin) + explosion screen shake for render.
@@ -643,6 +673,9 @@ export function update(dt) {
 
   // 1e. Task 3.3 + 5.1 — real-enemy AI + physics + attack damage + death pipeline.
   updateRealEnemies(dt);
+
+  // 1e2. Task 6.1 — boss: camera lock, phase machine, stomp shake, win on death.
+  updateBoss(dt);
 
   // 1f. Task 3.3 — particle + coin pool advancement.
   updateEffects(dt);
@@ -917,6 +950,75 @@ function updateRealEnemies(dt) {
   for (const e of realEnemies) {
     if (e === undefined || e === null) continue;
     updateRealEnemy(e, dt);
+  }
+}
+
+// --- Task 6.1 — Boss (Overgrown Elephant) -----------------------------------
+// Drives the boss's phase machine, camera lock, stomp screen-shake, and the
+// win-state transition on death. The boss is tracked separately from
+// realEnemies so its custom AI (phase-based, not aggro-based) runs here.
+
+/**
+ * Per-frame boss step: activate the fight when the hero approaches, run the
+ * phase AI + physics, resolve against solids, trigger the stomp shake, and
+ * handle the death → win pipeline.
+ * @param {number} dt seconds
+ */
+function updateBoss(dt) {
+  const b = boss;
+  if (!b) return;
+
+  // Decay the contact cooldown (shared with the 'contact' rule handler).
+  if (b._contactCd > 0) b._contactCd -= dt;
+
+  // Activate the fight once the hero is close enough (latches on).
+  if (b.aiState !== 'dead') {
+    const wasActive = b.active;
+    b.shouldActivate(hero);
+    if (b.active && !wasActive) {
+      // First activation: lock the camera to the arena.
+      camera.lockTo(b.arenaX, b.arenaW);
+      console.log('[boss] fight started — camera locked to arena');
+    }
+  }
+
+  // AI + gravity + integrate (base Enemy.update handles the death pipeline too).
+  b.update(dt, hero, world);
+
+  // Keep the boss inside the arena horizontally while alive & active.
+  if (b.alive && b.aiState !== 'dead' && b.active) {
+    const minX = b.arenaX;
+    const maxX = b.arenaX + b.arenaW - b.w;
+    if (b.x < minX) { b.x = minX; b.vx = Math.abs(b.vx); }
+    else if (b.x > maxX) { b.x = maxX; b.vx = -Math.abs(b.vx); }
+  }
+
+  // Resolve against solids so the boss rests on the floor (it has gravity 1).
+  if (b.alive && b.aiState !== 'dead' && b.gravity > 0) {
+    resolve(b, SOLIDS);
+  }
+
+  // Stomp shake: doStomp() records a magnitude; convert it into a screen shake.
+  if (b.shakeMag > 0) {
+    triggerShake(b.shakeMag);
+    b.shakeMag = 0;
+  }
+
+  // Death pipeline completion: spawn effects, drop coins, remove from world,
+  // unlock the camera, and transition to WIN exactly once.
+  if (!b.alive && !b._deathHandled) {
+    b._deathHandled = true;
+    const cx = b.x + b.w / 2;
+    const cy = b.y + b.h / 2;
+    particles.spawnBurst(cx, cy, 14);          // big victory sparkle burst
+    coins.dropCoins(b.coinDrop, cx, cy);       // generous coin bounty
+    world.remove(b);                           // drop from play
+    camera.unlock();                           // release the arena lock
+    b.onDeath();                               // boss-side death hook
+    if (getState() === S.PLAY) {
+      tryTransition(S.WIN);
+      console.log(`[state] PLAY → ${STATE_NAMES[S.WIN]} (boss defeated)`);
+    }
   }
 }
 
