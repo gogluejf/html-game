@@ -17,7 +17,7 @@ import { Hero } from '../hero.js';
 import { HEROES } from '../heroDefs.js';
 import { projectilePool, aimFromInput, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
-import { S, getState, STATE_NAMES, tryTransition } from '../state.js';
+import { S, getState, STATE_NAMES, tryTransition, onTransition } from '../state.js';
 import { Jester } from '../jester.js';
 import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
 import { Violetta, VIOLETTA_DEF } from '../violetta.js';
@@ -30,6 +30,7 @@ import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
 import { LEVELS, generateLevel } from '../level.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from '../debug.js';
+import { createStats, dumpStats } from '../stats.js';
 
 // --- Tunables for the test rig ---------------------------------------------
 // (Hero movement feel lives in js/hero.js; level geometry below.)
@@ -74,18 +75,26 @@ function setHeroRef(h) { hero = h; }
 // Task 3.1 — thorn fire state. Cooldown is in seconds; rapid powerup halves it.
 // (Hero.stats.projectile_freq is "shots per second", so base interval = 1/freq.)
 hero.fireCooldown = 0;
-// Combat telemetry (Task 3.1). Kept off hero.stats because that object is a
-// flat spread of the heroDef stat sheet (speed/jump/attack/...); these counters
-// are runtime bookkeeping, not tunable feel knobs.
+
+// Task 7.3 — Unified run telemetry (design §4.1). A single stats object tracks
+// every documented field: kills, damage, coins, hits taken, time, distance, etc.
+// It replaces the earlier scattered ad-hoc counters with one coherent structure.
+// hero.combatStats is aliased to point INTO runStats so that damage.js and
+// powerup.js (which write to hero.combatStats) update the unified object directly.
+hero.runStats = createStats();
+// Alias combatStats fields into runStats so existing code paths (damage.js,
+// powerup.js) write into the unified structure without modification.
 hero.combatStats = {
-  projectilesShot: 0,
-  hitsLanded: { projectile: 0, melee: 0 },
-  damageDealt: { byMethod: { projectile: 0, melee: 0 } },
+  get projectilesShot() { return hero.runStats.projectilesShot; },
+  set projectilesShot(v) { hero.runStats.projectilesShot = v; },
+  hitsLanded: hero.runStats.hitsLanded,
+  damageDealt: hero.runStats.damageDealt,
+  powerupsCollected: hero.runStats.powerupsCollected,
 };
 
 // Task 4.2 — coin collection stats (design §14). Per-type counters + total;
 // the total drives the 1up threshold (every 100 coins → +1 life).
-hero.stats.coinsCollected = { bronze: 0, silver: 0, gold: 0, total: 0 };
+// Now lives in hero.runStats.coinsCollected (Task 7.3 unified stats).
 
 // Task 2.1 — Animation engine integration test.
 // Generate 5 colored frames as offscreen canvases; cycle them on the hero.
@@ -449,13 +458,23 @@ function swapHero() {
     energy: hero.energy, lives: hero.lives, coins: hero.coins,
     ammo: hero.ammo, specialAmmo: hero.specialAmmo,
     checkpoint: hero.checkpoint, continuesUsed: hero.continuesUsed,
-    combatStats: hero.combatStats, stats: hero.stats,
+    stats: hero.stats,
+    runStats: hero.runStats, // Task 7.3 — preserve unified telemetry
     invincibleTimer: hero.invincibleTimer, rapidTimer: hero.rapidTimer,
   };
 
   const nh = new Hero(def, saved.x, saved.y);
   Object.assign(nh, saved);
   nh.vx = saved.vx; nh.vy = saved.vy;
+  // Re-alias combatStats into the (preserved) runStats so damage.js / powerup.js
+  // continue writing into the unified structure after the swap.
+  nh.combatStats = {
+    get projectilesShot() { return nh.runStats.projectilesShot; },
+    set projectilesShot(v) { nh.runStats.projectilesShot = v; },
+    hitsLanded: nh.runStats.hitsLanded,
+    damageDealt: nh.runStats.damageDealt,
+    powerupsCollected: nh.runStats.powerupsCollected,
+  };
   // Reattach placeholder anims sized for the new body.
   nh.anim = new Anim(
     ['#2ecc71', '#27ae60', '#1abc9c'].map(c => makeTestFrame(nh.w, nh.h, c)),
@@ -646,6 +665,9 @@ world.on('hit', (a, b) => {
       victim.invincibleTimer = Math.max(victim.invincibleTimer, 0.3); // brief i-frames
       // Task 7.1 — red vignette when the hero takes damage (design §12).
       Effects.heroDamaged();
+      // Task 7.3 — track hits taken from enemy projectiles (design §4.1).
+      victim.runStats.hitsTaken.enemyProjectile += 1;
+      victim.runStats.hitsTaken.total += 1;
     }
     foeProj.alive = false; // consumed on impact
     // SFX: hit
@@ -674,7 +696,12 @@ world.on('contact', (a, b) => {
   const amt = source.stats?.attack ?? 10;
   const dealt = damage(source, heroEnt, amt, 'contact');
   // Task 7.1 — red vignette on contact damage (design §12 "Hero damaged").
-  if (dealt > 0) Effects.heroDamaged();
+  if (dealt > 0) {
+    Effects.heroDamaged();
+    // Task 7.3 — track hits taken from enemy contact (design §4.1).
+    heroEnt.runStats.hitsTaken.enemyContact += 1;
+    heroEnt.runStats.hitsTaken.total += 1;
+  }
 });
 
 // Task 4.2 — HERO × COIN collection (design §14). Fires when the hero's box
@@ -695,8 +722,8 @@ world.on('collect', (a, b) => {
   const type = coinEnt.coinType ?? 'bronze';
   const value = coinEnt.value ?? COIN_TYPES.bronze.value;
   heroEnt.coins += value;
-  heroEnt.stats.coinsCollected[type] = (heroEnt.stats.coinsCollected[type] ?? 0) + 1;
-  heroEnt.stats.coinsCollected.total += 1;
+  heroEnt.runStats.coinsCollected[type] = (heroEnt.runStats.coinsCollected[type] ?? 0) + 1;
+  heroEnt.runStats.coinsCollected.total += 1;
 
   // Pickup VFX: a small sparkle burst at the coin's center (reuses the pooled
   // particle system; no allocation). SFX hook for later audio wiring.
@@ -763,12 +790,25 @@ world.on('checkpoint', (a, b) => {
   const fired = cp.trigger(heroEnt);
   if (!fired) return;
 
+  // Task 7.3 — count checkpoint hits (design §4.1).
+  heroEnt.runStats.checkpointsHit += 1;
+
   // VFX: flash (entity-driven) + floating id label.
   const cx = cp.x + cp.w / 2;
   const cy = cp.y + cp.h / 2;
   particles.spawnBurst(cx, cy, 5);
   spawnFloatText(cx, cy - 20, `CHECKPOINT ${cp.checkpointId}`, '#ffd700');
   // SFX: checkpoint
+});
+
+// --- Task 7.3 — Stats dump on WIN / GAMEOVER ----------------------------------
+// Subscribe to state transitions; when the run ends (WIN or OVER), serialize
+// the full §4.1 telemetry to console + downloadable JSON. This is the "tuning
+// pass" hook: every completed run produces a structured record for analysis.
+onTransition((from, to) => {
+  if (to === S.WIN || to === S.OVER) {
+    dumpStats(hero.runStats, hero);
+  }
 });
 
 // --- Camera --------------------------------------------------------------------
@@ -878,7 +918,13 @@ export function update(dt) {
   // 1c. melee swing (Task 3.2): J starts a swing; during its single active
   //     frame the hero's hitbox is checked against enemies and routed through
   //     central damage(). The cooldown lives on the hero (updateMelee).
-  if (input.melee) hero.tryMelee();
+  if (input.melee) {
+    const wasActive = hero.meleeActive;
+    hero.tryMelee();
+    if (!wasActive && hero.meleeActive) {
+      hero.runStats.meleeSwings += 1; // Task 7.3 — count the swing start
+    }
+  }
   applyMeleeDamage(hero, dt);
 
   // 1d. decay hit-flash timers on enemies (white flash when struck).
@@ -940,10 +986,9 @@ export function update(dt) {
   // 4. camera follows the hero (clamped to level bounds, facing look-ahead).
   camera.update(hero);
 
-  // 4b. Task 5.2 — track run distance for the game-over stats summary.
-  if (hero.stats && hero.stats.distanceTraveled != null) {
-    hero.stats.distanceTraveled += Math.abs(hero.vx * dt);
-  }
+  // 4b. Task 7.3 — track run distance + time for stats (design §4.1).
+  hero.runStats.distanceTraveled += Math.abs(hero.vx * dt);
+  hero.runStats.timePlayed += dt;
 
   // 5. Task 4.1 — decay the explosion screen shake (render reads getShakeOffset()).
   updateShake(dt);
@@ -1164,8 +1209,7 @@ function updateRealEnemy(e, dt) {
     coins.dropCoins(e.coinDrop, cx, cy);      // coin drop per config
     world.remove(e);                          // drop from play
     // Telemetry: count the kill by type (design §4.1 enemiesKilled).
-    hero.stats.enemiesKilled ??= {};
-    hero.stats.enemiesKilled[e.type] = (hero.stats.enemiesKilled[e.type] ?? 0) + 1;
+    hero.runStats.enemiesKilled[e.type] = (hero.runStats.enemiesKilled[e.type] ?? 0) + 1;
     if (Debug.enabled) Debug.logEvent(`kill ${e.type}`);
   }
 }
@@ -1260,6 +1304,8 @@ function updateBoss(dt) {
     world.remove(b);                           // drop from play
     camera.unlock();                           // release the arena lock
     b.onDeath();                               // boss-side death hook
+    // Task 7.3 — mark boss as killed (design §4.1).
+    hero.runStats.bossKilled = true;
     if (getState() === S.PLAY) {
       tryTransition(S.WIN);
       console.log(`[state] PLAY → ${STATE_NAMES[S.WIN]} (boss defeated)`);
@@ -1299,6 +1345,11 @@ function handleBarrelDestroyed(barrel) {
     // explodeBarrel() routes through central damage(); we pass the full live set.
     const targets = [hero, ...enemies, ...realEnemies];
     const result = explodeBarrel(barrel, targets);
+    // Task 7.3 — track if the hero was hit by the explosion (design §4.1).
+    if (result.hit.includes(hero)) {
+      hero.runStats.hitsTaken.explosion += 1;
+      hero.runStats.hitsTaken.total += 1;
+    }
     // Explosion VFX: 12–15 orange/red particles expanding outward.
     spawnExplosionVFX(cx, cy, result.radius);
     Effects.bigExplosion(); // Task 7.1 — brief white screen flash (design §12)
@@ -1317,9 +1368,8 @@ function handleBarrelDestroyed(barrel) {
   // Remove the dead barrel from the collision world so it stops blocking.
   world.remove(barrel);
   // Telemetry: count the destroyed barrel by type (design §4.1 barrelsDestroyed).
-  hero.stats.barrelsDestroyed ??= {};
   const bkey = barrel.explosive ? 'barrel' : 'coinBarrel';
-  hero.stats.barrelsDestroyed[bkey] = (hero.stats.barrelsDestroyed[bkey] ?? 0) + 1;
+  hero.runStats.barrelsDestroyed[bkey] = (hero.runStats.barrelsDestroyed[bkey] ?? 0) + 1;
   if (Debug.enabled) Debug.logEvent(`barrel destroyed (${bkey})`);
 }
 

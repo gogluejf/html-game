@@ -10,6 +10,7 @@ import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPi
 import { Effects } from '../effects.js';
 import { getState, STATE_NAMES, S } from '../state.js';
 import { Debug } from '../debug.js';
+import { calculateScore } from '../stats.js';
 
 export function render(ctx) {
   const cam = getCamera();
@@ -205,7 +206,7 @@ export function render(ctx) {
   // and current lives; the 1up threshold (every 100) is visible via the lives
   // counter incrementing.
   ctx.fillStyle = '#ffd700';
-  ctx.fillText(`COINS ${hero.stats.coinsCollected?.total ?? 0}   LIVES ${hero.lives}`, 8, VIEW_H - 30);
+  ctx.fillText(`COINS ${hero.runStats?.coinsCollected?.total ?? 0}   LIVES ${hero.lives}`, 8, VIEW_H - 30);
   ctx.restore();
 
   // --- State overlay (skeleton; replaced by real screens in Milestone 8) -----
@@ -279,7 +280,7 @@ function drawStateOverlay(ctx) {
  */
 function drawGameOverScreen(ctx) {
   const h = getHero();
-  const stats = h.stats ?? {};
+  const stats = h.runStats ?? {};
   const enemiesKilled = countEnemiesKilled();
   const coinsCollected = stats.coinsCollected?.total ?? 0;
   const distance = Math.round(stats.distanceTraveled ?? 0);
@@ -336,7 +337,7 @@ function drawGameOverScreen(ctx) {
 // --- Task 5.2 — game-over stat helpers ---------------------------------------
 /** Total live+dead enemy count that has been defeated this run. */
 function countEnemiesKilled() {
-  const stats = getHero().stats ?? {};
+  const stats = getHero().runStats ?? {};
   const ek = stats.enemiesKilled ?? {};
   let total = 0;
   for (const k in ek) total += ek[k] ?? 0;
@@ -344,17 +345,11 @@ function countEnemiesKilled() {
 }
 
 /**
- * Simple score derivation from run telemetry (Milestone 8 may refine the
- * formula). Coins carry the most weight; kills and distance add on top.
+ * Score derivation from run telemetry using the §4.1 formula (Task 7.3).
+ * Delegates to calculateScore() in stats.js for a single source of truth.
  */
 function computeScore(h) {
-  const stats = h.stats ?? {};
-  const coins = stats.coinsCollected?.total ?? 0;
-  const ek = stats.enemiesKilled ?? {};
-  let kills = 0;
-  for (const k in ek) kills += ek[k] ?? 0;
-  const dist = Math.round(stats.distanceTraveled ?? 0);
-  return coins * 10 + kills * 100 + Math.floor(dist / 10);
+  return calculateScore(h.runStats, h);
 }
 
 /**
