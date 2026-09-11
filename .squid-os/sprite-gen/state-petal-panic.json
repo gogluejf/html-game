@@ -1601,7 +1601,12 @@
             ],
             "frame_size": "332x525"
           }
-        },
+        }
+      ]
+    },
+    "powerups": {
+      "path": "panic-petal/assets/powerups",
+      "sheets": [
         {
           "file": "panic-petal/assets/powerups_sheet_1.png",
           "rows": 5,
@@ -1857,5 +1862,5 @@
       ]
     }
   },
-  "updated": "2026-09-11T00:12:44.760967"
+  "updated": "2026-09-11T00:14:30"
 }
