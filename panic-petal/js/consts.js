@@ -14,6 +14,14 @@ export const MAX_FALL_SPEED = 800;
 // 0.98 at 60fps ≈ gentle air resistance; tune per entity later if needed.
 export const AIR_DRAG = 0.995;
 
+// --- Time-to-live (TTL) -----------------------------------------------------
+// Global multiplier for all entity TTLs. 1 = normal speed.
+// Set via console: window.TTL_SPEED = 0.5 (slower expiry) or 2 (faster).
+export let TTL_SPEED = 1;
+
+// Default coin lifetime in seconds before it fades out if uncollected.
+export const COIN_TTL = 8;
+
 // --- Collision layers (bitmask) --------------------------------------------
 // Each entity sets `layer` to one or more of these bits; collision rules in
 // js/collision.js AND the masks to decide whether a pair interacts.

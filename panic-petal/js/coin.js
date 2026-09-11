@@ -15,7 +15,7 @@
 // coins always get their chance to be picked up.
 
 import { Entity } from './entity.js';
-import { LAYER, GRAVITY, MAX_FALL_SPEED } from './consts.js';
+import { LAYER, GRAVITY, MAX_FALL_SPEED, COIN_TTL, TTL_SPEED } from './consts.js';
 
 // --- Tunables ----------------------------------------------------------------
 export const MAX_COINS = 30;                 // hard cap on live coins (§17 perf param)
@@ -85,6 +85,10 @@ export class Coin extends Entity {
     this.collected = false;                 // latched on collect (prevents double-credit)
     this.spinAngle = 0;                     // visual spin (radians)
     this.settled = false;                   // true once velocity has damped out
+    // TTL: coins fade out after COIN_TTL seconds if not collected.
+    this.maxTtl = COIN_TTL;
+    this.ttl = COIN_TTL;
+    this.ttlSpeed = 1; // reads global TTL_SPEED each frame via tickTtl override below
   }
 
   /**
@@ -96,6 +100,10 @@ export class Coin extends Entity {
    */
   update(dt) {
     if (this.collected) return;
+
+    // TTL countdown — coin fades out after its lifetime expires.
+    this.tickTtl(dt * TTL_SPEED);
+    if (!this.alive) return;
 
     // Gravity scaled by per-type weight.
     this.vy += GRAVITY * this.weight * dt;
@@ -168,6 +176,11 @@ export class Coin extends Entity {
     const def = COIN_TYPES[this.coinType];
 
     ctx.save();
+    // Fade out during the last 25% of TTL so the player sees coins expiring.
+    if (this.maxTtl > 0) {
+      const frac = this.ttlFrac;
+      if (frac < 0.25) ctx.globalAlpha = frac / 0.25;
+    }
     ctx.translate(cx, cy);
     ctx.scale(squash, 1);
     // Body.
@@ -329,8 +342,8 @@ export class CoinPool {
         }
       }
 
-      // Cull off-screen (fell past the level, walked off the right edge).
-      if (c.x + c.w < 0 || c.x > levelLength || c.y > floorTop + 80) {
+      // Cull off-screen (fell past the level, walked off the right edge) or TTL expired.
+      if (!c.alive || c.x + c.w < 0 || c.x > levelLength || c.y > floorTop + 80) {
         c.alive = false;
         this.active.splice(i, 1);
       }

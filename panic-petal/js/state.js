@@ -32,12 +32,12 @@ export function setState(s) {
 
 // Transition map: which states can go where (design §1 graph).
 const TRANSITIONS = {
-  [S.HOME]:   [S.SELECT],
+  [S.HOME]:   [S.SELECT, S.PLAY],       // PLAY = F3 boot shortcut
   [S.SELECT]: [S.PLAY],
   [S.PLAY]:   [S.PAUSE, S.OVER, S.WIN],
   [S.PAUSE]:  [S.PLAY, S.HOME],       // resume or quit
   [S.OVER]:   [S.PLAY, S.HOME],       // retry or quit
-  [S.WIN]:    [S.SELECT, S.HOME],     // play again or quit
+  [S.WIN]:    [S.SELECT, S.HOME, S.PLAY], // play again or quit; PLAY = F3 shortcut
 };
 
 export function canTransition(from, to) {

@@ -7,6 +7,7 @@ import { update } from './systems/update.js';
 import { render } from './systems/render.js';
 import { loadImages } from './screens.js';
 import { waitForFonts } from './fonts.js';
+import * as CONSTS from './consts.js';
 
 // Load screen assets (Home/Select) immediately on page load.
 loadImages();
@@ -83,5 +84,12 @@ function frame(t) {
 
 // Expose for console/debug tuning: window.setGameScale(2) (live, uniform upscale).
 window.setGameScale = setGameScale;
+
+// Expose TTL_SPEED for live tuning: window.TTL_SPEED = 0.5 (slower coin expiry).
+Object.defineProperty(window, 'TTL_SPEED', {
+  get: () => CONSTS.TTL_SPEED,
+  set: (v) => { CONSTS.TTL_SPEED = v; },
+  configurable: true,
+});
 
 requestAnimationFrame(frame);

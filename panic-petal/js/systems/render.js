@@ -46,7 +46,6 @@ export function render(ctx) {
   for (const b of getBarrels()) {
     if (!b.alive) continue; // destroyed barrel is removed from play
     b.draw(ctx);
-    if (isDebugEnabled() && b.hp != null && b.maxHp > 0) drawHpBar(ctx, b);
   }
 
   // Placeholder pickups / enemies / projectiles (debug-colored bodies).
@@ -69,7 +68,6 @@ export function render(ctx) {
       ctx.fillRect(eb.x + sh.x, eb.y + sh.y, eb.w, eb.h);
       ctx.restore();
     }
-    if (e.hp != null && e.maxHp > 0) drawHpBar(ctx, e);
   }
 
   // Task 3.3 + 5.1 — real enemies (jester + vine_hound/violetta/jacko/boris).
@@ -82,9 +80,6 @@ export function render(ctx) {
     ctx.translate(sh.x, sh.y);
     e.draw(ctx);
     ctx.restore();
-    if (e.hp != null && e.maxHp > 0 && e.aiState !== 'dead') {
-      drawHpBar(ctx, e);
-    }
   }
 
   // Task 6.1 — boss (Overgrown Elephant). Drawn with a wide HP bar above it so
@@ -122,6 +117,15 @@ export function render(ctx) {
       const cy = c.y - 4;
       ctx.fillStyle = c.debugColor ?? '#fff';
       ctx.fillText(String(c.value), cx, cy);
+      // Small TTL bar (consistent with all other F3 bars).
+      if (c.maxTtl > 0) {
+        const barW = 14, barH = 2;
+        const bx = cx - barW / 2, by = cy - 6;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(bx, by, barW, barH);
+        ctx.fillStyle = c.ttlFrac < 0.25 ? '#e74c3c' : c.debugColor ?? '#fff';
+        ctx.fillRect(bx, by, barW * c.ttlFrac, barH);
+      }
     }
     // Task 4.3 — F3 debug: powerup type label above each live powerup, and the
     // checkpoint id above each flag (triggered ones dimmed).
@@ -138,6 +142,51 @@ export function render(ctx) {
       const cy = c.y - 6;
       ctx.fillStyle = c.triggered ? 'rgba(255,215,0,0.4)' : '#ffd700';
       ctx.fillText(`[${c.checkpointId}]`, cx, cy);
+    }
+    // Unified F3 labels: name + HP/energy bar for every entity.
+    // Consistent format: [NAME] above a small colored bar showing remaining life.
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    const BAR_W = 24, BAR_H = 3;
+
+    function drawLabel(ctx, x, y, name, frac, color) {
+      // Name text.
+      ctx.fillStyle = color;
+      ctx.fillText(name, x, y);
+      // Progress bar below the name.
+      const by = y + 3;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(x - BAR_W / 2, by, BAR_W, BAR_H);
+      ctx.fillStyle = frac < 0.25 ? '#e74c3c' : color;
+      ctx.fillRect(x - BAR_W / 2, by, BAR_W * Math.max(0, frac), BAR_H);
+    }
+
+    // Barrels (the orange SOLID boxes)
+    for (const b of getBarrels()) {
+      if (!b.alive) continue;
+      drawLabel(ctx, b.x + b.w / 2, b.y - 10, b.type, b.hp / b.maxHp, '#ff9f43');
+    }
+    // Hero energy
+    {
+      const h = getHero();
+      if (h && !h.dying) {
+        drawLabel(ctx, h.x + h.w / 2, h.y - 10, 'HERO', h.energy / h.maxEnergy, '#2ecc71');
+      }
+    }
+    // Enemy HP bar + name:state (single unified label, no duplication)
+    for (const e of getRealEnemies()) {
+      if (!e.alive) continue;
+      const frac = e.aiState === 'dead'
+        ? Math.max(0, 1 - (e.deathTimer / e.deathDuration))
+        : e.hp / e.maxHp;
+      drawLabel(ctx, e.x + e.w / 2, e.y - 10, `${e.type}:${e.aiState}`, frac, '#e74c3c');
+    }
+    // Boss HP
+    {
+      const b = getBoss();
+      if (b && b.alive) {
+        drawLabel(ctx, b.x + b.w / 2, b.y - 28, 'BOSS', b.hp / b.maxHp, '#e74c3c');
+      }
     }
     ctx.restore();
   }
@@ -410,14 +459,14 @@ function drawBossDebug(ctx, b) {
  * @param {Enemy} e any real enemy entity
  */
 function drawEnemyDebug(ctx, e) {
-  if (!e || !e.alive) return; // only draw while the enemy exists (incl. death anim)
+  if (!e || !e.alive) return;
 
   const cx = e.x + e.w / 2;
   const cy = e.y + e.h / 2;
 
-  // Aggro radius circle (faint).
+  // Aggro radius circle (faint but visible).
   ctx.save();
-  ctx.globalAlpha = 0.15;
+  ctx.globalAlpha = 0.35;
   ctx.strokeStyle = '#e74c3c';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
@@ -426,16 +475,12 @@ function drawEnemyDebug(ctx, e) {
   ctx.stroke();
   ctx.restore();
 
-  // AI state label above head. Color encodes activity level.
+  // Small AI-state text just below the entity (not above — drawLabel handles above).
   ctx.save();
-  ctx.font = 'bold 10px monospace';
+  ctx.font = '9px monospace';
   ctx.textAlign = 'center';
-  const active = ['chase', 'pace', 'roll', 'lunge', 'dive', 'attack', 'melee', 'shoot'];
-  const color = e.aiState === 'dead' ? '#999'
-    : active.includes(e.aiState) ? '#f39c12'
-    : '#aaa';
-  ctx.fillStyle = color;
-  ctx.fillText(`${e.type}:${e.aiState}`.toUpperCase(), cx, e.y - 14);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fillText(e.aiState, cx, e.y + e.h + 10);
   ctx.restore();
 }
 

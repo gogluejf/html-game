@@ -52,6 +52,37 @@ export class Entity {
     // --- State ----------------------------------------------------------------
     this.alive = true;
     this.debugColor = opts.debugColor ?? '#fff';
+
+    // --- Time-to-live (TTL) ---------------------------------------------------
+    // Generic expiry for any entity that should fade out after a period.
+    //   maxTtl  > 0  → entity will expire after maxTtl seconds (scaled by ttlSpeed)
+    //   maxTtl  = 0  → no expiry (default; lives forever until removed by logic)
+    //   ttl       → remaining seconds (counts down each frame)
+    //   ttlSpeed  → per-entity speed multiplier (1 = normal, 2 = twice as fast)
+    // The engine's global TTL_SPEED constant can scale all TTLs at once (tuning).
+    this.maxTtl = opts.maxTtl ?? 0;
+    this.ttl = this.maxTtl;
+    this.ttlSpeed = opts.ttlSpeed ?? 1;
+  }
+
+  /**
+   * Advance the TTL clock. Call from update() or let the engine do it.
+   * When ttl reaches 0, alive is set to false.
+   * @param {number} dt seconds
+   */
+  tickTtl(dt) {
+    if (this.maxTtl <= 0 || !this.alive) return;
+    this.ttl -= dt * this.ttlSpeed;
+    if (this.ttl <= 0) {
+      this.ttl = 0;
+      this.alive = false;
+    }
+  }
+
+  /** Fraction of life remaining (1 = fresh, 0 = expired). For progress bars. */
+  get ttlFrac() {
+    if (this.maxTtl <= 0) return 1;
+    return Math.max(0, this.ttl / this.maxTtl);
   }
 
   /**

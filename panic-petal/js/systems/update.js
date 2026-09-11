@@ -317,10 +317,54 @@ export function continueFromGameOver() {
   return true;
 }
 
+/**
+ * F3 boot shortcut: reset the world to a clean state before jumping to PLAY.
+ * Kills all enemies, clears projectiles/coins/particles, resets checkpoints.
+ * The hero is rebuilt by the transition hook (SELECT/HOME/OVER/WIN → PLAY).
+ */
+function resetWorldForF3() {
+  // Kill all real enemies + boss.
+  for (const e of realEnemies) {
+    if (e.alive) { e.alive = false; }
+  }
+  const b = getBoss();
+  if (b && b.alive) b.alive = false;
+  // Clear projectiles.
+  for (const p of projectilePool.activeItems) { p.alive = false; }
+  projectilePool.active.length = 0;
+  // Clear coins.
+  for (const c of coins.activeItems) { c.alive = false; c.collected = true; }
+  coins.active.length = 0;
+  // Reset checkpoint flags.
+  for (const c of checkpoints) c.triggered = false;
+  // Reset effects.
+  Effects.reset();
+  console.log('[debug] world reset for F3 boot');
+}
+
 window.addEventListener('keydown', (e) => {
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','KeyG','KeyJ'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
-  if (e.code === 'F3') { e.preventDefault(); setDebugEnabled(!isDebugEnabled()); }
+  if (e.code === 'F3') {
+    e.preventDefault();
+    const s = getState();
+    if (s !== S.PLAY) {
+      // Dev boot shortcut: jump to PLAY with Scarlet + debug ON. No reload.
+      window.__selectedHero = 'scarlet';
+      setDebugEnabled(true);
+      hero.x = 80;
+      hero.y = FLOOR_TOP - hero.h;
+      hero.vx = 0; hero.vy = 0;
+      hero.alive = true;
+      hero.dying = false;
+      hero.deathTimer = 0;
+      tryTransition(S.PLAY);
+      console.log(`[debug] F3: ${STATE_NAMES[s]} → PLAY`);
+    } else {
+      setDebugEnabled(!isDebugEnabled());
+    }
+    return;
+  }
   // F1 toggles the Debug & Test Harness (design §19). Reset flags when turning off.
   if (e.code === 'F1') {
     e.preventDefault();
@@ -825,7 +869,9 @@ onTransition((from, to) => { screenReset(to); });
 // Milestone 8 — When SELECT → PLAY, rebuild the hero with the chosen definition.
 // The Select screen sets window.__selectedHero before calling tryTransition(S.PLAY).
 onTransition((from, to) => {
-  if (from === S.SELECT && to === S.PLAY) {
+  if (to === S.PLAY && from !== S.PAUSE) {
+    // Covers: SELECT→PLAY, HOME→PLAY (F3 boot), OVER→PLAY, WIN→PLAY.
+    // PAUSE→PLAY is a resume — hero state is already correct.
     const heroId = window.__selectedHero || 'scarlet';
     const def = HEROES[heroId] || HEROES.scarlet;
     // Rebuild hero in place with the new definition.
@@ -1488,3 +1534,5 @@ function syncProjectilesToWorld() {
     if (!world.entities.has(p)) world.add(p);
   }
 }
+
+
