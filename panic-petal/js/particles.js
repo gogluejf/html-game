@@ -98,6 +98,34 @@ export class ParticleSystem {
     return spawned;
   }
 
+  /**
+   * Emit a SINGLE sparkle with an explicit color, speed and angle — used by
+   * directional effects like barrel explosions where the caller controls the
+   * vector rather than leaving it random. Falls back to a parked slot; returns
+   * null when the pool is exhausted (soft cap, no allocation).
+   *
+   * @param {number} cx center x
+   * @param {number} cy center y
+   * @param {string} color fill color
+   * @param {number} speed initial outward speed (px/s)
+   * @param {number} angle launch direction (radians)
+   * @returns {object|null} the live sparkle, or null if the pool is full
+   */
+  spawnOne(cx, cy, color, speed, angle) {
+    for (const item of this.items) {
+      if (item.alive) continue;
+      Object.assign(item, new Sparkle(cx - SPARKLE_SIZE / 2, cy - SPARKLE_SIZE / 2, color));
+      // Override the random velocity with the caller's directed vector.
+      item.vx = Math.cos(angle) * speed;
+      item.vy = Math.sin(angle) * speed;
+      item.color = color;
+      item.alive = true;
+      this.active.push(item);
+      return item;
+    }
+    return null; // pool exhausted
+  }
+
   /** Advance all active sparkles; cull expired ones. */
   updateAll(dt) {
     for (let i = this.active.length - 1; i >= 0; i--) {

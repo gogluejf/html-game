@@ -6,7 +6,7 @@
 // overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../view.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getJester, getParticles, getCoins } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getJester, getParticles, getCoins, getBarrels, getShakeOffset } from './update.js';
 import { getState, STATE_NAMES } from '../state.js';
 
 export function render(ctx) {
@@ -18,12 +18,22 @@ export function render(ctx) {
 
   // --- World (camera-translated) -------------------------------------------
   ctx.save();
-  ctx.translate(-cam.x, -cam.y);
+  // Task 4.1 — explosion screen shake offsets the whole world by a decaying
+  // random vector (getShakeOffset returns {x:0,y:0} when idle).
+  const shake = getShakeOffset();
+  ctx.translate(-cam.x + shake.x, -cam.y + shake.y);
 
   // Solid platforms (orange per design §16 debug palette).
   for (const s of getSolids()) {
     ctx.fillStyle = '#ff9f43';
     ctx.fillRect(s.x, s.y, s.w, s.h);
+  }
+
+  // Task 4.1 — destructible barrels (drawn via Entity.draw; white flash on hit).
+  for (const b of getBarrels()) {
+    if (!b.alive) continue; // destroyed barrel is removed from play
+    b.draw(ctx);
+    if (isDebugEnabled() && b.hp != null && b.maxHp > 0) drawHpBar(ctx, b);
   }
 
   // Placeholder pickups / enemies / projectiles (debug-colored bodies).
@@ -144,7 +154,8 @@ function drawDebugOverlay(ctx) {
   ];
 
   const all = [...getSolids().map(s => solidEntityProxy(s)),
-               ...getPickups(), ...getEnemies(), ...getProjectiles(), getHero()];
+               ...getPickups(), ...getEnemies(), ...getProjectiles(), getHero(),
+               ...getBarrels()];
 
   for (const ent of all) {
     const layer = ent.layer ?? 0;
@@ -170,6 +181,21 @@ function drawDebugOverlay(ctx) {
     ctx.strokeStyle = '#f1c40f';
     ctx.lineWidth = 2;
     ctx.strokeRect(mh.x, mh.y, mh.w, mh.h);
+    ctx.restore();
+  }
+
+  // Task 4.1 — magenta rings showing each live explosive barrel's AoE radius
+  // (design §16: "Magenta ring — explosion AoE radius").
+  for (const b of getBarrels()) {
+    if (!b.alive || !b.explosive || b.explodeRadius <= 0) continue;
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = '#ff6ec7';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, b.explodeRadius, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   }
 }

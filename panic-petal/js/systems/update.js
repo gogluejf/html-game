@@ -20,6 +20,7 @@ import { damage } from '../damage.js';
 import { S, getState, STATE_NAMES, tryTransition } from '../state.js';
 import { Jester } from '../jester.js';
 import { particles, coins } from '../particles.js';
+import { makeBarrel, makeCoinBarrel, explodeBarrel, BARREL_DAMAGE, GameObj } from '../object.js';
 
 // --- Tunables for the test rig ---------------------------------------------
 // (Hero movement feel lives in js/hero.js; level geometry below.)
@@ -129,6 +130,19 @@ const pickups = [
   new Entity({ x: 2000, y: VIEW_H - 40 - 28, w: 24, h: 24, gravity: 0, layer: LAYER.PICKUP, debugColor: '#3498db' }),
 ];
 
+// Task 4.1 — Destructible solid barrels (design §10 "Object").
+// Barrels are SOLID (block hero + enemy) but carry an HP pool; melee/thorns/bombs
+// chip that HP and it only explodes when HP hits 0. Placed along the floor so the
+// hero has to shoot around/through them. One coin barrel sits nearby as a coin
+// source (no damaging explosion).
+const BARREL_FLOOR_TOP = VIEW_H - 40; // sit on the floor
+const barrels = [
+  makeBarrel(600,  BARREL_FLOOR_TOP - 48),   // just right of spawn area
+  makeBarrel(1350, BARREL_FLOOR_TOP - 48),   // near the jester
+  makeBarrel(2100, BARREL_FLOOR_TOP - 48),   // mid-level cover
+  makeCoinBarrel(2700, BARREL_FLOOR_TOP - 48), // coin source near the end
+];
+
 // --- Input -------------------------------------------------------------------
 const keys = new Set();
 
@@ -182,6 +196,10 @@ for (const e of enemies) world.add(e);
 world.add(animTestEnemy);
 // Task 3.3 — jester participates in collisions (thorn hits, contact damage).
 world.add(jester);
+// Task 4.1 — barrels are SOLID: they block hero + enemy (resolve) and can be
+// hit by friendly thorns (PROJ_ALLY×SOLID → 'hit'). Added now; destroyed ones
+// are removed from the world when their HP hits 0.
+for (const b of barrels) world.add(b);
 
 // Rule-action handlers — the declarative dispatch path. For this task we only
 // need to observe events; damage/pickup logic arrives with later tasks.
@@ -194,6 +212,21 @@ world.on('hit', (a, b) => {
   const proj = a.layer === LAYER.PROJ_ALLY ? a : (b.layer === LAYER.PROJ_ALLY ? b : null);
   if (!proj || !proj.friendly) return; // only handle hero thorns here
   const target = proj === a ? b : a;
+
+  // Task 4.1 — friendly thorn hits a barrel (SOLID with an HP pool). Chip its
+  // HP; on destruction the barrel explodes (AoE + VFX) and is removed from the
+  // world. Thorns are consumed on impact either way.
+  if (target instanceof GameObj) {
+    const dealt = target.hit(proj.damage, hero, 'projectile');
+    if (dealt > 0) {
+      proj.alive = false;
+      if (target.destroyed) handleBarrelDestroyed(target);
+    } else {
+      proj.alive = false; // hit an already-destroyed solid — still consumed
+    }
+    return;
+  }
+
   if (target.layer !== LAYER.ENEMY && target.layer !== LAYER.BOSS) return;
   if (target.hp == null) return;       // non-target placeholder (e.g. anim test box)
   // Central damage routing: defense + telemetry in one place (Task 3.2).
@@ -235,6 +268,33 @@ world.on('contact', (a, b) => {
 export const camera = new Camera();
 camera.levelLength = LEVEL_LENGTH;
 
+// Task 4.1 — brief screen shake on barrel explosions (optional juice). A decaying
+// magnitude in px; render.js offsets the world by a random vector within it.
+let shakeMag = 0;
+const SHAKE_DURATION = 0.25; // seconds the shake lasts after being triggered
+let shakeTimer = 0;
+let shakeOffset = { x: 0, y: 0 };
+/** Trigger a screen shake of `mag` px for SHAKE_DURATION seconds. */
+function triggerShake(mag) {
+  shakeMag = Math.max(shakeMag, mag);
+  shakeTimer = SHAKE_DURATION;
+}
+/** Per-frame decay; recomputes and returns the current random offset {x,y}. */
+function updateShake(dt) {
+  if (shakeTimer > 0) shakeTimer -= dt;
+  if (shakeTimer <= 0 || shakeMag <= 0) {
+    shakeMag = 0;
+    shakeOffset.x = 0;
+    shakeOffset.y = 0;
+    return shakeOffset;
+  }
+  const m = shakeMag * (shakeTimer / SHAKE_DURATION); // ease out
+  shakeOffset.x = (Math.random() * 2 - 1) * m;
+  shakeOffset.y = (Math.random() * 2 - 1) * m;
+  return shakeOffset;
+}
+export function getShakeOffset() { return shakeOffset; }
+
 export function getHero() { return hero; }
 export function getSolids() { return SOLIDS; }
 export function getCollisionWorld() { return world; }
@@ -249,6 +309,8 @@ export function getCamera() { return camera; }
 export function getJester() { return jester; }
 export function getParticles() { return particles; }
 export function getCoins() { return coins; }
+// Task 4.1 — barrels + explosion screen shake for render.
+export function getBarrels() { return barrels; }
 
 // --- Per-frame step ------------------------------------------------------------
 export function update(dt) {
@@ -271,6 +333,11 @@ export function update(dt) {
   // 1d. decay hit-flash timers on enemies (white flash when struck).
   for (const e of enemies) {
     if (e.hitFlash > 0) e.hitFlash -= dt;
+  }
+
+  // 1d2. Task 4.1 — tick live barrels (decays their hit-flash timer).
+  for (const b of barrels) {
+    if (b.alive) b.update(dt);
   }
 
   // 1e. Task 3.3 — Jester AI + physics + whip damage + death pipeline.
@@ -305,6 +372,9 @@ export function update(dt) {
 
   // 4. camera follows the hero (clamped to level bounds, facing look-ahead).
   camera.update(hero);
+
+  // 5. Task 4.1 — decay the explosion screen shake (render reads getShakeOffset()).
+  updateShake(dt);
 }
 
 /**
@@ -415,6 +485,22 @@ function applyMeleeDamage(h, _dt) {
       }
     }
   }
+
+  // Task 4.1 — melee chips barrel HP (a swing breaks a barrel over several hits;
+  // it does NOT break on touch). Each barrel is struck at most once per swing.
+  for (const b of barrels) {
+    if (!b.alive || b.destroyed) continue;
+    if (h._meleeHitSet.has(b)) continue;
+    const bb = b.worldBox();
+    if (hb.x < bb.x + bb.w && hb.x + hb.w > bb.x &&
+        hb.y < bb.y + bb.h && hb.y + hb.h > bb.y) {
+      const dealt = b.hit(h.stats.attack, h, 'melee');
+      if (dealt > 0) {
+        h._meleeHitSet.add(b);
+        if (b.destroyed) handleBarrelDestroyed(b);
+      }
+    }
+  }
 }
 
 // --- Jester update (Task 3.3) -------------------------------------------------
@@ -474,6 +560,60 @@ function updateEffects(dt) {
   coins.updateAll(dt, FLOOR_TOP, LEVEL_LENGTH);
   // Sync coins into the collision world so HERO×COIN collect works.
   syncCoinsToWorld();
+}
+
+// --- Task 4.1 — Barrel destruction / explosion ---------------------------------
+// When a barrel's HP hits 0 (from any source: thorn, melee, bomb) we run the
+// explosion pipeline once: AoE damage to everything in radius (enemies AND hero),
+// an orange/red particle burst, a brief screen shake, and removal from the world.
+// Coin barrels skip the damaging AoE but still pop coins.
+
+/**
+ * Handle a barrel that just reached 0 HP. Runs the explosion AoE (damaging
+ * barrel only), spawns VFX, drops coins for coin barrels, shakes the screen,
+ * and removes the barrel from the collision world.
+ * @param {GameObj} barrel the destroyed object
+ */
+function handleBarrelDestroyed(barrel) {
+  const { cx, cy } = { cx: barrel.x + barrel.w / 2, cy: barrel.y + barrel.h / 2 };
+
+  if (barrel.explosive) {
+    // AoE damage to every live entity in radius (enemies + hero). The pure
+    // explodeBarrel() routes through central damage(); we pass the full live set.
+    const targets = [hero, ...enemies, jester];
+    const result = explodeBarrel(barrel, targets);
+    // Explosion VFX: 12–15 orange/red particles expanding outward.
+    spawnExplosionVFX(cx, cy, result.radius);
+    triggerShake(8);
+    // SFX: explosion
+  } else {
+    // Coin barrel: no damaging explosion, just a coin burst (design §10/§13).
+    const coinDrop = { range: [4, 7], chance: 1 };
+    coins.dropCoins(coinDrop, cx, cy);
+    // Small pop burst (reuse sparkle emitter).
+    particles.spawnBurst(cx, cy, 6);
+    // SFX: coin
+  }
+
+  // Remove the dead barrel from the collision world so it stops blocking.
+  world.remove(barrel);
+}
+
+/**
+ * Spawn an explosion visual: N orange/red particles flying outward from the
+ * blast center. Reuses the pooled particle system; colors are warm (fire-like).
+ * @param {number} cx blast center x
+ * @param {number} cy blast center y
+ * @param {number} radius explosion radius (scales the burst spread)
+ */
+function spawnExplosionVFX(cx, cy, radius) {
+  const count = 12 + Math.floor(Math.random() * 4); // 12–15
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 120 + Math.random() * (radius * 1.5);
+    const color = ['#e74c3c', '#f39c12', '#ff6ec7', '#ffffff'][i % 4];
+    particles.spawnOne(cx, cy, color, speed, angle);
+  }
 }
 
 /** Keep the collision world's coin set in sync with the pool. */

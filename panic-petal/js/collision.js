@@ -130,6 +130,7 @@ export const COLLISION_RULES = [
   { a: LAYER.ENEMY,     b: LAYER.SOLID,       action: 'resolve'    },
   { a: LAYER.PROJ_ALLY, b: LAYER.ENEMY,       action: 'hit'        },
   { a: LAYER.PROJ_ALLY, b: LAYER.BOSS,        action: 'hit'        },
+  { a: LAYER.PROJ_ALLY, b: LAYER.SOLID,       action: 'hit'        }, // thorns chip barrels (Task 4.1)
   { a: LAYER.PROJ_FOE,  b: LAYER.HERO,        action: 'hit'        },
   { a: LAYER.HERO,      b: LAYER.PICKUP,      action: 'pickup'     },
   { a: LAYER.HERO,      b: LAYER.COIN,        action: 'collect'    },
