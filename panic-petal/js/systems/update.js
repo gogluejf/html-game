@@ -19,14 +19,13 @@ import { projectilePool, aimFromInput, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
 import { S, getState, STATE_NAMES, tryTransition } from '../state.js';
 import { Jester } from '../jester.js';
-import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
-import { Violetta, VIOLETTA_DEF } from '../violetta.js';
-import { JackOLantern, JACKO_DEF, explodeJackolantern } from '../jackolantern.js';
-import { BorisLoon, BORIS_DEF, BORIS_BABY_DEF, makeBoris, makeBorisBaby } from '../boris_loon.js';
-import { particles, coins } from '../particles.js';
+import { VINE_HOUND_DEF } from '../vine_hound.js';
+import { VIOLETTA_DEF } from '../violetta.js';
+import { JackOLantern, explodeJackolantern } from '../jackolantern.js';import { particles, coins } from '../particles.js';
 import { makeBarrel, makeCoinBarrel, explodeBarrel, BARREL_DAMAGE, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
+import { LEVELS, generateLevel } from '../level.js';
 
 // --- Tunables for the test rig ---------------------------------------------
 // (Hero movement feel lives in js/hero.js; level geometry below.)
@@ -34,27 +33,21 @@ import { COIN_TYPES } from '../coin.js';
 // Task 5.2 — continue cost in coins (design §1/§14: 1000 coins per continue).
 export const CONTINUE_COST = 1000;
 
-// Level length: intentionally wider than the 960px viewport so the camera
-// can scroll. Floor spans the full length; air platforms are scattered along it.
-export const LEVEL_LENGTH = 6400;
+// Task 5.3 — Level struct + rogue spawner (design §13). The declarative level
+// definition (LEVELS[0] "Big Top") drives all world content: platforms,
+// checkpoints, and every spawnable item. generateLevel() randomly places the
+// spawnables along flat ground with min spacing; the hero-start zone (first
+// 500px) and boss arena (last 500px) stay clear.
+const LEVEL_DEF = LEVELS[0];
+const generated = generateLevel(LEVEL_DEF);
 
-// --- Static solid platforms (orange) ----------------------------------------
-// Plain AABBs; also wrapped as layer entities so the debug overlay can draw
-// them and the mask rules are exercised end-to-end.
-export const SOLIDS = [
-  { x: 0,    y: VIEW_H - 40, w: LEVEL_LENGTH, h: 40 },   // floor (full length)
-  { x: 180,  y: 380, w: 200, h: 24 },                    // low left platform
-  { x: 560,  y: 300, w: 220, h: 24 },                    // mid right platform
-  { x: 360,  y: 200, w: 160, h: 24 },                    // high center platform
-  { x: 900,  y: 360, w: 240, h: 24 },                    // further-right platform
-  { x: 1400, y: 300, w: 200, h: 24 },                    // mid platform
-  { x: 1900, y: 360, w: 260, h: 24 },                    // far platform
-  { x: 2400, y: 280, w: 200, h: 24 },                    // near-end platform
-  { x: 3200, y: 360, w: 240, h: 24 },                    // checkpoint-2 platform
-  { x: 4000, y: 300, w: 200, h: 24 },                    // mid-right platform
-  { x: 4800, y: 360, w: 260, h: 24 },                    // checkpoint-3 platform
-  { x: 5600, y: 300, w: 200, h: 24 },                    // final stretch platform
-];
+// Level length comes from the level definition (camera clamps to this).
+export const LEVEL_LENGTH = LEVEL_DEF.length;
+
+// --- Static solid platforms -------------------------------------------------
+// Plain AABBs from the level definition; also wrapped as layer entities so the
+// debug overlay can draw them and the mask rules are exercised end-to-end.
+export const SOLIDS = generated.platforms;
 
 // Solid wrapper entities (layer-only; no velocity/anim needed).
 class SolidBox extends Entity {
@@ -67,9 +60,10 @@ const solidEntities = SOLIDS.map(b => new SolidBox(b));
 // --- Hero (Task 2.2) ---------------------------------------------------------
 // Real Hero wrapping the Scarlet Vale definition; run/jump/crouch/slide,
 // gravity, ground friction, facing+mirrorX, and crouch-box shrink all live in
-// js/hero.js. Spawn on the floor: y = floorTop - hero.h.
-const FLOOR_TOP = VIEW_H - 40;
-const hero = new Hero(HEROES.scarlet, 80, FLOOR_TOP - HEROES.scarlet.h);
+// js/hero.js. Spawn on the floor at x=100 (per design §13 hero start).
+const FLOOR_TOP = SOLIDS[0].y; // ground top (first platform is the full-length floor)
+const HERO_START_X = 100;
+const hero = new Hero(HEROES.scarlet, HERO_START_X, FLOOR_TOP - HEROES.scarlet.h);
 
 // Task 3.1 — thorn fire state. Cooldown is in seconds; rapid powerup halves it.
 // (Hero.stats.projectile_freq is "shots per second", so base interval = 1/freq.)
@@ -111,7 +105,7 @@ hero.anims.attack = new Anim(
 // Task 3.1 — three red target boxes (HP = 20) that friendly thorns can destroy.
 // These stand in for real enemies: same ENEMY layer + HP, but no death pipeline
 // yet (that lands in Task 3.3). When hp drops to <= 0 they are culled here.
-const FLOOR_TOP_ENEMY = VIEW_H - 40; // floor top; targets sit on the floor
+const FLOOR_TOP_ENEMY = SOLIDS[0].y; // floor top; targets sit on the floor
 const TARGET_HP = 20;
 const enemies = [
   new Entity({ x: 700,  y: FLOOR_TOP_ENEMY - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY, debugColor: '#e74c3c' }),
@@ -125,24 +119,12 @@ for (const e of enemies) {
   e.hitFlash = 0;         // white-flash timer when struck (Task 3.2)
 }
 
-// Task 3.3 — real Jester enemy replacing one of the placeholder targets.
-// The jester has full AI (idle/chase/whip), contact damage, and a death
-// pipeline (shrink → fade → sparkle burst → coin drop).
-const jester = new Jester(1100, FLOOR_TOP_ENEMY - 48);
-
-// Task 5.1 — remaining enemy AIs (design §7). One of each type spread along the
-// x-axis so every documented behavior is observable as the hero advances.
-// Grounders (vine_hound, violetta, jackolantern) sit on the floor; flyers
-// (boris_loon + baby) hover above it at their resting altitude.
-const vineHound = new VineHound(1900, FLOOR_TOP_ENEMY - VINE_HOUND_DEF.h);
-const violetta = new Violetta(2900, FLOOR_TOP_ENEMY - VIOLETTA_DEF.h);
-const jacko = new JackOLantern(3600, FLOOR_TOP_ENEMY - JACKO_DEF.h);
-const boris = makeBoris(4300, FLOOR_TOP_ENEMY - 150);   // flyer resting altitude
-const borisBaby = makeBorisBaby(4500, FLOOR_TOP_ENEMY - 130);
-
-// The full set of "real" Enemy instances (jester + task 5.1 types). Drives the
-// per-frame AI/physics/update loop and the death pipeline uniformly.
-const realEnemies = [jester, vineHound, violetta, jacko, boris, borisBaby];
+// Task 5.3 — Real enemies come from generateLevel(LEVELS[0]). The rogue spawner
+// randomly places each type along flat ground with min spacing; flyers hover at
+// their resting altitude, grounders sit on the floor. Every documented AI
+// (jester/vine_hound/violetta/jackolantern/boris_loon/boris_loon_baby) is
+// instantiated per the level's spawn budget.
+const realEnemies = generated.enemies;
 
 // Task 2.1 — Non-looping anim test. Kept off the live targets (above) so the
 // animation cycle doesn't obscure their destruction; attached to a separate
@@ -164,42 +146,20 @@ const pickups = [
 // Task 4.1 — Destructible solid barrels (design §10 "Object").
 // Barrels are SOLID (block hero + enemy) but carry an HP pool; melee/thorns/bombs
 // chip that HP and it only explodes when HP hits 0. Placed along the floor so the
-// hero has to shoot around/through them. One coin barrel sits nearby as a coin
-// source (no damaging explosion).
-const BARREL_FLOOR_TOP = VIEW_H - 40; // sit on the floor
-const barrels = [
-  makeBarrel(600,  BARREL_FLOOR_TOP - 48),   // just right of spawn area
-  makeBarrel(1350, BARREL_FLOOR_TOP - 48),   // near the jester
-  makeBarrel(2100, BARREL_FLOOR_TOP - 48),   // mid-level cover
-  makeCoinBarrel(2700, BARREL_FLOOR_TOP - 48), // coin source near the end
-];
+// hero has to shoot around/through them. Coin barrels sit nearby as a coin source
+// (no damaging explosion). Task 5.3 — positions now come from generateLevel().
+const barrels = generated.barrels;
+const coinBarrels = generated.coinBarrels;
 
-// Task 4.3 — Powerups (design §10). Scattered along the level at varied x so
-// different effects are encountered as the hero advances. Each sits on the
-// floor (bob animation lifts it visually). The 'clear' powerup is placed late
-// where enemies cluster, and oneUp near the end as a reward.
-const POWERUP_FLOOR_TOP = VIEW_H - 40;
-export const powerups = [
-  new Powerup('ammo',          900,  POWERUP_FLOOR_TOP - 28),
-  new Powerup('invincibility', 1700, POWERUP_FLOOR_TOP - 28),
-  new Powerup('rapid',         2600, POWERUP_FLOOR_TOP - 28),
-  new Powerup('shield',        3400, POWERUP_FLOOR_TOP - 28),
-  new Powerup('energy',        4200, POWERUP_FLOOR_TOP - 28),
-  new Powerup('special',       5000, POWERUP_FLOOR_TOP - 28),
-  new Powerup('clear',         5500, POWERUP_FLOOR_TOP - 28),
-  new Powerup('oneUp',         6100, POWERUP_FLOOR_TOP - 28),
-];
+// Task 4.3 — Powerups (design §10). Scattered along the level by the rogue
+// spawner with min spacing. Each sits on the floor (bob animation lifts it
+// visually). The 'clear' powerup is placed wherever the spawner rolls it.
+export const powerups = generated.powerups;
 
-// Task 4.3 — Checkpoints (design §10/§13): four flags at x = 1500/3000/4500/6000
+// Task 4.3 — Checkpoints (design §10/§13): four flags at x = 2000/4000/6000/7500
 // with ids '1-1' … '1-4'. Touching one stores its position on hero.checkpoint
 // for death-restart. They are NOT solids — they don't block movement.
-const CHECKPOINT_FLOOR_TOP = VIEW_H - 40;
-export const checkpoints = [
-  makeCheckpoint('1-1', 1500, CHECKPOINT_FLOOR_TOP - 48),
-  makeCheckpoint('1-2', 3000, CHECKPOINT_FLOOR_TOP - 48),
-  makeCheckpoint('1-3', 4500, CHECKPOINT_FLOOR_TOP - 48),
-  makeCheckpoint('1-4', 6000, CHECKPOINT_FLOOR_TOP - 48),
-];
+export const checkpoints = generated.checkpoints;
 
 // --- Floating text (Task 4.3 VFX) -------------------------------------------
 // Small pooled "value label" popups for powerup pickups (e.g. "+100 Ammo") and
@@ -362,15 +322,14 @@ world.add(hero);
 // thorns can hit them (the anim box has no hp, so it's damage-immune).
 for (const e of enemies) world.add(e);
 world.add(animTestEnemy);
-// Task 3.3 — jester participates in collisions (thorn hits, contact damage).
-world.add(jester);
 // Task 5.1 — remaining enemies participate in collisions (thorn hits, contact,
 // foe projectiles). Flyers use gravity 0 so they never fall; grounders do not.
-for (const e of [vineHound, violetta, jacko, boris, borisBaby]) world.add(e);
+for (const e of realEnemies) world.add(e);
 // Task 4.1 — barrels are SOLID: they block hero + enemy (resolve) and can be
 // hit by friendly thorns (PROJ_ALLY×SOLID → 'hit'). Added now; destroyed ones
-// are removed from the world when their HP hits 0.
-for (const b of barrels) world.add(b);
+// are removed from the world when their HP hits 0. Both explosive barrels AND
+// coin barrels participate (coin barrels just skip the damaging AoE on death).
+for (const b of [...barrels, ...coinBarrels]) world.add(b);
 // Task 4.3 — powerups (PICKUP layer; HERO×PICKUP → 'pickup') and checkpoints
 // (CHECKPOINT layer; HERO×CHECKPOINT → 'checkpoint'). Both are non-solid.
 for (const p of powerups) world.add(p);
@@ -608,19 +567,15 @@ export function getAnimTestEnemy() { return animTestEnemy; }
 export function getProjectiles() { return projectilePool.activeItems; }
 export function getPickups() { return pickups; }
 export function getCamera() { return camera; }
-// Task 3.3 — jester + particle/coin pools for render.
-export function getJester() { return jester; }
-// Task 5.1 — remaining enemy instances + full real-enemy list for render/F3.
-export function getVineHound() { return vineHound; }
-export function getVioletta() { return violetta; }
-export function getJacko() { return jacko; }
-export function getBoris() { return boris; }
-export function getBorisBaby() { return borisBaby; }
+// Task 2.1 — decorative anim-test box (damage-immune placeholder).
+export function getAnimTestEnemy() { return animTestEnemy; }
+// Task 5.3 — full real-enemy list (from generateLevel) for render/F3.
 export function getRealEnemies() { return realEnemies; }
 export function getParticles() { return particles; }
 export function getCoins() { return coins; }
-// Task 4.1 — barrels + explosion screen shake for render.
-export function getBarrels() { return barrels; }
+// Task 4.1 + 5.3 — barrels (explosive + coin) + explosion screen shake for render.
+export function getBarrels() { return [...barrels, ...coinBarrels]; }
+export function getCoinBarrels() { return coinBarrels; }
 // Task 4.3 — powerups, checkpoints, floating text for render + F3 debug.
 export function getPowerups() { return powerups; }
 export function getCheckpoints() { return checkpoints; }
@@ -669,7 +624,7 @@ export function update(dt) {
   }
 
   // 1d2. Task 4.1 — tick live barrels (decays their hit-flash timer).
-  for (const b of barrels) {
+  for (const b of [...barrels, ...coinBarrels]) {
     if (b.alive) b.update(dt);
   }
 
@@ -854,7 +809,7 @@ function applyMeleeDamage(h, _dt) {
 
   // Task 4.1 — melee chips barrel HP (a swing breaks a barrel over several hits;
   // it does NOT break on touch). Each barrel is struck at most once per swing.
-  for (const b of barrels) {
+  for (const b of [...barrels, ...coinBarrels]) {
     if (!b.alive || b.destroyed) continue;
     if (h._meleeHitSet.has(b)) continue;
     const bb = b.worldBox();
