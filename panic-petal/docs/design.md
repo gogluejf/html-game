@@ -250,11 +250,10 @@ Axis-aligned bounding boxes (AABB). Boxes may be smaller than sprites (crouch, e
 
 - Projectile ↔ enemy → damage (friendly flag prevents self-hit; only enemy projectiles hit the player).
 - Hero melee hitbox ↔ enemy → damage.
-- Hero ↔ barrel → blocked (can't pass).
+- Hero ↔ barrel → blocked (can't pass). Barrel is a destructible solid with HP.
 - Enemy ↔ barrel → blocked.
-- Melee ↔ barrel → breaks barrel.
-- Projectile ↔ barrel/object → blocked/absorbed.
-- Barrel explosion → large-radius AoE damaging both enemies and hero.
+- Melee / projectile / bomb ↔ barrel → deals damage to barrel HP (does NOT break/explode on touch or per-hit).
+- Barrel HP reaches 0 → explodes: large-radius AoE damaging both enemies and hero within the explosion box.
 - Enemy body ↔ hero → drains hero energy.
 - Enemy projectile ↔ hero → damage.
 - Hero ↔ powerup → collect.
@@ -305,10 +304,10 @@ Spawn rules: fixed spots in authored levels; random drops in demo rogue mode.
 
 ### Object
 ```js
-{ type, hp, explosive }
+{ type, hp, maxHp, explosive, explodeRadius }
 ```
-- **Barrel** — solid; explodes (big AoE) when hit by bomb/projectile.
-- **Coin barrel** — bursts into several mixed coins that bounce to ground.
+- **Barrel** — destructible solid (blocks hero + enemy). Melee/projectile/bomb deal damage to its HP; it does NOT break on touch or per-hit. When HP hits 0 it explodes: AoE damage within `explodeRadius` (hurts enemies and hero). A bomb typically one-shots it; thorns/melee chip it over several hits.
+- **Coin barrel** — same HP/destructible behavior; on destruction bursts into several mixed coins that bounce to ground (no damaging explosion).
 - **Checkpoint** — sets restart position (position only, nothing else saved).
 - Coins have different weights per type (bronze < silver < gold) affecting bounce.
 
@@ -364,11 +363,23 @@ level = {
   name, index, boss,
   length,                       // world width in px
   checkpoints: [{id:'1-1',x}, ...],
-  enemies: { jester:N, jackolantern:N, ... },  // counts per type
   platforms: [...],             // ground + air platforms
-  objects: [...], powerups: [...]
+  spawn: {                      // WHAT the rogue spawner places (counts per type)
+    enemies:  { jester:N, jackolantern:N, vine_hound:N, boris_loon:N, boris_loon_baby:N, violetta_marionetta:N },
+    barrels:  N,                // destructible solid barrels
+    coinBarrels: N,             // coin-bursting barrels (a coin source)
+    powerups: { ammo:N, invincibility:N, special:N, rapid:N, shield:N, clear:N, energy:N, oneUp:N }
+  }
 }
 ```
+
+The level struct declares **all** spawnable content by count. The demo "rogue" spawner reads `level.spawn` and randomly distributes each item along the walkable ground (respecting min spacing / no-overlap), placing them before or as the hero advances. Authored (non-rogue) levels later can pin exact positions instead, but keep the same `spawn` totals so content budget is consistent.
+
+**Coins are NOT placed directly.** They have exactly two sources:
+- **Coin barrels** — burst into mixed coins on destruction.
+- **Enemies** — drop coins on death per their `coinDrop` range + % chance (§6).
+
+So the coin economy is driven by `coinBarrels` count plus enemy counts/drop-chance, not by a separate coin spawn budget.
 
 - **v1:** 1 level, ground + a few air platforms, checkpoints `1-1 … 1-4`, random enemy/powerup/barrel placement on flat ground, elephant boss at end.
 - **Later:** 8 levels / 8 bosses / 8 stages.
@@ -458,7 +469,10 @@ Toggle with `F1` (zero cost in normal play — everything behind `if (debug.enab
 
 ### Collision debugging (extends §16)
 - Colored boxes: orange platforms, green hero, red enemy, blue objects/powerups, pink projectiles/explosions.
-- Highlight **active hitboxes only** (melee window, projectile AoE, explosion radius) at the moment damage applies.
+- Highlight **active hitboxes only**, each with its own color so they're distinguishable mid-action:
+  - **Pink** — projectile + its AoE
+  - **Yellow** — hero melee active hitbox (drawn only during the active frame)
+  - **Magenta ring** — explosion AoE radius (barrel/bomb)
 - Event log ring buffer: last N collisions printed (`hero.melee hit jester, dmg 12`).
 
 ### Live stats HUD
@@ -468,3 +482,40 @@ Toggle with `F1` (zero cost in normal play — everything behind `if (debug.enab
 - `Debug` module holds: spawn table, god-mode flags, slow-mo factor, selected-entity ref, event-log ring buffer.
 - v1 input = keybinds + console (no full UI).
 - Most of this is cheap boilerplate; the anim scrubber is the one piece with real wiring into the animation engine.
+
+---
+
+## 20. Screens & UI
+
+Maps each state (§1) to a screen, the assets it uses, and its interactions. All screens render on the same canvas; a `Screen` per state handles input + draw.
+
+### Home (title)
+- **Assets:** `home_bigtop` (back parallax), `home_crowd` (mid silhouette), `home_stage` (foreground), `logo`, `home_cover_idle` (cover art), `home_scarlet_portrait`.
+- **Content:** animated bigtop scene (parallax layers + idle cover), logo centered.
+- **Interaction:** any key / Enter → Select. (Later: options.)
+
+### Select
+- **Assets:** `select_scarlet_vale`, `select_balthazar`, `select_none` (HUD panels).
+- **Content:** two hero panels side by side; highlight the focused one; show name + special (saw/bomb).
+- **Interaction:** Left/Right (or A/D) to focus, Enter to confirm → Play with that hero's stats. `select_none` shown when nothing focused yet.
+
+### Play
+- The game world (§13). HUD overlaid (below).
+
+### Pause
+- Overlay on frozen Play frame. Options: **Resume**, **Retry** (restart stage at first checkpoint), **Quit** (→ Home).
+- Toggle: Esc/P.
+
+### Game Over
+- **Content:** "Game Over", final score + key stats (enemies killed, coins, distance). Options: **Retry**, **Continue** (if continues left + enough coins), **Quit**.
+
+### Win
+- **Content:** victory screen after boss death, final score + full stats summary (from §4.1 dump). Options: **Play Again**, **Quit**.
+
+### HUD (overlaid during Play — built early, refined later)
+- **Energy bar:** red fill = current energy; **cyan overlay** = shield stacked on top.
+- **Ammo** count (thorn) + **special ammo** count with hero icon.
+- **Coins** total + **Lives** (hero icon × N).
+- **Checkpoint progress line:** horizontal track with checkpoint markers (1-1…1-4) and a hero icon tracing position along the level length.
+- Selected-hero portrait (small, corner).
+- Note: HUD is functional-first (readable bars/numbers); visual polish comes in the tuning phase. It depends only on player state, so it can be stubbed early and beautified late.
