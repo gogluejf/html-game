@@ -5,6 +5,10 @@
 import { VIEW_W, VIEW_H } from './view.js';
 import { update } from './systems/update.js';
 import { render } from './systems/render.js';
+import { loadImages } from './screens.js';
+
+// Load screen assets (Home/Select) immediately on page load.
+loadImages();
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');

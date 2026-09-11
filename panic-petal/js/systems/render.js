@@ -11,8 +11,17 @@ import { Effects } from '../effects.js';
 import { getState, STATE_NAMES, S } from '../state.js';
 import { Debug } from '../debug.js';
 import { calculateScore } from '../stats.js';
+import { drawScreen, screenUpdate } from '../screens.js';
 
 export function render(ctx) {
+  // Milestone 8 — Home & Select are full-screen; skip world rendering entirely.
+  const state = getState();
+  if (state === S.HOME || state === S.SELECT) {
+    screenUpdate(1 / 60); // advance parallax at fixed step
+    drawScreen(ctx);
+    return;
+  }
+
   const cam = getCamera();
 
   // Background (viewport-space; not affected by the camera).
@@ -209,8 +218,12 @@ export function render(ctx) {
   ctx.fillText(`COINS ${hero.runStats?.coinsCollected?.total ?? 0}   LIVES ${hero.lives}`, 8, VIEW_H - 30);
   ctx.restore();
 
-  // --- State overlay (skeleton; replaced by real screens in Milestone 8) -----
-  drawStateOverlay(ctx);
+  // --- State overlays (Milestone 8): HOME/SELECT handled above; OVER has its own.
+  if (state === S.OVER) {
+    drawGameOverScreen(ctx);
+  } else if (state === S.PAUSE || state === S.WIN) {
+    drawSimpleStateOverlay(ctx, state);
+  }
 }
 
 /**
@@ -241,22 +254,11 @@ function drawDeathSkull(ctx, h) {
 }
 
 /**
- * Minimal state indicator shown when not in PLAY. The full per-state screens
- * land in Milestone 8; this keeps the skeleton visible/testable today.
+ * Minimal overlay for PAUSE and WIN states (not yet full screens).
+ * HOME/SELECT/OVER have their own dedicated rendering paths.
  */
-function drawStateOverlay(ctx) {
-  const s = getState();
-  if (s === S.OVER) {
-    drawGameOverScreen(ctx);
-    return;
-  }
+function drawSimpleStateOverlay(ctx, s) {
   const label = STATE_NAMES[s] || String(s);
-  const hint =
-    s === 0 ? 'HOME — press Enter' :
-    s === 1 ? 'SELECT — press Enter' :
-    s === 3 ? 'PAUSE' :
-    s === 5 ? 'WIN' : '';
-
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -264,10 +266,14 @@ function drawStateOverlay(ctx) {
   ctx.textAlign = 'center';
   ctx.font = 'bold 48px monospace';
   ctx.fillText(label, VIEW_W / 2, VIEW_H / 2 - 8);
-  if (hint) {
+  if (s === S.PAUSE) {
     ctx.font = '18px monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.fillText(hint, VIEW_W / 2, VIEW_H / 2 + 28);
+    ctx.fillText('Press ENTER to resume', VIEW_W / 2, VIEW_H / 2 + 28);
+  } else if (s === S.WIN) {
+    ctx.font = '18px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillText('Press ENTER to continue', VIEW_W / 2, VIEW_H / 2 + 28);
   }
   ctx.restore();
 }

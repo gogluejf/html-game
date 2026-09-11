@@ -18,6 +18,7 @@ import { HEROES } from '../heroDefs.js';
 import { projectilePool, aimFromInput, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
 import { S, getState, STATE_NAMES, tryTransition, onTransition } from '../state.js';
+import { screenOnKey } from '../screens.js';
 import { Jester } from '../jester.js';
 import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
 import { Violetta, VIOLETTA_DEF } from '../violetta.js';
@@ -225,11 +226,16 @@ function spawnFloatText(x, y, text, color) {
 // --- Input -------------------------------------------------------------------
 const keys = new Set();
 
-// State-machine test driver (skeleton): Enter walks HOME→SELECT→PLAY.
-// Task 5.2 — GAME OVER handles R (retry), C (continue), Q (quit).
-// Milestone 8 replaces this with per-screen input handling.
+// State-machine input (Milestone 8): HOME/SELECT delegated to screens.js;
+// OVER handles R/C/Q; PAUSE/WIN use Enter.
 function handleStateKeys(e) {
   const s = getState();
+
+  // --- Home & Select screens handle their own keys (Milestone 8) ------------
+  if (s === S.HOME || s === S.SELECT) {
+    screenOnKey(e.code);
+    return;
+  }
 
   // --- Game Over options (Task 5.2) -----------------------------------------
   if (s === S.OVER) {
@@ -250,10 +256,11 @@ function handleStateKeys(e) {
     return;
   }
 
-  if (e.code !== 'Enter') return;
+  // --- Pause / Win: Enter to resume or advance -------------------------------
+  if (e.code !== 'Enter' && e.code !== 'Space') return;
   let target = null;
-  if (s === S.HOME)   target = S.SELECT;
-  else if (s === S.SELECT) target = S.PLAY;
+  if (s === S.PAUSE) target = S.PLAY;
+  else if (s === S.WIN) target = S.SELECT;
   if (target !== null && tryTransition(target)) {
     console.log(`[state] ${STATE_NAMES[s]} → ${STATE_NAMES[target]}`);
   }
@@ -808,6 +815,55 @@ world.on('checkpoint', (a, b) => {
 onTransition((from, to) => {
   if (to === S.WIN || to === S.OVER) {
     dumpStats(hero.runStats, hero);
+  }
+});
+
+// Milestone 8 — When SELECT → PLAY, rebuild the hero with the chosen definition.
+// The Select screen sets window.__selectedHero before calling tryTransition(S.PLAY).
+onTransition((from, to) => {
+  if (from === S.SELECT && to === S.PLAY) {
+    const heroId = window.__selectedHero || 'scarlet';
+    const def = HEROES[heroId] || HEROES.scarlet;
+    // Rebuild hero in place with the new definition.
+    const saved = {
+      x: hero.x, y: hero.y, vx: 0, vy: 0,
+      energy: def.stats.stamina, lives: 3, coins: 0,
+      ammo: 200, specialAmmo: 0,
+      checkpoint: { x: hero.x, y: hero.y }, continuesUsed: 0,
+    };
+    const nh = new Hero(def, saved.x, saved.y);
+    Object.assign(nh, saved);
+    nh.energy = def.stats.stamina;
+    nh.maxEnergy = def.stats.stamina;
+    nh.checkpoint = { x: saved.x, y: saved.y };
+    nh.invincibleTimer = 0;
+    nh.dying = false;
+    nh.deathTimer = 0;
+    nh.continuesUsed = 0;
+    // Fresh run stats.
+    nh.runStats = createStats();
+    nh.combatStats = {
+      get projectilesShot() { return nh.runStats.projectilesShot; },
+      set projectilesShot(v) { nh.runStats.projectilesShot = v; },
+      hitsLanded: nh.runStats.hitsLanded,
+      damageDealt: nh.runStats.damageDealt,
+      powerupsCollected: nh.runStats.powerupsCollected,
+    };
+    // Placeholder anims sized for the new body.
+    nh.anim = new Anim(
+      ['#2ecc71', '#27ae60', '#1abc9c'].map(c => makeTestFrame(nh.w, nh.h, c)),
+      { speed: 200, loop: true },
+    );
+    nh.anims.attack = new Anim(
+      ['#555555', '#888888', '#aaaaaa', '#ffffff', '#666666'].map(c => makeTestFrame(nh.w, nh.h, c)),
+      { speed: 80, loop: false },
+    );
+    // Swap in collision world + rebind reference.
+    world.remove(hero);
+    world.add(nh);
+    setHeroRef(nh);
+    Effects.reset();
+    console.log(`[screens] hero instantiated: ${def.name} (${heroId})`);
   }
 });
 
