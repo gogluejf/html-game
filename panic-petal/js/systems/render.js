@@ -6,9 +6,10 @@
 // overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../view.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getJester, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, CONTINUE_COST } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, CONTINUE_COST } from './update.js';
 import { Effects } from '../effects.js';
 import { getState, STATE_NAMES, S } from '../state.js';
+import { Debug } from '../debug.js';
 
 export function render(ctx) {
   const cam = getCamera();
@@ -161,6 +162,17 @@ export function render(ctx) {
     for (const e of getRealEnemies()) drawEnemyDebug(ctx, e);
   }
 
+  // --- Debug & Test Harness (F1, design §19) ---------------------------------
+  // Aggro viz + facing arrow + state label for every live enemy/boss, plus the
+  // anim-scrubber collision-box overlay on the selected entity. Gated entirely
+  // behind Debug.enabled so normal play pays nothing.
+  if (Debug.enabled) {
+    for (const e of getRealEnemies()) drawAggroViz(ctx, e);
+    const b = getBoss();
+    if (b && b.alive) drawAggroViz(ctx, b);
+    if (Debug.selected) drawSelectionOverlay(ctx, Debug.selected);
+  }
+
   ctx.restore();
 
   // --- Viewport-space HUD hint (not scrolled with the world) -----------------
@@ -168,6 +180,13 @@ export function render(ctx) {
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.font = '12px monospace';
     ctx.fillText('DEBUG ON — F3 to toggle', 8, 16);
+  }
+
+  // --- Debug & Test Harness HUD (F1): live §4.1 telemetry + event log --------
+  if (Debug.enabled) {
+    drawStatsHUD(ctx);
+    if (Debug.showLog) drawEventLog(ctx);
+    drawHarnessHint(ctx);
   }
 
   // Task 7.1 — screen-space effect overlays: red damage vignette + white
@@ -526,5 +545,201 @@ function drawEnemyDebug(ctx, e) {
     : '#aaa';
   ctx.fillStyle = color;
   ctx.fillText(`${e.type}:${e.aiState}`.toUpperCase(), cx, e.y - 14);
+  ctx.restore();
+}
+
+// --- Debug & Test Harness (F1, design §19) — world-space overlays ------------
+
+/**
+ * Aggro viz for a single enemy/boss: faint aggro-radius circle, a facing arrow
+ * from the body center, and the current AI-state label above its head. Drawn in
+ * world space (caller is inside the camera translate). No-op when not alive.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Enemy|Elephant} e
+ */
+function drawAggroViz(ctx, e) {
+  if (!e || !e.alive) return;
+  const cx = e.x + e.w / 2;
+  const cy = e.y + e.h / 2;
+
+  // Aggro radius (bosses use their trigger radius as the "aggro" ring).
+  const r = e.isBoss ? 300 : (e.aggroRadius ?? 300);
+  ctx.save();
+  ctx.globalAlpha = 0.2;
+  ctx.strokeStyle = e.isBoss ? '#8e6bbf' : '#e74c3c';
+  ctx.setLineDash([5, 5]);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Facing arrow: short line + arrowhead pointing along `facing`.
+  const dir = e.facing ?? 1;
+  const len = 22;
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.strokeStyle = '#2ecc71';
+  ctx.fillStyle = '#2ecc71';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + dir * len, cy);
+  ctx.stroke();
+  // Arrowhead.
+  ctx.beginPath();
+  ctx.moveTo(cx + dir * len, cy);
+  ctx.lineTo(cx + dir * (len - 6), cy - 4);
+  ctx.lineTo(cx + dir * (len - 6), cy + 4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // State label (phase for boss, aiState otherwise).
+  const state = e.isBoss ? e.phase : e.aiState;
+  ctx.save();
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = e.isBoss ? '#ffd700' : '#fff';
+  ctx.fillText(`${e.type ?? 'BOSS'}:${state}`.toUpperCase(), cx, e.y - 16);
+  ctx.restore();
+}
+
+/**
+ * Selection overlay for the anim scrubber: a bright outline around the selected
+ * entity's collision box + a small info tag (type, anim name, frame index).
+ * This is the "overlay its collision box on the sprite per frame" requirement.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Entity} sel
+ */
+function drawSelectionOverlay(ctx, sel) {
+  if (!sel) return;
+  const b = sel.worldBox();
+
+  // Collision-box outline (bright cyan so it stands out over any sprite).
+  ctx.save();
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(b.x, b.y, b.w, b.h);
+  ctx.globalAlpha = 0.15;
+  ctx.fillStyle = '#00e5ff';
+  ctx.fillRect(b.x, b.y, b.w, b.h);
+  ctx.restore();
+
+  // Info tag: type + anim frame index.
+  const anim = sel.anim ?? sel.anims?.attack;
+  const frame = anim && anim.frames.length ? `${anim.frameIndex}/${anim.frames.length - 1}` : '—';
+  const label = `${sel.type ?? sel.heroDef?.id ?? '?'}  f${frame}`;
+  ctx.save();
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'left';
+  const tw = ctx.measureText(label).width;
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillRect(b.x - 2, b.y - 18, tw + 8, 14);
+  ctx.fillStyle = '#00e5ff';
+  ctx.fillText(label, b.x + 2, b.y - 7);
+  ctx.restore();
+}
+
+// --- Debug & Test Harness HUD (F1) — viewport-space ---------------------------
+
+/**
+ * Live §4.1 telemetry HUD in the top-left corner: kills by type, coins, damage
+ * dealt by method, barrels destroyed, hits taken, distance, time. Reads straight
+ * off hero.stats so it always reflects the live run.
+ * @param {CanvasRenderingContext2D} ctx
+ */
+function drawStatsHUD(ctx) {
+  const h = getHero();
+  const s = h.stats ?? {};
+  const ek = s.enemiesKilled ?? {};
+  const dd = s.damageDealt ?? {};
+  const bm = dd.byMethod ?? {};
+  const be = dd.byEnemy ?? {};
+  const ht = s.hitsTaken ?? {};
+  const bc = s.barrelsDestroyed ?? {};
+  const cc = s.coinsCollected ?? {};
+
+  const lines = [];
+  lines.push('=== TELEMETRY (F1) ===');
+  // Kills by type.
+  const killStr = Object.entries(ek).map(([k, v]) => `${k}:${v}`).join(' ') || 'none';
+  lines.push(`kills   ${killStr}`);
+  lines.push(`coins   ${cc.total ?? 0}  (b/s/g ${cc.bronze ?? 0}/${cc.silver ?? 0}/${cc.gold ?? 0})`);
+  lines.push(`dmg     melee:${bm.melee ?? 0} proj:${bm.projectile ?? 0} special:${bm.special ?? 0}`);
+  const dmgByEnemy = Object.entries(be).map(([k, v]) => `${k}:${Math.round(v)}`).join(' ');
+  lines.push(`byType  ${dmgByEnemy || '—'}`);
+  lines.push(`barrels barrel:${bc.barrel ?? 0} coin:${bc.coinBarrel ?? 0}`);
+  lines.push(`hitsTkn contact:${ht.enemyContact ?? 0} proj:${ht.enemyProjectile ?? 0} expl:${ht.explosion ?? 0} tot:${ht.total ?? 0}`);
+  lines.push(`dist    ${Math.round(s.distanceTraveled ?? 0)}px  shots:${s.projectilesShot ?? 0} swings:${s.meleeSwings ?? 0}`);
+
+  // God mode + time scale status line.
+  const flags = [Debug.god ? 'GOD' : null, `t=${Debug.timeScale}x`, Debug.showLog ? 'LOG' : null]
+    .filter(Boolean).join('  ');
+  lines.push(flags);
+
+  ctx.save();
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  const pad = 6;
+  const lh = 14;
+  const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + pad * 2;
+  const x = 8, y = 8;
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  ctx.fillRect(x, y, w, lines.length * lh + pad * 2);
+  lines.forEach((l, i) => {
+    ctx.fillStyle = i === 0 ? '#00e5ff' : (i === lines.length - 1 ? '#ffd700' : '#ffffff');
+    ctx.fillText(l, x + pad, y + pad + lh * (i + 0.5));
+  });
+  ctx.restore();
+}
+
+/**
+ * Event-log tail (last 10 entries) in the bottom-right corner. Shown only while
+ * Debug.showLog is true (L toggles it). Timestamps are relative to now.
+ * @param {CanvasRenderingContext2D} ctx
+ */
+function drawEventLog(ctx) {
+  const log = Debug.log;
+  if (!log.length) return;
+  const tail = log.slice(-10);
+  const now = performance.now();
+
+  ctx.save();
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'right';
+  const lh = 14;
+  const maxW = Math.max(...tail.map(l => ctx.measureText(l.msg).width));
+  const w = maxW + 70; // room for timestamp
+  const x = VIEW_W - 8, y = VIEW_H - 12 - tail.length * lh;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(x - w, y - 4, w, tail.length * lh + 8);
+  tail.forEach((entry, i) => {
+    const age = ((now - entry.t) / 1000).toFixed(1);
+    const ly = y + i * lh + lh * 0.5;
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText(`+${age}s`, x - w + 44, ly);
+    ctx.fillStyle = '#aef78e';
+    ctx.fillText(entry.msg, x - 4, ly);
+  });
+  ctx.restore();
+}
+
+/**
+ * Compact keybind hint bar shown at the bottom-center while the harness is on,
+ * so the developer remembers the controls without leaving the game.
+ * @param {CanvasRenderingContext2D} ctx
+ */
+function drawHarnessHint(ctx) {
+  const txt = 'F1 harness | 1-9 spawn | G god | T slowmo | Y hero | L log | RMB select | LMB force-state | arrows scrub | X deselect';
+  ctx.save();
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center';
+  const w = ctx.measureText(txt).width;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(VIEW_W / 2 - w / 2 - 6, VIEW_H - 22, w + 12, 16);
+  ctx.fillStyle = '#00e5ff';
+  ctx.fillText(txt, VIEW_W / 2, VIEW_H - 11);
   ctx.restore();
 }

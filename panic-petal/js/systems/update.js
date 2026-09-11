@@ -19,15 +19,17 @@ import { projectilePool, aimFromInput, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
 import { S, getState, STATE_NAMES, tryTransition } from '../state.js';
 import { Jester } from '../jester.js';
-import { VINE_HOUND_DEF } from '../vine_hound.js';
-import { VIOLETTA_DEF } from '../violetta.js';
+import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
+import { Violetta, VIOLETTA_DEF } from '../violetta.js';
 import { JackOLantern, explodeJackolantern } from '../jackolantern.js';
+import { BorisLoon, BORIS_DEF, makeBorisBaby } from '../boris_loon.js';
 import { Elephant, makeElephant, BOSS_TRIGGER_RADIUS, WEAK_POINT_MULT } from '../boss.js';import { particles, coins } from '../particles.js';
 import { Effects } from '../effects.js';
 import { makeBarrel, makeCoinBarrel, explodeBarrel, BARREL_DAMAGE, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
 import { LEVELS, generateLevel } from '../level.js';
+import { Debug, initSpawnTable, SPAWN_KEYS } from '../debug.js';
 
 // --- Tunables for the test rig ---------------------------------------------
 // (Hero movement feel lives in js/hero.js; level geometry below.)
@@ -65,7 +67,9 @@ const solidEntities = SOLIDS.map(b => new SolidBox(b));
 // js/hero.js. Spawn on the floor at x=100 (per design §13 hero start).
 const FLOOR_TOP = SOLIDS[0].y; // ground top (first platform is the full-length floor)
 const HERO_START_X = 100;
-const hero = new Hero(HEROES.scarlet, HERO_START_X, FLOOR_TOP - HEROES.scarlet.h);
+let hero = new Hero(HEROES.scarlet, HERO_START_X, FLOOR_TOP - HEROES.scarlet.h);
+/** Rebind the module-level hero reference (used by the F1 hero-swap). */
+function setHeroRef(h) { hero = h; }
 
 // Task 3.1 — thorn fire state. Cooldown is in seconds; rapid powerup halves it.
 // (Hero.stats.projectile_freq is "shots per second", so base interval = 1/freq.)
@@ -301,9 +305,39 @@ window.addEventListener('keydown', (e) => {
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','KeyG','KeyJ'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
   if (e.code === 'F3') { e.preventDefault(); setDebugEnabled(!isDebugEnabled()); }
+  // F1 toggles the Debug & Test Harness (design §19). Reset flags when turning off.
+  if (e.code === 'F1') {
+    e.preventDefault();
+    const on = Debug.toggle();
+    if (!on) Debug.reset();
+    console.log(`[debug] harness ${on ? 'ON' : 'OFF'}`);
+    return;
+  }
+  handleDebugKeys(e); // no-op unless Debug.enabled
   handleStateKeys(e);
 });
 window.addEventListener('keyup', (e) => keys.delete(e.code));
+
+// --- Debug harness mouse input (F1): click to select / force an enemy's state --
+// Converts a screen-space click into logical 960x540 coords (inverse of the
+// main.js transform), then selects or cycles the entity under it. Only active
+// while the harness is on; zero cost otherwise (early return).
+window.addEventListener('mousedown', (e) => {
+  if (!Debug.enabled) return;
+  const canvas = document.getElementById('game');
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  // Screen → logical: account for letterbox centering + dpr scaling.
+  const sx = (e.clientX - rect.left) / rect.width * VIEW_W;
+  const sy = (e.clientY - rect.top) / rect.height * VIEW_H;
+  const cam = getCamera();
+  const lx = sx + cam.x;
+  const ly = sy + cam.y;
+  // Left click = force-cycle AI state; right click = select for inspection.
+  if (e.button === 2) { e.preventDefault(); selectEntityAt(lx, ly); }
+  else forceStateAt(lx, ly);
+});
+window.addEventListener('contextmenu', (e) => { if (Debug.enabled) e.preventDefault(); });
 
 /** Build the per-frame intent object from the live key set. */
 function readInput() {
@@ -323,6 +357,184 @@ function readInput() {
 let debugEnabled = false;
 export function isDebugEnabled() { return debugEnabled; }
 export function setDebugEnabled(v) { debugEnabled = v; }
+
+// --- Debug & Test Harness (F1, design §19) ------------------------------------
+// Everything below is gated behind `if (Debug.enabled)` so normal play pays only
+// a single boolean check per frame. The spawn table is populated once from the
+// entity constructors that exist in this module's scope.
+initSpawnTable({
+  Jester, VineHound, Violetta, JackOLantern,
+  BorisLoon, BORIS_DEF, makeBorisBaby,
+  makeBarrel, makeCoinBarrel, Powerup, POWERUP_TYPES,
+});
+
+/**
+ * Spawn a debug entity at (x, y) with an optional forced AI state, register it
+ * in the collision world, and log it. Returns the created entity (or null if the
+ * type is unknown). Used by the free-spawn hotkeys and the cursor-spawn click.
+ * @param {string} type spawn-table key (see SPAWN_KEYS / initSpawnTable)
+ * @param {number} x world x
+ * @param {number} y world y
+ * @param {string} [state] AI state to force after creation
+ */
+function debugSpawn(type, x, y, state) {
+  const entry = Debug.spawnTable[type];
+  if (!entry) return null;
+  const ent = entry.make(x, y, state);
+  // Register so it participates in collisions/rendering like level entities.
+  world.add(ent);
+  // Track spawned enemies in realEnemies so the generic update loop drives their
+  // AI + death pipeline exactly as level spawns do.
+  if (ent.layer === LAYER.ENEMY || ent.layer === LAYER.BOSS) realEnemies.push(ent);
+  else if (ent instanceof GameObj) barrels.push(ent); // barrels live in the barrel list
+  else if (ent instanceof Powerup) powerups.push(ent);
+  Debug.logEvent(`spawn ${type}${state ? ` @${state}` : ''} (${Math.round(x)},${Math.round(y)})`);
+  return ent;
+}
+
+/**
+ * Handle F1 harness keypresses. Called from the global keydown listener while
+ * Debug.enabled is true. All actions are edge-triggered (one press = one action).
+ * @param {KeyboardEvent} e
+ */
+function handleDebugKeys(e) {
+  if (!Debug.enabled) return;
+
+  // Free-spawn hotkeys (1-9): spawn at hero position + small offset.
+  const spawnType = SPAWN_KEYS[e.code];
+  if (spawnType) {
+    const ox = 40, oy = -20; // small offset so it doesn't overlap the hero
+    debugSpawn(spawnType, hero.x + hero.w / 2 + ox, hero.y + hero.h / 2 + oy);
+    return;
+  }
+
+  switch (e.code) {
+    case 'KeyG': // God mode toggle
+      Debug.god = !Debug.god;
+      Debug.logEvent(`god mode ${Debug.god ? 'ON' : 'OFF'}`);
+      break;
+    case 'KeyT': // Slow-mo / freeze cycle
+      Debug.timeScale = Debug.cycleTimeScale();
+      Debug.logEvent(`timeScale → ${Debug.timeScale}x`);
+      break;
+    case 'KeyY': // Hero swap Scarlet <-> Balthazhar
+      swapHero();
+      break;
+    case 'KeyL': // Toggle event-log display
+      Debug.showLog = !Debug.showLog;
+      break;
+    case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown':
+      // Anim scrubber: step the selected entity's anim frames.
+      scrubSelectedAnim(e.code);
+      break;
+    case 'KeyX': // Deselect current entity
+      if (Debug.selected) { Debug.selected = null; Debug.logEvent('deselect'); }
+      break;
+  }
+}
+
+/**
+ * Toggle between the two heroes (Scarlet Vale <-> Balthazhar). Rebuilds the hero
+ * instance in place, preserving position/energy/lives/ammo so the A/B test is
+ * about feel (jump height, speed, melee range), not a fresh start.
+ */
+function swapHero() {
+  const curId = hero.heroDef.id;
+  const nextId = curId === 'scarlet' ? 'balthazar' : 'scarlet';
+  const def = HEROES[nextId];
+
+  // Preserve runtime resources across the swap.
+  const saved = {
+    x: hero.x, y: hero.y, vx: hero.vx, vy: hero.vy,
+    energy: hero.energy, lives: hero.lives, coins: hero.coins,
+    ammo: hero.ammo, specialAmmo: hero.specialAmmo,
+    checkpoint: hero.checkpoint, continuesUsed: hero.continuesUsed,
+    combatStats: hero.combatStats, stats: hero.stats,
+    invincibleTimer: hero.invincibleTimer, rapidTimer: hero.rapidTimer,
+  };
+
+  const nh = new Hero(def, saved.x, saved.y);
+  Object.assign(nh, saved);
+  nh.vx = saved.vx; nh.vy = saved.vy;
+  // Reattach placeholder anims sized for the new body.
+  nh.anim = new Anim(
+    ['#2ecc71', '#27ae60', '#1abc9c'].map(c => makeTestFrame(nh.w, nh.h, c)),
+    { speed: 200, loop: true },
+  );
+  nh.anims.attack = new Anim(
+    ['#555555', '#888888', '#aaaaaa', '#ffffff', '#666666'].map(c => makeTestFrame(nh.w, nh.h, c)),
+    { speed: 80, loop: false },
+  );
+
+  // Swap the reference inside the collision world.
+  world.remove(hero);
+  world.add(nh);
+  // Rebind the module-level `hero` via the getter indirection: we mutate the
+  // exported binding by reassigning the captured variable through a setter.
+  setHeroRef(nh);
+  Debug.logEvent(`hero → ${def.name}`);
+}
+
+/** Step the selected entity's animation forward/back one frame. */
+function scrubSelectedAnim(code) {
+  const sel = Debug.selected;
+  if (!sel) return;
+  const anim = sel.anim ?? sel.anims?.attack;
+  if (!anim || !anim.frames.length) { Debug.logEvent('no anim on selection'); return; }
+  const n = anim.frames.length;
+  let i = anim.frameIndex;
+  if (code === 'ArrowRight') i = (i + 1) % n;
+  else if (code === 'ArrowLeft') i = (i - 1 + n) % n;
+  else if (code === 'ArrowUp') i = 0;
+  else if (code === 'ArrowDown') i = n - 1;
+  anim.pickFrame(i);
+  Debug.logEvent(`scrub ${sel.type ?? sel.heroDef?.id ?? '?'} frame ${i}/${n - 1}`);
+}
+
+/** Select the topmost enemy/boss/powerup under a logical-space point. */
+export function selectEntityAt(lx, ly) {
+  // Prefer enemies + boss (the interesting ones), then powerups/barrels.
+  const candidates = [...realEnemies, ...enemies, boss].filter(e => e && e.alive !== false);
+  for (const p of powerups) if (p.alive && !p.collected) candidates.push(p);
+  for (const b of [...barrels, ...coinBarrels]) if (b.alive) candidates.push(b);
+  for (const c of candidates) {
+    const b = c.worldBox();
+    if (lx >= b.x && lx <= b.x + b.w && ly >= b.y && ly <= b.y + b.h) {
+      Debug.selected = c;
+      Debug.logEvent(`select ${c.type ?? c.powerType ?? '?'} @(${Math.round(lx)},${Math.round(ly)})`);
+      return c;
+    }
+  }
+  Debug.selected = null;
+  return null;
+}
+
+/** Force-cycle the AI state of the entity under a logical-space point. */
+export function forceStateAt(lx, ly) {
+  const hit = pickEnemyAt(lx, ly);
+  if (!hit) return null;
+  const s = Debug.nextState(hit);
+  Debug.logEvent(`force ${hit.type}: ${s ?? '(none)'}`);
+  return s;
+}
+
+/** Find an enemy/boss whose box contains the point (for click-to-force-state). */
+function pickEnemyAt(lx, ly) {
+  const candidates = [...realEnemies, boss].filter(e => e && e.alive !== false);
+  for (const c of candidates) {
+    const b = c.worldBox();
+    if (lx >= b.x && lx <= b.x + b.w && ly >= b.y && ly <= b.y + b.h) return c;
+  }
+  return null;
+}
+
+/** Per-frame god-mode enforcement: invincible + infinite ammo. */
+function applyGodMode(dt) {
+  if (!Debug.god) return;
+  hero.invincibleTimer = Math.max(hero.invincibleTimer, dt);
+  hero.ammo = Infinity;
+  hero.energy = Math.max(hero.energy, 1); // never drop to 0 mid-test
+}
 
 // --- Collision world -----------------------------------------------------------
 const world = new CollisionWorld({ cellSize: 64 });
@@ -400,6 +612,7 @@ world.on('hit', (a, b) => {
       // (design §12 "Projectile hit on enemy" / "Enemy damaged").
       Effects.spawnHitSparkles(allyProj.x + allyProj.w / 2, allyProj.y + allyProj.h / 2);
       Effects.beginEnemyShake(target);
+      if (Debug.enabled) Debug.logEvent(`thorn → ${target.type ?? '?'} dmg ${dealt}`);
     }
     allyProj.alive = false;               // thorn is consumed on impact
     // Task 3.3 — Enemy instances trigger their death pipeline via die().
@@ -628,6 +841,13 @@ export function getFloatTexts() { return floatTexts; }
 export function update(dt) {
   // Physics only runs during PLAY; other states are screen-driven (Milestone 8).
   if (getState() !== S.PLAY) return;
+
+  // --- Debug harness (F1): time scaling + god mode. Zero cost when off. -------
+  if (Debug.enabled) {
+    applyGodMode(dt);
+    dt *= Debug.timeScale; // slow-mo / freeze-frame (0 = physics paused, render continues)
+    if (dt <= 0) { Effects.update(0); return; } // frozen: skip all physics this step
+  }
 
   // 1. input → intents (movement/jump/crouch logic lives in Hero.update).
   const input = readInput();
@@ -943,6 +1163,10 @@ function updateRealEnemy(e, dt) {
     Effects.spawnDeathSparkle(cx, cy, Math.max(e.w, e.h)); // Task 7.1 — sprite-sized burst
     coins.dropCoins(e.coinDrop, cx, cy);      // coin drop per config
     world.remove(e);                          // drop from play
+    // Telemetry: count the kill by type (design §4.1 enemiesKilled).
+    hero.stats.enemiesKilled ??= {};
+    hero.stats.enemiesKilled[e.type] = (hero.stats.enemiesKilled[e.type] ?? 0) + 1;
+    if (Debug.enabled) Debug.logEvent(`kill ${e.type}`);
   }
 }
 
@@ -1092,6 +1316,11 @@ function handleBarrelDestroyed(barrel) {
 
   // Remove the dead barrel from the collision world so it stops blocking.
   world.remove(barrel);
+  // Telemetry: count the destroyed barrel by type (design §4.1 barrelsDestroyed).
+  hero.stats.barrelsDestroyed ??= {};
+  const bkey = barrel.explosive ? 'barrel' : 'coinBarrel';
+  hero.stats.barrelsDestroyed[bkey] = (hero.stats.barrelsDestroyed[bkey] ?? 0) + 1;
+  if (Debug.enabled) Debug.logEvent(`barrel destroyed (${bkey})`);
 }
 
 /**
