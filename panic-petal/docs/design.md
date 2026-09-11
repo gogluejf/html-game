@@ -43,6 +43,8 @@ Base struct everything inherits from (hero, enemy, object, projectile, coin, pow
   vx, vy,          // velocity
   gravity,         // per-entity gravity factor (0 for flyers)
   facing,          // -1 | 1 (horizontal); also stores aim dir for 8-way
+  mirrorX,         // bool — flip horizontally (facing left/right)
+  mirrorY,         // bool — flip vertically (rare; e.g. flyers diving)
   weight,          // affects knockback / how it pushes others
   anim,            // AnimationController (see §11)
   alive,           // bool
@@ -266,11 +268,15 @@ anim = {
   frameSpeed,      // ms per frame
   rotation,        // radians
   scale,           // default 1
+  mirrorX,         // bool — horizontal flip (driven by facing)
+  mirrorY,         // bool — vertical flip
   autoRotate,      // bool
   loop,            // bool (jump = false)
   pickFrame(n)     // specific frame override
 }
 ```
+
+**Facing/mirror rule:** `mirrorX` is normally derived from `facing` (`facing === -1 → mirrorX = true`) so sprites auto-flip when the hero/enemy turns. `mirrorY` stays manual for special cases (e.g. a flyer banking downward). Mirroring applies at render time via canvas scale(-1,1), independent of the collision box (box is never mirrored — it's symmetric AABB).
 
 Rules:
 - Jump animation rotates in sync with the arc (takeoff→landing) and does **not loop**.
