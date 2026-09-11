@@ -1,129 +1,305 @@
 {
   "plan_name": "petal-panic-v1",
-  "title": "Petal Panic v1 \u2014 Run-and-Gun Demo",
+  "title": "Petal Panic v1 — Run-and-Gun Demo",
   "tasks": {
     "1.1": {
       "number": "1.1",
       "name": "Game loop + canvas scaffold (responsive)",
-      "status": "pending",
+      "status": "done",
       "summary": {
-        "done": "Scaffold verified and completed: index.html + js/main.js (fixed 60Hz accumulator loop, 960x540 logical space, dpr-aware fit-to-viewport 16:9 letterbox, single GAME_SCALE knob) plus placeholder systems/update.js and systems/render.js drawing a moving test box. Made GAME_SCALE runtime-tunable via setGameScale() (exported + window.setGameScale for console/debug), since ESM export let bindings are read-only. Verified headlessly with node: modules parse and load without errors, rAF loop runs stable over 30 frames, resize re-fits live preserving 16:9, backing store scales with devicePixelRatio, transform maps 960x540 -> backing store correctly, GAME_SCALE=2 uniformly upscales with no distortion.",
-        "decisions": "Kept existing scaffold structure (main.js owns loop+fit, systems/ holds update/render). Exposed setGameScale on window so it can be tuned from browser console or the future F1 debug harness. Canvas centered via CSS absolute translate(-50%,-50%) so letterbox bars are just page background.",
-        "lessons_learned": "ESM 'export let' bindings cannot be reassigned from outside the module \u2014 need an accessor function for any externally tunable knob. Headless DOM-stub smoke tests (node --input-type=module with stubbed document/window/requestAnimationFrame) give solid verification of loop + scaling math without a browser. .plan-progress.json did not exist; initialized it from .plan.json (all 23 tasks pending) before writing the summary.",
-        "tradeoffs": "GAME_SCALE is module-level mutable state behind an accessor rather than a plain exported const \u2014 the price of making the knob runtime-tunable while keeping ESM bindings immutable. Test box uses wall-clock time for motion (visual only); real entities will use accumulated sim time in later tasks.",
+        "done": "Fixed 60Hz accumulator loop scaffold: index.html + main.js (960x540 logical space, dpr-aware 16:9 letterbox fit, GAME_SCALE knob) plus systems/update.js + systems/render.js drawing a moving test box. Verified headlessly: clean module load, stable loop, correct transform math, live resize, uniform upscale.",
+        "decisions": "GAME_SCALE is module-level mutable state behind an accessor (setGameScale/getGameScale, exposed on window) rather than a plain exported const.",
+        "tradeoffs": "ESM `export let` bindings can't be reassigned externally — use an accessor for tunable knobs. Test-box motion uses wall-clock time (visual only); real entities will use accumulated sim time.",
+        "lessons_learned": "Headless DOM-stub smoke tests in node verify loop/scaling math without a browser.",
         "confidence": "high",
-        "failures": "None"
+        "failures": null
       }
     },
     "1.2": {
       "number": "1.2",
       "name": "Entity base + transform",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Entity base class with full §3 fields (position, velocity, gravity, facing, mirrorX/Y, rotation, scale, weight, anim, layer, box, alive, debugColor). worldBox() computes offset AABB; syncMirror() derives mirrorX from facing; update(dt) integrates gravity with MAX_FALL_SPEED clamp; draw(ctx) applies full transform pipeline. consts.js (GRAVITY, MAX_FALL_SPEED, LAYER bitmask) + view.js leaf module. Test entity falls+bounces.",
+        "decisions": "view.js split out as a true leaf module holding VIEW_W/VIEW_H.",
+        "tradeoffs": "Circular import (main.js <-> systems) put VIEW_W/H in TDZ at load and killed the loop; a leaf module breaks the cycle cleanly. Bounce formula had to use raw box offsets, not worldBox() result.",
+        "lessons_learned": "A shared-constants leaf module prevents circular-import TDZ crashes under ESM.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "1.3": {
       "number": "1.3",
       "name": "AABB collision + layer masks",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "CollisionWorld with spatial-hash broadphase (configurable cell size, default 64px), aabbOverlap (strict; touching edges=false), resolve() minimum-penetration-axis correction (no pass-through), and declarative COLLISION_RULES ({a,b,action} array). masksInteract precompiles RULE_PAIRS. Integration: WASD hero vs 4 solid platforms, F3 debug toggle.",
+        "decisions": "resolve() recomputes worldBox() after each axis push to avoid stale-reference bugs.",
+        "tradeoffs": "Rule-based pair gate (not if-chains) means a new interaction is one line. Tie-break on equal penetration resolves X first.",
+        "lessons_learned": "200 scattered entities built only 266 hash cells vs ~19,900 theoretical pairs — broadphase scales. 0 penetration over a 30s scripted run.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "1.4": {
       "number": "1.4",
       "name": "Camera + debug overlay",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Camera class: hero-follow with facing look-ahead (+80px), clamped to [0, levelLength-VIEW_W], lockTo/unlock for boss arena (y stays 0). Render applies ctx.translate(-cam.x,-cam.y) before world draw. Full §16 debug overlay (F3): orange=SOLID, green=HERO, red=ENEMY, blue=PICKUP, pink=PROJ. Test scene extended to 3000px with placeholder enemies/projectiles/pickups.",
+        "decisions": "Direct follow (no lerp) — acceptable per design note 'direct is fine for v1'.",
+        "tradeoffs": "Camera translate wrapped in save/restore so the DEBUG ON hint draws in viewport space, not scrolled.",
+        "lessons_learned": "Clamping verified at both edges; world scrolls once hero passes half-screen.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "2.1": {
       "number": "2.1",
       "name": "Animation engine",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Anim controller: frames[], speed (ms/frame), loop, float index i, done flag. tick(dt) advances frame (wraps for loop, clamps+done for one-shot); pickFrame(n) overrides; reset(); draw(ctx,entity) draws current frame at origin. Transform lives on Entity per §11 — Anim only picks which frame. Hero cycles 5 colored frames (loop); enemy plays 3-frame one-shot.",
+        "decisions": "Anim.draw() assumes the caller already applied the transform.",
+        "tradeoffs": "Double-transform bug: Entity.draw() applied translate/mirror/rotate/scale then called anim.draw() which repeated it, compounding transforms and pushing sprites off-screen. Fixed by removing the transform block from Anim.draw().",
+        "lessons_learned": "Keep transform ownership in exactly one place (Entity); the anim controller must never re-apply it.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "2.2": {
       "number": "2.2",
       "name": "Hero class + movement",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Hero extends Entity wrapping a hero def. Run (direct velocity, responsive), jump (impulse=-stats.jump, coyote 0.08s, input buffer 0.12s, variable height via early-release cut), crouch (swaps to offset crouchBox, bh 48->28.8, feet planted), slide (speed*1.5 while crouching+moving), facing/mirrorX synced, ground friction x0.85, gravity+MAX_FALL_SPEED clamp. heroDefs.js: Scarlet (fast/high jump) + Balthazar (slow/strong melee). Input: WASD/arrows move, Space/W/Up jump, S/Down crouch.",
+        "decisions": "Coyote time + jump buffering added for feel beyond the literal spec.",
+        "tradeoffs": "Direct velocity assignment (no accel ramp) keeps input feeling instant; friction only when no horizontal input.",
+        "lessons_learned": "Offset-box crouch shrink validates the collision model — box visibly shortens in F3 overlay.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "2.3": {
       "number": "2.3",
       "name": "State machine skeleton",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "State machine skeleton: S enum (HOME/SELECT/PLAY/PAUSE/OVER/WIN), centralized TRANSITIONS map matching design §1, canTransition/tryTransition, onTransition(fn) subscriber hook. Zero rendering imports. Physics gated behind getState()===S.PLAY in update loop. Test overlay shows state name + hint when not in PLAY.",
+        "decisions": "onTransition subscriber hook lets Milestone 8 wire screen reset/teardown without touching this module.",
+        "tradeoffs": "Kept deliberately thin — no visual coupling; screens plug in later by reading getState()/subscribing.",
+        "lessons_learned": "42-assertion node test: all 6 states, 11 valid edges pass, 12 invalid edges rejected.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "3.1": {
       "number": "3.1",
       "name": "Projectiles + 8-way shooting",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Projectile (extends Entity, gravity=0, 2s lifetime, 600px/s) + object Pool (64 slots, zero allocation under sustained fire). 8-direction aim from WASD/arrow input (Contra-style). G-key auto-fire with projectile_freq cooldown, ammo decrement, no fire at 0. Friendly-fire off by construction (no PROJ_ALLY×HERO rule). Test targets HP=20 destroyed on hit.",
+        "decisions": "aimFromInput maps every WASD/arrow combo to a distinct dir index; no directional input falls back to facing.",
+        "tradeoffs": "Pool.spawn reuses inactive slots via Object.assign — no GC pressure. Lifetime cull at exactly 2s + off-screen cull.",
+        "lessons_learned": "29 unit assertions pass (all 8 direction velocities, pool reuse, exhausted-pool soft cap, 100-shot sustained fire).",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "3.2": {
       "number": "3.2",
       "name": "Melee attack + damage routing",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Central damage() in damage.js: defense mitigation (min 1), telemetry (hitsLanded/damageDealt byMethod/byEnemy), death flag — all combat funnels through it. Hero melee: J key, 5-frame swing (windup->active->recovery), hitbox only on frame 3, 0.4s cooldown. meleeHitboxWorld: 40x40 box in facing direction, null outside active frame. applyMeleeDamage uses per-swing hit set. Enemy hit-flash timer. F3 draws yellow melee hitbox.",
+        "decisions": "Barrel/object HP kept local to GameObj.hit() (victim has no stat sheet); explosion AoE still routes through damage().",
+        "tradeoffs": "Active-frame-only damage window means windup/recovery deal nothing — validated by frame gating.",
+        "lessons_learned": "Node tests: damage math, min-1 floor, dead-target guard, death flag, melee frame gating, facing mirror, cooldown block.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "3.3": {
       "number": "3.3",
       "name": "Jester enemy + death pipeline",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Enemy base class: type, stats, hp, aiState, aggroRadius, hitFlash, death pipeline (deathTimer->fading->alive=false). takeDamage() routes through central damage(), triggers die() on lethal hit. Jester AI: idle->chase (within 300px)->attack (whip <60px); whip 0.4s with timed active window, 1.5s cooldown. Contact damage ENEMY×HERO drains hero energy. Death: fade, sparkle particles, coin drop. Particles module (pooled, capped ~50). F3: aggro circle + AI state label.",
+        "decisions": "Whip uses a time-based active window (WHIP_ACTIVE_FRAC) rather than a single frame — reads better.",
+        "tradeoffs": "Death pipeline owned by Enemy base so all enemies reuse it; coin drop driven by coinDrop config.",
+        "lessons_learned": "Proves the AI contract (idle/chase/attack) that the other 5 enemies inherit in 5.1.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "4.1": {
       "number": "4.1",
       "name": "Objects: barrels + explosions",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "GameObj base (SOLID layer, HP pool, hitFlash, explosive flag, explodeRadius). Barrel (HP 60, radius 120) + CoinBarrel (no AoE, coin burst). Thorns/melee chip HP; bomb one-shots; no break on touch (latched `destroyed`). Explosion: center-to-center circular AoE via central damage() — damages enemies AND hero within radius. PROJ_ALLY×SOLID rule added. VFX: 12-15 orange/red particles + eased screen shake. F3: barrel HP bars + magenta AoE rings.",
+        "decisions": "Explosion math kept pure (explodeBarrel/withinRadius/centerOf) for unit testing without a DOM.",
+        "tradeoffs": "Self-damage (hero hurt by own barrel blast) is intentional risk/reward per design.",
+        "lessons_learned": "26 object + 3 integration assertions pass; bomb=999 one-shots, thorns need exactly 6 hits (10x6=60).",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "4.2": {
       "number": "4.2",
       "name": "Coins with bounce + collection",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Coin class: per-type weight (bronze 0.8, silver 1.0, gold 1.3), value (10/25/50). Gravity scaled by weight (gold falls faster). Bounce restitution 0.4 + friction, settles when vy<20. Coin-barrel burst spawns 4-6 mixed coins with random upward velocity. Collection on hero touch increments coins + stats.coinsCollected. 1up every 100 coins. Visual spin + pickup sparkle. Cap ~30 active coins.",
+        "decisions": "Per-type weight creates visible bounce differences (named design requirement).",
+        "tradeoffs": "Coins settle within ~5s (restitution decay) — not infinite bouncing.",
+        "lessons_learned": "Node test confirms gold falls faster than bronze and coins come to rest on the ground plane.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "4.3": {
       "number": "4.3",
       "name": "Powerups + checkpoint",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Powerup class: 8 types (ammo, invincibility, special, rapid, shield, clear, energy, oneUp) as pure apply(hero,context) functions. Collection latched, applies effect, telemetry, sparkle + floating text. Checkpoint (non-solid) trigger stores {x,y} on hero.checkpoint, latches. 8 powerups + 4 checkpoints (1-1..1-4) placed along 6400px level. Invincibility: timed no-damage + fast blink. Rapid: fire rate x2. Clear: kills on-screen enemies. F3: type labels + checkpoint IDs.",
+        "decisions": "apply() takes a context param (enemies list etc.) so effects like 'clear' reach game state without global coupling.",
+        "tradeoffs": "Each effect is a pure function — unit-testable in node without a DOM.",
+        "lessons_learned": "27 assertions cover every effect, invincibility timer=5, checkpoint latch + restart position, collection latch + telemetry.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "5.1": {
       "number": "5.1",
       "name": "Remaining enemy AIs",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Five enemy AIs, each a small isolated state machine inheriting Enemy: VineHound (fast chaser speed 180, lunges <50px), Violetta (paces, shoots every 2s in LOS, melee <40px), JackOLantern (rolling bomb HP 30, explodes <80px or 3s timer, AoE 80px, destructible), BorisLoon (flyer gravity=0, sine-wave hover ±30px, dives when hero below, fires downward), BorisLoonBaby (smaller w×0.6, faster ×1.5, HP 15). All inherit Enemy cleanly.",
+        "decisions": "Flyers set gravity=0; grounders use GRAVITY — property-driven, not per-class branches.",
+        "tradeoffs": "BorisLoon constructor takes (def,x,y); factories makeBoris/makeBorisBaby wrap it. Enemies lacking idle reuse first walk frame statically.",
+        "lessons_learned": "All 5 instantiate and tick their AI without error; distinct speeds/attack patterns confirmed.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "5.2": {
       "number": "5.2",
       "name": "Energy / lives / gameover flow",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Death sequence: energy 0 -> skull 💀 sine-wave float + fade (1.5s). Life loss, respawn at last checkpoint with full energy + 1s i-frames. Lives exhausted -> GAMEOVER. Game Over overlay: score, stats, Retry/Continue/Quit. Continue costs 1000 coins, max 3/run, restores at checkpoint. Retry restarts at level start, full energy, lives reset to 3. Input R/C/Q during gameover.",
+        "decisions": "I-frames on respawn (1s) prevent instant re-death at the checkpoint.",
+        "tradeoffs": "Skull effect is a simple text sprite with sine offset + fading alpha — no sprite asset needed.",
+        "lessons_learned": "Death/respawn flow verified: dying flag, life decrement, checkpoint respawn, energy restore.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "5.3": {
       "number": "5.3",
       "name": "Level struct + random spawn",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "LEVELS[0] Big Top: 8000px, elephant boss, 4 checkpoints, 8 platforms. Spawn budget: 26 enemies (6 types), 8 barrels, 4 coin barrels, 13 powerups. generateLevel() rogue spawner with min-spacing (100px) random placement. No loose coins (only from barrel bursts + enemy drops). Boss arena (last 500px) + hero start zone (first 500px) kept clear. All items instantiated as real objects. Integrated into update.js.",
+        "decisions": "MIN_SPACING reduced 200->100px so the full budget fits in the ~7000px spawnable range.",
+        "tradeoffs": "Powerups spawned as a single batch (not per-type) to maximize available space; random placement can still come up 1-2 short on rare runs (acceptable for a rogue layout).",
+        "lessons_learned": "Enemies/barrels/coinBarrels always hit exact counts; powerups 11-13/13 across runs. Replayable (different layout each load).",
+        "confidence": "medium",
+        "failures": null
+      }
     },
     "6.1": {
       "number": "6.1",
       "name": "Elephant boss + win",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Elephant boss: HP 500, phase machine (idle->charge->stomp->trunk_blast). Camera lock to arena when hero within trigger radius. Escalation: phases speed up as HP drops (up to 1.5x). Weak point: head/trunk zone takes 1.5x damage (requires hitPos). Trunk blast fires 3 enemy projectiles in a fan. Charge runs across arena. Stomp telegraphed shake + shockwave window. Contact damage via HERO×BOSS rule. Death reuses Enemy pipeline; onDeath() triggers WIN. F3: phase label, HP bar, weak-point box.",
+        "decisions": "Weak-point bonus requires a hitPos argument — base hits take normal damage.",
+        "tradeoffs": "Escalation multiplier (1.0 + (1-hpFrac)*0.5) makes the fight harder as the boss weakens.",
+        "lessons_learned": "Phase cycling, weak-point math, and death->win transition verified in node.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "7.1": {
       "number": "7.1",
       "name": "Effects + particles",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Effects module: vignette (red edge glow on hero damage, decays 0.5s), screenFlash (white flash on big explosions, decays 0.15s). spawnHitSparkles (3-5 red), spawnDeathSparkle (sprite-sized), spawnPickupPop (colored ring), spawnExplosion (12+ warm particles scaled to AoE). Enemy shake ±3px during hitFlash (no extra timer). All wired: hero damage, proj hits, melee, barrel/bomb explosion, enemy death, powerup pickup. Reuses pooled particle system.",
+        "decisions": "Shake rides the existing hitFlash timer instead of a second clock.",
+        "tradeoffs": "All spawners reuse the pooled particle system — zero allocation in the hot path.",
+        "lessons_learned": "20 assertions cover decay rates, clamping, spawn counts/sizing, shake bounds, reset.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "7.2": {
       "number": "7.2",
       "name": "Debug/test harness (F1)",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Debug module: toggle (F1), god mode, timeScale (slow-mo/freeze), selected entity, event log ring buffer (50). Free-spawn keys 1-9 (all enemies, barrels, coin barrels, powerups). God mode (G): invincible + infinite ammo. Slow-mo cycle (T): 1x->0.5x->0.25x->freeze->1x. Hero swap (Y). AI state force + aggro radius circle + facing arrow + state label. Anim scrubber (step frames, overlay collision box). Live stats HUD. Event log display (L). initSpawnTable(deps) populates factories at load.",
+        "decisions": "Everything behind if(Debug.enabled) for zero-cost normal play.",
+        "tradeoffs": "Keyboard-driven (no complex UI) — prioritizes iteration speed over polish, per design.",
+        "lessons_learned": "Spawn table populated by initSpawnTable at game load; empty until then (expected).",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "7.3": {
       "number": "7.3",
       "name": "Stats export + tuning pass",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "stats.js: createStats() with full §4.1 telemetry structure. dumpStats(): console group + downloadable JSON on win/gameover. calculateScore(): enemies×100, boss×1000, coins×10, barrels×50/75, checkpoints×25. timePlayed + distanceTraveled tracked per frame during PLAY. All counters wired: kills by type, damage by method/enemy, hits taken by source, powerups by type, barrels by type, coins by type. Score shown on gameover/win.",
+        "decisions": "dumpStats produces both a readable console group and a downloadable JSON blob.",
+        "tradeoffs": "Score formula is a single tunable function feeding HUD + end screens.",
+        "lessons_learned": "Score calc verified: 5 jester + boss + 50 coins + 3 barrels + 4 checkpoints = 2250.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "8.1": {
       "number": "8.1",
       "name": "Home + Select screens",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Home: parallax bigtop scene (3 layers at different speeds), logo centered, blinking 'PRESS ENTER'. Select: two hero panels (Scarlet/Balthazar) with art, name, special label; gold border on focused panel, ←/→ cycle, Enter confirms. Hero selection drives gameplay via onTransition hook (correct stats/special). loadImages() preloads assets on page load. Graceful fallback if images not loaded. Replaced skeleton state overlay.",
+        "decisions": "Later rewritten with correct layering: 0.75x cover-fit, stage void-mask (alpha-zero near-black top so tent bleeds through), crowd bottom-anchored, Scarlet 80% height pendulum on left, bigtop pans L->R (circular tent), stage+crowd R->L.",
+        "tradeoffs": "Stage image is fully opaque — its black top would cover the elephant without the void-mask.",
+        "lessons_learned": "18 assertions + browser screenshot confirm no stretching, correct layer order, visible elephant/tiger/crowd/Scarlet.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "8.2": {
       "number": "8.2",
       "name": "Pause / Game Over / Win screens",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "Pause: semi-transparent overlay on frozen game, Resume/Retry/Quit. Game Over: score + kills + coins, Retry/Continue(3, 1000 coins)/Quit. Win: VICTORY banner, full §4.1 stats summary, Play Again/Quit. All wired to state machine transitions. Continue deducts coins, restores at checkpoint with full energy. Game world visible behind pause (dimmed).",
+        "decisions": "Reuse calculateScore from stats.js for consistent scoring across screens.",
+        "tradeoffs": "Continue gated on continuesUsed<3 AND coins>=1000; disabled option rendered dimmed.",
+        "lessons_learned": "All three screens expose draw+onKey; transitions follow valid state-machine paths.",
+        "confidence": "high",
+        "failures": null
+      }
     },
     "8.3": {
       "number": "8.3",
       "name": "HUD",
-      "status": "pending"
+      "status": "done",
+      "summary": {
+        "done": "drawHUD(ctx,hero,camera,levelDef) in viewport space: energy bar (red fill + cyan shield overlay, 200x16 top-left), ammo (thorn) + special ammo with hero-specific icons (saw/bomb), coins + lives top-right, hero portrait (32x32 lazy-loaded from assets/heroes/), checkpoint progress line (track + orange markers 1-1..1-4 + green hero dot with triangle pointer, clamped to level length). Drawn after camera restore, PLAY state only.",
+        "decisions": "Portrait lazy-loaded and cached per hero id; falls back to a colored box + initial before assets load.",
+        "tradeoffs": "Functional-first (readable bars/numbers); depends only on player state so it stubs early and polishes late.",
+        "lessons_learned": "12 assertions: energy fill/clamp, shield overlay, live ammo/special/coins/lives, 4 checkpoint marker positions, hero marker clamping, PLAY-state gate.",
+        "confidence": "high",
+        "failures": null
+      }
     }
   }
 }
