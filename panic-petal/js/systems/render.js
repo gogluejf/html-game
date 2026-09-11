@@ -133,8 +133,8 @@ export function render(ctx) {
       if (!p.alive || p.collected) continue;
       const cx = p.x + p.w / 2;
       const cy = p.y - 6;
-      ctx.fillStyle = p.def.color;
-      ctx.fillText(p.powerType.toUpperCase(), cx, cy);
+      ctx.fillStyle = '#3498db';
+      ctx.fillText(p.def.label, cx, cy);
     }
     for (const c of getCheckpoints()) {
       if (!c.alive) continue;

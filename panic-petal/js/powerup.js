@@ -22,15 +22,15 @@ import { LAYER } from './consts.js';
 export const POWERUP_DEFS = {
   ammo:          { label: '+100 Ammo',    color: '#3498db',
                    apply: (hero) => { hero.ammo += 100; } },
-  invincibility: { label: 'Invincible!',  color: '#e74c3c', duration: 5,
+  invincibility: { label: 'Invincible!',  color: '#3498db', duration: 5,
                    apply: (hero) => { hero.invincibleTimer = Math.max(hero.invincibleTimer ?? 0, 5); } },
-  special:       { label: '+50 Special',  color: '#9b59b6',
+  special:       { label: '+50 Special',  color: '#3498db',
                    apply: (hero) => { hero.specialAmmo += 50; } },
-  rapid:         { label: 'Rapid Fire!',  color: '#f39c12', duration: 6,
+  rapid:         { label: 'Rapid Fire!',  color: '#3498db', duration: 6,
                    apply: (hero) => { hero.rapidTimer = Math.max(hero.rapidTimer ?? 0, 6); } },
-  shield:        { label: '+50 Shield',   color: '#1abc9c',
+  shield:        { label: '+50 Shield',   color: '#3498db',
                    apply: (hero) => { hero.shield += 50; } },
-  clear:         { label: 'PANIC CLEAR!', color: '#e74c3c',
+  clear:         { label: 'PANIC CLEAR!', color: '#3498db',
                    apply: (hero, enemies) => {
                      for (const e of (enemies ?? [])) {
                        if (!e.alive) continue;
@@ -45,9 +45,9 @@ export const POWERUP_DEFS = {
                        }
                      }
                    } },
-  energy:        { label: '+30 Energy',   color: '#2ecc71',
+  energy:        { label: '+30 Energy',   color: '#3498db',
                    apply: (hero) => { hero.energy = Math.min(hero.maxEnergy, (hero.energy ?? 0) + 30); } },
-  oneUp:         { label: '1UP!',         color: '#ffd700',
+  oneUp:         { label: '1UP!',         color: '#3498db',
                    apply: (hero) => { hero.lives += 1; } },
 };
 
