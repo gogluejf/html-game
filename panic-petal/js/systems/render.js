@@ -660,9 +660,9 @@ function drawHarnessHint(ctx) {
   const w2 = ctx.measureText(line2).width;
   const w = Math.max(w1, w2);
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(VIEW_W / 2 - w / 2 - 6, VIEW_H - 70, w + 12, 32);
+  ctx.fillRect(VIEW_W / 2 - w / 2 - 6, VIEW_H - 55, w + 12, 32);
   ctx.fillStyle = '#00e5ff';
-  ctx.fillText(line1, VIEW_W / 2, VIEW_H - 59);
-  ctx.fillText(line2, VIEW_W / 2, VIEW_H - 43);
+  ctx.fillText(line1, VIEW_W / 2, VIEW_H - 44);
+  ctx.fillText(line2, VIEW_W / 2, VIEW_H - 28);
   ctx.restore();
 }
