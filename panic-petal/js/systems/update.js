@@ -20,7 +20,8 @@ import { damage } from '../damage.js';
 import { S, getState, STATE_NAMES, tryTransition } from '../state.js';
 import { Jester } from '../jester.js';
 import { particles, coins } from '../particles.js';
-import { makeBarrel, makeCoinBarrel, explodeBarrel, BARREL_DAMAGE, GameObj } from '../object.js';
+import { makeBarrel, makeCoinBarrel, explodeBarrel, BARREL_DAMAGE, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
+import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
 
 // --- Tunables for the test rig ---------------------------------------------
@@ -28,7 +29,7 @@ import { COIN_TYPES } from '../coin.js';
 
 // Level length: intentionally wider than the 960px viewport so the camera
 // can scroll. Floor spans the full length; air platforms are scattered along it.
-export const LEVEL_LENGTH = 3000;
+export const LEVEL_LENGTH = 6400;
 
 // --- Static solid platforms (orange) ----------------------------------------
 // Plain AABBs; also wrapped as layer entities so the debug overlay can draw
@@ -42,6 +43,10 @@ export const SOLIDS = [
   { x: 1400, y: 300, w: 200, h: 24 },                    // mid platform
   { x: 1900, y: 360, w: 260, h: 24 },                    // far platform
   { x: 2400, y: 280, w: 200, h: 24 },                    // near-end platform
+  { x: 3200, y: 360, w: 240, h: 24 },                    // checkpoint-2 platform
+  { x: 4000, y: 300, w: 200, h: 24 },                    // mid-right platform
+  { x: 4800, y: 360, w: 260, h: 24 },                    // checkpoint-3 platform
+  { x: 5600, y: 300, w: 200, h: 24 },                    // final stretch platform
 ];
 
 // Solid wrapper entities (layer-only; no velocity/anim needed).
@@ -148,6 +153,72 @@ const barrels = [
   makeCoinBarrel(2700, BARREL_FLOOR_TOP - 48), // coin source near the end
 ];
 
+// Task 4.3 — Powerups (design §10). Scattered along the level at varied x so
+// different effects are encountered as the hero advances. Each sits on the
+// floor (bob animation lifts it visually). The 'clear' powerup is placed late
+// where enemies cluster, and oneUp near the end as a reward.
+const POWERUP_FLOOR_TOP = VIEW_H - 40;
+export const powerups = [
+  new Powerup('ammo',          900,  POWERUP_FLOOR_TOP - 28),
+  new Powerup('invincibility', 1700, POWERUP_FLOOR_TOP - 28),
+  new Powerup('rapid',         2600, POWERUP_FLOOR_TOP - 28),
+  new Powerup('shield',        3400, POWERUP_FLOOR_TOP - 28),
+  new Powerup('energy',        4200, POWERUP_FLOOR_TOP - 28),
+  new Powerup('special',       5000, POWERUP_FLOOR_TOP - 28),
+  new Powerup('clear',         5500, POWERUP_FLOOR_TOP - 28),
+  new Powerup('oneUp',         6100, POWERUP_FLOOR_TOP - 28),
+];
+
+// Task 4.3 — Checkpoints (design §10/§13): four flags at x = 1500/3000/4500/6000
+// with ids '1-1' … '1-4'. Touching one stores its position on hero.checkpoint
+// for death-restart. They are NOT solids — they don't block movement.
+const CHECKPOINT_FLOOR_TOP = VIEW_H - 40;
+export const checkpoints = [
+  makeCheckpoint('1-1', 1500, CHECKPOINT_FLOOR_TOP - 48),
+  makeCheckpoint('1-2', 3000, CHECKPOINT_FLOOR_TOP - 48),
+  makeCheckpoint('1-3', 4500, CHECKPOINT_FLOOR_TOP - 48),
+  makeCheckpoint('1-4', 6000, CHECKPOINT_FLOOR_TOP - 48),
+];
+
+// --- Floating text (Task 4.3 VFX) -------------------------------------------
+// Small pooled "value label" popups for powerup pickups (e.g. "+100 Ammo") and
+// checkpoint triggers ("CHECKPOINT 1-2"). Pure visual: no collision layer, no
+// allocation after init. Reuses the same pool pattern as particles.
+class FloatText {
+  constructor() { this.alive = false; }
+  spawn(x, y, text, color) {
+    this.x = x; this.y = y; this.text = text; this.color = color;
+    this.life = 1.0; this.maxLife = 1.0; this.alive = true;
+  }
+  update(dt) {
+    if (!this.alive) return;
+    this.life -= dt;
+    if (this.life <= 0) { this.alive = false; return; }
+    this.y -= 30 * dt; // drift upward while fading
+  }
+  draw(ctx) {
+    if (!this.alive) return;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+    ctx.fillStyle = this.color;
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(this.text, this.x, this.y);
+    ctx.restore();
+  }
+}
+const FLOAT_TEXT_POOL_SIZE = 16;
+const floatTexts = Array.from({ length: FLOAT_TEXT_POOL_SIZE }, () => new FloatText());
+/** Spawn a floating label at (x, y). Returns null when the pool is exhausted. */
+function spawnFloatText(x, y, text, color) {
+  for (const t of floatTexts) {
+    if (t.alive) continue;
+    t.spawn(x, y, text, color);
+    return t;
+  }
+  return null;
+}
+
 // --- Input -------------------------------------------------------------------
 const keys = new Set();
 
@@ -205,6 +276,10 @@ world.add(jester);
 // hit by friendly thorns (PROJ_ALLY×SOLID → 'hit'). Added now; destroyed ones
 // are removed from the world when their HP hits 0.
 for (const b of barrels) world.add(b);
+// Task 4.3 — powerups (PICKUP layer; HERO×PICKUP → 'pickup') and checkpoints
+// (CHECKPOINT layer; HERO×CHECKPOINT → 'checkpoint'). Both are non-solid.
+for (const p of powerups) world.add(p);
+for (const c of checkpoints) world.add(c);
 
 // Rule-action handlers — the declarative dispatch path. For this task we only
 // need to observe events; damage/pickup logic arrives with later tasks.
@@ -311,6 +386,56 @@ world.on('collect', (a, b) => {
   }
 });
 
+// Task 4.3 — HERO × PICKUP powerup collection (design §10). Fires when the
+// hero's box overlaps a live powerup. We apply the documented effect via
+// Powerup.collect() (which latches + bumps telemetry), spawn a sparkle pop at
+// the pickup point, float the effect label above it, and remove the powerup
+// from the collision world. The 'clear' effect needs the live enemy list, so
+// we pass it through context.
+world.on('pickup', (a, b) => {
+  const pu = a.layer === LAYER.PICKUP ? a : (b.layer === LAYER.PICKUP ? b : null);
+  const heroEnt = a.layer === LAYER.HERO ? a : (b.layer === LAYER.HERO ? b : null);
+  if (!pu || !heroEnt) return;
+  if (!(pu instanceof Powerup)) return; // ignore non-powerup pickups
+  if (pu.collected || !pu.alive) return; // already collected (guard)
+
+  const cx = pu.x + pu.w / 2;
+  const cy = pu.y + pu.h / 2;
+
+  // Apply the effect with access to the live enemy set (for 'clear').
+  const applied = pu.collect(heroEnt, { enemies: getLiveEnemies() });
+  if (!applied) return;
+
+  // VFX: sparkle pop + floating label text (design §12 "Powerup pickup").
+  particles.spawnBurst(cx, cy, 6);
+  spawnFloatText(cx, cy - 16, pu.def.label, pu.def.color);
+  // SFX: powerup
+
+  world.remove(pu);
+});
+
+// Task 4.3 — HERO × CHECKPOINT trigger (design §10/§13). Fires when the hero's
+// box overlaps a checkpoint flag. Checkpoint.trigger() stores its position on
+// hero.checkpoint (used by the death-restart pipeline) and latches so re-walking
+// over it is a no-op. A brief flash plays via the entity's flashTimer.
+world.on('checkpoint', (a, b) => {
+  const cp = a.layer === LAYER.CHECKPOINT ? a : (b.layer === LAYER.CHECKPOINT ? b : null);
+  const heroEnt = a.layer === LAYER.HERO ? a : (b.layer === LAYER.HERO ? b : null);
+  if (!cp || !heroEnt) return;
+  if (!(cp instanceof Checkpoint)) return;
+  if (cp.triggered) return; // already triggered this run
+
+  const fired = cp.trigger(heroEnt);
+  if (!fired) return;
+
+  // VFX: flash (entity-driven) + floating id label.
+  const cx = cp.x + cp.w / 2;
+  const cy = cp.y + cp.h / 2;
+  particles.spawnBurst(cx, cy, 5);
+  spawnFloatText(cx, cy - 20, `CHECKPOINT ${cp.checkpointId}`, '#ffd700');
+  // SFX: checkpoint
+});
+
 // --- Camera --------------------------------------------------------------------
 // Hero-following cam clamped to [0, LEVEL_LENGTH - VIEW_W] with facing look-ahead.
 export const camera = new Camera();
@@ -347,6 +472,14 @@ export function getHero() { return hero; }
 export function getSolids() { return SOLIDS; }
 export function getCollisionWorld() { return world; }
 export function getEnemies() { return enemies; }
+// Task 4.3 — all live enemy entities (placeholder targets + jester) used by
+// the 'clear' powerup effect. Excludes dead/dead-animating enemies.
+export function getLiveEnemies() {
+  const out = [];
+  for (const e of enemies) if (e.alive !== false) out.push(e);
+  if (jester && jester.alive !== false && jester.aiState !== 'dead') out.push(jester);
+  return out;
+}
 // Task 2.1 — decorative anim-test box (damage-immune placeholder).
 export function getAnimTestEnemy() { return animTestEnemy; }
 // Task 3.1 — live thorns come from the shared pool (pooled, no allocation).
@@ -359,6 +492,10 @@ export function getParticles() { return particles; }
 export function getCoins() { return coins; }
 // Task 4.1 — barrels + explosion screen shake for render.
 export function getBarrels() { return barrels; }
+// Task 4.3 — powerups, checkpoints, floating text for render + F3 debug.
+export function getPowerups() { return powerups; }
+export function getCheckpoints() { return checkpoints; }
+export function getFloatTexts() { return floatTexts; }
 
 // --- Per-frame step ------------------------------------------------------------
 export function update(dt) {
@@ -386,6 +523,19 @@ export function update(dt) {
   // 1d2. Task 4.1 — tick live barrels (decays their hit-flash timer).
   for (const b of barrels) {
     if (b.alive) b.update(dt);
+  }
+
+  // 1d3. Task 4.3 — tick powerups (bob anim), checkpoints (flash decay), and
+  //     floating text popups. Collected powerups are removed from the world on
+  //     pickup, so we only advance still-live ones here.
+  for (const p of powerups) {
+    if (p.alive) p.update(dt);
+  }
+  for (const c of checkpoints) {
+    c.update(dt);
+  }
+  for (const t of floatTexts) {
+    t.update(dt);
   }
 
   // 1e. Task 3.3 — Jester AI + physics + whip damage + death pipeline.

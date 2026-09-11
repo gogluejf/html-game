@@ -6,7 +6,7 @@
 // overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../view.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getJester, getParticles, getCoins, getBarrels, getShakeOffset } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getJester, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts } from './update.js';
 import { getState, STATE_NAMES } from '../state.js';
 
 export function render(ctx) {
@@ -66,6 +66,14 @@ export function render(ctx) {
   for (const s of getParticles().activeItems) s.draw(ctx);
   for (const c of getCoins().activeItems) c.draw(ctx);
 
+  // Task 4.3 — checkpoints (flags) + powerups (signboards). Both draw themselves
+  // (Entity transform pipeline + bob/flash overlays).
+  for (const c of getCheckpoints()) c.draw(ctx);
+  for (const p of getPowerups()) p.draw(ctx);
+
+  // Task 4.3 — floating value-text popups (powerup labels, checkpoint ids).
+  for (const t of getFloatTexts()) t.draw(ctx);
+
   // Task 4.2 — F3 debug: show each coin's value as small text above it so the
   // per-type weight/value difference is visible during development.
   if (isDebugEnabled()) {
@@ -79,6 +87,22 @@ export function render(ctx) {
       ctx.fillStyle = c.debugColor ?? '#fff';
       ctx.fillText(String(c.value), cx, cy);
     }
+    // Task 4.3 — F3 debug: powerup type label above each live powerup, and the
+    // checkpoint id above each flag (triggered ones dimmed).
+    for (const p of getPowerups()) {
+      if (!p.alive || p.collected) continue;
+      const cx = p.x + p.w / 2;
+      const cy = p.y - 6;
+      ctx.fillStyle = p.def.color;
+      ctx.fillText(p.powerType.toUpperCase(), cx, cy);
+    }
+    for (const c of getCheckpoints()) {
+      if (!c.alive) continue;
+      const cx = c.x + c.w / 2;
+      const cy = c.y - 6;
+      ctx.fillStyle = c.triggered ? 'rgba(255,215,0,0.4)' : '#ffd700';
+      ctx.fillText(`[${c.checkpointId}]`, cx, cy);
+    }
     ctx.restore();
   }
 
@@ -87,7 +111,19 @@ export function render(ctx) {
 
   // Hero test box — drawn through Entity.draw() so the full transform
   // pipeline (mirror/rotate/scale + debug rect fallback) is exercised.
-  getHero().draw(ctx);
+  // Task 4.3 — Invincibility blink: while invincibleTimer > 0 the hero sprite
+  // alternates visible/invisible every 0.1s (design §12 "Invincibility active").
+  {
+    const h = getHero();
+    if (h.invincibleTimer > 0 && Math.floor(h.invincibleTimer / 0.1) % 2 === 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      h.draw(ctx);
+      ctx.restore();
+    } else {
+      h.draw(ctx);
+    }
+  }
 
   // Debug overlay (F3): full §16 colored boxes over every entity's worldBox().
   if (isDebugEnabled()) {

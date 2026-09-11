@@ -160,6 +160,88 @@ export function makeCoinBarrel(x, y) {
 }
 
 // ---------------------------------------------------------------------------
+// Checkpoint — restart position marker (design §10 "Object" / §13 level struct)
+// ---------------------------------------------------------------------------
+// A Checkpoint is NOT a solid: it doesn't block movement and has no HP pool.
+// It only carries a CHECKPOINT layer bit so the HERO×CHECKPOINT collision rule
+// fires when the hero walks into it. Touching it stores its position on the
+// hero (hero.checkpoint = {x,y}) which the death/restart pipeline uses as the
+// respawn point. Triggering latches per-checkpoint so re-walking over it does
+// nothing; a fresh run gets fresh instances.
+
+const CHECKPOINT_DEF = {
+  id: 'checkpoint',
+  w: 24, h: 48,
+};
+
+export class Checkpoint extends Entity {
+  /**
+   * @param {string} id checkpoint identifier (e.g. '1-1' … '1-4')
+   * @param {number} x spawn x (top-left of box)
+   * @param {number} y spawn y (top-left of box)
+   */
+  constructor(id, x, y) {
+    super({
+      x, y,
+      w: CHECKPOINT_DEF.w,
+      h: CHECKPOINT_DEF.h,
+      layer: LAYER.CHECKPOINT,
+      debugColor: '#ffd700',
+      gravity: 0,
+    });
+
+    this.type = 'checkpoint';
+    this.checkpointId = id;
+    this.triggered = false;
+    this.flashTimer = 0; // brief white flash after triggering (render reads it)
+  }
+
+  /** Per-frame step: decay the trigger flash timer. */
+  update(dt) {
+    if (this.flashTimer > 0) this.flashTimer = Math.max(0, this.flashTimer - dt);
+  }
+
+  /**
+   * Set the hero's restart position to this checkpoint. Latches so repeated
+   * overlap frames can't re-trigger. Returns true when newly triggered.
+   *
+   * @param {object} hero the touching hero
+   * @returns {boolean} true when the checkpoint fired this call
+   */
+  trigger(hero) {
+    if (this.triggered) return false;
+    this.triggered = true;
+    hero.checkpoint = { x: this.x, y: this.y };
+    this.flashTimer = 0.4;
+    // SFX: checkpoint
+    return true;
+  }
+
+  /**
+   * Draw the flag body. Debug rect fallback until real sprites land; a white
+   * flash overlay plays for FLASH duration right after triggering.
+   * @param {CanvasRenderingContext2D} ctx
+   */
+  draw(ctx) {
+    if (!this.alive) return;
+    super.draw(ctx);
+    if (this.flashTimer > 0) {
+      const b = this.worldBox();
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, this.flashTimer * 2.5);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(b.x - 4, b.y - 4, b.w + 8, b.h + 8);
+      ctx.restore();
+    }
+  }
+}
+
+/** Create a checkpoint with the given id at (x, y). */
+export function makeCheckpoint(id, x, y) {
+  return new Checkpoint(id, x, y);
+}
+
+// ---------------------------------------------------------------------------
 // Explosion AoE — pure function (unit-testable, no DOM)
 // ---------------------------------------------------------------------------
 
