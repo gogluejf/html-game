@@ -6,8 +6,8 @@
 // overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../view.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getJester, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies } from './update.js';
-import { getState, STATE_NAMES } from '../state.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getJester, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, CONTINUE_COST } from './update.js';
+import { getState, STATE_NAMES, S } from '../state.js';
 
 export function render(ctx) {
   const cam = getCamera();
@@ -114,9 +114,13 @@ export function render(ctx) {
   // pipeline (mirror/rotate/scale + debug rect fallback) is exercised.
   // Task 4.3 — Invincibility blink: while invincibleTimer > 0 the hero sprite
   // alternates visible/invisible every 0.1s (design §12 "Invincibility active").
+  // Task 5.2 — While dying the hero is invisible; a skull emoji floats up in a
+  // sine wave and fades over the death duration instead.
   {
     const h = getHero();
-    if (h.invincibleTimer > 0 && Math.floor(h.invincibleTimer / 0.1) % 2 === 0) {
+    if (h.dying) {
+      drawDeathSkull(ctx, h);
+    } else if (h.invincibleTimer > 0 && Math.floor(h.invincibleTimer / 0.1) % 2 === 0) {
       ctx.save();
       ctx.globalAlpha = 0.25;
       h.draw(ctx);
@@ -162,17 +166,47 @@ export function render(ctx) {
 }
 
 /**
+ * Task 5.2 — draw the hero-death skull effect (design §12 "Hero death"). The
+ * 💀 emoji floats upward in a sine wave and fades out over the death duration.
+ * Position is derived from hero.deathTimer so it stays in sync with the update
+ * loop without storing extra state. Called inside the camera-translated world.
+ */
+function drawDeathSkull(ctx, h) {
+  const t = h.deathTimer;
+  const dur = h.DEATH_DURATION || 1.5;
+  const alpha = Math.max(0, 1 - t / dur); // fade 1 → 0 over the duration
+  if (alpha <= 0) return;
+
+  // Start at the hero's center; drift up + sway sideways on a sine wave.
+  const cx = h.x + h.w / 2;
+  const cy = h.y + h.h / 2;
+  const sx = cx + Math.sin(t * 4) * 10;   // horizontal sine sway
+  const sy = cy - 30 * t;                 // steady upward float
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = '32px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('💀', sx, sy);
+  ctx.restore();
+}
+
+/**
  * Minimal state indicator shown when not in PLAY. The full per-state screens
  * land in Milestone 8; this keeps the skeleton visible/testable today.
  */
 function drawStateOverlay(ctx) {
   const s = getState();
+  if (s === S.OVER) {
+    drawGameOverScreen(ctx);
+    return;
+  }
   const label = STATE_NAMES[s] || String(s);
   const hint =
     s === 0 ? 'HOME — press Enter' :
     s === 1 ? 'SELECT — press Enter' :
     s === 3 ? 'PAUSE' :
-    s === 4 ? 'GAME OVER' :
     s === 5 ? 'WIN' : '';
 
   ctx.save();
@@ -188,6 +222,92 @@ function drawStateOverlay(ctx) {
     ctx.fillText(hint, VIEW_W / 2, VIEW_H / 2 + 28);
   }
   ctx.restore();
+}
+
+/**
+ * Task 5.2 — Game Over screen skeleton (design §20). Shows "GAME OVER", the
+ * key run stats (enemies killed, coins collected, distance), and the three
+ * options with their keys. Continue is shown only when affordable/available.
+ * Milestone 8 polishes this into a real Screen.
+ */
+function drawGameOverScreen(ctx) {
+  const h = getHero();
+  const stats = h.stats ?? {};
+  const enemiesKilled = countEnemiesKilled();
+  const coinsCollected = stats.coinsCollected?.total ?? 0;
+  const distance = Math.round(stats.distanceTraveled ?? 0);
+  const score = computeScore(h);
+
+  const canContinue =
+    h.continuesUsed < h.maxContinues && h.coins >= CONTINUE_COST;
+
+  ctx.save();
+  // Dim the frozen play frame behind the overlay.
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+  ctx.textAlign = 'center';
+
+  // Title.
+  ctx.fillStyle = '#e74c3c';
+  ctx.font = 'bold 64px monospace';
+  ctx.fillText('GAME OVER', VIEW_W / 2, 150);
+
+  // Score + key stats block.
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 22px monospace';
+  ctx.fillText(`SCORE  ${score}`, VIEW_W / 2, 210);
+  ctx.font = '16px monospace';
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillText(`ENEMIES KILLED   ${enemiesKilled}`, VIEW_W / 2, 248);
+  ctx.fillText(`COINS COLLECTED  ${coinsCollected}`, VIEW_W / 2, 274);
+  ctx.fillText(`DISTANCE         ${distance} px`, VIEW_W / 2, 300);
+
+  // Options.
+  let oy = 360;
+  ctx.font = 'bold 20px monospace';
+  ctx.fillStyle = '#ffd700';
+  ctx.fillText('[R]  RETRY', VIEW_W / 2, oy);
+  oy += 34;
+  if (canContinue) {
+    ctx.fillStyle = '#2ecc71';
+    ctx.fillText(`[C]  CONTINUE  (${h.continuesUsed}/${h.maxContinues}, -${CONTINUE_COST} coins)`, VIEW_W / 2, oy);
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    const why = h.continuesUsed >= h.maxContinues
+      ? 'no continues left'
+      : `need ${CONTINUE_COST} coins`;
+    ctx.fillText(`[C]  CONTINUE  (unavailable — ${why})`, VIEW_W / 2, oy);
+  }
+  oy += 34;
+  ctx.fillStyle = '#aaaaaa';
+  ctx.fillText('[Q]  QUIT', VIEW_W / 2, oy);
+
+  ctx.restore();
+}
+
+// --- Task 5.2 — game-over stat helpers ---------------------------------------
+/** Total live+dead enemy count that has been defeated this run. */
+function countEnemiesKilled() {
+  const stats = getHero().stats ?? {};
+  const ek = stats.enemiesKilled ?? {};
+  let total = 0;
+  for (const k in ek) total += ek[k] ?? 0;
+  return total;
+}
+
+/**
+ * Simple score derivation from run telemetry (Milestone 8 may refine the
+ * formula). Coins carry the most weight; kills and distance add on top.
+ */
+function computeScore(h) {
+  const stats = h.stats ?? {};
+  const coins = stats.coinsCollected?.total ?? 0;
+  const ek = stats.enemiesKilled ?? {};
+  let kills = 0;
+  for (const k in ek) kills += ek[k] ?? 0;
+  const dist = Math.round(stats.distanceTraveled ?? 0);
+  return coins * 10 + kills * 100 + Math.floor(dist / 10);
 }
 
 /**

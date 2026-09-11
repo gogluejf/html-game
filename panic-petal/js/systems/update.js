@@ -31,6 +31,9 @@ import { COIN_TYPES } from '../coin.js';
 // --- Tunables for the test rig ---------------------------------------------
 // (Hero movement feel lives in js/hero.js; level geometry below.)
 
+// Task 5.2 — continue cost in coins (design §1/§14: 1000 coins per continue).
+export const CONTINUE_COST = 1000;
+
 // Level length: intentionally wider than the 960px viewport so the camera
 // can scroll. Floor spans the full length; air platforms are scattered along it.
 export const LEVEL_LENGTH = 6400;
@@ -241,16 +244,87 @@ function spawnFloatText(x, y, text, color) {
 const keys = new Set();
 
 // State-machine test driver (skeleton): Enter walks HOME→SELECT→PLAY.
+// Task 5.2 — GAME OVER handles R (retry), C (continue), Q (quit).
 // Milestone 8 replaces this with per-screen input handling.
 function handleStateKeys(e) {
-  if (e.code !== 'Enter') return;
   const s = getState();
+
+  // --- Game Over options (Task 5.2) -----------------------------------------
+  if (s === S.OVER) {
+    if (e.code === 'KeyR') {
+      retryFromGameOver();
+      return;
+    }
+    if (e.code === 'KeyC') {
+      continueFromGameOver();
+      return;
+    }
+    if (e.code === 'KeyQ') {
+      if (tryTransition(S.HOME)) {
+        console.log(`[state] ${STATE_NAMES[s]} → ${STATE_NAMES[S.HOME]} (quit)`);
+      }
+      return;
+    }
+    return;
+  }
+
+  if (e.code !== 'Enter') return;
   let target = null;
   if (s === S.HOME)   target = S.SELECT;
   else if (s === S.SELECT) target = S.PLAY;
   if (target !== null && tryTransition(target)) {
     console.log(`[state] ${STATE_NAMES[s]} → ${STATE_NAMES[target]}`);
   }
+}
+
+/**
+ * Task 5.2 — Retry from game over: restart at the first checkpoint (1-1) or
+ * level start, full energy, lives reset to 3, continues reset. Checkpoints do
+ * NOT persist across a retry (design §1).
+ */
+export function retryFromGameOver() {
+  const cp = checkpoints.length ? checkpoints[0] : null;
+  hero.x = cp ? cp.x : 80;
+  hero.y = cp ? cp.y : (VIEW_H - 40 - hero.h);
+  hero.vx = 0;
+  hero.vy = 0;
+  hero.energy = hero.maxEnergy;
+  hero.lives = 3;
+  hero.dying = false;
+  hero.deathTimer = 0;
+  hero.alive = true;
+  hero.invincibleTimer = Hero.RESPAWN_IFRAMES;
+  hero.continuesUsed = 0;
+  hero.checkpoint = { x: hero.x, y: hero.y };
+  // Reset checkpoint flags so they can re-trigger on the new run.
+  for (const c of checkpoints) c.triggered = false;
+  if (tryTransition(S.PLAY)) {
+    console.log('[state] OVER → PLAY (retry)');
+  }
+}
+
+/**
+ * Task 5.2 — Continue from game over: costs CONTINUE_COST coins, limited to
+ * hero.maxContinues per run. Restores at the last checkpoint with full energy
+ * and one life. Returns true if the continue was applied.
+ */
+export function continueFromGameOver() {
+  if (hero.continuesUsed >= hero.maxContinues) {
+    console.log('[gameover] no continues left');
+    return false;
+  }
+  if (hero.coins < CONTINUE_COST) {
+    console.log(`[gameover] not enough coins (${hero.coins}/${CONTINUE_COST})`);
+    return false;
+  }
+  hero.coins -= CONTINUE_COST;
+  hero.continuesUsed += 1;
+  hero.lives = 1;
+  hero.respawn(); // restores at hero.checkpoint with full energy + i-frames
+  if (tryTransition(S.PLAY)) {
+    console.log(`[state] OVER → PLAY (continue #${hero.continuesUsed})`);
+  }
+  return true;
 }
 
 window.addEventListener('keydown', (e) => {
@@ -358,6 +432,8 @@ world.on('hit', (a, b) => {
   if (foeProj && !foeProj.friendly) {
     const victim = foeProj === a ? b : a;
     if (victim.layer !== LAYER.HERO) return;
+    // Task 5.2 — a hero mid-death takes no further damage (skull is playing).
+    if (victim.dying) { foeProj.alive = false; return; }
     if (victim.invincibleTimer > 0) { foeProj.alive = false; return; } // i-frames absorb it
     const dealt = damage(foeProj, victim, foeProj.damage, 'projectile');
     if (dealt > 0) {
@@ -378,6 +454,8 @@ world.on('contact', (a, b) => {
   const enemyEnt = a.layer === LAYER.ENEMY ? a : (b.layer === LAYER.ENEMY ? b : null);
   const heroEnt = a.layer === LAYER.HERO ? a : (b.layer === LAYER.HERO ? b : null);
   if (!enemyEnt || !heroEnt) return;
+  // Task 5.2 — no contact damage while the hero is mid-death.
+  if (heroEnt.dying) return;
   if (!enemyEnt.alive || enemyEnt.aiState === 'dead') return; // dead enemies don't hurt
   if (enemyEnt._contactCd > 0) return;
   enemyEnt._contactCd = CONTACT_COOLDOWN;
@@ -557,6 +635,25 @@ export function update(dt) {
   const input = readInput();
   hero.update(dt, input);
 
+  // 1a. Task 5.2 — energy / death / respawn / gameover flow.
+  //     Trigger: if energy hit 0 (and no death already running) start the
+  //     skull-fade sequence. While dying we skip all gameplay below (no input,
+  //     no shooting, no melee) so the corpse plays out cleanly; on completion
+  //     we either respawn at the checkpoint or transition to GAME OVER.
+  if (!hero.dying && hero.energy <= 0) {
+    hero.die();
+  }
+  if (hero.dying) {
+    hero.deathTimer += dt;
+    if (hero.deathTimer >= hero.DEATH_DURATION) {
+      finishHeroDeath();
+    }
+    // Camera still tracks (frozen) hero + decay shake so the fade reads well.
+    camera.update(hero);
+    updateShake(dt);
+    return;
+  }
+
   // 1b. thorn shooting (Task 3.1): G key fires 8-way projectiles from the pool.
   tryFire(hero, input, dt);
 
@@ -622,8 +719,29 @@ export function update(dt) {
   // 4. camera follows the hero (clamped to level bounds, facing look-ahead).
   camera.update(hero);
 
+  // 4b. Task 5.2 — track run distance for the game-over stats summary.
+  if (hero.stats && hero.stats.distanceTraveled != null) {
+    hero.stats.distanceTraveled += Math.abs(hero.vx * dt);
+  }
+
   // 5. Task 4.1 — decay the explosion screen shake (render reads getShakeOffset()).
   updateShake(dt);
+}
+
+/**
+ * Task 5.2 — called when the skull-fade death sequence completes. Consumes a
+ * life; if any remain, respawn at the last checkpoint with full energy + i-frames.
+ * If no lives remain, transition to GAME OVER (the state machine then shows the
+ * retry/continue/quit screen).
+ */
+function finishHeroDeath() {
+  hero.lives -= 1;
+  if (hero.lives > 0) {
+    hero.respawn();
+  } else {
+    hero.dying = false; // stop the fade; the OVER overlay takes over
+    tryTransition(S.OVER);
+  }
 }
 
 /**
@@ -782,7 +900,8 @@ function updateRealEnemy(e, dt) {
   const atkHb = getAttackHitbox(e);
   if (atkHb && !e._atkHitDone) {
     const hb = hero.worldBox();
-    if (aabbOverlap(atkHb, hb)) {
+    // Task 5.2 — no melee damage while the hero is mid-death.
+    if (!hero.dying && aabbOverlap(atkHb, hb)) {
       const dealt = damage(e, hero, e.stats.attack, 'melee');
       if (dealt > 0) {
         e._atkHitDone = true; // one hit per swing

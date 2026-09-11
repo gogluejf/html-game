@@ -50,6 +50,18 @@ export class Hero extends Entity {
     this.rapidTimer = 0;
     this.checkpoint = { x, y };
 
+    // --- Death / respawn / continue (Task 5.2) -------------------------------
+    // dying: hero has hit 0 energy and is playing the skull-fade death sequence.
+    // deathTimer: seconds elapsed since death started (drives skull motion/fade).
+    // DEATH_DURATION: total length of the skull animation before respawn/gameover.
+    // continuesUsed / maxContinues + CONTINUE_COST drive the gameover Continue
+    // option (design §1: 3 continues per run, each costs CONTINUE_COST coins).
+    this.dying = false;
+    this.deathTimer = 0;
+    this.DEATH_DURATION = 1.5;
+    this.continuesUsed = 0;
+    this.maxContinues = 3;
+
     // Movement state.
     this.grounded = false;
     this.crouching = false;
@@ -243,4 +255,50 @@ export class Hero extends Entity {
     }
     this.grounded = grounded;
   }
+
+  /**
+   * Begin the death sequence (Task 5.2). Called by the update system once
+   * energy reaches 0 and no death is already in progress. The hero becomes
+   * invisible for DEATH_DURATION seconds while a skull emoji floats up in a
+   * sine wave and fades; on completion the caller respawns or transitions to
+   * game over. No-op if already dying (guards against re-triggering mid-fade).
+   */
+  die() {
+    if (this.dying) return;
+    this.dying = true;
+    this.deathTimer = 0;
+    this.energy = 0;
+    // Freeze momentum so the corpse doesn't drift during the fade.
+    this.vx = 0;
+    this.vy = 0;
+  }
+
+  /**
+   * Respawn at the last checkpoint with full energy and brief i-frames (Task
+   * 5.2). Clears the death flag, restores energy/ammo-independent resources,
+   * and grants RESPAWN_IFRAMES of invincibility so the player isn't instantly
+   * killed again at the spawn point.
+   */
+  respawn() {
+    const cp = this.checkpoint ?? { x: 0, y: 0 };
+    this.x = cp.x;
+    this.y = cp.y;
+    this.vx = 0;
+    this.vy = 0;
+    this.energy = this.maxEnergy;
+    this.alive = true;
+    this.dying = false;
+    this.deathTimer = 0;
+    this.invincibleTimer = Math.max(this.invincibleTimer, Hero.RESPAWN_IFRAMES);
+    this.crouching = false;
+    this.sliding = false;
+    this.box = this.standBox;
+    this.meleeActive = false;
+    this.meleeFrame = 0;
+    this.meleeCooldown = 0;
+  }
 }
+
+// Seconds of invincibility granted on respawn (design §1 / Task 5.2). Static so
+// tests can read it without instantiating a hero.
+Hero.RESPAWN_IFRAMES = 1.0;
