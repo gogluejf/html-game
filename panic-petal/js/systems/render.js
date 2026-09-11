@@ -264,7 +264,6 @@ export function render(ctx) {
   if (Debug.enabled) {
     if (Debug.showStats) drawStatsHUD(ctx);
     if (Debug.showLog) drawEventLog(ctx);
-    drawHarnessHint(ctx);
   }
 
   // Task 7.1 — screen-space effect overlays: red damage vignette + white
@@ -279,6 +278,9 @@ export function render(ctx) {
   if (state === S.PLAY) {
     drawHUD(ctx, getHero(), cam, LEVELS[0]);
   }
+
+  // Harness hint drawn LAST so it sits on top of everything (incl. level map bar).
+  if (Debug.enabled) drawHarnessHint(ctx);
 
   // --- State overlays (Task 8.2): HOME/SELECT handled above; PAUSE/OVER/WIN
   // are drawn here as overlays on top of the frozen game world so the play
@@ -660,9 +662,9 @@ function drawHarnessHint(ctx) {
   const w2 = ctx.measureText(line2).width;
   const w = Math.max(w1, w2);
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(VIEW_W / 2 - w / 2 - 6, VIEW_H - 55, w + 12, 32);
+  ctx.fillRect(VIEW_W / 2 - w / 2 - 6, VIEW_H - 38, w + 12, 32);
   ctx.fillStyle = '#00e5ff';
-  ctx.fillText(line1, VIEW_W / 2, VIEW_H - 44);
-  ctx.fillText(line2, VIEW_W / 2, VIEW_H - 28);
+  ctx.fillText(line1, VIEW_W / 2, VIEW_H - 27);
+  ctx.fillText(line2, VIEW_W / 2, VIEW_H - 11);
   ctx.restore();
 }
