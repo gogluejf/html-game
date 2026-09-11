@@ -15,6 +15,7 @@ import { Camera } from '../camera.js';
 import { Anim, makeTestFrame } from '../anim.js';
 import { Hero } from '../hero.js';
 import { HEROES } from '../heroDefs.js';
+import { S, getState, STATE_NAMES, tryTransition } from '../state.js';
 
 // --- Tunables for the test rig ---------------------------------------------
 // (Hero movement feel lives in js/hero.js; level geometry below.)
@@ -87,10 +88,25 @@ const pickups = [
 
 // --- Input -------------------------------------------------------------------
 const keys = new Set();
+
+// State-machine test driver (skeleton): Enter walks HOME→SELECT→PLAY.
+// Milestone 8 replaces this with per-screen input handling.
+function handleStateKeys(e) {
+  if (e.code !== 'Enter') return;
+  const s = getState();
+  let target = null;
+  if (s === S.HOME)   target = S.SELECT;
+  else if (s === S.SELECT) target = S.PLAY;
+  if (target !== null && tryTransition(target)) {
+    console.log(`[state] ${STATE_NAMES[s]} → ${STATE_NAMES[target]}`);
+  }
+}
+
 window.addEventListener('keydown', (e) => {
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
   if (e.code === 'F3') { e.preventDefault(); setDebugEnabled(!isDebugEnabled()); }
+  handleStateKeys(e);
 });
 window.addEventListener('keyup', (e) => keys.delete(e.code));
 
@@ -137,6 +153,9 @@ export function getCamera() { return camera; }
 
 // --- Per-frame step ------------------------------------------------------------
 export function update(dt) {
+  // Physics only runs during PLAY; other states are screen-driven (Milestone 8).
+  if (getState() !== S.PLAY) return;
+
   // 1. input → intents (movement/jump/crouch logic lives in Hero.update).
   const input = readInput();
   hero.update(dt, input);

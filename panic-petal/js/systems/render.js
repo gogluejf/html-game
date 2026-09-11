@@ -7,6 +7,7 @@
 
 import { VIEW_W, VIEW_H } from '../view.js';
 import { getHero, getSolids, getEnemies, getProjectiles, getPickups, getCamera, isDebugEnabled } from './update.js';
+import { getState, STATE_NAMES } from '../state.js';
 
 export function render(ctx) {
   const cam = getCamera();
@@ -47,6 +48,38 @@ export function render(ctx) {
     ctx.font = '12px monospace';
     ctx.fillText('DEBUG ON — F3 to toggle', 8, 16);
   }
+
+  // --- State overlay (skeleton; replaced by real screens in Milestone 8) -----
+  drawStateOverlay(ctx);
+}
+
+/**
+ * Minimal state indicator shown when not in PLAY. The full per-state screens
+ * land in Milestone 8; this keeps the skeleton visible/testable today.
+ */
+function drawStateOverlay(ctx) {
+  const s = getState();
+  const label = STATE_NAMES[s] || String(s);
+  const hint =
+    s === 0 ? 'HOME — press Enter' :
+    s === 1 ? 'SELECT — press Enter' :
+    s === 3 ? 'PAUSE' :
+    s === 4 ? 'GAME OVER' :
+    s === 5 ? 'WIN' : '';
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 48px monospace';
+  ctx.fillText(label, VIEW_W / 2, VIEW_H / 2 - 8);
+  if (hint) {
+    ctx.font = '18px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillText(hint, VIEW_W / 2, VIEW_H / 2 + 28);
+  }
+  ctx.restore();
 }
 
 /**
