@@ -192,7 +192,8 @@ export function render(ctx) {
     ctx.restore();
   }
 
-  getAnimTestEnemy().draw(ctx);
+  const at = getAnimTestEnemy();
+  if (at.alive) at.draw(ctx);
   for (const p of getProjectiles()) p.draw(ctx);
 
   // Hero test box — drawn through Entity.draw() so the full transform
@@ -321,8 +322,9 @@ function drawDebugOverlay(ctx) {
   ];
 
   const all = [...getSolids().map(s => solidEntityProxy(s)),
-               ...getPickups(), ...getEnemies(), ...getProjectiles(), getHero(),
-               ...getBarrels()];
+               ...getPickups(), ...getEnemies().filter(e => e.alive !== false),
+               ...getProjectiles(), getHero(),
+               ...getBarrels().filter(b => b.alive)];
 
   for (const ent of all) {
     const layer = ent.layer ?? 0;

@@ -121,19 +121,10 @@ hero.anims.attack = new Anim(
 // Task 3.1 — three red target boxes (HP = 20) that friendly thorns can destroy.
 // These stand in for real enemies: same ENEMY layer + HP, but no death pipeline
 // yet (that lands in Task 3.3). When hp drops to <= 0 they are culled here.
-const FLOOR_TOP_ENEMY = SOLIDS[0].y; // floor top; targets sit on the floor
-const TARGET_HP = 20;
-const enemies = [
-  new Entity({ x: 700,  y: FLOOR_TOP_ENEMY - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY, debugColor: '#e74c3c' }),
-  new Entity({ x: 1500, y: FLOOR_TOP_ENEMY - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY, debugColor: '#e74c3c' }),
-  new Entity({ x: 2500, y: FLOOR_TOP_ENEMY - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY, debugColor: '#e74c3c' }),
-];
-for (const e of enemies) {
-  e.hp = TARGET_HP;
-  e.maxHp = TARGET_HP;
-  e.type = 'target';      // telemetry bucket (damage().byEnemy)
-  e.hitFlash = 0;         // white-flash timer when struck (Task 3.2)
-}
+const FLOOR_TOP_ENEMY = SOLIDS[0].y; // floor top
+// Legacy placeholder targets removed — real enemies (realEnemies) handle all combat.
+// Kept as empty array so existing code paths (melee, collision, damage) don't break.
+const enemies = [];
 
 // Task 5.3 — Real enemies come from generateLevel(LEVELS[0]). The rogue spawner
 // randomly places each type along flat ground with min spacing; flyers hover at
@@ -152,19 +143,17 @@ export const boss = makeElephant(LEVEL_LENGTH - 300, FLOOR_TOP);
 // Task 2.1 — Non-looping anim test. Kept off the live targets (above) so the
 // animation cycle doesn't obscure their destruction; attached to a separate
 // decorative placeholder that never takes damage.
-const animTestEnemy = new Entity({ x: 1150, y: FLOOR_TOP_ENEMY - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY, debugColor: '#9b59b6' });
+// Legacy placeholder entities (Tasks 1.2–3.1) — disabled. Real entities come
+// from generateLevel() / projectilePool / powerups array. Kept as inert objects
+// so existing code references don't break.
+const animTestEnemy = new Entity({ x: -9999, y: -9999, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY, debugColor: '#9b59b6' });
+animTestEnemy.alive = false;
 animTestEnemy.anim = new Anim(
   ['#e74c3c', '#f39c12', '#9b59b6'].map(c => makeTestFrame(36, 40, c)),
   { speed: 400, loop: false },
 );
-const projectiles = [
-  new Entity({ x: 1100, y: 320, w: 16, h: 10, gravity: 0, layer: LAYER.PROJ_ALLY, debugColor: '#ff6ec7' }),
-  new Entity({ x: 1800, y: 300, w: 16, h: 10, gravity: 0, layer: LAYER.PROJ_FOE,  debugColor: '#ff6ec7' }),
-];
-const pickups = [
-  new Entity({ x: 1200, y: VIEW_H - 40 - 28, w: 24, h: 24, gravity: 0, layer: LAYER.PICKUP, debugColor: '#3498db' }),
-  new Entity({ x: 2000, y: VIEW_H - 40 - 28, w: 24, h: 24, gravity: 0, layer: LAYER.PICKUP, debugColor: '#3498db' }),
-];
+const projectiles = [];
+const pickups = [];
 
 // Task 4.1 — Destructible solid barrels (design §10 "Object").
 // Barrels are SOLID (block hero + enemy) but carry an HP pool; melee/thorns/bombs
