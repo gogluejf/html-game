@@ -18,7 +18,7 @@ import { HEROES } from '../heroDefs.js';
 import { projectilePool, aimFromInput, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
 import { S, getState, STATE_NAMES, tryTransition, onTransition } from '../state.js';
-import { screenOnKey } from '../screens.js';
+import { screenOnKey, screenOnKeyUp } from '../screens.js';
 import { Jester } from '../jester.js';
 import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
 import { Violetta, VIOLETTA_DEF } from '../violetta.js';
@@ -332,7 +332,8 @@ window.addEventListener('keydown', (e) => {
   handleDebugKeys(e); // no-op unless Debug.enabled
   handleStateKeys(e);
 });
-window.addEventListener('keyup', (e) => keys.delete(e.code));
+window.addEventListener('keyup', (e) => { keys.delete(e.code); screenOnKeyUp(e.code); });
+window.addEventListener('blur', () => { keys.clear(); screenOnKeyUp('ArrowLeft'); screenOnKeyUp('ArrowRight'); });
 
 // --- Debug harness mouse input (F1): click to select / force an enemy's state --
 // Converts a screen-space click into logical 960x540 coords (inverse of the

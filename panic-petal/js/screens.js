@@ -371,8 +371,10 @@ export const Home = {
 
 export const Select = {
   focus: -1, // -1 = none, 0 = scarlet, 1 = balthazar
+  _heldLeft: false,   // ArrowLeft physically down (chip stays gold while held)
+  _heldRight: false,  // ArrowRight physically down
 
-  reset() { this.focus = -1; },
+  reset() { this.focus = -1; this._heldLeft = false; this._heldRight = false; },
 
   draw(ctx) {
     // Background — deep midnight so the cream art cards pop.
@@ -388,9 +390,9 @@ export const Select = {
     // Layout: one large central art card (swaps by focus) + a right-hand info
     // column (name, special, stat bars). The art is a full-body duo on cream —
     // the focused hero is lit, the other dimmed (see asset inspection).
-    const artW = 400, artH = 428;
+    const artW = 390, artH = 418;
     const artX = (VIEW_W - artW) / 2 - 150;   // shift left to leave room for info col
-    const artY = 92;
+    const artY = 78;
 
     const infoX = artX + artW + 40;
     const infoW = 250;
@@ -399,28 +401,39 @@ export const Select = {
     const hero = this.focus >= 0 ? heroes[this.focus] : null;
 
     // --- Central art card ----------------------------------------------------
-    // Cream mat frame around the artwork. Gold glow only when a hero is
-    // focused — the border itself is the focus indicator (no extra arrows).
-    ctx.save();
-    ctx.fillStyle = '#efe4c8';
-    roundRect(ctx, artX - 10, artY - 10, artW + 20, artH + 20, 12);
-    ctx.fill();
-    ctx.strokeStyle = this.focus >= 0 ? GOLD : '#5a4a3a';
-    ctx.lineWidth = this.focus >= 0 ? 5 : 3;
-    if (this.focus >= 0) { ctx.shadowColor = 'rgba(255,215,0,0.5)'; ctx.shadowBlur = 18; }
-    roundRect(ctx, artX - 10, artY - 10, artW + 20, artH + 20, 12);
-    ctx.stroke();
-    ctx.restore();
+    // Thin cream mat (8px) inside the frame so the artwork doesn't touch the
+    // border. The PNGs are 1212×1297 (aspect 0.934); the inner box matches that
+    // aspect so the art fills it edge-to-edge with no extra letterboxing.
+    {
+      const MAT = 8;
+      const aspect = 1212 / 1297;
+      const innerW = Math.min(artW - 2 * MAT, (artH - 2 * MAT) * aspect);
+      const innerH = innerW / aspect;
+      const ix = artX + (artW - innerW) / 2;
+      const iy = artY + (artH - innerH) / 2;
 
-    // Artwork: pick the focus-state variant (none / scarlet / balthazar).
-    const artKey = this.focus === 0 ? 'selectScarlet'
-               : this.focus === 1 ? 'selectBalthazar'
-               : 'selectNone';
-    const img = images[artKey];
-    if (img?.complete && img.naturalWidth > 0) {
-      drawFitted(ctx, img, artX, artY, artW, artH);
-    } else {
-      drawPlaceholder(ctx, artX, artY, artW, artH, 'hero art');
+      ctx.save();
+      ctx.fillStyle = '#efe4c8';
+      roundRect(ctx, artX, artY, artW, artH, 10);
+      ctx.fill();
+      // Frame is always a neutral dark line — focus is shown by the keycap
+      // chips below, never by the card border.
+      ctx.strokeStyle = '#5a4a3a';
+      ctx.lineWidth = 3;
+      roundRect(ctx, artX, artY, artW, artH, 10);
+      ctx.stroke();
+      ctx.restore();
+
+      // Artwork: pick the focus-state variant (none / scarlet / balthazar).
+      const artKey = this.focus === 0 ? 'selectScarlet'
+                 : this.focus === 1 ? 'selectBalthazar'
+                 : 'selectNone';
+      const img = images[artKey];
+      if (img?.complete && img.naturalWidth > 0) {
+        drawFitted(ctx, img, ix, iy, innerW, innerH);
+      } else {
+        drawPlaceholder(ctx, ix, iy, innerW, innerH, 'hero art');
+      }
     }
 
     // --- Info column ---------------------------------------------------------
@@ -507,20 +520,27 @@ export const Select = {
     }
 
     // --- Controls bar (below the card) ---------------------------------------
-    // Small keycap chips: [←] [→] SELECT   ·   [ENTER] CONFIRM. The whole bar
-    // is dimmed until a hero is focused; ENTER lights up gold when confirmable.
-    const barY = artY + artH + 26;
+    // Keycap chips: [←] [→] SELECT   ·   [⏎] CONFIRM.
+    //  - ← / → chips stay gold while their key is physically held down
+    //    (this._heldLeft / this._heldRight), so holding an arrow keeps it lit.
+    //  - ⏎ chip flashes gold for 180ms on Enter press.
+    //  - The SELECT / CONFIRM words NEVER highlight; they only brighten when
+    //    their associated action is active (arrow held / enter pressed).
+    const barY = artY + artH + 23;
     const cx0 = artX + artW / 2;
     ctx.save();
     ctx.textBaseline = 'middle';
 
+    const now = performance.now();
+    const enterFlash = this._flashT === 'enter' && (now - this._flashAt) < 180;
+
     const chip = (label, x, y, active) => {
       const w = label.length > 1 ? 34 : 26;
-      ctx.fillStyle = active ? 'rgba(255,215,0,0.18)' : 'rgba(255,255,255,0.07)';
+      ctx.fillStyle = active ? 'rgba(255,215,0,0.22)' : 'rgba(255,255,255,0.07)';
       roundRect(ctx, x - w / 2, y - 12, w, 24, 6);
       ctx.fill();
       ctx.strokeStyle = active ? GOLD : '#5a5a72';
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = active ? 2 : 1.5;
       roundRect(ctx, x - w / 2, y - 12, w, 24, 6);
       ctx.stroke();
       ctx.font = `13px ${FONT_UI}`;
@@ -546,12 +566,12 @@ export const Select = {
     const total = 26 + gap + 34 + gap + wSel + dotGap + 34 + gap + 34 + gap + wConf;
     let px = cx0 - total / 2;
 
-    chip('←', px + 13, barY, this.focus >= 0); px += 26 + gap;
-    chip('→', px + 17, barY, this.focus >= 0); px += 34 + gap;
-    word('SELECT', px, barY, this.focus >= 0 ? '#d8cdb4' : '#6e6552'); px += wSel + dotGap;
+    chip('←', px + 13, barY, this._heldLeft); px += 26 + gap;
+    chip('→', px + 17, barY, this._heldRight); px += 34 + gap;
+    word('SELECT', px, barY, this._heldLeft || this._heldRight ? '#d8cdb4' : '#6e6552'); px += wSel + dotGap;
     word('·', px, barY, '#5a5a72', 16); px += 12 + dotGap - 12;
-    chip('⏎', px + 17, barY, this.focus >= 0); px += 34 + gap;
-    word('CONFIRM', px, barY, this.focus >= 0 ? CREAM : '#6e6552');
+    chip('⏎', px + 17, barY, enterFlash); px += 34 + gap;
+    word('CONFIRM', px, barY, enterFlash ? CREAM : '#6e6552');
     ctx.restore();
   },
 
@@ -560,16 +580,27 @@ export const Select = {
     switch (code) {
       case 'ArrowLeft':
       case 'KeyA':
+        // Arrow chip stays gold while physically held (see draw).
+        this._heldLeft = true;
         // -1 (none) → scarlet; otherwise move left (balthazar → scarlet).
         this.focus = this.focus === -1 ? 0 : Math.max(0, this.focus - 1);
         break;
       case 'ArrowRight':
       case 'KeyD':
+        this._heldRight = true;
         // -1 (none) → scarlet; otherwise move right (scarlet → balthazar).
         this.focus = this.focus === -1 ? 0 : Math.min(1, this.focus + 1);
         break;
+      case 'ArrowUp':
+      case 'KeyW':
+        // Up loses focus — back to the "no selection" art state.
+        this.focus = -1;
+        break;
       case 'Enter':
       case 'Space':
+        // Enter flashes the ⏎ chip for 180ms.
+        this._flashT = 'enter';
+        this._flashAt = performance.now();
         if (this.focus >= 0) {
           const heroId = this.focus === 0 ? 'scarlet' : 'balthazar';
           window.__selectedHero = heroId;
@@ -579,6 +610,12 @@ export const Select = {
         }
         break;
     }
+  },
+
+  /** Called from the global keyup listener so held-arrow chips release. */
+  onKeyUp(code) {
+    if (code === 'ArrowLeft' || code === 'KeyA') this._heldLeft = false;
+    if (code === 'ArrowRight' || code === 'KeyD') this._heldRight = false;
   },
 };
 
@@ -845,6 +882,11 @@ export function screenOnKey(code, hero, actions) {
     return Win.onKey(code, actions);
   }
   return false;
+}
+
+/** Route a keyup event to the active screen (used for held-key visuals). */
+export function screenOnKeyUp(code) {
+  if (getState() === S.SELECT) Select.onKeyUp(code);
 }
 
 /** Update screen-specific per-frame logic (parallax, etc.). */
