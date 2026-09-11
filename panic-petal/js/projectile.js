@@ -158,3 +158,113 @@ export class Pool {
 
 // Shared global pool: the single source of all live projectiles.
 export const projectilePool = new Pool(Projectile, MAX_PROJECTILES);
+
+// --- Special projectiles (design §4, §10) ------------------------------------
+// Hero-specific weapon: bigger box, more damage, longer cooldown.
+//   - Scarlet "saw": fast, no gravity, short range, high DPS
+//   - Balthazar "bomb": has gravity, TTL fuse, explodes with AoE on expiry
+
+const SAW_SPEED = 800;
+const SAW_DAMAGE = 25;
+const SAW_LIFETIME = 0.6;       // short range
+const SAW_SIZE = 20;
+
+const BOMB_SPEED = 400;
+const BOMB_DAMAGE = 40;         // contact damage
+const BOMB_FUSE = 1.5;          // seconds before explosion
+const BOMB_EXPLODE_RADIUS = 100;
+const BOMB_SIZE = 18;
+const BOMB_GRAVITY = 800;       // px/s² (heavier than coins)
+
+export class Special extends Entity {
+  /**
+   * @param {number} x spawn x
+   * @param {number} y spawn y
+   * @param {number} dir 0..7 aim index
+   * @param {'saw'|'bomb'} type hero's special type
+   */
+  constructor(x, y, dir, type) {
+    const isSaw = type === 'saw';
+    super({
+      x, y,
+      w: isSaw ? SAW_SIZE : BOMB_SIZE,
+      h: isSaw ? SAW_SIZE : BOMB_SIZE,
+      layer: LAYER.PROJ_ALLY,
+      debugColor: isSaw ? '#ff6ec7' : '#f39c12',
+      gravity: isSaw ? 0 : 1,
+    });
+
+    this.type = type;
+    this.friendly = true;
+    this.speed = isSaw ? SAW_SPEED : BOMB_SPEED;
+    this.damage = isSaw ? SAW_DAMAGE : BOMB_DAMAGE;
+    this.life = isSaw ? SAW_LIFETIME : BOMB_FUSE;
+    this.maxTtl = this.life;
+    this.ttl = this.life;
+    this.radius = isSaw ? 0 : BOMB_EXPLODE_RADIUS; // bomb has AoE radius
+    this.exploded = false;
+
+    const angle = dirAngle(dir);
+    this.vx = Math.cos(angle) * this.speed;
+    this.vy = Math.sin(angle) * this.speed;
+  }
+
+  update(dt) {
+    // Gravity for bombs.
+    if (this.gravity !== 0) {
+      this.vy += BOMB_GRAVITY * dt;
+    }
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+
+    // TTL countdown.
+    this.tickTtl(dt);
+    if (!this.alive) {
+      // Bomb exploded (fuse ran out).
+      if (this.type === 'bomb' && !this.exploded) {
+        this.exploded = true;
+      }
+    }
+  }
+
+  draw(ctx) {
+    if (!this.alive) return;
+    const cx = this.x + this.w / 2;
+    const cy = this.y + this.h / 2;
+    ctx.save();
+    if (this.type === 'saw') {
+      // Spinning saw blade (pink/magenta).
+      ctx.translate(cx, cy);
+      ctx.rotate(performance.now() * 0.01);
+      ctx.fillStyle = '#ff6ec7';
+      ctx.beginPath();
+      ctx.arc(0, 0, this.w / 2, 0, Math.PI * 2);
+      ctx.fill();
+      // Teeth.
+      ctx.fillStyle = '#fff';
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        ctx.fillRect(Math.cos(a) * this.w * 0.4 - 2, Math.sin(a) * this.w * 0.4 - 2, 4, 4);
+      }
+    } else {
+      // Bomb (orange circle with fuse spark).
+      ctx.fillStyle = '#f39c12';
+      ctx.beginPath();
+      ctx.arc(cx, cy, this.w / 2, 0, Math.PI * 2);
+      ctx.fill();
+      // Fuse spark (blinks faster as TTL decreases).
+      const blinkRate = this.ttlFrac < 0.3 ? 0.05 : 0.15;
+      if (Math.floor(performance.now() * blinkRate) % 2 === 0) {
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(cx, cy - this.h / 2 - 3, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+}
+
+// Pool for specials (smaller than thorn pool — lower fire rate).
+export const MAX_SPECIALS = 16;
+export const specialPool = new Pool(Special, MAX_SPECIALS);

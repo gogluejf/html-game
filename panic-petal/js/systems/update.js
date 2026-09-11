@@ -15,7 +15,7 @@ import { Camera } from '../camera.js';
 import { Anim, makeTestFrame } from '../anim.js';
 import { Hero } from '../hero.js';
 import { HEROES } from '../heroDefs.js';
-import { projectilePool, aimFromInput, dirAngle } from '../projectile.js';
+import { projectilePool, specialPool, aimFromInput, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
 import { S, getState, STATE_NAMES, tryTransition, onTransition } from '../state.js';
 import { screenOnKey, screenOnKeyUp, screenReset } from '../screens.js';
@@ -346,7 +346,7 @@ function enableFullDebug(source) {
 }
 
 window.addEventListener('keydown', (e) => {
-  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','KeyG','KeyJ'].includes(e.code)) e.preventDefault();
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','KeyG','KeyH','KeyJ'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
   if (e.code === 'F3') {
     e.preventDefault();
@@ -420,7 +420,7 @@ function readInput() {
     down:   keys.has('ArrowDown') || keys.has('KeyS'),
     jump:   keys.has('ArrowUp') || keys.has('KeyW') || keys.has('Space'),
     shoot:  keys.has('KeyG'),
-    special: false,
+    special: keys.has('KeyH'),
     melee:  keys.has('KeyJ'),
   };
 }
@@ -536,6 +536,9 @@ function swapHero() {
 
   const nh = new Hero(def, saved.x, saved.y);
   Object.assign(nh, saved);
+  // CRITICAL: restore the NEW hero's stats (Object.assign overwrote them
+  // with the old hero's stats object). Stats define speed/jump/special/etc.
+  nh.stats = def.stats;
   nh.vx = saved.vx; nh.vy = saved.vy;
   // Re-alias combatStats into the (preserved) runStats so damage.js / powerup.js
   // continue writing into the unified structure after the swap.
@@ -623,6 +626,7 @@ function applyGodMode(dt) {
   if (!Debug.god) return;
   hero.invincibleTimer = Math.max(hero.invincibleTimer, dt);
   hero.ammo = Infinity;
+  hero.specialAmmo = Infinity;
   hero.energy = Math.max(hero.energy, 1); // never drop to 0 mid-test
 }
 
@@ -702,7 +706,8 @@ world.on('hit', (a, b) => {
       // (design §12 "Projectile hit on enemy" / "Enemy damaged").
       Effects.spawnHitSparkles(allyProj.x + allyProj.w / 2, allyProj.y + allyProj.h / 2);
       Effects.beginEnemyShake(target);
-      if (Debug.enabled) Debug.logEvent(`thorn → ${target.type ?? '?'} dmg ${dealt}`);
+      const srcName = allyProj.type === 'saw' || allyProj.type === 'bomb' ? allyProj.type : 'thorn';
+      if (Debug.enabled) Debug.logEvent(`${srcName} → ${target.type ?? '?'} dmg ${dealt}`);
     }
     allyProj.alive = false;               // thorn is consumed on impact
     // Task 3.3 — Enemy instances trigger their death pipeline via die().
@@ -985,6 +990,7 @@ export function getLiveEnemies() {
 export function getAnimTestEnemy() { return animTestEnemy; }
 // Task 3.1 — live thorns come from the shared pool (pooled, no allocation).
 export function getProjectiles() { return projectilePool.activeItems; }
+export function getSpecials() { return specialPool.activeItems; }
 export function getPickups() { return pickups; }
 export function getCamera() { return camera; }
 // Task 5.3 — full real-enemy list (from generateLevel) for render/F3.
@@ -1038,6 +1044,7 @@ export function update(dt) {
 
   // 1b. thorn shooting (Task 3.1): G key fires 8-way projectiles from the pool.
   tryFire(hero, input, dt);
+  trySpecial(hero, input, dt);
 
   // 1c. melee swing (Task 3.2): J starts a swing; during its single active
   //     frame the hero's hitbox is checked against enemies and routed through
@@ -1092,6 +1099,29 @@ export function update(dt) {
   projectilePool.updateAll(dt);
   cullOffScreen(projectilePool.activeItems);
   syncProjectilesToWorld();
+
+  // Special projectiles: update + handle bomb explosions.
+  specialPool.updateAll(dt);
+  syncSpecialsToWorld();
+  for (const s of specialPool.activeItems) {
+    if (!s.alive && s.type === 'bomb' && s.exploded) {
+      // Bomb fuse expired — AoE damage in radius.
+      const targets = [hero, ...realEnemies];
+      const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
+      for (const t of targets) {
+        if (!t.alive || t === hero) continue; // don't self-damage on own bomb
+        const dx = (t.x + t.w / 2) - cx;
+        const dy = (t.y + t.h / 2) - cy;
+        if (Math.sqrt(dx * dx + dy * dy) <= s.radius) {
+          damage(s, t, s.damage, 'special');
+        }
+      }
+      spawnExplosionVFX(cx, cy, s.radius);
+      Effects.bigExplosion();
+      triggerShake(6);
+      if (Debug.enabled) Debug.logEvent('bomb exploded');
+    }
+  }
 
   // 3. collide: positional correction against solids (no pass-through),
   //    then broadphase/narrowphase rule dispatch.
@@ -1190,6 +1220,33 @@ function tryFire(h, input, dt) {
   // Cooldown: base interval = 1 / shots-per-second; ×0.5 during rapid powerup.
   const base = 1 / h.stats.projectile_freq;
   h.fireCooldown = h.rapidTimer > 0 ? base * 0.5 : base;
+}
+
+// --- Special attack (design §4): H key fires hero's unique weapon ------------
+// Scarlet: fast saw blade (no gravity, short range). Balthazar: bomb (gravity,
+// TTL fuse, AoE explosion on expiry). Consumes specialAmmo, gated by special_freq.
+let specialCooldown = 0;
+function trySpecial(h, input, dt) {
+  if (specialCooldown > 0) specialCooldown -= dt;
+  if (!input.special || specialCooldown > 0) return;
+  if (h.specialAmmo <= 0) return;
+
+  const type = h.stats.special; // 'saw' | 'bomb'
+  const dir = aimFromInput(input, h.facing);
+  const cx = h.x + h.w / 2;
+  const cy = h.y + h.h / 2;
+  const angle = dirAngle(dir);
+  const ox = Math.cos(angle) * 20;
+  const oy = Math.sin(angle) * 20;
+
+  const s = specialPool.spawn(cx - 10 + ox, cy - 10 + oy, dir, type);
+  if (!s) return; // pool exhausted
+
+  h.specialAmmo -= 1;
+  h.combatStats.specialsUsed = (h.combatStats.specialsUsed ?? 0) + 1;
+  specialCooldown = h.stats.special_freq; // seconds between specials
+
+  if (Debug.enabled) Debug.logEvent(`special ${type} fired`);
 }
 
 // --- Melee attack (Task 3.2) -------------------------------------------------
@@ -1556,3 +1613,17 @@ function syncProjectilesToWorld() {
 }
 
 
+
+
+/** Sync live specials into the collision world (same pattern as projectiles). */
+function syncSpecialsToWorld() {
+  const live = specialPool.activeItems;
+  for (const e of world.entities) {
+    if (e.type === 'saw' || e.type === 'bomb') {
+      if (!live.includes(e)) world.remove(e);
+    }
+  }
+  for (const s of live) {
+    if (!world.entities.has(s)) world.add(s);
+  }
+}

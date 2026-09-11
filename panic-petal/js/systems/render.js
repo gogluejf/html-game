@@ -6,7 +6,7 @@
 // overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../view.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, isDebugEnabled, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss } from './update.js';
 import { Effects } from '../effects.js';
 import { getState, S } from '../state.js';
 import { Debug } from '../debug.js';
@@ -196,6 +196,7 @@ export function render(ctx) {
   const at = getAnimTestEnemy();
   if (at.alive) at.draw(ctx);
   for (const p of getProjectiles()) p.draw(ctx);
+  for (const s of getSpecials()) s.draw(ctx);
 
   // Hero test box — drawn through Entity.draw() so the full transform
   // pipeline (mirror/rotate/scale + debug rect fallback) is exercised.
@@ -325,7 +326,7 @@ function drawDebugOverlay(ctx) {
   const all = [...getSolids().map(s => solidEntityProxy(s)),
                ...getPickups(), ...getEnemies().filter(e => e.alive !== false),
                ...getRealEnemies().filter(e => e.alive),
-               ...getProjectiles(), getHero(),
+               ...getProjectiles(), ...getSpecials(), getHero(),
                ...getBarrels().filter(b => b.alive)];
   // Boss gets a radius circle too.
   const boss = getBoss();
