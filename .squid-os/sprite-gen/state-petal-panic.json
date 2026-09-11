@@ -1473,9 +1473,137 @@
             ],
             "frame_size": "303x230"
           }
+        },
+        {
+          "file": "panic-petal/assets/objects/barrel.png",
+          "rows": 1,
+          "cols": 1,
+          "description": "Circus barrel prop (single image)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "barrel",
+              "anim": "idle",
+              "frames": [
+                "barrel.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": null,
+            "bg_tol": 0,
+            "row_y": [
+              [
+                0,
+                385
+              ]
+            ],
+            "col_x": [
+              [
+                0
+              ]
+            ],
+            "frame_size": "305x386"
+          }
+        },
+        {
+          "file": "panic-petal/assets/objects/barrel_bomb.png",
+          "rows": 1,
+          "cols": 1,
+          "description": "Bomb barrel prop with lit fuse (single image)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "barrel_bomb",
+              "anim": "idle",
+              "frames": [
+                "barrel_bomb.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": null,
+            "bg_tol": 0,
+            "row_y": [
+              [
+                0,
+                494
+              ]
+            ],
+            "col_x": [
+              [
+                0
+              ]
+            ],
+            "frame_size": "322x495"
+          }
+        },
+        {
+          "file": "panic-petal/assets/objects/barrel_coin.png",
+          "rows": 1,
+          "cols": 1,
+          "description": "Flower barrel / coin barrel prop (single image)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "barrel_coin",
+              "anim": "idle",
+              "frames": [
+                "barrel_coin.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": null,
+            "bg_tol": 0,
+            "row_y": [
+              [
+                0,
+                384
+              ]
+            ],
+            "col_x": [
+              [
+                0
+              ]
+            ],
+            "frame_size": "356x385"
+          }
+        },
+        {
+          "file": "panic-petal/assets/objects/checkpoint.png",
+          "rows": 1,
+          "cols": 1,
+          "description": "Checkpoint flag pole prop (single image)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "checkpoint",
+              "anim": "idle",
+              "frames": [
+                "checkpoint.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": null,
+            "bg_tol": 0,
+            "row_y": [
+              [
+                0,
+                524
+              ]
+            ],
+            "col_x": [
+              [
+                0
+              ]
+            ],
+            "frame_size": "332x525"
+          }
         }
       ]
     }
   },
-  "updated": "2026-09-10T23:58:00"
+  "updated": "2026-09-10T23:44:25"
 }
