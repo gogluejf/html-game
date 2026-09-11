@@ -13,11 +13,11 @@ import { LAYER } from '../consts.js';
 import { CollisionWorld, resolve } from '../collision.js';
 import { Camera } from '../camera.js';
 import { Anim, makeTestFrame } from '../anim.js';
+import { Hero } from '../hero.js';
+import { HEROES } from '../heroDefs.js';
 
 // --- Tunables for the test rig ---------------------------------------------
-const MOVE_SPEED = 240;          // px/s horizontal
-const JUMP_VY = -520;            // jump impulse
-const GRAVITY_SCALE = 1;         // uses consts.GRAVITY internally
+// (Hero movement feel lives in js/hero.js; level geometry below.)
 
 // Level length: intentionally wider than the 960px viewport so the camera
 // can scroll. Floor spans the full length; air platforms are scattered along it.
@@ -45,25 +45,18 @@ class SolidBox extends Entity {
 }
 const solidEntities = SOLIDS.map(b => new SolidBox(b));
 
-// --- Hero test entity --------------------------------------------------------
-const hero = new Entity({
-  x: 80,
-  y: VIEW_H - 40 - 48,
-  w: 40,
-  h: 48,
-  vx: 0,
-  vy: 0,
-  gravity: GRAVITY_SCALE,
-  facing: 1,
-  layer: LAYER.HERO,
-  debugColor: '#2ecc71',   // green per design §16 (hero boxes)
-});
+// --- Hero (Task 2.2) ---------------------------------------------------------
+// Real Hero wrapping the Scarlet Vale definition; run/jump/crouch/slide,
+// gravity, ground friction, facing+mirrorX, and crouch-box shrink all live in
+// js/hero.js. Spawn on the floor: y = floorTop - hero.h.
+const FLOOR_TOP = VIEW_H - 40;
+const hero = new Hero(HEROES.scarlet, 80, FLOOR_TOP - HEROES.scarlet.h);
 
 // Task 2.1 — Animation engine integration test.
 // Generate 5 colored frames as offscreen canvases; cycle them on the hero.
 const heroFrames = ['#2ecc71', '#27ae60', '#1abc9c', '#16a085', '#3498db'];
 hero.anim = new Anim(
-  heroFrames.map(c => makeTestFrame(40, 48, c)),
+  heroFrames.map(c => makeTestFrame(hero.w, hero.h, c)),
   { speed: 200, loop: true },
 );
 
@@ -95,11 +88,25 @@ const pickups = [
 // --- Input -------------------------------------------------------------------
 const keys = new Set();
 window.addEventListener('keydown', (e) => {
-  if (['ArrowLeft','ArrowRight','ArrowUp','KeyA','KeyD','KeyW','Space'].includes(e.code)) e.preventDefault();
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
   if (e.code === 'F3') { e.preventDefault(); setDebugEnabled(!isDebugEnabled()); }
 });
 window.addEventListener('keyup', (e) => keys.delete(e.code));
+
+/** Build the per-frame intent object from the live key set. */
+function readInput() {
+  return {
+    left:   keys.has('ArrowLeft') || keys.has('KeyA'),
+    right:  keys.has('ArrowRight') || keys.has('KeyD'),
+    up:     keys.has('ArrowUp') || keys.has('KeyW'),
+    down:   keys.has('ArrowDown') || keys.has('KeyS'),
+    jump:   keys.has('ArrowUp') || keys.has('KeyW') || keys.has('Space'),
+    shoot:  false,
+    special: false,
+    melee:  false,
+  };
+}
 
 // --- Debug overlay state (F3) -------------------------------------------------
 let debugEnabled = false;
@@ -130,28 +137,22 @@ export function getCamera() { return camera; }
 
 // --- Per-frame step ------------------------------------------------------------
 export function update(dt) {
-  // 1. input → intents
-  let moveX = 0;
-  if (keys.has('ArrowLeft') || keys.has('KeyA'))  moveX -= 1;
-  if (keys.has('ArrowRight') || keys.has('KeyD')) moveX += 1;
-  hero.vx = moveX * MOVE_SPEED;
-  if (moveX !== 0) { hero.facing = moveX; hero.syncMirror(); }
-
-  if ((keys.has('ArrowUp') || keys.has('KeyW') || keys.has('Space')) && grounded()) {
-    hero.vy = JUMP_VY;
-  }
-
-  // 2. integrate (gravity + velocity)
-  hero.update(dt);
+  // 1. input → intents (movement/jump/crouch logic lives in Hero.update).
+  const input = readInput();
+  hero.update(dt, input);
 
   // 2b. advance animations for any entity that has one attached.
-  if (hero.anim) hero.anim.tick(dt);
+  // (Hero.update already ticks its own anim; tick the placeholder enemies too.)
   for (const e of enemies) if (e.anim) e.anim.tick(dt);
 
   // 3. collide: positional correction against solids (no pass-through),
   //    then broadphase/narrowphase rule dispatch.
   const hit = resolve(hero, SOLIDS);
   world.update();
+
+  // Grounded: derive from the last resolved axis + a surface-contact probe so
+  // the hero can jump again immediately after landing.
+  hero.setGrounded(isGrounded(hit));
 
   // Keep the hero inside the LEVEL horizontally (test-rig convenience).
   const wb = hero.worldBox();
@@ -162,8 +163,13 @@ export function update(dt) {
   camera.update(hero);
 }
 
-/** Grounded = resting on a solid's top surface (small epsilon tolerance). */
-function grounded() {
+/**
+ * Grounded = resting on a solid's top surface. Combines the last resolve()
+ * result (pushed down onto a floor this frame) with a small epsilon contact
+ * probe so the flag stays true while standing still.
+ */
+function isGrounded(hit) {
+  if (hit && hit.axis === 'y' && hit.dir === 1) return true; // landed on a surface
   const wb = hero.worldBox();
   for (const s of SOLIDS) {
     if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
