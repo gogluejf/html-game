@@ -6,7 +6,7 @@
 // overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../view.js';
-import { getHero, getSolids, getEnemies, getProjectiles, getPickups, getCamera, isDebugEnabled } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled } from './update.js';
 import { getState, STATE_NAMES } from '../state.js';
 
 export function render(ctx) {
@@ -28,7 +28,12 @@ export function render(ctx) {
 
   // Placeholder pickups / enemies / projectiles (debug-colored bodies).
   for (const p of getPickups()) p.draw(ctx);
-  for (const e of getEnemies()) e.draw(ctx);
+  for (const e of getEnemies()) {
+    if (e.alive === false) continue; // destroyed target — no longer drawn
+    e.draw(ctx);
+    if (e.hp != null && e.maxHp > 0) drawHpBar(ctx, e);
+  }
+  getAnimTestEnemy().draw(ctx);
   for (const p of getProjectiles()) p.draw(ctx);
 
   // Hero test box — drawn through Entity.draw() so the full transform
@@ -48,6 +53,15 @@ export function render(ctx) {
     ctx.font = '12px monospace';
     ctx.fillText('DEBUG ON — F3 to toggle', 8, 16);
   }
+
+  // Task 3.1 — thorn ammo readout so "no fire at 0" is observable.
+  const hero = getHero();
+  ctx.save();
+  ctx.fillStyle = '#ff6ec7';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`THORNS ${hero.ammo}`, 8, VIEW_H - 12);
+  ctx.restore();
 
   // --- State overlay (skeleton; replaced by real screens in Milestone 8) -----
   drawStateOverlay(ctx);
@@ -125,4 +139,17 @@ function drawDebugOverlay(ctx) {
 // overlay loop can treat them uniformly with Entity instances (worldBox()).
 function solidEntityProxy(box) {
   return { x: box.x, y: box.y, w: box.w, h: box.h, layer: 0b0000001000, worldBox: () => box };
+}
+
+/** Task 3.1 — small HP bar above a targetable enemy so thorn damage is visible. */
+function drawHpBar(ctx, e) {
+  const frac = Math.max(0, e.hp / e.maxHp);
+  const w = e.w, h = 4;
+  const x = e.x, y = e.y - 8;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+  ctx.fillStyle = '#e74c3c';
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#2ecc71';
+  ctx.fillRect(x, y, w * frac, h);
 }

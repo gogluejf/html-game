@@ -96,75 +96,13 @@ Verification: open panic-petal/index.html
 ### TASK: 2.3 - State machine skeleton
 Type: feature
 What: Implement the top-level state enum + transition dispatcher (home/select/play/pause/gameover/win) as a thin skeleton; actual screen rendering is built in the Screens & HUD milestone.
-Why: Gives every system a single place to read/write game state and route input, without coupling to screen visuals.
+Why: Gives every system a single place to read/write game state and route input, without coupling to screen visuals; state transitions are central and testable, screens plug in later.
 Files: + panic-petal/js/state.js
 Files: ~ panic-petal/js/main.js
 Snippet: // state.js\nconst S={HOME:0,SELECT:1,PLAY:2,PAUSE:3,OVER:4,WIN:5}; let cur=S.HOME;\nfunction set(s){ cur=s; } // dispatch handled in main loop
-Acceptance: S
-Acceptance: t
-Acceptance: a
-Acceptance: t
-Acceptance: e
-Acceptance:  
-Acceptance: t
-Acceptance: r
-Acceptance: a
-Acceptance: n
-Acceptance: s
-Acceptance: i
-Acceptance: t
-Acceptance: i
-Acceptance: o
-Acceptance: n
-Acceptance: s
-Acceptance:  
-Acceptance: a
-Acceptance: r
-Acceptance: e
-Acceptance:  
-Acceptance: c
-Acceptance: e
-Acceptance: n
-Acceptance: t
-Acceptance: r
-Acceptance: a
-Acceptance: l
-Acceptance:  
-Acceptance: a
-Acceptance: n
-Acceptance: d
-Acceptance:  
-Acceptance: t
-Acceptance: e
-Acceptance: s
-Acceptance: t
-Acceptance: a
-Acceptance: b
-Acceptance: l
-Acceptance: e
-Acceptance: ;
-Acceptance:  
-Acceptance: s
-Acceptance: c
-Acceptance: r
-Acceptance: e
-Acceptance: e
-Acceptance: n
-Acceptance: s
-Acceptance:  
-Acceptance: p
-Acceptance: l
-Acceptance: u
-Acceptance: g
-Acceptance:  
-Acceptance: i
-Acceptance: n
-Acceptance:  
-Acceptance: l
-Acceptance: a
-Acceptance: t
-Acceptance: e
-Acceptance: r
+Acceptance: set() is the only way to change state; no system mutates cur directly
+Acceptance: All six states (HOME/SELECT/PLAY/PAUSE/OVER/WIN) reachable via transitions
+Acceptance: Input routing dispatches to the active state's handler in the main loop
 Verification: open panic-petal/index.html
 
 ## MILESTONE: 3 - Combat Core

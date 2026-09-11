@@ -15,6 +15,7 @@ import { Camera } from '../camera.js';
 import { Anim, makeTestFrame } from '../anim.js';
 import { Hero } from '../hero.js';
 import { HEROES } from '../heroDefs.js';
+import { projectilePool, aimFromInput, dirAngle } from '../projectile.js';
 import { S, getState, STATE_NAMES, tryTransition } from '../state.js';
 
 // --- Tunables for the test rig ---------------------------------------------
@@ -53,6 +54,18 @@ const solidEntities = SOLIDS.map(b => new SolidBox(b));
 const FLOOR_TOP = VIEW_H - 40;
 const hero = new Hero(HEROES.scarlet, 80, FLOOR_TOP - HEROES.scarlet.h);
 
+// Task 3.1 — thorn fire state. Cooldown is in seconds; rapid powerup halves it.
+// (Hero.stats.projectile_freq is "shots per second", so base interval = 1/freq.)
+hero.fireCooldown = 0;
+// Combat telemetry (Task 3.1). Kept off hero.stats because that object is a
+// flat spread of the heroDef stat sheet (speed/jump/attack/...); these counters
+// are runtime bookkeeping, not tunable feel knobs.
+hero.combatStats = {
+  projectilesShot: 0,
+  hitsLanded: { projectile: 0 },
+  damageDealt: { byMethod: { projectile: 0 } },
+};
+
 // Task 2.1 — Animation engine integration test.
 // Generate 5 colored frames as offscreen canvases; cycle them on the hero.
 const heroFrames = ['#2ecc71', '#27ae60', '#1abc9c', '#16a085', '#3498db'];
@@ -65,15 +78,23 @@ hero.anim = new Anim(
 // These exist purely so every §16 overlay color is visible on screen. They are
 // static (gravity 0) and do NOT participate in collision resolution this task;
 // real enemy/projectile/powerup behavior lands in later tasks.
+// Task 3.1 — three red target boxes (HP = 20) that friendly thorns can destroy.
+// These stand in for real enemies: same ENEMY layer + HP, but no death pipeline
+// yet (that lands in Task 3.3). When hp drops to <= 0 they are culled here.
+const FLOOR_TOP_ENEMY = VIEW_H - 40; // floor top; targets sit on the floor
+const TARGET_HP = 20;
 const enemies = [
-  new Entity({ x: 700,  y: VIEW_H - 40 - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY,     debugColor: '#e74c3c' }),
-  new Entity({ x: 1500, y: VIEW_H - 40 - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY,     debugColor: '#e74c3c' }),
-  new Entity({ x: 2500, y: VIEW_H - 40 - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY,     debugColor: '#e74c3c' }),
+  new Entity({ x: 700,  y: FLOOR_TOP_ENEMY - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY, debugColor: '#e74c3c' }),
+  new Entity({ x: 1500, y: FLOOR_TOP_ENEMY - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY, debugColor: '#e74c3c' }),
+  new Entity({ x: 2500, y: FLOOR_TOP_ENEMY - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY, debugColor: '#e74c3c' }),
 ];
+for (const e of enemies) { e.hp = TARGET_HP; e.maxHp = TARGET_HP; }
 
-// Task 2.1 — Non-looping anim test on the first enemy.
-// 3 frames, plays once and stops (done=true). To replay, call anim.reset().
-enemies[0].anim = new Anim(
+// Task 2.1 — Non-looping anim test. Kept off the live targets (above) so the
+// animation cycle doesn't obscure their destruction; attached to a separate
+// decorative placeholder that never takes damage.
+const animTestEnemy = new Entity({ x: 1150, y: FLOOR_TOP_ENEMY - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY, debugColor: '#9b59b6' });
+animTestEnemy.anim = new Anim(
   ['#e74c3c', '#f39c12', '#9b59b6'].map(c => makeTestFrame(36, 40, c)),
   { speed: 400, loop: false },
 );
@@ -103,7 +124,7 @@ function handleStateKeys(e) {
 }
 
 window.addEventListener('keydown', (e) => {
-  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space'].includes(e.code)) e.preventDefault();
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','KeyG'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
   if (e.code === 'F3') { e.preventDefault(); setDebugEnabled(!isDebugEnabled()); }
   handleStateKeys(e);
@@ -118,7 +139,7 @@ function readInput() {
     up:     keys.has('ArrowUp') || keys.has('KeyW'),
     down:   keys.has('ArrowDown') || keys.has('KeyS'),
     jump:   keys.has('ArrowUp') || keys.has('KeyW') || keys.has('Space'),
-    shoot:  false,
+    shoot:  keys.has('KeyG'),
     special: false,
     melee:  false,
   };
@@ -133,10 +154,33 @@ export function setDebugEnabled(v) { debugEnabled = v; }
 const world = new CollisionWorld({ cellSize: 64 });
 for (const s of solidEntities) world.add(s);
 world.add(hero);
+// Live targets + the decorative anim-test box participate in collisions so
+// thorns can hit them (the anim box has no hp, so it's damage-immune).
+for (const e of enemies) world.add(e);
+world.add(animTestEnemy);
 
 // Rule-action handlers — the declarative dispatch path. For this task we only
 // need to observe events; damage/pickup logic arrives with later tasks.
 world.on('resolve', () => {}); // positional correction handled separately below
+
+// Task 3.1 — friendly thorns hit ENEMY/BOSS (PROJ_ALLY rule). Apply damage and
+// cull the projectile on impact. This is the ONLY place a PROJ_ALLY can interact
+// with an enemy; there is no PROJ_ALLY↔HERO rule, so friendly-fire stays off.
+world.on('hit', (a, b) => {
+  const proj = a.layer === LAYER.PROJ_ALLY ? a : (b.layer === LAYER.PROJ_ALLY ? b : null);
+  if (!proj || !proj.friendly) return; // only handle hero thorns here
+  const target = proj === a ? b : a;
+  if (target.layer !== LAYER.ENEMY && target.layer !== LAYER.BOSS) return;
+  if (target.hp == null) return;       // non-target placeholder (e.g. anim test box)
+  target.hp -= proj.damage;
+  hero.combatStats.hitsLanded.projectile += 1;
+  hero.combatStats.damageDealt.byMethod.projectile += proj.damage;
+  proj.alive = false;                   // thorn is consumed on impact
+  if (target.hp <= 0) {                 // target destroyed — drop it from play
+    target.alive = false;
+    world.remove(target);
+  }
+});
 
 // --- Camera --------------------------------------------------------------------
 // Hero-following cam clamped to [0, LEVEL_LENGTH - VIEW_W] with facing look-ahead.
@@ -147,7 +191,10 @@ export function getHero() { return hero; }
 export function getSolids() { return SOLIDS; }
 export function getCollisionWorld() { return world; }
 export function getEnemies() { return enemies; }
-export function getProjectiles() { return projectiles; }
+// Task 2.1 — decorative anim-test box (damage-immune placeholder).
+export function getAnimTestEnemy() { return animTestEnemy; }
+// Task 3.1 — live thorns come from the shared pool (pooled, no allocation).
+export function getProjectiles() { return projectilePool.activeItems; }
 export function getPickups() { return pickups; }
 export function getCamera() { return camera; }
 
@@ -160,9 +207,18 @@ export function update(dt) {
   const input = readInput();
   hero.update(dt, input);
 
+  // 1b. thorn shooting (Task 3.1): G key fires 8-way projectiles from the pool.
+  tryFire(hero, input, dt);
+
   // 2b. advance animations for any entity that has one attached.
-  // (Hero.update already ticks its own anim; tick the placeholder enemies too.)
-  for (const e of enemies) if (e.anim) e.anim.tick(dt);
+  // (Hero.update already ticks its own anim; tick the decorative anim-test box.)
+  if (animTestEnemy.anim) animTestEnemy.anim.tick(dt);
+
+  // 2c. thorn integration (Task 3.1): advance the pool, cull off-screen shots,
+  //     then refresh the collision world's live set from the pool.
+  projectilePool.updateAll(dt);
+  cullOffScreen(projectilePool.activeItems);
+  syncProjectilesToWorld();
 
   // 3. collide: positional correction against solids (no pass-through),
   //    then broadphase/narrowphase rule dispatch.
@@ -196,4 +252,71 @@ function isGrounded(hit) {
     if (gap >= -2 && gap <= 4 && hero.vy >= 0) return true;
   }
   return false;
+}
+
+// --- Thorn shooting (Task 3.1) -------------------------------------------------
+// G key fires an 8-way thorn from the shared pool. The aim direction comes from
+// the live WASD/arrow state (aimFromInput), falling back to the hero's facing
+// when no directional input is held. Ammo is consumed per shot and fire is
+// gated by a cooldown derived from stats.projectile_freq (halved during rapid).
+// Friendly projectiles only ever hit ENEMY/BOSS via COLLISION_RULES, so they can
+// never damage the hero — friendly-fire is off by construction.
+
+/**
+ * Attempt to fire one thorn this step. Mutates hero.fireCooldown / hero.ammo.
+ * @param {Hero} h the firing hero
+ * @param {object} input current intent (left/right/up/down/shoot)
+ * @param {number} dt seconds
+ */
+function tryFire(h, input, dt) {
+  if (h.fireCooldown > 0) h.fireCooldown -= dt;
+  if (!input.shoot || h.fireCooldown > 0) return;
+  if (h.ammo <= 0) return; // no ammo → cannot fire
+
+  const dir = aimFromInput(input, h.facing);
+
+  // Spawn at the hero's center, offset slightly toward the aim so the thorn
+  // starts just outside the body (avoids same-frame self-overlap artifacts).
+  const cx = h.x + h.w / 2;
+  const cy = h.y + h.h / 2;
+  const size = 12;
+  const ox = Math.cos(dirAngle(dir)) * 16;
+  const oy = Math.sin(dirAngle(dir)) * 16;
+  const p = projectilePool.spawn(cx - size / 2 + ox, cy - size / 2 + oy, dir, true);
+  if (!p) return; // pool exhausted — skip this shot (soft cap, no allocation)
+
+  h.ammo -= 1;
+  h.combatStats.projectilesShot += 1;
+
+  // Cooldown: base interval = 1 / shots-per-second; ×0.5 during rapid powerup.
+  const base = 1 / h.stats.projectile_freq;
+  h.fireCooldown = h.rapidTimer > 0 ? base * 0.5 : base;
+}
+
+/** Cull thorns that have flown past the level bounds (lifetime cull is in update). */
+function cullOffScreen(items) {
+  for (const p of items) {
+    if (p.x + p.w < 0 || p.x > LEVEL_LENGTH || p.y + p.h < -40 || p.y > VIEW_H + 40) {
+      p.alive = false;
+    }
+  }
+}
+
+/**
+ * Keep the collision world's live set in sync with the pool: add newly-spawned
+ * thorns, drop ones that died since last frame. The world skips !alive entities
+ * each pass, so this only needs to handle membership churn.
+ */
+function syncProjectilesToWorld() {
+  const live = projectilePool.activeItems;
+  // Remove dead projectiles still registered in the world.
+  for (const e of world.entities) {
+    if (e.friendly && (e.layer === LAYER.PROJ_ALLY || e.layer === LAYER.PROJ_FOE) && !live.includes(e)) {
+      world.remove(e);
+    }
+  }
+  // Add any live thorn not yet registered.
+  for (const p of live) {
+    if (!world.entities.has(p)) world.add(p);
+  }
 }

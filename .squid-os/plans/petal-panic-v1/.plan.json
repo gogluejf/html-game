@@ -159,7 +159,7 @@
           "name": "State machine skeleton",
           "type": "feature",
           "what": "Implement the top-level state enum + transition dispatcher (home/select/play/pause/gameover/win) as a thin skeleton; actual screen rendering is built in the Screens & HUD milestone.",
-          "why": "Gives every system a single place to read/write game state and route input, without coupling to screen visuals.",
+          "why": "Gives every system a single place to read/write game state and route input, without coupling to screen visuals; state transitions are central and testable, screens plug in later.",
           "files": [
             "+ panic-petal/js/state.js",
             "~ panic-petal/js/main.js"
@@ -167,7 +167,11 @@
           "snippet": [
             "// state.js\nconst S={HOME:0,SELECT:1,PLAY:2,PAUSE:3,OVER:4,WIN:5}; let cur=S.HOME;\nfunction set(s){ cur=s; } // dispatch handled in main loop"
           ],
-          "acceptance": "State transitions are central and testable; screens plug in later",
+          "acceptance": [
+            "set() is the only way to change state; no system mutates cur directly",
+            "All six states (HOME/SELECT/PLAY/PAUSE/OVER/WIN) reachable via transitions",
+            "Input routing dispatches to the active state's handler in the main loop"
+          ],
           "verify": [
             "open panic-petal/index.html"
           ]

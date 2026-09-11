@@ -616,7 +616,7 @@ class Hero extends Entity{ update(input,world){ /* integrate vx/vy, gravity, fri
                     </div>
                     <div class="task-cell">
                         <span class="cell-label">Why</span>
-                        <span class="cell-value">Gives every system a single place to read/write game state and route input, without coupling to screen visuals.</span>
+                        <span class="cell-value">Gives every system a single place to read/write game state and route input, without coupling to screen visuals; state transitions are central and testable, screens plug in later.</span>
                     </div>
                     
                 <div class="task-cell full-width">
@@ -633,7 +633,7 @@ function set(s){ cur=s; } // dispatch handled in main loop</code></pre>
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Acceptance Criteria</span>
-                    <ul class="acceptance-list"><li>S</li><li>t</li><li>a</li><li>t</li><li>e</li><li></li><li>t</li><li>r</li><li>a</li><li>n</li><li>s</li><li>i</li><li>t</li><li>i</li><li>o</li><li>n</li><li>s</li><li></li><li>a</li><li>r</li><li>e</li><li></li><li>c</li><li>e</li><li>n</li><li>t</li><li>r</li><li>a</li><li>l</li><li></li><li>a</li><li>n</li><li>d</li><li></li><li>t</li><li>e</li><li>s</li><li>t</li><li>a</li><li>b</li><li>l</li><li>e</li><li>;</li><li></li><li>s</li><li>c</li><li>r</li><li>e</li><li>e</li><li>n</li><li>s</li><li></li><li>p</li><li>l</li><li>u</li><li>g</li><li></li><li>i</li><li>n</li><li></li><li>l</li><li>a</li><li>t</li><li>e</li><li>r</li></ul>
+                    <ul class="acceptance-list"><li>set() is the only way to change state; no system mutates cur directly</li><li>All six states (HOME/SELECT/PLAY/PAUSE/OVER/WIN) reachable via transitions</li><li>Input routing dispatches to the active state&#x27;s handler in the main loop</li></ul>
                 </div>
                 </div>
                 <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
