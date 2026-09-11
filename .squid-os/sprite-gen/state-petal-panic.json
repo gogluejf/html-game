@@ -1025,8 +1025,8 @@
         }
       ]
     },
-    "hud": {
-      "path": "panic-petal/assets/hud",
+    "interface": {
+      "path": "panic-petal/assets/interface",
       "sheets": [
         {
           "file": "panic-petal/assets/select_balthazar.png",
