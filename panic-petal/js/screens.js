@@ -36,8 +36,7 @@ export function loadImages() {
     selectScarlet: 'assets/interface/select_scarlet_vale_f1.png',
     selectBalthazar: 'assets/interface/select_balthazar_f1.png',
     selectNone: 'assets/interface/select_none_f1.png',
-  };
-  totalCount = Object.keys(paths).length;
+  };  totalCount = Object.keys(paths).length;
   for (const [key, path] of Object.entries(paths)) {
     const img = new Image();
     img.onload = () => { loadedCount++; };
@@ -72,6 +71,18 @@ function drawPlaceholder(ctx, x, y, w, h, label) {
   ctx.textAlign = 'center';
   ctx.fillText(label || 'loading…', x + w / 2, y + h / 2 + 4);
   ctx.restore();
+}
+
+// Rounded-rect path (works on older canvas without native roundRect).
+function roundRect(ctx, x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
 }
 
 // =============================================================================
@@ -146,10 +157,16 @@ export const Home = {
       };
 
       // Card 1: "JF Rene presents" (1s – 3.5s)
-      drawCard('JF RENE PRESENTS', 1, 3.5, 46, CREAM);
+      drawCard('JF RENE PRESENTS', 1, 3.5, 40, CREAM);
 
-      // Card 2: "AI Qwen 3.8 7B AI Slop production" (4s – 6.5s)
-      drawCard('AI QWEN 3.8 7B · AI SLOP PRODUCTION', 4, 6.5, 30, '#d8c9a0');
+      // Card 2: "AI Qwen 3.8 7B / AI Slop production" (4s – 6.5s) — two lines
+      if (t >= 4 && t <= 6.5) {
+        const fadeIn = Math.min(1, (t - 4) / 0.5);
+        const fadeOut = Math.min(1, (6.5 - t) / 0.5);
+        ctx.globalAlpha = Math.min(fadeIn, fadeOut);
+        drawMarqueeTitle(ctx, 'AI QWEN 3.8 7B', VIEW_W / 2, VIEW_H / 2 - 26, 34, { color: '#d8c9a0' });
+        drawMarqueeTitle(ctx, 'AI SLOP PRODUCTION', VIEW_W / 2, VIEW_H / 2 + 26, 34, { color: '#d8c9a0' });
+      }
 
       // Card 3: "Built with [squid logo]" (7s – 9.5s) — small, humble
       if (t >= 7 && t <= 9.5) {
@@ -358,7 +375,7 @@ export const Select = {
   reset() { this.focus = -1; },
 
   draw(ctx) {
-    // Background.
+    // Background — deep midnight so the cream art cards pop.
     const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
     grad.addColorStop(0, '#0d0d1a');
     grad.addColorStop(1, '#1a1a2e');
@@ -366,81 +383,176 @@ export const Select = {
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
     // Title.
-    drawMarqueeTitle(ctx, 'SELECT YOUR HERO', VIEW_W / 2, 58, 40, { color: CREAM });
+    drawMarqueeTitle(ctx, 'SELECT YOUR HERO', VIEW_W / 2, 46, 38, { color: CREAM });
 
-    // Panel geometry.
-    const panelW = 260, panelH = 340;
-    const gap = 80;
-    const totalW = panelW * 2 + gap;
-    const startX = (VIEW_W - totalW) / 2;
-    const panelY = 90;
+    // Layout: one large central art card (swaps by focus) + a right-hand info
+    // column (name, special, stat bars). The art is a full-body duo on cream —
+    // the focused hero is lit, the other dimmed (see asset inspection).
+    const artW = 400, artH = 428;
+    const artX = (VIEW_W - artW) / 2 - 150;   // shift left to leave room for info col
+    const artY = 92;
+
+    const infoX = artX + artW + 40;
+    const infoW = 250;
 
     const heroes = [HEROES.scarlet, HEROES.balthazar];
-    const imgKeys = ['selectScarlet', 'selectBalthazar'];
+    const hero = this.focus >= 0 ? heroes[this.focus] : null;
 
-    for (let i = 0; i < 2; i++) {
-      const px = startX + i * (panelW + gap);
-      const focused = this.focus === i;
-      const hero = heroes[i];
+    // --- Central art card ----------------------------------------------------
+    // Cream mat frame around the artwork. Gold glow only when a hero is
+    // focused — the border itself is the focus indicator (no extra arrows).
+    ctx.save();
+    ctx.fillStyle = '#efe4c8';
+    roundRect(ctx, artX - 10, artY - 10, artW + 20, artH + 20, 12);
+    ctx.fill();
+    ctx.strokeStyle = this.focus >= 0 ? GOLD : '#5a4a3a';
+    ctx.lineWidth = this.focus >= 0 ? 5 : 3;
+    if (this.focus >= 0) { ctx.shadowColor = 'rgba(255,215,0,0.5)'; ctx.shadowBlur = 18; }
+    roundRect(ctx, artX - 10, artY - 10, artW + 20, artH + 20, 12);
+    ctx.stroke();
+    ctx.restore();
 
-      // Panel background.
-      ctx.save();
-      ctx.fillStyle = focused ? 'rgba(255,215,0,0.08)' : 'rgba(255,255,255,0.03)';
-      ctx.fillRect(px, panelY, panelW, panelH);
+    // Artwork: pick the focus-state variant (none / scarlet / balthazar).
+    const artKey = this.focus === 0 ? 'selectScarlet'
+               : this.focus === 1 ? 'selectBalthazar'
+               : 'selectNone';
+    const img = images[artKey];
+    if (img?.complete && img.naturalWidth > 0) {
+      drawFitted(ctx, img, artX, artY, artW, artH);
+    } else {
+      drawPlaceholder(ctx, artX, artY, artW, artH, 'hero art');
+    }
 
-      // Border (gold when focused, grey otherwise).
-      ctx.strokeStyle = focused ? '#ffd700' : '#555';
-      ctx.lineWidth = focused ? 4 : 2;
-      ctx.strokeRect(px, panelY, panelW, panelH);
-      ctx.restore();
-
-      // Hero art.
-      const artX = px + 15, artY = panelY + 15, artW = panelW - 30, artH = panelH - 100;
-      const img = images[imgKeys[i]];
-      if (img?.complete && img.naturalWidth > 0) {
-        drawFitted(ctx, img, artX, artY, artW, artH);
-      } else {
-        drawPlaceholder(ctx, artX, artY, artW, artH, hero.name);
-      }
-
+    // --- Info column ---------------------------------------------------------
+    if (hero) {
+      const cy = artY + 30;
       // Name.
-      drawPrompt(ctx, hero.name.toUpperCase(), px + panelW / 2, panelY + panelH - 58, 24, {
-        color: focused ? CREAM : '#b9a98a', font: FONT_TITLE,
+      drawMarqueeTitle(ctx, hero.name.toUpperCase(), infoX, cy, 30, {
+        align: 'left', color: CREAM,
       });
 
-      // Special ability label.
+      // Special ability plaque.
       const specialLabel = hero.stats.special === 'saw' ? 'Petal Saw' : 'Bomb Burst';
-      drawPrompt(ctx, `Special: ${specialLabel}`, px + panelW / 2, panelY + panelH - 36, 17, {
-        color: focused ? PINK : '#8a6a7a',
-      });
-
-      // Stats mini-display.
+      const plqY = cy + 34;
       ctx.save();
-      ctx.font = `13px ${FONT_UI}`;
-      ctx.textAlign = 'left';
-      ctx.fillStyle = focused ? '#d8cdb4' : '#777';
-      const sx = px + 20, sy = panelY + panelH - 16;
-      ctx.fillText(`SPD:${hero.stats.speed}  ATK:${hero.stats.attack}  DEF:${hero.stats.defense}`, sx, sy);
+      ctx.fillStyle = 'rgba(255,110,199,0.12)';
+      roundRect(ctx, infoX, plqY, infoW, 34, 8);
+      ctx.fill();
+      ctx.strokeStyle = PINK;
+      ctx.lineWidth = 2;
+      roundRect(ctx, infoX, plqY, infoW, 34, 8);
+      ctx.stroke();
+      drawPrompt(ctx, `★ ${specialLabel}`, infoX + infoW / 2, plqY + 17, 19, { color: PINK });
       ctx.restore();
-    }
 
-    // Focus indicator arrows.
-    if (this.focus >= 0) {
-      const fx = this.focus === 0
-        ? startX + panelW / 2
-        : startX + panelW + gap + panelW / 2;
+      // Stat bars (small table): SPD / ATK / DEF / JUMP / ENERGY.
+      const rows = [
+        ['SPEED',  hero.stats.speed,    300],
+        ['ATTACK', hero.stats.attack,   25],
+        ['DEFENSE',hero.stats.defense,  8],
+        ['JUMP',   hero.stats.jump,     560],
+        ['ENERGY', hero.stats.stamina,  120],
+      ];
+      let by = plqY + 34 + 34;
+      const labelW = 74, barX = infoX + labelW, barMaxW = infoW - labelW - 6;
+      for (const [label, val, max] of rows) {
+        ctx.save();
+        ctx.font = `14px ${FONT_UI}`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#b9a98a';
+        ctx.fillText(label, infoX, by + 7);
+
+        // Track.
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        roundRect(ctx, barX, by, barMaxW, 14, 7);
+        ctx.fill();
+        // Fill.
+        const frac = Math.max(0, Math.min(1, val / max));
+        const fw = Math.max(8, barMaxW * frac);
+        const bg = ctx.createLinearGradient(barX, 0, barX + barMaxW, 0);
+        bg.addColorStop(0, '#c0392b');
+        bg.addColorStop(1, GOLD);
+        ctx.fillStyle = bg;
+        roundRect(ctx, barX, by, fw, 14, 7);
+        ctx.fill();
+        // Value.
+        ctx.fillStyle = CREAM;
+        ctx.font = `12px ${FONT_UI}`;
+        ctx.textAlign = 'right';
+        ctx.fillText(String(val), infoX + infoW, by + 7);
+        ctx.restore();
+        by += 26;
+      }
+    } else {
+      // Nothing focused yet — hint plaque over the art (readable dark bg).
+      const pw = 240, ph = 58;
+      const px = artX + artW / 2 - pw / 2;
+      const py = artY + artH / 2 - ph / 2;
       ctx.save();
-      ctx.fillStyle = GOLD;
-      ctx.font = `bold 26px ${FONT_UI}`;
+      ctx.fillStyle = 'rgba(13,13,26,0.78)';
+      roundRect(ctx, px, py, pw, ph, 10);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,215,0,0.35)';
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, px, py, pw, ph, 10);
+      ctx.stroke();
+      ctx.font = `18px ${FONT_UI}`;
       ctx.textAlign = 'center';
-      ctx.shadowColor = 'rgba(255,215,0,0.5)';
-      ctx.shadowBlur = 8;
-      ctx.fillText('▼', fx, panelY - 8);
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#e8dcc0';
+      ctx.fillText('Use ← → to choose', artX + artW / 2, py + ph / 2 - 11);
+      ctx.fillText('your performer', artX + artW / 2, py + ph / 2 + 13);
       ctx.restore();
     }
 
-    // Controls hint.
-    drawPrompt(ctx, '← → SELECT   |   ENTER CONFIRM', VIEW_W / 2, VIEW_H - 26, 18, { color: '#b9a98a' });
+    // --- Controls bar (below the card) ---------------------------------------
+    // Small keycap chips: [←] [→] SELECT   ·   [ENTER] CONFIRM. The whole bar
+    // is dimmed until a hero is focused; ENTER lights up gold when confirmable.
+    const barY = artY + artH + 26;
+    const cx0 = artX + artW / 2;
+    ctx.save();
+    ctx.textBaseline = 'middle';
+
+    const chip = (label, x, y, active) => {
+      const w = label.length > 1 ? 34 : 26;
+      ctx.fillStyle = active ? 'rgba(255,215,0,0.18)' : 'rgba(255,255,255,0.07)';
+      roundRect(ctx, x - w / 2, y - 12, w, 24, 6);
+      ctx.fill();
+      ctx.strokeStyle = active ? GOLD : '#5a5a72';
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, x - w / 2, y - 12, w, 24, 6);
+      ctx.stroke();
+      ctx.font = `13px ${FONT_UI}`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = active ? CREAM : '#9a8f78';
+      ctx.fillText(label, x, y + 1);
+      return w;
+    };
+
+    const word = (text, x, y, color, size = 14) => {
+      ctx.font = `${size}px ${FONT_UI}`;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = color;
+      ctx.fillText(text, x, y);
+    };
+
+    // Measure words to lay out the row centered on the card.
+    ctx.font = `14px ${FONT_UI}`;
+    const wSel = ctx.measureText('SELECT').width;
+    const wConf = ctx.measureText('CONFIRM').width;
+    const gap = 10;                 // chip-to-chip / chip-to-word gaps
+    const dotGap = 22;              // space around the "·" separator
+    const total = 26 + gap + 34 + gap + wSel + dotGap + 34 + gap + 34 + gap + wConf;
+    let px = cx0 - total / 2;
+
+    chip('←', px + 13, barY, this.focus >= 0); px += 26 + gap;
+    chip('→', px + 17, barY, this.focus >= 0); px += 34 + gap;
+    word('SELECT', px, barY, this.focus >= 0 ? '#d8cdb4' : '#6e6552'); px += wSel + dotGap;
+    word('·', px, barY, '#5a5a72', 16); px += 12 + dotGap - 12;
+    chip('⏎', px + 17, barY, this.focus >= 0); px += 34 + gap;
+    word('CONFIRM', px, barY, this.focus >= 0 ? CREAM : '#6e6552');
+    ctx.restore();
   },
 
   /** Handle key input for hero selection. */
@@ -448,11 +560,13 @@ export const Select = {
     switch (code) {
       case 'ArrowLeft':
       case 'KeyA':
-        this.focus = this.focus <= 0 ? 1 : this.focus - 1;
+        // -1 (none) → scarlet; otherwise move left (balthazar → scarlet).
+        this.focus = this.focus === -1 ? 0 : Math.max(0, this.focus - 1);
         break;
       case 'ArrowRight':
       case 'KeyD':
-        this.focus = this.focus >= 1 ? 0 : this.focus + 1;
+        // -1 (none) → scarlet; otherwise move right (scarlet → balthazar).
+        this.focus = this.focus === -1 ? 0 : Math.min(1, this.focus + 1);
         break;
       case 'Enter':
       case 'Space':
