@@ -107,7 +107,7 @@ export function render(ctx) {
 
   // Task 4.2 — F3 debug: show each coin's value as small text above it so the
   // per-type weight/value difference is visible during development.
-  if (isDebugEnabled()) {
+  if (isDebugEnabled() && Debug.viewMode !== 2) {
     ctx.save();
     ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'center';
@@ -233,7 +233,8 @@ export function render(ctx) {
   }
 
   // Debug overlay (F3): full §16 colored boxes over every entity's worldBox().
-  if (isDebugEnabled()) {
+  // viewMode 0=sprites+overlay, 1=collision-only (opaque, no sprites), 2=no-visuals
+  if (isDebugEnabled() && Debug.viewMode !== 2) {
     drawDebugOverlay(ctx);
     // Task 3.3 + 5.1 — per-enemy debug: aggro radius circle + AI state label
     // above each real enemy's head.
