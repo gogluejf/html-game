@@ -335,6 +335,56 @@
             ],
             "frame_size": "254x394"
           }
+        },
+        {
+          "file": "panic-petal/assets/balthazar_sheet_3.png",
+          "rows": 1,
+          "cols": 8,
+          "description": "Balthazar tiger ringmaster hero sheet 3, crouch x 8 frames",
+          "entities": [
+            {
+              "row": 1,
+              "name": "balthazar",
+              "anim": "crouch",
+              "frames": [
+                "balthazar_crouch_f1.png",
+                "balthazar_crouch_f2.png",
+                "balthazar_crouch_f3.png",
+                "balthazar_crouch_f4.png",
+                "balthazar_crouch_f5.png",
+                "balthazar_crouch_f6.png",
+                "balthazar_crouch_f7.png",
+                "balthazar_crouch_f8.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              250,
+              148,
+              165
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                396
+              ]
+            ],
+            "col_x": [
+              [
+                170,
+                411,
+                655,
+                896,
+                1134,
+                1364,
+                1608,
+                1851
+              ]
+            ],
+            "frame_size": "236x397"
+          }
         }
       ]
     },
@@ -2025,5 +2075,5 @@
       ]
     }
   },
-  "updated": "2026-09-11T01:15:50"
+  "updated": "2026-09-11T01:24:53"
 }
