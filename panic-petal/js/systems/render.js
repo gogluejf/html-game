@@ -11,6 +11,8 @@ import { Effects } from '../effects.js';
 import { getState, S } from '../state.js';
 import { Debug } from '../debug.js';
 import { drawScreen, screenUpdate } from '../screens.js';
+import { drawHUD } from '../hud.js';
+import { LEVELS } from '../level.js';
 
 export function render(ctx) {
   // Milestone 8 — Home & Select are full-screen; skip world rendering entirely.
@@ -203,19 +205,13 @@ export function render(ctx) {
   // translate is restored so they cover the whole logical frame.
   Effects.drawOverlay(ctx, VIEW_W, VIEW_H);
 
-  // Task 3.1 — thorn ammo readout so "no fire at 0" is observable.
-  const hero = getHero();
-  ctx.save();
-  ctx.fillStyle = '#ff6ec7';
-  ctx.font = 'bold 14px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText(`THORNS ${hero.ammo}`, 8, VIEW_H - 12);
-  // Task 4.2 — coin + lives readout (design §14). Shows total coins collected
-  // and current lives; the 1up threshold (every 100) is visible via the lives
-  // counter incrementing.
-  ctx.fillStyle = '#ffd700';
-  ctx.fillText(`COINS ${hero.runStats?.coinsCollected?.total ?? 0}   LIVES ${hero.lives}`, 8, VIEW_H - 30);
-  ctx.restore();
+  // Task 8.3 — Play HUD (design §20): energy bar + shield, ammo/special,
+  // coins, lives, hero portrait, checkpoint progress line. Viewport-space,
+  // drawn after the camera restore; only during PLAY (PAUSE/OVER/WIN keep the
+  // frozen world visible and their screen overlay is drawn below).
+  if (state === S.PLAY) {
+    drawHUD(ctx, getHero(), cam, LEVELS[0]);
+  }
 
   // --- State overlays (Task 8.2): HOME/SELECT handled above; PAUSE/OVER/WIN
   // are drawn here as overlays on top of the frozen game world so the play
