@@ -23,6 +23,7 @@ import { VINE_HOUND_DEF } from '../vine_hound.js';
 import { VIOLETTA_DEF } from '../violetta.js';
 import { JackOLantern, explodeJackolantern } from '../jackolantern.js';
 import { Elephant, makeElephant, BOSS_TRIGGER_RADIUS, WEAK_POINT_MULT } from '../boss.js';import { particles, coins } from '../particles.js';
+import { Effects } from '../effects.js';
 import { makeBarrel, makeCoinBarrel, explodeBarrel, BARREL_DAMAGE, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
@@ -264,6 +265,7 @@ export function retryFromGameOver() {
   hero.invincibleTimer = Hero.RESPAWN_IFRAMES;
   hero.continuesUsed = 0;
   hero.checkpoint = { x: hero.x, y: hero.y };
+  Effects.reset(); // Task 7.1 — clear any stale vignette/flash between runs
   // Reset checkpoint flags so they can re-trigger on the new run.
   for (const c of checkpoints) c.triggered = false;
   if (tryTransition(S.PLAY)) {
@@ -392,7 +394,13 @@ world.on('hit', (a, b) => {
     }
     // Central damage routing: defense + telemetry in one place (Task 3.2).
     const dealt = damage(hero, target, allyProj.damage, 'projectile');
-    if (dealt > 0) target.hitFlash = 0.1; // brief white flash on impact
+    if (dealt > 0) {
+      target.hitFlash = 0.1; // brief white flash on impact
+      // Task 7.1 — red hit sparkles at the impact point + enemy shake
+      // (design §12 "Projectile hit on enemy" / "Enemy damaged").
+      Effects.spawnHitSparkles(allyProj.x + allyProj.w / 2, allyProj.y + allyProj.h / 2);
+      Effects.beginEnemyShake(target);
+    }
     allyProj.alive = false;               // thorn is consumed on impact
     // Task 3.3 — Enemy instances trigger their death pipeline via die().
     // damage() already set alive=false when hp<=0; we call die() to start the
@@ -423,6 +431,8 @@ world.on('hit', (a, b) => {
     const dealt = damage(foeProj, victim, foeProj.damage, 'projectile');
     if (dealt > 0) {
       victim.invincibleTimer = Math.max(victim.invincibleTimer, 0.3); // brief i-frames
+      // Task 7.1 — red vignette when the hero takes damage (design §12).
+      Effects.heroDamaged();
     }
     foeProj.alive = false; // consumed on impact
     // SFX: hit
@@ -449,7 +459,9 @@ world.on('contact', (a, b) => {
   if (source._contactCd > 0) return;
   source._contactCd = CONTACT_COOLDOWN;
   const amt = source.stats?.attack ?? 10;
-  damage(source, heroEnt, amt, 'contact');
+  const dealt = damage(source, heroEnt, amt, 'contact');
+  // Task 7.1 — red vignette on contact damage (design §12 "Hero damaged").
+  if (dealt > 0) Effects.heroDamaged();
 });
 
 // Task 4.2 — HERO × COIN collection (design §14). Fires when the hero's box
@@ -517,6 +529,7 @@ world.on('pickup', (a, b) => {
 
   // VFX: sparkle pop + floating label text (design §12 "Powerup pickup").
   particles.spawnBurst(cx, cy, 6);
+  Effects.spawnPickupPop(cx, cy, pu.def.color); // Task 7.1 — colored pop ring
   spawnFloatText(cx, cy - 16, pu.def.label, pu.def.color);
   // SFX: powerup
 
@@ -714,6 +727,9 @@ export function update(dt) {
 
   // 5. Task 4.1 — decay the explosion screen shake (render reads getShakeOffset()).
   updateShake(dt);
+
+  // 6. Task 7.1 — decay screen-space effect timers (vignette / flash).
+  Effects.update(dt);
 }
 
 /**
@@ -819,6 +835,7 @@ function applyMeleeDamage(h, _dt) {
       const dealt = damage(h, e, h.stats.attack, 'melee');
       if (dealt > 0) {
         e.hitFlash = 0.1; // brief white flash
+        Effects.beginEnemyShake(e); // Task 7.1 — fast shake on melee hit
         h._meleeHitSet.add(e);
         if (!e.alive) world.remove(e); // destroyed — drop from play
       }
@@ -834,6 +851,7 @@ function applyMeleeDamage(h, _dt) {
         hb.y < eb.y + eb.h && hb.y + hb.h > eb.y) {
       const dealt = e.takeDamage(h.stats.attack, h, 'melee');
       if (dealt > 0) {
+        Effects.beginEnemyShake(e); // Task 7.1 — fast shake on melee hit
         h._meleeHitSet.add(e);
         if (!e.alive) world.remove(e); // destroyed — drop from play
       }
@@ -894,6 +912,7 @@ function updateRealEnemy(e, dt) {
       if (dealt > 0) {
         e._atkHitDone = true; // one hit per swing
         hero.invincibleTimer = Math.max(hero.invincibleTimer, 0.3); // brief i-frames
+        Effects.heroDamaged(); // Task 7.1 — red vignette on enemy melee hit
       }
     }
   }
@@ -909,6 +928,7 @@ function updateRealEnemy(e, dt) {
     const targets = [hero, ...enemies, ...realEnemies];
     const result = explodeJackolantern(e, targets);
     spawnExplosionVFX(cx, cy, result.radius);
+    Effects.bigExplosion(); // Task 7.1 — screen flash on big explosion
     triggerShake(6);
     // SFX: explosion
   }
@@ -920,6 +940,7 @@ function updateRealEnemy(e, dt) {
     const cx = e.x + e.w / 2;
     const cy = e.y + e.h / 2;
     particles.spawnBurst(cx, cy, 7);          // sparkle burst (sprite-sized)
+    Effects.spawnDeathSparkle(cx, cy, Math.max(e.w, e.h)); // Task 7.1 — sprite-sized burst
     coins.dropCoins(e.coinDrop, cx, cy);      // coin drop per config
     world.remove(e);                          // drop from play
   }
@@ -1024,6 +1045,7 @@ function updateBoss(dt) {
 
 // Advance particle + coin pools (called each frame regardless of jester state).
 function updateEffects(dt) {
+  Effects.update(dt); // Task 7.1 — decay vignette / screen flash timers
   particles.updateAll(dt);
   // Coins bounce off the floor AND any air platform top they land on. We pass
   // the SOLIDS list minus the floor itself (the floor is handled by floorTop).
@@ -1055,6 +1077,7 @@ function handleBarrelDestroyed(barrel) {
     const result = explodeBarrel(barrel, targets);
     // Explosion VFX: 12–15 orange/red particles expanding outward.
     spawnExplosionVFX(cx, cy, result.radius);
+    Effects.bigExplosion(); // Task 7.1 — brief white screen flash (design §12)
     triggerShake(8);
     // SFX: explosion
   } else {

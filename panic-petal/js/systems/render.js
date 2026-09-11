@@ -7,6 +7,7 @@
 
 import { VIEW_W, VIEW_H } from '../view.js';
 import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getJester, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, CONTINUE_COST } from './update.js';
+import { Effects } from '../effects.js';
 import { getState, STATE_NAMES, S } from '../state.js';
 
 export function render(ctx) {
@@ -40,14 +41,20 @@ export function render(ctx) {
   for (const p of getPickups()) p.draw(ctx);
   for (const e of getEnemies()) {
     if (e.alive === false) continue; // destroyed target — no longer drawn
+    // Task 7.1 — enemy shake: offset the draw position by a random ±3px while
+    // hitFlash is running (design §12 "Enemy damaged: fast shake").
+    const sh = Effects.getShakeOffset(e);
+    ctx.save();
+    ctx.translate(sh.x, sh.y);
     e.draw(ctx);
+    ctx.restore();
     // Task 3.2 — white flash when struck (melee or projectile).
     if (e.hitFlash > 0) {
       ctx.save();
       ctx.globalAlpha = Math.min(1, e.hitFlash * 10);
       const eb = e.worldBox();
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(eb.x, eb.y, eb.w, eb.h);
+      ctx.fillRect(eb.x + sh.x, eb.y + sh.y, eb.w, eb.h);
       ctx.restore();
     }
     if (e.hp != null && e.maxHp > 0) drawHpBar(ctx, e);
@@ -57,7 +64,12 @@ export function render(ctx) {
   // Each draws itself including death shrink/fade and its attack telegraph.
   for (const e of getRealEnemies()) {
     if (!e.alive) continue;
+    // Task 7.1 — enemy shake (same pattern as placeholder targets above).
+    const sh = Effects.getShakeOffset(e);
+    ctx.save();
+    ctx.translate(sh.x, sh.y);
     e.draw(ctx);
+    ctx.restore();
     if (e.hp != null && e.maxHp > 0 && e.aiState !== 'dead') {
       drawHpBar(ctx, e);
     }
@@ -157,6 +169,11 @@ export function render(ctx) {
     ctx.font = '12px monospace';
     ctx.fillText('DEBUG ON — F3 to toggle', 8, 16);
   }
+
+  // Task 7.1 — screen-space effect overlays: red damage vignette + white
+  // explosion flash (design §12). Drawn in viewport space after the camera
+  // translate is restored so they cover the whole logical frame.
+  Effects.drawOverlay(ctx, VIEW_W, VIEW_H);
 
   // Task 3.1 — thorn ammo readout so "no fire at 0" is observable.
   const hero = getHero();
