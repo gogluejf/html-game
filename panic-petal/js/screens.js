@@ -203,7 +203,7 @@ export const Home = {
     {
       const src = images.homeBigtop;
       const osc = Math.max(0, gt - 2) * 2 * Math.PI / 60;
-      const vOsc = -(Math.cos(osc) * 0.7 + Math.sin(osc) * 0.3) * 10; // blended: gentle start, same peak
+      const vOsc = Math.sin(osc) * 10; // reverses: was going up, now goes down
       const vDrift = -100 + (-8 * (1 - Math.pow(1 - Math.min(1, gt / 2), 3))) + vOsc;
       if (src?.complete && src.naturalWidth > 0) {
         ctx.save();
@@ -221,7 +221,7 @@ export const Home = {
       const src = images.homeStage;
       const ready = src?.complete && src.naturalWidth > 0;
       const osc = Math.max(0, gt - 2) * 2 * Math.PI / 60;
-      const vOsc = (Math.cos(osc) * 0.7 + Math.sin(osc) * 0.3) * 20; // blended: gentle start, same peak
+      const vOsc = Math.sin(osc) * 20; // reverses: was going up, now goes down
       const vDrift = -15 * (1 - Math.pow(1 - Math.min(1, gt / 2), 3)) + vOsc;
       if (ready) {
         ctx.save();
@@ -242,7 +242,7 @@ export const Home = {
       const settleT = Math.min(1, gt / 2);
       const easeOut = 1 - Math.pow(1 - settleT, 3);
       const osc = Math.max(0, gt - 2) * 2 * Math.PI / 60;
-      const vOsc = (Math.cos(osc) * 0.7 + Math.sin(osc) * 0.3) * 30; // blended: gentle start, same peak
+      const vOsc = -Math.sin(osc) * 30; // reverses: was going down, now goes up
       const cy = maxDrop * easeOut - 40 + vOsc;
       if (src?.complete && src.naturalWidth > 0) {
         ctx.save();
@@ -324,8 +324,8 @@ export const Home = {
       }
     }
 
-    // --- Layer 6: "PRESS ENTER" hint — bottom center of the box, blinking ----
-    if (Math.floor(gt * 2) % 2 === 0) {
+    // --- Layer 6: "PRESS ENTER" hint — only after logo + 500ms (gt > 2.7) ----
+    if (gt > 2.7 && Math.floor(gt * 2) % 2 === 0) {
       ctx.save();
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 20px monospace';
@@ -348,9 +348,11 @@ export const Home = {
     if (t < 4) { this.parallaxOffset = 4; return; }       // JF Rene → Qwen
     if (t < 7) { this.parallaxOffset = 7; return; }       // Qwen → Squid
     if (t < 9.5) { this.parallaxOffset = 9.5; return; }   // Squid → scene
-    // After intro: go to SELECT
-    if (tryTransition(S.SELECT)) {
-      console.log('[screens] HOME → SELECT');
+    // After intro + logo + 500ms: go to SELECT
+    if (t - 9.5 > 2.7) {
+      if (tryTransition(S.SELECT)) {
+        console.log('[screens] HOME → SELECT');
+      }
     }
   },
 };
