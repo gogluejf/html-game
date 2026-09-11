@@ -44,12 +44,12 @@ export function render(ctx) {
 
   // Task 4.1 — destructible barrels (drawn via Entity.draw; white flash on hit).
   for (const b of getBarrels()) {
-    if (!b.alive) continue; // destroyed barrel is removed from play
-    b.draw(ctx);
+    if (!b.alive) continue;
+    if (!Debug.collisionOnly) b.draw(ctx);
   }
 
   // Placeholder pickups / enemies / projectiles (debug-colored bodies).
-  for (const p of getPickups()) p.draw(ctx);
+  if (!Debug.collisionOnly) for (const p of getPickups()) p.draw(ctx);
   for (const e of getEnemies()) {
     if (e.alive === false) continue; // destroyed target — no longer drawn
     // Task 7.1 — enemy shake: offset the draw position by a random ±3px while
@@ -74,7 +74,7 @@ export function render(ctx) {
   // Each draws itself including death shrink/fade and its attack telegraph.
   for (const e of getRealEnemies()) {
     if (!e.alive) continue;
-    // Task 7.1 — enemy shake (same pattern as placeholder targets above).
+    if (Debug.collisionOnly) continue;
     const sh = Effects.getShakeOffset(e);
     ctx.save();
     ctx.translate(sh.x, sh.y);
@@ -86,7 +86,7 @@ export function render(ctx) {
   // the fight's progress reads clearly; F3 adds phase name + weak-point box.
   const boss = getBoss();
   if (boss && boss.alive) {
-    boss.draw(ctx);
+    if (!Debug.collisionOnly) boss.draw(ctx);
     if (boss.hp != null && boss.maxHp > 0 && boss.aiState !== 'dead') {
       drawBossHpBar(ctx, boss);
     }
@@ -206,9 +206,11 @@ export function render(ctx) {
   }
 
   const at = getAnimTestEnemy();
-  if (at.alive) at.draw(ctx);
-  for (const p of getProjectiles()) p.draw(ctx);
-  for (const s of getSpecials()) s.draw(ctx);
+  if (at.alive && !Debug.collisionOnly) at.draw(ctx);
+  if (!Debug.collisionOnly) {
+    for (const p of getProjectiles()) p.draw(ctx);
+    for (const s of getSpecials()) s.draw(ctx);
+  }
 
   // Hero test box — drawn through Entity.draw() so the full transform
   // pipeline (mirror/rotate/scale + debug rect fallback) is exercised.
@@ -225,7 +227,7 @@ export function render(ctx) {
       ctx.globalAlpha = 0.25;
       h.draw(ctx);
       ctx.restore();
-    } else {
+    } else if (!Debug.collisionOnly) {
       h.draw(ctx);
     }
   }
@@ -324,7 +326,7 @@ function drawDeathSkull(ctx, h) {
  */
 function drawDebugOverlay(ctx) {
   ctx.save();
-  ctx.globalAlpha = 0.4;
+  ctx.globalAlpha = Debug.collisionOnly ? 1.0 : 0.4;
   ctx.lineWidth = 2;
 
   const layers = [
@@ -649,14 +651,19 @@ function drawEventLog(ctx) {
  * @param {CanvasRenderingContext2D} ctx
  */
 function drawHarnessHint(ctx) {
-  const txt = 'F1 harness | 1-9 spawn | F god | Z speed | T telemetry | Y hero | L log | E dump | RMB select | LMB force-state | arrows scrub | X deselect';
+  const line1 = 'F1 harness | 1-9 spawn | F god | Z speed | T telemetry | Y hero | L log | E dump | C collision-only';
+  const line2 = 'RMB select | LMB force-state | arrows scrub | X deselect';
   ctx.save();
   ctx.font = '11px monospace';
   ctx.textAlign = 'center';
-  const w = ctx.measureText(txt).width;
+  const w1 = ctx.measureText(line1).width;
+  const w2 = ctx.measureText(line2).width;
+  const w = Math.max(w1, w2);
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(VIEW_W / 2 - w / 2 - 6, VIEW_H - 22, w + 12, 16);
+  ctx.fillRect(VIEW_W / 2 - w / 2 - 6, VIEW_H - 38, w + 12, 32);
   ctx.fillStyle = '#00e5ff';
-  ctx.fillText(txt, VIEW_W / 2, VIEW_H - 11);
+  ctx.fillText(line1, VIEW_W / 2, VIEW_H - 27);
+  ctx.fillStyle = '#aaa';
+  ctx.fillText(line2, VIEW_W / 2, VIEW_H - 11);
   ctx.restore();
 }

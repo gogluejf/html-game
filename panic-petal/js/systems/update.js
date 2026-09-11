@@ -510,6 +510,10 @@ function handleDebugKeys(e) {
       dumpStats(hero.runStats, hero);
       Debug.logEvent('stats JSON downloaded');
       break;
+    case 'KeyC': // Toggle collision-only view (hide sprites)
+      Debug.collisionOnly = !Debug.collisionOnly;
+      Debug.logEvent(`collision-only ${Debug.collisionOnly ? 'ON' : 'OFF'}`);
+      break;
   }
 }
 

@@ -52,6 +52,7 @@ export const Debug = {
   LOG_MAX: 50,
   showLog: false, // L toggles the on-screen tail of the log
   showStats: false, // T toggles the telemetry panel (default OFF)
+  collisionOnly: false, // C toggles: hide sprites, show opaque collision boxes only
 
   // --- Toggle master switch -------------------------------------------------
   toggle() { this.enabled = !this.enabled; return this.enabled; },
