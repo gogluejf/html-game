@@ -19,6 +19,10 @@ import { projectilePool, aimFromInput, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
 import { S, getState, STATE_NAMES, tryTransition } from '../state.js';
 import { Jester } from '../jester.js';
+import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
+import { Violetta, VIOLETTA_DEF } from '../violetta.js';
+import { JackOLantern, JACKO_DEF, explodeJackolantern } from '../jackolantern.js';
+import { BorisLoon, BORIS_DEF, BORIS_BABY_DEF, makeBoris, makeBorisBaby } from '../boris_loon.js';
 import { particles, coins } from '../particles.js';
 import { makeBarrel, makeCoinBarrel, explodeBarrel, BARREL_DAMAGE, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
@@ -122,6 +126,20 @@ for (const e of enemies) {
 // The jester has full AI (idle/chase/whip), contact damage, and a death
 // pipeline (shrink → fade → sparkle burst → coin drop).
 const jester = new Jester(1100, FLOOR_TOP_ENEMY - 48);
+
+// Task 5.1 — remaining enemy AIs (design §7). One of each type spread along the
+// x-axis so every documented behavior is observable as the hero advances.
+// Grounders (vine_hound, violetta, jackolantern) sit on the floor; flyers
+// (boris_loon + baby) hover above it at their resting altitude.
+const vineHound = new VineHound(1900, FLOOR_TOP_ENEMY - VINE_HOUND_DEF.h);
+const violetta = new Violetta(2900, FLOOR_TOP_ENEMY - VIOLETTA_DEF.h);
+const jacko = new JackOLantern(3600, FLOOR_TOP_ENEMY - JACKO_DEF.h);
+const boris = makeBoris(4300, FLOOR_TOP_ENEMY - 150);   // flyer resting altitude
+const borisBaby = makeBorisBaby(4500, FLOOR_TOP_ENEMY - 130);
+
+// The full set of "real" Enemy instances (jester + task 5.1 types). Drives the
+// per-frame AI/physics/update loop and the death pipeline uniformly.
+const realEnemies = [jester, vineHound, violetta, jacko, boris, borisBaby];
 
 // Task 2.1 — Non-looping anim test. Kept off the live targets (above) so the
 // animation cycle doesn't obscure their destruction; attached to a separate
@@ -272,6 +290,9 @@ for (const e of enemies) world.add(e);
 world.add(animTestEnemy);
 // Task 3.3 — jester participates in collisions (thorn hits, contact damage).
 world.add(jester);
+// Task 5.1 — remaining enemies participate in collisions (thorn hits, contact,
+// foe projectiles). Flyers use gravity 0 so they never fall; grounders do not.
+for (const e of [vineHound, violetta, jacko, boris, borisBaby]) world.add(e);
 // Task 4.1 — barrels are SOLID: they block hero + enemy (resolve) and can be
 // hit by friendly thorns (PROJ_ALLY×SOLID → 'hit'). Added now; destroyed ones
 // are removed from the world when their HP hits 0.
@@ -289,40 +310,61 @@ world.on('resolve', () => {}); // positional correction handled separately below
 // cull the projectile on impact. This is the ONLY place a PROJ_ALLY can interact
 // with an enemy; there is no PROJ_ALLY↔HERO rule, so friendly-fire stays off.
 world.on('hit', (a, b) => {
-  const proj = a.layer === LAYER.PROJ_ALLY ? a : (b.layer === LAYER.PROJ_ALLY ? b : null);
-  if (!proj || !proj.friendly) return; // only handle hero thorns here
-  const target = proj === a ? b : a;
+  // --- Friendly thorns (hero → enemy/barrel) --------------------------------
+  const allyProj = a.layer === LAYER.PROJ_ALLY ? a : (b.layer === LAYER.PROJ_ALLY ? b : null);
+  if (allyProj && allyProj.friendly) {
+    const target = allyProj === a ? b : a;
 
-  // Task 4.1 — friendly thorn hits a barrel (SOLID with an HP pool). Chip its
-  // HP; on destruction the barrel explodes (AoE + VFX) and is removed from the
-  // world. Thorns are consumed on impact either way.
-  if (target instanceof GameObj) {
-    const dealt = target.hit(proj.damage, hero, 'projectile');
-    if (dealt > 0) {
-      proj.alive = false;
-      if (target.destroyed) handleBarrelDestroyed(target);
-    } else {
-      proj.alive = false; // hit an already-destroyed solid — still consumed
+    // Task 4.1 — friendly thorn hits a barrel (SOLID with an HP pool). Chip its
+    // HP; on destruction the barrel explodes (AoE + VFX) and is removed from the
+    // world. Thorns are consumed on impact either way.
+    if (target instanceof GameObj) {
+      const dealt = target.hit(allyProj.damage, hero, 'projectile');
+      if (dealt > 0) {
+        allyProj.alive = false;
+        if (target.destroyed) handleBarrelDestroyed(target);
+      } else {
+        allyProj.alive = false; // hit an already-destroyed solid — still consumed
+      }
+      return;
+    }
+
+    if (target.layer !== LAYER.ENEMY && target.layer !== LAYER.BOSS) return;
+    if (target.hp == null) return;       // non-target placeholder (e.g. anim test box)
+    // Central damage routing: defense + telemetry in one place (Task 3.2).
+    const dealt = damage(hero, target, allyProj.damage, 'projectile');
+    if (dealt > 0) target.hitFlash = 0.1; // brief white flash on impact
+    allyProj.alive = false;               // thorn is consumed on impact
+    // Task 3.3 — Enemy instances trigger their death pipeline via die().
+    // damage() already set alive=false when hp<=0; we call die() to start the
+    // shrink/fade sequence and restore alive=true so the anim plays.
+    // The entity is removed from the world when the anim completes (in updateRealEnemies).
+    if (typeof target.die === 'function' && target.hp <= 0 && target.aiState !== 'dead') {
+      target.die();
+      target.alive = true; // keep alive during death anim
+    } else if (!target.alive) {
+      // Placeholder targets (plain Entity, no death pipeline): remove immediately.
+      world.remove(target);
     }
     return;
   }
 
-  if (target.layer !== LAYER.ENEMY && target.layer !== LAYER.BOSS) return;
-  if (target.hp == null) return;       // non-target placeholder (e.g. anim test box)
-  // Central damage routing: defense + telemetry in one place (Task 3.2).
-  const dealt = damage(hero, target, proj.damage, 'projectile');
-  if (dealt > 0) target.hitFlash = 0.1; // brief white flash on impact
-  proj.alive = false;                   // thorn is consumed on impact
-  // Task 3.3 — Enemy instances trigger their death pipeline via die().
-  // damage() already set alive=false when hp<=0; we call die() to start the
-  // shrink/fade sequence and restore alive=true so the anim plays.
-  // The entity is removed from the world when the anim completes (in updateJester).
-  if (typeof target.die === 'function' && target.hp <= 0 && target.aiState !== 'dead') {
-    target.die();
-    target.alive = true; // keep alive during death anim
-  } else if (!target.alive) {
-    // Placeholder targets (plain Entity, no death pipeline): remove immediately.
-    world.remove(target);
+  // --- Foe projectiles (enemy → hero), Task 5.1 -----------------------------
+  // Violetta's shots and Boris Loon's dive-shots are unfriendly (PROJ_FOE). They
+  // only ever hit the hero (PROJ_FOE×HERO rule); there is no PROJ_FOE↔ENEMY rule
+  // so they can't self-damage. Route through central damage() and consume the
+  // shot on impact. Respects the hero's invincibility window.
+  const foeProj = a.layer === LAYER.PROJ_FOE ? a : (b.layer === LAYER.PROJ_FOE ? b : null);
+  if (foeProj && !foeProj.friendly) {
+    const victim = foeProj === a ? b : a;
+    if (victim.layer !== LAYER.HERO) return;
+    if (victim.invincibleTimer > 0) { foeProj.alive = false; return; } // i-frames absorb it
+    const dealt = damage(foeProj, victim, foeProj.damage, 'projectile');
+    if (dealt > 0) {
+      victim.invincibleTimer = Math.max(victim.invincibleTimer, 0.3); // brief i-frames
+    }
+    foeProj.alive = false; // consumed on impact
+    // SFX: hit
   }
 });
 
@@ -477,7 +519,9 @@ export function getEnemies() { return enemies; }
 export function getLiveEnemies() {
   const out = [];
   for (const e of enemies) if (e.alive !== false) out.push(e);
-  if (jester && jester.alive !== false && jester.aiState !== 'dead') out.push(jester);
+  for (const e of realEnemies) {
+    if (e.alive !== false && e.aiState !== 'dead') out.push(e);
+  }
   return out;
 }
 // Task 2.1 — decorative anim-test box (damage-immune placeholder).
@@ -488,6 +532,13 @@ export function getPickups() { return pickups; }
 export function getCamera() { return camera; }
 // Task 3.3 — jester + particle/coin pools for render.
 export function getJester() { return jester; }
+// Task 5.1 — remaining enemy instances + full real-enemy list for render/F3.
+export function getVineHound() { return vineHound; }
+export function getVioletta() { return violetta; }
+export function getJacko() { return jacko; }
+export function getBoris() { return boris; }
+export function getBorisBaby() { return borisBaby; }
+export function getRealEnemies() { return realEnemies; }
 export function getParticles() { return particles; }
 export function getCoins() { return coins; }
 // Task 4.1 — barrels + explosion screen shake for render.
@@ -538,8 +589,8 @@ export function update(dt) {
     t.update(dt);
   }
 
-  // 1e. Task 3.3 — Jester AI + physics + whip damage + death pipeline.
-  updateJester(dt);
+  // 1e. Task 3.3 + 5.1 — real-enemy AI + physics + attack damage + death pipeline.
+  updateRealEnemies(dt);
 
   // 1f. Task 3.3 — particle + coin pool advancement.
   updateEffects(dt);
@@ -668,18 +719,17 @@ function applyMeleeDamage(h, _dt) {
     }
   }
 
-  // Task 3.3 — melee also hits the jester (Enemy instance with takeDamage).
-  if (jester.alive && !h._meleeHitSet.has(jester)) {
-    const jb = jester.worldBox();
-    if (hb.x < jb.x + jb.w && hb.x + hb.w > jb.x &&
-        hb.y < jb.y + jb.h && hb.y + hb.h > jb.y) {
-      const dealt = jester.takeDamage(h.stats.attack, h, 'melee');
+  // Task 3.3 + 5.1 — melee hits every real enemy (Enemy instances with takeDamage).
+  for (const e of realEnemies) {
+    if (!e.alive || e.aiState === 'dead') continue;
+    if (h._meleeHitSet.has(e)) continue;
+    const eb = e.worldBox();
+    if (hb.x < eb.x + eb.w && hb.x + hb.w > eb.x &&
+        hb.y < eb.y + eb.h && hb.y + hb.h > eb.y) {
+      const dealt = e.takeDamage(h.stats.attack, h, 'melee');
       if (dealt > 0) {
-        h._meleeHitSet.add(jester);
-        if (!jester.alive) {
-          // Death pipeline completed (shouldn't happen instantly, but guard).
-          world.remove(jester);
-        }
+        h._meleeHitSet.add(e);
+        if (!e.alive) world.remove(e); // destroyed — drop from play
       }
     }
   }
@@ -701,54 +751,98 @@ function applyMeleeDamage(h, _dt) {
   }
 }
 
-// --- Jester update (Task 3.3) -------------------------------------------------
-// Drives the jester's AI state machine, physics integration, whip damage check,
-// solid collision, and death pipeline (sparkle burst + coin drop on full death).
+// --- Real-enemy update (Task 3.3 jester + Task 5.1 remaining AIs) ------------
+// Drives every real Enemy's AI state machine, physics integration, per-type
+// attack hitbox check, solid collision, and death pipeline (sparkle burst +
+// coin drop on full death). The jester-specific whip logic is generalized into a
+// per-enemy "attack hitbox" accessor so one loop covers all six types.
 
 /**
- * Per-frame jester step. Called from update() after hero movement.
+ * Per-frame step for a single real enemy. Called from updateRealEnemies().
+ * @param {Enemy} e the enemy entity
  * @param {number} dt seconds
  */
-function updateJester(dt) {
-  // Decay contact cooldown.
-  if (jester._contactCd > 0) jester._contactCd -= dt;
+function updateRealEnemy(e, dt) {
+  // Decay contact cooldown (shared by all real enemies via the 'contact' rule).
+  if (e._contactCd > 0) e._contactCd -= dt;
 
-  // AI + gravity + integrate (base Enemy.update handles all of this).
-  jester.update(dt, hero, world);
+  // AI + gravity + integrate (base Enemy.update handles all of this). Flyers
+  // have gravity 0 so they never fall; grounders do not.
+  e.update(dt, hero, world);
 
-  // Resolve against solids so the jester doesn't walk through platforms.
-  if (jester.alive && jester.aiState !== 'dead') {
-    resolve(jester, SOLIDS);
+  // Resolve against solids so grounders don't walk through platforms. Flyers
+  // skip solid resolution (they fly over/through platforms by design).
+  if (e.alive && e.aiState !== 'dead' && e.gravity > 0) {
+    resolve(e, SOLIDS);
   }
 
-  // Whip damage check: if the whip hitbox overlaps the hero, deal damage.
-  // Only one hit per whip swing (tracked via _whipHitDone flag).
-  const whipHb = jester.whipHitboxWorld;
-  if (whipHb && !jester._whipHitDone) {
+  // Attack hitbox check: each type exposes an active-world hitbox getter that
+  // returns null outside its damage window. On overlap we deal one hit per
+  // swing/lunge/jab (tracked via _atkHitDone), then reset when the window ends.
+  const atkHb = getAttackHitbox(e);
+  if (atkHb && !e._atkHitDone) {
     const hb = hero.worldBox();
-    if (aabbOverlap(whipHb, hb)) {
-      const dealt = damage(jester, hero, jester.stats.attack, 'melee');
+    if (aabbOverlap(atkHb, hb)) {
+      const dealt = damage(e, hero, e.stats.attack, 'melee');
       if (dealt > 0) {
-        jester._whipHitDone = true; // one hit per whip
+        e._atkHitDone = true; // one hit per swing
         hero.invincibleTimer = Math.max(hero.invincibleTimer, 0.3); // brief i-frames
       }
     }
   }
-  // Reset the whip-hit flag when the whip ends.
-  if (!jester.whipActive) jester._whipHitDone = false;
+  // Reset the hit flag once the attack window closes (hitbox back to null).
+  if (!atkHb) e._atkHitDone = false;
+
+  // Jack-O-Lantern explosion: when it detonates, run the AoE blast (same pattern
+  // as a barrel) and spawn VFX. The explode() hook fires exactly once.
+  if (e instanceof JackOLantern && e.exploded && !e._explodeHandled) {
+    e._explodeHandled = true;
+    const cx = e.x + e.w / 2;
+    const cy = e.y + e.h / 2;
+    const targets = [hero, ...enemies, ...realEnemies];
+    const result = explodeJackolantern(e, targets);
+    spawnExplosionVFX(cx, cy, result.radius);
+    triggerShake(6);
+    // SFX: explosion
+  }
 
   // Death pipeline completion: when alive flips to false after the anim,
   // spawn sparkles + coins and remove from the collision world.
-  if (!jester.alive && !jester._deathHandled) {
-    jester._deathHandled = true;
-    const cx = jester.x + jester.w / 2;
-    const cy = jester.y + jester.h / 2;
-    // Sparkle burst (6-8 particles, sprite-sized).
-    particles.spawnBurst(cx, cy, 7);
-    // Coin drop based on coinDrop config.
-    coins.dropCoins(jester.coinDrop, cx, cy);
-    // Remove from collision world.
-    world.remove(jester);
+  if (!e.alive && !e._deathHandled) {
+    e._deathHandled = true;
+    const cx = e.x + e.w / 2;
+    const cy = e.y + e.h / 2;
+    particles.spawnBurst(cx, cy, 7);          // sparkle burst (sprite-sized)
+    coins.dropCoins(e.coinDrop, cx, cy);      // coin drop per config
+    world.remove(e);                          // drop from play
+  }
+}
+
+/**
+ * Resolve the current active attack hitbox for a real enemy, or null when no
+ * damage should be dealt this frame. Each type stores its own getter name; the
+ * jester uses whipHitboxWorld, the vine hound lungeHitboxWorld, violetta
+ * meleeHitboxWorld. Boris Loon has no melee hitbox (it attacks via dive/contact
+ * + projectile).
+ * @param {Enemy} e
+ * @returns {{x:number,y:number,w:number,h:number}|null}
+ */
+function getAttackHitbox(e) {
+  if (e.whipHitboxWorld != null) return e.whipHitboxWorld;       // jester
+  if (e.lungeHitboxWorld != null) return e.lungeHitboxWorld;     // vine hound
+  if (e.meleeHitboxWorld != null) return e.meleeHitboxWorld;     // violetta
+  return null;
+}
+
+/**
+ * Advance every real enemy this step. Called from update() in place of the old
+ * single-jester call.
+ * @param {number} dt seconds
+ */
+function updateRealEnemies(dt) {
+  for (const e of realEnemies) {
+    if (e === undefined || e === null) continue;
+    updateRealEnemy(e, dt);
   }
 }
 
@@ -781,7 +875,7 @@ function handleBarrelDestroyed(barrel) {
   if (barrel.explosive) {
     // AoE damage to every live entity in radius (enemies + hero). The pure
     // explodeBarrel() routes through central damage(); we pass the full live set.
-    const targets = [hero, ...enemies, jester];
+    const targets = [hero, ...enemies, ...realEnemies];
     const result = explodeBarrel(barrel, targets);
     // Explosion VFX: 12–15 orange/red particles expanding outward.
     spawnExplosionVFX(cx, cy, result.radius);

@@ -6,7 +6,7 @@
 // overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../view.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getJester, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getJester, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies } from './update.js';
 import { getState, STATE_NAMES } from '../state.js';
 
 export function render(ctx) {
@@ -53,12 +53,13 @@ export function render(ctx) {
     if (e.hp != null && e.maxHp > 0) drawHpBar(ctx, e);
   }
 
-  // Task 3.3 — Jester enemy (draws itself including death shrink/fade + whip).
-  const jester = getJester();
-  if (jester.alive) {
-    jester.draw(ctx);
-    if (jester.hp != null && jester.maxHp > 0 && jester.aiState !== 'dead') {
-      drawHpBar(ctx, jester);
+  // Task 3.3 + 5.1 — real enemies (jester + vine_hound/violetta/jacko/boris).
+  // Each draws itself including death shrink/fade and its attack telegraph.
+  for (const e of getRealEnemies()) {
+    if (!e.alive) continue;
+    e.draw(ctx);
+    if (e.hp != null && e.maxHp > 0 && e.aiState !== 'dead') {
+      drawHpBar(ctx, e);
     }
   }
 
@@ -128,8 +129,9 @@ export function render(ctx) {
   // Debug overlay (F3): full §16 colored boxes over every entity's worldBox().
   if (isDebugEnabled()) {
     drawDebugOverlay(ctx);
-    // Task 3.3 — jester-specific debug: aggro radius circle + AI state label.
-    drawJesterDebug(ctx, getJester());
+    // Task 3.3 + 5.1 — per-enemy debug: aggro radius circle + AI state label
+    // above each real enemy's head.
+    for (const e of getRealEnemies()) drawEnemyDebug(ctx, e);
   }
 
   ctx.restore();
@@ -276,20 +278,22 @@ function drawHpBar(ctx, e) {
   ctx.fillRect(x, y, w * frac, h);
 }
 
-// --- Task 3.3 — Jester debug overlay (F3) ------------------------------------
-// Draws the aggro radius as a faint circle and the current AI state as a label
-// above the jester's head. Helps validate the state machine during development.
+// --- Task 3.3 + 5.1 — per-enemy debug overlay (F3) ---------------------------
+// Draws each real enemy's aggro radius as a faint circle and its current AI
+// state as a label above its head. Helps validate every state machine during
+// development (jester whip, hound lunge, violetta pace/shoot, jacko roll/launch,
+// boris hover/dive).
 
 /**
- * Draw jester-specific debug info: aggro circle + AI state label.
+ * Draw per-enemy debug info: aggro circle + AI state label.
  * @param {CanvasRenderingContext2D} ctx
- * @param {Jester} j the jester entity
+ * @param {Enemy} e any real enemy entity
  */
-function drawJesterDebug(ctx, j) {
-  if (!j || !j.alive) return; // only draw while the jester exists (including death anim)
+function drawEnemyDebug(ctx, e) {
+  if (!e || !e.alive) return; // only draw while the enemy exists (incl. death anim)
 
-  const cx = j.x + j.w / 2;
-  const cy = j.y + j.h / 2;
+  const cx = e.x + e.w / 2;
+  const cy = e.y + e.h / 2;
 
   // Aggro radius circle (faint).
   ctx.save();
@@ -298,23 +302,19 @@ function drawJesterDebug(ctx, j) {
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
   ctx.beginPath();
-  ctx.arc(cx, cy, j.aggroRadius, 0, Math.PI * 2);
+  ctx.arc(cx, cy, e.aggroRadius, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 
-  // AI state label above head.
+  // AI state label above head. Color encodes activity level.
   ctx.save();
   ctx.font = 'bold 10px monospace';
   ctx.textAlign = 'center';
-  ctx.fillStyle = j.aiState === 'chase' ? '#f39c12' :
-                  j.aiState === 'attack' ? '#e74c3c' :
-                  j.aiState === 'dead' ? '#999' : '#aaa';
-  ctx.fillText(j.aiState.toUpperCase(), cx, j.y - 14);
-  // Whip cooldown indicator (small number below state).
-  if (j.whipCooldown > 0) {
-    ctx.font = '9px monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText(`cd:${j.whipCooldown.toFixed(1)}s`, cx, j.y - 4);
-  }
+  const active = ['chase', 'pace', 'roll', 'lunge', 'dive', 'attack', 'melee', 'shoot'];
+  const color = e.aiState === 'dead' ? '#999'
+    : active.includes(e.aiState) ? '#f39c12'
+    : '#aaa';
+  ctx.fillStyle = color;
+  ctx.fillText(`${e.type}:${e.aiState}`.toUpperCase(), cx, e.y - 14);
   ctx.restore();
 }
