@@ -1601,9 +1601,261 @@
             ],
             "frame_size": "332x525"
           }
+        },
+        {
+          "file": "panic-petal/assets/powerups_sheet_1.png",
+          "rows": 5,
+          "cols": 4,
+          "description": "Wooden signboard powerup sprites, 5 types x 4 frames (NORMAL/INFLATE/PEAK/DEFLATE)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "scarlet_1up",
+              "anim": "scarlet_1up",
+              "frames": [
+                "scarlet_1up_f1.png",
+                "scarlet_1up_f2.png",
+                "scarlet_1up_f3.png",
+                "scarlet_1up_f4.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "balthazar_1up",
+              "anim": "balthazar_1up",
+              "frames": [
+                "balthazar_1up_f1.png",
+                "balthazar_1up_f2.png",
+                "balthazar_1up_f3.png",
+                "balthazar_1up_f4.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "rapid_fire",
+              "anim": "rapid_fire",
+              "frames": [
+                "rapid_fire_f1.png",
+                "rapid_fire_f2.png",
+                "rapid_fire_f3.png",
+                "rapid_fire_f4.png"
+              ]
+            },
+            {
+              "row": 4,
+              "name": "invincibility",
+              "anim": "invincibility",
+              "frames": [
+                "invincibility_f1.png",
+                "invincibility_f2.png",
+                "invincibility_f3.png",
+                "invincibility_f4.png"
+              ]
+            },
+            {
+              "row": 5,
+              "name": "panic_clear",
+              "anim": "panic_clear",
+              "frames": [
+                "panic_clear_f1.png",
+                "panic_clear_f2.png",
+                "panic_clear_f3.png",
+                "panic_clear_f4.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              250,
+              161,
+              177
+            ],
+            "bg_tol": 30,
+            "row_y": [
+              [
+                12,
+                138
+              ],
+              [
+                144,
+                273
+              ],
+              [
+                281,
+                405
+              ],
+              [
+                415,
+                545
+              ],
+              [
+                554,
+                697
+              ]
+            ],
+            "col_x": [
+              [
+                375,
+                695,
+                1086,
+                1535
+              ],
+              [
+                372,
+                696,
+                1079,
+                1531
+              ],
+              [
+                371,
+                693,
+                1073,
+                1530
+              ],
+              [
+                367,
+                693,
+                1079,
+                1525
+              ],
+              [
+                369,
+                692,
+                1065,
+                1526
+              ]
+            ],
+            "frame_size": "395x152"
+          }
+        },
+        {
+          "file": "panic-petal/assets/powerups_sheet_2.png",
+          "rows": 5,
+          "cols": 4,
+          "description": "Wooden signboard powerup sprites, 5 types x 4 frames (NORMAL/INFLATE/PEAK/DEFLATE)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "energy",
+              "anim": "energy",
+              "frames": [
+                "energy_f1.png",
+                "energy_f2.png",
+                "energy_f3.png",
+                "energy_f4.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "bomb",
+              "anim": "bomb",
+              "frames": [
+                "bomb_f1.png",
+                "bomb_f2.png",
+                "bomb_f3.png",
+                "bomb_f4.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "petal_saw",
+              "anim": "petal_saw",
+              "frames": [
+                "petal_saw_f1.png",
+                "petal_saw_f2.png",
+                "petal_saw_f3.png",
+                "petal_saw_f4.png"
+              ]
+            },
+            {
+              "row": 4,
+              "name": "thorn_missile",
+              "anim": "thorn_missile",
+              "frames": [
+                "thorn_missile_f1.png",
+                "thorn_missile_f2.png",
+                "thorn_missile_f3.png",
+                "thorn_missile_f4.png"
+              ]
+            },
+            {
+              "row": 5,
+              "name": "shield",
+              "anim": "shield",
+              "frames": [
+                "shield_f1.png",
+                "shield_f2.png",
+                "shield_f3.png",
+                "shield_f4.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              249,
+              166,
+              182
+            ],
+            "bg_tol": 30,
+            "row_y": [
+              [
+                11,
+                146
+              ],
+              [
+                156,
+                290
+              ],
+              [
+                307,
+                442
+              ],
+              [
+                455,
+                588
+              ],
+              [
+                607,
+                697
+              ]
+            ],
+            "col_x": [
+              [
+                400,
+                747,
+                1096,
+                1533
+              ],
+              [
+                397,
+                747,
+                1099,
+                1531
+              ],
+              [
+                391,
+                742,
+                1091,
+                1523
+              ],
+              [
+                397,
+                753,
+                1095,
+                1532
+              ],
+              [
+                393,
+                749,
+                1100,
+                1528
+              ]
+            ],
+            "frame_size": "333x144"
+          }
         }
       ]
     }
   },
-  "updated": "2026-09-10T23:44:25"
+  "updated": "2026-09-11T00:12:44.760967"
 }
