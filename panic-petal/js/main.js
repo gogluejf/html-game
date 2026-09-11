@@ -6,9 +6,17 @@ import { VIEW_W, VIEW_H } from './view.js';
 import { update } from './systems/update.js';
 import { render } from './systems/render.js';
 import { loadImages } from './screens.js';
+import { waitForFonts } from './fonts.js';
 
 // Load screen assets (Home/Select) immediately on page load.
 loadImages();
+
+// Wait for the display fonts before the first frame so titles/prompts render
+// in Alfa Slab One / Lilita One / Pirata One (not a fallback). Resolves after
+// ~2.5 s worst case, so a blocked network never blocks the game.
+waitForFonts().then((ready) => {
+  if (!ready) console.warn('[fonts] display fonts not ready; using fallback');
+});
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');

@@ -12,6 +12,7 @@
 // ES module, no frameworks. No DOM access beyond the passed ctx.
 
 import { VIEW_W, VIEW_H } from './view.js';
+import { FONT_UI, CREAM, GOLD } from './fonts.js';
 
 const PAD = 12;
 
@@ -66,17 +67,17 @@ function drawEnergyBar(ctx, hero) {
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 1;
   ctx.strokeRect(barX + 0.5, barY + 0.5, barW, barH);
-  ctx.fillStyle = '#fff';
-  ctx.font = '10px monospace';
+  ctx.fillStyle = CREAM;
+  ctx.font = `12px ${FONT_UI}`;
   ctx.textAlign = 'left';
-  ctx.fillText('ENERGY', barX, barY + barH + 10);
+  ctx.fillText('ENERGY', barX, barY + barH + 11);
 }
 
 // --- Ammo (below energy): thorn count + special count ------------------------
 
 function drawAmmo(ctx, hero) {
   const y = PAD + 16 + 28; // below the ENERGY label
-  ctx.font = '14px monospace';
+  ctx.font = `15px ${FONT_UI}`;
   ctx.textAlign = 'left';
   ctx.fillStyle = '#2ecc71';
   ctx.fillText(`🌿 ${hero.ammo ?? 0}`, PAD, y);
@@ -89,8 +90,8 @@ function drawAmmo(ctx, hero) {
 
 function drawCoinsAndLives(ctx, hero) {
   ctx.textAlign = 'right';
-  ctx.font = '16px monospace';
-  ctx.fillStyle = '#ffd700';
+  ctx.font = `17px ${FONT_UI}`;
+  ctx.fillStyle = GOLD;
   ctx.fillText(`💰 ${hero.coins ?? 0}`, VIEW_W - PAD, PAD + 16);
   ctx.fillStyle = '#e74c3c';
   ctx.fillText(`❤️ × ${hero.lives ?? 0}`, VIEW_W - PAD, PAD + 36);
@@ -131,7 +132,7 @@ function drawPortrait(ctx, hero) {
     ctx.fillStyle = hero.heroDef?.id === 'balthazar' ? '#5a3d8a' : '#8a2d3b';
     ctx.fillRect(x, y, size, size);
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 14px monospace';
+    ctx.font = `bold 15px ${FONT_UI}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText((hero.heroDef?.name ?? '?').charAt(0), x + size / 2, y + size / 2);
@@ -159,7 +160,7 @@ function drawProgressLine(ctx, hero, levelDef) {
 
   // Checkpoint markers (dimmed once the hero has passed them).
   if (Array.isArray(levelDef.checkpoints)) {
-    ctx.font = '9px monospace';
+    ctx.font = `10px ${FONT_UI}`;
     ctx.textAlign = 'center';
     for (const cp of levelDef.checkpoints) {
       const frac = Math.max(0, Math.min(1, cp.x / levelDef.length));

@@ -7,6 +7,10 @@ import { S, getState, tryTransition } from './state.js';
 import { HEROES } from './heroDefs.js';
 import { VIEW_W, VIEW_H } from './view.js';
 import { calculateScore } from './stats.js';
+import {
+  FONT_TITLE, FONT_UI, CREAM, GOLD, RED, PINK,
+  drawMarqueeTitle, drawPrompt, drawMenace,
+} from './fonts.js';
 
 // Continue cost (design §1/§14: 1000 coins per continue). update.js exports the
 // same constant; this local copy keeps screens.js self-contained for draw/onKey.
@@ -133,24 +137,19 @@ export const Home = {
       ctx.textBaseline = 'middle';
 
       // Helper: fade in/out a text card between [start, end]
-      const drawCard = (text, start, end, font, color) => {
+      const drawCard = (text, start, end, size, color) => {
         if (t < start || t > end) return;
         const fadeIn = Math.min(1, (t - start) / 0.5);
         const fadeOut = Math.min(1, (end - t) / 0.5);
-        const alpha = Math.min(fadeIn, fadeOut);
-        ctx.globalAlpha = alpha;
-        ctx.font = font;
-        ctx.fillStyle = color;
-        ctx.shadowColor = '#000';
-        ctx.shadowBlur = 4;
-        ctx.fillText(text, VIEW_W / 2, VIEW_H / 2);
+        ctx.globalAlpha = Math.min(fadeIn, fadeOut);
+        drawMarqueeTitle(ctx, text, VIEW_W / 2, VIEW_H / 2, size, { color });
       };
 
       // Card 1: "JF Rene presents" (1s – 3.5s)
-      drawCard('JF Rene presents', 1, 3.5, 'bold 36px monospace', '#ffffff');
+      drawCard('JF RENE PRESENTS', 1, 3.5, 46, CREAM);
 
       // Card 2: "AI Qwen 3.8 7B AI Slop production" (4s – 6.5s)
-      drawCard('AI Qwen 3.8 7B AI Slop production', 4, 6.5, 'bold 28px monospace', '#aaa');
+      drawCard('AI QWEN 3.8 7B · AI SLOP PRODUCTION', 4, 6.5, 30, '#d8c9a0');
 
       // Card 3: "Built with [squid logo]" (7s – 9.5s) — small, humble
       if (t >= 7 && t <= 9.5) {
@@ -158,9 +157,7 @@ export const Home = {
         const fadeOut = Math.min(1, (9.5 - t) / 0.5);
         const alpha = Math.min(fadeIn, fadeOut);
         ctx.globalAlpha = alpha;
-        ctx.font = '16px monospace';
-        ctx.fillStyle = '#888';
-        ctx.fillText('built with', VIEW_W / 2, VIEW_H / 2 - 20);
+        drawPrompt(ctx, 'built with', VIEW_W / 2, VIEW_H / 2 - 22, 20, { color: '#b9a98a' });
         const sq = images.squidLogo;
         if (sq?.complete && sq.naturalWidth > 0) {
           const lw = 120;
@@ -325,15 +322,9 @@ export const Home = {
     }
 
     // --- Layer 6: "PRESS ENTER" hint — only after logo + 500ms (gt > 2.7) ----
-    if (gt > 2.7 && Math.floor(gt * 2) % 2 === 0) {
-      ctx.save();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px monospace';
-      ctx.textAlign = 'center';
-      ctx.shadowColor = '#000';
-      ctx.shadowBlur = 4;
-      ctx.fillText('PRESS ENTER', HOME_W / 2, HOME_H - 18);
-      ctx.restore();
+    if (gt > 2.7) {
+      const blink = Math.floor(gt * 2) % 2 === 0;
+      drawPrompt(ctx, 'PRESS ENTER', HOME_W / 2, HOME_H - 24, 30, { blink });
     }
 
     ctx.restore(); // end 4:3 clip
@@ -375,14 +366,7 @@ export const Select = {
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
     // Title.
-    ctx.save();
-    ctx.fillStyle = '#ffd700';
-    ctx.font = 'bold 32px monospace';
-    ctx.textAlign = 'center';
-    ctx.shadowColor = '#000';
-    ctx.shadowBlur = 3;
-    ctx.fillText('SELECT YOUR HERO', VIEW_W / 2, 55);
-    ctx.restore();
+    drawMarqueeTitle(ctx, 'SELECT YOUR HERO', VIEW_W / 2, 58, 40, { color: CREAM });
 
     // Panel geometry.
     const panelW = 260, panelH = 340;
@@ -420,28 +404,22 @@ export const Select = {
       }
 
       // Name.
-      ctx.save();
-      ctx.fillStyle = focused ? '#ffd700' : '#aaa';
-      ctx.font = 'bold 18px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(hero.name.toUpperCase(), px + panelW / 2, panelY + panelH - 55);
-      ctx.restore();
+      drawPrompt(ctx, hero.name.toUpperCase(), px + panelW / 2, panelY + panelH - 58, 24, {
+        color: focused ? CREAM : '#b9a98a', font: FONT_TITLE,
+      });
 
       // Special ability label.
       const specialLabel = hero.stats.special === 'saw' ? 'Petal Saw' : 'Bomb Burst';
-      ctx.save();
-      ctx.fillStyle = focused ? '#ff6ec7' : '#888';
-      ctx.font = '13px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`Special: ${specialLabel}`, px + panelW / 2, panelY + panelH - 35);
-      ctx.restore();
+      drawPrompt(ctx, `Special: ${specialLabel}`, px + panelW / 2, panelY + panelH - 36, 17, {
+        color: focused ? PINK : '#8a6a7a',
+      });
 
       // Stats mini-display.
       ctx.save();
-      ctx.font = '11px monospace';
+      ctx.font = `13px ${FONT_UI}`;
       ctx.textAlign = 'left';
-      ctx.fillStyle = focused ? '#ccc' : '#777';
-      const sx = px + 20, sy = panelY + panelH - 18;
+      ctx.fillStyle = focused ? '#d8cdb4' : '#777';
+      const sx = px + 20, sy = panelY + panelH - 16;
       ctx.fillText(`SPD:${hero.stats.speed}  ATK:${hero.stats.attack}  DEF:${hero.stats.defense}`, sx, sy);
       ctx.restore();
     }
@@ -452,20 +430,17 @@ export const Select = {
         ? startX + panelW / 2
         : startX + panelW + gap + panelW / 2;
       ctx.save();
-      ctx.fillStyle = '#ffd700';
-      ctx.font = 'bold 24px monospace';
+      ctx.fillStyle = GOLD;
+      ctx.font = `bold 26px ${FONT_UI}`;
       ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(255,215,0,0.5)';
+      ctx.shadowBlur = 8;
       ctx.fillText('▼', fx, panelY - 8);
       ctx.restore();
     }
 
     // Controls hint.
-    ctx.save();
-    ctx.fillStyle = '#888';
-    ctx.font = '14px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('← → Select   |   ENTER Confirm', VIEW_W / 2, VIEW_H - 25);
-    ctx.restore();
+    drawPrompt(ctx, '← → SELECT   |   ENTER CONFIRM', VIEW_W / 2, VIEW_H - 26, 18, { color: '#b9a98a' });
   },
 
   /** Handle key input for hero selection. */
@@ -509,20 +484,12 @@ export const Pause = {
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
     // Title.
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 48px monospace';
-    ctx.textAlign = 'center';
-    ctx.shadowColor = '#000';
-    ctx.shadowBlur = 6;
-    ctx.fillText('PAUSED', VIEW_W / 2, VIEW_H / 2 - 60);
-    ctx.shadowBlur = 0;
+    drawMarqueeTitle(ctx, 'PAUSED', VIEW_W / 2, VIEW_H / 2 - 70, 56, { color: CREAM });
 
     // Options.
-    ctx.font = '24px monospace';
-    ctx.fillStyle = '#cccccc';
-    ctx.fillText('ENTER / ESC — Resume', VIEW_W / 2, VIEW_H / 2);
-    ctx.fillText('R — Retry Level', VIEW_W / 2, VIEW_H / 2 + 40);
-    ctx.fillText('Q — Quit to Home', VIEW_W / 2, VIEW_H / 2 + 80);
+    drawPrompt(ctx, 'ENTER / ESC — Resume', VIEW_W / 2, VIEW_H / 2 - 5, 24, { color: GOLD });
+    drawPrompt(ctx, 'R — Retry Level', VIEW_W / 2, VIEW_H / 2 + 35, 22, { color: '#d8cdb4' });
+    drawPrompt(ctx, 'Q — Quit to Home', VIEW_W / 2, VIEW_H / 2 + 75, 22, { color: '#d8cdb4' });
     ctx.restore();
   },
 
@@ -576,41 +543,32 @@ export const GameOver = {
     const score = calculateScore(s, hero);
 
     // Title.
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#e74c3c';
-    ctx.font = 'bold 56px monospace';
-    ctx.shadowColor = '#000';
-    ctx.shadowBlur = 8;
-    ctx.fillText('GAME OVER', VIEW_W / 2, 110);
-    ctx.shadowBlur = 0;
+    drawMenace(ctx, 'GAME OVER', VIEW_W / 2, 110, 64);
 
     // Score + key stats.
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 28px monospace';
-    ctx.fillText(`SCORE  ${score}`, VIEW_W / 2, 180);
-    ctx.font = '22px monospace';
-    ctx.fillStyle = '#dddddd';
-    ctx.fillText(`Enemies Killed: ${kills}`, VIEW_W / 2, 230);
-    ctx.fillText(`Coins Collected: ${coins}`, VIEW_W / 2, 265);
-    ctx.fillText(`Distance: ${distance} px`, VIEW_W / 2, 300);
+    ctx.textAlign = 'center';
+    drawPrompt(ctx, `SCORE  ${score}`, VIEW_W / 2, 185, 30, { color: CREAM, font: FONT_TITLE });
+    ctx.font = `22px ${FONT_UI}`;
+    ctx.fillStyle = '#d8cdb4';
+    ctx.fillText(`Enemies Killed: ${kills}`, VIEW_W / 2, 235);
+    ctx.fillText(`Coins Collected: ${coins}`, VIEW_W / 2, 270);
+    ctx.fillText(`Distance: ${distance} px`, VIEW_W / 2, 305);
 
     // Options.
-    let oy = 370;
-    ctx.font = '22px monospace';
-    ctx.fillStyle = '#ffd700';
-    ctx.fillText('R — Retry', VIEW_W / 2, oy);
-    oy += 38;
+    let oy = 375;
+    drawPrompt(ctx, 'R — Retry', VIEW_W / 2, oy, 24, { color: GOLD });
+    oy += 40;
 
     const okCont = canContinue(hero);
-    ctx.fillStyle = okCont ? '#ffd700' : '#555555';
     const remaining = (hero.maxContinues ?? 3) - (hero.continuesUsed ?? 0);
-    ctx.fillText(
+    drawPrompt(
+      ctx,
       `C — Continue (${remaining} left, ${CONTINUE_COST} coins)`,
-      VIEW_W / 2, oy,
+      VIEW_W / 2, oy, 22,
+      { color: okCont ? GOLD : '#555555' },
     );
-    oy += 38;
-    ctx.fillStyle = '#cccccc';
-    ctx.fillText('Q — Quit', VIEW_W / 2, oy);
+    oy += 40;
+    drawPrompt(ctx, 'Q — Quit', VIEW_W / 2, oy, 22, { color: '#cccccc' });
     ctx.restore();
   },
 
@@ -662,22 +620,15 @@ export const Win = {
     const score = calculateScore(s, hero);
 
     // Title.
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffd700';
-    ctx.font = 'bold 56px monospace';
-    ctx.shadowColor = '#ff6ec7';
-    ctx.shadowBlur = 12;
-    ctx.fillText('🎉 VICTORY! 🎉', VIEW_W / 2, 90);
-    ctx.shadowBlur = 0;
+    drawMarqueeTitle(ctx, '🎉 VICTORY! 🎉', VIEW_W / 2, 90, 58, { color: CREAM });
 
     // Score prominently.
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 36px monospace';
-    ctx.fillText(`SCORE: ${score}`, VIEW_W / 2, 150);
+    drawPrompt(ctx, `SCORE: ${score}`, VIEW_W / 2, 155, 34, { color: GOLD, font: FONT_TITLE });
 
     // Full §4.1 stats summary.
-    ctx.font = '18px monospace';
-    ctx.fillStyle = '#cccccc';
+    ctx.textAlign = 'center';
+    ctx.font = `19px ${FONT_UI}`;
+    ctx.fillStyle = '#d8cdb4';
     const lines = [
       `Hero: ${hero.heroDef?.name ?? ''}`,
       `Time: ${(s.timePlayed ?? 0).toFixed(1)}s`,
@@ -695,11 +646,8 @@ export const Win = {
     }
 
     // Options.
-    ctx.fillStyle = '#ffd700';
-    ctx.font = '22px monospace';
-    ctx.fillText('ENTER — Play Again', VIEW_W / 2, VIEW_H - 60);
-    ctx.fillStyle = '#cccccc';
-    ctx.fillText('Q — Quit', VIEW_W / 2, VIEW_H - 30);
+    drawPrompt(ctx, 'ENTER — Play Again', VIEW_W / 2, VIEW_H - 60, 24, { color: GOLD });
+    drawPrompt(ctx, 'Q — Quit', VIEW_W / 2, VIEW_H - 30, 20, { color: '#cccccc' });
     ctx.restore();
   },
 
