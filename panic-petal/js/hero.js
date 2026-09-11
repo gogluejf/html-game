@@ -304,21 +304,24 @@ export class Hero extends Entity {
    */
   draw(ctx) {
     ctx.save();
+    // When crouching, pivot at the FEET (bottom-center) so the sprite shrinks
+    // downward-to-upward, matching the crouchBox which keeps feet planted.
     const cx = this.x + this.w / 2;
-    const cy = this.y + this.h / 2;
+    const cy = this.crouching ? this.y + this.h : this.y + this.h / 2;
     ctx.translate(cx, cy);
     if (this.mirrorX) ctx.scale(-1, 1);
     if (this.mirrorY) ctx.scale(1, -1);
     ctx.rotate(this.rotation);
-    // Crouch: shrink vertical extent to match crouchBox.
     const scaleY = this.crouching ? 0.6 : 1;
     ctx.scale(this.scale, this.scale * scaleY);
+    // Offset so the sprite draws relative to the pivot.
+    const offsetY = this.crouching ? -this.h : -this.h / 2;
 
     if (this.anim && this.anim.frames.length > 0) {
       this.anim.draw(ctx, this);
     } else {
       ctx.fillStyle = this.debugColor;
-      ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+      ctx.fillRect(-this.w / 2, offsetY, this.w, this.h * scaleY);
     }
     ctx.restore();
   }
