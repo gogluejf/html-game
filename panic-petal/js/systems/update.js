@@ -709,7 +709,24 @@ world.on('hit', (a, b) => {
       const srcName = allyProj.type === 'saw' || allyProj.type === 'bomb' ? allyProj.type : 'thorn';
       if (Debug.enabled) Debug.logEvent(`${srcName} → ${target.type ?? '?'} dmg ${dealt}`);
     }
-    allyProj.alive = false;               // thorn is consumed on impact
+    allyProj.alive = false;               // projectile is consumed on impact
+    // Bomb explodes on contact (not just TTL expiry).
+    if (allyProj.type === 'bomb' && !allyProj.exploded) {
+      allyProj.exploded = true;
+      const bcx = allyProj.x + allyProj.w / 2, bcy = allyProj.y + allyProj.h / 2;
+      for (const t of [hero, ...realEnemies]) {
+        if (!t.alive || t === hero) continue;
+        const dx = (t.x + t.w / 2) - bcx;
+        const dy = (t.y + t.h / 2) - bcy;
+        if (Math.sqrt(dx * dx + dy * dy) <= allyProj.radius) {
+          damage(allyProj, t, allyProj.damage, 'special');
+        }
+      }
+      spawnExplosionVFX(bcx, bcy, allyProj.radius);
+      Effects.bigExplosion();
+      triggerShake(6);
+      if (Debug.enabled) Debug.logEvent('bomb exploded (contact)');
+    }
     // Task 3.3 — Enemy instances trigger their death pipeline via die().
     // damage() already set alive=false when hp<=0; we call die() to start the
     // shrink/fade sequence and restore alive=true so the anim plays.
@@ -1102,6 +1119,29 @@ export function update(dt) {
 
   // Special projectiles: update + handle bomb explosions.
   specialPool.updateAll(dt);
+  // Bomb bounce: bombs arc and bounce off floor/platform tops (like coins).
+  for (const s of specialPool.activeItems) {
+    if (!s.alive || s.type !== 'bomb') continue;
+    const bottom = s.y + s.h;
+    // Floor bounce.
+    if (bottom >= FLOOR_TOP && s.vy > 0) {
+      s.y = FLOOR_TOP - s.h;
+      s.vy *= -0.5; // restitution
+      s.vx *= 0.7;  // friction
+    }
+    // Platform-top bounces.
+    for (const p of SOLIDS.slice(1)) {
+      const prevBottom = bottom - s.vy * dt;
+      if (prevBottom <= p.y + 2 && bottom >= p.y && s.vy > 0) {
+        if (s.x + s.w > p.x && s.x < p.x + p.w) {
+          s.y = p.y - s.h;
+          s.vy *= -0.5;
+          s.vx *= 0.7;
+          break;
+        }
+      }
+    }
+  }
   syncSpecialsToWorld();
   for (const s of specialPool.activeItems) {
     if (!s.alive && s.type === 'bomb' && s.exploded) {

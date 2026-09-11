@@ -171,7 +171,11 @@ export function render(ctx) {
     {
       const h = getHero();
       if (h && !h.dying) {
-        const animName = h.anims?.attack ? 'combat' : (h.vy < 0 ? 'jump' : h.vx !== 0 ? 'run' : 'idle');
+        let animName = 'idle';
+        if (h.dying) animName = 'dead';
+        else if (h.meleeFrame > 0) animName = 'melee';
+        else if (h.vy < -10 || h.vy > 50) animName = 'jump';
+        else if (Math.abs(h.vx) > 20) animName = 'run';
         drawLabel(ctx, h.x + h.w / 2, h.y - 10, `HERO:${animName}`, h.energy / h.maxEnergy, '#2ecc71');
       }
     }
@@ -189,6 +193,13 @@ export function render(ctx) {
       if (b && b.alive) {
         drawLabel(ctx, b.x + b.w / 2, b.y - 28, 'BOSS', b.hp / b.maxHp, '#e74c3c');
       }
+    }
+    // Special projectiles: name + TTL/fuse bar
+    for (const s of getSpecials()) {
+      if (!s.alive) continue;
+      const frac = s.ttlFrac;
+      const color = s.type === 'bomb' ? '#f39c12' : '#ff6ec7';
+      drawLabel(ctx, s.x + s.w / 2, s.y - 10, s.type, frac, color);
     }
     ctx.restore();
   }

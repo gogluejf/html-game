@@ -169,7 +169,7 @@ const SAW_DAMAGE = 25;
 const SAW_LIFETIME = 0.6;       // short range
 const SAW_SIZE = 20;
 
-const BOMB_SPEED = 400;
+const BOMB_SPEED = 550;
 const BOMB_DAMAGE = 40;         // contact damage
 const BOMB_FUSE = 1.5;          // seconds before explosion
 const BOMB_EXPLODE_RADIUS = 100;
