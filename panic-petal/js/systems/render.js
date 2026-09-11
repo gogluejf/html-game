@@ -66,6 +66,22 @@ export function render(ctx) {
   for (const s of getParticles().activeItems) s.draw(ctx);
   for (const c of getCoins().activeItems) c.draw(ctx);
 
+  // Task 4.2 — F3 debug: show each coin's value as small text above it so the
+  // per-type weight/value difference is visible during development.
+  if (isDebugEnabled()) {
+    ctx.save();
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    for (const c of getCoins().activeItems) {
+      if (!c.alive || c.collected) continue;
+      const cx = c.x + c.w / 2;
+      const cy = c.y - 4;
+      ctx.fillStyle = c.debugColor ?? '#fff';
+      ctx.fillText(String(c.value), cx, cy);
+    }
+    ctx.restore();
+  }
+
   getAnimTestEnemy().draw(ctx);
   for (const p of getProjectiles()) p.draw(ctx);
 
@@ -96,6 +112,11 @@ export function render(ctx) {
   ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'left';
   ctx.fillText(`THORNS ${hero.ammo}`, 8, VIEW_H - 12);
+  // Task 4.2 — coin + lives readout (design §14). Shows total coins collected
+  // and current lives; the 1up threshold (every 100) is visible via the lives
+  // counter incrementing.
+  ctx.fillStyle = '#ffd700';
+  ctx.fillText(`COINS ${hero.stats.coinsCollected?.total ?? 0}   LIVES ${hero.lives}`, 8, VIEW_H - 30);
   ctx.restore();
 
   // --- State overlay (skeleton; replaced by real screens in Milestone 8) -----

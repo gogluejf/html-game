@@ -21,6 +21,7 @@ import { S, getState, STATE_NAMES, tryTransition } from '../state.js';
 import { Jester } from '../jester.js';
 import { particles, coins } from '../particles.js';
 import { makeBarrel, makeCoinBarrel, explodeBarrel, BARREL_DAMAGE, GameObj } from '../object.js';
+import { COIN_TYPES } from '../coin.js';
 
 // --- Tunables for the test rig ---------------------------------------------
 // (Hero movement feel lives in js/hero.js; level geometry below.)
@@ -69,6 +70,10 @@ hero.combatStats = {
   hitsLanded: { projectile: 0, melee: 0 },
   damageDealt: { byMethod: { projectile: 0, melee: 0 } },
 };
+
+// Task 4.2 — coin collection stats (design §14). Per-type counters + total;
+// the total drives the 1up threshold (every 100 coins → +1 life).
+hero.stats.coinsCollected = { bronze: 0, silver: 0, gold: 0, total: 0 };
 
 // Task 2.1 — Animation engine integration test.
 // Generate 5 colored frames as offscreen canvases; cycle them on the hero.
@@ -261,6 +266,49 @@ world.on('contact', (a, b) => {
   enemyEnt._contactCd = CONTACT_COOLDOWN;
   const amt = enemyEnt.stats?.attack ?? 10;
   damage(enemyEnt, heroEnt, amt, 'contact');
+});
+
+// Task 4.2 — HERO × COIN collection (design §14). Fires when the hero's box
+// overlaps a live coin's box. We credit the coin's value to the hero, bump the
+// per-type + total counters, spawn a small sparkle burst at the pickup point,
+// and remove the coin from both the pool and the collision world. The 1up
+// threshold (every 100 total coins → +1 life) is checked here so it fires the
+// moment the counter crosses the boundary.
+const ONEUP_THRESHOLD = 100; // total coins collected per extra life (design §14)
+let oneUpProgress = 0;       // running count toward the next 1up
+world.on('collect', (a, b) => {
+  const coinEnt = a.layer === LAYER.COIN ? a : (b.layer === LAYER.COIN ? b : null);
+  const heroEnt = a.layer === LAYER.HERO ? a : (b.layer === LAYER.HERO ? b : null);
+  if (!coinEnt || !heroEnt) return;
+  if (coinEnt.collected || !coinEnt.alive) return; // already credited (guard)
+
+  // Credit the hero + stats.
+  const type = coinEnt.coinType ?? 'bronze';
+  const value = coinEnt.value ?? COIN_TYPES.bronze.value;
+  heroEnt.coins += value;
+  heroEnt.stats.coinsCollected[type] = (heroEnt.stats.coinsCollected[type] ?? 0) + 1;
+  heroEnt.stats.coinsCollected.total += 1;
+
+  // Pickup VFX: a small sparkle burst at the coin's center (reuses the pooled
+  // particle system; no allocation). SFX hook for later audio wiring.
+  const cx = coinEnt.x + coinEnt.w / 2;
+  const cy = coinEnt.y + coinEnt.h / 2;
+  particles.spawnBurst(cx, cy, 4);
+  // SFX: coin
+
+  // Mark collected (latches so the pair can't double-credit next frame) and
+  // remove from the pool + collision world.
+  coinEnt.collect();
+  coins.remove(coinEnt);
+  world.remove(coinEnt);
+
+  // 1up check: every ONEUP_THRESHOLD total coins grants +1 life.
+  oneUpProgress += 1;
+  if (oneUpProgress >= ONEUP_THRESHOLD) {
+    oneUpProgress -= ONEUP_THRESHOLD;
+    heroEnt.lives += 1;
+    // SFX: 1up
+  }
 });
 
 // --- Camera --------------------------------------------------------------------
@@ -557,7 +605,10 @@ function updateJester(dt) {
 // Advance particle + coin pools (called each frame regardless of jester state).
 function updateEffects(dt) {
   particles.updateAll(dt);
-  coins.updateAll(dt, FLOOR_TOP, LEVEL_LENGTH);
+  // Coins bounce off the floor AND any air platform top they land on. We pass
+  // the SOLIDS list minus the floor itself (the floor is handled by floorTop).
+  const platforms = SOLIDS.slice(1); // index 0 is the full-length floor
+  coins.updateAll(dt, FLOOR_TOP, LEVEL_LENGTH, platforms);
   // Sync coins into the collision world so HERO×COIN collect works.
   syncCoinsToWorld();
 }
@@ -587,9 +638,10 @@ function handleBarrelDestroyed(barrel) {
     triggerShake(8);
     // SFX: explosion
   } else {
-    // Coin barrel: no damaging explosion, just a coin burst (design §10/§13).
-    const coinDrop = { range: [4, 7], chance: 1 };
-    coins.dropCoins(coinDrop, cx, cy);
+    // Coin barrel: no damaging explosion, just a mixed-type coin burst
+    // (design §10/§14). Mostly bronze, some silver, rare gold — each with a
+    // random upward+sideways velocity for a fountain effect.
+    coins.burstCoins(cx, cy, 5); // 4–6 mixed coins (clamped inside burstCoins)
     // Small pop burst (reuse sparkle emitter).
     particles.spawnBurst(cx, cy, 6);
     // SFX: coin
