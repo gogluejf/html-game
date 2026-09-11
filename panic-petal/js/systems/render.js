@@ -31,6 +31,15 @@ export function render(ctx) {
   for (const e of getEnemies()) {
     if (e.alive === false) continue; // destroyed target — no longer drawn
     e.draw(ctx);
+    // Task 3.2 — white flash when struck (melee or projectile).
+    if (e.hitFlash > 0) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, e.hitFlash * 10);
+      const eb = e.worldBox();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(eb.x, eb.y, eb.w, eb.h);
+      ctx.restore();
+    }
     if (e.hp != null && e.maxHp > 0) drawHpBar(ctx, e);
   }
   getAnimTestEnemy().draw(ctx);
@@ -133,6 +142,20 @@ function drawDebugOverlay(ctx) {
   }
 
   ctx.restore();
+
+  // Task 3.2 — draw the melee hitbox in YELLOW when active (debug only).
+  const hero = getHero();
+  const mh = hero.meleeHitboxWorld;
+  if (mh) {
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = '#f1c40f';
+    ctx.fillRect(mh.x, mh.y, mh.w, mh.h);
+    ctx.strokeStyle = '#f1c40f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(mh.x, mh.y, mh.w, mh.h);
+    ctx.restore();
+  }
 }
 
 // SOLIDS are plain AABBs ({x,y,w,h}); wrap them as a minimal proxy so the

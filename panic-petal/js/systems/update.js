@@ -16,6 +16,7 @@ import { Anim, makeTestFrame } from '../anim.js';
 import { Hero } from '../hero.js';
 import { HEROES } from '../heroDefs.js';
 import { projectilePool, aimFromInput, dirAngle } from '../projectile.js';
+import { damage } from '../damage.js';
 import { S, getState, STATE_NAMES, tryTransition } from '../state.js';
 
 // --- Tunables for the test rig ---------------------------------------------
@@ -62,8 +63,8 @@ hero.fireCooldown = 0;
 // are runtime bookkeeping, not tunable feel knobs.
 hero.combatStats = {
   projectilesShot: 0,
-  hitsLanded: { projectile: 0 },
-  damageDealt: { byMethod: { projectile: 0 } },
+  hitsLanded: { projectile: 0, melee: 0 },
+  damageDealt: { byMethod: { projectile: 0, melee: 0 } },
 };
 
 // Task 2.1 — Animation engine integration test.
@@ -72,6 +73,15 @@ const heroFrames = ['#2ecc71', '#27ae60', '#1abc9c', '#16a085', '#3498db'];
 hero.anim = new Anim(
   heroFrames.map(c => makeTestFrame(hero.w, hero.h, c)),
   { speed: 200, loop: true },
+);
+
+// Task 3.2 — Melee attack animation (5 placeholder frames).
+// Frame 3 (index) is the "active" frame where the hitbox is live.
+// Colors progress from dark → bright → dim to visually mark the peak.
+const attackFrames = ['#555555', '#888888', '#aaaaaa', '#ffffff', '#666666'];
+hero.anims.attack = new Anim(
+  attackFrames.map(c => makeTestFrame(hero.w, hero.h, c)),
+  { speed: 80, loop: false }, // 80ms per frame matches MELEE_FRAME_DURATION
 );
 
 // --- Placeholder non-hero entities (debug-color exercise only) ---------------
@@ -88,7 +98,12 @@ const enemies = [
   new Entity({ x: 1500, y: FLOOR_TOP_ENEMY - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY, debugColor: '#e74c3c' }),
   new Entity({ x: 2500, y: FLOOR_TOP_ENEMY - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY, debugColor: '#e74c3c' }),
 ];
-for (const e of enemies) { e.hp = TARGET_HP; e.maxHp = TARGET_HP; }
+for (const e of enemies) {
+  e.hp = TARGET_HP;
+  e.maxHp = TARGET_HP;
+  e.type = 'target';      // telemetry bucket (damage().byEnemy)
+  e.hitFlash = 0;         // white-flash timer when struck (Task 3.2)
+}
 
 // Task 2.1 — Non-looping anim test. Kept off the live targets (above) so the
 // animation cycle doesn't obscure their destruction; attached to a separate
@@ -124,7 +139,7 @@ function handleStateKeys(e) {
 }
 
 window.addEventListener('keydown', (e) => {
-  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','KeyG'].includes(e.code)) e.preventDefault();
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','KeyG','KeyJ'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
   if (e.code === 'F3') { e.preventDefault(); setDebugEnabled(!isDebugEnabled()); }
   handleStateKeys(e);
@@ -141,7 +156,7 @@ function readInput() {
     jump:   keys.has('ArrowUp') || keys.has('KeyW') || keys.has('Space'),
     shoot:  keys.has('KeyG'),
     special: false,
-    melee:  false,
+    melee:  keys.has('KeyJ'),
   };
 }
 
@@ -172,12 +187,11 @@ world.on('hit', (a, b) => {
   const target = proj === a ? b : a;
   if (target.layer !== LAYER.ENEMY && target.layer !== LAYER.BOSS) return;
   if (target.hp == null) return;       // non-target placeholder (e.g. anim test box)
-  target.hp -= proj.damage;
-  hero.combatStats.hitsLanded.projectile += 1;
-  hero.combatStats.damageDealt.byMethod.projectile += proj.damage;
+  // Central damage routing: defense + telemetry in one place (Task 3.2).
+  const dealt = damage(hero, target, proj.damage, 'projectile');
+  if (dealt > 0) target.hitFlash = 0.1; // brief white flash on impact
   proj.alive = false;                   // thorn is consumed on impact
-  if (target.hp <= 0) {                 // target destroyed — drop it from play
-    target.alive = false;
+  if (!target.alive) {                  // target destroyed — drop it from play
     world.remove(target);
   }
 });
@@ -209,6 +223,17 @@ export function update(dt) {
 
   // 1b. thorn shooting (Task 3.1): G key fires 8-way projectiles from the pool.
   tryFire(hero, input, dt);
+
+  // 1c. melee swing (Task 3.2): J starts a swing; during its single active
+  //     frame the hero's hitbox is checked against enemies and routed through
+  //     central damage(). The cooldown lives on the hero (updateMelee).
+  if (input.melee) hero.tryMelee();
+  applyMeleeDamage(hero, dt);
+
+  // 1d. decay hit-flash timers on enemies (white flash when struck).
+  for (const e of enemies) {
+    if (e.hitFlash > 0) e.hitFlash -= dt;
+  }
 
   // 2b. advance animations for any entity that has one attached.
   // (Hero.update already ticks its own anim; tick the decorative anim-test box.)
@@ -291,6 +316,45 @@ function tryFire(h, input, dt) {
   // Cooldown: base interval = 1 / shots-per-second; ×0.5 during rapid powerup.
   const base = 1 / h.stats.projectile_freq;
   h.fireCooldown = h.rapidTimer > 0 ? base * 0.5 : base;
+}
+
+// --- Melee attack (Task 3.2) -------------------------------------------------
+// J key starts a swing (hero.tryMelee). During the single ACTIVE frame of the
+// swing, the hero's meleeHitboxWorld is checked against every live enemy; on
+// overlap we route through central damage(). Each enemy can only be hit once
+// per swing (tracked in _meleeHitSet), so a multi-enemy overlap still deals
+// exactly one hit each. The cooldown prevents spamming.
+
+/**
+ * Check the hero's active melee hitbox against all enemies this step.
+ * Only produces damage when the swing is on its active frame.
+ * @param {Hero} h the swinging hero
+ * @param {number} dt seconds (unused here but kept for symmetry)
+ */
+function applyMeleeDamage(h, _dt) {
+  const hb = h.meleeHitboxWorld;
+  if (!hb) return; // not on the active frame — no damage window
+
+  // Reset the per-swing hit set at the start of the active frame.
+  if (!h._meleeHitSet || h.meleeFrame < h.MELEE_ACTIVE_FRAME + 0.5) {
+    h._meleeHitSet = new Set();
+  }
+
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    if (h._meleeHitSet.has(e)) continue; // already struck this swing
+    const eb = e.worldBox();
+    // AABB overlap test
+    if (hb.x < eb.x + eb.w && hb.x + hb.w > eb.x &&
+        hb.y < eb.y + eb.h && hb.y + hb.h > eb.y) {
+      const dealt = damage(h, e, h.stats.attack, 'melee');
+      if (dealt > 0) {
+        e.hitFlash = 0.1; // brief white flash
+        h._meleeHitSet.add(e);
+        if (!e.alive) world.remove(e); // destroyed — drop from play
+      }
+    }
+  }
 }
 
 /** Cull thorns that have flown past the level bounds (lifetime cull is in update). */

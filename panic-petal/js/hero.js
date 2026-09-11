@@ -55,6 +55,21 @@ export class Hero extends Entity {
     this.crouching = false;
     this.sliding = false;
 
+    // --- Melee swing (design §4) --------------------------------------------
+    // A swing is a short, non-looping animation with exactly ONE active frame —
+    // the "peak" of the arc. Damage is only dealt while that frame is showing
+    // (see meleeHitboxWorld). The cooldown spans the whole swing so you can't
+    // spam: tryMelee() is ignored until the current swing has fully finished.
+    this.meleeCooldown = 0;          // seconds until the next swing may start
+    this.meleeActive = false;        // true while a swing is in progress
+    this.meleeFrame = 0;             // float frame position within the swing
+    this.MELEE_TOTAL_FRAMES = 5;     // windup(0-2) + active(3) + recovery(4)
+    this.MELEE_ACTIVE_FRAME = 3;     // 0-indexed peak frame (the hitbox window)
+    this.MELEE_FRAME_DURATION = 0.08;// seconds per frame → 0.4s total swing
+    // Hitbox relative to hero center; ox is offset in the facing direction and
+    // flipped when facing left (see meleeHitboxWorld).
+    this.meleeHitbox = { ox: 20, oy: -10, bw: 40, bh: 40 };
+
     // Offset collision boxes (relative to origin). Standing = full w×h.
     // Crouch keeps feet planted: top drops by h*0.4, height becomes h*0.6.
     this.standBox = { ox: 0, oy: 0, bw: this.w, bh: this.h };
@@ -147,8 +162,68 @@ export class Hero extends Entity {
     if (this.invincibleTimer > 0) this.invincibleTimer -= dt;
     if (this.rapidTimer > 0) this.rapidTimer -= dt;
 
+    // --- Melee swing tick ---------------------------------------------------
+    // Advance the swing frame clock and drive the attack animation so its
+    // displayed frame stays in lockstep with the damage window.
+    this.updateMelee(dt);
+
     // --- Anim tick ----------------------------------------------------------
     if (this.anim) this.anim.tick(dt);
+  }
+
+  /**
+   * Start a melee swing if one is not already in progress. Edge-triggered:
+   * call once per J press (the update system does this). While a swing is
+   * active — or during the cooldown tail — further calls are ignored, which
+   * is what prevents spamming.
+   */
+  tryMelee() {
+    if (this.meleeCooldown > 0 || this.meleeActive) return;
+    this.meleeFrame = 0;
+    this.meleeActive = true;
+    this.meleeCooldown = this.MELEE_TOTAL_FRAMES * this.MELEE_FRAME_DURATION;
+    // Jump the attack anim to frame 0 so it plays from the windup.
+    if (this.anims.attack) this.anims.attack.reset();
+  }
+
+  /**
+   * Advance the swing's internal frame clock by dt. When the last frame has
+   * elapsed the swing ends (active flag cleared, frame reset). The cooldown
+   * itself is decremented by the caller alongside other timers.
+   * @param {number} dt seconds
+   */
+  updateMelee(dt) {
+    if (this.meleeCooldown > 0) this.meleeCooldown -= dt;
+    if (!this.meleeActive) return;
+    this.meleeFrame += dt / this.MELEE_FRAME_DURATION;
+    if (this.meleeFrame >= this.MELEE_TOTAL_FRAMES) {
+      this.meleeActive = false;
+      this.meleeFrame = 0;
+    } else if (this.anims.attack) {
+      // Keep the visible attack frame aligned with the logical frame index.
+      this.anims.attack.pickFrame(Math.floor(this.meleeFrame));
+    }
+  }
+
+  /**
+   * World-space AABB of the melee hitbox, or null when no damage should be
+   * dealt this frame. Only the single ACTIVE frame produces a box — windup
+   * (frames 0-2) and recovery (frame 4) return null, so damage lands exactly
+   * on the peak of the arc.
+   * @returns {{x:number,y:number,w:number,h:number}|null}
+   */
+  get meleeHitboxWorld() {
+    if (!this.meleeActive) return null;
+    if (Math.floor(this.meleeFrame) !== this.MELEE_ACTIVE_FRAME) return null;
+    const cx = this.x + this.w / 2;
+    const cy = this.y + this.h / 2;
+    const dir = this.facing;
+    return {
+      x: cx + dir * this.meleeHitbox.ox - (dir < 0 ? this.meleeHitbox.bw : 0),
+      y: cy + this.meleeHitbox.oy,
+      w: this.meleeHitbox.bw,
+      h: this.meleeHitbox.bh,
+    };
   }
 
   /**
