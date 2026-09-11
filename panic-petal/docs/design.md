@@ -6,6 +6,60 @@
 
 ---
 
+## 0. Architecture
+
+### Class hierarchy
+```
+Entity (base — sprite foundation struct, §3)
+├── Hero        (player-controlled; wraps a hero def, §5)
+├── Enemy       (AI-driven, §6–7)
+│     └── Boss  (elephant, camera-lock, phases, §9)
+├── Projectile  (§10)
+├── Powerup     (§10)
+├── Object      (barrel / coinBarrel / checkpoint, §10)
+└── Coin        (physics + bounce, §10/§14)
+```
+`Entity` owns: transform (x,y,w,h,facing,mirrorX/mirrorY,rotation,scale), velocity (vx,vy,gravity), `anim`, `layer` (collision mask), `alive`. Subclasses add behavior.
+
+### Collision box model
+- Box is **offset + size relative to entity origin**, not world coords: `{ ox, oy, bw, bh }`. World AABB = `(x+ox, y+oy, bw, bh)`.
+- This lets crouch/shrink swap in a smaller box without touching render logic.
+- Boxes are symmetric AABB — never mirrored by `mirrorX`.
+
+### Layer / mask system
+Each entity has a `layer` bitmask; collision rules are declarative masks, not if-chains:
+```
+HERO, ENEMY, BOSS, PROJ_FOE, PROJ_ALLY, SOLID, PICKUP, COIN, CHECKPOINT, HAZARD
+```
+A central `CollisionWorld` holds entities grouped by layer. Per-frame it tests only pairs whose masks intersect (e.g. `PROJ_ALLY × ENEMY`, `HERO × SOLID`, `HERO × PICKUP`). Adding a new interaction = one mask line, no spaghetti.
+
+### Collision API
+```js
+aabbOverlap(a, b) -> bool
+resolve(entity, solids)      // positional correction for SOLID (no pass-through)
+damage(source, target, amt)  // routes through defense, stats, effects
+CollisionWorld.update()      // broadphase (spatial hash) -> narrowphase -> callbacks
+```
+
+### Fixed update-loop order (per frame)
+```
+1. input          // read keys, set intents
+2. integrate      // apply gravity, vx/vy -> x/y (all entities)
+3. move AI        // enemies/boss decide actions
+4. collide        // CollisionWorld.update(): resolve solids, fire hit callbacks
+5. resolve hits   // damage(), deaths, pickups, checkpoints, coin bounce
+6. timers/effects // cooldowns, powerup durations, particles, anim advance
+7. camera         // follow hero / boss lock
+8. render         // draw world, then debug overlay if enabled
+```
+Fixed timestep (accumulator) so physics is deterministic regardless of display refresh.
+
+### Units & constants
+- Pixels + seconds. Physics runs at fixed 60 Hz steps.
+- Global consts (tunable): `GRAVITY`, `MAX_FALL_SPEED`, per-hero `JUMP_IMPULSE`, ground friction/deceleration.
+
+---
+
 ## 1. State Machine
 
 ```
@@ -45,6 +99,8 @@ Base struct everything inherits from (hero, enemy, object, projectile, coin, pow
   facing,          // -1 | 1 (horizontal); also stores aim dir for 8-way
   mirrorX,         // bool — flip horizontally (facing left/right)
   mirrorY,         // bool — flip vertically (rare; e.g. flyers diving)
+  rotation,        // radians (render transform)
+  scale,           // default 1 (render transform)
   weight,          // affects knockback / how it pushes others
   anim,            // AnimationController (see §11)
   alive,           // bool
@@ -266,15 +322,12 @@ Small clean controller per sprite:
 anim = {
   frames[],        // image refs
   frameSpeed,      // ms per frame
-  rotation,        // radians
-  scale,           // default 1
-  mirrorX,         // bool — horizontal flip (driven by facing)
-  mirrorY,         // bool — vertical flip
-  autoRotate,      // bool
   loop,            // bool (jump = false)
   pickFrame(n)     // specific frame override
 }
 ```
+
+Transform state (`rotation`, `scale`, `mirrorX`, `mirrorY`) lives on the **sprite base** (§3) — the sprite is the single source of truth for its full transform. The anim controller only handles *which frame and how fast* (frames, frameSpeed, loop, pickFrame). This keeps the collision/render pipeline reading one object for "where + how it looks."
 
 **Facing/mirror rule:** `mirrorX` is normally derived from `facing` (`facing === -1 → mirrorX = true`) so sprites auto-flip when the hero/enemy turns. `mirrorY` stays manual for special cases (e.g. a flyer banking downward). Mirroring applies at render time via canvas scale(-1,1), independent of the collision box (box is never mirrored — it's symmetric AABB).
 
@@ -377,3 +430,41 @@ Toggle (F3 or similar) draws semi-transparent boxes:
 | Lives start | 3 |
 
 These are placeholders — adjust freely.
+
+---
+
+## 19. Debug & Test Harness
+
+Toggle with `F1` (zero cost in normal play — everything behind `if (debug.enabled)`). A sandbox for tuning feel fast without playing the real game.
+
+### Free-spawn
+- Spawn at hero/cursor: every enemy type, boss, each powerup, each barrel, coins.
+- Spawn in a chosen AI state (idle/chase/attack) to watch a bat's flight or a clown's whip immediately.
+- **God mode** toggle: hero invincible + infinite ammo → test movement/shooting freely.
+
+### Hero test rig
+- Instant hero swap (Scarlet/Balthazhar) to A/B jump height, speed, melee range.
+- Slow-mo (0.25x / 0.5x) and freeze-frame (pause physics, keep rendering) to inspect boxes mid-jump.
+
+### Enemy AI inspection
+- Draw aggro radius circle, facing arrow, and current AI-state label above each enemy.
+- Force any enemy into any state on demand ("make this jester attack now") to validate sequences in isolation.
+- Teleport enemies next to hero to test contact/melee timing.
+
+### Animation scrubber (frame validation, not the viewer)
+- Select an entity → show anim name + frame index.
+- Step frames forward/back manually; overlay its collision box on the sprite per frame (verify crouch shrink, jump arc, melee active-frame).
+- Loop a single anim at adjustable frameSpeed to eyeball timing.
+
+### Collision debugging (extends §16)
+- Colored boxes: orange platforms, green hero, red enemy, blue objects/powerups, pink projectiles/explosions.
+- Highlight **active hitboxes only** (melee window, projectile AoE, explosion radius) at the moment damage applies.
+- Event log ring buffer: last N collisions printed (`hero.melee hit jester, dmg 12`).
+
+### Live stats HUD
+- On-screen display of the §4.1 telemetry during a run (hitsTaken-by-source, damageDealt-byEnemy, etc.).
+
+### Implementation notes
+- `Debug` module holds: spawn table, god-mode flags, slow-mo factor, selected-entity ref, event-log ring buffer.
+- v1 input = keybinds + console (no full UI).
+- Most of this is cheap boilerplate; the anim scrubber is the one piece with real wiring into the animation engine.
