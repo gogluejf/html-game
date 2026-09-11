@@ -20,7 +20,7 @@ import { VineHound } from './vine_hound.js';
 import { Violetta } from './violetta.js';
 import { JackOLantern } from './jackolantern.js';
 import { makeBoris, makeBorisBaby } from './boris_loon.js';
-import { makeBarrel, makeCoinBarrel, makeCheckpoint } from './object.js';
+import { makeBarrel, makeWoodBarrel, makeCoinBarrel, makeCheckpoint } from './object.js';
 import { Powerup } from './powerup.js';
 
 // ---------------------------------------------------------------------------
@@ -62,7 +62,8 @@ export const LEVELS = [
         boris_loon: 3,
         boris_loon_baby: 6,
       },
-      barrels: 8,
+      explosiveBarrels: 8,
+      woodBarrels: 4,
       coinBarrels: 4,
       powerups: {
         ammo: 3,
@@ -209,10 +210,20 @@ export function generateLevel(levelDef) {
   // --- Barrels (destructible solids) -----------------------------------------
   const barrels = [];
   const barrelPositions = randomPositions(
-    levelDef.spawn.barrels ?? 0, usedPositions, spawnEnd,
+    levelDef.spawn.explosiveBarrels ?? 0, usedPositions, spawnEnd,
   );
   for (const x of barrelPositions) {
     barrels.push(makeBarrel(x, GROUND_Y - BARREL_H));
+    usedPositions.push(x);
+  }
+
+  // --- Wood barrels (plain, non-explosive) -----------------------------------
+  const woodBarrels = [];
+  const woodBarrelPositions = randomPositions(
+    levelDef.spawn.woodBarrels ?? 0, usedPositions, spawnEnd,
+  );
+  for (const x of woodBarrelPositions) {
+    woodBarrels.push(makeWoodBarrel(x, GROUND_Y - BARREL_H));
     usedPositions.push(x);
   }
 
@@ -240,5 +251,5 @@ export function generateLevel(levelDef) {
     }
   }
 
-  return { platforms, enemies, barrels, coinBarrels, powerups, checkpoints };
+  return { platforms, enemies, barrels, woodBarrels, coinBarrels, powerups, checkpoints };
 }

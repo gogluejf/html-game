@@ -51,6 +51,7 @@ export const Debug = {
   log: [],
   LOG_MAX: 50,
   showLog: false, // L toggles the on-screen tail of the log
+  showStats: false, // T toggles the telemetry panel (default OFF)
 
   // --- Toggle master switch -------------------------------------------------
   toggle() { this.enabled = !this.enabled; return this.enabled; },
@@ -136,6 +137,7 @@ export const Debug = {
     this.timeScale = 1.0;
     this.selected = null;
     this.showLog = false;
+    this.showStats = false;
     this.log = [];
   },
 };

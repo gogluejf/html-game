@@ -22,9 +22,18 @@ export const BARREL_DAMAGE = 25;        // AoE damage dealt by a barrel explosio
 const BOMB_ONE_SHOT_DMG = 999;          // a bomb always destroys a barrel outright
 
 // --- Definitions -------------------------------------------------------------
+/** Plain destructible solid — blocks movement, breaks into particles. No AoE, no coins. */
+export const WOOD_BARREL_DEF = {
+  id: 'woodBarrel',
+  w: 32, h: 48,
+  hp: 40,
+  explosive: false,
+  explodeRadius: 0,
+};
+
 /** Destructible solid that explodes on destruction (hurts everyone nearby). */
 export const BARREL_DEF = {
-  id: 'barrel',
+  id: 'explosiveBarrel',
   w: 32, h: 48,
   hp: 60,
   explosive: true,
@@ -66,6 +75,7 @@ export class GameObj extends Entity {
     this.maxHp = def.hp ?? 60;
     this.explosive = def.explosive ?? true;
     this.explodeRadius = def.explodeRadius ?? 120;
+    this.radius = this.explodeRadius; // base Entity radius — debug draws this
     this.hitFlash = 0;             // white-flash timer when struck (render reads it)
     this.destroyed = false;        // latched once HP hits 0 (prevents double-explode)
   }
@@ -152,6 +162,11 @@ export class GameObj extends Entity {
 /** Create a damaging barrel at (x, y). */
 export function makeBarrel(x, y) {
   return new GameObj(BARREL_DEF, x, y);
+}
+
+/** Create a plain wooden barrel (no explosion, no coins — just blocks + breaks). */
+export function makeWoodBarrel(x, y) {
+  return new GameObj(WOOD_BARREL_DEF, x, y);
 }
 
 /** Create a coin-bursting barrel at (x, y). */

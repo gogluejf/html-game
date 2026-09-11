@@ -164,7 +164,8 @@ export function render(ctx) {
     // Barrels (the orange SOLID boxes)
     for (const b of getBarrels()) {
       if (!b.alive) continue;
-      drawLabel(ctx, b.x + b.w / 2, b.y - 10, b.type, b.hp / b.maxHp, '#ff9f43');
+      const label = b.type === 'explosiveBarrel' ? 'explosiveBarrel\u2728' : b.type;
+      drawLabel(ctx, b.x + b.w / 2, b.y - 10, label, b.hp / b.maxHp, '#ff9f43');
     }
     // Hero: name + anim state + energy bar
     {
@@ -246,7 +247,7 @@ export function render(ctx) {
 
   // --- Debug & Test Harness HUD (F1): live §4.1 telemetry + event log --------
   if (Debug.enabled) {
-    drawStatsHUD(ctx);
+    if (Debug.showStats) drawStatsHUD(ctx);
     if (Debug.showLog) drawEventLog(ctx);
     drawHarnessHint(ctx);
   }
@@ -323,8 +324,12 @@ function drawDebugOverlay(ctx) {
 
   const all = [...getSolids().map(s => solidEntityProxy(s)),
                ...getPickups(), ...getEnemies().filter(e => e.alive !== false),
+               ...getRealEnemies().filter(e => e.alive),
                ...getProjectiles(), getHero(),
                ...getBarrels().filter(b => b.alive)];
+  // Boss gets a radius circle too.
+  const boss = getBoss();
+  if (boss && boss.alive) all.push(boss);
 
   for (const ent of all) {
     const layer = ent.layer ?? 0;
@@ -353,17 +358,21 @@ function drawDebugOverlay(ctx) {
     ctx.restore();
   }
 
-  // Task 4.1 — magenta rings showing each live explosive barrel's AoE radius
-  // (design §16: "Magenta ring — explosion AoE radius").
-  for (const b of getBarrels()) {
-    if (!b.alive || !b.explosive || b.explodeRadius <= 0) continue;
+  // Generic effect-radius circles (F3): any entity with radius > 0 gets a
+  // dashed circle. Color: pink = explosion AoE, red = aggro/detection.
+  for (const ent of all) {
+    const r = ent.radius ?? 0;
+    if (r <= 0) continue;
+    const b = ent.worldBox ? ent.worldBox() : ent;
     const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    const isExplosion = ent.explosive === true;
     ctx.save();
     ctx.globalAlpha = 0.35;
-    ctx.strokeStyle = '#ff6ec7';
+    ctx.strokeStyle = isExplosion ? '#ff6ec7' : '#e74c3c';
+    ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    ctx.arc(cx, cy, b.explodeRadius, 0, Math.PI * 2);
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }
@@ -461,23 +470,9 @@ function drawBossDebug(ctx, b) {
  * @param {CanvasRenderingContext2D} ctx
  * @param {Enemy} e any real enemy entity
  */
-function drawEnemyDebug(ctx, e) {
-  if (!e || !e.alive) return;
-
-  const cx = e.x + e.w / 2;
-  const cy = e.y + e.h / 2;
-
-  // Aggro radius circle (visible dashed ring).
-  ctx.save();
-  ctx.globalAlpha = 0.35;
-  ctx.strokeStyle = '#e74c3c';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 4]);
-  ctx.beginPath();
-  ctx.arc(cx, cy, e.aggroRadius, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
-}
+// No-op: aggro circles are now drawn by the generic radius loop in drawDebugOverlay.
+// Kept as a call target so existing for-loops don't break.
+function drawEnemyDebug(_ctx, _e) {}
 
 // --- Debug & Test Harness (F1, design §19) — world-space overlays ------------
 
@@ -560,7 +555,7 @@ function drawSelectionOverlay(ctx, sel) {
  */
 function drawStatsHUD(ctx) {
   const h = getHero();
-  const s = h.stats ?? {};
+  const s = h.runStats ?? h.stats ?? {};
   const ek = s.enemiesKilled ?? {};
   const dd = s.damageDealt ?? {};
   const bm = dd.byMethod ?? {};
@@ -578,7 +573,7 @@ function drawStatsHUD(ctx) {
   lines.push(`dmg     melee:${bm.melee ?? 0} proj:${bm.projectile ?? 0} special:${bm.special ?? 0}`);
   const dmgByEnemy = Object.entries(be).map(([k, v]) => `${k}:${Math.round(v)}`).join(' ');
   lines.push(`byType  ${dmgByEnemy || '—'}`);
-  lines.push(`barrels barrel:${bc.barrel ?? 0} coin:${bc.coinBarrel ?? 0}`);
+  lines.push(`barrels wood:${bc.woodBarrel ?? 0} expl:${bc.explosiveBarrel ?? 0} coin:${bc.coinBarrel ?? 0}`);
   lines.push(`hitsTkn contact:${ht.enemyContact ?? 0} proj:${ht.enemyProjectile ?? 0} expl:${ht.explosion ?? 0} tot:${ht.total ?? 0}`);
   lines.push(`dist    ${Math.round(s.distanceTraveled ?? 0)}px  shots:${s.projectilesShot ?? 0} swings:${s.meleeSwings ?? 0}`);
 
@@ -593,7 +588,7 @@ function drawStatsHUD(ctx) {
   const pad = 6;
   const lh = 14;
   const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + pad * 2;
-  const x = 8, y = 8;
+  const x = 8, y = 60;
   ctx.fillStyle = 'rgba(0,0,0,0.65)';
   ctx.fillRect(x, y, w, lines.length * lh + pad * 2);
   lines.forEach((l, i) => {
@@ -641,7 +636,7 @@ function drawEventLog(ctx) {
  * @param {CanvasRenderingContext2D} ctx
  */
 function drawHarnessHint(ctx) {
-  const txt = 'F1 harness | 1-9 spawn | G god | T slowmo | Y hero | L log | RMB select | LMB force-state | arrows scrub | X deselect';
+  const txt = 'F1 harness | 1-9 spawn | G god | S speed | T telemetry | Y hero | L log | RMB select | LMB force-state | arrows scrub | X deselect';
   ctx.save();
   ctx.font = '11px monospace';
   ctx.textAlign = 'center';

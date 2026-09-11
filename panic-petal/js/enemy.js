@@ -54,6 +54,7 @@ export class Enemy extends Entity {
     // idle | walk | chase | attack | dead. Subclasses drive transitions.
     this.aiState = 'idle';
     this.aggroRadius = def.aggroRadius ?? 300;
+    this.radius = this.aggroRadius; // base Entity radius — debug draws this
 
     // White-flash timer (seconds) set by takeDamage(); render reads this.
     this.hitFlash = 0;

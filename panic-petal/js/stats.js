@@ -37,7 +37,7 @@ export function createStats() {
     specialsUsed: 0,
     meleeSwings: 0,
     hitsLanded: { melee: 0, projectile: 0, special: 0 },
-    barrelsDestroyed: { barrel: 0, coinBarrel: 0 },
+    barrelsDestroyed: { woodBarrel: 0, explosiveBarrel: 0, coinBarrel: 0 },
     hitsTaken: { enemyContact: 0, enemyProjectile: 0, explosion: 0, total: 0 },
     damageDealt: {
       byMethod: { melee: 0, projectile: 0, special: 0 },
@@ -126,7 +126,7 @@ export function calculateScore(stats, _hero) {
   score += Object.values(stats.enemiesKilled).reduce((a, b) => a + b, 0) * 100;
   if (stats.bossKilled) score += 1000;
   score += stats.coinsCollected.total * 10;
-  score += stats.barrelsDestroyed.barrel * 50;
+  score += (stats.barrelsDestroyed.explosiveBarrel ?? 0) * 50 + (stats.barrelsDestroyed.woodBarrel ?? 0) * 25;
   score += stats.barrelsDestroyed.coinBarrel * 75;
   score += stats.checkpointsHit * 25;
   return score;

@@ -63,6 +63,16 @@ export class Entity {
     this.maxTtl = opts.maxTtl ?? 0;
     this.ttl = this.maxTtl;
     this.ttlSpeed = opts.ttlSpeed ?? 1;
+
+    // --- Effect radius --------------------------------------------------------
+    // Generic "zone of effect" radius in logical px. Used by:
+    //   - enemies: aggro/detection radius
+    //   - barrels: explosion AoE radius
+    //   - projectiles/bombs: blast radius
+    //   - powerups: pickup radius (future)
+    // Debug overlay draws a dashed circle for any entity with radius > 0.
+    // Subclasses may alias this (e.g. Enemy.aggroRadius → this.radius).
+    this.radius = opts.radius ?? 0;
   }
 
   /**

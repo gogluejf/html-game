@@ -161,6 +161,7 @@ const pickups = [];
 // hero has to shoot around/through them. Coin barrels sit nearby as a coin source
 // (no damaging explosion). Task 5.3 — positions now come from generateLevel().
 const barrels = generated.barrels;
+const woodBarrels = generated.woodBarrels ?? [];
 const coinBarrels = generated.coinBarrels;
 
 // Task 4.3 — Powerups (design §10). Scattered along the level by the rogue
@@ -484,9 +485,13 @@ function handleDebugKeys(e) {
       Debug.god = !Debug.god;
       Debug.logEvent(`god mode ${Debug.god ? 'ON' : 'OFF'}`);
       break;
-    case 'KeyT': // Slow-mo / freeze cycle
+    case 'KeyS': // Slow-mo / freeze cycle
       Debug.timeScale = Debug.cycleTimeScale();
       Debug.logEvent(`timeScale → ${Debug.timeScale}x`);
+      break;
+    case 'KeyT': // Toggle telemetry panel
+      Debug.showStats = !Debug.showStats;
+      Debug.logEvent(`telemetry ${Debug.showStats ? 'ON' : 'OFF'}`);
       break;
     case 'KeyY': // Hero swap Scarlet <-> Balthazhar
       swapHero();
@@ -577,7 +582,7 @@ export function selectEntityAt(lx, ly) {
   // Prefer enemies + boss (the interesting ones), then powerups/barrels.
   const candidates = [...realEnemies, ...enemies, boss].filter(e => e && e.alive !== false);
   for (const p of powerups) if (p.alive && !p.collected) candidates.push(p);
-  for (const b of [...barrels, ...coinBarrels]) if (b.alive) candidates.push(b);
+  for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) if (b.alive) candidates.push(b);
   for (const c of candidates) {
     const b = c.worldBox();
     if (lx >= b.x && lx <= b.x + b.w && ly >= b.y && ly <= b.y + b.h) {
@@ -635,7 +640,7 @@ world.add(boss);
 // hit by friendly thorns (PROJ_ALLY×SOLID → 'hit'). Added now; destroyed ones
 // are removed from the world when their HP hits 0. Both explosive barrels AND
 // coin barrels participate (coin barrels just skip the damaging AoE on death).
-for (const b of [...barrels, ...coinBarrels]) world.add(b);
+for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) world.add(b);
 // Task 4.3 — powerups (PICKUP layer; HERO×PICKUP → 'pickup') and checkpoints
 // (CHECKPOINT layer; HERO×CHECKPOINT → 'checkpoint'). Both are non-solid.
 for (const p of powerups) world.add(p);
@@ -986,7 +991,7 @@ export function getBoss() { return boss; }
 export function getParticles() { return particles; }
 export function getCoins() { return coins; }
 // Task 4.1 + 5.3 — barrels (explosive + coin) + explosion screen shake for render.
-export function getBarrels() { return [...barrels, ...coinBarrels]; }
+export function getBarrels() { return [...barrels, ...woodBarrels, ...coinBarrels]; }
 export function getCoinBarrels() { return coinBarrels; }
 // Task 4.3 — powerups, checkpoints, floating text for render + F3 debug.
 export function getPowerups() { return powerups; }
@@ -1049,7 +1054,7 @@ export function update(dt) {
   }
 
   // 1d2. Task 4.1 — tick live barrels (decays their hit-flash timer).
-  for (const b of [...barrels, ...coinBarrels]) {
+  for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) {
     if (b.alive) b.update(dt);
   }
 
@@ -1241,7 +1246,7 @@ function applyMeleeDamage(h, _dt) {
 
   // Task 4.1 — melee chips barrel HP (a swing breaks a barrel over several hits;
   // it does NOT break on touch). Each barrel is struck at most once per swing.
-  for (const b of [...barrels, ...coinBarrels]) {
+  for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) {
     if (!b.alive || b.destroyed) continue;
     if (h._meleeHitSet.has(b)) continue;
     const bb = b.worldBox();
@@ -1471,20 +1476,22 @@ function handleBarrelDestroyed(barrel) {
     Effects.bigExplosion(); // Task 7.1 — brief white screen flash (design §12)
     triggerShake(8);
     // SFX: explosion
-  } else {
+  } else if (barrel.type === 'coinBarrel') {
     // Coin barrel: no damaging explosion, just a mixed-type coin burst
-    // (design §10/§14). Mostly bronze, some silver, rare gold — each with a
-    // random upward+sideways velocity for a fountain effect.
-    coins.burstCoins(cx, cy, 5); // 4–6 mixed coins (clamped inside burstCoins)
-    // Small pop burst (reuse sparkle emitter).
+    // (design §10/§14). Mostly bronze, some silver, rare gold.
+    coins.burstCoins(cx, cy, 5);
     particles.spawnBurst(cx, cy, 6);
     // SFX: coin
+  } else {
+    // Wood barrel (plain): just breaks into wood-chip particles. No damage, no coins.
+    particles.spawnBurst(cx, cy, 8);
+    // SFX: break
   }
 
   // Remove the dead barrel from the collision world so it stops blocking.
   world.remove(barrel);
   // Telemetry: count the destroyed barrel by type (design §4.1 barrelsDestroyed).
-  const bkey = barrel.explosive ? 'barrel' : 'coinBarrel';
+  const bkey = barrel.type; // 'woodBarrel' | 'barrel' | 'coinBarrel'
   hero.runStats.barrelsDestroyed[bkey] = (hero.runStats.barrelsDestroyed[bkey] ?? 0) + 1;
   if (Debug.enabled) Debug.logEvent(`barrel destroyed (${bkey})`);
 }
