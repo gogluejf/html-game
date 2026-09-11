@@ -373,8 +373,9 @@ export const Select = {
   focus: -1, // -1 = none, 0 = scarlet, 1 = balthazar
   _heldLeft: false,   // ArrowLeft physically down (chip stays gold while held)
   _heldRight: false,  // ArrowRight physically down
+  _heldAt: 0,         // timestamp of last arrow keydown/repeat (auto-expiry guard)
 
-  reset() { this.focus = -1; this._heldLeft = false; this._heldRight = false; },
+  reset() { this.focus = -1; this._heldLeft = false; this._heldRight = false; this._heldAt = 0; },
 
   draw(ctx) {
     // Background — deep midnight so the cream art cards pop.
@@ -533,6 +534,13 @@ export const Select = {
 
     const now = performance.now();
     const enterFlash = this._flashT === 'enter' && (now - this._flashAt) < 180;
+    // Auto-expiry guard: if a keyup is ever swallowed (Firefox focus quirks,
+    // browser arrow-key handling), the held state self-heals after 250ms —
+    // well below the human perception threshold and above the OS auto-repeat
+    // interval (~30-50/s), so genuinely-held keys keep re-stamping _heldAt.
+    const heldFresh = (now - this._heldAt) < 250;
+    const heldL = this._heldLeft && heldFresh;
+    const heldR = this._heldRight && heldFresh;
 
     const chip = (label, x, y, active) => {
       const w = label.length > 1 ? 34 : 26;
@@ -566,9 +574,9 @@ export const Select = {
     const total = 26 + gap + 34 + gap + wSel + dotGap + 34 + gap + 34 + gap + wConf;
     let px = cx0 - total / 2;
 
-    chip('←', px + 13, barY, this._heldLeft); px += 26 + gap;
-    chip('→', px + 17, barY, this._heldRight); px += 34 + gap;
-    word('SELECT', px, barY, this._heldLeft || this._heldRight ? '#d8cdb4' : '#6e6552'); px += wSel + dotGap;
+    chip('←', px + 13, barY, heldL); px += 26 + gap;
+    chip('→', px + 17, barY, heldR); px += 34 + gap;
+    word('SELECT', px, barY, heldL || heldR ? '#d8cdb4' : '#6e6552'); px += wSel + dotGap;
     word('·', px, barY, '#5a5a72', 16); px += 12 + dotGap - 12;
     chip('⏎', px + 17, barY, enterFlash); px += 34 + gap;
     word('CONFIRM', px, barY, enterFlash ? CREAM : '#6e6552');
@@ -580,14 +588,18 @@ export const Select = {
     switch (code) {
       case 'ArrowLeft':
       case 'KeyA':
-        // Arrow chip stays gold while physically held (see draw).
+        // Arrow chip stays gold while physically held (see draw). Stamp the
+        // expiry timer on every event — auto-repeat keeps it alive while the
+        // key is genuinely down.
         this._heldLeft = true;
+        this._heldAt = performance.now();
         // -1 (none) → scarlet; otherwise move left (balthazar → scarlet).
         this.focus = this.focus === -1 ? 0 : Math.max(0, this.focus - 1);
         break;
       case 'ArrowRight':
       case 'KeyD':
         this._heldRight = true;
+        this._heldAt = performance.now();
         // -1 (none) → scarlet; otherwise move right (scarlet → balthazar).
         this.focus = this.focus === -1 ? 0 : Math.min(1, this.focus + 1);
         break;
