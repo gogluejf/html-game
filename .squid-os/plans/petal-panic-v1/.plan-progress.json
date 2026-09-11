@@ -1,0 +1,129 @@
+{
+  "plan_name": "petal-panic-v1",
+  "title": "Petal Panic v1 \u2014 Run-and-Gun Demo",
+  "tasks": {
+    "1.1": {
+      "number": "1.1",
+      "name": "Game loop + canvas scaffold (responsive)",
+      "status": "pending",
+      "summary": {
+        "done": "Scaffold verified and completed: index.html + js/main.js (fixed 60Hz accumulator loop, 960x540 logical space, dpr-aware fit-to-viewport 16:9 letterbox, single GAME_SCALE knob) plus placeholder systems/update.js and systems/render.js drawing a moving test box. Made GAME_SCALE runtime-tunable via setGameScale() (exported + window.setGameScale for console/debug), since ESM export let bindings are read-only. Verified headlessly with node: modules parse and load without errors, rAF loop runs stable over 30 frames, resize re-fits live preserving 16:9, backing store scales with devicePixelRatio, transform maps 960x540 -> backing store correctly, GAME_SCALE=2 uniformly upscales with no distortion.",
+        "decisions": "Kept existing scaffold structure (main.js owns loop+fit, systems/ holds update/render). Exposed setGameScale on window so it can be tuned from browser console or the future F1 debug harness. Canvas centered via CSS absolute translate(-50%,-50%) so letterbox bars are just page background.",
+        "lessons_learned": "ESM 'export let' bindings cannot be reassigned from outside the module \u2014 need an accessor function for any externally tunable knob. Headless DOM-stub smoke tests (node --input-type=module with stubbed document/window/requestAnimationFrame) give solid verification of loop + scaling math without a browser. .plan-progress.json did not exist; initialized it from .plan.json (all 23 tasks pending) before writing the summary.",
+        "tradeoffs": "GAME_SCALE is module-level mutable state behind an accessor rather than a plain exported const \u2014 the price of making the knob runtime-tunable while keeping ESM bindings immutable. Test box uses wall-clock time for motion (visual only); real entities will use accumulated sim time in later tasks.",
+        "confidence": "high",
+        "failures": "None"
+      }
+    },
+    "1.2": {
+      "number": "1.2",
+      "name": "Entity base + transform",
+      "status": "pending"
+    },
+    "1.3": {
+      "number": "1.3",
+      "name": "AABB collision + layer masks",
+      "status": "pending"
+    },
+    "1.4": {
+      "number": "1.4",
+      "name": "Camera + debug overlay",
+      "status": "pending"
+    },
+    "2.1": {
+      "number": "2.1",
+      "name": "Animation engine",
+      "status": "pending"
+    },
+    "2.2": {
+      "number": "2.2",
+      "name": "Hero class + movement",
+      "status": "pending"
+    },
+    "2.3": {
+      "number": "2.3",
+      "name": "State machine skeleton",
+      "status": "pending"
+    },
+    "3.1": {
+      "number": "3.1",
+      "name": "Projectiles + 8-way shooting",
+      "status": "pending"
+    },
+    "3.2": {
+      "number": "3.2",
+      "name": "Melee attack + damage routing",
+      "status": "pending"
+    },
+    "3.3": {
+      "number": "3.3",
+      "name": "Jester enemy + death pipeline",
+      "status": "pending"
+    },
+    "4.1": {
+      "number": "4.1",
+      "name": "Objects: barrels + explosions",
+      "status": "pending"
+    },
+    "4.2": {
+      "number": "4.2",
+      "name": "Coins with bounce + collection",
+      "status": "pending"
+    },
+    "4.3": {
+      "number": "4.3",
+      "name": "Powerups + checkpoint",
+      "status": "pending"
+    },
+    "5.1": {
+      "number": "5.1",
+      "name": "Remaining enemy AIs",
+      "status": "pending"
+    },
+    "5.2": {
+      "number": "5.2",
+      "name": "Energy / lives / gameover flow",
+      "status": "pending"
+    },
+    "5.3": {
+      "number": "5.3",
+      "name": "Level struct + random spawn",
+      "status": "pending"
+    },
+    "6.1": {
+      "number": "6.1",
+      "name": "Elephant boss + win",
+      "status": "pending"
+    },
+    "7.1": {
+      "number": "7.1",
+      "name": "Effects + particles",
+      "status": "pending"
+    },
+    "7.2": {
+      "number": "7.2",
+      "name": "Debug/test harness (F1)",
+      "status": "pending"
+    },
+    "7.3": {
+      "number": "7.3",
+      "name": "Stats export + tuning pass",
+      "status": "pending"
+    },
+    "8.1": {
+      "number": "8.1",
+      "name": "Home + Select screens",
+      "status": "pending"
+    },
+    "8.2": {
+      "number": "8.2",
+      "name": "Pause / Game Over / Win screens",
+      "status": "pending"
+    },
+    "8.3": {
+      "number": "8.3",
+      "name": "HUD",
+      "status": "pending"
+    }
+  }
+}
