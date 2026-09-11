@@ -166,14 +166,15 @@ export function render(ctx) {
       if (!b.alive) continue;
       drawLabel(ctx, b.x + b.w / 2, b.y - 10, b.type, b.hp / b.maxHp, '#ff9f43');
     }
-    // Hero energy
+    // Hero: name + anim state + energy bar
     {
       const h = getHero();
       if (h && !h.dying) {
-        drawLabel(ctx, h.x + h.w / 2, h.y - 10, 'HERO', h.energy / h.maxEnergy, '#2ecc71');
+        const animName = h.anims?.attack ? 'combat' : (h.vy < 0 ? 'jump' : h.vx !== 0 ? 'run' : 'idle');
+        drawLabel(ctx, h.x + h.w / 2, h.y - 10, `HERO:${animName}`, h.energy / h.maxEnergy, '#2ecc71');
       }
     }
-    // Enemy HP bar + name:state (single unified label, no duplication)
+    // Enemy: name + aiState + HP bar (single unified label above)
     for (const e of getRealEnemies()) {
       if (!e.alive) continue;
       const frac = e.aiState === 'dead'
@@ -464,7 +465,7 @@ function drawEnemyDebug(ctx, e) {
   const cx = e.x + e.w / 2;
   const cy = e.y + e.h / 2;
 
-  // Aggro radius circle (faint but visible).
+  // Aggro radius circle (visible dashed ring).
   ctx.save();
   ctx.globalAlpha = 0.35;
   ctx.strokeStyle = '#e74c3c';
@@ -473,14 +474,6 @@ function drawEnemyDebug(ctx, e) {
   ctx.beginPath();
   ctx.arc(cx, cy, e.aggroRadius, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.restore();
-
-  // Small AI-state text just below the entity (not above — drawLabel handles above).
-  ctx.save();
-  ctx.font = '9px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.fillText(e.aiState, cx, e.y + e.h + 10);
   ctx.restore();
 }
 
@@ -498,19 +491,7 @@ function drawAggroViz(ctx, e) {
   const cx = e.x + e.w / 2;
   const cy = e.y + e.h / 2;
 
-  // Aggro radius (bosses use their trigger radius as the "aggro" ring).
-  const r = e.isBoss ? 300 : (e.aggroRadius ?? 300);
-  ctx.save();
-  ctx.globalAlpha = 0.2;
-  ctx.strokeStyle = e.isBoss ? '#8e6bbf' : '#e74c3c';
-  ctx.setLineDash([5, 5]);
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
-
-  // Facing arrow: short line + arrowhead pointing along `facing`.
+  // Facing arrow only (name + aggro circle are F3's job via drawLabel/drawEnemyDebug).
   const dir = e.facing ?? 1;
   const len = 22;
   ctx.save();
@@ -522,22 +503,12 @@ function drawAggroViz(ctx, e) {
   ctx.moveTo(cx, cy);
   ctx.lineTo(cx + dir * len, cy);
   ctx.stroke();
-  // Arrowhead.
   ctx.beginPath();
   ctx.moveTo(cx + dir * len, cy);
   ctx.lineTo(cx + dir * (len - 6), cy - 4);
   ctx.lineTo(cx + dir * (len - 6), cy + 4);
   ctx.closePath();
   ctx.fill();
-  ctx.restore();
-
-  // State label (phase for boss, aiState otherwise).
-  const state = e.isBoss ? e.phase : e.aiState;
-  ctx.save();
-  ctx.font = 'bold 10px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillStyle = e.isBoss ? '#ffd700' : '#fff';
-  ctx.fillText(`${e.type ?? 'BOSS'}:${state}`.toUpperCase(), cx, e.y - 16);
   ctx.restore();
 }
 
