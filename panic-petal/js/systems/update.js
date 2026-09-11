@@ -12,6 +12,7 @@ import { Entity } from '../entity.js';
 import { LAYER } from '../consts.js';
 import { CollisionWorld, resolve } from '../collision.js';
 import { Camera } from '../camera.js';
+import { Anim, makeTestFrame } from '../anim.js';
 
 // --- Tunables for the test rig ---------------------------------------------
 const MOVE_SPEED = 240;          // px/s horizontal
@@ -58,6 +59,14 @@ const hero = new Entity({
   debugColor: '#2ecc71',   // green per design §16 (hero boxes)
 });
 
+// Task 2.1 — Animation engine integration test.
+// Generate 5 colored frames as offscreen canvases; cycle them on the hero.
+const heroFrames = ['#2ecc71', '#27ae60', '#1abc9c', '#16a085', '#3498db'];
+hero.anim = new Anim(
+  heroFrames.map(c => makeTestFrame(40, 48, c)),
+  { speed: 200, loop: true },
+);
+
 // --- Placeholder non-hero entities (debug-color exercise only) ---------------
 // These exist purely so every §16 overlay color is visible on screen. They are
 // static (gravity 0) and do NOT participate in collision resolution this task;
@@ -67,6 +76,13 @@ const enemies = [
   new Entity({ x: 1500, y: VIEW_H - 40 - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY,     debugColor: '#e74c3c' }),
   new Entity({ x: 2500, y: VIEW_H - 40 - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY,     debugColor: '#e74c3c' }),
 ];
+
+// Task 2.1 — Non-looping anim test on the first enemy.
+// 3 frames, plays once and stops (done=true). To replay, call anim.reset().
+enemies[0].anim = new Anim(
+  ['#e74c3c', '#f39c12', '#9b59b6'].map(c => makeTestFrame(36, 40, c)),
+  { speed: 400, loop: false },
+);
 const projectiles = [
   new Entity({ x: 1100, y: 320, w: 16, h: 10, gravity: 0, layer: LAYER.PROJ_ALLY, debugColor: '#ff6ec7' }),
   new Entity({ x: 1800, y: 300, w: 16, h: 10, gravity: 0, layer: LAYER.PROJ_FOE,  debugColor: '#ff6ec7' }),
@@ -127,6 +143,10 @@ export function update(dt) {
 
   // 2. integrate (gravity + velocity)
   hero.update(dt);
+
+  // 2b. advance animations for any entity that has one attached.
+  if (hero.anim) hero.anim.tick(dt);
+  for (const e of enemies) if (e.anim) e.anim.tick(dt);
 
   // 3. collide: positional correction against solids (no pass-through),
   //    then broadphase/narrowphase rule dispatch.
