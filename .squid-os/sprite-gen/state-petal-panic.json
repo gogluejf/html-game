@@ -285,6 +285,56 @@
             ],
             "frame_size": "240x397"
           }
+        },
+        {
+          "file": "panic-petal/assets/scarlet_vale_sheet_3.png",
+          "rows": 1,
+          "cols": 8,
+          "description": "Scarlet Vale hero sheet 3, crouch x 8 frames",
+          "entities": [
+            {
+              "row": 1,
+              "name": "scarlet_vale",
+              "anim": "crouch",
+              "frames": [
+                "scarlet_vale_crouch_f1.png",
+                "scarlet_vale_crouch_f2.png",
+                "scarlet_vale_crouch_f3.png",
+                "scarlet_vale_crouch_f4.png",
+                "scarlet_vale_crouch_f5.png",
+                "scarlet_vale_crouch_f6.png",
+                "scarlet_vale_crouch_f7.png",
+                "scarlet_vale_crouch_f8.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              245,
+              147,
+              163
+            ],
+            "bg_tol": 12,
+            "row_y": [
+              [
+                0,
+                395
+              ]
+            ],
+            "col_x": [
+              [
+                178,
+                417,
+                660,
+                895,
+                1129,
+                1365,
+                1609,
+                1858
+              ]
+            ],
+            "frame_size": "254x394"
+          }
         }
       ]
     },
@@ -1970,5 +2020,5 @@
       ]
     }
   },
-  "updated": "2026-09-11T00:31:45"
+  "updated": "2026-09-11T01:10:23"
 }
