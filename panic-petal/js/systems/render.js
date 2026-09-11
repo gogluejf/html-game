@@ -45,11 +45,11 @@ export function render(ctx) {
   // Task 4.1 — destructible barrels (drawn via Entity.draw; white flash on hit).
   for (const b of getBarrels()) {
     if (!b.alive) continue;
-    if (!Debug.collisionOnly) b.draw(ctx);
+    if (!(Debug.viewMode === 1)) b.draw(ctx);
   }
 
   // Placeholder pickups / enemies / projectiles (debug-colored bodies).
-  if (!Debug.collisionOnly) for (const p of getPickups()) p.draw(ctx);
+  if (!(Debug.viewMode === 1)) for (const p of getPickups()) p.draw(ctx);
   for (const e of getEnemies()) {
     if (e.alive === false) continue; // destroyed target — no longer drawn
     // Task 7.1 — enemy shake: offset the draw position by a random ±3px while
@@ -74,7 +74,7 @@ export function render(ctx) {
   // Each draws itself including death shrink/fade and its attack telegraph.
   for (const e of getRealEnemies()) {
     if (!e.alive) continue;
-    if (Debug.collisionOnly) continue;
+    if ((Debug.viewMode === 1)) continue;
     const sh = Effects.getShakeOffset(e);
     ctx.save();
     ctx.translate(sh.x, sh.y);
@@ -86,7 +86,7 @@ export function render(ctx) {
   // the fight's progress reads clearly; F3 adds phase name + weak-point box.
   const boss = getBoss();
   if (boss && boss.alive) {
-    if (!Debug.collisionOnly) boss.draw(ctx);
+    if (!(Debug.viewMode === 1)) boss.draw(ctx);
     if (boss.hp != null && boss.maxHp > 0 && boss.aiState !== 'dead') {
       drawBossHpBar(ctx, boss);
     }
@@ -206,8 +206,8 @@ export function render(ctx) {
   }
 
   const at = getAnimTestEnemy();
-  if (at.alive && !Debug.collisionOnly) at.draw(ctx);
-  if (!Debug.collisionOnly) {
+  if (at.alive && !(Debug.viewMode === 1)) at.draw(ctx);
+  if (!(Debug.viewMode === 1)) {
     for (const p of getProjectiles()) p.draw(ctx);
     for (const s of getSpecials()) s.draw(ctx);
   }
@@ -227,7 +227,7 @@ export function render(ctx) {
       ctx.globalAlpha = 0.25;
       h.draw(ctx);
       ctx.restore();
-    } else if (!Debug.collisionOnly) {
+    } else if (!(Debug.viewMode === 1)) {
       h.draw(ctx);
     }
   }
@@ -326,7 +326,7 @@ function drawDeathSkull(ctx, h) {
  */
 function drawDebugOverlay(ctx) {
   ctx.save();
-  ctx.globalAlpha = Debug.collisionOnly ? 1.0 : 0.4;
+  ctx.globalAlpha = (Debug.viewMode === 1) ? 1.0 : 0.4;
   ctx.lineWidth = 2;
 
   const layers = [
@@ -660,10 +660,9 @@ function drawHarnessHint(ctx) {
   const w2 = ctx.measureText(line2).width;
   const w = Math.max(w1, w2);
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(VIEW_W / 2 - w / 2 - 6, VIEW_H - 38, w + 12, 32);
+  ctx.fillRect(VIEW_W / 2 - w / 2 - 6, VIEW_H - 70, w + 12, 32);
   ctx.fillStyle = '#00e5ff';
-  ctx.fillText(line1, VIEW_W / 2, VIEW_H - 27);
-  ctx.fillStyle = '#aaa';
-  ctx.fillText(line2, VIEW_W / 2, VIEW_H - 11);
+  ctx.fillText(line1, VIEW_W / 2, VIEW_H - 59);
+  ctx.fillText(line2, VIEW_W / 2, VIEW_H - 43);
   ctx.restore();
 }

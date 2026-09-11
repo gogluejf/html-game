@@ -370,18 +370,27 @@ window.addEventListener('keydown', (e) => {
     }
     return;
   }
-  // F1 toggles the Debug & Test Harness (design §19). Reset flags when turning off.
+  // F1 is an alias for F3 (unified debug toggle).
   if (e.code === 'F1') {
     e.preventDefault();
-    const on = Debug.toggle();
-    if (on) {
-      setDebugEnabled(true);
-      Debug.showLog = true;
-      Debug.logEvent('F1: harness ON');
+    const s = getState();
+    if (s !== S.PLAY) {
+      window.__selectedHero = 'scarlet';
+      hero.x = 80;
+      hero.y = FLOOR_TOP - hero.h;
+      hero.vx = 0; hero.vy = 0;
+      hero.alive = true;
+      hero.dying = false;
+      hero.deathTimer = 0;
+      enableFullDebug('F1');
+      tryTransition(S.PLAY);
+      console.log(`[debug] F1: ${STATE_NAMES[s]} → PLAY`);
     } else {
-      Debug.reset();
+      const turningOn = !isDebugEnabled();
+      setDebugEnabled(turningOn);
+      if (turningOn) enableFullDebug('F1');
+      else Debug.reset();
     }
-    console.log(`[debug] harness ${on ? 'ON' : 'OFF'}`);
     return;
   }
   handleDebugKeys(e); // no-op unless Debug.enabled
@@ -510,9 +519,9 @@ function handleDebugKeys(e) {
       dumpStats(hero.runStats, hero);
       Debug.logEvent('stats JSON downloaded');
       break;
-    case 'KeyC': // Toggle collision-only view (hide sprites)
-      Debug.collisionOnly = !Debug.collisionOnly;
-      Debug.logEvent(`collision-only ${Debug.collisionOnly ? 'ON' : 'OFF'}`);
+    case 'KeyC': // Cycle visual mode: overlay → collision-only → overlay
+      Debug.viewMode = (Debug.viewMode + 1) % 2;
+      Debug.logEvent(`view: ${Debug.viewMode === 0 ? 'sprites+overlay' : 'collision-only'}`);
       break;
   }
 }
