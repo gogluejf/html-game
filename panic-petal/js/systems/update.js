@@ -226,8 +226,10 @@ function spawnFloatText(x, y, text, color) {
 // --- Input -------------------------------------------------------------------
 const keys = new Set();
 
-// State-machine input (Milestone 8): HOME/SELECT delegated to screens.js;
-// OVER handles R/C/Q; PAUSE/WIN use Enter.
+// State-machine input (Milestone 8 / Task 8.2): HOME/SELECT/OVER/PAUSE/WIN are
+// all delegated to screens.js; update.js injects the game-reset closures
+// (retry/continue/quit) so that logic stays here. Esc/P toggles pause during
+// PLAY.
 function handleStateKeys(e) {
   const s = getState();
 
@@ -237,32 +239,30 @@ function handleStateKeys(e) {
     return;
   }
 
-  // --- Game Over options (Task 5.2) -----------------------------------------
-  if (s === S.OVER) {
-    if (e.code === 'KeyR') {
-      retryFromGameOver();
-      return;
-    }
-    if (e.code === 'KeyC') {
-      continueFromGameOver();
-      return;
-    }
-    if (e.code === 'KeyQ') {
-      if (tryTransition(S.HOME)) {
-        console.log(`[state] ${STATE_NAMES[s]} → ${STATE_NAMES[S.HOME]} (quit)`);
-      }
-      return;
-    }
+  // --- Pause toggle while playing (design §20: Esc or P enters/exits) -------
+  if (s === S.PLAY && (e.code === 'Escape' || e.code === 'KeyP')) {
+    if (tryTransition(S.PAUSE)) console.log('[state] PLAY → PAUSE');
     return;
   }
 
-  // --- Pause / Win: Enter to resume or advance -------------------------------
-  if (e.code !== 'Enter' && e.code !== 'Space') return;
-  let target = null;
-  if (s === S.PAUSE) target = S.PLAY;
-  else if (s === S.WIN) target = S.SELECT;
-  if (target !== null && tryTransition(target)) {
-    console.log(`[state] ${STATE_NAMES[s]} → ${STATE_NAMES[target]}`);
+  // --- Game Over / Pause / Win options (Task 8.2) ----------------------------
+  // The screens own key interpretation; we supply the level-reset actions.
+  if (s === S.OVER || s === S.PAUSE || s === S.WIN) {
+    const hero = getHero();
+    const quit = () => {
+      if (tryTransition(S.HOME)) {
+        console.log(`[state] ${STATE_NAMES[s]} → ${STATE_NAMES[S.HOME]} (quit)`);
+      }
+    };
+    const actions = {
+      retry: () => retryFromGameOver(),   // OVER + PAUSE: restart at level start
+      cont: () => continueFromGameOver(), // OVER: spend coins, respawn at checkpoint
+      playAgain: () => {                  // WIN: back to hero select
+        if (tryTransition(S.SELECT)) console.log('[state] WIN → SELECT (play again)');
+      },
+      quit,
+    };
+    screenOnKey(e.code, hero, actions);
   }
 }
 

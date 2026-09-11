@@ -6,11 +6,10 @@
 // overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../view.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, CONTINUE_COST } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getPickups, getCamera, isDebugEnabled, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss } from './update.js';
 import { Effects } from '../effects.js';
-import { getState, STATE_NAMES, S } from '../state.js';
+import { getState, S } from '../state.js';
 import { Debug } from '../debug.js';
-import { calculateScore } from '../stats.js';
 import { drawScreen, screenUpdate } from '../screens.js';
 
 export function render(ctx) {
@@ -218,11 +217,11 @@ export function render(ctx) {
   ctx.fillText(`COINS ${hero.runStats?.coinsCollected?.total ?? 0}   LIVES ${hero.lives}`, 8, VIEW_H - 30);
   ctx.restore();
 
-  // --- State overlays (Milestone 8): HOME/SELECT handled above; OVER has its own.
-  if (state === S.OVER) {
-    drawGameOverScreen(ctx);
-  } else if (state === S.PAUSE || state === S.WIN) {
-    drawSimpleStateOverlay(ctx, state);
+  // --- State overlays (Task 8.2): HOME/SELECT handled above; PAUSE/OVER/WIN
+  // are drawn here as overlays on top of the frozen game world so the play
+  // frame stays visible behind them (dimmed by each screen's own background).
+  if (state === S.PAUSE || state === S.OVER || state === S.WIN) {
+    drawScreen(ctx, getHero());
   }
 }
 
@@ -251,111 +250,6 @@ function drawDeathSkull(ctx, h) {
   ctx.textBaseline = 'middle';
   ctx.fillText('💀', sx, sy);
   ctx.restore();
-}
-
-/**
- * Minimal overlay for PAUSE and WIN states (not yet full screens).
- * HOME/SELECT/OVER have their own dedicated rendering paths.
- */
-function drawSimpleStateOverlay(ctx, s) {
-  const label = STATE_NAMES[s] || String(s);
-  ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.55)';
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-  ctx.fillStyle = '#ffffff';
-  ctx.textAlign = 'center';
-  ctx.font = 'bold 48px monospace';
-  ctx.fillText(label, VIEW_W / 2, VIEW_H / 2 - 8);
-  if (s === S.PAUSE) {
-    ctx.font = '18px monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.fillText('Press ENTER to resume', VIEW_W / 2, VIEW_H / 2 + 28);
-  } else if (s === S.WIN) {
-    ctx.font = '18px monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.fillText('Press ENTER to continue', VIEW_W / 2, VIEW_H / 2 + 28);
-  }
-  ctx.restore();
-}
-
-/**
- * Task 5.2 — Game Over screen skeleton (design §20). Shows "GAME OVER", the
- * key run stats (enemies killed, coins collected, distance), and the three
- * options with their keys. Continue is shown only when affordable/available.
- * Milestone 8 polishes this into a real Screen.
- */
-function drawGameOverScreen(ctx) {
-  const h = getHero();
-  const stats = h.runStats ?? {};
-  const enemiesKilled = countEnemiesKilled();
-  const coinsCollected = stats.coinsCollected?.total ?? 0;
-  const distance = Math.round(stats.distanceTraveled ?? 0);
-  const score = computeScore(h);
-
-  const canContinue =
-    h.continuesUsed < h.maxContinues && h.coins >= CONTINUE_COST;
-
-  ctx.save();
-  // Dim the frozen play frame behind the overlay.
-  ctx.fillStyle = 'rgba(0,0,0,0.7)';
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-
-  ctx.textAlign = 'center';
-
-  // Title.
-  ctx.fillStyle = '#e74c3c';
-  ctx.font = 'bold 64px monospace';
-  ctx.fillText('GAME OVER', VIEW_W / 2, 150);
-
-  // Score + key stats block.
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 22px monospace';
-  ctx.fillText(`SCORE  ${score}`, VIEW_W / 2, 210);
-  ctx.font = '16px monospace';
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.fillText(`ENEMIES KILLED   ${enemiesKilled}`, VIEW_W / 2, 248);
-  ctx.fillText(`COINS COLLECTED  ${coinsCollected}`, VIEW_W / 2, 274);
-  ctx.fillText(`DISTANCE         ${distance} px`, VIEW_W / 2, 300);
-
-  // Options.
-  let oy = 360;
-  ctx.font = 'bold 20px monospace';
-  ctx.fillStyle = '#ffd700';
-  ctx.fillText('[R]  RETRY', VIEW_W / 2, oy);
-  oy += 34;
-  if (canContinue) {
-    ctx.fillStyle = '#2ecc71';
-    ctx.fillText(`[C]  CONTINUE  (${h.continuesUsed}/${h.maxContinues}, -${CONTINUE_COST} coins)`, VIEW_W / 2, oy);
-  } else {
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    const why = h.continuesUsed >= h.maxContinues
-      ? 'no continues left'
-      : `need ${CONTINUE_COST} coins`;
-    ctx.fillText(`[C]  CONTINUE  (unavailable — ${why})`, VIEW_W / 2, oy);
-  }
-  oy += 34;
-  ctx.fillStyle = '#aaaaaa';
-  ctx.fillText('[Q]  QUIT', VIEW_W / 2, oy);
-
-  ctx.restore();
-}
-
-// --- Task 5.2 — game-over stat helpers ---------------------------------------
-/** Total live+dead enemy count that has been defeated this run. */
-function countEnemiesKilled() {
-  const stats = getHero().runStats ?? {};
-  const ek = stats.enemiesKilled ?? {};
-  let total = 0;
-  for (const k in ek) total += ek[k] ?? 0;
-  return total;
-}
-
-/**
- * Score derivation from run telemetry using the §4.1 formula (Task 7.3).
- * Delegates to calculateScore() in stats.js for a single source of truth.
- */
-function computeScore(h) {
-  return calculateScore(h.runStats, h);
 }
 
 /**

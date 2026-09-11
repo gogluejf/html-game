@@ -6,6 +6,11 @@
 import { S, getState, tryTransition } from './state.js';
 import { HEROES } from './heroDefs.js';
 import { VIEW_W, VIEW_H } from './view.js';
+import { calculateScore } from './stats.js';
+
+// Continue cost (design §1/§14: 1000 coins per continue). update.js exports the
+// same constant; this local copy keeps screens.js self-contained for draw/onKey.
+const CONTINUE_COST = 1000;
 
 // --- Image cache -------------------------------------------------------------
 const images = {};
@@ -300,11 +305,246 @@ export const Select = {
 };
 
 // =============================================================================
+// PAUSE SCREEN (design §20, Task 8.2)
+// Drawn as a semi-transparent overlay on top of the frozen Play frame — the
+// world is still rendered behind it by render.js; this screen only adds the
+// dim + title + options. Toggled with Esc/P; Resume with Enter/Esc/P.
+// =============================================================================
+
+export const Pause = {
+  /** @param {CanvasRenderingContext2D} ctx */
+  draw(ctx) {
+    // Dim the frozen play frame behind the overlay.
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    // Title.
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 48px monospace';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 6;
+    ctx.fillText('PAUSED', VIEW_W / 2, VIEW_H / 2 - 60);
+    ctx.shadowBlur = 0;
+
+    // Options.
+    ctx.font = '24px monospace';
+    ctx.fillStyle = '#cccccc';
+    ctx.fillText('ENTER / ESC — Resume', VIEW_W / 2, VIEW_H / 2);
+    ctx.fillText('R — Retry Level', VIEW_W / 2, VIEW_H / 2 + 40);
+    ctx.fillText('Q — Quit to Home', VIEW_W / 2, VIEW_H / 2 + 80);
+    ctx.restore();
+  },
+
+  /**
+   * Handle key input. `retry`/`quit` are injected by update.js so the level
+   * reset logic (which lives in systems/update.js) stays in one place.
+   * @param {string} code KeyboardEvent.code
+   * @param {{ retry?: () => void, quit?: () => void }} [actions]
+   */
+  onKey(code, actions = {}) {
+    if (code === 'Escape' || code === 'Enter' || code === 'Space' || code === 'KeyP') {
+      if (tryTransition(S.PLAY)) console.log('[screens] PAUSE → PLAY (resume)');
+      return true;
+    }
+    if (code === 'KeyR') {
+      if (actions.retry) actions.retry(); else tryTransition(S.HOME);
+      return true;
+    }
+    if (code === 'KeyQ') {
+      if (actions.quit) actions.quit(); else tryTransition(S.HOME);
+      return true;
+    }
+    return false;
+  },
+};
+
+// =============================================================================
+// GAME OVER SCREEN (design §20, Task 8.2)
+// Full-screen dark panel: "GAME OVER", final score + key stats, and the three
+// options (Retry / Continue / Quit). Continue is highlighted only when it is
+// affordable (continues left AND enough coins).
+// =============================================================================
+
+/** Shared continue-availability check (draw + onKey must agree). */
+export function canContinue(hero) {
+  return !!(hero && hero.continuesUsed < hero.maxContinues && hero.coins >= CONTINUE_COST);
+}
+
+export const GameOver = {
+  /** @param {CanvasRenderingContext2D} ctx @param {object} hero the hero entity */
+  draw(ctx, hero) {
+    // Dark background over the frozen play frame.
+    ctx.save();
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    const s = hero.runStats ?? {};
+    const kills = Object.values(s.enemiesKilled ?? {}).reduce((a, b) => a + b, 0);
+    const coins = s.coinsCollected?.total ?? 0;
+    const distance = Math.round(s.distanceTraveled ?? 0);
+    const score = calculateScore(s, hero);
+
+    // Title.
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 56px monospace';
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 8;
+    ctx.fillText('GAME OVER', VIEW_W / 2, 110);
+    ctx.shadowBlur = 0;
+
+    // Score + key stats.
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 28px monospace';
+    ctx.fillText(`SCORE  ${score}`, VIEW_W / 2, 180);
+    ctx.font = '22px monospace';
+    ctx.fillStyle = '#dddddd';
+    ctx.fillText(`Enemies Killed: ${kills}`, VIEW_W / 2, 230);
+    ctx.fillText(`Coins Collected: ${coins}`, VIEW_W / 2, 265);
+    ctx.fillText(`Distance: ${distance} px`, VIEW_W / 2, 300);
+
+    // Options.
+    let oy = 370;
+    ctx.font = '22px monospace';
+    ctx.fillStyle = '#ffd700';
+    ctx.fillText('R — Retry', VIEW_W / 2, oy);
+    oy += 38;
+
+    const okCont = canContinue(hero);
+    ctx.fillStyle = okCont ? '#ffd700' : '#555555';
+    const remaining = (hero.maxContinues ?? 3) - (hero.continuesUsed ?? 0);
+    ctx.fillText(
+      `C — Continue (${remaining} left, ${CONTINUE_COST} coins)`,
+      VIEW_W / 2, oy,
+    );
+    oy += 38;
+    ctx.fillStyle = '#cccccc';
+    ctx.fillText('Q — Quit', VIEW_W / 2, oy);
+    ctx.restore();
+  },
+
+  /**
+   * Handle key input. `retry`/`cont`/`quit` are injected by update.js so the
+   * respawn logic stays in systems/update.js.
+   * @param {string} code KeyboardEvent.code
+   * @param {object} hero the hero entity
+   * @param {{ retry?: () => void, cont?: () => void, quit?: () => void }} [actions]
+   */
+  onKey(code, hero, actions = {}) {
+    if (code === 'KeyR') {
+      if (actions.retry) actions.retry();
+      return true;
+    }
+    if (code === 'KeyC') {
+      if (actions.cont) actions.cont();
+      return true;
+    }
+    if (code === 'KeyQ') {
+      if (actions.quit) actions.quit();
+      return true;
+    }
+    return false;
+  },
+};
+
+// =============================================================================
+// WIN SCREEN (design §20, Task 8.2)
+// Celebratory full-screen panel: "VICTORY!", prominent score, and the full
+// §4.1 stats summary. dumpStats() already fired on the transition into WIN
+// (console + JSON download); this screen shows the same data inline.
+// =============================================================================
+
+export const Win = {
+  /** @param {CanvasRenderingContext2D} ctx @param {object} hero the hero entity */
+  draw(ctx, hero) {
+    // Celebratory background.
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+    grad.addColorStop(0, '#1a0a2e');
+    grad.addColorStop(1, '#2e1a4e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    const s = hero.runStats ?? {};
+    const kills = Object.values(s.enemiesKilled ?? {}).reduce((a, b) => a + b, 0);
+    const barrels = (s.barrelsDestroyed?.barrel ?? 0) + (s.barrelsDestroyed?.coinBarrel ?? 0);
+    const score = calculateScore(s, hero);
+
+    // Title.
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 56px monospace';
+    ctx.shadowColor = '#ff6ec7';
+    ctx.shadowBlur = 12;
+    ctx.fillText('🎉 VICTORY! 🎉', VIEW_W / 2, 90);
+    ctx.shadowBlur = 0;
+
+    // Score prominently.
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 36px monospace';
+    ctx.fillText(`SCORE: ${score}`, VIEW_W / 2, 150);
+
+    // Full §4.1 stats summary.
+    ctx.font = '18px monospace';
+    ctx.fillStyle = '#cccccc';
+    const lines = [
+      `Hero: ${hero.heroDef?.name ?? ''}`,
+      `Time: ${(s.timePlayed ?? 0).toFixed(1)}s`,
+      `Enemies: ${kills}`,
+      `Boss: ${s.bossKilled ? 'DEFEATED ✓' : '—'}`,
+      `Coins: ${s.coinsCollected?.total ?? 0}`,
+      `Barrels: ${barrels}`,
+      `Checkpoints: ${s.checkpointsHit ?? 0}`,
+      `Distance: ${Math.round(s.distanceTraveled ?? 0)}px`,
+    ];
+    let y = 200;
+    for (const line of lines) {
+      ctx.fillText(line, VIEW_W / 2, y);
+      y += 28;
+    }
+
+    // Options.
+    ctx.fillStyle = '#ffd700';
+    ctx.font = '22px monospace';
+    ctx.fillText('ENTER — Play Again', VIEW_W / 2, VIEW_H - 60);
+    ctx.fillStyle = '#cccccc';
+    ctx.fillText('Q — Quit', VIEW_W / 2, VIEW_H - 30);
+    ctx.restore();
+  },
+
+  /**
+   * Handle key input. `playAgain`/`quit` are injected by update.js.
+   * @param {string} code KeyboardEvent.code
+   * @param {{ playAgain?: () => void, quit?: () => void }} [actions]
+   */
+  onKey(code, actions = {}) {
+    if (code === 'Enter' || code === 'Space') {
+      if (actions.playAgain) actions.playAgain();
+      else if (tryTransition(S.SELECT)) console.log('[screens] WIN → SELECT (play again)');
+      return true;
+    }
+    if (code === 'KeyQ') {
+      if (actions.quit) actions.quit();
+      else if (tryTransition(S.HOME)) console.log('[screens] WIN → HOME (quit)');
+      return true;
+    }
+    return false;
+  },
+};
+
+// =============================================================================
 // Screen dispatch helpers (used by render.js + update.js)
 // =============================================================================
 
-/** Draw the appropriate screen for the current state. Returns true if a screen was drawn. */
-export function drawScreen(ctx) {
+/**
+ * Draw the appropriate screen for the current state. Returns true if a screen
+ * was drawn. HOME/SELECT are full-screen; PAUSE/OVER/WIN are overlays that
+ * render.js draws after the (frozen) game world so the world stays visible
+ * behind them.
+ */
+export function drawScreen(ctx, hero) {
   const s = getState();
   if (s === S.HOME) {
     Home.draw(ctx);
@@ -314,11 +554,27 @@ export function drawScreen(ctx) {
     Select.draw(ctx);
     return true;
   }
+  if (s === S.PAUSE) {
+    Pause.draw(ctx);
+    return true;
+  }
+  if (s === S.OVER) {
+    GameOver.draw(ctx, hero);
+    return true;
+  }
+  if (s === S.WIN) {
+    Win.draw(ctx, hero);
+    return true;
+  }
   return false;
 }
 
-/** Route a key event to the active screen. Returns true if the screen consumed it. */
-export function screenOnKey(code) {
+/**
+ * Route a key event to the active screen. Returns true if the screen consumed
+ * it. PAUSE/OVER/WIN receive an `actions` bag of closures supplied by
+ * update.js (level retry, continue, quit) so game-reset logic stays there.
+ */
+export function screenOnKey(code, hero, actions) {
   const s = getState();
   if (s === S.HOME) {
     Home.onKey(code);
@@ -327,6 +583,15 @@ export function screenOnKey(code) {
   if (s === S.SELECT) {
     Select.onKey(code);
     return true;
+  }
+  if (s === S.PAUSE) {
+    return Pause.onKey(code, actions);
+  }
+  if (s === S.OVER) {
+    return GameOver.onKey(code, hero, actions);
+  }
+  if (s === S.WIN) {
+    return Win.onKey(code, actions);
   }
   return false;
 }

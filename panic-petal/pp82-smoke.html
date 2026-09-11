@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8"></head>
+<body style="background:#000">
+<canvas id="game" width="960" height="540"></canvas>
+<script type="module">
+import './js/main.js';
+import { S, getState } from './js/state.js';
+
+const results = [];
+function key(code) { window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true })); }
+async function step(label) { await new Promise(r => setTimeout(r, 150)); results.push(label + '=' + getState()); }
+
+(async () => {
+  // HOME → SELECT → PLAY
+  key('Enter'); await step('select');
+  key('ArrowRight'); key('Enter'); await step('play');
+  // PAUSE → retry (R): expect PLAY with lives reset
+  key('Escape'); await step('paused');
+  key('KeyR'); await step('pause-retry');
+  // Force game over to test OVER screen keys
+  const U = await import('./js/systems/update.js');
+  const hero = U.getHero();
+  if (getState() === 2) U.tryTransition(4); // PLAY→OVER (valid)
+  await step('over');
+  // Continue with coins
+  hero.coins = 2000; hero.continuesUsed = 0;
+  key('KeyC'); await step('after-continue');
+  // Back to OVER and quit
+  if (getState() === 2) U.tryTransition(4);
+  await step('over2');
+  key('KeyQ'); await step('after-quit');
+  // Win flow
+  key('Enter'); key('ArrowRight'); key('Enter'); await step('play2');
+  U.tryTransition(5); // PLAY→WIN
+  await step('win');
+  key('Enter'); await step('after-playagain');
+})();
+
+setTimeout(() => {
+  const el = document.createElement('pre');
+  el.id = 'state-check';
+  el.textContent = 'state-check ' + results.join(' | ');
+  document.body.appendChild(el);
+}, 3500);
+</script>
+</body></html>
