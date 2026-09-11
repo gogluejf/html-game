@@ -3246,6 +3246,9 @@ const Game = {
         if (this.screenshake) this.screenshake.update(dt);
         if (this.deathAnim) this.deathAnim.update(dt);
         if (this.muzzleFlash) this.muzzleFlash.update(dt);
+        // Decay the damage vignette so the death hit doesn't leave a frozen
+        // red overlay on the game-over screen.
+        if (this.damageVignette) this.damageVignette.update(dt);
         if (this.gameOverTimer > 0) this.gameOverTimer -= dt;
         break;
     }
