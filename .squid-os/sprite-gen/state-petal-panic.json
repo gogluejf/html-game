@@ -1155,6 +1155,70 @@
             ],
             "frame_size": "1536x1024"
           }
+        },
+        {
+          "file": "panic-petal/assets/interface/bg_level1_foreground.png",
+          "rows": 1,
+          "cols": 1,
+          "description": "Level 1 foreground parallax layer: circus props on stage platform with red bunting (single image)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "bg_level1_foreground",
+              "anim": "idle",
+              "frames": [
+                "bg_level1_foreground.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": null,
+            "bg_tol": 0,
+            "row_y": [
+              [
+                0,
+                723
+              ]
+            ],
+            "col_x": [
+              [
+                0
+              ]
+            ],
+            "frame_size": "2172x724"
+          }
+        },
+        {
+          "file": "panic-petal/assets/interface/bg_level1_tent.png",
+          "rows": 1,
+          "cols": 1,
+          "description": "Level 1 back parallax layer: full circus tent backdrop with striped canopy, CIRCUS entrance, banners (single image)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "bg_level1_tent",
+              "anim": "idle",
+              "frames": [
+                "bg_level1_tent.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": null,
+            "bg_tol": 0,
+            "row_y": [
+              [
+                0,
+                723
+              ]
+            ],
+            "col_x": [
+              [
+                0
+              ]
+            ],
+            "frame_size": "2172x724"
+          }
         }
       ]
     },
@@ -1413,5 +1477,5 @@
       ]
     }
   },
-  "updated": "2026-09-10T23:26:07"
+  "updated": "2026-09-10T23:58:00"
 }
