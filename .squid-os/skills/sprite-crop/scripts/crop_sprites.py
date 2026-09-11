@@ -431,6 +431,11 @@ def cmd_crop(args):
     print(f"CROPPED {len(saved)} frames -> {args.out}")
     for f in sorted(saved):
         print(" ", f)
+    # ALWAYS normalize: crops come out at different sizes (thin edge-on frames
+    # vs wide face frames). Auto-run trim on the output dir so every entity's
+    # frames end up identical in size with equal padding. This is not optional.
+    trim_args = argparse.Namespace(dir=args.out, out=None, pad=args.pad)
+    cmd_trim(trim_args)
 
 def cmd_report(args):
     from PIL import Image
@@ -449,10 +454,15 @@ def cmd_report(args):
 def cmd_trim(args):
     """Normalize frames: per entity (filename prefix before _fN), compute the
     largest alpha bbox across all its frames, then place EVERY frame's content
-    at the same top-left origin on a common WxH canvas (max_w x max_h + pad).
+    CENTERED on a common WxH canvas (max_w x max_h + 2*pad).
 
-    Result: all frames of one entity are identical in size AND aligned, so
-    animation playback doesn't jitter. Different entities may differ in size.
+    Result: all frames of one entity are identical in size AND centered, so
+    every frame gets equal padding around its content and animation playback
+    doesn't jitter or stretch. Different entities may differ in size.
+
+    NOTE: this is REQUIRED after cropping any multi-frame animation — crops
+    come out at different sizes (e.g. thin edge-on frames vs wide face frames)
+    and must be normalized before use.
     """
     from PIL import Image
     import re
@@ -851,7 +861,7 @@ def main():
     sp = sub.add_parser("scan"); sp.add_argument("--sheet", required=True); sp.add_argument("--min-gap", type=int, default=8); sp.add_argument("--save")
     sd = sub.add_parser("degrid"); sd.add_argument("--sheet", required=True); sd.add_argument("--out", required=True)
     spr = sub.add_parser("prep"); spr.add_argument("--sheet", required=True); spr.add_argument("--out", required=True); spr.add_argument("--tol", type=int, default=40); spr.add_argument("--save-bg")
-    sc = sub.add_parser("crop"); sc.add_argument("--sheet", required=True); sc.add_argument("--out", required=True); sc.add_argument("--names", required=True); sc.add_argument("--cols", type=int, default=4); sc.add_argument("--bands"); sc.add_argument("--row-y"); sc.add_argument("--col-x"); sc.add_argument("--frame-size"); sc.add_argument("--inset", type=int, default=3)
+    sc = sub.add_parser("crop"); sc.add_argument("--sheet", required=True); sc.add_argument("--out", required=True); sc.add_argument("--names", required=True); sc.add_argument("--cols", type=int, default=4); sc.add_argument("--bands"); sc.add_argument("--row-y"); sc.add_argument("--col-x"); sc.add_argument("--frame-size"); sc.add_argument("--inset", type=int, default=3); sc.add_argument("--pad", type=int, default=8, help="padding for the automatic post-crop normalization (trim)")
     sr = sub.add_parser("report"); sr.add_argument("--dir", required=True)
     st = sub.add_parser("trim"); st.add_argument("--dir", required=True); st.add_argument("--out"); st.add_argument("--pad", type=int, default=4)
     sv = sub.add_parser("viewer"); sv.add_argument("--assets-dir", required=True); sv.add_argument("--project", required=True); sv.add_argument("--out", required=True); sv.add_argument("--bg"); sv.add_argument("--state", help="Path to state JSON (auto-detected if omitted)")

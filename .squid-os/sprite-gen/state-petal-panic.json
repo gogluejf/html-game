@@ -1189,7 +1189,96 @@
           }
         }
       ]
+    },
+    "objects": {
+      "path": "panic-petal/assets/objects",
+      "sheets": [
+        {
+          "file": "panic-petal/assets/coins_sheet.png",
+          "rows": 3,
+          "cols": 4,
+          "description": "Circus coins (bronze small, silver medium, gold large), 3 rows x 4 cols flip animation (front, edge, back, edge)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "coin_bronze",
+              "anim": "flip",
+              "frames": [
+                "coin_bronze_f1.png",
+                "coin_bronze_f2.png",
+                "coin_bronze_f3.png",
+                "coin_bronze_f4.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "coin_silver",
+              "anim": "flip",
+              "frames": [
+                "coin_silver_f1.png",
+                "coin_silver_f2.png",
+                "coin_silver_f3.png",
+                "coin_silver_f4.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "coin_gold",
+              "anim": "flip",
+              "frames": [
+                "coin_gold_f1.png",
+                "coin_gold_f2.png",
+                "coin_gold_f3.png",
+                "coin_gold_f4.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              249,
+              158,
+              176
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                341
+              ],
+              [
+                341,
+                682
+              ],
+              [
+                682,
+                1024
+              ]
+            ],
+            "col_x": [
+              [
+                435,
+                682,
+                928,
+                1202
+              ],
+              [
+                435,
+                682,
+                928,
+                1202
+              ],
+              [
+                435,
+                682,
+                928,
+                1202
+              ]
+            ],
+            "frame_size": "303x230"
+          }
+        }
+      ]
     }
   },
-  "updated": "2026-09-10T18:39:09"
+  "updated": "2026-09-10T22:50:25"
 }
