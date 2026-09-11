@@ -1,13 +1,23 @@
 // Petal Panic — render system. Draws in 960x540 logical coords; the
 // logical→screen transform is applied by main.js before this runs.
+//
+// Task 1.4: world entities are drawn under a camera translate so the level
+// scrolls horizontally, and F3 toggles the full design §16 colored-box debug
+// overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../view.js';
-import { getHero, getSolids, isDebugEnabled } from './update.js';
+import { getHero, getSolids, getEnemies, getProjectiles, getPickups, getCamera, isDebugEnabled } from './update.js';
 
 export function render(ctx) {
-  // Background
+  const cam = getCamera();
+
+  // Background (viewport-space; not affected by the camera).
   ctx.fillStyle = '#101018';
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+  // --- World (camera-translated) -------------------------------------------
+  ctx.save();
+  ctx.translate(-cam.x, -cam.y);
 
   // Solid platforms (orange per design §16 debug palette).
   for (const s of getSolids()) {
@@ -15,31 +25,71 @@ export function render(ctx) {
     ctx.fillRect(s.x, s.y, s.w, s.h);
   }
 
+  // Placeholder pickups / enemies / projectiles (debug-colored bodies).
+  for (const p of getPickups()) p.draw(ctx);
+  for (const e of getEnemies()) e.draw(ctx);
+  for (const p of getProjectiles()) p.draw(ctx);
+
   // Hero test box — drawn through Entity.draw() so the full transform
   // pipeline (mirror/rotate/scale + debug rect fallback) is exercised.
   getHero().draw(ctx);
 
-  // Debug overlay (F3): collision boxes + hint text. Basic version;
-  // the full §16/§19 overlay lands in task 1.4.
+  // Debug overlay (F3): full §16 colored boxes over every entity's worldBox().
   if (isDebugEnabled()) {
-    ctx.save();
-    ctx.globalAlpha = 0.55;
-    ctx.lineWidth = 2;
+    drawDebugOverlay(ctx);
+  }
 
-    // Solids: orange outlines
-    ctx.strokeStyle = '#ff9f43';
-    for (const s of getSolids()) ctx.strokeRect(s.x, s.y, s.w, s.h);
+  ctx.restore();
 
-    // Hero: green outline
-    const wb = getHero().worldBox();
-    ctx.strokeStyle = '#2ecc71';
-    ctx.strokeRect(wb.x, wb.y, wb.w, wb.h);
-
-    ctx.restore();
-
-    // Hint text
+  // --- Viewport-space HUD hint (not scrolled with the world) -----------------
+  if (isDebugEnabled()) {
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.font = '12px monospace';
     ctx.fillText('DEBUG ON — F3 to toggle', 8, 16);
   }
+}
+
+/**
+ * Design §16 debug overlay: semi-transparent filled rects + outlines over each
+ * entity's worldBox(), color-coded by collision layer.
+ *   Orange — SOLID (level platforms)
+ *   Green  — HERO
+ *   Red    — ENEMY
+ *   Blue   — PICKUP (objects / powerups)
+ *   Pink   — PROJ_ALLY / PROJ_FOE (projectiles / explosions)
+ */
+function drawDebugOverlay(ctx) {
+  ctx.save();
+  ctx.globalAlpha = 0.4;
+  ctx.lineWidth = 2;
+
+  const layers = [
+    { match: L => L & 0b0000001000, color: '#ff9f43' }, // SOLID → orange
+    { match: L => L & 0b0000000001, color: '#2ecc71' }, // HERO  → green
+    { match: L => L & 0b0000000010, color: '#e74c3c' }, // ENEMY → red
+    { match: L => L & 0b0000010000, color: '#3498db' }, // PICKUP→ blue
+    { match: L => L & 0b0001100000, color: '#ff6ec7' }, // PROJ  → pink
+  ];
+
+  const all = [...getSolids().map(s => solidEntityProxy(s)),
+               ...getPickups(), ...getEnemies(), ...getProjectiles(), getHero()];
+
+  for (const ent of all) {
+    const layer = ent.layer ?? 0;
+    const rule = layers.find(r => r.match(layer));
+    if (!rule) continue;
+    const b = ent.worldBox ? ent.worldBox() : ent;
+    ctx.fillStyle = rule.color;
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.strokeStyle = rule.color;
+    ctx.strokeRect(b.x, b.y, b.w, b.h);
+  }
+
+  ctx.restore();
+}
+
+// SOLIDS are plain AABBs ({x,y,w,h}); wrap them as a minimal proxy so the
+// overlay loop can treat them uniformly with Entity instances (worldBox()).
+function solidEntityProxy(box) {
+  return { x: box.x, y: box.y, w: box.w, h: box.h, layer: 0b0000001000, worldBox: () => box };
 }

@@ -2,25 +2,38 @@
 // Task 1.3 integration test: a hero-colored box moved by arrow keys / WASD,
 // colliding against static orange SOLID platforms via CollisionWorld + resolve().
 // F3 toggles the debug overlay (collision boxes) in render.js.
+// Task 1.4: hero-following camera clamped to level bounds with facing
+// look-ahead; the test level is now longer than the viewport so the camera
+// scrolls, and placeholder enemies/projectiles/pickups exercise every §16
+// debug-overlay color.
 
 import { VIEW_W, VIEW_H } from '../view.js';
 import { Entity } from '../entity.js';
 import { LAYER } from '../consts.js';
 import { CollisionWorld, resolve } from '../collision.js';
+import { Camera } from '../camera.js';
 
 // --- Tunables for the test rig ---------------------------------------------
 const MOVE_SPEED = 240;          // px/s horizontal
 const JUMP_VY = -520;            // jump impulse
 const GRAVITY_SCALE = 1;         // uses consts.GRAVITY internally
 
+// Level length: intentionally wider than the 960px viewport so the camera
+// can scroll. Floor spans the full length; air platforms are scattered along it.
+export const LEVEL_LENGTH = 3000;
+
 // --- Static solid platforms (orange) ----------------------------------------
 // Plain AABBs; also wrapped as layer entities so the debug overlay can draw
 // them and the mask rules are exercised end-to-end.
 export const SOLIDS = [
-  { x: 0,    y: VIEW_H - 40, w: VIEW_W, h: 40 },   // floor
-  { x: 180,  y: 380, w: 200, h: 24 },              // low left platform
-  { x: 560,  y: 300, w: 220, h: 24 },              // mid right platform
-  { x: 360,  y: 200, w: 160, h: 24 },              // high center platform
+  { x: 0,    y: VIEW_H - 40, w: LEVEL_LENGTH, h: 40 },   // floor (full length)
+  { x: 180,  y: 380, w: 200, h: 24 },                    // low left platform
+  { x: 560,  y: 300, w: 220, h: 24 },                    // mid right platform
+  { x: 360,  y: 200, w: 160, h: 24 },                    // high center platform
+  { x: 900,  y: 360, w: 240, h: 24 },                    // further-right platform
+  { x: 1400, y: 300, w: 200, h: 24 },                    // mid platform
+  { x: 1900, y: 360, w: 260, h: 24 },                    // far platform
+  { x: 2400, y: 280, w: 200, h: 24 },                    // near-end platform
 ];
 
 // Solid wrapper entities (layer-only; no velocity/anim needed).
@@ -45,6 +58,24 @@ const hero = new Entity({
   debugColor: '#2ecc71',   // green per design §16 (hero boxes)
 });
 
+// --- Placeholder non-hero entities (debug-color exercise only) ---------------
+// These exist purely so every §16 overlay color is visible on screen. They are
+// static (gravity 0) and do NOT participate in collision resolution this task;
+// real enemy/projectile/powerup behavior lands in later tasks.
+const enemies = [
+  new Entity({ x: 700,  y: VIEW_H - 40 - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY,     debugColor: '#e74c3c' }),
+  new Entity({ x: 1500, y: VIEW_H - 40 - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY,     debugColor: '#e74c3c' }),
+  new Entity({ x: 2500, y: VIEW_H - 40 - 40, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY,     debugColor: '#e74c3c' }),
+];
+const projectiles = [
+  new Entity({ x: 1100, y: 320, w: 16, h: 10, gravity: 0, layer: LAYER.PROJ_ALLY, debugColor: '#ff6ec7' }),
+  new Entity({ x: 1800, y: 300, w: 16, h: 10, gravity: 0, layer: LAYER.PROJ_FOE,  debugColor: '#ff6ec7' }),
+];
+const pickups = [
+  new Entity({ x: 1200, y: VIEW_H - 40 - 28, w: 24, h: 24, gravity: 0, layer: LAYER.PICKUP, debugColor: '#3498db' }),
+  new Entity({ x: 2000, y: VIEW_H - 40 - 28, w: 24, h: 24, gravity: 0, layer: LAYER.PICKUP, debugColor: '#3498db' }),
+];
+
 // --- Input -------------------------------------------------------------------
 const keys = new Set();
 window.addEventListener('keydown', (e) => {
@@ -68,9 +99,18 @@ world.add(hero);
 // need to observe events; damage/pickup logic arrives with later tasks.
 world.on('resolve', () => {}); // positional correction handled separately below
 
+// --- Camera --------------------------------------------------------------------
+// Hero-following cam clamped to [0, LEVEL_LENGTH - VIEW_W] with facing look-ahead.
+export const camera = new Camera();
+camera.levelLength = LEVEL_LENGTH;
+
 export function getHero() { return hero; }
 export function getSolids() { return SOLIDS; }
 export function getCollisionWorld() { return world; }
+export function getEnemies() { return enemies; }
+export function getProjectiles() { return projectiles; }
+export function getPickups() { return pickups; }
+export function getCamera() { return camera; }
 
 // --- Per-frame step ------------------------------------------------------------
 export function update(dt) {
@@ -93,10 +133,13 @@ export function update(dt) {
   const hit = resolve(hero, SOLIDS);
   world.update();
 
-  // Keep the hero inside the view horizontally (test-rig convenience).
+  // Keep the hero inside the LEVEL horizontally (test-rig convenience).
   const wb = hero.worldBox();
   if (wb.x < 0) { hero.x = -hero.box.ox; hero.vx = 0; }
-  else if (wb.x + wb.w > VIEW_W) { hero.x = VIEW_W - hero.box.ox - hero.box.bw; hero.vx = 0; }
+  else if (wb.x + wb.w > LEVEL_LENGTH) { hero.x = LEVEL_LENGTH - hero.box.ox - hero.box.bw; hero.vx = 0; }
+
+  // 4. camera follows the hero (clamped to level bounds, facing look-ahead).
+  camera.update(hero);
 }
 
 /** Grounded = resting on a solid's top surface (small epsilon tolerance). */
