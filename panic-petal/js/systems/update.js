@@ -481,11 +481,11 @@ function handleDebugKeys(e) {
   }
 
   switch (e.code) {
-    case 'KeyG': // God mode toggle
+    case 'KeyF': // God mode toggle
       Debug.god = !Debug.god;
       Debug.logEvent(`god mode ${Debug.god ? 'ON' : 'OFF'}`);
       break;
-    case 'KeyS': // Slow-mo / freeze cycle
+    case 'KeyZ': // Slow-mo / freeze cycle
       Debug.timeScale = Debug.cycleTimeScale();
       Debug.logEvent(`timeScale → ${Debug.timeScale}x`);
       break;
@@ -505,6 +505,10 @@ function handleDebugKeys(e) {
       break;
     case 'KeyX': // Deselect current entity
       if (Debug.selected) { Debug.selected = null; Debug.logEvent('deselect'); }
+      break;
+    case 'KeyE': // Dump stats JSON to disk
+      dumpStats(hero.runStats, hero);
+      Debug.logEvent('stats JSON downloaded');
       break;
   }
 }
@@ -804,6 +808,7 @@ world.on('collect', (a, b) => {
   coinEnt.collect();
   coins.remove(coinEnt);
   world.remove(coinEnt);
+  if (Debug.enabled) Debug.logEvent(`coin ${type} +${value}`);
 
   // 1up check: every ONEUP_THRESHOLD total coins grants +1 life.
   oneUpProgress += 1;
@@ -839,6 +844,7 @@ world.on('pickup', (a, b) => {
   Effects.spawnPickupPop(cx, cy, pu.def.color); // Task 7.1 — colored pop ring
   spawnFloatText(cx, cy - 16, pu.def.label, pu.def.color);
   // SFX: powerup
+  if (Debug.enabled) Debug.logEvent(`powerup ${pu.def.label}`);
 
   world.remove(pu);
 });
@@ -872,11 +878,8 @@ world.on('checkpoint', (a, b) => {
 // Subscribe to state transitions; when the run ends (WIN or OVER), serialize
 // the full §4.1 telemetry to console + downloadable JSON. This is the "tuning
 // pass" hook: every completed run produces a structured record for analysis.
-onTransition((from, to) => {
-  if (to === S.WIN || to === S.OVER) {
-    dumpStats(hero.runStats, hero);
-  }
-});
+// Stats dump is manual: press D in F1 mode to download the JSON.
+// No longer auto-triggers on WIN/OVER.
 
 // Reset per-screen transient state (held keys, focus) on entry.
 onTransition((from, to) => { screenReset(to); });

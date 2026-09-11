@@ -636,7 +636,7 @@ function drawEventLog(ctx) {
  * @param {CanvasRenderingContext2D} ctx
  */
 function drawHarnessHint(ctx) {
-  const txt = 'F1 harness | 1-9 spawn | G god | S speed | T telemetry | Y hero | L log | RMB select | LMB force-state | arrows scrub | X deselect';
+  const txt = 'F1 harness | 1-9 spawn | F god | Z speed | T telemetry | Y hero | L log | E dump | RMB select | LMB force-state | arrows scrub | X deselect';
   ctx.save();
   ctx.font = '11px monospace';
   ctx.textAlign = 'center';
