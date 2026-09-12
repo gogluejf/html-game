@@ -108,25 +108,18 @@ export class Hero extends Entity {
   update(dt, input, _world) {
     const speed = this.stats.speed;
 
-    // --- Crouch / stand -----------------------------------------------------
-    // Crouch only initiates while grounded. Release down → stand back up.
-    if (this.crouching && !input.down) {
-      this.crouching = false;
-      this.sliding = false;
-      this.box = this.standBox;
-    }
-    if (input.down && this.grounded && !this.crouching) {
-      this.crouching = true;
-      this.box = this.crouchBox;
-    }
-
     // --- Horizontal intent --------------------------------------------------
-    // Crouching locks horizontal control (SMB1): you cannot accelerate or
-    // steer while crouched, only carry your existing momentum and skid to a
-    // stop. This is what makes the crouch-decel below reachable — without it,
-    // holding a direction would keep force-setting vx every frame.
+    // Crouching locks horizontal control (SMB1): once crouched you cannot
+    // accelerate or steer, only carry existing momentum and skid to a stop.
+    //
+    // One-frame grace: when you FIRST press down this frame (wasCrouching was
+    // false), we still honor the held direction for THIS frame so the run
+    // momentum carries into the skid instead of stopping dead on the press.
+    // From the next frame on, crouching fully locks control and the decel
+    // below bleeds the momentum off — that's the visible "slide then stop".
+    const wasCrouching = this.crouching;
     let moveDir = 0;
-    if (!this.crouching) {
+    if (!this.crouching || !wasCrouching) {
       if (input.left) moveDir -= 1;
       if (input.right) moveDir += 1;
     }
@@ -153,6 +146,18 @@ export class Hero extends Entity {
         this.vx *= GROUND_FRICTION;
         if (Math.abs(this.vx) < 1) this.vx = 0;
       }
+    }
+
+    // --- Crouch / stand (runs AFTER movement so the first press keeps momentum)
+    // Crouch only initiates while grounded. Release down → stand back up.
+    if (this.crouching && !input.down) {
+      this.crouching = false;
+      this.sliding = false;
+      this.box = this.standBox;
+    }
+    if (input.down && this.grounded && !this.crouching) {
+      this.crouching = true;
+      this.box = this.crouchBox;
     }
 
     // --- Jump (with coyote time + input buffer for good feel) ---------------

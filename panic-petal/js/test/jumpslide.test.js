@@ -90,15 +90,42 @@ ok('crouch skid eventually reaches zero and stays there', () => {
 });
 
 ok('crouching locks horizontal control — holding a direction does not move you', () => {
-  // Running right, then pressing+holding down: crouch must NOT let you keep
-  // accelerating. vx should start decaying (skid), not be forced to run speed.
+  // Already crouched, then hold a direction: must NOT accelerate.
   const h = makeHero();
   h.setGrounded(true);
-  h.vx = 250;
-  const inp = noInput(); inp.right = true; inp.down = true;
-  h.update(DT, inp);
+  let inp = noInput(); inp.down = true;
+  h.update(DT, inp); // enter crouch (vx was 0)
   assert.ok(h.crouching, 'should be crouched');
-  assert.ok(h.vx < 250, `crouch must not hold/boost forward speed, got ${h.vx}`);
+  inp.right = true;
+  h.update(DT, inp);
+  assert.equal(h.vx, 0, `fully-crouched hero must not accelerate, got ${h.vx}`);
+});
+
+ok('run + press down slides a visible distance before stopping (not instant)', () => {
+  // The exact bug: pressing down while running used to stop dead on the press.
+  // Now there's a one-frame grace that carries run momentum into the skid, so
+  // the hero travels a real distance over several frames before reaching rest.
+  const h = makeHero();
+  h.setGrounded(true);
+  // Establish full run speed first.
+  let inp = noInput(); inp.right = true;
+  for (let i = 0; i < 10; i++) h.update(DT, inp);
+  assert.ok(Math.abs(h.vx - 250) < 1, `should be at run speed, got ${h.vx}`);
+
+  // Press+hold down while still holding right → begin the slide.
+  inp.down = true;
+  const startX = h.x;
+  let stopped = false;
+  let framesToStop = 0;
+  for (let i = 0; i < 300 && !stopped; i++) {
+    h.update(DT, inp);
+    framesToStop++;
+    if (h.vx === 0) stopped = true;
+  }
+  const slid = h.x - startX;
+  assert.ok(stopped, 'should eventually stop');
+  assert.ok(slid > 10, `should have slid a visible distance, only moved ${slid}px`);
+  assert.ok(framesToStop > 3, `should take several frames to skid, took ${framesToStop}`);
 });
 
 console.log(`\n${passed} passed`);
