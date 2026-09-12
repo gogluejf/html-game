@@ -13,7 +13,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "scarlet_vale_run",
+              "name": "scarlet_vale",
               "anim": "run",
               "frames": [
                 "scarlet_vale_run_f1.png",
@@ -25,7 +25,7 @@
             },
             {
               "row": 2,
-              "name": "scarlet_vale_jump",
+              "name": "scarlet_vale",
               "anim": "jump",
               "frames": [
                 "scarlet_vale_jump_f1.png",
@@ -37,7 +37,7 @@
             },
             {
               "row": 3,
-              "name": "scarlet_vale_attack",
+              "name": "scarlet_vale",
               "anim": "attack",
               "frames": [
                 "scarlet_vale_attack_f1.png",
@@ -103,7 +103,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "balthazar_run",
+              "name": "balthazar",
               "anim": "run",
               "frames": [
                 "balthazar_run_f1.png",
@@ -115,7 +115,7 @@
             },
             {
               "row": 2,
-              "name": "balthazar_jump",
+              "name": "balthazar",
               "anim": "jump",
               "frames": [
                 "balthazar_jump_f1.png",
@@ -127,7 +127,7 @@
             },
             {
               "row": 3,
-              "name": "balthazar_attack",
+              "name": "balthazar",
               "anim": "attack",
               "frames": [
                 "balthazar_attack_f1.png",
@@ -498,7 +498,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "scarlet_vale_run2",
+              "name": "scarlet_vale",
               "anim": "run2",
               "frames": [
                 "scarlet_vale_run2_f1.png",
@@ -549,7 +549,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "scarlet_vale_djump",
+              "name": "scarlet_vale",
               "anim": "djump",
               "frames": [
                 "scarlet_vale_djump_f1.png",
@@ -668,7 +668,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "jester_run",
+              "name": "jester",
               "anim": "run",
               "frames": [
                 "jester_run_f1.png",
@@ -680,7 +680,7 @@
             },
             {
               "row": 2,
-              "name": "jester_jump",
+              "name": "jester",
               "anim": "jump",
               "frames": [
                 "jester_jump_f1.png",
@@ -736,7 +736,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "jester_idle",
+              "name": "jester",
               "anim": "idle",
               "frames": [
                 "jester_idle_f1.png",
@@ -748,7 +748,7 @@
             },
             {
               "row": 2,
-              "name": "jester_whip",
+              "name": "jester",
               "anim": "whip",
               "frames": [
                 "jester_whip_f1.png",
@@ -760,7 +760,7 @@
             },
             {
               "row": 3,
-              "name": "jester_death",
+              "name": "jester",
               "anim": "death",
               "frames": [
                 "jester_death_f1.png",
@@ -827,7 +827,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "jackolantern_roll",
+              "name": "jackolantern",
               "anim": "roll",
               "frames": [
                 "jackolantern_roll_f1.png",
@@ -839,7 +839,7 @@
             },
             {
               "row": 2,
-              "name": "jackolantern_launch",
+              "name": "jackolantern",
               "anim": "launch",
               "frames": [
                 "jackolantern_launch_f1.png",
@@ -851,7 +851,7 @@
             },
             {
               "row": 3,
-              "name": "jackolantern_explode",
+              "name": "jackolantern",
               "anim": "explode",
               "frames": [
                 "jackolantern_explode_f1.png",
@@ -918,7 +918,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "vine_hound_run",
+              "name": "vine_hound",
               "anim": "run",
               "frames": [
                 "vine_hound_run_f1.png",
@@ -930,7 +930,7 @@
             },
             {
               "row": 2,
-              "name": "vine_hound_attack",
+              "name": "vine_hound",
               "anim": "attack",
               "frames": [
                 "vine_hound_attack_f1.png",
@@ -942,7 +942,7 @@
             },
             {
               "row": 3,
-              "name": "vine_hound_death",
+              "name": "vine_hound",
               "anim": "death",
               "frames": [
                 "vine_hound_death_f1.png",
@@ -1009,7 +1009,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "boris_loon_fly",
+              "name": "boris_loon",
               "anim": "fly",
               "frames": [
                 "boris_loon_fly_f1.png",
@@ -1021,7 +1021,7 @@
             },
             {
               "row": 2,
-              "name": "boris_loon_attack",
+              "name": "boris_loon",
               "anim": "attack",
               "frames": [
                 "boris_loon_attack_f1.png",
@@ -1033,7 +1033,7 @@
             },
             {
               "row": 3,
-              "name": "boris_loon_death",
+              "name": "boris_loon",
               "anim": "death",
               "frames": [
                 "boris_loon_death_f1.png",
@@ -1100,7 +1100,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "boris_loon_baby_fly_1",
+              "name": "boris_loon_baby",
               "anim": "fly_1",
               "frames": [
                 "boris_loon_baby_fly_1_f1.png",
@@ -1112,7 +1112,7 @@
             },
             {
               "row": 2,
-              "name": "boris_loon_baby_fly_2",
+              "name": "boris_loon_baby",
               "anim": "fly_2",
               "frames": [
                 "boris_loon_baby_fly_2_f1.png",
@@ -1124,7 +1124,7 @@
             },
             {
               "row": 3,
-              "name": "boris_loon_baby_fly_3",
+              "name": "boris_loon_baby",
               "anim": "fly_3",
               "frames": [
                 "boris_loon_baby_fly_3_f1.png",
@@ -1191,7 +1191,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "violetta_marionetta_walk",
+              "name": "violetta_marionetta",
               "anim": "walk",
               "frames": [
                 "violetta_marionetta_walk_f1.png",
@@ -1203,7 +1203,7 @@
             },
             {
               "row": 2,
-              "name": "violetta_marionetta_attack",
+              "name": "violetta_marionetta",
               "anim": "attack",
               "frames": [
                 "violetta_marionetta_attack_f1.png",
@@ -1215,7 +1215,7 @@
             },
             {
               "row": 3,
-              "name": "violetta_marionetta_death",
+              "name": "violetta_marionetta",
               "anim": "death",
               "frames": [
                 "violetta_marionetta_death_f1.png",
@@ -1287,7 +1287,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "overgrown_elephant_charge",
+              "name": "overgrown_elephant",
               "anim": "charge",
               "frames": [
                 "overgrown_elephant_charge_f1.png",
@@ -1299,7 +1299,7 @@
             },
             {
               "row": 2,
-              "name": "overgrown_elephant_stomp",
+              "name": "overgrown_elephant",
               "anim": "stomp",
               "frames": [
                 "overgrown_elephant_stomp_f1.png",
@@ -1311,7 +1311,7 @@
             },
             {
               "row": 3,
-              "name": "overgrown_elephant_trunk_blast",
+              "name": "overgrown_elephant",
               "anim": "trunk_blast",
               "frames": [
                 "overgrown_elephant_trunk_blast_f1.png",
@@ -1323,7 +1323,7 @@
             },
             {
               "row": 4,
-              "name": "overgrown_elephant_death",
+              "name": "overgrown_elephant",
               "anim": "death",
               "frames": [
                 "overgrown_elephant_death_f1.png",
@@ -1730,7 +1730,7 @@
           "entities": [
             {
               "row": 1,
-              "name": "home_cover_idle",
+              "name": "home_cover",
               "anim": "idle",
               "frames": [
                 "home_cover_idle_f1.png"
