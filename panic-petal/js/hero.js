@@ -14,7 +14,7 @@ import { GRAVITY, MAX_FALL_SPEED, LAYER } from './consts.js';
 // Feel knobs (tune freely; these are not per-hero stats).
 const GROUND_FRICTION = 0.85;   // vx multiplier per fixed step when no input on ground
 const JUMP_CUT_VY = 0.45;       // vy scale when jump released early (variable height)
-const SLIDE_DECEL = 1600;       // px/s^2 — linear skid-stop while crouching with no input
+const SLIDE_DECEL = 480;        // px/s^2 — crouch skid: ~0.5s / ~65px from full run
 const COYOTE_TIME = 0.08;       // grace window after leaving a ledge (s)
 const JUMP_BUFFER = 0.12;       // pre-land jump input window (s)
 

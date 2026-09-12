@@ -13,6 +13,8 @@ function ok(name, fn) {
 }
 const DT = 1 / 60;
 const noInput = () => ({ left: false, right: false, up: false, down: false, jump: false, shoot: false, special: false, melee: false });
+// Holding down = crouched (releasing down would stand back up mid-test).
+const crouchInput = () => ({ ...noInput(), down: true });
 const makeHero = () => new Hero(HEROES.scarlet, 0, 0); // speed 250, jump 500
 
 console.log('Double jump');
@@ -69,24 +71,27 @@ ok('standing with no input uses gentle friction (exponential decay)', () => {
   assert.ok(Math.abs(h.vx - 200 * 0.85) < 1, `expected ~170, got ${h.vx}`);
 });
 
-ok('crouching with no input skids to a stop via strong linear decel', () => {
+ok('crouching with no input skids down slowly via linear decel', () => {
   const h = makeHero();
   h.setGrounded(true);
   h.crouching = true;
-  h.vx = 375; // sliding speed (250 * 1.5)
-  h.update(DT, noInput());
-  // Linear decel of 1600*dt ≈ 26.67 removed this step → ~348, much faster than friction.
-  assert.ok(h.vx > 0 && h.vx < 375, 'should be decelerating');
-  assert.ok(h.vx < 375 - 20, `decel should be strong, got ${h.vx}`);
+  h.vx = 250; // full run speed
+  h.update(DT, crouchInput());
+  // Linear: exactly SLIDE_DECEL*dt = 8 px/s removed this step (vs friction's 15%).
+  assert.ok(Math.abs(h.vx - (250 - 8)) < 1, `expected ~242, got ${h.vx}`);
 });
 
-ok('crouch skid eventually reaches zero and stays there', () => {
+ok('crouch skid from run speed lasts ~0.5s and covers ~2 body-widths', () => {
   const h = makeHero();
   h.setGrounded(true);
   h.crouching = true;
-  h.vx = 375;
-  for (let i = 0; i < 120 && h.vx !== 0; i++) h.update(DT, noInput());
-  assert.equal(h.vx, 0, 'skid should come to a full stop');
+  h.vx = 250;
+  const x0 = h.x;
+  let frames = 0;
+  while (h.vx !== 0 && frames < 240) { h.update(DT, crouchInput()); frames++; }
+  const dist = h.x - x0;
+  assert.ok(frames > 24 && frames < 60, `skid should last ~30 frames, took ${frames}`);
+  assert.ok(dist > 40 && dist < 100, `skid should cover ~65px, got ${dist.toFixed(1)}px`);
 });
 
 ok('crouching locks horizontal control — holding a direction does not move you', () => {
@@ -124,8 +129,8 @@ ok('run + press down slides a visible distance before stopping (not instant)', (
   }
   const slid = h.x - startX;
   assert.ok(stopped, 'should eventually stop');
-  assert.ok(slid > 10, `should have slid a visible distance, only moved ${slid}px`);
-  assert.ok(framesToStop > 3, `should take several frames to skid, took ${framesToStop}`);
+  assert.ok(slid > 40, `should have slid a visible distance (~65px), only moved ${slid.toFixed(1)}px`);
+  assert.ok(framesToStop > 20, `should skid over ~30 frames, took ${framesToStop}`);
 });
 
 console.log(`\n${passed} passed`);
