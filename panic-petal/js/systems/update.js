@@ -1323,7 +1323,16 @@ function explodeSpecial(s) {
       const dx = (t.x + t.w / 2) - cx;
       const dy = (t.y + t.h / 2) - cy;
       if (Math.sqrt(dx * dx + dy * dy) <= s.radius) {
+        const wasAlive = t.alive;
         damage(s, t, s.damage, 'special');
+        // If this kill dropped a real enemy to 0 hp, route it through die() so
+        // it plays the SAME fixed-TTL death anim as a thorn/melee kill (instead
+        // of vanishing instantly). damage() set alive=false; die() restores it
+        // for the shrink/fade window.
+        if (wasAlive && !t.alive && typeof t.die === 'function' && t.aiState !== 'dead') {
+          t.die();
+          t.alive = true;
+        }
         if (Debug.enabled) Debug.logEvent(`bomb → ${t.type} dmg ${s.damage}`);
       }
     }
@@ -1615,6 +1624,15 @@ function handleBarrelDestroyed(barrel) {
     // explodeBarrel() routes through central damage(); we pass the full live set.
     const targets = [hero, ...enemies, ...realEnemies];
     const result = explodeBarrel(barrel, targets);
+    // Route any real enemy killed by the blast through die() so it plays the
+    // same fixed-TTL death anim as a thorn/melee kill (not an instant vanish).
+    for (const t of result.hit) {
+      if (t === hero) continue;
+      if (typeof t.die === 'function' && t.aiState !== 'dead') {
+        t.die();
+        t.alive = true; // keep alive during the shrink/fade window
+      }
+    }
     // Task 7.3 — track if the hero was hit by the explosion (design §4.1).
     if (result.hit.includes(hero)) {
       hero.runStats.hitsTaken.explosion += 1;
