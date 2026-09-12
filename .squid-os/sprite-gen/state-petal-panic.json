@@ -437,6 +437,58 @@
             "frame_size": "226x453",
             "frames_dir": "panic-petal/assets/heroes"
           }
+        },
+        {
+          "file": "panic-petal/assets/balthazar_sheet_5.png",
+          "rows": 1,
+          "cols": 8,
+          "description": "Balthazar tiger ringmaster hero sheet 5, djump x 8 frames",
+          "entities": [
+            {
+              "row": 1,
+              "name": "balthazar",
+              "anim": "djump",
+              "frames": [
+                "balthazar_djump_f1.png",
+                "balthazar_djump_f2.png",
+                "balthazar_djump_f3.png",
+                "balthazar_djump_f4.png",
+                "balthazar_djump_f5.png",
+                "balthazar_djump_f6.png",
+                "balthazar_djump_f7.png",
+                "balthazar_djump_f8.png"
+              ]
+            }
+          ],
+          "original_prompt": "Generate a sprite sheet of 1 hero sprite for the hand-painted circus game \"Petal Panic\", continuing the exact same hand-painted circus style as the prior Balthazar sheets above.\n\nLAYOUT: 1 row x 8 columns on a solid uniform pink background (rgb 250,152,170). The single row is one unique hero; the 8 columns are its 8 animation frames shown left-to-right. All cells exactly the same size (~221x452 px), evenly spaced, separated by thin light-pink grid lines (rgb 255,210,220, 2px wide). No text, no labels, no dark borders between cells. Image 1774 wide x 452 tall.\n\nSTYLE: hand-painted circus / big-top illustration. Soft painterly shading with visible brush texture, warm saturated colors, gentle highlights and shadows (NOT flat pixel art). Thick clean dark-brown/black outlines around the character. Side profile facing right. Dynamic poses with subtle motion smears on fast moves. Consistent proportions and palette across every frame.\n\nROW 1, 8 distinct loopable frames \u2014 BALTHAZAR, an anthropomorphic orange-and-black striped tiger dressed as a ringmaster/master of ceremonies. He wears a fitted black tuxedo jacket with satin lapels, a white dress shirt, a red bow tie, a red sash at the waist, and dark trousers; large expressive paws (orange with black stripes and cream claws), a long striped tail, and a confident theatrical expression. A DOUBLE-JUMP / aerial somersault (djump) sequence:\nFrame 1 -> crouched launch, body coiled low, arms pulled in, about to spring upward.\nFrame 2 -> rising, body extending upward, legs tucked, beginning to rotate forward.\nFrame 3 -> rotating forward mid-air, body tilting past vertical, head turning down, tail streaming up.\nFrame 4 -> fully upside-down at the top of the flip, head pointing down, feet up, coat tails flaring.\nFrame 5 -> still inverted but starting to roll back over, body curling, tail swinging.\nFrame 6 -> completing the rotation, coming back toward upright, head lifting.\nFrame 7 -> nearly upright again, body settling into a falling posture, legs reaching down.\nFrame 8 -> landing pose, body extended downward toward the ground, ready to plant, so the cycle loops.\n\nFrames within the row must be clearly distinct but smoothly sequential (loopable aerial flip). Keep it clean and croppable.\n",
+          "crop": {
+            "bg_color": [
+              250,
+              147,
+              168
+            ],
+            "bg_tol": 25,
+            "row_y": [
+              [
+                0,
+                452
+              ]
+            ],
+            "col_x": [
+              [
+                130,
+                364,
+                581,
+                790,
+                1002,
+                1210,
+                1405,
+                1640
+              ]
+            ],
+            "frame_size": "266x462",
+            "frames_dir": "panic-petal/assets/heroes"
+          }
         }
       ]
     },
@@ -2150,5 +2202,5 @@
       ]
     }
   },
-  "updated": "2026-09-12T01:03:36"
+  "updated": "2026-09-12T01:10:34"
 }
