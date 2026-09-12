@@ -83,7 +83,8 @@ export function render(ctx) {
   }
 
   // Task 6.1 — boss (Overgrown Elephant). Drawn with a wide HP bar above it so
-  // the fight's progress reads clearly; F3 adds phase name + weak-point box.
+  // the fight's progress reads clearly; F3 adds the unified phase/escalation
+  // label (drawLabel block) + weak-point box + arena bounds.
   const boss = getBoss();
   if (boss && boss.alive) {
     if (!(Debug.viewMode === 1)) boss.draw(ctx);
@@ -182,11 +183,15 @@ export function render(ctx) {
         : e.hp / e.maxHp;
       drawLabel(ctx, e.x + e.w / 2, e.y - 10, `${e.type}:${e.aiState}`, frac, '#e74c3c');
     }
-    // Boss HP
+    // Boss: unified label in the same name:state format as the enemies, with
+    // phase + escalation folded in. Replaces the old duplicate "BOSS PHASE ×n"
+    // text drawBossDebug used to paint 4px below this one. (The wide always-on
+    // gameplay bar above the boss, drawBossHpBar, is a separate HUD element.)
     {
       const b = getBoss();
       if (b && b.alive) {
-        drawLabel(ctx, b.x + b.w / 2, b.y - 28, 'BOSS', b.hp / b.maxHp, '#e74c3c');
+        drawLabel(ctx, b.x + b.w / 2, b.y - 28,
+          `BOSS:${b.phase}×${b.escalation.toFixed(2)}`, b.hp / b.maxHp, '#e74c3c');
       }
     }
     // Special projectiles: name + TTL/fuse bar
@@ -454,14 +459,13 @@ function drawBossHpBar(ctx, b) {
 }
 
 /**
- * F3 debug overlay for the boss: phase name + escalation above its head, the
- * weak-point box highlighted in gold, and the arena bounds as dashed lines.
+ * F3 debug overlay for the boss: weak-point box highlighted in gold and the
+ * arena bounds as dashed lines. (Phase + escalation show in the unified F3
+ * label above the boss — see the drawLabel block in render().)
  * @param {CanvasRenderingContext2D} ctx
  * @param {import('../boss.js').Elephant} b
  */
 function drawBossDebug(ctx, b) {
-  const cx = b.x + b.w / 2;
-
   // Arena bounds (dashed verticals).
   ctx.save();
   ctx.globalAlpha = 0.3;
@@ -480,14 +484,6 @@ function drawBossDebug(ctx, b) {
   ctx.strokeStyle = '#ffd700';
   ctx.lineWidth = 2;
   ctx.strokeRect(wp.x, wp.y, wp.w, wp.h);
-  ctx.restore();
-
-  // Phase + escalation label.
-  ctx.save();
-  ctx.font = 'bold 11px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#ffd700';
-  ctx.fillText(`BOSS ${b.phase.toUpperCase()} ×${b.escalation.toFixed(2)}`, cx, b.y - 24);
   ctx.restore();
 }
 
