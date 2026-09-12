@@ -52,11 +52,11 @@ export const Debug = {
   LOG_MAX: 50,
   showLog: false, // L toggles the on-screen tail of the log
   showStats: false, // T toggles the telemetry panel (default OFF)
-  viewMode: 0, // V cycles: 0=sprites+overlay, 1=collision-only (opaque), 2=no-visuals
+  viewMode: 0, // C cycles (round-robin): 0=sprite+collision, 1=collision-only (opaque), 2=sprite-only (pure gameplay)
 
   // --- Transform-debug detail level -----------------------------------------
-  // Cycles with C: 0=vectors only, 1=vectors+labels+mirror icons, 2=inspect
-  // selected entity (numeric panel). Drives drawEntityTransformDebug in render.
+  // The mirror icons + inspect panel are part of the collision debug details.
+  // detailLevel 2 = numeric inspect panel for the selected entity only.
   detailLevel: 0,
 
   // --- Toggle master switch -------------------------------------------------
@@ -154,6 +154,7 @@ export const Debug = {
     this.showLog = false;
     this.showStats = false;
     this.detailLevel = 0;
+    this.viewMode = 0; // never let a stale collision-only/sprite-only mode hide the overlay
     this.log = [];
   },
 };

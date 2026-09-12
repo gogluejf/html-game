@@ -509,14 +509,9 @@ function handleDebugKeys(e) {
       dumpStats(hero.runStats, hero);
       Debug.logEvent('stats JSON downloaded');
       break;
-    case 'KeyC': // Cycle transform-debug detail level (vectors → labels → inspect)
-      Debug.detailLevel = Debug.cycleDetailLevel();
-      const detNames = ['vectors', 'labels', 'inspect'];
-      Debug.logEvent(`detail: ${detNames[Debug.detailLevel]}`);
-      break;
-    case 'KeyV': // Cycle view mode: sprites+overlay → collision-only → no-visuals
+    case 'KeyC': // Cycle collision view mode (round-robin): sprite+collision → collision-only → sprite-only
       Debug.viewMode = (Debug.viewMode + 1) % 3;
-      const modeNames = ['sprites+overlay', 'collision-only', 'no-visuals'];
+      const modeNames = ['sprite+collision', 'collision-only', 'sprite-only'];
       Debug.logEvent(`view: ${modeNames[Debug.viewMode]}`);
       break;
   }
@@ -599,10 +594,18 @@ export function selectEntityAt(lx, ly) {
   const candidates = [...realEnemies, ...enemies, boss].filter(e => e && e.alive !== false);
   for (const p of powerups) if (p.alive && !p.collected) candidates.push(p);
   for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) if (b.alive) candidates.push(b);
+  const hero = getHero();
+  if (hero && !hero.dying) candidates.push(hero);
   for (const c of candidates) {
     const b = c.worldBox();
     if (lx >= b.x && lx <= b.x + b.w && ly >= b.y && ly <= b.y + b.h) {
       Debug.selected = c;
+      // Selecting an entity promotes detail to inspect level so its numeric
+      // panel shows immediately (mirror icons stay on at every level).
+      if (Debug.detailLevel < 2) {
+        Debug.detailLevel = 2;
+        Debug.logEvent('detail: inspect');
+      }
       Debug.logEvent(`select ${c.type ?? c.powerType ?? '?'} @(${Math.round(lx)},${Math.round(ly)})`);
       return c;
     }

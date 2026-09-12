@@ -74,7 +74,7 @@ export function render(ctx) {
   // Each draws itself including death shrink/fade and its attack telegraph.
   for (const e of getRealEnemies()) {
     if (!e.alive) continue;
-    if ((Debug.viewMode === 1)) continue;
+    if (Debug.viewMode === 1) continue;
     const sh = Effects.getShakeOffset(e);
     ctx.save();
     ctx.translate(sh.x, sh.y);
@@ -91,7 +91,7 @@ export function render(ctx) {
     if (boss.hp != null && boss.maxHp > 0 && boss.aiState !== 'dead') {
       drawBossHpBar(ctx, boss);
     }
-    if (Debug.enabled) drawBossDebug(ctx, boss);
+    if (Debug.enabled && Debug.viewMode !== 2) drawBossDebug(ctx, boss);
   }
 
   // Task 3.3 — sparkle particles + dropped coins.
@@ -172,7 +172,7 @@ export function render(ctx) {
     {
       const h = getHero();
       if (h && !h.dying) {
-        drawLabel(ctx, h.x + h.w / 2, h.y - 10, `HERO:${heroAnimName(h)}`, h.energy / h.maxEnergy, '#2ecc71');
+        drawLabel(ctx, h.x + h.w / 2, h.y - 10, `${h.heroDef?.name ?? 'HERO'}:${heroAnimName(h)}`, h.energy / h.maxEnergy, '#2ecc71');
       }
     }
     // Enemy: name + aiState + HP bar (single unified label above)
@@ -233,7 +233,8 @@ export function render(ctx) {
   }
 
   // Debug overlay: full §16 colored boxes over every entity's worldBox().
-  // viewMode 0=sprites+overlay, 1=collision-only (opaque, no sprites), 2=no-visuals
+  // viewMode 0=sprite+collision (semitransparent boxes), 1=collision-only
+  // (opaque boxes, no sprites), 2=sprite-only (pure gameplay, NO debug).
   if (Debug.enabled && Debug.viewMode !== 2) {
     drawDebugOverlay(ctx);
     // Task 3.3 + 5.1 — per-enemy debug: aggro radius circle + AI state label
@@ -246,7 +247,7 @@ export function render(ctx) {
   // EVERY live entity, plus the anim-scrubber collision-box overlay on the
   // selected entity. Gated entirely behind Debug.enabled so normal play pays
   // nothing. Detail level (C key) controls how much text/inspection is shown.
-  if (Debug.enabled) {
+  if (Debug.enabled && Debug.viewMode !== 2) {
     const allEnts = [
       ...getRealEnemies().filter(e => e.alive),
       ...getProjectiles(),
@@ -589,25 +590,18 @@ function drawEntityTransformDebug(ctx, ent) {
   //    down as soon as debug is on). One row per active timer, above the box.
   drawTimerStack(ctx, ent, cx, b.y - 34);
 
-  // 4) Labels + mirror icons (level >= 1).
-  if (Debug.detailLevel >= 1) {
-    const name = ent.type ?? ent.heroDef?.id ?? '?';
-    const state = ent.aiState ?? (ent.isBoss ? ent.phase : '');
-    const label = state ? `${name}:${state}` : name;
+  // 4) Mirror icons (always shown — part of the collision debug details).
+  //    Double-arrow glyphs: ↔ = mirrorX, ↕ = mirrorY. Lit cyan when active,
+  //    dim when not. No name label here (the unified labels above cover that).
+  {
+    const ix = cx - 10, iy = b.y - 24;
     ctx.save();
     ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillText(label, cx, b.y - 14);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(label, cx, b.y - 15);
-    // Mirror icons [X] [Y]: lit when true, dim when false.
-    const ix = cx - 12, iy = b.y - 24;
-    ctx.font = 'bold 8px monospace';
     ctx.fillStyle = ent.mirrorX ? '#00e5ff' : 'rgba(255,255,255,0.25)';
-    ctx.fillText('[X]', ix, iy);
+    ctx.fillText('\u2194', ix, iy);
     ctx.fillStyle = ent.mirrorY ? '#00e5ff' : 'rgba(255,255,255,0.25)';
-    ctx.fillText('[Y]', ix + 16, iy);
+    ctx.fillText('\u2195', ix + 12, iy);
     ctx.restore();
   }
 
@@ -806,7 +800,7 @@ function drawEventLog(ctx) {
  * @param {CanvasRenderingContext2D} ctx
  */
 function drawHarnessHint(ctx) {
-  const line1 = 'DEBUG | 1-9 spawn | F god | Z spd | T tele | Y hero | L log | E dump | C detail | V view';
+  const line1 = 'DEBUG | 1-9 spawn | F god | Z spd | T tele | Y hero | L log | E dump | C view (round-robin)';
   const line2 = 'RMB sel | LMB force | arrows scrub | X desel';
   ctx.save();
   ctx.font = '10px monospace';
