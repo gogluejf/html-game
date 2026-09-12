@@ -23,13 +23,29 @@ export class Camera {
   }
 
   /**
-   * Follow the hero horizontally with a facing look-ahead.
-   * No-op while locked (boss arena). Direct follow is fine for v1.
-   * @param {object} hero entity exposing x and facing (-1|1)
+   * Follow the hero horizontally with a dead-zone (buffer) to prevent jittery
+   * camera movement. The camera only scrolls when the hero crosses the trigger
+   * line: 60% from left (moving right) or 40% from left (moving left).
+   * No-op while locked (boss arena).
+   * @param {object} hero entity exposing x and w
    */
   update(hero) {
     if (this.locked) return;
-    const targetX = hero.x - this.w / 2 + hero.facing * 80;
+    const heroCenter = hero.x + hero.w / 2;
+    // Dead-zone boundaries in screen space.
+    const triggerRight = this.x + this.w * 0.6;  // hero must pass 60% to scroll right
+    const triggerLeft = this.x + this.w * 0.4;   // hero must pass 40% to scroll left
+
+    let targetX = this.x; // default: stay put (no scroll)
+
+    if (heroCenter > triggerRight) {
+      // Hero crossed the right trigger → scroll so hero sits at 60%.
+      targetX = heroCenter - this.w * 0.6;
+    } else if (heroCenter < triggerLeft) {
+      // Hero crossed the left trigger → scroll so hero sits at 40%.
+      targetX = heroCenter - this.w * 0.4;
+    }
+
     this.x = Math.max(0, Math.min(targetX, this.levelLength - this.w));
   }
 
