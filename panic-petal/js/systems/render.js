@@ -583,7 +583,12 @@ function drawEntityTransformDebug(ctx, ent) {
     ctx.restore();
   }
 
-  // 3) Labels + mirror icons (level >= 1).
+  // 3) Stacked labeled TTL bars — shown at ALL detail levels (this is the core
+  //    of the TTL debug; you should see life/fuse/death/rec/inv/special counting
+  //    down as soon as debug is on). One row per active timer, above the box.
+  drawTimerStack(ctx, ent, cx, b.y - 34);
+
+  // 4) Labels + mirror icons (level >= 1).
   if (Debug.detailLevel >= 1) {
     const name = ent.type ?? ent.heroDef?.id ?? '?';
     const state = ent.aiState ?? (ent.isBoss ? ent.phase : '');
@@ -603,11 +608,9 @@ function drawEntityTransformDebug(ctx, ent) {
     ctx.fillStyle = ent.mirrorY ? '#00e5ff' : 'rgba(255,255,255,0.25)';
     ctx.fillText('[Y]', ix + 16, iy);
     ctx.restore();
-    // Stacked labeled TTL bars (one row per active timer), above the icons.
-    drawTimerStack(ctx, ent, cx, b.y - 34);
   }
 
-  // 4) Numeric inspection panel (level 2, selected entity only).
+  // 5) Numeric inspection panel (level 2, selected entity only).
   if (Debug.detailLevel >= 2 && Debug.selected === ent) {
     const deg = r => ((r * 180 / Math.PI) % 360).toFixed(0);
     const anim = ent.anim;
