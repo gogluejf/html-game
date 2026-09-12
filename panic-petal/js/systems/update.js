@@ -703,19 +703,24 @@ world.on('hit', (a, b) => {
     if (target.isBoss && typeof target.isWeakPointHit === 'function') {
       const px = allyProj.x + allyProj.w / 2;
       const py = allyProj.y + allyProj.h / 2;
+      // takeDamage() owns the death transition internally (hp<=0 -> die()).
       const dealt = target.takeDamage(allyProj.damage, hero, 'projectile', { x: px, y: py });
       if (dealt > 0) target.hitFlash = 0.1;
       allyProj.alive = false;
-      if (typeof target.die === 'function' && target.hp <= 0 && target.aiState !== 'dead') {
-        target.die();
-        target.alive = true; // keep alive during death anim
-      }
       return;
     }
     // Central damage routing: defense + telemetry in one place (Task 3.2).
-    const dealt = damage(hero, target, allyProj.damage, 'projectile');
-    if (dealt > 0) {
+    // Real enemies route through takeDamage(), which OWNS the death transition
+    // internally (hp<=0 -> die() -> death TTL). Placeholder targets (plain
+    // Entity, no death pipeline) use raw damage() and are removed on death.
+    const isRealEnemy = typeof target.takeDamage === 'function';
+    const dealt = isRealEnemy
+      ? target.takeDamage(allyProj.damage, hero, 'projectile')
+      : damage(hero, target, allyProj.damage, 'projectile');
+    if (dealt > 0 && !isRealEnemy) {
       target.hitFlash = 0.1; // brief white flash on impact
+    }
+    if (dealt > 0) {
       // Task 7.1 — red hit sparkles at the impact point + enemy shake
       // (design §12 "Projectile hit on enemy" / "Enemy damaged").
       Effects.spawnHitSparkles(allyProj.x + allyProj.w / 2, allyProj.y + allyProj.h / 2);
@@ -728,15 +733,9 @@ world.on('hit', (a, b) => {
     if (allyProj.type === 'saw' || allyProj.type === 'bomb') {
       explodeSpecial(allyProj);
     }
-    // Task 3.3 — Enemy instances trigger their death pipeline via die().
-    // damage() already set alive=false when hp<=0; we call die() to start the
-    // shrink/fade sequence and restore alive=true so the anim plays.
-    // The entity is removed from the world when the anim completes (in updateRealEnemies).
-    if (typeof target.die === 'function' && target.hp <= 0 && target.aiState !== 'dead') {
-      target.die();
-      target.alive = true; // keep alive during death anim
-    } else if (!target.alive) {
-      // Placeholder targets (plain Entity, no death pipeline): remove immediately.
+    // Placeholders have no death anim: remove immediately when they die. Real
+    // enemies play their internal death pipeline (handled by updateRealEnemies).
+    if (!isRealEnemy && !target.alive) {
       world.remove(target);
     }
     return;
@@ -1318,22 +1317,17 @@ function explodeSpecial(s) {
 
   if (s.type === 'bomb' && s.radius > 0) {
     // AoE damage to all live entities in radius (enemies only — no self-damage).
+    // Route through takeDamage() so real enemies own their death transition
+    // internally (hp<=0 -> die() -> death TTL); placeholders use raw damage().
     for (const t of realEnemies) {
       if (!t.alive) continue;
       const dx = (t.x + t.w / 2) - cx;
       const dy = (t.y + t.h / 2) - cy;
       if (Math.sqrt(dx * dx + dy * dy) <= s.radius) {
-        const wasAlive = t.alive;
-        damage(s, t, s.damage, 'special');
-        // If this kill dropped a real enemy to 0 hp, route it through die() so
-        // it plays the SAME fixed-TTL death anim as a thorn/melee kill (instead
-        // of vanishing instantly). damage() set alive=false; die() restores it
-        // for the shrink/fade window.
-        if (wasAlive && !t.alive && typeof t.die === 'function' && t.aiState !== 'dead') {
-          t.die();
-          t.alive = true;
-        }
-        if (Debug.enabled) Debug.logEvent(`bomb → ${t.type} dmg ${s.damage}`);
+        const dealt = typeof t.takeDamage === 'function'
+          ? t.takeDamage(s.damage, s, 'special')
+          : damage(s, t, s.damage, 'special');
+        if (Debug.enabled) Debug.logEvent(`bomb → ${t.type} dmg ${dealt}`);
       }
     }
     spawnExplosionVFX(cx, cy, s.radius);
@@ -1624,15 +1618,8 @@ function handleBarrelDestroyed(barrel) {
     // explodeBarrel() routes through central damage(); we pass the full live set.
     const targets = [hero, ...enemies, ...realEnemies];
     const result = explodeBarrel(barrel, targets);
-    // Route any real enemy killed by the blast through die() so it plays the
-    // same fixed-TTL death anim as a thorn/melee kill (not an instant vanish).
-    for (const t of result.hit) {
-      if (t === hero) continue;
-      if (typeof t.die === 'function' && t.aiState !== 'dead') {
-        t.die();
-        t.alive = true; // keep alive during the shrink/fade window
-      }
-    }
+    // Real enemies killed by the blast already ran their internal death pipeline
+    // via takeDamage() inside explodeBarrel — no manual die() needed here.
     // Task 7.3 — track if the hero was hit by the explosion (design §4.1).
     if (result.hit.includes(hero)) {
       hero.runStats.hitsTaken.explosion += 1;

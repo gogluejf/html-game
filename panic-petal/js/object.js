@@ -309,15 +309,15 @@ export function explodeBarrel(obj, entities) {
     if (e.alive === false) continue;       // skip already-dead
     if (!withinRadius(obj, e, radius)) continue;
 
-    // Route through central damage() so defense + telemetry apply uniformly.
-    // Heroes drain energy; enemies drain hp. Both are valid targets.
-    const dealt = damage(obj, e, BARREL_DAMAGE, 'explosion');
+    // Route damage so defense + telemetry apply uniformly, and — for targets
+    // that own a death pipeline (real enemies) — let THEM handle the death
+    // transition internally via takeDamage(). Heroes drain energy; placeholders
+    // use raw damage(). The source never pokes at death directly.
+    const dealt = typeof e.takeDamage === 'function'
+      ? e.takeDamage(BARREL_DAMAGE, obj, 'explosion')
+      : damage(obj, e, BARREL_DAMAGE, 'explosion');
     if (dealt > 0) {
       hit.push(e);
-      if (typeof e.takeDamage === 'undefined' && e.hp != null && e.hp <= 0) {
-        // Plain placeholder enemy (no death pipeline): flag dead. damage() has
-        // already set alive=false; nothing else to do here.
-      }
     }
   }
 
