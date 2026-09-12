@@ -149,6 +149,8 @@ export function render(ctx) {
 
   // Debug: show each coin's value as small text above it so the
   // per-type weight/value difference is visible during development.
+  // (The TTL bar used to be hand-drawn here; coins now flow through the same
+  // generic drawTimerStack as every other entity — see allEnts below.)
   if (Debug.enabled && Debug.viewMode !== 2) {
     ctx.save();
     ctx.font = 'bold 9px monospace';
@@ -159,15 +161,6 @@ export function render(ctx) {
       const cy = c.y - 4;
       ctx.fillStyle = c.debugColor ?? '#fff';
       ctx.fillText(String(c.value), cx, cy);
-      // Small TTL bar (consistent with all other debug bars).
-      if (c.maxTtl > 0) {
-        const barW = 14, barH = 2;
-        const bx = cx - barW / 2, by = cy - 6;
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(bx, by, barW, barH);
-        ctx.fillStyle = c.ttlFrac < 0.25 ? '#e74c3c' : c.debugColor ?? '#fff';
-        ctx.fillRect(bx, by, barW * c.ttlFrac, barH);
-      }
     }
     // Debug: powerup type label above each live powerup, and the
     // checkpoint id above each flag (triggered ones dimmed).
@@ -286,6 +279,7 @@ export function render(ctx) {
       ...getBarrels().filter(b => b.alive),
       ...getPowerups().filter(p => p.alive && !p.collected),
       ...getPickups(),
+      ...getCoins().activeItems.filter(c => c.alive && !c.collected),
     ];
     const hero = getHero();
     if (hero && !hero.dying) allEnts.push(hero);
