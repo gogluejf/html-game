@@ -164,6 +164,19 @@ const barrels = generated.barrels;
 const woodBarrels = generated.woodBarrels ?? [];
 const coinBarrels = generated.coinBarrels;
 
+// Task 4.1 — dynamic SOLID registry: world boxes of every LIVE barrel.
+// Barrels are solids like the static platforms (design §10/§16): the hero and
+// grounded enemies resolve() against SOLIDS + this list each step, so they can
+// stand on and be blocked by barrels. The list is refreshed once per fixed
+// step because barrels get destroyed (HP 0 → alive=false) mid-fight.
+const barrelSolidBoxes = [];
+function refreshBarrelSolidBoxes() {
+  barrelSolidBoxes.length = 0;
+  for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) {
+    if (b.alive) barrelSolidBoxes.push(b.worldBox());
+  }
+}
+
 // Task 4.3 — Powerups (design §10). Scattered along the level by the rogue
 // spawner with min spacing. Each sits on the floor (bob animation lifts it
 // visually). The 'clear' powerup is placed wherever the spawner rolls it.
@@ -670,7 +683,8 @@ for (const c of checkpoints) world.add(c);
 
 // Rule-action handlers — the declarative dispatch path. For this task we only
 // need to observe events; damage/pickup logic arrives with later tasks.
-world.on('resolve', () => {}); // positional correction handled separately below
+world.on('resolve', () => {}); // positional correction happens via the resolve()
+                                // calls below (SOLIDS + barrelSolidBoxes)
 
 // Task 3.1 — friendly thorns hit ENEMY/BOSS (PROJ_ALLY rule). Apply damage and
 // cull the projectile on impact. This is the ONLY place a PROJ_ALLY can interact
@@ -1159,7 +1173,11 @@ export function update(dt) {
 
   // 3. collide: positional correction against solids (no pass-through),
   //    then broadphase/narrowphase rule dispatch.
-  const hit = resolve(hero, SOLIDS);
+  // Refresh the dynamic solid list (barrels) and resolve the hero against
+  // static platforms AND live barrels — barrels block movement like any
+  // platform piece (design §10: destructible solids).
+  refreshBarrelSolidBoxes();
+  const hit = resolve(hero, [...SOLIDS, ...barrelSolidBoxes]);
   world.update();
 
   // Grounded: derive from the last resolved axis + a surface-contact probe so
@@ -1209,7 +1227,9 @@ function finishHeroDeath() {
 function isGrounded(hit) {
   if (hit && hit.axis === 'y' && hit.dir === 1) return true; // landed on a surface
   const wb = hero.worldBox();
-  for (const s of SOLIDS) {
+  // Static platforms + live barrels both count as floor surfaces (the probe
+  // also covers the "standing on a barrel" case).
+  for (const s of [...SOLIDS, ...barrelSolidBoxes]) {
     if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
     const gap = s.y - (wb.y + wb.h);
     if (gap >= -2 && gap <= 4 && hero.vy >= 0) return true;
@@ -1405,10 +1425,11 @@ function updateRealEnemy(e, dt) {
   // have gravity 0 so they never fall; grounders do not.
   e.update(dt, hero, world);
 
-  // Resolve against solids so grounders don't walk through platforms. Flyers
-  // skip solid resolution (they fly over/through platforms by design).
+  // Resolve against solids (static platforms + live barrels) so grounders
+  // don't walk through platforms or barrels. Flyers skip solid resolution
+  // (they fly over/through them by design).
   if (e.alive && e.aiState !== 'dead' && e.gravity > 0) {
-    resolve(e, SOLIDS);
+    resolve(e, [...SOLIDS, ...barrelSolidBoxes]);
   }
 
   // Attack hitbox check: each type exposes an active-world hitbox getter that
