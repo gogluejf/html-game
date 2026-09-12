@@ -541,6 +541,58 @@
             "frame_size": "232x450",
             "frames_dir": "panic-petal/assets/heroes"
           }
+        },
+        {
+          "file": "panic-petal/assets/scarlet_vale_sheet_5.png",
+          "rows": 1,
+          "cols": 8,
+          "description": "Scarlet Vale hero double-jump (aerial flip), 8 frames",
+          "entities": [
+            {
+              "row": 1,
+              "name": "scarlet_vale_djump",
+              "anim": "djump",
+              "frames": [
+                "scarlet_vale_djump_f1.png",
+                "scarlet_vale_djump_f2.png",
+                "scarlet_vale_djump_f3.png",
+                "scarlet_vale_djump_f4.png",
+                "scarlet_vale_djump_f5.png",
+                "scarlet_vale_djump_f6.png",
+                "scarlet_vale_djump_f7.png",
+                "scarlet_vale_djump_f8.png"
+              ]
+            }
+          ],
+          "original_prompt": "Generate a sprite sheet of 1 hero character \"Scarlet Vale\" for the hand-painted circus game Petal Panic, continuing the exact same hand-painted circus style as the prior Scarlet Vale sheets above.\n\nLAYOUT: 1 row x 8 columns on a solid uniform pink background (rgb 252,151,170). The single row is the Scarlet Vale heroine; the 8 columns are her 8 double-jump animation frames shown left-to-right. All cells exactly the same size (~222x435 px), evenly spaced, separated by thin light-pink grid lines (rgb 255,210,220, 2px wide). No text, no labels, no dark borders between cells. Image 1774 wide x 435 tall.\n\nSTYLE: hand-painted circus / storybook illustration, soft painterly brushwork with visible texture, warm saturated palette (crimson red, deep black, cream skin tones, white feather accent). A glamorous burlesque/circus heroine: long flowing wavy black hair, a large crimson rose tucked into her hair, a black domino mask over her eyes, a white-and-grey plume/feather headdress arcing up behind her head. She wears a red bra-style top, a short red skirt, thigh-high black stockings, and red high-heeled shoes, with a flowing red cape/sash trailing behind. Full-body side profile facing right, dynamic and elegant. Consistent style across every frame.\n\nROW (left to right), 8 distinct double-jump (aerial spin/flip) frames:\n1. ASCEND - body upright, legs trailing below, arms back, just launched off the ground, cape streaming down.\n2. RISE - torso tilting back, one leg kicking up, hair beginning to flow upward.\n3. FLIP START - rotating backward, legs swinging up over the head, body inverting.\n4. INVERTED - fully upside-down mid-flip, hair and cape hanging downward, rose still in hair.\n5. ROTATE - completing the inversion, legs coming around to the other side, cape flaring.\n6. SETTLE - returning toward upright, legs tucking beneath, body leveling out.\n7. RECOVER - nearly vertical again, legs extending downward, arms reaching forward.\n8. LAND PREP - upright with legs split for landing, cape settling, matching the launch pose so the loop closes smoothly.\n\nFrames within the row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable.",
+          "crop": {
+            "bg_color": [
+              250,
+              146,
+              167
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                435
+              ]
+            ],
+            "col_x": [
+              [
+                111,
+                333,
+                554,
+                776,
+                998,
+                1220,
+                1441,
+                1663
+              ]
+            ],
+            "frame_size": "266x445",
+            "frames_dir": "panic-petal/assets/heroes"
+          }
         }
       ]
     },
@@ -2254,5 +2306,5 @@
       ]
     }
   },
-  "updated": "2026-09-12T01:11:56"
+  "updated": "2026-09-12T01:16:14"
 }
