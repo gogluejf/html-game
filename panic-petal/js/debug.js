@@ -1,6 +1,6 @@
 // Petal Panic — Debug & Test Harness (design §19).
 //
-// A developer sandbox toggled with F1. Every feature is gated behind
+// A developer sandbox toggled with the unified debug mode. Every feature is gated behind
 // `if (Debug.enabled)` in the update/render systems, so normal play pays zero
 // cost: when disabled the only work done is a single boolean check per frame.
 //
@@ -11,14 +11,14 @@
 // systems/render.js, which import this module.
 //
 // Features (v1 = keybinds + console, no UI):
-//   - Free-spawn any entity in a chosen AI state        (keys 1-9 while F1)
-//   - God mode (invincible + infinite ammo)             (G while F1)
-//   - Slow-mo / freeze cycle                            (T while F1)
-//   - Hero swap Scarlet <-> Balthazhar                  (Y while F1)
-//   - Force an enemy's AI state on demand               (click enemy while F1)
-//   - Aggro radius + facing arrow + state label viz     (always when F1)
+//   - Free-spawn any entity in a chosen AI state        (keys 1-9 while debug)
+//   - God mode (invincible + infinite ammo)             (G while debug)
+//   - Slow-mo / freeze cycle                            (T while debug)
+//   - Hero swap Scarlet <-> Balthazhar                  (Y while debug)
+//   - Force an enemy's AI state on demand               (click enemy while debug)
+//   - Aggro radius + facing arrow + state label viz     (always when debug)
 //   - Anim frame scrubber + collision-box overlay       (arrows + select)
-//   - Live §4.1 telemetry HUD                           (when F1)
+//   - Live §4.1 telemetry HUD                           (when debug)
 //   - Event log ring buffer                             (L toggles display)
 
 export const Debug = {
@@ -131,7 +131,7 @@ export const Debug = {
   },
 
   /**
-   * Reset all debug flags to defaults (called when F1 turns off and on re-enable).
+   * Reset all debug flags to defaults (called when debug turns off and on re-enable).
    */
   reset() {
     this.god = false;

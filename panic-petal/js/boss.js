@@ -256,7 +256,7 @@ export class Elephant extends Enemy {
   }
 
   /**
-   * World-space AABB of the weak point (head/trunk). Used by the F3 debug
+   * World-space AABB of the weak point (head/trunk). Used by the debug
    * overlay and by takeDamage() to decide bonus damage.
    * @returns {{x:number,y:number,w:number,h:number}}
    */

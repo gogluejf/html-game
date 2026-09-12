@@ -1,7 +1,7 @@
 // Petal Panic — update system (fixed 60Hz physics step).
 // Task 1.3 integration test: a hero-colored box moved by arrow keys / WASD,
 // colliding against static orange SOLID platforms via CollisionWorld + resolve().
-// F3 toggles the debug overlay (collision boxes) in render.js.
+// Debug mode toggles the unified debug overlay in render.js.
 // Task 1.4: hero-following camera clamped to level bounds with facing
 // look-ahead; the test level is now longer than the viewport so the camera
 // scrolls, and placeholder enemies/projectiles/pickups exercise every §16
@@ -70,7 +70,7 @@ const solidEntities = SOLIDS.map(b => new SolidBox(b));
 const FLOOR_TOP = SOLIDS[0].y; // ground top (first platform is the full-length floor)
 const HERO_START_X = 100;
 let hero = new Hero(HEROES.scarlet, HERO_START_X, FLOOR_TOP - HEROES.scarlet.h);
-/** Rebind the module-level hero reference (used by the F1 hero-swap). */
+/** Rebind the module-level hero reference (used by debug hero-swap). */
 function setHeroRef(h) { hero = h; }
 
 // Task 3.1 — thorn fire state. Cooldown is in seconds; rapid powerup halves it.
@@ -321,17 +321,15 @@ export function continueFromGameOver() {
 }
 
 /**
- * F3 boot shortcut: reset the world to a clean state before jumping to PLAY.
+ * Debug boot shortcut: reset the world to a clean state before jumping to PLAY.
  * Kills all enemies, clears projectiles/coins/particles, resets checkpoints.
  * The hero is rebuilt by the transition hook (SELECT/HOME/OVER/WIN → PLAY).
  */
-function resetWorldForF3() {
-  // Kill all real enemies + boss.
+function resetWorldForDebug() {
+  // Kill all real enemies (NOT the boss — killing it triggers WIN).
   for (const e of realEnemies) {
     if (e.alive) { e.alive = false; }
   }
-  const b = getBoss();
-  if (b && b.alive) b.alive = false;
   // Clear projectiles.
   for (const p of projectilePool.activeItems) { p.alive = false; }
   projectilePool.active.length = 0;
@@ -342,68 +340,52 @@ function resetWorldForF3() {
   for (const c of checkpoints) c.triggered = false;
   // Reset effects.
   Effects.reset();
-  console.log('[debug] world reset for F3 boot');
+  console.log('[debug] world reset for debug boot');
 }
 
 /**
- * Enable the full debug experience: visual overlay (F3) + harness (F1) + log.
- * Idempotent — safe to call multiple times. Used by both F3 paths (boot + toggle).
+ * Enable the unified debug experience: overlay + harness + log.
+ * Idempotent — safe to call multiple times.
  */
-function enableFullDebug(source) {
-  setDebugEnabled(true);
+function enableDebug(source) {
   if (!Debug.enabled) Debug.toggle();
   if (!Debug.showLog) {
     Debug.showLog = true;
-    Debug.logEvent(`${source}: debug + harness ON`);
+    Debug.logEvent(`${source}: debug ON`);
+  }
+}
+
+function handleDebugToggle(e, source) {
+  e.preventDefault();
+  const s = getState();
+  if (s !== S.PLAY) {
+    window.__selectedHero = 'scarlet';
+    hero.x = 80;
+    hero.y = FLOOR_TOP - hero.h;
+    hero.vx = 0; hero.vy = 0;
+    hero.alive = true;
+    hero.dying = false;
+    hero.deathTimer = 0;
+    enableDebug(source);
+    tryTransition(S.PLAY);
+    console.log(`[debug] ${source}: ${STATE_NAMES[s]} → PLAY`);
+    return;
+  }
+
+  if (!Debug.enabled) {
+    enableDebug(source);
+  } else {
+    Debug.toggle();
+    Debug.reset();
+    Debug.logEvent(`${source}: debug OFF`);
   }
 }
 
 window.addEventListener('keydown', (e) => {
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','KeyG','KeyH','KeyJ'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
-  if (e.code === 'F3') {
-    e.preventDefault();
-    const s = getState();
-    if (s !== S.PLAY) {
-      // Dev boot shortcut: jump to PLAY with Scarlet + full debug. No reload.
-      window.__selectedHero = 'scarlet';
-      hero.x = 80;
-      hero.y = FLOOR_TOP - hero.h;
-      hero.vx = 0; hero.vy = 0;
-      hero.alive = true;
-      hero.dying = false;
-      hero.deathTimer = 0;
-      enableFullDebug('F3');
-      tryTransition(S.PLAY);
-      console.log(`[debug] F3: ${STATE_NAMES[s]} → PLAY`);
-    } else {
-      const turningOn = !isDebugEnabled();
-      setDebugEnabled(turningOn);
-      if (turningOn) enableFullDebug('F3');
-    }
-    return;
-  }
-  // F1 is an alias for F3 (unified debug toggle).
-  if (e.code === 'F1') {
-    e.preventDefault();
-    const s = getState();
-    if (s !== S.PLAY) {
-      window.__selectedHero = 'scarlet';
-      hero.x = 80;
-      hero.y = FLOOR_TOP - hero.h;
-      hero.vx = 0; hero.vy = 0;
-      hero.alive = true;
-      hero.dying = false;
-      hero.deathTimer = 0;
-      enableFullDebug('F1');
-      tryTransition(S.PLAY);
-      console.log(`[debug] F1: ${STATE_NAMES[s]} → PLAY`);
-    } else {
-      const turningOn = !isDebugEnabled();
-      setDebugEnabled(turningOn);
-      if (turningOn) enableFullDebug('F1');
-      else Debug.reset();
-    }
+  if (e.code === 'F1' || e.code === 'F3') {
+    handleDebugToggle(e, 'debug');
     return;
   }
   handleDebugKeys(e); // no-op unless Debug.enabled
@@ -412,7 +394,7 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => { keys.delete(e.code); screenOnKeyUp(e.code); });
 window.addEventListener('blur', () => { keys.clear(); screenOnKeyUp('ArrowLeft'); screenOnKeyUp('ArrowRight'); });
 
-// --- Debug harness mouse input (F1): click to select / force an enemy's state --
+// --- Debug harness mouse input: click to select / force an enemy's state -----
 // Converts a screen-space click into logical 960x540 coords (inverse of the
 // main.js transform), then selects or cycles the entity under it. Only active
 // while the harness is on; zero cost otherwise (early return).
@@ -447,12 +429,7 @@ function readInput() {
   };
 }
 
-// --- Debug overlay state (F3) -------------------------------------------------
-let debugEnabled = false;
-export function isDebugEnabled() { return debugEnabled; }
-export function setDebugEnabled(v) { debugEnabled = v; }
-
-// --- Debug & Test Harness (F1, design §19) ------------------------------------
+// --- Debug & Test Harness ----------------------------------------------------
 // Everything below is gated behind `if (Debug.enabled)` so normal play pays only
 // a single boolean check per frame. The spawn table is populated once from the
 // entity constructors that exist in this module's scope.
@@ -487,7 +464,7 @@ function debugSpawn(type, x, y, state) {
 }
 
 /**
- * Handle F1 harness keypresses. Called from the global keydown listener while
+ * Handle debug keypresses. Called from the global keydown listener while
  * Debug.enabled is true. All actions are edge-triggered (one press = one action).
  * @param {KeyboardEvent} e
  */
@@ -919,7 +896,7 @@ world.on('checkpoint', (a, b) => {
 // Subscribe to state transitions; when the run ends (WIN or OVER), serialize
 // the full §4.1 telemetry to console + downloadable JSON. This is the "tuning
 // pass" hook: every completed run produces a structured record for analysis.
-// Stats dump is manual: press D in F1 mode to download the JSON.
+// Stats dump is manual: press E in debug mode to download the JSON.
 // No longer auto-triggers on WIN/OVER.
 
 // Reset per-screen transient state (held keys, focus) on entry.
@@ -929,7 +906,7 @@ onTransition((from, to) => { screenReset(to); });
 // The Select screen sets window.__selectedHero before calling tryTransition(S.PLAY).
 onTransition((from, to) => {
   if (to === S.PLAY && from !== S.PAUSE) {
-    // Covers: SELECT→PLAY, HOME→PLAY (F3 boot), OVER→PLAY, WIN→PLAY.
+    // Covers: SELECT→PLAY, HOME→PLAY (debug boot), OVER→PLAY, WIN→PLAY.
     // PAUSE→PLAY is a resume — hero state is already correct.
     const heroId = window.__selectedHero || 'scarlet';
     const def = HEROES[heroId] || HEROES.scarlet;
@@ -1029,16 +1006,16 @@ export function getProjectiles() { return projectilePool.activeItems; }
 export function getSpecials() { return specialPool.activeItems; }
 export function getPickups() { return pickups; }
 export function getCamera() { return camera; }
-// Task 5.3 — full real-enemy list (from generateLevel) for render/F3.
+// Task 5.3 — full real-enemy list (from generateLevel) for render/debug.
 export function getRealEnemies() { return realEnemies; }
-// Task 6.1 — the boss entity for render + F3 debug.
+// Task 6.1 — the boss entity for render + debug.
 export function getBoss() { return boss; }
 export function getParticles() { return particles; }
 export function getCoins() { return coins; }
 // Task 4.1 + 5.3 — barrels (explosive + coin) + explosion screen shake for render.
 export function getBarrels() { return [...barrels, ...woodBarrels, ...coinBarrels]; }
 export function getCoinBarrels() { return coinBarrels; }
-// Task 4.3 — powerups, checkpoints, floating text for render + F3 debug.
+// Task 4.3 — powerups, checkpoints, floating text for render + debug.
 export function getPowerups() { return powerups; }
 export function getCheckpoints() { return checkpoints; }
 export function getFloatTexts() { return floatTexts; }
@@ -1048,7 +1025,7 @@ export function update(dt) {
   // Physics only runs during PLAY; other states are screen-driven (Milestone 8).
   if (getState() !== S.PLAY) return;
 
-  // --- Debug harness (F1): time scaling + god mode. Zero cost when off. -------
+  // --- Debug harness: time scaling + god mode. Zero cost when off. -----------
   if (Debug.enabled) {
     applyGodMode(dt);
     dt *= Debug.timeScale; // slow-mo / freeze-frame (0 = physics paused, render continues)

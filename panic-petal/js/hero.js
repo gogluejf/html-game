@@ -6,7 +6,7 @@
 // Collision model note: the hero's collision box is an OFFSET AABB (this.box)
 // relative to its origin. Crouching swaps in a shorter box (crouchBox) whose
 // top edge drops by h*0.4 while keeping the feet planted — this validates the
-// offset-box model end-to-end (the F3 debug overlay shows the box get shorter).
+// offset-box model end-to-end (the debug overlay shows the box get shorter).
 
 import { Entity } from './entity.js';
 import { GRAVITY, MAX_FALL_SPEED, LAYER } from './consts.js';

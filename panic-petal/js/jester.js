@@ -150,7 +150,7 @@ export class Jester extends Enemy {
       ctx.lineTo(cx + dir * reach, cy - 6);
       ctx.stroke();
       ctx.restore();
-      // Live hitbox outline (debug aid even without F3).
+      // Live hitbox outline (debug aid even without debug mode).
       if (hb) {
         ctx.save();
         ctx.globalAlpha = 0.35;

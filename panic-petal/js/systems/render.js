@@ -2,11 +2,10 @@
 // logical→screen transform is applied by main.js before this runs.
 //
 // Task 1.4: world entities are drawn under a camera translate so the level
-// scrolls horizontally, and F3 toggles the full design §16 colored-box debug
-// overlay (orange/green/red/blue/pink by collision layer).
+// Debug mode toggles the unified debug overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../view.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, isDebugEnabled, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss } from './update.js';
 import { Effects } from '../effects.js';
 import { getState, S } from '../state.js';
 import { Debug } from '../debug.js';
@@ -83,7 +82,7 @@ export function render(ctx) {
   }
 
   // Task 6.1 — boss (Overgrown Elephant). Drawn with a wide HP bar above it so
-  // the fight's progress reads clearly; F3 adds the unified phase/escalation
+  // the fight's progress reads clearly; debug mode adds the unified phase/escalation
   // label (drawLabel block) + weak-point box + arena bounds.
   const boss = getBoss();
   if (boss && boss.alive) {
@@ -91,7 +90,7 @@ export function render(ctx) {
     if (boss.hp != null && boss.maxHp > 0 && boss.aiState !== 'dead') {
       drawBossHpBar(ctx, boss);
     }
-    if (isDebugEnabled()) drawBossDebug(ctx, boss);
+    if (Debug.enabled) drawBossDebug(ctx, boss);
   }
 
   // Task 3.3 — sparkle particles + dropped coins.
@@ -106,9 +105,9 @@ export function render(ctx) {
   // Task 4.3 — floating value-text popups (powerup labels, checkpoint ids).
   for (const t of getFloatTexts()) t.draw(ctx);
 
-  // Task 4.2 — F3 debug: show each coin's value as small text above it so the
+  // Debug: show each coin's value as small text above it so the
   // per-type weight/value difference is visible during development.
-  if (isDebugEnabled() && Debug.viewMode !== 2) {
+  if (Debug.enabled && Debug.viewMode !== 2) {
     ctx.save();
     ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'center';
@@ -118,7 +117,7 @@ export function render(ctx) {
       const cy = c.y - 4;
       ctx.fillStyle = c.debugColor ?? '#fff';
       ctx.fillText(String(c.value), cx, cy);
-      // Small TTL bar (consistent with all other F3 bars).
+      // Small TTL bar (consistent with all other debug bars).
       if (c.maxTtl > 0) {
         const barW = 14, barH = 2;
         const bx = cx - barW / 2, by = cy - 6;
@@ -128,7 +127,7 @@ export function render(ctx) {
         ctx.fillRect(bx, by, barW * c.ttlFrac, barH);
       }
     }
-    // Task 4.3 — F3 debug: powerup type label above each live powerup, and the
+    // Debug: powerup type label above each live powerup, and the
     // checkpoint id above each flag (triggered ones dimmed).
     for (const p of getPowerups()) {
       if (!p.alive || p.collected) continue;
@@ -144,7 +143,7 @@ export function render(ctx) {
       ctx.fillStyle = c.triggered ? 'rgba(255,215,0,0.4)' : '#ffd700';
       ctx.fillText(`[${c.checkpointId}]`, cx, cy);
     }
-    // Unified F3 labels: name + HP/energy bar for every entity.
+    // Unified debug labels: name + HP/energy bar for every entity.
     // Consistent format: [NAME] above a small colored bar showing remaining life.
     ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'center';
@@ -231,16 +230,16 @@ export function render(ctx) {
     }
   }
 
-  // Debug overlay (F3): full §16 colored boxes over every entity's worldBox().
+  // Debug overlay: full §16 colored boxes over every entity's worldBox().
   // viewMode 0=sprites+overlay, 1=collision-only (opaque, no sprites), 2=no-visuals
-  if (isDebugEnabled() && Debug.viewMode !== 2) {
+  if (Debug.enabled && Debug.viewMode !== 2) {
     drawDebugOverlay(ctx);
     // Task 3.3 + 5.1 — per-enemy debug: aggro radius circle + AI state label
     // above each real enemy's head.
     for (const e of getRealEnemies()) drawEnemyDebug(ctx, e);
   }
 
-  // --- Debug & Test Harness (F1, design §19) ---------------------------------
+  // --- Unified debug overlays -------------------------------------------------
   // Aggro viz + facing arrow + state label for every live enemy/boss, plus the
   // anim-scrubber collision-box overlay on the selected entity. Gated entirely
   // behind Debug.enabled so normal play pays nothing.
@@ -254,13 +253,13 @@ export function render(ctx) {
   ctx.restore();
 
   // --- Viewport-space HUD hint (not scrolled with the world) -----------------
-  if (isDebugEnabled()) {
+  if (Debug.enabled) {
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.font = '12px monospace';
-    ctx.fillText('DEBUG ON — F3 to toggle', 8, 16);
+    ctx.fillText('DEBUG ON', 8, 16);
   }
 
-  // --- Debug & Test Harness HUD (F1): live §4.1 telemetry + event log --------
+  // --- Unified debug HUD: live telemetry + event log --------------------------
   if (Debug.enabled) {
     if (Debug.showStats) drawStatsHUD(ctx);
     if (Debug.showLog) drawEventLog(ctx);
@@ -297,7 +296,7 @@ export function render(ctx) {
  * loop without storing extra state. Called inside the camera-translated world.
  */
 /**
- * Pick the hero's current anim name from its state (pure — used by the F3
+ * Pick the hero's current anim name from its state (pure — used by the debug
  * debug label, and any future real-sprite selection should use this too).
  *
  * Jump state is driven by `jumpsUsed`, NOT by vy: once a jump is initiated the
@@ -395,7 +394,7 @@ function drawDebugOverlay(ctx) {
     ctx.restore();
   }
 
-  // Generic effect-radius circles (F3): any entity with radius > 0 gets a
+  // Generic effect-radius circles (debug): any entity with radius > 0 gets a
   // dashed circle. Color: pink = explosion AoE, red = aggro/detection.
   for (const ent of all) {
     const r = ent.radius ?? 0;
@@ -459,8 +458,8 @@ function drawBossHpBar(ctx, b) {
 }
 
 /**
- * F3 debug overlay for the boss: weak-point box highlighted in gold and the
- * arena bounds as dashed lines. (Phase + escalation show in the unified F3
+ * Debug overlay for the boss: weak-point box highlighted in gold and the
+ * arena bounds as dashed lines. (Phase + escalation show in the unified debug
  * label above the boss — see the drawLabel block in render().)
  * @param {CanvasRenderingContext2D} ctx
  * @param {import('../boss.js').Elephant} b
@@ -487,7 +486,7 @@ function drawBossDebug(ctx, b) {
   ctx.restore();
 }
 
-// --- Task 3.3 + 5.1 — per-enemy debug overlay (F3) ---------------------------
+// --- Task 3.3 + 5.1 — per-enemy debug overlay --------------------------------
 // Draws each real enemy's aggro radius as a faint circle and its current AI
 // state as a label above its head. Helps validate every state machine during
 // development (jester whip, hound lunge, violetta pace/shoot, jacko roll/launch,
@@ -502,7 +501,7 @@ function drawBossDebug(ctx, b) {
 // Kept as a call target so existing for-loops don't break.
 function drawEnemyDebug(_ctx, _e) {}
 
-// --- Debug & Test Harness (F1, design §19) — world-space overlays ------------
+// --- Unified debug — world-space overlays ------------------------------------
 
 /**
  * Aggro viz for a single enemy/boss: faint aggro-radius circle, a facing arrow
@@ -516,7 +515,7 @@ function drawAggroViz(ctx, e) {
   const cx = e.x + e.w / 2;
   const cy = e.y + e.h / 2;
 
-  // Facing arrow only (name + aggro circle are F3's job via drawLabel/drawEnemyDebug).
+  // Facing arrow only (name + aggro circle are handled by debug labels/radius loops).
   const dir = e.facing ?? 1;
   const len = 22;
   ctx.save();
@@ -573,7 +572,7 @@ function drawSelectionOverlay(ctx, sel) {
   ctx.restore();
 }
 
-// --- Debug & Test Harness HUD (F1) — viewport-space ---------------------------
+// --- Unified debug HUD — viewport-space --------------------------------------
 
 /**
  * Live §4.1 telemetry HUD in the top-left corner: kills by type, coins, damage
@@ -593,7 +592,7 @@ function drawStatsHUD(ctx) {
   const cc = s.coinsCollected ?? {};
 
   const lines = [];
-  lines.push('=== TELEMETRY (F1) ===');
+  lines.push('=== TELEMETRY ===');
   // Kills by type.
   const killStr = Object.entries(ek).map(([k, v]) => `${k}:${v}`).join(' ') || 'none';
   lines.push(`kills   ${killStr}`);
@@ -664,7 +663,7 @@ function drawEventLog(ctx) {
  * @param {CanvasRenderingContext2D} ctx
  */
 function drawHarnessHint(ctx) {
-  const line1 = 'F1 | 1-9 spawn | F god | Z spd | T tele | Y hero | L log | E dump | C view';
+  const line1 = 'DEBUG | 1-9 spawn | F god | Z spd | T tele | Y hero | L log | E dump | C view';
   const line2 = 'RMB sel | LMB force | arrows scrub | X desel';
   ctx.save();
   ctx.font = '10px monospace';

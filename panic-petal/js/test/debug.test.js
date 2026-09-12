@@ -38,7 +38,7 @@ function makeFakeDeps() {
   };
 }
 
-console.log('Debug & Test Harness (F1)');
+console.log('Debug & Test Harness');
 
 ok('toggle flips enabled on/off', () => {
   Debug.enabled = false;
