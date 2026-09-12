@@ -5,6 +5,7 @@
 // Debug mode toggles the unified debug overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../view.js';
+import { LAYER } from '../consts.js';
 import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss } from './update.js';
 import { Effects } from '../effects.js';
 import { getState, S } from '../state.js';
@@ -36,75 +37,115 @@ export function render(ctx) {
   const shake = getShakeOffset();
   ctx.translate(-cam.x + shake.x, -cam.y + shake.y);
 
-  // Solid platforms (orange per design §16 debug palette).
-  for (const s of getSolids()) {
-    ctx.fillStyle = '#ff9f43';
-    ctx.fillRect(s.x, s.y, s.w, s.h);
+  // Solid platforms — SPRITE layer (solid orange placeholder art until real
+  // tiles land). Hidden in collision-only mode like every other sprite; the
+  // engine's semitransparent SOLID box still overlays them via drawDebugOverlay.
+  if (!(Debug.viewMode === 1)) {
+    for (const s of getSolids()) {
+      ctx.fillStyle = '#ff9f43';
+      ctx.fillRect(s.x, s.y, s.w, s.h);
+    }
   }
 
-  // Task 4.1 — destructible barrels (drawn via Entity.draw; white flash on hit).
-  for (const b of getBarrels()) {
-    if (!b.alive) continue;
-    if (!(Debug.viewMode === 1)) b.draw(ctx);
-  }
+  // =====================================================================
+  // SPRITE LAYER — one gate for everything below: `showSprites` is false
+  // only in collision-only mode. Adding a new entity type means adding its
+  // draw loop here ONCE; it can never be forgotten in the hide list again.
+  // The collision debug layer (drawDebugOverlay) is separate and always
+  // semitransparent — see below.
+  // =====================================================================
+  const showSprites = !(Debug.viewMode === 1);
+  if (showSprites) {
+    // Task 4.1 — destructible barrels (drawn via Entity.draw; white flash on hit).
+    for (const b of getBarrels()) {
+      if (!b.alive) continue;
+      b.draw(ctx);
+    }
 
-  // Placeholder pickups / enemies / projectiles (debug-colored bodies).
-  if (!(Debug.viewMode === 1)) for (const p of getPickups()) p.draw(ctx);
-  for (const e of getEnemies()) {
-    if (e.alive === false) continue; // destroyed target — no longer drawn
-    // Task 7.1 — enemy shake: offset the draw position by a random ±3px while
-    // hitFlash is running (design §12 "Enemy damaged: fast shake").
-    const sh = Effects.getShakeOffset(e);
-    ctx.save();
-    ctx.translate(sh.x, sh.y);
-    e.draw(ctx);
-    ctx.restore();
-    // Task 3.2 — white flash when struck (melee or projectile).
-    if (e.hitFlash > 0) {
+    // Placeholder pickups / enemies / projectiles (debug-colored bodies).
+    for (const p of getPickups()) p.draw(ctx);
+    for (const e of getEnemies()) {
+      if (e.alive === false) continue; // destroyed target — no longer drawn
+      // Task 7.1 — enemy shake: offset the draw position by a random ±3px while
+      // hitFlash is running (design §12 "Enemy damaged: fast shake").
+      const sh = Effects.getShakeOffset(e);
       ctx.save();
-      ctx.globalAlpha = Math.min(1, e.hitFlash * 10);
-      const eb = e.worldBox();
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(eb.x + sh.x, eb.y + sh.y, eb.w, eb.h);
+      ctx.translate(sh.x, sh.y);
+      e.draw(ctx);
+      ctx.restore();
+      // Task 3.2 — white flash when struck (melee or projectile).
+      if (e.hitFlash > 0) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, e.hitFlash * 10);
+        const eb = e.worldBox();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(eb.x + sh.x, eb.y + sh.y, eb.w, eb.h);
+        ctx.restore();
+      }
+    }
+
+    // Task 3.3 + 5.1 — real enemies (jester + vine_hound/violetta/jacko/boris).
+    // Each draws itself including death shrink/fade and its attack telegraph.
+    for (const e of getRealEnemies()) {
+      if (!e.alive) continue;
+      const sh = Effects.getShakeOffset(e);
+      ctx.save();
+      ctx.translate(sh.x, sh.y);
+      e.draw(ctx);
       ctx.restore();
     }
-  }
 
-  // Task 3.3 + 5.1 — real enemies (jester + vine_hound/violetta/jacko/boris).
-  // Each draws itself including death shrink/fade and its attack telegraph.
-  for (const e of getRealEnemies()) {
-    if (!e.alive) continue;
-    if (Debug.viewMode === 1) continue;
-    const sh = Effects.getShakeOffset(e);
-    ctx.save();
-    ctx.translate(sh.x, sh.y);
-    e.draw(ctx);
-    ctx.restore();
-  }
+    // Task 6.1 — boss (Overgrown Elephant).
+    const boss = getBoss();
+    if (boss && boss.alive) boss.draw(ctx);
 
-  // Task 6.1 — boss (Overgrown Elephant). Drawn with a wide HP bar above it so
-  // the fight's progress reads clearly; debug mode adds the unified phase/escalation
-  // label (drawLabel block) + weak-point box + arena bounds.
-  const boss = getBoss();
-  if (boss && boss.alive) {
-    if (!(Debug.viewMode === 1)) boss.draw(ctx);
-    if (boss.hp != null && boss.maxHp > 0 && boss.aiState !== 'dead') {
-      drawBossHpBar(ctx, boss);
+    // Task 3.3 — sparkle particles + dropped coins.
+    for (const s of getParticles().activeItems) s.draw(ctx);
+    for (const c of getCoins().activeItems) c.draw(ctx);
+
+    // Task 4.3 — checkpoints (flags) + powerups (signboards). Both draw themselves
+    // (Entity transform pipeline + bob/flash overlays).
+    for (const c of getCheckpoints()) c.draw(ctx);
+    for (const p of getPowerups()) p.draw(ctx);
+
+    // Task 4.3 — floating value-text popups (powerup labels, checkpoint ids).
+    for (const t of getFloatTexts()) t.draw(ctx);
+
+    // Projectiles + specials (hero bomb/saw).
+    for (const p of getProjectiles()) p.draw(ctx);
+    for (const s of getSpecials()) s.draw(ctx);
+
+    // Anim-test enemy (harness spawn).
+    const at = getAnimTestEnemy();
+    if (at.alive) at.draw(ctx);
+
+    // Hero — invincibility blink (0.25 alpha) and death skull are gameplay
+    // effects, so they live inside the sprite layer too.
+    {
+      const h = getHero();
+      if (h.dying) {
+        drawDeathSkull(ctx, h);
+      } else if (h.invincibleTimer > 0 && Math.floor(h.invincibleTimer / 0.1) % 2 === 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+        h.draw(ctx);
+        ctx.restore();
+      } else {
+        h.draw(ctx);
+      }
     }
-    if (Debug.enabled && Debug.viewMode !== 2) drawBossDebug(ctx, boss);
   }
 
-  // Task 3.3 — sparkle particles + dropped coins.
-  for (const s of getParticles().activeItems) s.draw(ctx);
-  for (const c of getCoins().activeItems) c.draw(ctx);
-
-  // Task 4.3 — checkpoints (flags) + powerups (signboards). Both draw themselves
-  // (Entity transform pipeline + bob/flash overlays).
-  for (const c of getCheckpoints()) c.draw(ctx);
-  for (const p of getPowerups()) p.draw(ctx);
-
-  // Task 4.3 — floating value-text popups (powerup labels, checkpoint ids).
-  for (const t of getFloatTexts()) t.draw(ctx);
+  // Boss HP bar (gameplay HUD element, not debug) + boss debug extras.
+  {
+    const boss = getBoss();
+    if (boss && boss.alive) {
+      if (boss.hp != null && boss.maxHp > 0 && boss.aiState !== 'dead') {
+        drawBossHpBar(ctx, boss);
+      }
+      if (Debug.enabled && Debug.viewMode !== 2) drawBossDebug(ctx, boss);
+    }
+  }
 
   // Debug: show each coin's value as small text above it so the
   // per-type weight/value difference is visible during development.
@@ -146,6 +187,21 @@ export function render(ctx) {
     }
     // Unified debug labels: name + HP/energy bar for every entity.
     // Consistent format: [NAME] above a small colored bar showing remaining life.
+    // Label color = the entity's collision-layer color (same map as the boxes),
+    // so text and box always match. One drawLabel call per entity — no
+    // per-type color duplication.
+    const LAYER_COLORS = {
+      [LAYER.SOLID]: '#ff9f43',
+      [LAYER.HERO]: '#2ecc71',
+      [LAYER.ENEMY]: '#e74c3c',
+      [LAYER.BOSS]: '#9b59b6',
+      [LAYER.PICKUP]: '#3498db',
+      [LAYER.PROJ_ALLY]: '#ff6ec7',
+      [LAYER.PROJ_FOE]: '#ff6ec7',
+      [LAYER.COIN]: '#f1c40f',
+      [LAYER.CHECKPOINT]: '#ffd700',
+    };
+    const layerColor = ent => LAYER_COLORS[ent.layer] ?? '#ffffff';
     ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'center';
     const BAR_W = 24, BAR_H = 3;
@@ -166,13 +222,13 @@ export function render(ctx) {
     for (const b of getBarrels()) {
       if (!b.alive) continue;
       const label = b.type === 'explosiveBarrel' ? 'explosiveBarrel\u2728' : b.type;
-      drawLabel(ctx, b.x + b.w / 2, b.y - 10, label, b.hp / b.maxHp, '#ff9f43');
+      drawLabel(ctx, b.x + b.w / 2, b.y - 10, label, b.hp / b.maxHp, layerColor(b));
     }
     // Hero: name + anim state + energy bar
     {
       const h = getHero();
       if (h && !h.dying) {
-        drawLabel(ctx, h.x + h.w / 2, h.y - 10, `${h.heroDef?.name ?? 'HERO'}:${heroAnimName(h)}`, h.energy / h.maxEnergy, '#2ecc71');
+        drawLabel(ctx, h.x + h.w / 2, h.y - 10, `${h.heroDef?.name ?? 'HERO'}:${heroAnimName(h)}`, h.energy / h.maxEnergy, layerColor(h));
       }
     }
     // Enemy: name + aiState + HP bar (single unified label above)
@@ -182,7 +238,7 @@ export function render(ctx) {
       // is the sprite's job, not the HP bar's. Showing 1 - deathFrac here made
       // the bar jump to 100% on death then drain — wrong.
       const frac = e.aiState === 'dead' ? 0 : e.hp / e.maxHp;
-      drawLabel(ctx, e.x + e.w / 2, e.y - 10, `${e.type}:${e.aiState}`, frac, '#e74c3c');
+      drawLabel(ctx, e.x + e.w / 2, e.y - 10, `${e.type}:${e.aiState}`, frac, layerColor(e));
     }
     // Boss: unified label in the same name:state format as the enemies, with
     // phase + escalation folded in. Replaces the old duplicate "BOSS PHASE ×n"
@@ -192,49 +248,24 @@ export function render(ctx) {
       const b = getBoss();
       if (b && b.alive) {
         drawLabel(ctx, b.x + b.w / 2, b.y - 28,
-          `BOSS:${b.phase}×${b.escalation.toFixed(2)}`, b.hp / b.maxHp, '#e74c3c');
+          `BOSS:${b.phase}×${b.escalation.toFixed(2)}`, b.hp / b.maxHp, layerColor(b));
       }
     }
     // Special projectiles: name + TTL/fuse bar
     for (const s of getSpecials()) {
       if (!s.alive) continue;
       const frac = s.ttlFrac;
-      const color = s.type === 'bomb' ? '#f39c12' : '#ff6ec7';
-      drawLabel(ctx, s.x + s.w / 2, s.y - 10, s.type, frac, color);
+      drawLabel(ctx, s.x + s.w / 2, s.y - 10, s.type, frac, layerColor(s));
     }
     ctx.restore();
   }
 
-  const at = getAnimTestEnemy();
-  if (at.alive && !(Debug.viewMode === 1)) at.draw(ctx);
-  if (!(Debug.viewMode === 1)) {
-    for (const p of getProjectiles()) p.draw(ctx);
-    for (const s of getSpecials()) s.draw(ctx);
-  }
-
-  // Hero test box — drawn through Entity.draw() so the full transform
-  // pipeline (mirror/rotate/scale + debug rect fallback) is exercised.
-  // Task 4.3 — Invincibility blink: while invincibleTimer > 0 the hero sprite
-  // alternates visible/invisible every 0.1s (design §12 "Invincibility active").
-  // Task 5.2 — While dying the hero is invisible; a skull emoji floats up in a
-  // sine wave and fades over the death duration instead.
-  {
-    const h = getHero();
-    if (h.dying) {
-      drawDeathSkull(ctx, h);
-    } else if (h.invincibleTimer > 0 && Math.floor(h.invincibleTimer / 0.1) % 2 === 0) {
-      ctx.save();
-      ctx.globalAlpha = 0.25;
-      h.draw(ctx);
-      ctx.restore();
-    } else if (!(Debug.viewMode === 1)) {
-      h.draw(ctx);
-    }
-  }
-
   // Debug overlay: full §16 colored boxes over every entity's worldBox().
-  // viewMode 0=sprite+collision (semitransparent boxes), 1=collision-only
-  // (opaque boxes, no sprites), 2=sprite-only (pure gameplay, NO debug).
+  // The collision debug layer is ONE code path (drawDebugOverlay) modulated by
+  // two independent layers:
+  //   sprite layer  — hidden only in collision-only mode (viewMode 1)
+  //   collision layer — drawn whenever debug is on and not sprite-only;
+  //                     SEMITRANSPARENT in both modes (it's always an overlay).
   if (Debug.enabled && Debug.viewMode !== 2) {
     drawDebugOverlay(ctx);
     // Task 3.3 + 5.1 — per-enemy debug: aggro radius circle + AI state label
@@ -361,22 +392,31 @@ function drawDeathSkull(ctx, h) {
  */
 function drawDebugOverlay(ctx) {
   ctx.save();
-  ctx.globalAlpha = (Debug.viewMode === 1) ? 1.0 : 0.4;
+  // The collision layer is ALWAYS semitransparent — it's an overlay on top of
+  // the sprite layer, in both sprite+collision and collision-only modes.
+  // (One code path; viewMode only decides whether the sprite layer exists.)
+  ctx.globalAlpha = 0.4;
   ctx.lineWidth = 2;
 
   const layers = [
     { match: L => L & 0b0000001000, color: '#ff9f43' }, // SOLID → orange
     { match: L => L & 0b0000000001, color: '#2ecc71' }, // HERO  → green
     { match: L => L & 0b0000000010, color: '#e74c3c' }, // ENEMY → red
+    { match: L => L & 0b0000000100, color: '#9b59b6' }, // BOSS  → purple
     { match: L => L & 0b0000010000, color: '#3498db' }, // PICKUP→ blue
     { match: L => L & 0b0001100000, color: '#ff6ec7' }, // PROJ  → pink
+    { match: L => L & 0b0010000000, color: '#f1c40f' }, // COIN  → gold
+    { match: L => L & 0b0100000000, color: '#ffd700' }, // CHECKPOINT → yellow
   ];
 
   const all = [...getSolids().map(s => solidEntityProxy(s)),
                ...getPickups(), ...getEnemies().filter(e => e.alive !== false),
                ...getRealEnemies().filter(e => e.alive),
                ...getProjectiles(), ...getSpecials(), getHero(),
-               ...getBarrels().filter(b => b.alive)];
+               ...getBarrels().filter(b => b.alive),
+               ...getCheckpoints().filter(c => c.alive),
+               ...getPowerups().filter(p => p.alive && !p.collected),
+               ...getCoins().activeItems.filter(c => c.alive && !c.collected)];
   // Boss gets a radius circle too.
   const boss = getBoss();
   if (boss && boss.alive) all.push(boss);
