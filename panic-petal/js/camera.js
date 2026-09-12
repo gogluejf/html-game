@@ -33,17 +33,17 @@ export class Camera {
     if (this.locked) return;
     const heroCenter = hero.x + hero.w / 2;
     // Dead-zone boundaries in screen space.
-    const triggerRight = this.x + this.w * 0.6;  // hero must pass 60% to scroll right
-    const triggerLeft = this.x + this.w * 0.4;   // hero must pass 40% to scroll left
+    const triggerRight = this.x + this.w * 0.65;  // hero must pass 60% to scroll right
+    const triggerLeft = this.x + this.w * 0.35;   // hero must pass 40% to scroll left
 
     let targetX = this.x; // default: stay put (no scroll)
 
     if (heroCenter > triggerRight) {
       // Hero crossed the right trigger → scroll so hero sits at 60%.
-      targetX = heroCenter - this.w * 0.6;
+      targetX = heroCenter - this.w * 0.65;
     } else if (heroCenter < triggerLeft) {
       // Hero crossed the left trigger → scroll so hero sits at 40%.
-      targetX = heroCenter - this.w * 0.4;
+      targetX = heroCenter - this.w * 0.35;
     }
 
     this.x = Math.max(0, Math.min(targetX, this.levelLength - this.w));
