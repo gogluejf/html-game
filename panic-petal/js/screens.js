@@ -164,7 +164,7 @@ export const Home = {
         const fadeIn = Math.min(1, (t - 4) / 0.5);
         const fadeOut = Math.min(1, (6.5 - t) / 0.5);
         ctx.globalAlpha = Math.min(fadeIn, fadeOut);
-        drawMarqueeTitle(ctx, 'AI QWEN 3.8 7B', VIEW_W / 2, VIEW_H / 2 - 26, 34, { color: '#d8c9a0' });
+        drawMarqueeTitle(ctx, 'A QWEN 3.8 7B', VIEW_W / 2, VIEW_H / 2 - 26, 34, { color: '#d8c9a0' });
         drawMarqueeTitle(ctx, 'AI SLOP PRODUCTION', VIEW_W / 2, VIEW_H / 2 + 26, 34, { color: '#d8c9a0' });
       }
 
