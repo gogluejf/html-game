@@ -85,9 +85,9 @@ export class Coin extends Entity {
     this.collected = false;                 // latched on collect (prevents double-credit)
     this.spinAngle = 0;                     // visual spin (radians)
     this.settled = false;                   // true once velocity has damped out
-    // TTL: coins fade out after COIN_TTL seconds if not collected. Setting
-    // maxTtl registers the 'life' timer on the unified engine (see Entity).
-    this.maxTtl = COIN_TTL;
+    // TTL: coins fade out after COIN_TTL seconds if not collected. setLife()
+    // registers the 'life' timer on the unified engine (see Entity).
+    this.setLife(COIN_TTL);
     this.ttlSpeed = 1; // reads global TTL_SPEED each frame via tickTtl override below
   }
 

@@ -203,8 +203,12 @@ export class Special extends Entity {
     // 'fuse' for bombs (AoE detonation) and 'life' for saws (range limit). Both
     // are driven by the same tickTtl()/ttlExpired expiry path.
     this._ttlLabel = isSaw ? 'life' : 'fuse';
-    this._maxTtl = this.life; // enable tickTtl() expiry for this entity
-    this.timers.set(this._ttlLabel, this.life);
+    this.setLife(this.life);
+    if (!isSaw) {
+      // Relabel the life timer as 'fuse' for display; tickTtl() honors _ttlLabel.
+      this.timers.clear('life');
+      this.timers.set('fuse', this.life);
+    }
     this.radius = isSaw ? 0 : BOMB_EXPLODE_RADIUS; // bomb has AoE radius
     this.exploded = false;
 
