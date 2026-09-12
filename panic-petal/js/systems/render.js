@@ -171,13 +171,7 @@ export function render(ctx) {
     {
       const h = getHero();
       if (h && !h.dying) {
-        let animName = 'idle';
-        if (h.dying) animName = 'dead';
-        else if (h.crouching) animName = 'crouch';
-        else if (h.meleeFrame > 0) animName = 'melee';
-        else if (h.vy < -10 || h.vy > 50) animName = h.jumpsUsed >= 2 ? 'djump' : 'jump';
-        else if (Math.abs(h.vx) > 20) animName = 'run';
-        drawLabel(ctx, h.x + h.w / 2, h.y - 10, `HERO:${animName}`, h.energy / h.maxEnergy, '#2ecc71');
+        drawLabel(ctx, h.x + h.w / 2, h.y - 10, `HERO:${heroAnimName(h)}`, h.energy / h.maxEnergy, '#2ecc71');
       }
     }
     // Enemy: name + aiState + HP bar (single unified label above)
@@ -297,6 +291,26 @@ export function render(ctx) {
  * Position is derived from hero.deathTimer so it stays in sync with the update
  * loop without storing extra state. Called inside the camera-translated world.
  */
+/**
+ * Pick the hero's current anim name from its state (pure — used by the F3
+ * debug label, and any future real-sprite selection should use this too).
+ *
+ * Jump state is driven by `jumpsUsed`, NOT by vy: once a jump is initiated the
+ * counter is >0 for the entire flight (Hero.update resets it to 0 on the ground
+ * every frame), so the hero shows jump/djump from launch until landing —
+ * including the apex, where vy passes through ~0 and a velocity threshold
+ * would briefly flicker the anim back to idle. Walking off a ledge (no jump
+ * initiated, jumpsUsed === 0) correctly falls through to run/idle.
+ */
+export function heroAnimName(h) {
+  if (h.dying) return 'dead';
+  if (h.crouching) return 'crouch';
+  if (h.meleeFrame > 0) return 'melee';
+  if (h.jumpsUsed > 0) return h.jumpsUsed >= 2 ? 'djump' : 'jump';
+  if (Math.abs(h.vx) > 20) return 'run';
+  return 'idle';
+}
+
 function drawDeathSkull(ctx, h) {
   const t = h.deathTimer;
   const dur = h.DEATH_DURATION || 1.5;
