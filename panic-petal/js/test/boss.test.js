@@ -295,7 +295,7 @@ ok('death anim completes and alive flips to false', () => {
   e.hp = 1;
   e.takeDamage(10, hero, 'melee');
   e.alive = true; // keep alive during the anim (as update.js does)
-  step(e, hero, 0.7); // > deathDuration (0.6)
+  step(e, hero, e.deathDuration + 0.1); // > deathDuration
   assert.equal(e.alive, false, 'corpse fully gone after anim');
 });
 ok('onDeath clears velocity and deactivates the fight', () => {

@@ -63,7 +63,7 @@ export class Enemy extends Entity {
     // Driven by a labeled 'death' timer on the unified engine (counts down).
     // deathTimer/fading are derived from it so render + debug stay in sync and
     // the death countdown shows as a 'death' bar in the per-entity stack.
-    this.deathDuration = 0.6; // seconds total for shrink+fade
+    this.deathDuration = 1.0; // seconds total for shrink+fade (room to hold last frame)
     this.fading = false;      // true after half duration (render fades out)
   }
 

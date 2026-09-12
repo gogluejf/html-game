@@ -86,11 +86,11 @@ ok('death pipeline: alive stays true during anim, false after duration', () => {
   assert.equal(e.alive, true); // still "alive" during death anim
 
   // Advance past half duration → fading should be true.
-  e.update(0.31, hero, null); // just over 0.3s (half of 0.6)
+  e.update(e.deathDuration / 2 + 0.01, hero, null); // just over half
   assert.equal(e.fading, true);
 
   // Advance past full duration → alive flips to false.
-  e.update(0.31, hero, null); // total ~0.62s > 0.6s
+  e.update(e.deathDuration / 2 + 0.01, hero, null); // total > deathDuration
   assert.equal(e.alive, false);
 });
 ok('dead enemy does not move (velocity stays 0)', () => {
@@ -286,7 +286,7 @@ ok('full death pipeline: kill jester → sparkles + coins spawned', () => {
   assert.equal(j.aiState, 'dead');
 
   // Advance through the full death anim.
-  j.update(0.7, hero, null);
+  j.update(j.deathDuration + 0.1, hero, null);
   assert.equal(j.alive, false);
 
   // Now simulate what updateJester does on death completion:
@@ -324,7 +324,7 @@ ok('custom enemy subclass works with base update/takeDamage/die', () => {
   te.hp = 1;
   te.takeDamage(10, hero, 'melee');
   assert.equal(te.aiState, 'dead');
-  te.update(0.7, hero, null);
+  te.update(te.deathDuration + 0.1, hero, null);
   assert.equal(te.alive, false);
 });
 
