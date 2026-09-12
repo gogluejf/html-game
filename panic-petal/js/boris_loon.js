@@ -161,26 +161,12 @@ export class BorisLoon extends Enemy {
 
   /**
    * Draw Boris. Falls back to the base debug rect (no sprite yet); the death
-   * shrink/fade is handled by Enemy.draw(). A faint cyan arc marks an active
-   * dive so the telegraph reads without sprites.
+   * shrink/fade is handled by Enemy.draw(). Dive telegraphing is provided by
+   * the generic debug velocity vector — no bespoke per-enemy indicator here.
    * @param {CanvasRenderingContext2D} ctx
    */
   draw(ctx) {
     super.draw(ctx);
-
-    if (this.alive && this.aiState === 'dive') {
-      const cx = this.x + this.w / 2;
-      const cy = this.y + this.h / 2;
-      ctx.save();
-      ctx.strokeStyle = '#1abc9c';
-      ctx.lineWidth = 3;
-      ctx.globalAlpha = 0.6;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx, cy + 24);
-      ctx.stroke();
-      ctx.restore();
-    }
   }
 }
 
