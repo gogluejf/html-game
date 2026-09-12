@@ -238,7 +238,7 @@ function handleStateKeys(e) {
 
   // --- Home & Select screens handle their own keys (Milestone 8) ------------
   if (s === S.HOME || s === S.SELECT) {
-    screenOnKey(e.code);
+    screenOnKey(e.code, undefined, undefined, e.repeat);
     return;
   }
 

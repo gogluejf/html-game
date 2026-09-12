@@ -583,8 +583,10 @@ export const Select = {
     ctx.restore();
   },
 
-  /** Handle key input for hero selection. */
-  onKey(code) {
+  /** Handle key input for hero selection. Ignores OS key auto-repeat so a held
+   *  arrow steps exactly once per physical press (prevents double-stepping). */
+  onKey(code, repeat = false) {
+    if (repeat) return; // one step per physical press
     switch (code) {
       case 'ArrowLeft':
       case 'KeyA':
@@ -874,14 +876,14 @@ export function drawScreen(ctx, hero) {
  * it. PAUSE/OVER/WIN receive an `actions` bag of closures supplied by
  * update.js (level retry, continue, quit) so game-reset logic stays there.
  */
-export function screenOnKey(code, hero, actions) {
+export function screenOnKey(code, hero, actions, repeat = false) {
   const s = getState();
   if (s === S.HOME) {
     Home.onKey(code);
     return true;
   }
   if (s === S.SELECT) {
-    Select.onKey(code);
+    Select.onKey(code, repeat);
     return true;
   }
   if (s === S.PAUSE) {
