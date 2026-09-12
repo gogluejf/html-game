@@ -10,6 +10,7 @@
 // working falling-box entity out of the box.
 
 import { GRAVITY, MAX_FALL_SPEED } from './consts.js';
+import { Timers } from './timers.js';
 
 export class Entity {
   /**
@@ -59,15 +60,17 @@ export class Entity {
     this.debugColor = opts.debugColor ?? '#fff';
 
     // --- Time-to-live (TTL) ---------------------------------------------------
-    // Generic expiry for any entity that should fade out after a period.
-    //   maxTtl  > 0  → entity will expire after maxTtl seconds (scaled by ttlSpeed)
-    //   maxTtl  = 0  → no expiry (default; lives forever until removed by logic)
-    //   ttl       → remaining seconds (counts down each frame)
-    //   ttlSpeed  → per-entity speed multiplier (1 = normal, 2 = twice as fast)
-    // The engine's global TTL_SPEED constant can scale all TTLs at once (tuning).
+    // Unified labeled timer set. An entity can carry MANY concurrent countdowns
+    // (life, fuse, death, rec, inv, rapid, ...) — see timers.js. The legacy
+    // scalar `ttl`/`maxTtl`/`ttlFrac` below are kept as thin aliases over a
+    // default 'life' timer so existing coin/projectile code keeps working while
+    // we migrate incrementally. New code should use this.timers directly.
+    this.timers = new Timers();
+    // Legacy alias fields (kept in sync with the 'life' timer for compat).
     this.maxTtl = opts.maxTtl ?? 0;
     this.ttl = this.maxTtl;
     this.ttlSpeed = opts.ttlSpeed ?? 1;
+    if (this.maxTtl > 0) this.timers.set('life', this.maxTtl);
 
     // --- Effect radius --------------------------------------------------------
     // Generic "zone of effect" radius in logical px. Used by:
@@ -82,22 +85,28 @@ export class Entity {
 
   /**
    * Advance the TTL clock. Call from update() or let the engine do it.
-   * When ttl reaches 0, alive is set to false.
+   * Delegates to the unified timer set: ticks every labeled timer, then keeps
+   * the legacy scalar `ttl`/`alive` in sync with the 'life' timer for backward
+   * compatibility. When the 'life' timer expires, alive is set to false.
    * @param {number} dt seconds
    */
   tickTtl(dt) {
-    if (this.maxTtl <= 0 || !this.alive) return;
-    this.ttl -= dt * this.ttlSpeed;
-    if (this.ttl <= 0) {
-      this.ttl = 0;
-      this.alive = false;
+    if (!this.alive) return;
+    this.timers.tick(dt * this.ttlSpeed);
+    // Keep legacy alias in sync (only meaningful when a 'life' timer exists).
+    if (this.maxTtl > 0) {
+      this.ttl = this.timers.get('life');
+      if (this.timers.expired('life')) {
+        this.ttl = 0;
+        this.alive = false;
+      }
     }
   }
 
   /** Fraction of life remaining (1 = fresh, 0 = expired). For progress bars. */
   get ttlFrac() {
     if (this.maxTtl <= 0) return 1;
-    return Math.max(0, this.ttl / this.maxTtl);
+    return this.timers.fraction('life');
   }
 
   /**

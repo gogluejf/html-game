@@ -46,8 +46,10 @@ export class Hero extends Entity {
     this.specialAmmo = 0;
     this.coins = 0;
     this.lives = 3;
-    this.invincibleTimer = 0;
-    this.rapidTimer = 0;
+    // Invincibility + rapid-fire are now unified labeled timers (see timers.js),
+    // exposed via the getters/setters below so legacy call sites
+    // (boss.js, powerup.js, update.js) keep working unchanged. The debug
+    // overlay shows them as 'inv' and 'rapid' bars in the per-entity stack.
     this.checkpoint = { x, y };
 
     // --- Death / respawn / continue (Task 5.2) -------------------------------
@@ -97,6 +99,27 @@ export class Hero extends Entity {
     this._coyote = 0;
     this._jumpBuffer = 0;
     this._prevJumpHeld = false;
+  }
+
+  // --- Legacy timer bridges -------------------------------------------------
+  // invincibleTimer / rapidTimer are now unified labeled timers ('inv'/'rapid').
+  // These accessors keep every existing call site working unchanged while the
+  // real state lives in this.timers (which the debug overlay renders).
+
+  /** Remaining invincibility seconds (0 when not active). */
+  get invincibleTimer() { return this.timers.get('inv'); }
+  /** Set/refresh invincibility. max()-style: passing a value extends only if longer. */
+  set invincibleTimer(v) {
+    if (v == null || v <= 0) { this.timers.clear('inv'); return; }
+    this.timers.set('inv', Math.max(this.timers.get('inv'), v));
+  }
+
+  /** Remaining rapid-fire seconds (0 when not active). */
+  get rapidTimer() { return this.timers.get('rapid'); }
+  /** Set/refresh rapid-fire window. */
+  set rapidTimer(v) {
+    if (v == null || v <= 0) { this.timers.clear('rapid'); return; }
+    this.timers.set('rapid', Math.max(this.timers.get('rapid'), v));
   }
 
   /**
@@ -204,8 +227,9 @@ export class Hero extends Entity {
     // Here we only track intent and integrate.
 
     // --- Timers -------------------------------------------------------------
-    if (this.invincibleTimer > 0) this.invincibleTimer -= dt;
-    if (this.rapidTimer > 0) this.rapidTimer -= dt;
+    // Unified labeled timers (inv, rapid, rec, ...) advance together. Legacy
+    // invincibleTimer/rapidTimer are getters over this set (see below).
+    this.timers.tick(dt);
 
     // --- Melee swing tick ---------------------------------------------------
     // Advance the swing frame clock and drive the attack animation so its

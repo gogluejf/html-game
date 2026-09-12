@@ -9,6 +9,7 @@ import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSp
 import { Effects } from '../effects.js';
 import { getState, S } from '../state.js';
 import { Debug } from '../debug.js';
+import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../timers.js';
 import { drawScreen, screenUpdate } from '../screens.js';
 import { drawHUD } from '../hud.js';
 import { LEVELS } from '../level.js';
@@ -602,6 +603,8 @@ function drawEntityTransformDebug(ctx, ent) {
     ctx.fillStyle = ent.mirrorY ? '#00e5ff' : 'rgba(255,255,255,0.25)';
     ctx.fillText('[Y]', ix + 16, iy);
     ctx.restore();
+    // Stacked labeled TTL bars (one row per active timer), above the icons.
+    drawTimerStack(ctx, ent, cx, b.y - 34);
   }
 
   // 4) Numeric inspection panel (level 2, selected entity only).
@@ -665,6 +668,46 @@ function drawSelectionOverlay(ctx, sel) {
   ctx.fillRect(b.x - 2, b.y - 18, tw + 8, 14);
   ctx.fillStyle = '#00e5ff';
   ctx.fillText(label, b.x + 2, b.y - 7);
+  ctx.restore();
+}
+
+/**
+ * Draw the stacked labeled TTL bars for an entity's active timers. One row per
+ * timer, drawn top-to-bottom above the entity: a dim 3-char label on the left
+ * and a small colored progress bar (same style as the existing debug bars).
+ * Kept quiet — labels are dim so a busy screen of many entities stays readable.
+ * No-op when the entity has no timers or none are active.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {import('../entity.js').Entity} ent
+ * @param {number} cx horizontal center to stack around
+ * @param {number} topY y of the topmost row (bars grow downward from here)
+ */
+function drawTimerStack(ctx, ent, cx, topY) {
+  const timers = ent.timers;
+  if (!timers || timers.count === 0) return;
+  const rows = timers.active();
+  if (!rows.length) return;
+
+  const BAR_W = 26, BAR_H = 3, ROW_H = 7, LABEL_W = 18;
+  const startX = cx - LABEL_W - BAR_W / 2; // left edge of the whole block
+
+  ctx.save();
+  ctx.font = 'bold 7px monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  rows.forEach((row, i) => {
+    const y = topY + i * ROW_H;
+    const color = TIMER_COLORS[row.name] ?? TIMER_COLOR_DEFAULT;
+    // Dim label prefix (3 chars max).
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText(row.name.slice(0, 3), startX, y);
+    // Bar background + fill (same muted style as other debug bars).
+    const bx = startX + LABEL_W;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(bx, y - BAR_H / 2, BAR_W, BAR_H);
+    ctx.fillStyle = color;
+    ctx.fillRect(bx, y - BAR_H / 2, BAR_W * row.frac, BAR_H);
+  });
   ctx.restore();
 }
 
