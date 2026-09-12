@@ -528,17 +528,17 @@
             ],
             "col_x": [
               [
-                113,
-                335,
-                557,
-                779,
-                1001,
-                1223,
-                1445,
-                1667
+                110,
+                332,
+                554,
+                776,
+                997,
+                1219,
+                1441,
+                1663
               ]
             ],
-            "frame_size": "232x450",
+            "frame_size": "221x442",
             "frames_dir": "panic-petal/assets/heroes"
           }
         },
@@ -591,6 +591,68 @@
               ]
             ],
             "frame_size": "266x445",
+            "frames_dir": "panic-petal/assets/heroes"
+          }
+        },
+        {
+          "file": "panic-petal/assets/balthazar_sheet_6.png",
+          "rows": 2,
+          "cols": 5,
+          "description": "Balthazar tiger ringmaster hero sheet 6, sweep x 10 frames (2 rows x 5 cols)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "balthazar",
+              "anim": "sweep",
+              "frames": [
+                "balthazar_sweep_f1.png",
+                "balthazar_sweep_f2.png",
+                "balthazar_sweep_f3.png",
+                "balthazar_sweep_f4.png",
+                "balthazar_sweep_f5.png",
+                "balthazar_sweep_f6.png",
+                "balthazar_sweep_f7.png",
+                "balthazar_sweep_f8.png",
+                "balthazar_sweep_f9.png",
+                "balthazar_sweep_f10.png"
+              ]
+            }
+          ],
+          "original_prompt": "Generate a sprite sheet of 1 hero sprite for the hand-painted circus game \"Petal Panic\", continuing the exact same hand-painted circus style as the prior Balthazar sheets above.\n\nLAYOUT: 2 rows x 5 columns on a solid uniform pink background (rgb 250,152,170). Each row continues the single hero; the 5 columns are its 5 animation frames shown left-to-right (row-major: f1..f5 top row, f6..f10 bottom row). All cells exactly the same size (~324x485 px), evenly spaced, separated by thin light-pink grid lines (rgb 255,210,220, 2px wide). No text, no labels, no dark borders between cells. Image 1619 wide x 971 tall.\n\nSTYLE: hand-painted circus / big-top illustration. Soft painterly shading with visible brush texture, warm saturated colors, gentle highlights and shadows (NOT flat pixel art). Thick clean dark-brown/black outlines around the character. Side profile facing right. Dynamic poses with subtle motion smears on fast moves. Consistent proportions and palette across every frame.\n\nROWS, 10 distinct loopable frames total \u2014 BALTHAZAR, an anthropomorphic orange-and-black striped tiger dressed as a ringmaster/master of ceremonies. He wears a fitted black tuxedo jacket with satin lapels, a white dress shirt, a red bow tie, a red sash at the waist, and dark trousers; large expressive paws (orange with black stripes and cream claws), a long striped tail, and a confident theatrical expression. A low SWEEP / sliding tackle sequence:\nFrame 1 -> upright running lunge, body leaning forward, one arm cocked back, about to drop low.\nFrame 2 -> dropping down, knees bending, body sinking toward the ground, arms reaching out front.\nFrame 3 -> fully crouched low, both hands planted near the floor, legs folding under, beginning the slide.\nFrame 4 -> sliding flat along the ground, body stretched low, legs trailing, motion smear behind.\nFrame 5 -> still sliding, legs extended out behind, coat tails flaring, momentum carrying forward.\nFrame 6 -> deep slide, body nearly horizontal, one leg kicking up dust/smear, head leading.\nFrame 7 -> end of the slide, legs dragging, body still low, starting to gather itself.\nFrame 8 -> pushing up from the ground, one knee down, arms bracing, rising out of the sweep.\nFrame 9 -> half-risen, weight shifting onto the lead foot, torso straightening, recovering balance.\nFrame 10 -> back to an upright ready stance, coiled and alert, so the cycle loops.\n\nFrames within the sheet must be clearly distinct but smoothly sequential (loopable low sweep). Keep it clean and croppable.\n",
+          "crop": {
+            "bg_color": [
+              249,
+              145,
+              168
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                485
+              ],
+              [
+                486,
+                971
+              ]
+            ],
+            "col_x": [
+              [
+                161,
+                484,
+                809,
+                1133,
+                1457
+              ],
+              [
+                161,
+                484,
+                809,
+                1133,
+                1457
+              ]
+            ],
+            "frame_size": "266x495",
             "frames_dir": "panic-petal/assets/heroes"
           }
         }
@@ -2306,5 +2368,5 @@
       ]
     }
   },
-  "updated": "2026-09-12T01:16:14"
+  "updated": "2026-09-12T01:20:57"
 }
