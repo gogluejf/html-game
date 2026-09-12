@@ -175,7 +175,7 @@ export function render(ctx) {
         if (h.dying) animName = 'dead';
         else if (h.crouching) animName = 'crouch';
         else if (h.meleeFrame > 0) animName = 'melee';
-        else if (h.vy < -10 || h.vy > 50) animName = 'jump';
+        else if (h.vy < -10 || h.vy > 50) animName = h.jumpsUsed >= 2 ? 'djump' : 'jump';
         else if (Math.abs(h.vx) > 20) animName = 'run';
         drawLabel(ctx, h.x + h.w / 2, h.y - 10, `HERO:${animName}`, h.energy / h.maxEnergy, '#2ecc71');
       }

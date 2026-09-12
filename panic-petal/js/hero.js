@@ -13,8 +13,8 @@ import { GRAVITY, MAX_FALL_SPEED, LAYER } from './consts.js';
 
 // Feel knobs (tune freely; these are not per-hero stats).
 const GROUND_FRICTION = 0.85;   // vx multiplier per fixed step when no input on ground
-const SLIDE_SPEED_MULT = 1.5;   // slide = fast low movement while crouching + moving
 const JUMP_CUT_VY = 0.45;       // vy scale when jump released early (variable height)
+const SLIDE_DECEL = 1600;       // px/s^2 — linear skid-stop while crouching with no input
 const COYOTE_TIME = 0.08;       // grace window after leaving a ledge (s)
 const JUMP_BUFFER = 0.12;       // pre-land jump input window (s)
 
@@ -66,6 +66,8 @@ export class Hero extends Entity {
     this.grounded = false;
     this.crouching = false;
     this.sliding = false;
+    this.jumpsUsed = 0;          // 0=grounded, 1=first jump used, 2=double jump used
+    this.MAX_JUMPS = 2;          // ground jump + 1 air jump
 
     // --- Melee swing (design §4) --------------------------------------------
     // A swing is a short, non-looping animation with exactly ONE active frame —
@@ -119,41 +121,67 @@ export class Hero extends Entity {
     }
 
     // --- Horizontal intent --------------------------------------------------
+    // Crouching locks horizontal control (SMB1): you cannot accelerate or
+    // steer while crouched, only carry your existing momentum and skid to a
+    // stop. This is what makes the crouch-decel below reachable — without it,
+    // holding a direction would keep force-setting vx every frame.
     let moveDir = 0;
-    if (input.left) moveDir -= 1;
-    if (input.right) moveDir += 1;
+    if (!this.crouching) {
+      if (input.left) moveDir -= 1;
+      if (input.right) moveDir += 1;
+    }
 
-    // Sliding = crouching AND actively moving horizontally.
-    this.sliding = this.crouching && moveDir !== 0;
+    // Sliding = crouching with residual momentum still carrying forward.
+    this.sliding = this.crouching && Math.abs(this.vx) > 20;
 
     if (moveDir !== 0) {
       this.facing = moveDir > 0 ? 1 : -1;
       this.syncMirror();
-      const actualSpeed = this.sliding ? speed * SLIDE_SPEED_MULT : speed;
-      this.vx = moveDir * actualSpeed;
+      this.vx = moveDir * speed;
     } else if (this.grounded) {
-      // Ground friction: decay momentum toward rest.
-      this.vx *= GROUND_FRICTION;
-      if (Math.abs(this.vx) < 1) this.vx = 0;
+      // No horizontal input on the ground. Two distinct feels:
+      //   • Crouching (SMB1 slide/skid): strong linear deceleration — you keep
+      //     sliding a short distance before stopping, like ice. Because crouch
+      //     locks control, this is the ONLY way momentum bleeds off while
+      //     crouched, giving "run + press down" its skid-stop feel.
+      //   • Standing: gentle exponential friction back to rest.
+      if (this.crouching && Math.abs(this.vx) > 0) {
+        const decel = SLIDE_DECEL * dt; // px/s removed this step
+        if (Math.abs(this.vx) <= decel) this.vx = 0;
+        else this.vx -= Math.sign(this.vx) * decel;
+      } else {
+        this.vx *= GROUND_FRICTION;
+        if (Math.abs(this.vx) < 1) this.vx = 0;
+      }
     }
 
     // --- Jump (with coyote time + input buffer for good feel) ---------------
     // Buffer: remember a recent jump press so a slightly-early tap still fires
     // once we land. Coyote: allow a jump just after walking off a ledge.
-    if (input.jump && !this._prevJumpHeld) this._jumpBuffer = JUMP_BUFFER;
+    const jumpPressed = input.jump && !this._prevJumpHeld; // edge-triggered press
+    if (jumpPressed) this._jumpBuffer = JUMP_BUFFER;
     if (this._jumpBuffer > 0) this._jumpBuffer -= dt;
     if (this._coyote > 0) this._coyote -= dt;
 
-    const canJump = this.grounded || this._coyote > 0;
-    if (canJump && this._jumpBuffer > 0 && !this.crouching) {
-      this.vy = -this.stats.jump;
+    // Keep the double-jump counter honest: while on the ground you always have
+    // both jumps available. Resetting here (not only on the landing transition)
+    // means the counter can never get "stuck" and block a ground jump.
+    if (this.grounded) this.jumpsUsed = 0;
+
+    const canGroundJump = (this.grounded || this._coyote > 0) && this.jumpsUsed === 0;
+    // Air (double) jump needs a FRESH press — holding the first jump must not
+    // also trigger the second. That's why we gate on jumpPressed, not the
+    // buffered value (the buffer is meant to carry a press across landing).
+    const canAirJump = !this.grounded && this.jumpsUsed === 1;
+    if ((canGroundJump || canAirJump) && this._jumpBuffer > 0 && !this.crouching) {
+      const isDouble = canAirJump;
+      this.vy = -this.stats.jump * (isDouble ? 0.85 : 1); // double jump slightly weaker
       this.grounded = false;
       this._coyote = 0;
       this._jumpBuffer = 0;
-      // Skip the jump-cut this frame so the full impulse registers.
+      this.jumpsUsed += 1;
     } else if (!input.jump && this._prevJumpHeld && this.vy < 0) {
-      // Variable jump height: releasing the jump mid-ascent caps upward velocity
-      // once (edge-triggered). Holding jump keeps the full arc.
+      // Variable jump height: releasing the jump mid-ascent caps upward velocity.
       this.vy *= JUMP_CUT_VY;
     }
     this._prevJumpHeld = input.jump;
@@ -246,8 +274,8 @@ export class Hero extends Entity {
    */
   setGrounded(grounded) {
     if (grounded && !this.grounded) {
-      // Just landed: clear any buffered jump that was consumed mid-air? No —
-      // a buffered jump should fire on landing (that's the point of buffering).
+      // Just landed: reset jump count for double-jump.
+      this.jumpsUsed = 0;
     }
     if (!grounded && this.grounded) {
       // Walked off a ledge: start coyote grace window.
@@ -292,6 +320,8 @@ export class Hero extends Entity {
     this.invincibleTimer = Math.max(this.invincibleTimer, Hero.RESPAWN_IFRAMES);
     this.crouching = false;
     this.sliding = false;
+    this.jumpsUsed = 0;          // 0=grounded, 1=first jump used, 2=double jump used
+    this.MAX_JUMPS = 2;          // ground jump + 1 air jump
     this.box = this.standBox;
     this.meleeActive = false;
     this.meleeFrame = 0;
