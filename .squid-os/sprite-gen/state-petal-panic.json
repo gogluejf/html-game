@@ -669,13 +669,13 @@
             {
               "row": 1,
               "name": "jester",
-              "anim": "run",
+              "anim": "chase",
               "frames": [
-                "jester_run_f1.png",
-                "jester_run_f2.png",
-                "jester_run_f3.png",
-                "jester_run_f4.png",
-                "jester_run_f5.png"
+                "jester_chase_f1.png",
+                "jester_chase_f2.png",
+                "jester_chase_f3.png",
+                "jester_chase_f4.png",
+                "jester_chase_f5.png"
               ]
             },
             {
@@ -749,13 +749,13 @@
             {
               "row": 2,
               "name": "jester",
-              "anim": "whip",
+              "anim": "attack",
               "frames": [
-                "jester_whip_f1.png",
-                "jester_whip_f2.png",
-                "jester_whip_f3.png",
-                "jester_whip_f4.png",
-                "jester_whip_f5.png"
+                "jester_attack_f1.png",
+                "jester_attack_f2.png",
+                "jester_attack_f3.png",
+                "jester_attack_f4.png",
+                "jester_attack_f5.png"
               ]
             },
             {
