@@ -178,9 +178,10 @@ export function render(ctx) {
     // Enemy: name + aiState + HP bar (single unified label above)
     for (const e of getRealEnemies()) {
       if (!e.alive) continue;
-      const frac = e.aiState === 'dead'
-        ? Math.max(0, 1 - (e.deathTimer / e.deathDuration))
-        : e.hp / e.maxHp;
+      // Dead enemies show an empty bar (they're already gone); the shrink/fade
+      // is the sprite's job, not the HP bar's. Showing 1 - deathFrac here made
+      // the bar jump to 100% on death then drain — wrong.
+      const frac = e.aiState === 'dead' ? 0 : e.hp / e.maxHp;
       drawLabel(ctx, e.x + e.w / 2, e.y - 10, `${e.type}:${e.aiState}`, frac, '#e74c3c');
     }
     // Boss: unified label in the same name:state format as the enemies, with
