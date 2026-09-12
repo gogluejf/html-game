@@ -595,15 +595,17 @@ export const Select = {
         // key is genuinely down.
         this._heldLeft = true;
         this._heldAt = performance.now();
-        // -1 (none) → scarlet; otherwise move left (balthazar → scarlet).
+        // none(-1) → scarlet(0); otherwise step left (balthazar → scarlet).
         this.focus = this.focus === -1 ? 0 : Math.max(0, this.focus - 1);
         break;
       case 'ArrowRight':
       case 'KeyD':
         this._heldRight = true;
         this._heldAt = performance.now();
-        // -1 (none) → scarlet; otherwise move right (scarlet → balthazar).
-        this.focus = this.focus === -1 ? 0 : Math.min(1, this.focus + 1);
+        // none(-1) → balthazar(1); otherwise step right (scarlet → balthazar).
+        // Right means "the hero on the right", so first-press-right lands on
+        // Balthazar, not Scarlet.
+        this.focus = this.focus === -1 ? 1 : Math.min(1, this.focus + 1);
         break;
       case 'ArrowUp':
       case 'KeyW':
