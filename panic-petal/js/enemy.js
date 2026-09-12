@@ -176,11 +176,17 @@ export class Enemy extends Entity {
     let scale = this.scale;
     let alpha = 1;
     if (this.aiState === 'dead') {
-      const t = Math.min(1, this.deathTimer / this.deathDuration);
-      scale *= 1 - t * 0.5; // shrink to 50% by end of anim
+      // Death plays in two phases within deathDuration:
+      //   Phase 1 (first ANIM_FRAC): shrink + fade out over the anim.
+      //   Phase 2 (remainder): HOLD the final frame (alpha frozen) so a real
+      //   death sprite can rest on its last pose before despawn. This gives the
+      //   "cool last-frame linger" without the corpse vanishing early.
+      const ANIM_FRAC = 0.6; // fraction of the window spent shrinking/fading
+      const t = Math.min(1, this.deathTimer / (this.deathDuration * ANIM_FRAC));
+      scale *= 1 - t * 0.5; // shrink to 50% by end of phase 1
       if (this.fading) {
-        const ft = (this.deathTimer - this.deathDuration * 0.5) / (this.deathDuration * 0.5);
-        alpha = Math.max(0, 1 - ft);
+        const ft = Math.min(1, (this.deathTimer - this.deathDuration * 0.5) / (this.deathDuration * ANIM_FRAC * 0.5));
+        alpha = Math.max(0.15, 1 - ft); // fade to 15% (not fully gone) and hold
       }
     }
 
