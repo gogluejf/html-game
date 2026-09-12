@@ -509,7 +509,12 @@ function handleDebugKeys(e) {
       dumpStats(hero.runStats, hero);
       Debug.logEvent('stats JSON downloaded');
       break;
-    case 'KeyC': // Cycle: sprites+overlay → collision-only → no-overlay (debug off visuals)
+    case 'KeyC': // Cycle transform-debug detail level (vectors → labels → inspect)
+      Debug.detailLevel = Debug.cycleDetailLevel();
+      const detNames = ['vectors', 'labels', 'inspect'];
+      Debug.logEvent(`detail: ${detNames[Debug.detailLevel]}`);
+      break;
+    case 'KeyV': // Cycle view mode: sprites+overlay → collision-only → no-visuals
       Debug.viewMode = (Debug.viewMode + 1) % 3;
       const modeNames = ['sprites+overlay', 'collision-only', 'no-visuals'];
       Debug.logEvent(`view: ${modeNames[Debug.viewMode]}`);

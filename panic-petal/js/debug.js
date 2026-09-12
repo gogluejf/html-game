@@ -52,7 +52,12 @@ export const Debug = {
   LOG_MAX: 50,
   showLog: false, // L toggles the on-screen tail of the log
   showStats: false, // T toggles the telemetry panel (default OFF)
-  viewMode: 0, // C cycles: 0=sprites+overlay, 1=collision-only (opaque)
+  viewMode: 0, // V cycles: 0=sprites+overlay, 1=collision-only (opaque), 2=no-visuals
+
+  // --- Transform-debug detail level -----------------------------------------
+  // Cycles with C: 0=vectors only, 1=vectors+labels+mirror icons, 2=inspect
+  // selected entity (numeric panel). Drives drawEntityTransformDebug in render.
+  detailLevel: 0,
 
   // --- Toggle master switch -------------------------------------------------
   toggle() { this.enabled = !this.enabled; return this.enabled; },
@@ -76,6 +81,15 @@ export const Debug = {
     const next = this.TIME_STEPS[(i + 1) % this.TIME_STEPS.length];
     this.timeScale = next;
     return next;
+  },
+
+  /**
+   * Cycle the transform-debug detail level (0 → 1 → 2 → 0).
+   * @returns {number} the new detailLevel
+   */
+  cycleDetailLevel() {
+    this.detailLevel = (this.detailLevel + 1) % 3;
+    return this.detailLevel;
   },
 
   /**
@@ -139,6 +153,7 @@ export const Debug = {
     this.selected = null;
     this.showLog = false;
     this.showStats = false;
+    this.detailLevel = 0;
     this.log = [];
   },
 };

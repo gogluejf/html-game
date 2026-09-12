@@ -240,13 +240,24 @@ export function render(ctx) {
   }
 
   // --- Unified debug overlays -------------------------------------------------
-  // Aggro viz + facing arrow + state label for every live enemy/boss, plus the
-  // anim-scrubber collision-box overlay on the selected entity. Gated entirely
-  // behind Debug.enabled so normal play pays nothing.
+  // Generic transform viz (sprite-orientation arrow + velocity vector) drawn for
+  // EVERY live entity, plus the anim-scrubber collision-box overlay on the
+  // selected entity. Gated entirely behind Debug.enabled so normal play pays
+  // nothing. Detail level (C key) controls how much text/inspection is shown.
   if (Debug.enabled) {
-    for (const e of getRealEnemies()) drawAggroViz(ctx, e);
-    const b = getBoss();
-    if (b && b.alive) drawAggroViz(ctx, b);
+    const allEnts = [
+      ...getRealEnemies().filter(e => e.alive),
+      ...getProjectiles(),
+      ...getSpecials().filter(s => s.alive),
+      ...getBarrels().filter(b => b.alive),
+      ...getPowerups().filter(p => p.alive && !p.collected),
+      ...getPickups(),
+    ];
+    const hero = getHero();
+    if (hero && !hero.dying) allEnts.push(hero);
+    const boss = getBoss();
+    if (boss && boss.alive) allEnts.push(boss);
+    for (const ent of allEnts) drawEntityTransformDebug(ctx, ent);
     if (Debug.selected) drawSelectionOverlay(ctx, Debug.selected);
   }
 
@@ -504,36 +515,121 @@ function drawEnemyDebug(_ctx, _e) {}
 // --- Unified debug — world-space overlays ------------------------------------
 
 /**
- * Aggro viz for a single enemy/boss: faint aggro-radius circle, a facing arrow
- * from the body center, and the current AI-state label above its head. Drawn in
- * world space (caller is inside the camera translate). No-op when not alive.
- * @param {CanvasRenderingContext2D} ctx
- * @param {Enemy|Elephant} e
+ * Draw a solid arrow from (x,y) along direction (dx,dy), length `len`.
+ * Pure canvas helper shared by the transform-debug overlay.
  */
-function drawAggroViz(ctx, e) {
-  if (!e || !e.alive) return;
-  const cx = e.x + e.w / 2;
-  const cy = e.y + e.h / 2;
-
-  // Facing arrow only (name + aggro circle are handled by debug labels/radius loops).
-  const dir = e.facing ?? 1;
-  const len = 22;
+function drawArrow(ctx, x, y, dx, dy, color, len) {
+  const ex = x + dx * len;
+  const ey = y + dy * len;
   ctx.save();
-  ctx.globalAlpha = 0.85;
-  ctx.strokeStyle = '#2ecc71';
-  ctx.fillStyle = '#2ecc71';
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(cx, cy);
-  ctx.lineTo(cx + dir * len, cy);
+  ctx.moveTo(x, y);
+  ctx.lineTo(ex, ey);
   ctx.stroke();
+  const ang = Math.atan2(dy, dx);
+  const hs = 6;
   ctx.beginPath();
-  ctx.moveTo(cx + dir * len, cy);
-  ctx.lineTo(cx + dir * (len - 6), cy - 4);
-  ctx.lineTo(cx + dir * (len - 6), cy + 4);
+  ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - hs * Math.cos(ang - 0.4), ey - hs * Math.sin(ang - 0.4));
+  ctx.lineTo(ex - hs * Math.cos(ang + 0.4), ey - hs * Math.sin(ang + 0.4));
   ctx.closePath();
   ctx.fill();
   ctx.restore();
+}
+
+/**
+ * Generic transform debug overlay for a single entity. Reads only the Entity's
+ * public fields (no per-type logic):
+ *   Level 0 — green solid arrow (sprite orientation) + brown dotted line+dot
+ *             (velocity). No text.
+ *   Level 1 — adds `name:state` label + [X]/[Y] mirror icons above the box.
+ *   Level 2 — if this is the selected entity, add a numeric inspection panel.
+ * Drawn in world space (caller is inside the camera translate).
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {import('../entity.js').Entity} ent
+ */
+function drawEntityTransformDebug(ctx, ent) {
+  if (!ent || !ent.worldBox) return;
+  const b = ent.worldBox();
+  const cx = b.x + b.w / 2;
+  const cy = b.y + b.h / 2;
+
+  // 1) Sprite orientation arrow (green, solid, bold) — "which way it faces".
+  const oa = ent.spriteOrientation();
+  drawArrow(ctx, cx, cy, Math.cos(oa), Math.sin(oa), '#2ecc71', 22);
+
+  // 2) Velocity indicator (brown, dotted, subtle) — "which way it moves".
+  const va = ent.velocityAngle();
+  if (va !== null) {
+    const len = Math.min(36, Math.max(8, ent.velocitySpeed() * 0.15));
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    ctx.strokeStyle = '#8B4513';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(va) * len, cy + Math.sin(va) * len);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(va) * len, cy + Math.sin(va) * len, 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#8B4513';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // 3) Labels + mirror icons (level >= 1).
+  if (Debug.detailLevel >= 1) {
+    const name = ent.type ?? ent.heroDef?.id ?? '?';
+    const state = ent.aiState ?? (ent.isBoss ? ent.phase : '');
+    const label = state ? `${name}:${state}` : name;
+    ctx.save();
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillText(label, cx, b.y - 14);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(label, cx, b.y - 15);
+    // Mirror icons [X] [Y]: lit when true, dim when false.
+    const ix = cx - 12, iy = b.y - 24;
+    ctx.font = 'bold 8px monospace';
+    ctx.fillStyle = ent.mirrorX ? '#00e5ff' : 'rgba(255,255,255,0.25)';
+    ctx.fillText('[X]', ix, iy);
+    ctx.fillStyle = ent.mirrorY ? '#00e5ff' : 'rgba(255,255,255,0.25)';
+    ctx.fillText('[Y]', ix + 16, iy);
+    ctx.restore();
+  }
+
+  // 4) Numeric inspection panel (level 2, selected entity only).
+  if (Debug.detailLevel >= 2 && Debug.selected === ent) {
+    const deg = r => ((r * 180 / Math.PI) % 360).toFixed(0);
+    const anim = ent.anim;
+    const frame = anim && anim.frames.length
+      ? `${anim.frameIndex}/${anim.frames.length - 1}` : '—';
+    const lines = [
+      `vx ${Math.round(ent.vx)}  vy ${Math.round(ent.vy)}`,
+      `spd ${Math.round(ent.velocitySpeed())}  rot ${deg(ent.rotation)}°  orient ${deg(ent.spriteOrientation())}°`,
+      `mx ${ent.mirrorX ? 1 : 0}  my ${ent.mirrorY ? 1 : 0}  scale ${ent.scale.toFixed(2)}`,
+      `anim f${frame}${ent.hp != null ? `  hp ${Math.round(ent.hp)}/${Math.round(ent.maxHp ?? '?')}` : ''}`,
+    ];
+    ctx.save();
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    const lh = 12;
+    const pw = Math.max(...lines.map(l => ctx.measureText(l).width)) + 12;
+    const px = b.x, py = b.y + b.h + 4;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(px, py, pw, lines.length * lh + 6);
+    lines.forEach((l, i) => {
+      ctx.fillStyle = i === 0 ? '#00e5ff' : '#ffffff';
+      ctx.fillText(l, px + 6, py + 6 + lh * (i + 0.5));
+    });
+    ctx.restore();
+  }
 }
 
 /**
@@ -663,7 +759,7 @@ function drawEventLog(ctx) {
  * @param {CanvasRenderingContext2D} ctx
  */
 function drawHarnessHint(ctx) {
-  const line1 = 'DEBUG | 1-9 spawn | F god | Z spd | T tele | Y hero | L log | E dump | C view';
+  const line1 = 'DEBUG | 1-9 spawn | F god | Z spd | T tele | Y hero | L log | E dump | C detail | V view';
   const line2 = 'RMB sel | LMB force | arrows scrub | X desel';
   ctx.save();
   ctx.font = '10px monospace';

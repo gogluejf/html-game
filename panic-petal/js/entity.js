@@ -35,6 +35,11 @@ export class Entity {
     this.rotation = opts.rotation ?? 0; // radians (render transform)
     this.scale = opts.scale ?? 1;
 
+    // --- Base sprite angle ----------------------------------------------------
+    // Optional offset for art that does NOT point right by default. Most sprites
+    // face right (0 rad); set once per entity type if the raw art points up/down.
+    this.baseSpriteAngle = opts.baseSpriteAngle ?? 0;
+
     // --- Physics ------------------------------------------------------------
     this.weight = opts.weight ?? 1;     // knockback / push strength
 
@@ -107,6 +112,35 @@ export class Entity {
       w: this.box.bw,
       h: this.box.bh,
     };
+  }
+
+  /**
+   * Visual direction the sprite is pointing, in world radians.
+   * Combines mirrorX + rotation into one true angle. Assumes the untransformed
+   * art points RIGHT (0 rad). mirrorY does NOT affect horizontal orientation
+   * (it's a vertical flip), so it's excluded here. Pure read — no mutation.
+   * @returns {number} angle in radians
+   */
+  spriteOrientation() {
+    let a = this.rotation;
+    if (this.mirrorX) a = Math.PI - a; // mirrorX flips the facing direction
+    return this.baseSpriteAngle + a;
+  }
+
+  /**
+   * Direction of movement in world radians, or null when (nearly) stationary.
+   * @param {number} threshold speed below which the entity counts as still
+   * @returns {number|null} angle in radians, or null
+   */
+  velocityAngle(threshold = 1) {
+    const speed = Math.hypot(this.vx, this.vy);
+    if (speed < threshold) return null;
+    return Math.atan2(this.vy, this.vx);
+  }
+
+  /** Speed magnitude (px/s). */
+  velocitySpeed() {
+    return Math.hypot(this.vx, this.vy);
   }
 
   /**

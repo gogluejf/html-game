@@ -154,4 +154,18 @@ ok('statesFor returns [] for a null entity', () => {
   assert.deepEqual(Debug.statesFor(null), []);
 });
 
+// --- Transform-debug detail level --------------------------------------------
+ok('detailLevel starts at 0 and cycles 0→1→2→0', () => {
+  Debug.detailLevel = 0;
+  assert.equal(Debug.cycleDetailLevel(), 1);
+  assert.equal(Debug.cycleDetailLevel(), 2);
+  assert.equal(Debug.cycleDetailLevel(), 0);
+});
+
+ok('reset() clears detailLevel to 0', () => {
+  Debug.detailLevel = 2;
+  Debug.reset();
+  assert.equal(Debug.detailLevel, 0);
+});
+
 console.log(`\n${passed} passed`);
