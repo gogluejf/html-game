@@ -385,6 +385,58 @@
             ],
             "frame_size": "236x397"
           }
+        },
+        {
+          "file": "panic-petal/assets/balthazar_sheet_4.png",
+          "rows": 1,
+          "cols": 8,
+          "description": "Balthazar tiger ringmaster hero sheet 4, run2 x 8 frames",
+          "entities": [
+            {
+              "row": 1,
+              "name": "balthazar",
+              "anim": "run2",
+              "frames": [
+                "balthazar_run2_f1.png",
+                "balthazar_run2_f2.png",
+                "balthazar_run2_f3.png",
+                "balthazar_run2_f4.png",
+                "balthazar_run2_f5.png",
+                "balthazar_run2_f6.png",
+                "balthazar_run2_f7.png",
+                "balthazar_run2_f8.png"
+              ]
+            }
+          ],
+          "original_prompt": "Generate a sprite sheet of 1 hero sprite for the hand-painted circus game \"Petal Panic\", continuing the exact same hand-painted circus style as the prior Balthazar sheets above.\n\nLAYOUT: 1 row x 8 columns on a solid uniform pink background (rgb 250,152,170). The single row is one unique hero; the 8 columns are its 8 animation frames shown left-to-right. All cells exactly the same size (~221x445 px), evenly spaced, separated by thin light-pink grid lines (rgb 255,210,220, 2px wide). No text, no labels, no dark borders between cells. Image 1774 wide x 445 tall.\n\nSTYLE: hand-painted circus / big-top illustration. Soft painterly shading with visible brush texture, warm saturated colors, gentle highlights and shadows (not flat pixel art). Thick clean dark-brown/black outlines around the character. Side profile facing right. Consistent style across every frame.\n\nROW 1 (top to bottom), 8 distinct loopable frames \u2014 BALTHAZAR, an anthropomorphic orange-and-black striped tiger ringmaster wearing a black tuxedo suit (jacket + trousers) with a white dress shirt, red bow tie, and a red sash/belt at the waist; white-gloved hands; long striped tail streaming behind. A confident athletic RUN CYCLE (run2):\nFrame 1 -> contact/foot down, body low, front leg bent forward, back leg pushing off.\nFrame 2 -> passing through mid-stride, legs crossing, body rising slightly.\nFrame 3 -> up position, both knees lifted, body at peak height, arms swinging.\nFrame 4 -> opposite foot reaching forward, body beginning to lower.\nFrame 5 -> second contact, other foot planted, body low again.\nFrame 6 -> mid-stride mirror of frame 2, legs crossing the other way.\nFrame 7 -> up position mirror of frame 3, knees lifted, body at peak.\nFrame 8 -> return to the starting contact pose so the cycle loops seamlessly.\n\nFrames within the row must be clearly distinct but smoothly sequential (loopable run). Keep it clean and croppable.",
+          "crop": {
+            "bg_color": [
+              250,
+              152,
+              171
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                445
+              ]
+            ],
+            "col_x": [
+              [
+                110,
+                331,
+                553,
+                775,
+                996,
+                1218,
+                1439,
+                1661
+              ]
+            ],
+            "frame_size": "226x453",
+            "frames_dir": "panic-petal/assets/heroes"
+          }
         }
       ]
     },
@@ -2098,5 +2150,5 @@
       ]
     }
   },
-  "updated": "2026-09-11T01:41:33"
+  "updated": "2026-09-12T01:03:36"
 }
