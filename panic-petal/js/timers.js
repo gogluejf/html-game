@@ -21,6 +21,7 @@ export const TIMER_COLORS = {
   rec:    '#f1c40f', // hero hit-stun / recovery (control locked)
   inv:    '#00e5ff', // hero invincibility frames (damage absorbed)
   rapid:  '#9b59b6', // rapid-fire powerup window
+  special:'#1abc9c', // special-attack cooldown (saw/bomb)
 };
 
 /** Fallback color for any label not in TIMER_COLORS. */

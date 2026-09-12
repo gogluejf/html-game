@@ -60,9 +60,17 @@ export class Enemy extends Entity {
     this.hitFlash = 0;
 
     // --- Death pipeline -----------------------------------------------------
-    this.deathTimer = 0;
+    // Driven by a labeled 'death' timer on the unified engine (counts down).
+    // deathTimer/fading are derived from it so render + debug stay in sync and
+    // the death countdown shows as a 'death' bar in the per-entity stack.
     this.deathDuration = 0.6; // seconds total for shrink+fade
     this.fading = false;      // true after half duration (render fades out)
+  }
+
+  /** Elapsed death time (derived from the 'death' timer), 0 when not dying. */
+  get deathTimer() {
+    if (this.aiState !== 'dead') return 0;
+    return Math.max(0, this.deathDuration - this.timers.get('death'));
   }
 
   /**
@@ -81,11 +89,11 @@ export class Enemy extends Entity {
 
     // --- Death pipeline ------------------------------------------------------
     if (this.aiState === 'dead') {
-      this.deathTimer += dt;
+      this.timers.tick(dt);
       if (!this.fading && this.deathTimer > this.deathDuration * 0.5) {
         this.fading = true;
       }
-      if (this.deathTimer >= this.deathDuration) {
+      if (this.timers.expired('death')) {
         this.alive = false; // fully gone — caller spawns effects + removes
       }
       return;
@@ -147,7 +155,7 @@ export class Enemy extends Entity {
   die() {
     if (this.aiState === 'dead') return; // already dying
     this.aiState = 'dead';
-    this.deathTimer = 0;
+    this.timers.set('death', this.deathDuration); // start the death countdown
     this.fading = false;
     this.vx = 0;
     this.vy = 0;

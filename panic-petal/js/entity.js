@@ -62,15 +62,18 @@ export class Entity {
     // --- Time-to-live (TTL) ---------------------------------------------------
     // Unified labeled timer set. An entity can carry MANY concurrent countdowns
     // (life, fuse, death, rec, inv, rapid, ...) — see timers.js. The legacy
-    // scalar `ttl`/`maxTtl`/`ttlFrac` below are kept as thin aliases over a
-    // default 'life' timer so existing coin/projectile code keeps working while
-    // we migrate incrementally. New code should use this.timers directly.
+    // scalar `ttl`/`maxTtl`/`ttlFrac` are kept as accessors over a default
+    // 'life' timer so existing coin/projectile code keeps working while we
+    // migrate incrementally. New code should use this.timers directly.
+    //
+    // IMPORTANT: maxTtl is a SETTER that (re)registers the 'life' timer, because
+    // subclasses assign this.maxTtl AFTER super() runs (e.g. Coin sets COIN_TTL
+    // in its own constructor body). A plain field would be set too late for the
+    // one-shot seeding below and the life timer would never exist.
     this.timers = new Timers();
-    // Legacy alias fields (kept in sync with the 'life' timer for compat).
-    this.maxTtl = opts.maxTtl ?? 0;
-    this.ttl = this.maxTtl;
+    this._maxTtl = 0;
     this.ttlSpeed = opts.ttlSpeed ?? 1;
-    if (this.maxTtl > 0) this.timers.set('life', this.maxTtl);
+    if ((opts.maxTtl ?? 0) > 0) this.maxTtl = opts.maxTtl; // route through setter
 
     // --- Effect radius --------------------------------------------------------
     // Generic "zone of effect" radius in logical px. Used by:
@@ -84,30 +87,41 @@ export class Entity {
   }
 
   /**
+   * Legacy maxTtl accessor. Setting it (re)registers the 'life' timer so the
+   * unified engine tracks it — this is why subclasses can assign this.maxTtl
+   * after super() and still get a working countdown.
+   */
+  get maxTtl() { return this._maxTtl; }
+  set maxTtl(v) {
+    this._maxTtl = v ?? 0;
+    if (this._maxTtl > 0) this.timers.set('life', this._maxTtl);
+    else this.timers.clear('life');
+  }
+
+  /**
    * Advance the TTL clock. Call from update() or let the engine do it.
-   * Delegates to the unified timer set: ticks every labeled timer, then keeps
-   * the legacy scalar `ttl`/`alive` in sync with the 'life' timer for backward
-   * compatibility. When the 'life' timer expires, alive is set to false.
+   * Delegates to the unified timer set: ticks every labeled timer, then flips
+   * alive=false when this entity's life timer expires. The life timer's label
+   * defaults to 'life' but subclasses (e.g. Special bombs) may use another
+   * label ('fuse') via this._ttlLabel so the debug stack reads descriptively.
+   * Subclasses that scale time pass a pre-scaled dt (e.g. coin passes dt*TTL_SPEED).
    * @param {number} dt seconds
    */
   tickTtl(dt) {
-    if (!this.alive) return;
+    if (!this.alive || this._maxTtl <= 0) return;
+    const label = this._ttlLabel ?? 'life';
     this.timers.tick(dt * this.ttlSpeed);
-    // Keep legacy alias in sync (only meaningful when a 'life' timer exists).
-    if (this.maxTtl > 0) {
-      this.ttl = this.timers.get('life');
-      if (this.timers.expired('life')) {
-        this.ttl = 0;
-        this.alive = false;
-      }
-    }
+    if (this.timers.expired(label)) this.alive = false;
   }
 
   /** Fraction of life remaining (1 = fresh, 0 = expired). For progress bars. */
   get ttlFrac() {
-    if (this.maxTtl <= 0) return 1;
-    return this.timers.fraction('life');
+    if (this._maxTtl <= 0) return 1;
+    return this.timers.fraction(this._ttlLabel ?? 'life');
   }
+
+  /** Remaining life seconds (legacy alias over the life/fuse timer). */
+  get ttl() { return this._maxTtl > 0 ? this.timers.get(this._ttlLabel ?? 'life') : 0; }
 
   /**
    * World-space AABB derived from the offset box.

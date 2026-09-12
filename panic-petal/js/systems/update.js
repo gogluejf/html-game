@@ -1281,10 +1281,11 @@ function tryFire(h, input, dt) {
 // --- Special attack (design §4): H key fires hero's unique weapon ------------
 // Scarlet: fast saw blade (no gravity, short range). Balthazar: bomb (gravity,
 // TTL fuse, AoE explosion on expiry). Consumes specialAmmo, gated by special_freq.
-let specialCooldown = 0;
+// The cooldown is a labeled timer on the HERO ('special') so it shows in the
+// per-entity debug stack like every other countdown.
 function trySpecial(h, input, dt) {
-  if (specialCooldown > 0) specialCooldown -= dt;
-  if (!input.special || specialCooldown > 0) return;
+  if (!input.special) return;
+  if (h.timers.get('special') > 0) return; // still cooling down
   if (h.specialAmmo <= 0) return;
 
   const type = h.stats.special; // 'saw' | 'bomb'
@@ -1300,7 +1301,7 @@ function trySpecial(h, input, dt) {
 
   h.specialAmmo -= 1;
   h.combatStats.specialsUsed = (h.combatStats.specialsUsed ?? 0) + 1;
-  specialCooldown = h.stats.special_freq; // seconds between specials
+  h.timers.set('special', h.stats.special_freq); // cooldown as a labeled timer
 
   if (Debug.enabled) Debug.logEvent(`special ${type} fired`);
 }
