@@ -442,21 +442,21 @@
           "file": "panic-petal/assets/balthazar_sheet_5.png",
           "rows": 1,
           "cols": 8,
-          "description": "Balthazar tiger ringmaster hero sheet 5, djump x 8 frames",
+          "description": "Balthazar tiger ringmaster hero sheet 5, jump2 x 8 frames",
           "entities": [
             {
               "row": 1,
               "name": "balthazar",
-              "anim": "djump",
+              "anim": "jump2",
               "frames": [
-                "balthazar_djump_f1.png",
-                "balthazar_djump_f2.png",
-                "balthazar_djump_f3.png",
-                "balthazar_djump_f4.png",
-                "balthazar_djump_f5.png",
-                "balthazar_djump_f6.png",
-                "balthazar_djump_f7.png",
-                "balthazar_djump_f8.png"
+                "balthazar_jump2_f1.png",
+                "balthazar_jump2_f2.png",
+                "balthazar_jump2_f3.png",
+                "balthazar_jump2_f4.png",
+                "balthazar_jump2_f5.png",
+                "balthazar_jump2_f6.png",
+                "balthazar_jump2_f7.png",
+                "balthazar_jump2_f8.png"
               ]
             }
           ],
@@ -550,16 +550,16 @@
             {
               "row": 1,
               "name": "scarlet_vale",
-              "anim": "djump",
+              "anim": "jump2",
               "frames": [
-                "scarlet_vale_djump_f1.png",
-                "scarlet_vale_djump_f2.png",
-                "scarlet_vale_djump_f3.png",
-                "scarlet_vale_djump_f4.png",
-                "scarlet_vale_djump_f5.png",
-                "scarlet_vale_djump_f6.png",
-                "scarlet_vale_djump_f7.png",
-                "scarlet_vale_djump_f8.png"
+                "scarlet_vale_jump2_f1.png",
+                "scarlet_vale_jump2_f2.png",
+                "scarlet_vale_jump2_f3.png",
+                "scarlet_vale_jump2_f4.png",
+                "scarlet_vale_jump2_f5.png",
+                "scarlet_vale_jump2_f6.png",
+                "scarlet_vale_jump2_f7.png",
+                "scarlet_vale_jump2_f8.png"
               ]
             }
           ],
