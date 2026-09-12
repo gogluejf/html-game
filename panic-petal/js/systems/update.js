@@ -756,7 +756,13 @@ world.on('hit', (a, b) => {
     if (victim.invincibleTimer > 0) { foeProj.alive = false; return; } // i-frames absorb it
     const dealt = damage(foeProj, victim, foeProj.damage, 'projectile');
     if (dealt > 0) {
-      victim.invincibleTimer = Math.max(victim.invincibleTimer, 0.3); // brief i-frames
+      // Knockback along the projectile's travel direction + hit-stun + i-frames.
+      victim.takeHit({
+        dirX: foeProj.vx, dirY: foeProj.vy,
+        strength: 220,
+        recovery: 0.25,
+        invincible: 0.30,
+      });
       // Task 7.1 — red vignette when the hero takes damage (design §12).
       Effects.heroDamaged();
       // Task 7.3 — track hits taken from enemy projectiles (design §4.1).
@@ -785,12 +791,26 @@ world.on('contact', (a, b) => {
   // Task 5.2 — no contact damage while the hero is mid-death.
   if (heroEnt.dying) return;
   if (!source.alive || source.aiState === 'dead') return; // dead enemies don't hurt
+  // i-frames absorb contact hits (prevents melt while overlapping). takeHit()
+  // returns false when invincible, so we skip damage + cooldown in that case.
+  if (heroEnt.timers.get('inv') > 0) return;
   if (source._contactCd > 0) return;
   source._contactCd = CONTACT_COOLDOWN;
   const amt = source.stats?.attack ?? 10;
   const dealt = damage(source, heroEnt, amt, 'contact');
-  // Task 7.1 — red vignette on contact damage (design §12 "Hero damaged").
+  // Knockback + hit-stun + i-frames: shove the hero away from the attacker's
+  // center with a small upward pop. Bosses fling harder than regular enemies.
   if (dealt > 0) {
+    const hcx = heroEnt.x + heroEnt.w / 2, scx = source.x + source.w / 2;
+    const dirX = Math.sign(hcx - scx) || (heroEnt.facing * -1);
+    const isBoss = source.layer === LAYER.BOSS;
+    heroEnt.takeHit({
+      dirX, dirY: -0.6,
+      strength: isBoss ? 340 : 260,
+      recovery: isBoss ? 0.30 : 0.25,
+      invincible: isBoss ? 0.70 : 0.60,
+    });
+    // Task 7.1 — red vignette on contact damage (design §12 "Hero damaged").
     Effects.heroDamaged();
     // Task 7.3 — track hits taken from enemy contact (design §4.1).
     heroEnt.runStats.hitsTaken.enemyContact += 1;
@@ -1598,6 +1618,14 @@ function handleBarrelDestroyed(barrel) {
     if (result.hit.includes(hero)) {
       hero.runStats.hitsTaken.explosion += 1;
       hero.runStats.hitsTaken.total += 1;
+      // Radial knockback away from the blast center + hit-stun + i-frames.
+      const hcx = hero.x + hero.w / 2, hcy = hero.y + hero.h / 2;
+      hero.takeHit({
+        dirX: hcx - cx, dirY: hcy - cy,
+        strength: 380,
+        recovery: 0.30,
+        invincible: 0.60,
+      });
     }
     // Explosion VFX: 12–15 orange/red particles expanding outward.
     spawnExplosionVFX(cx, cy, result.radius);

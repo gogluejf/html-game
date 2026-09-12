@@ -122,6 +122,38 @@ export class Hero extends Entity {
     this.timers.set('rapid', Math.max(this.timers.get('rapid'), v));
   }
 
+  /** True while the hero is in hit-stun (recovery) — input is locked. */
+  get hitStunned() { return this.timers.get('rec') > 0; }
+
+  /**
+   * Apply a hit reaction: knockback impulse + hit-stun (recovery) + i-frames.
+   * This is the single entry point for every damaging collision (enemy contact,
+   * boss contact, enemy projectile, barrel/bomb explosion). Callers pass a
+   * normalized direction + magnitude so each source can feel different.
+   *
+   * If the hero is already invincible (i-frames up), the hit is ABSORBED — no
+   * double-fling, no timer refresh. This matches how projectile hits already
+   * behave and prevents melt while overlapping.
+   *
+   * @param {object} o
+   * @param {number} o.dirX normalized knockback x (-1..1)
+   * @param {number} o.dirY normalized knockback y (-1..1)
+   * @param {number} o.strength knockback speed in px/s
+   * @param {number} [o.recovery] hit-stun seconds (default 0.25)
+   * @param {number} [o.invincible] i-frame seconds (default 0.6)
+   * @returns {boolean} true if the hit landed, false if absorbed by i-frames
+   */
+  takeHit({ dirX = 0, dirY = 0, strength = 240, recovery = 0.25, invincible = 0.6 }) {
+    if (this.dying) return false;
+    if (this.timers.get('inv') > 0) return false; // i-frames absorb it
+    const len = Math.hypot(dirX, dirY) || 1;
+    this.vx += (dirX / len) * strength;
+    this.vy += (dirY / len) * strength;
+    this.timers.set('rec', recovery);
+    this.timers.set('inv', Math.max(this.timers.get('inv'), invincible));
+    return true;
+  }
+
   /**
    * Per-frame step.
    * @param {number} dt seconds (fixed 1/60)
@@ -141,8 +173,12 @@ export class Hero extends Entity {
     // From the next frame on, crouching fully locks control and the decel
     // below bleeds the momentum off — that's the visible "slide then stop".
     const wasCrouching = this.crouching;
+    // Hit-stun (recovery): while active, input is locked and the knockback
+    // velocity plays out under friction instead of being overwritten by control.
+    // This is what makes a hit "fling" you back before you regain control.
+    const stunned = this.hitStunned;
     let moveDir = 0;
-    if (!this.crouching || !wasCrouching) {
+    if (!stunned && (!this.crouching || !wasCrouching)) {
       if (input.left) moveDir -= 1;
       if (input.right) moveDir += 1;
     }
@@ -150,7 +186,13 @@ export class Hero extends Entity {
     // Sliding = crouching with residual momentum still carrying forward.
     this.sliding = this.crouching && Math.abs(this.vx) > 20;
 
-    if (moveDir !== 0) {
+    if (stunned) {
+      // No control during recovery: bleed the knockback off with friction so it
+      // travels a short distance then settles, rather than stopping dead or
+      // being instantly overridden by held input.
+      this.vx *= GROUND_FRICTION;
+      if (Math.abs(this.vx) < 1) this.vx = 0;
+    } else if (moveDir !== 0) {
       this.facing = moveDir > 0 ? 1 : -1;
       this.syncMirror();
       this.vx = moveDir * speed;
@@ -201,7 +243,7 @@ export class Hero extends Entity {
     // also trigger the second. That's why we gate on jumpPressed, not the
     // buffered value (the buffer is meant to carry a press across landing).
     const canAirJump = !this.grounded && this.jumpsUsed === 1;
-    if ((canGroundJump || canAirJump) && this._jumpBuffer > 0 && !this.crouching) {
+    if ((canGroundJump || canAirJump) && this._jumpBuffer > 0 && !this.crouching && !stunned) {
       const isDouble = canAirJump;
       this.vy = -this.stats.jump * (isDouble ? 0.85 : 1); // double jump slightly weaker
       this.grounded = false;
