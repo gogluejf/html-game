@@ -63,20 +63,16 @@ function drawEnergyBar(ctx, hero) {
     ctx.fillRect(start, barY, w, barH);
   }
 
-  // Border + label.
+  // Border.
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 1;
   ctx.strokeRect(barX + 0.5, barY + 0.5, barW, barH);
-  ctx.fillStyle = CREAM;
-  ctx.font = `12px ${FONT_UI}`;
-  ctx.textAlign = 'left';
-  ctx.fillText('ENERGY', barX, barY + barH + 11);
 }
 
 // --- Ammo (below energy): thorn count + special count ------------------------
 
 function drawAmmo(ctx, hero) {
-  const y = PAD + 16 + 28; // below the ENERGY label
+  const y = PAD + 16 + 19; // just below the energy bar (no label anymore)
   ctx.font = `15px ${FONT_UI}`;
   ctx.textAlign = 'left';
   ctx.fillStyle = '#2ecc71';
