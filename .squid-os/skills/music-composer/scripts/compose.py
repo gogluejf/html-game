@@ -48,8 +48,17 @@ def check_track(t, idx):
         for si, d in enumerate(sset):
             if not isinstance(d, dict):
                 _err(f"{name}: drums[{li}][{si}] must be {{k,s,h}}")
-    # bass
-    check_phrase(t.get("bass"), f"{name}.bass")
+    # bass: single 32-step phrase OR a per-phrase bank (same length as leads).
+    # A bank lets the low end PROGRESS with the chord changes (v2 feature).
+    nph = len(t.get("leads") or [])
+    bass = t.get("bass")
+    if isinstance(bass, list) and bass and isinstance(bass[0], list):
+        if len(bass) != nph:
+            _err(f"{name}: bass bank length must match number of phrases ({nph})")
+        for pi, p in enumerate(bass):
+            check_phrase(p, f"{name}.bass[{pi}]")
+    else:
+        check_phrase(bass, f"{name}.bass")
     # leads bank
     leads = t.get("leads")
     if not isinstance(leads, list) or len(leads) == 0:
@@ -75,18 +84,53 @@ def check_track(t, idx):
     pl = t.get("phraseLens", [1] * len(leads))
     if not isinstance(pl, list) or len(pl) != len(leads):
         _err(f"{name}: phraseLens length must match number of phrases ({len(leads)})")
-    # leadLayers optional: [null,null,bankA,bankB]
+    for i, v in enumerate(pl):
+        if not isinstance(v, int) or v < 1:
+            _err(f"{name}.phraseLens[{i}]: must be a positive integer (2-bar blocks)")
+    # drumLevels optional (v2 dream construction): one level 0..3 per phrase.
+    # Required when the track has more than 4 phrases; otherwise the engine
+    # falls back to level = phrase index.
+    dl = t.get("drumLevels")
+    nph = len(leads)
+    if nph > 4 and dl is None:
+        _err(f"{name}: {nph} phrases require an explicit drumLevels array (one value 0-3 per phrase)")
+    if dl is not None:
+        if not isinstance(dl, list) or len(dl) != nph:
+            _err(f"{name}: drumLevels length must match number of phrases ({nph})")
+        for i, v in enumerate(dl):
+            if v not in (0, 1, 2, 3):
+                _err(f"{name}.drumLevels[{i}]: must be 0, 1, 2 or 3")
+    # leadLayers optional.
+    # v2 flat form: one 32-step phrase (or null) per phrase index.
+    # Legacy nested form: banks indexed by level, each bank = N phrases.
     ll = t.get("leadLayers")
     if ll is not None:
         if not isinstance(ll, list):
             _err(f"{name}: leadLayers must be an array or null")
-        for li, bank in enumerate(ll):
-            if bank is None:
-                continue
-            if not isinstance(bank, list) or len(bank) != len(leads):
-                _err(f"{name}.leadLayers[{li}]: bank must have {len(leads)} phrases")
-            for pi, p in enumerate(bank):
-                check_phrase(p, f"{name}.leadLayers[{li}][{pi}]")
+        looks_nested = any(
+            b is not None and isinstance(b, list) and b
+            and isinstance(b[0], list) and len(b[0]) == STEPS
+            for b in ll
+        )
+        if looks_nested:
+            # legacy: length = number of drum levels (4), each bank = N phrases
+            if len(ll) != 4:
+                _err(f"{name}: legacy leadLayers must have 4 level slots")
+            for li, bank in enumerate(ll):
+                if bank is None:
+                    continue
+                if not isinstance(bank, list) or len(bank) != nph:
+                    _err(f"{name}.leadLayers[{li}]: bank must have {nph} phrases")
+                for pi, p in enumerate(bank):
+                    check_phrase(p, f"{name}.leadLayers[{li}][{pi}]")
+        else:
+            # v2 flat: one phrase-or-null per phrase index
+            if len(ll) != nph:
+                _err(f"{name}: leadLayers length must match number of phrases ({nph})")
+            for pi, p in enumerate(ll):
+                if p is None:
+                    continue
+                check_phrase(p, f"{name}.leadLayers[{pi}]")
     # bpm
     if not isinstance(t.get("bpm"), (int, float)):
         _err(f"{name}: bpm required (number)")

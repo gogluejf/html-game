@@ -126,16 +126,16 @@ class MusicSequencer {
   }
 
   /**
-   * Drum/arrangement intensity level, locked to the current phrase:
-   *   phrase 0 -> level 0 (no drums)
-   *   phrase 1 -> level 1 (light)
-   *   phrase 2 -> level 2 (medium)
-   *   phrase 3 -> level 3 (full)
-   * Real-music logic: the big drum hit lands on the climax phrase every time,
-   * while the accumulating lead layers (see _leadLayer) keep each pass fresh.
+   * Drum/arrangement intensity for the current phrase.
+   * Preferred: explicit per-phrase table `trk.drumLevels` (one entry per
+   * phrase, values 0..3) — required for >4-phrase tracks (dream construction).
+   * Fallback (classic 4-phrase tracks): level = phrase index (0->none,
+   * 1->light, 2->medium, 3->full).
    */
   _drumLevel(trk) {
-    return this._phraseIndex(trk);
+    const pi = this._phraseIndex(trk);
+    if (trk.drumLevels && trk.drumLevels[pi] != null) return trk.drumLevels[pi];
+    return pi;
   }
 
   _playStep(trk, step, t) {
@@ -149,14 +149,16 @@ class MusicSequencer {
     if (d.k) this._kick(t, trk);
     if (d.s) this._snare(t, trk);
     if (d.h) this._hat(t, trk);
-    const b = trk.bass[step];
+    const b = (Array.isArray(trk.bass) && trk.bass[pi] != null) ? trk.bass[pi][step] : trk.bass[step];
     if (b) this._bass(t, b, trk);
     if (padPhrase && padPhrase[step]) this._pad(t, padPhrase[step], trk);
     const l = leadPhrase[step];
     if (l) this._lead(t, l, trk);
-    // Extra lead layer builds with the same level (absent at level 0).
-    if (trk.leadLayers && trk.leadLayers[lvl] && trk.leadLayers[lvl][pi]) {
-      const xl = trk.leadLayers[lvl][pi][step];
+    // Extra lead layer: per-phrase banks (null = no layer for that phrase).
+    // v2: leadLayers is a flat array with ONE 32-step entry per phrase index,
+    // so any number of phrases works (classic tracks put banks at 2 & 3).
+    if (trk.leadLayers && trk.leadLayers[pi]) {
+      const xl = trk.leadLayers[pi][step];
       if (xl) this._leadLayer(t, xl, trk, lvl);
     }
   }
@@ -603,7 +605,9 @@ class MusicSequencer {
 
   function buildTrack(t) {
     const drums = t.drums.map(set => set.map(d => ({ k: !!d.k, s: !!d.s, h: !!d.h })));
-    const bass = resolvePhrase(t.bass);
+    // bass: single 32-step phrase OR a per-phrase bank (same length as leads).
+    const isBassBank = Array.isArray(t.bass) && t.bass.length > 0 && Array.isArray(t.bass[0]);
+    const bass = isBassBank ? t.bass.map(resolvePhrase) : resolvePhrase(t.bass);
     const leads = t.leads.map(resolvePhrase);
     const pads = t.pads.map(p => {
       const o = {};
@@ -612,12 +616,22 @@ class MusicSequencer {
     });
     let leadLayers = null;
     if (t.leadLayers) {
-      leadLayers = t.leadLayers.map(bank => bank === null ? null : bank.map(resolvePhrase));
+      // v2 flat form: one 32-step phrase (or null) per phrase index.
+      // Legacy nested form (banks of phrases indexed by level) is normalized:
+      // a non-null bank contributes its first phrase to each level slot.
+      const arr = t.leadLayers;
+      const looksNested = arr.some(b => b !== null && Array.isArray(b) && Array.isArray(b[0]) && b[0].length === (t.steps || 32));
+      if (looksNested) {
+        leadLayers = arr.map(bank => bank === null ? null : resolvePhrase(bank[0]));
+      } else {
+        leadLayers = arr.map(b => b === null ? null : resolvePhrase(b));
+      }
     }
     return {
       name: t.name, bpm: t.bpm, steps: t.steps || 32,
       drums, bass, leads, pads,
       phraseLens: t.phraseLens || [1,1,1,1],
+      drumLevels: t.drumLevels || null,
       numCycles: t.numCycles || 3,
       leadLayers,
       bassType:t.bassType, bassCut:t.bassCut, bassDur:t.bassDur,
