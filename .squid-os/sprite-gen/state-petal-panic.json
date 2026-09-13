@@ -3566,6 +3566,50 @@
             ],
             "frame_size": "238x252"
           }
+        },
+        {
+          "file": "panic-petal/assets/projectile_sheet_2.png",
+          "rows": 1,
+          "cols": 5,
+          "description": "Spinning dumbbell projectile \u2014 1x5 strip",
+          "entities": [
+            {
+              "name": "projectile_2",
+              "anim": "spin",
+              "frames": [
+                "projectile_2_spin_f1.png",
+                "projectile_2_spin_f2.png",
+                "projectile_2_spin_f3.png",
+                "projectile_2_spin_f4.png",
+                "projectile_2_spin_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              249,
+              125,
+              162
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                724
+              ]
+            ],
+            "col_x": [
+              [
+                434,
+                869,
+                1303,
+                1737,
+                2172
+              ]
+            ],
+            "frame_size": "434x724",
+            "frames_dir": "panic-petal/assets/projectiles"
+          }
         }
       ]
     }
