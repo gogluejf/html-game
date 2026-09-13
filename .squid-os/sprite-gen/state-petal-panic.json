@@ -1611,6 +1611,94 @@
             "frame_size": "287x256",
             "frames_dir": "panic-petal/assets/enemies"
           }
+        },
+        {
+          "file": "panic-petal/assets/doodle_dink_sheet_1.png",
+          "rows": 3,
+          "cols": 5,
+          "description": "Doodle Dink striped jester \u2014 teleport, tomato_throw, headbutt",
+          "entities": [
+            {
+              "name": "doodle_dink",
+              "anim": "teleport",
+              "frames": [
+                "doodle_dink_teleport_f1.png",
+                "doodle_dink_teleport_f2.png",
+                "doodle_dink_teleport_f3.png",
+                "doodle_dink_teleport_f4.png",
+                "doodle_dink_teleport_f5.png"
+              ]
+            },
+            {
+              "name": "doodle_dink",
+              "anim": "tomato_throw",
+              "frames": [
+                "doodle_dink_tomato_throw_f1.png",
+                "doodle_dink_tomato_throw_f2.png",
+                "doodle_dink_tomato_throw_f3.png",
+                "doodle_dink_tomato_throw_f4.png",
+                "doodle_dink_tomato_throw_f5.png"
+              ]
+            },
+            {
+              "name": "doodle_dink",
+              "anim": "headbutt",
+              "frames": [
+                "doodle_dink_headbutt_f1.png",
+                "doodle_dink_headbutt_f2.png",
+                "doodle_dink_headbutt_f3.png",
+                "doodle_dink_headbutt_f4.png",
+                "doodle_dink_headbutt_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              250,
+              127,
+              158
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                341
+              ],
+              [
+                341,
+                682
+              ],
+              [
+                682,
+                1024
+              ]
+            ],
+            "col_x": [
+              [
+                307,
+                614,
+                921,
+                1228,
+                1535
+              ],
+              [
+                307,
+                614,
+                921,
+                1228,
+                1535
+              ],
+              [
+                307,
+                614,
+                921,
+                1228,
+                1535
+              ]
+            ],
+            "frame_size": "287x341",
+            "frames_dir": "panic-petal/assets/enemies"
+          }
         }
       ]
     },
