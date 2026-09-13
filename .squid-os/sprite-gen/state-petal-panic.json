@@ -3716,6 +3716,112 @@
             "frame_size": "192x341",
             "frames_dir": "panic-petal/assets/projectiles"
           }
+        },
+        {
+          "file": "panic-petal/assets/projectile_sheet_4.png",
+          "rows": 3,
+          "cols": 8,
+          "description": "Projectile 4 \u2014 fish_bone, circus_ball, peas_tornado",
+          "entities": [
+            {
+              "name": "projectile_4",
+              "anim": "fish_bone",
+              "frames": [
+                "projectile_4_fish_bone_f1.png",
+                "projectile_4_fish_bone_f2.png",
+                "projectile_4_fish_bone_f3.png",
+                "projectile_4_fish_bone_f4.png",
+                "projectile_4_fish_bone_f5.png",
+                "projectile_4_fish_bone_f6.png",
+                "projectile_4_fish_bone_f7.png",
+                "projectile_4_fish_bone_f8.png"
+              ]
+            },
+            {
+              "name": "projectile_4",
+              "anim": "circus_ball",
+              "frames": [
+                "projectile_4_circus_ball_f1.png",
+                "projectile_4_circus_ball_f2.png",
+                "projectile_4_circus_ball_f3.png",
+                "projectile_4_circus_ball_f4.png",
+                "projectile_4_circus_ball_f5.png",
+                "projectile_4_circus_ball_f6.png",
+                "projectile_4_circus_ball_f7.png",
+                "projectile_4_circus_ball_f8.png"
+              ]
+            },
+            {
+              "name": "projectile_4",
+              "anim": "peas_tornado",
+              "frames": [
+                "projectile_4_peas_tornado_f1.png",
+                "projectile_4_peas_tornado_f2.png",
+                "projectile_4_peas_tornado_f3.png",
+                "projectile_4_peas_tornado_f4.png",
+                "projectile_4_peas_tornado_f5.png",
+                "projectile_4_peas_tornado_f6.png",
+                "projectile_4_peas_tornado_f7.png",
+                "projectile_4_peas_tornado_f8.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              251,
+              131,
+              161
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                341
+              ],
+              [
+                341,
+                682
+              ],
+              [
+                682,
+                1024
+              ]
+            ],
+            "col_x": [
+              [
+                192,
+                384,
+                576,
+                768,
+                960,
+                1152,
+                1344,
+                1536
+              ],
+              [
+                192,
+                384,
+                576,
+                768,
+                960,
+                1152,
+                1344,
+                1536
+              ],
+              [
+                192,
+                384,
+                576,
+                768,
+                960,
+                1152,
+                1344,
+                1536
+              ]
+            ],
+            "frame_size": "192x341",
+            "frames_dir": "panic-petal/assets/projectiles"
+          }
         }
       ]
     }
