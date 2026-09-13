@@ -1,6 +1,6 @@
 # Petal Panic — Level Design
 
-## Level 1 — The Circus 🎪
+## Level 1 — The Circus
 
 **Boss:** Tusko Wobble
 
@@ -14,7 +14,7 @@ Warm, lively vintage circus. Scarlet and Balthazar discover something has corrup
 
 ---
 
-## Level 2 — Carnival After Dark 🎡
+## Level 2 — Carnival After Dark
 
 **Boss:** Ratchet Rumbelow
 
@@ -28,7 +28,7 @@ The adventure spills outside into a huge carnival. More open, colorful and chaot
 
 ---
 
-## Level 3 — The Pirate Ship 🏴‍☠️
+## Level 3 — The Pirate Ship
 
 **Boss:** Grim Vertigo
 
@@ -42,7 +42,7 @@ They take to sea toward Carrot's territory. Stormy skies, enormous wooden ship, 
 
 ---
 
-## Level 4 — Carrot's Republic 🥕
+## Level 4 — Carrot's Republic
 
 **Boss:** Dictator Carrot (final)
 
