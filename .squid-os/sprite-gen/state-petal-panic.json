@@ -2036,6 +2036,94 @@
             "frame_size": "285x250",
             "frames_dir": "panic-petal/assets/boss"
           }
+        },
+        {
+          "file": "panic-petal/assets/dictator_carrot_sheet_4.png",
+          "rows": 3,
+          "cols": 5,
+          "description": "Dictator Carrot final boss, sheet 4/4 \u2014 angry (row1), death (row2), scooter_ride (row3)",
+          "entities": [
+            {
+              "name": "dictator_carrot",
+              "anim": "angry",
+              "frames": [
+                "dictator_carrot_angry_f1.png",
+                "dictator_carrot_angry_f2.png",
+                "dictator_carrot_angry_f3.png",
+                "dictator_carrot_angry_f4.png",
+                "dictator_carrot_angry_f5.png"
+              ]
+            },
+            {
+              "name": "dictator_carrot",
+              "anim": "death",
+              "frames": [
+                "dictator_carrot_death_f1.png",
+                "dictator_carrot_death_f2.png",
+                "dictator_carrot_death_f3.png",
+                "dictator_carrot_death_f4.png",
+                "dictator_carrot_death_f5.png"
+              ]
+            },
+            {
+              "name": "dictator_carrot",
+              "anim": "scooter_ride",
+              "frames": [
+                "dictator_carrot_scooter_ride_f1.png",
+                "dictator_carrot_scooter_ride_f2.png",
+                "dictator_carrot_scooter_ride_f3.png",
+                "dictator_carrot_scooter_ride_f4.png",
+                "dictator_carrot_scooter_ride_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              252,
+              132,
+              159
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                341
+              ],
+              [
+                341,
+                682
+              ],
+              [
+                682,
+                1024
+              ]
+            ],
+            "col_x": [
+              [
+                153,
+                460,
+                768,
+                1075,
+                1383
+              ],
+              [
+                153,
+                460,
+                768,
+                1075,
+                1383
+              ],
+              [
+                153,
+                460,
+                768,
+                1075,
+                1383
+              ]
+            ],
+            "frame_size": "varies per anim",
+            "frames_dir": "panic-petal/assets/boss"
+          }
         }
       ]
     },
