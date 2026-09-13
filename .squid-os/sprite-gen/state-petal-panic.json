@@ -2250,7 +2250,7 @@
       "path": "panic-petal/assets/projectiles",
       "sheets": [
         {
-          "file": "panic-petal/assets/projectiles_sheet.png",
+          "file": "panic-petal/assets/projectile_sheet_1.png",
           "rows": 3,
           "cols": 8,
           "description": "Projectiles: thorn missile w/ petal trail (row1), bomb fuse + explosion burst (row2), spinning petal saw (row3); 3 rows x 8 frames",
