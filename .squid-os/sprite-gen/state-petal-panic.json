@@ -1699,6 +1699,50 @@
             "frame_size": "287x341",
             "frames_dir": "panic-petal/assets/enemies"
           }
+        },
+        {
+          "file": "panic-petal/assets/doodle_dink_sheet_2.png",
+          "rows": 1,
+          "cols": 5,
+          "description": "Doodle Dink death dissolve \u2014 1x5 strip",
+          "entities": [
+            {
+              "name": "doodle_dink",
+              "anim": "death",
+              "frames": [
+                "doodle_dink_death_f1.png",
+                "doodle_dink_death_f2.png",
+                "doodle_dink_death_f3.png",
+                "doodle_dink_death_f4.png",
+                "doodle_dink_death_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              251,
+              124,
+              161
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                793
+              ]
+            ],
+            "col_x": [
+              [
+                396,
+                793,
+                1189,
+                1585,
+                1983
+              ]
+            ],
+            "frame_size": "396x793",
+            "frames_dir": "panic-petal/assets/enemies"
+          }
         }
       ]
     },
