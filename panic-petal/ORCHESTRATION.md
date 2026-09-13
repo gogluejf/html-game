@@ -26,6 +26,7 @@ You are the orchestrator. You do NOT crop, validate, or compose yourself. You de
 | `boris_loon_baby_sheet.png` | boris_loon_baby | enemies | boris_loon_baby |
 | `violetta_marionetta_sheet.png` | violetta_marionetta | enemies | violetta_marionetta |
 | `overgrown_elephant_sheet.png` | overgrown_elephant | boss | overgrown_elephant |
+| `projectile_sheet_1.png` | projectile_1 | projectiles | projectile_1 |
 
 ### Upcoming Crops (new — Sep 13)
 
@@ -50,12 +51,12 @@ Single images (no crop, just state entry with rows=1 cols=1):
 
 Launch agents **sequentially** (one at a time, wait for each to finish before next). Pass BOTH skills: `["sprite-gen", "sprite-crop"]`.
 
-Agent prompt template (keep it minimal):
+Agent prompt template:
 
 ```
 Crop this pre-existing sprite sheet. The image is already provided — do NOT generate or download any image.
 
-SHEET: /home/goglue/src/html-game/panic-petal/assets/<PATH>/<SHEET>.png
+SHEET: /home/goglue/src/html-game/panic-petal/assets/<SHEET>.png
 ENTITY: <ENTITY>
 LABEL: <LABEL>
 WORKING DIR: /home/goglue/src/html-game
@@ -64,9 +65,16 @@ OUTPUT DIR: /home/goglue/src/html-game/panic-petal/assets/<LABEL>/
 
 Style: hand-painted circus, pink background with light grid. Assets dir: panic-petal/assets.
 Reverse-engineer the prompt from visual inspection and save to /tmp/<ENTITY>_prompt.txt.
+
+CROP RULES (critical):
+- Identify each sprite's actual bounding box within its cell. Do NOT use uniform grid math — AI-generated grids are never perfectly uniform. Scan for real sprite boundaries.
+- Fill the identified background zone with the exact pink bg color BEFORE making transparent. This prevents halos and edge artifacts.
+- After transparency: NO crazy top/bottom transparent margins. Trim to fit the sprite tightly. The frame should be snug around the character — no wasted empty space above head or below feet.
+- No missing left/right portions. Verify the full character body is captured including limbs, tails, weapons, effects that extend beyond the "cell".
+- No neighbor bleed. Each frame must contain ONLY its own sprite.
 ```
 
-Agent limits: `max_steps: 300`, `max_time: "20m"`, `max_tools: 300`
+Agent limits: `max_steps: 300`, `max_time: "7m"`, `max_tools: 300`
 Tools: `["bash", "read_file", "write_file", "inspect_media"]`
 
 If an agent fails (context canceled, timeout), clean its partial output and retry once. If it fails twice, skip and note it.
@@ -94,23 +102,31 @@ For single images, use the same pattern but add: `rows=1 cols=1, no crop needed,
 17. `projectile_sheet_3.png` → `projectiles/projectile_3_`
 18. `projectile_sheet_4.png` → `projectiles/projectile_4_`
 
-## Step 2: Validation Agent
+## Step 2: Per-Sheet Validation (after EACH crop agent finishes)
 
-After all crops are done, launch ONE validation agent:
+After EACH individual crop agent completes, launch a quick validation agent for THAT sheet only:
 
 ```
-Validate all cropped sprite frames for Petal Panic. Inspect 2-3 frames from each entity directory under /home/goglue/src/html-game/panic-petal/assets/. Check: background fully transparent (no pink/tan residue), no see-through faces/bodies, no neighbor bleed, no cut-off limbs. Report PASS/FAIL per entity.
+Validate the cropped frames for <ENTITY> in /home/goglue/src/html-game/panic-petal/assets/<LABEL>/<ENTITY>_. Inspect every frame with inspect_media. Check:
+1. Background fully transparent (no pink/tan residue anywhere)
+2. No see-through faces/bodies (no holes where bg showed through during generation)
+3. No neighbor bleed (no parts of adjacent sprites visible)
+4. No cut-off limbs, tails, weapons, or effects at edges
+5. No excessive transparent margin top/bottom (frame should be tight around sprite)
+6. Full character present left-to-right (no missing side portions)
+
+Report PASS or FAIL per frame. If ANY frame fails, list which frames and what's wrong.
 ```
 
 Tools: `["bash", "inspect_media"]`
-Limits: `max_steps: 100`, `max_time: "15m"`, `max_tools: 100`
+Limits: `max_steps: 50`, `max_time: "7m"`, `max_tools: 50`
 
-If any FAIL → relaunch a crop agent for that specific sheet with a note about what failed.
+If any frame FAILs → relaunch a crop agent for that specific sheet with a note about exactly what failed (which frames, what issue). Max 1 retry per sheet.
 
 ## Step 3: Verify State Consistency
 
-Check the state file yourself:
-- All 7 sheets + 5 single images present
+Check the state file yourself after all crops:
+- All sheets present in state JSON
 - Each has `entities[]`, `crop` block (except singles), consistent field names
 - No garbage top-level fields
 - Frame files on disk match state (`frames_dir` paths exist, file count = rows × cols)
@@ -137,8 +153,9 @@ DO NOT regenerate or modify music. Just open to confirm it plays.
 ## Rules
 
 - You are ORCHESTRATOR ONLY. Do not crop, validate pixel-by-pixel, or compose music yourself.
-- Keep agent prompts minimal. The skills carry the workflow.
+- Keep agent prompts minimal. The skills carry the workflow. The CROP RULES block is the critical addition.
 - Launch crop agents SEQUENTIALLY (LLM connection drops with parallel calls).
+- Validate AFTER EACH SHEET, not just at the end. Catch issues early.
 - If an agent stalls on skill_load or gets "context canceled", kill it and retry.
-- Verify with inspect_media on 1-2 frames per entity after crop (quick sanity check).
+- Agent timeout is 7 minutes. If it's not done by then, it's stuck.
 - Final deliverable: clean assets, perfect state JSON, working viewer, working jukebox.
