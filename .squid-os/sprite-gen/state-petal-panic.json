@@ -3610,6 +3610,112 @@
             "frame_size": "434x724",
             "frames_dir": "panic-petal/assets/projectiles"
           }
+        },
+        {
+          "file": "panic-petal/assets/projectile_sheet_3.png",
+          "rows": 3,
+          "cols": 8,
+          "description": "Projectile 3 \u2014 tomato (rolling+splat), carrot (spinning), pea (swirling)",
+          "entities": [
+            {
+              "name": "projectile_3",
+              "anim": "tomato",
+              "frames": [
+                "projectile_3_tomato_f1.png",
+                "projectile_3_tomato_f2.png",
+                "projectile_3_tomato_f3.png",
+                "projectile_3_tomato_f4.png",
+                "projectile_3_tomato_f5.png",
+                "projectile_3_tomato_f6.png",
+                "projectile_3_tomato_f7.png",
+                "projectile_3_tomato_f8.png"
+              ]
+            },
+            {
+              "name": "projectile_3",
+              "anim": "carrot",
+              "frames": [
+                "projectile_3_carrot_f1.png",
+                "projectile_3_carrot_f2.png",
+                "projectile_3_carrot_f3.png",
+                "projectile_3_carrot_f4.png",
+                "projectile_3_carrot_f5.png",
+                "projectile_3_carrot_f6.png",
+                "projectile_3_carrot_f7.png",
+                "projectile_3_carrot_f8.png"
+              ]
+            },
+            {
+              "name": "projectile_3",
+              "anim": "pea",
+              "frames": [
+                "projectile_3_pea_f1.png",
+                "projectile_3_pea_f2.png",
+                "projectile_3_pea_f3.png",
+                "projectile_3_pea_f4.png",
+                "projectile_3_pea_f5.png",
+                "projectile_3_pea_f6.png",
+                "projectile_3_pea_f7.png",
+                "projectile_3_pea_f8.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              251,
+              127,
+              157
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                341
+              ],
+              [
+                341,
+                682
+              ],
+              [
+                682,
+                1024
+              ]
+            ],
+            "col_x": [
+              [
+                192,
+                384,
+                576,
+                768,
+                960,
+                1152,
+                1344,
+                1536
+              ],
+              [
+                192,
+                384,
+                576,
+                768,
+                960,
+                1152,
+                1344,
+                1536
+              ],
+              [
+                192,
+                384,
+                576,
+                768,
+                960,
+                1152,
+                1344,
+                1536
+              ]
+            ],
+            "frame_size": "192x341",
+            "frames_dir": "panic-petal/assets/projectiles"
+          }
         }
       ]
     }
