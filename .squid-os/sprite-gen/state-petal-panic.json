@@ -1273,6 +1273,120 @@
             "frame_size": "304x332"
           },
           "original_prompt": "Hand-painted circus-style sprite sheet of \"Violetta Marionetta\", a sinister puppet-maiden enemy for a side-scrolling game. She is a gaunt, emaciated marionette with a pale bone-white skull-like face: hollow black eye sockets with small glowing eyes, a wide grinning mouth full of sharp teeth, and fine dark cracks/veining across her skin like aged porcelain. Her head is crowned with a deep-red rose (a blooming crimson bloom) set into a small red-and-cream jester/party cap with curled tips. Around her neck/shoulders is a large ruff collar made of glossy deep-red flower petals (a peony/poppy-like bloom), each petal tipped with a tiny gold bead. Her costume is a tattered red-and-cream striped bodice with ragged frilled cuffs and hem in cream and gold; thin spindly bone-white limbs end in long clawed black-gloved hands with exaggerated fingers, and she wears dark high-heeled boots with curled pointed toes and small gold bells at the tips. Thin puppet strings hang from above her head and dangle from her joints. Expression is menacing and theatrical \u2014 a twisted grin, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone white, gold accents, dark browns), dynamic hunched forward-leaning poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action: \"1. WALK\", \"2. ATTACK\", \"3. DEATH\"). Each row is one action, left to right:\n\nRow 1 \u2014 Walk (5 frames): a loping, hunched puppet walk cycle across the frame, body leaning forward, arms swinging with clawed hands, thin legs striding, petal-ruff and ribbons swaying, contact -> down -> passing -> up -> contact.\n\nRow 2 \u2014 Attack (5 frames): a lunging whip attack \u2014 crouched wind-up -> rising into an aggressive lunge with both clawed arms flung out wide -> full extended reach where her arms stretch into long thorn-vine whips flung out to the right, shedding loose red petals/debris with a swirling tan/pink motion trail -> follow-through -> recovery back to a ready stance.\n\nRow 3 \u2014 Death (5 frames): the marionette collapses and dissolves apart \u2014 frame 1 intact but staggering, then progressively breaking down, slumping to the ground, until she lies crumpled in a heap of scattered red petals, broken fragments, and dangling strings by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
+        },
+        {
+          "file": "panic-petal/assets/ratzo_ringleader_sheet.png",
+          "rows": 4,
+          "cols": 5,
+          "description": "Clown rat ringleader enemy, 4 actions x 5 frames (run, attack/fish-throw, charge, death)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "ratzo_ringleader",
+              "anim": "run",
+              "frames": [
+                "ratzo_ringleader_run_f1.png",
+                "ratzo_ringleader_run_f2.png",
+                "ratzo_ringleader_run_f3.png",
+                "ratzo_ringleader_run_f4.png",
+                "ratzo_ringleader_run_f5.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "ratzo_ringleader",
+              "anim": "attack",
+              "frames": [
+                "ratzo_ringleader_attack_f1.png",
+                "ratzo_ringleader_attack_f2.png",
+                "ratzo_ringleader_attack_f3.png",
+                "ratzo_ringleader_attack_f4.png",
+                "ratzo_ringleader_attack_f5.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "ratzo_ringleader",
+              "anim": "charge",
+              "frames": [
+                "ratzo_ringleader_charge_f1.png",
+                "ratzo_ringleader_charge_f2.png",
+                "ratzo_ringleader_charge_f3.png",
+                "ratzo_ringleader_charge_f4.png",
+                "ratzo_ringleader_charge_f5.png"
+              ]
+            },
+            {
+              "row": 4,
+              "name": "ratzo_ringleader",
+              "anim": "death",
+              "frames": [
+                "ratzo_ringleader_death_f1.png",
+                "ratzo_ringleader_death_f2.png",
+                "ratzo_ringleader_death_f3.png",
+                "ratzo_ringleader_death_f4.png",
+                "ratzo_ringleader_death_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              250,
+              129,
+              159
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                256
+              ],
+              [
+                256,
+                512
+              ],
+              [
+                512,
+                768
+              ],
+              [
+                768,
+                1024
+              ]
+            ],
+            "col_x": [
+              [
+                150,
+                454,
+                760,
+                1066,
+                1378
+              ],
+              [
+                150,
+                454,
+                760,
+                1066,
+                1378
+              ],
+              [
+                150,
+                454,
+                760,
+                1066,
+                1378
+              ],
+              [
+                150,
+                454,
+                760,
+                1066,
+                1378
+              ]
+            ],
+            "frame_size": "307x256",
+            "frames_dir": "panic-petal/assets/enemies"
+          }
         }
       ]
     },
@@ -3100,5 +3214,5 @@
       ]
     }
   },
-  "updated": "2026-09-13T03:49:02"
+  "updated": "2026-09-13T03:51:54"
 }
