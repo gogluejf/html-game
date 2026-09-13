@@ -118,40 +118,38 @@ the music should sound exactly like that.
 
 ---
 
-## Orchestration: Composing 48 Tracks
+## Orchestration: Composing 32 Tracks
 
-You are the orchestrator. You do NOT compose music yourself. You delegate to sub-agents and verify their output.
+You are the orchestrator. You do NOT compose music yourself. You delegate to sub-agents.
+No validation step. If an agent stops mid-way (cut off, error), relaunch it to finish.
+That is your only intervention.
 
 ### Context
 
 - **Working dir:** `/home/goglue/src/html-game`
 - **Mood brief:** `panic-petal/docs/music.md` (the creative input for all agents)
-- **Skill:** `music-composer` (passed to each agent — they know the format, validation, and state file path)
+- **Skill:** `music-composer` (passed to each agent — they know the format and state file path)
 - **State file:** `.squid-os/music-composer/petal-panic.json`
 - **Jukebox output:** `.squid-os/music-composer/petal-panic.jukebox.html`
 
-### Models
+### Model
 
-| Model Path | Role |
-|-----------|------|
-| `ninfer/qwen3.8-27b` | Composer ×2 per slot, Validator ×1 per track |
-| `openai-codex/gpt-6-astra` | Composer ×2 per slot, Validator ×1 per track |
-| `openai-codex/gpt-5.6-sol` | Composer ×2 per slot |
+| Model Path | Shortname | Role |
+|-----------|-----------|------|
+| `ninfer/qwen3.8-27b` | qwen | Composer ×4 per slot |
 
 ### Composition Agents
 
-**48 agents total.** 8 slots × 6 isolated agents per slot. Each agent composes exactly ONE track. They never see another agent's output — no cross-contamination.
+**32 agents total.** 8 slots × 4 isolated agents per slot. Each agent composes exactly ONE track. They never see another agent's output — no cross-contamination.
 
 Per-slot model assignment:
 
 | Variation | Model |
 |-----------|-------|
 | v1 | `ninfer/qwen3.8-27b` |
-| v2 | `openai-codex/gpt-6-astra` |
-| v3 | `openai-codex/gpt-5.6-sol` |
+| v2 | `ninfer/qwen3.8-27b` |
+| v3 | `ninfer/qwen3.8-27b` |
 | v4 | `ninfer/qwen3.8-27b` |
-| v5 | `openai-codex/gpt-6-astra` |
-| v6 | `openai-codex/gpt-5.6-sol` |
 
 Each agent receives:
 - The mood paragraph for its slot from `docs/music.md`
@@ -181,55 +179,30 @@ Load the music-composer skill. Compose one track that captures this mood with fu
 NES-era run-and-gun energy. Make it melodic, emotional, memorable. Not repetitive,
 not boring, not safe. A hook you can hum. Punk energy. 8-bit chiptune.
 
-Name the track: "<SLOT_NAME> v<N>".
+Name the track: "<SLOT_NAME> v<N> (qwen)".
+Example: "Petal Panic Title v1 (qwen)".
 
-Write it to the state file using the skill's compose command.
+Write it to the state file using the skill's compose command. IMPORTANT: the game name
+is EXACTLY "petal-panic" (lowercase, hyphenated: petal-panic, NOT panic-petal). The state
+file is .squid-os/music-composer/petal-panic.json. It may already contain other tracks. You
+MUST append your new track to the existing tracks, never overwrite them. Read the current
+state file first to get existing tracks, then pass [existing... + your new track] to the
+compose command with --game petal-panic. If the combined JSON is too large for a shell
+argument, write the tracks array to a temp file and feed it via a small python import of
+compose.py's validate/write path — same validation, just file-based.
+
+After writing the track, render the jukebox so the user can listen.
 ```
 
 Tools: `["bash", "read_file", "write_file"]`
 Limits: `max_steps: 200`, `max_time: "7m"`, `max_tools: 200`
 
-Launch sequentially. If an agent fails, retry once. If it fails twice, skip and note it.
-
-### Validation (per track, after composition)
-
-After each track is written, launch **2 validators** (one qwen, one astra). Both must PASS for the track to be accepted. If either FAILs, the composer gets **one revision pass** with the validator's feedback. No further looping.
-
-Validator prompt template:
-
-```
-Validate one track in the state file at
-/home/goglue/src/html-game/.squid-os/music-composer/petal-panic.json.
-
-Track name: "<SLOT_NAME> v<N>"
-Mood brief: (paste the slot's paragraph from docs/music.md)
-
-Assess:
-1. Does the melody PROGRESS? (distinct phrases, real arc — not one loop repeated)
-2. Is the VIBE respected? (does it match the mood brief?)
-3. Is the ENERGY there? (run-and-gun drive, punch, urgency — not flat or sleepy)
-4. Is it MEMORABLE? (a hook, a moment, something that sticks)
-5. Is it NON-REPETITIVE? (no boring static patterns, no filler)
-6. Would a Konami/Capcom composer nod at this, or shake their head?
-
-Report PASS or FAIL. If FAIL, state exactly what's wrong and what to fix.
-```
-
-Validator models:
-- Validator A: `ninfer/qwen3.8-27b`
-- Validator B: `openai-codex/gpt-6-astra`
-
-Tools: `["bash", "read_file"]`
-Limits: `max_steps: 50`, `max_time: "3m"`, `max_tools: 50`
-
-Revision flow (max 1 pass):
-1. Composer writes track → both validators run
-2. If either FAILs → relaunch the SAME composer model with the validator feedback, instructing one revision
-3. Revised track replaces the original. No second validation round. Accept or move on.
+Launch sequentially. If an agent stops mid-way (cut off, partial write, error),
+relaunch the SAME model to finish the job. Never do the composition work yourself.
 
 ### Final Step: Jukebox
 
-After all 48 tracks are in the state file:
+After all 32 tracks are in the state file:
 
 ```bash
 python3 .squid-os/skills/music-composer/scripts/compose.py player \
@@ -238,7 +211,7 @@ python3 .squid-os/skills/music-composer/scripts/compose.py player \
   --out .squid-os/music-composer/petal-panic.jukebox.html
 ```
 
-Open it. P cycles all 48. Pick 8 favorites. Done.
+Open it. P cycles all 32. Pick 8 favorites. Done.
 
 ### Rules
 
@@ -246,5 +219,6 @@ Open it. P cycles all 48. Pick 8 favorites. Done.
 - Launch agents SEQUENTIALLY.
 - Agents work BLIND. Never pass them the state file content or other tracks.
 - The mood brief in `docs/music.md` is the single source of creative truth.
-- Max 1 revision per track. No infinite loops.
-- Your only job after composition + validation: emit the jukebox HTML.
+- No validation. No revision passes. Compose and move on.
+- If an agent fails/stops, relaunch it once. If it fails twice, skip and note it.
+- Your only job after composition: emit the jukebox HTML.
