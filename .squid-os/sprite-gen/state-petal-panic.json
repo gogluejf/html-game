@@ -1599,6 +1599,64 @@
             "frame_size": "512x512",
             "frames_dir": "panic-petal/assets/boss"
           }
+        },
+        {
+          "file": "panic-petal/assets/ratchet_rumbelow_sheet_5.png",
+          "rows": 2,
+          "cols": 3,
+          "description": "Ratchet Rumbelow boss, sheet 5/5 \u2014 6 frames (charge x3, roar x3)",
+          "entities": [
+            {
+              "name": "ratchet_rumbelow",
+              "anim": "charge",
+              "frames": [
+                "ratchet_rumbelow_charge_f1.png",
+                "ratchet_rumbelow_charge_f2.png",
+                "ratchet_rumbelow_charge_f3.png"
+              ]
+            },
+            {
+              "name": "ratchet_rumbelow",
+              "anim": "roar",
+              "frames": [
+                "ratchet_rumbelow_roar_f1.png",
+                "ratchet_rumbelow_roar_f2.png",
+                "ratchet_rumbelow_roar_f3.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              249,
+              139,
+              158
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                511
+              ],
+              [
+                512,
+                1023
+              ]
+            ],
+            "col_x": [
+              [
+                0,
+                512,
+                1024
+              ],
+              [
+                0,
+                512,
+                1024
+              ]
+            ],
+            "frame_size": "512x512",
+            "frames_dir": "panic-petal/assets/boss"
+          }
         }
       ]
     },
@@ -2575,5 +2633,5 @@
       ]
     }
   },
-  "updated": "2026-09-13T03:28:43"
+  "updated": "2026-09-13T03:30:45"
 }
