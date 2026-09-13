@@ -9,12 +9,23 @@ Subcommands:
 The state file lives at <working-dir>/.squid-os/music-composer/GAME.json.
 Tracks use note NAMES (A4, C5) or null; every phrase array must be exactly 32 steps.
 """
-import argparse, json, os, sys
+import argparse, json, os, re, sys
 
 NOTE_NAMES = set()
 for _l in "C D E F G A B":
     for _o in range(1, 6):
         NOTE_NAMES.add(f"{_l}{_o}")
+        # sharps exist between every pair except E->F and B->C
+        if _l not in ("E", "B"):
+            NOTE_NAMES.add(f"{_l}#{_o}")
+# flats are the same pitches spelled down from the next natural
+_FLAT_FROM = {"Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#"}
+for _f in _FLAT_FROM:
+    for _o in range(1, 6):
+        NOTE_NAMES.add(f"{_f}{_o}")
+
+# Note token: naturals or sharps/flats (C4, C#4, Db4), optional ":N" duration.
+_NOTE_TOKEN = re.compile(r"^([A-G][#b]?[1-5])(?::([1-8]))?$")
 
 STEPS = 32
 
@@ -25,7 +36,12 @@ def _err(msg):
 
 
 def is_note(v):
-    return v is None or (isinstance(v, str) and v in NOTE_NAMES) or isinstance(v, (int, float))
+    if v is None or isinstance(v, (int, float)):
+        return True
+    if not isinstance(v, str):
+        return False
+    m = _NOTE_TOKEN.match(v)
+    return bool(m) and m.group(1) in NOTE_NAMES
 
 
 def check_phrase(arr, label):
@@ -150,10 +166,17 @@ def state_path(game, working_dir):
 
 
 def cmd_compose(a):
-    try:
-        tracks = json.loads(a.tracks)
-    except json.JSONDecodeError as e:
-        _err(f"--tracks is not valid JSON: {e}")
+    if a.tracks == "@file":
+        try:
+            with open(a.file) as f:
+                tracks = json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            _err(f"cannot read --file {a.file}: {e}")
+    else:
+        try:
+            tracks = json.loads(a.tracks)
+        except json.JSONDecodeError as e:
+            _err(f"--tracks is not valid JSON: {e}")
     validate_tracks(tracks)
     path = state_path(a.game, a.working_dir)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -274,7 +297,7 @@ def cmd_player(a):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    c = sub.add_parser("compose"); c.add_argument("--game", required=True); c.add_argument("--tracks", required=True); c.add_argument("--working-dir", default=".")
+    c = sub.add_parser("compose"); c.add_argument("--game", required=True); c.add_argument("--tracks", default="[]"); c.add_argument("--file", default=None, help="read tracks JSON from file (use --tracks @file)"); c.add_argument("--working-dir", default=".")
     v = sub.add_parser("validate"); v.add_argument("--file", required=True)
     p = sub.add_parser("player"); p.add_argument("--game", required=True); p.add_argument("--out", required=True); p.add_argument("--working-dir", default=".")
     a = ap.parse_args()

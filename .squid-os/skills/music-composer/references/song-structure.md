@@ -6,8 +6,9 @@ resolves note names to Hz and plays them. This is the exact format the in-game
 
 ## Note names
 
-Notes are written as `letter+octave` (e.g. `"A4"`, `"C5"`, `"E1"`). A rest is `null`.
-The engine's `_NOTE` table covers C1..B5:
+Notes are written as `letter+octave` (e.g. `"A4"`, `"C5"`, `"E1"`), optionally with an
+accidental for sharps/flats: `"C#4"`, `"Db4"`, `"G#2"`. A rest is `null`.
+The engine's `_NOTE` table covers C1..B5 including all black keys:
 
 ```
 C1 32.70  D1 36.71  E1 41.20  F1 43.65  G1 49.00  A1 55.00  B1 61.74
@@ -18,6 +19,13 @@ C5 523.25 D5 587.33 E5 659.25 F5 698.46 G5 783.99 A5 880.00 B5 987.77
 ```
 
 Never use raw Hz or bare identifiers — every cell must be a name string or null.
+
+Accidentals use **sharp spelling only** (`C#n`, `D#n`, `F#n`, `G#n`, `A#n` —
+each = one semitone above the preceding natural, computed as
+`natural * 2^(1/12)`). Flat spellings (`Db`, `Eb`, ...) are accepted by the
+engine as aliases of their sharp equivalents but should NOT be written in new
+compositions — keep the vocabulary to a single format. There is no `E#`/`B#`
+— those keys don't exist.
 
 ## Track object
 
