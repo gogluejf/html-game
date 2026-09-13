@@ -1,68 +1,34 @@
-# Petal Panic — Sprite Crop Revisions
-
-## ratchet_rumbelow (boss)
-
-| Issue | Frames | Fix |
-|-------|--------|-----|
-| Sheet 5 "charge" + "roar" should be ONE anim called `roar` f1-f6 | charge_f1-3, roar_f1-3 | Merge into `ratchet_rumbelow_roar_f1..f6`, rename files |
-| Badly cropped L/R — missing big parts of body | All sheet 5 frames (roar) | Re-crop with wider cell bounds from source sheet |
+# Petal Panic — Remaining Sprite Fixes (Round 2)
 
 ## dictator_carrot (boss)
 
 | Issue | Frames | Fix |
 |-------|--------|-----|
-| `defeat` — bottom wheel of scooter cut off | defeat_f1-f5 | Re-crop with lower row boundary |
-| `launch` f3 — pink leak on frame | launch_f3 | Clear stray pink pixels |
-| `punch` — fist on left is cropped (fist exceeds cell zone in source) | punch_f1-f5 (esp f4) | Widen crop box left to capture full fist |
-| `ride` — bottom wheel of scooter cut off | ride_f1-f5 | Re-crop with lower row boundary |
-| `ride` → rename to `sulk` | ride_f1-f5 | Rename files + state |
-| `shout` f2 — leak on left edge | shout_f2 | Clear left-edge residue |
+| `punch` f4, f5 — still has pink leak on left where fist extends beyond grid cell | punch_f4, punch_f5 | Re-crop tighter to grid boundary; accept that fist is at edge OR widen source crop zone by 10-15px left only |
 
 ## doodle_dink (enemies)
 
 | Issue | Frames | Fix |
 |-------|--------|-----|
-| Badly cropped each side — grid lines + numbers still visible | ALL frames (sheet 1 + 2) | Full re-crop with proper label exclusion + grid removal |
-| Lots of pink leaks | ALL frames | Redo transparency pass |
-
-## gustav_grapplersnout (enemies)
-
-| Issue | Frames | Fix |
-|-------|--------|-----|
-| `death` f4 — stretched/distorted, grid + numbers visible | death_f4 | Re-crop that single frame |
-| `ground_punch` f4 — stretched/distorted, grid + numbers visible | ground_punch_f4 | Re-crop that single frame |
-| Tail cropped on slide 3→4 transition (leak between) | crawl_f3/f4 or dumbbell_throw_f3/f4 | Check and fix tail clipping |
+| ALL frames badly cropped — only portion of sprite visible, shifted off-center | All 20 frames (sheet 1 + 2) | Full re-crop from source. The prepped image was cut wrong. Need to verify cell boundaries match actual sprite positions, not uniform math |
+| `death` row — headbutt frame is centered in middle of grid line, bleeding both sides | death frames | Verify row boundaries are correct for this strip layout |
 
 ## ratzo_ringleader (enemies)
 
 | Issue | Frames | Fix |
 |-------|--------|-----|
-| `attack` — fish head cropped on f4 bleeds into f5 right edge | attack_f4, attack_f5 | Re-crop with proper cell boundaries |
-| `charge` f1 — tiny leak at bottom | charge_f1 | Clear bottom-edge residue |
-
-## toadstool_tilly (enemies)
-
-| Issue | Frames | Fix |
-|-------|--------|-----|
-| Grid lines + numbers still visible | Multiple frames | Re-crop with grid removal |
-| `idle` — leak at bottom (mostly all slides) | idle_f1-f5 | Clear bottom debris / re-crop |
+| `charge` f1 — tiny leak at bottom (still present after fix) | charge_f1 | Clear bottom 10px more aggressively |
 
 ## projectile_4 (projectiles)
 
 | Issue | Frames | Fix |
 |-------|--------|-----|
-| `circus_ball` — text/numbers baked into frames | circus_ball_f1-f8 | Re-crop excluding label area |
-| `fish_bone` — text/numbers baked into frames | fish_bone_f1-f8 | Re-crop excluding label area |
-| `peas_tornado` — text baked into frames | peas_tornado_f1-f8 | Re-crop excluding label area |
+| Over-cropped — sprites too small now (aggressive trim removed too much) | All 24 frames | Re-crop from prepped image with less aggressive bottom/top trim (only remove number zone, keep full sprite) |
 
 ---
 
-## Priority Order
+## Notes
 
-1. **doodle_dink** — full re-crop (worst damage, all frames affected)
-2. **gustav_grapplersnout** — re-crop f4 frames + fix tail
-3. **dictator_carrot** — multiple issues (wheel clips, fist clip, rename, leaks)
-4. **ratchet_rumbelow sheet 5** — merge + re-crop roar
-5. **toadstool_tilly** — grid/numbers + bottom leaks
-6. **ratzo_ringleader** — minor (fish bleed, tiny leak)
-7. **projectile_4** — remove text/numbers from all 24 frames
+- **doodle_dink** is the biggest problem — needs a full re-crop done carefully with visual verification of each cell boundary against the actual sprite position.
+- **carrot punch f4/f5** — the fundamental issue is the fist extends past the cell boundary in the source art. Options: (a) accept slight clip, (b) widen crop into neighbor cell and mask out neighbor, (c) inpaint the missing fist pixels.
+- **projectile_4** — over-trimmed. The numbers were in the bottom ~30px but I trimmed 20% which ate into the sprite. Re-do with precise number-zone removal only.
