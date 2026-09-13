@@ -1657,6 +1657,112 @@
             "frame_size": "512x512",
             "frames_dir": "panic-petal/assets/boss"
           }
+        },
+        {
+          "file": "panic-petal/assets/grim_vertigo_sheet.png",
+          "rows": 4,
+          "cols": 4,
+          "description": "Grim Vertigo carousel mid-boss, 4 actions x 4 frames (idle/rotate, angry/transform, attack/hazards, death)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "grim_vertigo",
+              "anim": "idle",
+              "frames": [
+                "grim_vertigo_idle_f1.png",
+                "grim_vertigo_idle_f2.png",
+                "grim_vertigo_idle_f3.png",
+                "grim_vertigo_idle_f4.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "grim_vertigo",
+              "anim": "angry",
+              "frames": [
+                "grim_vertigo_angry_f1.png",
+                "grim_vertigo_angry_f2.png",
+                "grim_vertigo_angry_f3.png",
+                "grim_vertigo_angry_f4.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "grim_vertigo",
+              "anim": "attack",
+              "frames": [
+                "grim_vertigo_attack_f1.png",
+                "grim_vertigo_attack_f2.png",
+                "grim_vertigo_attack_f3.png",
+                "grim_vertigo_attack_f4.png"
+              ]
+            },
+            {
+              "row": 4,
+              "name": "grim_vertigo",
+              "anim": "death",
+              "frames": [
+                "grim_vertigo_death_f1.png",
+                "grim_vertigo_death_f2.png",
+                "grim_vertigo_death_f3.png",
+                "grim_vertigo_death_f4.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              249,
+              135,
+              167
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                10,
+                252
+              ],
+              [
+                254,
+                484
+              ],
+              [
+                492,
+                723
+              ],
+              [
+                745,
+                996
+              ]
+            ],
+            "col_x": [
+              [
+                317,
+                655,
+                994,
+                1345
+              ],
+              [
+                315,
+                652,
+                996,
+                1344
+              ],
+              [
+                317,
+                657,
+                996,
+                1342
+              ],
+              [
+                279,
+                584,
+                951,
+                1332
+              ]
+            ],
+            "frame_size": "300x250",
+            "frames_dir": "panic-petal/assets/boss"
+          }
         }
       ]
     },
