@@ -115,3 +115,136 @@ a man giving a speech to an empty room. Then it starts to collapse — the confi
 cracks, the key shifts, the grandeur falls apart. Half-time at the end. Not scary.
 *Stupid.* The final boss isn't a monster — he's an idiot with a botanical weapon, and
 the music should sound exactly like that.
+
+---
+
+## Orchestration: Composing 48 Tracks
+
+You are the orchestrator. You do NOT compose music yourself. You delegate to sub-agents and verify their output.
+
+### Context
+
+- **Working dir:** `/home/goglue/src/html-game`
+- **Mood brief:** `panic-petal/docs/music.md` (the creative input for all agents)
+- **Skill:** `music-composer` (passed to each agent — they know the format, validation, and state file path)
+- **State file:** `.squid-os/music-composer/petal-panic.json`
+- **Jukebox output:** `.squid-os/music-composer/petal-panic.jukebox.html`
+
+### Models
+
+| Model Path | Role |
+|-----------|------|
+| `ninfer/qwen3.8-27b` | Composer ×2 per slot, Validator ×1 per track |
+| `openai-codex/gpt-6-astra` | Composer ×2 per slot, Validator ×1 per track |
+| `openai-codex/gpt-5.6-sol` | Composer ×2 per slot |
+
+### Composition Agents
+
+**48 agents total.** 8 slots × 6 isolated agents per slot. Each agent composes exactly ONE track. They never see another agent's output — no cross-contamination.
+
+Per-slot model assignment:
+
+| Variation | Model |
+|-----------|-------|
+| v1 | `ninfer/qwen3.8-27b` |
+| v2 | `openai-codex/gpt-6-astra` |
+| v3 | `openai-codex/gpt-5.6-sol` |
+| v4 | `ninfer/qwen3.8-27b` |
+| v5 | `openai-codex/gpt-6-astra` |
+| v6 | `openai-codex/gpt-5.6-sol` |
+
+Each agent receives:
+- The mood paragraph for its slot from `docs/music.md`
+- The `music-composer` skill
+- Its variation number (v1–v6) for naming
+
+Each agent does NOT receive:
+- The existing state file or any previously composed track
+- Other agents' output
+- Specific BPM, key, or timbre instructions (creative choice belongs to the agent)
+
+Agent prompt template:
+
+```
+Compose one track for Petal Panic.
+
+Slot: <SLOT_NAME>
+Variation: v<N>
+
+Read the mood brief for this slot in /home/goglue/src/html-game/panic-petal/docs/music.md
+(section "<SLOT_HEADING>"). That is your ONLY creative input.
+
+DO NOT read .squid-os/music-composer/petal-panic.json. DO NOT read any jukebox HTML.
+DO NOT read any other music files. Compose purely from the mood brief.
+
+Load the music-composer skill. Compose one track that captures this mood with full
+NES-era run-and-gun energy. Make it melodic, emotional, memorable. Not repetitive,
+not boring, not safe. A hook you can hum. Punk energy. 8-bit chiptune.
+
+Name the track: "<SLOT_NAME> v<N>".
+
+Write it to the state file using the skill's compose command.
+```
+
+Tools: `["bash", "read_file", "write_file"]`
+Limits: `max_steps: 200`, `max_time: "7m"`, `max_tools: 200`
+
+Launch sequentially. If an agent fails, retry once. If it fails twice, skip and note it.
+
+### Validation (per track, after composition)
+
+After each track is written, launch **2 validators** (one qwen, one astra). Both must PASS for the track to be accepted. If either FAILs, the composer gets **one revision pass** with the validator's feedback. No further looping.
+
+Validator prompt template:
+
+```
+Validate one track in the state file at
+/home/goglue/src/html-game/.squid-os/music-composer/petal-panic.json.
+
+Track name: "<SLOT_NAME> v<N>"
+Mood brief: (paste the slot's paragraph from docs/music.md)
+
+Assess:
+1. Does the melody PROGRESS? (distinct phrases, real arc — not one loop repeated)
+2. Is the VIBE respected? (does it match the mood brief?)
+3. Is the ENERGY there? (run-and-gun drive, punch, urgency — not flat or sleepy)
+4. Is it MEMORABLE? (a hook, a moment, something that sticks)
+5. Is it NON-REPETITIVE? (no boring static patterns, no filler)
+6. Would a Konami/Capcom composer nod at this, or shake their head?
+
+Report PASS or FAIL. If FAIL, state exactly what's wrong and what to fix.
+```
+
+Validator models:
+- Validator A: `ninfer/qwen3.8-27b`
+- Validator B: `openai-codex/gpt-6-astra`
+
+Tools: `["bash", "read_file"]`
+Limits: `max_steps: 50`, `max_time: "3m"`, `max_tools: 50`
+
+Revision flow (max 1 pass):
+1. Composer writes track → both validators run
+2. If either FAILs → relaunch the SAME composer model with the validator feedback, instructing one revision
+3. Revised track replaces the original. No second validation round. Accept or move on.
+
+### Final Step: Jukebox
+
+After all 48 tracks are in the state file:
+
+```bash
+python3 .squid-os/skills/music-composer/scripts/compose.py player \
+  --game petal-panic \
+  --working-dir /home/goglue/src/html-game \
+  --out .squid-os/music-composer/petal-panic.jukebox.html
+```
+
+Open it. P cycles all 48. Pick 8 favorites. Done.
+
+### Rules
+
+- You are ORCHESTRATOR ONLY. Do not compose notes.
+- Launch agents SEQUENTIALLY.
+- Agents work BLIND. Never pass them the state file content or other tracks.
+- The mood brief in `docs/music.md` is the single source of creative truth.
+- Max 1 revision per track. No infinite loops.
+- Your only job after composition + validation: emit the jukebox HTML.
