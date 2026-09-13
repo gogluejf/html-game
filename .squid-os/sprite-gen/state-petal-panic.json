@@ -1387,6 +1387,120 @@
             "frame_size": "307x256",
             "frames_dir": "panic-petal/assets/enemies"
           }
+        },
+        {
+          "file": "panic-petal/assets/toadstool_tilly_sheet.png",
+          "rows": 4,
+          "cols": 5,
+          "description": "Toadstool Tilly clown-mushroom enemy, 4 actions x 5 frames (idle, spore cloud, ground eruption, death)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "toadstool_tilly",
+              "anim": "idle",
+              "frames": [
+                "toadstool_tilly_idle_f1.png",
+                "toadstool_tilly_idle_f2.png",
+                "toadstool_tilly_idle_f3.png",
+                "toadstool_tilly_idle_f4.png",
+                "toadstool_tilly_idle_f5.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "toadstool_tilly",
+              "anim": "spore",
+              "frames": [
+                "toadstool_tilly_spore_f1.png",
+                "toadstool_tilly_spore_f2.png",
+                "toadstool_tilly_spore_f3.png",
+                "toadstool_tilly_spore_f4.png",
+                "toadstool_tilly_spore_f5.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "toadstool_tilly",
+              "anim": "eruption",
+              "frames": [
+                "toadstool_tilly_eruption_f1.png",
+                "toadstool_tilly_eruption_f2.png",
+                "toadstool_tilly_eruption_f3.png",
+                "toadstool_tilly_eruption_f4.png",
+                "toadstool_tilly_eruption_f5.png"
+              ]
+            },
+            {
+              "row": 4,
+              "name": "toadstool_tilly",
+              "anim": "death",
+              "frames": [
+                "toadstool_tilly_death_f1.png",
+                "toadstool_tilly_death_f2.png",
+                "toadstool_tilly_death_f3.png",
+                "toadstool_tilly_death_f4.png",
+                "toadstool_tilly_death_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              249,
+              130,
+              158
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                239
+              ],
+              [
+                241,
+                499
+              ],
+              [
+                501,
+                759
+              ],
+              [
+                761,
+                1023
+              ]
+            ],
+            "col_x": [
+              [
+                280,
+                530,
+                805,
+                1085,
+                1380
+              ],
+              [
+                280,
+                530,
+                805,
+                1085,
+                1380
+              ],
+              [
+                280,
+                530,
+                805,
+                1085,
+                1380
+              ],
+              [
+                280,
+                530,
+                805,
+                1085,
+                1380
+              ]
+            ],
+            "frame_size": "270x270",
+            "frames_dir": "panic-petal/assets/enemies"
+          }
         }
       ]
     },
@@ -3214,5 +3328,5 @@
       ]
     }
   },
-  "updated": "2026-09-13T03:51:54"
+  "updated": "2026-09-13T03:55:34"
 }
