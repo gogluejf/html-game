@@ -1280,57 +1280,57 @@
       "path": "panic-petal/assets/boss",
       "sheets": [
         {
-          "file": "panic-petal/assets/overgrown_elephant_sheet.png",
+          "file": "panic-petal/assets/tusko_wobble_sheet.png",
           "rows": 4,
           "cols": 5,
           "description": "Overgrown Elephant boss, 4 actions x 5 frames (charge, stomp, trunk blast, death)",
           "entities": [
             {
               "row": 1,
-              "name": "overgrown_elephant",
+              "name": "tusko_wobble",
               "anim": "charge",
               "frames": [
-                "overgrown_elephant_charge_f1.png",
-                "overgrown_elephant_charge_f2.png",
-                "overgrown_elephant_charge_f3.png",
-                "overgrown_elephant_charge_f4.png",
-                "overgrown_elephant_charge_f5.png"
+                "tusko_wobble_charge_f1.png",
+                "tusko_wobble_charge_f2.png",
+                "tusko_wobble_charge_f3.png",
+                "tusko_wobble_charge_f4.png",
+                "tusko_wobble_charge_f5.png"
               ]
             },
             {
               "row": 2,
-              "name": "overgrown_elephant",
+              "name": "tusko_wobble",
               "anim": "stomp",
               "frames": [
-                "overgrown_elephant_stomp_f1.png",
-                "overgrown_elephant_stomp_f2.png",
-                "overgrown_elephant_stomp_f3.png",
-                "overgrown_elephant_stomp_f4.png",
-                "overgrown_elephant_stomp_f5.png"
+                "tusko_wobble_stomp_f1.png",
+                "tusko_wobble_stomp_f2.png",
+                "tusko_wobble_stomp_f3.png",
+                "tusko_wobble_stomp_f4.png",
+                "tusko_wobble_stomp_f5.png"
               ]
             },
             {
               "row": 3,
-              "name": "overgrown_elephant",
+              "name": "tusko_wobble",
               "anim": "trunk_blast",
               "frames": [
-                "overgrown_elephant_trunk_blast_f1.png",
-                "overgrown_elephant_trunk_blast_f2.png",
-                "overgrown_elephant_trunk_blast_f3.png",
-                "overgrown_elephant_trunk_blast_f4.png",
-                "overgrown_elephant_trunk_blast_f5.png"
+                "tusko_wobble_trunk_blast_f1.png",
+                "tusko_wobble_trunk_blast_f2.png",
+                "tusko_wobble_trunk_blast_f3.png",
+                "tusko_wobble_trunk_blast_f4.png",
+                "tusko_wobble_trunk_blast_f5.png"
               ]
             },
             {
               "row": 4,
-              "name": "overgrown_elephant",
+              "name": "tusko_wobble",
               "anim": "death",
               "frames": [
-                "overgrown_elephant_death_f1.png",
-                "overgrown_elephant_death_f2.png",
-                "overgrown_elephant_death_f3.png",
-                "overgrown_elephant_death_f4.png",
-                "overgrown_elephant_death_f5.png"
+                "tusko_wobble_death_f1.png",
+                "tusko_wobble_death_f2.png",
+                "tusko_wobble_death_f3.png",
+                "tusko_wobble_death_f4.png",
+                "tusko_wobble_death_f5.png"
               ]
             }
           ],
