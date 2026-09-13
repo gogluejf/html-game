@@ -2074,24 +2074,18 @@
           "file": "panic-petal/assets/ratchet_rumbelow_sheet_5.png",
           "rows": 2,
           "cols": 3,
-          "description": "Ratchet Rumbelow boss, sheet 5/5 \u2014 6 frames (charge x3, roar x3)",
+          "description": "Ratchet Rumbelow boss, sheet 5/5 \u2014 6 frames (roar)",
           "entities": [
-            {
-              "name": "ratchet_rumbelow",
-              "anim": "charge",
-              "frames": [
-                "ratchet_rumbelow_charge_f1.png",
-                "ratchet_rumbelow_charge_f2.png",
-                "ratchet_rumbelow_charge_f3.png"
-              ]
-            },
             {
               "name": "ratchet_rumbelow",
               "anim": "roar",
               "frames": [
                 "ratchet_rumbelow_roar_f1.png",
                 "ratchet_rumbelow_roar_f2.png",
-                "ratchet_rumbelow_roar_f3.png"
+                "ratchet_rumbelow_roar_f3.png",
+                "ratchet_rumbelow_roar_f4.png",
+                "ratchet_rumbelow_roar_f5.png",
+                "ratchet_rumbelow_roar_f6.png"
               ]
             }
           ],
@@ -2420,18 +2414,18 @@
           "file": "panic-petal/assets/dictator_carrot_sheet_3.png",
           "rows": 3,
           "cols": 5,
-          "description": "Dictator Carrot final boss (carrot-bodied dictator on red scooter) sheet 3/4, 3 actions x 5 frames (ride, punch, defeat)",
+          "description": "Dictator Carrot final boss (carrot-bodied dictator on red scooter) sheet 3/4, 3 actions x 5 frames (sulk, punch, defeat)",
           "entities": [
             {
               "row": 1,
               "name": "dictator_carrot",
-              "anim": "ride",
+              "anim": "sulk",
               "frames": [
-                "dictator_carrot_ride_f1.png",
-                "dictator_carrot_ride_f2.png",
-                "dictator_carrot_ride_f3.png",
-                "dictator_carrot_ride_f4.png",
-                "dictator_carrot_ride_f5.png"
+                "dictator_carrot_sulk_f1.png",
+                "dictator_carrot_sulk_f2.png",
+                "dictator_carrot_sulk_f3.png",
+                "dictator_carrot_sulk_f4.png",
+                "dictator_carrot_sulk_f5.png"
               ]
             },
             {
