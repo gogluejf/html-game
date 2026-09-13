@@ -1945,6 +1945,97 @@
             "frame_size": "310x341",
             "frames_dir": "panic-petal/assets/boss"
           }
+        },
+        {
+          "file": "panic-petal/assets/dictator_carrot_sheet_3.png",
+          "rows": 3,
+          "cols": 5,
+          "description": "Dictator Carrot final boss (carrot-bodied dictator on red scooter) sheet 3/4, 3 actions x 5 frames (ride, punch, defeat)",
+          "entities": [
+            {
+              "row": 1,
+              "name": "dictator_carrot",
+              "anim": "ride",
+              "frames": [
+                "dictator_carrot_ride_f1.png",
+                "dictator_carrot_ride_f2.png",
+                "dictator_carrot_ride_f3.png",
+                "dictator_carrot_ride_f4.png",
+                "dictator_carrot_ride_f5.png"
+              ]
+            },
+            {
+              "row": 2,
+              "name": "dictator_carrot",
+              "anim": "punch",
+              "frames": [
+                "dictator_carrot_punch_f1.png",
+                "dictator_carrot_punch_f2.png",
+                "dictator_carrot_punch_f3.png",
+                "dictator_carrot_punch_f4.png",
+                "dictator_carrot_punch_f5.png"
+              ]
+            },
+            {
+              "row": 3,
+              "name": "dictator_carrot",
+              "anim": "defeat",
+              "frames": [
+                "dictator_carrot_defeat_f1.png",
+                "dictator_carrot_defeat_f2.png",
+                "dictator_carrot_defeat_f3.png",
+                "dictator_carrot_defeat_f4.png",
+                "dictator_carrot_defeat_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              251,
+              133,
+              159
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                40,
+                334
+              ],
+              [
+                392,
+                643
+              ],
+              [
+                682,
+                972
+              ]
+            ],
+            "col_x": [
+              [
+                132,
+                442,
+                755,
+                1055,
+                1404
+              ],
+              [
+                132,
+                442,
+                755,
+                1055,
+                1404
+              ],
+              [
+                132,
+                442,
+                755,
+                1055,
+                1404
+              ]
+            ],
+            "frame_size": "285x250",
+            "frames_dir": "panic-petal/assets/boss"
+          }
         }
       ]
     },
@@ -2921,5 +3012,5 @@
       ]
     }
   },
-  "updated": "2026-09-13T03:37:50"
+  "updated": "2026-09-13T03:49:02"
 }
