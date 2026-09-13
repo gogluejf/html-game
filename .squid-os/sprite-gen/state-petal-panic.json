@@ -1501,6 +1501,116 @@
             "frame_size": "270x270",
             "frames_dir": "panic-petal/assets/enemies"
           }
+        },
+        {
+          "file": "panic-petal/assets/gustav_grapplersnout_sheet.png",
+          "rows": 4,
+          "cols": 5,
+          "description": "Gustav Grapplersnout strongman caterpillar \u2014 crawl, dumbbell_throw, ground_punch, death",
+          "entities": [
+            {
+              "name": "gustav_grapplersnout",
+              "anim": "crawl",
+              "frames": [
+                "gustav_grapplersnout_crawl_f1.png",
+                "gustav_grapplersnout_crawl_f2.png",
+                "gustav_grapplersnout_crawl_f3.png",
+                "gustav_grapplersnout_crawl_f4.png",
+                "gustav_grapplersnout_crawl_f5.png"
+              ]
+            },
+            {
+              "name": "gustav_grapplersnout",
+              "anim": "dumbbell_throw",
+              "frames": [
+                "gustav_grapplersnout_dumbbell_throw_f1.png",
+                "gustav_grapplersnout_dumbbell_throw_f2.png",
+                "gustav_grapplersnout_dumbbell_throw_f3.png",
+                "gustav_grapplersnout_dumbbell_throw_f4.png",
+                "gustav_grapplersnout_dumbbell_throw_f5.png"
+              ]
+            },
+            {
+              "name": "gustav_grapplersnout",
+              "anim": "ground_punch",
+              "frames": [
+                "gustav_grapplersnout_ground_punch_f1.png",
+                "gustav_grapplersnout_ground_punch_f2.png",
+                "gustav_grapplersnout_ground_punch_f3.png",
+                "gustav_grapplersnout_ground_punch_f4.png",
+                "gustav_grapplersnout_ground_punch_f5.png"
+              ]
+            },
+            {
+              "name": "gustav_grapplersnout",
+              "anim": "death",
+              "frames": [
+                "gustav_grapplersnout_death_f1.png",
+                "gustav_grapplersnout_death_f2.png",
+                "gustav_grapplersnout_death_f3.png",
+                "gustav_grapplersnout_death_f4.png",
+                "gustav_grapplersnout_death_f5.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              251,
+              129,
+              159
+            ],
+            "bg_tol": 20,
+            "row_y": [
+              [
+                0,
+                256
+              ],
+              [
+                256,
+                512
+              ],
+              [
+                512,
+                768
+              ],
+              [
+                768,
+                1024
+              ]
+            ],
+            "col_x": [
+              [
+                307,
+                614,
+                921,
+                1228,
+                1535
+              ],
+              [
+                307,
+                614,
+                921,
+                1228,
+                1535
+              ],
+              [
+                307,
+                614,
+                921,
+                1228,
+                1535
+              ],
+              [
+                307,
+                614,
+                921,
+                1228,
+                1535
+              ]
+            ],
+            "frame_size": "287x256",
+            "frames_dir": "panic-petal/assets/enemies"
+          }
         }
       ]
     },
