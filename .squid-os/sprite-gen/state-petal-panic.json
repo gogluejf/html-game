@@ -1391,6 +1391,110 @@
             ],
             "frame_size": "300x243"
           }
+        },
+        {
+          "file": "panic-petal/assets/ratchet_rumbelow_sheet_1.png",
+          "rows": 2,
+          "cols": 3,
+          "description": "Ratchet Rumbelow boss, sheet 1/5 \u2014 6 frames (earthquake x2 rows)",
+          "entities": [
+            {
+              "name": "ratchet_rumbelow",
+              "anim": "earthquake",
+              "frames": [
+                "ratchet_rumbelow_earthquake_f1.png",
+                "ratchet_rumbelow_earthquake_f2.png",
+                "ratchet_rumbelow_earthquake_f3.png",
+                "ratchet_rumbelow_earthquake_f4.png",
+                "ratchet_rumbelow_earthquake_f5.png",
+                "ratchet_rumbelow_earthquake_f6.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              250,
+              142,
+              161
+            ],
+            "bg_tol": 18,
+            "row_y": [
+              [
+                0,
+                490
+              ],
+              [
+                506,
+                1024
+              ]
+            ],
+            "col_x": [
+              [
+                253,
+                762,
+                1275
+              ],
+              [
+                253,
+                762,
+                1275
+              ]
+            ],
+            "frame_size": "518x495",
+            "frames_dir": "panic-petal/assets/boss"
+          }
+        },
+        {
+          "file": "panic-petal/assets/ratchet_rumbelow_sheet_2.png",
+          "rows": 2,
+          "cols": 3,
+          "description": "Ratchet Rumbelow boss, sheet 2/5 \u2014 6 frames (ground_slam x2 rows)",
+          "entities": [
+            {
+              "name": "ratchet_rumbelow",
+              "anim": "ground_slam",
+              "frames": [
+                "ratchet_rumbelow_ground_slam_f1.png",
+                "ratchet_rumbelow_ground_slam_f2.png",
+                "ratchet_rumbelow_ground_slam_f3.png",
+                "ratchet_rumbelow_ground_slam_f4.png",
+                "ratchet_rumbelow_ground_slam_f5.png",
+                "ratchet_rumbelow_ground_slam_f6.png"
+              ]
+            }
+          ],
+          "crop": {
+            "bg_color": [
+              249,
+              135,
+              156
+            ],
+            "bg_tol": 10,
+            "row_y": [
+              [
+                0,
+                490
+              ],
+              [
+                506,
+                1024
+              ]
+            ],
+            "col_x": [
+              [
+                253,
+                762,
+                1275
+              ],
+              [
+                253,
+                762,
+                1275
+              ]
+            ],
+            "frame_size": "528x505",
+            "frames_dir": "panic-petal/assets/boss"
+          }
         }
       ]
     },
@@ -2367,5 +2471,5 @@
       ]
     }
   },
-  "updated": "2026-09-12T01:20:57"
+  "updated": "2026-09-13T03:08:26"
 }
