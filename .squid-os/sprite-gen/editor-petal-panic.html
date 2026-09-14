@@ -98,7 +98,7 @@
         <div style="position:relative;display:inline-flex;">
           <button class="tbtn" id="resetBtn" title="reset boxes to original position">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>RESET</button>
-          <div id="resetMenu" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;z-index:10;min-width:140px;">
+          <div id="resetMenu" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;z-index:10;min-width:160px;white-space:nowrap;">
             <div class="reset-opt" data-scope="frame" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:var(--txt);">Reset Frame</div>
             <div class="reset-opt" data-scope="anim" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:var(--txt);">Reset Animation</div>
           </div>
@@ -239,56 +239,35 @@ function loadFrames(paths){
     const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = p;
   })));
 }
-// alpha bounds via fetch+blob (file:// images taint canvases; blob URLs do not)
-const bboxCache = new Map();
-async function alphaBBox(im, path){
-  if (bboxCache.has(path)) return bboxCache.get(path);
-  let bb = {x:0,y:0,w:im.naturalWidth,h:im.naturalHeight};
-  try{
-    const buf = await (await fetch(path)).arrayBuffer();
-    const url = URL.createObjectURL(new Blob([buf]));
-    const bi = new Image(); await new Promise(r=>{bi.onload=r; bi.onerror=r; bi.src=url;});
-    const c = document.createElement('canvas'); c.width = bi.naturalWidth; c.height = bi.naturalHeight;
-    const g = c.getContext('2d'); g.drawImage(bi,0,0);
-    URL.revokeObjectURL(url);
-    const d = g.getImageData(0,0,c.width,c.height).data;
-    let x0=c.width, y0=c.height, x1=-1, y1=-1;
-    for (let y=0;y<c.height;y++) for (let x=0;x<c.width;x++){
-      if (d[(y*c.width+x)*4+3] > 8){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
-    }
-    if (x1>=0) bb = {x:x0,y:y0,w:x1-x0+1,h:y1-y0+1};
-  }catch(e){ /* keep full-frame fallback */ }
-  bboxCache.set(path, bb); return bb;
+// ---------- default box geometry (initial view) ----------
+// Every frame's left-bottom corner sits at origin (0,0): x∈[0,w], y∈[-h,0].
+// Collision = frame-1 size minus a few px (centered → looks inside the sprite box).
+// Melee = 25% of collision width, same height, left of collision with a small gap.
+const COLL_PAD = 4;   // px trimmed off each side of the sprite box
+const MEELE_RATIO = 0.25, MEELE_GAP = 3;
+function defaultBoxes(w, h){
+  const cw = Math.max(1, w - COLL_PAD*2), ch = Math.max(1, h - COLL_PAD*2);
+  const col = { x:COLL_PAD, y:-h+COLL_PAD, w:cw, h:ch };
+  const mw = Math.max(1, Math.round(cw*MEELE_RATIO)), mh = ch;
+  const mee = { on:false, x:col.x-mw-MEELE_GAP, y:col.y, w:mw, h:mh };
+  return { col, mee };
 }
-const median = arr => { const a=[...arr].sort((m,n)=>m-n); const m=a.length>>1; return a.length%2 ? a[m] : (a[m-1]+a[m])/2; };
 function defaultState(name, imgs, paths){
   const good = imgs.filter(Boolean);
-  const medW = Math.round(median(good.map(i=>i.naturalWidth))) || 1;
-  const medH = Math.round(median(good.map(i=>i.naturalHeight))) || 1;
-  // center the default boxes on the sprite (origin 0,0); refined to alpha bounds if fetch works
-  const kx = -medW/2, ky = -medH/2;
+  const f1 = good[0];
+  const W = f1 ? f1.naturalWidth : 1, H = f1 ? f1.naturalHeight : 1;
+  const { col, mee } = defaultBoxes(W, H);
   return {
     key: name, speed: 8, playing: true, frameIdx: 0,
-    collision: { x:kx, y:ky, w:medW, h:medH },
+    collision: { ...col },
     frames: paths.map((p, i) => ({
       idx: i, name: p.split('/').pop(),
       crop: { x:0, y:0, w:good[i]?good[i].naturalWidth:0, h:good[i]?good[i].naturalHeight:0 },
-      offset: { x:0, y:0 }, scale: { sx:1, sy:1 },
-      melee: { on:false, x:kx, y:ky, w:medW, h:medH }
+      offset: { x:Math.round((good[i]?good[i].naturalWidth:W)/2), y:-Math.round((good[i]?good[i].naturalHeight:H)/2) },
+      scale: { sx:1, sy:1 },
+      melee: { ...mee }
     }))
   };
-}
-// refine defaults using real alpha bounds (non-blocking)
-async function refineDefaults(name, imgs, paths){
-  const st = S.get(name); if (!st) return;
-  const bbs = [];
-  for (let i=0;i<imgs.length;i++){ if (imgs[i]) bbs.push(await alphaBBox(imgs[i], paths[i])); }
-  if (!bbs.length) return;
-  const medW = Math.round(median(bbs.map(b=>b.w))), medH = Math.round(median(bbs.map(b=>b.h)));
-  const cx = Math.round(median(bbs.map(b=>b.x+b.w/2))), cy = Math.round(median(bbs.map(b=>b.y+b.h/2)));
-  st.collision = { x:Math.round(cx-medW/2), y:Math.round(cy-medH/2), w:medW, h:medH };
-  for (const f of st.frames) if (!f.melee.on){ f.melee.x=st.collision.x; f.melee.y=st.collision.y; f.melee.w=medW; f.melee.h=medH; }
-  if (cur && cur.name===name){ syncPanel(); draw(); }
 }
 async function selectEntity(li, ei, opts){
   opts = opts || {};
@@ -307,7 +286,6 @@ async function selectEntity(li, ei, opts){
   resizeCanvas(); syncPanel(); draw();
   // settle backing store once layout is ready (no re-zoom)
   requestAnimationFrame(()=>{ resizeCanvas(); draw(); });
-  if (!opts.noRefine) refineDefaults(cur.name, cur.imgs, cur.paths);
 }
 // ---------- geometry: sprite space origin (0,0) at view center + pan, +y down ----------
 function resizeCanvas(){
@@ -539,29 +517,32 @@ resetMenu.querySelectorAll('.reset-opt').forEach(opt => {
 });
 function resetFrame(){
   const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
-  // reset sprite offset/scale to origin
-  f.offset.x = 0; f.offset.y = 0;
+  // reset sprite offset/scale: scale back to 1, left-bottom corner at origin (0,0)
+  const im = cur.imgs[fi];
   f.scale.sx = 1; f.scale.sy = 1;
-  // reset melee box: off + default position (centered on collision)
+  if (im){ f.offset.x = Math.round(im.naturalWidth/2); f.offset.y = -Math.round(im.naturalHeight/2); }
+  else { f.offset.x = 0; f.offset.y = 0; }
+  // reset melee box: off + default position (25% width, left of collision with gap)
   f.melee.on = false;
-  f.melee.x = st.collision.x; f.melee.y = st.collision.y;
-  f.melee.w = st.collision.w; f.melee.h = st.collision.h;
+  f.melee.x = st.collision.x - f.melee.w - 3;
+  f.melee.y = st.collision.y;
 }
 function resetAnimation(){
   const st = cur.st;
-  // recompute defaults from natural image dims
+  // recompute defaults from frame 1's natural dims (same geometry as initial load)
   const good = cur.imgs.filter(Boolean);
-  const medW = Math.round(median(good.map(i=>i.naturalWidth))) || 1;
-  const medH = Math.round(median(good.map(i=>i.naturalHeight))) || 1;
-  const kx = -medW/2, ky = -medH/2;
-  // reset collision box
-  st.collision = { x:kx, y:ky, w:medW, h:medH };
-  // reset all frames
-  for (const f of st.frames){
-    f.offset.x = 0; f.offset.y = 0;
+  const f1 = good[0];
+  const W = f1 ? f1.naturalWidth : 1, H = f1 ? f1.naturalHeight : 1;
+  const { col, mee } = defaultBoxes(W, H);
+  st.collision = { ...col };
+  for (let i=0;i<st.frames.length;i++){
+    const f = st.frames[i];
+    const im = cur.imgs[i];
     f.scale.sx = 1; f.scale.sy = 1;
+    if (im){ f.offset.x = Math.round(im.naturalWidth/2); f.offset.y = -Math.round(im.naturalHeight/2); }
+    else { f.offset.x = 0; f.offset.y = 0; }
     f.melee.on = false;
-    f.melee.x = kx; f.melee.y = ky; f.melee.w = medW; f.melee.h = medH;
+    f.melee.x = mee.x; f.melee.y = mee.y; f.melee.w = mee.w; f.melee.h = mee.h;
   }
 }
 $('playBtn').addEventListener('click', ()=>{ if(cur&&cur.st) setPlaying(!cur.st.playing); });
