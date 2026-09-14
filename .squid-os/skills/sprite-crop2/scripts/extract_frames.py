@@ -206,10 +206,19 @@ def assign_components(comps, spans, y0, y1, sat_max_area, sat_radius, trace, row
 
 
 def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, margin, trace):
-    """Build one bounding rect per frame from owned pixels; crop RGBA."""
+    """Build one bounding rect per frame from owned pixels; crop RGBA.
+
+    Before saving, erases any foreground pixel whose component is NOT owned
+    by this frame (prevents cross-contamination when frames overlap in
+    x-space). Each frame is cropped independently from the original image.
+    """
     import numpy as np
+    from scipy import ndimage
     arr = np.array(im)
     alpha = arr[:, :, 3]
+    # Per-pixel component label map (0 = background)
+    fg_mask = alpha > 16
+    comp_labels, _ = ndimage.label(fg_mask)
     os.makedirs(out_dir, exist_ok=True)
     results = []
     for r, (y0, y1) in enumerate(rows):
@@ -230,11 +239,21 @@ def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, ma
             fx1 = min(arr.shape[1], fx1 + margin)
             fy1 = min(arr.shape[0], fy1 + margin)
             fn = f"{name}_{action}_f{si + 1}.png"
-            im.crop((fx0, fy0, fx1, fy1)).save(os.path.join(out_dir, fn))
-            # edge-touching check: foreground on the crop border?
-            sub = alpha[fy0:fy1, fx0:fx1]
-            edge_px = int(sub[0].sum() > 0 or sub[-1].sum() > 0 or
-                           sub[:, 0].sum() > 0 or sub[:, -1].sum() > 0)
+            # Crop from original, then erase unowned foreground pixels
+            crop_arr = arr[fy0:fy1, fx0:fx1].copy()
+            crop_labels = comp_labels[fy0:fy1, fx0:fx1]
+            owned_ids = set(c["id"] for c in owned)
+            # Erase: foreground pixels whose component is not owned by this frame
+            fg_in_crop = crop_arr[:, :, 3] > 16
+            unowned = fg_in_crop & ~np.isin(crop_labels, list(owned_ids))
+            erased = int(unowned.sum())
+            crop_arr[unowned, 3] = 0
+            from PIL import Image
+            Image.fromarray(crop_arr).save(os.path.join(out_dir, fn))
+            # edge-touching check on the CLEANED crop
+            clean_alpha = crop_arr[:, :, 3]
+            edge_px = bool(clean_alpha[0].sum() > 0 or clean_alpha[-1].sum() > 0 or
+                           clean_alpha[:, 0].sum() > 0 or clean_alpha[:, -1].sum() > 0)
             results.append({
                 "file": fn,
                 "entity": name,
@@ -244,12 +263,14 @@ def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, ma
                 "size": [fx1 - fx0, fy1 - fy0],
                 "center": [(fx0 + fx1) // 2, (fy0 + fy1) // 2],
                 "components": len(owned),
-                "edge_touching": bool(edge_px),
+                "erased_pixels": erased,
+                "edge_touching": edge_px,
             })
             touch = " EDGE-TOUCH" if edge_px else ""
+            erased_note = f" erased={erased}" if erased else ""
             trace(f"    {fn}: {fx1 - fx0}x{fy1 - fy0} @ ({fx0},{fy0}) "
                   f"center ({(fx0 + fx1) // 2},{(fy0 + fy1) // 2}) "
-                  f"comps={len(owned)}{touch}")
+                  f"comps={len(owned)}{erased_note}{touch}")
     return results
 
 
