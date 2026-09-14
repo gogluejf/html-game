@@ -87,10 +87,13 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>COLLISION</button>
         <button class="tbtn tog on" id="tglMeleeView" title="show/hide melee boxes">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 3"/></svg>MELEE VIEW</button>
-        <button class="tbtn tog" id="tglMeleeOn" style="display:none" title="enable/disable melee box for this frame">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 12l2 2 4-4"/></svg>MELEE ON</button>
         <button class="tbtn tog on" id="tglAxes" title="show/hide axes crosshair">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>AXES</button>
+      </div>
+      <div class="tgroup">
+        <span class="gtitle">Tools</span>
+        <button class="tbtn tog" id="tglMeleeOn" title="enable/disable melee box for this frame">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 12l2 2 4-4"/></svg>MELEE ON</button>
       </div>
       <div class="tgroup" style="margin-left:auto">
         <button class="tbtn" id="undoBtn" title="undo last transformation (ctrl+Z)">
@@ -473,7 +476,6 @@ bindNum('p_kw', v=>cur.st.collision.w=Math.max(1,v));
 bindNum('p_kh', v=>cur.st.collision.h=Math.max(1,v));
 P('p_mon').addEventListener('change', ()=>{
   if(!cur||!cur.st) return;
-  if (editingLocked()){ P('p_mon').checked = cur.st.frames[curFrameIdx()].melee.on; return; }
   pushUndo();
   const f = cur.st.frames[curFrameIdx()];
   f.melee.on = P('p_mon').checked;
@@ -485,16 +487,14 @@ function syncToggles(){
   $('tglMeleeView').classList.toggle('on', show.meleeView);
   $('tglAxes').classList.toggle('on', show.axes);
   $('tglSpriteView').classList.toggle('on', show.spriteView);
-  // MELEE ON button only appears when the current frame has a melee box enabled
+  // MELEE ON (Tools): always visible; .on reflects the current frame's melee box
   const mon = cur && cur.st ? cur.st.frames[curFrameIdx()].melee.on : false;
-  const btn = $('tglMeleeOn');
-  btn.style.display = mon ? '' : 'none';
-  btn.classList.toggle('on', mon);
+  $('tglMeleeOn').classList.toggle('on', mon);
 }
 $('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); });
 $('tglMeleeView').addEventListener('click', ()=>{ show.meleeView=!show.meleeView; syncToggles(); draw(); });
 $('tglMeleeOn').addEventListener('click', ()=>{
-  if (!cur || !cur.st || editingLocked()) return;
+  if (!cur || !cur.st) return;
   pushUndo();
   const f = cur.st.frames[curFrameIdx()];
   f.melee.on = !f.melee.on;
