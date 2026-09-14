@@ -90,11 +90,15 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 3"/></svg>MELEE VIEW</button>
         <button class="tbtn tog on" id="tglAxes" title="show/hide axes crosshair">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>AXES</button>
+        <button class="tbtn tog on" id="tglPivot" title="show/hide pivot point (drag to move)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>PIVOT</button>
       </div>
       <div class="tgroup">
         <span class="gtitle">Tools</span>
         <button class="tbtn tog" id="tglMeleeOn" title="enable/disable melee box for this frame">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 12l2 2 4-4"/></svg>MELEE ON</button>
+        <button class="tbtn" id="recenterPivotBtn" title="move pivot to collision box center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><path d="M12 5v3M12 16v3M5 12h3M16 12h3"/></svg>RECENTER PIVOT</button>
         <div style="position:relative;display:inline-flex;">
           <button class="tbtn" id="resetBtn" title="reset boxes to original position">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>RESET</button>
@@ -153,6 +157,8 @@
     <h2><span><span class="swatch" style="background:var(--org)"></span>Melee Box (per frame)</span><span><input type="checkbox" id="p_mon" title="enable melee box for this frame"></span></h2>
     <div class="row"><span>x,y</span><div class="pair" id="mxy"><div class="cell"><b>x</b><input type="number" id="p_mx"></div><div class="cell"><b>y</b><input type="number" id="p_my"></div></div></div>
     <div class="row"><span>w,h</span><div class="pair" id="mwh"><div class="cell"><b>w</b><input type="number" id="p_mw"></div><div class="cell"><b>h</b><input type="number" id="p_mh"></div></div></div>
+    <h2><span><span class="swatch" style="background:var(--yel)"></span>Pivot Point</span></h2>
+    <div class="row"><span>x,y</span><div class="pair"><div class="cell"><b>x</b><input type="number" id="p_px"></div><div class="cell"><b>y</b><input type="number" id="p_py"></div></div></div>
     <h2><span><span class="swatch" style="background:var(--acc)"></span>Collision Box (all frames)</span></h2>
     <div class="row"><span>x,y</span><div class="pair"><div class="cell"><b>x</b><input type="number" id="p_kx"></div><div class="cell"><b>y</b><input type="number" id="p_ky"></div></div></div>
     <div class="row"><span>w,h</span><div class="pair"><div class="cell"><b>w</b><input type="number" id="p_kw"></div><div class="cell"><b>h</b><input type="number" id="p_kh"></div></div></div>
@@ -214,7 +220,7 @@ function syncUndoButtons(){
   if (u) u.disabled = !undoStack.length;
   if (r) r.disabled = !redoStack.length;
 }
-let show = { collision:true, meleeView:false, axes:true, spriteView:true };
+let show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true };
 let isPlaying = true;      // global play/pause, carried across animations
 let drag = null;         // active pointer drag
 let hover = null;        // {box:'collision'|'melee'|'scale', handle:id} or {box, body:true}
@@ -260,6 +266,7 @@ function defaultState(name, imgs, paths){
   return {
     key: name, speed: 8, playing: true, frameIdx: 0,
     collision: { ...col },
+    pivot: { x: Math.round(col.x + col.w/2), y: Math.round(col.y + col.h/2) },
     frames: paths.map((p, i) => ({
       idx: i, name: p.split('/').pop(),
       crop: { x:0, y:0, w:good[i]?good[i].naturalWidth:0, h:good[i]?good[i].naturalHeight:0 },
@@ -402,6 +409,26 @@ function draw(){
     drawBox(b.rect, b.color, true, !dragging,
       hovered ? hover.handle : null, !!(hovered && hover.body));
   }
+  // ---------- pivot marker ----------
+  if (show.pivot && st.pivot){
+    const [px, py] = s2c(st.pivot.x, st.pivot.y);
+    const R = 10;   // screen-px radius
+    ctx.save();
+    ctx.strokeStyle = 'var(--yel)';
+    ctx.strokeStyle = '#ffe23e';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(px, py, R, 0, Math.PI*2); ctx.stroke();
+    ctx.fillStyle = '#ffe23e';
+    ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI*2); ctx.fill();
+    // crosshair ticks
+    ctx.beginPath();
+    ctx.moveTo(px-R-4, py); ctx.lineTo(px-R+2, py);
+    ctx.moveTo(px+R-2, py); ctx.lineTo(px+R+4, py);
+    ctx.moveTo(px, py-R-4); ctx.lineTo(px, py-R+2);
+    ctx.moveTo(px, py+R-2); ctx.lineTo(px, py+R+4);
+    ctx.stroke();
+    ctx.restore();
+  }
   finfo.textContent = `frame ${fi+1}/${st.frames.length}  \u2014  ${st.frames[fi].name}`;
   // DEBUG state readout (temporary)
   const mode = drag ? 'DRAG:'+drag.kind : (hover ? 'HOVER:'+(hover.handle||'body') : 'IDLE');
@@ -444,6 +471,7 @@ function syncPanel(){
   ['p_mx','p_my','p_mw','p_mh'].forEach(id=>P(id).classList.toggle('disabled-dim', md));
   P('p_mx').value=f.melee.x; P('p_my').value=f.melee.y; P('p_mw').value=f.melee.w; P('p_mh').value=f.melee.h;
   P('p_kx').value=st.collision.x; P('p_ky').value=st.collision.y; P('p_kw').value=st.collision.w; P('p_kh').value=st.collision.h;
+  if (st.pivot){ P('p_px').value=st.pivot.x; P('p_py').value=st.pivot.y; }
   setPlaying(st.playing);
   syncToggles();   // keep MELEE ON button in sync with current frame
 }
@@ -461,6 +489,8 @@ bindNum('p_kx', v=>cur.st.collision.x=v);
 bindNum('p_ky', v=>cur.st.collision.y=v);
 bindNum('p_kw', v=>cur.st.collision.w=Math.max(1,v));
 bindNum('p_kh', v=>cur.st.collision.h=Math.max(1,v));
+bindNum('p_px', v=>{ if(cur.st.pivot) cur.st.pivot.x=v; });
+bindNum('p_py', v=>{ if(cur.st.pivot) cur.st.pivot.y=v; });
 P('p_mon').addEventListener('change', ()=>{
   if(!cur||!cur.st) return;
   pushUndo();
@@ -488,7 +518,9 @@ function syncToggles(){
   mv.disabled = !anyMelee;
   if (!anyMelee) show.meleeView = false;   // force-hide when nothing to show
   mv.classList.toggle('on', show.meleeView && anyMelee);
+  $('tglPivot').classList.toggle('on', show.pivot);
   $('resetBtn').disabled = locked;   // whole Tools group disabled during animation
+  $('recenterPivotBtn').disabled = locked;
 }
 $('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); });
 $('tglMeleeView').addEventListener('click', ()=>{
@@ -506,6 +538,16 @@ $('tglMeleeOn').addEventListener('click', ()=>{
 });
 $('tglAxes').addEventListener('click', ()=>{ show.axes=!show.axes; syncToggles(); draw(); });
 $('tglSpriteView').addEventListener('click', ()=>{ show.spriteView=!show.spriteView; syncToggles(); draw(); });
+$('tglPivot').addEventListener('click', ()=>{ show.pivot=!show.pivot; syncToggles(); draw(); });
+// ---------- RECENTER PIVOT ----------
+$('recenterPivotBtn').addEventListener('click', ()=>{
+  if (!cur || !cur.st || editingLocked()) return;
+  pushUndo();
+  const c = cur.st.collision;
+  cur.st.pivot.x = Math.round(c.x + c.w/2);
+  cur.st.pivot.y = Math.round(c.y + c.h/2);
+  syncPanel(); draw();
+});
 // ---------- RESET tool (frame / animation) ----------
 const resetBtn = $('resetBtn'), resetMenu = $('resetMenu');
 resetBtn.addEventListener('click', e=>{
@@ -546,6 +588,7 @@ function resetAnimation(){
   const W = f1 ? f1.naturalWidth : 1, H = f1 ? f1.naturalHeight : 1;
   const { col, mee } = defaultBoxes(W, H);
   st.collision = { ...col };
+  st.pivot = { x: Math.round(col.x + col.w/2), y: Math.round(col.y + col.h/2) };
   for (let i=0;i<st.frames.length;i++){
     const f = st.frames[i];
     const im = cur.imgs[i];
@@ -601,12 +644,21 @@ function boxList(){
   if (show.spriteView && im) byKey.sprite    = { key:'sprite',    rect:frameRect(st, fi), color:COL_SCALE };
   if (show.collision)        byKey.collision = { key:'collision', rect:st.collision,      color:COL_COLL  };
   if (meleeVisible())        byKey.melee     = { key:'melee',     rect:st.frames[fi].melee, color:COL_MELEE };
+  // pivot is a point, not a rect — handled separately in hover/drag
   // return in z-order (front first) so hit-testing respects last-touched
   return boxZOrder.filter(k => byKey[k]).map(k => byKey[k]);
+}
+// pivot hit-test: within ~12 screen-px of the marker center
+function hitPivot(sx, sy){
+  if (!show.pivot || !cur.st.pivot) return false;
+  const tol = 12/zoom;
+  return Math.abs(sx - cur.st.pivot.x) <= tol && Math.abs(sy - cur.st.pivot.y) <= tol;
 }
 function updateHover(sx, sy){
   const prev = hover; hover = null;
   if (!editingLocked()){
+    // pivot takes priority (small target, drawn on top)
+    if (hitPivot(sx, sy)){ hover = { box:'pivot' }; finishHover(prev); return; }
     // first box hit wins (sprite drawn on top, then collision, then melee)
     for (const b of boxList()){
       const h = hitHandle(b.rect, sx, sy);
@@ -620,7 +672,8 @@ function updateHover(sx, sy){
 function finishHover(prev){
   const changed = JSON.stringify(prev) !== JSON.stringify(hover);
   if (changed) draw();
-  if (hover && hover.handle){
+  if (hover && hover.box==='pivot') cv.style.cursor = 'grab';
+  else if (hover && hover.handle){
     const c = { nw:'nwse-resize', se:'nwse-resize', ne:'nesw-resize', sw:'nesw-resize',
                 n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize' }[hover.handle];
     cv.style.cursor = c || 'default';
@@ -696,6 +749,13 @@ cv.addEventListener('pointerdown', e=>{
     cv.style.cursor = 'grabbing';
     return;
   }
+  // pivot marker -> drag to reposition
+  if (hover && hover.box==='pivot'){
+    pushUndo();
+    drag = { key:'pivot', sx, sy };
+    cv.style.cursor = 'grabbing';
+    draw(); return;
+  }
   // any visible box under the cursor -> unified move/resize
   if (hover && BOX[hover.box]){
     bringToFront(hover.box);   // last-touched box wins hit-testing
@@ -724,6 +784,10 @@ cv.addEventListener('pointermove', e=>{
     userZoomed = true;
     panX = drag.panX0 - (cx - drag.sx0)/zoom;
     panY = drag.panY0 - (cy - drag.sy0)/zoom;
+  } else if (drag.key==='pivot'){
+    cur.st.pivot.x = Math.round(sx);
+    cur.st.pivot.y = Math.round(sy);
+    syncPanel();
   } else if (BOX[drag.key]){
     // unified box transform: free anchor moves one edge, shift+corner locks ratio about center
     if (drag.anchor) BOX[drag.key].resize(drag, sx, sy);
