@@ -861,18 +861,20 @@ function drawFilm(){
     const ox=margin-B.minX*scale, oy=margin-B.minY*scale;
     const X=wx=>ox+wx*scale, Y=wy=>oy+wy*scale;
     const f=st.frames[i], im=cur.imgs[i];
+    // The filmstrip ALWAYS shows sprite + collision + melee regardless of the
+    // canvas view toggles — those only affect the main canvas, not this strip.
     g.lineWidth=1.5;
-    if (show.collision && st.collision){
+    if (st.collision){
       const bx=X(st.collision.x), by=Y(st.collision.y), bw=st.collision.w*scale, bh=st.collision.h*scale;
       g.fillStyle='rgba(62,240,255,.1)'; g.fillRect(bx,by,bw,bh);
       g.strokeStyle='rgba(62,240,255,.7)'; g.strokeRect(bx,by,bw,bh);
     }
-    if (show.meleeView && f.melee.on){
+    if (f.melee.on){
       const mx=X(f.melee.x), my=Y(f.melee.y), mw=f.melee.w*scale, mh=f.melee.h*scale;
       g.fillStyle='rgba(255,157,46,.1)'; g.fillRect(mx,my,mw,mh);
       g.strokeStyle='rgba(255,157,46,.7)'; g.strokeRect(mx,my,mw,mh);
     }
-    if (show.spriteView && im){
+    if (im){
       const w=im.naturalWidth*f.scale.sx, h=im.naturalHeight*f.scale.sy;
       const sxp=X(f.offset.x-w/2), syp=Y(f.offset.y-h/2);
       g.drawImage(im, sxp, syp, w*scale, h*scale);
