@@ -65,15 +65,23 @@
   #panel h2 .swatch{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px;}
   .row{display:flex;align-items:center;margin:7px 0;gap:10px;}
   .row > span{color:var(--dim);white-space:nowrap;font-size:13px;width:96px;flex:none;text-align:left;}
-  .row input[type=number]{width:84px;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--txt);font-family:inherit;font-size:13px;padding:5px 8px;text-align:right;-moz-appearance:textfield;}
+  .row input[type=number]{width:84px;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--txt);font-family:inherit;font-size:13px;padding:5px 20px 5px 8px;text-align:right;-moz-appearance:textfield;}
   .row input[type=number]::-webkit-inner-spin-button,.row input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   .row input[type=number]:focus{outline:none;border-color:var(--acc);}
+  /* custom spinner arrows, right-aligned inside the box */
+  .numwrap{position:relative;display:inline-block;width:84px;}
+  .numwrap input{width:100%;}
+  .numwrap .arr{position:absolute;right:5px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;}
+  .numwrap .arr span{width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;cursor:pointer;display:block;}
+  .numwrap .arr .up{border-bottom:4px solid var(--faint);}
+  .numwrap .arr .dn{border-top:4px solid var(--faint);}
+  .numwrap .arr span:hover{border-color:var(--acc);}
   .row input[type=checkbox]{accent-color:var(--acc);width:18px;height:18px;cursor:pointer;}
   .ro{color:var(--faint);background:transparent;border:1px solid transparent;padding:5px 7px;text-align:right;font-family:inherit;font-size:13px;}
   .pair{display:flex;gap:14px;flex:none;}
   .pair .cell{display:flex;align-items:center;gap:6px;}
   .pair .cell b{color:var(--faint);font-weight:normal;width:10px;font-size:12px;flex:none;text-align:center;}
-  .pair .cell input{width:84px;box-sizing:border-box;padding:5px 8px;font-size:13px;-moz-appearance:textfield;}
+  .pair .cell .numwrap{width:84px;}
   .pair .cell input::-webkit-inner-spin-button,.pair .cell input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   .disabled-dim{opacity:.45;}
 </style>
@@ -582,13 +590,24 @@ function stepFrame(d){ if(!cur||!cur.st)return; const st=cur.st; st.frameIdx=(st
 function setSpeed(v){ if(!cur||!cur.st)return; cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = cur.st.speed+' fps'; $('p_speed').value = cur.st.speed; }
 // ---------- panel ----------
 const P = id => $(id);
-// arrow-key stepping for number inputs (native spinners are hidden)
+// wrap panel number inputs with custom spinner arrows (native ones are hidden)
 document.querySelectorAll('#panel input[type=number]').forEach(inp=>{
+  const wrap = document.createElement('span');
+  wrap.className = 'numwrap';
+  inp.parentNode.insertBefore(wrap, inp);
+  wrap.appendChild(inp);
+  const arr = document.createElement('span');
+  arr.className = 'arr';
+  arr.innerHTML = '<span class="up"></span><span class="dn"></span>';
+  wrap.appendChild(arr);
+  const step = () => parseFloat(inp.step) || 1;
+  arr.querySelector('.up').addEventListener('click', ()=>{ inp.value=(parseFloat(inp.value)||0)+step(); inp.dispatchEvent(new Event('change')); });
+  arr.querySelector('.dn').addEventListener('click', ()=>{ inp.value=(parseFloat(inp.value)||0)-step(); inp.dispatchEvent(new Event('change')); });
+  // arrow-key stepping
   inp.addEventListener('keydown', e=>{
     if (e.key==='ArrowUp'||e.key==='ArrowDown'){
       e.preventDefault();
-      const step = parseFloat(inp.step)||1;
-      const d = e.key==='ArrowUp' ? step : -step;
+      const d = e.key==='ArrowUp' ? step() : -step();
       inp.value = (parseFloat(inp.value)||0) + d;
       inp.dispatchEvent(new Event('change'));
     }
