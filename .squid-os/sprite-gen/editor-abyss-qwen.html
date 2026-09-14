@@ -389,7 +389,7 @@ function collectState(){
       frames: st.frames.map(f => ({ idx:f.idx, name:f.name, crop:f.crop, offset:f.offset, scale:f.scale, melee:f.melee }))
     };
   }
-  return { v:1, entities, view:{ show, isPlaying, bgColor } };
+  return { v:1, entities, view:{ show, isPlaying, bgColor }, active: cur ? cur.name : null };
 }
 function saveState(){
   if (_loadingState) return;   // don't overwrite saved data mid-restore
@@ -935,11 +935,15 @@ function syncToggles(){
   btn.classList.toggle('on', mon);
   const locked = !!(cur && cur.st && cur.st.playing);
   btn.disabled = locked;
-  // MELEE VIEW (Display): only enabled when at least one frame has a melee box
+  // MELEE VIEW (Display): only enabled when at least one frame has a melee box.
+  // Guard on `cur` so we don't wipe a persisted meleeView during boot, before the
+  // first entity is loaded (cur is null then -> anyMelee would be false).
   const anyMelee = cur && cur.st ? cur.st.frames.some(f=>f.melee.on) : false;
   const mv = $('tglMeleeView');
-  mv.disabled = !anyMelee;
-  if (!anyMelee) show.meleeView = false;   // force-hide when nothing to show
+  if (cur && cur.st){
+    mv.disabled = !anyMelee;
+    if (!anyMelee) show.meleeView = false;   // force-hide when nothing to show
+  }
   mv.classList.toggle('on', show.meleeView && anyMelee);
   $('tglPivot').classList.toggle('on', show.pivot);
   // LABEL: sprite name over the canvas (viewer-style), drawn in draw()
@@ -1653,8 +1657,20 @@ loadState();          // restore per-entity state + view from localStorage (keep
 applySavedView();     // apply restored view (bg, play, toggles) to the UI — no save (guard on)
 syncToggles();   // set toolbar lit states from `show` BEFORE first paint (no flash)
 syncUndoButtons();   // disable undo/redo while stacks are empty
+// Restore the last-edited entity if we have one saved; otherwise start at the first.
+let startLi = 0, startEi = 0;
+try{
+  const _raw = localStorage.getItem(LS_KEY);
+  if (_raw){
+    const _d = JSON.parse(_raw);
+    if (_d && _d.active){
+      const hit = flatList.findIndex(f => MANIFEST.labels[f.li].entities[f.ei].name === _d.active);
+      if (hit >= 0){ startLi = flatList[hit].li; startEi = flatList[hit].ei; }
+    }
+  }
+}catch(e){}
 if (MANIFEST.labels.length){
-  selectEntity(0, 0).then(()=>{ _loadingState = false; });  // re-enable auto-save ONLY after async load done
+  selectEntity(startLi, startEi).then(()=>{ _loadingState = false; });  // re-enable auto-save ONLY after async load done
 } else {
   _loadingState = false;
 }
