@@ -436,6 +436,7 @@ function setPlaying(p){
   cur.st.playing = !!p;
   isPlaying = !!p;
   $('playIco').innerHTML = cur.st.playing ? '&#10074;&#10074;' : '&#9654;';
+  syncToggles();   // update MELEE ON disabled state immediately
 }
 function stepFrame(d){ if(!cur||!cur.st)return; const st=cur.st; st.frameIdx=(st.frameIdx+d+st.frames.length)%st.frames.length; syncPanel(); draw(); }
 function setSpeed(v){ if(!cur||!cur.st)return; cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = cur.st.speed+' fps'; $('p_speed').value = cur.st.speed; }
@@ -453,6 +454,7 @@ function syncPanel(){
   P('p_ox').value=f.offset.x; P('p_oy').value=f.offset.y;
   P('p_sx').value=f.scale.sx; P('p_sy').value=f.scale.sy;
   P('p_mon').checked=f.melee.on;
+  P('p_mon').disabled = st.playing;
   const md = !f.melee.on;
   ['p_mx','p_my','p_mw','p_mh'].forEach(id=>P(id).classList.toggle('disabled-dim', md));
   P('p_mx').value=f.melee.x; P('p_my').value=f.melee.y; P('p_mw').value=f.melee.w; P('p_mh').value=f.melee.h;
@@ -487,14 +489,17 @@ function syncToggles(){
   $('tglMeleeView').classList.toggle('on', show.meleeView);
   $('tglAxes').classList.toggle('on', show.axes);
   $('tglSpriteView').classList.toggle('on', show.spriteView);
-  // MELEE ON (Tools): always visible; .on reflects the current frame's melee box
+  // MELEE ON (Tools): always visible; .on reflects the current frame's melee box;
+  // disabled while playing (can't edit per-frame data during animation)
   const mon = cur && cur.st ? cur.st.frames[curFrameIdx()].melee.on : false;
-  $('tglMeleeOn').classList.toggle('on', mon);
+  const btn = $('tglMeleeOn');
+  btn.classList.toggle('on', mon);
+  btn.disabled = !!(cur && cur.st && cur.st.playing);
 }
 $('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); });
 $('tglMeleeView').addEventListener('click', ()=>{ show.meleeView=!show.meleeView; syncToggles(); draw(); });
 $('tglMeleeOn').addEventListener('click', ()=>{
-  if (!cur || !cur.st) return;
+  if (!cur || !cur.st || editingLocked()) return;
   pushUndo();
   const f = cur.st.frames[curFrameIdx()];
   f.melee.on = !f.melee.on;
