@@ -50,7 +50,7 @@
   #stage{flex:1;position:relative;overflow:hidden;background:#0a0c14;}
   /* ---------- frame filmstrip (bottom-right drawer, slides left/right) ---------- */
   #filmDrawer{position:absolute;right:0;bottom:10px;z-index:20;height:176px;width:34px;background:var(--film-bg,#000);border:2px solid #fff;border-right:none;border-radius:10px 0 0 10px;box-shadow:-6px 0 22px rgba(0,0,0,.5);overflow:hidden;transition:width .18s ease-out;}
-  #filmScroll{position:absolute;top:0;left:0;height:100%;display:flex;align-items:stretch;padding:8px 42px 8px 8px;pointer-events:none;white-space:nowrap;}
+  #filmScroll{position:absolute;top:0;left:0;height:100%;display:flex;align-items:stretch;padding:8px;pointer-events:none;white-space:nowrap;}
   #filmDrawer.on #filmScroll{pointer-events:auto;}
   #filmBtn{position:absolute;right:0;top:0;width:34px;height:100%;pointer-events:auto;font-family:inherit;font-size:10px;letter-spacing:1px;color:#fff;background:var(--panel);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;writing-mode:vertical-rl;text-orientation:mixed;}
   #filmBtn svg{width:14px;height:14px;transition:transform .28s;}
@@ -409,7 +409,7 @@ function collectState(){
       frames: st.frames.map(f => ({ idx:f.idx, name:f.name, crop:f.crop, offset:f.offset, scale:f.scale, melee:f.melee }))
     };
   }
-  return { v:1, entities, view:{ show, isPlaying, bgColor }, active: cur ? cur.name : null };
+  return { v:1, entities, view:{ show, isPlaying, bgColor, filmOpen: FILM.on }, active: cur ? cur.name : null };
 }
 function saveState(){
   if (_loadingState) return;   // don't overwrite saved data mid-restore
@@ -437,6 +437,7 @@ function loadState(){
     if (data.view.show) Object.assign(show, data.view.show);
     if (typeof data.view.isPlaying === 'boolean') isPlaying = data.view.isPlaying;
     if (typeof data.view.bgColor === 'string') bgColor = data.view.bgColor;
+    if (typeof data.view.filmOpen === 'boolean') FILM.on = data.view.filmOpen;
   }
   // normalize allFrames: it must be a real boolean (a stale/corrupt save could
   // leave it undefined or non-bool, which breaks the ghost view + button state).
@@ -929,10 +930,27 @@ $('filmBtn').addEventListener('click', ()=>{
     setTimeout(()=>{ FILM._animating=false; }, 200);
   }
   $('filmBtn').classList.toggle('on', FILM.on);
+  saveState();
 });
 // keep the strip in sync with edits / playback / view toggles
 const _origDraw=draw;
 draw=function(){ _origDraw(); if (FILM.on) drawFilm(); };
+// Apply the current FILM.on state to the drawer/button DOM (no animation).
+// Used to restore the saved open/closed state on load.
+function applyFilmState(){
+  const dw=$('filmDrawer');
+  dw.classList.toggle('on', FILM.on);
+  $('filmBtn').classList.toggle('on', FILM.on);
+  if (FILM.on){
+    drawFilm();
+    dw.style.transition='none';
+    const target = Math.min($('filmScroll').scrollWidth + 34, Math.round(window.innerWidth*0.85));
+    dw.style.width=target+'px';
+  } else {
+    dw.style.transition='none';
+    dw.style.width='34px';
+  }
+}
 // ---------- playback ----------
 let rotAcc = 0;
 function tick(t){
@@ -1823,7 +1841,7 @@ try{
   }
 }catch(e){}
 if (MANIFEST.labels.length){
-  selectEntity(startLi, startEi).then(()=>{ _loadingState = false; });  // re-enable auto-save ONLY after async load done
+  selectEntity(startLi, startEi).then(()=>{ _loadingState = false; applyFilmState(); });  // re-enable auto-save ONLY after async load done
 } else {
   _loadingState = false;
 }
