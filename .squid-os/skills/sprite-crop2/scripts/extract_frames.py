@@ -129,8 +129,13 @@ def cluster_row(row_mask, y0, y1, expected, trace, row_idx):
             seps.append((s, i))
         else:
             i += 1
-    # keep only interior separators with some width
-    seps = [s for s in seps if s[0] > xs and s[1] < xe and s[1] - s[0] >= 2]
+    # keep only interior separators with some width.
+    # A true interior separator must be separated from BOTH inked edges by
+    # real content — otherwise it's just an outer margin, not a frame boundary.
+    # Require a minimum "ink wall" on each side so edge margins are excluded.
+    min_wall = max(8, int((xe - xs) * 0.02))
+    seps = [s for s in seps
+            if s[0] > xs + min_wall and s[1] < xe - min_wall and s[1] - s[0] >= 2]
 
     spans = None
     method = "gap-split"
