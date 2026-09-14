@@ -51,6 +51,11 @@
   #zoombox button{width:32px;height:30px;}
   #zoombox button svg{width:16px;height:16px;}
   #zoomval{min-width:56px;text-align:center;font-size:15px;color:var(--acc);font-weight:bold;}
+  #rotbox{display:flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);}
+  #rotbox button{width:32px;height:30px;font-size:15px;}
+  #rotSpeedBox{display:flex;align-items:center;gap:4px;}
+  #rotSpeedVal{min-width:50px;text-align:center;font-size:13px;color:var(--pur);font-weight:bold;}
+  #rotAngle{min-width:44px;text-align:center;font-size:14px;color:var(--yel);font-weight:bold;}
   #finfo{font-size:13px;color:var(--faint);margin-left:auto;}
   #hint{padding:7px 14px;font-size:12px;color:var(--faint);border-top:1px solid var(--line);background:var(--bg2);line-height:1.6;}
   /* ---------- side panel ---------- */
@@ -134,11 +139,23 @@
         <button id="zoomIn" title="zoom in (ctrl+)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6M20 20l-4-4"/></svg></button>
       </div>
+      <div id="rotbox" title="rotation: independent of frame animation · click canvas to pause + reset to 0°">
+        <button id="rotPrev" title="rotate &#8722;15&#176;">&#8634;</button>
+        <button id="rotPlay" title="play/pause rotation"><span id="rotIco">&#9654;</span></button>
+        <button id="rotNext" title="rotate +15&#176;">&#8635;</button>
+        <div id="rotSpeedBox">
+          <button id="rotSlower" title="slower rot speed">&#8722;</button>
+          <div id="rotSpeedVal">30&#176;/s</div>
+          <button id="rotFaster" title="faster rot speed">&#43;</button>
+        </div>
+        <div id="rotAngle">0&#176;</div>
+      </div>
       <div id="finfo"></div>
     </div>
     <div id="hint">
       space play/pause &middot; &#8592;/&#8594; prev/next frame &middot; &#8593;/&#8595; prev/next sprite &middot; shift+arrow offset &#177;1 &middot; ctrl+arrow offset &#177;10<br>
       zoom: mouse wheel / ctrl&#8722; / ctrl+ / bottom buttons &middot; hover a visible box: drag inside to move it &middot; corner handle resizes &middot; shift+corner scales both axes<br>
+      rotation: bottom rot controls (independent of frame anim) &middot; click canvas while rotating = pause + reset to 0&#176;<br>
       undo/redo: top-right arrows or ctrl+Z / ctrl+Y (global — jumps back to the exact animation + frame you edited)
     </div>
   </div>
@@ -157,6 +174,9 @@
     <h2><span><span class="swatch" style="background:var(--org)"></span>Melee Box (per frame)</span><span><input type="checkbox" id="p_mon" title="enable melee box for this frame"></span></h2>
     <div class="row"><span>x,y</span><div class="pair" id="mxy"><div class="cell"><b>x</b><input type="number" id="p_mx"></div><div class="cell"><b>y</b><input type="number" id="p_my"></div></div></div>
     <div class="row"><span>w,h</span><div class="pair" id="mwh"><div class="cell"><b>w</b><input type="number" id="p_mw"></div><div class="cell"><b>h</b><input type="number" id="p_mh"></div></div></div>
+    <h2><span><span class="swatch" style="background:var(--pur)"></span>Rotation</span></h2>
+    <div class="row"><span>angle (&#176;)</span><span class="ro" id="p_rangle">0</span></div>
+    <div class="row"><span>speed (&#176;/s)</span><input type="number" id="p_rspeed" min="1" max="360" value="30"></div>
     <h2><span><span class="swatch" style="background:var(--yel)"></span>Pivot Point</span></h2>
     <div class="row"><span>x,y</span><div class="pair"><div class="cell"><b>x</b><input type="number" id="p_px"></div><div class="cell"><b>y</b><input type="number" id="p_py"></div></div></div>
     <h2><span><span class="swatch" style="background:var(--acc)"></span>Collision Box (all frames)</span></h2>
@@ -267,6 +287,7 @@ function defaultState(name, imgs, paths){
     key: name, speed: 8, playing: true, frameIdx: 0,
     collision: { ...col },
     pivot: { x: Math.round(col.x + col.w/2), y: Math.round(col.y + col.h/2) },
+    rot: { angle: 0, speed: 30, playing: false },   // degrees, deg/s, independent of frame anim
     frames: paths.map((p, i) => ({
       idx: i, name: p.split('/').pop(),
       crop: { x:0, y:0, w:good[i]?good[i].naturalWidth:0, h:good[i]?good[i].naturalHeight:0 },
@@ -301,8 +322,22 @@ function resizeCanvas(){
   cv.height = Math.max(1, Math.round(r.height));
 }
 // screen(px) <-> sprite-space. Origin (0,0) maps to canvas center + pan.
+// When rotation is active, c2s inverse-rotates around the pivot so that
+// hit-testing and drag math work in the unrotated (local) frame.
 function s2c(x, y){ return [ cv.width/2 + (x - panX)*zoom, cv.height/2 + (y - panY)*zoom ]; }
-function c2s(x, y){ return [ (x - cv.width/2)/zoom + panX, (y - cv.height/2)/zoom + panY ]; }
+function c2s(x, y){
+  let sx = (x - cv.width/2)/zoom + panX;
+  let sy = (y - cv.height/2)/zoom + panY;
+  // inverse-rotate around pivot if rotation is active
+  if (cur && cur.st && cur.st.rot && cur.st.rot.angle !== 0 && cur.st.pivot){
+    const rad = cur.st.rot.angle * Math.PI / 180;
+    const cos = Math.cos(-rad), sin = Math.sin(-rad);
+    const dx = sx - cur.st.pivot.x, dy = sy - cur.st.pivot.y;
+    sx = cur.st.pivot.x + dx*cos - dy*sin;
+    sy = cur.st.pivot.y + dx*sin + dy*cos;
+  }
+  return [sx, sy];
+}
 function evPos(e){ const r = cv.getBoundingClientRect(); return [ e.clientX - r.left, e.clientY - r.top ]; }
 function setZoom(nz, cx, cy){
   nz = Math.max(.05, Math.min(32, nz));
@@ -356,8 +391,8 @@ function hitHandle(rect, sx, sy){
 }
 function inside(r, x, y){ return x>=r.x && x<=r.x+r.w && y>=r.y && y<=r.y+r.h; }
 function meleeVisible(){ return show.meleeView && cur.st.frames[curFrameIdx()].melee.on; }
-// while playing, per-frame sprite edits are locked (view-only)
-function editingLocked(){ return !!(cur && cur.st && cur.st.playing); }
+// while playing OR rotating, per-frame sprite edits are locked (view-only)
+function editingLocked(){ return !!(cur && cur.st && (cur.st.playing || (cur.st.rot && cur.st.rot.playing))); }
 // choose a "nice" grid step (1,2,5,10,20,...) so ~40-80px on screen
 function gridStep(){
   const target = 60/zoom;      // desired sprite-px between lines
@@ -395,21 +430,32 @@ function draw(){
   }
   const fi = curFrameIdx();
   const im = cur.imgs[fi];
+  const rotDeg = (st.rot && st.rot.angle) || 0;
+  const rad = rotDeg * Math.PI / 180;
+  const pv = st.pivot || { x:0, y:0 };
+  // ---------- rotated context: pivot at center ----------
+  ctx.save();
+  const [pvx, pvy] = s2c(pv.x, pv.y);
+  ctx.translate(pvx, pvy);
+  ctx.rotate(rad);
+  ctx.translate(-pvx, -pvy);
+  // draw sprite
   if (im){
     const f = st.frames[fi];
     const w = im.naturalWidth*f.scale.sx, h = im.naturalHeight*f.scale.sy;
     const [dx, dy] = s2c(f.offset.x - w/2, f.offset.y - h/2);
     ctx.drawImage(im, dx, dy, w*zoom, h*zoom);
   }
-  // ---------- unified box rendering (z-order: last-touched draws on top) ----------
-  const boxes = boxList();   // returns in z-order (front first); reverse for draw (back first)
+  // draw boxes (rotated with sprite)
+  const boxes = boxList();
   for (const b of [...boxes].reverse()){
     const hovered = hover && hover.box===b.key;
     const dragging = drag && drag.kind!=='pan' && drag.key===b.key;
     drawBox(b.rect, b.color, true, !dragging,
       hovered ? hover.handle : null, !!(hovered && hover.body));
   }
-  // ---------- pivot marker ----------
+  ctx.restore();
+  // ---------- pivot marker (NOT rotated — always upright target) ----------
   if (show.pivot && st.pivot){
     const [px, py] = s2c(st.pivot.x, st.pivot.y);
     const R = 10;   // screen-px radius
@@ -435,12 +481,41 @@ function draw(){
   dbg.textContent = `mode=${mode}  drag=${drag?drag.kind:'null'}  hover=${hover?JSON.stringify(hover):'null'}`;
 }
 // ---------- playback ----------
+let rotAcc = 0;
 function tick(t){
   requestAnimationFrame(tick);
-  if (!cur || !cur.st || !cur.st.playing){ lastT = t; return; }
-  const dt = (t-lastT)/1000; lastT = t; acc += dt;
-  const step = 1/Math.max(1, cur.st.speed);
-  if (acc >= step){ acc %= step; cur.st.frameIdx = (cur.st.frameIdx+1) % cur.st.frames.length; syncPanel(); draw(); }
+  if (!cur || !cur.st){ lastT = t; return; }
+  const dt = (t-lastT)/1000; lastT = t;
+  // frame animation
+  if (cur.st.playing){
+    acc += dt;
+    const step = 1/Math.max(1, cur.st.speed);
+    if (acc >= step){ acc %= step; cur.st.frameIdx = (cur.st.frameIdx+1) % cur.st.frames.length; syncPanel(); draw(); }
+  } else { acc = 0; }
+  // rotation (independent of frame anim)
+  if (cur.st.rot){
+    // hold-to-rotate: accelerate while held, coast-decel after release
+    if (rotHold){
+      rotHold.t += dt;
+      rotHold.vel = Math.min(ROT_MAX_VEL, rotHold.vel + ROT_ACCEL * dt);
+      cur.st.rot.angle = ((cur.st.rot.angle + rotHold.dir * rotHold.vel * dt) % 360 + 360) % 360;
+    } else if (lastRotVel > 0.5){
+      // coasting: decelerate velocity, keep spinning in last direction
+      cur.st.rot.angle = ((cur.st.rot.angle + lastRotDir * lastRotVel * dt) % 360 + 360) % 360;
+      lastRotVel = Math.max(0, lastRotVel - ROT_DECEL * dt);
+      if (lastRotVel <= 0.5) lastRotVel = 0;
+    }
+    if (cur.st.rot.playing){
+      rotAcc += dt;
+      const rstep = 1/60;
+      while (rotAcc >= rstep){
+        rotAcc -= rstep;
+        cur.st.rot.angle = (cur.st.rot.angle + cur.st.rot.speed * rstep) % 360;
+      }
+    } else { rotAcc = 0; }
+    $('rotAngle').textContent = Math.round(cur.st.rot.angle)+'\u00B0';
+    draw();
+  }
 }
 requestAnimationFrame(tick);
 function setPlaying(p){
@@ -472,6 +547,7 @@ function syncPanel(){
   P('p_mx').value=f.melee.x; P('p_my').value=f.melee.y; P('p_mw').value=f.melee.w; P('p_mh').value=f.melee.h;
   P('p_kx').value=st.collision.x; P('p_ky').value=st.collision.y; P('p_kw').value=st.collision.w; P('p_kh').value=st.collision.h;
   if (st.pivot){ P('p_px').value=st.pivot.x; P('p_py').value=st.pivot.y; }
+  if (st.rot){ P('p_rangle').textContent=Math.round(st.rot.angle); P('p_rspeed').value=st.rot.speed; $('rotSpeedVal').textContent=st.rot.speed+'\u00B0/s'; $('rotAngle').textContent=Math.round(st.rot.angle)+'\u00B0'; $('rotIco').innerHTML=st.rot.playing?'&#10074;&#10074;':'&#9654;'; }
   setPlaying(st.playing);
   syncToggles();   // keep MELEE ON button in sync with current frame
 }
@@ -491,6 +567,7 @@ bindNum('p_kw', v=>cur.st.collision.w=Math.max(1,v));
 bindNum('p_kh', v=>cur.st.collision.h=Math.max(1,v));
 bindNum('p_px', v=>{ if(cur.st.pivot) cur.st.pivot.x=v; });
 bindNum('p_py', v=>{ if(cur.st.pivot) cur.st.pivot.y=v; });
+bindNum('p_rspeed', v=>{ if(cur.st.rot) setRotSpeed(v); });
 P('p_mon').addEventListener('change', ()=>{
   if(!cur||!cur.st) return;
   pushUndo();
@@ -589,6 +666,7 @@ function resetAnimation(){
   const { col, mee } = defaultBoxes(W, H);
   st.collision = { ...col };
   st.pivot = { x: Math.round(col.x + col.w/2), y: Math.round(col.y + col.h/2) };
+  st.rot = { angle: 0, speed: 30, playing: false };
   for (let i=0;i<st.frames.length;i++){
     const f = st.frames[i];
     const im = cur.imgs[i];
@@ -607,6 +685,83 @@ $('faster').addEventListener('click', ()=>{ if(cur&&cur.st) setSpeed(cur.st.spee
 // ---------- zoom controls ----------
 $('zoomIn').addEventListener('click',  ()=>setZoom(zoom*1.25));
 $('zoomOut').addEventListener('click', ()=>setZoom(zoom/1.25));
+// ---------- rotation controls ----------
+let rotHold = null;        // {dir:1|-1, vel:0, t:0} while holding ◀/▶
+let lastRotVel = 0;        // coasting velocity after release
+let lastRotDir = 1;        // coasting direction
+const ROT_MAX_VEL = 180;   // deg/s at full hold
+const ROT_ACCEL = 400;     // deg/s² while held
+const ROT_DECEL = 300;     // deg/s² after release (coast to stop)
+const ROT_TAP_MS = 200;    // hold longer than this = continuous, shorter = tap step
+function setRotPlaying(p){
+  if (!cur || !cur.st) return;
+  cur.st.rot.playing = !!p;
+  $('rotIco').innerHTML = cur.st.rot.playing ? '&#10074;&#10074;' : '&#9654;';
+}
+function stepRot(deg){
+  if (!cur || !cur.st) return;
+  pushUndo();
+  cur.st.rot.angle = ((cur.st.rot.angle + deg) % 360 + 360) % 360;
+  $('rotAngle').textContent = Math.round(cur.st.rot.angle)+'\u00B0';
+  draw();
+}
+function setRotSpeed(v){
+  if (!cur || !cur.st) return;
+  cur.st.rot.speed = Math.max(1, Math.min(360, v|0));
+  $('rotSpeedVal').textContent = cur.st.rot.speed+'\u00B0/s';
+}
+$('rotPlay').addEventListener('click', ()=>{ if(cur&&cur.st) setRotPlaying(!cur.st.rot.playing); });
+// hold-to-rotate: tap (<200ms) = 15° step, hold = continuous spin with accel/decel
+function startRotHold(dir){
+  if (!cur || !cur.st) return;
+  rotHold = { dir, vel: 0, t: 0 };
+}
+function stopRotHold(){
+  if (!rotHold) return;
+  const held = rotHold.t * 1000;   // ms held
+  const dir = rotHold.dir;
+  const vel = rotHold.vel;
+  rotHold = null;
+  if (held < ROT_TAP_MS && vel < 20){
+    // was a tap: snap to a clean 15° step instead of coasting
+    stepRot(dir * 15);
+  } else {
+    // was a hold: coast to a stop
+    lastRotVel = vel;
+    lastRotDir = dir;
+  }
+}
+$('rotPrev').addEventListener('pointerdown', e=>{ e.preventDefault(); startRotHold(-1); });
+$('rotNext').addEventListener('pointerdown', e=>{ e.preventDefault(); startRotHold(1); });
+window.addEventListener('pointerup', stopRotHold);
+window.addEventListener('pointercancel', stopRotHold);
+// auto-repeat helper: tap = one step, hold = repeat every `ms` after initial delay
+function autoRepeat(btn, fn, ms=120, delay=350){
+  let timer=null, iv=null;
+  btn.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    fn();
+    timer = setTimeout(()=>{ iv = setInterval(fn, ms); }, delay);
+  });
+  const stop = ()=>{ clearTimeout(timer); clearInterval(iv); timer=iv=null; };
+  btn.addEventListener('pointerup', stop);
+  btn.addEventListener('pointerleave', stop);
+  btn.addEventListener('pointercancel', stop);
+}
+autoRepeat($('rotSlower'), ()=>{ if(cur&&cur.st) setRotSpeed(cur.st.rot.speed-5); });
+autoRepeat($('rotFaster'), ()=>{ if(cur&&cur.st) setRotSpeed(cur.st.rot.speed+5); });
+// click canvas → if rotation is active (spinning or at non-zero angle), pause + reset to 0°
+cv.addEventListener('pointerdown', e=>{
+  if (cur && cur.st && cur.st.rot && (cur.st.rot.playing || Math.abs(cur.st.rot.angle) > 0.5)){
+    cur.st.rot.playing = false;
+    cur.st.rot.angle = 0;
+    lastRotVel = 0;   // kill any coasting
+    rotHold = null;   // cancel any hold
+    $('rotIco').innerHTML = '&#9654;';
+    $('rotAngle').textContent = '0\u00B0';
+    draw();
+  }
+}, true);   // capture phase: runs before the main pointerdown handler
 cv.addEventListener('wheel', e=>{
   e.preventDefault();
   const [cx, cy] = evPos(e);
