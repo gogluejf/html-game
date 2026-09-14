@@ -577,7 +577,6 @@ const BOX = {
     move(d, sx, sy){ const f=cur.st.frames[curFrameIdx()]; f.offset.x=Math.round(sx-d.ox); f.offset.y=Math.round(sy-d.oy); },
     resize(d, sx, sy){
       const f=cur.st.frames[curFrameIdx()], o=d.orig, ow=d.ow, oh=d.oh;
-      const cx=o.x+o.w/2, cy=o.y+o.h/2;
       if (d.ratio){
         // SHIFT: LOCK THE CURRENT RATIO. Corners scale BOTH axes uniformly about
         // the box center (a 2:1 stays 2:1). Middle handles (n/s/e/w) scale ONLY
@@ -585,21 +584,25 @@ const BOX = {
         // so it's an absolute mapping from cursor position (no compounding).
         const f0=d.sx0, g0=d.sy0;   // scales captured ONCE at drag start
         const corner=d.anchor.length===2;
+        // Relative to the GRAB POINT (cursor at pointerdown), not the box center:
+        // k starts at 1 so there's no jump on click; scale only changes as you drag.
+        const gx=d.gx, gy=d.gy;     // grab point in sprite space
         if (corner){
-          let nw, nh;              // desired full width/height in natural units
-          if (d.anchor.includes('e')) nw=2*(sx-cx)/ow; else if (d.anchor.includes('w')) nw=2*(cx-sx)/ow;
-          if (d.anchor.includes('s')) nh=2*(sy-cy)/oh; else if (d.anchor.includes('n')) nh=2*(cy-sy)/oh;
-          const k=Math.max(Math.abs(nw||1),Math.abs(nh||1));
+          let dx, dy;               // signed distance from grab point along each axis
+          if (d.anchor.includes('e')) dx=sx-gx; else if (d.anchor.includes('w')) dx=gx-sx;
+          if (d.anchor.includes('s')) dy=sy-gy; else if (d.anchor.includes('n')) dy=gy-sy;
+          // convert pixel deltas to a scale factor about the (fixed) center
+          const k=Math.max(Math.abs(1+2*dx/o.w),Math.abs(1+2*dy/o.h));
           f.scale.sx=Math.max(.05,f0*k);
           f.scale.sy=Math.max(.05,g0*k);
         } else if (d.anchor.includes('e')||d.anchor.includes('w')){
           // horizontal middle: scale X both sides about center, Y untouched
-          const nw=(d.anchor.includes('e'))?2*(sx-cx)/ow:2*(cx-sx)/ow;
-          f.scale.sx=Math.max(.05,f0*Math.abs(nw||1));
+          const dx=(d.anchor.includes('e'))?sx-gx:gx-sx;
+          f.scale.sx=Math.max(.05,f0*Math.abs(1+2*dx/o.w));
         } else {
           // vertical middle: scale Y both sides about center, X untouched
-          const nh=(d.anchor.includes('s'))?2*(sy-cy)/oh:2*(cy-sy)/oh;
-          f.scale.sy=Math.max(.05,g0*Math.abs(nh||1));
+          const dy=(d.anchor.includes('s'))?sy-gy:gy-sy;
+          f.scale.sy=Math.max(.05,g0*Math.abs(1+2*dy/o.h));
         }
       } else {
         let L=o.x,R=o.x+o.w,T=o.y,B=o.y+o.h;
@@ -644,6 +647,7 @@ cv.addEventListener('pointerdown', e=>{
              box:ref, ox:sx-(orig.x+orig.w/2), oy:sy-(orig.y+orig.h/2),
              ow: cur.imgs[fi]?cur.imgs[fi].naturalWidth:orig.w,
              oh: cur.imgs[fi]?cur.imgs[fi].naturalHeight:orig.h,
+             gx:sx, gy:sy,                                                // grab point (sprite space) for ratio-resize
              sx0: st.frames[fi].scale.sx, sy0: st.frames[fi].scale.sy };   // frozen start scales (sprite ratio-resize)
     draw(); return;
   }
