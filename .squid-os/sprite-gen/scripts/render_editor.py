@@ -29,7 +29,7 @@ def build_manifest(state):
                 frames = [f"../../{fd['path']}/{f}" for f in e["frames"]]
                 # per-frame crop coords [x,y,w,h] from the source sheet (or null)
                 crops = [bbox.get(f) for f in e["frames"]]
-                ents.append({"name": name, "frames": frames, "crops": crops})
+                ents.append({"name": name, "char": e.get("name",""), "anim": e.get("anim",""), "frames": frames, "crops": crops})
         if ents:
             labels.append({"name": folder, "entities": ents})
     return {"labels": labels}

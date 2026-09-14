@@ -22,6 +22,10 @@
   .ent.on{background:rgba(255,226,62,.12);color:#fff;}
   .ent .cnt{color:var(--faint);font-size:12px;white-space:nowrap;}
   .ent.on .cnt{color:var(--yel);}
+  /* character sub-group header */
+  .char{font-size:13px;color:var(--acc);margin:8px 0 2px;padding-left:4px;letter-spacing:.5px;}
+  /* animation row (indented under character) */
+  .ent.anim{padding-left:18px;font-size:13px;}
   /* ---------- middle ---------- */
   #mid{flex:1;display:flex;flex-direction:column;min-width:0;}
   #toolbar{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap;background:var(--bg2);}
@@ -314,18 +318,34 @@ let hover = null;        // {box:'collision'|'melee'|'scale', handle:id} or {box
 let boxZOrder = ['sprite','collision','melee'];   // front-to-back; last-touched moves to front
 let lastT = 0, acc = 0;
 // ---------- sidebar ----------
+// ---------- sidebar: class -> character (alpha) -> animations ----------
 MANIFEST.labels.forEach((lbl, li) => {
   const hd = document.createElement('div'); hd.className='label'; hd.textContent = lbl.name.toUpperCase();
   tree.appendChild(hd);
+  // group this class's entities by character (use clean char/anim from manifest)
+  const chars = new Map();   // charName -> [{anim, ei}]
   lbl.entities.forEach((en, ei) => {
-    const row = document.createElement('div'); row.className='ent';
-    row.innerHTML = `<span>${en.name}</span><span class="cnt">${en.frames.length}f</span>`;
-    row.addEventListener('click', () => selectEntity(li, ei));
-    en._el = row;
-    tree.appendChild(row);
-    flatList.push({li, ei});
-    entityPos.set(en.name, {li, ei});
+    const charName = en.char || en.name;
+    const anim = en.anim || '';
+    if (!chars.has(charName)) chars.set(charName, []);
+    chars.get(charName).push({ anim, ei });
   });
+  // sort characters A-Z
+  for (const cn of [...chars.keys()].sort((a,b)=>a.localeCompare(b))){
+    const chEl = document.createElement('div'); chEl.className='char'; chEl.textContent = cn;
+    tree.appendChild(chEl);
+    // sort that character's anims A-Z
+    for (const a of chars.get(cn).sort((x,y)=>x.anim.localeCompare(y.anim))){
+      const en = lbl.entities[a.ei];
+      const row = document.createElement('div'); row.className='ent anim';
+      row.innerHTML = `<span>${a.anim}</span><span class="cnt">${en.frames.length}f</span>`;
+      row.addEventListener('click', () => selectEntity(li, a.ei));
+      en._el = row;
+      tree.appendChild(row);
+      flatList.push({li, ei:a.ei});
+      entityPos.set(en.name, {li, ei:a.ei});
+    }
+  }
 });
 function loadFrames(paths){
   return Promise.all(paths.map(p => new Promise(res => {
