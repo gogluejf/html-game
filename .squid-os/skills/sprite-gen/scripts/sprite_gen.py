@@ -332,6 +332,7 @@ def cmd_state(args):
         if missing:
             print(f"ERROR: missing required fields: {missing}", file=sys.stderr)
             print(f"  Usage: --add-sheet name=X file=X size=WxH rows=N cols=N cell=N description=\"...\" entities='[{{\"row\":1,\"name\":\"X\",\"anim\":\"...\"}},...]'", file=sys.stderr)
+            print(f"  Note: 'row' may be an int (single row) or an array of ints (one animation spanning multiple grid rows, e.g. \"row\":[1,2]).", file=sys.stderr)
             sys.exit(1)
 
         sheet = {}
@@ -350,6 +351,12 @@ def cmd_state(args):
             for i, e in enumerate(entities):
                 if not isinstance(e, dict) or "row" not in e or "name" not in e or "anim" not in e:
                     print(f"ERROR: entities[{i}] must have 'row', 'name', 'anim' keys", file=sys.stderr)
+                    sys.exit(1)
+                # 'row' may be a single int OR an array of ints (one animation
+                # spanning multiple grid rows, e.g. a long anim laid out 2xN).
+                r = e["row"]
+                if not (isinstance(r, int) or (isinstance(r, list) and all(isinstance(x, int) for x in r))):
+                    print(f"ERROR: entities[{i}].row must be an int or an array of ints", file=sys.stderr)
                     sys.exit(1)
             sheet["entities"] = entities
         except json.JSONDecodeError as je:

@@ -38,7 +38,9 @@ Build a structured prompt with these sections (adapt to user's request):
 ```
 Generate a sprite sheet of [N] [entity type] sprites for [game description], continuing the exact same [style] as the [prior sheets] above.
 
-LAYOUT: [R] rows x [C] columns on a solid uniform pink background (rgb 255,182,193). Each row is one unique [entity]; the [C] columns are its [C] animation frames shown left-to-right. All cells exactly the same size ([CELL]x[CELL] px), evenly spaced, separated by thin light-pink grid lines (rgb 255,210,220, 2px wide). No text, no labels, no dark borders between cells. Image [W] wide x [H] tall.
+LAYOUT: [R] rows x [C] columns on a FULLY TRANSPARENT background (alpha channel, no color fill, no gradient, no vignette). Each row is one unique [entity]; the [C] columns are its [C] animation frames shown left-to-right. All cells exactly the same size ([CELL]x[CELL] px), evenly spaced. No text, no labels, no numbers, no grid lines, no borders between cells. Image [W] wide x [H] tall.
+
+CONTAINMENT: each sprite fits COMPLETELY inside its own cell. Any extending element (projectile, extended arm/fist, weapon, cape, smoke, particles, effects, motion trails, hair) stays within that frame's OWN cell — if a pose would extend past the box, compress the reach so it fits. Nothing clipped at a cell edge; small even margin around each sprite. All sprites the same scale relative to their cells, vertically aligned (same ground/anchor line per row).
 
 STYLE: [detailed style description - see Style Template below].
 
@@ -52,9 +54,11 @@ Frames within each row must be clearly distinct but smoothly sequential (loopabl
 
 **Key prompt rules:**
 - ALWAYS specify exact pixel dimensions for the full image AND per-cell size.
-- ALWAYS say "solid pure black background" — makes cropping trivial (threshold on black).
-- ALWAYS say "no text, no labels, no borders".
+- ALWAYS say "fully transparent background (alpha channel), no color fill, no gradient" — GPT can output real alpha PNGs; verify corner alpha = 0 after download. If it returns a painted/gradient backdrop instead, re-prompt with "background must be 100% transparent PNG, zero painted backdrop".
+- ALWAYS say "no text, no labels, no numbers, no grid lines, no borders".
+- ALWAYS include the CONTAINMENT rule: every sprite fits fully inside its own cell; extended elements (projectiles, arms/fists, capes, effects, particles) stay within that frame's own cell; nothing clipped at edges.
 - ALWAYS describe each frame distinctly (e.g. "wings up -> mid -> down -> mid") so GPT doesn't make identical frames.
+- **Pose-fits-cell (upfront):** When describing each row's frames, choose poses that PHYSICALLY fit one cell — avoid "fully extended limb past the box." For a throw/punch, pull the reach back or keep the projectile inside the frame's own cell. This prevents overflow into neighbors before generation, not as an afterthought.
 - For the FIRST sprite in a session, include a full style description. For subsequent ones, say "continuing the exact same style as the [prior] sheets above" — this keeps consistency.
 - Cell size guidelines: enemies/power-ups/player = 256x256px per cell; bosses = 512x512px per cell (bigger detail); backgrounds = single image (no grid).
 
@@ -245,14 +249,14 @@ Field meanings:
 - **Verify before sending:** Always confirm the prompt text is actually in the input box before clicking send. Check with JS innerText read.
 - **Verify after download:** Always @tool:inspect_media the downloaded PNG file itself (not a screenshot) before recording it in state. If quality is bad, regenerate in the same chat.
 - **State is pure art data:** The state file tracks ONLY generated visual assets (file, size, rows, cols, cell, description, entities, original_prompt). NEVER store game design values (points, wave, hp, weight, effect, score) — those belong in game code.
-- **Black background mandatory:** Every sprite sheet prompt MUST specify "solid pure black background" for easy cropping.
+- **Transparent background mandatory:** Every sprite sheet prompt MUST specify "fully transparent background (alpha channel), no color fill, no gradient". After download, verify corner alpha = 0 with PIL. If GPT paints a backdrop instead, re-prompt in the same chat demanding true transparency.
 - **Distinct frames mandatory:** Every prompt MUST explicitly describe each animation frame differently. If GPT returns identical frames, regenerate with stronger frame differentiation language.
 - **No hardcoded credentials:** Read CDP websocket URL from `~/.config/squid-os/browser-use.json` at runtime.
 - **Poll patiently:** Image generation takes 30-90s. Poll every 5s, max 24 iterations (2 min). Don't give up early.
 - **Download via page fetch:** Always use in-page `fetch()` with `credentials:'include'` to download images — direct curl won't have auth cookies.
 - **Save to assets dir:** All generated sheets go to `<assets-dir>` = `<working-dir>/<PROJECT>/assets/` (create it if missing, persist as `assets_dir` in state). Descriptive names: `enemies_sheet.png`, `bosses_sheet.png`, `powerups_sheet.png`, `player_sheet.png`, `background.png`. Cropped frames are saved by the sprite-crop skill under `<assets-dir>/<label>/`.
 - **Open for user:** After saving, always `open` the file so the user can see it full-size immediately.
-- **Style template for first prompt:** When starting a fresh project (no prior sprites), include this style block: "crisp 16-bit neo-arcade pixel art, [theme] neon colors ([list colors]) glowing against dark abyss-black. Sharp hard edges, NO anti-aliasing, NO gradients, flat shading with one highlight + one shadow step, high contrast, symmetrical, front-facing, no perspective. Consistent style across every sprite. Glowing accent cores/eyes. 1px dark rim outline."
+- **Style template for first prompt:** When starting a fresh project (no prior sprites), include a style block describing ONLY the art look — never the background (background is always requested as transparent separately). Generic base: "crisp high-detail hand-drawn sprite art, [theme] color palette ([list colors]). Sharp clean edges, consistent flat shading with one highlight + one shadow step, high contrast, symmetrical, front-facing, no perspective. Consistent style across every sprite. Glowing accent cores/eyes where fitting. 1px dark rim outline." Adapt the theme/palette to the project; keep the background instruction out of this block.
 - **Subsequent prompts:** Say "continuing the exact same [style] as the [prior entity] sheets above" — do NOT repeat the full style description. This keeps GPT anchored to the established look.
 
 ## Output Format
@@ -272,7 +276,7 @@ Field meanings:
 ## Examples
 **Example 1: Generate enemy sprites (first in session)**
 
-User: "Make me 4 aquatic enemies for my galaga game, pixel art style, neon colors on black"
+User: "Make me 4 aquatic enemies for my galaga game, pixel art style, neon colors"
 
 Skill actions:
 1. Bootstrap browser-use, verify ChatGPT login
@@ -310,4 +314,6 @@ Skill actions:
 - [sprite_gen.py](scripts/sprite_gen.py) — Deterministic CLI: send/wait/download/screenshot/state management via CDP.
 
 ### References
-- [prompt-templates.md](references/prompt-templates.md) — Additional documentation
+- [prompt-templates.md](references/prompt-templates.md) — Generic building-block templates (background rule, style block, layout, containment, frame patterns).
+- [regen.md](references/regen.md) — Fixed prompt for regenerating an existing bad sheet (labels/overflow/alignment), size-agnostic.
+- **Project-specific templates:** one file per project in this folder (e.g. `abyss-qwen.md`) that pins that project's style anchor + palette and reuses the generic layout/containment rules. Prefer the project template over the generic one when generating for that project. Add a new `<project>.md` here whenever you start a new project's sprites.
