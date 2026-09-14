@@ -416,24 +416,49 @@ function defaultBoxes(w, h){
   const mee = { on:false, x:col.x+cw+MEELE_GAP, y:col.y, w:mw, h:mh };
   return { col, mee };
 }
+// ---------- single source of truth for "initial layout at an anchor" ----------
+// Positions every frame + collision/pivot/melee relative to frame 1. Used by
+// initial load, Reset Animation, and the Position buttons so they never drift.
+//   mode 'leftbottom' -> each frame's left edge on X axis & bottom on Y axis
+//                        (per-frame dims, so all frames align on their corner)
+//   mode 'center'     -> each frame centered on the X/Y origin
+function layoutAt(st, imgs, W, H, mode){
+  const { col, mee } = defaultBoxes(W, H);
+  // shift the initial (origin-anchored) boxes so frame 1 lands on the target
+  const dOx = mode==='center' ? -Math.round(W/2) : 0;
+  const dOy = mode==='center' ?  Math.round(H/2) : 0;
+  st.collision = { x: col.x + dOx, y: col.y + dOy, w: col.w, h: col.h };
+  st.pivot = { x: Math.round(st.collision.x + st.collision.w/2), y: Math.round(st.collision.y + st.collision.h/2) };
+  for (let i=0;i<st.frames.length;i++){
+    const f = st.frames[i], im = imgs[i];
+    const fw = im ? im.naturalWidth : W, fh = im ? im.naturalHeight : H;
+    f.scale.sx = 1; f.scale.sy = 1;
+    if (mode==='center'){
+      f.offset.x = 0; f.offset.y = 0;                       // center this frame on origin
+    } else {
+      f.offset.x = Math.round(fw/2); f.offset.y = -Math.round(fh/2);  // left-bottom by own size
+    }
+    f.melee.on = false;
+    f.melee.x = mee.x + dOx; f.melee.y = mee.y + dOy; f.melee.w = mee.w; f.melee.h = mee.h;
+  }
+}
 function defaultState(name, imgs, paths, crops){
   const good = imgs.filter(Boolean);
   const f1 = good[0];
   const W = f1 ? f1.naturalWidth : 1, H = f1 ? f1.naturalHeight : 1;
-  const { col, mee } = defaultBoxes(W, H);
-  return {
+  const st = {
     key: name, speed: 8, playing: true, frameIdx: 0,
-    collision: { ...col },
-    pivot: { x: Math.round(col.x + col.w/2), y: Math.round(col.y + col.h/2) },
+    collision: null, pivot: null,
     rot: { angle: 0, speed: 30, playing: false },   // degrees, deg/s, independent of frame anim
     frames: paths.map((p, i) => ({
       idx: i, name: p.split('/').pop(),
       crop: (() => { const c = (crops&&crops[i])||null; return c ? {x:c[0],y:c[1],w:c[2],h:c[3]} : {x:0,y:0,w:good[i]?good[i].naturalWidth:0,h:good[i]?good[i].naturalHeight:0}; })(),
-      offset: { x:Math.round((good[i]?good[i].naturalWidth:W)/2), y:-Math.round((good[i]?good[i].naturalHeight:H)/2) },
-      scale: { sx:1, sy:1 },
-      melee: { ...mee }
+      offset: { x:0, y:0 }, scale: { sx:1, sy:1 }, melee: { on:false, x:0, y:0, w:0, h:0 }
     }))
   };
+  // initial load = left-bottom anchor (each frame's left/bottom on the axes)
+  layoutAt(st, imgs, W, H, 'leftbottom');
+  return st;
 }
 async function selectEntity(li, ei, opts){
   opts = opts || {};
@@ -910,21 +935,10 @@ function frame1Dims(){
 function applyPosition(mode){
   if (!cur || !cur.st || editingLocked()) return;
   pushUndo();
+  const st = cur.st;
   const { W, H } = frame1Dims();
-  // left edge on X axis (x=0) & bottom on Y axis (y=0)  ->  center at (W/2, -H/2)
-  // centered on origin                                  ->  center at (0, 0)
-  const ox = mode==='origin' ? Math.round(W/2) : 0;
-  const oy = mode==='origin' ? -Math.round(H/2) : 0;
-  const frames = cur.st.frames;
-  const dOx = ox - frames[0].offset.x;   // how far frame 1 moves
-  const dOy = oy - frames[0].offset.y;
-  for (const f of frames){
-    f.offset.x += dOx; f.offset.y += dOy;          // slide all frames together
-    if (f.melee){ f.melee.x += dOx; f.melee.y += dOy; }   // melee follows its frame
-  }
-  // collision + pivot live in sprite-space anchored to frame 1 -> slide them too
-  cur.st.collision.x += dOx; cur.st.collision.y += dOy;
-  if (cur.st.pivot){ cur.st.pivot.x += dOx; cur.st.pivot.y += dOy; }
+  // CENTER -> centered on origin; LEFT-BOTTOM -> each frame's left/bottom on axes
+  layoutAt(st, cur.imgs, W, H, mode==='origin' ? 'leftbottom' : 'center');
   syncPanel(); draw();
 }
 $('posOriginBtn').addEventListener('click', ()=>applyPosition('origin'));
@@ -967,19 +981,8 @@ function resetAnimation(){
   const good = cur.imgs.filter(Boolean);
   const f1 = good[0];
   const W = f1 ? f1.naturalWidth : 1, H = f1 ? f1.naturalHeight : 1;
-  const { col, mee } = defaultBoxes(W, H);
-  st.collision = { ...col };
-  st.pivot = { x: Math.round(col.x + col.w/2), y: Math.round(col.y + col.h/2) };
   st.rot = { angle: 0, speed: 30, playing: false };
-  for (let i=0;i<st.frames.length;i++){
-    const f = st.frames[i];
-    const im = cur.imgs[i];
-    f.scale.sx = 1; f.scale.sy = 1;
-    if (im){ f.offset.x = Math.round(im.naturalWidth/2); f.offset.y = -Math.round(im.naturalHeight/2); }
-    else { f.offset.x = 0; f.offset.y = 0; }
-    f.melee.on = false;
-    f.melee.x = mee.x; f.melee.y = mee.y; f.melee.w = mee.w; f.melee.h = mee.h;
-  }
+  layoutAt(st, cur.imgs, W, H, 'leftbottom');   // same as initial load
 }
 $('playBtn').addEventListener('click', ()=>{ if(cur&&cur.st) setPlaying(!cur.st.playing); });
 $('prevF').addEventListener('click', ()=>stepFrame(-1));
