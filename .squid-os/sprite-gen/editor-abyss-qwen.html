@@ -233,7 +233,7 @@
         <button id="rotNext" title="rotate +15&#176;">&#8635;</button>
         <div id="rotSpeedBox">
           <button id="rotSlower" title="slower rot speed">&#8722;</button>
-          <div id="rotSpeedVal">30&#176;/s</div>
+          <div id="rotSpeedVal">360&#176;/s</div>
           <button id="rotFaster" title="faster rot speed">&#43;</button>
         </div>
         <div id="rotAngle">0&#176;</div>
@@ -549,7 +549,7 @@ function defaultState(name, imgs, paths, crops){
   const st = {
     key: name, speed: 8, playing: true, frameIdx: 0,
     collision: null, pivot: null,
-    rot: { angle: 0, speed: 30, playing: false },   // degrees, deg/s, independent of frame anim
+    rot: { angle: 0, speed: 360, playing: false },   // degrees, deg/s, independent of frame anim
     frames: paths.map((p, i) => ({
       idx: i, name: p.split('/').pop(),
       crop: (() => { const c = (crops&&crops[i])||null; return c ? {x:c[0],y:c[1],w:c[2],h:c[3]} : {x:0,y:0,w:good[i]?good[i].naturalWidth:0,h:good[i]?good[i].naturalHeight:0}; })(),
@@ -1315,7 +1315,7 @@ function resetAnimation(){
   const good = cur.imgs.filter(Boolean);
   const f1 = good[0];
   const W = f1 ? f1.naturalWidth : 1, H = f1 ? f1.naturalHeight : 1;
-  st.rot = { angle: 0, speed: 30, playing: false };
+  st.rot = { angle: 0, speed: 360, playing: false };
   layoutAt(st, cur.imgs, W, H, 'leftbottom');   // same as initial load
 }
 $('playBtn').addEventListener('click', ()=>{ if(cur&&cur.st) setPlaying(!cur.st.playing); });
