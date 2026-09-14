@@ -447,8 +447,12 @@ function updateHover(sx, sy){
   }
   const changed = JSON.stringify(prev) !== JSON.stringify(hover);
   if (changed) draw();
-  // cursor feedback
-  if (hover && hover.handle) cv.style.cursor = (hover.handle.length===2) ? 'nwse-resize' : 'ns-resize';
+  // cursor feedback: per-handle resize arrows
+  if (hover && hover.handle){
+    const cur = { nw:'nwse-resize', se:'nwse-resize', ne:'nesw-resize', sw:'nesw-resize',
+                  n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize' }[hover.handle];
+    cv.style.cursor = cur || 'default';
+  }
   else if (hover && hover.body) cv.style.cursor = 'move';
   else cv.style.cursor = 'default';
 }
