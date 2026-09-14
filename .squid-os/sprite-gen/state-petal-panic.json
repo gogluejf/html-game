@@ -3129,7 +3129,7 @@
        "name": "barrel",
        "anim": "idle",
        "frames": [
-        "barrel.png"
+        "barrel_f1.png"
        ]
       }
      ],
@@ -3161,7 +3161,7 @@
        "name": "barrel_bomb",
        "anim": "idle",
        "frames": [
-        "barrel_bomb.png"
+        "barrel_bomb_f1.png"
        ]
       }
      ],
@@ -3193,7 +3193,7 @@
        "name": "barrel_coin",
        "anim": "idle",
        "frames": [
-        "barrel_coin.png"
+        "barrel_coin_f1.png"
        ]
       }
      ],
@@ -3225,7 +3225,7 @@
        "name": "checkpoint",
        "anim": "idle",
        "frames": [
-        "checkpoint.png"
+        "checkpoint_f1.png"
        ]
       }
      ],
@@ -3244,6 +3244,25 @@
        ]
       ],
       "frame_size": "332x525"
+     }
+    },
+    {
+     "file": "panic-petal/assets/checkpoint_boss_sheet.png",
+     "size": "413x440",
+     "rows": 1,
+     "cols": 1,
+     "cell": 413,
+     "description": "Checkpoint boss target drum (single image)",
+     "entities": [
+      {
+       "row": 1,
+       "name": "checkpoint_boss",
+       "anim": "idle"
+      }
+     ],
+     "crop": {
+      "frame_size": "413x440",
+      "frames_dir": "panic-petal/assets/objects"
      }
     }
    ]
@@ -3882,5 +3901,5 @@
    ]
   }
  },
- "updated": "2026-09-13T17:45:00"
+ "updated": "2026-09-14T01:10:28"
 }
