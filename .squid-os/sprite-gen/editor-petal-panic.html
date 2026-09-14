@@ -33,6 +33,8 @@
   .tbtn.armed{border-color:var(--acc);color:var(--acc);background:rgba(62,240,255,.12);}
   .tbtn.tog.on{border-color:var(--yel);color:var(--yel);background:rgba(255,226,62,.08);}
   .tbtn.tog.on svg{stroke:var(--yel);}
+  .tbtn:disabled{opacity:.3;cursor:not-allowed;border-color:var(--line);color:var(--faint);background:var(--panel);}
+  .tbtn:disabled:hover{border-color:var(--line);color:var(--faint);}
   /* ---------- stage ---------- */
   #stage{flex:1;position:relative;overflow:hidden;background:#0a0c14;}
   canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;}
@@ -88,6 +90,12 @@
         <button class="tbtn tog on" id="tglAxes" title="show/hide axes crosshair">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>AXES</button>
       </div>
+      <div class="tgroup" style="margin-left:auto">
+        <button class="tbtn" id="undoBtn" title="undo last transformation (ctrl+Z)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7L4 12l5 5"/><path d="M4 12h11a5 5 0 0 1 0 10h-1"/></svg></button>
+        <button class="tbtn" id="redoBtn" title="redo (ctrl+Y / ctrl+shift+Z)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 7l5 5-5 5"/><path d="M20 12H9a5 5 0 0 0 0 10h1"/></svg></button>
+      </div>
     </div>
     <div id="stage"><canvas id="cv"></canvas></div>
     <div id="transport">
@@ -112,7 +120,8 @@
     </div>
     <div id="hint">
       space play/pause &middot; &#8592;/&#8594; prev/next frame &middot; &#8593;/&#8595; prev/next sprite &middot; shift+arrow offset &#177;1 &middot; ctrl+arrow offset &#177;10<br>
-      zoom: mouse wheel / ctrl&#8722; / ctrl+ / bottom buttons &middot; hover a visible box: drag inside to move it &middot; corner handle resizes &middot; shift+corner scales both axes
+      zoom: mouse wheel / ctrl&#8722; / ctrl+ / bottom buttons &middot; hover a visible box: drag inside to move it &middot; corner handle resizes &middot; shift+corner scales both axes<br>
+      undo/redo: top-right arrows or ctrl+Z / ctrl+Y (global — jumps back to the exact animation + frame you edited)
     </div>
   </div>
   <div id="panel">
@@ -153,8 +162,43 @@ dbg.id = 'dbg';
 dbg.style.cssText = 'display:none;position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:99;background:#000;color:#0f0;font:12px monospace;padding:4px 10px;border:1px solid #0f0;border-radius:6px;pointer-events:none;';
 document.body.appendChild(dbg);
 let flatList = [], flatIdx = -1;
+const entityPos = new Map();   // entity name -> {li, ei} (for cross-animation undo)
 let cur = null;          // {name, paths, imgs, st}
 const S = new Map();     // per-entity editor state (preserved across switches)
+// ---------- undo / redo (global: crosses frames AND animations) ----------
+let undoStack = [], redoStack = [];
+function snap(){ return { name: cur.name, st: JSON.stringify(cur.st), fi: cur.st.frameIdx }; }
+function pushUndo(){
+  if (!cur || !cur.st) return;
+  undoStack.push(snap());
+  if (undoStack.length > 100) undoStack.shift();
+  redoStack.length = 0;
+  syncUndoButtons();
+}
+async function restore(entry){
+  // jump back to the exact animation + frame this edit was made on
+  const pos = entityPos.get(entry.name);
+  if (pos && (!cur || cur.name !== entry.name)) await selectEntity(pos.li, pos.ei, { noRefine:true });
+  cur.st = JSON.parse(entry.st);
+  cur.st.frameIdx = entry.fi % cur.st.frames.length;
+  syncPanel(); draw();
+}
+function doUndo(){
+  if (!cur || !undoStack.length) return;
+  redoStack.push(snap());
+  restore(undoStack.pop()).then(syncUndoButtons);
+}
+function doRedo(){
+  if (!cur || !redoStack.length) return;
+  undoStack.push(snap());
+  restore(redoStack.pop()).then(syncUndoButtons);
+}
+function clearHistory(){ undoStack.length = 0; redoStack.length = 0; syncUndoButtons(); }
+function syncUndoButtons(){
+  const u = $('undoBtn'), r = $('redoBtn');
+  if (u) u.disabled = !undoStack.length;
+  if (r) r.disabled = !redoStack.length;
+}
 let show = { collision:true, meleeView:true, axes:true, spriteView:true };
 let drag = null;         // active pointer drag
 let hover = null;        // {box:'collision'|'melee'|'scale', handle:id} or {box, body:true}
@@ -170,6 +214,7 @@ MANIFEST.labels.forEach((lbl, li) => {
     en._el = row;
     tree.appendChild(row);
     flatList.push({li, ei});
+    entityPos.set(en.name, {li, ei});
   });
 });
 function loadFrames(paths){
@@ -228,7 +273,8 @@ async function refineDefaults(name, imgs, paths){
   for (const f of st.frames) if (!f.melee.on){ f.melee.x=st.collision.x; f.melee.y=st.collision.y; f.melee.w=medW; f.melee.h=medH; }
   if (cur && cur.name===name){ syncPanel(); draw(); }
 }
-async function selectEntity(li, ei){
+async function selectEntity(li, ei, opts){
+  opts = opts || {};
   const en = MANIFEST.labels[li].entities[ei];
   document.querySelectorAll('.ent').forEach(e=>e.classList.remove('on'));
   en._el.classList.add('on');
@@ -240,7 +286,7 @@ async function selectEntity(li, ei){
   acc = 0; drag = null; hover = null;
   panX = 0; panY = 0;
   resizeCanvas(); fitZoom(); syncPanel(); draw();
-  refineDefaults(cur.name, cur.imgs, cur.paths);
+  if (!opts.noRefine) refineDefaults(cur.name, cur.imgs, cur.paths);
 }
 // ---------- geometry: sprite space origin (0,0) at view center + pan, +y down ----------
 function fitZoom(){
@@ -419,7 +465,7 @@ function syncPanel(){
   P('p_kx').value=st.collision.x; P('p_ky').value=st.collision.y; P('p_kw').value=st.collision.w; P('p_kh').value=st.collision.h;
   setPlaying(st.playing);
 }
-function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=parseFloat(P(id).value); if(!isNaN(v)&&cur&&cur.st&&!editingLocked()){ fn(v); draw(); } else syncPanel(); }); }
+function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=parseFloat(P(id).value); if(!isNaN(v)&&cur&&cur.st&&!editingLocked()){ pushUndo(); fn(v); draw(); } else syncPanel(); }); }
 bindNum('p_speed', v=>setSpeed(v));
 bindNum('p_ox', v=>cur.st.frames[curFrameIdx()].offset.x=v);
 bindNum('p_oy', v=>cur.st.frames[curFrameIdx()].offset.y=v);
@@ -436,6 +482,7 @@ bindNum('p_kh', v=>cur.st.collision.h=Math.max(1,v));
 P('p_mon').addEventListener('change', ()=>{
   if(!cur||!cur.st) return;
   if (editingLocked()){ P('p_mon').checked = cur.st.frames[curFrameIdx()].melee.on; return; }
+  pushUndo();
   const f = cur.st.frames[curFrameIdx()];
   f.melee.on = P('p_mon').checked;
   if (f.melee.on && !Object.is(f.melee.x, null)) { /* keep existing */ }
@@ -468,6 +515,9 @@ cv.addEventListener('wheel', e=>{
 }, { passive:false });
 // keep canvas backing store in sync with its CSS size (full-bleed stage)
 new ResizeObserver(()=>{ resizeCanvas(); draw(); }).observe(cv);
+// ---------- undo / redo controls ----------
+$('undoBtn').addEventListener('click', doUndo);
+$('redoBtn').addEventListener('click', doRedo);
 // ---------- box resize math ----------
 function resizeBox(box, anchorId, sx, sy, orig, keepRatio){
   let x1=orig.x, y1=orig.y, x2=orig.x+orig.w, y2=orig.y+orig.h;
@@ -541,6 +591,7 @@ cv.addEventListener('pointerdown', e=>{
   // boxes are editable via hover when visible
   if (hover && hover.box==='sprite' && show.spriteView){
     const f = st.frames[fi];
+    pushUndo();   // snapshot pre-transformation state for undo
     if (hover.handle) drag = { kind:'sprite-resize', anchor:hover.handle, ratio:e.shiftKey,
       ow:cur.imgs[fi].naturalWidth, oh:cur.imgs[fi].naturalHeight,
       orig:{ x:f.offset.x - cur.imgs[fi].naturalWidth*f.scale.sx/2,
@@ -552,12 +603,14 @@ cv.addEventListener('pointerdown', e=>{
   }
   if (hover && hover.box==='collision' && show.collision){
     const r = st.collision;
+    pushUndo();
     if (hover.handle) drag = { kind:'resize', box:r, anchor:hover.handle, orig:{...r}, ratio:e.shiftKey };
     else drag = { kind:'move', box:r, ox:sx-r.x, oy:sy-r.y };
     draw(); return;
   }
   if (hover && hover.box==='melee' && meleeVisible()){
     const r = st.frames[fi].melee;
+    pushUndo();
     if (hover.handle) drag = { kind:'resize', box:r, anchor:hover.handle, orig:{...r}, ratio:e.shiftKey };
     else drag = { kind:'move', box:r, ox:sx-r.x, oy:sy-r.y };
     draw(); return;
@@ -659,20 +712,31 @@ window.addEventListener('blur', ()=>{ if (hover || drag){ hover = null; drag = n
 // ---------- keyboard ----------
 window.addEventListener('keydown', e=>{
   if (!cur || !cur.st) return;
+  // undo / redo (works even when a box is focused, but not while typing in inputs)
   const tag = (e.target.tagName||'').toLowerCase();
+  if ((e.ctrlKey||e.metaKey) && e.code==='KeyZ'){
+    e.preventDefault();
+    if (e.shiftKey) doRedo(); else doUndo();
+    return;
+  }
+  if ((e.ctrlKey||e.metaKey) && e.code==='KeyY'){
+    e.preventDefault();
+    doRedo();
+    return;
+  }
   if (tag==='input' || tag==='textarea') return;
   const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
   const off = e.ctrlKey ? 10 : 1;
   switch (e.code){
     case 'Space': e.preventDefault(); setPlaying(!st.playing); break;
-    case 'ArrowRight': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ f.offset.x+=off; syncPanel(); draw(); } else stepFrame(1); break;
-    case 'ArrowLeft': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ f.offset.x-=off; syncPanel(); draw(); } else stepFrame(-1); break;
+    case 'ArrowRight': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); f.offset.x+=off; syncPanel(); draw(); } else stepFrame(1); break;
+    case 'ArrowLeft': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); f.offset.x-=off; syncPanel(); draw(); } else stepFrame(-1); break;
     case 'ArrowUp': e.preventDefault();
-      if (e.shiftKey && !e.ctrlKey && !editingLocked()){ f.offset.y-=off; syncPanel(); draw(); }
+      if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); f.offset.y-=off; syncPanel(); draw(); }
       else if (flatIdx>0){ flatIdx--; const q=flatList[flatIdx]; selectEntity(q.li,q.ei); }
       break;
     case 'ArrowDown': e.preventDefault();
-      if (e.shiftKey && !e.ctrlKey && !editingLocked()){ f.offset.y+=off; syncPanel(); draw(); }
+      if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); f.offset.y+=off; syncPanel(); draw(); }
       else if (flatIdx<flatList.length-1){ flatIdx++; const q=flatList[flatIdx]; selectEntity(q.li,q.ei); }
       break;
     case 'Minus': case 'NumpadSubtract': e.preventDefault(); if (e.ctrlKey){ setZoom(zoom/1.25); } else setSpeed(st.speed-1); break;
