@@ -65,6 +65,7 @@
   #panel h2 .swatch{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px;}
   .row{display:flex;align-items:center;margin:7px 0;gap:10px;}
   .row > span{color:var(--dim);white-space:nowrap;font-size:13px;width:96px;flex:none;text-align:left;}
+  .row .sp{width:6px;flex:none;}   /* spacer: aligns single inputs with pair's X column (accounts for row gap) */
   .row input[type=number]{width:84px;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--txt);font-family:inherit;font-size:13px;padding:5px 20px 5px 8px;text-align:right;-moz-appearance:textfield;}
   .row input[type=number]::-webkit-inner-spin-button,.row input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   .row input[type=number]:focus{outline:none;border-color:var(--acc);}
@@ -79,7 +80,7 @@
   .numwrap .arr .dn{border-top:4px solid var(--faint);}
   .numwrap .arr span:hover{border-color:var(--acc);}
   .row input[type=checkbox]{accent-color:var(--acc);width:18px;height:18px;cursor:pointer;}
-  .ro{color:var(--faint);background:transparent;border:1px solid transparent;padding:5px 7px;text-align:right;font-family:inherit;font-size:13px;}
+  .ro{color:var(--faint);background:transparent;border:1px solid transparent;padding:5px 8px;text-align:right;font-family:inherit;font-size:13px;width:84px;box-sizing:border-box;flex:none;}
   .pair{display:flex;gap:14px;flex:none;}
   .pair .cell{display:flex;align-items:center;gap:6px;}
   .pair .cell b{color:var(--faint);font-weight:normal;width:10px;font-size:12px;flex:none;text-align:center;}
@@ -175,7 +176,7 @@
     <h2>Animation</h2>
     <div class="row"><span>Name</span><span class="ro" id="p_aname">&mdash;</span></div>
     <div class="row"><span>Frames</span><span class="ro" id="p_acount">&mdash;</span></div>
-    <div class="row"><span>Speed (fps)</span><input type="number" id="p_speed" min="1" max="60" value="8"></div>
+    <div class="row"><span>Speed (fps)</span><span class="sp"></span><input type="number" id="p_speed" min="1" max="60" value="8"></div>
 
     <h2>Frame</h2>
     <div class="row"><span>Index</span><span class="ro" id="p_fidx">&mdash;</span></div>
@@ -220,8 +221,8 @@
     </div>
 
     <h2><span><span class="swatch" style="background:var(--pur)"></span>Rotation</span></h2>
-    <div class="row"><span>Angle</span><span class="ro" id="p_rangle">0&#176;</span></div>
-    <div class="row"><span>Speed (&#176;/s)</span><input type="number" id="p_rspeed" min="1" max="360" value="30"></div>
+    <div class="row"><span>Angle</span><span class="sp"></span><span class="ro" id="p_rangle">0&#176;</span></div>
+    <div class="row"><span>Speed (&#176;/s)</span><span class="sp"></span><input type="number" id="p_rspeed" min="1" max="360" value="30"></div>
 
     <h2><span><span class="swatch" style="background:var(--yel)"></span>Pivot Point</span></h2>
     <div class="row"><span>Position</span>
