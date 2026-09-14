@@ -163,6 +163,13 @@
           </div>
         </div>
       </div>
+      <div class="tgroup">
+        <span class="gtitle">Position</span>
+        <button class="tbtn" id="posOriginBtn" title="align sprite left edge to X axis and bottom to Y axis (based on frame 1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16h16"/><rect x="9" y="9" width="7" height="7"/></svg>LEFT&#8595; BOTTOM</button>
+        <button class="tbtn" id="posCenterBtn" title="center sprite on the X/Y axis origin (based on frame 1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><rect x="8" y="8" width="8" height="8"/></svg>CENTER</button>
+      </div>
       <div class="tgroup" style="margin-left:auto">
         <button class="tbtn" id="undoBtn" title="undo last transformation (ctrl+Z)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7L4 12l5 5"/><path d="M4 12h11a5 5 0 0 1 0 10h-1"/></svg></button>
@@ -522,6 +529,11 @@ function hitHandle(rect, sx, sy){
 }
 function inside(r, x, y){ return x>=r.x && x<=r.x+r.w && y>=r.y && y<=r.y+r.h; }
 function meleeVisible(){ return show.meleeView && cur.st.frames[curFrameIdx()].melee.on; }
+// ---------- box rects (stored directly in sprite-space) ----------
+// Collision & melee are physically shifted together with the frames on any
+// position reset, so they live in the same space as the sprite and follow it.
+function collisionRect(fi){ return { ...cur.st.collision }; }
+function meleeRect(fi){ return { ...cur.st.frames[fi].melee }; }
 // while playing OR rotating, per-frame sprite edits are locked (view-only)
 function editingLocked(){ return !!(cur && cur.st && (cur.st.playing || (cur.st.rot && cur.st.rot.playing))); }
 // choose a "nice" grid step (1,2,5,10,20,...) so ~40-80px on screen
@@ -792,6 +804,8 @@ function syncToggles(){
   $('tglLabel').classList.toggle('on', show.label);
   $('resetBtn').disabled = locked;   // whole Tools group disabled during animation
   $('recenterPivotBtn').disabled = locked;
+  $('posOriginBtn').disabled = locked;
+  $('posCenterBtn').disabled = locked;
 }
 $('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); });
 $('tglMeleeView').addEventListener('click', ()=>{
@@ -881,6 +895,40 @@ $('recenterPivotBtn').addEventListener('click', ()=>{
   cur.st.pivot.y = Math.round(c.y + c.h/2);
   syncPanel(); draw();
 });
+// ---------- POSITION: reset sprite placement based on frame 1 ----------
+// offset places a frame so its center sits at (offset.x, offset.y).
+// Frame 1 dims define the reference size for the whole animation.
+// Only frame 1's offset is re-anchored; every other frame keeps its RELATIVE
+// offset from frame 1, so the whole animation slides as one rigid body and
+// each frame's own placement is preserved. Collision/melee live in
+// sprite-space anchored to frame 1, so they follow automatically.
+function frame1Dims(){
+  const f1 = cur.imgs[0];
+  const W = f1 ? f1.naturalWidth : 1, H = f1 ? f1.naturalHeight : 1;
+  return { W, H };
+}
+function applyPosition(mode){
+  if (!cur || !cur.st || editingLocked()) return;
+  pushUndo();
+  const { W, H } = frame1Dims();
+  // left edge on X axis (x=0) & bottom on Y axis (y=0)  ->  center at (W/2, -H/2)
+  // centered on origin                                  ->  center at (0, 0)
+  const ox = mode==='origin' ? Math.round(W/2) : 0;
+  const oy = mode==='origin' ? -Math.round(H/2) : 0;
+  const frames = cur.st.frames;
+  const dOx = ox - frames[0].offset.x;   // how far frame 1 moves
+  const dOy = oy - frames[0].offset.y;
+  for (const f of frames){
+    f.offset.x += dOx; f.offset.y += dOy;          // slide all frames together
+    if (f.melee){ f.melee.x += dOx; f.melee.y += dOy; }   // melee follows its frame
+  }
+  // collision + pivot live in sprite-space anchored to frame 1 -> slide them too
+  cur.st.collision.x += dOx; cur.st.collision.y += dOy;
+  if (cur.st.pivot){ cur.st.pivot.x += dOx; cur.st.pivot.y += dOy; }
+  syncPanel(); draw();
+}
+$('posOriginBtn').addEventListener('click', ()=>applyPosition('origin'));
+$('posCenterBtn').addEventListener('click', ()=>applyPosition('center'));
 // ---------- RESET tool (frame / animation) ----------
 const resetBtn = $('resetBtn'), resetMenu = $('resetMenu');
 resetBtn.addEventListener('click', e=>{
@@ -1053,8 +1101,8 @@ function boxList(){
   const st = cur.st, fi = curFrameIdx(), im = cur.imgs[fi];
   const byKey = {};
   if (show.spriteView && im) byKey.sprite    = { key:'sprite',    rect:frameRect(st, fi), color:COL_SCALE };
-  if (show.collision)        byKey.collision = { key:'collision', rect:st.collision,      color:COL_COLL  };
-  if (meleeVisible())        byKey.melee     = { key:'melee',     rect:st.frames[fi].melee, color:COL_MELEE };
+  if (show.collision)        byKey.collision = { key:'collision', rect:collisionRect(fi), color:COL_COLL  };
+  if (meleeVisible())        byKey.melee     = { key:'melee',     rect:meleeRect(fi),     color:COL_MELEE };
   // pivot is a point, not a rect — handled separately in hover/drag
   // return in z-order (front first) so hit-testing respects last-touched
   return boxZOrder.filter(k => byKey[k]).map(k => byKey[k]);
