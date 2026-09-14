@@ -310,6 +310,8 @@ function hitHandle(rect, sx, sy){
 }
 function inside(r, x, y){ return x>=r.x && x<=r.x+r.w && y>=r.y && y<=r.y+r.h; }
 function meleeVisible(){ return show.meleeView && cur.st.frames[curFrameIdx()].melee.on; }
+// while playing, per-frame sprite edits are locked (view-only)
+function editingLocked(){ return !!(cur && cur.st && cur.st.playing); }
 // choose a "nice" grid step (1,2,5,10,20,...) so ~40-80px on screen
 function gridStep(){
   const target = 60/zoom;      // desired sprite-px between lines
@@ -417,7 +419,7 @@ function syncPanel(){
   P('p_kx').value=st.collision.x; P('p_ky').value=st.collision.y; P('p_kw').value=st.collision.w; P('p_kh').value=st.collision.h;
   setPlaying(st.playing);
 }
-function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=parseFloat(P(id).value); if(!isNaN(v)&&cur&&cur.st){ fn(v); draw(); } }); }
+function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=parseFloat(P(id).value); if(!isNaN(v)&&cur&&cur.st&&!editingLocked()){ fn(v); draw(); } else syncPanel(); }); }
 bindNum('p_speed', v=>setSpeed(v));
 bindNum('p_ox', v=>cur.st.frames[curFrameIdx()].offset.x=v);
 bindNum('p_oy', v=>cur.st.frames[curFrameIdx()].offset.y=v);
@@ -433,6 +435,7 @@ bindNum('p_kw', v=>cur.st.collision.w=Math.max(1,v));
 bindNum('p_kh', v=>cur.st.collision.h=Math.max(1,v));
 P('p_mon').addEventListener('change', ()=>{
   if(!cur||!cur.st) return;
+  if (editingLocked()){ P('p_mon').checked = cur.st.frames[curFrameIdx()].melee.on; return; }
   const f = cur.st.frames[curFrameIdx()];
   f.melee.on = P('p_mon').checked;
   if (f.melee.on && !Object.is(f.melee.x, null)) { /* keep existing */ }
@@ -483,6 +486,7 @@ function resizeBox(box, anchorId, sx, sy, orig, keepRatio){
 function updateHover(sx, sy){
   const st = cur.st, fi = curFrameIdx();
   const prev = hover; hover = null;
+  if (editingLocked()){ finishHover(prev); return; }   // playing: no hover/anchors
   // sprite box (editable whenever visible)
   if (show.spriteView){
     const r = frameRect(st, fi);
@@ -508,11 +512,16 @@ function updateHover(sx, sy){
   }
   const changed = JSON.stringify(prev) !== JSON.stringify(hover);
   if (changed) draw();
-  // cursor feedback: per-handle resize arrows
+  finishHover(prev);
+}
+// shared hover tail: redraw-if-changed + cursor feedback
+function finishHover(prev){
+  const changed = JSON.stringify(prev) !== JSON.stringify(hover);
+  if (changed) draw();
   if (hover && hover.handle){
-    const cur = { nw:'nwse-resize', se:'nwse-resize', ne:'nesw-resize', sw:'nesw-resize',
-                  n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize' }[hover.handle];
-    cv.style.cursor = cur || 'default';
+    const c = { nw:'nwse-resize', se:'nwse-resize', ne:'nesw-resize', sw:'nesw-resize',
+                n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize' }[hover.handle];
+    cv.style.cursor = c || 'default';
   }
   else if (hover && hover.body) cv.style.cursor = 'move';
   else cv.style.cursor = 'default';
@@ -523,6 +532,12 @@ cv.addEventListener('pointerdown', e=>{
   cv.setPointerCapture(e.pointerId);
   const [cx, cy] = evPos(e); const [sx, sy] = c2s(cx, cy);
   const st = cur.st, fi = curFrameIdx();
+  // while playing: no sprite/box edits, only pan the view
+  if (editingLocked()){
+    drag = { kind:'pan', sx0:cx, sy0:cy, panX0:panX, panY0:panY };
+    cv.style.cursor = 'grabbing';
+    return;
+  }
   // boxes are editable via hover when visible
   if (hover && hover.box==='sprite' && show.spriteView){
     const f = st.frames[fi];
@@ -637,14 +652,14 @@ window.addEventListener('keydown', e=>{
   const off = e.ctrlKey ? 10 : 1;
   switch (e.code){
     case 'Space': e.preventDefault(); setPlaying(!st.playing); break;
-    case 'ArrowRight': e.preventDefault(); if (e.shiftKey && !e.ctrlKey){ f.offset.x+=off; syncPanel(); draw(); } else stepFrame(1); break;
-    case 'ArrowLeft': e.preventDefault(); if (e.shiftKey && !e.ctrlKey){ f.offset.x-=off; syncPanel(); draw(); } else stepFrame(-1); break;
+    case 'ArrowRight': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ f.offset.x+=off; syncPanel(); draw(); } else stepFrame(1); break;
+    case 'ArrowLeft': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ f.offset.x-=off; syncPanel(); draw(); } else stepFrame(-1); break;
     case 'ArrowUp': e.preventDefault();
-      if (e.shiftKey && !e.ctrlKey){ f.offset.y-=off; syncPanel(); draw(); }
+      if (e.shiftKey && !e.ctrlKey && !editingLocked()){ f.offset.y-=off; syncPanel(); draw(); }
       else if (flatIdx>0){ flatIdx--; const q=flatList[flatIdx]; selectEntity(q.li,q.ei); }
       break;
     case 'ArrowDown': e.preventDefault();
-      if (e.shiftKey && !e.ctrlKey){ f.offset.y+=off; syncPanel(); draw(); }
+      if (e.shiftKey && !e.ctrlKey && !editingLocked()){ f.offset.y+=off; syncPanel(); draw(); }
       else if (flatIdx<flatList.length-1){ flatIdx++; const q=flatList[flatIdx]; selectEntity(q.li,q.ei); }
       break;
     case 'Minus': case 'NumpadSubtract': e.preventDefault(); if (e.ctrlKey){ setZoom(zoom/1.25); } else setSpeed(st.speed-1); break;
