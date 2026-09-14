@@ -1,5 +1,5 @@
 ---
-name: sprite-crop2
+name: sprite-crop
 description: Extracts animation frames from AI-generated sprite sheets with transparent backgrounds using foreground-ownership clustering instead of grid slicing. Alpha mask, connected components, row grouping, frame clustering with satellite assignment, bounding-box crops, and full stage-by-stage trace output. Use when the user asks to crop/extract frames from a transparent sprite sheet where grids are unreliable, frames overlap, or effects are detached.
 allowed-tools: bash read_file write_file inspect_media open
 ---
