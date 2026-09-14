@@ -72,7 +72,9 @@
   .numwrap{position:relative;display:inline-block;width:84px;}
   .numwrap input{width:100%;}
   .numwrap .arr{position:absolute;right:5px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;}
-  .numwrap .arr span{width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;cursor:pointer;display:block;}
+  .numwrap .arr span{width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;cursor:pointer;display:block;position:relative;}
+  /* invisible enlarged hit-zone */
+  .numwrap .arr span::before{content:'';position:absolute;left:-6px;top:-6px;width:14px;height:14px;}
   .numwrap .arr .up{border-bottom:4px solid var(--faint);}
   .numwrap .arr .dn{border-top:4px solid var(--faint);}
   .numwrap .arr span:hover{border-color:var(--acc);}
