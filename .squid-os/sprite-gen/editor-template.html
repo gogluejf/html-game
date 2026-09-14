@@ -26,6 +26,11 @@
   .char{font-size:13px;color:var(--acc);margin:8px 0 2px;padding-left:4px;letter-spacing:.5px;}
   /* animation row (indented under character) */
   .ent.anim{padding-left:18px;font-size:13px;}
+  /* single-animation character: combined "name (anim)" row, no indent */
+  .ent.solo{font-size:14px;color:var(--acc);}
+  .ent.solo:hover{background:rgba(62,240,255,.08);color:#fff;}
+  .ent.solo.on{background:rgba(255,226,62,.12);color:#fff;}
+  .ent.solo .animtag{color:var(--dim);font-weight:normal;font-size:12px;}
   /* ---------- middle ---------- */
   #mid{flex:1;display:flex;flex-direction:column;min-width:0;}
   #toolbar{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap;background:var(--bg2);}
@@ -383,18 +388,30 @@ MANIFEST.labels.forEach((lbl, li) => {
   });
   // sort characters A-Z
   for (const cn of [...chars.keys()].sort((a,b)=>a.localeCompare(b))){
-    const chEl = document.createElement('div'); chEl.className='char'; chEl.textContent = cn;
-    tree.appendChild(chEl);
-    // sort that character's anims A-Z
-    for (const a of chars.get(cn).sort((x,y)=>x.anim.localeCompare(y.anim))){
-      const en = lbl.entities[a.ei];
-      const row = document.createElement('div'); row.className='ent anim';
-      row.innerHTML = `<span>${a.anim}</span><span class="cnt">${en.frames.length}f</span>`;
+    const anims = chars.get(cn).sort((x,y)=>x.anim.localeCompare(y.anim));
+    if (anims.length === 1){
+      // single animation -> combine char + anim into one row: "name (anim)"
+      const a = anims[0], en = lbl.entities[a.ei];
+      const row = document.createElement('div'); row.className='ent solo';
+      row.innerHTML = `<span>${cn}${a.anim ? ' <b class="animtag">('+a.anim+')</b>' : ''}</span><span class="cnt">${en.frames.length}f</span>`;
       row.addEventListener('click', () => selectEntity(li, a.ei));
       en._el = row;
       tree.appendChild(row);
       flatList.push({li, ei:a.ei});
       entityPos.set(en.name, {li, ei:a.ei});
+    } else {
+      const chEl = document.createElement('div'); chEl.className='char'; chEl.textContent = cn;
+      tree.appendChild(chEl);
+      for (const a of anims){
+        const en = lbl.entities[a.ei];
+        const row = document.createElement('div'); row.className='ent anim';
+        row.innerHTML = `<span>${a.anim}</span><span class="cnt">${en.frames.length}f</span>`;
+        row.addEventListener('click', () => selectEntity(li, a.ei));
+        en._el = row;
+        tree.appendChild(row);
+        flatList.push({li, ei:a.ei});
+        entityPos.set(en.name, {li, ei:a.ei});
+      }
     }
   }
 });
