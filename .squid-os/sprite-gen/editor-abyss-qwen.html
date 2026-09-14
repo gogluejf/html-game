@@ -59,20 +59,22 @@
   #finfo{font-size:13px;color:var(--faint);margin-left:auto;}
   #hint{padding:7px 14px;font-size:12px;color:var(--faint);border-top:1px solid var(--line);background:var(--bg2);line-height:1.6;}
   /* ---------- side panel ---------- */
-  #panel{width:340px;border-left:1px solid var(--line);padding:16px;overflow-y:auto;background:var(--bg2);font-size:14px;}
+  #panel{width:400px;border-left:1px solid var(--line);padding:16px;overflow-y:auto;background:var(--bg2);font-size:14px;}
   #panel h2{font-size:13px;color:var(--acc);letter-spacing:2px;margin:18px 0 8px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:6px;}
   #panel h2:first-child{margin-top:0;}
   #panel h2 .swatch{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px;}
-  .row{display:flex;align-items:center;justify-content:space-between;margin:6px 0;gap:10px;}
-  .row > span{color:var(--dim);white-space:nowrap;font-size:13px;}
-  .row input[type=number]{width:64px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--txt);font-family:inherit;font-size:14px;padding:5px 7px;text-align:right;}
+  .row{display:flex;align-items:center;margin:7px 0;gap:10px;}
+  .row > span{color:var(--dim);white-space:nowrap;font-size:13px;width:96px;flex:none;text-align:left;}
+  .row input[type=number]{width:84px;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--txt);font-family:inherit;font-size:13px;padding:5px 8px;text-align:right;-moz-appearance:textfield;}
+  .row input[type=number]::-webkit-inner-spin-button,.row input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   .row input[type=number]:focus{outline:none;border-color:var(--acc);}
   .row input[type=checkbox]{accent-color:var(--acc);width:18px;height:18px;cursor:pointer;}
   .ro{color:var(--faint);background:transparent;border:1px solid transparent;padding:5px 7px;text-align:right;font-family:inherit;font-size:13px;}
-  .pair{display:flex;gap:8px;}
-  .pair .cell{flex:1;display:flex;align-items:center;gap:6px;min-width:0;}
-  .pair .cell b{color:var(--faint);font-weight:normal;width:14px;font-size:13px;}
-  .pair .cell input{flex:1;width:auto;min-width:0;}
+  .pair{display:flex;gap:14px;flex:none;}
+  .pair .cell{display:flex;align-items:center;gap:6px;}
+  .pair .cell b{color:var(--faint);font-weight:normal;width:10px;font-size:12px;flex:none;text-align:center;}
+  .pair .cell input{width:84px;box-sizing:border-box;padding:5px 8px;font-size:13px;-moz-appearance:textfield;}
+  .pair .cell input::-webkit-inner-spin-button,.pair .cell input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   .disabled-dim{opacity:.45;}
 </style>
 </head>
@@ -161,27 +163,77 @@
   </div>
   <div id="panel">
     <h2>Animation</h2>
-    <div class="row"><span>name</span><span class="ro" id="p_aname">&mdash;</span></div>
-    <div class="row"><span>frames</span><span class="ro" id="p_acount">&mdash;</span></div>
-    <div class="row"><span>speed (fps)</span><input type="number" id="p_speed" min="1" max="60" value="8"></div>
+    <div class="row"><span>Name</span><span class="ro" id="p_aname">&mdash;</span></div>
+    <div class="row"><span>Frames</span><span class="ro" id="p_acount">&mdash;</span></div>
+    <div class="row"><span>Speed (fps)</span><input type="number" id="p_speed" min="1" max="60" value="8"></div>
+
     <h2>Frame</h2>
-    <div class="row"><span>index</span><span class="ro" id="p_fidx">&mdash;</span></div>
-    <div class="row"><span>name</span><span class="ro" id="p_fname">&mdash;</span></div>
-    <div class="row"><span>crop x,y</span><div class="pair"><div class="cell"><b>x</b><input type="number" id="p_cx" disabled></div><div class="cell"><b>y</b><input type="number" id="p_cy" disabled></div></div></div>
-    <div class="row"><span>crop w,h</span><div class="pair"><div class="cell"><b>w</b><input type="number" id="p_cw" disabled></div><div class="cell"><b>h</b><input type="number" id="p_ch" disabled></div></div></div>
-    <div class="row"><span>offset x,y</span><div class="pair"><div class="cell"><b>x</b><input type="number" id="p_ox"></div><div class="cell"><b>y</b><input type="number" id="p_oy"></div></div></div>
-    <div class="row"><span>scale sx,sy</span><div class="pair"><div class="cell"><b>x</b><input type="number" step="0.05" id="p_sx"></div><div class="cell"><b>y</b><input type="number" id="p_sy"></div></div></div>
-    <h2><span><span class="swatch" style="background:var(--org)"></span>Melee Box (per frame)</span><span><input type="checkbox" id="p_mon" title="enable melee box for this frame"></span></h2>
-    <div class="row"><span>x,y</span><div class="pair" id="mxy"><div class="cell"><b>x</b><input type="number" id="p_mx"></div><div class="cell"><b>y</b><input type="number" id="p_my"></div></div></div>
-    <div class="row"><span>w,h</span><div class="pair" id="mwh"><div class="cell"><b>w</b><input type="number" id="p_mw"></div><div class="cell"><b>h</b><input type="number" id="p_mh"></div></div></div>
+    <div class="row"><span>Index</span><span class="ro" id="p_fidx">&mdash;</span></div>
+    <div class="row"><span>Name</span><span class="ro" id="p_fname">&mdash;</span></div>
+    <div class="row"><span>Crop position</span>
+      <div class="pair">
+        <div class="cell"><b>X</b><input type="number" id="p_cx" disabled></div>
+        <div class="cell"><b>Y</b><input type="number" id="p_cy" disabled></div>
+      </div>
+    </div>
+    <div class="row"><span>Crop size</span>
+      <div class="pair">
+        <div class="cell"><b>W</b><input type="number" id="p_cw" disabled></div>
+        <div class="cell"><b>H</b><input type="number" id="p_ch" disabled></div>
+      </div>
+    </div>
+    <div class="row"><span>Offset</span>
+      <div class="pair">
+        <div class="cell"><b>X</b><input type="number" id="p_ox"></div>
+        <div class="cell"><b>Y</b><input type="number" id="p_oy"></div>
+      </div>
+    </div>
+    <div class="row"><span>Scale</span>
+      <div class="pair">
+        <div class="cell"><b>X</b><input type="number" step="0.05" id="p_sx"></div>
+        <div class="cell"><b>Y</b><input type="number" id="p_sy"></div>
+      </div>
+    </div>
+
+    <h2><span><span class="swatch" style="background:var(--org)"></span>Melee Box</span><span><input type="checkbox" id="p_mon" title="enable melee box for this frame"></span></h2>
+    <div class="row"><span>Position</span>
+      <div class="pair" id="mxy">
+        <div class="cell"><b>X</b><input type="number" id="p_mx"></div>
+        <div class="cell"><b>Y</b><input type="number" id="p_my"></div>
+      </div>
+    </div>
+    <div class="row"><span>Size</span>
+      <div class="pair" id="mwh">
+        <div class="cell"><b>W</b><input type="number" id="p_mw"></div>
+        <div class="cell"><b>H</b><input type="number" id="p_mh"></div>
+      </div>
+    </div>
+
     <h2><span><span class="swatch" style="background:var(--pur)"></span>Rotation</span></h2>
-    <div class="row"><span>angle (&#176;)</span><span class="ro" id="p_rangle">0&#176;</span></div>
-    <div class="row"><span>speed (&#176;/s)</span><input type="number" id="p_rspeed" min="1" max="360" value="30"></div>
+    <div class="row"><span>Angle</span><span class="ro" id="p_rangle">0&#176;</span></div>
+    <div class="row"><span>Speed (&#176;/s)</span><input type="number" id="p_rspeed" min="1" max="360" value="30"></div>
+
     <h2><span><span class="swatch" style="background:var(--yel)"></span>Pivot Point</span></h2>
-    <div class="row"><span>x,y</span><div class="pair"><div class="cell"><b>x</b><input type="number" id="p_px"></div><div class="cell"><b>y</b><input type="number" id="p_py"></div></div></div>
-    <h2><span><span class="swatch" style="background:var(--acc)"></span>Collision Box (all frames)</span></h2>
-    <div class="row"><span>x,y</span><div class="pair"><div class="cell"><b>x</b><input type="number" id="p_kx"></div><div class="cell"><b>y</b><input type="number" id="p_ky"></div></div></div>
-    <div class="row"><span>w,h</span><div class="pair"><div class="cell"><b>w</b><input type="number" id="p_kw"></div><div class="cell"><b>h</b><input type="number" id="p_kh"></div></div></div>
+    <div class="row"><span>Position</span>
+      <div class="pair">
+        <div class="cell"><b>X</b><input type="number" id="p_px"></div>
+        <div class="cell"><b>Y</b><input type="number" id="p_py"></div>
+      </div>
+    </div>
+
+    <h2><span><span class="swatch" style="background:var(--acc)"></span>Collision Box</span></h2>
+    <div class="row"><span>Position</span>
+      <div class="pair">
+        <div class="cell"><b>X</b><input type="number" id="p_kx"></div>
+        <div class="cell"><b>Y</b><input type="number" id="p_ky"></div>
+      </div>
+    </div>
+    <div class="row"><span>Size</span>
+      <div class="pair">
+        <div class="cell"><b>W</b><input type="number" id="p_kw"></div>
+        <div class="cell"><b>H</b><input type="number" id="p_kh"></div>
+      </div>
+    </div>
   </div>
 </div>
 <script>
@@ -530,6 +582,18 @@ function stepFrame(d){ if(!cur||!cur.st)return; const st=cur.st; st.frameIdx=(st
 function setSpeed(v){ if(!cur||!cur.st)return; cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = cur.st.speed+' fps'; $('p_speed').value = cur.st.speed; }
 // ---------- panel ----------
 const P = id => $(id);
+// arrow-key stepping for number inputs (native spinners are hidden)
+document.querySelectorAll('#panel input[type=number]').forEach(inp=>{
+  inp.addEventListener('keydown', e=>{
+    if (e.key==='ArrowUp'||e.key==='ArrowDown'){
+      e.preventDefault();
+      const step = parseFloat(inp.step)||1;
+      const d = e.key==='ArrowUp' ? step : -step;
+      inp.value = (parseFloat(inp.value)||0) + d;
+      inp.dispatchEvent(new Event('change'));
+    }
+  });
+});
 function syncPanel(){
   if (!cur || !cur.st) return;
   const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
