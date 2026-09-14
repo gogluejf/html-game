@@ -265,6 +265,7 @@ def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, ma
                 "action": action,
                 "frame": si + 1,
                 "row": r,
+                "bbox": [fx0, fy0, fx1 - fx0, fy1 - fy0],
                 "size": [fx1 - fx0, fy1 - fy0],
                 "center": [(fx0 + fx1) // 2, (fy0 + fy1) // 2],
                 "components": len(owned),
@@ -344,9 +345,19 @@ def cmd_extract(args):
     trace(f"    small (<={args.satellite_max_area}px): {len(small)} -> satellite candidates")
 
     expected = [int(x) for x in args.rows.split(",")]
-    rows = group_rows(fg, W, H, trace)
+    if getattr(args, "row_y", None):
+        # explicit row bands: y0-y1,y0-y1,... (skips auto-detection)
+        rows = []
+        for part in args.row_y.split(","):
+            a, b = part.split("-")
+            rows.append((int(a), int(b)))
+        trace(f"[3] ROW GROUPING (manual --row-y: {len(rows)} bands)")
+        for i, (y0, y1) in enumerate(rows):
+            trace(f"    row {i}: y {y0}-{y1}")
+    else:
+        rows = group_rows(fg, W, H, trace)
     if len(rows) != len(expected):
-        trace(f"    WARN: {len(rows)} row bands found but {len(expected)} rows expected. "
+        trace(f"    WARN: {len(rows)} row bands but {len(expected)} rows expected. "
               f"Check the sheet assessment or pass --row-y manually.")
         if len(rows) < len(expected):
             trace("    FAIL: cannot map expected rows onto fewer measured bands.")
@@ -451,6 +462,7 @@ def main():
     ex.add_argument("--satellite-radius", type=int, default=160,
                     help="max distance from a frame center for satellite assignment")
     ex.add_argument("--min-comp", type=int, default=4, help="drop components smaller than this")
+    ex.add_argument("--row-y", help="manual row bands y0-y1,y0-y1,... (skips auto-detection)")
     ex.add_argument("--json", help="also write full result JSON here")
     rp = sub.add_parser("report")
     rp.add_argument("--dir", required=True)

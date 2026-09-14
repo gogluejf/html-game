@@ -31,7 +31,7 @@ The sheet must already have a transparent background (alpha). If it doesn't, sto
 
 ### 2. Extract
 
-Run extract with the assessed `--rows`, `--names`, `--actions`. The pipeline (all deterministic, all traced):
+Run extract with the assessed `--rows`, `--names`, `--actions` and ALWAYS pass `--json <out-dir>/result.json` (needed by record_crop.py):
 1. alpha mask (foreground = alpha > threshold)
 2. connected components (building blocks: bodies, limbs, petals, debris)
 3. row grouping (y-density bands)
@@ -64,13 +64,21 @@ Use @tool:open on the destination folder so the user can review.
 
 ### 5. Record crop params in state (via CLI — NEVER hand-edit JSON)
 
-Reuse the existing sprite-crop recorder (params only, no pixel work):
+The extract step MUST be run with `--json <out-dir>/result.json`. After frames are verified and installed, record the exact per-frame coordinates:
 ```bash
-python3 <working-dir>/.squid-os/skills/sprite-crop/scripts/crop_sprites.py record-crop \
-  --state <state-file> --sheet <entity_name> \
-  --frame-size "WxH" --frames-dir "<assets-dir>/<label>"
+python3 <working-dir>/.squid-os/skills/sprite-crop/scripts/record_crop.py \
+  --state <state-file> --result <out-dir>/result.json \
+  [--frames-dir "<assets-dir>/<label>"]
 ```
-(Only pass fields that apply; this skill records frames_dir + frame size, since coordinates are derived, not stored.)
+This is IDEMPOTENT: re-running for a re-cropped sheet REPLACES the `crop` block (no duplicates). It writes only:
+```json
+"crop": {
+  "frames_dir": "...",
+  "pass": "<tmp dir>",
+  "frames_bbox": { "entity_action_f1.png": [x, y, w, h], ... }
+}
+```
+All legacy grid fields (`row_y`, `col_x`, `frame_size`, `bg_color`, `bg_tol`) are dropped on record.
 
 ### 6. Emit the animation viewer (after frames are verified)
 
