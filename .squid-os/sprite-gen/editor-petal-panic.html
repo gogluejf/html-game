@@ -139,6 +139,7 @@
   </div>
   <div id="mid">
     <div id="toolbar" class="booting">
+      <span id="saveIndicator" style="font-size:10px;color:var(--grn);opacity:0;transition:opacity .3s;margin-left:auto;">✓ saved</span>
       <div class="tgroup">
         <span class="gtitle">Display</span>
         <button class="tbtn tog on" id="tglSpriteView" title="show/hide sprite box (handles appear on hover)">
@@ -166,6 +167,8 @@
           <div id="resetMenu" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;z-index:10;min-width:160px;white-space:nowrap;">
             <div class="reset-opt" data-scope="frame" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:var(--txt);">Reset Frame</div>
             <div class="reset-opt" data-scope="anim" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:var(--txt);">Reset Animation</div>
+            <div style="height:1px;background:var(--line);margin:4px 2px;"></div>
+            <div class="reset-opt" data-scope="factory" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:#ff5a5a;">Reset to Factory…</div>
           </div>
         </div>
       </div>
@@ -342,6 +345,7 @@ function pushUndo(){
   if (undoStack.length > 100) undoStack.shift();
   redoStack.length = 0;
   syncUndoButtons();
+  saveState();
 }
 async function restore(entry){
   // jump back to the exact animation + frame this edit was made on
@@ -370,6 +374,57 @@ function syncUndoButtons(){
 let show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true };
 let bgColor = '#000000';   // canvas background fill
 let isPlaying = true;      // global play/pause, carried across animations
+// ---------- localStorage persistence ----------
+const LS_KEY = 'sprite-editor-state-v1';
+let _loadingState = false;   // guard: suppress saves while restoring from localStorage
+// Serialize everything worth persisting: per-entity editor state + global view.
+function collectState(){
+  const entities = {};
+  for (const [name, st] of S){
+    entities[name] = {
+      speed: st.speed, playing: st.playing, frameIdx: st.frameIdx,
+      collision: st.collision, pivot: st.pivot, rot: st.rot,
+      frames: st.frames.map(f => ({ idx:f.idx, name:f.name, crop:f.crop, offset:f.offset, scale:f.scale, melee:f.melee }))
+    };
+  }
+  return { v:1, entities, view:{ show, isPlaying, bgColor } };
+}
+function saveState(){
+  if (_loadingState) return;   // don't overwrite saved data mid-restore
+  try{
+    const state = collectState();
+    // Never write an empty blob over existing saved data — that clobbers real state.
+    if (Object.keys(state.entities).length === 0) return;
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    const el = document.getElementById('saveIndicator');
+    if (el){ el.textContent='✓'; el.style.opacity='1'; setTimeout(()=>el.style.opacity='0', 500); }
+  }catch(e){ /* quota / private mode */ }
+}
+function loadState(){
+  let raw; try{ raw = localStorage.getItem(LS_KEY); }catch(e){ return; }
+  if (!raw) return;
+  let data; try{ data = JSON.parse(raw); }catch(e){ return; }
+  if (!data || data.v !== 1) return;
+  _loadingState = true;   // suppress saves while restoring
+  // restore per-entity state (merge over defaults when an entity is loaded)
+  for (const [name, saved] of Object.entries(data.entities||{})){
+    if (saved && Array.isArray(saved.frames)) S.set(name, saved);
+  }
+  // restore global view
+  if (data.view){
+    if (data.view.show) Object.assign(show, data.view.show);
+    if (typeof data.view.isPlaying === 'boolean') isPlaying = data.view.isPlaying;
+    if (typeof data.view.bgColor === 'string') bgColor = data.view.bgColor;
+  }
+  // NOTE: do NOT reset _loadingState here — the init sequence owns that flag
+  // and keeps it on until selectEntity()'s async load fully completes.
+}
+// apply restored view to the UI (called once at init)
+function applySavedView(){
+  $('bgval').textContent = bgColor; bgSwatch.style.background = bgColor; bgHex.value = bgColor;
+  setPlaying(isPlaying);
+  syncToggles();
+}
 let drag = null;         // active pointer drag
 let hover = null;        // {box:'collision'|'melee'|'scale', handle:id} or {box, body:true}
 let boxZOrder = ['sprite','collision','melee'];   // front-to-back; last-touched moves to front
@@ -486,7 +541,11 @@ async function selectEntity(li, ei, opts){
   flatIdx = flatList.findIndex(f => f.li===li && f.ei===ei);
   const imgs = await loadFrames(en.frames);
   cur = { name: en.name, paths: en.frames, imgs: imgs.filter(Boolean), crops: en.crops || [] };
-  if (!S.has(cur.name)) S.set(cur.name, defaultState(cur.name, cur.imgs, cur.paths, cur.crops));
+  // use saved per-entity state if present AND frame count still matches; else fresh defaults
+  const saved = S.get(cur.name);
+  if (!saved || !Array.isArray(saved.frames) || saved.frames.length !== en.frames.length){
+    S.set(cur.name, defaultState(cur.name, cur.imgs, cur.paths, cur.crops));
+  }
   cur.st = S.get(cur.name);
   cur.st.playing = isPlaying;   // carry global play/pause across animations
   acc = 0; drag = null; hover = null;
@@ -737,9 +796,10 @@ function setPlaying(p){
   $('playIco').innerHTML = cur.st.playing ? '&#10074;&#10074;' : '&#9654;';
   syncPanelDisabled();   // lock/unlock side inputs with play state
   syncToggles();   // update MELEE ON disabled state immediately
+  saveState();
 }
 function stepFrame(d){ if(!cur||!cur.st)return; const st=cur.st; st.frameIdx=(st.frameIdx+d+st.frames.length)%st.frames.length; syncPanel(); draw(); }
-function setSpeed(v){ if(!cur||!cur.st)return; cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = cur.st.speed+' fps'; $('p_speed').value = cur.st.speed; }
+function setSpeed(v){ if(!cur||!cur.st)return; cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = cur.st.speed+' fps'; $('p_speed').value = cur.st.speed; saveState(); }
 // ---------- panel ----------
 const P = id => $(id);
 // wrap panel number inputs with custom spinner arrows (native ones are hidden)
@@ -853,10 +913,10 @@ function syncToggles(){
   $('posOriginBtn').disabled = locked;
   $('posCenterBtn').disabled = locked;
 }
-$('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); });
+$('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); saveState(); });
 $('tglMeleeView').addEventListener('click', ()=>{
   if ($('tglMeleeView').disabled) return;
-  show.meleeView=!show.meleeView; syncToggles(); draw();
+  show.meleeView=!show.meleeView; syncToggles(); draw(); saveState();
 });
 $('tglMeleeOn').addEventListener('click', ()=>{
   if (!cur || !cur.st || editingLocked()) return;
@@ -867,10 +927,10 @@ $('tglMeleeOn').addEventListener('click', ()=>{
   P('p_mon').checked = f.melee.on;
   syncToggles(); syncPanel(); draw();
 });
-$('tglAxes').addEventListener('click', ()=>{ show.axes=!show.axes; syncToggles(); draw(); });
-$('tglSpriteView').addEventListener('click', ()=>{ show.spriteView=!show.spriteView; syncToggles(); draw(); });
-$('tglPivot').addEventListener('click', ()=>{ show.pivot=!show.pivot; syncToggles(); draw(); });
-$('tglLabel').addEventListener('click', ()=>{ show.label=!show.label; syncToggles(); draw(); });
+$('tglAxes').addEventListener('click', ()=>{ show.axes=!show.axes; syncToggles(); draw(); saveState(); });
+$('tglSpriteView').addEventListener('click', ()=>{ show.spriteView=!show.spriteView; syncToggles(); draw(); saveState(); });
+$('tglPivot').addEventListener('click', ()=>{ show.pivot=!show.pivot; syncToggles(); draw(); saveState(); });
+$('tglLabel').addEventListener('click', ()=>{ show.label=!show.label; syncToggles(); draw(); saveState(); });
 // ---------- background color picker (popup, live-updating) ----------
 const _bgState = { h:0, s:100, l:0 };   // current HSL
 const bgSatsq = $('bgSatsq'), bgSqDot = $('bgSqDot');
@@ -907,6 +967,7 @@ function setBgFromHsl(h,s,l){
   bgSqDot.style.left=(s/100*100)+'%';
   bgSqDot.style.top=((100-l)/100*100)+'%';
   draw();
+  saveState();
 }
 function setBg(hex){ const hsl=hex2hsl(hex); if(hsl) setBgFromHsl(hsl.h,hsl.s,hsl.l); }
 // saturation square drag (live)
@@ -931,7 +992,9 @@ function closeBgPop(){ bgPop.classList.remove('on'); }
 bgSwatch.addEventListener('click',e=>{ e.stopPropagation(); bgPop.classList.contains('on')?closeBgPop():openBgPop(); });
 $('bgClose').addEventListener('click',e=>{ e.stopPropagation(); closeBgPop(); });
 document.addEventListener('click',e=>{ if(bgPop.classList.contains('on') && !bgPop.contains(e.target) && e.target!==bgSwatch) closeBgPop(); });
-setBg('#000000');
+// Only apply the default bg if nothing was restored from localStorage.
+// (loadState() already ran at init and set bgColor from saved data, if any.)
+if (!localStorage.getItem(LS_KEY)) setBg('#000000');
 // ---------- RECENTER PIVOT ----------
 $('recenterPivotBtn').addEventListener('click', ()=>{
   if (!cur || !cur.st || editingLocked()) return;
@@ -977,6 +1040,7 @@ resetMenu.querySelectorAll('.reset-opt').forEach(opt => {
   opt.addEventListener('click', ()=>{
     const scope = opt.dataset.scope;
     resetMenu.style.display = 'none';
+    if (scope === 'factory'){ factoryReset(); return; }   // destructive — own confirm flow
     if (!cur || !cur.st || editingLocked()) return;
     pushUndo();
     if (scope === 'frame') resetFrame();
@@ -984,6 +1048,35 @@ resetMenu.querySelectorAll('.reset-opt').forEach(opt => {
     syncPanel(); draw();
   });
 });
+// ---------- factory reset: wipe ALL saved state + app state back to defaults ----------
+function factoryReset(){
+  const ok = confirm(
+    'RESET TO FACTORY\n\n' +
+    'This permanently deletes ALL saved editor state:\n' +
+    '  • every frame\'s offset / scale / melee box\n' +
+    '  • collision boxes, pivots, rotation\n' +
+    '  • speed, play state, background color\n' +
+    '  • all view toggles\n\n' +
+    'Everything returns to its default. This cannot be undone.\n\n' +
+    'Continue?'
+  );
+  if (!ok) return;
+  _loadingState = true;                       // suppress saves during the wipe
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  S.clear();                                  // drop all per-entity editor state
+  undoStack.length = 0; redoStack.length = 0; // clear history
+  show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true };
+  isPlaying = true;
+  bgColor = '#000000';
+  _bgState.h = 0; _bgState.s = 100; _bgState.l = 0;
+  userZoomed = false; zoom = 1; panX = 0; panY = 0;
+  $('zoomval').textContent = '100%';
+  $('bgval').textContent = bgColor; bgSwatch.style.background = bgColor; bgHex.value = bgColor;
+  $('bgHue').value = 0; $('bgLight').value = 0; paintSatSquare();
+  syncUndoButtons();
+  // reload the first entity fresh from defaults and re-enable saving
+  selectEntity(0, 0).then(()=>{ _loadingState = false; });
+}
 function resetFrame(){
   const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
   // reset sprite offset/scale: scale back to 1, left-bottom corner at origin (0,0)
@@ -1353,10 +1446,17 @@ window.addEventListener('keydown', e=>{
   }
 });
 // ---------- init ----------
+_loadingState = true;   // suppress saves during the entire init/restore sequence
 $('zoomval').textContent = Math.round(zoom*100)+'%';
+loadState();          // restore per-entity state + view from localStorage (keeps guard ON)
+applySavedView();     // apply restored view (bg, play, toggles) to the UI — no save (guard on)
 syncToggles();   // set toolbar lit states from `show` BEFORE first paint (no flash)
 syncUndoButtons();   // disable undo/redo while stacks are empty
-if (MANIFEST.labels.length) selectEntity(0, 0);
+if (MANIFEST.labels.length){
+  selectEntity(0, 0).then(()=>{ _loadingState = false; });  // re-enable auto-save ONLY after async load done
+} else {
+  _loadingState = false;
+}
 </script>
 </body>
 </html>
