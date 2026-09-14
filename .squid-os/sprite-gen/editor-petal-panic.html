@@ -209,6 +209,7 @@ let show = { collision:true, meleeView:true, axes:true, spriteView:true };
 let isPlaying = true;      // global play/pause, carried across animations
 let drag = null;         // active pointer drag
 let hover = null;        // {box:'collision'|'melee'|'scale', handle:id} or {box, body:true}
+let boxZOrder = ['sprite','collision','melee'];   // front-to-back; last-touched moves to front
 let lastT = 0, acc = 0;
 // ---------- sidebar ----------
 MANIFEST.labels.forEach((lbl, li) => {
@@ -406,12 +407,9 @@ function draw(){
     const [dx, dy] = s2c(f.offset.x - w/2, f.offset.y - h/2);
     ctx.drawImage(im, dx, dy, w*zoom, h*zoom);
   }
-  // ---------- unified box rendering (sprite / collision / melee share identical behavior) ----------
-  const boxes = [];
-  if (show.spriteView && im) boxes.push({ key:'sprite',    rect:frameRect(st, fi), color:COL_SCALE });
-  if (show.collision)        boxes.push({ key:'collision', rect:st.collision,      color:COL_COLL  });
-  if (meleeVisible())        boxes.push({ key:'melee',     rect:st.frames[fi].melee, color:COL_MELEE });
-  for (const b of boxes){
+  // ---------- unified box rendering (z-order: last-touched draws on top) ----------
+  const boxes = boxList();   // returns in z-order (front first); reverse for draw (back first)
+  for (const b of [...boxes].reverse()){
     const hovered = hover && hover.box===b.key;
     const dragging = drag && drag.kind!=='pan' && drag.key===b.key;
     drawBox(b.rect, b.color, true, !dragging,
@@ -542,13 +540,19 @@ function resizeBox(box, anchorId, sx, sy, orig, keepRatio){
   box.x=Math.round(x1); box.y=Math.round(y1); box.w=Math.round(w); box.h=Math.round(h);
 }
 // ---------- hover detection (unified for all boxes) ----------
+function bringToFront(key){
+  const i = boxZOrder.indexOf(key);
+  if (i > 0) boxZOrder.splice(i, 1);   // remove from current position
+  boxZOrder.unshift(key);               // move to front
+}
 function boxList(){
   const st = cur.st, fi = curFrameIdx(), im = cur.imgs[fi];
-  const out = [];
-  if (show.spriteView && im) out.push({ key:'sprite',    rect:frameRect(st, fi) });
-  if (show.collision)        out.push({ key:'collision', rect:st.collision });
-  if (meleeVisible())        out.push({ key:'melee',     rect:st.frames[fi].melee });
-  return out;
+  const byKey = {};
+  if (show.spriteView && im) byKey.sprite    = { key:'sprite',    rect:frameRect(st, fi), color:COL_SCALE };
+  if (show.collision)        byKey.collision = { key:'collision', rect:st.collision,      color:COL_COLL  };
+  if (meleeVisible())        byKey.melee     = { key:'melee',     rect:st.frames[fi].melee, color:COL_MELEE };
+  // return in z-order (front first) so hit-testing respects last-touched
+  return boxZOrder.filter(k => byKey[k]).map(k => byKey[k]);
 }
 function updateHover(sx, sy){
   const prev = hover; hover = null;
@@ -644,6 +648,7 @@ cv.addEventListener('pointerdown', e=>{
   }
   // any visible box under the cursor -> unified move/resize
   if (hover && BOX[hover.box]){
+    bringToFront(hover.box);   // last-touched box wins hit-testing
     pushUndo();
     const B = BOX[hover.box];
     const orig = B.snap(st, fi);
