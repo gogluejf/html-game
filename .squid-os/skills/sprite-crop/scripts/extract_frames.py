@@ -16,6 +16,7 @@ Subcommands:
   extract  --sheet PATH --out DIR --rows R1,R2,... [--names n1,n2,...]
            [--actions a1,a2,...] [--margin N] [--alpha-threshold N]
            [--satellite-max-area N] [--satellite-radius N] [--min-comp N]
+           [--row-y y0-y1,y0-y1,...] [--col-x row:x1,x2;row:x1,x2]
            [--trace] [--json OUT.json]
   report   --dir DIR
 """
@@ -378,12 +379,37 @@ def cmd_extract(args):
         sys.exit(1)
 
     trace("[4] FRAME CLUSTERING")
+    # Parse --col-x if provided: "row_idx:x1,x2,...;row_idx:x1,x2,..."
+    manual_cols = {}
+    if getattr(args, "col_x", None):
+        for part in args.col_x.split(";"):
+            part = part.strip()
+            if not part:
+                continue
+            row_str, xs_str = part.split(":")
+            row_idx = int(row_str.strip())
+            splits = [int(x.strip()) for x in xs_str.split(",")]
+            manual_cols[row_idx] = splits
+        trace(f"    manual --col-x overrides for rows: {list(manual_cols.keys())}")
+
     all_spans = []
     for r, (y0, y1) in enumerate(rows[: len(expected)]):
-        row_mask = fg[y0:y1, :]
-        spans = cluster_row(row_mask, y0, y1, expected[r], trace, r)
-        if len(spans) != expected[r]:
-            trace(f"    WARN: row {r} produced {len(spans)} spans, expected {expected[r]}")
+        if r in manual_cols:
+            # Use manual split points: boundaries are [0, split1, split2, ..., W]
+            splits = manual_cols[r]
+            bounds = [0] + splits + [W]
+            spans = [[bounds[i], bounds[i + 1]] for i in range(len(bounds) - 1)]
+            # If span count doesn't match expected, warn
+            if len(spans) != expected[r]:
+                trace(f"    WARN: row {r} manual col-x gives {len(spans)} spans, expected {expected[r]}")
+            trace(f"    row {r}: manual-col-x -> {len(spans)} span(s) at x={splits}")
+            for i, (a, b) in enumerate(spans):
+                trace(f"      frame {i + 1}: x {a}-{b} (width {b - a})")
+        else:
+            row_mask = fg[y0:y1, :]
+            spans = cluster_row(row_mask, y0, y1, expected[r], trace, r)
+            if len(spans) != expected[r]:
+                trace(f"    WARN: row {r} produced {len(spans)} spans, expected {expected[r]}")
         all_spans.append(spans)
 
     trace("[5] OWNERSHIP")
@@ -463,6 +489,9 @@ def main():
                     help="max distance from a frame center for satellite assignment")
     ex.add_argument("--min-comp", type=int, default=4, help="drop components smaller than this")
     ex.add_argument("--row-y", help="manual row bands y0-y1,y0-y1,... (skips auto-detection)")
+    ex.add_argument("--col-x", help="manual column split points per row, e.g. '0:300,600;1:400,800' "
+                    "(row_idx:x_split1,x_split2,...). Forces frame boundaries at given x coords, "
+                    "bypassing auto gap detection for that row. Use when glow/effects glue poses together.")
     ex.add_argument("--json", help="also write full result JSON here")
     rp = sub.add_parser("report")
     rp.add_argument("--dir", required=True)
