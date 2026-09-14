@@ -49,13 +49,13 @@
   /* ---------- stage ---------- */
   #stage{flex:1;position:relative;overflow:hidden;background:#0a0c14;}
   /* ---------- frame filmstrip (bottom-right drawer, slides left/right) ---------- */
-  #filmDrawer{position:absolute;right:0;bottom:10px;z-index:20;display:flex;align-items:stretch;height:176px;}
-  #filmScroll{display:flex;align-items:stretch;height:100%;width:max-content;background:rgba(10,12,20,.94);border:1px solid var(--line);border-right:none;border-radius:10px 0 0 10px;padding:8px;box-shadow:-6px 0 22px rgba(0,0,0,.5);transform-origin:right center;transform:translateX(100%) scaleX(0.001);opacity:0;transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .2s ease;pointer-events:none;}
-  #filmDrawer.on #filmScroll{transform:translateX(0) scaleX(1);opacity:1;pointer-events:auto;}
-  #filmBtn{flex:0 0 34px;width:34px;height:100%;pointer-events:auto;font-family:inherit;font-size:10px;letter-spacing:1px;color:var(--txt);background:var(--panel);border:1px solid var(--line);border-left:2px dashed var(--line);border-radius:0 0 0 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;writing-mode:vertical-rl;text-orientation:mixed;}
+  #filmDrawer{position:absolute;right:0;bottom:10px;z-index:20;height:176px;width:34px;background:rgba(10,12,20,.94);border:2px solid #fff;border-right:none;border-radius:10px 0 0 10px;box-shadow:-6px 0 22px rgba(0,0,0,.5);overflow:hidden;transition:width .3s cubic-bezier(.4,0,.2,1);}
+  #filmScroll{position:absolute;top:0;left:0;height:100%;display:flex;align-items:stretch;padding:8px 42px 8px 8px;pointer-events:none;}
+  #filmDrawer.on #filmScroll{pointer-events:auto;}
+  #filmBtn{position:absolute;right:0;top:0;width:34px;height:100%;pointer-events:auto;font-family:inherit;font-size:10px;letter-spacing:1px;color:#fff;background:var(--panel);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;writing-mode:vertical-rl;text-orientation:mixed;}
   #filmBtn svg{width:14px;height:14px;transition:transform .28s;}
   #filmDrawer.on #filmBtn svg{transform:rotate(180deg);}
-  #filmBtn:hover,#filmBtn.on{color:var(--acc);border-left-color:var(--acc);}
+  #filmBtn:hover,#filmBtn.on{color:var(--acc);}
   .fcell{flex:0 0 auto;position:relative;border-right:1px dashed rgba(90,106,144,.55);cursor:pointer;}
   .fcell:last-child{border-right:none;}
   .fcell canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;}
@@ -874,9 +874,19 @@ function drawFilm(){
 }
 $('filmBtn').addEventListener('click', ()=>{
   FILM.on=!FILM.on;
-  $('filmDrawer').classList.toggle('on', FILM.on);
+  const dw=$('filmDrawer');
+  if (FILM.on){
+    // measure full content width, then animate the drawer out to it
+    drawFilm();   // ensure cells are sized before measuring
+    const cellsW = $('filmScroll').scrollWidth;            // cells + their padding
+    const full = cellsW + 34;                              // + handle width
+    dw.classList.add('on');
+    dw.style.width = Math.min(full, window.innerWidth*0.8) + 'px';
+  } else {
+    dw.classList.remove('on');
+    dw.style.width = '34px';
+  }
   $('filmBtn').classList.toggle('on', FILM.on);
-  if (FILM.on) drawFilm();
 });
 // keep the strip in sync with edits / playback / view toggles
 const _origDraw=draw;
