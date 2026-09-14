@@ -34,6 +34,7 @@
   /* ---------- middle ---------- */
   #mid{flex:1;display:flex;flex-direction:column;min-width:0;}
   #toolbar{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap;background:var(--bg2);}
+  #toolbar.booting{visibility:hidden;}   /* hidden until init sets correct toggle states (no flash) */
   .tgroup{display:flex;gap:6px;align-items:center;padding:4px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);position:relative;}
   .tgroup .gtitle{font-size:10px;color:var(--faint);letter-spacing:1px;text-transform:uppercase;margin-right:2px;}
   .tbtn{font-family:inherit;font-size:13px;padding:8px 12px;border-radius:8px;border:2px solid var(--line);background:var(--panel);color:var(--dim);cursor:pointer;letter-spacing:.5px;transition:all .1s;display:inline-flex;align-items:center;gap:7px;}
@@ -137,15 +138,18 @@
     <div id="tree"></div>
   </div>
   <div id="mid">
-    <div id="toolbar">
+    <div id="toolbar" class="booting">
+      <span id="saveIndicator" style="font-size:10px;color:var(--grn);opacity:0;transition:opacity .3s;margin-left:auto;">✓ saved</span>
       <div class="tgroup">
         <span class="gtitle">Display</span>
         <button class="tbtn tog on" id="tglSpriteView" title="show/hide sprite box (handles appear on hover)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" stroke-dasharray="4 3"/></svg>SPRITE BOX</button>
         <button class="tbtn tog on" id="tglCollision" title="show/hide collision box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>COLLISION</button>
-        <button class="tbtn tog on" id="tglMeleeView" title="show/hide melee boxes">
+        <button class="tbtn tog" id="tglMeleeView" title="show/hide melee boxes">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 3"/></svg>MELEE VIEW</button>
+        <button class="tbtn tog" id="tglAllFrames" title="show/hide ALL frames ghosted at once (while paused) + make edits apply to every frame">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12"/><path d="M7 6v12M11 6v12M15 6v12M19 6v12"/></svg>ALL FRAMES</button>
         <button class="tbtn tog on" id="tglAxes" title="show/hide axes crosshair">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>AXES</button>
         <button class="tbtn tog on" id="tglPivot" title="show/hide pivot point (drag to move)">
@@ -155,24 +159,26 @@
       </div>
       <div class="tgroup">
         <span class="gtitle">Tools</span>
-        <button class="tbtn tog" id="tglMeleeOn" title="enable/disable melee box for this frame">
+        <button class="tbtn tog" id="tglMeleeOn" title="enable/disable melee box for this frame" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 12l2 2 4-4"/></svg>MELEE ON</button>
-        <button class="tbtn" id="recenterPivotBtn" title="move pivot to collision box center">
+        <button class="tbtn" id="recenterPivotBtn" title="move pivot to collision box center" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><path d="M12 5v3M12 16v3M5 12h3M16 12h3"/></svg>RECENTER PIVOT</button>
         <div style="position:relative;display:inline-flex;">
-          <button class="tbtn" id="resetBtn" title="reset boxes to original position">
+          <button class="tbtn" id="resetBtn" title="reset boxes to original position" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>RESET</button>
           <div id="resetMenu" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;z-index:10;min-width:160px;white-space:nowrap;">
             <div class="reset-opt" data-scope="frame" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:var(--txt);">Reset Frame</div>
             <div class="reset-opt" data-scope="anim" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:var(--txt);">Reset Animation</div>
+            <div style="height:1px;background:var(--line);margin:4px 2px;"></div>
+            <div class="reset-opt" data-scope="factory" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:#ff5a5a;">Reset to Factory…</div>
           </div>
         </div>
       </div>
       <div class="tgroup">
         <span class="gtitle">Position</span>
-        <button class="tbtn" id="posOriginBtn" title="align sprite left edge to X axis and bottom to Y axis (based on frame 1)">
+        <button class="tbtn" id="posOriginBtn" title="align sprite left edge to X axis and bottom to Y axis (based on frame 1)" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16h16"/><rect x="9" y="9" width="7" height="7"/></svg>LEFT&#8595; BOTTOM</button>
-        <button class="tbtn" id="posCenterBtn" title="center sprite on the X/Y axis origin (based on frame 1)">
+        <button class="tbtn" id="posCenterBtn" title="center sprite on the X/Y axis origin (based on frame 1)" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><rect x="8" y="8" width="8" height="8"/></svg>CENTER</button>
       </div>
       <div class="tgroup" style="margin-left:auto">
@@ -341,6 +347,7 @@ function pushUndo(){
   if (undoStack.length > 100) undoStack.shift();
   redoStack.length = 0;
   syncUndoButtons();
+  saveState();
 }
 async function restore(entry){
   // jump back to the exact animation + frame this edit was made on
@@ -366,9 +373,63 @@ function syncUndoButtons(){
   if (u) u.disabled = !undoStack.length;
   if (r) r.disabled = !redoStack.length;
 }
-let show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true };
+let show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false };
 let bgColor = '#000000';   // canvas background fill
 let isPlaying = true;      // global play/pause, carried across animations
+// ---------- localStorage persistence ----------
+const LS_KEY = 'sprite-editor-state-v1';
+let _loadingState = false;   // guard: suppress saves while restoring from localStorage
+// Serialize everything worth persisting: per-entity editor state + global view.
+function collectState(){
+  const entities = {};
+  for (const [name, st] of S){
+    entities[name] = {
+      speed: st.speed, playing: st.playing, frameIdx: st.frameIdx,
+      collision: st.collision, pivot: st.pivot, rot: st.rot,
+      frames: st.frames.map(f => ({ idx:f.idx, name:f.name, crop:f.crop, offset:f.offset, scale:f.scale, melee:f.melee }))
+    };
+  }
+  return { v:1, entities, view:{ show, isPlaying, bgColor } };
+}
+function saveState(){
+  if (_loadingState) return;   // don't overwrite saved data mid-restore
+  try{
+    const state = collectState();
+    // Never write an empty blob over existing saved data — that clobbers real state.
+    if (Object.keys(state.entities).length === 0) return;
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    const el = document.getElementById('saveIndicator');
+    if (el){ el.textContent='✓'; el.style.opacity='1'; setTimeout(()=>el.style.opacity='0', 500); }
+  }catch(e){ /* quota / private mode */ }
+}
+function loadState(){
+  let raw; try{ raw = localStorage.getItem(LS_KEY); }catch(e){ return; }
+  if (!raw) return;
+  let data; try{ data = JSON.parse(raw); }catch(e){ return; }
+  if (!data || data.v !== 1) return;
+  _loadingState = true;   // suppress saves while restoring
+  // restore per-entity state (merge over defaults when an entity is loaded)
+  for (const [name, saved] of Object.entries(data.entities||{})){
+    if (saved && Array.isArray(saved.frames)) S.set(name, saved);
+  }
+  // restore global view
+  if (data.view){
+    if (data.view.show) Object.assign(show, data.view.show);
+    if (typeof data.view.isPlaying === 'boolean') isPlaying = data.view.isPlaying;
+    if (typeof data.view.bgColor === 'string') bgColor = data.view.bgColor;
+  }
+  // normalize allFrames: it must be a real boolean (a stale/corrupt save could
+  // leave it undefined or non-bool, which breaks the ghost view + button state).
+  show.allFrames = !!show.allFrames;
+  // NOTE: do NOT reset _loadingState here — the init sequence owns that flag
+  // and keeps it on until selectEntity()'s async load fully completes.
+}
+// apply restored view to the UI (called once at init)
+function applySavedView(){
+  $('bgval').textContent = bgColor; bgSwatch.style.background = bgColor; bgHex.value = bgColor;
+  setPlaying(isPlaying);
+  syncToggles();
+}
 let drag = null;         // active pointer drag
 let hover = null;        // {box:'collision'|'melee'|'scale', handle:id} or {box, body:true}
 let boxZOrder = ['sprite','collision','melee'];   // front-to-back; last-touched moves to front
@@ -485,13 +546,20 @@ async function selectEntity(li, ei, opts){
   flatIdx = flatList.findIndex(f => f.li===li && f.ei===ei);
   const imgs = await loadFrames(en.frames);
   cur = { name: en.name, paths: en.frames, imgs: imgs.filter(Boolean), crops: en.crops || [] };
-  if (!S.has(cur.name)) S.set(cur.name, defaultState(cur.name, cur.imgs, cur.paths, cur.crops));
+  // use saved per-entity state if present AND frame count still matches; else fresh defaults
+  const saved = S.get(cur.name);
+  if (!saved || !Array.isArray(saved.frames) || saved.frames.length !== en.frames.length){
+    S.set(cur.name, defaultState(cur.name, cur.imgs, cur.paths, cur.crops));
+  }
   cur.st = S.get(cur.name);
   cur.st.playing = isPlaying;   // carry global play/pause across animations
   acc = 0; drag = null; hover = null;
   panX = 0; panY = 0;
   if (!userZoomed){ zoom = 1; $('zoomval').textContent = '100%'; }   // start each anim at true size
   resizeCanvas(); syncPanel(); draw();
+  syncUndoButtons();   // reflect current undo/redo stack state
+  // toolbar was hidden during boot; now that state is settled, reveal it
+  const tb = $('toolbar'); if (tb) tb.classList.remove('booting');
   // settle backing store once layout is ready (no re-zoom)
   requestAnimationFrame(()=>{ resizeCanvas(); draw(); });
 }
@@ -531,6 +599,14 @@ function setZoom(nz, cx, cy){
   draw();
 }
 function curFrameIdx(){ return cur.st.frameIdx % cur.st.frames.length; }
+// When ALL FRAMES mode is on, per-frame edits (offset/scale/melee) propagate to
+// EVERY frame so the whole animation moves as one rigid body. Collision is already
+// shared across frames, so it follows automatically. Returns the list of frames to
+// mutate for the current frame index; otherwise just that one frame.
+function targetFrames(fi){
+  if (show.allFrames && cur && cur.st) return cur.st.frames;
+  return [ cur.st.frames[fi] ];
+}
 function frameRect(st, fi){
   const im = cur.imgs[fi]; if (!im) return null;
   const f = st.frames[fi];
@@ -631,6 +707,23 @@ function draw(){
     const w = im.naturalWidth*f.scale.sx, h = im.naturalHeight*f.scale.sy;
     const [dx, dy] = s2c(f.offset.x - w/2, f.offset.y - h/2);
     ctx.drawImage(im, dx, dy, w*zoom, h*zoom);
+  }
+  // ALL FRAMES ghost view: while paused, draw every frame's image at its own
+  // position/scale with alpha so you can see the whole animation at once.
+  // No boxes for the ghosts — just the sprites. The current frame is drawn solid
+  // above; here we render the OTHER frames underneath at reduced opacity.
+  if (show.allFrames && !st.playing && st.frames.length > 1){
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    for (let i=0;i<st.frames.length;i++){
+      if (i===fi) continue;
+      const gim = cur.imgs[i]; if (!gim) continue;
+      const gf = st.frames[i];
+      const gw = gim.naturalWidth*gf.scale.sx, gh = gim.naturalHeight*gf.scale.sy;
+      const [gdx, gdy] = s2c(gf.offset.x - gw/2, gf.offset.y - gh/2);
+      ctx.drawImage(gim, gdx, gdy, gw*zoom, gh*zoom);
+    }
+    ctx.restore();
   }
   // draw boxes (rotated with sprite)
   const boxes = boxList();
@@ -733,9 +826,10 @@ function setPlaying(p){
   $('playIco').innerHTML = cur.st.playing ? '&#10074;&#10074;' : '&#9654;';
   syncPanelDisabled();   // lock/unlock side inputs with play state
   syncToggles();   // update MELEE ON disabled state immediately
+  saveState();
 }
 function stepFrame(d){ if(!cur||!cur.st)return; const st=cur.st; st.frameIdx=(st.frameIdx+d+st.frames.length)%st.frames.length; syncPanel(); draw(); }
-function setSpeed(v){ if(!cur||!cur.st)return; cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = cur.st.speed+' fps'; $('p_speed').value = cur.st.speed; }
+function setSpeed(v){ if(!cur||!cur.st)return; cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = cur.st.speed+' fps'; $('p_speed').value = cur.st.speed; saveState(); }
 // ---------- panel ----------
 const P = id => $(id);
 // wrap panel number inputs with custom spinner arrows (native ones are hidden)
@@ -799,14 +893,14 @@ function syncPanelDisabled(){
 }
 function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=parseFloat(P(id).value); if(!isNaN(v)&&cur&&cur.st&&!editingLocked()){ pushUndo(); fn(v); draw(); } else syncPanel(); }); }
 bindNum('p_speed', v=>setSpeed(v));
-bindNum('p_ox', v=>cur.st.frames[curFrameIdx()].offset.x=v);
-bindNum('p_oy', v=>cur.st.frames[curFrameIdx()].offset.y=v);
-bindNum('p_sx', v=>cur.st.frames[curFrameIdx()].scale.sx=Math.max(.05,v));
-bindNum('p_sy', v=>cur.st.frames[curFrameIdx()].scale.sy=Math.max(.05,v));
-bindNum('p_mx', v=>{ const m=cur.st.frames[curFrameIdx()].melee; if(m.on) m.x=v; });
-bindNum('p_my', v=>{ const m=cur.st.frames[curFrameIdx()].melee; if(m.on) m.y=v; });
-bindNum('p_mw', v=>{ const m=cur.st.frames[curFrameIdx()].melee; if(m.on) m.w=Math.max(1,v); });
-bindNum('p_mh', v=>{ const m=cur.st.frames[curFrameIdx()].melee; if(m.on) m.h=Math.max(1,v); });
+bindNum('p_ox', v=>{ const st=cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].offset.x; targetFrames(fi).forEach(f=>f.offset.x+=d); });
+bindNum('p_oy', v=>{ const st=cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].offset.y; targetFrames(fi).forEach(f=>f.offset.y+=d); });
+bindNum('p_sx', v=>{ const st=cur.st, fi=curFrameIdx(); const r=Math.max(.05,v)/st.frames[fi].scale.sx; targetFrames(fi).forEach(f=>f.scale.sx=Math.max(.05,f.scale.sx*r)); });
+bindNum('p_sy', v=>{ const st=cur.st, fi=curFrameIdx(); const r=Math.max(.05,v)/st.frames[fi].scale.sy; targetFrames(fi).forEach(f=>f.scale.sy=Math.max(.05,f.scale.sy*r)); });
+bindNum('p_mx', v=>{ const st=cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].melee.x; targetFrames(fi).forEach(f=>{ if(f.melee.on) f.melee.x+=d; }); });
+bindNum('p_my', v=>{ const st=cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].melee.y; targetFrames(fi).forEach(f=>{ if(f.melee.on) f.melee.y+=d; }); });
+bindNum('p_mw', v=>{ const st=cur.st, fi=curFrameIdx(); const r=Math.max(1,v)/st.frames[fi].melee.w; targetFrames(fi).forEach(f=>{ if(f.melee.on) f.melee.w=Math.max(1,f.melee.w*r); }); });
+bindNum('p_mh', v=>{ const st=cur.st, fi=curFrameIdx(); const r=Math.max(1,v)/st.frames[fi].melee.h; targetFrames(fi).forEach(f=>{ if(f.melee.on) f.melee.h=Math.max(1,f.melee.h*r); }); });
 bindNum('p_kx', v=>cur.st.collision.x=v);
 bindNum('p_ky', v=>cur.st.collision.y=v);
 bindNum('p_kw', v=>cur.st.collision.w=Math.max(1,v));
@@ -828,6 +922,12 @@ function syncToggles(){
   $('tglMeleeView').classList.toggle('on', show.meleeView);
   $('tglAxes').classList.toggle('on', show.axes);
   $('tglSpriteView').classList.toggle('on', show.spriteView);
+  // ALL FRAMES: only meaningful while paused (ghosts are a paused-state view)
+  const afBtn = $('tglAllFrames');
+  if (afBtn){
+    afBtn.classList.toggle('on', show.allFrames);
+    afBtn.disabled = !!(cur && cur.st && cur.st.playing);
+  }
   // MELEE ON (Tools): always visible; .on reflects the current frame's melee box;
   // disabled while playing (can't edit per-frame data during animation)
   const mon = cur && cur.st ? cur.st.frames[curFrameIdx()].melee.on : false;
@@ -849,10 +949,10 @@ function syncToggles(){
   $('posOriginBtn').disabled = locked;
   $('posCenterBtn').disabled = locked;
 }
-$('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); });
+$('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); saveState(); });
 $('tglMeleeView').addEventListener('click', ()=>{
   if ($('tglMeleeView').disabled) return;
-  show.meleeView=!show.meleeView; syncToggles(); draw();
+  show.meleeView=!show.meleeView; syncToggles(); draw(); saveState();
 });
 $('tglMeleeOn').addEventListener('click', ()=>{
   if (!cur || !cur.st || editingLocked()) return;
@@ -863,10 +963,17 @@ $('tglMeleeOn').addEventListener('click', ()=>{
   P('p_mon').checked = f.melee.on;
   syncToggles(); syncPanel(); draw();
 });
-$('tglAxes').addEventListener('click', ()=>{ show.axes=!show.axes; syncToggles(); draw(); });
-$('tglSpriteView').addEventListener('click', ()=>{ show.spriteView=!show.spriteView; syncToggles(); draw(); });
-$('tglPivot').addEventListener('click', ()=>{ show.pivot=!show.pivot; syncToggles(); draw(); });
-$('tglLabel').addEventListener('click', ()=>{ show.label=!show.label; syncToggles(); draw(); });
+$('tglAxes').addEventListener('click', ()=>{ show.axes=!show.axes; syncToggles(); draw(); saveState(); });
+$('tglSpriteView').addEventListener('click', ()=>{ show.spriteView=!show.spriteView; syncToggles(); draw(); saveState(); });
+$('tglAllFrames').addEventListener('click', ()=>{
+  if (!cur || !cur.st) return;
+  // can't be active while playing — ghosts are a paused-state view
+  if (cur.st.playing){ setPlaying(false); }
+  show.allFrames = !show.allFrames;
+  syncToggles(); draw(); saveState();
+});
+$('tglPivot').addEventListener('click', ()=>{ show.pivot=!show.pivot; syncToggles(); draw(); saveState(); });
+$('tglLabel').addEventListener('click', ()=>{ show.label=!show.label; syncToggles(); draw(); saveState(); });
 // ---------- background color picker (popup, live-updating) ----------
 const _bgState = { h:0, s:100, l:0 };   // current HSL
 const bgSatsq = $('bgSatsq'), bgSqDot = $('bgSqDot');
@@ -903,6 +1010,7 @@ function setBgFromHsl(h,s,l){
   bgSqDot.style.left=(s/100*100)+'%';
   bgSqDot.style.top=((100-l)/100*100)+'%';
   draw();
+  saveState();
 }
 function setBg(hex){ const hsl=hex2hsl(hex); if(hsl) setBgFromHsl(hsl.h,hsl.s,hsl.l); }
 // saturation square drag (live)
@@ -927,7 +1035,9 @@ function closeBgPop(){ bgPop.classList.remove('on'); }
 bgSwatch.addEventListener('click',e=>{ e.stopPropagation(); bgPop.classList.contains('on')?closeBgPop():openBgPop(); });
 $('bgClose').addEventListener('click',e=>{ e.stopPropagation(); closeBgPop(); });
 document.addEventListener('click',e=>{ if(bgPop.classList.contains('on') && !bgPop.contains(e.target) && e.target!==bgSwatch) closeBgPop(); });
-setBg('#000000');
+// Only apply the default bg if nothing was restored from localStorage.
+// (loadState() already ran at init and set bgColor from saved data, if any.)
+if (!localStorage.getItem(LS_KEY)) setBg('#000000');
 // ---------- RECENTER PIVOT ----------
 $('recenterPivotBtn').addEventListener('click', ()=>{
   if (!cur || !cur.st || editingLocked()) return;
@@ -973,6 +1083,7 @@ resetMenu.querySelectorAll('.reset-opt').forEach(opt => {
   opt.addEventListener('click', ()=>{
     const scope = opt.dataset.scope;
     resetMenu.style.display = 'none';
+    if (scope === 'factory'){ factoryReset(); return; }   // destructive — own confirm flow
     if (!cur || !cur.st || editingLocked()) return;
     pushUndo();
     if (scope === 'frame') resetFrame();
@@ -980,6 +1091,35 @@ resetMenu.querySelectorAll('.reset-opt').forEach(opt => {
     syncPanel(); draw();
   });
 });
+// ---------- factory reset: wipe ALL saved state + app state back to defaults ----------
+function factoryReset(){
+  const ok = confirm(
+    'RESET TO FACTORY\n\n' +
+    'This permanently deletes ALL saved editor state:\n' +
+    '  • every frame\'s offset / scale / melee box\n' +
+    '  • collision boxes, pivots, rotation\n' +
+    '  • speed, play state, background color\n' +
+    '  • all view toggles\n\n' +
+    'Everything returns to its default. This cannot be undone.\n\n' +
+    'Continue?'
+  );
+  if (!ok) return;
+  _loadingState = true;                       // suppress saves during the wipe
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  S.clear();                                  // drop all per-entity editor state
+  undoStack.length = 0; redoStack.length = 0; // clear history
+  show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false };
+  isPlaying = true;
+  bgColor = '#000000';
+  _bgState.h = 0; _bgState.s = 100; _bgState.l = 0;
+  userZoomed = false; zoom = 1; panX = 0; panY = 0;
+  $('zoomval').textContent = '100%';
+  $('bgval').textContent = bgColor; bgSwatch.style.background = bgColor; bgHex.value = bgColor;
+  $('bgHue').value = 0; $('bgLight').value = 0; paintSatSquare();
+  syncUndoButtons();
+  // reload the first entity fresh from defaults and re-enable saving
+  selectEntity(0, 0).then(()=>{ _loadingState = false; });
+}
 function resetFrame(){
   const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
   // reset sprite offset/scale: scale back to 1, left-bottom corner at origin (0,0)
@@ -1165,9 +1305,20 @@ function finishHover(prev){
 const BOX = {
   sprite: {
     snap(st, fi){ const f=st.frames[fi], im=cur.imgs[fi]; return { x:f.offset.x-im.naturalWidth*f.scale.sx/2, y:f.offset.y-im.naturalHeight*f.scale.sy/2, w:im.naturalWidth*f.scale.sx, h:im.naturalHeight*f.scale.sy }; },
-    move(d, sx, sy){ const f=cur.st.frames[curFrameIdx()]; f.offset.x=Math.round(sx-d.ox+d.orig.w/2); f.offset.y=Math.round(sy-d.oy+d.orig.h/2); },
+    move(d, sx, sy){
+      // current frame gets the exact target; in ALL FRAMES mode every other frame
+      // gets the same DELTA applied to its own starting offset (relative shift).
+      const st=cur.st, fi=curFrameIdx();
+      const tx=Math.round(sx-d.ox+d.orig.w/2), ty=Math.round(sy-d.oy+d.orig.h/2);
+      const f0=st.frames[fi]; f0.offset.x=tx; f0.offset.y=ty;
+      if (show.allFrames && d.before){
+        const dx=tx-d.before.frames[fi].ox, dy=ty-d.before.frames[fi].oy;
+        for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
+          const b=d.before.frames[i]; st.frames[i].offset.x=Math.round(b.ox+dx); st.frames[i].offset.y=Math.round(b.oy+dy); }
+      }
+    },
     resize(d, sx, sy){
-      const f=cur.st.frames[curFrameIdx()], o=d.orig, ow=d.ow, oh=d.oh;
+      const o=d.orig, ow=d.ow, oh=d.oh;
       if (d.ratio){
         // SHIFT: LOCK THE CURRENT RATIO. Corners scale BOTH axes uniformly about
         // the box center (a 2:1 stays 2:1). Middle handles (n/s/e/w) scale ONLY
@@ -1178,22 +1329,34 @@ const BOX = {
         // Relative to the GRAB POINT (cursor at pointerdown), not the box center:
         // k starts at 1 so there's no jump on click; scale only changes as you drag.
         const gx=d.gx, gy=d.gy;     // grab point in sprite space
+        let nsx=null, nsy=null;
         if (corner){
           let dx, dy;               // signed distance from grab point along each axis
           if (d.anchor.includes('e')) dx=sx-gx; else if (d.anchor.includes('w')) dx=gx-sx;
           if (d.anchor.includes('s')) dy=sy-gy; else if (d.anchor.includes('n')) dy=gy-sy;
           // convert pixel deltas to a scale factor about the (fixed) center
           const k=Math.max(Math.abs(1+2*dx/o.w),Math.abs(1+2*dy/o.h));
-          f.scale.sx=Math.max(.05,f0*k);
-          f.scale.sy=Math.max(.05,g0*k);
+          nsx=Math.max(.05,f0*k); nsy=Math.max(.05,g0*k);
         } else if (d.anchor.includes('e')||d.anchor.includes('w')){
           // horizontal middle: scale X both sides about center, Y untouched
           const dx=(d.anchor.includes('e'))?sx-gx:gx-sx;
-          f.scale.sx=Math.max(.05,f0*Math.abs(1+2*dx/o.w));
+          nsx=Math.max(.05,f0*Math.abs(1+2*dx/o.w));
         } else {
           // vertical middle: scale Y both sides about center, X untouched
           const dy=(d.anchor.includes('s'))?sy-gy:gy-sy;
-          f.scale.sy=Math.max(.05,g0*Math.abs(1+2*dy/o.h));
+          nsy=Math.max(.05,g0*Math.abs(1+2*dy/o.h));
+        }
+        // current frame exact; others get relative ratio applied to their own scales.
+        const st=cur.st, fi=curFrameIdx();
+        const f0f=st.frames[fi];
+        if (nsx!==null) f0f.scale.sx=nsx;
+        if (nsy!==null) f0f.scale.sy=nsy;
+        if (show.allFrames && d.before){
+          for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
+            const b=d.before.frames[i], fr=st.frames[i];
+            if (nsx!==null) fr.scale.sx=Math.max(.05,b.sx*(nsx/d.before.frames[fi].sx));
+            if (nsy!==null) fr.scale.sy=Math.max(.05,b.sy*(nsy/d.before.frames[fi].sy));
+          }
         }
       } else {
         let L=o.x,R=o.x+o.w,T=o.y,B=o.y+o.h;
@@ -1201,20 +1364,97 @@ const BOX = {
         if (d.anchor.includes('n'))T=sy; if (d.anchor.includes('s'))B=sy;
         if (R-L<1){ if(d.anchor.includes('w'))L=R-1; else R=L+1; }
         if (B-T<1){ if(d.anchor.includes('n'))T=B-1; else B=T+1; }
-        f.scale.sx=Math.max(.05,(R-L)/ow); f.scale.sy=Math.max(.05,(B-T)/oh);
-        f.offset.x=Math.round((L+R)/2); f.offset.y=Math.round((T+B)/2);
+        const nsx=Math.max(.05,(R-L)/ow), nsy=Math.max(.05,(B-T)/oh);
+        const ncx=Math.round((L+R)/2), ncy=Math.round((T+B)/2);
+        // current frame exact; others get relative ratio (scale) + delta (center).
+        const st=cur.st, fi=curFrameIdx();
+        const f0=st.frames[fi]; f0.scale.sx=nsx; f0.scale.sy=nsy; f0.offset.x=ncx; f0.offset.y=ncy;
+        if (show.allFrames && d.before){
+          const rx=nsx/d.before.frames[fi].sx, ry=nsy/d.before.frames[fi].sy;
+          const dx=ncx-d.before.frames[fi].ox, dy=ncy-d.before.frames[fi].oy;
+          for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
+            const b=d.before.frames[i], fr=st.frames[i];
+            fr.scale.sx=Math.max(.05,b.sx*rx); fr.scale.sy=Math.max(.05,b.sy*ry);
+            fr.offset.x=Math.round(b.ox+dx); fr.offset.y=Math.round(b.oy+dy); }
+        }
       }
     }
   },
   collision: {
     snap(st, fi){ return {...st.collision}; },
-    move(d, sx, sy){ d.box.x=Math.round(sx-d.ox); d.box.y=Math.round(sy-d.oy); },
-    resize(d, sx, sy){ resizeBox(d.box, d.anchor, sx, sy, d.orig, d.ratio); }
+    move(d, sx, sy){
+      const st=cur.st, fi=curFrameIdx();
+      const nx=Math.round(sx-d.ox), ny=Math.round(sy-d.oy);
+      st.collision.x=nx; st.collision.y=ny;
+      // ALL FRAMES: shift every frame's offset + melee by the same delta so the
+      // whole animation slides as one rigid body (collision is shared).
+      if (show.allFrames && d.before){
+        const dx=nx-d.before.col.x, dy=ny-d.before.col.y;
+        for (let i=0;i<st.frames.length;i++){
+          const b=d.before.frames[i], fr=st.frames[i];
+          fr.offset.x=Math.round(b.ox+dx); fr.offset.y=Math.round(b.oy+dy);
+          if (fr.melee.on){ fr.melee.x=Math.round(b.m.x+dx); fr.melee.y=Math.round(b.m.y+dy); }
+        }
+      }
+    },
+    resize(d, sx, sy){
+      const st=cur.st, fi=curFrameIdx();
+      const c0={...d.box};   // current collision (== before state at start)
+      resizeBox(c0, d.anchor, sx, sy, d.orig, d.ratio);
+      st.collision.x=c0.x; st.collision.y=c0.y; st.collision.w=c0.w; st.collision.h=c0.h;
+      // ALL FRAMES: scale every frame + its melee by the same ratio about the
+      // collision's starting center (relative to each frame's own size/position).
+      if (show.allFrames && d.before){
+        const b0=d.before.col;
+        const rx=b0.w>0?c0.w/b0.w:1, ry=b0.h>0?c0.h/b0.h:1;
+        const bcx=b0.x+b0.w/2, bcy=b0.y+b0.h/2;   // starting collision center
+        for (let i=0;i<st.frames.length;i++){
+          const b=d.before.frames[i], fr=st.frames[i];
+          // scale frame about the shared center: newCenter = bc + (oldCenter-bc)*r
+          const ocx=b.ox, ocy=b.oy;
+          fr.scale.sx=Math.max(.05,b.sx*rx); fr.scale.sy=Math.max(.05,b.sy*ry);
+          fr.offset.x=Math.round(bcx+(ocx-bcx)*rx); fr.offset.y=Math.round(bcy+(ocy-bcy)*ry);
+          if (fr.melee.on){
+            const m=b.m;
+            fr.melee.w=Math.max(1,Math.round(m.w*rx)); fr.melee.h=Math.max(1,Math.round(m.h*ry));
+            const mcx=m.x+m.w/2, mcy=m.y+m.h/2;
+            fr.melee.x=Math.round(bcx+(mcx-bcx)*rx - fr.melee.w/2);
+            fr.melee.y=Math.round(bcy+(mcy-bcy)*ry - fr.melee.h/2);
+          }
+        }
+      }
+    }
   },
   melee: {
     snap(st, fi){ return {...st.frames[fi].melee}; },
-    move(d, sx, sy){ d.box.x=Math.round(sx-d.ox); d.box.y=Math.round(sy-d.oy); },
-    resize(d, sx, sy){ resizeBox(d.box, d.anchor, sx, sy, d.orig, d.ratio); }
+    move(d, sx, sy){
+      const st=cur.st, fi=curFrameIdx();
+      const nx=Math.round(sx-d.ox), ny=Math.round(sy-d.oy);
+      const f0=st.frames[fi]; if(f0.melee.on){ f0.melee.x=nx; f0.melee.y=ny; }
+      if (show.allFrames && d.before && f0.melee.on){
+        const dx=nx-d.before.frames[fi].m.x, dy=ny-d.before.frames[fi].m.y;
+        for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
+          const b=d.before.frames[i], fr=st.frames[i]; if(!fr.melee.on)continue;
+          fr.melee.x=Math.round(b.m.x+dx); fr.melee.y=Math.round(b.m.y+dy); }
+      }
+    },
+    resize(d, sx, sy){
+      // compute target from current frame's own box, then apply relative ratio/delta to others
+      const st=cur.st, fi=curFrameIdx(), f0=st.frames[fi];
+      if (!f0.melee.on) return;
+      const m0={...d.box};   // current frame melee (== before state at start)
+      resizeBox(m0, d.anchor, sx, sy, d.orig, d.ratio);
+      f0.melee.x=m0.x; f0.melee.y=m0.y; f0.melee.w=m0.w; f0.melee.h=m0.h;
+      if (show.allFrames && d.before){
+        const b0=d.before.frames[fi].m;
+        const rx=b0.w>0?m0.w/b0.w:1, ry=b0.h>0?m0.h/b0.h:1;
+        const dx=m0.x-b0.x, dy=m0.y-b0.y;
+        for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
+          const b=d.before.frames[i], fr=st.frames[i]; if(!fr.melee.on)continue;
+          fr.melee.w=Math.max(1,Math.round(b.m.w*rx)); fr.melee.h=Math.max(1,Math.round(b.m.h*ry));
+          fr.melee.x=Math.round(b.m.x+dx); fr.melee.y=Math.round(b.m.y+dy); }
+      }
+    }
   }
 };
 cv.addEventListener('pointerdown', e=>{
@@ -1231,7 +1471,8 @@ cv.addEventListener('pointerdown', e=>{
   // pivot marker -> drag to reposition
   if (hover && hover.box==='pivot'){
     pushUndo();
-    drag = { key:'pivot', sx, sy };
+    const pv0 = st.pivot ? {...st.pivot} : null;
+    drag = { key:'pivot', sx, sy, before: pv0 };
     cv.style.cursor = 'grabbing';
     draw(); return;
   }
@@ -1242,12 +1483,22 @@ cv.addEventListener('pointerdown', e=>{
     const B = BOX[hover.box];
     const orig = B.snap(st, fi);
     const ref  = hover.box==='sprite' ? null : (hover.box==='collision' ? st.collision : st.frames[fi].melee);
+    // per-frame BEFORE-state for relative propagation (ALL FRAMES mode): each
+    // frame gets the same DELTA (position) / RATIO (size) applied to its own
+    // starting values, so frames keep their individual sizes/offsets.
+    const before = {
+      frames: st.frames.map(f => ({ ox:f.offset.x, oy:f.offset.y, sx:f.scale.sx, sy:f.scale.sy,
+                                    m:{...f.melee} })),
+      col: {...st.collision},
+      pivot: st.pivot ? {...st.pivot} : null
+    };
     drag = { key:hover.box, anchor:hover.handle||null, ratio:e.shiftKey, orig,
              box:ref, ox:sx-orig.x, oy:sy-orig.y,          // grab offset from box TOP-LEFT (shared move math)
              ow: cur.imgs[fi]?cur.imgs[fi].naturalWidth:orig.w,
              oh: cur.imgs[fi]?cur.imgs[fi].naturalHeight:orig.h,
              gx:sx, gy:sy,                                                // grab point (sprite space) for ratio-resize
-             sx0: st.frames[fi].scale.sx, sy0: st.frames[fi].scale.sy };   // frozen start scales (sprite ratio-resize)
+             sx0: st.frames[fi].scale.sx, sy0: st.frames[fi].scale.sy,   // frozen start scales (sprite ratio-resize)
+             before };
     draw(); return;
   }
   // empty space -> pan
@@ -1264,8 +1515,18 @@ cv.addEventListener('pointermove', e=>{
     panX = drag.panX0 - (cx - drag.sx0)/zoom;
     panY = drag.panY0 - (cy - drag.sy0)/zoom;
   } else if (drag.key==='pivot'){
-    cur.st.pivot.x = Math.round(sx);
-    cur.st.pivot.y = Math.round(sy);
+    const nx=Math.round(sx), ny=Math.round(sy);
+    cur.st.pivot.x=nx; cur.st.pivot.y=ny;
+    // ALL FRAMES: shift every frame + melee by the same delta so the whole
+    // animation follows the pivot as one rigid body.
+    if (show.allFrames && drag.before){
+      const dx=nx-drag.before.x, dy=ny-drag.before.y;
+      for (let i=0;i<cur.st.frames.length;i++){
+        const f=cur.st.frames[i];
+        f.offset.x+=dx; f.offset.y+=dy;
+        if (f.melee.on){ f.melee.x+=dx; f.melee.y+=dy; }
+      }
+    }
     syncPanel();
   } else if (BOX[drag.key]){
     // unified box transform: free anchor moves one edge, shift+corner locks ratio about center
@@ -1334,14 +1595,14 @@ window.addEventListener('keydown', e=>{
   const off = e.ctrlKey ? 10 : 1;
   switch (e.code){
     case 'Space': e.preventDefault(); setPlaying(!st.playing); break;
-    case 'ArrowRight': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); f.offset.x+=off; syncPanel(); draw(); } else stepFrame(1); break;
-    case 'ArrowLeft': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); f.offset.x-=off; syncPanel(); draw(); } else stepFrame(-1); break;
+    case 'ArrowRight': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); targetFrames(fi).forEach(f=>f.offset.x+=off); syncPanel(); draw(); } else stepFrame(1); break;
+    case 'ArrowLeft': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); targetFrames(fi).forEach(f=>f.offset.x-=off); syncPanel(); draw(); } else stepFrame(-1); break;
     case 'ArrowUp': e.preventDefault();
-      if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); f.offset.y-=off; syncPanel(); draw(); }
+      if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); targetFrames(fi).forEach(f=>f.offset.y-=off); syncPanel(); draw(); }
       else if (flatIdx>0){ flatIdx--; const q=flatList[flatIdx]; selectEntity(q.li,q.ei); }
       break;
     case 'ArrowDown': e.preventDefault();
-      if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); f.offset.y+=off; syncPanel(); draw(); }
+      if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); targetFrames(fi).forEach(f=>f.offset.y+=off); syncPanel(); draw(); }
       else if (flatIdx<flatList.length-1){ flatIdx++; const q=flatList[flatIdx]; selectEntity(q.li,q.ei); }
       break;
     case 'Minus': case 'NumpadSubtract': e.preventDefault(); if (e.ctrlKey){ setZoom(zoom/1.25); } else setSpeed(st.speed-1); break;
@@ -1349,8 +1610,17 @@ window.addEventListener('keydown', e=>{
   }
 });
 // ---------- init ----------
+_loadingState = true;   // suppress saves during the entire init/restore sequence
 $('zoomval').textContent = Math.round(zoom*100)+'%';
-if (MANIFEST.labels.length) selectEntity(0, 0);
+loadState();          // restore per-entity state + view from localStorage (keeps guard ON)
+applySavedView();     // apply restored view (bg, play, toggles) to the UI — no save (guard on)
+syncToggles();   // set toolbar lit states from `show` BEFORE first paint (no flash)
+syncUndoButtons();   // disable undo/redo while stacks are empty
+if (MANIFEST.labels.length){
+  selectEntity(0, 0).then(()=>{ _loadingState = false; });  // re-enable auto-save ONLY after async load done
+} else {
+  _loadingState = false;
+}
 </script>
 </body>
 </html>
