@@ -87,6 +87,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>COLLISION</button>
         <button class="tbtn tog on" id="tglMeleeView" title="show/hide melee boxes">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 3"/></svg>MELEE VIEW</button>
+        <button class="tbtn tog" id="tglMeleeOn" style="display:none" title="enable/disable melee box for this frame">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 12l2 2 4-4"/></svg>MELEE ON</button>
         <button class="tbtn tog on" id="tglAxes" title="show/hide axes crosshair">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>AXES</button>
       </div>
@@ -401,28 +403,16 @@ function draw(){
     const [dx, dy] = s2c(f.offset.x - w/2, f.offset.y - h/2);
     ctx.drawImage(im, dx, dy, w*zoom, h*zoom);
   }
-  // sprite box: dotted when idle/hovered (squares visible), solid while dragging
-  if (show.spriteView && im){
-    const r = frameRect(st, fi);
-    const dragging = drag && (drag.kind==='sprite-move'||drag.kind==='sprite-resize');
-    drawBox(r, COL_SCALE, true, !dragging,
-      hover && hover.box==='sprite' ? hover.handle : null,
-      !!(hover && hover.box==='sprite' && hover.body));
-  }
-  // collision box
-  if (show.collision){
-    const active = (hover && hover.box==='collision') || (drag && drag.box===st.collision);
-    drawBox(st.collision, COL_COLL, active, false,
-      hover && hover.box==='collision' ? hover.handle : null,
-      !!(hover && hover.box==='collision' && hover.body));
-  }
-  // melee box (per frame)
-  if (meleeVisible()){
-    const m = st.frames[fi].melee;
-    const active = (hover && hover.box==='melee') || (drag && drag.box===m);
-    drawBox(m, COL_MELEE, active, false,
-      hover && hover.box==='melee' ? hover.handle : null,
-      !!(hover && hover.box==='melee' && hover.body));
+  // ---------- unified box rendering (sprite / collision / melee share identical behavior) ----------
+  const boxes = [];
+  if (show.spriteView && im) boxes.push({ key:'sprite',    rect:frameRect(st, fi), color:COL_SCALE, dashed:true });
+  if (show.collision)        boxes.push({ key:'collision', rect:st.collision,      color:COL_COLL,  dashed:false });
+  if (meleeVisible())        boxes.push({ key:'melee',     rect:st.frames[fi].melee, color:COL_MELEE, dashed:false });
+  for (const b of boxes){
+    const hovered = hover && hover.box===b.key;
+    const dragging = drag && drag.kind!=='pan' && drag.key===b.key;
+    drawBox(b.rect, b.color, true, b.dashed && !dragging,
+      hovered ? hover.handle : null, !!(hovered && hover.body));
   }
   finfo.textContent = `frame ${fi+1}/${st.frames.length}  \u2014  ${st.frames[fi].name}`;
   // DEBUG state readout (temporary)
@@ -465,6 +455,7 @@ function syncPanel(){
   P('p_mx').value=f.melee.x; P('p_my').value=f.melee.y; P('p_mw').value=f.melee.w; P('p_mh').value=f.melee.h;
   P('p_kx').value=st.collision.x; P('p_ky').value=st.collision.y; P('p_kw').value=st.collision.w; P('p_kh').value=st.collision.h;
   setPlaying(st.playing);
+  syncToggles();   // keep MELEE ON button in sync with current frame
 }
 function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=parseFloat(P(id).value); if(!isNaN(v)&&cur&&cur.st&&!editingLocked()){ pushUndo(); fn(v); draw(); } else syncPanel(); }); }
 bindNum('p_speed', v=>setSpeed(v));
@@ -486,8 +477,7 @@ P('p_mon').addEventListener('change', ()=>{
   pushUndo();
   const f = cur.st.frames[curFrameIdx()];
   f.melee.on = P('p_mon').checked;
-  if (f.melee.on && !Object.is(f.melee.x, null)) { /* keep existing */ }
-  syncPanel(); draw();
+  syncToggles(); syncPanel(); draw();
 });
 // ---------- toolbar (display toggles only) ----------
 function syncToggles(){
@@ -495,9 +485,22 @@ function syncToggles(){
   $('tglMeleeView').classList.toggle('on', show.meleeView);
   $('tglAxes').classList.toggle('on', show.axes);
   $('tglSpriteView').classList.toggle('on', show.spriteView);
+  // MELEE ON button only appears when the current frame has a melee box enabled
+  const mon = cur && cur.st ? cur.st.frames[curFrameIdx()].melee.on : false;
+  const btn = $('tglMeleeOn');
+  btn.style.display = mon ? '' : 'none';
+  btn.classList.toggle('on', mon);
 }
 $('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); });
 $('tglMeleeView').addEventListener('click', ()=>{ show.meleeView=!show.meleeView; syncToggles(); draw(); });
+$('tglMeleeOn').addEventListener('click', ()=>{
+  if (!cur || !cur.st || editingLocked()) return;
+  pushUndo();
+  const f = cur.st.frames[curFrameIdx()];
+  f.melee.on = !f.melee.on;
+  P('p_mon').checked = f.melee.on;
+  syncToggles(); syncPanel(); draw();
+});
 $('tglAxes').addEventListener('click', ()=>{ show.axes=!show.axes; syncToggles(); draw(); });
 $('tglSpriteView').addEventListener('click', ()=>{ show.spriteView=!show.spriteView; syncToggles(); draw(); });
 $('playBtn').addEventListener('click', ()=>{ if(cur&&cur.st) setPlaying(!cur.st.playing); });
@@ -533,36 +536,25 @@ function resizeBox(box, anchorId, sx, sy, orig, keepRatio){
   if (w<1) w=1; if (h<1) h=1;
   box.x=Math.round(x1); box.y=Math.round(y1); box.w=Math.round(w); box.h=Math.round(h);
 }
-// ---------- hover detection ----------
+// ---------- hover detection (unified for all boxes) ----------
+function boxList(){
+  const st = cur.st, fi = curFrameIdx(), im = cur.imgs[fi];
+  const out = [];
+  if (show.spriteView && im) out.push({ key:'sprite',    rect:frameRect(st, fi) });
+  if (show.collision)        out.push({ key:'collision', rect:st.collision });
+  if (meleeVisible())        out.push({ key:'melee',     rect:st.frames[fi].melee });
+  return out;
+}
 function updateHover(sx, sy){
-  const st = cur.st, fi = curFrameIdx();
   const prev = hover; hover = null;
-  if (editingLocked()){ finishHover(prev); return; }   // playing: no hover/anchors
-  // sprite box (editable whenever visible)
-  if (show.spriteView){
-    const r = frameRect(st, fi);
-    if (r){
-      const h = hitHandle(r, sx, sy);
-      if (h) hover = { box:'sprite', handle:h };
-      else if (inside(r, sx, sy)) hover = { box:'sprite', body:true };
+  if (!editingLocked()){
+    // first box hit wins (sprite drawn on top, then collision, then melee)
+    for (const b of boxList()){
+      const h = hitHandle(b.rect, sx, sy);
+      if (h){ hover = { box:b.key, handle:h }; break; }
+      if (inside(b.rect, sx, sy)){ hover = { box:b.key, body:true }; break; }
     }
   }
-  // collision
-  if (!hover && show.collision){
-    const r = st.collision;
-    const h = hitHandle(r, sx, sy);
-    if (h) hover = { box:'collision', handle:h };
-    else if (inside(r, sx, sy)) hover = { box:'collision', body:true };
-  }
-  // melee
-  if (!hover && meleeVisible()){
-    const r = st.frames[fi].melee;
-    const h = hitHandle(r, sx, sy);
-    if (h) hover = { box:'melee', handle:h };
-    else if (inside(r, sx, sy)) hover = { box:'melee', body:true };
-  }
-  const changed = JSON.stringify(prev) !== JSON.stringify(hover);
-  if (changed) draw();
   finishHover(prev);
 }
 // shared hover tail: redraw-if-changed + cursor feedback
@@ -577,46 +569,69 @@ function finishHover(prev){
   else if (hover && hover.body) cv.style.cursor = 'move';
   else cv.style.cursor = 'default';
 }
-// ---------- pointer interaction ----------
+// ---------- pointer interaction (unified box engine) ----------
+// each box type knows how to snapshot + apply; the drag logic is shared
+const BOX = {
+  sprite: {
+    snap(st, fi){ const f=st.frames[fi], im=cur.imgs[fi]; return { x:f.offset.x-im.naturalWidth*f.scale.sx/2, y:f.offset.y-im.naturalHeight*f.scale.sy/2, w:im.naturalWidth*f.scale.sx, h:im.naturalHeight*f.scale.sy }; },
+    move(d, sx, sy){ const f=cur.st.frames[curFrameIdx()]; f.offset.x=Math.round(sx-d.ox); f.offset.y=Math.round(sy-d.oy); },
+    resize(d, sx, sy){
+      const f=cur.st.frames[curFrameIdx()], o=d.orig, ow=d.ow, oh=d.oh;
+      const cx=o.x+o.w/2, cy=o.y+o.h/2;
+      if (d.ratio){
+        let rx, ry;
+        if (d.anchor.includes('e')) rx=(sx-cx)/(o.w/2); else if (d.anchor.includes('w')) rx=(cx-sx)/(o.w/2);
+        if (d.anchor.includes('s')) ry=(sy-cy)/(o.h/2); else if (d.anchor.includes('n')) ry=(cy-sy)/(o.h/2);
+        const corner=d.anchor.length===2; let nsx,nsy;
+        if (corner){ const r=Math.max(Math.abs(rx),Math.abs(ry)); nsx=r*Math.sign(rx||1); nsy=r*Math.sign(ry||1); }
+        else if (d.anchor.includes('e')||d.anchor.includes('w')){ nsx=rx; nsy=1; } else { nsx=1; nsy=ry; }
+        f.scale.sx=Math.max(.05,nsx); f.scale.sy=Math.max(.05,nsy);
+      } else {
+        let L=o.x,R=o.x+o.w,T=o.y,B=o.y+o.h;
+        if (d.anchor.includes('w'))L=sx; if (d.anchor.includes('e'))R=sx;
+        if (d.anchor.includes('n'))T=sy; if (d.anchor.includes('s'))B=sy;
+        if (R-L<1){ if(d.anchor.includes('w'))L=R-1; else R=L+1; }
+        if (B-T<1){ if(d.anchor.includes('n'))T=B-1; else B=T+1; }
+        f.scale.sx=Math.max(.05,(R-L)/ow); f.scale.sy=Math.max(.05,(B-T)/oh);
+        f.offset.x=Math.round((L+R)/2); f.offset.y=Math.round((T+B)/2);
+      }
+    }
+  },
+  collision: {
+    snap(st, fi){ return {...st.collision}; },
+    move(d, sx, sy){ d.box.x=Math.round(sx-d.ox); d.box.y=Math.round(sy-d.oy); },
+    resize(d, sx, sy){ resizeBox(d.box, d.anchor, sx, sy, d.orig, d.ratio); }
+  },
+  melee: {
+    snap(st, fi){ return {...st.frames[fi].melee}; },
+    move(d, sx, sy){ d.box.x=Math.round(sx-d.ox); d.box.y=Math.round(sy-d.oy); },
+    resize(d, sx, sy){ resizeBox(d.box, d.anchor, sx, sy, d.orig, d.ratio); }
+  }
+};
 cv.addEventListener('pointerdown', e=>{
   if (!cur || !cur.st) return;
   cv.setPointerCapture(e.pointerId);
   const [cx, cy] = evPos(e); const [sx, sy] = c2s(cx, cy);
   const st = cur.st, fi = curFrameIdx();
-  // while playing: no sprite/box edits, only pan the view
+  // while playing: no edits, only pan
   if (editingLocked()){
     drag = { kind:'pan', sx0:cx, sy0:cy, panX0:panX, panY0:panY };
     cv.style.cursor = 'grabbing';
     return;
   }
-  // boxes are editable via hover when visible
-  if (hover && hover.box==='sprite' && show.spriteView){
-    const f = st.frames[fi];
-    pushUndo();   // snapshot pre-transformation state for undo
-    if (hover.handle) drag = { kind:'sprite-resize', anchor:hover.handle, ratio:e.shiftKey,
-      ow:cur.imgs[fi].naturalWidth, oh:cur.imgs[fi].naturalHeight,
-      orig:{ x:f.offset.x - cur.imgs[fi].naturalWidth*f.scale.sx/2,
-             y:f.offset.y - cur.imgs[fi].naturalHeight*f.scale.sy/2,
-             w:cur.imgs[fi].naturalWidth*f.scale.sx,
-             h:cur.imgs[fi].naturalHeight*f.scale.sy } };
-    else drag = { kind:'sprite-move', ox:sx-f.offset.x, oy:sy-f.offset.y };
-    draw(); return;
-  }
-  if (hover && hover.box==='collision' && show.collision){
-    const r = st.collision;
+  // any visible box under the cursor -> unified move/resize
+  if (hover && BOX[hover.box]){
     pushUndo();
-    if (hover.handle) drag = { kind:'resize', box:r, anchor:hover.handle, orig:{...r}, ratio:e.shiftKey };
-    else drag = { kind:'move', box:r, ox:sx-r.x, oy:sy-r.y };
+    const B = BOX[hover.box];
+    const orig = B.snap(st, fi);
+    const ref  = hover.box==='sprite' ? null : (hover.box==='collision' ? st.collision : st.frames[fi].melee);
+    drag = { key:hover.box, anchor:hover.handle||null, ratio:e.shiftKey, orig,
+             box:ref, ox:sx-(orig.x+orig.w/2), oy:sy-(orig.y+orig.h/2),
+             ow: cur.imgs[fi]?cur.imgs[fi].naturalWidth:orig.w,
+             oh: cur.imgs[fi]?cur.imgs[fi].naturalHeight:orig.h };
     draw(); return;
   }
-  if (hover && hover.box==='melee' && meleeVisible()){
-    const r = st.frames[fi].melee;
-    pushUndo();
-    if (hover.handle) drag = { kind:'resize', box:r, anchor:hover.handle, orig:{...r}, ratio:e.shiftKey };
-    else drag = { kind:'move', box:r, ox:sx-r.x, oy:sy-r.y };
-    draw(); return;
-  }
-  // clicked empty space -> pan the canvas
+  // empty space -> pan
   drag = { kind:'pan', sx0:cx, sy0:cy, panX0:panX, panY0:panY };
   cv.style.cursor = 'grabbing';
 });
@@ -624,57 +639,15 @@ cv.addEventListener('pointermove', e=>{
   if (!cur || !cur.st) return;
   const [cx, cy] = evPos(e); const [sx, sy] = c2s(cx, cy);
   if (!drag) { updateHover(sx, sy); return; }
-  const st = cur.st, fi = curFrameIdx();
-  if (drag.kind==='sprite-move'){
-    const f = st.frames[fi];
-    f.offset.x = Math.round(sx - drag.ox);
-    f.offset.y = Math.round(sy - drag.oy);
-  }
-  else if (drag.kind==='sprite-resize'){
-    const f = st.frames[fi];
-    const o = drag.orig, ow = drag.ow, oh = drag.oh;
-    const cx = o.x + o.w/2, cy = o.y + o.h/2;   // box center (stays fixed under shift)
-    if (drag.ratio){
-      // SHIFT: symmetric scale about the box center.
-      // corner -> lock ratio, scale BOTH axes (both sides); middle -> scale that axis only (both sides)
-      let rx, ry;
-      if (drag.anchor.includes('e')) rx = (sx - cx)/ (o.w/2);
-      else if (drag.anchor.includes('w')) rx = (cx - sx)/(o.w/2);
-      if (drag.anchor.includes('s')) ry = (sy - cy)/(o.h/2);
-      else if (drag.anchor.includes('n')) ry = (cy - sy)/(o.h/2);
-      const isCorner = drag.anchor.length===2;
-      let nsx, nsy;   // multipliers relative to ORIGINAL size
-      if (isCorner){
-        const r = Math.max(Math.abs(rx), Math.abs(ry));
-        nsx = r*Math.sign(rx||1); nsy = r*Math.sign(ry||1);
-      } else if (drag.anchor.includes('e')||drag.anchor.includes('w')){
-        nsx = rx; nsy = 1;
-      } else { nsx = 1; nsy = ry; }
-      // absolute scale from original dims each frame -> no compounding; center stays fixed
-      f.scale.sx = Math.max(.05, nsx);
-      f.scale.sy = Math.max(.05, nsy);
-    } else {
-      // FREE: move only the grabbed edge(s), opposite side fixed
-      let L=o.x, R=o.x+o.w, T=o.y, B=o.y+o.h;
-      if (drag.anchor.includes('w')) L=sx;
-      if (drag.anchor.includes('e')) R=sx;
-      if (drag.anchor.includes('n')) T=sy;
-      if (drag.anchor.includes('s')) B=sy;
-      if (R-L<1){ if(drag.anchor.includes('w'))L=R-1; else R=L+1; }
-      if (B-T<1){ if(drag.anchor.includes('n'))T=B-1; else B=T+1; }
-      f.scale.sx = Math.max(.05,(R-L)/ow);
-      f.scale.sy = Math.max(.05,(B-T)/oh);
-      f.offset.x = Math.round((L+R)/2);
-      f.offset.y = Math.round((T+B)/2);
-    }
-  }
-  else if (drag.kind==='resize') resizeBox(drag.box, drag.anchor, sx, sy, drag.orig, drag.ratio);
-  else if (drag.kind==='move'){ drag.box.x = Math.round(sx-drag.ox); drag.box.y = Math.round(sy-drag.oy); }
-  else if (drag.kind==='pan'){
+  if (drag.kind==='pan'){
     // move the view so the grabbed screen point stays under the cursor
     userZoomed = true;
     panX = drag.panX0 - (cx - drag.sx0)/zoom;
     panY = drag.panY0 - (cy - drag.sy0)/zoom;
+  } else if (BOX[drag.key]){
+    // unified box transform: free anchor moves one edge, shift+corner locks ratio about center
+    if (drag.anchor) BOX[drag.key].resize(drag, sx, sy);
+    else             BOX[drag.key].move(drag, sx, sy);
   }
   syncPanel(); draw();
 });
@@ -724,6 +697,13 @@ window.addEventListener('keydown', e=>{
   if ((e.ctrlKey||e.metaKey) && e.code==='KeyY'){
     e.preventDefault();
     doRedo();
+    return;
+  }
+  // ctrl+0 -> reset zoom to 100% (centered on origin)
+  if ((e.ctrlKey||e.metaKey) && (e.code==='Digit0' || e.code==='Numpad0')){
+    e.preventDefault();
+    panX = 0; panY = 0;
+    setZoom(1);
     return;
   }
   if (tag==='input' || tag==='textarea') return;
