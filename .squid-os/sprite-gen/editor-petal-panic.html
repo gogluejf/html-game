@@ -677,6 +677,7 @@ function setPlaying(p){
   cur.st.playing = !!p;
   isPlaying = !!p;
   $('playIco').innerHTML = cur.st.playing ? '&#10074;&#10074;' : '&#9654;';
+  syncPanelDisabled();   // lock/unlock side inputs with play state
   syncToggles();   // update MELEE ON disabled state immediately
 }
 function stepFrame(d){ if(!cur||!cur.st)return; const st=cur.st; st.frameIdx=(st.frameIdx+d+st.frames.length)%st.frames.length; syncPanel(); draw(); }
@@ -722,15 +723,25 @@ function syncPanel(){
   P('p_ox').value=f.offset.x; P('p_oy').value=f.offset.y;
   P('p_sx').value=f.scale.sx; P('p_sy').value=f.scale.sy;
   P('p_mon').checked=f.melee.on;
-  P('p_mon').disabled = st.playing;
-  const md = !f.melee.on;
-  ['p_mx','p_my','p_mw','p_mh'].forEach(id=>P(id).classList.toggle('disabled-dim', md));
   P('p_mx').value=f.melee.x; P('p_my').value=f.melee.y; P('p_mw').value=f.melee.w; P('p_mh').value=f.melee.h;
   P('p_kx').value=st.collision.x; P('p_ky').value=st.collision.y; P('p_kw').value=st.collision.w; P('p_kh').value=st.collision.h;
   if (st.pivot){ P('p_px').value=st.pivot.x; P('p_py').value=st.pivot.y; }
   if (st.rot){ P('p_rangle').value=Math.round(st.rot.angle); P('p_rspeed').value=st.rot.speed; $('rotSpeedVal').textContent=st.rot.speed+'\u00B0/s'; $('rotAngle').textContent=Math.round(st.rot.angle)+'\u00B0'; $('rotIco').innerHTML=st.rot.playing?'&#10074;&#10074;':'&#9654;'; }
   setPlaying(st.playing);
+  syncPanelDisabled();   // enable/disable side inputs based on play state + melee
   syncToggles();   // keep MELEE ON button in sync with current frame
+}
+// Enable/disable side-panel inputs: locked while animating (like the bottom
+// MELEE ON / RECENTER PIVOT / RESET buttons); melee fields also need melee on.
+const PANEL_EDITABLE = ['p_speed','p_ox','p_oy','p_sx','p_sy','p_mx','p_my','p_mw','p_mh','p_kx','p_ky','p_kw','p_kh','p_px','p_py','p_rspeed'];
+function syncPanelDisabled(){
+  if (!cur || !cur.st) return;
+  const st = cur.st, f = st.frames[curFrameIdx()];
+  const locked = editingLocked();
+  for (const id of PANEL_EDITABLE) P(id).disabled = locked;
+  P('p_mon').disabled = locked;
+  const md = locked || !f.melee.on;
+  ['p_mx','p_my','p_mw','p_mh'].forEach(id=>{ P(id).disabled = md; P(id).classList.toggle('disabled-dim', md); });
 }
 function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=parseFloat(P(id).value); if(!isNaN(v)&&cur&&cur.st&&!editingLocked()){ pushUndo(); fn(v); draw(); } else syncPanel(); }); }
 bindNum('p_speed', v=>setSpeed(v));
