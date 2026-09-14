@@ -1468,6 +1468,11 @@ function scaleAllAbout(st, before, rx, ry){
     fr.melee.x=Math.round(C.cx+(mcx-C.cx)*rx - fr.melee.w/2);
     fr.melee.y=Math.round(C.cy+(mcy-C.cy)*ry - fr.melee.h/2);
   }
+  // pivot: a point — scale its position about the shared center (no size)
+  if (st.pivot && before.pivot){
+    st.pivot.x=Math.round(C.cx+(before.pivot.x-C.cx)*rx);
+    st.pivot.y=Math.round(C.cy+(before.pivot.y-C.cy)*ry);
+  }
 }
 const BOX = {
   sprite: {
@@ -1492,6 +1497,7 @@ const BOX = {
           const m=d.before.frames[i].m;
           fr.melee.x=Math.round(m.x+dx); fr.melee.y=Math.round(m.y+dy);
         }
+        if (st.pivot && d.before.pivot){ st.pivot.x=Math.round(d.before.pivot.x+dx); st.pivot.y=Math.round(d.before.pivot.y+dy); }
       }
     },
     resize(d, sx, sy){
@@ -1567,6 +1573,7 @@ const BOX = {
           fr.offset.x=Math.round(b.ox+dx); fr.offset.y=Math.round(b.oy+dy);
           if (fr.melee.on){ fr.melee.x=Math.round(b.m.x+dx); fr.melee.y=Math.round(b.m.y+dy); }
         }
+        if (st.pivot && d.before.pivot){ st.pivot.x=Math.round(d.before.pivot.x+dx); st.pivot.y=Math.round(d.before.pivot.y+dy); }
       }
     },
     resize(d, sx, sy){
@@ -1594,6 +1601,7 @@ const BOX = {
         for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
           const b=d.before.frames[i], fr=st.frames[i]; if(!fr.melee.on)continue;
           fr.melee.x=Math.round(b.m.x+dx); fr.melee.y=Math.round(b.m.y+dy); }
+        if (st.pivot && d.before.pivot){ st.pivot.x=Math.round(d.before.pivot.x+dx); st.pivot.y=Math.round(d.before.pivot.y+dy); }
       }
     },
     resize(d, sx, sy){
@@ -1669,18 +1677,10 @@ cv.addEventListener('pointermove', e=>{
     panX = drag.panX0 - (cx - drag.sx0)/zoom;
     panY = drag.panY0 - (cy - drag.sy0)/zoom;
   } else if (drag.key==='pivot'){
-    const nx=Math.round(sx), ny=Math.round(sy);
-    cur.st.pivot.x=nx; cur.st.pivot.y=ny;
-    // ALL FRAMES: shift every frame + melee by the same delta so the whole
-    // animation follows the pivot as one rigid body.
-    if (show.allFrames && drag.before){
-      const dx=nx-drag.before.x, dy=ny-drag.before.y;
-      for (let i=0;i<cur.st.frames.length;i++){
-        const f=cur.st.frames[i];
-        f.offset.x+=dx; f.offset.y+=dy;
-        if (f.melee.on){ f.melee.x+=dx; f.melee.y+=dy; }
-      }
-    }
+    // Moving the pivot affects ONLY the pivot — zero effect on sprite/collision/
+    // melee. (Pivot follows those elements when THEY are moved/resized instead.)
+    cur.st.pivot.x=Math.round(sx);
+    cur.st.pivot.y=Math.round(sy);
     syncPanel();
   } else if (BOX[drag.key]){
     // unified box transform: free anchor moves one edge, shift+corner locks ratio about center
