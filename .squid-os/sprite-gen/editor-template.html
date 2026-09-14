@@ -151,6 +151,7 @@ const HANDLE_R = 6;
 // ---------- camera / viewport ----------
 let zoom = 1;            // sprite-px per screen-px (1 = true size)
 let panX = 0, panY = 0;  // sprite-space offset of the view center from origin (0,0)
+let userZoomed = false;  // once the user zooms/pans, stop auto-fitting on select
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
 ctx.imageSmoothingEnabled = false;
@@ -200,6 +201,7 @@ function syncUndoButtons(){
   if (r) r.disabled = !redoStack.length;
 }
 let show = { collision:true, meleeView:true, axes:true, spriteView:true };
+let isPlaying = true;      // global play/pause, carried across animations
 let drag = null;         // active pointer drag
 let hover = null;        // {box:'collision'|'melee'|'scale', handle:id} or {box, body:true}
 let lastT = 0, acc = 0;
@@ -283,19 +285,16 @@ async function selectEntity(li, ei, opts){
   cur = { name: en.name, paths: en.frames, imgs: imgs.filter(Boolean) };
   if (!S.has(cur.name)) S.set(cur.name, defaultState(cur.name, cur.imgs, cur.paths));
   cur.st = S.get(cur.name);
+  cur.st.playing = isPlaying;   // carry global play/pause across animations
   acc = 0; drag = null; hover = null;
   panX = 0; panY = 0;
-  resizeCanvas(); fitZoom(); syncPanel(); draw();
+  if (!userZoomed){ zoom = 1; $('zoomval').textContent = '100%'; }   // start each anim at true size
+  resizeCanvas(); syncPanel(); draw();
+  // settle backing store once layout is ready (no re-zoom)
+  requestAnimationFrame(()=>{ resizeCanvas(); draw(); });
   if (!opts.noRefine) refineDefaults(cur.name, cur.imgs, cur.paths);
 }
 // ---------- geometry: sprite space origin (0,0) at view center + pan, +y down ----------
-function fitZoom(){
-  if (!cur || !cur.imgs.length) return;
-  let mw=1, mh=1;
-  for (const im of cur.imgs){ mw=Math.max(mw, im.naturalWidth); mh=Math.max(mh, im.naturalHeight); }
-  const s = Math.min(cv.width/(mw*1.4), cv.height/(mh*1.4));
-  zoom = Math.max(.05, Math.min(32, s));
-}
 function resizeCanvas(){
   const r = cv.getBoundingClientRect();
   cv.width = Math.max(1, Math.round(r.width));
@@ -312,6 +311,7 @@ function setZoom(nz, cx, cy){
   zoom = nz;
   panX = wx - (cx - cv.width/2)/zoom;
   panY = wy - (cy - cv.height/2)/zoom;
+  userZoomed = true;              // manual zoom: stop auto-fitting on future selects
   $('zoomval').textContent = Math.round(zoom*100)+'%';
   draw();
 }
@@ -441,6 +441,7 @@ requestAnimationFrame(tick);
 function setPlaying(p){
   if(!cur || !cur.st) return;
   cur.st.playing = !!p;
+  isPlaying = !!p;
   $('playIco').innerHTML = cur.st.playing ? '&#10074;&#10074;' : '&#9654;';
 }
 function stepFrame(d){ if(!cur||!cur.st)return; const st=cur.st; st.frameIdx=(st.frameIdx+d+st.frames.length)%st.frames.length; syncPanel(); draw(); }
@@ -513,8 +514,8 @@ cv.addEventListener('wheel', e=>{
   const factor = e.deltaY < 0 ? 1.1 : 1/1.1;
   setZoom(zoom*factor, cx, cy);      // zoom about the cursor
 }, { passive:false });
-// keep canvas backing store in sync with its CSS size (full-bleed stage)
-new ResizeObserver(()=>{ resizeCanvas(); draw(); }).observe(cv);
+// keep canvas backing store in sync with its CSS size (full-bleed stage); don't re-fit
+new ResizeObserver(()=>{ if (cv.width !== Math.round(cv.getBoundingClientRect().width) || cv.height !== Math.round(cv.getBoundingClientRect().height)){ resizeCanvas(); draw(); } }).observe(cv);
 // ---------- undo / redo controls ----------
 $('undoBtn').addEventListener('click', doUndo);
 $('redoBtn').addEventListener('click', doRedo);
@@ -671,6 +672,7 @@ cv.addEventListener('pointermove', e=>{
   else if (drag.kind==='move'){ drag.box.x = Math.round(sx-drag.ox); drag.box.y = Math.round(sy-drag.oy); }
   else if (drag.kind==='pan'){
     // move the view so the grabbed screen point stays under the cursor
+    userZoomed = true;
     panX = drag.panX0 - (cx - drag.sx0)/zoom;
     panY = drag.panY0 - (cy - drag.sy0)/zoom;
   }
