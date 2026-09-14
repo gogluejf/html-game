@@ -108,10 +108,10 @@ async function selectEntity(li, ei){
   frameIdx = 0; acc = 0; playing = true;
   nameEl.textContent = current.name;
   metaEl.textContent = current.frames.length + ' frames';
-  if (current.frames.length && current.frames[0]) {
-    cv.width = current.frames[0].naturalWidth || 256;
-    cv.height = current.frames[0].naturalHeight || 256;
-  }
+  // Canvas = max width/height across all frames of this animation.
+  let mw = 256, mh = 256;
+  for (const im of current.frames){ if (im) { mw = Math.max(mw, im.naturalWidth); mh = Math.max(mh, im.naturalHeight); } }
+  cv.width = mw; cv.height = mh;
   draw();
 }
 
@@ -122,7 +122,7 @@ function draw(){
   if (current && current.frames.length){
     const idx = frameIdx % current.frames.length;
     const im = current.frames[idx];
-    if (im) ctx.drawImage(im, 0, 0, cv.width, cv.height);
+    if (im) ctx.drawImage(im, 0, cv.height - im.naturalHeight); // bottom-left aligned
     // Show current frame filename
     if (current.framePaths && current.framePaths.length){
       const fn = current.framePaths[idx] || '';
