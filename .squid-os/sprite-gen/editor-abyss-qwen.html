@@ -175,7 +175,7 @@
     <div class="row"><span>x,y</span><div class="pair" id="mxy"><div class="cell"><b>x</b><input type="number" id="p_mx"></div><div class="cell"><b>y</b><input type="number" id="p_my"></div></div></div>
     <div class="row"><span>w,h</span><div class="pair" id="mwh"><div class="cell"><b>w</b><input type="number" id="p_mw"></div><div class="cell"><b>h</b><input type="number" id="p_mh"></div></div></div>
     <h2><span><span class="swatch" style="background:var(--pur)"></span>Rotation</span></h2>
-    <div class="row"><span>angle (&#176;)</span><span class="ro" id="p_rangle">0</span></div>
+    <div class="row"><span>angle (&#176;)</span><span class="ro" id="p_rangle">0&#176;</span></div>
     <div class="row"><span>speed (&#176;/s)</span><input type="number" id="p_rspeed" min="1" max="360" value="30"></div>
     <h2><span><span class="swatch" style="background:var(--yel)"></span>Pivot Point</span></h2>
     <div class="row"><span>x,y</span><div class="pair"><div class="cell"><b>x</b><input type="number" id="p_px"></div><div class="cell"><b>y</b><input type="number" id="p_py"></div></div></div>
@@ -514,6 +514,7 @@ function tick(t){
       }
     } else { rotAcc = 0; }
     $('rotAngle').textContent = Math.round(cur.st.rot.angle)+'\u00B0';
+    P('p_rangle').textContent = Math.round(cur.st.rot.angle)+'\u00B0';
     draw();
   }
 }
