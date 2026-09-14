@@ -339,6 +339,12 @@
 <script>
 const MANIFEST = /*__MANIFEST__*/null;
 const COL_COLL='#3ef0ff', COL_MELEE='#ff9d2e', COL_SCALE='#b47bff';
+// hex (#rrggbb) + alpha (0-1) -> rgba() string, for translucent fills
+function hexA(hex, a){
+  const h = hex.replace('#','');
+  const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
 const HANDLE_R = 6;
 // ---------- camera / viewport ----------
 let zoom = 1;            // sprite-px per screen-px (1 = true size)
@@ -750,12 +756,27 @@ function draw(){
     ctx.restore();
   }
   // draw boxes (rotated with sprite)
+  // While PLAYING: render in "display" style — solid line + light fill, NO anchor
+  // handles (like the bottom filmstrip). While PAUSED: full edit style with
+  // handles so you can grab/resize.
+  const playing = !!st.playing;
   const boxes = boxList();
   for (const b of [...boxes].reverse()){
-    const hovered = hover && hover.box===b.key;
-    const dragging = drag && drag.kind!=='pan' && drag.key===b.key;
-    drawBox(b.rect, b.color, true, !dragging,
-      hovered ? hover.handle : null, !!(hovered && hover.body));
+    if (playing){
+      const [x, y] = s2c(b.rect.x, b.rect.y);
+      ctx.save();
+      ctx.fillStyle = hexA(b.color, .1);
+      ctx.fillRect(x, y, b.rect.w*zoom, b.rect.h*zoom);
+      ctx.strokeStyle = b.color;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, b.rect.w*zoom, b.rect.h*zoom);
+      ctx.restore();
+    } else {
+      const hovered = hover && hover.box===b.key;
+      const dragging = drag && drag.kind!=='pan' && drag.key===b.key;
+      drawBox(b.rect, b.color, true, !dragging,
+        hovered ? hover.handle : null, !!(hovered && hover.body));
+    }
   }
   ctx.restore();
   // ---------- sprite name label (viewer-style) — fixed at top-center of canvas ----------
