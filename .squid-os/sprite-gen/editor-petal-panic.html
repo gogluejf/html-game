@@ -214,7 +214,7 @@ function syncUndoButtons(){
   if (u) u.disabled = !undoStack.length;
   if (r) r.disabled = !redoStack.length;
 }
-let show = { collision:true, meleeView:true, axes:true, spriteView:true };
+let show = { collision:true, meleeView:false, axes:true, spriteView:true };
 let isPlaying = true;      // global play/pause, carried across animations
 let drag = null;         // active pointer drag
 let hover = null;        // {box:'collision'|'melee'|'scale', handle:id} or {box, body:true}
@@ -249,7 +249,7 @@ function defaultBoxes(w, h){
   const cw = Math.max(1, w - COLL_PAD*2), ch = Math.max(1, h - COLL_PAD*2);
   const col = { x:COLL_PAD, y:-h+COLL_PAD, w:cw, h:ch };
   const mw = Math.max(1, Math.round(cw*MEELE_RATIO)), mh = ch;
-  const mee = { on:false, x:col.x-mw-MEELE_GAP, y:col.y, w:mw, h:mh };
+  const mee = { on:false, x:col.x+cw+MEELE_GAP, y:col.y, w:mw, h:mh };
   return { col, mee };
 }
 function defaultState(name, imgs, paths){
@@ -466,6 +466,7 @@ P('p_mon').addEventListener('change', ()=>{
   pushUndo();
   const f = cur.st.frames[curFrameIdx()];
   f.melee.on = P('p_mon').checked;
+  if (f.melee.on) show.meleeView = true;   // auto-show melee view when enabling
   syncToggles(); syncPanel(); draw();
 });
 // ---------- toolbar (display toggles only) ----------
@@ -481,15 +482,25 @@ function syncToggles(){
   btn.classList.toggle('on', mon);
   const locked = !!(cur && cur.st && cur.st.playing);
   btn.disabled = locked;
+  // MELEE VIEW (Display): only enabled when at least one frame has a melee box
+  const anyMelee = cur && cur.st ? cur.st.frames.some(f=>f.melee.on) : false;
+  const mv = $('tglMeleeView');
+  mv.disabled = !anyMelee;
+  if (!anyMelee) show.meleeView = false;   // force-hide when nothing to show
+  mv.classList.toggle('on', show.meleeView && anyMelee);
   $('resetBtn').disabled = locked;   // whole Tools group disabled during animation
 }
 $('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); });
-$('tglMeleeView').addEventListener('click', ()=>{ show.meleeView=!show.meleeView; syncToggles(); draw(); });
+$('tglMeleeView').addEventListener('click', ()=>{
+  if ($('tglMeleeView').disabled) return;
+  show.meleeView=!show.meleeView; syncToggles(); draw();
+});
 $('tglMeleeOn').addEventListener('click', ()=>{
   if (!cur || !cur.st || editingLocked()) return;
   pushUndo();
   const f = cur.st.frames[curFrameIdx()];
   f.melee.on = !f.melee.on;
+  if (f.melee.on) show.meleeView = true;   // auto-show melee view when enabling
   P('p_mon').checked = f.melee.on;
   syncToggles(); syncPanel(); draw();
 });
