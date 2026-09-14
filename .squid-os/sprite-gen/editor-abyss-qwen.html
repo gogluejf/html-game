@@ -405,13 +405,13 @@ function draw(){
   }
   // ---------- unified box rendering (sprite / collision / melee share identical behavior) ----------
   const boxes = [];
-  if (show.spriteView && im) boxes.push({ key:'sprite',    rect:frameRect(st, fi), color:COL_SCALE, dashed:true });
-  if (show.collision)        boxes.push({ key:'collision', rect:st.collision,      color:COL_COLL,  dashed:false });
-  if (meleeVisible())        boxes.push({ key:'melee',     rect:st.frames[fi].melee, color:COL_MELEE, dashed:false });
+  if (show.spriteView && im) boxes.push({ key:'sprite',    rect:frameRect(st, fi), color:COL_SCALE });
+  if (show.collision)        boxes.push({ key:'collision', rect:st.collision,      color:COL_COLL  });
+  if (meleeVisible())        boxes.push({ key:'melee',     rect:st.frames[fi].melee, color:COL_MELEE });
   for (const b of boxes){
     const hovered = hover && hover.box===b.key;
     const dragging = drag && drag.kind!=='pan' && drag.key===b.key;
-    drawBox(b.rect, b.color, true, b.dashed && !dragging,
+    drawBox(b.rect, b.color, true, !dragging,
       hovered ? hover.handle : null, !!(hovered && hover.body));
   }
   finfo.textContent = `frame ${fi+1}/${st.frames.length}  \u2014  ${st.frames[fi].name}`;
@@ -574,7 +574,7 @@ function finishHover(prev){
 const BOX = {
   sprite: {
     snap(st, fi){ const f=st.frames[fi], im=cur.imgs[fi]; return { x:f.offset.x-im.naturalWidth*f.scale.sx/2, y:f.offset.y-im.naturalHeight*f.scale.sy/2, w:im.naturalWidth*f.scale.sx, h:im.naturalHeight*f.scale.sy }; },
-    move(d, sx, sy){ const f=cur.st.frames[curFrameIdx()]; f.offset.x=Math.round(sx-d.ox); f.offset.y=Math.round(sy-d.oy); },
+    move(d, sx, sy){ const f=cur.st.frames[curFrameIdx()]; f.offset.x=Math.round(sx-d.ox+d.orig.w/2); f.offset.y=Math.round(sy-d.oy+d.orig.h/2); },
     resize(d, sx, sy){
       const f=cur.st.frames[curFrameIdx()], o=d.orig, ow=d.ow, oh=d.oh;
       if (d.ratio){
@@ -644,7 +644,7 @@ cv.addEventListener('pointerdown', e=>{
     const orig = B.snap(st, fi);
     const ref  = hover.box==='sprite' ? null : (hover.box==='collision' ? st.collision : st.frames[fi].melee);
     drag = { key:hover.box, anchor:hover.handle||null, ratio:e.shiftKey, orig,
-             box:ref, ox:sx-(orig.x+orig.w/2), oy:sy-(orig.y+orig.h/2),
+             box:ref, ox:sx-orig.x, oy:sy-orig.y,          // grab offset from box TOP-LEFT (shared move math)
              ow: cur.imgs[fi]?cur.imgs[fi].naturalWidth:orig.w,
              oh: cur.imgs[fi]?cur.imgs[fi].naturalHeight:orig.h,
              gx:sx, gy:sy,                                                // grab point (sprite space) for ratio-resize
