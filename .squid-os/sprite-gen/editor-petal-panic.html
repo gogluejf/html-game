@@ -49,8 +49,8 @@
   /* ---------- stage ---------- */
   #stage{flex:1;position:relative;overflow:hidden;background:#0a0c14;}
   /* ---------- frame filmstrip (bottom-right drawer, slides left/right) ---------- */
-  #filmDrawer{position:absolute;right:0;bottom:10px;z-index:20;height:176px;width:34px;background:var(--film-bg,#000);border:2px solid #fff;border-right:none;border-radius:10px 0 0 10px;box-shadow:-6px 0 22px rgba(0,0,0,.5);overflow:hidden;transition:width .3s cubic-bezier(.4,0,.2,1);}
-  #filmScroll{position:absolute;top:0;left:0;height:100%;display:flex;align-items:stretch;padding:8px 42px 8px 8px;pointer-events:none;}
+  #filmDrawer{position:absolute;right:0;bottom:10px;z-index:20;height:176px;width:34px;background:var(--film-bg,#000);border:2px solid #fff;border-right:none;border-radius:10px 0 0 10px;box-shadow:-6px 0 22px rgba(0,0,0,.5);overflow:hidden;transition:width .18s ease-out;}
+  #filmScroll{position:absolute;top:0;left:0;height:100%;display:flex;align-items:stretch;padding:8px 42px 8px 8px;pointer-events:none;white-space:nowrap;}
   #filmDrawer.on #filmScroll{pointer-events:auto;}
   #filmBtn{position:absolute;right:0;top:0;width:34px;height:100%;pointer-events:auto;font-family:inherit;font-size:10px;letter-spacing:1px;color:#fff;background:var(--panel);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;writing-mode:vertical-rl;text-orientation:mixed;}
   #filmBtn svg{width:14px;height:14px;transition:transform .28s;}
@@ -579,6 +579,8 @@ async function selectEntity(li, ei, opts){
   if (!userZoomed){ zoom = 1; $('zoomval').textContent = '100%'; }   // start each anim at true size
   resizeCanvas(); syncPanel(); draw();
   syncUndoButtons();   // reflect current undo/redo stack state
+  // refresh the filmstrip for this sprite (rebuild cells + refit drawer width)
+  if (FILM.on){ drawFilm(); requestAnimationFrame(filmFitWidth); }
   // toolbar was hidden during boot; now that state is settled, reveal it
   const tb = $('toolbar'); if (tb) tb.classList.remove('booting');
   // settle backing store once layout is ready (no re-zoom)
@@ -806,7 +808,7 @@ function draw(){
 // its own cell aligned to the SHARED min/max bounds of all frames (sprite +
 // collision + melee). Boxes are full-line half-opaque, no anchor handles. Cells
 // are separated by a dashed line; the playing frame gets a focus outline.
-const FILM = { on:false, maxCellH:160, pad:8 };
+const FILM = { on:false, pad:8 };
 let filmCells = [];   // [{el, canvas}] built per entity
 function filmBounds(st){
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
@@ -841,7 +843,11 @@ function drawFilm(){
     }
   }
   const B=filmBounds(st);
-  const scale=Math.min(1, FILM.maxCellH/B.h);
+  // fit the whole shared bounds (sprite + collision + melee) into the drawer's
+  // usable height (drawer 176px minus 8px padding top & bottom = 160px), so the
+  // collision box extending below is never clipped.
+  const availH = 176 - FILM.pad*2;
+  const scale=Math.min(1, availH/B.h);
   const cw=Math.ceil(B.w*scale)+FILM.pad*2, chh=Math.ceil(B.h*scale)+FILM.pad*2;
   const dpr=Math.min(2, window.devicePixelRatio||1);
   for (let i=0;i<n;i++){
@@ -872,20 +878,55 @@ function drawFilm(){
     }
     el.classList.toggle('focus', i===curFrameIdx());
   }
+  // refit drawer width to this content — smooth short animation so frame/sprite
+  // changes glide to the new size instead of hard-jumping; skipped while an
+  // open/close transition is running so it doesn't fight that animation.
+  if (FILM.on && !FILM._animating){
+    const dw=$('filmDrawer');
+    const cellsW = $('filmScroll').scrollWidth;
+    const full = cellsW + 34;
+    const cap = Math.round(window.innerWidth*0.85);
+    const target = Math.min(full, cap) + 'px';
+    if (dw.style.width !== target){
+      dw.style.transition='width .12s ease-out';
+      dw.style.width = target;
+    }
+  }
+}
+// Size the drawer to fit the current filmstrip content (cells + handle).
+// Pure width set — the caller controls whether it animates via style.transition.
+function filmFitWidth(){
+  const dw=$('filmDrawer');
+  const cellsW = $('filmScroll').scrollWidth;            // cells + their padding
+  const full = cellsW + 34;                              // + handle width
+  const cap = Math.round(window.innerWidth*0.85);
+  dw.style.width = Math.min(full, cap) + 'px';
 }
 $('filmBtn').addEventListener('click', ()=>{
   FILM.on=!FILM.on;
   const dw=$('filmDrawer');
   if (FILM.on){
-    // measure full content width, then animate the drawer out to it
-    drawFilm();   // ensure cells are sized before measuring
-    const cellsW = $('filmScroll').scrollWidth;            // cells + their padding
-    const full = cellsW + 34;                              // + handle width
+    // build + size cells first (instant)
+    FILM._animating=true;
+    drawFilm();
+    FILM._animating=false;
+    const target = Math.min($('filmScroll').scrollWidth + 34, Math.round(window.innerWidth*0.85));
     dw.classList.add('on');
-    dw.style.width = Math.min(full, window.innerWidth*0.8) + 'px';
+    // force collapsed start, then animate out on the next frame
+    FILM._animating=true;
+    dw.style.transition='none';
+    dw.style.width='34px';
+    requestAnimationFrame(()=>{
+      dw.style.transition='width .18s ease-out';
+      dw.style.width=target+'px';
+      setTimeout(()=>{ FILM._animating=false; }, 200);
+    });
   } else {
     dw.classList.remove('on');
+    FILM._animating=true;
+    dw.style.transition='width .18s ease-out';
     dw.style.width = '34px';
+    setTimeout(()=>{ FILM._animating=false; }, 200);
   }
   $('filmBtn').classList.toggle('on', FILM.on);
 });
