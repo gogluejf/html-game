@@ -70,7 +70,7 @@
   .row input[type=number]::-webkit-inner-spin-button,.row input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   .row input[type=number]:focus{outline:none;border-color:var(--acc);}
   /* custom spinner arrows, right-aligned inside the box */
-  .numwrap{position:relative;display:inline-block;width:84px;}
+  .numwrap{position:relative;display:inline-block;width:84px;overflow:hidden;}
   .numwrap input{width:100%;}
   .numwrap .arr{position:absolute;right:5px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;}
   .numwrap .arr span{width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;cursor:pointer;display:block;position:relative;}
@@ -85,6 +85,10 @@
   .pair .cell{display:flex;align-items:center;gap:6px;}
   .pair .cell b{color:var(--faint);font-weight:normal;width:10px;font-size:12px;flex:none;text-align:center;}
   .pair .cell .numwrap{width:84px;}
+  input[type=number]:disabled,.numwrap input:disabled,input.ro-input{background:transparent;border-color:transparent;color:var(--faint);cursor:default;}
+  input.ro-input::-webkit-inner-spin-button,input.ro-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+  .numwrap input:disabled ~ .arr{display:none;}
+  input[type=number]:disabled ~ .arr{display:none;}
   .pair .cell input::-webkit-inner-spin-button,.pair .cell input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   .disabled-dim{opacity:.45;}
 </style>
@@ -175,8 +179,8 @@
   <div id="panel">
     <h2>Animation</h2>
     <div class="row"><span>Name</span><span class="ro" id="p_aname">&mdash;</span></div>
-    <div class="row"><span>Frames</span><span class="ro" id="p_acount">&mdash;</span></div>
-    <div class="row"><span>Speed (fps)</span><span class="sp"></span><input type="number" id="p_speed" min="1" max="60" value="8"></div>
+    <div class="row"><span>Frames</span><span class="sp"></span><input type="number" id="p_acount" disabled></div>
+    <div class="row"><span>Speed (fps)</span><div class="pair"><div class="cell"><b>V</b><input type="number" id="p_speed" min="1" max="60" value="8"></div></div></div>
 
     <h2>Frame</h2>
     <div class="row"><span>Index</span><span class="ro" id="p_fidx">&mdash;</span></div>
@@ -221,8 +225,8 @@
     </div>
 
     <h2><span><span class="swatch" style="background:var(--pur)"></span>Rotation</span></h2>
-    <div class="row"><span>Angle</span><span class="sp"></span><span class="ro" id="p_rangle">0&#176;</span></div>
-    <div class="row"><span>Speed (&#176;/s)</span><span class="sp"></span><input type="number" id="p_rspeed" min="1" max="360" value="30"></div>
+    <div class="row"><span>Angle</span><span class="sp"></span><input type="number" id="p_rangle" disabled></div>
+    <div class="row"><span>Speed (&#176;/s)</span><div class="pair"><div class="cell"><b>V</b><input type="number" id="p_rspeed" min="1" max="360" value="30"></div></div></div>
 
     <h2><span><span class="swatch" style="background:var(--yel)"></span>Pivot Point</span></h2>
     <div class="row"><span>Position</span>
@@ -248,7 +252,7 @@
   </div>
 </div>
 <script>
-const MANIFEST = {"labels": [{"name": "enemies", "entities": [{"name": "pufferfish_idle", "frames": ["../../abyss-qwen/assets/enemies/pufferfish_f1.png", "../../abyss-qwen/assets/enemies/pufferfish_f2.png", "../../abyss-qwen/assets/enemies/pufferfish_f3.png", "../../abyss-qwen/assets/enemies/pufferfish_f4.png"]}, {"name": "mantis_crab_idle", "frames": ["../../abyss-qwen/assets/enemies/mantis_crab_f1.png", "../../abyss-qwen/assets/enemies/mantis_crab_f2.png", "../../abyss-qwen/assets/enemies/mantis_crab_f3.png", "../../abyss-qwen/assets/enemies/mantis_crab_f4.png"]}, {"name": "jellyfish_idle", "frames": ["../../abyss-qwen/assets/enemies/jellyfish_f1.png", "../../abyss-qwen/assets/enemies/jellyfish_f2.png", "../../abyss-qwen/assets/enemies/jellyfish_f3.png", "../../abyss-qwen/assets/enemies/jellyfish_f4.png"]}, {"name": "anglerfish_idle", "frames": ["../../abyss-qwen/assets/enemies/anglerfish_f1.png", "../../abyss-qwen/assets/enemies/anglerfish_f2.png", "../../abyss-qwen/assets/enemies/anglerfish_f3.png", "../../abyss-qwen/assets/enemies/anglerfish_f4.png"]}, {"name": "mech_shark_idle", "frames": ["../../abyss-qwen/assets/enemies/mech_shark_f1.png", "../../abyss-qwen/assets/enemies/mech_shark_f2.png", "../../abyss-qwen/assets/enemies/mech_shark_f3.png", "../../abyss-qwen/assets/enemies/mech_shark_f4.png"]}, {"name": "sea_dragon_idle", "frames": ["../../abyss-qwen/assets/enemies/sea_dragon_f1.png", "../../abyss-qwen/assets/enemies/sea_dragon_f2.png", "../../abyss-qwen/assets/enemies/sea_dragon_f3.png", "../../abyss-qwen/assets/enemies/sea_dragon_f4.png"]}]}, {"name": "bosses", "entities": [{"name": "octopus_idle", "frames": ["../../abyss-qwen/assets/bosses/octopus_f1.png", "../../abyss-qwen/assets/bosses/octopus_f2.png", "../../abyss-qwen/assets/bosses/octopus_f3.png", "../../abyss-qwen/assets/bosses/octopus_f4.png"]}, {"name": "megalodon_idle", "frames": ["../../abyss-qwen/assets/bosses/megalodon_f1.png", "../../abyss-qwen/assets/bosses/megalodon_f2.png", "../../abyss-qwen/assets/bosses/megalodon_f3.png", "../../abyss-qwen/assets/bosses/megalodon_f4.png"]}, {"name": "kraken_idle", "frames": ["../../abyss-qwen/assets/bosses/kraken_f1.png", "../../abyss-qwen/assets/bosses/kraken_f2.png", "../../abyss-qwen/assets/bosses/kraken_f3.png", "../../abyss-qwen/assets/bosses/kraken_f4.png"]}]}, {"name": "powerups", "entities": [{"name": "shield_idle", "frames": ["../../abyss-qwen/assets/powerups/shield_f1.png", "../../abyss-qwen/assets/powerups/shield_f2.png", "../../abyss-qwen/assets/powerups/shield_f3.png", "../../abyss-qwen/assets/powerups/shield_f4.png"]}, {"name": "triple_shot_idle", "frames": ["../../abyss-qwen/assets/powerups/triple_shot_f1.png", "../../abyss-qwen/assets/powerups/triple_shot_f2.png", "../../abyss-qwen/assets/powerups/triple_shot_f3.png", "../../abyss-qwen/assets/powerups/triple_shot_f4.png"]}, {"name": "slow_mo_idle", "frames": ["../../abyss-qwen/assets/powerups/slow_mo_f1.png", "../../abyss-qwen/assets/powerups/slow_mo_f2.png", "../../abyss-qwen/assets/powerups/slow_mo_f3.png", "../../abyss-qwen/assets/powerups/slow_mo_f4.png"]}, {"name": "bomb_idle", "frames": ["../../abyss-qwen/assets/powerups/bomb_f1.png", "../../abyss-qwen/assets/powerups/bomb_f2.png", "../../abyss-qwen/assets/powerups/bomb_f3.png", "../../abyss-qwen/assets/powerups/bomb_f4.png"]}]}, {"name": "player", "entities": [{"name": "manta_ray_idle", "frames": ["../../abyss-qwen/assets/player/manta_ray_f1.png", "../../abyss-qwen/assets/player/manta_ray_f2.png", "../../abyss-qwen/assets/player/manta_ray_f3.png", "../../abyss-qwen/assets/player/manta_ray_f4.png"]}]}, {"name": "hud", "entities": [{"name": "splash_", "frames": ["../../abyss-qwen/assets/hud/splash_f1.png"]}, {"name": "background_", "frames": ["../../abyss-qwen/assets/hud/background_f1.png"]}]}]};
+const MANIFEST = {"labels": [{"name": "enemies", "entities": [{"name": "pufferfish_idle", "frames": ["../../abyss-qwen/assets/enemies/pufferfish_f1.png", "../../abyss-qwen/assets/enemies/pufferfish_f2.png", "../../abyss-qwen/assets/enemies/pufferfish_f3.png", "../../abyss-qwen/assets/enemies/pufferfish_f4.png"], "crops": [null, null, null, null]}, {"name": "mantis_crab_idle", "frames": ["../../abyss-qwen/assets/enemies/mantis_crab_f1.png", "../../abyss-qwen/assets/enemies/mantis_crab_f2.png", "../../abyss-qwen/assets/enemies/mantis_crab_f3.png", "../../abyss-qwen/assets/enemies/mantis_crab_f4.png"], "crops": [null, null, null, null]}, {"name": "jellyfish_idle", "frames": ["../../abyss-qwen/assets/enemies/jellyfish_f1.png", "../../abyss-qwen/assets/enemies/jellyfish_f2.png", "../../abyss-qwen/assets/enemies/jellyfish_f3.png", "../../abyss-qwen/assets/enemies/jellyfish_f4.png"], "crops": [null, null, null, null]}, {"name": "anglerfish_idle", "frames": ["../../abyss-qwen/assets/enemies/anglerfish_f1.png", "../../abyss-qwen/assets/enemies/anglerfish_f2.png", "../../abyss-qwen/assets/enemies/anglerfish_f3.png", "../../abyss-qwen/assets/enemies/anglerfish_f4.png"], "crops": [null, null, null, null]}, {"name": "mech_shark_idle", "frames": ["../../abyss-qwen/assets/enemies/mech_shark_f1.png", "../../abyss-qwen/assets/enemies/mech_shark_f2.png", "../../abyss-qwen/assets/enemies/mech_shark_f3.png", "../../abyss-qwen/assets/enemies/mech_shark_f4.png"], "crops": [null, null, null, null]}, {"name": "sea_dragon_idle", "frames": ["../../abyss-qwen/assets/enemies/sea_dragon_f1.png", "../../abyss-qwen/assets/enemies/sea_dragon_f2.png", "../../abyss-qwen/assets/enemies/sea_dragon_f3.png", "../../abyss-qwen/assets/enemies/sea_dragon_f4.png"], "crops": [null, null, null, null]}]}, {"name": "bosses", "entities": [{"name": "octopus_idle", "frames": ["../../abyss-qwen/assets/bosses/octopus_f1.png", "../../abyss-qwen/assets/bosses/octopus_f2.png", "../../abyss-qwen/assets/bosses/octopus_f3.png", "../../abyss-qwen/assets/bosses/octopus_f4.png"], "crops": [null, null, null, null]}, {"name": "megalodon_idle", "frames": ["../../abyss-qwen/assets/bosses/megalodon_f1.png", "../../abyss-qwen/assets/bosses/megalodon_f2.png", "../../abyss-qwen/assets/bosses/megalodon_f3.png", "../../abyss-qwen/assets/bosses/megalodon_f4.png"], "crops": [null, null, null, null]}, {"name": "kraken_idle", "frames": ["../../abyss-qwen/assets/bosses/kraken_f1.png", "../../abyss-qwen/assets/bosses/kraken_f2.png", "../../abyss-qwen/assets/bosses/kraken_f3.png", "../../abyss-qwen/assets/bosses/kraken_f4.png"], "crops": [null, null, null, null]}]}, {"name": "powerups", "entities": [{"name": "shield_idle", "frames": ["../../abyss-qwen/assets/powerups/shield_f1.png", "../../abyss-qwen/assets/powerups/shield_f2.png", "../../abyss-qwen/assets/powerups/shield_f3.png", "../../abyss-qwen/assets/powerups/shield_f4.png"], "crops": [null, null, null, null]}, {"name": "triple_shot_idle", "frames": ["../../abyss-qwen/assets/powerups/triple_shot_f1.png", "../../abyss-qwen/assets/powerups/triple_shot_f2.png", "../../abyss-qwen/assets/powerups/triple_shot_f3.png", "../../abyss-qwen/assets/powerups/triple_shot_f4.png"], "crops": [null, null, null, null]}, {"name": "slow_mo_idle", "frames": ["../../abyss-qwen/assets/powerups/slow_mo_f1.png", "../../abyss-qwen/assets/powerups/slow_mo_f2.png", "../../abyss-qwen/assets/powerups/slow_mo_f3.png", "../../abyss-qwen/assets/powerups/slow_mo_f4.png"], "crops": [null, null, null, null]}, {"name": "bomb_idle", "frames": ["../../abyss-qwen/assets/powerups/bomb_f1.png", "../../abyss-qwen/assets/powerups/bomb_f2.png", "../../abyss-qwen/assets/powerups/bomb_f3.png", "../../abyss-qwen/assets/powerups/bomb_f4.png"], "crops": [null, null, null, null]}]}, {"name": "player", "entities": [{"name": "manta_ray_idle", "frames": ["../../abyss-qwen/assets/player/manta_ray_f1.png", "../../abyss-qwen/assets/player/manta_ray_f2.png", "../../abyss-qwen/assets/player/manta_ray_f3.png", "../../abyss-qwen/assets/player/manta_ray_f4.png"], "crops": [null, null, null, null]}]}, {"name": "hud", "entities": [{"name": "splash_", "frames": ["../../abyss-qwen/assets/hud/splash_f1.png"], "crops": [null]}, {"name": "background_", "frames": ["../../abyss-qwen/assets/hud/background_f1.png"], "crops": [null]}]}]};
 const COL_COLL='#3ef0ff', COL_MELEE='#ff9d2e', COL_SCALE='#b47bff';
 const HANDLE_R = 6;
 // ---------- camera / viewport ----------
@@ -341,7 +345,7 @@ function defaultBoxes(w, h){
   const mee = { on:false, x:col.x+cw+MEELE_GAP, y:col.y, w:mw, h:mh };
   return { col, mee };
 }
-function defaultState(name, imgs, paths){
+function defaultState(name, imgs, paths, crops){
   const good = imgs.filter(Boolean);
   const f1 = good[0];
   const W = f1 ? f1.naturalWidth : 1, H = f1 ? f1.naturalHeight : 1;
@@ -353,7 +357,7 @@ function defaultState(name, imgs, paths){
     rot: { angle: 0, speed: 30, playing: false },   // degrees, deg/s, independent of frame anim
     frames: paths.map((p, i) => ({
       idx: i, name: p.split('/').pop(),
-      crop: { x:0, y:0, w:good[i]?good[i].naturalWidth:0, h:good[i]?good[i].naturalHeight:0 },
+      crop: (() => { const c = (crops&&crops[i])||null; return c ? {x:c[0],y:c[1],w:c[2],h:c[3]} : {x:0,y:0,w:good[i]?good[i].naturalWidth:0,h:good[i]?good[i].naturalHeight:0}; })(),
       offset: { x:Math.round((good[i]?good[i].naturalWidth:W)/2), y:-Math.round((good[i]?good[i].naturalHeight:H)/2) },
       scale: { sx:1, sy:1 },
       melee: { ...mee }
@@ -367,8 +371,8 @@ async function selectEntity(li, ei, opts){
   en._el.classList.add('on');
   flatIdx = flatList.findIndex(f => f.li===li && f.ei===ei);
   const imgs = await loadFrames(en.frames);
-  cur = { name: en.name, paths: en.frames, imgs: imgs.filter(Boolean) };
-  if (!S.has(cur.name)) S.set(cur.name, defaultState(cur.name, cur.imgs, cur.paths));
+  cur = { name: en.name, paths: en.frames, imgs: imgs.filter(Boolean), crops: en.crops || [] };
+  if (!S.has(cur.name)) S.set(cur.name, defaultState(cur.name, cur.imgs, cur.paths, cur.crops));
   cur.st = S.get(cur.name);
   cur.st.playing = isPlaying;   // carry global play/pause across animations
   acc = 0; drag = null; hover = null;
@@ -577,7 +581,7 @@ function tick(t){
       }
     } else { rotAcc = 0; }
     $('rotAngle').textContent = Math.round(cur.st.rot.angle)+'\u00B0';
-    P('p_rangle').textContent = Math.round(cur.st.rot.angle)+'\u00B0';
+    P('p_rangle').value = Math.round(cur.st.rot.angle);
     draw();
   }
 }
@@ -620,7 +624,7 @@ function syncPanel(){
   if (!cur || !cur.st) return;
   const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
   P('p_aname').textContent = cur.name;
-  P('p_acount').textContent = st.frames.length;
+  P('p_acount').value = st.frames.length;
   P('p_speed').value = st.speed; $('fpsval').textContent = st.speed+' fps';
   P('p_fidx').textContent = (fi+1)+' / '+st.frames.length;
   P('p_fname').textContent = f.name;
@@ -634,7 +638,7 @@ function syncPanel(){
   P('p_mx').value=f.melee.x; P('p_my').value=f.melee.y; P('p_mw').value=f.melee.w; P('p_mh').value=f.melee.h;
   P('p_kx').value=st.collision.x; P('p_ky').value=st.collision.y; P('p_kw').value=st.collision.w; P('p_kh').value=st.collision.h;
   if (st.pivot){ P('p_px').value=st.pivot.x; P('p_py').value=st.pivot.y; }
-  if (st.rot){ P('p_rangle').textContent=Math.round(st.rot.angle); P('p_rspeed').value=st.rot.speed; $('rotSpeedVal').textContent=st.rot.speed+'\u00B0/s'; $('rotAngle').textContent=Math.round(st.rot.angle)+'\u00B0'; $('rotIco').innerHTML=st.rot.playing?'&#10074;&#10074;':'&#9654;'; }
+  if (st.rot){ P('p_rangle').value=Math.round(st.rot.angle); P('p_rspeed').value=st.rot.speed; $('rotSpeedVal').textContent=st.rot.speed+'\u00B0/s'; $('rotAngle').textContent=Math.round(st.rot.angle)+'\u00B0'; $('rotIco').innerHTML=st.rot.playing?'&#10074;&#10074;':'&#9654;'; }
   setPlaying(st.playing);
   syncToggles();   // keep MELEE ON button in sync with current frame
 }

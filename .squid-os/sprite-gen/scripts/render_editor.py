@@ -18,6 +18,8 @@ def build_manifest(state):
         ents = []
         seen = set()
         for sh in fd.get("sheets", []):
+            # per-frame crop bbox from the sheet's crop data: {frame: [x,y,w,h]}
+            bbox = (sh.get("crop") or {}).get("frames_bbox", {})
             for e in sh.get("entities", []):
                 name = f"{e.get('name','x')}_{e.get('anim','a')}"
                 if name in seen or not e.get("frames"):
@@ -25,7 +27,9 @@ def build_manifest(state):
                 seen.add(name)
                 # viewer-relative paths: editor sits 2 levels above the assets root
                 frames = [f"../../{fd['path']}/{f}" for f in e["frames"]]
-                ents.append({"name": name, "frames": frames})
+                # per-frame crop coords [x,y,w,h] from the source sheet (or null)
+                crops = [bbox.get(f) for f in e["frames"]]
+                ents.append({"name": name, "frames": frames, "crops": crops})
         if ents:
             labels.append({"name": folder, "entities": ents})
     return {"labels": labels}
