@@ -9,7 +9,7 @@ the music makes your fingers move faster.
 The sound is pure 8-bit chiptune: square-wave leads that cut through everything, punchy
 basslines, drums that hit like a fist. But the engine isn't just rhythm — it's *melody*.
 Every track needs a hook you can hum for the rest of the day. A phrase that sticks in
-your skull after one playthrough and won't leave. Punk energy: fast, raw, unpolished,
+your skull after one playthrough and won't leave. Punk, Metal, Acid Jazz energy: fast, raw, unpolished,
 aggressive. No filler, no breathing room. Every note earns its place.
 
 And it has to *feel* something. Not just "fast background noise" — real emotion. The
