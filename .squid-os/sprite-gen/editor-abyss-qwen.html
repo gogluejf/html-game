@@ -25,7 +25,7 @@
   /* ---------- middle ---------- */
   #mid{flex:1;display:flex;flex-direction:column;min-width:0;}
   #toolbar{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap;background:var(--bg2);}
-  .tgroup{display:flex;gap:6px;align-items:center;padding:4px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);}
+  .tgroup{display:flex;gap:6px;align-items:center;padding:4px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);position:relative;}
   .tgroup .gtitle{font-size:10px;color:var(--faint);letter-spacing:1px;text-transform:uppercase;margin-right:2px;}
   .tbtn{font-family:inherit;font-size:13px;padding:8px 12px;border-radius:8px;border:2px solid var(--line);background:var(--panel);color:var(--dim);cursor:pointer;letter-spacing:.5px;transition:all .1s;display:inline-flex;align-items:center;gap:7px;}
   .tbtn svg{width:16px;height:16px;flex:none;}
@@ -35,6 +35,7 @@
   .tbtn.tog.on svg{stroke:var(--yel);}
   .tbtn:disabled{opacity:.3;cursor:not-allowed;border-color:var(--line);color:var(--faint);background:var(--panel);}
   .tbtn:disabled:hover{border-color:var(--line);color:var(--faint);}
+  .reset-opt:hover{background:rgba(62,240,255,.12);color:var(--acc);}
   /* ---------- stage ---------- */
   #stage{flex:1;position:relative;overflow:hidden;background:#0a0c14;}
   canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;}
@@ -94,6 +95,14 @@
         <span class="gtitle">Tools</span>
         <button class="tbtn tog" id="tglMeleeOn" title="enable/disable melee box for this frame">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 12l2 2 4-4"/></svg>MELEE ON</button>
+        <div style="position:relative;display:inline-flex;">
+          <button class="tbtn" id="resetBtn" title="reset boxes to original position">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>RESET</button>
+          <div id="resetMenu" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;z-index:10;min-width:140px;">
+            <div class="reset-opt" data-scope="frame" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:var(--txt);">Reset Frame</div>
+            <div class="reset-opt" data-scope="anim" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:var(--txt);">Reset Animation</div>
+          </div>
+        </div>
       </div>
       <div class="tgroup" style="margin-left:auto">
         <button class="tbtn" id="undoBtn" title="undo last transformation (ctrl+Z)">
@@ -492,7 +501,9 @@ function syncToggles(){
   const mon = cur && cur.st ? cur.st.frames[curFrameIdx()].melee.on : false;
   const btn = $('tglMeleeOn');
   btn.classList.toggle('on', mon);
-  btn.disabled = !!(cur && cur.st && cur.st.playing);
+  const locked = !!(cur && cur.st && cur.st.playing);
+  btn.disabled = locked;
+  $('resetBtn').disabled = locked;   // whole Tools group disabled during animation
 }
 $('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); });
 $('tglMeleeView').addEventListener('click', ()=>{ show.meleeView=!show.meleeView; syncToggles(); draw(); });
@@ -506,6 +517,53 @@ $('tglMeleeOn').addEventListener('click', ()=>{
 });
 $('tglAxes').addEventListener('click', ()=>{ show.axes=!show.axes; syncToggles(); draw(); });
 $('tglSpriteView').addEventListener('click', ()=>{ show.spriteView=!show.spriteView; syncToggles(); draw(); });
+// ---------- RESET tool (frame / animation) ----------
+const resetBtn = $('resetBtn'), resetMenu = $('resetMenu');
+resetBtn.addEventListener('click', e=>{
+  e.stopPropagation();
+  const open = resetMenu.style.display !== 'none';
+  resetMenu.style.display = open ? 'none' : 'block';
+});
+document.addEventListener('click', ()=>{ resetMenu.style.display = 'none'; });
+resetMenu.addEventListener('click', e=>{ e.stopPropagation(); });
+resetMenu.querySelectorAll('.reset-opt').forEach(opt => {
+  opt.addEventListener('click', ()=>{
+    const scope = opt.dataset.scope;
+    resetMenu.style.display = 'none';
+    if (!cur || !cur.st || editingLocked()) return;
+    pushUndo();
+    if (scope === 'frame') resetFrame();
+    else resetAnimation();
+    syncPanel(); draw();
+  });
+});
+function resetFrame(){
+  const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
+  // reset sprite offset/scale to origin
+  f.offset.x = 0; f.offset.y = 0;
+  f.scale.sx = 1; f.scale.sy = 1;
+  // reset melee box: off + default position (centered on collision)
+  f.melee.on = false;
+  f.melee.x = st.collision.x; f.melee.y = st.collision.y;
+  f.melee.w = st.collision.w; f.melee.h = st.collision.h;
+}
+function resetAnimation(){
+  const st = cur.st;
+  // recompute defaults from natural image dims
+  const good = cur.imgs.filter(Boolean);
+  const medW = Math.round(median(good.map(i=>i.naturalWidth))) || 1;
+  const medH = Math.round(median(good.map(i=>i.naturalHeight))) || 1;
+  const kx = -medW/2, ky = -medH/2;
+  // reset collision box
+  st.collision = { x:kx, y:ky, w:medW, h:medH };
+  // reset all frames
+  for (const f of st.frames){
+    f.offset.x = 0; f.offset.y = 0;
+    f.scale.sx = 1; f.scale.sy = 1;
+    f.melee.on = false;
+    f.melee.x = kx; f.melee.y = ky; f.melee.w = medW; f.melee.h = medH;
+  }
+}
 $('playBtn').addEventListener('click', ()=>{ if(cur&&cur.st) setPlaying(!cur.st.playing); });
 $('prevF').addEventListener('click', ()=>stepFrame(-1));
 $('nextF').addEventListener('click', ()=>stepFrame(1));
