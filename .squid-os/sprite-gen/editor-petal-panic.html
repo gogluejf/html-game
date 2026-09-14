@@ -542,7 +542,11 @@ cv.addEventListener('pointerdown', e=>{
   if (hover && hover.box==='sprite' && show.spriteView){
     const f = st.frames[fi];
     if (hover.handle) drag = { kind:'sprite-resize', anchor:hover.handle, ratio:e.shiftKey,
-      ow:cur.imgs[fi].naturalWidth, oh:cur.imgs[fi].naturalHeight, ox:f.offset.x, oy:f.offset.y };
+      ow:cur.imgs[fi].naturalWidth, oh:cur.imgs[fi].naturalHeight,
+      orig:{ x:f.offset.x - cur.imgs[fi].naturalWidth*f.scale.sx/2,
+             y:f.offset.y - cur.imgs[fi].naturalHeight*f.scale.sy/2,
+             w:cur.imgs[fi].naturalWidth*f.scale.sx,
+             h:cur.imgs[fi].naturalHeight*f.scale.sy } };
     else drag = { kind:'sprite-move', ox:sx-f.offset.x, oy:sy-f.offset.y };
     draw(); return;
   }
@@ -574,29 +578,38 @@ cv.addEventListener('pointermove', e=>{
   }
   else if (drag.kind==='sprite-resize'){
     const f = st.frames[fi];
-    // current rect edges in sprite space
-    const w0 = drag.ow*f.scale.sx, h0 = drag.oh*f.scale.sy;
-    let L = drag.ox - w0/2, R = drag.ox + w0/2, T = drag.oy - h0/2, B = drag.oy + h0/2;
-    if (drag.anchor.includes('w')) L = sx;
-    if (drag.anchor.includes('e')) R = sx;
-    if (drag.anchor.includes('n')) T = sy;
-    if (drag.anchor.includes('s')) B = sy;
+    const o = drag.orig, ow = drag.ow, oh = drag.oh;
+    const cx = o.x + o.w/2, cy = o.y + o.h/2;   // box center (stays fixed under shift)
     if (drag.ratio){
-      // shift: scale both axes by dominant delta (corners), or the shared axis (edges)
-      const rx = (R-L)/w0, ry = (B-T)/h0;
-      let r;
-      if (drag.anchor.length===2) r = Math.max(Math.abs(rx), Math.abs(ry));
-      else if (drag.anchor.includes('w')||drag.anchor.includes('e')) r = Math.abs(rx);
-      else r = Math.abs(ry);
-      const nw = drag.ow*r, nh = drag.oh*r;
-      const cxp = (L+R)/2, cyp = (T+B)/2;
-      f.scale.sx = Math.max(.05, nw/drag.ow);
-      f.scale.sy = Math.max(.05, nh/drag.oh);
-      f.offset.x = Math.round(cxp);
-      f.offset.y = Math.round(cyp);
+      // SHIFT: symmetric scale about the box center.
+      // corner -> lock ratio, scale BOTH axes (both sides); middle -> scale that axis only (both sides)
+      let rx, ry;
+      if (drag.anchor.includes('e')) rx = (sx - cx)/ (o.w/2);
+      else if (drag.anchor.includes('w')) rx = (cx - sx)/(o.w/2);
+      if (drag.anchor.includes('s')) ry = (sy - cy)/(o.h/2);
+      else if (drag.anchor.includes('n')) ry = (cy - sy)/(o.h/2);
+      const isCorner = drag.anchor.length===2;
+      let nsx, nsy;   // multipliers relative to ORIGINAL size
+      if (isCorner){
+        const r = Math.max(Math.abs(rx), Math.abs(ry));
+        nsx = r*Math.sign(rx||1); nsy = r*Math.sign(ry||1);
+      } else if (drag.anchor.includes('e')||drag.anchor.includes('w')){
+        nsx = rx; nsy = 1;
+      } else { nsx = 1; nsy = ry; }
+      // absolute scale from original dims each frame -> no compounding; center stays fixed
+      f.scale.sx = Math.max(.05, nsx);
+      f.scale.sy = Math.max(.05, nsy);
     } else {
-      f.scale.sx = Math.max(.05, (R-L)/drag.ow);
-      f.scale.sy = Math.max(.05, (B-T)/drag.oh);
+      // FREE: move only the grabbed edge(s), opposite side fixed
+      let L=o.x, R=o.x+o.w, T=o.y, B=o.y+o.h;
+      if (drag.anchor.includes('w')) L=sx;
+      if (drag.anchor.includes('e')) R=sx;
+      if (drag.anchor.includes('n')) T=sy;
+      if (drag.anchor.includes('s')) B=sy;
+      if (R-L<1){ if(drag.anchor.includes('w'))L=R-1; else R=L+1; }
+      if (B-T<1){ if(drag.anchor.includes('n'))T=B-1; else B=T+1; }
+      f.scale.sx = Math.max(.05,(R-L)/ow);
+      f.scale.sy = Math.max(.05,(B-T)/oh);
       f.offset.x = Math.round((L+R)/2);
       f.offset.y = Math.round((T+B)/2);
     }
