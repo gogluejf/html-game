@@ -1302,12 +1302,64 @@ function finishHover(prev){
 }
 // ---------- pointer interaction (unified box engine) ----------
 // each box type knows how to snapshot + apply; the drag logic is shared
+// Single fixed scale point for the whole animation body: the center of the
+// bounding box around every frame's sprite + the collision + any melee boxes,
+// measured at drag start. Scaling everything about this one point keeps the
+// relative positions/sizes of frames, collision and melee intact.
+function sharedScaleCenter(st, before){
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  const b0=before.col;
+  minX=Math.min(minX,b0.x); minY=Math.min(minY,b0.y); maxX=Math.max(maxX,b0.x+b0.w); maxY=Math.max(maxY,b0.y+b0.h);
+  for (let i=0;i<st.frames.length;i++){
+    const f=st.frames[i], im=cur.imgs[i]; if(!im) continue;
+    const b=before.frames[i];
+    const w=im.naturalWidth*b.sx, h=im.naturalHeight*b.sy;
+    minX=Math.min(minX,b.ox-w/2); minY=Math.min(minY,b.oy-h/2);
+    maxX=Math.max(maxX,b.ox+w/2); maxY=Math.max(maxY,b.oy+h/2);
+    if (f.melee.on){ const m=b.m;
+      minX=Math.min(minX,m.x); minY=Math.min(minY,m.y);
+      maxX=Math.max(maxX,m.x+m.w); maxY=Math.max(maxY,m.y+m.h); }
+  }
+  return { cx:(minX+maxX)/2, cy:(minY+maxY)/2 };
+}
+// Scale EVERYTHING (all frames' sprites + the shared collision + every melee box)
+// about ONE shared center by (rx,ry). Each element keeps its own size ratio and
+// its relative position to the others — the whole body scales as a single unit.
+function scaleAllAbout(st, before, rx, ry){
+  const C = sharedScaleCenter(st, before);
+  // frames: scale size + reposition center on its scaled ray from C
+  for (let i=0;i<st.frames.length;i++){
+    const b=before.frames[i], fr=st.frames[i];
+    fr.scale.sx=Math.max(.05,b.sx*rx); fr.scale.sy=Math.max(.05,b.sy*ry);
+    fr.offset.x=Math.round(C.cx+(b.ox-C.cx)*rx);
+    fr.offset.y=Math.round(C.cy+(b.oy-C.cy)*ry);
+  }
+  // collision (shared across frames)
+  const b0=before.col;
+  const ccx=b0.x+b0.w/2, ccy=b0.y+b0.h/2;
+  st.collision.w=Math.max(1,Math.round(b0.w*rx));
+  st.collision.h=Math.max(1,Math.round(b0.h*ry));
+  st.collision.x=Math.round(C.cx+(ccx-C.cx)*rx - st.collision.w/2);
+  st.collision.y=Math.round(C.cy+(ccy-C.cy)*ry - st.collision.h/2);
+  // melee per frame
+  for (let i=0;i<st.frames.length;i++){
+    const fr=st.frames[i]; if(!fr.melee.on) continue;
+    const m=before.frames[i].m;
+    const mcx=m.x+m.w/2, mcy=m.y+m.h/2;
+    fr.melee.w=Math.max(1,Math.round(m.w*rx));
+    fr.melee.h=Math.max(1,Math.round(m.h*ry));
+    fr.melee.x=Math.round(C.cx+(mcx-C.cx)*rx - fr.melee.w/2);
+    fr.melee.y=Math.round(C.cy+(mcy-C.cy)*ry - fr.melee.h/2);
+  }
+}
 const BOX = {
   sprite: {
     snap(st, fi){ const f=st.frames[fi], im=cur.imgs[fi]; return { x:f.offset.x-im.naturalWidth*f.scale.sx/2, y:f.offset.y-im.naturalHeight*f.scale.sy/2, w:im.naturalWidth*f.scale.sx, h:im.naturalHeight*f.scale.sy }; },
     move(d, sx, sy){
       // current frame gets the exact target; in ALL FRAMES mode every other frame
-      // gets the same DELTA applied to its own starting offset (relative shift).
+      // gets the same DELTA applied to its own starting offset (relative shift),
+      // AND the shared collision + every melee box slide by the same delta so the
+      // whole body moves as one rigid unit.
       const st=cur.st, fi=curFrameIdx();
       const tx=Math.round(sx-d.ox+d.orig.w/2), ty=Math.round(sy-d.oy+d.orig.h/2);
       const f0=st.frames[fi]; f0.offset.x=tx; f0.offset.y=ty;
@@ -1315,6 +1367,14 @@ const BOX = {
         const dx=tx-d.before.frames[fi].ox, dy=ty-d.before.frames[fi].oy;
         for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
           const b=d.before.frames[i]; st.frames[i].offset.x=Math.round(b.ox+dx); st.frames[i].offset.y=Math.round(b.oy+dy); }
+        // collision + melee follow the sprite by the same delta
+        const bc=d.before.col;
+        st.collision.x=Math.round(bc.x+dx); st.collision.y=Math.round(bc.y+dy);
+        for (let i=0;i<st.frames.length;i++){
+          const fr=st.frames[i]; if(!fr.melee.on) continue;
+          const m=d.before.frames[i].m;
+          fr.melee.x=Math.round(m.x+dx); fr.melee.y=Math.round(m.y+dy);
+        }
       }
     },
     resize(d, sx, sy){
@@ -1346,17 +1406,16 @@ const BOX = {
           const dy=(d.anchor.includes('s'))?sy-gy:gy-sy;
           nsy=Math.max(.05,g0*Math.abs(1+2*dy/o.h));
         }
-        // current frame exact; others get relative ratio applied to their own scales.
+        // current frame exact; then scale the WHOLE body (all frames + collision
+        // + melee) about one shared center so everything stays glued.
         const st=cur.st, fi=curFrameIdx();
         const f0f=st.frames[fi];
         if (nsx!==null) f0f.scale.sx=nsx;
         if (nsy!==null) f0f.scale.sy=nsy;
         if (show.allFrames && d.before){
-          for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
-            const b=d.before.frames[i], fr=st.frames[i];
-            if (nsx!==null) fr.scale.sx=Math.max(.05,b.sx*(nsx/d.before.frames[fi].sx));
-            if (nsy!==null) fr.scale.sy=Math.max(.05,b.sy*(nsy/d.before.frames[fi].sy));
-          }
+          const rx = nsx!==null ? nsx/d.before.frames[fi].sx : 1;
+          const ry = nsy!==null ? nsy/d.before.frames[fi].sy : 1;
+          scaleAllAbout(st, d.before, rx, ry);
         }
       } else {
         let L=o.x,R=o.x+o.w,T=o.y,B=o.y+o.h;
@@ -1366,16 +1425,12 @@ const BOX = {
         if (B-T<1){ if(d.anchor.includes('n'))T=B-1; else B=T+1; }
         const nsx=Math.max(.05,(R-L)/ow), nsy=Math.max(.05,(B-T)/oh);
         const ncx=Math.round((L+R)/2), ncy=Math.round((T+B)/2);
-        // current frame exact; others get relative ratio (scale) + delta (center).
+        // current frame exact; then scale the WHOLE body about one shared center.
         const st=cur.st, fi=curFrameIdx();
         const f0=st.frames[fi]; f0.scale.sx=nsx; f0.scale.sy=nsy; f0.offset.x=ncx; f0.offset.y=ncy;
         if (show.allFrames && d.before){
           const rx=nsx/d.before.frames[fi].sx, ry=nsy/d.before.frames[fi].sy;
-          const dx=ncx-d.before.frames[fi].ox, dy=ncy-d.before.frames[fi].oy;
-          for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
-            const b=d.before.frames[i], fr=st.frames[i];
-            fr.scale.sx=Math.max(.05,b.sx*rx); fr.scale.sy=Math.max(.05,b.sy*ry);
-            fr.offset.x=Math.round(b.ox+dx); fr.offset.y=Math.round(b.oy+dy); }
+          scaleAllAbout(st, d.before, rx, ry);
         }
       }
     }
@@ -1402,26 +1457,12 @@ const BOX = {
       const c0={...d.box};   // current collision (== before state at start)
       resizeBox(c0, d.anchor, sx, sy, d.orig, d.ratio);
       st.collision.x=c0.x; st.collision.y=c0.y; st.collision.w=c0.w; st.collision.h=c0.h;
-      // ALL FRAMES: scale every frame + its melee by the same ratio about the
-      // collision's starting center (relative to each frame's own size/position).
+      // ALL FRAMES: scale the WHOLE body (frames + collision + melee) about one
+      // shared center so everything stays glued.
       if (show.allFrames && d.before){
         const b0=d.before.col;
         const rx=b0.w>0?c0.w/b0.w:1, ry=b0.h>0?c0.h/b0.h:1;
-        const bcx=b0.x+b0.w/2, bcy=b0.y+b0.h/2;   // starting collision center
-        for (let i=0;i<st.frames.length;i++){
-          const b=d.before.frames[i], fr=st.frames[i];
-          // scale frame about the shared center: newCenter = bc + (oldCenter-bc)*r
-          const ocx=b.ox, ocy=b.oy;
-          fr.scale.sx=Math.max(.05,b.sx*rx); fr.scale.sy=Math.max(.05,b.sy*ry);
-          fr.offset.x=Math.round(bcx+(ocx-bcx)*rx); fr.offset.y=Math.round(bcy+(ocy-bcy)*ry);
-          if (fr.melee.on){
-            const m=b.m;
-            fr.melee.w=Math.max(1,Math.round(m.w*rx)); fr.melee.h=Math.max(1,Math.round(m.h*ry));
-            const mcx=m.x+m.w/2, mcy=m.y+m.h/2;
-            fr.melee.x=Math.round(bcx+(mcx-bcx)*rx - fr.melee.w/2);
-            fr.melee.y=Math.round(bcy+(mcy-bcy)*ry - fr.melee.h/2);
-          }
-        }
+        scaleAllAbout(st, d.before, rx, ry);
       }
     }
   },
@@ -1439,7 +1480,7 @@ const BOX = {
       }
     },
     resize(d, sx, sy){
-      // compute target from current frame's own box, then apply relative ratio/delta to others
+      // compute target from current frame's own box, then scale the WHOLE body
       const st=cur.st, fi=curFrameIdx(), f0=st.frames[fi];
       if (!f0.melee.on) return;
       const m0={...d.box};   // current frame melee (== before state at start)
@@ -1448,11 +1489,7 @@ const BOX = {
       if (show.allFrames && d.before){
         const b0=d.before.frames[fi].m;
         const rx=b0.w>0?m0.w/b0.w:1, ry=b0.h>0?m0.h/b0.h:1;
-        const dx=m0.x-b0.x, dy=m0.y-b0.y;
-        for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
-          const b=d.before.frames[i], fr=st.frames[i]; if(!fr.melee.on)continue;
-          fr.melee.w=Math.max(1,Math.round(b.m.w*rx)); fr.melee.h=Math.max(1,Math.round(b.m.h*ry));
-          fr.melee.x=Math.round(b.m.x+dx); fr.melee.y=Math.round(b.m.y+dy); }
+        scaleAllAbout(st, d.before, rx, ry);
       }
     }
   }
