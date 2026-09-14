@@ -1228,6 +1228,7 @@ function factoryReset(){
   show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false };
   isPlaying = true;
   bgColor = '#000000';
+  document.documentElement.style.setProperty('--film-bg', bgColor);
   _bgState.h = 0; _bgState.s = 100; _bgState.l = 0;
   userZoomed = false; zoom = 1; panX = 0; panY = 0;
   $('zoomval').textContent = '100%';
@@ -1235,9 +1236,7 @@ function factoryReset(){
   $('bgHue').value = 0; $('bgLight').value = 0; paintSatSquare();
   syncUndoButtons();
   // reload the first entity fresh from defaults and re-enable saving
-  selectEntity(0, 0).then(()=>{ _loadingState = false; });
-}
-function resetFrame(){
+  selectEntity(0, 0).then(()=>{ _loadingState = false; if (FILM.on) drawFilm(); });
   const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
   // reset sprite offset/scale: scale back to 1, left-bottom corner at origin (0,0)
   const im = cur.imgs[fi];
