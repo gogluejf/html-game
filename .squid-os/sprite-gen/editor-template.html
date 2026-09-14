@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SPRITE EDITOR — __PROJECT__</title>
+<style>
+  :root{
+    --bg:#0a0c14; --bg2:#070912; --panel:#0d1120; --line:#1b2540;
+    --txt:#cfe4ff; --dim:#8fa0d0; --faint:#5a6a90;
+    --acc:#3ef0ff; --yel:#ffe23e; --org:#ff9d2e; --pur:#b47bff; --grn:#5aff8a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:'Courier New',monospace;overflow:hidden;font-size:14px;}
+  #app{display:flex;height:100%;}
+  /* ---------- sidebar ---------- */
+  #side{width:270px;border-right:1px solid var(--line);padding:14px;overflow-y:auto;background:var(--bg2);}
+  #side h1{font-size:18px;color:var(--acc);letter-spacing:2px;margin:0 0 2px;text-transform:uppercase;}
+  #side .sub{font-size:12px;color:var(--faint);margin-bottom:12px;}
+  .label{color:var(--yel);font-size:13px;margin:12px 0 4px;letter-spacing:1px;text-transform:uppercase;}
+  .ent{font-size:14px;padding:7px 10px;border-radius:8px;cursor:pointer;color:var(--dim);user-select:none;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .ent:hover{background:rgba(62,240,255,.08);color:var(--txt);}
+  .ent.on{background:rgba(255,226,62,.12);color:#fff;}
+  .ent .cnt{color:var(--faint);font-size:12px;white-space:nowrap;}
+  .ent.on .cnt{color:var(--yel);}
+  /* ---------- middle ---------- */
+  #mid{flex:1;display:flex;flex-direction:column;min-width:0;}
+  #toolbar{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap;background:var(--bg2);}
+  .tgroup{display:flex;gap:6px;align-items:center;padding:4px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);}
+  .tgroup .gtitle{font-size:10px;color:var(--faint);letter-spacing:1px;text-transform:uppercase;margin-right:2px;}
+  .tbtn{font-family:inherit;font-size:13px;padding:8px 12px;border-radius:8px;border:2px solid var(--line);background:var(--panel);color:var(--dim);cursor:pointer;letter-spacing:.5px;transition:all .1s;display:inline-flex;align-items:center;gap:7px;}
+  .tbtn svg{width:16px;height:16px;flex:none;}
+  .tbtn:hover{border-color:var(--acc);color:var(--txt);}
+  .tbtn.armed{border-color:var(--acc);color:var(--acc);background:rgba(62,240,255,.12);}
+  .tbtn.tog.on{border-color:var(--yel);color:var(--yel);background:rgba(255,226,62,.08);}
+  .tbtn.tog.on svg{stroke:var(--yel);}
+  /* ---------- stage ---------- */
+  #stage{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid var(--line);border-radius:8px;}
+  /* ---------- transport ---------- */
+  #transport{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);background:var(--bg2);}
+  #transport button{font-family:inherit;font-size:18px;width:44px;height:38px;border-radius:8px;border:2px solid var(--line);background:var(--panel);color:var(--txt);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}
+  #transport button svg{width:18px;height:18px;}
+  #transport button:hover{border-color:var(--acc);color:var(--acc);}
+  #fpsbox{display:flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);}
+  #fpsbox button{width:32px;height:30px;font-size:15px;}
+  #fpsval{min-width:70px;text-align:center;font-size:16px;color:var(--yel);font-weight:bold;}
+  #finfo{font-size:13px;color:var(--faint);margin-left:auto;}
+  #hint{padding:7px 14px;font-size:12px;color:var(--faint);border-top:1px solid var(--line);background:var(--bg2);line-height:1.6;}
+  /* ---------- side panel ---------- */
+  #panel{width:340px;border-left:1px solid var(--line);padding:16px;overflow-y:auto;background:var(--bg2);font-size:14px;}
+  #panel h2{font-size:13px;color:var(--acc);letter-spacing:2px;margin:18px 0 8px;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:6px;}
+  #panel h2:first-child{margin-top:0;}
+  #panel h2 .swatch{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px;}
+  .row{display:flex;align-items:center;justify-content:space-between;margin:6px 0;gap:10px;}
+  .row > span{color:var(--dim);white-space:nowrap;font-size:13px;}
+  .row input[type=number]{width:64px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--txt);font-family:inherit;font-size:14px;padding:5px 7px;text-align:right;}
+  .row input[type=number]:focus{outline:none;border-color:var(--acc);}
+  .row input[type=checkbox]{accent-color:var(--acc);width:18px;height:18px;cursor:pointer;}
+  .ro{color:var(--faint);background:transparent;border:1px solid transparent;padding:5px 7px;text-align:right;font-family:inherit;font-size:13px;}
+  .pair{display:flex;gap:8px;}
+  .pair .cell{flex:1;display:flex;align-items:center;gap:6px;min-width:0;}
+  .pair .cell b{color:var(--faint);font-weight:normal;width:14px;font-size:13px;}
+  .pair .cell input{flex:1;width:auto;min-width:0;}
+  .disabled-dim{opacity:.45;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="side">
+    <h1>Sprite Editor</h1>
+    <div class="sub">__PROJECT__</div>
+    <div id="tree"></div>
+  </div>
+  <div id="mid">
+    <div id="toolbar">
+      <div class="tgroup">
+        <span class="gtitle">Tools</span>
+        <button class="tbtn tool armed" data-tool="select" title="Select / move frame (Shift+arrows &plusmn;1, Ctrl+arrows &plusmn;10)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3l7 17 2.5-7.5L21 10z"/></svg>SELECT</button>
+        <button class="tbtn tool" data-tool="scale" title="Scale current frame via 8 handles">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"/></svg>SCALE</button>
+        <button class="tbtn tool" data-tool="pivot" title="Click to place rotation center; drag to preview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>PIVOT</button>
+      </div>
+      <div class="tgroup">
+        <span class="gtitle">Display</span>
+        <button class="tbtn tog on" id="tglCollision" title="show/hide collision box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>COLLISION</button>
+        <button class="tbtn tog on" id="tglMeleeView" title="show/hide melee boxes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 3"/></svg>MELEE VIEW</button>
+        <button class="tbtn tog on" id="tglPivotView" title="show/hide rotation center marker">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/></svg>PIVOT MARKER</button>
+        <button class="tbtn tog on" id="tglAxes" title="show/hide axes crosshair">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>AXES</button>
+      </div>
+    </div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="transport">
+      <button id="prevF" title="previous frame (&#8592;)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM19 5l-10 7 10 7z"/></svg></button>
+      <button id="playBtn" title="play/pause (space)"><span id="playIco">&#9654;</span></button>
+      <button id="nextF" title="next frame (&#8594;)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM5 5l10 7-10 7z"/></svg></button>
+      <div id="fpsbox">
+        <button id="slower" title="slower (&#8722;)">&#8722;</button>
+        <div id="fpsval">8 fps</div>
+        <button id="faster" title="faster (+)">&#43;</button>
+      </div>
+      <div id="finfo"></div>
+    </div>
+    <div id="hint">
+      space play/pause &middot; &#8592;/&#8594; prev/next frame &middot; &#8593;/&#8595; prev/next sprite &middot; shift+arrow offset &#177;1 &middot; ctrl+arrow offset &#177;10<br>
+      hover a box corner to resize it &middot; drag inside a box to move it &middot; melee: click empty area with MELEE ON to create for this frame
+    </div>
+  </div>
+  <div id="panel">
+    <h2>Animation</h2>
+    <div class="row"><span>name</span><span class="ro" id="p_aname">&mdash;</span></div>
+    <div class="row"><span>frames</span><span class="ro" id="p_acount">&mdash;</span></div>
+    <div class="row"><span>speed (fps)</span><input type="number" id="p_speed" min="1" max="60" value="8"></div>
+    <h2>Frame</h2>
+    <div class="row"><span>index</span><span class="ro" id="p_fidx">&mdash;</span></div>
+    <div class="row"><span>name</span><span class="ro" id="p_fname">&mdash;</span></div>
+    <div class="row"><span>crop x,y</span><div class="pair"><div class="cell"><b>x</b><input type="number" id="p_cx" disabled></div><div class="cell"><b>y</b><input type="number" id="p_cy" disabled></div></div></div>
+    <div class="row"><span>crop w,h</span><div class="pair"><div class="cell"><b>w</b><input type="number" id="p_cw" disabled></div><div class="cell"><b>h</b><input type="number" id="p_ch" disabled></div></div></div>
+    <div class="row"><span>offset x,y</span><div class="pair"><div class="cell"><b>x</b><input type="number" id="p_ox"></div><div class="cell"><b>y</b><input type="number" id="p_oy"></div></div></div>
+    <div class="row"><span>rot cx,cy</span><div class="pair"><div class="cell"><b>x</b><input type="number" id="p_rcx"></div><div class="cell"><b>y</b><input type="number" id="p_rcy"></div></div></div>
+    <div class="row"><span>scale sx,sy</span><div class="pair"><div class="cell"><b>x</b><input type="number" step="0.05" id="p_sx"></div><div class="cell"><b>y</b><input type="number" id="p_sy"></div></div></div>
+    <h2><span><span class="swatch" style="background:var(--org)"></span>Melee Box (per frame)</span><span><input type="checkbox" id="p_mon" title="enable melee box for this frame"></span></h2>
+    <div class="row"><span>x,y</span><div class="pair" id="mxy"><div class="cell"><b>x</b><input type="number" id="p_mx"></div><div class="cell"><b>y</b><input type="number" id="p_my"></div></div></div>
+    <div class="row"><span>w,h</span><div class="pair" id="mwh"><div class="cell"><b>w</b><input type="number" id="p_mw"></div><div class="cell"><b>h</b><input type="number" id="p_mh"></div></div></div>
+    <h2><span><span class="swatch" style="background:var(--acc)"></span>Collision Box (all frames)</span></h2>
+    <div class="row"><span>x,y</span><div class="pair"><div class="cell"><b>x</b><input type="number" id="p_kx"></div><div class="cell"><b>y</b><input type="number" id="p_ky"></div></div></div>
+    <div class="row"><span>w,h</span><div class="pair"><div class="cell"><b>w</b><input type="number" id="p_kw"></div><div class="cell"><b>h</b><input type="number" id="p_kh"></div></div></div>
+  </div>
+</div>
+<script>
+const MANIFEST = /*__MANIFEST__*/null;
+const ZOOM = 2;
+const COL_COLL='#3ef0ff', COL_MELEE='#ff9d2e', COL_SCALE='#b47bff', COL_PIVOT='#ffe23e', COL_OFFSET='#5aff8a';
+const HANDLE_R = 6;
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const $ = id => document.getElementById(id);
+const tree = $('tree'), finfo = $('finfo');
+let flatList = [], flatIdx = -1;
+let cur = null;          // {name, paths, imgs, st}
+const S = new Map();     // per-entity editor state (preserved across switches)
+let tool = 'select';
+let show = { collision:true, meleeView:true, pivotView:true, axes:true };
+let drag = null;         // active pointer drag
+let hover = null;        // {box:'collision'|'melee'|'scale', handle:id} or {box, body:true}
+let lastT = 0, acc = 0;
+// ---------- sidebar ----------
+MANIFEST.labels.forEach((lbl, li) => {
+  const hd = document.createElement('div'); hd.className='label'; hd.textContent = lbl.name.toUpperCase();
+  tree.appendChild(hd);
+  lbl.entities.forEach((en, ei) => {
+    const row = document.createElement('div'); row.className='ent';
+    row.innerHTML = `<span>${en.name}</span><span class="cnt">${en.frames.length}f</span>`;
+    row.addEventListener('click', () => selectEntity(li, ei));
+    en._el = row;
+    tree.appendChild(row);
+    flatList.push({li, ei});
+  });
+});
+function loadFrames(paths){
+  return Promise.all(paths.map(p => new Promise(res => {
+    const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = p;
+  })));
+}
+// alpha bounds via fetch+blob (file:// images taint canvases; blob URLs do not)
+const bboxCache = new Map();
+async function alphaBBox(im, path){
+  if (bboxCache.has(path)) return bboxCache.get(path);
+  let bb = {x:0,y:0,w:im.naturalWidth,h:im.naturalHeight};
+  try{
+    const buf = await (await fetch(path)).arrayBuffer();
+    const url = URL.createObjectURL(new Blob([buf]));
+    const bi = new Image(); await new Promise(r=>{bi.onload=r; bi.onerror=r; bi.src=url;});
+    const c = document.createElement('canvas'); c.width = bi.naturalWidth; c.height = bi.naturalHeight;
+    const g = c.getContext('2d'); g.drawImage(bi,0,0);
+    URL.revokeObjectURL(url);
+    const d = g.getImageData(0,0,c.width,c.height).data;
+    let x0=c.width, y0=c.height, x1=-1, y1=-1;
+    for (let y=0;y<c.height;y++) for (let x=0;x<c.width;x++){
+      if (d[(y*c.width+x)*4+3] > 8){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+    }
+    if (x1>=0) bb = {x:x0,y:y0,w:x1-x0+1,h:y1-y0+1};
+  }catch(e){ /* keep full-frame fallback */ }
+  bboxCache.set(path, bb); return bb;
+}
+const median = arr => { const a=[...arr].sort((m,n)=>m-n); const m=a.length>>1; return a.length%2 ? a[m] : (a[m-1]+a[m])/2; };
+function defaultState(name, imgs, paths){
+  const good = imgs.filter(Boolean);
+  const medW = Math.round(median(good.map(i=>i.naturalWidth))) || 1;
+  const medH = Math.round(median(good.map(i=>i.naturalHeight))) || 1;
+  const kx = 0, ky = 0;   // refined to median alpha-bounds center once bboxes load
+  return {
+    key: name, speed: 8, playing: true, frameIdx: 0,
+    collision: { x:kx, y:ky, w:medW, h:medH },
+    pivot: { x:0, y:0 },
+    frames: paths.map((p, i) => ({
+      idx: i, name: p.split('/').pop(),
+      crop: { x:0, y:0, w:good[i]?good[i].naturalWidth:0, h:good[i]?good[i].naturalHeight:0 },
+      offset: { x:0, y:0 }, scale: { sx:1, sy:1 },
+      melee: { on:false, x:kx, y:ky, w:medW, h:medH }
+    }))
+  };
+}
+// refine defaults using real alpha bounds (non-blocking)
+async function refineDefaults(name, imgs, paths){
+  const st = S.get(name); if (!st) return;
+  const bbs = [];
+  for (let i=0;i<imgs.length;i++){ if (imgs[i]) bbs.push(await alphaBBox(imgs[i], paths[i])); }
+  if (!bbs.length) return;
+  const medW = Math.round(median(bbs.map(b=>b.w))), medH = Math.round(median(bbs.map(b=>b.h)));
+  const cx = Math.round(median(bbs.map(b=>b.x+b.w/2))), cy = Math.round(median(bbs.map(b=>b.y+b.h/2)));
+  st.collision = { x:Math.round(cx-medW/2), y:Math.round(cy-medH/2), w:medW, h:medH };
+  st.pivot = { x:cx, y:cy };
+  for (const f of st.frames) if (!f.melee.on){ f.melee.x=st.collision.x; f.melee.y=st.collision.y; f.melee.w=medW; f.melee.h=medH; }
+  if (cur && cur.name===name){ syncPanel(); draw(); }
+}
+async function selectEntity(li, ei){
+  const en = MANIFEST.labels[li].entities[ei];
+  document.querySelectorAll('.ent').forEach(e=>e.classList.remove('on'));
+  en._el.classList.add('on');
+  flatIdx = flatList.findIndex(f => f.li===li && f.ei===ei);
+  const imgs = await loadFrames(en.frames);
+  cur = { name: en.name, paths: en.frames, imgs: imgs.filter(Boolean) };
+  if (!S.has(cur.name)) S.set(cur.name, defaultState(cur.name, cur.imgs, cur.paths));
+  cur.st = S.get(cur.name);
+  acc = 0; drag = null; hover = null;
+  sizeCanvas(); syncPanel(); draw();
+  refineDefaults(cur.name, cur.imgs, cur.paths);
+}
+// ---------- geometry: sprite space origin at box center, +y down, units = original px ----------
+function dims(){
+  let mw=1, mh=1;
+  if (cur) for (const im of cur.imgs){ mw=Math.max(mw, im.naturalWidth); mh=Math.max(mh, im.naturalHeight); }
+  return { mw, mh, cw: mw*ZOOM, ch: mh*ZOOM };
+}
+function sizeCanvas(){ const d = dims(); cv.width = d.cw; cv.height = d.ch; }
+function s2c(x, y){ const d = dims(); return [ d.cw/2 + x*ZOOM, d.ch/2 + y*ZOOM ]; }
+function c2s(x, y){ const d = dims(); return [ (x - d.cw/2)/ZOOM, (y - d.ch/2)/ZOOM ]; }
+function evPos(e){ const r = cv.getBoundingClientRect(); return [ e.clientX - r.left, e.clientY - r.top ]; }
+function curFrameIdx(){ return cur.st.frameIdx % cur.st.frames.length; }
+function frameRect(st, fi){
+  const im = cur.imgs[fi]; if (!im) return null;
+  const f = st.frames[fi];
+  const w = im.naturalWidth*f.scale.sx, h = im.naturalHeight*f.scale.sy;
+  return { x: f.offset.x - w/2, y: f.offset.y - h/2, w, h };
+}
+function handlePts(r){
+  const cx=r.x+r.w/2, cy=r.y+r.h/2;
+  return [
+    {id:'nw',x:r.x,y:r.y},{id:'n',x:cx,y:r.y},{id:'ne',x:r.x+r.w,y:r.y},
+    {id:'w',x:r.x,y:cy},{id:'e',x:r.x+r.w,y:cy},
+    {id:'sw',x:r.x,y:r.y+r.h},{id:'s',x:cx,y:r.y+r.h},{id:'se',x:r.x+r.w,y:r.y+r.h}
+  ];
+}
+function drawBox(rect, color, showHandles, dashed, hotHandle, hotBody){
+  const [x, y] = s2c(rect.x, rect.y);
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = (hotBody||hotHandle) ? 3 : 2;
+  if (dashed) ctx.setLineDash([6,4]);
+  ctx.strokeRect(x, y, rect.w*ZOOM, rect.h*ZOOM);
+  ctx.setLineDash([]);
+  if (showHandles){
+    for (const p of handlePts(rect)){
+      const [px, py] = s2c(p.x, p.y);
+      const hot = hotHandle === p.id;
+      ctx.fillStyle = hot ? '#fff' : color;
+      const r = hot ? HANDLE_R+2 : HANDLE_R;
+      ctx.fillRect(px-r, py-r, r*2, r*2);
+    }
+  }
+  ctx.restore();
+}
+function hitHandle(rect, sx, sy){
+  const tol = 9/ZOOM;
+  for (const p of handlePts(rect)) if (Math.abs(sx-p.x)<=tol && Math.abs(sy-p.y)<=tol) return p.id;
+  return null;
+}
+function inside(r, x, y){ return x>=r.x && x<=r.x+r.w && y>=r.y && y<=r.y+r.h; }
+function meleeVisible(){ return show.meleeView && cur.st.frames[curFrameIdx()].melee.on; }
+function draw(){
+  if (!cur || !cur.st) return;
+  const st = cur.st;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  const t = 16;
+  for (let y=0;y<cv.height;y+=t) for (let x=0;x<cv.width;x+=t){
+    ctx.fillStyle = ((x/t+y/t)%2===0) ? '#10131f' : '#0c0f19';
+    ctx.fillRect(x,y,t,t);
+  }
+  if (show.axes){
+    ctx.strokeStyle = 'rgba(90,106,144,.55)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cv.width/2,0); ctx.lineTo(cv.width/2,cv.height);
+    ctx.moveTo(0,cv.height/2); ctx.lineTo(cv.width,cv.height/2); ctx.stroke();
+    ctx.fillStyle = 'rgba(90,106,144,.8)'; ctx.font = '11px Courier New';
+    ctx.fillText('+x \u25B6', cv.width/2+5, cv.height/2-5);
+    ctx.fillText('\u25BC +y', cv.width/2+5, cv.height/2+14);
+  }
+  const fi = curFrameIdx();
+  const im = cur.imgs[fi];
+  if (im){
+    const f = st.frames[fi];
+    const w = im.naturalWidth*f.scale.sx, h = im.naturalHeight*f.scale.sy;
+    const [dx, dy] = s2c(f.offset.x - w/2, f.offset.y - h/2);
+    ctx.drawImage(im, dx, dy, w*ZOOM, h*ZOOM);
+  }
+  // offset gizmo (select tool): dashed green box around current frame
+  if (tool==='select' && im) drawBox(frameRect(st, fi), COL_OFFSET, true, true, null, false);
+  // collision box
+  if (show.collision) drawBox(st.collision, COL_COLL, true, false,
+    hover && hover.box==='collision' ? hover.handle : null,
+    !!(hover && hover.box==='collision' && hover.body));
+  // melee box (per frame)
+  if (meleeVisible()) drawBox(st.frames[fi].melee, COL_MELEE, true, false,
+    hover && hover.box==='melee' ? hover.handle : null,
+    !!(hover && hover.box==='melee' && hover.body));
+  // scale gizmo only while SCALE tool armed
+  if (tool==='scale' && im) drawBox(frameRect(st, fi), COL_SCALE, true, false,
+    hover && hover.box==='scale' ? hover.handle : null, false);
+  // pivot marker
+  if (show.pivotView){
+    const [px, py] = s2c(st.pivot.x, st.pivot.y);
+    ctx.strokeStyle = COL_PIVOT; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(px,py,7,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px-11,py); ctx.lineTo(px+11,py); ctx.moveTo(px,py-11); ctx.lineTo(px,py+11); ctx.stroke();
+  }
+  finfo.textContent = `frame ${fi+1}/${st.frames.length}  \u2014  ${st.frames[fi].name}`;
+}
+// ---------- playback ----------
+function tick(t){
+  requestAnimationFrame(tick);
+  if (!cur || !cur.st || !cur.st.playing){ lastT = t; return; }
+  const dt = (t-lastT)/1000; lastT = t; acc += dt;
+  const step = 1/Math.max(1, cur.st.speed);
+  if (acc >= step){ acc %= step; cur.st.frameIdx = (cur.st.frameIdx+1) % cur.st.frames.length; syncPanel(); draw(); }
+}
+requestAnimationFrame(tick);
+function setPlaying(p){
+  if(!cur || !cur.st) return;
+  cur.st.playing = !!p;
+  $('playIco').innerHTML = cur.st.playing ? '&#10074;&#10074;' : '&#9654;';
+}
+function stepFrame(d){ if(!cur||!cur.st)return; const st=cur.st; st.frameIdx=(st.frameIdx+d+st.frames.length)%st.frames.length; syncPanel(); draw(); }
+function setSpeed(v){ if(!cur||!cur.st)return; cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = cur.st.speed+' fps'; $('p_speed').value = cur.st.speed; }
+// ---------- panel ----------
+const P = id => $(id);
+function syncPanel(){
+  if (!cur || !cur.st) return;
+  const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
+  P('p_aname').textContent = cur.name;
+  P('p_acount').textContent = st.frames.length;
+  P('p_speed').value = st.speed; $('fpsval').textContent = st.speed+' fps';
+  P('p_fidx').textContent = (fi+1)+' / '+st.frames.length;
+  P('p_fname').textContent = f.name;
+  P('p_cx').value=f.crop.x; P('p_cy').value=f.crop.y; P('p_cw').value=f.crop.w; P('p_ch').value=f.crop.h;
+  P('p_ox').value=f.offset.x; P('p_oy').value=f.offset.y;
+  P('p_rcx').value=st.pivot.x; P('p_rcy').value=st.pivot.y;
+  P('p_sx').value=f.scale.sx; P('p_sy').value=f.scale.sy;
+  P('p_mon').checked=f.melee.on;
+  const md = !f.melee.on;
+  ['p_mx','p_my','p_mw','p_mh'].forEach(id=>P(id).classList.toggle('disabled-dim', md));
+  P('p_mx').value=f.melee.x; P('p_my').value=f.melee.y; P('p_mw').value=f.melee.w; P('p_mh').value=f.melee.h;
+  P('p_kx').value=st.collision.x; P('p_ky').value=st.collision.y; P('p_kw').value=st.collision.w; P('p_kh').value=st.collision.h;
+  setPlaying(st.playing);
+}
+function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=parseFloat(P(id).value); if(!isNaN(v)&&cur&&cur.st){ fn(v); draw(); } }); }
+bindNum('p_speed', v=>setSpeed(v));
+bindNum('p_ox', v=>cur.st.frames[curFrameIdx()].offset.x=v);
+bindNum('p_oy', v=>cur.st.frames[curFrameIdx()].offset.y=v);
+bindNum('p_rcx', v=>cur.st.pivot.x=v);
+bindNum('p_rcy', v=>cur.st.pivot.y=v);
+bindNum('p_sx', v=>cur.st.frames[curFrameIdx()].scale.sx=Math.max(.05,v));
+bindNum('p_sy', v=>cur.st.frames[curFrameIdx()].scale.sy=Math.max(.05,v));
+bindNum('p_mx', v=>{ const m=cur.st.frames[curFrameIdx()].melee; if(m.on) m.x=v; });
+bindNum('p_my', v=>{ const m=cur.st.frames[curFrameIdx()].melee; if(m.on) m.y=v; });
+bindNum('p_mw', v=>{ const m=cur.st.frames[curFrameIdx()].melee; if(m.on) m.w=Math.max(1,v); });
+bindNum('p_mh', v=>{ const m=cur.st.frames[curFrameIdx()].melee; if(m.on) m.h=Math.max(1,v); });
+bindNum('p_kx', v=>cur.st.collision.x=v);
+bindNum('p_ky', v=>cur.st.collision.y=v);
+bindNum('p_kw', v=>cur.st.collision.w=Math.max(1,v));
+bindNum('p_kh', v=>cur.st.collision.h=Math.max(1,v));
+P('p_mon').addEventListener('change', ()=>{
+  if(!cur||!cur.st) return;
+  const f = cur.st.frames[curFrameIdx()];
+  f.melee.on = P('p_mon').checked;
+  if (f.melee.on && !Object.is(f.melee.x, null)) { /* keep existing */ }
+  syncPanel(); draw();
+});
+// ---------- toolbar ----------
+function setTool(t){
+  tool = (tool===t) ? 'select' : t;   // second click on active tool -> back to select
+  document.querySelectorAll('.tbtn.tool').forEach(b=>b.classList.toggle('armed', b.dataset.tool===tool));
+  draw();
+}
+document.querySelectorAll('.tbtn.tool').forEach(b=>b.addEventListener('click', ()=>setTool(b.dataset.tool)));
+function syncToggles(){
+  $('tglCollision').classList.toggle('on', show.collision);
+  $('tglMeleeView').classList.toggle('on', show.meleeView);
+  $('tglPivotView').classList.toggle('on', show.pivotView);
+  $('tglAxes').classList.toggle('on', show.axes);
+}
+$('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); });
+$('tglMeleeView').addEventListener('click', ()=>{ show.meleeView=!show.meleeView; syncToggles(); draw(); });
+$('tglPivotView').addEventListener('click', ()=>{ show.pivotView=!show.pivotView; syncToggles(); draw(); });
+$('tglAxes').addEventListener('click', ()=>{ show.axes=!show.axes; syncToggles(); draw(); });
+$('playBtn').addEventListener('click', ()=>{ if(cur&&cur.st) setPlaying(!cur.st.playing); });
+$('prevF').addEventListener('click', ()=>stepFrame(-1));
+$('nextF').addEventListener('click', ()=>stepFrame(1));
+$('slower').addEventListener('click', ()=>{ if(cur&&cur.st) setSpeed(cur.st.speed-1); });
+$('faster').addEventListener('click', ()=>{ if(cur&&cur.st) setSpeed(cur.st.speed+1); });
+// ---------- box resize math ----------
+function resizeBox(box, anchorId, sx, sy, orig, keepRatio){
+  let x1=orig.x, y1=orig.y, x2=orig.x+orig.w, y2=orig.y+orig.h;
+  if (anchorId.includes('w')) x1=sx; else if (anchorId.includes('e')) x2=sx;
+  if (anchorId.includes('n')) y1=sy; else if (anchorId.includes('s')) y2=sy;
+  let w=x2-x1, h=y2-y1;
+  if (keepRatio && orig.w>0 && orig.h>0){
+    const rx=w/orig.w, ry=h/orig.h, r=Math.max(Math.abs(rx),Math.abs(ry));
+    w=orig.w*r*Math.sign(w||1); h=orig.h*r*Math.sign(h||1);
+    x2=x1+w; y2=y1+h;
+  }
+  if (w<1) w=1; if (h<1) h=1;
+  box.x=Math.round(x1); box.y=Math.round(y1); box.w=Math.round(w); box.h=Math.round(h);
+}
+// ---------- hover detection ----------
+function updateHover(sx, sy){
+  const st = cur.st, fi = curFrameIdx();
+  const prev = hover; hover = null;
+  // scale handles only when SCALE tool armed
+  if (tool==='scale'){
+    const r = frameRect(st, fi);
+    if (r){
+      const h = hitHandle(r, sx, sy);
+      if (h) hover = { box:'scale', handle:h };
+    }
+  }
+  // collision
+  if (!hover && show.collision){
+    const r = st.collision;
+    const h = hitHandle(r, sx, sy);
+    if (h) hover = { box:'collision', handle:h };
+    else if (inside(r, sx, sy)) hover = { box:'collision', body:true };
+  }
+  // melee
+  if (!hover && meleeVisible()){
+    const r = st.frames[fi].melee;
+    const h = hitHandle(r, sx, sy);
+    if (h) hover = { box:'melee', handle:h };
+    else if (inside(r, sx, sy)) hover = { box:'melee', body:true };
+  }
+  const changed = JSON.stringify(prev) !== JSON.stringify(hover);
+  if (changed) draw();
+  // cursor feedback
+  if (hover && hover.handle) cv.style.cursor = (hover.handle.length===2) ? 'nwse-resize' : 'ns-resize';
+  else if (hover && hover.body) cv.style.cursor = 'move';
+  else cv.style.cursor = (tool==='pivot') ? 'crosshair' : 'default';
+}
+// ---------- pointer interaction ----------
+cv.addEventListener('pointerdown', e=>{
+  if (!cur || !cur.st) return;
+  cv.setPointerCapture(e.pointerId);
+  const [cx, cy] = evPos(e); const [sx, sy] = c2s(cx, cy);
+  const st = cur.st, fi = curFrameIdx();
+  if (tool==='pivot'){
+    drag = { kind:'pivot' };
+    st.pivot.x = Math.round(sx); st.pivot.y = Math.round(sy);
+    syncPanel(); draw(); return;
+  }
+  // boxes are editable via hover regardless of tool (select is the default hand)
+  if (hover && hover.box==='collision' && show.collision){
+    const r = st.collision;
+    if (hover.handle) drag = { kind:'resize', box:r, anchor:hover.handle, orig:{...r}, ratio:e.shiftKey };
+    else drag = { kind:'move', box:r, ox:sx-r.x, oy:sy-r.y };
+    draw(); return;
+  }
+  if (hover && hover.box==='melee' && meleeVisible()){
+    const r = st.frames[fi].melee;
+    if (hover.handle) drag = { kind:'resize', box:r, anchor:hover.handle, orig:{...r}, ratio:e.shiftKey };
+    else drag = { kind:'move', box:r, ox:sx-r.x, oy:sy-r.y };
+    draw(); return;
+  }
+  if (hover && hover.box==='scale'){
+    const f = st.frames[fi];
+    drag = { kind:'scale', anchor:hover.handle, ow:cur.imgs[fi].naturalWidth, oh:cur.imgs[fi].naturalHeight, ox:f.offset.x, oy:f.offset.y };
+    draw(); return;
+  }
+});
+cv.addEventListener('pointermove', e=>{
+  if (!cur || !cur.st) return;
+  const [cx, cy] = evPos(e); const [sx, sy] = c2s(cx, cy);
+  if (!drag) { updateHover(sx, sy); return; }
+  const st = cur.st, fi = curFrameIdx();
+  if (drag.kind==='resize') resizeBox(drag.box, drag.anchor, sx, sy, drag.orig, drag.ratio);
+  else if (drag.kind==='move'){ drag.box.x = Math.round(sx-drag.ox); drag.box.y = Math.round(sy-drag.oy); }
+  else if (drag.kind==='scale'){
+    const f = st.frames[fi];
+    const left = drag.ox - drag.ow*f.scale.sx/2, right = drag.ox + drag.ow*f.scale.sx/2;
+    const top = drag.oy - drag.oh*f.scale.sy/2, bot = drag.oy + drag.oh*f.scale.sy/2;
+    let nL=left, nR=right, nT=top, nB=bot;
+    if (drag.anchor.includes('w')) nL=sx;
+    if (drag.anchor.includes('e')) nR=sx;
+    if (drag.anchor.includes('n')) nT=sy;
+    if (drag.anchor.includes('s')) nB=sy;
+    f.scale.sx = Math.max(.05, (nR-nL)/drag.ow);
+    f.scale.sy = Math.max(.05, (nB-nT)/drag.oh);
+    f.offset.x = Math.round((nL+nR)/2);
+    f.offset.y = Math.round((nT+nB)/2);
+  }
+  else if (drag.kind==='pivot'){ st.pivot.x = Math.round(sx); st.pivot.y = Math.round(sy); }
+  syncPanel(); draw();
+});
+window.addEventListener('pointerup', ()=>{ drag = null; });
+// ---------- keyboard ----------
+window.addEventListener('keydown', e=>{
+  if (!cur || !cur.st) return;
+  const tag = (e.target.tagName||'').toLowerCase();
+  if (tag==='input' || tag==='textarea') return;
+  const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
+  const off = e.ctrlKey ? 10 : 1;
+  switch (e.code){
+    case 'Space': e.preventDefault(); setPlaying(!st.playing); break;
+    case 'ArrowRight': e.preventDefault(); if (e.shiftKey && !e.ctrlKey){ f.offset.x+=off; syncPanel(); draw(); } else stepFrame(1); break;
+    case 'ArrowLeft': e.preventDefault(); if (e.shiftKey && !e.ctrlKey){ f.offset.x-=off; syncPanel(); draw(); } else stepFrame(-1); break;
+    case 'ArrowUp': e.preventDefault();
+      if (e.shiftKey && !e.ctrlKey){ f.offset.y-=off; syncPanel(); draw(); }
+      else if (flatIdx>0){ flatIdx--; const q=flatList[flatIdx]; selectEntity(q.li,q.ei); }
+      break;
+    case 'ArrowDown': e.preventDefault();
+      if (e.shiftKey && !e.ctrlKey){ f.offset.y+=off; syncPanel(); draw(); }
+      else if (flatIdx<flatList.length-1){ flatIdx++; const q=flatList[flatIdx]; selectEntity(q.li,q.ei); }
+      break;
+    case 'Minus': case 'NumpadSubtract': e.preventDefault(); setSpeed(st.speed-1); break;
+    case 'Equal': case 'NumpadAdd': e.preventDefault(); setSpeed(st.speed+1); break;
+  }
+});
+// ---------- init ----------
+if (MANIFEST.labels.length) selectEntity(0, 0);
+</script>
+</body>
+</html>
