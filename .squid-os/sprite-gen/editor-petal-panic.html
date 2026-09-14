@@ -60,6 +60,32 @@
   #rotSpeedBox{display:flex;align-items:center;gap:4px;}
   #rotSpeedVal{min-width:50px;text-align:center;font-size:13px;color:var(--pur);font-weight:bold;}
   #rotAngle{min-width:44px;text-align:center;font-size:14px;color:var(--yel);font-weight:bold;}
+  #bgbox{display:flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);position:relative;}
+  #bgbox .bglab{font-size:10px;color:var(--faint);letter-spacing:1px;text-transform:uppercase;}
+  #bgSwatch{width:34px;height:28px;border:2px solid var(--line);border-radius:6px;cursor:pointer;background:#000;flex:none;}
+  #bgbox #bgval{min-width:56px;text-align:center;font-size:13px;color:var(--dim);font-family:'Courier New',monospace;}
+  /* ---------- background color picker popup ---------- */
+  #bgPop{position:absolute;bottom:calc(100% + 8px);left:0;z-index:50;width:248px;background:var(--panel);border:1px solid var(--acc);border-radius:10px;padding:12px;box-shadow:0 8px 28px rgba(0,0,0,.6);display:none;}
+  #bgPop.on{display:block;}
+  #bgPop h3{margin:0 0 8px;font-size:11px;color:var(--acc);letter-spacing:1px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
+  #bgPop .close{cursor:pointer;color:var(--faint);font-size:16px;line-height:1;padding:0 4px;}
+  #bgPop .close:hover{color:var(--txt);}
+  #bgSatsqWrap{position:relative;width:100%;height:150px;border-radius:6px;overflow:hidden;cursor:crosshair;border:1px solid var(--line);}
+  #bgSatsq{width:100%;height:100%;display:block;}
+  #bgSqDot{position:absolute;width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 3px #000;transform:translate(-50%,-50%);pointer-events:none;}
+  #bgHueRow,#bgLightRow{display:flex;align-items:center;gap:8px;margin-top:10px;}
+  #bgHueRow label,#bgLightRow label{font-size:10px;color:var(--faint);width:16px;flex:none;}
+  #bgHue,#bgLight{flex:1;-webkit-appearance:none;appearance:none;height:14px;border-radius:7px;outline:none;cursor:pointer;border:1px solid var(--line);}
+  #bgHue{background:linear-gradient(to right,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%);}
+  #bgLight{background:linear-gradient(to right,#000,#888,#fff);}
+  #bgHue::-webkit-slider-thumb,#bgLight::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:18px;border-radius:4px;background:#fff;border:2px solid var(--acc);cursor:pointer;}
+  #bgHexRow{display:flex;align-items:center;gap:8px;margin-top:12px;}
+  #bgHexRow label{font-size:10px;color:var(--faint);letter-spacing:1px;}
+  #bgHex{flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:6px;color:var(--txt);font-family:'Courier New',monospace;font-size:13px;padding:5px 8px;text-transform:lowercase;}
+  #bgHex:focus{outline:none;border-color:var(--acc);}
+  #bgPresets{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:12px;}
+  #bgPresets .sw{aspect-ratio:1;border-radius:4px;cursor:pointer;border:1px solid rgba(255,255,255,.12);}
+  #bgPresets .sw:hover{border-color:var(--acc);transform:scale(1.08);}
   #finfo{font-size:13px;color:var(--faint);margin-left:auto;}
   #hint{padding:7px 14px;font-size:12px;color:var(--faint);border-top:1px solid var(--line);background:var(--bg2);line-height:1.6;}
   /* ---------- side panel ---------- */
@@ -173,6 +199,19 @@
           <button id="rotFaster" title="faster rot speed">&#43;</button>
         </div>
         <div id="rotAngle">0&#176;</div>
+      </div>
+      <div id="bgbox" title="canvas background color">
+        <span class="bglab">BG</span>
+        <div id="bgSwatch"></div>
+        <span id="bgval">#000000</span>
+        <div id="bgPop">
+          <h3>Background <span class="close" id="bgClose">&#10005;</span></h3>
+          <div id="bgSatsqWrap"><canvas id="bgSatsq" width="224" height="150"></canvas><div id="bgSqDot"></div></div>
+          <div id="bgHueRow"><label>H</label><input type="range" id="bgHue" min="0" max="360" value="0"></div>
+          <div id="bgLightRow"><label>L</label><input type="range" id="bgLight" min="0" max="100" value="0"></div>
+          <div id="bgHexRow"><label>HEX</label><input type="text" id="bgHex" maxlength="7" spellcheck="false" value="#000000"></div>
+          <div id="bgPresets"></div>
+        </div>
       </div>
       <div id="finfo"></div>
     </div>
@@ -316,6 +355,7 @@ function syncUndoButtons(){
   if (r) r.disabled = !redoStack.length;
 }
 let show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true };
+let bgColor = '#000000';   // canvas background fill
 let isPlaying = true;      // global play/pause, carried across animations
 let drag = null;         // active pointer drag
 let hover = null;        // {box:'collision'|'melee'|'scale', handle:id} or {box, body:true}
@@ -494,7 +534,8 @@ function gridStep(){
 function draw(){
   if (!cur || !cur.st) return;
   const st = cur.st;
-  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, cv.width, cv.height);
   // ---------- full-screen grid ----------
   const step = gridStep();
   const [ox, oy] = s2c(0, 0);   // where sprite origin (0,0) lands on screen
@@ -759,6 +800,67 @@ $('tglAxes').addEventListener('click', ()=>{ show.axes=!show.axes; syncToggles()
 $('tglSpriteView').addEventListener('click', ()=>{ show.spriteView=!show.spriteView; syncToggles(); draw(); });
 $('tglPivot').addEventListener('click', ()=>{ show.pivot=!show.pivot; syncToggles(); draw(); });
 $('tglLabel').addEventListener('click', ()=>{ show.label=!show.label; syncToggles(); draw(); });
+// ---------- background color picker (popup, live-updating) ----------
+const _bgState = { h:0, s:100, l:0 };   // current HSL
+const bgSatsq = $('bgSatsq'), bgSqDot = $('bgSqDot');
+const bgPop = $('bgPop'), bgSwatch = $('bgSwatch'), bgHex = $('bgHex');
+const PRESETS = ['#000000','#0a0c14','#0d1120','#1b2540','#3ef0ff','#ffe23e',
+                 '#ff9d2e','#b47bff','#5aff8a','#ffffff','#8fa0d0','#5a6a90',
+                 '#1e2a4a','#2a1e3a','#3a0d0d','#0d3a2a'];
+function hsl2hex(h,s,l){ s/=100; l/=100; const k=n=>(n+h/30)%12, a=s*Math.min(l,1-l);
+  const f=n=>{ const c=l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1))); return Math.round(c*255).toString(16).padStart(2,'0'); };
+  return '#'+f(0)+f(8)+f(4); }
+function hex2hsl(hex){ const m=/^#?([0-9a-f]{6})$/i.exec(hex); if(!m) return null;
+  const r=parseInt(m[1].slice(0,2),16)/255,g=parseInt(m[1].slice(2,4),16)/255,b=parseInt(m[1].slice(4,6),16)/255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b); let h=0,s=0,l=(mx+mn)/2;
+  if(mx!==mn){ const d=mx-mn; s=l>0.5?d/(2-mx-mn):d/(mx+mn);
+    if(mx===r)h=((g-b)/d)%6; else if(mx===g)h=(b-r)/d+2; else h=(r-g)/d+4; h*=60; if(h<0)h+=360; }
+  return { h:Math.round(h), s:Math.round(s*100), l:Math.round(l*100) }; }
+function paintSatSquare(){
+  const c=bgSatsq.getContext('2d'), W=bgSatsq.width, H=bgSatsq.height;
+  const hueCol=hsl2hex(_bgState.h,100,50);
+  const g=c.createLinearGradient(0,0,W,0); g.addColorStop(0,'#fff'); g.addColorStop(1,hueCol);
+  c.fillStyle=g; c.fillRect(0,0,W,H);
+  const v=c.createLinearGradient(0,0,0,H); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'#000');
+  c.fillStyle=v; c.fillRect(0,0,W,H);
+}
+function setBgFromHsl(h,s,l){
+  _bgState.h=h; _bgState.s=s; _bgState.l=l;
+  const hex=hsl2hex(h,s,l);
+  bgColor=hex;
+  $('bgval').textContent=hex; bgSwatch.style.background=hex;
+  bgHex.value=hex;
+  $('bgHue').value=h; $('bgLight').value=l;
+  paintSatSquare();
+  const W=bgSatsq.width,H=bgSatsq.height;
+  bgSqDot.style.left=(s/100*100)+'%';
+  bgSqDot.style.top=((100-l)/100*100)+'%';
+  draw();
+}
+function setBg(hex){ const hsl=hex2hsl(hex); if(hsl) setBgFromHsl(hsl.h,hsl.s,hsl.l); }
+// saturation square drag (live)
+let sqDrag=false;
+function pickSq(e){ const rect=bgSatsq.getBoundingClientRect();
+  let x=(e.clientX-rect.left)/rect.width, y=(e.clientY-rect.top)/rect.height;
+  x=Math.max(0,Math.min(1,x)); y=Math.max(0,Math.min(1,y));
+  setBgFromHsl(_bgState.h, Math.round(x*100), Math.round((1-y)*100)); }
+bgSatsq.addEventListener('mousedown',e=>{sqDrag=true;pickSq(e);e.preventDefault();});
+window.addEventListener('mousemove',e=>{if(sqDrag)pickSq(e);});
+window.addEventListener('mouseup',()=>{sqDrag=false;});
+$('bgHue').addEventListener('input',()=>setBgFromHsl(+$('bgHue').value,_bgState.s,_bgState.l));
+$('bgLight').addEventListener('input',()=>setBgFromHsl(_bgState.h,_bgState.s,+$('bgLight').value));
+bgHex.addEventListener('change',()=>{ let v=bgHex.value.trim(); if(!v.startsWith('#'))v='#'+v;
+  if(/^#[0-9a-f]{6}$/i.test(v)) setBg(v); else bgHex.value=bgColor; });
+// presets grid
+PRESETS.forEach(p=>{ const d=document.createElement('div'); d.className='sw'; d.style.background=p; d.title=p;
+  d.addEventListener('click',()=>setBg(p)); $('bgPresets').appendChild(d); });
+// open / close popup
+function openBgPop(){ bgPop.classList.add('on'); paintSatSquare(); }
+function closeBgPop(){ bgPop.classList.remove('on'); }
+bgSwatch.addEventListener('click',e=>{ e.stopPropagation(); bgPop.classList.contains('on')?closeBgPop():openBgPop(); });
+$('bgClose').addEventListener('click',e=>{ e.stopPropagation(); closeBgPop(); });
+document.addEventListener('click',e=>{ if(bgPop.classList.contains('on') && !bgPop.contains(e.target) && e.target!==bgSwatch) closeBgPop(); });
+setBg('#000000');
 // ---------- RECENTER PIVOT ----------
 $('recenterPivotBtn').addEventListener('click', ()=>{
   if (!cur || !cur.st || editingLocked()) return;
