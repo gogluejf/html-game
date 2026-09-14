@@ -48,6 +48,19 @@
   .reset-opt:hover{background:rgba(62,240,255,.12);color:var(--acc);}
   /* ---------- stage ---------- */
   #stage{flex:1;position:relative;overflow:hidden;background:#0a0c14;}
+  /* ---------- frame filmstrip (bottom-right drawer, slides left/right) ---------- */
+  #filmDrawer{position:absolute;right:0;bottom:10px;z-index:20;display:flex;align-items:stretch;height:176px;}
+  #filmScroll{display:flex;align-items:stretch;height:100%;width:max-content;background:rgba(10,12,20,.94);border:1px solid var(--line);border-right:none;border-radius:10px 0 0 10px;padding:8px;box-shadow:-6px 0 22px rgba(0,0,0,.5);transform-origin:right center;transform:translateX(100%) scaleX(0.001);opacity:0;transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .2s ease;pointer-events:none;}
+  #filmDrawer.on #filmScroll{transform:translateX(0) scaleX(1);opacity:1;pointer-events:auto;}
+  #filmBtn{flex:0 0 34px;width:34px;height:100%;pointer-events:auto;font-family:inherit;font-size:10px;letter-spacing:1px;color:var(--txt);background:var(--panel);border:1px solid var(--line);border-left:2px dashed var(--line);border-radius:0 0 0 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;writing-mode:vertical-rl;text-orientation:mixed;}
+  #filmBtn svg{width:14px;height:14px;transition:transform .28s;}
+  #filmDrawer.on #filmBtn svg{transform:rotate(180deg);}
+  #filmBtn:hover,#filmBtn.on{color:var(--acc);border-left-color:var(--acc);}
+  .fcell{flex:0 0 auto;position:relative;border-right:1px dashed rgba(90,106,144,.55);cursor:pointer;}
+  .fcell:last-child{border-right:none;}
+  .fcell canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;}
+  .fcell .fnum{position:absolute;top:3px;left:5px;font:10px/1 'Courier New';color:var(--faint);pointer-events:none;}
+  .fcell.focus{outline:2px solid #ffffff;outline-offset:-2px;border-radius:4px;}
   canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;}
   /* ---------- transport ---------- */
   #transport{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);background:var(--bg2);}
@@ -188,7 +201,14 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 7l5 5-5 5"/><path d="M20 12H9a5 5 0 0 0 0 10h1"/></svg></button>
       </div>
     </div>
-    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="stage">
+      <canvas id="cv"></canvas>
+      <div id="filmDrawer">
+        <div id="filmScroll"></div>
+        <button id="filmBtn" title="show/hide all-frames filmstrip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>FRAMES</button>
+      </div>
+    </div>
     <div id="transport">
       <button id="prevF" title="previous frame (&#8592;)">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM19 5l-10 7 10 7z"/></svg></button>
@@ -780,6 +800,87 @@ function draw(){
   const mode = drag ? 'DRAG:'+drag.kind : (hover ? 'HOVER:'+(hover.handle||'body') : 'IDLE');
   dbg.textContent = `mode=${mode}  drag=${drag?drag.kind:'null'}  hover=${hover?JSON.stringify(hover):'null'}`;
 }
+// ---------- frame filmstrip (bottom-right unfold) ----------
+// A read-only strip showing every frame of the current animation, each drawn in
+// its own cell aligned to the SHARED min/max bounds of all frames (sprite +
+// collision + melee). Boxes are full-line half-opaque, no anchor handles. Cells
+// are separated by a dashed line; the playing frame gets a focus outline.
+const FILM = { on:false, maxCellH:160, pad:8 };
+let filmCells = [];   // [{el, canvas}] built per entity
+function filmBounds(st){
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  const c=st.collision;
+  if (c){ minX=Math.min(minX,c.x); minY=Math.min(minY,c.y); maxX=Math.max(maxX,c.x+c.w); maxY=Math.max(maxY,c.y+c.h); }
+  for (let i=0;i<st.frames.length;i++){
+    const f=st.frames[i], im=cur.imgs[i]; if(!im) continue;
+    const w=im.naturalWidth*f.scale.sx, h=im.naturalHeight*f.scale.sy;
+    minX=Math.min(minX,f.offset.x-w/2); minY=Math.min(minY,f.offset.y-h/2);
+    maxX=Math.max(maxX,f.offset.x+w/2); maxY=Math.max(maxY,f.offset.y+h/2);
+    if (f.melee.on){ const m=f.melee;
+      minX=Math.min(minX,m.x); minY=Math.min(minY,m.y);
+      maxX=Math.max(maxX,m.x+m.w); maxY=Math.max(maxY,m.y+m.h); }
+  }
+  if (!isFinite(minX)){ minX=minY=0; maxX=maxY=1; }
+  return { minX, minY, w:maxX-minX, h:maxY-minY };
+}
+function drawFilm(){
+  if (!FILM.on || !cur || !cur.st) return;
+  const st=cur.st, n=st.frames.length;
+  if (filmCells.length !== n){
+    $('filmScroll').innerHTML=''; filmCells=[];
+    for (let i=0;i<n;i++){
+      const cell=document.createElement('div'); cell.className='fcell';
+      cell.title='go to frame '+(i+1);
+      cell.addEventListener('click', ()=>{ if(!cur||!cur.st) return; cur.st.frameIdx=i%cur.st.frames.length; syncPanel(); draw(); });
+      const num=document.createElement('span'); num.className='fnum'; num.textContent=i+1;
+      const cv2=document.createElement('canvas');
+      cell.appendChild(num); cell.appendChild(cv2);
+      $('filmScroll').appendChild(cell);
+      filmCells.push({ el:cell, canvas:cv2 });
+    }
+  }
+  const B=filmBounds(st);
+  const scale=Math.min(1, FILM.maxCellH/B.h);
+  const cw=Math.ceil(B.w*scale)+FILM.pad*2, chh=Math.ceil(B.h*scale)+FILM.pad*2;
+  const dpr=Math.min(2, window.devicePixelRatio||1);
+  for (let i=0;i<n;i++){
+    const { canvas:fc, el }=filmCells[i];
+    fc.width=cw*dpr; fc.height=chh*dpr; fc.style.width=cw+'px'; fc.style.height=chh+'px';
+    const g=fc.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+    g.clearRect(0,0,cw,chh);
+    const ox=FILM.pad-B.minX*scale, oy=FILM.pad-B.minY*scale;
+    const X=wx=>ox+wx*scale, Y=wy=>oy+wy*scale;
+    const f=st.frames[i], im=cur.imgs[i];
+    g.lineWidth=1.5;
+    if (show.collision && st.collision){
+      const bx=X(st.collision.x), by=Y(st.collision.y), bw=st.collision.w*scale, bh=st.collision.h*scale;
+      g.fillStyle='rgba(62,240,255,.1)'; g.fillRect(bx,by,bw,bh);
+      g.strokeStyle='rgba(62,240,255,.7)'; g.strokeRect(bx,by,bw,bh);
+    }
+    if (show.meleeView && f.melee.on){
+      const mx=X(f.melee.x), my=Y(f.melee.y), mw=f.melee.w*scale, mh=f.melee.h*scale;
+      g.fillStyle='rgba(255,157,46,.1)'; g.fillRect(mx,my,mw,mh);
+      g.strokeStyle='rgba(255,157,46,.7)'; g.strokeRect(mx,my,mw,mh);
+    }
+    if (show.spriteView && im){
+      const w=im.naturalWidth*f.scale.sx, h=im.naturalHeight*f.scale.sy;
+      const sxp=X(f.offset.x-w/2), syp=Y(f.offset.y-h/2);
+      g.drawImage(im, sxp, syp, w*scale, h*scale);
+      g.fillStyle='rgba(180,123,255,.06)'; g.fillRect(sxp,syp,w*scale,h*scale);
+      g.strokeStyle='rgba(180,123,255,.7)'; g.strokeRect(sxp,syp,w*scale,h*scale);
+    }
+    el.classList.toggle('focus', i===curFrameIdx());
+  }
+}
+$('filmBtn').addEventListener('click', ()=>{
+  FILM.on=!FILM.on;
+  $('filmDrawer').classList.toggle('on', FILM.on);
+  $('filmBtn').classList.toggle('on', FILM.on);
+  if (FILM.on) drawFilm();
+});
+// keep the strip in sync with edits / playback / view toggles
+const _origDraw=draw;
+draw=function(){ _origDraw(); if (FILM.on) drawFilm(); };
 // ---------- playback ----------
 let rotAcc = 0;
 function tick(t){
