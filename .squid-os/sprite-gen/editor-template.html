@@ -34,6 +34,7 @@
   /* ---------- middle ---------- */
   #mid{flex:1;display:flex;flex-direction:column;min-width:0;}
   #toolbar{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap;background:var(--bg2);}
+  #toolbar.booting{visibility:hidden;}   /* hidden until init sets correct toggle states (no flash) */
   .tgroup{display:flex;gap:6px;align-items:center;padding:4px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);position:relative;}
   .tgroup .gtitle{font-size:10px;color:var(--faint);letter-spacing:1px;text-transform:uppercase;margin-right:2px;}
   .tbtn{font-family:inherit;font-size:13px;padding:8px 12px;border-radius:8px;border:2px solid var(--line);background:var(--panel);color:var(--dim);cursor:pointer;letter-spacing:.5px;transition:all .1s;display:inline-flex;align-items:center;gap:7px;}
@@ -137,14 +138,14 @@
     <div id="tree"></div>
   </div>
   <div id="mid">
-    <div id="toolbar">
+    <div id="toolbar" class="booting">
       <div class="tgroup">
         <span class="gtitle">Display</span>
         <button class="tbtn tog on" id="tglSpriteView" title="show/hide sprite box (handles appear on hover)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" stroke-dasharray="4 3"/></svg>SPRITE BOX</button>
         <button class="tbtn tog on" id="tglCollision" title="show/hide collision box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>COLLISION</button>
-        <button class="tbtn tog on" id="tglMeleeView" title="show/hide melee boxes">
+        <button class="tbtn tog" id="tglMeleeView" title="show/hide melee boxes">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 3"/></svg>MELEE VIEW</button>
         <button class="tbtn tog on" id="tglAxes" title="show/hide axes crosshair">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>AXES</button>
@@ -155,12 +156,12 @@
       </div>
       <div class="tgroup">
         <span class="gtitle">Tools</span>
-        <button class="tbtn tog" id="tglMeleeOn" title="enable/disable melee box for this frame">
+        <button class="tbtn tog" id="tglMeleeOn" title="enable/disable melee box for this frame" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 12l2 2 4-4"/></svg>MELEE ON</button>
-        <button class="tbtn" id="recenterPivotBtn" title="move pivot to collision box center">
+        <button class="tbtn" id="recenterPivotBtn" title="move pivot to collision box center" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><path d="M12 5v3M12 16v3M5 12h3M16 12h3"/></svg>RECENTER PIVOT</button>
         <div style="position:relative;display:inline-flex;">
-          <button class="tbtn" id="resetBtn" title="reset boxes to original position">
+          <button class="tbtn" id="resetBtn" title="reset boxes to original position" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>RESET</button>
           <div id="resetMenu" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;z-index:10;min-width:160px;white-space:nowrap;">
             <div class="reset-opt" data-scope="frame" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:var(--txt);">Reset Frame</div>
@@ -170,9 +171,9 @@
       </div>
       <div class="tgroup">
         <span class="gtitle">Position</span>
-        <button class="tbtn" id="posOriginBtn" title="align sprite left edge to X axis and bottom to Y axis (based on frame 1)">
+        <button class="tbtn" id="posOriginBtn" title="align sprite left edge to X axis and bottom to Y axis (based on frame 1)" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16h16"/><rect x="9" y="9" width="7" height="7"/></svg>LEFT&#8595; BOTTOM</button>
-        <button class="tbtn" id="posCenterBtn" title="center sprite on the X/Y axis origin (based on frame 1)">
+        <button class="tbtn" id="posCenterBtn" title="center sprite on the X/Y axis origin (based on frame 1)" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><rect x="8" y="8" width="8" height="8"/></svg>CENTER</button>
       </div>
       <div class="tgroup" style="margin-left:auto">
@@ -492,6 +493,9 @@ async function selectEntity(li, ei, opts){
   panX = 0; panY = 0;
   if (!userZoomed){ zoom = 1; $('zoomval').textContent = '100%'; }   // start each anim at true size
   resizeCanvas(); syncPanel(); draw();
+  syncUndoButtons();   // reflect current undo/redo stack state
+  // toolbar was hidden during boot; now that state is settled, reveal it
+  const tb = $('toolbar'); if (tb) tb.classList.remove('booting');
   // settle backing store once layout is ready (no re-zoom)
   requestAnimationFrame(()=>{ resizeCanvas(); draw(); });
 }
@@ -1350,6 +1354,8 @@ window.addEventListener('keydown', e=>{
 });
 // ---------- init ----------
 $('zoomval').textContent = Math.round(zoom*100)+'%';
+syncToggles();   // set toolbar lit states from `show` BEFORE first paint (no flash)
+syncUndoButtons();   // disable undo/redo while stacks are empty
 if (MANIFEST.labels.length) selectEntity(0, 0);
 </script>
 </body>
