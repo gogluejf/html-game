@@ -49,7 +49,7 @@
   /* ---------- stage ---------- */
   #stage{flex:1;position:relative;overflow:hidden;background:#0a0c14;}
   /* ---------- frame filmstrip (bottom-right drawer, slides left/right) ---------- */
-  #filmDrawer{position:absolute;right:0;bottom:10px;z-index:20;height:176px;width:34px;background:rgba(10,12,20,.94);border:2px solid #fff;border-right:none;border-radius:10px 0 0 10px;box-shadow:-6px 0 22px rgba(0,0,0,.5);overflow:hidden;transition:width .3s cubic-bezier(.4,0,.2,1);}
+  #filmDrawer{position:absolute;right:0;bottom:10px;z-index:20;height:176px;width:34px;background:var(--film-bg,#000);border:2px solid #fff;border-right:none;border-radius:10px 0 0 10px;box-shadow:-6px 0 22px rgba(0,0,0,.5);overflow:hidden;transition:width .3s cubic-bezier(.4,0,.2,1);}
   #filmScroll{position:absolute;top:0;left:0;height:100%;display:flex;align-items:stretch;padding:8px 42px 8px 8px;pointer-events:none;}
   #filmDrawer.on #filmScroll{pointer-events:auto;}
   #filmBtn{position:absolute;right:0;top:0;width:34px;height:100%;pointer-events:auto;font-family:inherit;font-size:10px;letter-spacing:1px;color:#fff;background:var(--panel);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;writing-mode:vertical-rl;text-orientation:mixed;}
@@ -441,6 +441,7 @@ function loadState(){
   // normalize allFrames: it must be a real boolean (a stale/corrupt save could
   // leave it undefined or non-bool, which breaks the ghost view + button state).
   show.allFrames = !!show.allFrames;
+  document.documentElement.style.setProperty('--film-bg', bgColor);
   // NOTE: do NOT reset _loadingState here — the init sequence owns that flag
   // and keeps it on until selectEntity()'s async load fully completes.
 }
@@ -847,7 +848,7 @@ function drawFilm(){
     const { canvas:fc, el }=filmCells[i];
     fc.width=cw*dpr; fc.height=chh*dpr; fc.style.width=cw+'px'; fc.style.height=chh+'px';
     const g=fc.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
-    g.clearRect(0,0,cw,chh);
+    g.fillStyle = bgColor; g.fillRect(0,0,cw,chh);   // follow the canvas BG setting
     const ox=FILM.pad-B.minX*scale, oy=FILM.pad-B.minY*scale;
     const X=wx=>ox+wx*scale, Y=wy=>oy+wy*scale;
     const f=st.frames[i], im=cur.imgs[i];
@@ -1117,6 +1118,7 @@ function setBgFromHsl(h,s,l){
   _bgState.h=h; _bgState.s=s; _bgState.l=l;
   const hex=hsl2hex(h,s,l);
   bgColor=hex;
+  document.documentElement.style.setProperty('--film-bg', hex);
   $('bgval').textContent=hex; bgSwatch.style.background=hex;
   bgHex.value=hex;
   $('bgHue').value=h; $('bgLight').value=l;
