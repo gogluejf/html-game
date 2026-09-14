@@ -844,19 +844,21 @@ function drawFilm(){
     }
   }
   const B=filmBounds(st);
-  // fit the whole shared bounds (sprite + collision + melee) into the drawer's
-  // usable height (drawer 176px minus 8px padding top & bottom = 160px), so the
-  // collision box extending below is never clipped.
-  const availH = 176 - FILM.pad*2;
-  const scale=Math.min(1, availH/B.h);
-  const cw=Math.ceil(B.w*scale)+FILM.pad*2, chh=Math.ceil(B.h*scale)+FILM.pad*2;
+  // The cell canvas fills the drawer's usable height (drawer 176 - 4 border -
+  // 16 scroll padding = 156px). Content is scaled to fit inside with a small
+  // internal margin, so collision/sprite/melee extending in any direction are
+  // never clipped.
+  const availH = 176 - 4 - FILM.pad*2;   // 156px usable content height
+  const margin = 6;                       // internal margin inside the canvas
+  const scale=Math.min(1, (availH-margin*2)/B.h);
+  const cw=Math.ceil(B.w*scale)+margin*2, chh=availH;
   const dpr=Math.min(2, window.devicePixelRatio||1);
   for (let i=0;i<n;i++){
     const { canvas:fc, el }=filmCells[i];
     fc.width=cw*dpr; fc.height=chh*dpr; fc.style.width=cw+'px'; fc.style.height=chh+'px';
     const g=fc.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
     g.fillStyle = bgColor; g.fillRect(0,0,cw,chh);   // follow the canvas BG setting
-    const ox=FILM.pad-B.minX*scale, oy=FILM.pad-B.minY*scale;
+    const ox=margin-B.minX*scale, oy=margin-B.minY*scale;
     const X=wx=>ox+wx*scale, Y=wy=>oy+wy*scale;
     const f=st.frames[i], im=cur.imgs[i];
     g.lineWidth=1.5;
