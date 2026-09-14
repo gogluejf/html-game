@@ -50,7 +50,7 @@
           ],
           "crop": {
             "frames_dir": "panic-petal/assets/heroes",
-            "pass": "/tmp/redo-scarlet-run-v1",
+            "pass": "/tmp/jumpfix-scv-v1",
             "frames_bbox": {
               "scarlet_vale_run_f1.png": [
                 29,
@@ -81,6 +81,66 @@
                 9,
                 277,
                 313
+              ],
+              "scarlet_vale_jump_f1.png": [
+                51,
+                330,
+                231,
+                306
+              ],
+              "scarlet_vale_jump_f2.png": [
+                355,
+                331,
+                284,
+                270
+              ],
+              "scarlet_vale_jump_f3.png": [
+                678,
+                336,
+                293,
+                307
+              ],
+              "scarlet_vale_jump_f4.png": [
+                1009,
+                326,
+                251,
+                291
+              ],
+              "scarlet_vale_jump_f5.png": [
+                1323,
+                332,
+                253,
+                298
+              ],
+              "scarlet_vale_attack_f1.png": [
+                13,
+                647,
+                312,
+                309
+              ],
+              "scarlet_vale_attack_f2.png": [
+                348,
+                645,
+                296,
+                311
+              ],
+              "scarlet_vale_attack_f3.png": [
+                664,
+                649,
+                310,
+                307
+              ],
+              "scarlet_vale_attack_f4.png": [
+                993,
+                652,
+                286,
+                304
+              ],
+              "scarlet_vale_attack_f5.png": [
+                1300,
+                648,
+                316,
+                308
               ]
             }
           }
@@ -130,7 +190,7 @@
           ],
           "crop": {
             "frames_dir": "panic-petal/assets/heroes",
-            "pass": "/tmp/redo-balthazar-run-v1",
+            "pass": "/tmp/jumpfix-bal-v1",
             "frames_bbox": {
               "balthazar_run_f1.png": [
                 12,
@@ -161,6 +221,66 @@
                 17,
                 314,
                 291
+              ],
+              "balthazar_jump_f1.png": [
+                7,
+                313,
+                294,
+                323
+              ],
+              "balthazar_jump_f2.png": [
+                339,
+                319,
+                291,
+                297
+              ],
+              "balthazar_jump_f3.png": [
+                657,
+                335,
+                313,
+                301
+              ],
+              "balthazar_jump_f4.png": [
+                985,
+                323,
+                291,
+                314
+              ],
+              "balthazar_jump_f5.png": [
+                1311,
+                325,
+                301,
+                312
+              ],
+              "balthazar_attack_f1.png": [
+                0,
+                655,
+                329,
+                283
+              ],
+              "balthazar_attack_f2.png": [
+                327,
+                642,
+                321,
+                299
+              ],
+              "balthazar_attack_f3.png": [
+                644,
+                646,
+                375,
+                288
+              ],
+              "balthazar_attack_f4.png": [
+                975,
+                665,
+                327,
+                284
+              ],
+              "balthazar_attack_f5.png": [
+                1258,
+                637,
+                325,
+                320
               ]
             }
           },
@@ -572,49 +692,49 @@
             "frames_dir": "panic-petal/assets/heroes",
             "pass": "/tmp/redo-balthazar-s5-v1",
             "frames_bbox": {
-              "balthazar_jump_f1.png": [
+              "balthazar_jump2_f1.png": [
                 3,
                 131,
                 323,
                 423
               ],
-              "balthazar_jump_f2.png": [
+              "balthazar_jump2_f2.png": [
                 321,
                 179,
                 274,
                 333
               ],
-              "balthazar_jump_f3.png": [
+              "balthazar_jump2_f3.png": [
                 597,
                 142,
                 272,
                 333
               ],
-              "balthazar_jump_f4.png": [
+              "balthazar_jump2_f4.png": [
                 897,
                 138,
                 263,
                 307
               ],
-              "balthazar_jump_f5.png": [
+              "balthazar_jump2_f5.png": [
                 1150,
                 159,
                 250,
                 318
               ],
-              "balthazar_jump_f6.png": [
+              "balthazar_jump2_f6.png": [
                 1393,
                 202,
                 239,
                 282
               ],
-              "balthazar_jump_f7.png": [
+              "balthazar_jump2_f7.png": [
                 1623,
                 197,
                 274,
                 349
               ],
-              "balthazar_jump_f8.png": [
+              "balthazar_jump2_f8.png": [
                 1867,
                 124,
                 299,
@@ -6075,5 +6195,5 @@
       ]
     }
   },
-  "updated": "2026-09-14T14:29:09"
+  "updated": "2026-09-14T15:11:26"
 }
