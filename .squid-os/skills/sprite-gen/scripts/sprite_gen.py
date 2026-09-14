@@ -368,13 +368,28 @@ def cmd_state(args):
             with open(args.prompt_file) as pf:
                 sheet["original_prompt"] = pf.read().strip()
 
+        # Determine target: folder-based or flat sheets (pop before field check)
+        folder = parts.pop("folder", None)
+
         # Reject unknown fields
         allowed_sheet_fields = {"file", "size", "rows", "cols", "cell", "description", "entities", "original_prompt", "crop"}
         extra = set(parts.keys()) - allowed_sheet_fields
         if extra:
             print(f"WARNING: ignoring unknown fields: {extra}", file=sys.stderr)
 
-        state["sheets"][name] = sheet
+        if folder:
+            # Folder-based format: state["folders"][folder]["sheets"].append(sheet)
+            if "folders" not in state:
+                state["folders"] = {}
+            if folder not in state["folders"]:
+                state["folders"][folder] = {"path": "", "sheets": []}
+            state["folders"][folder]["sheets"].append(sheet)
+        else:
+            # Flat format: state["sheets"][name] = sheet
+            if "sheets" not in state:
+                state["sheets"] = {}
+            state["sheets"][name] = sheet
+
         state["updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
 
     outdir = os.path.dirname(path)

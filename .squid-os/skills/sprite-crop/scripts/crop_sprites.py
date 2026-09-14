@@ -808,7 +808,23 @@ def cmd_record_crop(args):
     with open(state_path) as f:
         state = json.load(f)
 
-    if args.sheet not in state.get("sheets", {}):
+    # Find the sheet: check flat "sheets" dict first, then folder-based structure
+    sheet_ref = None
+    if args.sheet in state.get("sheets", {}):
+        sheet_ref = state["sheets"][args.sheet]
+    else:
+        # Search folder-based: folders.<folder>.sheets[] where sheet name matches
+        for folder_name, folder_data in state.get("folders", {}).items():
+            for s in folder_data.get("sheets", []):
+                # Match by filename basename or by name key
+                sheet_file = s.get("file", "")
+                sheet_basename = os.path.basename(sheet_file).replace(".png", "")
+                if args.sheet == sheet_basename or args.sheet == sheet_file:
+                    sheet_ref = s
+                    break
+            if sheet_ref:
+                break
+    if sheet_ref is None:
         print(f"ERROR: sheet '{args.sheet}' not found in state. Run sprite_gen.py state --add-sheet first.", file=sys.stderr)
         sys.exit(1)
 
@@ -846,7 +862,7 @@ def cmd_record_crop(args):
     if args.frames_dir:
         crop_block["frames_dir"] = args.frames_dir
 
-    state["sheets"][args.sheet]["crop"] = crop_block
+    sheet_ref["crop"] = crop_block
     state["updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
 
     with open(state_path, "w") as f:
