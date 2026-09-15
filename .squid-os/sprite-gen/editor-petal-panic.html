@@ -1236,12 +1236,12 @@ document.addEventListener('click',e=>{ if(bgPop.classList.contains('on') && !bgP
 if (!localStorage.getItem(LS_KEY)) setBg('#000000');
 // ---------- RECENTER PIVOT ----------
 $('recenterPivotBtn').addEventListener('click', ()=>{
-  if (!cur || !cur.st || editingLocked()) return;
+  if (!cur || !cur.st) return;
   pushUndo();
   const c = cur.st.collision;
   cur.st.pivot.x = Math.round(c.x + c.w/2);
   cur.st.pivot.y = Math.round(c.y + c.h/2);
-  syncPanel(); draw();
+  syncPanel(); draw(); saveState();
 });
 // ---------- POSITION: reset sprite placement based on frame 1 ----------
 // offset places a frame so its center sits at (offset.x, offset.y).
@@ -1256,13 +1256,13 @@ function frame1Dims(){
   return { W, H };
 }
 function applyPosition(mode){
-  if (!cur || !cur.st || editingLocked()) return;
+  if (!cur || !cur.st) return;
   pushUndo();
   const st = cur.st;
   const { W, H } = frame1Dims();
   // CENTER -> centered on origin; LEFT-BOTTOM -> each frame's left/bottom on axes
   layoutAt(st, cur.imgs, W, H, mode==='origin' ? 'leftbottom' : 'center');
-  syncPanel(); draw();
+  syncPanel(); draw(); saveState();
 }
 $('posOriginBtn').addEventListener('click', ()=>applyPosition('origin'));
 $('posCenterBtn').addEventListener('click', ()=>applyPosition('center'));
