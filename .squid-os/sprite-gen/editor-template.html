@@ -1143,11 +1143,16 @@ function syncToggles(){
   $('tglLabel').classList.toggle('on', show.label);
   $('resetBtn').disabled = locked;   // RESET stays locked during animation (destructive)
 }
-$('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); saveState(); });
+// If the user manually toggles any overlay while ctrl+H "hide mode" is active,
+// cancel hide mode: drop the snapshot so a later ctrl+H starts fresh from the
+// current (manually-adjusted) states instead of restoring the old pre-hide ones.
+// The clicked button's own input is still applied normally.
+function cancelHideMode(){ if (window._hideSnapshot){ window._hideSnapshot = null; } }
+$('tglCollision').addEventListener('click', ()=>{ cancelHideMode(); show.collision=!show.collision; syncToggles(); draw(); saveState(); });
 $('tglMeleeView').addEventListener('click', ()=>{
   // The button may LOOK disabled (current frame has no melee) but is still
   // clickable — it's a global display preference, not a per-frame control.
-  show.meleeView=!show.meleeView; syncToggles(); draw(); saveState();
+  show.meleeView=!show.meleeView; cancelHideMode(); syncToggles(); draw(); saveState();
 });
 $('tglMeleeOn').addEventListener('click', ()=>{
   if (!cur || !cur.st || editingLocked()) return;
@@ -1158,8 +1163,8 @@ $('tglMeleeOn').addEventListener('click', ()=>{
   P('p_mon').checked = f.melee.on;
   syncToggles(); syncPanel(); draw();
 });
-$('tglAxes').addEventListener('click', ()=>{ show.axes=!show.axes; syncToggles(); draw(); saveState(); });
-$('tglSpriteView').addEventListener('click', ()=>{ show.spriteView=!show.spriteView; syncToggles(); draw(); saveState(); });
+$('tglAxes').addEventListener('click', ()=>{ cancelHideMode(); show.axes=!show.axes; syncToggles(); draw(); saveState(); });
+$('tglSpriteView').addEventListener('click', ()=>{ cancelHideMode(); show.spriteView=!show.spriteView; syncToggles(); draw(); saveState(); });
 $('tglAllFrames').addEventListener('click', ()=>{
   if (!cur || !cur.st) return;
   // can't be active while playing — ghosts are a paused-state view
@@ -1167,7 +1172,7 @@ $('tglAllFrames').addEventListener('click', ()=>{
   show.allFrames = !show.allFrames;
   syncToggles(); draw(); saveState();
 });
-$('tglPivot').addEventListener('click', ()=>{ show.pivot=!show.pivot; syncToggles(); draw(); saveState(); });
+$('tglPivot').addEventListener('click', ()=>{ cancelHideMode(); show.pivot=!show.pivot; syncToggles(); draw(); saveState(); });
 $('tglLabel').addEventListener('click', ()=>{ show.label=!show.label; syncToggles(); draw(); saveState(); });
 // ---------- background color picker (popup, live-updating) ----------
 const _bgState = { h:0, s:100, l:0 };   // current HSL
