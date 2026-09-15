@@ -1114,67 +1114,67 @@
           "original_prompt": "Scarlet Vale special attack sheet \u2014 ribbon sweep + aerial flip, 2x5, hand-painted circus style",
           "crop": {
             "frames_dir": "panic-petal/assets/heroes",
-            "pass": "/tmp/scarlet_special-v3",
+            "pass": "/tmp/scarlet_special-final",
             "frames_bbox": {
               "scarlet_vale_special_f1.png": [
                 5,
-                0,
-                386,
-                467
+                78,
+                300,
+                373
               ],
               "scarlet_vale_special_f2.png": [
-                354,
-                0,
-                315,
-                467
+                314,
+                82,
+                382,
+                369
               ],
               "scarlet_vale_special_f3.png": [
-                671,
-                0,
-                407,
-                467
+                674,
+                64,
+                371,
+                389
               ],
               "scarlet_vale_special_f4.png": [
-                1035,
-                0,
-                512,
-                467
+                1028,
+                48,
+                389,
+                373
               ],
               "scarlet_vale_special_f5.png": [
-                1447,
-                0,
-                327,
-                466
+                1380,
+                52,
+                394,
+                397
               ],
-              "scarlet_vale_flip_f1.png": [
-                0,
-                458,
-                329,
-                429
+              "scarlet_vale_special_f6.png": [
+                24,
+                445,
+                282,
+                434
               ],
-              "scarlet_vale_flip_f2.png": [
-                314,
+              "scarlet_vale_special_f7.png": [
+                318,
+                472,
+                383,
+                342
+              ],
+              "scarlet_vale_special_f8.png": [
+                688,
                 451,
-                376,
-                436
+                369,
+                374
               ],
-              "scarlet_vale_flip_f3.png": [
-                699,
-                447,
-                358,
-                440
+              "scarlet_vale_special_f9.png": [
+                1050,
+                475,
+                366,
+                328
               ],
-              "scarlet_vale_flip_f4.png": [
-                1035,
-                451,
-                378,
-                430
-              ],
-              "scarlet_vale_flip_f5.png": [
-                1402,
-                615,
-                372,
-                272
+              "scarlet_vale_special_f10.png": [
+                1372,
+                537,
+                401,
+                312
               ]
             }
           }
@@ -5730,7 +5730,7 @@
             {
               "row": 1,
               "name": "thorn",
-              "anim": "shoot",
+              "anim": "projectile",
               "frames": [
                 "thorn_shoot_f1.png",
                 "thorn_shoot_f2.png",
@@ -5745,7 +5745,7 @@
             {
               "row": 2,
               "name": "bomb",
-              "anim": "shoot",
+              "anim": "special",
               "frames": [
                 "bomb_shoot_f1.png",
                 "bomb_shoot_f2.png",
@@ -5756,7 +5756,7 @@
             {
               "row": 2,
               "name": "boom",
-              "anim": "explose",
+              "anim": "special",
               "frames": [
                 "boom_explose_f1.png",
                 "boom_explose_f2.png",
@@ -5767,7 +5767,7 @@
             {
               "row": 3,
               "name": "saw",
-              "anim": "shoot",
+              "anim": "special",
               "frames": [
                 "saw_shoot_f1.png",
                 "saw_shoot_f2.png",
@@ -5938,8 +5938,8 @@
           "description": "Spinning dumbbell projectile \u2014 1x5 strip",
           "entities": [
             {
-              "name": "projectile_2",
-              "anim": "spin",
+              "name": "dumbbell",
+              "anim": "projectile",
               "frames": [
                 "projectile_2_spin_f1.png",
                 "projectile_2_spin_f2.png",
@@ -5993,8 +5993,8 @@
           "description": "Projectile 3 \u2014 tomato (rolling+splat), carrot (spinning), pea (swirling)",
           "entities": [
             {
-              "name": "projectile_3",
-              "anim": "tomato",
+              "name": "tomato",
+              "anim": "projectile",
               "frames": [
                 "projectile_3_tomato_f1.png",
                 "projectile_3_tomato_f2.png",
@@ -6007,8 +6007,8 @@
               ]
             },
             {
-              "name": "projectile_3",
-              "anim": "carrot",
+              "name": "carrot",
+              "anim": "projectile",
               "frames": [
                 "projectile_3_carrot_f1.png",
                 "projectile_3_carrot_f2.png",
@@ -6021,8 +6021,8 @@
               ]
             },
             {
-              "name": "projectile_3",
-              "anim": "pea",
+              "name": "pea",
+              "anim": "projectile",
               "frames": [
                 "projectile_3_pea_f1.png",
                 "projectile_3_pea_f2.png",
@@ -6193,8 +6193,8 @@
           "description": "Projectile 4 \u2014 fish_bone, circus_ball, peas_tornado",
           "entities": [
             {
-              "name": "projectile_4",
-              "anim": "fish_bone",
+              "name": "fish_bone",
+              "anim": "projectile",
               "frames": [
                 "projectile_4_fish_bone_f1.png",
                 "projectile_4_fish_bone_f2.png",
@@ -6207,8 +6207,8 @@
               ]
             },
             {
-              "name": "projectile_4",
-              "anim": "circus_ball",
+              "name": "circus_ball",
+              "anim": "projectile",
               "frames": [
                 "projectile_4_circus_ball_f1.png",
                 "projectile_4_circus_ball_f2.png",
@@ -6221,8 +6221,8 @@
               ]
             },
             {
-              "name": "projectile_4",
-              "anim": "peas_tornado",
+              "name": "peas_tornado",
+              "anim": "projectile",
               "frames": [
                 "projectile_4_peas_tornado_f1.png",
                 "projectile_4_peas_tornado_f2.png",
@@ -6389,6 +6389,6 @@
       ]
     }
   },
-  "updated": "2026-09-15T00:00:12",
+  "updated": "2026-09-15T01:25:18",
   "sheets": {}
 }
