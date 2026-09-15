@@ -1131,16 +1131,13 @@ function syncToggles(){
   btn.classList.toggle('on', mon);
   const locked = !!(cur && cur.st && cur.st.playing);
   btn.disabled = locked;
-  // MELEE VIEW (Display): only enabled when at least one frame has a melee box.
-  // Guard on `cur` so we don't wipe a persisted meleeView during boot, before the
-  // first entity is loaded (cur is null then -> anyMelee would be false).
-  const anyMelee = cur && cur.st ? cur.st.frames.some(f=>f.melee.on) : false;
+  // MELEE VIEW (Display): a global display preference that persists across frames
+  // and entities. It is NEVER auto-disabled or force-hidden here — the user owns
+  // it. The ONLY thing that forces it on is enabling a melee box (handled in the
+  // MELEE ON / p_mon handlers). Frames without melee simply render nothing.
   const mv = $('tglMeleeView');
-  if (cur && cur.st){
-    mv.disabled = !anyMelee;
-    if (!anyMelee) show.meleeView = false;   // force-hide when nothing to show
-  }
-  mv.classList.toggle('on', show.meleeView && anyMelee);
+  mv.disabled = false;
+  mv.classList.toggle('on', show.meleeView);
   $('tglPivot').classList.toggle('on', show.pivot);
   // LABEL: sprite name over the canvas (viewer-style), drawn in draw()
   $('tglLabel').classList.toggle('on', show.label);
