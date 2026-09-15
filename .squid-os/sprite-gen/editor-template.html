@@ -173,7 +173,7 @@
         <span class="gtitle">Tools</span>
         <button class="tbtn tog" id="tglMeleeOn" title="enable/disable melee box for this frame" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 12l2 2 4-4"/></svg>MELEE ON</button>
-        <button class="tbtn" id="recenterPivotBtn" title="move pivot to collision box center" disabled>
+        <button class="tbtn" id="recenterPivotBtn" title="move pivot to collision box center">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><path d="M12 5v3M12 16v3M5 12h3M16 12h3"/></svg>RECENTER PIVOT</button>
         <div style="position:relative;display:inline-flex;">
           <button class="tbtn" id="resetBtn" title="reset boxes to original position" disabled>
@@ -188,9 +188,9 @@
       </div>
       <div class="tgroup">
         <span class="gtitle">Position</span>
-        <button class="tbtn" id="posOriginBtn" title="align sprite left edge to X axis and bottom to Y axis (based on frame 1)" disabled>
+        <button class="tbtn" id="posOriginBtn" title="align sprite left edge to X axis and bottom to Y axis (based on frame 1)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16h16"/><rect x="9" y="9" width="7" height="7"/></svg>LEFT&#8595; BOTTOM</button>
-        <button class="tbtn" id="posCenterBtn" title="center sprite on the X/Y axis origin (based on frame 1)" disabled>
+        <button class="tbtn" id="posCenterBtn" title="center sprite on the X/Y axis origin (based on frame 1)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><rect x="8" y="8" width="8" height="8"/></svg>CENTER</button>
       </div>
       <span id="saveIndicator" style="font-size:10px;color:var(--grn);opacity:0;transition:opacity .3s;margin-left:auto;margin-right:8px;">✓ saved</span>
@@ -1141,10 +1141,7 @@ function syncToggles(){
   $('tglPivot').classList.toggle('on', show.pivot);
   // LABEL: sprite name over the canvas (viewer-style), drawn in draw()
   $('tglLabel').classList.toggle('on', show.label);
-  $('resetBtn').disabled = locked;   // whole Tools group disabled during animation
-  $('recenterPivotBtn').disabled = locked;
-  $('posOriginBtn').disabled = locked;
-  $('posCenterBtn').disabled = locked;
+  $('resetBtn').disabled = locked;   // RESET stays locked during animation (destructive)
 }
 $('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); saveState(); });
 $('tglMeleeView').addEventListener('click', ()=>{
