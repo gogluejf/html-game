@@ -365,7 +365,7 @@ E --> F[Render + debug overlay]</pre>
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/index.html</li><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/main.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/index.html</li><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/main.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -382,7 +382,7 @@ function frame(t){ acc+=Math.min(0.25,(t-last)/1000); last=t; while(acc&gt;=FIXE
                     <ul class="acceptance-list"><li>Canvas renders at stable 60Hz physics steps</li><li>Module files exist and load without errors</li><li>Resizing the window rescales the whole game live, keeps 16:9 (letterboxed), stays crisp (dpr-aware)</li><li>Changing GAME_SCALE uniformly upscales the entire game</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> <span class="task-verify">✔ drag window edge; confirm no distortion/stretch</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> <span class="task-verify">✔ drag window edge; confirm no distortion/stretch</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -404,7 +404,7 @@ function frame(t){ acc+=Math.min(0.25,(t-last)/1000); last=t; while(acc&gt;=FIXE
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/entity.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/entity.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -419,7 +419,7 @@ class Entity { constructor(o){ Object.assign(this,{facing:1,mirrorX:false,mirror
                     <ul class="acceptance-list"><li>Entity exposes worldBox() from offset box</li><li>mirrorX derives from facing when set</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ node -e &quot;require(&#x27;./panic-petal/js/entity.js&#x27;)&quot; 2&gt;/dev/null || echo browser-only</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ node -e &quot;require(&#x27;./petal-panic/js/entity.js&#x27;)&quot; 2&gt;/dev/null || echo browser-only</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -441,7 +441,7 @@ class Entity { constructor(o){ Object.assign(this,{facing:1,mirrorX:false,mirror
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/collision.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/collision.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -457,7 +457,7 @@ class CollisionWorld{ update(){ /* broadphase -&gt; narrowphase -&gt; callbacks 
                     <ul class="acceptance-list"><li>aabbOverlap correct incl. edge/touch cases</li><li>resolve() prevents pass-through of SOLID</li><li>Adding a new pair requires only a mask entry</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ grep -n &#x27;L\.&#x27; panic-petal/js/collision.js</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ grep -n &#x27;L\.&#x27; petal-panic/js/collision.js</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -479,7 +479,7 @@ class CollisionWorld{ update(){ /* broadphase -&gt; narrowphase -&gt; callbacks 
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/camera.js</li><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/main.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/camera.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/main.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -493,7 +493,7 @@ function updateCam(cam,hero,len){ cam.x=clamp(hero.x-cam.w/2+hero.facing*80, 0, 
                     <ul class="acceptance-list"><li>Camera clamps to [0,length]</li><li>Debug overlay draws orange/green/red/blue/pink boxes</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div></div>
         </section>
         <section id="hero-movement" class="milestone-section">
@@ -547,7 +547,7 @@ Crouch --> Run : release down</pre>
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/anim.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/anim.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -563,7 +563,7 @@ class Anim{ constructor(frames,{speed=100,loop=true}={}){...}
                     <ul class="acceptance-list"><li>Looping anim cycles; non-looping stops at last frame</li><li>pickFrame(n) overrides current frame</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -585,7 +585,7 @@ class Anim{ constructor(frames,{speed=100,loop=true}={}){...}
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/hero.js</li><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/main.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/hero.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/main.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -599,7 +599,7 @@ class Hero extends Entity{ update(input,world){ /* integrate vx/vy, gravity, fri
                     <ul class="acceptance-list"><li>Jump impulse matches hero.jump stat; lands on SOLID</li><li>Crouch shrinks collision box (verified in debug overlay)</li><li>Sprite mirrors when facing left</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -621,7 +621,7 @@ class Hero extends Entity{ update(input,world){ /* integrate vx/vy, gravity, fri
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/state.js</li><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/main.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/state.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/main.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -636,7 +636,7 @@ function set(s){ cur=s; } // dispatch handled in main loop</code></pre>
                     <ul class="acceptance-list"><li>set() is the only way to change state; no system mutates cur directly</li><li>All six states (HOME/SELECT/PLAY/PAUSE/OVER/WIN) reachable via transitions</li><li>Input routing dispatches to the active state&#x27;s handler in the main loop</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div></div>
         </section>
         <section id="combat-core" class="milestone-section">
@@ -689,7 +689,7 @@ E -->|no| F[death anim + sparkle + coins]</pre>
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/projectile.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/projectile.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -704,7 +704,7 @@ const pool=new Pool(Projectile, MAX_PROJECTILES);</code></pre>
                     <ul class="acceptance-list"><li>Shots fire in 8 directions toward aim</li><li>Ammo decrements; no fire at 0</li><li>Friendly projectiles never hit hero</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -726,7 +726,7 @@ const pool=new Pool(Projectile, MAX_PROJECTILES);</code></pre>
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/hero.js</li><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/damage.js</li></ul>
+                    <ul class="files-list"><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/hero.js</li><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/damage.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -740,7 +740,7 @@ function damage(src,tgt,amt,method){ const real=Math.max(1,amt-tgt.stats.defense
                     <ul class="acceptance-list"><li>Melee only deals damage during active frame</li><li>damage() respects target defense and updates telemetry</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -762,7 +762,7 @@ function damage(src,tgt,amt,method){ const real=Math.max(1,amt-tgt.stats.defense
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/enemy.js</li><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/jester.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/enemy.js</li><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/jester.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -776,7 +776,7 @@ class Jester extends Enemy{ ai(dt){ /* idle/walk/chase/attack states; aggro radi
                     <ul class="acceptance-list"><li>Jester chases within aggro radius and whips when close</li><li>Contact drains hero energy</li><li>Death plays anim then sparkle + coin drop</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div></div>
         </section>
         <section id="world-objects" class="milestone-section">
@@ -830,7 +830,7 @@ G --> H[coins fall + bounce on ground]</pre>
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/object.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/object.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -845,7 +845,7 @@ class Barrel extends Entity{ constructor(){ this.hp=this.maxHp; } hit(dmg){ this
                     <ul class="acceptance-list"><li>Hero and enemy cannot pass a barrel (solid)</li><li>Melee/projectile/bomb chip barrel HP; no explosion until HP=0</li><li>A bomb one-shots the barrel; thorns/melee need several hits</li><li>Explosion at HP=0 damages entities in radius including hero</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -867,7 +867,7 @@ class Barrel extends Entity{ constructor(){ this.hp=this.maxHp; } hit(dmg){ this
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/coin.js</li><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/object.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/coin.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/object.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -881,7 +881,7 @@ class Coin extends Entity{ update(dt){ this.vy+=GRAVITY*this.weight; if(grounded
                     <ul class="acceptance-list"><li>Coins bounce with per-type weight differences</li><li>Coin barrel spawns several mixed coins</li><li>Collection increments stats.coinsCollected</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -903,7 +903,7 @@ class Coin extends Entity{ update(dt){ this.vy+=GRAVITY*this.weight; if(grounded
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/powerup.js</li><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/state.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/powerup.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/state.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -917,7 +917,7 @@ const FX={ ammo:(p,v)=&gt;p.ammo+=v, invincibility:p=&gt;p.invincibleTimer=5, sh
                     <ul class="acceptance-list"><li>Each powerup applies its §10 effect</li><li>Invincibility grants timed no-damage + fast blink</li><li>Checkpoint stores position used on death-restart</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div></div>
         </section>
         <section id="full-roster-+-level" class="milestone-section">
@@ -972,7 +972,7 @@ G -->|no| H[gameover]</pre>
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/vine_hound.js</li><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/violetta.js</li><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/jackolantern.js</li><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/boris_loon.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/vine_hound.js</li><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/violetta.js</li><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/jackolantern.js</li><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/boris_loon.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -986,7 +986,7 @@ class BorisLoon extends Enemy{ constructor(){ this.gravity=0; } ai(dt){ /* sine-
                     <ul class="acceptance-list"><li>Each type exhibits its documented behavior</li><li>Flyers ignore gravity; grounders do not</li><li>Enemies lacking idle use first walk frame statically</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -1008,7 +1008,7 @@ class BorisLoon extends Enemy{ constructor(){ this.gravity=0; } ai(dt){ /* sine-
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/state.js</li><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/hero.js</li></ul>
+                    <ul class="files-list"><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/state.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/hero.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -1021,7 +1021,7 @@ class BorisLoon extends Enemy{ constructor(){ this.gravity=0; } ai(dt){ /* sine-
                     <ul class="acceptance-list"><li>Death shows skull sine-wave fade</li><li>Respawn uses last checkpoint position only</li><li>Continue costs coins, limited to 3</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -1043,7 +1043,7 @@ class BorisLoon extends Enemy{ constructor(){ this.gravity=0; } ai(dt){ /* sine-
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/level.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/level.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -1060,7 +1060,7 @@ const level1={ name:&#x27;Big Top&#x27;, index:1, boss:&#x27;elephant&#x27;, len
                     <ul class="acceptance-list"><li>Level loads with ground + air platforms</li><li>Checkpoints 1-1..1-4 placed along length</li><li>Rogue spawner places exactly the level.spawn counts of each item</li><li>Spawned items respect min spacing / no overlap</li><li>No loose coins spawned; coins only from coin barrels + enemy drops</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div></div>
         </section>
         <section id="boss-+-win" class="milestone-section">
@@ -1114,7 +1114,7 @@ Death --> Win</pre>
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/boss.js</li><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/state.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/boss.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/state.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -1128,7 +1128,7 @@ class Elephant extends Enemy{ constructor(){ this.isBoss=true; } ai(dt){ /* phas
                     <ul class="acceptance-list"><li>Camera locks to boss arena during fight</li><li>Each phase is telegraphed and dodgeable</li><li>Trunk/head weak point takes bonus damage</li><li>Death triggers win state</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div></div>
         </section>
         <section id="polish-+-tuning-harness" class="milestone-section">
@@ -1181,7 +1181,7 @@ F --> G[tune feel/AI/difficulty]</pre>
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/effects.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/effects.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -1195,7 +1195,7 @@ function spawnSparkle(x,y,size){...} function vignette(intensity){...} function 
                     <ul class="acceptance-list"><li>Each §12 effect triggers on its event</li><li>Enemy death fades fast while sparkle sized to sprite plays</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -1217,7 +1217,7 @@ function spawnSparkle(x,y,size){...} function vignette(intensity){...} function 
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/debug.js</li><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/main.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/debug.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/main.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -1231,7 +1231,7 @@ const Debug={ enabled:false, spawn(type,state,x,y){...}, god:false, slowmo:1, se
                     <ul class="acceptance-list"><li>Any enemy/boss/powerup/barrel spawns at cursor in a chosen state</li><li>Anim scrubber steps frames and overlays the collision box</li><li>AI state can be forced; aggro radius + label drawn</li><li>Live stats HUD reflects §4.1 telemetry</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -1253,7 +1253,7 @@ const Debug={ enabled:false, spawn(type,state,x,y){...}, god:false, slowmo:1, se
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/state.js</li><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/stats.js</li></ul>
+                    <ul class="files-list"><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/state.js</li><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/stats.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -1267,7 +1267,7 @@ function dumpStats(p){ const o={...p.stats}; console.table(o.damageDealt.byEnemy
                     <ul class="acceptance-list"><li>Stats dump to console + downloadable JSON on win/gameover</li><li>Jump arc/feel validated via slow-mo + playtest</li><li>Per-enemy effective HP reviewed and tuned</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div></div>
         </section>
         <section id="screens-&-hud" class="milestone-section">
@@ -1324,7 +1324,7 @@ Win --> Select : play again</pre>
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/screens.js</li><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/state.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/screens.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/state.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -1339,7 +1339,7 @@ const Select={ focus:0, draw(ctx){ /* select_scarlet_vale / select_balthazar pan
                     <ul class="acceptance-list"><li>Home shows animated bigtop + logo; Enter goes to Select</li><li>Select focuses between the two heroes; confirm starts Play with that hero&#x27;s stats</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -1361,7 +1361,7 @@ const Select={ focus:0, draw(ctx){ /* select_scarlet_vale / select_balthazar pan
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/screens.js</li><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/state.js</li></ul>
+                    <ul class="files-list"><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/screens.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/state.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -1377,7 +1377,7 @@ const Win={ draw(){ /* full §4.1 summary */ }, opts:[&#x27;playAgain&#x27;,&#x2
                     <ul class="acceptance-list"><li>Pause freezes Play and offers Resume/Retry/Quit</li><li>Game Over shows score+stats with Retry/Continue(3)/Quit</li><li>Win shows full stats summary with Play Again/Quit</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div>
             <div class="task-card">
                 <div class="task-header">
@@ -1399,7 +1399,7 @@ const Win={ draw(){ /* full §4.1 summary */ }, opts:[&#x27;playAgain&#x27;,&#x2
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Files</span>
-                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  panic-petal/js/hud.js</li><li class="file-mod"><span class="action-sym">~</span>  panic-petal/js/main.js</li></ul>
+                    <ul class="files-list"><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/hud.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/main.js</li></ul>
                 </div>
                     
                 <div class="task-cell full-width snippet-block">
@@ -1413,7 +1413,7 @@ function drawHUD(ctx,p){ /* red energy + cyan shield bar; ammo/special; coins/li
                     <ul class="acceptance-list"><li>Energy bar shows red fill + cyan shield overlay</li><li>Ammo, special ammo, coins, lives display live</li><li>Checkpoint line shows markers 1-1..1-4 and hero position along level length</li></ul>
                 </div>
                 </div>
-                <div class="task-footer"><span class="task-verify">✔ open panic-petal/index.html</span> </div>
+                <div class="task-footer"><span class="task-verify">✔ open petal-panic/index.html</span> </div>
             </div></div>
         </section>
     </div>

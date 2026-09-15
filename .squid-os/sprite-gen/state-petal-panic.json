@@ -3,10 +3,10 @@
   "style_name": "hand-painted circus",
   "folders": {
     "heroes": {
-      "path": "panic-petal/assets/heroes",
+      "path": "petal-panic/assets/heroes",
       "sheets": [
         {
-          "file": "panic-petal/assets/scarlet_vale_sheet_1.png",
+          "file": "petal-panic/assets/scarlet_vale_sheet_1.png",
           "rows": 3,
           "cols": 5,
           "description": "Scarlet Vale hero, 3 actions x 5 frames",
@@ -49,7 +49,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/jumpfix-scv-v1",
             "frames_bbox": {
               "scarlet_vale_run_f1.png": [
@@ -146,7 +146,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/balthazar_sheet_1.png",
+          "file": "petal-panic/assets/balthazar_sheet_1.png",
           "rows": 3,
           "cols": 5,
           "description": "Balthazar tiger ringmaster hero, 3 actions x 5 frames",
@@ -189,7 +189,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/jumpfix-bal-v1",
             "frames_bbox": {
               "balthazar_run_f1.png": [
@@ -287,7 +287,7 @@
           "original_prompt": "Hand-painted circus-style sprite sheet of \"Balthazar\", an anthropomorphic orange-and-black striped tiger dressed as a ringmaster/master of ceremonies. He wears a fitted black tuxedo jacket with satin lapels, a white dress shirt, a red bow tie, a red sash/sash-tie at the waist, and dark trousers; he has large expressive paws (orange with black stripes and cream claws), a long striped tail, and a confident, theatrical expression. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors, dynamic poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells. Each row is one action, left to right:\n\nRow 1 \u2014 Run cycle (5 frames): full sprint across the frame, contact -> down -> passing -> up -> contact, legs striding wide, tail streaming behind, body leaning forward.\n\nRow 2 \u2014 Jump/leap arc (5 frames): rising -> apex -> falling, both arms raised in a triumphant ringmaster gesture, coat tails flaring, big bounding leap.\n\nRow 3 \u2014 Attack with cane (5 frames): wind-up -> overhead swing -> follow-through -> impact -> recovery, wielding a gold-tipped cane/baton that leaves a glowing tan whip-like motion trail; final frame shows him standing upright resting on the cane, composed.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
         },
         {
-          "file": "panic-petal/assets/scarlet_vale_sheet_2.png",
+          "file": "petal-panic/assets/scarlet_vale_sheet_2.png",
           "rows": 1,
           "cols": 8,
           "description": "Scarlet Vale hero sheet 2, idle x 8 frames",
@@ -309,7 +309,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/redo-scarlet_vale-sheet2-v1",
             "frames_bbox": {
               "scarlet_vale_idle_f1.png": [
@@ -364,7 +364,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/balthazar_sheet_2.png",
+          "file": "petal-panic/assets/balthazar_sheet_2.png",
           "rows": 1,
           "cols": 8,
           "description": "Balthazar tiger ringmaster hero sheet 2, idle x 8 frames",
@@ -386,7 +386,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/redo-balthazar-sheet2-v1",
             "frames_bbox": {
               "balthazar_idle_f1.png": [
@@ -441,7 +441,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/scarlet_vale_sheet_3.png",
+          "file": "petal-panic/assets/scarlet_vale_sheet_3.png",
           "rows": 1,
           "cols": 8,
           "description": "Scarlet Vale hero sheet 3, crouch x 8 frames",
@@ -463,7 +463,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/redo-scarlet_vale-sheet3-v1",
             "frames_bbox": {
               "scarlet_vale_crouch_f1.png": [
@@ -518,7 +518,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/balthazar_sheet_3.png",
+          "file": "petal-panic/assets/balthazar_sheet_3.png",
           "rows": 1,
           "cols": 8,
           "description": "Balthazar tiger ringmaster hero sheet 3, crouch x 8 frames",
@@ -540,7 +540,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/redo-balthazar-s3-v1",
             "frames_bbox": {
               "balthazar_crouch_f1.png": [
@@ -595,7 +595,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/balthazar_sheet_4.png",
+          "file": "petal-panic/assets/balthazar_sheet_4.png",
           "rows": 1,
           "cols": 8,
           "description": "Balthazar tiger ringmaster hero sheet 4, run2 x 8 frames",
@@ -617,7 +617,7 @@
           ],
           "original_prompt": "Generate a sprite sheet of 1 hero sprite for the hand-painted circus game \"Petal Panic\", continuing the exact same hand-painted circus style as the prior Balthazar sheets above.\n\nLAYOUT: 1 row x 8 columns on a solid uniform pink background (rgb 250,152,170). The single row is one unique hero; the 8 columns are its 8 animation frames shown left-to-right. All cells exactly the same size (~221x445 px), evenly spaced, separated by thin light-pink grid lines (rgb 255,210,220, 2px wide). No text, no labels, no dark borders between cells. Image 1774 wide x 445 tall.\n\nSTYLE: hand-painted circus / big-top illustration. Soft painterly shading with visible brush texture, warm saturated colors, gentle highlights and shadows (not flat pixel art). Thick clean dark-brown/black outlines around the character. Side profile facing right. Consistent style across every frame.\n\nROW 1 (top to bottom), 8 distinct loopable frames \u2014 BALTHAZAR, an anthropomorphic orange-and-black striped tiger ringmaster wearing a black tuxedo suit (jacket + trousers) with a white dress shirt, red bow tie, and a red sash/belt at the waist; white-gloved hands; long striped tail streaming behind. A confident athletic RUN CYCLE (run2):\nFrame 1 -> contact/foot down, body low, front leg bent forward, back leg pushing off.\nFrame 2 -> passing through mid-stride, legs crossing, body rising slightly.\nFrame 3 -> up position, both knees lifted, body at peak height, arms swinging.\nFrame 4 -> opposite foot reaching forward, body beginning to lower.\nFrame 5 -> second contact, other foot planted, body low again.\nFrame 6 -> mid-stride mirror of frame 2, legs crossing the other way.\nFrame 7 -> up position mirror of frame 3, knees lifted, body at peak.\nFrame 8 -> return to the starting contact pose so the cycle loops seamlessly.\n\nFrames within the row must be clearly distinct but smoothly sequential (loopable run). Keep it clean and croppable.",
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/redo-balthazar-s4-v1",
             "frames_bbox": {
               "balthazar_run2_f1.png": [
@@ -666,7 +666,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/balthazar_sheet_5.png",
+          "file": "petal-panic/assets/balthazar_sheet_5.png",
           "rows": 1,
           "cols": 8,
           "description": "Balthazar tiger ringmaster hero sheet 5, jump2 x 8 frames",
@@ -689,7 +689,7 @@
           ],
           "original_prompt": "Generate a sprite sheet of 1 hero sprite for the hand-painted circus game \"Petal Panic\", continuing the exact same hand-painted circus style as the prior Balthazar sheets above.\n\nLAYOUT: 1 row x 8 columns on a solid uniform pink background (rgb 250,152,170). The single row is one unique hero; the 8 columns are its 8 animation frames shown left-to-right. All cells exactly the same size (~221x452 px), evenly spaced, separated by thin light-pink grid lines (rgb 255,210,220, 2px wide). No text, no labels, no dark borders between cells. Image 1774 wide x 452 tall.\n\nSTYLE: hand-painted circus / big-top illustration. Soft painterly shading with visible brush texture, warm saturated colors, gentle highlights and shadows (NOT flat pixel art). Thick clean dark-brown/black outlines around the character. Side profile facing right. Dynamic poses with subtle motion smears on fast moves. Consistent proportions and palette across every frame.\n\nROW 1, 8 distinct loopable frames \u2014 BALTHAZAR, an anthropomorphic orange-and-black striped tiger dressed as a ringmaster/master of ceremonies. He wears a fitted black tuxedo jacket with satin lapels, a white dress shirt, a red bow tie, a red sash at the waist, and dark trousers; large expressive paws (orange with black stripes and cream claws), a long striped tail, and a confident theatrical expression. A DOUBLE-JUMP / aerial somersault (djump) sequence:\nFrame 1 -> crouched launch, body coiled low, arms pulled in, about to spring upward.\nFrame 2 -> rising, body extending upward, legs tucked, beginning to rotate forward.\nFrame 3 -> rotating forward mid-air, body tilting past vertical, head turning down, tail streaming up.\nFrame 4 -> fully upside-down at the top of the flip, head pointing down, feet up, coat tails flaring.\nFrame 5 -> still inverted but starting to roll back over, body curling, tail swinging.\nFrame 6 -> completing the rotation, coming back toward upright, head lifting.\nFrame 7 -> nearly upright again, body settling into a falling posture, legs reaching down.\nFrame 8 -> landing pose, body extended downward toward the ground, ready to plant, so the cycle loops.\n\nFrames within the row must be clearly distinct but smoothly sequential (loopable aerial flip). Keep it clean and croppable.\n",
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/redo-balthazar-s5-v1",
             "frames_bbox": {
               "balthazar_jump2_f1.png": [
@@ -744,7 +744,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/scarlet_vale_sheet_4.png",
+          "file": "petal-panic/assets/scarlet_vale_sheet_4.png",
           "rows": 1,
           "cols": 8,
           "description": "Scarlet Vale hero run cycle (run2), 8 frames",
@@ -767,7 +767,7 @@
           ],
           "original_prompt": "Generate a sprite sheet of 1 hero character \"Scarlet Vale\" for the hand-painted circus game Petal Panic, continuing the exact same hand-painted circus style as the prior Scarlet Vale sheets above.\n\nLAYOUT: 1 row x 8 columns on a solid uniform pink background (rgb 252,151,170). The single row is the Scarlet Vale heroine; the 8 columns are her 8 run animation frames shown left-to-right. All cells exactly the same size (~222x442 px), evenly spaced, separated by thin light-pink grid lines (rgb 255,210,220, 2px wide). No text, no labels, no dark borders between cells. Image 1774 wide x 442 tall.\n\nSTYLE: hand-painted circus / storybook illustration, soft painterly brushwork with visible texture, warm saturated palette (crimson red, deep black, cream skin tones, white feather accent). A glamorous burlesque/circus heroine: long flowing wavy black hair, a large crimson rose tucked into her hair, a black domino mask over her eyes, a white-and-grey plume/feather headdress arcing up behind her head. She wears a red bra-style top, a short red skirt, thigh-high black stockings, and red high-heeled shoes, with a flowing red cape/sash trailing behind. Full-body side profile facing right, dynamic and elegant. Consistent style across every frame.\n\nROW (left to right), 8 distinct loopable run-cycle frames:\n1. STRIDE - right leg extended forward, left leg pushing back, arms mid-swing, cape billowing.\n2. CONTACT - legs passing through neutral, body slightly compressed, weight transferring.\n3. PUSH - left leg driving forward, right leg trailing, torso leaning into the run.\n4. RECOVER - opposite stride mirroring frame 1, arms swinging the other way.\n5. STRIDE 2 - right leg forward again, hair and cape at peak flow.\n6. CONTACT 2 - legs crossing through neutral, cape settling.\n7. PUSH 2 - left leg driving, momentum building.\n8. RECOVER 2 - returning toward frame 1 pose so the loop closes smoothly.\n\nFrames within the row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable.",
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/redo-scarlet-s4-v1",
             "frames_bbox": {
               "scarlet_vale_run_f1.png": [
@@ -822,7 +822,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/scarlet_vale_sheet_5.png",
+          "file": "petal-panic/assets/scarlet_vale_sheet_5.png",
           "rows": 1,
           "cols": 8,
           "description": "Scarlet Vale hero double-jump (aerial flip), 8 frames",
@@ -844,7 +844,7 @@
           ],
           "original_prompt": "Generate a sprite sheet of 1 hero character \"Scarlet Vale\" for the hand-painted circus game Petal Panic, continuing the exact same hand-painted circus style as the prior Scarlet Vale sheets above.\n\nLAYOUT: 1 row x 8 columns on a solid uniform pink background (rgb 252,151,170). The single row is the Scarlet Vale heroine; the 8 columns are her 8 double-jump animation frames shown left-to-right. All cells exactly the same size (~222x435 px), evenly spaced, separated by thin light-pink grid lines (rgb 255,210,220, 2px wide). No text, no labels, no dark borders between cells. Image 1774 wide x 435 tall.\n\nSTYLE: hand-painted circus / storybook illustration, soft painterly brushwork with visible texture, warm saturated palette (crimson red, deep black, cream skin tones, white feather accent). A glamorous burlesque/circus heroine: long flowing wavy black hair, a large crimson rose tucked into her hair, a black domino mask over her eyes, a white-and-grey plume/feather headdress arcing up behind her head. She wears a red bra-style top, a short red skirt, thigh-high black stockings, and red high-heeled shoes, with a flowing red cape/sash trailing behind. Full-body side profile facing right, dynamic and elegant. Consistent style across every frame.\n\nROW (left to right), 8 distinct double-jump (aerial spin/flip) frames:\n1. ASCEND - body upright, legs trailing below, arms back, just launched off the ground, cape streaming down.\n2. RISE - torso tilting back, one leg kicking up, hair beginning to flow upward.\n3. FLIP START - rotating backward, legs swinging up over the head, body inverting.\n4. INVERTED - fully upside-down mid-flip, hair and cape hanging downward, rose still in hair.\n5. ROTATE - completing the inversion, legs coming around to the other side, cape flaring.\n6. SETTLE - returning toward upright, legs tucking beneath, body leveling out.\n7. RECOVER - nearly vertical again, legs extending downward, arms reaching forward.\n8. LAND PREP - upright with legs split for landing, cape settling, matching the launch pose so the loop closes smoothly.\n\nFrames within the row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable.",
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/redo-scarlet-s5-v1",
             "frames_bbox": {
               "scarlet_vale_jump2_f1.png": [
@@ -893,7 +893,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/balthazar_sheet_6.png",
+          "file": "petal-panic/assets/balthazar_sheet_6.png",
           "rows": 2,
           "cols": 5,
           "description": "Balthazar tiger ringmaster hero sheet 6, sweep x 10 frames (2 rows x 5 cols)",
@@ -921,7 +921,7 @@
           ],
           "original_prompt": "Generate a sprite sheet of 1 hero sprite for the hand-painted circus game \"Petal Panic\", continuing the exact same hand-painted circus style as the prior Balthazar sheets above.\n\nLAYOUT: 2 rows x 5 columns on a solid uniform pink background (rgb 250,152,170). Each row continues the single hero; the 5 columns are its 5 animation frames shown left-to-right (row-major: f1..f5 top row, f6..f10 bottom row). All cells exactly the same size (~324x485 px), evenly spaced, separated by thin light-pink grid lines (rgb 255,210,220, 2px wide). No text, no labels, no dark borders between cells. Image 1619 wide x 971 tall.\n\nSTYLE: hand-painted circus / big-top illustration. Soft painterly shading with visible brush texture, warm saturated colors, gentle highlights and shadows (NOT flat pixel art). Thick clean dark-brown/black outlines around the character. Side profile facing right. Dynamic poses with subtle motion smears on fast moves. Consistent proportions and palette across every frame.\n\nROWS, 10 distinct loopable frames total \u2014 BALTHAZAR, an anthropomorphic orange-and-black striped tiger dressed as a ringmaster/master of ceremonies. He wears a fitted black tuxedo jacket with satin lapels, a white dress shirt, a red bow tie, a red sash at the waist, and dark trousers; large expressive paws (orange with black stripes and cream claws), a long striped tail, and a confident theatrical expression. A low SWEEP / sliding tackle sequence:\nFrame 1 -> upright running lunge, body leaning forward, one arm cocked back, about to drop low.\nFrame 2 -> dropping down, knees bending, body sinking toward the ground, arms reaching out front.\nFrame 3 -> fully crouched low, both hands planted near the floor, legs folding under, beginning the slide.\nFrame 4 -> sliding flat along the ground, body stretched low, legs trailing, motion smear behind.\nFrame 5 -> still sliding, legs extended out behind, coat tails flaring, momentum carrying forward.\nFrame 6 -> deep slide, body nearly horizontal, one leg kicking up dust/smear, head leading.\nFrame 7 -> end of the slide, legs dragging, body still low, starting to gather itself.\nFrame 8 -> pushing up from the ground, one knee down, arms bracing, rising out of the sweep.\nFrame 9 -> half-risen, weight shifting onto the lead foot, torso straightening, recovering balance.\nFrame 10 -> back to an upright ready stance, coiled and alert, so the cycle loops.\n\nFrames within the sheet must be clearly distinct but smoothly sequential (loopable low sweep). Keep it clean and croppable.\n",
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/redo2-balthazar-v3+v4",
             "frames_bbox": {
               "balthazar_sweep_f1.png": [
@@ -988,7 +988,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/scarlet_vale_sheet_6.png",
+          "file": "petal-panic/assets/scarlet_vale_sheet_6.png",
           "rows": 2,
           "cols": 5,
           "description": "Scarlet Vale hero cartwheel/acrobatic flip, 10 frames (2x5 grid)",
@@ -1016,7 +1016,7 @@
           ],
           "original_prompt": "Cartwheel/acrobatic flip sheet \u2014 reverse-engineered; to be regenerated via transparent regen pass.",
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/redo2-scarlet-v3+v4",
             "frames_bbox": {
               "scarlet_vale_cartwheel_f1.png": [
@@ -1083,7 +1083,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/scarlet_vale_sheet_7.png",
+          "file": "petal-panic/assets/scarlet_vale_sheet_7.png",
           "size": "1774x887",
           "rows": 2,
           "cols": 5,
@@ -1113,7 +1113,7 @@
           ],
           "original_prompt": "Scarlet Vale special attack sheet \u2014 ribbon sweep + aerial flip, 2x5, hand-painted circus style",
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/scarlet_special-final",
             "frames_bbox": {
               "scarlet_vale_special_f1.png": [
@@ -1180,7 +1180,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/balthazar_sheet_7.png",
+          "file": "petal-panic/assets/balthazar_sheet_7.png",
           "size": "1774x887",
           "rows": 2,
           "cols": 5,
@@ -1210,7 +1210,7 @@
           ],
           "original_prompt": "Balthazhar special attack sheet \u2014 golden energy slam + spin, 2x5, hand-painted circus style",
           "crop": {
-            "frames_dir": "panic-petal/assets/heroes",
+            "frames_dir": "petal-panic/assets/heroes",
             "pass": "/tmp/balthazar_special-v9",
             "frames_bbox": {
               "balthazar_special_f1.png": [
@@ -1279,10 +1279,10 @@
       ]
     },
     "enemies": {
-      "path": "panic-petal/assets/enemies",
+      "path": "petal-panic/assets/enemies",
       "sheets": [
         {
-          "file": "panic-petal/assets/jester_sheet_1.png",
+          "file": "petal-panic/assets/jester_sheet_1.png",
           "rows": 2,
           "cols": 5,
           "description": "Jester skull-clown enemy, 2 actions x 5 frames",
@@ -1313,7 +1313,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/enemies",
+            "frames_dir": "petal-panic/assets/enemies",
             "pass": "/tmp/redo-jester1-v1",
             "frames_bbox": {
               "jester_chase_f1.png": [
@@ -1381,7 +1381,7 @@
           "original_prompt": "Hand-painted circus-style sprite sheet of \"Jester\", a sinister clown-jester enemy for a side-scrolling game. He has a gaunt white skull-like face with hollow black eye sockets, a wide grinning mouth full of sharp teeth, and a small red clown nose; his skin is pale bone-white with dark shading. Around his head/shoulders he wears a large ruff collar made of glossy deep-red flower petals (like a blooming poppy or peony), each petal tipped with a tiny gold bead. His costume is a tattered jester outfit: a red-and-cream vertically striped bodice and puffed striped legs/trousers, ragged frilled cuffs and hem in cream and gold, dark leather boots with curled pointed toes and gold bells at the tips, and long clawed black-gloved hands with exaggerated fingers. His expression is menacing and theatrical \u2014 a twisted grin, glowing red eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone white, gold accents, dark browns), dynamic hunched forward-leaning poses, subtle motion smears on fast moves.\n\nSheet layout: 2 rows x 5 columns on a solid pink background with a faint light grid dividing the cells. Each row is one action, left to right:\n\nRow 1 \u2014 Run cycle (5 frames): a loping, hunched sprint across the frame, body leaning forward, arms pumping with clawed hands, striped legs striding, petal-ruff swaying, contact -> down -> passing -> up -> contact.\n\nRow 2 \u2014 Attack/lunge (5 frames): a leaping, lunging attack \u2014 rising -> apex -> falling toward the player, both clawed arms flung out wide, then a final impact frame showing him slamming down low with a splash/burst of red petal debris and dust at his feet.\n\nCharacter faces right, consistent proportions and palette across all 10 frames."
         },
         {
-          "file": "panic-petal/assets/jester_sheet_2.png",
+          "file": "petal-panic/assets/jester_sheet_2.png",
           "rows": 3,
           "cols": 5,
           "description": "Jester skull-clown enemy sheet 2, 3 actions x 5 frames (idle/whip/death)",
@@ -1424,7 +1424,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/enemies",
+            "frames_dir": "petal-panic/assets/enemies",
             "pass": "/tmp/redo-jester2-v1",
             "frames_bbox": {
               "jester_idle_f1.png": [
@@ -1522,7 +1522,7 @@
           "original_prompt": "Hand-painted circus-style sprite sheet of \"Jester\", the same sinister clown-jester enemy as before: gaunt white skull-like face, hollow black eye sockets, wide grinning mouth full of sharp teeth, small red clown nose, pale bone-white skin; a large ruff collar of glossy deep-red flower petals each tipped with a tiny gold bead; tattered jester costume in red-and-cream vertical stripes with ragged frilled cuffs/hem in cream and gold; dark leather boots with curled pointed toes and gold bells; long clawed black-gloved hands. Menacing theatrical expression, glowing red eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone white, gold accents, dark browns), dynamic poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells. Each row is one action, left to right:\n\nRow 1 \u2014 Idle/hover (5 frames): a menacing crouched idle stance, body swaying subtly side to side, arms hanging low with clawed hands, petal-ruff shifting slightly, weight shifting between feet \u2014 a looping threat pose.\n\nRow 2 \u2014 Whip attack (5 frames): he wields a long thorny stem ending in a huge open-mouthed carnivorous flower head (a snapping venus-flytrap-like bloom with ringed teeth). Wind-up -> extending the thorn whip forward -> full extension with the flower head flung out to the right -> a sweeping arc with a glowing tan/pink motion trail behind the flower -> recovery back to a ready stance.\n\nRow 3 \u2014 Death/dissolve (5 frames): the jester bursts apart into a spray of loose red petals and fragments that scatter outward and fade \u2014 frame 1 intact, then progressively disintegrating until only drifting petals remain by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
         },
         {
-          "file": "panic-petal/assets/jackolantern_sheet.png",
+          "file": "petal-panic/assets/jackolantern_sheet.png",
           "rows": 3,
           "cols": 5,
           "description": "Jack-O-Lantern pumpkin clown enemy, 3 actions x 5 frames (roll/launch/explode)",
@@ -1565,7 +1565,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/enemies",
+            "frames_dir": "petal-panic/assets/enemies",
             "pass": "/tmp/redo-jackolantern-v1",
             "frames_bbox": {
               "jackolantern_roll_f1.png": [
@@ -1663,7 +1663,7 @@
           "original_prompt": "Hand-painted circus-style sprite sheet of \"Jack-O-Lantern\", a sinister jack-o-lantern enemy for a side-scrolling game. Its head is a big glossy orange pumpkin with a classic carved grin \u2014 jagged triangular teeth, glowing yellow-orange eyes, and a crooked nose cut-out that glows from within; a thick dark-green curled stem sprouts from the top, bent into a hook. The pumpkin wears a tattered circus costume: a red-and-cream vertically striped ruffled collar/bodice around its midsection, ragged frilled cuffs and hem in cream with tiny gold beads, and two long black-gloved clawed hands with exaggerated fingers. Its legs are thin dark leather boots with curled pointed toes and small gold bells at the tips. Expression is menacing and theatrical \u2014 a twisted grinning face, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep orange, crimson red, bone/cream white, gold accents, dark browns and greens), dynamic poses, subtle motion smears and speed lines on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action). Each row is one action, left to right:\n\nRow 1 \u2014 Move / Roll (5 frames): the pumpkin sprints across the frame, then tumbles end-over-end into a rolling ball (frames 3-4 show it fully rounded with circular motion-smear trails and a few flying debris bits), then pops back upright into a stride. Legs striding wide, arms pumping with clawed hands, body leaning forward.\n\nRow 2 \u2014 Attack / Launch (5 frames): a leaping, lunging attack \u2014 crouched wind-up -> rising -> apex -> falling toward the player with both clawed arms flung out wide and tan/pink speed-line trails behind, ending in a final impact frame where he slams down low with a splash/burst of orange debris and dust at his feet.\n\nRow 3 \u2014 Death / Explode (5 frames): the pumpkin bursts apart \u2014 frame 1 intact, then progressively cracking open until it detonates into a radial spray of loose orange pumpkin chunks, seeds, and fragments that scatter outward and fade, leaving only drifting shards by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
         },
         {
-          "file": "panic-petal/assets/vine_hound_sheet.png",
+          "file": "petal-panic/assets/vine_hound_sheet.png",
           "rows": 3,
           "cols": 5,
           "description": "Vine Hound plant-beast enemy, 3 actions x 5 frames (run/attack/death)",
@@ -1705,7 +1705,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/enemies",
+            "frames_dir": "petal-panic/assets/enemies",
             "pass": "/tmp/redo-vine-hound-v1",
             "frames_bbox": {
               "vine_hound_run_f1.png": [
@@ -1797,7 +1797,7 @@
           "original_prompt": "Hand-painted circus-style sprite sheet of \"Vine Hound\", a sinister plant-hybrid beast enemy for a side-scrolling game. It is a four-legged canine/hound body made of twisted dark olive-green and brown vine-stem flesh \u2014 gnarled woody legs with clawed paws, a long sinuous tail ending in a small red flower bud, thorny tendrils and leafy growths sprouting along its spine and flanks. Its head is a pale bone-white skull-like hound face with glowing yellow eyes and a wide open maw full of sharp fangs; erupting from its neck/shoulders is a large blooming deep-red flower (a peony/poppy-like bloom) whose petals fan out like a mane or ruff collar, each petal glossy crimson with darker shading and tiny highlights. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, olive/brown greens, bone white, gold-yellow eye glow), dynamic poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action). Each row is one action, left to right:\n\nRow 1 \u2014 Run cycle (5 frames): a low, striding sprint across the frame, legs pumping wide, tail streaming behind, the red flower mane swaying, body leaning forward \u2014 contact -> down -> passing -> up -> contact.\n\nRow 2 \u2014 Attack (5 frames): the hound rears/lunges to strike \u2014 crouched wind-up -> rising into an aggressive lunge with jaws wide open -> full extended lunge where the body stretches out into a long thorn-vine whip ending in a huge open-mouthed carnivorous flower head (snapping venus-flytrap-like bloom with ringed teeth) flung out to the right, shedding loose red petals/debris -> recovery back to a ready stance.\n\nRow 3 \u2014 Death (5 frames): the hound collapses and dissolves apart \u2014 frame 1 intact but staggering, then progressively breaking down into a heap of vines, stems, and a spray of loose red petals that scatter outward and fade until only a tangle of greenery and drifting petals remain by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
         },
         {
-          "file": "panic-petal/assets/boris_loon_sheet.png",
+          "file": "petal-panic/assets/boris_loon_sheet.png",
           "rows": 3,
           "cols": 5,
           "description": "Boris Loon bat-clown ball enemy, 3 actions x 5 frames (fly/attack/death)",
@@ -1840,7 +1840,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/enemies",
+            "frames_dir": "petal-panic/assets/enemies",
             "pass": "/tmp/redo-boris_loon-v1",
             "frames_bbox": {
               "boris_loon_fly_f1.png": [
@@ -1938,7 +1938,7 @@
           "original_prompt": "Hand-painted circus-style sprite sheet of \"Boris Loon\", a sinister flying bat-clown enemy for a side-scrolling game. Its body is a big glossy red-and-white striped clown ball (like a juggling ball / beach-ball) with a classic menacing clown face painted on it: hollow black eye sockets with glowing yellow eyes, a wide grinning mouth full of sharp jagged teeth, a small round red clown nose, and white star shapes scattered across the red panels. On top of the ball sits a tiny red-and-cream striped conical party hat tipped with a gold bell/finial. Around the lower half of the ball is a ruffled collar made of glossy deep-red flower petals (a peony/poppy-like bloom), each petal tipped with a tiny gold bead. Two large dark crimson bat wings sprout from the sides of the ball, membranous with visible finger-bone struts. Hanging below the ball are two thin spindly legs ending in little red tassel/foot bells. Expression is menacing and theatrical \u2014 a twisted grin, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone/cream white, gold accents, dark browns), dynamic poses, subtle motion smears and speed lines on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action: \"1. FLY\", \"2. ATTACK\", \"3. DEATH\"). Each row is one action, left to right:\n\nRow 1 \u2014 Fly (5 frames): a hovering flight cycle, the clown ball drifting up and down with its bat wings flapping through a full open->half->open beat, body bobbing gently, legs dangling, a looping hover.\n\nRow 2 \u2014 Attack (5 frames): a lunging shriek attack \u2014 wind-up with a swirling tan/pink motion trail around the ball -> crouch/rise -> the clown face opens into a huge gaping maw with a long tongue and ringed teeth flung out to the right, spraying a burst of red droplets/debris -> follow-through -> recovery back to a ready hover.\n\nRow 3 \u2014 Death (5 frames): the clown ball bursts apart \u2014 frame 1 intact but cracking, then progressively disintegrating into a radial spray of loose red shards, petals, and fragments that scatter outward and fade, leaving only drifting debris by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
         },
         {
-          "file": "panic-petal/assets/boris_loon_baby_sheet.png",
+          "file": "petal-panic/assets/boris_loon_baby_sheet.png",
           "rows": 3,
           "cols": 5,
           "description": "Boris Loon Baby bat-clown enemy, 3 actions x 5 frames (fly/attack/death)",
@@ -1981,7 +1981,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/enemies",
+            "frames_dir": "petal-panic/assets/enemies",
             "pass": "/tmp/redo-boris_loon_baby-v1",
             "frames_bbox": {
               "boris_loon_baby_fly_1_f1.png": [
@@ -2079,7 +2079,7 @@
           "original_prompt": "Hand-painted circus-style sprite sheet of \"Boris Loon Baby\" (Baby Bat), a small sinister flying bat-clown enemy for a side-scrolling game. Its body is a big glossy red-and-white striped clown ball (like a juggling ball / beach-ball) with a classic menacing clown face painted on it: hollow black eye sockets with glowing yellow eyes, a wide grinning mouth full of sharp jagged teeth, a small round red clown nose, and white star shapes scattered across the red panels. On top of the ball sits a tiny red-and-cream striped conical party hat tipped with a gold bell/finial. Around the lower half of the ball is a ruffled collar made of glossy deep-red flower petals (a peony/poppy-like bloom), each petal tipped with a tiny gold bead. Two large dark crimson bat wings sprout from the sides of the ball, membranous with visible finger-bone struts and little gold stars on the wing membranes. Hanging below the ball are two thin spindly legs ending in little red tassel/foot bells. Expression is menacing and theatrical \u2014 a twisted grin, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone/cream white, gold accents, dark browns), dynamic poses, subtle motion smears and speed lines on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action: \"1. BABY BAT A\", \"2. BABY BAT B\", \"3. BABY BAT C\"). Each row is one action, left to right:\n\nRow 1 \u2014 Fly (5 frames): a hovering flight cycle, the clown ball drifting up and down with its bat wings flapping through a full open->half->open beat, body bobbing gently, legs dangling, a looping hover.\n\nRow 2 \u2014 Attack (5 frames): a lunging shriek attack \u2014 wind-up with a swirling tan/pink motion trail around the ball -> crouch/rise -> the clown face opens into a huge gaping maw with a long tongue and ringed teeth flung out to the right, spraying a burst of red droplets/debris -> follow-through -> recovery back to a ready hover.\n\nRow 3 \u2014 Death (5 frames): the clown ball bursts apart \u2014 frame 1 intact but cracking, then progressively disintegrating into a radial spray of loose red shards, petals, and fragments that scatter outward and fade, leaving only drifting debris by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
         },
         {
-          "file": "panic-petal/assets/violetta_marionetta_sheet.png",
+          "file": "petal-panic/assets/violetta_marionetta_sheet.png",
           "rows": 3,
           "cols": 5,
           "description": "Violetta Marionetta puppet-maiden enemy, 3 actions x 5 frames (walk/attack/death)",
@@ -2121,7 +2121,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/enemies",
+            "frames_dir": "petal-panic/assets/enemies",
             "pass": "/tmp/redo-violetta-marionetta-v1",
             "frames_bbox": {
               "violetta_marionetta_walk_f1.png": [
@@ -2213,7 +2213,7 @@
           "original_prompt": "Hand-painted circus-style sprite sheet of \"Violetta Marionetta\", a sinister puppet-maiden enemy for a side-scrolling game. She is a gaunt, emaciated marionette with a pale bone-white skull-like face: hollow black eye sockets with small glowing eyes, a wide grinning mouth full of sharp teeth, and fine dark cracks/veining across her skin like aged porcelain. Her head is crowned with a deep-red rose (a blooming crimson bloom) set into a small red-and-cream jester/party cap with curled tips. Around her neck/shoulders is a large ruff collar made of glossy deep-red flower petals (a peony/poppy-like bloom), each petal tipped with a tiny gold bead. Her costume is a tattered red-and-cream striped bodice with ragged frilled cuffs and hem in cream and gold; thin spindly bone-white limbs end in long clawed black-gloved hands with exaggerated fingers, and she wears dark high-heeled boots with curled pointed toes and small gold bells at the tips. Thin puppet strings hang from above her head and dangle from her joints. Expression is menacing and theatrical \u2014 a twisted grin, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone white, gold accents, dark browns), dynamic hunched forward-leaning poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action: \"1. WALK\", \"2. ATTACK\", \"3. DEATH\"). Each row is one action, left to right:\n\nRow 1 \u2014 Walk (5 frames): a loping, hunched puppet walk cycle across the frame, body leaning forward, arms swinging with clawed hands, thin legs striding, petal-ruff and ribbons swaying, contact -> down -> passing -> up -> contact.\n\nRow 2 \u2014 Attack (5 frames): a lunging whip attack \u2014 crouched wind-up -> rising into an aggressive lunge with both clawed arms flung out wide -> full extended reach where her arms stretch into long thorn-vine whips flung out to the right, shedding loose red petals/debris with a swirling tan/pink motion trail -> follow-through -> recovery back to a ready stance.\n\nRow 3 \u2014 Death (5 frames): the marionette collapses and dissolves apart \u2014 frame 1 intact but staggering, then progressively breaking down, slumping to the ground, until she lies crumpled in a heap of scattered red petals, broken fragments, and dangling strings by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames."
         },
         {
-          "file": "panic-petal/assets/ratzo_ringleader_sheet.png",
+          "file": "petal-panic/assets/ratzo_ringleader_sheet.png",
           "rows": 4,
           "cols": 5,
           "description": "Clown rat ringleader enemy, 4 actions x 5 frames (run, attack/fish-throw, charge, death)",
@@ -2268,7 +2268,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/enemies",
+            "frames_dir": "petal-panic/assets/enemies",
             "pass": "/tmp/redo-ratzo-ringleader-v1",
             "frames_bbox": {
               "ratzo_ringleader_run_f1.png": [
@@ -2395,7 +2395,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/toadstool_tilly_sheet.png",
+          "file": "petal-panic/assets/toadstool_tilly_sheet.png",
           "rows": 4,
           "cols": 5,
           "description": "Toadstool Tilly clown-mushroom enemy, 4 actions x 5 frames (idle, spore cloud, ground eruption, death)",
@@ -2450,7 +2450,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/enemies",
+            "frames_dir": "petal-panic/assets/enemies",
             "pass": "/tmp/redo-toadstool-tilly-v1",
             "frames_bbox": {
               "toadstool_tilly_idle_f1.png": [
@@ -2577,7 +2577,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/gustav_grapplersnout_sheet.png",
+          "file": "petal-panic/assets/gustav_grapplersnout_sheet.png",
           "rows": 4,
           "cols": 5,
           "description": "Gustav Grapplersnout strongman caterpillar \u2014 crawl, dumbbell_throw, ground_punch, death",
@@ -2628,7 +2628,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/enemies",
+            "frames_dir": "petal-panic/assets/enemies",
             "pass": "/tmp/redo-gustav-grapplersnout-v1",
             "frames_bbox": {
               "gustav_grapplersnout_crawl_f1.png": [
@@ -2755,7 +2755,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/doodle_dink_sheet_1.png",
+          "file": "petal-panic/assets/doodle_dink_sheet_1.png",
           "rows": 3,
           "cols": 5,
           "description": "Doodle Dink striped jester \u2014 teleport, tomato_throw, headbutt",
@@ -2795,7 +2795,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/enemies",
+            "frames_dir": "petal-panic/assets/enemies",
             "pass": "/tmp/redo-doodle-dink-v1",
             "frames_bbox": {
               "doodle_dink_teleport_f1.png": [
@@ -2892,7 +2892,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/doodle_dink_sheet_2.png",
+          "file": "petal-panic/assets/doodle_dink_sheet_2.png",
           "rows": 1,
           "cols": 5,
           "description": "Doodle Dink death dissolve \u2014 1x5 strip",
@@ -2910,7 +2910,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/enemies",
+            "frames_dir": "petal-panic/assets/enemies",
             "pass": "/tmp/redo-doodle-dink-v1",
             "frames_bbox": {
               "doodle_dink_death_f1.png": [
@@ -2949,10 +2949,10 @@
       ]
     },
     "boss": {
-      "path": "panic-petal/assets/boss",
+      "path": "petal-panic/assets/boss",
       "sheets": [
         {
-          "file": "panic-petal/assets/tusko_wobble_sheet.png",
+          "file": "petal-panic/assets/tusko_wobble_sheet.png",
           "rows": 4,
           "cols": 5,
           "description": "Overgrown Elephant boss, 4 actions x 5 frames (charge, stomp, trunk blast, death)",
@@ -3006,7 +3006,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/boss",
+            "frames_dir": "petal-panic/assets/boss",
             "pass": "/tmp/redo-tusko-v2",
             "frames_bbox": {
               "tusko_wobble_charge_f1.png": [
@@ -3127,7 +3127,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/ratchet_rumbelow_sheet_1.png",
+          "file": "petal-panic/assets/ratchet_rumbelow_sheet_1.png",
           "rows": 2,
           "cols": 3,
           "description": "Ratchet Rumbelow boss, sheet 1/5 \u2014 6 frames (earthquake x2 rows)",
@@ -3150,7 +3150,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/boss",
+            "frames_dir": "petal-panic/assets/boss",
             "pass": "/tmp/redo-ratchet_rumbelow-earthquake-v4",
             "frames_bbox": {
               "ratchet_rumbelow_earthquake_f1.png": [
@@ -3193,7 +3193,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/ratchet_rumbelow_sheet_2.png",
+          "file": "petal-panic/assets/ratchet_rumbelow_sheet_2.png",
           "rows": 2,
           "cols": 3,
           "description": "Ratchet Rumbelow boss, sheet 2/5 \u2014 6 frames (ground_slam x2 rows)",
@@ -3216,7 +3216,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/boss",
+            "frames_dir": "petal-panic/assets/boss",
             "pass": "/tmp/redo-ratchet_rumbelow-ground_slam-v1",
             "frames_bbox": {
               "ratchet_rumbelow_ground_slam_f1.png": [
@@ -3259,7 +3259,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/ratchet_rumbelow_sheet_3.png",
+          "file": "petal-panic/assets/ratchet_rumbelow_sheet_3.png",
           "rows": 2,
           "cols": 3,
           "description": "Ratchet Rumbelow boss, sheet 3/5 \u2014 6 frames (stomp)",
@@ -3282,7 +3282,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/boss",
+            "frames_dir": "petal-panic/assets/boss",
             "pass": "/tmp/redo-ratchet_rumbelow-stomp-v1",
             "frames_bbox": {
               "ratchet_rumbelow_stomp_f1.png": [
@@ -3325,7 +3325,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/ratchet_rumbelow_sheet_4.png",
+          "file": "petal-panic/assets/ratchet_rumbelow_sheet_4.png",
           "rows": 2,
           "cols": 3,
           "description": "Ratchet Rumbelow boss, sheet 4/5 \u2014 6 frames (death x2 rows)",
@@ -3348,7 +3348,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/boss",
+            "frames_dir": "petal-panic/assets/boss",
             "pass": "/tmp/redo-ratchet_rumbelow-death-v1",
             "frames_bbox": {
               "ratchet_rumbelow_death_f1.png": [
@@ -3391,7 +3391,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/ratchet_rumbelow_sheet_5.png",
+          "file": "petal-panic/assets/ratchet_rumbelow_sheet_5.png",
           "rows": 2,
           "cols": 3,
           "description": "Ratchet Rumbelow boss, sheet 5/5 \u2014 6 frames (roar)",
@@ -3414,7 +3414,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/boss",
+            "frames_dir": "petal-panic/assets/boss",
             "pass": "/tmp/redo-ratchet_rumbelow-roar-v1",
             "frames_bbox": {
               "ratchet_rumbelow_roar_f1.png": [
@@ -3457,7 +3457,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/grim_vertigo_sheet.png",
+          "file": "petal-panic/assets/grim_vertigo_sheet.png",
           "rows": 4,
           "cols": 4,
           "description": "Grim Vertigo carousel mid-boss, 4 actions x 4 frames (idle/rotate, angry/transform, attack/hazards, death)",
@@ -3508,7 +3508,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/boss",
+            "frames_dir": "petal-panic/assets/boss",
             "pass": "/tmp/redo-grim_vertigo-v1",
             "frames_bbox": {
               "grim_vertigo_idle_f1.png": [
@@ -3611,7 +3611,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/dictator_carrot_sheet_1.png",
+          "file": "petal-panic/assets/dictator_carrot_sheet_1.png",
           "rows": 3,
           "cols": 5,
           "description": "Dictator Carrot final boss (carrot-bodied dictator on red scooter), 3 actions x 5 frames (idle, charge, attack)",
@@ -3654,7 +3654,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/boss",
+            "frames_dir": "petal-panic/assets/boss",
             "pass": "/tmp/redo-dictator_carrot_1-v1",
             "frames_bbox": {
               "dictator_carrot_idle_f1.png": [
@@ -3751,7 +3751,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/dictator_carrot_sheet_2.png",
+          "file": "petal-panic/assets/dictator_carrot_sheet_2.png",
           "rows": 3,
           "cols": 5,
           "description": "Dictator Carrot final boss (carrot-bodied dictator on red scooter) sheet 2/4, 3 actions x 5 frames (launch, stomp, shout)",
@@ -3794,7 +3794,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/boss",
+            "frames_dir": "petal-panic/assets/boss",
             "pass": "/tmp/redo-dictator_carrot_2-v1",
             "frames_bbox": {
               "dictator_carrot_launch_f1.png": [
@@ -3891,7 +3891,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/dictator_carrot_sheet_3.png",
+          "file": "petal-panic/assets/dictator_carrot_sheet_3.png",
           "rows": 3,
           "cols": 5,
           "description": "Dictator Carrot final boss (carrot-bodied dictator on red scooter) sheet 3/4, 3 actions x 5 frames (sulk, punch, defeat)",
@@ -3934,7 +3934,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/boss",
+            "frames_dir": "petal-panic/assets/boss",
             "pass": "/tmp/redo-dictator_carrot_3-v1",
             "frames_bbox": {
               "dictator_carrot_sulk_f1.png": [
@@ -4031,7 +4031,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/dictator_carrot_sheet_4.png",
+          "file": "petal-panic/assets/dictator_carrot_sheet_4.png",
           "rows": 3,
           "cols": 5,
           "description": "Dictator Carrot final boss, sheet 4/4 \u2014 angry (row1), death (row2), scooter_ride (row3)",
@@ -4071,7 +4071,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/boss",
+            "frames_dir": "petal-panic/assets/boss",
             "pass": "/tmp/redo-dictator_carrot_4-v1",
             "frames_bbox": {
               "dictator_carrot_angry_f1.png": [
@@ -4170,10 +4170,10 @@
       ]
     },
     "interface": {
-      "path": "panic-petal/assets/interface",
+      "path": "petal-panic/assets/interface",
       "sheets": [
         {
-          "file": "panic-petal/assets/select_balthazar.png",
+          "file": "petal-panic/assets/select_balthazar.png",
           "rows": 1,
           "cols": 1,
           "description": "Balthazar character-select HUD panel (single image)",
@@ -4188,7 +4188,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/interface",
+            "frames_dir": "petal-panic/assets/interface",
             "pass": "opaque-copy",
             "frames_bbox": {
               "select_balthazar_f1.png": [
@@ -4201,7 +4201,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/select_none.png",
+          "file": "petal-panic/assets/select_none.png",
           "rows": 1,
           "cols": 1,
           "description": "No-character-selected HUD panel (single image)",
@@ -4216,7 +4216,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/interface",
+            "frames_dir": "petal-panic/assets/interface",
             "pass": "opaque-copy",
             "frames_bbox": {
               "select_none_f1.png": [
@@ -4229,7 +4229,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/select_scarlet_vale.png",
+          "file": "petal-panic/assets/select_scarlet_vale.png",
           "rows": 1,
           "cols": 1,
           "description": "Scarlet Vale character-select HUD panel (single image)",
@@ -4244,7 +4244,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/interface",
+            "frames_dir": "petal-panic/assets/interface",
             "pass": "opaque-copy",
             "frames_bbox": {
               "select_scarlet_vale_f1.png": [
@@ -4257,7 +4257,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/logo.png",
+          "file": "petal-panic/assets/logo.png",
           "rows": 1,
           "cols": 1,
           "description": "Game logo (single image)",
@@ -4272,7 +4272,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/interface",
+            "frames_dir": "petal-panic/assets/interface",
             "pass": "/tmp/redo-single",
             "frames_bbox": {
               "logo_f1.png": [
@@ -4285,7 +4285,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/interface/fg_level1_f1.png",
+          "file": "petal-panic/assets/interface/fg_level1_f1.png",
           "rows": 1,
           "cols": 1,
           "description": "Level 1 foreground parallax layer: circus props on stage platform with red bunting (single image)",
@@ -4302,7 +4302,7 @@
           "crop": {}
         },
         {
-          "file": "panic-petal/assets/interface/bg_level1_f1.png",
+          "file": "petal-panic/assets/interface/bg_level1_f1.png",
           "rows": 1,
           "cols": 1,
           "description": "Level 1 back parallax layer: full circus tent backdrop with striped canopy, CIRCUS entrance, banners (single image)",
@@ -4319,7 +4319,7 @@
           "crop": {}
         },
         {
-          "file": "panic-petal/assets/bg_level1.png",
+          "file": "petal-panic/assets/bg_level1.png",
           "rows": 1,
           "cols": 1,
           "description": "Background level 1",
@@ -4334,7 +4334,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/interface",
+            "frames_dir": "petal-panic/assets/interface",
             "pass": "opaque-copy",
             "frames_bbox": {
               "bg_level1_f1.png": [
@@ -4347,7 +4347,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/bg_level2.png",
+          "file": "petal-panic/assets/bg_level2.png",
           "rows": 1,
           "cols": 1,
           "description": "Background level 2",
@@ -4362,7 +4362,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/interface",
+            "frames_dir": "petal-panic/assets/interface",
             "pass": "opaque-copy",
             "frames_bbox": {
               "bg_level2_f1.png": [
@@ -4375,7 +4375,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/bg_level3.png",
+          "file": "petal-panic/assets/bg_level3.png",
           "rows": 1,
           "cols": 1,
           "description": "Background level 3",
@@ -4390,7 +4390,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/interface",
+            "frames_dir": "petal-panic/assets/interface",
             "pass": "opaque-copy",
             "frames_bbox": {
               "bg_level3_f1.png": [
@@ -4403,7 +4403,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/bg_level4.png",
+          "file": "petal-panic/assets/bg_level4.png",
           "rows": 1,
           "cols": 1,
           "description": "Background level 4",
@@ -4418,7 +4418,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/interface",
+            "frames_dir": "petal-panic/assets/interface",
             "pass": "opaque-copy",
             "frames_bbox": {
               "bg_level4_f1.png": [
@@ -4431,7 +4431,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/fg_level1.png",
+          "file": "petal-panic/assets/fg_level1.png",
           "rows": 1,
           "cols": 1,
           "description": "Foreground strip level 1",
@@ -4446,7 +4446,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/interface",
+            "frames_dir": "petal-panic/assets/interface",
             "pass": "pre-existing",
             "frames_bbox": {
               "fg_level1_f1.png": [
@@ -4459,7 +4459,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/fg_level2.png",
+          "file": "petal-panic/assets/fg_level2.png",
           "rows": 1,
           "cols": 1,
           "description": "Foreground strip level 2",
@@ -4474,7 +4474,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/interface",
+            "frames_dir": "petal-panic/assets/interface",
             "pass": "/tmp/redo-single-fg-level2",
             "frames_bbox": {
               "fg_level2_f1.png": [
@@ -4487,7 +4487,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/fg_level3.png",
+          "file": "petal-panic/assets/fg_level3.png",
           "rows": 1,
           "cols": 1,
           "description": "Foreground strip level 3",
@@ -4502,7 +4502,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/interface",
+            "frames_dir": "petal-panic/assets/interface",
             "pass": "/tmp/redo-single-fg-level3",
             "frames_bbox": {
               "fg_level3_f1.png": [
@@ -4515,7 +4515,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/fg_level4.png",
+          "file": "petal-panic/assets/fg_level4.png",
           "rows": 1,
           "cols": 1,
           "description": "Foreground strip level 4",
@@ -4530,7 +4530,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/interface",
+            "frames_dir": "petal-panic/assets/interface",
             "pass": "/tmp/redo-single-fg-level4",
             "frames_bbox": {
               "fg_level4_f1.png": [
@@ -4545,10 +4545,10 @@
       ]
     },
     "home": {
-      "path": "panic-petal/assets/home",
+      "path": "petal-panic/assets/home",
       "sheets": [
         {
-          "file": "panic-petal/assets/home_bigtop.png",
+          "file": "petal-panic/assets/home_bigtop.png",
           "rows": 1,
           "cols": 1,
           "description": "Bigtop tent interior home/parallax scene (single image)",
@@ -4563,7 +4563,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/home",
+            "frames_dir": "petal-panic/assets/home",
             "pass": "opaque-copy",
             "frames_bbox": {
               "home_bigtop_f1.png": [
@@ -4576,7 +4576,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/home_crowd.png",
+          "file": "petal-panic/assets/home_crowd.png",
           "rows": 1,
           "cols": 1,
           "description": "Audience crowd silhouette parallax layer (single image)",
@@ -4591,7 +4591,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/home",
+            "frames_dir": "petal-panic/assets/home",
             "pass": "/tmp/redo-single",
             "frames_bbox": {
               "home_crowd_f1.png": [
@@ -4604,7 +4604,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/home_stage.png",
+          "file": "petal-panic/assets/home_stage.png",
           "rows": 1,
           "cols": 1,
           "description": "Circus stage with characters home/parallax scene (single image)",
@@ -4619,7 +4619,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/home",
+            "frames_dir": "petal-panic/assets/home",
             "pass": "/tmp/redo-single",
             "frames_bbox": {
               "home_stage_f1.png": [
@@ -4632,7 +4632,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/home_scarlet_portrait.png",
+          "file": "petal-panic/assets/home_scarlet_portrait.png",
           "rows": 1,
           "cols": 1,
           "description": "Scarlet Vale aerialist portrait (single image)",
@@ -4647,7 +4647,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/home",
+            "frames_dir": "petal-panic/assets/home",
             "pass": "opaque-copy",
             "frames_bbox": {
               "home_scarlet_portrait_f1.png": [
@@ -4660,7 +4660,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/home_cover_idle.png",
+          "file": "petal-panic/assets/home_cover_idle.png",
           "rows": 1,
           "cols": 1,
           "description": "Game cover art (single image)",
@@ -4675,7 +4675,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/home",
+            "frames_dir": "petal-panic/assets/home",
             "pass": "opaque-copy",
             "frames_bbox": {
               "home_cover_f1.png": [
@@ -4688,7 +4688,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/home_squid_os_logo.png",
+          "file": "petal-panic/assets/home_squid_os_logo.png",
           "rows": 1,
           "cols": 1,
           "description": "Squid OS logo for credits splash (single image)",
@@ -4703,7 +4703,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/home",
+            "frames_dir": "petal-panic/assets/home",
             "pass": "/tmp/redo-single",
             "frames_bbox": {
               "squid_os_logo_f1.png": [
@@ -4718,10 +4718,10 @@
       ]
     },
     "objects": {
-      "path": "panic-petal/assets/objects",
+      "path": "petal-panic/assets/objects",
       "sheets": [
         {
-          "file": "panic-petal/assets/coins_sheet.png",
+          "file": "petal-panic/assets/coins_sheet.png",
           "rows": 3,
           "cols": 4,
           "description": "Circus coins (bronze small, silver medium, gold large), 3 rows x 4 cols flip animation (front, edge, back, edge)",
@@ -4761,7 +4761,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/objects",
+            "frames_dir": "petal-panic/assets/objects",
             "pass": "/home/goglue/tmp/coins-v1",
             "frames_bbox": {
               "coin_bronze_f1.png": [
@@ -4840,7 +4840,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/barrel_sheet.png",
+          "file": "petal-panic/assets/barrel_sheet.png",
           "rows": 1,
           "cols": 1,
           "description": "Circus barrel prop (single image)",
@@ -4855,7 +4855,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/objects",
+            "frames_dir": "petal-panic/assets/objects",
             "pass": "/tmp/redo-single",
             "frames_bbox": {
               "barrel_f1.png": [
@@ -4868,7 +4868,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/barrel_bomb_sheet.png",
+          "file": "petal-panic/assets/barrel_bomb_sheet.png",
           "rows": 1,
           "cols": 1,
           "description": "Bomb barrel prop with lit fuse (single image)",
@@ -4883,7 +4883,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/objects",
+            "frames_dir": "petal-panic/assets/objects",
             "pass": "/tmp/redo-single",
             "frames_bbox": {
               "barrel_bomb_f1.png": [
@@ -4896,7 +4896,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/barrel_coin_sheet.png",
+          "file": "petal-panic/assets/barrel_coin_sheet.png",
           "rows": 1,
           "cols": 1,
           "description": "Flower barrel / coin barrel prop (single image)",
@@ -4911,7 +4911,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/objects",
+            "frames_dir": "petal-panic/assets/objects",
             "pass": "/tmp/redo-single",
             "frames_bbox": {
               "barrel_coin_f1.png": [
@@ -4924,7 +4924,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/checkpoint_sheet.png",
+          "file": "petal-panic/assets/checkpoint_sheet.png",
           "rows": 1,
           "cols": 1,
           "description": "Checkpoint flag pole prop (single image)",
@@ -4939,7 +4939,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/objects",
+            "frames_dir": "petal-panic/assets/objects",
             "pass": "/tmp/redo-single",
             "frames_bbox": {
               "checkpoint_f1.png": [
@@ -4952,7 +4952,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/checkpoint_boss_sheet.png",
+          "file": "petal-panic/assets/checkpoint_boss_sheet.png",
           "size": "413x440",
           "rows": 1,
           "cols": 1,
@@ -4969,7 +4969,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/objects",
+            "frames_dir": "petal-panic/assets/objects",
             "pass": "/tmp/redo-single",
             "frames_bbox": {
               "checkpoint_boss_f1.png": [
@@ -4982,7 +4982,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/platforms_level1_sheet.png",
+          "file": "petal-panic/assets/platforms_level1_sheet.png",
           "rows": 3,
           "cols": 3,
           "description": "Platform tiles level 1 (3x3 grid)",
@@ -5009,7 +5009,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/objects",
+            "frames_dir": "petal-panic/assets/objects",
             "pass": "/tmp/redo-platforms-level1-v1",
             "frames_bbox": {
               "platforms_level1_f1.png": [
@@ -5070,7 +5070,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/platforms_level2_sheet.png",
+          "file": "petal-panic/assets/platforms_level2_sheet.png",
           "rows": 3,
           "cols": 3,
           "description": "Platform tiles level 2 (3x3 grid)",
@@ -5097,7 +5097,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/objects",
+            "frames_dir": "petal-panic/assets/objects",
             "pass": "/tmp/redo-platforms-level2-v1",
             "frames_bbox": {
               "platforms_level2_f1.png": [
@@ -5158,7 +5158,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/platforms_level3_sheet.png",
+          "file": "petal-panic/assets/platforms_level3_sheet.png",
           "rows": 3,
           "cols": 3,
           "description": "Platform tiles level 3 (3x3 grid)",
@@ -5185,7 +5185,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/objects",
+            "frames_dir": "petal-panic/assets/objects",
             "pass": "/tmp/redo-platforms-level3-v1",
             "frames_bbox": {
               "platforms_level3_f1.png": [
@@ -5246,7 +5246,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/platforms_level4_sheet.png",
+          "file": "petal-panic/assets/platforms_level4_sheet.png",
           "rows": 3,
           "cols": 3,
           "description": "Platform tiles level 4 (3x3 grid)",
@@ -5273,7 +5273,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/objects",
+            "frames_dir": "petal-panic/assets/objects",
             "pass": "/tmp/redo-platforms-level4-v1",
             "frames_bbox": {
               "platforms_level4_f1.png": [
@@ -5336,10 +5336,10 @@
       ]
     },
     "powerups": {
-      "path": "panic-petal/assets/powerups",
+      "path": "petal-panic/assets/powerups",
       "sheets": [
         {
-          "file": "panic-petal/assets/powerups_sheet_1.png",
+          "file": "petal-panic/assets/powerups_sheet_1.png",
           "rows": 5,
           "cols": 4,
           "description": "Wooden signboard powerup sprites, 5 types x 4 frames (NORMAL/INFLATE/PEAK/DEFLATE)",
@@ -5401,7 +5401,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/powerups",
+            "frames_dir": "petal-panic/assets/powerups",
             "pass": "/tmp/redo-pp1-v1",
             "frames_bbox": {
               "scarlet_1up_f1.png": [
@@ -5528,7 +5528,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/powerups_sheet_2.png",
+          "file": "petal-panic/assets/powerups_sheet_2.png",
           "rows": 5,
           "cols": 4,
           "description": "Wooden signboard powerup sprites, 5 types x 4 frames (NORMAL/INFLATE/PEAK/DEFLATE)",
@@ -5590,7 +5590,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/powerups",
+            "frames_dir": "petal-panic/assets/powerups",
             "pass": "/tmp/redo-pp2-v1",
             "frames_bbox": {
               "energy_f1.png": [
@@ -5719,10 +5719,10 @@
       ]
     },
     "projectiles": {
-      "path": "panic-petal/assets/projectiles",
+      "path": "petal-panic/assets/projectiles",
       "sheets": [
         {
-          "file": "panic-petal/assets/projectile_sheet_1.png",
+          "file": "petal-panic/assets/projectile_sheet_1.png",
           "rows": 3,
           "cols": 8,
           "description": "Projectiles: thorn missile w/ petal trail (row1), bomb fuse + explosion burst (row2), spinning petal saw (row3); 3 rows x 8 frames",
@@ -5781,7 +5781,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/projectiles",
+            "frames_dir": "petal-panic/assets/projectiles",
             "pass": "/home/goglue/tmp/projectiles-v1",
             "frames_bbox": {
               "thorn_shoot_f1.png": [
@@ -5932,7 +5932,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/projectile_sheet_2.png",
+          "file": "petal-panic/assets/projectile_sheet_2.png",
           "rows": 1,
           "cols": 5,
           "description": "Spinning dumbbell projectile \u2014 1x5 strip",
@@ -5950,7 +5950,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/projectiles",
+            "frames_dir": "petal-panic/assets/projectiles",
             "pass": "/tmp/redo-projectile-2-v1",
             "frames_bbox": {
               "projectile_2_spin_f1.png": [
@@ -5987,7 +5987,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/projectile_sheet_3.png",
+          "file": "petal-panic/assets/projectile_sheet_3.png",
           "rows": 3,
           "cols": 8,
           "description": "Projectile 3 \u2014 tomato (rolling+splat), carrot (spinning), pea (swirling)",
@@ -6036,7 +6036,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/projectiles",
+            "frames_dir": "petal-panic/assets/projectiles",
             "pass": "/tmp/proj3-final",
             "frames_bbox": {
               "projectile_3_tomato_f1.png": [
@@ -6187,7 +6187,7 @@
           }
         },
         {
-          "file": "panic-petal/assets/projectile_sheet_4.png",
+          "file": "petal-panic/assets/projectile_sheet_4.png",
           "rows": 3,
           "cols": 8,
           "description": "Projectile 4 \u2014 fish_bone, circus_ball, peas_tornado",
@@ -6236,7 +6236,7 @@
             }
           ],
           "crop": {
-            "frames_dir": "panic-petal/assets/projectiles",
+            "frames_dir": "petal-panic/assets/projectiles",
             "pass": "/home/goglue/tmp/proj4-v1",
             "frames_bbox": {
               "projectile_4_fish_bone_f1.png": [

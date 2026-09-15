@@ -1,11 +1,11 @@
 # Petal-Panic — Transparent Sheet Regeneration Plan
 
 ## Goal
-Regenerate every multi-frame sprite sheet as a **clean, fully transparent PNG** with no labels/numbers/grid lines and no overflow between cells. Each regenerated sheet is saved to `panic-petal/assets/transparent/<same-filename>.png`.
+Regenerate every multi-frame sprite sheet as a **clean, fully transparent PNG** with no labels/numbers/grid lines and no overflow between cells. Each regenerated sheet is saved to `petal-panic/assets/transparent/<same-filename>.png`.
 
 ## Per-sheet procedure (repeat for each row below)
 1. **New ChatGPT session** — open a fresh chat (`https://chatgpt.com/`), verify logged in. One sheet = one new session.
-2. **Upload** the original sheet from `panic-petal/assets/<file>` via the visible image file input.
+2. **Upload** the original sheet from `petal-panic/assets/<file>` via the visible image file input.
 3. **Send the regen prompt** verbatim from `.squid-os/skills/sprite-gen/references/regen.md`:
    ```bash
    python3 .squid-os/skills/sprite-gen/scripts/sprite_gen.py send --prompt "$(cat /tmp/regen_prompt.txt)" --chat-url "https://chatgpt.com/"
@@ -18,13 +18,13 @@ Regenerate every multi-frame sprite sheet as a **clean, fully transparent PNG** 
    - same row×col count as original
    - sprites fit their cells (no overflow into neighbors, nothing clipped)
    - consistent scale + alignment
-7. **If acceptable** → copy to `panic-petal/assets/transparent/<file>` and mark ✅ done.
+7. **If acceptable** → copy to `petal-panic/assets/transparent/<file>` and mark ✅ done.
 8. **If GPT returns an "image violation" / safety refusal** → retry in a NEW chat. **Max 2 retries.** After 2 failures mark ❌ failed (note reason).
 9. **Update this table** after every sheet (✅ / ⏳ in-progress / ❌ failed).
 
 ## Notes
-- Source dir: `panic-petal/assets/`
-- Output dir: `panic-petal/assets/transparent/`
+- Source dir: `petal-panic/assets/`
+- Output dir: `petal-panic/assets/transparent/`
 - Regen prompt source: `.squid-os/skills/sprite-gen/references/regen.md`
 - Do NOT overwrite originals — output goes only to `transparent/`.
 - Single-image assets (logo, backgrounds, select screens) are OUT OF SCOPE for this plan.

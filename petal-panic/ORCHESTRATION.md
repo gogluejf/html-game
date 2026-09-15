@@ -5,8 +5,8 @@ You are the orchestrator. You do NOT crop, validate, or compose yourself. You de
 ## Context
 
 - **Working dir:** `/home/goglue/src/html-game`
-- **Project:** `panic-petal`
-- **Assets dir:** `panic-petal/assets/`
+- **Project:** `petal-panic`
+- **Assets dir:** `petal-panic/assets/`
 - **State file:** `.squid-os/sprite-gen/state-petal-panic.json`
 - **Viewer output:** `.squid-os/sprite-gen/petal-panic.viewer.html`
 - **Music (already done, DO NOT TOUCH):** `.squid-os/music-composer/petal-panic.jukebox.html`
@@ -56,14 +56,14 @@ Agent prompt template:
 ```
 Crop this pre-existing sprite sheet. The image is already provided — do NOT generate or download any image.
 
-SHEET: /home/goglue/src/html-game/panic-petal/assets/<SHEET>.png
+SHEET: /home/goglue/src/html-game/petal-panic/assets/<SHEET>.png
 ENTITY: <ENTITY>
 LABEL: <LABEL>
 WORKING DIR: /home/goglue/src/html-game
 STATE FILE: /home/goglue/src/html-game/.squid-os/sprite-gen/state-petal-panic.json
-OUTPUT DIR: /home/goglue/src/html-game/panic-petal/assets/<LABEL>/
+OUTPUT DIR: /home/goglue/src/html-game/petal-panic/assets/<LABEL>/
 
-Style: hand-painted circus, pink background with light grid. Assets dir: panic-petal/assets.
+Style: hand-painted circus, pink background with light grid. Assets dir: petal-panic/assets.
 Reverse-engineer the prompt from visual inspection and save to /tmp/<ENTITY>_prompt.txt.
 
 CROP RULES (critical):
@@ -107,7 +107,7 @@ For single images, use the same pattern but add: `rows=1 cols=1, no crop needed,
 After EACH individual crop agent completes, launch a quick validation agent for THAT sheet only:
 
 ```
-Validate the cropped frames for <ENTITY> in /home/goglue/src/html-game/panic-petal/assets/<LABEL>/<ENTITY>_. Inspect every frame with inspect_media. Check:
+Validate the cropped frames for <ENTITY> in /home/goglue/src/html-game/petal-panic/assets/<LABEL>/<ENTITY>_. Inspect every frame with inspect_media. Check:
 1. Background fully transparent (no pink/tan residue anywhere)
 2. No see-through faces/bodies (no holes where bg showed through during generation)
 3. No neighbor bleed (no parts of adjacent sprites visible)
@@ -135,7 +135,7 @@ Check the state file yourself after all crops:
 
 ```bash
 python3 .squid-os/skills/sprite-crop/scripts/crop_sprites.py viewer \
-  --assets-dir panic-petal/assets \
+  --assets-dir petal-panic/assets \
   --project petal-panic \
   --out .squid-os/sprite-gen/petal-panic.viewer.html
 ```

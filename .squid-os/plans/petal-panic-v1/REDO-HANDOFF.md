@@ -20,7 +20,7 @@ This doc is the remaining work list + exact protocol.
 
 **Repo:** /home/goglue/src/html-game
 **State file:** .squid-os/sprite-gen/state-petal-panic.json
-**Assets root:** panic-petal/assets/
+**Assets root:** petal-panic/assets/
 
 **Vocabulary: "regen" = RE-CROP.** We do NOT regenerate source art via sprite-gen
 in this plan (source sheets are final; user fixed defects by hand when needed).
@@ -96,7 +96,7 @@ ISSUES: <none or one-line>
 
 Worked example of a filled entry (from this session):
 ```
-1. panic-petal/assets/jester_sheet_2.png — entity: jester — rows 3 — actions: idle,attack,death — install to panic-petal/assets/enemies/
+1. petal-panic/assets/jester_sheet_2.png — entity: jester — rows 3 — actions: idle,attack,death — install to petal-panic/assets/enemies/
    Target files: jester_idle_f1..5.png, jester_attack_f1..5.png, jester_death_f1..5.png
 ```
 
@@ -122,19 +122,19 @@ HARD RULES:
 - Filenames are sacred: if the CLI names outputs differently, mv them to the EXACT target names before copying.
 
 PROCESS THESE SHEETS:
-1. panic-petal/assets/balthazar_sheet_6.png — entity: balthazar — ONE 10-frame animation laid over 2 grid rows (assess actual pose count) — action: sweep — install to panic-petal/assets/heroes/
+1. petal-panic/assets/balthazar_sheet_6.png — entity: balthazar — ONE 10-frame animation laid over 2 grid rows (assess actual pose count) — action: sweep — install to petal-panic/assets/heroes/
    Target files: balthazar_sweep_f1..f10.png (sequential across both grid rows; use --rows 5,5 with actions sweep,sweep then rename r2 outputs to f6-f10)
-2. panic-petal/assets/scarlet_vale_sheet_6.png — entity: scarlet_vale — ONE 10-frame animation over 2 grid rows (assess) — action: cartwheel — install to panic-petal/assets/heroes/
+2. petal-panic/assets/scarlet_vale_sheet_6.png — entity: scarlet_vale — ONE 10-frame animation over 2 grid rows (assess) — action: cartwheel — install to petal-panic/assets/heroes/
    Target files: scarlet_vale_cartwheel_f1..f10.png (same 2-row trick as above)
-3. panic-petal/assets/vine_hound_sheet.png — entity: vine_hound — rows 3 — actions: run,attack,death — install to panic-petal/assets/enemies/
+3. petal-panic/assets/vine_hound_sheet.png — entity: vine_hound — rows 3 — actions: run,attack,death — install to petal-panic/assets/enemies/
    Target files: vine_hound_run_f1..5.png, vine_hound_attack_f1..4.png (attack row has only 4 poses, f3 is a WIDE ~623px frame), vine_hound_death_f1..5.png
-4. panic-petal/assets/doodle_dink_sheet_2.png — entity: doodle_dink — rows 1 — actions: death — install to panic-petal/assets/enemies/
+4. petal-panic/assets/doodle_dink_sheet_2.png — entity: doodle_dink — rows 1 — actions: death — install to petal-panic/assets/enemies/
    Target files: doodle_dink_death_f1..f5.png
-5. panic-petal/assets/tusko_wobble_sheet.png — entity: tusko_wobble — rows 4 — actions: charge,stomp,trunk_blast,death — install to panic-petal/assets/boss/
+5. petal-panic/assets/tusko_wobble_sheet.png — entity: tusko_wobble — rows 4 — actions: charge,stomp,trunk_blast,death — install to petal-panic/assets/boss/
    EXPECTED counts: charge=5, stomp=4, trunk_blast=4, death=5 (this is the cleaned sheet — trust measurement, report if different)
    Target files: tusko_wobble_charge_f1..5.png, tusko_wobble_stomp_f1..4.png, tusko_wobble_trunk_blast_f1..4.png, tusko_wobble_death_f1..5.png
    IMPORTANT: after copying, rm any stale tusko_wobble_stomp_f5.png / tusko_wobble_trunk_blast_f5.png from boss/ if present.
-6. panic-petal/assets/projectile_sheet_2.png — entity: projectile_2 — rows 1 — actions: spin — install to panic-petal/assets/projectiles/
+6. petal-panic/assets/projectile_sheet_2.png — entity: projectile_2 — rows 1 — actions: spin — install to petal-panic/assets/projectiles/
    Target files: projectile_2_spin_f1..f5.png
 
 For EACH sheet:
@@ -167,12 +167,12 @@ HARD RULES:
 
 CONTEXT: these sheets have glow/vines bleeding between rows, so auto row-detection fails. USE THE PROVIDED --row-y BANDS. Do not brute-force alpha thresholds.
 
-PROCESS THESE SHEETS (install both to panic-petal/assets/powerups/):
-1. panic-petal/assets/powerups_sheet_1.png
+PROCESS THESE SHEETS (install both to petal-panic/assets/powerups/):
+1. petal-panic/assets/powerups_sheet_1.png
    Command flags: --rows 4,4,4,4,4 --names tmp --actions r1,r2,r3,r4,r5 --margin 8 --row-y 0-177,177-324,324-464,464-611,611-793 --json ...
    Row entities top→bottom: scarlet_1up, balthazar_1up, rapid_fire, invincibility, panic_clear
    Target files: scarlet_1up_f1..f4.png, balthazar_1up_f1..f4.png, rapid_fire_f1..f4.png, invincibility_f1..f4.png, panic_clear_f1..f4.png (NO action word in filenames)
-2. panic-petal/assets/powerups_sheet_2.png
+2. petal-panic/assets/powerups_sheet_2.png
    Command flags: --rows 4,4,4,4,4 --names tmp --actions r1,r2,r3,r4,r5 --margin 8 --row-y 0-157,157-308,308-459,459-607,607-793 --json ...
    Row entities top→bottom: energy, bomb, petal_saw, thorn_missile, shield
    Target files: energy_f1..f4.png, bomb_f1..f4.png, petal_saw_f1..f4.png, thorn_missile_f1..f4.png, shield_f1..f4.png (NO action word)

@@ -10,7 +10,7 @@ Interacts with ChatGPT's image generation to produce pixel-art sprite sheets for
 ## Variables
 - `<skill-folder>` — directory containing this SKILL.md
 - `<working-dir>` — the REPO ROOT (e.g. `~/src/html-game`). NOT the game subfolder. All paths in state are relative to this.
-- `<assets-dir>` — where generated sprite sheets are saved: `<working-dir>/<PROJECT>/assets/` (one folder per project/game, e.g. `panic-petal/assets/`). Persisted in the state file as `assets_dir`.
+- `<assets-dir>` — where generated sprite sheets are saved: `<working-dir>/<PROJECT>/assets/` (one folder per project/game, e.g. `petal-panic/assets/`). Persisted in the state file as `assets_dir`.
 - `<chat-url>` — the ChatGPT conversation URL to use for style consistency (created on first run, reused thereafter)
 
 ## Instructions
@@ -198,10 +198,10 @@ On first run for a new project, determine the name from the user's request (e.g.
   "chat_url": "https://chatgpt.com/c/<uuid>",
   "style_name": "hand-painted circus parchment",
   "palette": ["crimson", "gold", "cream", "black"],
-  "assets_dir": "panic-petal/assets",
+  "assets_dir": "petal-panic/assets",
   "sheets": {
     "<entity_name>": {
-      "file": "panic-petal/assets/scarlet_vale_sheet.png",
+      "file": "petal-panic/assets/scarlet_vale_sheet.png",
       "size": "1619x971",
       "rows": 3,
       "cols": 5,
@@ -219,7 +219,7 @@ On first run for a new project, determine the name from the user's request (e.g.
         "row_y": [[0, 325], [326, 649], [650, 971]],
         "col_x": [[162, 489, 811, 1133, 1457], [162, 489, 811, 1133, 1457], [162, 489, 811, 1133, 1457]],
         "frame_size": "324x324",
-        "frames_dir": "panic-petal/assets/heroes"
+        "frames_dir": "petal-panic/assets/heroes"
       }
     }
   },

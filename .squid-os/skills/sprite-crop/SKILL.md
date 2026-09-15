@@ -8,7 +8,7 @@ allowed-tools: bash read_file write_file inspect_media open
 Crops animation frames from transparent-background sprite sheets by discovering which foreground pixels belong to each frame, then deriving rectangles — never the other way around. Pipeline: vision assessment of expected structure → alpha mask → connected components → row grouping → per-row frame clustering (constrained by expected counts) → component ownership including detached satellites → bounding-rect crops → deterministic validation (counts, edge-touching, orphans). Every stage emits a readable trace plus optional JSON for debugging and state recording. Vision is used only for the initial structural assessment and for flagged low-confidence cases; all pixel work is deterministic.
 
 ## Variables
-- `<skill-folder>` — directory containing this SKILL.md\n- `<working-dir>` — the REPO ROOT (e.g. ~/src/html-game), NOT the game subfolder\n- `<state-file>` — sprite-gen state file <working-dir>/.squid-os/sprite-gen/state-<PROJECT>.json (source of truth for sheet paths, rows/cols, entity names)\n- `<assets-dir>` — project asset folder from state (assets_dir, e.g. panic-petal/assets)
+- `<skill-folder>` — directory containing this SKILL.md\n- `<working-dir>` — the REPO ROOT (e.g. ~/src/html-game), NOT the game subfolder\n- `<state-file>` — sprite-gen state file <working-dir>/.squid-os/sprite-gen/state-<PROJECT>.json (source of truth for sheet paths, rows/cols, entity names)\n- `<assets-dir>` — project asset folder from state (assets_dir, e.g. petal-panic/assets)
 
 ## Instructions
 **PRIMARY METHOD:** the deterministic CLI does all pixel math — you supply the structural assessment and do verification:

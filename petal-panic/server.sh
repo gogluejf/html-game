@@ -12,8 +12,8 @@
 set -uo pipefail
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
-PIDFILE="/tmp/panic-petal-server.pid"
-LOGFILE="/tmp/panic-petal-server.log"
+PIDFILE="/tmp/petal-panic-server.pid"
+LOGFILE="/tmp/petal-panic-server.log"
 
 is_running() {
   # Returns 0 only if a live process owns the pidfile AND the port answers.

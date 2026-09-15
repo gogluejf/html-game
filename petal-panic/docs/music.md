@@ -127,7 +127,7 @@ That is your only intervention.
 ### Context
 
 - **Working dir:** `/home/goglue/src/html-game`
-- **Mood brief:** `panic-petal/docs/music.md` (the creative input for all agents)
+- **Mood brief:** `petal-panic/docs/music.md` (the creative input for all agents)
 - **Skill:** `music-composer` (passed to each agent — they know the format and state file path)
 - **State file:** `.squid-os/music-composer/petal-panic.json`
 - **Jukebox output:** `.squid-os/music-composer/petal-panic.jukebox.html`
@@ -169,7 +169,7 @@ Compose one track for Petal Panic.
 Slot: <SLOT_NAME>
 Variation: v<N>
 
-Read the mood brief for this slot in /home/goglue/src/html-game/panic-petal/docs/music.md
+Read the mood brief for this slot in /home/goglue/src/html-game/petal-panic/docs/music.md
 (section "<SLOT_HEADING>"). That is your ONLY creative input.
 
 DO NOT read .squid-os/music-composer/petal-panic.json. DO NOT read any jukebox HTML.
@@ -183,7 +183,7 @@ Name the track: "<SLOT_NAME> v<N> (qwen)".
 Example: "Petal Panic Title v1 (qwen)".
 
 Write it to the state file using the skill's compose command. IMPORTANT: the game name
-is EXACTLY "petal-panic" (lowercase, hyphenated: petal-panic, NOT panic-petal). The state
+is EXACTLY "petal-panic" (lowercase, hyphenated: petal-panic, NOT petal-panic). The state
 file is .squid-os/music-composer/petal-panic.json. It may already contain other tracks. You
 MUST append your new track to the existing tracks, never overwrite them. Read the current
 state file first to get existing tracks, then pass [existing... + your new track] to the

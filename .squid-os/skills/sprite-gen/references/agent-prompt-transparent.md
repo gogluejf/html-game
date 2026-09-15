@@ -35,7 +35,7 @@ CRITICAL BROWSER RULE: REUSE the already-open ChatGPT tab. Do NOT open a new bro
 IMPORTANT — RATE-LIMIT POPUP IS NON-BLOCKING: GPT often shows a "too many requests" popup BUT STILL GENERATES THE IMAGE underneath it. Do NOT treat the popup as a failure. After sending, poll for the image; if a new image appears in the chat, DOWNLOAD IT even if the popup is visible. Only wait 5 min and retry if NO new image appears after a reasonable time.
 
 SHEET (upload this): <SHEET>
-OUTPUT (save here if acceptable): /home/goglue/src/html-game/panic-petal/assets/transparent/<OUTNAME>
+OUTPUT (save here if acceptable): /home/goglue/src/html-game/petal-panic/assets/transparent/<OUTNAME>
 REGEN PROMPT SOURCE: /home/goglue/src/html-game/.squid-os/skills/sprite-gen/references/regen.md
 CLI: python3 /home/goglue/src/html-game/.squid-os/skills/sprite-gen/scripts/sprite_gen.py
 
