@@ -5249,7 +5249,8 @@
           "file": "petal-panic/assets/platforms_level4_sheet.png",
           "rows": 3,
           "cols": 3,
-          "description": "Platform tiles level 4 (3x3 grid)",
+          "description": "Dictator Carrot fortress platform tiles (stone blocks with carrot-crest shields, lanterns, bunting), 3x3 grid with props on top",
+          "size": "1536x1024",
           "entities": [
             {
               "row": [
@@ -5260,75 +5261,75 @@
               "name": "platforms_level4",
               "anim": "idle",
               "frames": [
-                "platforms_level4_f1.png",
-                "platforms_level4_f2.png",
-                "platforms_level4_f3.png",
-                "platforms_level4_f4.png",
-                "platforms_level4_f5.png",
-                "platforms_level4_f6.png",
-                "platforms_level4_f7.png",
-                "platforms_level4_f8.png",
-                "platforms_level4_f9.png"
+                "platforms_level4_idle_f1.png",
+                "platforms_level4_idle_f2.png",
+                "platforms_level4_idle_f3.png",
+                "platforms_level4_idle_f4.png",
+                "platforms_level4_idle_f5.png",
+                "platforms_level4_idle_f6.png",
+                "platforms_level4_idle_f7.png",
+                "platforms_level4_idle_f8.png",
+                "platforms_level4_idle_f9.png"
               ]
             }
           ],
           "crop": {
             "frames_dir": "petal-panic/assets/objects",
-            "pass": "/tmp/redo-platforms-level4-v1",
+            "pass": "/tmp/redo-platforms-level4-v18",
             "frames_bbox": {
-              "platforms_level4_f1.png": [
-                39,
-                71,
-                272,
-                256
+              "platforms_level4_idle_f1.png": [
+                30,
+                36,
+                293,
+                292
               ],
-              "platforms_level4_f2.png": [
-                385,
-                69,
-                393,
-                262
+              "platforms_level4_idle_f2.png": [
+                342,
+                35,
+                462,
+                288
               ],
-              "platforms_level4_f3.png": [
-                853,
-                68,
-                638,
-                258
+              "platforms_level4_idle_f3.png": [
+                812,
+                34,
+                711,
+                301
               ],
-              "platforms_level4_f4.png": [
-                40,
-                391,
-                271,
-                239
-              ],
-              "platforms_level4_f5.png": [
-                385,
-                378,
-                393,
-                258
-              ],
-              "platforms_level4_f6.png": [
-                854,
+              "platforms_level4_idle_f4.png": [
+                27,
                 367,
-                637,
-                265
+                295,
+                290
               ],
-              "platforms_level4_f7.png": [
-                39,
-                681,
-                272,
-                285
+              "platforms_level4_idle_f5.png": [
+                343,
+                365,
+                456,
+                292
               ],
-              "platforms_level4_f8.png": [
-                386,
-                632,
-                392,
+              "platforms_level4_idle_f6.png": [
+                817,
+                350,
+                704,
+                315
+              ],
+              "platforms_level4_idle_f7.png": [
+                25,
+                665,
+                298,
                 344
               ],
-              "platforms_level4_f9.png": [
-                854,
-                676,
-                657,
-                294
+              "platforms_level4_idle_f8.png": [
+                342,
+                665,
+                453,
+                344
+              ],
+              "platforms_level4_idle_f9.png": [
+                811,
+                665,
+                714,
+                344
               ]
             }
           }
@@ -6389,6 +6390,6 @@
       ]
     }
   },
-  "updated": "2026-09-15T01:25:18",
+  "updated": "2026-09-15T18:33:32",
   "sheets": {}
 }
