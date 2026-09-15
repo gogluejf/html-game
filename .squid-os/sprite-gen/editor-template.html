@@ -141,6 +141,26 @@
   input[type=number]:disabled ~ .arr{display:none;}
   .pair .cell input::-webkit-inner-spin-button,.pair .cell input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   .disabled-dim{opacity:.45;}
+
+  #helpBar{padding:8px 14px;border-top:1px solid var(--line);background:var(--bg2);display:flex;justify-content:flex-end;}
+  #helpBtn{font-size:11px;padding:7px 12px;}
+  #helpDialog{box-sizing:border-box;width:min(960px,94vw);max-height:90vh;padding:0;color:#e4eaf8;background:#101625;border:1px solid #354361;border-radius:20px;box-shadow:0 28px 100px #000a;font-family:system-ui,sans-serif;overflow:auto;}
+  #helpDialog::backdrop{background:#040813c9;backdrop-filter:blur(7px);}
+  .helpHead{padding:26px 28px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;}
+  .helpEyebrow{color:#3ef0ff;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+  .helpHead h2{margin:8px 0;font-size:26px;letter-spacing:-.7px;}
+  .helpHead p{margin:0;color:#9aaac5;font-size:13px;}
+  #helpClose{border:1px solid #354361;border-radius:10px;background:#1a2336;color:#dce6fa;font-size:23px;width:36px;height:36px;cursor:pointer;flex:none;}
+  .helpGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 28px 22px;}
+  .helpCard{border:1px solid #28344b;border-radius:13px;background:#151e30;padding:16px;}
+  .helpCard h3{margin:0 0 12px;color:#60dded;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;}
+  .helpItem{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #ffffff08;font-size:12px;line-height:1.4;}
+  .helpItem span{color:#cad5e8;}
+  .helpItem kbd{font-family:inherit;font-size:11px;color:#f5df85;background:#222d43;border:1px solid #39465e;border-bottom-width:2px;border-radius:5px;padding:3px 7px;white-space:nowrap;}
+  .helpFoot{padding:14px 28px;background:#0d1320;color:#91a3c1;font-size:12px;text-align:center;border-top:1px solid #28344b;}
+  #helpDialog :focus-visible,#helpBtn:focus-visible{outline:2px solid #3ef0ff;outline-offset:3px;}
+  @media(max-width:650px){.helpGrid{grid-template-columns:1fr;padding:0 16px 16px;}.helpHead{padding:20px 16px;}.helpHead h2{font-size:22px;}}
+
 </style>
 </head>
 <body>
@@ -255,13 +275,7 @@
       </div>
       <div id="finfo"></div>
     </div>
-    <div id="hint">
-      space play/pause &middot; &#8592;/&#8594; prev/next frame &middot; &#8593;/&#8595; prev/next sprite &middot; 1&ndash;9/0 jump to frame N (0=10) &middot; shift+arrow offset &#177;1 &middot; ctrl+arrow offset &#177;10 &middot; ctrl+H hide/restore all boxes<br>
-      M melee on/off &middot; Shift+S sprite box &middot; Shift+C collision &middot; Shift+M melee view &middot; Shift+F all frames &middot; Shift+A axes &middot; Shift+G grid &middot; Shift+P pivot &middot; Shift+L label<br>
-      zoom: mouse wheel / ctrl&#8722; / ctrl+ / bottom buttons &middot; hover a visible box: drag inside to move it &middot; corner handle resizes &middot; shift+corner scales both axes<br>
-      rotation: bottom rot controls (independent of frame anim) &middot; click canvas while rotating = pause + reset to 0&#176;<br>
-      undo/redo: top-right arrows or ctrl+Z / ctrl+Y (global — jumps back to the exact animation + frame you edited)
-    </div>
+    <div id="helpBar"><button id="helpBtn" class="tbtn" aria-haspopup="dialog" aria-controls="helpDialog">? &nbsp; HELP &amp; SHORTCUTS</button></div>
   </div>
   <div id="panel">
     <h2>Animation</h2>
@@ -339,6 +353,11 @@
     </div>
   </div>
 </div>
+<dialog id="helpDialog" aria-labelledby="helpTitle" aria-describedby="helpSummary">
+  <header class="helpHead"><div><div class="helpEyebrow">Sprite editor · quick reference</div><h2 id="helpTitle">Less hunting. More tuning.</h2><p id="helpSummary">Shortcuts follow button availability. Editing requires paused playback.</p></div><button id="helpClose" aria-label="Close help">×</button></header>
+  <div class="helpGrid"><section class="helpCard"><h3>Playback &amp; navigation</h3><div class="helpItem"><span>Play or pause animation</span><kbd>Space</kbd></div><div class="helpItem"><span>Previous or next frame</span><kbd>← / →</kbd></div><div class="helpItem"><span>Previous or next animation</span><kbd>↑ / ↓</kbd></div><div class="helpItem"><span>Jump directly to frames one through ten</span><kbd>1–9 / 0</kbd></div><div class="helpItem"><span>Decrease or increase playback speed</span><kbd>− / +</kbd></div><div class="helpItem"><span>Preview every frame in the filmstrip</span><kbd>FRAMES</kbd></div></section><section class="helpCard"><h3>Visibility &amp; clean preview</h3><div class="helpItem"><span>Toggle sprite boundary</span><kbd>Shift + S</kbd></div><div class="helpItem"><span>Toggle collision boundary</span><kbd>Shift + C</kbd></div><div class="helpItem"><span>Toggle melee boundaries</span><kbd>Shift + M</kbd></div><div class="helpItem"><span>Ghost all frames; edits affect every frame</span><kbd>Shift + F</kbd></div><div class="helpItem"><span>Toggle coordinate axes</span><kbd>Shift + A</kbd></div><div class="helpItem"><span>Toggle background grid</span><kbd>Shift + G</kbd></div><div class="helpItem"><span>Toggle pivot marker</span><kbd>Shift + P</kbd></div><div class="helpItem"><span>Toggle animation label</span><kbd>Shift + L</kbd></div><div class="helpItem"><span>Hide overlays; press again to restore</span><kbd>Ctrl + H</kbd></div></section><section class="helpCard"><h3>Collision &amp; frame editing</h3><div class="helpItem"><span>Enable or disable current frame’s melee box</span><kbd>M</kbd></div><div class="helpItem"><span>Move the hovered box</span><kbd>Drag inside</kbd></div><div class="helpItem"><span>Resize using an edge or corner</span><kbd>Drag handle</kbd></div><div class="helpItem"><span>Scale both axes together</span><kbd>Shift + corner drag</kbd></div><div class="helpItem"><span>Nudge frame offset while paused</span><kbd>Shift + arrows</kbd></div><div class="helpItem"><span>Edit exact box, offset, and scale values</span><kbd>Side panel</kbd></div><div class="helpItem"><span>Center pivot within the collision box</span><kbd>RECENTER PIVOT</kbd></div><div class="helpItem"><span>Align frames to the left-bottom origin</span><kbd>LEFT ↓ BOTTOM</kbd></div><div class="helpItem"><span>Center frames on the origin</span><kbd>CENTER</kbd></div></section><section class="helpCard"><h3>View &amp; utilities</h3><div class="helpItem"><span>Pan by dragging empty canvas space</span><kbd>Drag background</kbd></div><div class="helpItem"><span>Zoom around the pointer</span><kbd>Mouse wheel</kbd></div><div class="helpItem"><span>Zoom out or in</span><kbd>Ctrl + − / +</kbd></div><div class="helpItem"><span>Reset zoom and center the view</span><kbd>Ctrl + 0</kbd></div><div class="helpItem"><span>Rotate independently using bottom controls</span><kbd>Rotation controls</kbd></div><div class="helpItem"><span>Choose background using presets or custom colors</span><kbd>Color picker</kbd></div><div class="helpItem"><span>Undo; return to the edited animation</span><kbd>Ctrl + Z</kbd></div><div class="helpItem"><span>Redo the last undone edit</span><kbd>Ctrl + Y</kbd></div><div class="helpItem"><span>Reset frame, animation, or factory settings</span><kbd>RESET</kbd></div><div class="helpItem"><span>Save edits automatically in this browser</span><kbd>Auto-save</kbd></div></section></div>
+  <footer class="helpFoot">Click anywhere or press Escape to close · Shortcuts stay inactive while typing</footer>
+</dialog>
 <script>
 const MANIFEST = /*__MANIFEST__*/null;
 const COL_COLL='#3ef0ff', COL_MELEE='#ff9d2e', COL_SCALE='#b47bff';
@@ -1831,7 +1850,16 @@ window.addEventListener('pointercancel', endDrag);
 cv.addEventListener('pointerleave', ()=>{ if (hover){ hover = null; draw(); cv.style.cursor='default'; } });
 window.addEventListener('blur', ()=>{ if (hover || drag){ hover = null; drag = null; draw(); cv.style.cursor='default'; } });
 // ---------- keyboard ----------
+// Native modal blocks underlying clicks and restores focus on dismissal.
+const helpDialog = $('helpDialog');
+$('helpBtn').addEventListener('click', ()=>helpDialog.showModal());
+helpDialog.addEventListener('click', ()=>helpDialog.close());
+helpDialog.addEventListener('close', ()=>$('helpBtn').focus());
 window.addEventListener('keydown', e=>{
+  if (helpDialog.open){
+    if (e.key==='Escape'){ e.preventDefault(); helpDialog.close(); }
+    return;
+  }
   if (!cur || !cur.st) return;
   // undo / redo (works even when a box is focused, but not while typing in inputs)
   const tag = (e.target.tagName||'').toLowerCase();
