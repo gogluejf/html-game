@@ -5358,22 +5358,22 @@
             "pass": "petal-panic/assets/objects",
             "frames_bbox": {
               "platforms_level1_idle_f10.png": [
-                30,
-                231,
-                428,
-                267
+                20,
+                162,
+                305,
+                191
               ],
               "platforms_level1_idle_f11.png": [
-                504,
-                230,
-                617,
-                284
+                356,
+                162,
+                438,
+                203
               ],
               "platforms_level1_idle_f12.png": [
-                1164,
-                229,
-                977,
-                269
+                822,
+                161,
+                693,
+                192
               ]
             }
           },
@@ -5403,22 +5403,22 @@
             "pass": "petal-panic/assets/objects",
             "frames_bbox": {
               "platforms_level2_idle_f10.png": [
-                30,
-                244,
-                439,
-                240
+                20,
+                171,
+                313,
+                172
               ],
               "platforms_level2_idle_f11.png": [
-                535,
-                244,
-                694,
-                245
+                377,
+                171,
+                494,
+                176
               ],
               "platforms_level2_idle_f12.png": [
-                1283,
-                243,
-                863,
-                241
+                906,
+                170,
+                613,
+                173
               ]
             }
           },
@@ -5448,22 +5448,22 @@
             "pass": "petal-panic/assets/objects",
             "frames_bbox": {
               "platforms_level3_idle_f10.png": [
-                33,
-                247,
-                474,
-                250
+                22,
+                174,
+                338,
+                179
               ],
               "platforms_level3_idle_f11.png": [
-                564,
-                247,
-                635,
-                258
+                398,
+                173,
+                451,
+                186
               ],
               "platforms_level3_idle_f12.png": [
-                1261,
-                247,
-                882,
-                260
+                891,
+                173,
+                626,
+                187
               ]
             }
           },
@@ -5493,22 +5493,22 @@
             "pass": "petal-panic/assets/objects",
             "frames_bbox": {
               "platforms_level4_idle_f10.png": [
-                32,
-                178,
-                406,
-                379
+                21,
+                125,
+                290,
+                270
               ],
               "platforms_level4_idle_f11.png": [
-                484,
-                178,
-                700,
-                391
+                341,
+                125,
+                498,
+                278
               ],
               "platforms_level4_idle_f12.png": [
-                1246,
-                178,
-                897,
-                390
+                880,
+                124,
+                637,
+                279
               ]
             }
           },
@@ -5525,7 +5525,12 @@
             {
               "row": 1,
               "name": "blocks_level1",
-              "anim": "idle (naked block tiles, small/medium/large)"
+              "anim": "idle (naked block tiles, small/medium/large)",
+              "frames": [
+                "blocks_level1_idle_f4.png",
+                "blocks_level1_idle_f5.png",
+                "blocks_level1_idle_f6.png"
+              ]
             }
           ],
           "crop": {
@@ -5564,7 +5569,12 @@
             {
               "row": 1,
               "name": "blocks_level2",
-              "anim": "idle (naked block tiles, small/medium/large)"
+              "anim": "idle (naked block tiles, small/medium/large)",
+              "frames": [
+                "blocks_level2_idle_f4.png",
+                "blocks_level2_idle_f5.png",
+                "blocks_level2_idle_f6.png"
+              ]
             }
           ],
           "crop": {
@@ -5603,7 +5613,12 @@
             {
               "row": 1,
               "name": "blocks_level3",
-              "anim": "idle (naked block tiles, small/medium/large)"
+              "anim": "idle (naked block tiles, small/medium/large)",
+              "frames": [
+                "blocks_level3_idle_f4.png",
+                "blocks_level3_idle_f5.png",
+                "blocks_level3_idle_f6.png"
+              ]
             }
           ],
           "crop": {
@@ -5642,7 +5657,12 @@
             {
               "row": 1,
               "name": "blocks_level4",
-              "anim": "idle (naked block tiles, small/medium/large)"
+              "anim": "idle (naked block tiles, small/medium/large)",
+              "frames": [
+                "blocks_level4_idle_f4.png",
+                "blocks_level4_idle_f5.png",
+                "blocks_level4_idle_f6.png"
+              ]
             }
           ],
           "crop": {
@@ -6902,6 +6922,6 @@
       ]
     }
   },
-  "updated": "2026-09-15T19:42:12",
+  "updated": "2026-09-15T19:44:13",
   "chat_url": "null"
 }
