@@ -596,18 +596,27 @@ async function selectEntity(li, ei, opts){
   requestAnimationFrame(()=>{ resizeCanvas(); draw(); });
 }
 // ---------- geometry: sprite space origin (0,0) at view center + pan, +y down ----------
+let cssW = 1, cssH = 1;   // canvas size in CSS px (layout math uses these, not cv.width which is device px)
 function resizeCanvas(){
   const r = cv.getBoundingClientRect();
-  cv.width = Math.max(1, Math.round(r.width));
-  cv.height = Math.max(1, Math.round(r.height));
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cssW = Math.max(1, Math.round(r.width));
+  cssH = Math.max(1, Math.round(r.height));
+  // Size the backing store in DEVICE pixels and scale the context by dpr so we
+  // draw at true resolution. Without this, on Retina displays the low-res buffer
+  // is GPU-upscaled and semi-transparent box fills resample/blend across frames,
+  // accumulating toward solid white the more you edit.
+  cv.width = Math.max(1, Math.round(cssW * dpr));
+  cv.height = Math.max(1, Math.round(cssH * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 // screen(px) <-> sprite-space. Origin (0,0) maps to canvas center + pan.
 // When rotation is active, c2s inverse-rotates around the pivot so that
 // hit-testing and drag math work in the unrotated (local) frame.
-function s2c(x, y){ return [ cv.width/2 + (x - panX)*zoom, cv.height/2 + (y - panY)*zoom ]; }
+function s2c(x, y){ return [ cssW/2 + (x - panX)*zoom, cssH/2 + (y - panY)*zoom ]; }
 function c2s(x, y){
-  let sx = (x - cv.width/2)/zoom + panX;
-  let sy = (y - cv.height/2)/zoom + panY;
+  let sx = (x - cssW/2)/zoom + panX;
+  let sy = (y - cssH/2)/zoom + panY;
   // inverse-rotate around pivot if rotation is active
   if (cur && cur.st && cur.st.rot && cur.st.rot.angle !== 0 && cur.st.pivot){
     const rad = cur.st.rot.angle * Math.PI / 180;
@@ -621,11 +630,11 @@ function c2s(x, y){
 function evPos(e){ const r = cv.getBoundingClientRect(); return [ e.clientX - r.left, e.clientY - r.top ]; }
 function setZoom(nz, cx, cy){
   nz = Math.max(.05, Math.min(32, nz));
-  if (cx === undefined){ cx = cv.width/2; cy = cv.height/2; }   // zoom about center by default
+  if (cx === undefined){ cx = cssW/2; cy = cssH/2; }   // zoom about center by default
   const [wx, wy] = c2s(cx, cy);   // keep the sprite point under the cursor fixed
   zoom = nz;
-  panX = wx - (cx - cv.width/2)/zoom;
-  panY = wy - (cy - cv.height/2)/zoom;
+  panX = wx - (cx - cssW/2)/zoom;
+  panY = wy - (cy - cssH/2)/zoom;
   userZoomed = true;              // manual zoom: stop auto-fitting on future selects
   $('zoomval').textContent = Math.round(zoom*100)+'%';
   draw();
@@ -696,8 +705,14 @@ function gridStep(){
 function draw(){
   if (!cur || !cur.st) return;
   const st = cur.st;
+  // Clear the FULL canvas at identity transform, then apply dpr for drawing.
+  // This guarantees no residual content from previous frames accumulates.
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, cv.width, cv.height);
+  // Now apply dpr scaling for all subsequent drawing (which uses CSS-pixel coords)
+  const dpr = Math.min(2, window.devicePixelRatio||1);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   // ---------- full-screen grid + shared origin coords ----------
   const step = gridStep();
   const [ox, oy] = s2c(0, 0);   // where sprite origin (0,0) lands on screen
@@ -707,17 +722,17 @@ function draw(){
     ctx.strokeStyle = 'rgba(30,40,70,.5)';
     ctx.beginPath();
     let gx = ox % (step*zoom); if (gx < 0) gx += step*zoom;
-    for (let x=gx; x<cv.width; x+=step*zoom){ ctx.moveTo(x+.5,0); ctx.lineTo(x+.5,cv.height); }
+    for (let x=gx; x<cssW; x+=step*zoom){ ctx.moveTo(x+.5,0); ctx.lineTo(x+.5,cssH); }
     let gy = oy % (step*zoom); if (gy < 0) gy += step*zoom;
-    for (let y=gy; y<cv.height; y+=step*zoom){ ctx.moveTo(0,y+.5); ctx.lineTo(cv.width,y+.5); }
+    for (let y=gy; y<cssH; y+=step*zoom){ ctx.moveTo(0,y+.5); ctx.lineTo(cssW,y+.5); }
     ctx.stroke();
   }
   // ---------- axes through origin ----------
   if (show.axes){
     ctx.strokeStyle = 'rgba(90,106,144,.8)'; ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(ox,0); ctx.lineTo(ox,cv.height);
-    ctx.moveTo(0,oy); ctx.lineTo(cv.width,oy);
+    ctx.moveTo(ox,0); ctx.lineTo(ox,cssH);
+    ctx.moveTo(0,oy); ctx.lineTo(cssW,oy);
     ctx.stroke();
     ctx.fillStyle = 'rgba(150,170,210,.9)'; ctx.font = '11px Courier New';
     ctx.fillText('0,0', ox+4, oy-4);
@@ -769,7 +784,10 @@ function draw(){
     if (playing){
       const [x, y] = s2c(b.rect.x, b.rect.y);
       ctx.save();
-      ctx.fillStyle = hexA(b.color, .1);
+      // Uniform neutral fill so all boxes read at the same visual weight while
+      // playing (a bright color like cyan at equal alpha looks far more opaque
+      // than a dark one). Color identity stays in the border only.
+      ctx.fillStyle = 'rgba(255,255,255,.06)';
       ctx.fillRect(x, y, b.rect.w*zoom, b.rect.h*zoom);
       ctx.strokeStyle = b.color;
       ctx.lineWidth = 2;
@@ -793,7 +811,7 @@ function draw(){
     ctx.font = 'bold 26px Courier New';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    const tx = cv.width/2, ty = 14;
+    const tx = cssW/2, ty = 14;
     ctx.lineJoin = 'round';
     ctx.lineWidth = 6;
     ctx.strokeStyle = 'rgba(7,9,18,.9)';
@@ -1439,7 +1457,7 @@ cv.addEventListener('wheel', e=>{
   setZoom(zoom*factor, cx, cy);      // zoom about the cursor
 }, { passive:false });
 // keep canvas backing store in sync with its CSS size (full-bleed stage); don't re-fit
-new ResizeObserver(()=>{ if (cv.width !== Math.round(cv.getBoundingClientRect().width) || cv.height !== Math.round(cv.getBoundingClientRect().height)){ resizeCanvas(); draw(); } }).observe(cv);
+new ResizeObserver(()=>{ if (cssW !== Math.round(cv.getBoundingClientRect().width) || cssH !== Math.round(cv.getBoundingClientRect().height)){ resizeCanvas(); draw(); } }).observe(cv);
 // ---------- undo / redo controls ----------
 $('undoBtn').addEventListener('click', doUndo);
 $('redoBtn').addEventListener('click', doRedo);
@@ -1459,9 +1477,9 @@ function resizeBox(box, anchorId, sx, sy, orig, keepRatio){
 }
 // ---------- hover detection (unified for all boxes) ----------
 function bringToFront(key){
-  const i = boxZOrder.indexOf(key);
-  if (i > 0) boxZOrder.splice(i, 1);   // remove from current position
-  boxZOrder.unshift(key);               // move to front
+  // Remove every prior occurrence, including index 0, before moving to front.
+  // Duplicate entries draw the same translucent fill repeatedly.
+  boxZOrder = [key, ...boxZOrder.filter(k => k !== key)];
 }
 function boxList(){
   const st = cur.st, fi = curFrameIdx(), im = cur.imgs[fi];
