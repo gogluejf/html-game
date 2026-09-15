@@ -399,7 +399,7 @@ function syncUndoButtons(){
   if (u) u.disabled = !undoStack.length;
   if (r) r.disabled = !redoStack.length;
 }
-let show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false };
+let show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false, grid:true };
 let bgColor = '#000000';   // canvas background fill
 let isPlaying = true;      // global play/pause, carried across animations
 // ---------- localStorage persistence ----------
@@ -697,6 +697,7 @@ function draw(){
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, cv.width, cv.height);
   // ---------- full-screen grid ----------
+  if (show.grid){
   const step = gridStep();
   const [ox, oy] = s2c(0, 0);   // where sprite origin (0,0) lands on screen
   ctx.lineWidth = 1;
@@ -708,6 +709,7 @@ function draw(){
   let gy = oy % (step*zoom); if (gy < 0) gy += step*zoom;
   for (let y=gy; y<cv.height; y+=step*zoom){ ctx.moveTo(0,y+.5); ctx.lineTo(cv.width,y+.5); }
   ctx.stroke();
+  }
   // ---------- axes through origin ----------
   if (show.axes){
     ctx.strokeStyle = 'rgba(90,106,144,.8)'; ctx.lineWidth = 1.5;
@@ -1309,7 +1311,7 @@ function factoryReset(){
   try{ localStorage.removeItem(LS_KEY); }catch(e){}
   S.clear();                                  // drop all per-entity editor state
   undoStack.length = 0; redoStack.length = 0; // clear history
-  show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false };
+  show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false, grid:true };
   isPlaying = true;
   bgColor = '#000000';
   document.documentElement.style.setProperty('--film-bg', bgColor);
@@ -1833,7 +1835,7 @@ window.addEventListener('keydown', e=>{
   // the buttons back as they were on the next press).
   if ((e.ctrlKey||e.metaKey) && e.code==='KeyH'){
     e.preventDefault();
-    const HIDDEN_KEYS = ['collision','meleeView','axes','spriteView','pivot'];
+    const HIDDEN_KEYS = ['collision','meleeView','axes','spriteView','pivot','grid'];
     if (!window._hideSnapshot){
       window._hideSnapshot = {};
       for (const k of HIDDEN_KEYS){ window._hideSnapshot[k] = show[k]; show[k] = false; }
