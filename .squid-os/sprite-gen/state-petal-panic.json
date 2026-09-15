@@ -6,7 +6,7 @@
       "path": "petal-panic/assets/heroes",
       "sheets": [
         {
-          "file": "petal-panic/assets/scarlet_vale_sheet_1.png",
+          "file": "petal-panic/assets/scarlet_vale_sheet.png",
           "rows": 3,
           "cols": 5,
           "description": "Scarlet Vale hero, 3 actions x 5 frames",
@@ -146,7 +146,7 @@
           }
         },
         {
-          "file": "petal-panic/assets/balthazar_sheet_1.png",
+          "file": "petal-panic/assets/balthazar_sheet.png",
           "rows": 3,
           "cols": 5,
           "description": "Balthazar tiger ringmaster hero, 3 actions x 5 frames",
@@ -1282,7 +1282,7 @@
       "path": "petal-panic/assets/enemies",
       "sheets": [
         {
-          "file": "petal-panic/assets/jester_sheet_1.png",
+          "file": "petal-panic/assets/jester_sheet.png",
           "rows": 2,
           "cols": 5,
           "description": "Jester skull-clown enemy, 2 actions x 5 frames",
@@ -2755,7 +2755,7 @@
           }
         },
         {
-          "file": "petal-panic/assets/doodle_dink_sheet_1.png",
+          "file": "petal-panic/assets/doodle_dink_sheet.png",
           "rows": 3,
           "cols": 5,
           "description": "Doodle Dink striped jester \u2014 teleport, tomato_throw, headbutt",
@@ -3127,7 +3127,7 @@
           }
         },
         {
-          "file": "petal-panic/assets/ratchet_rumbelow_sheet_1.png",
+          "file": "petal-panic/assets/ratchet_rumbelow_sheet.png",
           "rows": 2,
           "cols": 3,
           "description": "Ratchet Rumbelow boss, sheet 1/5 \u2014 6 frames (earthquake x2 rows)",
@@ -3611,7 +3611,7 @@
           }
         },
         {
-          "file": "petal-panic/assets/dictator_carrot_sheet_1.png",
+          "file": "petal-panic/assets/dictator_carrot_sheet.png",
           "rows": 3,
           "cols": 5,
           "description": "Dictator Carrot final boss (carrot-bodied dictator on red scooter), 3 actions x 5 frames (idle, charge, attack)",
@@ -5339,7 +5339,7 @@
       "path": "petal-panic/assets/powerups",
       "sheets": [
         {
-          "file": "petal-panic/assets/powerups_sheet_1.png",
+          "file": "petal-panic/assets/powerups_sheet.png",
           "rows": 5,
           "cols": 4,
           "description": "Wooden signboard powerup sprites, 5 types x 4 frames (NORMAL/INFLATE/PEAK/DEFLATE)",
@@ -5722,7 +5722,7 @@
       "path": "petal-panic/assets/projectiles",
       "sheets": [
         {
-          "file": "petal-panic/assets/projectile_sheet_1.png",
+          "file": "petal-panic/assets/projectile_sheet.png",
           "rows": 3,
           "cols": 8,
           "description": "Projectiles: thorn missile w/ petal trail (row1), bomb fuse + explosion burst (row2), spinning petal saw (row3); 3 rows x 8 frames",

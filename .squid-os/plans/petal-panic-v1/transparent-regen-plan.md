@@ -36,19 +36,19 @@ Regenerate every multi-frame sprite sheet as a **clean, fully transparent PNG** 
 
 | # | File | Category | Status | Note |
 |---|------|----------|--------|------|
-| 1 | scarlet_vale_sheet_1.png | heroes | ✅ | done 2026-09-13 |
+| 1 | scarlet_vale_sheet.png | heroes | ✅ | done 2026-09-13 |
 | 2 | scarlet_vale_sheet_2.png | heroes | ✅ | done 2026-09-13 |
 | 3 | scarlet_vale_sheet_3.png | heroes | ✅ | done 2026-09-13 |
 | 4 | scarlet_vale_sheet_4.png | heroes | ✅ | done 2026-09-13 |
 | 5 | scarlet_vale_sheet_5.png | heroes | ✅ | done 2026-09-13 (2 recalls) |
 | 6 | scarlet_vale_sheet_6.png | heroes | ✅ | done 2026-09-13 |
-| 7 | balthazar_sheet_1.png | heroes | ✅ | done 2026-09-13 (edge fringe, accepted) |
+| 7 | balthazar_sheet.png | heroes | ✅ | done 2026-09-13 (edge fringe, accepted) |
 | 8 | balthazar_sheet_2.png | heroes | ✅ | done 2026-09-13 (recovered from /tmp) |
 | 9 | balthazar_sheet_3.png | heroes | ✅ | done 2026-09-13 |
 | 10 | balthazar_sheet_4.png | heroes | ✅ | done 2026-09-13 |
 | 11 | balthazar_sheet_5.png | heroes | ✅ | done 2026-09-13 |
 | 12 | balthazar_sheet_6.png | heroes | ✅ | done 2026-09-13 |
-| 13 | jester_sheet_1.png | enemies | ✅ | done 2026-09-13 |
+| 13 | jester_sheet.png | enemies | ✅ | done 2026-09-13 |
 | 14 | jester_sheet_2.png | enemies | ✅ | done 2026-09-13 |
 | 15 | jackolantern_sheet.png | enemies | ✅ | done 2026-09-13 |
 | 16 | vine_hound_sheet.png | enemies | ✅ | done 2026-09-13 (ACCEPTED: row2c3 attack lunge overflows — trim on crop) |
@@ -58,22 +58,22 @@ Regenerate every multi-frame sprite sheet as a **clean, fully transparent PNG** 
 | 20 | ratzo_ringleader_sheet.png | enemies | ✅ | done 2026-09-13 |
 | 21 | toadstool_tilly_sheet.png | enemies | ✅ | done 2026-09-13 (recovered from /tmp) |
 | 22 | gustav_grapplersnout_sheet.png | enemies | ✅ | done 2026-09-13 |
-| 23 | doodle_dink_sheet_1.png | enemies | ✅ | done 2026-09-13 |
+| 23 | doodle_dink_sheet.png | enemies | ✅ | done 2026-09-13 |
 | 24 | doodle_dink_sheet_2.png | enemies | ✅ | done 2026-09-13 |
 | 25 | tusko_wobble_sheet.png | boss | ✅ | done 2026-09-13 |
-| 26 | ratchet_rumbelow_sheet_1.png | boss | ✅ | done 2026-09-13 |
+| 26 | ratchet_rumbelow_sheet.png | boss | ✅ | done 2026-09-13 |
 | 27 | ratchet_rumbelow_sheet_2.png | boss | ✅ | done 2026-09-13 (1 recall) |
 | 28 | ratchet_rumbelow_sheet_3.png | boss | ✅ | done 2026-09-13 |
 | 29 | ratchet_rumbelow_sheet_4.png | boss | ✅ | done 2026-09-13 |
 | 30 | ratchet_rumbelow_sheet_5.png | boss | ✅ | done 2026-09-13 (1 recall) |
 | 31 | grim_vertigo_sheet.png | boss | ✅ | done 2026-09-13 (1 recall) |
-| 32 | dictator_carrot_sheet_1.png | boss | ✅ | done 2026-09-13 |
+| 32 | dictator_carrot_sheet.png | boss | ✅ | done 2026-09-13 |
 | 33 | dictator_carrot_sheet_2.png | boss | ✅ | done 2026-09-13 |
 | 34 | dictator_carrot_sheet_3.png | boss | ✅ | done 2026-09-13 |
 | 35 | dictator_carrot_sheet_4.png | boss | ✅ | done 2026-09-13 |
-| 36 | powerups_sheet_1.png | powerups | ✅ | done 2026-09-13 |
+| 36 | powerups_sheet.png | powerups | ✅ | done 2026-09-13 |
 | 37 | powerups_sheet_2.png | powerups | ✅ | done 2026-09-13 |
-| 38 | projectile_sheet_1.png | projectiles | ✅ | done 2026-09-13 |
+| 38 | projectile_sheet.png | projectiles | ✅ | done 2026-09-13 |
 | 39 | projectile_sheet_2.png | projectiles | ✅ | done 2026-09-13 |
 | 40 | projectile_sheet_3.png | projectiles | ✅ | done 2026-09-13 |
 | 41 | projectile_sheet_4.png | projectiles | ✅ | done 2026-09-13 |

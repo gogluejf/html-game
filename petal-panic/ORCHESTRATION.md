@@ -17,28 +17,28 @@ You are the orchestrator. You do NOT crop, validate, or compose yourself. You de
 
 | Sheet | Entity | Label | State Name |
 |-------|--------|-------|------------|
-| `scarlet_vale_sheet_1-6.png` | scarlet_vale | heroes | scarlet_vale |
-| `balthazar_sheet_1-6.png` | balthazar | heroes | balthazar |
-| `jester_sheet_1-2.png` | jester | enemies | jester |
+| `scarlet_vale_sheet, _2-7.png` | scarlet_vale | heroes | scarlet_vale |
+| `balthazar_sheet, _2-7.png` | balthazar | heroes | balthazar |
+| `jester_sheet, _2.png` | jester | enemies | jester |
 | `jackolantern_sheet.png` | jackolantern | enemies | jackolantern |
 | `vine_hound_sheet.png` | vine_hound | enemies | vine_hound |
 | `boris_loon_sheet.png` | boris_loon | enemies | boris_loon |
 | `boris_loon_baby_sheet.png` | boris_loon_baby | enemies | boris_loon_baby |
 | `violetta_marionetta_sheet.png` | violetta_marionetta | enemies | violetta_marionetta |
 | `overgrown_elephant_sheet.png` | overgrown_elephant | boss | overgrown_elephant |
-| `projectile_sheet_1.png` | projectile_1 | projectiles | projectile_1 |
+| `projectile_sheet.png` | projectile_1 | projectiles | projectile_1 |
 
 ### Upcoming Crops (new — Sep 13)
 
 | Sheet | Entity | Label | State Name | Notes |
 |-------|--------|-------|------------|-------|
-| `ratchet_rumbelow_sheet_1-5.png` | ratchet_rumbelow | boss | ratchet_rumbelow | Boss — 5 sheets |
+| `ratchet_rumbelow_sheet, _2-5.png` | ratchet_rumbelow | boss | ratchet_rumbelow | Boss — 5 sheets |
 | `grim_vertigo_sheet.png` | grim_vertigo | boss | grim_vertigo | Mid-boss carousel — 4 rows × 4 cols (idle, angry, attack, death) |
-| `dictator_carrot_sheet_1-4.png` | dictator_carrot | boss | dictator_carrot | Final boss — 4 sheets, 3×5 grid each |
+| `dictator_carrot_sheet, _2-4.png` | dictator_carrot | boss | dictator_carrot | Final boss — 4 sheets, 3×5 grid each |
 | `ratzo_ringleader_sheet.png` | ratzo_ringleader | enemies | ratzo_ringleader | Clown rat — 4×5 grid |
 | `toadstool_tilly_sheet.png` | toadstool_tilly | enemies | toadstool_tilly | Clown mushroom — 4×5 grid (idle, spore, ground eruption, death) |
 | `gustav_grapplersnout_sheet.png` | gustav_grapplersnout | enemies | gustav_grapplersnout | Strongman caterpillar — 4×5 grid (crawl, dumbbell throw, ground punch, death) |
-| `doodle_dink_sheet_1.png` | doodle_dink | enemies | doodle_dink_1 | Striped jester attacks — 3×5 grid (teleport, tomato throw, headbutt) |
+| `doodle_dink_sheet.png` | doodle_dink | enemies | doodle_dink_1 | Striped jester attacks — 3×5 grid (teleport, tomato throw, headbutt) |
 | `doodle_dink_sheet_2.png` | doodle_dink | enemies | doodle_dink_2 | Death dissolve — 1×5 strip |
 | `projectile_sheet_2.png` | projectile_2 | projectiles | projectile_2 | Spinning dumbbell — 1×5 strip |
 | `projectile_sheet_3.png` | projectile_3 | projectiles | projectile_3 | Tomato/carrot/pea — 3×8 grid |
@@ -83,20 +83,20 @@ For single images, use the same pattern but add: `rows=1 cols=1, no crop needed,
 
 ### Crop Order (upcoming)
 
-1. `ratchet_rumbelow_sheet_1.png` → `boss/ratchet_rumbelow_`
+1. `ratchet_rumbelow_sheet.png` → `boss/ratchet_rumbelow_`
 2. `ratchet_rumbelow_sheet_2.png` → `boss/ratchet_rumbelow_`
 3. `ratchet_rumbelow_sheet_3.png` → `boss/ratchet_rumbelow_`
 4. `ratchet_rumbelow_sheet_4.png` → `boss/ratchet_rumbelow_`
 5. `ratchet_rumbelow_sheet_5.png` → `boss/ratchet_rumbelow_`
 6. `grim_vertigo_sheet.png` → `boss/grim_vertigo_`
-7. `dictator_carrot_sheet_1.png` → `boss/dictator_carrot_`
+7. `dictator_carrot_sheet.png` → `boss/dictator_carrot_`
 8. `dictator_carrot_sheet_2.png` → `boss/dictator_carrot_`
 9. `dictator_carrot_sheet_3.png` → `boss/dictator_carrot_`
 10. `dictator_carrot_sheet_4.png` → `boss/dictator_carrot_`
 11. `ratzo_ringleader_sheet.png` → `enemies/ratzo_ringleader_`
 12. `toadstool_tilly_sheet.png` → `enemies/toadstool_tilly_`
 13. `gustav_grapplersnout_sheet.png` → `enemies/gustav_grapplersnout_`
-14. `doodle_dink_sheet_1.png` → `enemies/doodle_dink_`
+14. `doodle_dink_sheet.png` → `enemies/doodle_dink_`
 15. `doodle_dink_sheet_2.png` → `enemies/doodle_dink_`
 16. `projectile_sheet_2.png` → `projectiles/projectile_2_`
 17. `projectile_sheet_3.png` → `projectiles/projectile_3_`

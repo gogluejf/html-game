@@ -168,7 +168,7 @@ HARD RULES:
 CONTEXT: these sheets have glow/vines bleeding between rows, so auto row-detection fails. USE THE PROVIDED --row-y BANDS. Do not brute-force alpha thresholds.
 
 PROCESS THESE SHEETS (install both to petal-panic/assets/powerups/):
-1. petal-panic/assets/powerups_sheet_1.png
+1. petal-panic/assets/powerups_sheet.png
    Command flags: --rows 4,4,4,4,4 --names tmp --actions r1,r2,r3,r4,r5 --margin 8 --row-y 0-177,177-324,324-464,464-611,611-793 --json ...
    Row entities top→bottom: scarlet_1up, balthazar_1up, rapid_fire, invincibility, panic_clear
    Target files: scarlet_1up_f1..f4.png, balthazar_1up_f1..f4.png, rapid_fire_f1..f4.png, invincibility_f1..f4.png, panic_clear_f1..f4.png (NO action word in filenames)
@@ -205,7 +205,7 @@ One agent batch (or two of 4):
 | doodle_dink_sheet_2.png | doodle_dink | 1 row, 5 frames | death | enemies/ |
 | tusko_wobble_sheet.png | tusko_wobble | 5,4,4,5 (stomp=4, trunk_blast=4 — cleaned sheet) | charge,stomp,trunk_blast,death | boss/ |
 | projectile_sheet_2.png | projectile_2 | 1 row, 5 frames | spin | projectiles/ |
-| powerups_sheet_1.png | per-row (see B) | 4,4,4,4,4 + --row-y | idle×5 | powerups/ |
+| powerups_sheet.png | per-row (see B) | 4,4,4,4,4 + --row-y | idle×5 | powerups/ |
 | powerups_sheet_2.png | per-row (see B) | 4,4,4,4,4 + --row-y | idle×5 | powerups/ |
 (Powerups params are in section B — same batch or separate agent, orchestrator's choice.)
 
@@ -218,7 +218,7 @@ normalize anim to the single word. (Ratchet's recorded state entries show the en
 Source art has glow/vines bleeding between rows → auto row-detection fails. Measured bands:
 | Sheet | --row-y | Entities per row (top→bottom) | Target filenames |
 |---|---|---|---|
-| powerups_sheet_1.png | 0-177,177-324,324-464,464-611,611-793 | scarlet_1up,balthazar_1up,rapid_fire,invincibility,panic_clear | `<entity>_f1..f4.png` |
+| powerups_sheet.png | 0-177,177-324,324-464,464-611,611-793 | scarlet_1up,balthazar_1up,rapid_fire,invincibility,panic_clear | `<entity>_f1..f4.png` |
 | powerups_sheet_2.png | 0-157,157-308,308-459,459-607,607-793 | energy,bomb,petal_saw,thorn_missile,shield | `<entity>_f1..f4.png` |
 
 Target filenames have NO action word (game code uses `<entity>_fN.png`).
@@ -292,7 +292,7 @@ Report results to the user. STOP. Do not commit.
 - **Glow-heavy sheets** (powerups): auto row detection fails → use --row-y with measured bands (section B values).
 - **2-grid-row single animations** (ratchet, sheet_6 heroes): --rows N,N with action duplicated, then rename to sequential f1..fN.
 - **Per-row different entities** (powerups, coins, projectiles): CLI takes one --names for all rows → placeholder name, mv outputs to real names.
-- **Split rows** (projectile_sheet_1 row2 = bomb×4 + boom×4): extract as 8, rename halves.
+- **Split rows** (projectile_sheet row2 = bomb×4 + boom×4): extract as 8, rename halves.
 - **Stale leftovers:** after re-crops with FEWER frames, always rm the extra old _fN files.
 - **Agent rabbit holes:** a previous agent burned 20+ calls re-inspecting one corner pixel. "max 3 passes, never re-inspect same frame twice" exists because of that.
 - **Empty crops:** high --alpha-threshold erases soft-glow sprites → if frames come out empty (fg%=0), LOWER threshold or use --row-y. Never brute-force threshold sequences.
