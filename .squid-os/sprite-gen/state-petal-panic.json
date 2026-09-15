@@ -5493,6 +5493,162 @@
             }
           },
           "generated_in_chat": "https://chatgpt.com/c/6aa9cf38-a92c-83e9-873c-22178a46c496"
+        },
+        {
+          "file": "petal-panic/assets/blocks_level1_sheet_2.png",
+          "size": "1536x1024",
+          "rows": 1,
+          "cols": 3,
+          "cell": 512,
+          "description": "Level 1 naked blocks \u2014 one row of 3 stacked-block tiles, empty top surface (no props), generated via ChatGPT upload+regen",
+          "entities": [
+            {
+              "row": 1,
+              "name": "blocks_level1",
+              "anim": "static naked block tiles (small/medium/large)"
+            }
+          ],
+          "crop": {
+            "frames_dir": "petal-panic/assets/objects",
+            "pass": "petal-panic/assets/objects",
+            "frames_bbox": {
+              "blocks_level1_idle_f1.png": [
+                38,
+                609,
+                463,
+                270
+              ],
+              "blocks_level1_idle_f2.png": [
+                532,
+                422,
+                456,
+                443
+              ],
+              "blocks_level1_idle_f3.png": [
+                1011,
+                229,
+                483,
+                650
+              ]
+            }
+          }
+        },
+        {
+          "file": "petal-panic/assets/blocks_level2_sheet_2.png",
+          "size": "1536x1024",
+          "rows": 1,
+          "cols": 3,
+          "cell": 512,
+          "description": "Level 2 naked blocks \u2014 one row of 3 stacked-block tiles, empty top surface (no props), generated via ChatGPT upload+regen",
+          "entities": [
+            {
+              "row": 1,
+              "name": "blocks_level2",
+              "anim": "static naked block tiles (small/medium/large)"
+            }
+          ],
+          "crop": {
+            "frames_dir": "petal-panic/assets/objects",
+            "pass": "petal-panic/assets/objects",
+            "frames_bbox": {
+              "blocks_level2_idle_f1.png": [
+                38,
+                593,
+                462,
+                271
+              ],
+              "blocks_level2_idle_f2.png": [
+                529,
+                395,
+                457,
+                468
+              ],
+              "blocks_level2_idle_f3.png": [
+                1004,
+                209,
+                501,
+                655
+              ]
+            }
+          }
+        },
+        {
+          "file": "petal-panic/assets/blocks_level3_sheet_2.png",
+          "size": "1536x1024",
+          "rows": 1,
+          "cols": 3,
+          "cell": 512,
+          "description": "Level 3 naked blocks \u2014 one row of 3 stacked-block tiles, empty top surface (no props), generated via ChatGPT upload+regen",
+          "entities": [
+            {
+              "row": 1,
+              "name": "blocks_level3",
+              "anim": "static naked block tiles (small/medium/large)"
+            }
+          ],
+          "crop": {
+            "frames_dir": "petal-panic/assets/objects",
+            "pass": "petal-panic/assets/objects",
+            "frames_bbox": {
+              "blocks_level3_idle_f1.png": [
+                49,
+                596,
+                466,
+                319
+              ],
+              "blocks_level3_idle_f2.png": [
+                540,
+                390,
+                451,
+                525
+              ],
+              "blocks_level3_idle_f3.png": [
+                1009,
+                170,
+                495,
+                746
+              ]
+            }
+          }
+        },
+        {
+          "file": "petal-panic/assets/blocks_level4_sheet_2.png",
+          "size": "1536x1024",
+          "rows": 1,
+          "cols": 3,
+          "cell": 512,
+          "description": "Level 4 naked blocks \u2014 one row of 3 stacked-block tiles, empty top surface (no props), generated via ChatGPT upload+regen",
+          "entities": [
+            {
+              "row": 1,
+              "name": "blocks_level4",
+              "anim": "static naked block tiles (small/medium/large)"
+            }
+          ],
+          "crop": {
+            "frames_dir": "petal-panic/assets/objects",
+            "pass": "petal-panic/assets/objects",
+            "frames_bbox": {
+              "blocks_level4_idle_f1.png": [
+                27,
+                557,
+                489,
+                364
+              ],
+              "blocks_level4_idle_f2.png": [
+                524,
+                308,
+                482,
+                613
+              ],
+              "blocks_level4_idle_f3.png": [
+                1008,
+                101,
+                506,
+                820
+              ]
+            }
+          }
         }
       ]
     },
@@ -6550,6 +6706,6 @@
       ]
     }
   },
-  "updated": "2026-09-15T19:13:20",
+  "updated": "2026-09-15T19:23:38",
   "chat_url": "null"
 }
