@@ -13,7 +13,7 @@ Crops animation frames from transparent-background sprite sheets by discovering 
 ## Instructions
 **PRIMARY METHOD:** the deterministic CLI does all pixel math — you supply the structural assessment and do verification:
 ```bash
-python3 <skill-folder>/scripts/extract_frames.py extract --sheet <sheet.png> --out <tmp-dir> --rows R1,R2,... --names n1,n2,... --actions a1,a2,... [--margin N] [--json result.json]
+python3 <skill-folder>/scripts/extract_frames.py extract --sheet <sheet.png> --out <tmp-dir> --rows R1,R2,... --names n1,n2,... --actions a1,a2,... [--margin N] [--span] [--json result.json]
 python3 <skill-folder>/scripts/extract_frames.py report --dir <tmp-dir>
 ```
 Requires numpy + scipy + PIL (pillow).
@@ -26,6 +26,8 @@ Use @tool:inspect_media on the COMPLETE source sheet BEFORE running extraction. 
 - which frames are unusually wide/tall, have detached particles/debris, or look fragmented (deaths/explosions)
 
 Record it as `rows=<n1>,<n2>,...` plus one entity name and one action word per row. Example: "Row 1: 5 run, Row 2: 4 attack (one very wide), Row 3: 5 death with debris" → `--rows 5,4,5 --names flower_dog --actions run,attack,death`. A single `--names` value applies to all rows (one entity, multiple animations); `--actions` needs one word per row.
+
+**One animation spanning multiple rows → use `--span`.** When several grid rows together form a SINGLE continuous animation (e.g. a "special" move laid out as 2×5 = f1..f10), pass `--span` with ONE shared `--names` and ONE shared `--actions` value. The frame counter then runs continuously across all rows (`f1..fN`) instead of resetting to `f1` per row. Without `--span`, each row restarts at `f1`, so two rows with the same action would produce colliding filenames (row 2 overwrites row 1). `--span` works for any number of rows (2, 3, 5...). Example: `--rows 5,5 --names balthazar --actions special --span` → `balthazar_special_f1.png` … `f10.png`. In state, such an entity is recorded with `"row": [1, 2]` (array) and a single `anim`.
 
 The sheet must already have a transparent background (alpha). If it doesn't, stop and tell the user — this skill does NOT remove backgrounds.
 
@@ -95,7 +97,7 @@ Always run after cropping a new label and open the viewer so the user can confir
 - **Read the trace every run.** The stage-by-stage output is the debug surface: WARN/FLAG lines, unassigned components, edge-touching frames, and count mismatches tell you which stage to fix.
 - **Inspect after EVERY pass.** One inspection = at least 4 crops (first/last per row + any flagged). Do not declare success without inspecting the pass being shipped.
 - **Iterate until perfect, max 4 passes.** Fresh tmp dir per pass (`<label>-v1`, `-v2`...). After 4 failed passes, escalate to the user with trace + worst crops.
-- **Filenames are ALWAYS `<entity>_<action>_f<N>.png`.** Entity prefix on every file, one action word per row, _fN sequential within that row. Game code loads by this pattern.
+- **Filenames are ALWAYS `<entity>_<action>_f<N>.png`.** Entity prefix on every file, one action word per row, _fN sequential within that row. Game code loads by this pattern. EXCEPTION: with `--span`, _fN runs continuously across all rows (one animation), so a 2×5 special yields `f1..f10` in a single sequence.
 - **Only verified frames reach the project.** Nothing is copied into <assets-dir> until its pass passed inspection AND validation reported PASS (or issues were explicitly accepted by the user).
 - **State is written ONLY via CLI** (record-crop). NEVER hand-edit the state JSON.
 - **Flat frame structure.** Frames go directly in assets/<label>/ — NO per-entity subfolders.
@@ -152,6 +154,19 @@ User: "Extract this sheet" (sheet has flat pink background)
 Skill actions:
 1. inspect_media → background is opaque pink, no alpha
 2. STOP: tell the user this skill requires transparent-background sheets (no bg removal by design); offer to regenerate via @skill:sprite-gen with a transparency prompt or handle it manually.
+
+**Example 4: One animation across multiple rows (`--span`)**
+
+User: "Crop Balthazar's special — it's one move, 2 rows of 5 frames each, f1 to f10"
+
+Skill actions:
+1. inspect_media → 2 rows × 5 frames, both rows are the SAME "special" attack (row 1 = slam, row 2 = spin), together one continuous sequence
+2. Recognize this is ONE animation spanning 2 grid rows → use `--span`
+3. extract --rows 5,5 --names balthazar --actions special --span --row-y "0-443,443-887" --col-x "0:354,709,1063,1417" --json result.json
+   → produces balthazar_special_f1.png … f10.png in one pass (row 1 = f1-f5, row 2 = f6-f10). No manual renaming, no filename collisions.
+4. Inspect f1, f5, f6, f10 (+ any flagged) → clean
+5. Install to assets/heroes/, record_crop.py (writes 10 bboxes + syncs the single entity's frames), emit viewer
+6. State entity recorded as `"row": [1, 2]`, `"anim": "special"` — one entry, not two.
 
 ## Resources
 

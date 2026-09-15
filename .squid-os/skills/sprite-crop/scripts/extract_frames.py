@@ -211,12 +211,16 @@ def assign_components(comps, spans, y0, y1, sat_max_area, sat_radius, trace, row
     return assignments, flags
 
 
-def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, margin, trace):
+def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, margin, trace, span=False):
     """Build one bounding rect per frame from owned pixels; crop RGBA.
 
     Before saving, erases any foreground pixel whose component is NOT owned
     by this frame (prevents cross-contamination when frames overlap in
     x-space). Each frame is cropped independently from the original image.
+
+    span=True: the frame number runs CONTINUOUSLY across all rows (f1..fN)
+    instead of resetting to f1 per row. Use when several grid rows together
+    form ONE animation sequence (e.g. a 2x5 special = f1..f10).
     """
     import numpy as np
     from scipy import ndimage
@@ -227,6 +231,7 @@ def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, ma
     comp_labels, _ = ndimage.label(fg_mask)
     os.makedirs(out_dir, exist_ok=True)
     results = []
+    global_frame = 0  # continuous counter for span mode
     for r, (y0, y1) in enumerate(rows):
         name = names[r] if names else f"row{r + 1}"
         action = actions[r] if actions else "anim"
@@ -234,7 +239,8 @@ def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, ma
             owned = [c for c in comps
                      if assignments.get(c["id"]) == si and rows_match(c, (y0, y1))]
             if not owned:
-                trace(f"    WARN: frame {name}_{action}_f{si + 1} has no owned components — skipped")
+                warn_num = (global_frame + 1) if span else (si + 1)
+                trace(f"    WARN: frame {name}_{action}_f{warn_num} has no owned components — skipped")
                 continue
             fx0 = min(c["bbox"][0] for c in owned)
             fy0 = min(c["bbox"][1] for c in owned)
@@ -244,7 +250,12 @@ def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, ma
             fy0 = max(0, fy0 - margin)
             fx1 = min(arr.shape[1], fx1 + margin)
             fy1 = min(arr.shape[0], fy1 + margin)
-            fn = f"{name}_{action}_f{si + 1}.png"
+            if span:
+                global_frame += 1
+                frame_num = global_frame
+            else:
+                frame_num = si + 1
+            fn = f"{name}_{action}_f{frame_num}.png"
             # Crop from original, then erase unowned foreground pixels
             crop_arr = arr[fy0:fy1, fx0:fx1].copy()
             crop_labels = comp_labels[fy0:fy1, fx0:fx1]
@@ -264,7 +275,7 @@ def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, ma
                 "file": fn,
                 "entity": name,
                 "action": action,
-                "frame": si + 1,
+                "frame": frame_num,
                 "row": r,
                 "bbox": [fx0, fy0, fx1 - fx0, fy1 - fy0],
                 "size": [fx1 - fx0, fy1 - fy0],
@@ -378,6 +389,17 @@ def cmd_extract(args):
         print(f"ERROR: {len(actions)} actions but {len(expected)} rows", file=sys.stderr)
         sys.exit(1)
 
+    # --span: one continuous animation across all rows -> must share one name+action
+    if getattr(args, "span", False):
+        if not (names and len(set(names)) == 1):
+            print("ERROR: --span requires a single --names value shared by all rows", file=sys.stderr)
+            sys.exit(1)
+        if not (actions and len(set(actions)) == 1):
+            print("ERROR: --span requires a single --actions value shared by all rows", file=sys.stderr)
+            sys.exit(1)
+        trace(f"[SPAN] one continuous animation '{names[0]}_{actions[0]}' across {len(expected)} rows "
+              f"-> frames f1..f{sum(expected)}")
+
     trace("[4] FRAME CLUSTERING")
     # Parse --col-x if provided: "row_idx:x1,x2,...;row_idx:x1,x2,..."
     manual_cols = {}
@@ -427,7 +449,7 @@ def cmd_extract(args):
     trace("[6] BOUNDING RECTS + CROPS")
     results = crop_frames(im, comps, all_assignments, all_spans,
                           rows[: len(expected)], names, actions,
-                          args.out, args.margin, trace)
+                          args.out, args.margin, trace, span=args.span)
 
     issues = validate(results, expected, trace)
 
@@ -492,6 +514,10 @@ def main():
     ex.add_argument("--col-x", help="manual column split points per row, e.g. '0:300,600;1:400,800' "
                     "(row_idx:x_split1,x_split2,...). Forces frame boundaries at given x coords, "
                     "bypassing auto gap detection for that row. Use when glow/effects glue poses together.")
+    ex.add_argument("--span", action="store_true",
+                    help="treat all rows as ONE continuous animation: frame numbers run f1..fN "
+                         "across every row instead of resetting to f1 per row. Requires a single "
+                         "--names value and a single --actions value shared by all rows.")
     ex.add_argument("--json", help="also write full result JSON here")
     rp = sub.add_parser("report")
     rp.add_argument("--dir", required=True)

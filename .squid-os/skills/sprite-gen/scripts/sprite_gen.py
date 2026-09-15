@@ -294,7 +294,7 @@ def cmd_state(args):
             "style_name": args.style_name or None,
             "palette": [],
             "assets_dir": args.assets_dir or "",
-            "sheets": {},
+            "folders": {},
             "updated": time.strftime("%Y-%m-%dT%H:%M:%S")
         }
         # fall through: --add-sheet (if given) is processed below, then saved once
@@ -368,8 +368,14 @@ def cmd_state(args):
             with open(args.prompt_file) as pf:
                 sheet["original_prompt"] = pf.read().strip()
 
-        # Determine target: folder-based or flat sheets (pop before field check)
+        # Determine target folder (REQUIRED — sheets always live under folders.<name>)
         folder = parts.pop("folder", None)
+        if not folder:
+            print(f"ERROR: --add-sheet requires 'folder=<name>' so the sheet lands in "
+                  f"folders.<name>.sheets (the structure render_editor.py reads). "
+                  f"Omitting it would orphan the sheet in a top-level dict the editor ignores.",
+                  file=sys.stderr)
+            sys.exit(1)
 
         # Reject unknown fields
         allowed_sheet_fields = {"file", "size", "rows", "cols", "cell", "description", "entities", "original_prompt", "crop"}
@@ -377,20 +383,34 @@ def cmd_state(args):
         if extra:
             print(f"WARNING: ignoring unknown fields: {extra}", file=sys.stderr)
 
-        if folder:
-            # Folder-based format: state["folders"][folder]["sheets"].append(sheet)
-            if "folders" not in state:
-                state["folders"] = {}
-            if folder not in state["folders"]:
-                state["folders"][folder] = {"path": "", "sheets": []}
-            state["folders"][folder]["sheets"].append(sheet)
-        else:
-            # Flat format: state["sheets"][name] = sheet
-            if "sheets" not in state:
-                state["sheets"] = {}
-            state["sheets"][name] = sheet
+        # Folder-based, IDEMPOTENT: replace any existing sheet with the same file path.
+        if "folders" not in state:
+            state["folders"] = {}
+        if folder not in state["folders"]:
+            state["folders"][folder] = {"path": "", "sheets": []}
+        bucket = state["folders"][folder]["sheets"]
+        file_path = sheet["file"]
+        replaced = False
+        for i, existing in enumerate(bucket):
+            if existing.get("file") == file_path:
+                bucket[i] = sheet
+                replaced = True
+                break
+        if not replaced:
+            bucket.append(sheet)
+        verb = "replaced" if replaced else "added"
+        print(f"  {verb} sheet '{file_path}' in folders.{folder}")
 
         state["updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+    # --- migrate/clean legacy flat sheets{} (orphaned, not read by render_editor) ---
+    legacy = state.get("sheets")
+    if isinstance(legacy, dict) and legacy:
+        print(f"WARNING: found {len(legacy)} sheet(s) in legacy top-level 'sheets' "
+              f"({list(legacy.keys())}). These are NOT read by render_editor.py. "
+              f"Move them into folders.<name>.sheets manually.", file=sys.stderr)
+    elif isinstance(legacy, dict):
+        del state["sheets"]  # drop empty legacy key
 
     outdir = os.path.dirname(path)
     if outdir: os.makedirs(outdir, exist_ok=True)
