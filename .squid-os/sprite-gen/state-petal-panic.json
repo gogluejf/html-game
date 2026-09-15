@@ -1081,6 +1081,200 @@
               ]
             }
           }
+        },
+        {
+          "file": "panic-petal/assets/scarlet_vale_sheet_7.png",
+          "size": "1774x887",
+          "rows": 2,
+          "cols": 5,
+          "cell": 355,
+          "description": "Scarlet Vale hero sheet 7, special attack \u2014 ribbon sweep (row1) + aerial flip (row2), 2x5",
+          "entities": [
+            {
+              "row": [
+                1,
+                2
+              ],
+              "name": "scarlet_vale",
+              "anim": "special",
+              "frames": [
+                "scarlet_vale_special_f1.png",
+                "scarlet_vale_special_f2.png",
+                "scarlet_vale_special_f3.png",
+                "scarlet_vale_special_f4.png",
+                "scarlet_vale_special_f5.png",
+                "scarlet_vale_special_f6.png",
+                "scarlet_vale_special_f7.png",
+                "scarlet_vale_special_f8.png",
+                "scarlet_vale_special_f9.png",
+                "scarlet_vale_special_f10.png"
+              ]
+            }
+          ],
+          "original_prompt": "Scarlet Vale special attack sheet \u2014 ribbon sweep + aerial flip, 2x5, hand-painted circus style",
+          "crop": {
+            "frames_dir": "panic-petal/assets/heroes",
+            "pass": "/tmp/scarlet_special-v3",
+            "frames_bbox": {
+              "scarlet_vale_special_f1.png": [
+                5,
+                0,
+                386,
+                467
+              ],
+              "scarlet_vale_special_f2.png": [
+                354,
+                0,
+                315,
+                467
+              ],
+              "scarlet_vale_special_f3.png": [
+                671,
+                0,
+                407,
+                467
+              ],
+              "scarlet_vale_special_f4.png": [
+                1035,
+                0,
+                512,
+                467
+              ],
+              "scarlet_vale_special_f5.png": [
+                1447,
+                0,
+                327,
+                466
+              ],
+              "scarlet_vale_flip_f1.png": [
+                0,
+                458,
+                329,
+                429
+              ],
+              "scarlet_vale_flip_f2.png": [
+                314,
+                451,
+                376,
+                436
+              ],
+              "scarlet_vale_flip_f3.png": [
+                699,
+                447,
+                358,
+                440
+              ],
+              "scarlet_vale_flip_f4.png": [
+                1035,
+                451,
+                378,
+                430
+              ],
+              "scarlet_vale_flip_f5.png": [
+                1402,
+                615,
+                372,
+                272
+              ]
+            }
+          }
+        },
+        {
+          "file": "panic-petal/assets/balthazar_sheet_7.png",
+          "size": "1774x887",
+          "rows": 2,
+          "cols": 5,
+          "cell": 355,
+          "description": "Balthazhar tiger ringmaster hero sheet 7, special attack \u2014 golden energy slam (row1) + spin (row2), 2x5",
+          "entities": [
+            {
+              "row": [
+                1,
+                2
+              ],
+              "name": "balthazar",
+              "anim": "special",
+              "frames": [
+                "balthazar_special_f1.png",
+                "balthazar_special_f2.png",
+                "balthazar_special_f3.png",
+                "balthazar_special_f4.png",
+                "balthazar_special_f5.png",
+                "balthazar_special_f6.png",
+                "balthazar_special_f7.png",
+                "balthazar_special_f8.png",
+                "balthazar_special_f9.png",
+                "balthazar_special_f10.png"
+              ]
+            }
+          ],
+          "original_prompt": "Balthazhar special attack sheet \u2014 golden energy slam + spin, 2x5, hand-painted circus style",
+          "crop": {
+            "frames_dir": "panic-petal/assets/heroes",
+            "pass": "/tmp/balthazar_special-v9",
+            "frames_bbox": {
+              "balthazar_special_f1.png": [
+                2,
+                68,
+                344,
+                345
+              ],
+              "balthazar_special_f2.png": [
+                315,
+                85,
+                466,
+                326
+              ],
+              "balthazar_special_f3.png": [
+                649,
+                165,
+                475,
+                250
+              ],
+              "balthazar_special_f4.png": [
+                1094,
+                41,
+                268,
+                376
+              ],
+              "balthazar_special_f5.png": [
+                1339,
+                45,
+                435,
+                391
+              ],
+              "balthazar_special_f6.png": [
+                24,
+                603,
+                353,
+                256
+              ],
+              "balthazar_special_f7.png": [
+                395,
+                494,
+                325,
+                366
+              ],
+              "balthazar_special_f8.png": [
+                731,
+                427,
+                291,
+                455
+              ],
+              "balthazar_special_f9.png": [
+                1090,
+                428,
+                311,
+                450
+              ],
+              "balthazar_special_f10.png": [
+                1427,
+                382,
+                306,
+                505
+              ]
+            }
+          }
         }
       ]
     },
@@ -6195,5 +6389,6 @@
       ]
     }
   },
-  "updated": "2026-09-14T15:11:26"
+  "updated": "2026-09-15T00:00:12",
+  "sheets": {}
 }
