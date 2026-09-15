@@ -4996,15 +4996,15 @@
               "name": "platforms_level1",
               "anim": "idle",
               "frames": [
-                "platforms_level1_f1.png",
-                "platforms_level1_f2.png",
-                "platforms_level1_f3.png",
-                "platforms_level1_f4.png",
-                "platforms_level1_f5.png",
-                "platforms_level1_f6.png",
-                "platforms_level1_f7.png",
-                "platforms_level1_f8.png",
-                "platforms_level1_f9.png"
+                "platforms_level1_idle_f1.png",
+                "platforms_level1_idle_f2.png",
+                "platforms_level1_idle_f3.png",
+                "platforms_level1_idle_f4.png",
+                "platforms_level1_idle_f5.png",
+                "platforms_level1_idle_f6.png",
+                "platforms_level1_idle_f7.png",
+                "platforms_level1_idle_f8.png",
+                "platforms_level1_idle_f9.png"
               ]
             }
           ],
@@ -5012,55 +5012,55 @@
             "frames_dir": "petal-panic/assets/objects",
             "pass": "/tmp/redo-platforms-level1-v1",
             "frames_bbox": {
-              "platforms_level1_f1.png": [
+              "platforms_level1_idle_f1.png": [
                 32,
                 86,
                 293,
                 233
               ],
-              "platforms_level1_f2.png": [
+              "platforms_level1_idle_f2.png": [
                 378,
                 83,
                 425,
                 249
               ],
-              "platforms_level1_f3.png": [
+              "platforms_level1_idle_f3.png": [
                 852,
                 83,
                 662,
                 243
               ],
-              "platforms_level1_f4.png": [
+              "platforms_level1_idle_f4.png": [
                 32,
                 407,
                 282,
                 268
               ],
-              "platforms_level1_f5.png": [
+              "platforms_level1_idle_f5.png": [
                 376,
                 396,
                 426,
                 283
               ],
-              "platforms_level1_f6.png": [
+              "platforms_level1_idle_f6.png": [
                 853,
                 413,
                 651,
                 271
               ],
-              "platforms_level1_f7.png": [
+              "platforms_level1_idle_f7.png": [
                 29,
                 708,
                 296,
                 276
               ],
-              "platforms_level1_f8.png": [
+              "platforms_level1_idle_f8.png": [
                 380,
                 704,
                 442,
                 281
               ],
-              "platforms_level1_f9.png": [
+              "platforms_level1_idle_f9.png": [
                 854,
                 754,
                 660,
@@ -5084,15 +5084,15 @@
               "name": "platforms_level2",
               "anim": "idle",
               "frames": [
-                "platforms_level2_f1.png",
-                "platforms_level2_f2.png",
-                "platforms_level2_f3.png",
-                "platforms_level2_f4.png",
-                "platforms_level2_f5.png",
-                "platforms_level2_f6.png",
-                "platforms_level2_f7.png",
-                "platforms_level2_f8.png",
-                "platforms_level2_f9.png"
+                "platforms_level2_idle_f1.png",
+                "platforms_level2_idle_f2.png",
+                "platforms_level2_idle_f3.png",
+                "platforms_level2_idle_f4.png",
+                "platforms_level2_idle_f5.png",
+                "platforms_level2_idle_f6.png",
+                "platforms_level2_idle_f7.png",
+                "platforms_level2_idle_f8.png",
+                "platforms_level2_idle_f9.png"
               ]
             }
           ],
@@ -5100,55 +5100,55 @@
             "frames_dir": "petal-panic/assets/objects",
             "pass": "/tmp/redo-platforms-level2-v1",
             "frames_bbox": {
-              "platforms_level2_f1.png": [
+              "platforms_level2_idle_f1.png": [
                 33,
                 132,
                 276,
                 226
               ],
-              "platforms_level2_f2.png": [
+              "platforms_level2_idle_f2.png": [
                 376,
                 41,
                 463,
                 321
               ],
-              "platforms_level2_f3.png": [
+              "platforms_level2_idle_f3.png": [
                 889,
                 124,
                 632,
                 229
               ],
-              "platforms_level2_f4.png": [
+              "platforms_level2_idle_f4.png": [
                 34,
                 463,
                 275,
                 206
               ],
-              "platforms_level2_f5.png": [
+              "platforms_level2_idle_f5.png": [
                 375,
                 425,
                 459,
                 250
               ],
-              "platforms_level2_f6.png": [
+              "platforms_level2_idle_f6.png": [
                 890,
                 361,
                 630,
                 315
               ],
-              "platforms_level2_f7.png": [
+              "platforms_level2_idle_f7.png": [
                 38,
                 687,
                 266,
                 300
               ],
-              "platforms_level2_f8.png": [
+              "platforms_level2_idle_f8.png": [
                 375,
                 718,
                 461,
                 266
               ],
-              "platforms_level2_f9.png": [
+              "platforms_level2_idle_f9.png": [
                 886,
                 750,
                 635,
@@ -5172,15 +5172,15 @@
               "name": "platforms_level3",
               "anim": "idle",
               "frames": [
-                "platforms_level3_f1.png",
-                "platforms_level3_f2.png",
-                "platforms_level3_f3.png",
-                "platforms_level3_f4.png",
-                "platforms_level3_f5.png",
-                "platforms_level3_f6.png",
-                "platforms_level3_f7.png",
-                "platforms_level3_f8.png",
-                "platforms_level3_f9.png"
+                "platforms_level3_idle_f1.png",
+                "platforms_level3_idle_f2.png",
+                "platforms_level3_idle_f3.png",
+                "platforms_level3_idle_f4.png",
+                "platforms_level3_idle_f5.png",
+                "platforms_level3_idle_f6.png",
+                "platforms_level3_idle_f7.png",
+                "platforms_level3_idle_f8.png",
+                "platforms_level3_idle_f9.png"
               ]
             }
           ],
@@ -5188,55 +5188,55 @@
             "frames_dir": "petal-panic/assets/objects",
             "pass": "/tmp/redo-platforms-level3-v1",
             "frames_bbox": {
-              "platforms_level3_f1.png": [
+              "platforms_level3_idle_f1.png": [
                 39,
                 133,
                 307,
                 230
               ],
-              "platforms_level3_f2.png": [
+              "platforms_level3_idle_f2.png": [
                 421,
                 83,
                 419,
                 280
               ],
-              "platforms_level3_f3.png": [
+              "platforms_level3_idle_f3.png": [
                 914,
                 93,
                 593,
                 280
               ],
-              "platforms_level3_f4.png": [
+              "platforms_level3_idle_f4.png": [
                 39,
                 419,
                 295,
                 237
               ],
-              "platforms_level3_f5.png": [
+              "platforms_level3_idle_f5.png": [
                 413,
                 428,
                 422,
                 231
               ],
-              "platforms_level3_f6.png": [
+              "platforms_level3_idle_f6.png": [
                 901,
                 423,
                 594,
                 245
               ],
-              "platforms_level3_f7.png": [
+              "platforms_level3_idle_f7.png": [
                 51,
                 704,
                 283,
                 272
               ],
-              "platforms_level3_f8.png": [
+              "platforms_level3_idle_f8.png": [
                 413,
                 660,
                 449,
                 324
               ],
-              "platforms_level3_f9.png": [
+              "platforms_level3_idle_f9.png": [
                 892,
                 721,
                 591,
@@ -5345,26 +5345,31 @@
             {
               "row": 1,
               "name": "platforms_level1",
-              "anim": "static naked platform tiles (small/medium/large)"
+              "anim": "idle (naked platform tiles, small/medium/large)",
+              "frames": [
+                "platforms_level1_idle_f10.png",
+                "platforms_level1_idle_f11.png",
+                "platforms_level1_idle_f12.png"
+              ]
             }
           ],
           "crop": {
             "frames_dir": "petal-panic/assets/objects",
             "pass": "petal-panic/assets/objects",
             "frames_bbox": {
-              "platforms_level1_f10.png": [
+              "platforms_level1_idle_f10.png": [
                 30,
                 231,
                 428,
                 267
               ],
-              "platforms_level1_f11.png": [
+              "platforms_level1_idle_f11.png": [
                 504,
                 230,
                 617,
                 284
               ],
-              "platforms_level1_f12.png": [
+              "platforms_level1_idle_f12.png": [
                 1164,
                 229,
                 977,
@@ -5385,26 +5390,31 @@
             {
               "row": 1,
               "name": "platforms_level2",
-              "anim": "static naked platform tiles (small/medium/large)"
+              "anim": "idle (naked platform tiles, small/medium/large)",
+              "frames": [
+                "platforms_level2_idle_f10.png",
+                "platforms_level2_idle_f11.png",
+                "platforms_level2_idle_f12.png"
+              ]
             }
           ],
           "crop": {
             "frames_dir": "petal-panic/assets/objects",
             "pass": "petal-panic/assets/objects",
             "frames_bbox": {
-              "platforms_level2_f10.png": [
+              "platforms_level2_idle_f10.png": [
                 30,
                 244,
                 439,
                 240
               ],
-              "platforms_level2_f11.png": [
+              "platforms_level2_idle_f11.png": [
                 535,
                 244,
                 694,
                 245
               ],
-              "platforms_level2_f12.png": [
+              "platforms_level2_idle_f12.png": [
                 1283,
                 243,
                 863,
@@ -5425,26 +5435,31 @@
             {
               "row": 1,
               "name": "platforms_level3",
-              "anim": "static naked platform tiles (small/medium/large)"
+              "anim": "idle (naked platform tiles, small/medium/large)",
+              "frames": [
+                "platforms_level3_idle_f10.png",
+                "platforms_level3_idle_f11.png",
+                "platforms_level3_idle_f12.png"
+              ]
             }
           ],
           "crop": {
             "frames_dir": "petal-panic/assets/objects",
             "pass": "petal-panic/assets/objects",
             "frames_bbox": {
-              "platforms_level3_f10.png": [
+              "platforms_level3_idle_f10.png": [
                 33,
                 247,
                 474,
                 250
               ],
-              "platforms_level3_f11.png": [
+              "platforms_level3_idle_f11.png": [
                 564,
                 247,
                 635,
                 258
               ],
-              "platforms_level3_f12.png": [
+              "platforms_level3_idle_f12.png": [
                 1261,
                 247,
                 882,
@@ -5465,26 +5480,31 @@
             {
               "row": 1,
               "name": "platforms_level4",
-              "anim": "static naked platform tiles (small/medium/large)"
+              "anim": "idle (naked platform tiles, small/medium/large)",
+              "frames": [
+                "platforms_level4_idle_f10.png",
+                "platforms_level4_idle_f11.png",
+                "platforms_level4_idle_f12.png"
+              ]
             }
           ],
           "crop": {
             "frames_dir": "petal-panic/assets/objects",
             "pass": "petal-panic/assets/objects",
             "frames_bbox": {
-              "platforms_level4_f10.png": [
+              "platforms_level4_idle_f10.png": [
                 32,
                 178,
                 406,
                 379
               ],
-              "platforms_level4_f11.png": [
+              "platforms_level4_idle_f11.png": [
                 484,
                 178,
                 700,
                 391
               ],
-              "platforms_level4_f12.png": [
+              "platforms_level4_idle_f12.png": [
                 1246,
                 178,
                 897,
