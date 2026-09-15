@@ -244,6 +244,9 @@ Field meanings:
 
 **Frame naming convention:** `<entity>_<action>_f<N>.png` (e.g. `scarlet_vale_run_f1.png`). For single-action entities (abyss style): `<entity>_f<N>.png`. Frames go FLAT in `assets/<label>/` — no per-entity subfolders.
 
+### Techniques
+- [techniques/INDEX.md](techniques/INDEX.md) — Working recipes for fiddly browser/CDP operations (e.g. uploading a reference image into ChatGPT). Check here before improvising.
+
 ## Rules
 - **Same conversation always:** Never start a new chat mid-project. Style consistency depends on GPT seeing prior sprites in context.
 - **Verify before sending:** Always confirm the prompt text is actually in the input box before clicking send. Check with JS innerText read.
