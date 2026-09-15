@@ -254,7 +254,7 @@
       <div id="finfo"></div>
     </div>
     <div id="hint">
-      space play/pause &middot; &#8592;/&#8594; prev/next frame &middot; &#8593;/&#8595; prev/next sprite &middot; shift+arrow offset &#177;1 &middot; ctrl+arrow offset &#177;10<br>
+      space play/pause &middot; &#8592;/&#8594; prev/next frame &middot; &#8593;/&#8595; prev/next sprite &middot; 1&ndash;9/0 jump to frame N (0=10) &middot; shift+arrow offset &#177;1 &middot; ctrl+arrow offset &#177;10<br>
       zoom: mouse wheel / ctrl&#8722; / ctrl+ / bottom buttons &middot; hover a visible box: drag inside to move it &middot; corner handle resizes &middot; shift+corner scales both axes<br>
       rotation: bottom rot controls (independent of frame anim) &middot; click canvas while rotating = pause + reset to 0&#176;<br>
       undo/redo: top-right arrows or ctrl+Z / ctrl+Y (global — jumps back to the exact animation + frame you edited)
@@ -1828,6 +1828,21 @@ window.addEventListener('keydown', e=>{
   if (tag==='input' || tag==='textarea') return;
   const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
   const off = e.ctrlKey ? 10 : 1;
+  // 1-9 / 0 -> jump directly to that frame index of the current animation
+  // (1->frame1 ... 9->frame9, 0->frame10). Works for any anim length; clamps to last frame.
+  if (!e.ctrlKey && !e.altKey && !e.shiftKey){
+    let direct = null;
+    if (e.code.startsWith('Digit') && e.code !== 'Digit0'){ direct = parseInt(e.code.slice(5), 10) - 1; }
+    else if (e.code === 'Digit0' || e.code === 'Numpad0'){ direct = 9; }
+    else if (e.code.startsWith('Numpad') && e.code !== 'Numpad0'){ direct = parseInt(e.code.slice(6), 10) - 1; }
+    if (direct !== null && direct >= 0){
+      e.preventDefault();
+      const max = st.frames.length - 1;
+      st.frameIdx = Math.min(direct, max);
+      syncPanel(); draw();
+      return;
+    }
+  }
   switch (e.code){
     case 'Space': e.preventDefault(); setPlaying(!st.playing); break;
     case 'ArrowRight': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); targetFrames(fi).forEach(f=>f.offset.x+=off); syncPanel(); draw(); } else stepFrame(1); break;
