@@ -1131,14 +1131,12 @@ function syncToggles(){
   btn.classList.toggle('on', mon);
   const locked = !!(cur && cur.st && cur.st.playing);
   btn.disabled = locked;
-  // MELEE VIEW (Display): a global display preference that persists across frames
-  // and entities. The ONLY thing that forces it on is enabling a melee box.
-  // However, the BUTTON appears disabled (greyed) when the current frame has no
-  // melee box — to signal there's nothing to show right now — even if the view
-  // state itself is still "on" (it just renders nothing for this frame).
-  const curFrameMelee = cur && cur.st ? cur.st.frames[curFrameIdx()].melee.on : false;
+  // MELEE VIEW (Display): a global display preference, ALWAYS freely toggleable.
+  // Never disabled/greyed — the user can turn it on or off at any time regardless
+  // of the current frame's melee state. The ONLY thing that forces it on is
+  // enabling a melee box (MELEE ON / p_mon handlers).
   const mv = $('tglMeleeView');
-  mv.disabled = !curFrameMelee;   // grey out when current frame has no melee
+  mv.disabled = false;
   mv.classList.toggle('on', show.meleeView);
   $('tglPivot').classList.toggle('on', show.pivot);
   // LABEL: sprite name over the canvas (viewer-style), drawn in draw()
