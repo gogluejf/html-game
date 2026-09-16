@@ -1825,164 +1825,136 @@
           "pass": "/tmp/plat-l4-v1"
         }
       }, {
-        "file": "petal-panic/assets/blocks_level1_sheet_2.png",
-        "size": "1536x1024",
-        "rows": 1,
-        "cols": 3,
-        "cell": 512,
-        "description": "Level 1 naked blocks \u2014 one row of 3 stacked-block tiles, empty top surface (no props), generated via ChatGPT upload+regen",
-        "entities": [{
-          "name": "blocks_level1",
-          "anim": "idle",
-          "frames": [
-            {"file": "blocks_level1_idle_f4.png", "row": 0, "col": 0, "bbox": [38, 609, 463, 270]},
-            {"file": "blocks_level1_idle_f5.png", "row": 0, "col": 1, "bbox": [532, 422, 456, 443]},
-            {"file": "blocks_level1_idle_f6.png", "row": 0, "col": 2, "bbox": [1011, 229, 483, 650]}
-          ]
-        }],
-        "crop": {
-          "frames_dir": "petal-panic/assets/objects",
-          "pass": "petal-panic/assets/objects"
-        }
-      }, {
-        "file": "petal-panic/assets/blocks_level2_sheet_2.png",
-        "size": "1536x1024",
-        "rows": 1,
-        "cols": 3,
-        "cell": 512,
-        "description": "Level 2 naked blocks \u2014 one row of 3 stacked-block tiles, empty top surface (no props), generated via ChatGPT upload+regen",
-        "entities": [{
-          "name": "blocks_level2",
-          "anim": "idle",
-          "frames": [
-            {"file": "blocks_level2_idle_f4.png", "row": 0, "col": 0, "bbox": [38, 593, 462, 271]},
-            {"file": "blocks_level2_idle_f5.png", "row": 0, "col": 1, "bbox": [529, 395, 457, 468]},
-            {"file": "blocks_level2_idle_f6.png", "row": 0, "col": 2, "bbox": [1004, 209, 501, 655]}
-          ]
-        }],
-        "crop": {
-          "frames_dir": "petal-panic/assets/objects",
-          "pass": "petal-panic/assets/objects"
-        }
-      }, {
-        "file": "petal-panic/assets/blocks_level3_sheet_2.png",
-        "size": "1536x1024",
-        "rows": 1,
-        "cols": 3,
-        "cell": 512,
-        "description": "Level 3 naked blocks \u2014 one row of 3 stacked-block tiles, empty top surface (no props), generated via ChatGPT upload+regen",
-        "entities": [{
-          "name": "blocks_level3",
-          "anim": "idle",
-          "frames": [
-            {"file": "blocks_level3_idle_f4.png", "row": 0, "col": 0, "bbox": [49, 596, 466, 319]},
-            {"file": "blocks_level3_idle_f5.png", "row": 0, "col": 1, "bbox": [540, 390, 451, 525]},
-            {"file": "blocks_level3_idle_f6.png", "row": 0, "col": 2, "bbox": [1009, 170, 495, 746]}
-          ]
-        }],
-        "crop": {
-          "frames_dir": "petal-panic/assets/objects",
-          "pass": "petal-panic/assets/objects"
-        }
-      }, {
-        "file": "petal-panic/assets/blocks_level4_sheet_2.png",
-        "size": "1536x1024",
-        "rows": 1,
-        "cols": 3,
-        "cell": 512,
-        "description": "Level 4 naked blocks \u2014 one row of 3 stacked-block tiles, empty top surface (no props), generated via ChatGPT upload+regen",
-        "entities": [{
-          "name": "blocks_level4",
-          "anim": "idle",
-          "frames": [
-            {"file": "blocks_level4_idle_f4.png", "row": 0, "col": 0, "bbox": [27, 557, 489, 364]},
-            {"file": "blocks_level4_idle_f5.png", "row": 0, "col": 1, "bbox": [524, 308, 482, 613]},
-            {"file": "blocks_level4_idle_f6.png", "row": 0, "col": 2, "bbox": [1008, 101, 506, 820]}
-          ]
-        }],
-        "crop": {
-          "frames_dir": "petal-panic/assets/objects",
-          "pass": "petal-panic/assets/objects"
-        }
-      }, {
         "file": "petal-panic/assets/blocks_level1_sheet.png",
-        "size": "1536x1024",
-        "rows": 1,
+        "size": "1536x2048",
+        "rows": 2,
         "cols": 3,
         "cell": 512,
-        "description": "Level 1 block tiles with props (small/medium/large)",
+        "description": "Level 1 block tiles combined: row 1 with props, row 2 naked (small/medium/large)",
         "entities": [{
           "name": "blocks_level1",
-          "anim": "idle",
+          "anim": "single",
           "frames": [
-            {"file": "blocks_level1_idle_f1.png", "row": 0, "col": 0, "bbox": [37, 574, 462, 326]},
-            {"file": "blocks_level1_idle_f2.png", "row": 0, "col": 1, "bbox": [537, 371, 459, 508]},
-            {"file": "blocks_level1_idle_f3.png", "row": 0, "col": 2, "bbox": [1025, 88, 479, 809]}
+            {"file": "blocks_level1_single_f1.png", "row": 0, "col": 0, "bbox": [37, 574, 462, 326]},
+            {"file": "blocks_level1_single_f2.png", "row": 1, "col": 0, "bbox": [38, 1633, 463, 270]}
+          ]
+        }, {
+          "name": "blocks_level1",
+          "anim": "double",
+          "frames": [
+            {"file": "blocks_level1_double_f1.png", "row": 0, "col": 1, "bbox": [537, 371, 459, 508]},
+            {"file": "blocks_level1_double_f2.png", "row": 1, "col": 1, "bbox": [532, 1446, 456, 443]}
+          ]
+        }, {
+          "name": "blocks_level1",
+          "anim": "triple",
+          "frames": [
+            {"file": "blocks_level1_triple_f1.png", "row": 0, "col": 2, "bbox": [1025, 88, 479, 809]},
+            {"file": "blocks_level1_triple_f2.png", "row": 1, "col": 2, "bbox": [1011, 1253, 483, 650]}
           ]
         }],
         "crop": {
           "frames_dir": "petal-panic/assets/objects",
-          "pass": "petal-panic/assets/objects"
+          "pass": "/tmp/blocks-l1-v1"
         }
       }, {
         "file": "petal-panic/assets/blocks_level2_sheet.png",
-        "size": "1536x1024",
-        "rows": 1,
+        "size": "1536x2048",
+        "rows": 2,
         "cols": 3,
         "cell": 512,
-        "description": "Level 2 block tiles with props (small/medium/large)",
+        "description": "Level 2 block tiles combined: row 1 with props, row 2 naked (small/medium/large)",
         "entities": [{
           "name": "blocks_level2",
-          "anim": "idle",
+          "anim": "single",
           "frames": [
-            {"file": "blocks_level2_idle_f1.png", "row": 0, "col": 0, "bbox": [34, 570, 452, 320]},
-            {"file": "blocks_level2_idle_f2.png", "row": 0, "col": 1, "bbox": [501, 250, 479, 640]},
-            {"file": "blocks_level2_idle_f3.png", "row": 0, "col": 2, "bbox": [992, 15, 535, 876]}
+            {"file": "blocks_level2_single_f1.png", "row": 0, "col": 0, "bbox": [34, 570, 452, 320]},
+            {"file": "blocks_level2_single_f2.png", "row": 1, "col": 0, "bbox": [38, 1617, 462, 271]}
+          ]
+        }, {
+          "name": "blocks_level2",
+          "anim": "double",
+          "frames": [
+            {"file": "blocks_level2_double_f1.png", "row": 0, "col": 1, "bbox": [501, 250, 479, 640]},
+            {"file": "blocks_level2_double_f2.png", "row": 1, "col": 1, "bbox": [529, 1419, 457, 468]}
+          ]
+        }, {
+          "name": "blocks_level2",
+          "anim": "triple",
+          "frames": [
+            {"file": "blocks_level2_triple_f1.png", "row": 0, "col": 2, "bbox": [992, 15, 535, 876]},
+            {"file": "blocks_level2_triple_f2.png", "row": 1, "col": 2, "bbox": [1004, 1233, 501, 655]}
           ]
         }],
         "crop": {
           "frames_dir": "petal-panic/assets/objects",
-          "pass": "petal-panic/assets/objects"
+          "pass": "/tmp/blocks-l2-v1"
         }
       }, {
         "file": "petal-panic/assets/blocks_level3_sheet.png",
-        "size": "1536x1024",
-        "rows": 1,
+        "size": "1536x2048",
+        "rows": 2,
         "cols": 3,
         "cell": 512,
-        "description": "Level 3 block tiles with props (small/medium/large)",
+        "description": "Level 3 block tiles combined: row 1 with props, row 2 naked (small/medium/large)",
         "entities": [{
           "name": "blocks_level3",
-          "anim": "idle",
+          "anim": "single",
           "frames": [
-            {"file": "blocks_level3_idle_f1.png", "row": 0, "col": 0, "bbox": [29, 572, 471, 372]},
-            {"file": "blocks_level3_idle_f2.png", "row": 0, "col": 1, "bbox": [517, 300, 483, 644]},
-            {"file": "blocks_level3_idle_f3.png", "row": 0, "col": 2, "bbox": [1013, 26, 491, 918]}
+            {"file": "blocks_level3_single_f1.png", "row": 0, "col": 0, "bbox": [29, 572, 471, 372]},
+            {"file": "blocks_level3_single_f2.png", "row": 1, "col": 0, "bbox": [49, 1620, 466, 319]}
+          ]
+        }, {
+          "name": "blocks_level3",
+          "anim": "double",
+          "frames": [
+            {"file": "blocks_level3_double_f1.png", "row": 0, "col": 1, "bbox": [517, 300, 483, 644]},
+            {"file": "blocks_level3_double_f2.png", "row": 1, "col": 1, "bbox": [540, 1414, 451, 525]}
+          ]
+        }, {
+          "name": "blocks_level3",
+          "anim": "triple",
+          "frames": [
+            {"file": "blocks_level3_triple_f1.png", "row": 0, "col": 2, "bbox": [1013, 26, 491, 918]},
+            {"file": "blocks_level3_triple_f2.png", "row": 1, "col": 2, "bbox": [1009, 1194, 495, 746]}
           ]
         }],
         "crop": {
           "frames_dir": "petal-panic/assets/objects",
-          "pass": "petal-panic/assets/objects"
+          "pass": "/tmp/blocks-l3-v1"
         }
       }, {
         "file": "petal-panic/assets/blocks_level4_sheet.png",
-        "size": "1536x1024",
-        "rows": 1,
+        "size": "1536x2048",
+        "rows": 2,
         "cols": 3,
         "cell": 512,
-        "description": "Level 4 block tiles with props (small/medium/large)",
+        "description": "Level 4 block tiles combined: row 1 with props, row 2 naked (small/medium/large)",
         "entities": [{
           "name": "blocks_level4",
-          "anim": "idle",
+          "anim": "single",
           "frames": [
-            {"file": "blocks_level4_idle_f1.png", "row": 0, "col": 0, "bbox": [10, 562, 489, 409]},
-            {"file": "blocks_level4_idle_f2.png", "row": 0, "col": 1, "bbox": [516, 238, 487, 733]},
-            {"file": "blocks_level4_idle_f3.png", "row": 0, "col": 2, "bbox": [1011, 34, 515, 938]}
+            {"file": "blocks_level4_single_f1.png", "row": 0, "col": 0, "bbox": [10, 562, 489, 409]},
+            {"file": "blocks_level4_single_f2.png", "row": 1, "col": 0, "bbox": [27, 1581, 489, 364]}
+          ]
+        }, {
+          "name": "blocks_level4",
+          "anim": "double",
+          "frames": [
+            {"file": "blocks_level4_double_f1.png", "row": 0, "col": 1, "bbox": [516, 238, 487, 733]},
+            {"file": "blocks_level4_double_f2.png", "row": 1, "col": 1, "bbox": [524, 1332, 482, 613]}
+          ]
+        }, {
+          "name": "blocks_level4",
+          "anim": "triple",
+          "frames": [
+            {"file": "blocks_level4_triple_f1.png", "row": 0, "col": 2, "bbox": [1011, 34, 515, 938]},
+            {"file": "blocks_level4_triple_f2.png", "row": 1, "col": 2, "bbox": [1008, 1125, 506, 820]}
           ]
         }],
         "crop": {
           "frames_dir": "petal-panic/assets/objects",
-          "pass": "petal-panic/assets/objects"
+          "pass": "/tmp/blocks-l4-v1"
         }
       }]
     },
@@ -2277,6 +2249,6 @@
       }]
     }
   },
-  "updated": "2026-09-16T00:59:42",
+  "updated": "2026-09-16T01:10:19",
   "chat_url": "null"
 }
