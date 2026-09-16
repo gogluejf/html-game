@@ -1682,25 +1682,35 @@
         "description": "Platform tiles level 1 (3x3 grid) + row 4: naked platforms (S/M/L)",
         "entities": [{
           "name": "platforms_level1",
-          "anim": "idle",
+          "anim": "single",
           "frames": [
-            {"file": "platforms_level1_idle_f1.png", "row": 0, "col": 0, "bbox": [32, 86, 293, 233]},
-            {"file": "platforms_level1_idle_f2.png", "row": 0, "col": 1, "bbox": [378, 83, 425, 249]},
-            {"file": "platforms_level1_idle_f3.png", "row": 0, "col": 2, "bbox": [852, 83, 662, 243]},
-            {"file": "platforms_level1_idle_f4.png", "row": 1, "col": 0, "bbox": [32, 407, 282, 268]},
-            {"file": "platforms_level1_idle_f5.png", "row": 1, "col": 1, "bbox": [376, 396, 426, 283]},
-            {"file": "platforms_level1_idle_f6.png", "row": 1, "col": 2, "bbox": [853, 413, 651, 271]},
-            {"file": "platforms_level1_idle_f7.png", "row": 2, "col": 0, "bbox": [29, 708, 296, 276]},
-            {"file": "platforms_level1_idle_f8.png", "row": 2, "col": 1, "bbox": [380, 704, 442, 281]},
-            {"file": "platforms_level1_idle_f9.png", "row": 2, "col": 2, "bbox": [854, 754, 660, 229]},
-            {"file": "platforms_level1_idle_f10.png", "row": 3, "col": 0, "bbox": [37, 1061, 280, 172]},
-            {"file": "platforms_level1_idle_f11.png", "row": 3, "col": 1, "bbox": [384, 1060, 430, 194]},
-            {"file": "platforms_level1_idle_f12.png", "row": 3, "col": 2, "bbox": [873, 1039, 620, 167]}
+            {"file": "platforms_level1_single_f1.png", "row": 0, "col": 0, "bbox": [36, 90, 285, 225]},
+            {"file": "platforms_level1_single_f2.png", "row": 1, "col": 0, "bbox": [36, 411, 274, 260]},
+            {"file": "platforms_level1_single_f3.png", "row": 2, "col": 0, "bbox": [33, 712, 288, 268]},
+            {"file": "platforms_level1_single_f4.png", "row": 3, "col": 0, "bbox": [33, 1057, 288, 180]}
+          ]
+        }, {
+          "name": "platforms_level1",
+          "anim": "double",
+          "frames": [
+            {"file": "platforms_level1_double_f1.png", "row": 0, "col": 1, "bbox": [382, 87, 417, 241]},
+            {"file": "platforms_level1_double_f2.png", "row": 1, "col": 1, "bbox": [380, 400, 418, 275]},
+            {"file": "platforms_level1_double_f3.png", "row": 2, "col": 1, "bbox": [384, 708, 434, 273]},
+            {"file": "platforms_level1_double_f4.png", "row": 3, "col": 1, "bbox": [380, 1056, 438, 202]}
+          ]
+        }, {
+          "name": "platforms_level1",
+          "anim": "triple",
+          "frames": [
+            {"file": "platforms_level1_triple_f1.png", "row": 0, "col": 2, "bbox": [856, 87, 654, 235]},
+            {"file": "platforms_level1_triple_f2.png", "row": 1, "col": 2, "bbox": [857, 417, 643, 263]},
+            {"file": "platforms_level1_triple_f3.png", "row": 2, "col": 2, "bbox": [858, 758, 652, 221]},
+            {"file": "platforms_level1_triple_f4.png", "row": 3, "col": 2, "bbox": [869, 1035, 628, 175]}
           ]
         }],
         "crop": {
           "frames_dir": "petal-panic/assets/objects",
-          "pass": "/tmp/redo-platforms-level1-v1"
+          "pass": "/tmp/plat-l1-v1"
         }
       }, {
         "file": "petal-panic/assets/platforms_level2_sheet.png",
@@ -1709,25 +1719,35 @@
         "description": "Platform tiles level 2 (3x3 grid) + row 4: naked platforms (S/M/L)",
         "entities": [{
           "name": "platforms_level2",
-          "anim": "idle",
+          "anim": "single",
           "frames": [
-            {"file": "platforms_level2_idle_f1.png", "row": 0, "col": 0, "bbox": [33, 132, 276, 226]},
-            {"file": "platforms_level2_idle_f2.png", "row": 0, "col": 1, "bbox": [376, 41, 463, 321]},
-            {"file": "platforms_level2_idle_f3.png", "row": 0, "col": 2, "bbox": [889, 124, 632, 229]},
-            {"file": "platforms_level2_idle_f4.png", "row": 1, "col": 0, "bbox": [34, 463, 275, 206]},
-            {"file": "platforms_level2_idle_f5.png", "row": 1, "col": 1, "bbox": [375, 425, 459, 250]},
-            {"file": "platforms_level2_idle_f6.png", "row": 1, "col": 2, "bbox": [890, 361, 630, 315]},
-            {"file": "platforms_level2_idle_f7.png", "row": 2, "col": 0, "bbox": [38, 687, 266, 300]},
-            {"file": "platforms_level2_idle_f8.png", "row": 2, "col": 1, "bbox": [375, 718, 461, 266]},
-            {"file": "platforms_level2_idle_f9.png", "row": 2, "col": 2, "bbox": [886, 750, 635, 230]},
-            {"file": "platforms_level2_idle_f10.png", "row": 3, "col": 0, "bbox": [41, 1060, 260, 140]},
-            {"file": "platforms_level2_idle_f11.png", "row": 3, "col": 1, "bbox": [383, 1060, 447, 155]},
-            {"file": "platforms_level2_idle_f12.png", "row": 3, "col": 2, "bbox": [906, 1040, 594, 161]}
+            {"file": "platforms_level2_single_f1.png", "row": 0, "col": 0, "bbox": [37, 136, 268, 218]},
+            {"file": "platforms_level2_single_f2.png", "row": 1, "col": 0, "bbox": [38, 467, 267, 198]},
+            {"file": "platforms_level2_single_f3.png", "row": 2, "col": 0, "bbox": [42, 691, 258, 292]},
+            {"file": "platforms_level2_single_f4.png", "row": 3, "col": 0, "bbox": [37, 1056, 268, 148]}
+          ]
+        }, {
+          "name": "platforms_level2",
+          "anim": "double",
+          "frames": [
+            {"file": "platforms_level2_double_f1.png", "row": 0, "col": 1, "bbox": [380, 45, 455, 313]},
+            {"file": "platforms_level2_double_f2.png", "row": 1, "col": 1, "bbox": [379, 429, 451, 242]},
+            {"file": "platforms_level2_double_f3.png", "row": 2, "col": 1, "bbox": [379, 722, 453, 258]},
+            {"file": "platforms_level2_double_f4.png", "row": 3, "col": 1, "bbox": [379, 1056, 455, 163]}
+          ]
+        }, {
+          "name": "platforms_level2",
+          "anim": "triple",
+          "frames": [
+            {"file": "platforms_level2_triple_f1.png", "row": 0, "col": 2, "bbox": [893, 128, 624, 221]},
+            {"file": "platforms_level2_triple_f2.png", "row": 1, "col": 2, "bbox": [894, 365, 622, 307]},
+            {"file": "platforms_level2_triple_f3.png", "row": 2, "col": 2, "bbox": [890, 754, 627, 222]},
+            {"file": "platforms_level2_triple_f4.png", "row": 3, "col": 2, "bbox": [902, 1036, 602, 169]}
           ]
         }],
         "crop": {
           "frames_dir": "petal-panic/assets/objects",
-          "pass": "/tmp/redo-platforms-level2-v1"
+          "pass": "/tmp/plat-l2-v1"
         }
       }, {
         "file": "petal-panic/assets/platforms_level3_sheet.png",
@@ -1736,25 +1756,35 @@
         "description": "Platform tiles level 3 (3x3 grid) + row 4: naked platforms (S/M/L)",
         "entities": [{
           "name": "platforms_level3",
-          "anim": "idle",
+          "anim": "single",
           "frames": [
-            {"file": "platforms_level3_idle_f1.png", "row": 0, "col": 0, "bbox": [39, 133, 307, 230]},
-            {"file": "platforms_level3_idle_f2.png", "row": 0, "col": 1, "bbox": [421, 83, 419, 280]},
-            {"file": "platforms_level3_idle_f3.png", "row": 0, "col": 2, "bbox": [914, 93, 593, 280]},
-            {"file": "platforms_level3_idle_f4.png", "row": 1, "col": 0, "bbox": [39, 419, 295, 237]},
-            {"file": "platforms_level3_idle_f5.png", "row": 1, "col": 1, "bbox": [413, 428, 422, 231]},
-            {"file": "platforms_level3_idle_f6.png", "row": 1, "col": 2, "bbox": [901, 423, 594, 245]},
-            {"file": "platforms_level3_idle_f7.png", "row": 2, "col": 0, "bbox": [51, 704, 283, 272]},
-            {"file": "platforms_level3_idle_f8.png", "row": 2, "col": 1, "bbox": [413, 660, 449, 324]},
-            {"file": "platforms_level3_idle_f9.png", "row": 2, "col": 2, "bbox": [892, 721, 591, 266]},
-            {"file": "platforms_level3_idle_f10.png", "row": 3, "col": 0, "bbox": [48, 1060, 290, 150]},
-            {"file": "platforms_level3_idle_f11.png", "row": 3, "col": 1, "bbox": [421, 1060, 433, 172]},
-            {"file": "platforms_level3_idle_f12.png", "row": 3, "col": 2, "bbox": [912, 1040, 574, 165]}
+            {"file": "platforms_level3_single_f1.png", "row": 0, "col": 0, "bbox": [43, 137, 299, 222]},
+            {"file": "platforms_level3_single_f2.png", "row": 1, "col": 0, "bbox": [43, 423, 287, 229]},
+            {"file": "platforms_level3_single_f3.png", "row": 2, "col": 0, "bbox": [55, 708, 275, 264]},
+            {"file": "platforms_level3_single_f4.png", "row": 3, "col": 0, "bbox": [44, 1056, 298, 158]}
+          ]
+        }, {
+          "name": "platforms_level3",
+          "anim": "double",
+          "frames": [
+            {"file": "platforms_level3_double_f1.png", "row": 0, "col": 1, "bbox": [425, 87, 411, 272]},
+            {"file": "platforms_level3_double_f2.png", "row": 1, "col": 1, "bbox": [417, 432, 414, 223]},
+            {"file": "platforms_level3_double_f3.png", "row": 2, "col": 1, "bbox": [417, 664, 441, 316]},
+            {"file": "platforms_level3_double_f4.png", "row": 3, "col": 1, "bbox": [417, 1056, 441, 180]}
+          ]
+        }, {
+          "name": "platforms_level3",
+          "anim": "triple",
+          "frames": [
+            {"file": "platforms_level3_triple_f1.png", "row": 0, "col": 2, "bbox": [918, 97, 585, 272]},
+            {"file": "platforms_level3_triple_f2.png", "row": 1, "col": 2, "bbox": [905, 427, 586, 237]},
+            {"file": "platforms_level3_triple_f3.png", "row": 2, "col": 2, "bbox": [896, 725, 583, 258]},
+            {"file": "platforms_level3_triple_f4.png", "row": 3, "col": 2, "bbox": [908, 1036, 582, 173]}
           ]
         }],
         "crop": {
           "frames_dir": "petal-panic/assets/objects",
-          "pass": "/tmp/redo-platforms-level3-v1"
+          "pass": "/tmp/plat-l3-v1"
         }
       }, {
         "file": "petal-panic/assets/platforms_level4_sheet.png",
@@ -1764,25 +1794,35 @@
         "size": "1536x1024",
         "entities": [{
           "name": "platforms_level4",
-          "anim": "idle",
+          "anim": "single",
           "frames": [
-            {"file": "platforms_level4_idle_f1.png", "row": 0, "col": 0, "bbox": [30, 36, 293, 292]},
-            {"file": "platforms_level4_idle_f2.png", "row": 0, "col": 1, "bbox": [342, 35, 462, 288]},
-            {"file": "platforms_level4_idle_f3.png", "row": 0, "col": 2, "bbox": [812, 34, 711, 301]},
-            {"file": "platforms_level4_idle_f4.png", "row": 1, "col": 0, "bbox": [27, 367, 295, 290]},
-            {"file": "platforms_level4_idle_f5.png", "row": 1, "col": 1, "bbox": [343, 365, 456, 292]},
-            {"file": "platforms_level4_idle_f6.png", "row": 1, "col": 2, "bbox": [817, 350, 704, 315]},
-            {"file": "platforms_level4_idle_f7.png", "row": 2, "col": 0, "bbox": [25, 665, 298, 344]},
-            {"file": "platforms_level4_idle_f8.png", "row": 2, "col": 1, "bbox": [342, 665, 453, 344]},
-            {"file": "platforms_level4_idle_f9.png", "row": 2, "col": 2, "bbox": [811, 665, 714, 344]},
-            {"file": "platforms_level4_idle_f10.png", "row": 3, "col": 0, "bbox": [34, 1060, 281, 262]},
-            {"file": "platforms_level4_idle_f11.png", "row": 3, "col": 1, "bbox": [350, 1060, 445, 246]},
-            {"file": "platforms_level4_idle_f12.png", "row": 3, "col": 2, "bbox": [833, 1040, 669, 288]}
+            {"file": "platforms_level4_single_f1.png", "row": 0, "col": 0, "bbox": [34, 40, 285, 284]},
+            {"file": "platforms_level4_single_f2.png", "row": 1, "col": 0, "bbox": [31, 371, 287, 282]},
+            {"file": "platforms_level4_single_f3.png", "row": 2, "col": 0, "bbox": [29, 660, 290, 345]},
+            {"file": "platforms_level4_single_f4.png", "row": 3, "col": 0, "bbox": [30, 1056, 289, 270]}
+          ]
+        }, {
+          "name": "platforms_level4",
+          "anim": "double",
+          "frames": [
+            {"file": "platforms_level4_double_f1.png", "row": 0, "col": 1, "bbox": [346, 39, 454, 280]},
+            {"file": "platforms_level4_double_f2.png", "row": 1, "col": 1, "bbox": [347, 369, 448, 284]},
+            {"file": "platforms_level4_double_f3.png", "row": 2, "col": 1, "bbox": [346, 641, 445, 364]},
+            {"file": "platforms_level4_double_f4.png", "row": 3, "col": 1, "bbox": [346, 1056, 453, 254]}
+          ]
+        }, {
+          "name": "platforms_level4",
+          "anim": "triple",
+          "frames": [
+            {"file": "platforms_level4_triple_f1.png", "row": 0, "col": 2, "bbox": [816, 38, 703, 293]},
+            {"file": "platforms_level4_triple_f2.png", "row": 1, "col": 2, "bbox": [821, 350, 696, 319]},
+            {"file": "platforms_level4_triple_f3.png", "row": 2, "col": 2, "bbox": [815, 641, 706, 364]},
+            {"file": "platforms_level4_triple_f4.png", "row": 3, "col": 2, "bbox": [829, 1036, 677, 296]}
           ]
         }],
         "crop": {
           "frames_dir": "petal-panic/assets/objects",
-          "pass": "/tmp/redo-platforms-level4-v18"
+          "pass": "/tmp/plat-l4-v1"
         }
       }, {
         "file": "petal-panic/assets/blocks_level1_sheet_2.png",
@@ -2237,6 +2277,6 @@
       }]
     }
   },
-  "updated": "2026-09-15T19:44:13",
+  "updated": "2026-09-16T00:59:42",
   "chat_url": "null"
 }
