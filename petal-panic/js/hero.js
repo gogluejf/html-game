@@ -158,13 +158,12 @@ export class Hero extends Entity {
    */
   takeHit({ dirX = 0, dirY = 0, strength = 240, recovery = 0.25, invincible = 0.6 }) {
     if (this.dying) return false;
-    if (this.timers.get('inv') > 0) return false; // i-frames absorb it
+    if (this.intangible) return false; // intangible absorbs it
     const len = Math.hypot(dirX, dirY) || 1;
     this.vx += (dirX / len) * strength;
     this.vy += (dirY / len) * strength;
     this.timers.set('rec', recovery);
-    this.timers.set('inv', Math.max(this.timers.get('inv'), invincible));
-    // Intangible during i-frames (visual blink + no further hits).
+    // Intangible for the i-frame duration (drives both the state + the blink).
     this.intangible = true;
     this.timers.set('intangible', Math.max(this.timers.get('intangible'), invincible));
     return true;
