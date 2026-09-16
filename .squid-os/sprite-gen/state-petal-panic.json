@@ -1869,26 +1869,26 @@
           "anim": "single",
           "frames": [
             {"file": "blocks_level2_single_f1.png", "row": 0, "col": 0, "bbox": [34, 570, 452, 320]},
-            {"file": "blocks_level2_single_f2.png", "row": 1, "col": 0, "bbox": [38, 1617, 462, 271]}
+            {"file": "blocks_level2_single_f2.png", "row": 1, "col": 0, "bbox": [35, 1625, 461, 267]}
           ]
         }, {
           "name": "blocks_level2",
           "anim": "double",
           "frames": [
             {"file": "blocks_level2_double_f1.png", "row": 0, "col": 1, "bbox": [501, 250, 479, 640]},
-            {"file": "blocks_level2_double_f2.png", "row": 1, "col": 1, "bbox": [529, 1419, 457, 468]}
+            {"file": "blocks_level2_double_f2.png", "row": 1, "col": 1, "bbox": [516, 1430, 468, 462]}
           ]
         }, {
           "name": "blocks_level2",
           "anim": "triple",
           "frames": [
             {"file": "blocks_level2_triple_f1.png", "row": 0, "col": 2, "bbox": [992, 15, 535, 876]},
-            {"file": "blocks_level2_triple_f2.png", "row": 1, "col": 2, "bbox": [1004, 1233, 501, 655]}
+            {"file": "blocks_level2_triple_f2.png", "row": 1, "col": 2, "bbox": [1004, 1255, 503, 637]}
           ]
         }],
         "crop": {
           "frames_dir": "petal-panic/assets/objects",
-          "pass": "/tmp/blocks-l2-v1"
+          "pass": "/home/goglue/tmp/blocks-regen/l2-v2"
         }
       }, {
         "file": "petal-panic/assets/blocks_level3_sheet.png",
@@ -2249,6 +2249,6 @@
       }]
     }
   },
-  "updated": "2026-09-16T01:34:08",
+  "updated": "2026-09-16T01:36:10",
   "chat_url": "null"
 }
