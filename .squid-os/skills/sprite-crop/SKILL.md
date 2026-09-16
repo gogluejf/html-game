@@ -82,6 +82,19 @@ This is IDEMPOTENT: re-running for a re-cropped sheet REPLACES the `crop` block 
 ```
 All legacy grid fields (`row_y`, `col_x`, `frame_size`, `bg_color`, `bg_tol`) are dropped on record.
 
+### 6. Sprite editor (on demand, for crop verification)
+
+The editor is a single-file HTML app that shows every sheet with its recorded
+crop bboxes overlaid — use it to verify cuts after a crop pass.
+
+```bash
+python3 <working-dir>/.squid-os/skills/sprite-crop/scripts/render_editor.py [project ...]
+# outputs: <working-dir>/.squid-os/sprite-gen/editor-<project>.html
+```
+
+Template: `skills/sprite-crop/templates/editor-template.html`. Re-run after any
+state change (new crops, bbox edits) and open the generated file to inspect.
+
 ## Rules
 - **Frames are clusters, not cells.** Ownership first, rectangles second. Never treat a virtual grid or measured separator as a clipping boundary — limbs/attacks may cross into neighbor territory and must stay whole.
 - **Assess before extracting.** Always inspect the full sheet with vision and record expected rows/actions/counts BEFORE running extract. The expected count constrains clustering; extraction without an assessment is blind.
@@ -165,6 +178,10 @@ Skill actions:
 
 ### Scripts
 - [extract_frames.py](scripts/extract_frames.py) — Executable script
+- [render_editor.py](scripts/render_editor.py) — Renders editor-<project>.html from state JSON + template
+
+### Templates
+- [editor-template.html](templates/editor-template.html) — Editor UI with `/*__MANIFEST__*/` placeholder
 
 ### References
 - [extraction-design.md](references/extraction-design.md) — Additional documentation

@@ -8,7 +8,7 @@ and renders editor-<project>.html from editor-template.html.
 import json, sys
 from pathlib import Path
 
-SKILL = Path(__file__).resolve().parent.parent            # .squid-os/skills/sprite-gen
+SKILL = Path(__file__).resolve().parent.parent            # .squid-os/skills/sprite-crop
 TEMPLATE = SKILL / "templates" / "editor-template.html"
 OUT_DIR = SKILL.parent.parent / "sprite-gen"              # .squid-os/sprite-gen (outputs + state)
 
