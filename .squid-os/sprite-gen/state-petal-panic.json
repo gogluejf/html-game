@@ -4983,9 +4983,9 @@
         },
         {
           "file": "petal-panic/assets/platforms_level1_sheet.png",
-          "rows": 3,
+          "rows": 4,
           "cols": 3,
-          "description": "Platform tiles level 1 (3x3 grid)",
+          "description": "Platform tiles level 1 (3x3 grid) + row 4: naked platforms (S/M/L)",
           "entities": [
             {
               "row": [
@@ -5005,6 +5005,16 @@
                 "platforms_level1_idle_f7.png",
                 "platforms_level1_idle_f8.png",
                 "platforms_level1_idle_f9.png"
+              ]
+            },
+            {
+              "row": 4,
+              "name": "platforms_level1",
+              "anim": "idle (naked platform tiles, small/medium/large)",
+              "frames": [
+                "platforms_level1_idle_f10.png",
+                "platforms_level1_idle_f11.png",
+                "platforms_level1_idle_f12.png"
               ]
             }
           ],
@@ -5065,15 +5075,33 @@
                 754,
                 660,
                 229
+              ],
+              "platforms_level1_idle_f10.png": [
+                20,
+                1210,
+                305,
+                191
+              ],
+              "platforms_level1_idle_f11.png": [
+                356,
+                1210,
+                438,
+                203
+              ],
+              "platforms_level1_idle_f12.png": [
+                822,
+                1209,
+                693,
+                192
               ]
             }
           }
         },
         {
           "file": "petal-panic/assets/platforms_level2_sheet.png",
-          "rows": 3,
+          "rows": 4,
           "cols": 3,
-          "description": "Platform tiles level 2 (3x3 grid)",
+          "description": "Platform tiles level 2 (3x3 grid) + row 4: naked platforms (S/M/L)",
           "entities": [
             {
               "row": [
@@ -5093,6 +5121,16 @@
                 "platforms_level2_idle_f7.png",
                 "platforms_level2_idle_f8.png",
                 "platforms_level2_idle_f9.png"
+              ]
+            },
+            {
+              "row": 4,
+              "name": "platforms_level2",
+              "anim": "idle (naked platform tiles, small/medium/large)",
+              "frames": [
+                "platforms_level2_idle_f10.png",
+                "platforms_level2_idle_f11.png",
+                "platforms_level2_idle_f12.png"
               ]
             }
           ],
@@ -5153,15 +5191,33 @@
                 750,
                 635,
                 230
+              ],
+              "platforms_level2_idle_f10.png": [
+                20,
+                1219,
+                313,
+                172
+              ],
+              "platforms_level2_idle_f11.png": [
+                377,
+                1219,
+                494,
+                176
+              ],
+              "platforms_level2_idle_f12.png": [
+                906,
+                1218,
+                613,
+                173
               ]
             }
           }
         },
         {
           "file": "petal-panic/assets/platforms_level3_sheet.png",
-          "rows": 3,
+          "rows": 4,
           "cols": 3,
-          "description": "Platform tiles level 3 (3x3 grid)",
+          "description": "Platform tiles level 3 (3x3 grid) + row 4: naked platforms (S/M/L)",
           "entities": [
             {
               "row": [
@@ -5181,6 +5237,16 @@
                 "platforms_level3_idle_f7.png",
                 "platforms_level3_idle_f8.png",
                 "platforms_level3_idle_f9.png"
+              ]
+            },
+            {
+              "row": 4,
+              "name": "platforms_level3",
+              "anim": "idle (naked platform tiles, small/medium/large)",
+              "frames": [
+                "platforms_level3_idle_f10.png",
+                "platforms_level3_idle_f11.png",
+                "platforms_level3_idle_f12.png"
               ]
             }
           ],
@@ -5241,15 +5307,33 @@
                 721,
                 591,
                 266
+              ],
+              "platforms_level3_idle_f10.png": [
+                22,
+                1222,
+                338,
+                179
+              ],
+              "platforms_level3_idle_f11.png": [
+                398,
+                1221,
+                451,
+                186
+              ],
+              "platforms_level3_idle_f12.png": [
+                891,
+                1221,
+                626,
+                187
               ]
             }
           }
         },
         {
           "file": "petal-panic/assets/platforms_level4_sheet.png",
-          "rows": 3,
+          "rows": 4,
           "cols": 3,
-          "description": "Colonel Carrot fortress platform tiles (stone blocks with carrot-crest shields, lanterns, bunting), 3x3 grid with props on top",
+          "description": "Colonel Carrot fortress platform tiles (stone blocks with carrot-crest shields, lanterns, bunting), 3x3 grid with props on top + row 4: naked platforms (S/M/L)",
           "size": "1536x1024",
           "entities": [
             {
@@ -5270,6 +5354,16 @@
                 "platforms_level4_idle_f7.png",
                 "platforms_level4_idle_f8.png",
                 "platforms_level4_idle_f9.png"
+              ]
+            },
+            {
+              "row": 4,
+              "name": "platforms_level4",
+              "anim": "idle (naked platform tiles, small/medium/large)",
+              "frames": [
+                "platforms_level4_idle_f10.png",
+                "platforms_level4_idle_f11.png",
+                "platforms_level4_idle_f12.png"
               ]
             }
           ],
@@ -5330,189 +5424,27 @@
                 665,
                 714,
                 344
-              ]
-            }
-          }
-        },
-        {
-          "file": "petal-panic/assets/platforms_level1_sheet_2.png",
-          "size": "2172x724",
-          "rows": 1,
-          "cols": 3,
-          "cell": 724,
-          "description": "Level 1 naked platforms \u2014 one row of 3 tiles, empty top surface (no props), generated via ChatGPT upload+regen",
-          "entities": [
-            {
-              "row": 1,
-              "name": "platforms_level1",
-              "anim": "idle (naked platform tiles, small/medium/large)",
-              "frames": [
-                "platforms_level1_idle_f10.png",
-                "platforms_level1_idle_f11.png",
-                "platforms_level1_idle_f12.png"
-              ]
-            }
-          ],
-          "crop": {
-            "frames_dir": "petal-panic/assets/objects",
-            "pass": "petal-panic/assets/objects",
-            "frames_bbox": {
-              "platforms_level1_idle_f10.png": [
-                20,
-                162,
-                305,
-                191
               ],
-              "platforms_level1_idle_f11.png": [
-                356,
-                162,
-                438,
-                203
-              ],
-              "platforms_level1_idle_f12.png": [
-                822,
-                161,
-                693,
-                192
-              ]
-            }
-          },
-          "generated_in_chat": "https://chatgpt.com/c/6aa9cf38-a92c-83e9-873c-22178a46c496"
-        },
-        {
-          "file": "petal-panic/assets/platforms_level2_sheet_2.png",
-          "size": "2172x724",
-          "rows": 1,
-          "cols": 3,
-          "cell": 724,
-          "description": "Level 2 naked platforms \u2014 one row of 3 tiles, empty top surface (no props), generated via ChatGPT upload+regen",
-          "entities": [
-            {
-              "row": 1,
-              "name": "platforms_level2",
-              "anim": "idle (naked platform tiles, small/medium/large)",
-              "frames": [
-                "platforms_level2_idle_f10.png",
-                "platforms_level2_idle_f11.png",
-                "platforms_level2_idle_f12.png"
-              ]
-            }
-          ],
-          "crop": {
-            "frames_dir": "petal-panic/assets/objects",
-            "pass": "petal-panic/assets/objects",
-            "frames_bbox": {
-              "platforms_level2_idle_f10.png": [
-                20,
-                171,
-                313,
-                172
-              ],
-              "platforms_level2_idle_f11.png": [
-                377,
-                171,
-                494,
-                176
-              ],
-              "platforms_level2_idle_f12.png": [
-                906,
-                170,
-                613,
-                173
-              ]
-            }
-          },
-          "generated_in_chat": "https://chatgpt.com/c/6aa9cf38-a92c-83e9-873c-22178a46c496"
-        },
-        {
-          "file": "petal-panic/assets/platforms_level3_sheet_2.png",
-          "size": "2172x724",
-          "rows": 1,
-          "cols": 3,
-          "cell": 724,
-          "description": "Level 3 naked platforms \u2014 one row of 3 tiles, empty top surface (no props), generated via ChatGPT upload+regen",
-          "entities": [
-            {
-              "row": 1,
-              "name": "platforms_level3",
-              "anim": "idle (naked platform tiles, small/medium/large)",
-              "frames": [
-                "platforms_level3_idle_f10.png",
-                "platforms_level3_idle_f11.png",
-                "platforms_level3_idle_f12.png"
-              ]
-            }
-          ],
-          "crop": {
-            "frames_dir": "petal-panic/assets/objects",
-            "pass": "petal-panic/assets/objects",
-            "frames_bbox": {
-              "platforms_level3_idle_f10.png": [
-                22,
-                174,
-                338,
-                179
-              ],
-              "platforms_level3_idle_f11.png": [
-                398,
-                173,
-                451,
-                186
-              ],
-              "platforms_level3_idle_f12.png": [
-                891,
-                173,
-                626,
-                187
-              ]
-            }
-          },
-          "generated_in_chat": "https://chatgpt.com/c/6aa9cf38-a92c-83e9-873c-22178a46c496"
-        },
-        {
-          "file": "petal-panic/assets/platforms_level4_sheet_2.png",
-          "size": "2172x724",
-          "rows": 1,
-          "cols": 3,
-          "cell": 724,
-          "description": "Level 4 naked platforms \u2014 one row of 3 tiles, empty top surface (no props), generated via ChatGPT upload+regen",
-          "entities": [
-            {
-              "row": 1,
-              "name": "platforms_level4",
-              "anim": "idle (naked platform tiles, small/medium/large)",
-              "frames": [
-                "platforms_level4_idle_f10.png",
-                "platforms_level4_idle_f11.png",
-                "platforms_level4_idle_f12.png"
-              ]
-            }
-          ],
-          "crop": {
-            "frames_dir": "petal-panic/assets/objects",
-            "pass": "petal-panic/assets/objects",
-            "frames_bbox": {
               "platforms_level4_idle_f10.png": [
                 21,
-                125,
+                1173,
                 290,
                 270
               ],
               "platforms_level4_idle_f11.png": [
                 341,
-                125,
+                1173,
                 498,
                 278
               ],
               "platforms_level4_idle_f12.png": [
                 880,
-                124,
+                1172,
                 637,
                 279
               ]
             }
-          },
-          "generated_in_chat": "https://chatgpt.com/c/6aa9cf38-a92c-83e9-873c-22178a46c496"
+          }
         },
         {
           "file": "petal-panic/assets/blocks_level1_sheet_2.png",
