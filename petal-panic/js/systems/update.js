@@ -17,6 +17,7 @@ import { Hero } from '../hero.js';
 import { HEROES } from '../heroDefs.js';
 import { projectilePool, specialPool, aimFromInput, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
+import { makeHitbox, resetHitbox, processHitboxes } from '../hitbox.js';
 import { S, getState, STATE_NAMES, tryTransition, onTransition } from '../state.js';
 import { screenOnKey, screenOnKeyUp, screenReset } from '../screens.js';
 import { Jester } from '../jester.js';
@@ -1100,8 +1101,7 @@ export function update(dt) {
       hero.runStats.meleeSwings += 1; // Task 7.3 — count the swing start
     }
   }
-  applyMeleeDamage(hero, dt);
-  applySuperDamage(hero);
+  processAllHitboxes();
 
   // 1d. decay hit-flash timers on enemies (white flash when struck).
   for (const e of enemies) {
@@ -1355,126 +1355,114 @@ function explodeSpecial(s) {
 // per swing (tracked in _meleeHitSet), so a multi-enemy overlap still deals
 // exactly one hit each. The cooldown prevents spamming.
 
+// --- Unified hitbox system ---------------------------------------------------
+// All attack hitboxes (hero melee, hero super, enemy whip/lunge/jab) register
+// here each frame. One generic loop processes them via processHitboxes().
+
+const _hitboxes = []; // registered hitbox instances (reused, not allocated per frame)
+
+// Hero melee hitbox (ally team).
+const _hbMelee = makeHitbox({ owner: null, team: 'ally', box: null, damage: 0, method: 'melee' });
+_hitboxes.push(_hbMelee);
+
+// Hero super dash hitbox (ally team).
+const _hbSuper = makeHitbox({ owner: null, team: 'ally', box: null, damage: 0, method: 'super' });
+_hitboxes.push(_hbSuper);
+
 /**
- * Check the hero's active melee hitbox against all enemies this step.
- * Only produces damage when the swing is on its active frame.
- * @param {Hero} h the swinging hero
- * @param {number} dt seconds (unused here but kept for symmetry)
+ * Register active hitboxes for this frame and process them all in one pass.
+ * Called once per update tick after all entities have integrated.
  */
-function applyMeleeDamage(h, _dt) {
-  const hb = h.meleeHitboxWorld;
-  if (!hb) return; // not on the active frame — no damage window
+function processAllHitboxes() {
+  const h = hero;
 
-  // Reset the per-swing hit set at the start of the active frame.
-  if (!h._meleeHitSet || h.meleeFrame < h.MELEE_ACTIVE_FRAME + 0.5) {
-    h._meleeHitSet = new Set();
-  }
-
-  for (const e of enemies) {
-    if (!e.alive) continue;
-    if (h._meleeHitSet.has(e)) continue; // already struck this swing
-    const eb = e.worldBox();
-    // AABB overlap test
-    if (hb.x < eb.x + eb.w && hb.x + hb.w > eb.x &&
-        hb.y < eb.y + eb.h && hb.y + hb.h > eb.y) {
-      const dealt = damage(h, e, h.stats.attack, 'melee');
-      if (dealt > 0) {
-        e.hitFlash = 0.1; // brief white flash
-        Effects.beginEnemyShake(e); // Task 7.1 — fast shake on melee hit
-        h._meleeHitSet.add(e);
-        if (!e.alive) world.remove(e); // destroyed — drop from play
-      }
+  // --- Hero melee ---
+  const mh = h.meleeHitboxWorld;
+  if (mh) {
+    _hbMelee.owner = h;
+    _hbMelee.box = mh;
+    _hbMelee.damage = h.stats.attack;
+    _hbMelee.active = true;
+    // Reset hit set at start of active frame.
+    if (!h._meleeHitSet || h.meleeFrame < h.MELEE_ACTIVE_FRAME + 0.5) {
+      resetHitbox(_hbMelee);
+      h._meleeHitSet = _hbMelee.hitSet; // keep legacy ref working
     }
+  } else {
+    _hbMelee.active = false;
   }
 
-  // Task 3.3 + 5.1 — melee hits every real enemy (Enemy instances with takeDamage).
+  // --- Hero super dash ---
+  const sh = h.superHitboxWorld;
+  if (sh) {
+    _hbSuper.owner = h;
+    _hbSuper.box = sh;
+    _hbSuper.damage = h.stats.attack * 2;
+    _hbSuper.active = true;
+  } else {
+    _hbSuper.active = false;
+  }
+
+  // --- Enemy attack hitboxes (whip, lunge, jab) ---
+  // Each real enemy exposes an attack hitbox getter. Register dynamically.
   for (const e of realEnemies) {
     if (!e.alive || e.aiState === 'dead') continue;
-    if (h._meleeHitSet.has(e)) continue;
-    const eb = e.worldBox();
-    if (hb.x < eb.x + eb.w && hb.x + hb.w > eb.x &&
-        hb.y < eb.y + eb.h && hb.y + hb.h > eb.y) {
-      const dealt = e.takeDamage(h.stats.attack, h, 'melee');
-      if (dealt > 0) {
-        Effects.beginEnemyShake(e); // Task 7.1 — fast shake on melee hit
-        h._meleeHitSet.add(e);
-        if (!e.alive) world.remove(e); // destroyed — drop from play
-      }
+    const ehb = getEnemyAttackHitbox(e);
+    if (!ehb) continue;
+    let hb = e._hitbox;
+    if (!hb) {
+      hb = makeHitbox({ owner: e, team: 'foe', box: null, damage: e.stats.attack, method: 'melee' });
+      e._hitbox = hb;
+      _hitboxes.push(hb);
+    }
+    hb.owner = e;
+    hb.box = ehb;
+    hb.damage = e.stats.attack;
+    hb.active = true;
+    if (!e._hitboxReset) {
+      resetHitbox(hb);
+      e._hitboxReset = true;
+    }
+  }
+  // Deactivate enemy hitboxes that aren't attacking this frame.
+  for (const e of realEnemies) {
+    if (e._hitbox && !getEnemyAttackHitbox(e)) {
+      e._hitbox.active = false;
+      e._hitboxReset = false;
     }
   }
 
-  // Task 4.1 — melee chips barrel HP (a swing breaks a barrel over several hits;
-  // it does NOT break on touch). Each barrel is struck at most once per swing.
-  for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) {
-    if (!b.alive || b.destroyed) continue;
-    if (h._meleeHitSet.has(b)) continue;
-    const bb = b.worldBox();
-    if (hb.x < bb.x + bb.w && hb.x + hb.w > bb.x &&
-        hb.y < bb.y + bb.h && hb.y + hb.h > bb.y) {
-      const dealt = b.hit(h.stats.attack, h, 'melee');
-      if (dealt > 0) {
-        h._meleeHitSet.add(b);
-        if (b.destroyed) handleBarrelDestroyed(b);
-      }
+  // --- Process all against all targets ---
+  const targets = [h, ...realEnemies, boss, ...barrels, ...woodBarrels, ...coinBarrels].filter(Boolean);
+  processHitboxes(_hitboxes, targets, (hb, target, dealt) => {
+    // VFX / juice on hit.
+    if (target.layer === LAYER.HERO) {
+      Effects.heroDamaged();
+    } else {
+      Effects.beginEnemyShake(target);
+      if (target.hitFlash !== undefined) target.hitFlash = 0.1;
     }
-  }
+    // Remove dead enemies from world.
+    if (target.alive === false && target !== h) {
+      world.remove(target);
+    }
+    // Handle barrel destruction.
+    if (target.destroyed) {
+      handleBarrelDestroyed(target);
+    }
+  });
 }
 
 /**
- * Super dash damage: while the hero is dashing, the superHitboxWorld deals
- * damage to any enemy or barrel it plows through. Each target is hit at most
- * once per dash (tracked in _superHitSet).
+ * Get the current attack hitbox for a real enemy, or null.
+ * Each enemy type stores its hitbox getter under a known property name.
  */
-function applySuperDamage(h) {
-  const hb = h.superHitboxWorld;
-  if (!hb) return;
-
-  if (!h._superHitSet) h._superHitSet = new Set();
-
-  // Real enemies.
-  for (const e of realEnemies) {
-    if (!e.alive || e.aiState === 'dead') continue;
-    if (h._superHitSet.has(e)) continue;
-    const eb = e.worldBox();
-    if (hb.x < eb.x + eb.w && hb.x + hb.w > eb.x &&
-        hb.y < eb.y + eb.h && hb.y + hb.h > eb.y) {
-      const dealt = e.takeDamage(h.stats.attack * 2, h, 'super');
-      if (dealt > 0) {
-        Effects.beginEnemyShake(e);
-        h._superHitSet.add(e);
-        if (!e.alive) world.remove(e);
-      }
-    }
-  }
-
-  // Boss.
-  if (boss && boss.alive && boss.aiState !== 'dead' && !h._superHitSet.has(boss)) {
-    const eb = boss.worldBox();
-    if (hb.x < eb.x + eb.w && hb.x + hb.w > eb.x &&
-        hb.y < eb.y + eb.h && hb.y + hb.h > eb.y) {
-      const px = hb.x + hb.w / 2, py = hb.y + hb.h / 2;
-      const dealt = boss.takeDamage(h.stats.attack * 2, h, 'super', { x: px, y: py });
-      if (dealt > 0) {
-        Effects.beginEnemyShake(boss);
-        h._superHitSet.add(boss);
-      }
-    }
-  }
-
-  // Barrels.
-  for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) {
-    if (!b.alive || b.destroyed) continue;
-    if (h._superHitSet.has(b)) continue;
-    const bb = b.worldBox();
-    if (hb.x < bb.x + bb.w && hb.x + hb.w > bb.x &&
-        hb.y < bb.y + bb.h && hb.y + hb.h > bb.y) {
-      const dealt = b.hit(h.stats.attack * 2, h, 'super');
-      if (dealt > 0) {
-        h._superHitSet.add(b);
-        if (b.destroyed) handleBarrelDestroyed(b);
-      }
-    }
-  }
+function getEnemyAttackHitbox(e) {
+  // Jester: whipHitboxWorld, VineHound: lungeHitboxWorld, Violetta: meleeHitboxWorld
+  if (e.whipHitboxWorld != null) return e.whipHitboxWorld;
+  if (e.lungeHitboxWorld != null) return e.lungeHitboxWorld;
+  if (e.meleeHitboxWorld != null) return e.meleeHitboxWorld;
+  return null;
 }
 
 // --- Real-enemy update (Task 3.3 jester + Task 5.1 remaining AIs) ------------
@@ -1503,24 +1491,11 @@ function updateRealEnemy(e, dt) {
     resolve(e, [...SOLIDS, ...barrelSolidBoxes]);
   }
 
-  // Attack hitbox check: each type exposes an active-world hitbox getter that
-  // returns null outside its damage window. On overlap we deal one hit per
-  // swing/lunge/jab (tracked via _atkHitDone), then reset when the window ends.
+  // Attack hitbox: now handled by the unified processAllHitboxes() system.
+  // The old inline check is removed; enemy hitboxes register as team:'foe'
+  // and the generic loop routes them against the hero.
   const atkHb = getAttackHitbox(e);
-  if (atkHb && !e._atkHitDone) {
-    const hb = hero.worldBox();
-    // Task 5.2 — no melee damage while the hero is mid-death.
-    if (!hero.dying && aabbOverlap(atkHb, hb)) {
-      const dealt = damage(e, hero, e.stats.attack, 'melee');
-      if (dealt > 0) {
-        e._atkHitDone = true; // one hit per swing
-        hero.invincibleTimer = Math.max(hero.invincibleTimer, 0.3); // brief i-frames
-        Effects.heroDamaged(); // Task 7.1 — red vignette on enemy melee hit
-      }
-    }
-  }
-  // Reset the hit flag once the attack window closes (hitbox back to null).
-  if (!atkHb) e._atkHitDone = false;
+  if (!atkHb) e._atkHitDone = false; // reset when window closes (hitbox system uses its own hitSet)
 
   // Jack-O-Lantern explosion: when it detonates, run the AoE blast (same pattern
   // as a barrel) and spawn VFX. The explode() hook fires exactly once.
