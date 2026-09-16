@@ -1692,12 +1692,7 @@
             {"file": "platforms_level1_idle_f6.png", "row": 1, "col": 2, "bbox": [853, 413, 651, 271]},
             {"file": "platforms_level1_idle_f7.png", "row": 2, "col": 0, "bbox": [29, 708, 296, 276]},
             {"file": "platforms_level1_idle_f8.png", "row": 2, "col": 1, "bbox": [380, 704, 442, 281]},
-            {"file": "platforms_level1_idle_f9.png", "row": 2, "col": 2, "bbox": [854, 754, 660, 229]}
-          ]
-        }, {
-          "name": "platforms_level1",
-          "anim": "idle (naked platform tiles, small/medium/large)",
-          "frames": [
+            {"file": "platforms_level1_idle_f9.png", "row": 2, "col": 2, "bbox": [854, 754, 660, 229]},
             {"file": "platforms_level1_idle_f10.png", "row": 3, "col": 0, "bbox": [37, 1061, 280, 172]},
             {"file": "platforms_level1_idle_f11.png", "row": 3, "col": 1, "bbox": [384, 1060, 430, 194]},
             {"file": "platforms_level1_idle_f12.png", "row": 3, "col": 2, "bbox": [873, 1039, 620, 167]}
@@ -1724,12 +1719,7 @@
             {"file": "platforms_level2_idle_f6.png", "row": 1, "col": 2, "bbox": [890, 361, 630, 315]},
             {"file": "platforms_level2_idle_f7.png", "row": 2, "col": 0, "bbox": [38, 687, 266, 300]},
             {"file": "platforms_level2_idle_f8.png", "row": 2, "col": 1, "bbox": [375, 718, 461, 266]},
-            {"file": "platforms_level2_idle_f9.png", "row": 2, "col": 2, "bbox": [886, 750, 635, 230]}
-          ]
-        }, {
-          "name": "platforms_level2",
-          "anim": "idle (naked platform tiles, small/medium/large)",
-          "frames": [
+            {"file": "platforms_level2_idle_f9.png", "row": 2, "col": 2, "bbox": [886, 750, 635, 230]},
             {"file": "platforms_level2_idle_f10.png", "row": 3, "col": 0, "bbox": [41, 1060, 260, 140]},
             {"file": "platforms_level2_idle_f11.png", "row": 3, "col": 1, "bbox": [383, 1060, 447, 155]},
             {"file": "platforms_level2_idle_f12.png", "row": 3, "col": 2, "bbox": [906, 1040, 594, 161]}
@@ -1756,12 +1746,7 @@
             {"file": "platforms_level3_idle_f6.png", "row": 1, "col": 2, "bbox": [901, 423, 594, 245]},
             {"file": "platforms_level3_idle_f7.png", "row": 2, "col": 0, "bbox": [51, 704, 283, 272]},
             {"file": "platforms_level3_idle_f8.png", "row": 2, "col": 1, "bbox": [413, 660, 449, 324]},
-            {"file": "platforms_level3_idle_f9.png", "row": 2, "col": 2, "bbox": [892, 721, 591, 266]}
-          ]
-        }, {
-          "name": "platforms_level3",
-          "anim": "idle (naked platform tiles, small/medium/large)",
-          "frames": [
+            {"file": "platforms_level3_idle_f9.png", "row": 2, "col": 2, "bbox": [892, 721, 591, 266]},
             {"file": "platforms_level3_idle_f10.png", "row": 3, "col": 0, "bbox": [48, 1060, 290, 150]},
             {"file": "platforms_level3_idle_f11.png", "row": 3, "col": 1, "bbox": [421, 1060, 433, 172]},
             {"file": "platforms_level3_idle_f12.png", "row": 3, "col": 2, "bbox": [912, 1040, 574, 165]}
@@ -1789,12 +1774,7 @@
             {"file": "platforms_level4_idle_f6.png", "row": 1, "col": 2, "bbox": [817, 350, 704, 315]},
             {"file": "platforms_level4_idle_f7.png", "row": 2, "col": 0, "bbox": [25, 665, 298, 344]},
             {"file": "platforms_level4_idle_f8.png", "row": 2, "col": 1, "bbox": [342, 665, 453, 344]},
-            {"file": "platforms_level4_idle_f9.png", "row": 2, "col": 2, "bbox": [811, 665, 714, 344]}
-          ]
-        }, {
-          "name": "platforms_level4",
-          "anim": "idle (naked platform tiles, small/medium/large)",
-          "frames": [
+            {"file": "platforms_level4_idle_f9.png", "row": 2, "col": 2, "bbox": [811, 665, 714, 344]},
             {"file": "platforms_level4_idle_f10.png", "row": 3, "col": 0, "bbox": [34, 1060, 281, 262]},
             {"file": "platforms_level4_idle_f11.png", "row": 3, "col": 1, "bbox": [350, 1060, 445, 246]},
             {"file": "platforms_level4_idle_f12.png", "row": 3, "col": 2, "bbox": [833, 1040, 669, 288]}
@@ -1813,7 +1793,7 @@
         "description": "Level 1 naked blocks \u2014 one row of 3 stacked-block tiles, empty top surface (no props), generated via ChatGPT upload+regen",
         "entities": [{
           "name": "blocks_level1",
-          "anim": "idle (naked block tiles, small/medium/large)",
+          "anim": "idle",
           "frames": [
             {"file": "blocks_level1_idle_f4.png", "row": 0, "col": 0, "bbox": [38, 609, 463, 270]},
             {"file": "blocks_level1_idle_f5.png", "row": 0, "col": 1, "bbox": [532, 422, 456, 443]},
@@ -1833,7 +1813,7 @@
         "description": "Level 2 naked blocks \u2014 one row of 3 stacked-block tiles, empty top surface (no props), generated via ChatGPT upload+regen",
         "entities": [{
           "name": "blocks_level2",
-          "anim": "idle (naked block tiles, small/medium/large)",
+          "anim": "idle",
           "frames": [
             {"file": "blocks_level2_idle_f4.png", "row": 0, "col": 0, "bbox": [38, 593, 462, 271]},
             {"file": "blocks_level2_idle_f5.png", "row": 0, "col": 1, "bbox": [529, 395, 457, 468]},
@@ -1853,7 +1833,7 @@
         "description": "Level 3 naked blocks \u2014 one row of 3 stacked-block tiles, empty top surface (no props), generated via ChatGPT upload+regen",
         "entities": [{
           "name": "blocks_level3",
-          "anim": "idle (naked block tiles, small/medium/large)",
+          "anim": "idle",
           "frames": [
             {"file": "blocks_level3_idle_f4.png", "row": 0, "col": 0, "bbox": [49, 596, 466, 319]},
             {"file": "blocks_level3_idle_f5.png", "row": 0, "col": 1, "bbox": [540, 390, 451, 525]},
@@ -1873,7 +1853,7 @@
         "description": "Level 4 naked blocks \u2014 one row of 3 stacked-block tiles, empty top surface (no props), generated via ChatGPT upload+regen",
         "entities": [{
           "name": "blocks_level4",
-          "anim": "idle (naked block tiles, small/medium/large)",
+          "anim": "idle",
           "frames": [
             {"file": "blocks_level4_idle_f4.png", "row": 0, "col": 0, "bbox": [27, 557, 489, 364]},
             {"file": "blocks_level4_idle_f5.png", "row": 0, "col": 1, "bbox": [524, 308, 482, 613]},
