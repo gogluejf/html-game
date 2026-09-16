@@ -92,11 +92,10 @@ def main():
     R, C = sheet.get("rows", 0), sheet.get("cols", 0)
     rc_fallback = derive_rowcol(frames, R, C)
 
-    # --- sync entities[].frames from the result (group by entity+action) ---
-    # Each frame becomes {file, row, col, bbox} — single source of truth.
+    # --- sync entities[].frames from the result (group by entity+anim) ---
     by_ea = {}
     for fr in frames:
-        key = (fr["entity"], fr["action"])
+        key = (fr["entity"], fr.get("anim", fr.get("action")))
         by_ea.setdefault(key, []).append(fr)
     for key, flist in by_ea.items():
         flist.sort(key=lambda x: x["frame"])

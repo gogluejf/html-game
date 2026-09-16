@@ -13,12 +13,16 @@ Pipeline:
 Every stage prints a readable trace; --json also dumps the full result tree.
 
 Subcommands:
-  extract  --sheet PATH --out DIR --rows R1,R2,... [--names n1,n2,...]
-           [--actions a1,a2,...] [--margin N] [--alpha-threshold N]
+  extract  --sheet PATH --out DIR (--rows R1,R2,... | --cols C1,C2,...)
+           [--names n1,n2,...] [--anims a1,a2,...] [--margin N]
            [--satellite-max-area N] [--satellite-radius N] [--min-comp N]
            [--row-y y0-y1,y0-y1,...] [--col-x row:x1,x2;row:x1,x2]
            [--trace] [--json OUT.json]
   report   --dir DIR
+
+Orientation is implied by which axis flag you pass:
+  --rows  -> row-mode: fN runs across each row, --anims maps per row
+  --cols  -> col-mode: fN runs down each column, --anims maps per column
 """
 import argparse
 import json
@@ -101,6 +105,68 @@ def group_rows(mask, W, H, trace):
     return bands
 
 
+def group_cols(mask, W, H, trace):
+    """Project foreground onto x-axis -> column bands (col-mode)."""
+    import numpy as np
+    xprof = mask.sum(axis=0)
+    thresh = max(2, H // 400)
+    bands = density_bands(xprof, thresh, min_band=8, min_gap=6)
+    trace("[3] COL GROUPING")
+    trace(f"    x-density profile -> {len(bands)} col band(s), threshold={thresh}")
+    for i, (x0, x1) in enumerate(bands):
+        trace(f"    col {i}: x {x0}-{x1} (width {x1 - x0})")
+    return bands
+
+
+def cluster_col(col_mask, x0, x1, expected, trace, col_idx):
+    """Cluster one column's foreground into `expected` frame groups DOWN the column.
+
+    Transpose of cluster_row: y-density profile within the column band; split on
+    horizontal gaps. Falls back to even vertical division. Returns [y0,y1] spans.
+    """
+    import numpy as np
+    W_c = x1 - x0
+    yprof = col_mask.sum(axis=1)
+    inked = np.where(yprof > 0)[0]
+    if len(inked) == 0:
+        return []
+    ys, ye = int(inked[0]), int(inked[-1] + 1)
+
+    sep_thresh = max(1, int(W_c * 0.05))
+    seps = []
+    i = ys
+    while i < ye:
+        if yprof[i] <= sep_thresh:
+            s = i
+            while i < ye and yprof[i] <= sep_thresh:
+                i += 1
+            seps.append((s, i))
+        else:
+            i += 1
+    min_wall = max(8, int((ye - ys) * 0.02))
+    seps = [s for s in seps
+            if s[0] > ys + min_wall and s[1] < ye - min_wall and s[1] - s[0] >= 2]
+
+    method = "gap-split"
+    if len(seps) == expected - 1:
+        bounds = [ys] + [(a + b) // 2 for a, b in seps] + [ye]
+        spans = [[bounds[i], bounds[i + 1]] for i in range(expected)]
+    elif len(seps) >= expected - 1:
+        seps.sort(key=lambda s: s[1] - s[0], reverse=True)
+        seps = sorted(seps[: expected - 1])
+        bounds = [ys] + [(a + b) // 2 for a, b in seps] + [ye]
+        spans = [[bounds[i], bounds[i + 1]] for i in range(expected)]
+    else:
+        method = "even-division"
+        h = (ye - ys) / expected
+        spans = [[int(ys + i * h), int(ys + (i + 1) * h)] for i in range(expected)]
+
+    trace(f"    col {col_idx}: {method} -> {len(spans)} span(s) (expected {expected})")
+    for i, (a, b) in enumerate(spans):
+        trace(f"      frame {i + 1}: y {a}-{b} (height {b - a}, center {(a + b) // 2})")
+    return spans
+
+
 def cluster_row(row_mask, y0, y1, expected, trace, row_idx):
     """Cluster one row's foreground into `expected` frame groups.
 
@@ -161,12 +227,15 @@ def cluster_row(row_mask, y0, y1, expected, trace, row_idx):
     return spans
 
 
-def assign_components(comps, spans, y0, y1, sat_max_area, sat_radius, trace, row_idx):
+def assign_components(comps, spans, y0, y1, sat_max_area, sat_radius, trace, row_idx, col_mode=False):
     """Assign each component to a frame span.
 
     Primary: centroid falls inside a span.
     Satellite fallback: small components whose centroid misses all spans
     (or sits between them) join the nearest span center within sat_radius.
+
+    row-mode: spans are x-ranges -> test centroid x.
+    col-mode: spans are y-ranges -> test centroid y.
     Returns (assignments dict comp_id->span_idx, flags list).
     """
     centers = [(a + b) // 2 for a, b in spans]
@@ -174,9 +243,10 @@ def assign_components(comps, spans, y0, y1, sat_max_area, sat_radius, trace, row
     flags = []
     for c in comps:
         cx, cy = c["centroid"]
+        pos = cy if col_mode else cx
         hit = None
         for si, (a, b) in enumerate(spans):
-            if a <= cx < b:
+            if a <= pos < b:
                 hit = si
                 break
         if hit is not None:
@@ -189,7 +259,7 @@ def assign_components(comps, spans, y0, y1, sat_max_area, sat_radius, trace, row
             continue
         best, best_d = None, None
         for si, cc in enumerate(centers):
-            d = abs(cx - cc)
+            d = abs(pos - cc)
             if best_d is None or d < best_d:
                 best, best_d = si, d
         if best is None or best_d > sat_radius:
@@ -211,36 +281,49 @@ def assign_components(comps, spans, y0, y1, sat_max_area, sat_radius, trace, row
     return assignments, flags
 
 
-def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, margin, trace, span=False):
+def crop_frames(im, comps, assignments, spans, rows, names, anims, out_dir, margin, trace, span=False, col_mode=False):
     """Build one bounding rect per frame from owned pixels; crop RGBA.
 
     Before saving, erases any foreground pixel whose component is NOT owned
-    by this frame (prevents cross-contamination when frames overlap in
-    x-space). Each frame is cropped independently from the original image.
+    by this frame (prevents cross-contamination when frames overlap). Each
+    frame is cropped independently from the original image.
 
-    span=True: the frame number runs CONTINUOUSLY across all rows (f1..fN)
-    instead of resetting to f1 per row. Use when several grid rows together
-    form ONE animation sequence (e.g. a 2x5 special = f1..f10).
+    row-mode (col_mode=False): `rows` are y-bands, `spans[r]` are x-spans across
+      row r. fN runs across the row; --anims maps per row.
+    col-mode (col_mode=True):  `rows` are x-bands (columns), `spans[c]` are
+      y-spans down column c. fN runs down the column; --anims maps per column.
+
+    span=True (row-mode only): frame number runs CONTINUOUSLY across all rows.
     """
     import numpy as np
     from scipy import ndimage
     arr = np.array(im)
     alpha = arr[:, :, 3]
-    # Per-pixel component label map (0 = background)
     fg_mask = alpha > 16
     comp_labels, _ = ndimage.label(fg_mask)
     os.makedirs(out_dir, exist_ok=True)
     results = []
     global_frame = 0  # continuous counter for span mode
-    for r, (y0, y1) in enumerate(rows):
-        name = names[r] if names else f"row{r + 1}"
-        action = actions[r] if actions else "anim"
-        for si, (sx0, sx1) in enumerate(spans[r]):
-            owned = [c for c in comps
-                     if assignments.get(c["id"]) == si and rows_match(c, (y0, y1))]
+    for r, band in enumerate(rows):
+        b0, b1 = band
+        name = names[r] if names else f"{axis_word(col_mode)}{r + 1}"
+        anim = anims[r] if anims else "anim"
+        for si, (s0, s1) in enumerate(spans[r]):
+            if col_mode:
+                # band = x-range (column), span = y-range (down the column)
+                cx0, cx1 = b0, b1
+                cy0, cy1 = s0, s1
+                grid_row, grid_col = si, r
+                in_band = lambda c: cx0 - 4 <= c["centroid"][0] < cx1 + 4
+            else:
+                cy0, cy1 = b0, b1
+                cx0, cx1 = s0, s1
+                grid_row, grid_col = r, si
+                in_band = lambda c: cy0 - 4 <= c["centroid"][1] < cy1 + 4
+            owned = [c for c in comps if assignments.get(c["id"]) == si and in_band(c)]
             if not owned:
                 warn_num = (global_frame + 1) if span else (si + 1)
-                trace(f"    WARN: frame {name}_{action}_f{warn_num} has no owned components — skipped")
+                trace(f"    WARN: frame {name}_{anim}_f{warn_num} has no owned components — skipped")
                 continue
             fx0 = min(c["bbox"][0] for c in owned)
             fy0 = min(c["bbox"][1] for c in owned)
@@ -255,29 +338,26 @@ def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, ma
                 frame_num = global_frame
             else:
                 frame_num = si + 1
-            fn = f"{name}_{action}_f{frame_num}.png"
-            # Crop from original, then erase unowned foreground pixels
+            fn = f"{name}_{anim}_f{frame_num}.png"
             crop_arr = arr[fy0:fy1, fx0:fx1].copy()
             crop_labels = comp_labels[fy0:fy1, fx0:fx1]
             owned_ids = set(c["id"] for c in owned)
-            # Erase: foreground pixels whose component is not owned by this frame
             fg_in_crop = crop_arr[:, :, 3] > 16
             unowned = fg_in_crop & ~np.isin(crop_labels, list(owned_ids))
             erased = int(unowned.sum())
             crop_arr[unowned, 3] = 0
             from PIL import Image
             Image.fromarray(crop_arr).save(os.path.join(out_dir, fn))
-            # edge-touching check on the CLEANED crop
             clean_alpha = crop_arr[:, :, 3]
             edge_px = bool(clean_alpha[0].sum() > 0 or clean_alpha[-1].sum() > 0 or
                            clean_alpha[:, 0].sum() > 0 or clean_alpha[:, -1].sum() > 0)
             results.append({
                 "file": fn,
                 "entity": name,
-                "action": action,
+                "anim": anim,
                 "frame": frame_num,
-                "row": r,
-                "col": si if not span else None,
+                "row": grid_row,
+                "col": grid_col,
                 "bbox": [fx0, fy0, fx1 - fx0, fy1 - fy0],
                 "size": [fx1 - fx0, fy1 - fy0],
                 "center": [(fx0 + fx1) // 2, (fy0 + fy1) // 2],
@@ -291,6 +371,10 @@ def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, ma
                   f"center ({(fx0 + fx1) // 2},{(fy0 + fy1) // 2}) "
                   f"comps={len(owned)}{erased_note}{touch}")
     return results
+
+
+def axis_word(col_mode):
+    return "col" if col_mode else "row"
 
 
 def rows_match(comp, row_band):
@@ -357,54 +441,91 @@ def cmd_extract(args):
         trace(f"    ... {len(comps) - 12} more")
     trace(f"    small (<={args.satellite_max_area}px): {len(small)} -> satellite candidates")
 
-    expected = [int(x) for x in args.rows.split(",")]
-    if getattr(args, "row_y", None):
-        # explicit row bands: y0-y1,y0-y1,... (skips auto-detection)
-        rows = []
-        for part in args.row_y.split(","):
-            a, b = part.split("-")
-            rows.append((int(a), int(b)))
-        trace(f"[3] ROW GROUPING (manual --row-y: {len(rows)} bands)")
-        for i, (y0, y1) in enumerate(rows):
-            trace(f"    row {i}: y {y0}-{y1}")
+    # --- orientation: implied by --rows vs --cols (mutually exclusive) ---
+    if args.rows and args.cols:
+        print("ERROR: pass --rows OR --cols, not both", file=sys.stderr)
+        sys.exit(1)
+    if not args.rows and not args.cols:
+        print("ERROR: pass --rows (row-mode) or --cols (col-mode)", file=sys.stderr)
+        sys.exit(1)
+    col_mode = bool(args.cols)
+    if col_mode:
+        expected = [int(x) for x in args.cols.split(",")]
+        axis_label = "col"
     else:
-        rows = group_rows(fg, W, H, trace)
-    if len(rows) != len(expected):
-        trace(f"    WARN: {len(rows)} row bands but {len(expected)} rows expected. "
-              f"Check the sheet assessment or pass --row-y manually.")
-        if len(rows) < len(expected):
-            trace("    FAIL: cannot map expected rows onto fewer measured bands.")
-            sys.exit(1)
+        expected = [int(x) for x in args.rows.split(",")]
+        axis_label = "row"
+    if col_mode:
+        # COL-MODE: group columns (x-bands); each column is an "axis unit"
+        if getattr(args, "col_x", None):
+            cols_bands = []
+            for part in args.col_x.split(";"):
+                part = part.strip()
+                if not part:
+                    continue
+                x0, x1 = part.split("-")
+                cols_bands.append((int(x0), int(x1)))
+            trace(f"[3] COL GROUPING (manual --col-x: {len(cols_bands)} bands)")
+        else:
+            cols_bands = group_cols(fg, W, H, trace)
+        if len(cols_bands) != len(expected):
+            trace(f"    WARN: {len(cols_bands)} col bands but {len(expected)} cols expected.")
+            if len(cols_bands) < len(expected):
+                trace("    FAIL: cannot map expected cols onto fewer measured bands.")
+                sys.exit(1)
+        axis_bands = cols_bands[:len(expected)]
+    else:
+        # ROW-MODE: group rows (y-bands)
+        if getattr(args, "row_y", None):
+            rows = []
+            for part in args.row_y.split(","):
+                a, b = part.split("-")
+                rows.append((int(a), int(b)))
+            trace(f"[3] ROW GROUPING (manual --row-y: {len(rows)} bands)")
+            for i, (y0, y1) in enumerate(rows):
+                trace(f"    row {i}: y {y0}-{y1}")
+        else:
+            rows = group_rows(fg, W, H, trace)
+        if len(rows) != len(expected):
+            trace(f"    WARN: {len(rows)} row bands but {len(expected)} rows expected. "
+                  f"Check the sheet assessment or pass --row-y manually.")
+            if len(rows) < len(expected):
+                trace("    FAIL: cannot map expected rows onto fewer measured bands.")
+                sys.exit(1)
+        axis_bands = rows[:len(expected)]
 
     names = [n.strip() for n in args.names.split(",")] if args.names else None
-    actions = [a.strip() for a in args.actions.split(",")] if args.actions else None
-    # single name/action applies to all rows (one entity, multiple animations)
+    anims = [a.strip() for a in args.anims.split(",")] if args.anims else None
+    # single name/anim applies to all rows/cols (one entity, multiple animations)
     if names and len(names) == 1 and len(expected) > 1:
         names = names * len(expected)
-    if actions and len(actions) == 1 and len(expected) > 1:
-        actions = actions * len(expected)
+    if anims and len(anims) == 1 and len(expected) > 1:
+        anims = anims * len(expected)
     if names and len(names) != len(expected):
-        print(f"ERROR: {len(names)} names but {len(expected)} rows", file=sys.stderr)
+        print(f"ERROR: {len(names)} names but {len(expected)} {axis_label}s", file=sys.stderr)
         sys.exit(1)
-    if actions and len(actions) != len(expected):
-        print(f"ERROR: {len(actions)} actions but {len(expected)} rows", file=sys.stderr)
+    if anims and len(anims) != len(expected):
+        print(f"ERROR: {len(anims)} anims but {len(expected)} {axis_label}s", file=sys.stderr)
         sys.exit(1)
 
-    # --span: one continuous animation across all rows -> must share one name+action
+    # --span: one continuous animation across all rows -> must share one name+anim
     if getattr(args, "span", False):
+        if col_mode:
+            print("ERROR: --span is row-mode only", file=sys.stderr)
+            sys.exit(1)
         if not (names and len(set(names)) == 1):
             print("ERROR: --span requires a single --names value shared by all rows", file=sys.stderr)
             sys.exit(1)
-        if not (actions and len(set(actions)) == 1):
-            print("ERROR: --span requires a single --actions value shared by all rows", file=sys.stderr)
+        if not (anims and len(set(anims)) == 1):
+            print("ERROR: --span requires a single --anims value shared by all rows", file=sys.stderr)
             sys.exit(1)
-        trace(f"[SPAN] one continuous animation '{names[0]}_{actions[0]}' across {len(expected)} rows "
+        trace(f"[SPAN] one continuous animation '{names[0]}_{anims[0]}' across {len(expected)} rows "
               f"-> frames f1..f{sum(expected)}")
 
     trace("[4] FRAME CLUSTERING")
-    # Parse --col-x if provided: "row_idx:x1,x2,...;row_idx:x1,x2,..."
+    # Parse --col-x if provided (row-mode): "row_idx:x1,x2,...;row_idx:x1,x2,..."
     manual_cols = {}
-    if getattr(args, "col_x", None):
+    if not col_mode and getattr(args, "col_x", None):
         for part in args.col_x.split(";"):
             part = part.strip()
             if not part:
@@ -416,51 +537,64 @@ def cmd_extract(args):
         trace(f"    manual --col-x overrides for rows: {list(manual_cols.keys())}")
 
     all_spans = []
-    for r, (y0, y1) in enumerate(rows[: len(expected)]):
-        if r in manual_cols:
-            # Use manual split points: boundaries are [0, split1, split2, ..., W]
-            splits = manual_cols[r]
-            bounds = [0] + splits + [W]
-            spans = [[bounds[i], bounds[i + 1]] for i in range(len(bounds) - 1)]
-            # If span count doesn't match expected, warn
+    for r, band in enumerate(axis_bands):
+        b0, b1 = band
+        if col_mode:
+            # column band (x-range); cluster DOWN the column (y-spans)
+            col_mask = fg[:, b0:b1]
+            spans = cluster_col(col_mask, b0, b1, expected[r], trace, r)
             if len(spans) != expected[r]:
-                trace(f"    WARN: row {r} manual col-x gives {len(spans)} spans, expected {expected[r]}")
-            trace(f"    row {r}: manual-col-x -> {len(spans)} span(s) at x={splits}")
-            for i, (a, b) in enumerate(spans):
-                trace(f"      frame {i + 1}: x {a}-{b} (width {b - a})")
+                trace(f"    WARN: col {r} produced {len(spans)} spans, expected {expected[r]}")
         else:
-            row_mask = fg[y0:y1, :]
-            spans = cluster_row(row_mask, y0, y1, expected[r], trace, r)
-            if len(spans) != expected[r]:
-                trace(f"    WARN: row {r} produced {len(spans)} spans, expected {expected[r]}")
+            y0, y1 = b0, b1
+            if r in manual_cols:
+                splits = manual_cols[r]
+                bounds = [0] + splits + [W]
+                spans = [[bounds[i], bounds[i + 1]] for i in range(len(bounds) - 1)]
+                if len(spans) != expected[r]:
+                    trace(f"    WARN: row {r} manual col-x gives {len(spans)} spans, expected {expected[r]}")
+                trace(f"    row {r}: manual-col-x -> {len(spans)} span(s) at x={splits}")
+            else:
+                row_mask = fg[y0:y1, :]
+                spans = cluster_row(row_mask, y0, y1, expected[r], trace, r)
+                if len(spans) != expected[r]:
+                    trace(f"    WARN: row {r} produced {len(spans)} spans, expected {expected[r]}")
         all_spans.append(spans)
 
     trace("[5] OWNERSHIP")
     all_assignments = {}
     all_flags = []
-    for r, (y0, y1) in enumerate(rows[: len(expected)]):
-        row_comps = [c for c in comps if rows_match(c, (y0, y1))]
-        # local comp ids -> global: assign within row, keyed by comp id
-        a, fl = assign_components(row_comps, all_spans[r], y0, y1,
-                                  args.satellite_max_area, args.satellite_radius,
-                                  trace, r)
+    for r, band in enumerate(axis_bands):
+        b0, b1 = band
+        if col_mode:
+            col_comps = [c for c in comps if b0 - 4 <= c["centroid"][0] < b1 + 4]
+            a, fl = assign_components(col_comps, all_spans[r], b0, b1,
+                                      args.satellite_max_area, args.satellite_radius,
+                                      trace, r, col_mode=True)
+        else:
+            y0, y1 = b0, b1
+            row_comps = [c for c in comps if rows_match(c, (y0, y1))]
+            a, fl = assign_components(row_comps, all_spans[r], y0, y1,
+                                      args.satellite_max_area, args.satellite_radius,
+                                      trace, r)
         all_assignments.update(a)
         all_flags.extend(fl)
 
     trace("[6] BOUNDING RECTS + CROPS")
     results = crop_frames(im, comps, all_assignments, all_spans,
-                          rows[: len(expected)], names, actions,
-                          args.out, args.margin, trace, span=args.span)
+                          axis_bands, names, anims,
+                          args.out, args.margin, trace, span=args.span, col_mode=col_mode)
 
     issues = validate(results, expected, trace)
 
     summary = {
         "sheet": args.sheet,
         "size": [W, H],
+        "orientation": "col" if col_mode else "row",
         "foreground_pixels": fg_px,
         "components": len(comps),
-        "rows_measured": len(rows),
-        "rows_used": len(expected),
+        "axis_bands_measured": len(axis_bands),
+        "axis_used": len(expected),
         "expected_frames": sum(expected),
         "frames_cropped": len(results),
         "flags": all_flags,
@@ -501,9 +635,10 @@ def main():
     ex = sub.add_parser("extract")
     ex.add_argument("--sheet", required=True)
     ex.add_argument("--out", required=True)
-    ex.add_argument("--rows", required=True, help="expected frames per row, e.g. 5,4,5")
-    ex.add_argument("--names", help="one entity name per row, comma-separated")
-    ex.add_argument("--actions", help="one action word per row, comma-separated")
+    ex.add_argument("--rows", help="expected frames per row, e.g. 5,4,5 (row-mode)")
+    ex.add_argument("--cols", help="expected frames per column, e.g. 4,4,4 (col-mode)")
+    ex.add_argument("--names", help="one entity name per row/col, comma-separated")
+    ex.add_argument("--anims", help="one anim word per row/col, comma-separated")
     ex.add_argument("--margin", type=int, default=4, help="transparent safety margin px")
     ex.add_argument("--alpha-threshold", type=int, default=16)
     ex.add_argument("--satellite-max-area", type=int, default=400,
@@ -518,7 +653,7 @@ def main():
     ex.add_argument("--span", action="store_true",
                     help="treat all rows as ONE continuous animation: frame numbers run f1..fN "
                          "across every row instead of resetting to f1 per row. Requires a single "
-                         "--names value and a single --actions value shared by all rows.")
+                         "--names value and a single --anims value shared by all rows.")
     ex.add_argument("--json", help="also write full result JSON here")
     rp = sub.add_parser("report")
     rp.add_argument("--dir", required=True)
