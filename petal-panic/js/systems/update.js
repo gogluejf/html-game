@@ -490,6 +490,7 @@ function handleDebugKeys(e) {
   switch (e.code) {
     case 'KeyF': // God mode toggle
       Debug.god = !Debug.god;
+      if (!Debug.god) hero.intangible = false;
       Debug.logEvent(`god mode ${Debug.god ? 'ON' : 'OFF'}`);
       break;
     case 'KeyZ': // Slow-mo / freeze cycle
@@ -641,15 +642,12 @@ function pickEnemyAt(lx, ly) {
   return null;
 }
 
-/** Per-frame god-mode enforcement: blocks all damage + infinite ammo. */
+/** Per-frame god-mode enforcement: intangible + infinite ammo. */
 function applyGodMode(dt) {
   if (!Debug.god) return;
+  hero.intangible = true;
   hero.ammo = Infinity;
   hero.specialAmmo = Infinity;
-  // Block damage without using intangible (no visual blink in god mode).
-  // The hitbox system and contact checks will see energy never drops because
-  // we clamp it here after all damage has been applied this frame.
-  hero.energy = Math.max(hero.energy, 1);
 }
 // --- Collision world -----------------------------------------------------------
 const world = new CollisionWorld({ cellSize: 64 });
