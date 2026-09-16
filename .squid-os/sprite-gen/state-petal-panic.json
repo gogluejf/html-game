@@ -329,27 +329,27 @@
         "rows": 2,
         "cols": 5,
         "cell": 355,
-        "description": "Scarlet Vale hero sheet 7, special attack \u2014 ribbon sweep (row1) + aerial flip (row2), 2x5",
+        "description": "Scarlet Vale hero sheet 7, supermove \u2014 forward dash/slide (row1) + glide deceleration (row2), 2x5",
         "entities": [{
           "name": "scarlet_vale",
-          "anim": "special",
+          "anim": "supermove",
           "frames": [
-            {"file": "scarlet_vale_special_f1.png", "row": 0, "col": 0, "bbox": [5, 78, 300, 373]},
-            {"file": "scarlet_vale_special_f2.png", "row": 0, "col": 1, "bbox": [314, 82, 382, 369]},
-            {"file": "scarlet_vale_special_f3.png", "row": 0, "col": 2, "bbox": [674, 64, 371, 389]},
-            {"file": "scarlet_vale_special_f4.png", "row": 0, "col": 3, "bbox": [1028, 48, 389, 373]},
-            {"file": "scarlet_vale_special_f5.png", "row": 0, "col": 4, "bbox": [1380, 52, 394, 397]},
-            {"file": "scarlet_vale_special_f6.png", "row": 1, "col": 0, "bbox": [24, 445, 282, 434]},
-            {"file": "scarlet_vale_special_f7.png", "row": 1, "col": 1, "bbox": [318, 472, 383, 342]},
-            {"file": "scarlet_vale_special_f8.png", "row": 1, "col": 2, "bbox": [688, 451, 369, 374]},
-            {"file": "scarlet_vale_special_f9.png", "row": 1, "col": 3, "bbox": [1050, 475, 366, 328]},
-            {"file": "scarlet_vale_special_f10.png", "row": 1, "col": 4, "bbox": [1372, 537, 401, 312]}
+            {"file": "scarlet_vale_supermove_f1.png", "row": 0, "col": 0, "bbox": [5, 78, 300, 373]},
+            {"file": "scarlet_vale_supermove_f2.png", "row": 0, "col": 1, "bbox": [314, 82, 382, 369]},
+            {"file": "scarlet_vale_supermove_f3.png", "row": 0, "col": 2, "bbox": [674, 64, 371, 389]},
+            {"file": "scarlet_vale_supermove_f4.png", "row": 0, "col": 3, "bbox": [1028, 48, 389, 373]},
+            {"file": "scarlet_vale_supermove_f5.png", "row": 0, "col": 4, "bbox": [1380, 52, 394, 397]},
+            {"file": "scarlet_vale_supermove_f6.png", "row": 1, "col": 0, "bbox": [24, 445, 282, 434]},
+            {"file": "scarlet_vale_supermove_f7.png", "row": 1, "col": 1, "bbox": [318, 472, 383, 342]},
+            {"file": "scarlet_vale_supermove_f8.png", "row": 1, "col": 2, "bbox": [688, 451, 369, 374]},
+            {"file": "scarlet_vale_supermove_f9.png", "row": 1, "col": 3, "bbox": [1050, 475, 366, 328]},
+            {"file": "scarlet_vale_supermove_f10.png", "row": 1, "col": 4, "bbox": [1372, 537, 401, 312]}
           ]
         }],
-        "original_prompt": "Scarlet Vale special attack sheet \u2014 ribbon sweep + aerial flip, 2x5, hand-painted circus style",
+        "original_prompt": "Scarlet Vale supermove sheet \u2014 forward dash slide + glide, 2x5, hand-painted circus style",
         "crop": {
           "frames_dir": "petal-panic/assets/heroes",
-          "pass": "/tmp/scarlet_special-final"
+          "pass": "/tmp/scarlet_supermove-final"
         }
       }, {
         "file": "petal-panic/assets/balthazar_sheet_7.png",
@@ -357,27 +357,27 @@
         "rows": 2,
         "cols": 5,
         "cell": 355,
-        "description": "Balthazhar tiger ringmaster hero sheet 7, special attack \u2014 golden energy slam (row1) + spin (row2), 2x5",
+        "description": "Balthazhar tiger ringmaster hero sheet 7, supermove \u2014 forward dash/slide (row1) + glide deceleration (row2), 2x5",
         "entities": [{
           "name": "balthazar",
-          "anim": "special",
+          "anim": "supermove",
           "frames": [
-            {"file": "balthazar_special_f1.png", "row": 0, "col": 0, "bbox": [2, 68, 344, 345]},
-            {"file": "balthazar_special_f2.png", "row": 0, "col": 1, "bbox": [315, 85, 466, 326]},
-            {"file": "balthazar_special_f3.png", "row": 0, "col": 2, "bbox": [649, 165, 475, 250]},
-            {"file": "balthazar_special_f4.png", "row": 0, "col": 3, "bbox": [1094, 41, 268, 376]},
-            {"file": "balthazar_special_f5.png", "row": 0, "col": 4, "bbox": [1339, 45, 435, 391]},
-            {"file": "balthazar_special_f6.png", "row": 1, "col": 0, "bbox": [24, 603, 353, 256]},
-            {"file": "balthazar_special_f7.png", "row": 1, "col": 1, "bbox": [395, 494, 325, 366]},
-            {"file": "balthazar_special_f8.png", "row": 1, "col": 2, "bbox": [731, 427, 291, 455]},
-            {"file": "balthazar_special_f9.png", "row": 1, "col": 3, "bbox": [1090, 428, 311, 450]},
-            {"file": "balthazar_special_f10.png", "row": 1, "col": 4, "bbox": [1427, 382, 306, 505]}
+            {"file": "balthazar_supermove_f1.png", "row": 0, "col": 0, "bbox": [2, 68, 344, 345]},
+            {"file": "balthazar_supermove_f2.png", "row": 0, "col": 1, "bbox": [315, 85, 466, 326]},
+            {"file": "balthazar_supermove_f3.png", "row": 0, "col": 2, "bbox": [649, 165, 475, 250]},
+            {"file": "balthazar_supermove_f4.png", "row": 0, "col": 3, "bbox": [1094, 41, 268, 376]},
+            {"file": "balthazar_supermove_f5.png", "row": 0, "col": 4, "bbox": [1339, 45, 435, 391]},
+            {"file": "balthazar_supermove_f6.png", "row": 1, "col": 0, "bbox": [24, 603, 353, 256]},
+            {"file": "balthazar_supermove_f7.png", "row": 1, "col": 1, "bbox": [395, 494, 325, 366]},
+            {"file": "balthazar_supermove_f8.png", "row": 1, "col": 2, "bbox": [731, 427, 291, 455]},
+            {"file": "balthazar_supermove_f9.png", "row": 1, "col": 3, "bbox": [1090, 428, 311, 450]},
+            {"file": "balthazar_supermove_f10.png", "row": 1, "col": 4, "bbox": [1427, 382, 306, 505]}
           ]
         }],
-        "original_prompt": "Balthazhar special attack sheet \u2014 golden energy slam + spin, 2x5, hand-painted circus style",
+        "original_prompt": "Balthazhar supermove sheet \u2014 forward dash slide + glide, 2x5, hand-painted circus style",
         "crop": {
           "frames_dir": "petal-panic/assets/heroes",
-          "pass": "/tmp/balthazar_special-v9"
+          "pass": "/tmp/balthazar_supermove-v9"
         }
       }]
     },

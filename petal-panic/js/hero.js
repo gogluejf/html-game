@@ -461,7 +461,7 @@ export class Hero extends Entity {
     this.superActive = true;
     this.superTimer = this.SUPER_DUR;
     // Jump the attack/slide anim to frame 0 if available.
-    if (this.anims.super) this.anims.super.reset();
+    if (this.anims.supermove) this.anims.supermove.reset();
   }
 
   /**
