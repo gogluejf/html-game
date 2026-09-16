@@ -3,9 +3,15 @@
 record-crop — the ONLY writer of crop data into the sprite-gen state file.
 
 Reads the extract_frames.py --json result and, for the matching sheet entry:
-  1. REPLACES the `crop` block with clean data (idempotent — safe on re-crops)
-  2. SYNCS entities[].frames to exactly match the frames in the result
-     (fixes count drift like expected-8/actual-7 automatically)
+  1. REPLACES sheet.entities ENTIRELY from the result (idempotent full rewrite).
+     The result is the single source of truth for entity/frame data. No
+     matching against old entries, no merge, no WARN path.
+  2. REPLACES the `crop` block with clean data (idempotent — safe on re-crops)
+  3. VERIFIES every frames[].file exists in frames_dir; warns on orphan PNGs
+     in frames_dir not referenced by any entity on this sheet.
+
+Sheet-level fields (file, size, rows, cols, cell, description, original_prompt)
+belong to sprite-gen (--add-sheet) and are NEVER touched here.
 
 Nothing else may write crop data or frame lists. Agents never touch state;
 this CLI is called once per sheet after frames are verified + installed.
@@ -21,36 +27,12 @@ lives inline on each frame, so crop only keeps sheet-level fields):
     "pass": "<out_dir>",
     "margin": 8                              # kept from previous block if present
   }
-Each entities[].frames entry becomes {file, row, col, bbox}.
+Each entities[] entry: {name, anim, frames: [{file, row, col, bbox}, ...]}
+with frames sorted by frame number.
 """
 import argparse, json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from state_format import compact as _compact_json
-
-
-def _cluster(vals, n):
-    """Map each value to cluster index 0..n-1 by cutting at the n-1 largest gaps."""
-    s = sorted(set(vals))
-    if len(s) <= 1 or n <= 1:
-        return {v: 0 for v in s}
-    gaps = [(s[i+1] - s[i], i) for i in range(len(s) - 1)]
-    gaps.sort(reverse=True)
-    cut_after = sorted(idx for _, idx in gaps[:n - 1])
-    return {v: sum(1 for c in cut_after if c < s.index(v)) for v in s}
-
-
-def derive_rowcol(frames, R, C):
-    """Fallback: derive (row,col) per frame from bbox origin when not provided."""
-    if not R or not C:
-        return {}
-    fb = {}
-    for fr in frames:
-        bb = fr.get("bbox") or ([fr["center"][0]-fr["size"][0]//2,
-                                 fr["center"][1]-fr["size"][1]//2]+list(fr["size"]))
-        fb[fr["file"]] = bb
-    xc = _cluster([v[0] for v in fb.values()], C)
-    yc = _cluster([v[1] for v in fb.values()], R)
-    return {f: (yc.get(v[1]), xc.get(v[0])) for f, v in fb.items()}
 
 
 def find_sheet(state, result):
@@ -88,47 +70,34 @@ def main():
         print("ERROR: result has no frames", file=sys.stderr)
         sys.exit(1)
 
-    # fallback row/col derivation from bbox (used when extract didn't emit them)
-    R, C = sheet.get("rows", 0), sheet.get("cols", 0)
-    rc_fallback = derive_rowcol(frames, R, C)
-
-    # --- sync entities[].frames from the result (group by entity+anim) ---
+    # --- build the full replacement for sheet.entities from the result ---
     by_ea = {}
+    order = []
     for fr in frames:
         key = (fr["entity"], fr.get("anim", fr.get("action")))
-        by_ea.setdefault(key, []).append(fr)
-    for key, flist in by_ea.items():
-        flist.sort(key=lambda x: x["frame"])
+        if key not in by_ea:
+            by_ea[key] = []
+            order.append(key)
+        by_ea[key].append(fr)
+
+    new_entities = []
+    for key in order:
+        flist = sorted(by_ea[key], key=lambda x: x["frame"])
         new_frames = []
         for fr in flist:
-            if "bbox" in fr:
-                bb = fr["bbox"]
-            else:
+            bb = fr.get("bbox")
+            if bb is None:
                 cx, cy = fr["center"]; w, h = fr["size"]
                 bb = [cx - w // 2, cy - h // 2, w, h]
-            r, c = fr.get("row"), fr.get("col")
-            if r is None or c is None:
-                dr, dc = rc_fallback.get(fr["file"], (None, None))
-                r = r if r is not None else dr
-                c = c if c is not None else dc
             new_frames.append({
                 "file": fr["file"],
-                "row": r,
-                "col": c,
+                "row": fr.get("row"),
+                "col": fr.get("col"),
                 "bbox": bb,
             })
-        matched = False
-        for e in sheet.get("entities", []):
-            if e.get("name") == key[0] and e.get("anim") == key[1]:
-                old = e.get("frames", [])
-                e["frames"] = new_frames
-                if len(old) != len(new_frames):
-                    print(f"  SYNC {key[0]}_{key[1]}: {len(old)} -> {len(new_frames)} frames")
-                matched = True
-                break
-        if not matched:
-            print(f"  WARN: no entity entry for {key[0]}/{key[1]} — add it manually",
-                  file=sys.stderr)
+        new_entities.append({"name": key[0], "anim": key[1], "frames": new_frames})
+
+    sheet["entities"] = new_entities
 
     # --- replace crop block (idempotent; bbox now lives inline on frames) ---
     crop = sheet.get("crop", {})
@@ -145,9 +114,29 @@ def main():
     with open(args.state, "w") as f:
         f.write(_compact_json(state, 0) + "\n")
 
-    n_frames = sum(len(e.get("frames", [])) for e in sheet.get("entities", []))
-    print(f"RECORDED: {os.path.basename(sheet['file'])} -> {n_frames} frames "
-          f"(frames_dir={new_crop['frames_dir']})")
+    # --- verify: recorded files exist on disk; warn on orphans ---
+    fd = new_crop["frames_dir"]
+    missing = [f_["file"] for e in new_entities for f_ in e["frames"]
+               if fd and not os.path.exists(os.path.join(fd, f_["file"]))]
+    if missing:
+        print(f"ERROR: {len(missing)} recorded frames missing from {fd}: {missing[:5]}...",
+              file=sys.stderr)
+        sys.exit(1)
+
+    if fd and os.path.isdir(fd):
+        # Orphans = unreferenced PNGs whose name starts with one of THIS
+        # sheet's entity names (other sheets/entities share the same dir).
+        prefixes = tuple(e["name"] for e in new_entities)
+        recorded = {f_["file"] for e in new_entities for f_ in e["frames"]}
+        orphans = sorted(n for n in os.listdir(fd)
+                         if n.endswith(".png") and n.startswith(prefixes)
+                         and n not in recorded)
+        if orphans:
+            print(f"  ORPHANS in {fd} (not referenced by this sheet): {orphans}")
+
+    n_frames = sum(len(e["frames"]) for e in new_entities)
+    ents = ", ".join(f"{e['name']}/{e['anim']}x{len(e['frames'])}" for e in new_entities)
+    print(f"RECORDED: {os.path.basename(sheet['file'])} -> {n_frames} frames ({ents})")
 
 
 if __name__ == "__main__":
