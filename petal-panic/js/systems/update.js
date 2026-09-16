@@ -98,12 +98,8 @@ hero.combatStats = {
 // the total drives the 1up threshold (every 100 coins → +1 life).
 // Now lives in hero.runStats.coinsCollected (Task 7.3 unified stats).
 
-// Task 2.1 — Animation engine integration test.
-// Single solid frame (no cycling flash). Replaced with real sprites later.
-hero.anim = new Anim(
-  [makeTestFrame(hero.w, hero.h, '#2ecc71')],
-  { speed: 200, loop: true },
-);
+// Task 2.1 — Hero uses no anim (solid debugColor rect). Real sprites later.
+hero.anim = null;
 
 // Task 3.2 — Melee attack animation (5 placeholder frames).
 // Frame 3 (index) is the "active" frame where the hitbox is live.
