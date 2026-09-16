@@ -92,6 +92,18 @@ export class Hero extends Entity {
     this.crouchBox = { ox: 0, oy: this.h * 0.4, bw: this.w, bh: this.h * 0.6 };
     this.box = this.standBox;
 
+    // --- Super move (B key) ---------------------------------------------------
+    // Charges over time; when full the hero can dash forward with a fast
+    // slide + deceleration glide. Triggered by B when meter is full.
+    this.superMeter = 0;         // 0..100
+    this.SUPER_MAX = 100;
+    this.SUPER_CHARGE_RATE = 20; // per second → 5s to full
+    this.superActive = false;    // true while the dash is playing
+    this.superTimer = 0;         // seconds remaining in the dash
+    this.SUPER_DUR = 0.6;        // total dash duration
+    this.SUPER_SPEED = 900;      // initial px/s burst
+    this.SUPER_DECEL = 1800;     // px/s² deceleration during glide
+
     // Anim registry (real sprites later; placeholder frames attached by caller).
     this.anims = {};
 
@@ -186,7 +198,10 @@ export class Hero extends Entity {
     // Sliding = crouching with residual momentum still carrying forward.
     this.sliding = this.crouching && Math.abs(this.vx) > 20;
 
-    if (stunned) {
+    if (this.superActive) {
+      // Super dash owns vx/vy — skip all normal movement control.
+      // (updateSuper below will set the dash velocity.)
+    } else if (stunned) {
       // No control during recovery: bleed the knockback off with friction so it
       // travels a short distance then settles, rather than stopping dead or
       // being instantly overridden by held input.
@@ -243,7 +258,7 @@ export class Hero extends Entity {
     // also trigger the second. That's why we gate on jumpPressed, not the
     // buffered value (the buffer is meant to carry a press across landing).
     const canAirJump = !this.grounded && this.jumpsUsed === 1;
-    if ((canGroundJump || canAirJump) && this._jumpBuffer > 0 && !this.crouching && !stunned) {
+    if (!this.superActive && (canGroundJump || canAirJump) && this._jumpBuffer > 0 && !this.crouching && !stunned) {
       const isDouble = canAirJump;
       this.vy = -this.stats.jump * (isDouble ? 0.85 : 1); // double jump slightly weaker
       this.grounded = false;
@@ -257,8 +272,10 @@ export class Hero extends Entity {
     this._prevJumpHeld = input.jump;
 
     // --- Gravity ------------------------------------------------------------
-    this.vy += GRAVITY * dt;
-    if (this.vy > MAX_FALL_SPEED) this.vy = MAX_FALL_SPEED;
+    if (!this.superActive) {
+      this.vy += GRAVITY * dt;
+      if (this.vy > MAX_FALL_SPEED) this.vy = MAX_FALL_SPEED;
+    }
 
     // --- Integrate ----------------------------------------------------------
     this.x += this.vx * dt;
@@ -277,6 +294,9 @@ export class Hero extends Entity {
     // Advance the swing frame clock and drive the attack animation so its
     // displayed frame stays in lockstep with the damage window.
     this.updateMelee(dt);
+
+    // --- Super move charge + dash -------------------------------------------
+    this.updateSuper(dt, input);
 
     // --- Anim tick ----------------------------------------------------------
     if (this.anim) this.anim.tick(dt);
@@ -397,6 +417,51 @@ export class Hero extends Entity {
     this.meleeActive = false;
     this.meleeFrame = 0;
     this.meleeCooldown = 0;
+    this.superActive = false;
+    this.superTimer = 0;
+  }
+
+  /**
+   * Super move: charge over time, trigger dash on B when full.
+   * The dash is a fast forward burst that decelerates into a glide.
+   * @param {number} dt seconds
+   * @param {object} input { super: boolean } (B key)
+   */
+  updateSuper(dt, input) {
+    // Charge the meter (only when not already full and not mid-dash).
+    if (!this.superActive && this.superMeter < this.SUPER_MAX) {
+      this.superMeter = Math.min(this.SUPER_MAX, this.superMeter + this.SUPER_CHARGE_RATE * dt);
+    }
+
+    // Trigger: B pressed + meter full + not already dashing + grounded.
+    if (input.super && this.superMeter >= this.SUPER_MAX && !this.superActive && this.grounded) {
+      this.triggerSuper();
+    }
+
+    // Dash playback: fast burst → decelerate to glide.
+    if (this.superActive) {
+      this.superTimer -= dt;
+      const dir = this.facing;
+      // Decelerate from SUPER_SPEED toward 0 over SUPER_DUR.
+      const t = Math.max(0, this.superTimer / this.SUPER_DUR); // 1→0
+      const speed = this.SUPER_SPEED * t;
+      this.vx = dir * speed;
+      // No gravity influence during dash (airborne slide).
+      this.vy = 0;
+      if (this.superTimer <= 0) {
+        this.superActive = false;
+        this.vx = dir * 80; // small residual momentum after glide
+      }
+    }
+  }
+
+  /** Start the super dash. Resets meter, sets active state. */
+  triggerSuper() {
+    this.superMeter = 0;
+    this.superActive = true;
+    this.superTimer = this.SUPER_DUR;
+    // Jump the attack/slide anim to frame 0 if available.
+    if (this.anims.super) this.anims.super.reset();
   }
 
   /**

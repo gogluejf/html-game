@@ -31,6 +31,7 @@ export function drawHUD(ctx, hero, _camera, levelDef) {
   ctx.textBaseline = 'alphabetic';
 
   drawEnergyBar(ctx, hero);
+  drawSuperMeter(ctx, hero);
   drawAmmo(ctx, hero);
   drawCoinsAndLives(ctx, hero);
   drawPortrait(ctx, hero);
@@ -65,6 +66,35 @@ function drawEnergyBar(ctx, hero) {
 
   // Border.
   ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(barX + 0.5, barY + 0.5, barW, barH);
+}
+
+// --- Super meter (below energy): purple fill, blinks when full ---------------
+
+function drawSuperMeter(ctx, hero) {
+  const barX = PAD, barY = PAD + 16 + 4, barW = 100, barH = 8; // half size of energy bar
+
+  // Background.
+  ctx.fillStyle = '#2a2a3a';
+  ctx.fillRect(barX, barY, barW, barH);
+
+  // Fill (purple).
+  const frac = Math.max(0, Math.min(1, hero.superMeter / hero.SUPER_MAX));
+  ctx.fillStyle = '#9b59b6';
+  ctx.fillRect(barX, barY, barW * frac, barH);
+
+  // Blink when full: alternate visibility at ~4Hz.
+  if (frac >= 1 && !hero.superActive) {
+    const blink = Math.floor(performance.now() * 0.004) % 2 === 0;
+    if (blink) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.fillRect(barX, barY, barW, barH);
+    }
+  }
+
+  // Border.
+  ctx.strokeStyle = frac >= 1 ? '#fff' : '#666';
   ctx.lineWidth = 1;
   ctx.strokeRect(barX + 0.5, barY + 0.5, barW, barH);
 }
