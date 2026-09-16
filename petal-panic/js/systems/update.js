@@ -495,6 +495,7 @@ function handleDebugKeys(e) {
   switch (e.code) {
     case 'KeyF': // God mode toggle
       Debug.god = !Debug.god;
+      if (!Debug.god) hero.intangible = false; // clear god-mode intangibility
       Debug.logEvent(`god mode ${Debug.god ? 'ON' : 'OFF'}`);
       break;
     case 'KeyZ': // Slow-mo / freeze cycle
@@ -646,10 +647,10 @@ function pickEnemyAt(lx, ly) {
   return null;
 }
 
-/** Per-frame god-mode enforcement: invincible + infinite ammo. */
+/** Per-frame god-mode enforcement: intangible + infinite ammo. */
 function applyGodMode(dt) {
   if (!Debug.god) return;
-  hero.invincibleTimer = Math.max(hero.invincibleTimer, 999);
+  hero.intangible = true;
   hero.ammo = Infinity;
   hero.specialAmmo = Infinity;
 }
@@ -1080,11 +1081,6 @@ export function update(dt) {
   //     skull-fade sequence. While dying we skip all gameplay below (no input,
   //     no shooting, no melee) so the corpse plays out cleanly; on completion
   //     we either respawn at the checkpoint or transition to GAME OVER.
-  //     God mode: energy is clamped AFTER all damage this frame has been
-  //     applied, so the death check never sees 0.
-  if (Debug.god) {
-    hero.energy = Math.max(hero.energy, 1);
-  }
   if (!hero.dying && hero.energy <= 0) {
     hero.die();
   }
