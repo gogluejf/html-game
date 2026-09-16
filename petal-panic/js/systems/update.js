@@ -636,12 +636,10 @@ function pickEnemyAt(lx, ly) {
 /** Per-frame god-mode enforcement: invincible + infinite ammo. */
 function applyGodMode(dt) {
   if (!Debug.god) return;
-  hero.invincibleTimer = Math.max(hero.invincibleTimer, dt);
+  hero.invincibleTimer = Math.max(hero.invincibleTimer, 999);
   hero.ammo = Infinity;
   hero.specialAmmo = Infinity;
-  hero.energy = Math.max(hero.energy, 1); // never drop to 0 mid-test
 }
-
 // --- Collision world -----------------------------------------------------------
 const world = new CollisionWorld({ cellSize: 64 });
 for (const s of solidEntities) world.add(s);
@@ -1068,6 +1066,11 @@ export function update(dt) {
   //     skull-fade sequence. While dying we skip all gameplay below (no input,
   //     no shooting, no melee) so the corpse plays out cleanly; on completion
   //     we either respawn at the checkpoint or transition to GAME OVER.
+  //     God mode: energy is clamped AFTER all damage this frame has been
+  //     applied, so the death check never sees 0.
+  if (Debug.god) {
+    hero.energy = Math.max(hero.energy, 1);
+  }
   if (!hero.dying && hero.energy <= 0) {
     hero.die();
   }
