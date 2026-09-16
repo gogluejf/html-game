@@ -125,7 +125,14 @@ export function render(ctx) {
       const h = getHero();
       if (h.dying) {
         drawDeathSkull(ctx, h);
-      } else if (h.invincibleTimer > 0 && Math.floor(h.invincibleTimer / 0.1) % 2 === 0) {
+      } else if (h.intangible) {
+        // Intangible: fast half-alpha blink (debug cue for phasing).
+        ctx.save();
+        ctx.globalAlpha = Math.floor(performance.now() * 0.01) % 2 === 0 ? 0.4 : 0.8;
+        h.draw(ctx);
+        ctx.restore();
+      } else if (h.invincibleTimer > 0 && !Debug.god && Math.floor(h.invincibleTimer / 0.1) % 2 === 0) {
+        // Post-hit i-frames: slow blink (not during god mode).
         ctx.save();
         ctx.globalAlpha = 0.25;
         h.draw(ctx);
