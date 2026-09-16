@@ -1,0 +1,16 @@
+# Balthazhar | petal-panic/docs/entities/balthazar.yaml
+balthazar:
+  id: balthazar
+  name: "Balthazhar"
+  w: 36
+  h: 52
+  stats:
+    weight: 1.3
+    speed: 180         # px/s
+    attack: 20
+    defense: 5
+    stamina: 70        # = maxEnergy
+    jump: 420          # px/s impulse
+    projectile_freq: 10
+    special_freq: 3    # bomb cooldown (seconds)
+    special: bomb

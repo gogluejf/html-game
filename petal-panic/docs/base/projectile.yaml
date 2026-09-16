@@ -1,0 +1,13 @@
+# Petal Panic — Projectile (thorn) | js/projectile.js
+projectile:
+  # --- inherited from Entity ---
+
+  friendly: true        # true = hero's shot, false = enemy/boss shot
+  speed: 600            # px/s
+  damage: 10            # base damage per hit
+  life: 2               # seconds before auto-cull
+  dir: 0                # 0..7 aim index (8-way grid)
+  # vx/vy set from dir angle at construction; no gravity
+
+  # --- pool config ---
+  MAX_PROJECTILES: 64   # hard cap on live projectiles

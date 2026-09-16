@@ -1,0 +1,38 @@
+# Petal Panic — Enemy (base) | js/enemy.js
+enemy:
+  # --- inherited from Entity ---
+
+  type: "jester"    # def.id string
+  name: "Jester"    # display name
+  def: {}           # raw enemy definition object
+  isBoss: false     # true for boss enemies (Elephant); set via def.isBoss
+  stats:            # copy of def.stats
+    weight: 1
+    speed: 120      # px/s
+    attack: 15
+    defense: 2
+    stamina: 40     # = maxHp
+    mjump: 0
+    melee: true
+    projectile: false
+    fly: false
+  hp: 40            # current HP (drained via damage())
+  maxHp: 40
+  coinDrop:         # unified drop config (same shape as GameObj)
+    min: 1          # min coins to spawn
+    max: 3          # max coins to spawn
+    chance: 1.0     # probability of dropping (1 = always)
+    types:          # weight per coin type (optional, defaults 70/25/5)
+      bronze: 1
+      silver: 0
+      gold: 0
+
+  # --- AI state ---
+  aiState: idle     # 'idle' | 'walk' | 'chase' | 'attack' | 'dead'
+  aggroRadius: 300  # px; also aliased to this.radius for debug circle
+  hitFlash: 0       # seconds remaining on white flash
+
+  # --- death pipeline ---
+  deathDuration: 0.75  # total shrink+fade seconds
+  fading: false        # true after half duration (render fades out)
+  # deathTimer is a getter derived from timers.get('death')

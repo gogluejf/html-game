@@ -1,0 +1,37 @@
+# Petal Panic — Powerup | js/powerup.js
+powerup:
+  # --- inherited from Entity ---
+
+  powerType: "ammo"     # one of POWERUP_TYPES
+  def: {}               # { label, color, duration?, apply() }
+  collected: false      # latched on collect (prevents double-apply)
+  bobOffset: 0          # radians; visual bob phase (random init)
+
+  # --- effect definitions ---
+  defs:
+    ammo:
+      label: "+100 Ammo"
+      effect: hero.ammo += 100
+    invincibility:
+      label: "Invincible!"
+      duration: 5       # seconds
+      effect: hero.invincibleTimer = max(current, 5)
+    special:
+      label: "+50 Special"
+      effect: hero.specialAmmo += 50
+    rapid:
+      label: "Rapid Fire!"
+      duration: 6       # seconds
+      effect: hero.rapidTimer = max(current, 6)
+    shield:
+      label: "+50 Shield"
+      effect: hero.shield += 50
+    clear:
+      label: "PANIC CLEAR!"
+      effect: deal 9999 damage to all live enemies
+    energy:
+      label: "+30 Energy"
+      effect: hero.energy = min(maxEnergy, energy + 30)
+    oneUp:
+      label: "1UP!"
+      effect: hero.lives += 1

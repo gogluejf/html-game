@@ -1,0 +1,27 @@
+# Jack-O-Lantern | petal-panic/docs/entities/jack_o_lantern.yaml
+jack_o_lantern:
+  id: jackolantern
+  name: "Jack-O-Lantern"
+  w: 40
+  h: 40
+  aggro_radius: 400
+  stats:
+    weight: 1
+    speed: 150         # px/s while rolling
+    attack: 22
+    defense: 0
+    stamina: 30        # = maxHp
+    melee: false
+    projectile: false
+    fly: false
+  coin_drop: { min: 1, max: 2, chance: 1.0, types: { bronze: 1 } }
+
+  # --- rolling bomb ---
+  roll_speed: 150           # px/s toward hero
+  detonate_range: 80        # px; proximity triggers detonation
+  fuse_time: 3              # seconds; auto-detonate after this
+  launch_time: 0.4          # seconds telegraph before exploding
+  explode_time: 0.3         # seconds explosion flash lasts
+  explode_radius: 80        # px; AoE radius
+  spin_speed: 6             # rad/s visual spin while rolling
+  aggro_release_mult: 1.5

@@ -1,0 +1,22 @@
+# Petal Panic — Hitbox (unified attack system) | js/hitbox.js
+hitbox:
+  owner: entity       # who deals damage (telemetry, knockback dir)
+  team: 'ally'        # 'ally' | 'foe' | 'neutral'
+  box: { x: 0, y: 0, w: 0, h: 0 }  # world-space AABB
+  damage: 20          # raw amount (target defense still applies)
+  method: 'melee'     # telemetry label: 'melee' | 'super' | 'whip' | 'lunge' | ...
+  hitSet: Set()       # targets already struck this swing/dash
+  active: true        # false = skip this frame
+
+  # --- team routing (target layers) ---
+  teams:
+    ally:    [ENEMY, BOSS, SOLID]   # hero attacks hit enemies + barrels
+    foe:     [HERO]                 # enemy attacks hit the hero
+    neutral: [HERO, ENEMY, BOSS, SOLID]  # explosions, hazards
+
+  # --- rules ---
+  # - Never self-hits (owner is skipped)
+  # - Skips intangible targets
+  # - Skips hero if dying or invincible (i-frames)
+  # - Each target hit at most once per hitSet lifetime (per swing/dash)
+  # - Routes via takeDamage() → hit() → damage() fallback chain

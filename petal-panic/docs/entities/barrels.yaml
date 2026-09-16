@@ -1,0 +1,29 @@
+# Barrels (GameObj implementations) | petal-panic/docs/entities/barrels.yaml
+barrels:
+  wood_barrel:
+    id: woodBarrel
+    w: 32
+    h: 48
+    hp: 40
+    explosive: false
+    explode_radius: 0
+    coin_drop: null
+
+  explosive_barrel:
+    id: explosiveBarrel
+    w: 32
+    h: 48
+    hp: 60
+    explosive: true
+    explode_radius: 120
+    barrel_damage: 25        # AoE damage on explosion
+    coin_drop: null
+
+  coin_barrel:
+    id: coinBarrel
+    w: 32
+    h: 48
+    hp: 60
+    explosive: false
+    explode_radius: 0
+    coin_drop: { min: 4, max: 6, chance: 1.0, types: { bronze: 0.7, silver: 0.25, gold: 0.05 } }

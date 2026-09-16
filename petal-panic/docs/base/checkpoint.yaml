@@ -1,0 +1,8 @@
+# Petal Panic — Checkpoint | js/object.js
+checkpoint:
+  # --- inherited from Entity ---
+
+  type: "checkpoint"
+  checkpointId: "1-1"   # identifier string (e.g. '1-1' … '1-4')
+  triggered: false      # latched; re-walking over does nothing
+  flashTimer: 0         # brief white flash after triggering (seconds)

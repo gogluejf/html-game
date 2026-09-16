@@ -1,0 +1,27 @@
+# Petal Panic — Entity (base class) | js/entity.js
+entity:
+  x: 0              # top-left of collision box
+  y: 0
+  w: 0              # collision box width
+  h: 0              # collision box height
+  vx: 0             # px/s
+  vy: 0             # px/s
+  gravity: 1        # per-entity factor; 0 = flyer/static
+  facing: 1         # -1 | 1
+  mirrorX: false    # render flip
+  mirrorY: false
+  rotation: 0       # radians
+  scale: 1
+  baseSpriteAngle: 0 # radians; offset for art not pointing right
+  weight: 1         # knockback strength
+  anim: null        # AnimationController ref
+  layer: 0          # bitmask (LAYER.*)
+  box: { ox: 0, oy: 0, bw: w, bh: h }  # offset AABB, never mirrored
+  alive: true
+  intangible: false # true = enemy hitboxes pass through, no damage taken
+  debugColor: "#fff"
+  timers: Timers()  # unified labeled countdown set
+  maxTtl: 0         # total life seconds; 0 = no expiry
+  ttl: 0            # remaining life seconds
+  ttlSpeed: 1       # dt multiplier for TTL tick
+  radius: 0         # zone-of-effect radius (debug circle only)

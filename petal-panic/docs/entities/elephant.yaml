@@ -1,0 +1,40 @@
+# Overgrown Elephant (Boss) | petal-panic/docs/entities/elephant.yaml
+elephant:
+  id: elephant
+  name: "Overgrown Elephant"
+  is_boss: true
+  w: 80
+  h: 100
+  aggro_radius: Infinity   # always active once fight triggers
+  stats:
+    weight: 5
+    speed: 200
+    attack: 30
+    defense: 5
+    stamina: 500           # = maxHp
+    melee: true
+    projectile: true
+    fly: false
+  coin_drop: { min: 6, max: 10, chance: 1.0, types: { bronze: 0.5, silver: 0.35, gold: 0.15 } }
+
+  # --- weak point (head/trunk, top ~30%) ---
+  weak_point_box: { ox: 10, oy: 0, bw: 60, bh: 30 }
+  weak_point_mult: 1.5      # damage multiplier on weak-point hits
+
+  # --- escalation ---
+  escalation_max: 1.5       # up to 1.5x faster at 0% HP
+
+  # --- arena / camera lock ---
+  arena_width: 400
+  trigger_radius: 300       # hero within this → activate fight
+
+  # --- phase timing (base durations, divided by escalation) ---
+  idle_dur: 1.0
+  charge_dur: 1.5
+  stomp_dur: 1.0
+  trunk_dur: 1.2
+
+  # --- trunk blast geometry ---
+  trunk_fan_angles: [-0.35, 0, 0.35]  # radians around facing axis
+  trunk_speed: 420            # px/s
+  trunk_damage: 12            # per-shot (defense-mitigated)

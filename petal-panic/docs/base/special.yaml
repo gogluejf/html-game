@@ -1,0 +1,29 @@
+# Petal Panic — Special (saw / bomb) | js/projectile.js
+special:
+  # --- inherited from Entity ---
+
+  type: "saw"           # 'saw' | 'bomb'
+  friendly: true
+  speed: 800            # saw: 800, bomb: 550
+  damage: 25            # saw: 25, bomb: 40
+  life: 0.6             # saw: 0.6s range limit, bomb: 1.5s fuse
+  _ttlLabel: "life"     # saw: 'life', bomb: 'fuse'
+  radius: 0             # saw: 0, bomb: 100 (AoE explode radius)
+  exploded: false       # latched after bomb detonation
+  ttlExpired: false     # set when TTL kills it (triggers explodeSpecial)
+
+  # --- saw constants ---
+  saw_speed: 800
+  saw_damage: 25
+  saw_lifetime: 0.6
+  saw_size: 20
+
+  # --- bomb constants ---
+  bomb_speed: 550
+  bomb_damage: 40
+  bomb_fuse: 1.5
+  bomb_explode_radius: 100
+  bomb_size: 18
+  bomb_gravity: 800     # px/s²
+
+  MAX_SPECIALS: 16      # pool cap

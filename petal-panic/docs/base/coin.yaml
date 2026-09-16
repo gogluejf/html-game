@@ -1,0 +1,27 @@
+# Petal Panic — Coin | js/coin.js
+coin:
+  # --- inherited from Entity ---
+
+  coinType: "bronze"    # 'bronze' | 'silver' | 'gold'
+  value: 10             # bronze:10, silver:25, gold:50
+  weight: 0.8           # scales gravity (bronze:0.8, silver:1.0, gold:1.3)
+  bounceRestitution: 0.4
+  collected: false      # latched on collect
+  spinAngle: 0          # radians; visual spin
+  settled: false        # true once velocity damped out
+  ttlSpeed: 1           # reads global TTL_SPEED each frame
+
+  # --- coin type definitions ---
+  types:
+    bronze: { value: 10, weight: 0.8, color: "#cd7f32", size: 10 }
+    silver: { value: 25, weight: 1.0, color: "#c0c0c0", size: 12 }
+    gold:   { value: 50, weight: 1.3, color: "#ffd700", size: 14 }
+
+  # --- pool config ---
+  MAX_COINS: 30         # hard cap; oldest recycled on overflow
+  COIN_TTL: 8           # seconds before fade-out if uncollected
+  BOUNCE_FRICTION: 0.8  # vx decay per bounce
+  SETTLE_VY_THRESHOLD: 20
+  ROLL_DECEL: 6         # px/s² while rolling on ground
+  SPIN_RATE: 4          # rad/s
+  AIR_DRAG_PER_STEP: 0.995

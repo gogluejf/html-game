@@ -1,0 +1,16 @@
+# Scarlet Vale | petal-panic/docs/entities/scarlet.yaml
+scarlet:
+  id: scarlet
+  name: "Scarlet Vale"
+  w: 32
+  h: 48
+  stats:
+    weight: 1
+    speed: 250          # px/s
+    attack: 10
+    defense: 2
+    stamina: 100       # = maxEnergy
+    jump: 500          # px/s impulse
+    projectile_freq: 8  # shots per second
+    special_freq: 2     # saw cooldown (seconds)
+    special: saw

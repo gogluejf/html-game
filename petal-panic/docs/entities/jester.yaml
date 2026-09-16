@@ -1,0 +1,26 @@
+# Jester | petal-panic/docs/entities/jester.yaml
+jester:
+  id: jester
+  name: "Jester"
+  w: 36
+  h: 48
+  aggro_radius: 300
+  stats:
+    weight: 1
+    speed: 120         # px/s
+    attack: 15
+    defense: 2
+    stamina: 40        # = maxHp
+    mjump: 0
+    melee: true
+    projectile: false
+    fly: false
+  coin_drop: { min: 1, max: 3, chance: 1.0, types: { bronze: 1 } }
+
+  # --- whip attack ---
+  whip_range: 60              # px; distance to trigger whip
+  whip_duration: 0.4          # seconds total whip anim
+  whip_active_frac: [0.25, 0.75]  # fraction where hitbox is live
+  whip_cooldown: 1.5          # seconds between whips
+  whip_hitbox: { ox: 15, oy: -10, bw: 35, bh: 30 }
+  aggro_release_mult: 1.5     # deaggro at aggroRadius * this

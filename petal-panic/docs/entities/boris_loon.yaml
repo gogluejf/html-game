@@ -1,0 +1,39 @@
+# Boris Loon | petal-panic/docs/entities/boris_loon.yaml
+boris_loon:
+  id: boris_loon
+  name: "Boris Loon"
+  aggro_radius: 360
+  stats:
+    weight: 1
+    speed: 80          # px/s hover drift
+    attack: 12
+    defense: 1
+    stamina: 25        # = maxHp
+    melee: false
+    projectile: true
+    fly: true
+  coin_drop: { min: 1, max: 2, chance: 1.0, types: { bronze: 1 } }
+
+  # --- flight tunables ---
+  sine_amplitude: 30      # px; vertical bob amplitude
+  sine_period: 2          # seconds per full bob cycle
+  hover_speed_mult: 1.0   # horizontal drift = speed * this
+  dive_range: 160         # px; hero must be within this to trigger dive
+  dive_impulse: 320       # px/s; downward vy on dive start
+  dive_time: 0.8          # seconds the dive lasts
+  recover_time: 0.9       # seconds to climb back up
+  dive_cooldown: 2.0      # seconds between dives
+  shoot_chance: 0.5       # probability of firing when a dive starts
+  aggro_release_mult: 1.5
+
+  # --- baby variant ---
+  baby:
+    w: 26               # 44 * 0.6
+    h: 24               # 40 * 0.6
+    aggro_radius: 320
+    stats:
+      speed: 120
+      attack: 8
+      defense: 0
+      stamina: 15
+    coin_drop: { min: 1, max: 1, chance: 1.0, types: { bronze: 1 } }
