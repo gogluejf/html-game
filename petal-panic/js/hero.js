@@ -164,6 +164,9 @@ export class Hero extends Entity {
     this.vy += (dirY / len) * strength;
     this.timers.set('rec', recovery);
     this.timers.set('inv', Math.max(this.timers.get('inv'), invincible));
+    // Intangible during i-frames (visual blink + no further hits).
+    this.intangible = true;
+    this.timers.set('intangible', Math.max(this.timers.get('intangible'), invincible));
     return true;
   }
 
