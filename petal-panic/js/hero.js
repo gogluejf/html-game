@@ -115,21 +115,13 @@ export class Hero extends Entity {
   }
 
   // --- Legacy timer bridges -------------------------------------------------
-  // invincibleTimer / rapidTimer are now unified labeled timers ('inv'/'rapid').
-  // These accessors keep every existing call site working unchanged while the
-  // real state lives in this.timers (which the debug overlay renders).
-
-  /** Remaining invincibility seconds (0 when not active). */
-  get invincibleTimer() { return this.timers.get('inv'); }
-  /** Set/refresh invincibility. max()-style: passing a value extends only if longer. */
-  set invincibleTimer(v) {
-    if (v == null || v <= 0) { this.timers.clear('inv'); return; }
-    this.timers.set('inv', Math.max(this.timers.get('inv'), v));
-  }
+  // rapidTimer is a unified labeled timer ('rapid').
+  // Intangibility is now a proper state (this.intangible) driven by the
+  // 'intangible' timer — no more 'inv' timer or invincibleTimer accessor.
 
   /** Remaining rapid-fire seconds (0 when not active). */
   get rapidTimer() { return this.timers.get('rapid'); }
-  /** Set/refresh rapid-fire window. */
+  /** Set/refresh rapid-fire window. max()-style: passing a value extends only if longer. */
   set rapidTimer(v) {
     if (v == null || v <= 0) { this.timers.clear('rapid'); return; }
     this.timers.set('rapid', Math.max(this.timers.get('rapid'), v));
@@ -292,7 +284,7 @@ export class Hero extends Entity {
 
     // --- Timers -------------------------------------------------------------
     // Unified labeled timers (inv, rapid, rec, ...) advance together. Legacy
-    // invincibleTimer/rapidTimer are getters over this set (see below).
+    // Unified labeled timers (intangible, rapid, rec, ...) advance together.
     this.timers.tick(dt);
     if (this.intangible && this.timers.expired('intangible')) {
       this.intangible = false;
@@ -416,7 +408,8 @@ export class Hero extends Entity {
     this.alive = true;
     this.dying = false;
     this.deathTimer = 0;
-    this.invincibleTimer = Math.max(this.invincibleTimer, Hero.RESPAWN_IFRAMES);
+    this.intangible = true;
+    this.timers.set('intangible', Hero.RESPAWN_IFRAMES);
     this.crouching = false;
     this.sliding = false;
     this.jumpsUsed = 0;          // 0=grounded, 1=first jump used, 2=double jump used

@@ -292,7 +292,8 @@ export function retryFromGameOver() {
   hero.dying = false;
   hero.deathTimer = 0;
   hero.alive = true;
-  hero.invincibleTimer = Hero.RESPAWN_IFRAMES;
+  hero.intangible = true;
+  hero.timers.set('intangible', Hero.RESPAWN_IFRAMES);
   hero.continuesUsed = 0;
   hero.checkpoint = { x: hero.x, y: hero.y };
   Effects.reset(); // Task 7.1 — clear any stale vignette/flash between runs
@@ -544,7 +545,7 @@ function swapHero() {
     checkpoint: hero.checkpoint, continuesUsed: hero.continuesUsed,
     stats: hero.stats,
     runStats: hero.runStats, // Task 7.3 — preserve unified telemetry
-    invincibleTimer: hero.invincibleTimer, rapidTimer: hero.rapidTimer,
+    intangible: hero.intangible, rapidTimer: hero.rapidTimer,
   };
 
   const nh = new Hero(def, saved.x, saved.y);
@@ -762,7 +763,7 @@ world.on('hit', (a, b) => {
     if (victim.layer !== LAYER.HERO) return;
     // Task 5.2 — a hero mid-death takes no further damage (skull is playing).
     if (victim.dying) { foeProj.alive = false; return; }
-    if (victim.invincibleTimer > 0) { foeProj.alive = false; return; } // i-frames absorb it
+    if (victim.intangible) { foeProj.alive = false; return; } // intangible absorbs it
     const dealt = damage(foeProj, victim, foeProj.damage, 'projectile');
     if (dealt > 0) {
       // Knockback along the projectile's travel direction + hit-stun + i-frames.
@@ -803,7 +804,7 @@ world.on('contact', (a, b) => {
   // i-frames absorb contact hits (prevents melt while overlapping). takeHit()
   // returns false when invincible, so we skip damage + cooldown in that case.
   if (heroEnt.intangible) return;
-  if (heroEnt.timers.get('inv') > 0) return;
+  if (heroEnt.intangible) return;
   if (source._contactCd > 0) return;
   source._contactCd = CONTACT_COOLDOWN;
   const amt = source.stats?.attack ?? 10;
@@ -957,7 +958,7 @@ onTransition((from, to) => {
     nh.energy = def.stats.stamina;
     nh.maxEnergy = def.stats.stamina;
     nh.checkpoint = { x: saved.x, y: saved.y };
-    nh.invincibleTimer = 0;
+    nh.intangible = false;
     nh.dying = false;
     nh.deathTimer = 0;
     nh.continuesUsed = 0;

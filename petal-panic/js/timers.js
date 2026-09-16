@@ -15,13 +15,13 @@
 
 /** Short label → color map for the debug bars. Unknown labels fall back to gray. */
 export const TIMER_COLORS = {
-  life:   '#95a5a6', // generic expiry (coin/projectile)
-  fuse:   '#e67e22', // bomb / barrel detonation countdown
-  death:  '#e74c3c', // enemy death shrink/fade before despawn
-  rec:    '#f1c40f', // hero hit-stun / recovery (control locked)
-  inv:    '#00e5ff', // hero invincibility frames (damage absorbed)
-  rapid:  '#9b59b6', // rapid-fire powerup window
-  special:'#1abc9c', // special-attack cooldown (saw/bomb)
+  life:       '#95a5a6', // generic expiry (coin/projectile)
+  fuse:       '#e67e22', // bomb / barrel detonation countdown
+  death:      '#e74c3c', // enemy death shrink/fade before despawn
+  rec:        '#f1c40f', // hero hit-stun / recovery (control locked)
+  intangible: '#00e5ff', // hero intangible (no damage taken) — BLUE
+  rapid:      '#9b59b6', // rapid-fire powerup window
+  special:    '#1abc9c', // special-attack cooldown (saw/bomb)
 };
 
 /** Fallback color for any label not in TIMER_COLORS. */
@@ -32,9 +32,9 @@ export const TIMER_COLOR_DEFAULT = '#7f8c8d';
  *
  * Usage:
  *   this.timers = new Timers();
- *   this.timers.set('inv', 0.6);      // start/refresh a timer
+ *   this.timers.set('intangible', 0.6); // start/refresh a timer
  *   this.timers.tick(dt);             // advance all (call once per frame)
- *   if (this.timers.get('inv') > 0)   // still active?
+ *   if (this.timers.get('intangible') > 0) // still active?
  *   const f = this.timers.fraction('fuse'); // 0..1 for bars
  *   if (this.timers.expired('fuse'))  // true on the exact frame it hits 0
  */

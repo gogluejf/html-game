@@ -78,11 +78,10 @@ export function processHitboxes(hitboxes, targets, onHit) {
       const tb = t.worldBox ? t.worldBox() : { x: t.x, y: t.y, w: t.w, h: t.h };
       if (!aabbOverlap(hb.box, tb)) continue;
 
-      // Skip hero if intangible, invincible (i-frames), or mid-death.
+      // Skip hero if intangible or mid-death.
       if (t.layer === LAYER.HERO) {
         if (t.intangible) continue;
         if (t.dying) continue;
-        if (t.timers && t.timers.get('inv') > 0) continue;
       }
 
       // Route damage: prefer takeDamage (enemies run death pipeline),

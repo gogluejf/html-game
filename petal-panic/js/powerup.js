@@ -24,9 +24,8 @@ export const POWERUP_DEFS = {
                    apply: (hero) => { hero.ammo += 100; } },
   invincibility: { label: 'Invincible!',  color: '#3498db', duration: 5,
                    apply: (hero) => {
-                     hero.invincibleTimer = Math.max(hero.invincibleTimer ?? 0, 5);
                      hero.intangible = true;
-                     hero.timers.set('intangible', 5);
+                     hero.timers.set('intangible', Math.max(hero.timers.get('intangible'), 5));
                    } },
   special:       { label: '+50 Special',  color: '#3498db',
                    apply: (hero) => { hero.specialAmmo += 50; } },
