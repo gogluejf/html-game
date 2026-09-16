@@ -125,14 +125,14 @@ export function render(ctx) {
       const h = getHero();
       if (h.dying) {
         drawDeathSkull(ctx, h);
-      } else if (h.intangible) {
-        // Intangible: fast half-alpha blink (debug cue for phasing).
-        ctx.save();
-        ctx.globalAlpha = Math.floor(performance.now() * 0.01) % 2 === 0 ? 0.4 : 0.8;
-        h.draw(ctx);
-        ctx.restore();
       } else {
-        h.draw(ctx);
+        ctx.save();
+        if (h.intangible) {
+          ctx.globalAlpha = Math.floor(performance.now() * 0.01) % 2 === 0 ? 0.4 : 0.8;
+        }
+        ctx.fillStyle = h.debugColor;
+        ctx.fillRect(h.x, h.y, h.w, h.h);
+        ctx.restore();
       }
     }
   }
