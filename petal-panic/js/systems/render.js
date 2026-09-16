@@ -438,7 +438,20 @@ function drawDebugOverlay(ctx) {
     ctx.fillRect(mh.x, mh.y, mh.w, mh.h);
     ctx.strokeStyle = '#f1c40f';
     ctx.lineWidth = 2;
-    ctx.strokeRect(mh.x, mh.y, mh.w, mh.h);
+    ctx.strokeRect(mh.x + 0.5, mh.y + 0.5, mh.w, mh.h);
+    ctx.restore();
+  }
+
+  // Super dash hitbox in PURPLE when active (debug only).
+  const sh = hero.superHitboxWorld;
+  if (sh) {
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = '#9b59b6';
+    ctx.fillRect(sh.x, sh.y, sh.w, sh.h);
+    ctx.strokeStyle = '#9b59b6';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(sh.x + 0.5, sh.y + 0.5, sh.w, sh.h);
     ctx.restore();
   }
 

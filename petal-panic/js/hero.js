@@ -277,6 +277,8 @@ export class Hero extends Entity {
       this.vy += GRAVITY * dt;
       if (this.vy > MAX_FALL_SPEED) this.vy = MAX_FALL_SPEED;
     }
+    // NOTE: during superActive, gravity is handled inside updateSuper()
+    // (no gravity for first 60%, then gravity kicks in for the decel phase).
 
     // --- Integrate ----------------------------------------------------------
     this.x += this.vx * dt;
@@ -447,8 +449,14 @@ export class Hero extends Entity {
       const t = Math.max(0, this.superTimer / this.SUPER_DUR); // 1→0
       const speed = this.SUPER_SPEED * t;
       this.vx = dir * speed;
-      // No gravity influence during dash (airborne slide).
-      this.vy = 0;
+      // First 60%: no gravity (airborne slide). Last 40%: gravity kicks in
+      // so the deceleration feels like you're dropping back to earth.
+      if (t > 0.4) {
+        this.vy = 0;
+      } else {
+        this.vy += GRAVITY * dt;
+        if (this.vy > MAX_FALL_SPEED) this.vy = MAX_FALL_SPEED;
+      }
       if (this.superTimer <= 0) {
         this.superActive = false;
         this.vx = dir * 80; // small residual momentum after glide
