@@ -99,10 +99,9 @@ hero.combatStats = {
 // Now lives in hero.runStats.coinsCollected (Task 7.3 unified stats).
 
 // Task 2.1 — Animation engine integration test.
-// Generate 5 colored frames as offscreen canvases; cycle them on the hero.
-const heroFrames = ['#2ecc71', '#27ae60', '#1abc9c', '#16a085', '#3498db'];
+// Single solid frame (no cycling flash). Replaced with real sprites later.
 hero.anim = new Anim(
-  heroFrames.map(c => makeTestFrame(hero.w, hero.h, c)),
+  [makeTestFrame(hero.w, hero.h, '#2ecc71')],
   { speed: 200, loop: true },
 );
 
