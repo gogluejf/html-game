@@ -8,8 +8,9 @@ and renders editor-<project>.html from editor-template.html.
 import json, sys
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent  # .squid-os/sprite-gen
-TEMPLATE = BASE / "editor-template.html"
+SKILL = Path(__file__).resolve().parent.parent            # .squid-os/skills/sprite-gen
+TEMPLATE = SKILL / "templates" / "editor-template.html"
+OUT_DIR = SKILL.parent.parent / "sprite-gen"              # .squid-os/sprite-gen (outputs + state)
 
 
 def build_manifest(state):
@@ -38,14 +39,14 @@ def build_manifest(state):
 def main():
     projects = sys.argv[1:]
     if not projects:
-        projects = sorted(p.stem[len("state-"):] for p in BASE.glob("state-*.json"))
+        projects = sorted(p.stem[len("state-"):] for p in OUT_DIR.glob("state-*.json"))
     tpl = TEMPLATE.read_text()
     for proj in projects:
-        st = json.loads((BASE / f"state-{proj}.json").read_text())
+        st = json.loads((OUT_DIR / f"state-{proj}.json").read_text())
         man = build_manifest(st)
         out = tpl.replace("/*__MANIFEST__*/null", json.dumps(man))
         out = out.replace("__PROJECT__", proj)
-        dest = BASE / f"editor-{proj}.html"
+        dest = OUT_DIR / f"editor-{proj}.html"
         dest.write_text(out)
         n = sum(len(l["entities"]) for l in man["labels"])
         print(f"wrote {dest.name} ({n} entities)")

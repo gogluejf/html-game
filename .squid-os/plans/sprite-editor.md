@@ -11,12 +11,12 @@ No skill changes. Just: one generator script + one editor template.
 
 | File | Purpose |
 |---|---|
-| `.squid-os/sprite-gen/scripts/render_editor.py` | CLI: reads `state-<project>.json`, builds MANIFEST, renders `editor-<project>.html` from template |
-| `.squid-os/sprite-gen/editor-template.html` | The editor UI/logic with `/*__MANIFEST__*/` placeholder |
+| `skills/sprite-gen/scripts/render_editor.py` (under `.squid-os/`) | CLI: reads `state-<project>.json`, builds MANIFEST, renders `editor-<project>.html` from template |
+| `skills/sprite-gen/templates/editor-template.html` (under `.squid-os/`) | The editor UI/logic with `/*__MANIFEST__*/` placeholder |
 | `.squid-os/sprite-gen/editor-petal-panic.html` | Generated output (rerendered) |
 | `.squid-os/sprite-gen/editor-abyss-qwen.html` | Generated output (rerendered) |
 
-Usage: `python3 .squid-os/sprite-gen/scripts/render_editor.py petal-panic abyss-qwen`
+Usage: `python3 .squid-os/skills/sprite-gen/scripts/render_editor.py petal-panic abyss-qwen`
 (default: all `state-*.json` found in the script's parent dir).
 
 ## Layout

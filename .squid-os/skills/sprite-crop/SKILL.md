@@ -82,13 +82,6 @@ This is IDEMPOTENT: re-running for a re-cropped sheet REPLACES the `crop` block 
 ```
 All legacy grid fields (`row_y`, `col_x`, `frame_size`, `bg_color`, `bg_tol`) are dropped on record.
 
-### 6. Emit the animation viewer (after frames are verified)
-
-```bash
-python3 <working-dir>/.squid-os/skills/sprite-crop/scripts/crop_sprites.py viewer --assets-dir <working-dir>/<assets-dir> --project <PROJECT> --out <working-dir>/.squid-os/sprite-gen/<PROJECT>.viewer.html
-```
-Always run after cropping a new label and open the viewer so the user can confirm the animation. Re-run if you re-crop.
-
 ## Rules
 - **Frames are clusters, not cells.** Ownership first, rectangles second. Never treat a virtual grid or measured separator as a clipping boundary — limbs/attacks may cross into neighbor territory and must stay whole.
 - **Assess before extracting.** Always inspect the full sheet with vision and record expected rows/actions/counts BEFORE running extract. The expected count constrains clustering; extraction without an assessment is blind.
@@ -134,7 +127,7 @@ Skill actions:
 2. extract --rows 5,4,5 --names flower_dog --actions run,attack,death --json result.json
 3. Trace: row 1 gap-split finds only 3 clean separators for 4 expected → takes deepest 3; wide attack cluster spans ~2 normal cells; 6 petal satellites assigned to attack frame 3, 2 flagged low-confidence
 4. Inspect flower_dog_attack_f3, flower_dog_death_f5, flower_dog_run_f1 + 2 flagged → petals intact, no bleed
-5. Validation PASS 14/14 → install to assets/<label>/, record-crop, emit viewer
+5. Validation PASS 14/14 → install to assets/<label>/, record-crop
 
 **Example 2: Clustering mismatch**
 
@@ -145,7 +138,7 @@ Skill actions:
 2. extract → trace WARN: row 2 produced 4 bands but 5 expected (two early destruction poses sit close together)
 3. Re-inspect sheet: row 3 actually has 5 poses, two nearly touch → lower nothing; instead the even-division fallback already split them; inspect all 5 death crops
 4. One crop contains two poses → re-run with corrected assessment if needed, or accept and note
-5. Install verified pass, update state, viewer
+5. Install verified pass, update state
 
 **Example 3: Non-transparent input**
 
@@ -165,7 +158,7 @@ Skill actions:
 3. extract --rows 5,5 --names balthazar --actions special --span --row-y "0-443,443-887" --col-x "0:354,709,1063,1417" --json result.json
    → produces balthazar_special_f1.png … f10.png in one pass (row 1 = f1-f5, row 2 = f6-f10). No manual renaming, no filename collisions.
 4. Inspect f1, f5, f6, f10 (+ any flagged) → clean
-5. Install to assets/heroes/, record_crop.py (writes 10 bboxes + syncs the single entity's frames), emit viewer
+5. Install to assets/heroes/, record_crop.py (writes 10 bboxes + syncs the single entity's frames)
 6. State entity recorded as `"row": [1, 2]`, `"anim": "special"` — one entry, not two.
 
 ## Resources

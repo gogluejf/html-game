@@ -141,6 +141,26 @@
   input[type=number]:disabled ~ .arr{display:none;}
   .pair .cell input::-webkit-inner-spin-button,.pair .cell input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   .disabled-dim{opacity:.45;}
+
+  #helpBar{padding:8px 14px;border-top:1px solid var(--line);background:var(--bg2);display:flex;justify-content:flex-end;}
+  #helpBtn{font-size:11px;padding:7px 12px;}
+  #helpDialog{box-sizing:border-box;width:min(960px,94vw);max-height:90vh;padding:0;color:#e4eaf8;background:#101625;border:1px solid #354361;border-radius:20px;box-shadow:0 28px 100px #000a;font-family:system-ui,sans-serif;overflow:auto;}
+  #helpDialog::backdrop{background:#040813c9;backdrop-filter:blur(7px);}
+  .helpHead{padding:26px 28px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;}
+  .helpEyebrow{color:#3ef0ff;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+  .helpHead h2{margin:8px 0;font-size:26px;letter-spacing:-.7px;}
+  .helpHead p{margin:0;color:#9aaac5;font-size:13px;}
+  #helpClose{border:1px solid #354361;border-radius:10px;background:#1a2336;color:#dce6fa;font-size:23px;width:36px;height:36px;cursor:pointer;flex:none;}
+  .helpGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 28px 22px;}
+  .helpCard{border:1px solid #28344b;border-radius:13px;background:#151e30;padding:16px;}
+  .helpCard h3{margin:0 0 12px;color:#60dded;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;}
+  .helpItem{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #ffffff08;font-size:12px;line-height:1.4;}
+  .helpItem span{color:#cad5e8;}
+  .helpItem kbd{font-family:inherit;font-size:11px;color:#f5df85;background:#222d43;border:1px solid #39465e;border-bottom-width:2px;border-radius:5px;padding:3px 7px;white-space:nowrap;}
+  .helpFoot{padding:14px 28px;background:#0d1320;color:#91a3c1;font-size:12px;text-align:center;border-top:1px solid #28344b;}
+  #helpDialog :focus-visible,#helpBtn:focus-visible{outline:2px solid #3ef0ff;outline-offset:3px;}
+  @media(max-width:650px){.helpGrid{grid-template-columns:1fr;padding:0 16px 16px;}.helpHead{padding:20px 16px;}.helpHead h2{font-size:22px;}}
+
 </style>
 </head>
 <body>
@@ -164,6 +184,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12"/><path d="M7 6v12M11 6v12M15 6v12M19 6v12"/></svg>ALL FRAMES</button>
         <button class="tbtn tog on" id="tglAxes" title="show/hide axes crosshair">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>AXES</button>
+        <button class="tbtn tog on" id="tglGrid" title="show/hide background grid">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>GRID</button>
         <button class="tbtn tog on" id="tglPivot" title="show/hide pivot point (drag to move)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>PIVOT</button>
         <button class="tbtn tog on" id="tglLabel" title="show/hide sprite name label over the canvas">
@@ -173,7 +195,7 @@
         <span class="gtitle">Tools</span>
         <button class="tbtn tog" id="tglMeleeOn" title="enable/disable melee box for this frame" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 12l2 2 4-4"/></svg>MELEE ON</button>
-        <button class="tbtn" id="recenterPivotBtn" title="move pivot to collision box center" disabled>
+        <button class="tbtn" id="recenterPivotBtn" title="move pivot to collision box center">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><path d="M12 5v3M12 16v3M5 12h3M16 12h3"/></svg>RECENTER PIVOT</button>
         <div style="position:relative;display:inline-flex;">
           <button class="tbtn" id="resetBtn" title="reset boxes to original position" disabled>
@@ -188,9 +210,9 @@
       </div>
       <div class="tgroup">
         <span class="gtitle">Position</span>
-        <button class="tbtn" id="posOriginBtn" title="align sprite left edge to X axis and bottom to Y axis (based on frame 1)" disabled>
+        <button class="tbtn" id="posOriginBtn" title="align sprite left edge to X axis and bottom to Y axis (based on frame 1)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16h16"/><rect x="9" y="9" width="7" height="7"/></svg>LEFT&#8595; BOTTOM</button>
-        <button class="tbtn" id="posCenterBtn" title="center sprite on the X/Y axis origin (based on frame 1)" disabled>
+        <button class="tbtn" id="posCenterBtn" title="center sprite on the X/Y axis origin (based on frame 1)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><rect x="8" y="8" width="8" height="8"/></svg>CENTER</button>
       </div>
       <span id="saveIndicator" style="font-size:10px;color:var(--grn);opacity:0;transition:opacity .3s;margin-left:auto;margin-right:8px;">✓ saved</span>
@@ -253,12 +275,7 @@
       </div>
       <div id="finfo"></div>
     </div>
-    <div id="hint">
-      space play/pause &middot; &#8592;/&#8594; prev/next frame &middot; &#8593;/&#8595; prev/next sprite &middot; shift+arrow offset &#177;1 &middot; ctrl+arrow offset &#177;10<br>
-      zoom: mouse wheel / ctrl&#8722; / ctrl+ / bottom buttons &middot; hover a visible box: drag inside to move it &middot; corner handle resizes &middot; shift+corner scales both axes<br>
-      rotation: bottom rot controls (independent of frame anim) &middot; click canvas while rotating = pause + reset to 0&#176;<br>
-      undo/redo: top-right arrows or ctrl+Z / ctrl+Y (global — jumps back to the exact animation + frame you edited)
-    </div>
+    <div id="helpBar"><button id="helpBtn" class="tbtn" aria-haspopup="dialog" aria-controls="helpDialog">? &nbsp; HELP &amp; SHORTCUTS</button></div>
   </div>
   <div id="panel">
     <h2>Animation</h2>
@@ -336,6 +353,11 @@
     </div>
   </div>
 </div>
+<dialog id="helpDialog" aria-labelledby="helpTitle" aria-describedby="helpSummary">
+  <header class="helpHead"><div><div class="helpEyebrow">Sprite editor · quick reference</div><h2 id="helpTitle">Less hunting. More tuning.</h2><p id="helpSummary">Shortcuts follow button availability. Editing requires paused playback.</p></div><button id="helpClose" aria-label="Close help">×</button></header>
+  <div class="helpGrid"><section class="helpCard"><h3>Playback &amp; navigation</h3><div class="helpItem"><span>Play or pause animation</span><kbd>Space</kbd></div><div class="helpItem"><span>Previous or next frame</span><kbd>← / →</kbd></div><div class="helpItem"><span>Previous or next animation</span><kbd>↑ / ↓</kbd></div><div class="helpItem"><span>Jump directly to frames one through ten</span><kbd>1–9 / 0</kbd></div><div class="helpItem"><span>Decrease or increase playback speed</span><kbd>− / +</kbd></div><div class="helpItem"><span>Preview every frame in the filmstrip</span><kbd>FRAMES</kbd></div></section><section class="helpCard"><h3>Visibility &amp; clean preview</h3><div class="helpItem"><span>Toggle sprite boundary</span><kbd>Shift + S</kbd></div><div class="helpItem"><span>Toggle collision boundary</span><kbd>Shift + C</kbd></div><div class="helpItem"><span>Toggle melee boundaries</span><kbd>Shift + M</kbd></div><div class="helpItem"><span>Ghost all frames; edits affect every frame</span><kbd>Shift + F</kbd></div><div class="helpItem"><span>Toggle coordinate axes</span><kbd>Shift + A</kbd></div><div class="helpItem"><span>Toggle background grid</span><kbd>Shift + G</kbd></div><div class="helpItem"><span>Toggle pivot marker</span><kbd>Shift + P</kbd></div><div class="helpItem"><span>Toggle animation label</span><kbd>Shift + L</kbd></div><div class="helpItem"><span>Hide overlays; press again to restore</span><kbd>Ctrl + H</kbd></div></section><section class="helpCard"><h3>Collision &amp; frame editing</h3><div class="helpItem"><span>Enable or disable current frame’s melee box</span><kbd>M</kbd></div><div class="helpItem"><span>Move the hovered box</span><kbd>Drag inside</kbd></div><div class="helpItem"><span>Resize using an edge or corner</span><kbd>Drag handle</kbd></div><div class="helpItem"><span>Scale both axes together</span><kbd>Shift + corner drag</kbd></div><div class="helpItem"><span>Nudge frame offset while paused</span><kbd>Shift + arrows</kbd></div><div class="helpItem"><span>Edit exact box, offset, and scale values</span><kbd>Side panel</kbd></div><div class="helpItem"><span>Center pivot within the collision box</span><kbd>RECENTER PIVOT</kbd></div><div class="helpItem"><span>Align frames to the left-bottom origin</span><kbd>LEFT ↓ BOTTOM</kbd></div><div class="helpItem"><span>Center frames on the origin</span><kbd>CENTER</kbd></div></section><section class="helpCard"><h3>View &amp; utilities</h3><div class="helpItem"><span>Pan by dragging empty canvas space</span><kbd>Drag background</kbd></div><div class="helpItem"><span>Zoom around the pointer</span><kbd>Mouse wheel</kbd></div><div class="helpItem"><span>Zoom out or in</span><kbd>Ctrl + − / +</kbd></div><div class="helpItem"><span>Reset zoom and center the view</span><kbd>Ctrl + 0</kbd></div><div class="helpItem"><span>Rotate independently using bottom controls</span><kbd>Rotation controls</kbd></div><div class="helpItem"><span>Choose background using presets or custom colors</span><kbd>Color picker</kbd></div><div class="helpItem"><span>Undo; return to the edited animation</span><kbd>Ctrl + Z</kbd></div><div class="helpItem"><span>Redo the last undone edit</span><kbd>Ctrl + Y</kbd></div><div class="helpItem"><span>Reset frame, animation, or factory settings</span><kbd>RESET</kbd></div><div class="helpItem"><span>Save edits automatically in this browser</span><kbd>Auto-save</kbd></div></section></div>
+  <footer class="helpFoot">Click anywhere or press Escape to close · Shortcuts stay inactive while typing</footer>
+</dialog>
 <script>
 const MANIFEST = {"labels": [{"name": "enemies", "entities": [{"name": "pufferfish_idle", "char": "pufferfish", "anim": "idle", "frames": ["../../abyss-qwen/assets/enemies/pufferfish_f1.png", "../../abyss-qwen/assets/enemies/pufferfish_f2.png", "../../abyss-qwen/assets/enemies/pufferfish_f3.png", "../../abyss-qwen/assets/enemies/pufferfish_f4.png"], "crops": [null, null, null, null]}, {"name": "mantis_crab_idle", "char": "mantis_crab", "anim": "idle", "frames": ["../../abyss-qwen/assets/enemies/mantis_crab_f1.png", "../../abyss-qwen/assets/enemies/mantis_crab_f2.png", "../../abyss-qwen/assets/enemies/mantis_crab_f3.png", "../../abyss-qwen/assets/enemies/mantis_crab_f4.png"], "crops": [null, null, null, null]}, {"name": "jellyfish_idle", "char": "jellyfish", "anim": "idle", "frames": ["../../abyss-qwen/assets/enemies/jellyfish_f1.png", "../../abyss-qwen/assets/enemies/jellyfish_f2.png", "../../abyss-qwen/assets/enemies/jellyfish_f3.png", "../../abyss-qwen/assets/enemies/jellyfish_f4.png"], "crops": [null, null, null, null]}, {"name": "anglerfish_idle", "char": "anglerfish", "anim": "idle", "frames": ["../../abyss-qwen/assets/enemies/anglerfish_f1.png", "../../abyss-qwen/assets/enemies/anglerfish_f2.png", "../../abyss-qwen/assets/enemies/anglerfish_f3.png", "../../abyss-qwen/assets/enemies/anglerfish_f4.png"], "crops": [null, null, null, null]}, {"name": "mech_shark_idle", "char": "mech_shark", "anim": "idle", "frames": ["../../abyss-qwen/assets/enemies/mech_shark_f1.png", "../../abyss-qwen/assets/enemies/mech_shark_f2.png", "../../abyss-qwen/assets/enemies/mech_shark_f3.png", "../../abyss-qwen/assets/enemies/mech_shark_f4.png"], "crops": [null, null, null, null]}, {"name": "sea_dragon_idle", "char": "sea_dragon", "anim": "idle", "frames": ["../../abyss-qwen/assets/enemies/sea_dragon_f1.png", "../../abyss-qwen/assets/enemies/sea_dragon_f2.png", "../../abyss-qwen/assets/enemies/sea_dragon_f3.png", "../../abyss-qwen/assets/enemies/sea_dragon_f4.png"], "crops": [null, null, null, null]}]}, {"name": "bosses", "entities": [{"name": "octopus_idle", "char": "octopus", "anim": "idle", "frames": ["../../abyss-qwen/assets/bosses/octopus_f1.png", "../../abyss-qwen/assets/bosses/octopus_f2.png", "../../abyss-qwen/assets/bosses/octopus_f3.png", "../../abyss-qwen/assets/bosses/octopus_f4.png"], "crops": [null, null, null, null]}, {"name": "megalodon_idle", "char": "megalodon", "anim": "idle", "frames": ["../../abyss-qwen/assets/bosses/megalodon_f1.png", "../../abyss-qwen/assets/bosses/megalodon_f2.png", "../../abyss-qwen/assets/bosses/megalodon_f3.png", "../../abyss-qwen/assets/bosses/megalodon_f4.png"], "crops": [null, null, null, null]}, {"name": "kraken_idle", "char": "kraken", "anim": "idle", "frames": ["../../abyss-qwen/assets/bosses/kraken_f1.png", "../../abyss-qwen/assets/bosses/kraken_f2.png", "../../abyss-qwen/assets/bosses/kraken_f3.png", "../../abyss-qwen/assets/bosses/kraken_f4.png"], "crops": [null, null, null, null]}]}, {"name": "powerups", "entities": [{"name": "shield_idle", "char": "shield", "anim": "idle", "frames": ["../../abyss-qwen/assets/powerups/shield_f1.png", "../../abyss-qwen/assets/powerups/shield_f2.png", "../../abyss-qwen/assets/powerups/shield_f3.png", "../../abyss-qwen/assets/powerups/shield_f4.png"], "crops": [null, null, null, null]}, {"name": "triple_shot_idle", "char": "triple_shot", "anim": "idle", "frames": ["../../abyss-qwen/assets/powerups/triple_shot_f1.png", "../../abyss-qwen/assets/powerups/triple_shot_f2.png", "../../abyss-qwen/assets/powerups/triple_shot_f3.png", "../../abyss-qwen/assets/powerups/triple_shot_f4.png"], "crops": [null, null, null, null]}, {"name": "slow_mo_idle", "char": "slow_mo", "anim": "idle", "frames": ["../../abyss-qwen/assets/powerups/slow_mo_f1.png", "../../abyss-qwen/assets/powerups/slow_mo_f2.png", "../../abyss-qwen/assets/powerups/slow_mo_f3.png", "../../abyss-qwen/assets/powerups/slow_mo_f4.png"], "crops": [null, null, null, null]}, {"name": "bomb_idle", "char": "bomb", "anim": "idle", "frames": ["../../abyss-qwen/assets/powerups/bomb_f1.png", "../../abyss-qwen/assets/powerups/bomb_f2.png", "../../abyss-qwen/assets/powerups/bomb_f3.png", "../../abyss-qwen/assets/powerups/bomb_f4.png"], "crops": [null, null, null, null]}]}, {"name": "player", "entities": [{"name": "manta_ray_idle", "char": "manta_ray", "anim": "idle", "frames": ["../../abyss-qwen/assets/player/manta_ray_f1.png", "../../abyss-qwen/assets/player/manta_ray_f2.png", "../../abyss-qwen/assets/player/manta_ray_f3.png", "../../abyss-qwen/assets/player/manta_ray_f4.png"], "crops": [null, null, null, null]}]}, {"name": "hud", "entities": [{"name": "splash_", "char": "splash", "anim": "", "frames": ["../../abyss-qwen/assets/hud/splash_f1.png"], "crops": [null]}, {"name": "background_", "char": "background", "anim": "", "frames": ["../../abyss-qwen/assets/hud/background_f1.png"], "crops": [null]}]}]};
 const COL_COLL='#3ef0ff', COL_MELEE='#ff9d2e', COL_SCALE='#b47bff';
@@ -399,7 +421,7 @@ function syncUndoButtons(){
   if (u) u.disabled = !undoStack.length;
   if (r) r.disabled = !redoStack.length;
 }
-let show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false };
+let show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false, grid:true };
 let bgColor = '#000000';   // canvas background fill
 let isPlaying = true;      // global play/pause, carried across animations
 // ---------- localStorage persistence ----------
@@ -594,18 +616,27 @@ async function selectEntity(li, ei, opts){
   requestAnimationFrame(()=>{ resizeCanvas(); draw(); });
 }
 // ---------- geometry: sprite space origin (0,0) at view center + pan, +y down ----------
+let cssW = 1, cssH = 1;   // canvas size in CSS px (layout math uses these, not cv.width which is device px)
 function resizeCanvas(){
   const r = cv.getBoundingClientRect();
-  cv.width = Math.max(1, Math.round(r.width));
-  cv.height = Math.max(1, Math.round(r.height));
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cssW = Math.max(1, Math.round(r.width));
+  cssH = Math.max(1, Math.round(r.height));
+  // Size the backing store in DEVICE pixels and scale the context by dpr so we
+  // draw at true resolution. Without this, on Retina displays the low-res buffer
+  // is GPU-upscaled and semi-transparent box fills resample/blend across frames,
+  // accumulating toward solid white the more you edit.
+  cv.width = Math.max(1, Math.round(cssW * dpr));
+  cv.height = Math.max(1, Math.round(cssH * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 // screen(px) <-> sprite-space. Origin (0,0) maps to canvas center + pan.
 // When rotation is active, c2s inverse-rotates around the pivot so that
 // hit-testing and drag math work in the unrotated (local) frame.
-function s2c(x, y){ return [ cv.width/2 + (x - panX)*zoom, cv.height/2 + (y - panY)*zoom ]; }
+function s2c(x, y){ return [ cssW/2 + (x - panX)*zoom, cssH/2 + (y - panY)*zoom ]; }
 function c2s(x, y){
-  let sx = (x - cv.width/2)/zoom + panX;
-  let sy = (y - cv.height/2)/zoom + panY;
+  let sx = (x - cssW/2)/zoom + panX;
+  let sy = (y - cssH/2)/zoom + panY;
   // inverse-rotate around pivot if rotation is active
   if (cur && cur.st && cur.st.rot && cur.st.rot.angle !== 0 && cur.st.pivot){
     const rad = cur.st.rot.angle * Math.PI / 180;
@@ -619,11 +650,11 @@ function c2s(x, y){
 function evPos(e){ const r = cv.getBoundingClientRect(); return [ e.clientX - r.left, e.clientY - r.top ]; }
 function setZoom(nz, cx, cy){
   nz = Math.max(.05, Math.min(32, nz));
-  if (cx === undefined){ cx = cv.width/2; cy = cv.height/2; }   // zoom about center by default
+  if (cx === undefined){ cx = cssW/2; cy = cssH/2; }   // zoom about center by default
   const [wx, wy] = c2s(cx, cy);   // keep the sprite point under the cursor fixed
   zoom = nz;
-  panX = wx - (cx - cv.width/2)/zoom;
-  panY = wy - (cy - cv.height/2)/zoom;
+  panX = wx - (cx - cssW/2)/zoom;
+  panY = wy - (cy - cssH/2)/zoom;
   userZoomed = true;              // manual zoom: stop auto-fitting on future selects
   $('zoomval').textContent = Math.round(zoom*100)+'%';
   draw();
@@ -694,26 +725,34 @@ function gridStep(){
 function draw(){
   if (!cur || !cur.st) return;
   const st = cur.st;
+  // Clear the FULL canvas at identity transform, then apply dpr for drawing.
+  // This guarantees no residual content from previous frames accumulates.
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, cv.width, cv.height);
-  // ---------- full-screen grid ----------
+  // Now apply dpr scaling for all subsequent drawing (which uses CSS-pixel coords)
+  const dpr = Math.min(2, window.devicePixelRatio||1);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // ---------- full-screen grid + shared origin coords ----------
   const step = gridStep();
   const [ox, oy] = s2c(0, 0);   // where sprite origin (0,0) lands on screen
-  ctx.lineWidth = 1;
-  // minor lines
-  ctx.strokeStyle = 'rgba(30,40,70,.5)';
-  ctx.beginPath();
-  let gx = ox % (step*zoom); if (gx < 0) gx += step*zoom;
-  for (let x=gx; x<cv.width; x+=step*zoom){ ctx.moveTo(x+.5,0); ctx.lineTo(x+.5,cv.height); }
-  let gy = oy % (step*zoom); if (gy < 0) gy += step*zoom;
-  for (let y=gy; y<cv.height; y+=step*zoom){ ctx.moveTo(0,y+.5); ctx.lineTo(cv.width,y+.5); }
-  ctx.stroke();
+  if (show.grid){
+    ctx.lineWidth = 1;
+    // minor lines
+    ctx.strokeStyle = 'rgba(30,40,70,.5)';
+    ctx.beginPath();
+    let gx = ox % (step*zoom); if (gx < 0) gx += step*zoom;
+    for (let x=gx; x<cssW; x+=step*zoom){ ctx.moveTo(x+.5,0); ctx.lineTo(x+.5,cssH); }
+    let gy = oy % (step*zoom); if (gy < 0) gy += step*zoom;
+    for (let y=gy; y<cssH; y+=step*zoom){ ctx.moveTo(0,y+.5); ctx.lineTo(cssW,y+.5); }
+    ctx.stroke();
+  }
   // ---------- axes through origin ----------
   if (show.axes){
     ctx.strokeStyle = 'rgba(90,106,144,.8)'; ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(ox,0); ctx.lineTo(ox,cv.height);
-    ctx.moveTo(0,oy); ctx.lineTo(cv.width,oy);
+    ctx.moveTo(ox,0); ctx.lineTo(ox,cssH);
+    ctx.moveTo(0,oy); ctx.lineTo(cssW,oy);
     ctx.stroke();
     ctx.fillStyle = 'rgba(150,170,210,.9)'; ctx.font = '11px Courier New';
     ctx.fillText('0,0', ox+4, oy-4);
@@ -765,7 +804,10 @@ function draw(){
     if (playing){
       const [x, y] = s2c(b.rect.x, b.rect.y);
       ctx.save();
-      ctx.fillStyle = hexA(b.color, .1);
+      // Uniform neutral fill so all boxes read at the same visual weight while
+      // playing (a bright color like cyan at equal alpha looks far more opaque
+      // than a dark one). Color identity stays in the border only.
+      ctx.fillStyle = 'rgba(255,255,255,.06)';
       ctx.fillRect(x, y, b.rect.w*zoom, b.rect.h*zoom);
       ctx.strokeStyle = b.color;
       ctx.lineWidth = 2;
@@ -789,7 +831,7 @@ function draw(){
     ctx.font = 'bold 26px Courier New';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    const tx = cv.width/2, ty = 14;
+    const tx = cssW/2, ty = 14;
     ctx.lineJoin = 'round';
     ctx.lineWidth = 6;
     ctx.strokeStyle = 'rgba(7,9,18,.9)';
@@ -1117,6 +1159,7 @@ function syncToggles(){
   $('tglCollision').classList.toggle('on', show.collision);
   $('tglMeleeView').classList.toggle('on', show.meleeView);
   $('tglAxes').classList.toggle('on', show.axes);
+  $('tglGrid').classList.toggle('on', show.grid);
   $('tglSpriteView').classList.toggle('on', show.spriteView);
   // ALL FRAMES: only meaningful while paused (ghosts are a paused-state view)
   const afBtn = $('tglAllFrames');
@@ -1141,16 +1184,18 @@ function syncToggles(){
   $('tglPivot').classList.toggle('on', show.pivot);
   // LABEL: sprite name over the canvas (viewer-style), drawn in draw()
   $('tglLabel').classList.toggle('on', show.label);
-  $('resetBtn').disabled = locked;   // whole Tools group disabled during animation
-  $('recenterPivotBtn').disabled = locked;
-  $('posOriginBtn').disabled = locked;
-  $('posCenterBtn').disabled = locked;
+  $('resetBtn').disabled = locked;   // RESET stays locked during animation (destructive)
 }
-$('tglCollision').addEventListener('click', ()=>{ show.collision=!show.collision; syncToggles(); draw(); saveState(); });
+// If the user manually toggles any overlay while ctrl+H "hide mode" is active,
+// cancel hide mode: drop the snapshot so a later ctrl+H starts fresh from the
+// current (manually-adjusted) states instead of restoring the old pre-hide ones.
+// The clicked button's own input is still applied normally.
+function cancelHideMode(){ if (window._hideSnapshot){ window._hideSnapshot = null; } }
+$('tglCollision').addEventListener('click', ()=>{ cancelHideMode(); show.collision=!show.collision; syncToggles(); draw(); saveState(); });
 $('tglMeleeView').addEventListener('click', ()=>{
   // The button may LOOK disabled (current frame has no melee) but is still
   // clickable — it's a global display preference, not a per-frame control.
-  show.meleeView=!show.meleeView; syncToggles(); draw(); saveState();
+  show.meleeView=!show.meleeView; cancelHideMode(); syncToggles(); draw(); saveState();
 });
 $('tglMeleeOn').addEventListener('click', ()=>{
   if (!cur || !cur.st || editingLocked()) return;
@@ -1161,8 +1206,9 @@ $('tglMeleeOn').addEventListener('click', ()=>{
   P('p_mon').checked = f.melee.on;
   syncToggles(); syncPanel(); draw();
 });
-$('tglAxes').addEventListener('click', ()=>{ show.axes=!show.axes; syncToggles(); draw(); saveState(); });
-$('tglSpriteView').addEventListener('click', ()=>{ show.spriteView=!show.spriteView; syncToggles(); draw(); saveState(); });
+$('tglAxes').addEventListener('click', ()=>{ cancelHideMode(); show.axes=!show.axes; syncToggles(); draw(); saveState(); });
+$('tglGrid').addEventListener('click', ()=>{ cancelHideMode(); show.grid=!show.grid; syncToggles(); draw(); saveState(); });
+$('tglSpriteView').addEventListener('click', ()=>{ cancelHideMode(); show.spriteView=!show.spriteView; syncToggles(); draw(); saveState(); });
 $('tglAllFrames').addEventListener('click', ()=>{
   if (!cur || !cur.st) return;
   // can't be active while playing — ghosts are a paused-state view
@@ -1170,7 +1216,7 @@ $('tglAllFrames').addEventListener('click', ()=>{
   show.allFrames = !show.allFrames;
   syncToggles(); draw(); saveState();
 });
-$('tglPivot').addEventListener('click', ()=>{ show.pivot=!show.pivot; syncToggles(); draw(); saveState(); });
+$('tglPivot').addEventListener('click', ()=>{ cancelHideMode(); show.pivot=!show.pivot; syncToggles(); draw(); saveState(); });
 $('tglLabel').addEventListener('click', ()=>{ show.label=!show.label; syncToggles(); draw(); saveState(); });
 // ---------- background color picker (popup, live-updating) ----------
 const _bgState = { h:0, s:100, l:0 };   // current HSL
@@ -1239,12 +1285,12 @@ document.addEventListener('click',e=>{ if(bgPop.classList.contains('on') && !bgP
 if (!localStorage.getItem(LS_KEY)) setBg('#000000');
 // ---------- RECENTER PIVOT ----------
 $('recenterPivotBtn').addEventListener('click', ()=>{
-  if (!cur || !cur.st || editingLocked()) return;
+  if (!cur || !cur.st) return;
   pushUndo();
   const c = cur.st.collision;
   cur.st.pivot.x = Math.round(c.x + c.w/2);
   cur.st.pivot.y = Math.round(c.y + c.h/2);
-  syncPanel(); draw();
+  syncPanel(); draw(); saveState();
 });
 // ---------- POSITION: reset sprite placement based on frame 1 ----------
 // offset places a frame so its center sits at (offset.x, offset.y).
@@ -1259,13 +1305,13 @@ function frame1Dims(){
   return { W, H };
 }
 function applyPosition(mode){
-  if (!cur || !cur.st || editingLocked()) return;
+  if (!cur || !cur.st) return;
   pushUndo();
   const st = cur.st;
   const { W, H } = frame1Dims();
   // CENTER -> centered on origin; LEFT-BOTTOM -> each frame's left/bottom on axes
   layoutAt(st, cur.imgs, W, H, mode==='origin' ? 'leftbottom' : 'center');
-  syncPanel(); draw();
+  syncPanel(); draw(); saveState();
 }
 $('posOriginBtn').addEventListener('click', ()=>applyPosition('origin'));
 $('posCenterBtn').addEventListener('click', ()=>applyPosition('center'));
@@ -1307,7 +1353,7 @@ function factoryReset(){
   try{ localStorage.removeItem(LS_KEY); }catch(e){}
   S.clear();                                  // drop all per-entity editor state
   undoStack.length = 0; redoStack.length = 0; // clear history
-  show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false };
+  show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false, grid:true };
   isPlaying = true;
   bgColor = '#000000';
   document.documentElement.style.setProperty('--film-bg', bgColor);
@@ -1431,7 +1477,7 @@ cv.addEventListener('wheel', e=>{
   setZoom(zoom*factor, cx, cy);      // zoom about the cursor
 }, { passive:false });
 // keep canvas backing store in sync with its CSS size (full-bleed stage); don't re-fit
-new ResizeObserver(()=>{ if (cv.width !== Math.round(cv.getBoundingClientRect().width) || cv.height !== Math.round(cv.getBoundingClientRect().height)){ resizeCanvas(); draw(); } }).observe(cv);
+new ResizeObserver(()=>{ if (cssW !== Math.round(cv.getBoundingClientRect().width) || cssH !== Math.round(cv.getBoundingClientRect().height)){ resizeCanvas(); draw(); } }).observe(cv);
 // ---------- undo / redo controls ----------
 $('undoBtn').addEventListener('click', doUndo);
 $('redoBtn').addEventListener('click', doRedo);
@@ -1451,9 +1497,9 @@ function resizeBox(box, anchorId, sx, sy, orig, keepRatio){
 }
 // ---------- hover detection (unified for all boxes) ----------
 function bringToFront(key){
-  const i = boxZOrder.indexOf(key);
-  if (i > 0) boxZOrder.splice(i, 1);   // remove from current position
-  boxZOrder.unshift(key);               // move to front
+  // Remove every prior occurrence, including index 0, before moving to front.
+  // Duplicate entries draw the same translucent fill repeatedly.
+  boxZOrder = [key, ...boxZOrder.filter(k => k !== key)];
 }
 function boxList(){
   const st = cur.st, fi = curFrameIdx(), im = cur.imgs[fi];
@@ -1804,7 +1850,16 @@ window.addEventListener('pointercancel', endDrag);
 cv.addEventListener('pointerleave', ()=>{ if (hover){ hover = null; draw(); cv.style.cursor='default'; } });
 window.addEventListener('blur', ()=>{ if (hover || drag){ hover = null; drag = null; draw(); cv.style.cursor='default'; } });
 // ---------- keyboard ----------
+// Native modal blocks underlying clicks and restores focus on dismissal.
+const helpDialog = $('helpDialog');
+$('helpBtn').addEventListener('click', ()=>helpDialog.showModal());
+helpDialog.addEventListener('click', ()=>helpDialog.close());
+helpDialog.addEventListener('close', ()=>$('helpBtn').focus());
 window.addEventListener('keydown', e=>{
+  if (helpDialog.open){
+    if (e.key==='Escape'){ e.preventDefault(); helpDialog.close(); }
+    return;
+  }
   if (!cur || !cur.st) return;
   // undo / redo (works even when a box is focused, but not while typing in inputs)
   const tag = (e.target.tagName||'').toLowerCase();
@@ -1825,9 +1880,58 @@ window.addEventListener('keydown', e=>{
     setZoom(1);
     return;
   }
-  if (tag==='input' || tag==='textarea') return;
+  // ctrl+H -> hide ALL display overlays (collision, melee view, axes, sprite box, pivot).
+  // LABEL is intentionally left untouched. Pressing again restores each toggle to the
+  // exact state it had before it was hidden (deactivates the button visually, then puts
+  // the buttons back as they were on the next press).
+  if ((e.ctrlKey||e.metaKey) && e.code==='KeyH'){
+    e.preventDefault();
+    const HIDDEN_KEYS = ['collision','meleeView','axes','spriteView','pivot','grid'];
+    if (!window._hideSnapshot){
+      window._hideSnapshot = {};
+      for (const k of HIDDEN_KEYS){ window._hideSnapshot[k] = show[k]; show[k] = false; }
+    } else {
+      for (const k of HIDDEN_KEYS){ show[k] = window._hideSnapshot[k]; }
+      window._hideSnapshot = null;
+    }
+    syncToggles(); draw();
+    // Do NOT persist the transient hidden state — otherwise a reload restores
+    // axes/grid/etc. as off (the hide leaks into localStorage). The real display
+    // preference was already saved before hide mode began.
+    return;
+  }
+  if (tag==='input' || tag==='textarea' || tag==='select' || e.target.isContentEditable) return;
+  // Route shortcuts through the buttons to preserve guards and hide-mode behavior.
+  if (!e.ctrlKey && !e.metaKey && !e.altKey){
+    const displayKeys = {
+      KeyS:'tglSpriteView', KeyC:'tglCollision', KeyM:'tglMeleeView',
+      KeyF:'tglAllFrames', KeyA:'tglAxes', KeyG:'tglGrid',
+      KeyP:'tglPivot', KeyL:'tglLabel'
+    };
+    const buttonId = e.shiftKey ? displayKeys[e.code] : (e.code==='KeyM' ? 'tglMeleeOn' : null);
+    if (buttonId){
+      e.preventDefault();
+      if (!e.repeat) $(buttonId).click();
+      return;
+    }
+  }
   const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
   const off = e.ctrlKey ? 10 : 1;
+  // 1-9 / 0 -> jump directly to that frame index of the current animation
+  // (1->frame1 ... 9->frame9, 0->frame10). Works for any anim length; clamps to last frame.
+  if (!e.ctrlKey && !e.altKey && !e.shiftKey){
+    let direct = null;
+    if (e.code.startsWith('Digit') && e.code !== 'Digit0'){ direct = parseInt(e.code.slice(5), 10) - 1; }
+    else if (e.code === 'Digit0' || e.code === 'Numpad0'){ direct = 9; }
+    else if (e.code.startsWith('Numpad') && e.code !== 'Numpad0'){ direct = parseInt(e.code.slice(6), 10) - 1; }
+    if (direct !== null && direct >= 0){
+      e.preventDefault();
+      const max = st.frames.length - 1;
+      st.frameIdx = Math.min(direct, max);
+      syncPanel(); draw();
+      return;
+    }
+  }
   switch (e.code){
     case 'Space': e.preventDefault(); setPlaying(!st.playing); break;
     case 'ArrowRight': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); targetFrames(fi).forEach(f=>f.offset.x+=off); syncPanel(); draw(); } else stepFrame(1); break;
