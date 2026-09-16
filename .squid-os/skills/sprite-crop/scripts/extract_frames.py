@@ -277,6 +277,7 @@ def crop_frames(im, comps, assignments, spans, rows, names, actions, out_dir, ma
                 "action": action,
                 "frame": frame_num,
                 "row": r,
+                "col": si if not span else None,
                 "bbox": [fx0, fy0, fx1 - fx0, fy1 - fy0],
                 "size": [fx1 - fx0, fy1 - fy0],
                 "center": [(fx0 + fx1) // 2, (fy0 + fy1) // 2],

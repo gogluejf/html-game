@@ -19,18 +19,17 @@ def build_manifest(state):
         ents = []
         seen = set()
         for sh in fd.get("sheets", []):
-            # per-frame crop bbox from the sheet's crop data: {frame: [x,y,w,h]}
-            bbox = (sh.get("crop") or {}).get("frames_bbox", {})
             for e in sh.get("entities", []):
                 name = f"{e.get('name','x')}_{e.get('anim','a')}"
                 if name in seen or not e.get("frames"):
                     continue
                 seen.add(name)
+                # frames are {file,row,col,bbox} objects (or legacy strings)
+                files = [f["file"] if isinstance(f, dict) else f for f in e["frames"]]
+                bboxes = [f.get("bbox") if isinstance(f, dict) else None for f in e["frames"]]
                 # viewer-relative paths: editor sits 2 levels above the assets root
-                frames = [f"../../{fd['path']}/{f}" for f in e["frames"]]
-                # per-frame crop coords [x,y,w,h] from the source sheet (or null)
-                crops = [bbox.get(f) for f in e["frames"]]
-                ents.append({"name": name, "char": e.get("name",""), "anim": e.get("anim",""), "frames": frames, "crops": crops})
+                frames = [f"../../{fd['path']}/{f}" for f in files]
+                ents.append({"name": name, "char": e.get("name",""), "anim": e.get("anim",""), "frames": frames, "crops": bboxes})
         if ents:
             labels.append({"name": folder, "entities": ents})
     return {"labels": labels}
