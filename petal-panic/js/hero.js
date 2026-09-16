@@ -103,6 +103,7 @@ export class Hero extends Entity {
     this.SUPER_DUR = 0.6;        // total dash duration
     this.SUPER_SPEED = 900;      // initial px/s burst
     this.SUPER_DECEL = 1800;     // px/s² deceleration during glide
+    this.superHitbox = { ox: 24, oy: -8, bw: 36, bh: 32 }; // small, in front, body-height
 
     // Anim registry (real sprites later; placeholder frames attached by caller).
     this.anims = {};
@@ -433,8 +434,8 @@ export class Hero extends Entity {
       this.superMeter = Math.min(this.SUPER_MAX, this.superMeter + this.SUPER_CHARGE_RATE * dt);
     }
 
-    // Trigger: B pressed + meter full + not already dashing + grounded.
-    if (input.super && this.superMeter >= this.SUPER_MAX && !this.superActive && this.grounded) {
+    // Trigger: B pressed + meter full + not already dashing.
+    if (input.super && this.superMeter >= this.SUPER_MAX && !this.superActive) {
       this.triggerSuper();
     }
 
@@ -451,17 +452,46 @@ export class Hero extends Entity {
       if (this.superTimer <= 0) {
         this.superActive = false;
         this.vx = dir * 80; // small residual momentum after glide
+        // Restore previous animation.
+        if (this._prevAnim) {
+          this.anim = this._prevAnim;
+          this._prevAnim = null;
+        }
       }
     }
   }
 
-  /** Start the super dash. Resets meter, sets active state. */
+  /** Start the super dash. Resets meter, sets active state, swaps anim. */
   triggerSuper() {
     this.superMeter = 0;
     this.superActive = true;
     this.superTimer = this.SUPER_DUR;
-    // Jump the attack/slide anim to frame 0 if available.
-    if (this.anims.supermove) this.anims.supermove.reset();
+    // Swap to the supermove animation.
+    if (this.anims.supermove) {
+      this._prevAnim = this.anim;
+      this.anim = this.anims.supermove;
+      this.anim.reset();
+    }
+    this._superHitSet = new Set(); // track enemies already hit this dash
+  }
+
+  /**
+   * World-space AABB of the super dash hitbox, or null when not dashing.
+   * Small box in front of the hero, body-height. Deals damage to enemies
+   * plowed through during the dash.
+   * @returns {{x:number,y:number,w:number,h:number}|null}
+   */
+  get superHitboxWorld() {
+    if (!this.superActive) return null;
+    const cx = this.x + this.w / 2;
+    const cy = this.y + this.h / 2;
+    const dir = this.facing;
+    return {
+      x: cx + dir * this.superHitbox.ox - (dir < 0 ? this.superHitbox.bw : 0),
+      y: cy + this.superHitbox.oy,
+      w: this.superHitbox.bw,
+      h: this.superHitbox.bh,
+    };
   }
 
   /**

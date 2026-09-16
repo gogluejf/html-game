@@ -1101,6 +1101,7 @@ export function update(dt) {
     }
   }
   applyMeleeDamage(hero, dt);
+  applySuperDamage(hero);
 
   // 1d. decay hit-flash timers on enemies (white flash when struck).
   for (const e of enemies) {
@@ -1413,6 +1414,63 @@ function applyMeleeDamage(h, _dt) {
       const dealt = b.hit(h.stats.attack, h, 'melee');
       if (dealt > 0) {
         h._meleeHitSet.add(b);
+        if (b.destroyed) handleBarrelDestroyed(b);
+      }
+    }
+  }
+}
+
+/**
+ * Super dash damage: while the hero is dashing, the superHitboxWorld deals
+ * damage to any enemy or barrel it plows through. Each target is hit at most
+ * once per dash (tracked in _superHitSet).
+ */
+function applySuperDamage(h) {
+  const hb = h.superHitboxWorld;
+  if (!hb) return;
+
+  if (!h._superHitSet) h._superHitSet = new Set();
+
+  // Real enemies.
+  for (const e of realEnemies) {
+    if (!e.alive || e.aiState === 'dead') continue;
+    if (h._superHitSet.has(e)) continue;
+    const eb = e.worldBox();
+    if (hb.x < eb.x + eb.w && hb.x + hb.w > eb.x &&
+        hb.y < eb.y + eb.h && hb.y + hb.h > eb.y) {
+      const dealt = e.takeDamage(h.stats.attack * 2, h, 'super');
+      if (dealt > 0) {
+        Effects.beginEnemyShake(e);
+        h._superHitSet.add(e);
+        if (!e.alive) world.remove(e);
+      }
+    }
+  }
+
+  // Boss.
+  if (boss && boss.alive && boss.aiState !== 'dead' && !h._superHitSet.has(boss)) {
+    const eb = boss.worldBox();
+    if (hb.x < eb.x + eb.w && hb.x + hb.w > eb.x &&
+        hb.y < eb.y + eb.h && hb.y + hb.h > eb.y) {
+      const px = hb.x + hb.w / 2, py = hb.y + hb.h / 2;
+      const dealt = boss.takeDamage(h.stats.attack * 2, h, 'super', { x: px, y: py });
+      if (dealt > 0) {
+        Effects.beginEnemyShake(boss);
+        h._superHitSet.add(boss);
+      }
+    }
+  }
+
+  // Barrels.
+  for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) {
+    if (!b.alive || b.destroyed) continue;
+    if (h._superHitSet.has(b)) continue;
+    const bb = b.worldBox();
+    if (hb.x < bb.x + bb.w && hb.x + hb.w > bb.x &&
+        hb.y < bb.y + bb.h && hb.y + hb.h > bb.y) {
+      const dealt = b.hit(h.stats.attack * 2, h, 'super');
+      if (dealt > 0) {
+        h._superHitSet.add(b);
         if (b.destroyed) handleBarrelDestroyed(b);
       }
     }
