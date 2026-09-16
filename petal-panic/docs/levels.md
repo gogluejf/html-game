@@ -44,7 +44,7 @@ They take to sea toward Carrot's territory. Stormy skies, enormous wooden ship, 
 
 ## Level 4 — Carrot's Republic
 
-**Boss:** Dictator Carrot (final)
+**Boss:** Colonel Carrot (final)
 
 They arrive in Colonel Carrot's absurd authoritarian world. Streets become grander and more oppressive until they reach his palace/headquarters. Big spectacle, increasingly ridiculous propaganda, then the final confrontation with Carrot.
 

@@ -3611,137 +3611,137 @@
           }
         },
         {
-          "file": "petal-panic/assets/dictator_carrot_sheet.png",
+          "file": "petal-panic/assets/colonel_carrot_sheet.png",
           "rows": 3,
           "cols": 5,
-          "description": "Dictator Carrot final boss (carrot-bodied dictator on red scooter), 3 actions x 5 frames (idle, charge, attack)",
+          "description": "Colonel Carrot final boss (carrot-bodied colonel on red scooter), 3 actions x 5 frames (idle, charge, attack)",
           "entities": [
             {
               "row": 1,
-              "name": "dictator_carrot",
+              "name": "colonel_carrot",
               "anim": "idle",
               "frames": [
-                "dictator_carrot_idle_f1.png",
-                "dictator_carrot_idle_f2.png",
-                "dictator_carrot_idle_f3.png",
-                "dictator_carrot_idle_f4.png",
-                "dictator_carrot_idle_f5.png"
+                "colonel_carrot_idle_f1.png",
+                "colonel_carrot_idle_f2.png",
+                "colonel_carrot_idle_f3.png",
+                "colonel_carrot_idle_f4.png",
+                "colonel_carrot_idle_f5.png"
               ]
             },
             {
               "row": 2,
-              "name": "dictator_carrot",
+              "name": "colonel_carrot",
               "anim": "charge",
               "frames": [
-                "dictator_carrot_charge_f1.png",
-                "dictator_carrot_charge_f2.png",
-                "dictator_carrot_charge_f3.png",
-                "dictator_carrot_charge_f4.png",
-                "dictator_carrot_charge_f5.png"
+                "colonel_carrot_charge_f1.png",
+                "colonel_carrot_charge_f2.png",
+                "colonel_carrot_charge_f3.png",
+                "colonel_carrot_charge_f4.png",
+                "colonel_carrot_charge_f5.png"
               ]
             },
             {
               "row": 3,
-              "name": "dictator_carrot",
+              "name": "colonel_carrot",
               "anim": "attack",
               "frames": [
-                "dictator_carrot_attack_f1.png",
-                "dictator_carrot_attack_f2.png",
-                "dictator_carrot_attack_f3.png",
-                "dictator_carrot_attack_f4.png",
-                "dictator_carrot_attack_f5.png"
+                "colonel_carrot_attack_f1.png",
+                "colonel_carrot_attack_f2.png",
+                "colonel_carrot_attack_f3.png",
+                "colonel_carrot_attack_f4.png",
+                "colonel_carrot_attack_f5.png"
               ]
             }
           ],
           "crop": {
             "frames_dir": "petal-panic/assets/boss",
-            "pass": "/tmp/redo-dictator_carrot_1-v1",
+            "pass": "/tmp/redo-colonel_carrot_1-v1",
             "frames_bbox": {
-              "dictator_carrot_idle_f1.png": [
+              "colonel_carrot_idle_f1.png": [
                 12,
                 21,
                 258,
                 337
               ],
-              "dictator_carrot_idle_f2.png": [
+              "colonel_carrot_idle_f2.png": [
                 320,
                 60,
                 252,
                 298
               ],
-              "dictator_carrot_idle_f3.png": [
+              "colonel_carrot_idle_f3.png": [
                 625,
                 18,
                 264,
                 340
               ],
-              "dictator_carrot_idle_f4.png": [
+              "colonel_carrot_idle_f4.png": [
                 918,
                 50,
                 273,
                 309
               ],
-              "dictator_carrot_idle_f5.png": [
+              "colonel_carrot_idle_f5.png": [
                 1242,
                 28,
                 259,
                 330
               ],
-              "dictator_carrot_charge_f1.png": [
+              "colonel_carrot_charge_f1.png": [
                 6,
                 370,
                 281,
                 288
               ],
-              "dictator_carrot_charge_f2.png": [
+              "colonel_carrot_charge_f2.png": [
                 316,
                 366,
                 288,
                 292
               ],
-              "dictator_carrot_charge_f3.png": [
+              "colonel_carrot_charge_f3.png": [
                 626,
                 374,
                 292,
                 284
               ],
-              "dictator_carrot_charge_f4.png": [
+              "colonel_carrot_charge_f4.png": [
                 929,
                 374,
                 287,
                 284
               ],
-              "dictator_carrot_charge_f5.png": [
+              "colonel_carrot_charge_f5.png": [
                 1240,
                 375,
                 284,
                 283
               ],
-              "dictator_carrot_attack_f1.png": [
+              "colonel_carrot_attack_f1.png": [
                 16,
                 672,
                 291,
                 300
               ],
-              "dictator_carrot_attack_f2.png": [
+              "colonel_carrot_attack_f2.png": [
                 325,
                 662,
                 277,
                 311
               ],
-              "dictator_carrot_attack_f3.png": [
+              "colonel_carrot_attack_f3.png": [
                 651,
                 673,
                 258,
                 304
               ],
-              "dictator_carrot_attack_f4.png": [
+              "colonel_carrot_attack_f4.png": [
                 939,
                 654,
                 260,
                 324
               ],
-              "dictator_carrot_attack_f5.png": [
+              "colonel_carrot_attack_f5.png": [
                 1260,
                 674,
                 266,
@@ -3751,137 +3751,137 @@
           }
         },
         {
-          "file": "petal-panic/assets/dictator_carrot_sheet_2.png",
+          "file": "petal-panic/assets/colonel_carrot_sheet_2.png",
           "rows": 3,
           "cols": 5,
-          "description": "Dictator Carrot final boss (carrot-bodied dictator on red scooter) sheet 2/4, 3 actions x 5 frames (launch, stomp, shout)",
+          "description": "Colonel Carrot final boss (carrot-bodied colonel on red scooter) sheet 2/4, 3 actions x 5 frames (launch, stomp, shout)",
           "entities": [
             {
               "row": 1,
-              "name": "dictator_carrot",
+              "name": "colonel_carrot",
               "anim": "launch",
               "frames": [
-                "dictator_carrot_launch_f1.png",
-                "dictator_carrot_launch_f2.png",
-                "dictator_carrot_launch_f3.png",
-                "dictator_carrot_launch_f4.png",
-                "dictator_carrot_launch_f5.png"
+                "colonel_carrot_launch_f1.png",
+                "colonel_carrot_launch_f2.png",
+                "colonel_carrot_launch_f3.png",
+                "colonel_carrot_launch_f4.png",
+                "colonel_carrot_launch_f5.png"
               ]
             },
             {
               "row": 2,
-              "name": "dictator_carrot",
+              "name": "colonel_carrot",
               "anim": "stomp",
               "frames": [
-                "dictator_carrot_stomp_f1.png",
-                "dictator_carrot_stomp_f2.png",
-                "dictator_carrot_stomp_f3.png",
-                "dictator_carrot_stomp_f4.png",
-                "dictator_carrot_stomp_f5.png"
+                "colonel_carrot_stomp_f1.png",
+                "colonel_carrot_stomp_f2.png",
+                "colonel_carrot_stomp_f3.png",
+                "colonel_carrot_stomp_f4.png",
+                "colonel_carrot_stomp_f5.png"
               ]
             },
             {
               "row": 3,
-              "name": "dictator_carrot",
+              "name": "colonel_carrot",
               "anim": "shout",
               "frames": [
-                "dictator_carrot_shout_f1.png",
-                "dictator_carrot_shout_f2.png",
-                "dictator_carrot_shout_f3.png",
-                "dictator_carrot_shout_f4.png",
-                "dictator_carrot_shout_f5.png"
+                "colonel_carrot_shout_f1.png",
+                "colonel_carrot_shout_f2.png",
+                "colonel_carrot_shout_f3.png",
+                "colonel_carrot_shout_f4.png",
+                "colonel_carrot_shout_f5.png"
               ]
             }
           ],
           "crop": {
             "frames_dir": "petal-panic/assets/boss",
-            "pass": "/tmp/redo-dictator_carrot_2-v1",
+            "pass": "/tmp/redo-colonel_carrot_2-v1",
             "frames_bbox": {
-              "dictator_carrot_launch_f1.png": [
+              "colonel_carrot_launch_f1.png": [
                 11,
                 19,
                 237,
                 324
               ],
-              "dictator_carrot_launch_f2.png": [
+              "colonel_carrot_launch_f2.png": [
                 296,
                 24,
                 311,
                 319
               ],
-              "dictator_carrot_launch_f3.png": [
+              "colonel_carrot_launch_f3.png": [
                 603,
                 22,
                 268,
                 322
               ],
-              "dictator_carrot_launch_f4.png": [
+              "colonel_carrot_launch_f4.png": [
                 896,
                 31,
                 338,
                 312
               ],
-              "dictator_carrot_launch_f5.png": [
+              "colonel_carrot_launch_f5.png": [
                 1228,
                 48,
                 290,
                 296
               ],
-              "dictator_carrot_stomp_f1.png": [
+              "colonel_carrot_stomp_f1.png": [
                 9,
                 348,
                 248,
                 312
               ],
-              "dictator_carrot_stomp_f2.png": [
+              "colonel_carrot_stomp_f2.png": [
                 301,
                 376,
                 280,
                 283
               ],
-              "dictator_carrot_stomp_f3.png": [
+              "colonel_carrot_stomp_f3.png": [
                 605,
                 344,
                 278,
                 315
               ],
-              "dictator_carrot_stomp_f4.png": [
+              "colonel_carrot_stomp_f4.png": [
                 914,
                 340,
                 298,
                 318
               ],
-              "dictator_carrot_stomp_f5.png": [
+              "colonel_carrot_stomp_f5.png": [
                 1245,
                 342,
                 287,
                 321
               ],
-              "dictator_carrot_shout_f1.png": [
+              "colonel_carrot_shout_f1.png": [
                 5,
                 662,
                 283,
                 321
               ],
-              "dictator_carrot_shout_f2.png": [
+              "colonel_carrot_shout_f2.png": [
                 296,
                 659,
                 292,
                 324
               ],
-              "dictator_carrot_shout_f3.png": [
+              "colonel_carrot_shout_f3.png": [
                 603,
                 668,
                 265,
                 315
               ],
-              "dictator_carrot_shout_f4.png": [
+              "colonel_carrot_shout_f4.png": [
                 878,
                 669,
                 353,
                 312
               ],
-              "dictator_carrot_shout_f5.png": [
+              "colonel_carrot_shout_f5.png": [
                 1231,
                 682,
                 305,
@@ -3891,137 +3891,137 @@
           }
         },
         {
-          "file": "petal-panic/assets/dictator_carrot_sheet_3.png",
+          "file": "petal-panic/assets/colonel_carrot_sheet_3.png",
           "rows": 3,
           "cols": 5,
-          "description": "Dictator Carrot final boss (carrot-bodied dictator on red scooter) sheet 3/4, 3 actions x 5 frames (sulk, punch, defeat)",
+          "description": "Colonel Carrot final boss (carrot-bodied colonel on red scooter) sheet 3/4, 3 actions x 5 frames (sulk, punch, defeat)",
           "entities": [
             {
               "row": 1,
-              "name": "dictator_carrot",
+              "name": "colonel_carrot",
               "anim": "sulk",
               "frames": [
-                "dictator_carrot_sulk_f1.png",
-                "dictator_carrot_sulk_f2.png",
-                "dictator_carrot_sulk_f3.png",
-                "dictator_carrot_sulk_f4.png",
-                "dictator_carrot_sulk_f5.png"
+                "colonel_carrot_sulk_f1.png",
+                "colonel_carrot_sulk_f2.png",
+                "colonel_carrot_sulk_f3.png",
+                "colonel_carrot_sulk_f4.png",
+                "colonel_carrot_sulk_f5.png"
               ]
             },
             {
               "row": 2,
-              "name": "dictator_carrot",
+              "name": "colonel_carrot",
               "anim": "punch",
               "frames": [
-                "dictator_carrot_punch_f1.png",
-                "dictator_carrot_punch_f2.png",
-                "dictator_carrot_punch_f3.png",
-                "dictator_carrot_punch_f4.png",
-                "dictator_carrot_punch_f5.png"
+                "colonel_carrot_punch_f1.png",
+                "colonel_carrot_punch_f2.png",
+                "colonel_carrot_punch_f3.png",
+                "colonel_carrot_punch_f4.png",
+                "colonel_carrot_punch_f5.png"
               ]
             },
             {
               "row": 3,
-              "name": "dictator_carrot",
+              "name": "colonel_carrot",
               "anim": "defeat",
               "frames": [
-                "dictator_carrot_defeat_f1.png",
-                "dictator_carrot_defeat_f2.png",
-                "dictator_carrot_defeat_f3.png",
-                "dictator_carrot_defeat_f4.png",
-                "dictator_carrot_defeat_f5.png"
+                "colonel_carrot_defeat_f1.png",
+                "colonel_carrot_defeat_f2.png",
+                "colonel_carrot_defeat_f3.png",
+                "colonel_carrot_defeat_f4.png",
+                "colonel_carrot_defeat_f5.png"
               ]
             }
           ],
           "crop": {
             "frames_dir": "petal-panic/assets/boss",
-            "pass": "/tmp/redo-dictator_carrot_3-v1",
+            "pass": "/tmp/redo-colonel_carrot_3-v1",
             "frames_bbox": {
-              "dictator_carrot_sulk_f1.png": [
+              "colonel_carrot_sulk_f1.png": [
                 7,
                 65,
                 275,
                 282
               ],
-              "dictator_carrot_sulk_f2.png": [
+              "colonel_carrot_sulk_f2.png": [
                 305,
                 12,
                 291,
                 319
               ],
-              "dictator_carrot_sulk_f3.png": [
+              "colonel_carrot_sulk_f3.png": [
                 617,
                 8,
                 271,
                 311
               ],
-              "dictator_carrot_sulk_f4.png": [
+              "colonel_carrot_sulk_f4.png": [
                 919,
                 17,
                 265,
                 326
               ],
-              "dictator_carrot_sulk_f5.png": [
+              "colonel_carrot_sulk_f5.png": [
                 1243,
                 70,
                 282,
                 280
               ],
-              "dictator_carrot_punch_f1.png": [
+              "colonel_carrot_punch_f1.png": [
                 2,
                 350,
                 259,
                 314
               ],
-              "dictator_carrot_punch_f2.png": [
+              "colonel_carrot_punch_f2.png": [
                 318,
                 362,
                 250,
                 302
               ],
-              "dictator_carrot_punch_f3.png": [
+              "colonel_carrot_punch_f3.png": [
                 553,
                 360,
                 314,
                 303
               ],
-              "dictator_carrot_punch_f4.png": [
+              "colonel_carrot_punch_f4.png": [
                 839,
                 361,
                 368,
                 302
               ],
-              "dictator_carrot_punch_f5.png": [
+              "colonel_carrot_punch_f5.png": [
                 1231,
                 375,
                 299,
                 289
               ],
-              "dictator_carrot_defeat_f1.png": [
+              "colonel_carrot_defeat_f1.png": [
                 1,
                 666,
                 264,
                 322
               ],
-              "dictator_carrot_defeat_f2.png": [
+              "colonel_carrot_defeat_f2.png": [
                 305,
                 669,
                 278,
                 319
               ],
-              "dictator_carrot_defeat_f3.png": [
+              "colonel_carrot_defeat_f3.png": [
                 615,
                 658,
                 271,
                 335
               ],
-              "dictator_carrot_defeat_f4.png": [
+              "colonel_carrot_defeat_f4.png": [
                 911,
                 657,
                 298,
                 342
               ],
-              "dictator_carrot_defeat_f5.png": [
+              "colonel_carrot_defeat_f5.png": [
                 1173,
                 723,
                 361,
@@ -4031,134 +4031,134 @@
           }
         },
         {
-          "file": "petal-panic/assets/dictator_carrot_sheet_4.png",
+          "file": "petal-panic/assets/colonel_carrot_sheet_4.png",
           "rows": 3,
           "cols": 5,
-          "description": "Dictator Carrot final boss, sheet 4/4 \u2014 angry (row1), death (row2), scooter_ride (row3)",
+          "description": "Colonel Carrot final boss, sheet 4/4 \u2014 angry (row1), death (row2), scooter_ride (row3)",
           "entities": [
             {
-              "name": "dictator_carrot",
+              "name": "colonel_carrot",
               "anim": "angry",
               "frames": [
-                "dictator_carrot_angry_f1.png",
-                "dictator_carrot_angry_f2.png",
-                "dictator_carrot_angry_f3.png",
-                "dictator_carrot_angry_f4.png",
-                "dictator_carrot_angry_f5.png"
+                "colonel_carrot_angry_f1.png",
+                "colonel_carrot_angry_f2.png",
+                "colonel_carrot_angry_f3.png",
+                "colonel_carrot_angry_f4.png",
+                "colonel_carrot_angry_f5.png"
               ]
             },
             {
-              "name": "dictator_carrot",
+              "name": "colonel_carrot",
               "anim": "death",
               "frames": [
-                "dictator_carrot_death_f1.png",
-                "dictator_carrot_death_f2.png",
-                "dictator_carrot_death_f3.png",
-                "dictator_carrot_death_f4.png",
-                "dictator_carrot_death_f5.png"
+                "colonel_carrot_death_f1.png",
+                "colonel_carrot_death_f2.png",
+                "colonel_carrot_death_f3.png",
+                "colonel_carrot_death_f4.png",
+                "colonel_carrot_death_f5.png"
               ]
             },
             {
-              "name": "dictator_carrot",
+              "name": "colonel_carrot",
               "anim": "scooter_ride",
               "frames": [
-                "dictator_carrot_scooter_ride_f1.png",
-                "dictator_carrot_scooter_ride_f2.png",
-                "dictator_carrot_scooter_ride_f3.png",
-                "dictator_carrot_scooter_ride_f4.png",
-                "dictator_carrot_scooter_ride_f5.png"
+                "colonel_carrot_scooter_ride_f1.png",
+                "colonel_carrot_scooter_ride_f2.png",
+                "colonel_carrot_scooter_ride_f3.png",
+                "colonel_carrot_scooter_ride_f4.png",
+                "colonel_carrot_scooter_ride_f5.png"
               ]
             }
           ],
           "crop": {
             "frames_dir": "petal-panic/assets/boss",
-            "pass": "/tmp/redo-dictator_carrot_4-v1",
+            "pass": "/tmp/redo-colonel_carrot_4-v1",
             "frames_bbox": {
-              "dictator_carrot_angry_f1.png": [
+              "colonel_carrot_angry_f1.png": [
                 4,
                 19,
                 261,
                 320
               ],
-              "dictator_carrot_angry_f2.png": [
+              "colonel_carrot_angry_f2.png": [
                 310,
                 18,
                 279,
                 321
               ],
-              "dictator_carrot_angry_f3.png": [
+              "colonel_carrot_angry_f3.png": [
                 616,
                 17,
                 280,
                 323
               ],
-              "dictator_carrot_angry_f4.png": [
+              "colonel_carrot_angry_f4.png": [
                 925,
                 18,
                 300,
                 321
               ],
-              "dictator_carrot_angry_f5.png": [
+              "colonel_carrot_angry_f5.png": [
                 1252,
                 12,
                 278,
                 328
               ],
-              "dictator_carrot_death_f1.png": [
+              "colonel_carrot_death_f1.png": [
                 4,
                 360,
                 255,
                 306
               ],
-              "dictator_carrot_death_f2.png": [
+              "colonel_carrot_death_f2.png": [
                 299,
                 363,
                 300,
                 304
               ],
-              "dictator_carrot_death_f3.png": [
+              "colonel_carrot_death_f3.png": [
                 623,
                 352,
                 294,
                 316
               ],
-              "dictator_carrot_death_f4.png": [
+              "colonel_carrot_death_f4.png": [
                 928,
                 365,
                 306,
                 301
               ],
-              "dictator_carrot_death_f5.png": [
+              "colonel_carrot_death_f5.png": [
                 1234,
                 438,
                 302,
                 224
               ],
-              "dictator_carrot_scooter_ride_f1.png": [
+              "colonel_carrot_scooter_ride_f1.png": [
                 3,
                 670,
                 265,
                 327
               ],
-              "dictator_carrot_scooter_ride_f2.png": [
+              "colonel_carrot_scooter_ride_f2.png": [
                 313,
                 668,
                 279,
                 330
               ],
-              "dictator_carrot_scooter_ride_f3.png": [
+              "colonel_carrot_scooter_ride_f3.png": [
                 630,
                 671,
                 281,
                 327
               ],
-              "dictator_carrot_scooter_ride_f4.png": [
+              "colonel_carrot_scooter_ride_f4.png": [
                 930,
                 668,
                 276,
                 328
               ],
-              "dictator_carrot_scooter_ride_f5.png": [
+              "colonel_carrot_scooter_ride_f5.png": [
                 1243,
                 694,
                 280,
@@ -5249,7 +5249,7 @@
           "file": "petal-panic/assets/platforms_level4_sheet.png",
           "rows": 3,
           "cols": 3,
-          "description": "Dictator Carrot fortress platform tiles (stone blocks with carrot-crest shields, lanterns, bunting), 3x3 grid with props on top",
+          "description": "Colonel Carrot fortress platform tiles (stone blocks with carrot-crest shields, lanterns, bunting), 3x3 grid with props on top",
           "size": "1536x1024",
           "entities": [
             {

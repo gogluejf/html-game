@@ -1,6 +1,6 @@
 # Petal Panic — Remaining Sprite Fixes (Round 2)
 
-## dictator_carrot (boss)
+## colonel_carrot (boss)
 
 | Issue | Frames | Fix |
 |-------|--------|-----|

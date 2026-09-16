@@ -14,7 +14,7 @@ aggressive. No filler, no breathing room. Every note earns its place.
 
 And it has to *feel* something. Not just "fast background noise" — real emotion. The
 joy of a power-up rush. The dread before a boss appears. The absurd triumph of marching
-into a dictator's parade. Memorable moments: the one bar that makes you stop and go
+into a colonel's parade. Memorable moments: the one bar that makes you stop and go
 "yeah, *that's* the game." Music you'll still be whistling a week later.
 
 But Petal Panic has a soul: a loving circus turned nightmare by a stupid villain. So the
@@ -100,12 +100,12 @@ pressure. The music should make you feel like you're about to die and that's *fu
 Absurd totalitarian grandeur. Marching bands playing propaganda jingles. Giant carrot
 banners snapping in the wind. Forced-cheering crowds. Everything is garish red and gold.
 The melody is triumphant but *too* perfect — it resolves every time, which makes it feel
-wrong. Military precision. No swing. No mercy. A dictator's parade that's almost funny
+wrong. Military precision. No swing. No mercy. A colonel's parade that's almost funny
 if it weren't so oppressive. You're marching toward his palace and the band won't stop.
 
 ---
 
-## Final Boss — Dictator Carrot
+## Final Boss — Colonel Carrot
 
 **Brilliantly Stupid**
 

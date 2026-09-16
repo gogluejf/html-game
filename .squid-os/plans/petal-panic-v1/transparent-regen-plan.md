@@ -67,10 +67,10 @@ Regenerate every multi-frame sprite sheet as a **clean, fully transparent PNG** 
 | 29 | ratchet_rumbelow_sheet_4.png | boss | ✅ | done 2026-09-13 |
 | 30 | ratchet_rumbelow_sheet_5.png | boss | ✅ | done 2026-09-13 (1 recall) |
 | 31 | grim_vertigo_sheet.png | boss | ✅ | done 2026-09-13 (1 recall) |
-| 32 | dictator_carrot_sheet.png | boss | ✅ | done 2026-09-13 |
-| 33 | dictator_carrot_sheet_2.png | boss | ✅ | done 2026-09-13 |
-| 34 | dictator_carrot_sheet_3.png | boss | ✅ | done 2026-09-13 |
-| 35 | dictator_carrot_sheet_4.png | boss | ✅ | done 2026-09-13 |
+| 32 | colonel_carrot_sheet.png | boss | ✅ | done 2026-09-13 |
+| 33 | colonel_carrot_sheet_2.png | boss | ✅ | done 2026-09-13 |
+| 34 | colonel_carrot_sheet_3.png | boss | ✅ | done 2026-09-13 |
+| 35 | colonel_carrot_sheet_4.png | boss | ✅ | done 2026-09-13 |
 | 36 | powerups_sheet.png | powerups | ✅ | done 2026-09-13 |
 | 37 | powerups_sheet_2.png | powerups | ✅ | done 2026-09-13 |
 | 38 | projectile_sheet.png | projectiles | ✅ | done 2026-09-13 |

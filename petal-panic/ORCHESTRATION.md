@@ -34,7 +34,7 @@ You are the orchestrator. You do NOT crop, validate, or compose yourself. You de
 |-------|--------|-------|------------|-------|
 | `ratchet_rumbelow_sheet, _2-5.png` | ratchet_rumbelow | boss | ratchet_rumbelow | Boss — 5 sheets |
 | `grim_vertigo_sheet.png` | grim_vertigo | boss | grim_vertigo | Mid-boss carousel — 4 rows × 4 cols (idle, angry, attack, death) |
-| `dictator_carrot_sheet, _2-4.png` | dictator_carrot | boss | dictator_carrot | Final boss — 4 sheets, 3×5 grid each |
+| `colonel_carrot_sheet, _2-4.png` | colonel_carrot | boss | colonel_carrot | Final boss — 4 sheets, 3×5 grid each |
 | `ratzo_ringleader_sheet.png` | ratzo_ringleader | enemies | ratzo_ringleader | Clown rat — 4×5 grid |
 | `toadstool_tilly_sheet.png` | toadstool_tilly | enemies | toadstool_tilly | Clown mushroom — 4×5 grid (idle, spore, ground eruption, death) |
 | `gustav_grapplersnout_sheet.png` | gustav_grapplersnout | enemies | gustav_grapplersnout | Strongman caterpillar — 4×5 grid (crawl, dumbbell throw, ground punch, death) |
@@ -89,10 +89,10 @@ For single images, use the same pattern but add: `rows=1 cols=1, no crop needed,
 4. `ratchet_rumbelow_sheet_4.png` → `boss/ratchet_rumbelow_`
 5. `ratchet_rumbelow_sheet_5.png` → `boss/ratchet_rumbelow_`
 6. `grim_vertigo_sheet.png` → `boss/grim_vertigo_`
-7. `dictator_carrot_sheet.png` → `boss/dictator_carrot_`
-8. `dictator_carrot_sheet_2.png` → `boss/dictator_carrot_`
-9. `dictator_carrot_sheet_3.png` → `boss/dictator_carrot_`
-10. `dictator_carrot_sheet_4.png` → `boss/dictator_carrot_`
+7. `colonel_carrot_sheet.png` → `boss/colonel_carrot_`
+8. `colonel_carrot_sheet_2.png` → `boss/colonel_carrot_`
+9. `colonel_carrot_sheet_3.png` → `boss/colonel_carrot_`
+10. `colonel_carrot_sheet_4.png` → `boss/colonel_carrot_`
 11. `ratzo_ringleader_sheet.png` → `enemies/ratzo_ringleader_`
 12. `toadstool_tilly_sheet.png` → `enemies/toadstool_tilly_`
 13. `gustav_grapplersnout_sheet.png` → `enemies/gustav_grapplersnout_`
