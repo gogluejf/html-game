@@ -1641,10 +1641,9 @@ function handleBarrelDestroyed(barrel) {
     Effects.bigExplosion(); // Task 7.1 — brief white screen flash (design §12)
     triggerShake(8);
     // SFX: explosion
-  } else if (barrel.type === 'coinBarrel') {
-    // Coin barrel: no damaging explosion, just a mixed-type coin burst
-    // (design §10/§14). Mostly bronze, some silver, rare gold.
-    coins.burstCoins(cx, cy, 5);
+  } else if (barrel.coinDrop) {
+    // Coin barrel (or any object with a coinDrop config): spawn the burst.
+    coins.dropCoins(barrel.coinDrop, cx, cy);
     particles.spawnBurst(cx, cy, 6);
     // SFX: coin
   } else {

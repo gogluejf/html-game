@@ -27,7 +27,7 @@ export const VIOLETTA_DEF = {
     mjump: 0,
     melee: true, projectile: true, fly: false,
   },
-  coinDrop: { range: [1, 3], chance: 0.6 },
+  coinDrop: { min: 1, max: 3, chance: 1.0, types: { bronze: 1 } },
 };
 
 const PACING_SPEED = 80;        // px/s — walk speed while pacing

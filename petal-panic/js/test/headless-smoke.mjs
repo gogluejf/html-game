@@ -28,7 +28,7 @@ const DT = 1 / 60;
 function step(n) { for (let i = 0; i < n; i++) update(DT); }
 
 const before = coins.count;
-coins.burstCoins(300, 100, 5);
+coins.dropCoins({ min: 4, max: 6, chance: 1.0, types: { bronze: 0.7, silver: 0.25, gold: 0.05 } }, 300, 100);
 console.log('coins after burst:', coins.count, '(was', before + ')');
 step(60 * 10); // 10s — past COIN_TTL(8)
 console.log('coins after 10s:', coins.count, '(expect ~' + before + ' if TTL works)');

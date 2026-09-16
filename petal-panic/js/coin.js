@@ -36,26 +36,25 @@ export const COIN_TYPES = Object.freeze({
 });
 
 /**
- * Probability table for a single coin's type. Mostly bronze, some silver,
- * rare gold. Used by rollCoinType() and burstCoins().
+ * Probability table for a single coin's type. Used by rollCoinType() and
+ * dropCoins(). Can be overridden per-entity via coinDrop.types weights.
  */
-const TYPE_WEIGHTS = [
-  ['bronze', 0.7],
-  ['silver', 0.25],
-  ['gold',   0.05],
-];
+const DEFAULT_TYPE_WEIGHTS = { bronze: 0.7, silver: 0.25, gold: 0.05 };
 
 /**
- * Roll a random coin type from the weighted table.
+ * Roll a random coin type from weighted probabilities.
+ * @param {object} [weights] optional override, e.g. { bronze: 1 } or { bronze: 0.8, silver: 0.2 }
  * @returns {'bronze'|'silver'|'gold'}
  */
-export function rollCoinType() {
+export function rollCoinType(weights) {
+  const w = weights ?? DEFAULT_TYPE_WEIGHTS;
   let r = Math.random();
-  for (const [type, w] of TYPE_WEIGHTS) {
-    if (r < w) return type;
-    r -= w;
+  for (const [type, weight] of Object.entries(w)) {
+    if (r < weight) return type;
+    r -= weight;
   }
-  return 'bronze'; // fallback (shouldn't happen; weights sum to 1)
+  // Fallback: return the first key (shouldn't happen if weights sum to ~1)
+  return Object.keys(w)[0];
 }
 
 // ---------------------------------------------------------------------------
@@ -209,14 +208,11 @@ const AIR_DRAG_PER_STEP = 0.995;
 // ---------------------------------------------------------------------------
 
 /**
- * Pooled coin system. dropCoins() spawns a generic enemy-drop burst (all
- * bronze for v1 simplicity); burstCoins() spawns a mixed-type burst used by
- * coin barrels (mostly bronze, some silver, rare gold).
- *
- * When the pool is exhausted, the OLDEST live coin is recycled (its slot is
- * reused for the new coin) so bursts never silently fail. Recycled coins are
- * NOT credited to the hero — they just vanish, which matches the "oldest get
- * auto-collected or removed" rule from the task spec.
+ * Pooled coin system. dropCoins() spawns a burst from a unified config
+ * (used by both enemies and game objects). When the pool is exhausted, the
+ * OLDEST live coin is recycled (its slot is reused for the new coin) so bursts
+ * never silently fail. Recycled coins are NOT credited to the hero — they just
+ * vanish, which matches the "oldest get auto-collected or removed" rule.
  */
 export class CoinPool {
   /**
@@ -262,46 +258,27 @@ export class CoinPool {
   }
 
   /**
-   * Spawn a mixed-type burst at (cx, cy) — used by coin barrels. Each coin
-   * gets a random upward + sideways velocity for a satisfying fountain effect.
+   * Spawn a coin burst from a unified coinDrop config.
+   * Config shape: { min, max, chance, types?: { bronze, silver, gold } }
+   *   - min/max: range of coin count to spawn
+   *   - chance: 0..1 probability the drop happens at all (1 = always)
+   *   - types: optional weight override per coin type (defaults to 70/25/5)
    *
-   * @param {number} cx center x
-   * @param {number} cy center y
-   * @param {number} [count=5] how many coins (clamped to [min,max] internally)
-   * @returns {number} number actually spawned
-   */
-  burstCoins(cx, cy, count = 5) {
-    const n = Math.max(4, Math.min(6, count)); // clamp to 4–6 per task spec
-    let spawned = 0;
-    for (let i = 0; i < n; i++) {
-      const type = rollCoinType();
-      const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.9; // mostly up, ±~80°
-      const speed = 180 + Math.random() * 180; // 180–360 px/s
-      const c = this.spawnOne(type, cx, cy, {
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-      });
-      if (c) spawned++;
-    }
-    return spawned;
-  }
-
-  /**
-   * Legacy enemy-death drop: all-bronze burst (v1 simplification). Kept for
-   * backward compatibility with existing jester death pipeline calls.
+   * Used by BOTH enemies and game objects (barrels). One code path.
    *
-   * @param {{range:[number,number], chance:number}} coinDrop
+   * @param {{min:number, max:number, chance:number, types?:object}} cfg
    * @param {number} cx center x
    * @param {number} cy center y
    * @returns {number} number spawned (0 if the chance roll failed)
    */
-  dropCoins(coinDrop, cx, cy) {
-    if (Math.random() > coinDrop.chance) return 0;
-    const [min, max] = coinDrop.range;
-    const n = min + Math.floor(Math.random() * (max - min + 1));
+  dropCoins(cfg, cx, cy) {
+    if (!cfg) return 0;
+    if (Math.random() > cfg.chance) return 0;
+    const n = cfg.min + Math.floor(Math.random() * (cfg.max - cfg.min + 1));
     let spawned = 0;
     for (let i = 0; i < n; i++) {
-      const c = this.spawnOne('bronze', cx, cy);
+      const type = rollCoinType(cfg.types);
+      const c = this.spawnOne(type, cx, cy);
       if (c) spawned++;
     }
     return spawned;

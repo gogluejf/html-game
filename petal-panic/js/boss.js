@@ -32,13 +32,14 @@ import { damage } from './damage.js';
 export const ELEPHANT_DEF = {
   id: 'elephant',
   name: 'Overgrown Elephant',
+  isBoss: true,
   w: 80, h: 100,
   aggroRadius: Infinity, // always active once the fight triggers
   stats: {
     weight: 5, speed: 200, attack: 30, defense: 5, stamina: 500,
     melee: true, projectile: true, fly: false,
   },
-  coinDrop: { range: [6, 10], chance: 1.0 }, // generous bounty on victory
+  coinDrop: { min: 6, max: 10, chance: 1.0, types: { bronze: 0.5, silver: 0.35, gold: 0.15 } }, // generous bounty on victory
 };
 
 // --- Phase timing (base durations, divided by escalation) -------------------
@@ -72,7 +73,6 @@ export const BOSS_TRIGGER_RADIUS = 300; // hero within this of the boss → acti
 export class Elephant extends Enemy {
   constructor(x, y) {
     super(ELEPHANT_DEF, x, y);
-    this.isBoss = true;
     this.layer = LAYER.BOSS;
     this.debugColor = '#8e6bbf'; // distinct purple-brown for the boss body
 

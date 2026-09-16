@@ -27,7 +27,7 @@ export const JACKO_DEF = {
     mjump: 0,
     melee: false, projectile: false, fly: false,
   },
-  coinDrop: { range: [1, 2], chance: 0.5 },
+  coinDrop: { min: 1, max: 2, chance: 1.0, types: { bronze: 1 } },
 };
 
 const ROLL_SPEED = 150;         // px/s while rolling toward the hero

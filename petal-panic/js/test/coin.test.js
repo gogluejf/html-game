@@ -171,20 +171,22 @@ ok('coin passes through a platform side (no bounce from sides)', () => {
   assert.ok(c.vy >= 0, `vy=${c.vy} should be ≥ 0 (no side bounce)`);
 });
 
-// --- Mixed-type burst (acceptance #2) ----------------------------------------
+// --- Mixed-type burst via unified dropCoins (acceptance #2) ----------------------------------------
 console.log('\nMixed-type burst (acceptance #2)');
-ok('burstCoins spawns 4–6 coins', () => {
+ok('dropCoins with barrel config spawns 4–6 coins', () => {
   const pool = new CoinPool(32);
-  const n = pool.burstCoins(100, 100, 5);
+  const cfg = { min: 4, max: 6, chance: 1.0, types: { bronze: 0.7, silver: 0.25, gold: 0.05 } };
+  const n = pool.dropCoins(cfg, 100, 100);
   assert.ok(n >= 4 && n <= 6, `spawned ${n}, expected 4-6`);
   assert.equal(pool.count, n);
 });
-ok('burstCoins is mostly bronze (≥70% over many samples)', () => {
-  // Sample 200 bursts of 5 coins each = 1000 coins; count types.
+ok('dropCoins is mostly bronze (≥70% over many samples)', () => {
+  // Sample 200 drops of ~5 coins each = ~1000 coins; count types.
   const counts = { bronze: 0, silver: 0, gold: 0 };
   const pool = new CoinPool(MAX_COINS);
+  const cfg = { min: 5, max: 5, chance: 1.0, types: { bronze: 0.7, silver: 0.25, gold: 0.05 } };
   for (let trial = 0; trial < 200; trial++) {
-    const n = pool.burstCoins(100, 100, 5);
+    const n = pool.dropCoins(cfg, 100, 100);
     for (const c of pool.activeItems.slice(-n)) {
       counts[c.coinType] += 1;
     }
@@ -204,13 +206,13 @@ ok('rollCoinType returns a valid type key', () => {
     assert.ok(['bronze', 'silver', 'gold'].includes(t), `invalid type: ${t}`);
   }
 });
-ok('burst coins get upward+sideways velocity (fountain effect)', () => {
+ok('dropCoins with bronze-only types spawns all bronze', () => {
   const pool = new CoinPool(32);
-  const n = pool.burstCoins(100, 100, 5);
-  assert.ok(n >= 4);
-  // At least some coins should have negative vy (moving up) initially.
-  const upCount = pool.activeItems.filter(c => c.vy < 0).length;
-  assert.ok(upCount >= 1, `expected some coins moving up, got ${upCount}/${n}`);
+  const cfg = { min: 3, max: 3, chance: 1.0, types: { bronze: 1 } };
+  const n = pool.dropCoins(cfg, 100, 100);
+  assert.equal(n, 3);
+  const allBronze = pool.activeItems.every(c => c.coinType === 'bronze');
+  assert.ok(allBronze, 'expected all bronze coins');
 });
 
 // --- Pool cap + recycling ----------------------------------------------------
@@ -336,23 +338,24 @@ ok('1up fires exactly at the threshold boundary (not before/after)', () => {
   assert.equal(hero.lives, 4, '1up at exactly 100 coins');
 });
 
-// --- dropCoins backward compat (enemy death drops) ---------------------------
-console.log('\ndropCoins (backward compat)');
+// --- dropCoins unified config ------------------------------------------------
+console.log('\ndropCoins (unified config)');
 ok('dropCoins respects chance (always drops with chance=1)', () => {
   const pool = new CoinPool(32);
-  const n = pool.dropCoins({ range: [1, 3], chance: 1.0 }, 100, 100);
+  const n = pool.dropCoins({ min: 1, max: 3, chance: 1.0 }, 100, 100);
   assert.ok(n >= 1 && n <= 3, `got ${n} coins, expected 1-3`);
 });
 ok('dropCoins can return 0 (chance roll fails)', () => {
   const pool = new CoinPool(32);
-  const n = pool.dropCoins({ range: [1, 3], chance: 0.0 }, 100, 100);
+  const n = pool.dropCoins({ min: 1, max: 3, chance: 0.0 }, 100, 100);
   assert.equal(n, 0);
 });
-ok('dropCoins spawns all-bronze coins (v1 simplification)', () => {
+ok('dropCoins with no types defaults to mixed (bronze-heavy)', () => {
   const pool = new CoinPool(32);
-  pool.dropCoins({ range: [2, 2], chance: 1.0 }, 100, 100);
+  pool.dropCoins({ min: 2, max: 2, chance: 1.0 }, 100, 100);
+  // Default weights are bronze-heavy; just verify valid types come out.
   for (const c of pool.activeItems) {
-    assert.equal(c.coinType, 'bronze', `expected bronze, got ${c.coinType}`);
+    assert.ok(['bronze', 'silver', 'gold'].includes(c.coinType));
   }
 });
 

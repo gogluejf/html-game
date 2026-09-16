@@ -22,7 +22,7 @@ export const JESTER_DEF = {
     mjump: 0,
     melee: true, projectile: false, fly: false,
   },
-  coinDrop: { range: [1, 3], chance: 0.6 },
+  coinDrop: { min: 1, max: 3, chance: 1.0, types: { bronze: 1 } },
 };
 
 const WHIP_RANGE = 60;        // px — distance at which the jester starts a whip

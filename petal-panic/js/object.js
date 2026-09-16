@@ -29,6 +29,7 @@ export const WOOD_BARREL_DEF = {
   hp: 40,
   explosive: false,
   explodeRadius: 0,
+  coinDrop: null,
 };
 
 /** Destructible solid that explodes on destruction (hurts everyone nearby). */
@@ -38,6 +39,7 @@ export const BARREL_DEF = {
   hp: 60,
   explosive: true,
   explodeRadius: 120,
+  coinDrop: null,
 };
 
 /** Same HP/destructible behavior, but bursts into coins instead of exploding. */
@@ -47,6 +49,7 @@ export const COIN_BARREL_DEF = {
   hp: 60,
   explosive: false,   // no damaging explosion — just a coin burst
   explodeRadius: 0,
+  coinDrop: { min: 4, max: 6, chance: 1.0, types: { bronze: 0.7, silver: 0.25, gold: 0.05 } },
 };
 
 // ---------------------------------------------------------------------------
@@ -76,6 +79,7 @@ export class GameObj extends Entity {
     this.explosive = def.explosive ?? true;
     this.explodeRadius = def.explodeRadius ?? 120;
     this.radius = this.explodeRadius; // base Entity radius — debug draws this
+    this.coinDrop = def.coinDrop ?? null;
     this.hitFlash = 0;             // white-flash timer when struck (render reads it)
     this.destroyed = false;        // latched once HP hits 0 (prevents double-explode)
   }

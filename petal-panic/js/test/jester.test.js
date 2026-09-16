@@ -37,7 +37,7 @@ ok('constructor sets type, stats, hp, coinDrop from def', () => {
   assert.equal(e.type, 'jester');
   assert.equal(e.hp, 40);
   assert.equal(e.maxHp, 40);
-  assert.deepEqual(e.coinDrop, { range: [1, 3], chance: 0.6 });
+  assert.deepEqual(e.coinDrop, { min: 1, max: 3, chance: 1.0, types: { bronze: 1 } });
   assert.equal(e.layer, LAYER.ENEMY);
 });
 ok('aiState starts at idle', () => {
@@ -306,7 +306,7 @@ ok('custom enemy subclass works with base update/takeDamage/die', () => {
     constructor(x, y) {
       super({ id: 'test', name: 'Test', w: 20, h: 20, aggroRadius: 200,
               stats: { weight: 1, speed: 80, attack: 5, defense: 0, stamina: 10, fly: false },
-              coinDrop: { range: [1, 1], chance: 1.0 } }, x, y);
+              coinDrop: { min: 1, max: 1, chance: 1.0, types: { bronze: 1 } } }, x, y);
     }
     ai(dt, hero, world) {
       // Simple: always chase.

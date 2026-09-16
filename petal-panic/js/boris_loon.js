@@ -27,7 +27,7 @@ export const BORIS_DEF = {
     mjump: 0,
     melee: false, projectile: true, fly: true,
   },
-  coinDrop: { range: [1, 2], chance: 0.5 },
+  coinDrop: { min: 1, max: 2, chance: 1.0, types: { bronze: 1 } },
 };
 
 export const BORIS_BABY_DEF = {
@@ -40,7 +40,7 @@ export const BORIS_BABY_DEF = {
     mjump: 0,
     melee: false, projectile: true, fly: true,
   },
-  coinDrop: { range: [1, 1], chance: 0.5 },
+  coinDrop: { min: 1, max: 1, chance: 1.0, types: { bronze: 1 } },
 };
 
 // --- Shared flight tunables --------------------------------------------------

@@ -28,7 +28,7 @@ export class Enemy extends Entity {
   /**
    * @param {object} def enemy definition (see design §6): id, name, w, h,
    *                     aggroRadius, stats{weight,speed,attack,defense,stamina,
-   *                     melee,projectile,fly}, coinDrop{range,chance}.
+   *                     melee,projectile,fly}, coinDrop{min,max,chance,types}.
    * @param {number} [x] spawn x (top-left of box)
    * @param {number} [y] spawn y
    */
@@ -45,10 +45,11 @@ export class Enemy extends Entity {
     this.type = def.id;
     this.name = def.name ?? def.id;
     this.def = def;
+    this.isBoss = def.isBoss ?? false;
     this.stats = { ...def.stats };
     this.hp = def.stats.stamina;
     this.maxHp = def.stats.stamina;
-    this.coinDrop = def.coinDrop ?? { range: [1, 3], chance: 0.5 };
+    this.coinDrop = def.coinDrop ?? { min: 1, max: 3, chance: 0.5 };
 
     // --- AI state -----------------------------------------------------------
     // idle | walk | chase | attack | dead. Subclasses drive transitions.

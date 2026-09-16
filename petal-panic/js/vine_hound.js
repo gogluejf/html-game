@@ -25,7 +25,7 @@ export const VINE_HOUND_DEF = {
     mjump: 0,
     melee: true, projectile: false, fly: false,
   },
-  coinDrop: { range: [1, 3], chance: 0.6 },
+  coinDrop: { min: 1, max: 3, chance: 1.0, types: { bronze: 1 } },
 };
 
 const LUNGE_RANGE = 50;          // px — distance at which the hound lunges
