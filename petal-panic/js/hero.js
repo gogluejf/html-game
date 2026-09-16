@@ -103,7 +103,7 @@ export class Hero extends Entity {
     this.SUPER_DUR = 0.6;        // total dash duration
     this.SUPER_SPEED = 900;      // initial px/s burst
     this.SUPER_DECEL = 1800;     // px/s² deceleration during glide
-    this.superHitbox = { ox: 24, oy: -8, bw: 36, bh: 32 }; // small, in front, body-height
+    this.superHitbox = { ox: 20, oy: -this.h / 2, bw: 16, bh: this.h }; // thin, full body height, in front
 
     // Anim registry (real sprites later; placeholder frames attached by caller).
     this.anims = {};

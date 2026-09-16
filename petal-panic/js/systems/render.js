@@ -442,14 +442,14 @@ function drawDebugOverlay(ctx) {
     ctx.restore();
   }
 
-  // Super dash hitbox in PURPLE when active (debug only).
+  // Super dash hitbox in YELLOW when active (debug only) — same as melee.
   const sh = hero.superHitboxWorld;
   if (sh) {
     ctx.save();
     ctx.globalAlpha = 0.6;
-    ctx.fillStyle = '#9b59b6';
+    ctx.fillStyle = '#f1c40f';
     ctx.fillRect(sh.x, sh.y, sh.w, sh.h);
-    ctx.strokeStyle = '#9b59b6';
+    ctx.strokeStyle = '#f1c40f';
     ctx.lineWidth = 2;
     ctx.strokeRect(sh.x + 0.5, sh.y + 0.5, sh.w, sh.h);
     ctx.restore();
