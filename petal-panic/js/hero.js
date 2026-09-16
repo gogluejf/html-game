@@ -292,6 +292,9 @@ export class Hero extends Entity {
     // Unified labeled timers (inv, rapid, rec, ...) advance together. Legacy
     // invincibleTimer/rapidTimer are getters over this set (see below).
     this.timers.tick(dt);
+    if (this.intangible && this.timers.expired('intangible')) {
+      this.intangible = false;
+    }
 
     // --- Melee swing tick ---------------------------------------------------
     // Advance the swing frame clock and drive the attack animation so its
@@ -422,6 +425,7 @@ export class Hero extends Entity {
     this.meleeCooldown = 0;
     this.superActive = false;
     this.superTimer = 0;
+    this.intangible = false;
   }
 
   /**
@@ -474,6 +478,9 @@ export class Hero extends Entity {
     this.superMeter = 0;
     this.superActive = true;
     this.superTimer = this.SUPER_DUR;
+    // Intangible during the dash — enemy hitboxes pass through.
+    this.intangible = true;
+    this.timers.set('intangible', this.SUPER_DUR);
     // Swap to the supermove animation.
     if (this.anims.supermove) {
       this._prevAnim = this.anim;

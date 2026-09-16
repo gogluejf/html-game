@@ -806,6 +806,7 @@ world.on('contact', (a, b) => {
   if (!source.alive || source.aiState === 'dead') return; // dead enemies don't hurt
   // i-frames absorb contact hits (prevents melt while overlapping). takeHit()
   // returns false when invincible, so we skip damage + cooldown in that case.
+  if (heroEnt.intangible) return;
   if (heroEnt.timers.get('inv') > 0) return;
   if (source._contactCd > 0) return;
   source._contactCd = CONTACT_COOLDOWN;

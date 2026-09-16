@@ -57,6 +57,7 @@ export class Entity {
 
     // --- State ----------------------------------------------------------------
     this.alive = true;
+    this.intangible = false;  // true = enemy hitboxes pass through, no damage taken
     this.debugColor = opts.debugColor ?? '#fff';
 
     // --- Time-to-live (TTL) ---------------------------------------------------
