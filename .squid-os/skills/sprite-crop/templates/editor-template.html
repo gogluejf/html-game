@@ -456,8 +456,65 @@ function loadState(){
   let data; try{ data = JSON.parse(raw); }catch(e){ return; }
   if (!data || data.v !== 1) return;
   _loadingState = true;   // suppress saves while restoring
-  // restore per-entity state (merge over defaults when an entity is loaded)
+
+  // --- Migrate renamed entity keys ---
+  // When an entity is renamed in state.json (e.g. special → supermove), the old
+  // localStorage key won't match the new manifest name. We detect stale keys by
+  // checking if any manifest entity's frames match the saved frames after a
+  // simple rename substitution. If matched, adopt under the new key.
+  const manifestNames = new Set();
+  MANIFEST.labels.forEach(lbl => lbl.entities.forEach(en => manifestNames.add(en.name)));
+
+  const migrated = {};
   for (const [name, saved] of Object.entries(data.entities||{})){
+    if (manifestNames.has(name)) {
+      migrated[name] = saved;
+    } else if (saved && Array.isArray(saved.frames) && saved.frames.length > 0) {
+      // Stale key — try to find which manifest entity this belongs to by
+      // substituting known renames in the frame filenames and checking if
+      // any resulting name exists in the manifest's frame lists.
+      const RENAME_MAP = [['_special_', '_supermove_']];
+      let adopted = false;
+      outer: for (const lbl of MANIFEST.labels){
+        for (const en of lbl.entities){
+          if (migrated[en.name]) continue;
+          const manifestFiles = new Set((en.frames||[]).map(f => f.split('/').pop()));
+          for (const f of saved.frames){
+            const base = (f.name||'').split('/').pop();
+            for (const [from, to] of RENAME_MAP){
+              const renamed = base.replace(from, to);
+              if (manifestFiles.has(renamed)){
+                // Adopt: store under the new manifest name, rename frames
+                const copy = JSON.parse(JSON.stringify(saved));
+                copy.frames.forEach(fr => {
+                  if (fr.name) fr.name = fr.name.replace(from, to);
+                  if (fr.crop && fr.crop.file) fr.crop.file = fr.crop.file.replace(from, to);
+                });
+                migrated[en.name] = copy;
+                console.log(`[migration] "${name}" → "${en.name}"`);
+                adopted = true;
+                break outer;
+              }
+            }
+          }
+        }
+      }
+      if (!adopted) migrated[name] = saved; // truly orphaned — keep as-is
+    } else {
+      migrated[name] = saved;
+    }
+  }
+  data.entities = migrated;
+  if (data.active && !manifestNames.has(data.active)){
+    // Fix active pointer with same rename logic
+    for (const [from, to] of [['_special', '_supermove']]){
+      if (data.active.includes(from)) { data.active = data.active.replace(from, to); break; }
+    }
+  }
+  localStorage.setItem(LS_KEY, JSON.stringify(data));
+
+  // restore per-entity state
+  for (const [name, saved] of Object.entries(data.entities)){
     if (saved && Array.isArray(saved.frames)) S.set(name, saved);
   }
   // restore global view
@@ -1951,6 +2008,7 @@ window.addEventListener('keydown', e=>{
 // ---------- init ----------
 _loadingState = true;   // suppress saves during the entire init/restore sequence
 $('zoomval').textContent = Math.round(zoom*100)+'%';
+
 loadState();          // restore per-entity state + view from localStorage (keeps guard ON)
 applySavedView();     // apply restored view (bg, play, toggles) to the UI — no save (guard on)
 syncToggles();   // set toolbar lit states from `show` BEFORE first paint (no flash)
