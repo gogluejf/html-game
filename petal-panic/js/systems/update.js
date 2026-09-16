@@ -115,6 +115,17 @@ hero.anims.attack = new Anim(
   { speed: 80, loop: false }, // 80ms per frame matches MELEE_FRAME_DURATION
 );
 
+// Super move animation (10 placeholder frames — purple gradient).
+// Will be replaced with real supermove sprite frames when loaded.
+const superFrames = Array.from({ length: 10 }, (_, i) => {
+  const t = i / 9;
+  const r = Math.round(155 - t * 100);
+  const g = Math.round(89 + t * 60);
+  const b = Math.round(182 - t * 50);
+  return makeTestFrame(hero.w, hero.h, `rgb(${r},${g},${b})`);
+});
+hero.anims.supermove = new Anim(superFrames, { speed: 60, loop: false });
+
 // --- Placeholder non-hero entities (debug-color exercise only) ---------------
 // These exist purely so every §16 overlay color is visible on screen. They are
 // static (gravity 0) and do NOT participate in collision resolution this task;
