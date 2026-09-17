@@ -112,6 +112,7 @@ Tested in browser: yes/no
 
 ### References
 - [song-structure.md](references/song-structure.md) — Additional documentation
+- [behavior-spec.md](references/behavior-spec.md) — Jukebox player transport/UI expected-behavior spec (modes, buttons, list, timeline, keys, logging)
 
 ### Assets
 - [engine.js](assets/engine.js) — Template or resource file
