@@ -42,12 +42,12 @@ class MusicSequencer {
     this.tickMs = 25;
     // -- debug logging --
     this._logBuf = [];
-    this._logEnabled = false;
+    this._logEnabled = true;   // always-on tick log (TICK/START/STOP/LOOP lines)
   }
 
   enableLog() { this._logEnabled = true; this._log('LOG: enabled'); }
   disableLog() { this._logEnabled = false; this._log('LOG: disabled'); }
-  flushLog() { const out = this._logBuf.join('\n'); this._logBuf = []; return out; }
+  flushLog() { const out = this._logBuf.join('\n'); return out; }   // keep buffer (always-on)
   _log(msg) {
     if (!this._logEnabled) return;
     const t = (performance.now() / 1000).toFixed(4);
@@ -89,12 +89,43 @@ class MusicSequencer {
     this.timerId = setInterval(() => this._schedule(), this.tickMs);
   }
 
+  /** Seamless loop/advance: reset to track i at step 0 WITHOUT tearing down the
+   *  scheduler or resetting the clock. The existing setInterval keeps firing and
+   *  nextNoteTime stays on the beat grid (it's already ahead of ctx.currentTime
+   *  by the lookahead), so the first note of the new cycle lands exactly where
+   *  the grid says it should — no off-grid "now+0.06" jump, no interval-phase
+   *  drift. This is what makes song-end loops sound continuous instead of
+   *  restarting awkwardly. */
+  _loopRestart(trackIndex) {
+    const i = Math.max(0, Math.min(this.tracks.length - 1, (trackIndex == null ? this.current : trackIndex) | 0));
+    this._log('LOOP_RESTART track=' + i + ' nextNoteTime=' + this.nextNoteTime.toFixed(4) + ' ctxNow=' + this.ctx.currentTime.toFixed(4) + ' lead=' + (this.nextNoteTime - this.ctx.currentTime).toFixed(4));
+    this.current = i;
+    this.stepIndex = 0;
+    this.barCount = 0;
+    this.phraseCount = 0;
+    // Rebuild the audio bus only if it was torn down (normally it persists).
+    if (!this._busFilter) {
+      this._busFilter = this.ctx.createBiquadFilter();
+      this._busFilter.type = "lowpass";
+      this._busFilter.frequency.value = 12000;
+      this._busFilter.Q.value = 0.6;
+      this._busGain = this.ctx.createGain();
+      this._busGain.gain.value = 0.5;
+      this._busFilter.connect(this._busGain);
+      this._busGain.connect(this.master);
+    }
+    // Ensure we're actually playing and have a live timer (defensive: if a prior
+    // path cleared the interval, restart it — but keep nextNoteTime on the grid).
+    if (!this.playing) { this.playing = true; }
+    if (this.timerId === null) { this.timerId = setInterval(() => this._schedule(), this.tickMs); }
+  }
+
   /** Advance to the next track, restarting from phrase 0. */
   next() {
     const n = this.tracks.length;
     if (n < 2) return;
     const i = (this.current + 1) % n;
-    if (this.playing) this.start(i); else this.setTrack(i);
+    if (this.playing) this._loopRestart(i); else this.setTrack(i);
   }
 
   /** Pick a random other track (shuffle). */
@@ -103,7 +134,7 @@ class MusicSequencer {
     if (n < 2) return;
     let i;
     do { i = Math.floor(Math.random() * n); } while (i === this.current);
-    if (this.playing) this.start(i); else this.setTrack(i);
+    if (this.playing) this._loopRestart(i); else this.setTrack(i);
   }
 
   stop() {
@@ -220,9 +251,12 @@ class MusicSequencer {
       // Song-sequence mode: when the whole song has played through every
       // phrase exactly once (one full cycle), decide what happens next:
       if (trk.autoNext && this.barCount > 0 && this.barCount % totalBlocks === 0) {
-        this._log('LOOP detected at bar=' + this.barCount + ' totalBlocks=' + totalBlocks + ' autoNext=' + trk.autoNext + ' repeatOne=' + trk.repeatOne + ' shuffle=' + trk.shuffle);
-        if (trk.repeatOne) this.start(this.current);
-        else if (trk.shuffle) this.shuffleNext();
+        this._log('LOOP detected at bar=' + this.barCount + ' totalBlocks=' + totalBlocks + ' autoNext=' + trk.autoNext);
+        // Delegate the "what plays next" decision to the host (SongController
+        // overrides next()/shuffleNext() to run its rep/seq/shf mode logic).
+        // repeatOne is a pure-engine flag for standalone use; when set we loop
+        // in place seamlessly without touching the host.
+        if (trk.repeatOne) this._loopRestart(this.current);
         else this.next();
         return;
       }

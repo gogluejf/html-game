@@ -342,20 +342,36 @@ class SongController {
     this._logAction('SONG_END');
     if (this.shf) {
       let i; do { i = Math.floor(Math.random() * this.tracks.length); } while (i === this.current && this.tracks.length > 1);
-      this.play(i);
+      this._playSeamless(i);
     } else if (this.rep && !this.seq) {
-      this.play(this.current);
+      this._playSeamless(this.current);   // repeat ONE: loop same song, no clock reset
     } else if (this.seq) {
       const nx = this.current + 1;
       if (nx >= this.tracks.length) {
-        if (this.rep) this.play(0);
+        if (this.rep) this._playSeamless(0);
         else this.stop();
       } else {
-        this.play(nx);
+        this._playSeamless(nx);
       }
     } else {
       this.stop();
     }
+  }
+
+  /** Song-to-song transition that stays on the beat grid. If we're already
+   *  playing, use the engine's seamless restart (counters reset, scheduler and
+   *  nextNoteTime untouched) so there's no off-grid "now+0.06" jump. If we're
+   *  not playing (e.g. first start after a stop), fall back to a full play(). */
+  _playSeamless(i) {
+    if (this.player && this.playing && typeof this.player.seq._loopRestart === 'function') {
+      this._logAction('PLAY #' + (i+1) + ' (seamless)');
+      this.current = i;
+      this._manualPos = null;
+      this.player.seq._loopRestart(i);
+      if (this.onTrackChange) this.onTrackChange(i);
+      return;
+    }
+    this.play(i);
   }
 
   play(i) {
@@ -569,9 +585,21 @@ class SongController {
     URL.revokeObjectURL(a.href);
   }
   toggleLog() {
-    // Always-on action log: L just exports the full log file.
-    this.exportLog();
-    console.log('[jukebox] action log exported');
+    // Always-on logs: L exports BOTH the controller action log (PLAY/PAUSE/NEXT/
+    // SEEK/SELECT...) AND the engine tick log (TICK step/bar/t, START, LOOP) so a
+    // song-end loop glitch can be traced tick-by-tick.
+    const NL = String.fromCharCode(10);
+    let text = '===== ACTION LOG =====' + NL + this._actionLog.join(NL);
+    if (this.player && this.player.seq && typeof this.player.seq.flushLog === 'function') {
+      text += NL + NL + '===== ENGINE TICK LOG =====' + NL + this.player.seq.flushLog();
+    }
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jukebox-log-' + Date.now() + '.log';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    console.log('[jukebox] full log exported (actions + engine ticks)');
   }
 }
 
