@@ -600,7 +600,11 @@ export const Select = {
         // Enter flashes the ⏎ chip for 180ms.
         this._flashT = 'enter';
         this._flashAt = performance.now();
-        if (this.focus >= 0) {
+        if (this.focus < 0) {
+          // No selection yet → focus Scarlet (like pressing ←)
+          this.focus = 0;
+          return true;
+        }
           const heroId = this.focus === 0 ? 'scarlet' : 'balthazar';
           window.__selectedHero = heroId;
           if (tryTransition(S.PLAY)) {
