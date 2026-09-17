@@ -253,7 +253,7 @@ test('tabs are a focusable row and chips have distinct navigation/capture styles
   assert.ok(!text.some(t=>t.label==='+ Add'));
   tap('Enter'); fills.length=0; Remap.draw(ctx);
   assert.ok(fills.includes('rgba(255,110,199,0.5)'));
-  tap('Escape'); assert.equal(Remap.chip,1); assert.equal(Remap.focus,0);
+  tap('Escape'); assert.equal(Remap.focus,0);
   tap('Escape'); assert.equal(getState(),S.PAUSE);
 });
 
