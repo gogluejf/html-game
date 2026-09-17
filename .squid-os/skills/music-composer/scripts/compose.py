@@ -193,6 +193,83 @@ def cmd_validate(a):
     print(f"PASS: {a.file} ({len(tracks)} tracks)")
 
 
+def _load_state(game, working_dir):
+    path = state_path(game, working_dir)
+    try:
+        with open(path) as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        _err(f"cannot read state {path}: {e}")
+    if not isinstance(data, dict) or "tracks" not in data:
+        _err(f"{path} is not a valid state file (missing 'tracks')")
+    return path, data
+
+
+def _save_state(path, data):
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def cmd_add(a):
+    """Add one track to an existing game's track list."""
+    path, data = _load_state(a.game, a.working_dir)
+    # Track source: inline JSON object, @file (object or array), or stdin (-).
+    raw = a.track
+    if raw == "-":
+        raw = sys.stdin.read()
+    elif raw.startswith("@"):
+        fp = raw[1:]
+        try:
+            with open(fp) as f:
+                raw = f.read()
+        except OSError as e:
+            _err(f"cannot read --track file {fp}: {e}")
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as e:
+        _err(f"--track is not valid JSON: {e}")
+    new_tracks = parsed if isinstance(parsed, list) else [parsed]
+    validate_tracks(new_tracks)  # reject malformed tracks before touching state
+    # Reject duplicates by name.
+    existing = {t.get("name") for t in data["tracks"]}
+    dupes = [t.get("name") for t in new_tracks if t.get("name") in existing]
+    if dupes:
+        _err(f"track(s) already present: {', '.join(dupes)}")
+    data["tracks"].extend(new_tracks)
+    _save_state(path, data)
+    print(f"PASS: added {len(new_tracks)} -> {path} ({len(data['tracks'])} tracks)")
+
+
+def cmd_remove(a):
+    """Remove track(s) from an existing game by name (repeatable) or index."""
+    path, data = _load_state(a.game, a.working_dir)
+    names = set(a.name or [])
+    idxs = set(int(x) for x in (a.index or []))
+    if not names and not idxs:
+        _err("provide at least one --name or --index")
+    kept, removed = [], 0
+    for i, t in enumerate(data["tracks"]):
+        hit = (i in idxs) or (t.get("name") in names)
+        if hit:
+            removed += 1
+        else:
+            kept.append(t)
+    if removed == 0:
+        _err(f"no matching track(s) found (names={sorted(names)}, indices={sorted(idxs)})")
+    data["tracks"] = kept
+    _save_state(path, data)
+    print(f"PASS: removed {removed} -> {path} ({len(kept)} tracks)")
+
+
+def cmd_list(a):
+    """List a game's tracks with 0-based indices."""
+    _, data = _load_state(a.game, a.working_dir)
+    for i, t in enumerate(data["tracks"]):
+        extra = " ".join(str(t[k]) for k in ("style", "bpm") if t.get(k) is not None)
+        print(f"{i:>3}  {t.get('name','?')}{'  (' + extra + ')' if extra else ''}")
+    print(f"({len(data['tracks'])} tracks)")
+
+
 PLAYER_TMPL = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -790,8 +867,12 @@ def main():
     c = sub.add_parser("compose"); c.add_argument("--game", required=True); c.add_argument("--tracks", default="[]"); c.add_argument("--file", default=None, help="read tracks JSON from file (use --tracks @file)"); c.add_argument("--working-dir", default=".")
     v = sub.add_parser("validate"); v.add_argument("--file", required=True)
     p = sub.add_parser("player"); p.add_argument("--game", required=True); p.add_argument("--out", required=True); p.add_argument("--working-dir", default=".")
+    ad = sub.add_parser("add", help="add track(s) to a game's list"); ad.add_argument("--game", required=True); ad.add_argument("--track", required=True, help='JSON object, array, "@file", or "-" for stdin'); ad.add_argument("--working-dir", default=".")
+    rm = sub.add_parser("remove", help="remove track(s) by --name and/or --index"); rm.add_argument("--game", required=True); rm.add_argument("--name", action="append"); rm.add_argument("--index", action="append"); rm.add_argument("--working-dir", default=".")
+    ls = sub.add_parser("list", help="list a game's tracks with indices"); ls.add_argument("--game", required=True); ls.add_argument("--working-dir", default=".")
     a = ap.parse_args()
-    {"compose": cmd_compose, "validate": cmd_validate, "player": cmd_player}[a.cmd](a)
+    {"compose": cmd_compose, "validate": cmd_validate, "player": cmd_player,
+     "add": cmd_add, "remove": cmd_remove, "list": cmd_list}[a.cmd](a)
 
 
 if __name__ == "__main__":
