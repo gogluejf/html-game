@@ -33,7 +33,7 @@ export function setState(s) {
 // Transition map: which states can go where (design §1 graph).
 const TRANSITIONS = {
   [S.HOME]:   [S.SELECT, S.PLAY],       // PLAY = debug boot shortcut
-  [S.SELECT]: [S.PLAY],
+  [S.SELECT]: [S.PLAY, S.HOME],
   [S.PLAY]:   [S.PAUSE, S.OVER, S.WIN],
   [S.PAUSE]:  [S.PLAY, S.HOME],       // resume or quit
   [S.OVER]:   [S.PLAY, S.HOME],       // retry or quit

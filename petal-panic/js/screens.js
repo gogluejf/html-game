@@ -338,8 +338,8 @@ export const Home = {
       }
     }
 
-    // --- Layer 6: "PRESS ENTER" hint — only after logo + 500ms (gt > 2.7) ----
-    if (gt > 2.7) {
+    // --- Layer 6: "PRESS ENTER" hint — after logo delay OR after skip ------
+    if (gt > 2.7 || this._promptShown) {
       const blink = Math.floor(gt * 2) % 2 === 0;
       drawPrompt(ctx, 'PRESS ENTER', HOME_W / 2, HOME_H - 24, 30, { blink });
     }
@@ -356,11 +356,15 @@ export const Home = {
     if (t < 4) { this.parallaxOffset = 4; return; }       // JF Rene → Qwen
     if (t < 7) { this.parallaxOffset = 7; return; }       // Qwen → Squid
     if (t < 9.5) { this.parallaxOffset = 9.5; return; }   // Squid → scene
-    // After intro + logo + 500ms: go to SELECT
-    if (t - 9.5 > 2.7) {
-      if (tryTransition(S.SELECT)) {
-        console.log('[screens] HOME → SELECT');
-      }
+    // After intro: show "PRESS ENTER" immediately and accept on NEXT press.
+    // First press after scene: set the flag so draw shows the prompt.
+    // Second press: transition.
+    if (!this._promptShown) {
+      this._promptShown = true;
+      return;
+    }
+    if (tryTransition(S.SELECT)) {
+      console.log('[screens] HOME → SELECT');
     }
   },
 };
@@ -611,6 +615,10 @@ export const Select = {
       case 'KeyW':
         // Up loses focus — back to the "no selection" art state.
         this.focus = -1;
+        break;
+      case 'Escape':
+        // Back to home.
+        if (tryTransition(S.HOME)) console.log('[screens] SELECT → HOME (back)');
         break;
       case 'Enter':
       case 'Space':

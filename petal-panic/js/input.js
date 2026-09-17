@@ -1,18 +1,24 @@
 // Petal Panic — Input Engine.
 //
-// Polls all active input sources every tick and exposes a single normalized
-// `state` object. Every consumer (update engine, screens, HUD) reads from
-// `input.state` or calls `input.consumeAction()`. No raw key/button checks
-// anywhere else.
+// TWO LAYERS:
 //
-// Architecture:
-//   - Sources are a LIST. Each source implements { id, poll(raw) → actions }.
-//   - Add/remove sources without touching the merge logic.
-//   - All active sources are OR'd together: if ANY source says "jump", jump is true.
-//   - Axes: highest-magnitude source wins (gamepad stick beats keyboard digital).
+//   Layer 1 — NAVIGATION (fixed, NOT configurable):
+//     Works on all screens. Same buttons always. Never remapped.
+//       Keyboard: Arrows/WASD navigate, Enter confirm, Escape back/pause
+//       Gamepad:  D-pad/stick navigate, ✕(0) confirm, ○(1) back, Options(9) pause
+//     Handled by gamepadScreenBridge() in systems/update.js.
+//     Does NOT go through input.state or the mapping config.
 //
-// v1 sources: keyboard, gamepad (PS5/PS4/Xbox/generic auto-detect).
-// Future: touch, second gamepad, etc. Just push to input.sources.
+//   Layer 2 — GAMEPLAY (remappable via config):
+//     Only active in PLAY state. These are what the remap UI edits.
+//       move, aim, jump, shoot, melee, supermove, switchWeapon, crouch,
+//       lockDir, lockMove
+//     Handled by input.poll() → input.state. Read by the update engine.
+//
+// Sources are a LIST. Each source implements { id, poll(raw) → actions }.
+// Add/remove sources without touching the merge logic.
+// All active sources OR together for discrete actions; highest-magnitude
+// wins for axes.
 
 const DEADZONE = 0.2;
 
@@ -56,19 +62,15 @@ const keyboardSource = {
       crouch: k('KeyS'),
       lockDir: k('KeyK'),
       lockMove: k('KeyL'),
-      pause: k('Escape'),
-      confirm: k('Enter') || k('Space'),
-      back: k('Escape'),
     };
   },
 
-  /** Display label for an action. */
+  /** Display label for a gameplay action. */
   label(action) {
     const labels = {
       jump: 'SPACE', melee: 'J', supermove: 'B', shoot: 'G',
       switchWeapon: 'TAB', lockDir: 'K', lockMove: 'L',
-      crouch: 'S', pause: 'ESC', move: 'WASD', aim: '←↑→↓',
-      confirm: 'ENTER', back: 'ESC',
+      crouch: 'S', move: 'WASD', aim: '←↑→↓',
     };
     return labels[action] || '?';
   },
@@ -171,7 +173,7 @@ const gamepadSource = {
       if (btn(B.dpadDown)) moveY = 1;
     }
 
-    // Actions (level-triggered: true while held)
+    // Actions (level-triggered: true while held) — GAMEPLAY ONLY
     return {
       moveX, moveY,
       aimX, aimY,
@@ -183,22 +185,17 @@ const gamepadSource = {
       crouch: btn(B.dpadDown) ? true : false, // D-pad down
       lockDir: btn(B.l3),                 // L3 / LS
       lockMove: btn(B.r3),                // R3 / RS
-      pause: btn(B.options) || btn(B.start), // Options / Start
-      confirm: btn(B.a),                  // Cross / A
-      back: btn(B.b),                     // Circle / B
     };
   },
 
-  /** Display label for an action based on detected layout. */
+  /** Display label for a gameplay action based on detected layout. */
   label(action) {
     if (!this.layout) return '';
     const sym = this.layout.symbols;
     const map = {
       jump: sym.a, melee: sym.y, supermove: sym.b, shoot: sym.x,
       switchWeapon: sym.lb, lockDir: sym.l3, lockMove: sym.r3,
-      crouch: '▼', pause: sym.options || sym.start,
-      move: 'STICK', aim: 'STICK',
-      confirm: sym.a, back: sym.b,
+      crouch: '▼', move: 'STICK', aim: 'STICK',
     };
     return map[action] || '?';
   },
@@ -212,7 +209,7 @@ export const input = {
   // --- The source list (add/remove here) ------------------------------------
   sources: [keyboardSource, gamepadSource],
 
-  // --- Public state ----------------------------------------------------------
+  // --- Public state (GAMEPLAY LAYER ONLY — navigation is separate) -----------
   state: {
     moveX: 0, moveY: 0,
     aimX: 0, aimY: 0, aimAngle: 0,
@@ -220,8 +217,6 @@ export const input = {
     jump: false, melee: false, supermove: false,
     switchWeapon: false, crouch: false,
     lockDir: false, lockMove: false,
-    pause: false,
-    confirm: false, back: false,
     // Source info
     activeSources: [],     // which sources contributed this tick
     gamepadConnected: false,
@@ -261,11 +256,10 @@ export const input = {
       if (Math.abs(raw.aimY) > Math.abs(s.aimY)) s.aimY = raw.aimY;
     }
 
-    // --- Merge discrete actions: OR all sources -----------------------------
+    // --- Merge discrete actions: OR all sources (GAMEPLAY ONLY) -------------
     s.shooting = false; s.jump = false; s.melee = false;
     s.supermove = false; s.switchWeapon = false; s.crouch = false;
-    s.lockDir = false; s.lockMove = false; s.pause = false;
-    s.confirm = false; s.back = false;
+    s.lockDir = false; s.lockMove = false;
 
     for (const { raw } of results) {
       s.shooting ||= raw.shooting;
@@ -276,9 +270,6 @@ export const input = {
       s.crouch ||= raw.crouch;
       s.lockDir ||= raw.lockDir;
       s.lockMove ||= raw.lockMove;
-      s.pause ||= raw.pause;
-      s.confirm ||= raw.confirm;
-      s.back ||= raw.back;
     }
 
     // --- Lock logic ----------------------------------------------------------
