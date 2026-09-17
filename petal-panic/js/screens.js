@@ -643,44 +643,88 @@ export const Select = {
 // =============================================================================
 
 export const Pause = {
+  focus: 0, // 0=Resume, 1=Retry, 2=Quit
+
   /** @param {CanvasRenderingContext2D} ctx */
   draw(ctx) {
-    // Dim the frozen play frame behind the overlay.
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
-    // Title.
-    drawMarqueeTitle(ctx, 'PAUSED', VIEW_W / 2, VIEW_H / 2 - 70, 56, { color: CREAM });
+    drawMarqueeTitle(ctx, 'PAUSED', VIEW_W / 2, VIEW_H / 2 - 80, 56, { color: CREAM });
 
-    // Options.
-    drawPrompt(ctx, 'ENTER / ESC — Resume', VIEW_W / 2, VIEW_H / 2 - 5, 24, { color: GOLD });
-    drawPrompt(ctx, 'R — Retry Level', VIEW_W / 2, VIEW_H / 2 + 35, 22, { color: '#d8cdb4' });
-    drawPrompt(ctx, 'Q — Quit to Home', VIEW_W / 2, VIEW_H / 2 + 75, 22, { color: '#d8cdb4' });
+    const options = ['Resume', 'Retry Level', 'Quit to Home'];
+    const startY = VIEW_H / 2 - 20;
+    const gap = 40;
+
+    for (let i = 0; i < options.length; i++) {
+      const y = startY + i * gap;
+      const focused = i === this.focus;
+      if (focused) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,110,199,0.15)';
+        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
+        ctx.fill();
+        ctx.strokeStyle = PINK;
+        ctx.lineWidth = 2;
+        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
+        ctx.stroke();
+        ctx.restore();
+      }
+      drawPrompt(ctx, (focused ? '▶ ' : '  ') + options[i], VIEW_W / 2, y + 2, focused ? 24 : 22, {
+        color: focused ? '#ff6ec7' : '#d8cdb4',
+      });
+    }
+
+    // Dynamic button hints
+    const hintY = startY + options.length * gap + 20;
+    drawPrompt(ctx, `▲▼ Navigate   ✕/ENTER Confirm`, VIEW_W / 2, hintY, 14, { color: '#888' });
     ctx.restore();
   },
 
   /**
-   * Handle key input. `retry`/`quit` are injected by update.js so the level
-   * reset logic (which lives in systems/update.js) stays in one place.
-   * @param {string} code KeyboardEvent.code
+   * Handle input. Uses action-based navigation.
+   * @param {string} code virtual key code (from screenOnAction mapping)
    * @param {{ retry?: () => void, quit?: () => void }} [actions]
    */
   onKey(code, actions = {}) {
-    if (code === 'Escape' || code === 'Enter' || code === 'Space' || code === 'KeyP') {
-      if (tryTransition(S.PLAY)) console.log('[screens] PAUSE → PLAY (resume)');
-      return true;
-    }
-    if (code === 'KeyR') {
-      if (actions.retry) actions.retry(); else tryTransition(S.HOME);
-      return true;
-    }
-    if (code === 'KeyQ') {
-      if (actions.quit) actions.quit(); else tryTransition(S.HOME);
-      return true;
+    switch (code) {
+      case 'ArrowUp':
+        this.focus = (this.focus + 2) % 3;
+        return true;
+      case 'ArrowDown':
+        this.focus = (this.focus + 1) % 3;
+        return true;
+      case 'Enter':
+      case 'Space':
+      case 'Escape':
+        this.execute(actions);
+        return true;
+      case 'KeyR':
+        if (actions.retry) actions.retry(); else tryTransition(S.HOME);
+        return true;
+      case 'KeyQ':
+        if (actions.quit) actions.quit(); else tryTransition(S.HOME);
+        return true;
     }
     return false;
   },
+
+  execute(actions) {
+    switch (this.focus) {
+      case 0: // Resume
+        if (tryTransition(S.PLAY)) console.log('[screens] PAUSE → PLAY (resume)');
+        break;
+      case 1: // Retry
+        if (actions.retry) actions.retry(); else tryTransition(S.HOME);
+        break;
+      case 2: // Quit
+        if (actions.quit) actions.quit(); else tryTransition(S.HOME);
+        break;
+    }
+  },
+
+  reset() { this.focus = 0; },
 };
 
 // =============================================================================
@@ -871,6 +915,28 @@ export function drawScreen(ctx, hero) {
     return true;
   }
   return false;
+}
+
+/**
+ * Action-based input for screens. SINGLE entry point for all input sources.
+ * Screens receive abstract actions, not raw key codes or button indices.
+ *
+ * @param {string} action 'confirm' | 'back' | 'left' | 'right' | 'up'
+ * @param {object} [hero] current hero (for OVER/WIN screens)
+ * @param {object} [actions] action bag (retry, cont, playAgain, quit)
+ */
+export function screenOnAction(action, hero, actions) {
+  const KEY_MAP = {
+    confirm: 'Enter',
+    back: 'Escape',
+    left: 'ArrowLeft',
+    right: 'ArrowRight',
+    up: 'ArrowUp',
+    down: 'ArrowDown',
+  };
+  const code = KEY_MAP[action];
+  if (!code) return false;
+  return screenOnKey(code, hero, actions, false);
 }
 
 /**

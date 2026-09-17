@@ -7,6 +7,7 @@
 // scrolls, and placeholder enemies/projectiles/pickups exercise every §16
 // debug-overlay color.
 
+import { input } from '../input.js';
 import { VIEW_W, VIEW_H } from '../view.js';
 import { Entity } from '../entity.js';
 import { LAYER } from '../consts.js';
@@ -19,7 +20,7 @@ import { projectilePool, specialPool, aimFromInput, dirAngle } from '../projecti
 import { damage } from '../damage.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../hitbox.js';
 import { S, getState, STATE_NAMES, tryTransition, onTransition } from '../state.js';
-import { screenOnKey, screenOnKeyUp, screenReset } from '../screens.js';
+import { screenOnKey, screenOnAction, screenOnKeyUp, screenReset } from '../screens.js';
 import { Jester } from '../jester.js';
 import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
 import { Violetta, VIOLETTA_DEF } from '../violetta.js';
@@ -402,6 +403,86 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => { keys.delete(e.code); screenOnKeyUp(e.code); });
 window.addEventListener('blur', () => { keys.clear(); screenOnKeyUp('ArrowLeft'); screenOnKeyUp('ArrowRight'); });
 
+// --- Gamepad → Screen bridge -------------------------------------------------
+// Polls gamepad every frame for screen navigation. Uses screenOnAction()
+// so screens receive abstract actions, not fake key codes.
+//
+// Per-interface mapping:
+//   keyboard: Escape = pause + back (context-dependent)
+//             Enter  = confirm
+//   gamepad:  Options/Start (btn 9) = pause + confirm
+//             ○ / B (btn 1)         = back
+//             ✕ / A (btn 0)         = confirm
+let _gpPrevPause = false;
+let _gpPrevConfirm = false;
+let _gpPrevBack = false;
+let _gpPrevLeft = false;
+let _gpPrevRight = false;
+let _gpPrevUp = false;
+let _gpPrevDown = false;
+
+function gamepadScreenBridge() {
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  const pad = pads && pads[0] && pads[0].connected ? pads[0] : null;
+  if (!pad) return;
+
+  const btn = (i) => !!(pad.buttons[i] && pad.buttons[i].pressed);
+  const s = getState();
+
+  // Pause: Options/Start (btn 9) — works in PLAY and PAUSE
+  const pauseBtn = btn(9);
+  if (pauseBtn && !_gpPrevPause) {
+    handleStateKeys({ code: 'Escape', repeat: false });
+  }
+  _gpPrevPause = pauseBtn;
+
+  // Only handle confirm/back/navigate when NOT in PLAY
+  if (s === S.PLAY) return;
+
+  // Confirm: ✕/A (btn 0) OR Options/Start (btn 9)
+  const confirm = btn(0) || btn(9);
+  if (confirm && !_gpPrevConfirm) {
+    screenOnAction('confirm');
+  }
+  _gpPrevConfirm = confirm;
+
+  // Back: ○/B (btn 1)
+  const back = btn(1);
+  if (back && !_gpPrevBack) {
+    screenOnAction('back');
+  }
+  _gpPrevBack = back;
+
+  // Navigate left/right: D-pad buttons OR left stick (not both)
+  const dpadL = btn(14);
+  const dpadR = btn(15);
+  const stickL = pad.axes[0] < -0.5;
+  const stickR = pad.axes[0] > 0.5;
+  const left = dpadL || stickL;
+  const right = dpadR || stickR;
+  if (left && !_gpPrevLeft) screenOnAction('left');
+  if (!left && _gpPrevLeft) screenOnKeyUp('ArrowLeft'); // release held visual
+  if (right && !_gpPrevRight) screenOnAction('right');
+  if (!right && _gpPrevRight) screenOnKeyUp('ArrowRight'); // release held visual
+  _gpPrevLeft = left;
+  _gpPrevRight = right;
+
+  // Up/Down: D-pad buttons OR left stick Y
+  const dpadU = btn(12);
+  const dpadD = btn(13);
+  const stickU = pad.axes[1] < -0.5;
+  const stickD = pad.axes[1] > 0.5;
+  const up = dpadU || stickU;
+  const down = dpadD || stickD;
+  if (up && !_gpPrevUp) screenOnAction('up');
+  if (down && !_gpPrevDown) screenOnAction('down');
+  _gpPrevUp = up;
+  _gpPrevDown = down;
+}
+
+// Call every frame from the main loop (add to frame function in main.js)
+export { gamepadScreenBridge };
+
 // --- Debug harness mouse input: click to select / force an enemy's state -----
 // Converts a screen-space click into logical 960x540 coords (inverse of the
 // main.js transform), then selects or cycles the entity under it. Only active
@@ -423,18 +504,23 @@ window.addEventListener('mousedown', (e) => {
 });
 window.addEventListener('contextmenu', (e) => { if (Debug.enabled) e.preventDefault(); });
 
-/** Build the per-frame intent object from the live key set. */
+/** Build the per-frame intent object from the normalized input state. */
 function readInput() {
+  input.poll(keys);
+  const s = input.state;
   return {
-    left:   keys.has('ArrowLeft') || keys.has('KeyA'),
-    right:  keys.has('ArrowRight') || keys.has('KeyD'),
-    up:     keys.has('ArrowUp') || keys.has('KeyW'),
-    down:   keys.has('ArrowDown') || keys.has('KeyS'),
-    jump:   keys.has('ArrowUp') || keys.has('KeyW') || keys.has('Space'),
-    shoot:  keys.has('KeyG'),
-    special: keys.has('KeyH'),
-    melee:  keys.has('KeyJ'),
-    super:  keys.has('KeyB'),
+    left:   s.moveX < -0.2,
+    right:  s.moveX > 0.2,
+    up:     s.moveY < -0.2,
+    down:   s.crouch,
+    jump:   s.jump,
+    shoot:  s.shooting,
+    special: s.switchWeapon,
+    melee:  s.melee,
+    super:  s.supermove,
+    // Aim direction (for projectile targeting)
+    aimX:   s.aimX,
+    aimY:   s.aimY,
   };
 }
 
