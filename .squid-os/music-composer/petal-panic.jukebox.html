@@ -239,6 +239,14 @@ class MusicSequencer {
       this.barCount = 0;
       this.phraseCount = 0;
       this.nextNoteTime = this.ctx.currentTime + 0.04;
+    } else {
+      // Not playing: a track switch invalidates any saved pause snapshot so a
+      // later resume() honors the newly-selected track (this.current) instead
+      // of snapping back to the track that was paused.
+      this._pausedTrack = null;
+      this._pausedStep = 0;
+      this._pausedBar = 0;
+      this._pausedPhrase = 0;
     }
   }
 
@@ -896,6 +904,30 @@ class SongController {
     // loop honors it instead of clobbering the dot with live engine position.
     this._manualPos = null;
     this._loadPrefs();
+    // -- always-on action log --
+    this._actionLog = [];
+  }
+
+  /** Log a user action with full state snapshot. Always on. */
+  _logAction(action) {
+    const t = (performance.now() / 1000).toFixed(3);
+    const pos = this.position().toFixed(4);
+    const eng = this.player ? ('bar=' + this.player.seq.barCount + '/step=' + this.player.seq.stepIndex) : 'noEngine';
+    const line = t + ' | ' + action + ' | track=' + (this.current+1) + ' "' + this.tracks[this.current].name + '" | playing=' + this.playing + ' | pos=' + pos + ' | manualPos=' + this._manualPos + ' | ' + eng;
+    this._actionLog.push(line);
+    if (this._actionLog.length > 2000) this._actionLog.splice(0, 500);
+    console.log('[jukebox] ' + line);
+  }
+
+  exportLog() {
+    const NL = String.fromCharCode(10);
+    const text = this._actionLog.join(NL);
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jukebox-actions-' + Date.now() + '.log';
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   _loadPrefs() {
@@ -920,6 +952,7 @@ class SongController {
   }
 
   _onSongEnd() {
+    this._logAction('SONG_END');
     if (this.shf) {
       let i; do { i = Math.floor(Math.random() * this.tracks.length); } while (i === this.current && this.tracks.length > 1);
       this.play(i);
@@ -940,6 +973,7 @@ class SongController {
 
   play(i) {
     this.init();
+    this._logAction('PLAY #' + (i+1));
     if (this.player.ctx.state === 'suspended') this.player.ctx.resume();
     const wasCurrent = (i === this.current);
     this.current = i;
@@ -971,6 +1005,7 @@ class SongController {
 
   pause() {
     if (!this.player || !this.playing) return;
+    this._logAction('PAUSE');
     this.player.pause();
     this.playing = false;
     if (this.onPlayStateChange) this.onPlayStateChange(false);
@@ -978,6 +1013,7 @@ class SongController {
 
   resume() {
     if (!this.player || this.playing) return;
+    this._logAction('RESUME');
     // If a manual dot position was set while paused, seek there first, then clear it
     if (this._manualPos !== null && this._manualPos > 0) {
       const frac = this._manualPos;
@@ -1001,6 +1037,7 @@ class SongController {
   }
 
   next() {
+    this._logAction('NEXT');
     const n = this.tracks.length;
     if (this.playing) {
       // Playing → jump to and play the next song, dot at 0.
@@ -1035,6 +1072,7 @@ class SongController {
   /** Media-player prev: if within first 1s of current song → previous song,
    *  otherwise restart current song at 0. Preserves play/pause state. */
   prevSmart() {
+    this._logAction('PREV pos=' + this.position().toFixed(3));
     const nearStart = this.position() < (1.0 / Math.max(1, this.duration()));
     if (nearStart) {
       // Previous song at 0, keep state
@@ -1055,7 +1093,11 @@ class SongController {
   select(i) {
     this.init();
     this.current = i;
+    // Tell the ENGINE to load this track (without starting audio), so a later
+    // resume() plays the correct song instead of the stale one.
+    this.player.setTrack(i);
     this._manualPos = 0;   // dot explicitly at zero
+    this._logAction('SELECT #' + (i+1));
     if (this.onTrackChange) this.onTrackChange(i);
   }
 
@@ -1063,6 +1105,7 @@ class SongController {
    *  paused/stopped it records a manual position so play() can start from it. */
   seek(frac) {
     frac = Math.max(0, Math.min(1, frac));
+    this._logAction('SEEK ' + frac.toFixed(3) + (this.playing ? '' : ' (paused->manual)'));
     if (!this.playing) {
       this._manualPos = frac;
       return;
@@ -1139,18 +1182,9 @@ class SongController {
     URL.revokeObjectURL(a.href);
   }
   toggleLog() {
-    this.init();
-    const ind = document.getElementById('log-ind');
-    if (this.player.seq._logEnabled) {
-      this.disableLog();
-      this.downloadLog();
-      if (ind) ind.classList.remove('on');
-      console.log('[jukebox] log saved');
-    } else {
-      this.enableLog();
-      if (ind) ind.classList.add('on');
-      console.log('[jukebox] logging enabled — press L again to save+stop');
-    }
+    // Always-on action log: L just exports the full log file.
+    this.exportLog();
+    console.log('[jukebox] action log exported');
   }
 }
 
@@ -1215,12 +1249,12 @@ function renderList() {
 function onPrevClick() {
   sc.prevSmart();
 }
-tbPrev.addEventListener('click', onPrevClick);
-tbPlay.addEventListener('click', () => sc.togglePause());
-tbNext.addEventListener('click', () => sc.next());
-mtSeq.addEventListener('click', () => { sc.setMode('seq'); syncModes(); });
-mtRep.addEventListener('click', () => { sc.setMode('rep'); syncModes(); });
-mtShf.addEventListener('click', () => { sc.setMode('shf'); syncModes(); });
+tbPrev.addEventListener('click', e => { onPrevClick(); e.currentTarget.blur(); });
+tbPlay.addEventListener('click', e => { sc.togglePause(); e.currentTarget.blur(); });
+tbNext.addEventListener('click', e => { sc.next(); e.currentTarget.blur(); });
+mtSeq.addEventListener('click', e => { sc.setMode('seq'); syncModes(); e.currentTarget.blur(); });
+mtRep.addEventListener('click', e => { sc.setMode('rep'); syncModes(); e.currentTarget.blur(); });
+mtShf.addEventListener('click', e => { sc.setMode('shf'); syncModes(); e.currentTarget.blur(); });
 
 function syncModes() {
   mtSeq.classList.toggle('on', sc.seq);
@@ -1230,6 +1264,15 @@ function syncModes() {
 
 // Keyboard (mirrors the transport buttons exactly)
 window.addEventListener('keydown', e => {
+  // If a transport button still has focus, let the browser's native Space/Enter
+  // activation handle it — otherwise we'd double-toggle. (blur() on click above
+  // normally prevents this; this is a safety net.)
+  const btnFocused = document.activeElement && document.activeElement.tagName === 'BUTTON';
+  if (e.code === 'Space' || e.code === 'Enter') {
+    if (btnFocused) return;   // native button activation will fire the same action
+    if (e.code === 'Space') { e.preventDefault(); sc.togglePause(); }
+    return;
+  }
   if (e.code === 'KeyP') { e.preventDefault(); sc.next(); }
   else if (e.code === 'ArrowDown' || e.code === 'ArrowRight') { e.preventDefault(); sc.next(); }
   else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') { e.preventDefault(); onPrevClick(); }
@@ -1237,7 +1280,6 @@ window.addEventListener('keydown', e => {
   else if (e.code === 'KeyS') { e.preventDefault(); sc.setMode('seq'); syncModes(); }
   else if (e.code === 'KeyR') { e.preventDefault(); sc.setMode('rep'); syncModes(); }
   else if (e.code === 'KeyH') { e.preventDefault(); sc.setMode('shf'); syncModes(); }
-  else if (e.code === 'Space') { e.preventDefault(); sc.togglePause(); }
   else if (e.code === 'KeyL') { e.preventDefault(); sc.toggleLog(); }
 });
 

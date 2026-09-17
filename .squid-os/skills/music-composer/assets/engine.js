@@ -165,6 +165,14 @@ class MusicSequencer {
       this.barCount = 0;
       this.phraseCount = 0;
       this.nextNoteTime = this.ctx.currentTime + 0.04;
+    } else {
+      // Not playing: a track switch invalidates any saved pause snapshot so a
+      // later resume() honors the newly-selected track (this.current) instead
+      // of snapping back to the track that was paused.
+      this._pausedTrack = null;
+      this._pausedStep = 0;
+      this._pausedBar = 0;
+      this._pausedPhrase = 0;
     }
   }
 
