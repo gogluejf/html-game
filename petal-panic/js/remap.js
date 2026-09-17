@@ -119,89 +119,92 @@ export const Remap = {
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
     // Title
-    drawMarqueeTitle(ctx, 'CONTROLS', VIEW_W / 2, 40, 36, { color: CREAM });
+    drawMarqueeTitle(ctx, 'CONTROLS', VIEW_W / 2, 34, 32, { color: CREAM });
 
-    // Tabs
-    const tabY = 72;
-    const tabs = ['KEYBOARD', 'GAMEPAD'];
-    const tabXs = [292, 592]; // centered above each column's chips
-    for (let i = 0; i < tabs.length; i++) {
-      const tx = tabXs[i];
-      const active = (i === 0 && this.tab === 'keyboard') || (i === 1 && this.tab === 'gamepad');
+    // Layout constants
+    const labelX = 70;           // action labels
+    const kbX = 250;             // keyboard chips start
+    const gpX = 580;             // gamepad chips start
+    const chipW = 76;
+    const chipGap = 8;
+    const rowH = 28;
+    const listTop = 95;          // first row Y
+    const headerY = 70;          // column headers
+
+    // Column headers (act as tabs, aligned above their chips)
+    const headers = [
+      { label: 'KEYBOARD', x: kbX + 76, active: this.tab === 'keyboard' },
+      { label: 'GAMEPAD',  x: gpX + 76, active: this.tab === 'gamepad' },
+    ];
+    for (const h of headers) {
       ctx.save();
-      if (active) {
+      if (h.active) {
         ctx.fillStyle = 'rgba(255,110,199,0.15)';
-        roundRect(ctx, tx - 45, tabY - 14, 90, 28, 6);
+        roundRect(ctx, h.x - 52, headerY - 13, 104, 26, 6);
         ctx.fill();
         ctx.strokeStyle = PINK;
-        ctx.lineWidth = this.focus === -1 ? 3 : 1;
-        roundRect(ctx, tx - 45, tabY - 14, 90, 28, 6);
+        ctx.lineWidth = this.focus === -1 ? 3 : 2;
+        roundRect(ctx, h.x - 52, headerY - 13, 104, 26, 6);
         ctx.stroke();
       }
-      drawPrompt(ctx, tabs[i], tx, tabY + 2, 16, { color: active ? PINK : '#888' });
+      drawPrompt(ctx, h.label, h.x, headerY + 2, 15, { color: h.active ? PINK : '#777' });
       ctx.restore();
     }
 
-    let listStartY = 100;
-
-    // Action rows
-    const rowH = 28;
-    const listX = 100;
-    const listW = VIEW_W - 200;
-
+    // Action rows — both columns always drawn
     for (let i = 0; i < ACTIONS.length; i++) {
-      const y = listStartY + i * rowH;
+      const y = listTop + i * rowH;
       const focused = i === this.focus;
       const action = ACTIONS[i];
 
-      // Row background
-      ctx.save();
+      // Full-width row highlight
       if (focused) {
-        ctx.fillStyle = 'rgba(255,110,199,0.1)';
-        roundRect(ctx, listX, y - 12, listW, rowH - 4, 4);
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,110,199,0.07)';
+        roundRect(ctx, labelX - 10, y - 11, VIEW_W - 2*(labelX - 10), rowH - 2, 4);
         ctx.fill();
         ctx.strokeStyle = PINK;
         ctx.lineWidth = 1.5;
-        roundRect(ctx, listX, y - 12, listW, rowH - 4, 4);
+        roundRect(ctx, labelX - 10, y - 11, VIEW_W - 2*(labelX - 10), rowH - 2, 4);
         ctx.stroke();
+        ctx.restore();
       }
-      ctx.restore();
 
-      // Action label
-      drawPrompt(ctx, action.label, listX + 10, y + 2, 14, {
+      // Action label (left side)
+      drawPrompt(ctx, action.label, labelX, y + 2, 14, {
         align: 'left', color: focused ? CREAM : '#aaa',
       });
 
-      // Fixed slots, no extra Add chip on any row.
-      const labels = Array.from({ length: bindingSlots(this.tab, action.id) }, (_, slot) =>
-        this.formatBinding(this.mapping[this.tab][action.id][slot]));
-      const widths = labels.map(label => Math.min(360, Math.max(52, label.length * 9 + 20)));
-      const startX = listX + 200, available = listW - 220;
-      const selected = focused ? this.chip : 0;
-      const offsets = widths.map((_, j) => widths.slice(0, j).reduce((n, w) => n + w + 8, 0));
-      const scroll = Math.max(0, offsets[selected] + widths[selected] - available);
-      ctx.save();
-      ctx.beginPath(); ctx.rect(startX, y - 12, available, 26); ctx.clip();
-      for (let j = 0; j < labels.length; j++) {
-        const chipX = startX + offsets[j] - scroll;
-        const active = focused && j === this.chip;
-        ctx.fillStyle = active ? (this.capturing ? 'rgba(255,110,199,0.5)' : 'rgba(255,110,199,0.15)') : '#1a1a2e';
-        roundRect(ctx, chipX, y - 9, widths[j], 22, 4); ctx.fill();
-        ctx.strokeStyle = active ? PINK : focused ? GOLD : '#555';
-        ctx.lineWidth = active && this.capturing ? 3 : 1; ctx.stroke();
-        // Symbol-friendly system font keeps PS shapes and stick arrows legible.
-        drawPrompt(ctx, labels[j], chipX + widths[j] / 2, y + 2, 15,
-          { color: active ? CREAM : '#bbb', font: 'sans-serif' });
-      }
-      ctx.restore();
-      if (offsets.at(-1) + widths.at(-1) > available) {
-        drawPrompt(ctx, '↔', listX + listW - 8, y + 2, 15, { color: GOLD });
+      // Draw chips for both sources simultaneously
+      for (const src of ['keyboard', 'gamepad']) {
+        const baseX = src === 'keyboard' ? kbX : gpX;
+        const isActive = this.tab === src;
+        const slots = bindingSlots(src, action.id);
+        const dimmed = !isActive;
+
+        for (let j = 0; j < slots; j++) {
+          const cx = baseX + j * (chipW + chipGap);
+          const label = this.formatBinding(this.mapping[src][action.id][j]);
+          const isFocus = focused && isActive && j === this.chip;
+          const isCap = isFocus && this.capturing;
+
+          ctx.save();
+          ctx.globalAlpha = dimmed ? 0.4 : 1;
+          ctx.fillStyle = isCap ? 'rgba(255,110,199,0.5)'
+            : isFocus ? 'rgba(255,110,199,0.15)' : '#1a1a2e';
+          roundRect(ctx, cx, y - 9, chipW, 22, 4); ctx.fill();
+          ctx.strokeStyle = isCap ? PINK : isFocus ? GOLD : '#555';
+          ctx.lineWidth = isCap ? 3 : 1; ctx.stroke();
+          drawPrompt(ctx, label, cx + chipW/2, y + 2, 14,
+            { color: isFocus ? CREAM : '#bbb', font: 'sans-serif' });
+          ctx.restore();
+        }
       }
     }
 
     // Bottom bar — three styled buttons
     const botY = 455;
-    const btnW = 160, btnH = 26, gap = 40;
+    const btnW = 170, btnH = 28, gap = 30;
     const btns = [
       { label: 'RESET TO DEFAULTS', x: VIEW_W/2 - btnW - gap/2, focus: this.focus === ACTIONS.length },
       { label: `LAYOUT: ${this.gamepadLayout.toUpperCase()}`, x: VIEW_W/2, focus: this.focus === ACTIONS.length + 2 },
@@ -217,14 +220,14 @@ export const Remap = {
       ctx.restore();
     }
 
-    // Two readable hint lines, separated from actions and footer controls.
+    // Hint
     const hint = this.capturing
-      ? 'Press a binding — automatically captures the next row'
-      : '↑ ↓ Row    ← → Chip    Confirm: start capture sequence';
-    drawPrompt(ctx, hint, VIEW_W / 2, 482, 16, { color: this.capturing ? PINK : CREAM });
-    drawPrompt(ctx, this.capturing ? 'Esc / East button: stop capture • Held inputs must be released'
-      : '↑ ↓ Navigate    ← → Chip / Tab    Confirm: edit    Esc / ○: back',
-      VIEW_W / 2, 511, 14, { color: '#aaa' });
+      ? `Press a ${this.tab === 'keyboard' ? 'key' : 'button'} — auto-advances`
+      : '↑ ↓ Row    ← → Chip    Confirm: edit    Esc/○: back';
+    drawPrompt(ctx, hint, VIEW_W / 2, 490, 15, { color: this.capturing ? PINK : CREAM });
+    drawPrompt(ctx, this.capturing ? 'Esc (keyboard) / ○ (gamepad): stop capture'
+      : 'Left/right on bottom bar: switch buttons',
+      VIEW_W / 2, 512, 13, { color: '#999' });
   },
 
   formatBinding(value) {
