@@ -442,8 +442,9 @@ PLAYER_TMPL = """<!DOCTYPE html>
   /* Side info panel (now-playing details) */
   #wrap{flex-direction:row;align-items:flex-start;justify-content:center;gap:32px;}
   #main-col{display:flex;flex-direction:column;align-items:center;width:100%;max-width:728px;}
-  #side-panel{width:340px;flex-shrink:0;background:var(--panel);border:2px solid var(--border);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:14px;position:sticky;top:150px;box-shadow:0 8px 40px rgba(0,0,0,.5);}
+  #side-panel{width:340px;flex-shrink:0;display:flex;flex-direction:column;gap:18px;position:sticky;top:150px;}
   #side-panel.hidden{display:none;}
+  #sp-card{background:var(--panel);border:2px solid var(--border);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:0 8px 40px rgba(0,0,0,.5);}
   #sp-art{width:100%;aspect-ratio:1/1;border-radius:10px;background:radial-gradient(circle at 50% 40%,#1a2740,#0a0f1c);display:flex;align-items:center;justify-content:center;font-size:64px;color:var(--cyan);text-shadow:0 0 24px var(--cyan);border:2px solid var(--border);}
   #sp-title{font-size:24px;font-weight:bold;color:#fff;line-height:1.2;text-shadow:0 0 12px rgba(62,240,255,.3);}
   #sp-badges{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
@@ -460,7 +461,7 @@ PLAYER_TMPL = """<!DOCTYPE html>
   #sp-vibe-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-top:4px;}
   #sp-vibe{font-size:13px;color:#a0b4d8;line-height:1.5;font-style:italic;}
   /* Side-panel transport (under the card) */
-  #sp-transport{display:flex;flex-direction:column;gap:14px;margin-top:6px;padding-top:16px;border-top:2px solid var(--border);}
+  #sp-transport{display:flex;flex-direction:column;gap:14px;}
   #sp-tl-head{display:flex;justify-content:space-between;font-size:12px;color:#a0b4d8;font-variant-numeric:tabular-nums;font-weight:bold;}
   #sp-timeline{position:relative;height:6px;background:var(--panel);border:1px solid var(--border);border-radius:999px;cursor:pointer;overflow:visible;}
   #sp-tl-progress{position:absolute;top:0;left:0;height:100%;background:rgba(62,240,255,.35);border-radius:999px;pointer-events:none;}
@@ -489,27 +490,29 @@ PLAYER_TMPL = """<!DOCTYPE html>
     <div id="list"></div>
   </div>
   <aside id="side-panel" class="hidden">
-    <div id="sp-art">&#9834;</div>
-    <div id="sp-title">&ndash;</div>
-    <div id="sp-badges">
-      <span id="sp-genre">&ndash;</span>
-      <span id="sp-bpm">&ndash;</span>
-      <span id="sp-fav" title="Favorite"></span>
+    <div id="sp-card">
+      <div id="sp-art">&#9834;</div>
+      <div id="sp-title">&ndash;</div>
+      <div id="sp-badges">
+        <span id="sp-genre">&ndash;</span>
+        <span id="sp-bpm">&ndash;</span>
+        <span id="sp-fav" title="Favorite"></span>
+      </div>
+      <div id="sp-meta">
+        <div><span class="k">Created</span><span class="v" id="sp-created">&ndash;</span></div>
+        <div><span class="k">Revision</span><span class="v" id="sp-revision">&ndash;</span></div>
+      </div>
+      <div id="sp-vibe-label">Vibe</div>
+      <div id="sp-vibe">&ndash;</div>
     </div>
-    <div id="sp-meta">
-      <div><span class="k">Created</span><span class="v" id="sp-created">&ndash;</span></div>
-      <div><span class="k">Revision</span><span class="v" id="sp-revision">&ndash;</span></div>
-    </div>
-    <div id="sp-vibe-label">Vibe</div>
-    <div id="sp-vibe">&ndash;</div>
     <div id="sp-transport">
-      <div id="sp-tl-head"><span id="sp-time-cur">0:00</span><span id="sp-time-dur">0:00</span></div>
-      <div id="sp-timeline"><div id="sp-tl-progress"></div><div id="sp-tl-dot"></div></div>
       <div id="sp-btns">
         <button class="tbtn" id="sp-prev" title="Restart / previous"><svg viewBox="0 0 24 24"><polygon points="15 4 5 12 15 20 15 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
         <button class="tbtn play-btn" id="sp-play" title="Play/Pause"><svg viewBox="0 0 24 24" id="sp-play-icon"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></button>
         <button class="tbtn" id="sp-next" title="Next song"><svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="5" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
       </div>
+      <div id="sp-tl-head"><span id="sp-time-cur">0:00</span><span id="sp-time-dur">0:00</span></div>
+      <div id="sp-timeline"><div id="sp-tl-progress"></div><div id="sp-tl-dot"></div></div>
     </div>
   </aside>
 </div>
