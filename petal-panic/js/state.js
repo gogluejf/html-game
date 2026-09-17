@@ -10,6 +10,7 @@ export const S = {
   PAUSE: 3,
   OVER: 4,    // game over
   WIN: 5,
+  REMAP: 6,   // controls/remap screen
 };
 
 // Human-readable names for logging / overlays / future screen dispatch.
@@ -20,6 +21,7 @@ export const STATE_NAMES = {
   [S.PAUSE]:  'PAUSE',
   [S.OVER]:   'OVER',
   [S.WIN]:    'WIN',
+  [S.REMAP]:  'REMAP',
 };
 
 let cur = S.HOME;
@@ -32,12 +34,13 @@ export function setState(s) {
 
 // Transition map: which states can go where (design §1 graph).
 const TRANSITIONS = {
-  [S.HOME]:   [S.SELECT, S.PLAY],       // PLAY = debug boot shortcut
+  [S.HOME]:   [S.SELECT, S.PLAY, S.REMAP],
   [S.SELECT]: [S.PLAY, S.HOME],
   [S.PLAY]:   [S.PAUSE, S.OVER, S.WIN],
-  [S.PAUSE]:  [S.PLAY, S.HOME],       // resume or quit
+  [S.PAUSE]:  [S.PLAY, S.HOME, S.REMAP],
   [S.OVER]:   [S.PLAY, S.HOME],       // retry or quit
   [S.WIN]:    [S.SELECT, S.HOME, S.PLAY], // play again or quit; PLAY = debug shortcut
+  [S.REMAP]:  [S.PAUSE, S.HOME],      // return to wherever we came from
 };
 
 export function canTransition(from, to) {

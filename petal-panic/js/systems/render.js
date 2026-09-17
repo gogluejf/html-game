@@ -18,7 +18,7 @@ import { LEVELS } from '../level.js';
 export function render(ctx) {
   // Milestone 8 — Home & Select are full-screen; skip world rendering entirely.
   const state = getState();
-  if (state === S.HOME || state === S.SELECT) {
+  if (state === S.HOME || state === S.SELECT || state === S.REMAP) {
     screenUpdate(1 / 60); // advance parallax at fixed step
     drawScreen(ctx);
     return;

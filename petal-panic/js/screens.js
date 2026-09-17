@@ -3,12 +3,13 @@
 // main.js at startup; draw methods handle missing images gracefully with
 // placeholder boxes.
 
-import { S, getState, tryTransition } from './state.js';
+import { S, getState, tryTransition, canTransition } from './state.js';
 import { HEROES } from './heroDefs.js';
 import { VIEW_W, VIEW_H } from './view.js';
 import { calculateScore } from './stats.js';
+import { Remap } from './remap.js';
 import {
-  FONT_TITLE, FONT_UI, CREAM, GOLD, RED, PINK,
+  FONT_TITLE, FONT_UI, CREAM, GOLD, RED, PINK, roundRect,
   drawMarqueeTitle, drawPrompt, drawMenace,
 } from './fonts.js';
 
@@ -74,17 +75,6 @@ function drawPlaceholder(ctx, x, y, w, h, label) {
 }
 
 // Rounded-rect path (works on older canvas without native roundRect).
-function roundRect(ctx, x, y, w, h, r) {
-  const rr = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + rr, y);
-  ctx.arcTo(x + w, y, x + w, y + h, rr);
-  ctx.arcTo(x + w, y + h, x, y + h, rr);
-  ctx.arcTo(x, y + h, x, y, rr);
-  ctx.arcTo(x, y, x + w, y, rr);
-  ctx.closePath();
-}
-
 // =============================================================================
 // HOME SCREEN
 // =============================================================================
@@ -661,7 +651,7 @@ export const Pause = {
 
     drawMarqueeTitle(ctx, 'PAUSED', VIEW_W / 2, VIEW_H / 2 - 80, 56, { color: CREAM });
 
-    const options = ['Resume', 'Retry Level', 'Quit to Home'];
+    const options = ['Resume', 'Retry Level', 'Controls', 'Quit to Home'];
     const startY = VIEW_H / 2 - 20;
     const gap = 40;
 
@@ -696,16 +686,20 @@ export const Pause = {
    * @param {{ retry?: () => void, quit?: () => void }} [actions]
    */
   onKey(code, actions = {}) {
+    // Back (○/Escape) ALWAYS exits the menu, regardless of focus.
+    if (code === 'Escape') {
+      if (tryTransition(S.PLAY)) console.log('[screens] PAUSE → PLAY (back)');
+      return true;
+    }
     switch (code) {
       case 'ArrowUp':
-        this.focus = (this.focus + 2) % 3;
+        this.focus = (this.focus + 3) % 4;
         return true;
       case 'ArrowDown':
-        this.focus = (this.focus + 1) % 3;
+        this.focus = (this.focus + 1) % 4;
         return true;
       case 'Enter':
       case 'Space':
-      case 'Escape':
         this.execute(actions);
         return true;
       case 'KeyR':
@@ -726,7 +720,10 @@ export const Pause = {
       case 1: // Retry
         if (actions.retry) actions.retry(); else tryTransition(S.HOME);
         break;
-      case 2: // Quit
+      case 2: // Controls
+        if (tryTransition(S.REMAP)) console.log('[screens] PAUSE → REMAP');
+        break;
+      case 3: // Quit
         if (actions.quit) actions.quit(); else tryTransition(S.HOME);
         break;
     }
@@ -799,6 +796,11 @@ export const GameOver = {
    * @param {{ retry?: () => void, cont?: () => void, quit?: () => void }} [actions]
    */
   onKey(code, hero, actions = {}) {
+    // Back (○/Escape) ALWAYS exits to home.
+    if (code === 'Escape') {
+      if (actions.quit) actions.quit(); else tryTransition(S.HOME);
+      return true;
+    }
     if (code === 'KeyR') {
       if (actions.retry) actions.retry();
       return true;
@@ -876,6 +878,11 @@ export const Win = {
    * @param {{ playAgain?: () => void, quit?: () => void }} [actions]
    */
   onKey(code, actions = {}) {
+    // Back (○/Escape) ALWAYS exits to home.
+    if (code === 'Escape') {
+      if (actions.quit) actions.quit(); else tryTransition(S.HOME);
+      return true;
+    }
     if (code === 'Enter' || code === 'Space') {
       if (actions.playAgain) actions.playAgain();
       else if (tryTransition(S.SELECT)) console.log('[screens] WIN → SELECT (play again)');
@@ -908,6 +915,10 @@ export function drawScreen(ctx, hero) {
   }
   if (s === S.SELECT) {
     Select.draw(ctx);
+    return true;
+  }
+  if (s === S.REMAP) {
+    Remap.draw(ctx);
     return true;
   }
   if (s === S.PAUSE) {
@@ -954,12 +965,25 @@ export function screenOnAction(action, hero, actions) {
  */
 export function screenOnKey(code, hero, actions, repeat = false) {
   const s = getState();
+  // Pause toggle: Back OR Confirm in PLAY → PAUSE (both ○ and ✕/Options pause)
+  if (s === S.PLAY && (code === 'Escape' || code === 'Enter')) {
+    if (tryTransition(S.PAUSE)) console.log('[state] PLAY → PAUSE');
+    return true;
+  }
   if (s === S.HOME) {
     Home.onKey(code);
     return true;
   }
   if (s === S.SELECT) {
     Select.onKey(code, repeat);
+    return true;
+  }
+  if (s === S.REMAP) {
+    const result = Remap.onKey(code);
+    if (result === 'exit') {
+      // Always go back to PAUSE (that's where we came from)
+      tryTransition(S.PAUSE);
+    }
     return true;
   }
   if (s === S.PAUSE) {
@@ -982,10 +1006,12 @@ export function screenOnKeyUp(code) {
 /** Reset per-screen transient state on entry (held keys, focus, flashes). */
 export function screenReset(s) {
   if (s === S.SELECT) Select.reset();
+  if (s === S.REMAP) Remap.resetState();
 }
 
 /** Update screen-specific per-frame logic (parallax, etc.). */
 export function screenUpdate(dt) {
   const s = getState();
   if (s === S.HOME) Home.update(dt);
+  if (s === S.REMAP) Remap.update(dt);
 }

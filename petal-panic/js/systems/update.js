@@ -21,6 +21,7 @@ import { damage } from '../damage.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../hitbox.js';
 import { S, getState, STATE_NAMES, tryTransition, onTransition } from '../state.js';
 import { screenOnKey, screenOnAction, screenOnKeyUp, screenReset } from '../screens.js';
+import { Remap } from '../remap.js';
 import { Jester } from '../jester.js';
 import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
 import { Violetta, VIOLETTA_DEF } from '../violetta.js';
@@ -242,6 +243,9 @@ const keys = new Set();
 // (retry/continue/quit) so that logic stays here. Esc/P toggles pause during
 // PLAY.
 function handleStateKeys(e) {
+  // Debounce: ignore input for 200ms after any state transition.
+  if (performance.now() - _stateChangeTime < INPUT_DEBOUNCE) return;
+
   const s = getState();
 
   // --- Home & Select screens handle their own keys (Milestone 8) ------------
@@ -399,90 +403,104 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   handleDebugKeys(e); // no-op unless Debug.enabled
-  handleStateKeys(e);
+  // Map keyboard keys to nav actions and emit through unified navEvent.
+  const navMap = {
+    Enter: 'confirm', Space: 'confirm',
+    Escape: 'back',
+    ArrowUp: 'up', KeyW: 'up',
+    ArrowDown: 'down', KeyS: 'down',
+    ArrowLeft: 'left', KeyA: 'left',
+    ArrowRight: 'right', KeyD: 'right',
+  };
+  const action = navMap[e.code];
+  if (action && !e.repeat) navEvent(action);
 });
 window.addEventListener('keyup', (e) => { keys.delete(e.code); screenOnKeyUp(e.code); });
 window.addEventListener('blur', () => { keys.clear(); screenOnKeyUp('ArrowLeft'); screenOnKeyUp('ArrowRight'); });
 
-// --- Gamepad → Screen bridge -------------------------------------------------
-// Polls gamepad every frame for screen navigation. Uses screenOnAction()
-// so screens receive abstract actions, not fake key codes.
-//
-// Per-interface mapping:
-//   keyboard: Escape = pause + back (context-dependent)
-//             Enter  = confirm
-//   gamepad:  Options/Start (btn 9) = pause + confirm
-//             ○ / B (btn 1)         = back
-//             ✕ / A (btn 0)         = confirm
-let _gpPrevPause = false;
-let _gpPrevConfirm = false;
-let _gpPrevBack = false;
-let _gpPrevLeft = false;
-let _gpPrevRight = false;
-let _gpPrevUp = false;
-let _gpPrevDown = false;
+// ===========================================================================
+// Unified Navigation Input
+// ===========================================================================
+// ONE code path for ALL sources (keyboard, gamepad, future: touch).
+// Sources emit "action" events. The nav handler applies debounce and routes.
+// No duplicate edge detection. No parallel paths.
+// ===========================================================================
 
-function gamepadScreenBridge() {
+let _stateChangeTime = 0;
+const NAV_DEBOUNCE = 250; // ms — ignore nav input this long after a state change
+onTransition(() => { _stateChangeTime = performance.now(); });
+
+/**
+ * Emit a navigation event. Called by keyboard keydown AND gamepad poll.
+ * @param {string} action 'confirm' | 'back' | 'left' | 'right' | 'up' | 'down'
+ */
+function navEvent(action) {
+  // Debounce ONLY 'back' (prevents hold-○/hold-Escape spam toggling menus).
+  // Confirm and navigate are NOT debounced — they should respond instantly.
+  if (action === 'back' && performance.now() - _stateChangeTime < NAV_DEBOUNCE) return;
+  screenOnAction(action);
+}
+
+// --- Gamepad poll (called every frame from main loop) -----------------------
+// Emits nav events using the SAME navEvent() as keyboard. One path.
+let _gpNavPrev = {}; // track previous button states for edge detection
+
+export function gamepadScreenBridge() {
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   const pad = pads && pads[0] && pads[0].connected ? pads[0] : null;
   if (!pad) return;
 
-  const btn = (i) => !!(pad.buttons[i] && pad.buttons[i].pressed);
   const s = getState();
+  const btn = (i) => !!(pad.buttons[i] && pad.buttons[i].pressed);
 
-  // Pause: Options/Start (btn 9) — works in PLAY and PAUSE
-  const pauseBtn = btn(9);
-  if (pauseBtn && !_gpPrevPause) {
-    handleStateKeys({ code: 'Escape', repeat: false });
-  }
-  _gpPrevPause = pauseBtn;
+  // Edge detection: only fire on press (was released last frame, pressed now)
+  const edge = (i) => {
+    const pressed = btn(i);
+    const wasPressed = _gpNavPrev[i] || false;
+    const isEdge = pressed && !wasPressed;
+    _gpNavPrev[i] = pressed;
+    return isEdge;
+  };
 
-  // Only handle confirm/back/navigate when NOT in PLAY
+  // Pause/Confirm: Options/Start (btn 9) — ALWAYS 'confirm'
+  if (edge(9)) navEvent('confirm');
+
+  // Only handle confirm/navigate when NOT in PLAY
   if (s === S.PLAY) return;
 
-  // Confirm: ✕/A (btn 0) OR Options/Start (btn 9)
-  const confirm = btn(0) || btn(9);
-  if (confirm && !_gpPrevConfirm) {
-    screenOnAction('confirm');
+  // REMAP state: pass raw gamepad buttons to Remap ONLY while capturing.
+  // Navigation (up/down/left/right/confirm/back) goes through navEvent normally.
+  if (s === S.REMAP && Remap.capturing) {
+    for (let i = 0; i < pad.buttons.length; i++) {
+      if (edge(i)) Remap.onGamepadButton(i);
+    }
+    return;
   }
-  _gpPrevConfirm = confirm;
+
+  // Confirm: ✕/A (btn 0) only
+  if (edge(0)) navEvent('confirm');
 
   // Back: ○/B (btn 1)
-  const back = btn(1);
-  if (back && !_gpPrevBack) {
-    screenOnAction('back');
-  }
-  _gpPrevBack = back;
+  if (edge(1)) navEvent('back');
 
-  // Navigate left/right: D-pad buttons OR left stick (not both)
-  const dpadL = btn(14);
-  const dpadR = btn(15);
-  const stickL = pad.axes[0] < -0.5;
-  const stickR = pad.axes[0] > 0.5;
-  const left = dpadL || stickL;
-  const right = dpadR || stickR;
-  if (left && !_gpPrevLeft) screenOnAction('left');
-  if (!left && _gpPrevLeft) screenOnKeyUp('ArrowLeft'); // release held visual
-  if (right && !_gpPrevRight) screenOnAction('right');
-  if (!right && _gpPrevRight) screenOnKeyUp('ArrowRight'); // release held visual
-  _gpPrevLeft = left;
-  _gpPrevRight = right;
+  // Navigate: D-pad or left stick
+  const dpadL = btn(14), dpadR = btn(15), dpadU = btn(12), dpadD = btn(13);
+  const stickL = pad.axes[0] < -0.5, stickR = pad.axes[0] > 0.5;
+  const stickU = pad.axes[1] < -0.5, stickD = pad.axes[1] > 0.5;
 
-  // Up/Down: D-pad buttons OR left stick Y
-  const dpadU = btn(12);
-  const dpadD = btn(13);
-  const stickU = pad.axes[1] < -0.5;
-  const stickD = pad.axes[1] > 0.5;
-  const up = dpadU || stickU;
-  const down = dpadD || stickD;
-  if (up && !_gpPrevUp) screenOnAction('up');
-  if (down && !_gpPrevDown) screenOnAction('down');
-  _gpPrevUp = up;
-  _gpPrevDown = down;
+  if ((dpadL || stickL) && !_gpNavPrev._l) navEvent('left');
+  if ((dpadR || stickR) && !_gpNavPrev._r) navEvent('right');
+  if ((dpadU || stickU) && !_gpNavPrev._u) navEvent('up');
+  if ((dpadD || stickD) && !_gpNavPrev._d) navEvent('down');
+  _gpNavPrev._l = dpadL || stickL;
+  _gpNavPrev._r = dpadR || stickR;
+  _gpNavPrev._u = dpadU || stickU;
+  _gpNavPrev._d = dpadD || stickD;
+
+  // Release held-key visuals on select screen
+  if (!_gpNavPrev._l) screenOnKeyUp('ArrowLeft');
+  if (!_gpNavPrev._r) screenOnKeyUp('ArrowRight');
 }
-
-// Call every frame from the main loop (add to frame function in main.js)
-export { gamepadScreenBridge };
 
 // --- Debug harness mouse input: click to select / force an enemy's state -----
 // Converts a screen-space click into logical 960x540 coords (inverse of the
