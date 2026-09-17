@@ -373,8 +373,18 @@ class SongController {
 
   resume() {
     if (!this.player || this.playing) return;
-    this.player.resume();
-    this.playing = true;
+    // If a manual dot position was set while paused, seek there first, then clear it
+    if (this._manualPos !== null && this._manualPos > 0) {
+      const frac = this._manualPos;
+      this._manualPos = null;   // clear BEFORE seek so seek() takes the playing branch
+      this.player.resume();
+      this.playing = true;
+      this.seek(frac);
+    } else {
+      this._manualPos = null;
+      this.player.resume();
+      this.playing = true;
+    }
     if (this.onPlayStateChange) this.onPlayStateChange(true);
   }
 
