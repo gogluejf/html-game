@@ -47,19 +47,10 @@ export const Remap = {
   focus: 0,              // focused row index
   preferredChip: 0,
   _chipPos: 0,           // absolute chip position across both columns
-  get chipPos() {
-    const kbSlots = bindingSlots('keyboard', ACTIONS[this.focus]?.id || 'jump');
-    return this.tab === 'keyboard' ? this._chipPos : kbSlots + this._chipPos;
-  },
-  set chipPos(v) {
-    const kbSlots = bindingSlots('keyboard', ACTIONS[this.focus]?.id || 'jump');
-    if (v < kbSlots) { this.tab = 'keyboard'; this._chipPos = v; }
-    else { this.tab = 'gamepad'; this._chipPos = v - kbSlots; }
-  },
   get chip() {
     return this.focus >= 0 && this.focus < ACTIONS.length
       ? Math.min(this.preferredChip, bindingSlots(this.tab, ACTIONS[this.focus].id) - 1) : 0;
-  },
+  }
   _flashInvalid: 0,      // timer for "INVALID" flash
   _pulseT: 0,            // pulse timer for "PRESS ANY..." text
 
@@ -102,12 +93,9 @@ export const Remap = {
         const kbSlots = bindingSlots('keyboard', ACTIONS[this.focus].id);
         const gpSlots = bindingSlots('gamepad', ACTIONS[this.focus].id);
         const total = kbSlots + gpSlots;
-        // Current position: 0..kbSlots-1 = keyboard, kbSlots..total-1 = gamepad
-        const cur = this.chipPos;
-        this.chipPos = (cur + total + (action === 'left' ? -1 : 1)) % total;
-        // Update tab and chip based on position
-        if (this.chipPos < kbSlots) { this.tab = 'keyboard'; this.chip = this.chipPos; }
-        else { this.tab = 'gamepad'; this.chip = this.chipPos - kbSlots; }
+        this._chipPos = (this._chipPos + total + (action === 'left' ? -1 : 1)) % total;
+        if (this._chipPos < kbSlots) { this.tab = 'keyboard'; this.preferredChip = this._chipPos; }
+        else { this.tab = 'gamepad'; this.preferredChip = this._chipPos - kbSlots; }
       }
     } else if (action === 'confirm') {
       if (this.focus === ACTIONS.length) this.reset();
