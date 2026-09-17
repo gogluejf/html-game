@@ -209,6 +209,12 @@ PLAYER_TMPL = """<!DOCTYPE html>
              color:#8fa0d0;transition:all .12s;user-select:none;text-align:center;}
   #list .row:hover{border-color:#3ef0ff;color:#cfe4ff;background:rgba(62,240,255,.06);}
   #list .row.on{border-color:#ffe23e;color:#fff;background:rgba(255,226,62,.10);box-shadow:0 0 16px rgba(255,226,62,.25);}
+  #modes{display:flex;gap:14px;margin-top:-8px;}
+  #modes .mode{display:flex;align-items:center;gap:7px;font-size:15px;letter-spacing:2px;padding:6px 13px;border:2px solid #1b2540;border-radius:8px;cursor:pointer;
+               color:#5a6a90;user-select:none;transition:all .12s;}
+  #modes .mode svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  #modes .mode:hover{border-color:#3ef0ff;color:#cfe4ff;}
+  #modes .mode.on{border-color:#3ef0ff;color:#fff;background:rgba(62,240,255,.10);box-shadow:0 0 14px rgba(62,240,255,.3);}
   #hint{font-size:15px;color:#5a6a90;letter-spacing:1px;}
 </style>
 </head>
@@ -219,8 +225,19 @@ PLAYER_TMPL = """<!DOCTYPE html>
     <div id="sub">JUKEBOX</div>
   </div>
   <div id="now">&nbsp;</div>
+  <div id="modes">
+    <div class="mode" id="m-seq" title="auto-advance to next song when one finishes (S)">
+      <svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>SEQ
+    </div>
+    <div class="mode" id="m-rep" title="repeat the current song forever (R)">
+      <svg viewBox="0 0 24 24"><polyline points="17 2 21 6 17 10"></polyline><path d="M3 12v-2a4 4 0 0 1 4-4h14"></path><polyline points="7 22 3 18 7 14"></polyline><path d="M21 12v2a4 4 0 0 1-4 4H3"></path></svg>REP
+    </div>
+    <div class="mode" id="m-shf" title="pick a random song when one finishes (H)">
+      <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>SHF
+    </div>
+  </div>
   <div id="list"></div>
-  <div id="hint">click a song &middot; P = next &middot; M = mute</div>
+  <div id="hint">click a song &middot; P / &#8594; = next &middot; &#8592; = prev &middot; M = mute &middot; S/R/H = seq/repeat/shuffle</div>
 </div>
 <script>
 __ENGINE__
@@ -228,8 +245,30 @@ __ENGINE__
 <script>
 const TRACKS = __TRACKS__;
 let player = null;
+// Playback modes (mutually exclusive): seq = next song in order,
+// rep = repeat current song, shf = random song. All off = stop after one play.
+let modeSeq = true, modeRep = false, modeShf = false;
 const nowEl = document.getElementById('now');
 const listEl = document.getElementById('list');
+const mSeq = document.getElementById('m-seq');
+const mRep = document.getElementById('m-rep');
+const mShf = document.getElementById('m-shf');
+
+function applyModes(){
+  if (!player) return;
+  player.seq.tracks.forEach(t => { t.autoNext = modeSeq || modeRep || modeShf; t.repeatOne = modeRep; t.shuffle = modeShf; });
+}
+function setMode(which){
+  // Toggling a mode on turns the others off (one behavior at a time).
+  if (which === 'seq'){ modeSeq = !modeSeq; modeRep = false; modeShf = false; }
+  else if (which === 'rep'){ modeRep = !modeRep; modeSeq = false; modeShf = false; }
+  else { modeShf = !modeShf; modeSeq = false; modeRep = false; }
+  mSeq.classList.toggle('on', modeSeq);
+  mRep.classList.toggle('on', modeRep);
+  mShf.classList.toggle('on', modeShf);
+  applyModes();
+  console.log('[jukebox] mode: ' + (modeRep ? 'repeat' : modeShf ? 'shuffle' : modeSeq ? 'sequence' : 'off'));
+}
 
 function ensure(){
   if (!player){
@@ -246,14 +285,25 @@ function renderList(){
 function showNow(){
   const names = player.getNames();
   nowEl.textContent = player.playing ? ('\u25cf NOW PLAYING: '+(player.current+1)+' '+names[player.current]) : '\u25cb stopped';
+  lastShown = player.current;
   renderList();
 }
 function playTrack(i){
   ensure();
+  applyModes();
   player.start(i);
   console.log('[jukebox] play -> #'+(i+1), player.getNames()[i]);
   showNow();
 }
+// Keep the "now playing" display in sync with the engine (covers both
+// manual P/click changes and automatic song-sequence advances).
+// Only touch the DOM when the current track actually changed, so the
+// row highlight never flickers mid-song.
+let lastShown = -1;
+setInterval(()=>{
+  if (!player || !player.playing) return;
+  if (player.current !== lastShown) { lastShown = player.current; showNow(); }
+}, 250);
 function nextTrack(){
   ensure();
   const started = player.playing;
@@ -261,9 +311,23 @@ function nextTrack(){
   const target = started ? (player.current + 1) % n : 0;
   playTrack(target);
 }
+function prevTrack(){
+  ensure();
+  const n = player.seq.tracks.length;
+  const target = (player.current - 1 + n) % n;
+  playTrack(target);
+}
+mSeq.addEventListener('click', ()=>setMode('seq'));
+mRep.addEventListener('click', ()=>setMode('rep'));
+mShf.addEventListener('click', ()=>setMode('shf'));
 window.addEventListener('keydown', (e)=>{
   if (e.code === 'KeyP'){ e.preventDefault(); nextTrack(); }
+  else if (e.code === 'ArrowDown' || e.code === 'ArrowRight'){ e.preventDefault(); nextTrack(); }
+  else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft'){ e.preventDefault(); prevTrack(); }
   else if (e.code === 'KeyM'){ ensure(); player.toggleMute(); }
+  else if (e.code === 'KeyS'){ e.preventDefault(); setMode('seq'); }
+  else if (e.code === 'KeyR'){ e.preventDefault(); setMode('rep'); }
+  else if (e.code === 'KeyH'){ e.preventDefault(); setMode('shf'); }
 });
 document.body.addEventListener('click', ()=>{ ensure(); });
 // Render the clickable track list up front (before any audio starts).

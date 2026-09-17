@@ -74,6 +74,23 @@ class MusicSequencer {
     this.timerId = setInterval(() => this._schedule(), this.tickMs);
   }
 
+  /** Advance to the next track, restarting from phrase 0. */
+  next() {
+    const n = this.tracks.length;
+    if (n < 2) return;
+    const i = (this.current + 1) % n;
+    if (this.playing) this.start(i); else this.setTrack(i);
+  }
+
+  /** Pick a random other track (shuffle). */
+  shuffleNext() {
+    const n = this.tracks.length;
+    if (n < 2) return;
+    let i;
+    do { i = Math.floor(Math.random() * n); } while (i === this.current);
+    if (this.playing) this.start(i); else this.setTrack(i);
+  }
+
   stop() {
     if (this.timerId !== null) { clearInterval(this.timerId); this.timerId = null; }
     this.playing = false;
@@ -112,6 +129,19 @@ class MusicSequencer {
       this.nextNoteTime += spb / 4;              // one 16th note
       this.stepIndex = (this.stepIndex + 1) % trk.steps;
       if (this.stepIndex === 0) { this.barCount++; this.phraseCount++; } // finished a 2-bar block (= one phrase)
+      // Song-sequence mode: when the whole song has played through every
+      // phrase exactly once (one full cycle), decide what happens next:
+      //   repeat  -> restart this track
+      //   shuffle -> random other track
+      //   seq     -> next track in order
+      const lens = trk.phraseLens || trk.leads.map(() => 1);
+      const totalBlocks = lens.reduce((a, b) => a + b, 0);
+      if (trk.autoNext && this.barCount > 0 && this.barCount % totalBlocks === 0) {
+        if (trk.repeatOne) this.start(this.current);
+        else if (trk.shuffle) this.shuffleNext();
+        else this.next();
+        return;
+      }
     }
   }
 
@@ -671,6 +701,8 @@ class MusicSequencer {
   };
   Player.prototype.stop = function () { this.seq.stop(); };
   Player.prototype.setTrack = function (i) { this.seq.setTrack(i); };
+  Player.prototype.next = function () { this.seq.next(); };
+  Player.prototype.shuffleNext = function () { this.seq.shuffleNext(); };
   Object.defineProperty(Player.prototype, 'current', { get() { return this.seq.current; } });
   Object.defineProperty(Player.prototype, 'playing', { get() { return this.seq.playing; } });
   Player.prototype.getNames = function () { return this.seq.tracks.map(t => t.name); };
