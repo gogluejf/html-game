@@ -391,7 +391,7 @@ PLAYER_TMPL = """<!DOCTYPE html>
   #sub{font-size:14px;color:var(--dim);letter-spacing:4px;margin-top:-12px;}
   #now{font-size:28px;color:var(--gold);min-height:36px;text-shadow:0 0 14px var(--gold);font-weight:bold;text-align:center;}
   #list{display:flex;flex-direction:column;gap:6px;min-width:340px;max-width:728px;width:100%;}
-  #list .row{display:grid;grid-template-columns:28px 1fr auto;column-gap:12px;align-items:center;padding:9px 16px;border:2px solid var(--border);border-radius:8px;cursor:pointer;color:#a0b4d8;transition:all .12s;user-select:none;background:var(--panel);}
+  #list .row{display:grid;grid-template-columns:28px 1fr auto auto;column-gap:12px;align-items:center;padding:9px 16px;border:2px solid var(--border);border-radius:8px;cursor:pointer;color:#a0b4d8;transition:all .12s;user-select:none;background:var(--panel);}
   #list .row:hover{border-color:var(--cyan);background:#142030;}
   #list .row.on{border-color:var(--gold);background:rgba(255,226,62,.1);box-shadow:0 0 16px rgba(255,226,62,.25);}
   #list .row .num{grid-column:1;font-size:15px;font-weight:bold;color:var(--dim);font-variant-numeric:tabular-nums;align-self:center;}
@@ -402,6 +402,11 @@ PLAYER_TMPL = """<!DOCTYPE html>
   #list .row .chip{font-size:11px;font-weight:bold;letter-spacing:.5px;padding:2px 8px;border-radius:999px;white-space:nowrap;}
   #list .row .chip.genre{color:var(--gold);background:rgba(255,226,62,.1);border:1px solid rgba(255,226,62,.35);}
   #list .row .bpm{font-size:13px;font-weight:bold;color:var(--cyan);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  #list .row .fav{grid-column:4;cursor:pointer;color:var(--dim);display:flex;align-items:center;transition:transform .12s,color .12s;padding:2px;}
+  #list .row .fav:hover{color:#ff8fa5;transform:scale(1.2);}
+  #list .row .fav svg{width:16px;height:16px;display:block;}
+  #list .row .fav.on{color:#ff3b5c;}
+  #list .row .fav.on svg{filter:drop-shadow(0 0 4px rgba(255,59,92,.6));}
   /* Transport bar */
   #transport{position:fixed;bottom:0;left:0;right:0;z-index:100;background:linear-gradient(to top,#080c18 0%,#0d1220 100%);border-top:2px solid var(--border);padding:14px 24px 18px;display:flex;align-items:center;gap:14px;user-select:none;box-shadow:0 -4px 40px rgba(0,0,0,.6);}
   .tbtn{width:42px;height:42px;border:2px solid #4a6a90;border-radius:8px;background:#152030;color:#e0ecff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
@@ -444,6 +449,11 @@ PLAYER_TMPL = """<!DOCTYPE html>
   #sp-badges{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
   #sp-genre{font-size:12px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:var(--gold);background:rgba(255,226,62,.12);border:1px solid rgba(255,226,62,.4);padding:4px 10px;border-radius:999px;}
   #sp-bpm{font-size:12px;font-weight:bold;color:var(--cyan);background:rgba(62,240,255,.1);border:1px solid rgba(62,240,255,.35);padding:4px 10px;border-radius:999px;font-variant-numeric:tabular-nums;}
+  #sp-fav{cursor:pointer;color:var(--dim);display:flex;align-items:center;margin-left:auto;transition:transform .12s,color .12s;padding:4px;}
+  #sp-fav:hover{color:#ff8fa5;transform:scale(1.15);}
+  #sp-fav svg{width:22px;height:22px;display:block;}
+  #sp-fav.on{color:#ff3b5c;}
+  #sp-fav.on svg{filter:drop-shadow(0 0 5px rgba(255,59,92,.7));}
   #sp-meta{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--dim);}
   #sp-meta .k{color:var(--dim);letter-spacing:1px;text-transform:uppercase;font-size:10px;margin-right:6px;}
   #sp-meta .v{color:#a0b4d8;font-variant-numeric:tabular-nums;}
@@ -471,6 +481,7 @@ PLAYER_TMPL = """<!DOCTYPE html>
     <div id="sp-badges">
       <span id="sp-genre">&ndash;</span>
       <span id="sp-bpm">&ndash;</span>
+      <span id="sp-fav" title="Favorite"></span>
     </div>
     <div id="sp-meta">
       <div><span class="k">Created</span><span class="v" id="sp-created">&ndash;</span></div>
@@ -519,6 +530,9 @@ class SongController {
     // Set by seek()/select() while paused/stopped; cleared on play(). The render
     // loop honors it instead of clobbering the dot with live engine position.
     this._manualPos = null;
+    // -- favorites (track indices), persisted to localStorage --
+    // Must be initialized BEFORE _loadPrefs() so the saved favs aren't wiped.
+    this.favorites = [];
     this._loadPrefs();
     // -- always-on action log --
     this._actionLog = [];
@@ -550,10 +564,27 @@ class SongController {
     try {
       const p = JSON.parse(localStorage.getItem('jukebox-prefs') || '{}');
       this.seq = !!p.seq; this.rep = !!p.rep; this.shf = !!p.shf;
+      if (Array.isArray(p.favs)) this.favorites = p.favs.slice();
     } catch (e) {}
   }
   _savePrefs() {
-    try { localStorage.setItem('jukebox-prefs', JSON.stringify({ seq: this.seq, rep: this.rep, shf: this.shf })); } catch (e) {}
+    try { localStorage.setItem('jukebox-prefs', JSON.stringify({ seq: this.seq, rep: this.rep, shf: this.shf, favs: this.favorites })); } catch (e) {}
+  }
+
+  isFav(i) { return this.favorites.indexOf(i) !== -1; }
+  toggleFav(i) {
+    const at = this.favorites.indexOf(i);
+    if (at === -1) this.favorites.push(i); else this.favorites.splice(at, 1);
+    this._savePrefs();
+    // Update just the heart in place (no full re-render, keeps hover state).
+    const el = document.querySelector('#list .row[data-i="' + i + '"] .fav');
+    if (el) { el.classList.toggle('on', this.isFav(i)); el.innerHTML = this._heartSVG(this.isFav(i)); }
+    // Keep the side-panel heart in sync if this is the currently-shown track.
+    if (typeof window.__syncSpFav === 'function') window.__syncSpFav();
+    return this.isFav(i);
+  }
+  _heartSVG(on) {
+    return '<svg viewBox="0 0 24 24" ' + (on ? 'fill="#ff3b5c" stroke="#ff3b5c"' : 'fill="none" stroke="currentColor"') + ' stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>';
   }
 
   init() {
@@ -852,6 +883,7 @@ const sidePanel = document.getElementById('side-panel');
 const spTitle = document.getElementById('sp-title');
 const spGenre = document.getElementById('sp-genre');
 const spBpm = document.getElementById('sp-bpm');
+const spFav = document.getElementById('sp-fav');
 const spCreated = document.getElementById('sp-created');
 const spRevision = document.getElementById('sp-revision');
 const spVibe = document.getElementById('sp-vibe');
@@ -922,10 +954,23 @@ function renderSidePanel() {
   if (gc) { spGenre.style.color = gc[0]; spGenre.style.background = gc[1]; spGenre.style.borderColor = gc[0] + '66'; }
   else { spGenre.style.color = ''; spGenre.style.background = ''; spGenre.style.borderColor = ''; }
   spBpm.textContent = (t.bpm != null ? t.bpm + ' BPM' : '\u2013');
+  const fav = sc.isFav(sc.current);
+  spFav.classList.toggle('on', fav);
+  spFav.innerHTML = sc._heartSVG(fav);
+  spFav.title = fav ? 'Unfavorite' : 'Favorite';
   spCreated.textContent = fmtDate(t.createdAt);
   spRevision.textContent = (t.revision != null ? 'r' + t.revision : '\u2013');
   spVibe.textContent = (t.vibe && String(t.vibe).trim()) ? t.vibe : '\u2013';
 }
+
+// Refresh only the side-panel heart (used by toggleFav so list + panel stay in sync).
+window.__syncSpFav = function() {
+  const fav = sc.isFav(sc.current);
+  spFav.classList.toggle('on', fav);
+  spFav.innerHTML = sc._heartSVG(fav);
+  spFav.title = fav ? 'Unfavorite' : 'Favorite';
+};
+spFav.addEventListener('click', () => { sc.toggleFav(sc.current); });
 
 // Track change → update list highlight + now-playing label + side panel
 sc.onTrackChange = (i) => {
@@ -947,6 +992,7 @@ function renderList() {
   listEl.innerHTML = sc.tracks.map((t, i) => {
     const gc = genreColor(t.genre);
     const genreStyle = gc ? 'style="color:' + gc[0] + ';background:' + gc[1] + ';border-color:' + gc[0] + '55"' : '';
+    const fav = sc.isFav(i);
     return '<div class="row ' + (i === sc.current ? 'on' : '') + '" data-i="' + i + '">' +
       '<span class="num">' + (i+1) + '</span>' +
       '<span class="nm" title="' + esc(t.name) + '">' + esc(t.name) + '</span>' +
@@ -954,6 +1000,7 @@ function renderList() {
         (t.genre ? '<span class="chip genre" ' + genreStyle + '>' + esc(t.genre) + '</span>' : '') +
         (t.bpm != null ? '<span class="bpm">' + t.bpm + ' BPM</span>' : '') +
       '</span>' +
+      '<span class="fav' + (fav ? ' on' : '') + '" title="' + (fav ? 'Unfavorite' : 'Favorite') + '">' + sc._heartSVG(fav) + '</span>' +
     '</div>';
   }).join('');
   listEl.querySelectorAll('.row').forEach(el => {
@@ -973,6 +1020,12 @@ function renderList() {
         _listCount = 0;
         sc.play(i);
       }
+    });
+    // Heart toggles favorite without triggering play/select.
+    const favEl = el.querySelector('.fav');
+    if (favEl) favEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sc.toggleFav(parseInt(el.dataset.i, 10));
     });
   });
 }
