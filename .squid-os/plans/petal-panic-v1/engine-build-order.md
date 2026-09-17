@@ -54,7 +54,41 @@ capture barriers suppress held inputs until release rather than using debounce.
 
 ---
 
-### 2. Level Shape Engine (`js/level-shape.js`)
+### 2. Hero Engine Polish (`js/hero.js`)
+
+**Why second:** The hero is the player's avatar—every other system (combat, levels,
+bosses) depends on how it feels to move, attack, and react. Right now the hero has
+basic movement but lacks the polish that makes a platformer feel good: no move
+cancellation, no crouch/slide transitions, no supermove animation state, no
+attack hitbox timing, no drop-through-platform input. Fixing these before building
+levels means you test against a hero that actually plays well.
+
+Scope:
+- **Move cancellation:** pressing opposite direction stops momentum immediately
+  (no coasting), with a short friction tail for feel
+- **Crouch/slide:** Down while grounded = crouch; Down while moving = slide with
+  skid decel; release Down = stand up (keep existing SMB1-style logic, clean up)
+- **Supermove state machine:** dash startup → active → recovery frames, invincibility
+  window, camera nudge, cancelable into jump after recovery
+- **Attack timing:** melee swing has windup/active/recovery frames; hitbox only
+  active during "active" frames; can't re-swing until recovery ends
+- **Drop-through platform:** Down + Jump on one-way platform drops through
+- **Hit-stun / knockback:** brief input lock on hit, knockback velocity with decay,
+  i-frame flash
+- **Facing & mirror:** hero sprite flips on facing change; aim direction independent
+  of facing (already partially done via lockDir)
+- **Animation state sync:** ensure anim frame matches physics state (idle/run/jump/
+  crouch/attack/super/death) without drift
+
+Files:
+- `js/hero.js` — refactor update loop into clear state phases
+- `js/systems/update.js` — pass correct intent flags, respect new states
+- `js/hitbox.js` — per-frame hitbox data from anim state (if not already wired)
+- Tests: `js/test/heroAnim.test.js`, `js/test/melee.test.js`, `js/test/jumpslide.test.js`
+
+---
+
+### 8. Level Shape Engine (`js/level-shape.js`)
 
 **Why second:** Bosses need arenas, enemies need varied terrain, rogue spawner needs
 platforms to place things on. Right now everything is one flat line.
@@ -75,7 +109,7 @@ Files:
 
 ---
 
-### 3. Explosion / Radius / TTL Generic Engine (`js/blast.js`)
+### 8. Explosion / Radius / TTL Generic Engine (`js/blast.js`)
 
 **Why third:** Bosses, Jack-O-Lanterns, barrels, powerups, ground attacks all need
 "circle of damage for X seconds." Extract the barrel special-case into a reusable primitive.
@@ -96,7 +130,7 @@ Files:
 
 ---
 
-### 4. Special Effects Engine (`js/effects-engine.js`)
+### 8. Special Effects Engine (`js/effects-engine.js`)
 
 **Why fourth:** Bosses and explosions trigger VFX through one API instead of
 ad-hoc calls. Formalize what's already in `effects.js`.
@@ -121,7 +155,7 @@ Files:
 
 ---
 
-### 5. Projectile Engine Upgrade (`js/projectile.js`)
+### 8. Projectile Engine Upgrade (`js/projectile.js`)
 
 **Why fifth:** Bosses need missile patterns. Normalize aim, add pattern support.
 
@@ -141,7 +175,7 @@ Files:
 
 ---
 
-### 6. Boss Pattern / Macro Engine (`js/boss-pattern.js`)
+### 8. Boss Pattern / Macro Engine (`js/boss-pattern.js`)
 
 **Why last:** It composes everything above. Spawns enemies, fires projectile
 patterns, triggers blasts, switches phases, uses hitboxes. Building it first
@@ -168,7 +202,7 @@ Files:
 
 ---
 
-### 7. Sprite Engine Wiring (ongoing)
+### 8. Sprite Engine Wiring (ongoing)
 
 Wire per-frame hitbox data from editor into entity getters. Small change, do
 whenever real sprites with painted boxes are ready.
