@@ -68,10 +68,13 @@ Scope:
   (no coasting), with a short friction tail for feel
 - **Crouch/slide:** Down while grounded = crouch; Down while moving = slide with
   skid decel; release Down = stand up (keep existing SMB1-style logic, clean up)
-- **Supermove state machine:** dash startup → active → recovery frames, invincibility
-  window, camera nudge, cancelable into jump after recovery
-- **Attack timing:** melee swing has windup/active/recovery frames; hitbox only
-  active during "active" frames; can't re-swing until recovery ends
+- **Jump during crouch:** allow jump from crouched state (cancel crouch into jump)
+- **Jump during supermove:** allow jump-cancel out of supermove recovery (not
+  during active dash frames—only after recovery starts)
+- **Attack speed:** melee swing should be snappy—short windup (2-3 frames),
+  quick active window, minimal recovery. Avoid slow/clunky swings that interrupt
+  flow. Consider allowing attack cancel into move/direction change after active
+  frames end
 - **Drop-through platform:** Down + Jump on one-way platform drops through
 - **Hit-stun / knockback:** brief input lock on hit, knockback velocity with decay,
   i-frame flash
