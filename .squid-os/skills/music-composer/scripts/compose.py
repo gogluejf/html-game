@@ -165,6 +165,20 @@ def state_path(game, working_dir):
     return os.path.join(working_dir, ".squid-os", "music-composer", f"{game}.json")
 
 
+def _stamp_tracks(tracks):
+    """Ensure every track has createdAt (ISO local datetime) and revision (int).
+    genre is left as-is (may be absent)."""
+    from datetime import datetime
+    now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    for t in tracks:
+        if not isinstance(t, dict):
+            continue
+        if "createdAt" not in t or not t.get("createdAt"):
+            t["createdAt"] = now
+        if t.get("revision") is None:
+            t["revision"] = 1
+
+
 def cmd_compose(a):
     if a.tracks == "@file":
         try:
@@ -178,6 +192,7 @@ def cmd_compose(a):
         except json.JSONDecodeError as e:
             _err(f"--tracks is not valid JSON: {e}")
     validate_tracks(tracks)
+    _stamp_tracks(tracks)
     path = state_path(a.game, a.working_dir)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
@@ -230,6 +245,7 @@ def cmd_add(a):
         _err(f"--track is not valid JSON: {e}")
     new_tracks = parsed if isinstance(parsed, list) else [parsed]
     validate_tracks(new_tracks)  # reject malformed tracks before touching state
+    _stamp_tracks(new_tracks)
     # Reject duplicates by name.
     existing = {t.get("name") for t in data["tracks"]}
     dupes = [t.get("name") for t in new_tracks if t.get("name") in existing]
@@ -267,7 +283,10 @@ def cmd_list(a):
     for i, t in enumerate(data["tracks"]):
         bpm = t.get("bpm", "")
         vibe = (t.get("vibe") or "").strip()
-        print(f"{i:>3}  {str(bpm) + ' BPM':>8}  {t.get('name','?')}" + (f"  — {vibe}" if vibe else ""))
+        genre = t.get("genre") or "?"
+        rev = t.get("revision")
+        rev = "?" if rev is None else str(rev)
+        print(f"{i:>3}  {str(bpm) + ' BPM':>8}  [{genre}] r{rev:<2}  {t.get('name','?')}" + (f"  — {vibe}" if vibe else ""))
     print(f"({len(data['tracks'])} tracks)")
 
 
@@ -311,6 +330,52 @@ def cmd_set_vibe(a):
     print(f"PASS: set vibe on {updated} track(s) -> {path}")
 
 
+def _parse_kv(pairs):
+    """Parse a list of 'key=value' strings into a dict. Values are parsed as
+    JSON when they look like JSON (object/array/number/bool/null), else kept
+    as the raw string."""
+    out = {}
+    for pair in pairs or []:
+        if "=" not in pair:
+            _err(f"--set expects key=value, got {pair!r}")
+        k, v = pair.split("=", 1)
+        k = k.strip()
+        s = v.strip()
+        # Try JSON first; fall back to the literal string.
+        try:
+            out[k] = json.loads(s)
+        except json.JSONDecodeError:
+            out[k] = v
+    return out
+
+
+def cmd_edit(a):
+    """Update metadata fields on track(s) by --name and/or --index, then bump
+    each matched track's revision by 1. Fields come from repeatable
+    --set key=value pairs (value parsed as JSON when it looks like JSON)."""
+    path, data = _load_state(a.game, a.working_dir)
+    names = set(a.name or [])
+    idxs = set(int(x) for x in (a.index or []))
+    if not names and not idxs:
+        _err("provide at least one --name or --index")
+    updates = _parse_kv(a.set)
+    if not updates:
+        _err("provide at least one --set key=value")
+    edited = 0
+    for i, t in enumerate(data["tracks"]):
+        hit = (i in idxs) or (t.get("name") in names)
+        if not hit:
+            continue
+        for k, v in updates.items():
+            t[k] = v
+        t["revision"] = int(t.get("revision", 0)) + 1
+        edited += 1
+    if edited == 0:
+        _err(f"no matching track(s) found (names={sorted(names)}, indices={sorted(idxs)})")
+    _save_state(path, data)
+    print(f"PASS: edited {edited} track(s) -> {path}")
+
+
 PLAYER_TMPL = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -320,20 +385,23 @@ PLAYER_TMPL = """<!DOCTYPE html>
   :root{--bg:#05070f;--panel:#0d1220;--border:#2a4060;--cyan:#3ef0ff;--gold:#ffe23e;--dim:#7a8ab0;--text:#e0ecff;}
   *{box-sizing:border-box;}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow-x:hidden;}
-  #wrap{display:flex;flex-direction:column;align-items:center;padding:40px 20px 130px;gap:24px;min-height:100vh;}
+  #wrap{display:flex;flex-direction:column;align-items:center;padding:0 20px 130px;gap:0;min-height:100vh;}
+  #header{position:sticky;top:0;z-index:50;width:100%;max-width:728px;display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 0 18px;background:linear-gradient(to bottom,var(--bg) 70%,rgba(5,7,15,0));}
   #title{font-size:42px;font-weight:bold;letter-spacing:6px;color:var(--cyan);text-shadow:0 0 24px var(--cyan);margin:0;text-transform:uppercase;}
   #sub{font-size:14px;color:var(--dim);letter-spacing:4px;margin-top:-12px;}
   #now{font-size:28px;color:var(--gold);min-height:36px;text-shadow:0 0 14px var(--gold);font-weight:bold;text-align:center;}
-  #list{display:flex;flex-direction:column;gap:6px;min-width:380px;max-width:640px;width:100%;}
-  #list .row{display:grid;grid-template-columns:28px 1fr auto;grid-template-rows:auto auto;column-gap:12px;align-items:center;padding:9px 16px;border:2px solid var(--border);border-radius:8px;cursor:pointer;color:#a0b4d8;transition:all .12s;user-select:none;background:var(--panel);}
+  #list{display:flex;flex-direction:column;gap:6px;min-width:340px;max-width:728px;width:100%;}
+  #list .row{display:grid;grid-template-columns:28px 1fr auto;column-gap:12px;align-items:center;padding:9px 16px;border:2px solid var(--border);border-radius:8px;cursor:pointer;color:#a0b4d8;transition:all .12s;user-select:none;background:var(--panel);}
   #list .row:hover{border-color:var(--cyan);background:#142030;}
   #list .row.on{border-color:var(--gold);background:rgba(255,226,62,.1);box-shadow:0 0 16px rgba(255,226,62,.25);}
-  #list .row .num{grid-column:1;grid-row:1/3;font-size:15px;font-weight:bold;color:var(--dim);font-variant-numeric:tabular-nums;align-self:center;}
+  #list .row .num{grid-column:1;font-size:15px;font-weight:bold;color:var(--dim);font-variant-numeric:tabular-nums;align-self:center;}
   #list .row.on .num{color:var(--gold);}
-  #list .row .nm{grid-column:2;grid-row:1;font-size:22px;color:#a0b4d8;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #list .row .nm{grid-column:2;font-size:22px;color:#a0b4d8;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   #list .row.on .nm{color:#fff;}
-  #list .row .vb{grid-column:2;grid-row:2;font-size:12px;color:var(--dim);line-height:1.35;font-style:italic;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-  #list .row .bpm{grid-column:3;grid-row:1/3;font-size:15px;font-weight:bold;color:var(--cyan);font-variant-numeric:tabular-nums;align-self:center;}
+  #list .row .chips{grid-column:3;display:flex;flex-direction:column;gap:4px;align-items:flex-end;align-self:center;}
+  #list .row .chip{font-size:11px;font-weight:bold;letter-spacing:.5px;padding:2px 8px;border-radius:999px;white-space:nowrap;}
+  #list .row .chip.genre{color:var(--gold);background:rgba(255,226,62,.1);border:1px solid rgba(255,226,62,.35);}
+  #list .row .bpm{font-size:13px;font-weight:bold;color:var(--cyan);font-variant-numeric:tabular-nums;white-space:nowrap;}
   /* Transport bar */
   #transport{position:fixed;bottom:0;left:0;right:0;z-index:100;background:linear-gradient(to top,#080c18 0%,#0d1220 100%);border-top:2px solid var(--border);padding:14px 24px 18px;display:flex;align-items:center;gap:14px;user-select:none;box-shadow:0 -4px 40px rgba(0,0,0,.6);}
   .tbtn{width:42px;height:42px;border:2px solid #4a6a90;border-radius:8px;background:#152030;color:#e0ecff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
@@ -356,8 +424,9 @@ PLAYER_TMPL = """<!DOCTYPE html>
   #tl-dot{position:absolute;top:50%;left:0;width:16px;height:16px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px rgba(255,226,62,.8),0 0 4px rgba(255,226,62,1);transform:translate(-50%,-50%);cursor:grab;z-index:2;transition:box-shadow .1s,width .1s,height .1s;}
   #tl-dot:hover{width:22px;height:22px;box-shadow:0 0 20px rgba(255,226,62,1),0 0 8px rgba(255,226,62,1);}
   #tl-dot:active{cursor:grabbing;}
-  #tl-time{font-size:14px;color:#a0b4d8;min-width:110px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;font-weight:bold;}
-  #tl-title{font-size:14px;color:var(--gold);font-weight:bold;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 0 8px rgba(255,226,62,.3);line-height:1.2;}
+  #tl-head{display:flex;align-items:baseline;gap:22px;min-width:0;}
+  #tl-time{font-size:13px;color:#a0b4d8;flex-shrink:0;font-variant-numeric:tabular-nums;font-weight:bold;white-space:nowrap;}
+  #tl-title{font-size:14px;color:var(--gold);font-weight:bold;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 0 8px rgba(255,226,62,.3);line-height:1.2;min-width:0;}
   #log-ind{position:fixed;top:12px;right:16px;z-index:200;font-size:12px;font-weight:bold;letter-spacing:1px;padding:6px 12px;border-radius:6px;background:#1a0d0d;border:2px solid #ff4444;color:#ff6666;display:none;box-shadow:0 0 12px rgba(255,68,68,.4);}
   #log-ind.on{display:block;}
   /* Mode toggles */
@@ -365,25 +434,61 @@ PLAYER_TMPL = """<!DOCTYPE html>
   #modes-t .mode{font-size:12px;font-weight:bold;letter-spacing:1.5px;padding:7px 14px;border:2px solid #4a6a90;border-radius:6px;cursor:pointer;color:#a0b4d8;transition:all .15s;user-select:none;background:#152030;}
   #modes-t .mode:hover{border-color:var(--cyan);color:#fff;background:#1e3050;}
   #modes-t .mode.on{border-color:var(--cyan);color:#fff;background:rgba(62,240,255,.15);box-shadow:0 0 12px rgba(62,240,255,.3);}
+  /* Side info panel (now-playing details) */
+  #wrap{flex-direction:row;align-items:flex-start;justify-content:center;gap:32px;}
+  #main-col{display:flex;flex-direction:column;align-items:center;width:100%;max-width:728px;}
+  #side-panel{width:340px;flex-shrink:0;background:var(--panel);border:2px solid var(--border);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:14px;position:sticky;top:150px;box-shadow:0 8px 40px rgba(0,0,0,.5);}
+  #side-panel.hidden{display:none;}
+  #sp-art{width:100%;aspect-ratio:1/1;border-radius:10px;background:radial-gradient(circle at 50% 40%,#1a2740,#0a0f1c);display:flex;align-items:center;justify-content:center;font-size:64px;color:var(--cyan);text-shadow:0 0 24px var(--cyan);border:2px solid var(--border);}
+  #sp-title{font-size:24px;font-weight:bold;color:#fff;line-height:1.2;text-shadow:0 0 12px rgba(62,240,255,.3);}
+  #sp-badges{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  #sp-genre{font-size:12px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:var(--gold);background:rgba(255,226,62,.12);border:1px solid rgba(255,226,62,.4);padding:4px 10px;border-radius:999px;}
+  #sp-bpm{font-size:12px;font-weight:bold;color:var(--cyan);background:rgba(62,240,255,.1);border:1px solid rgba(62,240,255,.35);padding:4px 10px;border-radius:999px;font-variant-numeric:tabular-nums;}
+  #sp-meta{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--dim);}
+  #sp-meta .k{color:var(--dim);letter-spacing:1px;text-transform:uppercase;font-size:10px;margin-right:6px;}
+  #sp-meta .v{color:#a0b4d8;font-variant-numeric:tabular-nums;}
+  #sp-vibe-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-top:4px;}
+  #sp-vibe{font-size:13px;color:#a0b4d8;line-height:1.5;font-style:italic;}
+  @media (max-width:820px){
+    #wrap{flex-direction:column;align-items:center;}
+    #side-panel{position:static;width:100%;max-width:560px;}
+  }
 </style>
 </head>
 <body>
 <div id="log-ind">● LOGGING — press L to save</div>
 <div id="wrap">
-  <div><h1 id="title">Music for __GAME__</h1><div id="sub">JUKEBOX</div></div>
-  <div id="now">&nbsp;</div>
-  <div id="list"></div>
+  <div id="main-col">
+    <div id="header">
+      <h1 id="title">Music for __GAME__</h1><div id="sub">JUKEBOX</div>
+      <div id="now">&nbsp;</div>
+    </div>
+    <div id="list"></div>
+  </div>
+  <aside id="side-panel" class="hidden">
+    <div id="sp-art">&#9834;</div>
+    <div id="sp-title">&ndash;</div>
+    <div id="sp-badges">
+      <span id="sp-genre">&ndash;</span>
+      <span id="sp-bpm">&ndash;</span>
+    </div>
+    <div id="sp-meta">
+      <div><span class="k">Created</span><span class="v" id="sp-created">&ndash;</span></div>
+      <div><span class="k">Revision</span><span class="v" id="sp-revision">&ndash;</span></div>
+    </div>
+    <div id="sp-vibe-label">Vibe</div>
+    <div id="sp-vibe">&ndash;</div>
+  </aside>
 </div>
 <div id="transport">
   <button class="tbtn" id="tb-prev" title="Restart song / double-click for previous"><svg viewBox="0 0 24 24"><polygon points="15 4 5 12 15 20 15 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
   <button class="tbtn play-btn" id="tb-play" title="Play/Pause (Space)"><svg viewBox="0 0 24 24" id="play-icon"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></button>
   <button class="tbtn" id="tb-next" title="Next song"><svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="5" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
   <div id="tl-wrap">
-    <div id="tl-title"></div>
+    <div id="tl-head"><span id="tl-title"></span><span id="tl-time">0:00 / 0:00</span></div>
     <div id="phrase-labels"></div>
     <div id="timeline"><div id="tl-progress"></div><div id="tl-dividers"></div><div id="tl-dot"></div></div>
   </div>
-  <div id="tl-time">0:00 / 0:00</div>
   <div id="modes-t">
     <div class="mode" id="mt-seq" title="Sequence (S)"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;display:inline;vertical-align:-2px;margin-right:4px;"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg>SEQ</div>
     <div class="mode" id="mt-rep" title="Repeat (R)"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;display:inline;vertical-align:-2px;margin-right:4px;"><polyline points="17 2 21 6 17 10"></polyline><path d="M3 12v-2a4 4 0 0 1 4-4h14"></path><polyline points="7 22 3 18 7 14"></polyline><path d="M21 12v2a4 4 0 0 1-4 4H3"></path></svg>REP</div>
@@ -743,13 +848,92 @@ const mtRep = document.getElementById('mt-rep');
 const mtShf = document.getElementById('mt-shf');
 const playIcon = document.getElementById('play-icon');
 const tlTitle = document.getElementById('tl-title');
+const sidePanel = document.getElementById('side-panel');
+const spTitle = document.getElementById('sp-title');
+const spGenre = document.getElementById('sp-genre');
+const spBpm = document.getElementById('sp-bpm');
+const spCreated = document.getElementById('sp-created');
+const spRevision = document.getElementById('sp-revision');
+const spVibe = document.getElementById('sp-vibe');
 
-// Track change → update list highlight + now-playing label
+// Format an ISO datetime (e.g. 2026-09-17T06:19:54) as "Sep 17, 2026 · 6:19 AM".
+function fmtDate(iso) {
+  if (!iso) return '\u2013';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return String(iso);
+  const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+  let h = d.getHours();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12; if (h === 0) h = 12;
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return mon + ' ' + d.getDate() + ', ' + d.getFullYear() + ' \u00b7 ' + h + ':' + m + ' ' + ampm;
+}
+
+// Per-genre color palette so each style gets its own hue in the list + panel.
+// Normalizes the genre string, then matches against known styles; falls back to
+// a hash-based pick from the palette so unseen genres still get a stable color.
+const GENRE_COLORS = [
+  ['#ff5d5d', 'rgba(255,93,93,.14)'],   // red
+  ['#ffa040', 'rgba(255,160,64,.14)'],  // orange
+  ['#ffe23e', 'rgba(255,226,62,.14)'],  // gold
+  ['#a8e05f', 'rgba(168,224,95,.14)'],  // lime
+  ['#5fe08a', 'rgba(95,224,138,.14)'],  // green
+  ['#3ef0c8', 'rgba(62,240,200,.14)'],  // teal
+  ['#3ef0ff', 'rgba(62,240,255,.14)'],  // cyan
+  ['#5aa8ff', 'rgba(90,168,255,.14)'],  // blue
+  ['#8a7bff', 'rgba(138,123,255,.14)'], // indigo
+  ['#c86bff', 'rgba(200,107,255,.14)'], // purple
+  ['#ff6bd6', 'rgba(255,107,214,.14)'],// pink
+  ['#ff8fb0', 'rgba(255,143,176,.14)'] // rose
+];
+// Explicit keyword -> palette index for the common styles we actually use.
+const GENRE_KEYWORDS = {
+  metal:0, thrash:0, punk:1, 'speed punk':1, 'punk metal':1, speed:0,
+  trance:6, techno:6, dubstep:9, industrial:9, breakbeat:7, electro:7,
+  jazz:2, 'acid jazz':2, fusion:2, bossa:4, reggae:4, funk:3, soul:3,
+  chiptune:5, 'drum and bass':5, '8-bit':5, march:8, anthem:8, dirge:11,
+  gothic:11, darkwave:10, ambient:10, horror:11, baroque:8, celtic:4,
+  folk:4, psych:10, psychedelic:10, disco:2, house:6, tropical:6,
+  neoclassical:7, lofi:3, 'lo-fi':3, hip:3, waltz:11
+};
+function genreColor(genre) {
+  if (!genre) return null;
+  const g = String(genre).toLowerCase();
+  // Exact keyword hit first.
+  if (GENRE_KEYWORDS[g] != null) return GENRE_COLORS[GENRE_KEYWORDS[g]];
+  // Then substring match (longest keyword wins).
+  let best = -1, bestLen = 0;
+  for (const k in GENRE_KEYWORDS) {
+    if (g.indexOf(k) !== -1 && k.length > bestLen) { best = GENRE_KEYWORDS[k]; bestLen = k.length; }
+  }
+  if (best >= 0) return GENRE_COLORS[best];
+  // Fallback: stable hash into the palette.
+  let h = 0; for (let i = 0; i < g.length; i++) h = (h * 31 + g.charCodeAt(i)) >>> 0;
+  return GENRE_COLORS[h % GENRE_COLORS.length];
+}
+
+function renderSidePanel() {
+  const t = sc.tracks[sc.current];
+  if (!t) { sidePanel.classList.add('hidden'); return; }
+  sidePanel.classList.remove('hidden');
+  spTitle.textContent = t.name || '\u2013';
+  spGenre.textContent = t.genre || '\u2013';
+  const gc = genreColor(t.genre);
+  if (gc) { spGenre.style.color = gc[0]; spGenre.style.background = gc[1]; spGenre.style.borderColor = gc[0] + '66'; }
+  else { spGenre.style.color = ''; spGenre.style.background = ''; spGenre.style.borderColor = ''; }
+  spBpm.textContent = (t.bpm != null ? t.bpm + ' BPM' : '\u2013');
+  spCreated.textContent = fmtDate(t.createdAt);
+  spRevision.textContent = (t.revision != null ? 'r' + t.revision : '\u2013');
+  spVibe.textContent = (t.vibe && String(t.vibe).trim()) ? t.vibe : '\u2013';
+}
+
+// Track change → update list highlight + now-playing label + side panel
 sc.onTrackChange = (i) => {
   const names = sc.tracks.map(t => t.name);
   nowEl.textContent = '\u25cf NOW PLAYING: ' + (i+1) + ' ' + names[i];
   tlTitle.textContent = (i+1) + '. ' + names[i];
   renderList();
+  renderSidePanel();
 };
 sc.onPlayStateChange = (playing) => {
   if (!playing && sc._startTime === null) {
@@ -760,14 +944,18 @@ sc.onPlayStateChange = (playing) => {
 let _listTimer = null, _listCount = 0, _listIdx = 0;
 function renderList() {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  listEl.innerHTML = sc.tracks.map((t, i) =>
-    '<div class="row ' + (i === sc.current ? 'on' : '') + '" data-i="' + i + '">' +
+  listEl.innerHTML = sc.tracks.map((t, i) => {
+    const gc = genreColor(t.genre);
+    const genreStyle = gc ? 'style="color:' + gc[0] + ';background:' + gc[1] + ';border-color:' + gc[0] + '55"' : '';
+    return '<div class="row ' + (i === sc.current ? 'on' : '') + '" data-i="' + i + '">' +
       '<span class="num">' + (i+1) + '</span>' +
       '<span class="nm" title="' + esc(t.name) + '">' + esc(t.name) + '</span>' +
-      '<span class="bpm">' + (t.bpm != null ? t.bpm + ' BPM' : '&ndash;') + '</span>' +
-      (t.vibe ? '<span class="vb" title="' + esc(t.vibe) + '">' + esc(t.vibe) + '</span>' : '') +
-    '</div>'
-  ).join('');
+      '<span class="chips">' +
+        (t.genre ? '<span class="chip genre" ' + genreStyle + '>' + esc(t.genre) + '</span>' : '') +
+        (t.bpm != null ? '<span class="bpm">' + t.bpm + ' BPM</span>' : '') +
+      '</span>' +
+    '</div>';
+  }).join('');
   listEl.querySelectorAll('.row').forEach(el => {
     el.addEventListener('click', () => {
       const i = parseInt(el.dataset.i, 10);
@@ -888,7 +1076,12 @@ tlEl.addEventListener('click', e => {
 
 // Initial render + restore saved mode prefs to UI
 renderList();
+renderSidePanel();
 syncModes();
+// Populate the transport-bar title for the initially-selected track (track 0).
+// onTrackChange only fires on a *change*, so the first song's title would
+// otherwise stay blank until the user switches songs.
+tlTitle.textContent = '1. ' + sc.tracks[sc.current].name;
 </script>
 </body>
 </html>
@@ -924,9 +1117,10 @@ def main():
     rm = sub.add_parser("remove", help="remove track(s) by --name and/or --index"); rm.add_argument("--game", required=True); rm.add_argument("--name", action="append"); rm.add_argument("--index", action="append"); rm.add_argument("--working-dir", default=".")
     ls = sub.add_parser("list", help="list a game's tracks with indices"); ls.add_argument("--game", required=True); ls.add_argument("--working-dir", default=".")
     sv = sub.add_parser("set-vibe", help="set short vibe description on track(s) by --name/--index"); sv.add_argument("--game", required=True); sv.add_argument("--name", action="append"); sv.add_argument("--index", action="append"); sv.add_argument("--vibe", action="append", required=True, help="one per selector, in order"); sv.add_argument("--working-dir", default=".")
+    ed = sub.add_parser("edit", help="update metadata fields on track(s) and bump revision"); ed.add_argument("--game", required=True); ed.add_argument("--name", action="append"); ed.add_argument("--index", action="append"); ed.add_argument("--set", action="append", required=True, help="key=value (repeatable); value parsed as JSON when it looks like JSON"); ed.add_argument("--working-dir", default=".")
     a = ap.parse_args()
     {"compose": cmd_compose, "validate": cmd_validate, "player": cmd_player,
-     "add": cmd_add, "remove": cmd_remove, "list": cmd_list, "set-vibe": cmd_set_vibe}[a.cmd](a)
+     "add": cmd_add, "remove": cmd_remove, "list": cmd_list, "set-vibe": cmd_set_vibe, "edit": cmd_edit}[a.cmd](a)
 
 
 if __name__ == "__main__":

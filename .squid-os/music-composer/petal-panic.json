@@ -1558,7 +1558,10 @@
       "layerDur": 0.26,
       "kickTop": 95,
       "kickBot": 30,
-      "vibe": "Aggressive dark E-minor metal boss theme \u2014 galloping palm-mute bass, high-gain sawtooth lead with vibrato, pounding double-kick at 144 BPM, menacing carnival-underground energy."
+      "vibe": "Aggressive dark E-minor metal boss theme \u2014 galloping palm-mute bass, high-gain sawtooth lead with vibrato, pounding double-kick at 144 BPM, menacing carnival-underground energy.",
+      "genre": "Metal",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "Ferris Wheel Ascension",
@@ -2877,7 +2880,10 @@
       "layerDur": 0.22,
       "kickTop": 130,
       "kickBot": 42,
-      "vibe": "Euphoric trance, four-on-the-floor kick with rolling 16th hats, soaring square-wave lead over bright arpeggiated pads, A major with a big uplifting emotional lift."
+      "vibe": "Euphoric trance, four-on-the-floor kick with rolling 16th hats, soaring square-wave lead over bright arpeggiated pads, A major with a big uplifting emotional lift.",
+      "genre": "Trance",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "Midnight Calliope",
@@ -4196,7 +4202,10 @@
       "layerDur": 0.3,
       "kickTop": 110,
       "kickBot": 40,
-      "vibe": "Mellow, groovy acid jazz/nu-jazz \u2014 warm Rhodes-like pads, syncopated swing, muted-brass lead over a steady walking bass, smooth mid-tempo night-carnival mood."
+      "vibe": "Mellow, groovy acid jazz/nu-jazz \u2014 warm Rhodes-like pads, syncopated swing, muted-brass lead over a steady walking bass, smooth mid-tempo night-carnival mood.",
+      "genre": "Acid Jazz",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "PYRA",
@@ -5449,7 +5458,10 @@
       "layerDur": 0.2,
       "kickTop": 130,
       "kickBot": 42,
-      "vibe": "Fast 150 BPM Egyptian punk-metal with NES chiptune flavor \u2014 heavy E minor riffing laced with phrygian-dominant and chromatic notes for an ancient, aggressive feel."
+      "vibe": "Fast 150 BPM Egyptian punk-metal with NES chiptune flavor \u2014 heavy E minor riffing laced with phrygian-dominant and chromatic notes for an ancient, aggressive feel.",
+      "genre": "Punk Metal",
+      "createdAt": "2026-09-13T14:59:10",
+      "revision": 1
     },
     {
       "name": "CARNIVAL NIGHT FIGHT",
@@ -6702,7 +6714,10 @@
       "layerDur": 0.18,
       "kickTop": 140,
       "kickBot": 45,
-      "vibe": "Fast E-phrygian-dominant punk-metal brawl at 168 BPM \u2014 ancient Egyptian half-step bite over bright fairground calliope layer, full driving drums, night mood."
+      "vibe": "Fast E-phrygian-dominant punk-metal brawl at 168 BPM \u2014 ancient Egyptian half-step bite over bright fairground calliope layer, full driving drums, night mood.",
+      "genre": "Punk Metal",
+      "createdAt": "2026-09-13T14:59:10",
+      "revision": 1
     },
     {
       "name": "Petal Panic Title v1 dream REMIX",
@@ -8085,7 +8100,10 @@
         3,
         2
       ],
-      "vibe": "Grand triumphant circus calliope fanfare in fast 8-bit chiptune \u2014 square-wave leads, punchy saw bass, fist-like drums \u2014 that curdles into uneasy whimsical horror as a tritone creeps in."
+      "vibe": "Grand triumphant circus calliope fanfare in fast 8-bit chiptune \u2014 square-wave leads, punchy saw bass, fist-like drums \u2014 that curdles into uneasy whimsical horror as a tritone creeps in.",
+      "genre": "Chiptune",
+      "createdAt": "2026-09-13T01:42:03",
+      "revision": 1
     },
     {
       "name": "Brilliantly Stupid v1 REMIX",
@@ -9371,7 +9389,10 @@
         3,
         2
       ],
-      "vibe": "Slow, grand, ridiculous chiptune \u2014 a pompous villain fanfare played deadpan that cracks and collapses into half-time stupidity, not scary but absurd."
+      "vibe": "Slow, grand, ridiculous chiptune \u2014 a pompous villain fanfare played deadpan that cracks and collapses into half-time stupidity, not scary but absurd.",
+      "genre": "Chiptune",
+      "createdAt": "2026-09-13T01:42:03",
+      "revision": 1
     },
     {
       "name": "Brilliantly Stupid v3 REMIX",
@@ -10657,7 +10678,10 @@
         3,
         2
       ],
-      "vibe": "Slow, grand, ridiculous NES chiptune \u2014 a pompous villain parade fanfare played deadpan that cracks and collapses into half-time absurd defeat, not scary but stupid."
+      "vibe": "Slow, grand, ridiculous NES chiptune \u2014 a pompous villain parade fanfare played deadpan that cracks and collapses into half-time absurd defeat, not scary but stupid.",
+      "genre": "Chiptune",
+      "createdAt": "2026-09-13T01:42:03",
+      "revision": 1
     },
     {
       "name": "ACID METAL REMIX",
@@ -11879,7 +11903,10 @@
         3,
         2
       ],
-      "vibe": "E-minor techno-metal at 150 BPM, punchy sawtooth bass and square-wave lead, aggressive riffing with drums stacking from backbeat to busy 16th hats \u2014 fast, heavy, industrial."
+      "vibe": "E-minor techno-metal at 150 BPM, punchy sawtooth bass and square-wave lead, aggressive riffing with drums stacking from backbeat to busy 16th hats \u2014 fast, heavy, industrial.",
+      "genre": "Techno Metal",
+      "createdAt": "2026-09-11T12:02:17",
+      "revision": 1
     },
     {
       "name": "ACID JAZZ NIGHT REMIX",
@@ -13101,7 +13128,10 @@
         3,
         2
       ],
-      "vibe": "Mellow, groovy acid jazz / nu-jazz night groove \u2014 warm Rhodes-like pads, syncopated swing feel, muted-brass square lead over a steady walking bass, mid-tempo and smooth."
+      "vibe": "Mellow, groovy acid jazz / nu-jazz night groove \u2014 warm Rhodes-like pads, syncopated swing feel, muted-brass square lead over a steady walking bass, mid-tempo and smooth.",
+      "genre": "Acid Jazz",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "GRAVE PUNK REMIX",
@@ -14323,7 +14353,10 @@
         3,
         2
       ],
-      "vibe": "E-minor punk at 168 BPM \u2014 fast, aggressive, headbanging; driving 8th-note sawtooth bass, square-wave lead with a rising hook into a full-speed riff climax, drums stacking to busy 16th hats."
+      "vibe": "E-minor punk at 168 BPM \u2014 fast, aggressive, headbanging; driving 8th-note sawtooth bass, square-wave lead with a rising hook into a full-speed riff climax, drums stacking to busy 16th hats.",
+      "genre": "Punk",
+      "createdAt": "2026-09-11T12:02:17",
+      "revision": 1
     },
     {
       "name": "CRYPT WALTZ REMIX",
@@ -15545,7 +15578,10 @@
         3,
         2
       ],
-      "vibe": "Slow E-minor gothic dirge waltz; deep triangle bass on downbeats, mournful vibrato square lead, sparse building funeral-kick drums \u2014 dark, atmospheric bat-cave energy."
+      "vibe": "Slow E-minor gothic dirge waltz; deep triangle bass on downbeats, mournful vibrato square lead, sparse building funeral-kick drums \u2014 dark, atmospheric bat-cave energy.",
+      "genre": "Gothic",
+      "createdAt": "2026-09-11T12:02:17",
+      "revision": 1
     },
     {
       "name": "CELTIC PIRATES REMIX",
@@ -16767,7 +16803,10 @@
         3,
         2
       ],
-      "vibe": "Fast, intense 8-bit pirate run-and-gun \u2014 storm-tossed tilting deck, thunder on the downbeat, cannon fire between phrases, ominous brass cutting through wind, maximum action pressure."
+      "vibe": "Fast, intense 8-bit pirate run-and-gun \u2014 storm-tossed tilting deck, thunder on the downbeat, cannon fire between phrases, ominous brass cutting through wind, maximum action pressure.",
+      "genre": "Chiptune",
+      "createdAt": "2026-09-13T14:59:10",
+      "revision": 1
     },
     {
       "name": "STORM AT SEA REMIX",
@@ -17989,7 +18028,10 @@
         3,
         2
       ],
-      "vibe": "Dark A-minor storm dirge at 84 BPM \u2014 deep slow triangle bass, mournful descending square lead with vibrato, sparse funeral drums swelling into a rolling sea, ominous chiptune voyage."
+      "vibe": "Dark A-minor storm dirge at 84 BPM \u2014 deep slow triangle bass, mournful descending square lead with vibrato, sparse funeral drums swelling into a rolling sea, ominous chiptune voyage.",
+      "genre": "Dirge",
+      "createdAt": "2026-09-11T12:02:17",
+      "revision": 1
     },
     {
       "name": "MARCH TO POWER REMIX",
@@ -19211,7 +19253,10 @@
         3,
         2
       ],
-      "vibe": "A-major military march at 120 BPM \u2014 heavy downbeat triangle bass boom-chick cadence, bold square lead rising fanfare hook into a full brass-style climax, drums building to marching sixteenths."
+      "vibe": "A-major military march at 120 BPM \u2014 heavy downbeat triangle bass boom-chick cadence, bold square lead rising fanfare hook into a full brass-style climax, drums building to marching sixteenths.",
+      "genre": "March",
+      "createdAt": "2026-09-11T12:02:17",
+      "revision": 1
     },
     {
       "name": "THE DECREE REMIX",
@@ -20433,7 +20478,10 @@
         3,
         2
       ],
-      "vibe": "Cold A-minor imperial anthem at 90 BPM \u2014 deep sub-bass, sparse commanding lead with long held notes and wide pauses, ceremonial drums swelling to a roll; monumental throne-room gravity for the boss reveal."
+      "vibe": "Cold A-minor imperial anthem at 90 BPM \u2014 deep sub-bass, sparse commanding lead with long held notes and wide pauses, ceremonial drums swelling to a roll; monumental throne-room gravity for the boss reveal.",
+      "genre": "Anthem",
+      "createdAt": "2026-09-11T12:02:17",
+      "revision": 1
     },
     {
       "name": "PHARAOH FURY v1 REMIX",
@@ -21752,7 +21800,10 @@
       "layerDur": 0.2,
       "kickTop": 130,
       "kickBot": 38,
-      "vibe": "Egyptian 8-bit drum-and-bass boss track \u2014 bad-ass, aggressive chiptune with punchy square-wave lead and heavy rolling DnB drums at a furious 174 BPM."
+      "vibe": "Egyptian 8-bit drum-and-bass boss track \u2014 bad-ass, aggressive chiptune with punchy square-wave lead and heavy rolling DnB drums at a furious 174 BPM.",
+      "genre": "Drum and Bass",
+      "createdAt": "2026-09-13T14:59:10",
+      "revision": 1
     },
     {
       "name": "BLOOM OF THE DAMNED v1 REMIX",
@@ -23311,7 +23362,10 @@
       "layerDur": 0.3,
       "kickTop": 90,
       "kickBot": 28,
-      "vibe": "Epic 8-bit metal boss \u2014 heavy, slow, massive; 132 BPM half-time weight, sparse hammer-stab power chords, walking-root saw bass, chugging pads, deep punchy kick, dark E-minor doom."
+      "vibe": "Epic 8-bit metal boss \u2014 heavy, slow, massive; 132 BPM half-time weight, sparse hammer-stab power chords, walking-root saw bass, chugging pads, deep punchy kick, dark E-minor doom.",
+      "genre": "Metal",
+      "createdAt": "2026-09-13T14:35:21",
+      "revision": 1
     },
     {
       "name": "Boss Stomp v5 REMIX",
@@ -24837,7 +24891,10 @@
       "layerDur": 0.2,
       "kickTop": 130,
       "kickBot": 38,
-      "vibe": "8-bit chiptune boss theme \u2014 not melodic but rhythmic menace; heavy pounding, low growling sawtooth bass, staccato square-wave hits landing like punches, fist-like drums, fast aggressive punk energy at 180 BPM."
+      "vibe": "8-bit chiptune boss theme \u2014 not melodic but rhythmic menace; heavy pounding, low growling sawtooth bass, staccato square-wave hits landing like punches, fist-like drums, fast aggressive punk energy at 180 BPM.",
+      "genre": "Chiptune",
+      "createdAt": "2026-09-13T01:42:03",
+      "revision": 1
     },
     {
       "name": "PETAL PANIC TITLE - EPIQUE",
@@ -26220,7 +26277,10 @@
       "layerDur": 0.3,
       "kickTop": 125,
       "kickBot": 40,
-      "vibe": "Epic, memorable 8-bit chiptune title theme \u2014 warm singing square-wave lead over a hummable A-major arpeggio hook, punchy sawtooth bass, wide epic pads, triumphant pop-minor progression building to a joyful peak."
+      "vibe": "Epic, memorable 8-bit chiptune title theme \u2014 warm singing square-wave lead over a hummable A-major arpeggio hook, punchy sawtooth bass, wide epic pads, triumphant pop-minor progression building to a joyful peak.",
+      "genre": "Chiptune",
+      "createdAt": "2026-09-13T14:59:10",
+      "revision": 1
     },
     {
       "name": "TROPIC FIGHT ON DOCTOR ISLAND",
@@ -27491,7 +27551,10 @@
       "layerDur": 0.26,
       "kickTop": 110,
       "kickBot": 38,
-      "vibe": "Jazz-funk beat-and-bump at 104 BPM \u2014 groovy head-nod groove in Dorian b7 (Bb9), syncopated triangle bass with passing chromatics, muted-hat funk ghosting, wah-ish singing square lead, tropical fight energy."
+      "vibe": "Jazz-funk beat-and-bump at 104 BPM \u2014 groovy head-nod groove in Dorian b7 (Bb9), syncopated triangle bass with passing chromatics, muted-hat funk ghosting, wah-ish singing square lead, tropical fight energy.",
+      "genre": "Jazz Funk",
+      "createdAt": "2026-09-13T14:59:10",
+      "revision": 1
     },
     {
       "name": "TROPIC FIGHT 2 - THE TOWER ASCENSION",
@@ -28762,7 +28825,10 @@
       "layerDur": 0.2,
       "kickTop": 150,
       "kickBot": 48,
-      "vibe": "Catchy rock-metal-punk chiptune at 172 BPM \u2014 syncopated hook with a flat-6 wrong note that never resolves, epic Am-F-G-E minor circle, driving drums and octave-jump peaks."
+      "vibe": "Catchy rock-metal-punk chiptune at 172 BPM \u2014 syncopated hook with a flat-6 wrong note that never resolves, epic Am-F-G-E minor circle, driving drums and octave-jump peaks.",
+      "genre": "Punk Metal",
+      "createdAt": "2026-09-13T14:59:10",
+      "revision": 1
     },
     {
       "name": "TROPIC FIGHT 3 - DESCENT TO THE SEWER PASSAGE",
@@ -30033,7 +30099,10 @@
       "layerDur": 0.2,
       "kickTop": 150,
       "kickBot": 48,
-      "vibe": "Fast 172 BPM punk-metal chiptune in E major \u2014 square-wave lead with biting syncopation, punchy sawtooth bass, escalating drums, catchy falling melody that sinks into a low-register sewer dump."
+      "vibe": "Fast 172 BPM punk-metal chiptune in E major \u2014 square-wave lead with biting syncopation, punchy sawtooth bass, escalating drums, catchy falling melody that sinks into a low-register sewer dump.",
+      "genre": "Punk Metal",
+      "createdAt": "2026-09-13T14:59:10",
+      "revision": 1
     },
     {
       "name": "PHARAOH'S WRATH",
@@ -31206,7 +31275,10 @@
       "layerDur": 0.15,
       "kickTop": 165,
       "kickBot": 40,
-      "vibe": "Aggressive Egyptian punk metal \u2014 fast 180 BPM, E harmonic minor, staccato 3-note hook over chugging eighth-note sawtooth bass with an angular square/saw lead and full pounding punk drums; heavy, raw, simple."
+      "vibe": "Aggressive Egyptian punk metal \u2014 fast 180 BPM, E harmonic minor, staccato 3-note hook over chugging eighth-note sawtooth bass with an angular square/saw lead and full pounding punk drums; heavy, raw, simple.",
+      "genre": "Punk Metal",
+      "createdAt": "2026-09-17T06:02:24",
+      "revision": 1
     },
     {
       "name": "TOMB OF THE DAMNED",
@@ -32379,7 +32451,10 @@
       "layerDur": 0.2,
       "kickTop": 140,
       "kickBot": 38,
-      "vibe": "Heavy D-minor thrash at 174 BPM \u2014 galloping triplet sawtooth bass, low growling lead with deep vibrato, thick dark pads, full punk drums; slower, heavier, menacing than its siblings."
+      "vibe": "Heavy D-minor thrash at 174 BPM \u2014 galloping triplet sawtooth bass, low growling lead with deep vibrato, thick dark pads, full punk drums; slower, heavier, menacing than its siblings.",
+      "genre": "Thrash",
+      "createdAt": "2026-09-17T06:02:24",
+      "revision": 1
     },
     {
       "name": "SCARAB STOMP",
@@ -33528,7 +33603,10 @@
       "layerDur": 0.12,
       "kickTop": 170,
       "kickBot": 38,
-      "vibe": "Pure speed punk, 184 BPM A minor; relentless square-wave root chug, one-note chant lead breaking into a fast riff, busiest drums, no pads until peak \u2014 fastest, thinnest, rawest of the set."
+      "vibe": "Pure speed punk, 184 BPM A minor; relentless square-wave root chug, one-note chant lead breaking into a fast riff, busiest drums, no pads until peak \u2014 fastest, thinnest, rawest of the set.",
+      "genre": "Speed Punk",
+      "createdAt": "2026-09-17T06:02:24",
+      "revision": 1
     },
     {
       "name": "ANUBIS RAGE",
@@ -34701,7 +34779,10 @@
       "layerDur": 0.22,
       "kickTop": 150,
       "kickBot": 42,
-      "vibe": "Mid-tempo heavy Egyptian punk-metal breakdown in B minor \u2014 groovy walking bass, a singable square-wave lead that actually sings, warm sawtooth pads, full punchy drums; heavier and more dynamic than its frantic siblings."
+      "vibe": "Mid-tempo heavy Egyptian punk-metal breakdown in B minor \u2014 groovy walking bass, a singable square-wave lead that actually sings, warm sawtooth pads, full punchy drums; heavier and more dynamic than its frantic siblings.",
+      "genre": "Punk Metal",
+      "createdAt": "2026-09-17T06:02:24",
+      "revision": 1
     },
     {
       "name": "Circus Balloon Drift",
@@ -35874,7 +35955,10 @@
       "layerDur": 0.5,
       "kickTop": 120,
       "kickBot": 45,
-      "vibe": "Chill, mellow lo-fi hip hop for a circus platformer \u2014 soft boom-bap drums, warm triangle/sine bass and pads with long notes, lazy floating drift at 80 BPM."
+      "vibe": "Chill, mellow lo-fi hip hop for a circus platformer \u2014 soft boom-bap drums, warm triangle/sine bass and pads with long notes, lazy floating drift at 80 BPM.",
+      "genre": "Lo-fi Hip Hop",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "PIERROT'S GRINDER",
@@ -37067,7 +37151,10 @@
       "layerDur": 0.14,
       "kickTop": 150,
       "kickBot": 38,
-      "vibe": "Aggressive, mechanical industrial chiptune for a circus platformer \u2014 harsh four-on-the-floor kick, sawtooth bass/lead/pads with high cuts and short punchy notes, driving 130 BPM A-minor menace."
+      "vibe": "Aggressive, mechanical industrial chiptune for a circus platformer \u2014 harsh four-on-the-floor kick, sawtooth bass/lead/pads with high cuts and short punchy notes, driving 130 BPM A-minor menace.",
+      "genre": "Industrial",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "Big Top Skank",
@@ -38385,7 +38472,10 @@
       "layerDur": 0.5,
       "kickTop": 150,
       "kickBot": 55,
-      "vibe": "Laid-back offbeat reggae skank for a circus platformer \u2014 breezy, mellow, warm major/minor seventh chords, melodic walking triangle bass, sine pads, gentle one-drop groove with space."
+      "vibe": "Laid-back offbeat reggae skank for a circus platformer \u2014 breezy, mellow, warm major/minor seventh chords, melodic walking triangle bass, sine pads, gentle one-drop groove with space.",
+      "genre": "Reggae",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "BAROQUE BIGTOP",
@@ -39638,7 +39728,10 @@
       "layerDur": 0.22,
       "kickTop": 120,
       "kickBot": 40,
-      "vibe": "Ornate harpsichord-style Baroque circus theme \u2014 contrapuntal square-wave leads with melodic runs over a ground-bass ostinato and rich figured-bass chords, sparse lute-pluck drums, elegant and ceremonial at 100 BPM."
+      "vibe": "Ornate harpsichord-style Baroque circus theme \u2014 contrapuntal square-wave leads with melodic runs over a ground-bass ostinato and rich figured-bass chords, sparse lute-pluck drums, elegant and ceremonial at 100 BPM.",
+      "genre": "Baroque",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "BIG TOP RUMBLE",
@@ -40771,7 +40864,10 @@
       "layerDur": 0.5,
       "kickTop": 110,
       "kickBot": 40,
-      "vibe": "Heavy dubstep with slow wobble sawtooth bass and half-time snare on beat three, dark atmospheric melody over sustained pads, ominous rumbling circus energy at 140 BPM."
+      "vibe": "Heavy dubstep with slow wobble sawtooth bass and half-time snare on beat three, dark atmospheric melody over sustained pads, ominous rumbling circus energy at 140 BPM.",
+      "genre": "Dubstep",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "Carnaval do Circo",
@@ -42089,7 +42185,10 @@
       "layerDur": 0.28,
       "kickTop": 110,
       "kickBot": 45,
-      "vibe": "Smooth bossa nova Brazilian swing for a circus platformer \u2014 lazy surdo kick, soft shaker hats, gentle walking bass, lyrical sine lead over lush warm maj7/min9 pads."
+      "vibe": "Smooth bossa nova Brazilian swing for a circus platformer \u2014 lazy surdo kick, soft shaker hats, gentle walking bass, lyrical sine lead over lush warm maj7/min9 pads.",
+      "genre": "Bossa Nova",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "CIRCUS OF STATIC",
@@ -43342,7 +43441,10 @@
       "layerDur": 0.22,
       "kickTop": 120,
       "kickBot": 40,
-      "vibe": "Driving repetitive club techno at 135 BPM, four-on-the-floor kick with busy 16th hats, steady pulsing sawtooth root bass, minimal hypnotic square-wave hook over dark sustained pads \u2014 cold, mechanical, relentless."
+      "vibe": "Driving repetitive club techno at 135 BPM, four-on-the-floor kick with busy 16th hats, steady pulsing sawtooth root bass, minimal hypnotic square-wave hook over dark sustained pads \u2014 cold, mechanical, relentless.",
+      "genre": "Techno",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "TENTHOOD JIG",
@@ -44661,7 +44763,10 @@
       "layerDur": 0.2,
       "kickTop": 150,
       "kickBot": 55,
-      "vibe": "Fast Celtic folk jig/reel for a circus platformer \u2014 lively fiddle-tune lead, bodhran soft kick and light shaker, open-fifth drone pads, bright bouncy energy at 120 BPM."
+      "vibe": "Fast Celtic folk jig/reel for a circus platformer \u2014 lively fiddle-tune lead, bodhran soft kick and light shaker, open-fifth drone pads, bright bouncy energy at 120 BPM.",
+      "genre": "Celtic Folk",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "CIRCUIT BIGTOP",
@@ -45978,7 +46083,10 @@
       "layerDur": 0.2,
       "kickTop": 130,
       "kickBot": 42,
-      "vibe": "Electric jazz fusion groove \u2014 complex syncopated ghost-note drums, chromatic walking bass, sophisticated improvisatory melody over lush extended 9th/13th chords, sawtooth guitar-ish lead, mid-tempo."
+      "vibe": "Electric jazz fusion groove \u2014 complex syncopated ghost-note drums, chromatic walking bass, sophisticated improvisatory melody over lush extended 9th/13th chords, sawtooth guitar-ish lead, mid-tempo.",
+      "genre": "Jazz Fusion",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "The Hollow Ring",
@@ -47100,7 +47208,10 @@
       "layerDur": 2.2,
       "kickTop": 140,
       "kickBot": 42,
-      "vibe": "Creepy horror-ambient drone at a slow 58 BPM \u2014 sparse distant thuds and cymbal wash, deep sine drones, eerie dissonant floating notes over minor-second and tritone clusters, unsettling whispering counter-melody."
+      "vibe": "Creepy horror-ambient drone at a slow 58 BPM \u2014 sparse distant thuds and cymbal wash, deep sine drones, eerie dissonant floating notes over minor-second and tritone clusters, unsettling whispering counter-melody.",
+      "genre": "Horror Ambient",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "Pirate Ship Reel",
@@ -48353,7 +48464,10 @@
       "layerDur": 0.2,
       "kickTop": 110,
       "kickBot": 45,
-      "vibe": "Lively Celtic folk jig/reel, fiddle-tune triangle lead over open-fifth sine pads, bodhran soft kick and light shaker with a steady 8th-note root/fifth bass groove \u2014 bright D-major circus energy at 120 BPM."
+      "vibe": "Lively Celtic folk jig/reel, fiddle-tune triangle lead over open-fifth sine pads, bodhran soft kick and light shaker with a steady 8th-note root/fifth bass groove \u2014 bright D-major circus energy at 120 BPM.",
+      "genre": "Celtic Folk",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "Tent Acid Trip",
@@ -49572,7 +49686,10 @@
       "layerDur": 0.24,
       "kickTop": 120,
       "kickBot": 40,
-      "vibe": "Psychedelic rock for a circus platformer \u2014 fuzzy, swirling, odd-time feel at 95 BPM; high-vibrato sawtooth lead bending between notes over lurching fuzzy bass and warm swirly pads in C minor."
+      "vibe": "Psychedelic rock for a circus platformer \u2014 fuzzy, swirling, odd-time feel at 95 BPM; high-vibrato sawtooth lead bending between notes over lurching fuzzy bass and warm swirly pads in C minor.",
+      "genre": "Psych Rock",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "Carousel Disco",
@@ -50891,7 +51008,10 @@
       "layerDur": 0.22,
       "kickTop": 120,
       "kickBot": 40,
-      "vibe": "Bright four-on-floor disco dance groove \u2014 funky syncopated sawtooth bass, catchy square-wave arpeggio hook, offbeat open hats, string-stab layers, upbeat cheerful major-key energy."
+      "vibe": "Bright four-on-floor disco dance groove \u2014 funky syncopated sawtooth bass, catchy square-wave arpeggio hook, offbeat open hats, string-stab layers, upbeat cheerful major-key energy.",
+      "genre": "Disco",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "Midnight Big Top",
@@ -52110,7 +52230,10 @@
       "layerDur": 0.3,
       "kickTop": 100,
       "kickBot": 35,
-      "vibe": "Moody gothic darkwave at 100 BPM \u2014 melancholic soaring square-wave lead over dark sustained sawtooth minor pads and a sparse driving beat."
+      "vibe": "Moody gothic darkwave at 100 BPM \u2014 melancholic soaring square-wave lead over dark sustained sawtooth minor pads and a sparse driving beat.",
+      "genre": "Darkwave",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "Sawdust Breaks",
@@ -53349,7 +53472,10 @@
       "layerDur": 0.18,
       "kickTop": 150,
       "kickBot": 45,
-      "vibe": "Breakbeat/electro at 125 BPM in C minor \u2014 sampled-drum feel with busy 16th hats and ghost snares, punchy square-wave electro bass stabs, angular electro lead riff, minimal sawtooth pads, high-energy circus-platformer groove."
+      "vibe": "Breakbeat/electro at 125 BPM in C minor \u2014 sampled-drum feel with busy 16th hats and ghost snares, punchy square-wave electro bass stabs, angular electro lead riff, minimal sawtooth pads, high-energy circus-platformer groove.",
+      "genre": "Breakbeat",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "Circus Requiem",
@@ -54522,7 +54648,10 @@
       "layerDur": 0.7,
       "kickTop": 110,
       "kickBot": 45,
-      "vibe": "Minimal neoclassical, slow and emotional at 70 BPM \u2014 sparse heartbeat pulse, deep roots, arpeggiated piano-like sine melody over lush sustained chords."
+      "vibe": "Minimal neoclassical, slow and emotional at 70 BPM \u2014 sparse heartbeat pulse, deep roots, arpeggiated piano-like sine melody over lush sustained chords.",
+      "genre": "Neoclassical",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "Ratchet Shred",
@@ -55775,7 +55904,10 @@
       "layerDur": 0.16,
       "kickTop": 150,
       "kickBot": 45,
-      "vibe": "Blazing speed-metal shred for a circus platformer \u2014 galloping eighth-note sawtooth bass, fast high-vibrato shredding leads, double-blast kick drums with 16th hats, dark minimal pads, E-minor frenzy."
+      "vibe": "Blazing speed-metal shred for a circus platformer \u2014 galloping eighth-note sawtooth bass, fast high-vibrato shredding leads, double-blast kick drums with 16th hats, dark minimal pads, E-minor frenzy.",
+      "genre": "Speed Metal",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "Carrot Soul",
@@ -57126,7 +57258,10 @@
       "layerDur": 0.24,
       "kickTop": 130,
       "kickBot": 42,
-      "vibe": "Warm, groovy soul-funk groove for a circus platformer \u2014 deep melodic funk bass, soulful call-and-response leads, tight pocket drums with ghost notes, lush extended-chord pads."
+      "vibe": "Warm, groovy soul-funk groove for a circus platformer \u2014 deep melodic funk bass, soulful call-and-response leads, tight pocket drums with ghost notes, lush extended-chord pads.",
+      "genre": "Soul Funk",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     },
     {
       "name": "Carnival Breeze",
@@ -58511,7 +58646,10 @@
       "layerDur": 0.22,
       "kickTop": 110,
       "kickBot": 45,
-      "vibe": "Laid-back sunny tropical house, ~100 BPM; soft four-on-floor kick with shaker hats, round sub-bass, breezy pentatonic triangle lead over warm sine major pads and marimba-like plucks."
+      "vibe": "Laid-back sunny tropical house, ~100 BPM; soft four-on-floor kick with shaker hats, round sub-bass, breezy pentatonic triangle lead over warm sine major pads and marimba-like plucks.",
+      "genre": "Tropical House",
+      "createdAt": "2026-09-17T06:19:54",
+      "revision": 1
     }
   ]
 }
