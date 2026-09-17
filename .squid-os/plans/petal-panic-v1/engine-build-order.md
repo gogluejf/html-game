@@ -88,7 +88,7 @@ Files:
 
 ---
 
-### 8. Level Shape Engine (`js/level-shape.js`)
+### 3. Level Shape Engine (`js/level-shape.js`)
 
 **Why second:** Bosses need arenas, enemies need varied terrain, rogue spawner needs
 platforms to place things on. Right now everything is one flat line.
@@ -109,7 +109,7 @@ Files:
 
 ---
 
-### 8. Explosion / Radius / TTL Generic Engine (`js/blast.js`)
+### 4. Explosion / Radius / TTL Generic Engine (`js/blast.js`)
 
 **Why third:** Bosses, Jack-O-Lanterns, barrels, powerups, ground attacks all need
 "circle of damage for X seconds." Extract the barrel special-case into a reusable primitive.
@@ -130,7 +130,7 @@ Files:
 
 ---
 
-### 8. Special Effects Engine (`js/effects-engine.js`)
+### 5. Special Effects Engine (`js/effects-engine.js`)
 
 **Why fourth:** Bosses and explosions trigger VFX through one API instead of
 ad-hoc calls. Formalize what's already in `effects.js`.
@@ -155,7 +155,7 @@ Files:
 
 ---
 
-### 8. Projectile Engine Upgrade (`js/projectile.js`)
+### 6. Projectile Engine Upgrade (`js/projectile.js`)
 
 **Why fifth:** Bosses need missile patterns. Normalize aim, add pattern support.
 
@@ -175,7 +175,7 @@ Files:
 
 ---
 
-### 8. Boss Pattern / Macro Engine (`js/boss-pattern.js`)
+### 7. Boss Pattern / Macro Engine (`js/boss-pattern.js`)
 
 **Why last:** It composes everything above. Spawns enemies, fires projectile
 patterns, triggers blasts, switches phases, uses hitboxes. Building it first
