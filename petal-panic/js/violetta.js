@@ -213,6 +213,11 @@ function dirAngleLocal(dir) { return DIR_ANGLES[((dir % 8) + 8) % 8]; }
 /** Nearest 8-way aim index for an (dx, dy) offset (screen y grows downward). */
 function nearestDirIndex(dx, dy) {
   if (dx === 0 && dy === 0) return 0;
+  // Snap to horizontal when vertical offset is negligible (prevents shooting
+  // into the floor when targets are at roughly the same height).
+  if (Math.abs(dy) < 20) {
+    return dx > 0 ? 0 : 4; // right or left
+  }
   if (dx > 0 && dy < 0) return 1; // up-right
   if (dx < 0 && dy < 0) return 3; // up-left
   if (dx < 0 && dy > 0) return 5; // down-left

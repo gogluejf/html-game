@@ -1360,18 +1360,65 @@ function explodeSpecial(s) {
 // exactly one hit each. The cooldown prevents spamming.
 
 // --- Unified hitbox system ---------------------------------------------------
-// All attack hitboxes (hero melee, hero super, enemy whip/lunge/jab) register
-// here each frame. One generic loop processes them via processHitboxes().
+// All attack hitboxes register here each frame. One generic loop processes
+// them via processHitboxes(). Each hitbox "slot" follows the same lifecycle:
+//   box appears → activate + reset hitSet (fresh instance)
+//   box persists → stay active, hitSet prevents re-hits
+//   box disappears → deactivate, flag ready for next instance
 
 const _hitboxes = []; // registered hitbox instances (reused, not allocated per frame)
 
-// Hero melee hitbox (ally team).
+/**
+ * A hitbox slot: pairs a persistent Hitbox object with the state needed to
+ * track its instance lifecycle (reset-on-first-frame pattern).
+ */
+function makeSlot(hb, { ownerGet, boxGet, damageGet, resetFlag }) {
+  return { hb, ownerGet, boxGet, damageGet, resetFlag };
+}
+
+/**
+ * Update one hitbox slot for this tick. Returns nothing; mutates the slot's
+ * hitbox in place. The resetFlag is a [getter, setter] pair on the owner so
+ * each entity tracks its own "has this instance already reset?" state.
+ */
+function updateSlot(slot) {
+  const { hb, ownerGet, boxGet, damageGet, resetFlag } = slot;
+  const owner = ownerGet();
+  const box = boxGet();
+  if (box && owner) {
+    hb.owner = owner;
+    hb.box = box;
+    hb.damage = damageGet();
+    hb.active = true;
+    if (!resetFlag.get()) {
+      resetHitbox(hb);
+      resetFlag.set(true);
+    }
+  } else {
+    hb.active = false;
+    resetFlag.set(false);
+  }
+}
+
+// Hero melee slot.
 const _hbMelee = makeHitbox({ owner: null, team: 'ally', box: null, damage: 0, method: 'melee' });
 _hitboxes.push(_hbMelee);
+const _slotMelee = makeSlot(_hbMelee, {
+  ownerGet: () => hero,
+  boxGet: () => hero.meleeHitboxWorld,
+  damageGet: () => hero.stats.attack,
+  resetFlag: { get: () => !!hero._meleeHbReset, set: v => hero._meleeHbReset = v },
+});
 
-// Hero super dash hitbox (ally team).
+// Hero supermove dash slot.
 const _hbSuper = makeHitbox({ owner: null, team: 'ally', box: null, damage: 0, method: 'super' });
 _hitboxes.push(_hbSuper);
+const _slotSuper = makeSlot(_hbSuper, {
+  ownerGet: () => hero,
+  boxGet: () => hero.supermoveHitboxWorld,
+  damageGet: () => hero.stats.attack * 2,
+  resetFlag: { get: () => !!hero._supermoveHbReset, set: v => hero._supermoveHbReset = v },
+});
 
 /**
  * Register active hitboxes for this frame and process them all in one pass.
@@ -1380,39 +1427,23 @@ _hitboxes.push(_hbSuper);
 function processAllHitboxes() {
   const h = hero;
 
-  // --- Hero melee ---
-  const mh = h.meleeHitboxWorld;
-  if (mh) {
-    _hbMelee.owner = h;
-    _hbMelee.box = mh;
-    _hbMelee.damage = h.stats.attack;
-    _hbMelee.active = true;
-    // Reset hit set at start of active frame.
-    if (!h._meleeHitSet || h.meleeFrame < h.MELEE_ACTIVE_FRAME + 0.5) {
-      resetHitbox(_hbMelee);
-      h._meleeHitSet = _hbMelee.hitSet; // keep legacy ref working
-    }
-  } else {
-    _hbMelee.active = false;
-  }
-
-  // --- Hero super dash ---
-  const sh = h.superHitboxWorld;
-  if (sh) {
-    _hbSuper.owner = h;
-    _hbSuper.box = sh;
-    _hbSuper.damage = h.stats.attack * 2;
-    _hbSuper.active = true;
-  } else {
-    _hbSuper.active = false;
-  }
+  // --- Hero slots (melee + supermove) ---
+  updateSlot(_slotMelee);
+  updateSlot(_slotSuper);
 
   // --- Enemy attack hitboxes (whip, lunge, jab) ---
   // Each real enemy exposes an attack hitbox getter. Register dynamically.
   for (const e of realEnemies) {
     if (!e.alive || e.aiState === 'dead') continue;
     const ehb = getEnemyAttackHitbox(e);
-    if (!ehb) continue;
+    if (!ehb) {
+      // No box this frame → deactivate + ready for next attack.
+      if (e._hitbox) {
+        e._hitbox.active = false;
+        e._hitboxReset = false;
+      }
+      continue;
+    }
     let hb = e._hitbox;
     if (!hb) {
       hb = makeHitbox({ owner: e, team: 'foe', box: null, damage: e.stats.attack, method: 'melee' });
@@ -1426,13 +1457,6 @@ function processAllHitboxes() {
     if (!e._hitboxReset) {
       resetHitbox(hb);
       e._hitboxReset = true;
-    }
-  }
-  // Deactivate enemy hitboxes that aren't attacking this frame.
-  for (const e of realEnemies) {
-    if (e._hitbox && !getEnemyAttackHitbox(e)) {
-      e._hitbox.active = false;
-      e._hitboxReset = false;
     }
   }
 

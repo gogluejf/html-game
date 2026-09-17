@@ -445,7 +445,7 @@ function drawDebugOverlay(ctx) {
   }
 
   // Super dash hitbox in YELLOW when active (debug only) — same as melee.
-  const sh = hero.superHitboxWorld;
+  const sh = hero.supermoveHitboxWorld;
   if (sh) {
     ctx.save();
     ctx.globalAlpha = 0.6;

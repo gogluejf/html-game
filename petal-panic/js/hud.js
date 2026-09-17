@@ -80,12 +80,12 @@ function drawSuperMeter(ctx, hero) {
   ctx.fillRect(barX, barY, barW, barH);
 
   // Fill (purple).
-  const frac = Math.max(0, Math.min(1, hero.superMeter / hero.SUPER_MAX));
+  const frac = Math.max(0, Math.min(1, hero.supermoveMeter / hero.SUPERMOVE_MAX));
   ctx.fillStyle = '#9b59b6';
   ctx.fillRect(barX, barY, barW * frac, barH);
 
   // Blink when full: alternate visibility at ~4Hz.
-  if (frac >= 1 && !hero.superActive) {
+  if (frac >= 1 && !hero.supermoveActive) {
     const blink = Math.floor(performance.now() * 0.004) % 2 === 0;
     if (blink) {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
