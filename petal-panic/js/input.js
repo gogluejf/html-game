@@ -42,23 +42,24 @@ const keyboardSource = {
     let moveX = 0, moveY = 0;
     if (k('KeyA') || k('ArrowLeft')) moveX -= 1;
     if (k('KeyD') || k('ArrowRight')) moveX += 1;
-    if (k('KeyW')) moveY -= 1;
-    if (k('KeyS')) moveY += 1;
+    if (k('KeyW') || k('ArrowUp')) moveY -= 1;
+    if (k('KeyS') || k('ArrowDown')) moveY += 1;
 
+    // Aim: same keys as movement (WASD + arrows all aim)
     let aimX = 0, aimY = 0;
-    if (k('ArrowLeft')) aimX -= 1;
-    if (k('ArrowRight')) aimX += 1;
-    if (k('ArrowUp')) aimY -= 1;
-    if (k('ArrowDown')) aimY += 1;
+    if (k('KeyA') || k('ArrowLeft')) aimX -= 1;
+    if (k('KeyD') || k('ArrowRight')) aimX += 1;
+    if (k('KeyW') || k('ArrowUp')) aimY -= 1;
+    if (k('KeyS') || k('ArrowDown')) aimY += 1;
 
     return {
       moveX, moveY,
       aimX, aimY,
-      shooting: k('KeyG'),
+      shooting: k('ControlLeft') || k('ControlRight'),
       jump: k('Space'),
-      melee: k('KeyJ'),
-      supermove: k('KeyB'),
-      switchWeapon: k('Tab'),
+      melee: k('KeyC'),
+      supermove: k('KeyV'),
+      switchWeapon: k('KeyB'),
       crouch: k('KeyS'),
       lockDir: k('KeyK'),
       lockMove: k('KeyL'),
@@ -68,9 +69,9 @@ const keyboardSource = {
   /** Display label for a gameplay action. */
   label(action) {
     const labels = {
-      jump: 'SPACE', melee: 'J', supermove: 'B', shoot: 'G',
-      switchWeapon: 'TAB', lockDir: 'K', lockMove: 'L',
-      crouch: 'S', move: 'WASD', aim: '←↑→↓',
+      jump: 'SPACE', melee: 'C', supermove: 'V', shoot: 'CTRL',
+      switchWeapon: 'B', lockDir: 'K', lockMove: 'L',
+      crouch: 'S', move: 'WASD', aim: 'WASD/←↑→↓',
     };
     return labels[action] || '?';
   },

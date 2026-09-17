@@ -391,7 +391,7 @@ function handleDebugToggle(e, source) {
 }
 
 window.addEventListener('keydown', (e) => {
-  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','KeyG','KeyH','KeyJ','KeyB'].includes(e.code)) e.preventDefault();
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','ControlLeft','ControlRight','KeyC','KeyV','KeyB'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
   if (e.code === 'F1' || e.code === 'F3') {
     handleDebugToggle(e, 'debug');
