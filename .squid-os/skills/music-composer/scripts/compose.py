@@ -233,6 +233,9 @@ PLAYER_TMPL = """<!DOCTYPE html>
   #tl-dot:hover{width:22px;height:22px;box-shadow:0 0 20px rgba(255,226,62,1),0 0 8px rgba(255,226,62,1);}
   #tl-dot:active{cursor:grabbing;}
   #tl-time{font-size:14px;color:#a0b4d8;min-width:110px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;font-weight:bold;}
+  #tl-title{font-size:14px;color:var(--gold);font-weight:bold;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 0 8px rgba(255,226,62,.3);line-height:1.2;}
+  #log-ind{position:fixed;top:12px;right:16px;z-index:200;font-size:12px;font-weight:bold;letter-spacing:1px;padding:6px 12px;border-radius:6px;background:#1a0d0d;border:2px solid #ff4444;color:#ff6666;display:none;box-shadow:0 0 12px rgba(255,68,68,.4);}
+  #log-ind.on{display:block;}
   /* Mode toggles */
   #modes-t{display:flex;gap:6px;flex-shrink:0;}
   #modes-t .mode{font-size:12px;font-weight:bold;letter-spacing:1.5px;padding:7px 14px;border:2px solid #4a6a90;border-radius:6px;cursor:pointer;color:#a0b4d8;transition:all .15s;user-select:none;background:#152030;}
@@ -241,6 +244,7 @@ PLAYER_TMPL = """<!DOCTYPE html>
 </style>
 </head>
 <body>
+<div id="log-ind">● LOGGING — press L to save</div>
 <div id="wrap">
   <div><h1 id="title">Music for __GAME__</h1><div id="sub">JUKEBOX</div></div>
   <div id="now">&nbsp;</div>
@@ -251,6 +255,7 @@ PLAYER_TMPL = """<!DOCTYPE html>
   <button class="tbtn play-btn" id="tb-play" title="Play/Pause (Space)"><svg viewBox="0 0 24 24" id="play-icon"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></button>
   <button class="tbtn" id="tb-next" title="Next song"><svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="5" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
   <div id="tl-wrap">
+    <div id="tl-title"></div>
     <div id="phrase-labels"></div>
     <div id="timeline"><div id="tl-progress"></div><div id="tl-dividers"></div><div id="tl-dot"></div></div>
   </div>
@@ -282,6 +287,20 @@ class SongController {
     this.onTrackChange = null;
     this.onPlayStateChange = null;
     this._neverStarted = true;
+    this._pendingSeek = null;
+    this._wasPlaying = false;
+    this._dotOverride = false;  // user manually placed dot while not playing
+    this._loadPrefs();
+  }
+
+  _loadPrefs() {
+    try {
+      const p = JSON.parse(localStorage.getItem('jukebox-prefs') || '{}');
+      this.seq = !!p.seq; this.rep = !!p.rep; this.shf = !!p.shf;
+    } catch (e) {}
+  }
+  _savePrefs() {
+    try { localStorage.setItem('jukebox-prefs', JSON.stringify({ seq: this.seq, rep: this.rep, shf: this.shf })); } catch (e) {}
   }
 
   init() {
@@ -321,7 +340,16 @@ class SongController {
     this.player.start(i);
     this.playing = true;
     this._neverStarted = false;
+    this._wasPlaying = true;
+    this._dotOverride = false;
     this._lastProgress = 0;
+    console.log('[pp] play(' + i + ') pendingSeek=' + this._pendingSeek + ' engine bar/step=' + this.player.seq.barCount + '/' + this.player.seq.stepIndex);
+    if (this._pendingSeek !== null && this._pendingSeek > 0) {
+      const ps = this._pendingSeek;
+      this.seek(ps);
+      this._pendingSeek = null;
+      console.log('[pp] play -> seeked to ' + ps + ' engine now bar/step=' + this.player.seq.barCount + '/' + this.player.seq.stepIndex + ' position()=' + this.position().toFixed(3));
+    }
     if (this.onTrackChange) this.onTrackChange(i);
     if (this.onPlayStateChange) this.onPlayStateChange(true);
   }
@@ -330,6 +358,7 @@ class SongController {
     if (!this.player) return;
     this.player.stop();
     this.playing = false;
+    this._wasPlaying = false;
     this._lastProgress = 0;
     if (this.onPlayStateChange) this.onPlayStateChange(false);
   }
@@ -371,8 +400,14 @@ class SongController {
 
   /** Seek to fraction 0..1. Uses engine.seekToStep(). */
   seek(frac) {
-    if (!this.player) return;
     frac = Math.max(0, Math.min(1, frac));
+    if (!this.playing) {
+      this._pendingSeek = frac;
+      this._lastProgress = frac;
+      this._dotOverride = true;
+      return;
+    }
+    if (!this.player) return;
     const trk = this.player.seq.tracks[this.current];
     if (!trk) return;
     const pl = trk.phraseLens || [1,1,1,1,1,1,1,1];
@@ -380,6 +415,7 @@ class SongController {
     const targetStep = Math.floor(frac * totalSteps);
     this.player.seekToStep(targetStep);
     this._lastProgress = frac;
+    console.log('[pp] seek(' + frac.toFixed(3) + ') totalSteps=' + totalSteps + ' targetStep=' + targetStep + ' engine bar/step=' + this.player.seq.barCount + '/' + this.player.seq.stepIndex + ' position()=' + this.position().toFixed(3));
   }
 
   /**
@@ -421,11 +457,40 @@ class SongController {
     if (which === 'seq') { this.seq = !this.seq; if (this.seq) this.shf = false; }
     else if (which === 'rep') { this.rep = !this.rep; if (this.rep) this.shf = false; }
     else { this.shf = !this.shf; if (this.shf) { this.seq = false; this.rep = false; } }
+    this._savePrefs();
   }
 
   toggleMute() {
     this.init();
     this.muted = this.player.toggleMute();
+  }
+
+  /* -- debug logging -- */
+  enableLog() { this.init(); this.player.seq.enableLog(); }
+  disableLog() { if (this.player) this.player.seq.disableLog(); }
+  downloadLog() {
+    if (!this.player) return;
+    const text = this.player.seq.flushLog();
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jukebox-ticks-' + Date.now() + '.log';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+  toggleLog() {
+    this.init();
+    const ind = document.getElementById('log-ind');
+    if (this.player.seq._logEnabled) {
+      this.disableLog();
+      this.downloadLog();
+      if (ind) ind.classList.remove('on');
+      console.log('[jukebox] log saved');
+    } else {
+      this.enableLog();
+      if (ind) ind.classList.add('on');
+      console.log('[jukebox] logging enabled — press L again to save+stop');
+    }
   }
 }
 
@@ -444,11 +509,13 @@ const mtSeq = document.getElementById('mt-seq');
 const mtRep = document.getElementById('mt-rep');
 const mtShf = document.getElementById('mt-shf');
 const playIcon = document.getElementById('play-icon');
+const tlTitle = document.getElementById('tl-title');
 
 // Track change → update list highlight + now-playing label
 sc.onTrackChange = (i) => {
   const names = sc.tracks.map(t => t.name);
   nowEl.textContent = '\u25cf NOW PLAYING: ' + (i+1) + ' ' + names[i];
+  tlTitle.textContent = (i+1) + '. ' + names[i];
   renderList();
 };
 sc.onPlayStateChange = (playing) => {
@@ -457,13 +524,37 @@ sc.onPlayStateChange = (playing) => {
   }
 };
 
+let _listTimer = null, _listCount = 0, _listIdx = 0;
 function renderList() {
   listEl.innerHTML = sc.tracks.map((t, i) =>
     '<div class="row ' + (i === sc.current ? 'on' : '') + '" data-i="' + i + '">' + (i+1) + '. ' + t.name + '</div>'
   ).join('');
-  listEl.querySelectorAll('.row').forEach(el =>
-    el.addEventListener('click', () => sc.play(parseInt(el.dataset.i, 10)))
-  );
+  listEl.querySelectorAll('.row').forEach(el => {
+    el.addEventListener('click', () => {
+      const i = parseInt(el.dataset.i, 10);
+      _listIdx = i;
+      // Already playing → single click switches song immediately
+      if (sc.playing) { sc.play(i); return; }
+      // Not playing → single click focuses (select + dot to start), double plays
+      _listCount++;
+      if (_listCount === 1) {
+        sc.current = i;
+        // Keep dot where user dragged it (pending seek), else reset to 0
+        const pos = (sc._pendingSeek !== null && sc._pendingSeek > 0) ? sc._pendingSeek : 0;
+        sc._lastProgress = pos;
+        tlDot.style.left = (pos * 100) + '%';
+        tlProg.style.width = (pos * 100) + '%';
+        tlTitle.textContent = (i+1) + '. ' + sc.tracks[i].name;
+        nowEl.textContent = '\u25cb SELECTED: ' + (i+1) + ' ' + sc.tracks[i].name;
+        renderList();
+        _listTimer = setTimeout(() => { _listCount = 0; }, 400);
+      } else if (_listCount >= 2) {
+        clearTimeout(_listTimer);
+        _listCount = 0;
+        sc.play(i);
+      }
+    });
+  });
 }
 
 // Prev button: single=restart, double=prev song (1s grace)
@@ -498,6 +589,7 @@ window.addEventListener('keydown', e => {
   else if (e.code === 'KeyR') { e.preventDefault(); sc.setMode('rep'); syncModes(); }
   else if (e.code === 'KeyH') { e.preventDefault(); sc.setMode('shf'); syncModes(); }
   else if (e.code === 'Space') { e.preventDefault(); sc.togglePause(); }
+  else if (e.code === 'KeyL') { e.preventDefault(); sc.toggleLog(); }
 });
 
 
@@ -519,7 +611,18 @@ function fmt(s) {
 
 // Main render loop: read sc.position() (engine stepIndex), update DOM
 setInterval(() => {
-  const p = sc.position();
+  // Playing → read real engine position (accurate even right after a seek).
+  // Not playing → show where the dot was dragged (_pendingSeek) or 0.
+  let p;
+  if (sc.playing) {
+    p = sc.position();
+  } else if (sc._wasPlaying && !sc._dotOverride) {
+    // Paused mid-song, user hasn't moved the dot → freeze at audio position
+    p = sc.position();
+  } else {
+    // Stopped, or user manually placed the dot → show where they put it
+    p = (sc._lastProgress > 0) ? sc._lastProgress : 0;
+  }
   tlDot.style.left = (p * 100) + '%';
   tlProg.style.width = (p * 100) + '%';
   const dur = sc.duration();
@@ -552,11 +655,15 @@ window.addEventListener('mouseup', e => {
 tlEl.addEventListener('click', e => {
   if (dragging) return;
   const r = tlEl.getBoundingClientRect();
-  sc.seek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)));
+  const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  console.log('[pp] TL click frac=' + f.toFixed(3) + ' playing=' + sc.playing + ' player=' + !!sc.player + ' pendingBefore=' + sc._pendingSeek);
+  sc.seek(f);
+  console.log('[pp] TL click after: pending=' + sc._pendingSeek + ' lastProg=' + sc._lastProgress);
 });
 
-// Initial list render
+// Initial render + restore saved mode prefs to UI
 renderList();
+syncModes();
 </script>
 </body>
 </html>

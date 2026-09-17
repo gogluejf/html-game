@@ -40,6 +40,19 @@ class MusicSequencer {
 
     this.lookahead = 0.12;
     this.tickMs = 25;
+    // -- debug logging --
+    this._logBuf = [];
+    this._logEnabled = false;
+  }
+
+  enableLog() { this._logEnabled = true; this._log('LOG: enabled'); }
+  disableLog() { this._logEnabled = false; this._log('LOG: disabled'); }
+  flushLog() { const out = this._logBuf.join('\n'); this._logBuf = []; return out; }
+  _log(msg) {
+    if (!this._logEnabled) return;
+    const t = (performance.now() / 1000).toFixed(4);
+    this._logBuf.push(t + ' ' + msg);
+    if (this._logBuf.length > 5000) this._logBuf.splice(0, 1000);
   }
 
   /* -- public API ---------------------------------------------------------- */
@@ -54,6 +67,7 @@ class MusicSequencer {
 
   start(trackIndex) {
     trackIndex = (trackIndex == null) ? this.current : trackIndex;
+    this._log('START track=' + trackIndex + ' ctxNow=' + this.ctx.currentTime.toFixed(4));
     this.stop();
     this.current = Math.max(0, Math.min(this.tracks.length - 1, trackIndex | 0));
     this.playing = true;
@@ -61,6 +75,7 @@ class MusicSequencer {
     this.barCount = 0;
     this.phraseCount = 0;   // total phrase-events played (drives drum level)
     this.nextNoteTime = this.ctx.currentTime + 0.06;
+    this._log('START done nextNoteTime=' + this.nextNoteTime.toFixed(4) + ' delta=' + (this.nextNoteTime - this.ctx.currentTime).toFixed(4));
 
     this._busFilter = this.ctx.createBiquadFilter();
     this._busFilter.type = "lowpass";
@@ -92,6 +107,7 @@ class MusicSequencer {
   }
 
   stop() {
+    this._log('STOP playing=' + this.playing + ' stepIdx=' + this.stepIndex + ' bar=' + this.barCount);
     if (this.timerId !== null) { clearInterval(this.timerId); this.timerId = null; }
     this.playing = false;
     const t = this.ctx.currentTime;
@@ -184,7 +200,10 @@ class MusicSequencer {
 
   _schedule() {
     const trk = this.tracks[this.current];
+    const lens = trk.phraseLens || trk.leads.map(() => 1);
+    const totalBlocks = lens.reduce((a, b) => a + b, 0);
     while (this.nextNoteTime < this.ctx.currentTime + this.lookahead) {
+      this._log('TICK step=' + this.stepIndex + ' bar=' + this.barCount + ' t=' + this.nextNoteTime.toFixed(4) + ' ctxNow=' + this.ctx.currentTime.toFixed(4) + ' lead=' + (trk.leads[this._phraseIndex(trk)][this.stepIndex] ? 'Y':'-'));
       this._playStep(trk, this.stepIndex, this.nextNoteTime);
       const spb = 60.0 / trk.bpm;
       this.nextNoteTime += spb / 4;              // one 16th note
@@ -192,12 +211,8 @@ class MusicSequencer {
       if (this.stepIndex === 0) { this.barCount++; this.phraseCount++; } // finished a 2-bar block (= one phrase)
       // Song-sequence mode: when the whole song has played through every
       // phrase exactly once (one full cycle), decide what happens next:
-      //   repeat  -> restart this track
-      //   shuffle -> random other track
-      //   seq     -> next track in order
-      const lens = trk.phraseLens || trk.leads.map(() => 1);
-      const totalBlocks = lens.reduce((a, b) => a + b, 0);
       if (trk.autoNext && this.barCount > 0 && this.barCount % totalBlocks === 0) {
+        this._log('LOOP detected at bar=' + this.barCount + ' totalBlocks=' + totalBlocks + ' autoNext=' + trk.autoNext + ' repeatOne=' + trk.repeatOne + ' shuffle=' + trk.shuffle);
         if (trk.repeatOne) this.start(this.current);
         else if (trk.shuffle) this.shuffleNext();
         else this.next();
