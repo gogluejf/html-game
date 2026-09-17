@@ -80,6 +80,11 @@ Scope:
   i-frame flash
 - **Facing & mirror:** hero sprite flips on facing change; aim direction independent
   of facing (already partially done via lockDir)
+- **Jump-off-solid speed cap:** when jumping off a solid object (barrel, block),
+  clamp horizontal velocity so you don't launch with excessive speed. The issue:
+  running into a barrel builds momentum, then jumping over it carries that full
+  speed across the gap—feels like a rocket. Cap vx on jump initiation from solids
+  to normal run speed (or slightly above for a small boost, but not double)
 - **Animation state sync:** ensure anim frame matches physics state (idle/run/jump/
   crouch/attack/super/death) without drift
 
