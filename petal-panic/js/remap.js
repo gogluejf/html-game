@@ -173,7 +173,7 @@ export const Remap = {
 
         for (let j = 0; j < slots; j++) {
           const cx = baseX + j * (chipW + chipGap);
-          const label = this.formatBinding(this.mapping[src][action.id][j]);
+          const label = formatBinding(this.mapping[src][action.id][j], src, this.gamepadLayout === 'Auto' ? input.state.gamepadLayout || 'Generic' : this.gamepadLayout);
           const isFocus = focused && isActive && j === this.chip;
           const isCap = isFocus && this.capturing;
 
