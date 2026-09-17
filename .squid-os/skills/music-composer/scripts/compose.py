@@ -266,95 +266,297 @@ __ENGINE__
 </script>
 <script>
 const TRACKS=__TRACKS__;
-let player=null,modeSeq=false,modeRep=false,modeShf=false,lastShown=-1,_tlStart=null;
-const nowEl=document.getElementById('now'),listEl=document.getElementById('list');
-const tbPrev=document.getElementById('tb-prev'),tbPlay=document.getElementById('tb-play'),tbNext=document.getElementById('tb-next');
-const tlEl=document.getElementById('timeline'),tlProg=document.getElementById('tl-progress'),tlDot=document.getElementById('tl-dot'),tlTime=document.getElementById('tl-time');
-const mtSeq=document.getElementById('mt-seq'),mtRep=document.getElementById('mt-rep'),mtShf=document.getElementById('mt-shf');
-const playIcon=document.getElementById('play-icon');
-function decideNextAction(){if(modeShf)return'random';if(modeRep&&!modeSeq)return'same';if(modeSeq)return'next';return'stop';}
-function applyModes(){if(!player)return;player.seq.tracks.forEach(t=>{t.autoNext=true;t.repeatOne=false;t.shuffle=false;});}
-function installSongEndHooks(){
-  const seq=player.seq,n=()=>seq.tracks.length;
-  seq._origStart=seq._origStart||seq.start.bind(seq);seq._origStop=seq._origStop||seq.stop.bind(seq);
-  seq.next=function(){const act=decideNextAction(),N=n();if(act==='stop'){seq._origStop();return;}if(act==='same'){seq._origStart(seq.current);return;}if(act==='random'){let i;do{i=Math.floor(Math.random()*N);}while(i===seq.current&&N>1);seq._origStart(i);return;}const nx=seq.current+1;if(nx>=N){if(modeRep)seq._origStart(0);else seq._origStop();return;}seq._origStart(nx);};
-  seq.shuffleNext=function(){const act=decideNextAction();if(act!=='random'){seq.next();return;}let i;do{i=Math.floor(Math.random()*n());}while(i===seq.current&&n()>1);seq._origStart(i);};
+
+/* ── SongController: single source of truth for playback state ─────────── */
+class SongController {
+  constructor(tracks) {
+    this.tracks = tracks;
+    this.player = null;
+    this.current = 0;
+    this.playing = false;
+    this.muted = false;
+    this.seq = false;
+    this.rep = false;
+    this.shf = false;
+    this._lastProgress = 0;
+    this.onTrackChange = null;
+    this.onPlayStateChange = null;
+    this._neverStarted = true;
+  }
+
+  init() {
+    if (this.player) return;
+    this.player = new MusicEngine.Player({ tracks: this.tracks });
+    const seq = this.player.seq;
+    seq._origStart = seq.start.bind(seq);
+    seq._origStop = seq.stop.bind(seq);
+    seq.next = () => this._onSongEnd();
+    seq.shuffleNext = () => this._onSongEnd();
+    this.player.seq.tracks.forEach(t => { t.autoNext = true; });
+  }
+
+  _onSongEnd() {
+    if (this.shf) {
+      let i; do { i = Math.floor(Math.random() * this.tracks.length); } while (i === this.current && this.tracks.length > 1);
+      this.play(i);
+    } else if (this.rep && !this.seq) {
+      this.play(this.current);
+    } else if (this.seq) {
+      const nx = this.current + 1;
+      if (nx >= this.tracks.length) {
+        if (this.rep) this.play(0);
+        else this.stop();
+      } else {
+        this.play(nx);
+      }
+    } else {
+      this.stop();
+    }
+  }
+
+  play(i) {
+    this.init();
+    if (this.player.ctx.state === 'suspended') this.player.ctx.resume();
+    this.current = i;
+    this.player.start(i);
+    this.playing = true;
+    this._neverStarted = false;
+    this._lastProgress = 0;
+    if (this.onTrackChange) this.onTrackChange(i);
+    if (this.onPlayStateChange) this.onPlayStateChange(true);
+  }
+
+  stop() {
+    if (!this.player) return;
+    this.player.stop();
+    this.playing = false;
+    this._lastProgress = 0;
+    if (this.onPlayStateChange) this.onPlayStateChange(false);
+  }
+
+  pause() {
+    if (!this.player || !this.playing) return;
+    this.player.pause();
+    this.playing = false;
+    if (this.onPlayStateChange) this.onPlayStateChange(false);
+  }
+
+  resume() {
+    if (!this.player || this.playing) return;
+    this.player.resume();
+    this.playing = true;
+    if (this.onPlayStateChange) this.onPlayStateChange(true);
+  }
+
+  togglePause() {
+    if (this.playing) { this.pause(); return; }
+    // If we've never started anything (fresh page), start track 0
+    if (!this.player || this._neverStarted) { this.play(0); return; }
+    this.resume();
+  }
+
+  next() {
+    const n = this.tracks.length;
+    this.play((this.current + 1) % n);
+  }
+
+  prev() {
+    const n = this.tracks.length;
+    this.play((this.current - 1 + n) % n);
+  }
+
+  restart() {
+    this.play(this.current);
+  }
+
+  /** Seek to fraction 0..1. Uses engine.seekToStep(). */
+  seek(frac) {
+    if (!this.player) return;
+    frac = Math.max(0, Math.min(1, frac));
+    const trk = this.player.seq.tracks[this.current];
+    if (!trk) return;
+    const pl = trk.phraseLens || [1,1,1,1,1,1,1,1];
+    const totalSteps = pl.reduce((s, l) => s + 32 * l, 0);
+    const targetStep = Math.floor(frac * totalSteps);
+    this.player.seekToStep(targetStep);
+    this._lastProgress = frac;
+  }
+
+  /**
+   * Current position as fraction 0..1.
+   * Reads the ENGINE'S ACTUAL stepIndex + barCount so it stays in sync
+   * with real audio playback (including pause/seek/loop).
+   */
+  position() {
+    if (!this.player) return 0;
+    const seq = this.player.seq;
+    const trk = seq.tracks[this.current];
+    if (!trk) return 0;
+    const pl = trk.phraseLens || [1,1,1,1,1,1,1,1];
+    const totalSteps = pl.reduce((s, l) => s + 32 * l, 0);
+    // Absolute step = barCount full blocks of 32 + current stepIndex within block
+    const absStep = (seq.barCount || 0) * 32 + (seq.stepIndex || 0);
+    // barCount wraps via modulo in the engine? No — it increments forever.
+    // But the song loops when barCount hits totalBlocks. We need position
+    // within ONE song cycle:
+    const totalBlocks = pl.reduce((a, b) => a + b, 0);
+    const cycleBlock = (seq.barCount || 0) % totalBlocks;
+    const pos = (cycleBlock * 32 + (seq.stepIndex || 0)) / totalSteps;
+    return Math.max(0, Math.min(1, pos));
+  }
+
+  duration() {
+    const trk = this.player ? this.player.seq.tracks[this.current] : this.tracks[this.current];
+    if (!trk) return 0;
+    const pl = trk.phraseLens || [1,1,1,1,1,1,1,1];
+    const totalSteps = pl.reduce((s, l) => s + 32 * l, 0);
+    return totalSteps * (60 / trk.bpm) / 4;
+  }
+
+  name() {
+    return this.tracks[this.current].name;
+  }
+
+  setMode(which) {
+    if (which === 'seq') { this.seq = !this.seq; if (this.seq) this.shf = false; }
+    else if (which === 'rep') { this.rep = !this.rep; if (this.rep) this.shf = false; }
+    else { this.shf = !this.shf; if (this.shf) { this.seq = false; this.rep = false; } }
+  }
+
+  toggleMute() {
+    this.init();
+    this.muted = this.player.toggleMute();
+  }
 }
-function setMode(w){
-  if(w==='seq'){modeSeq=!modeSeq;if(modeSeq)modeShf=false;}
-  else if(w==='rep'){modeRep=!modeRep;if(modeRep)modeShf=false;}
-  else{modeShf=!modeShf;if(modeShf){modeSeq=false;modeRep=false;}}
-  syncModeUI();applyModes();
+
+/* ── UI wiring ──────────────────────────────────────────────────────────── */
+const sc = new SongController(TRACKS);
+const nowEl = document.getElementById('now');
+const listEl = document.getElementById('list');
+const tbPrev = document.getElementById('tb-prev');
+const tbPlay = document.getElementById('tb-play');
+const tbNext = document.getElementById('tb-next');
+const tlEl = document.getElementById('timeline');
+const tlProg = document.getElementById('tl-progress');
+const tlDot = document.getElementById('tl-dot');
+const tlTime = document.getElementById('tl-time');
+const mtSeq = document.getElementById('mt-seq');
+const mtRep = document.getElementById('mt-rep');
+const mtShf = document.getElementById('mt-shf');
+const playIcon = document.getElementById('play-icon');
+
+// Track change → update list highlight + now-playing label
+sc.onTrackChange = (i) => {
+  const names = sc.tracks.map(t => t.name);
+  nowEl.textContent = '\u25cf NOW PLAYING: ' + (i+1) + ' ' + names[i];
+  renderList();
+};
+sc.onPlayStateChange = (playing) => {
+  if (!playing && sc._startTime === null) {
+    nowEl.textContent = '\u23f8 PAUSED';
+  }
+};
+
+function renderList() {
+  listEl.innerHTML = sc.tracks.map((t, i) =>
+    '<div class="row ' + (i === sc.current ? 'on' : '') + '" data-i="' + i + '">' + (i+1) + '. ' + t.name + '</div>'
+  ).join('');
+  listEl.querySelectorAll('.row').forEach(el =>
+    el.addEventListener('click', () => sc.play(parseInt(el.dataset.i, 10)))
+  );
 }
-function syncModeUI(){mtSeq.classList.toggle('on',modeSeq);mtRep.classList.toggle('on',modeRep);mtShf.classList.toggle('on',modeShf);}
-function ensure(){if(!player){player=new MusicEngine.Player({tracks:TRACKS});installSongEndHooks();applyModes();renderList();}if(player.ctx.state==='suspended')player.ctx.resume();}
-function renderList(){const names=player.getNames();listEl.innerHTML=names.map((n,i)=>'<div class="row '+(i===player.current?'on':'')+'" data-i="'+i+'">'+(i+1)+'. '+n+'</div>').join('');listEl.querySelectorAll('.row').forEach(el=>el.addEventListener('click',()=>playTrack(parseInt(el.dataset.i,10))));}
-function showNow(){const names=player.getNames();nowEl.textContent=player.playing?('\u25cf NOW PLAYING: '+(player.current+1)+' '+names[player.current]):'\u23f8 PAUSED';lastShown=player.current;renderList();_tlStart=performance.now();}
-function playTrack(i){ensure();applyModes();player.start(i);showNow();}
-setInterval(()=>{if(!player||!player.playing)return;if(player.current!==lastShown){lastShown=player.current;showNow();}},250);
-function nextTrack(){ensure();const n=player.seq.tracks.length;playTrack((player.current+1)%n);}
-function prevTrack(){ensure();const n=player.seq.tracks.length;playTrack((player.current-1+n)%n);}
-function restartSong(){if(!player)return;ensure();player.start(player.current);_tlStart=performance.now();}
-function togglePause(){ensure();if(player.playing){player.pause();tbPlay.classList.add('paused');showNow();}else{player.resume();tbPlay.classList.remove('paused');showNow();}}
-// Prev: single=restart, double=prev song (1s grace)
-let _prevTimer=null,_prevCount=0;
-tbPrev.addEventListener('click',()=>{_prevCount++;if(_prevCount===1){_prevTimer=setTimeout(()=>{_prevCount=0;restartSong();},1000);}else if(_prevCount>=2){clearTimeout(_prevTimer);_prevCount=0;prevTrack();}});
-window.addEventListener('keydown',e=>{
-  if(e.code==='KeyP'){e.preventDefault();nextTrack();}
-  else if(e.code==='ArrowDown'||e.code==='ArrowRight'){e.preventDefault();nextTrack();}
-  else if(e.code==='ArrowUp'||e.code==='ArrowLeft'){e.preventDefault();prevTrack();}
-  else if(e.code==='KeyM'){ensure();player.toggleMute();}
-  else if(e.code==='KeyS'){e.preventDefault();setMode('seq');}
-  else if(e.code==='KeyR'){e.preventDefault();setMode('rep');}
-  else if(e.code==='KeyH'){e.preventDefault();setMode('shf');}
-  else if(e.code==='Space'){e.preventDefault();togglePause();}
+
+// Prev button: single=restart, double=prev song (1s grace)
+let _prevTimer = null, _prevCount = 0;
+tbPrev.addEventListener('click', () => {
+  _prevCount++;
+  if (_prevCount === 1) {
+    _prevTimer = setTimeout(() => { _prevCount = 0; sc.restart(); }, 1000);
+  } else if (_prevCount >= 2) {
+    clearTimeout(_prevTimer); _prevCount = 0; sc.prev();
+  }
 });
-document.body.addEventListener('click',()=>{ensure();});
-tbPlay.addEventListener('click',togglePause);
-tbNext.addEventListener('click',nextTrack);
-mtSeq.addEventListener('click',()=>setMode('seq'));
-mtRep.addEventListener('click',()=>setMode('rep'));
-mtShf.addEventListener('click',()=>setMode('shf'));
-// Timeline
-(function(){
-  const divs=document.getElementById('tl-dividers'),labels=document.getElementById('phrase-labels');
-  const names=['0','0b','1','1b','2','3','4','tag'];
-  for(let i=0;i<8;i++){const d=document.createElement('div');d.className='div';divs.appendChild(d);const l=document.createElement('span');l.textContent=names[i];labels.appendChild(l);}
-})();
-function trackDuration(trk){const pl=trk.phraseLens||[1,1,1,1,1,1,1,1];return pl.reduce((s,l)=>s+32*l,0)*(60/trk.bpm)/4;}
-function getProgress(){if(!player)return 0;const trk=player.seq.tracks[player.current];if(!trk)return 0;if(_tlStart===null)_tlStart=performance.now();return Math.min(1,(performance.now()-_tlStart)/1000/trackDuration(trk));}
-function seekTo(frac){
-  if(!player)return;
-  const trk=player.seq.tracks[player.current];
-  if(!trk)return;
-  const pl=trk.phraseLens||[1,1,1,1,1,1,1,1];
-  const totalSteps=pl.reduce((s,l)=>s+32*l,0);
-  const targetStep=Math.floor(frac*totalSteps);
-  // Use the engine's real seek: sets stepIndex/barCount/phraseCount correctly
-  player.seekToStep(targetStep);
-  _tlStart=performance.now();
+tbPlay.addEventListener('click', () => sc.togglePause());
+tbNext.addEventListener('click', () => sc.next());
+mtSeq.addEventListener('click', () => { sc.setMode('seq'); syncModes(); });
+mtRep.addEventListener('click', () => { sc.setMode('rep'); syncModes(); });
+mtShf.addEventListener('click', () => { sc.setMode('shf'); syncModes(); });
+
+function syncModes() {
+  mtSeq.classList.toggle('on', sc.seq);
+  mtRep.classList.toggle('on', sc.rep);
+  mtShf.classList.toggle('on', sc.shf);
 }
-function fmt(s){const m=Math.floor(s/60);return m+':'+String(Math.floor(s%60)).padStart(2,'0');}
-let _lastP=0;
-setInterval(()=>{
-  if(!player)return;
-  const p=getProgress();
-  // Detect loop: progress jumped backwards significantly = song restarted
-  if(p<_lastP-0.3){_tlStart=performance.now();}
-  _lastP=p;
-  tlDot.style.left=(p*100)+'%';tlProg.style.width=(p*100)+'%';
-  const trk=player.seq.tracks[player.current];
-  if(trk){const d=trackDuration(trk);tlTime.textContent=fmt(p*d)+' / '+fmt(d);}
-  if(player.playing){playIcon.innerHTML='<rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/>';tbPlay.classList.remove('paused');}
-  else{playIcon.innerHTML='<polygon points="7 4 20 12 7 20 7 4"/>';tbPlay.classList.add('paused');}
-},50);
-let dragging=false;
-tlDot.addEventListener('mousedown',e=>{dragging=true;e.preventDefault();e.stopPropagation();});
-window.addEventListener('mousemove',e=>{if(!dragging)return;const r=tlEl.getBoundingClientRect();const f=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));tlDot.style.left=(f*100)+'%';tlProg.style.width=(f*100)+'%';});
-window.addEventListener('mouseup',e=>{if(!dragging)return;dragging=false;const r=tlEl.getBoundingClientRect();seekTo(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)));});
-tlEl.addEventListener('click',e=>{if(dragging)return;const r=tlEl.getBoundingClientRect();seekTo(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)));});
-listEl.innerHTML=TRACKS.map((t,i)=>'<div class="row" data-i="'+i+'">'+(i+1)+'. '+t.name+'</div>').join('');
-listEl.querySelectorAll('.row').forEach(el=>el.addEventListener('click',()=>playTrack(parseInt(el.dataset.i,10))));
+
+// Keyboard
+window.addEventListener('keydown', e => {
+  if (e.code === 'KeyP') { e.preventDefault(); sc.next(); }
+  else if (e.code === 'ArrowDown' || e.code === 'ArrowRight') { e.preventDefault(); sc.next(); }
+  else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') { e.preventDefault(); sc.prev(); }
+  else if (e.code === 'KeyM') { sc.toggleMute(); }
+  else if (e.code === 'KeyS') { e.preventDefault(); sc.setMode('seq'); syncModes(); }
+  else if (e.code === 'KeyR') { e.preventDefault(); sc.setMode('rep'); syncModes(); }
+  else if (e.code === 'KeyH') { e.preventDefault(); sc.setMode('shf'); syncModes(); }
+  else if (e.code === 'Space') { e.preventDefault(); sc.togglePause(); }
+});
+
+
+// ── Timeline rendering (reads from sc.position()) ────────────────────────
+(function buildTimeline() {
+  const divs = document.getElementById('tl-dividers');
+  const labels = document.getElementById('phrase-labels');
+  const names = ['0','0b','1','1b','2','3','4','tag'];
+  for (let i = 0; i < 8; i++) {
+    const d = document.createElement('div'); d.className = 'div'; divs.appendChild(d);
+    const l = document.createElement('span'); l.textContent = names[i]; labels.appendChild(l);
+  }
+})();
+
+function fmt(s) {
+  const m = Math.floor(s / 60);
+  return m + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+}
+
+// Main render loop: read sc.position() (engine stepIndex), update DOM
+setInterval(() => {
+  const p = sc.position();
+  tlDot.style.left = (p * 100) + '%';
+  tlProg.style.width = (p * 100) + '%';
+  const dur = sc.duration();
+  tlTime.textContent = fmt(p * dur) + ' / ' + fmt(dur);
+  if (sc.playing) {
+    playIcon.innerHTML = '<rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/>';
+    tbPlay.classList.remove('paused');
+  } else {
+    playIcon.innerHTML = '<polygon points="7 4 20 12 7 20 7 4"/>';
+    tbPlay.classList.add('paused');
+  }
+}, 50);
+
+// Drag dot → seek
+let dragging = false;
+tlDot.addEventListener('mousedown', e => { dragging = true; e.preventDefault(); e.stopPropagation(); });
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const r = tlEl.getBoundingClientRect();
+  const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  tlDot.style.left = (f * 100) + '%';
+  tlProg.style.width = (f * 100) + '%';
+});
+window.addEventListener('mouseup', e => {
+  if (!dragging) return;
+  dragging = false;
+  const r = tlEl.getBoundingClientRect();
+  sc.seek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)));
+});
+tlEl.addEventListener('click', e => {
+  if (dragging) return;
+  const r = tlEl.getBoundingClientRect();
+  sc.seek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)));
+});
+
+// Initial list render
+renderList();
 </script>
 </body>
 </html>
