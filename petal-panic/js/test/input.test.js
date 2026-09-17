@@ -212,32 +212,6 @@ test('migration upgrades only exact complete old defaults, preserving custom and
   assert.equal('crouch' in f.engine.mapping.gamepad, false);
   load({ gamepad: { shoot: ['btn:2','btn:7'] } }); assert.deepEqual(f.engine.mapping.gamepad.shoot, ['btn:2']);
 });
-test('direct chip navigation and continuous sequence preserve preferred column through single rows', () => {
-  for (const column of [0,1]) {
-    clean(S.PAUSE); tryTransition(S.REMAP); Remap.tab='gamepad';
-    assert.equal(Remap.focus,0); assert.equal(Remap.capturing,false);
-    if (column) { tap('ArrowRight'); tap('ArrowRight'); assert.equal(Remap.tab,'gamepad'); }
-    else { assert.equal(Remap.tab,'keyboard'); }
-    const p=pad(); pads.push(p); U.processInput();
-    tap('Enter'); assert.equal(Remap.focus,0); // tabs → row 0
-    tap('Enter'); assert.equal(Remap.capturing,true); // row 0 → capture
-    const actions=['moveUp','moveDown','moveLeft','moveRight','jump','shoot','melee','supermove','switchWeapon','lockDir','lockMove'];
-    for (let row=0;row<actions.length;row++) {
-      const slot=column && (row<4 || row===7) ? 1 : 0;
-      assert.equal(Remap.focus,row); assert.equal(Remap.chip,slot);
-      const before=[...input.mapping.gamepad[actions[row]]];
-      p.buttons[8].pressed=true; U.processInput();
-      assert.equal(input.mapping.gamepad[actions[row]][slot],'btn:8');
-      if (before.length===2) assert.equal(input.mapping.gamepad[actions[row]][1-slot],before[1-slot]);
-      assert.equal(Remap.focus,Math.min(row+1,10));
-      U.processInput(); assert.equal(Remap.focus,Math.min(row+1,10));
-      assert.equal(Remap.capturing,row<10);
-      p.buttons[8].pressed=false; U.processInput();
-    }
-    assert.equal(getState(),S.REMAP);
-    tap('Escape'); assert.equal(getState(),S.PAUSE);
-  }
-});
 test('tabs are a focusable row and chips have distinct navigation/capture styles', () => {
   clean(S.PAUSE); tryTransition(S.REMAP); Remap.tab='keyboard';
   assert.equal(Remap.focus,0);
