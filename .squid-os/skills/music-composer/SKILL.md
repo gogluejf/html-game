@@ -29,9 +29,10 @@ python3 <skill-folder>/scripts/compose.py validate --file <state-file>
 python3 <skill-folder>/scripts/compose.py player --game <GAME> --out <player-out>
 
 # Manage an existing playlist incrementally (read-modify-write, validated):
-python3 <skill-folder>/scripts/compose.py list   --game <GAME>                 # show tracks + 0-based indices
+python3 <skill-folder>/scripts/compose.py list   --game <GAME>                 # show tracks + index/bpm/vibe
 python3 <skill-folder>/scripts/compose.py add    --game <GAME> --track '<JSON_OBJECT_OR_ARRAY|@file|->'
 python3 <skill-folder>/scripts/compose.py remove --game <GAME> --name "<NAME>" [--index N]   # both repeatable
+python3 <skill-folder>/scripts/compose.py set-vibe --game <GAME> --name "<NAME>" --vibe "<short phrase>"   # repeatable; one --vibe per selector
 ```
 
 ### 1. Interview for the brief
@@ -48,6 +49,7 @@ If the user gives a one-line brief ('make music for abyss-qwen, dark synthwave')
 ### 2. Write the tracks (the creative part)
 
 Author a JSON array of track objects using the **song structure** (see references/song-structure.md). Key rules:
+- Each track carries a short **`vibe`** field — a 10–25 word human phrase describing the intended feel/style (e.g. `"gritty carnival punk, fast and aggressive, sawtooth drive with busy hats"`). Display-only; shown dimmed under the title in the playlist. Always include it when authoring new tracks.
 - Notes are **names** (`"A4"`, `"C5"`) or `null` for a rest — never raw Hz. The engine resolves names via its `\_NOTE` table (C1..B5).
 - Every phrase array is **exactly 32 steps** (one 2-bar block of 16th notes).
 - Each track has a **bank of lead phrases** and a matching bank of **pad phrases**; `phraseLens` (in bars, e.g. `[2,2,1,1]`) controls how long each phrase plays before advancing.
@@ -73,8 +75,9 @@ Use these for incremental edits instead of re-running `compose` (which replaces 
 - **`list --game <GAME>`** — print all tracks with their 0-based indices (use the index for precise `remove`).
 - **`add --game <GAME> --track '<src>'`** — append one track (JSON object) or several (array). `<src>` may be inline JSON, `@file`, or `-` for stdin. Validates each track first and rejects duplicate names, so it never corrupts the existing playlist.
 - **`remove --game <GAME> --name "<NAME>" [--index N]`** — delete by name and/or index (both repeatable); errors if nothing matches.
+- **`set-vibe --game <GAME> --name "<NAME>" --vibe "<phrase>"`** — set the short `vibe` description on track(s). Repeatable; each `--name`/`--index` pairs with the next `--vibe` in order. The vibe is a 10–25 word human phrase describing the intended feel/style; it's display-only metadata (shown dimmed under the title in the playlist) and does not affect playback or validation.
 
-After any `add`/`remove`, re-run `player` to refresh the jukebox HTML. Prefer these over hand-editing the state file.
+After any `add`/`remove`/`set-vibe`, re-run `player` to refresh the jukebox HTML. Prefer these over hand-editing the state file.
 
 ### 5. Iterate
 

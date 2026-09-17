@@ -262,12 +262,53 @@ def cmd_remove(a):
 
 
 def cmd_list(a):
-    """List a game's tracks with 0-based indices."""
+    """List a game's tracks with 0-based indices, bpm, and vibe."""
     _, data = _load_state(a.game, a.working_dir)
     for i, t in enumerate(data["tracks"]):
-        extra = " ".join(str(t[k]) for k in ("style", "bpm") if t.get(k) is not None)
-        print(f"{i:>3}  {t.get('name','?')}{'  (' + extra + ')' if extra else ''}")
+        bpm = t.get("bpm", "")
+        vibe = (t.get("vibe") or "").strip()
+        print(f"{i:>3}  {bpm:>4}  {t.get('name','?')}" + (f"  — {vibe}" if vibe else ""))
     print(f"({len(data['tracks'])} tracks)")
+
+
+def cmd_set_vibe(a):
+    """Set the vibe description on track(s) by --name and/or --index.
+
+    The vibe is a short human phrase (10-25 words) describing the intended
+    feel/style of the song. It is display metadata only (shown dimmed in the
+    playlist); it does not affect playback or validation. Repeatable so several
+    tracks can be tagged in one call: each --name/--index pairs with the next
+    --vibe in order.
+    """
+    path, data = _load_state(a.game, a.working_dir)
+    # Build an ordered list of (selector, vibe) pairs from parallel args.
+    names = a.name or []
+    idxs = [int(x) for x in (a.index or [])]
+    vibes = a.vibe or []
+    sel_count = len(names) + len(idxs)
+    if sel_count == 0:
+        _err("provide at least one --name or --index")
+    if len(vibes) != sel_count:
+        _err(f"--vibe count ({len(vibes)}) must match selector count ({sel_count})")
+    # Map selectors to track indices.
+    name_to_idx = {}
+    for i, t in enumerate(data["tracks"]):
+        name_to_idx.setdefault(t.get("name"), i)
+    targets = []
+    for nm in names:
+        if nm not in name_to_idx:
+            _err(f"no track named '{nm}'")
+        targets.append(name_to_idx[nm])
+    for ix in idxs:
+        if not (0 <= ix < len(data["tracks"])):
+            _err(f"index {ix} out of range (0-{len(data['tracks'])-1})")
+        targets.append(ix)
+    updated = 0
+    for idx, vibe in zip(targets, vibes):
+        data["tracks"][idx]["vibe"] = vibe.strip()
+        updated += 1
+    _save_state(path, data)
+    print(f"PASS: set vibe on {updated} track(s) -> {path}")
 
 
 PLAYER_TMPL = """<!DOCTYPE html>
@@ -283,10 +324,16 @@ PLAYER_TMPL = """<!DOCTYPE html>
   #title{font-size:42px;font-weight:bold;letter-spacing:6px;color:var(--cyan);text-shadow:0 0 24px var(--cyan);margin:0;text-transform:uppercase;}
   #sub{font-size:14px;color:var(--dim);letter-spacing:4px;margin-top:-12px;}
   #now{font-size:28px;color:var(--gold);min-height:36px;text-shadow:0 0 14px var(--gold);font-weight:bold;text-align:center;}
-  #list{display:flex;flex-direction:column;gap:10px;min-width:320px;max-width:500px;width:100%;}
-  #list .row{font-size:22px;padding:10px 20px;border:2px solid var(--border);border-radius:8px;cursor:pointer;color:#a0b4d8;transition:all .12s;user-select:none;text-align:center;background:var(--panel);}
-  #list .row:hover{border-color:var(--cyan);color:#fff;background:#142030;}
-  #list .row.on{border-color:var(--gold);color:#fff;background:rgba(255,226,62,.1);box-shadow:0 0 16px rgba(255,226,62,.25);}
+  #list{display:flex;flex-direction:column;gap:6px;min-width:340px;max-width:560px;width:100%;}
+  #list .row{display:grid;grid-template-columns:28px 1fr auto;grid-template-rows:auto auto;column-gap:12px;align-items:center;padding:9px 16px;border:2px solid var(--border);border-radius:8px;cursor:pointer;color:#a0b4d8;transition:all .12s;user-select:none;background:var(--panel);}
+  #list .row:hover{border-color:var(--cyan);background:#142030;}
+  #list .row.on{border-color:var(--gold);background:rgba(255,226,62,.1);box-shadow:0 0 16px rgba(255,226,62,.25);}
+  #list .row .num{grid-column:1;grid-row:1/3;font-size:15px;font-weight:bold;color:var(--dim);font-variant-numeric:tabular-nums;align-self:center;}
+  #list .row.on .num{color:var(--gold);}
+  #list .row .nm{grid-column:2;grid-row:1;font-size:19px;font-weight:bold;color:#cfe4ff;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #list .row.on .nm{color:#fff;}
+  #list .row .vb{grid-column:2;grid-row:2;font-size:12px;color:var(--dim);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:italic;}
+  #list .row .bpm{grid-column:3;grid-row:1/3;font-size:15px;font-weight:bold;color:var(--cyan);font-variant-numeric:tabular-nums;align-self:center;}
   /* Transport bar */
   #transport{position:fixed;bottom:0;left:0;right:0;z-index:100;background:linear-gradient(to top,#080c18 0%,#0d1220 100%);border-top:2px solid var(--border);padding:14px 24px 18px;display:flex;align-items:center;gap:14px;user-select:none;box-shadow:0 -4px 40px rgba(0,0,0,.6);}
   .tbtn{width:42px;height:42px;border:2px solid #4a6a90;border-radius:8px;background:#152030;color:#e0ecff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
@@ -712,8 +759,14 @@ sc.onPlayStateChange = (playing) => {
 
 let _listTimer = null, _listCount = 0, _listIdx = 0;
 function renderList() {
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   listEl.innerHTML = sc.tracks.map((t, i) =>
-    '<div class="row ' + (i === sc.current ? 'on' : '') + '" data-i="' + i + '">' + (i+1) + '. ' + t.name + '</div>'
+    '<div class="row ' + (i === sc.current ? 'on' : '') + '" data-i="' + i + '">' +
+      '<span class="num">' + (i+1) + '</span>' +
+      '<span class="nm" title="' + esc(t.name) + '">' + esc(t.name) + '</span>' +
+      '<span class="bpm">' + (t.bpm != null ? t.bpm : '&ndash;') + '</span>' +
+      (t.vibe ? '<span class="vb" title="' + esc(t.vibe) + '">' + esc(t.vibe) + '</span>' : '') +
+    '</div>'
   ).join('');
   listEl.querySelectorAll('.row').forEach(el => {
     el.addEventListener('click', () => {
@@ -870,9 +923,10 @@ def main():
     ad = sub.add_parser("add", help="add track(s) to a game's list"); ad.add_argument("--game", required=True); ad.add_argument("--track", required=True, help='JSON object, array, "@file", or "-" for stdin'); ad.add_argument("--working-dir", default=".")
     rm = sub.add_parser("remove", help="remove track(s) by --name and/or --index"); rm.add_argument("--game", required=True); rm.add_argument("--name", action="append"); rm.add_argument("--index", action="append"); rm.add_argument("--working-dir", default=".")
     ls = sub.add_parser("list", help="list a game's tracks with indices"); ls.add_argument("--game", required=True); ls.add_argument("--working-dir", default=".")
+    sv = sub.add_parser("set-vibe", help="set short vibe description on track(s) by --name/--index"); sv.add_argument("--game", required=True); sv.add_argument("--name", action="append"); sv.add_argument("--index", action="append"); sv.add_argument("--vibe", action="append", required=True, help="one per selector, in order"); sv.add_argument("--working-dir", default=".")
     a = ap.parse_args()
     {"compose": cmd_compose, "validate": cmd_validate, "player": cmd_player,
-     "add": cmd_add, "remove": cmd_remove, "list": cmd_list}[a.cmd](a)
+     "add": cmd_add, "remove": cmd_remove, "list": cmd_list, "set-vibe": cmd_set_vibe}[a.cmd](a)
 
 
 if __name__ == "__main__":
