@@ -591,10 +591,11 @@ class SongController {
       const p = JSON.parse(localStorage.getItem('jukebox-prefs') || '{}');
       this.seq = !!p.seq; this.rep = !!p.rep; this.shf = !!p.shf;
       if (Array.isArray(p.favs)) this.favorites = p.favs.slice();
+      if (typeof p.cur === 'number' && p.cur >= 0 && p.cur < this.tracks.length) this.current = p.cur;
     } catch (e) {}
   }
   _savePrefs() {
-    try { localStorage.setItem('jukebox-prefs', JSON.stringify({ seq: this.seq, rep: this.rep, shf: this.shf, favs: this.favorites })); } catch (e) {}
+    try { localStorage.setItem('jukebox-prefs', JSON.stringify({ seq: this.seq, rep: this.rep, shf: this.shf, favs: this.favorites, cur: this.current })); } catch (e) {}
   }
 
   isFav(i) { return this.favorites.indexOf(i) !== -1; }
@@ -655,6 +656,7 @@ class SongController {
       this._manualPos = null;
       this.player.seq._loopRestart(i);
       if (this.onTrackChange) this.onTrackChange(i);
+      this._savePrefs();
       return;
     }
     this.play(i);
@@ -666,6 +668,7 @@ class SongController {
     if (this.player.ctx.state === 'suspended') this.player.ctx.resume();
     const wasCurrent = (i === this.current);
     this.current = i;
+    this._savePrefs();
     // A manual dot placement only applies to the song it was set on. If we're
     // starting a different song, drop it so the new track starts at 0.
     if (!wasCurrent) this._manualPos = null;
@@ -720,8 +723,9 @@ class SongController {
 
   togglePause() {
     if (this.playing) { this.pause(); return; }
-    // If we've never started anything (fresh page), start track 0
-    if (!this.player || this._neverStarted) { this.play(0); return; }
+    // If we've never started anything (fresh page), start the current track
+    // (restored from localStorage if available).
+    if (!this.player || this._neverStarted) { this.play(this.current); return; }
     this.resume();
   }
 
@@ -782,6 +786,7 @@ class SongController {
   select(i) {
     this.init();
     this.current = i;
+    this._savePrefs();
     // Tell the ENGINE to load this track (without starting audio), so a later
     // resume() plays the correct song instead of the stale one.
     this.player.setTrack(i);
