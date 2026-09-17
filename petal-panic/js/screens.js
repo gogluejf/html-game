@@ -605,11 +605,10 @@ export const Select = {
           this.focus = 0;
           return true;
         }
-          const heroId = this.focus === 0 ? 'scarlet' : 'balthazar';
-          window.__selectedHero = heroId;
-          if (tryTransition(S.PLAY)) {
-            console.log(`[screens] SELECT → PLAY (hero: ${heroId})`);
-          }
+        const heroId = this.focus === 0 ? 'scarlet' : 'balthazar';
+        window.__selectedHero = heroId;
+        if (tryTransition(S.PLAY)) {
+          console.log(`[screens] SELECT → PLAY (hero: ${heroId})`);
         }
         break;
     }
