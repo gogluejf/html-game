@@ -349,7 +349,7 @@ export const Remap = {
 
   /**
    * Handle a raw gamepad button press during capture.
-   * Called from the gamepad bridge when in remap screen.
+   * Reserved buttons (nav) cancel capture instead of being assigned.
    * @param {number} btnIndex
    * @returns {boolean} true if consumed
    */
@@ -357,9 +357,11 @@ export const Remap = {
     if (!this.capturing) return false;
     if (this.tab !== 'gamepad') return false;
 
-    // Reserved buttons can't be bound
+    // Reserved buttons cancel capture (act as 'back')
     if (RESERVED_GAMEPAD_BUTTONS.has(btnIndex)) {
-      this._flashInvalid = 0.5;
+      this.capturing = false;
+      // If it's the back button (1), also exit the screen
+      if (btnIndex === 1) return 'exit';
       return true;
     }
 

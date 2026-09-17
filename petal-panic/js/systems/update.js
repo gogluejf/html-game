@@ -427,7 +427,7 @@ window.addEventListener('blur', () => { keys.clear(); screenOnKeyUp('ArrowLeft')
 // ===========================================================================
 
 let _stateChangeTime = 0;
-const NAV_DEBOUNCE = 250; // ms — ignore nav input this long after a state change
+const NAV_DEBOUNCE = 150; // ms — ignore nav input this long after a state change
 onTransition(() => { _stateChangeTime = performance.now(); });
 
 /**
@@ -437,7 +437,7 @@ onTransition(() => { _stateChangeTime = performance.now(); });
 function navEvent(action) {
   // Debounce ONLY 'back' (prevents hold-○/hold-Escape spam toggling menus).
   // Confirm and navigate are NOT debounced — they should respond instantly.
-  if (action === 'back' && performance.now() - _stateChangeTime < NAV_DEBOUNCE) return;
+  // Edge detection prevents hold-spam. No debounce needed.
   screenOnAction(action);
 }
 
@@ -471,7 +471,14 @@ export function gamepadScreenBridge() {
   // REMAP state: pass raw gamepad buttons to Remap ONLY while capturing.
   // Navigation (up/down/left/right/confirm/back) goes through navEvent normally.
   if (s === S.REMAP && Remap.capturing) {
+    // Back button (○/btn 1) cancels capture, stays on remap screen
+    if (edge(1)) {
+      Remap.capturing = false;
+      return;
+    }
+    // All other buttons: pass to Remap for capture
     for (let i = 0; i < pad.buttons.length; i++) {
+      if (i === 1) continue;
       if (edge(i)) Remap.onGamepadButton(i);
     }
     return;
