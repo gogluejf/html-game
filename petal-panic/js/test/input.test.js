@@ -86,7 +86,6 @@ test('capture cancel/back is identical across both tabs and both controlling dev
     const p = pad(); pads.push(p); U.processInput();
     const press = button => { if (source === 'keyboard') key(button === 0 ? 'Enter' : 'Escape'); else p.buttons[button].pressed = true; U.processInput(); };
     const release = button => { if (source === 'keyboard') key(button === 0 ? 'Enter' : 'Escape', false); else p.buttons[button].pressed = false; U.processInput(); };
-    press(0); assert.equal(Remap.focus, 0); release(0); // confirm on tabs → row 0
     press(0); assert.equal(Remap.capturing, true); release(0); // confirm on row 0 → capture
     press(1); assert.equal(Remap.capturing, false); assert.equal(getState(), S.REMAP);
     U.processInput(); assert.equal(getState(), S.REMAP); release(1);
@@ -216,12 +215,9 @@ test('migration upgrades only exact complete old defaults, preserving custom and
 test('direct chip navigation and continuous sequence preserve preferred column through single rows', () => {
   for (const column of [0,1]) {
     clean(S.PAUSE); tryTransition(S.REMAP); Remap.tab='gamepad';
-    assert.equal(Remap.focus,-1); assert.equal(Remap.capturing,false);
-    tap('ArrowDown'); assert.equal(Remap.focus,0);
-    if (column) { tap('ArrowRight'); assert.equal(Remap.chip,1); }
-    else { assert.equal(Remap.chip,0); }
-    tap('ArrowUp'); assert.equal(Remap.focus,-1);
-    tap('ArrowDown'); assert.equal(Remap.focus,0);
+    assert.equal(Remap.focus,0); assert.equal(Remap.capturing,false);
+    if (column) { tap('ArrowRight'); tap('ArrowRight'); assert.equal(Remap.tab,'gamepad'); }
+    else { assert.equal(Remap.tab,'keyboard'); }
     const p=pad(); pads.push(p); U.processInput();
     tap('Enter'); assert.equal(Remap.focus,0); // tabs → row 0
     tap('Enter'); assert.equal(Remap.capturing,true); // row 0 → capture
@@ -244,10 +240,10 @@ test('direct chip navigation and continuous sequence preserve preferred column t
 });
 test('tabs are a focusable row and chips have distinct navigation/capture styles', () => {
   clean(S.PAUSE); tryTransition(S.REMAP); Remap.tab='keyboard';
-  assert.equal(Remap.focus,-1); // starts on tabs
-  tap('ArrowRight'); assert.equal(Remap.tab,'gamepad');
-  tap('ArrowLeft'); assert.equal(Remap.tab,'keyboard');
-  tap('ArrowDown'); tap('ArrowRight'); assert.equal(Remap.chip,1);
+  assert.equal(Remap.focus,0);
+  // Left/right crosses from keyboard chips to gamepad chips
+  tap('ArrowRight'); tap('ArrowRight'); assert.equal(Remap.tab,'gamepad');
+  tap('ArrowLeft'); tap('ArrowLeft'); assert.equal(Remap.tab,'keyboard');
   const text=[], fills=[];
   const ctx=new Proxy({}, {get:(_,prop)=>prop==='createLinearGradient' ? ()=>({addColorStop(){}})
     : prop==='fillText' ? (label,x,y)=>text.push({label,x,y}) : noop,

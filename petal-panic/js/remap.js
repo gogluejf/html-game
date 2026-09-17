@@ -46,6 +46,16 @@ export const Remap = {
   tab: 'keyboard',       // 'keyboard' | 'gamepad'
   focus: 0,              // focused row index
   preferredChip: 0,
+  _chipPos: 0,           // absolute chip position across both columns
+  get chipPos() {
+    const kbSlots = bindingSlots('keyboard', ACTIONS[this.focus]?.id || 'jump');
+    return this.tab === 'keyboard' ? this._chipPos : kbSlots + this._chipPos;
+  },
+  set chipPos(v) {
+    const kbSlots = bindingSlots('keyboard', ACTIONS[this.focus]?.id || 'jump');
+    if (v < kbSlots) { this.tab = 'keyboard'; this._chipPos = v; }
+    else { this.tab = 'gamepad'; this._chipPos = v - kbSlots; }
+  },
   get chip() {
     return this.focus >= 0 && this.focus < ACTIONS.length
       ? Math.min(this.preferredChip, bindingSlots(this.tab, ACTIONS[this.focus].id) - 1) : 0;
@@ -60,8 +70,9 @@ export const Remap = {
   reset() { input.resetMapping(); },
   resetState() {
     input.cancelCapture();
-    this.focus = -1; // start on the device-tab row
+    this.focus = 0;
     this.preferredChip = 0;
+    this._chipPos = 0;
     this._flashInvalid = 0;
     this._pulseT = 0;
   },
@@ -79,21 +90,27 @@ export const Remap = {
     const count = ACTIONS.length + 3;
     if (action === 'back') { this.save(); return 'exit'; }
     if (action === 'up' || action === 'down') {
-      // -1 is the device-tab row; no separate navigation mode.
-      this.focus = ((this.focus + 1 + count + 1 + (action === 'up' ? -1 : 1)) % (count + 1)) - 1;
+      this.focus = (this.focus + count + (action === 'up' ? -1 : 1)) % count;
     } else if (action === 'left' || action === 'right') {
-      if (this.focus === -1) this.tab = action === 'left' ? 'keyboard' : 'gamepad';
-      else if (this.focus >= ACTIONS.length) {
-        // Bottom buttons: left/right cycles between them (Reset, Layout, Done)
+      if (this.focus >= ACTIONS.length) {
+        // Bottom buttons: left/right cycles between them
         const order = [ACTIONS.length, ACTIONS.length + 2, ACTIONS.length + 1];
         const idx = order.indexOf(this.focus);
         this.focus = order[(idx + (action === 'left' ? order.length - 1 : 1)) % order.length];
-      } else if (this.focus < ACTIONS.length && bindingSlots(this.tab, ACTIONS[this.focus].id) === 2) {
-        this.preferredChip = action === 'left' ? 0 : 1;
+      } else {
+        // Navigate across ALL chips in the row (keyboard + gamepad)
+        const kbSlots = bindingSlots('keyboard', ACTIONS[this.focus].id);
+        const gpSlots = bindingSlots('gamepad', ACTIONS[this.focus].id);
+        const total = kbSlots + gpSlots;
+        // Current position: 0..kbSlots-1 = keyboard, kbSlots..total-1 = gamepad
+        const cur = this.chipPos;
+        this.chipPos = (cur + total + (action === 'left' ? -1 : 1)) % total;
+        // Update tab and chip based on position
+        if (this.chipPos < kbSlots) { this.tab = 'keyboard'; this.chip = this.chipPos; }
+        else { this.tab = 'gamepad'; this.chip = this.chipPos - kbSlots; }
       }
     } else if (action === 'confirm') {
-      if (this.focus === -1) { this.focus = 0; return true; }
-      else if (this.focus === ACTIONS.length) this.reset();
+      if (this.focus === ACTIONS.length) this.reset();
       else if (this.focus === ACTIONS.length + 1) { this.save(); return 'exit'; }
       else if (this.focus === ACTIONS.length + 2) {
         input.gamepadLayout = LAYOUT_OPTIONS[(LAYOUT_OPTIONS.indexOf(input.gamepadLayout) + 1) % LAYOUT_OPTIONS.length];
@@ -131,25 +148,9 @@ export const Remap = {
     const listTop = 95;          // first row Y
     const headerY = 70;          // column headers
 
-    // Column headers (act as tabs, aligned above their chips)
-    const headers = [
-      { label: 'KEYBOARD', x: kbX + 76, active: this.tab === 'keyboard' },
-      { label: 'GAMEPAD',  x: gpX + 76, active: this.tab === 'gamepad' },
-    ];
-    for (const h of headers) {
-      ctx.save();
-      if (h.active) {
-        ctx.fillStyle = 'rgba(255,110,199,0.15)';
-        roundRect(ctx, h.x - 52, headerY - 13, 104, 26, 6);
-        ctx.fill();
-        ctx.strokeStyle = PINK;
-        ctx.lineWidth = this.focus === -1 ? 3 : 2;
-        roundRect(ctx, h.x - 52, headerY - 13, 104, 26, 6);
-        ctx.stroke();
-      }
-      drawPrompt(ctx, h.label, h.x, headerY + 2, 15, { color: h.active ? PINK : '#777' });
-      ctx.restore();
-    }
+    // Column headers — static labels, always visible
+    drawPrompt(ctx, 'KEYBOARD', kbX + 76, headerY + 2, 15, { color: CREAM });
+    drawPrompt(ctx, 'GAMEPAD', gpX + 76, headerY + 2, 15, { color: CREAM });
 
     // Action rows — both columns always drawn
     for (let i = 0; i < ACTIONS.length; i++) {
@@ -223,7 +224,7 @@ export const Remap = {
     // Hint
     const hint = this.capturing
       ? `Press a ${this.tab === 'keyboard' ? 'key' : 'button'} — auto-advances`
-      : '↑ ↓ Row    ← → Chip    Confirm: edit    Esc/○: back';
+      : '↑ ↓ Row    ← → All chips    Confirm: edit    Esc/○: back';
     drawPrompt(ctx, hint, VIEW_W / 2, 490, 15, { color: this.capturing ? PINK : CREAM });
     drawPrompt(ctx, this.capturing ? 'Esc (keyboard) / ○ (gamepad): stop capture'
       : 'Left/right on bottom bar: switch buttons',
