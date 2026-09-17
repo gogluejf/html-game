@@ -412,7 +412,7 @@ PLAYER_TMPL = """<!DOCTYPE html>
   .tbtn{width:42px;height:42px;border:2px solid #4a6a90;border-radius:8px;background:#152030;color:#e0ecff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
   .tbtn:hover{border-color:var(--cyan);color:#fff;background:#1e3050;transform:scale(1.08);}
   .tbtn:active{transform:scale(.93);}
-  .tbtn svg{width:20px;height:20px;fill:currentColor;}
+  .tbtn svg{width:20px;height:20px;fill:currentColor;pointer-events:none;}
   .tbtn.play-btn{width:50px;height:50px;border-color:var(--cyan);color:var(--cyan);background:#0d1825;box-shadow:0 0 14px rgba(62,240,255,.25);}
   .tbtn.play-btn:hover{box-shadow:0 0 24px rgba(62,240,255,.45);background:#152535;}
   .tbtn.play-btn.paused{border-color:var(--gold);color:var(--gold);box-shadow:0 0 14px rgba(255,226,62,.25);}
@@ -459,6 +459,19 @@ PLAYER_TMPL = """<!DOCTYPE html>
   #sp-meta .v{color:#a0b4d8;font-variant-numeric:tabular-nums;}
   #sp-vibe-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-top:4px;}
   #sp-vibe{font-size:13px;color:#a0b4d8;line-height:1.5;font-style:italic;}
+  /* Side-panel transport (under the card) */
+  #sp-transport{display:flex;flex-direction:column;gap:14px;margin-top:6px;padding-top:16px;border-top:2px solid var(--border);}
+  #sp-tl-head{display:flex;justify-content:space-between;font-size:12px;color:#a0b4d8;font-variant-numeric:tabular-nums;font-weight:bold;}
+  #sp-timeline{position:relative;height:6px;background:var(--panel);border:1px solid var(--border);border-radius:999px;cursor:pointer;overflow:visible;}
+  #sp-tl-progress{position:absolute;top:0;left:0;height:100%;background:rgba(62,240,255,.35);border-radius:999px;pointer-events:none;}
+  #sp-tl-dot{position:absolute;top:50%;left:0;width:14px;height:14px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px rgba(255,226,62,.8);transform:translate(-50%,-50%);cursor:grab;z-index:2;transition:width .1s,height .1s;}
+  #sp-tl-dot:hover{width:18px;height:18px;}
+  #sp-tl-dot:active{cursor:grabbing;}
+  #sp-btns{display:flex;align-items:center;justify-content:center;gap:18px;}
+  #sp-btns .tbtn{width:56px;height:56px;border-radius:12px;}
+  #sp-btns .tbtn svg{width:26px;height:26px;}
+  #sp-btns .play-btn{width:72px;height:72px;border-color:var(--cyan);box-shadow:0 0 16px rgba(62,240,255,.25);}
+  #sp-btns .play-btn svg{width:32px;height:32px;}
   @media (max-width:820px){
     #wrap{flex-direction:column;align-items:center;}
     #side-panel{position:static;width:100%;max-width:560px;}
@@ -489,6 +502,15 @@ PLAYER_TMPL = """<!DOCTYPE html>
     </div>
     <div id="sp-vibe-label">Vibe</div>
     <div id="sp-vibe">&ndash;</div>
+    <div id="sp-transport">
+      <div id="sp-tl-head"><span id="sp-time-cur">0:00</span><span id="sp-time-dur">0:00</span></div>
+      <div id="sp-timeline"><div id="sp-tl-progress"></div><div id="sp-tl-dot"></div></div>
+      <div id="sp-btns">
+        <button class="tbtn" id="sp-prev" title="Restart / previous"><svg viewBox="0 0 24 24"><polygon points="15 4 5 12 15 20 15 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
+        <button class="tbtn play-btn" id="sp-play" title="Play/Pause"><svg viewBox="0 0 24 24" id="sp-play-icon"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></button>
+        <button class="tbtn" id="sp-next" title="Next song"><svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="5" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
+      </div>
+    </div>
   </aside>
 </div>
 <div id="transport">
@@ -1095,12 +1117,23 @@ setInterval(() => {
   tlProg.style.width = (p * 100) + '%';
   const dur = sc.duration();
   tlTime.textContent = fmt(p * dur) + ' / ' + fmt(dur);
+  // Side-panel mirror (skip while user is dragging its dot)
+  if (!spDragging) {
+    spTlDot.style.left = (p * 100) + '%';
+    spTlProg.style.width = (p * 100) + '%';
+  }
+  spTimeCur.textContent = fmt(p * dur);
+  spTimeDur.textContent = fmt(dur);
   if (sc.playing) {
     playIcon.innerHTML = '<rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/>';
+    spPlayIcon.innerHTML = '<rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/>';
     tbPlay.classList.remove('paused');
+    spPlay.classList.remove('paused');
   } else {
     playIcon.innerHTML = '<polygon points="7 4 20 12 7 20 7 4"/>';
+    spPlayIcon.innerHTML = '<polygon points="7 4 20 12 7 20 7 4"/>';
     tbPlay.classList.add('paused');
+    spPlay.classList.add('paused');
   }
 }, 50);
 
@@ -1125,6 +1158,43 @@ tlEl.addEventListener('click', e => {
   const r = tlEl.getBoundingClientRect();
   const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
   sc.seek(f);
+});
+
+/* ── Side-panel transport: bigger controls + simple line scrubber ─────── */
+const spPrev = document.getElementById('sp-prev');
+const spPlay = document.getElementById('sp-play');
+const spNext = document.getElementById('sp-next');
+const spPlayIcon = document.getElementById('sp-play-icon');
+const spTlEl = document.getElementById('sp-timeline');
+const spTlProg = document.getElementById('sp-tl-progress');
+const spTlDot = document.getElementById('sp-tl-dot');
+const spTimeCur = document.getElementById('sp-time-cur');
+const spTimeDur = document.getElementById('sp-time-dur');
+spPrev.addEventListener('click', e => { onPrevClick(); e.currentTarget.blur(); });
+spPlay.addEventListener('click', e => { sc.togglePause(); e.currentTarget.blur(); });
+spNext.addEventListener('click', e => { sc.next(); e.currentTarget.blur(); });
+let spDragging = false;
+function _spSeekFromEvent(e) {
+  const r = spTlEl.getBoundingClientRect();
+  return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+}
+spTlDot.addEventListener('mousedown', e => { spDragging = true; e.preventDefault(); e.stopPropagation(); });
+spTlEl.addEventListener('mousedown', e => {
+  if (e.target === spTlDot) return;
+  spDragging = true;
+  sc.seek(_spSeekFromEvent(e));
+  e.preventDefault();
+});
+window.addEventListener('mousemove', e => {
+  if (!spDragging) return;
+  const f = _spSeekFromEvent(e);
+  spTlDot.style.left = (f * 100) + '%';
+  spTlProg.style.width = (f * 100) + '%';
+});
+window.addEventListener('mouseup', e => {
+  if (!spDragging) return;
+  spDragging = false;
+  sc.seek(_spSeekFromEvent(e));
 });
 
 // Initial render + restore saved mode prefs to UI
