@@ -267,7 +267,7 @@ def cmd_list(a):
     for i, t in enumerate(data["tracks"]):
         bpm = t.get("bpm", "")
         vibe = (t.get("vibe") or "").strip()
-        print(f"{i:>3}  {bpm:>4}  {t.get('name','?')}" + (f"  — {vibe}" if vibe else ""))
+        print(f"{i:>3}  {str(bpm) + ' BPM':>8}  {t.get('name','?')}" + (f"  — {vibe}" if vibe else ""))
     print(f"({len(data['tracks'])} tracks)")
 
 
@@ -324,15 +324,15 @@ PLAYER_TMPL = """<!DOCTYPE html>
   #title{font-size:42px;font-weight:bold;letter-spacing:6px;color:var(--cyan);text-shadow:0 0 24px var(--cyan);margin:0;text-transform:uppercase;}
   #sub{font-size:14px;color:var(--dim);letter-spacing:4px;margin-top:-12px;}
   #now{font-size:28px;color:var(--gold);min-height:36px;text-shadow:0 0 14px var(--gold);font-weight:bold;text-align:center;}
-  #list{display:flex;flex-direction:column;gap:6px;min-width:340px;max-width:560px;width:100%;}
+  #list{display:flex;flex-direction:column;gap:6px;min-width:380px;max-width:640px;width:100%;}
   #list .row{display:grid;grid-template-columns:28px 1fr auto;grid-template-rows:auto auto;column-gap:12px;align-items:center;padding:9px 16px;border:2px solid var(--border);border-radius:8px;cursor:pointer;color:#a0b4d8;transition:all .12s;user-select:none;background:var(--panel);}
   #list .row:hover{border-color:var(--cyan);background:#142030;}
   #list .row.on{border-color:var(--gold);background:rgba(255,226,62,.1);box-shadow:0 0 16px rgba(255,226,62,.25);}
   #list .row .num{grid-column:1;grid-row:1/3;font-size:15px;font-weight:bold;color:var(--dim);font-variant-numeric:tabular-nums;align-self:center;}
   #list .row.on .num{color:var(--gold);}
-  #list .row .nm{grid-column:2;grid-row:1;font-size:19px;font-weight:bold;color:#cfe4ff;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #list .row .nm{grid-column:2;grid-row:1;font-size:22px;color:#a0b4d8;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   #list .row.on .nm{color:#fff;}
-  #list .row .vb{grid-column:2;grid-row:2;font-size:12px;color:var(--dim);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:italic;}
+  #list .row .vb{grid-column:2;grid-row:2;font-size:12px;color:var(--dim);line-height:1.35;font-style:italic;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
   #list .row .bpm{grid-column:3;grid-row:1/3;font-size:15px;font-weight:bold;color:var(--cyan);font-variant-numeric:tabular-nums;align-self:center;}
   /* Transport bar */
   #transport{position:fixed;bottom:0;left:0;right:0;z-index:100;background:linear-gradient(to top,#080c18 0%,#0d1220 100%);border-top:2px solid var(--border);padding:14px 24px 18px;display:flex;align-items:center;gap:14px;user-select:none;box-shadow:0 -4px 40px rgba(0,0,0,.6);}
@@ -764,7 +764,7 @@ function renderList() {
     '<div class="row ' + (i === sc.current ? 'on' : '') + '" data-i="' + i + '">' +
       '<span class="num">' + (i+1) + '</span>' +
       '<span class="nm" title="' + esc(t.name) + '">' + esc(t.name) + '</span>' +
-      '<span class="bpm">' + (t.bpm != null ? t.bpm : '&ndash;') + '</span>' +
+      '<span class="bpm">' + (t.bpm != null ? t.bpm + ' BPM' : '&ndash;') + '</span>' +
       (t.vibe ? '<span class="vb" title="' + esc(t.vibe) + '">' + esc(t.vibe) + '</span>' : '') +
     '</div>'
   ).join('');
