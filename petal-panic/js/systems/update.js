@@ -391,7 +391,7 @@ function handleDebugToggle(e, source) {
 }
 
 window.addEventListener('keydown', (e) => {
-  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','ControlLeft','ControlRight','KeyC','KeyV','KeyB'].includes(e.code)) e.preventDefault();
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','ControlLeft','ControlRight','KeyX','KeyC','KeyV'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
   if (e.code === 'F1' || e.code === 'F3') {
     handleDebugToggle(e, 'debug');
@@ -605,7 +605,7 @@ function handleDebugKeys(e) {
       dumpStats(hero.runStats, hero);
       Debug.logEvent('stats JSON downloaded');
       break;
-    case 'KeyC': // Cycle collision view mode (round-robin): sprite+collision → collision-only → sprite-only
+    case 'Tab': // Cycle collision view mode (round-robin): sprite+collision → collision-only → sprite-only
       Debug.viewMode = (Debug.viewMode + 1) % 3;
       const modeNames = ['sprite+collision', 'collision-only', 'sprite-only'];
       Debug.logEvent(`view: ${modeNames[Debug.viewMode]}`);

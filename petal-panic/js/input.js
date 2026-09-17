@@ -57,9 +57,9 @@ const keyboardSource = {
       aimX, aimY,
       shooting: k('ControlLeft') || k('ControlRight'),
       jump: k('Space'),
-      melee: k('KeyC'),
-      supermove: k('KeyV'),
-      switchWeapon: k('KeyB'),
+      melee: k('KeyX'),
+      supermove: k('KeyC'),
+      switchWeapon: k('KeyV'),
       crouch: k('KeyS'),
       lockDir: k('KeyK'),
       lockMove: k('KeyL'),
@@ -69,8 +69,8 @@ const keyboardSource = {
   /** Display label for a gameplay action. */
   label(action) {
     const labels = {
-      jump: 'SPACE', melee: 'C', supermove: 'V', shoot: 'CTRL',
-      switchWeapon: 'B', lockDir: 'K', lockMove: 'L',
+      jump: 'SPACE', melee: 'X', supermove: 'C', shoot: 'CTRL',
+      switchWeapon: 'V', lockDir: 'K', lockMove: 'L',
       crouch: 'S', move: 'WASD', aim: 'WASD/←↑→↓',
     };
     return labels[action] || '?';
