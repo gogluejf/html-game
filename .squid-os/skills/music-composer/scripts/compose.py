@@ -199,157 +199,161 @@ PLAYER_TMPL = """<!DOCTYPE html>
 <meta charset="utf-8">
 <title>MUSIC FOR __GAME__</title>
 <style>
-  html,body{margin:0;min-height:100%;background:#05070f;color:#cfe4ff;font-family:'Courier New',monospace;}
-  #wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:48px 20px;gap:26px;box-sizing:border-box;}
-  #title{font-size:44px;font-weight:bold;letter-spacing:6px;color:#3ef0ff;text-shadow:0 0 24px #3ef0ff;margin:0;text-transform:uppercase;}
-  #sub{font-size:16px;color:#5a6a90;letter-spacing:3px;margin-top:-14px;}
-  #now{font-size:30px;color:#ffe23e;min-height:38px;text-shadow:0 0 14px #ffe23e;font-weight:bold;}
-  #list{display:flex;flex-direction:column;gap:12px;min-width:340px;}
-  #list .row{font-size:24px;padding:10px 22px;border:2px solid #1b2540;border-radius:8px;cursor:pointer;
-             color:#8fa0d0;transition:all .12s;user-select:none;text-align:center;}
-  #list .row:hover{border-color:#3ef0ff;color:#cfe4ff;background:rgba(62,240,255,.06);}
-  #list .row.on{border-color:#ffe23e;color:#fff;background:rgba(255,226,62,.10);box-shadow:0 0 16px rgba(255,226,62,.25);}
-  #modes{display:flex;gap:14px;margin-top:-8px;}
-  #modes .mode{display:flex;align-items:center;gap:7px;font-size:15px;letter-spacing:2px;padding:6px 13px;border:2px solid #1b2540;border-radius:8px;cursor:pointer;
-               color:#5a6a90;user-select:none;transition:all .12s;}
-  #modes .mode svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
-  #modes .mode:hover{border-color:#3ef0ff;color:#cfe4ff;}
-  #modes .mode.on{border-color:#3ef0ff;color:#fff;background:rgba(62,240,255,.10);box-shadow:0 0 14px rgba(62,240,255,.3);}
-  #hint{font-size:15px;color:#5a6a90;letter-spacing:1px;}
+  :root{--bg:#05070f;--panel:#0d1220;--border:#2a4060;--cyan:#3ef0ff;--gold:#ffe23e;--dim:#7a8ab0;--text:#e0ecff;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow-x:hidden;}
+  #wrap{display:flex;flex-direction:column;align-items:center;padding:40px 20px 130px;gap:24px;min-height:100vh;}
+  #title{font-size:42px;font-weight:bold;letter-spacing:6px;color:var(--cyan);text-shadow:0 0 24px var(--cyan);margin:0;text-transform:uppercase;}
+  #sub{font-size:14px;color:var(--dim);letter-spacing:4px;margin-top:-12px;}
+  #now{font-size:28px;color:var(--gold);min-height:36px;text-shadow:0 0 14px var(--gold);font-weight:bold;text-align:center;}
+  #list{display:flex;flex-direction:column;gap:10px;min-width:320px;max-width:500px;width:100%;}
+  #list .row{font-size:22px;padding:10px 20px;border:2px solid var(--border);border-radius:8px;cursor:pointer;color:#a0b4d8;transition:all .12s;user-select:none;text-align:center;background:var(--panel);}
+  #list .row:hover{border-color:var(--cyan);color:#fff;background:#142030;}
+  #list .row.on{border-color:var(--gold);color:#fff;background:rgba(255,226,62,.1);box-shadow:0 0 16px rgba(255,226,62,.25);}
+  /* Transport bar */
+  #transport{position:fixed;bottom:0;left:0;right:0;z-index:100;background:linear-gradient(to top,#080c18 0%,#0d1220 100%);border-top:2px solid var(--border);padding:14px 24px 18px;display:flex;align-items:center;gap:14px;user-select:none;box-shadow:0 -4px 40px rgba(0,0,0,.6);}
+  .tbtn{width:42px;height:42px;border:2px solid #4a6a90;border-radius:8px;background:#152030;color:#e0ecff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
+  .tbtn:hover{border-color:var(--cyan);color:#fff;background:#1e3050;transform:scale(1.08);}
+  .tbtn:active{transform:scale(.93);}
+  .tbtn svg{width:20px;height:20px;fill:currentColor;}
+  .tbtn.play-btn{width:50px;height:50px;border-color:var(--cyan);color:var(--cyan);background:#0d1825;box-shadow:0 0 14px rgba(62,240,255,.25);}
+  .tbtn.play-btn:hover{box-shadow:0 0 24px rgba(62,240,255,.45);background:#152535;}
+  .tbtn.play-btn.paused{border-color:var(--gold);color:var(--gold);box-shadow:0 0 14px rgba(255,226,62,.25);}
+  /* Timeline */
+  #tl-wrap{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;}
+  #phrase-labels{display:flex;gap:1px;font-size:10px;color:var(--dim);letter-spacing:.5px;text-transform:uppercase;font-weight:bold;}
+  #phrase-labels span{flex:1;text-align:center;overflow:hidden;white-space:nowrap;}
+  #timeline{position:relative;height:34px;background:var(--panel);border:2px solid var(--border);border-radius:8px;cursor:pointer;overflow:hidden;transition:border-color .15s;}
+  #timeline:hover{border-color:rgba(62,240,255,.5);}
+  #tl-progress{position:absolute;top:0;left:0;height:100%;background:linear-gradient(90deg,rgba(62,240,255,.1),rgba(62,240,255,.22));pointer-events:none;border-right:2px solid rgba(62,240,255,.4);}
+  #tl-dividers{position:absolute;top:0;left:0;right:0;height:100%;display:flex;pointer-events:none;}
+  #tl-dividers .div{flex:1;border-right:1px solid rgba(62,240,255,.18);}
+  #tl-dividers .div:last-child{border-right:none;}
+  #tl-dot{position:absolute;top:50%;left:0;width:16px;height:16px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px rgba(255,226,62,.8),0 0 4px rgba(255,226,62,1);transform:translate(-50%,-50%);cursor:grab;z-index:2;transition:box-shadow .1s,width .1s,height .1s;}
+  #tl-dot:hover{width:22px;height:22px;box-shadow:0 0 20px rgba(255,226,62,1),0 0 8px rgba(255,226,62,1);}
+  #tl-dot:active{cursor:grabbing;}
+  #tl-time{font-size:14px;color:#a0b4d8;min-width:110px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;font-weight:bold;}
+  /* Mode toggles */
+  #modes-t{display:flex;gap:6px;flex-shrink:0;}
+  #modes-t .mode{font-size:12px;font-weight:bold;letter-spacing:1.5px;padding:7px 14px;border:2px solid #4a6a90;border-radius:6px;cursor:pointer;color:#a0b4d8;transition:all .15s;user-select:none;background:#152030;}
+  #modes-t .mode:hover{border-color:var(--cyan);color:#fff;background:#1e3050;}
+  #modes-t .mode.on{border-color:var(--cyan);color:#fff;background:rgba(62,240,255,.15);box-shadow:0 0 12px rgba(62,240,255,.3);}
 </style>
 </head>
 <body>
 <div id="wrap">
-  <div>
-    <h1 id="title">Music for __GAME__</h1>
-    <div id="sub">JUKEBOX</div>
-  </div>
+  <div><h1 id="title">Music for __GAME__</h1><div id="sub">JUKEBOX</div></div>
   <div id="now">&nbsp;</div>
-  <div id="modes">
-    <div class="mode" id="m-seq" title="auto-advance to next song when one finishes (S)">
-      <svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>SEQ
-    </div>
-    <div class="mode" id="m-rep" title="repeat the current song forever (R)">
-      <svg viewBox="0 0 24 24"><polyline points="17 2 21 6 17 10"></polyline><path d="M3 12v-2a4 4 0 0 1 4-4h14"></path><polyline points="7 22 3 18 7 14"></polyline><path d="M21 12v2a4 4 0 0 1-4 4H3"></path></svg>REP
-    </div>
-    <div class="mode" id="m-shf" title="pick a random song when one finishes (H)">
-      <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>SHF
-    </div>
-    <div class="mode" id="m-pause" title="pause / resume playback (Space)">
-      <svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>PAUSE
-    </div>
-  </div>
   <div id="list"></div>
-  <div id="hint">click a song &middot; P / &#8594; = next &middot; &#8592; = prev &middot; M = mute &middot; S/R/H = seq/repeat/shuffle &middot; Space = pause</div>
+</div>
+<div id="transport">
+  <button class="tbtn" id="tb-prev" title="Restart song / double-click for previous"><svg viewBox="0 0 24 24"><polygon points="15 4 5 12 15 20 15 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
+  <button class="tbtn play-btn" id="tb-play" title="Play/Pause (Space)"><svg viewBox="0 0 24 24" id="play-icon"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></button>
+  <button class="tbtn" id="tb-next" title="Next song"><svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="5" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
+  <div id="tl-wrap">
+    <div id="phrase-labels"></div>
+    <div id="timeline"><div id="tl-progress"></div><div id="tl-dividers"></div><div id="tl-dot"></div></div>
+  </div>
+  <div id="tl-time">0:00 / 0:00</div>
+  <div id="modes-t">
+    <div class="mode" id="mt-seq" title="Sequence (S)"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;display:inline;vertical-align:-2px;margin-right:4px;"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg>SEQ</div>
+    <div class="mode" id="mt-rep" title="Repeat (R)"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;display:inline;vertical-align:-2px;margin-right:4px;"><polyline points="17 2 21 6 17 10"></polyline><path d="M3 12v-2a4 4 0 0 1 4-4h14"></path><polyline points="7 22 3 18 7 14"></polyline><path d="M21 12v2a4 4 0 0 1-4 4H3"></path></svg>REP</div>
+    <div class="mode" id="mt-shf" title="Shuffle (H)"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;display:inline;vertical-align:-2px;margin-right:4px;"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>SHF</div>
+  </div>
 </div>
 <script>
 __ENGINE__
 </script>
 <script>
-const TRACKS = __TRACKS__;
-let player = null;
-// Playback modes (mutually exclusive): seq = next song in order,
-// rep = repeat current song, shf = random song. All off = stop after one play.
-let modeSeq = true, modeRep = false, modeShf = false;
-const nowEl = document.getElementById('now');
-const listEl = document.getElementById('list');
-const mSeq = document.getElementById('m-seq');
-const mRep = document.getElementById('m-rep');
-const mShf = document.getElementById('m-shf');
-const mPause = document.getElementById('m-pause');
-
-function applyModes(){
-  if (!player) return;
-  player.seq.tracks.forEach(t => { t.autoNext = modeSeq || modeRep || modeShf; t.repeatOne = modeRep; t.shuffle = modeShf; });
+const TRACKS=__TRACKS__;
+let player=null,modeSeq=false,modeRep=false,modeShf=false,lastShown=-1,_tlStart=null;
+const nowEl=document.getElementById('now'),listEl=document.getElementById('list');
+const tbPrev=document.getElementById('tb-prev'),tbPlay=document.getElementById('tb-play'),tbNext=document.getElementById('tb-next');
+const tlEl=document.getElementById('timeline'),tlProg=document.getElementById('tl-progress'),tlDot=document.getElementById('tl-dot'),tlTime=document.getElementById('tl-time');
+const mtSeq=document.getElementById('mt-seq'),mtRep=document.getElementById('mt-rep'),mtShf=document.getElementById('mt-shf');
+const playIcon=document.getElementById('play-icon');
+function decideNextAction(){if(modeShf)return'random';if(modeRep&&!modeSeq)return'same';if(modeSeq)return'next';return'stop';}
+function applyModes(){if(!player)return;player.seq.tracks.forEach(t=>{t.autoNext=true;t.repeatOne=false;t.shuffle=false;});}
+function installSongEndHooks(){
+  const seq=player.seq,n=()=>seq.tracks.length;
+  seq._origStart=seq._origStart||seq.start.bind(seq);seq._origStop=seq._origStop||seq.stop.bind(seq);
+  seq.next=function(){const act=decideNextAction(),N=n();if(act==='stop'){seq._origStop();return;}if(act==='same'){seq._origStart(seq.current);return;}if(act==='random'){let i;do{i=Math.floor(Math.random()*N);}while(i===seq.current&&N>1);seq._origStart(i);return;}const nx=seq.current+1;if(nx>=N){if(modeRep)seq._origStart(0);else seq._origStop();return;}seq._origStart(nx);};
+  seq.shuffleNext=function(){const act=decideNextAction();if(act!=='random'){seq.next();return;}let i;do{i=Math.floor(Math.random()*n());}while(i===seq.current&&n()>1);seq._origStart(i);};
 }
-function setMode(which){
-  // Toggling a mode on turns the others off (one behavior at a time).
-  if (which === 'seq'){ modeSeq = !modeSeq; modeRep = false; modeShf = false; }
-  else if (which === 'rep'){ modeRep = !modeRep; modeSeq = false; modeShf = false; }
-  else { modeShf = !modeShf; modeSeq = false; modeRep = false; }
-  mSeq.classList.toggle('on', modeSeq);
-  mRep.classList.toggle('on', modeRep);
-  mShf.classList.toggle('on', modeShf);
-  applyModes();
-  console.log('[jukebox] mode: ' + (modeRep ? 'repeat' : modeShf ? 'shuffle' : modeSeq ? 'sequence' : 'off'));
+function setMode(w){
+  if(w==='seq'){modeSeq=!modeSeq;if(modeSeq)modeShf=false;}
+  else if(w==='rep'){modeRep=!modeRep;if(modeRep)modeShf=false;}
+  else{modeShf=!modeShf;if(modeShf){modeSeq=false;modeRep=false;}}
+  syncModeUI();applyModes();
 }
-
-function ensure(){
-  if (!player){
-    player = new MusicEngine.Player({ tracks: TRACKS });
-    renderList();
-  }
-  if (player.ctx.state === 'suspended') player.ctx.resume();
-}
-function renderList(){
-  const names = player.getNames();
-  listEl.innerHTML = names.map((n,i)=>`<div class="row ${i===player.current?'on':''}" data-i="${i}">${i+1}. ${n}</div>`).join('');
-  listEl.querySelectorAll('.row').forEach(el=>el.addEventListener('click',()=>playTrack(parseInt(el.dataset.i,10))));
-}
-function showNow(){
-  const names = player.getNames();
-  nowEl.textContent = player.playing ? ('\u25cf NOW PLAYING: '+(player.current+1)+' '+names[player.current]) : '\u23f8 PAUSED';
-  lastShown = player.current;
-  renderList();
-}
-function playTrack(i){
-  ensure();
-  applyModes();
-  player.start(i);
-  console.log('[jukebox] play -> #'+(i+1), player.getNames()[i]);
-  showNow();
-}
-// Keep the "now playing" display in sync with the engine (covers both
-// manual P/click changes and automatic song-sequence advances).
-// Only touch the DOM when the current track actually changed, so the
-// row highlight never flickers mid-song.
-let lastShown = -1;
-setInterval(()=>{
-  if (!player || !player.playing) return;
-  if (player.current !== lastShown) { lastShown = player.current; showNow(); }
-}, 250);
-function nextTrack(){
-  ensure();
-  const started = player.playing;
-  const n = player.seq.tracks.length;
-  const target = started ? (player.current + 1) % n : 0;
-  playTrack(target);
-}
-function prevTrack(){
-  ensure();
-  const n = player.seq.tracks.length;
-  const target = (player.current - 1 + n) % n;
-  playTrack(target);
-}
-mSeq.addEventListener('click', ()=>setMode('seq'));
-mRep.addEventListener('click', ()=>setMode('rep'));
-mShf.addEventListener('click', ()=>setMode('shf'));
-function togglePause(){
-  ensure();
-  if (player.playing) {
-    player.pause();
-    mPause.classList.add('on');
-    showNow();
-  } else {
-    player.resume();
-    mPause.classList.remove('on');
-    showNow();
-  }
-}
-mPause.addEventListener('click', togglePause);
-window.addEventListener('keydown', (e)=>{
-  if (e.code === 'KeyP'){ e.preventDefault(); nextTrack(); }
-  else if (e.code === 'ArrowDown' || e.code === 'ArrowRight'){ e.preventDefault(); nextTrack(); }
-  else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft'){ e.preventDefault(); prevTrack(); }
-  else if (e.code === 'KeyM'){ ensure(); player.toggleMute(); }
-  else if (e.code === 'KeyS'){ e.preventDefault(); setMode('seq'); }
-  else if (e.code === 'KeyR'){ e.preventDefault(); setMode('rep'); }
-  else if (e.code === 'KeyH'){ e.preventDefault(); setMode('shf'); }
-  else if (e.code === 'Space'){ e.preventDefault(); togglePause(); }
+function syncModeUI(){mtSeq.classList.toggle('on',modeSeq);mtRep.classList.toggle('on',modeRep);mtShf.classList.toggle('on',modeShf);}
+function ensure(){if(!player){player=new MusicEngine.Player({tracks:TRACKS});installSongEndHooks();applyModes();renderList();}if(player.ctx.state==='suspended')player.ctx.resume();}
+function renderList(){const names=player.getNames();listEl.innerHTML=names.map((n,i)=>'<div class="row '+(i===player.current?'on':'')+'" data-i="'+i+'">'+(i+1)+'. '+n+'</div>').join('');listEl.querySelectorAll('.row').forEach(el=>el.addEventListener('click',()=>playTrack(parseInt(el.dataset.i,10))));}
+function showNow(){const names=player.getNames();nowEl.textContent=player.playing?('\u25cf NOW PLAYING: '+(player.current+1)+' '+names[player.current]):'\u23f8 PAUSED';lastShown=player.current;renderList();_tlStart=performance.now();}
+function playTrack(i){ensure();applyModes();player.start(i);showNow();}
+setInterval(()=>{if(!player||!player.playing)return;if(player.current!==lastShown){lastShown=player.current;showNow();}},250);
+function nextTrack(){ensure();const n=player.seq.tracks.length;playTrack((player.current+1)%n);}
+function prevTrack(){ensure();const n=player.seq.tracks.length;playTrack((player.current-1+n)%n);}
+function restartSong(){if(!player)return;ensure();player.start(player.current);_tlStart=performance.now();}
+function togglePause(){ensure();if(player.playing){player.pause();tbPlay.classList.add('paused');showNow();}else{player.resume();tbPlay.classList.remove('paused');showNow();}}
+// Prev: single=restart, double=prev song (1s grace)
+let _prevTimer=null,_prevCount=0;
+tbPrev.addEventListener('click',()=>{_prevCount++;if(_prevCount===1){_prevTimer=setTimeout(()=>{_prevCount=0;restartSong();},1000);}else if(_prevCount>=2){clearTimeout(_prevTimer);_prevCount=0;prevTrack();}});
+window.addEventListener('keydown',e=>{
+  if(e.code==='KeyP'){e.preventDefault();nextTrack();}
+  else if(e.code==='ArrowDown'||e.code==='ArrowRight'){e.preventDefault();nextTrack();}
+  else if(e.code==='ArrowUp'||e.code==='ArrowLeft'){e.preventDefault();prevTrack();}
+  else if(e.code==='KeyM'){ensure();player.toggleMute();}
+  else if(e.code==='KeyS'){e.preventDefault();setMode('seq');}
+  else if(e.code==='KeyR'){e.preventDefault();setMode('rep');}
+  else if(e.code==='KeyH'){e.preventDefault();setMode('shf');}
+  else if(e.code==='Space'){e.preventDefault();togglePause();}
 });
-document.body.addEventListener('click', ()=>{ ensure(); });
-// Render the clickable track list up front (before any audio starts).
-listEl.innerHTML = TRACKS.map((t,i)=>`<div class="row" data-i="${i}">${i+1}. ${t.name}</div>`).join('');
+document.body.addEventListener('click',()=>{ensure();});
+tbPlay.addEventListener('click',togglePause);
+tbNext.addEventListener('click',nextTrack);
+mtSeq.addEventListener('click',()=>setMode('seq'));
+mtRep.addEventListener('click',()=>setMode('rep'));
+mtShf.addEventListener('click',()=>setMode('shf'));
+// Timeline
+(function(){
+  const divs=document.getElementById('tl-dividers'),labels=document.getElementById('phrase-labels');
+  const names=['0','0b','1','1b','2','3','4','tag'];
+  for(let i=0;i<8;i++){const d=document.createElement('div');d.className='div';divs.appendChild(d);const l=document.createElement('span');l.textContent=names[i];labels.appendChild(l);}
+})();
+function trackDuration(trk){const pl=trk.phraseLens||[1,1,1,1,1,1,1,1];return pl.reduce((s,l)=>s+32*l,0)*(60/trk.bpm)/4;}
+function getProgress(){if(!player)return 0;const trk=player.seq.tracks[player.current];if(!trk)return 0;if(_tlStart===null)_tlStart=performance.now();return Math.min(1,(performance.now()-_tlStart)/1000/trackDuration(trk));}
+function seekTo(frac){
+  if(!player)return;
+  const trk=player.seq.tracks[player.current];
+  if(!trk)return;
+  const pl=trk.phraseLens||[1,1,1,1,1,1,1,1];
+  const totalSteps=pl.reduce((s,l)=>s+32*l,0);
+  const targetStep=Math.floor(frac*totalSteps);
+  // Use the engine's real seek: sets stepIndex/barCount/phraseCount correctly
+  player.seekToStep(targetStep);
+  _tlStart=performance.now();
+}
+function fmt(s){const m=Math.floor(s/60);return m+':'+String(Math.floor(s%60)).padStart(2,'0');}
+let _lastP=0;
+setInterval(()=>{
+  if(!player)return;
+  const p=getProgress();
+  // Detect loop: progress jumped backwards significantly = song restarted
+  if(p<_lastP-0.3){_tlStart=performance.now();}
+  _lastP=p;
+  tlDot.style.left=(p*100)+'%';tlProg.style.width=(p*100)+'%';
+  const trk=player.seq.tracks[player.current];
+  if(trk){const d=trackDuration(trk);tlTime.textContent=fmt(p*d)+' / '+fmt(d);}
+  if(player.playing){playIcon.innerHTML='<rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/>';tbPlay.classList.remove('paused');}
+  else{playIcon.innerHTML='<polygon points="7 4 20 12 7 20 7 4"/>';tbPlay.classList.add('paused');}
+},50);
+let dragging=false;
+tlDot.addEventListener('mousedown',e=>{dragging=true;e.preventDefault();e.stopPropagation();});
+window.addEventListener('mousemove',e=>{if(!dragging)return;const r=tlEl.getBoundingClientRect();const f=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));tlDot.style.left=(f*100)+'%';tlProg.style.width=(f*100)+'%';});
+window.addEventListener('mouseup',e=>{if(!dragging)return;dragging=false;const r=tlEl.getBoundingClientRect();seekTo(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)));});
+tlEl.addEventListener('click',e=>{if(dragging)return;const r=tlEl.getBoundingClientRect();seekTo(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)));});
+listEl.innerHTML=TRACKS.map((t,i)=>'<div class="row" data-i="'+i+'">'+(i+1)+'. '+t.name+'</div>').join('');
 listEl.querySelectorAll('.row').forEach(el=>el.addEventListener('click',()=>playTrack(parseInt(el.dataset.i,10))));
 </script>
 </body>

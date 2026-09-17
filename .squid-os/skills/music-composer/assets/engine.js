@@ -152,6 +152,27 @@ class MusicSequencer {
     }
   }
 
+  /** Seek to an absolute step within the current track (0-based).
+   *  Computes the correct barCount/phraseCount so phrase progression
+   *  and drum levels are accurate at the seek point. */
+  seekToStep(absStep) {
+    const trk = this.tracks[this.current];
+    if (!trk) return;
+    const lens = trk.phraseLens || trk.leads.map(() => 1);
+    const totalBlocks = lens.reduce((a, b) => a + b, 0);
+    // Each block = 32 steps. Find which block and step-within-block.
+    const block = Math.floor(absStep / 32);
+    const stepInBlock = absStep % 32;
+    this.stepIndex = stepInBlock;
+    this.barCount = block;
+    this.phraseCount = block;
+    this.nextNoteTime = this.ctx.currentTime + 0.06;
+    // Kill any lingering oscillators from before the seek.
+    const t = this.ctx.currentTime;
+    this._liveOscs.forEach((n) => { try { n.stop(t + 0.02); } catch (e) {} });
+    this._liveOscs.clear();
+  }
+
   setIntensity(_n) { /* deferred */ }
 
   _rearm() {
@@ -745,6 +766,7 @@ class MusicSequencer {
   Player.prototype.setTrack = function (i) { this.seq.setTrack(i); };
   Player.prototype.next = function () { this.seq.next(); };
   Player.prototype.shuffleNext = function () { this.seq.shuffleNext(); };
+  Player.prototype.seekToStep = function (absStep) { this.seq.seekToStep(absStep); };
   Object.defineProperty(Player.prototype, 'current', { get() { return this.seq.current; } });
   Object.defineProperty(Player.prototype, 'playing', { get() { return this.seq.playing; } });
   Player.prototype.getNames = function () { return this.seq.tracks.map(t => t.name); };
