@@ -50,7 +50,7 @@ export const Remap = {
   get chip() {
     return this.focus >= 0 && this.focus < ACTIONS.length
       ? Math.min(this.preferredChip, bindingSlots(this.tab, ACTIONS[this.focus].id) - 1) : 0;
-  }
+  },
   _flashInvalid: 0,      // timer for "INVALID" flash
   _pulseT: 0,            // pulse timer for "PRESS ANY..." text
 
