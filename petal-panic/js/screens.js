@@ -366,11 +366,11 @@ export const Home = {
 // =============================================================================
 
 export const Select = {
-  focus: -1, // -1 = none, 0 = scarlet, 1 = balthazar
+  focus: 0, // 0 = scarlet, 1 = balthazar
   _heldLeft: false,   // ArrowLeft physically down (chip stays gold while held)
   _heldRight: false,  // ArrowRight physically down
 
-  reset() { this.focus = -1; this._heldLeft = false; this._heldRight = false; },
+  reset() { this.focus = 0; this._heldLeft = false; this._heldRight = false; },
 
   draw(ctx) {
     // Background — deep midnight so the cream art cards pop.
