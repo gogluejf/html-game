@@ -277,7 +277,8 @@ export function createInput({ target = globalThis.window, document = globalThis.
   };
   listen(target, 'keydown', e => {
     if (/^F\d+$/.test(e.code)) return; // debug owns function keys
-    if (KEY_NAV[e.code] || capture || Object.values(engine.mapping.keyboard).some(v => v.includes(e.code))) e.preventDefault?.();
+    if (e.ctrlKey || e.metaKey) return; // browser shortcuts always pass through
+  if (KEY_NAV[e.code] || capture || Object.values(engine.mapping.keyboard).some(v => v.includes(e.code))) e.preventDefault?.();
     if (e.repeat || keys.has(e.code) || suspended) return;
     keys.add(e.code); queue.push({ code: e.code, down: true });
   });
