@@ -4,45 +4,129 @@
 <meta charset="utf-8">
 <title>MUSIC FOR abyss-qwen</title>
 <style>
-  html,body{margin:0;min-height:100%;background:#05070f;color:#cfe4ff;font-family:'Courier New',monospace;}
-  #wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:48px 20px;gap:26px;box-sizing:border-box;}
-  #title{font-size:44px;font-weight:bold;letter-spacing:6px;color:#3ef0ff;text-shadow:0 0 24px #3ef0ff;margin:0;text-transform:uppercase;}
-  #sub{font-size:16px;color:#5a6a90;letter-spacing:3px;margin-top:-14px;}
-  #now{font-size:30px;color:#ffe23e;min-height:38px;text-shadow:0 0 14px #ffe23e;font-weight:bold;}
-  #list{display:flex;flex-direction:column;gap:12px;min-width:340px;}
-  #list .row{font-size:24px;padding:10px 22px;border:2px solid #1b2540;border-radius:8px;cursor:pointer;
-             color:#8fa0d0;transition:all .12s;user-select:none;text-align:center;}
-  #list .row:hover{border-color:#3ef0ff;color:#cfe4ff;background:rgba(62,240,255,.06);}
-  #list .row.on{border-color:#ffe23e;color:#fff;background:rgba(255,226,62,.10);box-shadow:0 0 16px rgba(255,226,62,.25);}
-  #modes{display:flex;gap:14px;margin-top:-8px;}
-  #modes .mode{display:flex;align-items:center;gap:7px;font-size:15px;letter-spacing:2px;padding:6px 13px;border:2px solid #1b2540;border-radius:8px;cursor:pointer;
-               color:#5a6a90;user-select:none;transition:all .12s;}
-  #modes .mode svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
-  #modes .mode:hover{border-color:#3ef0ff;color:#cfe4ff;}
-  #modes .mode.on{border-color:#3ef0ff;color:#fff;background:rgba(62,240,255,.10);box-shadow:0 0 14px rgba(62,240,255,.3);}
-  #hint{font-size:15px;color:#5a6a90;letter-spacing:1px;}
+  :root{--bg:#05070f;--panel:#0d1220;--border:#2a4060;--cyan:#3ef0ff;--gold:#ffe23e;--dim:#7a8ab0;--text:#e0ecff;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow-x:hidden;}
+  #wrap{display:flex;flex-direction:column;align-items:center;padding:0 20px 130px;gap:0;min-height:100vh;}
+  #header{position:sticky;top:0;z-index:50;width:100%;max-width:728px;display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 0 18px;background:linear-gradient(to bottom,var(--bg) 70%,rgba(5,7,15,0));}
+  #title{font-size:42px;font-weight:bold;letter-spacing:6px;color:var(--cyan);text-shadow:0 0 24px var(--cyan);margin:0;text-transform:uppercase;}
+  #sub{font-size:14px;color:var(--dim);letter-spacing:4px;margin-top:-12px;}
+  #now{font-size:28px;color:var(--gold);min-height:36px;text-shadow:0 0 14px var(--gold);font-weight:bold;text-align:center;}
+  #list{display:flex;flex-direction:column;gap:6px;min-width:340px;max-width:728px;width:100%;}
+  #list .row{display:grid;grid-template-columns:28px minmax(0,1fr) auto 64px 24px;column-gap:12px;align-items:center;padding:9px 16px 28px;border:2px solid var(--border);border-radius:8px;cursor:pointer;color:#a0b4d8;transition:all .12s;user-select:none;background:var(--panel);}
+  #list .row:hover{border-color:var(--cyan);background:#142030;}
+  #list .row.on{border-color:var(--gold);background:rgba(255,226,62,.1);box-shadow:0 0 16px rgba(255,226,62,.25);}
+  #list .row .num{grid-column:1;font-size:15px;font-weight:bold;color:var(--dim);font-variant-numeric:tabular-nums;align-self:center;}
+  #list .row.on .num{color:var(--gold);}
+  #list .row .nm{grid-column:2;font-size:22px;color:#a0b4d8;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #list .row.on .nm{color:#fff;}
+  #list .row .chips{grid-column:3;display:flex;flex-direction:row;gap:10px;align-items:center;justify-content:flex-end;align-self:center;}
+  #list .row .chip{font-size:11px;font-weight:bold;letter-spacing:.5px;padding:2px 8px;border-radius:999px;white-space:nowrap;}
+  #list .row .chip.genre{color:var(--gold);background:rgba(255,226,62,.1);border:1px solid rgba(255,226,62,.35);}
+  #list .row .bpm{grid-column:4;justify-self:end;font-size:13px;font-weight:normal;color:var(--cyan);opacity:.75;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
+  #list .row .fav{grid-column:5;align-self:start;margin-top:2px;cursor:pointer;color:var(--dim);display:flex;align-items:center;transition:transform .12s,color .12s;padding:2px;}
+  #list .row .fav:hover{color:#ff8fa5;transform:scale(1.2);}
+  #list .row .fav svg{width:16px;height:16px;display:block;}
+  #list .row .fav.on{color:#ff3b5c;}
+  #list .row .fav.on svg{filter:drop-shadow(0 0 4px rgba(255,59,92,.6));}
+  /* Transport bar */
+  #transport{position:fixed;bottom:0;left:0;right:0;z-index:100;background:linear-gradient(to top,#080c18 0%,#0d1220 100%);border-top:2px solid var(--border);padding:14px 24px 18px;display:flex;align-items:center;gap:14px;user-select:none;box-shadow:0 -4px 40px rgba(0,0,0,.6);}
+  .tbtn{width:42px;height:42px;border:2px solid #4a6a90;border-radius:8px;background:#152030;color:#e0ecff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
+  .tbtn:hover{border-color:var(--cyan);color:#fff;background:#1e3050;transform:scale(1.08);}
+  .tbtn:active{transform:scale(.93);}
+  .tbtn svg{width:20px;height:20px;fill:currentColor;}
+  .tbtn.play-btn{width:50px;height:50px;border-color:var(--cyan);color:var(--cyan);background:#0d1825;box-shadow:0 0 14px rgba(62,240,255,.25);}
+  .tbtn.play-btn:hover{box-shadow:0 0 24px rgba(62,240,255,.45);background:#152535;}
+  .tbtn.play-btn.paused{border-color:var(--gold);color:var(--gold);box-shadow:0 0 14px rgba(255,226,62,.25);}
+  /* Timeline */
+  #tl-wrap{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;}
+  #phrase-labels{display:flex;gap:1px;font-size:10px;color:var(--dim);letter-spacing:.5px;text-transform:uppercase;font-weight:bold;}
+  #phrase-labels span{flex:1;text-align:center;overflow:hidden;white-space:nowrap;}
+  #timeline{position:relative;height:34px;background:var(--panel);border:2px solid var(--border);border-radius:8px;cursor:pointer;overflow:hidden;transition:border-color .15s;}
+  #timeline:hover{border-color:rgba(62,240,255,.5);}
+  #tl-progress{position:absolute;top:0;left:0;height:100%;background:linear-gradient(90deg,rgba(62,240,255,.1),rgba(62,240,255,.22));pointer-events:none;border-right:2px solid rgba(62,240,255,.4);}
+  #tl-dividers{position:absolute;top:0;left:0;right:0;height:100%;display:flex;pointer-events:none;}
+  #tl-dividers .div{flex:1;border-right:1px solid rgba(62,240,255,.18);}
+  #tl-dividers .div:last-child{border-right:none;}
+  #tl-dot{position:absolute;top:50%;left:0;width:16px;height:16px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px rgba(255,226,62,.8),0 0 4px rgba(255,226,62,1);transform:translate(-50%,-50%);cursor:grab;z-index:2;transition:box-shadow .1s,width .1s,height .1s;}
+  #tl-dot:hover{width:22px;height:22px;box-shadow:0 0 20px rgba(255,226,62,1),0 0 8px rgba(255,226,62,1);}
+  #tl-dot:active{cursor:grabbing;}
+  #tl-head{display:flex;align-items:baseline;gap:22px;min-width:0;}
+  #tl-time{font-size:13px;color:#a0b4d8;flex-shrink:0;font-variant-numeric:tabular-nums;font-weight:bold;white-space:nowrap;}
+  #tl-title{font-size:14px;color:var(--gold);font-weight:bold;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 0 8px rgba(255,226,62,.3);line-height:1.2;min-width:0;}
+  #log-ind{position:fixed;top:12px;right:16px;z-index:200;font-size:12px;font-weight:bold;letter-spacing:1px;padding:6px 12px;border-radius:6px;background:#1a0d0d;border:2px solid #ff4444;color:#ff6666;display:none;box-shadow:0 0 12px rgba(255,68,68,.4);}
+  #log-ind.on{display:block;}
+  /* Mode toggles */
+  #modes-t{display:flex;gap:6px;flex-shrink:0;}
+  #modes-t .mode{font-size:12px;font-weight:bold;letter-spacing:1.5px;padding:7px 14px;border:2px solid #4a6a90;border-radius:6px;cursor:pointer;color:#a0b4d8;transition:all .15s;user-select:none;background:#152030;}
+  #modes-t .mode:hover{border-color:var(--cyan);color:#fff;background:#1e3050;}
+  #modes-t .mode.on{border-color:var(--cyan);color:#fff;background:rgba(62,240,255,.15);box-shadow:0 0 12px rgba(62,240,255,.3);}
+  /* Side info panel (now-playing details) */
+  #wrap{flex-direction:row;align-items:flex-start;justify-content:center;gap:32px;}
+  #main-col{display:flex;flex-direction:column;align-items:center;width:100%;max-width:728px;}
+  #side-panel{width:340px;flex-shrink:0;background:var(--panel);border:2px solid var(--border);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:14px;position:sticky;top:150px;box-shadow:0 8px 40px rgba(0,0,0,.5);}
+  #side-panel.hidden{display:none;}
+  #sp-art{width:100%;aspect-ratio:1/1;border-radius:10px;background:radial-gradient(circle at 50% 40%,#1a2740,#0a0f1c);display:flex;align-items:center;justify-content:center;font-size:64px;color:var(--cyan);text-shadow:0 0 24px var(--cyan);border:2px solid var(--border);}
+  #sp-title{font-size:24px;font-weight:bold;color:#fff;line-height:1.2;text-shadow:0 0 12px rgba(62,240,255,.3);}
+  #sp-badges{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  #sp-genre{font-size:12px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:var(--gold);background:rgba(255,226,62,.12);border:1px solid rgba(255,226,62,.4);padding:4px 10px;border-radius:999px;}
+  #sp-bpm{font-size:12px;font-weight:bold;color:var(--cyan);background:rgba(62,240,255,.1);border:1px solid rgba(62,240,255,.35);padding:4px 10px;border-radius:999px;font-variant-numeric:tabular-nums;}
+  #sp-fav{cursor:pointer;color:var(--dim);display:flex;align-items:center;margin-left:auto;transition:transform .12s,color .12s;padding:4px;}
+  #sp-fav:hover{color:#ff8fa5;transform:scale(1.15);}
+  #sp-fav svg{width:22px;height:22px;display:block;}
+  #sp-fav.on{color:#ff3b5c;}
+  #sp-fav.on svg{filter:drop-shadow(0 0 5px rgba(255,59,92,.7));}
+  #sp-meta{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--dim);}
+  #sp-meta .k{color:var(--dim);letter-spacing:1px;text-transform:uppercase;font-size:10px;margin-right:6px;}
+  #sp-meta .v{color:#a0b4d8;font-variant-numeric:tabular-nums;}
+  #sp-vibe-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-top:4px;}
+  #sp-vibe{font-size:13px;color:#a0b4d8;line-height:1.5;font-style:italic;}
+  @media (max-width:820px){
+    #wrap{flex-direction:column;align-items:center;}
+    #side-panel{position:static;width:100%;max-width:560px;}
+  }
 </style>
 </head>
 <body>
+<div id="log-ind">● LOGGING — press L to save</div>
 <div id="wrap">
-  <div>
-    <h1 id="title">Music for abyss-qwen</h1>
-    <div id="sub">JUKEBOX</div>
+  <div id="main-col">
+    <div id="header">
+      <h1 id="title">Music for abyss-qwen</h1><div id="sub">JUKEBOX</div>
+      <div id="now">&nbsp;</div>
+    </div>
+    <div id="list"></div>
   </div>
-  <div id="now">&nbsp;</div>
-  <div id="modes">
-    <div class="mode" id="m-seq" title="auto-advance to next song when one finishes (S)">
-      <svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>SEQ
+  <aside id="side-panel" class="hidden">
+    <div id="sp-art">&#9834;</div>
+    <div id="sp-title">&ndash;</div>
+    <div id="sp-badges">
+      <span id="sp-genre">&ndash;</span>
+      <span id="sp-bpm">&ndash;</span>
+      <span id="sp-fav" title="Favorite"></span>
     </div>
-    <div class="mode" id="m-rep" title="repeat the current song forever (R)">
-      <svg viewBox="0 0 24 24"><polyline points="17 2 21 6 17 10"></polyline><path d="M3 12v-2a4 4 0 0 1 4-4h14"></path><polyline points="7 22 3 18 7 14"></polyline><path d="M21 12v2a4 4 0 0 1-4 4H3"></path></svg>REP
+    <div id="sp-meta">
+      <div><span class="k">Created</span><span class="v" id="sp-created">&ndash;</span></div>
+      <div><span class="k">Revision</span><span class="v" id="sp-revision">&ndash;</span></div>
     </div>
-    <div class="mode" id="m-shf" title="pick a random song when one finishes (H)">
-      <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>SHF
-    </div>
+    <div id="sp-vibe-label">Vibe</div>
+    <div id="sp-vibe">&ndash;</div>
+  </aside>
+</div>
+<div id="transport">
+  <button class="tbtn" id="tb-prev" title="Restart song / double-click for previous"><svg viewBox="0 0 24 24"><polygon points="15 4 5 12 15 20 15 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
+  <button class="tbtn play-btn" id="tb-play" title="Play/Pause (Space)"><svg viewBox="0 0 24 24" id="play-icon"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></button>
+  <button class="tbtn" id="tb-next" title="Next song"><svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="5" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
+  <div id="tl-wrap">
+    <div id="tl-head"><span id="tl-title"></span><span id="tl-time">0:00 / 0:00</span></div>
+    <div id="phrase-labels"></div>
+    <div id="timeline"><div id="tl-progress"></div><div id="tl-dividers"></div><div id="tl-dot"></div></div>
   </div>
-  <div id="list"></div>
-  <div id="hint">click a song &middot; P / &#8594; = next &middot; &#8592; = prev &middot; M = mute &middot; S/R/H = seq/repeat/shuffle</div>
+  <div id="modes-t">
+    <div class="mode" id="mt-seq" title="Sequence (S)"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;display:inline;vertical-align:-2px;margin-right:4px;"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg>SEQ</div>
+    <div class="mode" id="mt-rep" title="Repeat (R)"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;display:inline;vertical-align:-2px;margin-right:4px;"><polyline points="17 2 21 6 17 10"></polyline><path d="M3 12v-2a4 4 0 0 1 4-4h14"></path><polyline points="7 22 3 18 7 14"></polyline><path d="M21 12v2a4 4 0 0 1-4 4H3"></path></svg>REP</div>
+    <div class="mode" id="mt-shf" title="Shuffle (H)"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;display:inline;vertical-align:-2px;margin-right:4px;"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>SHF</div>
+  </div>
 </div>
 <script>
 /* music-composer engine — standalone build of MusicSequencer.
@@ -87,6 +171,19 @@ class MusicSequencer {
 
     this.lookahead = 0.12;
     this.tickMs = 25;
+    // -- debug logging --
+    this._logBuf = [];
+    this._logEnabled = true;   // always-on tick log (TICK/START/STOP/LOOP lines)
+  }
+
+  enableLog() { this._logEnabled = true; this._log('LOG: enabled'); }
+  disableLog() { this._logEnabled = false; this._log('LOG: disabled'); }
+  flushLog() { const out = this._logBuf.join('\n'); return out; }   // keep buffer (always-on)
+  _log(msg) {
+    if (!this._logEnabled) return;
+    const t = (performance.now() / 1000).toFixed(4);
+    this._logBuf.push(t + ' ' + msg);
+    if (this._logBuf.length > 5000) this._logBuf.splice(0, 1000);
   }
 
   /* -- public API ---------------------------------------------------------- */
@@ -101,6 +198,7 @@ class MusicSequencer {
 
   start(trackIndex) {
     trackIndex = (trackIndex == null) ? this.current : trackIndex;
+    this._log('START track=' + trackIndex + ' ctxNow=' + this.ctx.currentTime.toFixed(4));
     this.stop();
     this.current = Math.max(0, Math.min(this.tracks.length - 1, trackIndex | 0));
     this.playing = true;
@@ -108,6 +206,7 @@ class MusicSequencer {
     this.barCount = 0;
     this.phraseCount = 0;   // total phrase-events played (drives drum level)
     this.nextNoteTime = this.ctx.currentTime + 0.06;
+    this._log('START done nextNoteTime=' + this.nextNoteTime.toFixed(4) + ' delta=' + (this.nextNoteTime - this.ctx.currentTime).toFixed(4));
 
     this._busFilter = this.ctx.createBiquadFilter();
     this._busFilter.type = "lowpass";
@@ -121,12 +220,43 @@ class MusicSequencer {
     this.timerId = setInterval(() => this._schedule(), this.tickMs);
   }
 
+  /** Seamless loop/advance: reset to track i at step 0 WITHOUT tearing down the
+   *  scheduler or resetting the clock. The existing setInterval keeps firing and
+   *  nextNoteTime stays on the beat grid (it's already ahead of ctx.currentTime
+   *  by the lookahead), so the first note of the new cycle lands exactly where
+   *  the grid says it should — no off-grid "now+0.06" jump, no interval-phase
+   *  drift. This is what makes song-end loops sound continuous instead of
+   *  restarting awkwardly. */
+  _loopRestart(trackIndex) {
+    const i = Math.max(0, Math.min(this.tracks.length - 1, (trackIndex == null ? this.current : trackIndex) | 0));
+    this._log('LOOP_RESTART track=' + i + ' nextNoteTime=' + this.nextNoteTime.toFixed(4) + ' ctxNow=' + this.ctx.currentTime.toFixed(4) + ' lead=' + (this.nextNoteTime - this.ctx.currentTime).toFixed(4));
+    this.current = i;
+    this.stepIndex = 0;
+    this.barCount = 0;
+    this.phraseCount = 0;
+    // Rebuild the audio bus only if it was torn down (normally it persists).
+    if (!this._busFilter) {
+      this._busFilter = this.ctx.createBiquadFilter();
+      this._busFilter.type = "lowpass";
+      this._busFilter.frequency.value = 12000;
+      this._busFilter.Q.value = 0.6;
+      this._busGain = this.ctx.createGain();
+      this._busGain.gain.value = 0.5;
+      this._busFilter.connect(this._busGain);
+      this._busGain.connect(this.master);
+    }
+    // Ensure we're actually playing and have a live timer (defensive: if a prior
+    // path cleared the interval, restart it — but keep nextNoteTime on the grid).
+    if (!this.playing) { this.playing = true; }
+    if (this.timerId === null) { this.timerId = setInterval(() => this._schedule(), this.tickMs); }
+  }
+
   /** Advance to the next track, restarting from phrase 0. */
   next() {
     const n = this.tracks.length;
     if (n < 2) return;
     const i = (this.current + 1) % n;
-    if (this.playing) this.start(i); else this.setTrack(i);
+    if (this.playing) this._loopRestart(i); else this.setTrack(i);
   }
 
   /** Pick a random other track (shuffle). */
@@ -135,10 +265,11 @@ class MusicSequencer {
     if (n < 2) return;
     let i;
     do { i = Math.floor(Math.random() * n); } while (i === this.current);
-    if (this.playing) this.start(i); else this.setTrack(i);
+    if (this.playing) this._loopRestart(i); else this.setTrack(i);
   }
 
   stop() {
+    this._log('STOP playing=' + this.playing + ' stepIdx=' + this.stepIndex + ' bar=' + this.barCount);
     if (this.timerId !== null) { clearInterval(this.timerId); this.timerId = null; }
     this.playing = false;
     const t = this.ctx.currentTime;
@@ -146,6 +277,46 @@ class MusicSequencer {
     this._liveOscs.clear();
     if (this._busFilter) { try { this._busFilter.disconnect(); } catch (e) {} this._busFilter = null; }
     if (this._busGain)   { try { this._busGain.disconnect(); } catch (e) {} this._busGain = null; }
+  }
+
+  /** True pause: freeze the scheduler mid-song, keep all state. */
+  pause() {
+    if (!this.playing) return;
+    if (this.timerId !== null) { clearInterval(this.timerId); this.timerId = null; }
+    this.playing = false;
+    // Kill only the currently-sounding oscillators (the lookahead tail).
+    const t = this.ctx.currentTime;
+    this._liveOscs.forEach((n) => { try { n.stop(t + 0.03); } catch (e) {} });
+    this._liveOscs.clear();
+    // Save position so resume() can pick up exactly here.
+    this._pausedStep = this.stepIndex;
+    this._pausedBar = this.barCount;
+    this._pausedPhrase = this.phraseCount;
+    this._pausedTrack = this.current;
+  }
+
+  /** Resume from the exact step saved by pause(). */
+  resume() {
+    if (this.playing) return;
+    const trk = this.tracks[this._pausedTrack != null ? this._pausedTrack : this.current];
+    this.current = this._pausedTrack != null ? this._pausedTrack : this.current;
+    this.stepIndex = this._pausedStep || 0;
+    this.barCount = this._pausedBar || 0;
+    this.phraseCount = this._pausedPhrase || 0;
+    this.playing = true;
+    this.nextNoteTime = this.ctx.currentTime + 0.06;
+    // Rebuild the bus if it was torn down.
+    if (!this._busFilter) {
+      this._busFilter = this.ctx.createBiquadFilter();
+      this._busFilter.type = "lowpass";
+      this._busFilter.frequency.value = 12000;
+      this._busFilter.Q.value = 0.6;
+      this._busGain = this.ctx.createGain();
+      this._busGain.gain.value = 0.5;
+      this._busFilter.connect(this._busGain);
+      this._busGain.connect(this.master);
+    }
+    this.timerId = setInterval(() => this._schedule(), this.tickMs);
   }
 
   setTrack(i) {
@@ -156,7 +327,36 @@ class MusicSequencer {
       this.barCount = 0;
       this.phraseCount = 0;
       this.nextNoteTime = this.ctx.currentTime + 0.04;
+    } else {
+      // Not playing: a track switch invalidates any saved pause snapshot so a
+      // later resume() honors the newly-selected track (this.current) instead
+      // of snapping back to the track that was paused.
+      this._pausedTrack = null;
+      this._pausedStep = 0;
+      this._pausedBar = 0;
+      this._pausedPhrase = 0;
     }
+  }
+
+  /** Seek to an absolute step within the current track (0-based).
+   *  Computes the correct barCount/phraseCount so phrase progression
+   *  and drum levels are accurate at the seek point. */
+  seekToStep(absStep) {
+    const trk = this.tracks[this.current];
+    if (!trk) return;
+    const lens = trk.phraseLens || trk.leads.map(() => 1);
+    const totalBlocks = lens.reduce((a, b) => a + b, 0);
+    // Each block = 32 steps. Find which block and step-within-block.
+    const block = Math.floor(absStep / 32);
+    const stepInBlock = absStep % 32;
+    this.stepIndex = stepInBlock;
+    this.barCount = block;
+    this.phraseCount = block;
+    this.nextNoteTime = this.ctx.currentTime + 0.06;
+    // Kill any lingering oscillators from before the seek.
+    const t = this.ctx.currentTime;
+    this._liveOscs.forEach((n) => { try { n.stop(t + 0.02); } catch (e) {} });
+    this._liveOscs.clear();
   }
 
   setIntensity(_n) { /* deferred */ }
@@ -170,7 +370,10 @@ class MusicSequencer {
 
   _schedule() {
     const trk = this.tracks[this.current];
+    const lens = trk.phraseLens || trk.leads.map(() => 1);
+    const totalBlocks = lens.reduce((a, b) => a + b, 0);
     while (this.nextNoteTime < this.ctx.currentTime + this.lookahead) {
+      this._log('TICK step=' + this.stepIndex + ' bar=' + this.barCount + ' t=' + this.nextNoteTime.toFixed(4) + ' ctxNow=' + this.ctx.currentTime.toFixed(4) + ' lead=' + (trk.leads[this._phraseIndex(trk)][this.stepIndex] ? 'Y':'-'));
       this._playStep(trk, this.stepIndex, this.nextNoteTime);
       const spb = 60.0 / trk.bpm;
       this.nextNoteTime += spb / 4;              // one 16th note
@@ -178,14 +381,13 @@ class MusicSequencer {
       if (this.stepIndex === 0) { this.barCount++; this.phraseCount++; } // finished a 2-bar block (= one phrase)
       // Song-sequence mode: when the whole song has played through every
       // phrase exactly once (one full cycle), decide what happens next:
-      //   repeat  -> restart this track
-      //   shuffle -> random other track
-      //   seq     -> next track in order
-      const lens = trk.phraseLens || trk.leads.map(() => 1);
-      const totalBlocks = lens.reduce((a, b) => a + b, 0);
       if (trk.autoNext && this.barCount > 0 && this.barCount % totalBlocks === 0) {
-        if (trk.repeatOne) this.start(this.current);
-        else if (trk.shuffle) this.shuffleNext();
+        this._log('LOOP detected at bar=' + this.barCount + ' totalBlocks=' + totalBlocks + ' autoNext=' + trk.autoNext);
+        // Delegate the "what plays next" decision to the host (SongController
+        // overrides next()/shuffleNext() to run its rep/seq/shf mode logic).
+        // repeatOne is a pure-engine flag for standalone use; when set we loop
+        // in place seamlessly without touching the host.
+        if (trk.repeatOne) this._loopRestart(this.current);
         else this.next();
         return;
       }
@@ -747,9 +949,12 @@ class MusicSequencer {
     this.seq.start(i == null ? 0 : i);
   };
   Player.prototype.stop = function () { this.seq.stop(); };
+  Player.prototype.pause = function () { this.seq.pause(); };
+  Player.prototype.resume = function () { this.seq.resume(); };
   Player.prototype.setTrack = function (i) { this.seq.setTrack(i); };
   Player.prototype.next = function () { this.seq.next(); };
   Player.prototype.shuffleNext = function () { this.seq.shuffleNext(); };
+  Player.prototype.seekToStep = function (absStep) { this.seq.seekToStep(absStep); };
   Object.defineProperty(Player.prototype, 'current', { get() { return this.seq.current; } });
   Object.defineProperty(Player.prototype, 'playing', { get() { return this.seq.playing; } });
   Player.prototype.getNames = function () { return this.seq.tracks.map(t => t.name); };
@@ -769,96 +974,631 @@ class MusicSequencer {
 
 </script>
 <script>
-const TRACKS = [{"name": "PUNK", "bpm": 182, "steps": 32, "drums": [[{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}]], "bass": ["E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1"], "leads": [["E4", null, "B4", null, "E4", null, "A4", null, "G4", null, "A4", null, "B4", null, "E5", null, "E4", null, "B4", null, "A4", null, "B4", null, "E4", null, "G4", null, "A4", null, "B4", null], ["A4", null, "B4", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, "E5", null, "D5", null, "B4", null, "C5", null, "D5", null, "E5", null], ["G4", null, "A4", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, "C5", null, "D5", null, "C5", null, "B4", null, "A4", null, "G4", null, "A4", null], ["E5", null, "D5", null, "C5", null, "D5", null, "B4", null, "C5", null, "B4", null, "A4", null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "E5", null, "D5", null, "C5", null]], "pads": [{"0": ["E2", "B2", "E3"], "16": ["A2", "E3", "A3"]}, {"0": ["A2", "C4", "E4"], "16": ["G2", "B3", "D4"]}, {"0": ["G2", "B3", "D4"], "16": ["A2", "C4", "E4"]}, {"0": ["E2", "B2", "E3"], "16": ["E2", "B2", "E3"]}], "phraseLens": [2, 2, 1, 1], "numCycles": 3, "leadLayers": [null, null, [[null, null, "B4", null, null, null, "A4", null, "G4", null, null, null, "B4", null, null, null, null, null, "B4", null, "A4", null, null, null, null, null, "G4", null, "A4", null, null, null], [null, null, "B4", null, "C5", null, null, null, "A4", null, null, null, null, null, null, null, null, null, "B4", null, "E5", null, null, null, "B4", null, "C5", null, null, null, null, null], [null, null, "A4", null, "B4", null, null, null, "G4", null, "F4", null, null, null, null, null, "B4", null, "C5", null, null, null, "C5", null, null, null, "A4", null, "G4", null, null, null], ["E5", null, null, null, "C5", null, null, null, "B4", null, "C5", null, null, null, "A4", null, null, null, "C5", null, "D5", null, "E5", null, "G5", null, null, null, null, null, "C5", null]], [["E4", null, "B4", null, "A4", null, "A4", null, "G4", null, "A4", null, "B4", null, "E5", null, "A4", null, "B4", null, "A4", null, "B4", null, "E4", null, "G4", null, "A4", null, "B4", null], ["A4", null, "B4", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, "E5", null, "D5", null, "B4", null, "C5", null, "D5", null, "E5", null], ["G4", null, "A4", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, "C5", null, "D5", null, "C5", null, "B4", null, "A4", null, "G4", null, "A4", null], ["E5", null, "D5", null, "C5", null, "D5", null, "B4", null, "C5", null, "B4", null, "A4", null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "E5", null, "D5", null, "C5", null]]], "bassType": "sawtooth", "bassCut": 1100, "bassDur": 0.16, "padType": "sawtooth", "padCut": 1800, "padDur": 0.5, "leadType": "square", "leadCut": 4200, "leadDur": 0.18, "vib": 10, "layerType": "triangle", "layerCut": 3200, "layerDur": 0.18, "kickTop": 150, "kickBot": 48}, {"name": "METAL", "bpm": 158, "steps": 32, "drums": [[{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}]], "bass": ["E2", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E2", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E2", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E2", "E1", "E2", "E1", "E1", "E1", "E2", "E1"], "leads": [["E4", null, "E4", "B4", "A4", null, "B4", null, "G4", null, "A4", null, "B4", null, "E4", null, "D4", null, "D4", "A4", "G4", null, "A4", null, "E4", null, "G4", null, "B4", null, "A4", null], ["B4", null, "A4", null, "G4", null, "A4", null, "B4", null, "C5", null, "D5", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, "A4", null], ["C5", null, "D5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "E5", null, "D5", null, "C5", null, "B4", null], ["G5", null, "E5", null, "D5", null, "E5", null, "C5", null, "D5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "B4", null, "G4", null, "A4", null, "B4", null, "A4", null]], "pads": [{"0": ["E2", "B2"], "8": ["E2", "B2"], "16": ["D2", "A2"], "24": ["D2", "A2"]}, {"0": ["B1", "E2"], "8": ["A2", "E3"], "16": ["G2", "D3"], "24": ["A2", "E3"]}, {"0": ["E2", "B2"], "8": ["C3", "G3"], "16": ["D2", "A2"], "24": ["B1", "E2"]}, {"0": ["E2", "B2"], "8": ["E2", "B2"], "16": ["E2", "B2"], "24": ["E2", "B2"]}], "phraseLens": [2, 2, 1, 1], "numCycles": 3, "leadLayers": [null, null, [[null, null, "E4", "B4", "A4", null, null, null, "G4", null, "A4", null, "B4", null, null, null, "D4", null, "D4", null, "G4", null, null, null, "E4", null, "G4", null, "B4", null, null, null], ["B4", null, "A4", null, "G4", null, null, null, "B4", null, "C5", null, null, null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, null, null], ["C5", null, "D5", null, "E5", null, null, null, "C5", null, "B4", null, "A4", null, null, null, "C5", null, "D5", null, "E5", null, "G5", null, null, null, "D5", null, "C5", null, null, null], ["G5", null, "E5", null, "D5", null, null, null, "C5", null, "D5", null, null, null, "D5", null, "C5", null, "B4", null, "A4", null, "B4", null, "G4", null, "A4", null, "B4", null, null, null]], [["E4", null, "E4", "B4", "A4", null, "B4", null, "G4", null, "A4", null, "B4", null, "E4", null, "D4", null, "D4", "A4", "G4", null, "A4", null, "E4", null, "G4", null, "B4", null, "A4", null], ["B4", null, "A4", null, "G4", null, "A4", null, "B4", null, "C5", null, "D5", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, "A4", null], ["C5", null, "D5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "E5", null, "D5", null, "C5", null, "B4", null], ["G5", null, "E5", null, "D5", null, "E5", null, "C5", null, "D5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "B4", null, "G4", null, "A4", null, "B4", null, "A4", null]]], "bassType": "sawtooth", "bassCut": 950, "bassDur": 0.17, "padType": "sawtooth", "padCut": 1500, "padDur": 0.4, "leadType": "sawtooth", "leadCut": 3600, "leadDur": 0.2, "vib": 14, "layerType": "sawtooth", "layerCut": 2800, "layerDur": 0.2, "kickTop": 130, "kickBot": 42}, {"name": "SYNTHWAVE", "bpm": 118, "steps": 32, "drums": [[{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}]], "bass": ["A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2"], "leads": [["A4", null, "C5", null, "E5", null, "C5", null, "A4", null, "B4", null, "C5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "G4", null, "A4", null, "A4", null, null, null], ["A4", "B4", "C5", "D5", "E5", "D5", "C5", "D5", "E5", "F5", "G5", "E5", "F5", "G5", "A5", "G5", "G5", "A5", "G5", "E5", "D5", "E5", "F5", "G5", "E5", "D5", "C5", "D5", "E5", null, null, null], ["A5", "G5", "E5", "G5", "A5", "G5", "E5", "G5", "A5", "A5", "A5", "G5", "A5", "G5", "E5", "G5", "A5", "A5", "G5", "E5", "A5", "G5", "E5", "D5", "A5", "G5", "E5", "G5", "A5", "G5", "E5", null], ["A3", null, "C4", null, "E4", null, "C4", null, "A3", null, "B3", null, "C4", null, "E4", null, "D4", null, "C4", null, "B3", null, "A3", null, "G4", null, "A4", null, "A4", null, "C5", null]], "pads": [{"0": ["A2", "C4", "E4"], "4": ["A2", "C4", "E4"], "8": ["F2", "A3", "C4"], "12": ["F2", "A3", "C4"], "16": ["G2", "C4", "E4"], "20": ["G2", "C4", "E4"], "24": ["A2", "C4", "E4"], "28": ["A2", "C4", "E4"]}, {"0": ["C3", "E4", "G4"], "4": ["C3", "E4", "G4"], "8": ["B1", "D4", "F4"], "12": ["B1", "D4", "F4"], "16": ["A2", "C4", "E4"], "20": ["A2", "C4", "E4"], "24": ["G2", "B3", "D4"], "28": ["G2", "B3", "D4"]}, {"0": ["E3", "G4", "B4"], "4": ["E3", "G4", "B4"], "8": ["D3", "F4", "A3"], "12": ["D3", "F4", "A3"], "16": ["C3", "E4", "G4"], "20": ["C3", "E4", "G4"], "24": ["E3", "G4", "B4"], "28": ["D3", "F4", "A3"]}, {"0": ["A2", "C4", "E4"], "4": ["A2", "C4", "E4"], "8": ["A2", "C4", "E4"], "12": ["A2", "C4", "E4"], "16": ["C3", "E4", "G4"], "20": ["C3", "E4", "G4"], "24": ["A2", "C4", "E4"], "28": ["A2", "C4", "E4"]}], "phraseLens": [2, 2, 1, 1], "numCycles": 3, "leadLayers": [null, null, [[null, null, "C5", null, null, null, "E5", null, "A4", null, null, null, "C5", null, null, null, null, null, "D5", null, "B4", null, null, null, "G4", null, null, null, "A4", null, null, null], ["A4", null, null, null, "C5", null, null, null, "E5", null, null, null, "G5", null, null, null, "A5", null, null, null, "G5", null, null, null, "E5", null, "D5", null, null, null, null, null], ["E5", null, null, null, "G5", null, null, null, "A5", null, null, null, "G5", null, null, null, "E5", null, null, null, "D5", null, null, null, "E5", null, "G5", null, null, null, null, null], ["C4", null, null, null, "E4", null, null, null, null, null, null, null, null, null, null, null, "C4", null, null, null, "B3", null, null, null, "G4", null, null, null, "A4", null, null, null]], [["A4", null, "C5", null, "E5", null, "C5", null, "A4", null, "B4", null, "C5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "G4", null, "A4", null, "A4", null, "C5", null], ["A4", "B4", "C5", "D5", "E5", "D5", "C5", "D5", "E5", "F5", "G5", "E5", "F5", "G5", "A5", "G5", "G5", "A5", "G5", "E5", "D5", "E5", "F5", "G5", "E5", "D5", "C5", "D5", null, null, null, null], ["A5", null, "G5", null, "E5", null, "G5", null, "A5", null, "A5", null, "G5", null, "E5", null, "A5", null, "G5", null, "E5", null, "G5", null, "A5", null, "G5", null, "A5", null, "E5", null], ["A3", null, "C4", null, "E4", null, "C4", null, "A3", null, "B3", null, "C4", null, "E4", null, "D4", null, "C4", null, "B3", null, "A3", null, "G4", null, "A4", null, "A4", null, "C5", null]]], "bassType": "sawtooth", "bassCut": 800, "bassDur": 0.22, "padType": "sawtooth", "padCut": 2200, "padDur": 0.5, "leadType": "square", "leadCut": 3400, "leadDur": 0.22, "vib": 6, "layerType": "triangle", "layerCut": 3000, "layerDur": 0.22, "kickTop": 120, "kickBot": 40}, {"name": "ACID JAZZ", "bpm": 104, "steps": 32, "drums": [[{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}]], "bass": ["A1", null, "D2", null, "E2", null, "G2", null, "A1", null, "C2", null, "D2", null, "E2", null, "A1", null, "D2", null, "E2", null, "G2", null, "C2", null, "E2", null, "G2", null, "A1", null], "leads": [["A4", null, "C5", null, "E5", null, "D5", null, "C5", null, "A4", null, "G4", null, "A4", null, "A4", null, "C5", null, "E5", null, "G5", null, "F5", null, "E5", null, "D5", null, "C5", null], ["G4", null, "A4", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "C5", null, "D5", null, "E5", null, "D5", null, "C5", null, "A4", null, "G4", null], ["C5", null, "B4", null, "A4", null, "B4", null, "G4", null, "A4", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "C5", null, "D5", null, "C5", null], ["E5", null, "D5", null, "C5", null, "D5", null, "B4", null, "C5", null, "A4", null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "F5", null, "E5", null, "D5", null, "C5", null]], "pads": [{"0": ["A2", "C4", "E4"], "4": ["D2", "F4", "A3"], "8": ["E2", "G4", "B3"], "12": ["G2", "C4", "E4"], "16": ["A2", "C4", "E4"], "20": ["D2", "F4", "A3"], "24": ["E2", "G4", "B3"], "28": ["G2", "C4", "E4"]}, {"0": ["G2", "B3", "D4"], "4": ["C3", "E4", "G4"], "8": ["D2", "F4", "A3"], "12": ["A2", "C4", "E4"], "16": ["G2", "B3", "D4"], "20": ["C3", "E4", "G4"], "24": ["D2", "F4", "A3"], "28": ["A2", "C4", "E4"]}, {"0": ["D2", "F4", "A3"], "4": ["E2", "G4", "B3"], "8": ["A2", "C4", "E4"], "12": ["G2", "B3", "D4"], "16": ["D2", "F4", "A3"], "20": ["E2", "G4", "B3"], "24": ["A2", "C4", "E4"], "28": ["G2", "B3", "D4"]}, {"0": ["A2", "C4", "E4"], "4": ["G2", "B3", "D4"], "8": ["D2", "F4", "A3"], "12": ["E2", "G4", "B3"], "16": ["A2", "C4", "E4"], "20": ["G2", "B3", "D4"], "24": ["D2", "F4", "A3"], "28": ["E2", "G4", "B3"]}], "phraseLens": [2, 2, 1, 1], "numCycles": 3, "leadLayers": [null, null, [[null, null, "C5", null, "E5", null, null, null, "C5", null, "A4", null, null, null, null, null, "A4", null, "C5", null, "E5", null, "G5", null, null, null, "E5", null, "D5", null, null, null], ["G4", null, "A4", null, "C5", null, "B4", null, null, null, null, null, "F4", null, null, null, "A4", null, "C5", null, "D5", null, "E5", null, null, null, "C5", null, null, null, "G4", null], ["C5", null, "B4", null, "A4", null, null, null, "G4", null, "A4", null, "C5", null, null, null, null, null, "G4", null, "F4", null, null, null, "A4", null, "C5", null, "D5", null, null, null], ["E5", null, "D5", null, "C5", null, null, null, "B4", null, "C5", null, null, null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "F5", null, null, null, "D5", null, null, null]], [["A4", null, "C5", null, "E5", null, "D5", null, "C5", null, "A4", null, "G4", null, "A4", null, "A4", null, "C5", null, "E5", null, "G5", null, "F5", null, "E5", null, "D5", null, "C5", null], ["G4", null, "A4", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "C5", null, "D5", null, "E5", null, "D5", null, "C5", null, "A4", null, "G4", null], ["C5", null, "B4", null, "A4", null, "B4", null, "G4", null, "A4", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "C5", null, "D5", null, "C5", null], ["E5", null, "D5", null, "C5", null, "D5", null, "B4", null, "C5", null, "A4", null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "F5", null, "E5", null, "D5", null, "C5", null]]], "bassType": "triangle", "bassCut": 700, "bassDur": 0.24, "padType": "triangle", "padCut": 2600, "padDur": 0.7, "leadType": "triangle", "leadCut": 3800, "leadDur": 0.3, "vib": 10, "layerType": "triangle", "layerCut": 3400, "layerDur": 0.3, "kickTop": 110, "kickBot": 44}];
-let player = null;
-// Playback modes (mutually exclusive): seq = next song in order,
-// rep = repeat current song, shf = random song. All off = stop after one play.
-let modeSeq = true, modeRep = false, modeShf = false;
+const TRACKS=[{"name": "PUNK", "bpm": 182, "steps": 32, "drums": [[{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}]], "bass": ["E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E1", "E1", "E2", "E1"], "leads": [["E4", null, "B4", null, "E4", null, "A4", null, "G4", null, "A4", null, "B4", null, "E5", null, "E4", null, "B4", null, "A4", null, "B4", null, "E4", null, "G4", null, "A4", null, "B4", null], ["A4", null, "B4", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, "E5", null, "D5", null, "B4", null, "C5", null, "D5", null, "E5", null], ["G4", null, "A4", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, "C5", null, "D5", null, "C5", null, "B4", null, "A4", null, "G4", null, "A4", null], ["E5", null, "D5", null, "C5", null, "D5", null, "B4", null, "C5", null, "B4", null, "A4", null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "E5", null, "D5", null, "C5", null]], "pads": [{"0": ["E2", "B2", "E3"], "16": ["A2", "E3", "A3"]}, {"0": ["A2", "C4", "E4"], "16": ["G2", "B3", "D4"]}, {"0": ["G2", "B3", "D4"], "16": ["A2", "C4", "E4"]}, {"0": ["E2", "B2", "E3"], "16": ["E2", "B2", "E3"]}], "phraseLens": [2, 2, 1, 1], "numCycles": 3, "leadLayers": [null, null, [[null, null, "B4", null, null, null, "A4", null, "G4", null, null, null, "B4", null, null, null, null, null, "B4", null, "A4", null, null, null, null, null, "G4", null, "A4", null, null, null], [null, null, "B4", null, "C5", null, null, null, "A4", null, null, null, null, null, null, null, null, null, "B4", null, "E5", null, null, null, "B4", null, "C5", null, null, null, null, null], [null, null, "A4", null, "B4", null, null, null, "G4", null, "F4", null, null, null, null, null, "B4", null, "C5", null, null, null, "C5", null, null, null, "A4", null, "G4", null, null, null], ["E5", null, null, null, "C5", null, null, null, "B4", null, "C5", null, null, null, "A4", null, null, null, "C5", null, "D5", null, "E5", null, "G5", null, null, null, null, null, "C5", null]], [["E4", null, "B4", null, "A4", null, "A4", null, "G4", null, "A4", null, "B4", null, "E5", null, "A4", null, "B4", null, "A4", null, "B4", null, "E4", null, "G4", null, "A4", null, "B4", null], ["A4", null, "B4", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, "E5", null, "D5", null, "B4", null, "C5", null, "D5", null, "E5", null], ["G4", null, "A4", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, "C5", null, "D5", null, "C5", null, "B4", null, "A4", null, "G4", null, "A4", null], ["E5", null, "D5", null, "C5", null, "D5", null, "B4", null, "C5", null, "B4", null, "A4", null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "E5", null, "D5", null, "C5", null]]], "bassType": "sawtooth", "bassCut": 1100, "bassDur": 0.16, "padType": "sawtooth", "padCut": 1800, "padDur": 0.5, "leadType": "square", "leadCut": 4200, "leadDur": 0.18, "vib": 10, "layerType": "triangle", "layerCut": 3200, "layerDur": 0.18, "kickTop": 150, "kickBot": 48, "genre": "Punk", "vibe": "Driving 80s punk energy: fast E-root chug, snare on two and four, raw aggressive riffing for early waves.", "createdAt": "2026-09-09T18:45:06", "revision": 1}, {"name": "METAL", "bpm": 158, "steps": 32, "drums": [[{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}]], "bass": ["E2", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E2", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E2", "E1", "E2", "E1", "E1", "E1", "E2", "E1", "E2", "E1", "E2", "E1", "E1", "E1", "E2", "E1"], "leads": [["E4", null, "E4", "B4", "A4", null, "B4", null, "G4", null, "A4", null, "B4", null, "E4", null, "D4", null, "D4", "A4", "G4", null, "A4", null, "E4", null, "G4", null, "B4", null, "A4", null], ["B4", null, "A4", null, "G4", null, "A4", null, "B4", null, "C5", null, "D5", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, "A4", null], ["C5", null, "D5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "E5", null, "D5", null, "C5", null, "B4", null], ["G5", null, "E5", null, "D5", null, "E5", null, "C5", null, "D5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "B4", null, "G4", null, "A4", null, "B4", null, "A4", null]], "pads": [{"0": ["E2", "B2"], "8": ["E2", "B2"], "16": ["D2", "A2"], "24": ["D2", "A2"]}, {"0": ["B1", "E2"], "8": ["A2", "E3"], "16": ["G2", "D3"], "24": ["A2", "E3"]}, {"0": ["E2", "B2"], "8": ["C3", "G3"], "16": ["D2", "A2"], "24": ["B1", "E2"]}, {"0": ["E2", "B2"], "8": ["E2", "B2"], "16": ["E2", "B2"], "24": ["E2", "B2"]}], "phraseLens": [2, 2, 1, 1], "numCycles": 3, "leadLayers": [null, null, [[null, null, "E4", "B4", "A4", null, null, null, "G4", null, "A4", null, "B4", null, null, null, "D4", null, "D4", null, "G4", null, null, null, "E4", null, "G4", null, "B4", null, null, null], ["B4", null, "A4", null, "G4", null, null, null, "B4", null, "C5", null, null, null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, null, null], ["C5", null, "D5", null, "E5", null, null, null, "C5", null, "B4", null, "A4", null, null, null, "C5", null, "D5", null, "E5", null, "G5", null, null, null, "D5", null, "C5", null, null, null], ["G5", null, "E5", null, "D5", null, null, null, "C5", null, "D5", null, null, null, "D5", null, "C5", null, "B4", null, "A4", null, "B4", null, "G4", null, "A4", null, "B4", null, null, null]], [["E4", null, "E4", "B4", "A4", null, "B4", null, "G4", null, "A4", null, "B4", null, "E4", null, "D4", null, "D4", "A4", "G4", null, "A4", null, "E4", null, "G4", null, "B4", null, "A4", null], ["B4", null, "A4", null, "G4", null, "A4", null, "B4", null, "C5", null, "D5", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "B4", null, "A4", null], ["C5", null, "D5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "E5", null, "D5", null, "C5", null, "B4", null], ["G5", null, "E5", null, "D5", null, "E5", null, "C5", null, "D5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "B4", null, "G4", null, "A4", null, "B4", null, "A4", null]]], "bassType": "sawtooth", "bassCut": 950, "bassDur": 0.17, "padType": "sawtooth", "padCut": 1500, "padDur": 0.4, "leadType": "sawtooth", "leadCut": 3600, "leadDur": 0.2, "vib": 14, "layerType": "sawtooth", "layerCut": 2800, "layerDur": 0.2, "kickTop": 130, "kickBot": 42, "genre": "Metal", "vibe": "E-minor power chords with octave-jump chug and a relentless riffing lead; heavy mid-game intensity.", "createdAt": "2026-09-09T18:45:06", "revision": 1}, {"name": "SYNTHWAVE", "bpm": 118, "steps": 32, "drums": [[{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": true}]], "bass": ["A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2", "A1", "A2"], "leads": [["A4", null, "C5", null, "E5", null, "C5", null, "A4", null, "B4", null, "C5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "G4", null, "A4", null, "A4", null, null, null], ["A4", "B4", "C5", "D5", "E5", "D5", "C5", "D5", "E5", "F5", "G5", "E5", "F5", "G5", "A5", "G5", "G5", "A5", "G5", "E5", "D5", "E5", "F5", "G5", "E5", "D5", "C5", "D5", "E5", null, null, null], ["A5", "G5", "E5", "G5", "A5", "G5", "E5", "G5", "A5", "A5", "A5", "G5", "A5", "G5", "E5", "G5", "A5", "A5", "G5", "E5", "A5", "G5", "E5", "D5", "A5", "G5", "E5", "G5", "A5", "G5", "E5", null], ["A3", null, "C4", null, "E4", null, "C4", null, "A3", null, "B3", null, "C4", null, "E4", null, "D4", null, "C4", null, "B3", null, "A3", null, "G4", null, "A4", null, "A4", null, "C5", null]], "pads": [{"0": ["A2", "C4", "E4"], "4": ["A2", "C4", "E4"], "8": ["F2", "A3", "C4"], "12": ["F2", "A3", "C4"], "16": ["G2", "C4", "E4"], "20": ["G2", "C4", "E4"], "24": ["A2", "C4", "E4"], "28": ["A2", "C4", "E4"]}, {"0": ["C3", "E4", "G4"], "4": ["C3", "E4", "G4"], "8": ["B1", "D4", "F4"], "12": ["B1", "D4", "F4"], "16": ["A2", "C4", "E4"], "20": ["A2", "C4", "E4"], "24": ["G2", "B3", "D4"], "28": ["G2", "B3", "D4"]}, {"0": ["E3", "G4", "B4"], "4": ["E3", "G4", "B4"], "8": ["D3", "F4", "A3"], "12": ["D3", "F4", "A3"], "16": ["C3", "E4", "G4"], "20": ["C3", "E4", "G4"], "24": ["E3", "G4", "B4"], "28": ["D3", "F4", "A3"]}, {"0": ["A2", "C4", "E4"], "4": ["A2", "C4", "E4"], "8": ["A2", "C4", "E4"], "12": ["A2", "C4", "E4"], "16": ["C3", "E4", "G4"], "20": ["C3", "E4", "G4"], "24": ["A2", "C4", "E4"], "28": ["A2", "C4", "E4"]}], "phraseLens": [2, 2, 1, 1], "numCycles": 3, "leadLayers": [null, null, [[null, null, "C5", null, null, null, "E5", null, "A4", null, null, null, "C5", null, null, null, null, null, "D5", null, "B4", null, null, null, "G4", null, null, null, "A4", null, null, null], ["A4", null, null, null, "C5", null, null, null, "E5", null, null, null, "G5", null, null, null, "A5", null, null, null, "G5", null, null, null, "E5", null, "D5", null, null, null, null, null], ["E5", null, null, null, "G5", null, null, null, "A5", null, null, null, "G5", null, null, null, "E5", null, null, null, "D5", null, null, null, "E5", null, "G5", null, null, null, null, null], ["C4", null, null, null, "E4", null, null, null, null, null, null, null, null, null, null, null, "C4", null, null, null, "B3", null, null, null, "G4", null, null, null, "A4", null, null, null]], [["A4", null, "C5", null, "E5", null, "C5", null, "A4", null, "B4", null, "C5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "G4", null, "A4", null, "A4", null, "C5", null], ["A4", "B4", "C5", "D5", "E5", "D5", "C5", "D5", "E5", "F5", "G5", "E5", "F5", "G5", "A5", "G5", "G5", "A5", "G5", "E5", "D5", "E5", "F5", "G5", "E5", "D5", "C5", "D5", null, null, null, null], ["A5", null, "G5", null, "E5", null, "G5", null, "A5", null, "A5", null, "G5", null, "E5", null, "A5", null, "G5", null, "E5", null, "G5", null, "A5", null, "G5", null, "A5", null, "E5", null], ["A3", null, "C4", null, "E4", null, "C4", null, "A3", null, "B3", null, "C4", null, "E4", null, "D4", null, "C4", null, "B3", null, "A3", null, "G4", null, "A4", null, "A4", null, "C5", null]]], "bassType": "sawtooth", "bassCut": 800, "bassDur": 0.22, "padType": "sawtooth", "padCut": 2200, "padDur": 0.5, "leadType": "square", "leadCut": 3400, "leadDur": 0.22, "vib": 6, "layerType": "triangle", "layerCut": 3000, "layerDur": 0.22, "kickTop": 120, "kickBot": 40, "genre": "Synthwave", "vibe": "Dark retro-horror synthwave: pulsing bass, gated drums, ominous arps as the descent deepens.", "createdAt": "2026-09-09T18:45:06", "revision": 1}, {"name": "ACID JAZZ", "bpm": 104, "steps": 32, "drums": [[{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}], [{"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": true, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": true, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}]], "bass": ["A1", null, "D2", null, "E2", null, "G2", null, "A1", null, "C2", null, "D2", null, "E2", null, "A1", null, "D2", null, "E2", null, "G2", null, "C2", null, "E2", null, "G2", null, "A1", null], "leads": [["A4", null, "C5", null, "E5", null, "D5", null, "C5", null, "A4", null, "G4", null, "A4", null, "A4", null, "C5", null, "E5", null, "G5", null, "F5", null, "E5", null, "D5", null, "C5", null], ["G4", null, "A4", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "C5", null, "D5", null, "E5", null, "D5", null, "C5", null, "A4", null, "G4", null], ["C5", null, "B4", null, "A4", null, "B4", null, "G4", null, "A4", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "C5", null, "D5", null, "C5", null], ["E5", null, "D5", null, "C5", null, "D5", null, "B4", null, "C5", null, "A4", null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "F5", null, "E5", null, "D5", null, "C5", null]], "pads": [{"0": ["A2", "C4", "E4"], "4": ["D2", "F4", "A3"], "8": ["E2", "G4", "B3"], "12": ["G2", "C4", "E4"], "16": ["A2", "C4", "E4"], "20": ["D2", "F4", "A3"], "24": ["E2", "G4", "B3"], "28": ["G2", "C4", "E4"]}, {"0": ["G2", "B3", "D4"], "4": ["C3", "E4", "G4"], "8": ["D2", "F4", "A3"], "12": ["A2", "C4", "E4"], "16": ["G2", "B3", "D4"], "20": ["C3", "E4", "G4"], "24": ["D2", "F4", "A3"], "28": ["A2", "C4", "E4"]}, {"0": ["D2", "F4", "A3"], "4": ["E2", "G4", "B3"], "8": ["A2", "C4", "E4"], "12": ["G2", "B3", "D4"], "16": ["D2", "F4", "A3"], "20": ["E2", "G4", "B3"], "24": ["A2", "C4", "E4"], "28": ["G2", "B3", "D4"]}, {"0": ["A2", "C4", "E4"], "4": ["G2", "B3", "D4"], "8": ["D2", "F4", "A3"], "12": ["E2", "G4", "B3"], "16": ["A2", "C4", "E4"], "20": ["G2", "B3", "D4"], "24": ["D2", "F4", "A3"], "28": ["E2", "G4", "B3"]}], "phraseLens": [2, 2, 1, 1], "numCycles": 3, "leadLayers": [null, null, [[null, null, "C5", null, "E5", null, null, null, "C5", null, "A4", null, null, null, null, null, "A4", null, "C5", null, "E5", null, "G5", null, null, null, "E5", null, "D5", null, null, null], ["G4", null, "A4", null, "C5", null, "B4", null, null, null, null, null, "F4", null, null, null, "A4", null, "C5", null, "D5", null, "E5", null, null, null, "C5", null, null, null, "G4", null], ["C5", null, "B4", null, "A4", null, null, null, "G4", null, "A4", null, "C5", null, null, null, null, null, "G4", null, "F4", null, null, null, "A4", null, "C5", null, "D5", null, null, null], ["E5", null, "D5", null, "C5", null, null, null, "B4", null, "C5", null, null, null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "F5", null, null, null, "D5", null, null, null]], [["A4", null, "C5", null, "E5", null, "D5", null, "C5", null, "A4", null, "G4", null, "A4", null, "A4", null, "C5", null, "E5", null, "G5", null, "F5", null, "E5", null, "D5", null, "C5", null], ["G4", null, "A4", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "C5", null, "D5", null, "E5", null, "D5", null, "C5", null, "A4", null, "G4", null], ["C5", null, "B4", null, "A4", null, "B4", null, "G4", null, "A4", null, "C5", null, "B4", null, "A4", null, "G4", null, "F4", null, "G4", null, "A4", null, "C5", null, "D5", null, "C5", null], ["E5", null, "D5", null, "C5", null, "D5", null, "B4", null, "C5", null, "A4", null, "B4", null, "C5", null, "D5", null, "E5", null, "G5", null, "F5", null, "E5", null, "D5", null, "C5", null]]], "bassType": "triangle", "bassCut": 700, "bassDur": 0.24, "padType": "triangle", "padCut": 2600, "padDur": 0.7, "leadType": "triangle", "leadCut": 3800, "leadDur": 0.3, "vib": 10, "layerType": "triangle", "layerCut": 3400, "layerDur": 0.3, "kickTop": 110, "kickBot": 44, "genre": "Acid Jazz", "vibe": "Laid-back syncopated acid jazz groove with EP-style comping; the odd-calm boss-fight contrast track.", "createdAt": "2026-09-09T18:45:06", "revision": 1}];
+
+/* ── SongController: single source of truth for playback state ─────────── */
+class SongController {
+  constructor(tracks) {
+    this.tracks = tracks;
+    this.player = null;
+    this.current = 0;
+    this.playing = false;
+    this.muted = false;
+    this.seq = false;
+    this.rep = false;
+    this.shf = false;
+    this.onTrackChange = null;
+    this.onPlayStateChange = null;
+    this._neverStarted = true;
+    // Single source of truth for "user manually placed the dot while NOT playing".
+    // Set by seek()/select() while paused/stopped; cleared on play(). The render
+    // loop honors it instead of clobbering the dot with live engine position.
+    this._manualPos = null;
+    // -- favorites (track indices), persisted to localStorage --
+    // Must be initialized BEFORE _loadPrefs() so the saved favs aren't wiped.
+    this.favorites = [];
+    this._loadPrefs();
+    // -- always-on action log --
+    this._actionLog = [];
+  }
+
+  /** Log a user action with full state snapshot. Always on. */
+  _logAction(action) {
+    const t = (performance.now() / 1000).toFixed(3);
+    const pos = this.position().toFixed(4);
+    const eng = this.player ? ('bar=' + this.player.seq.barCount + '/step=' + this.player.seq.stepIndex) : 'noEngine';
+    const line = t + ' | ' + action + ' | track=' + (this.current+1) + ' "' + this.tracks[this.current].name + '" | playing=' + this.playing + ' | pos=' + pos + ' | manualPos=' + this._manualPos + ' | ' + eng;
+    this._actionLog.push(line);
+    if (this._actionLog.length > 2000) this._actionLog.splice(0, 500);
+    console.log('[jukebox] ' + line);
+  }
+
+  exportLog() {
+    const NL = String.fromCharCode(10);
+    const text = this._actionLog.join(NL);
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jukebox-actions-' + Date.now() + '.log';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  _loadPrefs() {
+    try {
+      const p = JSON.parse(localStorage.getItem('jukebox-prefs') || '{}');
+      this.seq = !!p.seq; this.rep = !!p.rep; this.shf = !!p.shf;
+      if (Array.isArray(p.favs)) this.favorites = p.favs.slice();
+    } catch (e) {}
+  }
+  _savePrefs() {
+    try { localStorage.setItem('jukebox-prefs', JSON.stringify({ seq: this.seq, rep: this.rep, shf: this.shf, favs: this.favorites })); } catch (e) {}
+  }
+
+  isFav(i) { return this.favorites.indexOf(i) !== -1; }
+  toggleFav(i) {
+    const at = this.favorites.indexOf(i);
+    if (at === -1) this.favorites.push(i); else this.favorites.splice(at, 1);
+    this._savePrefs();
+    // Update just the heart in place (no full re-render, keeps hover state).
+    const el = document.querySelector('#list .row[data-i="' + i + '"] .fav');
+    if (el) { el.classList.toggle('on', this.isFav(i)); el.innerHTML = this._heartSVG(this.isFav(i)); }
+    // Keep the side-panel heart in sync if this is the currently-shown track.
+    if (typeof window.__syncSpFav === 'function') window.__syncSpFav();
+    return this.isFav(i);
+  }
+  _heartSVG(on) {
+    return '<svg viewBox="0 0 24 24" ' + (on ? 'fill="#ff3b5c" stroke="#ff3b5c"' : 'fill="none" stroke="currentColor"') + ' stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>';
+  }
+
+  init() {
+    if (this.player) return;
+    this.player = new MusicEngine.Player({ tracks: this.tracks });
+    const seq = this.player.seq;
+    seq._origStart = seq.start.bind(seq);
+    seq._origStop = seq.stop.bind(seq);
+    seq.next = () => this._onSongEnd();
+    seq.shuffleNext = () => this._onSongEnd();
+    this.player.seq.tracks.forEach(t => { t.autoNext = true; });
+  }
+
+  _onSongEnd() {
+    this._logAction('SONG_END');
+    if (this.shf) {
+      let i; do { i = Math.floor(Math.random() * this.tracks.length); } while (i === this.current && this.tracks.length > 1);
+      this._playSeamless(i);
+    } else if (this.rep && !this.seq) {
+      this._playSeamless(this.current);   // repeat ONE: loop same song, no clock reset
+    } else if (this.seq) {
+      const nx = this.current + 1;
+      if (nx >= this.tracks.length) {
+        if (this.rep) this._playSeamless(0);
+        else this.stop();
+      } else {
+        this._playSeamless(nx);
+      }
+    } else {
+      this.stop();
+    }
+  }
+
+  /** Song-to-song transition that stays on the beat grid. If we're already
+   *  playing, use the engine's seamless restart (counters reset, scheduler and
+   *  nextNoteTime untouched) so there's no off-grid "now+0.06" jump. If we're
+   *  not playing (e.g. first start after a stop), fall back to a full play(). */
+  _playSeamless(i) {
+    if (this.player && this.playing && typeof this.player.seq._loopRestart === 'function') {
+      this._logAction('PLAY #' + (i+1) + ' (seamless)');
+      this.current = i;
+      this._manualPos = null;
+      this.player.seq._loopRestart(i);
+      if (this.onTrackChange) this.onTrackChange(i);
+      return;
+    }
+    this.play(i);
+  }
+
+  play(i) {
+    this.init();
+    this._logAction('PLAY #' + (i+1));
+    if (this.player.ctx.state === 'suspended') this.player.ctx.resume();
+    const wasCurrent = (i === this.current);
+    this.current = i;
+    // A manual dot placement only applies to the song it was set on. If we're
+    // starting a different song, drop it so the new track starts at 0.
+    if (!wasCurrent) this._manualPos = null;
+    this.player.start(i);
+    this.playing = true;
+    this._neverStarted = false;
+    // If the user placed the dot while paused/stopped, start FROM that position.
+    if (this._manualPos !== null && this._manualPos > 0) {
+      this.seek(this._manualPos);
+    }
+    this._manualPos = null;
+    if (this.onTrackChange) this.onTrackChange(i);
+    if (this.onPlayStateChange) this.onPlayStateChange(true);
+  }
+
+  stop() {
+    if (!this.player) return;
+    this.player.stop();
+    this.playing = false;
+    // Engine position is now meaningless (barCount/stepIndex are stale); the
+    // dot should sit at 0. Clear any manual placement so we don't show a
+    // leftover drag position after a full stop.
+    this._manualPos = null;
+    if (this.onPlayStateChange) this.onPlayStateChange(false);
+  }
+
+  pause() {
+    if (!this.player || !this.playing) return;
+    this._logAction('PAUSE');
+    this.player.pause();
+    this.playing = false;
+    if (this.onPlayStateChange) this.onPlayStateChange(false);
+  }
+
+  resume() {
+    if (!this.player || this.playing) return;
+    this._logAction('RESUME');
+    // If a manual dot position was set while paused, seek there first, then clear it
+    if (this._manualPos !== null && this._manualPos > 0) {
+      const frac = this._manualPos;
+      this._manualPos = null;   // clear BEFORE seek so seek() takes the playing branch
+      this.player.resume();
+      this.playing = true;
+      this.seek(frac);
+    } else {
+      this._manualPos = null;
+      this.player.resume();
+      this.playing = true;
+    }
+    if (this.onPlayStateChange) this.onPlayStateChange(true);
+  }
+
+  togglePause() {
+    if (this.playing) { this.pause(); return; }
+    // If we've never started anything (fresh page), start track 0
+    if (!this.player || this._neverStarted) { this.play(0); return; }
+    this.resume();
+  }
+
+  next() {
+    this._logAction('NEXT');
+    const n = this.tracks.length;
+    if (this.playing) {
+      // Playing → jump to and play the next song, dot at 0.
+      this._manualPos = null;
+      this.play((this.current + 1) % n);
+    } else {
+      // Paused/stopped → just select the next song (dot at 0), stay stopped.
+      this.select((this.current + 1) % n);
+    }
+  }
+
+  prev() {
+    const n = this.tracks.length;
+    if (this.playing) {
+      this._manualPos = null;
+      this.play((this.current - 1 + n) % n);
+    } else {
+      this.select((this.current - 1 + n) % n);
+    }
+  }
+
+  /** Restart the CURRENT song from position 0, preserving play/pause state. */
+  restart() {
+    if (this.playing) {
+      this._manualPos = null;
+      this.play(this.current);
+    } else {
+      this.select(this.current);
+    }
+  }
+
+  /** Media-player prev: if within first 1s of current song → previous song,
+   *  otherwise restart current song at 0. Preserves play/pause state. */
+  prevSmart() {
+    this._logAction('PREV pos=' + this.position().toFixed(3));
+    const nearStart = this.position() < (1.0 / Math.max(1, this.duration()));
+    if (nearStart) {
+      // Previous song at 0, keep state
+      const n = this.tracks.length;
+      if (this.playing) {
+        this._manualPos = null;
+        this.play((this.current - 1 + n) % n);
+      } else {
+        this.select((this.current - 1 + n) % n);
+      }
+    } else {
+      // Restart current song at 0, keep state
+      this.restart();
+    }
+  }
+
+  /** Select a song WITHOUT playing it: highlight, dot to 0, no audio. */
+  select(i) {
+    this.init();
+    this.current = i;
+    // Tell the ENGINE to load this track (without starting audio), so a later
+    // resume() plays the correct song instead of the stale one.
+    this.player.setTrack(i);
+    this._manualPos = 0;   // dot explicitly at zero
+    this._logAction('SELECT #' + (i+1));
+    if (this.onTrackChange) this.onTrackChange(i);
+  }
+
+  /** Seek to fraction 0..1. Uses engine.seekToStep() while playing; while
+   *  paused/stopped it records a manual position so play() can start from it. */
+  seek(frac) {
+    frac = Math.max(0, Math.min(1, frac));
+    this._logAction('SEEK ' + frac.toFixed(3) + (this.playing ? '' : ' (paused->manual)'));
+    if (!this.playing) {
+      this._manualPos = frac;
+      return;
+    }
+    if (!this.player) return;
+    const trk = this.player.seq.tracks[this.current];
+    if (!trk) return;
+    const pl = trk.phraseLens || [1,1,1,1,1,1,1,1];
+    const totalSteps = pl.reduce((s, l) => s + 32 * l, 0);
+    const targetStep = Math.floor(frac * totalSteps);
+    this.player.seekToStep(targetStep);
+  }
+
+  /**
+   * Current position as fraction 0..1.
+   * Reads the ENGINE'S ACTUAL stepIndex + barCount so it stays in sync
+   * with real audio playback (including pause/seek/loop).
+   */
+  position() {
+    // If the user manually placed the dot while not playing, report that.
+    if (this._manualPos !== null) return this._manualPos;
+    if (!this.player) return 0;
+    const seq = this.player.seq;
+    const trk = seq.tracks[this.current];
+    if (!trk) return 0;
+    const pl = trk.phraseLens || [1,1,1,1,1,1,1,1];
+    const totalSteps = pl.reduce((s, l) => s + 32 * l, 0);
+    // Absolute step = barCount full blocks of 32 + current stepIndex within block
+    const absStep = (seq.barCount || 0) * 32 + (seq.stepIndex || 0);
+    // barCount wraps via modulo in the engine? No — it increments forever.
+    // But the song loops when barCount hits totalBlocks. We need position
+    // within ONE song cycle:
+    const totalBlocks = pl.reduce((a, b) => a + b, 0);
+    const cycleBlock = (seq.barCount || 0) % totalBlocks;
+    const pos = (cycleBlock * 32 + (seq.stepIndex || 0)) / totalSteps;
+    return Math.max(0, Math.min(1, pos));
+  }
+
+  duration() {
+    const trk = this.player ? this.player.seq.tracks[this.current] : this.tracks[this.current];
+    if (!trk) return 0;
+    const pl = trk.phraseLens || [1,1,1,1,1,1,1,1];
+    const totalSteps = pl.reduce((s, l) => s + 32 * l, 0);
+    return totalSteps * (60 / trk.bpm) / 4;
+  }
+
+  name() {
+    return this.tracks[this.current].name;
+  }
+
+  setMode(which) {
+    if (which === 'seq') { this.seq = !this.seq; if (this.seq) this.shf = false; }
+    else if (which === 'rep') { this.rep = !this.rep; if (this.rep) this.shf = false; }
+    else { this.shf = !this.shf; if (this.shf) { this.seq = false; this.rep = false; } }
+    this._savePrefs();
+  }
+
+  toggleMute() {
+    this.init();
+    this.muted = this.player.toggleMute();
+  }
+
+  /* -- debug logging -- */
+  enableLog() { this.init(); this.player.seq.enableLog(); }
+  disableLog() { if (this.player) this.player.seq.disableLog(); }
+  downloadLog() {
+    if (!this.player) return;
+    const text = this.player.seq.flushLog();
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jukebox-ticks-' + Date.now() + '.log';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+  toggleLog() {
+    // Always-on logs: L exports BOTH the controller action log (PLAY/PAUSE/NEXT/
+    // SEEK/SELECT...) AND the engine tick log (TICK step/bar/t, START, LOOP) so a
+    // song-end loop glitch can be traced tick-by-tick.
+    const NL = String.fromCharCode(10);
+    let text = '===== ACTION LOG =====' + NL + this._actionLog.join(NL);
+    if (this.player && this.player.seq && typeof this.player.seq.flushLog === 'function') {
+      text += NL + NL + '===== ENGINE TICK LOG =====' + NL + this.player.seq.flushLog();
+    }
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jukebox-log-' + Date.now() + '.log';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    console.log('[jukebox] full log exported (actions + engine ticks)');
+  }
+}
+
+/* ── UI wiring ──────────────────────────────────────────────────────────── */
+const sc = new SongController(TRACKS);
 const nowEl = document.getElementById('now');
 const listEl = document.getElementById('list');
-const mSeq = document.getElementById('m-seq');
-const mRep = document.getElementById('m-rep');
-const mShf = document.getElementById('m-shf');
+const tbPrev = document.getElementById('tb-prev');
+const tbPlay = document.getElementById('tb-play');
+const tbNext = document.getElementById('tb-next');
+const tlEl = document.getElementById('timeline');
+const tlProg = document.getElementById('tl-progress');
+const tlDot = document.getElementById('tl-dot');
+const tlTime = document.getElementById('tl-time');
+const mtSeq = document.getElementById('mt-seq');
+const mtRep = document.getElementById('mt-rep');
+const mtShf = document.getElementById('mt-shf');
+const playIcon = document.getElementById('play-icon');
+const tlTitle = document.getElementById('tl-title');
+const sidePanel = document.getElementById('side-panel');
+const spTitle = document.getElementById('sp-title');
+const spGenre = document.getElementById('sp-genre');
+const spBpm = document.getElementById('sp-bpm');
+const spFav = document.getElementById('sp-fav');
+const spCreated = document.getElementById('sp-created');
+const spRevision = document.getElementById('sp-revision');
+const spVibe = document.getElementById('sp-vibe');
 
-function applyModes(){
-  if (!player) return;
-  player.seq.tracks.forEach(t => { t.autoNext = modeSeq || modeRep || modeShf; t.repeatOne = modeRep; t.shuffle = modeShf; });
-}
-function setMode(which){
-  // Toggling a mode on turns the others off (one behavior at a time).
-  if (which === 'seq'){ modeSeq = !modeSeq; modeRep = false; modeShf = false; }
-  else if (which === 'rep'){ modeRep = !modeRep; modeSeq = false; modeShf = false; }
-  else { modeShf = !modeShf; modeSeq = false; modeRep = false; }
-  mSeq.classList.toggle('on', modeSeq);
-  mRep.classList.toggle('on', modeRep);
-  mShf.classList.toggle('on', modeShf);
-  applyModes();
-  console.log('[jukebox] mode: ' + (modeRep ? 'repeat' : modeShf ? 'shuffle' : modeSeq ? 'sequence' : 'off'));
+// Format an ISO datetime (e.g. 2026-09-17T06:19:54) as "Sep 17, 2026 · 6:19 AM".
+function fmtDate(iso) {
+  if (!iso) return '–';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return String(iso);
+  const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+  let h = d.getHours();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12; if (h === 0) h = 12;
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return mon + ' ' + d.getDate() + ', ' + d.getFullYear() + ' · ' + h + ':' + m + ' ' + ampm;
 }
 
-function ensure(){
-  if (!player){
-    player = new MusicEngine.Player({ tracks: TRACKS });
-    renderList();
+// Per-genre color palette so each style gets its own hue in the list + panel.
+// Normalizes the genre string, then matches against known styles; falls back to
+// a hash-based pick from the palette so unseen genres still get a stable color.
+const GENRE_COLORS = [
+  ['#ff5d5d', 'rgba(255,93,93,.14)'],   // red
+  ['#ffa040', 'rgba(255,160,64,.14)'],  // orange
+  ['#ffe23e', 'rgba(255,226,62,.14)'],  // gold
+  ['#a8e05f', 'rgba(168,224,95,.14)'],  // lime
+  ['#5fe08a', 'rgba(95,224,138,.14)'],  // green
+  ['#3ef0c8', 'rgba(62,240,200,.14)'],  // teal
+  ['#3ef0ff', 'rgba(62,240,255,.14)'],  // cyan
+  ['#5aa8ff', 'rgba(90,168,255,.14)'],  // blue
+  ['#8a7bff', 'rgba(138,123,255,.14)'], // indigo
+  ['#c86bff', 'rgba(200,107,255,.14)'], // purple
+  ['#ff6bd6', 'rgba(255,107,214,.14)'],// pink
+  ['#ff8fb0', 'rgba(255,143,176,.14)'] // rose
+];
+// Explicit keyword -> palette index for the common styles we actually use.
+const GENRE_KEYWORDS = {
+  metal:0, thrash:0, punk:1, 'speed punk':1, 'punk metal':1, speed:0,
+  trance:6, techno:6, dubstep:9, industrial:9, breakbeat:7, electro:7,
+  jazz:2, 'acid jazz':2, fusion:2, bossa:4, reggae:4, funk:3, soul:3,
+  chiptune:5, 'drum and bass':5, '8-bit':5, march:8, anthem:8, dirge:11,
+  gothic:11, darkwave:10, ambient:10, horror:11, baroque:8, celtic:4,
+  folk:4, psych:10, psychedelic:10, disco:2, house:6, tropical:6,
+  neoclassical:7, lofi:3, 'lo-fi':3, hip:3, waltz:11
+};
+function genreColor(genre) {
+  if (!genre) return null;
+  const g = String(genre).toLowerCase();
+  // Exact keyword hit first.
+  if (GENRE_KEYWORDS[g] != null) return GENRE_COLORS[GENRE_KEYWORDS[g]];
+  // Then substring match (longest keyword wins).
+  let best = -1, bestLen = 0;
+  for (const k in GENRE_KEYWORDS) {
+    if (g.indexOf(k) !== -1 && k.length > bestLen) { best = GENRE_KEYWORDS[k]; bestLen = k.length; }
   }
-  if (player.ctx.state === 'suspended') player.ctx.resume();
+  if (best >= 0) return GENRE_COLORS[best];
+  // Fallback: stable hash into the palette.
+  let h = 0; for (let i = 0; i < g.length; i++) h = (h * 31 + g.charCodeAt(i)) >>> 0;
+  return GENRE_COLORS[h % GENRE_COLORS.length];
 }
-function renderList(){
-  const names = player.getNames();
-  listEl.innerHTML = names.map((n,i)=>`<div class="row ${i===player.current?'on':''}" data-i="${i}">${i+1}. ${n}</div>`).join('');
-  listEl.querySelectorAll('.row').forEach(el=>el.addEventListener('click',()=>playTrack(parseInt(el.dataset.i,10))));
+
+function renderSidePanel() {
+  const t = sc.tracks[sc.current];
+  if (!t) { sidePanel.classList.add('hidden'); return; }
+  sidePanel.classList.remove('hidden');
+  spTitle.textContent = t.name || '–';
+  spGenre.textContent = t.genre || '–';
+  const gc = genreColor(t.genre);
+  if (gc) { spGenre.style.color = gc[0]; spGenre.style.background = gc[1]; spGenre.style.borderColor = gc[0] + '66'; }
+  else { spGenre.style.color = ''; spGenre.style.background = ''; spGenre.style.borderColor = ''; }
+  spBpm.textContent = (t.bpm != null ? t.bpm + ' BPM' : '–');
+  const fav = sc.isFav(sc.current);
+  spFav.classList.toggle('on', fav);
+  spFav.innerHTML = sc._heartSVG(fav);
+  spFav.title = fav ? 'Unfavorite' : 'Favorite';
+  spCreated.textContent = fmtDate(t.createdAt);
+  spRevision.textContent = (t.revision != null ? 'r' + t.revision : '–');
+  spVibe.textContent = (t.vibe && String(t.vibe).trim()) ? t.vibe : '–';
 }
-function showNow(){
-  const names = player.getNames();
-  nowEl.textContent = player.playing ? ('● NOW PLAYING: '+(player.current+1)+' '+names[player.current]) : '○ stopped';
-  lastShown = player.current;
+
+// Refresh only the side-panel heart (used by toggleFav so list + panel stay in sync).
+window.__syncSpFav = function() {
+  const fav = sc.isFav(sc.current);
+  spFav.classList.toggle('on', fav);
+  spFav.innerHTML = sc._heartSVG(fav);
+  spFav.title = fav ? 'Unfavorite' : 'Favorite';
+};
+spFav.addEventListener('click', () => { sc.toggleFav(sc.current); });
+
+// Track change → update list highlight + now-playing label + side panel
+sc.onTrackChange = (i) => {
+  const names = sc.tracks.map(t => t.name);
+  nowEl.textContent = '● NOW PLAYING: ' + (i+1) + ' ' + names[i];
+  tlTitle.textContent = (i+1) + '. ' + names[i];
   renderList();
+  renderSidePanel();
+};
+sc.onPlayStateChange = (playing) => {
+  if (!playing && sc._startTime === null) {
+    nowEl.textContent = '⏸ PAUSED';
+  }
+};
+
+let _listTimer = null, _listCount = 0, _listIdx = 0;
+function renderList() {
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  listEl.innerHTML = sc.tracks.map((t, i) => {
+    const gc = genreColor(t.genre);
+    const genreStyle = gc ? 'style="color:' + gc[0] + ';background:' + gc[1] + ';border-color:' + gc[0] + '55"' : '';
+    const fav = sc.isFav(i);
+    return '<div class="row ' + (i === sc.current ? 'on' : '') + '" data-i="' + i + '">' +
+      '<span class="num">' + (i+1) + '</span>' +
+      '<span class="nm" title="' + esc(t.name) + '">' + esc(t.name) + '</span>' +
+      '<span class="chips">' +
+        (t.genre ? '<span class="chip genre" ' + genreStyle + '>' + esc(t.genre) + '</span>' : '') +
+      '</span>' +
+      (t.bpm != null ? '<span class="bpm">' + t.bpm + ' BPM</span>' : '') +
+      '<span class="fav' + (fav ? ' on' : '') + '" title="' + (fav ? 'Unfavorite' : 'Favorite') + '">' + sc._heartSVG(fav) + '</span>' +
+    '</div>';
+  }).join('');
+  listEl.querySelectorAll('.row').forEach(el => {
+    el.addEventListener('click', () => {
+      const i = parseInt(el.dataset.i, 10);
+      _listIdx = i;
+      // Already playing → single click switches song immediately.
+      if (sc.playing) { sc.play(i); return; }
+      // Not playing → single click selects (highlight, dot to 0), double plays.
+      _listCount++;
+      if (_listCount === 1) {
+        sc.select(i);
+        nowEl.textContent = '○ SELECTED: ' + (i+1) + ' ' + sc.tracks[i].name;
+        _listTimer = setTimeout(() => { _listCount = 0; }, 400);
+      } else if (_listCount >= 2) {
+        clearTimeout(_listTimer);
+        _listCount = 0;
+        sc.play(i);
+      }
+    });
+    // Heart toggles favorite without triggering play/select.
+    const favEl = el.querySelector('.fav');
+    if (favEl) favEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sc.toggleFav(parseInt(el.dataset.i, 10));
+    });
+  });
 }
-function playTrack(i){
-  ensure();
-  applyModes();
-  player.start(i);
-  console.log('[jukebox] play -> #'+(i+1), player.getNames()[i]);
-  showNow();
+
+// Prev button: single=restart current, double=previous song (1s grace).
+// Shared with the Left-arrow key so both behave identically.
+function onPrevClick() {
+  sc.prevSmart();
 }
-// Keep the "now playing" display in sync with the engine (covers both
-// manual P/click changes and automatic song-sequence advances).
-// Only touch the DOM when the current track actually changed, so the
-// row highlight never flickers mid-song.
-let lastShown = -1;
-setInterval(()=>{
-  if (!player || !player.playing) return;
-  if (player.current !== lastShown) { lastShown = player.current; showNow(); }
-}, 250);
-function nextTrack(){
-  ensure();
-  const started = player.playing;
-  const n = player.seq.tracks.length;
-  const target = started ? (player.current + 1) % n : 0;
-  playTrack(target);
+tbPrev.addEventListener('click', e => { onPrevClick(); e.currentTarget.blur(); });
+tbPlay.addEventListener('click', e => { sc.togglePause(); e.currentTarget.blur(); });
+tbNext.addEventListener('click', e => { sc.next(); e.currentTarget.blur(); });
+mtSeq.addEventListener('click', e => { sc.setMode('seq'); syncModes(); e.currentTarget.blur(); });
+mtRep.addEventListener('click', e => { sc.setMode('rep'); syncModes(); e.currentTarget.blur(); });
+mtShf.addEventListener('click', e => { sc.setMode('shf'); syncModes(); e.currentTarget.blur(); });
+
+function syncModes() {
+  mtSeq.classList.toggle('on', sc.seq);
+  mtRep.classList.toggle('on', sc.rep);
+  mtShf.classList.toggle('on', sc.shf);
 }
-function prevTrack(){
-  ensure();
-  const n = player.seq.tracks.length;
-  const target = (player.current - 1 + n) % n;
-  playTrack(target);
-}
-mSeq.addEventListener('click', ()=>setMode('seq'));
-mRep.addEventListener('click', ()=>setMode('rep'));
-mShf.addEventListener('click', ()=>setMode('shf'));
-window.addEventListener('keydown', (e)=>{
-  if (e.code === 'KeyP'){ e.preventDefault(); nextTrack(); }
-  else if (e.code === 'ArrowDown' || e.code === 'ArrowRight'){ e.preventDefault(); nextTrack(); }
-  else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft'){ e.preventDefault(); prevTrack(); }
-  else if (e.code === 'KeyM'){ ensure(); player.toggleMute(); }
-  else if (e.code === 'KeyS'){ e.preventDefault(); setMode('seq'); }
-  else if (e.code === 'KeyR'){ e.preventDefault(); setMode('rep'); }
-  else if (e.code === 'KeyH'){ e.preventDefault(); setMode('shf'); }
+
+// Keyboard (mirrors the transport buttons exactly)
+window.addEventListener('keydown', e => {
+  // If a transport button still has focus, let the browser's native Space/Enter
+  // activation handle it — otherwise we'd double-toggle. (blur() on click above
+  // normally prevents this; this is a safety net.)
+  const btnFocused = document.activeElement && document.activeElement.tagName === 'BUTTON';
+  if (e.code === 'Space' || e.code === 'Enter') {
+    if (btnFocused) return;   // native button activation will fire the same action
+    if (e.code === 'Space') { e.preventDefault(); sc.togglePause(); }
+    return;
+  }
+  if (e.code === 'KeyP') { e.preventDefault(); sc.next(); }
+  else if (e.code === 'ArrowDown' || e.code === 'ArrowRight') { e.preventDefault(); sc.next(); }
+  else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') { e.preventDefault(); onPrevClick(); }
+  else if (e.code === 'KeyM') { sc.toggleMute(); }
+  else if (e.code === 'KeyS') { e.preventDefault(); sc.setMode('seq'); syncModes(); }
+  else if (e.code === 'KeyR') { e.preventDefault(); sc.setMode('rep'); syncModes(); }
+  else if (e.code === 'KeyH') { e.preventDefault(); sc.setMode('shf'); syncModes(); }
+  else if (e.code === 'KeyL') { e.preventDefault(); sc.toggleLog(); }
 });
-document.body.addEventListener('click', ()=>{ ensure(); });
-// Render the clickable track list up front (before any audio starts).
-listEl.innerHTML = TRACKS.map((t,i)=>`<div class="row" data-i="${i}">${i+1}. ${t.name}</div>`).join('');
-listEl.querySelectorAll('.row').forEach(el=>el.addEventListener('click',()=>playTrack(parseInt(el.dataset.i,10))));
+
+
+// ── Timeline rendering (reads from sc.position()) ────────────────────────
+(function buildTimeline() {
+  const divs = document.getElementById('tl-dividers');
+  const labels = document.getElementById('phrase-labels');
+  const names = ['0','0b','1','1b','2','3','4','tag'];
+  for (let i = 0; i < 8; i++) {
+    const d = document.createElement('div'); d.className = 'div'; divs.appendChild(d);
+    const l = document.createElement('span'); l.textContent = names[i]; labels.appendChild(l);
+  }
+})();
+
+function fmt(s) {
+  const m = Math.floor(s / 60);
+  return m + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+}
+
+// Main render loop. One rule: show sc.position(). While playing that reads the
+// live engine position; while paused/stopped it honors a manual dot placement
+// (_manualPos) and otherwise freezes at the paused audio position. No clobbering.
+setInterval(() => {
+  const p = sc.position();
+  tlDot.style.left = (p * 100) + '%';
+  tlProg.style.width = (p * 100) + '%';
+  const dur = sc.duration();
+  tlTime.textContent = fmt(p * dur) + ' / ' + fmt(dur);
+  if (sc.playing) {
+    playIcon.innerHTML = '<rect x="5" y="4" width="4" height="16" rx="1"/><rect x="15" y="4" width="4" height="16" rx="1"/>';
+    tbPlay.classList.remove('paused');
+  } else {
+    playIcon.innerHTML = '<polygon points="7 4 20 12 7 20 7 4"/>';
+    tbPlay.classList.add('paused');
+  }
+}, 50);
+
+// Drag dot → seek
+let dragging = false;
+tlDot.addEventListener('mousedown', e => { dragging = true; e.preventDefault(); e.stopPropagation(); });
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const r = tlEl.getBoundingClientRect();
+  const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  tlDot.style.left = (f * 100) + '%';
+  tlProg.style.width = (f * 100) + '%';
+});
+window.addEventListener('mouseup', e => {
+  if (!dragging) return;
+  dragging = false;
+  const r = tlEl.getBoundingClientRect();
+  sc.seek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)));
+});
+tlEl.addEventListener('click', e => {
+  if (dragging) return;
+  const r = tlEl.getBoundingClientRect();
+  const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  sc.seek(f);
+});
+
+// Initial render + restore saved mode prefs to UI
+renderList();
+renderSidePanel();
+syncModes();
+// Populate the transport-bar title for the initially-selected track (track 0).
+// onTrackChange only fires on a *change*, so the first song's title would
+// otherwise stay blank until the user switches songs.
+tlTitle.textContent = '1. ' + sc.tracks[sc.current].name;
 </script>
 </body>
 </html>
