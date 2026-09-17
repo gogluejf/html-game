@@ -10,6 +10,7 @@ import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSp
 import { Effects } from '../effects.js';
 import { getState, S } from '../state.js';
 import { Debug } from '../debug.js';
+import { input, formatBinding } from '../input.js';
 import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../timers.js';
 import { drawScreen, screenUpdate } from '../screens.js';
 import { drawHUD } from '../hud.js';
@@ -302,6 +303,7 @@ export function render(ctx) {
   // --- Unified debug HUD: live telemetry + event log --------------------------
   if (Debug.enabled) {
     if (Debug.showStats) drawStatsHUD(ctx);
+    if (Debug.showInput) drawInputMonitor(ctx);
     if (Debug.showLog) drawEventLog(ctx);
   }
 
@@ -812,6 +814,82 @@ function drawStatsHUD(ctx) {
 }
 
 /**
+ * Live input monitor (top-right, U toggles it). Shows the RAW physical state —
+ * which key codes / pad buttons are physically down right now — plus the
+ * resolved action mapping and the final normalized intent. This is the
+ * "is the engine even seeing my key?" diagnostic: if J lights up under KEYS
+ * but SHOOT stays off under ACTIONS, the binding table is wrong; if J never
+ * lights up at all, the event isn't reaching the engine.
+ * @param {CanvasRenderingContext2D} ctx
+ */
+function drawInputMonitor(ctx) {
+  const s = input.state;
+  const lines = [];
+  lines.push('=== INPUT MONITOR (U) ===');
+
+  // Raw keyboard: the exact physical key codes the engine currently holds.
+  const fmtCode = c => ({ Space: 'SPACE', ControlLeft: 'CTRL', ControlRight: 'CTRL R' })[c]
+    || (c.startsWith('Key') ? c.slice(3) : c.startsWith('Digit') ? c.slice(5) : c);
+  const rawKeys = input.heldKeys.map(fmtCode);
+  lines.push(`KEYS  ${rawKeys.length ? rawKeys.join(' ') : '— none —'}`);
+
+  // Gamepad raw: poll navigator directly (read-only, cheap).
+  const pads = (typeof navigator !== 'undefined' && navigator.getGamepads) ? [...navigator.getGamepads()] : [];
+  let anyPadActive = false;
+  const padInfo = pads.filter(p => p && p.connected).map((p, i) => {
+    const btns = [...p.buttons].map((b, j) => b.pressed || b.value > 0.5 ? `B${j}` : null).filter(Boolean);
+    const axes = [...p.axes].map((v, j) => Math.abs(v) > 0.2 ? `A${j}:${Math.round(v * 100)}%` : null).filter(Boolean);
+    if (btns.length || axes.length) anyPadActive = true;
+    return `PAD${i}[${(p.id || '').slice(0, 18)}]: ${[...btns, ...axes].join(' ') || 'idle'}`;
+  });
+  lines.push(padInfo.length ? padInfo.join(' | ') : 'PAD   — none connected —');
+
+  // Resolved actions (what the game actually receives).
+  const act = [
+    s.moveX !== 0 || s.moveY !== 0 ? `move(${s.moveX.toFixed(1)},${s.moveY.toFixed(1)})` : null,
+    s.crouch ? 'crouch' : null,
+    s.jump ? 'JUMP' : null,
+    s.shooting ? 'SHOOT' : null,
+    s.melee ? 'MELEE' : null,
+    s.supermove ? 'SUPER' : null,
+    s.switchWeapon ? 'SWAP' : null,
+    s.lockDir ? 'LOCKDIR' : null,
+    s.lockMove ? 'LOCKMOVE' : null,
+  ].filter(Boolean);
+  lines.push(`ACT   ${act.length ? act.join(' ') : '— idle —'}`);
+  lines.push(`AIM   x:${s.aimX.toFixed(2)} y:${s.aimY.toFixed(2)} (${(s.aimAngle * 180 / Math.PI).toFixed(0)}°)`);
+
+  // Active source + layout.
+  lines.push(`SRC   ${s.source}${s.gamepadConnected ? ` pad:${s.gamepadLayout}` : ''}`);
+
+  // Binding reference (current mapping) — compact grid, 4 per line.
+  const refEntries = Object.entries(input.mapping.keyboard)
+    .map(([a, b]) => `${a}=${b.map(x => formatBinding(x, 'keyboard')).join('/')}`);
+  for (let i = 0; i < refEntries.length; i += 4) {
+    lines.push(refEntries.slice(i, i + 4).join('  '));
+  }
+
+  ctx.save();
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  const lh = 13, pad = 5;
+  const w = Math.min(Math.max(...lines.map(l => ctx.measureText(l).width)) + pad * 2, VIEW_W / 2);
+  const x = VIEW_W - w - 8, y = 96; // below the coins/lives/portrait HUD cluster
+  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  ctx.fillRect(x, y, w, lines.length * lh + pad * 2);
+  lines.forEach((l, i) => {
+    let color = '#ffffff';
+    if (i === 0) color = '#ff9f43';
+    else if (l.startsWith('KEYS') && !l.includes('none')) color = '#7cffcb';
+    else if (l.startsWith('ACT') && !l.includes('idle')) color = '#ffd700';
+    else if (l.startsWith('PAD') && anyPadActive) color = '#7cffcb';
+    ctx.fillStyle = color;
+    ctx.fillText(l, x + pad, y + pad + lh * (i + 0.5));
+  });
+  ctx.restore();
+}
+
+/**
  * Event-log tail (last 10 entries) in the bottom-right corner. Shown only while
  * Debug.showLog is true (L toggles it). Timestamps are relative to now.
  * @param {CanvasRenderingContext2D} ctx
@@ -849,7 +927,7 @@ function drawEventLog(ctx) {
  * @param {CanvasRenderingContext2D} ctx
  */
 function drawHarnessHint(ctx) {
-  const line1 = 'DEBUG | 1-9 spawn | F god | Z spd | T tele | Y hero | L log | E dump | C view (round-robin)';
+  const line1 = 'DEBUG | 1-9 spawn | F god | Z spd | T tele | U input | Y hero | L log | E dump | C view (round-robin)';
   const line2 = 'RMB sel | LMB force | arrows scrub | X desel';
   ctx.save();
   ctx.font = '10px monospace';

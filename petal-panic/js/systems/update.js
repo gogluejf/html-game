@@ -476,6 +476,10 @@ function handleDebugKeys(e) {
       Debug.showStats = !Debug.showStats;
       Debug.logEvent(`telemetry ${Debug.showStats ? 'ON' : 'OFF'}`);
       break;
+    case 'KeyU': // Toggle live input monitor panel
+      Debug.showInput = !Debug.showInput;
+      Debug.logEvent(`input monitor ${Debug.showInput ? 'ON' : 'OFF'}`);
+      break;
     case 'KeyY': // Hero swap Scarlet <-> Balthazhar
       swapHero();
       break;

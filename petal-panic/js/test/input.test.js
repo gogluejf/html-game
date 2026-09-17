@@ -68,11 +68,11 @@ test('mapping loads legacy values, validates corruption, applies immediately, pe
   const unavailable = createInput({ storage: () => { throw Error('denied'); } }); assert.equal(unavailable.setBinding('keyboard', 'jump', 'KeyZ'), true); unavailable.destroy();
 });
 test('lockDir freezes previous aim until release, uses facing before first aim; lockMove leaves aim free', () => {
-  const f = fixture(); f.down('KeyK'); f.engine.poll({ facing: -1 }); assert.equal(f.engine.state.aimX, -1);
+  const f = fixture(); f.down('KeyI'); f.engine.poll({ facing: -1 }); assert.equal(f.engine.state.aimX, -1);
   f.down('KeyW'); f.engine.poll(); assert.equal(f.engine.state.aimX, -1);
-  f.up('KeyK'); f.engine.poll(); assert.equal(f.engine.state.aimY, -1);
-  f.down('KeyK'); f.up('KeyW'); f.down('KeyD'); f.engine.poll(); assert.ok(Math.abs(f.engine.state.aimX) < 1e-9); assert.equal(f.engine.state.aimY, -1);
-  f.up('KeyK'); f.down('KeyL'); f.engine.poll(); assert.equal(f.engine.state.moveX, 0); assert.equal(f.engine.state.aimX, 1);
+  f.up('KeyI'); f.engine.poll(); assert.equal(f.engine.state.aimY, -1);
+  f.down('KeyI'); f.up('KeyW'); f.down('KeyD'); f.engine.poll(); assert.ok(Math.abs(f.engine.state.aimX) < 1e-9); assert.equal(f.engine.state.aimY, -1);
+  f.up('KeyI'); f.down('KeyO'); f.engine.poll(); assert.equal(f.engine.state.moveX, 0); assert.equal(f.engine.state.aimX, 1);
 });
 function clean(state) {
   pads.length = 0; windowEvents.emit('blur'); windowEvents.emit('focus'); input.cancelCapture(); input.resetMapping();
@@ -165,7 +165,7 @@ test('approved defaults: every movement alias, Down crouch, trigger locks and bo
       f.engine.poll(); assert.equal(f.engine.state[axis], value);
       assert.equal(f.engine.state.crouch, action === 'moveDown');
       if (action === 'moveDown') {
-        f.down('KeyL'); f.engine.poll(); assert.equal(f.engine.state.moveY, 0); assert.equal(f.engine.state.crouch, true);
+        f.down('KeyO'); f.engine.poll(); assert.equal(f.engine.state.moveY, 0); assert.equal(f.engine.state.crouch, true);
       }
       f.engine.destroy();
     }
@@ -178,7 +178,7 @@ test('approved defaults: every movement alias, Down crouch, trigger locks and bo
     f.engine.destroy();
   }
   const f = fixture(); f.engine.setBinding('keyboard', 'moveDown', 'KeyZ');
-  f.down('KeyZ'); f.down('KeyW'); f.down('KeyL'); f.engine.poll();
+  f.down('KeyZ'); f.down('KeyW'); f.down('KeyO'); f.engine.poll();
   assert.equal(f.engine.state.crouch, true); assert.equal(f.engine.state.moveY, 0);
   assert.equal(f.engine.buttonLabel('crouch', 'keyboard'), 'Z / ↓');
   assert.equal(formatBinding('axis:0:-1','gamepad'), 'LS ←');
@@ -196,17 +196,29 @@ test('fixed binding limits persist replacements without losing siblings', () => 
 });
 test('migration upgrades only exact complete old defaults, preserving custom and partial saves', () => {
   const f = fixture(); const old = structuredClone(DEFAULT_MAPPING);
+  // The pre-HJKN keyboard layout: Ctrl shoot, X melee, C super, V weapon, K/L locks.
   old.keyboard.shoot = ['ControlLeft','ControlRight'];
-  old.keyboard.crouch = ['KeyS','ArrowDown'];
+  old.keyboard.melee = ['KeyX']; old.keyboard.supermove = ['KeyC'];
+  old.keyboard.switchWeapon = ['KeyV']; old.keyboard.lockDir = ['KeyK']; old.keyboard.lockMove = ['KeyL'];
+  Object.assign(old.gamepad, { shoot: ['btn:2','btn:7'], supermove: ['btn:1'], crouch: ['btn:13'], lockDir: ['btn:10'], lockMove: ['btn:11'] });
   Object.assign(old.gamepad, { shoot: ['btn:2','btn:7'], supermove: ['btn:1'], crouch: ['btn:13'], lockDir: ['btn:10'], lockMove: ['btn:11'] });
   const load = data => { f.data.set('petal_panic_mapping',JSON.stringify(data)); f.engine.loadMapping(); };
   load(old); assert.deepEqual(f.engine.mapping, DEFAULT_MAPPING);
   const singleton = structuredClone(old);
   for (const source of ['keyboard','gamepad']) for (const action of Object.keys(singleton[source])) singleton[source][action] = singleton[source][action][0];
+  // The pre-HJKN singleton snapshot (Ctrl shoot, X melee, C super, V weapon, K/L locks).
+  singleton.keyboard.shoot = 'ControlLeft'; singleton.keyboard.melee = 'KeyX';
+  singleton.keyboard.supermove = 'KeyC'; singleton.keyboard.switchWeapon = 'KeyV';
+  singleton.keyboard.lockDir = 'KeyK'; singleton.keyboard.lockMove = 'KeyL';
   Object.assign(singleton.gamepad, { moveLeft: 'axis:-1x', moveRight: 'axis:1x', moveUp: 'axis:-1y', moveDown: 'axis:1y' });
   load(singleton); assert.deepEqual(f.engine.mapping, DEFAULT_MAPPING);
+  // Customized save (locks moved to btn:6/7): the gamepad customization is
+  // preserved exactly; the untouched legacy keyboard half still upgrades.
   singleton.gamepad.lockDir = 'btn:6'; singleton.gamepad.lockMove = 'btn:7';
-  load(singleton); assert.deepEqual(f.engine.mapping.gamepad.lockDir, ['btn:6']);
+  const customized = structuredClone(singleton);
+  load(customized);
+  assert.deepEqual(f.engine.mapping.keyboard.shoot, ['KeyJ']);
+  assert.deepEqual(f.engine.mapping.gamepad.lockDir, ['btn:6']);
   assert.deepEqual(f.engine.mapping.gamepad.lockMove, ['btn:7']);
   assert.deepEqual(f.engine.mapping.gamepad.moveLeft, ['axis:0:-1','btn:14']);
   assert.equal('crouch' in f.engine.mapping.gamepad, false);
@@ -244,12 +256,14 @@ test('actual shot octants honor direction lock and all eight stationary aim dire
       if(source==='gamepad') { p.axes[0]=x; p.axes[1]=y; }
     };
     const lock=(kind,on)=>{
-      if(source==='keyboard') (on?f.down:f.up)(kind==='dir'?'KeyK':'KeyL');
+      if(source==='keyboard') (on?f.down:f.up)(kind==='dir'?'KeyI':'KeyO');
       else p.buttons[kind==='dir'?6:7].pressed=on;
     };
     direction(1,-1); f.engine.poll(); lock('dir',true); f.engine.poll();
     for(const [x,y] of directions) {
       direction(x,y); f.engine.poll();
+      // Direction lock freezes aim at the locked diagonal on both devices;
+      // movement keeps following the direction input.
       assert.equal(aimFromInput(f.engine.state,-1),1);
       const shot=new Projectile(0,0,aimFromInput(f.engine.state,-1));
       assert.ok(shot.vx>0 && shot.vy<0);
@@ -259,11 +273,15 @@ test('actual shot octants honor direction lock and all eight stationary aim dire
     for(const [x,y,octant] of directions) {
       direction(x,y); f.engine.poll();
       assert.equal(f.engine.state.moveX,0); assert.equal(f.engine.state.moveY,0);
+      // LockMove zeroes movement but aim still follows the direction input.
       assert.equal(aimFromInput(f.engine.state,1),octant,source+':'+octant);
     }
-    // Right stick overrides the entire aim vector, not individual movement axes.
+    // No separate aim device exists: release lockMove, hold direction(1,0) —
+    // aim IS that direction regardless of the right stick (unbound).
+    lock('move', false);
     direction(1,0); p.axes[2]=0; p.axes[3]=-1; f.engine.poll();
-    assert.equal(aimFromInput(f.engine.state,1),2);
+    assert.equal(f.engine.state.moveX, 1);
+    assert.equal(aimFromInput(f.engine.state,1),0);
     f.engine.destroy();
   }
 });

@@ -14,8 +14,8 @@ export const DEFAULT_MAPPING = {
   keyboard: {
     moveUp: ['KeyW', 'ArrowUp'], moveDown: ['KeyS', 'ArrowDown'],
     moveLeft: ['KeyA', 'ArrowLeft'], moveRight: ['KeyD', 'ArrowRight'],
-    jump: ['Space'], shoot: ['ControlLeft'], melee: ['KeyX'], supermove: ['KeyC'],
-    switchWeapon: ['KeyV'], lockDir: ['KeyK'], lockMove: ['KeyL'],
+    jump: ['Space'], shoot: ['KeyJ'], melee: ['KeyH'], supermove: ['KeyK'],
+    switchWeapon: ['KeyN'], lockDir: ['KeyI'], lockMove: ['KeyO'],
   },
   gamepad: {
     moveUp: ['axis:1:-1', 'btn:12'], moveDown: ['axis:1:1', 'btn:13'],
@@ -29,20 +29,57 @@ const STORAGE_KEY = 'petal_panic_mapping';
 const cloneDefaults = () => JSON.parse(JSON.stringify(DEFAULT_MAPPING));
 // Only a complete exact old-default snapshot is safe to upgrade. Partial or
 // customized saves (including singleton trigger locks) retain every binding.
-const oldDefaults = cloneDefaults();
-oldDefaults.keyboard.shoot = ['ControlLeft', 'ControlRight'];
-oldDefaults.keyboard.crouch = ['KeyS', 'ArrowDown'];
-Object.assign(oldDefaults.gamepad, { shoot: ['btn:2', 'btn:7'], supermove: ['btn:1'],
-  crouch: ['btn:13'], lockDir: ['btn:10'], lockMove: ['btn:11'] });
-const oldSingletonDefaults = JSON.parse(JSON.stringify(oldDefaults));
-for (const source of ['keyboard', 'gamepad']) for (const action of Object.keys(oldSingletonDefaults[source])) {
-  oldSingletonDefaults[source][action] = oldSingletonDefaults[source][action].slice(0, 1);
-}
 const legacyAxes = { 'axis:-1x': 'axis:0:-1', 'axis:1x': 'axis:0:1', 'axis:-1y': 'axis:1:-1', 'axis:1y': 'axis:1:1' };
+const matchesSnapshot = (data, defaults) => ['keyboard', 'gamepad'].every(source =>
+  Object.keys(defaults[source]).length === Object.keys(data[source] || {}).length &&
+  Object.entries(defaults[source]).every(([action, expected]) => {
+    const saved = data[source]?.[action];
+    const values = (Array.isArray(saved) ? saved : [saved]).map(b => legacyAxes[b] || b);
+    return JSON.stringify(values) === JSON.stringify(expected);
+  }));
+// Pre-HJKN keyboard layout: shoot=Ctrl, melee=X, super=C, weapon=V, locks=K/L.
+const legacyKeyboardDefaults = cloneDefaults();
+legacyKeyboardDefaults.keyboard.shoot = ['ControlLeft', 'ControlRight'];
+legacyKeyboardDefaults.keyboard.melee = ['KeyX'];
+legacyKeyboardDefaults.keyboard.supermove = ['KeyC'];
+legacyKeyboardDefaults.keyboard.switchWeapon = ['KeyV'];
+legacyKeyboardDefaults.keyboard.lockDir = ['KeyK'];
+legacyKeyboardDefaults.keyboard.lockMove = ['KeyL'];
+Object.assign(legacyKeyboardDefaults.gamepad, { shoot: ['btn:2', 'btn:7'], supermove: ['btn:1'],
+  crouch: ['btn:13'], lockDir: ['btn:10'], lockMove: ['btn:11'] });
+// Variant the old code actually shipped to browsers (pre-lock-remap gamepad).
+const legacyKeyboardDefaultsB = JSON.parse(JSON.stringify(legacyKeyboardDefaults));
+Object.assign(legacyKeyboardDefaultsB.gamepad, { shoot: ['btn:2'], lockDir: ['btn:6'], lockMove: ['btn:7'] });
+// Browsers saved single-slot snapshots (old bindingSlots were all 1): every
+// action stored exactly one trigger. These two are those snapshots.
+const legacyKeyboardSingletonA = JSON.parse(JSON.stringify(legacyKeyboardDefaults));
+for (const source of ['keyboard', 'gamepad']) for (const action of Object.keys(legacyKeyboardSingletonA[source])) {
+  legacyKeyboardSingletonA[source][action] = legacyKeyboardSingletonA[source][action].slice(0, 1);
+}
+const legacyKeyboardSingletonB = JSON.parse(JSON.stringify(legacyKeyboardDefaultsB));
+for (const source of ['keyboard', 'gamepad']) for (const action of Object.keys(legacyKeyboardSingletonB[source])) {
+  legacyKeyboardSingletonB[source][action] = legacyKeyboardSingletonB[source][action].slice(0, 1);
+}
+// The snapshot real browsers actually hold today: movement kept its two
+// aliases (restored by the v3 backfill) while combat actions stayed singleton.
+const legacyKeyboardSingletonC = JSON.parse(JSON.stringify(legacyKeyboardDefaultsB));
+delete legacyKeyboardSingletonC.gamepad.crouch;
+Object.assign(legacyKeyboardSingletonC.keyboard, {
+  moveUp: ['KeyW', 'ArrowUp'], moveDown: ['KeyS', 'ArrowDown'],
+  moveLeft: ['KeyA', 'ArrowLeft'], moveRight: ['KeyD', 'ArrowRight'],
+  jump: ['Space'], shoot: ['ControlLeft'], melee: ['KeyX'], supermove: ['KeyC'],
+  switchWeapon: ['KeyV'], lockDir: ['KeyK'], lockMove: ['KeyL'],
+});
+Object.assign(legacyKeyboardSingletonC.gamepad, {
+  moveUp: ['axis:1:-1', 'btn:12'], moveDown: ['axis:1:1', 'btn:13'],
+  moveLeft: ['axis:0:-1', 'btn:14'], moveRight: ['axis:0:1', 'btn:15'],
+  jump: ['btn:0'], shoot: ['btn:2'], melee: ['btn:3'], supermove: ['btn:1', 'btn:5'],
+  switchWeapon: ['btn:4'], lockDir: ['btn:6'], lockMove: ['btn:7'],
+});
 const validBinding = (source, b) => typeof b === 'string' && (source === 'keyboard'
   ? /^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|Enter|Escape|Tab|Backspace|Delete|Insert|Home|End|PageUp|PageDown|Control(Left|Right)|Shift(Left|Right)|Alt(Left|Right)|Meta(Left|Right)|Minus|Equal|BracketLeft|BracketRight|Backslash|Semicolon|Quote|Comma|Period|Slash|Backquote|Numpad\w+)$/.test(b)
   : /^(btn:\d+|axis:\d+:(-1|1))$/.test(b));
-const blank = () => ({ moveX: 0, moveY: 0, aimX: 0, aimY: 0, aimAngle: 0,
+const blank = () => ({ moveX: 0, moveY: 0, directionX: 0, directionY: 0, aimX: 0, aimY: 0, aimAngle: 0,
   shooting: false, jump: false, melee: false, supermove: false, switchWeapon: false,
   crouch: false, lockDir: false, lockMove: false, pause: false });
 function layoutOf(pad) {
@@ -88,14 +125,11 @@ export function createInput({ target = globalThis.window, document = globalThis.
       try {
         const data = JSON.parse(storage()?.getItem(STORAGE_KEY) || 'null');
         if (!data || typeof data !== 'object') return;
-        const untouched = !data.version && [oldDefaults, oldSingletonDefaults].some(defaults =>
-          ['keyboard', 'gamepad'].every(source =>
-            Object.keys(data[source] || {}).length === Object.keys(defaults[source]).length &&
-            Object.entries(defaults[source]).every(([action, expected]) => {
-              const saved = data[source]?.[action];
-              const values = (Array.isArray(saved) ? saved : [saved]).map(b => legacyAxes[b] || b);
-              return JSON.stringify(values) === JSON.stringify(expected);
-            })));
+        // A save that exactly matches a historical default snapshot is untouched
+        // → safe to replace wholesale with the current defaults. (Old writers
+        // stamped version 3, so version presence alone never disqualifies.)
+        const untouched = [legacyKeyboardDefaults, legacyKeyboardDefaultsB, legacyKeyboardSingletonA,
+          legacyKeyboardSingletonB, legacyKeyboardSingletonC].some(d => matchesSnapshot(data, d));
         for (const source of ['keyboard', 'gamepad']) for (const action of Object.keys(DEFAULT_MAPPING[source])) {
           const saved = data[source]?.[action];
           if (untouched || saved === undefined) continue;
@@ -192,6 +226,14 @@ export function createInput({ target = globalThis.window, document = globalThis.
           }
         }
       };
+      // Barrier-quarantined controls re-arm as soon as the physical source is
+      // confirmed released (or gone) — a keyup for the exact id is NOT required,
+      // because after a barrier the next keydown of a still-held key is filtered
+      // and would otherwise leave the id blocked forever.
+      for (const id of [...blocked]) {
+        const code = id.startsWith('k:') ? id.slice(2) : null;
+        if (code !== null ? !keys.has(code) : !physical.has(id)) blocked.delete(id);
+      }
       for (const { code, down } of queue.splice(0)) {
         change(`k:${code}`, down ? { source: 'keyboard', binding: code, value: 1 } : null);
         observe();
@@ -232,30 +274,34 @@ export function createInput({ target = globalThis.window, document = globalThis.
       this.nav = { held: Object.fromEntries([...previousNav].map(a => [a, true])),
         pressed: NAV.filter(a => pressed.has(a)), released: NAV.filter(a => released.has(a)) };
       const s = blank();
+      // --- Direction: ONE source vector from all movement inputs ------------
+      // WASD/arrows, dpad buttons and the LEFT stick all feed the same
+      // `direction`. It is the single "which way am I pointing" value.
       const amount = (source, action) => {
         let value = 0;
         for (const [id, p] of physical) if (!blocked.has(id) && p.source === source && this.mapping[source][action].includes(p.binding)) value = Math.max(value, p.value);
         return value;
       };
       const merge = (a, b) => Math.abs(b) > Math.abs(a) ? b : a;
+      let dirX = 0, dirY = 0;
       for (const source of ['keyboard','gamepad']) {
         s.crouch ||= amount(source, 'moveDown') > 0.2;
-        const x = amount(source, 'moveRight') - amount(source, 'moveLeft');
-        const y = amount(source, 'moveDown') - amount(source, 'moveUp');
-        s.moveX = merge(s.moveX, x); s.moveY = merge(s.moveY, y);
+        dirX = merge(dirX, amount(source, 'moveRight') - amount(source, 'moveLeft'));
+        dirY = merge(dirY, amount(source, 'moveDown') - amount(source, 'moveUp'));
+      }
+      if (Math.abs(dirX) < 1e-6) dirX = 0;
+      if (Math.abs(dirY) < 1e-6) dirY = 0;
+      s.directionX = dirX; s.directionY = dirY;
 
-      }
-      // Movement directions aim on every device, before movement is locked.
-      s.aimX = s.moveX; s.aimY = s.moveY;
-      let stickAimX = 0, stickAimY = 0;
-      for (const [id, p] of physical) if (!blocked.has(id) && p.source === 'gamepad') {
-        const [, axis, sign] = p.binding.split(':');
-        if (p.binding.startsWith('axis:') && (axis === '2' || axis === '3')) {
-          if (axis === '2') stickAimX = merge(stickAimX, p.value * Number(sign));
-          else stickAimY = merge(stickAimY, p.value * Number(sign));
-        }
-      }
-      if (stickAimX || stickAimY) { s.aimX = stickAimX; s.aimY = stickAimY; }
+      // --- Movement: direction, zeroed while lockMove is held ---------------
+      s.moveX = dirX; s.moveY = dirY;
+
+      // --- Aim: IS the direction. One control does both ---------------------
+      // There is no separate aim device: whatever direction you point (WASD,
+      // dpad, left stick) is where you move AND where you aim. lockDir is the
+      // only thing that can make aim differ from direction (it freezes the
+      // angle). No right-stick aim, no hidden sources.
+      s.aimX = dirX; s.aimY = dirY;
       // Jump remains held for variable-height jumping; short taps get one tick.
       for (const a of DISCRETE) s[a === 'shoot' ? 'shooting' : a] = previousGame.has(a) || gamePressed.has(a);
       for (const a of ['melee','supermove','switchWeapon']) s[a] = gamePressed.has(a);
@@ -274,10 +320,16 @@ export function createInput({ target = globalThis.window, document = globalThis.
       this.state = s; return s;
     },
     destroy() { for (const off of listeners) off(); },
+    /** Raw physical keyboard codes currently held (debug/diagnostics only). */
+    get heldKeys() { return [...keys]; },
   };
   listen(target, 'keydown', e => {
     if (/^F\d+$/.test(e.code)) return; // debug owns function keys
-    if (e.ctrlKey || e.metaKey) return; // browser shortcuts always pass through
+    // Never swallow OS/browser shortcut combos (Cmd/Ctrl+letter), but a bare
+    // modifier press must still reach us — dropping it here is what made held
+    // shoot keys stick after any accidental two-key chord.
+    const bareModifier = /^(Control|Shift|Alt|Meta)(Left|Right)$/.test(e.code);
+    if ((e.ctrlKey || e.metaKey) && !bareModifier) return;
   if (KEY_NAV[e.code] || capture || Object.values(engine.mapping.keyboard).some(v => v.includes(e.code))) e.preventDefault?.();
     if (e.repeat || keys.has(e.code) || suspended) return;
     keys.add(e.code); queue.push({ code: e.code, down: true });

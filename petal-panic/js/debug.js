@@ -52,6 +52,7 @@ export const Debug = {
   LOG_MAX: 50,
   showLog: false, // L toggles the on-screen tail of the log
   showStats: false, // T toggles the telemetry panel (default OFF)
+  showInput: false, // U toggles the live input monitor panel (default OFF)
   viewMode: 0, // C cycles (round-robin): 0=sprite+collision, 1=collision-only (opaque), 2=sprite-only (pure gameplay)
 
   // --- Transform-debug detail level -----------------------------------------
@@ -153,6 +154,7 @@ export const Debug = {
     this.selected = null;
     this.showLog = false;
     this.showStats = false;
+    this.showInput = false;
     this.detailLevel = 0;
     this.viewMode = 0; // never let a stale collision-only/sprite-only mode hide the overlay
     this.log = [];
