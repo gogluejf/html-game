@@ -202,6 +202,10 @@ export class Hero extends Entity {
       // being instantly overridden by held input.
       this.vx *= GROUND_FRICTION;
       if (Math.abs(this.vx) < 1) this.vx = 0;
+    } else if (input.lockMove) {
+      // Aiming in place stops locomotion, not gravity or damage knockback.
+      this.vx = 0;
+      this.sliding = false;
     } else if (moveDir !== 0) {
       this.facing = moveDir > 0 ? 1 : -1;
       this.syncMirror();

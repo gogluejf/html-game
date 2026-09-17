@@ -35,13 +35,22 @@ Scope:
 Actions (10):
 Move, Jump, Aim/Shoot, Melee, Supermove, Switch Weapon, Lock Direction, Lock Movement, Crouch/Slide, Pause
 
+Implemented contract: see [input-engine.md](input-engine.md).
+
 Files:
-- `js/input.js` — core module (poll, normalize, lock logic)
-- `js/input-mapping.js` — mapping table + persistence (localStorage)
-- `js/input-gamepad.js` — gamepad detection + layout tables
-- `js/screens/remap.js` — remap UI
-- Modify: `js/systems/update.js` (remove inline keys.has, read from input.state)
-- Modify: `js/hud.js` (dynamic button hints)
+- `js/input.js` — physical adapters, semantic edges/held, lifecycle barriers,
+  mapping/persistence/labels, capture, lock logic (single input boundary)
+- `js/remap.js` — source-agnostic semantic UI and normalized capture results
+- `js/screens.js` — one semantic action route and transition lifecycle
+- `js/systems/update.js` — poll once per fixed tick, inject screen closures,
+  consume normalized gameplay; debug remains separate
+- `js/hud.js` — live mapping hints
+- `js/main.js` — no separate gamepad navigation bridge
+- `js/test/input.test.js` — deterministic keyboard/gamepad adapter regressions
+
+Navigation is fixed, gameplay bindings are configurable. Remap records its parent;
+back during capture cancels only, the next fresh back leaves one level. State and
+capture barriers suppress held inputs until release rather than using debounce.
 
 ---
 

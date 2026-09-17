@@ -7,6 +7,8 @@ import { S, getState, tryTransition, canTransition } from './state.js';
 import { HEROES } from './heroDefs.js';
 import { VIEW_W, VIEW_H } from './view.js';
 import { calculateScore } from './stats.js';
+import { onTransition } from './state.js';
+import { input } from './input.js';
 import { Remap } from './remap.js';
 import {
   FONT_TITLE, FONT_UI, CREAM, GOLD, RED, PINK, roundRect,
@@ -14,7 +16,7 @@ import {
 } from './fonts.js';
 
 // Continue cost (design §1/§14: 1000 coins per continue). update.js exports the
-// same constant; this local copy keeps screens.js self-contained for draw/onKey.
+// same constant; this local copy keeps screens.js self-contained for draw/onAction.
 const CONTINUE_COST = 1000;
 
 // --- Image cache -------------------------------------------------------------
@@ -337,9 +339,9 @@ export const Home = {
     ctx.restore(); // end 4:3 clip
   },
 
-  /** Handle key input. During intro: skip to next card. After intro: go to SELECT. */
-  onKey(code) {
-    if (code !== 'Enter' && code !== 'Space') return;
+  /** Handle semantic input. During intro: skip to next card. After intro: go to SELECT. */
+  onAction(action) {
+    if (action !== 'confirm') return;
     const t = this.parallaxOffset;
     // Skip through intro cards on press
     if (t < 1) { this.parallaxOffset = 1; return; }       // black → JF Rene
@@ -367,9 +369,8 @@ export const Select = {
   focus: -1, // -1 = none, 0 = scarlet, 1 = balthazar
   _heldLeft: false,   // ArrowLeft physically down (chip stays gold while held)
   _heldRight: false,  // ArrowRight physically down
-  _heldAt: 0,         // timestamp of last arrow keydown/repeat (auto-expiry guard)
 
-  reset() { this.focus = -1; this._heldLeft = false; this._heldRight = false; this._heldAt = 0; },
+  reset() { this.focus = -1; this._heldLeft = false; this._heldRight = false; },
 
   draw(ctx) {
     // Background — deep midnight so the cream art cards pop.
@@ -528,13 +529,8 @@ export const Select = {
 
     const now = performance.now();
     const enterFlash = this._flashT === 'enter' && (now - this._flashAt) < 180;
-    // Auto-expiry guard: if a keyup is ever swallowed (Firefox focus quirks,
-    // browser arrow-key handling), the held state self-heals after 250ms —
-    // well below the human perception threshold and above the OS auto-repeat
-    // interval (~30-50/s), so genuinely-held keys keep re-stamping _heldAt.
-    const heldFresh = (now - this._heldAt) < 250;
-    const heldL = this._heldLeft && heldFresh;
-    const heldR = this._heldRight && heldFresh;
+    const heldL = this._heldLeft;
+    const heldR = this._heldRight;
 
     const chip = (label, x, y, active) => {
       const w = label.length > 1 ? 34 : 26;
@@ -577,41 +573,30 @@ export const Select = {
     ctx.restore();
   },
 
-  /** Handle key input for hero selection. Ignores OS key auto-repeat so a held
-   *  arrow steps exactly once per physical press (prevents double-stepping). */
-  onKey(code, repeat = false) {
-    if (repeat) return; // one step per physical press
-    switch (code) {
-      case 'ArrowLeft':
-      case 'KeyA':
-        // Arrow chip stays gold while physically held (see draw). Stamp the
-        // expiry timer on every event — auto-repeat keeps it alive while the
-        // key is genuinely down.
+  /** One semantic press per step; adapter handles physical repeat and releases. */
+  onAction(action) {
+    switch (action) {
+      case 'left':
         this._heldLeft = true;
-        this._heldAt = performance.now();
         // none(-1) → scarlet(0); otherwise step left (balthazar → scarlet).
         this.focus = this.focus === -1 ? 0 : Math.max(0, this.focus - 1);
         break;
-      case 'ArrowRight':
-      case 'KeyD':
+      case 'right':
         this._heldRight = true;
-        this._heldAt = performance.now();
         // none(-1) → balthazar(1); otherwise step right (scarlet → balthazar).
         // Right means "the hero on the right", so first-press-right lands on
         // Balthazar, not Scarlet.
         this.focus = this.focus === -1 ? 1 : Math.min(1, this.focus + 1);
         break;
-      case 'ArrowUp':
-      case 'KeyW':
+      case 'up':
         // Up loses focus — back to the "no selection" art state.
         this.focus = -1;
         break;
-      case 'Escape':
+      case 'back':
         // Back to home.
         if (tryTransition(S.HOME)) console.log('[screens] SELECT → HOME (back)');
         break;
-      case 'Enter':
-      case 'Space':
+      case 'confirm':
         // Enter flashes the ⏎ chip for 180ms.
         this._flashT = 'enter';
         this._flashAt = performance.now();
@@ -626,11 +611,7 @@ export const Select = {
     }
   },
 
-  /** Called from the global keyup listener so held-arrow chips release. */
-  onKeyUp(code) {
-    if (code === 'ArrowLeft' || code === 'KeyA') this._heldLeft = false;
-    if (code === 'ArrowRight' || code === 'KeyD') this._heldRight = false;
-  },
+
 };
 
 // =============================================================================
@@ -682,30 +663,29 @@ export const Pause = {
 
   /**
    * Handle input. Uses action-based navigation.
-   * @param {string} code virtual key code (from screenOnAction mapping)
+   * @param {string} action semantic navigation action
    * @param {{ retry?: () => void, quit?: () => void }} [actions]
    */
-  onKey(code, actions = {}) {
+  onAction(action, actions = {}) {
     // Back (○/Escape) ALWAYS exits the menu, regardless of focus.
-    if (code === 'Escape') {
+    if (action === 'back' || action === 'pause') {
       if (tryTransition(S.PLAY)) console.log('[screens] PAUSE → PLAY (back)');
       return true;
     }
-    switch (code) {
-      case 'ArrowUp':
+    switch (action) {
+      case 'up':
         this.focus = (this.focus + 3) % 4;
         return true;
-      case 'ArrowDown':
+      case 'down':
         this.focus = (this.focus + 1) % 4;
         return true;
-      case 'Enter':
-      case 'Space':
+      case 'confirm':
         this.execute(actions);
         return true;
-      case 'KeyR':
+      case 'retry':
         if (actions.retry) actions.retry(); else tryTransition(S.HOME);
         return true;
-      case 'KeyQ':
+      case 'quit':
         if (actions.quit) actions.quit(); else tryTransition(S.HOME);
         return true;
     }
@@ -739,12 +719,13 @@ export const Pause = {
 // affordable (continues left AND enough coins).
 // =============================================================================
 
-/** Shared continue-availability check (draw + onKey must agree). */
+/** Shared continue-availability check (draw + onAction must agree). */
 export function canContinue(hero) {
   return !!(hero && hero.continuesUsed < hero.maxContinues && hero.coins >= CONTINUE_COST);
 }
 
 export const GameOver = {
+  focus: 0,
   /** @param {CanvasRenderingContext2D} ctx @param {object} hero the hero entity */
   draw(ctx, hero) {
     // Dark background over the frozen play frame.
@@ -772,44 +753,47 @@ export const GameOver = {
 
     // Options.
     let oy = 375;
-    drawPrompt(ctx, 'R — Retry', VIEW_W / 2, oy, 24, { color: GOLD });
+    drawPrompt(ctx, (this.focus === 0 ? '▶ ' : '') + 'R — Retry', VIEW_W / 2, oy, 24, { color: GOLD });
     oy += 40;
 
     const okCont = canContinue(hero);
     const remaining = (hero.maxContinues ?? 3) - (hero.continuesUsed ?? 0);
     drawPrompt(
       ctx,
-      `C — Continue (${remaining} left, ${CONTINUE_COST} coins)`,
+      `${this.focus === 1 ? '▶ ' : ''}C — Continue (${remaining} left, ${CONTINUE_COST} coins)`,
       VIEW_W / 2, oy, 22,
       { color: okCont ? GOLD : '#555555' },
     );
     oy += 40;
-    drawPrompt(ctx, 'Q — Quit', VIEW_W / 2, oy, 22, { color: '#cccccc' });
+    drawPrompt(ctx, (this.focus === 2 ? '▶ ' : '') + 'Q — Quit', VIEW_W / 2, oy, 22, { color: '#cccccc' });
     ctx.restore();
   },
 
   /**
-   * Handle key input. `retry`/`cont`/`quit` are injected by update.js so the
+   * Handle semantic input. `retry`/`cont`/`quit` are injected by update.js so the
    * respawn logic stays in systems/update.js.
-   * @param {string} code KeyboardEvent.code
+   * @param {string} action semantic navigation action
    * @param {object} hero the hero entity
    * @param {{ retry?: () => void, cont?: () => void, quit?: () => void }} [actions]
    */
-  onKey(code, hero, actions = {}) {
+  onAction(action, hero, actions = {}) {
+    if (action === 'up') { this.focus = (this.focus + 2) % 3; return true; }
+    if (action === 'down') { this.focus = (this.focus + 1) % 3; return true; }
+    if (action === 'confirm') action = ['retry', 'cont', 'quit'][this.focus];
     // Back (○/Escape) ALWAYS exits to home.
-    if (code === 'Escape') {
+    if (action === 'back') {
       if (actions.quit) actions.quit(); else tryTransition(S.HOME);
       return true;
     }
-    if (code === 'KeyR') {
+    if (action === 'retry') {
       if (actions.retry) actions.retry();
       return true;
     }
-    if (code === 'KeyC') {
-      if (actions.cont) actions.cont();
+    if (action === 'cont') {
+      if (canContinue(hero) && actions.cont) actions.cont();
       return true;
     }
-    if (code === 'KeyQ') {
+    if (action === 'quit') {
       if (actions.quit) actions.quit();
       return true;
     }
@@ -873,22 +857,22 @@ export const Win = {
   },
 
   /**
-   * Handle key input. `playAgain`/`quit` are injected by update.js.
-   * @param {string} code KeyboardEvent.code
+   * Handle semantic input. `playAgain`/`quit` are injected by update.js.
+   * @param {string} action semantic navigation action
    * @param {{ playAgain?: () => void, quit?: () => void }} [actions]
    */
-  onKey(code, actions = {}) {
+  onAction(action, actions = {}) {
     // Back (○/Escape) ALWAYS exits to home.
-    if (code === 'Escape') {
+    if (action === 'back') {
       if (actions.quit) actions.quit(); else tryTransition(S.HOME);
       return true;
     }
-    if (code === 'Enter' || code === 'Space') {
+    if (action === 'confirm') {
       if (actions.playAgain) actions.playAgain();
       else if (tryTransition(S.SELECT)) console.log('[screens] WIN → SELECT (play again)');
       return true;
     }
-    if (code === 'KeyQ') {
+    if (action === 'quit') {
       if (actions.quit) actions.quit();
       else if (tryTransition(S.HOME)) console.log('[screens] WIN → HOME (quit)');
       return true;
@@ -944,69 +928,43 @@ export function drawScreen(ctx, hero) {
  * @param {object} [hero] current hero (for OVER/WIN screens)
  * @param {object} [actions] action bag (retry, cont, playAgain, quit)
  */
-export function screenOnAction(action, hero, actions) {
-  const KEY_MAP = {
-    confirm: 'Enter',
-    back: 'Escape',
-    left: 'ArrowLeft',
-    right: 'ArrowRight',
-    up: 'ArrowUp',
-    down: 'ArrowDown',
-  };
-  const code = KEY_MAP[action];
-  if (!code) return false;
-  return screenOnKey(code, hero, actions, false);
-}
-
-/**
- * Route a key event to the active screen. Returns true if the screen consumed
- * it. PAUSE/OVER/WIN receive an `actions` bag of closures supplied by
- * update.js (level retry, continue, quit) so game-reset logic stays there.
- */
-export function screenOnKey(code, hero, actions, repeat = false) {
+let remapParent = S.PAUSE;
+export function screenOnAction(action, hero, actions = {}) {
   const s = getState();
-  // Pause toggle: Back OR Confirm in PLAY → PAUSE (both ○ and ✕/Options pause)
-  if (s === S.PLAY && (code === 'Escape' || code === 'Enter')) {
-    if (tryTransition(S.PAUSE)) console.log('[state] PLAY → PAUSE');
-    return true;
+  if (s === S.PLAY) {
+    if (action === 'pause') { tryTransition(S.PAUSE); return true; }
+    return false;
   }
-  if (s === S.HOME) {
-    Home.onKey(code);
-    return true;
-  }
-  if (s === S.SELECT) {
-    Select.onKey(code, repeat);
-    return true;
-  }
+  if (action === 'pause' && s !== S.PAUSE) action = 'confirm';
+  if (s === S.HOME) { Home.onAction(action); return true; }
+  if (s === S.SELECT) { Select.onAction(action); return true; }
   if (s === S.REMAP) {
-    const result = Remap.onKey(code);
-    if (result === 'exit') {
-      // Always go back to PAUSE (that's where we came from)
-      tryTransition(S.PAUSE);
-    }
+    if (Remap.onAction(action) === 'exit') tryTransition(remapParent);
     return true;
   }
-  if (s === S.PAUSE) {
-    return Pause.onKey(code, actions);
-  }
-  if (s === S.OVER) {
-    return GameOver.onKey(code, hero, actions);
-  }
-  if (s === S.WIN) {
-    return Win.onKey(code, actions);
-  }
+  if (s === S.PAUSE) return Pause.onAction(action, actions);
+  if (s === S.OVER) return GameOver.onAction(action, hero, actions);
+  if (s === S.WIN) return Win.onAction(action, actions);
   return false;
 }
 
-/** Route a keyup event to the active screen (used for held-key visuals). */
-export function screenOnKeyUp(code) {
-  if (getState() === S.SELECT) Select.onKeyUp(code);
+// Once per input tick. A state/capture boundary invalidates the entire batch.
+export function dispatchScreenInput(engine, hero, actions) {
+  const generation = engine.generation;
+  if (engine.captureResult) { Remap.onCapture(engine.captureResult); engine.captureResult = null; }
+  for (const action of engine.nav.pressed) {
+    screenOnAction(action, hero, actions);
+    if (engine.generation !== generation) break;
+  }
+  Select._heldLeft = !!engine.nav.held.left;
+  Select._heldRight = !!engine.nav.held.right;
 }
 
-/** Reset per-screen transient state on entry (held keys, focus, flashes). */
-export function screenReset(s) {
+export function screenReset(s, from) {
   if (s === S.SELECT) Select.reset();
-  if (s === S.REMAP) Remap.resetState();
+  if (s === S.PAUSE) Pause.reset();
+  if (s === S.OVER) GameOver.focus = 0;
+  if (s === S.REMAP) { remapParent = from === S.HOME ? S.HOME : S.PAUSE; Remap.resetState(); }
 }
 
 /** Update screen-specific per-frame logic (parallax, etc.). */
@@ -1015,3 +973,5 @@ export function screenUpdate(dt) {
   if (s === S.HOME) Home.update(dt);
   if (s === S.REMAP) Remap.update(dt);
 }
+
+onTransition((from, to) => { input.cancelCapture(); screenReset(to, from); });

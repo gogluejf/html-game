@@ -29,7 +29,7 @@ function makeFakeCtx() {
 }
 
 const { S, getState, tryTransition } = await import('../state.js');
-const { Home, Select, loadImages, drawScreen, screenOnKey, screenUpdate } = await import('../screens.js');
+const { Home, Select, loadImages, drawScreen, screenOnAction, screenUpdate } = await import('../screens.js');
 const { HEROES } = await import('../heroDefs.js');
 
 let passed = 0;
@@ -63,10 +63,10 @@ ok('Home parallax advances over time', () => {
   assert.ok(Home.parallaxOffset > before, `offset ${before} → ${Home.parallaxOffset}`);
 });
 
-ok('Home.onKey(Enter) transitions HOME→SELECT', () => {
+ok('Home.onAction(Enter) transitions HOME→SELECT', () => {
   // State machine starts at HOME; if already elsewhere, skip.
   if (getState() === S.HOME) {
-    Home.onKey('Enter');
+    Home.onAction('confirm');
     assert.equal(getState(), S.SELECT, 'should be in SELECT after Enter');
   } else {
     console.log('    (skipped — not in HOME state)');
@@ -81,44 +81,44 @@ ok('Select initial focus is -1 (none)', () => {
 
 ok('Select ArrowRight cycles: -1 → 0 → 1 → 0', () => {
   Select.reset();
-  Select.onKey('ArrowRight');
+  Select.onAction('right');
   assert.equal(Select.focus, 0, 'first right → scarlet');
-  Select.onKey('ArrowRight');
+  Select.onAction('right');
   assert.equal(Select.focus, 1, 'second right → balthazar');
-  Select.onKey('ArrowRight');
+  Select.onAction('right');
   assert.equal(Select.focus, 0, 'third right wraps → scarlet');
 });
 
 ok('Select ArrowLeft cycles: -1 → 1 → 0 → 1', () => {
   Select.reset();
-  Select.onKey('ArrowLeft');
+  Select.onAction('left');
   assert.equal(Select.focus, 1, 'first left → balthazar');
-  Select.onKey('ArrowLeft');
+  Select.onAction('left');
   assert.equal(Select.focus, 0, 'second left → scarlet');
-  Select.onKey('ArrowLeft');
+  Select.onAction('left');
   assert.equal(Select.focus, 1, 'third left wraps → balthazar');
 });
 
 ok('Select A/D keys also cycle focus', () => {
   Select.reset();
-  Select.onKey('KeyD');
+  Select.onAction('right');
   assert.equal(Select.focus, 0);
-  Select.onKey('KeyA');
+  Select.onAction('left');
   assert.equal(Select.focus, 1);
 });
 
 ok('Select Enter with no focus does NOT transition', () => {
   Select.reset();
   const before = getState();
-  Select.onKey('Enter');
+  Select.onAction('confirm');
   assert.equal(getState(), before, 'no transition when focus=-1');
 });
 
 ok('Select Enter with focus=0 sets __selectedHero=scarlet', () => {
   Select.reset();
-  Select.onKey('ArrowRight'); // focus scarlet
+  Select.onAction('right'); // focus scarlet
   assert.equal(Select.focus, 0);
-  Select.onKey('Enter');
+  Select.onAction('confirm');
   assert.equal(window.__selectedHero, 'scarlet');
 });
 
@@ -127,10 +127,10 @@ ok('Select Enter with focus=1 sets __selectedHero=balthazar', () => {
   // The state machine allows SELECT→PLAY but not PLAY→SELECT directly.
   // For this test, just verify the hero id logic.
   Select.reset();
-  Select.onKey('ArrowRight');
-  Select.onKey('ArrowRight'); // now focus=1 (balthazar)
+  Select.onAction('right');
+  Select.onAction('right'); // now focus=1 (balthazar)
   window.__selectedHero = undefined;
-  Select.onKey('Enter');
+  Select.onAction('confirm');
   assert.equal(window.__selectedHero, 'balthazar');
 });
 

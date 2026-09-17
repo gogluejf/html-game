@@ -48,21 +48,12 @@ export function dirAngle(dir) {
  * @returns {number} 0..7
  */
 export function aimFromInput(input, facing) {
-  const dx = (input.right ? 1 : 0) - (input.left ? 1 : 0);
-  const dy = (input.down ? 1 : 0) - (input.up ? 1 : 0); // screen y grows downward
-
-  if (dx === 0 && dy === 0) {
-    return facing >= 0 ? 0 : 4; // no aim → shoot in facing direction
-  }
-  // Resolve diagonals to the nearest octant.
-  if (dx > 0 && dy < 0) return 1; // up-right
-  if (dx < 0 && dy < 0) return 3; // up-left
-  if (dx < 0 && dy > 0) return 5; // down-left
-  if (dx > 0 && dy > 0) return 7; // down-right
-  if (dy < 0) return 2;           // up
-  if (dy > 0) return 6;           // down
-  if (dx > 0) return 0;           // right
-  return 4;                       // left
+  // Explicit aim is authoritative; never reconstruct it from movement after locks.
+  const hasAim = Number.isFinite(input.aimX) && Number.isFinite(input.aimY);
+  const dx = hasAim ? input.aimX : (input.right ? 1 : 0) - (input.left ? 1 : 0);
+  const dy = hasAim ? input.aimY : (input.down ? 1 : 0) - (input.up ? 1 : 0);
+  if (Math.hypot(dx, dy) < 1e-6) return facing >= 0 ? 0 : 4;
+  return ((Math.round(-Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8;
 }
 
 export class Projectile extends Entity {

@@ -3,7 +3,7 @@
 // to the screen (dpr-aware, 16:9 letterbox, GAME_SCALE knob).
 
 import { VIEW_W, VIEW_H } from './view.js';
-import { update, gamepadScreenBridge } from './systems/update.js';
+import { update } from './systems/update.js';
 import { render } from './systems/render.js';
 import { loadImages } from './screens.js';
 import { waitForFonts } from './fonts.js';
@@ -76,9 +76,6 @@ function frame(t) {
     update(FIXED_DT);
     accumulator -= FIXED_DT;
   }
-
-  // Gamepad → screen navigation bridge (runs every frame, all states)
-  gamepadScreenBridge();
 
   applyTransform();
   render(ctx);

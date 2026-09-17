@@ -1,7 +1,7 @@
 // Petal Panic — Remap Controls Screen.
 //
 // A settings screen for reassigning gameplay action bindings per input source.
-// Navigation (confirm/back/navigate) is NOT remappable — only gameplay actions.
+// Navigation is semantic and source-agnostic; input.js owns physical capture.
 //
 // Layout:
 //   - Title: "CONTROLS"
@@ -10,18 +10,15 @@
 //   - Action rows with current binding displayed
 //   - Bottom: [RESET TO DEFAULTS] ... [DONE]
 //
-// Remap flow:
-//   1. Navigate to a row (up/down)
-//   2. Confirm → "PRESS ANY KEY/BUTTON..." (pulsing)
-//   3. Press a valid input → captured, auto-advance to next row
-//   4. Back (○/Esc) during capture → cancel, keep old binding
-//   5. Back on list → save + exit
-//
+// Rows/chips navigate directly. Confirm starts continuous capture down rows.
+// Remember the preferred column across single-slot rows. Cancel stops capture;
+// another Back exits Controls. Finish at the last row without wrapping.
+
 // Persistence: localStorage('petal_panic_mapping')
 
 import { VIEW_W, VIEW_H } from './view.js';
 import { drawMarqueeTitle, drawPrompt, roundRect } from './fonts.js';
-import { input } from './input.js';
+import { input, formatBinding, bindingSlots } from './input.js';
 
 const CREAM = '#f5e6c8';
 const PINK = '#ff6ec7';
@@ -30,7 +27,7 @@ const GOLD = '#d4a843';
 // Actions that can be remapped (gameplay layer only).
 const ACTIONS = [
   { id: 'moveUp',       label: 'Move Up' },
-  { id: 'moveDown',     label: 'Move Down' },
+  { id: 'moveDown',     label: 'Down / Crouch' },
   { id: 'moveLeft',     label: 'Move Left' },
   { id: 'moveRight',    label: 'Move Right' },
   { id: 'jump',         label: 'Jump' },
@@ -38,90 +35,67 @@ const ACTIONS = [
   { id: 'melee',        label: 'Melee' },
   { id: 'supermove',    label: 'Supermove' },
   { id: 'switchWeapon', label: 'Switch Weapon' },
-  { id: 'crouch',       label: 'Crouch' },
   { id: 'lockDir',      label: 'Lock Direction' },
   { id: 'lockMove',     label: 'Lock Movement' },
 ];
 
-// Default bindings per source.
-const DEFAULTS = {
-  keyboard: {
-    moveUp: 'KeyW', moveDown: 'KeyS', moveLeft: 'KeyA', moveRight: 'KeyD',
-    jump: 'Space', shoot: 'ControlLeft', melee: 'KeyX', supermove: 'KeyC',
-    switchWeapon: 'KeyV', crouch: 'KeyS', lockDir: 'KeyK', lockMove: 'KeyL',
-  },
-  gamepad: {
-    moveUp: 'axis:-1y', moveDown: 'axis:1y', moveLeft: 'axis:-1x', moveRight: 'axis:1x',
-    jump: 'btn:0', shoot: 'btn:2', melee: 'btn:3', supermove: 'btn:1',
-    switchWeapon: 'btn:4', crouch: 'btn:13', lockDir: 'btn:10', lockMove: 'btn:11',
-  },
-};
-
-// Navigation inputs that CANNOT be assigned as gameplay bindings.
-const RESERVED_KEYBOARD = new Set([
-  'Enter', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-]);
-const RESERVED_GAMEPAD_BUTTONS = new Set([0, 1, 9, 12, 13, 14, 15]);
-
-// Gamepad layout options for the selector.
-const LAYOUT_OPTIONS = ['PS5', 'PS4', 'Xbox', 'Generic'];
-
-const STORAGE_KEY = 'petal_panic_mapping';
+const LAYOUT_OPTIONS = ['Auto', 'PS5', 'PS4', 'Xbox', '8BitDo', 'Generic'];
 
 export const Remap = {
   // State
   tab: 'keyboard',       // 'keyboard' | 'gamepad'
   focus: 0,              // focused row index
-  capturing: false,      // true while waiting for a new binding
-  layoutFocus: 0,        // focused layout option (gamepad tab)
-  editingLayout: false,  // true while cycling layout
+  preferredChip: 0,
+  get chip() {
+    return this.focus >= 0 && this.focus < ACTIONS.length
+      ? Math.min(this.preferredChip, bindingSlots(this.tab, ACTIONS[this.focus].id) - 1) : 0;
+  },
   _flashInvalid: 0,      // timer for "INVALID" flash
   _pulseT: 0,            // pulse timer for "PRESS ANY..." text
 
-  // Current mapping (loaded from storage or defaults)
-  mapping: { keyboard: { ...DEFAULTS.keyboard }, gamepad: { ...DEFAULTS.gamepad } },
-  gamepadLayout: 'PS5',
-
-  /** Load mapping from localStorage or use defaults. */
-  load() {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.keyboard) this.mapping.keyboard = { ...DEFAULTS.keyboard, ...parsed.keyboard };
-        if (parsed.gamepad) this.mapping.gamepad = { ...DEFAULTS.gamepad, ...parsed.gamepad };
-        if (parsed.gamepadLayout) this.gamepadLayout = parsed.gamepadLayout;
-      }
-    } catch (e) { /* corrupted storage, use defaults */ }
-  },
-
-  /** Save mapping to localStorage and apply to input engine. */
-  save() {
-    const data = {
-      keyboard: this.mapping.keyboard,
-      gamepad: this.mapping.gamepad,
-      gamepadLayout: this.gamepadLayout,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    // Apply to input engine (future: re-read source configs)
-  },
-
-  /** Reset to defaults. */
-  reset() {
-    this.mapping.keyboard = { ...DEFAULTS.keyboard };
-    this.mapping.gamepad = { ...DEFAULTS.gamepad };
-    this.gamepadLayout = 'PS5';
-    this.save();
-  },
-
-  /** Reset transient state on screen entry. */
+  get mapping() { return input.mapping; },
+  get gamepadLayout() { return input.gamepadLayout; },
+  get capturing() { return input.capturing; },
+  save() { return input.saveMapping(); },
+  reset() { input.resetMapping(); },
   resetState() {
+    input.cancelCapture();
     this.focus = 0;
-    this.capturing = false;
-    this.editingLayout = false;
+    this.preferredChip = 0;
     this._flashInvalid = 0;
     this._pulseT = 0;
-    this.load();
+  },
+  onCapture(result) {
+    if (result?.status !== 'bound') return;
+    if (!input.setBinding(result.source, ACTIONS[this.focus].id, result.binding, this.chip)) return;
+    if (this.focus < ACTIONS.length - 1) {
+      this.focus++;
+      input.beginCapture(this.tab);
+      this._pulseT = 0;
+    }
+  },
+  onAction(action) {
+    if (this.capturing) return true; // input engine owns capture and cancellation
+    const count = ACTIONS.length + 3;
+    if (action === 'back') { this.save(); return 'exit'; }
+    if (action === 'up' || action === 'down') {
+      // -1 is the device-tab row; no separate navigation mode.
+      this.focus = ((this.focus + 1 + count + 1 + (action === 'up' ? -1 : 1)) % (count + 1)) - 1;
+    } else if (action === 'left' || action === 'right') {
+      if (this.focus === -1) this.tab = action === 'left' ? 'keyboard' : 'gamepad';
+      else if (this.focus < ACTIONS.length && bindingSlots(this.tab, ACTIONS[this.focus].id) === 2) {
+        this.preferredChip = action === 'left' ? 0 : 1;
+      }
+    } else if (action === 'confirm') {
+      if (this.focus === -1) this.focus = 0;
+      else if (this.focus === ACTIONS.length) this.reset();
+      else if (this.focus === ACTIONS.length + 1) { this.save(); return 'exit'; }
+      else if (this.focus === ACTIONS.length + 2) {
+        input.gamepadLayout = LAYOUT_OPTIONS[(LAYOUT_OPTIONS.indexOf(input.gamepadLayout) + 1) % LAYOUT_OPTIONS.length];
+        this.save();
+      } else { input.beginCapture(this.tab); this._pulseT = 0; }
+    }
+    return true;
   },
 
   /** Per-frame update (pulse timers). */
@@ -154,7 +128,7 @@ export const Remap = {
         roundRect(ctx, tx - 45, tabY - 14, 90, 28, 6);
         ctx.fill();
         ctx.strokeStyle = PINK;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = this.focus === -1 ? 3 : 1;
         roundRect(ctx, tx - 45, tabY - 14, 90, 28, 6);
         ctx.stroke();
       }
@@ -176,9 +150,9 @@ export const Remap = {
     }
 
     // Action rows
-    const rowH = 32;
-    const listX = VIEW_W / 2 - 200;
-    const listW = 400;
+    const rowH = 28;
+    const listX = 100;
+    const listW = VIEW_W - 200;
 
     for (let i = 0; i < ACTIONS.length; i++) {
       const y = listStartY + i * rowH;
@@ -203,174 +177,50 @@ export const Remap = {
         align: 'left', color: focused ? CREAM : '#aaa',
       });
 
-      // Binding display
-      const binding = this.mapping[this.tab][action.id];
-      const bindLabel = this.formatBinding(binding);
-
-      if (this.capturing && focused) {
-        // Pulsing "PRESS ANY..." text
-        const pulse = Math.sin(this._pulseT * 6) > 0;
-        drawPrompt(ctx, pulse ? 'PRESS ANY KEY/BUTTON...' : '                    ',
-          listX + listW - 10, y + 2, 13, { align: 'right', color: PINK });
-      } else if (this._flashInvalid > 0 && focused) {
-        drawPrompt(ctx, 'INVALID', listX + listW - 10, y + 2, 13, { align: 'right', color: '#ff4444' });
-      } else {
-        // Keycap chip
-        const chipW = Math.max(40, bindLabel.length * 9 + 12);
-        const chipX = listX + listW - chipW - 10;
-        ctx.save();
-        ctx.fillStyle = '#1a1a2e';
-        roundRect(ctx, chipX, y - 8, chipW, 20, 4);
-        ctx.fill();
-        ctx.strokeStyle = focused ? GOLD : '#555';
-        ctx.lineWidth = 1;
-        roundRect(ctx, chipX, y - 8, chipW, 20, 4);
-        ctx.stroke();
-        drawPrompt(ctx, bindLabel, chipX + chipW / 2, y + 2, 12, { color: focused ? CREAM : '#999' });
-        ctx.restore();
+      // Fixed slots, no extra Add chip on any row.
+      const labels = Array.from({ length: bindingSlots(this.tab, action.id) }, (_, slot) =>
+        this.formatBinding(this.mapping[this.tab][action.id][slot]));
+      const widths = labels.map(label => Math.min(360, Math.max(52, label.length * 9 + 20)));
+      const startX = listX + 200, available = listW - 220;
+      const selected = focused ? this.chip : 0;
+      const offsets = widths.map((_, j) => widths.slice(0, j).reduce((n, w) => n + w + 8, 0));
+      const scroll = Math.max(0, offsets[selected] + widths[selected] - available);
+      ctx.save();
+      ctx.beginPath(); ctx.rect(startX, y - 12, available, 26); ctx.clip();
+      for (let j = 0; j < labels.length; j++) {
+        const chipX = startX + offsets[j] - scroll;
+        const active = focused && j === this.chip;
+        ctx.fillStyle = active ? (this.capturing ? 'rgba(255,110,199,0.5)' : 'rgba(255,110,199,0.15)') : '#1a1a2e';
+        roundRect(ctx, chipX, y - 9, widths[j], 22, 4); ctx.fill();
+        ctx.strokeStyle = active ? PINK : focused ? GOLD : '#555';
+        ctx.lineWidth = active && this.capturing ? 3 : 1; ctx.stroke();
+        // Symbol-friendly system font keeps PS shapes and stick arrows legible.
+        drawPrompt(ctx, labels[j], chipX + widths[j] / 2, y + 2, 15,
+          { color: active ? CREAM : '#bbb', font: 'sans-serif' });
+      }
+      ctx.restore();
+      if (offsets.at(-1) + widths.at(-1) > available) {
+        drawPrompt(ctx, '↔', listX + listW - 8, y + 2, 15, { color: GOLD });
       }
     }
 
     // Bottom bar
-    const botY = VIEW_H - 30;
-    drawPrompt(ctx, 'RESET TO DEFAULTS', VIEW_W / 2 - 150, botY, 13, { color: '#888' });
-    drawPrompt(ctx, 'DONE', VIEW_W / 2 + 150, botY, 13, { color: '#888' });
+    const botY = 448;
+    drawPrompt(ctx, 'RESET TO DEFAULTS', VIEW_W / 2 - 150, botY, 13, { color: this.focus === ACTIONS.length ? PINK : '#888' });
+    drawPrompt(ctx, 'DONE', VIEW_W / 2 + 150, botY, 13, { color: this.focus === ACTIONS.length + 1 ? PINK : '#888' });
+    drawPrompt(ctx, `LAYOUT: ${this.gamepadLayout}`, VIEW_W / 2, botY, 13, { color: this.focus === ACTIONS.length + 2 ? PINK : '#888' });
 
-    // Hint
-    drawPrompt(ctx, '▲▼ Navigate   ✕/ENTER Select   ○/ESC Back', VIEW_W / 2, VIEW_H - 10, 11, { color: '#555' });
+    // Two readable hint lines, separated from actions and footer controls.
+    const hint = this.capturing
+      ? 'Press a binding — automatically captures the next row'
+      : '↑ ↓ Row    ← → Chip    Confirm: start capture sequence';
+    drawPrompt(ctx, hint, VIEW_W / 2, 482, 16, { color: this.capturing ? PINK : CREAM });
+    drawPrompt(ctx, this.capturing ? 'Esc / East button: stop capture • Held inputs must be released'
+      : 'Up from first row: device tabs    Esc / East button: back',
+      VIEW_W / 2, 511, 14, { color: '#aaa' });
   },
 
-  /** Format a binding value for display. */
-  formatBinding(val) {
-    if (!val) return '?';
-    if (this.tab === 'gamepad') {
-      if (val.startsWith('btn:')) {
-        const idx = parseInt(val.slice(4), 10);
-        return this.gamepadButtonLabel(idx);
-      }
-      if (val.startsWith('axis:')) return 'STICK';
-      return val;
-    }
-    // Keyboard: show friendly name
-    const names = {
-      Space: 'SPACE', ControlLeft: 'CTRL', ControlRight: 'CTRL R',
-      ShiftLeft: 'SHIFT', ShiftRight: 'SHIFT R',
-      ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
-      Enter: 'ENTER', Escape: 'ESC', Tab: 'TAB',
-    };
-    if (names[val]) return names[val];
-    if (val.startsWith('Key')) return val.slice(3); // KeyW → W
-    if (val.startsWith('Digit')) return val.slice(5);
-    return val.toUpperCase();
-  },
-
-  /** Get symbol for a gamepad button index based on current layout. */
-  gamepadButtonLabel(idx) {
-    const layouts = {
-      PS5:   ['✕','○','□','△','L1','R1','L2','R2','CREATE','OPTIONS','L3','R3','▲','▼','◀','▶'],
-      PS4:   ['✕','○','□','△','L1','R1','L2','R2','SHARE','OPTIONS','L3','R3','▲','▼','◀','▶'],
-      Xbox:  ['A','B','X','Y','LB','RB','LT','RT','VIEW','MENU','LS','RS','▲','▼','◀','▶'],
-      Generic: Array.from({ length: 16 }, (_, i) => `BTN ${i}`),
-    };
-    const labels = layouts[this.gamepadLayout] || layouts.Generic;
-    return labels[idx] || `BTN ${idx}`;
-  },
-
-  /**
-   * Handle navigation input (from screenOnAction or screenOnKey).
-   * Only accepts input from the ACTIVE TAB's source.
-   * @param {string} code virtual key code
-   */
-  onKey(code) {
-    // Tab switching (left/right on the tab row)
-    if (!this.capturing) {
-      switch (code) {
-        case 'ArrowUp':
-          this.focus = (this.focus + ACTIONS.length - 1) % ACTIONS.length;
-          return true;
-        case 'ArrowDown':
-          this.focus = (this.focus + 1) % ACTIONS.length;
-          return true;
-        case 'ArrowLeft':
-          this.tab = 'keyboard';
-          return true;
-        case 'ArrowRight':
-          this.tab = 'gamepad';
-          return true;
-        case 'Enter':
-        case 'Space':
-          // Start capturing for focused row
-          this.capturing = true;
-          this._pulseT = 0;
-          return true;
-        case 'Escape':
-          // Save and exit
-          this.save();
-          return 'exit';
-      }
-    }
-
-    // While capturing: ONLY accept keyboard input if on keyboard tab.
-    // Gamepad input is handled separately via onGamepadButton().
-    if (this.capturing && this.tab === 'keyboard') {
-      // Escape/Back always cancels capture
-      if (code === 'Escape') {
-        this.capturing = false;
-        return true;
-      }
-      // Enter/confirm cancels too (can't bind confirm)
-      if (code === 'Enter' || code === 'Space') {
-        this._flashInvalid = 0.5;
-        return true;
-      }
-      // Arrows are reserved
-      if (RESERVED_KEYBOARD.has(code)) {
-        this._flashInvalid = 0.5;
-        return true;
-      }
-      // Valid! Assign it.
-      const actionId = ACTIONS[this.focus].id;
-      this.mapping.keyboard[actionId] = code;
-      this.capturing = false;
-      // Auto-advance
-      this.focus = (this.focus + 1) % ACTIONS.length;
-      this.save();
-      return true;
-    }
-
-    // While capturing on gamepad tab: ignore keyboard input entirely.
-    // (onGamepadButton handles it.)
-    if (this.capturing && this.tab === 'gamepad') {
-      return true; // consume but do nothing
-    }
-
-    return false;
-  },
-
-  /**
-   * Handle a raw gamepad button press during capture.
-   * Reserved buttons (nav) cancel capture instead of being assigned.
-   * @param {number} btnIndex
-   * @returns {boolean} true if consumed
-   */
-  onGamepadButton(btnIndex) {
-    if (!this.capturing) return false;
-    if (this.tab !== 'gamepad') return false;
-
-    // Reserved buttons cancel capture (act as 'back')
-    if (RESERVED_GAMEPAD_BUTTONS.has(btnIndex)) {
-      this.capturing = false;
-      // If it's the back button (1), also exit the screen
-      if (btnIndex === 1) return 'exit';
-      return true;
-    }
-
-    // Valid! Assign it.
-    const actionId = ACTIONS[this.focus].id;
-    this.mapping.gamepad[actionId] = `btn:${btnIndex}`;
-    this.capturing = false;
-    this.focus = (this.focus + 1) % ACTIONS.length;
-    this.save();
-    return true;
+  formatBinding(value) {
+    return formatBinding(value, this.tab, this.gamepadLayout === 'Auto' ? input.state.gamepadLayout || 'Generic' : this.gamepadLayout);
   },
 };

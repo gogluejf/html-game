@@ -1,313 +1,298 @@
-// Petal Panic — Input Engine.
-//
-// TWO LAYERS:
-//
-//   Layer 1 — NAVIGATION (fixed, NOT configurable):
-//     Works on all screens. Same buttons always. Never remapped.
-//       Keyboard: Arrows/WASD navigate, Enter confirm, Escape back/pause
-//       Gamepad:  D-pad/stick navigate, ✕(0) confirm, ○(1) back, Options(9) pause
-//     Handled by gamepadScreenBridge() in systems/update.js.
-//     Does NOT go through input.state or the mapping config.
-//
-//   Layer 2 — GAMEPLAY (remappable via config):
-//     Only active in PLAY state. These are what the remap UI edits.
-//       move, aim, jump, shoot, melee, supermove, switchWeapon, crouch,
-//       lockDir, lockMove
-//     Handled by input.poll() → input.state. Read by the update engine.
-//
-// Sources are a LIST. Each source implements { id, poll(raw) → actions }.
-// Add/remove sources without touching the merge logic.
-// All active sources OR together for discrete actions; highest-magnitude
-// wins for axes.
-
-const DEADZONE = 0.2;
-
-function dz(v) { return Math.abs(v) > DEADZONE ? v : 0; }
-function dpad(val) { return Math.abs(val) > 0.5; }
-
-// ---------------------------------------------------------------------------
-// Source: Keyboard
-// ---------------------------------------------------------------------------
-const keyboardSource = {
-  id: 'keyboard',
-  active: true,
-
-  /**
-   * @param {Set<string>} keys currently held key codes
-   * @returns {object} raw actions from keyboard
-   */
-  poll(keys) {
-    const k = (code) => keys.has(code);
-
-    let moveX = 0, moveY = 0;
-    if (k('KeyA') || k('ArrowLeft')) moveX -= 1;
-    if (k('KeyD') || k('ArrowRight')) moveX += 1;
-    if (k('KeyW') || k('ArrowUp')) moveY -= 1;
-    if (k('KeyS') || k('ArrowDown')) moveY += 1;
-
-    // Aim: same keys as movement (WASD + arrows all aim)
-    let aimX = 0, aimY = 0;
-    if (k('KeyA') || k('ArrowLeft')) aimX -= 1;
-    if (k('KeyD') || k('ArrowRight')) aimX += 1;
-    if (k('KeyW') || k('ArrowUp')) aimY -= 1;
-    if (k('KeyS') || k('ArrowDown')) aimY += 1;
-
-    return {
-      moveX, moveY,
-      aimX, aimY,
-      shooting: k('ControlLeft') || k('ControlRight'),
-      jump: k('Space'),
-      melee: k('KeyX'),
-      supermove: k('KeyC'),
-      switchWeapon: k('KeyV'),
-      crouch: k('KeyS'),
-      lockDir: k('KeyK'),
-      lockMove: k('KeyL'),
-    };
+// Physical input boundary. Screens consume nav actions; gameplay consumes state.
+// Keyboard events are queued (including taps between ticks); pads are sampled.
+// A context/capture boundary quarantines held controls until physical release.
+const NAV = ['back', 'pause', 'up', 'down', 'left', 'right', 'confirm', 'retry', 'cont', 'quit', 'remove'];
+const KEY_NAV = { Escape: ['back', 'pause'], KeyP: ['pause'], Enter: ['confirm'], Space: ['confirm'],
+  ArrowUp: ['up'], KeyW: ['up'], ArrowDown: ['down'], KeyS: ['down'],
+  ArrowLeft: ['left'], KeyA: ['left'], ArrowRight: ['right'], KeyD: ['right'],
+  Delete: ['remove'], KeyR: ['retry'], KeyC: ['cont'], KeyQ: ['quit'] };
+const PAD_NAV = { 'btn:2': ['remove'], 'btn:0': ['confirm'], 'btn:1': ['back'], 'btn:9': ['pause'],
+  'btn:12': ['up'], 'btn:13': ['down'], 'btn:14': ['left'], 'btn:15': ['right'],
+  'axis:0:-1': ['left'], 'axis:0:1': ['right'], 'axis:1:-1': ['up'], 'axis:1:1': ['down'] };
+const DISCRETE = ['jump', 'shoot', 'melee', 'supermove', 'switchWeapon', 'lockDir', 'lockMove'];
+export const DEFAULT_MAPPING = {
+  keyboard: {
+    moveUp: ['KeyW', 'ArrowUp'], moveDown: ['KeyS', 'ArrowDown'],
+    moveLeft: ['KeyA', 'ArrowLeft'], moveRight: ['KeyD', 'ArrowRight'],
+    jump: ['Space'], shoot: ['ControlLeft'], melee: ['KeyX'], supermove: ['KeyC'],
+    switchWeapon: ['KeyV'], lockDir: ['KeyK'], lockMove: ['KeyL'],
   },
-
-  /** Display label for a gameplay action. */
-  label(action) {
-    const labels = {
-      jump: 'SPACE', melee: 'X', supermove: 'C', shoot: 'CTRL',
-      switchWeapon: 'V', lockDir: 'K', lockMove: 'L',
-      crouch: 'S', move: 'WASD', aim: 'WASD/←↑→↓',
-    };
-    return labels[action] || '?';
+  gamepad: {
+    moveUp: ['axis:1:-1', 'btn:12'], moveDown: ['axis:1:1', 'btn:13'],
+    moveLeft: ['axis:0:-1', 'btn:14'], moveRight: ['axis:0:1', 'btn:15'],
+    jump: ['btn:0'], shoot: ['btn:2'], melee: ['btn:3'], supermove: ['btn:1', 'btn:5'],
+    switchWeapon: ['btn:4'], lockDir: ['btn:6'], lockMove: ['btn:7'],
   },
 };
-
-// ---------------------------------------------------------------------------
-// Source: Gamepad (auto-detect layout)
-// ---------------------------------------------------------------------------
-
-/** Known layouts: button index → symbol name. */
-const PAD_LAYOUTS = {
-  ps5: {
-    match: (pad) => pad.vendor === 0x054c && pad.product === 0x0ce6,
-    name: 'PS5',
-    buttons: {
-      a: 0, b: 1, x: 2, y: 3,
-      lb: 4, rb: 5, l2: 6, r2: 7,
-      create: 8, options: 9, l3: 10, r3: 11,
-      dpadUp: 12, dpadDown: 13, dpadLeft: 14, dpadRight: 15,
-    },
-    symbols: { a: '✕', b: '○', x: '□', y: '△', lb: 'L1', rb: 'R1', l2: 'L2', r2: 'R2', options: 'OPTIONS', l3: 'L3', r3: 'R3' },
-  },
-  ps4: {
-    match: (pad) => pad.vendor === 0x054c && (pad.product === 0x0908 || pad.product === 0x09cc),
-    name: 'PS4',
-    buttons: {
-      a: 0, b: 1, x: 2, y: 3,
-      lb: 4, rb: 5, l2: 6, r2: 7,
-      share: 8, options: 9, l3: 10, r3: 11,
-      dpadUp: 12, dpadDown: 13, dpadLeft: 14, dpadRight: 15,
-    },
-    symbols: { a: '✕', b: '○', x: '□', y: '△', lb: 'L1', rb: 'R1', l2: 'L2', r2: 'R2', options: 'OPTIONS', l3: 'L3', r3: 'R3' },
-  },
-  xbox: {
-    match: (pad) => pad.vendor === 0x045e,
-    name: 'Xbox',
-    buttons: {
-      a: 0, b: 1, x: 2, y: 3,
-      lb: 4, rb: 5, l2: 6, r2: 7,
-      back: 8, start: 9, l3: 10, r3: 11,
-      dpadUp: 12, dpadDown: 13, dpadLeft: 14, dpadRight: 15,
-    },
-    symbols: { a: 'A', b: 'B', x: 'X', y: 'Y', lb: 'LB', rb: 'RB', l2: 'LT', r2: 'RT', start: 'START', l3: 'LS', r3: 'RS' },
-  },
-  generic: {
-    match: () => true, // fallback
-    name: 'Generic',
-    buttons: {
-      a: 0, b: 1, x: 2, y: 3,
-      lb: 4, rb: 5, l2: 6, r2: 7,
-      back: 8, start: 9, l3: 10, r3: 11,
-      dpadUp: 12, dpadDown: 13, dpadLeft: 14, dpadRight: 15,
-    },
-    symbols: { a: 'BTN 0', b: 'BTN 1', x: 'BTN 2', y: 'BTN 3', lb: 'BTN 4', rb: 'BTN 5', l2: 'BTN 6', r2: 'BTN 7', start: 'BTN 9', l3: 'BTN 10', r3: 'BTN 11' },
-  },
-};
-
-let detectedLayout = null;
-
-function detectLayout(pad) {
-  if (!pad) return null;
-  for (const layout of [PAD_LAYOUTS.ps5, PAD_LAYOUTS.ps4, PAD_LAYOUTS.xbox]) {
-    if (layout.match(pad)) return layout;
+export const bindingSlots = (source, action) => action.startsWith('move') || (source === 'gamepad' && action === 'supermove') ? 2 : 1;
+const STORAGE_KEY = 'petal_panic_mapping';
+const cloneDefaults = () => JSON.parse(JSON.stringify(DEFAULT_MAPPING));
+// Only a complete exact old-default snapshot is safe to upgrade. Partial or
+// customized saves (including singleton trigger locks) retain every binding.
+const oldDefaults = cloneDefaults();
+oldDefaults.keyboard.shoot = ['ControlLeft', 'ControlRight'];
+oldDefaults.keyboard.crouch = ['KeyS', 'ArrowDown'];
+Object.assign(oldDefaults.gamepad, { shoot: ['btn:2', 'btn:7'], supermove: ['btn:1'],
+  crouch: ['btn:13'], lockDir: ['btn:10'], lockMove: ['btn:11'] });
+const oldSingletonDefaults = JSON.parse(JSON.stringify(oldDefaults));
+for (const source of ['keyboard', 'gamepad']) for (const action of Object.keys(oldSingletonDefaults[source])) {
+  oldSingletonDefaults[source][action] = oldSingletonDefaults[source][action].slice(0, 1);
+}
+const legacyAxes = { 'axis:-1x': 'axis:0:-1', 'axis:1x': 'axis:0:1', 'axis:-1y': 'axis:1:-1', 'axis:1y': 'axis:1:1' };
+const validBinding = (source, b) => typeof b === 'string' && (source === 'keyboard'
+  ? /^(Key[A-Z]|Digit[0-9]|Arrow(Up|Down|Left|Right)|Space|Enter|Escape|Tab|Backspace|Delete|Insert|Home|End|PageUp|PageDown|Control(Left|Right)|Shift(Left|Right)|Alt(Left|Right)|Meta(Left|Right)|Minus|Equal|BracketLeft|BracketRight|Backslash|Semicolon|Quote|Comma|Period|Slash|Backquote|Numpad\w+)$/.test(b)
+  : /^(btn:\d+|axis:\d+:(-1|1))$/.test(b));
+const blank = () => ({ moveX: 0, moveY: 0, aimX: 0, aimY: 0, aimAngle: 0,
+  shooting: false, jump: false, melee: false, supermove: false, switchWeapon: false,
+  crouch: false, lockDir: false, lockMove: false, pause: false });
+function layoutOf(pad) {
+  const id = pad.id || '';
+  if (/dualsense|0ce6/i.test(id)) return 'PS5';
+  if (/054c|sony|playstation|dualshock/i.test(id)) return 'PS4';
+  if (/8bitdo/i.test(id)) return '8BitDo';
+  if (/045e|xbox|microsoft/i.test(id)) return 'Xbox';
+  return 'Generic';
+}
+export function formatBinding(binding, source = 'keyboard', layout = 'Generic') {
+  if (Array.isArray(binding)) return binding.map(b => formatBinding(b, source, layout)).join(' / ');
+  if (!binding) return '—';
+  if (source === 'gamepad') {
+    if (binding.startsWith('axis:')) {
+      const [, axis, sign] = binding.split(':');
+      if (Number(axis) < 4) return `${Number(axis) < 2 ? 'LS' : 'RS'} ${Number(axis) % 2 ? (sign === '-1' ? '↑' : '↓') : (sign === '-1' ? '←' : '→')}`;
+      return `AXIS ${axis} ${sign === '-1' ? '−' : '+'}`;
+    }
+    const i = Number(binding.slice(4));
+    const labels = layout.startsWith('PS') ? ['✕','○','□','△','L1','R1','L2','R2','SHARE','OPTIONS','L3','R3','▲','▼','◀','▶']
+      : ['A','B','X','Y','LB','RB','LT','RT','VIEW','MENU','LS','RS','▲','▼','◀','▶'];
+    return layout === 'Generic' ? `BTN ${i}` : labels[i] || `BTN ${i}`;
   }
-  return PAD_LAYOUTS.generic;
+  return ({ Space: 'SPACE', ControlLeft: 'CTRL', ControlRight: 'CTRL R', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' })[binding]
+    || binding.replace(/^Key|^Digit/, '').toUpperCase();
 }
 
-const gamepadSource = {
-  id: 'gamepad',
-  active: true,
-  connected: false,
-  layout: null,
-
-  /**
-   * @returns {object|null} raw actions from gamepad, or null if not connected
-   */
-  poll() {
-    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-    const pad = pads && pads[0] && pads[0].connected ? pads[0] : null;
-    this.connected = !!pad;
-    if (!pad) return null;
-
-    this.layout = detectLayout(pad);
-    const btn = (i) => !!(pad.buttons[i] && pad.buttons[i].pressed);
-    const B = this.layout.buttons;
-
-    // Sticks
-    let moveX = dz(pad.axes[0] || 0);
-    let moveY = dz(pad.axes[1] || 0);
-    let aimX = dz(pad.axes[2] || 0);
-    let aimY = dz(pad.axes[3] || 0);
-
-    // D-pad fallback for movement
-    if (moveX === 0) {
-      if (btn(B.dpadLeft)) moveX = -1;
-      if (btn(B.dpadRight)) moveX = 1;
-    }
-    if (moveY === 0) {
-      if (btn(B.dpadUp)) moveY = -1;
-      if (btn(B.dpadDown)) moveY = 1;
-    }
-
-    // Actions (level-triggered: true while held) — GAMEPLAY ONLY
-    return {
-      moveX, moveY,
-      aimX, aimY,
-      shooting: btn(B.x) || btn(B.r2),   // Square / X / RT
-      jump: btn(B.a),                     // Cross / A
-      melee: btn(B.y),                    // Triangle / Y
-      supermove: btn(B.b),                // Circle / B
-      switchWeapon: btn(B.lb),            // L1 / LB
-      crouch: btn(B.dpadDown) ? true : false, // D-pad down
-      lockDir: btn(B.l3),                 // L3 / LS
-      lockMove: btn(B.r3),                // R3 / RS
-    };
-  },
-
-  /** Display label for a gameplay action based on detected layout. */
-  label(action) {
-    if (!this.layout) return '';
-    const sym = this.layout.symbols;
-    const map = {
-      jump: sym.a, melee: sym.y, supermove: sym.b, shoot: sym.x,
-      switchWeapon: sym.lb, lockDir: sym.l3, lockMove: sym.r3,
-      crouch: '▼', move: 'STICK', aim: 'STICK',
-    };
-    return map[action] || '?';
-  },
-};
-
-// ---------------------------------------------------------------------------
-// Input Engine (merges all active sources)
-// ---------------------------------------------------------------------------
-
-export const input = {
-  // --- The source list (add/remove here) ------------------------------------
-  sources: [keyboardSource, gamepadSource],
-
-  // --- Public state (GAMEPLAY LAYER ONLY — navigation is separate) -----------
-  state: {
-    moveX: 0, moveY: 0,
-    aimX: 0, aimY: 0, aimAngle: 0,
-    shooting: false,
-    jump: false, melee: false, supermove: false,
-    switchWeapon: false, crouch: false,
-    lockDir: false, lockMove: false,
-    // Source info
-    activeSources: [],     // which sources contributed this tick
-    gamepadConnected: false,
-    gamepadLayout: null,   // 'PS5' | 'PS4' | 'Xbox' | 'Generic'
-  },
-
-  // --- Internal --------------------------------------------------------------
-  _lockDirAngle: 0,
-
-  /**
-   * Call once per tick. Polls all active sources, merges into state.
-   * @param {Set<string>} keys current held key codes (from window listeners)
-   */
-  poll(keys) {
-    const s = this.state;
-    const results = [];
-
-    for (const src of this.sources) {
-      if (!src.active) continue;
-      const raw = src.poll
-        ? (src.id === 'keyboard' ? src.poll(keys) : src.poll())
-        : null;
-      if (raw) results.push({ src, raw });
-    }
-
-    // Track which sources are active
-    s.activeSources = results.map(r => r.src.id);
-    s.gamepadConnected = gamepadSource.connected;
-    s.gamepadLayout = gamepadSource.layout ? gamepadSource.layout.name : null;
-
-    // --- Merge axes: highest magnitude wins ---------------------------------
-    s.moveX = 0; s.moveY = 0; s.aimX = 0; s.aimY = 0;
-    for (const { raw } of results) {
-      if (Math.abs(raw.moveX) > Math.abs(s.moveX)) s.moveX = raw.moveX;
-      if (Math.abs(raw.moveY) > Math.abs(s.moveY)) s.moveY = raw.moveY;
-      if (Math.abs(raw.aimX) > Math.abs(s.aimX)) s.aimX = raw.aimX;
-      if (Math.abs(raw.aimY) > Math.abs(s.aimY)) s.aimY = raw.aimY;
-    }
-
-    // --- Merge discrete actions: OR all sources (GAMEPLAY ONLY) -------------
-    s.shooting = false; s.jump = false; s.melee = false;
-    s.supermove = false; s.switchWeapon = false; s.crouch = false;
-    s.lockDir = false; s.lockMove = false;
-
-    for (const { raw } of results) {
-      s.shooting ||= raw.shooting;
-      s.jump ||= raw.jump;
-      s.melee ||= raw.melee;
-      s.supermove ||= raw.supermove;
-      s.switchWeapon ||= raw.switchWeapon;
-      s.crouch ||= raw.crouch;
-      s.lockDir ||= raw.lockDir;
-      s.lockMove ||= raw.lockMove;
-    }
-
-    // --- Lock logic ----------------------------------------------------------
-    if (s.lockDir) {
-      if (s.aimX !== 0 || s.aimY !== 0) {
-        this._lockDirAngle = Math.atan2(s.aimY, s.aimX);
+export function createInput({ target = globalThis.window, document = globalThis.document,
+  getGamepads = () => globalThis.navigator?.getGamepads?.() || [],
+  storage = () => globalThis.localStorage } = {}) {
+  const keys = new Set(), queue = [], physical = new Map(), blocked = new Set();
+  let previousNav = new Set(), previousGame = new Set(), capture = null;
+  let lastAim = null, lockedAngle = null, suspended = false, quarantinePads = false;
+  const pendingReleases = new Set();
+  const listeners = [];
+  const listen = (obj, name, fn) => { obj?.addEventListener?.(name, fn); listeners.push(() => obj?.removeEventListener?.(name, fn)); };
+  const engine = {
+    state: blank(), nav: { held: {}, pressed: [], released: [] }, captureResult: null,
+    mapping: cloneDefaults(), gamepadLayout: 'Auto', source: 'keyboard', generation: 0,
+    loadMapping() {
+      this.mapping = cloneDefaults(); this.gamepadLayout = 'Auto';
+      try {
+        const data = JSON.parse(storage()?.getItem(STORAGE_KEY) || 'null');
+        if (!data || typeof data !== 'object') return;
+        const untouched = !data.version && [oldDefaults, oldSingletonDefaults].some(defaults =>
+          ['keyboard', 'gamepad'].every(source =>
+            Object.keys(data[source] || {}).length === Object.keys(defaults[source]).length &&
+            Object.entries(defaults[source]).every(([action, expected]) => {
+              const saved = data[source]?.[action];
+              const values = (Array.isArray(saved) ? saved : [saved]).map(b => legacyAxes[b] || b);
+              return JSON.stringify(values) === JSON.stringify(expected);
+            })));
+        for (const source of ['keyboard', 'gamepad']) for (const action of Object.keys(DEFAULT_MAPPING[source])) {
+          const saved = data[source]?.[action];
+          if (untouched || saved === undefined) continue;
+          const values = (Array.isArray(saved) ? saved : [saved]).map(b => legacyAxes[b] || b);
+          if (values.every(b => validBinding(source, b))) {
+            const slots = bindingSlots(source, action);
+            this.mapping[source][action] = values.slice(0, slots);
+            // Older editors replaced an entire direction with one binding.
+            // Restore missing default alternatives once, keeping the first choice.
+            if ((data.version || 0) < 3 && slots === 2) {
+              for (const binding of DEFAULT_MAPPING[source][action]) {
+                if (this.mapping[source][action].length >= slots) break;
+                if (!this.mapping[source][action].includes(binding)) this.mapping[source][action].push(binding);
+              }
+            }
+          }
+        }
+        if (['Auto','PS5','PS4','Xbox','8BitDo','Generic'].includes(data.gamepadLayout)) this.gamepadLayout = data.gamepadLayout;
+      } catch { /* unavailable/corrupt storage: defaults remain usable */ }
+    },
+    saveMapping() {
+      try { storage()?.setItem(STORAGE_KEY, JSON.stringify({ ...this.mapping, version: 3, gamepadLayout: this.gamepadLayout })); return true; }
+      catch { return false; } // bindings apply in memory even when storage is blocked
+    },
+    // Omitted index replaces the first chip, never its siblings; length appends.
+    setBinding(source, action, binding, index = 0) {
+      const bindings = this.mapping[source]?.[action];
+      if (!bindings || !validBinding(source, binding) || !Number.isInteger(index)
+        || index < 0 || index > bindings.length || index >= bindingSlots(source, action)) return false;
+      bindings[index] = binding;
+      this.saveMapping(); return true;
+    },
+    addBinding(source, action, binding) {
+      return this.setBinding(source, action, binding, this.mapping[source]?.[action]?.length);
+    },
+    removeBinding(source, action, index) {
+      const bindings = this.mapping[source]?.[action];
+      if (!bindings || !Number.isInteger(index) || index < 0 || index >= bindings.length) return false;
+      bindings.splice(index, 1); this.saveMapping(); return true;
+    },
+    resetMapping() { this.mapping = cloneDefaults(); this.gamepadLayout = 'Auto'; this.saveMapping(); },
+    buttonLabel(action, source = this.source) {
+      if (action === 'crouch') action = 'moveDown';
+      if (action === 'pause') return source === 'keyboard' ? 'ESC' : formatBinding('btn:9', source, this.state.gamepadLayout || 'Generic');
+      if (action === 'aim' && source === 'gamepad') return 'RIGHT STICK';
+      if (action === 'move' || action === 'aim') return ['moveUp','moveDown','moveLeft','moveRight'].map(a => this.buttonLabel(a, source)).join(' ');
+      return formatBinding(this.mapping[source]?.[action], source, this.gamepadLayout === 'Auto' ? this.state.gamepadLayout || 'Generic' : this.gamepadLayout);
+    },
+    // Call on every state transition and capture boundary. No time debounce.
+    barrier() {
+      for (const id of physical.keys()) blocked.add(id);
+      for (const key of keys) blocked.add(`k:${key}`);
+      queue.length = 0; this.generation++;
+      this.nav = { held: {}, pressed: [], released: [...previousNav] };
+      for (const action of previousNav) pendingReleases.add(action);
+      previousNav.clear(); previousGame.clear(); this.state = blank(); lockedAngle = null;
+    },
+    reset() { lastAim = null; this.barrier(); },
+    beginCapture(source) { this.barrier(); capture = source; this.captureResult = null; },
+    cancelCapture() { capture = null; this.captureResult = null; this.barrier(); },
+    get capturing() { return capture !== null; },
+    poll({ facing = 1 } = {}) {
+      const pressed = new Set(), released = new Set(pendingReleases), gamePressed = new Set(), candidates = [];
+      pendingReleases.clear();
+      const captureAtStart = capture;
+      const navNow = () => {
+        const values = new Set();
+        for (const [id, p] of physical) if (!blocked.has(id) && p.value > 0.5) {
+          for (const action of (p.source === 'keyboard' ? KEY_NAV[p.binding] : PAD_NAV[p.binding]) || []) values.add(action);
+        }
+        return values;
+      };
+      const gameNow = () => {
+        const values = new Set();
+        for (const [id, p] of physical) if (!blocked.has(id) && p.value > 0.2) {
+          for (const action of DISCRETE) if (this.mapping[p.source][action].includes(p.binding)) values.add(action);
+        }
+        return values;
+      };
+      const observe = () => {
+        const n = navNow(), g = gameNow();
+        for (const a of n) if (!previousNav.has(a)) pressed.add(a);
+        for (const a of previousNav) if (!n.has(a)) released.add(a);
+        for (const a of g) if (!previousGame.has(a)) gamePressed.add(a);
+        previousNav = n; previousGame = g;
+      };
+      const change = (id, p) => {
+        const old = physical.get(id);
+        if (!p || p.value === 0) { physical.delete(id); blocked.delete(id); }
+        else {
+          physical.set(id, p);
+          if (p.value > 0.5 && (!old || old.value <= 0.5) && !blocked.has(id)) {
+            candidates.push(p); this.source = p.source;
+          }
+        }
+      };
+      for (const { code, down } of queue.splice(0)) {
+        change(`k:${code}`, down ? { source: 'keyboard', binding: code, value: 1 } : null);
+        observe();
       }
-      s.aimX = Math.cos(this._lockDirAngle);
-      s.aimY = Math.sin(this._lockDirAngle);
-      s.aimAngle = this._lockDirAngle;
-    } else {
-      s.aimAngle = Math.atan2(s.aimY, s.aimX);
-    }
+      const padPhysical = new Map(); let layout = null, connected = false;
+      if (!suspended) for (const pad of getGamepads() || []) {
+        if (!pad || pad.connected === false) continue;
+        connected = true; layout ||= layoutOf(pad);
+        const prefix = `p:${pad.index ?? 0}:${pad.id || ''}:`;
+        pad.buttons.forEach((b, i) => {
+          if (b.pressed || b.value > 0.5) padPhysical.set(prefix + `btn:${i}`, { source: 'gamepad', binding: `btn:${i}`, value: 1 });
+        });
+        pad.axes.forEach((v, i) => {
+          if (Math.abs(v) > 0.2) { const binding = `axis:${i}:${Math.sign(v)}`;
+            padPhysical.set(prefix + binding, { source: 'gamepad', binding, value: Math.abs(v) }); }
+        });
+      }
+      for (const [id, p] of physical) if (p.source === 'gamepad' && !padPhysical.has(id)) change(id, null);
+      for (const [id, p] of padPhysical) {
+        if (quarantinePads) blocked.add(id);
+        change(id, p);
+      }
+      if (!suspended) quarantinePads = false;
+      observe();
+      this.captureResult = null;
+      if (captureAtStart) {
+        // Back is universal, regardless of capture target or simultaneous binding.
+        if (pressed.has('back')) this.captureResult = { status: 'cancelled' };
+        else {
+          const p = candidates.find(p => p.source === captureAtStart && validBinding(p.source, p.binding)
+            && !(p.source === 'keyboard' ? ['Escape','KeyP'].includes(p.binding) : p.binding === 'btn:9'));
+          if (p) this.captureResult = { status: 'bound', source: p.source, binding: p.binding };
+        }
+        if (this.captureResult) { capture = null; this.barrier(); }
+        this.nav = { held: {}, pressed: [], released: [] }; this.state = blank();
+        return this.state;
+      }
+      this.nav = { held: Object.fromEntries([...previousNav].map(a => [a, true])),
+        pressed: NAV.filter(a => pressed.has(a)), released: NAV.filter(a => released.has(a)) };
+      const s = blank();
+      const amount = (source, action) => {
+        let value = 0;
+        for (const [id, p] of physical) if (!blocked.has(id) && p.source === source && this.mapping[source][action].includes(p.binding)) value = Math.max(value, p.value);
+        return value;
+      };
+      const merge = (a, b) => Math.abs(b) > Math.abs(a) ? b : a;
+      for (const source of ['keyboard','gamepad']) {
+        s.crouch ||= amount(source, 'moveDown') > 0.2;
+        const x = amount(source, 'moveRight') - amount(source, 'moveLeft');
+        const y = amount(source, 'moveDown') - amount(source, 'moveUp');
+        s.moveX = merge(s.moveX, x); s.moveY = merge(s.moveY, y);
 
-    if (s.lockMove) {
-      s.moveX = 0;
-      s.moveY = 0;
-    }
-  },
-
-  /**
-   * Get display label for an action. Prefers gamepad label if connected,
-   * falls back to keyboard.
-   * @param {string} action
-   * @returns {string}
-   */
-  buttonLabel(action) {
-    if (gamepadSource.connected && gamepadSource.layout) {
-      return gamepadSource.label(action);
-    }
-    return keyboardSource.label(action);
-  },
-
-  /**
-   * Reset internal state (call on game restart / hero swap).
-   */
-  reset() {
-    this._lockDirAngle = 0;
-  },
-};
+      }
+      // Movement directions aim on every device, before movement is locked.
+      s.aimX = s.moveX; s.aimY = s.moveY;
+      let stickAimX = 0, stickAimY = 0;
+      for (const [id, p] of physical) if (!blocked.has(id) && p.source === 'gamepad') {
+        const [, axis, sign] = p.binding.split(':');
+        if (p.binding.startsWith('axis:') && (axis === '2' || axis === '3')) {
+          if (axis === '2') stickAimX = merge(stickAimX, p.value * Number(sign));
+          else stickAimY = merge(stickAimY, p.value * Number(sign));
+        }
+      }
+      if (stickAimX || stickAimY) { s.aimX = stickAimX; s.aimY = stickAimY; }
+      // Jump remains held for variable-height jumping; short taps get one tick.
+      for (const a of DISCRETE) s[a === 'shoot' ? 'shooting' : a] = previousGame.has(a) || gamePressed.has(a);
+      for (const a of ['melee','supermove','switchWeapon']) s[a] = gamePressed.has(a);
+      if (s.lockDir) {
+        if (lockedAngle === null) lockedAngle = lastAim ?? ((s.aimX || s.aimY)
+          ? Math.atan2(s.aimY, s.aimX) : (facing < 0 ? Math.PI : 0));
+        s.aimX = Math.cos(lockedAngle); s.aimY = Math.sin(lockedAngle); s.aimAngle = lockedAngle;
+      } else {
+        lockedAngle = null;
+        if (s.aimX || s.aimY) lastAim = Math.atan2(s.aimY, s.aimX);
+        s.aimAngle = lastAim ?? (facing < 0 ? Math.PI : 0);
+      }
+      if (s.lockMove) s.moveX = s.moveY = 0;
+      s.pause = pressed.has('pause'); s.source = this.source;
+      s.gamepadConnected = connected; s.gamepadLayout = layout;
+      this.state = s; return s;
+    },
+    destroy() { for (const off of listeners) off(); },
+  };
+  listen(target, 'keydown', e => {
+    if (/^F\d+$/.test(e.code)) return; // debug owns function keys
+    if (KEY_NAV[e.code] || capture || Object.values(engine.mapping.keyboard).some(v => v.includes(e.code))) e.preventDefault?.();
+    if (e.repeat || keys.has(e.code) || suspended) return;
+    keys.add(e.code); queue.push({ code: e.code, down: true });
+  });
+  listen(target, 'keyup', e => { keys.delete(e.code); queue.push({ code: e.code, down: false }); });
+  const release = () => {
+    engine.barrier(); keys.clear(); physical.clear(); blocked.clear();
+    if (capture) { capture = null; engine.captureResult = { status: 'cancelled' }; }
+    suspended = true; quarantinePads = true;
+  };
+  listen(target, 'blur', release);
+  listen(target, 'focus', () => { suspended = false; });
+  listen(document, 'visibilitychange', () => { if (document.hidden) release(); else suspended = false; });
+  listen(target, 'gamepaddisconnected', e => {
+    for (const id of physical.keys()) if (id.startsWith(`p:${e.gamepad.index}:`)) { physical.delete(id); blocked.delete(id); }
+  });
+  engine.loadMapping(); return engine;
+}
+export const input = createInput();

@@ -20,8 +20,7 @@ import { projectilePool, specialPool, aimFromInput, dirAngle } from '../projecti
 import { damage } from '../damage.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../hitbox.js';
 import { S, getState, STATE_NAMES, tryTransition, onTransition } from '../state.js';
-import { screenOnKey, screenOnAction, screenOnKeyUp, screenReset } from '../screens.js';
-import { Remap } from '../remap.js';
+import { dispatchScreenInput } from '../screens.js';
 import { Jester } from '../jester.js';
 import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
 import { Violetta, VIOLETTA_DEF } from '../violetta.js';
@@ -236,51 +235,6 @@ function spawnFloatText(x, y, text, color) {
 }
 
 // --- Input -------------------------------------------------------------------
-const keys = new Set();
-
-// State-machine input (Milestone 8 / Task 8.2): HOME/SELECT/OVER/PAUSE/WIN are
-// all delegated to screens.js; update.js injects the game-reset closures
-// (retry/continue/quit) so that logic stays here. Esc/P toggles pause during
-// PLAY.
-function handleStateKeys(e) {
-  // Debounce: ignore input for 200ms after any state transition.
-  if (performance.now() - _stateChangeTime < INPUT_DEBOUNCE) return;
-
-  const s = getState();
-
-  // --- Home & Select screens handle their own keys (Milestone 8) ------------
-  if (s === S.HOME || s === S.SELECT) {
-    screenOnKey(e.code, undefined, undefined, e.repeat);
-    return;
-  }
-
-  // --- Pause toggle while playing (design §20: Esc or P enters/exits) -------
-  if (s === S.PLAY && (e.code === 'Escape' || e.code === 'KeyP')) {
-    if (tryTransition(S.PAUSE)) console.log('[state] PLAY → PAUSE');
-    return;
-  }
-
-  // --- Game Over / Pause / Win options (Task 8.2) ----------------------------
-  // The screens own key interpretation; we supply the level-reset actions.
-  if (s === S.OVER || s === S.PAUSE || s === S.WIN) {
-    const hero = getHero();
-    const quit = () => {
-      if (tryTransition(S.HOME)) {
-        console.log(`[state] ${STATE_NAMES[s]} → ${STATE_NAMES[S.HOME]} (quit)`);
-      }
-    };
-    const actions = {
-      retry: () => retryFromGameOver(),   // OVER + PAUSE: restart at level start
-      cont: () => continueFromGameOver(), // OVER: spend coins, respawn at checkpoint
-      playAgain: () => {                  // WIN: back to hero select
-        if (tryTransition(S.SELECT)) console.log('[state] WIN → SELECT (play again)');
-      },
-      quit,
-    };
-    screenOnKey(e.code, hero, actions);
-  }
-}
-
 /**
  * Task 5.2 — Retry from game over: restart at the first checkpoint (1-1) or
  * level start, full energy, lives reset to 3, continues reset. Checkpoints do
@@ -394,119 +348,22 @@ function handleDebugToggle(e, source) {
   }
 }
 
+// Debug is intentionally outside normal navigation/gameplay bindings.
 window.addEventListener('keydown', (e) => {
-  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','ControlLeft','ControlRight','KeyX','KeyC','KeyV','F1','F2','F3'].includes(e.code)) e.preventDefault();
-  keys.add(e.code);
-  if (e.code === 'F1' || e.code === 'F2') {
-    e.preventDefault();
-    handleDebugToggle(e, 'debug');
-    return;
-  }
-  handleDebugKeys(e); // no-op unless Debug.enabled
-  // Map keyboard keys to nav actions and emit through unified navEvent.
-  const navMap = {
-    Enter: 'confirm', Space: 'confirm',
-    Escape: 'back',
-    ArrowUp: 'up', KeyW: 'up',
-    ArrowDown: 'down', KeyS: 'down',
-    ArrowLeft: 'left', KeyA: 'left',
-    ArrowRight: 'right', KeyD: 'right',
-  };
-  const action = navMap[e.code];
-  if (action && !e.repeat) navEvent(action);
+  if (input.capturing) return;
+  if (['F1', 'F2', 'F3'].includes(e.code)) e.preventDefault();
+  if (e.code === 'F1' || e.code === 'F2') { handleDebugToggle(e, 'debug'); return; }
+  handleDebugKeys(e);
 });
-window.addEventListener('keyup', (e) => { keys.delete(e.code); screenOnKeyUp(e.code); });
-window.addEventListener('blur', () => { keys.clear(); screenOnKeyUp('ArrowLeft'); screenOnKeyUp('ArrowRight'); });
 
-// ===========================================================================
-// Unified Navigation Input
-// ===========================================================================
-// ONE code path for ALL sources (keyboard, gamepad, future: touch).
-// Sources emit "action" events. The nav handler applies debounce and routes.
-// No duplicate edge detection. No parallel paths.
-// ===========================================================================
-
-let _stateChangeTime = 0;
-const NAV_DEBOUNCE = 150; // ms — ignore nav input this long after a state change
-onTransition(() => { _stateChangeTime = performance.now(); });
-
-/**
- * Emit a navigation event. Called by keyboard keydown AND gamepad poll.
- * @param {string} action 'confirm' | 'back' | 'left' | 'right' | 'up' | 'down'
- */
-function navEvent(action) {
-  // Debounce ONLY 'back' (prevents hold-○/hold-Escape spam toggling menus).
-  // Confirm and navigate are NOT debounced — they should respond instantly.
-  // Edge detection prevents hold-spam. No debounce needed.
-  screenOnAction(action);
-}
-
-// --- Gamepad poll (called every frame from main loop) -----------------------
-// Emits nav events using the SAME navEvent() as keyboard. One path.
-let _gpNavPrev = {}; // track previous button states for edge detection
-
-export function gamepadScreenBridge() {
-  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-  const pad = pads && pads[0] && pads[0].connected ? pads[0] : null;
-  if (!pad) return;
-
-  const s = getState();
-  const btn = (i) => !!(pad.buttons[i] && pad.buttons[i].pressed);
-
-  // Edge detection: only fire on press (was released last frame, pressed now)
-  const edge = (i) => {
-    const pressed = btn(i);
-    const wasPressed = _gpNavPrev[i] || false;
-    const isEdge = pressed && !wasPressed;
-    _gpNavPrev[i] = pressed;
-    return isEdge;
-  };
-
-  // Pause/Confirm: Options/Start (btn 9) — ALWAYS 'confirm'
-  if (edge(9)) navEvent('confirm');
-
-  // Only handle confirm/navigate when NOT in PLAY
-  if (s === S.PLAY) return;
-
-  // REMAP state: pass raw gamepad buttons to Remap ONLY while capturing.
-  // Navigation (up/down/left/right/confirm/back) goes through navEvent normally.
-  if (s === S.REMAP && Remap.capturing) {
-    // Back button (○/btn 1) cancels capture, stays on remap screen
-    if (edge(1)) {
-      Remap.capturing = false;
-      return;
-    }
-    // All other buttons: pass to Remap for capture
-    for (let i = 0; i < pad.buttons.length; i++) {
-      if (i === 1) continue;
-      if (edge(i)) Remap.onGamepadButton(i);
-    }
-    return;
-  }
-
-  // Confirm: ✕/A (btn 0) only
-  if (edge(0)) navEvent('confirm');
-
-  // Back: ○/B (btn 1)
-  if (edge(1)) navEvent('back');
-
-  // Navigate: D-pad or left stick
-  const dpadL = btn(14), dpadR = btn(15), dpadU = btn(12), dpadD = btn(13);
-  const stickL = pad.axes[0] < -0.5, stickR = pad.axes[0] > 0.5;
-  const stickU = pad.axes[1] < -0.5, stickD = pad.axes[1] > 0.5;
-
-  if ((dpadL || stickL) && !_gpNavPrev._l) navEvent('left');
-  if ((dpadR || stickR) && !_gpNavPrev._r) navEvent('right');
-  if ((dpadU || stickU) && !_gpNavPrev._u) navEvent('up');
-  if ((dpadD || stickD) && !_gpNavPrev._d) navEvent('down');
-  _gpNavPrev._l = dpadL || stickL;
-  _gpNavPrev._r = dpadR || stickR;
-  _gpNavPrev._u = dpadU || stickU;
-  _gpNavPrev._d = dpadD || stickD;
-
-  // Release held-key visuals on select screen
-  if (!_gpNavPrev._l) screenOnKeyUp('ArrowLeft');
-  if (!_gpNavPrev._r) screenOnKeyUp('ArrowRight');
+export function processInput() {
+  input.poll({ facing: hero.facing });
+  dispatchScreenInput(input, hero, {
+    retry: retryFromGameOver,
+    cont: continueFromGameOver,
+    playAgain: () => tryTransition(S.SELECT),
+    quit: () => tryTransition(S.HOME),
+  });
 }
 
 // --- Debug harness mouse input: click to select / force an enemy's state -----
@@ -532,7 +389,6 @@ window.addEventListener('contextmenu', (e) => { if (Debug.enabled) e.preventDefa
 
 /** Build the per-frame intent object from the normalized input state. */
 function readInput() {
-  input.poll(keys);
   const s = input.state;
   return {
     left:   s.moveX < -0.2,
@@ -541,6 +397,7 @@ function readInput() {
     down:   s.crouch,
     jump:   s.jump,
     shoot:  s.shooting,
+    lockMove: s.lockMove,
     special: s.switchWeapon,
     melee:  s.melee,
     super:  s.supermove,
@@ -1053,13 +910,13 @@ world.on('checkpoint', (a, b) => {
 // No longer auto-triggers on WIN/OVER.
 
 // Reset per-screen transient state (held keys, focus) on entry.
-onTransition((from, to) => { screenReset(to); });
+// Screen lifecycle and input barriers are subscribed in screens.js.
 
 // Milestone 8 — When SELECT → PLAY, rebuild the hero with the chosen definition.
 // The Select screen sets window.__selectedHero before calling tryTransition(S.PLAY).
 onTransition((from, to) => {
-  if (to === S.PLAY && from !== S.PAUSE) {
-    // Covers: SELECT→PLAY, HOME→PLAY (debug boot), OVER→PLAY, WIN→PLAY.
+  if (to === S.PLAY && from !== S.PAUSE && from !== S.OVER) {
+    // New run: SELECT/HOME/WIN → PLAY. Retry/continue already restore OVER.
     // PAUSE→PLAY is a resume — hero state is already correct.
     const heroId = window.__selectedHero || 'scarlet';
     const def = HEROES[heroId] || HEROES.scarlet;
@@ -1175,6 +1032,7 @@ export function getFloatTexts() { return floatTexts; }
 
 // --- Per-frame step ------------------------------------------------------------
 export function update(dt) {
+  processInput();
   // Physics only runs during PLAY; other states are screen-driven (Milestone 8).
   if (getState() !== S.PLAY) return;
 

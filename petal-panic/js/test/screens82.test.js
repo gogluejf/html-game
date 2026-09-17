@@ -58,7 +58,7 @@ console.log('\nTask 8.2 — Pause / Game Over / Win Screens\n');
 const hero = U.getHero();
 const CONTINUE_COST = U.CONTINUE_COST;
 
-// Helper: build the same actions bag update.js builds for screenOnKey.
+// Helper: build the same actions bag update.js builds for screenOnAction.
 function actions() {
   return {
     retry: () => U.retryFromGameOver(),
@@ -99,50 +99,50 @@ ok('Pause.draw() does not throw', () => {
   assert.ok(ctx.texts.some(t => t.includes('Quit')), 'quit option rendered');
 });
 
-ok('Pause.onKey(Enter) resumes PAUSE→PLAY', () => {
+ok('Pause.onAction(Enter) resumes PAUSE→PLAY', () => {
   setState(S.PLAY);
   tryTransition(S.PAUSE);
   assert.equal(getState(), S.PAUSE);
-  const consumed = SC.screenOnKey('Enter', hero, actions());
+  const consumed = SC.screenOnAction('confirm', hero, actions());
   assert.equal(consumed, true);
   assert.equal(getState(), S.PLAY);
 });
 
-ok('Pause.onKey(Escape) also resumes', () => {
+ok('Pause.onAction(Escape) also resumes', () => {
   setState(S.PLAY);
   tryTransition(S.PAUSE);
-  SC.screenOnKey('Escape', hero, actions());
+  SC.screenOnAction('back', hero, actions());
   assert.equal(getState(), S.PLAY);
 });
 
-ok('Pause.onKey(KeyP) also resumes', () => {
+ok('Pause.onAction(KeyP) also resumes', () => {
   setState(S.PLAY);
   tryTransition(S.PAUSE);
-  SC.screenOnKey('KeyP', hero, actions());
+  SC.screenOnAction('pause', hero, actions());
   assert.equal(getState(), S.PLAY);
 });
 
-ok('Pause.onKey(KeyR) retries level (PAUSE→HOME)', () => {
+ok('Pause.onAction(KeyR) retries level (PAUSE→HOME)', () => {
   setState(S.PLAY);
   tryTransition(S.PAUSE);
-  SC.screenOnKey('KeyR', hero, actions());
+  SC.screenOnAction('retry', hero, actions());
   // retryFromGameOver resets at first checkpoint then tries OVER→PLAY, which
   // is invalid from PAUSE; the fallback path leaves us out of PAUSE. From
   // PAUSE the state machine allows PAUSE→HOME, so verify we left PAUSE.
   assert.notEqual(getState(), S.PAUSE, 'no longer paused after retry');
 });
 
-ok('Pause.onKey(KeyQ) quits to HOME', () => {
+ok('Pause.onAction(KeyQ) quits to HOME', () => {
   setState(S.PLAY);
   tryTransition(S.PAUSE);
-  SC.screenOnKey('KeyQ', hero, actions());
+  SC.screenOnAction('quit', hero, actions());
   assert.equal(getState(), S.HOME);
 });
 
 ok('Pause ignores unrelated keys', () => {
   setState(S.PLAY);
   tryTransition(S.PAUSE);
-  const consumed = SC.screenOnKey('KeyX', hero, actions());
+  const consumed = SC.screenOnAction('KeyX', hero, actions());
   assert.equal(consumed, false);
   assert.equal(getState(), S.PAUSE);
 });
@@ -178,49 +178,49 @@ ok('canContinue() gates on continues left AND coins', () => {
   assert.equal(SC.canContinue(null), false, 'null hero safe');
 });
 
-ok('GameOver.onKey(KeyR) retries (OVER→PLAY)', () => {
+ok('GameOver.onAction(KeyR) retries (OVER→PLAY)', () => {
   enterOver();
   const before = hero.x;
-  SC.screenOnKey('KeyR', hero, actions());
+  SC.screenOnAction('retry', hero, actions());
   assert.equal(getState(), S.PLAY, 'back in PLAY after retry');
   assert.equal(hero.lives, 3, 'lives reset to 3');
   assert.equal(hero.continuesUsed, 0, 'continues reset');
   void before;
 });
 
-ok('GameOver.onKey(KeyC) spends coins and respawns when affordable', () => {
+ok('GameOver.onAction(KeyC) spends coins and respawns when affordable', () => {
   enterOver();
   hero.coins = CONTINUE_COST + 500;
   hero.continuesUsed = 0;
   hero.checkpoint = { x: 400, y: 100 };
-  SC.screenOnKey('KeyC', hero, actions());
+  SC.screenOnAction('cont', hero, actions());
   assert.equal(getState(), S.PLAY, 'back in PLAY after continue');
   assert.equal(hero.coins, 500, 'coins debited');
   assert.equal(hero.continuesUsed, 1, 'continue counted');
   assert.equal(hero.lives, 1, 'one life granted');
 });
 
-ok('GameOver.onKey(KeyC) is a no-op when coins are insufficient', () => {
+ok('GameOver.onAction(KeyC) is a no-op when coins are insufficient', () => {
   enterOver();
   hero.coins = 10;
   hero.continuesUsed = 0;
-  SC.screenOnKey('KeyC', hero, actions());
+  SC.screenOnAction('cont', hero, actions());
   assert.equal(getState(), S.OVER, 'still in OVER');
   assert.equal(hero.coins, 10, 'coins untouched');
   assert.equal(hero.continuesUsed, 0, 'no continue spent');
 });
 
-ok('GameOver.onKey(KeyC) is a no-op when no continues remain', () => {
+ok('GameOver.onAction(KeyC) is a no-op when no continues remain', () => {
   enterOver();
   hero.coins = CONTINUE_COST * 10;
   hero.continuesUsed = hero.maxContinues;
-  SC.screenOnKey('KeyC', hero, actions());
+  SC.screenOnAction('cont', hero, actions());
   assert.equal(getState(), S.OVER, 'still in OVER');
 });
 
-ok('GameOver.onKey(KeyQ) quits to HOME', () => {
+ok('GameOver.onAction(KeyQ) quits to HOME', () => {
   enterOver();
-  SC.screenOnKey('KeyQ', hero, actions());
+  SC.screenOnAction('quit', hero, actions());
   assert.equal(getState(), S.HOME);
 });
 
@@ -249,21 +249,21 @@ ok('Win.draw() renders VICTORY, score and full §4.1 summary', () => {
   assert.ok(ctx.texts.some(t => t.includes('Quit')), 'quit option');
 });
 
-ok('Win.onKey(Enter) plays again (WIN→SELECT)', () => {
+ok('Win.onAction(Enter) plays again (WIN→SELECT)', () => {
   enterWin();
-  SC.screenOnKey('Enter', hero, actions());
+  SC.screenOnAction('confirm', hero, actions());
   assert.equal(getState(), S.SELECT);
 });
 
-ok('Win.onKey(KeyQ) quits to HOME', () => {
+ok('Win.onAction(KeyQ) quits to HOME', () => {
   enterWin();
-  SC.screenOnKey('KeyQ', hero, actions());
+  SC.screenOnAction('quit', hero, actions());
   assert.equal(getState(), S.HOME);
 });
 
 ok('Win ignores unrelated keys', () => {
   enterWin();
-  const consumed = SC.screenOnKey('KeyZ', hero, actions());
+  const consumed = SC.screenOnAction('KeyZ', hero, actions());
   assert.equal(consumed, false);
   assert.equal(getState(), S.WIN);
 });
@@ -287,8 +287,8 @@ ok('drawScreen dispatches PAUSE/OVER/WIN overlays', () => {
   assert.ok(ctx.texts.some(t => t.includes('VICTORY')));
 });
 
-ok('screenOnKey routes unknown-state keys without throwing', () => {
-  const r = SC.screenOnKey('KeyA', hero, actions());
+ok('screenOnAction routes unknown-state keys without throwing', () => {
+  const r = SC.screenOnAction('left', hero, actions());
   assert.equal(r, false);
 });
 

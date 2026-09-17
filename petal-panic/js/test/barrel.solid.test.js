@@ -17,10 +17,10 @@ globalThis.document = {
   }),
 };
 globalThis.window = {
-  addEventListener: (ev, fn) => { listeners[ev] = fn; },
+  addEventListener: (ev, fn) => { (listeners[ev] ||= []).push(fn); },
 };
-const press = (code) => listeners.keydown({ code, preventDefault: noop });
-const release = (code) => listeners.keyup({ code, preventDefault: noop });
+const press = (code) => listeners.keydown.forEach(fn => fn({ code, preventDefault: noop }));
+const release = (code) => listeners.keyup.forEach(fn => fn({ code, preventDefault: noop }));
 
 const U = await import('../systems/update.js');
 const { S, setState } = await import('../state.js');
