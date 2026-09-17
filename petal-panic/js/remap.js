@@ -122,10 +122,11 @@ export const Remap = {
     drawMarqueeTitle(ctx, 'CONTROLS', VIEW_W / 2, 40, 36, { color: CREAM });
 
     // Tabs
-    const tabY = 65;
+    const tabY = 72;
     const tabs = ['KEYBOARD', 'GAMEPAD'];
+    const tabXs = [292, 592]; // centered above each column's chips
     for (let i = 0; i < tabs.length; i++) {
-      const tx = VIEW_W / 2 - 100 + i * 110;
+      const tx = tabXs[i];
       const active = (i === 0 && this.tab === 'keyboard') || (i === 1 && this.tab === 'gamepad');
       ctx.save();
       if (active) {

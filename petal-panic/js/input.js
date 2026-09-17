@@ -218,7 +218,7 @@ export function createInput({ target = globalThis.window, document = globalThis.
       observe();
       this.captureResult = null;
       if (captureAtStart) {
-        // Back is universal, regardless of capture target or simultaneous binding.
+        // Back (Escape / ○) ALWAYS cancels capture. It cannot be self-assigned.
         if (pressed.has('back')) this.captureResult = { status: 'cancelled' };
         else {
           const p = candidates.find(p => p.source === captureAtStart && validBinding(p.source, p.binding)
