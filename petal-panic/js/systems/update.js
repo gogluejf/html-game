@@ -391,9 +391,10 @@ function handleDebugToggle(e, source) {
 }
 
 window.addEventListener('keydown', (e) => {
-  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','ControlLeft','ControlRight','KeyX','KeyC','KeyV'].includes(e.code)) e.preventDefault();
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Space','ControlLeft','ControlRight','KeyX','KeyC','KeyV','F1','F2','F3'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
-  if (e.code === 'F1' || e.code === 'F3') {
+  if (e.code === 'F1' || e.code === 'F2') {
+    e.preventDefault();
     handleDebugToggle(e, 'debug');
     return;
   }
@@ -564,6 +565,11 @@ function debugSpawn(type, x, y, state) {
  * @param {KeyboardEvent} e
  */
 function handleDebugKeys(e) {
+  // F3 auto-enables debug if off, then cycles view on next press.
+  if (e.code === 'F3' && !Debug.enabled) {
+    handleDebugToggle(e, 'debug');
+    return;
+  }
   if (!Debug.enabled) return;
 
   // Free-spawn hotkeys (1-9): spawn at hero position + small offset.
@@ -605,7 +611,7 @@ function handleDebugKeys(e) {
       dumpStats(hero.runStats, hero);
       Debug.logEvent('stats JSON downloaded');
       break;
-    case 'Tab': // Cycle collision view mode (round-robin): sprite+collision → collision-only → sprite-only
+    case 'F3': // Cycle collision view mode (round-robin)
       Debug.viewMode = (Debug.viewMode + 1) % 3;
       const modeNames = ['sprite+collision', 'collision-only', 'sprite-only'];
       Debug.logEvent(`view: ${modeNames[Debug.viewMode]}`);
