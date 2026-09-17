@@ -60,7 +60,7 @@ export const Remap = {
   reset() { input.resetMapping(); },
   resetState() {
     input.cancelCapture();
-    this.focus = 0;
+    this.focus = -1; // start on the device-tab row
     this.preferredChip = 0;
     this._flashInvalid = 0;
     this._pulseT = 0;
@@ -83,11 +83,16 @@ export const Remap = {
       this.focus = ((this.focus + 1 + count + 1 + (action === 'up' ? -1 : 1)) % (count + 1)) - 1;
     } else if (action === 'left' || action === 'right') {
       if (this.focus === -1) this.tab = action === 'left' ? 'keyboard' : 'gamepad';
-      else if (this.focus < ACTIONS.length && bindingSlots(this.tab, ACTIONS[this.focus].id) === 2) {
+      else if (this.focus >= ACTIONS.length) {
+        // Bottom buttons: left/right cycles between them (Reset, Layout, Done)
+        const order = [ACTIONS.length, ACTIONS.length + 2, ACTIONS.length + 1];
+        const idx = order.indexOf(this.focus);
+        this.focus = order[(idx + (action === 'left' ? order.length - 1 : 1)) % order.length];
+      } else if (this.focus < ACTIONS.length && bindingSlots(this.tab, ACTIONS[this.focus].id) === 2) {
         this.preferredChip = action === 'left' ? 0 : 1;
       }
     } else if (action === 'confirm') {
-      if (this.focus === -1) this.focus = 0;
+      if (this.focus === -1) { this.focus = 0; return true; }
       else if (this.focus === ACTIONS.length) this.reset();
       else if (this.focus === ACTIONS.length + 1) { this.save(); return 'exit'; }
       else if (this.focus === ACTIONS.length + 2) {
@@ -136,18 +141,7 @@ export const Remap = {
       ctx.restore();
     }
 
-    // Gamepad layout selector (only on gamepad tab)
     let listStartY = 100;
-    if (this.tab === 'gamepad') {
-      const ly = 95;
-      drawPrompt(ctx, 'Layout:', VIEW_W / 2 - 120, ly, 14, { color: '#888' });
-      for (let i = 0; i < LAYOUT_OPTIONS.length; i++) {
-        const lx = VIEW_W / 2 - 50 + i * 80;
-        const sel = LAYOUT_OPTIONS[i] === this.gamepadLayout;
-        drawPrompt(ctx, LAYOUT_OPTIONS[i], lx, ly, sel ? 16 : 13, { color: sel ? GOLD : '#666' });
-      }
-      listStartY = 120;
-    }
 
     // Action rows
     const rowH = 28;
@@ -204,11 +198,23 @@ export const Remap = {
       }
     }
 
-    // Bottom bar
-    const botY = 448;
-    drawPrompt(ctx, 'RESET TO DEFAULTS', VIEW_W / 2 - 150, botY, 13, { color: this.focus === ACTIONS.length ? PINK : '#888' });
-    drawPrompt(ctx, 'DONE', VIEW_W / 2 + 150, botY, 13, { color: this.focus === ACTIONS.length + 1 ? PINK : '#888' });
-    drawPrompt(ctx, `LAYOUT: ${this.gamepadLayout}`, VIEW_W / 2, botY, 13, { color: this.focus === ACTIONS.length + 2 ? PINK : '#888' });
+    // Bottom bar — three styled buttons
+    const botY = 455;
+    const btnW = 160, btnH = 26, gap = 40;
+    const btns = [
+      { label: 'RESET TO DEFAULTS', x: VIEW_W/2 - btnW - gap/2, focus: this.focus === ACTIONS.length },
+      { label: `LAYOUT: ${this.gamepadLayout.toUpperCase()}`, x: VIEW_W/2, focus: this.focus === ACTIONS.length + 2 },
+      { label: 'DONE', x: VIEW_W/2 + btnW + gap/2, focus: this.focus === ACTIONS.length + 1 },
+    ];
+    for (const b of btns) {
+      ctx.save();
+      ctx.fillStyle = b.focus ? 'rgba(255,110,199,0.2)' : '#1a1a2e';
+      roundRect(ctx, b.x - btnW/2, botY - btnH/2, btnW, btnH, 6); ctx.fill();
+      ctx.strokeStyle = b.focus ? PINK : '#555';
+      ctx.lineWidth = b.focus ? 2 : 1; ctx.stroke();
+      drawPrompt(ctx, b.label, b.x, botY + 1, 13, { color: b.focus ? CREAM : '#aaa' });
+      ctx.restore();
+    }
 
     // Two readable hint lines, separated from actions and footer controls.
     const hint = this.capturing
@@ -216,7 +222,7 @@ export const Remap = {
       : '↑ ↓ Row    ← → Chip    Confirm: start capture sequence';
     drawPrompt(ctx, hint, VIEW_W / 2, 482, 16, { color: this.capturing ? PINK : CREAM });
     drawPrompt(ctx, this.capturing ? 'Esc / East button: stop capture • Held inputs must be released'
-      : 'Up from first row: device tabs    Esc / East button: back',
+      : '↑ ↓ Navigate    ← → Chip / Tab    Confirm: edit    Esc / ○: back',
       VIEW_W / 2, 511, 14, { color: '#aaa' });
   },
 
