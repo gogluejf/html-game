@@ -888,13 +888,13 @@ class SongController {
     this.seq = false;
     this.rep = false;
     this.shf = false;
-    this._lastProgress = 0;
     this.onTrackChange = null;
     this.onPlayStateChange = null;
     this._neverStarted = true;
-    this._pendingSeek = null;
-    this._wasPlaying = false;
-    this._dotOverride = false;  // user manually placed dot while not playing
+    // Single source of truth for "user manually placed the dot while NOT playing".
+    // Set by seek()/select() while paused/stopped; cleared on play(). The render
+    // loop honors it instead of clobbering the dot with live engine position.
+    this._manualPos = null;
     this._loadPrefs();
   }
 
@@ -941,20 +941,19 @@ class SongController {
   play(i) {
     this.init();
     if (this.player.ctx.state === 'suspended') this.player.ctx.resume();
+    const wasCurrent = (i === this.current);
     this.current = i;
+    // A manual dot placement only applies to the song it was set on. If we're
+    // starting a different song, drop it so the new track starts at 0.
+    if (!wasCurrent) this._manualPos = null;
     this.player.start(i);
     this.playing = true;
     this._neverStarted = false;
-    this._wasPlaying = true;
-    this._dotOverride = false;
-    this._lastProgress = 0;
-    console.log('[pp] play(' + i + ') pendingSeek=' + this._pendingSeek + ' engine bar/step=' + this.player.seq.barCount + '/' + this.player.seq.stepIndex);
-    if (this._pendingSeek !== null && this._pendingSeek > 0) {
-      const ps = this._pendingSeek;
-      this.seek(ps);
-      this._pendingSeek = null;
-      console.log('[pp] play -> seeked to ' + ps + ' engine now bar/step=' + this.player.seq.barCount + '/' + this.player.seq.stepIndex + ' position()=' + this.position().toFixed(3));
+    // If the user placed the dot while paused/stopped, start FROM that position.
+    if (this._manualPos !== null && this._manualPos > 0) {
+      this.seek(this._manualPos);
     }
+    this._manualPos = null;
     if (this.onTrackChange) this.onTrackChange(i);
     if (this.onPlayStateChange) this.onPlayStateChange(true);
   }
@@ -963,8 +962,10 @@ class SongController {
     if (!this.player) return;
     this.player.stop();
     this.playing = false;
-    this._wasPlaying = false;
-    this._lastProgress = 0;
+    // Engine position is now meaningless (barCount/stepIndex are stale); the
+    // dot should sit at 0. Clear any manual placement so we don't show a
+    // leftover drag position after a full stop.
+    this._manualPos = null;
     if (this.onPlayStateChange) this.onPlayStateChange(false);
   }
 
@@ -991,25 +992,69 @@ class SongController {
 
   next() {
     const n = this.tracks.length;
-    this.play((this.current + 1) % n);
+    if (this.playing) {
+      // Playing → jump to and play the next song, dot at 0.
+      this._manualPos = null;
+      this.play((this.current + 1) % n);
+    } else {
+      // Paused/stopped → just select the next song (dot at 0), stay stopped.
+      this.select((this.current + 1) % n);
+    }
   }
 
   prev() {
     const n = this.tracks.length;
-    this.play((this.current - 1 + n) % n);
+    if (this.playing) {
+      this._manualPos = null;
+      this.play((this.current - 1 + n) % n);
+    } else {
+      this.select((this.current - 1 + n) % n);
+    }
   }
 
+  /** Restart the CURRENT song from position 0, preserving play/pause state. */
   restart() {
-    this.play(this.current);
+    if (this.playing) {
+      this._manualPos = null;
+      this.play(this.current);
+    } else {
+      this.select(this.current);
+    }
   }
 
-  /** Seek to fraction 0..1. Uses engine.seekToStep(). */
+  /** Media-player prev: if within first 1s of current song → previous song,
+   *  otherwise restart current song at 0. Preserves play/pause state. */
+  prevSmart() {
+    const nearStart = this.position() < (1.0 / Math.max(1, this.duration()));
+    if (nearStart) {
+      // Previous song at 0, keep state
+      const n = this.tracks.length;
+      if (this.playing) {
+        this._manualPos = null;
+        this.play((this.current - 1 + n) % n);
+      } else {
+        this.select((this.current - 1 + n) % n);
+      }
+    } else {
+      // Restart current song at 0, keep state
+      this.restart();
+    }
+  }
+
+  /** Select a song WITHOUT playing it: highlight, dot to 0, no audio. */
+  select(i) {
+    this.init();
+    this.current = i;
+    this._manualPos = 0;   // dot explicitly at zero
+    if (this.onTrackChange) this.onTrackChange(i);
+  }
+
+  /** Seek to fraction 0..1. Uses engine.seekToStep() while playing; while
+   *  paused/stopped it records a manual position so play() can start from it. */
   seek(frac) {
     frac = Math.max(0, Math.min(1, frac));
     if (!this.playing) {
-      this._pendingSeek = frac;
-      this._lastProgress = frac;
-      this._dotOverride = true;
+      this._manualPos = frac;
       return;
     }
     if (!this.player) return;
@@ -1019,8 +1064,6 @@ class SongController {
     const totalSteps = pl.reduce((s, l) => s + 32 * l, 0);
     const targetStep = Math.floor(frac * totalSteps);
     this.player.seekToStep(targetStep);
-    this._lastProgress = frac;
-    console.log('[pp] seek(' + frac.toFixed(3) + ') totalSteps=' + totalSteps + ' targetStep=' + targetStep + ' engine bar/step=' + this.player.seq.barCount + '/' + this.player.seq.stepIndex + ' position()=' + this.position().toFixed(3));
   }
 
   /**
@@ -1029,6 +1072,8 @@ class SongController {
    * with real audio playback (including pause/seek/loop).
    */
   position() {
+    // If the user manually placed the dot while not playing, report that.
+    if (this._manualPos !== null) return this._manualPos;
     if (!this.player) return 0;
     const seq = this.player.seq;
     const trk = seq.tracks[this.current];
@@ -1138,20 +1183,13 @@ function renderList() {
     el.addEventListener('click', () => {
       const i = parseInt(el.dataset.i, 10);
       _listIdx = i;
-      // Already playing → single click switches song immediately
+      // Already playing → single click switches song immediately.
       if (sc.playing) { sc.play(i); return; }
-      // Not playing → single click focuses (select + dot to start), double plays
+      // Not playing → single click selects (highlight, dot to 0), double plays.
       _listCount++;
       if (_listCount === 1) {
-        sc.current = i;
-        // Keep dot where user dragged it (pending seek), else reset to 0
-        const pos = (sc._pendingSeek !== null && sc._pendingSeek > 0) ? sc._pendingSeek : 0;
-        sc._lastProgress = pos;
-        tlDot.style.left = (pos * 100) + '%';
-        tlProg.style.width = (pos * 100) + '%';
-        tlTitle.textContent = (i+1) + '. ' + sc.tracks[i].name;
+        sc.select(i);
         nowEl.textContent = '○ SELECTED: ' + (i+1) + ' ' + sc.tracks[i].name;
-        renderList();
         _listTimer = setTimeout(() => { _listCount = 0; }, 400);
       } else if (_listCount >= 2) {
         clearTimeout(_listTimer);
@@ -1162,16 +1200,12 @@ function renderList() {
   });
 }
 
-// Prev button: single=restart, double=prev song (1s grace)
-let _prevTimer = null, _prevCount = 0;
-tbPrev.addEventListener('click', () => {
-  _prevCount++;
-  if (_prevCount === 1) {
-    _prevTimer = setTimeout(() => { _prevCount = 0; sc.restart(); }, 1000);
-  } else if (_prevCount >= 2) {
-    clearTimeout(_prevTimer); _prevCount = 0; sc.prev();
-  }
-});
+// Prev button: single=restart current, double=previous song (1s grace).
+// Shared with the Left-arrow key so both behave identically.
+function onPrevClick() {
+  sc.prevSmart();
+}
+tbPrev.addEventListener('click', onPrevClick);
 tbPlay.addEventListener('click', () => sc.togglePause());
 tbNext.addEventListener('click', () => sc.next());
 mtSeq.addEventListener('click', () => { sc.setMode('seq'); syncModes(); });
@@ -1184,11 +1218,11 @@ function syncModes() {
   mtShf.classList.toggle('on', sc.shf);
 }
 
-// Keyboard
+// Keyboard (mirrors the transport buttons exactly)
 window.addEventListener('keydown', e => {
   if (e.code === 'KeyP') { e.preventDefault(); sc.next(); }
   else if (e.code === 'ArrowDown' || e.code === 'ArrowRight') { e.preventDefault(); sc.next(); }
-  else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') { e.preventDefault(); sc.prev(); }
+  else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') { e.preventDefault(); onPrevClick(); }
   else if (e.code === 'KeyM') { sc.toggleMute(); }
   else if (e.code === 'KeyS') { e.preventDefault(); sc.setMode('seq'); syncModes(); }
   else if (e.code === 'KeyR') { e.preventDefault(); sc.setMode('rep'); syncModes(); }
@@ -1214,20 +1248,11 @@ function fmt(s) {
   return m + ':' + String(Math.floor(s % 60)).padStart(2, '0');
 }
 
-// Main render loop: read sc.position() (engine stepIndex), update DOM
+// Main render loop. One rule: show sc.position(). While playing that reads the
+// live engine position; while paused/stopped it honors a manual dot placement
+// (_manualPos) and otherwise freezes at the paused audio position. No clobbering.
 setInterval(() => {
-  // Playing → read real engine position (accurate even right after a seek).
-  // Not playing → show where the dot was dragged (_pendingSeek) or 0.
-  let p;
-  if (sc.playing) {
-    p = sc.position();
-  } else if (sc._wasPlaying && !sc._dotOverride) {
-    // Paused mid-song, user hasn't moved the dot → freeze at audio position
-    p = sc.position();
-  } else {
-    // Stopped, or user manually placed the dot → show where they put it
-    p = (sc._lastProgress > 0) ? sc._lastProgress : 0;
-  }
+  const p = sc.position();
   tlDot.style.left = (p * 100) + '%';
   tlProg.style.width = (p * 100) + '%';
   const dur = sc.duration();
@@ -1261,9 +1286,7 @@ tlEl.addEventListener('click', e => {
   if (dragging) return;
   const r = tlEl.getBoundingClientRect();
   const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-  console.log('[pp] TL click frac=' + f.toFixed(3) + ' playing=' + sc.playing + ' player=' + !!sc.player + ' pendingBefore=' + sc._pendingSeek);
   sc.seek(f);
-  console.log('[pp] TL click after: pending=' + sc._pendingSeek + ' lastProg=' + sc._lastProgress);
 });
 
 // Initial render + restore saved mode prefs to UI
