@@ -235,9 +235,12 @@ PLAYER_TMPL = """<!DOCTYPE html>
     <div class="mode" id="m-shf" title="pick a random song when one finishes (H)">
       <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>SHF
     </div>
+    <div class="mode" id="m-pause" title="pause / resume playback (Space)">
+      <svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>PAUSE
+    </div>
   </div>
   <div id="list"></div>
-  <div id="hint">click a song &middot; P / &#8594; = next &middot; &#8592; = prev &middot; M = mute &middot; S/R/H = seq/repeat/shuffle</div>
+  <div id="hint">click a song &middot; P / &#8594; = next &middot; &#8592; = prev &middot; M = mute &middot; S/R/H = seq/repeat/shuffle &middot; Space = pause</div>
 </div>
 <script>
 __ENGINE__
@@ -253,6 +256,7 @@ const listEl = document.getElementById('list');
 const mSeq = document.getElementById('m-seq');
 const mRep = document.getElementById('m-rep');
 const mShf = document.getElementById('m-shf');
+const mPause = document.getElementById('m-pause');
 
 function applyModes(){
   if (!player) return;
@@ -284,7 +288,7 @@ function renderList(){
 }
 function showNow(){
   const names = player.getNames();
-  nowEl.textContent = player.playing ? ('\u25cf NOW PLAYING: '+(player.current+1)+' '+names[player.current]) : '\u25cb stopped';
+  nowEl.textContent = player.playing ? ('\u25cf NOW PLAYING: '+(player.current+1)+' '+names[player.current]) : '\u23f8 PAUSED';
   lastShown = player.current;
   renderList();
 }
@@ -320,6 +324,19 @@ function prevTrack(){
 mSeq.addEventListener('click', ()=>setMode('seq'));
 mRep.addEventListener('click', ()=>setMode('rep'));
 mShf.addEventListener('click', ()=>setMode('shf'));
+function togglePause(){
+  ensure();
+  if (player.playing) {
+    player.pause();
+    mPause.classList.add('on');
+    showNow();
+  } else {
+    player.resume();
+    mPause.classList.remove('on');
+    showNow();
+  }
+}
+mPause.addEventListener('click', togglePause);
 window.addEventListener('keydown', (e)=>{
   if (e.code === 'KeyP'){ e.preventDefault(); nextTrack(); }
   else if (e.code === 'ArrowDown' || e.code === 'ArrowRight'){ e.preventDefault(); nextTrack(); }
@@ -328,6 +345,7 @@ window.addEventListener('keydown', (e)=>{
   else if (e.code === 'KeyS'){ e.preventDefault(); setMode('seq'); }
   else if (e.code === 'KeyR'){ e.preventDefault(); setMode('rep'); }
   else if (e.code === 'KeyH'){ e.preventDefault(); setMode('shf'); }
+  else if (e.code === 'Space'){ e.preventDefault(); togglePause(); }
 });
 document.body.addEventListener('click', ()=>{ ensure(); });
 // Render the clickable track list up front (before any audio starts).

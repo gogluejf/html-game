@@ -40,9 +40,12 @@
     <div class="mode" id="m-shf" title="pick a random song when one finishes (H)">
       <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>SHF
     </div>
+    <div class="mode" id="m-pause" title="pause / resume playback (Space)">
+      <svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>PAUSE
+    </div>
   </div>
   <div id="list"></div>
-  <div id="hint">click a song &middot; P / &#8594; = next &middot; &#8592; = prev &middot; M = mute &middot; S/R/H = seq/repeat/shuffle</div>
+  <div id="hint">click a song &middot; P / &#8594; = next &middot; &#8592; = prev &middot; M = mute &middot; S/R/H = seq/repeat/shuffle &middot; Space = pause</div>
 </div>
 <script>
 /* music-composer engine — standalone build of MusicSequencer.
@@ -146,6 +149,46 @@ class MusicSequencer {
     this._liveOscs.clear();
     if (this._busFilter) { try { this._busFilter.disconnect(); } catch (e) {} this._busFilter = null; }
     if (this._busGain)   { try { this._busGain.disconnect(); } catch (e) {} this._busGain = null; }
+  }
+
+  /** True pause: freeze the scheduler mid-song, keep all state. */
+  pause() {
+    if (!this.playing) return;
+    if (this.timerId !== null) { clearInterval(this.timerId); this.timerId = null; }
+    this.playing = false;
+    // Kill only the currently-sounding oscillators (the lookahead tail).
+    const t = this.ctx.currentTime;
+    this._liveOscs.forEach((n) => { try { n.stop(t + 0.03); } catch (e) {} });
+    this._liveOscs.clear();
+    // Save position so resume() can pick up exactly here.
+    this._pausedStep = this.stepIndex;
+    this._pausedBar = this.barCount;
+    this._pausedPhrase = this.phraseCount;
+    this._pausedTrack = this.current;
+  }
+
+  /** Resume from the exact step saved by pause(). */
+  resume() {
+    if (this.playing) return;
+    const trk = this.tracks[this._pausedTrack != null ? this._pausedTrack : this.current];
+    this.current = this._pausedTrack != null ? this._pausedTrack : this.current;
+    this.stepIndex = this._pausedStep || 0;
+    this.barCount = this._pausedBar || 0;
+    this.phraseCount = this._pausedPhrase || 0;
+    this.playing = true;
+    this.nextNoteTime = this.ctx.currentTime + 0.06;
+    // Rebuild the bus if it was torn down.
+    if (!this._busFilter) {
+      this._busFilter = this.ctx.createBiquadFilter();
+      this._busFilter.type = "lowpass";
+      this._busFilter.frequency.value = 12000;
+      this._busFilter.Q.value = 0.6;
+      this._busGain = this.ctx.createGain();
+      this._busGain.gain.value = 0.5;
+      this._busFilter.connect(this._busGain);
+      this._busGain.connect(this.master);
+    }
+    this.timerId = setInterval(() => this._schedule(), this.tickMs);
   }
 
   setTrack(i) {
@@ -747,6 +790,8 @@ class MusicSequencer {
     this.seq.start(i == null ? 0 : i);
   };
   Player.prototype.stop = function () { this.seq.stop(); };
+  Player.prototype.pause = function () { this.seq.pause(); };
+  Player.prototype.resume = function () { this.seq.resume(); };
   Player.prototype.setTrack = function (i) { this.seq.setTrack(i); };
   Player.prototype.next = function () { this.seq.next(); };
   Player.prototype.shuffleNext = function () { this.seq.shuffleNext(); };
@@ -779,6 +824,7 @@ const listEl = document.getElementById('list');
 const mSeq = document.getElementById('m-seq');
 const mRep = document.getElementById('m-rep');
 const mShf = document.getElementById('m-shf');
+const mPause = document.getElementById('m-pause');
 
 function applyModes(){
   if (!player) return;
@@ -810,7 +856,7 @@ function renderList(){
 }
 function showNow(){
   const names = player.getNames();
-  nowEl.textContent = player.playing ? ('● NOW PLAYING: '+(player.current+1)+' '+names[player.current]) : '○ stopped';
+  nowEl.textContent = player.playing ? ('● NOW PLAYING: '+(player.current+1)+' '+names[player.current]) : '⏸ PAUSED';
   lastShown = player.current;
   renderList();
 }
@@ -846,6 +892,19 @@ function prevTrack(){
 mSeq.addEventListener('click', ()=>setMode('seq'));
 mRep.addEventListener('click', ()=>setMode('rep'));
 mShf.addEventListener('click', ()=>setMode('shf'));
+function togglePause(){
+  ensure();
+  if (player.playing) {
+    player.pause();
+    mPause.classList.add('on');
+    showNow();
+  } else {
+    player.resume();
+    mPause.classList.remove('on');
+    showNow();
+  }
+}
+mPause.addEventListener('click', togglePause);
 window.addEventListener('keydown', (e)=>{
   if (e.code === 'KeyP'){ e.preventDefault(); nextTrack(); }
   else if (e.code === 'ArrowDown' || e.code === 'ArrowRight'){ e.preventDefault(); nextTrack(); }
@@ -854,6 +913,7 @@ window.addEventListener('keydown', (e)=>{
   else if (e.code === 'KeyS'){ e.preventDefault(); setMode('seq'); }
   else if (e.code === 'KeyR'){ e.preventDefault(); setMode('rep'); }
   else if (e.code === 'KeyH'){ e.preventDefault(); setMode('shf'); }
+  else if (e.code === 'Space'){ e.preventDefault(); togglePause(); }
 });
 document.body.addEventListener('click', ()=>{ ensure(); });
 // Render the clickable track list up front (before any audio starts).

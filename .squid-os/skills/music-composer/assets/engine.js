@@ -101,6 +101,46 @@ class MusicSequencer {
     if (this._busGain)   { try { this._busGain.disconnect(); } catch (e) {} this._busGain = null; }
   }
 
+  /** True pause: freeze the scheduler mid-song, keep all state. */
+  pause() {
+    if (!this.playing) return;
+    if (this.timerId !== null) { clearInterval(this.timerId); this.timerId = null; }
+    this.playing = false;
+    // Kill only the currently-sounding oscillators (the lookahead tail).
+    const t = this.ctx.currentTime;
+    this._liveOscs.forEach((n) => { try { n.stop(t + 0.03); } catch (e) {} });
+    this._liveOscs.clear();
+    // Save position so resume() can pick up exactly here.
+    this._pausedStep = this.stepIndex;
+    this._pausedBar = this.barCount;
+    this._pausedPhrase = this.phraseCount;
+    this._pausedTrack = this.current;
+  }
+
+  /** Resume from the exact step saved by pause(). */
+  resume() {
+    if (this.playing) return;
+    const trk = this.tracks[this._pausedTrack != null ? this._pausedTrack : this.current];
+    this.current = this._pausedTrack != null ? this._pausedTrack : this.current;
+    this.stepIndex = this._pausedStep || 0;
+    this.barCount = this._pausedBar || 0;
+    this.phraseCount = this._pausedPhrase || 0;
+    this.playing = true;
+    this.nextNoteTime = this.ctx.currentTime + 0.06;
+    // Rebuild the bus if it was torn down.
+    if (!this._busFilter) {
+      this._busFilter = this.ctx.createBiquadFilter();
+      this._busFilter.type = "lowpass";
+      this._busFilter.frequency.value = 12000;
+      this._busFilter.Q.value = 0.6;
+      this._busGain = this.ctx.createGain();
+      this._busGain.gain.value = 0.5;
+      this._busFilter.connect(this._busGain);
+      this._busGain.connect(this.master);
+    }
+    this.timerId = setInterval(() => this._schedule(), this.tickMs);
+  }
+
   setTrack(i) {
     i = Math.max(0, Math.min(this.tracks.length - 1, i | 0));
     this.current = i;
@@ -700,6 +740,8 @@ class MusicSequencer {
     this.seq.start(i == null ? 0 : i);
   };
   Player.prototype.stop = function () { this.seq.stop(); };
+  Player.prototype.pause = function () { this.seq.pause(); };
+  Player.prototype.resume = function () { this.seq.resume(); };
   Player.prototype.setTrack = function (i) { this.seq.setTrack(i); };
   Player.prototype.next = function () { this.seq.next(); };
   Player.prototype.shuffleNext = function () { this.seq.shuffleNext(); };
