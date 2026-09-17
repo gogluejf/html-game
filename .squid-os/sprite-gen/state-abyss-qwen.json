@@ -10,61 +10,65 @@
         "cols": 4,
         "description": "6 aquatic enemy types, 4 animation frames each",
         "entities": [{
-          "name": "pufferfish",
-          "anim": "idle",
+          "name": "enemy",
+          "anim": "pufferfish",
           "frames": [
-            {"file": "pufferfish_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "pufferfish_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "pufferfish_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "pufferfish_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "enemy_pufferfish_f1.png", "row": 0, "col": 0, "bbox": [36, 54, 182, 165]},
+            {"file": "enemy_pufferfish_f2.png", "row": 0, "col": 1, "bbox": [280, 31, 208, 201]},
+            {"file": "enemy_pufferfish_f3.png", "row": 0, "col": 2, "bbox": [533, 11, 214, 233]},
+            {"file": "enemy_pufferfish_f4.png", "row": 0, "col": 3, "bbox": [797, 35, 198, 193]}
           ]
         }, {
-          "name": "mantis_crab",
-          "anim": "idle",
+          "name": "enemy",
+          "anim": "mantis_crab",
           "frames": [
-            {"file": "mantis_crab_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "mantis_crab_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "mantis_crab_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "mantis_crab_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "enemy_mantis_crab_f1.png", "row": 1, "col": 0, "bbox": [6, 266, 246, 240]},
+            {"file": "enemy_mantis_crab_f2.png", "row": 1, "col": 1, "bbox": [279, 267, 209, 251]},
+            {"file": "enemy_mantis_crab_f3.png", "row": 1, "col": 2, "bbox": [533, 267, 214, 201]},
+            {"file": "enemy_mantis_crab_f4.png", "row": 1, "col": 3, "bbox": [773, 268, 245, 204]}
           ]
         }, {
-          "name": "jellyfish",
-          "anim": "idle",
+          "name": "enemy",
+          "anim": "jellyfish",
           "frames": [
-            {"file": "jellyfish_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "jellyfish_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "jellyfish_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "jellyfish_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "enemy_jellyfish_f1.png", "row": 2, "col": 0, "bbox": [21, 481, 184, 262]},
+            {"file": "enemy_jellyfish_f2.png", "row": 2, "col": 1, "bbox": [305, 485, 179, 250]},
+            {"file": "enemy_jellyfish_f3.png", "row": 2, "col": 2, "bbox": [564, 484, 152, 265]},
+            {"file": "enemy_jellyfish_f4.png", "row": 2, "col": 3, "bbox": [819, 481, 188, 262]}
           ]
         }, {
-          "name": "anglerfish",
-          "anim": "idle",
+          "name": "enemy",
+          "anim": "anglerfish",
           "frames": [
-            {"file": "anglerfish_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "anglerfish_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "anglerfish_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "anglerfish_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "enemy_anglerfish_f1.png", "row": 3, "col": 0, "bbox": [21, 751, 227, 222]},
+            {"file": "enemy_anglerfish_f2.png", "row": 3, "col": 1, "bbox": [276, 759, 208, 217]},
+            {"file": "enemy_anglerfish_f3.png", "row": 3, "col": 2, "bbox": [531, 764, 226, 208]},
+            {"file": "enemy_anglerfish_f4.png", "row": 3, "col": 3, "bbox": [788, 751, 226, 222]}
           ]
         }, {
-          "name": "mech_shark",
-          "anim": "idle",
+          "name": "enemy",
+          "anim": "mech_shark",
           "frames": [
-            {"file": "mech_shark_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "mech_shark_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "mech_shark_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "mech_shark_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "enemy_mech_shark_f1.png", "row": 4, "col": 0, "bbox": [10, 988, 237, 223]},
+            {"file": "enemy_mech_shark_f2.png", "row": 4, "col": 1, "bbox": [266, 988, 236, 220]},
+            {"file": "enemy_mech_shark_f3.png", "row": 4, "col": 2, "bbox": [522, 988, 238, 221]},
+            {"file": "enemy_mech_shark_f4.png", "row": 4, "col": 3, "bbox": [777, 988, 237, 223]}
           ]
         }, {
-          "name": "sea_dragon",
-          "anim": "idle",
+          "name": "enemy",
+          "anim": "sea_dragon",
           "frames": [
-            {"file": "sea_dragon_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "sea_dragon_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "sea_dragon_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "sea_dragon_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "enemy_sea_dragon_f1.png", "row": 5, "col": 0, "bbox": [9, 1237, 238, 284]},
+            {"file": "enemy_sea_dragon_f2.png", "row": 5, "col": 1, "bbox": [266, 1227, 237, 298]},
+            {"file": "enemy_sea_dragon_f3.png", "row": 5, "col": 2, "bbox": [524, 1227, 232, 297]},
+            {"file": "enemy_sea_dragon_f4.png", "row": 5, "col": 3, "bbox": [777, 1237, 238, 287]}
           ]
         }],
-        "original_prompt": "Generate a sprite sheet of retro arcade space-invasion enemy sprites for a Galaga-style game, but with an AQUATIC / deep-sea alien theme. LAYOUT: 6 rows x 4 columns on a solid pure black background. Each row is one unique aquatic enemy; the 4 columns in that row are its 4 animation frames shown left-to-right. All cells exactly the same size (256x256 px), evenly spaced, no text, no labels, no borders between cells. Square image 1024 wide x 1536 tall. STYLE: crisp 16-bit neo-arcade pixel art, underwater bioluminescent neon colors (cyan, teal, magenta, poison-green, orange) glowing against dark abyss-black. Sharp hard edges, NO anti-aliasing, NO gradients, flat shading with one highlight + one shadow step, high contrast, symmetrical, front-facing, no perspective. Consistent style across every sprite. Each enemy centered in its cell with consistent scale. Add glowing accent cores/eyes. 1px dark rim outline so sprites pop off black. ROWS (top to bottom), 4 distinct loopable frames each: 1. Pufferfish (spiky round fish) - puff cycle: small -> mid -> big with spikes out -> mid 2. Flying Mantis Crab (hovering crustacean with big pincers) - pincers: open -> closing -> snap shut -> opening 3. Jellyfish (dome with trailing tentacles) - tentacle sway: phase 1 -> 2 -> 3 -> 4 4. Anglerfish (dark fish with glowing lure on stalk and big toothy jaw) - jaw: open -> biting -> closed -> lure flicker 5. Mech-Shark / Orca (sleek armored fast diver) - fin flick + mouth open/close cycle, 4 poses 6. Sea Dragon (horned serpent-like beast with small tentacles) - tentacle wave + horn glow pulse, 4 phases. Frames within each row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable."
+        "original_prompt": "Generate a sprite sheet of retro arcade space-invasion enemy sprites for a Galaga-style game, but with an AQUATIC / deep-sea alien theme. LAYOUT: 6 rows x 4 columns on a solid pure black background. Each row is one unique aquatic enemy; the 4 columns in that row are its 4 animation frames shown left-to-right. All cells exactly the same size (256x256 px), evenly spaced, no text, no labels, no borders between cells. Square image 1024 wide x 1536 tall. STYLE: crisp 16-bit neo-arcade pixel art, underwater bioluminescent neon colors (cyan, teal, magenta, poison-green, orange) glowing against dark abyss-black. Sharp hard edges, NO anti-aliasing, NO gradients, flat shading with one highlight + one shadow step, high contrast, symmetrical, front-facing, no perspective. Consistent style across every sprite. Each enemy centered in its cell with consistent scale. Add glowing accent cores/eyes. 1px dark rim outline so sprites pop off black. ROWS (top to bottom), 4 distinct loopable frames each: 1. Pufferfish (spiky round fish) - puff cycle: small -> mid -> big with spikes out -> mid 2. Flying Mantis Crab (hovering crustacean with big pincers) - pincers: open -> closing -> snap shut -> opening 3. Jellyfish (dome with trailing tentacles) - tentacle sway: phase 1 -> 2 -> 3 -> 4 4. Anglerfish (dark fish with glowing lure on stalk and big toothy jaw) - jaw: open -> biting -> closed -> lure flicker 5. Mech-Shark / Orca (sleek armored fast diver) - fin flick + mouth open/close cycle, 4 poses 6. Sea Dragon (horned serpent-like beast with small tentacles) - tentacle wave + horn glow pulse, 4 phases. Frames within each row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable.",
+        "crop": {
+          "frames_dir": "abyss-qwen/assets/enemies",
+          "pass": "/home/goglue/tmp/abyss-final-enemies"
+        }
       }]
     },
     "bosses": {
@@ -75,34 +79,38 @@
         "cols": 4,
         "description": "3 large boss creatures, 4 animation frames each",
         "entities": [{
-          "name": "octopus",
-          "anim": "idle",
+          "name": "boss",
+          "anim": "octopus",
           "frames": [
-            {"file": "octopus_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "octopus_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "octopus_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "octopus_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "boss_octopus_f1.png", "row": 0, "col": 0, "bbox": [2, 8, 358, 348]},
+            {"file": "boss_octopus_f2.png", "row": 0, "col": 1, "bbox": [375, 3, 338, 345]},
+            {"file": "boss_octopus_f3.png", "row": 0, "col": 2, "bbox": [752, 4, 305, 341]},
+            {"file": "boss_octopus_f4.png", "row": 0, "col": 3, "bbox": [1096, 3, 342, 340]}
           ]
         }, {
-          "name": "megalodon",
-          "anim": "idle",
+          "name": "boss",
+          "anim": "shark",
           "frames": [
-            {"file": "megalodon_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "megalodon_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "megalodon_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "megalodon_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "boss_shark_f1.png", "row": 1, "col": 0, "bbox": [5, 354, 353, 377]},
+            {"file": "boss_shark_f2.png", "row": 1, "col": 1, "bbox": [365, 356, 353, 374]},
+            {"file": "boss_shark_f3.png", "row": 1, "col": 2, "bbox": [728, 356, 354, 374]},
+            {"file": "boss_shark_f4.png", "row": 1, "col": 3, "bbox": [1087, 356, 356, 375]}
           ]
         }, {
-          "name": "kraken",
-          "anim": "idle",
+          "name": "boss",
+          "anim": "kraken",
           "frames": [
-            {"file": "kraken_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "kraken_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "kraken_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "kraken_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "boss_kraken_f1.png", "row": 2, "col": 0, "bbox": [4, 690, 351, 393]},
+            {"file": "boss_kraken_f2.png", "row": 2, "col": 1, "bbox": [366, 690, 353, 393]},
+            {"file": "boss_kraken_f3.png", "row": 2, "col": 2, "bbox": [729, 690, 353, 383]},
+            {"file": "boss_kraken_f4.png", "row": 2, "col": 3, "bbox": [1090, 690, 355, 394]}
           ]
         }],
-        "original_prompt": "Now generate a sprite sheet of 3 huge retro arcade BOSS sprites for the SAME game, continuing the exact same AQUATIC / deep-sea alien theme and pixel-art style as the enemy sheet above (same neon palette, same black background, same crisp 16-bit look). These are large menacing final-boss creatures, bigger and more detailed than the regular enemies. LAYOUT: 3 rows x 4 columns on a solid pure black background. Each row is one unique boss; the 4 columns in that row are its 4 animation frames shown left-to-right. All cells exactly the same size (512x512 px), evenly spaced, no text, no labels, no borders between cells. Image 2048 wide x 1536 tall. STYLE: identical to the enemy sheet - crisp 16-bit neo-arcade pixel art, underwater bioluminescent neon colors (cyan, teal, magenta, poison-green, orange, red) glowing against dark abyss-black. Sharp hard edges, NO anti-aliasing, NO gradients, flat shading with highlight + shadow steps, high contrast, symmetrical, front-facing, no perspective. Glowing accent eyes/cores. 1px dark rim outline. Large intimidating bosses filling most of each cell. ROWS (top to bottom), 4 distinct loopable frames each: 1. GIANT EVIL OCTOPUS - massive purple/magenta octopus with many long writhing tentacles, huge glowing red eyes, menacing open maw with teeth. Frames: tentacle spread cycle (wide -> mid -> tight -> mid). 2. MEGALODON LEVIATHAN SHARK - colossal armored cyan/teal mega-shark with metallic plating, glowing green eyes, rows of huge teeth, dorsal fin. Frames: jaw open/close + fin flick cycle (closed -> opening -> wide open -> closing). 3. ABYSSAL KRAKEN DREADNOUGHT - enormous dark teal kraken with thick armored tentacles, multiple glowing orange eyes, crown of spikes, central glowing core. Frames: tentacle wave + core glow pulse cycle (phase 1 -> 2 -> 3 -> 4). Frames within each row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable, consistent scale so all three read as same-tier bosses matching the enemy sheet style."
+        "original_prompt": "Now generate a sprite sheet of 3 huge retro arcade BOSS sprites for the SAME game, continuing the exact same AQUATIC / deep-sea alien theme and pixel-art style as the enemy sheet above (same neon palette, same black background, same crisp 16-bit look). These are large menacing final-boss creatures, bigger and more detailed than the regular enemies. LAYOUT: 3 rows x 4 columns on a solid pure black background. Each row is one unique boss; the 4 columns in that row are its 4 animation frames shown left-to-right. All cells exactly the same size (512x512 px), evenly spaced, no text, no labels, no borders between cells. Image 2048 wide x 1536 tall. STYLE: identical to the enemy sheet - crisp 16-bit neo-arcade pixel art, underwater bioluminescent neon colors (cyan, teal, magenta, poison-green, orange, red) glowing against dark abyss-black. Sharp hard edges, NO anti-aliasing, NO gradients, flat shading with highlight + shadow steps, high contrast, symmetrical, front-facing, no perspective. Glowing accent eyes/cores. 1px dark rim outline. Large intimidating bosses filling most of each cell. ROWS (top to bottom), 4 distinct loopable frames each: 1. GIANT EVIL OCTOPUS - massive purple/magenta octopus with many long writhing tentacles, huge glowing red eyes, menacing open maw with teeth. Frames: tentacle spread cycle (wide -> mid -> tight -> mid). 2. MEGALODON LEVIATHAN SHARK - colossal armored cyan/teal mega-shark with metallic plating, glowing green eyes, rows of huge teeth, dorsal fin. Frames: jaw open/close + fin flick cycle (closed -> opening -> wide open -> closing). 3. ABYSSAL KRAKEN DREADNOUGHT - enormous dark teal kraken with thick armored tentacles, multiple glowing orange eyes, crown of spikes, central glowing core. Frames: tentacle wave + core glow pulse cycle (phase 1 -> 2 -> 3 -> 4). Frames within each row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable, consistent scale so all three read as same-tier bosses matching the enemy sheet style.",
+        "crop": {
+          "frames_dir": "abyss-qwen/assets/bosses",
+          "pass": "/home/goglue/tmp/abyss-final-bosses"
+        }
       }]
     },
     "powerups": {
@@ -113,43 +121,47 @@
         "cols": 4,
         "description": "4 collectible power-up capsules (bubbly sausage/popper style), 4 inflate/squeeze frames each",
         "entities": [{
-          "name": "shield",
-          "anim": "idle",
+          "name": "powerup",
+          "anim": "shield",
           "frames": [
-            {"file": "shield_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "shield_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "shield_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "shield_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "powerup_shield_f1.png", "row": 0, "col": 0, "bbox": [2, 58, 308, 227]},
+            {"file": "powerup_shield_f2.png", "row": 0, "col": 1, "bbox": [321, 93, 296, 164]},
+            {"file": "powerup_shield_f3.png", "row": 0, "col": 2, "bbox": [637, 125, 293, 100]},
+            {"file": "powerup_shield_f4.png", "row": 0, "col": 3, "bbox": [949, 93, 294, 164]}
           ]
         }, {
-          "name": "triple_shot",
-          "anim": "idle",
+          "name": "powerup",
+          "anim": "triple_shot",
           "frames": [
-            {"file": "triple_shot_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "triple_shot_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "triple_shot_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "triple_shot_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "powerup_triple_shot_f1.png", "row": 1, "col": 0, "bbox": [2, 341, 308, 223]},
+            {"file": "powerup_triple_shot_f2.png", "row": 1, "col": 1, "bbox": [323, 371, 294, 165]},
+            {"file": "powerup_triple_shot_f3.png", "row": 1, "col": 2, "bbox": [636, 407, 294, 99]},
+            {"file": "powerup_triple_shot_f4.png", "row": 1, "col": 3, "bbox": [949, 371, 293, 165]}
           ]
         }, {
-          "name": "slow_mo",
-          "anim": "idle",
+          "name": "powerup",
+          "anim": "slow_mo",
           "frames": [
-            {"file": "slow_mo_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "slow_mo_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "slow_mo_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "slow_mo_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "powerup_slow_mo_f1.png", "row": 2, "col": 0, "bbox": [0, 632, 310, 308]},
+            {"file": "powerup_slow_mo_f2.png", "row": 2, "col": 1, "bbox": [323, 661, 294, 286]},
+            {"file": "powerup_slow_mo_f3.png", "row": 2, "col": 2, "bbox": [637, 698, 293, 99]},
+            {"file": "powerup_slow_mo_f4.png", "row": 2, "col": 3, "bbox": [949, 661, 293, 286]}
           ]
         }, {
-          "name": "bomb",
-          "anim": "idle",
+          "name": "powerup",
+          "anim": "bomb",
           "frames": [
-            {"file": "bomb_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "bomb_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "bomb_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "bomb_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "powerup_bomb_f1.png", "row": 3, "col": 0, "bbox": [2, 911, 308, 220]},
+            {"file": "powerup_bomb_f2.png", "row": 3, "col": 1, "bbox": [323, 938, 294, 168]},
+            {"file": "powerup_bomb_f3.png", "row": 3, "col": 2, "bbox": [637, 978, 293, 97]},
+            {"file": "powerup_bomb_f4.png", "row": 3, "col": 3, "bbox": [949, 938, 294, 168]}
           ]
         }],
-        "original_prompt": "Make a NEW sprite sheet of 4 power-up items. IMPORTANT: these must be BUBBLY SAUSAGE / POPPER shapes - like a plump inflated pill or party-cracker with a small TIED KNOT/BAND on EACH END (like a tied sausage link). Round glossy gelatinous body with a bright highlight. NOT ornate badges - simple round bubbly capsules. LAYOUT: 4 rows x 4 columns, pure black background, each cell 256x256px, evenly spaced, no text/borders. Image 1024x1024. CRITICAL ANIMATION: Each row must show 4 CLEARLY DIFFERENT frames of a squeeze/inflate cycle: frame 1 = fully inflated (fat/round), frame 2 = slightly squished, frame 3 = most squished (thin/wide), frame 4 = slightly squished. The capsule visibly changes shape between frames. Do NOT make all 4 frames identical. STYLE: same crisp 16-bit neon pixel art as the enemy/boss sheets above, black bg, hard edges, no anti-aliasing, flat shading + highlight, glowing center icon, 1px dark rim. ROWS top to bottom: 1. CYAN capsule, tied knots both ends, center icon = shield hexagon 2. YELLOW/GOLD capsule, tied knots both ends, center icon = three arrows fanning up 3. PURPLE capsule, tied knots both ends, center icon = hourglass 4. RED/ORANGE capsule, tied knots both ends, center icon = bomb/explosion star. Each row: 4 distinct inflate/squeeze frames. Clean and croppable."
+        "original_prompt": "Make a NEW sprite sheet of 4 power-up items. IMPORTANT: these must be BUBBLY SAUSAGE / POPPER shapes - like a plump inflated pill or party-cracker with a small TIED KNOT/BAND on EACH END (like a tied sausage link). Round glossy gelatinous body with a bright highlight. NOT ornate badges - simple round bubbly capsules. LAYOUT: 4 rows x 4 columns, pure black background, each cell 256x256px, evenly spaced, no text/borders. Image 1024x1024. CRITICAL ANIMATION: Each row must show 4 CLEARLY DIFFERENT frames of a squeeze/inflate cycle: frame 1 = fully inflated (fat/round), frame 2 = slightly squished, frame 3 = most squished (thin/wide), frame 4 = slightly squished. The capsule visibly changes shape between frames. Do NOT make all 4 frames identical. STYLE: same crisp 16-bit neon pixel art as the enemy/boss sheets above, black bg, hard edges, no anti-aliasing, flat shading + highlight, glowing center icon, 1px dark rim. ROWS top to bottom: 1. CYAN capsule, tied knots both ends, center icon = shield hexagon 2. YELLOW/GOLD capsule, tied knots both ends, center icon = three arrows fanning up 3. PURPLE capsule, tied knots both ends, center icon = hourglass 4. RED/ORANGE capsule, tied knots both ends, center icon = bomb/explosion star. Each row: 4 distinct inflate/squeeze frames. Clean and croppable.",
+        "crop": {
+          "frames_dir": "abyss-qwen/assets/powerups",
+          "pass": "/home/goglue/tmp/abyss-final-powerups"
+        }
       }]
     },
     "player": {
@@ -160,16 +172,20 @@
         "cols": 4,
         "description": "Player hero ship - Manta Ray fighter viewed from below, 4 wing-fin animation frames",
         "entities": [{
-          "name": "manta_ray",
-          "anim": "idle",
+          "name": "player",
+          "anim": "manta_ray",
           "frames": [
-            {"file": "manta_ray_f1.png", "row": null, "col": null, "bbox": null},
-            {"file": "manta_ray_f2.png", "row": null, "col": null, "bbox": null},
-            {"file": "manta_ray_f3.png", "row": null, "col": null, "bbox": null},
-            {"file": "manta_ray_f4.png", "row": null, "col": null, "bbox": null}
+            {"file": "player_manta_ray_f1.png", "row": 0, "col": 0, "bbox": [0, 99, 560, 531]},
+            {"file": "player_manta_ray_f2.png", "row": 0, "col": 1, "bbox": [584, 85, 510, 545]},
+            {"file": "player_manta_ray_f3.png", "row": 0, "col": 2, "bbox": [1221, 84, 318, 546]},
+            {"file": "player_manta_ray_f4.png", "row": 0, "col": 3, "bbox": [1657, 99, 509, 531]}
           ]
         }],
-        "original_prompt": "Generate a sprite sheet of the PLAYER HERO ship for this same aquatic Galaga game. Same 16-bit neon pixel-art style and black background as the other sheets. THE HERO: A sleek MANTA RAY fighter craft, viewed from BELOW (so we see its underside), pointing UP (nose at top). It has wide sweeping wings/fins that look like a spaceship when seen from below. Exotic color scheme: brown/bronze body with a blue/cyan gradient toward the wing tips, scattered small glowing dots (bioluminescent spots) across the body. A bright cyan cockpit/core glow in the center. Two small thruster glows at the rear. LAYOUT: 1 row x 4 columns on pure black background. The 4 columns are 4 animation frames showing the manta ray's wing fins flapping/swimming: frame 1 = wings fully spread wide, frame 2 = wings slightly swept back, frame 3 = wings most swept (narrow), frame 4 = wings slightly swept back. Subtle but clearly distinct fin positions between frames. Each cell 256x256px, evenly spaced, no text/borders. Image 1024x256 pixels. STYLE: crisp 16-bit neo-arcade pixel art, hard edges, no anti-aliasing, flat shading + highlight steps, high contrast, symmetrical, front-facing (from below looking up). Glowing accents. 1px dark rim outline. The manta should read clearly as a fast elegant player ship."
+        "original_prompt": "Generate a sprite sheet of the PLAYER HERO ship for this same aquatic Galaga game. Same 16-bit neon pixel-art style and black background as the other sheets. THE HERO: A sleek MANTA RAY fighter craft, viewed from BELOW (so we see its underside), pointing UP (nose at top). It has wide sweeping wings/fins that look like a spaceship when seen from below. Exotic color scheme: brown/bronze body with a blue/cyan gradient toward the wing tips, scattered small glowing dots (bioluminescent spots) across the body. A bright cyan cockpit/core glow in the center. Two small thruster glows at the rear. LAYOUT: 1 row x 4 columns on pure black background. The 4 columns are 4 animation frames showing the manta ray's wing fins flapping/swimming: frame 1 = wings fully spread wide, frame 2 = wings slightly swept back, frame 3 = wings most swept (narrow), frame 4 = wings slightly swept back. Subtle but clearly distinct fin positions between frames. Each cell 256x256px, evenly spaced, no text/borders. Image 1024x256 pixels. STYLE: crisp 16-bit neo-arcade pixel art, hard edges, no anti-aliasing, flat shading + highlight steps, high contrast, symmetrical, front-facing (from below looking up). Glowing accents. 1px dark rim outline. The manta should read clearly as a fast elegant player ship.",
+        "crop": {
+          "frames_dir": "abyss-qwen/assets/player",
+          "pass": "/home/goglue/tmp/abyss-final-player"
+        }
       }]
     },
     "hud": {
@@ -203,5 +219,5 @@
       }]
     }
   },
-  "updated": "2026-09-10T18:35:00"
+  "updated": "2026-09-17T17:22:04"
 }

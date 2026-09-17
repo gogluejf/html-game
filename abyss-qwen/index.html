@@ -1113,30 +1113,30 @@ function loadPngSprite(name, dir, prefix, frameCount, scaleW) {
 }
 
 // Player + enemy sets (all 4-frame animations).
-loadPngSprite("player", "player", "manta_ray", 4, 56);
-loadPngSprite("bee", "enemies", "jellyfish", 4, 40);
-loadPngSprite("butterfly", "enemies", "pufferfish", 4, 44);
-loadPngSprite("fighter", "enemies", "sea_dragon", 4, 48);
-loadPngSprite("shooter", "enemies", "anglerfish", 4, 42);
-loadPngSprite("brute", "enemies", "mantis_crab", 4, 46);
-loadPngSprite("raider", "enemies", "mech_shark", 4, 50);
+loadPngSprite("player", "player", "player_manta_ray", 4, 56);
+loadPngSprite("bee", "enemies", "enemy_jellyfish", 4, 40);
+loadPngSprite("butterfly", "enemies", "enemy_pufferfish", 4, 44);
+loadPngSprite("fighter", "enemies", "enemy_sea_dragon", 4, 48);
+loadPngSprite("shooter", "enemies", "enemy_anglerfish", 4, 42);
+loadPngSprite("brute", "enemies", "enemy_mantis_crab", 4, 46);
+loadPngSprite("raider", "enemies", "enemy_mech_shark", 4, 50);
 
 // Power-up pickups (4-frame animations).
-loadPngSprite("pu_shield", "powerups", "shield", 4, 34);
-loadPngSprite("pu_triple", "powerups", "triple_shot", 4, 34);
-loadPngSprite("pu_slow", "powerups", "slow_mo", 4, 34);
-loadPngSprite("pu_bomb", "powerups", "bomb", 4, 34);
+loadPngSprite("pu_shield", "powerups", "powerup_shield", 4, 34);
+loadPngSprite("pu_triple", "powerups", "powerup_triple_shot", 4, 34);
+loadPngSprite("pu_slow", "powerups", "powerup_slow_mo", 4, 34);
+loadPngSprite("pu_bomb", "powerups", "powerup_bomb", 4, 34);
 
 /**
  * Boss roster — cycled in order on every 4th wave.
  *   wave 4 -> octopus, 8 -> megalodon, 12 -> kraken, 16 -> octopus, ...
  */
 const BOSS_ROSTER = [
-  { name: "octopus",   sprite: "boss_octopus",   hp: 10, points: 5000, fireRate: 0.8, scaleW: 130 },
-  { name: "megalodon", sprite: "boss_megalodon", hp: 14, points: 7500, fireRate: 0.65, scaleW: 150 },
-  { name: "kraken",    sprite: "boss_kraken",    hp: 18, points: 10000, fireRate: 0.5, scaleW: 130 },
+  { name: "octopus",   sprite: "boss_octopus",   prefix: "boss_octopus",   hp: 10, points: 5000, fireRate: 0.8, scaleW: 130 },
+  { name: "megalodon", sprite: "boss_megalodon", prefix: "boss_shark",     hp: 14, points: 7500, fireRate: 0.65, scaleW: 150 },
+  { name: "kraken",    sprite: "boss_kraken",    prefix: "boss_kraken",    hp: 18, points: 10000, fireRate: 0.5, scaleW: 130 },
 ];
-BOSS_ROSTER.forEach((b) => loadPngSprite(b.sprite, "bosses", b.name, 4, b.scaleW));
+BOSS_ROSTER.forEach((b) => loadPngSprite(b.sprite, "bosses", b.prefix, 4, b.scaleW));
 
 /**
  * Draw a PNG sprite centered on (cx, cy), scaled so its width matches `scaleW`.
