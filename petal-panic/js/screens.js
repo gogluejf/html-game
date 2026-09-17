@@ -366,11 +366,11 @@ export const Home = {
 // =============================================================================
 
 export const Select = {
-  focus: 0, // 0 = scarlet, 1 = balthazar
+  focus: -1, // -1 = none, 0 = scarlet, 1 = balthazar
   _heldLeft: false,   // ArrowLeft physically down (chip stays gold while held)
   _heldRight: false,  // ArrowRight physically down
 
-  reset() { this.focus = 0; this._heldLeft = false; this._heldRight = false; },
+  reset() { this.focus = -1; this._heldLeft = false; this._heldRight = false; },
 
   draw(ctx) {
     // Background — deep midnight so the cream art cards pop.
@@ -381,7 +381,7 @@ export const Select = {
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
     // Title.
-    drawMarqueeTitle(ctx, 'SELECT YOUR HERO', VIEW_W / 2, 46, 38, { color: CREAM });
+    drawMarqueeTitle(ctx, 'SELECT YOUR PERFORMER', VIEW_W / 2, 46, 38, { color: CREAM });
 
     // Layout: one large central art card (swaps by focus) + a right-hand info
     // column (name, special, stat bars). The art is a full-body duo on cream —
