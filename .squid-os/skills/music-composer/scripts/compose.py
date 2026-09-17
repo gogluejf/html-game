@@ -463,8 +463,9 @@ PLAYER_TMPL = """<!DOCTYPE html>
   /* Side-panel transport (under the card) */
   #sp-transport{display:flex;flex-direction:column;gap:14px;}
   #sp-tl-head{display:flex;justify-content:space-between;font-size:12px;color:#a0b4d8;font-variant-numeric:tabular-nums;font-weight:bold;}
-  #sp-timeline{position:relative;height:6px;background:var(--panel);border:1px solid var(--border);border-radius:999px;cursor:pointer;overflow:visible;}
-  #sp-tl-progress{position:absolute;top:0;left:0;height:100%;background:rgba(62,240,255,.35);border-radius:999px;pointer-events:none;}
+  #sp-timeline{position:relative;height:28px;background:transparent;cursor:pointer;overflow:visible;}
+  #sp-tl-track{position:absolute;top:50%;left:0;right:0;height:6px;transform:translateY(-50%);background:var(--panel);border:1px solid var(--border);border-radius:999px;pointer-events:none;}
+  #sp-tl-progress{position:absolute;top:50%;left:0;height:6px;transform:translateY(-50%);background:rgba(62,240,255,.35);border-radius:999px;pointer-events:none;}
   #sp-tl-dot{position:absolute;top:50%;left:0;width:14px;height:14px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px rgba(255,226,62,.8);transform:translate(-50%,-50%);cursor:grab;z-index:2;transition:width .1s,height .1s;}
   #sp-tl-dot:hover{width:18px;height:18px;}
   #sp-tl-dot:active{cursor:grabbing;}
@@ -512,7 +513,7 @@ PLAYER_TMPL = """<!DOCTYPE html>
         <button class="tbtn" id="sp-next" title="Next song"><svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="5" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
       </div>
       <div id="sp-tl-head"><span id="sp-time-cur">0:00</span><span id="sp-time-dur">0:00</span></div>
-      <div id="sp-timeline"><div id="sp-tl-progress"></div><div id="sp-tl-dot"></div></div>
+      <div id="sp-timeline"><div id="sp-tl-track"></div><div id="sp-tl-progress"></div><div id="sp-tl-dot"></div></div>
     </div>
   </aside>
 </div>
