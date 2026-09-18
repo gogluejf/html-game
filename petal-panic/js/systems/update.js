@@ -16,7 +16,7 @@ import { Camera } from '../camera.js';
 import { Anim, makeTestFrame } from '../anim.js';
 import { Hero } from '../hero.js';
 import { HEROES } from '../heroDefs.js';
-import { projectilePool, specialPool, aimFromInput, dirAngle } from '../projectile.js';
+import { projectilePool, specialPool, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../hitbox.js';
 import { S, getState, STATE_NAMES, tryTransition, onTransition } from '../state.js';
@@ -78,6 +78,12 @@ function setHeroRef(h) { hero = h; }
 // Task 3.1 — thorn fire state. Cooldown is in seconds; rapid powerup halves it.
 // (Hero.stats.projectile_freq is "shots per second", so base interval = 1/freq.)
 hero.fireCooldown = 0;
+
+// Lock Direction must freeze the RESOLVED aim, not the raw directional key
+// (design §5): install the hero's contextual resolver into the input engine so
+// the lock-capture applies the same rules as resolveAim (grounded crouch →
+// horizontal toward facing, airborne/lockMove + Down → straight down, ...).
+input.setResolveAim((intent) => getHero().resolveAim(intent));
 
 // Task 7.3 — Unified run telemetry (design §4.1). A single stats object tracks
 // every documented field: kills, damage, coins, hits taken, time, distance, etc.
@@ -398,6 +404,7 @@ function readInput() {
     jump:   s.jump,
     shoot:  s.shooting,
     lockMove: s.lockMove,
+    lockDir: s.lockDir,
     special: s.switchWeapon,
     melee:  s.melee,
     super:  s.supermove,
@@ -1230,17 +1237,23 @@ function isGrounded(hit) {
 }
 
 // --- Thorn shooting (Task 3.1) -------------------------------------------------
-// G key fires an 8-way thorn from the shared pool. The aim direction comes from
-// the live WASD/arrow state (aimFromInput), falling back to the hero's facing
-// when no directional input is held. Ammo is consumed per shot and fire is
-// gated by a cooldown derived from stats.projectile_freq (halved during rapid).
+// G key fires an 8-way thorn from the shared pool. The aim direction is resolved
+// by gameplay context via hero.resolveAim() (design §4/§32): grounded crouch
+// shoots horizontally toward facing, airborne or lockMove + Down shoot straight
+// down, and no directional input falls back to the hero's facing. Ammo is
+// consumed per shot and fire is gated by a cooldown derived from
+// stats.projectile_freq (halved during rapid).
 // Friendly projectiles only ever hit ENEMY/BOSS via COLLISION_RULES, so they can
 // never damage the hero — friendly-fire is off by construction.
 
 /**
  * Attempt to fire one thorn this step. Mutates hero.fireCooldown / hero.ammo.
+ * The aim is resolved by gameplay context (hero.resolveAim, design §4/§32),
+ * not from raw keys: grounded crouch shoots horizontally toward facing,
+ * airborne/lockMove + Down shoot straight down. Spawn origin is the active
+ * box center so a crouched shot leaves from the lower body.
  * @param {Hero} h the firing hero
- * @param {object} input current intent (left/right/up/down/shoot)
+ * @param {object} input current intent (left/right/up/down/shoot/lockMove/aimX/aimY)
  * @param {number} dt seconds
  */
 function tryFire(h, input, dt) {
@@ -1248,12 +1261,11 @@ function tryFire(h, input, dt) {
   if (!input.shoot || h.fireCooldown > 0) return;
   if (h.ammo <= 0) return; // no ammo → cannot fire
 
-  const dir = aimFromInput(input, h.facing);
+  const dir = h.resolveAim(input);
 
-  // Spawn at the hero's center, offset slightly toward the aim so the thorn
-  // starts just outside the body (avoids same-frame self-overlap artifacts).
-  const cx = h.x + h.w / 2;
-  const cy = h.y + h.h / 2;
+  // Spawn at the active-box center, offset slightly toward the aim so the
+  // thorn starts just outside the body (avoids same-frame self-overlap).
+  const { x: cx, y: cy } = h.bodyCenter();
   const size = 12;
   const ox = Math.cos(dirAngle(dir)) * 16;
   const oy = Math.sin(dirAngle(dir)) * 16;
@@ -1279,9 +1291,8 @@ function trySpecial(h, input, dt) {
   if (h.specialAmmo <= 0) return;
 
   const type = h.stats.special; // 'saw' | 'bomb'
-  const dir = aimFromInput(input, h.facing);
-  const cx = h.x + h.w / 2;
-  const cy = h.y + h.h / 2;
+  const dir = h.resolveAim(input);
+  const { x: cx, y: cy } = h.bodyCenter();
   const angle = dirAngle(dir);
   const ox = Math.cos(angle) * 20;
   const oy = Math.sin(angle) * 20;

@@ -5,7 +5,15 @@
       "status": "not_started",
       "name": "Contextual Down: crouch vs downward aim resolution",
       "milestone": "Behavior Corrections (Doc Compliance)",
-      "milestone_number": "1"
+      "milestone_number": "1",
+      "summary": {
+        "failures": "None",
+        "confidence": "high",
+        "decisions": "(1) Hook-based wiring instead of moving capture into update.js: input.js keeps ownership of the freeze mechanics (angle storage, cos/sin feedback into aimX/aimY); update.js only supplies the contextual rule via setResolveAim(() => getHero().resolveAim(intent)) \u2014 no new module coupling, screens unaffected. (2) Capture uses dirAngle(dir) (the canonical DIR_ANGLES table) rather than atan2(sin/cos) reconstruction \u2014 the latter silently flips sign for dirs 1/2/7 (caught by test). (3) Resolver receives {down: s.crouch, lockMove, aimX: dirX, aimY: dirY} \u2014 the pre-freeze raw values \u2014 so the context rules see the true held state at press time.",
+        "tradeoffs": "Resolver wins over lastAim unconditionally when installed \u2014 even if the player had an explicit non-contextual aim in flight, engage-time resolution re-applies context rules per \u00a75 'captures the resolved aim'. Screens never install a resolver so their raw-capture behavior is untouched. The frozen vector round-trips through aimFromInput exactly (verified all 8 dirs), so resolveAim's lockDir branch returns the captured direction.",
+        "lessons_learned": "(1) lastAim was already non-null on the engage frame (set by the previous poll's else-branch), so gating the resolver on 'lastAim === null' made it dead code \u2014 the capture must prefer the resolver whenever one is installed. (2) Math.atan2(Math.sin(d*PI/4), Math.cos(d*PI/4)) \u2260 dirAngle(d) for dirs 1, 2, 7 (sign flip) \u2014 always use the canonical angle table when converting 8-way indices to angles. (3) Pipeline tests are order-sensitive to hero position/facing carried between cases; placeHero() settles the hero onto the floor each time which masks most drift but crouch-state assertions need the settle frames before locking.",
+        "done": "REVIEW FIX (lock-capture \u00a75): Lock Direction now captures the RESOLVED aim at engage time, not the raw directional key. input.js gained setResolveAim(fn) \u2014 the gameplay layer (update.js) installs hero.resolveAim as the resolver; on the lock-engage frame (lockedAngle===null) the capture runs resolveAim({down: s.crouch, lockMove, aimX: dirX, aimY: dirY}) and freezes dirAngle(dir). Without a resolver installed (screens/pre-hero polls) the old raw-aim + facing fallback is preserved unchanged. A grounded crouched hero pressing I while holding Down now locks horizontal-toward-facing instead of straight-down. Also exported DIR_RIGHT/DIR_LEFT/DIR_DOWN from projectile.js (single shared table; hero.js local constants removed)."
+      }
     },
     "1.2": {
       "number": "1.2",

@@ -10,6 +10,7 @@
 
 import { Entity } from './entity.js';
 import { GRAVITY, MAX_FALL_SPEED, LAYER } from './consts.js';
+import { aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } from './projectile.js';
 
 // Feel knobs (tune freely; these are not per-hero stats).
 const GROUND_FRICTION = 0.85;   // vx multiplier per fixed step when no input on ground
@@ -229,12 +230,14 @@ export class Hero extends Entity {
 
     // --- Crouch / stand (runs AFTER movement so the first press keeps momentum)
     // Crouch only initiates while grounded. Release down → stand back up.
-    if (this.crouching && !input.down) {
+    // §4 "Movement Locked": while lockMove is held, Down no longer initiates
+    // crouch — it becomes a downward aim instead (see resolveAim).
+    if (this.crouching && (!input.down || input.lockMove)) {
       this.crouching = false;
       this.sliding = false;
       this.box = this.standBox;
     }
-    if (input.down && this.grounded && !this.crouching) {
+    if (input.down && !input.lockMove && this.grounded && !this.crouching) {
       this.crouching = true;
       this.box = this.crouchBox;
     }
@@ -359,6 +362,50 @@ export class Hero extends Entity {
       w: this.meleeHitbox.bw,
       h: this.meleeHitbox.bh,
     };
+  }
+
+  /**
+   * Resolve the aim direction (8-way index) from gameplay context, NOT raw
+   * keys (design §32). The single directional input source is
+   * input.aimX/aimY (input.js guarantees one vector for move + aim; lockDir
+   * freezes it there). Context rules (design §4):
+   *   - Grounded + Down → crouch/slide: shooting stays HORIZONTAL toward the
+   *     current facing. There is no grounded-crouch + straight-down state.
+   *   - Airborne + Down → straight-down aim.
+   *   - Movement Locked + Down → straight-down aim (locomotion is already
+   *     zeroed by lockMove in update()).
+   *   - No directional input → horizontal shot toward facing (neutral shot).
+   * @param {object} input intent { left,right,up,down,lockMove,lockDir,aimX,aimY }
+   * @returns {number} 0..7 8-way aim index
+   */
+  resolveAim(input) {
+    const down = !!input.down;
+    // Lock Direction freezes the resolved aim (design §5): the frozen aim
+    // (input.aimX/aimY, set by input.js) is authoritative and wins over every
+    // contextual Down rule — even airborne+Down keeps shooting the locked dir.
+    if (input.lockDir) return aimFromInput(input, this.facing);
+    // Movement lock + Down → straight-down aim (§4 "Movement Locked"). Checked
+    // first: while locked, Down no longer initiates crouch.
+    if (down && input.lockMove) return DIR_DOWN;
+    // Grounded + Down (or already crouched) → horizontal toward facing.
+    // There is NO grounded-crouch + straight-down state (§4). The crouch flag
+    // alone must NOT win while airborne: a hero who slid/fell off a ledge with
+    // Down still held is now in the air, so Down means downward aim (§4).
+    if (this.grounded && (this.crouching || down)) return this.facing >= 0 ? DIR_RIGHT : DIR_LEFT;
+    // Airborne + Down → straight down.
+    if (down) return DIR_DOWN;
+    return aimFromInput(input, this.facing);
+  }
+
+  /**
+   * Vertical center of the ACTIVE collision box (standing or crouch).
+   * Shots spawn from here so a crouched shot originates lower than a standing
+   * one — derived from the box, not the standing height (design §4 / AC #2).
+   * @returns {{x:number,y:number}} world-space body center
+   */
+  bodyCenter() {
+    const b = this.box ?? this.standBox;
+    return { x: this.x + b.ox + b.bw / 2, y: this.y + b.oy + b.bh / 2 };
   }
 
   /**

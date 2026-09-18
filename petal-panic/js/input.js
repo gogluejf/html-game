@@ -1,6 +1,7 @@
 // Physical input boundary. Screens consume nav actions; gameplay consumes state.
 // Keyboard events are queued (including taps between ticks); pads are sampled.
 // A context/capture boundary quarantines held controls until physical release.
+import { dirAngle } from './projectile.js';
 const NAV = ['back', 'pause', 'up', 'down', 'left', 'right', 'confirm', 'retry', 'cont', 'quit', 'remove'];
 const KEY_NAV = { Escape: ['back', 'pause'], KeyP: ['pause'], Enter: ['confirm'], Space: ['confirm'],
   ArrowUp: ['up'], KeyW: ['up'], ArrowDown: ['down'], KeyS: ['down'],
@@ -114,6 +115,12 @@ export function createInput({ target = globalThis.window, document = globalThis.
   const keys = new Set(), queue = [], physical = new Map(), blocked = new Set();
   let previousNav = new Set(), previousGame = new Set(), capture = null;
   let lastAim = null, lockedAngle = null, suspended = false, quarantinePads = false;
+  // Contextual aim resolver (design §5/§32): Lock Direction must freeze the
+  // RESOLVED aim, not the raw directional key. The gameplay layer installs a
+  // resolver bound to the hero so the capture below applies the same context
+  // rules as resolveAim (grounded crouch → horizontal toward facing, ...).
+  // Without one (screens / pre-hero polls) the raw aim is captured verbatim.
+  let resolveAim = null;
   const pendingReleases = new Set();
   const listeners = [];
   const listen = (obj, name, fn) => { obj?.addEventListener?.(name, fn); listeners.push(() => obj?.removeEventListener?.(name, fn)); };
@@ -188,6 +195,8 @@ export function createInput({ target = globalThis.window, document = globalThis.
       previousNav.clear(); previousGame.clear(); this.state = blank(); lockedAngle = null;
     },
     reset() { lastAim = null; this.barrier(); },
+    /** Install the contextual aim resolver used when Lock Direction engages. */
+    setResolveAim(fn) { resolveAim = fn ?? null; },
     beginCapture(source) { this.barrier(); capture = source; this.captureResult = null; },
     cancelCapture() { capture = null; this.captureResult = null; this.barrier(); },
     get capturing() { return capture !== null; },
@@ -306,8 +315,30 @@ export function createInput({ target = globalThis.window, document = globalThis.
       for (const a of DISCRETE) s[a === 'shoot' ? 'shooting' : a] = previousGame.has(a) || gamePressed.has(a);
       for (const a of ['melee','supermove','switchWeapon']) s[a] = gamePressed.has(a);
       if (s.lockDir) {
-        if (lockedAngle === null) lockedAngle = lastAim ?? ((s.aimX || s.aimY)
-          ? Math.atan2(s.aimY, s.aimX) : (facing < 0 ? Math.PI : 0));
+        // Lock Direction freezes the RESOLVED aim (design §5), not merely the
+        // raw directional key: a grounded crouched hero locking while holding
+        // Down must lock horizontal-toward-facing, never straight-down. The
+        // resolver applies the same context rules as hero.resolveAim; when no
+        // resolver is installed (screens / pre-hero polls) fall back to the
+        // raw aim with the facing-based neutral default. Capture happens on
+        // the engage frame itself (lockedAngle still null), so the frozen
+        // value always reflects the state at the moment of the press.
+        if (lockedAngle === null) {
+          // Capture the RESOLVED aim at engage time. When a resolver is
+          // installed (gameplay layer), it wins over lastAim — that is exactly
+          // the §5 fix: holding Down while grounded-crouched resolves to
+          // horizontal-toward-facing, not straight-down. Without a resolver
+          // (screens / pre-hero polls) fall back to the raw aim with the
+          // facing-based neutral default.
+          let angle;
+          if (resolveAim) {
+            const dir = resolveAim({ down: s.crouch, lockMove: s.lockMove, aimX: dirX, aimY: dirY });
+            angle = dirAngle(dir);
+          } else {
+            angle = lastAim ?? ((s.aimX || s.aimY) ? Math.atan2(s.aimY, s.aimX) : (facing < 0 ? Math.PI : 0));
+          }
+          lockedAngle = angle;
+        }
         s.aimX = Math.cos(lockedAngle); s.aimY = Math.sin(lockedAngle); s.aimAngle = lockedAngle;
       } else {
         lockedAngle = null;
