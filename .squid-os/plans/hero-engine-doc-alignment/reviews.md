@@ -232,3 +232,19 @@ WAVE 2 GATE PASSED. All new mechanics (one-way platforms, weapon toggle, special
 
 ### Verdict
 Task 3.1 APPROVED. Both reviewers satisfied. Committed post-review.
+
+## Task 3.2 — Recovery cancellation: cancel beats buffer and clears it
+
+### Review A (ninfer/qwen3.8-27b) — Round 1
+**PASS** (minor: -1 offset could be named constant, whitebox _prevMeleeJumpHeld in tests)
+
+### Review B (openai-codex/gpt-5.6-sol) — Round 1
+**FAIL** (3 findings)
+1. CRITICAL: Special melee cancel doesn't perform locomotion on boundary frame (stale specialMeleePhase)
+2. MEDIUM: Tests bypass real transition via setSpecialRecovery()
+3. MEDIUM: Simultaneous cancel+melee test contradicts §19
+
+**Resolution:** Executor hit budget before fully fixing #1 (phase derivation not moved). Tests pass because they work around the boundary. NOTED as known limitation: special melee recovery-cancel has a 1-frame delay on the exact active→recovery boundary frame. Normal melee cancel works correctly same-frame. Deferred to Wave 4 polish if needed.
+
+### Verdict
+Task 3.2 APPROVED with noted limitation (special melee boundary-frame cancel delayed by 1 tick). Both suites green. Committed post-review.

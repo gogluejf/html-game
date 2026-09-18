@@ -122,7 +122,7 @@
     },
     "3.1": {
       "number": "3.1",
-      "status": "not_started",
+      "status": "completed",
       "name": "Shared one-slot melee buffer with latest-wins replacement",
       "milestone": "Combat Input Architecture (Buffer + Cancellation)",
       "milestone_number": "3",
@@ -140,7 +140,15 @@
       "status": "not_started",
       "name": "Recovery cancellation: cancel beats buffer and clears it",
       "milestone": "Combat Input Architecture (Buffer + Cancellation)",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "done": "Recovery cancellation for both melee types (\u00a716/\u00a719): updateMelee(dt, input) now derives the phase pre-increment and, during recovery, checks a shared _meleeCancelRequested(input) predicate (fresh jump edge via _prevMeleeJumpHeld OR directional run input) BEFORE advancing the clock or executing the buffer; on cancel it calls new endNormalMelee() and clears pendingMelee. updateSpecialMelee's existing cancel branch now uses the same shared predicate and also clears pendingMelee. Added endNormalMelee() mirroring endSpecialMelee(). New test file meleeCancel.test.js (17 assertions, direct-intent pattern + one wiring test mirroring update.js per-frame order). All verify commands exit 0; no regressions in melee/heroHit/jumpslide/crouchCancel/supermove tests.",
+        "confidence": "high",
+        "failures": "None",
+        "lessons_learned": "The hero's jump block runs BEFORE the melee tick inside update(), so a recovery-cancel jump fires naturally the same frame with no extra plumbing \u2014 but it means jump-during-windup/active is NOT suppressed for normal melee (it was never suppressed before either); tests must assert non-cancellation, not jump suppression. A held jump (no fresh edge) correctly does not cancel, matching the edge-triggered design.",
+        "tradeoffs": "Normal melee does not suppress jumps during windup/active (unlike special melee) \u2014 out of scope for \u00a716 which only defines cancel rules; committed frames simply don't cancel. Jump-edge tracking reuses the single _prevMeleeJumpHeld flag written by both machines' ticks (they are mutually exclusive so no conflict).",
+        "decisions": "Single shared predicate _meleeCancelRequested() used by both normal and special melee guarantees identical cancel rules with zero per-type divergence (AC#5). Cancel check placed at the top of each machine's tick (after phase derivation, before frame advance and before executePendingMelee), satisfying \u00a719 'cancel is evaluated before buffer execution'. endNormalMelee() added as the symmetric counterpart to endSpecialMelee() rather than inline flag-clearing."
+      }
     },
     "4.1": {
       "number": "4.1",

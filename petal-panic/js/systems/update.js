@@ -1100,7 +1100,7 @@ export function update(dt) {
   if (hero.fireCooldown > 0) hero.fireCooldown -= dt;
   tryFire(hero, input, dt);                    // dispatches on hero.selectedWeapon
 
-  // 1c. melee swing (Task 3.2 + §17-§18): H starts a swing; during its single
+  // 1c. melee swing (Task 3.2 + §17-§19): H starts a swing; during its single
   //     active frame the hero's hitbox is checked against enemies and routed
   //     through central damage(). The cooldown lives on the hero (updateMelee).
   //     §24: combat inputs are locked during hit-stun — no melee activation.
@@ -1109,6 +1109,10 @@ export function update(dt) {
   //     pending slot with latest-wins replacement — a press during an
   //     in-progress attack buffers instead of being dropped, and the buffered
   //     action fires only after the current attack's natural recovery (§18).
+  //     §19 ordering: hero.update() above already evaluated the recovery
+  //     cancel BEFORE any buffer execution this frame (cancel beats buffer);
+  //     this block then handles the NEW melee press for THIS frame — either
+  //     starting a fresh swing or buffering into the still-active one.
   if (input.melee && !hero.hitStunned) {
     const wasActive = hero.meleeActive || hero.specialMeleeActive;
     hero.requestMelee(input.down ? 'special' : 'normal');

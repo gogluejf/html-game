@@ -191,11 +191,11 @@ export class Hero extends Entity {
     this._coyote = 0;
     this._jumpBuffer = 0;
     this._prevJumpHeld = false;
-    // Dedicated prev-jump tracker for the special-melee recovery cancel (§16).
-    // _prevJumpHeld is updated inside update() BEFORE updateSpecialMelee runs,
-    // so a fresh-press check against it there would always read stale state.
-    // This flag is only written at the very end of updateSpecialMelee, after
-    // every consumer has run — giving the cancel check a true edge signal.
+    // Dedicated prev-jump tracker for melee recovery cancels (§16/§19).
+    // _prevJumpHeld is updated inside update() BEFORE the melee phase machines
+    // run, so a fresh-press check against it there would always read stale
+    // state. This flag is only written at the very end of each melee tick —
+    // giving both cancel checks (normal + special) a true edge signal.
     this._prevMeleeJumpHeld = false;
 
     // One-way platform drop-through (design §13). _dropTimer > 0 while the
@@ -485,8 +485,10 @@ export class Hero extends Entity {
 
     // --- Melee swing tick ---------------------------------------------------
     // Advance the swing frame clock and drive the attack animation so its
-    // displayed frame stays in lockstep with the damage window.
-    this.updateMelee(dt);
+    // displayed frame stays in lockstep with the damage window. Input is
+    // passed for the recovery cancel (§16/§19): a fresh jump press or run
+    // input during recovery ends the swing early and clears pendingMelee.
+    this.updateMelee(dt, input);
 
     // --- Special melee tick (design §15) ------------------------------------
     // Down+Melee swing: windup/active own vx (committed trajectory), recovery
@@ -573,11 +575,35 @@ export class Hero extends Entity {
    * Advance the swing's internal frame clock by dt. When the last frame has
    * elapsed the swing ends (active flag cleared, frame reset). The cooldown
    * itself is decremented by the caller alongside other timers.
+   *
+   * Per-frame order matters (design §19 — cancellation always beats buffering):
+   *   1. advance the frame clock
+   *   2. if in RECOVERY and a valid locomotion intent arrives (fresh jump press
+   *      or run/movement input) → end the attack early, CLEAR the pending melee
+   *      buffer (§19), and let normal locomotion proceed this same frame.
+   *   3. else if the swing finished naturally AND a melee is buffered → fire it.
+   * Windup + active are committed (§16): no cancel during those frames.
    * @param {number} dt seconds
+   * @param {object} input intent (jump/left/right used for recovery cancel)
    */
-  updateMelee(dt) {
+  updateMelee(dt, input) {
     if (this.meleeCooldown > 0) this.meleeCooldown -= dt;
     if (!this.meleeActive) return;
+    // Phase derived from the frame count BEFORE advancing (frame N owns its own
+    // phase): windup [0, ACTIVE_FRAME), active [ACTIVE_FRAME, TOTAL-1),
+    // recovery [TOTAL-1, TOTAL).
+    const f = Math.floor(this.meleeFrame);
+    const inRecovery = f >= this.MELEE_TOTAL_FRAMES - 1;
+    if (inRecovery && this._meleeCancelRequested(input)) {
+      // Recovery cancel (§16/§19): end the swing NOW, discard the buffered
+      // action — cancellation always wins and clears the buffer. Locomotion
+      // resumes immediately (the movement/jump blocks in update() already ran
+      // with this frame's input, so control is regained the same frame).
+      this.endNormalMelee();
+      this.pendingMelee = null;
+      this._prevMeleeJumpHeld = !!(input && input.jump);
+      return;
+    }
     this.meleeFrame += dt / this.MELEE_FRAME_DURATION;
     if (this.meleeFrame >= this.MELEE_TOTAL_FRAMES) {
       this.meleeActive = false;
@@ -595,6 +621,30 @@ export class Hero extends Entity {
       // Keep the visible attack frame aligned with the logical frame index.
       this.anims.attack.pickFrame(Math.floor(this.meleeFrame));
     }
+    this._prevMeleeJumpHeld = !!(input && input.jump);
+  }
+
+  /**
+   * Shared recovery-cancel predicate (design §16/§19): true when the player
+   * issues a valid locomotion transition out of recovery — a FRESH jump press
+   * (edge-triggered via _prevMeleeJumpHeld) or a directional run input.
+   * Used identically by normal and special melee so both kinds obey the same
+   * cancel rules with no per-type divergence.
+   * @param {object} input intent
+   * @returns {boolean}
+   */
+  _meleeCancelRequested(input) {
+    if (!input) return false;
+    const jumpPressed = !!input.jump && !this._prevMeleeJumpHeld;
+    const moveInput = (input.left && !input.right) || (input.right && !input.left);
+    return jumpPressed || moveInput;
+  }
+
+  /** End the normal swing (natural completion or recovery cancel, §16/§19). */
+  endNormalMelee() {
+    this.meleeActive = false;
+    this.meleeFrame = 0;
+    this.meleeCooldown = 0;
   }
 
   /**
@@ -688,18 +738,19 @@ export class Hero extends Entity {
     }
     this.specialMeleePhase = phase;
 
-    // Recovery cancel (§16 shared rule): a fresh jump press OR any horizontal
-    // movement input ends the swing early; normal control resumes immediately.
-    // Checked AFTER the phase is derived so a boundary-crossing frame cancels
-    // out of recovery correctly. The jump edge uses _prevMeleeJumpHeld — a
-    // dedicated tracker updated at the END of this method — because the shared
-    // _prevJumpHeld is already set from THIS frame's input by the time
-    // update() reaches here, which would make the fresh-press check always
-    // false (stale signal).
-    const jumpPressed = input && input.jump && !this._prevMeleeJumpHeld;
-    const moveInput = input && ((input.left && !input.right) || (input.right && !input.left));
-    if (phase === 'recovery' && (jumpPressed || moveInput)) {
+    // Recovery cancel (§16/§19 shared rule): a fresh jump press OR any
+    // horizontal movement input ends the swing early; normal control resumes
+    // immediately. Checked AFTER the phase is derived so a boundary-crossing
+    // frame cancels out of recovery correctly. The jump edge uses
+    // _prevMeleeJumpHeld — a dedicated tracker updated at the END of this
+    // method — because the shared _prevJumpHeld is already set from THIS
+    // frame's input by the time update() reaches here, which would make the
+    // fresh-press check always false (stale signal). Cancellation ALWAYS wins:
+    // the pending melee buffer is discarded along with the remaining recovery
+    // (§19 "cancellation always wins and clears the buffer").
+    if (phase === 'recovery' && this._meleeCancelRequested(input)) {
       this.endSpecialMelee();
+      this.pendingMelee = null;
       this._prevMeleeJumpHeld = !!input.jump;
       return;
     }
