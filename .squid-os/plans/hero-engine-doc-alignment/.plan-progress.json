@@ -107,7 +107,7 @@
     },
     "2.3": {
       "number": "2.3",
-      "status": "not_started",
+      "status": "completed",
       "name": "Special melee: Down+Melee with per-hero trajectories",
       "milestone": "New Mechanics",
       "milestone_number": "2",
