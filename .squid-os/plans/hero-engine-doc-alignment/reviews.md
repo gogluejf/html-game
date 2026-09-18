@@ -269,3 +269,11 @@ WAVE 3 GATE PASSED. Combat input architecture complete.
 
 ### Verdict
 Task 4.1 APPROVED after fix. Single-reviewed. Committed post-review.
+
+## Task 4.2 — Explicit state composition + debug/timer parity (§27, §28, §31)
+
+### Review
+Single-reviewed (executor hit budget before full review dispatch). Domain getters added (locomotion, combatPhase, aimMode, effects). heroAnimName updated to use composed state. Debug timer labels verified against §28. All tests pass.
+
+### Verdict
+Task 4.2 APPROVED (single-reviewed, minimal scope). Committed post-review.

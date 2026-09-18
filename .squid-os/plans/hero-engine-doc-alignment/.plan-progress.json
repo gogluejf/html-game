@@ -152,7 +152,7 @@
     },
     "4.1": {
       "number": "4.1",
-      "status": "not_started",
+      "status": "completed",
       "name": "Data-driven per-frame attack hitboxes (\u00a730)",
       "milestone": "Polish, Validation & Premium Quality Bar",
       "milestone_number": "4",

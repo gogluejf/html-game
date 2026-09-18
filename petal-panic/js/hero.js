@@ -244,6 +244,47 @@ export class Hero extends Entity {
   /** True while the hero is in hit-stun (recovery) — input is locked. */
   get hitStunned() { return this.timers.get('rec') > 0; }
 
+  // --- Composed domain views (§31) -------------------------------------------
+  // Pure derivations over the authoritative flags above. Render, anim
+  // selection, and the debug overlay read these instead of re-deriving state
+  // from scattered booleans — one derivation point, no consumer-side drift.
+
+  /** Locomotion phase: 'dead'|'supermove'|'attack'|'hitstun'|'slide'|'crouch'|'jump'|'djump'|'fall'|'run'|'idle'. */
+  get locomotion() {
+    if (this.dying) return 'dead';
+    if (this.supermoveActive) return 'supermove';
+    if (this.meleeActive || this.specialMeleeActive) return 'attack';
+    if (this.hitStunned) return 'hitstun';
+    if (this.crouching) return this.sliding ? 'slide' : 'crouch';
+    if (!this.grounded) return this.jumpsUsed >= 2 ? 'djump' : (this.vy > 0 ? 'fall' : 'jump');
+    if (Math.abs(this.vx) > 20) return 'run';
+    return 'idle';
+  }
+
+  /** Combat phase: null | 'windup' | 'active' | 'recovery' (per attack kind). */
+  get combatPhase() {
+    if (this.meleeActive) {
+      const f = Math.floor(this.meleeFrame);
+      if (f < this.MELEE_ACTIVE_FRAME) return 'windup';
+      if (f < this.MELEE_TOTAL_FRAMES - 1) return 'active';
+      return 'recovery';
+    }
+    if (this.specialMeleeActive) return this.specialMeleePhase;
+    return null;
+  }
+
+  /** Aim mode as seen by the hero side: direction lock lives in input.js. */
+  get aimMode() { return 'follow-input'; }
+
+  /** Active effect flags, composed for consumers that need them together. */
+  get effects() {
+    return {
+      intangible: this.intangible,
+      rapid: this.timers.get('rapid') > 0,
+      hitstun: this.hitStunned,
+    };
+  }
+
   /**
    * Apply a hit reaction: contextual knockback impulse + hit-stun (recovery) +
    * i-frames. This is the single entry point for every damaging collision

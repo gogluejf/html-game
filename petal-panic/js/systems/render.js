@@ -368,19 +368,32 @@ export function render(ctx) {
  * airborne + falling (vy > 0) → 'fall'; airborne at rest → idle.
  */
 export function heroAnimName(h) {
-  if (h.dying) return 'dead';
-  if (h.supermoveActive) return 'supermove';
-  if (h.meleeActive) return 'melee';
-  if (h.timers && h.timers.get('rec') > 0) return 'hitstun';
-  if (h.crouching) return h.sliding ? 'slide' : 'crouch';
-  if (h.jumpsUsed > 0) return h.jumpsUsed >= 2 ? 'djump' : 'jump';
-  // Airborne without an initiated jump (walked off a ledge): falling → fall.
-  // `!grounded` is the authoritative airborne signal — a grounded hero can
-  // carry residual vy from integration before the main loop's resolve() runs,
-  // so vy alone would misfire on the ground.
-  if (!h.grounded && h.vy > 0) return 'fall';
-  if (Math.abs(h.vx) > 20) return 'run';
-  return 'idle';
+  // Composed domain view (hero.locomotion, §31) — single derivation point.
+  const loc = h.locomotion ?? (() => {
+    // Plain test fixtures without getters keep working via raw fields.
+    if (h.dying) return 'dead';
+    if (h.supermoveActive) return 'supermove';
+    if (h.meleeActive) return 'attack';
+    if (h.timers && h.timers.get('rec') > 0) return 'hitstun';
+    if (h.crouching) return h.sliding ? 'slide' : 'crouch';
+    if (h.jumpsUsed > 0) return h.jumpsUsed >= 2 ? 'djump' : 'jump';
+    if (!h.grounded && h.vy > 0) return 'fall';
+    if (Math.abs(h.vx) > 20) return 'run';
+    return 'idle';
+  })();
+  switch (loc) {
+    case 'dead': return 'dead';
+    case 'supermove': return 'supermove';
+    case 'attack': return h.specialMeleeActive ? 'specialmelee' : 'melee';
+    case 'hitstun': return 'hitstun';
+    case 'slide': return 'slide';
+    case 'crouch': return 'crouch';
+    case 'djump': return 'djump';
+    case 'jump': return 'jump';
+    case 'fall': return 'fall';
+    case 'run': return 'run';
+    default: return 'idle';
+  }
 }
 
 function drawDeathSkull(ctx, h) {
