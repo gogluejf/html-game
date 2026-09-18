@@ -92,7 +92,7 @@
     },
     "2.2": {
       "number": "2.2",
-      "status": "not_started",
+      "status": "completed",
       "name": "Weapon toggle system (N): Thorn / Special through one shoot path",
       "milestone": "New Mechanics",
       "milestone_number": "2",
@@ -110,7 +110,15 @@
       "status": "not_started",
       "name": "Special melee: Down+Melee with per-hero trajectories",
       "milestone": "New Mechanics",
-      "milestone_number": "2"
+      "milestone_number": "2",
+      "summary": {
+        "confidence": "high",
+        "tradeoffs": "Dedicated _prevMeleeJumpHeld flag is a second prev-jump tracker rather than reordering _prevJumpHeld updates \u2014 reordering would have risked breaking the jump-cut branch which relies on the current update position; a separate tracker keeps the change minimal and scoped to special melee.",
+        "failures": "None",
+        "lessons_learned": "Edge-trigger checks that read a 'previous frame' flag are order-sensitive: any consumer running after the flag's write sees a stale signal. The old test masked this by calling updateSpecialMelee directly with a hand-set _prevJumpHeld \u2014 integration-path tests catch what unit-isolation tests hide.",
+        "done": "Fixed recovery-cancel bug in integrated update path: added dedicated _prevMeleeJumpHeld tracker (written at end of updateSpecialMelee) so the fresh-press check no longer reads the stale _prevJumpHeld that update() sets before calling it; also added movement cancel during recovery per doc \u00a716 (left/right input ends special melee early via endSpecialMelee). Fixed mutual-exclusion gap: tryMelee() now refuses to start a normal swing while specialMeleeActive, symmetric with startSpecialMelee's existing guard. Updated specialMelee.test.js recovery-cancel test to use the full h.update(DT, input) production path instead of calling updateSpecialMelee directly, and added tests for movement-cancel and the symmetric tryMelee guard.",
+        "decisions": "Chose option A from the task (separate _prevMeleeJumpHeld tracker) over moving the _prevJumpHeld write later in update(): the jump block's variable-height cut (else-if !input.jump && this._prevJumpHeld) depends on the write happening where it is, so a dedicated tracker is the cleanest minimal fix. Movement cancel uses directional intent (left XOR right), not raw vx, so knockback bleed during recovery doesn't accidentally cancel the swing."
+      }
     },
     "3.1": {
       "number": "3.1",

@@ -19,6 +19,14 @@ export const HEROES = {
       special_freq: 2,      // saw cooldown (seconds)
       special: 'saw',
     },
+    // §15 Special melee (Down+Melee): retreating cartwheel — travels AWAY from
+    // facing while the sprite keeps its original orientation. Tuning lives here.
+    specialMelee: {
+      direction: -1,        // -1 = away from facing (scarlet's cartwheel)
+      travelSpeed: 300,     // px/s self-supplied horizontal movement
+      frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
+      hitbox: { ox: 20, oy: -10, bw: 40, bh: 40 },    // active-frame box offset from center
+    },
   },
   balthazar: {
     id: 'balthazar',
@@ -34,6 +42,13 @@ export const HEROES = {
       projectile_freq: 10,
       special_freq: 3,
       special: 'bomb',
+    },
+    // §15 Special melee (Down+Melee): advancing sweep — travels TOWARD facing.
+    specialMelee: {
+      direction: 1,         // +1 = toward facing (balthazar's sweep)
+      travelSpeed: 300,     // px/s self-supplied horizontal movement
+      frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
+      hitbox: { ox: 20, oy: -10, bw: 40, bh: 40 },    // active-frame box offset from center
     },
   },
 };

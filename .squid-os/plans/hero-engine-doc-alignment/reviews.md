@@ -188,3 +188,19 @@ Task 2.1 APPROVED. Both reviewers satisfied. Committed post-review.
 
 ### Verdict
 Task 2.2 APPROVED. Both reviewers satisfied. Committed post-review.
+
+## Task 2.3 — Special melee: Down+Melee with per-hero trajectories
+
+### Review A (ninfer/qwen3.8-27b)
+**ERROR** — context overflow (second occurrence). Proceeding as single-reviewed per orchestrator failure handling.
+
+### Review B (openai-codex/gpt-5.6-sol) — Round 1
+**FAIL** (3 findings)
+1. Recovery cancel broken in integrated path (_prevJumpHeld ordering) — ACCEPTED, fixed
+2. Normal + special melee can be active simultaneously — ACCEPTED, fixed
+3. Shared melee buffering absent — REJECTED (task 3.1 scope, Wave 3)
+
+**Resolution:** #1 fixed (dedicated _prevMeleeJumpHeld tracker + movement cancel). #2 fixed (tryMelee guards on specialMeleeActive). #3 deferred to 3.1.
+
+### Verdict
+Task 2.3 APPROVED (single-reviewed — Review A context overflow). Both suites green. Committed post-review.

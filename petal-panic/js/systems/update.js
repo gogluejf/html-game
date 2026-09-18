@@ -1104,9 +1104,15 @@ export function update(dt) {
   //     frame the hero's hitbox is checked against enemies and routed through
   //     central damage(). The cooldown lives on the hero (updateMelee).
   //     §24: combat inputs are locked during hit-stun — no melee activation.
+  //     §15: Down+Melee triggers the SPECIAL melee (per-hero trajectory)
+  //     instead of the normal swing; plain Melee keeps the existing behavior.
   if (input.melee && !hero.hitStunned) {
     const wasActive = hero.meleeActive;
-    hero.tryMelee();
+    if (input.down) {
+      hero.startSpecialMelee();
+    } else {
+      hero.tryMelee();
+    }
     if (!wasActive && hero.meleeActive) {
       hero.runStats.meleeSwings += 1; // Task 7.3 — count the swing start
     }
@@ -1479,6 +1485,18 @@ const _slotSuper = makeSlot(_hbSuper, {
   resetFlag: { get: () => !!hero._supermoveHbReset, set: v => hero._supermoveHbReset = v },
 });
 
+// Hero special melee slot (design §15): Down+Melee per-hero trajectory swing.
+// Same lifecycle as the normal melee slot — only the active phase exposes a
+// box; damage routes through the same central damage() system.
+const _hbSpecialMelee = makeHitbox({ owner: null, team: 'ally', box: null, damage: 0, method: 'specialMelee' });
+_hitboxes.push(_hbSpecialMelee);
+const _slotSpecialMelee = makeSlot(_hbSpecialMelee, {
+  ownerGet: () => hero,
+  boxGet: () => hero.specialMeleeHitboxWorld,
+  damageGet: () => hero.stats.attack,
+  resetFlag: { get: () => !!hero._specialMeleeHbReset, set: v => hero._specialMeleeHbReset = v },
+});
+
 /**
  * Register active hitboxes for this frame and process them all in one pass.
  * Called once per update tick after all entities have integrated.
@@ -1486,8 +1504,9 @@ const _slotSuper = makeSlot(_hbSuper, {
 function processAllHitboxes() {
   const h = hero;
 
-  // --- Hero slots (melee + supermove) ---
+  // --- Hero slots (melee + special melee + supermove) ---
   updateSlot(_slotMelee);
+  updateSlot(_slotSpecialMelee);
   updateSlot(_slotSuper);
 
   // --- Enemy attack hitboxes (whip, lunge, jab) ---

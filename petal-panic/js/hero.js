@@ -139,6 +139,17 @@ export class Hero extends Entity {
     // flipped when facing left (see meleeHitboxWorld).
     this.meleeHitbox = { ox: 20, oy: -10, bw: 40, bh: 40 };
 
+    // --- Special melee (design §15) ------------------------------------------
+    // Down+Melee triggers a per-hero special swing with a self-supplied
+    // trajectory (Balthazar advances, Scarlet retreats). Same phase rules as
+    // normal melee (§16): windup+active are committed (own vx, no cancel),
+    // recovery is cancellable by jump/movement. Frame timing reuses the same
+    // MELEE_FRAME_DURATION clock as the normal swing — no new timing system.
+    this.specialMeleeActive = false;   // true while a special swing is playing
+    this.specialMeleePhase = null;     // 'windup' | 'active' | 'recovery' | null
+    this.specialMeleeFrame = 0;        // float frame position within the swing
+    this.specialMeleeDir = 1;          // resolved dir: facing * config.direction
+
     // Offset collision boxes (relative to origin). Standing = full w×h.
     // Crouch keeps feet planted: top drops by h*0.4, height becomes h*0.6.
     this.standBox = { ox: 0, oy: 0, bw: this.w, bh: this.h };
@@ -171,6 +182,12 @@ export class Hero extends Entity {
     this._coyote = 0;
     this._jumpBuffer = 0;
     this._prevJumpHeld = false;
+    // Dedicated prev-jump tracker for the special-melee recovery cancel (§16).
+    // _prevJumpHeld is updated inside update() BEFORE updateSpecialMelee runs,
+    // so a fresh-press check against it there would always read stale state.
+    // This flag is only written at the very end of updateSpecialMelee, after
+    // every consumer has run — giving the cancel check a true edge signal.
+    this._prevMeleeJumpHeld = false;
 
     // One-way platform drop-through (design §13). _dropTimer > 0 while the
     // hero is intentionally passing through a one-way platform: resolve() is
@@ -314,6 +331,11 @@ export class Hero extends Entity {
     if (this.supermoveActive) {
       // Super dash owns vx/vy — skip all normal movement control.
       // (updateSupermove below will set the dash velocity.)
+    } else if (this.specialMeleeActive && this.specialMeleePhase !== 'recovery') {
+      // Special melee windup/active (§15): the committed trajectory OWNS vx —
+      // held input cannot steer or reverse it mid-attack. updateSpecialMelee
+      // sets vx = dir * travelSpeed after this block, so we must not write it
+      // here. Gravity still applies; jump-cancel is blocked (committed).
     } else if (stunned) {
       // No control during recovery: bleed the knockback off with friction so it
       // travels a short distance then settles, rather than stopping dead or
@@ -409,7 +431,7 @@ export class Hero extends Entity {
     // cancels out of the remaining recovery (handled by endSupermove below).
     if (this.supermoveActive && this.supermovePhase === 'decel' && jumpPressed) {
       this.endSupermove();
-    } else if (!dropping && !this.supermoveActive && (canGroundJump || canAirJump) && this._jumpBuffer > 0 && !stunned) {
+    } else if (!dropping && !this.supermoveActive && (canGroundJump || canAirJump) && this._jumpBuffer > 0 && !stunned && !(this.specialMeleeActive && this.specialMeleePhase !== 'recovery')) {
       // §12: crouching must never force a stand-first. Jumping from crouch
       // cancels it atomically (state + hitbox + slide flag) before launch.
       if (this.crouching) this.exitCrouch();
@@ -457,6 +479,12 @@ export class Hero extends Entity {
     // displayed frame stays in lockstep with the damage window.
     this.updateMelee(dt);
 
+    // --- Special melee tick (design §15) ------------------------------------
+    // Down+Melee swing: windup/active own vx (committed trajectory), recovery
+    // decays + is jump-cancellable. Runs after updateMelee; both swings are
+    // mutually exclusive (startSpecialMelee refuses while a normal swing is up).
+    this.updateSpecialMelee(dt, input);
+
     // --- Super move charge + dash -------------------------------------------
     this.updateSupermove(dt, input);
 
@@ -482,7 +510,10 @@ export class Hero extends Entity {
    * is what prevents spamming.
    */
   tryMelee() {
-    if (this.meleeCooldown > 0 || this.meleeActive) return;
+    // Mutual exclusion (§15/§16): the two swings never overlap. startSpecialMelee
+    // refuses while a normal swing is up; this is the symmetric guard so a
+    // plain Melee press can't start a normal swing under an active special one.
+    if (this.meleeCooldown > 0 || this.meleeActive || this.specialMeleeActive) return;
     this.meleeFrame = 0;
     this.meleeActive = true;
     this.meleeCooldown = this.MELEE_TOTAL_FRAMES * this.MELEE_FRAME_DURATION;
@@ -527,6 +558,140 @@ export class Hero extends Entity {
       y: cy + this.meleeHitbox.oy,
       w: this.meleeHitbox.bw,
       h: this.meleeHitbox.bh,
+    };
+  }
+
+  /**
+   * Start a special melee swing (design §15). Edge-triggered by the update
+   * system on Down+Melee. The trajectory is self-supplied and COMMITTED once
+   * started: windup+active own vx at travelSpeed in the resolved direction
+   * (facing * config.direction — Balthazar advances, Scarlet retreats).
+   * Facing/mirrorX are never flipped here, so Scarlet's sprite keeps its
+   * original orientation through the cartwheel.
+   */
+  startSpecialMelee() {
+    if (this.specialMeleeActive || this.meleeActive) return;
+    const cfg = this.heroDef.specialMelee;
+    this.specialMeleeActive = true;
+    this.specialMeleePhase = 'windup';
+    this.specialMeleeFrame = 0;
+    // Resolved movement direction: toward facing for balthazar (+1), away for
+    // scarlet (-1). Captured ONCE at trigger — it cannot be reversed mid-attack.
+    this.specialMeleeDir = this.facing * cfg.direction;
+    // Jump the attack anim to frame 0 so it plays from the windup.
+    if (this.anims.attack) this.anims.attack.reset();
+  }
+
+  /** Total frames of the special swing (windup + active + recovery). */
+  get specialMeleeTotalFrames() {
+    const f = this.heroDef.specialMelee.frames;
+    return f.windup + f.active + f.recovery;
+  }
+
+  /**
+   * Advance the special swing's frame clock by dt and drive its phases
+   * (design §15/§16). Reuses the normal melee's MELEE_FRAME_DURATION clock.
+   *   windup/active — committed: owns vx at travelSpeed, no jump/run cancel.
+   *   active        — hitbox exposed via specialMeleeHitboxWorld.
+   *   recovery      — vx decays; a fresh jump press cancels out early.
+   * @param {number} dt seconds
+   * @param {object} input intent (jump edge used for recovery cancel)
+   */
+  updateSpecialMelee(dt, input) {
+    if (!this.specialMeleeActive) return;
+    const cfg = this.heroDef.specialMelee;
+    const total = this.specialMeleeTotalFrames;
+
+    // Advance the frame clock: dt/SPECIAL_MELEE_FRAME_DURATION frames per step.
+    // The special swing's frame counts are defined at 60fps (heroDefs §15), so
+    // its frame duration is exactly 1/60s — at the fixed 60fps step each
+    // update() call advances by exactly one integer frame, no float drift.
+    // The PRE-increment value is what this update() acts on (frame N owns its
+    // own phase), so a swing started at frame 0 plays windup on its first tick
+    // and crosses each boundary on the exact tick the previous phase's last
+    // frame completes.
+    const f = Math.floor(this.specialMeleeFrame);
+
+    // Phase is DERIVED from the frame count, never set imperatively:
+    //   [0, windup)                          → windup
+    //   [windup, windup+active)              → active
+    //   [windup+active, windup+active+recov) → recovery
+    //   >= total                             → done
+    let phase;
+    if (f < cfg.frames.windup) phase = 'windup';
+    else if (f < cfg.frames.windup + cfg.frames.active) phase = 'active';
+    else if (f < total) phase = 'recovery';
+    else {
+      // Natural completion: clear the swing state entirely.
+      this.endSpecialMelee();
+      this._prevMeleeJumpHeld = !!(input && input.jump);
+      return;
+    }
+    this.specialMeleePhase = phase;
+
+    // Recovery cancel (§16 shared rule): a fresh jump press OR any horizontal
+    // movement input ends the swing early; normal control resumes immediately.
+    // Checked AFTER the phase is derived so a boundary-crossing frame cancels
+    // out of recovery correctly. The jump edge uses _prevMeleeJumpHeld — a
+    // dedicated tracker updated at the END of this method — because the shared
+    // _prevJumpHeld is already set from THIS frame's input by the time
+    // update() reaches here, which would make the fresh-press check always
+    // false (stale signal).
+    const jumpPressed = input && input.jump && !this._prevMeleeJumpHeld;
+    const moveInput = input && ((input.left && !input.right) || (input.right && !input.left));
+    if (phase === 'recovery' && (jumpPressed || moveInput)) {
+      this.endSpecialMelee();
+      this._prevMeleeJumpHeld = !!input.jump;
+      return;
+    }
+
+    this.specialMeleeFrame += dt / Hero.SPECIAL_MELEE_FRAME_DURATION;
+
+    if (phase === 'recovery') {
+      // Committed velocity bleeds off under friction during recovery.
+      this.vx *= GROUND_FRICTION;
+      if (Math.abs(this.vx) < 1) this.vx = 0;
+    } else {
+      // Windup + active: committed — the trajectory OWNS vx regardless of
+      // held input; it cannot be reversed mid-attack.
+      this.vx = this.specialMeleeDir * cfg.travelSpeed;
+    }
+
+    if (this.anims.attack) {
+      this.anims.attack.pickFrame(Math.min(f, this.MELEE_TOTAL_FRAMES - 1));
+    }
+
+    // Refresh the dedicated jump-edge tracker AFTER all consumers have run,
+    // so next frame's fresh-press check compares against THIS frame's state.
+    this._prevMeleeJumpHeld = !!(input && input.jump);
+  }
+
+  /** End the special swing (natural completion or recovery jump-cancel). */
+  endSpecialMelee() {
+    this.specialMeleeActive = false;
+    this.specialMeleePhase = null;
+    this.specialMeleeFrame = 0;
+  }
+
+  /**
+   * World-space AABB of the special melee hitbox, or null when no damage
+   * should be dealt this frame. Only the ACTIVE phase produces a box; the box
+   * mirrors with FACING (not the travel direction), matching how the sprite
+   * is oriented — Scarlet hits in front of her original facing even while
+   * retreating.
+   * @returns {{x:number,y:number,w:number,h:number}|null}
+   */
+  get specialMeleeHitboxWorld() {
+    if (!this.specialMeleeActive || this.specialMeleePhase !== 'active') return null;
+    const hb = this.heroDef.specialMelee.hitbox;
+    const cx = this.x + this.w / 2;
+    const cy = this.y + this.h / 2;
+    const dir = this.facing;
+    return {
+      x: cx + dir * hb.ox - (dir < 0 ? hb.bw : 0),
+      y: cy + hb.oy,
+      w: hb.bw,
+      h: hb.bh,
     };
   }
 
@@ -646,6 +811,9 @@ export class Hero extends Entity {
     this.meleeActive = false;
     this.meleeFrame = 0;
     this.meleeCooldown = 0;
+    this.specialMeleeActive = false;
+    this.specialMeleePhase = null;
+    this.specialMeleeFrame = 0;
     this.supermoveActive = false;
     this.supermovePhase = null;
     this.supermoveTimer = 0;
@@ -828,3 +996,9 @@ export class Hero extends Entity {
 // Seconds of invincibility granted on respawn (design §1 / Task 5.2). Static so
 // tests can read it without instantiating a hero.
 Hero.RESPAWN_IFRAMES = 1.0;
+
+// Special melee frame duration (design §15): the per-hero frame counts in
+// heroDefs are defined at 60fps, so one special-melee frame is exactly 1/60s.
+// This is deliberately NOT the normal swing's MELEE_FRAME_DURATION (0.08s) —
+// mixing the two clocks made phase boundaries drift by a frame every tick.
+Hero.SPECIAL_MELEE_FRAME_DURATION = 1 / 60;
