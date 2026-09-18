@@ -84,3 +84,25 @@ Task 1.2 APPROVED. Both reviewers PASS. Committed post-review.
 
 ### Verdict
 Task 1.3 APPROVED. Both reviewers PASS. Committed post-review.
+
+## Task 1.4 — Hit response: contextual knockback table + i-frame visual sync + test cleanup
+
+### Review A (ninfer/qwen3.8-27b) — Round 1
+**PASS** (3 minor: duplicate guard line, redundant respawn set, stale comment; 1 informational: heavyProj forward-looking)
+
+### Review B (openai-codex/gpt-5.6-sol) — Round 1
+**FAIL** (4 major, 2 minor)
+1. MAJOR: boss.js stomp bypasses takeHit() — REJECTED (out of scope, boss.js not in file list)
+2. MAJOR: heavyProj profile unreachable — REJECTED (forward-looking per §25 "at minimum distinguish")
+3. MAJOR: Explosion damage bypasses intangibility (§27) — ACCEPTED
+4. MAJOR: Hero switch copies flag without timer (§28/§31) — ACCEPTED
+5. MINOR: Test doesn't cover real call sites — ACCEPTED
+6. MINOR: Blink expiry test doesn't verify render alpha — ACCEPTED
+
+**Resolution:** #3, #4, #5, #6 ACCEPTED. Executor fixed all (plus Review A's trivial cleanups).
+
+### Review B — Round 2 (final)
+**PASS** — No findings. Explosion guards confirmed, swapHero timer transfer confirmed. Tests green.
+
+### Verdict
+Task 1.4 APPROVED. Both reviewers PASS. Committed post-review.

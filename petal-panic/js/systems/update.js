@@ -535,6 +535,17 @@ function swapHero() {
 
   const nh = new Hero(def, saved.x, saved.y);
   Object.assign(nh, saved);
+  // Carry the remaining i-frame window across the swap so the new hero is not
+  // immune forever (flag alone would outlive its timer). If the old flag was
+  // set but the timer already expired, clear both so the flag can't linger.
+  if (saved.intangible) {
+    const remaining = hero.timers.get('intangible');
+    if (remaining > 0) {
+      nh.timers.set('intangible', remaining);
+    } else {
+      nh.intangible = false;
+    }
+  }
   // CRITICAL: restore the NEW hero's stats (Object.assign overwrote them
   // with the old hero's stats object). Stats define speed/jump/special/etc.
   nh.stats = def.stats;
@@ -752,11 +763,10 @@ world.on('hit', (a, b) => {
     const dealt = damage(foeProj, victim, foeProj.damage, 'projectile');
     if (dealt > 0) {
       // Knockback along the projectile's travel direction + hit-stun + i-frames.
+      // Contextual profile by source (design §25): ordinary foe shot.
       victim.takeHit({
+        source: 'projectile',
         dirX: foeProj.vx, dirY: foeProj.vy,
-        strength: 220,
-        recovery: 0.25,
-        invincible: 0.30,
       });
       // Task 7.1 — red vignette when the hero takes damage (design §12).
       Effects.heroDamaged();
@@ -789,7 +799,6 @@ world.on('contact', (a, b) => {
   // i-frames absorb contact hits (prevents melt while overlapping). takeHit()
   // returns false when invincible, so we skip damage + cooldown in that case.
   if (heroEnt.intangible) return;
-  if (heroEnt.intangible) return;
   if (source._contactCd > 0) return;
   source._contactCd = CONTACT_COOLDOWN;
   const amt = source.stats?.attack ?? 10;
@@ -799,12 +808,10 @@ world.on('contact', (a, b) => {
   if (dealt > 0) {
     const hcx = heroEnt.x + heroEnt.w / 2, scx = source.x + source.w / 2;
     const dirX = Math.sign(hcx - scx) || (heroEnt.facing * -1);
-    const isBoss = source.layer === LAYER.BOSS;
+    // Contextual profile by source (design §25): boss bodies fling harder.
     heroEnt.takeHit({
+      source: source.layer === LAYER.BOSS ? 'bossContact' : 'contact',
       dirX, dirY: -0.6,
-      strength: isBoss ? 340 : 260,
-      recovery: isBoss ? 0.30 : 0.25,
-      invincible: isBoss ? 0.70 : 0.60,
     });
     // Task 7.1 — red vignette on contact damage (design §12 "Hero damaged").
     Effects.heroDamaged();
@@ -1684,11 +1691,10 @@ function handleBarrelDestroyed(barrel) {
       hero.runStats.hitsTaken.total += 1;
       // Radial knockback away from the blast center + hit-stun + i-frames.
       const hcx = hero.x + hero.w / 2, hcy = hero.y + hero.h / 2;
+      // Contextual profile by source (design §25): strong radial explosion recoil.
       hero.takeHit({
+        source: 'explosion',
         dirX: hcx - cx, dirY: hcy - cy,
-        strength: 380,
-        recovery: 0.30,
-        invincible: 0.60,
       });
     }
     // Explosion VFX: 12–15 orange/red particles expanding outward.

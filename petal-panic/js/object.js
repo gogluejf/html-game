@@ -311,6 +311,7 @@ export function explodeBarrel(obj, entities) {
   for (const e of entities) {
     if (!e || e === obj) continue;         // never self-hit the barrel
     if (e.alive === false) continue;       // skip already-dead
+    if (e.intangible) continue;            // i-frames absorb explosion damage
     if (!withinRadius(obj, e, radius)) continue;
 
     // Route damage so defense + telemetry apply uniformly, and — for targets

@@ -16,6 +16,13 @@ import { drawScreen, screenUpdate } from '../screens.js';
 import { drawHUD } from '../hud.js';
 import { LEVELS } from '../level.js';
 
+// I-frame blink tuning (design §27): the flicker phase is derived from the
+// 'intangible' timer's remaining fraction, so these only set LOOK — the timing
+// is owned by the immunity window itself.
+const IFRAME_BLINK_CYCLES = 6;       // full on/off cycles across the whole window
+const IFRAME_BLINK_ALPHA_ON = 0.8;   // "on" visibility
+const IFRAME_BLINK_ALPHA_OFF = 0.4;  // "off" visibility
+
 export function render(ctx) {
   // Milestone 8 — Home & Select are full-screen; skip world rendering entirely.
   const state = getState();
@@ -120,8 +127,11 @@ export function render(ctx) {
     const at = getAnimTestEnemy();
     if (at.alive) at.draw(ctx);
 
-    // Hero — invincibility blink (0.25 alpha) and death skull are gameplay
-    // effects, so they live inside the sprite layer too.
+    // Hero — invincibility blink and death skull are gameplay effects, so they
+    // live inside the sprite layer too. The flicker is driven by the 'intangible'
+    // timer's REMAINING FRACTION (design §27): the phase advances with the
+    // actual immunity window, so the blink stops on the exact frame immunity
+    // ends — no wall-clock drift.
     {
       const h = getHero();
       if (h.dying) {
@@ -129,7 +139,11 @@ export function render(ctx) {
       } else {
         ctx.save();
         if (h.intangible) {
-          ctx.globalAlpha = Math.floor(performance.now() * 0.01) % 2 === 0 ? 0.4 : 0.8;
+          const frac = h.timers.fraction('intangible'); // 1 → 0 across the window
+          // IFRAME_BLINK_CYCLES full on/off cycles across the whole window;
+          // phase derived from the fraction so the last visible state lands at expiry.
+          const phase = Math.floor(frac * IFRAME_BLINK_CYCLES) % 2 === 0;
+          ctx.globalAlpha = phase ? IFRAME_BLINK_ALPHA_ON : IFRAME_BLINK_ALPHA_OFF;
         }
         ctx.fillStyle = h.debugColor;
         ctx.fillRect(h.x, h.y, h.w, h.h);

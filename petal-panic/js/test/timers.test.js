@@ -86,7 +86,7 @@ ok('clear / clearAll work', () => {
 });
 
 ok('known labels have colors', () => {
-  for (const k of ['life', 'fuse', 'death', 'rec', 'inv', 'rapid']) {
+  for (const k of ['life', 'fuse', 'death', 'rec', 'intangible', 'rapid']) {
     assert.ok(TIMER_COLORS[k], `missing color for ${k}`);
   }
 });

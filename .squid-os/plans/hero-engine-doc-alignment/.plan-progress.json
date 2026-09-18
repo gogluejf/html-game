@@ -32,7 +32,7 @@
     },
     "1.3": {
       "number": "1.3",
-      "status": "not_started",
+      "status": "completed",
       "name": "Supermove: phase-aware jump cancellation + anim flag fix",
       "milestone": "Behavior Corrections (Doc Compliance)",
       "milestone_number": "1",
@@ -50,7 +50,15 @@
       "status": "not_started",
       "name": "Hit response: contextual knockback table + i-frame visual sync + test cleanup",
       "milestone": "Behavior Corrections (Doc Compliance)",
-      "milestone_number": "1"
+      "milestone_number": "1",
+      "summary": {
+        "decisions": "Chose to transfer the remaining intangible timer across hero swap (rather than clearing it) to preserve the player's earned i-frame window; also clear flag when timer is already spent so no orphaned flag survives Object.assign.",
+        "lessons_learned": "bck/object.test.js fails to load due to a pre-existing missing test/consts.js module \u2014 unrelated to these edits (it imports ../consts.js which does not exist); required suites (heroHit, timers, supermove) all pass.",
+        "failures": "None",
+        "confidence": "high",
+        "done": "Applied 4 review fixes: (1) removed duplicate 'if (heroEnt.intangible) return;' guard in update.js contact handler; (2) deleted stale '(inv, rapid, rec, ...)' comment line in hero.js, keeping the corrected '(intangible, rapid, rec, ...)' version; (3) added 'if (e.intangible) continue;' guard to both explosion AoE loops (explodeBarrel in object.js and explodeJackolantern in jackolantern.js) so i-frames absorb explosion damage consistently with contact/projectile paths; (4) swapHero() now copies the remaining 'intangible' timer value to the new hero (and clears the flag if the timer already expired), preventing permanent immunity after a mid-i-frame switch.",
+        "tradeoffs": "Explosion intangibility guard placed in the pure AoE functions rather than at call sites \u2014 keeps the rule in one place per explosion type and matches how takeHit absorbs hits."
+      }
     },
     "1.5": {
       "number": "1.5",

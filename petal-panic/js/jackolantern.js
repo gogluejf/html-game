@@ -201,6 +201,7 @@ export function explodeJackolantern(obj, entities) {
   for (const e of entities) {
     if (!e || e === obj) continue;        // never self-hit
     if (e.alive === false) continue;      // skip already-dead
+    if (e.intangible) continue;           // i-frames absorb explosion damage
     if (!withinRadius(obj, e, radius)) continue;
 
     const dealt = damage(obj, e, JACKO_DEF.stats.attack, 'explosion');

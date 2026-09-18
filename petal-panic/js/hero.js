@@ -31,6 +31,26 @@ const AIR_ACCEL = 1400;         // px/s^2 ramp for airborne horizontal intent
 // arcade-immediate ground snap (§7). The velocity heuristic alone can't tell
 // these apart; the collision flag is the reliable signal.
 
+// Contextual knockback profiles (design §25): hero recoil is NOT one universal
+// value — it depends on the impact source. Each profile carries its own
+// strength (px/s), recovery (hit-stun seconds, §24/§26) and i-frame window
+// (§27). Damage and knockback are INDEPENDENT properties: two attacks can deal
+// equal damage with very different recoil, so callers pass the source key and
+// never inline these numbers.
+export const KNOCKBACK_PROFILES = {
+  contact:     { strength: 260, recovery: 0.25, iFrames: 0.60 }, // enemy body
+  bossContact: { strength: 340, recovery: 0.30, iFrames: 0.70 }, // boss body
+  projectile:  { strength: 220, recovery: 0.25, iFrames: 0.30 }, // ordinary foe shot
+  heavyProj:   { strength: 300, recovery: 0.30, iFrames: 0.40 }, // heavy foe shot
+  explosion:   { strength: 380, recovery: 0.30, iFrames: 0.60 }, // barrel/bomb AoE
+};
+
+/** Fallback profile for unknown sources (keeps takeHit total; no magic numbers). */
+const DEFAULT_KNOCKBACK_SOURCE = 'contact';
+
+/** Hero knockback resistance modifier (§25): scales every profile's strength. */
+const HERO_KNOCKBACK_RESISTANCE = 1;
+
 export class Hero extends Entity {
   /**
    * @param {object} heroDef one of HEROES from heroDefs.js
@@ -62,7 +82,7 @@ export class Hero extends Entity {
     // Invincibility + rapid-fire are now unified labeled timers (see timers.js),
     // exposed via the getters/setters below so legacy call sites
     // (boss.js, powerup.js, update.js) keep working unchanged. The debug
-    // overlay shows them as 'inv' and 'rapid' bars in the per-entity stack.
+    // overlay shows them as 'intangible' and 'rapid' bars in the per-entity stack.
     this.checkpoint = { x, y };
 
     // --- Death / respawn / continue (Task 5.2) -------------------------------
@@ -150,33 +170,41 @@ export class Hero extends Entity {
   get hitStunned() { return this.timers.get('rec') > 0; }
 
   /**
-   * Apply a hit reaction: knockback impulse + hit-stun (recovery) + i-frames.
-   * This is the single entry point for every damaging collision (enemy contact,
-   * boss contact, enemy projectile, barrel/bomb explosion). Callers pass a
-   * normalized direction + magnitude so each source can feel different.
+   * Apply a hit reaction: contextual knockback impulse + hit-stun (recovery) +
+   * i-frames. This is the single entry point for every damaging collision
+   * (enemy contact, boss contact, enemy projectile, barrel/bomb explosion).
    *
-   * If the hero is already invincible (i-frames up), the hit is ABSORBED — no
+   * Knockback comes from the per-source KNOCKBACK_PROFILES table (design §25):
+   * callers pass a source KEY ('contact' | 'bossContact' | 'projectile' |
+   * 'heavyProj' | 'explosion') plus the impact direction; no raw strength /
+   * recovery / i-frame numbers are passed in. Damage and knockback stay
+   * independent — damage() handles HP, this handles recoil only.
+   *
+   * If the hero is already intangible (i-frames up), the hit is ABSORBED — no
    * double-fling, no timer refresh. This matches how projectile hits already
    * behave and prevents melt while overlapping.
    *
    * @param {object} o
-   * @param {number} o.dirX normalized knockback x (-1..1)
-   * @param {number} o.dirY normalized knockback y (-1..1)
-   * @param {number} o.strength knockback speed in px/s
-   * @param {number} [o.recovery] hit-stun seconds (default 0.25)
-   * @param {number} [o.invincible] i-frame seconds (default 0.6)
+   * @param {string} [o.source] knockback profile key (default 'contact')
+   * @param {number} o.dirX knockback x (normalized or raw velocity; normalized here)
+   * @param {number} o.dirY knockback y
    * @returns {boolean} true if the hit landed, false if absorbed by i-frames
    */
-  takeHit({ dirX = 0, dirY = 0, strength = 240, recovery = 0.25, invincible = 0.6 }) {
+  takeHit({ source = DEFAULT_KNOCKBACK_SOURCE, dirX = 0, dirY = 0 }) {
     if (this.dying) return false;
     if (this.intangible) return false; // intangible absorbs it
+    const profile = KNOCKBACK_PROFILES[source] ?? KNOCKBACK_PROFILES[DEFAULT_KNOCKBACK_SOURCE];
     const len = Math.hypot(dirX, dirY) || 1;
-    this.vx += (dirX / len) * strength;
-    this.vy += (dirY / len) * strength;
-    this.timers.set('rec', recovery);
-    // Intangible for the i-frame duration (drives both the state + the blink).
+    const kb = profile.strength * HERO_KNOCKBACK_RESISTANCE;
+    this.vx += (dirX / len) * kb;
+    this.vy += (dirY / len) * kb;
+    // Hit-stun (§24/§26): input locked, physics keep running; knockback decays
+    // under friction during the window and control resumes cleanly after.
+    this.timers.set('rec', profile.recovery);
+    // Intangible for the i-frame duration (§27): drives both the state flag and
+    // the render blink (which reads the timer's remaining fraction).
     this.intangible = true;
-    this.timers.set('intangible', Math.max(this.timers.get('intangible'), invincible));
+    this.timers.set('intangible', Math.max(this.timers.get('intangible'), profile.iFrames));
     return true;
   }
 
@@ -334,7 +362,6 @@ export class Hero extends Entity {
     // Here we only track intent and integrate.
 
     // --- Timers -------------------------------------------------------------
-    // Unified labeled timers (inv, rapid, rec, ...) advance together. Legacy
     // Unified labeled timers (intangible, rapid, rec, ...) advance together.
     this.timers.tick(dt);
     if (this.intangible && this.timers.expired('intangible')) {
