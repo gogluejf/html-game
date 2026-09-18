@@ -23,9 +23,11 @@ export const ATTACK_SUPERMOVE = 'supermove';
 const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: -10, bw: 40, bh: 40 }, null];
 
 /** Shared supermove dash box (thin, full body height, in front). */
-// oy: 'center' is a sentinel resolved at runtime to -bh/2 so the box is
-// vertically centered on the hero body (matches the pre-data-table behavior).
-const SUPERMOVE_HITBOX = { ox: 20, oy: 'center', bw: 16, bh: 'body' };
+// oy: 0 is a sentinel resolved at runtime to the hero's TOP edge (y = h.y), so
+// the box spans the full body height from the feet up. A plain numeric offset
+// would be measured from the body CENTER and misplace the box by bh/2 — the
+// pre-data-table behavior was {ox, y: h.y, w, h} with no centering.
+const SUPERMOVE_HITBOX = { ox: 20, oy: 0, bw: 16, bh: 'body' };
 
 export const HEROES = {
   scarlet: {

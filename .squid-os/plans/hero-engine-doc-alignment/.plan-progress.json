@@ -167,7 +167,7 @@
     },
     "4.2": {
       "number": "4.2",
-      "status": "not_started",
+      "status": "completed",
       "name": "Explicit state composition + debug/timer parity (\u00a727, \u00a728, \u00a731)",
       "milestone": "Polish, Validation & Premium Quality Bar",
       "milestone_number": "4"
@@ -177,7 +177,15 @@
       "status": "not_started",
       "name": "\u00a733 responsiveness-invariant test suite + full regression gate",
       "milestone": "Polish, Validation & Premium Quality Bar",
-      "milestone_number": "4"
+      "milestone_number": "4",
+      "summary": {
+        "decisions": "Drove tests through public API where possible (requestMelee, updateSupermove via input.super with meter pre-filled, startDropThrough via input.onOneWay); only touched internals (_dropTimer reset, supermovePhase handoff) where no public path exists. Used hero.locomotion composed-domain getter (\u00a731) as the animation-sync source of truth instead of scraping anim names.",
+        "lessons_learned": "Jump edge-triggering gotcha: holding jump across setGrounded(false) leaves _prevJumpHeld true, so the next frame's press isn't an edge \u2014 must release one frame before re-pressing. Drop-through window (_dropTimer) suppresses the buffered jump even after leaving the platform, so 'from below' scenarios need the window expired first. Verified pre-existing failures by stashing untracked files rather than assuming new code caused them.",
+        "confidence": "medium",
+        "failures": "invariants.test.js exits 0 (5/5). run-all.mjs exits 1 due to TWO PRE-EXISTING failures verified via git stash against HEAD~ (9508c03): attackHitbox.test.js (supermove mirror y-offset for scarlet/balthazar) and crouchCancel.test.js ('melee end falls back to movement state' expects run, gets jump). Both fail without my changes \u2014 likely fallout from 4.1/4.2, out of scope for this test-only task.",
+        "done": "Added petal-panic/js/test/invariants.test.js (5 cross-mechanic \u00a733 invariant cases: buffer-vs-cancel with cleared pendingMelee, crouch+jump+locomotion anim sync, one-way drop-through not consuming a jump plus free upward traversal, single-slot latest-wins melee buffer, supermove burst non-cancellable vs decel cancellable) and petal-panic/js/test/run-all.mjs runner that executes every *.test.js in its directory and exits non-zero on any failure.",
+        "tradeoffs": "invariants.test.js covers the 5 cross-cutting bullets named in the task; per-mechanic \u00a733 bullets already covered by dedicated test files (jump buffer/coyote, slide tuning, air control, hitbox windows) are intentionally not duplicated. run-all.mjs runs each file as a separate node process so shared-state leaks between suites are impossible but startup cost is paid per file."
+      }
     }
   }
 }

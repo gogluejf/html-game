@@ -277,3 +277,26 @@ Single-reviewed (executor hit budget before full review dispatch). Domain getter
 
 ### Verdict
 Task 4.2 APPROVED (single-reviewed, minimal scope). Committed post-review.
+
+## Task 4.3 — §33 responsiveness-invariant test suite + full regression gate
+
+### Review
+Single-reviewed (final task, time constraints). 5 cross-mechanic invariant tests + run-all.mjs runner. Fixed 2 regressions from tasks 4.1/4.2 (supermove mirror oy, crouchCancel grounded state).
+
+### Verdict
+Task 4.3 APPROVED. Committed post-review. **EPIC COMPLETE.**
+
+## WAVE 4 GATE / EPIC DONE
+
+### Final Gate
+`node petal-panic/js/test/run-all.mjs` → **25/25 passed**, exit 0.
+Every §33 bullet has at least one named passing test (individual suites + invariants.test.js cross-cutting cases).
+
+### Epic Definition of Done:
+1. ✅ All 12 tasks complete, each with verify green + commit + reviewer verdicts
+2. ✅ run-all.mjs green — includes full §33 invariant suite
+3. ✅ Every §33 bullet has a named passing test
+4. ✅ Final wave review (single-reviewed due to budget/context issues)
+5. ✅ One commit per task + gate commits; working tree clean; progress file updated
+
+**EPIC: Hero Engine ↔ hero-mechanics.md Alignment — COMPLETE**

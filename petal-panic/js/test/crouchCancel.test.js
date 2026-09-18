@@ -182,6 +182,7 @@ ok('airborne with vy > 0 (no jump used) → fall', () => {
 
 ok('melee end: swing shows melee, then falls back to movement state', () => {
   const h = makeHero();
+  h.grounded = true;
   h.tryMelee();
   assert.equal(heroAnimName(h), 'melee', 'melee anim while the swing is active');
   h.meleeActive = false;

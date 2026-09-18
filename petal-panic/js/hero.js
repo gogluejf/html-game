@@ -191,7 +191,7 @@ export class Hero extends Entity {
     // box tracks each hero's own h. Same shape as meleeHitbox for consumers.
     const _superHbData = this.heroDef.attacks[ATTACK_SUPERMOVE].box;
     const _superBh = _superHbData.bh === 'body' ? this.h : _superHbData.bh;
-    this.supermoveHitbox = { ..._superHbData, bh: _superBh, oy: _superHbData.oy === 'center' ? -_superBh / 2 : _superHbData.oy };
+    this.supermoveHitbox = { ..._superHbData, bh: _superBh };
 
     // Anim registry (real sprites later; placeholder frames attached by caller).
     this.anims = {};
@@ -256,9 +256,12 @@ export class Hero extends Entity {
     if (this.meleeActive || this.specialMeleeActive) return 'attack';
     if (this.hitStunned) return 'hitstun';
     if (this.crouching) return this.sliding ? 'slide' : 'crouch';
-    if (!this.grounded) return this.jumpsUsed >= 2 ? 'djump' : (this.vy > 0 ? 'fall' : 'jump');
-    if (Math.abs(this.vx) > 20) return 'run';
-    return 'idle';
+    // Grounded movement is authoritative even when a jump has been initiated
+    // but not yet left the ground (jumpsUsed > 0 with vy still ≈ 0): the hero
+    // is on the floor, so run/idle describe its real state. The airborne
+    // branch below only applies once the hero has actually left the ground.
+    if (this.grounded) return Math.abs(this.vx) > 20 ? 'run' : 'idle';
+    return this.jumpsUsed >= 2 ? 'djump' : (this.vy > 0 ? 'fall' : 'jump');
   }
 
   /** Combat phase: null | 'windup' | 'active' | 'recovery' (per attack kind). */
@@ -711,9 +714,8 @@ export class Hero extends Entity {
    *                  produce a box.
    *   specialMelee { hitbox: {ox,oy,bw,bh} } — exposed on every ACTIVE-phase
    *                  frame (per-hero differences come from the data).
-   *   supermove    { box: {ox,oy|'center',bw,bh|'body'} } — exposed for the whole dash;
-   *                  'body' resolves to the hero's full body height;
-   *                  'center' vertically centers the box on the body.
+   *   supermove    { box: {ox,oy,bw,bh|'body'} } — exposed for the whole dash;
+   *                  'body' resolves to the hero's full body height.
    *
    * Mirroring: ox is an offset in the FACING direction; facing left flips the
    * box so its right edge lands at center - ox (the sprite mirrors identically,
@@ -734,8 +736,6 @@ export class Hero extends Entity {
       if (!this.supermoveActive) return null;
       const box = this.heroDef.attacks[ATTACK_SUPERMOVE].box;
       entry = { ...box, bh: box.bh === 'body' ? this.h : box.bh };
-      // oy 'center' sentinel: vertically center the box on the body.
-      if (entry.oy === 'center') entry.oy = -entry.bh / 2;
     } else {
       throw new Error(`Hero.attackHitboxWorld: unknown attack '${attackName}'`);
     }
