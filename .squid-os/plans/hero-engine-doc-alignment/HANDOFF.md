@@ -12,7 +12,7 @@ Read this first, then read `orchestrator.md` (the binding execution contract). D
 
 ## Start command
 
-Run the plan `hero-engine-doc-alignment` per its `orchestrator.md`, autonomously, task after task, no human between tasks. The orchestrator defines: wave order, per-task loop (execute → verify → task commit → Review A → Review B → record verdicts in reviews.md → mark done), executor budgets, reviewer prompts/rubric, wave gates vs baseline, and commit discipline (`hero-align <task-id>: <name>`).
+Run the plan `hero-engine-doc-alignment` per its `orchestrator.md`, autonomously, task after task, no human between tasks. The orchestrator defines: wave order, per-task loop (execute → verify → Review A + B on the uncommitted diff → resolve findings → record verdicts in reviews.md → commit → mark done), executor budgets, reviewer prompts/rubric, wave gates vs baseline, and commit discipline (`hero-align <task-id>: <name>`, post-review only).
 
 ## Scars from the previous (aborted) run — do not repeat
 
