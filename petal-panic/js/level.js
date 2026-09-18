@@ -43,15 +43,18 @@ export const LEVELS = [
     ],
     platforms: [
       // Ground: full length. y=500 matches VIEW_H(540) - 40 (floor thickness).
+      // Solid by default (no oneWay flag) — drop-through never affects it (§13).
       { x: 0, y: 500, w: 8000, h: 40 },
       // Air platforms (a few) — scattered along the walk for vertical variety.
-      { x: 800,  y: 380, w: 150, h: 16 },
-      { x: 1500, y: 350, w: 120, h: 16 },
-      { x: 2500, y: 370, w: 180, h: 16 },
-      { x: 3500, y: 340, w: 140, h: 16 },
-      { x: 4500, y: 360, w: 160, h: 16 },
-      { x: 5500, y: 380, w: 130, h: 16 },
-      { x: 6500, y: 350, w: 150, h: 16 },
+      // oneWay: true (design §13): the hero passes up through them and can
+      // drop through with Down+Jump; they only land from above while falling.
+      { x: 800,  y: 380, w: 150, h: 16, oneWay: true },
+      { x: 1500, y: 350, w: 120, h: 16, oneWay: true },
+      { x: 2500, y: 370, w: 180, h: 16, oneWay: true },
+      { x: 3500, y: 340, w: 140, h: 16, oneWay: true },
+      { x: 4500, y: 360, w: 160, h: 16, oneWay: true },
+      { x: 5500, y: 380, w: 130, h: 16, oneWay: true },
+      { x: 6500, y: 350, w: 150, h: 16, oneWay: true },
     ],
     spawn: {
       enemies: {

@@ -48,12 +48,31 @@ export function aabbOverlap(a, b) {
  * instances we read/write e.x/e.y directly (the box offset is baked into the
  * penetration math via worldBox()).
  *
+ * One-way solids (design §13): a solid flagged `oneWay: true` behaves
+ * directionally. It NEVER blocks upward traversal — while the entity rises
+ * (vy < 0) or its previous frame's bottom was at/below the solid's top
+ * (it came from underneath), the solid is skipped entirely, so a jump passes
+ * straight up through it. Falling onto it from above (prev bottom ≤ top)
+ * lands normally as ground. While `opts.ignoreOneWay` is set (drop-through
+ * window, design §13 "Drop Through") one-way solids are skipped unconditionally
+ * so the hero drops through; SOLID terrain (floor, barrels) is never affected.
+ *
  * @param {object} entity  object with x, y, vx, vy and worldBox()
- * @param {Array<{x:number,y:number,w:number,h:number}>} solids static AABBs
+ * @param {Array<{x:number,y:number,w:number,h:number,oneWay?:boolean}>} solids
+ *        static AABBs (plain boxes or Entity instances; plain boxes may carry
+ *        an optional oneWay flag)
+ * @param {object} [opts]
+ * @param {number} [opts.prevBottom] entity's bottom edge BEFORE this frame's
+ *        integration (y + h). Required for correct one-way landing detection:
+ *        after integrate(), a falling hero has already sunk below the platform
+ *        top, so the prev-frame bottom is the only reliable "came from above"
+ *        signal. Solid (non-one-way) resolution ignores this value.
+ * @param {boolean} [opts.ignoreOneWay] when true, skip all one-way solids
+ *        this frame (hero drop-through window).
  * @returns {{axis:'x'|'y', dir:1|-1}|null} last axis resolved (dir = push
  *         direction), or null if no correction was needed.
  */
-export function resolve(entity, solids) {
+export function resolve(entity, solids, opts = {}) {
   let resolved = null;
   let blockedX = false;
 
@@ -61,6 +80,42 @@ export function resolve(entity, solids) {
     // Recompute the box after each axis push so the second axis sees the
     // corrected position (stale-reference bug otherwise).
     let b = entity.worldBox ? entity.worldBox() : entity;
+
+    // --- One-way rule (design §13) ------------------------------------------
+    // Never block upward traversal: rising, or arriving from underneath
+    // (previous bottom strictly BELOW the solid top), skips the solid entirely.
+    // Drop-through window skips one-way solids unconditionally. Solid terrain
+    // carries no oneWay flag and is unaffected by both conditions.
+    if (s.oneWay) {
+      const prevBottom = opts.prevBottom ?? (b.y + b.h);
+      // Skip when: drop-through window active, hero rising, OR the previous
+      // bottom was strictly below the platform top (came from underneath).
+      // Exact-edge contact (prevBottom === s.y, standing on the surface) must
+      // NOT skip — the hero is at rest ON the platform and gravity will pull it
+      // in this frame; skipping would let it sink through every frame.
+      if (opts.ignoreOneWay || entity.vy < 0 || prevBottom > s.y) continue;
+      // Must actually overlap the platform box (X AND Y) before snapping:
+      // a hero far to the left/right of the platform must not be teleported
+      // onto it just because its bottom crossed the top edge.
+      const penX = Math.min(b.x + b.w - s.x, s.x + s.w - b.x);
+      const penY = Math.min(b.y + b.h - s.y, s.y + s.h - b.y);
+      if (penX <= 0 || penY <= 0) continue; // no AABB overlap → skip
+      // Hero is falling from above onto a one-way platform → LAND on top.
+      // The generic minimum-penetration push would push UP out of the surface
+      // here (the hero has already integrated below the top this frame, so the
+      // upward penetration is smaller than the downward one). Landing is not a
+      // "push out": snap the box's bottom to the platform top and zero vy.
+      // Box offset is baked into worldBox(): for an Entity the box is at
+      // (x + ox, y + oy) with height bh. Compute the box bottom's distance
+      // from entity.y and set entity.y so that bottom lands exactly on s.y —
+      // this works for standing AND crouching boxes alike (crouchBox has a
+      // non-zero oy), so a crouched hero still rests its feet on the surface.
+      const boxBottomOffset = b.y - entity.y + b.h;
+      entity.y = s.y - boxBottomOffset;
+      if (entity.vy > 0) entity.vy = 0;
+      resolved = { axis: 'y', dir: 1 };
+      continue; // skip generic AABB push for this solid
+    }
 
     // Penetration depths along each axis (0 = no overlap on that axis).
     const penX = Math.min(b.x + b.w - s.x, s.x + s.w - b.x);
@@ -105,10 +160,25 @@ export function resolve(entity, solids) {
       const px2 = Math.min(b.x + b.w - s.x, s.x + s.w - b.x);
       if (p2 > 0 && px2 > 0) pushAxis('y');
     } else {
-      pushAxis('y');
-      const p2 = Math.min(b.x + b.w - s.x, s.x + s.w - b.x);
-      const py2 = Math.min(b.y + b.h - s.y, s.y + s.h - b.y);
-      if (p2 > 0 && py2 > 0) pushAxis('x');
+      // The hero is falling and was above this solid's top before integration:
+      // it Landed on the surface. The generic minimum-penetration choice would
+      // push UP out of the floor here (the downward penetration from a fast
+      // fall exceeds the upward one), which reads as "floor must not stop the
+      // hero". Landing always resolves to the top surface regardless of
+      // penetration depth — snap down onto it instead of picking by min-depth.
+      const prevBottom = opts.prevBottom ?? (b.y + b.h);
+      if (entity.vy >= 0 && prevBottom <= s.y) {
+        const oy = b.oy ?? 0;
+        const boxH = b.h ?? b.bh;
+        entity.y = s.y - (oy + boxH);
+        if (entity.vy > 0) entity.vy = 0;
+        resolved = { axis: 'y', dir: 1 };
+      } else {
+        pushAxis('y');
+        const p2 = Math.min(b.x + b.w - s.x, s.x + s.w - b.x);
+        const py2 = Math.min(b.y + b.h - s.y, s.y + s.h - b.y);
+        if (p2 > 0 && py2 > 0) pushAxis('x');
+      }
     }
   }
 

@@ -1063,6 +1063,11 @@ export function update(dt) {
 
   // 1. input → intents (movement/jump/crouch logic lives in Hero.update).
   const input = readInput();
+  // One-way platform context (design §13): Down+Jump while standing on a
+  // one-way platform becomes a drop-through, not a jump. The probe uses the
+  // PREVIOUS frame's grounded state — setGrounded() runs after hero.update(),
+  // so this is exactly "standing on a one-way platform right now".
+  input.onOneWay = standingOnOneWay();
   hero.update(dt, input);
 
   // 1a. Task 5.2 — energy / death / respawn / gameover flow.
@@ -1184,11 +1189,21 @@ export function update(dt) {
   // static platforms AND live barrels — barrels block movement like any
   // platform piece (design §10: destructible solids).
   refreshBarrelSolidBoxes();
-  const hit = resolve(hero, [...SOLIDS, ...barrelSolidBoxes]);
+  // One-way platforms (design §13): resolve() needs the hero's bottom edge
+  // BEFORE this frame's integration to tell "fell onto it from above" apart
+  // from "arrived from underneath". Capture it here — hero.update() above has
+  // already integrated x/y for this step.
+  const heroPrevBottom = hero.worldBox().y + hero.worldBox().h - hero.vy * dt;
+  const hit = resolve(hero, [...SOLIDS, ...barrelSolidBoxes], {
+    prevBottom: heroPrevBottom,
+    ignoreOneWay: hero.droppingThrough,
+  });
   world.update();
 
   // Grounded: derive from the last resolved axis + a surface-contact probe so
-  // the hero can jump again immediately after landing.
+  // the hero can jump again immediately after landing. While dropping through
+  // a one-way platform the hero is NOT grounded on it (the probe below skips
+  // ignored one-way solids); solid terrain still grounds normally.
   hero.setGrounded(isGrounded(hit));
 
   // Keep the hero inside the LEVEL horizontally (test-rig convenience).
@@ -1235,11 +1250,31 @@ function isGrounded(hit) {
   if (hit && hit.axis === 'y' && hit.dir === 1) return true; // landed on a surface
   const wb = hero.worldBox();
   // Static platforms + live barrels both count as floor surfaces (the probe
-  // also covers the "standing on a barrel" case).
+  // also covers the "standing on a barrel" case). One-way solids currently
+  // being dropped through are excluded — the hero is intentionally passing
+  // below them, not standing on them (design §13 drop-through).
   for (const s of [...SOLIDS, ...barrelSolidBoxes]) {
+    if (s.oneWay && hero.droppingThrough) continue;
     if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
     const gap = s.y - (wb.y + wb.h);
     if (gap >= -2 && gap <= 4 && hero.vy >= 0) return true;
+  }
+  return false;
+}
+
+/**
+ * True when the hero is grounded on a one-way platform (design §13): the
+ * Down+Jump drop-through intent is only valid there. Solid terrain never
+ * qualifies, so normal jumps over floors/barrels are unaffected.
+ */
+function standingOnOneWay() {
+  if (!hero.grounded) return false;
+  const wb = hero.worldBox();
+  for (const s of SOLIDS) {
+    if (!s.oneWay) continue;
+    if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
+    const gap = s.y - (wb.y + wb.h);
+    if (gap >= -2 && gap <= 4) return true;
   }
   return false;
 }

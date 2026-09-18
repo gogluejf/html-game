@@ -151,3 +151,24 @@ Task 1.5 APPROVED. Both reviewers PASS. Committed post-review. WAVE 1 COMPLETE.
 
 ### Gate Verdict
 WAVE 1 GATE PASSED (single-reviewed due to Review A context overflow). All 18 test files green. No new failures vs baseline.
+
+## Task 2.1 — One-way platforms + Down+Jump drop-through
+
+### Review A (ninfer/qwen3.8-27b) — Round 1
+**PASS** (minor: duplicated land-snap between oneWay/solid branches, defensive b.h??b.bh)
+
+### Review B (openai-codex/gpt-5.6-sol) — Round 1
+**FAIL** (5 findings)
+1. One-way snap without overlap check — ACCEPTED, fixed
+2. Exact-edge contact skipped (>= vs >) — ACCEPTED, fixed
+3. Drop-through early return skips systems (§31) — ACCEPTED, fixed
+4. Test gaps — ACCEPTED, fixed (3 new tests)
+5. Duplicated ground-contact logic — REJECTED (minor, cosmetic)
+
+### Review B — Round 2
+**FAIL** (2 new)
+1. Crouch box offset mishandled in one-way snap — ACCEPTED, fixed
+2. Non-overlap test doesn't exercise AABB fix — ACCEPTED, fixed
+
+### Verdict
+Task 2.1 APPROVED. Both reviewers satisfied. Committed post-review.

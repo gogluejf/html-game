@@ -80,7 +80,15 @@
       "status": "not_started",
       "name": "One-way platforms + Down+Jump drop-through",
       "milestone": "New Mechanics",
-      "milestone_number": "2"
+      "milestone_number": "2",
+      "summary": {
+        "tradeoffs": "None \u2014 both fixes are minimal and strictly more correct than before",
+        "failures": "None",
+        "lessons_learned": "A test can pass for the wrong reason when an earlier guard clause short-circuits before the logic under test is reached \u2014 verify which branch actually executed (here prevBottom > s.y was skipping before the penX/penY check). Also, snapping via a fixed offset constant (oy + bh read from the box) breaks when the box shape changes per pose (stand vs crouch); deriving the offset from the live box position relative to entity.y is pose-independent.",
+        "done": "Fixed two review findings on Task 2.1: (1) one-way landing snap in collision.js now computes boxBottomOffset = b.y - entity.y + b.h and sets entity.y = s.y - boxBottomOffset, so crouching heroes (crouchBox.oy != 0) land with feet exactly on the platform top instead of being mispositioned; (2) the non-overlap test in oneWayPlatform.test.js now places the hero's previous bottom at ONE_WAY.y - 5 (above the platform top) so execution reaches the penX/penY AABB check and skips due to no X overlap, instead of exiting early at the prevBottom > s.y skip.",
+        "confidence": "high",
+        "decisions": "Used the generic box-bottom-relative-to-entity.y formula for the one-way snap rather than special-casing crouchBox.oy, keeping it consistent with how worldBox() derives the actual box"
+      }
     },
     "2.2": {
       "number": "2.2",

@@ -18,6 +18,12 @@ const JUMP_CUT_VY = 0.45;       // vy scale when jump released early (variable h
 const SLIDE_DECEL = 480;        // px/s^2 — crouch skid: ~0.5s / ~65px from full run
 const COYOTE_TIME = 0.08;       // grace window after leaving a ledge (s)
 const JUMP_BUFFER = 0.12;       // pre-land jump input window (s)
+// One-way platform drop-through (design §13): Down+Jump while standing on a
+// one-way platform temporarily ignores that platform long enough to clear it,
+// instead of consuming the press as an upward jump. Named constant — the value
+// is tuned so gravity carries the hero fully below the platform thickness
+// (~16px) before the window expires.
+const DROP_THROUGH_TIME = 0.25; // seconds the one-way solid stays ignored
 // Air control (design §8): when starting horizontal movement in the air from
 // near-zero velocity, accelerate toward run speed over a short ramp instead of
 // snapping to full speed in one frame. Ground stays arcade-immediate (§7).
@@ -151,6 +157,26 @@ export class Hero extends Entity {
     this._coyote = 0;
     this._jumpBuffer = 0;
     this._prevJumpHeld = false;
+
+    // One-way platform drop-through (design §13). _dropTimer > 0 while the
+    // hero is intentionally passing through a one-way platform: resolve() is
+    // told to ignore one-way solids until it expires, so gravity carries the
+    // hero fully below the platform before it becomes landable again. Solid
+    // terrain (floor / barrels) is never affected — they carry no oneWay flag.
+    this._dropTimer = 0;
+  }
+
+  /** True while the drop-through window is active (one-way solids ignored). */
+  get droppingThrough() { return this._dropTimer > 0; }
+
+  /**
+   * Begin a one-way platform drop-through (design §13 "Drop Through"). Called
+   * by the update system when Down+Jump fires while standing on a one-way
+   * platform: the platform is ignored for DROP_THROUGH_TIME seconds and the
+   * jump press is NOT consumed as an upward jump (jumpsUsed unchanged).
+   */
+  startDropThrough() {
+    this._dropTimer = DROP_THROUGH_TIME;
   }
 
   // --- Legacy timer bridges -------------------------------------------------
@@ -351,12 +377,25 @@ export class Hero extends Entity {
     // also trigger the second. That's why we gate on jumpPressed, not the
     // buffered value (the buffer is meant to carry a press across landing).
     const canAirJump = !this.grounded && this.jumpsUsed === 1;
+    // One-way platform drop-through (design §13): Down + Jump while standing
+    // on a one-way platform drops the hero THROUGH it instead of jumping.
+    // The update system supplies input.onOneWay (grounded on a one-way solid);
+    // here the press starts the ignore window and is consumed — it must NOT
+    // arm the jump buffer or count as a jump (jumpsUsed stays unchanged).
+    // Solid terrain never sets onOneWay, so normal jumps are unaffected.
+    // §31: all systems keep running this frame — only the JUMP is suppressed;
+    // gravity, timers, melee, supermove and anim below still execute.
+    const dropping = jumpPressed && input.down && input.onOneWay && this.grounded;
+    if (dropping) {
+      this.startDropThrough();
+      this._jumpBuffer = 0;
+    }
     // Supermove jump cancellation (§23): the committed burst is NOT cancellable;
     // once the dash enters its recovery/deceleration phase a fresh Jump press
     // cancels out of the remaining recovery (handled by endSupermove below).
     if (this.supermoveActive && this.supermovePhase === 'decel' && jumpPressed) {
       this.endSupermove();
-    } else if (!this.supermoveActive && (canGroundJump || canAirJump) && this._jumpBuffer > 0 && !stunned) {
+    } else if (!dropping && !this.supermoveActive && (canGroundJump || canAirJump) && this._jumpBuffer > 0 && !stunned) {
       // §12: crouching must never force a stand-first. Jumping from crouch
       // cancels it atomically (state + hitbox + slide flag) before launch.
       if (this.crouching) this.exitCrouch();
@@ -395,6 +434,9 @@ export class Hero extends Entity {
     if (this.intangible && this.timers.expired('intangible')) {
       this.intangible = false;
     }
+    // Drop-through window (design §13): expires naturally so the one-way
+    // platform becomes landable again once the hero has cleared it.
+    if (this._dropTimer > 0) this._dropTimer = Math.max(0, this._dropTimer - dt);
 
     // --- Melee swing tick ---------------------------------------------------
     // Advance the swing frame clock and drive the attack animation so its
