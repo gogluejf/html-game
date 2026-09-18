@@ -2,6 +2,16 @@
 Why: petal-panic/docs/hero-mechanics.md is now the single source of truth for hero behavior. Code audit found 12+ divergences: no special melee, no weapon toggle (N fires specials directly), no one-way platforms or drop-through, aim not used for crouch/shoot context rules, supermove jump-cancel missing, stale 'inv' timer in tests, and a render flag that never exists (superActive vs supermoveActive). This plan sequences fixes as behavior corrections → new mechanics → polish, each with acceptance criteria tied to the doc.
 Outcomes: Every mechanic in hero-mechanics.md §3–§33 is implemented and verifiable; zero duplicate code paths (single damage/knockback/timer routing); existing tested behaviors (double jump, coyote, buffer, slide, i-frames) remain green; premium engine quality — no ad-hoc state flags, explicit state composition per §31.
 
+
+## TESTING CONVENTION (added during execution — binding for all remaining tasks)
+
+1. **Mechanic tests use the direct-intent pattern** (reference: `petal-panic/js/test/jumpslide.test.js`): call `hero.update(DT, intent)` with plain intent objects. No DOM key simulation, no input.js polling, no full `update()` pipeline. Assert behavior invariants (dir index, flags, velocity sign/magnitude, phase names) — not pixel offsets or tuning constants.
+2. **One small wiring test per new input surface** (readInput/input.js edge cases: lockDir freeze, lockMove zeroing, crouch mapping) may use the full pipeline with stubbed DOM listeners — few in number, full key release + `processInput()` before/after every case, poll-until-condition instead of fixed frame counts.
+3. **No inline HTTP servers in tests** (freezes the host app). Real gameplay feel is verified **manually by the user at the end** via `server.py`; no automated acceptance criterion may depend on in-game observation.
+4. **Executor anti-loop rule:** max 2 identical diagnostic runs; edit-first/verify-after; if a harness misbehaves, rewrite the case in direct-intent style before debugging the pipeline.
+
+---
+
 ## MILESTONE: 1 - Behavior Corrections (Doc Compliance)
 Pattern: Audit-driven fix; single source of truth = hero-mechanics.md
 Objective: Fix every place where existing code contradicts the doc, without adding new features. Each task starts with a code review that classifies the item as NEW (absent) vs POLISH (present but wrong feel), and acceptance criteria verify the doc's stated behavior.
@@ -272,3 +282,4 @@ Acceptance: A single command runs the entire petal-panic js test suite (all exis
 Acceptance: Tuning values (jump buffer window, slide distance, super profile) are asserted against the documented targets within tolerance, so retuning must be deliberate
 Verification: node petal-panic/js/test/invariants.test.js
 Verification: node petal-panic/js/test/run-all.mjs
+

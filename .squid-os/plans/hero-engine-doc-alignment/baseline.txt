@@ -1,0 +1,14 @@
+barrel.integration.test.js PASS
+barrel.solid.test.js PASS
+coin.test.js PASS
+debug.test.js PASS
+effects.test.js PASS
+entityTransform.test.js PASS
+heroAnim.test.js PASS
+heroHit.test.js FAIL
+hud83.test.js PASS
+input.test.js PASS
+jumpslide.test.js PASS
+melee.test.js PASS
+projectile.test.js PASS
+timers.test.js FAIL
