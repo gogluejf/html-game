@@ -350,7 +350,7 @@ export function render(ctx) {
  */
 export function heroAnimName(h) {
   if (h.dying) return 'dead';
-  if (h.superActive) return 'supermove';
+  if (h.supermoveActive) return 'supermove';
   if (h.crouching) return 'crouch';
   if (h.meleeFrame > 0) return 'melee';
   if (h.jumpsUsed > 0) return h.jumpsUsed >= 2 ? 'djump' : 'jump';

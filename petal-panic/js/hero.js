@@ -105,17 +105,23 @@ export class Hero extends Entity {
     this.crouchBox = { ox: 0, oy: this.h * 0.4, bw: this.w, bh: this.h * 0.6 };
     this.box = this.standBox;
 
-    // --- Super move (B key) ---------------------------------------------------
-    // Charges over time; when full the hero can dash forward with a fast
-    // slide + deceleration glide. Triggered by B when meter is full.
+    // --- Super move (design §22-§23) ------------------------------------------
+    // Charges over time; when full the hero can dash forward. Triggered by the
+    // super intent when the meter is full. The dash has TWO explicit phases
+    // (§23): a committed BURST (first ~60% — high horizontal speed, no gravity,
+    // jump CANNOT cancel) and a DECEL/recovery tail (last ~40% — gravity
+    // resumes, horizontal speed decays, jump MAY cancel out of it).
     this.supermoveMeter = 0;         // 0..100
     this.SUPERMOVE_MAX = 100;
     this.SUPERMOVE_CHARGE_RATE = 20; // per second → 5s to full
     this.supermoveActive = false;    // true while the dash is playing
-    this.supermoveTimer = 0;         // seconds remaining in the dash
+    this.supermovePhase = null;      // 'burst' | 'decel' | null (not dashing)
+    this.supermoveTimer = 0;         // seconds remaining in the CURRENT phase
+    this._supermoveElapsed = 0;      // total seconds since trigger (never resets mid-dash)
     this.SUPERMOVE_DUR = 0.6;        // total dash duration
-    this.SUPERMOVE_SPEED = 900;      // initial px/s burst
-    this.SUPERMOVE_DECEL = 1800;     // px/s² deceleration during glide
+    this.SUPERMOVE_BURST_FRAC = 0.6; // fraction of the dash that is the committed burst
+    this.SUPERMOVE_SPEED = 900;      // px/s at dash start (decays linearly to 0)
+    this.SUPERMOVE_RESIDUAL = 80;    // px/s small forward nudge kept when the dash ends
     this.supermoveHitbox = { ox: 20, oy: -this.h / 2, bw: 16, bh: this.h }; // thin, full body height, in front
 
     // Anim registry (real sprites later; placeholder frames attached by caller).
@@ -292,7 +298,12 @@ export class Hero extends Entity {
     // also trigger the second. That's why we gate on jumpPressed, not the
     // buffered value (the buffer is meant to carry a press across landing).
     const canAirJump = !this.grounded && this.jumpsUsed === 1;
-    if (!this.supermoveActive && (canGroundJump || canAirJump) && this._jumpBuffer > 0 && !this.crouching && !stunned) {
+    // Supermove jump cancellation (§23): the committed burst is NOT cancellable;
+    // once the dash enters its recovery/deceleration phase a fresh Jump press
+    // cancels out of the remaining recovery (handled by endSupermove below).
+    if (this.supermoveActive && this.supermovePhase === 'decel' && jumpPressed) {
+      this.endSupermove();
+    } else if (!this.supermoveActive && (canGroundJump || canAirJump) && this._jumpBuffer > 0 && !this.crouching && !stunned) {
       const isDouble = canAirJump;
       this.vy = -this.stats.jump * (isDouble ? 0.85 : 1); // double jump slightly weaker
       this.grounded = false;
@@ -306,12 +317,13 @@ export class Hero extends Entity {
     this._prevJumpHeld = input.jump;
 
     // --- Gravity ------------------------------------------------------------
-    if (!this.supermoveActive) {
+    // During a supermove dash the dash owns vy: the committed burst phase has
+    // no gravity (airborne slide); the decel phase applies gravity inside
+    // updateSupermove() so the hero drops back toward the ground.
+    if (!this.supermoveActive || this.supermovePhase === 'decel') {
       this.vy += GRAVITY * dt;
       if (this.vy > MAX_FALL_SPEED) this.vy = MAX_FALL_SPEED;
     }
-    // NOTE: during supermoveActive, gravity is handled inside updateSupermove()
-    // (no gravity for first 60%, then gravity kicks in for the decel phase).
 
     // --- Integrate ----------------------------------------------------------
     this.x += this.vx * dt;
@@ -502,15 +514,22 @@ export class Hero extends Entity {
     this.meleeFrame = 0;
     this.meleeCooldown = 0;
     this.supermoveActive = false;
+    this.supermovePhase = null;
     this.supermoveTimer = 0;
-    this.intangible = false;
+    this._supermoveElapsed = 0;
+    // Respawn i-frames (§27): the shared 'intangible' timer drives BOTH the
+    // flag and the blink — the flag must stay true while the timer is active.
+    this.intangible = true;
   }
 
   /**
-   * Super move: charge over time, trigger dash on B when full.
-   * The dash is a fast forward burst that decelerates into a glide.
+   * Super move: charge over time, trigger dash on super intent when full.
+   * The dash plays out in two explicit phases (design §23):
+   *   burst — committed: high horizontal speed, no gravity, jump CANNOT cancel.
+   *   decel — recovery: gravity resumes, horizontal speed decays, jump MAY
+   *           cancel out of the remaining recovery.
    * @param {number} dt seconds
-   * @param {object} input { super: boolean } (B key)
+   * @param {object} input { super: boolean }
    */
   updateSupermove(dt, input) {
     // Charge the meter (only when not already full and not mid-dash).
@@ -518,35 +537,36 @@ export class Hero extends Entity {
       this.supermoveMeter = Math.min(this.SUPERMOVE_MAX, this.supermoveMeter + this.SUPERMOVE_CHARGE_RATE * dt);
     }
 
-    // Trigger: B pressed + meter full + not already dashing.
+    // Trigger: super pressed + meter full + not already dashing.
     if (input.super && this.supermoveMeter >= this.SUPERMOVE_MAX && !this.supermoveActive) {
       this.triggerSupermove();
     }
 
-    // Dash playback: fast burst → decelerate to glide.
+    // Dash playback: committed burst → decelerating recovery.
     if (this.supermoveActive) {
-      this.supermoveTimer -= dt;
       const dir = this.facing;
-      // Decelerate from SUPERMOVE_SPEED toward 0 over SUPERMOVE_DUR.
-      const t = Math.max(0, this.supermoveTimer / this.SUPERMOVE_DUR); // 1→0
-      const speed = this.SUPERMOVE_SPEED * t;
-      this.vx = dir * speed;
-      // First 60%: no gravity (airborne slide). Last 40%: gravity kicks in
-      // so the deceleration feels like you're dropping back to earth.
-      if (t > 0.4) {
+      // §22 velocity profile: ONE continuous linear ramp from SUPERMOVE_SPEED at
+      // dash start down to SUPERMOVE_RESIDUAL at dash end, driven by TOTAL elapsed
+      // time since the trigger. The phase split (burst vs decel) only governs
+      // gravity and jump-cancel eligibility — it must NOT create a velocity
+      // discontinuity at the handoff (supermoveTimer resets between phases).
+      this._supermoveElapsed += dt;
+      const f = Math.min(1, this._supermoveElapsed / this.SUPERMOVE_DUR); // 0→1 across the whole dash
+      this.vx = dir * (this.SUPERMOVE_SPEED + (this.SUPERMOVE_RESIDUAL - this.SUPERMOVE_SPEED) * f);
+      if (this.supermovePhase === 'burst') {
+        // Committed: no gravity (handled by the gate in update()).
         this.vy = 0;
-      } else {
-        this.vy += GRAVITY * dt;
-        if (this.vy > MAX_FALL_SPEED) this.vy = MAX_FALL_SPEED;
-      }
-      if (this.supermoveTimer <= 0) {
-        this.supermoveActive = false;
-        this.vx = dir * 80; // small residual momentum after glide
-        // Restore previous animation.
-        if (this._prevAnim) {
-          this.anim = this._prevAnim;
-          this._prevAnim = null;
+        this.supermoveTimer -= dt;
+        if (this.supermoveTimer <= 0) {
+          // Hand off to the recovery phase; carry the boundary velocity.
+          this.supermovePhase = 'decel';
+          this.supermoveTimer = this.decelDur;
         }
+      } else {
+        // Recovery: gravity applied in update(). A fresh Jump press cancels here
+        // (see the jump block in update()).
+        this.supermoveTimer -= dt;
+        if (this.supermoveTimer <= 0) this.endSupermove();
       }
     }
   }
@@ -555,15 +575,61 @@ export class Hero extends Entity {
   triggerSupermove() {
     this.supermoveMeter = 0;
     this.supermoveActive = true;
-    this.supermoveTimer = this.SUPERMOVE_DUR;
-    // Intangible during the dash — enemy hitboxes pass through.
+    // Split the total duration into the committed burst and the recovery tail.
+    this.burstDur = this.SUPERMOVE_DUR * this.SUPERMOVE_BURST_FRAC;
+    this.decelDur = this.SUPERMOVE_DUR - this.burstDur;
+    this.decelFrac = this.decelDur / this.SUPERMOVE_DUR; // speed scale at handoff
+    this.supermovePhase = 'burst';
+    this.supermoveTimer = this.burstDur;
+    this._supermoveElapsed = 0; // total elapsed since trigger (drives the velocity ramp)
+    // Intangible for at least the dash window via the SHARED 'intangible' timer
+    // (§27 common semantics — same timer as i-frames/powerups, no separate
+    // bookkeeping). max() so an existing longer grant (i-frames / powerup) is
+    // never truncated; we remember the pre-dash value so endSupermove() can
+    // restore it when a jump-cancel ends the dash early.
+    this._preSupermoveIntangible = this.timers.get('intangible');
     this.intangible = true;
-    this.timers.set('intangible', this.SUPERMOVE_DUR);
+    this.timers.set('intangible', Math.max(this._preSupermoveIntangible, this.SUPERMOVE_DUR));
     // Swap to the supermove animation.
     if (this.anims.supermove) {
       this._prevAnim = this.anim;
       this.anim = this.anims.supermove;
       this.anim.reset();
+    }
+  }
+
+  /**
+   * End the dash early (jump-cancel during the decel phase) or naturally at the
+   * end of the decel phase. Retains a small residual forward nudge so the hero
+   * does not stop dead in mid-air (§22 "do not stop unnaturally"). Normal
+   * control/gravity resume immediately after.
+   */
+  endSupermove() {
+    this.supermoveActive = false;
+    this.supermovePhase = null;
+    this.supermoveTimer = 0;
+    this.vx = this.facing * this.SUPERMOVE_RESIDUAL;
+    // The supermove-granted immunity ends with the dash. Restore whatever
+    // intangibility existed BEFORE the dash (i-frames/powerup, or none) so a
+    // jump-cancel never leaves the hero invulnerable past the visible dash.
+    // _preSupermoveIntangible was captured as the REMAINING seconds at trigger
+    // time; subtract the total elapsed since the trigger to get what that
+    // pre-dash grant SHOULD have left — this correctly zeroes out a short
+    // pre-grant (e.g. 0.3s i-frames) that naturally expired during the dash.
+    const pre = this._preSupermoveIntangible ?? 0;
+    const preRemaining = Math.max(0, pre - this._supermoveElapsed);
+    if (preRemaining > 0) {
+      this.timers.set('intangible', preRemaining);
+      this.intangible = true;
+    } else {
+      this.timers.clear('intangible');
+      this.intangible = false;
+    }
+    this._preSupermoveIntangible = 0;
+    // Restore previous animation.
+    if (this._prevAnim) {
+      this.anim = this._prevAnim;
+      this._prevAnim = null;
     }
   }
 

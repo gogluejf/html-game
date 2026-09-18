@@ -54,3 +54,33 @@ Task 1.1 APPROVED. Both reviewers PASS. Committed post-review.
 
 ### Verdict
 Task 1.2 APPROVED. Both reviewers PASS. Committed post-review.
+
+## Task 1.3 — Supermove: phase-aware jump cancellation + anim flag fix
+
+### Review A (ninfer/qwen3.8-27b) — Round 1
+**PASS** (1 major: intangibility not shortened on cancel; 2 minor: velocity formula convoluted, dual boolean nit)
+
+### Review B (openai-codex/gpt-5.6-sol) — Round 1
+**FAIL** (4 major, 2 minor)
+1. MAJOR: Burst velocity reversed (starts 40%, accelerates to 100%)
+2. MAJOR: endSupermove doesn't shorten intangible timer
+3. MAJOR: triggerSupermove overwrites existing longer intangibility
+4. MINOR: Respawn doesn't clear supermovePhase
+5. MAJOR: No test for cancel-then-intangibility
+6. MINOR: Async test wrapper
+
+**Resolution:** All ACCEPTED. Executor fixed all six.
+
+### Review B — Round 2
+**FAIL** (3 major)
+1. MAJOR: Velocity ramp still discontinuous at handoff (timer reset causes ~94→408 px/s jump)
+2. MAJOR: Intangibility restore wrong for shorter pre-existing grants
+3. MAJOR: Respawn sets intangible=false after granting timer (pre-existing §27 violation)
+
+**Resolution:** All ACCEPTED. Executor added _supermoveElapsed accumulator, analytic restore, removed respawn bug.
+
+### Review B — Round 3 (final)
+**PASS** — No findings. 15/15 supermove tests, 10/10 heroAnim.
+
+### Verdict
+Task 1.3 APPROVED. Both reviewers PASS. Committed post-review.
