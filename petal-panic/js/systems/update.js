@@ -1100,20 +1100,19 @@ export function update(dt) {
   if (hero.fireCooldown > 0) hero.fireCooldown -= dt;
   tryFire(hero, input, dt);                    // dispatches on hero.selectedWeapon
 
-  // 1c. melee swing (Task 3.2): J starts a swing; during its single active
-  //     frame the hero's hitbox is checked against enemies and routed through
-  //     central damage(). The cooldown lives on the hero (updateMelee).
+  // 1c. melee swing (Task 3.2 + §17-§18): H starts a swing; during its single
+  //     active frame the hero's hitbox is checked against enemies and routed
+  //     through central damage(). The cooldown lives on the hero (updateMelee).
   //     §24: combat inputs are locked during hit-stun — no melee activation.
-  //     §15: Down+Melee triggers the SPECIAL melee (per-hero trajectory)
-  //     instead of the normal swing; plain Melee keeps the existing behavior.
+  //     §15: Down+Melee resolves to the SPECIAL melee (per-hero trajectory);
+  //     plain Melee stays normal. §17: both kinds funnel through ONE shared
+  //     pending slot with latest-wins replacement — a press during an
+  //     in-progress attack buffers instead of being dropped, and the buffered
+  //     action fires only after the current attack's natural recovery (§18).
   if (input.melee && !hero.hitStunned) {
-    const wasActive = hero.meleeActive;
-    if (input.down) {
-      hero.startSpecialMelee();
-    } else {
-      hero.tryMelee();
-    }
-    if (!wasActive && hero.meleeActive) {
+    const wasActive = hero.meleeActive || hero.specialMeleeActive;
+    hero.requestMelee(input.down ? 'special' : 'normal');
+    if (!wasActive && (hero.meleeActive || hero.specialMeleeActive)) {
       hero.runStats.meleeSwings += 1; // Task 7.3 — count the swing start
     }
   }

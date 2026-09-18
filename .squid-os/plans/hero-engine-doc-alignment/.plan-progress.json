@@ -125,7 +125,15 @@
       "status": "not_started",
       "name": "Shared one-slot melee buffer with latest-wins replacement",
       "milestone": "Combat Input Architecture (Buffer + Cancellation)",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "confidence": "high",
+        "failures": "None",
+        "tradeoffs": "Buffered action fires on the same tick the current swing's frame clock crosses its total (i.e. at natural completion), which is the earliest instant consistent with 'after full natural recovery'; no extra delay frame was added since that would diverge from unbuffered timing.",
+        "lessons_learned": "hero.update() does NOT consume input.melee \u2014 melee triggering lives in systems/update.js, so direct-intent tests must call hero.requestMelee() for presses and hero.update(DT, intent) only for ticks; first test draft wrongly assumed update() handled the press and silently buffered nothing.",
+        "done": "Added pendingMelee one-slot buffer ('normal'|'special'|null) to Hero with requestMelee(kind) entry point (latest-wins store/replace during an in-progress attack, immediate start otherwise), _startMeleeAttack dispatch reusing existing tryMelee/startSpecialMelee phase machines, and executePendingMelee() hooked into natural completion of BOTH updateMelee (normal swing end) and updateSpecialMelee (special swing end). systems/update.js melee trigger now routes through hero.requestMelee(input.down ? 'special' : 'normal') instead of calling tryMelee/startSpecialMelee directly; swing-start telemetry guard extended to special swings. Respawn clears the slot. New test file petal-panic/js/test/meleeBuffer.test.js (16 assertions) covers all 4 acceptance criteria plus chaining and wiring contract.",
+        "decisions": "Single shared slot on Hero per doc \u00a717 (not per-kind); buffering implemented as pure state write with zero effect on the frame clock (\u00a718); execution hooked into the two existing natural-completion points rather than a new timer, so no parallel timing system; update.js remains the only place that resolves Down+Melee context into a kind."
+      }
     },
     "3.2": {
       "number": "3.2",

@@ -139,6 +139,15 @@ export class Hero extends Entity {
     // flipped when facing left (see meleeHitboxWorld).
     this.meleeHitbox = { ox: 20, oy: -10, bw: 40, bh: 40 };
 
+    // --- Shared melee input buffer (design §17-§18) --------------------------
+    // Normal and special melee share ONE pending slot of capacity 1:
+    // 'normal' | 'special' | null. A melee press during an in-progress attack
+    // stores or REPLACES this value (latest valid input wins) — there is never
+    // a multi-action queue. The buffered action executes only after the
+    // current attack's recovery finishes NATURALLY; buffering never shortens
+    // recovery (§18). Cancellation clears the slot (task 3.2).
+    this.pendingMelee = null;
+
     // --- Special melee (design §15) ------------------------------------------
     // Down+Melee triggers a per-hero special swing with a self-supplied
     // trajectory (Balthazar advances, Scarlet retreats). Same phase rules as
@@ -522,6 +531,45 @@ export class Hero extends Entity {
   }
 
   /**
+   * Shared melee entry point (design §17): one pending slot for both normal
+   * and special melee, capacity exactly one. While an attack is in progress
+   * the request is stored in pendingMelee — or REPLACES whatever was stored
+   * (latest valid input wins; mashing can never queue two attacks). With no
+   * attack in progress the action starts immediately through the existing
+   * phase machines (no parallel timing).
+   * @param {'normal'|'special'} kind resolved from Down+Melee context
+   */
+  requestMelee(kind) {
+    if (this.meleeActive || this.specialMeleeActive) {
+      this.pendingMelee = kind; // store OR replace (§17 latest-wins)
+      return;
+    }
+    this._startMeleeAttack(kind);
+  }
+
+  /** Start a melee swing of the given kind via the existing phase machines. */
+  _startMeleeAttack(kind) {
+    if (kind === 'special') this.startSpecialMelee();
+    else this.tryMelee();
+  }
+
+  /**
+   * Execute the buffered melee action (design §18). Called only when the
+   * current attack's recovery has finished NATURALLY: the buffer never
+   * advances the frame clock or shortens recovery — it simply fires the
+   * pending action the instant the swing completes on its own schedule.
+   * The slot is cleared before starting so the new attack cannot re-buffer
+   * into itself. Returns true if an attack was started.
+   */
+  executePendingMelee() {
+    const kind = this.pendingMelee;
+    if (!kind) return false;
+    this.pendingMelee = null;
+    this._startMeleeAttack(kind);
+    return true;
+  }
+
+  /**
    * Advance the swing's internal frame clock by dt. When the last frame has
    * elapsed the swing ends (active flag cleared, frame reset). The cooldown
    * itself is decremented by the caller alongside other timers.
@@ -534,6 +582,15 @@ export class Hero extends Entity {
     if (this.meleeFrame >= this.MELEE_TOTAL_FRAMES) {
       this.meleeActive = false;
       this.meleeFrame = 0;
+      // Clamp to exactly 0: the decrement above can leave a tiny positive float
+      // (~1e-16) when the last tick overshoots the boundary. tryMelee()'s guard
+      // (`meleeCooldown > 0`) would then reject a buffered 'normal' attack that
+      // executePendingMelee fires on this very tick.
+      this.meleeCooldown = 0;
+      // Natural completion (§18): a buffered melee fires NOW — after windup →
+      // active → full natural recovery — without any re-press. Buffering did
+      // not shorten the swing: this tick happened on the original schedule.
+      this.executePendingMelee();
     } else if (this.anims.attack) {
       // Keep the visible attack frame aligned with the logical frame index.
       this.anims.attack.pickFrame(Math.floor(this.meleeFrame));
@@ -622,8 +679,10 @@ export class Hero extends Entity {
     else if (f < cfg.frames.windup + cfg.frames.active) phase = 'active';
     else if (f < total) phase = 'recovery';
     else {
-      // Natural completion: clear the swing state entirely.
+      // Natural completion: clear the swing state entirely, then let a
+      // buffered melee fire (§18 — only after full natural recovery).
       this.endSpecialMelee();
+      this.executePendingMelee();
       this._prevMeleeJumpHeld = !!(input && input.jump);
       return;
     }
@@ -811,6 +870,7 @@ export class Hero extends Entity {
     this.meleeActive = false;
     this.meleeFrame = 0;
     this.meleeCooldown = 0;
+    this.pendingMelee = null;
     this.specialMeleeActive = false;
     this.specialMeleePhase = null;
     this.specialMeleeFrame = 0;

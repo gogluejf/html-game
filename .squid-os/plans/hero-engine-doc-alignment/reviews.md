@@ -217,3 +217,18 @@ All 21 test files pass individually. `barrel.solid.test.js` is known-flaky (timi
 
 ### Gate Verdict
 WAVE 2 GATE PASSED. All new mechanics (one-way platforms, weapon toggle, special melee) implemented and tested. No regressions.
+
+## Task 3.1 — Shared one-slot melee buffer with latest-wins replacement
+
+### Review A (ninfer/qwen3.8-27b) — Round 1
+**PASS** (4 minor/informational: stale buffer on cancel [task 3.2 scope], telemetry guard, test mirrors ternary, edge-only input note)
+
+### Review B (openai-codex/gpt-5.6-sol) — Round 1 (after server retry)
+**FAIL** (2 findings)
+1. HIGH: normal→normal buffered auto-fire fails (meleeCooldown float dust ~1e-16)
+2. MEDIUM: No test for normal→normal case
+
+**Resolution:** Both ACCEPTED. Fixed: meleeCooldown clamped to 0 before executePendingMelee. Test added (rewritten to detect frame reset rather than meleeActive toggle).
+
+### Verdict
+Task 3.1 APPROVED. Both reviewers satisfied. Committed post-review.
