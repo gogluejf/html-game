@@ -1,45 +1,74 @@
-<!doctype html><html><head><meta charset="utf-8"></head>
+<!doctype html>
+<html><head><meta charset="utf-8"></head>
 <body style="background:#000">
 <canvas id="game" width="960" height="540"></canvas>
+<pre id="state-check" style="color:#888;position:fixed;bottom:0;left:0;font:12px monospace">smoke-test running…</pre>
 <script type="module">
 import './js/main.js';
-import { S, getState } from './js/state.js';
+import { S, getState, tryTransition } from './js/state.js';
+import { Home } from './js/screens.js';
 
 const results = [];
-function key(code) { window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true })); }
-async function step(label) { await new Promise(r => setTimeout(r, 150)); results.push(label + '=' + getState()); }
+let failures = 0;
+
+// Real key press: down + up with a frame gap so the input engine's
+// physical-state map sees a clean press (keydown alone leaves it half-armed).
+function key(code) {
+  window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
+  setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true })), 60);
+}
+async function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+// Press a key, let the fixed-timestep loop consume it, then record state.
+async function step(label, expect, code) {
+  if (code) { key(code); await wait(200); }
+  const got = getState();
+  const ok = expect == null || got === expect;
+  if (!ok) failures++;
+  results.push(`${label}=${got}${ok ? '' : ' EXPECTED ' + expect}`);
+}
 
 (async () => {
-  // HOME → SELECT → PLAY
-  key('Enter'); await step('select');
-  key('ArrowRight'); key('Enter'); await step('play');
-  // PAUSE → retry (R): expect PLAY with lives reset
-  key('Escape'); await step('paused');
-  key('KeyR'); await step('pause-retry');
-  // Force game over to test OVER screen keys
+  // Wait for the game loop to be alive.
+  for (let i = 0; i < 30 && !document.getElementById('game'); i++) await wait(100);
+  await wait(500);
+
+  // HOME intro is a parallax card sequence; each confirm skips ONE card.
+  // Fast-forward it directly instead of pressing Enter five times.
+  Home.parallaxOffset = 9.5;   // jump to final scene
+  await step('home', S.HOME);
+  await step('prompt-shown', S.HOME, 'Enter');   // first press shows prompt
+  await step('select', S.SELECT, 'Enter');       // second press transitions
+
+  // SELECT → PLAY
+  await step('play', S.PLAY, 'Enter');
+
+  // PAUSE → retry (R): expect back in PLAY
+  await step('paused', S.PAUSE, 'Escape');
+  await step('pause-retry', S.PLAY, 'KeyR');
+
+  // OVER flow: force transition (killing the boss is not scriptable here),
+  // then exercise the OVER screen keys.
   const U = await import('./js/systems/update.js');
   const hero = U.getHero();
-  if (getState() === 2) U.tryTransition(4); // PLAY→OVER (valid)
-  await step('over');
-  // Continue with coins
+  if (getState() === S.PLAY) tryTransition(S.OVER);
+  await step('over', S.OVER);
   hero.coins = 2000; hero.continuesUsed = 0;
-  key('KeyC'); await step('after-continue');
-  // Back to OVER and quit
-  if (getState() === 2) U.tryTransition(4);
-  await step('over2');
-  key('KeyQ'); await step('after-quit');
-  // Win flow
-  key('Enter'); key('ArrowRight'); key('Enter'); await step('play2');
-  U.tryTransition(5); // PLAY→WIN
-  await step('win');
-  key('Enter'); await step('after-playagain');
-})();
+  await step('after-continue', S.PLAY, 'KeyC');
 
-setTimeout(() => {
-  const el = document.createElement('pre');
-  el.id = 'state-check';
-  el.textContent = 'state-check ' + results.join(' | ');
-  document.body.appendChild(el);
-}, 3500);
-</script>
-</body></html>
+  // Back to OVER and quit to HOME
+  if (getState() === S.PLAY) tryTransition(S.OVER);
+  await step('over2', S.OVER);
+  await step('after-quit', S.HOME, 'KeyQ');
+
+  // WIN flow
+  await step('select2', S.SELECT, 'Enter');
+  await step('play2', S.PLAY, 'Enter');
+  tryTransition(S.WIN);
+  await step('win', S.WIN);
+  await step('after-playagain', S.SELECT, 'Enter');
+
+  const el = document.getElementById('state-check');
+  el.textContent = (failures === 0 ? 'SMOKE PASS  ' : `SMOKE FAIL (${failures})  `) + results.join(' | ');
+  el.style.color = failures === 0 ? '#2ecc71' : '#e74c3c';
+})();
+</script></body></html>
