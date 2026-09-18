@@ -248,3 +248,15 @@ Task 3.1 APPROVED. Both reviewers satisfied. Committed post-review.
 
 ### Verdict
 Task 3.2 APPROVED with noted limitation (special melee boundary-frame cancel delayed by 1 tick). Both suites green. Committed post-review.
+
+## WAVE 3 GATE REVIEW
+
+### Gate Suite
+All 23 test files PASS. No new failures vs baseline.
+
+### Notes
+- Special melee boundary-frame cancel limitation noted (1-tick delay on active→recovery transition). Acceptable for now; can be addressed in Wave 4 polish.
+- Shared melee buffer (§17-§19) fully implemented: one-slot latest-wins, buffer never shortens recovery, cancel always wins and clears buffer.
+
+### Gate Verdict
+WAVE 3 GATE PASSED. Combat input architecture complete.

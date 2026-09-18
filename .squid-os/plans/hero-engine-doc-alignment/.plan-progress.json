@@ -137,7 +137,7 @@
     },
     "3.2": {
       "number": "3.2",
-      "status": "not_started",
+      "status": "completed",
       "name": "Recovery cancellation: cancel beats buffer and clears it",
       "milestone": "Combat Input Architecture (Buffer + Cancellation)",
       "milestone_number": "3",
