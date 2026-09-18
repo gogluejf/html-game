@@ -55,6 +55,7 @@ export function aabbOverlap(a, b) {
  */
 export function resolve(entity, solids) {
   let resolved = null;
+  let blockedX = false;
 
   for (const s of solids) {
     // Recompute the box after each axis push so the second axis sees the
@@ -80,6 +81,7 @@ export function resolve(entity, solids) {
           if (entity.vx < 0) entity.vx = 0;
           resolved = { axis: 'x', dir: 1 };
         }
+        blockedX = true;
       } else {
         const dUp    = (b.y + b.h) - s.y;   // distance to push up
         const dDown  = (s.y + s.h) - b.y;   // distance to push down
@@ -110,7 +112,24 @@ export function resolve(entity, solids) {
     }
   }
 
+  // Stamp the per-frame block flag so hero.update() (next step) can tell a
+  // solid-pinned hero apart from one standing still at rest.
+  entity._blockedX = blockedX;
+
   return resolved;
+}
+
+/**
+ * Per-frame horizontal-block flag for an entity (design §8 solid-obstacle case).
+ * resolve() zeroes vx into a wall, so a hero pinned against a solid can never
+ * accumulate horizontal velocity — but that alone is indistinguishable from a
+ * grounded hero standing still about to move. This flag is the reliable signal:
+ * it is true only when a solid actually cancelled horizontal displacement this
+ * frame. The main loop stamps it on the hero after resolve(); hero.update()
+ * clears it at the start of each step and reads it in the horizontal branch.
+ */
+export function wasBlockedX(entity) {
+  return !!entity._blockedX;
 }
 
 // ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
   "tasks": {
     "1.1": {
       "number": "1.1",
-      "status": "not_started",
+      "status": "completed",
       "name": "Contextual Down: crouch vs downward aim resolution",
       "milestone": "Behavior Corrections (Doc Compliance)",
       "milestone_number": "1",
@@ -20,7 +20,15 @@
       "status": "not_started",
       "name": "Air control: ramp from rest, preserve jump momentum",
       "milestone": "Behavior Corrections (Doc Compliance)",
-      "milestone_number": "1"
+      "milestone_number": "1",
+      "summary": {
+        "confidence": "high",
+        "decisions": "Chose Option A (collision flag from resolve()) over the velocity heuristic or reordering jump logic: it is the only signal that distinguishes 'standing still about to move' from 'pinned against a wall', both of which have vx\u22480. Flag lives on the entity (_blockedX) rather than being returned, so hero.update() can read it without the main loop needing new plumbing.",
+        "lessons_learned": "resolve() zeroes vx into walls every frame, so a blocked hero can never accumulate velocity \u2014 making vx alone an ambiguous blocked/rest signal. The distinguishing fact is whether a solid actually cancelled displacement this frame, which only the collision resolver knows. Tests that simulate blocking must set _blockedX=true (not just zero vx) to exercise the real code path.",
+        "done": "Replaced the velocity-based blocked heuristic in hero.js update() with a reliable collision flag. resolve() in collision.js now tracks whether any solid cancelled horizontal displacement this frame (blockedX) and stamps entity._blockedX; added wasBlockedX() helper. The horizontal branch now uses 'grounded && _blockedX' for the air-ramp decision instead of |vx| < epsilon, so a grounded hero at rest pressing a direction gets instant full run speed (\u00a77) while a solid-pinned hero ramping out of a barrel still uses the \u00a78 air ramp. Fixed the ground-snap test to start from natural rest (vx=0) and assert instant 250 on the first frame, and updated the barrel test to stamp _blockedX.",
+        "tradeoffs": "The block flag is stamped by resolve() at end-of-frame N and read during update() of frame N+1 (one-frame-late signal). This is correct for the barrel case because resolve() re-stamps it every frame while pinned, so the flag stays true across the whole pin duration including the jump-launch frame. Requires the main loop to call resolve(hero,...) \u2014 which it already does.",
+        "failures": "None for the required suites (airControl, jumpslide, contextualAim all exit 0). Note: heroHit.test.js and timers.test.js fail but are PRE-EXISTING baseline failures about the stale 'inv' timer label (separate task), verified via git stash."
+      }
     },
     "1.3": {
       "number": "1.3",

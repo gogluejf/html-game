@@ -18,6 +18,18 @@ const JUMP_CUT_VY = 0.45;       // vy scale when jump released early (variable h
 const SLIDE_DECEL = 480;        // px/s^2 — crouch skid: ~0.5s / ~65px from full run
 const COYOTE_TIME = 0.08;       // grace window after leaving a ledge (s)
 const JUMP_BUFFER = 0.12;       // pre-land jump input window (s)
+// Air control (design §8): when starting horizontal movement in the air from
+// near-zero velocity, accelerate toward run speed over a short ramp instead of
+// snapping to full speed in one frame. Ground stays arcade-immediate (§7).
+const AIR_ACCEL = 1400;         // px/s^2 ramp for airborne horizontal intent
+// Blocked-on-ground (design §8 solid-obstacle case): resolve() stamps a
+// per-frame _blockedX flag when a solid actually cancelled horizontal motion.
+// A grounded hero pinned against a wall can never accumulate vx, so its held
+// direction must use the air ramp — snapping to full run speed would launch it
+// at max velocity the instant it jumps out of the barrel. This is distinct from
+// a grounded hero standing still at rest (vx≈0 but NOT blocked), which gets the
+// arcade-immediate ground snap (§7). The velocity heuristic alone can't tell
+// these apart; the collision flag is the reliable signal.
 
 export class Hero extends Entity {
   /**
@@ -210,7 +222,27 @@ export class Hero extends Entity {
     } else if (moveDir !== 0) {
       this.facing = moveDir > 0 ? 1 : -1;
       this.syncMirror();
-      this.vx = moveDir * speed;
+      const targetVx = moveDir * speed;
+      // Blocked on the ground (design §8 solid-obstacle case): a solid actually
+      // cancelled our horizontal motion last frame (resolve() stamped
+      // _blockedX). Use the air ramp here too — snapping to full run speed would
+      // launch the hero at max velocity the instant it jumps out of the barrel.
+      // A grounded hero standing still at rest has _blockedX false and gets the
+      // arcade-immediate snap (§7); the collision flag distinguishes the two.
+      const blockedOnGround = this.grounded && !!this._blockedX;
+      if (!blockedOnGround && this.grounded) {
+        // Ground: arcade-immediate — full run speed on the same frame (§7).
+        // Opposite-direction input cancels existing momentum immediately.
+        this.vx = targetVx;
+      } else {
+        // Air (or blocked-on-ground): accelerate toward run speed over a short
+        // ramp (§8). Never snap from ~0 to full speed in one frame; legitimate
+        // jump momentum is preserved because we only approach, never overwrite,
+        // vx.
+        const step = AIR_ACCEL * dt;
+        if (Math.abs(targetVx - this.vx) <= step) this.vx = targetVx;
+        else this.vx += Math.sign(targetVx - this.vx) * step;
+      }
     } else if (this.grounded) {
       // No horizontal input on the ground. Two distinct feels:
       //   • Crouching (SMB1 slide/skid): strong linear deceleration — you keep
