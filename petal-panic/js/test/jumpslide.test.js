@@ -49,16 +49,20 @@ ok('first jump fires from ground, second fires in air on fresh press', () => {
   assert.equal(h.jumpsUsed, 2, 'fresh air press should use the double jump');
 });
 
-ok('crouching blocks jumping', () => {
+ok('jumping from crouch cancels crouch and jumps immediately (§12, no stand-first)', () => {
   const h = makeHero();
   h.setGrounded(true);
   // Crouch via input (grounded + down), then press jump on the next frame.
   let inp = noInput(); inp.down = true;
   h.update(DT, inp);
   assert.ok(h.crouching, 'should be crouched');
-  inp = noInput(); inp.down = true; inp.jump = true;
+  inp.jump = true;
   h.update(DT, inp);
-  assert.equal(h.jumpsUsed, 0, 'crouched hero should not jump');
+  assert.equal(h.jumpsUsed, 1, 'crouched hero MUST jump without standing first');
+  assert.ok(h.vy < 0, 'should have upward velocity after the jump');
+  assert.equal(h.crouching, false, 'crouch must be cancelled by the jump');
+  assert.equal(h.sliding, false, 'slide flag must not linger after the jump');
+  assert.equal(h.box, h.standBox, 'standing hitbox must be restored on the same frame');
 });
 
 console.log('Crouch / slide deceleration');

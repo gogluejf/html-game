@@ -353,21 +353,32 @@ export function render(ctx) {
  */
 /**
  * Pick the hero's current anim name from its state (pure — used by the debug
- * debug label, and any future real-sprite selection should use this too).
+ * label, and any future real-sprite selection should use this too).
+ *
+ * Priority order follows design §29 (gameplay state is authoritative; the
+ * animation must never drift away from it):
+ *   dead > supermove > melee > hit-stun ('rec') > crouch/slide > jump/fall > run > idle
  *
  * Jump state is driven by `jumpsUsed`, NOT by vy: once a jump is initiated the
  * counter is >0 for the entire flight (Hero.update resets it to 0 on the ground
  * every frame), so the hero shows jump/djump from launch until landing —
  * including the apex, where vy passes through ~0 and a velocity threshold
  * would briefly flicker the anim back to idle. Walking off a ledge (no jump
- * initiated, jumpsUsed === 0) correctly falls through to run/idle.
+ * initiated, jumpsUsed === 0) falls through to the fall/run/idle branch:
+ * airborne + falling (vy > 0) → 'fall'; airborne at rest → idle.
  */
 export function heroAnimName(h) {
   if (h.dying) return 'dead';
   if (h.supermoveActive) return 'supermove';
-  if (h.crouching) return 'crouch';
-  if (h.meleeFrame > 0) return 'melee';
+  if (h.meleeActive) return 'melee';
+  if (h.timers && h.timers.get('rec') > 0) return 'hitstun';
+  if (h.crouching) return h.sliding ? 'slide' : 'crouch';
   if (h.jumpsUsed > 0) return h.jumpsUsed >= 2 ? 'djump' : 'jump';
+  // Airborne without an initiated jump (walked off a ledge): falling → fall.
+  // `!grounded` is the authoritative airborne signal — a grounded hero can
+  // carry residual vy from integration before the main loop's resolve() runs,
+  // so vy alone would misfire on the ground.
+  if (!h.grounded && h.vy > 0) return 'fall';
   if (Math.abs(h.vx) > 20) return 'run';
   return 'idle';
 }

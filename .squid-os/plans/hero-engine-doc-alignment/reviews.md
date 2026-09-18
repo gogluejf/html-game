@@ -106,3 +106,30 @@ Task 1.3 APPROVED. Both reviewers PASS. Committed post-review.
 
 ### Verdict
 Task 1.4 APPROVED. Both reviewers PASS. Committed post-review.
+
+## Task 1.5 — Crouch/slide cancellation hardening + anim-state sync audit
+
+### Review A (ninfer/qwen3.8-27b) — Round 1
+**PASS** (4 low/info: special melee/shooting latent, DIR_ export ordering, fake-hero fixture, slide test tautology)
+
+### Review B (openai-codex/gpt-5.6-sol) — Round 1
+**FAIL** (3 HIGH, 2 MEDIUM)
+1. HIGH: No 'fall' state in heroAnimName (§29)
+2. HIGH: sliding flag desyncs from velocity (threshold 20 vs residual vx)
+3. HIGH: Release-Down + move ignores same-frame input (ordering)
+4. MEDIUM: Slide-end test too weak
+5. MEDIUM: §29 coverage incomplete
+
+**Resolution:** All ACCEPTED. Executor fixed all five.
+
+### Review B — Round 2
+**FAIL** (1 MEDIUM)
+1. MEDIUM: First-frame crouch grace is dead code (wasCrouching captured after entry)
+
+**Resolution:** ACCEPTED. Executor moved capture before entry block + added grace-frame test.
+
+### Review B — Round 3 (final)
+**PASS** — No findings. 11/11 crouchCancel, 8/8 jumpslide, 10/10 heroAnim.
+
+### Verdict
+Task 1.5 APPROVED. Both reviewers PASS. Committed post-review. WAVE 1 COMPLETE.

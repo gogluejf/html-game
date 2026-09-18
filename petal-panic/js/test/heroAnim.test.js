@@ -28,7 +28,7 @@ function ok(name, fn) {
 // Plain state objects — heroAnimName is a pure reader of hero fields.
 const hero = (o = {}) => ({
   dying: false, crouching: false, meleeFrame: 0,
-  jumpsUsed: 0, vx: 0, vy: 0,
+  jumpsUsed: 0, vx: 0, vy: 0, grounded: true,
   ...o,
 });
 
@@ -38,7 +38,7 @@ ok('running on ground → run', () => assert.equal(heroAnimName(hero({ vx: 250 }
 ok('crouch wins over everything else', () =>
   assert.equal(heroAnimName(hero({ crouching: true, vx: 250, jumpsUsed: 1 })), 'crouch'));
 ok('melee wins over movement', () =>
-  assert.equal(heroAnimName(hero({ meleeFrame: 3, vx: 250 })), 'melee'));
+  assert.equal(heroAnimName(hero({ meleeActive: true, vx: 250 })), 'melee'));
 ok('dying wins over everything', () =>
   assert.equal(heroAnimName(hero({ dying: true, crouching: true })), 'dead'));
 
@@ -56,9 +56,9 @@ ok('double jump, whole remaining flight → djump (apex included)', () => {
   assert.equal(heroAnimName(hero({ jumpsUsed: 2, vy: 0 })), 'djump');
   assert.equal(heroAnimName(hero({ jumpsUsed: 2, vy: 400 })), 'djump');
 });
-ok('walking off a ledge (no jump initiated) → NOT jump', () => {
-  assert.equal(heroAnimName(hero({ vy: 100 })), 'idle');      // airborne, falling
-  assert.equal(heroAnimName(hero({ vy: 100, vx: 250 })), 'run');
+ok('walking off a ledge (no jump initiated) → fall, NOT jump', () => {
+  assert.equal(heroAnimName(hero({ grounded: false, vy: 100 })), 'fall');       // airborne, falling
+  assert.equal(heroAnimName(hero({ grounded: false, vy: 100, vx: 250 })), 'fall');
 });
 
 console.log(`\n${passed} passed`);

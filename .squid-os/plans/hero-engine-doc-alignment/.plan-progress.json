@@ -47,7 +47,7 @@
     },
     "1.4": {
       "number": "1.4",
-      "status": "not_started",
+      "status": "completed",
       "name": "Hit response: contextual knockback table + i-frame visual sync + test cleanup",
       "milestone": "Behavior Corrections (Doc Compliance)",
       "milestone_number": "1",
@@ -65,7 +65,15 @@
       "status": "not_started",
       "name": "Crouch/slide cancellation hardening + anim-state sync audit",
       "milestone": "Behavior Corrections (Doc Compliance)",
-      "milestone_number": "1"
+      "milestone_number": "1",
+      "summary": {
+        "done": "Fixed the first-frame crouch grace bug: moved the wasCrouching capture to BEFORE the crouch entry/exit block in Hero.update() so it reflects the pre-transition state (previously captured after the entry block had already set this.crouching=true, making the grace condition dead code). Added a test in crouchCancel.test.js asserting that on the exact frame Down is first pressed while running, vx retains full run speed (250) and from the next frame slide decel removes exactly SLIDE_DECEL*dt (~8 px/s \u2192 242).",
+        "failures": "None",
+        "decisions": "Captured wasCrouching at the top of the crouch section rather than using an enteredCrouchThisFrame flag; keeps a single source of truth for the pre-transition state and matches the existing comment intent.",
+        "confidence": "high",
+        "tradeoffs": "None \u2014 minimal one-line move of the capture plus an explanatory comment.",
+        "lessons_learned": "The sliding flag is derived from crouching && |vx|>0.5, so it is legitimately true on the grace frame too \u2014 the grace governs control input, not the momentum-derived slide state. Don't assert sliding=false on the entry frame."
+      }
     },
     "2.1": {
       "number": "2.1",

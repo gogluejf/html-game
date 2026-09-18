@@ -217,6 +217,29 @@ export class Hero extends Entity {
   update(dt, input, _world) {
     const speed = this.stats.speed;
 
+    // --- Crouch / stand (runs BEFORE movement so the exit is atomic) --------
+    // §11: state, movement restrictions, hitbox and animation must transition
+    // together. The exit MUST be resolved before horizontal input is evaluated:
+    // on the frame Down is released while a direction is held, the standing
+    // hitbox + full locomotion must apply the SAME frame (no one-frame lag where
+    // the old crouch lock still eats the input). Crouch only initiates while
+    // grounded. §4 "Movement Locked": while lockMove is held, Down no longer
+    // initiates crouch — it becomes a downward aim instead (see resolveAim).
+    //
+    // Capture the PRE-transition crouch state first: the entry block below can
+    // flip this.crouching to true THIS frame, and the grace check in the
+    // movement branch needs to know whether the hero was ALREADY crouched when
+    // this frame began. Capturing after the entry block would make
+    // wasCrouching === this.crouching always and kill the grace condition.
+    const wasCrouching = this.crouching;
+    if (this.crouching && (!input.down || input.lockMove)) {
+      this.exitCrouch();
+    }
+    if (input.down && !input.lockMove && this.grounded && !this.crouching) {
+      this.crouching = true;
+      this.box = this.crouchBox;
+    }
+
     // --- Horizontal intent --------------------------------------------------
     // Crouching locks horizontal control (SMB1): once crouched you cannot
     // accelerate or steer, only carry existing momentum and skid to a stop.
@@ -226,7 +249,6 @@ export class Hero extends Entity {
     // momentum carries into the skid instead of stopping dead on the press.
     // From the next frame on, crouching fully locks control and the decel
     // below bleeds the momentum off — that's the visible "slide then stop".
-    const wasCrouching = this.crouching;
     // Hit-stun (recovery): while active, input is locked and the knockback
     // velocity plays out under friction instead of being overwritten by control.
     // This is what makes a hit "fling" you back before you regain control.
@@ -238,7 +260,12 @@ export class Hero extends Entity {
     }
 
     // Sliding = crouching with residual momentum still carrying forward.
-    this.sliding = this.crouching && Math.abs(this.vx) > 20;
+    // Epsilon gate: the flag stays true for the entire skid until vx is
+    // clamped to exactly 0 in the slide-decel branch below, so state/anim/
+    // hitbox never desync from velocity (§11). The epsilon only guards float
+    // dust; it must sit BELOW the per-frame decel step (SLIDE_DECEL * dt ≈ 8)
+    // or the flag would flip one frame before rest.
+    this.sliding = this.crouching && Math.abs(this.vx) > 0.5;
 
     if (this.supermoveActive) {
       // Super dash owns vx/vy — skip all normal movement control.
@@ -286,26 +313,18 @@ export class Hero extends Entity {
       //   • Standing: gentle exponential friction back to rest.
       if (this.crouching && Math.abs(this.vx) > 0) {
         const decel = SLIDE_DECEL * dt; // px/s removed this step
-        if (Math.abs(this.vx) <= decel) this.vx = 0;
-        else this.vx -= Math.sign(this.vx) * decel;
+        if (Math.abs(this.vx) <= decel) {
+          this.vx = 0;
+          // §11: clear the slide flag in the SAME frame vx is clamped to rest —
+          // state and velocity transition atomically, no lingering slide anim.
+          this.sliding = false;
+        } else {
+          this.vx -= Math.sign(this.vx) * decel;
+        }
       } else {
         this.vx *= GROUND_FRICTION;
         if (Math.abs(this.vx) < 1) this.vx = 0;
       }
-    }
-
-    // --- Crouch / stand (runs AFTER movement so the first press keeps momentum)
-    // Crouch only initiates while grounded. Release down → stand back up.
-    // §4 "Movement Locked": while lockMove is held, Down no longer initiates
-    // crouch — it becomes a downward aim instead (see resolveAim).
-    if (this.crouching && (!input.down || input.lockMove)) {
-      this.crouching = false;
-      this.sliding = false;
-      this.box = this.standBox;
-    }
-    if (input.down && !input.lockMove && this.grounded && !this.crouching) {
-      this.crouching = true;
-      this.box = this.crouchBox;
     }
 
     // --- Jump (with coyote time + input buffer for good feel) ---------------
@@ -331,7 +350,10 @@ export class Hero extends Entity {
     // cancels out of the remaining recovery (handled by endSupermove below).
     if (this.supermoveActive && this.supermovePhase === 'decel' && jumpPressed) {
       this.endSupermove();
-    } else if (!this.supermoveActive && (canGroundJump || canAirJump) && this._jumpBuffer > 0 && !this.crouching && !stunned) {
+    } else if (!this.supermoveActive && (canGroundJump || canAirJump) && this._jumpBuffer > 0 && !stunned) {
+      // §12: crouching must never force a stand-first. Jumping from crouch
+      // cancels it atomically (state + hitbox + slide flag) before launch.
+      if (this.crouching) this.exitCrouch();
       const isDouble = canAirJump;
       this.vy = -this.stats.jump * (isDouble ? 0.85 : 1); // double jump slightly weaker
       this.grounded = false;
@@ -480,6 +502,19 @@ export class Hero extends Entity {
   }
 
   /**
+   * Single exit path for crouch/slide (design §11): state, movement
+   * restrictions, hitbox and animation must all transition together — no
+   * scattered flag clears. Locomotion restrictions lift automatically because
+   * update() reads the flags; the standing hitbox is restored so a hero who
+   * just stood up is never hit-tested with the short crouch box.
+   */
+  exitCrouch() {
+    this.crouching = false;
+    this.sliding = false;
+    this.box = this.standBox;
+  }
+
+  /**
    * Called by the main loop after resolve() so the hero knows whether it is
    * resting on a surface. Also maintains the coyote timer: entering the air
    * from a grounded state starts the grace window.
@@ -532,11 +567,9 @@ export class Hero extends Entity {
     this.deathTimer = 0;
     this.intangible = true;
     this.timers.set('intangible', Hero.RESPAWN_IFRAMES);
-    this.crouching = false;
-    this.sliding = false;
+    this.exitCrouch();
     this.jumpsUsed = 0;          // 0=grounded, 1=first jump used, 2=double jump used
     this.MAX_JUMPS = 2;          // ground jump + 1 air jump
-    this.box = this.standBox;
     this.meleeActive = false;
     this.meleeFrame = 0;
     this.meleeCooldown = 0;
