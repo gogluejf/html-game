@@ -155,7 +155,15 @@
       "status": "not_started",
       "name": "Data-driven per-frame attack hitboxes (\u00a730)",
       "milestone": "Polish, Validation & Premium Quality Bar",
-      "milestone_number": "4"
+      "milestone_number": "4",
+      "summary": {
+        "failures": "None",
+        "done": "Fixed supermove hitbox vertical offset regression: changed oy from 0 to 'center' sentinel in heroDefs.js SUPERMOVE_HITBOX, and added runtime resolution (oy === 'center' \u2192 -bh/2) in both attackHitboxWorld() and the constructor's supermoveHitbox init. The box is now vertically centered on the hero body as before the data-table refactor.",
+        "tradeoffs": "None \u2014 sentinel approach keeps the data declarative while handling per-hero body height variation at runtime.",
+        "decisions": "Used a 'center' string sentinel for oy rather than hardcoding -h/2 in the data table, since bodyHeight varies per hero (scarlet h=48, balthazar h=52). Resolution happens in two places: the resolver (attackHitboxWorld) and the constructor cache (supermoveHitbox).",
+        "confidence": "high",
+        "lessons_learned": "When converting inline math to a data table, sentinels like 'body' for bh must be mirrored for any other dimension that depends on the same variable \u2014 oy: 0 looked valid but silently shifted the box 24px down because it was measured from center, not top."
+      }
     },
     "4.2": {
       "number": "4.2",

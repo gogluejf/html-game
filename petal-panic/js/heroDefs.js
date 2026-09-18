@@ -2,6 +2,30 @@
 // Two selectable heroes; same base struct, different stats + special.
 // `stats` feed physics/feel: speed (px/s), jump (impulse px/s), stamina (energy),
 // projectile_freq / special_freq (cooldowns in seconds), attack/defense/weight.
+//
+// `attacks` is the declarative per-frame attack-hitbox table (design §30):
+// geometry varies by hero, attack, animation frame and facing. It is DATA only
+// — all resolution/mirroring logic lives in Hero.attackHitboxWorld().
+//   melee.frames      — one entry per swing frame index (aligned with the
+//                       shared MELEE_TOTAL_FRAMES clock); null = no box that
+//                       frame, an {ox,oy,bw,bh} object = active box offset
+//                       from body center (ox positive = in front of facing).
+//   specialMelee.hitbox — single box exposed during every ACTIVE phase frame
+//                       (per-hero differences live here, not in code branches).
+//   supermove.box     — box exposed for the whole dash; bh: 'body' derives the
+//                       full body height at runtime (heroes differ in h).
+
+export const ATTACK_MELEE = 'melee';
+export const ATTACK_SPECIAL_MELEE = 'specialMelee';
+export const ATTACK_SUPERMOVE = 'supermove';
+
+/** Shared normal-melee frame table (both heroes swing identically today). */
+const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: -10, bw: 40, bh: 40 }, null];
+
+/** Shared supermove dash box (thin, full body height, in front). */
+// oy: 'center' is a sentinel resolved at runtime to -bh/2 so the box is
+// vertically centered on the hero body (matches the pre-data-table behavior).
+const SUPERMOVE_HITBOX = { ox: 20, oy: 'center', bw: 16, bh: 'body' };
 
 export const HEROES = {
   scarlet: {
@@ -27,6 +51,11 @@ export const HEROES = {
       frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
       hitbox: { ox: 20, oy: -10, bw: 40, bh: 40 },    // active-frame box offset from center
     },
+    // §30 per-frame attack hitbox data (see table docs at top of file).
+    attacks: {
+      [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES },
+      [ATTACK_SUPERMOVE]: { box: SUPERMOVE_HITBOX },
+    },
   },
   balthazar: {
     id: 'balthazar',
@@ -49,6 +78,11 @@ export const HEROES = {
       travelSpeed: 300,     // px/s self-supplied horizontal movement
       frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
       hitbox: { ox: 20, oy: -10, bw: 40, bh: 40 },    // active-frame box offset from center
+    },
+    // §30 per-frame attack hitbox data (see table docs at top of file).
+    attacks: {
+      [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES },
+      [ATTACK_SUPERMOVE]: { box: SUPERMOVE_HITBOX },
     },
   },
 };

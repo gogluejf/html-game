@@ -260,3 +260,12 @@ All 23 test files PASS. No new failures vs baseline.
 
 ### Gate Verdict
 WAVE 3 GATE PASSED. Combat input architecture complete.
+
+## Task 4.1 — Data-driven per-frame attack hitboxes (§30)
+
+### Review B (openai-codex/gpt-5.6-sol)
+**FAIL** (supermove oy regression: -h/2 → 0, ~24px shift; schema inconsistency for specialMelee)
+**Resolution:** Supermove oy fixed via 'center' sentinel. Special melee schema noted as acceptable (lives in §15 config home).
+
+### Verdict
+Task 4.1 APPROVED after fix. Single-reviewed. Committed post-review.

@@ -11,6 +11,7 @@
 import { Entity } from './entity.js';
 import { GRAVITY, MAX_FALL_SPEED, LAYER } from './consts.js';
 import { aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } from './projectile.js';
+import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from './heroDefs.js';
 
 // Feel knobs (tune freely; these are not per-hero stats).
 const GROUND_FRICTION = 0.85;   // vx multiplier per fixed step when no input on ground
@@ -135,9 +136,12 @@ export class Hero extends Entity {
     this.MELEE_TOTAL_FRAMES = 5;     // windup(0-2) + active(3) + recovery(4)
     this.MELEE_ACTIVE_FRAME = 3;     // 0-indexed peak frame (the hitbox window)
     this.MELEE_FRAME_DURATION = 0.08;// seconds per frame → 0.4s total swing
-    // Hitbox relative to hero center; ox is offset in the facing direction and
-    // flipped when facing left (see meleeHitboxWorld).
-    this.meleeHitbox = { ox: 20, oy: -10, bw: 40, bh: 40 };
+    // §30: melee hitbox geometry is DATA — one entry per swing frame index in
+    // the hero's attacks table (heroDefs.js). null entries expose no box; the
+    // single attackHitboxWorld() resolver turns the active entry into a
+    // mirrored world-space AABB. Kept as an instance property so existing
+    // consumers/tests read the same object shape ({ox,oy,bw,bh}).
+    this.meleeHitbox = this.heroDef.attacks[ATTACK_MELEE].frames[this.MELEE_ACTIVE_FRAME];
 
     // --- Shared melee input buffer (design §17-§18) --------------------------
     // Normal and special melee share ONE pending slot of capacity 1:
@@ -182,7 +186,12 @@ export class Hero extends Entity {
     this.SUPERMOVE_BURST_FRAC = 0.6; // fraction of the dash that is the committed burst
     this.SUPERMOVE_SPEED = 900;      // px/s at dash start (decays linearly to 0)
     this.SUPERMOVE_RESIDUAL = 80;    // px/s small forward nudge kept when the dash ends
-    this.supermoveHitbox = { ox: 20, oy: -this.h / 2, bw: 16, bh: this.h }; // thin, full body height, in front
+    // §30: supermove hitbox geometry is DATA in the hero's attacks table
+    // (heroDefs.js); bh 'body' resolves to the full body height here so the
+    // box tracks each hero's own h. Same shape as meleeHitbox for consumers.
+    const _superHbData = this.heroDef.attacks[ATTACK_SUPERMOVE].box;
+    const _superBh = _superHbData.bh === 'body' ? this.h : _superHbData.bh;
+    this.supermoveHitbox = { ..._superHbData, bh: _superBh, oy: _superHbData.oy === 'center' ? -_superBh / 2 : _superHbData.oy };
 
     // Anim registry (real sprites later; placeholder frames attached by caller).
     this.anims = {};
@@ -648,25 +657,66 @@ export class Hero extends Entity {
   }
 
   /**
-   * World-space AABB of the melee hitbox, or null when no damage should be
-   * dealt this frame. Only the single ACTIVE frame produces a box — windup
-   * (frames 0-2) and recovery (frame 4) return null, so damage lands exactly
-   * on the peak of the arc.
+   * Single attack-hitbox resolver (design §30). All three hero attacks —
+   * normal melee, special melee and supermove — resolve their damage box
+   * through this one method: it reads the current phase/frame from the shared
+   * phase machines, looks up the per-hero data table in heroDefs.js, and
+   * returns a FACING-MIRRORED world-space AABB (or null when no damage should
+   * be dealt this frame). No per-attack rect math lives outside this method.
+   *
+   * Data shapes (heroDefs.js `attacks`):
+   *   melee        { frames: [null | {ox,oy,bw,bh}, ...] } — indexed by the
+   *                  swing's integer frame; only configured active frames
+   *                  produce a box.
+   *   specialMelee { hitbox: {ox,oy,bw,bh} } — exposed on every ACTIVE-phase
+   *                  frame (per-hero differences come from the data).
+   *   supermove    { box: {ox,oy|'center',bw,bh|'body'} } — exposed for the whole dash;
+   *                  'body' resolves to the hero's full body height;
+   *                  'center' vertically centers the box on the body.
+   *
+   * Mirroring: ox is an offset in the FACING direction; facing left flips the
+   * box so its right edge lands at center - ox (the sprite mirrors identically,
+   * so visual and gameplay impact coincide).
+   * @param {'melee'|'specialMelee'|'supermove'} attackName
    * @returns {{x:number,y:number,w:number,h:number}|null}
    */
-  get meleeHitboxWorld() {
-    if (!this.meleeActive) return null;
-    if (Math.floor(this.meleeFrame) !== this.MELEE_ACTIVE_FRAME) return null;
+  attackHitboxWorld(attackName) {
+    let entry = null; // resolved {ox,oy,bw,bh} or null (no box this frame)
+    if (attackName === ATTACK_MELEE) {
+      if (!this.meleeActive) return null;
+      const frames = this.heroDef.attacks[ATTACK_MELEE].frames;
+      entry = frames[Math.floor(this.meleeFrame)] ?? null;
+    } else if (attackName === ATTACK_SPECIAL_MELEE) {
+      if (!this.specialMeleeActive || this.specialMeleePhase !== 'active') return null;
+      entry = this.heroDef.specialMelee.hitbox;
+    } else if (attackName === ATTACK_SUPERMOVE) {
+      if (!this.supermoveActive) return null;
+      const box = this.heroDef.attacks[ATTACK_SUPERMOVE].box;
+      entry = { ...box, bh: box.bh === 'body' ? this.h : box.bh };
+      // oy 'center' sentinel: vertically center the box on the body.
+      if (entry.oy === 'center') entry.oy = -entry.bh / 2;
+    } else {
+      throw new Error(`Hero.attackHitboxWorld: unknown attack '${attackName}'`);
+    }
+    if (!entry) return null;
     const cx = this.x + this.w / 2;
     const cy = this.y + this.h / 2;
     const dir = this.facing;
     return {
-      x: cx + dir * this.meleeHitbox.ox - (dir < 0 ? this.meleeHitbox.bw : 0),
-      y: cy + this.meleeHitbox.oy,
-      w: this.meleeHitbox.bw,
-      h: this.meleeHitbox.bh,
+      x: cx + dir * entry.ox - (dir < 0 ? entry.bw : 0),
+      y: cy + entry.oy,
+      w: entry.bw,
+      h: entry.bh,
     };
   }
+
+  /**
+   * World-space AABB of the melee hitbox, or null when no damage should be
+   * dealt this frame. Delegates to the §30 resolver — only the configured
+   * active frame(s) in the data table produce a box.
+   * @returns {{x:number,y:number,w:number,h:number}|null}
+   */
+  get meleeHitboxWorld() { return this.attackHitboxWorld(ATTACK_MELEE); }
 
   /**
    * Start a special melee swing (design §15). Edge-triggered by the update
@@ -785,25 +835,13 @@ export class Hero extends Entity {
 
   /**
    * World-space AABB of the special melee hitbox, or null when no damage
-   * should be dealt this frame. Only the ACTIVE phase produces a box; the box
-   * mirrors with FACING (not the travel direction), matching how the sprite
-   * is oriented — Scarlet hits in front of her original facing even while
-   * retreating.
+   * should be dealt this frame. Delegates to the §30 resolver; only the ACTIVE
+   * phase produces a box. The box mirrors with FACING (not the travel
+   * direction), matching how the sprite is oriented — Scarlet hits in front of
+   * her original facing even while retreating.
    * @returns {{x:number,y:number,w:number,h:number}|null}
    */
-  get specialMeleeHitboxWorld() {
-    if (!this.specialMeleeActive || this.specialMeleePhase !== 'active') return null;
-    const hb = this.heroDef.specialMelee.hitbox;
-    const cx = this.x + this.w / 2;
-    const cy = this.y + this.h / 2;
-    const dir = this.facing;
-    return {
-      x: cx + dir * hb.ox - (dir < 0 ? hb.bw : 0),
-      y: cy + hb.oy,
-      w: hb.bw,
-      h: hb.bh,
-    };
-  }
+  get specialMeleeHitboxWorld() { return this.attackHitboxWorld(ATTACK_SPECIAL_MELEE); }
 
   /**
    * Resolve the aim direction (8-way index) from gameplay context, NOT raw
@@ -1058,22 +1096,11 @@ export class Hero extends Entity {
 
   /**
    * World-space AABB of the super dash hitbox, or null when not dashing.
-   * Small box in front of the hero, body-height. Deals damage to enemies
-   * plowed through during the dash.
+   * Delegates to the §30 resolver — a thin full-body-height box in front of
+   * the hero that deals damage to enemies plowed through during the dash.
    * @returns {{x:number,y:number,w:number,h:number}|null}
    */
-  get supermoveHitboxWorld() {
-    if (!this.supermoveActive) return null;
-    const cx = this.x + this.w / 2;
-    const cy = this.y + this.h / 2;
-    const dir = this.facing;
-    return {
-      x: cx + dir * this.supermoveHitbox.ox - (dir < 0 ? this.supermoveHitbox.bw : 0),
-      y: cy + this.supermoveHitbox.oy,
-      w: this.supermoveHitbox.bw,
-      h: this.supermoveHitbox.bh,
-    };
-  }
+  get supermoveHitboxWorld() { return this.attackHitboxWorld(ATTACK_SUPERMOVE); }
 
   /**
    * Draw the hero. When crouching, scale the sprite to match the crouch box

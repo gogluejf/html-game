@@ -15,7 +15,7 @@ import { CollisionWorld, resolve, aabbOverlap } from '../collision.js';
 import { Camera } from '../camera.js';
 import { Anim, makeTestFrame } from '../anim.js';
 import { Hero, WEAPON_SPECIAL } from '../hero.js';
-import { HEROES } from '../heroDefs.js';
+import { HEROES, ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from '../heroDefs.js';
 import { projectilePool, specialPool, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../hitbox.js';
@@ -1473,7 +1473,7 @@ const _hbMelee = makeHitbox({ owner: null, team: 'ally', box: null, damage: 0, m
 _hitboxes.push(_hbMelee);
 const _slotMelee = makeSlot(_hbMelee, {
   ownerGet: () => hero,
-  boxGet: () => hero.meleeHitboxWorld,
+  boxGet: () => hero.attackHitboxWorld(ATTACK_MELEE),
   damageGet: () => hero.stats.attack,
   resetFlag: { get: () => !!hero._meleeHbReset, set: v => hero._meleeHbReset = v },
 });
@@ -1483,7 +1483,7 @@ const _hbSuper = makeHitbox({ owner: null, team: 'ally', box: null, damage: 0, m
 _hitboxes.push(_hbSuper);
 const _slotSuper = makeSlot(_hbSuper, {
   ownerGet: () => hero,
-  boxGet: () => hero.supermoveHitboxWorld,
+  boxGet: () => hero.attackHitboxWorld(ATTACK_SUPERMOVE),
   damageGet: () => hero.stats.attack * 2,
   resetFlag: { get: () => !!hero._supermoveHbReset, set: v => hero._supermoveHbReset = v },
 });
@@ -1495,7 +1495,7 @@ const _hbSpecialMelee = makeHitbox({ owner: null, team: 'ally', box: null, damag
 _hitboxes.push(_hbSpecialMelee);
 const _slotSpecialMelee = makeSlot(_hbSpecialMelee, {
   ownerGet: () => hero,
-  boxGet: () => hero.specialMeleeHitboxWorld,
+  boxGet: () => hero.attackHitboxWorld(ATTACK_SPECIAL_MELEE),
   damageGet: () => hero.stats.attack,
   resetFlag: { get: () => !!hero._specialMeleeHbReset, set: v => hero._specialMeleeHbReset = v },
 });
