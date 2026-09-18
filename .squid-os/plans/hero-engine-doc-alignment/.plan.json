@@ -1,0 +1,396 @@
+{
+  "plan_name": "hero-engine-doc-alignment",
+  "title": "Hero Engine \u2194 hero-mechanics.md Alignment",
+  "why": "petal-panic/docs/hero-mechanics.md is now the single source of truth for hero behavior. Code audit found 12+ divergences: no special melee, no weapon toggle (N fires specials directly), no one-way platforms or drop-through, aim not used for crouch/shoot context rules, supermove jump-cancel missing, stale 'inv' timer in tests, and a render flag that never exists (superActive vs supermoveActive). This plan sequences fixes as behavior corrections \u2192 new mechanics \u2192 polish, each with acceptance criteria tied to the doc.",
+  "outcomes": "Every mechanic in hero-mechanics.md \u00a73\u2013\u00a733 is implemented and verifiable; zero duplicate code paths (single damage/knockback/timer routing); existing tested behaviors (double jump, coyote, buffer, slide, i-frames) remain green; premium engine quality \u2014 no ad-hoc state flags, explicit state composition per \u00a731.",
+  "milestones": [
+    {
+      "number": "1",
+      "name": "Behavior Corrections (Doc Compliance)",
+      "pattern": [
+        "Audit-driven fix; single source of truth = hero-mechanics.md"
+      ],
+      "objective": "Fix every place where existing code contradicts the doc, without adding new features. Each task starts with a code review that classifies the item as NEW (absent) vs POLISH (present but wrong feel), and acceptance criteria verify the doc's stated behavior.",
+      "success": "All \u00a73\u2013\u00a710 invariants hold: contextual Down rules, air control ramp, supermove jump-cancel phases, i-frame visual sync, timer labels match \u00a728, no stale flags. Existing test suite stays green.",
+      "diagram": "graph TD\n    A[Code vs Doc audit] --> B{Item classification}\n    B -->|NEW - absent| C[Implement mechanic]\n    B -->|POLISH - present but off| D[Tune / correct behavior]\n    B -->|CORRECT - wrong contract| E[Refactor to doc contract]\n    C --> F[Acceptance: doc invariant holds]\n    D --> F\n    E --> F\n    F --> G[Existing tests stay green]",
+      "tasks": [
+        {
+          "number": "1.1",
+          "name": "Contextual Down: crouch vs downward aim resolution",
+          "type": "bug",
+          "what": "Route the resolved aim (input.state.aimX/aimY) into hero.update and implement doc \u00a74 context rules: grounded+Down=crouch (shoot stays horizontal toward facing), airborne+Down=straight-down aim, lockMove+Down=downward aim with zero locomotion.",
+          "why": "Today readInput() maps s.crouch to input.down and tryFire uses raw aimFromInput; a grounded crouched hero can shoot diagonally/downward via WASD which the doc forbids ('no normal grounded crouch + straight-down shooting state'). Aim must be resolved by gameplay context, not raw keys (\u00a732).",
+          "files": [
+            "~ petal-panic/js/systems/update.js",
+            "~ petal-panic/js/hero.js",
+            "+ petal-panic/js/test/contextualAim.test.js"
+          ],
+          "snippet": [
+            "// update.js readInput(): pass through the RESOLVED aim from the input engine\nreturn { ..., down: s.crouch, aimX: s.aimX, aimY: s.aimY };\n\n// hero.js \u2014 contextual aim resolver (single source, called by tryFire path)\n// grounded + down  -> horizontal along facing (crouch rule, doc \u00a74)\n// airborne + down  -> straight down\n// lockMove + down  -> straight down, locomotion already zeroed\n// no direction     -> horizontal along facing (neutral shot, doc \u00a73)\nresolveAim(input, h) -> dir8\n\n// tryFire/trySpecial consume resolveAim() instead of aimFromInput(raw)"
+          ],
+          "acceptance": [
+            "Grounded hero holding Down + Shoot fires horizontally in facing direction only (no diagonal/down shots while crouched)",
+            "Airborne hero holding Down + Shoot fires straight down",
+            "lockMove + Down + Shoot fires straight down with vx held at 0",
+            "No directional input + Shoot fires horizontally toward facing (neutral shot unchanged)",
+            "Lock Direction still freezes the resolved aim (existing input.js behavior untouched)"
+          ],
+          "verify": [
+            "node petal-panic/js/test/contextualAim.test.js",
+            "node petal-panic/js/test/projectile.test.js"
+          ]
+        },
+        {
+          "number": "1.2",
+          "name": "Air control: ramp from rest, preserve jump momentum",
+          "type": "bug",
+          "what": "Replace the instant vx=speed assignment with a ground/air-aware model in hero.js: grounded input snaps to run speed immediately (doc \u00a77), airborne input accelerates toward run speed over a short ramp when starting from near-zero horizontal velocity, and existing legitimate momentum is preserved.",
+          "why": "Doc \u00a78 requires air acceleration instead of an instant snap ('do not instantly assign full run speed; accelerate toward normal horizontal speed over a short period'), while \u00a77 keeps ground movement arcade-immediate. Current code sets this.vx = moveDir * speed in both states \u2014 the barrel-jump case (\u00a78) feels like suddenly running at full speed mid-air.",
+          "files": [
+            "~ petal-panic/js/hero.js",
+            "+ petal-panic/js/test/airControl.test.js"
+          ],
+          "snippet": [
+            "// hero.js feel knobs (tuning values per doc \u00a735)\nconst AIR_ACCEL = 1400;      // px/s^2 ramp when starting air movement from rest\nconst GROUND_SNAP = true;    // ground: immediate run speed (no ramp)\n\n// update() horizontal intent:\n// grounded + input   -> vx = dir * speed            (immediate, doc \u00a77)\n// airborne + input   -> approach(vx, dir*speed, AIR_ACCEL*dt)  (ramp, doc \u00a78)\n// no input           -> existing friction / slide-decel branches unchanged\n// opposite direction on ground -> immediate cancel (already true via vx overwrite)"
+          ],
+          "acceptance": [
+            "Grounded: pressing a direction produces full run speed on the same frame (no ramp)",
+            "Airborne from ~0 vx: velocity approaches run speed over several frames, never snaps to full speed in one frame",
+            "Jumping while running preserves horizontal momentum (running jump continues naturally)",
+            "Opposite ground direction cancels momentum immediately (existing behavior retained)",
+            "Barrel case: jumping while blocked against a solid accelerates into movement once clearable, without a 1-frame full-speed snap"
+          ],
+          "verify": [
+            "node petal-panic/js/test/airControl.test.js",
+            "node petal-panic/js/test/jumpslide.test.js"
+          ]
+        },
+        {
+          "number": "1.3",
+          "name": "Supermove: phase-aware jump cancellation + anim flag fix",
+          "type": "bug",
+          "what": "Split the supermove dash into explicit burst (first ~60%, committed) and decel (last ~40%, jump-cancellable) phases in hero.js, allow Jump to cancel only during decel, and fix the render.js flag mismatch (h.superActive vs h.supermoveActive) so the supermove anim state is selected correctly.",
+          "why": "Doc \u00a723 requires 'active dash = committed; recovery/deceleration = jump-cancellable' \u2014 today a jump input mid-dash is silently ignored for the whole 0.6s. Separately, heroAnimName() reads h.superActive which does not exist on Hero, so the supermove anim branch never fires (\u00a729 animation sync).",
+          "files": [
+            "~ petal-panic/js/hero.js",
+            "~ petal-panic/js/systems/render.js",
+            "+ petal-panic/js/test/supermove.test.js"
+          ],
+          "snippet": [
+            "// hero.js \u2014 phase model replaces single timer countdown\n// SUPERMOVE_DUR split: BURST_FRAC = 0.6 (committed), remainder = decel\n// updateSupermove():\n//   if phase === 'burst':   no jump cancel, no gravity, vx = dir * burstSpeed(t)\n//   if phase === 'decel':   gravity resumes, vx decays, JUMP may cancel ->\n//                           end dash early, keep residual forward nudge\n// triggerSupermove(): set intangible via the shared 'intangible' timer ONLY\n//                     (no separate inv path)\n\n// render.js heroAnimName(): h.supermoveActive (correct existing field)"
+          ],
+          "acceptance": [
+            "Jump pressed during the first 60% of the dash does NOT cancel it",
+            "Jump pressed during the last 40% ends the dash early with a small residual forward velocity",
+            "Intangibility window equals the actual dash duration (timer-driven, not hardcoded overlap)",
+            "heroAnimName returns 'supermove' while dashing (flag fixed); returns previous state after dash ends",
+            "No duplicate intangibility bookkeeping: supermove uses the same 'intangible' timer as i-frames/powerups (\u00a727 common semantics)"
+          ],
+          "verify": [
+            "node petal-panic/js/test/supermove.test.js",
+            "node petal-panic/js/test/heroHit.test.js"
+          ]
+        },
+        {
+          "number": "1.4",
+          "name": "Hit response: contextual knockback table + i-frame visual sync + test cleanup",
+          "type": "bug",
+          "what": "Centralize hero knockback in a per-source profile table (contact / enemy melee / ordinary projectile / heavy projectile / explosion) consumed by the existing takeHit() entry point, drive the i-frame blink from the 'intangible' timer's remaining fraction instead of wall-clock performance.now(), and fix stale assertions ('inv' timer) in test/heroHit.test.js.",
+          "why": "Doc \u00a725 forbids one universal recoil value \u2014 today contact uses 260/340 inline, projectiles a flat 220, explosions 380, all hardcoded at call sites with no source taxonomy. Doc \u00a727 requires the i-frame flash to correspond to the actual immunity window; the render blink is decoupled from the timer. The test file still asserts timers.get('inv') which no longer exists (timers were unified to 'intangible').",
+          "files": [
+            "~ petal-panic/js/hero.js",
+            "~ petal-panic/js/systems/update.js",
+            "~ petal-panic/js/systems/render.js",
+            "~ petal-panic/js/test/heroHit.test.js"
+          ],
+          "snippet": [
+            "// hero.js \u2014 knockback profiles (doc \u00a725 taxonomy), single lookup\nKNOCKBACK_PROFILES = {\n  contact:      { strength: 260, recovery: 0.25, iFrames: 0.60 },\n  bossContact:  { strength: 340, recovery: 0.30, iFrames: 0.70 },\n  projectile:   { strength: 220, recovery: 0.25, iFrames: 0.30 },\n  heavyProj:    { strength: 300, recovery: 0.30, iFrames: 0.40 },\n  explosion:    { strength: 380, recovery: 0.30, iFrames: 0.60 },\n}\ntakeHit({ source, dirX, dirY }) -> reads profile by source key,\n  applies hero knockback-resistance modifier, sets 'rec' + 'intangible'\n\n// update.js call sites pass source key instead of raw numbers\n// render.js blink: alpha derived from h.timers.fraction('intangible')\n//                 so the flicker ends exactly when immunity ends (\u00a727)"
+          ],
+          "acceptance": [
+            "Each damage source (enemy contact, boss contact, ordinary projectile, explosion) produces its own distinct knockback magnitude via the shared profile table \u2014 no inline magic numbers left at call sites",
+            "Damage and knockback remain independent properties (equal-damage attacks can have different recoil)",
+            "I-frame blink stops on the exact frame the 'intangible' timer expires (no drift after immunity ends)",
+            "Knockback velocity decays over the hit-stun window and normal control resumes cleanly with no residual state lock (\u00a726)",
+            "test/heroHit.test.js passes against the current 'intangible'/'rec' timer names (stale 'inv' assertion removed)"
+          ],
+          "verify": [
+            "node petal-panic/js/test/heroHit.test.js",
+            "node petal-panic/js/test/timers.test.js"
+          ]
+        },
+        {
+          "number": "1.5",
+          "name": "Crouch/slide cancellation hardening + anim-state sync audit",
+          "type": "refactor",
+          "what": "Guarantee crouch/slide exit transitions state, hitbox, movement restrictions, and animation atomically (jump-from-crouch included), and extend heroAnimName() to cover the full \u00a729 list (melee, supermove, hit-stun, death) with a test that asserts no stale visual state after each transition.",
+          "why": "Doc \u00a711 requires 'state, movement restrictions, hitbox, animation must transition together \u2014 no crouch hitbox or animation may remain after the hero is back on their feet.' Jump currently refuses while crouching (the !this.crouching gate in the jump branch), which contradicts \u00a712 ('crouching must never force the player to stand first'). heroAnimName also lacks melee/hit/death branches beyond what exists, so visuals can drift from gameplay state (\u00a729).",
+          "files": [
+            "~ petal-panic/js/hero.js",
+            "~ petal-panic/js/systems/render.js",
+            "+ petal-panic/js/test/crouchCancel.test.js"
+          ],
+          "snippet": [
+            "// hero.js \u2014 single exit path for crouch/slide (no scattered flag clears)\nexitCrouch() {\n  this.crouching = false;\n  this.sliding = false;\n  this.box = this.standBox;        // hitbox restored\n  // locomotion restrictions lifted automatically (update reads flags)\n}\n// jump branch: remove '!this.crouching' gate; jumping calls exitCrouch()\n// first, then initiates the jump (doc \u00a712)\n\n// render.js heroAnimName() \u2014 priority order per \u00a729:\n// dead > supermove > melee(active) > hitstun('rec') > crouch > jump/fall > run > idle"
+          ],
+          "acceptance": [
+            "Jumping from crouch immediately cancels crouch and initiates the jump (no stand-first requirement)",
+            "Releasing Down while moving exits crouch into run with standing hitbox active the same frame",
+            "After slide ends, vx reaches 0 and sliding flag + slide anim stop together (no lingering slide state)",
+            "heroAnimName covers all \u00a729 states and a test asserts the returned name matches authoritative state after each transition (jump-from-crouch, melee end, hit-stun end, dash end)"
+          ],
+          "verify": [
+            "node petal-panic/js/test/crouchCancel.test.js",
+            "node petal-panic/js/test/jumpslide.test.js",
+            "node petal-panic/js/test/heroAnim.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "2",
+      "name": "New Mechanics",
+      "pattern": [
+        "Vertical slices; shared core systems (damage, timers, hitbox slots) reused \u2014 no parallel code paths"
+      ],
+      "objective": "Implement the mechanics the doc specifies that are entirely absent from the engine: one-way platforms with drop-through, the weapon toggle system (N), and special melee (Down+Melee) with per-hero trajectories.",
+      "success": "\u00a713 one-way platform rules work (up-through, land, Down+Jump drop); N toggles Thorn/Special with independent ammo+cooldowns and Special fires via the same shoot path; Down+Melee triggers Balthazar's advancing sweep and Scarlet's retreating cartwheel with committed windup/active + cancellable recovery.",
+      "diagram": "graph LR\n    subgraph OneWay\n      A[Level def: oneWay flag] --> B[resolve: skip when rising]\n      B --> C[Land: falling onto top]\n      B --> D[Down+Jump: ignore ~0.25s]\n    end\n    subgraph Weapons\n      E[N pressed] --> F[Toggle selectedWeapon]\n      F --> G[Shoot uses selected weapon]\n      G --> H[Thorn pool / Special pool]\n    end\n    subgraph SpecialMelee\n      I[Down+Melee] --> J[Hero-specific trajectory]\n      J --> K[Windup committed]\n      K --> L[Active frames deal damage]\n      L --> M[Recovery cancellable]\n    end",
+      "tasks": [
+        {
+          "number": "2.1",
+          "name": "One-way platforms + Down+Jump drop-through",
+          "type": "feature",
+          "what": "Add a oneWay flag to level platform definitions, make resolve() skip one-way solids while the hero moves upward or is not overlapping from above, and implement Down+Jump on a one-way platform as a temporary (~0.25s) ignore of that platform instead of a jump.",
+          "why": "Doc \u00a713 is entirely unimplemented: all platforms are solid AABBs today (level.js platforms have no type), so the hero cannot pass up through air platforms and there is no drop-through. This is a general platforming rule the doc marks as core feel ('one-way platforms never block upward traversal').",
+          "files": [
+            "~ petal-panic/js/level.js",
+            "~ petal-panic/js/collision.js",
+            "~ petal-panic/js/hero.js",
+            "~ petal-panic/js/systems/update.js",
+            "+ petal-panic/js/test/oneWayPlatform.test.js"
+          ],
+          "snippet": [
+            "// level.js \u2014 platform definition gains an optional flag\n{ x: 800, y: 380, w: 150, h: 16, oneWay: true }   // air platforms; floor stays solid\n\n// collision.js resolve(entity, solids, opts)\n//   one-way rule: skip solid when entity.vy < 0 (rising) OR entity's previous\n//   bottom was below the solid top (came from underneath)\n//   landing: falling (vy >= 0) with prev bottom <= top -> land normally\n\n// hero.js \u2014 drop-through intent\n//   input.down && jumpPressed && standing on one-way platform:\n//     set _dropTimer = 0.25 (ignore one-way solids while > 0)\n//     do NOT consume as an upward jump (doc \u00a713)\n//   solid terrain unaffected (floor / barrels always resolve)"
+          ],
+          "acceptance": [
+            "Hero moving upward passes through a one-way platform without being pushed down",
+            "Falling onto a one-way platform from above lands it as ground (setGrounded true)",
+            "Down+Jump while standing on a one-way platform drops the hero through it and does NOT trigger a jump (jumpsUsed unchanged)",
+            "Drop-through ignore window expires and the platform becomes landable again",
+            "Solid terrain (floor, barrels) is never affected by drop-through"
+          ],
+          "verify": [
+            "node petal-panic/js/test/oneWayPlatform.test.js",
+            "node petal-panic/js/test/jumpslide.test.js"
+          ]
+        },
+        {
+          "number": "2.2",
+          "name": "Weapon toggle system (N): Thorn / Special through one shoot path",
+          "type": "feature",
+          "what": "Replace the direct N-fires-special behavior with a selectedWeapon toggle on the hero ('thorn' | 'special'); J always fires the selected weapon, each weapon keeps its own ammo pool and cooldown timer, and HUD shows the active weapon.",
+          "why": "Doc \u00a721 says Switch Weapon 'toggles Shoot between Thorn and Special' and 'the Special weapon must route through the same weapon-selection system rather than existing as an unrelated hidden firing path.' Today readInput maps s.switchWeapon to input.special and trySpecial() fires immediately on N \u2014 a separate hidden firing path with no selection state. Also fixes specialAmmo starting at 0 in fresh runs (line 931) so the toggled weapon is actually usable.",
+          "files": [
+            "~ petal-panic/js/hero.js",
+            "~ petal-panic/js/systems/update.js",
+            "~ petal-panic/js/hud.js",
+            "+ petal-panic/js/test/weaponToggle.test.js"
+          ],
+          "snippet": [
+            "// hero.js\nthis.selectedWeapon = 'thorn';        // persisted until toggled\ntoggleWeapon() { this.selectedWeapon = this.selectedWeapon === 'thorn' ? 'special' : 'thorn'; }\n\n// update.js \u2014 single fire path (doc: 'same weapon-selection system')\nif (input.shoot) tryFire(h, input, dt);      // dispatches on h.selectedWeapon\nif (input.switchWeapon) h.toggleWeapon();    // edge-triggered, no fire\n// tryFire: thorn -> projectilePool + 'ammo' + fireCooldown\n//          special -> specialPool + 'specialAmmo' + timers('special')\n// both consume the SAME resolved aim (task 1.1)"
+          ],
+          "acceptance": [
+            "Pressing N toggles the selected weapon without firing anything",
+            "J fires Thorn when selected and Special when selected \u2014 one code path, no hidden second trigger",
+            "Each weapon has independent ammo and cooldown: depleting Thorn ammo does not block Special and vice versa",
+            "Selection persists across frames until toggled again; swapHero preserves/restores selection sensibly",
+            "HUD indicates which weapon is currently selected"
+          ],
+          "verify": [
+            "node petal-panic/js/test/weaponToggle.test.js",
+            "node petal-panic/js/test/projectile.test.js"
+          ]
+        },
+        {
+          "number": "2.3",
+          "name": "Special melee: Down+Melee with per-hero trajectories",
+          "type": "feature",
+          "what": "Add a special-melee action to the hero triggered by Down+Melee: Balthazar performs a forward advancing sweep, Scarlet a backward cartwheel that stays oriented toward her original facing; both use windup\u2192active\u2192recovery phases with animation-synchronized hitboxes routed through the central damage system.",
+          "why": "Doc \u00a715 is entirely absent \u2014 today Down+Melee just starts the same normal swing (input.down is ignored for melee). The doc makes this a core character-contrast mechanic (\u00a734): 'Balthazar attacks into space; Scarlet attacks while leaving space.' Trajectory must be self-supplied (no Forward required) and committed once started.",
+          "files": [
+            "~ petal-panic/js/hero.js",
+            "~ petal-panic/js/heroDefs.js",
+            "~ petal-panic/js/systems/update.js",
+            "+ petal-panic/js/test/specialMelee.test.js"
+          ],
+          "snippet": [
+            "// heroDefs.js \u2014 per-hero special melee config (tuning lives here, not in code)\nspecialMelee: {\n  direction: 1 | -1,      // +1 = toward facing (balthazar), -1 = away (scarlet)\n  travelSpeed: px/s,      // self-supplied trajectory\n  frames: { windup: n, active: n, recovery: n },\n  hitbox: { ox, oy, bw, bh },   // active-frame box, mirrored by facing\n}\n\n// hero.js \u2014 phase machine shared with normal melee (doc \u00a716 same rules)\nstartSpecialMelee()  // sets phase='windup', locks committed flag\nupdateSpecialMelee(dt)\n//   windup/active: committed \u2014 no jump/run cancel; vx = dir * travelSpeed\n//   active frames: specialMeleeHitboxWorld exposed (same slot pattern as melee)\n//   recovery: jump/run cancel allowed (shared rule, task 3.1 buffer applies)\n// facing preserved throughout scarlet's cartwheel (oriented toward original facing)"
+          ],
+          "acceptance": [
+            "Down+Melee triggers special melee (not normal melee); plain Melee still triggers normal melee",
+            "Balthazar travels toward his facing during the attack without any horizontal input held",
+            "Scarlet travels opposite her facing but her sprite/orientation keeps facing the original direction",
+            "Damage lands only on the configured active frames via the central damage system (team/stats respected); hitbox mirrors correctly when facing left",
+            "Windup+active are committed (jump cannot abort); recovery is cancellable by jump/movement",
+            "Trajectory cannot be manually reversed mid-attack (committed movement owns vx during windup/active)"
+          ],
+          "verify": [
+            "node petal-panic/js/test/specialMelee.test.js",
+            "node petal-panic/js/test/melee.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "3",
+      "name": "Combat Input Architecture (Buffer + Cancellation)",
+      "pattern": [
+        "Single pending-action slot; cancellation checked before buffer execution"
+      ],
+      "objective": "Implement the shared melee input buffer (\u00a717\u2013\u00a719) that normal and special melee share: one-slot latest-wins buffering, buffer never shortens recovery, and cancellation always beats and clears the buffer.",
+      "success": "Mashing melee stores at most one pending action (latest wins); a buffered attack executes only after full natural recovery; any valid recovery-cancel (jump/run) discards the buffer. Both normal and special melee route through the same slot.",
+      "diagram": "stateDiagram-v2\n    [*] --> Idle\n    Idle --> Windup : melee pressed\n    Windup --> Active : committed\n    Active --> Recovery : committed\n    Recovery --> Idle : natural finish then run buffer\n    Recovery --> Idle : cancel - jump or run - buffer cleared\n    Idle --> Windup : buffered action fires",
+      "tasks": [
+        {
+          "number": "3.1",
+          "name": "Shared one-slot melee buffer with latest-wins replacement",
+          "type": "feature",
+          "what": "Add a single pendingMelee slot ('normal' | 'special' | null) to the hero: melee input during an in-progress attack stores/replaces the request (latest valid input wins), and the buffered action executes only after the current attack's recovery finishes naturally.",
+          "why": "Doc \u00a717\u2013\u00a718 are absent \u2014 today tryMelee() is flatly ignored while a swing is active, so inputs during an attack are lost rather than buffered. The doc requires exactly one pending slot with latest-wins semantics ('repeated button mashing cannot schedule several future attacks') and explicitly forbids buffering from shortening recovery.",
+          "files": [
+            "~ petal-panic/js/hero.js",
+            "~ petal-panic/js/systems/update.js",
+            "+ petal-panic/js/test/meleeBuffer.test.js"
+          ],
+          "snippet": [
+            "// hero.js\nthis.pendingMelee = null;   // 'normal' | 'special' | null \u2014 capacity: 1\n\nrequestMelee(kind) {        // kind from Down+Melee context resolution\n  if (attackInProgress) this.pendingMelee = kind;  // store OR replace (latest wins)\n  else startAttack(kind);\n}\n// updateMelee(): when recovery completes naturally ->\n//   if pendingMelee: fire it, clear slot, return\n//   (buffer NEVER advances the frame clock early)"
+          ],
+          "acceptance": [
+            "Pressing Melee then Special Melee before the first attack finishes leaves exactly 'special' buffered (then pressing Melee again leaves 'normal') \u2014 never two queued actions",
+            "The buffered attack does not start until windup\u2192active\u2192full natural recovery of the current attack has elapsed (frame timing identical to an unbuffered sequence)",
+            "After natural recovery completes, the buffered action fires automatically without re-pressing",
+            "Normal and special melee share the same slot (a normal can be replaced by a special and vice versa)"
+          ],
+          "verify": [
+            "node petal-panic/js/test/meleeBuffer.test.js",
+            "node petal-panic/js/test/melee.test.js"
+          ]
+        },
+        {
+          "number": "3.2",
+          "name": "Recovery cancellation: cancel beats buffer and clears it",
+          "type": "feature",
+          "what": "Implement recovery-phase cancellation for both melee types: once recovery begins, Jump or Run immediately ends the attack, performs the locomotion action, and clears pendingMelee; cancellation is checked before buffered execution each frame.",
+          "why": "Doc \u00a716/\u00a719 define the core combat feel contract: 'windup + active = committed; recovery = player locomotion can regain control immediately' and 'cancellation always wins and clears the buffer.' Today there is no recovery-cancel at all \u2014 the swing runs its full 0.4s regardless of input, making movement feel sticky (exactly what \u00a71 forbids).",
+          "files": [
+            "~ petal-panic/js/hero.js",
+            "~ petal-panic/js/systems/update.js",
+            "+ petal-panic/js/test/meleeCancel.test.js"
+          ],
+          "snippet": [
+            "// hero.js updateMelee(dt, input) \u2014 per-frame order matters (doc \u00a719):\n//   1. advance frame clock\n//   2. if phase === 'recovery' AND (input.jumpPressed OR horizontal intent):\n//        end attack early; clear pendingMelee; let locomotion proceed\n//   3. else if attack finished naturally AND pendingMelee: fire buffer\n// Cancellation (step 2) is ALWAYS evaluated before buffer execution (step 3).\n// Applies identically to normal + special melee (shared phase machine)."
+          ],
+          "acceptance": [
+            "Melee \u2192 buffer Special Melee \u2192 recovery \u2192 Jump results in Jump only; the buffered Special Melee is discarded",
+            "Special Melee \u2192 buffer Melee \u2192 recovery \u2192 Run results in Run; the buffered Melee is discarded",
+            "Jump during windup or active frames does NOT cancel the attack (committed)",
+            "Run input during recovery cancels remaining recovery and resumes locomotion the same frame with no residual attack state",
+            "Both normal and special melee obey identical cancel rules (no per-type divergence)"
+          ],
+          "verify": [
+            "node petal-panic/js/test/meleeCancel.test.js",
+            "node petal-panic/js/test/meleeBuffer.test.js",
+            "node petal-panic/js/test/specialMelee.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "4",
+      "name": "Polish, Validation & Premium Quality Bar",
+      "pattern": [
+        "Invariants as executable tests; single-responsibility systems; no duplicated state"
+      ],
+      "objective": "Close the quality gaps: per-frame attack hitbox data-driven by hero/attack/frame (\u00a730), explicit state composition instead of flag soup (\u00a731), debug-overlay timer parity with \u00a728, and a doc-invariant test suite that encodes every \u00a733 responsiveness invariant as an executable check.",
+      "success": "Every \u00a733 invariant has a named executable test; attack hitboxes are data (per hero/attack/frame/facing) not inline math; hero state is inspectable as composed domains (locomotion / combat / aim / effects) rather than scattered booleans; debug overlay timers match the doc table exactly.",
+      "diagram": "graph TD\n    A[Doc section 33 invariants] --> B[Invariant test suite]\n    C[Hero state flags] --> D[Composed domain getters]\n    D --> E[Anim selection + debug overlay read same source]\n    F[Hitbox inline math] --> G[Per-hero per-frame hitbox data tables]\n    G --> H[Slot system consumes tables]",
+      "tasks": [
+        {
+          "number": "4.1",
+          "name": "Data-driven per-frame attack hitboxes (\u00a730)",
+          "type": "refactor",
+          "what": "Move melee/special-melee/supermove hitbox geometry out of inline hero.js math into per-hero, per-attack, per-frame data tables (offset/size by facing), consumed by the existing hitbox-slot system in update.js.",
+          "why": "Doc \u00a730 requires hitbox data 'capable of varying by hero, attack, animation frame/phase, facing' with visual and gameplay impact coinciding. Today each hitbox is a single static rect computed inline (meleeHitbox, supermoveHitbox) \u2014 special melee (task 2.3) would otherwise add a third copy of the same pattern, which is exactly the duplication this plan must avoid.",
+          "files": [
+            "~ petal-panic/js/heroDefs.js",
+            "~ petal-panic/js/hero.js",
+            "~ petal-panic/js/systems/update.js"
+          ],
+          "snippet": [
+            "// heroDefs.js \u2014 declarative hitbox data (tuning surface, no logic)\nattacks: {\n  melee:      { frames: [null, null, null, { ox: 20, oy: -10, bw: 40, bh: 40 }, null] },\n  specialMelee: { frames: [ ...per-frame boxes... ] },\n  supermove:  { box: { ox: 20, bw: 16 } },   // body-height derived at runtime\n}\n\n// hero.js \u2014 one resolver replaces three inline getters\nattackHitboxWorld(attackName) -> AABB | null\n//   reads current phase/frame index from the shared phase machine,\n//   looks up the table entry, mirrors by facing\n// update.js slots keep their boxGet indirection; only the source changes"
+          ],
+          "acceptance": [
+            "All three attack types resolve their hitbox through the single resolver + data tables (no inline per-attack rect math remaining in hero.js)",
+            "Hitboxes exist only during configured active frames/windows for every attack type",
+            "Facing left correctly mirrors every attack hitbox (test covers both facings \u00d7 all attacks)",
+            "Per-hero differences (balthazar vs scarlet special melee boxes) come from data, not code branches"
+          ],
+          "verify": [
+            "node petal-panic/js/test/melee.test.js",
+            "node petal-panic/js/test/specialMelee.test.js",
+            "node petal-panic/js/test/supermove.test.js"
+          ]
+        },
+        {
+          "number": "4.2",
+          "name": "Explicit state composition + debug/timer parity (\u00a727, \u00a728, \u00a731)",
+          "type": "refactor",
+          "what": "Expose hero state as composed domain queries (locomotion / combat phase / aim mode / effects) that render, debug overlay, and anim selection all read from the same source; verify the debug timer labels match the \u00a728 table (intangible, rapid, special) with no orphan or missing timers.",
+          "why": "Doc \u00a731 forbids a 'mutually exclusive mega-state' and requires explicit, predictable coexistence (airborne + facing right + direction-locked downward + intangible simultaneously). Today consumers each re-derive state from scattered booleans (crouching, sliding, meleeActive, supermoveActive, intangible, hitStunned), which is how drift bugs like the superActive mismatch (task 1.3) happen. \u00a728's timer table must be visible and synchronized in the debug overlay.",
+          "files": [
+            "~ petal-panic/js/hero.js",
+            "~ petal-panic/js/systems/render.js",
+            "~ petal-panic/js/debug.js"
+          ],
+          "snippet": [
+            "// hero.js \u2014 derived domain views (pure getters over authoritative flags)\nget locomotion() -> 'idle'|'run'|'slide'|'crouch'|'jump'|'fall'\nget combatPhase() -> null|'windup'|'active'|'recovery' (+ attack kind)\nget aimMode()    -> 'follow-input'|'locked'\nget effects()    -> { intangible: bool, rapid: bool, hitstun: bool }\n// render.js heroAnimName(), debug overlay, and tests all consume these \u2014\n// single derivation point, no consumer-side flag re-interpretation\n\n// debug.js \u2014 timer bars rendered from h.timers directly;\n// labels/colors per \u00a728 table (intangible, rapid, special); rec shown for hit-stun"
+          ],
+          "acceptance": [
+            "A hero can be airborne + facing right + direction-locked downward + intangible simultaneously and every consumer (anim, debug, damage) reads consistent values from the composed state",
+            "No consumer re-derives hero state from raw boolean flags outside hero.js (render/debug/anim use the domain getters)",
+            "Debug overlay shows exactly the \u00a728 timer set when active (intangible / rapid / special) with correct labels and colors; no stale 'inv' label anywhere",
+            "Timers remain synchronized with their effects: clearing the 'rapid' timer stops the doubled fire rate on the same frame, etc."
+          ],
+          "verify": [
+            "node petal-panic/js/test/timers.test.js",
+            "node petal-panic/js/test/heroAnim.test.js",
+            "node petal-panic/js/test/debug.test.js"
+          ]
+        },
+        {
+          "number": "4.3",
+          "name": "\u00a733 responsiveness-invariant test suite + full regression gate",
+          "type": "test",
+          "what": "Add a dedicated invariant test file that encodes every bullet of doc \u00a733 as an executable check against the hero (driven by scripted input sequences over fixed dt steps), and wire all petal-panic js tests into a single runnable gate.",
+          "why": "The doc's final contract (\u00a733/\u00a736) is only trustworthy if machine-checked. Individual mechanic tests exist per feature, but there is no suite that asserts the cross-mechanic invariants (e.g. 'buffered melee never shortens recovery' AND 'cancellation always beats buffering' together, or 'animation, hitbox, physics, and gameplay state remain synchronized'). This is the premium-quality validation layer: any future tuning change that breaks a feel invariant fails the gate.",
+          "files": [
+            "+ petal-panic/js/test/invariants.test.js"
+          ],
+          "snippet": [
+            "// Each \u00a733 bullet becomes one named ok() case, driven by a small harness:\n//   step(hero, inputs[], nFrames) -> final state snapshot\n// Examples (one per invariant, not exhaustive list):\n//   opposite ground direction defeats momentum immediately\n//   jump buffer (~0.12s) forgives early press; coyote forgives late press\n//   air movement from rest ramps, legitimate jump momentum preserved\n//   one-way platforms never block upward traversal; Down+Jump drops through\n//   melee windup/active committed; recovery cancellable\n//   buffer stores max 1 action; latest wins; cancel clears buffer\n//   supermove burst not jump-cancellable; decel is\n//   hitboxes exist only during intended windows\n//   anim name matches authoritative state after each transition\n// Runner: node petal-panic/js/test/run-all.mjs (executes every *.test.js)"
+          ],
+          "acceptance": [
+            "Every bullet in doc \u00a733 has at least one named passing test case in invariants.test.js",
+            "Cross-mechanic cases included: buffer-vs-cancel interaction, crouch+jump+anim sync, drop-through vs jump consumption",
+            "A single command runs the entire petal-panic js test suite (all existing + new tests) and exits non-zero on any failure",
+            "Tuning values (jump buffer window, slide distance, super profile) are asserted against the documented targets within tolerance, so retuning must be deliberate"
+          ],
+          "verify": [
+            "node petal-panic/js/test/invariants.test.js",
+            "node petal-panic/js/test/run-all.mjs"
+          ]
+        }
+      ]
+    }
+  ]
+}
