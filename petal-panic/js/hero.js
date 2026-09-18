@@ -54,6 +54,13 @@ export const KNOCKBACK_PROFILES = {
 /** Fallback profile for unknown sources (keeps takeHit total; no magic numbers). */
 const DEFAULT_KNOCKBACK_SOURCE = 'contact';
 
+// --- Weapon selection (design §21) -------------------------------------------
+// N toggles the selected weapon between Thorn and Special; J always fires the
+// SELECTED weapon through one shared shoot path. Each weapon keeps its own
+// ammo pool and cooldown timer. The selection persists until toggled again.
+export const WEAPON_THORN = 'thorn';
+export const WEAPON_SPECIAL = 'special';
+
 /** Hero knockback resistance modifier (§25): scales every profile's strength. */
 const HERO_KNOCKBACK_RESISTANCE = 1;
 
@@ -82,7 +89,14 @@ export class Hero extends Entity {
     this.maxEnergy = heroDef.stats.stamina;
     this.shield = 0;
     this.ammo = 200;
+    // §21: each weapon has its own ammo pool. Fresh runs start with no special
+    // ammo (§20: "No ammo: no projectile is created.") — the powerup system
+    // grants special ammo during a run.
     this.specialAmmo = 0;
+    // §21 Weapon Switching: N toggles the SELECTED weapon ('thorn' | 'special');
+    // J always fires whatever is selected through one shared shoot path. The
+    // selection persists until toggled again.
+    this.selectedWeapon = WEAPON_THORN;
     this.coins = 0;
     this.lives = 3;
     // Invincibility + rapid-fire are now unified labeled timers (see timers.js),
@@ -448,6 +462,17 @@ export class Hero extends Entity {
 
     // --- Anim tick ----------------------------------------------------------
     if (this.anim) this.anim.tick(dt);
+  }
+
+  /**
+   * Toggle the selected weapon between Thorn and Special (design §21).
+   * Edge-triggered by the update system on an N press — this ONLY changes the
+   * selection; it never fires anything. J always fires whatever is currently
+   * selected through the single shared shoot path. Each weapon keeps its own
+   * ammo pool and cooldown, so toggling mid-cooldown is harmless.
+   */
+  toggleWeapon() {
+    this.selectedWeapon = this.selectedWeapon === WEAPON_THORN ? WEAPON_SPECIAL : WEAPON_THORN;
   }
 
   /**

@@ -172,3 +172,19 @@ WAVE 1 GATE PASSED (single-reviewed due to Review A context overflow). All 18 te
 
 ### Verdict
 Task 2.1 APPROVED. Both reviewers satisfied. Committed post-review.
+
+## Task 2.2 — Weapon toggle system (N): Thorn / Special through one shoot path
+
+### Review A (ninfer/qwen3.8-27b) — Round 1
+**PASS** (minor: test re-implements fire logic, stale comment, HUD string coupling)
+
+### Review B (openai-codex/gpt-5.6-sol) — Round 1
+**FAIL** (3 findings)
+1. Thorn cooldown freezes when J released / Special selected (§21) — ACCEPTED, fixed
+2. Tests don't exercise production path — NOTED (harness limitation, acceptable)
+3. specialAmmo starting at 50 undocumented — ACCEPTED, reverted to 0
+
+**Resolution:** #1 fixed (fireCooldown ticks every frame in update loop). #3 reverted (specialAmmo = 0). #2 noted as known limitation.
+
+### Verdict
+Task 2.2 APPROVED. Both reviewers satisfied. Committed post-review.

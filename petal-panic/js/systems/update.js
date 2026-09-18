@@ -14,7 +14,7 @@ import { LAYER } from '../consts.js';
 import { CollisionWorld, resolve, aabbOverlap } from '../collision.js';
 import { Camera } from '../camera.js';
 import { Anim, makeTestFrame } from '../anim.js';
-import { Hero } from '../hero.js';
+import { Hero, WEAPON_SPECIAL } from '../hero.js';
 import { HEROES } from '../heroDefs.js';
 import { projectilePool, specialPool, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
@@ -405,7 +405,9 @@ function readInput() {
     shoot:  s.shooting,
     lockMove: s.lockMove,
     lockDir: s.lockDir,
-    special: s.switchWeapon,
+    // §21: N is a weapon TOGGLE (selection), not a fire trigger. The intent is
+    // edge-triggered by input.js; tryFire() dispatches on hero.selectedWeapon.
+    switchWeapon: s.switchWeapon,
     melee:  s.melee,
     super:  s.supermove,
     // Aim direction (for projectile targeting)
@@ -527,6 +529,7 @@ function swapHero() {
     x: hero.x, y: hero.y, vx: hero.vx, vy: hero.vy,
     energy: hero.energy, lives: hero.lives, coins: hero.coins,
     ammo: hero.ammo, specialAmmo: hero.specialAmmo,
+    selectedWeapon: hero.selectedWeapon,
     checkpoint: hero.checkpoint, continuesUsed: hero.continuesUsed,
     stats: hero.stats,
     runStats: hero.runStats, // Task 7.3 — preserve unified telemetry
@@ -1089,9 +1092,13 @@ export function update(dt) {
     return;
   }
 
-  // 1b. thorn shooting (Task 3.1): G key fires 8-way projectiles from the pool.
-  tryFire(hero, input, dt);
-  trySpecial(hero, input, dt);
+  // 1b. shooting (Task 3.1 + §21): J fires the SELECTED weapon through one
+  //     shared path; N toggles the selection without firing anything.
+  if (input.switchWeapon) hero.toggleWeapon(); // edge-triggered, no fire
+  // Thorn cooldown ticks EVERY frame regardless of input/selection — a stale
+  // cooldown must never freeze while J is released or Special is selected.
+  if (hero.fireCooldown > 0) hero.fireCooldown -= dt;
+  tryFire(hero, input, dt);                    // dispatches on hero.selectedWeapon
 
   // 1c. melee swing (Task 3.2): J starts a swing; during its single active
   //     frame the hero's hitbox is checked against enemies and routed through
@@ -1289,20 +1296,38 @@ function standingOnOneWay() {
 // Friendly projectiles only ever hit ENEMY/BOSS via COLLISION_RULES, so they can
 // never damage the hero — friendly-fire is off by construction.
 
+// --- Shooting (Task 3.1 + design §21) ----------------------------------------
+// ONE shared shoot path: J fires whatever weapon is currently SELECTED on the
+// hero ('thorn' | 'special'). N never fires — it only toggles the selection
+// (hero.toggleWeapon, called by the update step). Each weapon keeps its own
+// ammo pool and its own cooldown timer, so depleting Thorn ammo never blocks
+// Special and vice versa. The aim is resolved once by gameplay context
+// (hero.resolveAim, design §4/§32); friendly projectiles only ever hit
+// ENEMY/BOSS via COLLISION_RULES, so friendly-fire is off by construction.
+
 /**
- * Attempt to fire one thorn this step. Mutates hero.fireCooldown / hero.ammo.
- * The aim is resolved by gameplay context (hero.resolveAim, design §4/§32),
- * not from raw keys: grounded crouch shoots horizontally toward facing,
- * airborne/lockMove + Down shoot straight down. Spawn origin is the active
- * box center so a crouched shot leaves from the lower body.
+ * Attempt to fire the hero's selected weapon this step. Dispatches on
+ * h.selectedWeapon; each branch consumes that weapon's OWN ammo pool and sets
+ * its OWN cooldown (Thorn → h.ammo / h.fireCooldown; Special → h.specialAmmo /
+ * the labeled 'special' timer, which shows in the per-entity debug stack).
  * @param {Hero} h the firing hero
- * @param {object} input current intent (left/right/up/down/shoot/lockMove/aimX/aimY)
+ * @param {object} input current intent (shoot/lockMove/aimX/aimY/...)
  * @param {number} dt seconds
  */
 function tryFire(h, input, dt) {
-  if (h.fireCooldown > 0) h.fireCooldown -= dt;
-  if (!input.shoot || h.fireCooldown > 0) return;
-  if (h.ammo <= 0) return; // no ammo → cannot fire
+  if (!input.shoot) return;
+  if (h.selectedWeapon === WEAPON_SPECIAL) {
+    fireSpecial(h, input);
+  } else {
+    // Default workhorse: fast, straight thorns (§21).
+    fireThorn(h, input, dt);
+  }
+}
+
+/** Fire one Thorn (default weapon): projectilePool + 'ammo' + fireCooldown. */
+function fireThorn(h, input, dt) {
+  if (h.fireCooldown > 0) return; // still cooling down (ticks every frame in update())
+  if (h.ammo <= 0) return;        // no ammo → cannot fire
 
   const dir = h.resolveAim(input);
 
@@ -1323,15 +1348,16 @@ function tryFire(h, input, dt) {
   h.fireCooldown = h.rapidTimer > 0 ? base * 0.5 : base;
 }
 
-// --- Special attack (design §4): H key fires hero's unique weapon ------------
-// Scarlet: fast saw blade (no gravity, short range). Balthazar: bomb (gravity,
-// TTL fuse, AoE explosion on expiry). Consumes specialAmmo, gated by special_freq.
-// The cooldown is a labeled timer on the HERO ('special') so it shows in the
-// per-entity debug stack like every other countdown.
-function trySpecial(h, input, dt) {
-  if (!input.special) return;
+/**
+ * Fire the hero's Special weapon (design §21): Scarlet throws a fast saw blade
+ * (no gravity, short range); Balthazar lobs a bomb (gravity, fuse, AoE).
+ * Consumes specialAmmo, gated by special_freq. The cooldown is a labeled timer
+ * on the HERO ('special') so it shows in the per-entity debug stack like every
+ * other countdown — independent of the Thorn fireCooldown.
+ */
+function fireSpecial(h, input) {
   if (h.timers.get('special') > 0) return; // still cooling down
-  if (h.specialAmmo <= 0) return;
+  if (h.specialAmmo <= 0) return;          // no special ammo → cannot fire
 
   const type = h.stats.special; // 'saw' | 'bomb'
   const dir = h.resolveAim(input);

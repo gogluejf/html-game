@@ -100,16 +100,21 @@ function drawSuperMeter(ctx, hero) {
 }
 
 // --- Ammo (below energy): thorn count + special count ------------------------
+// §21: the currently SELECTED weapon is indicated with a '>' marker so the
+// player always knows which weapon J will fire. N toggles the selection.
 
 function drawAmmo(ctx, hero) {
   const y = PAD + 16 + 19; // just below the energy bar (no label anymore)
   ctx.font = `15px ${FONT_UI}`;
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#2ecc71';
-  ctx.fillText(`🌿 ${hero.ammo ?? 0}`, PAD, y);
+  const thornSelected = hero.selectedWeapon !== 'special';
+  const thornMark = thornSelected ? '> ' : '  ';
+  ctx.fillStyle = thornSelected ? '#2ecc71' : 'rgba(46, 204, 113, 0.45)';
+  ctx.fillText(`${thornMark}🌿 ${hero.ammo ?? 0}`, PAD, y);
   const specialIcon = hero.heroDef?.special === 'saw' ? '⚙️' : '💣';
-  ctx.fillStyle = '#9b59b6';
-  ctx.fillText(`${specialIcon} ${hero.specialAmmo ?? 0}`, PAD + 80, y);
+  const specialMark = thornSelected ? '  ' : '> ';
+  ctx.fillStyle = thornSelected ? 'rgba(155, 89, 182, 0.45)' : '#9b59b6';
+  ctx.fillText(`${specialMark}${specialIcon} ${hero.specialAmmo ?? 0}`, PAD + 80, y);
 }
 
 // --- Coins + lives (top-right) -----------------------------------------------
