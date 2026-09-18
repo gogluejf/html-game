@@ -1091,7 +1091,8 @@ export function update(dt) {
   // 1c. melee swing (Task 3.2): J starts a swing; during its single active
   //     frame the hero's hitbox is checked against enemies and routed through
   //     central damage(). The cooldown lives on the hero (updateMelee).
-  if (input.melee) {
+  //     §24: combat inputs are locked during hit-stun — no melee activation.
+  if (input.melee && !hero.hitStunned) {
     const wasActive = hero.meleeActive;
     hero.tryMelee();
     if (!wasActive && hero.meleeActive) {

@@ -52,9 +52,13 @@ export function aimFromInput(input, facing) {
   const hasAim = Number.isFinite(input.aimX) && Number.isFinite(input.aimY);
   const dx = hasAim ? input.aimX : (input.right ? 1 : 0) - (input.left ? 1 : 0);
   const dy = hasAim ? input.aimY : (input.down ? 1 : 0) - (input.up ? 1 : 0);
-  if (Math.hypot(dx, dy) < 1e-6) return facing >= 0 ? 0 : 4;
+  if (Math.hypot(dx, dy) < 1e-6) return facing >= 0 ? DIR_RIGHT : DIR_LEFT;
   return ((Math.round(-Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8;
 }
+
+// 8-way aim indices (DIR_ANGLES order). Exported so the contextual rules in
+// hero.resolveAim and the lock-capture rule in input.js share one table.
+export const DIR_RIGHT = 0, DIR_LEFT = 4, DIR_DOWN = 6;
 
 export class Projectile extends Entity {
   /**

@@ -133,3 +133,21 @@ Task 1.4 APPROVED. Both reviewers PASS. Committed post-review.
 
 ### Verdict
 Task 1.5 APPROVED. Both reviewers PASS. Committed post-review. WAVE 1 COMPLETE.
+
+## WAVE 1 GATE REVIEW
+
+### Review A (ninfer/qwen3.8-27b)
+**ERROR** — context overflow, could not complete. Proceeding with single reviewer + mechanical tests (per orchestrator failure handling). Flagging as "single-reviewed."
+
+### Review B (openai-codex/gpt-5.6-sol)
+**FAIL** (5 major)
+1. MAJOR: endSupermove can clear newer powerup intangibility (§31) — ACCEPTED, fixed
+2. MAJOR: render.js paints standing rectangle ignoring heroAnimName (§33) — REJECTED (pre-existing render architecture; belongs to Milestone 4 polish)
+3. MAJOR: Crouch transitions execute during hit-stun (§31) — ACCEPTED, fixed
+4. MAJOR: Supermove/melee not gated by hit-stun (§31) — ACCEPTED, fixed
+5. MAJOR: Lock Movement erases knockback velocity (§31) — ACCEPTED, fixed
+
+**Resolution:** Findings 1, 3, 4, 5 fixed. Finding 2 rejected as out-of-wave-scope (render visual pipeline is Milestone 4 territory). Full suite green post-fix.
+
+### Gate Verdict
+WAVE 1 GATE PASSED (single-reviewed due to Review A context overflow). All 18 test files green. No new failures vs baseline.

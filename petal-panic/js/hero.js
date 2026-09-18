@@ -232,12 +232,16 @@ export class Hero extends Entity {
     // this frame began. Capturing after the entry block would make
     // wasCrouching === this.crouching always and kill the grace condition.
     const wasCrouching = this.crouching;
-    if (this.crouching && (!input.down || input.lockMove)) {
-      this.exitCrouch();
-    }
-    if (input.down && !input.lockMove && this.grounded && !this.crouching) {
-      this.crouching = true;
-      this.box = this.crouchBox;
+    // §24: during hit-stun, normal player input is temporarily locked — Down
+    // must not initiate or cancel crouch while recovery is active.
+    if (!this.hitStunned) {
+      if (this.crouching && (!input.down || input.lockMove)) {
+        this.exitCrouch();
+      }
+      if (input.down && !input.lockMove && this.grounded && !this.crouching) {
+        this.crouching = true;
+        this.box = this.crouchBox;
+      }
     }
 
     // --- Horizontal intent --------------------------------------------------
@@ -276,8 +280,10 @@ export class Hero extends Entity {
       // being instantly overridden by held input.
       this.vx *= GROUND_FRICTION;
       if (Math.abs(this.vx) < 1) this.vx = 0;
-    } else if (input.lockMove) {
+    } else if (input.lockMove && !stunned) {
       // Aiming in place stops locomotion, not gravity or damage knockback.
+      // While hit-stunned we must NOT zero vx — that would erase the knockback
+      // velocity; §6: Lock Movement disables player-driven locomotion only.
       this.vx = 0;
       this.sliding = false;
     } else if (moveDir !== 0) {
@@ -633,6 +639,8 @@ export class Hero extends Entity {
 
   /** Start the super dash. Resets meter, sets active state, swaps anim. */
   triggerSupermove() {
+    // §24: combat inputs are locked during hit-stun — no supermove activation.
+    if (this.hitStunned) return;
     this.supermoveMeter = 0;
     this.supermoveActive = true;
     // Split the total duration into the committed burst and the recovery tail.
@@ -676,10 +684,19 @@ export class Hero extends Entity {
     // time; subtract the total elapsed since the trigger to get what that
     // pre-dash grant SHOULD have left — this correctly zeroes out a short
     // pre-grant (e.g. 0.3s i-frames) that naturally expired during the dash.
+    // If something ELSE extended the timer DURING the dash (a powerup pickup),
+    // its remaining window is still in the live timer and must not be
+    // truncated by restoring the shorter pre-dash value.
     const pre = this._preSupermoveIntangible ?? 0;
     const preRemaining = Math.max(0, pre - this._supermoveElapsed);
-    if (preRemaining > 0) {
-      this.timers.set('intangible', preRemaining);
+    // If something ELSE extended the timer beyond SUPERMOVE_DUR during the dash
+    // (e.g. a powerup pickup), that excess belongs to the other source and must
+    // survive. We only remove the supermove-granted portion.
+    const current = this.timers.get('intangible');
+    const otherExcess = Math.max(0, current - this.SUPERMOVE_DUR);
+    const restored = Math.max(preRemaining, otherExcess);
+    if (restored > 0) {
+      this.timers.set('intangible', restored);
       this.intangible = true;
     } else {
       this.timers.clear('intangible');

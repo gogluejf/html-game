@@ -62,7 +62,7 @@
     },
     "1.5": {
       "number": "1.5",
-      "status": "not_started",
+      "status": "completed",
       "name": "Crouch/slide cancellation hardening + anim-state sync audit",
       "milestone": "Behavior Corrections (Doc Compliance)",
       "milestone_number": "1",
