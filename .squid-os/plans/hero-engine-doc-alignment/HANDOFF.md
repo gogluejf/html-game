@@ -20,12 +20,12 @@ Run the plan `hero-engine-doc-alignment` per its `orchestrator.md`, autonomously
 2. **Unbounded executors loop.** An executor with no step budget re-ran one probe 168×. Fix: hard budgets (150 steps / 200 tools / 45m) + anti-loop rule (max 2 identical probes) in every dispatch.
 3. **Reviews skipped.** Tasks were marked done on green tests alone; the dual-review stage never ran. Fix: a task is done ONLY when both reviewer verdicts are recorded in `reviews.md`. Green tests ≠ done.
 4. **Runner coded directly.** The orchestrating session edited code itself after agent failures. Forbidden now: runner never writes code; two failed executor attempts → stop and surface to user.
-5. **Mixed diffs.** No per-task commits → reviewers couldn't attribute findings. Fix: one isolated commit per task before review; reviewers judge `git show <commit>`.
+5. **Mixed diffs.** Reviewers must judge ONE task's changes, not a pile. Fix: reviewers get the task's uncommitted diff (`git diff` + new test files); the task is committed only AFTER both reviews pass, so each commit is exactly the reviewed state.
 
 ## Rules that are easy to forget
 
 - Runner (you) NEVER edits code — delegation only. Plan/orchestrator docs and git ops are fine.
 - No inline HTTP servers in any agent work (freezes the host app). Live gameplay feel = user, manually, via server.py at the end.
 - Doc wins over code: `petal-panic/docs/hero-mechanics.md` is the single source of truth.
-- Commits: per task after green verify + before reviews; fix commits as `hero-align <id> fix:`; wave gate commits for bookkeeping. Never commit a red suite.
+- Commits: per task ONLY after verify green + both reviews recorded + accepted findings fixed (`hero-align <id>: <name>`); wave gate commits for bookkeeping. Never commit a red suite or unreviewed code.
 - If an executor exhausts its budget: inspect the leftover diff, re-dispatch ONCE diagnosis-first, else BLOCKED + stop wave + report.

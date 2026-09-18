@@ -73,14 +73,14 @@ Run the FULL suite `petal-panic/js/test/*.test.js` on clean pre-work code and re
 1. **Execute.** Inline executor agent receives the EXECUTOR PROMPT (below) with the standard budgets. It implements the task AND writes the named test file(s). It does NOT commit.
 2. **Verify (mechanical).** Runner executes every `Verification:` command of the task, plus the task's related existing tests. Capture full stdout/stderr.
 3. **Fix cycle.** If red: feed the exact failure output back to a fresh executor (diagnosis-first prompt), max **2 retry cycles** total. Still red → mark task BLOCKED, stop the wave, surface to user with the failing command + stderr.
-4. **Task commit.** Verify green → runner commits ONLY this task's files: `hero-align <task-id>: <task name>`. Isolated commit = isolated review diff (`git show`).
-5. **Review A** (qwen3.8-27b): line-level pass on `git show <task commit>`.
-6. **Review B** (gpt-5.6-sol): intent/doc-conformance pass on the same diff.
-7. **Resolve reviews.** Findings are either ACCEPT (executor agent fixes, re-run step 2, amend/add fix commit `hero-align <task-id> fix: <summary>`) or REJECT (runner notes why in the review log). Disagreement between A and B → mechanical tests break the tie if relevant; otherwise surface a one-line question to the user (the only allowed human interrupt mid-wave).
-8. **Record.** Append both verdicts + resolution to `.squid-os/plans/hero-engine-doc-alignment/reviews.md` (one block per task).
-9. **Done.** Task marked complete in progress file ONLY after steps 2, 5, 6, 8 are all recorded. Next task.
+4. **Review A** (qwen3.8-27b): line-level pass on the task's UNCOMMITTED diff (`git diff` + untracked test files).
+5. **Review B** (gpt-5.6-sol): intent/doc-conformance pass on the same uncommitted diff.
+6. **Resolve reviews.** Findings are either ACCEPT (executor agent fixes, re-run step 2 until green) or REJECT (runner notes why in the review log). Disagreement between A and B → mechanical tests break the tie if relevant; otherwise surface a one-line question to the user (the only allowed human interrupt mid-wave). Iterate reviews if fixes are non-trivial (max 2 review rounds per task, then surface to user).
+7. **Record.** Append both verdicts + resolution to `.squid-os/plans/hero-engine-doc-alignment/reviews.md` (one block per task).
+8. **Task commit — AFTER review only.** Verify green AND both verdicts recorded AND all accepted findings fixed → runner commits the reviewed state: `hero-align <task-id>: <task name>`. The commit contains exactly what the reviewers approved. Never commit code that has not passed both reviews.
+9. **Done.** Task marked complete in progress file ONLY after steps 2, 4, 5, 7, 8 are all recorded. Next task.
 
-**A task is not done with green tests alone — both reviewer verdicts must be recorded.**
+**A task is not done with green tests alone — both reviewer verdicts must be recorded, and the commit happens only after review.**
 
 ## Wave gate (between waves)
 
@@ -148,8 +148,8 @@ RULES:
 {CROSS-CUTTING QUALITY RUBRIC}
 
 CONTEXT: Task {id} "{name}" — acceptance criteria: {list}. Doc sections: {§refs}.
-DIFF (isolated task commit):
-{git show output}
+DIFF (uncommitted task diff — git diff + new test files):
+{diff output}
 
 Focus: items 2, 4, 5, 7, 9 (duplication, magic numbers, anim sync, cancel-order, test quality) plus concrete bugs (off-by-one frames, stale flags, wrong timer name, missing mirror case).
 You judge the diff only — do not run tests, do not edit code.
@@ -164,8 +164,8 @@ Verdict: PASS or FAIL + numbered findings (file:line — issue — §ref — sev
 CONTEXT: Task {id} "{name}" — acceptance criteria: {list}.
 DOC SECTIONS (authoritative):
 {inline the doc sections}
-DIFF (isolated task commit):
-{git show output}
+DIFF (uncommitted task diff — git diff + new test files):
+{diff output}
 
 Focus: item 1 (exact doc conformance — quote the doc line the code must satisfy), item 3 (state composition), item 6 (hitbox windows), item 8 (regression risk to other hero mechanics). Judge intent, not style.
 You judge the diff only — do not run tests, do not edit code.
@@ -201,4 +201,4 @@ Verdict: PASS or FAIL + numbered findings.
 2. `node petal-panic/js/test/run-all.mjs` (task 4.3) green — includes the full §33 invariant suite.
 3. Every §33 bullet has a named passing test.
 4. Final wave review PASS from both reviewers.
-5. One commit per task (+ fix commits + gate commits); working tree clean; plan progress file updated.
+5. One commit per task (post-review) + gate commits; working tree clean at each gate; plan progress file updated.
