@@ -88,7 +88,7 @@ ok('per-hero special melee differences come from DATA, not code branches', () =>
     const sb = s.attackHitboxWorld(ATTACK_SPECIAL_MELEE);
     const bb = b.attackHitboxWorld(ATTACK_SPECIAL_MELEE);
     assert.equal(sb.w, 52); assert.equal(sb.h, 30);   // scarlet's data
-    assert.equal(bb.w, 36); assert.equal(bb.h, 52);   // balthazar's data
+    assert.equal(bb.w, 36); assert.equal(bb.h, 26);   // balthazar's data (half-height leg sweep)
     assert.notEqual(sb.x, bb.x, 'boxes must differ purely by data');
   } finally {
     HEROES.scarlet.specialMelee.hitbox = saved;

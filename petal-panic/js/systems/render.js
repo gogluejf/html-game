@@ -498,14 +498,15 @@ function drawDebugOverlay(ctx) {
     ctx.restore();
   }
 
-  // Special melee (Down+Melee) hitbox in CYAN when active (debug only).
+  // Special melee (Down+Melee) hitbox in YELLOW when active (debug only) —
+  // same convention as melee + supermove.
   const spm = hero.specialMeleeHitboxWorld;
   if (spm) {
     ctx.save();
     ctx.globalAlpha = 0.6;
-    ctx.fillStyle = '#00e5ff';
+    ctx.fillStyle = '#f1c40f';
     ctx.fillRect(spm.x, spm.y, spm.w, spm.h);
-    ctx.strokeStyle = '#00e5ff';
+    ctx.strokeStyle = '#f1c40f';
     ctx.lineWidth = 2;
     ctx.strokeRect(spm.x + 0.5, spm.y + 0.5, spm.w, spm.h);
     ctx.restore();
