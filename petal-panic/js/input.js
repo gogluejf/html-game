@@ -293,11 +293,15 @@ export function createInput({ target = globalThis.window, document = globalThis.
       };
       const merge = (a, b) => Math.abs(b) > Math.abs(a) ? b : a;
       let dirX = 0, dirY = 0;
+      let rawDown = false;
       for (const source of ['keyboard','gamepad']) {
-        s.crouch ||= amount(source, 'moveDown') > 0.2;
+        rawDown ||= amount(source, 'moveDown') > 0.2;
         dirX = merge(dirX, amount(source, 'moveRight') - amount(source, 'moveLeft'));
         dirY = merge(dirY, amount(source, 'moveDown') - amount(source, 'moveUp'));
       }
+      // Crouch only on PURE Down (no horizontal). Diagonal down (Down+Left/Right)
+      // is a diagonal aim, not a crouch — the hero keeps running and shoots diagonally.
+      s.crouch = rawDown && Math.abs(dirX) < 0.2;
       if (Math.abs(dirX) < 1e-6) dirX = 0;
       if (Math.abs(dirY) < 1e-6) dirY = 0;
       s.directionX = dirX; s.directionY = dirY;

@@ -900,6 +900,11 @@ export class Hero extends Entity {
    */
   resolveAim(input) {
     const down = !!input.down;
+    // Grounded + crouching → ALWAYS horizontal toward facing, regardless of
+    // lock state. A crouched hero cannot shoot downward (§4). This must be
+    // checked BEFORE the lockDir branch so that locking while crouched never
+    // captures a downward angle.
+    if (this.grounded && this.crouching) return this.facing >= 0 ? DIR_RIGHT : DIR_LEFT;
     // Lock Direction freezes the resolved aim (design §5): the frozen aim
     // (input.aimX/aimY, set by input.js) is authoritative and wins over every
     // contextual Down rule — even airborne+Down keeps shooting the locked dir.
