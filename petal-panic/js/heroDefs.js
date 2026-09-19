@@ -20,7 +20,7 @@ export const ATTACK_SPECIAL_MELEE = 'specialMelee';
 export const ATTACK_SUPERMOVE = 'supermove';
 
 /** Shared normal-melee frame table (both heroes swing identically today). */
-const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: -10, bw: 40, bh: 40 }, null];
+const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }, null];
 
 /** Shared supermove dash box (thin, full body height, in front). */
 // oy: 0 is a sentinel resolved at runtime to the hero's TOP edge (y = h.y), so
@@ -51,7 +51,7 @@ export const HEROES = {
       direction: -1,        // -1 = away from facing (scarlet's cartwheel)
       travelSpeed: 300,     // px/s self-supplied horizontal movement
       frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
-      hitbox: { ox: 20, oy: -10, bw: 40, bh: 40 },    // active-frame box offset from center
+      hitbox: { ox: 0, oy: 0, bw: 32, bh: 48 },       // full-body overlay (cartwheel)
     },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
@@ -79,7 +79,7 @@ export const HEROES = {
       direction: 1,         // +1 = toward facing (balthazar's sweep)
       travelSpeed: 300,     // px/s self-supplied horizontal movement
       frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
-      hitbox: { ox: 20, oy: -10, bw: 40, bh: 40 },    // active-frame box offset from center
+      hitbox: { ox: 18, oy: 0, bw: 36, bh: 52 },     // in front, same size as collision box
     },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {

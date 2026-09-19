@@ -44,7 +44,7 @@ ok('swing constants per spec', () => {
   assert.equal(h.MELEE_TOTAL_FRAMES, 5);
   assert.equal(h.MELEE_ACTIVE_FRAME, 3);
   assert.ok(approx(h.MELEE_FRAME_DURATION, 0.08));
-  assert.deepEqual(h.meleeHitbox, { ox: 20, oy: -10, bw: 40, bh: 40 });
+  assert.deepEqual(h.meleeHitbox, { ox: 20, oy: 0, bw: 40, bh: 40 });
 });
 
 console.log('tryMelee / cooldown');
