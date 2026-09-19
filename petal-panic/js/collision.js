@@ -122,6 +122,19 @@ export function resolve(entity, solids, opts = {}) {
     const penY = Math.min(b.y + b.h - s.y, s.y + s.h - b.y);
     if (penX <= 0 || penY <= 0) continue; // no overlap at all
 
+    // Landing snap for regular solids: if the entity is falling and was
+    // previously at or above the solid top, it's a landing — snap the box
+    // bottom to the surface. Prevents minimum-penetration oscillation when
+    // the box is tall enough to fit inside the solid (crouch box in thin platform).
+    const prevBottom = opts.prevBottom ?? (b.y + b.h);
+    if (entity.vy >= 0 && prevBottom <= s.y + 2) {
+      const boxBottomOffset = b.y - entity.y + b.h;
+      entity.y = s.y - boxBottomOffset;
+      entity.vy = 0;
+      resolved = { axis: 'y', dir: 1 };
+      continue;
+    }
+
     /** Push out along one axis by its minimum penetration. */
     const pushAxis = (axis) => {
       if (axis === 'x') {

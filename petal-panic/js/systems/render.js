@@ -146,7 +146,8 @@ export function render(ctx) {
           ctx.globalAlpha = phase ? IFRAME_BLINK_ALPHA_ON : IFRAME_BLINK_ALPHA_OFF;
         }
         ctx.fillStyle = h.debugColor;
-        ctx.fillRect(h.x, h.y, h.w, h.h);
+        const hb = h.worldBox();
+        ctx.fillRect(hb.x, hb.y, hb.w, hb.h);
         ctx.restore();
       }
     }
