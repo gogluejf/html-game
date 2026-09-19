@@ -740,12 +740,21 @@ export class Hero extends Entity {
       throw new Error(`Hero.attackHitboxWorld: unknown attack '${attackName}'`);
     }
     if (!entry) return null;
-    const cx = this.x + this.w / 2;
-    const cy = this.y + this.h / 2;
+    // Anchor to the ACTIVE collision box (worldBox), not the standing body.
+    // Crouching shrinks/lowers the box; anchoring to the standing center made
+    // every hitbox drift down relative to the real collision box. The active
+    // box's center is the stable reference that tracks the hero's true body.
+    const wb = this.worldBox();
+    const cx = wb.x + wb.w / 2;
+    const cy = wb.y + wb.h / 2;
     const dir = this.facing;
+    // oy offsets the box VERTICALLY from the body center. The box is CENTERED
+    // on (cy + oy): a 40px-tall box with oy:0 spans cy-20..cy+20, aligned with
+    // the body. (Previously y was the box TOP at cy+oy, which pushed every
+    // box down by half its height.)
     return {
       x: cx + dir * entry.ox - (dir < 0 ? entry.bw : 0),
-      y: cy + entry.oy,
+      y: cy + entry.oy - entry.bh / 2,
       w: entry.bw,
       h: entry.bh,
     };

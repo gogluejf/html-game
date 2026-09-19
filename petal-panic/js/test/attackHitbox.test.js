@@ -36,13 +36,13 @@ function startDash(h, facing = 1) {
   const inp = noInput(); inp.super = true;
   h.update(DT, inp);
 }
-const center = (h) => ({ cx: h.x + h.w / 2, cy: h.y + h.h / 2 });
-/** Assert a box is mirrored correctly around the body center for `dir`. */
+const center = (h) => { const wb = h.worldBox(); return { cx: wb.x + wb.w / 2, cy: wb.y + wb.h / 2 }; };
+/** Assert a box is mirrored correctly around the active-box center for `dir`. */
 function assertMirrored(box, dir, entry, h) {
   const { cx, cy } = center(h);
   const wantX = dir > 0 ? cx + entry.ox : cx - entry.ox - entry.bw;
   assert.ok(approx(box.x, wantX), `x=${box.x} want ${wantX} (facing ${dir})`);
-  assert.ok(approx(box.y, cy + entry.oy), `y=${box.y} want ${cy + entry.oy}`);
+  assert.ok(approx(box.y, cy + entry.oy - entry.bh / 2), `y=${box.y} want ${cy + entry.oy - entry.bh / 2}`);
   assert.equal(box.w, entry.bw);
   assert.equal(box.h, entry.bh);
 }
