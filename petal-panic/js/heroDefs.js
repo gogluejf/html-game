@@ -78,7 +78,7 @@ export const HEROES = {
       direction: 1,         // +1 = toward facing (balthazar's sweep)
       travelSpeed: 300,     // px/s self-supplied horizontal movement
       frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
-      hitbox: { ox: 18, oy: 13, bw: 36, bh: 26 },     // leg sweep: in front, half-height at ground level (like his foot)
+      hitbox: { ox: 9, oy: 8.5, bw: 36, bh: 35 },     // leg sweep: in front, ~2/3 body height at ground level, offset back over his body
     },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
