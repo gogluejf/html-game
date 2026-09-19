@@ -900,18 +900,21 @@ export class Hero extends Entity {
    */
   resolveAim(input) {
     const down = !!input.down;
-    // Grounded + crouching → ALWAYS horizontal toward facing, regardless of
-    // lock state. A crouched hero cannot shoot downward (§4). This must be
-    // checked BEFORE the lockDir branch so that locking while crouched never
-    // captures a downward angle.
-    if (this.grounded && this.crouching) return this.facing >= 0 ? DIR_RIGHT : DIR_LEFT;
+    // Movement lock + Down → straight-down aim (§4 "Movement Locked").
+    // Must be checked first: while lockMove is held, Down does NOT crouch —
+    // it aims straight down.
+    if (down && input.lockMove) return DIR_DOWN;
+    // Grounded + crouching (or about to crouch via pure Down) → ALWAYS
+    // horizontal toward facing, regardless of lock state. A crouched hero
+    // cannot shoot downward (§4). Checked BEFORE the lockDir branch so that
+    // locking while crouched never captures a downward angle. We also check
+    // input.down because at lock-capture time (processInput) the hero may not
+    // have entered crouch yet this frame — the flag flips in hero.update().
+    if (this.grounded && (this.crouching || down)) return this.facing >= 0 ? DIR_RIGHT : DIR_LEFT;
     // Lock Direction freezes the resolved aim (design §5): the frozen aim
     // (input.aimX/aimY, set by input.js) is authoritative and wins over every
-    // contextual Down rule — even airborne+Down keeps shooting the locked dir.
+    // other contextual rule.
     if (input.lockDir) return aimFromInput(input, this.facing);
-    // Movement lock + Down → straight-down aim (§4 "Movement Locked"). Checked
-    // first: while locked, Down no longer initiates crouch.
-    if (down && input.lockMove) return DIR_DOWN;
     // Grounded + Down (or already crouched) → horizontal toward facing.
     // There is NO grounded-crouch + straight-down state (§4). The crouch flag
     // alone must NOT win while airborne: a hero who slid/fell off a ledge with
