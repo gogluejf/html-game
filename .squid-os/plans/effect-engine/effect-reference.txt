@@ -1,0 +1,42 @@
+# Pre-refactor Effects.* reference values (for task 2.3 regression asserts)
+
+Source: petal-panic/js/effects.js (module `Effects`, imported by systems/update.js and systems/render.js).
+All constants below are exact as of pre-effect-engine refactor.
+
+## Screen-space decay (linear, per fixed step)
+
+| value | constant | file:line | note |
+|---|---|---|---|
+| vignette full-fade time = 0.5s | `VIGNETTE_DECAY = 1 / 0.5` (= 2.0 /s) | js/effects.js:27 | `vignette -= VIGNETTE_DECAY * dt`, clamped at 0 (js/effects.js:178) |
+| screenFlash full-fade time = 0.15s | `FLASH_DECAY = 1 / 0.15` (= 6.666…/s) | js/effects.js:28 | `screenFlash -= FLASH_DECAY * dt`, clamped at 0 (js/effects.js:181) |
+
+Fixed-dt behavior (from Effects.update(dt), js/effects.js:174-184):
+- vignette: set to 1 by heroDamaged() → after update(0.25) == 0.5; after further update(0.3) == 0 (asserted in js/test/effects.test.js:24-28)
+- screenFlash: set to 1 by bigExplosion() → after update(0.075) ≈ 0.5 (±0.02); after further update(0.1) == 0 (asserted in js/test/effects.test.js:39-43)
+- both kick via max(): `this.vignette = Math.max(this.vignette, min(1, strength))` (js/effects.js:52), same for screenFlash (js/effects.js:62)
+- reset() zeroes both (js/effects.js:255-258)
+
+## Sparkle / burst counts
+
+| effect | formula | file:line | bounds |
+|---|---|---|---|
+| hit sparkles (spawnHitSparkles) | random int in [3, 5] when count omitted | `HIT_SPARKLE_COUNT = [3, 5]` js/effects.js:29; roll at js/effects.js:78 | 3..5 inclusive; speed uniform [60, 140] px/s (`HIT_SPARKLE_SPEED`, js/effects.js:30) |
+| death sparkle (spawnDeathSparkle) | `max(4, round(8 + size * 0.25))` | `DEATH_SPARKLE_BASE = 8` js/effects.js:31; formula at js/effects.js:99 | size=16 → 8; size=96 → 32 (asserted js/test/effects.test.js:61-63) |
+| pickup pop (spawnPickupPop) | fixed 8 | `PICKUP_POP_COUNT = 8` js/effects.js:32; loop js/effects.js:113 | exactly 8, evenly spaced angles, speed 100..180 px/s (js/effects.js:115-116) |
+| explosion (spawnExplosion) | `min(24, 12 + round(radius * 0.15))` | `EXPLOSION_MIN = 12` js/effects.js:33, `EXPLOSION_PER_PX = 0.15` js/effects.js:34; formula js/effects.js:132 | radius=20 → 12; radius=200 → 24 (cap); radius=100000 → 24 (asserted js/test/effects.test.js:74-83); speed 120..(120+radius*1.5) px/s (js/effects.js:134) |
+
+Palettes: FIRE_COLORS = ['#e74c3c','#f39c12','#ff6ec7','#ffffff'] (js/effects.js:38); BLOOD_COLORS = ['#e74c3c','#c0392b','#ff6b6b'] (js/effects.js:40).
+
+## Shake offset bounds
+
+| value | constant | file:line | note |
+|---|---|---|---|
+| ±3 px per axis | `SHAKE_AMT = 3` | js/effects.js:35 | getShakeOffset returns `{x: (rand*2-1)*3, y: (rand*2-1)*3}` while `hitFlash > 0`, else {0,0} (js/effects.js:163-168) |
+| shake duration 0.1s | `e.hitFlash = Math.max(e.hitFlash ?? 0, 0.1)` | beginEnemyShake, js/effects.js:152 | enemy hitFlash also set to 0.1 on strike (js/enemy.js:187), decremented per frame (js/enemy.js:117) |
+
+Bounds asserted in js/test/effects.test.js:100-112: every component within [-3, +3]; {0,0} when hitFlash==0 or entity null.
+
+## Overlay render (drawOverlay, js/effects.js:196-232)
+
+- vignette radial gradient stops: center clear → `rgba(180,20,20, 0.15*v)` at 0.7 → `rgba(150,10,10, 0.55*v)` at 1.0; inner radius 0.45*hypot(cx,cy) (js/effects.js:203-206)
+- screenFlash: full-viewport white fillRect with globalAlpha = f (js/effects.js:218-224)

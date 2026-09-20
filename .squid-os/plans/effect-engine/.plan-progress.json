@@ -1,0 +1,229 @@
+{
+  "tasks": {
+    "1.1": {
+      "number": "1.1",
+      "status": "done",
+      "name": "Update effects.md to the data-object spec",
+      "milestone": "Architecture Spec and Engine Core",
+      "milestone_number": "1",
+      "summary": {
+        "decisions": "<append: continuous activation mode; beam origin/orientation rules>",
+        "confidence": "high",
+        "done": "<append: resolved dual-review findings>",
+        "tradeoffs": "Trigger table assigns best-fit triggers per effect from the fixed vocabulary; some effects plausibly fire on multiple events, so entries list several triggers rather than one canonical owner.",
+        "lessons_learned": "<append: reviewers caught ambiguity between fire-time sampling vs continuous tracking>",
+        "failures": "None"
+      }
+    },
+    "1.2": {
+      "number": "1.2",
+      "status": "in_progress",
+      "name": "Effect core: registry, instance lifecycle, trigger bus",
+      "milestone": "Architecture Spec and Engine Core",
+      "milestone_number": "1"
+    },
+    "1.3": {
+      "number": "1.3",
+      "status": "not_started",
+      "name": "Generic carrier interface for effect attachment",
+      "milestone": "Architecture Spec and Engine Core",
+      "milestone_number": "1"
+    },
+    "2.1": {
+      "number": "2.1",
+      "status": "not_started",
+      "name": "Split the monolith into per-effect files",
+      "milestone": "Migrate Existing Effects onto the Engine",
+      "milestone_number": "2"
+    },
+    "2.2": {
+      "number": "2.2",
+      "status": "not_started",
+      "name": "Re-point Effects.* API to the engine as a compat shim",
+      "milestone": "Migrate Existing Effects onto the Engine",
+      "milestone_number": "2"
+    },
+    "2.3": {
+      "number": "2.3",
+      "status": "not_started",
+      "name": "Behavior-preservation regression for migrated effects",
+      "milestone": "Migrate Existing Effects onto the Engine",
+      "milestone_number": "2"
+    },
+    "3.1": {
+      "number": "3.1",
+      "status": "not_started",
+      "name": "Screen Overlay",
+      "milestone": "Screen-Space and Overlay Effects",
+      "milestone_number": "3"
+    },
+    "3.2": {
+      "number": "3.2",
+      "status": "not_started",
+      "name": "Sprite Flash",
+      "milestone": "Screen-Space and Overlay Effects",
+      "milestone_number": "3"
+    },
+    "3.3": {
+      "number": "3.3",
+      "status": "not_started",
+      "name": "Camera Shake",
+      "milestone": "Screen-Space and Overlay Effects",
+      "milestone_number": "3"
+    },
+    "3.4": {
+      "number": "3.4",
+      "status": "not_started",
+      "name": "Sprite Shake (standalone)",
+      "milestone": "Screen-Space and Overlay Effects",
+      "milestone_number": "3"
+    },
+    "3.5": {
+      "number": "3.5",
+      "status": "not_started",
+      "name": "Impact Star / Hit Pop",
+      "milestone": "Screen-Space and Overlay Effects",
+      "milestone_number": "3"
+    },
+    "4.1": {
+      "number": "4.1",
+      "status": "not_started",
+      "name": "Debris",
+      "milestone": "Particle and Burst Effects",
+      "milestone_number": "4"
+    },
+    "4.2": {
+      "number": "4.2",
+      "status": "not_started",
+      "name": "Dust Cloud",
+      "milestone": "Particle and Burst Effects",
+      "milestone_number": "4"
+    },
+    "4.3": {
+      "number": "4.3",
+      "status": "not_started",
+      "name": "Composite Explosion Burst",
+      "milestone": "Particle and Burst Effects",
+      "milestone_number": "4"
+    },
+    "5.1": {
+      "number": "5.1",
+      "status": "not_started",
+      "name": "Trail",
+      "milestone": "Motion, Telegraph and Marker Effects",
+      "milestone_number": "5"
+    },
+    "5.2": {
+      "number": "5.2",
+      "status": "not_started",
+      "name": "Afterimage / Ghost Frames",
+      "milestone": "Motion, Telegraph and Marker Effects",
+      "milestone_number": "5"
+    },
+    "5.3": {
+      "number": "5.3",
+      "status": "not_started",
+      "name": "Ground Wave",
+      "milestone": "Motion, Telegraph and Marker Effects",
+      "milestone_number": "5"
+    },
+    "5.4": {
+      "number": "5.4",
+      "status": "not_started",
+      "name": "Shockwave",
+      "milestone": "Motion, Telegraph and Marker Effects",
+      "milestone_number": "5"
+    },
+    "5.5": {
+      "number": "5.5",
+      "status": "not_started",
+      "name": "Telegraph Circle",
+      "milestone": "Motion, Telegraph and Marker Effects",
+      "milestone_number": "5"
+    },
+    "5.6": {
+      "number": "5.6",
+      "status": "not_started",
+      "name": "Ground Target Marker",
+      "milestone": "Motion, Telegraph and Marker Effects",
+      "milestone_number": "5"
+    },
+    "5.7": {
+      "number": "5.7",
+      "status": "not_started",
+      "name": "Target Reticle",
+      "milestone": "Motion, Telegraph and Marker Effects",
+      "milestone_number": "5"
+    },
+    "5.8": {
+      "number": "5.8",
+      "status": "not_started",
+      "name": "Attack Arc / Slash",
+      "milestone": "Motion, Telegraph and Marker Effects",
+      "milestone_number": "5"
+    },
+    "6.1": {
+      "number": "6.1",
+      "status": "not_started",
+      "name": "Fade Out",
+      "milestone": "Sprite-State and Beam Effects",
+      "milestone_number": "6"
+    },
+    "6.2": {
+      "number": "6.2",
+      "status": "not_started",
+      "name": "Scale / Pulse",
+      "milestone": "Sprite-State and Beam Effects",
+      "milestone_number": "6"
+    },
+    "6.3": {
+      "number": "6.3",
+      "status": "not_started",
+      "name": "Squash and Stretch",
+      "milestone": "Sprite-State and Beam Effects",
+      "milestone_number": "6"
+    },
+    "6.4": {
+      "number": "6.4",
+      "status": "not_started",
+      "name": "Aura / Glow",
+      "milestone": "Sprite-State and Beam Effects",
+      "milestone_number": "6"
+    },
+    "6.5": {
+      "number": "6.5",
+      "status": "not_started",
+      "name": "Beam",
+      "milestone": "Sprite-State and Beam Effects",
+      "milestone_number": "6"
+    },
+    "7.1": {
+      "number": "7.1",
+      "status": "not_started",
+      "name": "Per-effect theater demos",
+      "milestone": "Effect Theater and Handoff",
+      "milestone_number": "7"
+    },
+    "7.2": {
+      "number": "7.2",
+      "status": "not_started",
+      "name": "Effect Theater overlay + debug shortcut",
+      "milestone": "Effect Theater and Handoff",
+      "milestone_number": "7"
+    },
+    "7.3": {
+      "number": "7.3",
+      "status": "not_started",
+      "name": "Document effect config in entity YAML",
+      "milestone": "Effect Theater and Handoff",
+      "milestone_number": "7"
+    },
+    "7.4": {
+      "number": "7.4",
+      "status": "not_started",
+      "name": "Final regression + scope handoff",
+      "milestone": "Effect Theater and Handoff",
+      "milestone_number": "7"
+    }
+  }
+}

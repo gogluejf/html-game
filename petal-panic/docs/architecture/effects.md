@@ -1,10 +1,104 @@
 # Petal Panic — Visual Effects Catalog
 
-The Effects Engine provides a reusable, parameterized library of visual effects.
+This document is the **conceptual source of truth** for the Effects Engine. It wins over code: if an implementation diverges from this spec, the implementation changes to match it (the same contract `knockback.md` holds for knockback).
 
 Effects should remain primarily visual. Damage, collision, attack timing, and gameplay consequences belong to the appropriate gameplay systems. Attack Patterns can combine effects with collision volumes, sprites, audio, timers, and other systems.
 
-Effects may be procedural Canvas effects, sprite-based animations, or compositions of multiple smaller effects.
+---
+
+## Effect Model
+
+Every effect is a **data object**: `{ type, params }`. An effect has no behavior of its own in configuration — it is registered once by `type`, then instantiated with `params` when a trigger fires.
+
+```js
+// An effect instance is pure data until the engine instantiates it:
+{ type: 'beam', params: { length: 120, width: 8, ... } }
+```
+
+### Carriers
+
+An effect is **attached to a carrier** via declarative config. A carrier is anything that owns state the effect needs at fire time: a projectile, a hitbox, a collision event, a marker, or a radius (AoE area).
+
+```js
+// Carriers declare their effects in config; the engine reads them:
+carrier.effects = [
+  { on: 'collision',   type: 'particle-burst', params: { count: 12 } },
+  { on: 'attackActive', type: 'beam',          params: { length: 120 } },
+];
+```
+
+The engine's single fire path is: *carrier emits trigger event → engine looks up attached effects whose `on` matches → instantiates `{ type, params }` from the registry → runs the lifecycle*. Adding a new effect requires one file + one registration + one demo (a theater entry exercising it) — no engine change.
+
+### Triggers
+
+A fixed vocabulary of trigger events. Each catalog entry below lists the trigger(s) that fire it (see the Trigger Table). The current vocabulary:
+
+- `spawn` — the carrier appears / is created
+- `death` — the carrier (or its owner entity) dies
+- `collision` — a collision involving the carrier resolves
+- `explosion` — an explosion AoE detonates
+- `pickup` — a collectible is picked up
+- `damageTaken` — the hero takes damage
+- `hitLanded` — an enemy is struck
+- `attackActive` — the carrier's attack window opens (matches the attached hitbox)
+- `stateChange` — the carrier enters a notable state (charge, stun, phase)
+- `manual` — fired explicitly by game code (debug theater, scripted sequences)
+
+### Continuous Activation
+
+Some effects are active only while a condition holds rather than at a discrete moment. An effect may declare continuous activation alongside or instead of discrete triggers:
+
+```js
+{ on: 'collision', type: 'trail',
+  continuous: { condition: 'moving' },   // spawn when condition becomes true, complete when it stops
+}
+```
+
+Config shape: `{ continuous: { condition: 'moving' | 'fastMoving' } }`. The engine keeps **one instance** alive while the carrier satisfies the condition — spawning it when the condition starts and completing it when the condition ends. A continuous declaration can accompany discrete triggers (the effect fires on either).
+
+### Lifecycle
+
+Every effect instance runs the same lifecycle regardless of type:
+
+1. **fire(trigger, carrier)** — instantiate with resolved `params` (values may be read from the carrier, e.g. beam orientation from its hitbox).
+2. **update(dt)** — advance internal timers while active.
+3. **render(ctx)** — draw; screen-space effects render after the camera transform is restored.
+4. **complete** — removed from the active set when its duration elapses.
+
+Effects may be procedural Canvas effects, sprite-based animations, or compositions of multiple smaller effects (see Effect Composition).
+
+---
+
+## Trigger Table
+
+| # | effect | trigger(s) |
+|---|--------|-----------|
+| 1 | Particle Burst / Sparks | `collision`, `death`, `explosion`, `pickup`, `hitLanded` |
+| 2 | Explosion | `explosion`, `death` |
+| 3 | Debris | `death`, `explosion`, `collision` |
+| 4 | Ground Wave | `attackActive` (paired with a moving collision volume) |
+| 5 | Shockwave | `explosion`, `attackActive` |
+| 6 | Trail | `spawn`, `attackActive`; continuous (`moving`) |
+| 7 | Afterimage / Ghost Frames | `stateChange` (dash/supermove); continuous (`fastMoving`) |
+| 8 | Telegraph Circle | `stateChange` (attack windup begins) |
+| 9 | Ground Target Marker | `spawn` (projectile/missile created) |
+| 10 | Target Reticle | `spawn` (lock-on acquired), `stateChange` |
+| 11 | Damage Vignette | `damageTaken` |
+| 12 | Sprite Flash | `hitLanded`, `stateChange`, `damageTaken` |
+| 13 | Camera Shake | `explosion`, `hitLanded`, `attackActive` |
+| 14 | Screen Flash | `explosion`, `stateChange` |
+| 15 | Sprite Shake | `hitLanded`, `stateChange` |
+| 16 | Impact Star / Hit Pop | `hitLanded`, `collision` |
+| 17 | Fade Out | `death`, `stateChange` |
+| 18 | Scale / Pulse | `stateChange`, `spawn` |
+| 19 | Squash & Stretch | `stateChange` (jump/landing), `hitLanded` |
+| 20 | Dust Cloud | `stateChange` (landing/run start), `collision` |
+| 21 | Attack Arc / Slash | `attackActive` |
+| 22 | Aura / Glow | `stateChange`, `spawn` |
+| 23 | Screen Overlay | `stateChange` (boss phase / danger state) |
+| 24 | Composite Explosion Burst | `death`, `explosion` |
+| 25 | Heat Distortion *(experimental — out of scope for v1)* | `explosion` |
+| 26 | Beam | `attackActive` (oriented to its attached hitbox) |
 
 ---
 
@@ -419,15 +513,13 @@ A boss enters its death state. Over two seconds, explosions appear at random loc
 
 ---
 
-# Experimental Effect
-
-## 25. Heat Distortion *
+## 25. Heat Distortion *(experimental — out of scope for v1)*
 
 Creates the appearance of heated air or visual distortion around explosions, fire, machinery, or other heat sources.
 
 A simple Canvas implementation may simulate the effect using animated translucent distortion-like sprites. True dynamic distortion of the rendered scene would likely require WebGL/shader-based rendering.
 
-This effect is **experimental and optional**. It should not be considered a required capability of the initial Effects Engine.
+This effect is **experimental and out of scope for v1**. It must not be considered a required capability of the initial Effects Engine; it is documented here only so the catalog stays complete. It may be implemented later as any other `{ type, params }` effect without engine changes.
 
 Potential parameters:
 - Area
@@ -436,6 +528,40 @@ Potential parameters:
 - Animation speed
 - Opacity
 - Duration
+
+---
+
+## 26. Beam
+
+A directional rectangular beam — a lightsaber-style strike that extends from an origin along an axis, with a bright core and an alpha-gradient halo around it.
+
+Fired on `attackActive` from its **attached hitbox**: the beam's origin is captured once at fire time, while its orientation continuously tracks the attached hitbox for the beam's lifetime. So the beam always visually matches the collision volume that actually deals damage, even if the carrier re-orients between frames.
+
+Lifecycle: **flash-in then fade-out**. On fire the beam ramps from zero to full intensity over the flash-in time (a quick "ignition"), holds at full strength for the middle of its life, then fades to zero over the fade-out time ("extinguish"). Total lifetime = flashIn + hold + fadeOut (hold may be zero for a pure pulse).
+
+Rendering: a filled rectangle (length × width) rotated to the hitbox orientation, plus a halo drawn as layered strokes/fills with decreasing alpha out to the gradient radius — brightest at the core, transparent at the halo edge. No blur passes; the gradient is achieved with stacked alpha layers so it stays cheap on Canvas 2D.
+
+Parameters:
+- `length` — beam length in px (may default to the hitbox dimension along its axis)
+- `width` — beam core width in px
+- `gradientRadius` — halo extent beyond the core, in px
+- `color` — core/halo color
+- `flashInTime` — ignition ramp duration (s)
+- `fadeOutTime` — extinguish ramp duration (s)
+- `holdTime` — full-intensity hold between flash-in and fade-out (s, optional, default 0)
+- `origin` — beam start point in world coordinates; defaults to the corner of the attached hitbox nearest the carrier's facing point (or the hitbox center if the hitbox has no facing)
+- `orientation` — beam axis; defaults to the attached hitbox's long axis, resolved from the carrier's facing when the hitbox is square
+
+Example config:
+
+```js
+// A lightsaber slash: the beam mirrors the slash hitbox exactly.
+slashHitbox.effects = [
+  { on: 'attackActive', type: 'beam',
+    params: { length: 120, width: 8, gradientRadius: 14,
+              color: '#8ef', flashInTime: 0.05, fadeOutTime: 0.15 } },
+];
+```
 
 ---
 
@@ -455,7 +581,7 @@ A hero supermove could compose:
 
 `Aura + Afterimage + Trail + Sprite Flash + Particle Burst + Screen Flash`
 
-The Attack Engine determines **when and why** these effects occur. The Effects Engine determines **how they are visually rendered**.
+Compositions are themselves data: a list of `{ type, params }` entries sharing a trigger. The Attack Engine determines **when and why** these effects occur. The Effects Engine determines **how they are visually rendered**.
 
 # Core Rule
 
