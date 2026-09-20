@@ -86,10 +86,10 @@ hero:
     pop: 50
     dir_mode: from_attacker
   supermove_knockback: # shared by both heroes — strongest launch, longest stun, visible loft
-    base: 600
-    scale_by_speed: 0.5
-    hitstun: 0.50
-    pop: 150
+    base: 360
+    scale_by_speed: 0.3
+    hitstun: 0.30
+    pop: 90
     dir_mode: along_velocity
   # Note: explosion knockback is NOT declared here — it is carried on the
   # explosion subject itself (knockback.md §7: "An explosion → the explosion"),

@@ -62,11 +62,11 @@ ok('supermove (both heroes) carries the strongest launch', () => {
   for (const id of ['scarlet', 'balthazar']) {
     const kb = HEROES[id].attacks[ATTACK_SUPERMOVE].knockback;
     assert.ok(kb, `${id} supermove must expose a non-null knockback setting`);
-    assert.equal(kb.base, 600);
-    assert.equal(kb.scaleBySpeed, 0.5);
-    assert.equal(kb.hitstun, 0.50);
+    assert.equal(kb.base, 360);
+    assert.equal(kb.scaleBySpeed, 0.3);
+    assert.equal(kb.hitstun, 0.30);
     assert.equal(kb.dirMode, 'alongVelocity'); // scales with dash speed
-    assert.equal(kb.pop, 150);                 // biggest upward loft (§5)
+    assert.equal(kb.pop, 90);                  // biggest upward loft (§5)
   }
 });
 
@@ -100,11 +100,13 @@ ok('thorn / special projectile definitions carry NO knockback', () => {
   }
 });
 
-ok('strength ordering: super base > cartwheel base > sweep base', () => {
+ok('strength ordering: super base >= cartwheel base > sweep base', () => {
   const superBase = HEROES.scarlet.attacks[ATTACK_SUPERMOVE].knockback.base;
   const cartwheelBase = HEROES.scarlet.specialMelee.knockback.base;
   const sweepBase = HEROES.balthazar.specialMelee.knockback.base;
-  assert.ok(superBase > cartwheelBase, `super (${superBase}) must exceed cartwheel (${cartwheelBase})`);
+  // Supermove was tuned down to 60% of its original heft, so it now ties the
+  // cartwheel on base (360) and is distinguished by pop/scale instead.
+  assert.ok(superBase >= cartwheelBase, `super (${superBase}) must not be weaker than cartwheel (${cartwheelBase})`);
   assert.ok(cartwheelBase > sweepBase, `cartwheel (${cartwheelBase}) must exceed sweep (${sweepBase})`);
 });
 

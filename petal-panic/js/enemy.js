@@ -95,8 +95,9 @@ export class Enemy extends Entity {
 
   /**
    * Per-frame step. Order: hit-flash decay → death pipeline → AI → integrate.
-   * When dead we skip AI and integration entirely (the corpse doesn't move);
-   * we only advance the death clock. While hit-stunned we skip ai() but still
+   * When dead we skip AI but still integrate physics so a body that was just
+   * knocked back slides/arcs off before fading (the corpse doesn't take action);
+   * we also advance the death clock. While hit-stunned we skip ai() but still
    * integrate physics so the knockback shove plays out visibly (§6).
    *
    * @param {number} dt seconds (fixed 1/60)
@@ -117,6 +118,15 @@ export class Enemy extends Entity {
       if (this.timers.expired('death')) {
         this.alive = false; // fully gone — caller spawns effects + removes
       }
+      // Still integrate physics so a dying body that was just knocked back
+      // slides/arcs off before fading, instead of teleporting to its death spot.
+      // ai() is intentionally skipped (the corpse takes no action).
+      if (this.gravity > 0) {
+        this.vy += GRAVITY * this.gravity * dt;
+        if (this.vy > MAX_FALL_SPEED) this.vy = MAX_FALL_SPEED;
+      }
+      this.x += this.vx * dt;
+      this.y += this.vy * dt;
       return;
     }
 
@@ -179,10 +189,12 @@ export class Enemy extends Entity {
   }
 
   /**
-   * Enter the death pipeline. Velocity is zeroed so the corpse doesn't drift;
-   * the base update() then advances deathTimer until alive flips to false.
-   * Subclasses may override to add knockback or a specific death animation,
-   * but MUST call super.die() so the timing bookkeeping stays consistent.
+   * Enter the death pipeline. Velocity is zeroed so a corpse that was NOT just
+   * hit doesn't drift; the base update() then advances deathTimer while still
+   * integrating physics, so an enemy killed by a knockback on the same frame
+   * keeps sliding/arcing off before it fades. Subclasses may override to add
+   * knockback or a specific death animation, but MUST call super.die() so the
+   * timing bookkeeping stays consistent.
    */
   die() {
     if (this.aiState === 'dead') return; // already dying

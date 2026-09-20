@@ -38,10 +38,10 @@ const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }
 // bh: 'body' resolves to the hero's full body height; oy: 0 centers it on the
 // body center so it spans the full height symmetrically (no drift below feet).
 const SUPERMOVE_HITBOX = { ox: 20, oy: 0, bw: 16, bh: 'body' };
-// pop: 150 px/s upward launch (§5) — with GRAVITY 1500 a light enemy rises ~7.5px
-// and hangs ~0.2s: a visible loft of roughly a body-height or two at dash speed,
-// not an exaggerated rocket. The strongest of the three committed attacks.
-const SUPERMOVE_KNOCKBACK = { base: 600, scaleBySpeed: 0.5, hitstun: 0.50, dirMode: 'alongVelocity', pop: 150 };
+// pop: 90 px/s upward launch (§5) — with GRAVITY 1500 a light enemy rises ~2.7px
+// and hangs ~0.12s: a modest loft at dash speed (tuned down from the original
+// 150 rocket). The strongest of the three committed attacks.
+const SUPERMOVE_KNOCKBACK = { base: 360, scaleBySpeed: 0.3, hitstun: 0.30, dirMode: 'alongVelocity', pop: 90 };
 
 export const HEROES = {
   scarlet: {
