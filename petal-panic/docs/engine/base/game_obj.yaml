@@ -6,41 +6,18 @@ game_obj:
   def: {}                  # raw object definition
   hp: 60                   # current HP
   maxHp: 60
-  explosive: true          # explodes on destruction (AoE damage)
-  explodeRadius: 120       # px; also aliased to this.radius
+  explosion: null          # generic explosion config (docs/architecture/explosion.md); null = no blast
   coinDrop: null           # unified drop config (same shape as Enemy), null = no drop
   hitFlash: 0              # white flash timer when struck
   destroyed: false         # latched once HP hits 0
 
-  # --- barrel definitions ---
-  wood_barrel:
-    id: woodBarrel
-    w: 32
-    h: 48
-    hp: 40
-    explosive: false
-    explodeRadius: 0
-    coinDrop: null
-  explosive_barrel:
-    id: explosiveBarrel
-    w: 32
-    h: 48
-    hp: 60
-    explosive: true
-    explodeRadius: 120
-    coinDrop: null
-  coin_barrel:
-    id: coinBarrel
-    w: 32
-    h: 48
-    hp: 60
-    explosive: false
-    explodeRadius: 0
-    coinDrop:
-      min: 4
-      max: 6
-      chance: 1.0
-      types:
-        bronze: 0.7
-        silver: 0.25
-        gold: 0.05
+  # --- explosion property (docs/architecture/explosion.md) ---
+  # Any entity (GameObj, Enemy, projectile) can carry an .explosion object.
+  # When the entity detonates (barrel: HP→0; enemy: AI trigger), the engine
+  # calls resolveExplosion() with this config. No per-type special-casing.
+  #   radius      px AoE reach
+  #   damage      HP drain per valid target
+  #   alignment   'foe' | 'ally' | 'neutral' — decides who is hurt (§2)
+  #   knockback   KnockbackSetting with dirMode 'radial' (§4, knockback.md §7)
+  #
+  # explosive is a derived getter: get explosive() { return !!this.explosion }

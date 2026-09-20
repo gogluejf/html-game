@@ -1,12 +1,11 @@
-# Barrels (GameObj implementations) | petal-panic/docs/entities/barrels.yaml
+# Barrels (GameObj implementations) | js/object.js
 barrels:
   wood_barrel:
     id: woodBarrel
     w: 32
     h: 48
     hp: 40
-    explosive: false
-    explode_radius: 0
+    explosion: null         # no blast — just breaks into wood chips
     coin_drop: null
 
   explosive_barrel:
@@ -14,9 +13,19 @@ barrels:
     w: 32
     h: 48
     hp: 60
-    explosive: true
-    explode_radius: 120
-    barrel_damage: 25        # AoE damage on explosion
+    # --- explosion (docs/architecture/explosion.md) ---
+    # Neutral alignment: hurts everyone in range (hero AND enemies).
+    explosion:
+      radius: 120           # px AoE reach
+      damage: 25            # HP drain per target
+      alignment: neutral    # 'foe' | 'ally' | 'neutral' (§2)
+      knockback:
+        base: 380           # px/s radial shove strength
+        scale_by_speed: 0   # no motion term for explosions
+        hitstun: 0.30       # seconds victim AI freezes
+        i_frames: 0.60      # protection window (seconds)
+        dir_mode: radial    # push away from blast center (§4)
+        pop: 60             # fixed upward launch px/s (§5)
     coin_drop: null
 
   coin_barrel:
@@ -24,6 +33,5 @@ barrels:
     w: 32
     h: 48
     hp: 60
-    explosive: false
-    explode_radius: 0
+    explosion: null         # no damaging explosion — just a coin burst
     coin_drop: { min: 4, max: 6, chance: 1.0, types: { bronze: 0.7, silver: 0.25, gold: 0.05 } }

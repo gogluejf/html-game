@@ -1,4 +1,4 @@
-# Jack-O-Lantern | petal-panic/docs/entities/jack_o_lantern.yaml
+# Jack-O-Lantern | js/jackolantern.js
 jack_o_lantern:
   id: jackolantern
   name: "Jack-O-Lantern"
@@ -22,6 +22,21 @@ jack_o_lantern:
   fuse_time: 3              # seconds; auto-detonate after this
   launch_time: 0.4          # seconds telegraph before exploding
   explode_time: 0.3         # seconds explosion flash lasts
-  explode_radius: 80        # px; AoE radius
   spin_speed: 6             # rad/s visual spin while rolling
   aggro_release_mult: 1.5
+
+  # --- explosion (docs/architecture/explosion.md) ---
+  # Generic entity property: any entity with .explosion detonates via
+  # resolveExplosion() on trigger. Alignment 'foe' means it hurts the hero
+  # but spares other enemies. Knockback is radial (shoves victims outward).
+  explosion:
+    radius: 80              # px AoE reach
+    damage: 22              # HP drain per target
+    alignment: foe          # 'foe' | 'ally' | 'neutral' (§2)
+    knockback:
+      base: 300             # px/s radial shove strength
+      scale_by_speed: 0     # no motion term for explosions
+      hitstun: 0.25         # seconds victim AI freezes
+      i_frames: 0.40        # protection window (seconds)
+      dir_mode: radial      # push away from blast center (§4)
+      pop: 50               # fixed upward launch px/s (§5)

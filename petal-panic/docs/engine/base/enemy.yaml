@@ -52,3 +52,10 @@ enemy:
     # the caller derives the normalized direction. Body contact pushes away from
     # the attacker, so this resolves to from_attacker at impact.
   # Boss override (isBoss): { base: 340, scale_by_speed: 1.0, hitstun: 0.30, i_frames: 0.70 }
+
+  # --- explosion (docs/architecture/explosion.md) ---
+  # Optional generic property: any enemy def can declare an .explosion object.
+  # When the enemy detonates (e.g. Jack-O-Lantern sets .exploded = true), the
+  # engine calls resolveExplosion() with this config. null/absent = no blast.
+  # See entities/jack_o_lantern.yaml for a concrete example.
+  explosion: null       # { radius, damage, alignment, knockback } or null
