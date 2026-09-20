@@ -94,9 +94,9 @@ class EffectInstance {
   }
 
   /** Render. No-op once done. (Spec §Lifecycle names this step `render`.) */
-  render(ctx) {
+  render(ctx, renderCtx = {}) {
     if (this.done) return;
-    if (typeof this.body.render === 'function') this.body.render(ctx);
+    if (typeof this.body.render === 'function') this.body.render(ctx, renderCtx);
   }
 
   /** Force-complete (used by resetEffects and continuous deactivation). */
@@ -260,9 +260,12 @@ export function updateEffects(dt) {
  * Draw all active instances. Screen-space effects should render after the
  * camera transform is restored (their responsibility, not the engine's).
  * @param {object} ctx CanvasRenderingContext2D
+ * @param {object} [renderCtx] optional context handed to each instance's
+ *   render() as its second argument (e.g. { view: { w, h } } for screen-space
+ *   overlays that need viewport dims at draw time)
  */
-export function drawEffects(ctx) {
-  for (const inst of active) inst.render(ctx);
+export function drawEffects(ctx, renderCtx = {}) {
+  for (const inst of active) inst.render(ctx, renderCtx);
 }
 
 /**

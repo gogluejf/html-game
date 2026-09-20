@@ -1,59 +1,115 @@
-// Petal Panic — central effects module (design §12).
+// Petal Panic — central effects module (design §12) — COMPAT SHIM.
 //
-// One-stop API for every screen-space + entity-space visual effect. Pure VFX:
-// no collision, no logic impact. Reuses the pooled particle system from
-// js/particles.js for all burst-style effects; owns its own timers for the
-// screen-space overlays (damage vignette, white flash) and the per-enemy hit
-// shake.
+// Task 2.2: this file used to be the monolith that owned every visual effect
+// inline. It is now a thin compatibility layer over the Effect Engine
+// (js/effects/): importing this module registers the eight migrated effect
+// types, and every legacy Effects.* method forwards to the engine's single
+// fire path (fireManual / updateEffects / drawEffects / resetEffects).
+// systems/update.js and systems/render.js call sites are untouched.
 //
-// Screen-space state (read by render.js via drawOverlay / getShakeOffset):
-//   - vignette    0..1  red edge glow when the hero takes damage (decays 0.5s)
-//   - screenFlash 0..1  white full-screen flash on big explosions (decays 0.15s)
+// Behavior parity with the pre-refactor monolith (reference:
+// .squid-os/plans/effect-engine/effect-reference.txt) is preserved by routing
+// through the migrated per-effect files, which own all tunables:
+//   - hitSparkle.js    count roll [3,5], speed [60,140], BLOOD_COLORS
+//   - deathSparkle.js  count = max(4, round(8 + size*0.25))
+//   - pickupPop.js     fixed 8, evenly spaced ring, speed [100,180]
+//   - explosion.js     count = min(24, 12 + round(radius*0.15)), FIRE_COLORS
+//   - vignette.js      linear decay over 0.5s, radial gradient stops
+//   - screenFlash.js   linear decay over 0.15s, white fill at alpha=value
+//   - spriteShake.js   ±3px while carrier.hitFlash > 0
+// No tunable constants live in this file anymore.
 //
-// Entity-space helpers:
-//   - spawnHitSparkles(x, y, n)      small red "blood" sparkles on projectile hits
-//   - spawnDeathSparkle(x, y, size)  sparkle burst scaled to a sprite's size
-//   - spawnPickupPop(x, y, color)    powerup collect pop
-//   - spawnExplosion(x, y, radius)   barrel/bomb blast (orange/red, sized to AoE)
-//   - beginEnemyShake(entity)       ±3px random offset for 0.1s while hitFlash runs
-//
-// The enemy shake is driven off the entity's existing `hitFlash` timer so we
-// don't need a second clock: update() recomputes the offset each frame while
-// hitFlash > 0 and zeroes it when the flash ends.
+// Screen-space state (read via the `vignette` / `screenFlash` getters for
+// tests/debug): mirrors the engine's active instance values each frame —
+// the singleton semantics of the old API, backed by one engine instance per
+// overlay type (max() kick on fire, linear decay, zero when faded).
 
 import { particles } from './particles.js';
+import { VIEW_W, VIEW_H } from './view.js'; // viewport dims for screen-space overlay fires
+import {
+  fireManual,
+  updateEffects as stepEngine,
+  drawEffects,
+  resetEffects,
+} from './effects/index.js';
+import { SHAKE_AMT, getShakeOffset } from './effects/spriteShake.js'; // single owner of the ±3px tunable + jitter math
+import './effects/registry.js'; // side effect: registers the eight migrated types
 
-// --- Tunables -----------------------------------------------------------------
-const VIGNETTE_DECAY = 1 / 0.5;     // full fade over 0.5s (CoD-style, subtle)
-const FLASH_DECAY = 1 / 0.15;       // full fade over 0.15s (brief white pop)
-const HIT_SPARKLE_COUNT = [3, 5];   // design §12: 3–5 red sparkles per hit
-const HIT_SPARKLE_SPEED = [60, 140];
-const DEATH_SPARKLE_BASE = 8;       // baseline sparkle count at 32px sprite width
-const PICKUP_POP_COUNT = 8;
-const EXPLOSION_MIN = 12;           // min particles for an explosion blast
-const EXPLOSION_PER_PX = 0.15;      // extra particles per px of radius
-const SHAKE_AMT = 3;                // ±3px (design §12 "fast shake")
+// --- Screen-space singleton mirror ---------------------------------------------
+// The engine owns the instances; these slots expose the same read surface the
+// old monolith had (Effects.vignette / Effects.screenFlash) and drive the
+// "kick, never lower" merge rule: a new fire only replaces the running
+// instance when it would raise the value (monolith: Math.max(current, s)).
+let vignetteInstance = null;
+let flashInstance = null;
 
-// Warm fire palette shared by explosions.
-const FIRE_COLORS = ['#e74c3c', '#f39c12', '#ff6ec7', '#ffffff'];
-// Blood-like palette for projectile hit sparkles.
-const BLOOD_COLORS = ['#e74c3c', '#c0392b', '#ff6b6b'];
+/** Live intensity 0..1 of a tracked overlay instance (body holds the value). */
+function overlayValue(inst) {
+  return inst ? inst.body.value : 0;
+}
+
+/** Current vignette intensity 0..1 (0 when no active instance). */
+export function getVignetteValue() {
+  return vignetteInstance && !vignetteInstance.done ? overlayValue(vignetteInstance) : 0;
+}
+
+/** Current screen-flash intensity 0..1 (0 when no active instance). */
+export function getScreenFlashValue() {
+  return flashInstance && !flashInstance.done ? overlayValue(flashInstance) : 0;
+}
+
+/**
+ * Fire a screen-space overlay through the engine with the old singleton
+ * semantics: if an instance of the same type is still active and its current
+ * value is >= the new strength, keep it (never lower); otherwise complete the
+ * old one and spawn a fresh instance kicked to the clamped strength. The
+ * viewport dims ride in the fire-time ctx ({ view: { w, h } }) so the migrated
+ * factories can read them (they also accept draw-time renderCtx).
+ * @param {'vignette'|'screen-flash'} type
+ * @param {number} strength desired intensity (clamped 0..1 by the factory)
+ * @param {(type:string, params:object)=>object|null} fireFn
+ * @param {object|null} current the currently tracked instance
+ * @returns {object|null} the instance now being tracked
+ */
+function kickOverlay(type, strength, fireFn, current) {
+  const clamped = Math.min(1, Math.max(0, strength));
+  if (current && !current.done && overlayValue(current) >= clamped) return current;
+  if (current) current.complete();
+  const next = fireFn(type, { strength });
+  return next ?? current; // unknown type → keep whatever was there (no throw)
+}
+
+// --- Entity-space spawners ------------------------------------------------------
+
+/**
+ * Spawn a one-shot burst effect and report how many particles actually
+ * entered the shared pool (pool exhaustion caps the count — monolith parity).
+ * @param {{x:number,y:number}} p point
+ * @param {number} before particle count before firing
+ * @param {() => void} fire fn that fires the effect once
+ * @returns {number} particles actually spawned
+ */
+function spawnCounted(p, before, fire) {
+  fire();
+  return particles.count - before;
+}
 
 // ---------------------------------------------------------------------------
-// Effects singleton
+// Effects singleton (compat facade — every legacy method keeps its signature)
 // ---------------------------------------------------------------------------
 
 export const Effects = {
-  // --- Screen-space state ---------------------------------------------------
-  vignette: 0,      // 0..1 red edge glow
-  screenFlash: 0,   // 0..1 white overlay
+  // --- Screen-space state (legacy read surface) -------------------------------
+  get vignette() { return getVignetteValue(); },
+  get screenFlash() { return getScreenFlashValue(); },
 
   /**
    * Hero took damage → kick the red vignette to full. Decays in update().
    * @param {number} [strength=1] 0..1 initial intensity
    */
   heroDamaged(strength = 1) {
-    this.vignette = Math.max(this.vignette, Math.min(1, strength));
+    vignetteInstance = kickOverlay('vignette', strength,
+      (t, params) => fireManual({ type: t, params }, null, { view: { w: VIEW_W, h: VIEW_H } }), vignetteInstance);
   },
 
   /**
@@ -61,7 +117,8 @@ export const Effects = {
    * @param {number} [strength=1] 0..1 initial intensity
    */
   bigExplosion(strength = 1) {
-    this.screenFlash = Math.max(this.screenFlash, Math.min(1, strength));
+    flashInstance = kickOverlay('screen-flash', strength,
+      (t, params) => fireManual({ type: t, params }, null, { view: { w: VIEW_W, h: VIEW_H } }), flashInstance);
   },
 
   // --- Entity-space spawners --------------------------------------------------
@@ -75,15 +132,10 @@ export const Effects = {
    * @returns {number} sparkles actually spawned
    */
   spawnHitSparkles(x, y, count) {
-    const n = count ?? (HIT_SPARKLE_COUNT[0] + Math.floor(Math.random() * (HIT_SPARKLE_COUNT[1] - HIT_SPARKLE_COUNT[0] + 1)));
-    let spawned = 0;
-    for (let i = 0; i < n; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = HIT_SPARKLE_SPEED[0] + Math.random() * (HIT_SPARKLE_SPEED[1] - HIT_SPARKLE_SPEED[0]);
-      const color = BLOOD_COLORS[i % BLOOD_COLORS.length];
-      if (particles.spawnOne(x, y, color, speed, angle)) spawned++;
-    }
-    return spawned;
+    const before = particles.count;
+    return spawnCounted({ x, y }, before, () => {
+      fireManual({ type: 'hit-sparkle', params: { x, y, ...(count != null ? { count } : {}) } });
+    });
   },
 
   /**
@@ -96,8 +148,10 @@ export const Effects = {
    * @returns {number} sparkles actually spawned
    */
   spawnDeathSparkle(x, y, size = 32) {
-    const count = Math.max(4, Math.round(DEATH_SPARKLE_BASE + size * 0.25));
-    return particles.spawnBurst(x, y, count);
+    const before = particles.count;
+    return spawnCounted({ x, y }, before, () => {
+      fireManual({ type: 'death-sparkle', params: { x, y, size } });
+    });
   },
 
   /**
@@ -109,14 +163,10 @@ export const Effects = {
    * @returns {number} sparkles actually spawned
    */
   spawnPickupPop(x, y, color = '#ffffff') {
-    let spawned = 0;
-    for (let i = 0; i < PICKUP_POP_COUNT; i++) {
-      // Evenly spaced angles give a clean "pop ring".
-      const angle = (i / PICKUP_POP_COUNT) * Math.PI * 2;
-      const speed = 100 + Math.random() * 80;
-      if (particles.spawnOne(x, y, color, speed, angle)) spawned++;
-    }
-    return spawned;
+    const before = particles.count;
+    return spawnCounted({ x, y }, before, () => {
+      fireManual({ type: 'pickup-pop', params: { x, y, color } });
+    });
   },
 
   /**
@@ -129,93 +179,78 @@ export const Effects = {
    * @returns {number} particles actually spawned
    */
   spawnExplosion(x, y, radius = 60) {
-    const count = Math.min(24, EXPLOSION_MIN + Math.round(radius * EXPLOSION_PER_PX));
-    let spawned = 0;
-    for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 120 + Math.random() * (radius * 1.5);
-      const color = FIRE_COLORS[i % FIRE_COLORS.length];
-      if (particles.spawnOne(x, y, color, speed, angle)) spawned++;
-    }
-    return spawned;
+    const before = particles.count;
+    return spawnCounted({ x, y }, before, () => {
+      fireManual({ type: 'explosion', params: { x, y, radius } });
+    });
   },
 
   /**
    * Mark an entity as shaking (design §12 "Enemy damaged: fast shake"). The
    * shake rides on the entity's existing hitFlash timer (0.1s), so just set
-   * hitFlash — update() then calls getShakeOffset(e) each frame to read the
-   * random offset. This helper exists so callers have one semantic call site.
+   * hitFlash — render reads getShakeOffset(e) each frame for the random
+   * offset. Firing the engine's sprite-shake type also tracks the instance so
+   * it prunes itself once the flash decays.
    * @param {object} e any entity with a hitFlash timer
    */
   beginEnemyShake(e) {
     if (!e) return;
-    e.hitFlash = Math.max(e.hitFlash ?? 0, 0.1);
+    fireManual({ type: 'sprite-shake', params: {} }, e);
   },
 
   /**
    * Per-frame random shake offset for an entity whose hitFlash is running.
    * Returns {x,y} in [-SHAKE_AMT, +SHAKE_AMT] while hitFlash > 0, else {0,0}.
-   * Callers add this to the entity's draw position.
+   * Callers add this to the entity's draw position. Thin stateless read
+   * helper (monolith parity): it reads carrier.hitFlash directly — the same
+   * expiry signal the engine instance uses — so no engine lookup is needed
+   * here; the computation and SHAKE_AMT live in spriteShake.js (single owner).
    * @param {object} e entity with a hitFlash timer
    * @returns {{x:number,y:number}}
    */
   getShakeOffset(e) {
-    if (!e || !(e.hitFlash > 0)) return { x: 0, y: 0 };
-    return {
-      x: (Math.random() * 2 - 1) * SHAKE_AMT,
-      y: (Math.random() * 2 - 1) * SHAKE_AMT,
-    };
+    return getShakeOffset(e);
   },
 
-  // --- Frame step -------------------------------------------------------------
+  // --- Frame step --------------------------------------------------------------
 
   /**
-   * Decay the screen-space timers. Called once per fixed step from update().
+   * Step the engine (all active effect instances). The shared particle pool is
+   * NOT advanced here: systems/update.js advances it exactly once per frame via
+   * particles.updateAll(dt) at its own call site. The monolith's update() did
+   * not advance particles either, and the engine prunes completed one-shot
+   * instances from its active set on this step, so nothing lingers.
    * @param {number} dt seconds
    */
   update(dt) {
-    if (this.vignette > 0) {
-      this.vignette = Math.max(0, this.vignette - VIGNETTE_DECAY * dt);
-    }
-    if (this.screenFlash > 0) {
-      this.screenFlash = Math.max(0, this.screenFlash - FLASH_DECAY * dt);
-    }
+    stepEngine(dt);
+    // The engine prunes completed instances from its active set, so the shim's
+    // tracked overlay slots must clear themselves once their instance is done —
+    // otherwise a stale slot would keep serving reads (and kickOverlay's
+    // "never lower" rule would compare against a dead instance).
+    if (vignetteInstance && vignetteInstance.done) vignetteInstance = null;
+    if (flashInstance && flashInstance.done) flashInstance = null;
   },
 
   /**
    * Draw the screen-space overlays (vignette + white flash) in VIEWPORT space.
    * Must be called AFTER the camera translate has been restored, so it covers
-   * the whole logical viewport regardless of scroll.
+   * the whole logical viewport regardless of scroll. Delegates to the engine's
+   * drawEffects() so every active renderable instance (including declaratively
+   * fired ones) completes its lifecycle; the viewport dims are handed to each
+   * instance via a { view: { w, h } } context because the migrated screen-space
+   * factories read their viewport from fire-time params/ctx.
    * @param {CanvasRenderingContext2D} ctx
    * @param {number} viewW logical viewport width (VIEW_W)
    * @param {number} viewH logical viewport height (VIEW_H)
    */
   drawOverlay(ctx, viewW, viewH) {
-    // --- Red damage vignette (CoD-style radial gradient) ---------------------
-    if (this.vignette > 0) {
-      const v = this.vignette;
-      const cx = viewW / 2, cy = viewH / 2;
-      // Gradient reaches full red only at the corners; the center stays clear.
-      const r = Math.hypot(cx, cy);
-      const grad = ctx.createRadialGradient(cx, cy, r * 0.45, cx, cy, r);
-      grad.addColorStop(0, 'rgba(180, 20, 20, 0)');
-      grad.addColorStop(0.7, `rgba(180, 20, 20, ${0.15 * v})`);
-      grad.addColorStop(1, `rgba(150, 10, 10, ${0.55 * v})`);
-      ctx.save();
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, viewW, viewH);
-      ctx.restore();
-    }
-
-    // --- White explosion flash -----------------------------------------------
-    if (this.screenFlash > 0) {
-      const f = this.screenFlash;
-      ctx.save();
-      ctx.globalAlpha = f;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, viewW, viewH);
-      ctx.restore();
-    }
+    // Screen-space effects own their "draw after camera restore" ordering
+    // (render.js calls this post-restore); entity-space instances have no-op
+    // renders here, so one engine pass covers both without changing order.
+    // The viewport dims ride in renderCtx because the migrated screen-space
+    // factories read their viewport from fire-time params/ctx.
+    drawEffects(ctx, { view: { w: viewW, h: viewH } });
   },
 
   /**
@@ -223,7 +258,8 @@ export const Effects = {
    * bleed into the next life).
    */
   reset() {
-    this.vignette = 0;
-    this.screenFlash = 0;
+    resetEffects();
+    vignetteInstance = null;
+    flashInstance = null;
   },
 };

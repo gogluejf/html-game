@@ -46,7 +46,7 @@
     },
     "2.1": {
       "number": "2.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Split the monolith into per-effect files",
       "milestone": "Migrate Existing Effects onto the Engine",
       "milestone_number": "2",
@@ -61,10 +61,15 @@
     },
     "2.2": {
       "number": "2.2",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Re-point Effects.* API to the engine as a compat shim",
       "milestone": "Migrate Existing Effects onto the Engine",
-      "milestone_number": "2"
+      "milestone_number": "2",
+      "summary": {
+        "lessons_learned": "EffectInstance wraps factory output in .body; any shim code touching live effect state (value/done) must go through inst.body. Engine's updateEffects splices completed instances out of the active array, so external references to them become stale \u2014 tracked-slot holders must null themselves on done. complete() on a kicked-out old instance is safe: it only flips done + calls body.complete() if present, no active-set bookkeeping needed.",
+        "done": "Fixed compat shim value access: getVignetteValue/getScreenFlashValue and kickOverlay's never-lower rule now read instance.body.value (EffectInstance exposes the effect body as .body). update() now clears the tracked overlay slots when their instance completes, since the engine prunes done instances from its active set.",
+        "failures": "None \u2014 effects.test.js 20/20, run-all 35/35 green."
+      }
     },
     "2.3": {
       "number": "2.3",

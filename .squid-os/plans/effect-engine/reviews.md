@@ -61,6 +61,22 @@ Note: run-all.mjs has two pre-existing flaky files unrelated to this plan — co
 
 **Resolution:** ACCEPT (fix). New js/effects/registry.js registers all 8 types (kebab-case spec names mapped in one place; side-effect module, no circular imports) + effectsRegistry.test.js proves each resolves through real fire()/fireManual(); spriteShake marks done on hitFlash expiry; negative-strength clamp at fire time (both overlay effects); palettes.js single source for shared color arrays; magic numbers extracted; mid-decay epsilon assertion added. Re-verify: 35/35 green ×2. Committed.
 
+## Task 2.2 — Re-point Effects.* API to the engine as a compat shim
+
+**Review A:** FAIL (2 blocker, 1 major, 1 minor)
+- blocker: effects.js:238 — Effects.update() advanced particles again; update.js already advances them → double/triple speed, half lifetime
+- blocker: effects.js:247 — drawOverlay never passed viewW/viewH to instances → overlays silently invisible at runtime
+- major: no shim-level end-to-end test (kick→step→read, drawOverlay mock ctx)
+- minor: SHAKE_AMT duplicated between shim and spriteShake.js
+
+**Review B:** FAIL (2 blocker, 2 major)
+- blocker: effects.js:238 — same particle double-step (B counted three advances/frame given two Effects.update calls)
+- blocker: effects.js:249 — drawOverlay ignores viewport dims, same root cause as A-blocker 2
+- major: effects.js:249 — drawOverlay rendered only shim-tracked instances instead of delegating to engine drawEffects()
+- major: effects.js:38 — SHAKE_AMT + jitter logic duplicate spriteShake.js (single-owner violation)
+
+**Resolution:** ACCEPT (fix). Removed particles.updateAll from the shim's update() (pool advances exactly once per frame via update.js, proven by new test); drawOverlay now routes through the engine's drawEffects() with { view: { w, h } } ctx so declaratively fired renderable effects also complete their lifecycle; SHAKE_AMT exported from spriteShake.js as single owner, shim consumes it; new js/test/effectsShim.test.js (11 tests, fixed dt = 1/60): kick→step→read ≈0.5±ε after 15 frames, linear flash decay, never-lower merge rule, reset clears tracked overlays, drawOverlay issues real gradient/fill/alpha canvas calls via mock ctx, pool untouched by Effects.update, shake constant ownership. Re-verify: 36/36 green (barrel.solid pre-existing flake re-run clean ×3). Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
