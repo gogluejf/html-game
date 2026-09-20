@@ -46,10 +46,18 @@
     },
     "2.1": {
       "number": "2.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Split the monolith into per-effect files",
       "milestone": "Migrate Existing Effects onto the Engine",
-      "milestone_number": "2"
+      "milestone_number": "2",
+      "summary": {
+        "lessons_learned": "One-shot burst effects report done at fire time and are intentionally pruned from the active set by spawnFromConfig \u2014 a registration test asserting activeCount()==1 after firing a burst type will fail; use a screen-space type (vignette/screen-flash) for the 'entered the active set' assertion. The engine does not own the carrier's hitFlash countdown, so a spriteShake test must manually decay e.hitFlash across frames before update() can observe the expiry. Re-ran the two known-flaky tests (contextualAim, barrel.solid) once \u2014 both passed this run.",
+        "decisions": "Registration home = dedicated js/effects/registry.js (side-effect module) rather than inline in index.js: keeps the engine core free of concrete effect imports and avoids any circular-import risk (index.js never imports back). One-line-per-effect layout so M3\u2013M7 extend trivially. Importing registry.js is idempotent (registerEffect overwrites by key). spriteShake done-on-expiry reads the carrier's hitFlash (which the carrier owns/countdowns) rather than keeping a second clock \u2014 matches monolith getShakeOffset zeroing-out behavior. Negative-strength clamp applied at fire time in the factory, not in render/update guards, so value is correct from construction.",
+        "failures": "None",
+        "confidence": "high",
+        "done": "Resolved all review findings on per-effect files (2.1). B-blocker: created js/effects/registry.js registering all eight migrated factories (hit-sparkle, death-sparkle, pickup-pop, explosion, particle-burst, vignette, screen-flash, sprite-shake) via registerEffect; added effectsRegistry.test.js proving each of the 8 types resolves through the real fire()/fireManual() path plus one carrier-declared fire(). B-major x2: vignette.js + screenFlash.js now clamp strength to [0,1] (Math.min(1, Math.max(0, params.strength ?? 1))) so negative strength collapses to 0 \u2192 no render + done immediately; added tests for both. B-major: spriteShake.js update() now marks done when carrier.hitFlash has fully decayed (monolith expiry semantics), so the engine prunes it instead of leaving an inert instance active forever; added a frames-to-done test. A-1: extracted BLOOD_COLORS/FIRE_COLORS into shared js/effects/palettes.js, single source consumed by hitSparkle.js + explosion.js (monolith untouched until 2.2). A-2/A-3: named constants PICKUP_POP_SPEED=[100,180] in pickupPop.js and EXPLOSION_BASE_SPEED=120 / EXPLOSION_SPEED_PER_PX=1.5 in explosion.js. A-4: vignette decay test now asserts the mid-decay linear value within 1e-9 at 0.25s.",
+        "tradeoffs": "Type names use kebab-case matching the effects.md catalog/trigger-table vocabulary rather than the camelCase factory names \u2014 registry.js is the single mapping point, so M3\u2013M7 just add one import + one line. palettes.js duplicates the two arrays from the still-live monolith until 2.2 re-points it; acceptable since the new files must share ONE copy and the monolith is slated for removal."
+      }
     },
     "2.2": {
       "number": "2.2",

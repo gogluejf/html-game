@@ -46,6 +46,21 @@ Note: run-all.mjs has two pre-existing flaky files unrelated to this plan — co
 
 **Resolution:** ACCEPT (fix). Contract split into REQUIRED (effects; isConditionMet when continuous present) vs OPTIONAL geometry (origin/facing/size — consumed by effects like Beam, never by the engine); attachEffects accepts continuous-only entries (still rejects entries with neither); new Cross-kind section proves 5 plain-object carrier shapes fire through the real fire() path with zero engine change; dir vector-only; zero-length dir warns. Re-verify: 33/33 green (flake re-run confirmed pre-existing, see note above). Committed.
 
+## Task 2.1 — Split the monolith into per-effect files
+
+**Review A:** PASS (4 minor)
+- minor: BLOOD_COLORS/FIRE_COLORS duplicated from monolith → shared palettes.js
+- minor: magic numbers inline in pickupPop.js (100/80) and explosion.js (120/1.5) → named constants
+- minor: decay tests only assert terminal zero → added mid-decay linear-curve assertion
+
+**Review B:** FAIL (1 blocker, 3 major)
+- blocker: index.js:42 — none of the 8 migrated factories registered; engine lookup cannot instantiate any migrated type
+- major: spriteShake.js:38 — update never completes when carrier.hitFlash expires (inert instance forever)
+- major: vignette.js:25 — negative strength not clamped to [0,1] as the monolith effectively did
+- major: screenFlash.js:25 — same clamp gap
+
+**Resolution:** ACCEPT (fix). New js/effects/registry.js registers all 8 types (kebab-case spec names mapped in one place; side-effect module, no circular imports) + effectsRegistry.test.js proves each resolves through real fire()/fireManual(); spriteShake marks done on hitFlash expiry; negative-strength clamp at fire time (both overlay effects); palettes.js single source for shared color arrays; magic numbers extracted; mid-decay epsilon assertion added. Re-verify: 35/35 green ×2. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
