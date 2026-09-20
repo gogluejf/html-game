@@ -11,6 +11,7 @@
 import { strict as assert } from 'node:assert';
 import { Hero } from '../hero.js';
 import { HEROES, ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from '../heroDefs.js';
+import { applyKnockback } from '../knockback.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -65,7 +66,17 @@ ok('supermove (both heroes) carries the strongest launch', () => {
     assert.equal(kb.scaleBySpeed, 0.5);
     assert.equal(kb.hitstun, 0.50);
     assert.equal(kb.dirMode, 'alongVelocity'); // scales with dash speed
+    assert.equal(kb.pop, 150);                 // biggest upward loft (§5)
   }
+});
+
+ok('sweep and cartwheel carry a smaller pop than the supermove (§5)', () => {
+  const sweepPop = HEROES.balthazar.specialMelee.knockback.pop;
+  const cartwheelPop = HEROES.scarlet.specialMelee.knockback.pop;
+  const superPop = HEROES.scarlet.attacks[ATTACK_SUPERMOVE].knockback.pop;
+  assert.ok(sweepPop > 0 && cartwheelPop > 0, 'special melee pops must be positive');
+  assert.ok(superPop > cartwheelPop, `super pop (${superPop}) must exceed cartwheel pop (${cartwheelPop})`);
+  assert.ok(superPop > sweepPop, `super pop (${superPop}) must exceed sweep pop (${sweepPop})`);
 });
 
 ok('normal melee carries NO knockback (damage only, v1)', () => {
@@ -132,6 +143,68 @@ ok('normal melee hitbox resolves WITHOUT knockback', () => {
     const box = h.attackHitboxWorld(ATTACK_MELEE);
     assert.ok(box, 'active-frame melee must resolve a box');
     assert.equal(box.knockback, undefined, 'melee box must carry no knockback');
+  }
+});
+
+console.log('Vertical pop on hard hits (§5 — 2D knockback)');
+
+// Plain stand-in victim: only the fields applyKnockback reads/writes.
+const mkVictim = (resist = 1) => ({ vx: 0, vy: 0, knockbackResist: resist });
+
+// A ground-level supermove hit: the dash normal is horizontal (alongVelocity,
+// hero moving purely horizontally), so without a pop the victim would slide
+// sideways with NO upward motion. The pop must supply the loft.
+ok('a supermove hit sets victim.vy upward proportional to strength', () => {
+  const kb = HEROES.scarlet.attacks[ATTACK_SUPERMOVE].knockback;
+  const v = mkVictim(1);
+  // Attacker dashing right at ~900 px/s → alongVelocity normal is +x, y=0.
+  const applied = applyKnockback(v, { vx: 900, vy: 0 }, kb, { x: 1, y: 0 });
+  assert.equal(applied, true);
+  assert.ok(v.vy < 0, `expected upward (negative) vy, got ${v.vy}`);
+  // Exact pop: 150 / resist 1 straight up.
+  assert.ok(Math.abs(v.vy - (-kb.pop)) < 1e-9, `expected vy=-${kb.pop}, got ${v.vy}`);
+  // Horizontal shove still lands along the dash direction.
+  assert.ok(v.vx > 0, `expected positive vx, got ${v.vx}`);
+});
+
+ok('supermove pop scales down for heavier victims (mass resists the loft)', () => {
+  const kb = HEROES.balthazar.attacks[ATTACK_SUPERMOVE].knockback;
+  const light = mkVictim(1);
+  const heavy = mkVictim(2);
+  applyKnockback(light, { vx: 900, vy: 0 }, kb, { x: 1, y: 0 });
+  applyKnockback(heavy, { vx: 900, vy: 0 }, kb, { x: 1, y: 0 });
+  assert.ok(Math.abs(heavy.vy - light.vy / 2) < 1e-9, `heavy vy=${heavy.vy} should be half of light vy=${light.vy}`);
+});
+
+ok('sweep gives a smaller hop than the supermove (tuned, not exaggerated)', () => {
+  const sweepKb = HEROES.balthazar.specialMelee.knockback;
+  const superKb = HEROES.scarlet.attacks[ATTACK_SUPERMOVE].knockback;
+  const sweepVictim = mkVictim(1);
+  const superVictim = mkVictim(1);
+  // Sweep lunges toward facing at travelSpeed 300 → horizontal normal.
+  applyKnockback(sweepVictim, { vx: 300, vy: 0 }, sweepKb, { x: 1, y: 0 });
+  applyKnockback(superVictim, { vx: 900, vy: 0 }, superKb, { x: 1, y: 0 });
+  assert.ok(sweepVictim.vy < 0, 'sweep must still pop upward');
+  assert.ok(-sweepVictim.vy < -superVictim.vy,
+    `sweep pop (${Math.abs(sweepVictim.vy)}) must be smaller than super pop (${Math.abs(superVictim.vy)})`);
+});
+
+ok('a Thorn hit (no knockback) leaves vy unchanged', () => {
+  // Friendly Thorn carries no knockback data anywhere — the core wiring gates
+  // on presence of hb.knockback, so applyKnockback never runs for it. Prove
+  // both halves: null/undefined settings are pure no-ops, and thorn/special
+  // attack definitions expose no knockback field at all.
+  const v = mkVictim(1);
+  v.vx = 10; v.vy = -5; // pre-existing velocity must survive untouched
+  assert.equal(applyKnockback(v, { vx: 0, vy: 0 }, null, { x: 1, y: 0 }), false);
+  assert.equal(applyKnockback(v, { vx: 0, vy: 0 }, undefined, { x: 1, y: 0 }), false);
+  assert.equal(v.vy, -5, 'vy must be unchanged by a no-knockback hit');
+  assert.equal(v.vx, 10, 'vx must be unchanged by a no-knockback hit');
+  assert.equal(v.hitstunTimer, undefined, 'no stun from a no-knockback hit');
+  for (const id of ['scarlet', 'balthazar']) {
+    const def = HEROES[id];
+    assert.equal(def.attacks.knockback, undefined);
+    assert.equal(def.specialMelee.hitbox.knockback, undefined);
   }
 });
 

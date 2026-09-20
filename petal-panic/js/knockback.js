@@ -19,6 +19,12 @@
  * @property {number} [iFrames]     Protection window in seconds; 0/absent = none (§6).
  * @property {'fromAttacker'|'alongVelocity'|'radial'} dirMode Direction mode (§4) — informational here;
  *                                   the caller derives the normalized direction from it.
+ * @property {number} [pop]         Fixed upward launch (px/s) added on top of the directional
+ *                                   impulse (§5): hard hits pop the victim off the ground so it
+ *                                   falls back under existing gravity. Independent of the push
+ *                                   normal, because these attacks shove horizontally at ground
+ *                                   level and would otherwise impart no vertical motion. 0/absent
+ *                                   = no pop. Scales with mass like the rest of the shove.
  */
 
 /**
@@ -34,6 +40,9 @@
  *                   shove (§3). knockbackResist defaults to 1 (no change).
  *
  * The result is applied as a 2D impulse (so strong hits loft the victim upward, §5),
+ * plus an optional fixed upward `pop` launch (§5) for attacks that shove horizontally
+ * at ground level and would otherwise impart no vertical motion. Both fall back under
+ * existing gravity — there is no separate bounce system.
  * and the victim's stun / protection TTLs are set (never shortened by a weaker follow-up).
  *
  * @param {object} victim    Entity being hit. Reads/writes vx, vy; reads knockbackResist
@@ -67,6 +76,14 @@ export function applyKnockback(victim, attacker, knockback, normal) {
   // 2D impulse along the (caller-normalized) push direction (§5).
   victim.vx += nx * mag;
   victim.vy += ny * mag;
+
+  // Vertical pop (§5): a fixed upward launch on top of the directional impulse.
+  // These attacks shove horizontally at ground level, so the normal alone carries
+  // little/no vertical component — without this, hard hits would slide victims
+  // sideways but never loft them. Negative y = up in screen coords. Scales with
+  // mass like the rest of the shove; absent/0 leaves vy untouched by the pop.
+  const pop = (knockback.pop ?? 0) / resist;
+  if (pop > 0) victim.vy -= pop;
 
   // Stun (§6): never shorten an existing longer stun. Physics keep running during it.
   victim.hitstunTimer = Math.max(victim.hitstunTimer ?? 0, knockback.hitstun ?? 0);

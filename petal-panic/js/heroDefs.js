@@ -38,7 +38,10 @@ const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }
 // bh: 'body' resolves to the hero's full body height; oy: 0 centers it on the
 // body center so it spans the full height symmetrically (no drift below feet).
 const SUPERMOVE_HITBOX = { ox: 20, oy: 0, bw: 16, bh: 'body' };
-const SUPERMOVE_KNOCKBACK = { base: 600, scaleBySpeed: 0.5, hitstun: 0.50, dirMode: 'alongVelocity' };
+// pop: 150 px/s upward launch (§5) — with GRAVITY 1500 a light enemy rises ~7.5px
+// and hangs ~0.2s: a visible loft of roughly a body-height or two at dash speed,
+// not an exaggerated rocket. The strongest of the three committed attacks.
+const SUPERMOVE_KNOCKBACK = { base: 600, scaleBySpeed: 0.5, hitstun: 0.50, dirMode: 'alongVelocity', pop: 150 };
 
 export const HEROES = {
   scarlet: {
@@ -65,7 +68,8 @@ export const HEROES = {
       hitbox: { ox: 0, oy: 0, bw: 32, bh: 48 },       // full-body overlay (cartwheel)
       // Knockback (knockback.md §11): strong escape shove AWAY from the hero —
       // pushes the enemy back to create escape space behind the retreat.
-      knockback: { base: 360, scaleBySpeed: 0.4, hitstun: 0.30, dirMode: 'fromAttacker' },
+      // pop: 50 px/s upward (§5) — a small hop, weaker than the supermove loft.
+      knockback: { base: 360, scaleBySpeed: 0.4, hitstun: 0.30, dirMode: 'fromAttacker', pop: 50 },
     },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
@@ -96,7 +100,8 @@ export const HEROES = {
       hitbox: { ox: 9, oy: 8.5, bw: 36, bh: 35 },     // leg sweep: in front, ~2/3 body height at ground level, offset back over his body
       // Knockback (knockback.md §11): aggressive forward pushback along the
       // lunge velocity — clears the path ahead of the advancing sweep.
-      knockback: { base: 320, scaleBySpeed: 0.4, hitstun: 0.28, dirMode: 'alongVelocity' },
+      // pop: 40 px/s upward (§5) — a small hop; v1 tuning, final feel in 2.3.
+      knockback: { base: 320, scaleBySpeed: 0.4, hitstun: 0.28, dirMode: 'alongVelocity', pop: 40 },
     },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
