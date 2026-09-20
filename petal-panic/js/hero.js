@@ -44,11 +44,11 @@ const AIR_REVERSAL_MIN_SPEED = 40; // px/s — below this counts as near-zero
 // arcade-immediate ground snap (§7). The velocity heuristic alone can't tell
 // these apart; the collision flag is the reliable signal.
 
-// Contextual knockback profiles (design §25): hero recoil is NOT one universal
+// Contextual knockback profiles (design §25): hero knockback is NOT one universal
 // value — it depends on the impact source. Each profile carries its own
 // strength (px/s), recovery (hit-stun seconds, §24/§26) and i-frame window
 // (§27). Damage and knockback are INDEPENDENT properties: two attacks can deal
-// equal damage with very different recoil, so callers pass the source key and
+// equal damage with very different knockback, so callers pass the source key and
 // never inline these numbers.
 export const KNOCKBACK_PROFILES = {
   contact:     { strength: 260, recovery: 0.25, iFrames: 0.60 }, // enemy body
@@ -303,7 +303,7 @@ export class Hero extends Entity {
    * callers pass a source KEY ('contact' | 'bossContact' | 'projectile' |
    * 'heavyProj' | 'explosion') plus the impact direction; no raw strength /
    * recovery / i-frame numbers are passed in. Damage and knockback stay
-   * independent — damage() handles HP, this handles recoil only.
+   * independent — damage() handles HP, this handles knockback only.
    *
    * If the hero is already intangible (i-frames up), the hit is ABSORBED — no
    * double-fling, no timer refresh. This matches how projectile hits already
@@ -763,6 +763,12 @@ export class Hero extends Entity {
       throw new Error(`Hero.attackHitboxWorld: unknown attack '${attackName}'`);
     }
     if (!entry) return null;
+    // Knockback (knockback.md §11): committed attacks carry a knockback setting
+    // on their hitbox data. Attach it to the resolved world box so the core
+    // wiring reads it at impact as hb.knockback (updateSlot copies it off
+    // boxGet()). Attacks without a knockback field (normal melee) resolve with
+    // knockback undefined — presence of the data is the only gate.
+    const knockback = this._attackKnockback(attackName);
     // Anchor to the ACTIVE collision box (worldBox), not the standing body.
     // Crouching shrinks/lowers the box; anchoring to the standing center made
     // every hitbox drift down relative to the real collision box. The active
@@ -780,7 +786,24 @@ export class Hero extends Entity {
       y: cy + entry.oy - entry.bh / 2,
       w: entry.bw,
       h: entry.bh,
+      knockback,
     };
+  }
+
+  /**
+   * Resolve the knockback setting for an attack from its hitbox data
+   * (knockback.md §11). Data only — no per-attack branching at impact time.
+   * @param {'melee'|'specialMelee'|'supermove'} attackName
+   * @returns {object|undefined} KnockbackSetting or undefined (no shove)
+   */
+  _attackKnockback(attackName) {
+    if (attackName === ATTACK_SPECIAL_MELEE) {
+      return this.heroDef.specialMelee.knockback;
+    }
+    if (attackName === ATTACK_SUPERMOVE) {
+      return this.heroDef.attacks[ATTACK_SUPERMOVE].knockback;
+    }
+    return undefined; // normal melee: damage only, no knockback (v1)
   }
 
   /**

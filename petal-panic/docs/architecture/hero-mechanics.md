@@ -1021,7 +1021,7 @@ During hit-stun:
 
 # 25. Contextual Knockback
 
-Hero knockback must not use one universal recoil value.
+Hero knockback must not use one universal knockback value.
 
 Knockback depends on the impact source.
 
@@ -1048,7 +1048,7 @@ Resulting knockback should consider:
 
 Enemy contact:
 
-* relatively small separation recoil.
+* relatively small separation knockback.
 
 Ordinary projectile:
 
@@ -1067,7 +1067,7 @@ Damage and knockback are independent properties.
 Two attacks may:
 
 * deal equal damage;
-* produce very different recoil.
+* produce very different knockback.
 
 ---
 

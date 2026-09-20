@@ -42,7 +42,7 @@ ok('each damage source produces its own distinct knockback magnitude (§25)', ()
 });
 
 ok('damage and knockback are independent properties (§25)', () => {
-  // Equal-damage attacks can carry different recoil: the profiles themselves
+  // Equal-damage attacks can carry different knockback: the profiles themselves
   // prove the table decouples the two (same table, different strengths), and
   // takeHit never reads any damage value.
   assert.notEqual(KNOCKBACK_PROFILES.contact.strength, KNOCKBACK_PROFILES.projectile.strength);
