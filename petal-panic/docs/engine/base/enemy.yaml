@@ -36,3 +36,19 @@ enemy:
   deathDuration: 0.75  # total shrink+fade seconds
   fading: false        # true after half duration (render fades out)
   # deathTimer is a getter derived from timers.get('death')
+
+  # --- body-contact knockback (§9, docs/architecture/knockback.md) ---
+  # Carried on the enemy's own body so the contact handler can call
+  # applyKnockback() with no layer-based branching. Regular enemies get the
+  # lighter base; bosses declare a larger one so they read harder through mass
+  # AND speed (the motion term picks up their velocity automatically).
+  # Fields match KnockbackSetting in js/knockback.js field-for-field.
+  body_knockback:
+    base: 260           # px/s inherent heft when nothing is moving (§2)
+    scale_by_speed: 1.0 # multiplier on head-on relative velocity (§2 motion term)
+    hitstun: 0.25       # stun window in seconds — ai() skipped, physics run (§6)
+    i_frames: 0.60      # protection window in seconds; 0/absent = none (§6)
+    # dir_mode: 'fromAttacker' | 'alongVelocity' | 'radial' (§4) — informational;
+    # the caller derives the normalized direction. Body contact pushes away from
+    # the attacker, so this resolves to from_attacker at impact.
+  # Boss override (isBoss): { base: 340, scale_by_speed: 1.0, hitstun: 0.30, i_frames: 0.70 }

@@ -24,3 +24,10 @@ jester:
   whip_cooldown: 1.5          # seconds between whips
   whip_hitbox: { ox: 15, oy: -10, bw: 35, bh: 30 }
   aggro_release_mult: 1.5     # deaggro at aggroRadius * this
+
+  # --- knockback (docs/architecture/knockback.md) ---
+  # v1 scope: hero→enemy knockback only, from the three committed hero attacks.
+  # The jester's whip is an ENEMY attack on the hero — it carries NO knockback
+  # setting; enemy attacks shove the hero via the hero-side KNOCKBACK_PROFILES
+  # (source-keyed, js/hero.js), not per-attack data. The jester's own body
+  # contact uses the base enemy_knockback from base/enemy.yaml.

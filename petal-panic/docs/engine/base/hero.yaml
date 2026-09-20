@@ -60,6 +60,41 @@ hero:
   _prevAnim: null       # saved anim to restore after super ends
   _superHitSet: null    # targets already hit this dash
 
+  # --- committed-attack knockback (docs/architecture/knockback.md §11) ---
+  # Knockback is DATA on the attack's hitbox (hb.knockback); the core wiring
+  # reads it at impact and routes to applyKnockback(). Fields match
+  # KnockbackSetting in js/knockback.js field-for-field. v1 scope: only these
+  # three committed attacks carry a knockback setting — normal melee and
+  # thorn/special projectiles deal damage without shoving.
+  #   base           px/s inherent heft (§2)
+  #   scale_by_speed multiplier on head-on relative velocity (§2 motion term)
+  #   hitstun        stun window in seconds — victim ai() skipped, physics run (§6)
+  #   pop            fixed upward launch px/s added on top of the directional
+  #                  impulse; hard hits pop the victim off the ground so it
+  #                  falls back under existing gravity (§5). 0/absent = none.
+  #   dir_mode       'fromAttacker' | 'alongVelocity' | 'radial' (§4)
+  sweep_knockback:     # Balthazar specialMelee — forward lunge; shove ALONG the lunge
+    base: 320
+    scale_by_speed: 0.4
+    hitstun: 0.28
+    pop: 40
+    dir_mode: along_velocity
+  cartwheel_knockback: # Scarlet specialMelee — retreating roll; shove AWAY from the hero
+    base: 360
+    scale_by_speed: 0.4
+    hitstun: 0.30
+    pop: 50
+    dir_mode: from_attacker
+  supermove_knockback: # shared by both heroes — strongest launch, longest stun, visible loft
+    base: 600
+    scale_by_speed: 0.5
+    hitstun: 0.50
+    pop: 150
+    dir_mode: along_velocity
+  # Note: explosion knockback is NOT declared here — it is carried on the
+  # explosion subject itself (knockback.md §7: "An explosion → the explosion"),
+  # blowing victims radially outward with distance falloff.
+
   # --- collision boxes ---
   standBox: { ox: 0, oy: 0, bw: w, bh: h }
   crouchBox: { ox: 0, oy: h*0.4, bw: w, bh: h*0.6 }
