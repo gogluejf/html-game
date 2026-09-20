@@ -39,24 +39,40 @@
     },
     "2.1": {
       "number": "2.1",
-      "status": "not_started",
+      "status": "done",
       "name": "Attach knockback to the three hero attack hitboxes",
       "milestone": "Hero Committed Attacks Carry Knockback",
       "milestone_number": 2
     },
     "2.2": {
       "number": "2.2",
-      "status": "not_started",
+      "status": "done",
       "name": "Vertical pop on hard hits (2D knockback)",
       "milestone": "Hero Committed Attacks Carry Knockback",
-      "milestone_number": 2
+      "milestone_number": 2,
+      "summary": {
+        "lessons_learned": "The core 2D impulse already worked (knockback.test.js proves an upward normal lofts), but our specific attack normals carry no y component at ground level \u2014 verifying against the real dirMode math, not just the generic mechanism, was the crux. Pop must be applied after the impulse and divided by resist so mass resists the loft too; it must NOT fire on the no-op path (Thorn) \u2014 the early return guard keeps that intact.",
+        "tradeoffs": "Pop is a separate fixed knob rather than blending vertical into the push normal: cleaner tuning (vertical feel independent of horizontal direction) but one more field on the setting. Pop scales with knockbackResist like the shove \u2014 heavier enemies get a proportionally smaller loft, consistent with \u00a73.",
+        "done": "Added an optional 'pop' field (fixed upward launch, px/s) to the knockback setting: applyKnockback() now adds victim.vy -= pop/resist on top of the directional impulse, so hard hits loft victims off the ground and they fall back under existing gravity (\u00a75). Set pop values on the three committed attacks in heroDefs.js: supermove 150 (visible ~1-2 body-height loft at GRAVITY 1500), cartwheel 50, sweep 40 \u2014 ordered super > special melee, nothing exaggerated. Added acceptance tests to attackKnockback.test.js: supermove hit with a horizontal dash normal sets vy upward proportional to strength (exact -pop check + mass-resistance scaling + sweep-hops-smaller-than-super ordering); Thorn/no-knockback hit leaves vx/vy/hitstunTimer untouched.",
+        "confidence": "high",
+        "decisions": "Chose option (b) from the task context: an explicit per-attack 'pop' field consumed by applyKnockback, instead of biasing the caller-derived normal. The alongVelocity/fromAttacker normals for these ground-level attacks are effectively horizontal (hero vy=0 during dash, same-height center-to-center), so the existing 2D mechanism alone would impart no upward motion \u2014 the pop guarantees the \u00a75 loft regardless of geometry. Values left as v1 starting points for final tuning in 2.3.",
+        "failures": "None. Full suite 28/28; one transient barrel.solid flake in run-all passed on rerun and also passes on stashed HEAD (pre-existing, unrelated)."
+      }
     },
     "2.3": {
       "number": "2.3",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Feel pass + regression gate",
       "milestone": "Hero Committed Attacks Carry Knockback",
-      "milestone_number": 2
+      "milestone_number": 2,
+      "summary": {
+        "confidence": "high",
+        "tradeoffs": "Values are starting points; final tuning may happen after user playtest",
+        "failures": "None",
+        "done": "Full suite green (28/28) vs baseline. Final v1 knockback values recorded: sweep {base:320, scaleBySpeed:0.4, hitstun:0.28, pop:40, dirMode:alongVelocity}, cartwheel {base:360, scaleBySpeed:0.4, hitstun:0.30, pop:50, dirMode:fromAttacker}, supermove {base:600, scaleBySpeed:0.5, hitstun:0.50, pop:150, dirMode:alongVelocity}. Manual feel verification deferred to user playtest.",
+        "lessons_learned": "barrel.solid.test.js is intermittently flaky in run-all but passes standalone",
+        "decisions": "No code changes needed for this chore task \u2014 data was already in place from 2.1/2.2"
+      }
     },
     "3.1": {
       "number": "3.1",
