@@ -21,9 +21,9 @@ Fixed-dt behavior (from Effects.update(dt), js/effects.js:174-184):
 | effect | formula | file:line | bounds |
 |---|---|---|---|
 | hit sparkles (spawnHitSparkles) | random int in [3, 5] when count omitted | `HIT_SPARKLE_COUNT = [3, 5]` js/effects.js:29; roll at js/effects.js:78 | 3..5 inclusive; speed uniform [60, 140] px/s (`HIT_SPARKLE_SPEED`, js/effects.js:30) |
-| death sparkle (spawnDeathSparkle) | `max(4, round(8 + size * 0.25))` | `DEATH_SPARKLE_BASE = 8` js/effects.js:31; formula at js/effects.js:99 | size=16 → 8; size=96 → 32 (asserted js/test/effects.test.js:61-63) |
+| death sparkle (spawnDeathSparkle) | `max(4, round(8 + size * 0.25))` | `DEATH_SPARKLE_BASE = 8` js/effects.js:31; formula at js/effects.js:99 | size=16 → 12; size=96 → 32 (asserted js/test/effects.test.js:61-63) |
 | pickup pop (spawnPickupPop) | fixed 8 | `PICKUP_POP_COUNT = 8` js/effects.js:32; loop js/effects.js:113 | exactly 8, evenly spaced angles, speed 100..180 px/s (js/effects.js:115-116) |
-| explosion (spawnExplosion) | `min(24, 12 + round(radius * 0.15))` | `EXPLOSION_MIN = 12` js/effects.js:33, `EXPLOSION_PER_PX = 0.15` js/effects.js:34; formula js/effects.js:132 | radius=20 → 12; radius=200 → 24 (cap); radius=100000 → 24 (asserted js/test/effects.test.js:74-83); speed 120..(120+radius*1.5) px/s (js/effects.js:134) |
+| explosion (spawnExplosion) | `min(24, 12 + round(radius * 0.15))` | `EXPLOSION_MIN = 12` js/effects.js:33, `EXPLOSION_PER_PX = 0.15` js/effects.js:34; formula js/effects.js:132 | radius=20 → 15; radius=200 → 24 (cap); radius=100000 → 24 (asserted js/test/effects.test.js:74-83); speed 120..(120+radius*1.5) px/s (js/effects.js:134) |
 
 Palettes: FIRE_COLORS = ['#e74c3c','#f39c12','#ff6ec7','#ffffff'] (js/effects.js:38); BLOOD_COLORS = ['#e74c3c','#c0392b','#ff6b6b'] (js/effects.js:40).
 

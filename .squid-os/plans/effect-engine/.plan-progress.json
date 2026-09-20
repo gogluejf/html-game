@@ -61,7 +61,7 @@
     },
     "2.2": {
       "number": "2.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Re-point Effects.* API to the engine as a compat shim",
       "milestone": "Migrate Existing Effects onto the Engine",
       "milestone_number": "2",
@@ -73,10 +73,18 @@
     },
     "2.3": {
       "number": "2.3",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Behavior-preservation regression for migrated effects",
       "milestone": "Migrate Existing Effects onto the Engine",
-      "milestone_number": "2"
+      "milestone_number": "2",
+      "summary": {
+        "decisions": "Used statistical endpoint coverage (2000 trials, tolerance chosen so flake probability ~e^-50 or lower) instead of seeding \u2014 project has no seeded RNG and the effect modules call Math.random() directly. Palette assertions import from palettes.js rather than hardcoding literals. Death-sparkle floor documented as unreachable-by-contract rather than forcing an illegal negative-size input.",
+        "tradeoffs": "Screen-flash ~0.5 check uses a \u00b10.06 bracket around the 0.075s mark because 0.075s is not a multiple of the fixed dt (nearest frames give 0.5556 and 0.4444); the exact linear-curve value at integer frames is still asserted to epsilon, so the decay rate itself is pinned exactly.",
+        "failures": "None",
+        "done": "Fixed all review findings on effectRegression.test.js: (B1) locked exact bounds via statistical endpoint coverage over 2000 trials for hit-sparkle [60,140], pickup-pop [100,180] and shake \u00b13px per axis (min/max must approach both extremes within epsilon); (B2) added death-sparkle floor test \u2014 verified monolith contract (size = sprite dimension px, caller passes Math.max(e.w,e.h)) means no legal input makes max(4,...) bind, so asserted smallest legal size > 4 with a comment documenting the floor as defensive; (B3) added explosion speed bounds [120,120+radius*1.5] with endpoint coverage at radius 40, plus palette-cycle tests asserting BLOOD_COLORS/FIRE_COLORS values appear exactly through the public shim, importing the arrays from effects/palettes.js as single source; (A-minor x2) fixed effect-reference.txt examples: death-sparkle size=16 \u2192 12, explosion radius=20 \u2192 15.",
+        "lessons_learned": "Within-range-only assertions cannot detect narrowed random ranges \u2014 always assert both endpoints are statistically reached. run-all has pre-existing ~25% flakes in barrel.solid/contextualAim; re-run before judging.",
+        "confidence": "high"
+      }
     },
     "3.1": {
       "number": "3.1",

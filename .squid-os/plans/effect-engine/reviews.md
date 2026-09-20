@@ -77,6 +77,19 @@ Note: run-all.mjs has two pre-existing flaky files unrelated to this plan — co
 
 **Resolution:** ACCEPT (fix). Removed particles.updateAll from the shim's update() (pool advances exactly once per frame via update.js, proven by new test); drawOverlay now routes through the engine's drawEffects() with { view: { w, h } } ctx so declaratively fired renderable effects also complete their lifecycle; SHAKE_AMT exported from spriteShake.js as single owner, shim consumes it; new js/test/effectsShim.test.js (11 tests, fixed dt = 1/60): kick→step→read ≈0.5±ε after 15 frames, linear flash decay, never-lower merge rule, reset clears tracked overlays, drawOverlay issues real gradient/fill/alpha canvas calls via mock ctx, pool untouched by Effects.update, shake constant ownership. Re-verify: 36/36 green (barrel.solid pre-existing flake re-run clean ×3). Committed.
 
+## Task 2.3 — Behavior-preservation regression for migrated effects
+
+**Review A:** PASS (2 minor)
+- minor: effect-reference.txt death-sparkle example "size=16 → 8" inconsistent with its own formula (yields 12) — reference-doc typo, test correctly asserts 12
+- minor: effect-reference.txt explosion example "radius=20 → 12" inconsistent with formula (yields 15) — same class of typo
+
+**Review B:** FAIL (3 major)
+- major: effectRegression.test.js:55 — random-range asserts only check within-range; narrowed ranges would silently pass (exact bounds not locked)
+- major: effectRegression.test.js:65 — death-sparkle max(4,...) floor never exercised
+- major: effectRegression.test.js:96 — explosion speed range 120..(120+r·1.5) and FIRE/BLOOD palette values not asserted through the public shim
+
+**Resolution:** ACCEPT (fix). Endpoint-coverage assertions over 2000 trials lock both extremes of hit-sparkle [60,140], pickup-pop [100,180], shake ±3px (flake prob ~e⁻⁵⁰; no seeded RNG in project); death-sparkle floor documented as unreachable-by-contract after verifying the monolith's param contract (caller passes Math.max(e.w,e.h)); explosion speed bounds + endpoint coverage added; BLOOD/FIRE palette-cycle tests import exact arrays from palettes.js (single source); both effect-reference.txt example typos corrected. Re-verify: 37/37 green (effectRegression alone 5× → 20/20 each; barrel.solid/contextualAim pre-existing flakes re-run clean). Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
