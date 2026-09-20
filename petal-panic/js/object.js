@@ -4,7 +4,7 @@
 // HP pool. Unlike static platforms it can be damaged: melee swings, friendly
 // projectiles, and bombs chip its HP; it does NOT break on touch or per-hit.
 // When HP reaches 0 it is destroyed — a damaging barrel explodes (AoE within
-// explodeRadius, hurting enemies AND the hero), while a coin barrel bursts
+// its explosion.radius, hurting enemies AND the hero), while a coin barrel bursts
 // into coins with no damage.
 //
 // The GameObj base is intentionally generic so later objects (checkpoints in
@@ -16,7 +16,7 @@
 
 import { Entity } from './entity.js';
 import { LAYER } from './consts.js';
-import { damage } from './damage.js';
+import { BARREL_EXPLOSION_KNOCKBACK, ALIGNMENT } from './explosion.js';
 
 // --- Tunables ----------------------------------------------------------------
 export const BARREL_DAMAGE = 25;        // AoE damage dealt by a barrel explosion
@@ -28,8 +28,7 @@ export const WOOD_BARREL_DEF = {
   id: 'woodBarrel',
   w: 32, h: 48,
   hp: 40,
-  explosive: false,
-  explodeRadius: 0,
+  explosion: null,   // no blast — just breaks into wood chips
   coinDrop: null,
 };
 
@@ -38,8 +37,12 @@ export const BARREL_DEF = {
   id: 'explosiveBarrel',
   w: 32, h: 48,
   hp: 60,
-  explosive: true,
-  explodeRadius: 120,
+  explosion: {
+    radius: 120,
+    damage: BARREL_DAMAGE,
+    alignment: ALIGNMENT.NEUTRAL,
+    knockback: BARREL_EXPLOSION_KNOCKBACK,
+  },
   coinDrop: null,
 };
 
@@ -48,8 +51,7 @@ export const COIN_BARREL_DEF = {
   id: 'coinBarrel',
   w: 32, h: 48,
   hp: 60,
-  explosive: false,   // no damaging explosion — just a coin burst
-  explodeRadius: 0,
+  explosion: null,   // no damaging explosion — just a coin burst
   coinDrop: { min: 4, max: 6, chance: 1.0, types: { bronze: 0.7, silver: 0.25, gold: 0.05 } },
 };
 
@@ -59,7 +61,7 @@ export const COIN_BARREL_DEF = {
 
 export class GameObj extends Entity {
   /**
-   * @param {object} def object definition: { id, w, h, hp, explosive, explodeRadius }
+   * @param {object} def object definition: { id, w, h, hp, explosion }
    * @param {number} [x] spawn x (top-left of box)
    * @param {number} [y] spawn y (top-left of box)
    */
@@ -77,13 +79,16 @@ export class GameObj extends Entity {
     this.def = def;
     this.hp = def.hp ?? 60;
     this.maxHp = def.hp ?? 60;
-    this.explosive = def.explosive ?? true;
-    this.explodeRadius = def.explodeRadius ?? 120;
-    this.radius = this.explodeRadius; // base Entity radius — debug draws this
+    // Generic explosion property (explosion.js). null = no blast. The engine
+    // resolves it uniformly on destruction — no per-type special cases.
+    this.explosion = def.explosion ?? null;
     this.coinDrop = def.coinDrop ?? null;
     this.hitFlash = 0;             // white-flash timer when struck (render reads it)
     this.destroyed = false;        // latched once HP hits 0 (prevents double-explode)
   }
+
+  /** Derived flag for backward compat: true when this object carries a blast. */
+  get explosive() { return !!this.explosion; }
 
   /** Per-frame step: only decay the hit-flash timer (clamped at 0). */
   update(dt) {
@@ -262,7 +267,9 @@ export function makeCheckpoint(id, x, y) {
 }
 
 // ---------------------------------------------------------------------------
-// Explosion AoE — pure function (unit-testable, no DOM)
+// Geometry helpers (unit-testable, no DOM) — retained for the archived
+// bck/object.test.js references. The live blast path routes through the generic
+// resolveExplosion() in explosion.js; these are pure center/distance utilities.
 // ---------------------------------------------------------------------------
 
 /**
@@ -287,51 +294,4 @@ export function withinRadius(a, b, radius) {
   const dx = ax - bx;
   const dy = ay - by;
   return Math.sqrt(dx * dx + dy * dy) <= radius;
-}
-
-/**
- * Resolve a barrel explosion: apply AoE damage to every live entity whose
- * center lies within `obj.explodeRadius`. Enemies take it as 'explosion'
- * damage (routed through central damage()); the hero takes it too (self-damage
- * risk/reward). The exploding barrel itself is never hit.
- *
- * SUPERSEDED: the game loop now routes barrels through the generic
- * resolveExplosion() (explosion.js) with a NEUTRAL alignment + radial knockback,
- * which also shoves enemies and preserves hero behavior via takeHit('explosion').
- * This function is retained only for the archived bck/object.test.js references;
- * it is no longer called by the live code path.
- *
- * This is deliberately PURE with respect to the world: it mutates HP/energy
- * and returns a summary, leaving VFX + world removal to the caller. That makes
- * the acceptance criteria ("damages entities in radius including hero") trivial
- * to assert in node.
- *
- * @param {GameObj} obj the exploding barrel
- * @param {Array<object>} entities all live candidate targets (enemies, hero, ...)
- * @returns {{center:{cx,cy}, radius:number, hit:object[]}} explosion summary
- */
-export function explodeBarrel(obj, entities) {
-  const { cx, cy } = centerOf(obj);
-  const radius = obj.explodeRadius;
-  const hit = [];
-
-  for (const e of entities) {
-    if (!e || e === obj) continue;         // never self-hit the barrel
-    if (e.alive === false) continue;       // skip already-dead
-    if (e.intangible) continue;            // i-frames absorb explosion damage
-    if (!withinRadius(obj, e, radius)) continue;
-
-    // Route damage so defense + telemetry apply uniformly, and — for targets
-    // that own a death pipeline (real enemies) — let THEM handle the death
-    // transition internally via takeDamage(). Heroes drain energy; placeholders
-    // use raw damage(). The source never pokes at death directly.
-    const dealt = typeof e.takeDamage === 'function'
-      ? e.takeDamage(BARREL_DAMAGE, obj, 'explosion')
-      : damage(obj, e, BARREL_DAMAGE, 'explosion');
-    if (dealt > 0) {
-      hit.push(e);
-    }
-  }
-
-  return { center: { cx, cy }, radius, hit };
 }

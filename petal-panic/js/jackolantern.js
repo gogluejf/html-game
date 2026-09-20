@@ -15,6 +15,7 @@
 
 import { Enemy } from './enemy.js';
 import { LAYER } from './consts.js';
+import { JACKO_EXPLOSION_KNOCKBACK, ALIGNMENT } from './explosion.js';
 
 export const JACKO_DEF = {
   id: 'jackolantern',
@@ -27,6 +28,15 @@ export const JACKO_DEF = {
     melee: false, projectile: false, fly: false,
   },
   coinDrop: { min: 1, max: 2, chance: 1.0, types: { bronze: 1 } },
+  // Generic explosion property (explosion.js): a FOE-side self-detonation that
+  // hurts the hero but spares its own kind. The engine resolves it uniformly on
+  // detonation via resolveExplosion() — no per-type special case in update.js.
+  explosion: {
+    radius: 80,
+    damage: 22,                 // matches stats.attack
+    alignment: ALIGNMENT.FOE,
+    knockback: JACKO_EXPLOSION_KNOCKBACK,
+  },
 };
 
 const ROLL_SPEED = 150;         // px/s while rolling toward the hero

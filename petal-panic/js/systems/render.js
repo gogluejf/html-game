@@ -513,22 +513,37 @@ function drawDebugOverlay(ctx) {
   }
 
   // Generic effect-radius circles (debug): any entity with radius > 0 gets a
-  // dashed circle. Color: pink = explosion AoE, red = aggro/detection.
+  // dashed red circle (aggro/detection). Any entity carrying an `explosion`
+  // property ALSO gets a dashed PINK circle at its actual blast radius — so a
+  // Jack-O-Lantern shows BOTH (red aggro from ent.radius, pink blast from
+  // ent.explosion.radius) and barrels show only the pink blast ring.
   for (const ent of all) {
-    const r = ent.radius ?? 0;
-    if (r <= 0) continue;
     const b = ent.worldBox ? ent.worldBox() : ent;
     const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-    const isExplosion = ent.explosive === true;
-    ctx.save();
-    ctx.globalAlpha = 0.35;
-    ctx.strokeStyle = isExplosion ? '#ff6ec7' : '#e74c3c';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
+    const r = ent.radius ?? 0;
+    if (r > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    const er = ent.explosion?.radius ?? 0;
+    if (er > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = '#ff6ec7';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, er, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 }
 

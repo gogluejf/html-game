@@ -51,6 +51,13 @@ export class Enemy extends Entity {
     this.maxHp = def.stats.stamina;
     this.coinDrop = def.coinDrop ?? { min: 1, max: 3, chance: 0.5 };
 
+    // --- Explosion (generic entity property) ---------------------------------
+    // Any entity can declare an `explosion` in its def; the engine resolves it
+    // uniformly on death/termination via resolveExplosion() (explosion.js). No
+    // per-type special cases — barrels and Jack-O-Lanterns both carry this same
+    // shape and detonate through the one shared resolver. null = no blast.
+    this.explosion = def.explosion ?? null;
+
     // --- AI state -----------------------------------------------------------
     // idle | walk | chase | attack | dead. Subclasses drive transitions.
     this.aiState = 'idle';

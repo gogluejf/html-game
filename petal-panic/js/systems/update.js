@@ -25,12 +25,12 @@ import { dispatchScreenInput } from '../screens.js';
 import { Jester } from '../jester.js';
 import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
 import { Violetta, VIOLETTA_DEF } from '../violetta.js';
-import { JackOLantern, JACKO_DEF, JACKO_EXPLODE_RADIUS } from '../jackolantern.js';
+import { JackOLantern } from '../jackolantern.js';
 import { BorisLoon, BORIS_DEF, makeBorisBaby } from '../boris_loon.js';
 import { Elephant, makeElephant, BOSS_TRIGGER_RADIUS, WEAK_POINT_MULT } from '../boss.js';import { particles, coins } from '../particles.js';
 import { Effects } from '../effects.js';
-import { makeBarrel, makeCoinBarrel, BARREL_DAMAGE, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
-import { resolveExplosion, ALIGNMENT, BARREL_EXPLOSION_KNOCKBACK, JACKO_EXPLOSION_KNOCKBACK } from '../explosion.js';
+import { makeBarrel, makeCoinBarrel, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
+import { resolveExplosion } from '../explosion.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
 import { LEVELS, generateLevel } from '../level.js';
@@ -1666,21 +1666,19 @@ function updateRealEnemy(e, dt) {
   const atkHb = getAttackHitbox(e);
   if (!atkHb) e._atkHitDone = false; // reset when window closes (hitbox system uses its own hitSet)
 
-  // Jack-O-Lantern explosion: when it detonates, run the AoE blast (same pattern
-  // as a barrel) and spawn VFX. The explode() hook fires exactly once.
-  if (e instanceof JackOLantern && e.exploded && !e._explodeHandled) {
+  // Explosion (generic): any entity that carries an `explosion` property and has
+  // latched its detonation fires the AoE blast here — the SAME path a barrel uses.
+  // The only per-source difference is WHEN the trigger fires: barrels detonate on
+  // destruction, the Jack-O-Lantern latches `exploded` when it blows up. No
+  // instanceof checks; the engine reads e.explosion and resolves uniformly.
+  if (e.explosion && e.exploded && !e._explodeHandled) {
     e._explodeHandled = true;
     const cx = e.x + e.w / 2;
     const cy = e.y + e.h / 2;
-    // A Jack-O-Lantern is a FOE-side self-detonation: it hurts the hero but spares
-    // its own kind (fixes the old bug where the blast damaged other enemies).
     const targets = [hero, ...enemies, ...realEnemies];
     const result = resolveExplosion({
+      ...e.explosion,
       cx, cy,
-      radius: JACKO_EXPLODE_RADIUS,
-      damage: JACKO_DEF.stats.attack,
-      alignment: ALIGNMENT.FOE,
-      knockback: JACKO_EXPLOSION_KNOCKBACK,
       self: e,
       ctx: { hero },
     }, targets);
@@ -1832,19 +1830,17 @@ function updateEffects(dt) {
 function handleBarrelDestroyed(barrel) {
   const { cx, cy } = { cx: barrel.x + barrel.w / 2, cy: barrel.y + barrel.h / 2 };
 
-  if (barrel.explosive) {
+  if (barrel.explosion) {
     // AoE damage to every live entity in radius (enemies + hero). The pure
     // resolveExplosion() routes through central damage(); we pass the full live set.
     // A barrel is a NEUTRAL blast: it hurts whoever stands in range (hero AND enemies)
     // and shoves everyone radially. Hero knockback is routed through takeHit('explosion')
     // inside resolveExplosion, preserving the exact pre-refactor rec/intangible behavior.
+    // Same generic path as any other detonating entity — only the trigger differs.
     const targets = [hero, ...enemies, ...realEnemies];
     const result = resolveExplosion({
+      ...barrel.explosion,
       cx, cy,
-      radius: barrel.explodeRadius,
-      damage: BARREL_DAMAGE,
-      alignment: ALIGNMENT.NEUTRAL,
-      knockback: BARREL_EXPLOSION_KNOCKBACK,
       self: barrel,
       ctx: { hero },
     }, targets);
