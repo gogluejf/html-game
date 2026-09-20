@@ -1,0 +1,97 @@
+{
+  "tasks": {
+    "1.1": {
+      "number": "1.1",
+      "status": "done",
+      "name": "Knockback setting + applyKnockback helper",
+      "milestone": "Knockback Core Mechanic",
+      "milestone_number": 1
+    },
+    "1.2": {
+      "number": "1.2",
+      "status": "done",
+      "name": "Enemy hit-stun window + AI interrupt",
+      "milestone": "Knockback Core Mechanic",
+      "milestone_number": 1,
+      "summary": {
+        "confidence": "high",
+        "decisions": "Stun check placed after the death pipeline so dying enemies ignore stun; timer decremented before the ai() skip so the frame that drives it to 0 is still a stun frame (clean one-frame-later resume); no state save/restore needed since aiState is never mutated during stun.",
+        "lessons_learned": "Boundary semantics matter: with hitstunTimer = N*DT, ai() resumes on step N+1, not N \u2014 test asserts this explicitly. The bck/ test dir contains archived bit-roted tests (bad import paths) that fail standalone but are excluded from run-all.mjs; don't treat those as regressions.",
+        "failures": "None",
+        "tradeoffs": "Plain countdown field instead of a unified Timers entry \u2014 consistent with existing hitFlash and required because applyKnockback (task 1.1) writes victim.hitstunTimer from outside; clamped at 0 to avoid negative drift.",
+        "done": "Added hitstunTimer (seconds) + stunned getter to Enemy; update() now skips ai() while stunned but still integrates gravity/vx/vy so knockback plays out visibly; aiState is untouched during stun so the enemy resumes its exact prior AI state on expiry. hitFlash visual unchanged. Added js/test/enemyHitstun.test.js (9 cases): ai() frozen during window, physics integrate (horizontal shove + gravity), resume of prior state, boundary frame behavior, dead-enemy precedence."
+      }
+    },
+    "1.3": {
+      "number": "1.3",
+      "status": "done",
+      "name": "Wire applyKnockback into enemy damage path",
+      "milestone": "Knockback Core Mechanic",
+      "milestone_number": 1,
+      "summary": {
+        "tradeoffs": "Single integration point after damage() call",
+        "failures": "None",
+        "decisions": "Normal computed per dirMode at call site; knockback data stays on the source object",
+        "confidence": "high",
+        "lessons_learned": "Previous agent wasted steps searching; the damage resolution point is clearly marked in update.js",
+        "done": "Wired applyKnockback into enemy damage path in update.js"
+      }
+    },
+    "2.1": {
+      "number": "2.1",
+      "status": "not_started",
+      "name": "Attach knockback to the three hero attack hitboxes",
+      "milestone": "Hero Committed Attacks Carry Knockback",
+      "milestone_number": 2
+    },
+    "2.2": {
+      "number": "2.2",
+      "status": "not_started",
+      "name": "Vertical pop on hard hits (2D knockback)",
+      "milestone": "Hero Committed Attacks Carry Knockback",
+      "milestone_number": 2
+    },
+    "2.3": {
+      "number": "2.3",
+      "status": "not_started",
+      "name": "Feel pass + regression gate",
+      "milestone": "Hero Committed Attacks Carry Knockback",
+      "milestone_number": 2
+    },
+    "3.1": {
+      "number": "3.1",
+      "status": "not_started",
+      "name": "Merge contact/bossContact into velocity-scaled body knockback",
+      "milestone": "Body-Contact Unification and Docs",
+      "milestone_number": 3
+    },
+    "3.2": {
+      "number": "3.2",
+      "status": "not_started",
+      "name": "Document knockback in entity YAML",
+      "milestone": "Body-Contact Unification and Docs",
+      "milestone_number": 3
+    },
+    "3.3": {
+      "number": "3.3",
+      "status": "not_started",
+      "name": "Final regression + scope handoff",
+      "milestone": "Body-Contact Unification and Docs",
+      "milestone_number": 3
+    },
+    "3.4": {
+      "number": "3.4",
+      "status": "not_started",
+      "name": "Preserve existing enemy-to-hero knockback through the refactor",
+      "milestone": "Body-Contact Unification and Docs",
+      "milestone_number": 3
+    },
+    "4.1": {
+      "number": "4.1",
+      "status": "not_started",
+      "name": "Self-protection on connect (sweep + cartwheel)",
+      "milestone": "Self-Protection on Connect",
+      "milestone_number": 4
+    }
+  }
+}
