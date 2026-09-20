@@ -1,0 +1,30 @@
+Pre-refactor enemy→hero knockback reference (captured before any refactor lands)
+=============================================================================
+Source: petal-panic/js/hero.js — KNOCKBACK_PROFILES + takeHit()
+Hero resistance: HERO_KNOCKBACK_RESISTANCE = 1
+
+For a normalized direction (dirX, dirY), takeHit applies:
+  vx += (dirX / len) * strength * resist
+  vy += (dirY / len) * strength * resist
+  timers.set('rec', recovery)
+  intangible = true; timers.set('intangible', max(existing, iFrames))
+
+Profiles (strength px/s, recovery s, iFrames s):
+  contact:     { strength: 260, recovery: 0.25, iFrames: 0.60 }
+  bossContact: { strength: 340, recovery: 0.30, iFrames: 0.70 }
+  projectile:  { strength: 220, recovery: 0.25, iFrames: 0.30 }
+  heavyProj:   { strength: 300, recovery: 0.30, iFrames: 0.40 }
+  explosion:   { strength: 380, recovery: 0.30, iFrames: 0.60 }
+
+Reference test vectors (dirX=1, dirY=0, hero at rest, not intangible):
+  contact:     vx_delta=+260, vy_delta=0, rec=0.25, intangible=0.60
+  bossContact: vx_delta=+340, vy_delta=0, rec=0.30, intangible=0.70
+  projectile:  vx_delta=+220, vy_delta=0, rec=0.25, intangible=0.30
+  heavyProj:   vx_delta=+300, vy_delta=0, rec=0.30, intangible=0.40
+  explosion:   vx_delta=+380, vy_delta=0, rec=0.30, intangible=0.60
+
+Behavior notes:
+  - If hero is already intangible, takeHit returns false (absorbed, no change)
+  - If hero is dying, takeHit returns false
+  - iFrames uses max(existing, profile.iFrames) — does NOT shorten existing window
+  - Direction is normalized to unit vector before applying strength
