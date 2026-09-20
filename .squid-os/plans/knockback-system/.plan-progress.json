@@ -128,10 +128,18 @@
     },
     "4.1": {
       "number": "4.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Self-protection on connect (sweep + cartwheel)",
       "milestone": "Self-Protection on Connect",
-      "milestone_number": 4
+      "milestone_number": 4,
+      "summary": {
+        "failures": "None \u2014 full suite 30/30 green.",
+        "done": "Added _connectProtectFrames window to Hero: markSpecialConnect() arms it to remaining active+recovery frames on first clean special-melee connect, updateSpecialMelee decays it one frame/tick, endSpecialMelee/respawn clear it; connectProtected getter exposed. update.js: processAllHitboxes onHit calls markSpecialConnect() only for hb.method==='specialMelee', and world.on('contact') skips hero damage while connectProtected. New direct-intent test file petal-panic/js/test/connectProtect.test.js (14 assertions across all 4 acceptance criteria).",
+        "decisions": "Armed from the unified hitbox system's onHit callback (fires only on real connects, so whiffs are excluded by construction) rather than duplicating overlap math in hero.js. Idempotent max() on re-hits keeps the earliest (longest) window. Protection gates only the body-contact handler per milestone scope; enemy attack hitboxes already skip intangible heroes and were left untouched since they don't read this flag.",
+        "lessons_learned": "respawn() resets special-swing state inline (not via endSpecialMelee), so the new field had to be cleared there too \u2014 missed it on the first pass and the respawn test caught it. The existing specialMelee.test.js setSpecialFrame helper pattern was the right model for driving phases directly in tests.",
+        "tradeoffs": "Window is counted in swing frames rather than seconds, so it stays exactly in lockstep with the 60fps special-melee clock and drains to zero precisely when recovery ends \u2014 no separate expiry check needed. Contact cooldown (_contactCd) is NOT set when protection absorbs a hit, so the enemy can re-hit the instant protection drops.",
+        "confidence": "high"
+      }
     }
   }
 }
