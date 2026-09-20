@@ -88,10 +88,18 @@
     },
     "3.1": {
       "number": "3.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Screen Overlay",
       "milestone": "Screen-Space and Overlay Effects",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "tradeoffs": "Zero-peak (negative/clamped-to-0 opacity) instances still run their full timed lifetime before reporting done \u2014 diverges slightly from screenFlash's instant-done behavior but is consistent with this effect being duration-defined; render() is a no-op throughout so there is no visual cost. Hold time is derived as max(0, duration - fadeIn - fadeOut) rather than a separate param, matching the spec's param list exactly.",
+        "decisions": "Ramp scaling is proportional (both ramps scaled by duration/rampSum) rather than clamping one ramp \u2014 preserves symmetric fade shape. Total lifetime variable renamed conceptually to just 'duration' since it's now guaranteed equal. Doc \u00a723 got one explicit line about the edge case per finding instructions.",
+        "failures": "Task.verify lists 'node petal-panic/js/test/effectCatalog.test.js' which does not exist yet (the catalog test is presumably an M7 theater deliverable); ran the project suite instead: node petal-panic/js/test/run-all.mjs \u2192 38/38 passed.",
+        "confidence": "high",
+        "lessons_learned": "Floating-point accumulation of DT frames means N*DT can be slightly less than the nominal boundary (e.g. 18*(1/60)=0.2999...<0.3), so 'just before boundary' assertions must use frame counts that are safely below the threshold, not exact multiples.",
+        "done": "Fixed all 4 review findings: (B-major-1) screenOverlay.js now scales fadeIn/fadeOut proportionally when their sum exceeds duration so total lifetime always equals duration exactly; updated doc comment and test to assert the new contract. (B-major-2) Added end-to-end test proving fire\u2192updateEffects\u2192drawEffects(ctx, renderCtx) propagates draw-time viewport dims through the engine path. (B-minor-1) Tests now use renderCtx as primary documented path for viewport; factory-time viewW/viewH kept only in one clearly-marked fallback test. (B-minor-2) registry.js header comment made count-agnostic."
+      }
     },
     "3.2": {
       "number": "3.2",

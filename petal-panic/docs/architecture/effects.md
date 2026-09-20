@@ -488,6 +488,8 @@ Parameters may include:
 - Fade-out
 - Blend mode
 
+When fadeIn + fadeOut exceed duration, both ramps are scaled proportionally to fit; total lifetime always equals duration (hold = 0).
+
 ---
 
 ## 24. Composite Explosion Burst

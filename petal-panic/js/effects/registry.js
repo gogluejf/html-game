@@ -10,8 +10,8 @@
 // outward on both the engine and the effect files, so there is no circular
 // import: index.js never imports back from here.
 //
-// Importing this module has exactly one side effect: registering the eight
-// migrated types. It is idempotent (registerEffect overwrites by key), so it
+// Importing this module has one side effect per type: registering each
+// migrated type. It is idempotent (registerEffect overwrites by key), so it
 // is safe to import more than once.
 
 import { registerEffect } from './index.js';
@@ -23,6 +23,7 @@ import { particleBurst } from './particleBurst.js';
 import { vignette } from './vignette.js';
 import { screenFlash } from './screenFlash.js';
 import { spriteShake } from './spriteShake.js';
+import { screenOverlay } from './screenOverlay.js';
 
 // --- Migrated effects (task 2.1) ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -33,3 +34,6 @@ registerEffect('particle-burst', particleBurst);
 registerEffect('vignette', vignette);
 registerEffect('screen-flash', screenFlash);
 registerEffect('sprite-shake', spriteShake);
+
+// --- M3 screen-space / overlay effects ----------------------------------------
+registerEffect('screen-overlay', screenOverlay);

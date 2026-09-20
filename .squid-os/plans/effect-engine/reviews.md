@@ -109,6 +109,18 @@ Note: run-all.mjs has two pre-existing flaky files unrelated to this plan — co
 **Fixes round 2:** explosion factory accepts optional params.count override (default = deterministic formula preserved); shim spawnExplosion(x, y, radius, count?) forwards it; all three former spawnExplosionVFX sites (bomb/enemy-death/barrel) roll the legacy `12 + floor(rand*4)` verbatim at the call site and pass explicit count; saw-fizzle + enemy-death sparkle confirmed already routed via Effects.fireParticleBurst; doc §Lifecycle updated to render(ctx, renderCtx?). New deterministic test pins the legacy roll (rand=0→12, rand=0.999→15 through the real shim path).
 **Final gate verify:** 37/37 green (barrel.solid pre-existing flake re-run clean), effectRegression 21/21 ×5 zero flakes, no direct particles.spawn* in systems/. Gate commit: `effects: wave 2 gate`.
 
+## Task 3.1 — Screen Overlay
+
+**Review A:** PASS — No findings. (Spec §23 params/triggers/lifecycle all conform; single registration; conventions mirrored without copying; deterministic fixed-dt tests.)
+
+**Review B:** FAIL (2 major, 2 minor)
+- major: screenOverlay.js:40 — duration < fadeIn+fadeOut made actual lifetime exceed declared duration (doc defines duration as total lifetime); test codified the nonconformant behavior
+- major: screenOverlay.test.js:123 — viewport tested via direct body.render(), not the documented fire → updateEffects → drawEffects(renderCtx) path
+- minor: tests promoted viewW/viewH to params though §23 excludes them (viewport is renderCtx per Lifecycle)
+- minor: registry.js:13 header still said "exactly eight types"
+
+**Resolution:** ACCEPT (fix). Ramp scaling when fadeIn+fadeOut > duration so total lifetime always equals duration (doc §23 made explicit with one line); new end-to-end test proves draw-time viewport propagation through fireManual → updateEffects → drawEffects(mockCtx, {view}); viewW/viewH kept only as a clearly-labeled undocumented fallback (consistency with vignette/screenFlash), tests exercise renderCtx as primary; registry header now count-agnostic. Re-verify: 38/38 green. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
