@@ -176,6 +176,15 @@ export class Hero extends Entity {
     this.specialMeleePhase = null;     // 'windup' | 'active' | 'recovery' | null
     this.specialMeleeFrame = 0;        // float frame position within the swing
     this.specialMeleeDir = 1;          // resolved dir: facing * config.direction
+    // Self-protection on connect (knockback.md milestone 4): set to the number
+    // of frames remaining (active + recovery) once the special swing lands a
+    // clean hit during its active phase. Decays one frame per tick in
+    // updateSpecialMelee and is cleared by endSpecialMelee(). While > 0 the
+    // contact-damage handler treats the hero as invulnerable — the follow-
+    // through of a landed sweep/cartwheel cannot clip the hero. A whiffed
+    // swing never sets it, so the hero stays fully exposed. Normal melee and
+    // projectiles never touch this field.
+    this._connectProtectFrames = 0;
 
     // Offset collision boxes (relative to origin). Standing = full w×h.
     // Crouch keeps feet planted: top drops by h*0.4, height becomes h*0.6.
@@ -850,6 +859,34 @@ export class Hero extends Entity {
   }
 
   /**
+   * True while the hero is protected by a clean special-melee connect
+   * (knockback.md milestone 4): a sweep/cartwheel that landed during its
+   * active phase keeps the hero immune to contact damage until that swing's
+   * active+recovery phases end. Whiffs grant nothing; normal melee and
+   * projectiles never set this window.
+   */
+  get connectProtected() { return this._connectProtectFrames > 0; }
+
+  /**
+   * Arm the self-protection window after a CLEAN connect on the special
+   * melee hitbox (called from the unified hitbox system's onHit callback,
+   * which fires only when the special-melee box actually struck a target —
+   * a whiff never reaches here). The window lasts for the remainder of the
+   * current active frame plus every remaining recovery frame, i.e. until the
+   * swing ends naturally or is cancelled. Idempotent: re-hits during the same
+   * swing keep the earliest (longest) window rather than extending it.
+   */
+  markSpecialConnect() {
+    if (!this.specialMeleeActive) return;
+    const cfg = this.heroDef.specialMelee;
+    const total = this.specialMeleeTotalFrames;
+    const f = Math.floor(this.specialMeleeFrame);
+    // Frames still owned by this swing: the rest of active + all of recovery.
+    const remaining = Math.max(0, total - f);
+    this._connectProtectFrames = Math.max(this._connectProtectFrames, remaining);
+  }
+
+  /**
    * Advance the special swing's frame clock by dt and drive its phases
    * (design §15/§16). Reuses the normal melee's MELEE_FRAME_DURATION clock.
    *   windup/active — committed: owns vx at travelSpeed, no jump/run cancel.
@@ -911,6 +948,15 @@ export class Hero extends Entity {
 
     this.specialMeleeFrame += dt / Hero.SPECIAL_MELEE_FRAME_DURATION;
 
+    // Self-protection on connect (knockback.md milestone 4): the window is
+    // counted in swing frames, so it decays one frame per tick while the
+    // special swing is running. It can only be armed during active, so by the
+    // time recovery ends the count has drained to exactly zero — no separate
+    // expiry check needed. A whiffed swing never arms it.
+    if (this._connectProtectFrames > 0) {
+      this._connectProtectFrames = Math.max(0, this._connectProtectFrames - 1);
+    }
+
     if (phase === 'recovery') {
       // Committed velocity bleeds off under friction during recovery.
       this.vx *= GROUND_FRICTION;
@@ -935,6 +981,9 @@ export class Hero extends Entity {
     this.specialMeleeActive = false;
     this.specialMeleePhase = null;
     this.specialMeleeFrame = 0;
+    // A cancelled swing ends its self-protection immediately (milestone 4:
+    // "protection clears when the swing ends or is cancelled").
+    this._connectProtectFrames = 0;
   }
 
   /**
@@ -1075,6 +1124,7 @@ export class Hero extends Entity {
     this.specialMeleeActive = false;
     this.specialMeleePhase = null;
     this.specialMeleeFrame = 0;
+    this._connectProtectFrames = 0;
     this.supermoveActive = false;
     this.supermovePhase = null;
     this.supermoveTimer = 0;

@@ -803,6 +803,12 @@ world.on('contact', (a, b) => {
   // i-frames absorb contact hits (prevents melt while overlapping). takeHit()
   // returns false when invincible, so we skip damage + cooldown in that case.
   if (heroEnt.intangible) return;
+  // Self-protection on connect (knockback.md milestone 4): a clean sweep or
+  // cartwheel connect keeps the hero immune to contact damage until that
+  // swing's active+recovery end. The flag is set by the unified hitbox
+  // system on first connect and cleared by endSpecialMelee(); whiffs never
+  // set it, so a missed swing leaves the hero fully exposed here.
+  if (heroEnt.connectProtected) return;
   if (source._contactCd > 0) return;
   source._contactCd = CONTACT_COOLDOWN;
   const amt = source.stats?.attack ?? 10;
@@ -1559,6 +1565,14 @@ function processAllHitboxes() {
   // --- Process all against all targets ---
   const targets = [h, ...realEnemies, boss, ...barrels, ...woodBarrels, ...coinBarrels].filter(Boolean);
   processHitboxes(_hitboxes, targets, (hb, target, dealt) => {
+    // Self-protection on connect (knockback.md milestone 4): the FIRST clean
+    // hit of a special melee swing arms the hero's protection window for the
+    // rest of that swing. The callback only fires when the box actually struck
+    // a target — a whiff never reaches here, so it grants nothing. Normal
+    // melee and supermove connects intentionally do NOT arm it (acceptance #4).
+    if (hb.method === 'specialMelee' && hb.owner === h) {
+      h.markSpecialConnect();
+    }
     // VFX / juice on hit.
     if (target.layer === LAYER.HERO) {
       Effects.heroDamaged();
