@@ -174,7 +174,7 @@
     },
     "4.3": {
       "number": "4.3",
-      "status": "not_started",
+      "status": "completed",
       "name": "\u00a733 responsiveness-invariant test suite + full regression gate",
       "milestone": "Polish, Validation & Premium Quality Bar",
       "milestone_number": "4",
