@@ -14,6 +14,12 @@
 //                       (per-hero differences live here, not in code branches).
 //   supermove.box     — box exposed for the whole dash; bh: 'body' derives the
 //                       full body height at runtime (heroes differ in h).
+//
+// Knockback (docs/architecture/knockback.md §11): committed attacks carry a
+// `knockback` setting on their hitbox data; the core wiring reads it off the
+// hitbox at impact (hb.knockback) and routes to applyKnockback(). Non-committed
+// attacks (normal melee, thorn/special projectiles) carry NO knockback field —
+// presence of the data is the only gate. Values are starting points tuned in 2.3.
 
 export const ATTACK_MELEE = 'melee';
 export const ATTACK_SPECIAL_MELEE = 'specialMelee';
@@ -22,11 +28,17 @@ export const ATTACK_SUPERMOVE = 'supermove';
 /** Shared normal-melee frame table (both heroes swing identically today). */
 const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }, null];
 
-/** Shared supermove dash box (thin, full body height, in front). */
+/**
+ * Shared supermove dash box + knockback (thin, full body height, in front).
+ * Both heroes share the same supermove launch character (knockback.md §11):
+ * the strongest shove — big base heft, scales hardest with dash speed, longest
+ * stun, pushed along the dash velocity.
+ */
 // Anchored to the active collision-box CENTER (see Hero.attackHitboxWorld).
 // bh: 'body' resolves to the hero's full body height; oy: 0 centers it on the
 // body center so it spans the full height symmetrically (no drift below feet).
 const SUPERMOVE_HITBOX = { ox: 20, oy: 0, bw: 16, bh: 'body' };
+const SUPERMOVE_KNOCKBACK = { base: 600, scaleBySpeed: 0.5, hitstun: 0.50, dirMode: 'alongVelocity' };
 
 export const HEROES = {
   scarlet: {
@@ -51,11 +63,14 @@ export const HEROES = {
       travelSpeed: 300,     // px/s self-supplied horizontal movement
       frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
       hitbox: { ox: 0, oy: 0, bw: 32, bh: 48 },       // full-body overlay (cartwheel)
+      // Knockback (knockback.md §11): strong escape shove AWAY from the hero —
+      // pushes the enemy back to create escape space behind the retreat.
+      knockback: { base: 360, scaleBySpeed: 0.4, hitstun: 0.30, dirMode: 'fromAttacker' },
     },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
       [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES },
-      [ATTACK_SUPERMOVE]: { box: SUPERMOVE_HITBOX },
+      [ATTACK_SUPERMOVE]: { box: SUPERMOVE_HITBOX, knockback: SUPERMOVE_KNOCKBACK },
     },
   },
   balthazar: {
@@ -79,11 +94,14 @@ export const HEROES = {
       travelSpeed: 300,     // px/s self-supplied horizontal movement
       frames: { windup: 4, active: 3, recovery: 4 },  // frame counts at 60fps
       hitbox: { ox: 9, oy: 8.5, bw: 36, bh: 35 },     // leg sweep: in front, ~2/3 body height at ground level, offset back over his body
+      // Knockback (knockback.md §11): aggressive forward pushback along the
+      // lunge velocity — clears the path ahead of the advancing sweep.
+      knockback: { base: 320, scaleBySpeed: 0.4, hitstun: 0.28, dirMode: 'alongVelocity' },
     },
     // §30 per-frame attack hitbox data (see table docs at top of file).
     attacks: {
       [ATTACK_MELEE]: { frames: MELEE_HITBOX_FRAMES },
-      [ATTACK_SUPERMOVE]: { box: SUPERMOVE_HITBOX },
+      [ATTACK_SUPERMOVE]: { box: SUPERMOVE_HITBOX, knockback: SUPERMOVE_KNOCKBACK },
     },
   },
 };
