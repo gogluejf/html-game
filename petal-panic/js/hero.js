@@ -124,6 +124,14 @@ export class Hero extends Entity {
     this.continuesUsed = 0;
     this.maxContinues = 3;
 
+    // --- Body-contact knockback shim (§9) -------------------------------------
+    // applyKnockback() writes plain hitstunTimer / iFrameTimer fields on the
+    // victim. The contact handler in update.js transfers these into the hero's
+    // unified timer system immediately after calling applyKnockback. These
+    // fields are transient (always zeroed right after transfer).
+    this.hitstunTimer = 0;
+    this.iFrameTimer = 0;
+
     // Movement state.
     this.grounded = false;
     this.crouching = false;

@@ -67,6 +67,15 @@ export class Enemy extends Entity {
     // applyKnockback and counts down here, mirroring hitFlash.
     this.hitstunTimer = 0;
 
+    // --- Body-contact knockback (§9) ------------------------------------------
+    // Carried on the entity so the contact handler in update.js can call
+    // applyKnockback() without any layer-based branching. Regular enemies get
+    // a lighter base; bosses declare a larger base so they read harder through
+    // mass AND speed (the motion term picks up their velocity automatically).
+    this.bodyKnockback = def.bodyKnockback ?? (this.isBoss
+      ? { base: 340, scaleBySpeed: 1.0, hitstun: 0.30, iFrames: 0.70 }
+      : { base: 260, scaleBySpeed: 1.0, hitstun: 0.25, iFrames: 0.60 });
+
     // --- Death pipeline -----------------------------------------------------
     // Driven by a labeled 'death' timer on the unified engine (counts down).
     // deathTimer/fading are derived from it so render + debug stay in sync and

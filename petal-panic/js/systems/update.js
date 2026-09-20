@@ -807,16 +807,27 @@ world.on('contact', (a, b) => {
   source._contactCd = CONTACT_COOLDOWN;
   const amt = source.stats?.attack ?? 10;
   const dealt = damage(source, heroEnt, amt, 'contact');
-  // Knockback + hit-stun + i-frames: shove the hero away from the attacker's
-  // center with a small upward pop. Bosses fling harder than regular enemies.
+  // Body-contact knockback (§9): a single velocity-scaled rule carried on the
+  // enemy. Idle enemies shove less than charging ones (motion term); bosses
+  // read harder through their larger base + speed, not a separate category.
   if (dealt > 0) {
     const hcx = heroEnt.x + heroEnt.w / 2, scx = source.x + source.w / 2;
     const dirX = Math.sign(hcx - scx) || (heroEnt.facing * -1);
-    // Contextual profile by source (design §25): boss bodies fling harder.
-    heroEnt.takeHit({
-      source: source.layer === LAYER.BOSS ? 'bossContact' : 'contact',
-      dirX, dirY: -0.6,
-    });
+    // Build the push normal (horizontal away from attacker + small upward pop).
+    const rawLen = Math.hypot(dirX, -0.6) || 1;
+    const normal = { x: dirX / rawLen, y: -0.6 / rawLen };
+    applyKnockback(heroEnt, source, source.bodyKnockback, normal);
+    // Route applyKnockback's plain-field results into the hero's unified timer
+    // system so the existing intangible flag + render blink keep working.
+    if (heroEnt.hitstunTimer > 0) {
+      heroEnt.timers.set('rec', Math.max(heroEnt.timers.get('rec'), heroEnt.hitstunTimer));
+      heroEnt.hitstunTimer = 0;
+    }
+    if (heroEnt.iFrameTimer > 0) {
+      heroEnt.intangible = true;
+      heroEnt.timers.set('intangible', Math.max(heroEnt.timers.get('intangible'), heroEnt.iFrameTimer));
+      heroEnt.iFrameTimer = 0;
+    }
     // Task 7.1 — red vignette on contact damage (design §12 "Hero damaged").
     Effects.heroDamaged();
     // Task 7.3 — track hits taken from enemy contact (design §4.1).
