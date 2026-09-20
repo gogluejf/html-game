@@ -56,6 +56,8 @@ Some effects are active only while a condition holds rather than at a discrete m
 
 Config shape: `{ continuous: { condition: 'moving' | 'fastMoving' } }`. The engine keeps **one instance** alive while the carrier satisfies the condition — spawning it when the condition starts and completing it when the condition ends. A continuous declaration can accompany discrete triggers (the effect fires on either).
 
+**Carrier contract.** For each continuous declaration, the engine asks the carrier whether its condition currently holds by calling `carrier.isConditionMet(condition)` with the declared condition string (`'moving'` or `'fastMoving'`) and using the boolean return value. Carriers that declare continuous effects must implement this method; one instance is kept alive per declaration (not per condition), so two declarations sharing a condition each get their own instance. When a live instance reports `done`, the engine drops it and re-spawns a fresh one on the next update as long as the condition still holds.
+
 ### Lifecycle
 
 Every effect instance runs the same lifecycle regardless of type:

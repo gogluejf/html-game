@@ -20,7 +20,14 @@
       "status": "in_progress",
       "name": "Effect core: registry, instance lifecycle, trigger bus",
       "milestone": "Architecture Spec and Engine Core",
-      "milestone_number": "1"
+      "milestone_number": "1",
+      "summary": {
+        "failures": "None",
+        "lessons_learned": "Spec-first review caught a real API inversion (fire arg order) that tests had codified \u2014 tests must assert the documented contract, not the implementation's accidental shape. Avoid writing identity markers onto user-supplied objects (carriers): frozen objects throw in strict mode and preexisting properties collide; WeakMap is the zero-mutation fix. When rewriting call sites across a file, prefer targeted edits or a full rewrite over regex substitution \u2014 a sloppy regex corrupted the untracked test file (recoverable only by rewrite).",
+        "decisions": "fire(trigger, carrier) order follows effects.md \u00a7Lifecycle as source of truth over prior code; manual fires are one mechanism (trigger value 'manual'), not a second path; carrier identity via WeakMap keyed by object identity + declaration index for continuous keys; unknown-type handling stays non-throwing per spec, surfaced via console.warn.",
+        "done": "Resolved Review B + A-3 findings on effect engine core: (B-1) fire() signature flipped to doc-conformant fire(trigger, carrier, ctx={}) with all call sites/tests updated; (B-2) fireManual documented as the same single spawn path per the spec's 'manual' trigger vocabulary entry (no code change needed \u2014 it already routes through spawnFromConfig); (B-3) continuous tracking now uses a WeakMap (carrierIds) for carrier identity instead of mutating carriers with __effectId \u2014 frozen carriers work, no collision risk; (B-4) resetEffects already cleared the continuous map; added test proving tracked continuous state is fully cleared and re-spawns fresh after reset; (A-3) spawnFromConfig now console.warns on unregistered types (still no-throw), with a warn-capturing test.",
+        "confidence": "high"
+      }
     },
     "1.3": {
       "number": "1.3",
