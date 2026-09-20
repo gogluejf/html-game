@@ -109,4 +109,50 @@ ok('barrel case: blocked against a solid then jumping accelerates into movement,
   assert.ok(Math.abs(h.vx - 250) < 1, `should settle at run speed after clearing, got ${h.vx}`);
 });
 
+console.log('Air direction reversal (§8)');
+ok('full-speed air reversal flips instantly, preserving speed magnitude (no decel-to-zero)', () => {
+  const h = makeHero();
+  h.setGrounded(true);
+  let inp = noInput(); inp.right = true;
+  for (let i = 0; i < 10; i++) h.update(DT, inp); // reach full run speed
+  assert.ok(Math.abs(h.vx - 250) < 1, 'precondition: at full run speed');
+  inp.jump = true;
+  h.update(DT, inp);
+  h.setGrounded(false); // airborne
+  assert.ok(Math.abs(h.vx - 250) < 1, 'running jump preserved 250 vx');
+  // Press the opposite direction in the air.
+  inp = noInput(); inp.left = true;
+  h.update(DT, inp);
+  // Instant mirror: sign flipped on THIS frame, magnitude preserved (~250).
+  assert.ok(h.vx < 0, `reversal must flip sign immediately, got ${h.vx}`);
+  assert.ok(Math.abs(Math.abs(h.vx) - 250) < 1, `magnitude must be preserved (~250), got ${h.vx}`);
+});
+
+ok('air reversal never passes through a long zero window', () => {
+  const h = makeHero();
+  h.setGrounded(true);
+  let inp = noInput(); inp.right = true;
+  for (let i = 0; i < 10; i++) h.update(DT, inp);
+  inp.jump = true;
+  h.update(DT, inp);
+  h.setGrounded(false);
+  inp = noInput(); inp.left = true;
+  h.update(DT, inp);
+  // The very first reversal frame is already fully negative — it did not cruise
+  // through ~0 over many frames (the old bug took ~11 frames to cross zero).
+  assert.ok(h.vx <= -249, `first reversal frame should be ~-250, got ${h.vx}`);
+});
+
+ok('near-zero air start still uses the ramp (no instant snap)', () => {
+  const h = makeHero();
+  h.setGrounded(true);
+  let inp = noInput(); inp.jump = true;
+  h.update(DT, inp); // jump from rest → vx ≈ 0
+  h.setGrounded(false);
+  assert.ok(Math.abs(h.vx) < 1, 'precondition: jumped from rest');
+  inp = noInput(); inp.right = true;
+  h.update(DT, inp);
+  assert.ok(h.vx > 0 && h.vx < 250, `near-zero start must ramp, not snap: ${h.vx}`);
+});
+
 console.log(`\n${passed} passed`);

@@ -29,6 +29,12 @@ const DROP_THROUGH_TIME = 0.25; // seconds the one-way solid stays ignored
 // near-zero velocity, accelerate toward run speed over a short ramp instead of
 // snapping to full speed in one frame. Ground stays arcade-immediate (§7).
 const AIR_ACCEL = 1400;         // px/s^2 ramp for airborne horizontal intent
+// Air Control §8 — reversal vs ramp-up boundary. If the hero already has real
+// horizontal momentum (|vx| above this) and presses the OPPOSITE direction, the
+// velocity flips instantly while preserving its magnitude (no decel-to-zero).
+// Below this threshold the hero is "near rest" and uses the gradual ramp-up so
+// starting from stationary stays precise instead of lurching to full speed.
+const AIR_REVERSAL_MIN_SPEED = 40; // px/s — below this counts as near-zero
 // Blocked-on-ground (design §8 solid-obstacle case): resolve() stamps a
 // per-frame _blockedX flag when a solid actually cancelled horizontal motion.
 // A grounded hero pinned against a wall can never accumulate vx, so its held
@@ -426,13 +432,30 @@ export class Hero extends Entity {
         // Opposite-direction input cancels existing momentum immediately.
         this.vx = targetVx;
       } else {
-        // Air (or blocked-on-ground): accelerate toward run speed over a short
-        // ramp (§8). Never snap from ~0 to full speed in one frame; legitimate
-        // jump momentum is preserved because we only approach, never overwrite,
-        // vx.
-        const step = AIR_ACCEL * dt;
-        if (Math.abs(targetVx - this.vx) <= step) this.vx = targetVx;
-        else this.vx += Math.sign(targetVx - this.vx) * step;
+        // Air (or blocked-on-ground): §8 air control. Two distinct behaviors:
+        //
+        //   1. REVERSAL — the hero has real momentum (|vx| >= threshold) and is
+        //      pressing the OPPOSITE direction. Flip instantly, preserving the
+        //      current speed magnitude. No decel-to-zero, no re-accel: a +200
+        //      hero pressing left becomes -200 on this frame. This keeps mid-air
+        //      corrections crisp and never lets a reversal feel sluggish.
+        //
+        //   2. RAMP-UP — starting from near-zero (stationary jump) or topping up
+        //      in the SAME direction. Accelerate toward full run speed over a
+        //      short period so a stationary jump stays precise instead of
+        //      lurching to full speed in one frame. Legitimate jump momentum is
+        //      preserved because we only approach, never overwrite, vx.
+        const reversing =
+          Math.sign(this.vx) === -moveDir &&
+          Math.abs(this.vx) >= AIR_REVERSAL_MIN_SPEED;
+        if (reversing) {
+          // Instant mirror: keep the exact speed we had, just flip its sign.
+          this.vx = moveDir * Math.abs(this.vx);
+        } else {
+          const step = AIR_ACCEL * dt;
+          if (Math.abs(targetVx - this.vx) <= step) this.vx = targetVx;
+          else this.vx += Math.sign(targetVx - this.vx) * step;
+        }
       }
     } else if (this.grounded) {
       // No horizontal input on the ground. Two distinct feels:

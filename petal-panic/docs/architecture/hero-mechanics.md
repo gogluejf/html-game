@@ -262,32 +262,46 @@ Direction reversal should feel immediate.
 
 Ground and airborne horizontal control intentionally behave differently.
 
-## Existing Momentum
+The single design goal is **maximum responsiveness**. Every rule below exists to
+keep air control instant except in the one case where instant control would feel
+wrong: starting to move from (near) rest. The ramp-up is a precision tool for
+that case only — it must never make an already-moving hero, or a hero who is
+actively changing direction, feel sluggish.
 
-If the hero jumps while already moving:
+## Running → Jump: Preserve Full Velocity
 
-* legitimate horizontal momentum is preserved.
+If the hero jumps while already moving horizontally:
 
-A normal running jump should therefore continue naturally.
+* the full current horizontal velocity is preserved on launch;
+* no ramp, no decay, no re-acceleration.
 
----
+A running jump continues at run speed. This is the baseline "feels good" case and
+must stay exactly as fast as ground movement.
 
-## Starting Horizontal Movement in Air
+## Air Direction Reversal: Instant Flip, Keep Speed
 
-If the hero enters the air with little or no horizontal velocity and then presses a horizontal direction:
+If the hero is moving horizontally in the air and presses the opposite direction:
+
+* the velocity direction reverses **immediately**;
+* the current speed magnitude is preserved through the reversal;
+* the hero does **not** decelerate to zero before reversing.
+
+Reversing feels like an instant mirror of the current motion, not a stop-then-go.
+This keeps mid-air corrections crisp.
+
+## Stationary / Near-Zero → Jump: Ramp-Up
+
+If the hero enters the air with little or no horizontal velocity and then presses
+a horizontal direction:
 
 * do **not** instantly assign full run speed;
-* accelerate toward normal horizontal speed over a short period.
+* accelerate gradually from the current low velocity toward full air speed over a
+  short period.
 
-The ramp should remain quick and responsive.
+This enables precise, controlled jumps onto nearby obstacles and platforms without
+the hero lurching forward at full speed the moment a direction is tapped.
 
-This is not intended to create floaty or sluggish air control.
-
----
-
-## Solid-Obstacle Case
-
-Example:
+### Solid-Obstacle Example
 
 1. Hero runs against a barrel.
 2. Barrel correctly blocks movement.
@@ -295,13 +309,36 @@ Example:
 4. Hero jumps.
 5. Once high enough to clear the barrel, horizontal movement becomes possible.
 
-The hero should accelerate into horizontal movement rather than instantly snapping from approximately zero velocity to full run speed.
-
-This makes it possible to:
+Because the hero was pinned at ~zero horizontal velocity by the barrel, the air
+ramp-up applies: the hero accelerates into horizontal movement rather than
+snapping from ~0 to full run speed in one frame. This makes it possible to:
 
 * jump onto the barrel precisely;
 * clear it naturally;
 * avoid the feeling of suddenly "running at full speed in mid-air."
+
+## Direction Change During Ramp-Up: Flip, Then Keep Ramping
+
+If the hero is mid-ramp (still accelerating from a low start) and presses the
+opposite direction:
+
+* flip the current velocity direction immediately, preserving its magnitude;
+* continue ramping toward full speed in the new direction.
+
+The ramp state survives the reversal; only the sign of the velocity changes. The
+hero never loses the progress it has already built up.
+
+## Core Rule
+
+Ramp-up applies **only** when the hero enters the air at low/near-zero horizontal
+velocity. It must not affect:
+
+* normal running jumps (full velocity is preserved);
+* mid-air direction reversals (instant flip, speed kept);
+* any situation where the hero already has meaningful horizontal momentum.
+
+The intent is maximum responsiveness: the game should always feel instant except
+for the deliberate, brief ramp that gives precise control when starting from rest.
 
 This is a **general air-control rule**, not a special barrel/block velocity cap.
 
