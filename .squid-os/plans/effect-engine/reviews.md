@@ -134,6 +134,25 @@ Note: run-all.mjs has two pre-existing flaky files unrelated to this plan — co
 
 **Resolution:** ACCEPT (fix). blendIntensity implemented as a real alpha-multiplier param (default 1.0 preserves behavior; effective alpha = opacity × blendIntensity clamped [0,1]) + documented in §12; params.box added to §12 param list (factory-time fallback geometry, world coords, no-op when absent); frequency test replaced with exact frame-set derivation at fixed dt (expected ON/OFF sets from the phase formula over frames 1..k−1, exactly 2*flashes−1 transitions, lifetime == 24 frames) + mutation test proving flashes=2 vs 3 yield different patterns. Re-verify: 39/39 green (spriteFlash 18/18 ×5 deterministic). Committed.
 
+## Task 3.3 — Camera Shake
+
+**Review A:** PASS (1 minor — catalog trigger coverage: only `explosion` exercised; acceptable, data-driven triggers + full wiring belongs to call-site migration)
+
+**Review B:** FAIL (1 blocker, 3 major)
+- blocker: cameraShake.test.js:153 — no production path consumed the STATE offset; firing had no visible effect
+- major: only `explosion` trigger tested; documented `hitLanded`/`attackActive` not proven through the engine path
+- major: effects.md:321 — Frequency listed without units/re-roll timing/first-roll/holding semantics
+- major: default frequency 30 Hz did not preserve legacy per-frame random shake
+
+**Fix round 1:** legacy call sites migrated through the shim (triggerShake tracked-instance slot with max-kick merge; getShakeOffset() reads the instance; legacy shakeMag/shakeTimer/shakeOffset locals removed from systems/update.js — single owner); doc §13 frequency semantics made explicit (Hz, hold-between-rolls, first roll on first update, frequency 0 = per-frame legacy mode); default set to per-frame re-roll; hitLanded + attackActive trigger tests added.
+**Fix cycle bugs found during verification (all test/shim-side, effect math was correct):**
+1. Import name collision: `getShakeOffset` imported from spriteShake.js shadowed inside the singleton's own camera-shake method → aliased import to getSpriteShakeOffset.
+2. Object-literal key collision: TWO methods named getShakeOffset in the Effects literal (camera no-arg + per-entity) — the later silently overwrote the earlier, so the camera path always returned {0,0}. Renamed the per-entity method to getEntityShakeOffset(e); render.js:79/99 + tests updated; regression test proves both paths return distinct correct values simultaneously.
+3. Test expectation arithmetic: stub seq [0.25, 0.75] gives factors (2·rand−1) = ∓0.5, so frame-1 offset is (−2.8, 2.8), not (−5.6, 5.6) — corrected expectations + comments show the factor step.
+4. Re-fire tail loop mis-indexed fresh-instance frames (k=f+1−10 instead of continuing past k=15) and expected live offsets after the 0.25s lifetime — rewritten to assert done→{0,0} after the fresh lifetime, which IS the timer-reset parity proof. Removed a leftover DBG console.log.
+
+Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.

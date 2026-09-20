@@ -73,6 +73,16 @@ export function activeCount() {
   return active.filter(i => !i.done).length;
 }
 
+/**
+ * Snapshot of the currently active (not-yet-completed) instances. Read-only
+ * view for tests/debug tooling — never mutate the returned array or the
+ * instances through it (use complete()/resetEffects() for lifecycle).
+ * @returns {EffectInstance[]}
+ */
+export function activeInstances() {
+  return active.filter(i => !i.done);
+}
+
 // --- EffectInstance -------------------------------------------------------------
 // Uniform wrapper so every effect — regardless of type — advances through
 // the same update/draw/complete path driven only by its own params.

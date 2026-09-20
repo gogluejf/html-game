@@ -298,7 +298,7 @@ ok('kick uses max(): a weaker flash never lowers a running one', () => {
   assert.equal(Effects.screenFlash, 1);
 });
 
-console.log('enemy shake (beginEnemyShake / getShakeOffset) — ±3px bounds');
+console.log('enemy shake (beginEnemyShake / getEntityShakeOffset) — ±3px bounds');
 ok('beginEnemyShake sets hitFlash up to 0.1 (keeps longer existing values)', () => {
   const e = { hitFlash: 0 };
   Effects.beginEnemyShake(e);
@@ -307,16 +307,16 @@ ok('beginEnemyShake sets hitFlash up to 0.1 (keeps longer existing values)', () 
   Effects.beginEnemyShake(e2);
   assert.equal(e2.hitFlash, 0.3);
 });
-ok('getShakeOffset stays within ±3px per axis while hitFlash > 0, both sides reached', () => {
+ok('getEntityShakeOffset stays within ±3px per axis while hitFlash > 0, both sides reached', () => {
   const e = { hitFlash: 0.1 };
-  // Deterministic endpoint coverage: getShakeOffset returns (rand*2-1)*SHAKE_AMT
+  // Deterministic endpoint coverage: getEntityShakeOffset returns (rand*2-1)*SHAKE_AMT
   // on each axis — TWO randoms per call (x then y). Stub a length-8 sequence so
   // four calls produce x∈{-3,+3} and y∈{-3,+3} exactly — no statistical
   // tolerance. rand=0 → -3; rand≈1 → +3.
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   withRandomSeq([0, 0.999999, 0.999999, 0, 0, 0.999999, 0.999999, 0], () => {
     for (let i = 0; i < 4; i++) {
-      const o = Effects.getShakeOffset(e);
+      const o = Effects.getEntityShakeOffset(e);
       assert.ok(Math.abs(o.x) <= 3 && Math.abs(o.y) <= 3, `offset (${o.x}, ${o.y})`);
       minX = Math.min(minX, o.x); maxX = Math.max(maxX, o.x);
       minY = Math.min(minY, o.y); maxY = Math.max(maxY, o.y);
@@ -327,9 +327,9 @@ ok('getShakeOffset stays within ±3px per axis while hitFlash > 0, both sides re
   assert.ok(minY < -2.99, `min y ${minY} never reached the -3 bound`);
   assert.ok(maxY > 2.99, `max y ${maxY} never reached the +3 bound`);
 });
-ok('getShakeOffset returns {0,0} when hitFlash == 0 or entity is null', () => {
-  assert.deepEqual(Effects.getShakeOffset({ hitFlash: 0 }), { x: 0, y: 0 });
-  assert.deepEqual(Effects.getShakeOffset(null), { x: 0, y: 0 });
+ok('getEntityShakeOffset returns {0,0} when hitFlash == 0 or entity is null', () => {
+  assert.deepEqual(Effects.getEntityShakeOffset({ hitFlash: 0 }), { x: 0, y: 0 });
+  assert.deepEqual(Effects.getEntityShakeOffset(null), { x: 0, y: 0 });
 });
 
 console.log('reset');

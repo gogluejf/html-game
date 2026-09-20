@@ -95,21 +95,21 @@ ok('beginEnemyShake keeps a longer existing flash', () => {
   Effects.beginEnemyShake(e);
   assert.equal(e.hitFlash, 0.3);
 });
-ok('getShakeOffset returns zero when no flash', () => {
-  assert.deepEqual(Effects.getShakeOffset({ hitFlash: 0 }), { x: 0, y: 0 });
+ok('getEntityShakeOffset returns zero when no flash', () => {
+  assert.deepEqual(Effects.getEntityShakeOffset({ hitFlash: 0 }), { x: 0, y: 0 });
 });
-ok('getShakeOffset stays within ±3px while flashing', () => {
+ok('getEntityShakeOffset stays within ±3px while flashing', () => {
   const e = { hitFlash: 0.1 };
   let sawNonZero = false;
   for (let i = 0; i < 50; i++) {
-    const o = Effects.getShakeOffset(e);
+    const o = Effects.getEntityShakeOffset(e);
     assert.ok(Math.abs(o.x) <= 3 && Math.abs(o.y) <= 3);
     if (o.x !== 0 || o.y !== 0) sawNonZero = true;
   }
   assert.ok(sawNonZero, 'expected at least one non-zero offset in 50 rolls');
 });
-ok('getShakeOffset handles null entity', () => {
-  assert.deepEqual(Effects.getShakeOffset(null), { x: 0, y: 0 });
+ok('getEntityShakeOffset handles null entity', () => {
+  assert.deepEqual(Effects.getEntityShakeOffset(null), { x: 0, y: 0 });
 });
 
 console.log('Reset');

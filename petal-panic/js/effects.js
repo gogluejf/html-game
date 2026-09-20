@@ -25,7 +25,10 @@
 // Screen-space state (read via the `vignette` / `screenFlash` getters for
 // tests/debug): mirrors the engine's active instance values each frame —
 // the singleton semantics of the old API, backed by one engine instance per
-// overlay type (max() kick on fire, linear decay, zero when faded).
+// overlay type (max() kick on fire, linear decay, zero when faded). The
+// camera-shake slot works the same way: Effects.triggerShake(mag) fires a
+// tracked 'camera-shake' instance through the engine with the legacy
+// max-kick merge rule, and Effects.getShakeOffset() reads its current offset.
 
 import { particles } from './particles.js';
 import { VIEW_W, VIEW_H } from './view.js'; // viewport dims for screen-space overlay fires
@@ -35,7 +38,7 @@ import {
   drawEffects,
   resetEffects,
 } from './effects/index.js';
-import { SHAKE_AMT, getShakeOffset } from './effects/spriteShake.js'; // single owner of the ±3px tunable + jitter math
+import { SHAKE_AMT, getShakeOffset as getSpriteShakeOffset } from './effects/spriteShake.js'; // single owner of the ±3px tunable + jitter math (aliased: the singleton below defines its own camera-shake getShakeOffset())
 import './effects/registry.js'; // side effect: registers the eight migrated types
 
 // --- Screen-space singleton mirror ---------------------------------------------
@@ -45,6 +48,7 @@ import './effects/registry.js'; // side effect: registers the eight migrated typ
 // instance when it would raise the value (monolith: Math.max(current, s)).
 let vignetteInstance = null;
 let flashInstance = null;
+let shakeInstance = null; // camera-shake singleton (legacy triggerShake semantics)
 
 /** Live intensity 0..1 of a tracked overlay instance (body holds the value). */
 function overlayValue(inst) {
@@ -80,6 +84,26 @@ function kickOverlay(type, strength, fireFn, current) {
   if (current) current.complete();
   const next = fireFn(type, { strength });
   return next ?? current; // unknown type → keep whatever was there (no throw)
+}
+
+/**
+ * Kick the camera-shake singleton through the engine with the legacy
+ * triggerShake(mag) merge rule: `shakeMag = Math.max(shakeMag, mag)` plus an
+ * unconditional timer reset. That is exactly "re-fire a fresh full-lifetime
+ * instance whenever mag >= the running instance's original intensity; keep
+ * the running one when mag is smaller" — the monolith's max() never lowers
+ * the amplitude envelope, and its timer reset only extends the tail at the
+ * unchanged peak magnitude (which a kept instance already does).
+ * @param {number} mag desired shake magnitude in px
+ * @returns {object|null} the instance now being tracked
+ */
+function kickCameraShake(mag) {
+  const cur = shakeInstance;
+  if (cur && !cur.done && mag < cur.body.intensity) return cur; // never lower the peak
+  if (cur) cur.complete();
+  const next = fireManual({ type: 'camera-shake', params: { intensity: mag } }, null,
+    { view: { w: VIEW_W, h: VIEW_H } });
+  return next ?? cur;
 }
 
 // --- Entity-space spawners ------------------------------------------------------
@@ -122,6 +146,32 @@ export const Effects = {
   bigExplosion(strength = 1) {
     flashInstance = kickOverlay('screen-flash', strength,
       (t, params) => fireManual({ type: t, params }, null, { view: { w: VIEW_W, h: VIEW_H } }), flashInstance);
+  },
+
+  /**
+   * Explosion / stomp / heavy impact → screen shake of `mag` px for the
+   * camera-shake default duration (0.25s). Legacy triggerShake(mag) merge
+   * rule: max-kick on magnitude — a smaller trigger while a larger shake is
+   * live keeps the bigger one; an equal-or-larger trigger re-fires a fresh
+   * full-lifetime instance (the monolith's unconditional timer reset).
+   * @param {number} mag shake magnitude in px
+   */
+  triggerShake(mag) {
+    shakeInstance = kickCameraShake(mag);
+  },
+
+  /**
+   * Current camera-shake offset {x,y} in px; {0,0} when idle or done.
+   * render.js adds this to the camera translate each frame (monolith parity:
+   * the same per-frame random draw cadence, now owned by the engine instance).
+   * @returns {{x:number,y:number}}
+   */
+  getShakeOffset() {
+    if (shakeInstance && !shakeInstance.done) {
+      const o = shakeInstance.body.getOffset();
+      return { x: o.x, y: o.y };
+    }
+    return { x: 0, y: 0 };
   },
 
   // --- Entity-space spawners --------------------------------------------------
@@ -214,7 +264,7 @@ export const Effects = {
   /**
    * Mark an entity as shaking (design §12 "Enemy damaged: fast shake"). The
    * shake rides on the entity's existing hitFlash timer (0.1s), so just set
-   * hitFlash — render reads getShakeOffset(e) each frame for the random
+   * hitFlash — render reads getEntityShakeOffset(e) each frame for the random
    * offset. Firing the engine's sprite-shake type also tracks the instance so
    * it prunes itself once the flash decays.
    * @param {object} e any entity with a hitFlash timer
@@ -231,11 +281,14 @@ export const Effects = {
    * helper (monolith parity): it reads carrier.hitFlash directly — the same
    * expiry signal the engine instance uses — so no engine lookup is needed
    * here; the computation and SHAKE_AMT live in spriteShake.js (single owner).
+   * Named getEntityShakeOffset to keep the no-arg getShakeOffset() name free
+   * for the camera-shake read path (object-literal key collision would make
+   * the later definition silently win).
    * @param {object} e entity with a hitFlash timer
    * @returns {{x:number,y:number}}
    */
-  getShakeOffset(e) {
-    return getShakeOffset(e);
+  getEntityShakeOffset(e) {
+    return getSpriteShakeOffset(e);
   },
 
   // --- Frame step --------------------------------------------------------------
@@ -256,6 +309,7 @@ export const Effects = {
     // "never lower" rule would compare against a dead instance).
     if (vignetteInstance && vignetteInstance.done) vignetteInstance = null;
     if (flashInstance && flashInstance.done) flashInstance = null;
+    if (shakeInstance && shakeInstance.done) shakeInstance = null;
   },
 
   /**
@@ -287,5 +341,6 @@ export const Effects = {
     resetEffects();
     vignetteInstance = null;
     flashInstance = null;
+    shakeInstance = null;
   },
 };

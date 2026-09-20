@@ -76,7 +76,7 @@ export function render(ctx) {
       if (e.alive === false) continue; // destroyed target — no longer drawn
       // Task 7.1 — enemy shake: offset the draw position by a random ±3px while
       // hitFlash is running (design §12 "Enemy damaged: fast shake").
-      const sh = Effects.getShakeOffset(e);
+      const sh = Effects.getEntityShakeOffset(e);
       ctx.save();
       ctx.translate(sh.x, sh.y);
       e.draw(ctx);
@@ -96,7 +96,7 @@ export function render(ctx) {
     // Each draws itself including death shrink/fade and its attack telegraph.
     for (const e of getRealEnemies()) {
       if (!e.alive) continue;
-      const sh = Effects.getShakeOffset(e);
+      const sh = Effects.getEntityShakeOffset(e);
       ctx.save();
       ctx.translate(sh.x, sh.y);
       e.draw(ctx);

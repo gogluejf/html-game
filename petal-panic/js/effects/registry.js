@@ -25,6 +25,7 @@ import { screenFlash } from './screenFlash.js';
 import { spriteShake } from './spriteShake.js';
 import { screenOverlay } from './screenOverlay.js';
 import { spriteFlash } from './spriteFlash.js';
+import { cameraShake } from './cameraShake.js';
 
 // --- Migrated effects (task 2.1) ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -39,3 +40,4 @@ registerEffect('sprite-shake', spriteShake);
 // --- M3 screen-space / overlay effects ----------------------------------------
 registerEffect('screen-overlay', screenOverlay);
 registerEffect('sprite-flash', spriteFlash);
+registerEffect('camera-shake', cameraShake);

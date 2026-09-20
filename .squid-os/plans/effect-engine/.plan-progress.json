@@ -103,7 +103,7 @@
     },
     "3.2": {
       "number": "3.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Sprite Flash",
       "milestone": "Screen-Space and Overlay Effects",
       "milestone_number": "3",
@@ -117,10 +117,18 @@
     },
     "3.3": {
       "number": "3.3",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Camera Shake",
       "milestone": "Screen-Space and Overlay Effects",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "lessons_learned": "Math.random stubs cannot produce exactly \u00b11 ((rand*2-1) maxes at ~1.999998), so exact-EPS assertions against extreme draws fail \u2014 use a small STUB_TOL (1e-4) for amplitude checks while keeping EPS for structural assertions (zeroing, done-frame). With a decaying envelope, 'both endpoints reached' must be asserted on the FIRST roll (largest amplitude), not aggregated over the whole lifetime \u2014 later rolls are bounded by the smaller envelope and never reach the full bound. Re-roll-rate tests must compare offset CHANGES between consecutive updates, not non-zero-ness: the initial {0,0} state and a held offset both read as 'no change' incorrectly otherwise.",
+        "failures": "Task.verify lists 'node petal-panic/js/test/effectCatalog.test.js' which does not exist yet (presumably an M7 theater deliverable); fell back to the project-wide runner: node petal-panic/js/test/run-all.mjs \u2192 40/40 passed (was 39/39 before this task).",
+        "decisions": "Implemented as a pure STATE effect with getOffset() on the instance body (not a module-level singleton, not an engine API) \u2014 matches the sprite-shake consumption pattern and keeps the engine free of per-effect branching. Defaults chosen from the legacy monolith values (intensity 6, duration 0.25s, linear decay) so a future call-site migration is behavior-preserving. Frequency modeled as re-roll period (offset held between rolls) instead of phase-based jitter, since the spec only says 'Frequency' without defining it; one explicit comment documents the interpretation. lastRoll initialized to -Infinity so the first update always rolls.",
+        "confidence": "high",
+        "done": "Camera Shake implemented as a registered STATE effect (petal-panic/js/effects/cameraShake.js + one-line registration in registry.js, no engine change). Instance exposes getOffset() consumed by the camera each frame (same pattern as sprite-shake; render() is a no-op). Params per effects.md \u00a713: intensity (default 6 = legacy triggerShake value), duration (default 0.25s = legacy SHAKE_DURATION), frequency Hz (default 30; offset re-rolls every 1/frequency and holds between rolls so frequency is observable at any frame rate), hStrength/vStrength per-axis multipliers, decay exponent (default 1 = linear ease-out matching the monolith). Amplitude = intensity * (remaining/duration)^decay; per-axis uniform random within \u00b1strength*amp. Done exactly when elapsed >= duration - 1e-9 (fixed-dt epsilon convention), then getOffset() returns {x:0,y:0}; complete() force-completes for the engine reset path. New test file js/test/cameraShake.test.js (9 tests): exact done-frame at 15 frames, exact amplitude values via Math.random stubs (STUB_TOL 1e-4 since rand\u2208[0,1) can't hit \u00b11 exactly), bounds check over full lifetime, h/v strength scaling, frequency re-roll counting (60Hz vs 30Hz), registration via hasEffect/fireManual, carrier-config attach on 'explosion', end-to-end fire\u2192updateEffects through the real engine path, and a standalone theater demo with null carrier driven only by params.",
+        "tradeoffs": "Legacy systems/update.js shake (triggerShake/updateShake/getShakeOffset) left untouched \u2014 migration of those call sites to the engine type is out of scope for this task (M2-style behavior-preserving migration would be a later task); both coexist without conflict since the new type is instance-scoped. Offset is held constant between re-roll frames rather than drawn every update(), which deviates from the monolith's per-frame draw but makes the documented 'Frequency' param actually meaningful. No kick/merge semantics (unlike vignette/screen-flash singletons): multiple concurrent shakes sum nothing \u2014 the consumer would need to pick or add offsets; not exercised yet since no game call site uses the engine type yet."
+      }
     },
     "3.4": {
       "number": "3.4",

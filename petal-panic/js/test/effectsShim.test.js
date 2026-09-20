@@ -123,11 +123,11 @@ ok('Effects.update(dt) leaves the particle pool untouched', () => {
 });
 
 console.log('Shake constant is owned by spriteShake.js');
-ok('getShakeOffset stays within ±SHAKE_AMT while flashing', () => {
+ok('getEntityShakeOffset stays within ±SHAKE_AMT while flashing', () => {
   const e = { hitFlash: 0.1 };
   let sawNonZero = false;
   for (let i = 0; i < 50; i++) {
-    const o = Effects.getShakeOffset(e);
+    const o = Effects.getEntityShakeOffset(e);
     assert.ok(Math.abs(o.x) <= 3 && Math.abs(o.y) <= 3, `out of range: ${JSON.stringify(o)}`);
     if (o.x !== 0 || o.y !== 0) sawNonZero = true;
   }
@@ -137,6 +137,104 @@ ok('beginEnemyShake fires the engine type AND bumps hitFlash', () => {
   const e = { hitFlash: 0 };
   Effects.beginEnemyShake(e);
   assert.ok(e.hitFlash >= 0.1);
+});
+
+
+console.log('Camera-shake singleton through the shim (task 3.3 review)');
+ok('triggerShake kicks a tracked instance; getShakeOffset returns its live offset', () => {
+  Effects.reset();
+  assert.deepEqual(Effects.getShakeOffset(), { x: 0, y: 0 }, 'idle → zero offset');
+  Effects.triggerShake(6);
+  // Stub Math.random so the per-frame re-rolls are deterministic and the
+  // envelope math is checkable frame by frame.
+  const seq = [0.25, 0.75]; // x,y pair cycled every frame (perFrame default)
+  let ri = 0;
+  const origRand = Math.random;
+  Math.random = () => seq[ri++ % seq.length];
+  try {
+    for (let f = 0; f < 15; f++) {
+      Effects.update(DT); // engine step drives the tracked shake instance
+      const o = Effects.getShakeOffset();
+      // amp_k = intensity * ((DURATION - k*DT)/DURATION), k = f+1
+      const amp = 6 * ((0.25 - (f + 1) * DT) / 0.25);
+      // The effect multiplies by (2*rand-1): x-roll 0.25 -> -0.5, y-roll 0.75 -> +0.5
+      const ex = -0.5 * amp; // frame 1: -0.5 * 5.6 = -2.8
+      const ey = +0.5 * amp; // frame 1: +0.5 * 5.6 =  2.8
+      assert.ok(Math.abs(o.x - ex) < 1e-4 && Math.abs(o.y - ey) < 1e-4,
+        `frame ${f + 1} offset (${o.x}, ${o.y}) vs (${ex}, ${ey})`);
+    }
+  } finally { Math.random = origRand; }
+  for (let i = 0; i < 10; i++) Effects.update(DT); // drain past the 0.25s lifetime
+  assert.deepEqual(Effects.getShakeOffset(), { x: 0, y: 0 }, 'zero once done');
+});
+ok('triggerShake max-kick merge: smaller trigger keeps the bigger running shake', () => {
+  Effects.reset();
+  Effects.triggerShake(8);
+  Effects.update(DT);
+  Effects.triggerShake(4); // smaller than the running peak of 8
+  Effects.update(DT);
+  const o = Effects.getShakeOffset();
+  assert.ok(Math.abs(o.x) <= 8 + 1e-9 && Math.abs(o.y) <= 8 + 1e-9,
+    `envelope must stay at the 8px peak (${o.x}, ${o.y})`);
+});
+ok('triggerShake re-fires on an equal-or-larger kick (timer-reset parity)', () => {
+  Effects.reset();
+  Effects.triggerShake(6);
+  for (let i = 0; i < 10; i++) Effects.update(DT); // ~0.167s into the 0.25s life
+  Effects.triggerShake(6); // equal magnitude → fresh full-lifetime instance
+  const origRand = Math.random;
+  Math.random = () => 0.25; // deterministic: (2*0.25-1) = -0.5 → x = -0.5*amp each frame
+  try {
+    for (let f = 0; f < 15; f++) {
+      Effects.update(DT);
+      const o = Effects.getShakeOffset();
+      const amp = 6 * ((0.25 - (f + 1) * DT) / 0.25);
+      assert.ok(Math.abs(o.x - (-0.5 * amp)) < 1e-4,
+        `frame ${f + 1} x ${o.x} vs ${-0.5 * amp} (fresh decay curve from the re-fire)`);
+    }
+    // The first 15 updates above consumed the fresh instance's full 0.25s
+    // lifetime (k=1..15). From its 16th update on the instance is DONE —
+    // timer-reset parity: the re-fire started a fresh full lifetime from the
+    // re-fire point, not a continuation of the old curve.
+    for (let i = 0; i < 2; i++) {
+      Effects.update(DT);
+      assert.deepEqual(Effects.getShakeOffset(), { x: 0, y: 0 },
+        `post-lifetime update ${i + 1} must be zero (fresh instance done at exactly 0.25s)`);
+    }
+  } finally { Math.random = origRand; }
+});
+ok('camera and entity shake paths coexist: distinct correct offsets simultaneously', () => {
+  // Regression for the object-literal key collision where two methods named
+  // getShakeOffset coexisted (the sprite-shake body silently won, so the
+  // camera path always read {0,0}). Proves BOTH read paths work at once:
+  // a live camera shake AND a live entity hitFlash yield their own offsets.
+  Effects.reset();
+  const e = { hitFlash: 0 };
+  Effects.triggerShake(6);
+  Effects.beginEnemyShake(e); // bumps e.hitFlash to 0.1
+  assert.ok(e.hitFlash >= 0.1, 'entity flash is live');
+  const seq = [0.25, 0.75]; // x,y pair cycled per roll
+  let ri = 0;
+  const origRand = Math.random;
+  Math.random = () => seq[ri++ % seq.length];
+  try {
+    Effects.update(DT); // steps the tracked camera-shake instance (rolls once)
+    const cam = Effects.getShakeOffset();          // camera path (no-arg)
+    const amp = 6 * ((0.25 - DT) / 0.25);
+    // (2*rand-1): x-roll 0.25 -> -0.5, y-roll 0.75 -> +0.5; frame 1 amp = 5.6
+    assert.ok(Math.abs(cam.x - (-0.5 * amp)) < 1e-4 && Math.abs(cam.y - (+0.5 * amp)) < 1e-4,
+      `camera offset (${cam.x}, ${cam.y}) vs envelope (${-0.5 * amp}, ${+0.5 * amp})`);
+    assert.ok(cam.x !== 0 || cam.y !== 0, 'camera offset non-zero while shaking');
+    const ent = Effects.getEntityShakeOffset(e);   // sprite path (with entity)
+    assert.ok(Math.abs(ent.x) <= 3 + 1e-9 && Math.abs(ent.y) <= 3 + 1e-9,
+      `entity offset (${ent.x}, ${ent.y}) within ±SHAKE_AMT`);
+    assert.ok(ent.x !== 0 || ent.y !== 0, 'entity offset non-zero while flashing');
+    // The two paths are independent: stub sequence positions differ, so the
+    // values are distinct draws — but the contract is just that each is its
+    // own correct value, not that they differ from each other.
+    assert.notDeepEqual({ x: cam.x, y: cam.y }, { x: 0, y: 0 });
+  } finally { Math.random = origRand; }
+  Effects.reset();
 });
 
 console.log(`${passed} passed`);

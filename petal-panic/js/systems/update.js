@@ -1008,32 +1008,13 @@ onTransition((from, to) => {
 export const camera = new Camera();
 camera.levelLength = LEVEL_LENGTH;
 
-// Task 4.1 — brief screen shake on barrel explosions (optional juice). A decaying
-// magnitude in px; render.js offsets the world by a random vector within it.
-let shakeMag = 0;
-const SHAKE_DURATION = 0.25; // seconds the shake lasts after being triggered
-let shakeTimer = 0;
-let shakeOffset = { x: 0, y: 0 };
-/** Trigger a screen shake of `mag` px for SHAKE_DURATION seconds. */
-function triggerShake(mag) {
-  shakeMag = Math.max(shakeMag, mag);
-  shakeTimer = SHAKE_DURATION;
-}
-/** Per-frame decay; recomputes and returns the current random offset {x,y}. */
-function updateShake(dt) {
-  if (shakeTimer > 0) shakeTimer -= dt;
-  if (shakeTimer <= 0 || shakeMag <= 0) {
-    shakeMag = 0;
-    shakeOffset.x = 0;
-    shakeOffset.y = 0;
-    return shakeOffset;
-  }
-  const m = shakeMag * (shakeTimer / SHAKE_DURATION); // ease out
-  shakeOffset.x = (Math.random() * 2 - 1) * m;
-  shakeOffset.y = (Math.random() * 2 - 1) * m;
-  return shakeOffset;
-}
-export function getShakeOffset() { return shakeOffset; }
+// Task 4.1 — brief screen shake on barrel explosions (optional juice). The
+// camera-shake effect engine instance is the single owner of the shake state
+// (effects/cameraShake.js); triggerShake()/updateShake() used to live here as
+// module locals but were migrated through the Effects shim (task 3.3 review):
+// render.js reads getShakeOffset(), which now returns the tracked instance's
+// current offset ({0,0} when idle/done).
+export function getShakeOffset() { return Effects.getShakeOffset(); }
 
 export function getHero() { return hero; }
 export function getSolids() { return SOLIDS; }
@@ -1105,9 +1086,11 @@ export function update(dt) {
     if (hero.deathTimer >= hero.DEATH_DURATION) {
       finishHeroDeath();
     }
-    // Camera still tracks (frozen) hero + decay shake so the fade reads well.
+    // Camera still tracks (frozen) hero; the shake instance is stepped by
+    // updateEffects() below only on live frames — during death the monolith
+    // decayed it here, so step the shim directly to preserve that tail.
     camera.update(hero);
-    updateShake(dt);
+    Effects.update(dt);
     return;
   }
 
@@ -1253,8 +1236,8 @@ export function update(dt) {
   hero.runStats.distanceTraveled += Math.abs(hero.vx * dt);
   hero.runStats.timePlayed += dt;
 
-  // 5. Task 4.1 — decay the explosion screen shake (render reads getShakeOffset()).
-  updateShake(dt);
+  // 5. Task 4.1 — the camera-shake instance is stepped by updateEffects() →
+  // Effects.update(dt) below (render reads getShakeOffset()).
 }
 
 /**
@@ -1433,7 +1416,7 @@ function explodeSpecial(s) {
     const bombCount = 12 + Math.floor(Math.random() * 4);
     Effects.spawnExplosion(cx, cy, s.radius, bombCount); // engine path — warm fire burst sized to AoE
     Effects.bigExplosion();
-    triggerShake(6);
+    Effects.triggerShake(6); // engine path — camera-shake singleton (task 3.3)
     if (Debug.enabled) Debug.logEvent('bomb exploded');
   } else {
     // Saw: small fizzle spark, no AoE.
@@ -1689,7 +1672,7 @@ function updateRealEnemy(e, dt) {
     const deathCount = 12 + Math.floor(Math.random() * 4);
     Effects.spawnExplosion(cx, cy, result.radius, deathCount); // engine path — warm fire burst sized to AoE
     Effects.bigExplosion(); // Task 7.1 — screen flash on big explosion
-    triggerShake(6);
+    Effects.triggerShake(6); // engine path — camera-shake singleton (task 3.3)
     // SFX: explosion
   }
 
@@ -1784,7 +1767,7 @@ function updateBoss(dt) {
 
   // Stomp shake: doStomp() records a magnitude; convert it into a screen shake.
   if (b.shakeMag > 0) {
-    triggerShake(b.shakeMag);
+    Effects.triggerShake(b.shakeMag); // engine path — stomp shake (task 3.3)
     b.shakeMag = 0;
   }
 
@@ -1861,7 +1844,7 @@ function handleBarrelDestroyed(barrel) {
     const barrelCount = 12 + Math.floor(Math.random() * 4);
     Effects.spawnExplosion(cx, cy, result.radius, barrelCount); // engine path — warm fire burst sized to AoE
     Effects.bigExplosion(); // Task 7.1 — brief white screen flash (design §12)
-    triggerShake(8);
+    Effects.triggerShake(8); // engine path — barrel explosion shake (task 3.3)
     // SFX: explosion
   } else if (barrel.coinDrop) {
     // Coin barrel (or any object with a coinDrop config): spawn the burst.

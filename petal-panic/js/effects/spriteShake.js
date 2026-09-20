@@ -23,7 +23,7 @@ export const SHAKE_AMT = 3; // ±3px (design §12 "fast shake") — single owner
 /**
  * Stateless per-frame random offset for an entity whose hitFlash is running:
  * {x,y} in [-SHAKE_AMT, +SHAKE_AMT] while hitFlash > 0, else {0,0}.
- * Exported so the compat shim's Effects.getShakeOffset() — a pure read helper
+ * Exported so the compat shim's Effects.getEntityShakeOffset() — a pure read
  * kept stateless for monolith parity (it reads carrier.hitFlash directly,
  * exactly like the old monolith) — shares this exact computation and constant
  * instead of duplicating them.
