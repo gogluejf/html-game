@@ -18,6 +18,7 @@ import { Hero, WEAPON_SPECIAL } from '../hero.js';
 import { HEROES, ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from '../heroDefs.js';
 import { projectilePool, specialPool, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
+import { applyKnockback } from '../knockback.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../hitbox.js';
 import { S, getState, STATE_NAMES, tryTransition, onTransition } from '../state.js';
 import { dispatchScreenInput } from '../screens.js';
@@ -1550,6 +1551,31 @@ function processAllHitboxes() {
     } else {
       Effects.beginEnemyShake(target);
       if (target.hitFlash !== undefined) target.hitFlash = 0.1;
+
+      // Hero→enemy knockback: if the attack hitbox carries a `knockback`
+      // setting, apply the physical reaction to the enemy. No per-attack-type
+      // branching — presence of the data is the only gate. The setting lives on
+      // the hitbox (design §7), not the hero; the hero is used for motion/dir.
+      const source = hb.owner;
+      if (hb.knockback) {
+        const dirMode = hb.knockback.dirMode || 'fromAttacker';
+        let nx, ny;
+        if (dirMode === 'alongVelocity') {
+          const len = Math.hypot(source.vx || 0, source.vy || 0) || 1;
+          nx = (source.vx || 0) / len;
+          ny = (source.vy || 0) / len;
+        } else {
+          // 'fromAttacker' or 'radial': direction from source center to enemy center
+          const scx = source.x + (source.w || 0) / 2;
+          const scy = source.y + (source.h || 0) / 2;
+          const ecx = target.x + target.w / 2;
+          const ecy = target.y + target.h / 2;
+          const dx = ecx - scx, dy = ecy - scy;
+          const len = Math.hypot(dx, dy) || 1;
+          nx = dx / len; ny = dy / len;
+        }
+        applyKnockback(target, source, hb.knockback, { x: nx, y: ny });
+      }
     }
     // Remove dead enemies from world.
     if (target.alive === false && target !== h) {
@@ -1775,7 +1801,7 @@ function handleBarrelDestroyed(barrel) {
       hero.runStats.hitsTaken.total += 1;
       // Radial knockback away from the blast center + hit-stun + i-frames.
       const hcx = hero.x + hero.w / 2, hcy = hero.y + hero.h / 2;
-      // Contextual profile by source (design §25): strong radial explosion recoil.
+      // Contextual profile by source (design §25): strong radial explosion knockback.
       hero.takeHit({
         source: 'explosion',
         dirX: hcx - cx, dirY: hcy - cy,
