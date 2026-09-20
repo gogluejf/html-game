@@ -45,3 +45,9 @@ Note: run-all.mjs has two pre-existing flaky files unrelated to this plan — co
 - major: effectCarrier.test.js:107 — integration tests cover only makeCarrier objects, not projectile/hitbox/collision/marker/radius shapes
 
 **Resolution:** ACCEPT (fix). Contract split into REQUIRED (effects; isConditionMet when continuous present) vs OPTIONAL geometry (origin/facing/size — consumed by effects like Beam, never by the engine); attachEffects accepts continuous-only entries (still rejects entries with neither); new Cross-kind section proves 5 plain-object carrier shapes fire through the real fire() path with zero engine change; dir vector-only; zero-length dir warns. Re-verify: 33/33 green (flake re-run confirmed pre-existing, see note above). Committed.
+
+## Wave 1 gate — M1 (1.1–1.3)
+
+**Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
+**Wave review (dual):** PASS — No findings. Doc conformance, single mechanism, no duplication, behavior preservation (no game code touched), extensibility contract intact.
+**Gate commit:** `effects: wave 1 gate`.

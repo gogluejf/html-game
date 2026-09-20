@@ -31,7 +31,7 @@
     },
     "1.3": {
       "number": "1.3",
-      "status": "in_progress",
+      "status": "done",
       "name": "Generic carrier interface for effect attachment",
       "milestone": "Architecture Spec and Engine Core",
       "milestone_number": "1",
