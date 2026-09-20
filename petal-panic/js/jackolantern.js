@@ -8,14 +8,13 @@
 // While rolling it moves toward the hero at ROLL_SPEED and spins (rotation is
 // advanced in ai() so the "rolling" reads even without sprites). It is fully
 // destructible by shot/melee before detonation (HP = stamina, drained via the
-// base takeDamage()). On detonation it deals AoE damage to every live entity
-// within EXPLODE_RADIUS using the same pattern as a barrel explosion — the
-// update system calls explodeJackolantern() (a pure function over the live set)
-// which routes through central damage().
+// base takeDamage()). On detonation it deals AoE damage to the hero within
+// JACKO_EXPLODE_RADIUS — resolved by the generic explosion system (explosion.js)
+// with a FOE alignment so its own kind is spared. The update system drives that
+// resolver; this class only latches the blast and fires onExplode().
 
 import { Enemy } from './enemy.js';
 import { LAYER } from './consts.js';
-import { damage } from './damage.js';
 
 export const JACKO_DEF = {
   id: 'jackolantern',
@@ -35,7 +34,7 @@ const DETONATE_RANGE = 80;      // px — proximity that triggers detonation
 const FUSE_TIME = 3;            // seconds — auto-detonate after this long
 const LAUNCH_TIME = 0.4;        // seconds of "launch" telegraph before exploding
 const EXPLODE_TIME = 0.3;       // seconds the explosion flash lasts
-const EXPLODE_RADIUS = 80;      // px — AoE radius (smaller than a barrel's 120)
+export const JACKO_EXPLODE_RADIUS = 80; // px — AoE radius (smaller than a barrel's 120)
 const SPIN_SPEED = 6;           // rad/s — visual spin while rolling
 const AGGRO_RELEASE_MULT = 1.5; // deaggro when hero exceeds aggroRadius * this
 
@@ -115,9 +114,9 @@ export class JackOLantern extends Enemy {
 
   /**
    * Fire the explosion hook. The actual AoE damage is driven by the game loop
-   * calling explodeJackolantern() with the live entity set (mirrors how a
-   * barrel explodes). This latch guarantees the blast happens exactly once even
-   * if ai() runs again on the same frame.
+   * calling resolveExplosion() (explosion.js) with a FOE alignment, mirroring how
+   * a barrel detonates through the same shared resolver. This latch guarantees the
+   * blast happens exactly once even if ai() runs again on the same frame.
    */
   explode() {
     if (this.exploded) return;
@@ -144,12 +143,12 @@ export class JackOLantern extends Enemy {
       let r, alpha, color;
       if (this.aiState === 'launch') {
         const t = 1 - this.launchTimer / LAUNCH_TIME; // 0..1
-        r = EXPLODE_RADIUS * t;
+        r = JACKO_EXPLODE_RADIUS * t;
         alpha = 0.3 + 0.4 * t;
         color = '#f39c12';
       } else {
         const t = 1 - this.explodeTimer / EXPLODE_TIME; // 0..1
-        r = EXPLODE_RADIUS;
+        r = JACKO_EXPLODE_RADIUS;
         alpha = Math.max(0, 1 - t);
         color = '#e74c3c';
       }
@@ -165,48 +164,9 @@ export class JackOLantern extends Enemy {
   }
 }
 
-// --- Explosion AoE — pure function (unit-testable, no DOM) -------------------
-// Mirrors explodeBarrel(): applies AoE damage to every live entity whose center
-// lies within the lantern's EXPLODE_RADIUS, routed through central damage().
-// The exploding lantern itself is never hit. Returns a summary so VFX + removal
-// stay with the caller.
-
-/** Center point of an entity's box. */
-function centerOf(e) {
-  return { cx: e.x + e.w / 2, cy: e.y + e.h / 2 };
-}
-
-/** True when the centers of a and b are within `radius` px. */
-function withinRadius(a, b, radius) {
-  const { cx: ax, cy: ay } = centerOf(a);
-  const { cx: bx, cy: by } = centerOf(b);
-  const dx = ax - bx, dy = ay - by;
-  return Math.sqrt(dx * dx + dy * dy) <= radius;
-}
-
-/**
- * Resolve a Jack-O-Lantern explosion: apply AoE damage to every live entity
- * within its radius (enemies AND the hero). Pure with respect to the world —
- * mutates HP/energy and returns a summary, leaving VFX + removal to the caller.
- *
- * @param {JackOLantern} obj the exploding lantern
- * @param {Array<object>} entities all live candidate targets (enemies, hero, ...)
- * @returns {{center:{cx,cy}, radius:number, hit:object[]}} explosion summary
- */
-export function explodeJackolantern(obj, entities) {
-  const { cx, cy } = centerOf(obj);
-  const radius = EXPLODE_RADIUS;
-  const hit = [];
-
-  for (const e of entities) {
-    if (!e || e === obj) continue;        // never self-hit
-    if (e.alive === false) continue;      // skip already-dead
-    if (e.intangible) continue;           // i-frames absorb explosion damage
-    if (!withinRadius(obj, e, radius)) continue;
-
-    const dealt = damage(obj, e, JACKO_DEF.stats.attack, 'explosion');
-    if (dealt > 0) hit.push(e);
-  }
-
-  return { center: { cx, cy }, radius, hit };
-}
+// --- Explosion AoE -----------------------------------------------------------
+// The Jack-O-Lantern's blast is resolved by the generic explosion system
+// (explosion.js resolveExplosion) with a FOE alignment + JACKO_EXPLOSION_KNOCKBACK,
+// driven by the game loop in update.js. There is no per-source detonation routine here
+// — the lantern only latches exploded once and fires onExplode(); the actual AoE math
+// lives in the single shared resolver (see docs/architecture/explosion.md §5).

@@ -25,11 +25,12 @@ import { dispatchScreenInput } from '../screens.js';
 import { Jester } from '../jester.js';
 import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
 import { Violetta, VIOLETTA_DEF } from '../violetta.js';
-import { JackOLantern, explodeJackolantern } from '../jackolantern.js';
+import { JackOLantern, JACKO_DEF, JACKO_EXPLODE_RADIUS } from '../jackolantern.js';
 import { BorisLoon, BORIS_DEF, makeBorisBaby } from '../boris_loon.js';
 import { Elephant, makeElephant, BOSS_TRIGGER_RADIUS, WEAK_POINT_MULT } from '../boss.js';import { particles, coins } from '../particles.js';
 import { Effects } from '../effects.js';
-import { makeBarrel, makeCoinBarrel, explodeBarrel, BARREL_DAMAGE, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
+import { makeBarrel, makeCoinBarrel, BARREL_DAMAGE, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
+import { resolveExplosion, ALIGNMENT, BARREL_EXPLOSION_KNOCKBACK, JACKO_EXPLOSION_KNOCKBACK } from '../explosion.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
 import { LEVELS, generateLevel } from '../level.js';
@@ -1671,8 +1672,18 @@ function updateRealEnemy(e, dt) {
     e._explodeHandled = true;
     const cx = e.x + e.w / 2;
     const cy = e.y + e.h / 2;
+    // A Jack-O-Lantern is a FOE-side self-detonation: it hurts the hero but spares
+    // its own kind (fixes the old bug where the blast damaged other enemies).
     const targets = [hero, ...enemies, ...realEnemies];
-    const result = explodeJackolantern(e, targets);
+    const result = resolveExplosion({
+      cx, cy,
+      radius: JACKO_EXPLODE_RADIUS,
+      damage: JACKO_DEF.stats.attack,
+      alignment: ALIGNMENT.FOE,
+      knockback: JACKO_EXPLOSION_KNOCKBACK,
+      self: e,
+      ctx: { hero },
+    }, targets);
     spawnExplosionVFX(cx, cy, result.radius);
     Effects.bigExplosion(); // Task 7.1 — screen flash on big explosion
     triggerShake(6);
@@ -1823,22 +1834,26 @@ function handleBarrelDestroyed(barrel) {
 
   if (barrel.explosive) {
     // AoE damage to every live entity in radius (enemies + hero). The pure
-    // explodeBarrel() routes through central damage(); we pass the full live set.
+    // resolveExplosion() routes through central damage(); we pass the full live set.
+    // A barrel is a NEUTRAL blast: it hurts whoever stands in range (hero AND enemies)
+    // and shoves everyone radially. Hero knockback is routed through takeHit('explosion')
+    // inside resolveExplosion, preserving the exact pre-refactor rec/intangible behavior.
     const targets = [hero, ...enemies, ...realEnemies];
-    const result = explodeBarrel(barrel, targets);
+    const result = resolveExplosion({
+      cx, cy,
+      radius: barrel.explodeRadius,
+      damage: BARREL_DAMAGE,
+      alignment: ALIGNMENT.NEUTRAL,
+      knockback: BARREL_EXPLOSION_KNOCKBACK,
+      self: barrel,
+      ctx: { hero },
+    }, targets);
     // Real enemies killed by the blast already ran their internal death pipeline
-    // via takeDamage() inside explodeBarrel — no manual die() needed here.
+    // via takeDamage() inside resolveExplosion — no manual die() needed here.
     // Task 7.3 — track if the hero was hit by the explosion (design §4.1).
     if (result.hit.includes(hero)) {
       hero.runStats.hitsTaken.explosion += 1;
       hero.runStats.hitsTaken.total += 1;
-      // Radial knockback away from the blast center + hit-stun + i-frames.
-      const hcx = hero.x + hero.w / 2, hcy = hero.y + hero.h / 2;
-      // Contextual profile by source (design §25): strong radial explosion knockback.
-      hero.takeHit({
-        source: 'explosion',
-        dirX: hcx - cx, dirY: hcy - cy,
-      });
     }
     // Explosion VFX: 12–15 orange/red particles expanding outward.
     spawnExplosionVFX(cx, cy, result.radius);

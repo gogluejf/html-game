@@ -9,9 +9,10 @@
 //
 // The GameObj base is intentionally generic so later objects (checkpoints in
 // task 4.3, other solids) can inherit from it. Barrels are the v1 concrete
-// case. The explosion itself is a PURE function (explodeBarrel) that takes the
-// world's live entities + the hero and applies central damage() to everything
-// inside the radius — keeping the math unit-testable without a DOM.
+// case. The explosion itself is a PURE function (resolveExplosion in
+// explosion.js) that takes the world's live entities + the hero and applies
+// central damage() to everything inside the radius — keeping the math
+// unit-testable without a DOM.
 
 import { Entity } from './entity.js';
 import { LAYER } from './consts.js';
@@ -133,9 +134,9 @@ export class GameObj extends Entity {
 
   /**
    * Fire the explosion hook. The actual AoE damage + VFX are driven by the
-   * game loop calling explodeBarrel() (a pure function over the live entity
-   * set) so the math stays testable. This hook exists so subclasses or future
-   * objects can react locally if needed.
+   * game loop calling resolveExplosion() (explosion.js) with a NEUTRAL alignment
+   * over the live entity set so the math stays testable. This hook exists so
+   * subclasses or future objects can react locally if needed.
    */
   explode() {
     this.onExplode?.(this);
@@ -293,6 +294,12 @@ export function withinRadius(a, b, radius) {
  * center lies within `obj.explodeRadius`. Enemies take it as 'explosion'
  * damage (routed through central damage()); the hero takes it too (self-damage
  * risk/reward). The exploding barrel itself is never hit.
+ *
+ * SUPERSEDED: the game loop now routes barrels through the generic
+ * resolveExplosion() (explosion.js) with a NEUTRAL alignment + radial knockback,
+ * which also shoves enemies and preserves hero behavior via takeHit('explosion').
+ * This function is retained only for the archived bck/object.test.js references;
+ * it is no longer called by the live code path.
  *
  * This is deliberately PURE with respect to the world: it mutates HP/energy
  * and returns a summary, leaving VFX + world removal to the caller. That makes
