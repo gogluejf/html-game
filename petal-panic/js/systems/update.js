@@ -1649,8 +1649,13 @@ function updateRealEnemy(e, dt) {
 
   // Resolve against solids (static platforms + live barrels) so grounders
   // don't walk through platforms or barrels. Flyers skip solid resolution
-  // (they fly over/through them by design).
-  if (e.alive && e.aiState !== 'dead' && e.gravity > 0) {
+  // (they fly over/through them by design). Dying enemies (aiState === 'dead')
+  // still resolve: their death pipeline integrates vx/vy + gravity, so a body
+  // knocked back mid-death must land on platforms and slide along the ground
+  // instead of ghosting through floors. Resolution stops only when alive
+  // flips to false (death fade complete), at which point updateRealEnemy()
+  // removes the entity from the collision world.
+  if (e.alive && e.gravity > 0) {
     resolve(e, [...SOLIDS, ...barrelSolidBoxes]);
   }
 
