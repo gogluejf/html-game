@@ -88,7 +88,7 @@
     },
     "3.1": {
       "number": "3.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Screen Overlay",
       "milestone": "Screen-Space and Overlay Effects",
       "milestone_number": "3",
@@ -103,10 +103,17 @@
     },
     "3.2": {
       "number": "3.2",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Sprite Flash",
       "milestone": "Screen-Space and Overlay Effects",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "confidence": "high",
+        "failures": "None after fix (initial strict-derivation run failed on the done-frame edge case in both new tests; resolved by excluding frame k from phase expectations). No flakes in this session's run-all.",
+        "lessons_learned": "When deriving expected frame sets for a fixed-dt effect, the done-frame must be handled separately: update() forces done+OFF BEFORE any phase evaluation, so the final frame (k where k*DT >= duration-1e-9) carries no phase state and must be stripped from observed sets / excluded from expectations. The first attempt failed because frame 24 appeared in observed OFF but not in the phase-derived expectation.",
+        "done": "Fix cycle: corrected the failing spriteFlash test tolerance (\u00b16 \u2192 \u00b112, js/test/spriteFlash.test.js:~line 60) and added an explicit phase-alignment line to effects.md \u00a712. run-all now 39/39.",
+        "decisions": "B-major1/A-minor: implemented 'Blend intensity' as a real param (blendIntensity, default 1.0 = no behavior change; effective alpha = opacity * blendIntensity, clamped [0,1] like opacity) rather than folding into opacity \u2014 doc \u00a712 lists it and the effect already has an explicit opacity contract, so a separate multiplier is the least-surprising reading. Also documented params.box in \u00a712: factory-time fallback geometry {x,y,w,h} in WORLD coordinates, used only when carrier exposes neither worldBox() nor origin()+size(), no default (absent/non-positive dims \u2192 render no-op). B-major2/A-minor: replaced the \u00b112-frame tolerance assertion with exact frame-set derivation at fixed dt=1/60 \u2014 expected ON/OFF sets computed from the same phase formula (floor((elapsed+1e-9)/half), even=ON) over frames 1..k-1, done-frame (k=24, forced OFF before phase eval) excluded from expectations; also asserts lifetime == 24 frames and exactly 2*flashes-1 phase transitions. Added a second test proving flashes=2 vs flashes=3 produce different exact patterns (mutation check confirms a hardcoded-wrong-count implementation fails)."
+      }
     },
     "3.3": {
       "number": "3.3",

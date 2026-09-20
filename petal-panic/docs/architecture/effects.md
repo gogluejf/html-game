@@ -303,7 +303,10 @@ Parameters may include:
 - Flash frequency
 - Number of flashes
 - Opacity
-- Blend intensity
+- Blend intensity — additional alpha multiplier applied to the tint while ON (default 1.0, i.e. no change; effective alpha = opacity × blend intensity). Dials down how strongly the tint blends over the sprite without altering the base opacity contract.
+- Box *(fallback)* — factory-time geometry `{ x, y, w, h }` in **world coordinates**, used only when the carrier exposes neither `worldBox()` nor `origin()+size()` (tests, theater demos with a null carrier). No default: absent or non-positive dimensions make render() a no-op.
+
+Phase alignment: the flash starts ON at t=0; each half-cycle (one ON stretch or one OFF stretch) lasts `duration / (2 * flashes)` seconds, and state flips at every half-cycle boundary. With a fixed 1/60s frame step, a frame landing exactly on a boundary counts as the new phase (ON phases are even-indexed).
 
 ---
 

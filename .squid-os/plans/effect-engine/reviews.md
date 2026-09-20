@@ -121,6 +121,19 @@ Note: run-all.mjs has two pre-existing flaky files unrelated to this plan — co
 
 **Resolution:** ACCEPT (fix). Ramp scaling when fadeIn+fadeOut > duration so total lifetime always equals duration (doc §23 made explicit with one line); new end-to-end test proves draw-time viewport propagation through fireManual → updateEffects → drawEffects(mockCtx, {view}); viewW/viewH kept only as a clearly-labeled undocumented fallback (consistency with vignette/screenFlash), tests exercise renderCtx as primary; registry header now count-agnostic. Re-verify: 38/38 green. Committed.
 
+## Task 3.2 — Sprite Flash
+
+**Review A:** PASS (3 minor)
+- minor: spriteFlash.js:41 — params.box fallback undocumented in §12
+- minor: spriteFlash.js:57 — "Blend intensity" param listed in §12 not implemented
+- minor: spriteFlash.test.js:48 — ±12 frame tolerance looser than rubric's exact-within-epsilon
+
+**Review B:** FAIL (2 major)
+- major: effects.md:306 — Blend intensity specified but neither implemented nor documented as absent
+- major: spriteFlash.test.js:72 — ±12 frames around expectation of 6 lets grossly wrong cycle counts pass
+
+**Resolution:** ACCEPT (fix). blendIntensity implemented as a real alpha-multiplier param (default 1.0 preserves behavior; effective alpha = opacity × blendIntensity clamped [0,1]) + documented in §12; params.box added to §12 param list (factory-time fallback geometry, world coords, no-op when absent); frequency test replaced with exact frame-set derivation at fixed dt (expected ON/OFF sets from the phase formula over frames 1..k−1, exactly 2*flashes−1 transitions, lifetime == 24 frames) + mutation test proving flashes=2 vs 3 yield different patterns. Re-verify: 39/39 green (spriteFlash 18/18 ×5 deterministic). Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
