@@ -188,6 +188,37 @@ ok('does not render once done', () => {
   b.render(ctx); // no-op when done
   assert.equal(calls.length, 0);
 });
+ok('render prefers the DRAW-TIME view over stale factory-time params', () => {
+  // Gate fix: a declaratively-fired overlay has no fire-time view context, so
+  // its viewport must come from the draw-time renderCtx.view that drawEffects
+  // hands every instance — NOT from factory-time params. Assert draw-time wins
+  // even when factory-time params carry different (stale) dims.
+  const calls = [];
+  const ctx = {
+    createRadialGradient(...a) { calls.push(['grad', ...a]); return { addColorStop() {} }; },
+    save() {}, restore() {}, fillRect(...a) { calls.push(['fill', ...a]); },
+    set fillStyle(v) {}, get fillStyle() { return undefined; },
+  };
+  const b = vignette({ viewW: 999, viewH: 777 }); // stale factory-time dims
+  b.render(ctx, { view: { w: 1280, h: 720 } });   // authoritative draw-time dims
+  const fill = calls.find(c => c[0] === 'fill');
+  assert.deepEqual([fill[1], fill[2], fill[3], fill[4]], [0, 0, 1280, 720], 'draw-time view wins');
+  const grad = calls.find(c => c[0] === 'grad');
+  assert.equal(grad[1], 640, 'gradient centered on draw-time width/2');
+  assert.equal(grad[2], 360, 'gradient centered on draw-time height/2');
+});
+ok('falls back to factory-time params when draw-time view is absent', () => {
+  const calls = [];
+  const ctx = {
+    createRadialGradient(...a) { calls.push(['grad', ...a]); return { addColorStop() {} }; },
+    save() {}, restore() {}, fillRect(...a) { calls.push(['fill', ...a]); },
+    set fillStyle(v) {}, get fillStyle() { return undefined; },
+  };
+  const b = vignette({ viewW: 640, viewH: 480 });
+  b.render(ctx, {}); // no draw-time view → factory-time fallback
+  const fill = calls.find(c => c[0] === 'fill');
+  assert.deepEqual([fill[1], fill[2], fill[3], fill[4]], [0, 0, 640, 480], 'factory-time fallback used');
+});
 
 console.log('screenFlash');
 ok('kicks to strength and decays linearly over 0.15s', () => {
@@ -225,6 +256,34 @@ ok('renders a white viewport fill at globalAlpha = value', () => {
   assert.ok(calls.some((c) => c[0] === 'alpha' && Math.abs(c[1] - expected) < 1e-9), `alpha ~${expected} recorded`);
   assert.ok(calls.some((c) => c[0] === 'style' && c[1] === '#ffffff'));
   assert.ok(calls.some((c) => c[0] === 'fill' && c[1] === 0 && c[2] === 0 && c[3] === 640 && c[4] === 480));
+});
+ok('render prefers the DRAW-TIME view over stale factory-time params', () => {
+  // Gate fix: a declaratively-fired overlay has no fire-time view context, so
+  // its viewport must come from the draw-time renderCtx.view that drawEffects
+  // hands every instance — NOT from factory-time params. Assert draw-time wins
+  // even when factory-time params carry different (stale) dims.
+  const calls = [];
+  const ctx = {
+    save() {}, restore() {}, fillRect(...a) { calls.push(['fill', ...a]); },
+    set globalAlpha(v) {}, get globalAlpha() { return 1; },
+    set fillStyle(v) {}, get fillStyle() { return undefined; },
+  };
+  const b = screenFlash({ viewW: 999, viewH: 777 }); // stale factory-time dims
+  b.render(ctx, { view: { w: 1280, h: 720 } });      // authoritative draw-time dims
+  const fill = calls.find(c => c[0] === 'fill');
+  assert.deepEqual([fill[1], fill[2], fill[3], fill[4]], [0, 0, 1280, 720], 'draw-time view wins');
+});
+ok('falls back to factory-time params when draw-time view is absent', () => {
+  const calls = [];
+  const ctx = {
+    save() {}, restore() {}, fillRect(...a) { calls.push(['fill', ...a]); },
+    set globalAlpha(v) {}, get globalAlpha() { return 1; },
+    set fillStyle(v) {}, get fillStyle() { return undefined; },
+  };
+  const b = screenFlash({ viewW: 640, viewH: 480 });
+  b.render(ctx, {}); // no draw-time view → factory-time fallback
+  const fill = calls.find(c => c[0] === 'fill');
+  assert.deepEqual([fill[1], fill[2], fill[3], fill[4]], [0, 0, 640, 480], 'factory-time fallback used');
 });
 
 console.log('spriteShake');

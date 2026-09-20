@@ -64,7 +64,7 @@ Every effect instance runs the same lifecycle regardless of type:
 
 1. **fire(trigger, carrier)** — instantiate with resolved `params` (values may be read from the carrier, e.g. beam orientation from its hitbox).
 2. **update(dt)** — advance internal timers while active.
-3. **render(ctx)** — draw; screen-space effects render after the camera transform is restored.
+3. **render(ctx, renderCtx?)** — draw; screen-space effects render after the camera transform is restored. `renderCtx` is an optional draw-time context handed by `drawEffects()` (e.g. `{ view: { w, h } }`) that screen-space overlays read their viewport from.
 4. **complete** — removed from the active set when its duration elapses.
 
 Effects may be procedural Canvas effects, sprite-based animations, or compositions of multiple smaller effects (see Effect Composition).

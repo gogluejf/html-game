@@ -10,7 +10,9 @@
 // old singleton semantics through one instance.
 //
 // params: { strength?, viewW, viewH } — strength defaults to 1 (clamped 0..1);
-// viewW/viewH come from ctx ({ view: { w, h } }) or params.
+// viewW/viewH are read at DRAW time from the render ctx ({ view: { w, h } })
+// that drawEffects hands every instance, falling back to factory-time
+// params.viewW/viewH (or fire-time ctx.view) when the draw-time view is absent.
 
 const VIGNETTE_DECAY = 1 / 0.5; // full fade over 0.5s (CoD-style, subtle)
 
@@ -34,11 +36,16 @@ export function vignette(params = {}, carrier, ctx = {}) {
       // strict comparison would never mark the effect done.
       if (this.value <= 1e-9) this.done = true;
     },
-    render(c2d) {
+    render(c2d, renderCtx = {}) {
       const v = this.value;
       if (this.done || v <= 1e-9) return;
-      const viewW = params.viewW ?? view.w;
-      const viewH = params.viewH ?? view.h;
+      // Prefer the DRAW-TIME viewport (renderCtx.view, passed by drawEffects)
+      // so declaratively-fired overlays without fire-time view context still
+      // render; fall back to factory-time params.viewW/viewH, then fire-time
+      // ctx.view, for callers that only supply dims at construction.
+      const dv = renderCtx.view ?? {};
+      const viewW = dv.w ?? params.viewW ?? view.w;
+      const viewH = dv.h ?? params.viewH ?? view.h;
       if (!viewW || !viewH) return;
       const cx = viewW / 2, cy = viewH / 2;
       // Gradient reaches full red only at the corners; the center stays clear.

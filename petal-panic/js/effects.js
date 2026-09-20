@@ -13,7 +13,10 @@
 //   - hitSparkle.js    count roll [3,5], speed [60,140], BLOOD_COLORS
 //   - deathSparkle.js  count = max(4, round(8 + size*0.25))
 //   - pickupPop.js     fixed 8, evenly spaced ring, speed [100,180]
-//   - explosion.js     count = min(24, 12 + round(radius*0.15)), FIRE_COLORS
+//   - explosion.js     count = min(24, 12 + round(radius*0.15)) unless an
+//                       explicit `count` param overrides it (legacy bomb /
+//                       enemy-death / barrel roll 12–15, owned by the call
+//                       sites), FIRE_COLORS
 //   - vignette.js      linear decay over 0.5s, radial gradient stops
 //   - screenFlash.js   linear decay over 0.15s, white fill at alpha=value
 //   - spriteShake.js   ±3px while carrier.hitFlash > 0
@@ -176,12 +179,35 @@ export const Effects = {
    * @param {number} x blast center x
    * @param {number} y blast center y
    * @param {number} [radius=60] explosion radius (px) — scales spread + count
+   * @param {number} [count] explicit particle count; overrides the engine's
+   *   deterministic formula when provided (legacy call sites pass their own
+   *   roll). Omitted → formula min(24, 12 + round(radius*0.15)).
    * @returns {number} particles actually spawned
    */
-  spawnExplosion(x, y, radius = 60) {
+  spawnExplosion(x, y, radius = 60, count) {
     const before = particles.count;
     return spawnCounted({ x, y }, before, () => {
-      fireManual({ type: 'explosion', params: { x, y, radius } });
+      fireManual({ type: 'explosion', params: { x, y, radius, ...(count != null ? { count } : {}) } });
+    });
+  },
+
+  /**
+   * Plain sparkle burst from a point — the engine-side home of the legacy
+   * `particles.spawnBurst(x, y, n)` calls that used to live inline in
+   * systems/update.js (coin pickup, powerup pickup, checkpoint, saw fizzle,
+   * barrel break, boss death). Routes through the engine's single fire path
+   * (the 'particle-burst' type) so no call site spawns particles directly.
+   * Behavior is identical to the old direct call: the shared pool's
+   * spawnBurst() picks random warm colors and outward velocities.
+   * @param {number} x center x
+   * @param {number} y center y
+   * @param {number} [count=6] how many sparkles (pool default when omitted)
+   * @returns {number} particles actually spawned
+   */
+  fireParticleBurst(x, y, count = 6) {
+    const before = particles.count;
+    return spawnCounted({ x, y }, before, () => {
+      fireManual({ type: 'particle-burst', params: { x, y, count } });
     });
   },
 

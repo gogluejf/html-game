@@ -73,7 +73,7 @@
     },
     "2.3": {
       "number": "2.3",
-      "status": "in_progress",
+      "status": "done",
       "name": "Behavior-preservation regression for migrated effects",
       "milestone": "Migrate Existing Effects onto the Engine",
       "milestone_number": "2",

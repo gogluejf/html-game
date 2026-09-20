@@ -868,7 +868,7 @@ world.on('collect', (a, b) => {
   // particle system; no allocation). SFX hook for later audio wiring.
   const cx = coinEnt.x + coinEnt.w / 2;
   const cy = coinEnt.y + coinEnt.h / 2;
-  particles.spawnBurst(cx, cy, 4);
+  Effects.fireParticleBurst(cx, cy, 4); // engine path (single fire path) — plain sparkle burst
   // SFX: coin
 
   // Mark collected (latches so the pair can't double-credit next frame) and
@@ -908,7 +908,7 @@ world.on('pickup', (a, b) => {
   if (!applied) return;
 
   // VFX: sparkle pop + floating label text (design §12 "Powerup pickup").
-  particles.spawnBurst(cx, cy, 6);
+  Effects.fireParticleBurst(cx, cy, 6); // engine path — plain sparkle burst
   Effects.spawnPickupPop(cx, cy, pu.def.color); // Task 7.1 — colored pop ring
   spawnFloatText(cx, cy - 16, pu.def.label, pu.def.color);
   // SFX: powerup
@@ -937,7 +937,7 @@ world.on('checkpoint', (a, b) => {
   // VFX: flash (entity-driven) + floating id label.
   const cx = cp.x + cp.w / 2;
   const cy = cp.y + cp.h / 2;
-  particles.spawnBurst(cx, cy, 5);
+  Effects.fireParticleBurst(cx, cy, 5); // engine path — plain sparkle burst
   spawnFloatText(cx, cy - 20, `CHECKPOINT ${cp.checkpointId}`, '#ffd700');
   // SFX: checkpoint
 });
@@ -1255,9 +1255,6 @@ export function update(dt) {
 
   // 5. Task 4.1 — decay the explosion screen shake (render reads getShakeOffset()).
   updateShake(dt);
-
-  // 6. Task 7.1 — decay screen-space effect timers (vignette / flash).
-  Effects.update(dt);
 }
 
 /**
@@ -1429,13 +1426,18 @@ function explodeSpecial(s) {
         if (Debug.enabled) Debug.logEvent(`bomb → ${t.type} dmg ${dealt}`);
       }
     }
-    spawnExplosionVFX(cx, cy, s.radius);
+    // Legacy bomb explosion roll (pre-migration spawnExplosionVFX, preserved
+    // verbatim): 12 + floor(rand*4) → 12–15 particles. The engine's
+    // deterministic formula is overridden by this explicit count; palettes
+    // and speeds stay owned by effects/explosion.js.
+    const bombCount = 12 + Math.floor(Math.random() * 4);
+    Effects.spawnExplosion(cx, cy, s.radius, bombCount); // engine path — warm fire burst sized to AoE
     Effects.bigExplosion();
     triggerShake(6);
     if (Debug.enabled) Debug.logEvent('bomb exploded');
   } else {
     // Saw: small fizzle spark, no AoE.
-    particles.spawnBurst(cx, cy, 4);
+    Effects.fireParticleBurst(cx, cy, 4); // engine path — plain sparkle burst
   }
 }
 
@@ -1682,7 +1684,10 @@ function updateRealEnemy(e, dt) {
       self: e,
       ctx: { hero },
     }, targets);
-    spawnExplosionVFX(cx, cy, result.radius);
+    // Legacy enemy-death explosion roll (pre-migration spawnExplosionVFX,
+    // preserved verbatim): 12 + floor(rand*4) → 12–15 particles.
+    const deathCount = 12 + Math.floor(Math.random() * 4);
+    Effects.spawnExplosion(cx, cy, result.radius, deathCount); // engine path — warm fire burst sized to AoE
     Effects.bigExplosion(); // Task 7.1 — screen flash on big explosion
     triggerShake(6);
     // SFX: explosion
@@ -1694,7 +1699,7 @@ function updateRealEnemy(e, dt) {
     e._deathHandled = true;
     const cx = e.x + e.w / 2;
     const cy = e.y + e.h / 2;
-    particles.spawnBurst(cx, cy, 7);          // sparkle burst (sprite-sized)
+    Effects.fireParticleBurst(cx, cy, 7);          // engine path — plain sparkle burst
     Effects.spawnDeathSparkle(cx, cy, Math.max(e.w, e.h)); // Task 7.1 — sprite-sized burst
     coins.dropCoins(e.coinDrop, cx, cy);      // coin drop per config
     world.remove(e);                          // drop from play
@@ -1789,7 +1794,7 @@ function updateBoss(dt) {
     b._deathHandled = true;
     const cx = b.x + b.w / 2;
     const cy = b.y + b.h / 2;
-    particles.spawnBurst(cx, cy, 14);          // big victory sparkle burst
+    Effects.fireParticleBurst(cx, cy, 14);        // engine path — big victory sparkle burst
     coins.dropCoins(b.coinDrop, cx, cy);       // generous coin bounty
     world.remove(b);                           // drop from play
     camera.unlock();                           // release the arena lock
@@ -1851,19 +1856,21 @@ function handleBarrelDestroyed(barrel) {
       hero.runStats.hitsTaken.explosion += 1;
       hero.runStats.hitsTaken.total += 1;
     }
-    // Explosion VFX: 12–15 orange/red particles expanding outward.
-    spawnExplosionVFX(cx, cy, result.radius);
+    // Legacy barrel explosion roll (pre-migration spawnExplosionVFX, preserved
+    // verbatim): 12 + floor(rand*4) → 12–15 particles.
+    const barrelCount = 12 + Math.floor(Math.random() * 4);
+    Effects.spawnExplosion(cx, cy, result.radius, barrelCount); // engine path — warm fire burst sized to AoE
     Effects.bigExplosion(); // Task 7.1 — brief white screen flash (design §12)
     triggerShake(8);
     // SFX: explosion
   } else if (barrel.coinDrop) {
     // Coin barrel (or any object with a coinDrop config): spawn the burst.
     coins.dropCoins(barrel.coinDrop, cx, cy);
-    particles.spawnBurst(cx, cy, 6);
+    Effects.fireParticleBurst(cx, cy, 6); // engine path — plain sparkle burst
     // SFX: coin
   } else {
     // Wood barrel (plain): just breaks into wood-chip particles. No damage, no coins.
-    particles.spawnBurst(cx, cy, 8);
+    Effects.fireParticleBurst(cx, cy, 8); // engine path — plain sparkle burst
     // SFX: break
   }
 
@@ -1873,23 +1880,6 @@ function handleBarrelDestroyed(barrel) {
   const bkey = barrel.type; // 'woodBarrel' | 'barrel' | 'coinBarrel'
   hero.runStats.barrelsDestroyed[bkey] = (hero.runStats.barrelsDestroyed[bkey] ?? 0) + 1;
   if (Debug.enabled) Debug.logEvent(`barrel destroyed (${bkey})`);
-}
-
-/**
- * Spawn an explosion visual: N orange/red particles flying outward from the
- * blast center. Reuses the pooled particle system; colors are warm (fire-like).
- * @param {number} cx blast center x
- * @param {number} cy blast center y
- * @param {number} radius explosion radius (scales the burst spread)
- */
-function spawnExplosionVFX(cx, cy, radius) {
-  const count = 12 + Math.floor(Math.random() * 4); // 12–15
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 120 + Math.random() * (radius * 1.5);
-    const color = ['#e74c3c', '#f39c12', '#ff6ec7', '#ffffff'][i % 4];
-    particles.spawnOne(cx, cy, color, speed, angle);
-  }
 }
 
 /** Keep the collision world's coin set in sync with the pool. */

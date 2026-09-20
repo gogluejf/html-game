@@ -90,6 +90,25 @@ Note: run-all.mjs has two pre-existing flaky files unrelated to this plan — co
 
 **Resolution:** ACCEPT (fix). Endpoint-coverage assertions over 2000 trials lock both extremes of hit-sparkle [60,140], pickup-pop [100,180], shake ±3px (flake prob ~e⁻⁵⁰; no seeded RNG in project); death-sparkle floor documented as unreachable-by-contract after verifying the monolith's param contract (caller passes Math.max(e.w,e.h)); explosion speed bounds + endpoint coverage added; BLOOD/FIRE palette-cycle tests import exact arrays from palettes.js (single source); both effect-reference.txt example typos corrected. Re-verify: 37/37 green (effectRegression alone 5× → 20/20 each; barrel.solid/contextualAim pre-existing flakes re-run clean). Committed.
 
+## Wave 2 gate — M2 (2.1–2.3)
+
+**Gate tests:** run-all.mjs 37/37 vs baseline 31/31 (+6 new suites/tests; no new failures). effectRegression.test.js 20→21 passed, deterministic, zero flakes ×5.
+**Wave review (dual):** FAIL round 1 (1 blocker, 4 major, 1 minor):
+- blocker: update.js legacy particles.spawnBurst/spawnOne/local spawnExplosionVFX sites + duplicated FIRE_COLORS/speeds helper
+- major: duplicate Effects.update(dt) per frame → engine instances stepping twice
+- major: vignette.js viewport dims factory-time only (draw-time view ignored)
+- major: screenFlash.js same
+- major: effectRegression probabilistic sampling instead of deterministic stubs
+- minor: .plan-progress.json 2.3 status (verified already "done" — reviewer misread, no action)
+
+**Fixes round 1:** all systems/ spawn sites re-pointed through Effects.* (grep particles.spawn* in systems/ now empty); duplicate Effects.update removed (one canonical call at update.js:1805); render(c2d, renderCtx) second arg threaded through index.js drawEffects so overlays prefer draw-time { view }; regression converted to fully deterministic Math.random stubs.
+**Re-review:** FAIL (1 blocker, 1 minor):
+- blocker: update.js:1429 — legacy explosion VFX used random 12–15 particles; re-pointing to the deterministic formula changed behavior (radius-scaled 12–24)
+- minor: effects.md §Lifecycle still says render(ctx) while engine uses optional renderCtx second arg
+
+**Fixes round 2:** explosion factory accepts optional params.count override (default = deterministic formula preserved); shim spawnExplosion(x, y, radius, count?) forwards it; all three former spawnExplosionVFX sites (bomb/enemy-death/barrel) roll the legacy `12 + floor(rand*4)` verbatim at the call site and pass explicit count; saw-fizzle + enemy-death sparkle confirmed already routed via Effects.fireParticleBurst; doc §Lifecycle updated to render(ctx, renderCtx?). New deterministic test pins the legacy roll (rand=0→12, rand=0.999→15 through the real shim path).
+**Final gate verify:** 37/37 green (barrel.solid pre-existing flake re-run clean), effectRegression 21/21 ×5 zero flakes, no direct particles.spawn* in systems/. Gate commit: `effects: wave 2 gate`.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.

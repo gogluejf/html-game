@@ -31,8 +31,24 @@ function ok(name, fn) {
 
 /** Drain the shared particle pool so a test can count spawns deterministically. */
 function drainPool() {
-  for (const s of particles.activeItems) s.alive = false;
+  // Force every live sparkle past its lifetime so updateAll splices it out of
+  // the active list (it culls by life expiry, not by an alive flag).
+  for (const s of particles.activeItems) s.life = 0;
   particles.updateAll(1);
+}
+
+// --- Deterministic RNG ---------------------------------------------------------
+// The regression must be fully deterministic (no statistical tolerance): we
+// stub Math.random with an exact sequence generator, assert the endpoint
+// sequences, and restore the original in `finally`. This replaces the old
+// 2000-trial sampling that left a nonzero flake risk. Fixed dt stays 1/60.
+const realRandom = Math.random;
+/** Run fn with Math.random replaced by a sequence of [0,1) values (cycled). */
+function withRandomSeq(values, fn) {
+  const orig = Math.random;
+  let i = 0;
+  Math.random = () => values[i++ % values.length];
+  try { return fn(); } finally { Math.random = orig; }
 }
 
 /** Step the engine at fixed dt for n frames (n * 1/60 seconds). */
@@ -42,37 +58,44 @@ function stepFrames(n) {
 
 console.log('hit sparkles (spawnHitSparkles)');
 ok('default count is a random int in [3,5] (old HIT_SPARKLE_COUNT roll)', () => {
-  const seen = new Set();
-  for (let trial = 0; trial < 60; trial++) {
+  // Deterministic: the roll is 3 + floor(rand * 3). Stub rand to land exactly
+  // on each of the three outcomes and assert the exact counts.
+  const cases = [[0, 3], [0.5, 4], [0.999, 5]];
+  for (const [r, expected] of cases) {
     drainPool();
-    const n = Effects.spawnHitSparkles(100, 100);
+    const n = withRandomSeq([r], () => Effects.spawnHitSparkles(100, 100));
     assert.ok(Number.isInteger(n), `count ${n} not an integer`);
-    assert.ok(n >= 3 && n <= 5, `count ${n} outside [3,5]`);
-    seen.add(n);
+    assert.equal(n, expected, `rand=${r} → count ${n}, expected ${expected}`);
   }
-  // The old roll could land on any of 3..5; over 60 trials all three must appear.
-  assert.deepEqual([...seen].sort(), [3, 4, 5], `roll never produced every value: ${[...seen]}`);
 });
 ok('speeds uniform within [60,140] px/s (HIT_SPARKLE_SPEED), both endpoints reached', () => {
-  // Statistical endpoint coverage: over many trials the continuous uniform
-  // sample must land arbitrarily close to BOTH bounds — a narrowed range
-  // (e.g. [80,120]) would fail the min/max assertions even though every
-  // output still lies inside [60,140].
-  const TRIALS = 2000;
-  let minSpeed = Infinity, maxSpeed = -Infinity;
-  for (let trial = 0; trial < TRIALS; trial++) {
-    drainPool();
-    Effects.spawnHitSparkles(0, 0, 5);
-    for (const s of particles.activeItems) {
-      const speed = Math.hypot(s.vx, s.vy);
-      assert.ok(speed >= 60 && speed <= 140, `speed ${speed} outside [60,140]`);
-      minSpeed = Math.min(minSpeed, speed);
-      maxSpeed = Math.max(maxSpeed, speed);
-    }
-  }
-  // P(no sample within 0.5 of an endpoint in 10000 draws) ≈ e^-50 → negligible.
-  assert.ok(minSpeed < 60.5, `min speed ${minSpeed} never approached the 60 bound`);
-  assert.ok(maxSpeed > 139.5, `max speed ${maxSpeed} never approached the 140 bound`);
+  // Deterministic endpoint coverage. Per-sparkle Math.random() draw order:
+  //   1. hitSparkle angle    (hitSparkle.js)
+  //   2. hitSparkle speed    ← the one that sets the final vx/vy magnitude
+  //   3. Sparkle ctor angle  (particles.js — overridden by spawnOne's directed
+  //      vector, so this draw is dead for the final |v|)
+  //   4. Sparkle ctor speed  (particles.js — likewise overridden, dead)
+  // The effect draws its own angle+speed FIRST and passes them to spawnOne;
+  // spawnOne then constructs a Sparkle (which consumes two more randoms for a
+  // velocity it immediately overrides with cos(angle)*speed / sin(angle)*speed).
+  // Net: FOUR randoms per particle, but the EFFECTIVE-speed draw is the
+  // effect's own draw #2, landing at index 4k+1 (first at 1, second at 5).
+  // Place the low/high endpoint seeds exactly there; the rest are dummies.
+  // No statistical tolerance.
+  const N = 5;
+  drainPool();
+  const seq = new Array(4 * N).fill(0.5);
+  seq[1] = 0;          // first sparkle's effective-speed draw → 60
+  seq[5] = 0.999999;   // second sparkle's effective-speed draw → ~140
+  const speeds = withRandomSeq(seq, () => {
+    const out = [];
+    Effects.spawnHitSparkles(0, 0, N);
+    for (const s of particles.activeItems) out.push(Math.hypot(s.vx, s.vy));
+    return out;
+  });
+  assert.equal(speeds.length, N);
+  assert.ok(Math.abs(speeds[0] - 60) < 1e-6, `min speed ${speeds[0]} should reach the 60 bound`);
+  assert.ok(Math.abs(speeds[1] - 140) < 1e-3, `max speed ${speeds[1]} should reach the 140 bound`);
 });
 
 console.log('death sparkle (spawnDeathSparkle)');
@@ -120,21 +143,32 @@ ok('exactly 8 sparkles in an evenly spaced ring, speed [100,180] with both endpo
     diff = Math.min(diff, Math.PI * 2 - diff);
     assert.ok(diff < EPS, `item ${i} angle off by ${diff}`);
   }
-  // Statistical endpoint coverage over many bursts: a narrowed range would
-  // pass the per-item bounds but never approach both extremes.
-  let minSpeed = Infinity, maxSpeed = -Infinity;
-  for (let trial = 0; trial < 2000; trial++) {
-    drainPool();
+  // Deterministic endpoint coverage. Per-sparkle Math.random() draw order:
+  //   1. pickupPop speed     ← the one that sets the final vx/vy magnitude
+  //      (pickupPop computes its evenly spaced angle deterministically — no draw)
+  //   2. Sparkle ctor angle  (particles.js — overridden by spawnOne's directed
+  //      vector, so this draw is dead for the final |v|)
+  //   3. Sparkle ctor speed  (particles.js — likewise overridden, dead)
+  // The effect draws its speed FIRST and passes it to spawnOne; spawnOne then
+  // constructs a Sparkle (which consumes two more randoms for a velocity it
+  // immediately overrides with cos(angle)*speed / sin(angle)*speed). Net:
+  // THREE randoms per particle, effective-speed draw at index 3k (first at 0,
+  // second at 3). Place the low/high endpoint seeds exactly there; the rest
+  // are dummies. No statistical tolerance.
+  drainPool();
+  const N = 8;
+  const seq = new Array(3 * N).fill(0.5);
+  seq[0] = 0;          // first sparkle's effective-speed draw → 100
+  seq[3] = 0.999999;   // second sparkle's effective-speed draw → ~180
+  const speeds = withRandomSeq(seq, () => {
+    const out = [];
     Effects.spawnPickupPop(0, 0, '#ff00ff');
-    for (const s of particles.activeItems) {
-      const speed = Math.hypot(s.vx, s.vy);
-      minSpeed = Math.min(minSpeed, speed);
-      maxSpeed = Math.max(maxSpeed, speed);
-    }
-  }
-  // P(no sample within 4 of an extreme in 16000 draws) ≈ e^-80 → negligible.
-  assert.ok(minSpeed < 104, `min speed ${minSpeed} never approached the 100 bound`);
-  assert.ok(maxSpeed > 176, `max speed ${maxSpeed} never approached the 180 bound`);
+    for (const s of particles.activeItems) out.push(Math.hypot(s.vx, s.vy));
+    return out;
+  });
+  assert.equal(speeds.length, N);
+  assert.ok(Math.abs(speeds[0] - 100) < 1e-6, `min speed ${speeds[0]} should reach the 100 bound`);
+  assert.ok(Math.abs(speeds[1] - 180) < 1e-3, `max speed ${speeds[1]} should reach the 180 bound`);
 });
 
 console.log('explosion (spawnExplosion)');
@@ -151,28 +185,46 @@ ok('caps at the pool size (no allocation beyond MAX_PARTICLES)', () => {
   const n = Effects.spawnExplosion(0, 0, 100000);
   assert.ok(n <= 50, `got ${n}`);
 });
-ok('speeds within [120, 120 + radius*1.5], both endpoints statistically reached', () => {
-  // Statistical endpoint coverage: with radius 40 the range is [120, 180].
-  // Over many trials the uniform sample must approach BOTH bounds — a
-  // narrowed spread would fail even if every output stays in-range.
-  const RADIUS = 40;
-  const TRIALS = 2000;
-  let minSpeed = Infinity, maxSpeed = -Infinity;
-  for (let trial = 0; trial < TRIALS; trial++) {
+ok('legacy bomb/enemy-death/barrel roll is preserved via the count override (rand=0 → 12, rand=0.999 → 15)', () => {
+  // The pre-migration spawnExplosionVFX rolled 12 + floor(rand*4) (12–15) at
+  // the call site; the gate fix moved that roll back into the update.js call
+  // sites and forwards it as an explicit count param. Stub Math.random so the
+  // roll lands exactly on both endpoints through the real shim path.
+  for (const [r, expected] of [[0, 12], [0.999, 15]]) {
     drainPool();
-    Effects.spawnExplosion(0, 0, RADIUS);
-    for (const s of particles.activeItems) {
-      const speed = Math.hypot(s.vx, s.vy);
-      assert.ok(speed >= 120 && speed <= 120 + RADIUS * 1.5,
-        `speed ${speed} outside [120, ${120 + RADIUS * 1.5}]`);
-      minSpeed = Math.min(minSpeed, speed);
-      maxSpeed = Math.max(maxSpeed, speed);
-    }
+    const n = withRandomSeq([r], () => Effects.spawnExplosion(0, 0, 20, 12 + Math.floor(Math.random() * 4)));
+    assert.equal(n, expected, `rand=${r} → count ${n}, expected ${expected}`);
   }
-  // P(no sample within 3 of an endpoint per 15-draw burst over 2000 bursts)
-  // ≈ e^-300 → negligible flake probability.
-  assert.ok(minSpeed < 123, `min speed ${minSpeed} never approached the 120 bound`);
-  assert.ok(maxSpeed > 177, `max speed ${maxSpeed} never approached the ${120 + RADIUS * 1.5} bound`);
+});
+ok('speeds within [120, 120 + radius*1.5], both endpoints reached', () => {
+  // Deterministic endpoint coverage: with radius 40 the range is [120, 180]
+  // (speed = 120 + rand * radius*1.5). Per-sparkle Math.random() draw order:
+  //   1. explosion angle     (explosion.js)
+  //   2. explosion speed     ← the one that sets the final vx/vy magnitude
+  //   3. Sparkle ctor angle  (particles.js — overridden by spawnOne's directed
+  //      vector, so this draw is dead for the final |v|)
+  //   4. Sparkle ctor speed  (particles.js — likewise overridden, dead)
+  // The effect draws its own angle+speed FIRST and passes them to spawnOne;
+  // spawnOne then constructs a Sparkle (which consumes two more randoms for a
+  // velocity it immediately overrides with cos(angle)*speed / sin(angle)*speed).
+  // Net: FOUR randoms per particle, effective-speed draw at index 4k+1
+  // (first at 1, second at 5). Place the low/high endpoint seeds exactly there;
+  // the rest are dummies. No statistical tolerance.
+  const RADIUS = 40;
+  const N = 18; // count for radius 40 = min(24, 12 + round(6)) = 18
+  drainPool();
+  const seq = new Array(4 * N).fill(0.5);
+  seq[1] = 0;          // first sparkle's effective-speed draw → 120
+  seq[5] = 0.999999;   // second sparkle's effective-speed draw → ~180
+  const speeds = withRandomSeq(seq, () => {
+    const out = [];
+    Effects.spawnExplosion(0, 0, RADIUS);
+    for (const s of particles.activeItems) out.push(Math.hypot(s.vx, s.vy));
+    return out;
+  });
+  assert.equal(speeds.length, N);
+  assert.ok(Math.abs(speeds[0] - 120) < 1e-6, `min speed ${speeds[0]} should reach the 120 bound`);
+  assert.ok(Math.abs(speeds[1] - (120 + RADIUS * 1.5)) < 1e-3, `max speed ${speeds[1]} should reach the ${120 + RADIUS * 1.5} bound`);
 });
 ok('hit-sparkle colors cycle BLOOD_COLORS exactly (all values appear)', () => {
   // Single source of truth: the palettes module, not hardcoded literals.
@@ -257,25 +309,23 @@ ok('beginEnemyShake sets hitFlash up to 0.1 (keeps longer existing values)', () 
 });
 ok('getShakeOffset stays within ±3px per axis while hitFlash > 0, both sides reached', () => {
   const e = { hitFlash: 0.1 };
-  let sawNonZero = false;
-  // Statistical endpoint coverage: (rand*2-1)*3 is a continuous uniform on
-  // [-3, +3], so over enough rolls BOTH the negative and positive extremes
-  // must be approached — a narrowed amplitude (e.g. ±2) would fail even
-  // though every offset still lies inside ±3.
+  // Deterministic endpoint coverage: getShakeOffset returns (rand*2-1)*SHAKE_AMT
+  // on each axis — TWO randoms per call (x then y). Stub a length-8 sequence so
+  // four calls produce x∈{-3,+3} and y∈{-3,+3} exactly — no statistical
+  // tolerance. rand=0 → -3; rand≈1 → +3.
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  for (let i = 0; i < 500; i++) {
-    const o = Effects.getShakeOffset(e);
-    assert.ok(Math.abs(o.x) <= 3 && Math.abs(o.y) <= 3, `offset (${o.x}, ${o.y})`);
-    if (o.x !== 0 || o.y !== 0) sawNonZero = true;
-    minX = Math.min(minX, o.x); maxX = Math.max(maxX, o.x);
-    minY = Math.min(minY, o.y); maxY = Math.max(maxY, o.y);
-  }
-  assert.ok(sawNonZero, 'expected at least one non-zero offset in 500 rolls');
-  // P(no sample within 0.3 of an extreme in 500 draws) ≈ e^-50 → negligible.
-  assert.ok(minX < -2.7, `min x ${minX} never approached the -3 bound`);
-  assert.ok(maxX > 2.7, `max x ${maxX} never approached the +3 bound`);
-  assert.ok(minY < -2.7, `min y ${minY} never approached the -3 bound`);
-  assert.ok(maxY > 2.7, `max y ${maxY} never approached the +3 bound`);
+  withRandomSeq([0, 0.999999, 0.999999, 0, 0, 0.999999, 0.999999, 0], () => {
+    for (let i = 0; i < 4; i++) {
+      const o = Effects.getShakeOffset(e);
+      assert.ok(Math.abs(o.x) <= 3 && Math.abs(o.y) <= 3, `offset (${o.x}, ${o.y})`);
+      minX = Math.min(minX, o.x); maxX = Math.max(maxX, o.x);
+      minY = Math.min(minY, o.y); maxY = Math.max(maxY, o.y);
+    }
+  });
+  assert.ok(minX < -2.99, `min x ${minX} never reached the -3 bound`);
+  assert.ok(maxX > 2.99, `max x ${maxX} never reached the +3 bound`);
+  assert.ok(minY < -2.99, `min y ${minY} never reached the -3 bound`);
+  assert.ok(maxY > 2.99, `max y ${maxY} never reached the +3 bound`);
 });
 ok('getShakeOffset returns {0,0} when hitFlash == 0 or entity is null', () => {
   assert.deepEqual(Effects.getShakeOffset({ hitFlash: 0 }), { x: 0, y: 0 });

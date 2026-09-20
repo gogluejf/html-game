@@ -8,8 +8,9 @@
 // One-shot burst: all particles spawned at fire time into the shared pool;
 // done immediately.
 //
-// params: { x, y, radius? } — radius defaults to 60px.
-// Count formula (unchanged): min(24, 12 + round(radius * 0.15));
+// params: { x, y, radius?, count? } — radius defaults to 60px; count overrides
+// the formula when provided (legacy bomb/enemy-death/barrel roll 12–15).
+// Default count formula: min(24, 12 + round(radius * 0.15));
 // speeds 120..(120 + radius * 1.5) px/s; colors cycle FIRE_COLORS by index.
 
 import { particles } from '../particles.js';
@@ -21,12 +22,14 @@ const EXPLOSION_BASE_SPEED = 120;   // base particle speed (px/s) at zero radius
 const EXPLOSION_SPEED_PER_PX = 1.5; // added speed spread per px of radius
 
 /**
- * @param {{x:number, y:number, radius?:number}} params
+ * @param {{x:number, y:number, radius?:number, count?:number}} params
  * @returns {{update:Function, render:Function, done:boolean}}
  */
 export function explosion(params = {}) {
   const { x, y, radius = 60 } = params;
-  const count = Math.min(24, EXPLOSION_MIN + Math.round(radius * EXPLOSION_PER_PX));
+  // Optional explicit count (legacy call sites pass their own roll); otherwise
+  // the deterministic engine formula owns the count.
+  const count = params.count ?? Math.min(24, EXPLOSION_MIN + Math.round(radius * EXPLOSION_PER_PX));
   for (let i = 0; i < count; i++) {
     const angle = Math.random() * Math.PI * 2;
     const speed = EXPLOSION_BASE_SPEED + Math.random() * (radius * EXPLOSION_SPEED_PER_PX);
