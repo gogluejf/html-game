@@ -60,6 +60,13 @@ export class Enemy extends Entity {
     // White-flash timer (seconds) set by takeDamage(); render reads this.
     this.hitFlash = 0;
 
+    // Hit-stun window (seconds remaining). Set by knockback (knockback.js
+    // writes victim.hitstunTimer); while > 0 the enemy's ai() is skipped but
+    // physics keep integrating so the shove plays out visibly (§6 stun).
+    // Plain field (not a unified timer): it's written from outside via
+    // applyKnockback and counts down here, mirroring hitFlash.
+    this.hitstunTimer = 0;
+
     // --- Death pipeline -----------------------------------------------------
     // Driven by a labeled 'death' timer on the unified engine (counts down).
     // deathTimer/fading are derived from it so render + debug stay in sync and
@@ -74,10 +81,14 @@ export class Enemy extends Entity {
     return Math.max(0, this.deathDuration - this.timers.get('death'));
   }
 
+  /** True while the hit-stun window is active (ai() is frozen). */
+  get stunned() { return this.hitstunTimer > 0; }
+
   /**
    * Per-frame step. Order: hit-flash decay → death pipeline → AI → integrate.
    * When dead we skip AI and integration entirely (the corpse doesn't move);
-   * we only advance the death clock.
+   * we only advance the death clock. While hit-stunned we skip ai() but still
+   * integrate physics so the knockback shove plays out visibly (§6).
    *
    * @param {number} dt seconds (fixed 1/60)
    * @param {Hero} hero the player (AI target)
@@ -100,8 +111,19 @@ export class Enemy extends Entity {
       return;
     }
 
-    // --- AI (subclasses override) -------------------------------------------
-    this.ai(dt, hero, world);
+    // --- Hit-stun window -----------------------------------------------------
+    // A stunned enemy cannot act: its ai() is skipped for the whole window,
+    // freezing whatever action it was mid-way through (a whipping Jester stops).
+    // Physics below still run, so the knockback velocity integrates and the
+    // shove is visible. No state save/restore needed — aiState is untouched,
+    // so when the timer expires the enemy resumes exactly where it left off.
+    if (this.stunned) {
+      this.hitstunTimer -= dt;
+      if (this.hitstunTimer < 0) this.hitstunTimer = 0;
+    } else {
+      // --- AI (subclasses override) ------------------------------------------
+      this.ai(dt, hero, world);
+    }
 
     // --- Gravity + integrate -------------------------------------------------
     if (this.gravity > 0) {
