@@ -61,7 +61,7 @@
     },
     "2.3": {
       "number": "2.3",
-      "status": "in_progress",
+      "status": "done",
       "name": "Feel pass + regression gate",
       "milestone": "Hero Committed Attacks Carry Knockback",
       "milestone_number": 2,
@@ -76,7 +76,7 @@
     },
     "3.1": {
       "number": "3.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Merge contact/bossContact into velocity-scaled body knockback",
       "milestone": "Body-Contact Unification and Docs",
       "milestone_number": 3
