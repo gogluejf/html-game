@@ -76,35 +76,59 @@
     },
     "3.1": {
       "number": "3.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Merge contact/bossContact into velocity-scaled body knockback",
       "milestone": "Body-Contact Unification and Docs",
-      "milestone_number": 3
+      "milestone_number": 3,
+      "summary": {
+        "tradeoffs": "The hero has two redundant timer mechanisms (plain fields + unified timers) bridged by a small transfer block in the contact handler. This is intentional: it keeps takeHit() unchanged for projectile/explosion sources while letting body-contact use the unified applyKnockback math. A future task could unify all hero damage through applyKnockback if desired.",
+        "failures": "None",
+        "decisions": "Used the compatibility-shim approach: applyKnockback writes plain fields on the hero, and the contact handler immediately transfers them to the hero's Timers system. This preserves the existing intangible flag + render blink mechanism without modifying takeHit() or the timer system. Bosses get their harder hit from a larger base (340 vs 260) plus the motion term picking up their actual velocity \u2014 no separate category needed. Kept KNOCKBACK_PROFILES contact/bossContact rows since they're still referenced by tests and DEFAULT_KNOCKBACK_SOURCE.",
+        "lessons_learned": "applyKnockback normalizes internally via the caller-provided normal vector, so the caller must pass an already-normalized direction. The old takeHit normalized dirX/dirY internally. Both produce identical results when the input magnitudes match. The motion term uses dot(attacker_velocity, normal) clamped to >=0, so only forward momentum amplifies the hit \u2014 a receding enemy can't add force.",
+        "done": "Replaced the layer-based boss/regular contact branch with applyKnockback using a bodyKnockback setting carried on each Enemy. Enemy constructor now assigns bodyKnockback (base 260 for regular, 340 for bosses; scaleBySpeed 1.0, matching old profile recovery/iFrames). The contact handler in update.js computes a normalized push normal, calls applyKnockback(hero, source, source.bodyKnockback, normal), then routes the plain hitstunTimer/iFrameTimer fields into the hero's unified timer system. Hero gained transient hitstunTimer/iFrameTimer fields (always zeroed post-transfer) as the shim between applyKnockback's plain-field writes and the hero's Timers-based state.",
+        "confidence": "high"
+      }
     },
     "3.2": {
       "number": "3.2",
-      "status": "not_started",
+      "status": "done",
       "name": "Document knockback in entity YAML",
       "milestone": "Body-Contact Unification and Docs",
-      "milestone_number": 3
+      "milestone_number": 3,
+      "summary": {
+        "tradeoffs": "Jester gets a documentation-only note rather than a whip hitbox knockback block, because the implementation has no per-enemy-attack knockback data \u2014 enemy\u2192hero shoves use source-keyed profiles on the hero side. Documenting 'no knockback' explicitly prevents designers from adding a fake field later.",
+        "decisions": "Used snake_case keys (body_knockback, scale_by_speed, dir_mode, i_frames) per task context, while keeping the JS camelCase names visible in comments so the mapping is unambiguous. Kept the boss body_knockback override as an inline comment rather than a second block, since it's a single fallback expression in enemy.js, not a separate def field. Named the hero block supermove_knockback (matching ATTACK_SUPERMOVE) rather than super_knockback from the snippet, to align with the codebase identifier.",
+        "failures": "None",
+        "done": "Added knockback blocks to the three entity YAML files, verified field-for-field against the implementation (js/knockback.js typedef + js/heroDefs.js values + js/enemy.js bodyKnockback defaults). enemy.yaml: body_knockback block with base/scale_by_speed/hitstun/i_frames plus boss-override note. hero.yaml: sweep_knockback, cartwheel_knockback, supermove_knockback blocks matching heroDefs.js exactly, with a field legend and a comment noting explosion knockback is carried on the explosion subject (knockback.md \u00a77). jester.yaml: explicit note that the whip carries NO knockback setting (enemy attacks shove the hero via source-keyed KNOCKBACK_PROFILES in hero.js; v1 scope is hero\u2192enemy only). All three files parse as valid YAML.",
+        "confidence": "high",
+        "lessons_learned": "The plan snippet's enemy example (base: 60, dir_mode: from_attacker) did not match the implemented values (base: 260 regular / 340 boss, no dirMode field on body contact) \u2014 always verify against the actual implementation before writing doc YAML. Also the snippet omitted the pop field entirely; the implemented KnockbackSetting includes pop for all three hero attacks."
+      }
     },
     "3.3": {
       "number": "3.3",
-      "status": "not_started",
+      "status": "done",
       "name": "Final regression + scope handoff",
       "milestone": "Body-Contact Unification and Docs",
       "milestone_number": 3
     },
     "3.4": {
       "number": "3.4",
-      "status": "not_started",
+      "status": "done",
       "name": "Preserve existing enemy-to-hero knockback through the refactor",
       "milestone": "Body-Contact Unification and Docs",
-      "milestone_number": 3
+      "milestone_number": 3,
+      "summary": {
+        "lessons_learned": "The contact path's expected vx/vy differ from the simple dirX=1,dirY=0 reference because the handler bakes a -0.6 upward component into the normal before normalization (len=\u221a1.36\u22481.166), giving vx\u2248222.9 not 260 \u2014 the regression must use the handler's actual input, not the profile strength directly.",
+        "confidence": "high",
+        "decisions": "Pinned expected values as an explicit REF table mirroring knockback-reference.txt instead of deriving them from KNOCKBACK_PROFILES/enemy defaults at runtime, so the test fails if EITHER side drifts from the captured pre-refactor reference. Used real Hero + Enemy instances (not stand-ins) to exercise the actual code paths including the default bodyKnockback fallback logic.",
+        "failures": "None",
+        "tradeoffs": "Test replicates the contact handler's normal construction and timer transfer inline rather than importing update.js (which has heavy DOM/game-state deps), so a future change to those two snippets in update.js would need the test updated too \u2014 acceptable for a regression pin.",
+        "done": "Created petal-panic/js/test/knockbackRegression.test.js (9 tests, all passing) proving the enemy\u2192hero knockback refactor is behavior-preserving: body contact via applyKnockback+enemy.bodyKnockback reproduces the pre-refactor contact/bossContact vectors (260/340 along the (\u00b11,-0.6) normalized normal \u2192 vx\u2248222.9/vy\u2248-133.8, rec 0.25/0.30, iFrames 0.60/0.70); projectile/heavyProj/explosion via takeHit reproduce their exact reference values (220/300/380, matching rec + intangible windows). Also covers radial explosion direction scaling and i-frame absorption on both paths."
+      }
     },
     "4.1": {
       "number": "4.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Self-protection on connect (sweep + cartwheel)",
       "milestone": "Self-Protection on Connect",
       "milestone_number": 4
