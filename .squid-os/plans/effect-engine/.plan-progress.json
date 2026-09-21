@@ -223,7 +223,7 @@
     },
     "5.5": {
       "number": "5.5",
-      "status": "in_progress",
+      "status": "done",
       "name": "Telegraph Circle",
       "milestone": "Motion, Telegraph and Marker Effects",
       "milestone_number": "5",
@@ -238,10 +238,18 @@
     },
     "5.6": {
       "number": "5.6",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Ground Target Marker",
       "milestone": "Motion, Telegraph and Marker Effects",
-      "milestone_number": "5"
+      "milestone_number": "5",
+      "summary": {
+        "failures": "None",
+        "done": "Cleanup (Review A): render() now reads the stored this.radius instead of recomputing the pulse formula; core formula lives only in update(). Header comments updated to describe the cache. Behavior identical \u2014 this.radius is initialized to the base radius at construction so a pre-update first draw is still correct.",
+        "decisions": "Kept Math.max(0, this.radius) guard in render() for degenerate radius-0 instances",
+        "lessons_learned": "Task 5.6 lived in the effect-engine plan (.plan.json), not petal-panic-v1",
+        "tradeoffs": "None \u2014 one-line behavior-preserving change",
+        "confidence": "high"
+      }
     },
     "5.7": {
       "number": "5.7",

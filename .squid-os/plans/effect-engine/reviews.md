@@ -299,6 +299,14 @@ Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Commit
 
 **Resolution:** ACCEPT (minor fix). Added one test-only case proving the render-half of the followTarget contract: after an update, move the carrier's origin without further update, render into the recording stub, assert the stroked arc is centered at the carrier's NEW live origin (and not the stale update-time position). No runtime logic changed. Re-verify: telegraphCircle 27/27 ×8 zero flakes; run-all 50/50 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
 
+## Task 5.6 — Ground Target Marker
+
+**Review A (round 1):** PASS (2 minor) — render() recomputed the pulse radius already stored by update() (redundant copy of the core formula; harmless by construction); `animation` param is read-but-reserved (`void animation`), intentional documented surface area.
+
+**Review B (round 1):** PASS (first attempt hit tool budget; retry) — fixed marker (origin captured once at construction, never re-resolved → moving carriers don't drag it; following is §10's job); declarative attachment incl. non-entity carriers; params-driven standalone path via null-carrier fireManual. 22 passed.
+
+**Resolution:** ACCEPT (minor fix). render() now reads the stored `this.radius` instead of recomputing the sinusoid (formula lives in one place); `this.radius` initialized to base radius at construction so a pre-update render still draws correct t=0 geometry. No behavior change. Re-verify: groundMarker 22/22 ×8 zero flakes; run-all 51/51 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.

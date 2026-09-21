@@ -36,6 +36,7 @@ import { afterimage } from './afterimage.js';
 import { groundWave } from './groundWave.js';
 import { shockwave } from './shockwave.js';
 import { telegraphCircle } from './telegraphCircle.js';
+import { groundMarker } from './groundMarker.js';
 
 // --- Migrated effects (task 2.1) ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -65,3 +66,4 @@ registerEffect('afterimage', afterimage);
 registerEffect('ground-wave', groundWave);
 registerEffect('shockwave', shockwave);
 registerEffect('telegraph-circle', telegraphCircle);
+registerEffect('ground-target-marker', groundMarker);
