@@ -208,7 +208,7 @@
     },
     "5.4": {
       "number": "5.4",
-      "status": "in_progress",
+      "status": "done",
       "name": "Shockwave",
       "milestone": "Motion, Telegraph and Marker Effects",
       "milestone_number": "5",
@@ -223,10 +223,18 @@
     },
     "5.5": {
       "number": "5.5",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Telegraph Circle",
       "milestone": "Motion, Telegraph and Marker Effects",
-      "milestone_number": "5"
+      "milestone_number": "5",
+      "summary": {
+        "confidence": "high",
+        "lessons_learned": "The render-half re-resolution lives in telegraphCircle.render() via resolveOrigin(carrier, fallback) when followTarget \u2014 it bypasses this.origin entirely, so moving the carrier post-update is observable only through the recorded arc call args.",
+        "failures": "None",
+        "decisions": "Placed the new ok() in the existing 'render' section next to the other render-contract tests; asserted both positive (arc at live origin) and negative (not at stale origin) conditions for clarity",
+        "done": "Added one test-only case to petal-panic/js/test/telegraphCircle.test.js closing Review A's gap: with followTarget:true and a movingCarrier, after update() the carrier origin is moved WITHOUT another update(); render() into a recording-canvas stub must stroke the arc centered at the carrier's NEW live origin (500,600), not the stale update-time position (10,20). Fixed dt=1/60, exact-within-epsilon on arc center coords. No runtime logic changed.",
+        "tradeoffs": "None \u2014 pure additive test; existing makeCtx/movingCarrier helpers reused"
+      }
     },
     "5.6": {
       "number": "5.6",

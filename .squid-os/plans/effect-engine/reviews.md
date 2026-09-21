@@ -291,6 +291,14 @@ Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Commit
 
 **Resolution:** Both findings are the SAME design decision already made and committed for task 5.3 (Ground Wave), so behavior is unchanged — resolved by documentation + a pinning test. (B-1) header now states the config precondition: "expands to maxRadius then fades" assumes `duration >= (maxRadius-startRadius)/expansionSpeed`; a shorter duration stops the ring at its current radius on completion (no teleport / forced arrival), same convention as groundWave. (B-2) the concept doc §5 lists opacity and duration as independent params with no hold-then-fade requirement; simultaneous expand+fade is the standard shockwave look and matches "then fades" as one timed event — kept as-is. Added one test pinning the sensible-config path (reaches exactly maxRadius at the travel time, holds there while alpha strictly decreases each frame through completion). Reviewer disagreement broken by the established cross-task convention + mechanical tests (sensible-config contract fully satisfied). Re-review: B final PASS. Re-verify: shockwave 21/21 ×10 zero flakes; run-all 49/49 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
 
+## Task 5.5 — Telegraph Circle
+
+**Review A (round 1):** PASS (2 minor) — NaN radius input propagates (identical parity with shockwave/groundWave siblings, not a regression); followTarget contract documented as "re-resolve at update AND render" but only the update() half was tested.
+
+**Review B (round 1):** PASS — No findings. Duration-bound shrinking circle + deterministic opacity pulse; fixed-position and live follow-target both supported; generic carriers via origin(); standalone params-only path driven by null carrier. 26 passed.
+
+**Resolution:** ACCEPT (minor fix). Added one test-only case proving the render-half of the followTarget contract: after an update, move the carrier's origin without further update, render into the recording stub, assert the stroked arc is centered at the carrier's NEW live origin (and not the stale update-time position). No runtime logic changed. Re-verify: telegraphCircle 27/27 ×8 zero flakes; run-all 50/50 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
