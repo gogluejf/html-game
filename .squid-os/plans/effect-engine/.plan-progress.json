@@ -201,17 +201,25 @@
     },
     "5.3": {
       "number": "5.3",
-      "status": "in_progress",
+      "status": "done",
       "name": "Ground Wave",
       "milestone": "Motion, Telegraph and Marker Effects",
       "milestone_number": "5"
     },
     "5.4": {
       "number": "5.4",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Shockwave",
       "milestone": "Motion, Telegraph and Marker Effects",
-      "milestone_number": "5"
+      "milestone_number": "5",
+      "summary": {
+        "tradeoffs": "None \u2014 docs + one test only",
+        "done": "Reviewer-B findings resolved as documentation-only: added a 'Config precondition' note to the shockwave.js file header (documented expand-then-fade behavior assumes duration >= (maxRadius-startRadius)/expansionSpeed; shorter duration stops the ring at its current radius, same convention as groundWave 5.3) and added one new test pinning the sensible-config path (defaults startRadius 4/maxRadius 60/expansionSpeed 300/duration 0.4): asserts the ring reaches exactly maxRadius at the first fixed-dt frame covering the travel time, holds there, alpha strictly decreases through completion, and completes at duration. No runtime logic changed in update()/render(); existing stop-short test kept.",
+        "lessons_learned": "round((maxR-startR)/speed / dt) frames lands slightly BEFORE the real-valued travel time (11 frames = 0.1833s < 0.1867s), so asserting maxRadius at that exact frame fails by ~1px; assert at the first frame where radius >= maxR instead.",
+        "decisions": "Kept the committed 5.3/5.4 design decision (stop short, no forced arrival) unchanged; made it explicit via header note mirroring groundWave's 'Duration vs travel time' section. New test uses the exact default params from the task brief and derives the arrival frame from the fixed-dt grid rather than assuming round(travelTime/dt), since r(t) is derived from accumulated elapsed time.",
+        "confidence": "high",
+        "failures": "None"
+      }
     },
     "5.5": {
       "number": "5.5",

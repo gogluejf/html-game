@@ -281,6 +281,16 @@ Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Commit
 
 **Resolution:** ACCEPT (fix). (B-3/A-#1) crest reworked to an ellipse via translate(frontX,groundY)+scale(1, height/(width/2)) so the peak reaches exactly `height`; dead `void topY` removed; header documents the ellipse; new test asserts vertical extent == height. (B-1) early-completion behavior deliberately documented (front stops at current x, no teleport/forced arrival) + pinned by a test (speed 300, distance 150, duration 0.3 → frontX 90 < 150 at completion). (B-2) endpoint-frame omission documented as intentional (engine prunes during updateEffects before drawEffects) in header + render JSDoc; existing "draws nothing once done" test stays valid. (A-minor) frontX now initialized from resolveOrigin(carrier, fallback).x. Also fixed two stale test assertions from the initial pass (arc matched by hard-coded exact angle literals + wrong array index for the anticlockwise flag [5] vs [6]) → now assert the contract (center (frontX,groundY), radius width/2, semicircle span, sweep flag). Re-review: B final PASS. Re-verify: groundWave 25/25 ×10 zero flakes; run-all 48/48 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
 
+## Task 5.4 — Shockwave
+
+**Review A (round 1):** PASS (5 minor/info) — NaN param input propagates to geometry (undocumented edge, consistent with siblings); redundant alpha guard; unused renderCtx param; one arrival test relies on float/frame alignment coincidence; one loose `drew >= 12` liveness bound. No blockers/majors.
+
+**Review B (round 1):** FAIL (1 high, 1 medium)
+- high: completes before reaching maxRadius when duration < (maxRadius-startRadius)/expansionSpeed
+- medium: opacity fades during expansion rather than only after reaching maxRadius
+
+**Resolution:** Both findings are the SAME design decision already made and committed for task 5.3 (Ground Wave), so behavior is unchanged — resolved by documentation + a pinning test. (B-1) header now states the config precondition: "expands to maxRadius then fades" assumes `duration >= (maxRadius-startRadius)/expansionSpeed`; a shorter duration stops the ring at its current radius on completion (no teleport / forced arrival), same convention as groundWave. (B-2) the concept doc §5 lists opacity and duration as independent params with no hold-then-fade requirement; simultaneous expand+fade is the standard shockwave look and matches "then fades" as one timed event — kept as-is. Added one test pinning the sensible-config path (reaches exactly maxRadius at the travel time, holds there while alpha strictly decreases each frame through completion). Reviewer disagreement broken by the established cross-task convention + mechanical tests (sensible-config contract fully satisfied). Re-review: B final PASS. Re-verify: shockwave 21/21 ×10 zero flakes; run-all 49/49 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
