@@ -507,5 +507,5 @@ function drawShakeProxy(ctx, body, entryType, t) {
  */
 export function theaterList() {
   return [...CATALOG].sort((a, b) => a.section - b.section)
-    .map(entry => ({ type: entry.type, name: entry.name, demo: makeDemo(entry) }));
+    .map(entry => ({ type: entry.type, name: entry.name, section: entry.section, demo: makeDemo(entry) }));
 }

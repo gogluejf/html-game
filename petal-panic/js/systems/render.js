@@ -32,7 +32,7 @@ export function render(ctx) {
     screenUpdate(1 / 60); // advance parallax at fixed step
     drawScreen(ctx);
     // Theater can be opened from any screen via F2.
-    if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
+    if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H, input.state.gamepadLayout || 'Generic');
     return;
   }
 
@@ -375,7 +375,7 @@ export function render(ctx) {
 
   // Effect Theater (task 7.2): debug-only black-screen overlay drawn LAST so it
   // covers everything (game world + HUD + state overlays). No-op when inactive.
-  if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
+  if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H, input.state.gamepadLayout || 'Generic');
 }
 
 /**

@@ -394,6 +394,12 @@ export function processInput() {
       Debug.logEvent('theater CLOSE (back)');
       return;
     }
+    // Replay current effect on nav.confirm (Enter/Space / gamepad A).
+    if (input.nav.pressed.includes('confirm')) {
+      Theater.clock = -0.5;
+      Debug.logEvent(`theater REPLAY → ${Theater.current().type}`);
+      return;
+    }
     updateTheaterGamepad();
     // Suppress normal screen navigation while the theater is open.
     return;

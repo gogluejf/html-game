@@ -18,6 +18,7 @@
 
 import { theaterList, resetEffects, DEMO_VIEW } from './index.js';
 import { particles } from '../particles.js';
+import { navLabelString } from '../input.js';
 
 // Built once at import: the catalog is static for the life of the process.
 const list = theaterList();
@@ -80,7 +81,7 @@ export const Theater = {
    * @param {number} w viewport width (VIEW_W)
    * @param {number} h viewport height (VIEW_H)
    */
-  draw(ctx, w, h) {
+  draw(ctx, w, h, layout = 'Generic') {
     if (!this.active) return;
     const entry = list[this.index];
     ctx.save();
@@ -95,13 +96,10 @@ export const Theater = {
     ctx.font = 'bold 28px monospace';
     ctx.fillText('EFFECT THEATER', w / 2, 44);
 
-    // 3. Current effect name (large) + id/type (smaller) centered near the top.
+    // 3. Current effect name (large) + section number.
     ctx.font = 'bold 20px monospace';
     ctx.fillStyle = '#7df';
-    ctx.fillText(entry.name, w / 2, 96);
-    ctx.font = '14px monospace';
-    ctx.fillStyle = '#aaa';
-    ctx.fillText(`type: ${entry.type}`, w / 2, 118);
+    ctx.fillText(`${entry.section}. ${entry.name}`, w / 2, 96);
 
     // 4. Index indicator.
     ctx.font = '14px monospace';
@@ -117,10 +115,12 @@ export const Theater = {
     entry.demo(ctx, this.clock);
     ctx.restore();
 
-    // 6. Hint text at bottom.
+    // 6. Hint text at bottom (dynamic labels from input API).
+    const confirmLabel = navLabelString('confirm', { layout });
+    const backLabel = navLabelString('back', { layout });
     ctx.fillStyle = '#666';
     ctx.font = '12px monospace';
-    ctx.fillText('←/→ step   Back/Esc close   F2 toggle', w / 2, h - 16);
+    ctx.fillText(`←/→ step   [${confirmLabel}] replay   [${backLabel}] close   F2 toggle`, w / 2, h - 16);
 
     ctx.restore();
   },

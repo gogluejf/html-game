@@ -109,6 +109,40 @@ export function formatBinding(binding, source = 'keyboard', layout = 'Generic') 
     || binding.replace(/^Key|^Digit/, '').toUpperCase();
 }
 
+/**
+ * Return all human-readable labels for a nav action across the requested sources.
+ * Inverts KEY_NAV / PAD_NAV to find which physical bindings map to the action,
+ * then formats each with formatBinding() using the active gamepad layout.
+ *
+ * @param {string} action — one of NAV ('back', 'confirm', 'pause', 'up', etc.)
+ * @param {{source?: 'keyboard'|'gamepad'|'all', layout?: string}} [opts]
+ * @returns {string[]} e.g. ['ENTER', 'SPACE', '✕'] or ['ESC', '○']
+ */
+export function navLabels(action, { source = 'all', layout = 'Generic' } = {}) {
+  const results = [];
+  if (source === 'keyboard' || source === 'all') {
+    for (const [key, actions] of Object.entries(KEY_NAV)) {
+      if (actions.includes(action)) results.push(formatBinding(key, 'keyboard'));
+    }
+  }
+  if (source === 'gamepad' || source === 'all') {
+    for (const [btn, actions] of Object.entries(PAD_NAV)) {
+      if (actions.includes(action)) results.push(formatBinding(btn, 'gamepad', layout));
+    }
+  }
+  return results;
+}
+
+/**
+ * Single compact string for UI hints: "ENTER / SPACE / ✕"
+ * @param {string} action
+ * @param {{source?: 'keyboard'|'gamepad'|'all', layout?: string}} [opts]
+ * @returns {string}
+ */
+export function navLabelString(action, opts) {
+  return navLabels(action, opts).join(' / ');
+}
+
 export function createInput({ target = globalThis.window, document = globalThis.document,
   getGamepads = () => globalThis.navigator?.getGamepads?.() || [],
   storage = () => globalThis.localStorage } = {}) {
