@@ -11,7 +11,7 @@ Execution contract for the `effect-engine` plan. No human between tasks.
 ## Per-task loop (strict order)
 
 1. `progress.py mark-in-progress`
-2. **Execute** — inline agent with `task-executor` skill, passed the plan path + task id. Budgets: max_steps 150, max_tools 200, max_time 45m.
+2. **Execute** — inline agent with `task-executor` skill, passed the plan path + task id. Budgets: max_steps 150, max_tools 200, max_time 15m.
 3. **Verify** — run every `Verification:` command from the task + related existing tests.
 4. **Fix cycle** — if red: fresh task-executor with diagnosis-first prompt. Max 2 retries. Still red → BLOCKED, stop wave, surface to user.
 5. **Review A** (qwen3.8-27b, line-level) on uncommitted diff.

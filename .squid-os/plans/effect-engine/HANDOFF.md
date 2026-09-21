@@ -30,7 +30,7 @@ The runner (you) dispatches, verifies mechanically, reviews, records, commits, t
 
 ### Per-task loop (strict order, from orchestrator.md)
 1. `progress.py mark-in-progress --task-id <id>`
-2. **Execute** — inline agent with `task-executor` skill, passed plan path + task id. Budgets: max_steps 150, max_tools 200, max_time 45m.
+2. **Execute** — inline agent with `task-executor` skill, passed plan path + task id. Budgets: max_steps 150, max_tools 200, max_time 15m.
 3. **Verify** — run the task's `Verification:` command + related existing tests. NOTE: most M5/M6/M7 tasks list `node petal-panic/js/test/effectCatalog.test.js`, which does NOT exist yet (it's an M7 deliverable). **Fall back to `node petal-panic/js/test/run-all.mjs` and note it.**
 4. **Fix cycle** — if red: fresh task-executor with a diagnosis-first prompt (state the exact failing assertions + root cause you found). Max 2 retries. Still red → BLOCKED, stop wave, surface to user.
 5. **Review A** — `ninfer/qwen3.8-27b` (local, line-level) on the uncommitted diff. Budgets: max_steps 75, max_time 15m.
