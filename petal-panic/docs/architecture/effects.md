@@ -562,3 +562,31 @@ A Target Marker does not launch a missile.
 A Telegraph Circle does not execute an attack.
 
 Those gameplay behaviors are composed by the Attack Engine using Collision, Effects, Sprite/Animation, Audio, and other systems.
+
+---
+
+# Scope & Handoff
+
+This section records exactly what shipped with the Effects Engine epic so the next epic can pick up cleanly. It is a concept-level note — no implementation detail.
+
+## What Shipped
+
+- **The generic registry-driven Effect Engine.** Every effect is a plain data object — a type plus its parameters — attached declaratively to any carrier and fired on a trigger. The engine knows nothing about specific effects; it only knows how to look a type up and drive its lifecycle.
+- **Twenty-five catalog effects implemented** (§1–§24 above, plus §26 Beam). Heat Distortion (§25) remains experimental and is not implemented.
+- **Legacy effects migrated behavior-preservingly.** Existing one-off visual code was folded into the engine without changing how it looks or feels in-game.
+- **A debug-mode Effect Theater.** In debug mode, a step-through viewer walks every catalog effect in turn, showing each one's name and id alongside a live demo of that effect. It is driven by keyboard and gamepad input.
+- **The carrier interface.** A carrier exposes origin, facing, and size as needed, plus a list of the effects it carries and their triggers. The engine drives any such carrier unchanged — plain-object carriers shaped like a projectile, hit area, collision event, marker, or area-of-effect region all fire effects through the same path today. No per-entity-class code is required; the interface is generic by design.
+
+## Deferred / Out of Scope for v1 (handoff to the next epic)
+
+- **Heat Distortion (§25).** Experimental; not implemented.
+- **Per-entity renderer consumption of sprite-state multipliers.** Fade Out's opacity, Scale/Pulse's scale, and Squash & Stretch's per-axis scale expose their state, but the production renderer does not yet read those values onto individual sprites. Likewise, behind-sprite rendering order for Aura/Glow is not wired into the production render pass. These effects work standalone; the follow-up is teaching the renderer to apply them to sprites.
+- **Wiring effects onto future multi-box / multi-radius / multi-marker data** (the animation-studio revision). No such data exists yet. When it lands, the carrier interface already accepts it unchanged.
+
+## Extensibility Contract
+
+Adding a new effect is three things: one file under the effects folder, one registration line, and one row in the theater catalog. No engine change is required.
+
+## Carrier Readiness
+
+The carrier interface accepts any duck-typed object — anything that exposes origin, facing, and size as an effect needs them, plus an effects configuration. Future marker, box, and radius entities can therefore attach effects with zero engine change; the interface is ready before the data arrives.

@@ -364,14 +364,14 @@
     },
     "7.3": {
       "number": "7.3",
-      "status": "in_progress",
+      "status": "done",
       "name": "Document effect config in entity YAML",
       "milestone": "Effect Theater and Handoff",
       "milestone_number": "7"
     },
     "7.4": {
       "number": "7.4",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Final regression + scope handoff",
       "milestone": "Effect Theater and Handoff",
       "milestone_number": "7"

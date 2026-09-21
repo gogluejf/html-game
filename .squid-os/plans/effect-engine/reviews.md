@@ -457,6 +457,22 @@ DEFERRED (tracked, carried from 6.1 + confirmed at gate): render.js per-entity c
 
 **Resolution:** ACCEPT all actionable findings (doc-comment precision). (B2) VERIFIED real — hitSparkle.js reads params.x/y directly with NO carrier-origin logic (legacy M2-migrated); added x/y to the projectile example with a comment that the caller sets them from the collision event at fire time. (B1) Added a clarifying comment that the beam reads the ACTIVE ATTACK HITBOX's origin()/facing() at fire time (the hero is the carrier owning the hitbox), per effects.md §26. (B3/A#1) Rewrote the stateChange comment to state plainly that the engine fires on EVERY emitted stateChange with no built-in predicate — the caller emits it only when entering the desired state (designer-tunable via trigger emission). (A#2) corrected the `moving` condition comment to "carrier-defined predicate; effective floor ~10 px/s". Re-verify: both YAML files parse clean (yaml.safe_load OK); grep confirms both effects blocks present. Doc-only change — no code touched, full suite unaffected (59/59). Committed.
 
+## Task 7.4 — Final regression + scope handoff
+
+**Regression:** run-all.mjs 59/59 vs baseline 31/31 (+28 new suites/tests; no new failures). effectRegression.test.js 21/21 (behavior preservation intact). Pre-existing flakes (barrel.solid, contextualAim ~25%) re-run clean across 3× runs.
+
+**Review A (round 1):** PASS (3 minor)
+- minor: effects.md:574 — "registry-driven" jargon not used elsewhere in the doc (wording drift)
+- minor: effects.md:580 vs :590 — Carrier Readiness slightly restates the What-Shipped carrier bullet (mild redundancy)
+- minor (info): effects.md:576 — "Twenty-five (§1–§24 above, plus §26 Beam)" reads slightly mechanical
+
+**Review B (round 1):** FAIL (1 major)
+- major: effects.md:578 — overclaims that projectiles/hit areas/collision events/markers/AoE regions "all satisfy this interface today," while production wiring for future multi-box/radius/marker data is explicitly deferred at line 584
+
+**Resolution:** ACCEPT (B-major). Reworded the carrier-interface bullet to distinguish what's PROVEN (the generic duck-typed contract — plain-object carriers shaped like a projectile/hit area/collision event/marker/AoE region all fire effects through the same path today, no per-entity-class code required) from what's DEFERRED (wiring onto future multi-box/radius/marker data that doesn't exist yet). Removed the overclaim. A's 3 minors accepted as-is (cosmetic wording/redundancy, non-blocking; the section stays concept-level with no function names/constants/formulas/code). Re-verify: run-all 59/59, effectRegression 21/21, markdown coherent. Doc-only change. Committed.
+
+EPIC COMPLETE — all 28 tasks done + committed; Waves 1–7 gated; full suite green vs baseline; preservation regression green; Heat Distortion deferred (documented); extensibility contract intact (one file + one registration + one theater row).
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
