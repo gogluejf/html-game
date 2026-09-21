@@ -8,11 +8,11 @@ import { HEROES } from './heroDefs.js';
 import { VIEW_W, VIEW_H } from './view.js';
 import { calculateScore } from './stats.js';
 import { onTransition } from './state.js';
-import { input, navLabelString } from './input.js';
+import { input, navLabelString, navHintEntries, navLabels } from './input.js';
 import { Remap } from './remap.js';
 import {
   FONT_TITLE, FONT_UI, CREAM, GOLD, RED, PINK, roundRect,
-  drawMarqueeTitle, drawPrompt, drawMenace,
+  drawMarqueeTitle, drawPrompt, drawMenace, drawNavBar,
 } from './fonts.js';
 
 // Continue cost (design §1/§14: 1000 coins per continue). update.js exports the
@@ -510,67 +510,30 @@ export const Select = {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#e8dcc0';
-      ctx.fillText('Use ← → to choose', artX + artW / 2, py + ph / 2 - 11);
+      const lrIcons = [...navLabels('left', { simple: true }), ...navLabels('right', { simple: true })].join(' ');
+      ctx.fillText(`Use ${lrIcons} to choose`, artX + artW / 2, py + ph / 2 - 11);
       ctx.fillText('your performer', artX + artW / 2, py + ph / 2 + 13);
       ctx.restore();
     }
 
     // --- Controls bar (below the card) ---------------------------------------
-    // Keycap chips: [←] [→] SELECT   ·   [⏎] CONFIRM.
-    //  - ← / → chips stay gold while their key is physically held down
-    //    (this._heldLeft / this._heldRight), so holding an arrow keeps it lit.
-    //  - ⏎ chip flashes gold for 180ms on Enter press.
-    //  - The SELECT / CONFIRM words NEVER highlight; they only brighten when
-    //    their associated action is active (arrow held / enter pressed).
+    // Keycap chips via drawNavBar + navHintEntries (layout-aware).
+    // Left/Right chips stay gold while held; Confirm flashes on press.
     const barY = artY + artH + 23;
     const cx0 = artX + artW / 2;
-    ctx.save();
-    ctx.textBaseline = 'middle';
-
     const now = performance.now();
     const enterFlash = this._flashT === 'enter' && (now - this._flashAt) < 180;
     const heldL = this._heldLeft;
     const heldR = this._heldRight;
 
-    const chip = (label, x, y, active) => {
-      const w = label.length > 1 ? 34 : 26;
-      ctx.fillStyle = active ? 'rgba(255,215,0,0.22)' : 'rgba(255,255,255,0.07)';
-      roundRect(ctx, x - w / 2, y - 12, w, 24, 6);
-      ctx.fill();
-      ctx.strokeStyle = active ? GOLD : '#5a5a72';
-      ctx.lineWidth = active ? 2 : 1.5;
-      roundRect(ctx, x - w / 2, y - 12, w, 24, 6);
-      ctx.stroke();
-      ctx.font = `13px ${FONT_UI}`;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = active ? CREAM : '#9a8f78';
-      ctx.fillText(label, x, y + 1);
-      return w;
-    };
-
-    const word = (text, x, y, color, size = 14) => {
-      ctx.font = `${size}px ${FONT_UI}`;
-      ctx.textAlign = 'left';
-      ctx.fillStyle = color;
-      ctx.fillText(text, x, y);
-    };
-
-    // Measure words to lay out the row centered on the card.
-    ctx.font = `14px ${FONT_UI}`;
-    const wSel = ctx.measureText('SELECT').width;
-    const wConf = ctx.measureText('CONFIRM').width;
-    const gap = 10;                 // chip-to-chip / chip-to-word gaps
-    const dotGap = 22;              // space around the "·" separator
-    const total = 26 + gap + 34 + gap + wSel + dotGap + 34 + gap + 34 + gap + wConf;
-    let px = cx0 - total / 2;
-
-    chip('←', px + 13, barY, heldL); px += 26 + gap;
-    chip('→', px + 17, barY, heldR); px += 34 + gap;
-    word('SELECT', px, barY, heldL || heldR ? '#d8cdb4' : '#6e6552'); px += wSel + dotGap;
-    word('·', px, barY, '#5a5a72', 16); px += 12 + dotGap - 12;
-    chip('⏎', px + 17, barY, enterFlash); px += 34 + gap;
-    word('CONFIRM', px, barY, enterFlash ? CREAM : '#6e6552');
-    ctx.restore();
+    const entries = navHintEntries([
+      { actions: ['left', 'right'], label: 'Select' },
+      { action: 'confirm', label: 'Confirm' },
+    ]);
+    // Mark active states
+    if (entries[0]) entries[0].active = heldL || heldR;
+    if (entries[1]) entries[1].active = enterFlash;
+    drawNavBar(ctx, cx0, barY, entries);
   },
 
   /** One semantic press per step; adapter handles physical repeat and releases. */
@@ -658,42 +621,13 @@ export const Pause = {
       });
     }
 
-    // Dynamic button hints (single line, keys normal / actions bold).
-    const navLabel = navLabelString('up', { simple: true }) + '/' + navLabelString('down', { simple: true });
-    const confirmLabel = navLabelString('confirm');
-    const backLabel = navLabelString('back');
-    const hintY = startY + options.length * gap + 20;
-    const hintText = `[${navLabel}] Navigate   [${confirmLabel}] Confirm   [${backLabel}] Close`;
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const keyFont = `13px ${FONT_UI}`;
-    const actFont = `bold 13px ${FONT_UI}`;
-    const keyColor = '#777';
-    const actColor = '#aaa';
-    const parts = hintText.split('   ');
-    let totalW = 0;
-    const measured = parts.map((part, idx) => {
-      const bracketEnd = part.indexOf(']') + 1;
-      const keyPart = part.slice(0, bracketEnd + 1);
-      const actPart = part.slice(bracketEnd + 1);
-      ctx.font = keyFont;
-      const wKey = ctx.measureText(keyPart).width;
-      ctx.font = actFont;
-      const wAct = ctx.measureText(actPart).width;
-      totalW += wKey + wAct + (idx < parts.length - 1 ? 12 : 0);
-      return { keyPart, actPart, wKey, wAct };
-    });
-    let hx = VIEW_W / 2 - totalW / 2;
-    ctx.textAlign = 'left';
-    for (let i = 0; i < measured.length; i++) {
-      const m = measured[i];
-      ctx.font = keyFont; ctx.fillStyle = keyColor;
-      ctx.fillText(m.keyPart, hx, hintY); hx += m.wKey;
-      ctx.font = actFont; ctx.fillStyle = actColor;
-      ctx.fillText(m.actPart, hx, hintY); hx += m.wAct + 12;
-    }
-    ctx.restore();
+    // Dynamic button hints (keycap chip style, single line).
+    const hintY = startY + options.length * gap + 24;
+    drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
+      { actions: ['up', 'down'], label: 'Navigate' },
+      { action: 'confirm' },
+      { action: 'back', label: 'Close' },
+    ]));
     ctx.restore();
   },
 

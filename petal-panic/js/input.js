@@ -121,23 +121,28 @@ export function formatBinding(binding, source = 'keyboard', layout = 'Generic') 
  *     Useful for compact UI hints where redundant bindings clutter the line.
  * @returns {string[]} e.g. ['ENTER', 'SPACE', '✕'] or ['ESC', '○']
  */
+const DIRECTIONAL = new Set(['up', 'down', 'left', 'right']);
+
 export function navLabels(action, { source = 'all', simple = false } = {}) {
   const results = [];
   // Read layout from the singleton input engine (detected pad or user config).
   const layout = input.gamepadLayout === 'Auto'
     ? (input.state?.gamepadLayout || 'Generic')
     : input.gamepadLayout;
+  const isDir = DIRECTIONAL.has(action);
   if (source === 'keyboard' || source === 'all') {
     for (const [key, actions] of Object.entries(KEY_NAV)) {
       if (!actions.includes(action)) continue;
-      if (simple) continue; // simple mode: no keyboard at all, just d-pad
+      // simple + directional: skip keyboard entirely (only d-pad)
+      if (simple && isDir) continue;
       results.push(formatBinding(key, 'keyboard'));
     }
   }
   if (source === 'gamepad' || source === 'all') {
     for (const [btn, actions] of Object.entries(PAD_NAV)) {
       if (!actions.includes(action)) continue;
-      if (simple && btn.startsWith('axis:')) continue; // skip LS, keep d-pad
+      // simple + directional: skip LS axes (keep d-pad buttons only)
+      if (simple && isDir && btn.startsWith('axis:')) continue;
       results.push(formatBinding(btn, 'gamepad', layout));
     }
   }
@@ -152,6 +157,39 @@ export function navLabels(action, { source = 'all', simple = false } = {}) {
  */
 export function navLabelString(action, opts) {
   return navLabels(action, opts).join(' / ');
+}
+
+/**
+ * Build structured entries for drawNavBar() from a list of nav actions.
+ * Each entry is { icons: string[], label } where icons is the full list of
+ * button labels (each gets its own chip) and label is the action word.
+ * Uses simple mode by default (d-pad only for directional, no LS).
+ *
+ * @param {Array<{action:string, label?:string, opts?:object}>} items
+ *   - action: NAV action name ('up', 'confirm', 'back', etc.)
+ *   - label: display word (defaults to capitalized action name)
+ *   - opts: per-item overrides ({ source, simple })
+ * @returns {{icons:string[], label:string, active?:boolean}[]}
+ */
+export function navHintEntries(items) {
+  const LABELS = {
+    up: 'Navigate', down: 'Navigate', left: 'Select', right: 'Select',
+    confirm: 'Confirm', back: 'Close', pause: 'Pause',
+    retry: 'Retry', cont: 'Continue', quit: 'Quit', remove: 'Remove',
+  };
+  return items.map(({ action, actions, label, opts = {} }) => {
+    const o = { simple: true, ...opts };
+    // Support single `action` or multiple `actions` (e.g. ['up','down'])
+    const actionList = actions || [action];
+    const icons = [];
+    for (const a of actionList) {
+      for (const lbl of navLabels(a, o)) {
+        if (!icons.includes(lbl)) icons.push(lbl);
+      }
+    }
+    const defaultLabel = label || (actionList.length > 1 ? 'Navigate' : (LABELS[actionList[0]] || actionList[0]));
+    return { icons, label: label || defaultLabel };
+  });
 }
 
 export function createInput({ target = globalThis.window, document = globalThis.document,

@@ -150,3 +150,73 @@ export function roundRect(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y, x + w, y, rr);
   ctx.closePath();
 }
+
+/**
+ * Draw a navigation hint bar in the select-screen keycap style.
+ * Each entry is { icons: string[], label, active? } — one chip per icon,
+ * followed by the action word in bold. Entries separated by "·".
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} cx — center X of the bar
+ * @param {number} y — vertical center
+ * @param {{icons:string[], label:string, active?:boolean}[]} entries
+ */
+export function drawNavBar(ctx, cx, y, entries) {
+  const gap = 8;       // chip-to-chip gap within an entry
+  const dotGap = 20;   // space between entries (the "·" separator)
+  const wordGap = 6;   // chip-to-word gap
+  const chipH = 24;
+  const chipPadX = 10; // horizontal padding inside chip
+
+  // Measure total width
+  ctx.font = `13px ${FONT_UI}`;
+  const wordFont = `bold 14px ${FONT_UI}`;
+  let total = 0;
+  const metrics = entries.map((e, i) => {
+    const chipWidths = e.icons.map(icon => {
+      ctx.font = `13px ${FONT_UI}`;
+      return ctx.measureText(icon).width + chipPadX * 2;
+    });
+    ctx.font = wordFont;
+    const wordW = ctx.measureText(e.label).width;
+    const entryW = chipWidths.reduce((a, b) => a + b, 0) + (e.icons.length - 1) * gap + wordGap + wordW;
+    total += entryW;
+    if (i < entries.length - 1) total += dotGap;
+    return { chipWidths, wordW };
+  });
+
+  let px = cx - total / 2;
+  ctx.save();
+  ctx.textBaseline = 'middle';
+
+  for (let i = 0; i < entries.length; i++) {
+    const { icons, label, active } = entries[i];
+    const { chipWidths, wordW } = metrics[i];
+
+    // Draw each icon as its own chip
+    for (let j = 0; j < icons.length; j++) {
+      const cw = chipWidths[j];
+      ctx.fillStyle = active ? 'rgba(255,215,0,0.22)' : 'rgba(255,255,255,0.07)';
+      roundRect(ctx, px, y - chipH / 2, cw, chipH, 6);
+      ctx.fill();
+      ctx.strokeStyle = active ? GOLD : '#5a5a72';
+      ctx.lineWidth = active ? 2 : 1.5;
+      roundRect(ctx, px, y - chipH / 2, cw, chipH, 6);
+      ctx.stroke();
+      ctx.font = `13px ${FONT_UI}`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = active ? CREAM : '#9a8f78';
+      ctx.fillText(icons[j], px + cw / 2, y + 1);
+      px += cw + gap;
+    }
+    px -= gap; // remove last gap before word
+
+    // Word (bold)
+    ctx.font = wordFont;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = active ? CREAM : '#6e6552';
+    ctx.fillText(label, px + wordGap, y);
+    px += wordGap + wordW + dotGap;
+  }
+  ctx.restore();
+}

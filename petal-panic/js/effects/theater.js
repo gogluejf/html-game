@@ -18,7 +18,7 @@
 
 import { theaterList, resetEffects, DEMO_VIEW } from './index.js';
 import { particles } from '../particles.js';
-import { navLabelString } from '../input.js';
+import { navLabelString, navLabels } from '../input.js';
 
 // Built once at import: the catalog is static for the life of the process.
 const list = theaterList();
@@ -116,11 +116,12 @@ export const Theater = {
     ctx.restore();
 
     // 6. Hint text at bottom (dynamic labels from input API).
+    const stepIcons = [...navLabels('left', { simple: true }), ...navLabels('right', { simple: true })].join('/');
     const confirmLabel = navLabelString('confirm');
     const backLabel = navLabelString('back');
     ctx.fillStyle = '#666';
     ctx.font = '12px monospace';
-    ctx.fillText(`←/→ step   [${confirmLabel}] replay   [${backLabel}] close   F2 toggle`, w / 2, h - 16);
+    ctx.fillText(`${stepIcons} step   [${confirmLabel}] replay   [${backLabel}] close   F2 toggle`, w / 2, h - 16);
 
     ctx.restore();
   },

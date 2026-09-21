@@ -17,8 +17,8 @@
 // Persistence: localStorage('petal_panic_mapping')
 
 import { VIEW_W, VIEW_H } from './view.js';
-import { drawMarqueeTitle, drawPrompt, roundRect } from './fonts.js';
-import { input, formatBinding, bindingSlots, navLabelString } from './input.js';
+import { drawMarqueeTitle, drawPrompt, roundRect, drawNavBar } from './fonts.js';
+import { input, formatBinding, bindingSlots, navHintEntries } from './input.js';
 import { FONT_UI } from './fonts.js';
 
 const CREAM = '#f5e6c8';
@@ -210,55 +210,20 @@ export const Remap = {
       ctx.restore();
     }
 
-    // Hint — single line, keys normal / actions bold.
-    // During capture: show only the OPPOSITE source's back button.
-    let hintText;
+    // Hint — keycap chip style (single line).
     if (this.capturing) {
-      // Editing keyboard → cancel with gamepad back. Editing gamepad → cancel with keyboard back.
-      const cancelLabel = this.tab === 'keyboard'
-        ? navLabelString('back', { source: 'gamepad' })
-        : navLabelString('back', { source: 'keyboard' });
-      hintText = `[${cancelLabel}] Cancel`;
+      const cancelAction = this.tab === 'keyboard'
+        ? { action: 'back', label: 'Cancel', opts: { source: 'gamepad' } }
+        : { action: 'back', label: 'Cancel', opts: { source: 'keyboard' } };
+      drawNavBar(ctx, VIEW_W / 2, 490, navHintEntries([cancelAction]));
     } else {
-      const navL = navLabelString('up', { simple: true }) + '/' + navLabelString('down', { simple: true });
-      const lrL = navLabelString('left', { simple: true }) + '/' + navLabelString('right', { simple: true });
-      const confL = navLabelString('confirm');
-      const backL = navLabelString('back');
-      hintText = `[${navL}] Row   [${lrL}] Chip   [${confL}] Edit   [${backL}] Close`;
+      drawNavBar(ctx, VIEW_W / 2, 490, navHintEntries([
+        { actions: ['up', 'down'], label: 'Row' },
+        { actions: ['left', 'right'], label: 'Chip' },
+        { action: 'confirm', label: 'Edit' },
+        { action: 'back', label: 'Close' },
+      ]));
     }
-    // Draw: split into key segments (normal) and action words (bold).
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const keyFont = `13px ${FONT_UI}`;
-    const actFont = `bold 13px ${FONT_UI}`;
-    const keyColor = '#777';
-    const actColor = '#aaa';
-    // Parse the hint into [key, action] pairs separated by "   ".
-    const parts = hintText.split('   ');
-    // Measure total width
-    let totalW = 0;
-    const measured = parts.map(part => {
-      const bracketEnd = part.indexOf(']') + 1;
-      const keyPart = part.slice(0, bracketEnd + 1); // includes trailing space
-      const actPart = part.slice(bracketEnd + 1);
-      ctx.font = keyFont;
-      const wKey = ctx.measureText(keyPart).width;
-      ctx.font = actFont;
-      const wAct = ctx.measureText(actPart).width;
-      totalW += wKey + wAct + (parts.indexOf(part) < parts.length - 1 ? 12 : 0);
-      return { keyPart, actPart, wKey, wAct };
-    });
-    let hx = VIEW_W / 2 - totalW / 2;
-    ctx.textAlign = 'left';
-    for (let i = 0; i < measured.length; i++) {
-      const m = measured[i];
-      ctx.font = keyFont; ctx.fillStyle = keyColor;
-      ctx.fillText(m.keyPart, hx, 490); hx += m.wKey;
-      ctx.font = actFont; ctx.fillStyle = actColor;
-      ctx.fillText(m.actPart, hx, 490); hx += m.wAct + 12;
-    }
-    ctx.restore();
   },
 
   formatBinding(value) {
