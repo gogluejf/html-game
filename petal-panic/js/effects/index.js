@@ -299,3 +299,156 @@ export function resetEffects() {
   for (const [, inst] of continuous) inst.complete();
   continuous.clear();
 }
+
+// --- Effect Theater -------------------------------------------------------------
+// A uniform, debug-only preview surface: every registered effect gets a small
+// self-contained `demo(ctx, t)` that renders it standalone on a neutral stage,
+// driven ONLY by its params — no real gameplay entity required. The theater
+// (task 7.2) steps through `theaterList()` in catalog order and calls the
+// current entry's demo each frame with an increasing elapsed time `t`.
+//
+// Design choice (documented per task 7.1): the demo logic is CENTRALIZED here
+// rather than duplicated across the 25 effect files. Each demo reuses the
+// engine's own record/render path — fireManual(type, null carrier, default
+// params) → step updateEffects/drawEffects to reach time `t` → draw — so the
+// preview exercises exactly the code the game uses, and "adding an effect"
+// stays one file (the factory) plus one CATALOG row below. The only per-effect
+// knowledge lives in this table (default params + a few presentation hooks),
+// which is data, not behavior.
+//
+// Per-demo clock model: `demo(ctx, t)` is STATELESS and deterministic — it
+// clears the engine, fires the effect fresh at t=0, advances it to elapsed
+// time `t`, then draws the single frame at `t`. The theater therefore just
+// passes an increasing `t` (or restarts at 0 when stepping); no hidden
+// per-entry mutable clock exists. Fixed dt = 1/60 (project convention).
+
+import { particles } from '../particles.js';
+
+const DEMO_DT = 1 / 60;          // fixed step (project convention)
+const DEMO_VIEW = { w: 320, h: 180 }; // neutral-stage viewport for screen-space overlays
+const STAGE_X = 160;             // world origin for standalone demos (center-ish)
+const STAGE_Y = 90;
+const BOX = { x: STAGE_X - 16, y: STAGE_Y - 16, w: 32, h: 32 }; // reference sprite box
+
+/**
+ * Catalog-ordered list of theater entries. Order follows effects.md §1→§24
+ * (Heat Distortion §25 is deferred/out-of-scope and NOT registered, so it is
+ * absent) then §26 Beam. `params` are the defaults a bare fire would use; they
+ * exist only so the demo is VISIBLE (real entities pass their own params at
+ * fire time — these never affect gameplay).
+ *
+ * Optional per-entry hooks (all presentation-only, applied inside the demo):
+ *   feed(inst, i)  — drive a recording effect (trail/afterimage) with synthetic
+ *                    motion so its ribbon/ghosts actually appear.
+ *   render(ctx, inst, body) — replace the standard draw for non-canvas effects
+ *                             (camera/sprite shake) with a visible proxy.
+ */
+const CATALOG = [
+  { type: 'particle-burst',        name: 'Particle Burst / Sparks', section: 1,  params: { x: STAGE_X, y: STAGE_Y, count: 16 } },
+  { type: 'explosion',             name: 'Explosion',               section: 2,  params: { x: STAGE_X, y: STAGE_Y, radius: 60 } },
+  { type: 'debris',                name: 'Debris',                  section: 3,  params: { x: STAGE_X, y: STAGE_Y, fragmentCount: 14, velocity: 220, lifetime: 0.8 } },
+  { type: 'ground-wave',           name: 'Ground Wave',             section: 4,  params: { x: STAGE_X, y: STAGE_Y, duration: 0.8 } },
+  { type: 'shockwave',             name: 'Shockwave',               section: 5,  params: { x: STAGE_X, y: STAGE_Y, duration: 0.6 } },
+  { type: 'trail',                 name: 'Trail',                   section: 6,  params: { lifetime: 0.6 },
+    feed(inst, i) { const b = inst.body; if (typeof b.addPoint === 'function') b.addPoint(STAGE_X - 40 + i * 4, STAGE_Y); } },
+  { type: 'afterimage',            name: 'Afterimage / Ghost Frames', section: 7, params: { box: BOX, spawnInterval: 1 / 30, lifetime: 0.6 },
+    feed(inst, i) { const b = inst.body; if (typeof b.addGhost === 'function') b.addGhost(STAGE_X - 30 + i * 3, STAGE_Y); } },
+  { type: 'telegraph-circle',      name: 'Telegraph Circle',        section: 8,  params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
+  { type: 'ground-target-marker',  name: 'Ground Target Marker',    section: 9,  params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
+  { type: 'target-reticle',        name: 'Target Reticle',          section: 10, params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
+  { type: 'vignette',              name: 'Damage Vignette',         section: 11, params: { strength: 1, viewW: DEMO_VIEW.w, viewH: DEMO_VIEW.h } },
+  { type: 'sprite-flash',          name: 'Sprite Flash',            section: 12, params: { box: BOX, duration: 0.5 } },
+  { type: 'camera-shake',          name: 'Camera Shake',            section: 13, params: { intensity: 6, duration: 0.5 } },
+  { type: 'screen-flash',          name: 'Screen Flash',            section: 14, params: { strength: 1, viewW: DEMO_VIEW.w, viewH: DEMO_VIEW.h } },
+  { type: 'sprite-shake',          name: 'Sprite Shake',            section: 15, params: { amount: 4 } },
+  { type: 'impact-star',           name: 'Impact Star / Hit Pop',   section: 16, params: { x: STAGE_X, y: STAGE_Y } },
+  { type: 'fade-out',              name: 'Fade Out',                section: 17, params: { box: BOX, duration: 0.6 } },
+  { type: 'scale-pulse',           name: 'Scale / Pulse',           section: 18, params: { box: BOX, duration: 0.8 } },
+  { type: 'squash-stretch',        name: 'Squash & Stretch',        section: 19, params: { box: BOX, duration: 0.6 } },
+  { type: 'dust-cloud',            name: 'Dust Cloud',              section: 20, params: { x: STAGE_X, y: STAGE_Y, particleCount: 18, lifetime: 0.8 } },
+  { type: 'attack-arc',            name: 'Attack Arc / Slash',      section: 21, params: { x: STAGE_X, y: STAGE_Y, duration: 0.4 } },
+  { type: 'aura-glow',             name: 'Aura / Glow',             section: 22, params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
+  { type: 'screen-overlay',        name: 'Screen Overlay',          section: 23, params: { color: '#ff5a5a', opacity: 0.5, duration: 1.0, fadeIn: 0.2, fadeOut: 0.2 } },
+  { type: 'composite-explosion',   name: 'Composite Explosion Burst', section: 24, params: { x: STAGE_X, y: STAGE_Y, radius: 60, explosionCount: 6, duration: 1.0 } },
+  { type: 'beam',                  name: 'Beam',                    section: 26, params: { x: STAGE_X, y: STAGE_Y, length: 120, width: 18, gradientRadius: 14, color: '#7df', flashInTime: 0.05, fadeOutTime: 0.15 } },
+];
+
+// Effects whose visual lives in the SHARED particle pool (one-shot bursts):
+// the instance completes immediately, so the demo must also advance + draw the
+// pool to show the particles flying.
+const POOL_DRIVEN = new Set(['particle-burst', 'explosion', 'debris', 'dust-cloud', 'composite-explosion']);
+// State effects with no canvas render (render() is a no-op): the demo paints a
+// visible proxy driven by the instance's getOffset() so the jitter reads.
+const SHAKE_PROXY = new Set(['camera-shake', 'sprite-shake']);
+
+/**
+ * Build a stateless, deterministic demo for one catalog entry.
+ * @param {object} entry a CATALOG row
+ * @returns {(ctx:object, t:number) => void}
+ */
+function makeDemo(entry) {
+  return function demo(ctx, t) {
+    const target = Math.max(0, Number.isFinite(t) ? t : 0);
+    // Fresh start every call: clear any prior effect/pool state so the demo is
+    // fully self-contained and independent of what the theater drew before.
+    resetEffects();
+    particles.reset(); // clear live particles for a clean slate
+    const inst = fireManual({ type: entry.type, params: { ...entry.params } }, null, {});
+    if (!inst) return; // unregistered type — nothing to show (never throws)
+    const frames = Math.round(target / DEMO_DT);
+    for (let i = 1; i <= frames; i++) {
+      updateEffects(DEMO_DT);
+      particles.updateAll(DEMO_DT);
+      if (entry.feed) entry.feed(inst, i);
+    }
+    if (SHAKE_PROXY.has(entry.type)) {
+      drawShakeProxy(ctx, inst.body);
+    } else {
+      // Standard draw: world-space effects (no view needed) + screen-space
+      // overlays (fed the neutral-stage viewport via renderCtx.view).
+      drawEffects(ctx, { view: DEMO_VIEW });
+      if (POOL_DRIVEN.has(entry.type)) {
+        for (const s of particles.activeItems) s.draw(ctx);
+      }
+    }
+  };
+}
+
+/**
+ * Visible proxy for the non-drawing shake effects: a reference box offset by
+ * the live getOffset(), so the camera/sprite jitter is legible on the neutral
+ * stage even though the real effect is consumed by the camera/renderer.
+ */
+function drawShakeProxy(ctx, body) {
+  let off = typeof body.getOffset === 'function' ? body.getOffset() : { x: 0, y: 0 };
+  if (!off || (off.x === 0 && off.y === 0)) off = { x: 4, y: -3 }; // deterministic visible fallback
+  ctx.save();
+  ctx.globalAlpha = 0.8;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(BOX.x + off.x, BOX.y + off.y, BOX.w, BOX.h);
+  // Crosshair at the nominal (unshaken) center so the displacement reads.
+  ctx.strokeStyle = '#888';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(BOX.x + BOX.w / 2 - 6, BOX.y + BOX.h / 2);
+  ctx.lineTo(BOX.x + BOX.w / 2 + 6, BOX.y + BOX.h / 2);
+  ctx.moveTo(BOX.x + BOX.w / 2, BOX.y + BOX.h / 2 - 6);
+  ctx.lineTo(BOX.x + BOX.w / 2, BOX.y + BOX.h / 2 + 6);
+  ctx.stroke();
+  // Small filled dot at the shaken center (also satisfies fill-based draw checks).
+  ctx.beginPath();
+  ctx.arc(BOX.x + off.x + BOX.w / 2, BOX.y + off.y + BOX.h / 2, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
+ * Uniform theater entry point (task 7.1). Returns every implemented effect as
+ * `{ type, name, demo }` in catalog order (§1 Particle Burst → §24 Composite
+ * Explosion Burst → §26 Beam), skipping Heat Distortion (§25, deferred).
+ * @returns {{type:string, name:string, demo:Function}[]}
+ */
+export function theaterList() {
+  return [...CATALOG].sort((a, b) => a.section - b.section)
+    .map(entry => ({ type: entry.type, name: entry.name, demo: makeDemo(entry) }));
+}

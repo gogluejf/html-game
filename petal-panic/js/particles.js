@@ -166,6 +166,12 @@ export class ParticleSystem {
 
   get activeItems() { return this.active; }
   get count() { return this.active.length; }
+
+  /** Clear all live particles (used by the debug theater / tests for a clean slate). */
+  reset() {
+    for (const s of this.active) s.alive = false;
+    this.active.length = 0;
+  }
 }
 
 // Shared global particle system.

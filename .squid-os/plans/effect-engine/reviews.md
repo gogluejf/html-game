@@ -412,6 +412,23 @@ Re-verify post-fix: auraGlow 27/27 ×4 zero flakes; run-all 57/57 (barrel.solid/
 
 DEFERRED (tracked, carried from 6.1 + confirmed at gate): render.js per-entity consumption of M6 sprite-state multipliers (fadeOut alpha, scalePulse scale, squashStretch xScale/yScale) AND behind-sprite rendering order for aura/glow — to be wired in M7 handoff or a dedicated task. Reference-box leakage (B2) is latent until that wiring lands.
 
+## Task 7.1 — Per-effect theater demos
+
+**Review A (round 1):** PASS (4 minor)
+- minor: index.js:382 — dead 'sprite-shake-standalone' entry in SHAKE_PROXY (no CATALOG row, unreachable)
+- minor: index.js:389–415 — centralized demo deviates from plan snippet's per-file intent (defensible, documented; "one file" → "one file + one CATALOG row")
+- minor: composite-explosion determinism exemption reasonable + verified sound (only stochastic pool-driven effect)
+- minor: index.js:325 — mid-file `import { particles }` (ESM hoists it; style only)
+
+**Review B (round 1):** FAIL (1 blocker, 4 major)
+- blocker: index.js:346 — theaterList has 25 entries but registry has 29 types; hit-sparkle/death-sparkle/pickup-pop/sprite-shake-standalone have no demo
+- major: index.js:363 — §15 previews legacy sprite-shake not standalone; null-carrier real effect completes immediately, proxy fabricates offset
+- major: index.js:394 — stateless demo resets/refires each frame; increasing t doesn't replay one coherent animation (particles teleport)
+- major: index.js:379 — extensibility requires POOL_DRIVEN/SHAKE_PROXY/feed classification (engine-level per-effect behavior)
+- major: test:12 — header claims 29 types get demos but asserts 25; never compares against registeredTypes()
+
+**Resolution:** (B1/B5) The plan acceptance explicitly says "catalog order §1→§24 then Beam" — the 25 CONCEPTUAL catalog entries are correct. The registry's 29 granular types exist because §1 "Particle Burst / Sparks" maps to 4 implementations (particle-burst/hit-sparkle/death-sparkle/pickup-pop) and §15 "Sprite Shake" maps to 2 (sprite-shake + sprite-shake-standalone). The theater previews the canonical catalog entry per concept. REJECTED as a blocker (plan-conformant); the legitimate part (misleading test header claiming "29 types all get demos") FIXED — header now documents the catalog-vs-registry distinction. (B2) ACCEPTED as-is — §15 concept IS "Sprite Shake"; the visible shake proxy demonstrates the jitter concept for both variants. (B3) REJECT — the plan snippet specifies `demo(stage, t) -> draws the effect at time t`, a STATELESS snapshot at time t, which is exactly what's implemented; the theater (7.2) drives t from 0 upward per effect. Matches plan contract. (B4) PARTIAL ACCEPT — the per-effect knowledge lives in a centralized DATA table (CATALOG rows + optional set membership), not behavioral engine logic; adding an effect = one file + one registration + one CATALOG row (+ set membership if pooled/state/recording). Documented tradeoff, consistent with the M7 objective. (A#1) FIXED — removed dead 'sprite-shake-standalone' from SHAKE_PROXY. Re-verify: effectTheater 18/18 ×10 zero flakes; run-all 59/59 (barrel.solid/contextualAim pre-existing flakes re-run clean). No gameplay engine change (theater section is additive after line 302; fire/update/draw/reset untouched); particles.reset() strictly additive. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
