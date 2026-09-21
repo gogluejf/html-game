@@ -499,6 +499,25 @@ Parameters may include:
 - Opacity
 - Gravity
 
+Implementation notes (type `dust-cloud`, js/effects/dustCloud.js):
+
+This catalog entry is a **one-shot particle effect** that spawns all puffs into the shared pool (js/particles.js) at fire time via `spawnOne()` with per-puff overrides; the instance reports `done` immediately and the pool owns the puffs' stepping, culling, and rendering for their lifetime (same pattern as explosion.js / debris.js).
+
+Parameter semantics:
+- `particleCount` — number of dust puffs to spawn (default 6); 0 or negative spawns nothing.
+- `spread` — horizontal half-width of the cluster in px (default 10). Each puff's launch x is offset uniformly from the contact point within ±spread, so the cloud reads as a patch on the ground rather than a single point.
+- `size` — puff side length in px (default 5).
+- `velocity` — base initial speed in px/s (default 30 — soft, low-velocity). Each puff gets a uniform random multiplier in **[0.5, 1] · velocity**, so every puff stays bounded by the declared velocity while the cloud keeps natural spread.
+- `lifetime` — seconds each puff lives before fading out (default 0.4); overrides the pool's SPARKLE_LIFETIME.
+- `opacity` — peak alpha, clamped to [0,1] (default 0.8). The drawn alpha is `opacity · (remaining/lifetime)`, so every puff fades to exactly 0 at its end of life.
+- `gravity` — downward acceleration applied to the puffs in px/s² (default 0 → gentle drift, no settling); positive values make the cloud settle back down, negative floats it upward. Overrides the pool's legacy 200 px/s² sparkle arc.
+- `x` / `y` — contact point in world space (standalone/fallback position). **Carrier origin wins:** when the carrier exposes `origin()`, its FIRE-time position is used instead of params.x/y (params are the fallback for manual/theater fires with a null carrier).
+
+Launch direction: not a param — puffs billow up and outward around the contact point by construction: each launches at −π/2 + uniform(−π/2, +π/2), i.e. a wide cone centered straight up. This matches the catalog's "around a contact point" usage (landings, run starts, slides, stomps, impacts) without exposing a redundant axis param.
+
+Pool extension (strictly additive, documented contract): Sparkle supports one more optional per-item field consumed only when set — `dustAlpha` (peak draw alpha; drawn alpha = `dustAlpha · (life/maxLife)`). Plain sparkles never set it, so their update/draw behavior remains byte-identical to the legacy full-alpha fade path; recycled slots clear the field on respawn so a slot can never carry stale dust state into a plain-sparkle life. (The existing `debrisGravity` / `debrisRotation` / `rot` fields from §3 are reused unchanged — dust uses `debrisGravity` for its gravity param.)
+
+
 ---
 
 ## 21. Attack Arc / Slash

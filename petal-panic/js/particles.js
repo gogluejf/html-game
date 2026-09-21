@@ -59,8 +59,12 @@ class Sparkle extends Entity {
   draw(ctx) {
     if (!this.alive) return;
     const alpha = Math.max(0, this.life / this.maxLife);
+    // Per-puff peak-alpha override (dustCloud.js sets dustAlpha): drawn alpha
+    // is dustAlpha · (remaining/lifetime), so puffs fade to exactly 0 at end
+    // of life. Plain sparkles never set it and keep the legacy full-alpha
+    // fade (byte-identical path).
     ctx.save();
-    ctx.globalAlpha = alpha;
+    ctx.globalAlpha = (this.dustAlpha ?? 1) * alpha;
     ctx.fillStyle = this.color;
     if (this.rot != null) {
       // Rotating fragment: square shrinks linearly toward the end of life so
@@ -110,6 +114,7 @@ export class ParticleSystem {
       delete item.rot;
       delete item.debrisGravity;
       delete item.debrisRotation;
+      delete item.dustAlpha;
       item.alive = true;
       this.active.push(item);
       spawned++;
@@ -138,6 +143,7 @@ export class ParticleSystem {
       delete item.rot;
       delete item.debrisGravity;
       delete item.debrisRotation;
+      delete item.dustAlpha;
       // Override the random velocity with the caller's directed vector.
       item.vx = Math.cos(angle) * speed;
       item.vy = Math.sin(angle) * speed;

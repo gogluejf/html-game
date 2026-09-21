@@ -13,3 +13,6 @@ export const BLOOD_COLORS = ['#e74c3c', '#c0392b', '#ff6b6b'];
 
 // Warm fire palette for barrel/bomb explosion bursts (explosion).
 export const FIRE_COLORS = ['#e74c3c', '#f39c12', '#ff6ec7', '#ffffff'];
+
+// Muted earthy palette for ground dust puffs (dustCloud, catalog #20).
+export const DUST_COLORS = ['#b8a88a', '#a09070', '#c8b89a'];
