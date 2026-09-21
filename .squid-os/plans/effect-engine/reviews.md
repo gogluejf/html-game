@@ -358,6 +358,14 @@ DEFERRED (tracked): render.js per-entity consumption of fade-out alpha() (and, b
 
 **Resolution:** ACCEPT (fix). (B-1) render() now uses this.scale() ALONE (no double-applied startScale); verified max scale() with {startScale:1.2,maxScale:1.5} is exactly 1.5, not 1.8; added a never-exceeds-maxScale pin across the lifetime. (B-2) params given a coherent documented relationship: pulseFrequency = Hz (cycles/sec), loopCount = number of full cycles performed, lifetime = delay + loopCount·(1/pulseFrequency) EXACTLY; `duration` made redundant/ignored (accepted for §18 API compat but does not affect timing). Verified {pulseFrequency:2,loopCount:1} → exactly ONE pulse, done at frame 30. Also fixed Review A's two stale comments (peak phase, ramp formula) in the impl rewrite. The executor's first fix attempt hit budget mid-tool-call leaving a stale test file mismatched to the corrected impl; a follow-up test-only rewrite reconciled all 32 assertions to the corrected contract. Re-review: B final PASS. Re-verify: scalePulse 32/32 ×10 zero flakes; run-all 55/55 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
 
+## Task 6.3 — Squash & Stretch
+
+**Review A (round 1):** PASS (4 minor/nit, all non-blocking) — xScale()/yScale() are byte-for-byte duplicates differing only in travel var (consistent with self-contained M6 sibling style); render() re-evaluates the clock twice (harmless, pure); one continuity test uses inline target literals (correct contract-assertion practice); the `<= delay + EPS` neutral guard is the standard fixed-dt epsilon convention. No dead code/stale comments/NaN/divide-by-zero. Boundary continuity verified analytically + numerically.
+
+**Review B (round 1):** PASS — No findings. Independently distorts X/Y then returns both axes to neutral within duration+recoveryDuration; landing and jump configs both supported; declarative carrier attachment via real fire(); standalone path fully params-driven (null carrier). 30 passed.
+
+**Resolution:** No fixes required — both reviewers PASS. Effect follows the M6 sprite-state pattern (non-uniform xScale()/yScale() multipliers the renderer consumes; two-window ease from neutral 1.0 → peak 1+intensity·(target−1) over duration, then back to exactly 1.0 over recoveryDuration; lifetime = delay+duration+recoveryDuration; render reads the same queries; deferred renderer-consumption note present). Re-verify: squashStretch 30/30 ×8 zero flakes; run-all 56/56 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
