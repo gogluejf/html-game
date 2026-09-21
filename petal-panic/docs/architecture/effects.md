@@ -203,7 +203,7 @@ Parameters may include:
 
 Displays a warning circle before an attack occurs.
 
-The circle may shrink toward its center as the attack approaches. When the countdown completes, the Attack Pattern can trigger the actual attack.
+The circle shrinks toward its center with a slow ease-in build-up (nearly still at first, accelerating into the final moment). When the countdown completes, the Attack Pattern can trigger the actual attack.
 
 Useful for boss attacks, stomps, explosions, area attacks, and delayed hazards.
 
