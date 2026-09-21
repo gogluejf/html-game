@@ -324,7 +324,20 @@ export function afterimage(params = {}, carrier = null) {
       if (this.done || this.ghosts.length === 0 || opacity <= EPS) return;
       const box = resolveBox(carrier, params.box);
       if (!box) return;
-      const face = (carrier && typeof carrier.facing === 'function') ? carrier.facing() : { x: 1, y: 0 };
+      // Resolve facing: carrier may return {x,y} or a number (radians).
+      let face;
+      if (carrier && typeof carrier.facing === 'function') {
+        const f = carrier.facing();
+        if (Number.isFinite(f)) {
+          face = { x: Math.cos(f), y: Math.sin(f) };
+        } else if (f && Number.isFinite(f.x) && Number.isFinite(f.y)) {
+          face = f;
+        } else {
+          face = { x: 1, y: 0 };
+        }
+      } else {
+        face = { x: 1, y: 0 };
+      }
       // Perpendicular to the facing direction (+90° rotation).
       const nx = -face.y, ny = face.x;
       c2d.save();

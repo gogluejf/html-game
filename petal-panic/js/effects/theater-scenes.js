@@ -195,7 +195,7 @@ const SCENES = {
   },
   // 7. Afterimage: hero moves fast, ghosts behind
   afterimage: {
-    setup() { return { hero: heroEntity(STAGE_X - 80, STAGE_Y, 200) }; },
+    setup() { return { hero: heroEntity(STAGE_X - 60, STAGE_Y, 200) }; },
     fire(c, entry) { return fireManual({ type: entry.type, params: { ...entry.params } }, c.hero); },
     draw(ctx, c) { c.hero.draw(ctx); },
   },

@@ -350,7 +350,7 @@ export const CATALOG = [
   { type: 'ground-wave',           name: 'Ground Wave',             section: 4,  params: { x: STAGE_X, y: STAGE_Y, duration: 0.8 } },
   { type: 'shockwave',             name: 'Shockwave',               section: 5,  params: { x: STAGE_X, y: STAGE_Y, duration: 0.6 } },
   { type: 'trail',                 name: 'Trail',                   section: 6,  params: { lifetime: 0.6 } },
-  { type: 'afterimage',            name: 'Afterimage / Ghost Frames', section: 7, params: { box: BOX, spawnInterval: 1 / 30, lifetime: 0.6 } },
+  { type: 'afterimage',            name: 'Afterimage / Ghost Frames', section: 7, params: { box: BOX, spawnInterval: 1 / 10, lifetime: 1.2, color: '#ff0000', opacity: 0.5 } },
   { type: 'telegraph-circle',      name: 'Telegraph Circle',        section: 8,  params: { x: STAGE_X, y: STAGE_Y, duration: 2.5, expand: true } },
   { type: 'ground-target-marker',  name: 'Ground Target Marker',    section: 9,  params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
   { type: 'target-reticle',        name: 'Target Reticle',          section: 10, params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
