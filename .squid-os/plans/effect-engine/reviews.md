@@ -203,6 +203,19 @@ Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Commit
 
 **Resolution:** ACCEPT (fix with documented exception). effects.md §3 gained a full "Implementation notes" block (param defaults: fragmentCount 8, velocity 140, multiplier [0.5,1]·velocity, direction −π/2, spread π/2, gravity 400, rotation 6 rad/s, lifetime 0.6, size 4; one-shot lifecycle — done at fire, pool owns stepping/culling; carrier-origin-wins precedence); the particles.js additions are now explicitly documented as a strictly-additive pool extension (optional per-item debrisGravity/debrisRotation/rot fields, consumed only when set, plain sparkles byte-identical, recycled slots cleared on respawn) and the 1e-9 epsilon cull documented as pool-wide deterministic boundary semantics (FP residue ~5e-17 no longer extends life a frame); test tolerance normalized to close(vx, 0, 1e-3) with cos(π/2) leakage explained. Re-verify: 43/43 green (debris 22, effectsMigrated 29, effectRegression 21 explicitly re-run). Committed.
 
+## Task 4.2 — Dust Cloud
+
+**Review A:** PASS (minor notes only)
+- minor: dustCloud.test.js:77–82 — 20-value stub sequence spelled out by hand; a single 5-element cycle would be equivalent (accepted; comment documents intent)
+- minor: several other tests stub with only 3 values for a 5-draw puff — safe because the cycle wraps and those assertions don't depend on the overridden ctor draws (out of scope, no action)
+- minor: theater-demo bound widened from ±spread to ±(spread+1) — correct minimal correction for the size-mismatch offset, now explained in an adjacent comment
+
+**Review B:** FAIL (2 minor)
+- minor: dustCloud.test.js:338 — cluster-containment assertion weakened from documented ±spread to ±(spread+1); should assert the launch coordinate directly instead of widening the envelope (doc §20)
+- minor: dustCloud.test.js:105–109 — corrected expectations assert undocumented pool internals (SPARKLE_SIZE=4, top-left offset 2) rather than the documented launch-x offset (doc §20)
+
+**Resolution:** ACCEPT (fix). Both findings resolved by re-expressing the assertions against the DOCUMENTED contract rather than pool internals: added a single commented mirror constant SPARKLE_SIZE=4 (the pool's private placement offset, not exported) so tests compute the documented launch x as `it.x + SPARKLE_SIZE/2`. 'spread bounds' test now asserts launch x lands at contactX∓spread (90 / ≈110) instead of raw top-left pixels (88/108); 'standalone theater demo' test asserts launch x within ±spread of the contact (no +1 tolerance), with the size assertion kept separate. Stub alignment itself was already corrected this task: each puff consumes exactly 5 Math.random() calls (dx, angle, speed in dustCloud.js + Sparkle ctor angle/speed which spawnOne overrides with the directed vector) — the original 4-value stub cycle misaligned after puff 0 (the flake root cause, same class as 4.1 debris). Re-verify: dustCloud 23/23 ×10 zero flakes; run-all 44/44 (barrel.solid pre-existing ~25% flake re-run clean). dustCloud.js behavior unchanged. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.

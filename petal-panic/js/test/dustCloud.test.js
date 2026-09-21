@@ -14,6 +14,14 @@ import '../effects/registry.js'; // side effect: registers the types
 
 const DT = 1 / 60;
 const EPS = 1e-9;
+// Pool placement convention (particles.js): spawnOne places an item's TOP-LEFT
+// at (launchX − SPARKLE_SIZE/2, launchY − SPARKLE_SIZE/2). So a puff's DOCUMENTED
+// launch coordinate (the point dustCloud passes to spawnOne) recovers from the
+// stored top-left via launchX = it.x + SPARKLE_SIZE/2. The pool keeps this
+// constant private, so we mirror its single value here purely to undo that one
+// offset — every assertion below is expressed against the documented launch x,
+// never against the raw top-left pixel.
+const SPARKLE_SIZE = 4; // px — mirrors particles.js' private SPARKLE_SIZE
 const close = (a, b, tol = EPS) => Math.abs(a - b) < tol;
 
 let passed = 0;
@@ -68,12 +76,16 @@ ok('cycles DUST_COLORS by index', () => {
 console.log('cluster and velocity envelope');
 ok('each puff speed is velocity * uniform[0.5,1] within the ±spread cluster', () => {
   drainPool();
-  // Stub rand: per puff the draw order is dx first, then angle, then speed —
-  // and spawnOne's Sparkle ctor consumes 2 more (random angle + random speed,
-  // both overridden by the directed vector). Sequence [0.5, 0.5, 0.25, 0.5]
-  // cycled → dx multiplier 2*0.5-1 = 0 (on point), angle multiplier 2*0.5-1
-  // = 0 (straight up), speed multiplier 0.5 + 0.25*0.5 = 0.625.
-  withRandomSeq([0.5, 0.5, 0.25, 0.5], () => {
+  // Stub rand: each puff consumes EXACTLY 5 Math.random calls — dustCloud dx,
+  // dustCloud angle, dustCloud speed, then spawnOne's Sparkle ctor (random
+  // angle + random speed, both overridden by the directed vector). For 4 puffs
+  // that's 20 draws; the sequence repeats [0.5, 0.5, 0.25, 0.5, 0.5] × 4 so
+  // every puff gets: dx multiplier 2*0.5-1 = 0 (on point), angle multiplier
+  // 2*0.5-1 = 0 (straight up), speed multiplier 0.5 + 0.25*0.5 = 0.625.
+  withRandomSeq([0.5, 0.5, 0.25, 0.5, 0.5,
+                 0.5, 0.5, 0.25, 0.5, 0.5,
+                 0.5, 0.5, 0.25, 0.5, 0.5,
+                 0.5, 0.5, 0.25, 0.5, 0.5], () => {
     dustCloud({ x: 50, y: 80, particleCount: 4, velocity: 60, spread: 12 });
   });
   const items = particles.activeItems;
@@ -98,12 +110,16 @@ ok('spread bounds: rand 0 → left edge, rand 1 → right edge of the cluster', 
     dustCloud({ x: 100, y: 0, particleCount: 2, velocity: 40, spread: 10 });
   });
   const items = particles.activeItems;
-  // Puff 0: dx = −10 → spawn center x = 90, item top-left x = 90 − 2.5 = 87.5
-  //   (size 5 → half-size 2.5 offset).
-  assert.ok(close(items[0].x, 87.5, 1e-9), `puff0 x ${items[0].x}, expected 87.5`);
-  // Puff 1: dx ≈ +10 → item top-left x ≈ 107.5. cos/sin leakage at the near-
-  // edge angles is covered by the documented 1e-3 tolerance.
-  assert.ok(close(items[1].x, 107.5, 1e-3), `puff1 x ${items[1].x}, expected ~107.5`);
+  // Assert the DOCUMENTED launch x (contactX + dx, dx ∈ ±spread), not the raw
+  // top-left pixel. Recover launch x from the stored top-left by undoing the
+  // pool's single placement offset (SPARKLE_SIZE/2):
+  //   Puff 0: rand 0 → dx = −spread → launch x = 100 − 10 = 90 (left edge).
+  assert.ok(close(items[0].x + SPARKLE_SIZE / 2, 90, 1e-9),
+    `puff0 launch x ${items[0].x + SPARKLE_SIZE / 2}, expected contactX − spread = 90`);
+  //   Puff 1: rand ≈ 1 → dx ≈ +spread → launch x ≈ 100 + 10 = 110 (right edge).
+  // cos/sin leakage at the near-edge angles is covered by the documented 1e-3 tolerance.
+  assert.ok(close(items[1].x + SPARKLE_SIZE / 2, 110, 1e-3),
+    `puff1 launch x ${items[1].x + SPARKLE_SIZE / 2}, expected ~contactX + spread = 110`);
 });
 ok('zero velocity produces zero-speed puffs (purely clustered in place)', () => {
   drainPool();
@@ -327,7 +343,12 @@ ok('standalone theater demo driven only by params (null carrier, manual fire)', 
   for (const it of particles.activeItems) {
     assert.ok(Math.hypot(it.vx, it.vy) <= 40 + EPS, `speed ${Math.hypot(it.vx, it.vy)} within velocity`);
     assert.ok(close(it.w, 6) && close(it.h, 6), 'size honored');
-    assert.ok(Math.abs((it.x + it.w / 2) - 160) <= 14 + EPS, `x ${it.x} within ±spread of contact`);
+    // Assert the DOCUMENTED launch x directly: dustCloud launches each puff at
+    // contactX + dx with dx ∈ ±spread, and spawnOne places the item's top-left
+    // at launchX − SPARKLE_SIZE/2. So launch x = it.x + SPARKLE_SIZE/2 must sit
+    // within ±spread of the contact x (160) — no size-mismatch tolerance needed.
+    const launchX = it.x + SPARKLE_SIZE / 2;
+    assert.ok(Math.abs(launchX - 160) <= 14 + EPS, `launch x ${launchX} within ±spread of contact`);
   }
   // Self-terminating: the whole cloud is gone after its lifetime.
   let drew = 0;
