@@ -45,6 +45,7 @@ function makeCtx() {
     moveTo(...a) { calls.push(['moveTo', ...a]); },
     lineTo(...a) { calls.push(['lineTo', ...a]); },
     arc(...a) { calls.push(['arc', ...a]); },
+    ellipse(...a) { calls.push(['ellipse', ...a]); },
     translate(...a) { calls.push(['translate', ...a]); },
     rotate(...a) { calls.push(['rotate', ...a]); },
     scale(...a) { calls.push(['scale', ...a]); },
@@ -66,7 +67,7 @@ function makeCtx() {
 }
 
 const has = (ctx, op) => ctx.calls.some(c => c[0] === op);
-const anyDraw = (ctx) => ['fill', 'stroke', 'rect', 'fillRect', 'arc', 'gradL', 'gradR'].some(op => has(ctx, op));
+const anyDraw = (ctx) => ['fill', 'stroke', 'rect', 'fillRect', 'arc', 'ellipse', 'gradL', 'gradR'].some(op => has(ctx, op));
 
 // Sensible default params per type (reused from the CATALOG defaults in
 // index.js) so a bare fireManual produces a visible, valid instance.

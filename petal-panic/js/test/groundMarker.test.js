@@ -41,6 +41,7 @@ function makeCtx() {
     beginPath() { calls.push(['beginPath']); },
     closePath() { calls.push(['closePath']); },
     arc(...a) { calls.push(['arc', ...a]); },
+    ellipse(...a) { calls.push(['ellipse', ...a]); },
     moveTo(...a) { calls.push(['moveTo', ...a]); },
     lineTo(...a) { calls.push(['lineTo', ...a]); },
     fill() { calls.push(['fill']); },
@@ -182,8 +183,8 @@ ok('draws rings + ticks while active (save/restore bracketed, constant alpha)', 
   const ctx = makeCtx();
   b.render(ctx);
   assert.deepEqual([ctx.calls[0][0], ctx.calls.at(-1)[0]], ['save', 'restore'], 'save/restore bracket the draw');
-  const arcs = ctx.calls.filter(c => c[0] === 'arc');
-  assert.equal(arcs.length, 2, 'two concentric stroked circles (outer + inner ring)');
+  const ellipses = ctx.calls.filter(c => c[0] === 'ellipse');
+  assert.equal(ellipses.length, 2, 'two concentric stroked ellipses (outer + inner ring)');
   const alphas = ctx.calls.filter(c => c[0] === 'alpha');
   assert.equal(alphas.length, 1, 'single globalAlpha write');
   assert.ok(close(alphas[0][1], 0.7, 1e-6), `alpha == declared constant opacity (got ${alphas[0][1]})`);
@@ -191,14 +192,17 @@ ok('draws rings + ticks while active (save/restore bracketed, constant alpha)', 
   assert.equal(strokes.length, 6, 'outer ring + inner ring + 4 ticks = 6 strokes');
   // Contract: both rings centered at the origin; outer ring radius matches
   // the current exposed radius; inner ring is a proper fraction of it.
-  const [outer, inner] = arcs;
+  // ellipse args: [label, x, y, radiusX, radiusY, rotation, startAngle, endAngle]
+  const [outer, inner] = ellipses;
   assert.ok(close(outer[1], 30) && close(outer[2], 40), `outer ring centered at the origin (got ${outer[1]},${outer[2]})`);
   assert.ok(close(inner[1], 30) && close(inner[2], 40), `inner ring centered at the origin (got ${inner[1]},${inner[2]})`);
-  assert.ok(close(outer[3], b.radius), `outer ring radius matches the current radius (${outer[3]} vs ${b.radius})`);
+  assert.ok(close(outer[3], b.radius), `outer ring radiusX matches the current radius (${outer[3]} vs ${b.radius})`);
   assert.ok(inner[3] > 0 && inner[3] < outer[3], `inner ring smaller than outer (${inner[3]} < ${outer[3]})`);
-  assert.ok(close(Math.abs(outer[5] - outer[4]), Math.PI * 2), 'outer ring spans a full circle (2π radians)');
   // Contract: four radial tick segments, each starting outside the outer
   // ring and ending further out (length > 0, pointing away from center).
+  // With perspective squash, the Euclidean distance varies by angle, so we
+  // check the unsquashed radial component instead.
+  const SQ = 0.3; // must match PERSPECTIVE_SQUASH in groundMarker.js
   const moves = ctx.calls.filter(c => c[0] === 'moveTo');
   const lines = ctx.calls.filter(c => c[0] === 'lineTo');
   assert.equal(moves.length, 4, 'four tick start points');
@@ -206,22 +210,26 @@ ok('draws rings + ticks while active (save/restore bracketed, constant alpha)', 
   for (let k = 0; k < 4; k++) {
     const [, mx, my] = moves[k];
     const [, lx, ly] = lines[k];
-    const dStart = Math.hypot(mx - 30, my - 40);
-    const dEnd = Math.hypot(lx - 30, ly - 40);
-    assert.ok(dStart > outer[3], `tick ${k} starts outside the outer ring (${dStart} > ${outer[3]})`);
-    assert.ok(dEnd > dStart + 1e-6, `tick ${k} extends outward (end ${dEnd} > start ${dStart})`);
-    // Tick lies on a radial line through the origin (collinear with center).
-    const cross = (mx - 30) * (ly - 40) - (my - 40) * (lx - 30);
-    assert.ok(Math.abs(cross) < 1e-6, `tick ${k} is radial (collinear with the origin)`);
+    // Unsquashed radial distance: undo the y-squash before measuring
+    const dStart = Math.hypot(mx - 30, (my - 40) / SQ);
+    const dEnd = Math.hypot(lx - 30, (ly - 40) / SQ);
+    assert.ok(dStart > outer[3], `tick ${k} starts outside the outer ring (${dStart.toFixed(1)} > ${outer[3]})`);
+    assert.ok(dEnd > dStart + 1e-6, `tick ${k} extends outward (end ${dEnd.toFixed(1)} > start ${dStart.toFixed(1)})`);
+    // Tick lies on a radial line through the origin (collinear in unsquashed space).
+    const ux = mx - 30, uy = (my - 40) / SQ;
+    const vx = lx - 30, vy = (ly - 40) / SQ;
+    const cross = ux * vy - uy * vx;
+    assert.ok(Math.abs(cross) < 1e-4, `tick ${k} is radial (collinear with the origin)`);
   }
 });
 ok('ticks rotate deterministically over the lifetime (angle advances with time)', () => {
   // Documented contract: the ticks rotate at a constant angular velocity, so
   // the first tick's radial direction changes monotonically across updates.
   const b = groundMarker({ x: 0, y: 0, radius: 40, pulseRate: 0, rotation: 0, duration: 2 });
+  const SQ = 0.3;
   const firstTickAngle = (ctx) => {
     const m = ctx.calls.find(c => c[0] === 'moveTo');
-    return Math.atan2(m[2], m[1]);
+    return Math.atan2(m[2] / SQ, m[1]);
   };
   const a0 = firstTickAngle((() => { const c = makeCtx(); b.render(c); return c; })());
   for (let i = 0; i < 30; i++) b.update(DT); // t = 0.5s
@@ -230,14 +238,15 @@ ok('ticks rotate deterministically over the lifetime (angle advances with time)'
     `first tick direction changed over 0.5s (was ${a0.toFixed(3)}, now ${a1.toFixed(3)})`);
 });
 ok('declared rotation sets the initial tick orientation', () => {
-  // At t=0 the first tick points along `rotation` (documented contract).
+  // At t=0 the first tick points along `rotation` in unsquashed space.
   const rot = Math.PI / 3;
   const b = groundMarker({ x: 0, y: 0, radius: 40, pulseRate: 0, rotation: rot, duration: 2 });
   const ctx = makeCtx();
   b.render(ctx);
   const m = ctx.calls.find(c => c[0] === 'moveTo');
-  const dir = Math.atan2(m[2], m[1]);
-  assert.ok(close(dir, rot, 1e-9), `first tick points along the declared rotation (got ${dir}, want ${rot})`);
+  const SQ = 0.3;
+  const dir = Math.atan2(m[2] / SQ, m[1]);
+  assert.ok(close(dir, rot, 1e-6), `first tick points along the declared rotation (got ${dir}, want ${rot})`);
 });
 ok('degenerate geometry (radius 0 or opacity 0) draws nothing but still completes', () => {
   const bR = groundMarker({ radius: 0, duration: 0.1 });

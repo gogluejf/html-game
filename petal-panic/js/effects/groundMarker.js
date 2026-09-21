@@ -119,6 +119,7 @@ const TICK_ROTATION_SPEED = Math.PI; // rad/s — slow deterministic tick spin
 const MARKER_STROKE_WIDTH = 4;    // px — outer ring stroke width
 const TICK_LENGTH = 8;            // px — radial tick mark length
 const TICK_GAP = 4;               // px — gap between outer ring and tick start
+const PERSPECTIVE_SQUASH = 0.3;   // y-axis squash for ground perspective (1 = flat circle)
 const EPS = 1e-9;                 // fixed-dt epsilon convention
 
 /**
@@ -183,32 +184,33 @@ export function groundMarker(params = {}, carrier = null) {
       const rOuter = Math.max(0, this.radius);
       const rInner = rOuter * INNER_RING_FRACTION;
       const angle = rotation + TICK_ROTATION_SPEED * this.elapsed;
+      const sq = PERSPECTIVE_SQUASH; // y-axis squash for ground perspective
       c2d.save();
       c2d.globalAlpha = opacity;
       c2d.strokeStyle = color;
-      // Outer ring.
+      // Outer ring (ellipse — squashed y for ground perspective).
       c2d.lineWidth = MARKER_STROKE_WIDTH;
       c2d.beginPath();
-      c2d.arc(o.x, o.y, rOuter, 0, Math.PI * 2);
+      c2d.ellipse(o.x, o.y, rOuter, rOuter * sq, 0, 0, Math.PI * 2);
       c2d.stroke();
       // Inner ring.
       c2d.lineWidth = MARKER_STROKE_WIDTH / 2;
       c2d.beginPath();
-      c2d.arc(o.x, o.y, rInner, 0, Math.PI * 2);
+      c2d.ellipse(o.x, o.y, rInner, rInner * sq, 0, 0, Math.PI * 2);
       c2d.stroke();
-      // Four cardinal tick marks, rotating slowly at angle(t).
+      // Four cardinal tick marks, rotating slowly at angle(t), squashed on y.
       c2d.lineWidth = MARKER_STROKE_WIDTH / 2;
       for (let k = 0; k < 4; k++) {
         const a = angle + (k * Math.PI) / 2;
         const cos = Math.cos(a), sin = Math.sin(a);
+        const gapR = rOuter + TICK_GAP;
+        const endR = gapR + TICK_LENGTH;
         c2d.beginPath();
-        c2d.moveTo(o.x + cos * (rOuter + TICK_GAP), o.y + sin * (rOuter + TICK_GAP));
-        c2d.lineTo(o.x + cos * (rOuter + TICK_GAP + TICK_LENGTH), o.y + sin * (rOuter + TICK_GAP + TICK_LENGTH));
+        c2d.moveTo(o.x + cos * gapR, o.y + sin * gapR * sq);
+        c2d.lineTo(o.x + cos * endR, o.y + sin * endR * sq);
         c2d.stroke();
       }
       c2d.restore();
-      // Keep `animation` referenced so future variants can branch here without
-      // a signature change; today every style shares the pulse shape.
       void animation;
     },
 
