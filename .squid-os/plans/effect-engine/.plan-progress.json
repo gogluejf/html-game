@@ -194,14 +194,14 @@
     },
     "5.2": {
       "number": "5.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Afterimage / Ghost Frames",
       "milestone": "Motion, Telegraph and Marker Effects",
       "milestone_number": "5"
     },
     "5.3": {
       "number": "5.3",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Ground Wave",
       "milestone": "Motion, Telegraph and Marker Effects",
       "milestone_number": "5"
