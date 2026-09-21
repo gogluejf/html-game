@@ -443,6 +443,20 @@ DEFERRED (tracked, carried from 6.1 + confirmed at gate): render.js per-entity c
 
 **Resolution:** ACCEPT all actionable findings. (B-blocker) processInput() now returns early while Theater.active, skipping dispatchScreenInput entirely — so the input engine's recorded Escape/back/pause never drives a screen transition behind the overlay. (B-major) update(dt) now returns immediately after Theater.update(dt) while active, freezing all gameplay physics behind the black overlay (hero doesn't walk, gamepad actions don't fire). (A-major/A-minor#2) theater.js open() AND close() now call resetEffects() so no demo/gameplay instance survives across the boundary — new node test proves a live vignette/screen-flash is cleared by both. (A-minor#3) removed the dead theaterWasHeld guard. (A-minor#4) exported DEMO_VIEW from index.js and reused it for the centering translate (no more duplicated 320/180). Re-verify: effectTheater 31/31 ×3 zero flakes; run-all 59/59 (barrel.solid/contextualAim pre-existing flakes re-run clean). Engine core unchanged (index.js fire/update/draw/reset lifecycle intact; only additive consumers in update.js/render.js + new theater.js). Wired: KeyB opens, arrows step (scrubber guarded), Esc closes to debug, F1/F2 exit debug+theater, gamepad d-pad/stick edge-triggered step + btn:1 back closes. DOM wiring not node-testable (verified by review against acceptance). Committed.
 
+## Task 7.3 — Document effect config in entity YAML
+
+**Review A (round 1):** PASS (3 minor)
+- minor: hero.yaml:123 — stateChange comment "fires on any anim/state transition (caller filters)" overstates; engine fires every entry whose `on` matches, caller decides when to emit
+- minor: projectile.yaml:35 — `moving` described as "speed > 0" but it's a carrier predicate with ~10 px/s floor
+- minor (info): examples omit x/y positional params (resolve from live carrier at fire time; acceptable for docs)
+
+**Review B (round 1):** FAIL (2 major, 1 minor)
+- major: hero.yaml:110 — effects attached to hero though beam should mirror the attack HITBOX's origin/facing; doesn't show how to attach to the actual hitbox
+- major: projectile.yaml:28 — hit-sparkle supplies only count but the effect requires params.x/y (no carrier derivation) → undefined coords for standalone fire
+- minor: hero.yaml:122 — aura example implies charged/super-only but config has no state predicate, fires on every emitted stateChange
+
+**Resolution:** ACCEPT all actionable findings (doc-comment precision). (B2) VERIFIED real — hitSparkle.js reads params.x/y directly with NO carrier-origin logic (legacy M2-migrated); added x/y to the projectile example with a comment that the caller sets them from the collision event at fire time. (B1) Added a clarifying comment that the beam reads the ACTIVE ATTACK HITBOX's origin()/facing() at fire time (the hero is the carrier owning the hitbox), per effects.md §26. (B3/A#1) Rewrote the stateChange comment to state plainly that the engine fires on EVERY emitted stateChange with no built-in predicate — the caller emits it only when entering the desired state (designer-tunable via trigger emission). (A#2) corrected the `moving` condition comment to "carrier-defined predicate; effective floor ~10 px/s". Re-verify: both YAML files parse clean (yaml.safe_load OK); grep confirms both effects blocks present. Doc-only change — no code touched, full suite unaffected (59/59). Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.

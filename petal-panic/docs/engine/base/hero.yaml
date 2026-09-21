@@ -95,6 +95,45 @@ hero:
   # explosion subject itself (knockback.md §7: "An explosion → the explosion"),
   # blowing victims radially outward with distance falloff.
 
+  # --- declarative effects (js/effects/index.js — carrier.effects contract) ---
+  # Each entry is { on, type, params } (+ optional continuous: { condition }).
+  #   on       — trigger event; one of: spawn | death | collision | explosion |
+  #              pickup | damageTaken | hitLanded | attackActive | stateChange | manual
+  #   type     — registered kebab-case effect name (see js/effects/registry.js)
+  #   params   — effect-specific param object (field names per each effect file header)
+  #   continuous — optional { condition: 'moving' | 'fastMoving' }; keeps one
+  #                instance alive while the carrier satisfies the condition
+  #
+  # The engine's fire(trigger, carrier) reads carrier.effects and instantiates
+  # every entry whose `on` matches the emitted trigger. This mirrors the same
+  # shape documented in index.js header comments.
+  effects:
+    # Example 1: a committed attack hitbox carrying a beam on activation.
+    # The beam reads the ACTIVE ATTACK HITBOX's origin() + facing() at fire time
+    # (the hero is the carrier that owns the hitbox), so it mirrors the exact
+    # collision area that deals damage — see effects.md §26 Beam.
+    - on: attackActive       # fires when the attack hitbox enters its active window
+      type: beam             # directional rectangular beam with alpha-gradient halo
+      params:
+        length: 260          # beam length in px along the facing axis
+        width: 18            # beam width in px perpendicular to the facing axis
+        color: '#7df'        # cool cyan-white energy tint (hex string)
+        flashInTime: 0.05    # flash-in phase duration (s)
+        fadeOutTime: 0.15    # fade-out phase duration (s); total = sum
+    # Example 2: an aura glow for a charged/super state. NOTE: the engine fires
+    # this on EVERY 'stateChange' the caller emits — there is no built-in state
+    # predicate, so the caller emits 'stateChange' only when entering the state
+    # you want the aura for (designer-tunable via where/when the trigger fires).
+    - on: stateChange        # fires whenever the caller emits this trigger
+      type: aura-glow        # soft radial gradient pulsing around the sprite
+      params:
+        radius: 32           # glow radius in px (gradient reaches transparency here)
+        opacity: 0.6         # peak alpha 0..1 at the center
+        pulseRate: 3         # Hz — deterministic cosine pulse frequency
+        intensity: 1.0       # how far the pulse swings toward full brightness
+        color: '#ff9'        # warm amber tint for the charged-attack halo
+        duration: 0.6        # total lifetime in seconds
+
   # --- collision boxes ---
   standBox: { ox: 0, oy: 0, bw: w, bh: h }
   crouchBox: { ox: 0, oy: h*0.4, bw: w, bh: h*0.6 }

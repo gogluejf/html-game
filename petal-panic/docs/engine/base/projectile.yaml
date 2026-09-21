@@ -11,3 +11,32 @@ projectile:
 
   # --- pool config ---
   MAX_PROJECTILES: 64   # hard cap on live projectiles
+
+  # --- declarative effects (js/effects/index.js — carrier.effects contract) ---
+  # Each entry is { on, type, params } (+ optional continuous: { condition }).
+  #   on       — trigger event that fires the effect; one of:
+  #              spawn | death | collision | explosion | pickup | damageTaken |
+  #              hitLanded | attackActive | stateChange | manual
+  #   type     — registered kebab-case effect name (see js/effects/registry.js)
+  #   params   — effect-specific param object (field names per each effect file header)
+  #   continuous — optional { condition: 'moving' | 'fastMoving' }; keeps one
+  #                instance alive while the carrier satisfies the condition
+  #
+  # Example: a thorn projectile carrying a hit-sparkle burst on impact and a
+  # short motion trail while in flight.
+  effects:
+    - on: collision          # fires when the projectile hits something
+      type: hit-sparkle      # small red "blood" sparkles at the impact point
+      params:
+        x: 0                 # impact point (world px) — set from the collision
+        y: 0                 # event by the caller at fire time
+        count: 4             # particle count (omitted → random 3–5)
+    - on: spawn              # fires once at construction
+      type: trail            # fading ribbon behind the moving projectile
+      continuous:
+        condition: moving    # carrier-defined predicate; effective floor ~10 px/s
+      params:
+        length: 28           # max ribbon reach in px of accumulated path
+        width: 3             # head thickness in px (tapers to ~1px at tail)
+        lifetime: 0.35       # per-point survival window (s)
+        opacity: 0.7         # peak alpha 0..1

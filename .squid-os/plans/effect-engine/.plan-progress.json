@@ -357,14 +357,14 @@
     },
     "7.2": {
       "number": "7.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Effect Theater overlay + debug shortcut",
       "milestone": "Effect Theater and Handoff",
       "milestone_number": "7"
     },
     "7.3": {
       "number": "7.3",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Document effect config in entity YAML",
       "milestone": "Effect Theater and Handoff",
       "milestone_number": "7"
