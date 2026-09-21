@@ -81,7 +81,7 @@ export const Theater = {
    * @param {number} w viewport width (VIEW_W)
    * @param {number} h viewport height (VIEW_H)
    */
-  draw(ctx, w, h, layout = 'Generic') {
+  draw(ctx, w, h) {
     if (!this.active) return;
     const entry = list[this.index];
     ctx.save();
@@ -116,8 +116,8 @@ export const Theater = {
     ctx.restore();
 
     // 6. Hint text at bottom (dynamic labels from input API).
-    const confirmLabel = navLabelString('confirm', { layout });
-    const backLabel = navLabelString('back', { layout });
+    const confirmLabel = navLabelString('confirm');
+    const backLabel = navLabelString('back');
     ctx.fillStyle = '#666';
     ctx.font = '12px monospace';
     ctx.fillText(`←/→ step   [${confirmLabel}] replay   [${backLabel}] close   F2 toggle`, w / 2, h - 16);
