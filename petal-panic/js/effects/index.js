@@ -349,7 +349,7 @@ const CATALOG = [
   { type: 'debris',                name: 'Debris',                  section: 3,  params: { x: STAGE_X, y: STAGE_Y, fragmentCount: 14, velocity: 220, lifetime: 0.8 } },
   { type: 'ground-wave',           name: 'Ground Wave',             section: 4,  params: { x: STAGE_X, y: STAGE_Y, duration: 0.8 } },
   { type: 'shockwave',             name: 'Shockwave',               section: 5,  params: { x: STAGE_X, y: STAGE_Y, duration: 0.6 } },
-  { type: 'trail',                 name: 'Trail',                   section: 6,  params: { lifetime: 0.6, speed: 400 },
+  { type: 'trail',                 name: 'Trail',                   section: 6,  params: { lifetime: 0.6 },
     feed(inst, i) { const b = inst.body; if (typeof b.addPoint === 'function') b.addPoint(STAGE_X - 80 + i * 8, STAGE_Y); } },
   { type: 'afterimage',            name: 'Afterimage / Ghost Frames', section: 7, params: { box: BOX, spawnInterval: 1 / 30, lifetime: 0.6 },
     feed(inst, i) { const b = inst.body; if (typeof b.addGhost === 'function') b.addGhost(STAGE_X - 30 + i * 3, STAGE_Y); } },

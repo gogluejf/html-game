@@ -119,7 +119,6 @@ const DEFAULT_LIFETIME = 0.5; // s  — per-point survival window / termination 
 const DEFAULT_OPACITY = 0.9;  // peak alpha
 const DEFAULT_DENSITY = 3;    // px — min spacing between recorded points
 const DEFAULT_OFFSET = 0;     // px — perpendicular shift from centerline
-const DEFAULT_SPEED = 200;    // px/s — synthetic carrier speed (standalone/theater)
 const TRAIL_COLOR = '#ffffff';
 const MIN_TAIL_WIDTH = 1;     // px — floor of the taper
 const EPS = 1e-9;             // fixed-dt epsilon convention
@@ -134,7 +133,7 @@ const MIN_SPEED = 10;         // px/s — below this the carrier is not "moving"
 
 /**
  * @param {{length?:number, width?:number, lifetime?:number, opacity?:number,
- *          density?:number, offset?:number, speed?:number}} params
+ *          density?:number, offset?:number}} params
  * @param {object} [carrier]
  * @returns {{update:Function, render:Function, complete:Function, addPoint:Function,
  *            done:boolean, space:string, points:Array, elapsed:number}}
@@ -146,7 +145,6 @@ export function trail(params = {}, carrier = null) {
   const opacity = Math.min(1, Math.max(0, params.opacity ?? DEFAULT_OPACITY));
   const density = Math.max(1e-6, params.density ?? DEFAULT_DENSITY);
   const offset = params.offset ?? DEFAULT_OFFSET;
-  const speed = Math.max(0, params.speed ?? DEFAULT_SPEED); // px/s (standalone/theater)
 
   return {
     space: 'world', // trails ride the world-space camera pass (two-pass model)

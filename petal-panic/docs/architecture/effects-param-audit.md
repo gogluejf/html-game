@@ -95,9 +95,8 @@ Compares `effects.md` (concept catalog) against actual code in `petal-panic/js/e
 | opacity | ✅ |
 | density | ✅ |
 | offset | ✅ |
-| speed | ✅ |
 
-> Fully parametric.
+> Fully parametric. The trail follows its carrier's actual movement — no speed param needed.
 
 ---
 
