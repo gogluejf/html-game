@@ -113,6 +113,16 @@ Compares `effects.md` (concept catalog) against actual code in `petal-panic/js/e
 
 > Fully parametric. Also accepts `color` (✅) and `box` (✅).
 
+**Sprite colorization (planned):** When real sprites are wired in, each ghost
+frame will render the carrier's actual sprite (not a flat rect) tinted with
+the effect's `color` at a fixed fill alpha (currently hardcoded 80%). Technique:
+offscreen canvas → `drawImage(sprite)` → `globalCompositeOperation = 'source-atop'`
+→ `fillRect(color, 0.8)` → draw result to main ctx with per-ghost `globalAlpha`.
+The `opacity` param controls the ghost's overall transparency (fade over age);
+the tint fill alpha is separate and currently not exposed as a param. Should be
+named `blendIntensity` to match Sprite Flash (§12) which already uses that name
+for the same concept.
+
 ---
 
 ## 8. Telegraph Circle (`telegraphCircle.js`)
@@ -190,6 +200,13 @@ Compares `effects.md` (concept catalog) against actual code in `petal-panic/js/e
 | blend intensity | ✅ |
 
 > Fully parametric. Also accepts `box` (✅).
+
+**Sprite colorization (planned):** Same technique as Afterimage (§7) — offscreen
+canvas + `source-atop` tint. Already has the two-layer alpha model: `opacity`
+controls the flash's overall fade over its duration, `blendIntensity` controls
+how strongly the tint covers the sprite (equivalent to afterimage's future
+`tintOpacity`). Only missing piece is swapping the flat rect for a real
+`drawImage(sprite)` when sprites are wired in.
 
 ---
 
