@@ -1,108 +1,81 @@
 # Petal Panic — Visual Effects Catalog
 
-This document is the **conceptual source of truth** for the Effects Engine. It wins over code: if an implementation diverges from this spec, the implementation changes to match it (the same contract `knockback.md` holds for knockback).
+The Effects Engine provides a reusable, parameterized library of visual effects. Each effect is described by a type and a set of parameters; an effect carries no behavior in its configuration — it is registered once by type, and instantiated with parameters when a trigger fires.
 
 Effects should remain primarily visual. Damage, collision, attack timing, and gameplay consequences belong to the appropriate gameplay systems. Attack Patterns can combine effects with collision volumes, sprites, audio, timers, and other systems.
+
+Effects may be procedural Canvas effects, sprite-based animations, or compositions of multiple smaller effects.
 
 ---
 
 ## Effect Model
 
-Every effect is a **data object**: `{ type, params }`. An effect has no behavior of its own in configuration — it is registered once by `type`, then instantiated with `params` when a trigger fires.
+Every effect is described by a **type** and a set of **parameters**. An effect has no behavior of its own while it is being configured — it is pure description. A given type is registered once with the engine, and each time a matching trigger fires, a fresh instance of that effect is created using the declared parameters. The same type can therefore be reused across many different situations simply by supplying different parameters.
 
-```js
-// An effect instance is pure data until the engine instantiates it:
-{ type: 'beam', params: { length: 120, width: 8, ... } }
-```
+## Carriers
 
-### Carriers
+An effect is attached to a **carrier** — anything that owns the state the effect needs at fire time. A carrier might be a projectile, a hit area, a collision event, a marker, or an area-of-effect region. A carrier declares which effects it carries and on which trigger each one fires. When the carrier's trigger occurs, the engine instantiates the declared effects, reading any values they need from the carrier at that moment.
 
-An effect is **attached to a carrier** via declarative config. A carrier is anything that owns state the effect needs at fire time: a projectile, a hitbox, a collision event, a marker, or a radius (AoE area).
-
-```js
-// Carriers declare their effects in config; the engine reads them:
-carrier.effects = [
-  { on: 'collision',   type: 'particle-burst', params: { count: 12 } },
-  { on: 'attackActive', type: 'beam',          params: { length: 120 } },
-];
-```
-
-The engine's single fire path is: *carrier emits trigger event → engine looks up attached effects whose `on` matches → instantiates `{ type, params }` from the registry → runs the lifecycle*. Adding a new effect requires one file + one registration + one demo (a theater entry exercising it) — no engine change.
-
-### Triggers
+## Triggers
 
 A fixed vocabulary of trigger events. Each catalog entry below lists the trigger(s) that fire it (see the Trigger Table). The current vocabulary:
 
-- `spawn` — the carrier appears / is created
-- `death` — the carrier (or its owner entity) dies
-- `collision` — a collision involving the carrier resolves
-- `explosion` — an explosion AoE detonates
-- `pickup` — a collectible is picked up
-- `damageTaken` — the hero takes damage
-- `hitLanded` — an enemy is struck
-- `attackActive` — the carrier's attack window opens (matches the attached hitbox)
-- `stateChange` — the carrier enters a notable state (charge, stun, phase)
-- `manual` — fired explicitly by game code (debug theater, scripted sequences)
+- **spawn** — the carrier appears / is created
+- **death** — the carrier (or its owner entity) dies
+- **collision** — a collision involving the carrier resolves
+- **explosion** — an explosion area detonates
+- **pickup** — a collectible is picked up
+- **damage taken** — the hero takes damage
+- **hit landed** — an enemy is struck
+- **attack active** — the carrier's attack window opens (matching its attached hit area)
+- **state change** — the carrier enters a notable state (charge, stun, phase)
+- **manual** — fired explicitly by game code (debug theater, scripted sequences)
 
-### Continuous Activation
+## Continuous Activation
 
-Some effects are active only while a condition holds rather than at a discrete moment. An effect may declare continuous activation alongside or instead of discrete triggers:
+Some effects are active only while a condition holds rather than at a single moment — for example, a trail while moving, or afterimages while moving fast. For these, a single instance stays alive for as long as the condition holds: it starts when the condition begins and ends when the condition stops. A continuous activation can accompany discrete triggers, so the same effect may fire on either.
 
-```js
-{ on: 'collision', type: 'trail',
-  continuous: { condition: 'moving' },   // spawn when condition becomes true, complete when it stops
-}
-```
+## Lifecycle
 
-Config shape: `{ continuous: { condition: 'moving' | 'fastMoving' } }`. The engine keeps **one instance** alive while the carrier satisfies the condition — spawning it when the condition starts and completing it when the condition ends. A continuous declaration can accompany discrete triggers (the effect fires on either).
+Every effect instance runs through the same stages regardless of type:
 
-**Carrier contract.** For each continuous declaration, the engine asks the carrier whether its condition currently holds by calling `carrier.isConditionMet(condition)` with the declared condition string (`'moving'` or `'fastMoving'`) and using the boolean return value. Carriers that declare continuous effects must implement this method; one instance is kept alive per declaration (not per condition), so two declarations sharing a condition each get their own instance. When a live instance reports `done`, the engine drops it and re-spawns a fresh one on the next update as long as the condition still holds.
+1. **Fired** — the effect is instantiated with its parameters, possibly reading values from its carrier at that moment.
+2. **Updated** — the effect advances over time while it is active.
+3. **Rendered** — the effect draws itself each frame.
+4. **Completed** — the effect is removed once its duration elapses.
 
-### Lifecycle
-
-Every effect instance runs the same lifecycle regardless of type:
-
-1. **fire(trigger, carrier)** — instantiate with resolved `params` (values may be read from the carrier, e.g. beam orientation from its hitbox).
-2. **update(dt)** — advance internal timers while active.
-3. **render(ctx, renderCtx?)** — draw; screen-space effects render after the camera transform is restored. `renderCtx` is an optional draw-time context handed by `drawEffects()` (e.g. `{ view: { w, h } }`) that screen-space overlays read their viewport from.
-4. **complete** — removed from the active set when its duration elapses.
-
-**Two-pass rendering.** Effects live in one of two coordinate spaces, declared by an optional `body.space` field (`'world'` | `'screen'`; default `'world'`). The renderer draws them in two passes: world-space effects (e.g. spriteFlash, impactStar) are drawn inside the camera translate via `drawEffects(ctx, undefined, { space: 'world' })`, and screen-space effects (e.g. vignette, screenFlash, screenOverlay — `space: 'screen'`) are drawn after the camera restore via `drawEffects(ctx, { view }, { space: 'screen' })`. `drawEffects()` applies one generic filter on `body.space ?? 'world'`; omitting the pass filter draws every instance (legacy single-pass behavior).
-
-Effects may be procedural Canvas effects, sprite-based animations, or compositions of multiple smaller effects (see Effect Composition).
-
----
+**Two-pass rendering.** Effects live in one of two spaces. Some are in **world space** — they move with the world and the camera (for example, an impact star at a point in the scene). Others are in **screen space** — fixed to the viewport, like overlays and flashes. The renderer draws them in two passes: world-space effects are drawn within the world view, and screen-space effects are drawn after the camera transform is applied, so overlays stay put relative to the screen rather than drifting with the world.
 
 ## Trigger Table
 
 | # | effect | trigger(s) |
 |---|--------|-----------|
-| 1 | Particle Burst / Sparks | `collision`, `death`, `explosion`, `pickup`, `hitLanded` |
-| 2 | Explosion | `explosion`, `death` |
-| 3 | Debris | `death`, `explosion`, `collision` |
-| 4 | Ground Wave | `attackActive` (paired with a moving collision volume) |
-| 5 | Shockwave | `explosion`, `attackActive` |
-| 6 | Trail | `spawn`, `attackActive`; continuous (`moving`) |
-| 7 | Afterimage / Ghost Frames | `stateChange` (dash/supermove); continuous (`fastMoving`) |
-| 8 | Telegraph Circle | `stateChange` (attack windup begins) |
-| 9 | Ground Target Marker | `spawn` (projectile/missile created) |
-| 10 | Target Reticle | `spawn` (lock-on acquired), `stateChange` |
-| 11 | Damage Vignette | `damageTaken` |
-| 12 | Sprite Flash | `hitLanded`, `stateChange`, `damageTaken` |
-| 13 | Camera Shake | `explosion`, `hitLanded`, `attackActive` |
-| 14 | Screen Flash | `explosion`, `stateChange` |
-| 15 | Sprite Shake | `hitLanded`, `stateChange` |
-| 16 | Impact Star / Hit Pop | `hitLanded`, `collision` |
-| 17 | Fade Out | `death`, `stateChange` |
-| 18 | Scale / Pulse | `stateChange`, `spawn` |
-| 19 | Squash & Stretch | `stateChange` (jump/landing), `hitLanded` |
-| 20 | Dust Cloud | `stateChange` (landing/run start), `collision` |
-| 21 | Attack Arc / Slash | `attackActive` |
-| 22 | Aura / Glow | `stateChange`, `spawn` |
-| 23 | Screen Overlay | `stateChange` (boss phase / danger state) |
-| 24 | Composite Explosion Burst | `death`, `explosion` |
-| 25 | Heat Distortion *(experimental — out of scope for v1)* | `explosion` |
-| 26 | Beam | `attackActive` (oriented to its attached hitbox) |
+| 1 | Particle Burst / Sparks | spawn, death, collision, explosion, pickup, hit landed |
+| 2 | Explosion | explosion, death |
+| 3 | Debris | death, explosion, collision |
+| 4 | Ground Wave | attack active (paired with a moving collision volume) |
+| 5 | Shockwave | explosion, attack active |
+| 6 | Trail | spawn, attack active; continuous (moving) |
+| 7 | Afterimage / Ghost Frames | state change (dash/supermove); continuous (fast moving) |
+| 8 | Telegraph Circle | state change (attack windup begins) |
+| 9 | Ground Target Marker | spawn (projectile/missile created) |
+| 10 | Target Reticle | spawn (lock-on acquired), state change |
+| 11 | Damage Vignette | damage taken |
+| 12 | Sprite Flash | hit landed, state change, damage taken |
+| 13 | Camera Shake | explosion, hit landed, attack active |
+| 14 | Screen Flash | explosion, state change |
+| 15 | Sprite Shake | hit landed, state change |
+| 16 | Impact Star / Hit Pop | hit landed, collision |
+| 17 | Fade Out | death, state change |
+| 18 | Scale / Pulse | state change, spawn |
+| 19 | Squash & Stretch | state change (jump/landing), hit landed |
+| 20 | Dust Cloud | state change (landing/run start), collision |
+| 21 | Attack Arc / Slash | attack active |
+| 22 | Aura / Glow | state change, spawn |
+| 23 | Screen Overlay | state change (boss phase / danger state) |
+| 24 | Composite Explosion Burst | death, explosion |
+| 25 | Heat Distortion *(experimental — out of scope for v1)* | explosion |
+| 26 | Beam | attack active (oriented to its attached hit area) |
 
 ---
 
@@ -150,30 +123,10 @@ Parameters may include:
 - Fragment count
 - Initial velocity
 - Direction
-- Spread
 - Gravity
 - Rotation
 - Lifetime
 - Size
-
-Implementation notes (type `debris`, js/effects/debris.js):
-
-This catalog entry is a **one-shot particle effect** that spawns all fragments into the shared pool (js/particles.js) at fire time via `spawnOne()` with per-fragment overrides; the instance reports `done` immediately and the pool owns the fragments' stepping, culling, and rendering for their lifetime (same pattern as explosion.js / particleBurst.js).
-
-Parameter semantics:
-- `fragmentCount` — number of fragments to project (default 8); 0 or negative spawns nothing.
-- `velocity` — base initial speed in px/s (default 140). Each fragment gets a uniform random multiplier in **[0.5, 1] · velocity**, so every fragment's speed stays bounded by the declared velocity while the burst has natural spread.
-- `direction` — launch axis in radians (default −π/2, i.e. up). Every fragment is scattered around this axis within `spread`.
-- `spread` — half-angle of the scatter cone in radians (default π/2 → a full 360° burst).
-- `gravity` — downward acceleration applied to the fragments in px/s² (default 400); negative values float upward. Overrides the pool's legacy 200 px/s² sparkle arc.
-- `rotation` — spin rate in rad/s applied to each fragment's draw rotation (default 6); sign sets spin direction. Fragments start unrotated (rot = 0) at fire time.
-- `lifetime` — seconds each fragment lives before fading out (default 0.6); overrides the pool's SPARKLE_LIFETIME.
-- `size` — fragment side length in px (default 4); the drawn square scales down linearly toward the end of life.
-- `x` / `y` — impact point in world space (standalone/fallback position). **Carrier origin wins:** when the carrier exposes `origin()`, its FIRE-time position is used instead of params.x/y (params are the fallback for manual/theater fires with a null carrier).
-
-Pool extension (strictly additive, documented contract): Sparkle supports three optional per-item fields consumed only when set — `debrisGravity` (per-fragment gravity, else the legacy 200), `debrisRotation` (spin rate, else no spin), and `rot` (current rotation; presence also selects the rotating-draw path). Plain sparkles never set them, so their update/draw behavior is byte-identical to the legacy code path; recycled slots clear these fields on respawn so a slot can never carry stale debris state into a plain-sparkle life.
-
-Pool culling epsilon: the pool culls items at `life <= 1e-9` rather than `<= 0`. Fixed-step FP residue (e.g. 0.2 − 12·(1/60) ≈ 4.9e-17) would otherwise extend an exact-lifetime item by one frame; the epsilon makes the done-frame deterministic at exact boundaries for ALL pool items (plain sparkles included). This applies to any consumer of the pool, not just debris.
 
 ---
 
@@ -325,10 +278,7 @@ Parameters may include:
 - Flash frequency
 - Number of flashes
 - Opacity
-- Blend intensity — additional alpha multiplier applied to the tint while ON (default 1.0, i.e. no change; effective alpha = opacity × blend intensity). Dials down how strongly the tint blends over the sprite without altering the base opacity contract.
-- Box *(fallback)* — factory-time geometry `{ x, y, w, h }` in **world coordinates**, used only when the carrier exposes neither `worldBox()` nor `origin()+size()` (tests, theater demos with a null carrier). No default: absent or non-positive dimensions make render() a no-op.
-
-Phase alignment: the flash starts ON at t=0; each half-cycle (one ON stretch or one OFF stretch) lasts `duration / (2 * flashes)` seconds, and state flips at every half-cycle boundary. With a fixed 1/60s frame step, a frame landing exactly on a boundary counts as the new phase (ON phases are even-indexed).
+- Blend intensity
 
 ---
 
@@ -380,18 +330,6 @@ Parameters may include:
 - Duration
 - Decay
 
-Implementation notes (standalone type `sprite-shake-standalone`, js/effects/spriteShakeStandalone.js):
-
-This catalog entry is implemented as a **standalone STATE effect** that owns its own timer — distinct from the migrated `sprite-shake` type (js/effects/spriteShake.js), which rides on the carrier's existing `hitFlash` window and stays as-is for monolith parity. The standalone type is a STATE effect: `render()` is a no-op; the renderer reads `getOffset() → {x,y}` off the instance each frame and adds it to that one sprite's draw position only (localized jitter; the camera never moves).
-
-Parameter semantics:
-- `hIntensity` / `vIntensity` — max offset per axis in px (default 3 each, the legacy SHAKE_AMT).
-- `duration` — TOTAL lifetime in seconds (default 0.1, the legacy hitFlash shake window). The effect is done exactly when `duration` elapses; `getOffset()` returns `{x:0, y:0}` after that.
-- `frequency` — re-roll rate in Hz (default 0 = "perFrame": a fresh random offset every `update()` call, the legacy behavior). A positive value f re-rolls every 1/f seconds and HOLDS the previous offset between rolls; the first roll happens on the first update after fire.
-- `decay` — decay exponent: amplitude(t) = intensity · (remaining/duration)^decay, applied independently per axis (default 1 = linear ease-out).
-
-While active, each axis is a fresh uniform random in [−intensity·amp, +intensity·amp] where amp follows the decay curve.
-
 ---
 
 ## 16. Impact Star / Hit Pop
@@ -409,32 +347,6 @@ Parameters may include:
 - Opacity
 - Style
 - Scale curve
-
-Implementation notes (standalone type `impact-star`, js/effects/impactStar.js):
-
-This catalog entry is a **DRAW effect** that owns its own timer and pops at the exact impact point. `render()` draws a scaling star/burst centered on the impact origin; the pop starts at full size and pops OUT — it scales down along the scale curve while fading to zero opacity, then completes exactly when the declared `duration` elapses.
-
-Parameter semantics:
-- `size` — star radius in px at t=0 (default 12). Zero or negative → no draw.
-- `duration` — TOTAL lifetime in seconds (default 0.1, "very short"). The effect is done exactly when `duration` elapses; total lifetime equals `duration`.
-- `rotation` — base rotation in radians (default 0).
-- `opacity` — peak opacity, clamped to [0,1] (default 1). Zero → no draw.
-- `style` — `'star'` (default) or `'burst'`; unknown values fall back to `'star'`.
-- `scaleCurve` — named curve applied to both scale and alpha over the lifetime: `'linear'` (default), `'easeOut'`, `'easeIn'`; unknown names fall back to `'linear'`.
-- `x` / `y` — impact point in world space (default {0,0}); standalone/fallback position.
-
-Position: prefers the live carrier's `origin()` at DRAW time (tracks a moving carrier); `params.x/y` are the standalone/fallback position used when there is no carrier exposing `origin()`. With neither a carrier nor params the pop renders at the origin (center).
-
-Style rendering:
-- `'star'` — filled white (`#ffffff`) 4-point star path.
-- `'burst'` — 8 yellow (`#ffd93b`) radial spokes, stroked (not filled).
-
-Scale/alpha curves (progress p in [0,1] → remaining strength in [0,1]):
-- `linear`: `1 - p`
-- `easeOut`: `(1 - p)^2`
-- `easeIn`: `1 - p^2`
-
-Fade/alpha: `globalAlpha = opacity · curve(progress)` where progress = elapsed/duration, so alpha tracks the same curve as scale and reaches 0 exactly at the end of the lifetime.
 
 ---
 
@@ -499,25 +411,6 @@ Parameters may include:
 - Opacity
 - Gravity
 
-Implementation notes (type `dust-cloud`, js/effects/dustCloud.js):
-
-This catalog entry is a **one-shot particle effect** that spawns all puffs into the shared pool (js/particles.js) at fire time via `spawnOne()` with per-puff overrides; the instance reports `done` immediately and the pool owns the puffs' stepping, culling, and rendering for their lifetime (same pattern as explosion.js / debris.js).
-
-Parameter semantics:
-- `particleCount` — number of dust puffs to spawn (default 6); 0 or negative spawns nothing.
-- `spread` — horizontal half-width of the cluster in px (default 10). Each puff's launch x is offset uniformly from the contact point within ±spread, so the cloud reads as a patch on the ground rather than a single point.
-- `size` — puff side length in px (default 5).
-- `velocity` — base initial speed in px/s (default 30 — soft, low-velocity). Each puff gets a uniform random multiplier in **[0.5, 1] · velocity**, so every puff stays bounded by the declared velocity while the cloud keeps natural spread.
-- `lifetime` — seconds each puff lives before fading out (default 0.4); overrides the pool's SPARKLE_LIFETIME.
-- `opacity` — peak alpha, clamped to [0,1] (default 0.8). The drawn alpha is `opacity · (remaining/lifetime)`, so every puff fades to exactly 0 at its end of life.
-- `gravity` — downward acceleration applied to the puffs in px/s² (default 0 → gentle drift, no settling); positive values make the cloud settle back down, negative floats it upward. Overrides the pool's legacy 200 px/s² sparkle arc.
-- `x` / `y` — contact point in world space (standalone/fallback position). **Carrier origin wins:** when the carrier exposes `origin()`, its FIRE-time position is used instead of params.x/y (params are the fallback for manual/theater fires with a null carrier).
-
-Launch direction: not a param — puffs billow up and outward around the contact point by construction: each launches at −π/2 + uniform(−π/2, +π/2), i.e. a wide cone centered straight up. This matches the catalog's "around a contact point" usage (landings, run starts, slides, stomps, impacts) without exposing a redundant axis param.
-
-Pool extension (strictly additive, documented contract): Sparkle supports one more optional per-item field consumed only when set — `dustAlpha` (peak draw alpha; drawn alpha = `dustAlpha · (life/maxLife)`). Plain sparkles never set it, so their update/draw behavior remains byte-identical to the legacy full-alpha fade path; recycled slots clear the field on respawn so a slot can never carry stale dust state into a plain-sparkle life. (The existing `debrisGravity` / `debrisRotation` / `rot` fields from §3 are reused unchanged — dust uses `debrisGravity` for its gravity param.)
-
-
 ---
 
 ## 21. Attack Arc / Slash
@@ -570,8 +463,6 @@ Parameters may include:
 - Fade-out
 - Blend mode
 
-When fadeIn + fadeOut exceed duration, both ramps are scaled proportionally to fit; total lifetime always equals duration (hold = 0).
-
 ---
 
 ## 24. Composite Explosion Burst
@@ -597,39 +488,17 @@ Example:
 
 A boss enters its death state. Over two seconds, explosions appear at random locations across its body while sparks and debris are generated. The boss sprite can simultaneously shake and fade out.
 
-Implementation notes (type `composite-explosion`, js/effects/compositeExplosion.js):
-
-This catalog entry is a **STATE compositor**: it stays active over its full `duration` and repeatedly fires smaller child effects at jittered points within ±(posVariance·radius) of the area center; `render()` is a no-op because all visible work is delegated to the children (shared pool / screen-space overlays). It is one of several STATE effects in the catalog — Screen Flash (§14), standalone Sprite Shake (§15), and Camera Shake (§13) are also STATE effects — not the only one.
-
-Compositor mechanism: **every** child is routed through the engine's single spawn path — `fireManual({ type, params })` from index.js — so each child enters the engine's active set with its own EffectInstance wrapper and its normal update/render lifecycle. Pool-based children (explosion, particle-burst, debris, dust-cloud) push into the shared pool AND their instance is pruned immediately, since they report done at fire time; STATE / overlay children (e.g. screen-flash) stay in the active set and are updated and rendered by the engine for their own lifetime. Routing every child through this one path makes ANY registered effect type a valid child (the catalog lists "Explosion, Particle Burst, Debris, Flash, or other effects") — there is no fixed table of supported children and no per-type special-casing beyond the size/count key maps below. An unregistered `childType` makes `fireManual` console.warn and return null, which the compositor simply ignores per tick (a config bug must never crash gameplay). One mechanism, no duplication, no engine change.
-
-Parameter semantics:
-- `x` / `y` — area center in world space (standalone/fallback position). **Carrier origin wins:** when the carrier exposes `origin()`, its FIRE-time position is used instead of params.x/y (params are the fallback for manual/theater fires with a null carrier).
-- `radius` — half-extent of the square spawn area in px (default 40); every child point lies within ±radius·posVariance of the center.
-- `explosionCount` — number of child effects fired over the lifetime (default 6); 0 or negative fires nothing. The declared count ALWAYS fires within the lifetime: if explicit intervals or accumulated jitter would otherwise push a scheduled child past `duration`, the remaining children are compressed to land exactly at the end frame instead of being silently dropped.
-- `spawnInterval` — base time between child spawns in s; when omitted, defaults to `duration / explosionCount` so the declared count always fits the duration (no clumping at t=0, no silent under-firing).
-- `timingVariance` — half-window of the uniform jitter added to each interval in s (default 0.1); 0 gives exact periodic spawning. The first child fires exactly at t=0.
-- `posVariance` — fraction of `radius` used as the uniform per-axis offset range (default 1 → the full ±radius square; values < 1 cluster spawns tighter around the center).
-- `childType` — which registered effect type to fire per tick (default `'explosion'`). Any registered type is a valid child; unknown types are ignored per tick (a config bug must never crash gameplay).
-- `childSizeRange` — `[min, max]` SIZE envelope passed to the child (default [8, 24]); each child gets a uniform random value in the range mapped onto the child's actual SIZE param. This is distinct from density.
-- `density` — the ABSOLUTE per-child particle/fragment/puff COUNT (default 1): `count = floor(density)`. It is NOT a multiplier on a base count — it IS the count the child receives. Only applied when the child has a count key (see below); screen-flash has no count, so density is a no-op there.
-- `duration` — total lifetime in s (default 2). Total lifetime == `duration` exactly: the instance reports done exactly when `elapsed >= duration - 1e-9` (the fixed-dt epsilon convention used across the project).
-
-Two distinct child mappings (do not conflate them):
-- **`childSizeRange` → the child's SIZE param** (`CHILD_SIZE_KEY`): `explosion`→`radius`, `debris`→`size`, `dust-cloud`→`size`, `particle-burst`→`size`, `screen-flash`→`strength`. Types without an entry fall back to the generic `size` param (harmless if the child ignores it).
-- **`density` → the child's COUNT** (`CHILD_COUNT_KEY`): `explosion`→`count`, `debris`→`fragmentCount`, `dust-cloud`→`particleCount`, `particle-burst`→`count`. `screen-flash` has no count key, so density is a no-op there. A missing count key means the child uses its own default count.
-
-Trigger table row (#24) lists `death`, `explosion` — consistent with the intended usage (large boss deaths, machinery destruction, chained explosions).
-
 ---
 
-## 25. Heat Distortion *(experimental — out of scope for v1)*
+# Experimental Effect
+
+## 25. Heat Distortion *
 
 Creates the appearance of heated air or visual distortion around explosions, fire, machinery, or other heat sources.
 
 A simple Canvas implementation may simulate the effect using animated translucent distortion-like sprites. True dynamic distortion of the rendered scene would likely require WebGL/shader-based rendering.
 
-This effect is **experimental and out of scope for v1**. It must not be considered a required capability of the initial Effects Engine; it is documented here only so the catalog stays complete. It may be implemented later as any other `{ type, params }` effect without engine changes.
+This effect is **experimental and optional**. It should not be considered a required capability of the initial Effects Engine.
 
 Potential parameters:
 - Area
@@ -643,35 +512,22 @@ Potential parameters:
 
 ## 26. Beam
 
-A directional rectangular beam — a lightsaber-style strike that extends from an origin along an axis, with a bright core and an alpha-gradient halo around it.
+A directional rectangular beam — a lightsaber-style strike that extends from an origin along an axis, with a bright core and a soft alpha-gradient halo around it.
 
-Fired on `attackActive` from its **attached hitbox**: the beam's origin is captured once at fire time, while its orientation continuously tracks the attached hitbox for the beam's lifetime. So the beam always visually matches the collision volume that actually deals damage, even if the carrier re-orients between frames.
+Useful for melee slash attacks, energy strikes, sword-like hits, and fast directional attacks.
 
-Lifecycle: **flash-in then fade-out**. On fire the beam ramps from zero to full intensity over the flash-in time (a quick "ignition"), holds at full strength for the middle of its life, then fades to zero over the fade-out time ("extinguish"). Total lifetime = flashIn + hold + fadeOut (hold may be zero for a pure pulse).
+The beam is fired when its attached attack becomes active. It visually mirrors the shape and orientation of the attack's collision area, so the visible beam always matches the hit area that actually deals damage. It ignites quickly, holds, then fades out; its total lifetime is the sum of its ignition, hold, and fade times.
 
-Rendering: a filled rectangle (length × width) rotated to the hitbox orientation, plus a halo drawn as layered strokes/fills with decreasing alpha out to the gradient radius — brightest at the core, transparent at the halo edge. No blur passes; the gradient is achieved with stacked alpha layers so it stays cheap on Canvas 2D.
-
-Parameters:
-- `length` — beam length in px (may default to the hitbox dimension along its axis)
-- `width` — beam core width in px
-- `gradientRadius` — halo extent beyond the core, in px
-- `color` — core/halo color
-- `flashInTime` — ignition ramp duration (s)
-- `fadeOutTime` — extinguish ramp duration (s)
-- `holdTime` — full-intensity hold between flash-in and fade-out (s, optional, default 0)
-- `origin` — beam start point in world coordinates; defaults to the corner of the attached hitbox nearest the carrier's facing point (or the hitbox center if the hitbox has no facing)
-- `orientation` — beam axis; defaults to the attached hitbox's long axis, resolved from the carrier's facing when the hitbox is square
-
-Example config:
-
-```js
-// A lightsaber slash: the beam mirrors the slash hitbox exactly.
-slashHitbox.effects = [
-  { on: 'attackActive', type: 'beam',
-    params: { length: 120, width: 8, gradientRadius: 14,
-              color: '#8ef', flashInTime: 0.05, fadeOutTime: 0.15 } },
-];
-```
+Parameters may include:
+- Length
+- Width
+- Halo / gradient radius
+- Color
+- Ignition time (flash-in)
+- Fade-out time
+- Hold time
+- Origin
+- Orientation
 
 ---
 
@@ -691,7 +547,7 @@ A hero supermove could compose:
 
 `Aura + Afterimage + Trail + Sprite Flash + Particle Burst + Screen Flash`
 
-Compositions are themselves data: a list of `{ type, params }` entries sharing a trigger. The Attack Engine determines **when and why** these effects occur. The Effects Engine determines **how they are visually rendered**.
+Compositions are themselves data: a list of effect entries sharing a trigger. The Attack Engine determines **when and why** these effects occur. The Effects Engine determines **how they are visually rendered**.
 
 # Core Rule
 
