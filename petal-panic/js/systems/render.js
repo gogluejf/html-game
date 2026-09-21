@@ -1025,8 +1025,8 @@ function drawEventLog(ctx) {
  * @param {CanvasRenderingContext2D} ctx
  */
 function drawHarnessHint(ctx) {
-  const line1 = 'DEBUG | 1-9 spawn | F god | Z spd | T tele | U input | Y hero | L log | E dump | C view (round-robin)';
-  const line2 = 'RMB sel | LMB force | arrows scrub | X desel';
+  const line1 = 'DEBUG | 1-9 spawn | F god | Z spd | T tele | U input | Y hero | L log | E dump';
+  const line2 = 'RMB sel | LMB force | arrows scrub | X desel | F2 theater | F3 view | F1 exit debug';
   ctx.save();
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';

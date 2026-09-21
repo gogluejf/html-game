@@ -117,7 +117,7 @@ export const Theater = {
     // 6. Hint text at bottom.
     ctx.fillStyle = '#666';
     ctx.font = '12px monospace';
-    ctx.fillText('←/→ step   Esc close   F1/F2 exit', w / 2, h - 16);
+    ctx.fillText('←/→ step   Back/Esc close   F2 toggle', w / 2, h - 16);
 
     ctx.restore();
   },

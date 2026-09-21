@@ -353,8 +353,7 @@ function handleDebugToggle(e, source) {
   } else {
     Debug.toggle();
     Debug.reset();
-    // Turning debug OFF also closes the Effect Theater (it is debug-only), so
-    // F1/F2 exits debug entirely back to gameplay even from the theater.
+    // Closing debug also closes the theater (it's a debug overlay).
     if (Theater.active) Theater.close();
     Debug.logEvent(`${source}: debug OFF`);
   }
@@ -364,14 +363,19 @@ function handleDebugToggle(e, source) {
 window.addEventListener('keydown', (e) => {
   if (input.capturing) return;
   if (['F1', 'F2', 'F3'].includes(e.code)) e.preventDefault();
-  if (e.code === 'F1' || e.code === 'F2') { handleDebugToggle(e, 'debug'); return; }
-  // Effect Theater: while open, Escape closes it and returns to normal debug
-  // mode (does NOT exit debug). Intercepted here so it never falls through to
-  // the nav system's pause binding (Escape → 'back'/'pause').
-  if (e.code === 'Escape' && Theater.active) {
-    e.preventDefault();
-    Theater.close();
-    Debug.logEvent('theater CLOSE (Esc)');
+  // F1: toggle debug mode. Opening debug from gameplay enters PLAY + harness.
+  // Closing debug returns to normal gameplay (and closes theater if open).
+  if (e.code === 'F1') { handleDebugToggle(e, 'debug'); return; }
+  // F2: toggle Effect Theater. Works from anywhere (gameplay or debug).
+  // Does NOT require debug to be on — it's a standalone overlay.
+  if (e.code === 'F2') {
+    if (Theater.active) {
+      Theater.close();
+      Debug.logEvent('theater CLOSE (F2)');
+    } else {
+      Theater.open();
+      Debug.logEvent('theater OPEN (F2)');
+    }
     return;
   }
   handleDebugKeys(e);
@@ -379,17 +383,19 @@ window.addEventListener('keydown', (e) => {
 
 export function processInput() {
   input.poll({ facing: hero.facing });
-  // Effect Theater (debug-only): while open, route gamepad d-pad / left-stick
-  // horizontal move to step the current effect, and a back/cancel press to
-  // close it. Keyboard arrows + Esc are handled in the keydown listener above;
-  // F1/F2 exit debug entirely (and thus the theater) via handleDebugToggle.
-  // Edge-triggered so holding a direction steps once per press, not every frame.
+  // Effect Theater: while open, route gamepad d-pad / left-stick horizontal
+  // move to step the current effect. Back (Esc / ○) closes the theater.
+  // F2 also toggles it (handled in keydown above). Edge-triggered so holding
+  // a direction steps once per press, not every frame.
   if (Theater.active) {
+    // Close on nav.back (Escape / gamepad ○) — uses the abstracted nav layer.
+    if (input.nav.pressed.includes('back')) {
+      Theater.close();
+      Debug.logEvent('theater CLOSE (back)');
+      return;
+    }
     updateTheaterGamepad();
-    // Suppress normal screen navigation while the theater is open: the input
-    // engine still records Escape/gamepad-back as 'back'/'pause', and we must
-    // NOT let those drive PLAY→PAUSE or other screen transitions behind the
-    // black overlay. Skip dispatchScreenInput entirely while active.
+    // Suppress normal screen navigation while the theater is open.
     return;
   }
   dispatchScreenInput(input, hero, {
@@ -408,9 +414,8 @@ let theaterWasHeld = 0;
 /**
  * Step the Effect Theater from gamepad input. Called once per frame from
  * processInput() while Theater.active. Reads input.state.moveX (d-pad +
- * left-stick, already normalized by the existing input remap) for left/right,
- * and nav.pressed 'back' (gamepad btn:1 ○) to close. Keyboard Escape closes
- * separately in the keydown listener.
+ * left-stick, already normalized by the existing input remap) for left/right.
+ * Closing is handled in processInput via nav.back (Escape / gamepad ○).
  */
 function updateTheaterGamepad() {
   const s = input.state;
@@ -422,13 +427,6 @@ function updateTheaterGamepad() {
     Debug.logEvent(`theater → ${Theater.current().type}`);
   }
   theaterWasHeld = dir;
-  // Back/cancel (gamepad ○ = btn:1 → 'back') closes the theater. The keyboard
-  // Escape path is handled in the keydown listener; guard against double-close
-  // by checking active again.
-  if (input.nav.pressed.includes('back') && Theater.active) {
-    Theater.close();
-    Debug.logEvent('theater CLOSE (gamepad back)');
-  }
 }
 
 // --- Debug harness mouse input: click to select / force an enemy's state -----
@@ -553,12 +551,6 @@ function handleDebugKeys(e) {
       break;
     case 'KeyL': // Toggle event-log display
       Debug.showLog = !Debug.showLog;
-      break;
-    case 'KeyB': // Open the Effect Theater (debug-only overlay)
-      if (!Theater.active) {
-        Theater.open();
-        Debug.logEvent('theater OPEN');
-      }
       break;
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown':
       // While the Effect Theater is open, Left/Right step the current effect

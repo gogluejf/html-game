@@ -48,34 +48,38 @@ Every effect instance runs through the same stages regardless of type:
 
 ## Trigger Table
 
-| # | effect | trigger(s) |
-|---|--------|-----------|
-| 1 | Particle Burst / Sparks | spawn, death, collision, explosion, pickup, hit landed |
-| 2 | Explosion | explosion, death |
-| 3 | Debris | death, explosion, collision |
-| 4 | Ground Wave | attack active (paired with a moving collision volume) |
-| 5 | Shockwave | explosion, attack active |
-| 6 | Trail | spawn, attack active; continuous (moving) |
-| 7 | Afterimage / Ghost Frames | state change (dash/supermove); continuous (fast moving) |
-| 8 | Telegraph Circle | state change (attack windup begins) |
-| 9 | Ground Target Marker | spawn (projectile/missile created) |
-| 10 | Target Reticle | spawn (lock-on acquired), state change |
-| 11 | Damage Vignette | damage taken |
-| 12 | Sprite Flash | hit landed, state change, damage taken |
-| 13 | Camera Shake | explosion, hit landed, attack active |
-| 14 | Screen Flash | explosion, state change |
-| 15 | Sprite Shake | hit landed, state change |
-| 16 | Impact Star / Hit Pop | hit landed, collision |
-| 17 | Fade Out | death, state change |
-| 18 | Scale / Pulse | state change, spawn |
-| 19 | Squash & Stretch | state change (jump/landing), hit landed |
-| 20 | Dust Cloud | state change (landing/run start), collision |
-| 21 | Attack Arc / Slash | attack active |
-| 22 | Aura / Glow | state change, spawn |
-| 23 | Screen Overlay | state change (boss phase / danger state) |
-| 24 | Composite Explosion Burst | death, explosion |
-| 25 | Heat Distortion *(experimental — out of scope for v1)* | explosion |
-| 26 | Beam | attack active (oriented to its attached hit area) |
+Concept triggers (design intent) and current in-game usage (what actually fires today). ✅ = wired, ❌ = not yet.
+
+| # | effect | status | concept trigger(s) | current in-game usage |
+|---|--------|--------|-------------------|----------------------|
+| 1 | Particle Burst / Sparks | ✅ | spawn, death, collision, explosion, pickup, hit landed | • ally projectile hit<br>• enemy death<br>• barrel AoE<br>• bomb AoE<br>• boss stomp<br>• victory<br>• pickup |
+| 2 | Explosion | ✅ | explosion, death | • barrel AoE detonation<br>• bomb AoE detonation<br>• boss component death |
+| 3 | Debris | ❌ | death, explosion, collision | — |
+| 4 | Ground Wave | ❌ | attack active (moving collision volume) | — |
+| 5 | Shockwave | ❌ | explosion, attack active | — |
+| 6 | Trail | ❌ | spawn, attack active; continuous (moving) | — |
+| 7 | Afterimage / Ghost Frames | ❌ | state change (dash/supermove); continuous (fast moving) | — |
+| 8 | Telegraph Circle | ❌ | state change (attack windup begins) | — |
+| 9 | Ground Target Marker | ❌ | spawn (projectile/missile created) | — |
+| 10 | Target Reticle | ❌ | spawn (lock-on acquired), state change | — |
+| 11 | Damage Vignette | ✅ | damage taken | • hero hit by projectile<br>• hero collision<br>• boss attack |
+| 12 | Sprite Flash | ❌ | hit landed, state change, damage taken | — *(uses legacy hitFlash timer)* |
+| 13 | Camera Shake | ✅ | explosion, hit landed, attack active | • bomb AoE<br>• barrel AoE<br>• boss stomp |
+| 14 | Screen Flash | ✅ | explosion, state change | • big AoE detonation (bomb, barrel, boss) |
+| 15 | Sprite Shake | ✅ | hit landed, state change | • enemy hit by ally projectile<br>• enemy hit by melee |
+| 16 | Impact Star / Hit Pop | ❌ | hit landed, collision | — *(uses hitSparkle/deathSparkle)* |
+| 17 | Fade Out | ❌ | death, state change | — |
+| 18 | Scale / Pulse | ❌ | state change, spawn | — |
+| 19 | Squash & Stretch | ❌ | state change (jump/landing), hit landed | — |
+| 20 | Dust Cloud | ❌ | state change (landing/run start), collision | — |
+| 21 | Attack Arc / Slash | ❌ | attack active | — |
+| 22 | Aura / Glow | ❌ | state change, spawn | — |
+| 23 | Screen Overlay | ❌ | state change (boss phase / danger state) | — |
+| 24 | Composite Explosion Burst | ❌ | death, explosion | — |
+| 25 | Heat Distortion *(experimental)* | ❌ | explosion | — *(not implemented)* |
+| 26 | Beam | ❌ | attack active (oriented to hit area) | — |
+
+**Currently consumed: 9 of 25 effects.** The remaining 16 are registered, theater-testable, and ready to wire when their gameplay systems land.
 
 ---
 
