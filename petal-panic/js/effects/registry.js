@@ -32,6 +32,7 @@ import { debris } from './debris.js';
 import { dustCloud } from './dustCloud.js';
 import { compositeExplosion } from './compositeExplosion.js';
 import { trail } from './trail.js';
+import { afterimage } from './afterimage.js';
 
 // --- Migrated effects (task 2.1) ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -57,3 +58,4 @@ registerEffect('composite-explosion', compositeExplosion);
 
 // --- M5 motion / ribbon effects -------------------------------------------------
 registerEffect('trail', trail);
+registerEffect('afterimage', afterimage);
