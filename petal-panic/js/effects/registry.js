@@ -42,6 +42,7 @@ import { attackArc } from './attackArc.js';
 import { fadeOut } from './fadeOut.js';
 import { scalePulse } from './scalePulse.js';
 import { squashStretch } from './squashStretch.js';
+import { auraGlow } from './auraGlow.js';
 
 // --- Migrated effects (task 2.1) ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -79,3 +80,4 @@ registerEffect('attack-arc', attackArc);
 registerEffect('fade-out', fadeOut);
 registerEffect('scale-pulse', scalePulse);
 registerEffect('squash-stretch', squashStretch);
+registerEffect('aura-glow', auraGlow);

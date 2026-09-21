@@ -366,6 +366,25 @@ DEFERRED (tracked): render.js per-entity consumption of fade-out alpha() (and, b
 
 **Resolution:** No fixes required — both reviewers PASS. Effect follows the M6 sprite-state pattern (non-uniform xScale()/yScale() multipliers the renderer consumes; two-window ease from neutral 1.0 → peak 1+intensity·(target−1) over duration, then back to exactly 1.0 over recoveryDuration; lifetime = delay+duration+recoveryDuration; render reads the same queries; deferred renderer-consumption note present). Re-verify: squashStretch 30/30 ×8 zero flakes; run-all 56/56 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
 
+## Task 6.4 — Aura / Glow
+
+**Review A (round 1):** PASS (3 minor, all non-blocking)
+- minor: auraGlow.js:253 — colorWithAlpha helper is new duplication with no shared home (flag for M6/Beam task; not a defect now)
+- minor: auraGlow.js:209–218 — resolveOrigin identical body to 6 siblings (established per-file pattern, consistent)
+- minor: auraGlow.js:151 vs :184 — pulse cosine computed independently in update() and render() (correct by design: pure function of elapsed time, no state coupling)
+
+**Review B (round 1):** FAIL (3 major)
+- major: auraGlow.js:219 — glow uses source-over drawing and renders OVER the target sprite (world pass draws after entities), not BEHIND it as plan acceptance states
+- major: auraGlow.js:168 — carrier origin captured only at fire time; a moving target immediately leaves the aura behind; a lifetime-based aura should remain around its carrier throughout its continuous lifecycle
+- major: auraGlow.js:257 — color parameter does not reliably render declared color: valid CSS colors outside #rgb/#rrggbb/limited rgb()/rgba() silently become black
+
+**Resolution:**
+- (B-1) REJECT — renderer ordering (world effects drawn after entities) is an M7 wiring concern, same deferral pattern as fadeOut alpha consumption (6.1). The effect file itself is correct; the "behind" requirement will be addressed when M7 wires per-entity rendering order. Not a defect in auraGlow.js.
+- (B-2) ACCEPT (fix). Origin now re-resolved from carrier.origin() each update() when a carrier is present (same live-tracking pattern as trail.js/afterimage.js). Null-carrier fires keep the params.x/y fallback. Header updated. New test proves a mutable carrier's changing origin causes the rendered arc center to follow. Re-verify: auraGlow 27/27 ×4 zero flakes; run-all 57/57 (barrel.solid pre-existing flake re-run clean).
+- (B-3) REJECT — hex (#rgb/#rrggbb) + rgb()/rgba() covers all practical configs used in this codebase (all existing effects use hex or rgba strings). Named CSS colors are out of scope for a canvas game engine that standardizes on hex. Documented in header.
+
+Re-verify post-fix: auraGlow 27/27 ×4 zero flakes; run-all 57/57 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
