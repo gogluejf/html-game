@@ -98,6 +98,15 @@ export function cameraShake(params = {}) {
         this.y = (Math.random() * 2 - 1) * vMul * amp;
       }
     },
+    /** Reset the lifetime clock: a smaller kick keeps this instance's peak
+     *  but restarts the full decay curve from now (legacy triggerShake's
+     *  unconditional `shakeTimer = SHAKE_DURATION` reset). */
+    resetTimer() {
+      if (this.done) return;
+      this.elapsed = 0;
+      this.remaining = duration;
+      this.lastRoll = -Infinity; // forces a fresh roll on the next update()
+    },
     render() {}, // state effect — consumed by the camera, never drawn
     complete() {
       this.done = true;

@@ -63,6 +63,7 @@ export function spriteFlash(params = {}, carrier = null) {
   const half = duration / (2 * flashes);
 
   return {
+    space: 'world', // tints the carrier's world-space box (two-pass render model, effects.md §Lifecycle)
     on: true, // first frame is ON: the flash kicks in immediately on fire
     elapsed: 0,
     /** Advance the clock; toggle ON/OFF at each half-cycle boundary. */

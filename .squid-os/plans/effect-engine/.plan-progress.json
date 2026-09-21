@@ -147,7 +147,7 @@
     },
     "3.5": {
       "number": "3.5",
-      "status": "in_progress",
+      "status": "done",
       "name": "Impact Star / Hit Pop",
       "milestone": "Screen-Space and Overlay Effects",
       "milestone_number": "3",

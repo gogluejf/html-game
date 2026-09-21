@@ -29,6 +29,7 @@ export function vignette(params = {}, carrier, ctx = {}) {
   // done immediately.
   const value = Math.min(1, Math.max(0, params.strength ?? 1));
   return {
+    space: 'screen', // viewport-space overlay (two-pass render model, effects.md §Lifecycle)
     value,
     update(dt) {
       this.value = Math.max(0, this.value - VIGNETTE_DECAY * dt);

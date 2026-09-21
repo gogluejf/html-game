@@ -29,6 +29,19 @@ function makeCtx() {
     get globalAlpha() { return this._ga ?? 1; },
     set fillStyle(v) { calls.push(['style', v]); },
     get fillStyle() { return undefined; },
+    createRadialGradient(...a) {
+      calls.push(['createRadialGradient', ...a]);
+      return { addColorStop(o, c) { calls.push(['addColorStop', o, c]); } };
+    },
+    translate(...a) { calls.push(['translate', ...a]); },
+    rotate(...a) { calls.push(['rotate', ...a]); },
+    beginPath() { calls.push(['beginPath']); },
+    closePath() { calls.push(['closePath']); },
+    fill() { calls.push(['fillPath']); },
+    stroke() { calls.push(['strokePath']); },
+    moveTo(...a) { calls.push(['moveTo', ...a]); },
+    lineTo(...a) { calls.push(['lineTo', ...a]); },
+    arc(...a) { calls.push(['arc', ...a]); },
   };
 }
 
@@ -272,6 +285,36 @@ ok('end-to-end: fire → updateEffects → drawEffects tints the carrier box', (
   const ctx2 = makeCtx();
   drawEffects(ctx2, { view: { w: 640, h: 480 } });
   assert.equal(ctx2.calls.length, 0, 'no draw after completion');
+  resetEffects();
+});
+ok('two-pass model: impactStar renders in the world pass, NOT the screen pass', () => {
+  // World-space effects (default space) must be drawn by the camera-translated
+  // pass only; the post-restore screen pass must skip them.
+  resetEffects();
+  const inst = fireManual({ type: 'impact-star', params: { x: 30, y: 40, size: 20, duration: 0.4 } });
+  assert.ok(inst !== null, 'fired through the engine');
+  updateEffects(DT); // one frame: still active
+  const worldCtx = makeCtx();
+  drawEffects(worldCtx, undefined, { space: 'world' });
+  assert.ok(worldCtx.calls.some(c => c[0] === 'translate'), 'world pass drew the star');
+  const screenCtx = makeCtx();
+  drawEffects(screenCtx, { view: { w: 640, h: 480 } }, { space: 'screen' });
+  assert.equal(screenCtx.calls.length, 0, 'screen pass must not draw a world-space effect');
+  resetEffects();
+});
+ok('two-pass model: vignette renders in the screen pass, NOT the world pass', () => {
+  // Screen-space overlays (space: 'screen') must be drawn by the post-restore
+  // pass only; the camera-translated world pass must skip them.
+  resetEffects();
+  const inst = fireManual({ type: 'vignette', params: { strength: 1 } }, null, { view: { w: 960, h: 540 } });
+  assert.ok(inst !== null, 'fired through the engine');
+  updateEffects(DT); // one frame: still above zero
+  const worldCtx = makeCtx();
+  drawEffects(worldCtx, undefined, { space: 'world' });
+  assert.equal(worldCtx.calls.length, 0, 'world pass must not draw a screen-space overlay');
+  const screenCtx = makeCtx();
+  drawEffects(screenCtx, { view: { w: 960, h: 540 } }, { space: 'screen' });
+  assert.ok(screenCtx.calls.some(c => c[0] === 'fill'), 'screen pass drew the vignette fill');
   resetEffects();
 });
 ok('complete() force-completes (engine reset path)', () => {

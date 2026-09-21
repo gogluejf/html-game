@@ -67,6 +67,8 @@ Every effect instance runs the same lifecycle regardless of type:
 3. **render(ctx, renderCtx?)** — draw; screen-space effects render after the camera transform is restored. `renderCtx` is an optional draw-time context handed by `drawEffects()` (e.g. `{ view: { w, h } }`) that screen-space overlays read their viewport from.
 4. **complete** — removed from the active set when its duration elapses.
 
+**Two-pass rendering.** Effects live in one of two coordinate spaces, declared by an optional `body.space` field (`'world'` | `'screen'`; default `'world'`). The renderer draws them in two passes: world-space effects (e.g. spriteFlash, impactStar) are drawn inside the camera translate via `drawEffects(ctx, undefined, { space: 'world' })`, and screen-space effects (e.g. vignette, screenFlash, screenOverlay — `space: 'screen'`) are drawn after the camera restore via `drawEffects(ctx, { view }, { space: 'screen' })`. `drawEffects()` applies one generic filter on `body.space ?? 'world'`; omitting the pass filter draws every instance (legacy single-pass behavior).
+
 Effects may be procedural Canvas effects, sprite-based animations, or compositions of multiple smaller effects (see Effect Composition).
 
 ---

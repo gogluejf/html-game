@@ -37,6 +37,7 @@ import {
   updateEffects as stepEngine,
   drawEffects,
   resetEffects,
+  activeInstances,
 } from './effects/index.js';
 import { SHAKE_AMT, getShakeOffset as getSpriteShakeOffset } from './effects/spriteShake.js'; // single owner of the ±3px tunable + jitter math (aliased: the singleton below defines its own camera-shake getShakeOffset())
 import './effects/registry.js'; // side effect: registers the eight migrated types
@@ -89,17 +90,22 @@ function kickOverlay(type, strength, fireFn, current) {
 /**
  * Kick the camera-shake singleton through the engine with the legacy
  * triggerShake(mag) merge rule: `shakeMag = Math.max(shakeMag, mag)` plus an
- * unconditional timer reset. That is exactly "re-fire a fresh full-lifetime
- * instance whenever mag >= the running instance's original intensity; keep
- * the running one when mag is smaller" — the monolith's max() never lowers
- * the amplitude envelope, and its timer reset only extends the tail at the
- * unchanged peak magnitude (which a kept instance already does).
+ * unconditional timer reset. An equal-or-larger kick re-fires a fresh
+ * full-lifetime instance; a smaller kick keeps the running instance's peak
+ * but resets its lifetime clock (resetTimer), so the decay curve restarts
+ * from the kick frame at the unchanged peak magnitude — exactly the
+ * monolith's `shakeTimer = SHAKE_DURATION` on every call.
  * @param {number} mag desired shake magnitude in px
  * @returns {object|null} the instance now being tracked
  */
 function kickCameraShake(mag) {
   const cur = shakeInstance;
-  if (cur && !cur.done && mag < cur.body.intensity) return cur; // never lower the peak
+  if (cur && !cur.done && mag < cur.body.intensity) {
+    // Never lower the peak — but the legacy timer reset still applies: a
+    // smaller kick restarts the full decay curve at the kept magnitude.
+    cur.body.resetTimer();
+    return cur;
+  }
   if (cur) cur.complete();
   const next = fireManual({ type: 'camera-shake', params: { intensity: mag } }, null,
     { view: { w: VIEW_W, h: VIEW_H } });
@@ -162,16 +168,23 @@ export const Effects = {
 
   /**
    * Current camera-shake offset {x,y} in px; {0,0} when idle or done.
-   * render.js adds this to the camera translate each frame (monolith parity:
-   * the same per-frame random draw cadence, now owned by the engine instance).
+   * Sums the live offsets of ALL active 'camera-shake' instances: the tracked
+   * singleton (triggerShake's max-kick merge slot) plus any declaratively
+   * fired instances (carrier config on explosion/hitLanded/attackActive).
+   * Extra instances ADD their offsets to the tracked one. render.js adds this
+   * to the camera translate each frame (monolith parity for the tracked slot;
+   * additive combination for the engine-owned extras).
    * @returns {{x:number,y:number}}
    */
   getShakeOffset() {
-    if (shakeInstance && !shakeInstance.done) {
-      const o = shakeInstance.body.getOffset();
-      return { x: o.x, y: o.y };
+    let x = 0, y = 0;
+    for (const inst of activeInstances()) {
+      if (inst.type !== 'camera-shake') continue;
+      const o = inst.body.getOffset();
+      x += o.x;
+      y += o.y;
     }
-    return { x: 0, y: 0 };
+    return { x, y };
   },
 
   // --- Entity-space spawners --------------------------------------------------
@@ -291,6 +304,46 @@ export const Effects = {
     return getSpriteShakeOffset(e);
   },
 
+  /**
+   * Per-frame random shake offset from all active 'sprite-shake-standalone'
+   * instances whose carrier IS this entity (identity match via
+   * EffectInstance.carrier). Standalone instances own their own timer (they do
+   * NOT ride on hitFlash), so without this read path a renderer would never
+   * consume them. Returns the summed {x,y} of matching instances; {0,0} when
+   * none are active for this entity. render.js adds this to the same
+   * translate as getEntityShakeOffset() so both shake sources compose.
+   * @param {object} e the carrier entity
+   * @returns {{x:number,y:number}}
+   */
+  getStandaloneShakeOffset(e) {
+    let x = 0, y = 0;
+    for (const inst of activeInstances()) {
+      if (inst.type !== 'sprite-shake-standalone') continue;
+      if (inst.carrier !== e) continue; // identity match only
+      const o = inst.body.getOffset();
+      x += o.x;
+      y += o.y;
+    }
+    return { x, y };
+  },
+
+  /**
+   * Combined per-entity shake offset: the hitFlash-driven sprite-shake
+   * (getEntityShakeOffset) PLUS any carrier-declared standalone instances on
+   * this entity (getStandaloneShakeOffset). render.js consumes this single
+   * value at EVERY drawable carrier site so both shake sources compose and no
+   * carrier-declared instance is left visually unconsumed. The two individual
+   * methods are kept (tests read them directly); this just folds their sum into
+   * one call for the renderer.
+   * @param {object} e the carrier entity
+   * @returns {{x:number,y:number}}
+   */
+  getEntityShakeTotal(e) {
+    const a = this.getEntityShakeOffset(e);
+    const b = this.getStandaloneShakeOffset(e);
+    return { x: a.x + b.x, y: a.y + b.y };
+  },
+
   // --- Frame step --------------------------------------------------------------
 
   /**
@@ -316,9 +369,10 @@ export const Effects = {
    * Draw the screen-space overlays (vignette + white flash) in VIEWPORT space.
    * Must be called AFTER the camera translate has been restored, so it covers
    * the whole logical viewport regardless of scroll. Delegates to the engine's
-   * drawEffects() so every active renderable instance (including declaratively
-   * fired ones) completes its lifecycle; the viewport dims are handed to each
-   * instance via a { view: { w, h } } context because the migrated screen-space
+   * drawEffects() screen pass ({ space: 'screen' }) so every active
+   * screen-space instance (including declaratively fired ones) completes its
+   * lifecycle; world-space instances are skipped by the generic space filter.
+   * The viewport dims ride in renderCtx because the migrated screen-space
    * factories read their viewport from fire-time params/ctx.
    * @param {CanvasRenderingContext2D} ctx
    * @param {number} viewW logical viewport width (VIEW_W)
@@ -326,11 +380,11 @@ export const Effects = {
    */
   drawOverlay(ctx, viewW, viewH) {
     // Screen-space effects own their "draw after camera restore" ordering
-    // (render.js calls this post-restore); entity-space instances have no-op
-    // renders here, so one engine pass covers both without changing order.
-    // The viewport dims ride in renderCtx because the migrated screen-space
-    // factories read their viewport from fire-time params/ctx.
-    drawEffects(ctx, { view: { w: viewW, h: viewH } });
+    // (render.js calls this post-restore); the { space: 'screen' } pass is
+    // the other half of the two-pass model — world-space effects are drawn
+    // inside the camera translate via drawEffects(ctx, undefined, { space:
+    // 'world' }) at render.js's world pass.
+    drawEffects(ctx, { view: { w: viewW, h: viewH } }, { space: 'screen' });
   },
 
   /**

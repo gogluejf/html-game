@@ -8,6 +8,7 @@ import { VIEW_W, VIEW_H } from '../view.js';
 import { LAYER } from '../consts.js';
 import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss } from './update.js';
 import { Effects } from '../effects.js';
+import { drawEffects } from '../effects/index.js';
 import { getState, S } from '../state.js';
 import { Debug } from '../debug.js';
 import { input, formatBinding } from '../input.js';
@@ -63,20 +64,34 @@ export function render(ctx) {
   // semitransparent — see below.
   // =====================================================================
   const showSprites = !(Debug.viewMode === 1);
+  // Per-entity shake consumption (effects.md §Carriers): any drawable entity
+  // that can be an effect carrier must translate its draw by the combined
+  // hitFlash + standalone offset so carrier-declared sprite-shake instances are
+  // visually consumed. {0,0} when nothing is live → a no-op translate.
+  const drawShaken = (ctx, ent, fn) => {
+    const o = Effects.getEntityShakeTotal(ent);
+    if (!o.x && !o.y) { fn(); return; }
+    ctx.save();
+    ctx.translate(o.x, o.y);
+    fn();
+    ctx.restore();
+  };
   if (showSprites) {
     // Task 4.1 — destructible barrels (drawn via Entity.draw; white flash on hit).
     for (const b of getBarrels()) {
       if (!b.alive) continue;
-      b.draw(ctx);
+      drawShaken(ctx, b, () => b.draw(ctx));
     }
 
     // Placeholder pickups / enemies / projectiles (debug-colored bodies).
-    for (const p of getPickups()) p.draw(ctx);
+    for (const p of getPickups()) drawShaken(ctx, p, () => p.draw(ctx));
     for (const e of getEnemies()) {
       if (e.alive === false) continue; // destroyed target — no longer drawn
       // Task 7.1 — enemy shake: offset the draw position by a random ±3px while
-      // hitFlash is running (design §12 "Enemy damaged: fast shake").
-      const sh = Effects.getEntityShakeOffset(e);
+      // hitFlash is running (design §12 "Enemy damaged: fast shake"), plus any
+      // carrier-declared sprite-shake-standalone instances on this entity. Both
+      // sources compose via the single getEntityShakeTotal() read.
+      const sh = Effects.getEntityShakeTotal(e);
       ctx.save();
       ctx.translate(sh.x, sh.y);
       e.draw(ctx);
@@ -96,7 +111,7 @@ export function render(ctx) {
     // Each draws itself including death shrink/fade and its attack telegraph.
     for (const e of getRealEnemies()) {
       if (!e.alive) continue;
-      const sh = Effects.getEntityShakeOffset(e);
+      const sh = Effects.getEntityShakeTotal(e);
       ctx.save();
       ctx.translate(sh.x, sh.y);
       e.draw(ctx);
@@ -105,7 +120,7 @@ export function render(ctx) {
 
     // Task 6.1 — boss (Overgrown Elephant).
     const boss = getBoss();
-    if (boss && boss.alive) boss.draw(ctx);
+    if (boss && boss.alive) drawShaken(ctx, boss, () => boss.draw(ctx));
 
     // Task 3.3 — sparkle particles + dropped coins.
     for (const s of getParticles().activeItems) s.draw(ctx);
@@ -113,19 +128,19 @@ export function render(ctx) {
 
     // Task 4.3 — checkpoints (flags) + powerups (signboards). Both draw themselves
     // (Entity transform pipeline + bob/flash overlays).
-    for (const c of getCheckpoints()) c.draw(ctx);
-    for (const p of getPowerups()) p.draw(ctx);
+    for (const c of getCheckpoints()) drawShaken(ctx, c, () => c.draw(ctx));
+    for (const p of getPowerups()) drawShaken(ctx, p, () => p.draw(ctx));
 
     // Task 4.3 — floating value-text popups (powerup labels, checkpoint ids).
     for (const t of getFloatTexts()) t.draw(ctx);
 
     // Projectiles + specials (hero bomb/saw).
-    for (const p of getProjectiles()) p.draw(ctx);
-    for (const s of getSpecials()) s.draw(ctx);
+    for (const p of getProjectiles()) drawShaken(ctx, p, () => p.draw(ctx));
+    for (const s of getSpecials()) drawShaken(ctx, s, () => s.draw(ctx));
 
     // Anim-test enemy (harness spawn).
     const at = getAnimTestEnemy();
-    if (at.alive) at.draw(ctx);
+    if (at.alive) drawShaken(ctx, at, () => at.draw(ctx));
 
     // Hero — invincibility blink and death skull are gameplay effects, so they
     // live inside the sprite layer too. The flicker is driven by the 'intangible'
@@ -137,7 +152,11 @@ export function render(ctx) {
       if (h.dying) {
         drawDeathSkull(ctx, h);
       } else {
+        // Hero is a carrier too — consume its combined shake offset so any
+        // carrier-declared sprite-shake instance on the hero is drawn.
+        const o = Effects.getEntityShakeTotal(h);
         ctx.save();
+        if (o.x || o.y) ctx.translate(o.x, o.y);
         if (h.intangible) {
           const frac = h.timers.fraction('intangible'); // 1 → 0 across the window
           // IFRAME_BLINK_CYCLES full on/off cycles across the whole window;
@@ -305,6 +324,12 @@ export function render(ctx) {
     for (const ent of allEnts) drawEntityTransformDebug(ctx, ent);
     if (Debug.selected) drawSelectionOverlay(ctx, Debug.selected);
   }
+
+  // Two-pass effects model (effects.md §Lifecycle): world-space effects
+  // (spriteFlash, impactStar — default space) draw inside the camera translate,
+  // after the entities so they sit on top of the sprites. Screen-space
+  // overlays keep their post-restore pass below (Effects.drawOverlay).
+  drawEffects(ctx, undefined, { space: 'world' });
 
   ctx.restore();
 

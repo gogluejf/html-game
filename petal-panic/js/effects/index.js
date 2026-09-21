@@ -267,15 +267,27 @@ export function updateEffects(dt) {
 }
 
 /**
- * Draw all active instances. Screen-space effects should render after the
- * camera transform is restored (their responsibility, not the engine's).
+ * Draw all active instances whose `body.space` matches the pass. Two-pass
+ * render model (effects.md §Lifecycle): world-space effects (default; e.g.
+ * spriteFlash, impactStar) are drawn inside the camera translate, and
+ * screen-space effects (`space: 'screen'`; e.g. vignette, screenFlash,
+ * screenOverlay) are drawn after the camera transform is restored. A body
+ * without a `space` field defaults to `'world'`. One generic check — no
+ * per-effect branching.
  * @param {object} ctx CanvasRenderingContext2D
  * @param {object} [renderCtx] optional context handed to each instance's
  *   render() as its second argument (e.g. { view: { w, h } } for screen-space
  *   overlays that need viewport dims at draw time)
+ * @param {{space?:'world'|'screen'}} [pass] which coordinate space this pass
+ *   draws; omit to draw every active instance (legacy single-pass behavior).
  */
-export function drawEffects(ctx, renderCtx = {}) {
-  for (const inst of active) inst.render(ctx, renderCtx);
+export function drawEffects(ctx, renderCtx = {}, pass = {}) {
+  const space = pass.space ?? null; // null → no filtering (all instances)
+  for (const inst of active) {
+    if (inst.done) continue;
+    if (space && (inst.body.space ?? 'world') !== space) continue;
+    inst.render(ctx, renderCtx);
+  }
 }
 
 /**

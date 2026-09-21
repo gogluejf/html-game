@@ -175,6 +175,20 @@ Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Commit
 
 **Resolution:** ACCEPT (fix). §16 gained a compact "Implementation notes" block documenting param defaults (size 12, duration 0.1, opacity 1, rotation 0, style 'star', scaleCurve 'linear'), style values + colors (star = filled white #ffffff; burst = 8 yellow #ffd93b spokes; unknown→star), curve formulas (linear 1−p, easeOut (1−p)², easeIn 1−p²; unknown→linear), position behavior (live carrier.origin() at draw time; params.x/y standalone fallback), alpha = opacity·curve(progress), lifetime == duration — density matched to §12/§13/§15. Tests reframed from implementation-detail pins to documented-contract checks via a shapeSig() helper (closed-filled vs open-stroked signatures, doc-cited colors, relative-extent scaling); star-vs-burst distinctness test added; coverage preserved/increased (19→20). Re-verify: 42/42 green (impactStar 20/20 ×5 deterministic). Committed.
 
+## Wave 3 gate — M3 (3.1–3.5)
+
+**Gate tests:** run-all.mjs 42/42 vs wave-2 baseline 37/37 (+5 new effect suites; no new failures).
+**Wave review (dual):** FAIL round 1 (4 blockers):
+- blocker: kickCameraShake didn't reset lifetime on smaller kicks (legacy triggerShake ALWAYS reset the timer)
+- blocker: declaratively fired camera-shake instances never consumed (camera read only the tracked singleton)
+- blocker: sole drawEffects pass after camera restore → world-space effects (spriteFlash, impactStar) rendered in viewport coords
+- blocker: standalone sprite-shake offsets never consumed by any renderer
+
+**Fixes round 1:** cameraShake.js gained resetTimer(); kickCameraShake calls it when keeping a larger running shake (legacy unconditional timer-reset parity, test asserts fresh decay curve at kept magnitude); getShakeOffset sums ALL active camera-shake instances (tracked slot keeps max-kick merge; declarative extras add — test proves carrier-declared 'explosion' fire contributes); two-pass rendering model: body.space field ('world'|'screen', default world) + generic filter in drawEffects(ctx, renderCtx, { space }) — world pass inside the camera transform (render.js ~314), screen pass post-restore via Effects.drawOverlay; §Lifecycle documents the two-pass model; spriteShakeStandalone consumed per-entity via getStandaloneShakeOffset (carrier identity match).
+**Re-review:** FAIL (1 blocker): standalone shake applied only at enemy loops — boss/hero/barrels/pickups/projectiles/specials bypassed it.
+**Fixes round 2:** Effects.getEntityShakeTotal(e) combined helper (hitFlash + standalone); render.js drawShaken() DRY helper applies the combined offset at every drawable carrier site (barrels, pickups, boss, checkpoints, powerups, projectiles, specials, anim-test enemy, hero); non-carrier types untouched; enemy loops now use the single combined call; shim tests prove combined sum for an entity with both live hitFlash and a declared standalone instance, {0,0} for non-carriers.
+**Final gate verify:** 42/42 green (contextualAim pre-existing flake re-run clean). Extensibility contract intact: new effects declare their own space field in-file — one file + one registration, no engine change. Gate commit: `effects: wave 3 gate`.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.

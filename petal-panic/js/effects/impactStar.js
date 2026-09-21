@@ -54,6 +54,7 @@ export function impactStar(params = {}, carrier = null) {
   const py = params.y ?? 0;
 
   return {
+    space: 'world', // pops at a world-space impact point (two-pass render model, effects.md §Lifecycle)
     elapsed: 0,
     update(dt) {
       if (this.done) return;

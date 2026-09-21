@@ -56,6 +56,7 @@ export function screenOverlay(params = {}, carrier, ctx = {}) {
   const total = duration; // lifetime always equals the declared duration
 
   return {
+    space: 'screen', // viewport-space overlay (two-pass render model, effects.md §Lifecycle)
     peak,
     elapsed: 0,
     value: 0,
