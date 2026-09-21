@@ -28,6 +28,7 @@ import { Enemy } from './enemy.js';
 import { LAYER } from './consts.js';
 import { projectilePool } from './projectile.js';
 import { damage } from './damage.js';
+import { Effects } from './effects.js';
 
 export const ELEPHANT_DEF = {
   id: 'elephant',
@@ -45,7 +46,7 @@ export const ELEPHANT_DEF = {
 // --- Phase timing (base durations, divided by escalation) -------------------
 const IDLE_DUR = 1.0;          // seconds between attacks
 const CHARGE_DUR = 1.5;        // run-across-arena length
-const STOMP_DUR = 1.0;         // shake + shockwave
+const STOMP_DUR = 2.5;         // full stomp telegraph + shockwave
 const TRUNK_DUR = 1.2;         // ranged fan
 
 // --- Telegraph windows (fractions of the phase duration) --------------------
@@ -53,8 +54,7 @@ const TRUNK_DUR = 1.2;         // ranged fan
 // can read it and react. These are the fractions of the phase timer where the
 // effect is actually live.
 const CHARGE_ACTIVE_FRAC = [0.0, 1.0];   // whole charge is contact-dangerous
-const STOMP_SHAKE_FRAC   = [0.0, 0.45];  // shake telegraph (no damage yet)
-const STOMP_WAVE_FRAC    = [0.45, 0.75]; // shockwave window (damage if grounded)
+const STOMP_WAVE_FRAC    = [0.85, 1.0];  // shockwave fires after blink ends
 const TRUNK_FIRE_FRAC    = 0.3;          // moment the fan fires
 
 // --- Trunk blast geometry ----------------------------------------------------
@@ -158,6 +158,13 @@ export class Elephant extends Enemy {
         if (this.phaseTimer >= CHARGE_DUR / this.escalation) {
           this.vx = 0;
           this.startPhase('stomp');
+          // Fire the telegraph circle (expand mode: AoE warning) via the effects engine
+          const cx = this.x + this.w / 2;
+          const cy = this.y + this.h;
+          Effects.fireManual({
+            type: 'telegraph-circle',
+            params: { x: cx, y: cy, radius: 60, minRadius: 12, expand: true, duration: STOMP_DUR / this.escalation, color: '#f39c12' },
+          }, null);
         }
         break;
       }
@@ -332,23 +339,9 @@ export class Elephant extends Enemy {
     ctx.fillRect(wp.x, wp.y, wp.w, wp.h);
     ctx.restore();
 
-    // Stomp telegraph: a pulsing ring under the feet during the shake window.
-    if (this.phase === 'stomp') {
-      const dur = STOMP_DUR / this.escalation;
-      const t = this.phaseTimer / dur;
-      if (t < STOMP_SHAKE_FRAC[1]) {
-        const cx = this.x + this.w / 2;
-        const cy = this.y + this.h;
-        ctx.save();
-        ctx.globalAlpha = 0.5;
-        ctx.strokeStyle = '#f39c12';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 20 + t * 40, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
+    // Stomp telegraph is now handled by the effects engine (telegraph-circle,
+    // expand mode) — fired in update() when the stomp phase begins.
+
   }
 }
 

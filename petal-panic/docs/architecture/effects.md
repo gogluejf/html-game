@@ -59,7 +59,7 @@ Concept triggers (design intent) and current in-game usage (what actually fires 
 | 5 | Shockwave | ❌ | explosion, attack active | — |
 | 6 | Trail | ❌ | spawn, attack active; continuous (moving) | — |
 | 7 | Afterimage / Ghost Frames | ❌ | state change (dash/supermove); continuous (fast moving) | — |
-| 8 | Telegraph Circle | ❌ | state change (attack windup begins) | — |
+| 8 | Telegraph Circle | ✅ | state change (attack windup begins) | boss stomp (expand) |
 | 9 | Ground Target Marker | ❌ | spawn (projectile/missile created) | — |
 | 10 | Target Reticle | ❌ | spawn (lock-on acquired), state change | — |
 | 11 | Damage Vignette | ✅ | damage taken | • hero hit by projectile<br>• hero collision<br>• boss attack |
@@ -201,18 +201,21 @@ Parameters may include:
 
 ## 8. Telegraph Circle
 
-Displays a warning circle before an attack occurs.
+Displays a warning circle before an attack occurs. Three-phase sequence: eased build (shrink or expand), a silence gap, then a dot blink ×3 as the final "attack incoming" signal.
 
-The circle shrinks toward its center with a slow ease-in build-up (nearly still at first, accelerating into the final moment). When the countdown completes, the Attack Pattern can trigger the actual attack.
+- **Shrink mode** (default): circle contracts to zero with a vacuum ease-in — "something lands EXACTLY here"
+- **Expand mode** (`expand: true`): circle grows from small to full with an ease-out pop — "GET OUT of this zone"
 
 Useful for boss attacks, stomps, explosions, area attacks, and delayed hazards.
 
 Parameters may include:
-- Radius
-- Duration
-- Shrink rate
+- Radius (large size)
+- Min radius (small size / dot)
+- Expand (direction: shrink or grow)
+- Pulse rate (build phase)
 - Opacity
 - Thickness
+- Duration (scales all phases)
 - Position
 - Follow target / fixed position
 

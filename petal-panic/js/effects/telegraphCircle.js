@@ -2,21 +2,28 @@
 // circle displayed BEFORE an attack occurs. The sequence is a fixed internal
 // rhythm derived from `duration`:
 //
-//   Phase 1 — SHRINK (ease-in): the circle starts at `radius` and contracts
-//     toward `minRadius` with a cubic ease-in (slow start → fast end).
-//     Occupies the first 70% of duration.
+//   Phase 1 — BUILD: the circle animates its radius with an eased curve.
+//     - shrink mode (default): starts at `radius`, contracts to zero
+//       (cubic ease-in: slow start → fast vacuum suck)
+//     - expand mode (`expand: true`): starts at `minRadius`, grows to `radius`
+//       (cubic ease-out: fast pop → slow settle)
+//     Occupies the first 60% of duration.
 //
-//   Phase 2 — GAP: nothing is drawn. A brief silence that reads as "the
-//     moment before impact". Occupies the next 8% of duration.
+//   Phase 2 — GAP: nothing is drawn. A silence that reads as "the moment
+//     before impact". Occupies the next 20% of duration.
 //
 //   Phase 3 — DOT BLINK ×3: a filled dot at `minRadius` flashes on/off/on/
 //     off/on/off three times rapidly. The final signal that the attack is
-//     about to trigger. Occupies the last 22% of duration.
+//     about to trigger. Occupies the last 20% of duration.
 //
 // The total time is controlled by ONE param (`duration`). Setting a longer
-// duration makes the whole sequence proportionally slower (slower build-up,
-// longer pause, slower blinks). No separate params for gap length or blink
-// speed — the proportions are baked in so every telegraph reads consistently.
+// duration makes the whole sequence proportionally slower. No separate params
+// for gap length or blink speed — the proportions are baked in so every
+// telegraph reads consistently.
+//
+// Use cases:
+//   shrink (default) — precision impact: "something lands EXACTLY here"
+//   expand           — AoE warning: "GET OUT of this growing zone"
 //
 // STATE/DRAW effect: this instance stays active over its whole lifetime and
 // owns its own timer. Each update() advances the clock; each render() draws
@@ -35,49 +42,44 @@
 // time; with `followTarget` false (default) the origin is captured once at
 // fire time and held fixed.
 //
-// params: { radius?, minRadius?, pulseRate?, thickness?, opacity?,
+// params: { radius?, minRadius?, expand?, pulseRate?, thickness?, opacity?,
 //           duration?, followTarget?, color?, x?, y? }
-//   radius       — initial (full) warning-circle radius in px (default 48).
-//                  Non-negative; negative values clamp to 0.
-//   minRadius    — final dot radius in px (default 12). Used both as the
-//                  shrink target AND the dot size during the blink phase.
-//                  Non-negative; negative values clamp to 0.
-//   pulseRate    — warning pulse frequency in Hz during the SHRINK phase
-//                  (default 4). The alpha oscillates as
-//                  opacity · (0.5 + 0.5·cos(2π·pulseRate·t)); at 4 Hz the
-//                  circle blinks ~4 times per second. pulseRate 0 disables
-//                  the pulse (constant peak opacity during shrink).
+//   radius       — the LARGE radius in px (default 48). In shrink mode this
+//                  is the starting size; in expand mode it's the ending size.
+//   minRadius    — the SMALL radius in px (default 12). In shrink mode this
+//                  is the dot size during the blink phase; in expand mode it's
+//                  the starting size AND the dot size during blink.
+//   expand       — direction flag (default false). false = shrink (precision
+//                  impact), true = expand (AoE warning zone).
+//   pulseRate    — warning pulse frequency in Hz during the BUILD phase
+//                  (default 4). pulseRate 0 disables the pulse.
 //   thickness    — stroke width of the circle outline in px (default 5).
-//                  Used during the SHRINK phase. The DOT BLINK phase uses a
-//                  filled circle (no stroke), so thickness does not affect
-//                  it. Non-negative; negative values clamp to 0.
-//   opacity      — peak alpha 0..1, clamped (default 0.85). Applied to both
-//                  the pulsing shrink circle and the dot blinks.
-//   duration     — whole-instance lifetime in seconds (default 0.4). The
-//                  total countdown window. Internally split:
-//                    shrink: 0% → 70%
-//                    gap:    70% → 78%
-//                    blink:  78% → 100%  (3 on/off cycles)
-//                  Must be > 0; non-positive values fall back to the default.
+//                  Used during the BUILD phase. The DOT BLINK uses fill.
+//   opacity      — peak alpha 0..1, clamped (default 0.85).
+//   duration     — whole-instance lifetime in seconds (default 0.4).
+//                    build:  0% → 60%
+//                    gap:    60% → 80%
+//                    blink:  80% → 100%  (3 on/off cycles)
 //   followTarget — whether the circle tracks a MOVING carrier (default false).
 //   color        — stroke/fill color (default '#ff5a5a', red warning tint).
 //   x, y         — standalone origin fallback (default { x: 0, y: 0 }).
 //
 // Geometry by phase:
-//   SHRINK:  p = clamp(t / shrinkEnd, 0, 1); r = radius − (radius−minR)·p³
-//            alpha = opacity · (0.5 + 0.5·cos(2π·pulseRate·t))
-//   GAP:     nothing drawn
-//   BLINK:   filled circle at minRadius; alpha = opacity when ON, 0 when OFF.
-//            3 full on/off cycles across the blink window. Each cycle is
-//            blinkWindow/6 long for ON and blinkWindow/6 for OFF.
+//   BUILD (shrink):  p = clamp(t / buildEnd, 0, 1); r = radius · (1 − p³)
+//   BUILD (expand):  p = clamp(t / buildEnd, 0, 1); r = minR + (radius−minR)·p³
+//                    [both ease-in: slow start → fast end]
+//   GAP:             nothing drawn
+//   BLINK:           filled circle at minRadius; alpha = opacity when ON, 0 OFF.
+//                    3 full on/off cycles across the blink window.
 //
 // Degenerate cases (thickness ≤ 0 or opacity ≤ 0) draw nothing but the
 // instance still runs its timer and completes at `duration`.
 
-const DEFAULT_RADIUS = 48;       // px — initial (full) warning-circle radius
-const DEFAULT_MIN_RADIUS = 12;   // px — final dot radius
-const DEFAULT_PULSE_RATE = 4;    // Hz — warning pulse frequency (shrink phase)
-const DEFAULT_THICKNESS = 5;     // px — circle stroke width (shrink phase)
+const DEFAULT_RADIUS = 48;       // px — large radius
+const DEFAULT_MIN_RADIUS = 12;   // px — small radius / dot size
+const DEFAULT_EXPAND = false;    // false = shrink, true = expand
+const DEFAULT_PULSE_RATE = 4;    // Hz — warning pulse frequency (build phase)
+const DEFAULT_THICKNESS = 5;     // px — circle stroke width (build phase)
 const DEFAULT_OPACITY = 0.85;    // peak alpha
 const DEFAULT_DURATION = 0.4;    // s  — whole-instance lifetime
 const DEFAULT_FOLLOW_TARGET = false;
@@ -85,13 +87,13 @@ const DEFAULT_COLOR = '#ff5a5a'; // red warning tint
 const EPS = 1e-9;                // fixed-dt epsilon convention
 
 // Phase proportions (fractions of duration):
-const SHRINK_FRAC = 0.60;  // 0% → 60%: ease-in shrink to ZERO
+const BUILD_FRAC = 0.60;   // 0% → 60%: eased build (shrink or expand)
 const GAP_FRAC = 0.20;     // 60% → 80%: "be ready" silence
 // Blink: 80% → 100% (remaining 20%)
 const BLINK_CYCLES = 3;    // 3 on/off cycles
 
 /**
- * @param {{radius?:number, minRadius?:number, pulseRate?:number,
+ * @param {{radius?:number, minRadius?:number, expand?:boolean, pulseRate?:number,
  *          thickness?:number, opacity?:number, duration?:number,
  *          followTarget?:boolean, color?:string, x?:number, y?:number}} params
  * @param {object} [carrier]
@@ -102,6 +104,7 @@ const BLINK_CYCLES = 3;    // 3 on/off cycles
 export function telegraphCircle(params = {}, carrier = null) {
   const radius = Math.max(0, params.radius ?? DEFAULT_RADIUS);
   const minRadius = Math.max(0, params.minRadius ?? DEFAULT_MIN_RADIUS);
+  const expand = !!params.expand;
   const pulseRate = params.pulseRate >= 0 ? params.pulseRate : DEFAULT_PULSE_RATE;
   const thickness = Math.max(0, params.thickness ?? DEFAULT_THICKNESS);
   const opacity = Math.min(1, Math.max(0, params.opacity ?? DEFAULT_OPACITY));
@@ -111,31 +114,38 @@ export function telegraphCircle(params = {}, carrier = null) {
   const fallback = { x: params.x ?? 0, y: params.y ?? 0 };
 
   // Pre-compute phase boundaries in seconds:
-  const shrinkEnd = duration * SHRINK_FRAC;
-  const gapEnd = duration * (SHRINK_FRAC + GAP_FRAC);
-  // blinkEnd == duration
+  const buildEnd = duration * BUILD_FRAC;
+  const gapEnd = duration * (BUILD_FRAC + GAP_FRAC);
   // Each blink half-cycle (ON or OFF) duration:
   const blinkHalfCycle = (duration - gapEnd) / (BLINK_CYCLES * 2);
+
+  // Starting radius depends on direction:
+  const startRadius = expand ? minRadius : radius;
 
   const api = {
     space: 'world',
     done: false,
     elapsed: 0,
-    /** Current circle radius (meaningful during shrink; = minRadius after). */
-    radius,
+    /** Current circle radius. */
+    radius: startRadius,
     /** Resolved origin. */
     origin: resolveOrigin(carrier, fallback),
 
     update(dt) {
       if (this.done) return;
       this.elapsed += dt;
-      // Update the radius field (used by external code / tests):
-      if (this.elapsed < shrinkEnd) {
-        const p = this.elapsed / shrinkEnd;
-        const eased = p * p * p;
-        this.radius = radius * (1 - eased); // shrinks to ZERO
+      if (this.elapsed < buildEnd) {
+        const p = this.elapsed / buildEnd;
+        const eased = p * p * p; // ease-in: slow start → fast end (both directions)
+        if (expand) {
+          // r goes minRadius → radius, accelerating toward the end
+          this.radius = minRadius + (radius - minRadius) * eased;
+        } else {
+          // r goes radius → 0, accelerating toward the end
+          this.radius = radius * (1 - eased);
+        }
       } else {
-        this.radius = 0;
+        this.radius = expand ? radius : 0;
       }
       if (followTarget) this.origin = resolveOrigin(carrier, fallback);
       if (this.elapsed >= duration - EPS) this.done = true;
@@ -146,8 +156,8 @@ export function telegraphCircle(params = {}, carrier = null) {
       const o = followTarget ? resolveOrigin(carrier, fallback) : this.origin;
       const t = this.elapsed;
 
-      if (t < shrinkEnd) {
-        // ─── PHASE 1: SHRINK (ease-in stroked circle with pulse) ───
+      if (t < buildEnd) {
+        // ─── PHASE 1: BUILD (eased stroked circle with pulse) ───
         if (thickness <= EPS) return;
         const alpha = opacity * (0.5 + 0.5 * Math.cos(2 * Math.PI * pulseRate * t));
         if (alpha <= EPS) return;
@@ -162,11 +172,10 @@ export function telegraphCircle(params = {}, carrier = null) {
 
       } else if (t < gapEnd) {
         // ─── PHASE 2: GAP (nothing drawn) ───
-        // Intentionally empty.
 
       } else {
         // ─── PHASE 3: DOT BLINK ×3 (filled dot at minRadius) ───
-        const blinkT = t - gapEnd; // time within the blink window
+        const blinkT = t - gapEnd;
         const cyclePos = blinkT % (blinkHalfCycle * 2);
         const isOn = cyclePos < blinkHalfCycle;
         if (!isOn) return;

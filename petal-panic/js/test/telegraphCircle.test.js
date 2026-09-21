@@ -61,8 +61,8 @@ function movingCarrier(x = 0, y = 0) {
 
 // Phase boundaries for default duration (0.4s):
 const DUR = 0.4;
-const SHRINK_END = DUR * 0.65;  // 0.26s
-const GAP_END = DUR * 0.77;     // 0.308s
+const BUILD_END = DUR * 0.60;   // 0.24s
+const GAP_END = DUR * 0.80;     // 0.32s
 
 console.log('lifetime');
 ok('defaults: done exactly at the duration boundary, not before', () => {
@@ -160,7 +160,7 @@ ok('gap lasts multiple frames (not a single-frame flicker)', () => {
 console.log('phase 3: dot blink ×3');
 ok('blink phase draws a filled dot (fill, not stroke)', () => {
   const b = telegraphCircle({ radius: 48, minRadius: 12, duration: 0.4 });
-  const targetFrame = Math.round(0.32 / DT);
+  const targetFrame = Math.round(0.34 / DT);
   for (let i = 0; i < targetFrame; i++) b.update(DT);
   const ctx = makeCtx();
   b.render(ctx);
@@ -171,7 +171,7 @@ ok('blink phase draws a filled dot (fill, not stroke)', () => {
 });
 ok('blink phase uses minRadius for the dot size', () => {
   const b = telegraphCircle({ radius: 48, minRadius: 12, duration: 0.4 });
-  const targetFrame = Math.round(0.32 / DT);
+  const targetFrame = Math.round(0.34 / DT);
   for (let i = 0; i < targetFrame; i++) b.update(DT);
   const ctx = makeCtx();
   b.render(ctx);
@@ -180,13 +180,15 @@ ok('blink phase uses minRadius for the dot size', () => {
   assert.ok(close(arc[3], 12), `dot radius == minRadius (${arc[3]})`);
 });
 ok('blink alternates on/off (3 full cycles)', () => {
-  const blinkStart = GAP_END;
-  const blinkDur = DUR - GAP_END;
-  const halfCycle = blinkDur / 6;
+  // Use duration 1.5 so the blink window is wide enough to sample at 60fps
+  const dur = 1.5;
+  const gapEnd = dur * 0.80;
+  const blinkDur = dur - gapEnd; // 0.3s
+  const halfCycle = blinkDur / 6; // 0.05s = 3 frames
   const states = [];
   for (let i = 0; i < 6; i++) {
-    const t = blinkStart + (i + 0.5) * halfCycle;
-    const freshB = telegraphCircle({ radius: 48, minRadius: 12, duration: 0.4 });
+    const t = gapEnd + (i + 0.5) * halfCycle;
+    const freshB = telegraphCircle({ radius: 48, minRadius: 12, duration: dur });
     const frames = Math.round(t / DT);
     for (let f = 0; f < frames; f++) freshB.update(DT);
     const ctx = makeCtx();
