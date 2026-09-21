@@ -17,6 +17,7 @@
 // a ctx stub).
 
 import { theaterList, resetEffects, DEMO_VIEW } from './index.js';
+import { particles } from '../particles.js';
 
 // Built once at import: the catalog is static for the life of the process.
 const list = theaterList();
@@ -26,7 +27,8 @@ export const Theater = {
   index: 0,
   // Elapsed time within the current effect's demo (seconds). Stateless demos
   // re-fire fresh at t=0 and advance to `t`, so this is the only clock needed.
-  clock: 0,
+  // Negative = pre-roll delay before the demo starts (gives the eye a beat).
+  clock: -0.5,
 
   /** Number of previewable effects (== theaterList().length). */
   get count() { return list.length; },
@@ -40,7 +42,7 @@ export const Theater = {
   open() {
     this.active = true;
     this.index = 0;
-    this.clock = 0;
+    this.clock = -0.5;
     resetEffects(); // clean slate: no real-gameplay instances under the overlay
   },
 
@@ -51,6 +53,7 @@ export const Theater = {
   close() {
     this.active = false;
     resetEffects(); // drop the last demo's instances before gameplay resumes
+    particles.reset(); // clear any demo particles so they don't leak into gameplay
   },
 
   /**
@@ -61,7 +64,7 @@ export const Theater = {
   step(dir) {
     if (!this.active) return;
     this.index = (this.index + dir + list.length) % list.length;
-    this.clock = 0;
+    this.clock = -0.5;
   },
 
   /** Advance the demo clock by dt seconds. No-op when inactive. */

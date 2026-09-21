@@ -31,6 +31,8 @@ export function render(ctx) {
   if (state === S.HOME || state === S.SELECT || state === S.REMAP) {
     screenUpdate(1 / 60); // advance parallax at fixed step
     drawScreen(ctx);
+    // Theater can be opened from any screen via F2.
+    if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
     return;
   }
 

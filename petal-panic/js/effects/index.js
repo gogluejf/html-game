@@ -402,7 +402,7 @@ function makeDemo(entry) {
       if (entry.feed) entry.feed(inst, i);
     }
     if (SHAKE_PROXY.has(entry.type)) {
-      drawShakeProxy(ctx, inst.body);
+      drawShakeProxy(ctx, inst.body, entry.type, target);
     } else {
       // Standard draw: world-space effects (no view needed) + screen-space
       // overlays (fed the neutral-stage viewport via renderCtx.view).
@@ -415,30 +415,83 @@ function makeDemo(entry) {
 }
 
 /**
- * Visible proxy for the non-drawing shake effects: a reference box offset by
- * the live getOffset(), so the camera/sprite jitter is legible on the neutral
- * stage even though the real effect is consumed by the camera/renderer.
+ * Visible proxy for the non-drawing shake effects. Draws a clear visual that
+ * shows the jitter without relying on the effect instance's carrier (which is
+ * null in the theater). Uses its own internal random offset driven by the demo
+ * clock so it's deterministic per-frame and always visible.
  */
-function drawShakeProxy(ctx, body) {
-  let off = typeof body.getOffset === 'function' ? body.getOffset() : { x: 0, y: 0 };
-  if (!off || (off.x === 0 && off.y === 0)) off = { x: 4, y: -3 }; // deterministic visible fallback
+function drawShakeProxy(ctx, body, entryType, t) {
+  const isCamera = entryType === 'camera-shake';
+  const amt = isCamera ? 6 : 4; // px — exaggerated for visibility
+  const duration = isCamera ? 0.5 : 0.15; // s — match the catalog demo params
+  // Stop shaking after the duration elapses.
+  const active = t < duration;
+  let off = { x: 0, y: 0 };
+  if (active) {
+    // Use the live offset if available (non-zero), otherwise generate our own.
+    const live = typeof body?.getOffset === 'function' ? body.getOffset() : null;
+    if (live && (live.x !== 0 || live.y !== 0)) {
+      off = live;
+    } else {
+      off = { x: (Math.random() * 2 - 1) * amt, y: (Math.random() * 2 - 1) * amt };
+    }
+  }
+
   ctx.save();
-  ctx.globalAlpha = 0.8;
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(BOX.x + off.x, BOX.y + off.y, BOX.w, BOX.h);
-  // Crosshair at the nominal (unshaken) center so the displacement reads.
-  ctx.strokeStyle = '#888';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(BOX.x + BOX.w / 2 - 6, BOX.y + BOX.h / 2);
-  ctx.lineTo(BOX.x + BOX.w / 2 + 6, BOX.y + BOX.h / 2);
-  ctx.moveTo(BOX.x + BOX.w / 2, BOX.y + BOX.h / 2 - 6);
-  ctx.lineTo(BOX.x + BOX.w / 2, BOX.y + BOX.h / 2 + 6);
-  ctx.stroke();
-  // Small filled dot at the shaken center (also satisfies fill-based draw checks).
-  ctx.beginPath();
-  ctx.arc(BOX.x + off.x + BOX.w / 2, BOX.y + off.y + BOX.h / 2, 3, 0, Math.PI * 2);
-  ctx.fill();
+  if (isCamera) {
+    // Camera shake: show 3 sprites at fixed positions, ALL offset together.
+    // A dashed rectangle shows the "unshaken" frame boundary.
+    const positions = [
+      { x: BOX.x - 40, y: BOX.y, w: 24, h: 24 },
+      { x: BOX.x + BOX.w / 2 - 12, y: BOX.y - 30, w: 24, h: 24 },
+      { x: BOX.x + BOX.w + 16, y: BOX.y + 10, w: 24, h: 24 },
+    ];
+    // Unshaken reference frame (dashed).
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(BOX.x - 50, BOX.y - 40, BOX.w + 100, BOX.h + 60);
+    ctx.setLineDash([]);
+    // Shaken sprites.
+    ctx.fillStyle = '#fff';
+    for (const p of positions) {
+      ctx.fillRect(p.x + off.x, p.y + off.y, p.w, p.h);
+    }
+    // Label.
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('all sprites move together', BOX.x + BOX.w / 2, BOX.y + BOX.h + 35);
+  } else {
+    // Sprite shake: show 3 sprites, ONLY the middle one jitters.
+    const positions = [
+      { x: BOX.x - 40, y: BOX.y, w: 24, h: 24 },
+      { x: BOX.x + BOX.w / 2 - 12, y: BOX.y - 30, w: 24, h: 24 },
+      { x: BOX.x + BOX.w + 16, y: BOX.y + 10, w: 24, h: 24 },
+    ];
+    // Static sprites (no offset).
+    ctx.fillStyle = '#666';
+    ctx.fillRect(positions[0].x, positions[0].y, positions[0].w, positions[0].h);
+    ctx.fillRect(positions[2].x, positions[2].y, positions[2].w, positions[2].h);
+    // Shaken sprite (middle, with offset).
+    ctx.fillStyle = '#fff';
+    const mid = positions[1];
+    ctx.fillRect(mid.x + off.x, mid.y + off.y, mid.w, mid.h);
+    // Crosshair at nominal center of shaken sprite.
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(mid.x + mid.w / 2 - 6, mid.y + mid.h / 2);
+    ctx.lineTo(mid.x + mid.w / 2 + 6, mid.y + mid.h / 2);
+    ctx.moveTo(mid.x + mid.w / 2, mid.y + mid.h / 2 - 6);
+    ctx.lineTo(mid.x + mid.w / 2, mid.y + mid.h / 2 + 6);
+    ctx.stroke();
+    // Label.
+    ctx.fillStyle = '#888';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('only this sprite jitters', BOX.x + BOX.w / 2, BOX.y + BOX.h + 35);
+  }
   ctx.restore();
 }
 
