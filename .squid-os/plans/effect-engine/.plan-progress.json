@@ -173,14 +173,14 @@
     },
     "4.2": {
       "number": "4.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Dust Cloud",
       "milestone": "Particle and Burst Effects",
       "milestone_number": "4"
     },
     "4.3": {
       "number": "4.3",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Composite Explosion Burst",
       "milestone": "Particle and Burst Effects",
       "milestone_number": "4"

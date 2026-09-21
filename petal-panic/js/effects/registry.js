@@ -30,6 +30,7 @@ import { spriteShakeStandalone } from './spriteShakeStandalone.js';
 import { impactStar } from './impactStar.js';
 import { debris } from './debris.js';
 import { dustCloud } from './dustCloud.js';
+import { compositeExplosion } from './compositeExplosion.js';
 
 // --- Migrated effects (task 2.1) ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -51,3 +52,4 @@ registerEffect('impact-star', impactStar);
 // --- M4 particle / burst effects -------------------------------------------------
 registerEffect('debris', debris);
 registerEffect('dust-cloud', dustCloud);
+registerEffect('composite-explosion', compositeExplosion);

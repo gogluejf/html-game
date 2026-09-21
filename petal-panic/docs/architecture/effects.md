@@ -597,6 +597,30 @@ Example:
 
 A boss enters its death state. Over two seconds, explosions appear at random locations across its body while sparks and debris are generated. The boss sprite can simultaneously shake and fade out.
 
+Implementation notes (type `composite-explosion`, js/effects/compositeExplosion.js):
+
+This catalog entry is a **STATE compositor**: it stays active over its full `duration` and repeatedly fires smaller child effects at jittered points within ±(posVariance·radius) of the area center; `render()` is a no-op because all visible work is delegated to the children (shared pool / screen-space overlays). It is one of several STATE effects in the catalog — Screen Flash (§14), standalone Sprite Shake (§15), and Camera Shake (§13) are also STATE effects — not the only one.
+
+Compositor mechanism: **every** child is routed through the engine's single spawn path — `fireManual({ type, params })` from index.js — so each child enters the engine's active set with its own EffectInstance wrapper and its normal update/render lifecycle. Pool-based children (explosion, particle-burst, debris, dust-cloud) push into the shared pool AND their instance is pruned immediately, since they report done at fire time; STATE / overlay children (e.g. screen-flash) stay in the active set and are updated and rendered by the engine for their own lifetime. Routing every child through this one path makes ANY registered effect type a valid child (the catalog lists "Explosion, Particle Burst, Debris, Flash, or other effects") — there is no fixed table of supported children and no per-type special-casing beyond the size/count key maps below. An unregistered `childType` makes `fireManual` console.warn and return null, which the compositor simply ignores per tick (a config bug must never crash gameplay). One mechanism, no duplication, no engine change.
+
+Parameter semantics:
+- `x` / `y` — area center in world space (standalone/fallback position). **Carrier origin wins:** when the carrier exposes `origin()`, its FIRE-time position is used instead of params.x/y (params are the fallback for manual/theater fires with a null carrier).
+- `radius` — half-extent of the square spawn area in px (default 40); every child point lies within ±radius·posVariance of the center.
+- `explosionCount` — number of child effects fired over the lifetime (default 6); 0 or negative fires nothing. The declared count ALWAYS fires within the lifetime: if explicit intervals or accumulated jitter would otherwise push a scheduled child past `duration`, the remaining children are compressed to land exactly at the end frame instead of being silently dropped.
+- `spawnInterval` — base time between child spawns in s; when omitted, defaults to `duration / explosionCount` so the declared count always fits the duration (no clumping at t=0, no silent under-firing).
+- `timingVariance` — half-window of the uniform jitter added to each interval in s (default 0.1); 0 gives exact periodic spawning. The first child fires exactly at t=0.
+- `posVariance` — fraction of `radius` used as the uniform per-axis offset range (default 1 → the full ±radius square; values < 1 cluster spawns tighter around the center).
+- `childType` — which registered effect type to fire per tick (default `'explosion'`). Any registered type is a valid child; unknown types are ignored per tick (a config bug must never crash gameplay).
+- `childSizeRange` — `[min, max]` SIZE envelope passed to the child (default [8, 24]); each child gets a uniform random value in the range mapped onto the child's actual SIZE param. This is distinct from density.
+- `density` — the ABSOLUTE per-child particle/fragment/puff COUNT (default 1): `count = floor(density)`. It is NOT a multiplier on a base count — it IS the count the child receives. Only applied when the child has a count key (see below); screen-flash has no count, so density is a no-op there.
+- `duration` — total lifetime in s (default 2). Total lifetime == `duration` exactly: the instance reports done exactly when `elapsed >= duration - 1e-9` (the fixed-dt epsilon convention used across the project).
+
+Two distinct child mappings (do not conflate them):
+- **`childSizeRange` → the child's SIZE param** (`CHILD_SIZE_KEY`): `explosion`→`radius`, `debris`→`size`, `dust-cloud`→`size`, `particle-burst`→`size`, `screen-flash`→`strength`. Types without an entry fall back to the generic `size` param (harmless if the child ignores it).
+- **`density` → the child's COUNT** (`CHILD_COUNT_KEY`): `explosion`→`count`, `debris`→`fragmentCount`, `dust-cloud`→`particleCount`, `particle-burst`→`count`. `screen-flash` has no count key, so density is a no-op there. A missing count key means the child uses its own default count.
+
+Trigger table row (#24) lists `death`, `explosion` — consistent with the intended usage (large boss deaths, machinery destruction, chained explosions).
+
 ---
 
 ## 25. Heat Distortion *(experimental — out of scope for v1)*

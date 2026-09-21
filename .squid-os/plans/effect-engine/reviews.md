@@ -216,6 +216,23 @@ Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Commit
 
 **Resolution:** ACCEPT (fix). Both findings resolved by re-expressing the assertions against the DOCUMENTED contract rather than pool internals: added a single commented mirror constant SPARKLE_SIZE=4 (the pool's private placement offset, not exported) so tests compute the documented launch x as `it.x + SPARKLE_SIZE/2`. 'spread bounds' test now asserts launch x lands at contactX∓spread (90 / ≈110) instead of raw top-left pixels (88/108); 'standalone theater demo' test asserts launch x within ±spread of the contact (no +1 tolerance), with the size assertion kept separate. Stub alignment itself was already corrected this task: each puff consumes exactly 5 Math.random() calls (dx, angle, speed in dustCloud.js + Sparkle ctor angle/speed which spawnOne overrides with the directed vector) — the original 4-value stub cycle misaligned after puff 0 (the flake root cause, same class as 4.1 debris). Re-verify: dustCloud 23/23 ×10 zero flakes; run-all 44/44 (barrel.solid pre-existing ~25% flake re-run clean). dustCloud.js behavior unchanged. Committed.
 
+## Task 4.3 — Composite Explosion Burst
+
+**Review A (round 1):** PASS (1 major, 3 minor)
+- major: screen-flash dispatch test didn't observe the compositor's actual dispatch (factory-body assertion proved little beyond the existing screenFlash suite)
+- minor: unused activeInstances import; shared mutable DEFAULT_SIZE_RANGE array; float written to count-keyed child params relying on siblings' implicit floor
+
+**Review B (round 1):** FAIL (1 blocker, 5 major, 3 minor)
+- blocker: screen-flash children created via direct factory call were DISCARDED — never registered/updated/rendered → no visible effect (violated lifecycle/composition contract for non-one-shot children)
+- major: fixed child table omitted particle-burst and prevented "or other effects" composition
+- major: childSizeRange mapped onto particle/fragment COUNTS, conflating size with the separately-listed Density param
+- major: declared explosionCount not guaranteed over duration when interval/jitter pushed scheduled children past duration
+- major: screen-flash test never observed a flash produced by the compositor
+- major: count tests only covered schedules known to fit the duration
+- minor: randomized-position test gave identical positions; standalone demo passed vacuously if no particles; §24 impl-notes inaccuracies ("only state effect")
+
+**Resolution (redesign):** ACCEPT (fix). Reworked the compositor so EVERY child routes through the engine's single spawn path `fireManual({type, params})` from index.js (no longer direct factory calls): each child enters the active set with its own lifecycle — pool-based children push into the shared pool and are pruned immediately (done at fire time), STATE/overlay children (screen-flash) stay active and get their normal update/render. This fixes the discarded-body blocker AND makes ANY registered type a valid child (no fixed table). Added a `density` param (absolute per-child count, count=floor(density), default 1) distinct from `childSizeRange` (→ the child's SIZE param via CHILD_SIZE_KEY: explosion→radius, debris/dust-cloud/particle-burst→size, screen-flash→strength); density scales COUNT via CHILD_COUNT_KEY (explosion/particle-burst→count, debris→fragmentCount, dust-cloud→particleCount; screen-flash has none). Added a B-4 guarantee: the declared count always fires within the lifetime (jitter clamp keeps nextAt<=duration as the primary mechanism; a frame-skip-only tail-collapse guard kept defensively). Added particle-burst to both key maps. Rewrote the §24 Implementation notes block to document the shipped design (STATE compositor — explicitly NOT the only state effect; fireManual routing; full param semantics incl. density; the two distinct size/count mappings; carrier-origin-wins; total-lifetime==duration). Tests: re-measured draw order post-redesign, added B-4 edge-case (genuine over-duration jitter schedule), varied-position B-7 test (captures launch points before physics drift), observable screen-flash + particle-burst dispatch, B-8 standalone demo asserts declared children emitted. Re-verify: compositeExplosion 28/28 ×10 zero flakes; run-all 45/45 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
