@@ -31,6 +31,7 @@ import { impactStar } from './impactStar.js';
 import { debris } from './debris.js';
 import { dustCloud } from './dustCloud.js';
 import { compositeExplosion } from './compositeExplosion.js';
+import { trail } from './trail.js';
 
 // --- Migrated effects (task 2.1) ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -53,3 +54,6 @@ registerEffect('impact-star', impactStar);
 registerEffect('debris', debris);
 registerEffect('dust-cloud', dustCloud);
 registerEffect('composite-explosion', compositeExplosion);
+
+// --- M5 motion / ribbon effects -------------------------------------------------
+registerEffect('trail', trail);

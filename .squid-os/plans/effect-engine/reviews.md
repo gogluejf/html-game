@@ -245,6 +245,20 @@ Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Commit
 
 **Final gate verify:** run-all.mjs 45/45, effectRegression 21/21, post-doc-rewrite re-run clean. Extensibility contract intact: each new effect = one file + one registration (theater demo deferred to M7); only shared-code change is the strictly-additive particles.js pool extension. Gate commit: `effects: wave 4 gate`.
 
+## Task 5.1 — Trail
+
+**Review A (round 1):** PASS (7 minor) — redundant posFrac/frac re-derivation; imprecise "fades by age" comments; loose test thresholds (head alpha, offset sign-only, magic `>= 7`); standalone test poked body.points internals; dead `t` field.
+
+**Review B (round 1):** FAIL (5 major, 1 minor)
+- major: trail did not fade over the declared lifetime — alpha was purely positional (buffer index), recorded t unused/dead
+- major: continuous trail self-completed every lifetime, periodically clearing the ribbon instead of persisting while moving
+- major: NaN with exactly 2 points (n-2===0 → alpha/width NaN/Infinity)
+- major: `length` limited point COUNT not accumulated path DISTANCE (large steps blew past declared reach)
+- major: standalone theater demo test invalid — mutated body.points + hand-maintained buffer cap; with null carrier the real effect drew nothing
+- minor: trigger verification used `collision` (not in Trail's row) and omitted marker/box/radius carriers
+
+**Resolution:** ACCEPT (fix). Reworked trail.js: (B1) alpha is now AGE-based — each segment's alpha = opacity·clamp(1 − (elapsed − olderEndpoint.t)/lifetime, 0, 1), so every point fades linearly and vanishes when a full lifetime old (recorded t now live); width taper stays positional (shape). (B2) one rule satisfies both modes: the instance completes at elapsed>=lifetime ONLY if no fresh point was recorded that frame — a moving carrier persists (old points self-clean via age-fade + eviction), a stopped/absent carrier terminates exactly at fire+lifetime (no leak). (B3) denom = max(1, n−2) guards the n===2 NaN case. (B4) `length` now bounds ACCUMULATED PATH DISTANCE (evict oldest until Σ segment lengths <= length). (B5) added a public addPoint(x,y) driving the real record/render path; the standalone test feeds a position sequence through it with a null carrier (no internal poking). (B6) a gap/break rule: if a single step exceeds `length`, the buffer resets so no over-length segment stretches across the gap (teleport breaks the ribbon). Trigger tests switched to documented spawn/attackActive + a plain-object marker carrier. Review A minors folded in (collapsed redundant var, exact epsilon assertions, offset magnitude, removed magic count). Re-review: B final FAIL on one residual major (path-eviction loop stopped at 2 points so a single >length segment survived) → fixed with the gap/break reset. Re-verify: trail 27/27 ×10 zero flakes; run-all 46/46 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.

@@ -180,14 +180,14 @@
     },
     "4.3": {
       "number": "4.3",
-      "status": "in_progress",
+      "status": "done",
       "name": "Composite Explosion Burst",
       "milestone": "Particle and Burst Effects",
       "milestone_number": "4"
     },
     "5.1": {
       "number": "5.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Trail",
       "milestone": "Motion, Telegraph and Marker Effects",
       "milestone_number": "5"
