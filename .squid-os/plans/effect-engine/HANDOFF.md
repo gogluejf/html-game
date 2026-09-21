@@ -33,8 +33,8 @@ The runner (you) dispatches, verifies mechanically, reviews, records, commits, t
 2. **Execute** — inline agent with `task-executor` skill, passed plan path + task id. Budgets: max_steps 150, max_tools 200, max_time 45m.
 3. **Verify** — run the task's `Verification:` command + related existing tests. NOTE: most M5/M6/M7 tasks list `node petal-panic/js/test/effectCatalog.test.js`, which does NOT exist yet (it's an M7 deliverable). **Fall back to `node petal-panic/js/test/run-all.mjs` and note it.**
 4. **Fix cycle** — if red: fresh task-executor with a diagnosis-first prompt (state the exact failing assertions + root cause you found). Max 2 retries. Still red → BLOCKED, stop wave, surface to user.
-5. **Review A** — `ninfer/qwen3.8-27b` (local, line-level) on the uncommitted diff.
-6. **Review B** — `openai-codex/gpt-5.6-sol` (cloud, intent/acceptance-conformance) on the same diff. Retry 1–2× if overloaded. Run both in parallel.
+5. **Review A** — `ninfer/qwen3.8-27b` (local, line-level) on the uncommitted diff. Budgets: max_steps 75, max_time 15m.
+6. **Review B** — `openai-codex/gpt-5.6-sol` (cloud, intent/acceptance-conformance) on the same diff. Budgets: max_steps 75, max_time 15m. Retry 1–2× if overloaded. Run both in parallel.
 7. **Resolve** — ACCEPT (executor fixes, re-verify) or REJECT (note why). Disagreement → mechanical tests break the tie; else one-line question to user. Max 2 rounds.
 8. **Record** — append both verdicts + resolution to `reviews.md` (insert after the previous task's block, before the "Wave 1 gate" section — the file appends newest-tasks upward toward that anchor).
 9. **Commit** — `effects <task-id>: <task name>`. Only after steps 3–8. One commit per task.

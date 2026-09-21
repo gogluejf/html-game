@@ -36,8 +36,8 @@ Execution contract for the `effect-engine` plan. No human between tasks.
 | Role | Model | Notes |
 |---|---|---|
 | Executor | session default via `task-executor` skill | writes code + tests |
-| Reviewer A | `ninfer/qwen3.8-27b` | local, line-level |
-| Reviewer B | `openai-codex/gpt-5.6-sol` | cloud, intent/doc-conformance; retry 1–2× if overloaded |
+| Reviewer A | `ninfer/qwen3.8-27b` | local, line-level; max_steps 75, max_time 15m |
+| Reviewer B | `openai-codex/gpt-5.6-sol` | cloud, intent/doc-conformance; max_steps 75, max_time 15m; retry 1–2× if overloaded |
 | Tests | deterministic shell | never an LLM |
 
 ## Source of truth & precedence
