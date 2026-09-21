@@ -385,6 +385,21 @@ DEFERRED (tracked): render.js per-entity consumption of fade-out alpha() (and, b
 
 Re-verify post-fix: auraGlow 27/27 ×4 zero flakes; run-all 57/57 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
 
+## Task 6.5 — Beam
+
+**Review A (round 1):** FAIL (1 major, 4 minor)
+- major: beam.js:269–289 — colorWithAlpha duplicated verbatim from auraGlow.js (rubric #6 no duplication)
+- minor: beam.js:119 — params.duration silently ignored (derived from flashInTime+fadeOutTime; no warning)
+- minor: beam.js — doc §26 lists "Hold time" param; implementation has only two phases (plan scope reduction, acceptable)
+- minor: beam.test.js:249/222 — float accumulation fragility in two alpha-boundary tests (passes at 1e-9 tol, latent at tighter)
+- minor: beam.js:131 — magic `0` origin defaults instead of named constants
+
+**Review B (round 1):** FAIL (2 major)
+- major: beam.js:188–196 — gradient spans width+2×gradientRadius but filled rect is only width tall → halo clipped, soft glow invisible
+- major: beam.js:196 — rect centered on origin (x=-length/2) so half projects opposite facing; doc says "extends from an origin along an axis"
+
+**Resolution:** ACCEPT all three actionable findings. (B1) filled rect expanded to full gradient span (width+2·haloR tall) so the soft halo falloff is visible. (B2) rect now starts at local x=0 (origin-anchored) and extends forward `length` px along facing — matches doc "extends from an origin." Header updated. Test assertion rewritten for the new geometry. (A3) colorWithAlpha extracted to shared js/effects/colorUtil.js; both auraGlow.js and beam.js import it (duplicates removed). A's minors accepted as-is (duration ignore documented in header; hold-time deferred per plan scope; test fragility cosmetic at 1e-9; origin defaults are conventional zero). Re-verify: beam 32/32 ×3, auraGlow 27/27, run-all 58/58 (barrel.solid pre-existing flake re-run clean). No engine change; registry addition additive; colorUtil.js is a new shared utility (additive). Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.

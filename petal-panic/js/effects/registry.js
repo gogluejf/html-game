@@ -43,6 +43,7 @@ import { fadeOut } from './fadeOut.js';
 import { scalePulse } from './scalePulse.js';
 import { squashStretch } from './squashStretch.js';
 import { auraGlow } from './auraGlow.js';
+import { beam } from './beam.js';
 
 // --- Migrated effects (task 2.1) ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -81,3 +82,6 @@ registerEffect('fade-out', fadeOut);
 registerEffect('scale-pulse', scalePulse);
 registerEffect('squash-stretch', squashStretch);
 registerEffect('aura-glow', auraGlow);
+
+// --- M6 beam effect -------------------------------------------------------------
+registerEffect('beam', beam);
