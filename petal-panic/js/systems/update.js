@@ -35,6 +35,7 @@ import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
 import { LEVELS, generateLevel } from '../level.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from '../debug.js';
+import { Theater } from '../effects/theater.js';
 import { createStats, dumpStats } from '../stats.js';
 
 // --- Tunables for the test rig ---------------------------------------------
@@ -352,6 +353,9 @@ function handleDebugToggle(e, source) {
   } else {
     Debug.toggle();
     Debug.reset();
+    // Turning debug OFF also closes the Effect Theater (it is debug-only), so
+    // F1/F2 exits debug entirely back to gameplay even from the theater.
+    if (Theater.active) Theater.close();
     Debug.logEvent(`${source}: debug OFF`);
   }
 }
@@ -361,17 +365,70 @@ window.addEventListener('keydown', (e) => {
   if (input.capturing) return;
   if (['F1', 'F2', 'F3'].includes(e.code)) e.preventDefault();
   if (e.code === 'F1' || e.code === 'F2') { handleDebugToggle(e, 'debug'); return; }
+  // Effect Theater: while open, Escape closes it and returns to normal debug
+  // mode (does NOT exit debug). Intercepted here so it never falls through to
+  // the nav system's pause binding (Escape → 'back'/'pause').
+  if (e.code === 'Escape' && Theater.active) {
+    e.preventDefault();
+    Theater.close();
+    Debug.logEvent('theater CLOSE (Esc)');
+    return;
+  }
   handleDebugKeys(e);
 });
 
 export function processInput() {
   input.poll({ facing: hero.facing });
+  // Effect Theater (debug-only): while open, route gamepad d-pad / left-stick
+  // horizontal move to step the current effect, and a back/cancel press to
+  // close it. Keyboard arrows + Esc are handled in the keydown listener above;
+  // F1/F2 exit debug entirely (and thus the theater) via handleDebugToggle.
+  // Edge-triggered so holding a direction steps once per press, not every frame.
+  if (Theater.active) {
+    updateTheaterGamepad();
+    // Suppress normal screen navigation while the theater is open: the input
+    // engine still records Escape/gamepad-back as 'back'/'pause', and we must
+    // NOT let those drive PLAY→PAUSE or other screen transitions behind the
+    // black overlay. Skip dispatchScreenInput entirely while active.
+    return;
+  }
   dispatchScreenInput(input, hero, {
     retry: retryFromGameOver,
     cont: continueFromGameOver,
     playAgain: () => tryTransition(S.SELECT),
     quit: () => tryTransition(S.HOME),
   });
+}
+
+// --- Effect Theater gamepad stepping (task 7.2) ------------------------------
+// Tracks the previous held-direction so a step fires only on the edge (crossing
+// zero), preventing hold-to-spin. `wasHeld` is -1/0/+1 for prev/left/right.
+let theaterWasHeld = 0;
+
+/**
+ * Step the Effect Theater from gamepad input. Called once per frame from
+ * processInput() while Theater.active. Reads input.state.moveX (d-pad +
+ * left-stick, already normalized by the existing input remap) for left/right,
+ * and nav.pressed 'back' (gamepad btn:1 ○) to close. Keyboard Escape closes
+ * separately in the keydown listener.
+ */
+function updateTheaterGamepad() {
+  const s = input.state;
+  const dir = s.moveX < -0.2 ? -1 : s.moveX > 0.2 ? 1 : 0;
+  // Edge-trigger: fire a step only when the held direction changes away from 0
+  // into a new side (or flips side). Holding keeps the same dir → no re-step.
+  if (dir !== 0 && dir !== theaterWasHeld) {
+    Theater.step(dir);
+    Debug.logEvent(`theater → ${Theater.current().type}`);
+  }
+  theaterWasHeld = dir;
+  // Back/cancel (gamepad ○ = btn:1 → 'back') closes the theater. The keyboard
+  // Escape path is handled in the keydown listener; guard against double-close
+  // by checking active again.
+  if (input.nav.pressed.includes('back') && Theater.active) {
+    Theater.close();
+    Debug.logEvent('theater CLOSE (gamepad back)');
+  }
 }
 
 // --- Debug harness mouse input: click to select / force an enemy's state -----
@@ -497,7 +554,20 @@ function handleDebugKeys(e) {
     case 'KeyL': // Toggle event-log display
       Debug.showLog = !Debug.showLog;
       break;
+    case 'KeyB': // Open the Effect Theater (debug-only overlay)
+      if (!Theater.active) {
+        Theater.open();
+        Debug.logEvent('theater OPEN');
+      }
+      break;
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown':
+      // While the Effect Theater is open, Left/Right step the current effect
+      // INSTEAD of driving the anim scrubber (guard so both don't fire).
+      if (Theater.active && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) {
+        Theater.step(e.code === 'ArrowLeft' ? -1 : 1);
+        Debug.logEvent(`theater → ${Theater.current().type}`);
+        break;
+      }
       // Anim scrubber: step the selected entity's anim frames.
       scrubSelectedAnim(e.code);
       break;
@@ -1054,6 +1124,15 @@ export function getFloatTexts() { return floatTexts; }
 // --- Per-frame step ------------------------------------------------------------
 export function update(dt) {
   processInput();
+  // Effect Theater (debug-only): advance its demo clock while open. Gated on
+  // active so normal play pays zero cost. Runs even outside PLAY (the theater
+  // is a debug overlay independent of gameplay state). While the black-screen
+  // theater is up we FREEZE the game behind it: skip all gameplay physics so
+  // the hero doesn't walk and gamepad actions don't fire under the overlay.
+  if (Theater.active) {
+    Theater.update(dt);
+    return;
+  }
   // Physics only runs during PLAY; other states are screen-driven (Milestone 8).
   if (getState() !== S.PLAY) return;
 

@@ -325,7 +325,7 @@ export function resetEffects() {
 import { particles } from '../particles.js';
 
 const DEMO_DT = 1 / 60;          // fixed step (project convention)
-const DEMO_VIEW = { w: 320, h: 180 }; // neutral-stage viewport for screen-space overlays
+export const DEMO_VIEW = { w: 320, h: 180 }; // neutral-stage viewport for screen-space overlays
 const STAGE_X = 160;             // world origin for standalone demos (center-ish)
 const STAGE_Y = 90;
 const BOX = { x: STAGE_X - 16, y: STAGE_Y - 16, w: 32, h: 32 }; // reference sprite box

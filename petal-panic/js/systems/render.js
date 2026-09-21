@@ -11,6 +11,7 @@ import { Effects } from '../effects.js';
 import { drawEffects } from '../effects/index.js';
 import { getState, S } from '../state.js';
 import { Debug } from '../debug.js';
+import { Theater } from '../effects/theater.js';
 import { input, formatBinding } from '../input.js';
 import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../timers.js';
 import { drawScreen, screenUpdate } from '../screens.js';
@@ -369,6 +370,10 @@ export function render(ctx) {
   if (state === S.PAUSE || state === S.OVER || state === S.WIN) {
     drawScreen(ctx, getHero());
   }
+
+  // Effect Theater (task 7.2): debug-only black-screen overlay drawn LAST so it
+  // covers everything (game world + HUD + state overlays). No-op when inactive.
+  if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
 }
 
 /**

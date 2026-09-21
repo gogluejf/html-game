@@ -18,7 +18,8 @@
 // §15), matching the plan's "catalog order §1→§24 then Beam" acceptance.
 
 import { strict as assert } from 'node:assert';
-import { theaterList } from '../effects/index.js';
+import { theaterList, fireManual, activeCount } from '../effects/index.js';
+import { Theater } from '../effects/theater.js';
 import '../effects/registry.js'; // side effect: registers all types
 
 const DT = 1 / 60;
@@ -59,6 +60,10 @@ function makeCtx() {
     set globalCompositeOperation(v) { calls.push(['gco', v]); },
     createLinearGradient(...a) { const g = gradObj(); calls.push(['gradL', ...a, g]); return g; },
     createRadialGradient(...a) { const g = gradObj(); calls.push(['gradR', ...a, g]); return g; },
+    fillText(...a) { calls.push(['fillText', ...a]); },
+    set textAlign(v) { calls.push(['textAlign', v]); },
+    get textAlign() { return this._ta ?? 'start'; },
+    set font(v) { calls.push(['font', v]); },
   };
 }
 
@@ -182,6 +187,112 @@ ok('at least one draw call on average across ALL demos at t=0.05', () => {
     if (anyDraw(ctx)) drew++;
   }
   assert.ok(drew >= list.length - 2, `most demos visibly draw (drew ${drew}/${list.length})`);
+});
+
+console.log('Theater overlay object (task 7.2) — pure logic, no DOM');
+// Reset to a known state so these tests are independent of ordering.
+Theater.close();
+ok('list length matches theaterList().length', () => {
+  assert.equal(Theater.count, theaterList().length);
+});
+ok('open() sets active=true and resets index/clock to 0', () => {
+  // Start from a non-zero state to prove open() actually resets.
+  Theater.open(); Theater.step(1); Theater.update(DT * 5);
+  Theater.open();
+  assert.equal(Theater.active, true);
+  assert.equal(Theater.index, 0);
+  assert.equal(Theater.clock, 0);
+});
+ok('step(+1) advances the index', () => {
+  Theater.open();
+  const before = Theater.index;
+  Theater.step(1);
+  assert.equal(Theater.index, (before + 1) % Theater.count);
+});
+ok('step(-1) goes back one', () => {
+  Theater.open(); Theater.step(1); Theater.step(1);
+  const before = Theater.index;
+  Theater.step(-1);
+  assert.equal(Theater.index, (before - 1 + Theater.count) % Theater.count);
+});
+ok('step wraps forward at the last entry to 0', () => {
+  Theater.open();
+  Theater.index = Theater.count - 1;
+  Theater.step(1);
+  assert.equal(Theater.index, 0);
+});
+ok('step wraps backward at index 0 to the last entry', () => {
+  Theater.open();
+  Theater.index = 0;
+  Theater.step(-1);
+  assert.equal(Theater.index, Theater.count - 1);
+});
+ok('step() resets the clock to 0', () => {
+  Theater.open();
+  Theater.update(DT * 10);
+  assert.ok(Theater.clock > 0, 'clock advanced before step');
+  Theater.step(1);
+  assert.equal(Theater.clock, 0);
+});
+ok('update(dt) advances the clock only when active', () => {
+  Theater.open();
+  Theater.clock = 0;
+  Theater.update(DT);
+  assert.ok(Math.abs(Theater.clock - DT) < 1e-9, `clock ≈ dt (got ${Theater.clock})`);
+  Theater.close();
+  const frozen = Theater.clock;
+  Theater.update(DT * 3);
+  assert.equal(Theater.clock, frozen, 'clock does not advance while inactive');
+});
+ok('close() sets active=false', () => {
+  Theater.open();
+  assert.equal(Theater.active, true);
+  Theater.close();
+  assert.equal(Theater.active, false);
+});
+ok('open()/close() clear engine instances so demos do not leak into gameplay', () => {
+  // Fire a real effect into the shared engine, then prove that opening AND
+  // closing the theater both resetEffects() — so no demo/gameplay instance
+  // survives across the boundary (a lingering camera-shake/vignette would
+  // otherwise show for one frame after the overlay lifts).
+  fireManual({ type: 'vignette', params: { strength: 1, viewW: 320, viewH: 180 } });
+  assert.ok(activeCount() >= 1, 'a live instance exists before close');
+  Theater.close(); // must drop it
+  assert.equal(activeCount(), 0, 'close() cleared the engine');
+  fireManual({ type: 'screen-flash', params: { strength: 1, viewW: 320, viewH: 180 } });
+  assert.ok(activeCount() >= 1, 'a live instance exists before open');
+  Theater.open(); // must drop it
+  assert.equal(activeCount(), 0, 'open() cleared the engine');
+  Theater.close();
+});
+ok('draw is a no-op when inactive (no calls recorded)', () => {
+  Theater.close();
+  const ctx = makeCtx();
+  Theater.draw(ctx, 960, 540);
+  assert.equal(ctx.calls.length, 0, 'no draw calls when inactive');
+});
+ok('draw when active fills the viewport black and runs the demo', () => {
+  Theater.open(); // first effect = particle-burst
+  const ctx = makeCtx();
+  Theater.draw(ctx, 960, 540);
+  // Black full-viewport fillRect present.
+  const blackFill = ctx.calls.some(c => c[0] === 'fillRect' && c[1] === 0 && c[2] === 0 && c[3] === 960 && c[4] === 540);
+  assert.ok(blackFill, 'black fillRect covers the full 960x540 viewport');
+  // The current demo was invoked (particle-burst paints pool particles).
+  assert.ok(anyDraw(ctx), 'active draw produced demo draw calls');
+  // Balanced save/restore.
+  const saves = ctx.calls.filter(c => c[0] === 'save').length;
+  const restores = ctx.calls.filter(c => c[0] === 'restore').length;
+  assert.equal(saves, restores, 'save/restore balanced');
+  Theater.close();
+});
+ok('current() returns the selected entry with type/name/demo', () => {
+  Theater.open();
+  const cur = Theater.current();
+  assert.equal(cur.type, list[0].type);
+  assert.equal(typeof cur.name, 'string');
+  assert.equal(typeof cur.demo, 'function');
+  Theater.close();
 });
 
 console.log(`${passed} passed`);
