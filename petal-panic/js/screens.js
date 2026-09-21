@@ -658,39 +658,40 @@ export const Pause = {
       });
     }
 
-    // Dynamic button hints (from input API — layout-aware, simple mode).
-    // Three lines: Navigate / Confirm / Close — keys normal, actions bold.
+    // Dynamic button hints (single line, keys normal / actions bold).
     const navLabel = navLabelString('up', { simple: true }) + '/' + navLabelString('down', { simple: true });
     const confirmLabel = navLabelString('confirm');
     const backLabel = navLabelString('back');
-    const hintY = startY + options.length * gap + 16;
-    const lineH = 20;
-    const entries = [
-      { key: `[${navLabel}]`, action: 'Navigate' },
-      { key: `[${confirmLabel}]`, action: 'Confirm' },
-      { key: `[${backLabel}]`, action: 'Close' },
-    ];
+    const hintY = startY + options.length * gap + 20;
+    const hintText = `[${navLabel}] Navigate   [${confirmLabel}] Confirm   [${backLabel}] Close`;
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const keyFont = `12px ${FONT_UI}`;
-    const actFont = `bold 12px ${FONT_UI}`;
-    const keyColor = '#666';
-    const actColor = '#999';
-    for (let i = 0; i < entries.length; i++) {
-      const { key, action } = entries[i];
-      const y = hintY + i * lineH;
+    const keyFont = `13px ${FONT_UI}`;
+    const actFont = `bold 13px ${FONT_UI}`;
+    const keyColor = '#777';
+    const actColor = '#aaa';
+    const parts = hintText.split('   ');
+    let totalW = 0;
+    const measured = parts.map((part, idx) => {
+      const bracketEnd = part.indexOf(']') + 1;
+      const keyPart = part.slice(0, bracketEnd + 1);
+      const actPart = part.slice(bracketEnd + 1);
       ctx.font = keyFont;
-      const wKey = ctx.measureText(key + ' ').width;
+      const wKey = ctx.measureText(keyPart).width;
       ctx.font = actFont;
-      const wAct = ctx.measureText(action).width;
-      const total = wKey + wAct;
-      let hx = VIEW_W / 2 - total / 2;
-      ctx.textAlign = 'left';
+      const wAct = ctx.measureText(actPart).width;
+      totalW += wKey + wAct + (idx < parts.length - 1 ? 12 : 0);
+      return { keyPart, actPart, wKey, wAct };
+    });
+    let hx = VIEW_W / 2 - totalW / 2;
+    ctx.textAlign = 'left';
+    for (let i = 0; i < measured.length; i++) {
+      const m = measured[i];
       ctx.font = keyFont; ctx.fillStyle = keyColor;
-      ctx.fillText(key + ' ', hx, y); hx += wKey;
+      ctx.fillText(m.keyPart, hx, hintY); hx += m.wKey;
       ctx.font = actFont; ctx.fillStyle = actColor;
-      ctx.fillText(action, hx, y);
+      ctx.fillText(m.actPart, hx, hintY); hx += m.wAct + 12;
     }
     ctx.restore();
     ctx.restore();
