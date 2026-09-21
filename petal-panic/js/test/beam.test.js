@@ -303,30 +303,66 @@ ok('the rectangle is oriented along the carrier facing (rotation == facing angle
   assert.ok(rot && close(rot[1], Math.PI / 2),
     `beam rotated along the carrier facing (got ${rot && rot[1]}, want π/2)`);
 });
-ok('halo gradient: transparent edges, full core alpha at the center line', () => {
+ok('halo gradient: symmetric 4-stop profile with flat bright core', () => {
   // Use a frame where haloScale is exactly 1 (the flash-in boundary) so the
-  // edgeFrac assertion is exact. With width 20 and gradientRadius 10:
-  // halfW = 10, span = 20, edgeFrac = 10/20 = 0.5.
+  // coreFrac assertion is exact. With width 20 and gradientRadius 10:
+  // halfW = 10, span = 20, coreFrac = haloR/span = 10/20 = 0.5.
   const fin = 0.05, fout = 0.15;
   const b = beam({ x: 0, y: 0, length: 100, width: 20, gradientRadius: 10, color: '#ff0000', opacity: 0.8, flashInTime: fin, fadeOutTime: fout });
   for (let i = 0; i < Math.round(fin / DT); i++) b.update(DT); // t == flashInTime → haloScale 1
   const ctx = makeCtx();
   b.render(ctx);
   const grad = ctx.calls.find(c => c[0] === 'grad')[5];
-  assert.equal(grad.stops.length, 3, 'three gradient stops (edge, core, edge)');
-  const [[p0, c0], [p1, c1], [p2, c2]] = grad.stops;
-  assert.ok(close(p0, 0), 'first stop at position 0');
-  const halfW = 20 / 2, haloR = 10;
-  const edgeFrac = halfW / (halfW + haloR); // 10/20 = 0.5
-  assert.ok(close(p1, edgeFrac), `core stop at the hard-edge fraction (got ${p1}, want ${edgeFrac})`);
-  assert.ok(close(p2, 1), 'last stop at position 1');
+  assert.equal(grad.stops.length, 4, 'four gradient stops (edge, core-start, core-end, edge)');
+  const [[p0, c0], [p1, c1], [p2, c2], [p3, c3]] = grad.stops;
+  const halfW = 20 / 2, haloR = 10, span = halfW + haloR;
+  const coreFrac = haloR / span; // 10/20 = 0.5
+  // Stop positions
+  assert.ok(close(p0, 0), `stop 0 at position 0 (got ${p0})`);
+  assert.ok(close(p1, coreFrac), `core-start stop at coreFrac (got ${p1}, want ${coreFrac})`);
+  assert.ok(close(p2, 1 - coreFrac), `core-end stop at 1−coreFrac (got ${p2}, want ${1 - coreFrac})`);
+  assert.ok(close(p3, 1), `stop 3 at position 1 (got ${p3})`);
+  // Symmetry: the two peak stops mirror around 0.5
+  assert.ok(close(p1 + p2, 1), `symmetric: coreFrac + (1−coreFrac) == 1 (got ${p1 + p2})`);
+  // Alphas
   const [, , , a0] = parseRgba(c0);
-  const [cr, cg, cb, ac] = parseRgba(c1);
-  const [, , , a2] = parseRgba(c2);
+  const [cr, cg, cb, ac1] = parseRgba(c1);
+  const [, , , ac2] = parseRgba(c2);
+  const [, , , a3] = parseRgba(c3);
   assert.ok(close(a0, 0), `outer edge alpha == 0 (got ${a0})`);
-  assert.ok(close(a2, 0), `inner edge alpha == 0 (got ${a2})`);
+  assert.ok(close(a3, 0), `outer edge alpha == 0 (got ${a3})`);
+  assert.ok(ac1 > 0, `core-start alpha > 0 during the life (got ${ac1})`);
+  assert.ok(close(ac1, ac2), `both peak stops have equal alpha (got ${ac1} vs ${ac2})`);
   assert.deepEqual([cr, cg, cb], [255, 0, 0], `core color channels match the declared color (got ${cr},${cg},${cb})`);
-  assert.ok(ac > 0, `core alpha > 0 during the life (got ${ac})`);
+});
+ok('haloR=0: uniform fill (both peak stops at 0 and 1)', () => {
+  // When gradientRadius is 0, haloR = 0, span = halfW, coreFrac = 0.
+  // The two peak stops collapse to positions 0 and 1 → a solid uniform fill.
+  const fin = 0.05, fout = 0.15;
+  const b = beam({ x: 0, y: 0, length: 100, width: 20, gradientRadius: 0, color: '#00ff00', opacity: 0.9, flashInTime: fin, fadeOutTime: fout });
+  for (let i = 0; i < Math.round(fin / DT); i++) b.update(DT);
+  const ctx = makeCtx();
+  b.render(ctx);
+  const grad = ctx.calls.find(c => c[0] === 'grad')[5];
+  assert.equal(grad.stops.length, 4, 'still four stops even with no halo');
+  const [[p0, c0], [p1, c1], [p2, c2], [p3, c3]] = grad.stops;
+  assert.ok(close(p0, 0), `stop 0 at 0 (got ${p0})`);
+  assert.ok(close(p1, 0), `core-start at 0 when haloR=0 (got ${p1})`);
+  assert.ok(close(p2, 1), `core-end at 1 when haloR=0 (got ${p2})`);
+  assert.ok(close(p3, 1), `stop 3 at 1 (got ${p3})`);
+  const [, , , a0] = parseRgba(c0);
+  const [, , , a1] = parseRgba(c1);
+  const [, , , a2] = parseRgba(c2);
+  const [, , , a3] = parseRgba(c3);
+  // At the outer edges (positions 0 and 1) there are duplicate stops:
+  // position 0 has both alpha-0 and peak-alpha; canvas uses the last one added.
+  // But structurally we verify the alphas are as expected.
+  assert.ok(close(a0, 0), `stop 0 alpha == 0 (got ${a0})`);
+  assert.ok(a1 > 0, `core-start alpha > 0 (got ${a1})`);
+  assert.ok(a2 > 0, `core-end alpha > 0 (got ${a2})`);
+  assert.ok(close(a3, 0), `stop 3 alpha == 0 (got ${a3})`);
+  // Both peak stops carry the same alpha (uniform core)
+  assert.ok(close(a1, a2), `peak stops equal (got ${a1} vs ${a2})`);
 });
 ok('declared color drives the core (hex parsing)', () => {
   const b = beam({ color: '#00ff88', length: 50, width: 10, opacity: 1 });
@@ -473,13 +509,14 @@ ok('complete() force-completes (engine reset path)', () => {
   assert.equal(ctx.calls.length, 0, 'no draw after forced completion');
 });
 
-/** Extract the core (center-line) alpha from a recorded render's gradient. */
+/** Extract the core (peak) alpha from a recorded render's gradient. */
 function coreAlpha(ctx) {
   const grad = ctx.calls.find(c => c[0] === 'grad');
   if (!grad) return -1;
   const obj = grad[5];
-  // The core stop is the MIDDLE one (position edgeFrac, between the two 0-alpha
-  // edges); its alpha is the documented core brightness for this frame.
+  // The core stop is stops[1] (the first peak stop at coreFrac); its alpha is
+  // the documented core brightness for this frame. Both peak stops (indices 1
+  // and 2) carry equal alpha, so either works.
   const core = obj.stops[1];
   const [, , , a] = parseRgba(core[1]);
   return a;

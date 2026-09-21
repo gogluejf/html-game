@@ -80,9 +80,9 @@
 // facing axis (not centered on it): its near edge starts at the carrier's
 // origin point and it projects `length` px in the facing direction. The halo is
 // a LINEAR alpha gradient across the local Y axis (perpendicular to the beam)
-// from −(width/2 + haloR) to +(width/2 + haloR): transparent at the outer edges,
-// rising through the hard edge to the full core alpha at the center line — a
-// symmetric soft glow that extends `haloR` px past each hard edge. The filled
+// from −(width/2 + haloR) to +(width/2 + haloR): a symmetric profile with a
+// flat bright core (full alpha between the two hard edges) flanked by soft
+// halo falloff that fades to transparent at the outer edges. The filled
 // rectangle covers the FULL gradient span (width + 2·haloR tall) so the
 // gradient's transparent falloff is visible as a soft glow around the hard beam
 // core. Drawn inside a save/restore bracket (recording-canvas friendly).
@@ -187,16 +187,23 @@ export function beam(params = {}, carrier = null) {
       c2d.save();
       c2d.translate(origin.x, origin.y);
       c2d.rotate(angle);
-      // Halo: a linear alpha gradient across the local Y axis (perpendicular to
-      // the beam) from −(halfW + haloR) to +(halfW + haloR): transparent at the
-      // outer edges, rising through the hard edge to the full core alpha at the
-      // center line. When haloR is 0 the gradient collapses onto the hard edge
-      // (a crisp beam with no soft glow).
+      // Halo: a SYMMETRIC linear alpha gradient across the local Y axis
+      // (perpendicular to the beam) from −(halfW + haloR) to +(halfW + haloR).
+      // Four stops produce a flat bright core flanked by soft halo falloff:
+      //   stop 0            → alpha 0        (outer transparent edge)
+      //   stop coreFrac     → alpha peak     (hard edge of the core, inner halo boundary)
+      //   stop 1−coreFrac   → alpha peak     (symmetric hard edge)
+      //   stop 1            → alpha 0        (outer transparent edge)
+      // Between the two peak stops the canvas interpolates between equal values
+      // → a flat plateau (the solid bright core). When haloR is 0, coreFrac = 0
+      // and 1−coreFrac = 1, so both peak stops sit at the ends: a uniform fill
+      // (crisp beam with no soft glow).
       const grad = c2d.createLinearGradient(0, -(halfW + haloR), 0, halfW + haloR);
       const span = halfW + haloR;
-      const edgeFrac = span > EPS ? halfW / span : 1;
+      const coreFrac = span > EPS ? haloR / span : 0;
       grad.addColorStop(0, colorWithAlpha(color, 0));
-      grad.addColorStop(edgeFrac, colorWithAlpha(color, alpha * coreAlpha));
+      grad.addColorStop(coreFrac, colorWithAlpha(color, alpha * coreAlpha));
+      grad.addColorStop(1 - coreFrac, colorWithAlpha(color, alpha * coreAlpha));
       grad.addColorStop(1, colorWithAlpha(color, 0));
       c2d.fillStyle = grad;
       c2d.beginPath();

@@ -313,7 +313,7 @@
     },
     "6.3": {
       "number": "6.3",
-      "status": "in_progress",
+      "status": "done",
       "name": "Squash and Stretch",
       "milestone": "Sprite-State and Beam Effects",
       "milestone_number": "6",
@@ -328,14 +328,22 @@
     },
     "6.4": {
       "number": "6.4",
-      "status": "not_started",
+      "status": "done",
       "name": "Aura / Glow",
       "milestone": "Sprite-State and Beam Effects",
-      "milestone_number": "6"
+      "milestone_number": "6",
+      "summary": {
+        "failures": "None",
+        "done": "Created petal-panic/js/effects/auraGlow.js (Aura/Glow, effects.md \u00a722): a world-space STATE/DRAW effect that paints one filled circle behind the carrier sprite with a canvas radial gradient (color at pulsing alpha at center \u2192 transparent at edge). Pulsing radius r(t)=radius\u00b7(1+A/2\u00b7cos(2\u03c0\u00b7pulseRate\u00b7t)) and alpha(t)=opacity\u00b7intensity\u00b7(0.5+0.5\u00b7cos(2\u03c0\u00b7pulseRate\u00b7t)), both pure functions of elapsed time (no Math.random); pulseRate 0 disables the pulse (steady aura). Carrier origin() wins over params.x/y; offset shifts the drawn center; origin captured once at fire time (fixed-position contract, no followTarget). Lifetime == duration exactly with EPS=1e-9 done-detection. Registered as 'aura-glow' in registry.js (one import + one registerEffect line, no engine change). Added deterministic pure-unit test petal-panic/js/test/auraGlow.test.js (27 assertions) with a recording-canvas stub that captures createRadialGradient/addColorStop so the gradient draw is asserted.",
+        "tradeoffs": "Radius pulse uses cos (starts at +A/2 above base at t=0) while alpha uses 0.5+0.5\u00b7cos (starts at full peak) \u2014 documented explicitly in the header rather than forcing both to share one waveform; keeps the documented 't=0 starts at FULL peak opacity' contract for the alpha while giving the radius a symmetric \u00b1A/2 swing around the declared base. Color is parsed from hex/rgb() into rgba(r,g,b,a) stops because canvas gradient stops need explicit alpha per stop; unparseable colors fall back to black channels (documented).",
+        "confidence": "high",
+        "decisions": "Chose a DRAW effect (paints its own geometry via createRadialGradient) rather than an M6 multiplier pattern \u2014 \u00a722 is a glow BEHIND the sprite, not a sprite-state modifier, so it needs no renderer-side consumption hook. Fixed-origin (no followTarget) matches groundMarker's contract; a continuously-following aura would be re-fired each frame by a continuous declaration. save/restore brackets the geometry draw only (gradient object created before the bracket since it carries no canvas state). intensity clamped [0,2] mirroring squashStretch's convention (0 = invisible degenerate config, >1 = flaring overshoot).",
+        "lessons_learned": "The plan's listed verify command (effectCatalog.test.js) does not exist yet \u2014 it is an M7 deliverable; verified via the new per-effect unit test + run-all.mjs instead. The ok() helper increments its count even on caught failure, so trust the \u2717 lines + process.exitCode, not the trailing 'N passed'. First implementation of the radius pulse used the same 0.5+0.5\u00b7cos waveform as the alpha, which made pulseRate=0 yield radius\u00b71.25 instead of the documented constant base radius \u2014 fixed by switching the radius to a plain cos term with an explicit pulseRate>EPS guard, matching the documented 'pulseRate 0 disables the pulse' contract."
+      }
     },
     "6.5": {
       "number": "6.5",
-      "status": "not_started",
+      "status": "done",
       "name": "Beam",
       "milestone": "Sprite-State and Beam Effects",
       "milestone_number": "6"
