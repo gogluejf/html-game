@@ -37,6 +37,7 @@ import { groundWave } from './groundWave.js';
 import { shockwave } from './shockwave.js';
 import { telegraphCircle } from './telegraphCircle.js';
 import { groundMarker } from './groundMarker.js';
+import { targetReticle } from './targetReticle.js';
 
 // --- Migrated effects (task 2.1) ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -67,3 +68,4 @@ registerEffect('ground-wave', groundWave);
 registerEffect('shockwave', shockwave);
 registerEffect('telegraph-circle', telegraphCircle);
 registerEffect('ground-target-marker', groundMarker);
+registerEffect('target-reticle', targetReticle);

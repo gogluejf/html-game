@@ -307,6 +307,16 @@ Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Commit
 
 **Resolution:** ACCEPT (minor fix). render() now reads the stored `this.radius` instead of recomputing the sinusoid (formula lives in one place); `this.radius` initialized to base radius at construction so a pre-update render still draws correct t=0 geometry. No behavior change. Re-verify: groundMarker 22/22 ×8 zero flakes; run-all 51/51 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
 
+## Task 5.7 — Target Reticle
+
+**Review A (round 1):** PASS (4 minor, all cosmetic) — stale `tickLength` comment referencing a nonexistent param (real constant TICK_LENGTH; same slip propagated from groundMarker.js); facingDir recomputed every render even when offset is 0 (negligible); double origin re-resolution per frame in follow mode (intentional, matches telegraphCircle); one redundant loose tick-rotation test.
+
+**Review B (round 1):** FAIL (1 real defect + 3 conforming notes)
+- major: fixed mode (followMode:false) with nonzero offset drifts when the carrier rotates — render() recomputed the offset direction from the carrier's LIVE facing every frame, so fixed mode did not hold position
+- (conforming) follow behavior, declarative attachment incl. non-entity carriers, params-driven standalone path all OK
+
+**Resolution:** ACCEPT (fix). Captured the carrier's facing ONCE at construction (`frozenFacing`) alongside the origin; fixed mode now uses the frozen facing for the offset in both update() and render(), while followMode:true still re-resolves origin AND facing live each frame (byte-for-byte unchanged). Header documents freeze-vs-track semantics. Added two deterministic tests (fixed-mode no-drift when facing changes after fire; follow-mode re-aims along new live facing). Also fixed the stale `tickLength` → `TICK_LENGTH` comment in both targetReticle.js and groundMarker.js (comment-only). Re-review: B final PASS. Re-verify: targetReticle 32/32 ×10 zero flakes; groundMarker 22/22 (comment change broke nothing); run-all 52/52 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.

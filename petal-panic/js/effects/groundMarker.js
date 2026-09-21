@@ -14,7 +14,7 @@
 // time:
 //   - outer ring radius = `radius` · pulse(t)  (the "pulsing" part)
 //   - inner ring radius = `radius` · INNER_RING_FRACTION · pulse(t)
-//   - tick marks sit just outside the outer ring, length `tickLength`
+//   - tick marks sit just outside the outer ring, length TICK_LENGTH
 // where pulse(t) = 1 + PULSE_AMPLITUDE·sin(2π·pulseRate·t) oscillates between
 // 1 − PULSE_AMPLITUDE and 1 + PULSE_AMPLITUDE around the declared radius.
 // The outer-ring radius is computed once per frame in update() and stored on
@@ -95,8 +95,8 @@
 // Drawn inside a save/restore bracket (recording-canvas friendly): one outer
 // stroked circle (lineWidth MARKER_STROKE_WIDTH), one inner stroked circle
 // (lineWidth MARKER_STROKE_WIDTH / 2), then four radial tick lines of length
-// `tickLength` at angles angle + k·π/2 (k = 0..3), starting at
-// rOuter + TICK_GAP and ending at rOuter + TICK_GAP + tickLength. Degenerate
+// TICK_LENGTH at angles angle + k·π/2 (k = 0..3), starting at
+// rOuter + TICK_GAP and ending at rOuter + TICK_GAP + TICK_LENGTH. Degenerate
 // cases (radius ≤ 0 or opacity ≤ 0) draw nothing but the instance still runs
 // its timer and completes at `duration`.
 //

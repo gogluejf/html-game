@@ -238,7 +238,7 @@
     },
     "5.6": {
       "number": "5.6",
-      "status": "in_progress",
+      "status": "done",
       "name": "Ground Target Marker",
       "milestone": "Motion, Telegraph and Marker Effects",
       "milestone_number": "5",
@@ -253,10 +253,18 @@
     },
     "5.7": {
       "number": "5.7",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Target Reticle",
       "milestone": "Motion, Telegraph and Marker Effects",
-      "milestone_number": "5"
+      "milestone_number": "5",
+      "summary": {
+        "confidence": "high",
+        "tradeoffs": "Offset direction uses carrier facing() when available else +x \u2014 documented in header; no initial-rotation param (ticks always start at angle 0) since a lock-on reticle spinning from cardinal is the expected read.",
+        "lessons_learned": "Plan's verify command (effectCatalog.test.js) does not exist yet \u2014 it is an M7 deliverable; verified via run-all.mjs instead (52/52 pass) plus 10\u00d7 re-run of the new test with zero flakes.",
+        "decisions": "Mirrored groundMarker's ring+tick geometry and telegraphCircle's followTarget re-resolution pattern (renamed followMode per plan snippet). Radius/angle derived purely from elapsed time (no integration) so fixed-dt drift never leaks into geometry. No engine changes; only index.js imported by the effect.",
+        "done": "Created petal-panic/js/effects/targetReticle.js (registered as 'target-reticle'): a targeting reticle with two concentric pulsing rings + four rotating bracket ticks, carrier-origin resolution (carrier origin() wins over params.x/y), followMode for tracking moving carriers vs fixed fire-time origin, radial offset along carrier facing(), constant opacity, exact-duration lifetime with EPS done-detection. Added one import + one registerEffect line to registry.js. Wrote petal-panic/js/test/targetReticle.test.js (30 deterministic assertions).",
+        "failures": "None"
+      }
     },
     "5.8": {
       "number": "5.8",
