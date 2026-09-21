@@ -27,6 +27,7 @@ import { screenOverlay } from './screenOverlay.js';
 import { spriteFlash } from './spriteFlash.js';
 import { cameraShake } from './cameraShake.js';
 import { spriteShakeStandalone } from './spriteShakeStandalone.js';
+import { impactStar } from './impactStar.js';
 
 // --- Migrated effects (task 2.1) ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -43,3 +44,4 @@ registerEffect('screen-overlay', screenOverlay);
 registerEffect('sprite-flash', spriteFlash);
 registerEffect('camera-shake', cameraShake);
 registerEffect('sprite-shake-standalone', spriteShakeStandalone);
+registerEffect('impact-star', impactStar);

@@ -165,6 +165,16 @@ Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Commit
 
 **Resolution:** ACCEPT (fix). Clamp removed — any positive frequency works verbatim (f===0 or 'perFrame' → per-frame mode; rollPeriod = 1/f otherwise); new test proves 0.5 Hz holds across frames and re-rolls at the 2s boundary (would have failed under the old ~60-frame period); new simultaneous-run test proves both types independently correct on one carrier (standalone from its own envelope, hitFlash-driven within ±SHAKE_AMT) with independence in both directions (completing standalone doesn't touch hitFlash offset; clearing hitFlash doesn't stop standalone); redundant magic-number assertions cleaned up. Re-verify: 41/41 green (spriteShakeStandalone 16/16 ×3 deterministic; barrel.solid/contextualAim pre-existing flakes re-run clean). Committed.
 
+## Task 3.5 — Impact Star / Hit Pop
+
+**Review A:** PASS — No findings. (§16 thin spec implemented exactly; single registration; named constants; real engine-path tests; 42/42.)
+
+**Review B:** FAIL (1 major, 1 minor)
+- major: effects.md:383 — implemented defaults, position fallback/tracking, style values, curve formulas/fallback, fade behavior, exact lifetime semantics all undocumented (executor-filled gaps left ambiguous)
+- minor: impactStar.test.js:89 — tests assert private rendering details (exact colors, vertex counts, path ops) rather than the documented contract
+
+**Resolution:** ACCEPT (fix). §16 gained a compact "Implementation notes" block documenting param defaults (size 12, duration 0.1, opacity 1, rotation 0, style 'star', scaleCurve 'linear'), style values + colors (star = filled white #ffffff; burst = 8 yellow #ffd93b spokes; unknown→star), curve formulas (linear 1−p, easeOut (1−p)², easeIn 1−p²; unknown→linear), position behavior (live carrier.origin() at draw time; params.x/y standalone fallback), alpha = opacity·curve(progress), lifetime == duration — density matched to §12/§13/§15. Tests reframed from implementation-detail pins to documented-contract checks via a shapeSig() helper (closed-filled vs open-stroked signatures, doc-cited colors, relative-extent scaling); star-vs-burst distinctness test added; coverage preserved/increased (19→20). Re-verify: 42/42 green (impactStar 20/20 ×5 deterministic). Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.

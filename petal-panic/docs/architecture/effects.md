@@ -388,6 +388,32 @@ Parameters may include:
 - Style
 - Scale curve
 
+Implementation notes (standalone type `impact-star`, js/effects/impactStar.js):
+
+This catalog entry is a **DRAW effect** that owns its own timer and pops at the exact impact point. `render()` draws a scaling star/burst centered on the impact origin; the pop starts at full size and pops OUT — it scales down along the scale curve while fading to zero opacity, then completes exactly when the declared `duration` elapses.
+
+Parameter semantics:
+- `size` — star radius in px at t=0 (default 12). Zero or negative → no draw.
+- `duration` — TOTAL lifetime in seconds (default 0.1, "very short"). The effect is done exactly when `duration` elapses; total lifetime equals `duration`.
+- `rotation` — base rotation in radians (default 0).
+- `opacity` — peak opacity, clamped to [0,1] (default 1). Zero → no draw.
+- `style` — `'star'` (default) or `'burst'`; unknown values fall back to `'star'`.
+- `scaleCurve` — named curve applied to both scale and alpha over the lifetime: `'linear'` (default), `'easeOut'`, `'easeIn'`; unknown names fall back to `'linear'`.
+- `x` / `y` — impact point in world space (default {0,0}); standalone/fallback position.
+
+Position: prefers the live carrier's `origin()` at DRAW time (tracks a moving carrier); `params.x/y` are the standalone/fallback position used when there is no carrier exposing `origin()`. With neither a carrier nor params the pop renders at the origin (center).
+
+Style rendering:
+- `'star'` — filled white (`#ffffff`) 4-point star path.
+- `'burst'` — 8 yellow (`#ffd93b`) radial spokes, stroked (not filled).
+
+Scale/alpha curves (progress p in [0,1] → remaining strength in [0,1]):
+- `linear`: `1 - p`
+- `easeOut`: `(1 - p)^2`
+- `easeIn`: `1 - p^2`
+
+Fade/alpha: `globalAlpha = opacity · curve(progress)` where progress = elapsed/duration, so alpha tracks the same curve as scale and reaches 0 exactly at the end of the lifetime.
+
 ---
 
 ## 17. Fade Out

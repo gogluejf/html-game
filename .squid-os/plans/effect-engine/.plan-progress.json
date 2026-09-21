@@ -132,7 +132,7 @@
     },
     "3.4": {
       "number": "3.4",
-      "status": "in_progress",
+      "status": "done",
       "name": "Sprite Shake (standalone)",
       "milestone": "Screen-Space and Overlay Effects",
       "milestone_number": "3",
@@ -147,10 +147,18 @@
     },
     "3.5": {
       "number": "3.5",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Impact Star / Hit Pop",
       "milestone": "Screen-Space and Overlay Effects",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "lessons_learned": "Baseline run-all was already flaky at barrel.solid (~25% pre-existing); re-run before judging. impactStar.test.js alone is fully deterministic (20/20 x5). Refactoring implementation-detail assertions into contract assertions can ADD coverage (new explicit shape-distinction test) while removing brittle vertex-count pins.",
+        "failures": "None. effectCatalog.test.js (the task's verify command) does not exist yet \u2014 it is an M7 deliverable \u2014 so verification fell back to the project-wide runner: 41/42 passed; the single failure was barrel.solid.test.js, a known pre-existing flake that passes on re-run.",
+        "decisions": "Doc is source of truth: filled effects.md \u00a716 with a compact Parameters+Behavior block (defaults, style values+colors, curve formulas, position fallback/tracking, alpha formula) matching the density of \u00a712/\u00a713/\u00a715. Tests reframed from private rendering details to documented contract: added shapeSig() helper capturing only path/terminal ops (beginPath/closePath/fill/stroke) so star vs burst are distinguished by shape (closed-filled vs open-stroked) without pinning vertex counts; kept color asserts but framed as doc-conformance with \u00a716 citations; scale check now compares relative extent rather than exact coords.",
+        "confidence": "high",
+        "tradeoffs": "scaleCurve is a fixed set of named curves (linear/easeOut/easeIn) rather than an arbitrary function param \u2014 keeps params serializable/config-friendly; unknown names fall back to linear. Impact position prefers live carrier.origin() at draw time over params.x/y so a moving carrier is tracked; params are the standalone fallback. Default duration 0.1s chosen from the doc's 'very short' wording since effects.md lists no concrete value.",
+        "done": "Impact Star / Hit Pop implemented as a registered type: new file petal-panic/js/effects/impactStar.js (4-point star or radial burst at the exact impact point, scaling down and fading along a named scaleCurve over the declared duration), one import + one registerEffect('impact-star') in registry.js, and a 19-test suite js/test/impactStar.test.js covering lifetime (done exactly at duration with epsilon done-detection), rendering (save/restore bracketing, translate to impact origin, rotation, alpha = opacity * curve(p) for linear/easeOut/easeIn, unknown curve falls back to linear, opacity clamping, burst vs star paths, draw-time carrier.origin() tracking with params fallback), registration through the real fire()/fireManual() path on hitLanded/collision, end-to-end engine lifecycle, and a standalone theater demo driven only by params with null carrier."
+      }
     },
     "4.1": {
       "number": "4.1",
