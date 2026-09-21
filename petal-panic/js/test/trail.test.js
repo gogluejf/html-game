@@ -501,9 +501,17 @@ ok('end-to-end: fire → updateEffects → drawEffects draws; persists while mov
   }
   assert.ok(drew >= 1, 'drew the ribbon while active');
   assert.equal(inst.done, false, 'still alive at the lifetime boundary because the carrier kept moving (B2)');
-  // Now stop the carrier: with no fresh point recorded, it completes at the
-  // next lifetime-boundary check and is pruned from the active set.
-  updateEffects(DT);
+  // Now stop the carrier. Under B2 a stopped carrier terminates at
+  // `lifetime + recencyWindow`, NOT at `lifetime`: its last point (recorded at
+  // frame 12, elapsed == lifetime) must first age OUT of the recency window
+  // before the instance may complete. Here recencyWindow =
+  // min(density / MIN_SPEED, lifetime) = min(5/10, 0.2) = 0.2s == 12 frames, so
+  // completion lands at elapsed ≈ lifetime + window == 0.4s — i.e. ~12 frames
+  // AFTER the stop. We run 13 stop-phase frames (ceil(window/dt) + 1) to
+  // comfortably exceed that boundary; 4 frames (the old value) stops short of
+  // the window aging out and would wrongly expect early termination.
+  const STOP_FRAMES = Math.ceil((Math.min(5 / 10, 0.2)) / DT) + 1; // 13
+  for (let i = 0; i < STOP_FRAMES; i++) updateEffects(DT);
   assert.equal(inst.done, true, 'completed once the carrier stopped driving fresh points');
   const ctxAfter = makeCtx();
   drawEffects(ctxAfter, {});

@@ -24,21 +24,55 @@
 // Continuous persistence vs. discrete termination (B2): a continuously-moving
 // trail must persist while the carrier keeps moving rather than hard-stopping
 // at `lifetime` (which would periodically wipe the ribbon). Mechanism: the
-// instance completes at `elapsed >= lifetime` ONLY IF no FRESH POINT was
-// recorded during that update — i.e. the carrier is not actively extending the
-// ribbon right now. A live carrier that keeps moving records a new point every
-// frame, so the "fresh" guard stays true and the instance NEVER force-completes
-// on the elapsed clock; it simply keeps going, letting old points fade out via
-// the age-based alpha and get evicted once fully faded. It completes only when:
+// instance completes at `elapsed >= lifetime` ONLY IF NO FRESH POINT was
+// recorded WITHIN THE RECENCY WINDOW — i.e. the carrier has not actually moved
+// recently. We track `lastPointT` (the elapsed time of the most recently
+// recorded point) and check whether any point was recorded within the window
+// since then.
+//
+// Why a recency window instead of "fresh THIS frame": trail records a point
+// only when the carrier moves far enough past the recording gate, so a
+// SLOW-but-moving carrier does NOT record a point every frame — its samples are
+// spaced up to ~`density` px apart in distance, which at low speed can span
+// several frames. Checking "fresh this frame" wrongly completed such a carrier
+// on the exact lifetime-boundary frame that fell BETWEEN its point-samples.
+// Looking back over the recency window fixes this: a genuinely-moving carrier
+// keeps recording points within the window, so the "recently active" guard
+// stays true and the instance NEVER force-completes on the elapsed clock; it
+// simply keeps going, letting old points fade out via the age-based alpha and
+// get evicted once fully faded.
+//
+// Recording trigger: update() adds a point whenever the carrier's origin is at
+// least `minMove = max(density, MIN_SPEED·dt)` px from the last recorded point.
+// A carrier moving at speed v ≥ MIN_SPEED therefore accumulates ≥ minMove px
+// of travel every ⌈minMove / v⌉ frames and MUST record a new point within that
+// many frames (the distance from the last point grows monotonically by v·dt per
+// frame until it crosses the gate). The maximum expected gap between recordings
+// for a still-moving carrier is thus ≤ density/MIN_SPEED seconds (at the slowest
+// speed we treat as "moving", with default density 3 and MIN_SPEED 10 → 0.3 s,
+// i.e. up to 18 frames at dt=1/60).
+//
+// Recency window = min(density / MIN_SPEED, lifetime): exactly that maximum
+// expected inter-recording gap. A carrier whose per-frame motion exceeds
+// MIN_SPEED·dt keeps recording within the window → persists past `lifetime`;
+// a stopped carrier stops recording, its last point ages out of the window,
+// and the instance terminates EXACTLY at `lifetime`. Capping at `lifetime`
+// mirrors afterimage's B2 precondition for degenerate configs (window longer
+// than the fade window would keep an instance alive even though all its points
+// have already fully faded). Computed from the config constants so it holds
+// for any fixed step size.
+//
+// It completes only when:
 //   (a) the engine explicitly completes it (continuous condition stopped, or
 //       resetEffects), OR
-//   (b) `elapsed >= lifetime` with no fresh point this frame. Because the clock
-//       starts at fire, a no-motion / no-carrier instance still terminates
-//       EXACTLY at `lifetime`, preserving the discrete "done at lifetime"
-//       contract; a carrier that stops moving also terminates once the clock
-//       passes `lifetime` with no new recording.
+//   (b) `elapsed >= lifetime` with NO point recorded within the recency
+//       window. Because the clock starts at fire and `lastPointT` is unset
+//       before any point is recorded, a no-motion / no-carrier instance still
+//       terminates EXACTLY at `lifetime`, preserving the discrete "done at
+//       lifetime" contract; a carrier that stops moving also terminates once
+//       the clock passes `lifetime` and its last point ages out of the window.
 // This single rule satisfies BOTH the discrete fire (self-terminates at
-// `lifetime` when quiet) AND continuous (persists while moving).
+// `lifetime` when quiet) AND continuous (persists while actually moving).
 //
 // params: { length?, width?, lifetime?, opacity?, density?, offset? }
 //   length   — max ribbon REACH in px of ACCUMULATED PATH DISTANCE (default 40).
@@ -88,6 +122,14 @@ const DEFAULT_OFFSET = 0;     // px — perpendicular shift from centerline
 const TRAIL_COLOR = '#ffffff';
 const MIN_TAIL_WIDTH = 1;     // px — floor of the taper
 const EPS = 1e-9;             // fixed-dt epsilon convention
+// B2 recency window: how long ago a point may have been recorded while the
+// carrier still counts as "recently active" (i.e. actually moving). A moving
+// carrier records a point at least every `density` px of travel, so at the
+// slowest speed we still treat as "moving" (MIN_SPEED px/s) the gap between
+// consecutive recordings is <= density/MIN_SPEED seconds. The effective window
+// is min(density / MIN_SPEED, lifetime), computed from the config constants so
+// it holds for any fixed step size and stays bounded by the fade window.
+const MIN_SPEED = 10;         // px/s — below this the carrier is not "moving"
 
 /**
  * @param {{length?:number, width?:number, lifetime?:number, opacity?:number,
@@ -110,31 +152,54 @@ export function trail(params = {}, carrier = null) {
     elapsed: 0,
     /** Recorded points, oldest first. Bounded by accumulated path length. */
     points: [],
+    // Elapsed time of the most recently recorded point (B2 recency marker).
+    // Set by addPoint() whenever a point is actually recorded; before any
+    // point exists it stays -Infinity → NOT recently active, so a no-carrier /
+    // no-motion instance still terminates exactly at `lifetime`.
+    lastPointT: -Infinity,
 
     /**
      * Advance the clock and record the carrier's current position. Reads the
      * LIVE carrier origin() so the trail tracks a moving entity each frame.
      * With no carrier (standalone/theater) nothing is recorded here — the
      * caller feeds positions through addPoint(). Termination: at `elapsed >=
-     * lifetime` the instance completes ONLY if no fresh point was recorded this
-     * frame, so a live carrier keeps the ribbon alive while it moves (B2) while
-     * a stopped / no-carrier instance still ends exactly at `lifetime`.
+     * lifetime` the instance completes ONLY if NO point was recorded within
+     * the recency window, so a live carrier that keeps MOVING keeps the ribbon
+     * alive past `lifetime` (B2) while a stopped / no-carrier instance still
+     * ends exactly at `lifetime`.
      */
     update(dt) {
       if (this.done) return;
       this.elapsed += dt;
-      // Record the live carrier position (if present); note whether a FRESH
-      // point was actually added this frame (density gate may drop repeats).
-      let fresh = false;
+      // Record the live carrier position (if present). A point is added when
+      // the carrier has moved more than the `density` spacing gate OR more
+      // than MIN_SPEED·dt since the last recorded point (velocity-aware), so a
+      // slow-but-moving carrier still records every frame it moves while a
+      // stationary one records nothing.
       if (carrier && typeof carrier.origin === 'function') {
         const o = carrier.origin();
-        fresh = this.addPoint(o.x, o.y);
+        const last = this.points[this.points.length - 1];
+        const minMove = Math.max(density, MIN_SPEED * dt);
+        if (!last || Math.hypot(o.x - last.x, o.y - last.y) >= minMove - EPS) {
+          this.addPoint(o.x, o.y);
+        }
       }
       // Persistence vs. termination (B2): complete at the lifetime boundary
-      // only when the carrier is NOT actively extending the ribbon this frame.
-      // A moving carrier records a fresh point every frame → stays alive past
-      // `lifetime`; a quiet / absent carrier → terminates exactly at `lifetime`.
-      if (!fresh && this.elapsed >= lifetime - EPS) {
+      // only when NO point was recorded within the recency window. "Fresh THIS
+      // frame" is wrong because a slow-but-moving carrier records points only
+      // every ~`density` px of travel, so its samples can be several frames
+      // apart: on the exact lifetime-boundary frame that falls BETWEEN two
+      // samples it would wrongly complete. Instead we look back over the
+      // recency window = min(density / MIN_SPEED, lifetime) — the maximum
+      // expected gap between recordings for a still-moving carrier (see
+      // header). A moving carrier's lastPointT stays within the window →
+      // persists past `lifetime`; a stopped / absent carrier stops recording,
+      // its last point ages out of the window, and it terminates exactly at
+      // `lifetime`.
+      const recencyWindow = Math.min(density / MIN_SPEED, lifetime);
+      const recentlyActive = Number.isFinite(this.lastPointT)
+        && (this.elapsed - this.lastPointT) <= recencyWindow + EPS;
+      if (!recentlyActive && this.elapsed >= lifetime - EPS) {
         this.done = true;
       }
     },
@@ -164,6 +229,10 @@ export function trail(params = {}, carrier = null) {
         pts.length = 0;
       }
       pts.push({ x, y, t: this.elapsed });
+      // B2 recency marker: a point actually recorded marks the carrier as
+      // recently active (it MOVED far enough to extend the ribbon). A stopped
+      // carrier records nothing, so its lastPointT ages out of the window.
+      this.lastPointT = this.elapsed;
       // Path-length bound (B4): evict oldest points until the accumulated path
       // length (oldest→newest) is <= `length`.
       let total = 0;

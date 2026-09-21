@@ -250,6 +250,35 @@ ok('DEFAULT interval (1/30 ≈ 2 frames) persists past lifetime while moving, th
   assert.equal(activeCount(), 0, 'instance left the active set');
   resetEffects();
 });
+ok('REGRESSION: a STATIONARY carrier with origin() terminates exactly at lifetime (not forever)', () => {
+  // The pre-fix bug: a carrier whose origin() NEVER changes re-rolls on cadence
+  // (default 1/30 ≈ 2 frames), and the B2 "recently active" check refreshed
+  // lastGhostT on every roll — treating carrier PRESENCE as activity. The
+  // instance therefore persisted FOREVER, spawning overlapping ghosts at the
+  // same position. After the motion-gated fix, rolls that record the SAME
+  // position do NOT refresh the marker, so once the clock passes `lifetime`
+  // with no real movement the instance terminates EXACTLY at frame 18
+  // (lifetime 0.3 / dt 1/60).
+  const LIFETIME = 0.3;
+  const c = movingCarrier(0); // x stays 0 — origin() never changes
+  const b = afterimage({ count: 6, lifetime: LIFETIME }, c); // default spawnInterval 1/30
+  for (let i = 0; i < 17; i++) b.update(DT); // 17 frames ≈ 0.2833s
+  assert.equal(b.done, false, 'not done just before the lifetime boundary');
+  b.update(DT); // frame 18 = 0.3s → must terminate here, not persist
+  assert.equal(b.done, true, 'stationary carrier terminates exactly at lifetime (frame 18)');
+});
+ok('REGRESSION: a MOVING carrier still persists past lifetime (motion-gated rule preserves 5.2 behavior)', () => {
+  // Counterpart to the stationary regression: a carrier whose origin() CHANGES
+  // each roll genuinely moves, so its rolls DO refresh the recency marker and
+  // the instance persists past `lifetime` at any spawnInterval <= lifetime
+  // (the existing B2 continuous-persistence contract, now gated on motion).
+  const LIFETIME = 0.3;
+  const c = movingCarrier(0);
+  const b = afterimage({ count: 6, lifetime: LIFETIME }, c); // default spawnInterval 1/30
+  for (let i = 0; i < 40; i++) { c.x += 5; b.update(DT); } // 40 frames ≈ 0.667s > 0.3s
+  assert.equal(b.done, false, 'moving carrier persists past lifetime');
+  assert.ok(b.ghosts.length >= 1 && b.ghosts.length <= 6, `ghosts maintained (${b.ghosts.length})`);
+});
 ok('coarse interval (spawnInterval > lifetime) is degenerate: terminates at lifetime even while moving', () => {
   // Documents the B2 precondition: when the spawn interval EXCEEDS the lifetime,
   // each ghost fully fades before the next snapshot (≤1 ghost visible — no real

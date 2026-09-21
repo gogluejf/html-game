@@ -50,6 +50,18 @@
 //       at lifetime" contract; a carrier that stops moving also terminates
 //       once the clock passes `lifetime` and its last ghost ages out of the
 //       window.
+// MOTION-GATED ACTIVITY RULE: "recently active" means the carrier actually
+// MOVED since the last snapshot — not merely that it is present and re-rolling.
+// recordGhost() refreshes the recency marker (lastGhostT) only when a counted
+// roll records a position differing from the previously recorded ghost position
+// by more than MIN_MOVE_EPS px. A STATIONARY carrier (origin() never changes)
+// still re-rolls on cadence but records the same position every time, so its
+// rolls do NOT refresh the marker; once the clock passes `lifetime` with no real
+// movement the instance terminates EXACTLY at `lifetime` instead of persisting
+// forever (the pre-fix bug: presence was treated as activity, so a static
+// carrier kept overlapping ghosts indefinitely). A genuinely MOVING carrier
+// persists at any spawnInterval <= lifetime (its positions change each roll →
+// the marker keeps refreshing). Deterministic — no randomness.
 // PRECONDITION for continuous persistence: `spawnInterval <= lifetime`. When
 // the interval exceeds the lifetime, each ghost fully fades before the next
 // snapshot (at most ~1 ghost is ever visible — a degenerate config with no real
@@ -116,6 +128,13 @@ const DEFAULT_FADE_RATE = 1;      // fade exponent (1 = linear)
 const DEFAULT_OFFSET = 0;         // px — perpendicular shift from centerline
 const DEFAULT_COLOR = '#cfe8ff';  // soft light tint — translucent copies of the sprite (§7)
 const EPS = 1e-9;                 // fixed-dt epsilon convention
+// Motion epsilon for the B2 activity rule: a ghost recorded at a position that
+// differs from the previously recorded ghost position by MORE than this many px
+// counts as real motion (it refreshes the recency marker). A stationary carrier
+// re-rolls on cadence but records the SAME position every time, so its deltas
+// stay ≤ MIN_MOVE_EPS and it does NOT count as moving — once the clock passes
+// `lifetime` with no real movement the instance terminates exactly there.
+const MIN_MOVE_EPS = 1e-6;        // px — sub-pixel; below this the carrier is stationary
 // B2 recency window: how long ago a ghost may have been recorded while the
 // carrier still counts as "recently active". It equals the SPAWN INTERVAL (or
 // one frame in per-frame mode), NOT a fixed one frame. Rationale: a moving
@@ -151,8 +170,13 @@ export function afterimage(params = {}, carrier = null) {
   /**
    * Record a ghost at (x, y). Shared by the carrier-driven roll in update()
    * and the public addGhost() feeder. When `countsAsActive` is true (a live
-   * carrier roll or an explicit feed) the B2 recency marker (lastGhostT) is
-   * refreshed, marking the carrier as recently active; when false (a no-
+   * carrier roll or an explicit feed) AND the position actually MOVED since
+   * the last recorded ghost (by more than MIN_MOVE_EPS px), the B2 recency
+   * marker (lastGhostT) is refreshed — marking the carrier as recently ACTIVE.
+   * A stationary carrier re-rolls on cadence but records the same position
+   * every time, so its rolls do NOT refresh the marker: once the clock passes
+   * `lifetime` with no real movement the instance terminates exactly there
+   * instead of persisting forever. When `countsAsActive` is false (a no-
    * carrier self-tick at the held position) the ghost is still recorded for
    * rendering/cadence but does NOT count as new motion, so a no-carrier
    * instance stays quiet and terminates exactly at `lifetime`.
@@ -171,9 +195,20 @@ export function afterimage(params = {}, carrier = null) {
     body.lastPos.y = y;
     const g = body.ghosts;
     g.push({ x, y, t: body.elapsed });
-    // B2 recency marker: only genuine activity (carrier roll / explicit feed)
-    // refreshes it — a self-tick at a held position does not.
-    if (countsAsActive) body.lastGhostT = body.elapsed;
+    // B2 recency marker: only genuine ACTIVITY refreshes it — a self-tick at a
+    // held position does not (countsAsActive false), and neither does a carrier
+    // roll that records the SAME position as the last ghost (stationary
+    // carrier). "Recently active" means the carrier actually MOVED since the
+    // last snapshot, so a stationary carrier's on-cadence rolls do not keep
+    // the instance alive past `lifetime`.
+    if (countsAsActive) {
+      const moved = Math.abs(x - body.lastGhostX) > MIN_MOVE_EPS
+        || Math.abs(y - body.lastGhostY) > MIN_MOVE_EPS;
+      if (moved) body.lastGhostT = body.elapsed;
+    }
+    // Track the last recorded ghost position for the motion check above.
+    body.lastGhostX = x;
+    body.lastGhostY = y;
     // Ring-buffer bound: drop the oldest ghost beyond `count`.
     while (g.length > count) g.shift();
     // Age eviction: drop fully-faded ghosts (age >= lifetime).
@@ -197,8 +232,14 @@ export function afterimage(params = {}, carrier = null) {
     // Elapsed time of the most recent ghost actually recorded (set by
     // addGhost). Drives the B2 "recently active" check. Before any ghost is
     // recorded it stays -Infinity → NOT recently active, so a no-carrier /
-    // no-motion instance still terminates exactly at `lifetime`.
+    // no-motion instance still terminates exactly at `lifetime`. Only
+    // refreshed when the carrier's position actually MOVED (see recordGhost),
+    // so a stationary carrier does not keep refreshing it.
     lastGhostT: -Infinity,
+    // Position of the most recently recorded ghost; used to decide whether a
+    // new roll counts as real motion (delta > MIN_MOVE_EPS) for the B2 marker.
+    lastGhostX: 0,
+    lastGhostY: 0,
 
     /**
      * Advance the clock and snapshot the position when the spawn interval has
