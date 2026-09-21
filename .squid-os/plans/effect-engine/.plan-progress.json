@@ -117,7 +117,7 @@
     },
     "3.3": {
       "number": "3.3",
-      "status": "in_progress",
+      "status": "done",
       "name": "Camera Shake",
       "milestone": "Screen-Space and Overlay Effects",
       "milestone_number": "3",
@@ -132,10 +132,18 @@
     },
     "3.4": {
       "number": "3.4",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Sprite Shake (standalone)",
       "milestone": "Screen-Space and Overlay Effects",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "confidence": "high",
+        "tradeoffs": "Per-axis decay applied independently (ampX = hIntensity*t^decay, ampY = vIntensity*t^decay) rather than a shared amplitude then scaled \u2014 matches cameraShake's per-axis structure and keeps h/v intensity scaling exact at every frame.",
+        "decisions": "Type id 'sprite-shake-standalone' (kebab-case, distinct from the hitFlash-driven 'sprite-shake' shim which stays untouched). Defaults follow legacy monolith values: h/vIntensity 3 (SHAKE_AMT), duration 0.1s (hitFlash window), frequency 0 = perFrame re-roll, decay 1 linear ease-out. Epsilon 1e-9 done-detection identical to cameraShake.js convention.",
+        "done": "Created petal-panic/js/effects/spriteShakeStandalone.js (standalone STATE effect owning its own timer, params hIntensity/vIntensity/frequency/duration/decay, getOffset() within \u00b1intensity bounds, {0,0} after done, render() no-op); registered as 'sprite-shake-standalone' in js/effects/registry.js (one import + one registerEffect, no engine change); made effects.md \u00a715 explicit about the standalone type's param/frequency semantics; added js/test/spriteShakeStandalone.test.js with 14 direct-intent tests through the real fire()/updateEffects() path. Full runner: 41/41.",
+        "failures": "None. Note: task verify command references effectCatalog.test.js which does not exist until M7; fell back to the project-wide runner (node js/test/run-all.mjs), 41/41 passed.",
+        "lessons_learned": "effects.md \u00a715 listed only generic param names; doc was made explicit per task rule (doc wins over code). The standalone type must NOT touch carrier.hitFlash \u2014 proven by a test asserting carrier.hitFlash stays undefined after firing on a bare carrier."
+      }
     },
     "3.5": {
       "number": "3.5",

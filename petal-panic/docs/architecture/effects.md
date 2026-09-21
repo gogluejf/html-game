@@ -358,6 +358,18 @@ Parameters may include:
 - Duration
 - Decay
 
+Implementation notes (standalone type `sprite-shake-standalone`, js/effects/spriteShakeStandalone.js):
+
+This catalog entry is implemented as a **standalone STATE effect** that owns its own timer — distinct from the migrated `sprite-shake` type (js/effects/spriteShake.js), which rides on the carrier's existing `hitFlash` window and stays as-is for monolith parity. The standalone type is a STATE effect: `render()` is a no-op; the renderer reads `getOffset() → {x,y}` off the instance each frame and adds it to that one sprite's draw position only (localized jitter; the camera never moves).
+
+Parameter semantics:
+- `hIntensity` / `vIntensity` — max offset per axis in px (default 3 each, the legacy SHAKE_AMT).
+- `duration` — TOTAL lifetime in seconds (default 0.1, the legacy hitFlash shake window). The effect is done exactly when `duration` elapses; `getOffset()` returns `{x:0, y:0}` after that.
+- `frequency` — re-roll rate in Hz (default 0 = "perFrame": a fresh random offset every `update()` call, the legacy behavior). A positive value f re-rolls every 1/f seconds and HOLDS the previous offset between rolls; the first roll happens on the first update after fire.
+- `decay` — decay exponent: amplitude(t) = intensity · (remaining/duration)^decay, applied independently per axis (default 1 = linear ease-out).
+
+While active, each axis is a fresh uniform random in [−intensity·amp, +intensity·amp] where amp follows the decay curve.
+
 ---
 
 ## 16. Impact Star / Hit Pop

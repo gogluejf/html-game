@@ -153,6 +153,18 @@ Note: run-all.mjs has two pre-existing flaky files unrelated to this plan — co
 
 Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Committed.
 
+## Task 3.4 — Sprite Shake (standalone)
+
+**Review A:** PASS (2 minor)
+- minor: spriteShakeStandalone.js:45 — Math.max(1, frequency) silently clamps sub-1 Hz values, contradicting doc §15 "positive f re-rolls every 1/f seconds"
+- minor: test endpoint-seed assertions use redundant magic numbers duplicating the exact STUB_TOL checks
+
+**Review B:** FAIL (2 major)
+- major: spriteShakeStandalone.js:57 — same sub-1 Hz clamp contradicts the documented arbitrary-positive-f contract
+- major: tests never prove standalone + hitFlash-driven sprite shake run simultaneously on the same entity
+
+**Resolution:** ACCEPT (fix). Clamp removed — any positive frequency works verbatim (f===0 or 'perFrame' → per-frame mode; rollPeriod = 1/f otherwise); new test proves 0.5 Hz holds across frames and re-rolls at the 2s boundary (would have failed under the old ~60-frame period); new simultaneous-run test proves both types independently correct on one carrier (standalone from its own envelope, hitFlash-driven within ±SHAKE_AMT) with independence in both directions (completing standalone doesn't touch hitFlash offset; clearing hitFlash doesn't stop standalone); redundant magic-number assertions cleaned up. Re-verify: 41/41 green (spriteShakeStandalone 16/16 ×3 deterministic; barrel.solid/contextualAim pre-existing flakes re-run clean). Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.
