@@ -658,11 +658,41 @@ export const Pause = {
       });
     }
 
-    // Dynamic button hints (from input API — layout-aware)
-    const navLabel = navLabelString('up') + '/' + navLabelString('down');
+    // Dynamic button hints (from input API — layout-aware, simple mode).
+    // Three lines: Navigate / Confirm / Close — keys normal, actions bold.
+    const navLabel = navLabelString('up', { simple: true }) + '/' + navLabelString('down', { simple: true });
     const confirmLabel = navLabelString('confirm');
-    const hintY = startY + options.length * gap + 20;
-    drawPrompt(ctx, `[${navLabel}] Navigate   [${confirmLabel}] Confirm`, VIEW_W / 2, hintY, 13, { color: '#777' });
+    const backLabel = navLabelString('back');
+    const hintY = startY + options.length * gap + 16;
+    const lineH = 20;
+    const entries = [
+      { key: `[${navLabel}]`, action: 'Navigate' },
+      { key: `[${confirmLabel}]`, action: 'Confirm' },
+      { key: `[${backLabel}]`, action: 'Close' },
+    ];
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const keyFont = `12px ${FONT_UI}`;
+    const actFont = `bold 12px ${FONT_UI}`;
+    const keyColor = '#666';
+    const actColor = '#999';
+    for (let i = 0; i < entries.length; i++) {
+      const { key, action } = entries[i];
+      const y = hintY + i * lineH;
+      ctx.font = keyFont;
+      const wKey = ctx.measureText(key + ' ').width;
+      ctx.font = actFont;
+      const wAct = ctx.measureText(action).width;
+      const total = wKey + wAct;
+      let hx = VIEW_W / 2 - total / 2;
+      ctx.textAlign = 'left';
+      ctx.font = keyFont; ctx.fillStyle = keyColor;
+      ctx.fillText(key + ' ', hx, y); hx += wKey;
+      ctx.font = actFont; ctx.fillStyle = actColor;
+      ctx.fillText(action, hx, y);
+    }
+    ctx.restore();
     ctx.restore();
   },
 

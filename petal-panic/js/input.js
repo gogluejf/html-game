@@ -116,10 +116,12 @@ export function formatBinding(binding, source = 'keyboard', layout = 'Generic') 
  * Layout is read from the input engine's own state (detected or configured).
  *
  * @param {string} action — one of NAV ('back', 'confirm', 'pause', 'up', etc.)
- * @param {{source?: 'keyboard'|'gamepad'|'all'}} [opts]
+ * @param {{source?: 'keyboard'|'gamepad'|'all', simple?: boolean}} [opts]
+ *   - simple: true → only show arrow/d-pad symbols (↑ ↓ ← →), skip W/S/A/D and LS.
+ *     Useful for compact UI hints where redundant bindings clutter the line.
  * @returns {string[]} e.g. ['ENTER', 'SPACE', '✕'] or ['ESC', '○']
  */
-export function navLabels(action, { source = 'all' } = {}) {
+export function navLabels(action, { source = 'all', simple = false } = {}) {
   const results = [];
   // Read layout from the singleton input engine (detected pad or user config).
   const layout = input.gamepadLayout === 'Auto'
@@ -127,12 +129,16 @@ export function navLabels(action, { source = 'all' } = {}) {
     : input.gamepadLayout;
   if (source === 'keyboard' || source === 'all') {
     for (const [key, actions] of Object.entries(KEY_NAV)) {
-      if (actions.includes(action)) results.push(formatBinding(key, 'keyboard'));
+      if (!actions.includes(action)) continue;
+      if (simple) continue; // simple mode: no keyboard at all, just d-pad
+      results.push(formatBinding(key, 'keyboard'));
     }
   }
   if (source === 'gamepad' || source === 'all') {
     for (const [btn, actions] of Object.entries(PAD_NAV)) {
-      if (actions.includes(action)) results.push(formatBinding(btn, 'gamepad', layout));
+      if (!actions.includes(action)) continue;
+      if (simple && btn.startsWith('axis:')) continue; // skip LS, keep d-pad
+      results.push(formatBinding(btn, 'gamepad', layout));
     }
   }
   return results;
@@ -141,7 +147,7 @@ export function navLabels(action, { source = 'all' } = {}) {
 /**
  * Single compact string for UI hints: "ENTER / SPACE / ✕"
  * @param {string} action
- * @param {{source?: 'keyboard'|'gamepad'|'all'}} [opts]
+ * @param {{source?: 'keyboard'|'gamepad'|'all', simple?: boolean}} [opts]
  * @returns {string}
  */
 export function navLabelString(action, opts) {
