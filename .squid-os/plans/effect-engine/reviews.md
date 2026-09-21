@@ -348,6 +348,16 @@ Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Commit
 
 DEFERRED (tracked): render.js per-entity consumption of fade-out alpha() (and, by extension, the other M6 sprite-state effects' multipliers) across drawable entity sites — to be wired in M7 handoff or a dedicated task.
 
+## Task 6.2 — Scale / Pulse
+
+**Review A (round 1):** PASS (2 minor, both stale comments) — header claimed maxScale reached "at phase π/2" but the actual ramp peaks at phase π; test determinism note misstated the ramp formula. No behavior impact.
+
+**Review B (round 1):** FAIL (2 high)
+- high: standalone path applied startScale twice (render used startScale·scale() while scale() already incorporates startScale) → demo exceeded maxScale and diverged from the renderer-consumed contract
+- high: loopCount controlled lifetime windows, not pulse repetitions (actual cycles = loopCount×frequency), contradicting §18's param intent
+
+**Resolution:** ACCEPT (fix). (B-1) render() now uses this.scale() ALONE (no double-applied startScale); verified max scale() with {startScale:1.2,maxScale:1.5} is exactly 1.5, not 1.8; added a never-exceeds-maxScale pin across the lifetime. (B-2) params given a coherent documented relationship: pulseFrequency = Hz (cycles/sec), loopCount = number of full cycles performed, lifetime = delay + loopCount·(1/pulseFrequency) EXACTLY; `duration` made redundant/ignored (accepted for §18 API compat but does not affect timing). Verified {pulseFrequency:2,loopCount:1} → exactly ONE pulse, done at frame 30. Also fixed Review A's two stale comments (peak phase, ramp formula) in the impl rewrite. The executor's first fix attempt hit budget mid-tool-call leaving a stale test file mismatched to the corrected impl; a follow-up test-only rewrite reconciled all 32 assertions to the corrected contract. Re-review: B final PASS. Re-verify: scalePulse 32/32 ×10 zero flakes; run-all 55/55 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.

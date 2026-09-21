@@ -283,7 +283,7 @@
     },
     "6.1": {
       "number": "6.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Fade Out",
       "milestone": "Sprite-State and Beam Effects",
       "milestone_number": "6",
@@ -298,10 +298,18 @@
     },
     "6.2": {
       "number": "6.2",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Scale / Pulse",
       "milestone": "Sprite-State and Beam Effects",
-      "milestone_number": "6"
+      "milestone_number": "6",
+      "summary": {
+        "failures": "None after fix. All 30 scalePulse assertions pass \u226510\u00d7 consecutively; full suite 55/55 \u00d73.",
+        "decisions": "Kept the impl's delay+loopCount\u00b7duration lifetime model (house convention, generalizes fadeOut's delay+duration) rather than changing it; fixed the two buggy tests to declare loopCount:1 explicitly. Chose to fix the impl for the loopCount fallback bug since the doc and test name both specify 'non-positive falls back to named default'.",
+        "confidence": "high",
+        "lessons_learned": "The test harness prints 'N passed' even when assertions fail because ok() counts caught failures \u2014 trust the \u2717 lines + exit code. The three failing tests encoded mutually disjoint lifetime intervals (0.4s / 0.2s / 1.5s), proving no single formula could satisfy them as written \u2014 a strong signal the tests were internally inconsistent, not just off-by-one. Math.max(1, round(x)) conflates 'clamp to minimum 1' with 'fall back to default'; use an explicit >0 guard before rounding.",
+        "done": "Fixed three deterministically-failing assertions in scalePulse (task 6.2). Root cause: tests 1 & 2 omitted loopCount so their instances defaulted to 3 cycles while asserting single-cycle completion; test 3 exposed an impl bug where non-positive loopCount clamped to 1 instead of falling back to the named default 3. Fixed both sides minimally: added loopCount:1 to tests 1 & 2, and corrected the impl's loopCount normalization so non-positive/absent values fall back to DEFAULT_LOOP_COUNT (3) like duration/frequency. Documented the exact lifetime formula (delay + loopCount\u00b7duration) in the file header.",
+        "tradeoffs": "None \u2014 changes are minimal and preserve all other passing assertions (27\u219230 passed)."
+      }
     },
     "6.3": {
       "number": "6.3",
