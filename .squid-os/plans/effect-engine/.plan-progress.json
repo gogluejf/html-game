@@ -283,10 +283,18 @@
     },
     "6.1": {
       "number": "6.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Fade Out",
       "milestone": "Sprite-State and Beam Effects",
-      "milestone_number": "6"
+      "milestone_number": "6",
+      "summary": {
+        "tradeoffs": "render() draws a white reference box as the standalone/theater fallback (no real sprite exists for null-carrier demos), while the renderer-consumed path is the pure alpha() query \u2014 both read the same ramp so values are identical; no engine or render.js changes were made (renderer integration of alpha() is left to the consuming entity per the M6 pattern).",
+        "done": "Created petal-panic/js/effects/fadeOut.js (sprite-state alpha-multiplier effect, effects.md \u00a717) and registered 'fade-out' in registry.js (one import + one registerEffect line). Added deterministic pure-unit test petal-panic/js/test/fadeOut.test.js (28 assertions, fixed dt=1/60, recording-canvas stub); verified via run-all.mjs (54/54, zero \u2717) and 10\u00d7 flake re-run of the new test.",
+        "lessons_learned": "The plan's listed verification file effectCatalog.test.js does not exist yet (M7 deliverable), so verification was done against run-all.mjs plus a dedicated per-effect test following the established per-effect test convention (attackArc/spriteFlash pattern).",
+        "confidence": "high",
+        "decisions": "Sprite-state application: expose an alpha MULTIPLIER (starts at 1.0, eases toward endOpacity/startOpacity) via a pure alpha() query the renderer folds into globalAlpha, mirroring how spriteFlash exposes tint state without mutating the carrier. Total lifetime == delay + duration exactly with 1e-9 epsilon done-detection; curve vocabulary linear/easeIn(p\u00b2)/easeOut(1-(1-p)\u00b2) with unknown names falling back to linear; opacities clamped to [0,1]; endOpacity > startOpacity naturally yields a fade-in from the same ramp.",
+        "failures": "None"
+      }
     },
     "6.2": {
       "number": "6.2",

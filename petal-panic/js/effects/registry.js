@@ -39,6 +39,7 @@ import { telegraphCircle } from './telegraphCircle.js';
 import { groundMarker } from './groundMarker.js';
 import { targetReticle } from './targetReticle.js';
 import { attackArc } from './attackArc.js';
+import { fadeOut } from './fadeOut.js';
 
 // --- Migrated effects (task 2.1) ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -71,3 +72,6 @@ registerEffect('telegraph-circle', telegraphCircle);
 registerEffect('ground-target-marker', groundMarker);
 registerEffect('target-reticle', targetReticle);
 registerEffect('attack-arc', attackArc);
+
+// --- M6 sprite-state effects -----------------------------------------------------
+registerEffect('fade-out', fadeOut);
