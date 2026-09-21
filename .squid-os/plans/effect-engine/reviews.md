@@ -317,6 +317,16 @@ Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Commit
 
 **Resolution:** ACCEPT (fix). Captured the carrier's facing ONCE at construction (`frozenFacing`) alongside the origin; fixed mode now uses the frozen facing for the offset in both update() and render(), while followMode:true still re-resolves origin AND facing live each frame (byte-for-byte unchanged). Header documents freeze-vs-track semantics. Added two deterministic tests (fixed-mode no-drift when facing changes after fire; follow-mode re-aims along new live facing). Also fixed the stale `tickLength` → `TICK_LENGTH` comment in both targetReticle.js and groundMarker.js (comment-only). Re-review: B final PASS. Re-verify: targetReticle 32/32 ×10 zero flakes; groundMarker 22/22 (comment change broke nothing); run-all 52/52 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
 
+## Task 5.8 — Attack Arc / Slash
+
+**Review A (round 1):** PASS (3 minor) — sweepDirection:NaN yields silent no-op (identical parity with groundWave direction:NaN, not a regression); no test for non-unit-magnitude sweepDirection sign normalization; several angle assertions use tol 1e-6 vs module EPS 1e-9 (justified by atan2/multiplication accumulation, cosmetic).
+
+**Review B (round 1):** FAIL (2 major)
+- major: trailing wake always offset by 0.35·arcAngle including at t=0 → visible slash begins before the declared orientation and spans ~1.35·arcAngle (violates "declared angle in the declared orientation")
+- major: endpoint frame pruned → leading edge never visibly reaches the full declared angle (for the fast default duration this omits ~1/9 of the sweep)
+
+**Resolution:** ACCEPT (fix). (B-1) trailing edge clamped to never cross the base orientation (max(base, lead−wakeSpan) CCW / min(base, lead+wakeSpan) CW) so at t=0 the arc starts AT the base and the visible span stays within [base, base+sweepDir·arcAngle], ≤ arcAngle; also caught+fixed that the original wake formula extended in the wrong direction for clockwise sweeps. (B-2) sweep now driven against (duration − dt) so progress hits 1.0 one frame before done and the last VISIBLE frame renders the leading edge EXACTLY at base + sweepDir·arcAngle; lifetime/done semantics unchanged. Closing re-review surfaced one residual edge: duration <= dt (sub-frame) completes before any render so the full angle is never drawn — resolved by documenting a config precondition (visible sweep needs duration >= ~2·dt) + pinning the actual behavior with a test (the existing Math.max(duration−dt, EPS) guard already prevents NaN/negative math). Re-review: B confirmed both majors fixed; residual edge documented+pinned. Re-verify: attackArc 25/25 ×10 zero flakes; run-all 53/53 (barrel.solid/contextualAim pre-existing flakes re-run clean). No engine change; registry addition additive. Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.

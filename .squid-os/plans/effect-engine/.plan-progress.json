@@ -253,7 +253,7 @@
     },
     "5.7": {
       "number": "5.7",
-      "status": "in_progress",
+      "status": "done",
       "name": "Target Reticle",
       "milestone": "Motion, Telegraph and Marker Effects",
       "milestone_number": "5",
@@ -268,10 +268,18 @@
     },
     "5.8": {
       "number": "5.8",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Attack Arc / Slash",
       "milestone": "Motion, Telegraph and Marker Effects",
-      "milestone_number": "5"
+      "milestone_number": "5",
+      "summary": {
+        "failures": "None",
+        "decisions": "Chose the (duration \u2212 dt) sweep-window approach over scaling the final frame \u2014 it's a pure mapping change with no special-casing, fully deterministic, and keeps the alpha fade on the original duration clock. Used Math.max/Math.min clamps (not a generic clamp helper) since the two sweep directions need opposite comparisons.",
+        "done": "Fixed both review findings for attackArc.js: (1) clamped trailing wake so it never crosses the base orientation \u2014 trail = max(base, lead \u2212 wakeSpan) for CCW / min(base, lead + wakeSpan) for CW; at t=0 the arc is a zero-length point AT the declared base orientation and the visible span stays inside [base, base+sweepDir\u00b7arcAngle] \u2264 arcAngle. (2) Drove the sweep against (duration \u2212 dt) instead of duration so progress hits 1.0 one frame before done \u2014 the last VISIBLE frame now lands the leading edge EXACTLY at base + sweepDir\u00b7arcAngle (no tolerance). Lifetime/done semantics unchanged (elapsed >= duration \u2212 EPS). Updated header to document both behaviors. Added tests: first-visible-frame starts AT base (trail==lead==base), full-lifetime span bound in both sweep directions, exact endpoint reach (unit + end-to-end), clockwise wake lag past the clamp. Adjusted existing sweep-rate assertions to the new (duration\u2212dt) mapping.",
+        "tradeoffs": "Sweep rate is now arcAngle/(duration\u2212dt) rad/s instead of arcAngle/duration \u2014 negligible (~1% faster) but makes the full angle visible on the last drawn frame, which is the acceptance contract. The 'sweepDirection -1' test needed a longer elapsed time (30\u00b7dt) because with the default 90\u00b0 arc and 1s duration the lead only crosses wakeSpan after ~6 frames.",
+        "confidence": "high",
+        "lessons_learned": "The original formula 'trail = lead \u2212 sweepDir\u00b7wakeSpan' was wrong for clockwise sweeps: it extended the wake in the WRONG direction (past the endpoint, not toward the base). For CW the wake must extend in +angle from the lead (i.e. lead + wakeSpan), clamped to base. Verified by tracing the per-frame angles before fixing."
+      }
     },
     "6.1": {
       "number": "6.1",
