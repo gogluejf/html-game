@@ -180,6 +180,7 @@ Parameters may include:
 - Opacity
 - Density
 - Offset
+- Speed (synthetic carrier speed for standalone/theater use)
 
 ---
 

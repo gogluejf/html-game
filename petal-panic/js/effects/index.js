@@ -349,8 +349,8 @@ const CATALOG = [
   { type: 'debris',                name: 'Debris',                  section: 3,  params: { x: STAGE_X, y: STAGE_Y, fragmentCount: 14, velocity: 220, lifetime: 0.8 } },
   { type: 'ground-wave',           name: 'Ground Wave',             section: 4,  params: { x: STAGE_X, y: STAGE_Y, duration: 0.8 } },
   { type: 'shockwave',             name: 'Shockwave',               section: 5,  params: { x: STAGE_X, y: STAGE_Y, duration: 0.6 } },
-  { type: 'trail',                 name: 'Trail',                   section: 6,  params: { lifetime: 0.6 },
-    feed(inst, i) { const b = inst.body; if (typeof b.addPoint === 'function') b.addPoint(STAGE_X - 40 + i * 4, STAGE_Y); } },
+  { type: 'trail',                 name: 'Trail',                   section: 6,  params: { lifetime: 0.6, speed: 400 },
+    feed(inst, i) { const b = inst.body; if (typeof b.addPoint === 'function') b.addPoint(STAGE_X - 80 + i * 8, STAGE_Y); } },
   { type: 'afterimage',            name: 'Afterimage / Ghost Frames', section: 7, params: { box: BOX, spawnInterval: 1 / 30, lifetime: 0.6 },
     feed(inst, i) { const b = inst.body; if (typeof b.addGhost === 'function') b.addGhost(STAGE_X - 30 + i * 3, STAGE_Y); } },
   { type: 'telegraph-circle',      name: 'Telegraph Circle',        section: 8,  params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
@@ -358,9 +358,9 @@ const CATALOG = [
   { type: 'target-reticle',        name: 'Target Reticle',          section: 10, params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
   { type: 'vignette',              name: 'Damage Vignette',         section: 11, params: { strength: 1, viewW: DEMO_VIEW.w, viewH: DEMO_VIEW.h } },
   { type: 'sprite-flash',          name: 'Sprite Flash',            section: 12, params: { box: BOX, duration: 0.5 } },
-  { type: 'camera-shake',          name: 'Camera Shake',            section: 13, params: { intensity: 6, duration: 0.5 } },
+  { type: 'camera-shake',          name: 'Camera Shake',            section: 13, params: { intensity: 6, duration: 0.25 } },
   { type: 'screen-flash',          name: 'Screen Flash',            section: 14, params: { strength: 1, viewW: DEMO_VIEW.w, viewH: DEMO_VIEW.h } },
-  { type: 'sprite-shake',          name: 'Sprite Shake',            section: 15, params: { amount: 4 } },
+  { type: 'sprite-shake',          name: 'Sprite Shake',            section: 15, params: { amount: 3 } },
   { type: 'impact-star',           name: 'Impact Star / Hit Pop',   section: 16, params: { x: STAGE_X, y: STAGE_Y } },
   { type: 'fade-out',              name: 'Fade Out',                section: 17, params: { box: BOX, duration: 0.6 } },
   { type: 'scale-pulse',           name: 'Scale / Pulse',           section: 18, params: { box: BOX, duration: 0.8 } },
@@ -388,7 +388,11 @@ const SHAKE_PROXY = new Set(['camera-shake', 'sprite-shake']);
  */
 function makeDemo(entry) {
   return function demo(ctx, t) {
-    const target = Math.max(0, Number.isFinite(t) ? t : 0);
+    // Pre-roll: theater clock is negative. Show nothing — the effect hasn't
+    // been fired yet. This avoids the "frozen flash" where the effect sits
+    // fully visible before its animation plays.
+    if (!Number.isFinite(t) || t < 0) return;
+    const target = t;
     // Fresh start every call: clear any prior effect/pool state so the demo is
     // fully self-contained and independent of what the theater drew before.
     resetEffects();
@@ -422,8 +426,8 @@ function makeDemo(entry) {
  */
 function drawShakeProxy(ctx, body, entryType, t) {
   const isCamera = entryType === 'camera-shake';
-  const amt = isCamera ? 6 : 4; // px — exaggerated for visibility
-  const duration = isCamera ? 0.5 : 0.15; // s — match the catalog demo params
+  const amt = isCamera ? 6 : 3; // px — match in-game values (explosion / projectile hit)
+  const duration = isCamera ? 0.25 : 0.1; // s — match in-game (SHAKE_DURATION / hitFlash)
   // Stop shaking after the duration elapses.
   const active = t < duration;
   let off = { x: 0, y: 0 };

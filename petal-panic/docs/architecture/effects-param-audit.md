@@ -95,6 +95,7 @@ Compares `effects.md` (concept catalog) against actual code in `petal-panic/js/e
 | opacity | ✅ |
 | density | ✅ |
 | offset | ✅ |
+| speed | ✅ |
 
 > Fully parametric.
 
