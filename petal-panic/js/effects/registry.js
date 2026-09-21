@@ -28,6 +28,7 @@ import { spriteFlash } from './spriteFlash.js';
 import { cameraShake } from './cameraShake.js';
 import { spriteShakeStandalone } from './spriteShakeStandalone.js';
 import { impactStar } from './impactStar.js';
+import { debris } from './debris.js';
 
 // --- Migrated effects (task 2.1) ---------------------------------------------
 registerEffect('hit-sparkle', hitSparkle);
@@ -45,3 +46,6 @@ registerEffect('sprite-flash', spriteFlash);
 registerEffect('camera-shake', cameraShake);
 registerEffect('sprite-shake-standalone', spriteShakeStandalone);
 registerEffect('impact-star', impactStar);
+
+// --- M4 particle / burst effects -------------------------------------------------
+registerEffect('debris', debris);

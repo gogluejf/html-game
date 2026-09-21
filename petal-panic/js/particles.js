@@ -40,11 +40,20 @@ class Sparkle extends Entity {
 
   update(dt) {
     this.life -= dt;
-    if (this.life <= 0) { this.alive = false; return; }
+    // Epsilon cull: fixed-step FP residue (e.g. 0.2 - 12*(1/60) ≈ 4.86e-17)
+    // would otherwise let pool items survive exactly one extra frame at the
+    // exact-lifetime boundary. Makes the done-frame exact for all pool items
+    // (plain sparkles included — same residue class).
+    if (this.life <= 1e-9) { this.alive = false; return; }
     // Slight upward drift then settle (gives the burst a "pop" feel).
-    this.vy += 200 * dt; // mild gravity for arc
+    // Per-fragment gravity override (debris.js sets debrisGravity); the
+    // default keeps the legacy 200 px/s² sparkle arc.
+    this.vy += (this.debrisGravity ?? 200) * dt;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
+    // Per-fragment spin (debris.js sets debrisRotation); plain sparkles have
+    // no rot and draw unrotated exactly as before.
+    if (this.rot != null) this.rot += (this.debrisRotation ?? 0) * dt;
   }
 
   draw(ctx) {
@@ -53,10 +62,18 @@ class Sparkle extends Entity {
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.fillStyle = this.color;
-    ctx.fillRect(this.x, this.y, this.w, this.h);
+    if (this.rot != null) {
+      // Rotating fragment: square shrinks linearly toward the end of life so
+      // it reads as tumbling debris rather than a constant-size sprite.
+      const s = this.w * alpha;
+      ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
+      ctx.rotate(this.rot);
+      ctx.fillRect(-s / 2, -s / 2, s, s);
+    } else {
+      ctx.fillRect(this.x, this.y, this.w, this.h);
+    }
     ctx.restore();
-  }
-}
+  }}
 
 /**
  * Pooled sparkle emitter. spawnBurst() fires N sparkles from a point; they
@@ -87,6 +104,12 @@ export class ParticleSystem {
       if (item.alive) continue;
       const color = SPARKLE_COLORS[Math.floor(Math.random() * SPARKLE_COLORS.length)];
       Object.assign(item, new Sparkle(cx - SPARKLE_SIZE / 2, cy - SPARKLE_SIZE / 2, color));
+      // Recycled slots may retain debris overrides from a previous life
+      // (Object.assign never deletes keys); clear them so plain sparkles
+      // always take the legacy unrotated path.
+      delete item.rot;
+      delete item.debrisGravity;
+      delete item.debrisRotation;
       item.alive = true;
       this.active.push(item);
       spawned++;
@@ -110,6 +133,11 @@ export class ParticleSystem {
     for (const item of this.items) {
       if (item.alive) continue;
       Object.assign(item, new Sparkle(cx - SPARKLE_SIZE / 2, cy - SPARKLE_SIZE / 2, color));
+      // Reset debris overrides so a recycled slot behaves as a plain sparkle
+      // unless the caller sets them (debris.js is the only current setter).
+      delete item.rot;
+      delete item.debrisGravity;
+      delete item.debrisRotation;
       // Override the random velocity with the caller's directed vector.
       item.vx = Math.cos(angle) * speed;
       item.vy = Math.sin(angle) * speed;

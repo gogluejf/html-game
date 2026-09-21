@@ -189,6 +189,20 @@ Re-verify: 40/40 green ×2 (cameraShake + effectsShim ×5 deterministic). Commit
 **Fixes round 2:** Effects.getEntityShakeTotal(e) combined helper (hitFlash + standalone); render.js drawShaken() DRY helper applies the combined offset at every drawable carrier site (barrels, pickups, boss, checkpoints, powerups, projectiles, specials, anim-test enemy, hero); non-carrier types untouched; enemy loops now use the single combined call; shim tests prove combined sum for an entity with both live hitFlash and a declared standalone instance, {0,0} for non-carriers.
 **Final gate verify:** 42/42 green (contextualAim pre-existing flake re-run clean). Extensibility contract intact: new effects declare their own space field in-file — one file + one registration, no engine change. Gate commit: `effects: wave 3 gate`.
 
+## Task 4.1 — Debris
+
+**Review A:** PASS (3 minor)
+- minor: particles.js:45 — epsilon cull shifts all pool items' exact-lifetime boundary by one frame; acceptable FP-residue correction but should be documented in the doc
+- minor: debris defaults/spread/carrier-origin rule documented only in module header, not effects.md §3
+- minor: debris.test.js:128 — ad-hoc tolerance instead of the file's close() helper
+
+**Review B:** FAIL (3 major)
+- major: particles.js changes violate one-file-plus-registration / no-engine-change contract
+- major: epsilon cull changes plain-sparkle lifecycle (not strictly additive)
+- major: effects.md §3 still ambiguous (no defaults, spread param, carrier-origin precedence, speed range, pool ownership, one-shot semantics)
+
+**Resolution:** ACCEPT (fix with documented exception). effects.md §3 gained a full "Implementation notes" block (param defaults: fragmentCount 8, velocity 140, multiplier [0.5,1]·velocity, direction −π/2, spread π/2, gravity 400, rotation 6 rad/s, lifetime 0.6, size 4; one-shot lifecycle — done at fire, pool owns stepping/culling; carrier-origin-wins precedence); the particles.js additions are now explicitly documented as a strictly-additive pool extension (optional per-item debrisGravity/debrisRotation/rot fields, consumed only when set, plain sparkles byte-identical, recycled slots cleared on respawn) and the 1e-9 epsilon cull documented as pool-wide deterministic boundary semantics (FP residue ~5e-17 no longer extends life a frame); test tolerance normalized to close(vx, 0, 1e-3) with cos(π/2) leakage explained. Re-verify: 43/43 green (debris 22, effectsMigrated 29, effectRegression 21 explicitly re-run). Committed.
+
 ## Wave 1 gate — M1 (1.1–1.3)
 
 **Gate tests:** run-all.mjs 33/33 vs baseline 31/31 (+2 new suites: effectEngine, effectCarrier; no new failures). Pre-existing flakes (contextualAim, barrel.solid) re-run clean.

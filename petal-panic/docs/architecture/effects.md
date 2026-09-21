@@ -150,10 +150,30 @@ Parameters may include:
 - Fragment count
 - Initial velocity
 - Direction
+- Spread
 - Gravity
 - Rotation
 - Lifetime
 - Size
+
+Implementation notes (type `debris`, js/effects/debris.js):
+
+This catalog entry is a **one-shot particle effect** that spawns all fragments into the shared pool (js/particles.js) at fire time via `spawnOne()` with per-fragment overrides; the instance reports `done` immediately and the pool owns the fragments' stepping, culling, and rendering for their lifetime (same pattern as explosion.js / particleBurst.js).
+
+Parameter semantics:
+- `fragmentCount` — number of fragments to project (default 8); 0 or negative spawns nothing.
+- `velocity` — base initial speed in px/s (default 140). Each fragment gets a uniform random multiplier in **[0.5, 1] · velocity**, so every fragment's speed stays bounded by the declared velocity while the burst has natural spread.
+- `direction` — launch axis in radians (default −π/2, i.e. up). Every fragment is scattered around this axis within `spread`.
+- `spread` — half-angle of the scatter cone in radians (default π/2 → a full 360° burst).
+- `gravity` — downward acceleration applied to the fragments in px/s² (default 400); negative values float upward. Overrides the pool's legacy 200 px/s² sparkle arc.
+- `rotation` — spin rate in rad/s applied to each fragment's draw rotation (default 6); sign sets spin direction. Fragments start unrotated (rot = 0) at fire time.
+- `lifetime` — seconds each fragment lives before fading out (default 0.6); overrides the pool's SPARKLE_LIFETIME.
+- `size` — fragment side length in px (default 4); the drawn square scales down linearly toward the end of life.
+- `x` / `y` — impact point in world space (standalone/fallback position). **Carrier origin wins:** when the carrier exposes `origin()`, its FIRE-time position is used instead of params.x/y (params are the fallback for manual/theater fires with a null carrier).
+
+Pool extension (strictly additive, documented contract): Sparkle supports three optional per-item fields consumed only when set — `debrisGravity` (per-fragment gravity, else the legacy 200), `debrisRotation` (spin rate, else no spin), and `rot` (current rotation; presence also selects the rotating-draw path). Plain sparkles never set them, so their update/draw behavior is byte-identical to the legacy code path; recycled slots clear these fields on respawn so a slot can never carry stale debris state into a plain-sparkle life.
+
+Pool culling epsilon: the pool culls items at `life <= 1e-9` rather than `<= 0`. Fixed-step FP residue (e.g. 0.2 − 12·(1/60) ≈ 4.9e-17) would otherwise extend an exact-lifetime item by one frame; the epsilon makes the done-frame deterministic at exact boundaries for ALL pool items (plain sparkles included). This applies to any consumer of the pool, not just debris.
 
 ---
 

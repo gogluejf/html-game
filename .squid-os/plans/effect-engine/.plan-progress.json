@@ -162,10 +162,14 @@
     },
     "4.1": {
       "number": "4.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Debris",
       "milestone": "Particle and Burst Effects",
-      "milestone_number": "4"
+      "milestone_number": "4",
+      "summary": {
+        "decisions": "B1: accepted the particles.js additions as a documented, minimal, strictly-additive pool extension (optional per-item fields debrisGravity/debrisRotation/rot, zero impact when unset; recycled slots clear them on respawn) and documented it explicitly in effects.md \u00a73 'Pool extension' block rather than destabilizing the working pool with a parallel item array. B2: epsilon cull (life <= 1e-9) documented in \u00a73 as applying to ALL pool items \u2014 exact-lifetime boundaries now cull deterministically (FP residue ~5e-17 no longer extends life by one frame). A3: debris.test.js ad-hoc Math.abs check replaced with the file's own close() helper extended with an optional tol param (close(a,b,tol=EPS)) using a documented 1e-3 tolerance for cos(PI/2) float leakage.",
+        "lessons_learned": "The 'one file + one registration, no engine change' rule is violated whenever an effect needs behavior the shared pool class hardcodes (Sparkle.update hardcoded gravity 200 and had no rotation); the resolution pattern is strictly-additive optional per-item fields consumed only when set, cleared on slot recycle, and documented in the catalog so the contract is explicit. Exact-lifetime boundary tests at fixed dt are sensitive to FP residue (~5e-17): a 1e-9 epsilon cull makes done-frames deterministic but shifts plain-sparkle boundary timing by one frame for exact lifetimes \u2014 must be documented as pool-wide semantics. Near-edge angles (rand\u21921.0 giving direction+spread = \u00b1\u03c0/2) leak cos(\u03c0/2)\u22486e-17 into the perpendicular velocity component; use a documented tolerance instead of EPS there."
+      }
     },
     "4.2": {
       "number": "4.2",
