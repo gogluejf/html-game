@@ -387,7 +387,7 @@ const SCENES = {
     setup() {
       const boss = {
         _x: STAGE_X - 80, _y: STAGE_Y,
-        origin: () => ({ x: this._x, y: this._y }),
+        origin: () => ({ x: boss._x, y: boss._y }),
         facing: () => 0,
         size: () => ({ w: 48, h: 60 }),
       };
