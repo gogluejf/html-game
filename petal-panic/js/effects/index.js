@@ -343,16 +343,14 @@ const BOX = { x: STAGE_X - 16, y: STAGE_Y - 16, w: 32, h: 32 }; // reference spr
  *   render(ctx, inst, body) — replace the standard draw for non-canvas effects
  *                             (camera/sprite shake) with a visible proxy.
  */
-const CATALOG = [
+export const CATALOG = [
   { type: 'particle-burst',        name: 'Particle Burst / Sparks', section: 1,  params: { x: STAGE_X, y: STAGE_Y, count: 16 } },
   { type: 'explosion',             name: 'Explosion',               section: 2,  params: { x: STAGE_X, y: STAGE_Y, radius: 60 } },
   { type: 'debris',                name: 'Debris',                  section: 3,  params: { x: STAGE_X, y: STAGE_Y, fragmentCount: 14, velocity: 220, lifetime: 0.8 } },
   { type: 'ground-wave',           name: 'Ground Wave',             section: 4,  params: { x: STAGE_X, y: STAGE_Y, duration: 0.8 } },
   { type: 'shockwave',             name: 'Shockwave',               section: 5,  params: { x: STAGE_X, y: STAGE_Y, duration: 0.6 } },
-  { type: 'trail',                 name: 'Trail',                   section: 6,  params: { lifetime: 0.6 },
-    feed(inst, i) { const b = inst.body; if (typeof b.addPoint === 'function') b.addPoint(STAGE_X - 80 + i * 8, STAGE_Y); } },
-  { type: 'afterimage',            name: 'Afterimage / Ghost Frames', section: 7, params: { box: BOX, spawnInterval: 1 / 30, lifetime: 0.6 },
-    feed(inst, i) { const b = inst.body; if (typeof b.addGhost === 'function') b.addGhost(STAGE_X - 30 + i * 3, STAGE_Y); } },
+  { type: 'trail',                 name: 'Trail',                   section: 6,  params: { lifetime: 0.6 } },
+  { type: 'afterimage',            name: 'Afterimage / Ghost Frames', section: 7, params: { box: BOX, spawnInterval: 1 / 30, lifetime: 0.6 } },
   { type: 'telegraph-circle',      name: 'Telegraph Circle',        section: 8,  params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
   { type: 'ground-target-marker',  name: 'Ground Target Marker',    section: 9,  params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
   { type: 'target-reticle',        name: 'Target Reticle',          section: 10, params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
@@ -376,136 +374,6 @@ const CATALOG = [
 // Effects whose visual lives in the SHARED particle pool (one-shot bursts):
 // the instance completes immediately, so the demo must also advance + draw the
 // pool to show the particles flying.
-const POOL_DRIVEN = new Set(['particle-burst', 'explosion', 'debris', 'dust-cloud', 'composite-explosion']);
-// State effects with no canvas render (render() is a no-op): the demo paints a
 // visible proxy driven by the instance's getOffset() so the jitter reads.
-const SHAKE_PROXY = new Set(['camera-shake', 'sprite-shake']);
 
-/**
- * Build a stateless, deterministic demo for one catalog entry.
- * @param {object} entry a CATALOG row
- * @returns {(ctx:object, t:number) => void}
- */
-function makeDemo(entry) {
-  return function demo(ctx, t) {
-    // Pre-roll: theater clock is negative. Show nothing — the effect hasn't
-    // been fired yet. This avoids the "frozen flash" where the effect sits
-    // fully visible before its animation plays.
-    if (!Number.isFinite(t) || t < 0) return;
-    const target = t;
-    // Fresh start every call: clear any prior effect/pool state so the demo is
-    // fully self-contained and independent of what the theater drew before.
-    resetEffects();
-    particles.reset(); // clear live particles for a clean slate
-    const inst = fireManual({ type: entry.type, params: { ...entry.params } }, null, {});
-    if (!inst) return; // unregistered type — nothing to show (never throws)
-    const frames = Math.round(target / DEMO_DT);
-    for (let i = 1; i <= frames; i++) {
-      updateEffects(DEMO_DT);
-      particles.updateAll(DEMO_DT);
-      if (entry.feed) entry.feed(inst, i);
-    }
-    if (SHAKE_PROXY.has(entry.type)) {
-      drawShakeProxy(ctx, inst.body, entry.type, target);
-    } else {
-      // Standard draw: world-space effects (no view needed) + screen-space
-      // overlays (fed the neutral-stage viewport via renderCtx.view).
-      drawEffects(ctx, { view: DEMO_VIEW });
-      if (POOL_DRIVEN.has(entry.type)) {
-        for (const s of particles.activeItems) s.draw(ctx);
-      }
-    }
-  };
-}
-
-/**
- * Visible proxy for the non-drawing shake effects. Draws a clear visual that
- * shows the jitter without relying on the effect instance's carrier (which is
- * null in the theater). Uses its own internal random offset driven by the demo
- * clock so it's deterministic per-frame and always visible.
- */
-function drawShakeProxy(ctx, body, entryType, t) {
-  const isCamera = entryType === 'camera-shake';
-  const amt = isCamera ? 6 : 3; // px — match in-game values (explosion / projectile hit)
-  const duration = isCamera ? 0.25 : 0.1; // s — match in-game (SHAKE_DURATION / hitFlash)
-  // Stop shaking after the duration elapses.
-  const active = t < duration;
-  let off = { x: 0, y: 0 };
-  if (active) {
-    // Use the live offset if available (non-zero), otherwise generate our own.
-    const live = typeof body?.getOffset === 'function' ? body.getOffset() : null;
-    if (live && (live.x !== 0 || live.y !== 0)) {
-      off = live;
-    } else {
-      off = { x: (Math.random() * 2 - 1) * amt, y: (Math.random() * 2 - 1) * amt };
-    }
-  }
-
-  ctx.save();
-  if (isCamera) {
-    // Camera shake: show 3 sprites at fixed positions, ALL offset together.
-    // A dashed rectangle shows the "unshaken" frame boundary.
-    const positions = [
-      { x: BOX.x - 40, y: BOX.y, w: 24, h: 24 },
-      { x: BOX.x + BOX.w / 2 - 12, y: BOX.y - 30, w: 24, h: 24 },
-      { x: BOX.x + BOX.w + 16, y: BOX.y + 10, w: 24, h: 24 },
-    ];
-    // Unshaken reference frame (dashed).
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.strokeRect(BOX.x - 50, BOX.y - 40, BOX.w + 100, BOX.h + 60);
-    ctx.setLineDash([]);
-    // Shaken sprites.
-    ctx.fillStyle = '#fff';
-    for (const p of positions) {
-      ctx.fillRect(p.x + off.x, p.y + off.y, p.w, p.h);
-    }
-    // Label.
-    ctx.fillStyle = '#888';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('all sprites move together', BOX.x + BOX.w / 2, BOX.y + BOX.h + 35);
-  } else {
-    // Sprite shake: show 3 sprites, ONLY the middle one jitters.
-    const positions = [
-      { x: BOX.x - 40, y: BOX.y, w: 24, h: 24 },
-      { x: BOX.x + BOX.w / 2 - 12, y: BOX.y - 30, w: 24, h: 24 },
-      { x: BOX.x + BOX.w + 16, y: BOX.y + 10, w: 24, h: 24 },
-    ];
-    // Static sprites (no offset).
-    ctx.fillStyle = '#666';
-    ctx.fillRect(positions[0].x, positions[0].y, positions[0].w, positions[0].h);
-    ctx.fillRect(positions[2].x, positions[2].y, positions[2].w, positions[2].h);
-    // Shaken sprite (middle, with offset).
-    ctx.fillStyle = '#fff';
-    const mid = positions[1];
-    ctx.fillRect(mid.x + off.x, mid.y + off.y, mid.w, mid.h);
-    // Crosshair at nominal center of shaken sprite.
-    ctx.strokeStyle = '#888';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(mid.x + mid.w / 2 - 6, mid.y + mid.h / 2);
-    ctx.lineTo(mid.x + mid.w / 2 + 6, mid.y + mid.h / 2);
-    ctx.moveTo(mid.x + mid.w / 2, mid.y + mid.h / 2 - 6);
-    ctx.lineTo(mid.x + mid.w / 2, mid.y + mid.h / 2 + 6);
-    ctx.stroke();
-    // Label.
-    ctx.fillStyle = '#888';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('only this sprite jitters', BOX.x + BOX.w / 2, BOX.y + BOX.h + 35);
-  }
-  ctx.restore();
-}
-
-/**
- * Uniform theater entry point (task 7.1). Returns every implemented effect as
- * `{ type, name, demo }` in catalog order (§1 Particle Burst → §24 Composite
- * Explosion Burst → §26 Beam), skipping Heat Distortion (§25, deferred).
- * @returns {{type:string, name:string, demo:Function}[]}
- */
-export function theaterList() {
-  return [...CATALOG].sort((a, b) => a.section - b.section)
-    .map(entry => ({ type: entry.type, name: entry.name, section: entry.section, demo: makeDemo(entry) }));
-}
+// Theater scenes live in theater-scenes.js (debug-only, not loaded in gameplay).

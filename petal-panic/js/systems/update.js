@@ -559,15 +559,11 @@ function handleDebugKeys(e) {
       Debug.showLog = !Debug.showLog;
       break;
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown':
-      // While the Effect Theater is open, Left/Right step the current effect
-      // INSTEAD of driving the anim scrubber (guard so both don't fire).
-      if (Theater.active && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) {
-        Theater.step(e.code === 'ArrowLeft' ? -1 : 1);
-        Debug.logEvent(`theater → ${Theater.current().type}`);
-        break;
+      // Theater stepping is handled by updateTheaterGamepad (reads input.state.moveX).
+      // Don't double-step here. Only drive the anim scrubber when theater is closed.
+      if (!Theater.active) {
+        scrubSelectedAnim(e.code);
       }
-      // Anim scrubber: step the selected entity's anim frames.
-      scrubSelectedAnim(e.code);
       break;
     case 'KeyX': // Deselect current entity
       if (Debug.selected) { Debug.selected = null; Debug.logEvent('deselect'); }

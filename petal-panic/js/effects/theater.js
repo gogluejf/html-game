@@ -16,9 +16,11 @@
 // restarts at 0 on open() and step(). Node-testable without a canvas (draw takes
 // a ctx stub).
 
-import { theaterList, resetEffects, DEMO_VIEW } from './index.js';
+import { theaterList } from './theater-scenes.js';
+import { resetEffects, DEMO_VIEW } from './index.js';
 import { particles } from '../particles.js';
 import { navLabelString, navLabels } from '../input.js';
+import { EFFECT_META } from './theater-meta.js';
 
 // Built once at import: the catalog is static for the life of the process.
 const list = theaterList();
@@ -84,44 +86,98 @@ export const Theater = {
   draw(ctx, w, h) {
     if (!this.active) return;
     const entry = list[this.index];
+    const meta = EFFECT_META[entry.type];
     ctx.save();
 
     // 1. Fill the entire viewport black.
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, w, h);
 
-    // 2. Title at top center.
+    // Layout: demo area on left/center, info panel on right (~240px)
+    const panelW = 240;
+    const panelX = w - panelW;
+    const demoW = panelX - 20;
+
+    // 2. Title at top center of demo area.
     ctx.textAlign = 'center';
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 28px monospace';
-    ctx.fillText('EFFECT THEATER', w / 2, 44);
+    ctx.fillText('EFFECT THEATER', demoW / 2, 44);
 
     // 3. Current effect name (large) + section number.
     ctx.font = 'bold 20px monospace';
     ctx.fillStyle = '#7df';
-    ctx.fillText(`${entry.section}. ${entry.name}`, w / 2, 96);
+    ctx.fillText(`${entry.section}. ${entry.name}`, demoW / 2, 96);
 
     // 4. Index indicator.
     ctx.font = '14px monospace';
     ctx.fillStyle = '#888';
-    ctx.fillText(`${this.index + 1} / ${list.length}`, w / 2, h - 40);
+    ctx.fillText(`${this.index + 1} / ${list.length}`, demoW / 2, h - 40);
 
-    // 5. Run the current demo. Demos draw in world coords around a ~160,90 stage
-    //    origin on the DEMO_VIEW (320x180) neutral stage; translate so that stage
-    //    sits roughly centered in the full logical viewport. Keep it simple — a
-    //    single optional translate, no per-effect special-casing.
+    // 5. Run the current demo (centered in demo area).
     ctx.save();
-    ctx.translate((w - DEMO_VIEW.w) / 2, (h - DEMO_VIEW.h) / 2);
+    ctx.translate((demoW - DEMO_VIEW.w) / 2, (h - DEMO_VIEW.h) / 2);
     entry.demo(ctx, this.clock);
     ctx.restore();
 
-    // 6. Hint text at bottom (dynamic labels from input API).
+    // 6. Right info panel.
+    if (meta) {
+      ctx.save();
+      // Panel background
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      ctx.fillRect(panelX, 60, panelW - 10, h - 100);
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(panelX, 60, panelW - 10, h - 100);
+
+      let py = 80;
+      ctx.textAlign = 'left';
+
+      // Description
+      ctx.font = '12px monospace';
+      ctx.fillStyle = '#aaa';
+      const words = meta.desc.split(' ');
+      let line = '';
+      for (const word of words) {
+        if ((line + word).length > 32) {
+          ctx.fillText(line, panelX + 12, py);
+          py += 16;
+          line = word + ' ';
+        } else {
+          line += word + ' ';
+        }
+      }
+      if (line) { ctx.fillText(line.trim(), panelX + 12, py); py += 16; }
+      py += 12;
+
+      // Params header
+      ctx.font = 'bold 11px monospace';
+      ctx.fillStyle = '#7df';
+      ctx.fillText('PARAMS', panelX + 12, py);
+      py += 18;
+
+      // Param list
+      ctx.font = '11px monospace';
+      for (const p of meta.params) {
+        const icon = p.config ? '✅' : '❌';
+        ctx.fillStyle = p.config ? '#ccc' : '#666';
+        ctx.fillText(`${icon} ${p.key}`, panelX + 12, py);
+        ctx.fillStyle = '#666';
+        ctx.fillText(`   ${p.desc}`, panelX + 12, py + 12);
+        py += 26;
+        if (py > h - 60) break; // don't overflow into hint bar
+      }
+      ctx.restore();
+    }
+
+    // 7. Hint text at bottom (dynamic labels from input API).
     const stepIcons = [...navLabels('left', { simple: true }), ...navLabels('right', { simple: true })].join('/');
     const confirmLabel = navLabelString('confirm');
     const backLabel = navLabelString('back');
+    ctx.textAlign = 'center';
     ctx.fillStyle = '#666';
     ctx.font = '12px monospace';
-    ctx.fillText(`${stepIcons} step   [${confirmLabel}] replay   [${backLabel}] close   F2 toggle`, w / 2, h - 16);
+    ctx.fillText(`${stepIcons} step   [${confirmLabel}] replay   [${backLabel}] close   F2 toggle`, demoW / 2, h - 16);
 
     ctx.restore();
   },
