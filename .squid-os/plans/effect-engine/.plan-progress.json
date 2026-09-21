@@ -371,7 +371,7 @@
     },
     "7.4": {
       "number": "7.4",
-      "status": "in_progress",
+      "status": "done",
       "name": "Final regression + scope handoff",
       "milestone": "Effect Theater and Handoff",
       "milestone_number": "7"

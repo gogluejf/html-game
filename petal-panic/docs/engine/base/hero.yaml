@@ -108,11 +108,13 @@ hero:
   # every entry whose `on` matches the emitted trigger. This mirrors the same
   # shape documented in index.js header comments.
   effects:
-    # Example 1: a committed attack hitbox carrying a beam on activation.
-    # The beam reads the ACTIVE ATTACK HITBOX's origin() + facing() at fire time
-    # (the hero is the carrier that owns the hitbox), so it mirrors the exact
-    # collision area that deals damage — see effects.md §26 Beam.
-    - on: attackActive       # fires when the attack hitbox enters its active window
+    # Example 1: a committed attack carrying a beam on activation. The engine
+    # passes the object OWNING this effects array as the carrier, so the beam
+    # reads THAT carrier's origin()/facing() at fire time. To make the beam
+    # mirror the attack's collision area, declare these effects on the carrier
+    # whose origin/facing match the active hitbox (the attack hitbox itself, or
+    # the hero when its facing equals the hitbox facing). See effects.md §26.
+    - on: attackActive       # fires when the attack window opens
       type: beam             # directional rectangular beam with alpha-gradient halo
       params:
         length: 260          # beam length in px along the facing axis

@@ -580,12 +580,13 @@ This section records exactly what shipped with the Effects Engine epic so the ne
 ## Deferred / Out of Scope for v1 (handoff to the next epic)
 
 - **Heat Distortion (§25).** Experimental; not implemented.
+- **Beam hold phase.** The concept describes the beam as igniting, holding, then fading (lifetime = ignition + hold + fade). The v1 implementation ships the ignition (flash-in) and fade-out phases only — there is no separate hold window yet. A follow-up can add the hold so the beam sustains at full brightness before fading.
 - **Per-entity renderer consumption of sprite-state multipliers.** Fade Out's opacity, Scale/Pulse's scale, and Squash & Stretch's per-axis scale expose their state, but the production renderer does not yet read those values onto individual sprites. Likewise, behind-sprite rendering order for Aura/Glow is not wired into the production render pass. These effects work standalone; the follow-up is teaching the renderer to apply them to sprites.
 - **Wiring effects onto future multi-box / multi-radius / multi-marker data** (the animation-studio revision). No such data exists yet. When it lands, the carrier interface already accepts it unchanged.
 
 ## Extensibility Contract
 
-Adding a new effect is three things: one file under the effects folder, one registration line, and one row in the theater catalog. No engine change is required.
+Adding a new effect is: one file under the effects folder, one registration line, and one row in the theater catalog. For most effects that is the whole change. Effects whose visual lives in the shared particle pool, or that are state-only with no canvas draw (e.g. camera/sprite shake), additionally need a small data-table note in the theater so its demo knows how to present them — still data, not behavioral engine logic. The engine core itself (type lookup, lifecycle, trigger bus) never changes when an effect is added.
 
 ## Carrier Readiness
 
