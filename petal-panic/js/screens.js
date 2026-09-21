@@ -8,7 +8,7 @@ import { HEROES } from './heroDefs.js';
 import { VIEW_W, VIEW_H } from './view.js';
 import { calculateScore } from './stats.js';
 import { onTransition } from './state.js';
-import { input } from './input.js';
+import { input, navLabelString } from './input.js';
 import { Remap } from './remap.js';
 import {
   FONT_TITLE, FONT_UI, CREAM, GOLD, RED, PINK, roundRect,
@@ -644,23 +644,25 @@ export const Pause = {
       const focused = i === this.focus;
       if (focused) {
         ctx.save();
-        ctx.fillStyle = 'rgba(255,110,199,0.15)';
+        ctx.fillStyle = 'rgba(255,110,199,0.10)';
         roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
         ctx.fill();
-        ctx.strokeStyle = PINK;
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(255,110,199,0.4)';
+        ctx.lineWidth = 1;
         roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
         ctx.stroke();
         ctx.restore();
       }
-      drawPrompt(ctx, (focused ? '▶ ' : '  ') + options[i], VIEW_W / 2, y + 2, focused ? 24 : 22, {
+      drawPrompt(ctx, (focused ? '▸ ' : '  ') + options[i], VIEW_W / 2, y + 2, focused ? 22 : 20, {
         color: focused ? '#ff6ec7' : '#d8cdb4',
       });
     }
 
-    // Dynamic button hints
+    // Dynamic button hints (from input API — layout-aware)
+    const navLabel = navLabelString('up') + '/' + navLabelString('down');
+    const confirmLabel = navLabelString('confirm');
     const hintY = startY + options.length * gap + 20;
-    drawPrompt(ctx, `▲▼ Navigate   ✕/ENTER Confirm`, VIEW_W / 2, hintY, 14, { color: '#888' });
+    drawPrompt(ctx, `[${navLabel}] Navigate   [${confirmLabel}] Confirm`, VIEW_W / 2, hintY, 13, { color: '#777' });
     ctx.restore();
   },
 
@@ -756,19 +758,19 @@ export const GameOver = {
 
     // Options.
     let oy = 375;
-    drawPrompt(ctx, (this.focus === 0 ? '▶ ' : '') + 'R — Retry', VIEW_W / 2, oy, 24, { color: GOLD });
+    drawPrompt(ctx, (this.focus === 0 ? '▸ ' : '  ') + 'R — Retry', VIEW_W / 2, oy, 22, { color: GOLD });
     oy += 40;
 
     const okCont = canContinue(hero);
     const remaining = (hero.maxContinues ?? 3) - (hero.continuesUsed ?? 0);
     drawPrompt(
       ctx,
-      `${this.focus === 1 ? '▶ ' : ''}C — Continue (${remaining} left, ${CONTINUE_COST} coins)`,
-      VIEW_W / 2, oy, 22,
+      `${this.focus === 1 ? '▸ ' : '  '}C — Continue (${remaining} left, ${CONTINUE_COST} coins)`,
+      VIEW_W / 2, oy, 20,
       { color: okCont ? GOLD : '#555555' },
     );
     oy += 40;
-    drawPrompt(ctx, (this.focus === 2 ? '▶ ' : '') + 'Q — Quit', VIEW_W / 2, oy, 22, { color: '#cccccc' });
+    drawPrompt(ctx, (this.focus === 2 ? '▸ ' : '  ') + 'Q — Quit', VIEW_W / 2, oy, 20, { color: '#cccccc' });
     ctx.restore();
   },
 
