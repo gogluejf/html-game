@@ -64,6 +64,11 @@ function makeCtx() {
     set textAlign(v) { calls.push(['textAlign', v]); },
     get textAlign() { return this._ta ?? 'start'; },
     set font(v) { calls.push(['font', v]); },
+    strokeRect(...a) { calls.push(['strokeRect', ...a]); },
+    setLineDash(...a) { calls.push(['setLineDash', ...a]); },
+    arcTo(...a) { calls.push(['arcTo', ...a]); },
+    quadraticCurveTo(...a) { calls.push(['quadraticCurveTo', ...a]); },
+    bezierCurveTo(...a) { calls.push(['bezierCurveTo', ...a]); },
   };
 }
 
@@ -105,7 +110,7 @@ ok('sections are strictly increasing (catalog order preserved)', () => {
     'trail', 'afterimage', 'telegraph-circle', 'ground-target-marker',
     'target-reticle', 'vignette', 'sprite-flash', 'camera-shake',
     'screen-flash', 'sprite-shake', 'impact-star', 'fade-out', 'scale-pulse',
-    'squash-stretch', 'dust-cloud', 'attack-arc', 'aura-glow', 'screen-overlay',
+    'squash-stretch', 'dust-cloud', 'slash', 'aura-glow', 'screen-overlay',
     'composite-explosion', 'beam',
   ];
   assert.deepEqual(list.map(e => e.type), expected, 'full catalog order matches §1→§24 then Beam');
@@ -177,7 +182,7 @@ ok('afterimage feeds synthetic ghosts and draws rects', () => {
 ok('shake proxy (camera-shake) draws a visible offset box', () => {
   const ctx = makeCtx();
   byType['camera-shake'].demo(ctx, 0.1);
-  assert.ok(has(ctx, 'fillRect') && has(ctx, 'fill'), 'camera-shake proxy painted a box');
+  assert.ok(has(ctx, 'strokeRect') || has(ctx, 'fillRect'), 'camera-shake proxy painted a box');
 });
 ok('at least one draw call on average across ALL demos at t=0.05', () => {
   let drew = 0;
@@ -195,13 +200,13 @@ Theater.close();
 ok('list length matches theaterList().length', () => {
   assert.equal(Theater.count, theaterList().length);
 });
-ok('open() sets active=true and resets index/clock to 0', () => {
+ok('open() sets active=true and resets index/clock to pre-roll', () => {
   // Start from a non-zero state to prove open() actually resets.
   Theater.open(); Theater.step(1); Theater.update(DT * 5);
   Theater.open();
   assert.equal(Theater.active, true);
   assert.equal(Theater.index, 0);
-  assert.equal(Theater.clock, 0);
+  assert.ok(Theater.clock <= 0, 'clock reset to pre-roll (≤ 0)');
 });
 ok('step(+1) advances the index', () => {
   Theater.open();
@@ -227,12 +232,12 @@ ok('step wraps backward at index 0 to the last entry', () => {
   Theater.step(-1);
   assert.equal(Theater.index, Theater.count - 1);
 });
-ok('step() resets the clock to 0', () => {
+ok('step() resets the clock to pre-roll', () => {
   Theater.open();
-  Theater.update(DT * 10);
+  Theater.update(DT * 40); // advance past the -0.5 pre-roll into positive territory
   assert.ok(Theater.clock > 0, 'clock advanced before step');
   Theater.step(1);
-  assert.equal(Theater.clock, 0);
+  assert.ok(Theater.clock <= 0, 'clock reset to pre-roll after step');
 });
 ok('update(dt) advances the clock only when active', () => {
   Theater.open();

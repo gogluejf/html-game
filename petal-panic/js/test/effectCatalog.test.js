@@ -91,7 +91,7 @@ const DEFAULT_PARAMS = {
   'scale-pulse':          { box: { x: 144, y: 74, w: 32, h: 32 }, duration: 0.8 },
   'squash-stretch':       { box: { x: 144, y: 74, w: 32, h: 32 }, duration: 0.6 },
   'dust-cloud':           { x: 160, y: 90, particleCount: 18, lifetime: 0.8 },
-  'attack-arc':           { x: 160, y: 90, duration: 0.4 },
+  'slash':           { x: 160, y: 90, duration: 0.4 },
   'aura-glow':            { x: 160, y: 90, duration: 1.0 },
   'screen-overlay':       { color: '#ff5a5a', opacity: 0.5, duration: 1.0, fadeIn: 0.2, fadeOut: 0.2 },
   'composite-explosion':  { x: 160, y: 90, radius: 60, explosionCount: 6, duration: 1.0 },
@@ -128,7 +128,7 @@ ok('full type sequence matches the documented catalog order', () => {
     'trail', 'afterimage', 'telegraph-circle', 'ground-target-marker',
     'target-reticle', 'vignette', 'sprite-flash', 'camera-shake',
     'screen-flash', 'sprite-shake', 'impact-star', 'fade-out', 'scale-pulse',
-    'squash-stretch', 'dust-cloud', 'attack-arc', 'aura-glow', 'screen-overlay',
+    'squash-stretch', 'dust-cloud', 'slash', 'aura-glow', 'screen-overlay',
     'composite-explosion', 'beam',
   ];
   assert.deepEqual(list.map(e => e.type), expected, 'full catalog order matches §1→§24 then Beam');

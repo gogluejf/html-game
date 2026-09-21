@@ -364,7 +364,7 @@ export const CATALOG = [
   { type: 'scale-pulse',           name: 'Scale / Pulse',           section: 18, params: { box: BOX, duration: 0.8 } },
   { type: 'squash-stretch',        name: 'Squash & Stretch',        section: 19, params: { box: BOX, duration: 0.6 } },
   { type: 'dust-cloud',            name: 'Dust Cloud',              section: 20, params: { x: STAGE_X, y: STAGE_Y, particleCount: 18, lifetime: 0.8 } },
-  { type: 'attack-arc',            name: 'Attack Arc / Slash',      section: 21, params: { x: STAGE_X, y: STAGE_Y, duration: 0.4 } },
+  { type: 'slash',                 name: 'Slash',                   section: 21, params: { duration: 0.1, angle: -Math.PI / 4, length: 52, spacing: 9, traceCount: 3, forwardOffset: 38, color: '#fff' } },
   { type: 'aura-glow',             name: 'Aura / Glow',             section: 22, params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
   { type: 'screen-overlay',        name: 'Screen Overlay',          section: 23, params: { color: '#ff5a5a', opacity: 0.5, duration: 1.0, fadeIn: 0.2, fadeOut: 0.2 } },
   { type: 'composite-explosion',   name: 'Composite Explosion Burst', section: 24, params: { x: STAGE_X, y: STAGE_Y, radius: 60, explosionCount: 6, duration: 1.0 } },
@@ -377,3 +377,4 @@ export const CATALOG = [
 // visible proxy driven by the instance's getOffset() so the jitter reads.
 
 // Theater scenes live in theater-scenes.js (debug-only, not loaded in gameplay).
+export { theaterList } from './theater-scenes.js';

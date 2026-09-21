@@ -310,19 +310,23 @@ Compares `effects.md` (concept catalog) against actual code in `petal-panic/js/e
 
 ---
 
-## 21. Attack Arc / Slash (`attackArc.js`)
+## 21. Slash (`slash.js`)
 
 | Param | Config? |
 |-------|---------|
-| arc angle | ✅ |
-| radius | ✅ |
+| angle relative to facing | ✅ |
+| trace length | ✅ |
+| trace spacing | ✅ |
 | thickness | ✅ |
+| trace count | ✅ |
+| forward offset | ✅ |
 | duration | ✅ |
 | orientation | ✅ |
 | opacity | ✅ |
 | follow entity | ✅ |
+| color | ✅ |
 
-> Fully parametric. Also accepts `sweepDirection`, `color` (all ✅).
+> Fully parametric.
 
 ---
 

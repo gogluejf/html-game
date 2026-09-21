@@ -38,7 +38,7 @@ import { shockwave } from './shockwave.js';
 import { telegraphCircle } from './telegraphCircle.js';
 import { groundMarker } from './groundMarker.js';
 import { targetReticle } from './targetReticle.js';
-import { attackArc } from './attackArc.js';
+import { slash } from './slash.js';
 import { fadeOut } from './fadeOut.js';
 import { scalePulse } from './scalePulse.js';
 import { squashStretch } from './squashStretch.js';
@@ -75,7 +75,7 @@ registerEffect('shockwave', shockwave);
 registerEffect('telegraph-circle', telegraphCircle);
 registerEffect('ground-target-marker', groundMarker);
 registerEffect('target-reticle', targetReticle);
-registerEffect('attack-arc', attackArc);
+registerEffect('slash', slash);
 
 // --- M6 sprite-state effects -----------------------------------------------------
 registerEffect('fade-out', fadeOut);

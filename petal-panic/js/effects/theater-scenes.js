@@ -358,9 +358,9 @@ const SCENES = {
       ctx.fillRect(STAGE_X - 60, STAGE_Y + 30, 120, 2);
     },
   },
-  // 21. Attack Arc: hero swings
-  'attack-arc': {
-    setup() { return { hero: heroEntity(STAGE_X - 30, STAGE_Y, 0) }; },
+  // 21. Slash: three claw traces appear instantly in front of hero
+  slash: {
+    setup() { return { hero: heroEntity(STAGE_X - 35, STAGE_Y, 0) }; },
     fire(c, entry) { return fireManual({ type: entry.type, params: { ...entry.params } }, c.hero); },
     draw(ctx, c) { c.hero.draw(ctx); },
   },

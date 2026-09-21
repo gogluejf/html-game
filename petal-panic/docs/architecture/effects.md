@@ -72,7 +72,7 @@ Concept triggers (design intent) and current in-game usage (what actually fires 
 | 18 | Scale / Pulse | ❌ | state change, spawn | — |
 | 19 | Squash & Stretch | ❌ | state change (jump/landing), hit landed | — |
 | 20 | Dust Cloud | ❌ | state change (landing/run start), collision | — |
-| 21 | Attack Arc / Slash | ❌ | attack active | — |
+| 21 | Slash | ❌ | attack active | — |
 | 22 | Aura / Glow | ❌ | state change, spawn | — |
 | 23 | Screen Overlay | ❌ | state change (boss phase / danger state) | — |
 | 24 | Composite Explosion Burst | ❌ | death, explosion | — |
@@ -417,20 +417,24 @@ Parameters may include:
 
 ---
 
-## 21. Attack Arc / Slash
+## 21. Slash
 
-Creates a fast visual arc representing the path of a melee attack.
+Creates N parallel tapered claw/blade traces (default 3) that appear instantly over a damaged entity and fade quickly. Each trace is a dart shape: wide at the base, pointed at the tip. Frequently used for melee hits on enemies or heroes.
 
-Useful for claws, blades, ribbons, cymbals, sweeping attacks, and other fast melee actions.
+Useful for claws, fast melee strikes, blade swipes, and short directional attacks. The visual does not define collision; an Attack Pattern pairs it with the real hitbox.
 
 Parameters may include:
-- Arc angle
-- Radius
+- Angle relative to facing
+- Trace length
+- Trace spacing
 - Thickness
+- Trace count
+- Forward offset
 - Duration
 - Orientation
 - Opacity
 - Follow entity
+- Color
 
 ---
 
