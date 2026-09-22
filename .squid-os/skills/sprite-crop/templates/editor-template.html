@@ -1933,6 +1933,26 @@ function finishHover(prev){
 // bounding box around every frame's sprite + the collision + any melee boxes,
 // measured at drag start. Scaling everything about this one point keeps the
 // relative positions/sizes of frames, collision and melee intact.
+// ---------- rigid body utilities (single source of truth for propagation) ----------
+// Shift the ENTIRE body (all frames + collision + all boxes + pivot) by (dx, dy).
+function shiftAll(dx, dy){
+  const st = cur.st;
+  for (let i=0;i<st.frames.length;i++){
+    st.frames[i].offset.x += dx;
+    st.frames[i].offset.y += dy;
+    const bxArr = st.frames[i].boxes || [];
+    for (const b of bxArr){ b.x += dx; b.y += dy; }
+  }
+  st.collision.x += dx; st.collision.y += dy;
+  if (st.pivot){ st.pivot.x += dx; st.pivot.y += dy; }
+}
+// Shift ONE element + propagate to all frames (rigid body).
+// All element types move the ENTIRE body — they are all part of the same rigid unit.
+// type: 'sprite' | 'collision' | 'box', idx: box index (unused, kept for clarity)
+function shiftElement(type, idx, dx, dy){
+  shiftAll(dx, dy);
+}
+// Compute the bounding-box center of all elements (for scale-about-center).
 function sharedScaleCenter(st, before){
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   const b0=before.col;
@@ -1950,9 +1970,8 @@ function sharedScaleCenter(st, before){
   }
   return { cx:(minX+maxX)/2, cy:(minY+maxY)/2 };
 }
-// Scale EVERYTHING (all frames' sprites + the shared collision + every melee box)
-// about ONE shared center by (rx,ry). Each element keeps its own size ratio and
-// its relative position to the others — the whole body scales as a single unit.
+// Scale EVERYTHING (all frames' sprites + the shared collision + every box)
+// about ONE shared center by (rx,ry). The whole body scales as a single unit.
 function scaleAllAbout(st, before, rx, ry){
   const C = sharedScaleCenter(st, before);
   // frames: scale size + reposition center on its scaled ray from C
@@ -1993,28 +2012,11 @@ const BOX = {
   sprite: {
     snap(st, fi){ const f=st.frames[fi], im=cur.imgs[fi]; return { x:f.offset.x-im.naturalWidth*f.scale.sx/2, y:f.offset.y-im.naturalHeight*f.scale.sy/2, w:im.naturalWidth*f.scale.sx, h:im.naturalHeight*f.scale.sy }; },
     move(d, sx, sy){
-      // current frame gets the exact target; in ALL FRAMES mode every other frame
-      // gets the same DELTA applied to its own starting offset (relative shift),
-      // AND the shared collision + every melee box slide by the same delta so the
-      // whole body moves as one rigid unit.
       const st=cur.st, fi=curFrameIdx();
       const tx=Math.round(sx-d.ox+d.orig.w/2), ty=Math.round(sy-d.oy+d.orig.h/2);
-      const f0=st.frames[fi]; f0.offset.x=tx; f0.offset.y=ty;
-      if (show.allFrames && d.before){
-        const dx=tx-d.before.frames[fi].ox, dy=ty-d.before.frames[fi].oy;
-        for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
-          const b=d.before.frames[i]; st.frames[i].offset.x=Math.round(b.ox+dx); st.frames[i].offset.y=Math.round(b.oy+dy); }
-        // collision + boxes follow the sprite by the same delta
-        const bc=d.before.col;
-        st.collision.x=Math.round(bc.x+dx); st.collision.y=Math.round(bc.y+dy);
-        for (let i=0;i<st.frames.length;i++){
-          const fr=st.frames[i];
-          const bxArr=d.before.frames[i].bx||[];
-          for (let bi=0;bi<bxArr.length;bi++){ if(!fr.boxes[bi]) continue;
-            fr.boxes[bi].x=Math.round(bxArr[bi].x+dx); fr.boxes[bi].y=Math.round(bxArr[bi].y+dy); }
-        }
-        if (st.pivot && d.before.pivot){ st.pivot.x=Math.round(d.before.pivot.x+dx); st.pivot.y=Math.round(d.before.pivot.y+dy); }
-      }
+      const dx=tx-st.frames[fi].offset.x, dy=ty-st.frames[fi].offset.y;
+      if (show.allFrames){ shiftAll(dx, dy); }
+      else { st.frames[fi].offset.x=tx; st.frames[fi].offset.y=ty; }
     },
     resize(d, sx, sy){
       const o=d.orig, ow=d.ow, oh=d.oh;
@@ -2077,21 +2079,11 @@ const BOX = {
   collision: {
     snap(st, fi){ return {...st.collision}; },
     move(d, sx, sy){
-      const st=cur.st, fi=curFrameIdx();
+      const st=cur.st;
       const nx=Math.round(sx-d.ox), ny=Math.round(sy-d.oy);
-      st.collision.x=nx; st.collision.y=ny;
-      // ALL FRAMES: shift every frame's offset + boxes by the same delta
-      if (show.allFrames && d.before){
-        const dx=nx-d.before.col.x, dy=ny-d.before.col.y;
-        for (let i=0;i<st.frames.length;i++){
-          const b=d.before.frames[i], fr=st.frames[i];
-          fr.offset.x=Math.round(b.ox+dx); fr.offset.y=Math.round(b.oy+dy);
-          const bxArr=b.bx||[];
-          for (let bi=0;bi<bxArr.length;bi++){ if(!fr.boxes[bi]) continue;
-            fr.boxes[bi].x=Math.round(bxArr[bi].x+dx); fr.boxes[bi].y=Math.round(bxArr[bi].y+dy); }
-        }
-        if (st.pivot && d.before.pivot){ st.pivot.x=Math.round(d.before.pivot.x+dx); st.pivot.y=Math.round(d.before.pivot.y+dy); }
-      }
+      const dx=nx-st.collision.x, dy=ny-st.collision.y;
+      if (show.allFrames){ shiftAll(dx, dy); }
+      else { st.collision.x=nx; st.collision.y=ny; }
     },
     resize(d, sx, sy){
       const st=cur.st, fi=curFrameIdx();
@@ -2114,26 +2106,21 @@ const BOX = {
       move(d, sx, sy){
         const st=cur.st, fi=curFrameIdx();
         const nx=Math.round(sx-d.ox), ny=Math.round(sy-d.oy);
-        const f0=st.frames[fi]; const b0=f0.boxes[d.boxIdx]; if(!b0) return;
-        b0.x=nx; b0.y=ny;
-        if (show.allFrames && d.before){
-          const dx=nx-d.before.frames[fi].bx[d.boxIdx].x, dy=ny-d.before.frames[fi].bx[d.boxIdx].y;
-          for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
-            const fr=st.frames[i]; if(!fr.boxes[d.boxIdx]) continue;
-            fr.boxes[d.boxIdx].x=Math.round(d.before.frames[i].bx[d.boxIdx].x+dx);
-            fr.boxes[d.boxIdx].y=Math.round(d.before.frames[i].bx[d.boxIdx].y+dy); }
-          if (st.pivot && d.before.pivot){ st.pivot.x=Math.round(d.before.pivot.x+dx); st.pivot.y=Math.round(d.before.pivot.y+dy); }
-        }
+        const b0=st.frames[fi].boxes[idx]; if(!b0) return;
+        const dx=nx-b0.x, dy=ny-b0.y;
+        if (show.allFrames){ shiftAll(dx, dy); }
+        else { b0.x=nx; b0.y=ny; }
       },
       resize(d, sx, sy){
         const st=cur.st, fi=curFrameIdx(), f0=st.frames[fi];
-        const b0=f0.boxes[d.boxIdx]; if(!b0) return;
+        const b0=f0.boxes[idx]; if(!b0) return;
         const m0={...d.box};
         resizeBox(m0, d.anchor, sx, sy, d.orig, d.ratio);
         b0.x=m0.x; b0.y=m0.y; b0.w=m0.w; b0.h=m0.h;
         if (show.allFrames && d.before){
-          const bref=d.before.frames[fi].bx[d.boxIdx];
-          const rx=bref.w>0?m0.w/bref.w:1, ry=bref.h>0?m0.h/bref.h:1;
+          const bref=d.before.frames[fi].bx[idx];
+          if (!bref || bref.w===0 || bref.h===0) return;
+          const rx=m0.w/bref.w, ry=m0.h/bref.h;
           scaleAllAbout(st, d.before, rx, ry);
         }
       }
@@ -2361,35 +2348,12 @@ window.addEventListener('keydown', e=>{
       else return;
       e.preventDefault();
       pushUndo();
-      // Apply same all-frames propagation as drag handlers
       if (_selectedBox.startsWith('box_')){
-        const selIdx = parseInt(_selectedBox.slice(4), 10);
-        for (let i=0;i<st.frames.length;i++){
-          if (!st.frames[i].boxes[selIdx]) continue;
-          st.frames[i].boxes[selIdx].x += dx;
-          st.frames[i].boxes[selIdx].y += dy;
-        }
-        if (st.pivot){ st.pivot.x += dx; st.pivot.y += dy; }
+        shiftElement('box', parseInt(_selectedBox.slice(4), 10), dx, dy);
       } else if (_selectedBox === 'sprite'){
-        for (let i=0;i<st.frames.length;i++){
-          st.frames[i].offset.x += dx;
-          st.frames[i].offset.y += dy;
-        }
-        st.collision.x += dx; st.collision.y += dy;
-        for (let i=0;i<st.frames.length;i++){
-          const bxArr = st.frames[i].boxes || [];
-          for (const b of bxArr){ b.x += dx; b.y += dy; }
-        }
-        if (st.pivot){ st.pivot.x += dx; st.pivot.y += dy; }
+        shiftElement('sprite', -1, dx, dy);
       } else if (_selectedBox === 'collision'){
-        st.collision.x += dx; st.collision.y += dy;
-        for (let i=0;i<st.frames.length;i++){
-          st.frames[i].offset.x += dx;
-          st.frames[i].offset.y += dy;
-          const bxArr = st.frames[i].boxes || [];
-          for (const b of bxArr){ b.x += dx; b.y += dy; }
-        }
-        if (st.pivot){ st.pivot.x += dx; st.pivot.y += dy; }
+        shiftElement('collision', -1, dx, dy);
       }
       syncPanel(); draw(); saveState();
       return;
