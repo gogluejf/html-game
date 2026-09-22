@@ -1,12 +1,10 @@
 // Petal Panic — Collision system (design §3 "Collision API" & §8).
-//
 // Responsibilities:
 //   - aabbOverlap(a, b)          strict AABB overlap test (touching edges = false)
 //   - resolve(entity, solids)    positional correction so an entity can't pass
 //                                through SOLID boxes; axis-separated (X then Y)
 //   - CollisionWorld             spatial-hash broadphase + declarative mask rules
 //                                narrowphase; fires per-rule callbacks on overlap
-//
 // Design goals:
 //   - Adding a new interaction = one line in COLLISION_RULES (no if-chains).
 //   - Broadphase is a uniform spatial hash grid → O(n·k), not O(n²).
@@ -232,7 +230,7 @@ export const COLLISION_RULES = [
   { a: LAYER.ENEMY,     b: LAYER.SOLID,       action: 'resolve'    },
   { a: LAYER.PROJ_ALLY, b: LAYER.ENEMY,       action: 'hit'        },
   { a: LAYER.PROJ_ALLY, b: LAYER.BOSS,        action: 'hit'        },
-  { a: LAYER.PROJ_ALLY, b: LAYER.SOLID,       action: 'hit'        }, // thorns chip barrels (Task 4.1)
+  { a: LAYER.PROJ_ALLY, b: LAYER.SOLID,       action: 'hit'        }, // thorns chip barrels ()
   { a: LAYER.PROJ_FOE,  b: LAYER.HERO,        action: 'hit'        },
   { a: LAYER.HERO,      b: LAYER.PICKUP,      action: 'pickup'     },
   { a: LAYER.HERO,      b: LAYER.COIN,        action: 'collect'    },

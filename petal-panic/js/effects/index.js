@@ -1,20 +1,16 @@
 // Petal Panic — Effects Engine core (spec: docs/architecture/effects.md).
-//
 // Generic, registry-driven effect system. Every effect is a data object
 // `{ type, params }` attached declaratively to a carrier; the engine fires it
 // when a trigger event occurs and runs the instance through one uniform
 // lifecycle: fire → update(dt) → render(ctx) → complete.
-//
 // Carriers are anything that owns state an effect needs at fire time
 // (projectile, hitbox, collision event, marker, radius). A carrier declares
 // its effects in `carrier.effects`:
-//
 //   carrier.effects = [
 //     { on: 'collision',    type: 'particle-burst', params: { count: 12 } },
 //     { on: 'attackActive', type: 'beam',           params: { length: 120 } },
 //     { on: 'spawn',        type: 'trail',          continuous: { condition: 'moving' } },
 //   ];
-//
 // Pure module — no DOM required. Effect factories may use Canvas 2D APIs at
 // render time; the engine itself never touches document/window.
 
@@ -304,10 +300,9 @@ export function resetEffects() {
 // A uniform, debug-only preview surface: every registered effect gets a small
 // self-contained `demo(ctx, t)` that renders it standalone on a neutral stage,
 // driven ONLY by its params — no real gameplay entity required. The theater
-// (task 7.2) steps through `theaterList()` in catalog order and calls the
+// () steps through `theaterList()` in catalog order and calls the
 // current entry's demo each frame with an increasing elapsed time `t`.
-//
-// Design choice (documented per task 7.1): the demo logic is CENTRALIZED here
+// Design choice (documented per ): the demo logic is CENTRALIZED here
 // rather than duplicated across the 25 effect files. Each demo reuses the
 // engine's own record/render path — fireManual(type, null carrier, default
 // params) → step updateEffects/drawEffects to reach time `t` → draw — so the
@@ -315,7 +310,6 @@ export function resetEffects() {
 // stays one file (the factory) plus one CATALOG row below. The only per-effect
 // knowledge lives in this table (default params + a few presentation hooks),
 // which is data, not behavior.
-//
 // Per-demo clock model: `demo(ctx, t)` is STATELESS and deterministic — it
 // clears the engine, fires the effect fresh at t=0, advances it to elapsed
 // time `t`, then draws the single frame at `t`. The theater therefore just

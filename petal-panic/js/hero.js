@@ -1,8 +1,6 @@
 // Petal Panic — Hero (design §4-5). The core playable character.
-//
 // Wraps a hero definition (see heroDefs.js) and drives run/jump/crouch/slide,
 // gravity, ground friction, facing + mirrorX, and crouch-box shrink.
-//
 // Collision model note: the hero's collision box is an OFFSET AABB (this.box)
 // relative to its origin. Crouching swaps in a shorter box (crouchBox) whose
 // top edge drops by h*0.4 while keeping the feet planted — this validates the
@@ -112,7 +110,7 @@ export class Hero extends Entity {
     // overlay shows them as 'intangible' and 'rapid' bars in the per-entity stack.
     this.checkpoint = { x, y };
 
-    // --- Death / respawn / continue (Task 5.2) -------------------------------
+    // --- Death / respawn / continue () -------------------------------
     // dying: hero has hit 0 energy and is playing the skull-fade death sequence.
     // deathTimer: seconds elapsed since death started (drives skull motion/fade).
     // DEATH_DURATION: total length of the skull animation before respawn/gameover.
@@ -163,7 +161,7 @@ export class Hero extends Entity {
     // stores or REPLACES this value (latest valid input wins) — there is never
     // a multi-action queue. The buffered action executes only after the
     // current attack's recovery finishes NATURALLY; buffering never shortens
-    // recovery (§18). Cancellation clears the slot (task 3.2).
+    // recovery (§18). Cancellation clears the slot ().
     this.pendingMelee = null;
 
     // --- Special melee (design §15) ------------------------------------------
@@ -176,7 +174,7 @@ export class Hero extends Entity {
     this.specialMeleePhase = null;     // 'windup' | 'active' | 'recovery' | null
     this.specialMeleeFrame = 0;        // float frame position within the swing
     this.specialMeleeDir = 1;          // resolved dir: facing * config.direction
-    // Self-protection on connect (knockback.md milestone 4): set to the number
+    // Self-protection on connect (knockback.md ): set to the number
     // of frames remaining (active + recovery) once the special swing lands a
     // clean hit during its active phase. Decays one frame per tick in
     // updateSpecialMelee and is cleared by endSpecialMelee(). While > 0 the
@@ -367,7 +365,6 @@ export class Hero extends Entity {
     // the old crouch lock still eats the input). Crouch only initiates while
     // grounded. §4 "Movement Locked": while lockMove is held, Down no longer
     // initiates crouch — it becomes a downward aim instead (see resolveAim).
-    //
     // Capture the PRE-transition crouch state first: the entry block below can
     // flip this.crouching to true THIS frame, and the grace check in the
     // movement branch needs to know whether the hero was ALREADY crouched when
@@ -389,7 +386,6 @@ export class Hero extends Entity {
     // --- Horizontal intent --------------------------------------------------
     // Crouching locks horizontal control (SMB1): once crouched you cannot
     // accelerate or steer, only carry existing momentum and skid to a stop.
-    //
     // One-frame grace: when you FIRST press down this frame (wasCrouching was
     // false), we still honor the held direction for THIS frame so the run
     // momentum carries into the skid instead of stopping dead on the press.
@@ -450,13 +446,11 @@ export class Hero extends Entity {
         this.vx = targetVx;
       } else {
         // Air (or blocked-on-ground): §8 air control. Two distinct behaviors:
-        //
         //   1. REVERSAL — the hero has real momentum (|vx| >= threshold) and is
         //      pressing the OPPOSITE direction. Flip instantly, preserving the
         //      current speed magnitude. No decel-to-zero, no re-accel: a +200
         //      hero pressing left becomes -200 on this frame. This keeps mid-air
         //      corrections crisp and never lets a reversal feel sluggish.
-        //
         //   2. RAMP-UP — starting from near-zero (stationary jump) or topping up
         //      in the SAME direction. Accelerate toward full run speed over a
         //      short period so a stationary jump stays precise instead of
@@ -860,7 +854,7 @@ export class Hero extends Entity {
 
   /**
    * True while the hero is protected by a clean special-melee connect
-   * (knockback.md milestone 4): a sweep/cartwheel that landed during its
+   * (knockback.md ): a sweep/cartwheel that landed during its
    * active phase keeps the hero immune to contact damage until that swing's
    * active+recovery phases end. Whiffs grant nothing; normal melee and
    * projectiles never set this window.
@@ -948,7 +942,7 @@ export class Hero extends Entity {
 
     this.specialMeleeFrame += dt / Hero.SPECIAL_MELEE_FRAME_DURATION;
 
-    // Self-protection on connect (knockback.md milestone 4): the window is
+    // Self-protection on connect (knockback.md ): the window is
     // counted in swing frames, so it decays one frame per tick while the
     // special swing is running. It can only be armed during active, so by the
     // time recovery ends the count has drained to exactly zero — no separate
@@ -981,8 +975,7 @@ export class Hero extends Entity {
     this.specialMeleeActive = false;
     this.specialMeleePhase = null;
     this.specialMeleeFrame = 0;
-    // A cancelled swing ends its self-protection immediately (milestone 4:
-    // "protection clears when the swing ends or is cancelled").
+    // A cancelled swing ends its self-protection immediately (    // "protection clears when the swing ends or is cancelled").
     this._connectProtectFrames = 0;
   }
 
@@ -1080,7 +1073,7 @@ export class Hero extends Entity {
   }
 
   /**
-   * Begin the death sequence (Task 5.2). Called by the update system once
+   * Begin the death sequence (). Called by the update system once
    * energy reaches 0 and no death is already in progress. The hero becomes
    * invisible for DEATH_DURATION seconds while a skull emoji floats up in a
    * sine wave and fades; on completion the caller respawns or transitions to
@@ -1293,7 +1286,7 @@ export class Hero extends Entity {
   }
 }
 
-// Seconds of invincibility granted on respawn (design §1 / Task 5.2). Static so
+// Seconds of invincibility granted on respawn (design §1 / ). Static so
 // tests can read it without instantiating a hero.
 Hero.RESPAWN_IFRAMES = 1.0;
 

@@ -1,14 +1,12 @@
 // Petal Panic — Objects (design §10 "Object"): destructible solids.
-//
 // An Object is a solid that blocks movement (layer SOLID) but also carries an
 // HP pool. Unlike static platforms it can be damaged: melee swings, friendly
 // projectiles, and bombs chip its HP; it does NOT break on touch or per-hit.
 // When HP reaches 0 it is destroyed — a damaging barrel explodes (AoE within
 // its explosion.radius, hurting enemies AND the hero), while a coin barrel bursts
 // into coins with no damage.
-//
 // The GameObj base is intentionally generic so later objects (checkpoints in
-// task 4.3, other solids) can inherit from it. Barrels are the v1 concrete
+// , other solids) can inherit from it. Barrels are the v1 concrete
 // case. The explosion itself is a PURE function (resolveExplosion in
 // explosion.js) that takes the world's live entities + the hero and applies
 // central damage() to everything inside the radius — keeping the math

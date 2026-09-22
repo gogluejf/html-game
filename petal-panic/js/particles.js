@@ -1,10 +1,8 @@
 // Petal Panic — Particles (design §12).
-//
 // Lightweight pooled particle system for one-shot visual effects:
 //   - sparkle bursts on enemy death / barrel pop (small colored squares that
 //     fly out and fade)
-//
-// Coins live in js/coin.js (Task 4.2) because they have per-type weight,
+// Coins live in js/coin.js () because they have per-type weight,
 // bounce physics, and a collection pipeline — all of which are non-trivial
 // enough to warrant their own module. This file re-exports the shared coin
 // pool so existing callers (`import { coins } from './particles.js'`) keep

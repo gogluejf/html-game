@@ -3,13 +3,11 @@
 // impacts, stomps, and power releases; commonly paired with an area collision
 // volume by an Attack Pattern (the ring itself does NOT hit the player —
 // presentation only, per the core rule in effects.md).
-//
 // Config precondition: the documented behavior "expands to maxRadius at
 // expansionSpeed then fades" assumes duration >= (maxRadius − startRadius)/
 // expansionSpeed. If duration is shorter than the travel time, the ring stops
 // expanding at its current radius when the instance completes (no teleport, no
-// forced arrival) — same convention as groundWave (task 5.3).
-//
+// forced arrival) — same convention as groundWave ().
 // STATE/DRAW effect: this instance stays active over its whole lifetime and
 // owns its own timer. Each update() advances the clock; each render() draws
 // one stroked circle centered on the origin whose radius is derived PURELY
@@ -18,7 +16,6 @@
 // whole lifetime. The geometry is fully deterministic — no randomness — so
 // the ring reaches exactly `maxRadius` at the declared arrival time
 // ((maxRadius − startRadius)/expansionSpeed) and holds there until completion.
-//
 // Lifetime: `duration` is the WHOLE-instance lifetime and equals the total
 // lifetime exactly — the instance completes when `elapsed >= duration - EPS`
 // (fixed-dt epsilon convention). This is a discrete fire: it is spawned on a
@@ -27,12 +24,10 @@
 // carrier → params alone drive it). No continuous-persistence rule applies
 // (B2-style recency is not needed: the ring has a fixed finite life window,
 // not a fade-out tail).
-//
 // Origin: if the carrier exposes origin(), its position wins over params.x/y
 // (same block pattern as trail/afterimage/groundWave); params.x/y are the
 // standalone/theater fallback used when the effect is fired with a null
 // carrier.
-//
 // params: { startRadius?, maxRadius?, expansionSpeed?, thickness?, opacity?,
 //           duration?, color?, x?, y? }
 //   startRadius    — initial ring radius in px (default 4). Non-negative;
@@ -69,7 +64,6 @@
 //   x, y           — standalone origin (fallback when no carrier origin()
 //                    exists): the point the ring expands from (default
 //                    { x: 0, y: 0 }).
-//
 // Geometry: at elapsed t the ring sits at
 //   r(t) = min(startRadius + expansionSpeed·t, maxRadius)
 // drawn as a single stroked circle centered at the resolved origin with
@@ -77,14 +71,12 @@
 // Drawn inside a save/restore bracket (recording-canvas friendly). Degenerate
 // cases (thickness ≤ 0 or opacity ≤ 0) draw nothing but the instance still
 // runs its timer and completes at `duration`.
-//
 // Duration vs travel time: if `duration < (maxRadius − startRadius)/
 // expansionSpeed`, the instance completes BEFORE the ring reaches `maxRadius`
 // — the ring simply stops at whatever radius it has reached at that moment
 // (it does NOT teleport to the declared maxRadius). This models a short-lived
 // shockwave that hasn't finished expanding; the speed is unchanged and no
 // forced-arrival occurs.
-//
 // Endpoint frame: when arrival coincides with completion (the common case
 // where (maxRadius − startRadius)/expansionSpeed == duration), the engine
 // prunes the instance during updateEffects() before drawEffects() runs, so

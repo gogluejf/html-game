@@ -1,5 +1,4 @@
-// Petal Panic — Play HUD (design §20, Task 8.3).
-//
+// Petal Panic — Play HUD (design §20, ).
 // Viewport-space overlay drawn AFTER the camera translate is restored, so it
 // never scrolls with the world. Pure canvas rects + text (functional-first;
 // visual polish later). Reads only live player state:
@@ -8,7 +7,6 @@
 //   - coins + lives (top-right)
 //   - selected-hero portrait (32×32, top-right corner)
 //   - checkpoint progress line: track + checkpoint markers + hero position
-//
 // ES module, no frameworks. No DOM access beyond the passed ctx.
 
 import { VIEW_W, VIEW_H } from './view.js';

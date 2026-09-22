@@ -4,11 +4,9 @@
 // Red edge glow when the hero takes damage (design §12, CoD-style radial
 // gradient): kicks to full on fire, decays linearly over 0.5s, renders as a
 // screen-space overlay after the camera transform is restored.
-//
 // Screen-space state lives on the instance (not module scope) so multiple
-// instances each keep their own timer; the compat shim (task 2.2) routes the
+// instances each keep their own timer; the compat shim () routes the
 // old singleton semantics through one instance.
-//
 // params: { strength?, viewW, viewH } — strength defaults to 1 (clamped 0..1);
 // viewW/viewH are read at DRAW time from the render ctx ({ view: { w, h } })
 // that drawEffects hands every instance, falling back to factory-time

@@ -1,12 +1,10 @@
 // Petal Panic — central effects module (design §12) — COMPAT SHIM.
-//
-// Task 2.2: this file used to be the monolith that owned every visual effect
+// this file used to be the monolith that owned every visual effect
 // inline. It is now a thin compatibility layer over the Effect Engine
 // (js/effects/): importing this module registers the eight migrated effect
 // types, and every legacy Effects.* method forwards to the engine's single
 // fire path (fireManual / updateEffects / drawEffects / resetEffects).
 // systems/update.js and systems/render.js call sites are untouched.
-//
 // Behavior parity with the pre-refactor monolith (reference:
 // .squid-os/plans/effect-engine/effect-reference.txt) is preserved by routing
 // through the migrated per-effect files, which own all tunables:
@@ -21,7 +19,6 @@
 //   - screenFlash.js   linear decay over 0.15s, white fill at alpha=value
 //   - spriteShake.js   ±3px while carrier.hitFlash > 0
 // No tunable constants live in this file anymore.
-//
 // Screen-space state (read via the `vignette` / `screenFlash` getters for
 // tests/debug): mirrors the engine's active instance values each frame —
 // the singleton semantics of the old API, backed by one engine instance per

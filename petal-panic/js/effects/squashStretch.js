@@ -2,9 +2,8 @@
 // Temporarily distorts a sprite's scale along its X and Y axes for landings,
 // jumps, boss stomps, impacts, bouncing objects, and exaggerated cartoon
 // movement.
-//
-// SPRITE-STATE effect (M6): like fade-out (task 6.1) and scale / pulse
-// (task 6.2), this instance does NOT paint new geometry of its own. It ramps
+// SPRITE-STATE effect (M6): like fade-out () and scale / pulse
+// (), this instance does NOT paint new geometry of its own. It ramps
 // NON-UNIFORM X/Y SCALE MULTIPLIERS over time that the renderer consumes when
 // drawing the carrier's sprite — the same consumption pattern as scalePulse's
 // uniform multiplier (the engine never mutates the carrier; the effect
@@ -25,7 +24,6 @@
 // Both paths read the SAME ramp: render() uses xScale()/yScale() alone,
 // mirroring scalePulse/fadeOut's "both paths read the SAME ramp" rule, so the
 // standalone demo and the exposed multipliers are identical values.
-//
 // Renderer consumption status: as of this task (6.3) the production renderer
 // (systems/render.js) does NOT yet read active squash-stretch instances'
 // xScale()/yScale() at the drawable entity sites — wiring that per-entity
@@ -36,7 +34,6 @@
 // contract is fully implemented and tested; a declaratively attached
 // squash-stretch will drive in-game sprite distortion once render.js folds
 // inst.xScale()/inst.yScale() into the carrier's sprite transform.
-//
 // Distortion model & parameter semantics (§19 knobs as independent
 // declarations): the effect has TWO windows inside one lifetime:
 //   - DISTORT window (length `duration`): the multipliers ease from their
@@ -63,7 +60,6 @@
 // ramp is continuous. No randomness anywhere — rendering is a pure function
 // of elapsed time and params (deterministic). Unknown/absent numeric params
 // fall back to the named defaults below.
-//
 // Lifetime & completion (the documented contract): the WHOLE-instance
 // lifetime is EXACTLY `delay + duration + recoveryDuration` seconds — the
 // total of the declared distort and recovery windows. The instance completes
@@ -73,14 +69,12 @@
 // window ends at an eased progress of exactly 1, the terminal multipliers are
 // EXACTLY 1.0 on both axes — the sprite settles back to its undistorted size
 // within the declared durations (the acceptance criterion).
-//
 // Config precondition: like attackArc/groundWave/shockwave/fadeOut/
 // scalePulse, a VISIBLE distortion requires delay + duration +
 // recoveryDuration >= ~2·dt (at least ~2 frames at dt = 1/60). The engine
 // prunes the instance during update() before drawEffects() runs once done, so
 // any total lifetime <= dt completes on the FIRST update and is pruned before
 // rendering — a sub-frame distortion is degenerate/nonsensical.
-//
 // params: { xScale?, yScale?, duration?, recoveryDuration?, intensity?,
 //           delay? }
 //   xScale         — TARGET horizontal scale at the peak of the distortion
@@ -107,7 +101,6 @@
 //   delay          — hold time in seconds BEFORE the distortion begins
 //                    (default 0). During the delay both multipliers stay
 //                    pinned at 1.0. Negative values clamp to 0.
-//
 // Carrier geometry (standalone/demo path only): the reference box drawn by
 // render() resolves the sprite box at DRAW time via carrier.worldBox()
 // ({ x, y, w, h }) when available, falling back to carrier.origin()/size(),

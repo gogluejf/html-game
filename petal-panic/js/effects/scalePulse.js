@@ -1,8 +1,7 @@
 // Petal Panic — scale / pulse effect (effects.md §18, catalog #18). Temporarily
 // grows and/or shrinks a visual element for charging attacks, pickups, warnings,
 // power-ups, target indicators, impacts, and environmental objects.
-//
-// SPRITE-STATE effect (M6): like fade-out (task 6.1), this instance does NOT
+// SPRITE-STATE effect (M6): like fade-out (), this instance does NOT
 // paint new geometry of its own. It ramps a SCALE MULTIPLIER over time that the
 // renderer consumes when drawing the carrier's sprite — the same consumption
 // pattern as fadeOut's alpha multiplier (the engine never mutates the carrier;
@@ -22,7 +21,6 @@
 // Both paths read the SAME ramp: render() uses scale() alone (NOT startScale ·
 // scale()), mirroring fadeOut's "both paths read the SAME ramp" rule, so the
 // standalone demo and the exposed multiplier are identical values.
-//
 // Renderer consumption status: as of this task (6.2) the production renderer
 // (systems/render.js) does NOT yet read active scale-pulse instances' scale() at
 // the drawable entity sites — wiring that per-entity consumption across all
@@ -32,7 +30,6 @@
 // the scale() contract is fully implemented and tested; a declaratively
 // attached scale-pulse will drive in-game sprite size once render.js folds
 // inst.scale() into the carrier's sprite transform.
-//
 // Ramp model & parameter semantics (§18 knobs as independent declarations):
 //   - pulseFrequency — Hz: full pulse cycles PER SECOND (the oscillation rate).
 //     Each cycle takes exactly 1/pulseFrequency seconds.
@@ -53,7 +50,6 @@
 // which equals minScale at phase = 0 (and every 2π thereafter) and maxScale at
 // phase = π/2 (a half cycle = 1/(2·pulseFrequency) seconds), staying inside
 // [minScale, maxScale] throughout.
-//
 // Lifetime & completion (the documented contract): the WHOLE-instance lifetime
 // is EXACTLY `delay + loopCount · (1/pulseFrequency)` seconds — the time needed
 // for loopCount full cycles at the declared frequency. The instance completes on
@@ -61,10 +57,9 @@
 // 1e-9), i.e. after exactly round((delay + loopCount/pulseFrequency) / dt)
 // fixed steps of dt = 1/60. Because an integer number of whole cycles elapse by
 // construction, the terminal multiplier lands exactly on minScale (a cycle
-// boundary). This generalizes fadeOut's `delay + duration` (task 6.1) to a
+// boundary). This generalizes fadeOut's `delay + duration` () to a
 // repeating pulse whose cycle length is set by the frequency, not a separate
 // duration knob.
-//
 // The documented "starts at startScale" contract holds EXACTLY during the hold
 // (t ≤ delay pins the multiplier at startScale before any oscillation begins).
 // At completion an integer number of cycles by construction lands the
@@ -80,14 +75,12 @@
 // Curve vocabulary: none — the pulse shape is fixed to a sine (deterministic;
 // no randomness anywhere — rendering is a pure function of elapsed time and
 // params). Unknown/absent numeric params fall back to the named defaults below.
-//
 // Config precondition: like attackArc/groundWave/shockwave/fadeOut, a VISIBLE
 // pulse requires loopCount/pulseFrequency >= ~2·dt (at least ~2 frames at
 // dt = 1/60). The engine prunes the instance during update() before
 // drawEffects() runs once done, so any total lifetime <= dt completes on the
 // FIRST update and is pruned before rendering — a sub-frame pulse is
 // degenerate/nonsensical.
-//
 // params: { startScale?, maxScale?, minScale?, duration?, pulseFrequency?,
 //           loopCount?, delay? }
 //   startScale     — scale multiplier at fire time and during the hold (default
@@ -126,7 +119,6 @@
 //   delay          — hold time in seconds BEFORE the pulse begins (default 0).
 //                    During the delay the multiplier stays pinned at startScale.
 //                    Negative values clamp to 0.
-//
 // Carrier geometry (standalone/demo path only): the reference box drawn by
 // render() resolves the sprite box at DRAW time via carrier.worldBox()
 // ({ x, y, w, h }) when available, falling back to carrier.origin()/size(),

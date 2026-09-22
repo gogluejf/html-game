@@ -1,16 +1,13 @@
 // Petal Panic — Enemy base class (design §6-7).
-//
 // Every enemy type inherits from this and overrides ai() with its own small
 // state machine (idle / walk / chase / attack / dead). The base class owns:
 //   - stats + hp pool (drained via central damage())
 //   - coinDrop config (rolled on death)
 //   - hitFlash timer (white flash when struck)
 //   - death pipeline: aiState='dead' → shrink/fade over deathDuration → alive=false
-//
-// Subclasses (Jester in task 3.3, others in 5.1+) add their own AI fields and
+// Subclasses (Jester in , others in 5.1+) add their own AI fields and
 // override ai(). They should NOT override update() unless they need to run
 // custom physics; the base update() handles gravity/integration uniformly.
-//
 // Death contract:
 //   - takeDamage() routes through damage(); if hp hits 0 it calls die() which
 //     sets aiState='dead'. The entity stays "alive" (still drawn, still in the

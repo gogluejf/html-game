@@ -1,11 +1,10 @@
-// Petal Panic — display fonts & marquee text treatments (Milestone 8 polish).
+// Petal Panic — display fonts & marquee text treatments (polish).
 // Replaces the old flat `monospace` + black shadowBlur look with a circus-
 // marquee identity that matches the painted logo: cream letters, red drop
 // bevel, gold glow. Three Google Fonts are loaded in index.html:
 //   TITLE  = 'Alfa Slab One'  — chunky slab serif, matches the logo lettering
 //   UI     = 'Lilita One'     — round, friendly, legible at small sizes
 //   MENACE = 'Pirata One'     — dark blackletter for GAME OVER / boss names
-//
 // Canvas can't use CSS @font-face directly, so we wait for document.fonts to
 // load before the first frame (see main.js) and set ctx.font with the family
 // name here. If a font fails to load we fall back gracefully.

@@ -1,16 +1,13 @@
-// Petal Panic — Effect Theater overlay (task 7.2).
-//
+// Petal Panic — Effect Theater overlay ().
 // A DEBUG-ONLY preview surface that steps through every registered effect in
-// catalog order (theaterList() from effects/index.js, task 7.1). When active it
+// catalog order (theaterList() from effects/index.js, ). When active it
 // paints the whole viewport black, shows a title + the current effect's name and
 // id/type, an index indicator, and runs the current effect's stateless demo each
 // frame with an increasing elapsed time `t`.
-//
 // This module is self-contained: update.js / render.js / debug.js only CALL into
 // it (open/close/step/update/draw). It never touches the effect engine's core
 // lifecycle (fire/update/draw/reset) directly — it just invokes the demos, which
 // internally reuse the engine's own record/render path.
-//
 // Pure + deterministic: no Math.random, no DOM. The demo clock (`clock`) is the
 // single piece of mutable state; it advances in update(dt) while active and
 // restarts at 0 on open() and step(). Node-testable without a canvas (draw takes

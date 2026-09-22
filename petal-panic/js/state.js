@@ -1,6 +1,6 @@
 // Petal Panic — top-level state machine (design §1).
 // Thin skeleton: enum + centralized transition map + dispatcher.
-// Zero dependency on rendering; Screens & HUD (Milestone 8) plug in later by
+// Zero dependency on rendering; Screens & HUD () plug in later by
 // reading getState() / subscribing to transitions and drawing per-state screens.
 
 export const S = {
@@ -47,8 +47,7 @@ export function canTransition(from, to) {
   return (TRANSITIONS[from] || []).includes(to);
 }
 
-// Subscribers receive (from, to) after a successful transition. Milestone 8
-// hooks its screen reset/teardown here; the skeleton itself stays render-free.
+// Subscribers receive (from, to) after a successful transition. // hooks its screen reset/teardown here; the skeleton itself stays render-free.
 const listeners = new Set();
 export function onTransition(fn) {
   listeners.add(fn);

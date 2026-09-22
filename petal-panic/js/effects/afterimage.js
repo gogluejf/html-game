@@ -1,7 +1,6 @@
 // Petal Panic — afterimage / ghost frames (effects.md §7, catalog #7).
 // Temporary translucent copies of a moving sprite left behind its current
 // position for dashes, supermoves, rapid boss movement, and exaggerated speed.
-//
 // STATE/DRAW effect: this instance stays active over its whole lifetime and
 // owns its own timer. Each update() advances the clock and — when the spawn
 // interval has elapsed — snapshots the carrier's CURRENT origin into a bounded
@@ -13,7 +12,6 @@
 // calls update() each frame). It also works as a discrete fire (spawned on a
 // trigger) and standalone in the theater (null carrier → caller feeds
 // positions via addGhost()).
-//
 // Lifetime vs. age fade (B1): `lifetime` is the PER-GHOST survival window, not
 // a hard whole-instance cutoff. Every ghost carries the elapsed time at
 // snapshot (`t`). At render time a ghost's age = this.elapsed - t, and its
@@ -21,11 +19,10 @@
 // linearly over the lifetime and vanishes exactly when it is a full lifetime
 // old. Ghosts are evicted from the buffer once fully faded, so a long-lived
 // instance never accumulates stale entries.
-//
 // Continuous persistence vs. discrete termination (B2): a continuously-moving
 // afterimage must persist while the carrier keeps moving rather than
 // hard-stopping at `lifetime` (which would periodically wipe the ghosts).
-// Mechanism (same rule as trail, task 5.1): the instance completes at
+// Mechanism (same rule as trail, ): the instance completes at
 // `elapsed >= lifetime` ONLY IF the carrier is NOT RECENTLY ACTIVE — i.e. no
 // ghost was recorded within the last recency window. The window equals the
 // spawn interval (or one frame in per-frame mode), CAPPED at `lifetime`. This
@@ -71,7 +68,6 @@
 // This single rule satisfies BOTH the discrete fire (self-terminates at
 // `lifetime` when quiet) AND continuous (persists while moving, given the
 // precondition above).
-//
 // params: { count?, spawnInterval?, lifetime?, opacity?, fadeRate?, offset?, color? }
 //   count         — max number of ghost frames held at once (default 4). Older
 //                  ghosts beyond `count` are dropped immediately (ring-buffer
@@ -111,7 +107,6 @@
 //                  of the sprite rather than blank white boxes; §7 "translucent
 //                  copies of a moving sprite"). Callers may pass any CSS color.
 //                  Alpha/fade behavior is unaffected (per-ghost globalAlpha).
-//
 // Geometry: a ghost is drawn as a filled rectangle centered on its recorded
 // position, sized by the carrier's size() ({ w, h }) read at DRAW time when
 // available, falling back to factory-time params.box { x, y, w, h } for

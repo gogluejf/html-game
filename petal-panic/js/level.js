@@ -1,18 +1,15 @@
 // Petal Panic — Level struct + demo rogue spawner (design §13).
-//
 // The LEVELS array is declarative: each entry declares WHAT content a run has
 // (counts per enemy type, barrels, coin barrels, powerups) plus the fixed
 // geometry (platforms, checkpoints, length). The spawner (generateLevel)
 // decides WHERE to place the spawnable items along flat ground, respecting a
 // minimum spacing so spawns never cluster unfairly and keeping the hero-start
 // zone (first SPAWN_START px) and boss arena (last 500 px) clear.
-//
 // Coins are NOT spawned directly. They come from exactly two sources (design
 // §14):
 //   - Coin barrels bursting on destruction (handled by object.js / update.js)
 //   - Enemy death drops (Enemy.coinDrop config, rolled in updateRealEnemy)
 // So `spawn` deliberately has no `coins` field.
-//
 // This module is pure (no DOM, no canvas) so it's unit-testable in node.
 
 import { Jester } from './jester.js';
@@ -104,7 +101,7 @@ const BARREL_H = 48;
 const POWERUP_H = 28;
 const CHECKPOINT_H = 48;
 /** Resting altitude offset above the ground for flyer enemies (Boris Loon). */
-const FLYER_REST_ALTITUDE = 150; // adult; baby uses 130 (matches Task 5.1 layout)
+const FLYER_REST_ALTITUDE = 150; // adult; baby uses 130 (matches layout)
 const FLYER_BABY_REST_ALTITUDE = 130;
 
 /**

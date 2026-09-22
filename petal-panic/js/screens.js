@@ -1,4 +1,4 @@
-// Petal Panic — Home & Select screens (design §20, Milestone 8).
+// Petal Panic — Home & Select screens (design §20, ).
 // ES module; no frameworks. Images are loaded via loadImages() called from
 // main.js at startup; draw methods handle missing images gracefully with
 // placeholder boxes.
@@ -578,7 +578,7 @@ export const Select = {
 };
 
 // =============================================================================
-// PAUSE SCREEN (design §20, Task 8.2)
+// PAUSE SCREEN (design §20, )
 // Drawn as a semi-transparent overlay on top of the frozen Play frame — the
 // world is still rendered behind it by render.js; this screen only adds the
 // dim + title + options. Toggled with Esc/P; Resume with Enter/Esc/P.
@@ -680,7 +680,7 @@ export const Pause = {
 };
 
 // =============================================================================
-// GAME OVER SCREEN (design §20, Task 8.2)
+// GAME OVER SCREEN (design §20, )
 // Same ergonomics as the pause menu: dim overlay, centered title, a ▸-style
 // option list with a keycap nav bar below. Two options only — Continue and
 // Quit. Continue shows how many remain; no coin cost.
@@ -800,7 +800,7 @@ export const GameOver = {
 };
 
 // =============================================================================
-// WIN SCREEN (design §20, Task 8.2)
+// WIN SCREEN (design §20, )
 // Celebratory full-screen panel: "VICTORY!", prominent score, and the full
 // §4.1 stats summary. dumpStats() already fired on the transition into WIN
 // (console + JSON download); this screen shows the same data inline.
