@@ -1751,7 +1751,13 @@ function resetAnimation(){
 function togglePlay(){
   if (!cur || !cur.st) return;
   if (cur.st.playing){ setPlaying(false); }
-  else { cur.st.frameIdx = 0; acc = 0; _selectedBox = null; setPlaying(true); syncPanel(); draw(); }
+  else {
+    // "once" mode: if we're on the last frame, restart from 0
+    const isOnce = (cur.st.playback || 'loop') === 'once';
+    const onLast = cur.st.frameIdx >= cur.st.frames.length - 1;
+    if (isOnce && onLast) cur.st.frameIdx = 0;
+    acc = 0; _selectedBox = null; setPlaying(true); syncPanel(); draw();
+  }
 }
 $('playBtn').addEventListener('click', togglePlay);
 $('prevF').addEventListener('click', ()=>stepFrame(-1));
