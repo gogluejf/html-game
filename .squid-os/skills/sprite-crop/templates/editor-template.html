@@ -141,6 +141,36 @@
   input[type=number]:disabled ~ .arr{display:none;}
   .pair .cell input::-webkit-inner-spin-button,.pair .cell input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
   .disabled-dim{opacity:.45;}
+  /* ---------- timing section ---------- */
+  #timingSection{margin-top:4px;}
+  .timing-mode{display:flex;gap:8px;margin:6px 0 10px;}
+  .tbtn.tsm{font-size:11px;padding:5px 10px;border-radius:6px;letter-spacing:.5px;}
+  .tbtn.tsm.on{border-color:var(--grn);color:var(--grn);background:rgba(90,255,138,.08);}
+  .timing-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .timing-table .trow{display:flex;align-items:center;gap:6px;padding:4px 2px;border-bottom:1px solid rgba(27,37,64,.5);}
+  .timing-table .trow:last-child{border-bottom:none;}
+  .timing-table .trow.custom{border-left:3px solid var(--yel);padding-left:3px;}
+  .timing-table .tthumb{width:28px;height:28px;flex:none;border-radius:4px;overflow:hidden;background:var(--panel);border:1px solid var(--line);image-rendering:pixelated;}
+  .timing-table .tthumb canvas{width:100%;height:100%;}
+  .timing-table .tslider{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:var(--line);outline:none;cursor:pointer;min-width:60px;}
+  .timing-table .tslider::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--acc);border:2px solid #fff;cursor:pointer;}
+  .timing-table .tslider::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--acc);border:2px solid #fff;cursor:pointer;}
+  .timing-table .tmult{width:32px;text-align:right;color:var(--dim);flex:none;font-size:11px;}
+  .timing-table .tdur{width:48px;text-align:right;color:var(--txt);flex:none;font-size:11px;}
+  .timing-total{display:flex;align-items:center;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--faint);}
+  .timing-total button{font-family:inherit;font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--dim);cursor:pointer;}
+  .timing-total button:hover{border-color:var(--org);color:var(--org);}
+  /* ---------- confirm dialog ---------- */
+  #confirmDialog{box-sizing:border-box;width:min(420px,90vw);padding:0;color:#e4eaf8;background:#101625;border:1px solid #354361;border-radius:16px;box-shadow:0 20px 60px #000a;font-family:'Courier New',monospace;}
+  #confirmDialog::backdrop{background:#040813c9;backdrop-filter:blur(4px);}
+  #confirmDialog .cd-body{padding:24px 28px 20px;}
+  #confirmDialog .cd-title{font-size:14px;color:var(--yel);letter-spacing:1px;margin-bottom:10px;text-transform:uppercase;}
+  #confirmDialog .cd-msg{font-size:13px;color:var(--txt);line-height:1.5;}
+  #confirmDialog .cd-actions{display:flex;justify-content:flex-end;gap:10px;padding:16px 28px 20px;border-top:1px solid var(--line);}
+  #confirmDialog .cd-btn{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:8px;border:2px solid var(--line);background:var(--panel);color:var(--dim);cursor:pointer;}
+  #confirmDialog .cd-btn:hover{border-color:var(--acc);color:var(--acc);}
+  #confirmDialog .cd-btn.danger{border-color:var(--org);color:var(--org);}
+  #confirmDialog .cd-btn.danger:hover{background:rgba(255,157,46,.12);}
 
   #helpBar{padding:8px 14px;border-top:1px solid var(--line);background:var(--bg2);display:flex;justify-content:flex-end;}
   #helpBtn{font-size:11px;padding:7px 12px;}
@@ -351,12 +381,35 @@
         <div class="cell"><b>H</b><input type="number" id="p_kh"></div>
       </div>
     </div>
+
+    <h2><span><span class="swatch" style="background:var(--grn)"></span>Timing</span></h2>
+    <div id="timingSection">
+      <div class="timing-mode">
+        <button class="tbtn tsm tog on" id="pbLoop" title="loop playback">&#8635; Loop</button>
+        <button class="tbtn tsm tog" id="pbOnce" title="play once then stop">&#9654; Once</button>
+      </div>
+      <div class="timing-table" id="timingTable"></div>
+      <div class="timing-total">
+        <span id="timingTotal">&mdash;</span>
+        <button id="timingResetBtn">Reset All</button>
+      </div>
+    </div>
   </div>
 </div>
 <dialog id="helpDialog" aria-labelledby="helpTitle" aria-describedby="helpSummary">
   <header class="helpHead"><div><div class="helpEyebrow">Sprite editor · quick reference</div><h2 id="helpTitle">Less hunting. More tuning.</h2><p id="helpSummary">Shortcuts follow button availability. Editing requires paused playback.</p></div><button id="helpClose" aria-label="Close help">×</button></header>
   <div class="helpGrid"><section class="helpCard"><h3>Playback &amp; navigation</h3><div class="helpItem"><span>Play or pause animation</span><kbd>Space</kbd></div><div class="helpItem"><span>Previous or next frame</span><kbd>← / →</kbd></div><div class="helpItem"><span>Previous or next animation</span><kbd>↑ / ↓</kbd></div><div class="helpItem"><span>Jump directly to frames one through ten</span><kbd>1–9 / 0</kbd></div><div class="helpItem"><span>Decrease or increase playback speed</span><kbd>− / +</kbd></div><div class="helpItem"><span>Preview every frame in the filmstrip</span><kbd>FRAMES</kbd></div></section><section class="helpCard"><h3>Visibility &amp; clean preview</h3><div class="helpItem"><span>Toggle sprite boundary</span><kbd>Shift + S</kbd></div><div class="helpItem"><span>Toggle collision boundary</span><kbd>Shift + C</kbd></div><div class="helpItem"><span>Toggle melee boundaries</span><kbd>Shift + M</kbd></div><div class="helpItem"><span>Ghost all frames; edits affect every frame</span><kbd>Shift + F</kbd></div><div class="helpItem"><span>Toggle coordinate axes</span><kbd>Shift + A</kbd></div><div class="helpItem"><span>Toggle background grid</span><kbd>Shift + G</kbd></div><div class="helpItem"><span>Toggle pivot marker</span><kbd>Shift + P</kbd></div><div class="helpItem"><span>Toggle animation label</span><kbd>Shift + L</kbd></div><div class="helpItem"><span>Hide overlays; press again to restore</span><kbd>Ctrl + H</kbd></div></section><section class="helpCard"><h3>Collision &amp; frame editing</h3><div class="helpItem"><span>Enable or disable current frame’s melee box</span><kbd>M</kbd></div><div class="helpItem"><span>Recenter pivot in collision box</span><kbd>R</kbd></div><div class="helpItem"><span>Move the hovered box</span><kbd>Drag inside</kbd></div><div class="helpItem"><span>Resize using an edge or corner</span><kbd>Drag handle</kbd></div><div class="helpItem"><span>Scale both axes together</span><kbd>Shift + corner drag</kbd></div><div class="helpItem"><span>Nudge frame offset while paused</span><kbd>Shift + arrows</kbd></div><div class="helpItem"><span>Edit exact box, offset, and scale values</span><kbd>Side panel</kbd></div><div class="helpItem"><span>Center pivot within the collision box</span><kbd>RECENTER PIVOT</kbd></div><div class="helpItem"><span>Align frames to the left-bottom origin</span><kbd>LEFT ↓ BOTTOM</kbd></div><div class="helpItem"><span>Center frames on the origin</span><kbd>CENTER</kbd></div></section><section class="helpCard"><h3>View &amp; utilities</h3><div class="helpItem"><span>Pan by dragging empty canvas space</span><kbd>Drag background</kbd></div><div class="helpItem"><span>Zoom around the pointer</span><kbd>Mouse wheel</kbd></div><div class="helpItem"><span>Zoom out or in</span><kbd>Ctrl + − / +</kbd></div><div class="helpItem"><span>Reset zoom and center the view</span><kbd>Ctrl + 0</kbd></div><div class="helpItem"><span>Rotate independently using bottom controls</span><kbd>Rotation controls</kbd></div><div class="helpItem"><span>Choose background using presets or custom colors</span><kbd>Color picker</kbd></div><div class="helpItem"><span>Undo; return to the edited animation</span><kbd>Ctrl + Z</kbd></div><div class="helpItem"><span>Redo the last undone edit</span><kbd>Ctrl + Y</kbd></div><div class="helpItem"><span>Reset frame, animation, or factory settings</span><kbd>RESET</kbd></div><div class="helpItem"><span>Save edits automatically in this browser</span><kbd>Auto-save</kbd></div></section></div>
   <footer class="helpFoot">Click anywhere or press Escape to close · Shortcuts stay inactive while typing</footer>
+</dialog>
+<dialog id="confirmDialog">
+  <div class="cd-body">
+    <div class="cd-title">⚠ Confirm Reset</div>
+    <div class="cd-msg" id="cdMsg"></div>
+  </div>
+  <div class="cd-actions">
+    <button class="cd-btn" id="cdCancel">Cancel</button>
+    <button class="cd-btn danger" id="cdYes">Yes, Reset</button>
+  </div>
 </dialog>
 <script>
 const MANIFEST = /*__MANIFEST__*/null;
@@ -433,8 +486,9 @@ function collectState(){
   for (const [name, st] of S){
     entities[name] = {
       speed: st.speed, playing: st.playing, frameIdx: st.frameIdx,
+      playback: st.playback || 'loop',
       collision: st.collision, pivot: st.pivot, rot: st.rot,
-      frames: st.frames.map(f => ({ idx:f.idx, name:f.name, crop:f.crop, offset:f.offset, scale:f.scale, melee:f.melee }))
+      frames: st.frames.map(f => ({ idx:f.idx, name:f.name, crop:f.crop, offset:f.offset, scale:f.scale, melee:f.melee, durUnits:f.durUnits||1 }))
     };
   }
   return { v:1, entities, view:{ show, isPlaying, bgColor, filmOpen: FILM.on }, active: cur ? cur.name : null };
@@ -516,6 +570,11 @@ function loadState(){
   // restore per-entity state
   for (const [name, saved] of Object.entries(data.entities)){
     if (saved && Array.isArray(saved.frames)) S.set(name, saved);
+  }
+  // migrate new fields: playback + durUnits (additive, backward-compatible)
+  for (const [, st] of S){
+    if (!st.playback) st.playback = 'loop';
+    for (const f of st.frames){ if (f.durUnits === undefined || f.durUnits < 1) f.durUnits = 1; }
   }
   // restore global view
   if (data.view){
@@ -633,12 +692,14 @@ function defaultState(name, imgs, paths, crops){
   const W = f1 ? f1.naturalWidth : 1, H = f1 ? f1.naturalHeight : 1;
   const st = {
     key: name, speed: 8, playing: true, frameIdx: 0,
+    playback: 'loop',
     collision: null, pivot: null,
     rot: { angle: 0, speed: 360, playing: false },   // degrees, deg/s, independent of frame anim
     frames: paths.map((p, i) => ({
       idx: i, name: p.split('/').pop(),
       crop: (() => { const c = (crops&&crops[i])||null; return c ? {x:c[0],y:c[1],w:c[2],h:c[3]} : {x:0,y:0,w:good[i]?good[i].naturalWidth:0,h:good[i]?good[i].naturalHeight:0}; })(),
-      offset: { x:0, y:0 }, scale: { sx:1, sy:1 }, melee: { on:false, x:0, y:0, w:0, h:0 }
+      offset: { x:0, y:0 }, scale: { sx:1, sy:1 }, melee: { on:false, x:0, y:0, w:0, h:0 },
+      durUnits: 1
     }))
   };
   // initial load = left-bottom anchor (each frame's left/bottom on the axes)
@@ -1081,11 +1142,28 @@ function tick(t){
   requestAnimationFrame(tick);
   if (!cur || !cur.st){ lastT = t; return; }
   const dt = (t-lastT)/1000; lastT = t;
-  // frame animation
+  // frame animation — unit-based accumulator
   if (cur.st.playing){
-    acc += dt;
-    const step = 1/Math.max(1, cur.st.speed);
-    if (acc >= step){ acc %= step; cur.st.frameIdx = (cur.st.frameIdx+1) % cur.st.frames.length; syncPanel(); draw(); }
+    acc += dt * cur.st.speed;   // accumulate in UNITS (1 unit = 1/fps seconds)
+    const fi = curFrameIdx();
+    const units = cur.st.frames[fi].durUnits || 1;
+    if (acc >= units){
+      acc -= units;
+      const next = fi + 1;
+      if (next >= cur.st.frames.length){
+        if ((cur.st.playback || 'loop') === 'once'){
+          // stop at final frame
+          cur.st.frameIdx = cur.st.frames.length - 1;
+          setPlaying(false);
+          acc = 0;
+        } else {
+          cur.st.frameIdx = 0;
+        }
+      } else {
+        cur.st.frameIdx = next;
+      }
+      syncPanel(); draw();
+    }
   } else { acc = 0; }
   // rotation (independent of frame anim)
   if (cur.st.rot){
@@ -1118,13 +1196,122 @@ function setPlaying(p){
   if(!cur || !cur.st) return;
   cur.st.playing = !!p;
   isPlaying = !!p;
+  if (p) acc = 0;   // fresh start: no leftover accumulation
   $('playIco').innerHTML = cur.st.playing ? '&#10074;&#10074;' : '&#9654;';
   syncPanelDisabled();   // lock/unlock side inputs with play state
   syncToggles();   // update MELEE ON disabled state immediately
   saveState();
 }
-function stepFrame(d){ if(!cur||!cur.st)return; const st=cur.st; st.frameIdx=(st.frameIdx+d+st.frames.length)%st.frames.length; syncPanel(); draw(); }
-function setSpeed(v){ if(!cur||!cur.st)return; cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = cur.st.speed+' fps'; $('p_speed').value = cur.st.speed; saveState(); }
+function stepFrame(d){ if(!cur||!cur.st)return; const st=cur.st; st.frameIdx=(st.frameIdx+d+st.frames.length)%st.frames.length; acc=0; syncPanel(); draw(); }
+function setSpeed(v){ if(!cur||!cur.st)return; cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = cur.st.speed+' fps'; $('p_speed').value = cur.st.speed; saveState(); buildTimingTable(); }
+// ---------- timing table (per-frame duration units) ----------
+function baseUnitMs(){ return 1000 / (cur && cur.st ? cur.st.speed : 8); }
+function buildTimingTable(){
+  if (!cur || !cur.st) return;
+  const st = cur.st, tbl = $('timingTable');
+  tbl.innerHTML = '';
+  let totalUnits = 0;
+  st.frames.forEach((f, i) => {
+    const units = f.durUnits || 1;
+    totalUnits += units;
+    const row = document.createElement('div');
+    row.className = 'trow' + (units > 1 ? ' custom' : '');
+    // thumbnail
+    const thumb = document.createElement('div'); thumb.className = 'tthumb';
+    const tc = document.createElement('canvas'); tc.width = 28; tc.height = 28;
+    const im = cur.imgs[i];
+    if (im){
+      const tctx = tc.getContext('2d');
+      tctx.imageSmoothingEnabled = false;
+      const scale = Math.min(28/im.naturalWidth, 28/im.naturalHeight);
+      const dw = Math.round(im.naturalWidth*scale), dh = Math.round(im.naturalHeight*scale);
+      tctx.drawImage(im, (28-dw)/2, (28-dh)/2, dw, dh);
+    }
+    thumb.appendChild(tc);
+    // slider
+    const sl = document.createElement('input');
+    sl.type = 'range'; sl.className = 'tslider';
+    sl.min = '1'; sl.max = '10'; sl.step = '1'; sl.value = String(units);
+    sl.addEventListener('input', () => {
+      const v = Math.max(1, parseInt(sl.value, 10));
+      f.durUnits = v;
+      row.classList.toggle('custom', v > 1);
+      multEl.textContent = '\u00D7' + v;
+      durEl.textContent = Math.round(baseUnitMs() * v) + 'ms';
+      updateTimingTotal();
+      saveState();
+    });
+    sl.addEventListener('change', () => { sl.blur(); });   // release focus so shortcuts work
+    sl.addEventListener('dblclick', () => {
+      f.durUnits = 1; sl.value = '1';
+      row.classList.remove('custom');
+      multEl.textContent = '\u00D71';
+      durEl.textContent = Math.round(baseUnitMs()) + 'ms';
+      updateTimingTotal(); saveState();
+    });
+    // multiplier + duration labels
+    const multEl = document.createElement('span'); multEl.className = 'tmult'; multEl.textContent = '\u00D7' + units;
+    const durEl = document.createElement('span'); durEl.className = 'tdur'; durEl.textContent = Math.round(baseUnitMs() * units) + 'ms';
+    row.appendChild(thumb); row.appendChild(sl); row.appendChild(multEl); row.appendChild(durEl);
+    tbl.appendChild(row);
+  });
+  updateTimingTotal();
+}
+function updateTimingTotal(){
+  if (!cur || !cur.st) return;
+  const st = cur.st;
+  const totalUnits = st.frames.reduce((s, f) => s + (f.durUnits || 1), 0);
+  const totalMs = Math.round(totalUnits * baseUnitMs());
+  $('timingTotal').textContent = totalMs + 'ms (' + totalUnits + ' units @ ' + st.speed + 'fps)';
+}
+// playback mode buttons
+$('pbLoop').addEventListener('click', () => {
+  if (!cur || !cur.st) return;
+  cur.st.playback = 'loop'; syncPlaybackButtons(); saveState();
+});
+$('pbOnce').addEventListener('click', () => {
+  if (!cur || !cur.st) return;
+  cur.st.playback = 'once'; syncPlaybackButtons(); saveState();
+});
+// reset all timing
+$('timingResetBtn').addEventListener('click', () => {
+  if (!cur || !cur.st) return;
+  const n = cur.st.frames.length;
+  confirmDialog('Reset per-frame timing for all ' + n + ' frames?', () => {
+    pushUndo();
+    cur.st.frames.forEach(f => { f.durUnits = 1; });
+    buildTimingTable(); saveState();
+  });
+});
+// sync playback buttons in syncPanel
+function syncPlaybackButtons(){
+  if (!cur || !cur.st) return;
+  const val = cur.st.playback || 'loop';
+  $('pbLoop').classList.toggle('on', val === 'loop');
+  $('pbOnce').classList.toggle('on', val === 'once');
+}
+// ---------- reusable confirm dialog ----------
+let _cdResolve = null;
+const cdDialog = $('confirmDialog');
+function confirmDialog(message, onYes){
+  return new Promise(resolve => {
+    $('cdMsg').textContent = message;
+    _cdResolve = resolve;
+    cdDialog.showModal();
+    $('cdYes').focus();
+  }).then(ok => {
+    cdDialog.close();
+    if (ok) onYes();
+    return ok;
+  });
+}
+function _cdDone(ok){
+  if (_cdResolve){ _cdResolve(ok); _cdResolve = null; }
+}
+$('cdYes').addEventListener('click', () => { _cdDone(true); });
+$('cdCancel').addEventListener('click', () => { _cdDone(false); });
+cdDialog.addEventListener('cancel', e => { e.preventDefault(); _cdDone(false); });   // Esc
+cdDialog.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); _cdDone(true); } });
 // ---------- panel ----------
 const P = id => $(id);
 // wrap panel number inputs with custom spinner arrows (native ones are hidden)
@@ -1171,6 +1358,8 @@ function syncPanel(){
   if (st.pivot){ P('p_px').value=st.pivot.x; P('p_py').value=st.pivot.y; }
   if (st.rot){ P('p_rangle').value=Math.round(st.rot.angle); P('p_rspeed').value=st.rot.speed; $('rotSpeedVal').textContent=st.rot.speed+'\u00B0/s'; $('rotAngle').textContent=Math.round(st.rot.angle)+'\u00B0'; $('rotIco').innerHTML=st.rot.playing?'&#10074;&#10074;':'&#9654;'; }
   setPlaying(st.playing);
+  syncPlaybackButtons();
+  buildTimingTable();
   syncPanelDisabled();   // enable/disable side inputs based on play state + melee
   syncToggles();   // keep MELEE ON button in sync with current frame
 }
@@ -1387,51 +1576,47 @@ resetMenu.querySelectorAll('.reset-opt').forEach(opt => {
     resetMenu.style.display = 'none';
     if (scope === 'factory'){ factoryReset(); return; }   // destructive — own confirm flow
     if (!cur || !cur.st || editingLocked()) return;
-    pushUndo();
-    if (scope === 'frame') resetFrame();
-    else resetAnimation();
-    syncPanel(); draw();
+    if (scope === 'frame'){
+      confirmDialog('Reset current frame (offset, scale, boxes, markers)?', () => {
+        pushUndo(); resetFrame(); syncPanel(); draw();
+      });
+    } else {
+      confirmDialog('Reset all frames and animation-level settings for this entity?', () => {
+        pushUndo(); resetAnimation(); syncPanel(); draw();
+      });
+    }
   });
 });
 // ---------- factory reset: wipe ALL saved state + app state back to defaults ----------
 function factoryReset(){
-  const ok = confirm(
-    'RESET TO FACTORY\n\n' +
-    'This permanently deletes ALL saved editor state:\n' +
-    '  • every frame\'s offset / scale / melee box\n' +
-    '  • collision boxes, pivots, rotation\n' +
-    '  • speed, play state, background color\n' +
-    '  • all view toggles\n\n' +
-    'Everything returns to its default. This cannot be undone.\n\n' +
-    'Continue?'
-  );
-  if (!ok) return;
-  _loadingState = true;                       // suppress saves during the wipe
-  try{ localStorage.removeItem(LS_KEY); }catch(e){}
-  S.clear();                                  // drop all per-entity editor state
-  undoStack.length = 0; redoStack.length = 0; // clear history
-  show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false, grid:true };
-  isPlaying = true;
-  bgColor = '#000000';
-  document.documentElement.style.setProperty('--film-bg', bgColor);
-  _bgState.h = 0; _bgState.s = 100; _bgState.l = 0;
-  userZoomed = false; zoom = 1; panX = 0; panY = 0;
-  $('zoomval').textContent = '100%';
-  $('bgval').textContent = bgColor; bgSwatch.style.background = bgColor; bgHex.value = bgColor;
-  $('bgHue').value = 0; $('bgLight').value = 0; paintSatSquare();
-  syncUndoButtons();
-  // reload the first entity fresh from defaults and re-enable saving
-  selectEntity(0, 0).then(()=>{ _loadingState = false; if (FILM.on) drawFilm(); });
-  const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
-  // reset sprite offset/scale: scale back to 1, left-bottom corner at origin (0,0)
-  const im = cur.imgs[fi];
-  f.scale.sx = 1; f.scale.sy = 1;
-  if (im){ f.offset.x = Math.round(im.naturalWidth/2); f.offset.y = -Math.round(im.naturalHeight/2); }
-  else { f.offset.x = 0; f.offset.y = 0; }
-  // reset melee box: off + default position (25% width, left of collision with gap)
-  f.melee.on = false;
-  f.melee.x = st.collision.x - f.melee.w - 3;
-  f.melee.y = st.collision.y;
+  confirmDialog('Restore factory defaults for ALL entities? This permanently deletes all saved editor state and cannot be undone.', () => {
+    _loadingState = true;                       // suppress saves during the wipe
+    try{ localStorage.removeItem(LS_KEY); }catch(e){}
+    S.clear();                                  // drop all per-entity editor state
+    undoStack.length = 0; redoStack.length = 0; // clear history
+    show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false, grid:true };
+    isPlaying = true;
+    bgColor = '#000000';
+    document.documentElement.style.setProperty('--film-bg', bgColor);
+    _bgState.h = 0; _bgState.s = 100; _bgState.l = 0;
+    userZoomed = false; zoom = 1; panX = 0; panY = 0;
+    $('zoomval').textContent = '100%';
+    $('bgval').textContent = bgColor; bgSwatch.style.background = bgColor; bgHex.value = bgColor;
+    $('bgHue').value = 0; $('bgLight').value = 0; paintSatSquare();
+    syncUndoButtons();
+    // reload the first entity fresh from defaults and re-enable saving
+    selectEntity(0, 0).then(()=>{ _loadingState = false; if (FILM.on) drawFilm(); });
+    const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
+    // reset sprite offset/scale: scale back to 1, left-bottom corner at origin (0,0)
+    const im = cur.imgs[fi];
+    f.scale.sx = 1; f.scale.sy = 1;
+    if (im){ f.offset.x = Math.round(im.naturalWidth/2); f.offset.y = -Math.round(im.naturalHeight/2); }
+    else { f.offset.x = 0; f.offset.y = 0; }
+    // reset melee box: off + default position (25% width, left of collision with gap)
+    f.melee.on = false;
+    f.melee.x = st.collision.x - f.melee.w - 3;
+    f.melee.y = st.collision.y;
+  });
 }
 function resetAnimation(){
   const st = cur.st;
@@ -1442,7 +1627,12 @@ function resetAnimation(){
   st.rot = { angle: 0, speed: 360, playing: false };
   layoutAt(st, cur.imgs, W, H, 'leftbottom');   // same as initial load
 }
-$('playBtn').addEventListener('click', ()=>{ if(cur&&cur.st) setPlaying(!cur.st.playing); });
+function togglePlay(){
+  if (!cur || !cur.st) return;
+  if (cur.st.playing){ setPlaying(false); }
+  else { cur.st.frameIdx = 0; acc = 0; setPlaying(true); syncPanel(); draw(); }
+}
+$('playBtn').addEventListener('click', togglePlay);
 $('prevF').addEventListener('click', ()=>stepFrame(-1));
 $('nextF').addEventListener('click', ()=>stepFrame(1));
 $('slower').addEventListener('click', ()=>{ if(cur&&cur.st) setSpeed(cur.st.speed-1); });
@@ -1990,7 +2180,7 @@ window.addEventListener('keydown', e=>{
     }
   }
   switch (e.code){
-    case 'Space': e.preventDefault(); setPlaying(!st.playing); break;
+    case 'Space': e.preventDefault(); togglePlay(); break;
     case 'ArrowRight': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); targetFrames(fi).forEach(f=>f.offset.x+=off); syncPanel(); draw(); } else stepFrame(1); break;
     case 'ArrowLeft': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); targetFrames(fi).forEach(f=>f.offset.x-=off); syncPanel(); draw(); } else stepFrame(-1); break;
     case 'ArrowUp': e.preventDefault();
