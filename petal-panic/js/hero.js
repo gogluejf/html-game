@@ -116,8 +116,8 @@ export class Hero extends Entity {
     // dying: hero has hit 0 energy and is playing the skull-fade death sequence.
     // deathTimer: seconds elapsed since death started (drives skull motion/fade).
     // DEATH_DURATION: total length of the skull animation before respawn/gameover.
-    // continuesUsed / maxContinues + CONTINUE_COST drive the gameover Continue
-    // option (design §1: 3 continues per run, each costs CONTINUE_COST coins).
+    // continuesUsed / maxContinues drive the gameover Continue option
+    // (design §1: 3 continues per run, no coin cost).
     this.dying = false;
     this.deathTimer = 0;
     this.DEATH_DURATION = 1.5;

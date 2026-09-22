@@ -41,9 +41,6 @@ import { createStats, dumpStats } from '../stats.js';
 // --- Tunables for the test rig ---------------------------------------------
 // (Hero movement feel lives in js/hero.js; level geometry below.)
 
-// Task 5.2 — continue cost in coins (design §1/§14: 1000 coins per continue).
-export const CONTINUE_COST = 1000;
-
 // Task 5.3 — Level struct + rogue spawner (design §13). The declarative level
 // definition (LEVELS[0] "Big Top") drives all world content: platforms,
 // checkpoints, and every spawnable item. generateLevel() randomly places the
@@ -273,20 +270,15 @@ export function retryFromGameOver() {
 }
 
 /**
- * Task 5.2 — Continue from game over: costs CONTINUE_COST coins, limited to
- * hero.maxContinues per run. Restores at the last checkpoint with full energy
- * and one life. Returns true if the continue was applied.
+ * Task 5.2 — Continue from game over: limited to hero.maxContinues per run,
+ * no coin cost. Restores at the last checkpoint with full energy and one life.
+ * Returns true if the continue was applied.
  */
 export function continueFromGameOver() {
   if (hero.continuesUsed >= hero.maxContinues) {
     console.log('[gameover] no continues left');
     return false;
   }
-  if (hero.coins < CONTINUE_COST) {
-    console.log(`[gameover] not enough coins (${hero.coins}/${CONTINUE_COST})`);
-    return false;
-  }
-  hero.coins -= CONTINUE_COST;
   hero.continuesUsed += 1;
   hero.lives = 1;
   hero.respawn(); // restores at hero.checkpoint with full energy + i-frames

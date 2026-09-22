@@ -123,8 +123,8 @@ test('Space jump and Circle super never pause; Escape/Options do; pause menu clo
   Pause.focus = 1; U.getHero().lives = 1; tap('Enter'); assert.equal(getState(), S.PLAY); assert.equal(U.getHero().lives, 3);
   tap('Escape'); assert.equal(getState(), S.PAUSE); Pause.focus = 2; tap('Enter'); assert.equal(getState(), S.REMAP);
   tap('Escape'); Pause.focus = 3; tap('Enter'); assert.equal(getState(), S.HOME);
-  clean(S.OVER); const h = U.getHero(); h.coins = 1500; h.continuesUsed = 0; h.checkpoint = { x: 400, y: 100 }; GameOver.focus = 1;
-  tap('Enter'); assert.equal(getState(), S.PLAY); assert.equal(U.getHero().coins, 500); assert.equal(U.getHero().continuesUsed, 1); assert.equal(U.getHero().lives, 1);
+  clean(S.OVER); const h = U.getHero(); h.coins = 1500; h.continuesUsed = 0; h.checkpoint = { x: 400, y: 100 }; GameOver.focus = 0;
+  tap('Enter'); assert.equal(getState(), S.PLAY); assert.equal(U.getHero().coins, 1500); assert.equal(U.getHero().continuesUsed, 1); assert.equal(U.getHero().lives, 1);
 });
 
 test('disconnect, visibility and focus lifecycle release semantic holds without phantom reconnect edges', () => {

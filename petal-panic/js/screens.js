@@ -9,17 +9,14 @@ import { VIEW_W, VIEW_H } from './view.js';
 import { calculateScore } from './stats.js';
 import { onTransition } from './state.js';
 import { input, navLabelString, navHintEntries, navLabels } from './input.js';
-import { Remap } from './remap.js';
+
+// --- Image cache -------------------------------------------------------------
 import {
   FONT_TITLE, FONT_UI, CREAM, GOLD, RED, PINK, roundRect,
   drawMarqueeTitle, drawPrompt, drawMenace, drawNavBar,
 } from './fonts.js';
 
-// Continue cost (design §1/§14: 1000 coins per continue). update.js exports the
-// same constant; this local copy keeps screens.js self-contained for draw/onAction.
-const CONTINUE_COST = 1000;
-
-// --- Image cache -------------------------------------------------------------
+import { Remap } from './remap.js';
 const images = {};
 let loadedCount = 0;
 let totalCount = 0;
@@ -684,21 +681,21 @@ export const Pause = {
 
 // =============================================================================
 // GAME OVER SCREEN (design §20, Task 8.2)
-// Full-screen dark panel: "GAME OVER", final score + key stats, and the three
-// options (Retry / Continue / Quit). Continue is highlighted only when it is
-// affordable (continues left AND enough coins).
+// Same ergonomics as the pause menu: dim overlay, centered title, a ▸-style
+// option list with a keycap nav bar below. Two options only — Continue and
+// Quit. Continue shows how many remain; no coin cost.
 // =============================================================================
 
 /** Shared continue-availability check (draw + onAction must agree). */
 export function canContinue(hero) {
-  return !!(hero && hero.continuesUsed < hero.maxContinues && hero.coins >= CONTINUE_COST);
+  return !!(hero && hero.continuesUsed < hero.maxContinues);
 }
 
 export const GameOver = {
-  focus: 0,
+  focus: 0, // 0=Continue, 1=Quit
   /** @param {CanvasRenderingContext2D} ctx @param {object} hero the hero entity */
   draw(ctx, hero) {
-    // Dark background over the frozen play frame.
+    // Full-opaque dark background (game over hides the world, unlike pause).
     ctx.save();
     ctx.fillStyle = '#0d0d1a';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -709,65 +706,96 @@ export const GameOver = {
     const distance = Math.round(s.distanceTraveled ?? 0);
     const score = calculateScore(s, hero);
 
-    // Title.
-    drawMenace(ctx, 'GAME OVER', VIEW_W / 2, 110, 64);
+    drawMenace(ctx, 'GAME OVER', VIEW_W / 2, VIEW_H / 2 - 130, 56);
 
     // Score + key stats.
     ctx.textAlign = 'center';
-    drawPrompt(ctx, `SCORE  ${score}`, VIEW_W / 2, 185, 30, { color: CREAM, font: FONT_TITLE });
-    ctx.font = `22px ${FONT_UI}`;
+    drawPrompt(ctx, `SCORE  ${score}`, VIEW_W / 2, VIEW_H / 2 - 75, 24, { color: CREAM, font: FONT_TITLE });
+    ctx.font = `16px ${FONT_UI}`;
     ctx.fillStyle = '#d8cdb4';
-    ctx.fillText(`Enemies Killed: ${kills}`, VIEW_W / 2, 235);
-    ctx.fillText(`Coins Collected: ${coins}`, VIEW_W / 2, 270);
-    ctx.fillText(`Distance: ${distance} px`, VIEW_W / 2, 305);
+    ctx.fillText(`Enemies Killed: ${kills}   ·   Coins: ${coins}   ·   Distance: ${distance} px`, VIEW_W / 2, VIEW_H / 2 - 45);
 
-    // Options.
-    let oy = 375;
-    drawPrompt(ctx, (this.focus === 0 ? '▸ ' : '  ') + 'R — Retry', VIEW_W / 2, oy, 22, { color: GOLD });
-    oy += 40;
-
-    const okCont = canContinue(hero);
+    // Options — same list style as the pause menu.
     const remaining = (hero.maxContinues ?? 3) - (hero.continuesUsed ?? 0);
-    drawPrompt(
-      ctx,
-      `${this.focus === 1 ? '▸ ' : '  '}C — Continue (${remaining} left, ${CONTINUE_COST} coins)`,
-      VIEW_W / 2, oy, 20,
-      { color: okCont ? GOLD : '#555555' },
-    );
-    oy += 40;
-    drawPrompt(ctx, (this.focus === 2 ? '▸ ' : '  ') + 'Q — Quit', VIEW_W / 2, oy, 20, { color: '#cccccc' });
+    const okCont = canContinue(hero);
+    const options = [
+      { label: `Continue (${remaining} left)`, enabled: okCont },
+      { label: 'Quit to Home', enabled: true },
+    ];
+    const startY = VIEW_H / 2 - 5;
+    const gap = 40;
+
+    for (let i = 0; i < options.length; i++) {
+      const y = startY + i * gap;
+      const focused = i === this.focus;
+      if (focused) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,110,199,0.10)';
+        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,110,199,0.4)';
+        ctx.lineWidth = 1;
+        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
+        ctx.stroke();
+        ctx.restore();
+      }
+      drawPrompt(ctx, (focused ? '▸ ' : '  ') + options[i].label, VIEW_W / 2, y + 2, focused ? 22 : 20, {
+        color: !options[i].enabled ? '#555555' : (focused ? '#ff6ec7' : '#d8cdb4'),
+      });
+    }
+
+    // Dynamic button hints (keycap chip style, single line) — same as pause.
+    const hintY = startY + options.length * gap + 24;
+    drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
+      { actions: ['up', 'down'], label: 'Navigate' },
+      { action: 'confirm' },
+      { action: 'back', label: 'Quit' },
+    ]));
     ctx.restore();
   },
 
   /**
-   * Handle semantic input. `retry`/`cont`/`quit` are injected by update.js so the
+   * Handle semantic input. `cont`/`quit` are injected by update.js so the
    * respawn logic stays in systems/update.js.
    * @param {string} action semantic navigation action
    * @param {object} hero the hero entity
-   * @param {{ retry?: () => void, cont?: () => void, quit?: () => void }} [actions]
+   * @param {{ cont?: () => void, quit?: () => void }} [actions]
    */
   onAction(action, hero, actions = {}) {
-    if (action === 'up') { this.focus = (this.focus + 2) % 3; return true; }
-    if (action === 'down') { this.focus = (this.focus + 1) % 3; return true; }
-    if (action === 'confirm') action = ['retry', 'cont', 'quit'][this.focus];
-    // Back (○/Escape) ALWAYS exits to home.
+    // Back (○/Escape) ALWAYS quits to home.
     if (action === 'back') {
       if (actions.quit) actions.quit(); else tryTransition(S.HOME);
       return true;
     }
-    if (action === 'retry') {
-      if (actions.retry) actions.retry();
-      return true;
-    }
-    if (action === 'cont') {
-      if (canContinue(hero) && actions.cont) actions.cont();
-      return true;
-    }
-    if (action === 'quit') {
-      if (actions.quit) actions.quit();
-      return true;
+    switch (action) {
+      case 'up':
+        this.focus = (this.focus + 1) % 2;
+        return true;
+      case 'down':
+        this.focus = (this.focus + 1) % 2;
+        return true;
+      case 'confirm':
+        this.execute(hero, actions);
+        return true;
+      case 'cont':
+        if (canContinue(hero) && actions.cont) actions.cont();
+        return true;
+      case 'quit':
+        if (actions.quit) actions.quit(); else tryTransition(S.HOME);
+        return true;
     }
     return false;
+  },
+
+  execute(hero, actions) {
+    switch (this.focus) {
+      case 0: // Continue
+        if (canContinue(hero) && actions.cont) actions.cont();
+        break;
+      case 1: // Quit
+        if (actions.quit) actions.quit(); else tryTransition(S.HOME);
+        break;
+    }
   },
 };
 
