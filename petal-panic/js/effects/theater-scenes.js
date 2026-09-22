@@ -382,7 +382,7 @@ const SCENES = {
     fire(c, entry) { fireManual({ type: entry.type, params: { ...entry.params, x: c.boss.origin().x, y: c.boss.origin().y } }, c.boss); },
     draw(ctx, c, t) { if (t < 0.1) c.boss.draw(ctx); },
   },
-  // 26. Beam: boss fires beam (bigger than hero)
+  // 26. Beam: boss fires beam (bigger than hero) — beam waits 500ms after boss appears
   beam: {
     setup() {
       const boss = {
@@ -402,8 +402,10 @@ const SCENES = {
         ctx.textAlign = 'center';
         ctx.fillText('BOSS', boss._x, boss._y + 4);
       };
-      return { boss };
+      return { boss, _timer: 0 };
     },
+    update(c, dt) { c._timer += dt; },
+    shouldFire(c) { return c._timer >= 0.5; },
     fire(c, entry) { return fireManual({ type: entry.type, params: { ...entry.params } }, c.boss); },
     draw(ctx, c) { c.boss.draw(ctx); },
   },

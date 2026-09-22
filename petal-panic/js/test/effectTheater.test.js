@@ -151,7 +151,7 @@ ok('explosion produces fill/rect particle draws over its life', () => {
 });
 ok('beam produces a filled rotated rectangle (rect + fill + linear gradient)', () => {
   const ctx = makeCtx();
-  byType['beam'].demo(ctx, 0.08); // just past flash-in peak
+  byType['beam'].demo(ctx, 0.6); // past the 500ms boss-appear delay
   assert.ok(has(ctx, 'rect'), 'beam drew a rect');
   assert.ok(has(ctx, 'fill'), 'beam filled');
   assert.ok(has(ctx, 'gradL'), 'beam built a linear halo gradient');
