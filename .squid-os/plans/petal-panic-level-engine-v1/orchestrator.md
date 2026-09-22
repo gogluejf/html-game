@@ -7,6 +7,8 @@ two short prompts. No human between tasks.
 ## Runner rules
 - The runner NEVER writes or edits code. All code work goes through the executor agent.
   If the executor crashes or a fix is needed, re-dispatch the executor — do not patch inline.
+- Do NOT wait for user authorization between tasks. Crush all tasks one after the other
+  without pausing for confirmation. Only stop at wave gates or when a task cannot proceed.
 
 ## The loop (per task, strict order)
 
