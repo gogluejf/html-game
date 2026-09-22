@@ -2161,9 +2161,8 @@ cv.addEventListener('pointerdown', e=>{
     bringToFront(hover.box);   // last-touched box wins hit-testing
     const isDynBox = hover.box.startsWith('box_');
     const boxIdx = isDynBox ? parseInt(hover.box.slice(4), 10) : -1;
-    // select melee boxes on click
-    if (isDynBox) _selectedBox = hover.box;
-    else _selectedBox = null;
+    // select any element on click (box_N, sprite, collision)
+    _selectedBox = hover.box;
     const B = isDynBox ? BOX.getBox(boxIdx) : BOX[hover.box];
     const orig = B.snap(st, fi);
     const ref  = hover.box==='sprite' ? null : (hover.box==='collision' ? st.collision : (isDynBox ? st.frames[fi].boxes[boxIdx] : null));
@@ -2333,26 +2332,40 @@ window.addEventListener('keydown', e=>{
       return;
     }
   }
-  // selected melee box: delete, nudge, escape
-  if (_selectedBox && _selectedBox.startsWith('box_')){
-    const selIdx = parseInt(_selectedBox.slice(4), 10);
-    const selFrame = st.frames[fi];
-    if (e.code === 'Delete' || e.code === 'Backspace'){
-      e.preventDefault();
-      if (!editingLocked()){ pushUndo(); selFrame.boxes.splice(selIdx, 1); _selectedBox = null; buildMeleeBoxList(); draw(); saveState(); }
-      return;
-    }
+  // selected element (box_N, sprite, collision): nudge, delete (boxes only), escape
+  if (_selectedBox){
     if (e.code === 'Escape'){
       e.preventDefault();
       _selectedBox = null; draw();
       return;
     }
+    if (_selectedBox.startsWith('box_') && (e.code === 'Delete' || e.code === 'Backspace')){
+      e.preventDefault();
+      if (!editingLocked()){
+        const selIdx = parseInt(_selectedBox.slice(4), 10);
+        pushUndo(); st.frames[fi].boxes.splice(selIdx, 1);
+        _selectedBox = null; buildMeleeBoxList(); draw(); saveState();
+      }
+      return;
+    }
     if (!editingLocked() && !e.ctrlKey && !e.shiftKey && !e.altKey){
-      const nudge = e.ctrlKey ? 10 : 1;
-      if (e.code === 'ArrowRight'){ e.preventDefault(); pushUndo(); selFrame.boxes[selIdx].x += nudge; syncPanel(); draw(); return; }
-      if (e.code === 'ArrowLeft'){ e.preventDefault(); pushUndo(); selFrame.boxes[selIdx].x -= nudge; syncPanel(); draw(); return; }
-      if (e.code === 'ArrowUp'){ e.preventDefault(); pushUndo(); selFrame.boxes[selIdx].y -= nudge; syncPanel(); draw(); return; }
-      if (e.code === 'ArrowDown'){ e.preventDefault(); pushUndo(); selFrame.boxes[selIdx].y += nudge; syncPanel(); draw(); return; }
+      const nudge = 1;
+      let target = null;
+      if (_selectedBox.startsWith('box_')){
+        const selIdx = parseInt(_selectedBox.slice(4), 10);
+        target = st.frames[fi].boxes[selIdx];
+      } else if (_selectedBox === 'sprite'){
+        target = { get x(){ return st.frames[fi].offset.x; }, set x(v){ st.frames[fi].offset.x = v; },
+                  get y(){ return st.frames[fi].offset.y; }, set y(v){ st.frames[fi].offset.y = v; } };
+      } else if (_selectedBox === 'collision'){
+        target = st.collision;
+      }
+      if (target){
+        if (e.code === 'ArrowRight'){ e.preventDefault(); pushUndo(); target.x += nudge; syncPanel(); draw(); return; }
+        if (e.code === 'ArrowLeft'){ e.preventDefault(); pushUndo(); target.x -= nudge; syncPanel(); draw(); return; }
+        if (e.code === 'ArrowUp'){ e.preventDefault(); pushUndo(); target.y -= nudge; syncPanel(); draw(); return; }
+        if (e.code === 'ArrowDown'){ e.preventDefault(); pushUndo(); target.y += nudge; syncPanel(); draw(); return; }
+      }
     }
   }
   switch (e.code){
