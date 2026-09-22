@@ -1232,7 +1232,9 @@ function buildTimingTable(){
     const sl = document.createElement('input');
     sl.type = 'range'; sl.className = 'tslider';
     sl.min = '1'; sl.max = '10'; sl.step = '1'; sl.value = String(units);
+    let _slUndoPushed = false;
     sl.addEventListener('input', () => {
+      if (!_slUndoPushed){ pushUndo(); _slUndoPushed = true; }
       const v = Math.max(1, parseInt(sl.value, 10));
       f.durUnits = v;
       row.classList.toggle('custom', v > 1);
@@ -1241,8 +1243,9 @@ function buildTimingTable(){
       updateTimingTotal();
       saveState();
     });
-    sl.addEventListener('change', () => { sl.blur(); });   // release focus so shortcuts work
+    sl.addEventListener('change', () => { sl.blur(); _slUndoPushed = false; });   // release focus so shortcuts work
     sl.addEventListener('dblclick', () => {
+      pushUndo();
       f.durUnits = 1; sl.value = '1';
       row.classList.remove('custom');
       multEl.textContent = '\u00D71';
