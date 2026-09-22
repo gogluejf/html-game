@@ -85,7 +85,10 @@ Why: The zone has a finite length and the exit flag is at the end. The camera mu
 Files: ~ petal-panic/js/camera.js
 Files: ~ petal-panic/js/systems/update.js
 Snippet: // Camera max scroll comes from the active zone's length.\n// The zone is the only world — nothing exists past its end.\nexport function setCameraMax(zone) {\n  // horizontal: max = zone.bounds.x + zone.bounds.w - VIEW_W\n  // vertical:   min = max = zone.bounds.x (no horizontal scroll)\n  // boss:       min = max (frozen)\n}
-Acceptance: Camera max scroll equals the zone's length (cannot draw past the exit flag); Vertical zones have no horizontal camera movement; Boss zone camera is completely frozen (fixed view); Entering a new zone (after clear sequence) re-clamps the camera to the new zone's length
+Acceptance: Camera max scroll equals the zone's length (cannot draw past the exit flag)
+Acceptance: Vertical zones have no horizontal camera movement
+Acceptance: Boss zone camera is completely frozen (fixed view)
+Acceptance: Entering a new zone (after clear sequence) re-clamps the camera to the new zone's length
 Verification: node --test petal-panic/js/test/
 
 ## MILESTONE: 3 - Terrain Generation
