@@ -11,7 +11,7 @@ import { strict as assert } from 'node:assert';
 import { Hero } from '../hero.js';
 import { HEROES } from '../heroDefs.js';
 import { resolve } from '../collision.js';
-import { LEVELS } from '../level.js';
+import { LEVELS, LEGACY_CORRIDOR } from '../level.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -37,7 +37,7 @@ function standOn(h, plat) {
 
 console.log('Level definitions');
 ok('air platforms carry oneWay: true; the floor stays solid', () => {
-  const plats = LEVELS[0].platforms;
+  const plats = LEGACY_CORRIDOR.platforms;
   assert.equal(plats[0].oneWay, undefined, 'floor must remain solid (no oneWay flag)');
   for (const p of plats.slice(1)) {
     assert.equal(p.oneWay, true, `air platform at x=${p.x} must be oneWay`);

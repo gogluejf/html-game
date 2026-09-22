@@ -101,7 +101,7 @@ test('formatAreaId: area ids come from the level definition (checkpoint ids)', (
 test('formatAreaId: the boss zone is identified as the level\'s boss area (from the level def)', async () => {
   const { LEVELS } = await import('../level.js');
   const def = LEVELS[0];
-  const bossIdx = def.checkpoints.length - 1; // the last checkpoint of the level is the boss zone
+  const bossIdx = def.LEGACY.checkpoints.length - 1; // the last checkpoint of the level is the boss zone
   assert.equal(L.formatAreaId(1, bossIdx), '1-B', 'the boss area index (from the level def) displays as 1-B');
   assert.notEqual(L.formatAreaId(1, bossIdx - 1), '1-B', 'the area before the boss is not the boss zone');
 });
@@ -371,14 +371,14 @@ test('boss-zone entry shows the boss area id (1-B), not the last ordinary area',
   hero.alive = true;
   hero.energy = hero.maxEnergy;
   hero.lives = 3;
-  hero.currentArea = def.checkpoints.length - 2; // last ordinary area before the boss
+  hero.currentArea = def.LEGACY.checkpoints.length - 2; // last ordinary area before the boss
   boss.active = false;
   boss.aiState = 'idle';
 
   // Trigger the boss-zone entry exactly as updateBoss() does on first
   // activation: set currentArea to the boss zone and show the shared entry
   // screen (lifecycle.md §2). We replicate the call-site logic the fix lives in.
-  hero.currentArea = def.checkpoints.length; // boss zone (beyond the last flag)
+  hero.currentArea = def.LEGACY.checkpoints.length; // boss zone (beyond the last flag)
   const bossCp = checkpoints[checkpoints.length - 1];
   hero.checkpoint = { x: bossCp.x, y: bossCp.y };
   L.showAreaEntry(hero);

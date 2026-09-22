@@ -188,11 +188,14 @@ function drawProgressLine(ctx, hero, levelDef) {
   ctx.stroke();
 
   // Checkpoint markers (dimmed once the hero has passed them).
-  if (Array.isArray(levelDef.checkpoints)) {
+  // Task 2.1: the progress track is the DEPRECATED single corridor (the runtime
+  // is still wired to it), so the markers/length come from levelDef.LEGACY.
+  const corridor = levelDef.LEGACY;
+  if (Array.isArray(corridor?.checkpoints)) {
     ctx.font = `10px ${FONT_UI}`;
     ctx.textAlign = 'center';
-    for (const cp of levelDef.checkpoints) {
-      const frac = Math.max(0, Math.min(1, cp.x / levelDef.length));
+    for (const cp of corridor.checkpoints) {
+      const frac = Math.max(0, Math.min(1, cp.x / corridor.length));
       const cx = lineX + frac * lineW;
       const passed = hero.x >= cp.x;
       ctx.fillStyle = passed ? 'rgba(243, 156, 18, 0.4)' : '#f39c12';
@@ -205,7 +208,7 @@ function drawProgressLine(ctx, hero, levelDef) {
   }
 
   // Hero position marker (clamped to the track).
-  const heroFrac = Math.max(0, Math.min(1, (hero.x + hero.w / 2) / levelDef.length));
+  const heroFrac = Math.max(0, Math.min(1, (hero.x + hero.w / 2) / corridor.length));
   const hx = lineX + heroFrac * lineW;
   ctx.fillStyle = '#2ecc71';
   ctx.beginPath();

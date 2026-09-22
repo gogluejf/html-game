@@ -484,10 +484,13 @@ function levelName(level) {
  * boss area → '1-B'. The IDs come from the level's checkpoint definitions —
  * the boss zone is a property of the level (the checkpoint whose id ends in
  * '-B'), not a universal index.
+ *
+ * NOTE (task 2.1): the runtime is still wired to the DEPRECATED single corridor,
+ * so the checkpoint ids come from LEVELS[?].LEGACY (not the zone model).
  */
 export function formatAreaId(level, area) {
   const def = LEVELS[level - 1];
-  const cps = def?.checkpoints;
+  const cps = def?.LEGACY?.checkpoints;
   if (!cps || cps.length === 0) {
     // Unknown level: fall back to positional ids.
     return `${level}-${area < 0 ? 1 : area + 1}`;

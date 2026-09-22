@@ -47,10 +47,18 @@
     },
     "2.1": {
       "number": "2.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Zone model replacing single corridor",
       "milestone": "Zone & Transition System",
-      "milestone_number": "2"
+      "milestone_number": "2",
+      "summary": {
+        "tradeoffs": "Legacy corridor kept (as LEGACY_CORRIDOR + LEVELS[0].LEGACY + deprecated generateLevel()) because full runtime rewiring to the zone model is task 7.1. The zone model is now the authoritative structure the runtime references (hero.zones, exported levelZones + getActiveZone()), but the camera still clamps to the LEGACY corridor length until 7.1 swaps it. Vertical zones have a bottom platform at bounds.y+bounds.h and a one-way top platform at VERTICAL_TOP_PLATFORM_OFFSET=56.",
+        "lessons_learned": "Screen-coordinate gotcha: y=0 is the TOP, so a bottom (entry) flag has a LARGER y than a top (exit) flag. The R1 code had this inverted (entry at y=452, exit at y=1572) which was geometrically wrong. zonePlatforms must receive the full zone object (with orientation) to branch correctly \u2014 passing bare {bounds} silently produced horizontal geometry for vertical zones.",
+        "done": "R2 fixes for task 2.1. BLOCKER (R2#1): Wired buildLevelZones into the runtime \u2014 update.js now imports and calls buildLevelZones(LEVEL_DEF) at module load, exports levelZones + getActiveZone(hero), and stores hero.zones = levelZones at both boot and SELECT\u2192PLAY game start. The zone model is no longer dead code; it is the authoritative structure the runtime references. MAJOR (R2#2): Fixed flagY for vertical zones \u2014 entry flag now at the BOTTOM (y = bounds.y + bounds.h - flagH = 1572, largest y) and exit flag at the TOP (y = VERTICAL_TOP_PLATFORM_OFFSET - flagH = 8, smallest y). Fixed zonePlatforms for vertical zones: bottom supporting platform at bounds.y+bounds.h (full width) + one-way top platform at y=56 (120px wide, under the exit flag). Updated zone.test.js assertions to match correct screen-coordinate semantics (entry.y > exit.y). Updated docs: structure.md \u00a74 (coordinate summary table) and checkpoints.md \u00a71 (screen-coordinate clarification).",
+        "confidence": "high",
+        "failures": "Only pre-existing baseline flakes remain: input.test.js (2 tests: simultaneous sources + Space jump) and barrel.solid.test.js (intermittent timing flake). All zone/lifecycle/invariant/oneWayPlatform tests pass. Full suite: 117/119 pass.",
+        "decisions": "VERTICAL_TOP_PLATFORM_OFFSET=56 gives the exit flag a top edge at y=8 (56-48), keeping it 8px inside the zone bounds. The top platform is one-way (hero can jump up through it). zonePlatforms now receives the full zone object (not bare {bounds}) so it can branch on orientation. The camera still uses LEVEL_LENGTH (legacy corridor) for clamping \u2014 task 7.1 will switch to getActiveZone(hero).bounds."
+      }
     },
     "2.2": {
       "number": "2.2",

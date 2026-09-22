@@ -52,17 +52,32 @@ not yet been specified.
 
 Vertical progression is an upward climb, Contra-style.
 
-- The starting flag sits on a supporting platform at the bottom.
+- The starting (entry) flag sits on a supporting platform at the **bottom** of
+  the zone. In screen coordinates (y=0 is the top), the bottom platform is at
+  the largest y value in the zone's bounds, and the entry flag's top edge is at
+  `bounds.y + bounds.h - flagHeight`.
 - There is **no horizontal camera scrolling**. The hero can still move sideways
   and jump between platforms inside the fixed width.
 - The camera follows upward progress only. Once raised, it never follows back down.
 - The hero may fall within the visible view, but falling into the bottom emptiness
   kills them. Descending cannot recover the earlier part of the climb.
-- The exit flag sits on a platform at the top.
+- The exit flag sits on a platform at the **top** of the climb. In screen
+  coordinates the top platform is at a small y offset from `bounds.y`, and the
+  exit flag's top edge is at `topPlatformY - flagHeight`. The top platform is
+  a one-way surface (the hero can pass up through it and land from above).
 - Death resets the ascent to its starting platform and starting camera position.
 
 The initial supporting platform must allow a safe start; the lethal bottom rule
 must not kill a hero standing normally at the entry.
+
+**Coordinate summary (screen coordinates, y=0 is top):**
+
+| Element | Y position |
+|---------|-----------|
+| Entry flag (bottom) | `bounds.y + bounds.h - flagHeight` (largest y) |
+| Bottom platform top | `bounds.y + bounds.h` |
+| Top platform top | `bounds.y + topOffset` (small y, near top) |
+| Exit flag (top) | `bounds.y + topOffset - flagHeight` (smallest y) |
 
 ## 5. Terrain vocabulary
 

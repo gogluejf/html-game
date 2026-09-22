@@ -63,6 +63,9 @@ console.log('\nTask 8.3 — Play HUD\n');
 
 const hero = U.getHero();
 const levelDef = LEVELS[0];
+// Task 2.1: the HUD progress track renders the DEPRECATED single corridor, so
+// its geometry (checkpoints, length) lives on levelDef.LEGACY.
+const corridor = levelDef.LEGACY;
 const cam = U.getCamera();
 
 ok('drawHUD runs without throwing (full state)', () => {
@@ -128,7 +131,7 @@ ok('coins + lives display live', () => {
 ok('checkpoint line: markers for every checkpoint id', () => {
   const ctx = makeFakeCtx();
   drawHUD(ctx, hero, cam, levelDef);
-  const ids = levelDef.checkpoints.map(c => c.id);
+  const ids = corridor.checkpoints.map(c => c.id);
   for (const id of ids) {
     assert.ok(ctx.texts.some(t => t.t === id), `marker label "${id}" drawn`);
   }
@@ -140,8 +143,8 @@ ok('checkpoint line: marker positions scale by cp.x / length', () => {
   const ctx = makeFakeCtx();
   drawHUD(ctx, hero, cam, levelDef);
   const lineX = VIEW_W * 0.2, lineW = VIEW_W * 0.6;
-  for (const cp of levelDef.checkpoints) {
-    const expectX = lineX + (cp.x / levelDef.length) * lineW;
+  for (const cp of corridor.checkpoints) {
+    const expectX = lineX + (cp.x / corridor.length) * lineW;
     const m = ctx.arcs.find(a => a.r === 5 && Math.abs(a.x - expectX) < 1);
     assert.ok(m, `checkpoint ${cp.id} marker at expected x≈${expectX.toFixed(1)}`);
   }
@@ -159,14 +162,14 @@ ok('hero position marker clamped to [start, end] of track', () => {
     assert.ok(dot && Math.abs(dot.x - lineX) < 2, 'hero dot at track start');
 
     // Mid-level → proportional position.
-    hero.x = levelDef.length / 2;
+    hero.x = corridor.length / 2;
     ctx = makeFakeCtx();
     drawHUD(ctx, hero, cam, levelDef);
     dot = ctx.arcs.find(a => a.r === 6);
     assert.ok(dot && Math.abs(dot.x - (lineX + lineW / 2)) < 2, 'hero dot mid-track');
 
     // Past the end → clamped to track end.
-    hero.x = levelDef.length * 2;
+    hero.x = corridor.length * 2;
     ctx = makeFakeCtx();
     drawHUD(ctx, hero, cam, levelDef);
     dot = ctx.arcs.find(a => a.r === 6);

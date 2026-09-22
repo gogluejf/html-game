@@ -11,7 +11,10 @@ an exit clears the area and establishes the next area's starting point.
 - The -4 exit is a boss checkpoint; the next, separate boss zone starts beside
   a boss checkpoint too.
 - Vertical-area entry and exit flags sit on supporting platforms, at the bottom
-  and top respectively.
+  and top respectively. In screen coordinates (y=0 is top), the entry flag has
+  the **larger** y value (bottom of the climb) and the exit flag has the
+  **smaller** y value (top of the climb). The exit flag's platform is a one-way
+  surface near the top of the zone's bounds.
 
 An entry flag is already the starting checkpoint, not another exit trigger.
 Arriving beside it must not immediately clear the newly entered area.

@@ -33,7 +33,7 @@ import { makeBarrel, makeCoinBarrel, GameObj, Checkpoint, makeCheckpoint } from 
 import { resolveExplosion } from '../explosion.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
-import { LEVELS, generateLevel } from '../level.js';
+import { LEVELS, generateLevel, buildLevelZones } from '../level.js';
 import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry } from '../lifecycle.js';
 import { GAME_RULES } from '../gameRules.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from '../debug.js';
@@ -44,10 +44,13 @@ import { dumpStats } from '../stats.js';
 // (Hero movement feel lives in js/hero.js; level geometry below.)
 
 // Level struct + rogue spawner (design §13). The declarative level
-// definition (LEVELS[0] "Big Top") drives all world content: platforms,
-// checkpoints, and every spawnable item. generateLevel() randomly places the
-// spawnables along flat ground with min spacing; the hero-start zone (first
-// 500px) and boss arena (last 500px) stay clear.
+// definition (LEVELS[0] "Big Top") drives all world content.
+//
+// NOTE (task 2.1): the authoritative level structure is the sealed zone model
+// (buildLevelZones). The runtime below is still wired to the DEPRECATED single
+// corridor (LEVEL_DEF.LEGACY + generateLevel()) while the zone engine is wired
+// in by later tasks; the camera length and corridor checkpoint count therefore
+// come from the legacy corridor, not from the zone model.
 const LEVEL_DEF = LEVELS[0];
 // `let` because a genuinely new game (lifecycle.md §1/§6) replaces the whole
 // generated world with fresh random generation choices. startGame() invokes
@@ -56,7 +59,27 @@ const LEVEL_DEF = LEVELS[0];
 let generated = generateLevel(LEVEL_DEF);
 
 // Level length comes from the level definition (camera clamps to this).
-export const LEVEL_LENGTH = LEVEL_DEF.length;
+export const LEVEL_LENGTH = LEVEL_DEF.LEGACY.length;
+
+// --- Zone model (task 2.1 — authoritative level structure) -------------------
+// The sealed zone model is the authoritative structure the runtime references
+// for structural decisions (zone bounds, flags, orientation). The LEGACY
+// corridor provides the actual geometry (platforms, checkpoints) until task 7.1
+// swaps it for per-zone content. The zone model is built once at boot and
+// stored on the hero so the game loop and camera can reference it.
+export const levelZones = buildLevelZones(LEVEL_DEF);
+/**
+ * The zone currently being played. Index into levelZones based on the hero's
+ * currentArea. Used for structural decisions (camera clamping, bounds).
+ * Task 7.1 will fully wire zone geometry into the game loop; for now this
+ * exposes the zone model so it is not dead code.
+ */
+export function getActiveZone(hero) {
+  // currentArea: -1 → zone[0], -2 → zone[1], -3 → zone[2], -4 → zone[3],
+  // checkpoints.length (boss) → zone[4].
+  const idx = hero.currentArea <= -1 ? -(hero.currentArea) - 1 : hero.currentArea;
+  return levelZones[Math.min(idx, levelZones.length - 1)];
+}
 
 // --- Static solid platforms -------------------------------------------------
 // Plain AABBs from the level definition; also wrapped as layer entities so the
@@ -103,6 +126,9 @@ hero = startGame({ oldHero: hero }, HEROES.scarlet);
 hero.x = HERO_START_X;
 hero.y = FLOOR_TOP - hero.h;
 hero.checkpoint = { x: hero.x, y: hero.y };
+// Store the zone model on the hero (task 2.1 — the zone model must not be
+// dead code; it is the authoritative structure the runtime references).
+hero.zones = levelZones;
 // Register the world-regeneration callback so SUBSEQUENT genuinely-new games
 // (SELECT → PLAY) establish fresh generation choices (lifecycle.md §1/§6).
 // The boot game above used the world baked at module load; only a new game
@@ -1121,6 +1147,8 @@ onTransition((from, to) => {
     nh.x = HERO_START_X;
     nh.y = FLOOR_TOP - nh.h;
     nh.checkpoint = { x: nh.x, y: nh.y };
+    // Zone model (task 2.1) — authoritative structure on the hero.
+    nh.zones = levelZones;
     // Placeholder anims sized for the new body.
     nh.anim = new Anim(
       ['#2ecc71', '#27ae60', '#1abc9c'].map(c => makeTestFrame(nh.w, nh.h, c)),
@@ -1147,6 +1175,10 @@ onTransition((from, to) => {
 
 // --- Camera --------------------------------------------------------------------
 // Hero-following cam clamped to [0, LEVEL_LENGTH - VIEW_W] with facing look-ahead.
+// NOTE (task 2.1): the zone model (levelZones) is the authoritative level
+// structure. The camera currently clamps to the LEGACY corridor length because
+// the runtime geometry is still the single corridor. Task 7.1 will swap the
+// camera bounds to use the active zone's bounds (getActiveZone(hero).bounds).
 export const camera = new Camera();
 camera.levelLength = LEVEL_LENGTH;
 
@@ -1928,7 +1960,7 @@ function updateBoss(dt) {
       // to map onto the level's boss area (formatAreaId: area >=
       // checkpoints.length - 1 → '1-B'). Setting it one past the last flag
       // keeps the -1 offset uniform with the ordinary-flag path.
-      hero.currentArea = LEVEL_DEF.checkpoints.length; // boss zone (beyond last flag)
+      hero.currentArea = LEVEL_DEF.LEGACY.checkpoints.length; // boss zone (beyond last flag)
       // checkpoints.md §1: the boss zone restarts beside the boss checkpoint
       // (the last flag of the level). Set the respawn point BEFORE showing the
       // entry screen so confirming it (startLife → hero.respawn()) lands the
