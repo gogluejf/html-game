@@ -62,7 +62,7 @@
     },
     "2.2": {
       "number": "2.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Exit flag, clear banner, fade transition",
       "milestone": "Zone & Transition System",
       "milestone_number": "2",
@@ -77,8 +77,8 @@
     },
     "2.3": {
       "number": "2.3",
-      "status": "not_started",
-      "name": "Per-zone camera boundaries",
+      "status": "in_progress",
+      "name": "Camera max-scroll from zone length",
       "milestone": "Zone & Transition System",
       "milestone_number": "2"
     },

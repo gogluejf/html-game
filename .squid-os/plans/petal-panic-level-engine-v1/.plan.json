@@ -129,19 +129,22 @@
         },
         {
           "number": "2.3",
-          "name": "Per-zone camera boundaries",
+          "name": "Camera max-scroll from zone length",
           "type": "feature",
-          "what": "Make the camera clamp to the active zone's bounds so it cannot reveal previous or next zones; horizontal zones scroll right only, boss zone is a fixed view.",
-          "why": "Docs/structure.md: the camera stops at area boundaries and cannot reveal adjacent zones; the boss arena locks both sides.",
+          "what": "Set the camera's max scroll to the active zone's length so it cannot draw past the zone's end. The zone is the only world in memory — there is no next zone to reveal. For horizontal zones: camera scrolls right up to the zone's exit flag, then stops. For vertical zones: no horizontal scroll (fixed width). For the boss zone: camera is completely frozen (fixed arena view). This is a one-line clamp, not a zone management system.",
+          "why": "The zone has a finite length and the exit flag is at the end. The camera must not draw beyond the zone's bounds. The boss arena is a fixed-size room where the camera doesn't move at all.",
           "files": [
             "~ petal-panic/js/camera.js",
             "~ petal-panic/js/systems/update.js"
           ],
           "snippet": [
-            "// Camera takes its clamp range from the ACTIVE zone.\nexport function setCameraBounds(zone) {\n  // min/max from zone.bounds; boss zone: min === max (locked)\n}"
+            "// Camera max scroll comes from the active zone's length.\n// The zone is the only world — nothing exists past its end.\nexport function setCameraMax(zone) {\n  // horizontal: max = zone.bounds.x + zone.bounds.w - VIEW_W\n  // vertical:   min = max = zone.bounds.x (no horizontal scroll)\n  // boss:       min = max (frozen)\n}"
           ],
           "acceptance": [
-            "Camera never draws outside the active zone in any state; entering the boss zone freezes the camera; returning to a new zone re-clamps correctly"
+            "Camera max scroll equals the zone's length (cannot draw past the exit flag)",
+            "Vertical zones have no horizontal camera movement",
+            "Boss zone camera is completely frozen (fixed view)",
+            "Entering a new zone (after clear sequence) re-clamps the camera to the new zone's length"
           ],
           "verify": [
             "node --test petal-panic/js/test/"

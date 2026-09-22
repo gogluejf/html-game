@@ -78,14 +78,14 @@ Snippet: // Clearing an ordinary area:\n// 1. activate exit flag  2. flag flash 
 Acceptance: Touching the exit flag triggers flash + banner exactly once; camera never reveals the next zone before the fade; after fade-in the hero stands at the new zone's start beside its entry flag; entry flag does not immediately re-trigger a clear
 Verification: node --test petal-panic/js/test/
 
-### TASK: 2.3 - Per-zone camera boundaries
+### TASK: 2.3 - Camera max-scroll from zone length
 Type: feature
-What: Make the camera clamp to the active zone's bounds so it cannot reveal previous or next zones; horizontal zones scroll right only, boss zone is a fixed view.
-Why: Docs/structure.md: the camera stops at area boundaries and cannot reveal adjacent zones; the boss arena locks both sides.
+What: Set the camera's max scroll to the active zone's length so it cannot draw past the zone's end. The zone is the only world in memory — there is no next zone to reveal. For horizontal zones: camera scrolls right up to the zone's exit flag, then stops. For vertical zones: no horizontal scroll (fixed width). For the boss zone: camera is completely frozen (fixed arena view). This is a one-line clamp, not a zone management system.
+Why: The zone has a finite length and the exit flag is at the end. The camera must not draw beyond the zone's bounds. The boss arena is a fixed-size room where the camera doesn't move at all.
 Files: ~ petal-panic/js/camera.js
 Files: ~ petal-panic/js/systems/update.js
-Snippet: // Camera takes its clamp range from the ACTIVE zone.\nexport function setCameraBounds(zone) {\n  // min/max from zone.bounds; boss zone: min === max (locked)\n}
-Acceptance: Camera never draws outside the active zone in any state; entering the boss zone freezes the camera; returning to a new zone re-clamps correctly
+Snippet: // Camera max scroll comes from the active zone's length.\n// The zone is the only world — nothing exists past its end.\nexport function setCameraMax(zone) {\n  // horizontal: max = zone.bounds.x + zone.bounds.w - VIEW_W\n  // vertical:   min = max = zone.bounds.x (no horizontal scroll)\n  // boss:       min = max (frozen)\n}
+Acceptance: Camera max scroll equals the zone's length (cannot draw past the exit flag); Vertical zones have no horizontal camera movement; Boss zone camera is completely frozen (fixed view); Entering a new zone (after clear sequence) re-clamps the camera to the new zone's length
 Verification: node --test petal-panic/js/test/
 
 ## MILESTONE: 3 - Terrain Generation

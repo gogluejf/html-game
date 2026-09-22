@@ -223,6 +223,9 @@ export function beginClearFadeIn() {
   hero.x = zone.bounds.x + ZONE_ENTRY_X;
   hero.y = entryY - hero.h;
   hero.checkpoint = { x: hero.x, y: hero.y };
+  // Re-clamp the camera to the new zone's bounds (task 2.3) so it cannot reveal
+  // the previous or next zone; a fresh vertical climb also resets its ascent.
+  camera.setZoneBounds(zone);
 }
 
 // --- Zone model (task 2.1 — authoritative level structure) -------------------
@@ -1395,17 +1398,25 @@ onTransition((from, to) => {
     // fade-in because the hero was already positioned by startLife and the
     // screen was opaque (no visible world to fade from).
     beginClearFadeIn();
+    // Re-clamp the camera to the zone the hero is now in (task 2.3). This runs
+    // on EVERY area-entry confirmation (new game, clear-sequence advance, death
+    // restart, continue), so the camera is always bound to the active zone and
+    // a fresh vertical climb resets its ascent high-water mark.
+    camera.setZoneBounds(getActiveZone(hero));
   }
 });
 
 // --- Camera --------------------------------------------------------------------
-// Hero-following cam clamped to [0, LEVEL_LENGTH - VIEW_W] with facing look-ahead.
-// NOTE (task 2.1): the zone model (levelZones) is the authoritative level
-// structure. The camera currently clamps to the LEGACY corridor length because
-// the runtime geometry is still the single corridor. Task 7.1 will swap the
-// camera bounds to use the active zone's bounds (getActiveZone(hero).bounds).
+// Hero-following cam clamped to the ACTIVE ZONE's world bounds (task 2.3).
+// The zone model (levelZones) is the authoritative level structure: the
+// camera's clamp range comes from getActiveZone(hero).bounds, NOT the legacy
+// corridor length, so it can never reveal the previous or next zone
+// (structure.md §2/§3, checkpoints.md §2). The legacy corridor is still the
+// active geometry until task 7.1; the camera bounds are already zone-driven.
 export const camera = new Camera();
-camera.levelLength = LEVEL_LENGTH;
+// Bind the camera to the zone the hero starts in (area -1) so it is clamped
+// from the very first frame.
+camera.setZoneBounds(getActiveZone(hero));
 
 // brief screen shake on barrel explosions (optional juice). The
 // camera-shake effect engine instance is the single owner of the shake state
@@ -2188,8 +2199,16 @@ function updateBoss(dt) {
     const wasActive = b.active;
     b.shouldActivate(hero);
     if (b.active && !wasActive) {
-      // First activation: lock the camera to the arena.
-      camera.lockTo(b.arenaX, b.arenaW);
+      // First activation: the boss zone is a separate sealed zone
+      // (checkpoints.md §1/§3, structure.md §3) whose arena locks both sides.
+      const bossZone = levelZones[4];
+      // Bind the camera to the boss zone's bounds, which freezes it
+      // (min === max on both axes) so it cannot reveal adjacent zones
+      // (task 2.3, structure.md §3).
+      if (bossZone) camera.setZoneBounds(bossZone);
+      // Keep the boss's own arena lock (centered on spawn) so the fight view
+      // is the arena rather than the whole zone width.
+      camera.lockTo(b.arenaX, 0);
       // checkpoints.md §1/§3: the boss zone is a separate zone that starts
       // beside the boss checkpoint and receives the SHARED area-entry screen,
       // identified as the level's boss area (the last checkpoint of the
@@ -2205,7 +2224,6 @@ function updateBoss(dt) {
       // checkpoints.md §1: the boss zone restarts beside the boss checkpoint.
       // Use the zone model's entry flag position for consistency with the
       // clear-sequence path.
-      const bossZone = levelZones[4];
       if (bossZone?.entryFlag) {
         hero.checkpoint = {
           x: bossZone.bounds.x + bossZone.entryFlag.x,
