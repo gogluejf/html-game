@@ -120,6 +120,9 @@ Report findings as: file:line — issue — doc § ref — severity (blocker/maj
    effects; no image loading introduced.
 9. **Test quality**: pure-unit where possible (level.js-style, no DOM), fixed dt = 1/60,
    exact values within epsilon; integration tests simulate full flows headlessly.
+10. **No unbounded loops**: every generation/placement retry is attempt-capped (like the
+    prototype's MAX_ATTEMPTS) with a soft-cap fallback; every test has a hard timeout.
+    A hung generator or test is a blocker, not a flake.
 
 Verdict: `PASS` or `FAIL` + numbered findings. No prose padding.
 
