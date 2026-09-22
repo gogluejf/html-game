@@ -1103,9 +1103,13 @@ world.on('checkpoint', (a, b) => {
 // When SELECT → PLAY, rebuild the hero with the chosen definition.
 // The Select screen sets window.__selectedHero before calling tryTransition(S.PLAY).
 onTransition((from, to) => {
-  if (to === S.PLAY && from !== S.PAUSE && from !== S.OVER) {
+  if (to === S.PLAY && from !== S.PAUSE && from !== S.OVER && from !== S.AREA_ENTRY) {
     // New run: SELECT/HOME/WIN → PLAY. Retry/continue already restore OVER.
     // PAUSE→PLAY is a resume — hero state is already correct.
+    // AREA_ENTRY→PLAY is the player confirming the shared area-entry screen to
+    // begin the attempt (lifecycle.md §2/§3) — the hero was already rebuilt by
+    // startGame/continueRun and placed by startLife, so this must NOT trigger
+    // startGame (which would rebuild the hero and reroll generation).
     // lifecycle.md §1: a genuinely new game rebuilds the hero with the chosen
     // definition and establishes lives, the continue pool, fresh run stats,
     // and the area position. startGame() owns all of that; this hook only
@@ -1917,7 +1921,20 @@ function updateBoss(dt) {
       // identified as the level's boss area (the last checkpoint of the
       // level's checkpoint definitions). The player confirms the screen to
       // begin the encounter (lifecycle.md §2).
-      hero.currentArea = LEVEL_DEF.checkpoints.length - 1; // boss area index
+      //
+      // The boss zone lies BEYOND the last ordinary flag — it is not the area
+      // reached by the flag at index (length-1). showAreaEntry() formats the
+      // id from (currentArea - 1), so currentArea must be checkpoints.length
+      // to map onto the level's boss area (formatAreaId: area >=
+      // checkpoints.length - 1 → '1-B'). Setting it one past the last flag
+      // keeps the -1 offset uniform with the ordinary-flag path.
+      hero.currentArea = LEVEL_DEF.checkpoints.length; // boss zone (beyond last flag)
+      // checkpoints.md §1: the boss zone restarts beside the boss checkpoint
+      // (the last flag of the level). Set the respawn point BEFORE showing the
+      // entry screen so confirming it (startLife → hero.respawn()) lands the
+      // hero here, not at the previous ordinary flag.
+      const bossCp = checkpoints[checkpoints.length - 1];
+      if (bossCp) hero.checkpoint = { x: bossCp.x, y: bossCp.y };
       showAreaEntry(hero, areaContext);
       console.log('[boss] fight started — camera locked to arena, boss-zone entry screen shown');
     }

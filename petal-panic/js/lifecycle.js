@@ -319,6 +319,23 @@ export function startLife(h, ctx) {
   // or a continue restored them.
   resetHeroTransient(h);
   h.respawn();
+  // checkpoints.md §1: the flag the hero is placed beside is the area's ENTRY
+  // flag — "arriving beside it must not immediately clear the newly entered
+  // area." restoreArea() above re-armed every checkpoint, so the next overlap
+  // frame would re-trigger the entry flag and immediately re-open the entry
+  // screen. Latch it so it does not re-fire for this attempt; a later genuine
+  // walk-over (next attempt's restoreArea) re-arms it again.
+  //
+  // The entry flag is the one the hero's checkpoint points at. Checkpoint
+  // stores its own x on trigger(), and flags are x-distinct, so matching on x
+  // (with a small tolerance for the hero's body offset) identifies the entry
+  // flag unambiguously regardless of the checkpoint's stored y.
+  const cpX = h.checkpoint?.x;
+  if (cpX !== undefined) {
+    for (const cp of c.checkpoints ?? []) {
+      if (Math.abs(cp.x - cpX) < 1) cp.triggered = true;
+    }
+  }
 }
 
 /**
@@ -406,6 +423,13 @@ export function getAreaEntryData() { return _areaEntryData; }
 export function showAreaEntry(h, ctx) {
   const data = {
     levelName: levelName(h.currentLevel),
+    // currentArea is the index of the checkpoint whose flag the hero has just
+    // reached (the entry flag of the area being shown). formatAreaId expects
+    // the *area index*, where the area shown when reaching the flag at index i
+    // is (i - 1): the pre-area (-1) is shown for the first flag, and the boss
+    // zone is shown when currentArea reaches the last checkpoint index
+    // (checkpoints.length - 1) — which must map to the boss id, not the last
+    // ordinary area.
     areaId: formatAreaId(h.currentLevel, h.currentArea - 1),
     lives: h.lives,
   };

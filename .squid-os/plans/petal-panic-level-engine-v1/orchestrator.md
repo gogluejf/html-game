@@ -25,8 +25,13 @@ two short prompts. No human between tasks.
    - Only **minor** findings → note them in reviews.md and commit anyway (minors don't block).
    - Reviewers disagree on whether something is a problem → the test suite breaks the tie if
      it covers the case; otherwise one-line question to user.
-   - **Max 2 review→fix→re-review rounds total.** After round 2, commit what's green and note
-     any remaining findings.
+   - **Max 2 fix rounds + 1 final confirmation review.**
+     - Round 1: review → if FAIL with major/blocker → fix.
+     - Round 2: re-review (confirm round-1 findings fixed) → if still FAIL with major/blocker → fix.
+     - Round 3 (final): re-review **only verifies the previously identified findings are resolved**.
+       No new findings are accepted at this stage. If all prior findings are resolved → PASS → commit.
+       If a prior finding is NOT resolved → one more targeted fix + one more review (exception, max once).
+     - After the final confirmation, commit what's green and note any remaining minor findings.
 5. **Record** — append verdicts + resolution to `reviews.md`.
 6. **Commit** — `levels <task-id>: <task name>`.
 7. `progress.py mark-done` **after** the summary is persisted (the executor stores it via

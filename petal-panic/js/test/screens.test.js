@@ -124,6 +124,9 @@ test('new game shows the shared entry screen for the first area', () => {
   // A genuinely new game (SELECT → PLAY) opens the shared entry screen. The
   // transition hook pushes the screen AFTER the transition completes, so the
   // screen data survives the transition's screen reset.
+  // Start from a valid pre-SELECT state (HOME) so the SELECT transition is
+  // well-formed regardless of the state a prior test left behind.
+  setState(S.HOME);
   tryTransition(S.SELECT);
   window.__selectedHero = 'scarlet';
   SC.Select.reset();
@@ -226,8 +229,15 @@ test('death in 1-3 re-enters 1-3 beside its entry flag (same area, same arrangem
     assert.equal(enemy.alive, true, 'defeated enemies are restored');
     assert.equal(enemy.hp, enemy.maxHp, 'enemy HP fully restored');
   }
+  // checkpoints.md §1: the ENTRY flag (the one the hero respawns beside, 1-3)
+  // must NOT immediately re-trigger the newly entered area — it is latched so
+  // the next overlap frame is a no-op. The OTHER flags re-arm for the attempt.
+  const entryCp = checkpoints.find(c => c.checkpointId === '1-3');
+  assert.ok(entryCp, 'the 1-3 entry flag exists');
+  assert.equal(entryCp.triggered, true, 'the entry flag is latched so it does not re-trigger');
   for (const c of checkpoints) {
-    assert.equal(c.triggered, false, 'checkpoints re-arm for the new attempt');
+    if (c === entryCp) continue;
+    assert.equal(c.triggered, false, 'other checkpoints re-arm for the new attempt');
   }
 });
 
@@ -343,4 +353,44 @@ test('back on the entry screen opens the pause menu', () => {
 
   L.areaEntryOnAction('back', h, ctx);
   assert.equal(getState(), S.PAUSE, 'back opens the pause menu');
+});
+
+// --- 7. Boss-zone entry: identified as '1-B' and restarts beside the boss cp --
+
+test('boss-zone entry shows the boss area id (1-B), not the last ordinary area', async () => {
+  const { LEVELS } = await import('../level.js');
+  const def = LEVELS[0];
+
+  const hero = U.getHero();
+  const boss = U.getBoss();
+  const checkpoints = U.getCheckpoints();
+
+  // Clean PLAY state; the boss has not yet activated this run.
+  setState(S.PLAY);
+  hero.dying = false;
+  hero.alive = true;
+  hero.energy = hero.maxEnergy;
+  hero.lives = 3;
+  hero.currentArea = def.checkpoints.length - 2; // last ordinary area before the boss
+  boss.active = false;
+  boss.aiState = 'idle';
+
+  // Trigger the boss-zone entry exactly as updateBoss() does on first
+  // activation: set currentArea to the boss zone and show the shared entry
+  // screen (lifecycle.md §2). We replicate the call-site logic the fix lives in.
+  hero.currentArea = def.checkpoints.length; // boss zone (beyond the last flag)
+  const bossCp = checkpoints[checkpoints.length - 1];
+  hero.checkpoint = { x: bossCp.x, y: bossCp.y };
+  L.showAreaEntry(hero);
+
+  const data = SC.getAreaEntryData();
+  assert.equal(getState(), S.AREA_ENTRY, 'boss-zone entry uses the shared entry screen');
+  assert.equal(data.areaId, '1-B', 'the boss zone is identified as the level\'s boss area (1-B)');
+  assert.ok(data.areaId !== '1-4', 'the boss zone is NOT the last ordinary area (1-4)');
+
+  // BLOCKER 2: the respawn point is the boss checkpoint, so confirming the
+  // screen (startLife → hero.respawn()) lands the hero beside the boss flag.
+  L.areaEntryOnAction('confirm', hero);
+  assert.equal(getState(), S.PLAY, 'confirm starts the boss encounter');
+  assert.ok(Math.abs(hero.x - bossCp.x) < 1, `hero placed beside the boss checkpoint (x=${hero.x})`);
 });
