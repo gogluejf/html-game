@@ -478,7 +478,8 @@ let show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:
 let bgColor = '#000000';   // canvas background fill
 let isPlaying = true;      // global play/pause, carried across animations
 // ---------- localStorage persistence ----------
-const LS_KEY = 'sprite-editor-state-v1';
+const LS_KEY = 'sprite-editor-state-v1-petal-panic';
+const LS_KEY_OLD = 'sprite-editor-state-v1';   // pre-per-project key (one-time migration)
 let _loadingState = false;   // guard: suppress saves while restoring from localStorage
 // Serialize everything worth persisting: per-entity editor state + global view.
 function collectState(){
@@ -505,6 +506,16 @@ function saveState(){
   }catch(e){ /* quota / private mode */ }
 }
 function loadState(){
+  // one-time migration: if no per-project key exists but old shared key does, adopt it
+  try{
+    if (!localStorage.getItem(LS_KEY)){
+      const old = localStorage.getItem(LS_KEY_OLD);
+      if (old){
+        localStorage.setItem(LS_KEY, old);
+        localStorage.removeItem(LS_KEY_OLD);
+      }
+    }
+  }catch(e){}
   let raw; try{ raw = localStorage.getItem(LS_KEY); }catch(e){ return; }
   if (!raw) return;
   let data; try{ data = JSON.parse(raw); }catch(e){ return; }
