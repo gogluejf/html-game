@@ -26,8 +26,12 @@ Read structure and game rules first, then lifecycle. The remaining documents
 expand individual parts of that contract. Shared rules have one owner; links
 point to it rather than introducing competing definitions.
 
-The existing [level story](../story/levels.md) describes the four settings,
-bosses, and enemy rosters. It is separate from these mechanics. References:
+The existing [level story](../story/levels.md) describes the level settings,
+bosses, and enemy rosters. The game will contain **eight levels**; the story
+document currently details the first four. These mechanics are written for an
+N-level engine — nothing here depends on a specific level count. Implementation
+starts with Level 1 only; the engine must not hardcode it as the only level. It
+is separate from these mechanics. References:
 [hero mechanics](../architecture/hero-mechanics.md),
 [knockback](../architecture/knockback.md), and
 [effects](../architecture/effects.md).
