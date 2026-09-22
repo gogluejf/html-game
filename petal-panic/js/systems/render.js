@@ -5,7 +5,7 @@
 
 import { VIEW_W, VIEW_H } from '../view.js';
 import { LAYER } from '../consts.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getDeathFadeAlpha } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getDeathFadeAlpha, getClearBanner, getClearFadeAlpha } from './update.js';
 import { Effects } from '../effects.js';
 import { drawEffects } from '../effects/index.js';
 import { getState, S } from '../state.js';
@@ -386,6 +386,34 @@ export function render(ctx) {
   if (fade > 0) {
     ctx.save();
     ctx.globalAlpha = fade;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    ctx.restore();
+  }
+
+  // checkpoints.md §2: the area-clear 'X-Y CLEAR' banner — a full-screen
+  // celebratory presentation drawn during the banner phase of the clear
+  // sequence. Drawn over the (frozen) world so the banner is clearly visible.
+  const banner = getClearBanner();
+  if (banner) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 48px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(banner, VIEW_W / 2, VIEW_H / 2);
+    ctx.restore();
+  }
+
+  // checkpoints.md §2: the area-clear fade overlay — drawn over the world
+  // during the fade-out (to black before the entry screen) and the fade-in
+  // (from black into the new zone). The same mechanism as the death fade.
+  const clearFade = getClearFadeAlpha();
+  if (clearFade > 0) {
+    ctx.save();
+    ctx.globalAlpha = clearFade;
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     ctx.restore();

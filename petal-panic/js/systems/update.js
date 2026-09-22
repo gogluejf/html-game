@@ -29,12 +29,13 @@ import { JackOLantern } from '../jackolantern.js';
 import { BorisLoon, BORIS_DEF, makeBorisBaby } from '../boris_loon.js';
 import { Elephant, makeElephant, BOSS_TRIGGER_RADIUS, WEAK_POINT_MULT } from '../boss.js';import { particles, coins } from '../particles.js';
 import { Effects } from '../effects.js';
+import { fireManual } from '../effects/index.js';
 import { makeBarrel, makeCoinBarrel, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
 import { resolveExplosion } from '../explosion.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
-import { LEVELS, generateLevel, buildLevelZones } from '../level.js';
-import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry } from '../lifecycle.js';
+import { LEVELS, generateLevel, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../level.js';
+import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId } from '../lifecycle.js';
 import { GAME_RULES } from '../gameRules.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from '../debug.js';
 import { Theater } from '../effects/theater.js';
@@ -60,6 +61,169 @@ let generated = generateLevel(LEVEL_DEF);
 
 // Level length comes from the level definition (camera clamps to this).
 export const LEVEL_LENGTH = LEVEL_DEF.LEGACY.length;
+
+// --- Area-clear sequence (checkpoints.md §2) -----------------------------------
+// When the hero reaches an area's EXIT flag the area is cleared and the next
+// zone is generated. The sequence (checkpoints.md §2, structure.md §2):
+//   1. activate exit flag
+//   2. celebratory flash effect (screenFlash)
+//   3. 'X-Y CLEAR' banner
+//   4. fade out (black overlay driven by getClearFadeAlpha)
+//   5. show next area's entry screen (showAreaEntry)
+//   6. fade into the new zone at its start
+//
+// The sequence is driven by a small state machine stepped in update() so it
+// does not depend on frame timing. The banner is a full-screen presentation
+// drawn by render.js (getClearBanner returns the text or null). The fade-out
+// is a black overlay; the fade-in reuses the same mechanism after the entry
+// screen is confirmed.
+//
+// State: 'idle' | 'flash' | 'banner' | 'fadeOut' | 'fadeIn'
+const CLEAR_SEQ = {
+  FLASH: 0.5,      // seconds of celebratory flash
+  BANNER: 1.2,     // seconds the 'X-Y CLEAR' banner is held
+  FADE_OUT: 0.6,   // seconds to fade to black before the entry screen
+  FADE_IN: 0.6,    // seconds to fade into the new zone after the entry screen
+};
+let clearSeq = {
+  state: 'idle',
+  timer: 0,
+  bannerText: null, // the 'X-Y CLEAR' text shown during the banner phase
+  pendingArea: null, // the area index to advance to after the fade-out completes
+  pendingFadeIn: false, // true when the next AREA_ENTRY→PLAY should start a fade-in
+};
+
+/**
+ * The current clear-sequence state. Exposed for render.js and tests.
+ * @returns {{state:string, timer:number, bannerText:string|null, pendingArea:number|null}}
+ */
+export function getClearSequence() {
+  return clearSeq;
+}
+
+/**
+ * The 'X-Y CLEAR' banner text, or null when the banner is not showing.
+ * render.js reads this to draw the full-screen banner overlay.
+ */
+export function getClearBanner() {
+  return clearSeq.state === 'banner' ? clearSeq.bannerText : null;
+}
+
+/**
+ * The black-overlay alpha for the area-clear fade. Returns 0 when no fade is
+ * active; 1 during the fade-out (fully black before the entry screen) and
+ * during the fade-in (ramping from black into the new zone). render.js reads
+ * this to draw the overlay (the same mechanism as the death fade).
+ */
+export function getClearFadeAlpha() {
+  if (clearSeq.state === 'fadeOut') {
+    const t = clearSeq.timer / CLEAR_SEQ.FADE_OUT;
+    return Math.max(0, Math.min(1, t));
+  }
+  if (clearSeq.state === 'fadeIn') {
+    const t = clearSeq.timer / CLEAR_SEQ.FADE_IN;
+    return Math.max(0, Math.min(1, 1 - t));
+  }
+  return 0;
+}
+
+/**
+ * Begin the area-clear sequence: fire the celebratory screen flash and show
+ * the 'X-Y CLEAR' banner. The fade-out begins after the banner. Called from
+ * the checkpoint handler when the hero reaches an exit flag.
+ *
+ * @param {string} areaId the area identifier being cleared (e.g. '1-1')
+ * @param {number} nextArea the area index to advance to after the fade
+ */
+export function onExitFlagReached(areaId, nextArea) {
+  // Fire the celebratory screen flash (reuse the existing screenFlash effect).
+  fireManual({ type: 'screen-flash', params: { strength: 1 } }, null, { view: { w: VIEW_W, h: VIEW_H } });
+  clearSeq = {
+    state: 'banner',
+    timer: 0,
+    bannerText: `${areaId} CLEAR`,
+    pendingArea: nextArea,
+    pendingFadeIn: true,
+  };
+}
+
+/**
+ * Step the clear-sequence state machine. Called from update() during PLAY.
+ * Advances the timer and transitions between phases:
+ *   banner → fadeOut → (showAreaEntry) → [entry screen confirmed] → fadeIn → idle
+ *
+ * @param {number} dt seconds
+ */
+export function stepClearSequence(dt) {
+  if (clearSeq.state === 'idle') return;
+  clearSeq.timer += dt;
+  if (clearSeq.state === 'banner') {
+    if (clearSeq.timer >= CLEAR_SEQ.BANNER) {
+      clearSeq.state = 'fadeOut';
+      clearSeq.timer = 0;
+    }
+  } else if (clearSeq.state === 'fadeOut') {
+    if (clearSeq.timer >= CLEAR_SEQ.FADE_OUT) {
+      // Fully faded: show the next area's entry screen. The attempt begins
+      // when the player confirms it (lifecycle.md §2); the fade-in is started
+      // when the entry screen is confirmed (AREA_ENTRY→PLAY transition).
+      const area = clearSeq.pendingArea;
+      clearSeq.state = 'idle';
+      clearSeq.timer = 0;
+      clearSeq.bannerText = null;
+      clearSeq.pendingArea = null;
+      // Mark that the next AREA_ENTRY→PLAY should start the fade-in.
+      clearSeq.pendingFadeIn = true;
+      // Advance the hero's area to the next zone-model area (BLOCKER 1/2).
+      // The zone model uses areas -1, -2, -3, -4, boss; pendingArea is now
+      // in the zone-model convention (e.g. -2 for the second area).
+      hero.currentArea = area;
+      // BLOCKER 3: set the checkpoint to the next zone's entry flag position
+      // so startLife can latch the matching flag. For area -1 (no entry
+      // flag), use the zone's start position.
+      const nextZone = getActiveZone(hero);
+      if (nextZone.entryFlag) {
+        hero.checkpoint = {
+          x: nextZone.bounds.x + nextZone.entryFlag.x,
+          y: nextZone.entryFlag.y,
+        };
+      } else {
+        // Area -1 has no entry flag; use the zone start position.
+        hero.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - hero.h };
+      }
+      showAreaEntry(hero, areaContext);
+    }
+  } else if (clearSeq.state === 'fadeIn') {
+    if (clearSeq.timer >= CLEAR_SEQ.FADE_IN) {
+      clearSeq.state = 'idle';
+      clearSeq.timer = 0;
+      clearSeq.bannerText = null;
+      clearSeq.pendingArea = null;
+    }
+  }
+}
+
+/**
+ * Begin the fade-in into the new zone. Called when the entry screen is
+ * confirmed (the attempt begins). Places the hero at the new zone's start
+ * and starts the fade-in.
+ */
+export function beginClearFadeIn() {
+  if (!clearSeq.pendingFadeIn) return; // not a clear-sequence entry
+  clearSeq.pendingFadeIn = false;
+  clearSeq.state = 'fadeIn';
+  clearSeq.timer = 0;
+  // Place the hero at the new zone's start (beside its entry flag).
+  // BLOCKER 4: use the zone's entry flag y-position for vertical zones
+  // (the entry flag sits on the bottom platform, not at ZONE_GROUND_Y).
+  const zone = getActiveZone(hero);
+  const entryY = zone.entryFlag
+    ? zone.bounds.y + zone.entryFlag.y
+    : zone.bounds.y + ZONE_GROUND_Y;
+  hero.x = zone.bounds.x + ZONE_ENTRY_X;
+  hero.y = entryY - hero.h;
+  hero.checkpoint = { x: hero.x, y: hero.y };
+}
 
 // --- Zone model (task 2.1 — authoritative level structure) -------------------
 // The sealed zone model is the authoritative structure the runtime references
@@ -1102,19 +1266,63 @@ world.on('checkpoint', (a, b) => {
   spawnFloatText(cx, cy - 20, `CHECKPOINT ${cp.checkpointId}`, '#ffd700');
   // SFX: checkpoint
 
-  // checkpoints.md §1/§3: a checkpoint marks an area boundary. Reaching one
-  // advances to the next area (the boss zone, identified as the level's boss
-  // area, receives the same shared entry screen). The world is single-level
-  // for v1, so the area index is the level's checkpoint position: the
-  // triggered flag at index i is the entry of area i (area -1 is the
-  // pre-area before the first flag). The player confirms the entry screen to
-  // begin the new area (lifecycle.md §2: show the screen, then begin play).
+  // checkpoints.md §1/§2, structure.md §2: a checkpoint marks an area
+  // boundary. In the sealed-zone model each area has an EXIT flag at its far
+  // end; reaching it clears the area (flash + 'X-Y CLEAR' banner + fade out)
+  // and generates the next zone. The entry flag (at a zone's start) is the
+  // starting checkpoint and must NOT trigger a clear — it is latched by
+  // startLife so arriving beside it does not re-clear the newly entered area.
+  //
+  // The legacy corridor has one flag per area boundary. Reaching the flag at
+  // index i clears the area the hero is currently in and advances to the next
+  // zone-model area. The zone model uses areas -1, -2, -3, -4, boss. The
+  // legacy checkpoint at index i is the EXIT of area -(i+1), so:
+  //   idx 0 → clears area -1, advances to area -2
+  //   idx 1 → clears area -2, advances to area -3
+  //   idx 2 → clears area -3, advances to area -4
+  //   idx 3 → clears area -4, advances to boss (handled by boss activation)
+  //
+  // BLOCKER 6: the last checkpoint (idx 3) is the boss checkpoint. The boss
+  // zone entry is handled by the boss activation path (shouldActivate), NOT
+  // by the clear sequence. The clear sequence only fires for ordinary area
+  // exits (idx 0, 1, 2).
   const idx = checkpoints.indexOf(cp);
-  if (idx >= 0) {
-    heroEnt.currentArea = idx;
-    showAreaEntry(heroEnt, areaContext);
+  if (idx >= 0 && idx < LEVEL_DEF.LEGACY.checkpoints.length - 1) {
+    // The area being cleared is the area the hero is currently in.
+    // The next area in the zone model: legacy idx i → zone area -(i+2).
+    const nextArea = -(idx + 2);
+    const clearedAreaId = formatAreaIdForClear(heroEnt.currentArea);
+    // checkpoints.md §2: begin the clear sequence (flash + banner + fade).
+    onExitFlagReached(clearedAreaId, nextArea);
   }
 });
+
+/**
+ * Format the area identifier for the 'X-Y CLEAR' banner. The area being
+ * cleared is the one the hero is currently in (heroEnt.currentArea).
+ * @param {number} currentArea the area index the hero is in
+ * @returns {string} the area id (e.g. '1-1')
+ */
+function formatAreaIdForClear(currentArea) {
+  // Reuse the lifecycle module's formatter. The area being cleared is the
+  // current area; formatAreaId expects the area index where the pre-area
+  // (-1) maps to the first checkpoint id.
+  // Import lazily to avoid a circular dependency at module load.
+  return formatAreaIdSafe(hero.currentLevel, currentArea);
+}
+
+/**
+ * Safe wrapper around lifecycle's formatAreaId that falls back to a
+ * positional id when the level definition is unavailable.
+ */
+function formatAreaIdSafe(level, area) {
+  try {
+    // formatAreaId is imported from lifecycle.js at the top of the module.
+    return formatAreaId(level, area);
+  } catch {
+    return `${level}-${area < 0 ? 1 : area + 1}`;
+  }
+}
 
 // --- Stats dump on WIN / GAMEOVER ----------------------------------
 // Subscribe to state transitions; when the run ends (WIN or OVER), serialize
@@ -1170,6 +1378,23 @@ onTransition((from, to) => {
     // clear it.
     showAreaEntry(nh, areaContext);
     console.log(`[lifecycle] new game: ${def.name} (${heroId})`);
+  }
+});
+
+// AREA_ENTRY → PLAY: when the player confirms the area-entry screen, begin the
+// fade-in into the new zone (checkpoints.md §2 step 6). This only fires when
+// the area was reached via the clear sequence (exit flag → banner → fade-out →
+// entry screen). For other entry-screen paths (new game, death restart,
+// continue) the fade-in is not needed because the hero is already positioned
+// by startLife and the screen was opaque (no visible world to fade from).
+onTransition((from, to) => {
+  if (to === S.PLAY && from === S.AREA_ENTRY) {
+    // Only start the fade-in when the entry screen was reached via the clear
+    // sequence (exit flag → banner → fade-out → entry screen). For other
+    // entry-screen paths (new game, death restart, continue) there is no
+    // fade-in because the hero was already positioned by startLife and the
+    // screen was opaque (no visible world to fade from).
+    beginClearFadeIn();
   }
 });
 
@@ -1239,6 +1464,23 @@ export function update(dt) {
   }
   // Physics only runs during PLAY; other states are screen-driven ().
   if (getState() !== S.PLAY) return;
+
+  // 0. Area-clear sequence (checkpoints.md §2): step the state machine
+  //     (banner → fadeOut → entry screen → fadeIn). While the sequence is
+  //     active the hero is frozen (no input, no physics) so the camera
+  //     cannot scroll past the exit into the next zone.
+  if (clearSeq.state !== 'idle') {
+    stepClearSequence(dt);
+    // While the clear sequence is active (banner/fadeOut/fadeIn), skip
+    // gameplay physics: the hero is frozen and the camera stays put.
+    // The fade-in completes and returns to normal play.
+    if (clearSeq.state !== 'idle') {
+      camera.update(hero);
+      Effects.update(dt);
+      return;
+    }
+    // Fade-in just completed: continue into normal play this frame.
+  }
 
   // --- Debug harness: time scaling + god mode. Zero cost when off. -----------
   if (Debug.enabled) {
@@ -1954,19 +2196,25 @@ function updateBoss(dt) {
       // level's checkpoint definitions). The player confirms the screen to
       // begin the encounter (lifecycle.md §2).
       //
-      // The boss zone lies BEYOND the last ordinary flag — it is not the area
-      // reached by the flag at index (length-1). showAreaEntry() formats the
-      // id from (currentArea - 1), so currentArea must be checkpoints.length
-      // to map onto the level's boss area (formatAreaId: area >=
-      // checkpoints.length - 1 → '1-B'). Setting it one past the last flag
-      // keeps the -1 offset uniform with the ordinary-flag path.
-      hero.currentArea = LEVEL_DEF.LEGACY.checkpoints.length; // boss zone (beyond last flag)
-      // checkpoints.md §1: the boss zone restarts beside the boss checkpoint
-      // (the last flag of the level). Set the respawn point BEFORE showing the
-      // entry screen so confirming it (startLife → hero.respawn()) lands the
-      // hero here, not at the previous ordinary flag.
-      const bossCp = checkpoints[checkpoints.length - 1];
-      if (bossCp) hero.checkpoint = { x: bossCp.x, y: bossCp.y };
+      // The boss zone lies BEYOND the last ordinary flag. In the zone model
+      // the boss zone is zone[4] (index 4 in levelZones). showAreaEntry()
+      // formats the id from (currentArea - 1), so currentArea must be
+      // checkpoints.length to map onto the level's boss area (formatAreaId:
+      // area >= checkpoints.length - 1 → '1-B').
+      hero.currentArea = LEVEL_DEF.LEGACY.checkpoints.length; // boss zone (zone[4])
+      // checkpoints.md §1: the boss zone restarts beside the boss checkpoint.
+      // Use the zone model's entry flag position for consistency with the
+      // clear-sequence path.
+      const bossZone = levelZones[4];
+      if (bossZone?.entryFlag) {
+        hero.checkpoint = {
+          x: bossZone.bounds.x + bossZone.entryFlag.x,
+          y: bossZone.entryFlag.y,
+        };
+      } else {
+        const bossCp = checkpoints[checkpoints.length - 1];
+        if (bossCp) hero.checkpoint = { x: bossCp.x, y: bossCp.y };
+      }
       showAreaEntry(hero, areaContext);
       console.log('[boss] fight started — camera locked to arena, boss-zone entry screen shown');
     }

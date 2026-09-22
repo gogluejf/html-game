@@ -47,7 +47,7 @@
     },
     "2.1": {
       "number": "2.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Zone model replacing single corridor",
       "milestone": "Zone & Transition System",
       "milestone_number": "2",
@@ -62,10 +62,18 @@
     },
     "2.2": {
       "number": "2.2",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Exit flag, clear banner, fade transition",
       "milestone": "Zone & Transition System",
-      "milestone_number": "2"
+      "milestone_number": "2",
+      "summary": {
+        "done": "Fixed all 6 R2 blockers in the area-clear sequence. (1) Clear sequence now advances hero.currentArea to the correct zone-model area (-2/-3/-4) after fade-out. (2) Checkpoint handler maps legacy idx to zone-model areas: idx 0\u2192-2, 1\u2192-3, 2\u2192-4. (3) Checkpoint set to next zone's entry flag position (from getActiveZone().entryFlag), falling back to zone start for area -1. (4) beginClearFadeIn uses zone entry flag y-position for vertical zones. (5) Confirmed false positive: clear fade reuses the same timer+alpha overlay pattern as the death fade. (6) Clear sequence guard (idx < checkpoints.length-1) prevents firing for the boss checkpoint; boss zone entry handled by boss activation path. Updated tests to zone-model area convention with 16 passing tests.",
+        "decisions": "Used zone-model area indexing (-1..-4, 4=boss) for hero.currentArea throughout the clear sequence and boss activation path. Legacy checkpoint idx maps to zone area via -(idx+2). The boss checkpoint (idx 3) is excluded from the clear sequence by the guard idx < checkpoints.length-1. The boss activation path now uses the zone model's entry flag position for the checkpoint instead of the raw legacy checkpoint position.",
+        "lessons_learned": "The zone model (task 2.1) and the clear sequence (task 2.2) had divergent area indexing conventions: the zone model uses -1..-4 while the clear sequence used legacy 0..3. This caused getActiveZone() to resolve incorrectly after the first clear. The fix required mapping legacy checkpoint indices to zone-model areas at the checkpoint handler boundary. The entry flag y-position differs for vertical zones (bottom platform) vs horizontal zones (ground), so beginClearFadeIn must use the zone's entry flag y rather than a hardcoded ZONE_GROUND_Y.",
+        "failures": "None (3 pre-existing baseline flakes: barrel.solid, input.test simultaneous sources, input.test Space jump \u2014 all fail on base commit too)",
+        "confidence": "high",
+        "tradeoffs": "The clear sequence still uses the legacy corridor geometry (single 8000px corridor) since zone geometry swap is task 7.1. The hero.currentArea now uses zone-model convention (-1..-4, 4=boss) which is consistent with getActiveZone() but the legacy corridor checkpoints are still the trigger mechanism. The entry screen area id formatting still uses the legacy formatAreaId (checkpoints.md \u00a73) which maps currentArea-1 to the checkpoint id \u2014 this works because the mapping is consistent."
+      }
     },
     "2.3": {
       "number": "2.3",
