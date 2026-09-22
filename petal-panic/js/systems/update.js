@@ -34,9 +34,11 @@ import { resolveExplosion } from '../explosion.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
 import { LEVELS, generateLevel } from '../level.js';
+import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld } from '../lifecycle.js';
+import { GAME_RULES } from '../gameRules.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from '../debug.js';
 import { Theater } from '../effects/theater.js';
-import { createStats, dumpStats } from '../stats.js';
+import { dumpStats } from '../stats.js';
 
 // --- Tunables for the test rig ---------------------------------------------
 // (Hero movement feel lives in js/hero.js; level geometry below.)
@@ -47,7 +49,11 @@ import { createStats, dumpStats } from '../stats.js';
 // spawnables along flat ground with min spacing; the hero-start zone (first
 // 500px) and boss arena (last 500px) stay clear.
 const LEVEL_DEF = LEVELS[0];
-const generated = generateLevel(LEVEL_DEF);
+// `let` because a genuinely new game (lifecycle.md §1/§6) replaces the whole
+// generated world with fresh random generation choices. startGame() invokes
+// regenerateWorld() (registered below) to re-roll; death and Continue never
+// touch it, so a run's arrangement is fixed for the whole game.
+let generated = generateLevel(LEVEL_DEF);
 
 // Level length comes from the level definition (camera clamps to this).
 export const LEVEL_LENGTH = LEVEL_DEF.length;
@@ -71,8 +77,11 @@ const solidEntities = SOLIDS.map(b => new SolidBox(b));
 // js/hero.js. Spawn on the floor at x=100 (per design §13 hero start).
 const FLOOR_TOP = SOLIDS[0].y; // ground top (first platform is the full-length floor)
 const HERO_START_X = 100;
+// The module-level hero reference. Boot starts a genuine new game via the
+// lifecycle module (lifecycle.md §1); the SELECT→PLAY hook rebinds it for a
+// new hero. `let` because setHeroRef() reassigns it.
 let hero = new Hero(HEROES.scarlet, HERO_START_X, FLOOR_TOP - HEROES.scarlet.h);
-/** Rebind the module-level hero reference (used by debug hero-swap). */
+/** Rebind the module-level hero reference (used by debug hero-swap / new game). */
 function setHeroRef(h) { hero = h; }
 
 // thorn fire state. Cooldown is in seconds; rapid powerup halves it.
@@ -85,26 +94,21 @@ hero.fireCooldown = 0;
 // horizontal toward facing, airborne/lockMove + Down → straight down, ...).
 input.setResolveAim((intent) => getHero().resolveAim(intent));
 
-// Unified run telemetry (design §4.1). A single stats object tracks
-// every documented field: kills, damage, coins, hits taken, time, distance, etc.
-// It replaces the earlier scattered ad-hoc counters with one coherent structure.
-// hero.combatStats is aliased to point INTO runStats so that damage.js and
-// powerup.js (which write to hero.combatStats) update the unified object directly.
-hero.runStats = createStats();
-// Alias combatStats fields into runStats so existing code paths (damage.js,
-// powerup.js) write into the unified structure without modification.
-hero.combatStats = {
-  get projectilesShot() { return hero.runStats.projectilesShot; },
-  set projectilesShot(v) { hero.runStats.projectilesShot = v; },
-  hitsLanded: hero.runStats.hitsLanded,
-  damageDealt: hero.runStats.damageDealt,
-  powerupsCollected: hero.runStats.powerupsCollected,
-};
-
-// coin collection stats (design §14). Per-type counters + total;
-// the total drives the 1up threshold (every 100 coins → +1 life).
-// Now lives in hero.runStats.coinsCollected (unified stats).
-
+// --- New game (lifecycle.md §1) -------------------------------------------
+// The SELECT→PLAY transition hook below rebuilds the hero with the chosen
+// definition; at boot we start a genuine new game with the default hero.
+// startGame() owns lives, the continue pool, fresh run stats, and the area
+// position — nothing here assigns them ad hoc.
+hero = startGame({ oldHero: hero }, HEROES.scarlet);
+hero.x = HERO_START_X;
+hero.y = FLOOR_TOP - hero.h;
+hero.checkpoint = { x: hero.x, y: hero.y };
+// Register the world-regeneration callback so SUBSEQUENT genuinely-new games
+// (SELECT → PLAY) establish fresh generation choices (lifecycle.md §1/§6).
+// The boot game above used the world baked at module load; only a new game
+// after the first rerolls. Death and Continue never call startGame, so they
+// never reroll.
+setRegenerateWorld(regenerateWorld);
 // Hero uses no anim (solid debugColor rect). Real sprites later.
 hero.anim = null;
 
@@ -152,7 +156,9 @@ const realEnemies = generated.enemies;
 // locks to its arena once the hero gets within BOSS_TRIGGER_RADIUS; defeating it
 // transitions to S.WIN. Tracked separately from realEnemies so the generic
 // enemy loop never drives the boss's phase machine.
-export const boss = makeElephant(LEVEL_LENGTH - 300, FLOOR_TOP);
+// `let` because a genuinely new game replaces the boss with a freshly
+// generated one (lifecycle.md §1/§6). regenerateWorld() reassigns it.
+export let boss = makeElephant(LEVEL_LENGTH - 300, FLOOR_TOP);
 
 // Non-looping anim test. Kept off the live targets (above) so the
 // animation cycle doesn't obscure their destruction; attached to a separate
@@ -201,6 +207,91 @@ export const powerups = generated.powerups;
 // for death-restart. They are NOT solids — they don't block movement.
 export const checkpoints = generated.checkpoints;
 
+// --- Area lifecycle context (lifecycle.md §2/§3/§4) -------------------------
+// The generated world IS the area's fixed arrangement. We record each entity's
+// initial position/state ONCE (the arrangement is fixed for the whole game and
+// must never change), then bind that context to the hero so the lifecycle ops
+// (startLife / continueRun) can restore the area without any other module
+// knowing what "start" means. rememberInitial() is idempotent, so this only
+// matters at boot.
+const areaContext = {
+  enemies: realEnemies,
+  boss,
+  barrels: [...barrels, ...woodBarrels, ...coinBarrels],
+  powerups,
+  checkpoints,
+  projectiles: projectilePool,
+  coins,
+  particles,
+  effects: Effects,
+};
+for (const e of realEnemies) rememberInitial(e, { aiState: e.aiState });
+rememberInitial(boss, { aiState: boss.aiState });
+for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) rememberInitial(b);
+for (const p of powerups) rememberInitial(p);
+bindAreaContext(hero, areaContext);
+
+/**
+ * Re-generate the world with FRESH random generation choices (lifecycle.md
+ * §1/§6). Called ONLY by startGame() — a genuinely new game is allowed new
+ * choices; death and Continue never reroll, so a run's arrangement stays fixed.
+ *
+ * The module-level `generated` is swapped for a fresh one and the area context
+ * (and the collision world / solid entities) are rebound to the new entity
+ * lists. The hero is NOT swapped here — startGame() builds and inserts the
+ * fresh hero. The old boss is removed from the collision world; the new one is
+ * added. The camera length is unchanged (the level definition is identical).
+ *
+ * @param {object} oldCtx the previous area context (its entity lists)
+ * @returns {object} the new area context (bound to the new world)
+ */
+function regenerateWorld(oldCtx) {
+  const prev = generated;
+  generated = generateLevel(LEVEL_DEF);
+
+  // Rebuild the static solid wrapper entities from the fresh platforms.
+  SOLIDS.length = 0;
+  for (const b of generated.platforms) SOLIDS.push(b);
+  solidEntities.length = 0;
+  for (const b of generated.platforms) solidEntities.push(new SolidBox(b));
+
+  // Swap the generated entity lists into the mutable module references so the
+  // update loop, debug overlay, and getters all see the new world.
+  realEnemies.length = 0; realEnemies.push(...generated.enemies);
+  barrels.length = 0; barrels.push(...generated.barrels);
+  woodBarrels.length = 0; woodBarrels.push(...generated.woodBarrels ?? []);
+  coinBarrels.length = 0; coinBarrels.push(...generated.coinBarrels);
+  powerups.length = 0; powerups.push(...generated.powerups);
+  checkpoints.length = 0; checkpoints.push(...generated.checkpoints);
+
+  // Rebuild the area context around the fresh entity lists.
+  const newCtx = {
+    enemies: realEnemies,
+    boss,
+    barrels: [...barrels, ...woodBarrels, ...coinBarrels],
+    powerups,
+    checkpoints,
+    projectiles: projectilePool,
+    coins,
+    particles,
+    effects: Effects,
+  };
+
+  // Rebind the collision world: drop the old boss + solids, add the new boss +
+  // solids. The hero is managed by startGame() (it removes oldHero / adds the
+  // new hero), so we don't touch the hero here.
+  world.remove(oldCtx.boss);
+  for (const s of solidEntities) world.add(s);
+  world.add(boss);
+
+  // The fresh entities start WITHOUT a recorded _initPos. startGame() clears
+  // any stale _initPos via resetGeneration() (defensive: the new instances are
+  // already clean), and the first startLife/continueRun of the new game records
+  // the arrangement exactly once via rememberInitial() (idempotent). That first
+  // recording fixes the arrangement for the whole new game (lifecycle.md §2).
+  return newCtx;
+}
+
 // --- Floating text (VFX) -------------------------------------------
 // Small pooled "value label" popups for powerup pickups (e.g. "+100 Ammo") and
 // checkpoint triggers ("CHECKPOINT 1-2"). Pure visual: no collision layer, no
@@ -242,50 +333,38 @@ function spawnFloatText(x, y, text, color) {
 
 // --- Input -------------------------------------------------------------------
 /**
- * Retry from game over: restart at the first checkpoint (1-1) or
- * level start, full energy, lives reset to 3, continues reset. Checkpoints do
- * NOT persist across a retry (design §1).
+ * Retry from the pause menu / game over: a fresh attempt at the CURRENT area's
+ * beginning (lifecycle.md §3 — "replaying the same arrangement"). This is a
+ * LIFE START, not a resume: it restores the whole area (enemies, barrels,
+ * powerups, checkpoints), clears transient projectiles/coins/effects, and
+ * places the hero back at the area's entry with full energy and i-frames.
+ *
+ * Lives are UNTOUCHED (lifecycle.md §3; game-rules.md §1): retry is a fresh
+ * attempt, not a continue — only Continue restores the starting life count.
+ * The continue pool is also untouched. All the "what does starting mean"
+ * knowledge lives in lifecycle.js (startLife); this is a thin wrapper so the
+ * GameOver screen's `retry` action and the pause menu's "Retry Level" keep
+ * working and the state transition (OVER/PAUSE → PLAY) stays local.
  */
 export function retryFromGameOver() {
-  const cp = checkpoints.length ? checkpoints[0] : null;
-  hero.x = cp ? cp.x : 80;
-  hero.y = cp ? cp.y : (VIEW_H - 40 - hero.h);
-  hero.vx = 0;
-  hero.vy = 0;
-  hero.energy = hero.maxEnergy;
-  hero.lives = 3;
-  hero.dying = false;
-  hero.deathTimer = 0;
-  hero.alive = true;
-  hero.intangible = true;
-  hero.timers.set('intangible', Hero.RESPAWN_IFRAMES);
-  hero.continuesUsed = 0;
-  hero.checkpoint = { x: hero.x, y: hero.y };
-  Effects.reset(); // clear any stale vignette/flash between runs
-  // Reset checkpoint flags so they can re-trigger on the new run.
-  for (const c of checkpoints) c.triggered = false;
+  startLife(hero, areaContext);
   if (tryTransition(S.PLAY)) {
-    console.log('[state] OVER → PLAY (retry)');
+    console.log('[lifecycle] → PLAY (retry)');
   }
 }
 
 /**
- * Continue from game over: limited to hero.maxContinues per run,
- * no coin cost. Restores at the last checkpoint with full energy and one life.
- * Returns true if the continue was applied.
+ * Continue from game over (lifecycle.md §4). Consumes exactly one continue,
+ * restores the global starting life count, and returns to area -1 of the
+ * CURRENT level. No coin cost. Returns true if the continue was applied.
+ *
+ * The pool is a growable global balance (gameRules.js); with no continues
+ * remaining, Continue cannot be activated.
  */
 export function continueFromGameOver() {
-  if (hero.continuesUsed >= hero.maxContinues) {
-    console.log('[gameover] no continues left');
-    return false;
-  }
-  hero.continuesUsed += 1;
-  hero.lives = 1;
-  hero.respawn(); // restores at hero.checkpoint with full energy + i-frames
-  if (tryTransition(S.PLAY)) {
-    console.log(`[state] OVER → PLAY (continue #${hero.continuesUsed})`);
-  }
-  return true;
+  const applied = continueRun(hero, areaContext);
+  if (applied) console.log('[lifecycle] continue applied');
+  return applied;
 }
 
 /**
@@ -1014,33 +1093,17 @@ onTransition((from, to) => {
   if (to === S.PLAY && from !== S.PAUSE && from !== S.OVER) {
     // New run: SELECT/HOME/WIN → PLAY. Retry/continue already restore OVER.
     // PAUSE→PLAY is a resume — hero state is already correct.
+    // lifecycle.md §1: a genuinely new game rebuilds the hero with the chosen
+    // definition and establishes lives, the continue pool, fresh run stats,
+    // and the area position. startGame() owns all of that; this hook only
+    // rebuilds the hero instance and rebinds the reference.
     const heroId = window.__selectedHero || 'scarlet';
     const def = HEROES[heroId] || HEROES.scarlet;
-    // Rebuild hero in place with the new definition.
-    const saved = {
-      x: hero.x, y: hero.y, vx: 0, vy: 0,
-      energy: def.stats.stamina, lives: 3, coins: 0,
-      ammo: 200, specialAmmo: 0,
-      checkpoint: { x: hero.x, y: hero.y }, continuesUsed: 0,
-    };
-    const nh = new Hero(def, saved.x, saved.y);
-    Object.assign(nh, saved);
-    nh.energy = def.stats.stamina;
-    nh.maxEnergy = def.stats.stamina;
-    nh.checkpoint = { x: saved.x, y: saved.y };
-    nh.intangible = false;
-    nh.dying = false;
-    nh.deathTimer = 0;
-    nh.continuesUsed = 0;
-    // Fresh run stats.
-    nh.runStats = createStats();
-    nh.combatStats = {
-      get projectilesShot() { return nh.runStats.projectilesShot; },
-      set projectilesShot(v) { nh.runStats.projectilesShot = v; },
-      hitsLanded: nh.runStats.hitsLanded,
-      damageDealt: nh.runStats.damageDealt,
-      powerupsCollected: nh.runStats.powerupsCollected,
-    };
+    const oldHero = hero;
+    const nh = startGame({ world, oldHero, areaContext }, def);
+    nh.x = HERO_START_X;
+    nh.y = FLOOR_TOP - nh.h;
+    nh.checkpoint = { x: nh.x, y: nh.y };
     // Placeholder anims sized for the new body.
     nh.anim = new Anim(
       ['#2ecc71', '#27ae60', '#1abc9c'].map(c => makeTestFrame(nh.w, nh.h, c)),
@@ -1050,12 +1113,11 @@ onTransition((from, to) => {
       ['#555555', '#888888', '#aaaaaa', '#ffffff', '#666666'].map(c => makeTestFrame(nh.w, nh.h, c)),
       { speed: 80, loop: false },
     );
-    // Swap in collision world + rebind reference.
-    world.remove(hero);
-    world.add(nh);
+    // Rebind the reference + bind the area context so startLife/continueRun
+    // can restore the preserved arrangement.
     setHeroRef(nh);
-    Effects.reset();
-    console.log(`[screens] hero instantiated: ${def.name} (${heroId})`);
+    bindAreaContext(nh, areaContext);
+    console.log(`[lifecycle] new game: ${def.name} (${heroId})`);
   }
 });
 
@@ -1306,15 +1368,16 @@ export function update(dt) {
 }
 
 /**
- * called when the skull-fade death sequence completes. Consumes a
- * life; if any remain, respawn at the last checkpoint with full energy + i-frames.
- * If no lives remain, transition to GAME OVER (the state machine then shows the
- * retry/continue/quit screen).
+ * Called when the skull-fade death sequence completes. Consumes one life
+ * exactly once; if any remain, this is a LIFE START (lifecycle.md §3) —
+ * replay the SAME area arrangement with i-frames. If no lives remain,
+ * transition to GAME OVER (the state machine then shows the
+ * continue/quit screen).
  */
 function finishHeroDeath() {
   hero.lives -= 1;
   if (hero.lives > 0) {
-    hero.respawn();
+    startLife(hero, areaContext);
   } else {
     hero.dying = false; // stop the fade; the OVER overlay takes over
     tryTransition(S.OVER);

@@ -686,8 +686,13 @@ export const Pause = {
 // Quit. Continue shows how many remain; no coin cost.
 // =============================================================================
 
-/** Shared continue-availability check (draw + onAction must agree). */
+/** Shared continue-availability check (draw + onAction must agree).
+ * The pool is a growable global balance owned by lifecycle.js; with no
+ * continues remaining, Continue cannot be activated (game-rules.md §1). */
 export function canContinue(hero) {
+  const pool = hero?.continues;
+  if (pool) return pool.remaining > 0;
+  // Fallback for a hero built before lifecycle wiring (e.g. bare tests).
   return !!(hero && hero.continuesUsed < hero.maxContinues);
 }
 
@@ -716,7 +721,9 @@ export const GameOver = {
     ctx.fillText(`Enemies Killed: ${kills}   ·   Coins: ${coins}   ·   Distance: ${distance} px`, VIEW_W / 2, VIEW_H / 2 - 45);
 
     // Options — same list style as the pause menu.
-    const remaining = (hero.maxContinues ?? 3) - (hero.continuesUsed ?? 0);
+    const pool = hero.continues;
+    const remaining = pool ? pool.remaining
+      : (hero.maxContinues ?? 3) - (hero.continuesUsed ?? 0);
     const okCont = canContinue(hero);
     const options = [
       { label: `Continue (${remaining} left)`, enabled: okCont },
