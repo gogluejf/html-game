@@ -4,6 +4,7 @@
 // placeholder boxes.
 
 import { S, getState, tryTransition, canTransition } from './state.js';
+import { areaEntryOnAction, setAreaEntryDataCallback, getAreaEntryData as getAreaEntryDataFromLifecycle } from './lifecycle.js';
 import { HEROES } from './heroDefs.js';
 import { VIEW_W, VIEW_H } from './view.js';
 import { calculateScore } from './stats.js';
@@ -887,14 +888,102 @@ export const Win = {
 };
 
 // =============================================================================
+// AREA-ENTRY SCREEN (checkpoints.md §3 — one shared screen)
+//
+// The SAME full-screen presentation is used for: starting the first area of a
+// new game, advancing to another area or level, restarting an area after an
+// ordinary death, restarting the current level's -1 after Continue, and
+// entering/restarting the boss zone.
+//
+// It displays exactly three pieces of information (game-rules.md §3):
+//   1. Level name
+//   2. Area identifier
+//   3. Number of lives remaining
+// **No score appears here** — score is reserved for Game Over and the level
+// reward screen (game-rules.md §4).
+//
+// Ergonomics follow the shared contract (game-rules.md §3): full-screen, the
+// same list layout / focus pill / keycap nav bar as the pause menu. The data
+// and the confirm-to-play flow are owned by lifecycle.js (showAreaEntry /
+// areaEntryOnAction); this screen only presents that data.
+// =============================================================================
+
+/** The screen data as last presented (set by showAreaEntry in lifecycle.js). */
+let areaEntryData = null;
+
+/** Set the data the AreaEntry screen presents (called by lifecycle.js). */
+export function setAreaEntryData(data) { areaEntryData = data; }
+
+/** The currently presented data (for tests / render). */
+export function getAreaEntryData() { return getAreaEntryDataFromLifecycle(); }
+
+export const AreaEntry = {
+  /** Present new data (level name, area id, lives). NO score field. */
+  set(data) { areaEntryData = data; },
+
+  /** @param {CanvasRenderingContext2D} ctx */
+  draw(ctx) {
+    const d = areaEntryData ?? { levelName: '', areaId: '', lives: 0 };
+    // Full-opaque dark background — like Game Over, the world is hidden
+    // behind this screen (it is a full-screen presentation, not a panel).
+    ctx.save();
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    drawMarqueeTitle(ctx, d.levelName.toUpperCase(), VIEW_W / 2, VIEW_H / 2 - 150, 52, { color: CREAM });
+
+    // Area identifier — the screen's headline.
+    drawMarqueeTitle(ctx, d.areaId, VIEW_W / 2, VIEW_H / 2 - 70, 44, { color: GOLD });
+
+    // Lives remaining — emphasized (checkpoints.md §3 allows the life-count
+    // decrease to be emphasized within this same screen).
+    drawPrompt(ctx, `LIVES  ${d.lives}`, VIEW_W / 2, VIEW_H / 2 - 10, 26, { color: CREAM, font: FONT_TITLE });
+
+    // Option list — the SAME list layout / focus pill pattern as the pause
+    // menu (game-rules.md §3 shared ergonomics contract).
+    const options = ['Start', 'Back'];
+    const startY = VIEW_H / 2 + 40;
+    const gap = 40;
+    for (let i = 0; i < options.length; i++) {
+      const y = startY + i * gap;
+      const focused = i === 0;
+      if (focused) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,110,199,0.10)';
+        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,110,199,0.4)';
+        ctx.lineWidth = 1;
+        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
+        ctx.stroke();
+        ctx.restore();
+      }
+      drawPrompt(ctx, (focused ? '▸ ' : '  ') + options[i], VIEW_W / 2, y + 2, focused ? 22 : 20, {
+        color: focused ? '#ff6ec7' : '#d8cdb4',
+      });
+    }
+
+    // Keycap nav bar — the SAME bar as the pause menu (navigate/confirm/quit)
+    // per the shared ergonomics contract (game-rules.md §3).
+    const hintY = startY + options.length * gap + 24;
+    drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
+      { actions: ['up', 'down'], label: 'Navigate' },
+      { action: 'confirm' },
+      { action: 'back', label: 'Quit' },
+    ]));
+    ctx.restore();
+  },
+};
+
+// =============================================================================
 // Screen dispatch helpers (used by render.js + update.js)
 // =============================================================================
 
 /**
  * Draw the appropriate screen for the current state. Returns true if a screen
- * was drawn. HOME/SELECT are full-screen; PAUSE/OVER/WIN are overlays that
- * render.js draws after the (frozen) game world so the world stays visible
- * behind them.
+ * was drawn. HOME/SELECT/AREA_ENTRY are full-screen; PAUSE/OVER/WIN are
+ * overlays that render.js draws after the (frozen) game world so the world
+ * stays visible behind them.
  */
 export function drawScreen(ctx, hero) {
   const s = getState();
@@ -920,6 +1009,10 @@ export function drawScreen(ctx, hero) {
   }
   if (s === S.WIN) {
     Win.draw(ctx, hero);
+    return true;
+  }
+  if (s === S.AREA_ENTRY) {
+    AreaEntry.draw(ctx);
     return true;
   }
   return false;
@@ -950,6 +1043,7 @@ export function screenOnAction(action, hero, actions = {}) {
   if (s === S.PAUSE) return Pause.onAction(action, actions);
   if (s === S.OVER) return GameOver.onAction(action, hero, actions);
   if (s === S.WIN) return Win.onAction(action, actions);
+  if (s === S.AREA_ENTRY) return areaEntryOnAction(action, hero);
   return false;
 }
 
@@ -970,6 +1064,9 @@ export function screenReset(s, from) {
   if (s === S.PAUSE) Pause.reset();
   if (s === S.OVER) GameOver.focus = 0;
   if (s === S.REMAP) { remapParent = from === S.HOME ? S.HOME : S.PAUSE; Remap.resetState(); }
+  // AREA_ENTRY: the screen data is pushed by lifecycle.js (showAreaEntry)
+  // IMMEDIATELY before the transition into AREA_ENTRY; the transition listener
+  // must NOT clear it here or the screen would render blank values.
 }
 
 /** Update screen-specific per-frame logic (parallax, etc.). */
@@ -980,3 +1077,7 @@ export function screenUpdate(dt) {
 }
 
 onTransition((from, to) => { input.cancelCapture(); screenReset(to, from); });
+
+// Register the area-entry data callback with lifecycle.js so that
+// showAreaEntry() can push the screen data here without a circular import.
+setAreaEntryDataCallback((data) => { areaEntryData = data; });

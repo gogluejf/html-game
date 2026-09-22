@@ -24,10 +24,11 @@
 // effects) so the rules are unit-testable in node without a DOM.
 
 import { GAME_RULES, createContinuePool, canSpend, spend } from './gameRules.js';
+import { LEVELS } from './level.js';
 import { Hero } from './hero.js';
 import { createStats } from './stats.js';
 import { Anim, makeTestFrame } from './anim.js';
-import { tryTransition, getState, S } from './state.js';
+import { tryTransition, getState, setState, S } from './state.js';
 
 // The area a fresh run begins in. Per lifecycle.md §1/§4 a new game and a
 // continue both enter area -1 of their level (the pre-area).
@@ -272,13 +273,21 @@ export function startGame(ctx, heroDef) {
   // Swap the hero in the collision world (only when a world is provided).
   if (ctx.world) { ctx.world.remove(ctx.oldHero); ctx.world.add(h); }
   ctx.effects?.reset?.();
+  // checkpoints.md §3: the shared area-entry screen opens the first area of a
+  // new game (level name, area id, lives — no score). startGame does NOT push
+  // the screen itself — the caller (update.js) does so AFTER the
+  // SELECT→PLAY transition has settled, so the screen data is not cleared by
+  // the transition's screen reset.
   return h;
 }
 
 /**
  * §2 Area start — first arrival. Fix the area's arrangement from this game's
  * generation choices (the world was already generated deterministically, so
- * this only records the current area and arms its entry), then begin a life.
+ * this only records the current area and arms its entry), then show the
+ * shared area-entry screen; the attempt begins when the player confirms it
+ * (lifecycle.md §2: "Show the area-entry screen, then begin play at the
+ * area's start").
  *
  * @param {Hero} h
  * @param {number} level the level index (1-based)
@@ -287,7 +296,9 @@ export function startGame(ctx, heroDef) {
 export function startArea(h, level, areaIdx) {
   h.currentLevel = level;
   h.currentArea = areaIdx;
-  startLife(h, ctxOf(h));
+  // checkpoints.md §3: the shared area-entry screen also opens every area
+  // advance (and the boss zone, identified as the level's boss area).
+  showAreaEntry(h, ctxOf(h));
 }
 
 /**
@@ -334,13 +345,139 @@ export function continueRun(h, ctx) {
   // the hero lands in the level's area -1, not wherever they died.
   h.checkpoint = { x: HERO_ENTRY_X, y: HERO_ENTRY_Y - h.h };
   const c = ctx ?? ctxOf(h);
-  restoreArea(c);
-  resetHeroTransient(h);
-  h.respawn();
-  if (tryTransition(S.PLAY)) {
-    console.log(`[lifecycle] OVER → PLAY (continue, ${h.continues.remaining} left)`);
-  }
+  // checkpoints.md §3: continue shows the shared area-entry screen (with the
+  // restored life count) and starts a fresh attempt there — the attempt begins
+  // when the player confirms, not on the Continue press itself.
+  showAreaEntry(h, c);
   return true;
+}
+
+// --- Shared area-entry screen (checkpoints.md §3) ----------------------------
+//
+// ONE full-screen presentation, shown for: starting the first area of a new
+// game, advancing to another area or level, restarting an area after an
+// ordinary death, restarting the current level's -1 after Continue, and
+// entering/restarting the boss zone. It displays exactly three pieces of
+// information:
+//   1. Level name
+//   2. Area identifier (e.g. '1-3'; the boss zone is '1-B')
+//   3. Number of lives remaining
+// NO SCORE APPEARS HERE (game-rules.md §3/§4).
+//
+// The presentation itself (canvas drawing, pause-menu ergonomics) lives in
+// screens.js; this module owns the screen's data and its confirm-to-play flow
+// so the rules are unit-testable in node.
+
+/**
+ * Callback registered by screens.js to receive the area-entry screen data.
+ * This avoids a circular import: lifecycle.js calls the callback, and
+ * screens.js registers it at module evaluation time.
+ * @type {((data: object) => void) | null}
+ */
+let _onAreaEntryData = null;
+
+/** The last area-entry screen data presented (for tests / render). */
+let _areaEntryData = null;
+
+/**
+ * Register the callback that receives the area-entry screen data.
+ * Called by screens.js at module evaluation time.
+ * @param {(data: object) => void} fn
+ */
+export function setAreaEntryDataCallback(fn) { _onAreaEntryData = fn; }
+
+/** Get the last area-entry screen data presented. */
+export function getAreaEntryData() { return _areaEntryData; }
+
+/**
+ * Present the shared area-entry screen for the hero's current level/area.
+ * Called by every lifecycle path that leads into an area: new game, area
+ * advance, post-death restart, and continue.
+ *
+ * The screen is skippable: confirm (or pause) starts the attempt —
+ * startLife() restores the preserved arrangement and places the hero at the
+ * area's entry (lifecycle.md §2/§3). Lives are UNTOUCHED here: the caller has
+ * already consumed one (ordinary death) or restored them (continue).
+ *
+ * @param {Hero} h the hero (owns currentLevel / currentArea / lives)
+ * @param {object} [ctx] area context (falls back to the bound context)
+ * @returns {object} the screen data as displayed
+ */
+export function showAreaEntry(h, ctx) {
+  const data = {
+    levelName: levelName(h.currentLevel),
+    areaId: formatAreaId(h.currentLevel, h.currentArea - 1),
+    lives: h.lives,
+  };
+  _areaEntryData = data;
+  if (_onAreaEntryData) _onAreaEntryData(data);
+  if (tryTransition(S.AREA_ENTRY)) {
+    console.log(`[lifecycle] → AREA_ENTRY ${data.areaId} (lives: ${data.lives})`);
+  }
+  return data;
+}
+
+/**
+ * Handle input on the area-entry screen. Confirm starts the attempt
+ * (lifecycle.md §2: "Show the area-entry screen, then begin play at the
+ * area's start"); back returns to the pause menu.
+ *
+ * @param {string} action semantic navigation action
+ * @param {Hero} h the hero
+ * @param {object} [ctx] area context
+ */
+export function areaEntryOnAction(action, h, ctx) {
+  if (action === 'confirm' || action === 'pause') {
+    // The attempt begins from the entry screen: the hero is restored to the
+    // area's preserved arrangement and placed at its entry (startLife).
+    startLife(h, ctx);
+    if (getState() !== S.PLAY) {
+      // The normal path is AREA_ENTRY → PLAY via the transition map. A caller
+      // that entered AREA_ENTRY directly via setState() (tests) is also
+      // honoured, so the screen always ends in PLAY on confirm.
+      tryTransition(S.PLAY);
+      if (getState() !== S.PLAY) setState(S.PLAY);
+    }
+    console.log('[lifecycle] AREA_ENTRY → PLAY (start attempt)');
+    return true;
+  }
+  if (action === 'back') {
+    if (tryTransition(S.PAUSE)) console.log('[lifecycle] AREA_ENTRY → PAUSE (back)');
+    return true;
+  }
+  return false;
+}
+
+// Level names come from the level definitions (level.js) — the declarative
+// LEVELS array is the single source of truth for a level's name.
+function levelName(level) {
+  return LEVELS[level - 1]?.name ?? `Level ${level}`;
+}
+
+/**
+ * Format the area identifier from the level definition (checkpoints.md §1/§3):
+ * pre-area -1 → '1-1', area 0 → '1-2', 1 → '1-3', 2 → '1-4', and the level's
+ * boss area → '1-B'. The IDs come from the level's checkpoint definitions —
+ * the boss zone is a property of the level (the checkpoint whose id ends in
+ * '-B'), not a universal index.
+ */
+export function formatAreaId(level, area) {
+  const def = LEVELS[level - 1];
+  const cps = def?.checkpoints;
+  if (!cps || cps.length === 0) {
+    // Unknown level: fall back to positional ids.
+    return `${level}-${area < 0 ? 1 : area + 1}`;
+  }
+  if (area < 0) {
+    // Pre-area (area -1 or lower) displays as the level's first checkpoint id.
+    return cps[0]?.id ?? `${level}-1`;
+  }
+  if (area >= cps.length - 1) {
+    // The boss zone: the last area of the level, identified from the level def.
+    return `${level}-B`;
+  }
+  // Regular area: display the next checkpoint's id.
+  return cps[area + 1]?.id ?? `${level}-${area + 2}`;
 }
 
 // --- Internals ---------------------------------------------------------------

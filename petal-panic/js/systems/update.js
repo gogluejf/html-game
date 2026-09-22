@@ -34,7 +34,7 @@ import { resolveExplosion } from '../explosion.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
 import { LEVELS, generateLevel } from '../level.js';
-import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld } from '../lifecycle.js';
+import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry } from '../lifecycle.js';
 import { GAME_RULES } from '../gameRules.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from '../debug.js';
 import { Theater } from '../effects/theater.js';
@@ -1075,6 +1075,19 @@ world.on('checkpoint', (a, b) => {
   Effects.fireParticleBurst(cx, cy, 5); // engine path — plain sparkle burst
   spawnFloatText(cx, cy - 20, `CHECKPOINT ${cp.checkpointId}`, '#ffd700');
   // SFX: checkpoint
+
+  // checkpoints.md §1/§3: a checkpoint marks an area boundary. Reaching one
+  // advances to the next area (the boss zone, identified as the level's boss
+  // area, receives the same shared entry screen). The world is single-level
+  // for v1, so the area index is the level's checkpoint position: the
+  // triggered flag at index i is the entry of area i (area -1 is the
+  // pre-area before the first flag). The player confirms the entry screen to
+  // begin the new area (lifecycle.md §2: show the screen, then begin play).
+  const idx = checkpoints.indexOf(cp);
+  if (idx >= 0) {
+    heroEnt.currentArea = idx;
+    showAreaEntry(heroEnt, areaContext);
+  }
 });
 
 // --- Stats dump on WIN / GAMEOVER ----------------------------------
@@ -1117,6 +1130,13 @@ onTransition((from, to) => {
     // can restore the preserved arrangement.
     setHeroRef(nh);
     bindAreaContext(nh, areaContext);
+    // checkpoints.md §3: a genuinely new game opens the shared area-entry
+    // screen (level name, area id, lives — no score) for the level's first
+    // area. startGame() does NOT push the screen itself; the caller does so
+    // AFTER the transition completes (lifecycle.md §1). The screen data is
+    // supplied before the transition so the transition's screen reset cannot
+    // clear it.
+    showAreaEntry(nh, areaContext);
     console.log(`[lifecycle] new game: ${def.name} (${heroId})`);
   }
 });
@@ -1210,7 +1230,7 @@ export function update(dt) {
   }
   if (hero.dying) {
     hero.deathTimer += dt;
-    if (hero.deathTimer >= hero.DEATH_DURATION) {
+    if (hero.deathTimer >= hero.DEATH_DURATION + DEATH_FADE_DURATION) {
       finishHeroDeath();
     }
     // Camera still tracks (frozen) hero; the shake instance is stepped by
@@ -1367,19 +1387,38 @@ export function update(dt) {
   // Effects.update(dt) below (render reads getShakeOffset()).
 }
 
+// checkpoints.md §4: after the death presentation and a short delay, FADE TO
+// BLACK. Consume one life exactly once. If lives remain, show the shared
+// entry screen with the new count, then restart the entire current area
+// (the player confirms the screen to begin the attempt).
+/** Length of the fade-to-black after the skull presentation (checkpoints.md §4). */
+const DEATH_FADE_DURATION = 0.6;
+/** Black overlay drawn during the post-skull fade-to-black (render.js reads it). */
+export function getDeathFadeAlpha() {
+  if (!hero.dying) return 0;
+  const t = (hero.deathTimer - hero.DEATH_DURATION) / DEATH_FADE_DURATION;
+  return Math.max(0, Math.min(1, t));
+}
+
 /**
- * Called when the skull-fade death sequence completes. Consumes one life
- * exactly once; if any remain, this is a LIFE START (lifecycle.md §3) —
- * replay the SAME area arrangement with i-frames. If no lives remain,
- * transition to GAME OVER (the state machine then shows the
- * continue/quit screen).
+ * Called when the death presentation + fade-to-black completes. Consumes one
+ * life exactly once; if any remain, show the SHARED area-entry screen
+ * (lifecycle.md §3); if no lives remain, transition to GAME OVER (the
+ * state machine then shows the continue/quit screen).
  */
 function finishHeroDeath() {
   hero.lives -= 1;
+  hero.dying = false; // stop the fade (the entry screen / OVER overlay take over)
   if (hero.lives > 0) {
-    startLife(hero, areaContext);
+    // checkpoints.md §4: after the death presentation and the fade, consume
+    // one life exactly once and show the SHARED area-entry screen with the new
+    // count. The whole area is restored and the attempt starts beside the
+    // area's entry flag (e.g. death in 1-3 restarts 1-3 beside its flag) when
+    // the player confirms the screen.
+    showAreaEntry(hero, areaContext);
   } else {
-    hero.dying = false; // stop the fade; the OVER overlay takes over
+    // checkpoints.md §5: at zero lives the EXISTING Game Over screen takes
+    // over instead of the area-entry screen — untouched.
     tryTransition(S.OVER);
   }
 }
@@ -1873,7 +1912,14 @@ function updateBoss(dt) {
     if (b.active && !wasActive) {
       // First activation: lock the camera to the arena.
       camera.lockTo(b.arenaX, b.arenaW);
-      console.log('[boss] fight started — camera locked to arena');
+      // checkpoints.md §1/§3: the boss zone is a separate zone that starts
+      // beside the boss checkpoint and receives the SHARED area-entry screen,
+      // identified as the level's boss area (the last checkpoint of the
+      // level's checkpoint definitions). The player confirms the screen to
+      // begin the encounter (lifecycle.md §2).
+      hero.currentArea = LEVEL_DEF.checkpoints.length - 1; // boss area index
+      showAreaEntry(hero, areaContext);
+      console.log('[boss] fight started — camera locked to arena, boss-zone entry screen shown');
     }
   }
 

@@ -111,7 +111,12 @@ test('simultaneous sources dispatch once and transitions discard the remaining b
   clean(S.SELECT); Select.reset(); const p = pad(); pads.push(p);
   key('ArrowRight'); p.buttons[15].pressed = true; U.processInput(); assert.equal(Select.focus, 1);
   key('Enter'); p.buttons[0].pressed = true; p.buttons[9].pressed = true; U.processInput();
-  assert.equal(getState(), S.PLAY); U.processInput(); assert.equal(getState(), S.PLAY); assert.equal(input.state.jump, false);
+  // A new game (SELECT → PLAY) opens the shared area-entry screen first
+  // (checkpoints.md §3); confirming it starts the attempt.
+  assert.equal(getState(), S.AREA_ENTRY);
+  key('Enter', false); p.buttons[0].pressed = false; p.buttons[9].pressed = false;
+  U.processInput();
+  assert.equal(getState(), S.PLAY); assert.equal(input.state.jump, false);
   clean(S.PAUSE); tryTransition(S.REMAP); Remap.tab = 'keyboard'; tap('Enter'); key('Enter'); key('KeyZ'); U.processInput();
   assert.equal(Remap.capturing, true); U.processInput(); assert.equal(Remap.capturing, true);
 });
@@ -124,7 +129,15 @@ test('Space jump and Circle super never pause; Escape/Options do; pause menu clo
   tap('Escape'); assert.equal(getState(), S.PAUSE); Pause.focus = 2; tap('Enter'); assert.equal(getState(), S.REMAP);
   tap('Escape'); Pause.focus = 3; tap('Enter'); assert.equal(getState(), S.HOME);
   clean(S.OVER); const h = U.getHero(); h.coins = 1500; h.continuesUsed = 0; h.checkpoint = { x: 400, y: 100 }; GameOver.focus = 0;
+  // Continue now shows the shared area-entry screen first (checkpoints.md §3);
+  // confirming it starts the fresh attempt.
+  tap('Enter'); assert.equal(getState(), S.AREA_ENTRY);
   tap('Enter'); assert.equal(getState(), S.PLAY); assert.equal(U.getHero().coins, 1500); assert.equal(U.getHero().continuesUsed, 1); assert.equal(U.getHero().lives, 3);
+  // A new game (SELECT → PLAY) opens the shared area-entry screen first
+  // (checkpoints.md §3); confirming it starts the attempt.
+  tryTransition(S.SELECT); GameOver.focus = 0;
+  tap('Enter'); assert.equal(getState(), S.AREA_ENTRY);
+  tap('Enter'); assert.equal(getState(), S.PLAY);
 });
 
 test('disconnect, visibility and focus lifecycle release semantic holds without phantom reconnect edges', () => {

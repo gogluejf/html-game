@@ -11,6 +11,7 @@ export const S = {
   OVER: 4,    // game over
   WIN: 5,
   REMAP: 6,   // controls/remap screen
+  AREA_ENTRY: 7, // shared area-entry screen (checkpoints.md §3)
 };
 
 // Human-readable names for logging / overlays / future screen dispatch.
@@ -22,6 +23,7 @@ export const STATE_NAMES = {
   [S.OVER]:   'OVER',
   [S.WIN]:    'WIN',
   [S.REMAP]:  'REMAP',
+  [S.AREA_ENTRY]: 'AREA_ENTRY',
 };
 
 let cur = S.HOME;
@@ -36,9 +38,10 @@ export function setState(s) {
 const TRANSITIONS = {
   [S.HOME]:   [S.SELECT, S.PLAY, S.REMAP],
   [S.SELECT]: [S.PLAY, S.HOME],
-  [S.PLAY]:   [S.PAUSE, S.OVER, S.WIN],
-  [S.PAUSE]:  [S.PLAY, S.HOME, S.REMAP],
-  [S.OVER]:   [S.PLAY, S.HOME],       // retry or quit
+  [S.PLAY]:   [S.PAUSE, S.OVER, S.WIN, S.AREA_ENTRY],
+  [S.PAUSE]:  [S.PLAY, S.HOME, S.REMAP, S.AREA_ENTRY],
+  [S.OVER]:   [S.PLAY, S.HOME, S.AREA_ENTRY],   // retry/continue show the entry screen first
+  [S.AREA_ENTRY]: [S.PLAY, S.PAUSE, S.OVER],    // confirm starts the attempt; back opens pause
   [S.WIN]:    [S.SELECT, S.HOME, S.PLAY], // play again or quit; PLAY = debug shortcut
   [S.REMAP]:  [S.PAUSE, S.HOME],      // return to wherever we came from
 };

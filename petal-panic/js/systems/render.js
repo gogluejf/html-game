@@ -5,7 +5,7 @@
 
 import { VIEW_W, VIEW_H } from '../view.js';
 import { LAYER } from '../consts.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getDeathFadeAlpha } from './update.js';
 import { Effects } from '../effects.js';
 import { drawEffects } from '../effects/index.js';
 import { getState, S } from '../state.js';
@@ -31,6 +31,13 @@ export function render(ctx) {
     screenUpdate(1 / 60); // advance parallax at fixed step
     drawScreen(ctx);
     // Theater can be opened from any screen via F2.
+    if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
+    return;
+  }
+  // AREA_ENTRY is an opaque full-screen presentation (checkpoints.md §3) —
+  // the world is hidden behind it, so skip world rendering like HOME/SELECT.
+  if (state === S.AREA_ENTRY) {
+    drawScreen(ctx);
     if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
     return;
   }
@@ -370,6 +377,18 @@ export function render(ctx) {
   // frame stays visible behind them (dimmed by each screen's own background).
   if (state === S.PAUSE || state === S.OVER || state === S.WIN) {
     drawScreen(ctx, getHero());
+  }
+
+  // checkpoints.md §4: the ordinary-death fade-to-black — drawn over the
+  // (frozen) world during the short delay after the skull presentation,
+  // before the shared area-entry screen or Game Over takes over.
+  const fade = getDeathFadeAlpha();
+  if (fade > 0) {
+    ctx.save();
+    ctx.globalAlpha = fade;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    ctx.restore();
   }
 
   // Effect Theater: debug-only black-screen overlay drawn LAST so it

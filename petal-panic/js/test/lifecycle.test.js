@@ -176,7 +176,12 @@ test('continueRun: spends exactly one continue, restores starting lives', () => 
   assert.equal(h.continuesUsed, 1, 'continuesUsed reflects spend');
   assert.equal(h.lives, 3, 'lives restored to starting count');
   assert.equal(h.currentArea, -1, 'back to area -1');
-  assert.equal(getState(), S.PLAY, 'transitioned to PLAY');
+  // checkpoints.md §3: continue shows the shared area-entry screen; the fresh
+  // attempt starts when the player confirms it (lifecycle.md §4).
+  assert.equal(getState(), S.AREA_ENTRY, 'transitioned to the shared area-entry screen');
+  const r = L.areaEntryOnAction('confirm', h, ctx);
+  assert.equal(r, true, 'confirm starts the attempt');
+  assert.equal(getState(), S.PLAY, 'transitioned to PLAY after confirming');
 });
 
 test('continueRun: returns to area -1 of the CURRENT level (not level 1)', () => {
@@ -225,7 +230,9 @@ test('continueRun: never rerolls generation (arrangement preserved)', () => {
   setState(S.OVER);
   L.continueRun(h, ctx);
 
-  // Arrangement restored to ORIGINAL positions, not re-rolled.
+  // The entry screen is shown; confirming starts the attempt and restores the
+  // arrangement to ORIGINAL positions, not re-rolled.
+  L.areaEntryOnAction('confirm', h, ctx);
   assert.equal(ctx._enemy.x, origEnemyX, 'enemy at original x (not rerolled)');
   assert.equal(ctx._barrel.x, origBarrelX, 'barrel at original x (not rerolled)');
   assert.equal(ctx._enemy.hp, 40, 'enemy HP fully restored');
@@ -325,8 +332,10 @@ test('continueRun: re-positions the hero at the level entry (area -1), not the d
   const ctx = makeAreaContext(h);
   setState(S.OVER);
   L.continueRun(h, ctx);
-  // Continuing after defeat in 2-3 lands the hero at the level's area -1 entry
-  // (x=100), NOT at the death spot (x=6000).
+  // The entry screen is shown; confirming starts the fresh attempt. Continuing
+  // after defeat in 2-3 lands the hero at the level's area -1 entry (x=100),
+  // NOT at the death spot (x=6000).
+  L.areaEntryOnAction('confirm', h, ctx);
   assert.equal(h.currentArea, -1, 'area reset to -1');
   assert.equal(h.x, 100, 'hero positioned at the level entry, not the death spot');
   assert.ok(h.intangible, 'respawn i-frames active');
@@ -401,9 +410,13 @@ test('integration: full death → continue flow via update.js', async () => {
   setState(S.OVER);
   const applied = U.continueFromGameOver();
   assert.equal(applied, true, 'continue applied');
-  assert.equal(getState(), S.PLAY, 'back in PLAY');
+  assert.equal(getState(), S.AREA_ENTRY, 'continue shows the shared area-entry screen (checkpoints.md §3)');
   assert.equal(hero.lives, 3, 'lives restored to 3');
   assert.equal(hero.continuesUsed, 1, 'one continue spent');
+  // Confirming the entry screen starts the fresh attempt (lifecycle.md §4).
+  const { areaEntryOnAction } = L;
+  assert.equal(areaEntryOnAction('confirm', hero), true, 'confirm starts the attempt');
+  assert.equal(getState(), S.PLAY, 'back in PLAY after confirming the entry screen');
   assert.ok(hero.energy === hero.maxEnergy, 'full energy after continue');
 });
 
@@ -418,9 +431,12 @@ test('integration: continue from 2-3 lands the hero at the level entry (area -1)
 
   const applied = U.continueFromGameOver();
   assert.equal(applied, true, 'continue applied');
-  assert.equal(getState(), S.PLAY, 'back in PLAY');
+  assert.equal(getState(), S.AREA_ENTRY, 'continue shows the shared area-entry screen first');
   assert.equal(hero.lives, 3, 'starting lives restored');
   assert.equal(hero.currentArea, -1, 'area reset to -1');
-  // The hero is placed at the level's entry (x=100), NOT at the death spot (x=6000).
+  // Confirming the entry screen starts the fresh attempt at the level's entry
+  // (x=100), NOT at the death spot (x=6000).
+  L.areaEntryOnAction('confirm', hero);
+  assert.equal(getState(), S.PLAY, 'back in PLAY after confirming the entry screen');
   assert.ok(Math.abs(hero.x - 100) < 1, `hero at level entry x=${hero.x} (not 6000)`);
 });
