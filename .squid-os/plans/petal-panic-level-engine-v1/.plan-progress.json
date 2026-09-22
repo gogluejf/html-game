@@ -122,7 +122,7 @@
     },
     "3.3": {
       "number": "3.3",
-      "status": "in_progress",
+      "status": "done",
       "name": "Progression -1 to -4 + length doubling",
       "milestone": "Terrain Generation",
       "milestone_number": "3",
