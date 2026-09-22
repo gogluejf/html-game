@@ -231,6 +231,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>COLLISION</button>
         <button class="tbtn tog" id="tglMeleeView" title="show/hide hit boxes">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 3"/></svg>HIT BOXES</button>
+          <button class="tbtn tog" id="tglMarkerView" title="show/hide markers (Shift+M)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></svg>MARKERS</button>
         <button class="tbtn tog" id="tglAllFrames" title="show/hide ALL frames ghosted at once (while paused) + make edits apply to every frame">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12"/><path d="M7 6v12M11 6v12M15 6v12M19 6v12"/></svg>ALL FRAMES</button>
         <button class="tbtn tog on" id="tglAxes" title="show/hide axes crosshair">
@@ -245,6 +247,7 @@
       <div class="tgroup">
         <span class="gtitle">Tools</span>
         <button class="tbtn" id="addBoxToolbar" title="add a hit box to this frame (M)">+ BOX</button>
+        <button class="tbtn" id="addMarkerToolbar" title="add a marker">+ MARKER</button>
         <button class="tbtn" id="recenterPivotBtn" title="move pivot to collision box center">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><path d="M12 5v3M12 16v3M5 12h3M16 12h3"/></svg>RECENTER PIVOT</button>
         <div style="position:relative;display:inline-flex;">
@@ -363,6 +366,11 @@
       <div id="meleeBoxList"></div>
     </div>
 
+    <h2 id="markersHeader"><span><span class="swatch" style="background:var(--org);border-radius:50%"></span>Markers</span><button class="tbtn tsm" id="addMarkerBtn" title="add a marker">+ Add</button></h2>
+    <div class="section-body" id="markersBody">
+      <div id="markerList"></div>
+    </div>
+
     <h2><span><span class="swatch" style="background:var(--pur)"></span>Rotation</span></h2>
     <div class="row"><span>Angle</span><span class="sp"></span><input type="number" id="p_rangle" disabled></div>
     <div class="row"><span>Speed (&#176;/s)</span><div class="pair"><div class="cell"><b>V</b><input type="number" id="p_rspeed" min="1" max="360" value="30"></div></div></div>
@@ -406,7 +414,7 @@
 </div>
 <dialog id="helpDialog" aria-labelledby="helpTitle" aria-describedby="helpSummary">
   <header class="helpHead"><div><div class="helpEyebrow">Sprite editor · quick reference</div><h2 id="helpTitle">Less hunting. More tuning.</h2><p id="helpSummary">Shortcuts follow button availability. Editing requires paused playback.</p></div><button id="helpClose" aria-label="Close help">×</button></header>
-  <div class="helpGrid"><section class="helpCard"><h3>Playback &amp; navigation</h3><div class="helpItem"><span>Play or pause animation</span><kbd>Space</kbd></div><div class="helpItem"><span>Previous or next frame</span><kbd>← / →</kbd></div><div class="helpItem"><span>Previous or next animation</span><kbd>↑ / ↓</kbd></div><div class="helpItem"><span>Jump directly to frames one through ten</span><kbd>1–9 / 0</kbd></div><div class="helpItem"><span>Decrease or increase playback speed</span><kbd>− / +</kbd></div><div class="helpItem"><span>Preview every frame in the filmstrip</span><kbd>FRAMES</kbd></div></section><section class="helpCard"><h3>Visibility &amp; clean preview</h3><div class="helpItem"><span>Toggle sprite boundary</span><kbd>Shift + S</kbd></div><div class="helpItem"><span>Toggle collision boundary</span><kbd>Shift + C</kbd></div><div class="helpItem"><span>Toggle hit box boundaries</span><kbd>Shift + M</kbd></div><div class="helpItem"><span>Ghost all frames; edits affect every frame</span><kbd>Shift + F</kbd></div><div class="helpItem"><span>Toggle coordinate axes</span><kbd>Shift + A</kbd></div><div class="helpItem"><span>Toggle background grid</span><kbd>Shift + G</kbd></div><div class="helpItem"><span>Toggle pivot marker</span><kbd>Shift + P</kbd></div><div class="helpItem"><span>Toggle animation label</span><kbd>Shift + L</kbd></div><div class="helpItem"><span>Hide overlays; press again to restore</span><kbd>Ctrl + H</kbd></div></section><section class="helpCard"><h3>Collision &amp; frame editing</h3><div class="helpItem"><span>Add a hit box to current frame</span><kbd>M</kbd></div><div class="helpItem"><span>Recenter pivot in collision box</span><kbd>R</kbd></div><div class="helpItem"><span>Move the hovered box</span><kbd>Drag inside</kbd></div><div class="helpItem"><span>Resize using an edge or corner</span><kbd>Drag handle</kbd></div><div class="helpItem"><span>Scale both axes together</span><kbd>Shift + corner drag</kbd></div><div class="helpItem"><span>Nudge frame offset while paused</span><kbd>Shift + arrows</kbd></div><div class="helpItem"><span>Edit exact box, offset, and scale values</span><kbd>Side panel</kbd></div><div class="helpItem"><span>Center pivot within the collision box</span><kbd>RECENTER PIVOT</kbd></div><div class="helpItem"><span>Align frames to the left-bottom origin</span><kbd>LEFT ↓ BOTTOM</kbd></div><div class="helpItem"><span>Center frames on the origin</span><kbd>CENTER</kbd></div></section><section class="helpCard"><h3>View &amp; utilities</h3><div class="helpItem"><span>Pan by dragging empty canvas space</span><kbd>Drag background</kbd></div><div class="helpItem"><span>Zoom around the pointer</span><kbd>Mouse wheel</kbd></div><div class="helpItem"><span>Zoom out or in</span><kbd>Ctrl + − / +</kbd></div><div class="helpItem"><span>Reset zoom and center the view</span><kbd>Ctrl + 0</kbd></div><div class="helpItem"><span>Rotate independently using bottom controls</span><kbd>Rotation controls</kbd></div><div class="helpItem"><span>Choose background using presets or custom colors</span><kbd>Color picker</kbd></div><div class="helpItem"><span>Undo; return to the edited animation</span><kbd>Ctrl + Z</kbd></div><div class="helpItem"><span>Redo the last undone edit</span><kbd>Ctrl + Y</kbd></div><div class="helpItem"><span>Reset frame, animation, or factory settings</span><kbd>RESET</kbd></div><div class="helpItem"><span>Save edits automatically in this browser</span><kbd>Auto-save</kbd></div></section></div>
+  <div class="helpGrid"><section class="helpCard"><h3>Playback &amp; navigation</h3><div class="helpItem"><span>Play or pause animation</span><kbd>Space</kbd></div><div class="helpItem"><span>Previous or next frame</span><kbd>← / →</kbd></div><div class="helpItem"><span>Previous or next animation</span><kbd>↑ / ↓</kbd></div><div class="helpItem"><span>Jump directly to frames one through ten</span><kbd>1–9 / 0</kbd></div><div class="helpItem"><span>Decrease or increase playback speed</span><kbd>− / +</kbd></div><div class="helpItem"><span>Preview every frame in the filmstrip</span><kbd>FRAMES</kbd></div></section><section class="helpCard"><h3>View toggles</h3><div class="helpItem"><span>Toggle sprite boundary</span><kbd>S</kbd></div><div class="helpItem"><span>Toggle collision boundary</span><kbd>C</kbd></div><div class="helpItem"><span>Toggle hit boxes</span><kbd>H</kbd></div><div class="helpItem"><span>Toggle markers</span><kbd>M</kbd></div><div class="helpItem"><span>Ghost all frames; edits affect every frame</span><kbd>F</kbd></div><div class="helpItem"><span>Toggle coordinate axes</span><kbd>A</kbd></div><div class="helpItem"><span>Toggle background grid</span><kbd>G</kbd></div><div class="helpItem"><span>Toggle pivot marker</span><kbd>P</kbd></div><div class="helpItem"><span>Toggle animation label</span><kbd>L</kbd></div><div class="helpItem"><span>Hide/restore ALL overlays</span><kbd>Ctrl + Shift + H</kbd></div></section><section class="helpCard"><h3>Editing</h3><div class="helpItem"><span>Recenter pivot in collision box</span><kbd>R</kbd></div><div class="helpItem"><span>Select element (click) then nudge</span><kbd>Arrows</kbd></div><div class="helpItem"><span>Delete selected hit box or marker</span><kbd>Delete</kbd></div><div class="helpItem"><span>Deselect (click empty / Escape)</span><kbd>Esc</kbd></div><div class="helpItem"><span>Move the hovered box</span><kbd>Drag inside</kbd></div><div class="helpItem"><span>Resize using an edge or corner</span><kbd>Drag handle</kbd></div><div class="helpItem"><span>Scale both axes together</span><kbd>Shift + corner drag</kbd></div><div class="helpItem"><span>Nudge frame offset while paused</span><kbd>Shift + arrows</kbd></div><div class="helpItem"><span>Edit exact values</span><kbd>Side panel</kbd></div></section><section class="helpCard"><h3>View &amp; utilities</h3><div class="helpItem"><span>Pan by dragging empty canvas space</span><kbd>Drag background</kbd></div><div class="helpItem"><span>Zoom around the pointer</span><kbd>Mouse wheel</kbd></div><div class="helpItem"><span>Zoom out or in</span><kbd>Ctrl + − / +</kbd></div><div class="helpItem"><span>Reset zoom and center the view</span><kbd>Ctrl + 0</kbd></div><div class="helpItem"><span>Rotate independently using bottom controls</span><kbd>Rotation controls</kbd></div><div class="helpItem"><span>Choose background using presets or custom colors</span><kbd>Color picker</kbd></div><div class="helpItem"><span>Undo</span><kbd>Ctrl + Z</kbd></div><div class="helpItem"><span>Redo</span><kbd>Ctrl + Y</kbd></div><div class="helpItem"><span>Reset frame, animation, or factory</span><kbd>RESET</kbd></div><div class="helpItem"><span>Save edits automatically in this browser</span><kbd>Auto-save</kbd></div></section></div>
   <footer class="helpFoot">Click anywhere or press Escape to close · Shortcuts stay inactive while typing</footer>
 </dialog>
 <dialog id="confirmDialog">
@@ -421,7 +429,7 @@
 </dialog>
 <script>
 const MANIFEST = /*__MANIFEST__*/null;
-const COL_COLL='#3ef0ff', COL_MELEE='#ff9d2e', COL_SCALE='#b47bff';
+const COL_COLL='#3ef0ff', COL_MELEE='#ff9d2e', COL_SCALE='#b47bff', COL_MARKER='#ff5a5a';
 // hex (#rrggbb) + alpha (0-1) -> rgba() string, for translucent fills
 function hexA(hex, a){
   const h = hex.replace('#','');
@@ -483,7 +491,7 @@ function syncUndoButtons(){
   if (u) u.disabled = !undoStack.length;
   if (r) r.disabled = !redoStack.length;
 }
-let show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false, grid:true };
+let show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false, grid:true, markerView:false };
 let bgColor = '#000000';   // canvas background fill
 let isPlaying = true;      // global play/pause, carried across animations
 // ---------- localStorage persistence ----------
@@ -497,7 +505,7 @@ function collectState(){
     entities[name] = {
       speed: st.speed, playing: st.playing, frameIdx: st.frameIdx,
       playback: st.playback || 'loop',
-      collision: st.collision, pivot: st.pivot, rot: st.rot,
+      collision: st.collision, pivot: st.pivot, markers: st.markers||[], rot: st.rot,
       frames: st.frames.map(f => ({ idx:f.idx, name:f.name, crop:f.crop, offset:f.offset, scale:f.scale, boxes:f.boxes||[], durUnits:f.durUnits||1 }))
     };
   }
@@ -594,6 +602,7 @@ function loadState(){
   // migrate new fields: playback + durUnits + boxes (additive, backward-compatible)
   for (const [, st] of S){
     if (!st.playback) st.playback = 'loop';
+    if (!st.markers) st.markers = [];
     for (const f of st.frames){
       if (f.durUnits === undefined || f.durUnits < 1) f.durUnits = 1;
       // melee → boxes migration
@@ -724,7 +733,7 @@ function defaultState(name, imgs, paths, crops){
   const st = {
     key: name, speed: 8, playing: true, frameIdx: 0,
     playback: 'loop',
-    collision: null, pivot: null,
+    collision: null, pivot: null, markers: [],
     rot: { angle: 0, speed: 360, playing: false },   // degrees, deg/s, independent of frame anim
     frames: paths.map((p, i) => ({
       idx: i, name: p.split('/').pop(),
@@ -1031,6 +1040,53 @@ function draw(){
     ctx.restore();
   }
   finfo.textContent = `frame ${fi+1}/${st.frames.length}  \u2014  ${st.frames[fi].name}`;
+  // ---------- markers (NOT rotated — always upright, like pivot) ----------
+  if (show.markerView && st.markers){
+    for (let mi=0; mi<st.markers.length; mi++){
+      const m = st.markers[mi];
+      const [mx, my] = s2c(m.x, m.y);
+      const selected = _selectedBox === 'marker_'+mi;
+      const panelHl = _panelHighlight === 'marker_'+mi;
+      ctx.save();
+      // radius circle
+      if (m.radiusOn && m.radius > 0){
+        ctx.strokeStyle = COL_MARKER;
+        ctx.lineWidth = selected || panelHl ? 2.5 : 1.5;
+        if (!selected && !panelHl) ctx.setLineDash([4,3]);
+        ctx.beginPath();
+        ctx.arc(mx, my, m.radius*zoom, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      // dot
+      const dotR = selected ? 7 : 5;
+      ctx.fillStyle = COL_MARKER;
+      ctx.beginPath();
+      ctx.arc(mx, my, dotR, 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // selection ring
+      if (selected || panelHl){
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(mx, my, 12, 0, Math.PI*2);
+        ctx.stroke();
+      }
+      // label above dot (or above radius circle)
+      if (m.label){
+        const labelY = m.radiusOn && m.radius > 0 ? my - m.radius*zoom - 6 : my - dotR - 6;
+        ctx.font = '11px Courier New';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillStyle = COL_MARKER;
+        ctx.fillText(m.label, mx, labelY);
+      }
+      ctx.restore();
+    }
+  }
   // DEBUG state readout (temporary)
   const mode = drag ? 'DRAG:'+drag.kind : (hover ? 'HOVER:'+(hover.handle||'body') : 'IDLE');
   dbg.textContent = `mode=${mode}  drag=${drag?drag.kind:'null'}  hover=${hover?JSON.stringify(hover):'null'}`;
@@ -1106,6 +1162,20 @@ function drawFilm(){
       const mx=X(mb.x), my=Y(mb.y), mw=mb.w*scale, mh=mb.h*scale;
       g.fillStyle='rgba(255,157,46,.1)'; g.fillRect(mx,my,mw,mh);
       g.strokeStyle='rgba(255,157,46,.7)'; g.strokeRect(mx,my,mw,mh);
+    }
+    // markers (per-animation, same position in every cell)
+    if (st.markers){
+      for (const mk of st.markers){
+        const mkx=X(mk.x), mky=Y(mk.y);
+        g.fillStyle='#ff5a5a';
+        g.beginPath(); g.arc(mkx, mky, 3, 0, Math.PI*2); g.fill();
+        if (mk.radiusOn && mk.radius > 0){
+          g.strokeStyle='rgba(255,90,90,.6)';
+          g.setLineDash([3,2]);
+          g.beginPath(); g.arc(mkx, mky, mk.radius*scale, 0, Math.PI*2); g.stroke();
+          g.setLineDash([]);
+        }
+      }
     }
     if (im){
       const w=im.naturalWidth*f.scale.sx, h=im.naturalHeight*f.scale.sy;
@@ -1419,6 +1489,7 @@ function syncPanel(){
   if (st.pivot){ P('p_px').value=st.pivot.x; P('p_py').value=st.pivot.y; }
   if (st.rot){ P('p_rangle').value=Math.round(st.rot.angle); P('p_rspeed').value=st.rot.speed; $('rotSpeedVal').textContent=st.rot.speed+'\u00B0/s'; $('rotAngle').textContent=Math.round(st.rot.angle)+'\u00B0'; $('rotIco').innerHTML=st.rot.playing?'&#10074;&#10074;':'&#9654;'; }
   buildMeleeBoxList();
+  buildMarkerList();
   setPlaying(st.playing);
   syncPlaybackButtons();
   buildTimingTable();
@@ -1543,6 +1614,123 @@ function buildMeleeBoxList(){
   });
 }
 $('addBoxBtn').addEventListener('click', addMeleeBox);
+// ---------- markers panel (dynamic list) ----------
+function nextMarkerLabel(markers){
+  if (!markers.length) return 'marker';
+  const labels = new Set(markers.map(m => m.label));
+  if (!labels.has('marker')) return 'marker';
+  let n = 2;
+  while (labels.has('marker_' + n)) n++;
+  return 'marker_' + n;
+}
+function nextMarkerPosition(st){
+  const markers = st.markers;
+  if (markers.length === 0){
+    return { x: st.pivot.x, y: st.pivot.y };
+  }
+  const last = markers[markers.length - 1];
+  return { x: last.x + 20, y: last.y - 20 };
+}
+function addMarker(){
+  if (!cur || !cur.st || editingLocked()) return;
+  pushUndo();
+  const pos = nextMarkerPosition(cur.st);
+  const label = nextMarkerLabel(cur.st.markers);
+  cur.st.markers.push({ label, x:pos.x, y:pos.y, radiusOn:false, radius:0 });
+  show.markerView = true;
+  syncToggles(); buildMarkerList(); draw(); saveState();
+}
+function deleteMarker(idx){
+  if (!cur || !cur.st || editingLocked()) return;
+  pushUndo();
+  cur.st.markers.splice(idx, 1);
+  _panelHighlight = null;
+  buildMarkerList(); draw(); saveState();
+}
+function buildMarkerList(){
+  if (!cur || !cur.st) return;
+  const st = cur.st;
+  const markers = st.markers || [];
+  const list = $('markerList');
+  list.innerHTML = '';
+  markers.forEach((m, i) => {
+    const row = document.createElement('div');
+    row.className = 'mb-row';
+    row.dataset.idx = i;
+    // line 1: dot + label + radius toggle + delete
+    const l1 = document.createElement('div'); l1.className = 'mb-row-line1';
+    const dot = document.createElement('span');
+    dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:'+COL_MARKER+';flex:none;display:inline-block;margin-right:4px;';
+    const lbl = document.createElement('input');
+    lbl.type = 'text'; lbl.className = 'mb-label'; lbl.value = m.label;
+    lbl.addEventListener('focus', () => { _panelHighlight = 'marker_'+i; draw(); });
+    lbl.addEventListener('blur', () => {
+      _panelHighlight = null; draw();
+      const newLabel = lbl.value.trim();
+      if (!newLabel){ lbl.value = m.label; return; }
+      const dup = markers.some((om, oi) => oi !== i && om.label === newLabel);
+      if (dup){ lbl.classList.add('dup'); setTimeout(()=>lbl.classList.remove('dup'), 800); lbl.value = m.label; return; }
+      if (newLabel !== m.label){ pushUndo(); m.label = newLabel; draw(); saveState(); }
+    });
+    const radBtn = document.createElement('button');
+    radBtn.className = 'tbtn tsm'; radBtn.style.padding='2px 6px'; radBtn.style.fontSize='10px';
+    radBtn.textContent = m.radiusOn ? '\u25CF R' : '\u25CB R';
+    radBtn.title = 'toggle radius';
+    radBtn.addEventListener('click', () => {
+      pushUndo();
+      m.radiusOn = !m.radiusOn;
+      if (m.radiusOn && m.radius === 0) m.radius = 30;
+      buildMarkerList(); draw(); saveState();
+    });
+    const del = document.createElement('button');
+    del.className = 'mb-del'; del.textContent = '\u00D7'; del.title = 'delete marker';
+    del.addEventListener('click', () => deleteMarker(i));
+    l1.appendChild(dot); l1.appendChild(lbl); l1.appendChild(radBtn); l1.appendChild(del);
+    // line 2: X Y R
+    const l2 = document.createElement('div'); l2.className = 'mb-row-line2';
+    ['x','y'].forEach(axis => {
+      const cell = document.createElement('div'); cell.className = 'cell';
+      const bb = document.createElement('b'); bb.textContent = axis.toUpperCase();
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.value = m[axis];
+      inp.addEventListener('focus', () => { _panelHighlight = 'marker_'+i; draw(); });
+      inp.addEventListener('blur', () => { _panelHighlight = null; draw(); });
+      inp.addEventListener('change', () => {
+        const v = parseFloat(inp.value);
+        if (isNaN(v) || !cur || !cur.st || editingLocked()) return;
+        pushUndo(); m[axis] = v; draw(); saveState();
+      });
+      cell.appendChild(bb); cell.appendChild(inp);
+      l2.appendChild(cell);
+    });
+    // R input
+    const rCell = document.createElement('div'); rCell.className = 'cell';
+    const rb = document.createElement('b'); rb.textContent = 'R';
+    const rInp = document.createElement('input');
+    rInp.type = 'number'; rInp.value = m.radius; rInp.min = '1';
+    rInp.disabled = !m.radiusOn;
+    if (!m.radiusOn) rInp.classList.add('disabled-dim');
+    rInp.addEventListener('focus', () => { _panelHighlight = 'marker_'+i; draw(); });
+    rInp.addEventListener('blur', () => { _panelHighlight = null; draw(); });
+    rInp.addEventListener('change', () => {
+      const v = parseFloat(rInp.value);
+      if (isNaN(v) || !cur || !cur.st || editingLocked()) return;
+      pushUndo(); m.radius = Math.max(1, v); draw(); saveState();
+    });
+    rCell.appendChild(rb); rCell.appendChild(rInp);
+    l2.appendChild(rCell);
+    // whole-row hover
+    row.addEventListener('mouseenter', () => { _panelHighlight = 'marker_'+i; draw(); });
+    row.addEventListener('mouseleave', () => { if (_panelHighlight==='marker_'+i){ _panelHighlight = null; draw(); } });
+    row.appendChild(l1); row.appendChild(l2);
+    list.appendChild(row);
+  });
+}
+$('addMarkerBtn').addEventListener('click', addMarker);
+$('addMarkerToolbar').addEventListener('click', addMarker);
+$('tglMarkerView').addEventListener('click', ()=>{
+  show.markerView = !show.markerView; cancelHideMode(); syncToggles(); draw(); saveState();
+});
 // ---------- toolbar (display toggles only) ----------
 function syncToggles(){
   $('tglCollision').classList.toggle('on', show.collision);
@@ -1565,6 +1753,8 @@ function syncToggles(){
   mv.classList.toggle('on', show.meleeView);
   $('tglPivot').classList.toggle('on', show.pivot);
   $('tglLabel').classList.toggle('on', show.label);
+  const mv2 = $('tglMarkerView');
+  if (mv2) mv2.classList.toggle('on', show.markerView);
   $('resetBtn').disabled = locked;
 }
 // If the user manually toggles any overlay while ctrl+H "hide mode" is active,
@@ -1900,6 +2090,16 @@ function hitPivot(sx, sy){
   const tol = 12/zoom;
   return Math.abs(sx - cur.st.pivot.x) <= tol && Math.abs(sy - cur.st.pivot.y) <= tol;
 }
+// marker hit-test: returns index or -1
+function hitMarker(sx, sy){
+  if (!show.markerView || !cur.st.markers) return -1;
+  const tol = 14/zoom;
+  for (let i=0; i<cur.st.markers.length; i++){
+    const m = cur.st.markers[i];
+    if (Math.abs(sx-m.x) <= tol && Math.abs(sy-m.y) <= tol) return i;
+  }
+  return -1;
+}
 function updateHover(sx, sy){
   const prev = hover; hover = null;
   if (!editingLocked()){
@@ -1945,6 +2145,7 @@ function shiftAll(dx, dy){
   }
   st.collision.x += dx; st.collision.y += dy;
   if (st.pivot){ st.pivot.x += dx; st.pivot.y += dy; }
+  for (const m of st.markers){ m.x += dx; m.y += dy; }
 }
 // Shift ONE element + propagate to all frames (rigid body).
 // All element types move the ENTIRE body — they are all part of the same rigid unit.
@@ -2006,6 +2207,16 @@ function scaleAllAbout(st, before, rx, ry){
   if (st.pivot && before.pivot){
     st.pivot.x=Math.round(C.cx+(before.pivot.x-C.cx)*rx);
     st.pivot.y=Math.round(C.cy+(before.pivot.y-C.cy)*ry);
+  }
+  // markers: scale position + radius about center
+  if (before.markers){
+    for (let mi=0; mi<before.markers.length; mi++){
+      const m=st.markers[mi], bm=before.markers[mi];
+      if (!m || !bm) continue;
+      m.x=Math.round(C.cx+(bm.x-C.cx)*rx);
+      m.y=Math.round(C.cy+(bm.y-C.cy)*ry);
+      if (m.radiusOn) m.radius=Math.max(1,Math.round(bm.radius*rx));
+    }
   }
 }
 const BOX = {
@@ -2138,6 +2349,15 @@ cv.addEventListener('pointerdown', e=>{
     cv.style.cursor = 'grabbing';
     return;
   }
+  // marker -> click to select, drag to move (only the marker moves)
+  const mkIdx = hitMarker(sx, sy);
+  if (mkIdx >= 0){
+    _selectedBox = 'marker_'+mkIdx;
+    pushUndo();
+    drag = { key:'marker', markerIdx:mkIdx, sx, sy, undoPushed:false };
+    cv.style.cursor = 'grabbing';
+    draw(); return;
+  }
   // pivot marker -> drag to reposition
   if (hover && hover.box==='pivot'){
     pushUndo();
@@ -2161,7 +2381,8 @@ cv.addEventListener('pointerdown', e=>{
       frames: st.frames.map(f => ({ ox:f.offset.x, oy:f.offset.y, sx:f.scale.sx, sy:f.scale.sy,
                                     bx:(f.boxes||[]).map(b=>({...b})) })),
       col: {...st.collision},
-      pivot: st.pivot ? {...st.pivot} : null
+      pivot: st.pivot ? {...st.pivot} : null,
+      markers: (st.markers||[]).map(m=>({...m}))
     };
     drag = { key:hover.box, boxIdx, anchor:hover.handle||null, ratio:e.shiftKey, orig,
              box:ref, ox:sx-orig.x, oy:sy-orig.y,
@@ -2186,6 +2407,12 @@ cv.addEventListener('pointermove', e=>{
     userZoomed = true;
     panX = drag.panX0 - (cx - drag.sx0)/zoom;
     panY = drag.panY0 - (cy - drag.sy0)/zoom;
+  } else if (drag.key==='marker'){
+    // Moving a marker affects ONLY that marker
+    if (!drag.undoPushed){ pushUndo(); drag.undoPushed = true; }
+    const m = cur.st.markers[drag.markerIdx];
+    if (m){ m.x=Math.round(sx); m.y=Math.round(sy); }
+    syncPanel(); draw(); return;
   } else if (drag.key==='pivot'){
     // Moving the pivot affects ONLY the pivot — zero effect on sprite/collision/
     // melee. (Pivot follows those elements when THEY are moved/resized instead.)
@@ -2276,7 +2503,7 @@ window.addEventListener('keydown', e=>{
   // the buttons back as they were on the next press).
   if ((e.ctrlKey||e.metaKey) && e.code==='KeyH'){
     e.preventDefault();
-    const HIDDEN_KEYS = ['collision','meleeView','axes','spriteView','pivot','grid'];
+    const HIDDEN_KEYS = ['collision','meleeView','axes','spriteView','pivot','grid','markerView'];
     if (!window._hideSnapshot){
       window._hideSnapshot = {};
       for (const k of HIDDEN_KEYS){ window._hideSnapshot[k] = show[k]; show[k] = false; }
@@ -2294,11 +2521,12 @@ window.addEventListener('keydown', e=>{
   // Route shortcuts through the buttons to preserve guards and hide-mode behavior.
   if (!e.ctrlKey && !e.metaKey && !e.altKey){
     const displayKeys = {
-      KeyS:'tglSpriteView', KeyC:'tglCollision', KeyM:'tglMeleeView',
+      KeyS:'tglSpriteView', KeyC:'tglCollision', KeyM:'tglMarkerView',
       KeyF:'tglAllFrames', KeyA:'tglAxes', KeyG:'tglGrid',
-      KeyP:'tglPivot', KeyL:'tglLabel'
+      KeyP:'tglPivot', KeyL:'tglLabel', KeyH:'tglMeleeView'
     };
-    const buttonId = e.shiftKey ? displayKeys[e.code] : (e.code==='KeyM' ? 'addBoxToolbar' : (e.code==='KeyR' ? 'recenterPivotBtn' : null));
+    // Plain S/C/H/M = view toggles; Shift+S/C/etc also work; R = recenter pivot
+    const buttonId = displayKeys[e.code] || (e.code==='KeyR' ? 'recenterPivotBtn' : null);
     if (buttonId){
       e.preventDefault();
       if (!e.repeat) $(buttonId).click();
@@ -2322,19 +2550,25 @@ window.addEventListener('keydown', e=>{
       return;
     }
   }
-  // selected element (box_N, sprite, collision): nudge, delete (boxes only), escape
+  // selected element (box_N, sprite, collision, marker_N): nudge, delete, escape
   if (_selectedBox){
     if (e.code === 'Escape'){
       e.preventDefault();
       _selectedBox = null; draw();
       return;
     }
-    if (_selectedBox.startsWith('box_') && (e.code === 'Delete' || e.code === 'Backspace')){
+    if ((_selectedBox.startsWith('box_') || _selectedBox.startsWith('marker_')) && (e.code === 'Delete' || e.code === 'Backspace')){
       e.preventDefault();
       if (!editingLocked()){
-        const selIdx = parseInt(_selectedBox.slice(4), 10);
-        pushUndo(); st.frames[fi].boxes.splice(selIdx, 1);
-        _selectedBox = null; buildMeleeBoxList(); draw(); saveState();
+        if (_selectedBox.startsWith('box_')){
+          const selIdx = parseInt(_selectedBox.slice(4), 10);
+          pushUndo(); st.frames[fi].boxes.splice(selIdx, 1);
+          _selectedBox = null; buildMeleeBoxList(); draw(); saveState();
+        } else {
+          const selIdx = parseInt(_selectedBox.slice(7), 10);
+          pushUndo(); st.markers.splice(selIdx, 1);
+          _selectedBox = null; buildMarkerList(); draw(); saveState();
+        }
       }
       return;
     }
@@ -2354,6 +2588,10 @@ window.addEventListener('keydown', e=>{
         shiftElement('sprite', -1, dx, dy);
       } else if (_selectedBox === 'collision'){
         shiftElement('collision', -1, dx, dy);
+      } else if (_selectedBox.startsWith('marker_')){
+        const mi = parseInt(_selectedBox.slice(7), 10);
+        const m = st.markers[mi];
+        if (m){ m.x += dx; m.y += dy; }
       }
       syncPanel(); draw(); saveState();
       return;
