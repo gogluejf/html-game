@@ -144,6 +144,8 @@
   /* ---------- timing section ---------- */
   #timingSection{margin-top:4px;}
   .timing-mode{display:flex;gap:8px;margin:6px 0 10px;}
+  .timing-mode-inline{display:flex;gap:6px;margin-left:12px;flex:none;}
+  .timing-mode-inline .tbtn.tsm{padding:3px 8px;font-size:10px;white-space:nowrap;flex:none;}
   .tbtn.tsm{font-size:11px;padding:4px 14px;border-radius:8px;letter-spacing:.5px;background:none;border:1.5px solid var(--faint);color:var(--dim);cursor:pointer;font-family:inherit;transition:all .15s;font-weight:bold;}
   .tbtn.tsm:hover{border-color:var(--acc);color:var(--acc);}
   .tbtn.tsm.on{border-color:var(--grn);color:var(--grn);}
@@ -389,12 +391,11 @@
 
     <h2><span><span class="swatch" style="background:var(--grn)"></span>Timing</span></h2>
     <div id="timingSection">
-      <div class="row"><span>Frames</span><span class="sp"></span><input type="number" id="p_acount" disabled></div>
-      <div class="row"><span>Speed (fps)</span><div class="pair"><div class="cell"><b>V</b><input type="number" id="p_speed" min="1" max="60" value="8"></div></div></div>
-      <div class="timing-mode">
+      <div class="row" style="flex-wrap:nowrap;"><span>Frames</span><span class="sp"></span><input type="number" id="p_acount" disabled><div class="timing-mode-inline">
         <button class="tbtn tsm tog on" id="pbLoop" title="loop playback">&#8635; Loop</button>
         <button class="tbtn tsm tog" id="pbOnce" title="play once then stop">&#9654; Once</button>
-      </div>
+      </div></div>
+      <div class="row"><span>Speed (fps)</span><div class="pair"><div class="cell"><b>V</b><input type="number" id="p_speed" min="1" max="60" value="8"></div></div></div>
       <div class="timing-table" id="timingTable"></div>
       <div class="timing-total">
         <span id="timingTotal">&mdash;</span>
