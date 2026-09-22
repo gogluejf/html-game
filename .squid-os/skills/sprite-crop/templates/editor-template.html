@@ -361,27 +361,8 @@
       </div>
     </div>
 
-    <h2 id="meleeBoxesHeader"><span><span class="swatch" style="background:var(--org)"></span>Hit Boxes</span><button class="tbtn tsm" id="addBoxBtn" title="add a hit box">+ Add</button></h2>
-    <div class="section-body" id="meleeBoxesBody">
-      <div id="meleeBoxList"></div>
-    </div>
 
-    <h2 id="markersHeader"><span><span class="swatch" style="background:var(--org);border-radius:50%"></span>Markers</span><button class="tbtn tsm" id="addMarkerBtn" title="add a marker">+ Add</button></h2>
-    <div class="section-body" id="markersBody">
-      <div id="markerList"></div>
-    </div>
 
-    <h2><span><span class="swatch" style="background:var(--pur)"></span>Rotation</span></h2>
-    <div class="row"><span>Angle</span><span class="sp"></span><input type="number" id="p_rangle" disabled></div>
-    <div class="row"><span>Speed (&#176;/s)</span><div class="pair"><div class="cell"><b>V</b><input type="number" id="p_rspeed" min="1" max="360" value="30"></div></div></div>
-
-    <h2><span><span class="swatch" style="background:var(--yel)"></span>Pivot Point</span></h2>
-    <div class="row"><span>Position</span>
-      <div class="pair">
-        <div class="cell"><b>X</b><input type="number" id="p_px"></div>
-        <div class="cell"><b>Y</b><input type="number" id="p_py"></div>
-      </div>
-    </div>
 
     <h2><span><span class="swatch" style="background:var(--acc)"></span>Collision Box</span></h2>
     <div class="row"><span>Position</span>
@@ -397,6 +378,18 @@
       </div>
     </div>
 
+    <h2><span><span class="swatch" style="background:var(--yel)"></span>Pivot Point</span></h2>
+    <div class="row"><span>Position</span>
+      <div class="pair">
+        <div class="cell"><b>X</b><input type="number" id="p_px"></div>
+        <div class="cell"><b>Y</b><input type="number" id="p_py"></div>
+      </div>
+    </div>
+
+    <h2><span><span class="swatch" style="background:var(--pur)"></span>Rotation</span></h2>
+    <div class="row"><span>Angle</span><span class="sp"></span><input type="number" id="p_rangle" disabled></div>
+    <div class="row"><span>Speed (&#176;/s)</span><div class="pair"><div class="cell"><b>V</b><input type="number" id="p_rspeed" min="1" max="360" value="30"></div></div></div>
+
     <h2><span><span class="swatch" style="background:var(--grn)"></span>Timing</span></h2>
     <div id="timingSection">
       <div class="row" style="flex-wrap:nowrap;"><span>Frames</span><span class="sp"></span><input type="number" id="p_acount" disabled><div class="timing-mode-inline">
@@ -409,6 +402,16 @@
         <span id="timingTotal">&mdash;</span>
         <button id="timingResetBtn">Reset All</button>
       </div>
+    </div>
+
+    <h2 id="markersHeader"><span><span class="swatch" style="background:#ff5a5a;border-radius:50%"></span>Markers</span><button class="tbtn tsm" id="addMarkerBtn" title="add a marker">+ Add</button></h2>
+    <div class="section-body" id="markersBody">
+      <div id="markerList"></div>
+    </div>
+
+    <h2 id="meleeBoxesHeader"><span><span class="swatch" style="background:var(--org)"></span>Hit Boxes</span><button class="tbtn tsm" id="addBoxBtn" title="add a hit box">+ Add</button></h2>
+    <div class="section-body" id="meleeBoxesBody">
+      <div id="meleeBoxList"></div>
     </div>
   </div>
 </div>
@@ -1050,9 +1053,16 @@ function draw(){
       ctx.save();
       // radius circle
       if (m.radiusOn && m.radius > 0){
+        const hl = selected || panelHl;
+        if (hl){
+          ctx.fillStyle = hexA(COL_MARKER, 0.15);
+          ctx.beginPath();
+          ctx.arc(mx, my, m.radius*zoom, 0, Math.PI*2);
+          ctx.fill();
+        }
         ctx.strokeStyle = COL_MARKER;
-        ctx.lineWidth = selected || panelHl ? 2.5 : 1.5;
-        if (!selected && !panelHl) ctx.setLineDash([4,3]);
+        ctx.lineWidth = hl ? 2.5 : 1.5;
+        if (!hl) ctx.setLineDash([4,3]);
         ctx.beginPath();
         ctx.arc(mx, my, m.radius*zoom, 0, Math.PI*2);
         ctx.stroke();
@@ -1074,6 +1084,16 @@ function draw(){
         ctx.beginPath();
         ctx.arc(mx, my, 12, 0, Math.PI*2);
         ctx.stroke();
+      }
+      // radius resize handle at 3 o'clock (visible when paused + radius on)
+      if (m.radiusOn && m.radius > 0 && !st.playing){
+        const [hx, hy] = s2c(m.x + m.radius, m.y);
+        const hot = (selected || panelHl);
+        ctx.fillStyle = hot ? '#fff' : COL_MARKER;
+        ctx.fillRect(hx-4, hy-4, 8, 8);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(hx-4, hy-4, 8, 8);
       }
       // label above dot (or above radius circle)
       if (m.label){
@@ -1546,6 +1566,7 @@ function addMeleeBox(){
   const pos = nextBoxPosition(cur.st, fi);
   const label = nextBoxLabel(cur.st.frames[fi].boxes);
   cur.st.frames[fi].boxes.push({ label, ...pos });
+  _selectedBox = 'box_' + (cur.st.frames[fi].boxes.length - 1);
   show.meleeView = true;
   syncToggles(); buildMeleeBoxList(); draw(); saveState();
 }
@@ -1616,12 +1637,12 @@ function buildMeleeBoxList(){
 $('addBoxBtn').addEventListener('click', addMeleeBox);
 // ---------- markers panel (dynamic list) ----------
 function nextMarkerLabel(markers){
-  if (!markers.length) return 'marker';
+  if (!markers.length) return 'AI Trigger';
   const labels = new Set(markers.map(m => m.label));
-  if (!labels.has('marker')) return 'marker';
+  if (!labels.has('AI Trigger')) return 'AI Trigger';
   let n = 2;
-  while (labels.has('marker_' + n)) n++;
-  return 'marker_' + n;
+  while (labels.has('AI Trigger_' + n)) n++;
+  return 'AI Trigger_' + n;
 }
 function nextMarkerPosition(st){
   const markers = st.markers;
@@ -1636,7 +1657,13 @@ function addMarker(){
   pushUndo();
   const pos = nextMarkerPosition(cur.st);
   const label = nextMarkerLabel(cur.st.markers);
-  cur.st.markers.push({ label, x:pos.x, y:pos.y, radiusOn:false, radius:0 });
+  // inherit radius settings from last marker (or default 400/on for first)
+  const markers = cur.st.markers;
+  const last = markers.length > 0 ? markers[markers.length - 1] : null;
+  const radiusOn = last ? last.radiusOn : true;
+  const radius = (last && last.radius > 0) ? last.radius : 400;
+  cur.st.markers.push({ label, x:pos.x, y:pos.y, radiusOn, radius });
+  _selectedBox = 'marker_' + (cur.st.markers.length - 1);
   show.markerView = true;
   syncToggles(); buildMarkerList(); draw(); saveState();
 }
@@ -2100,6 +2127,18 @@ function hitMarker(sx, sy){
   }
   return -1;
 }
+// marker radius handle hit-test: returns idx or -1 (checks all markers with radius)
+function hitMarkerRadiusHandle(sx, sy){
+  if (!show.markerView || !cur.st.markers || cur.st.playing) return -1;
+  const tol = 10/zoom;
+  for (let i=0; i<cur.st.markers.length; i++){
+    const m = cur.st.markers[i];
+    if (!m.radiusOn || m.radius <= 0) continue;
+    const hx = m.x + m.radius, hy = m.y;
+    if (Math.abs(sx-hx) <= tol && Math.abs(sy-hy) <= tol) return i;
+  }
+  return -1;
+}
 function updateHover(sx, sy){
   const prev = hover; hover = null;
   if (!editingLocked()){
@@ -2349,6 +2388,15 @@ cv.addEventListener('pointerdown', e=>{
     cv.style.cursor = 'grabbing';
     return;
   }
+  // marker radius handle -> drag to resize radius
+  const radIdx = hitMarkerRadiusHandle(sx, sy);
+  if (radIdx >= 0){
+    _selectedBox = 'marker_'+radIdx;   // auto-select the marker
+    pushUndo();
+    drag = { key:'markerRadius', markerIdx:radIdx, undoPushed:true };
+    cv.style.cursor = 'nwse-resize';
+    draw(); return;
+  }
   // marker -> click to select, drag to move (only the marker moves)
   const mkIdx = hitMarker(sx, sy);
   if (mkIdx >= 0){
@@ -2407,6 +2455,14 @@ cv.addEventListener('pointermove', e=>{
     userZoomed = true;
     panX = drag.panX0 - (cx - drag.sx0)/zoom;
     panY = drag.panY0 - (cy - drag.sy0)/zoom;
+  } else if (drag.key==='markerRadius'){
+    // Resize marker radius: distance from center to cursor
+    const m = cur.st.markers[drag.markerIdx];
+    if (m){
+      const dist = Math.sqrt((sx-m.x)*(sx-m.x) + (sy-m.y)*(sy-m.y));
+      m.radius = Math.max(1, Math.round(dist));
+    }
+    syncPanel(); draw(); return;
   } else if (drag.key==='marker'){
     // Moving a marker affects ONLY that marker
     if (!drag.undoPushed){ pushUndo(); drag.undoPushed = true; }
