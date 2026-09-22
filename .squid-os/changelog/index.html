@@ -141,7 +141,7 @@ body {
   margin-top: 4px;
 }
 
-.stat .num.value-avg { color: hsl(82, 75%, 45%); }
+.stat .num.value-avg { color: hsl(86, 75%, 45%); }
 
 /* Entries */
 .entries {
@@ -400,19 +400,19 @@ body {
 <main class="wrap">
   <div class="stats-bar">
     <div class="stat">
-      <div class="num">6</div>
+      <div class="num">13</div>
       <div class="label">Entries</div>
     </div>
     <div class="stat">
-      <div class="num">136</div>
+      <div class="num">383</div>
       <div class="label">Commits</div>
     </div>
     <div class="stat">
-      <div class="num value-avg">7.2</div>
+      <div class="num value-avg">7.5</div>
       <div class="label">Avg Impact</div>
     </div>
     <div class="stat">
-      <div class="num" style="font-size:1rem">This week<br><span style='font-size:0.7rem;color:var(--text-dim)'>18–21 Sep</span></div>
+      <div class="num" style="font-size:1rem">This week<br><span style='font-size:0.7rem;color:var(--text-dim)'>12–21 Sep</span></div>
       <div class="label">Coverage</div>
     </div>
   </div>
@@ -563,12 +563,180 @@ body {
             <div class="entry-tags"><span class="tag">music</span><span class="tag">petal-panic</span></div>
           </div>
         </div>
+        <div class="entry-row fx" data-dates="2026-09-18" data-value="9">
+          <div class="date-stamp">
+            <span class="stamp-day">18</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>📐 HERO ALIGN EPIC</h3>
+              <div class="entry-meta">
+                <span class="badge">27 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Full hero engine ↔ mechanics doc alignment — 4 waves, 12 tasks, dual-review gated</p>
+            <ul class="entry-bullets"><li>Contextual Down (crouch vs aim)</li><li>Air control ramp + momentum preservation</li><li>Supermove phase-aware jump cancel</li><li>Hit response knockback table + i-frame sync</li><li>Crouch/slide cancel hardening</li><li>One-way platforms + drop-through</li><li>Weapon toggle (N) Thorn/Special</li><li>Per-hero special melee trajectories</li><li>Melee input buffer (latest-wins)</li><li>Recovery cancellation</li><li>Data-driven per-frame hitboxes</li><li>Invariant test suite → EPIC DONE</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:90%;background:hsl(106, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(106, 75%, 45%)">9/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">hero</span><span class="tag">combat</span><span class="tag">alignment</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-17" data-value="7">
+          <div class="date-stamp">
+            <span class="stamp-day">17</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>⌨️ INPUT ENGINE + CONTROLS</h3>
+              <div class="entry-meta">
+                <span class="badge">15 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Unified input engine with keyboard+gamepad merge, control remapping screen, HJKN layout</p>
+            <ul class="entry-bullets"><li>Input engine v1: source list, gamepad+keyboard merge, screen bridge</li><li>Two-layer nav/gameplay separation</li><li>Sequential control remapping screen</li><li>HJKN key layout + unified direction/aim model</li><li>Keyboard XCV mapping (X melee, C supermove, V switch)</li><li>F1/F2 debug toggle + F3 collision view</li><li>Browser shortcut passthrough during input capture</li><li>Select screen: no auto-select, Enter focuses Scarlet</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:70%;background:hsl(80, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(80, 75%, 45%)">7/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">input</span><span class="tag">controls</span><span class="tag">gamepad</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-14,2026-09-15" data-value="9">
+          <div class="date-stamp">
+            <span class="stamp-day">14-15</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🎨 SPRITE EDITOR v1</h3>
+              <div class="entry-meta">
+                <span class="badge">55 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Built the full sprite frame editor from scratch — canvas, boxes, filmstrip, undo, persistence</p>
+            <ul class="entry-bullets"><li>Full-screen grid viewport with zoom + pan</li><li>Per-handle resize cursors + hover/drag state machine</li><li>Global undo/redo across frames and animations</li><li>Filmstrip drawer (slide left/right, follows BG color)</li><li>Melee view toggle + persistent display preference</li><li>localStorage persistence + factory reset</li><li>BG color picker (sat square, sliders, presets)</li><li>ALL FRAMES rigid-body propagation</li><li>Ctrl+H hide/restore overlays</li><li>1-9/0 direct frame-jump shortcuts</li><li>Sidebar groups by class > character > animation</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:90%;background:hsl(106, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(106, 75%, 45%)">9/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">editor</span><span class="tag">sprites</span><span class="tag">ui</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-13,2026-09-17" data-value="8">
+          <div class="date-stamp">
+            <span class="stamp-day">13-17</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🎵 MUSIC COMPOSER + JUKEBOX</h3>
+              <div class="entry-meta">
+                <span class="badge">45 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Built the music composer skill v2 (dream construction) + full jukebox player with side panel, favorites, and 46-track petal-panic playlist</p>
+            <ul class="entry-bullets"><li>Music composer v2: dream construction + per-phrase bass bank</li><li>Jukebox player: Spotify-style side panel, genre colors, sticky header</li><li>Heart favorites + localStorage persistence</li><li>Single-line playlist rows with BPM column</li><li>Seamless song-end loop + transport fixes</li><li>46-track petal-panic playlist (funk/metal/trance/acid-jazz)</li><li>March to Power Remix restructured with original v1 peaks</li><li>Petal Panic Title EPIQUE reimagined</li><li>Pharaoh Fury + Bloom of the Damned boss tracks</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:80%;background:hsl(93, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(93, 75%, 45%)">8/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">music</span><span class="tag">jukebox</span><span class="tag">composer</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-13,2026-09-16" data-value="9">
+          <div class="date-stamp">
+            <span class="stamp-day">13-16</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🖼️ SPRITE CROP + ASSETS PIPELINE</h3>
+              <div class="entry-meta">
+                <span class="badge">60 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Rebuilt sprite-crop skill with foreground-ownership clustering, cropped all 18+ sheets, transparent bg pipeline</p>
+            <ul class="entry-bullets"><li>Sprite-crop v2: foreground-ownership clustering (replaces grid slicing)</li><li>record_crop.py — idempotent state rewrite from results</li><li>--col-x flag for manual column split points</li><li>Cropped ALL petal-panic sprites (18 sheets, bosses, enemies, projectiles)</li><li>Transparent background regen batch for levels 1-4</li><li>Platform/block sheet normalization (naming, merging, resizing)</li><li>Abyss-qwen: pad frames to uniform canvas + recrop with flood-fill</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:90%;background:hsl(106, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(106, 75%, 45%)">9/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">sprites</span><span class="tag">assets</span><span class="tag">crop</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-13,2026-09-17" data-value="4">
+          <div class="date-stamp">
+            <span class="stamp-day">13-17</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>📝 DOCS + PROJECT SETUP</h3>
+              <div class="entry-meta">
+                <span class="badge">15 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Project rename, docs structure, music mood guide, level design notes, README + license</p>
+            <ul class="entry-bullets"><li>Rename panic-petal → petal-panic (all paths)</li><li>Dictator → Colonel rename (content + filenames)</li><li>Hero mechanics doc (source of truth)</li><li>Music mood guide + orchestration plan</li><li>Level design notes</li><li>README + AI-Slop license + Squid-OS logo</li><li>Docs restructure: engine/base/entities under single spec folder</li><li>Official YAML design docs (engine + base + entities)</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:40%;background:hsl(40, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(40, 75%, 45%)">4/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">docs</span><span class="tag">setup</span><span class="tag">naming</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-12,2026-09-16" data-value="8">
+          <div class="date-stamp">
+            <span class="stamp-day">12-16</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🏗️ ENGINE CORE + DEBUG</h3>
+              <div class="entry-meta">
+                <span class="badge">30 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Unified TTL timer engine, intangible state, generic hitbox system, debug overlays</p>
+            <ul class="entry-bullets"><li>Unified labeled TTL engine + debug stacked bars</li><li>Intangible state replaces i-frame blink (one concept)</li><li>Unified hitbox system replaces per-attack damage functions</li><li>Super move (B key): charge meter + forward dash</li><li>Generic transform & velocity debug overlay</li><li>Two-layer render: one sprite gate, modular collision layer</li><li>Coin TTL through generic timer stack</li><li>Barrels are now solid (block + stand on)</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:80%;background:hsl(93, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(93, 75%, 45%)">8/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">engine</span><span class="tag">debug</span><span class="tag">timers</span><span class="tag">hitbox</span></div>
+          </div>
+        </div>
   </div>
 </main>
 
 <footer class="site-footer">
   <div class="wrap">
-    <p>Generated by Squid-OS changelog skill · 2026-09-21 23:43</p>
+    <p>Generated by Squid-OS changelog skill · 2026-09-21 23:48</p>
   </div>
 </footer>
 

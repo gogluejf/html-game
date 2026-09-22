@@ -146,13 +146,215 @@
       "commit_count": 2,
       "repo_name": "html-game",
       "created_at": "2026-09-21T23:41:31.013021"
+    },
+    {
+      "id": "2026-09-13_-music-composer--jukebox",
+      "title": "\ud83c\udfb5 MUSIC COMPOSER + JUKEBOX",
+      "dates": [
+        "2026-09-13",
+        "2026-09-17"
+      ],
+      "summary": "Built the music composer skill v2 (dream construction) + full jukebox player with side panel, favorites, and 46-track petal-panic playlist",
+      "bullets": [
+        "Music composer v2: dream construction + per-phrase bass bank",
+        "Jukebox player: Spotify-style side panel, genre colors, sticky header",
+        "Heart favorites + localStorage persistence",
+        "Single-line playlist rows with BPM column",
+        "Seamless song-end loop + transport fixes",
+        "46-track petal-panic playlist (funk/metal/trance/acid-jazz)",
+        "March to Power Remix restructured with original v1 peaks",
+        "Petal Panic Title EPIQUE reimagined",
+        "Pharaoh Fury + Bloom of the Damned boss tracks"
+      ],
+      "value": 8,
+      "tags": [
+        "music",
+        "jukebox",
+        "composer"
+      ],
+      "commit_count": 45,
+      "repo_name": "html-game",
+      "created_at": "2026-09-21T23:48:22.353538"
+    },
+    {
+      "id": "2026-09-13_-sprite-crop--assets-pipeline",
+      "title": "\ud83d\uddbc\ufe0f SPRITE CROP + ASSETS PIPELINE",
+      "dates": [
+        "2026-09-13",
+        "2026-09-16"
+      ],
+      "summary": "Rebuilt sprite-crop skill with foreground-ownership clustering, cropped all 18+ sheets, transparent bg pipeline",
+      "bullets": [
+        "Sprite-crop v2: foreground-ownership clustering (replaces grid slicing)",
+        "record_crop.py \u2014 idempotent state rewrite from results",
+        "--col-x flag for manual column split points",
+        "Cropped ALL petal-panic sprites (18 sheets, bosses, enemies, projectiles)",
+        "Transparent background regen batch for levels 1-4",
+        "Platform/block sheet normalization (naming, merging, resizing)",
+        "Abyss-qwen: pad frames to uniform canvas + recrop with flood-fill"
+      ],
+      "value": 9,
+      "tags": [
+        "sprites",
+        "assets",
+        "crop"
+      ],
+      "commit_count": 60,
+      "repo_name": "html-game",
+      "created_at": "2026-09-21T23:48:22.386466"
+    },
+    {
+      "id": "2026-09-14_-sprite-editor-v1",
+      "title": "\ud83c\udfa8 SPRITE EDITOR v1",
+      "dates": [
+        "2026-09-14",
+        "2026-09-15"
+      ],
+      "summary": "Built the full sprite frame editor from scratch \u2014 canvas, boxes, filmstrip, undo, persistence",
+      "bullets": [
+        "Full-screen grid viewport with zoom + pan",
+        "Per-handle resize cursors + hover/drag state machine",
+        "Global undo/redo across frames and animations",
+        "Filmstrip drawer (slide left/right, follows BG color)",
+        "Melee view toggle + persistent display preference",
+        "localStorage persistence + factory reset",
+        "BG color picker (sat square, sliders, presets)",
+        "ALL FRAMES rigid-body propagation",
+        "Ctrl+H hide/restore overlays",
+        "1-9/0 direct frame-jump shortcuts",
+        "Sidebar groups by class > character > animation"
+      ],
+      "value": 9,
+      "tags": [
+        "editor",
+        "sprites",
+        "ui"
+      ],
+      "commit_count": 55,
+      "repo_name": "html-game",
+      "created_at": "2026-09-21T23:48:22.418793"
+    },
+    {
+      "id": "2026-09-17_-input-engine--controls",
+      "title": "\u2328\ufe0f INPUT ENGINE + CONTROLS",
+      "dates": [
+        "2026-09-17"
+      ],
+      "summary": "Unified input engine with keyboard+gamepad merge, control remapping screen, HJKN layout",
+      "bullets": [
+        "Input engine v1: source list, gamepad+keyboard merge, screen bridge",
+        "Two-layer nav/gameplay separation",
+        "Sequential control remapping screen",
+        "HJKN key layout + unified direction/aim model",
+        "Keyboard XCV mapping (X melee, C supermove, V switch)",
+        "F1/F2 debug toggle + F3 collision view",
+        "Browser shortcut passthrough during input capture",
+        "Select screen: no auto-select, Enter focuses Scarlet"
+      ],
+      "value": 7,
+      "tags": [
+        "input",
+        "controls",
+        "gamepad"
+      ],
+      "commit_count": 15,
+      "repo_name": "html-game",
+      "created_at": "2026-09-21T23:48:22.454227"
+    },
+    {
+      "id": "2026-09-12_-engine-core--debug",
+      "title": "\ud83c\udfd7\ufe0f ENGINE CORE + DEBUG",
+      "dates": [
+        "2026-09-12",
+        "2026-09-16"
+      ],
+      "summary": "Unified TTL timer engine, intangible state, generic hitbox system, debug overlays",
+      "bullets": [
+        "Unified labeled TTL engine + debug stacked bars",
+        "Intangible state replaces i-frame blink (one concept)",
+        "Unified hitbox system replaces per-attack damage functions",
+        "Super move (B key): charge meter + forward dash",
+        "Generic transform & velocity debug overlay",
+        "Two-layer render: one sprite gate, modular collision layer",
+        "Coin TTL through generic timer stack",
+        "Barrels are now solid (block + stand on)"
+      ],
+      "value": 8,
+      "tags": [
+        "engine",
+        "debug",
+        "timers",
+        "hitbox"
+      ],
+      "commit_count": 30,
+      "repo_name": "html-game",
+      "created_at": "2026-09-21T23:48:22.490084"
+    },
+    {
+      "id": "2026-09-18_-hero-align-epic",
+      "title": "\ud83d\udcd0 HERO ALIGN EPIC",
+      "dates": [
+        "2026-09-18"
+      ],
+      "summary": "Full hero engine \u2194 mechanics doc alignment \u2014 4 waves, 12 tasks, dual-review gated",
+      "bullets": [
+        "Contextual Down (crouch vs aim)",
+        "Air control ramp + momentum preservation",
+        "Supermove phase-aware jump cancel",
+        "Hit response knockback table + i-frame sync",
+        "Crouch/slide cancel hardening",
+        "One-way platforms + drop-through",
+        "Weapon toggle (N) Thorn/Special",
+        "Per-hero special melee trajectories",
+        "Melee input buffer (latest-wins)",
+        "Recovery cancellation",
+        "Data-driven per-frame hitboxes",
+        "Invariant test suite \u2192 EPIC DONE"
+      ],
+      "value": 9,
+      "tags": [
+        "hero",
+        "combat",
+        "alignment"
+      ],
+      "commit_count": 27,
+      "repo_name": "html-game",
+      "created_at": "2026-09-21T23:48:22.525349"
+    },
+    {
+      "id": "2026-09-13_-docs--project-setup",
+      "title": "\ud83d\udcdd DOCS + PROJECT SETUP",
+      "dates": [
+        "2026-09-13",
+        "2026-09-17"
+      ],
+      "summary": "Project rename, docs structure, music mood guide, level design notes, README + license",
+      "bullets": [
+        "Rename panic-petal \u2192 petal-panic (all paths)",
+        "Dictator \u2192 Colonel rename (content + filenames)",
+        "Hero mechanics doc (source of truth)",
+        "Music mood guide + orchestration plan",
+        "Level design notes",
+        "README + AI-Slop license + Squid-OS logo",
+        "Docs restructure: engine/base/entities under single spec folder",
+        "Official YAML design docs (engine + base + entities)"
+      ],
+      "value": 4,
+      "tags": [
+        "docs",
+        "setup",
+        "naming"
+      ],
+      "commit_count": 15,
+      "repo_name": "html-game",
+      "created_at": "2026-09-21T23:48:22.559793"
     }
   ],
   "index": {
-    "total_entries": 6,
-    "total_commits": 136,
-    "avg_value": 7.2,
-    "date_start": "2026-09-18",
+    "total_entries": 13,
+    "total_commits": 383,
+    "avg_value": 7.5,
+    "date_start": "2026-09-12",
     "date_end": "2026-09-21"
   }
 }
