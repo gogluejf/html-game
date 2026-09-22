@@ -77,7 +77,7 @@
     },
     "2.3": {
       "number": "2.3",
-      "status": "in_progress",
+      "status": "done",
       "name": "Camera max-scroll from zone length",
       "milestone": "Zone & Transition System",
       "milestone_number": "2",
