@@ -4,6 +4,10 @@ Execution contract for the `petal-panic-level-engine-v1` plan. The runner (plan-
 drives the loop; the executor (task-executor) does the work. This file is just the loop +
 two short prompts. No human between tasks.
 
+## Runner rules
+- The runner NEVER writes or edits code. All code work goes through the executor agent.
+  If the executor crashes or a fix is needed, re-dispatch the executor — do not patch inline.
+
 ## The loop (per task, strict order)
 
 1. `progress.py mark-in-progress`
