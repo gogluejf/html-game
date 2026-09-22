@@ -40,3 +40,40 @@
 - R1 minor: Transition ownership asymmetry (continueRun owns tryTransition, others don't). **Non-blocking, cosmetic.**
 
 **Committed:** `fcce894`
+
+---
+
+## Task 1.3 — Shared area-entry screen + death flow
+
+**Round 1:**
+
+| Reviewer | Verdict | Key Findings |
+|---|---|---|
+| R1 (Qwen3.8-27B) | FAIL | 1 blocker: formatAreaId hardcodes boss index; 1 major: area-advance/boss-zone entry not wired to showAreaEntry; 1 major: tryTransition global semantics change; 1 major: fragile two-hop redirect; 7 minors |
+| R2 (GPT-5.6-sol) | FAIL | 3 blockers: screenReset clears areaEntryData, AREA_ENTRY→PLAY treated as new game, tryTransition global change; 2 majors: no fade-to-black, ergonomics incomplete; 1 major: formatAreaId hardcodes boss |
+
+**Round 1 fix dispatched.** Executor hit step limit twice; completed on third dispatch.
+
+**Round 2:**
+
+| Reviewer | Verdict | Key Findings |
+|---|---|---|
+| R1 (Qwen3.8-27B) | FAIL | 1 blocker: boss zone shows 1-4 not 1-B + doesn't restart beside boss checkpoint; 1 major: entry list not navigable; 1 major: Game Over Retry bypasses entry screen; 4 minors |
+| R2 (GPT-5.6-sol) | FAIL | 3 blockers: AREA_ENTRY→PLAY still triggers startGame, boss offset wrong, entry flag re-triggers on respawn; 1 major: ergonomics |
+
+**Round 2 fix dispatched.** All 4 blockers fixed.
+
+**Round 3 (final confirmation):**
+
+| Reviewer | Verdict |
+|---|---|
+| R1 (Qwen3.8-27B) | PASS — all 4 blockers RESOLVED |
+| R2 (GPT-5.6-sol) | PASS — all 4 blockers RESOLVED |
+
+**Committed:** `a4577ef` (initial) + `72b176b` (round-2 fixes)
+
+**Remaining minor findings (non-blocking):**
+- Entry screen "list" has no up/down navigation (Start is always focused) — ergonomics gap, cosmetic
+- Game Over "Retry" path bypasses the shared entry screen (pre-existing behavior, contradicts shared-screen contract) — **Owner: Wave 7 (Integration)**
+- Double bookkeeping of screen data (lifecycle.js `_areaEntryData` + screens.js `areaEntryData`) — cosmetic
+- `formatAreaId` call-site uses undocumented `-1` offset invariant — **Owner: Wave 2 (Zone & Transition)**
