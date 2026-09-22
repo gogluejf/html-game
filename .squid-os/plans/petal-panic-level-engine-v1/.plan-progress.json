@@ -152,10 +152,18 @@
     },
     "4.2": {
       "number": "4.2",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Level 1 config (The Circus)",
       "milestone": "Population",
-      "milestone_number": "4"
+      "milestone_number": "4",
+      "summary": {
+        "confidence": "high",
+        "tradeoffs": "None \u2014 pure data file, no logic or rendering.",
+        "done": "Created petal-panic/js/levelConfigs.js with the full Level 1 (The Circus) configuration: enemy roster (Jester, Jack-O-Lantern, Vine Hound, Boris Loon babies) with weights, boss (tusko_wobble), powerup mix with 8 types and relative weights, per-stage budgets for all four stages (-1 through -4) with explicit enemy/barrel/powerup counts, verticalArea: -3, and length budgets (horizontal: 4000px, vertical: 1620px). Added petal-panic/js/test/levelConfigs.test.js with 21 tests validating structure, story-doc roster match, exactly-one-vertical-area invariant, per-stage budget scoping, and data purity. All 21 tests pass.",
+        "lessons_learned": "The existing LEVELS[0] in level.js has a 'spawn' field with flat level-wide counts (e.g. jester: 6). The new levelConfigs.js replaces that with per-stage budgets, which is the correct granularity per populate.md \u00a71. The two files coexist: level.js keeps its legacy spawn for the deprecated generateLevel() path, levelConfigs.js is the authoritative config for the new zone-based generator.",
+        "decisions": "1. Enemy roster uses weight-based entries (not flat counts) at the top level to express relative frequency, while stageBudgets uses explicit per-stage counts. 2. verticalArea is -3, matching the existing LEVELS[0] in level.js. 3. Stage budgets use string keys ('-1' through '-4') for JSON-safe object keys. 4. Length budgets are in px (4000/1620) matching the existing HORIZONTAL_AREA_LENGTH_PX and ZONE_H_VERTICAL constants in level.js. 5. getLevelConfig/getStageBudget helpers are thin lookup functions \u2014 the generator will consume these.",
+        "failures": "None (3 pre-existing baseline flakes in input.test.js are unrelated)"
+      }
     },
     "5.1": {
       "number": "5.1",
