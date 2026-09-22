@@ -29,6 +29,7 @@
 import { createRng, makeBlock, makePlatform } from './terrain.js';
 import { GRAVITY, DOUBLE_JUMP_FACTOR } from './consts.js';
 import { HEROES } from './heroDefs.js';
+import { BARREL_DEF } from './object.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -208,11 +209,21 @@ export const MACROS = Object.freeze({
     units: Object.freeze([B(1), B(2), B(3), B(2), B(1)]),
     entryClear: 5,
     exitClear: 5,
+    // Slots sit on the TOP surface of the unit below them (block height /
+    // platform tier / ground 0) — see surfaceElevationAt in placeMacro. A macro
+    // with 5 blocks declares enough slots that a typical budget can be met
+    // (task 4.1: 3-4 enemy, 2-3 barrel, 1-2 powerup).
     placements: Object.freeze([
-      // A barrel can sit on top of the peak (height-3 block).
-      { slot: 'peak', x: 2, type: 'barrel' },
-      // An enemy can patrol the base.
+      // Enemies patrol the base / on top of the low blocks.
       { slot: 'base', x: 0, type: 'enemy' },
+      { slot: 'on-h1', x: 0, type: 'enemy' },
+      { slot: 'on-h2', x: 1, type: 'enemy' },
+      { slot: 'on-h2b', x: 3, type: 'enemy' },
+      // Barrels sit on top of the mid/peak blocks.
+      { slot: 'peak', x: 2, type: 'barrel' },
+      { slot: 'on-h2-mid', x: 1, type: 'barrel' },
+      // Powerups perch on the peak.
+      { slot: 'peak-powerup', x: 2, type: 'powerup' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]), // can follow any macro
@@ -235,9 +246,18 @@ export const MACROS = Object.freeze({
     units: Object.freeze([B(1), B(1), B(1), B(1), B(1)]),
     entryClear: 5,
     exitClear: 5,
+    // Five height-1 blocks: enemies + barrels sit on TOP of the blocks
+    // (elevation 1), not inside them. Enough slots for a typical budget.
     placements: Object.freeze([
-      { slot: 'between', x: 1, type: 'enemy' },
-      { slot: 'between', x: 3, type: 'powerup' },
+      { slot: 'e1', x: 0, type: 'enemy' },
+      { slot: 'e2', x: 1, type: 'enemy' },
+      { slot: 'e3', x: 2, type: 'enemy' },
+      { slot: 'e4', x: 4, type: 'enemy' },
+      { slot: 'b1', x: 2, type: 'barrel' },
+      { slot: 'b2', x: 3, type: 'barrel' },
+      { slot: 'b3', x: 1, type: 'barrel' },
+      { slot: 'p1', x: 2, type: 'powerup' },
+      { slot: 'p2', x: 4, type: 'powerup' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -265,10 +285,19 @@ export const MACROS = Object.freeze({
     ]),
     entryClear: 2,
     exitClear: 3,
+    // Slots sit on the TOP of each block band: low (h1, elev 1), mid (h2,
+    // elev 2), high (h3, elev 3). The resolver reads surfaceElevationAt, so
+    // each slot rests on its band's surface, never inside a block.
     placements: Object.freeze([
       { slot: 'low', x: 2, type: 'enemy' },
+      { slot: 'low2', x: 3, type: 'enemy' },
+      { slot: 'mid-enemy', x: 7, type: 'enemy' },
+      { slot: 'high-enemy', x: 12, type: 'enemy' },
       { slot: 'mid', x: 7, type: 'barrel' },
+      { slot: 'mid2', x: 8, type: 'barrel' },
+      { slot: 'high-barrel', x: 12, type: 'barrel' },
       { slot: 'high', x: 12, type: 'powerup' },
+      { slot: 'high2', x: 13, type: 'powerup' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -296,10 +325,19 @@ export const MACROS = Object.freeze({
     ]),
     entryClear: 2,
     exitClear: 2,
+    // Slots rest on the supporting surface: on-top of blocks (elev = height)
+    // and on the platform's landing face (elev = tier 2). Enough slots for a
+    // typical budget; the gap (x=3..5) carries no slots.
     placements: Object.freeze([
+      { slot: 'on-h1', x: 0, type: 'enemy' },
       { slot: 'before-gap', x: 2, type: 'enemy' },
+      { slot: 'on-platform', x: 5, type: 'enemy' },
+      { slot: 'on-platform2', x: 6, type: 'enemy' },
       { slot: 'on-platform', x: 5, type: 'powerup' },
+      { slot: 'on-platform-pu', x: 6, type: 'powerup' },
       { slot: 'after-platform', x: 9, type: 'barrel' },
+      { slot: 'on-h3', x: 8, type: 'barrel' },
+      { slot: 'on-h2', x: 9, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -330,9 +368,15 @@ export const MACROS = Object.freeze({
     ]),
     entryClear: 2,
     exitClear: 2,
+    // The hero drops onto the landing block (x=3, h1 → elev 1). The before-gap
+    // slot is on the entry ground (elev 0). Enough slots for a typical budget.
     placements: Object.freeze([
       { slot: 'before-gap', x: 0, type: 'enemy' },
-      { slot: 'landing', x: 4, type: 'powerup' },
+      { slot: 'before-gap2', x: 1, type: 'enemy' },
+      { slot: 'landing-enemy', x: 3, type: 'enemy' },
+      { slot: 'landing', x: 3, type: 'powerup' },
+      { slot: 'landing-barrel', x: 3, type: 'barrel' },
+      { slot: 'before-gap-barrel', x: 0, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -366,9 +410,16 @@ export const MACROS = Object.freeze({
     ]),
     entryClear: 2,
     exitClear: 2,
+    // Vertical slots rest on the ground (elev 0); the macro's platforms are
+    // the climb landings. Enough slots for a typical budget.
     placements: Object.freeze([
       { slot: 'tier1', x: 0, type: 'enemy' },
+      { slot: 'tier1b', x: 0, type: 'enemy' },
+      { slot: 'tier2', x: 1, type: 'enemy' },
       { slot: 'tier3', x: 2, type: 'powerup' },
+      { slot: 'tier3b', x: 2, type: 'powerup' },
+      { slot: 'tier2-barrel', x: 1, type: 'barrel' },
+      { slot: 'tier1-barrel', x: 0, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -401,9 +452,15 @@ export const MACROS = Object.freeze({
     ]),
     entryClear: 2,
     exitClear: 2,
+    // Vertical slots rest on the ground (elev 0); platforms are climb landings.
     placements: Object.freeze([
       { slot: 'tier1', x: 0, type: 'enemy' },
-      { slot: 'tier3', x: 4, type: 'powerup' },
+      { slot: 'tier2', x: 1, type: 'enemy' },
+      { slot: 'tier3', x: 2, type: 'enemy' },
+      { slot: 'tier3b', x: 4, type: 'powerup' },
+      { slot: 'tier3c', x: 4, type: 'powerup' },
+      { slot: 'tier2-barrel', x: 1, type: 'barrel' },
+      { slot: 'tier1-barrel', x: 0, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -613,6 +670,532 @@ export function macroDensity(macro) {
  */
 export function layoutDensity(layout) {
   return layout.macros.reduce((sum, id) => sum + macroDensity(MACROS[id]), 0);
+}
+
+// ---------------------------------------------------------------------------
+// Area population (populate.md §1–§5, generation.md §4 step 4)
+// ---------------------------------------------------------------------------
+// Terrain macros provide MEANINGFUL PLACEMENT SLOTS (populate.md §1):
+// positions where enemies, barrels, and powerups can go. A slot is not an
+// arbitrary coordinate — it is a meaningful place ("on top of this platform",
+// "in this open pocket", "at this elevated perch"). The population RESOLVER
+// (populateArea) fills those slots to meet the level's QUANTITY BUDGETS using
+// the per-game seeded RNG.
+//
+// Two ideas are kept strictly distinct (populate.md §1):
+//   - QUANTITY BUDGET: how many items/enemies belong in the area.
+//   - PLACEMENT / TYPE CHANCE: which valid slots and which types are chosen
+//     to satisfy that budget.
+//
+// For a fixed budget, independent coin flips must NOT accidentally produce an
+// empty or overcrowded area (populate.md §1). The resolver therefore fills
+// slots deterministically from the budget: it never under-fills below the
+// budget when slots are available, and it never over-fills (each slot holds
+// at most one item). If the chosen terrain cannot support the budget, the
+// resolver fills every valid slot rather than piling items into invalid
+// positions — the composition (composer) is the thing to revise, not the
+// placement.
+//
+// The resolver is a PURE function: (rng, layout, config) → population. It
+// never re-rolls the terrain; it only decides WHICH slots and WHICH types
+// satisfy the budgets. The same (rng stream, layout, config) always yields the
+// same population, which is what makes "the same arrangement is restored
+// after a life loss" hold (lifecycle.md §6: the RNG is rolled once per game).
+
+/**
+ * Barrel structure scales (populate.md §3).
+ *   - SINGLE:  isolated barrels (the common simple placement).
+ *   - MEDIUM:  an organized arrangement of ~4–9 barrels.
+ *   - SUPER:   a much larger set piece (a barrel pyramid/wall).
+ *
+ * The medium/super bounds are the doc's stated range. The exact frequency and
+ * counts are tuning values (populate.md §3); the resolver treats them as the
+ * structural envelope an arrangement must fit within.
+ */
+export const BARREL_STRUCTURE = Object.freeze({
+  single: Object.freeze({ min: 1, max: 1 }),
+  medium: Object.freeze({ min: 4, max: 9 }),
+  super: Object.freeze({ min: 10, max: 99 }),
+});
+
+/**
+ * How many width-units apart two barrels in the same structure must sit for
+ * one to be inside another's blast radius (a "chain" position).
+ *
+ * A barrel's explosion reaches BARREL_EXPLOSION_RADIUS_PX; two adjacent
+ * barrels (each BARREL_PX wide) sit 1 width-unit apart, so the chain threshold
+ * is (radius − barrel width) in px, expressed in width-units. We use the
+ * actual blast radius and barrel footprint so the "chain" claim is grounded in
+ * the real explosion behavior, not assumed (populate.md §3: "must not assume
+ * an explosion can reach beyond its actual gameplay area").
+ */
+// Barrel footprint + blast radius come from the single source of truth in
+// object.js (BARREL_DEF) — not duplicated magic constants. All three barrel
+// variants (explosive / wood / coin) share the same w (BARREL_DEF.w); the
+// chain threshold is derived from the explosive barrel's blast radius.
+const BARREL_PX = BARREL_DEF.w;
+const BARREL_EXPLOSION_RADIUS_PX = BARREL_DEF.explosion.radius;
+/** Max horizontal spacing (width-units) between two barrels for a chain. */
+export const BARREL_CHAIN_MAX_UNITS = Math.max(
+  1,
+  Math.ceil((BARREL_EXPLOSION_RADIUS_PX - BARREL_PX) / UNIT_PX),
+);
+
+/**
+ * Classify a group of barrel x-positions (width-units, same tier) into a
+ * structure scale (populate.md §3).
+ *
+ * The doc's scales: single = isolated barrels (the common simple placement);
+ * medium = an organized arrangement of ~4-9 barrels; super = a much larger set
+ * piece. A small cluster of 2-3 barrels is NOT a medium structure — it is a
+ * "small" arrangement (a step-up from a single barrel, far short of the 4-9
+ * medium band), so it is classified as `small`. Only groups of 4+ enter the
+ * medium band (populate.md §3: "approximately 4–9 barrels").
+ *
+ * @param {number[]} xs barrel x positions (unit space)
+ * @returns {'single'|'small'|'medium'|'super'} the structure scale
+ */
+export function classifyBarrelStructure(xs) {
+  const n = xs.length;
+  if (n <= BARREL_STRUCTURE.single.max) return 'single';
+  if (n < BARREL_STRUCTURE.medium.min) return 'small'; // 2-3: small cluster
+  if (n <= BARREL_STRUCTURE.medium.max) return 'medium'; // 4-9
+  return 'super';
+}
+
+/**
+ * Whether a group of barrels on the SAME tier at the given x-positions (unit
+ * space) forms a chain: at least two barrels within BARREL_CHAIN_MAX_UNITS of
+ * each other. A well-placed attack then causes a satisfying chain reaction
+ * (populate.md §3).
+ *
+ * @param {number[]} xs barrel x positions (unit space)
+ * @returns {boolean} true if any two barrels are chain-adjacent
+ */
+export function formsChain(xs) {
+  const sorted = [...xs].sort((a, b) => a - b);
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] - sorted[i - 1] <= BARREL_CHAIN_MAX_UNITS) return true;
+  }
+  return false;
+}
+
+/**
+ * Group an area's barrel placements into contiguous same-tier runs.
+ *
+ * A barrel "structure" (populate.md §3) is a set of barrels on the SAME
+ * supporting surface (tier) that sit near each other along the route. We group
+ * by tier, then by contiguity: two same-tier barrels belong to the same
+ * structure when their x positions are within BARREL_CHAIN_MAX_UNITS of each
+ * other (they are chain-adjacent). Isolated same-tier barrels form single
+ * structures.
+ *
+ * @param {Array<{x:number, y:number, type:string, slot:string}>} barrelPlacements
+ * @returns {Array<{tier:number, xs:number[], positions:object[]}>} the structures
+ */
+export function barrelStructures(barrelPlacements) {
+  const byTier = new Map();
+  for (const b of barrelPlacements) {
+    const tier = b.y ?? 0;
+    if (!byTier.has(tier)) byTier.set(tier, []);
+    byTier.get(tier).push(b);
+  }
+  const structures = [];
+  for (const [tier, list] of byTier) {
+    const sorted = list
+      .slice()
+      .sort((a, b) => (a.x - b.x) || (a.slot.localeCompare(b.slot)));
+    let current = null;
+    for (const b of sorted) {
+      if (
+        current &&
+        b.x - current.positions[current.positions.length - 1].x <= BARREL_CHAIN_MAX_UNITS
+      ) {
+        current.positions.push(b);
+        current.xs.push(b.x);
+      } else {
+        current = { tier, xs: [b.x], positions: [b] };
+        structures.push(current);
+      }
+    }
+  }
+  return structures;
+}
+
+/**
+ * Weighted pick from a map of {key: weight} using the given RNG.
+ *
+ * @param {Object<string, number>} weights key → weight
+ * @param {ReturnType<typeof createRng>} rng
+ * @returns {string} the chosen key
+ */
+function pickWeightedKey(weights, rng) {
+  const entries = Object.entries(weights);
+  const total = entries.reduce((s, [, w]) => s + w, 0);
+  if (total <= 0) return entries[0][0];
+  let roll = rng.next() * total;
+  for (const [key, w] of entries) {
+    roll -= w;
+    if (roll <= 0) return key;
+  }
+  return entries[entries.length - 1][0]; // floating-point edge case
+}
+
+/**
+ * Build the per-slot population opportunity lists from a composed layout.
+ *
+ * Each slot in layout.placements carries a `type` ('enemy' | 'barrel' |
+ * 'powerup'). We group them into the three opportunity pools the resolver
+ * fills. Slots are the ONLY valid positions — the resolver never invents a
+ * coordinate (populate.md §1: "use valid opportunities to satisfy the
+ * intended quantity").
+ *
+ * @param {object} layout the layout from composeArea (its `placements`)
+ * @returns {{enemies:object[], barrels:object[], powerups:object[]}} the pools
+ */
+function buildSlotPools(layout) {
+  const pools = { enemies: [], barrels: [], powerups: [] };
+  for (const slot of layout.placements ?? []) {
+    if (slot.type === 'enemy') pools.enemies.push(slot);
+    else if (slot.type === 'barrel') pools.barrels.push(slot);
+    else if (slot.type === 'powerup') pools.powerups.push(slot);
+  }
+  return pools;
+}
+
+/**
+ * Whether a slot sits at a VALID standing position — i.e. NOT inside a solid
+ * block (populate.md §1 + task 4.1 BLOCKER: items must never spawn in solids).
+ *
+ * A slot is valid when its y (the surface elevation it rests on) is at or above
+ * the TOP of every solid block whose x-range covers the slot's x. A block of
+ * height H occupies y = 0..H; a slot at elevation y is inside the block when
+ * y < H (the slot is below the block's top surface). A slot at y >= H rests on
+ * or above the block's top — a valid standing position.
+ *
+ * Platforms are one-way landings (not solids the hero walks inside), so they
+ * do not invalidate a slot; only solid blocks do.
+ *
+ * @param {object} slot a slot {x, y}
+ * @param {object[]} units the layout's placed units (its `aabb` + `kind` + `height`)
+ * @returns {boolean} true if the slot is at a valid standing position
+ */
+export function slotIsOnValidSurface(slot, units) {
+  if (!units) return true; // no terrain to check against
+  for (const u of units) {
+    if (u.kind !== 'block') continue; // platforms are one-way landings, not solids
+    // The slot's x is the CENTER of its unit cell. A block of width W at x=u.x
+    // occupies [u.x, u.x+W). The slot is at the same unit cell as the block
+    // when slot.x is within [u.x, u.x+W). Since both are unit-aligned, the
+    // slot's x matches the block's x exactly (slot.x === u.x for a slot on
+    // top of the block). We check: does the slot's x fall within the block's
+    // x-range? If so, the slot must be at or above the block's top.
+    const uStart = u.x;
+    const uEnd = u.x + u.aabb.w;
+    if (slot.x >= uStart && slot.x < uEnd) {
+      // The slot is above this block. It must be at or above the block's top
+      // (height H) — i.e. y >= H. If y < H, the slot is INSIDE the block.
+      const surfaceY = slot.y ?? 0;
+      if (surfaceY < u.height) {
+        return false; // the slot is INSIDE the block (below its top)
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Choose up to `count` slots from a pool using the seeded RNG.
+ *
+ * This is the "placement chance" (populate.md §1): WHICH valid slots are
+ * selected to satisfy the budget. It draws a shuffled prefix of the pool
+ * (Fisher–Yates with the provided RNG), so the selection is deterministic for
+ * a given rng stream AND respects the budget (never more than `count`, never
+ * more than the pool size). No independent coin flips — a fixed budget always
+ * fills as many valid slots as the budget asks for, up to the pool's capacity.
+ *
+ * @param {object[]} pool the candidate slots
+ * @param {number} count the quantity budget
+ * @param {ReturnType<typeof createRng>} rng
+ * @returns {object[]} the chosen slots (≤ count, ≤ pool.length)
+ */
+function chooseSlots(pool, count, rng) {
+  const n = pool.length;
+  const target = Math.max(0, Math.min(count, n));
+  // Work on a copy so the caller's pool is not mutated.
+  const shuffled = pool.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(rng.next() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, target);
+}
+
+/**
+ * Assign enemy types to chosen enemy slots from the level's enemy roster
+ * (populate.md §4).
+ *
+ * The roster is a map of {type: count}. The resolver picks a type per slot
+ * from the roster's available counts (weighted by remaining count) so the
+ * area's enemy MIX matches the roster without forcing the same mix into every
+ * macro (populate.md §4: "Do not force the same enemy mix into every macro
+ * simply to reach a total"). Each type is capped at its roster count; if the
+ * total roster count is below the number of slots, the extra slots are left
+ * empty (a smaller mix than the roster, never a type beyond its budget).
+ *
+ * @param {object[]} enemySlots the chosen enemy slots
+ * @param {Object<string, number>} roster {type: count}
+ * @param {ReturnType<typeof createRng>} rng
+ * @returns {object[]} the enemy placements ({slot, type})
+ */
+function assignEnemyTypes(enemySlots, roster, rng) {
+  const remaining = { ...roster };
+  const placements = [];
+  for (const slot of enemySlots) {
+    const total = Object.values(remaining).reduce((a, b) => a + b, 0);
+    if (total <= 0) break; // roster exhausted — leave remaining slots empty
+    const type = pickWeightedKey(remaining, rng);
+    remaining[type] -= 1;
+    placements.push({ ...slot, type });
+  }
+  return placements;
+}
+
+/**
+ * Assign powerup types to chosen powerup slots from the level's powerup mix
+ * (populate.md §2).
+ *
+ * The mix is a map of {type: count} (a QUANTITY budget per type) plus optional
+ * selection weights. When weights are supplied, a slot's type is picked
+ * weighted by the remaining count × weight; otherwise it is picked uniformly
+ * among types that still have budget left. Each type is capped at its count
+ * (the "guaranteed quantities and limits by type", populate.md §2). If the
+ * total mix is below the number of slots, extra slots are left empty.
+ *
+ * @param {object[]} powerupSlots the chosen powerup slots
+ * @param {Object<string, number>} mix {type: count}
+ * @param {Object<string, number>|undefined} weights {type: weight} (optional)
+ * @param {ReturnType<typeof createRng>} rng
+ * @returns {object[]} the powerup placements ({slot, type})
+ */
+function assignPowerupTypes(powerupSlots, mix, weights, rng) {
+  const remaining = { ...mix };
+  const placements = [];
+  for (const slot of powerupSlots) {
+    const typesWithBudget = Object.entries(remaining).filter(([, c]) => c > 0);
+    if (typesWithBudget.length === 0) break; // mix exhausted
+    let type;
+    if (weights) {
+      const w = {};
+      for (const [t, c] of typesWithBudget) w[t] = c * (weights[t] ?? 1);
+      type = pickWeightedKey(w, rng);
+    } else {
+      type = rng.pick(typesWithBudget.map(([t]) => t));
+    }
+    remaining[type] -= 1;
+    placements.push({ ...slot, type });
+  }
+  return placements;
+}
+
+/**
+ * Populate a composed area's macro slots from the level's budgets (populate.md
+ * §1–§5, generation.md §4 step 4).
+ *
+ * PURE: (rng, layout, config) → population. The same rng stream + layout +
+ * config always produces the same population — the "fixed for the game"
+ * contract (lifecycle.md §6). The resolver never invents coordinates: every
+ * returned item sits on a slot from layout.placements, so it is never in a
+ * solid (the composer already validated the terrain) and never buries/blocks
+ * a landing (a slot is a designated, terrain-meaningful position).
+ *
+ * @param {ReturnType<typeof createRng>} rng the per-game RNG (stateful)
+ * @param {object} layout the composed area layout (from composeArea)
+ * @param {object} config the level/area population config:
+ *   {
+ *     enemies:  Object<string, number>,   // roster {type: count}
+ *     powerups: Object<string, number>,   // mix {type: count}
+ *     powerupWeights?: Object<string, number>, // optional selection weights
+ *     barrels:  Object<string, number>,   // {explosive, wood, coin} counts
+ *     hero?: 'scarlet'|'balthazar',        // for future reach/eligibility
+ *   }
+ * @returns {{enemies:object[], barrels:object[], powerups:object[],
+ *            structures:object[],
+ *            budgets:{enemies:{requested:number,placed:number,slots:number},
+ *                     barrels:{requested:number,placed:number,slots:number},
+ *                     powerups:{requested:number,placed:number,slots:number}}}}
+ *   the population. Each item is the slot (x, y, slot, placementId) plus a
+ *   `type`. `structures` groups the barrels by scale (populate.md §3).
+ *   `budgets` records, per category, the requested quantity, how many were
+ *   placed, and how many valid slots were available — so a budget that the
+ *   terrain could not fully support is visible (under-placement), never hidden.
+ *
+ * STABLE SNAPSHOT (task 4.1 / acceptance #5, lifecycle.md §6): the returned
+ * population is a pure, value-only snapshot — every item is a plain object
+ * (slot fields + `type`), with no references to live entities or the RNG. It
+ * is the authoritative arrangement for the whole game: the resolver runs ONCE
+ * per game (from the seed), its output is stored (e.g. on the hero or zone),
+ * and `restoreArea` (lifecycle.js) replays that SAME stored population after a
+ * life loss. The integration with `restoreArea` happens in task 7.1 (full
+ * runtime wiring); this task only guarantees the output is a stable snapshot
+ * that can be stored and restored byte-for-byte.
+ */
+export function populateArea(rng, layout, config = {}) {
+  const pools = buildSlotPools(layout);
+
+  // BLOCKER guard (task 4.1): before any item is placed, verify every slot is
+  // at a VALID standing position — i.e. NOT inside a solid block (checked
+  // against the layout's block AABBs). The composer's surfaceElevationAt
+  // already sets each slot's y to the top of the supporting surface, so this
+  // check is a defense-in-depth invariant: it throws if a slot ever ends up
+  // inside a solid, rather than silently spawning an item in a block.
+  const solidUnits = (layout.units ?? []).filter((u) => u.kind === 'block');
+  for (const slot of layout.placements ?? []) {
+    if (!slotIsOnValidSurface(slot, solidUnits)) {
+      throw new Error(
+        `populateArea: slot ${slot.slot} at x=${slot.x} y=${slot.y ?? 0} ` +
+          `is inside a solid block — items must never spawn in solids`,
+      );
+    }
+  }
+
+  const enemyRoster = config.enemies ?? {};
+  const powerupMix = config.powerups ?? {};
+  const powerupWeights = config.powerupWeights;
+  const barrelCounts = config.barrels ?? {};
+
+  // --- Enemies (populate.md §4) ---------------------------------------------
+  const enemyBudget = Object.values(enemyRoster).reduce((a, b) => a + b, 0);
+  const enemySlots = chooseSlots(pools.enemies, enemyBudget, rng);
+  const enemies = assignEnemyTypes(enemySlots, enemyRoster, rng);
+
+  // --- Barrels (populate.md §3) ---------------------------------------------
+  // The barrel budget is the total of all barrel types. Slots are filled first
+  // (placement chance), then each chosen slot is assigned a barrel type from
+  // the per-type counts (type chance). Explosive barrels are assigned a
+  // deterministic share so they can form chain positions (see below).
+  const barrelBudget = Object.values(barrelCounts).reduce((a, b) => a + b, 0);
+  const barrelSlots = chooseSlots(pools.barrels, barrelBudget, rng);
+  const barrels = assignBarrelTypes(barrelSlots, barrelCounts, rng);
+
+  // --- Powerups (populate.md §2) --------------------------------------------
+  const powerupBudget = Object.values(powerupMix).reduce((a, b) => a + b, 0);
+  const powerupSlots = chooseSlots(pools.powerups, powerupBudget, rng);
+  const powerups = assignPowerupTypes(powerupSlots, powerupMix, powerupWeights, rng);
+
+  const structures = barrelStructures(barrels).map((s) => ({
+    tier: s.tier,
+    xs: s.xs,
+    scale: classifyBarrelStructure(s.xs),
+    chain: formsChain(s.xs),
+  }));
+
+  return {
+    enemies,
+    barrels,
+    powerups,
+    structures,
+    budgets: {
+      enemies: { requested: enemyBudget, placed: enemies.length, slots: pools.enemies.length },
+      barrels: { requested: barrelBudget, placed: barrels.length, slots: pools.barrels.length },
+      powerups: { requested: powerupBudget, placed: powerups.length, slots: pools.powerups.length },
+    },
+  };
+}
+
+/**
+ * Produce a stable, value-only SNAPSHOT of a population for storage and
+ * restoration (task 4.1 / acceptance #5, lifecycle.md §6).
+ *
+ * The snapshot is the arrangement `restoreArea` (lifecycle.js) replays after a
+ * life loss. It is a deep copy of the population's plain-object contents
+ * (enemies, barrels, powerups, structures, budgets) — no references to live
+ * entities, the RNG, or the layout — so it can be stored on the hero or zone
+ * and restored byte-for-byte. The same snapshot always restores the same
+ * arrangement (the "fixed for the game" contract).
+ *
+ * NOTE: the integration with `restoreArea` (storing this snapshot on the
+ * hero/zone and replaying it on life loss) happens in task 7.1 (full runtime
+ * wiring). This helper only makes the resolver's output a stable, storable
+ * snapshot.
+ *
+ * @param {object} population the population from populateArea
+ * @returns {object} a deep, value-only snapshot of the population
+ */
+export function populationSnapshot(population) {
+  return {
+    enemies: (population.enemies ?? []).map((e) => ({ ...e })),
+    barrels: (population.barrels ?? []).map((b) => ({ ...b })),
+    powerups: (population.powerups ?? []).map((p) => ({ ...p })),
+    structures: (population.structures ?? []).map((s) => ({
+      ...s,
+      xs: (s.xs ?? []).slice(),
+    })),
+    budgets: {
+      enemies: { ...(population.budgets?.enemies ?? {}) },
+      barrels: { ...(population.budgets?.barrels ?? {}) },
+      powerups: { ...(population.budgets?.powerups ?? {}) },
+    },
+  };
+}
+
+/**
+ * Assign barrel types to chosen barrel slots from the per-type counts
+ * (populate.md §3).
+ *
+ * Each type is capped at its count. To let explosive barrels FORM CHAIN
+ * POSITIONS (populate.md §3: "a well-placed attack causes a satisfying chain
+ * reaction"), the explosive count is placed on slots that are adjacent to
+ * another chosen barrel slot (same tier, within BARREL_CHAIN_MAX_UNITS)
+ * whenever possible — so the explosive barrels land in the middle of a
+ * structure, not isolated at its edges. The remaining barrel types (wood,
+ * coin) fill the rest.
+ *
+ * @param {object[]} barrelSlots the chosen barrel slots
+ * @param {Object<string, number>} counts {explosive, wood, coin}
+ * @param {ReturnType<typeof createRng>} rng
+ * @returns {object[]} the barrel placements ({slot, type})
+ */
+function assignBarrelTypes(barrelSlots, counts, rng) {
+  const remaining = { ...counts };
+  const placements = [];
+
+  // Order slots so "chainable" slots (adjacent to another chosen slot on the
+  // same tier) come first. A slot is chainable when another chosen barrel slot
+  // sits within BARREL_CHAIN_MAX_UNITS on the same tier.
+  const isChainable = (slot) =>
+    barrelSlots.some(
+      (o) =>
+        o !== slot &&
+        (o.y ?? 0) === (slot.y ?? 0) &&
+        Math.abs(o.x - slot.x) <= BARREL_CHAIN_MAX_UNITS,
+    );
+  const chainable = barrelSlots.filter(isChainable);
+  const isolated = barrelSlots.filter((s) => !isChainable(s));
+  // Deterministic order: chainable first (stable by x), then isolated.
+  const ordered = [
+    ...chainable.sort((a, b) => a.x - b.x),
+    ...isolated.sort((a, b) => a.x - b.x),
+  ];
+
+  for (const slot of ordered) {
+    // Prefer an explosive barrel while the explosive budget remains AND this
+    // slot is chainable (so explosive barrels form the chain). On a non-
+    // chainable slot an explosive barrel would sit isolated, so we let the
+    // remaining types (wood/coin, plus any leftover explosive) fill it.
+    if (remaining.explosive > 0 && isChainable(slot)) {
+      placements.push({ ...slot, type: 'explosive' });
+      remaining.explosive -= 1;
+    } else if (Object.values(remaining).some((c) => c > 0)) {
+      const type = pickWeightedKey(remaining, rng);
+      placements.push({ ...slot, type });
+      remaining[type] -= 1;
+    } else {
+      break; // all budgets exhausted
+    }
+  }
+
+  return placements;
 }
 
 // ---------------------------------------------------------------------------
@@ -966,14 +1549,81 @@ function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, entryCl
   }
 
   // Record placement opportunities (relative to macro start).
+  //
+  // A slot's y is the ELEVATION OF ITS SUPPORTING SURFACE, not a fixed 0:
+  //   - a slot above a solid block of height H sits at elevation H (the block's
+  //     TOP surface — the hero/items stand ON the block, never inside it);
+  //   - a slot above a platform of tier T sits at elevation T (the platform's
+  //     landing face);
+  //   - a slot on open ground sits at elevation 0.
+  // This is the BLOCKER fix (items spawning inside solids): the slot y MUST be
+  // at the top of whatever surface is below it, so an item placed there rests
+  // on a valid standing position. (populate.md §1: slots are meaningful,
+  // terrain-valid positions, not arbitrary coordinates.)
   for (const p of macro.placements) {
+    const surface = surfaceElevationAt(macro, p, isVertical);
     placements.push({
       ...p,
       x: isVertical ? CENTER_X : axisPos + macro.entryClear + p.x,
-      y: isVertical ? axisPos + (p.y ?? 0) : 0,
+      y: surface,
       placementId: instanceId,
     });
   }
+}
+
+/**
+ * Elevation (in units) of the supporting surface directly below a slot at
+ * local unit-x `p.x`, relative to the macro's entry line.
+ *
+ * A slot stands on whatever surface is under it:
+ *   - a solid block of height H → elevation H (stand on the block's top);
+ *   - a platform of tier T → elevation T (stand on the platform's landing
+ *     face — platforms are one-way landings, not solids the hero walks inside);
+ *   - open ground (a gap or empty space) → elevation 0.
+ *
+ * Horizontal macros compose left-to-right along x. The local cursor for unit i
+ * (0-based) is `entryClear + sum(widths of units[0..i-1])`; a slot at p.x sits
+ * in the unit whose x-range covers p.x (or on the ground if none does — the
+ * slot is in a gap / clear zone). We walk the MACRO'S OWN unit sequence (not
+ * the cumulative placedUnits, which would include prior macros' units at
+ * overlapping absolute x).
+ *
+ * Vertical macros place every unit at the same x (CENTER_X), so the
+ * "supporting surface" is the ground at elevation 0; the macro's own platforms
+ * are the climb landings, not the surface under a slot.
+ *
+ * @param {object} macro the macro being placed (its `units` + `entryClear`)
+ * @param {object} p the slot descriptor (its local `x`)
+ * @param {boolean} isVertical whether the area is vertical
+ * @returns {number} the surface elevation (units) the slot rests on
+ */
+function surfaceElevationAt(macro, p, isVertical) {
+  if (isVertical) {
+    // Vertical: slots rest on the ground (elevation 0); the macro's platforms
+    // are climb landings, not the supporting surface under a slot.
+    return 0;
+  }
+  // Horizontal: walk the macro's own units left-to-right, accumulating the
+  // local cursor, and find the unit whose x-range covers the slot's p.x.
+  //
+  // The slot's p.x is the offset from the ENTRY CLEAR ZONE START (not the
+  // macro's start). The first unit is at local x = 0 (relative to the entry
+  // clear zone start), so the cursor starts at 0, not at macro.entryClear.
+  let cursor = 0;
+  for (const u of macro.units) {
+    const uStart = cursor;
+    const uEnd = cursor + (u.width ?? 1);
+    if (p.x >= uStart && p.x < uEnd) {
+      // The slot is above this unit. A solid block → stand on its top (height);
+      // a platform → stand on its landing face (tier); a gap → ground (0).
+      if (u.kind === 'block') return u.height;
+      if (u.kind === 'platform') return u.tier ?? 0;
+      return 0; // gap
+    }
+    cursor = uEnd;
+  }
+  // No unit covers the slot's x — it is on open ground (gap / clear zone).
+  return 0;
 }
 
 // ---------------------------------------------------------------------------
