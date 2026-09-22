@@ -49,7 +49,7 @@
   /* ---------- stage ---------- */
   #stage{flex:1;position:relative;overflow:hidden;background:#0a0c14;}
   /* ---------- frame filmstrip (bottom-right drawer, slides left/right) ---------- */
-  #filmDrawer{position:absolute;right:0;bottom:10px;z-index:20;height:176px;width:34px;background:var(--film-bg,#000);border:2px solid #fff;border-right:none;border-radius:10px 0 0 10px;box-shadow:-6px 0 22px rgba(0,0,0,.5);overflow:hidden;transition:width .18s ease-out;}
+  #filmDrawer{position:absolute;right:0;bottom:10px;z-index:20;height:116px;width:34px;background:var(--film-bg,#000);border:2px solid #fff;border-right:none;border-radius:10px 0 0 10px;box-shadow:-6px 0 22px rgba(0,0,0,.5);overflow:hidden;transition:width .18s ease-out;}
   #filmScroll{position:absolute;top:0;left:0;height:100%;display:flex;align-items:stretch;padding:8px;pointer-events:none;white-space:nowrap;}
   #filmDrawer.on #filmScroll{pointer-events:auto;}
   #filmBtn{position:absolute;right:0;top:0;width:34px;height:100%;pointer-events:auto;font-family:inherit;font-size:10px;letter-spacing:1px;color:#fff;background:var(--panel);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;writing-mode:vertical-rl;text-orientation:mixed;}
@@ -1079,7 +1079,7 @@ function drawFilm(){
   // 16 scroll padding = 156px). Content is scaled to fit inside with a small
   // internal margin, so collision/sprite/melee extending in any direction are
   // never clipped.
-  const availH = 176 - 4 - FILM.pad*2;   // 156px usable content height
+  const availH = 116 - 4 - FILM.pad*2;   // ~96px usable content height
   const margin = 6;                       // internal margin inside the canvas
   const scale=Math.min(1, (availH-margin*2)/B.h);
   const cw=Math.ceil(B.w*scale)+margin*2, chh=availH;
@@ -1434,7 +1434,7 @@ function syncPanelDisabled(){
   const list = $('meleeBoxList');
   if (list) list.querySelectorAll('input').forEach(inp => { inp.disabled = locked; });
 }
-function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=parseFloat(P(id).value); if(!isNaN(v)&&cur&&cur.st&&!editingLocked()){ pushUndo(); fn(v); draw(); } else syncPanel(); }); }
+function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=parseFloat(P(id).value); if(!isNaN(v)&&cur&&cur.st&&!editingLocked()){ pushUndo(); fn(v); draw(); saveState(); } else syncPanel(); }); }
 bindNum('p_speed', v=>setSpeed(v));
 bindNum('p_ox', v=>{ const st=cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].offset.x; targetFrames(fi).forEach(f=>f.offset.x+=d); });
 bindNum('p_oy', v=>{ const st=cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].offset.y; targetFrames(fi).forEach(f=>f.offset.y+=d); });
