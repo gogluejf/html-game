@@ -232,7 +232,9 @@ test('tabs are a focusable row and chips have distinct navigation/capture styles
   tap('ArrowLeft'); tap('ArrowLeft'); assert.equal(Remap.tab,'keyboard');
   const text=[], fills=[];
   const ctx=new Proxy({}, {get:(_,prop)=>prop==='createLinearGradient' ? ()=>({addColorStop(){}})
-    : prop==='fillText' ? (label,x,y)=>text.push({label,x,y}) : noop,
+    : prop==='fillText' ? (label,x,y)=>text.push({label,x,y})
+    : prop==='measureText' ? ()=>({width:10})
+    : noop,
     set:(_,prop,value)=>{if(prop==='fillStyle') fills.push(value);return true;}});
   Remap.draw(ctx);
   assert.ok(fills.includes('rgba(255,110,199,0.15)'));

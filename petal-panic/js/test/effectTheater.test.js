@@ -69,6 +69,9 @@ function makeCtx() {
     arcTo(...a) { calls.push(['arcTo', ...a]); },
     quadraticCurveTo(...a) { calls.push(['quadraticCurveTo', ...a]); },
     bezierCurveTo(...a) { calls.push(['bezierCurveTo', ...a]); },
+    ellipse(...a) { calls.push(['ellipse', ...a]); },
+    measureText() { return { width: 10 }; },
+    strokeText(...a) { calls.push(['strokeText', ...a]); },
   };
 }
 

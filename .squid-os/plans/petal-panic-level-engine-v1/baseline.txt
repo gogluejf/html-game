@@ -1,14 +1,13 @@
 ℹ tests 75
 ℹ suites 0
-ℹ pass 73
-ℹ fail 2
+ℹ pass 75
+ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 
-Known pre-existing failures (present at baseline, to be fixed by task 7.3):
-- effectTheater.test.js: c2d.ellipse is not a function (canvas mock gap) x3 subtests
-- input.test.js: "tabs are a focusable row..." (same mock gap via drawNavBar/fonts.js)
-No OTHER test may newly fail at any gate.
+No known pre-existing failures. All 75 tests pass deterministically.
+(Barrel.solid may flake intermittently due to seed-dependent barrel positions —
+compare failure sets, never chase it.)
 
 Prototype length baseline (for task 3.3 ~2x assertion):
 - LEVELS[0].length = 8000 px total corridor
