@@ -1548,8 +1548,7 @@ bgSwatch.addEventListener('click',e=>{ e.stopPropagation(); bgPop.classList.cont
 $('bgClose').addEventListener('click',e=>{ e.stopPropagation(); closeBgPop(); });
 document.addEventListener('click',e=>{ if(bgPop.classList.contains('on') && !bgPop.contains(e.target) && e.target!==bgSwatch) closeBgPop(); });
 // Only apply the default bg if nothing was restored from localStorage.
-// (loadState() already ran at init and set bgColor from saved data, if any.)
-if (!localStorage.getItem(LS_KEY)) setBg('#000000');
+// (Moved to init sequence below loadState() so it doesn't clobber saved data.)
 // ---------- RECENTER PIVOT ----------
 $('recenterPivotBtn').addEventListener('click', ()=>{
   if (!cur || !cur.st) return;
@@ -2117,6 +2116,12 @@ window.addEventListener('pointercancel', endDrag);
 // No pointermove events fire once the cursor leaves the canvas, so clear hover explicitly:
 cv.addEventListener('pointerleave', ()=>{ if (hover){ hover = null; draw(); cv.style.cursor='default'; } });
 window.addEventListener('blur', ()=>{ if (hover || drag){ hover = null; drag = null; draw(); cv.style.cursor='default'; } });
+// ---------- cross-tab sync: reload state when another tab saves ----------
+window.addEventListener('storage', e => {
+  if (e.key !== LS_KEY) return;
+  // another window wrote to our key — reload the page to pick up its state
+  location.reload();
+});
 // ---------- keyboard ----------
 // Native modal blocks underlying clicks and restores focus on dismissal.
 const helpDialog = $('helpDialog');
@@ -2221,6 +2226,7 @@ _loadingState = true;   // suppress saves during the entire init/restore sequenc
 $('zoomval').textContent = Math.round(zoom*100)+'%';
 
 loadState();          // restore per-entity state + view from localStorage (keeps guard ON)
+if (!localStorage.getItem(LS_KEY)) setBg('#000000');   // default bg only if truly no save exists
 applySavedView();     // apply restored view (bg, play, toggles) to the UI — no save (guard on)
 syncToggles();   // set toolbar lit states from `show` BEFORE first paint (no flash)
 syncUndoButtons();   // disable undo/redo while stacks are empty
