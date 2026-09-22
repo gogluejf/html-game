@@ -242,7 +242,7 @@ pre { margin:5px 0 0 0; font-family:Consolas,monospace; color:#ce9178; font-size
                 </div>
                 <span class="pattern-tag">Sealed Zones + State Machine</span> 
                 <p class="ms-count">3 Task(s)</p>
-                <ul class="ms-task-list"><li>2.1 - Zone model replacing single corridor</li><li>2.2 - Exit flag, clear banner, fade transition</li><li>2.3 - Per-zone camera boundaries</li></ul>
+                <ul class="ms-task-list"><li>2.1 - Zone model replacing single corridor</li><li>2.2 - Exit flag, clear banner, fade transition</li><li>2.3 - Camera max-scroll from zone length</li></ul>
             </div>
         </a>
         <a href="#terrain-generation" class="milestone-card-link">
@@ -588,18 +588,18 @@ export function onExitFlagReached(zone) { /* ... */ }</code></pre>
                 <div class="task-header">
                     <div class="task-title-row">
                         <span class="task-num"># 2.3</span>
-                        <span class="task-name">Per-zone camera boundaries</span>
+                        <span class="task-name">Camera max-scroll from zone length</span>
                         <span class="layer-badge" style="background:#569cd6">feature</span>
                     </div>
                 </div>
                 <div class="task-grid">
                     <div class="task-cell">
                         <span class="cell-label">What</span>
-                        <span class="cell-value">Make the camera clamp to the active zone&#x27;s bounds so it cannot reveal previous or next zones; horizontal zones scroll right only, boss zone is a fixed view.</span>
+                        <span class="cell-value">Set the camera&#x27;s max scroll to the active zone&#x27;s length so it cannot draw past the zone&#x27;s end. The zone is the only world in memory — there is no next zone to reveal. For horizontal zones: camera scrolls right up to the zone&#x27;s exit flag, then stops. For vertical zones: no horizontal scroll (fixed width). For the boss zone: camera is completely frozen (fixed arena view). This is a one-line clamp, not a zone management system.</span>
                     </div>
                     <div class="task-cell">
                         <span class="cell-label">Why</span>
-                        <span class="cell-value">Docs/structure.md: the camera stops at area boundaries and cannot reveal adjacent zones; the boss arena locks both sides.</span>
+                        <span class="cell-value">The zone has a finite length and the exit flag is at the end. The camera must not draw beyond the zone&#x27;s bounds. The boss arena is a fixed-size room where the camera doesn&#x27;t move at all.</span>
                     </div>
                     
                 <div class="task-cell full-width">
@@ -609,15 +609,18 @@ export function onExitFlagReached(zone) { /* ... */ }</code></pre>
                     
                 <div class="task-cell full-width snippet-block">
                     <span class="cell-label">Snippet</span>
-                    <pre><code class="language-js">// Camera takes its clamp range from the ACTIVE zone.
-export function setCameraBounds(zone) {
-  // min/max from zone.bounds; boss zone: min === max (locked)
+                    <pre><code class="language-js">// Camera max scroll comes from the active zone&#x27;s length.
+// The zone is the only world — nothing exists past its end.
+export function setCameraMax(zone) {
+  // horizontal: max = zone.bounds.x + zone.bounds.w - VIEW_W
+  // vertical:   min = max = zone.bounds.x (no horizontal scroll)
+  // boss:       min = max (frozen)
 }</code></pre>
                 </div>
                     
                 <div class="task-cell full-width">
                     <span class="cell-label">Acceptance Criteria</span>
-                    <ul class="acceptance-list"><li>Camera never draws outside the active zone in any state; entering the boss zone freezes the camera; returning to a new zone re-clamps correctly</li></ul>
+                    <ul class="acceptance-list"><li>Camera max scroll equals the zone&#x27;s length (cannot draw past the exit flag); Vertical zones have no horizontal camera movement; Boss zone camera is completely frozen (fixed view); Entering a new zone (after clear sequence) re-clamps the camera to the new zone&#x27;s length</li></ul>
                 </div>
                 </div>
                 <div class="task-footer"><span class="task-verify">✔ node --test petal-panic/js/test/</span> </div>
