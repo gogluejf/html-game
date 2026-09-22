@@ -107,7 +107,7 @@
     },
     "3.2": {
       "number": "3.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Macro library + area composer",
       "milestone": "Terrain Generation",
       "milestone_number": "3",
@@ -122,10 +122,18 @@
     },
     "3.3": {
       "number": "3.3",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Progression -1 to -4 + length doubling",
       "milestone": "Terrain Generation",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "failures": "None in scope. Full suite: 193 pass / 2 fail. The 2 failures are pre-existing and OUTSIDE this task's scope: input.test.js ('Space jump and Circle super never pause') and effectEngine.test.js ('simultaneous sources dispatch once'). barrel.solid.test.js is flaky (pre-existing, seed-dependent). All task files (macros/zone/terrain) are green: 65/65.",
+        "lessons_learned": "The vertical composer's axis-length-based stacking (axisPos += axisLen) was the root cause of the unreachable inter-macro join: the axis length includes entryClear + exitClear breathing room, so the next macro's first platform ends up entryClear + firstLocalTier tiers above the previous macro's peak. The fix is to anchor the next macro's first platform to a reachable elevation (prevPeak + MAX_ELEVATION_STEP) rather than blindly stacking at axisPos. The validation was also blind to inter-macro joins \u2014 it only checked within-macro steps. The fix is to check the step from the previous macro's PEAK to the next macro's FIRST platform when placementIds differ.",
+        "done": "Fixed both MAJOR findings from R2 review. (MAJOR 1 / R2 #2): The vertical composer now ensures reachable inter-macro joins. Added firstPlatformAbsY() and lastPlatformAbsY() helpers to compute a macro's first/peak platform elevation in absolute climb space. In composeArea's vertical placement loop, track prevPeakAbsY (the previous macro's peak elevation); before placing the next macro, if its natural first-platform elevation (axisPos + firstLocalTier) would exceed prevPeakAbsY + MAX_ELEVATION_STEP, shift the macro DOWN so its first platform sits at exactly prevPeakAbsY + MAX_ELEVATION_STEP. This eliminates the unreachable 4-tier gap (e.g. seed 1 previously: macro 0 peak y=3, macro 1 first y=7 \u2192 now: macro 0 peak y=3, macro 1 first y=4). Updated validateLayout to CHECK inter-macro vertical transitions: when two consecutive platforms have different placementIds, compute the step from the previous macro's PEAK (max y of all platforms in that macro) to the current macro's first platform; if the upward step exceeds MAX_ELEVATION_STEP, throw 'unreachable join'. Also added 2 new tests: one that asserts an unreachable inter-macro join (4-tier gap) throws, and one that asserts a reachable join (1-tier step) passes. (MAJOR 2 / R2 #2): The horizontal zone bounds now match the terrain budget. Added ZONE_WIDTH_HORIZONTAL=4000 (2x the ~2000px prototype segment) and ZONE_WIDTH_VERTICAL=1600 (one screen, for vertical + boss zones). buildLevelZones now uses the orientation-aware width: horizontal zones are 4000px wide, vertical zones stay 1600px wide (one screen per structure.md \u00a74), and the boss zone stays 1600px (fixed-size arena). ZONE_EXIT_X is now derived from the zone's actual width (bounds.w - ZONE_EXIT_PAD) so the exit flag scales with the zone. Added ZONE_WIDTH (backward-compat alias = 1600) and ZONE_EXIT_X (backward-compat alias = 1480). Added a new zone test asserting horizontal zones are ZONE_WIDTH_HORIZONTAL wide and vertical/boss zones are ZONE_WIDTH_VERTICAL wide.",
+        "decisions": "(1) Inter-macro join fix: shift the next macro DOWN (not up) so its first platform is at prevPeak + MAX_ELEVATION_STEP. Shifting down is safer (never exceeds the budget) and the macro's subsequent platforms (higher tiers) continue the climb naturally. (2) Validation: the inter-macro check uses the previous macro's PEAK (max y of all its platforms) as the reference, not the previous platform in sort order. This is correct because the hero stands on the highest platform of the previous macro before jumping to the next. (3) Zone width: horizontal zones are 4000px wide (2x prototype segment), vertical zones stay 1600px (one screen per structure.md \u00a74), boss zone stays 1600px (fixed-size arena). The zone IS the world (structure.md \u00a72) \u2014 the terrain fills the zone, and the zone is the terrain's container. (4) ZONE_EXIT_X is now derived from bounds.w - ZONE_EXIT_PAD so it scales with the zone's width. Backward-compat aliases (ZONE_WIDTH, ZONE_EXIT_X) are kept for existing consumers.",
+        "tradeoffs": "The vertical composer's shift-down logic can cause macros to overlap in the y-axis when the budget is tight (e.g. two climbing macros with entryClear=2 each: macro 0 at y=0-6, macro 1 shifted to y=3-9, overlapping y=3-6). This is acceptable because the platforms are one-way (pass-through from below) so the hero can still reach the higher platforms; the overlap is a visual artifact, not a gameplay blocker. The inter-macro validation is the authoritative check \u2014 if a join is unreachable, it throws. For the horizontal zone width change: the exit flag x is now derived from bounds.w - ZONE_EXIT_PAD instead of a hardcoded ZONE_EXIT_X=1480. This is a behavior change for any code that reads ZONE_EXIT_X directly (it still works for vertical/boss zones at 1480, but horizontal zones now put the exit at 3880). The ZONE_EXIT_X export is kept as a backward-compat alias for the 1600px width.",
+        "confidence": "high"
+      }
     },
     "4.1": {
       "number": "4.1",

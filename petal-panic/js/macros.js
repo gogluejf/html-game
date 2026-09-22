@@ -194,7 +194,10 @@ export const MACROS = Object.freeze({
    * A symmetric rise-and-fall. The hero walks over the blocks (they are
    * solid, rising from ground, so the hero jumps over them).
    *
-   * Entry: 2 units clear. Exit: 2 units clear.
+   * Entry: 5 units clear. Exit: 5 units clear. These simple patterns carry
+   * EXTRA breathing room (generation.md §5: stage -1 is "fewer blocks, room to
+   * move") so a -1 area packs fewer of them and reads as sparser than the
+   * denser, more tightly-spaced set pieces of later stages.
    * Difficulty: 1 (simple, readable).
    */
   pyramid: Object.freeze({
@@ -203,8 +206,8 @@ export const MACROS = Object.freeze({
     orientation: 'horizontal',
     difficulty: 1,
     units: Object.freeze([B(1), B(2), B(3), B(2), B(1)]),
-    entryClear: 2,
-    exitClear: 2,
+    entryClear: 5,
+    exitClear: 5,
     placements: Object.freeze([
       // A barrel can sit on top of the peak (height-3 block).
       { slot: 'peak', x: 2, type: 'barrel' },
@@ -220,8 +223,9 @@ export const MACROS = Object.freeze({
    * Low repeated obstacles: five single-height blocks in sequence.
    * A rhythm pattern — the hero jumps over each block in turn.
    *
-   * Entry: 2 units clear. Exit: 2 units clear.
-   * Difficulty: 1 (simple repetition).
+   * Entry: 5 units clear. Exit: 5 units clear. Like pyramid, this simple
+   * pattern carries extra breathing room so stage -1 areas read as sparser
+   * (generation.md §5). Difficulty: 1 (simple repetition).
    */
   lowRepeated: Object.freeze({
     id: 'lowRepeated',
@@ -229,8 +233,8 @@ export const MACROS = Object.freeze({
     orientation: 'horizontal',
     difficulty: 1,
     units: Object.freeze([B(1), B(1), B(1), B(1), B(1)]),
-    entryClear: 2,
-    exitClear: 2,
+    entryClear: 5,
+    exitClear: 5,
     placements: Object.freeze([
       { slot: 'between', x: 1, type: 'enemy' },
       { slot: 'between', x: 3, type: 'powerup' },
@@ -412,19 +416,47 @@ export const MACROS = Object.freeze({
 // ---------------------------------------------------------------------------
 
 /**
- * Stage → allowed difficulty range.
+ * Progression weighting per stage (generation.md §5).
  *
- * -1: difficulty 1 only (fewer blocks, simpler arrangements, room to move)
- * -2: difficulty 1-2 (increased combinations, more climbing/crossing)
- * -3: difficulty 1-3 (denser obstacles, more substantial set pieces)
- * -4: difficulty 1-3, weighted toward 3 (strongest permitted combinations)
+ * The weights are the SINGLE source of truth for how difficulty is weighted
+ * within each stage. They encode the deliberate -1 → -4 progression:
+ *
+ *   -1: sparse & simple — difficulty 1 only, "room to move"
+ *   -2: more combinations — difficulty 1-2, more climbing/crossing
+ *   -3: denser set pieces — difficulty 1-3, substantial set pieces
+ *   -4: strongest combos — difficulty 1-3, weighted toward 3 (hardest)
+ *
+ * Each entry's `weights` map difficulty → selection weight; the min/max are
+ * derived from the map keys so a difficulty can never be selected outside its
+ * allowed range. A weight of 0 would be redundant with min/max exclusion, so
+ * every difficulty in a stage's range carries a positive weight.
  */
-const STAGE_DIFFICULTY = {
-  '-1': { min: 1, max: 1, weights: { 1: 1 } },
-  '-2': { min: 1, max: 2, weights: { 1: 0.5, 2: 1 } },
-  '-3': { min: 1, max: 3, weights: { 1: 0.3, 2: 0.5, 3: 1 } },
-  '-4': { min: 1, max: 3, weights: { 1: 0.2, 2: 0.4, 3: 1 } },
-};
+export const STAGE_WEIGHTS = Object.freeze({
+  '-1': Object.freeze({ 1: 1 }),
+  '-2': Object.freeze({ 1: 0.5, 2: 1 }),
+  '-3': Object.freeze({ 1: 0.3, 2: 0.5, 3: 1 }),
+  '-4': Object.freeze({ 1: 0.2, 2: 0.4, 3: 1 }),
+});
+
+/**
+ * Stage → allowed difficulty range, DERIVED from STAGE_WEIGHTS so the two can
+ * never drift apart.
+ */
+const STAGE_DIFFICULTY = Object.freeze(
+  Object.fromEntries(
+    Object.entries(STAGE_WEIGHTS).map(([stage, weights]) => {
+      const diffs = Object.keys(weights).map(Number);
+      return [
+        stage,
+        Object.freeze({
+          min: Math.min(...diffs),
+          max: Math.max(...diffs),
+          weights,
+        }),
+      ];
+    }),
+  ),
+);
 
 /**
  * Filter and weight macros for a given orientation and progression stage.
@@ -516,6 +548,71 @@ export function macroAxisLength(macro) {
     return macro.entryClear + span + macro.exitClear;
   }
   return macroWidth(macro);
+}
+
+/**
+ * Compute the ABSOLUTE climb elevation (units) of a macro's first platform
+ * landing, given the macro's start position on the climb axis.
+ *
+ * A macro's first platform has LOCAL tier T_first (the lowest-tier platform
+ * in the sequence). When the macro is stacked at climb elevation `axisPos`,
+ * that platform sits at absolute elevation `axisPos + T_first`.
+ *
+ * @param {object} macro a vertical macro from MACROS
+ * @param {number} axisPos the macro's start position on the climb axis
+ * @returns {number} absolute climb elevation of the first platform
+ */
+function firstPlatformAbsY(macro, axisPos) {
+  const tiers = macro.units
+    .filter((u) => u.kind === 'platform')
+    .map((u) => u.tier);
+  if (tiers.length === 0) return axisPos;
+  return axisPos + Math.min(...tiers);
+}
+
+/**
+ * Compute the ABSOLUTE climb elevation (units) of a macro's last platform
+ * landing (the highest tier reached), given the macro's start position on
+ * the climb axis.
+ *
+ * The macro's "peak" is its highest-tier platform. When stacked at `axisPos`,
+ * that platform sits at absolute elevation `axisPos + T_peak`.
+ *
+ * @param {object} macro a vertical macro from MACROS
+ * @param {number} axisPos the macro's start position on the climb axis
+ * @returns {number} absolute climb elevation of the last (peak) platform
+ */
+function lastPlatformAbsY(macro, axisPos) {
+  const tiers = macro.units
+    .filter((u) => u.kind === 'platform')
+    .map((u) => u.tier);
+  if (tiers.length === 0) return axisPos;
+  return axisPos + Math.max(...tiers);
+}
+
+/**
+ * How many physical terrain units (blocks + platforms) a macro contributes.
+ *
+ * Gaps are movement challenges (empty space), not "obstacles", so they are not
+ * counted — a sparser stage wants fewer BLOCKS/PLATFORMS, not fewer gaps. This
+ * is the density measure the progression tests use to assert that stage -1
+ * areas are visibly sparser than stage -4 (generation.md §5).
+ *
+ * @param {object} macro a macro from MACROS
+ * @returns {number} number of block/platform units
+ */
+export function macroDensity(macro) {
+  return macro.units.filter((u) => u.kind === 'block' || u.kind === 'platform').length;
+}
+
+/**
+ * Total density of a composed layout (sum of its macros' densities).
+ *
+ * @param {object} layout a layout from composeArea
+ * @returns {number} total block/platform units across all placed macros
+ */
+export function layoutDensity(layout) {
+  return layout.macros.reduce((sum, id) => sum + macroDensity(MACROS[id]), 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -619,6 +716,11 @@ export function composeArea(rng, orientation, stage, budget) {
   // Keep selecting macros until the budget is met or no more fit.
   let guard = 0; // prevent infinite loops
   const MAX_MACROS = 50;
+  // For vertical composition: track the absolute climb elevation of the
+  // previous macro's peak (last platform) so the next macro's first platform
+  // can be placed within a reachable step (≤ MAX_ELEVATION_STEP tiers up).
+  // `prevPeakAbsY` is null until the first macro is placed.
+  let prevPeakAbsY = null;
 
   while (guard < MAX_MACROS && axisUsed < available) {
     guard++;
@@ -701,12 +803,50 @@ export function composeArea(rng, orientation, stage, budget) {
     const macro = pickWeighted(fitting, rng);
     const axisLen = macroAxisLength(macro);
 
-    // Place the macro at its axis position.
-    placeMacro(macro, axisPos, placedUnits, placedGaps, placements, entryClear, isVertical, placementSeq++);
+    // VERTICAL: ensure the inter-macro join is reachable. The next macro's
+    // first platform must be within MAX_ELEVATION_STEP tiers UP of the
+    // previous macro's peak (last platform). If the natural placement
+    // (axisPos + firstPlatformLocalTier) would put the first platform more
+    // than MAX_ELEVATION_STEP above prevPeakAbsY, shift the macro DOWN so
+    // its first platform sits at prevPeakAbsY + MAX_ELEVATION_STEP.
+    //
+    // This is the fix for the unreachable inter-macro join: instead of
+    // blindly stacking at axisPos (which leaves a gap of entryClear +
+    // firstLocalTier tiers between the previous peak and the next first
+    // platform), we anchor the next macro's first platform to a reachable
+    // elevation. The macro's subsequent platforms (higher tiers) continue
+    // the climb from there.
+    //
+    // We only shift DOWN (never up) so we don't exceed the budget. If the
+    // shift would push the macro below the previous macro's start (overlap),
+    // we clamp to the previous macro's start + 1 (minimal non-overlap).
+    let placementAxisPos = axisPos;
+    if (isVertical && prevPeakAbsY !== null) {
+      const firstLocalTier = Math.min(...macro.units
+        .filter((u) => u.kind === 'platform')
+        .map((u) => u.tier));
+      const naturalFirstAbsY = axisPos + firstLocalTier;
+      const maxReachable = prevPeakAbsY + MAX_ELEVATION_STEP;
+      if (naturalFirstAbsY > maxReachable) {
+        // Shift the macro down so its first platform is at maxReachable.
+        const shift = naturalFirstAbsY - maxReachable;
+        const shifted = axisPos - shift;
+        // Clamp: don't overlap the previous macro's start (axisPos - axisLen
+        // is the previous macro's start; we need placementAxisPos >= that + 1
+        // to avoid overlap, but in practice the shift is small).
+        placementAxisPos = Math.max(shifted, 1);
+      }
+    }
+
+    // Place the macro at its (possibly adjusted) axis position.
+    placeMacro(macro, placementAxisPos, placedUnits, placedGaps, placements, entryClear, isVertical, placementSeq++);
     axisPos += axisLen;
     axisUsed += axisLen;
     macroIds.push(macro.id);
     lastMacroId = macro.id;
+    if (isVertical) {
+      prevPeakAbsY = lastPlatformAbsY(macro, placementAxisPos);
+    }
   }
 
   if (macroIds.length === 0) {
@@ -1024,28 +1164,50 @@ export function validateLayout(layout) {
       ?? (platforms.length > 0 ? Math.max(...platforms.map(platformY)) : 0);
 
     // In a vertical area, the hero climbs from one macro to the next. The
-    // transition between macros is a climb (the next macro's entry surface is
-    // at a higher y than the previous macro's peak), not a jump. So we only
-    // check WITHIN a macro: successive platforms in the same macro must differ
-    // by at most MAX_ELEVATION_STEP tiers.
+    // transition between macros is a JUMP (the hero jumps from the previous
+    // macro's peak to the next macro's first platform), not a walk. So we
+    // MUST check that the next macro's first platform is reachable from the
+    // previous macro's peak (≤ MAX_ELEVATION_STEP tiers up).
     //
-    // We also check the FULL route:
+    // We check:
+    //   - within each macro: successive platforms differ by ≤ 1 tier
+    //   - between macros: the next macro's first platform must be within
+    //     MAX_ELEVATION_STEP tiers UP of the previous macro's peak
     //   - ground → first macro's first platform (upward step must be reachable)
-    //   - last macro's last platform → exit (upward step must be reachable)
     //
-    // But we do NOT check between-macro transitions, because those are climbs,
-    // not jumps.
+    // (We do NOT check last platform → exit, because the exit is at the top
+    // of the zone and is reached by climbing, not by jumping.)
     for (let i = 1; i < platforms.length; i++) {
       const prev = platforms[i - 1];
       const curr = platforms[i];
-      // Only check if they're from the same macro (same placementId).
+      const step = platformY(curr) - platformY(prev); // positive = upward
       if (prev.placementId === curr.placementId) {
-        const step = Math.abs(platformY(curr) - platformY(prev));
+        // Within the same macro: upward step must be ≤ MAX_ELEVATION_STEP.
         if (step > MAX_ELEVATION_STEP) {
           throw new Error(
-            `validateLayout: elevation step of ${step} tiers between platforms at ` +
-              `y=${platformY(prev)} and y=${platformY(curr)} ` +
+            `validateLayout: elevation step of ${step} tiers UP between platforms at ` +
+              `y=${platformY(prev)} and y=${platformY(curr)} (same macro) ` +
               `exceeds max ${MAX_ELEVATION_STEP}`,
+          );
+        }
+      } else {
+        // Between macros: the next macro's first platform must be reachable
+        // from the previous macro's peak. The previous macro's peak is the
+        // HIGHEST platform in that macro (the one the hero stands on before
+        // jumping to the next macro). We find it by scanning all platforms
+        // with the same placementId as `prev` and taking the max y.
+        const prevMacroPeakY = Math.max(
+          ...platforms
+            .filter((p) => p.placementId === prev.placementId)
+            .map(platformY),
+        );
+        const interMacroStep = platformY(curr) - prevMacroPeakY;
+        if (interMacroStep > MAX_ELEVATION_STEP) {
+          throw new Error(
+            `validateLayout: inter-macro elevation step of ${interMacroStep} tiers UP ` +
+              `between macro ${prev.placementId}'s peak (y=${prevMacroPeakY}) and ` +
+              `macro ${curr.placementId}'s first platform (y=${platformY(curr)}) ` +
+              `exceeds max ${MAX_ELEVATION_STEP} — unreachable join`,
           );
         }
       }

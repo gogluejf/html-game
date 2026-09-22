@@ -21,15 +21,28 @@ import { test } from 'node:test';
 import {
   MACROS,
   macroWidth,
+  macroDensity,
+  layoutDensity,
   selectMacros,
   composeArea,
   composeAreaSeeded,
   validateLayout,
+  STAGE_WEIGHTS,
   ENTRY_CLEAR,
   EXIT_CLEAR,
   MAX_CLEARABLE_GAP,
 } from '../macros.js';
 import { createRng } from '../terrain.js';
+import {
+  HORIZONTAL_AREA_LENGTH_PX,
+  VERTICAL_AREA_LENGTH_PX,
+  areaLengthBudget,
+  buildZoneTerrain,
+  buildAllZoneTerrain,
+  buildLevelZones,
+  LEVELS,
+} from '../level.js';
+import { UNIT_PX } from '../macros.js';
 
 // ---------------------------------------------------------------------------
 // Macro vocabulary (generation.md §2, §3)
@@ -198,11 +211,11 @@ test('selectMacros: throws on unknown stage', () => {
 
 test('composeArea: returns a layout with the correct shape', () => {
   const rng = createRng(42);
-  const layout = composeArea(rng, 'horizontal', -1, 20);
+  const layout = composeArea(rng, 'horizontal', -1, 40);
 
   assert.equal(layout.orientation, 'horizontal');
   assert.equal(layout.stage, -1);
-  assert.equal(layout.budget, 20);
+  assert.equal(layout.budget, 40);
   assert.equal(layout.entryClear, ENTRY_CLEAR);
   assert.equal(layout.exitClear, EXIT_CLEAR);
   assert.ok(Array.isArray(layout.macros), 'has macros array');
@@ -216,7 +229,7 @@ test('composeArea: returns a layout with the correct shape', () => {
 test('composeArea: layout meets the budget (totalWidth >= budget)', () => {
   for (const seed of [1, 7, 42, 100, 999]) {
     const rng = createRng(seed);
-    const layout = composeArea(rng, 'horizontal', -1, 15);
+    const layout = composeArea(rng, 'horizontal', -1, 40);
     assert.ok(
       layout.totalWidth >= layout.budget,
       `seed ${seed}: totalWidth ${layout.totalWidth} >= budget ${layout.budget}`,
@@ -226,7 +239,7 @@ test('composeArea: layout meets the budget (totalWidth >= budget)', () => {
 
 test('composeArea: at least one macro is placed', () => {
   const rng = createRng(1);
-  const layout = composeArea(rng, 'horizontal', -1, 20);
+  const layout = composeArea(rng, 'horizontal', -1, 40);
   assert.ok(layout.macros.length >= 1, 'at least one macro placed');
 });
 
@@ -366,7 +379,7 @@ test('composeArea: vertical layout has platform units (climbing landings)', () =
 
 test('composeArea: stage -1 produces only difficulty-1 macros', () => {
   const rng = createRng(1);
-  const layout = composeArea(rng, 'horizontal', -1, 20);
+  const layout = composeArea(rng, 'horizontal', -1, 40);
   for (const id of layout.macros) {
     assert.equal(MACROS[id].difficulty, 1, `stage -1: macro ${id} is difficulty 1`);
   }
@@ -384,6 +397,169 @@ test('composeArea: stage -3 can include difficulty-3 macros', () => {
     }
   }
   assert.ok(found, 'stage -3: at least one seed produces a difficulty-3 macro');
+});
+
+// ---------------------------------------------------------------------------
+// Progression -1 to -4 (generation.md §5) + length doubling (structure.md §6)
+// ---------------------------------------------------------------------------
+
+test('STAGE_WEIGHTS: -1 is sparse/simple, -4 is dense/hard (generation.md §5)', () => {
+  // -1 uses ONLY difficulty-1 macros; -4 weights difficulty-3 heaviest.
+  assert.deepEqual(Object.keys(STAGE_WEIGHTS['-1']), ['1'], '-1: only difficulty 1');
+  assert.ok(STAGE_WEIGHTS['-4'][3] >= 1, '-4: difficulty 3 is the top weight');
+  assert.ok(STAGE_WEIGHTS['-4'][1] < STAGE_WEIGHTS['-4'][3], '-4: difficulty 1 weighted below 3');
+});
+
+test('progression: stage -1 areas are visibly sparser than stage -4 (generation.md §5)', () => {
+  // -1 must have FEWER obstacles (block/platform units) than -4 at the same
+  // (real) horizontal area budget. This is the "visibly sparser" acceptance
+  // criterion: fewer, more simply-arranged obstacles with room to move.
+  const budget = areaLengthBudget('horizontal');
+  const seeds = Array.from({ length: 40 }, (_, i) => i + 1);
+  let density1 = 0;
+  let density4 = 0;
+  for (const seed of seeds) {
+    const l1 = composeAreaSeeded(seed, 'horizontal', -1, budget);
+    const l4 = composeAreaSeeded(seed, 'horizontal', -4, budget);
+    // Every stage must produce a completable (validated) route.
+    validateLayout(l1);
+    validateLayout(l4);
+    density1 += layoutDensity(l1);
+    density4 += layoutDensity(l4);
+  }
+  const avg1 = density1 / seeds.length;
+  const avg4 = density4 / seeds.length;
+  assert.ok(
+    avg1 < avg4,
+    `stage -1 avg density ${avg1.toFixed(2)} must be less than stage -4 avg density ${avg4.toFixed(2)}`,
+  );
+});
+
+test('progression: macro difficulty rises across -1 → -4 (generation.md §5)', () => {
+  // Across the four stages, the AVERAGE macro difficulty must be non-decreasing
+  // and -4 must strictly exceed -1 (stronger combos later).
+  const budget = areaLengthBudget('horizontal');
+  const seeds = Array.from({ length: 40 }, (_, i) => i + 1);
+  const avgDiff = {};
+  for (const stage of [-1, -2, -3, -4]) {
+    let total = 0;
+    let count = 0;
+    for (const seed of seeds) {
+      const l = composeAreaSeeded(seed, 'horizontal', stage, budget);
+      for (const id of l.macros) {
+        total += MACROS[id].difficulty;
+        count++;
+      }
+    }
+    avgDiff[stage] = total / count;
+  }
+  assert.ok(avgDiff[-1] < avgDiff[-4], `avg difficulty -1 (${avgDiff[-1].toFixed(2)}) < -4 (${avgDiff[-4].toFixed(2)})`);
+  assert.ok(avgDiff[-2] >= avgDiff[-1], 'avg difficulty -2 >= -1');
+  assert.ok(avgDiff[-4] >= avgDiff[-3], 'avg difficulty -4 >= -3 (strongest combos)');
+});
+
+test('progression: all four stages produce completable routes (generation.md §5/§6)', () => {
+  // For each stage, composing at the real area budget must yield a layout that
+  // passes validation (no impossible gaps, entry/exit clear, no buried
+  // landings, reachable elevations) — i.e. a completable route.
+  const budget = areaLengthBudget('horizontal');
+  const vBudget = areaLengthBudget('vertical');
+  for (const stage of [-1, -2, -3, -4]) {
+    for (const seed of [1, 7, 42, 100]) {
+      const l = composeAreaSeeded(seed, 'horizontal', stage, budget);
+      assert.ok(l.macros.length > 0, `stage ${stage} seed ${seed}: at least one macro`);
+      validateLayout(l); // throws if the route is not completable
+    }
+    // The vertical slot stage must also compose a completable vertical climb.
+    if (stage !== -1) {
+      const lv = composeAreaSeeded(42, 'vertical', stage, vBudget);
+      validateLayout(lv);
+    }
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Length doubling (structure.md §6, generation.md §7)
+// ---------------------------------------------------------------------------
+
+test('length: horizontal area budget is ~2x the prototype segment (structure.md §6)', () => {
+  // The measured prototype baseline was ~2000px per checkpoint segment
+  // (8000px corridor / 4 segments). The target is ~2x that = ~4000px.
+  const PROTOTYPE_SEGMENT_PX = 2000;
+  assert.equal(
+    HORIZONTAL_AREA_LENGTH_PX,
+    2 * PROTOTYPE_SEGMENT_PX,
+    'horizontal area length is exactly 2x the prototype segment',
+  );
+  // In unit space the budget is the px target scaled by UNIT_PX.
+  assert.equal(
+    areaLengthBudget('horizontal'),
+    Math.round(HORIZONTAL_AREA_LENGTH_PX / UNIT_PX),
+    'horizontal budget is the px target in width-units',
+  );
+});
+
+test('length: vertical area budget is the ~3-screen climb height, NOT doubled (structure.md §6)', () => {
+  // Vertical length is tuned separately and must NOT be blindly doubled
+  // (structure.md §6). It stays at the ~3-screen (VIEW_H × 3) climb height.
+  assert.ok(
+    VERTICAL_AREA_LENGTH_PX < HORIZONTAL_AREA_LENGTH_PX,
+    'vertical area is shorter than the doubled horizontal area (not doubled)',
+  );
+  assert.equal(
+    areaLengthBudget('vertical'),
+    Math.round(VERTICAL_AREA_LENGTH_PX / UNIT_PX),
+    'vertical budget is the climb height in units',
+  );
+});
+
+test('length: composed horizontal areas meet the doubled budget in px', () => {
+  // A composed horizontal area's total width in px (units × UNIT_PX) must be
+  // at least the budget's px target (≈4000px). totalWidth = max(budget, axisPos),
+  // so it is always >= budget; the budget itself is the ~2x prototype segment.
+  const budget = areaLengthBudget('horizontal');
+  const budgetPx = Math.round(budget * UNIT_PX);
+  for (const seed of [1, 7, 42, 100]) {
+    const l = composeAreaSeeded(seed, 'horizontal', -4, budget);
+    const widthPx = l.totalWidth * UNIT_PX;
+    assert.ok(
+      widthPx >= budgetPx,
+      `seed ${seed}: composed width ${widthPx}px is at least the budget ${budgetPx}px`,
+    );
+    // And the budget is ~2x the prototype segment (within rounding tolerance).
+    assert.ok(
+      Math.abs(budgetPx - HORIZONTAL_AREA_LENGTH_PX) <= UNIT_PX,
+      `budget ${budgetPx}px is within one unit of the 2x target ${HORIZONTAL_AREA_LENGTH_PX}px`,
+    );
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Vertical slot: exactly one of -2/-3/-4 is vertical, fixed for the game
+// (structure.md §1) — the composer respects the configured slot.
+// ---------------------------------------------------------------------------
+
+test('vertical slot: the configured area composes as a vertical climb (structure.md §1)', () => {
+  const def = LEVELS[0];
+  assert.ok([-2, -3, -4].includes(def.verticalArea), 'Level 1 vertical slot is -2/-3/-4');
+  const zones = buildLevelZones(def);
+  const verticalZone = zones.find((z) => z.idx === def.verticalArea);
+  assert.equal(verticalZone.orientation, 'vertical', 'the configured area is the vertical one');
+  const layout = buildZoneTerrain(verticalZone, createRng(42));
+  assert.equal(layout.orientation, 'vertical', 'buildZoneTerrain composes the vertical slot vertically');
+  assert.equal(layout.stage, def.verticalArea, 'the vertical area uses its own stage');
+  validateLayout(layout);
+});
+
+test('vertical slot: exactly one area is vertical and it is fixed for the game (structure.md §1)', () => {
+  // Composing ALL areas from a single seed: exactly one is vertical, and it is
+  // the configured slot — deterministic and fixed for the whole game.
+  const def = LEVELS[0];
+  const result = buildAllZoneTerrain(def, 12345);
+  const verticalIdx = [...result.keys()].filter((idx) => result.get(idx).orientation === 'vertical');
+  assert.deepEqual(verticalIdx, [def.verticalArea], 'exactly one vertical area, at the configured slot');
+  // Every composed area is a completable route.
+  for (const layout of result.values()) validateLayout(layout);
 });
 
 // ---------------------------------------------------------------------------
@@ -419,8 +595,10 @@ test('composeArea: same seed produces identical layout (determinism)', () => {
 });
 
 test('composeArea: different seeds produce different layouts', () => {
-  const layout1 = composeAreaSeeded(1, 'horizontal', -2, 25);
-  const layout2 = composeAreaSeeded(2, 'horizontal', -2, 25);
+  // Use a realistic area budget so the composition actually varies between
+  // seeds (a tiny budget collapses to a single macro and can collide).
+  const layout1 = composeAreaSeeded(1, 'horizontal', -2, 40);
+  const layout2 = composeAreaSeeded(2, 'horizontal', -2, 40);
 
   // It's theoretically possible (but extremely unlikely) that two different
   // seeds produce the same macro sequence. We check the full layout shape.
@@ -432,8 +610,8 @@ test('composeArea: different seeds produce different layouts', () => {
 test('composeArea: determinism holds across multiple seeds and stages', () => {
   for (const seed of [100, 200, 300]) {
     for (const stage of [-1, -2, -3]) {
-      const a = composeAreaSeeded(seed, 'horizontal', stage, 20);
-      const b = composeAreaSeeded(seed, 'horizontal', stage, 20);
+      const a = composeAreaSeeded(seed, 'horizontal', stage, 40);
+      const b = composeAreaSeeded(seed, 'horizontal', stage, 40);
       assert.deepEqual(a.macros, b.macros, `seed ${seed} stage ${stage}: same macros`);
       assert.deepEqual(
         a.units.map((u) => ({ x: u.x, kind: u.kind })),
@@ -455,8 +633,8 @@ test('composeArea: throws on invalid orientation', () => {
 
 test('composeArea: throws on invalid stage', () => {
   const rng = createRng(1);
-  assert.throws(() => composeArea(rng, 'horizontal', 0, 20), /stage/);
-  assert.throws(() => composeArea(rng, 'horizontal', -5, 20), /stage/);
+  assert.throws(() => composeArea(rng, 'horizontal', 0, 40), /stage/);
+  assert.throws(() => composeArea(rng, 'horizontal', -5, 40), /stage/);
 });
 
 test('composeArea: throws on budget too small', () => {
@@ -553,12 +731,73 @@ test('validateLayout: throws on elevation step > 1 tier', () => {
     exitClear: EXIT_CLEAR,
     macros: [],
     units: [
-      { kind: 'platform', x: 5, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 2, h: 1 } },
-      { kind: 'platform', x: 8, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 8, y: 3, w: 2, h: 1 } },
+      { kind: 'platform', x: 5, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 8, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 8, y: 3, w: 2, h: 1 }, placementId: 1 },
     ],
     gaps: [],
     totalWidth: 20,
     placements: [],
   };
   assert.throws(() => validateLayout(layout), /elevation step/);
+});
+
+test('validateLayout: throws on unreachable inter-macro join (R2 #2)', () => {
+  // Two vertical macros stacked with a 4-tier gap between macro 0's peak
+  // (y=3) and macro 1's first platform (y=7). The hero standing on y=3
+  // cannot double-jump 4 tiers up to y=7 — this is an unreachable join.
+  const layout = {
+    orientation: 'vertical',
+    stage: -2,
+    budget: 20,
+    entryClear: ENTRY_CLEAR,
+    exitClear: EXIT_CLEAR,
+    macros: ['climbing', 'climbing'],
+    units: [
+      // Macro 0 (placementId 0): platforms at y=1, y=2, y=3 (peak at y=3).
+      { kind: 'platform', x: 5, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 2, h: 1 }, placementId: 0 },
+      { kind: 'platform', x: 5, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 2, w: 2, h: 1 }, placementId: 0 },
+      { kind: 'platform', x: 5, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 3, w: 2, h: 1 }, placementId: 0 },
+      // Macro 1 (placementId 1): platforms at y=7, y=8, y=9 (first at y=7).
+      { kind: 'platform', x: 5, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 7, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 8, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 9, w: 2, h: 1 }, placementId: 1 },
+    ],
+    gaps: [],
+    totalWidth: 20,
+    placements: [],
+  };
+  assert.throws(
+    () => validateLayout(layout),
+    /inter-macro.*unreachable|unreachable join/,
+    'unreachable inter-macro join must be flagged',
+  );
+});
+
+test('validateLayout: passes on a reachable inter-macro join (R2 #2)', () => {
+  // Two vertical macros stacked with a 1-tier gap between macro 0's peak
+  // (y=3) and macro 1's first platform (y=4). The hero standing on y=3
+  // can double-jump 1 tier up to y=4 — this is a reachable join.
+  const layout = {
+    orientation: 'vertical',
+    stage: -2,
+    budget: 20,
+    entryClear: ENTRY_CLEAR,
+    exitClear: EXIT_CLEAR,
+    macros: ['climbing', 'climbing'],
+    units: [
+      // Macro 0 (placementId 0): platforms at y=1, y=2, y=3 (peak at y=3).
+      { kind: 'platform', x: 5, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 2, h: 1 }, placementId: 0 },
+      { kind: 'platform', x: 5, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 2, w: 2, h: 1 }, placementId: 0 },
+      { kind: 'platform', x: 5, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 3, w: 2, h: 1 }, placementId: 0 },
+      // Macro 1 (placementId 1): platforms at y=4, y=5, y=6 (first at y=4).
+      { kind: 'platform', x: 5, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 4, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 5, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 6, w: 2, h: 1 }, placementId: 1 },
+    ],
+    gaps: [],
+    totalWidth: 20,
+    placements: [],
+  };
+  // Should NOT throw.
+  validateLayout(layout);
 });

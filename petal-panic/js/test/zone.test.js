@@ -17,7 +17,7 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
-import { LEVELS, buildLevelZones, BOSS_CHECKPOINT, ZONE_H_HORIZONTAL, ZONE_H_VERTICAL } from '../level.js';
+import { LEVELS, buildLevelZones, BOSS_CHECKPOINT, ZONE_H_HORIZONTAL, ZONE_H_VERTICAL, ZONE_WIDTH_HORIZONTAL, ZONE_WIDTH_VERTICAL } from '../level.js';
 import { VIEW_H } from '../view.js';
 
 const def = LEVELS[0];
@@ -187,4 +187,28 @@ test('vertical-area slot is explicit config, not an undocumented default', () =>
   // And buildLevelZones honors it: the declared area is the vertical one.
   const vz = zones.find((z) => z.orientation === 'vertical');
   assert.equal(vz.areaIdx, def.verticalArea, 'the configured area is the vertical one');
+});
+
+test('horizontal zones are ~2x the prototype segment wide; vertical/boss are one screen (structure.md §4/§6)', () => {
+  // A horizontal zone's width IS the area's playable length (structure.md §6:
+  // the zone is the world; the terrain fills it). The target is ~2x the
+  // ~2000px prototype segment = 4000px.
+  // A vertical zone is one screen wide (structure.md §4: the climb is
+  // constrained to a single-screen-wide corridor), so it stays at the
+  // original 1600px width.
+  // The boss zone is a fixed-size arena, not a doubled corridor, so it also
+  // stays at 1600px.
+  const horizontalZones = zones.filter((z) => z.kind === 'area' && z.orientation === 'horizontal');
+  const verticalZone = zones.find((z) => z.kind === 'area' && z.orientation === 'vertical');
+  const bossZone = zones.find((z) => z.kind === 'boss');
+  for (const z of horizontalZones) {
+    assert.equal(z.bounds.w, ZONE_WIDTH_HORIZONTAL, `${z.idx} horizontal zone is the doubled width`);
+  }
+  assert.equal(verticalZone.bounds.w, ZONE_WIDTH_VERTICAL, 'vertical zone is one screen wide');
+  assert.equal(bossZone.bounds.w, ZONE_WIDTH_VERTICAL, 'boss zone is a fixed-size arena');
+  // The horizontal width is ~2x the vertical (one-screen) width.
+  assert.ok(
+    ZONE_WIDTH_HORIZONTAL > ZONE_WIDTH_VERTICAL,
+    'horizontal zones are wider than the one-screen vertical/boss width',
+  );
 });
