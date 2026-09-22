@@ -150,6 +150,7 @@
   .timing-table .trow{display:flex;align-items:center;gap:6px;padding:4px 2px;border-bottom:1px solid rgba(27,37,64,.5);}
   .timing-table .trow:last-child{border-bottom:none;}
   .timing-table .trow.custom{border-left:3px solid var(--yel);padding-left:3px;}
+  .timing-table .trow.current{background:rgba(62,240,255,.10);outline:1px solid var(--acc);outline-offset:-1px;border-radius:3px;}
   .timing-table .tthumb{width:28px;height:28px;flex:none;border-radius:4px;overflow:hidden;background:var(--panel);border:1px solid var(--line);image-rendering:pixelated;}
   .timing-table .tthumb canvas{width:100%;height:100%;}
   .timing-table .tslider{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:var(--line);outline:none;cursor:pointer;min-width:60px;}
@@ -310,9 +311,6 @@
   <div id="panel">
     <h2>Animation</h2>
     <div class="sprite-title" id="p_stitle">&mdash;</div>
-    <div class="row"><span>Name</span><span class="ro" id="p_aname">&mdash;</span></div>
-    <div class="row"><span>Frames</span><span class="sp"></span><input type="number" id="p_acount" disabled></div>
-    <div class="row"><span>Speed (fps)</span><div class="pair"><div class="cell"><b>V</b><input type="number" id="p_speed" min="1" max="60" value="8"></div></div></div>
 
     <h2><span><span class="swatch" style="background:var(--pur)"></span>Sprite Frame</span></h2>
     <div class="row"><span>Index</span><span class="ro" id="p_fidx">&mdash;</span></div>
@@ -384,6 +382,8 @@
 
     <h2><span><span class="swatch" style="background:var(--grn)"></span>Timing</span></h2>
     <div id="timingSection">
+      <div class="row"><span>Frames</span><span class="sp"></span><input type="number" id="p_acount" disabled></div>
+      <div class="row"><span>Speed (fps)</span><div class="pair"><div class="cell"><b>V</b><input type="number" id="p_speed" min="1" max="60" value="8"></div></div></div>
       <div class="timing-mode">
         <button class="tbtn tsm tog on" id="pbLoop" title="loop playback">&#8635; Loop</button>
         <button class="tbtn tsm tog" id="pbOnce" title="play once then stop">&#9654; Once</button>
@@ -1165,6 +1165,15 @@ function tick(t){
       syncPanel(); draw();
     }
   } else { acc = 0; }
+  // lightweight current-frame highlight update (avoids full table rebuild at 60fps)
+  const _tbl = $('timingTable');
+  if (_tbl){
+    const rows = _tbl.children;
+    const fi = curFrameIdx();
+    for (let r = 0; r < rows.length; r++){
+      rows[r].classList.toggle('current', r === fi);
+    }
+  }
   // rotation (independent of frame anim)
   if (cur.st.rot){
     // hold-to-rotate: accelerate while held, coast-decel after release
@@ -1211,11 +1220,12 @@ function buildTimingTable(){
   const st = cur.st, tbl = $('timingTable');
   tbl.innerHTML = '';
   let totalUnits = 0;
+  const curFi = curFrameIdx();
   st.frames.forEach((f, i) => {
     const units = f.durUnits || 1;
     totalUnits += units;
     const row = document.createElement('div');
-    row.className = 'trow' + (units > 1 ? ' custom' : '');
+    row.className = 'trow' + (units > 1 ? ' custom' : '') + (i === curFi ? ' current' : '');
     // thumbnail
     const thumb = document.createElement('div'); thumb.className = 'tthumb';
     const tc = document.createElement('canvas'); tc.width = 28; tc.height = 28;
@@ -1343,9 +1353,6 @@ document.querySelectorAll('#panel input[type=number]').forEach(inp=>{
 function syncPanel(){
   if (!cur || !cur.st) return;
   const st = cur.st, fi = curFrameIdx(), f = st.frames[fi];
-  P('p_aname').textContent = cur.name;
-  // full sprite title: character + animation (from manifest char/anim)
-  const _en = MANIFEST.labels.flat ? null : null;
   const _curEn = (() => { for (const l of MANIFEST.labels) for (const e of l.entities) if (e.name===cur.name) return e; return null; })();
   P('p_stitle').textContent = _curEn ? (_curEn.char + ' — ' + _curEn.anim) : cur.name;
   P('p_acount').value = st.frames.length;
