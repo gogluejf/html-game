@@ -1,0 +1,144 @@
+{
+  "tasks": {
+    "1.1": {
+      "number": "1.1",
+      "status": "not_started",
+      "name": "Global game settings module",
+      "milestone": "Game Rules Core",
+      "milestone_number": "1"
+    },
+    "1.2": {
+      "number": "1.2",
+      "status": "not_started",
+      "name": "Lifecycle operations (startRun/startLife/continueRun)",
+      "milestone": "Game Rules Core",
+      "milestone_number": "1"
+    },
+    "1.3": {
+      "number": "1.3",
+      "status": "not_started",
+      "name": "Shared area-entry screen + death flow",
+      "milestone": "Game Rules Core",
+      "milestone_number": "1"
+    },
+    "2.1": {
+      "number": "2.1",
+      "status": "not_started",
+      "name": "Zone model replacing single corridor",
+      "milestone": "Zone & Transition System",
+      "milestone_number": "2"
+    },
+    "2.2": {
+      "number": "2.2",
+      "status": "not_started",
+      "name": "Exit flag, clear banner, fade transition",
+      "milestone": "Zone & Transition System",
+      "milestone_number": "2"
+    },
+    "2.3": {
+      "number": "2.3",
+      "status": "not_started",
+      "name": "Per-zone camera boundaries",
+      "milestone": "Zone & Transition System",
+      "milestone_number": "2"
+    },
+    "3.1": {
+      "number": "3.1",
+      "status": "not_started",
+      "name": "Terrain grammar + seeded RNG",
+      "milestone": "Terrain Generation",
+      "milestone_number": "3"
+    },
+    "3.2": {
+      "number": "3.2",
+      "status": "not_started",
+      "name": "Macro library + area composer",
+      "milestone": "Terrain Generation",
+      "milestone_number": "3"
+    },
+    "3.3": {
+      "number": "3.3",
+      "status": "not_started",
+      "name": "Progression -1 to -4 + length doubling",
+      "milestone": "Terrain Generation",
+      "milestone_number": "3"
+    },
+    "4.1": {
+      "number": "4.1",
+      "status": "not_started",
+      "name": "Macro placement opportunities + population resolver",
+      "milestone": "Population",
+      "milestone_number": "4"
+    },
+    "4.2": {
+      "number": "4.2",
+      "status": "not_started",
+      "name": "Level 1 config (The Circus)",
+      "milestone": "Population",
+      "milestone_number": "4"
+    },
+    "5.1": {
+      "number": "5.1",
+      "status": "not_started",
+      "name": "Vertical zone orientation",
+      "milestone": "Vertical Areas",
+      "milestone_number": "5"
+    },
+    "5.2": {
+      "number": "5.2",
+      "status": "not_started",
+      "name": "Climbing macros for vertical composition",
+      "milestone": "Vertical Areas",
+      "milestone_number": "5"
+    },
+    "6.1": {
+      "number": "6.1",
+      "status": "not_started",
+      "name": "Boss approach + arena lock + intro sequence",
+      "milestone": "Boss Zone",
+      "milestone_number": "6"
+    },
+    "6.2": {
+      "number": "6.2",
+      "status": "not_started",
+      "name": "Level reward screen + continue crediting",
+      "milestone": "Boss Zone",
+      "milestone_number": "6"
+    },
+    "7.1": {
+      "number": "7.1",
+      "status": "not_started",
+      "name": "Wire engine into main loop (replace prototype world)",
+      "milestone": "Level 1 Integration + Gameplay Polish",
+      "milestone_number": "7"
+    },
+    "7.2": {
+      "number": "7.2",
+      "status": "not_started",
+      "name": "Concrete design-plan values + tuning pass",
+      "milestone": "Level 1 Integration + Gameplay Polish",
+      "milestone_number": "7"
+    },
+    "7.3": {
+      "number": "7.3",
+      "status": "not_started",
+      "name": "Full-flow integration tests + suite green",
+      "milestone": "Level 1 Integration + Gameplay Polish",
+      "milestone_number": "7"
+    },
+    "7.4": {
+      "number": "7.4",
+      "status": "not_started",
+      "name": "8 level config entries",
+      "milestone": "Level 1 Integration + Gameplay Polish",
+      "milestone_number": "7"
+    },
+    "7.5": {
+      "number": "7.5",
+      "status": "not_started",
+      "name": "Minimal end-of-game screen",
+      "milestone": "Level 1 Integration + Gameplay Polish",
+      "milestone_number": "7"
+    }
+  }
+}

@@ -1,154 +1,128 @@
 # Orchestrator — petal-panic-level-engine-v1
 
-Execution contract for the `petal-panic-level-engine-v1` plan. No human between tasks.
-Modeled on the effect-engine orchestrator, adapted to the level engine's specifics.
+Execution contract for the `petal-panic-level-engine-v1` plan. The runner (plan-runner)
+drives the loop; the executor (task-executor) does the work. This file is just the loop +
+two short prompts. No human between tasks.
 
-## How we run
-
-- **plan-runner** drives the loop: init progress → next-task → mark-in-progress → delegate → verify → review → commit → mark-done → next.
-- **task-executor** executes each task: receives the plan path + task id, reads its own context from the plan file, writes code + tests, reports back.
-- The runner NEVER codes. It dispatches, verifies mechanically, reviews, commits, tracks progress.
-
-## Per-task loop (strict order)
+## The loop (per task, strict order)
 
 1. `progress.py mark-in-progress`
-2. **Execute** — inline agent with `task-executor` skill, passed the plan path + task id. Budgets: max_steps 150, max_tools 200, max_time 15m.
-   Every executor prompt MUST inline the relevant `docs/levels/*.md` sections referenced by the task. Do not make agents hunt for context.
-3. **Verify** — run every `Verify:` command from the task + the full existing suite (`node --test petal-panic/js/test/*.test.js`).
-4. **Fix cycle** — if red: fresh task-executor with diagnosis-first prompt. Max 2 retries. Still red → BLOCKED, stop wave, surface to user.
-5. **Review A** (qwen3.8-27b, line-level) on uncommitted diff.
-6. **Review B** (gpt-5.6-sol, intent/doc-conformance) on same diff.
-7. **Resolve** — ACCEPT (executor fixes, re-verify) or REJECT (note why). Disagreement → mechanical tests break tie; else one-line question to user. Max 2 rounds.
-8. **Record** — append both verdicts + resolution to `reviews.md`.
-9. **Commit** — `levels <task-id>: <task name>`. Only after steps 3–8 complete.
-10. `progress.py mark-done`.
+2. **Execute** — inline agent, `task-executor` skill, EXECUTOR PROMPT below.
+   Budgets: max_steps 150, max_tools 200, max_time 15m.
+3. **Review** — two independent reviewers, SAME prompt (intent + code quality), different
+   models (two eyes on the same question). REVIEWER PROMPT below.
+4. **Resolve:**
+   - Both PASS → commit.
+   - Either FAILS with a **major/blocker** finding → re-dispatch the SAME executor with the
+     findings verbatim (EXECUTOR PROMPT, "fix these findings" mode). It fixes + re-runs until
+     green, then re-review.
+   - Only **minor** findings → note them in reviews.md and commit anyway (minors don't block).
+   - Reviewers disagree on whether something is a problem → the test suite breaks the tie if
+     it covers the case; otherwise one-line question to user.
+   - **Max 2 review→fix→re-review rounds total.** After round 2, commit what's green and note
+     any remaining findings.
+5. **Record** — append verdicts + resolution to `reviews.md`.
+6. **Commit** — `levels <task-id>: <task name>`.
+7. `progress.py mark-done` **after** the summary is persisted (the executor stores it via
+   the task-executor skill's `set-summary.py`). If the executor crashed and never ran it,
+   the runner runs `set-summary.py` before `mark-done`. Never leave a done task without a
+   summary in `.plan-progress.json`.
 
-**A task is NOT done until committed. No next task before the commit lands.**
+A task is NOT done until committed. No next task before the commit lands.
 
-## Wave gate (between waves)
+## EXECUTOR PROMPT
 
-1. Full test suite vs `baseline.txt`. Any NEW failure → fix executor, re-run. Max 2 cycles.
-   - From Wave 3+: also assert determinism — generate Level 1 twice with the same seed, diff the world layouts (must be identical).
-   - From Wave 5+: also run the vertical-zone tests explicitly.
-   - From Wave 6+: also run the boss-zone sequence tests explicitly.
-2. **Wave review** — both reviewers on accumulated wave diff since last gate.
-3. Gate commit: `levels: wave <n> gate`. Clean tree required at every gate.
+```
+Your job: execute plan `{plan}`, task **{id} — {name}** using the task-executor skill.
+Follow the skill's workflow (extract task, code, verify, store summary via set-summary.py,
+display summary). Working directory: ~/src/html-game
+
+CONTRACT (from .plan.json):
+- what: {what}
+- files: {files}
+- acceptance: {acceptance}
+- verify: {verify}
+
+DOCS FOR THIS TASK (source of truth — they win over code):
+{the specific docs/levels/*.md files + § sections this task settles}
+
+PLAN-SPECIFIC RULES (on top of the skill's own rules):
+- TESTS: meaningful logic tests only — assert the behavior the docs require and that the
+  code complies with the docs. Do NOT write over-engineered tests checking mathematical
+  precision of every duration, frame, or pixel. Determinism (same seed → same world) IS
+  worth an exact test; presentation timing is not.
+- Run the task's verify command AND the full suite `node --test petal-panic/js/test/*.test.js`
+  (glob form) until green. Known baseline flakes (barrel.solid, Space-jump pause,
+  effectTheater c2d.ellipse, input tabs) are ignored — compare failure sets, never chase them.
+- Scope: this task changes only what its contract says. Hero/enemy/combat/effects/art/music
+  are out of scope unless the task explicitly includes them.
+- Do NOT commit (git read-only for you).
+
+BEFORE YOU FINISH:
+- Store your summary (per the task-executor skill).
+- Return your final report (per the task-executor skill format).
+```
+
+## REVIEWER PROMPT (identical for both reviewers — only the model differs)
+
+```
+You are a reviewer for plan `{plan}`, task **{id} — {name}`. Working directory:
+~/src/html-game. Do NOT modify files. Judge the diff only — do not run tests.
+
+Steps:
+1. bash: git diff
+2. read_file {the docs/levels/*.md files this task settles}
+3. read_file {the source files in the diff}
+4. Verdict.
+
+CHECK (both of these):
+- INTENT: does the code do what the task contract says, and align with the docs?
+- CODE QUALITY: is the architecture clean (one owner per rule, no duplication, no magic
+  numbers)? Is the logic consistent with the task description?
+- Any silent behavior change to out-of-scope systems? (blocker)
+
+Output (strict):
+Verdict: PASS or FAIL
+Numbered findings: file:line — issue — doc § ref — severity (blocker/major/minor)
+```
 
 ## Models
 
-| Role | Model | Notes |
-|---|---|---|
-| Executor | session default via `task-executor` skill | writes code + tests |
-| Reviewer A | `ninfer/qwen3.8-27b` | local, line-level; max_steps 75, max_time 15m |
-| Reviewer B | `openai-codex/gpt-5.6-sol` | cloud, intent/doc-conformance; max_steps 75, max_time 15m; retry 1–2× if overloaded |
-| Tests | deterministic shell | never an LLM |
+Two different models run the SAME review (two independent eyes on the same question).
+
+| Role | Model |
+|---|---|
+| Executor | session default via `task-executor` skill |
+| Reviewer 1 | `vllm/unsloth/Qwen3.8-27B-NVFP4` |
+| Reviewer 2 | `openai-codex/gpt-5.6-sol` (or a second `vllm/unsloth/Qwen3.8-27B-NVFP4` if the cloud model is unavailable) |
+
+## Wave gate (between waves)
+
+1. Full suite `node --test petal-panic/js/test/*.test.js` (glob form) vs `baseline.txt`.
+   Any NEW deterministic failure → fix before the gate commit. Known baseline flakes ignored.
+2. Gate commit: `levels: wave <n> gate`. Clean tree required.
 
 ## Source of truth & precedence
 
-1. `petal-panic/docs/levels/*.md` (the 8-file design contract) — wins over code.
-   In particular: `game-rules.md`, `lifecycle.md`, `structure.md`, `generation.md`,
-   `populate.md`, `checkpoints.md`, `boss-arena.md`.
-2. `petal-panic/docs/story/levels.md` — Level 1 roster/boss/theme content.
-3. `petal-panic-level-engine-v1.md` — task scope, acceptance, verify commands.
-4. This orchestrator — execution policy, budgets, gates.
+1. `petal-panic/docs/levels/*.md` — the design contract. Wins over code.
+2. `petal-panic/docs/story/levels.md` — Level 1 content.
+3. `petal-panic-level-engine-v1.md` — task scope/acceptance/verify.
+4. This orchestrator — execution policy only.
 5. Existing prototype code — preserved unless a task explicitly changes it.
-   Critically: hero movement/shooting/enemy AI/projectile/collision systems must keep
-   working unchanged against the new world refs; the engine replaces WORLD CONSTRUCTION,
-   not entity behavior.
 
-## Baseline (once at reset, before task 1.1)
+## Scope exclusions (every executor)
 
-- Full suite → `baseline.txt` (known pre-existing failures recorded: `c2d.ellipse` mock gap in
-  effectTheater.test.js, tabs focusable row in input.test.js — these are fixed by task 7.3,
-  so they may disappear but no OTHER test may newly fail).
-- Measure and record the prototype length baseline (current area segment lengths in px) →
-  `length-baseline.txt`. Task 3.3 asserts ~2× against this number.
-
-## Scope exclusions (hard rules for every executor)
-
-This epic builds the LEVEL SYSTEM ONLY. Out of scope — do not touch, redesign, or
-"improve" any of these in any task:
-
-- **Hero mechanics** (movement, jumps, slide, weapons, supermove) — unchanged.
-- **Enemy AI and behavior** — population only PLACES existing enemies; their logic is untouched.
-- **Combat systems** (damage, knockback, hitboxes, projectiles, barrel explosions) — unchanged.
-- **Effects** (js/effects/) — reuse existing ones as-is; no new or edited effect files.
-- **Art/sprites** — geometry stays drawn rectangles; placeholder visuals only; no image loading.
-- **Level 1 content only** — engine is config-driven/N-level, but only The Circus ships.
-- **Music/sound** — deferred; silence is fine.
-
-If a task seems to require touching any of the above, it is scoped wrong — stop and
-surface to the user instead of working around it.
+Level system ONLY. Do not touch: hero mechanics, enemy AI, combat, effects (reuse only),
+art/sprites (placeholder rectangles), music. Level 1 content only.
 
 ## Wave structure
 
 ```
 Wave 1: M1 Game Rules Core        (1.1 → 1.2 → 1.3)      Gate 1
 Wave 2: M2 Zone & Transition      (2.1 → 2.2 → 2.3)      Gate 2
-Wave 3: M3 Terrain Generation     (3.1 → 3.2 → 3.3)      Gate 3 (+ determinism check)
-Wave 4: M4 Population             (4.1 → 4.2)            Gate 4 (+ determinism check)
-Wave 5: M5 Vertical Areas         (5.1 → 5.2)            Gate 5 (+ vertical tests)
-Wave 6: M6 Boss Zone              (6.1 → 6.2)            Gate 6 (+ boss sequence tests)
+Wave 3: M3 Terrain Generation     (3.1 → 3.2 → 3.3)      Gate 3
+Wave 4: M4 Population             (4.1 → 4.2)            Gate 4
+Wave 5: M5 Vertical Areas         (5.1 → 5.2)            Gate 5
+Wave 6: M6 Boss Zone              (6.1 → 6.2)            Gate 6
 Wave 7: M7 Integration + Polish   (7.1 → 7.2 → 7.3 → 7.4 → 7.5)  Gate 7 → EPIC DONE
 ```
-
-Tasks within a milestone run in listed order. M1 (lifecycle ops) completes before any zone
-work; M2 (zones) before M3 (terrain); M3 before M4 (population needs placement slots);
-M5/M6 build on M2–M4; M7 integrates everything.
-
-## Quality rubric (both reviewers)
-
-Report findings as: file:line — issue — doc § ref — severity (blocker/major/minor).
-
-1. **Doc conformance**: implements the `docs/levels/*.md` contract exactly. Sealed zones,
-   entry/exit flag rules, continue semantics, intro sequence order — per the docs, not per
-   the prototype's habits.
-2. **One owner per rule**: lifecycle ops own start/reset semantics; gameRules owns global
-   numbers; terrain/macros own geometry; populate owns budgets. No module outside its owner
-   assigns lives/continues or scatters spawnables.
-3. **Determinism**: all randomness flows from the per-game seeded RNG. Same seed → identical
-   worlds. Death/continue rebuild the SAME arrangement, never reroll.
-4. **Config-driven, N-level**: nothing hardcodes "4 levels" or Level 1 specifics outside
-   `levelConfigs.js`. Adding a level = one config entry.
-5. **Behavior preservation**: hero, enemies, projectiles, collision, knockback behave
-   identically as before; only world construction changed. Silent behavior change = blocker.
-6. **No magic numbers at call sites**: tuning values live in `GAME_RULES` / `levelConfigs.js`
-   with a comment citing the doc section they settle.
-7. **No duplication**: one transition path, one camera-clamp source, one reward-crediting
-   site (credited exactly once regardless of redraws).
-8. **Placeholder-only visuals**: any new screen/zone uses drawn rectangles or existing
-   effects; no image loading introduced.
-9. **Test quality**: pure-unit where possible (level.js-style, no DOM), fixed dt = 1/60,
-   exact values within epsilon; integration tests simulate full flows headlessly.
-10. **No unbounded loops**: every generation/placement retry is attempt-capped (like the
-    prototype's MAX_ATTEMPTS) with a soft-cap fallback; every test has a hard timeout.
-    A hung generator or test is a blocker, not a flake.
-
-Verdict: `PASS` or `FAIL` + numbered findings. No prose padding.
-
-## Failure handling
-
-- Task blocked after 2 fix cycles → stop wave, report to user. Wait.
-- Executor budget exhausted → diagnosis-first re-dispatch (max 1), then BLOCKED.
-- Wave gate red → bisect, fix, re-run. Max 2 cycles, then stop.
-- Reviewer A unavailable → proceed with B only, flag "A-unavailable" in reviews.md.
-- Reviewer B unavailable → retry 1–2×, then proceed with A only, flag "B-unavailable".
-- User interrupts limited to reviewer disagreement — one line, batched at next gate if non-blocking.
-
-## Definition of done (epic)
-
-1. All 20 tasks: verify green, both reviews recorded, committed.
-2. Full suite green vs baseline (the 2 known pre-existing failures fixed by 7.3, none new).
-3. Determinism proven: same seed twice → identical Level 1 world layouts.
-4. Full game run completable headlessly: entry screen → areas with clear banners →
-   boss approach/intro/fight → reward screen crediting continues → next level; the FINAL
-   level ends on the minimal end-of-game screen (congrats + score + return home).
-5. Death mid-area restarts the same area with identical arrangement; continue from any area
-   lands in area -1 of the current level with restored starting lives.
-6. Continue pool is a growable balance (starts 3, credited by reward screen at 1 per 1000
-   coins, never coin-spent).
-7. Vertical zone: up-only camera, fall-off-bottom death, bottom-platform restart.
-8. Every "design-plan decision" marker in the docs has a concrete cited value in
-   `GAME_RULES` / `levelConfigs.js`.
-9. All 8 level config entries exist with monotonic tension rise; engine boots any level by index.
-10. One commit per task + gate commits; clean tree at each gate; progress file updated.
