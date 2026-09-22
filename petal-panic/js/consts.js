@@ -10,6 +10,12 @@ export const GRAVITY = 1500;
 // Terminal velocity: vertical speed is clamped to this (px/s).
 export const MAX_FALL_SPEED = 800;
 
+// Impulse multiplier applied to the second (air) jump. The double jump is
+// slightly weaker than the ground jump (design §4/§5). Single owner for the
+// factor — hero.js launches with it and terrain.js derives tier reachability
+// from it, so neither re-hardcodes the literal.
+export const DOUBLE_JUMP_FACTOR = 0.85;
+
 // Horizontal friction / air drag factor per second (multiplied into vx).
 // 0.98 at 60fps ≈ gentle air resistance; tune per entity later if needed.
 export const AIR_DRAG = 0.995;

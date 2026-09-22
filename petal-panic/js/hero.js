@@ -7,7 +7,7 @@
 // offset-box model end-to-end (the debug overlay shows the box get shorter).
 
 import { Entity } from './entity.js';
-import { GRAVITY, MAX_FALL_SPEED, LAYER } from './consts.js';
+import { GRAVITY, MAX_FALL_SPEED, LAYER, DOUBLE_JUMP_FACTOR } from './consts.js';
 import { aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } from './projectile.js';
 import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from './heroDefs.js';
 
@@ -532,7 +532,7 @@ export class Hero extends Entity {
       // cancels it atomically (state + hitbox + slide flag) before launch.
       if (this.crouching) this.exitCrouch();
       const isDouble = canAirJump;
-      this.vy = -this.stats.jump * (isDouble ? 0.85 : 1); // double jump slightly weaker
+      this.vy = -this.stats.jump * (isDouble ? DOUBLE_JUMP_FACTOR : 1); // double jump slightly weaker
       this.grounded = false;
       this._coyote = 0;
       this._jumpBuffer = 0;

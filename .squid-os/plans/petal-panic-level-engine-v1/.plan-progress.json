@@ -92,10 +92,18 @@
     },
     "3.1": {
       "number": "3.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Terrain grammar + seeded RNG",
       "milestone": "Terrain Generation",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "lessons_learned": "Double-jump reach = ground apex (jump^2/2g) + double apex ((0.85*jump)^2/2g): Scarlet ~143px, Balthazar ~101px, so tier steps must be <= ~85px (101 - 16 margin) to be comfortable for the weaker hero. node --test on a bare .js file runs fine (no package.json, ESM default).",
+        "confidence": "high",
+        "done": "Created petal-panic/js/terrain.js: a pure terrain grammar + seeded per-game RNG. createRng(seed) is a mulberry32 PRNG (numeric or FNV-1a-hashed string seed) with next/int/pick/float, so the same seed always yields the identical generation stream. BLOCK (1w, heights 1/2/3, solid, ground-rising, not one-way) and PLATFORM (widths 1/2/3, tiers 1/2/3, one-way, one thickness, not solid) grammars + makeBlock/makePlatform factories. doubleJumpReach/minHeroDoubleJumpReach/maxClearableStep derive tier spacing from the real hero physics (GRAVITY 1500, double-jump 0.85 factor, Balthazar is the binding weaker jumper) so each tier step is reachable by both heroes with a 16px margin; tierToOffset maps tiers 0..3 to equal-spaced pixel offsets. Added terrain.test.js (21 tests).",
+        "decisions": "mulberry32 for the PRNG (small, deterministic, platform-stable). Tier spacing is derived from hero reach by construction rather than a hand-tuned constant, so the 'reachable by both heroes' invariant holds automatically; Balthazar (smaller jump) is the binding constraint. Units model (not pixels) so 3.2 owns pixel layout. RNG is a stateful closure; determinism comes from fixed seed.",
+        "failures": "None for this task. Full suite shows 2 pre-existing baseline flakes in input.test.js (pause/supermove dispatch) that fail identically in isolation and do not import terrain.js.",
+        "tradeoffs": "Hero reach values (jump impulse 500/420, GRAVITY, double-jump 0.85) are mirrored locally in terrain.js rather than imported from heroDefs/consts, to keep the module pure and dependency-free; the docstring says to keep HERO_REACH in sync. REACH_MARGIN (16px) is a tuning constant. Dimensions stay in 'units' \u2014 pixel scaling is deferred to the macro composer (3.2)."
+      }
     },
     "3.2": {
       "number": "3.2",
