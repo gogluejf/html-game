@@ -73,7 +73,7 @@ The next area receives its own entry screen and fresh playable contents.
 Defeating a boss runs the reward screen before the next level's area -1.
 
 The exact final-game ending presentation is a design-plan concern; the last boss
-must not attempt to advance into a nonexistent fifth level.
+of the game must not attempt to advance into a nonexistent next level.
 
 ## 6. Lifetime of randomness
 
