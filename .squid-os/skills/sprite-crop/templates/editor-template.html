@@ -2353,22 +2353,46 @@ window.addEventListener('keydown', e=>{
     }
     if (!editingLocked() && !e.ctrlKey && !e.shiftKey && !e.altKey){
       const nudge = 1;
-      let target = null;
+      let dx = 0, dy = 0;
+      if (e.code === 'ArrowRight') dx = nudge;
+      else if (e.code === 'ArrowLeft') dx = -nudge;
+      else if (e.code === 'ArrowUp') dy = -nudge;
+      else if (e.code === 'ArrowDown') dy = nudge;
+      else return;
+      e.preventDefault();
+      pushUndo();
+      // Apply same all-frames propagation as drag handlers
       if (_selectedBox.startsWith('box_')){
         const selIdx = parseInt(_selectedBox.slice(4), 10);
-        target = st.frames[fi].boxes[selIdx];
+        for (let i=0;i<st.frames.length;i++){
+          if (!st.frames[i].boxes[selIdx]) continue;
+          st.frames[i].boxes[selIdx].x += dx;
+          st.frames[i].boxes[selIdx].y += dy;
+        }
+        if (st.pivot){ st.pivot.x += dx; st.pivot.y += dy; }
       } else if (_selectedBox === 'sprite'){
-        target = { get x(){ return st.frames[fi].offset.x; }, set x(v){ st.frames[fi].offset.x = v; },
-                  get y(){ return st.frames[fi].offset.y; }, set y(v){ st.frames[fi].offset.y = v; } };
+        for (let i=0;i<st.frames.length;i++){
+          st.frames[i].offset.x += dx;
+          st.frames[i].offset.y += dy;
+        }
+        st.collision.x += dx; st.collision.y += dy;
+        for (let i=0;i<st.frames.length;i++){
+          const bxArr = st.frames[i].boxes || [];
+          for (const b of bxArr){ b.x += dx; b.y += dy; }
+        }
+        if (st.pivot){ st.pivot.x += dx; st.pivot.y += dy; }
       } else if (_selectedBox === 'collision'){
-        target = st.collision;
+        st.collision.x += dx; st.collision.y += dy;
+        for (let i=0;i<st.frames.length;i++){
+          st.frames[i].offset.x += dx;
+          st.frames[i].offset.y += dy;
+          const bxArr = st.frames[i].boxes || [];
+          for (const b of bxArr){ b.x += dx; b.y += dy; }
+        }
+        if (st.pivot){ st.pivot.x += dx; st.pivot.y += dy; }
       }
-      if (target){
-        if (e.code === 'ArrowRight'){ e.preventDefault(); pushUndo(); target.x += nudge; syncPanel(); draw(); return; }
-        if (e.code === 'ArrowLeft'){ e.preventDefault(); pushUndo(); target.x -= nudge; syncPanel(); draw(); return; }
-        if (e.code === 'ArrowUp'){ e.preventDefault(); pushUndo(); target.y -= nudge; syncPanel(); draw(); return; }
-        if (e.code === 'ArrowDown'){ e.preventDefault(); pushUndo(); target.y += nudge; syncPanel(); draw(); return; }
-      }
+      syncPanel(); draw(); saveState();
+      return;
     }
   }
   switch (e.code){
