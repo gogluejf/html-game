@@ -66,13 +66,19 @@ Modeled on the effect-engine orchestrator, adapted to the level engine's specifi
 
 ## Scope exclusions (hard rules for every executor)
 
-- **NO art/sprite work.** Geometry stays drawn rectangles (blocks/platforms/ground as in the
-  prototype). Boss, enemies, cards, flags use placeholder visuals. Sprite hookup is a future epic.
-- **Level 1 only.** The engine is N-level/config-driven, but content ships for Level 1
-  (The Circus) exclusively. No Level 2+ config entries.
-- **No music/sound.** Docs defer it; silence is acceptable.
-- **No new combat mechanics.** Enemy AI, damage, knockback, barrel chain-damage behavior are
-  untouched — population places them, it does not redesign them.
+This epic builds the LEVEL SYSTEM ONLY. Out of scope — do not touch, redesign, or
+"improve" any of these in any task:
+
+- **Hero mechanics** (movement, jumps, slide, weapons, supermove) — unchanged.
+- **Enemy AI and behavior** — population only PLACES existing enemies; their logic is untouched.
+- **Combat systems** (damage, knockback, hitboxes, projectiles, barrel explosions) — unchanged.
+- **Effects** (js/effects/) — reuse existing ones as-is; no new or edited effect files.
+- **Art/sprites** — geometry stays drawn rectangles; placeholder visuals only; no image loading.
+- **Level 1 content only** — engine is config-driven/N-level, but only The Circus ships.
+- **Music/sound** — deferred; silence is fine.
+
+If a task seems to require touching any of the above, it is scoped wrong — stop and
+surface to the user instead of working around it.
 
 ## Wave structure
 
