@@ -92,7 +92,7 @@
     },
     "3.1": {
       "number": "3.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Terrain grammar + seeded RNG",
       "milestone": "Terrain Generation",
       "milestone_number": "3",
@@ -107,10 +107,18 @@
     },
     "3.2": {
       "number": "3.2",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Macro library + area composer",
       "milestone": "Terrain Generation",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "failures": "None (2 pre-existing baseline flakes in effectsShim and input tests, unrelated)",
+        "lessons_learned": "macroId alone can't distinguish repeated placements of the same macro \u2014 need a unique placement instance id. The docs say 'jumps must respect actual movement abilities' but downward steps are always possible (falling), so only upward steps need validation.",
+        "decisions": "Vertical macros use local tiers (1,2,3) and are placed at absolute climb elevation (axisPos + tier). Upward-only elevation constraint matches physical reality. Follow-condition relaxation preserves orientation constraint.",
+        "tradeoffs": "Horizontal elevation validation only checks upward steps (downward falls are always possible). Vertical validation uses placementId to distinguish macro instances. UNIT_PX=48 is a working constant pending pixel-scaling task 3.3.",
+        "done": "Fixed all 5 R2 findings: (1) Vertical areas now compose along Y axis with height budget, macros stacked vertically with sustained upward climb; (2) gapDrop macro now has a solid block landing after the gap; (3) Macro compatibility enforces both follows/followedBy directions, relaxes to same-orientation instead of discarding all constraints; (4) Route validation checks ALL elevation transitions (ground\u2192first, unit\u2192next, last\u2192exit), upward-only constraint; (5) MAX_CLEARABLE_GAP derived from hero physics (speed \u00d7 airtime, min of both heroes). Updated generation.md \u00a72/\u00a74/\u00a76 and structure.md \u00a74/\u00a75.",
+        "confidence": "high"
+      }
     },
     "3.3": {
       "number": "3.3",

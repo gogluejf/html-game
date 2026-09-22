@@ -27,6 +27,9 @@ Examples from the design discussion, to become a tunable pattern vocabulary:
   platform at tier 2; then height-3, height-2, height-1 blocks.
 - **Climbing pattern:** a sequence of reachable landings that continues upward
   within the vertical area's fixed screen width.
+- **Gap/drop:** a wide gap followed by a lower landing (a solid block). The
+  hero must jump the gap and land on the block. Not a lethal pit — the landing
+  is a real surface, not air.
 
 These are families of arrangements, not final spacing values. A gap or drop is
 a movement challenge; this does not automatically mean a lethal pit.
@@ -53,6 +56,28 @@ neighboring patterns into a playable route.
 4. Populate their designated positions using the level's budgets and chances.
 5. Check the complete route, including the joins and population obstacles.
 6. Keep the resulting arrangement for every attempt in this game.
+
+**Composition axis.** Horizontal areas compose along X: the budget is a width
+budget, and macros are placed left to right. Vertical areas compose along Y:
+the budget is a HEIGHT budget (the zone is roughly three screens tall), and
+macros are stacked upward — each macro's entry sits at the current climb
+elevation, and its exit raises the hero's position. The zone's width is fixed
+(one screen wide), so horizontal positioning is constrained; composition
+itself is purely vertical.
+
+**Follow conditions.** A macro can declare which macros can precede it
+(`follows`) and which can follow it (`followedBy`). The composer enforces BOTH
+directions: if macro A declares `followedBy: [B]` and macro B declares
+`follows: [A]`, both must agree. If no compatible candidate exists, the
+composer relaxes to any macro of the same orientation (follow conditions are
+soft pacing hints; orientation is the hard structural constraint).
+
+**Elevation validation.** The route is validated for playability: only
+UPWARD elevation steps are constrained (a hero can reach at most one tier
+higher per jump). Downward steps are always possible (falling), so they are
+not validated. In vertical areas, the climb must continue upward between
+macros — the next macro's first landing must be at a higher elevation than
+the previous macro's last landing.
 
 Terrain selection is randomized too. The earlier idea that only population was
 random was incorrect. Authored macros constrain randomness; they do not make
@@ -94,7 +119,11 @@ curve (config); what is rolled is the concrete layout, once per game.
 ## 6. Playability requirements
 
 - Both heroes must be able to complete the required route.
-- Jumps must respect actual movement abilities and available headroom.
+- Jumps must respect actual movement abilities and available headroom. The
+  maximum clearable horizontal gap is derived from hero physics: the minimum
+  horizontal distance a hero can cover during a full-speed double-jump airtime
+  (speed × total airtime, where total airtime = single-jump airtime +
+  double-jump airtime). Any gap wider than this is impossible.
 - Solid blocks cannot be treated as jump-through platforms.
 - Required landings must not be buried beneath barrel walls or other solids.
 - Pattern joins must not create impossible gaps or trapped starts.

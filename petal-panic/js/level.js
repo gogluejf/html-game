@@ -31,6 +31,8 @@ import { makeBoris, makeBorisBaby } from './boris_loon.js';
 import { makeBarrel, makeWoodBarrel, makeCoinBarrel, makeCheckpoint } from './object.js';
 import { Powerup } from './powerup.js';
 import { VIEW_H } from './view.js';
+import { composeArea } from './macros.js';
+import { createRng } from './terrain.js';
 
 // ---------------------------------------------------------------------------
 // Level definitions (declarative — WHAT, not WHERE)
@@ -361,6 +363,66 @@ export function buildLevelZones(levelDef) {
   zones.push(bossZone);
 
   return zones;
+}
+
+// ---------------------------------------------------------------------------
+// Zone terrain composition (task 3.2 — macro composer integration)
+// ---------------------------------------------------------------------------
+// The macro composer (macros.js) produces a unit-space layout for a zone.
+// This function bridges the zone model and the macro composer: it composes
+// the terrain for a given zone using the per-game RNG, and returns the layout
+// ready for pixel scaling (task 3.3 / 7.2).
+//
+// The layout is in UNIT SPACE (width-units and tier-units). Pixel scaling
+// (unit → px) is a later task; this function returns the unit-space layout
+// as-is so the caller can apply the scale factor when it's defined.
+
+/**
+ * Compose the terrain for one zone using the macro composer.
+ *
+ * This is a PURE function: (zone, rng, seed) → terrain layout.
+ * Same seed → same layout (lifecycle.md §6: the RNG is rolled ONCE per game).
+ *
+ * @param {object} zone a zone from buildLevelZones()
+ * @param {ReturnType<typeof createRng>} rng the per-game RNG (stateful)
+ * @param {number} budget the area's length budget in width-units
+ * @returns {object} the composed terrain layout (same shape as composeArea)
+ */
+export function buildZoneTerrain(zone, rng, budget) {
+  if (zone.kind !== 'area') {
+    throw new Error(`buildZoneTerrain: zone kind must be 'area', got ${zone.kind}`);
+  }
+  const orientation = zone.orientation;
+  const stage = zone.areaIdx; // -1 to -4
+  return composeArea(rng, orientation, stage, budget);
+}
+
+/**
+ * Compose terrain for ALL ordinary areas of a level using a single per-game seed.
+ *
+ * This derives one RNG from the seed and composes each area's terrain in
+ * sequence. The RNG is stateful, so the composition order matters: areas are
+ * composed in play order (-1, -2, -3, -4), and each area's composition
+ * advances the RNG stream. This is the "rolled once per game" contract:
+ * the same seed always produces the same terrain for every area.
+ *
+ * @param {object} levelDef one entry from LEVELS
+ * @param {number|string} seed the per-game seed
+ * @param {number} budget the area's length budget in width-units
+ * @returns {Map<number, object>} map of areaIdx → terrain layout
+ */
+export function buildAllZoneTerrain(levelDef, seed, budget) {
+  const zones = buildLevelZones(levelDef);
+  const rng = createRng(seed);
+  const result = new Map();
+
+  for (const zone of zones) {
+    if (zone.kind !== 'area') continue;
+    const layout = buildZoneTerrain(zone, rng, budget);
+    result.set(zone.areaIdx, layout);
+  }
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------

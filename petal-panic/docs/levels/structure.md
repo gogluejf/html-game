@@ -70,6 +70,15 @@ Vertical progression is an upward climb, Contra-style.
 The initial supporting platform must allow a safe start; the lethal bottom rule
 must not kill a hero standing normally at the entry.
 
+**Composition.** Vertical areas are composed along the Y axis (height), not
+the X axis (width). The budget is a HEIGHT budget — the zone is roughly three
+screens tall (VIEW_H × 3 ≈ 1620 px). Macros are stacked upward: each macro's
+entry sits at the current climb elevation, and its exit raises the hero's
+position. The zone's width is fixed (one screen wide), so horizontal
+positioning is constrained; composition itself is purely vertical. The
+climb must be sustained: each successive macro continues upward, and the
+final platform reaches the top of the zone (where the exit flag sits).
+
 **Coordinate summary (screen coordinates, y=0 is top):**
 
 | Element | Y position |
@@ -102,6 +111,11 @@ are not interchangeable, even when their top surfaces share a height.
 Successive top-surface elevations are spaced so double jumping can reach the
 next tier: ground to tier 1, then tier 1 to tier 2, then tier 2 to tier 3.
 Spacing must work for both heroes with a usable margin, not only a perfect jump.
+
+The maximum clearable horizontal gap is derived from hero physics: the minimum
+horizontal distance a hero can cover during a full-speed double-jump airtime
+(speed × total airtime). This is computed from the hero's run speed and jump
+impulse (both heroes, take the minimum), not a hand-tuned constant.
 
 Vertical areas repeat reachable climbing patterns upward; three tiers must not
 accidentally become a three-platform cap on the entire ascent. Exact vertical
