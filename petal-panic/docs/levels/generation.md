@@ -1,0 +1,97 @@
+# Petal Panic — Area Generation
+
+**Randomize the selection and arrangement of playable patterns, not arbitrary
+obstacles.** A macro is an authored terrain sequence with a readable challenge,
+an entry, and an exit. The generator combines macros into an area.
+
+## 1. Terrain grammar
+
+Use the block and platform units defined in [structure](structure.md):
+
+- Blocks: one width unit, heights 1, 2, or 3; solid from every side.
+- Platforms: widths 1, 2, or 3, placed at elevation tier 1, 2, or 3; one-way.
+- Successive elevation steps are reachable using the hero's double jump.
+
+The artwork provides themed appearances, not permission to break these rules.
+A block's decorative top must not be confused with a separate gameplay object.
+
+## 2. Macro examples
+
+Examples from the design discussion, to become a tunable pattern vocabulary:
+
+- **Pyramid:** blocks of heights 1, 2, 3, 2, 1.
+- **Low repeated obstacles:** five single-height blocks in sequence.
+- **Stretched pyramid:** five height-1 blocks, five height-2 blocks, five
+  height-3 blocks, followed by a descent/drop.
+- **Mixed crossing:** height-1, height-2, height-3 blocks; a gap; a triple-width
+  platform at tier 2; then height-3, height-2, height-1 blocks.
+- **Climbing pattern:** a sequence of reachable landings that continues upward
+  within the vertical area's fixed screen width.
+
+These are families of arrangements, not final spacing values. A gap or drop is
+a movement challenge; this does not automatically mean a lethal pit.
+
+## 3. What a macro describes
+
+Each pattern describes in ordinary design terms:
+
+- Its orientation and difficulty category.
+- Terrain order, relative elevations, widths, and gaps.
+- Where the hero arrives and leaves, and what landing space is needed.
+- Suitable positions for enemies, barrels, and powerups.
+- Allowed variations and their selection chances.
+- Conditions under which it can follow another pattern.
+
+A macro is more than an attractive picture. Its entrance and exit must join
+neighboring patterns into a playable route.
+
+## 4. Constructing an area
+
+1. Reserve a safe entry and a reachable exit-flag region.
+2. Select patterns suitable for the area's orientation and progression stage.
+3. Arrange compatible patterns to meet the area's length/height budget.
+4. Populate their designated positions using the level's budgets and chances.
+5. Check the complete route, including the joins and population obstacles.
+6. Keep the resulting arrangement for every attempt in this game.
+
+Terrain selection is randomized too. The earlier idea that only population was
+random was incorrect. Authored macros constrain randomness; they do not make
+all games use the same terrain sequence.
+
+## 5. Progression across -1 to -4
+
+Patterns are grouped or weighted by challenge so progression is deliberate:
+
+- **-1:** fewer blocks/platforms, simpler arrangements, room to move.
+- **-2:** increased combinations and more climbing/crossing demands.
+- **-3:** denser obstacles and more substantial set pieces.
+- **-4:** the strongest permitted combinations and harder elevated routes.
+
+Exactly one of -2/-3/-4 is vertical. It follows the same progression principle
+through climbing complexity, not horizontal length. Pattern repetition is
+allowed, but unconstrained repetition must not replace pacing.
+
+Later areas should feel more intense, not impossible. Breathing room and clear
+landings remain useful even in the hardest patterns.
+
+## 6. Playability requirements
+
+- Both heroes must be able to complete the required route.
+- Jumps must respect actual movement abilities and available headroom.
+- Solid blocks cannot be treated as jump-through platforms.
+- Required landings must not be buried beneath barrel walls or other solids.
+- Pattern joins must not create impossible gaps or trapped starts.
+- In vertical areas, the route must remain usable under an upward-only camera.
+- The start and exit must not require a random powerup to be reachable.
+
+Validate the composed and populated area, not only isolated macros. Difficulty
+comes from readable challenges, not accidental impossible geometry.
+
+## 7. Tuning boundary
+
+Exact unit dimensions, pattern weights, spacing, and area budgets remain tuning
+work. The target is roughly double the prototype's short ordinary areas. Measure
+that baseline before selecting exact dimensions.
+
+A level's configuration chooses patterns and budgets. The shared mechanics do
+not acquire special-case rules for each individual level.
