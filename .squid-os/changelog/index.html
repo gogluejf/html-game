@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>html-game — Changelog</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #352830;
+  --bg-deep: #241a20;
+  --bg-deeper: #1a1018;
+  --surface: #2a1f28;
+  --card: #3e2f38;
+  --gold: #f0c040;
+  --gold-dim: #b8922a;
+  --orange: #f08912;
+  --orange-soft: #f5a623;
+  --text: #f4e8e0;
+  --text-dim: #a89aa2;
+  --line: rgba(240, 192, 64, 0.14);
+  --line-soft: rgba(240, 192, 64, 0.08);
+  --radius: 12px;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+.wrap { width: min(900px, calc(100vw - 48px)); margin: 0 auto; }
+
+/* Header */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(42, 31, 40, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.site-header .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 0;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand h1 {
+  font-size: 1.3rem;
+  color: var(--gold);
+  letter-spacing: -0.5px;
+}
+
+.brand .sub {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+
+/* Filter buttons */
+.filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover {
+  border-color: var(--gold-dim);
+  color: var(--text);
+}
+
+.filter-btn.active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(240, 192, 64, 0.08);
+}
+
+/* Stats bar */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  padding: 32px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.stat {
+  text-align: center;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+}
+
+.stat .num {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--gold);
+  font-family: var(--mono);
+}
+
+.stat .label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.stat .num.value-avg { color: hsl(82, 75%, 45%); }
+
+/* Entries */
+.entries {
+  padding: 40px 0 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.entry-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.date-stamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--bg-deeper);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  min-height: 140px;
+  position: sticky;
+  top: 90px;
+}
+
+.stamp-day {
+  font-family: var(--mono);
+  font-size: 3.4rem;
+  font-weight: 800;
+  color: var(--gold);
+  line-height: 1;
+  letter-spacing: -3px;
+}
+
+.stamp-month {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--orange-soft);
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+
+.entry-card {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  padding: 28px 30px;
+  transition: transform 0.25s, border-color 0.25s, opacity 0.5s;
+}
+
+.entry-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--line);
+}
+
+.entry-row.hidden {
+  display: none;
+}
+
+.entry-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.entry-header h3 {
+  font-size: 1.2rem;
+  color: var(--gold);
+  letter-spacing: -0.3px;
+}
+
+.entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.badge {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-deeper);
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+}
+
+.date-range {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.entry-summary {
+  color: var(--text-dim);
+  font-size: 0.92rem;
+  margin-bottom: 14px;
+}
+
+.entry-bullets {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+.entry-bullets li {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 6px;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.entry-bullets li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: var(--orange-soft);
+  font-weight: 700;
+}
+
+/* Value gauge */
+.value-gauge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.gauge-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  min-width: 50px;
+}
+
+.gauge-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-deeper);
+  overflow: hidden;
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+.gauge-num {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Tags */
+.entry-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line-soft);
+  color: var(--text-dim);
+  background: var(--bg-deeper);
+}
+
+/* Footer */
+.site-footer {
+  background: var(--bg-deeper);
+  border-top: 1px solid var(--line-soft);
+  padding: 30px 0;
+  text-align: center;
+}
+
+.site-footer p {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+
+/* Scroll-in animation */
+.fx {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.fx.in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx { opacity: 1; transform: none; transition: none; }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .stats-bar { grid-template-columns: 1fr 1fr; }
+  .entry-header { flex-direction: column; }
+  .filters { width: 100%; }
+  .entry-row {
+    grid-template-columns: 1fr;
+  }
+  .date-stamp {
+    position: static;
+    flex-direction: row;
+    gap: 8px;
+    min-height: auto;
+    padding: 10px 14px;
+    justify-content: flex-start;
+  }
+  .stamp-day { font-size: 1.4rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <div class="brand">
+      <h1>🦑 html-game</h1>
+      <span class="sub">changelog</span>
+    </div>
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="week">Week</button>
+      <button class="filter-btn" data-filter="month">Month</button>
+      <button class="filter-btn" data-filter="quarter">Quarter</button>
+      <button class="filter-btn" data-filter="year">Year</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="num">6</div>
+      <div class="label">Entries</div>
+    </div>
+    <div class="stat">
+      <div class="num">136</div>
+      <div class="label">Commits</div>
+    </div>
+    <div class="stat">
+      <div class="num value-avg">7.2</div>
+      <div class="label">Avg Impact</div>
+    </div>
+    <div class="stat">
+      <div class="num" style="font-size:1rem">This week<br><span style='font-size:0.7rem;color:var(--text-dim)'>18–21 Sep</span></div>
+      <div class="label">Coverage</div>
+    </div>
+  </div>
+
+  <div class="entries">
+    
+        <div class="entry-row fx" data-dates="2026-09-21" data-value="7">
+          <div class="date-stamp">
+            <span class="stamp-day">21</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🎨 ANIMATION STUDIO</h3>
+              <div class="entry-meta">
+                <span class="badge">22 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Hit box editing, markers, playback modes, and UI polish for sprite editor</p>
+            <ul class="entry-bullets"><li>Multi-box hit box editing with selection + arrow nudge</li><li>Rigid body propagation to all frames</li><li>Markers (per-animation point + radius)</li><li>Playback: loop/once, per-frame duration</li><li>Cross-tab sync + localStorage isolation</li><li>Wrote cleanup/refactor plan</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:70%;background:hsl(80, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(80, 75%, 45%)">7/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">editor</span><span class="tag">sprites</span><span class="tag">ui</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-21" data-value="5">
+          <div class="date-stamp">
+            <span class="stamp-day">21</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🧭 NAV / UX</h3>
+              <div class="entry-meta">
+                <span class="badge">8 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Unified navigation hints across all screens</p>
+            <ul class="entry-bullets"><li>Unified nav instruction bar</li><li>Dynamic hints read from input engine</li><li>Pause/gameover screen improvements</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:50%;background:hsl(53, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(53, 75%, 45%)">5/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">petal-panic</span><span class="tag">ux</span><span class="tag">nav</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-20" data-value="9">
+          <div class="date-stamp">
+            <span class="stamp-day">20</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>💥 KNOCKBACK SYSTEM</h3>
+              <div class="entry-meta">
+                <span class="badge">18 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Full knockback/recoil system built from scratch — enemies fly when hit</p>
+            <ul class="entry-bullets"><li>Enemy hit-stun + AI interrupt</li><li>Velocity-scaled body knockback</li><li>Vertical pop on hard hits</li><li>Dead enemies fly off platforms</li><li>Self-protection (sweep + cartwheel)</li><li>Unified explosion as generic data-driven property</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:90%;background:hsl(106, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(106, 75%, 45%)">9/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">petal-panic</span><span class="tag">combat</span><span class="tag">physics</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-20,2026-09-21" data-value="10">
+          <div class="date-stamp">
+            <span class="stamp-day">20-21</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>✨ EFFECTS ENGINE</h3>
+              <div class="entry-meta">
+                <span class="badge">62 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Built the whole effect engine in 7 waves — 25+ effects + debug theater</p>
+            <ul class="entry-bullets"><li>Core: registry, trigger bus, carrier interface</li><li>Screen effects: overlay, flash, camera shake, impact star</li><li>Particles: debris, dust, composite explosion</li><li>Motion: trail, afterimage, shockwave, telegraph circle</li><li>Sprite-state: fade, scale/pulse, squash & stretch, aura, beam</li><li>Effect Theater (KeyB) — step through all demos</li><li>Full regression: 60/60 passing → EPIC DONE</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:100%;background:hsl(120, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(120, 75%, 45%)">10/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">petal-panic</span><span class="tag">effects</span><span class="tag">engine</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-18,2026-09-19" data-value="8">
+          <div class="date-stamp">
+            <span class="stamp-day">18-19</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🦸 HERO MECHANICS POLISH</h3>
+              <div class="entry-meta">
+                <span class="badge">24 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Rewrote hero engine to match mechanics doc — 4 waves of alignment</p>
+            <ul class="entry-bullets"><li>Contextual Down (crouch vs aim)</li><li>Air control ramp + momentum preservation</li><li>Per-hero special melee trajectories</li><li>Data-driven per-frame hitboxes</li><li>Melee input buffer (latest-wins)</li><li>Recovery cancellation</li><li>Crouch flicker + diagonal aim fixes</li><li>Balthazar leg sweep tuning</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:80%;background:hsl(93, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(93, 75%, 45%)">8/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">petal-panic</span><span class="tag">hero</span><span class="tag">combat</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-18" data-value="4">
+          <div class="date-stamp">
+            <span class="stamp-day">18</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🎵 MARCH TO POWER REMIX</h3>
+              <div class="entry-meta">
+                <span class="badge">2 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Petal Panic playlist — proper 1b b-phrase ending (descent to tonic)</p>
+            <ul class="entry-bullets"><li>March to Power Remix with correct b-phrase resolution</li><li>Replaced old pyra state files with petal-panic playlist</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:40%;background:hsl(40, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(40, 75%, 45%)">4/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">music</span><span class="tag">petal-panic</span></div>
+          </div>
+        </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Generated by Squid-OS changelog skill · 2026-09-21 23:43</p>
+  </div>
+</footer>
+
+<script>
+// Filter logic
+const filters = document.querySelectorAll('.filter-btn');
+const cards = document.querySelectorAll('.entry-row');
+
+filters.forEach(btn => {
+  btn.addEventListener('click', () => {
+    filters.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter = btn.dataset.filter;
+    applyFilter(filter);
+  });
+});
+
+function applyFilter(filter) {
+  const now = new Date();
+  let cutoff;
+  switch(filter) {
+    case 'week': cutoff = new Date(now); cutoff.setDate(now.getDate() - 7); break;
+    case 'month': cutoff = new Date(now); cutoff.setMonth(now.getMonth() - 1); break;
+    case 'quarter': cutoff = new Date(now); cutoff.setMonth(now.getMonth() - 3); break;
+    case 'year': cutoff = new Date(now); cutoff.setFullYear(now.getFullYear() - 1); break;
+    default: cutoff = null;
+  }
+
+  cards.forEach(card => {
+    if (!cutoff) {
+      card.classList.remove('hidden');
+      return;
+    }
+    const dates = card.dataset.dates.split(',');
+    // Show if any date in the entry is after cutoff
+    const visible = dates.some(d => new Date(d) >= cutoff);
+    card.classList.toggle('hidden', !visible);
+  });
+}
+
+// Scroll-in animation
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('in');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.fx').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
