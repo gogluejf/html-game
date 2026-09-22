@@ -1,8 +1,8 @@
 // Petal Panic — update system (fixed 60Hz physics step).
-// Task 1.3 integration test: a hero-colored box moved by arrow keys / WASD,
+// integration test: a hero-colored box moved by arrow keys / WASD,
 // colliding against static orange SOLID platforms via CollisionWorld + resolve().
 // Debug mode toggles the unified debug overlay in render.js.
-// Task 1.4: hero-following camera clamped to level bounds with facing
+// hero-following camera clamped to level bounds with facing
 // look-ahead; the test level is now longer than the viewport so the camera
 // scrolls, and placeholder enemies/projectiles/pickups exercise every §16
 // debug-overlay color.
@@ -41,7 +41,7 @@ import { createStats, dumpStats } from '../stats.js';
 // --- Tunables for the test rig ---------------------------------------------
 // (Hero movement feel lives in js/hero.js; level geometry below.)
 
-// Task 5.3 — Level struct + rogue spawner (design §13). The declarative level
+// Level struct + rogue spawner (design §13). The declarative level
 // definition (LEVELS[0] "Big Top") drives all world content: platforms,
 // checkpoints, and every spawnable item. generateLevel() randomly places the
 // spawnables along flat ground with min spacing; the hero-start zone (first
@@ -65,7 +65,7 @@ class SolidBox extends Entity {
 }
 const solidEntities = SOLIDS.map(b => new SolidBox(b));
 
-// --- Hero (Task 2.2) ---------------------------------------------------------
+// --- Hero ---------------------------------------------------------
 // Real Hero wrapping the Scarlet Vale definition; run/jump/crouch/slide,
 // gravity, ground friction, facing+mirrorX, and crouch-box shrink all live in
 // js/hero.js. Spawn on the floor at x=100 (per design §13 hero start).
@@ -75,7 +75,7 @@ let hero = new Hero(HEROES.scarlet, HERO_START_X, FLOOR_TOP - HEROES.scarlet.h);
 /** Rebind the module-level hero reference (used by debug hero-swap). */
 function setHeroRef(h) { hero = h; }
 
-// Task 3.1 — thorn fire state. Cooldown is in seconds; rapid powerup halves it.
+// thorn fire state. Cooldown is in seconds; rapid powerup halves it.
 // (Hero.stats.projectile_freq is "shots per second", so base interval = 1/freq.)
 hero.fireCooldown = 0;
 
@@ -85,7 +85,7 @@ hero.fireCooldown = 0;
 // horizontal toward facing, airborne/lockMove + Down → straight down, ...).
 input.setResolveAim((intent) => getHero().resolveAim(intent));
 
-// Task 7.3 — Unified run telemetry (design §4.1). A single stats object tracks
+// Unified run telemetry (design §4.1). A single stats object tracks
 // every documented field: kills, damage, coins, hits taken, time, distance, etc.
 // It replaces the earlier scattered ad-hoc counters with one coherent structure.
 // hero.combatStats is aliased to point INTO runStats so that damage.js and
@@ -101,14 +101,14 @@ hero.combatStats = {
   powerupsCollected: hero.runStats.powerupsCollected,
 };
 
-// Task 4.2 — coin collection stats (design §14). Per-type counters + total;
+// coin collection stats (design §14). Per-type counters + total;
 // the total drives the 1up threshold (every 100 coins → +1 life).
-// Now lives in hero.runStats.coinsCollected (Task 7.3 unified stats).
+// Now lives in hero.runStats.coinsCollected (unified stats).
 
-// Task 2.1 — Hero uses no anim (solid debugColor rect). Real sprites later.
+// Hero uses no anim (solid debugColor rect). Real sprites later.
 hero.anim = null;
 
-// Task 3.2 — Melee attack animation (5 placeholder frames).
+// Melee attack animation (5 placeholder frames).
 // Frame 3 (index) is the "active" frame where the hitbox is live.
 // Colors progress from dark → bright → dim to visually mark the peak.
 const attackFrames = ['#555555', '#888888', '#aaaaaa', '#ffffff', '#666666'];
@@ -132,29 +132,29 @@ hero.anims.supermove = new Anim(superFrames, { speed: 60, loop: false });
 // These exist purely so every §16 overlay color is visible on screen. They are
 // static (gravity 0) and do NOT participate in collision resolution this task;
 // real enemy/projectile/powerup behavior lands in later tasks.
-// Task 3.1 — three red target boxes (HP = 20) that friendly thorns can destroy.
+// three red target boxes (HP = 20) that friendly thorns can destroy.
 // These stand in for real enemies: same ENEMY layer + HP, but no death pipeline
-// yet (that lands in Task 3.3). When hp drops to <= 0 they are culled here.
+// yet (that lands in ). When hp drops to <= 0 they are culled here.
 const FLOOR_TOP_ENEMY = SOLIDS[0].y; // floor top
 // Legacy placeholder targets removed — real enemies (realEnemies) handle all combat.
 // Kept as empty array so existing code paths (melee, collision, damage) don't break.
 const enemies = [];
 
-// Task 5.3 — Real enemies come from generateLevel(LEVELS[0]). The rogue spawner
+// Real enemies come from generateLevel(LEVELS[0]). The rogue spawner
 // randomly places each type along flat ground with min spacing; flyers hover at
 // their resting altitude, grounders sit on the floor. Every documented AI
 // (jester/vine_hound/violetta/jackolantern/boris_loon/boris_loon_baby) is
 // instantiated per the level's spawn budget.
 const realEnemies = generated.enemies;
 
-// Task 6.1 — Overgrown Elephant boss (design §9). Spawned at the far end of the
+// Overgrown Elephant boss (design §9). Spawned at the far end of the
 // level in the boss arena (last 500px stay clear of regular spawns). The camera
 // locks to its arena once the hero gets within BOSS_TRIGGER_RADIUS; defeating it
 // transitions to S.WIN. Tracked separately from realEnemies so the generic
 // enemy loop never drives the boss's phase machine.
 export const boss = makeElephant(LEVEL_LENGTH - 300, FLOOR_TOP);
 
-// Task 2.1 — Non-looping anim test. Kept off the live targets (above) so the
+// Non-looping anim test. Kept off the live targets (above) so the
 // animation cycle doesn't obscure their destruction; attached to a separate
 // decorative placeholder that never takes damage.
 // Legacy placeholder entities (Tasks 1.2–3.1) — disabled. Real entities come
@@ -169,16 +169,16 @@ animTestEnemy.anim = new Anim(
 const projectiles = [];
 const pickups = [];
 
-// Task 4.1 — Destructible solid barrels (design §10 "Object").
+// Destructible solid barrels (design §10 "Object").
 // Barrels are SOLID (block hero + enemy) but carry an HP pool; melee/thorns/bombs
 // chip that HP and it only explodes when HP hits 0. Placed along the floor so the
 // hero has to shoot around/through them. Coin barrels sit nearby as a coin source
-// (no damaging explosion). Task 5.3 — positions now come from generateLevel().
+// (no damaging explosion). positions now come from generateLevel().
 const barrels = generated.barrels;
 const woodBarrels = generated.woodBarrels ?? [];
 const coinBarrels = generated.coinBarrels;
 
-// Task 4.1 — dynamic SOLID registry: world boxes of every LIVE barrel.
+// dynamic SOLID registry: world boxes of every LIVE barrel.
 // Barrels are solids like the static platforms (design §10/§16): the hero and
 // grounded enemies resolve() against SOLIDS + this list each step, so they can
 // stand on and be blocked by barrels. The list is refreshed once per fixed
@@ -191,17 +191,17 @@ function refreshBarrelSolidBoxes() {
   }
 }
 
-// Task 4.3 — Powerups (design §10). Scattered along the level by the rogue
+// Powerups (design §10). Scattered along the level by the rogue
 // spawner with min spacing. Each sits on the floor (bob animation lifts it
 // visually). The 'clear' powerup is placed wherever the spawner rolls it.
 export const powerups = generated.powerups;
 
-// Task 4.3 — Checkpoints (design §10/§13): four flags at x = 2000/4000/6000/7500
+// Checkpoints (design §10/§13): four flags at x = 2000/4000/6000/7500
 // with ids '1-1' … '1-4'. Touching one stores its position on hero.checkpoint
 // for death-restart. They are NOT solids — they don't block movement.
 export const checkpoints = generated.checkpoints;
 
-// --- Floating text (Task 4.3 VFX) -------------------------------------------
+// --- Floating text (VFX) -------------------------------------------
 // Small pooled "value label" popups for powerup pickups (e.g. "+100 Ammo") and
 // checkpoint triggers ("CHECKPOINT 1-2"). Pure visual: no collision layer, no
 // allocation after init. Reuses the same pool pattern as particles.
@@ -242,7 +242,7 @@ function spawnFloatText(x, y, text, color) {
 
 // --- Input -------------------------------------------------------------------
 /**
- * Task 5.2 — Retry from game over: restart at the first checkpoint (1-1) or
+ * Retry from game over: restart at the first checkpoint (1-1) or
  * level start, full energy, lives reset to 3, continues reset. Checkpoints do
  * NOT persist across a retry (design §1).
  */
@@ -261,7 +261,7 @@ export function retryFromGameOver() {
   hero.timers.set('intangible', Hero.RESPAWN_IFRAMES);
   hero.continuesUsed = 0;
   hero.checkpoint = { x: hero.x, y: hero.y };
-  Effects.reset(); // Task 7.1 — clear any stale vignette/flash between runs
+  Effects.reset(); // clear any stale vignette/flash between runs
   // Reset checkpoint flags so they can re-trigger on the new run.
   for (const c of checkpoints) c.triggered = false;
   if (tryTransition(S.PLAY)) {
@@ -270,7 +270,7 @@ export function retryFromGameOver() {
 }
 
 /**
- * Task 5.2 — Continue from game over: limited to hero.maxContinues per run,
+ * Continue from game over: limited to hero.maxContinues per run,
  * no coin cost. Restores at the last checkpoint with full energy and one life.
  * Returns true if the continue was applied.
  */
@@ -404,7 +404,7 @@ export function processInput() {
   });
 }
 
-// --- Effect Theater gamepad stepping (task 7.2) ------------------------------
+// --- Effect Theater gamepad stepping ------------------------------
 // Tracks the previous held-direction so a step fires only on the edge (crossing
 // zero), preventing hold-to-spin. `wasHeld` is -1/0/+1 for prev/left/right.
 let theaterWasHeld = 0;
@@ -590,7 +590,7 @@ function swapHero() {
     selectedWeapon: hero.selectedWeapon,
     checkpoint: hero.checkpoint, continuesUsed: hero.continuesUsed,
     stats: hero.stats,
-    runStats: hero.runStats, // Task 7.3 — preserve unified telemetry
+    runStats: hero.runStats, // preserve unified telemetry
     intangible: hero.intangible, rapidTimer: hero.rapidTimer,
   };
 
@@ -715,18 +715,18 @@ world.add(hero);
 // thorns can hit them (the anim box has no hp, so it's damage-immune).
 for (const e of enemies) world.add(e);
 world.add(animTestEnemy);
-// Task 5.1 — remaining enemies participate in collisions (thorn hits, contact,
+// remaining enemies participate in collisions (thorn hits, contact,
 // foe projectiles). Flyers use gravity 0 so they never fall; grounders do not.
 for (const e of realEnemies) world.add(e);
-// Task 6.1 — boss participates in collisions (PROJ_ALLY×BOSS → 'hit',
+// boss participates in collisions (PROJ_ALLY×BOSS → 'hit',
 // HERO×BOSS → contact). Added after the regular enemies.
 world.add(boss);
-// Task 4.1 — barrels are SOLID: they block hero + enemy (resolve) and can be
+// barrels are SOLID: they block hero + enemy (resolve) and can be
 // hit by friendly thorns (PROJ_ALLY×SOLID → 'hit'). Added now; destroyed ones
 // are removed from the world when their HP hits 0. Both explosive barrels AND
 // coin barrels participate (coin barrels just skip the damaging AoE on death).
 for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) world.add(b);
-// Task 4.3 — powerups (PICKUP layer; HERO×PICKUP → 'pickup') and checkpoints
+// powerups (PICKUP layer; HERO×PICKUP → 'pickup') and checkpoints
 // (CHECKPOINT layer; HERO×CHECKPOINT → 'checkpoint'). Both are non-solid.
 for (const p of powerups) world.add(p);
 for (const c of checkpoints) world.add(c);
@@ -736,7 +736,7 @@ for (const c of checkpoints) world.add(c);
 world.on('resolve', () => {}); // positional correction happens via the resolve()
                                 // calls below (SOLIDS + barrelSolidBoxes)
 
-// Task 3.1 — friendly thorns hit ENEMY/BOSS (PROJ_ALLY rule). Apply damage and
+// friendly thorns hit ENEMY/BOSS (PROJ_ALLY rule). Apply damage and
 // cull the projectile on impact. This is the ONLY place a PROJ_ALLY can interact
 // with an enemy; there is no PROJ_ALLY↔HERO rule, so friendly-fire stays off.
 world.on('hit', (a, b) => {
@@ -745,7 +745,7 @@ world.on('hit', (a, b) => {
   if (allyProj && allyProj.friendly) {
     const target = allyProj === a ? b : a;
 
-    // Task 4.1 — friendly thorn hits a barrel (SOLID with an HP pool). Chip its
+    // friendly thorn hits a barrel (SOLID with an HP pool). Chip its
     // HP; on destruction the barrel explodes (AoE + VFX) and is removed from the
     // world. Thorns are consumed on impact either way.
     if (target instanceof GameObj) {
@@ -765,7 +765,7 @@ world.on('hit', (a, b) => {
 
     if (target.layer !== LAYER.ENEMY && target.layer !== LAYER.BOSS) return;
     if (target.hp == null) return;       // non-target placeholder (e.g. anim test box)
-    // Task 6.1 — boss weak point: thorns landing in the head/trunk zone deal
+    // boss weak point: thorns landing in the head/trunk zone deal
     // WEAK_POINT_MULT× damage. Compute the impact point from the projectile's
     // center and route through the boss's takeDamage() for the bonus.
     if (target.isBoss && typeof target.isWeakPointHit === 'function') {
@@ -777,7 +777,7 @@ world.on('hit', (a, b) => {
       allyProj.alive = false;
       return;
     }
-    // Central damage routing: defense + telemetry in one place (Task 3.2).
+    // Central damage routing: defense + telemetry in one place.
     // Real enemies route through takeDamage(), which OWNS the death transition
     // internally (hp<=0 -> die() -> death TTL). Placeholder targets (plain
     // Entity, no death pipeline) use raw damage() and are removed on death.
@@ -789,7 +789,7 @@ world.on('hit', (a, b) => {
       target.hitFlash = 0.1; // brief white flash on impact
     }
     if (dealt > 0) {
-      // Task 7.1 — red hit sparkles at the impact point + enemy shake
+      // red hit sparkles at the impact point + enemy shake
       // (design §12 "Projectile hit on enemy" / "Enemy damaged").
       Effects.spawnHitSparkles(allyProj.x + allyProj.w / 2, allyProj.y + allyProj.h / 2);
       Effects.beginEnemyShake(target);
@@ -809,7 +809,7 @@ world.on('hit', (a, b) => {
     return;
   }
 
-  // --- Foe projectiles (enemy → hero), Task 5.1 -----------------------------
+  // --- Foe projectiles (enemy → hero), ----------------------------
   // Violetta's shots and Boris Loon's dive-shots are unfriendly (PROJ_FOE). They
   // only ever hit the hero (PROJ_FOE×HERO rule); there is no PROJ_FOE↔ENEMY rule
   // so they can't self-damage. Route through central damage() and consume the
@@ -818,7 +818,7 @@ world.on('hit', (a, b) => {
   if (foeProj && !foeProj.friendly) {
     const victim = foeProj === a ? b : a;
     if (victim.layer !== LAYER.HERO) return;
-    // Task 5.2 — a hero mid-death takes no further damage (skull is playing).
+    // a hero mid-death takes no further damage (skull is playing).
     if (victim.dying) { foeProj.alive = false; return; }
     if (victim.intangible) { foeProj.alive = false; return; } // intangible absorbs it
     const dealt = damage(foeProj, victim, foeProj.damage, 'projectile');
@@ -829,9 +829,9 @@ world.on('hit', (a, b) => {
         source: 'projectile',
         dirX: foeProj.vx, dirY: foeProj.vy,
       });
-      // Task 7.1 — red vignette when the hero takes damage (design §12).
+      // red vignette when the hero takes damage (design §12).
       Effects.heroDamaged();
-      // Task 7.3 — track hits taken from enemy projectiles (design §4.1).
+      // track hits taken from enemy projectiles (design §4.1).
       victim.runStats.hitsTaken.enemyProjectile += 1;
       victim.runStats.hitsTaken.total += 1;
     }
@@ -840,27 +840,27 @@ world.on('hit', (a, b) => {
   }
 });
 
-// Task 3.3 — ENEMY × HERO contact damage (jester body touching hero drains energy).
+// ENEMY × HERO contact damage (jester body touching hero drains energy).
 // The COLLISION_RULES table has {a:HERO, b:ENEMY, action:'contact'}; this fires
 // when the hero overlaps an enemy's body box. We drain the hero's energy via
 // central damage() (enemy as source, hero as target). A per-enemy cooldown
 // prevents multi-hit drain every frame while overlapping.
 const CONTACT_COOLDOWN = 0.5; // seconds between contact hits from same enemy
 world.on('contact', (a, b) => {
-  // Task 6.1 — the boss is a BOSS-layer entity; treat it like an enemy for
+  // the boss is a BOSS-layer entity; treat it like an enemy for
   // contact damage (touching the elephant drains hero energy at its high attack).
   const enemyEnt = a.layer === LAYER.ENEMY ? a : (b.layer === LAYER.ENEMY ? b : null);
   const bossEnt = a.layer === LAYER.BOSS ? a : (b.layer === LAYER.BOSS ? b : null);
   const heroEnt = a.layer === LAYER.HERO ? a : (b.layer === LAYER.HERO ? b : null);
   const source = enemyEnt || bossEnt;
   if (!source || !heroEnt) return;
-  // Task 5.2 — no contact damage while the hero is mid-death.
+  // no contact damage while the hero is mid-death.
   if (heroEnt.dying) return;
   if (!source.alive || source.aiState === 'dead') return; // dead enemies don't hurt
   // i-frames absorb contact hits (prevents melt while overlapping). takeHit()
   // returns false when invincible, so we skip damage + cooldown in that case.
   if (heroEnt.intangible) return;
-  // Self-protection on connect (knockback.md milestone 4): a clean sweep or
+  // Self-protection on connect (knockback.md ): a clean sweep or
   // cartwheel connect keeps the hero immune to contact damage until that
   // swing's active+recovery end. The flag is set by the unified hitbox
   // system on first connect and cleared by endSpecialMelee(); whiffs never
@@ -891,15 +891,15 @@ world.on('contact', (a, b) => {
       heroEnt.timers.set('intangible', Math.max(heroEnt.timers.get('intangible'), heroEnt.iFrameTimer));
       heroEnt.iFrameTimer = 0;
     }
-    // Task 7.1 — red vignette on contact damage (design §12 "Hero damaged").
+    // red vignette on contact damage (design §12 "Hero damaged").
     Effects.heroDamaged();
-    // Task 7.3 — track hits taken from enemy contact (design §4.1).
+    // track hits taken from enemy contact (design §4.1).
     heroEnt.runStats.hitsTaken.enemyContact += 1;
     heroEnt.runStats.hitsTaken.total += 1;
   }
 });
 
-// Task 4.2 — HERO × COIN collection (design §14). Fires when the hero's box
+// HERO × COIN collection (design §14). Fires when the hero's box
 // overlaps a live coin's box. We credit the coin's value to the hero, bump the
 // per-type + total counters, spawn a small sparkle burst at the pickup point,
 // and remove the coin from both the pool and the collision world. The 1up
@@ -943,7 +943,7 @@ world.on('collect', (a, b) => {
   }
 });
 
-// Task 4.3 — HERO × PICKUP powerup collection (design §10). Fires when the
+// HERO × PICKUP powerup collection (design §10). Fires when the
 // hero's box overlaps a live powerup. We apply the documented effect via
 // Powerup.collect() (which latches + bumps telemetry), spawn a sparkle pop at
 // the pickup point, float the effect label above it, and remove the powerup
@@ -965,7 +965,7 @@ world.on('pickup', (a, b) => {
 
   // VFX: sparkle pop + floating label text (design §12 "Powerup pickup").
   Effects.fireParticleBurst(cx, cy, 6); // engine path — plain sparkle burst
-  Effects.spawnPickupPop(cx, cy, pu.def.color); // Task 7.1 — colored pop ring
+  Effects.spawnPickupPop(cx, cy, pu.def.color); // colored pop ring
   spawnFloatText(cx, cy - 16, pu.def.label, pu.def.color);
   // SFX: powerup
   if (Debug.enabled) Debug.logEvent(`powerup ${pu.def.label}`);
@@ -973,7 +973,7 @@ world.on('pickup', (a, b) => {
   world.remove(pu);
 });
 
-// Task 4.3 — HERO × CHECKPOINT trigger (design §10/§13). Fires when the hero's
+// HERO × CHECKPOINT trigger (design §10/§13). Fires when the hero's
 // box overlaps a checkpoint flag. Checkpoint.trigger() stores its position on
 // hero.checkpoint (used by the death-restart pipeline) and latches so re-walking
 // over it is a no-op. A brief flash plays via the entity's flashTimer.
@@ -987,7 +987,7 @@ world.on('checkpoint', (a, b) => {
   const fired = cp.trigger(heroEnt);
   if (!fired) return;
 
-  // Task 7.3 — count checkpoint hits (design §4.1).
+  // count checkpoint hits (design §4.1).
   heroEnt.runStats.checkpointsHit += 1;
 
   // VFX: flash (entity-driven) + floating id label.
@@ -998,7 +998,7 @@ world.on('checkpoint', (a, b) => {
   // SFX: checkpoint
 });
 
-// --- Task 7.3 — Stats dump on WIN / GAMEOVER ----------------------------------
+// --- Stats dump on WIN / GAMEOVER ----------------------------------
 // Subscribe to state transitions; when the run ends (WIN or OVER), serialize
 // the full §4.1 telemetry to console + downloadable JSON. This is the "tuning
 // pass" hook: every completed run produces a structured record for analysis.
@@ -1008,7 +1008,7 @@ world.on('checkpoint', (a, b) => {
 // Reset per-screen transient state (held keys, focus) on entry.
 // Screen lifecycle and input barriers are subscribed in screens.js.
 
-// Milestone 8 — When SELECT → PLAY, rebuild the hero with the chosen definition.
+// When SELECT → PLAY, rebuild the hero with the chosen definition.
 // The Select screen sets window.__selectedHero before calling tryTransition(S.PLAY).
 onTransition((from, to) => {
   if (to === S.PLAY && from !== S.PAUSE && from !== S.OVER) {
@@ -1064,10 +1064,10 @@ onTransition((from, to) => {
 export const camera = new Camera();
 camera.levelLength = LEVEL_LENGTH;
 
-// Task 4.1 — brief screen shake on barrel explosions (optional juice). The
+// brief screen shake on barrel explosions (optional juice). The
 // camera-shake effect engine instance is the single owner of the shake state
 // (effects/cameraShake.js); triggerShake()/updateShake() used to live here as
-// module locals but were migrated through the Effects shim (task 3.3 review):
+// module locals but were migrated through the Effects shim (review):
 // render.js reads getShakeOffset(), which now returns the tracked instance's
 // current offset ({0,0} when idle/done).
 export function getShakeOffset() { return Effects.getShakeOffset(); }
@@ -1076,7 +1076,7 @@ export function getHero() { return hero; }
 export function getSolids() { return SOLIDS; }
 export function getCollisionWorld() { return world; }
 export function getEnemies() { return enemies; }
-// Task 4.3 — all live enemy entities (placeholder targets + jester) used by
+// all live enemy entities (placeholder targets + jester) used by
 // the 'clear' powerup effect. Excludes dead/dead-animating enemies.
 export function getLiveEnemies() {
   const out = [];
@@ -1086,23 +1086,23 @@ export function getLiveEnemies() {
   }
   return out;
 }
-// Task 2.1 — decorative anim-test box (damage-immune placeholder).
+// decorative anim-test box (damage-immune placeholder).
 export function getAnimTestEnemy() { return animTestEnemy; }
-// Task 3.1 — live thorns come from the shared pool (pooled, no allocation).
+// live thorns come from the shared pool (pooled, no allocation).
 export function getProjectiles() { return projectilePool.activeItems; }
 export function getSpecials() { return specialPool.activeItems; }
 export function getPickups() { return pickups; }
 export function getCamera() { return camera; }
-// Task 5.3 — full real-enemy list (from generateLevel) for render/debug.
+// full real-enemy list (from generateLevel) for render/debug.
 export function getRealEnemies() { return realEnemies; }
-// Task 6.1 — the boss entity for render + debug.
+// the boss entity for render + debug.
 export function getBoss() { return boss; }
 export function getParticles() { return particles; }
 export function getCoins() { return coins; }
-// Task 4.1 + 5.3 — barrels (explosive + coin) + explosion screen shake for render.
+// barrels (explosive + coin) + explosion screen shake for render.
 export function getBarrels() { return [...barrels, ...woodBarrels, ...coinBarrels]; }
 export function getCoinBarrels() { return coinBarrels; }
-// Task 4.3 — powerups, checkpoints, floating text for render + debug.
+// powerups, checkpoints, floating text for render + debug.
 export function getPowerups() { return powerups; }
 export function getCheckpoints() { return checkpoints; }
 export function getFloatTexts() { return floatTexts; }
@@ -1119,7 +1119,7 @@ export function update(dt) {
     Theater.update(dt);
     return;
   }
-  // Physics only runs during PLAY; other states are screen-driven (Milestone 8).
+  // Physics only runs during PLAY; other states are screen-driven ().
   if (getState() !== S.PLAY) return;
 
   // --- Debug harness: time scaling + god mode. Zero cost when off. -----------
@@ -1138,7 +1138,7 @@ export function update(dt) {
   input.onOneWay = standingOnOneWay();
   hero.update(dt, input);
 
-  // 1a. Task 5.2 — energy / death / respawn / gameover flow.
+  // 1a. energy / death / respawn / gameover flow.
   //     Trigger: if energy hit 0 (and no death already running) start the
   //     skull-fade sequence. While dying we skip all gameplay below (no input,
   //     no shooting, no melee) so the corpse plays out cleanly; on completion
@@ -1159,7 +1159,7 @@ export function update(dt) {
     return;
   }
 
-  // 1b. shooting (Task 3.1 + §21): J fires the SELECTED weapon through one
+  // 1b. shooting (+ §21): J fires the SELECTED weapon through one
   //     shared path; N toggles the selection without firing anything.
   if (input.switchWeapon) hero.toggleWeapon(); // edge-triggered, no fire
   // Thorn cooldown ticks EVERY frame regardless of input/selection — a stale
@@ -1167,7 +1167,7 @@ export function update(dt) {
   if (hero.fireCooldown > 0) hero.fireCooldown -= dt;
   tryFire(hero, input, dt);                    // dispatches on hero.selectedWeapon
 
-  // 1c. melee swing (Task 3.2 + §17-§19): H starts a swing; during its single
+  // 1c. melee swing (+ §17-§19): H starts a swing; during its single
   //     active frame the hero's hitbox is checked against enemies and routed
   //     through central damage(). The cooldown lives on the hero (updateMelee).
   //     §24: combat inputs are locked during hit-stun — no melee activation.
@@ -1184,7 +1184,7 @@ export function update(dt) {
     const wasActive = hero.meleeActive || hero.specialMeleeActive;
     hero.requestMelee(input.down ? 'special' : 'normal');
     if (!wasActive && (hero.meleeActive || hero.specialMeleeActive)) {
-      hero.runStats.meleeSwings += 1; // Task 7.3 — count the swing start
+      hero.runStats.meleeSwings += 1; // count the swing start
     }
   }
   processAllHitboxes();
@@ -1194,12 +1194,12 @@ export function update(dt) {
     if (e.hitFlash > 0) e.hitFlash -= dt;
   }
 
-  // 1d2. Task 4.1 — tick live barrels (decays their hit-flash timer).
+  // 1d2. tick live barrels (decays their hit-flash timer).
   for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) {
     if (b.alive) b.update(dt);
   }
 
-  // 1d3. Task 4.3 — tick powerups (bob anim), checkpoints (flash decay), and
+  // 1d3. tick powerups (bob anim), checkpoints (flash decay), and
   //     floating text popups. Collected powerups are removed from the world on
   //     pickup, so we only advance still-live ones here.
   for (const p of powerups) {
@@ -1212,20 +1212,20 @@ export function update(dt) {
     t.update(dt);
   }
 
-  // 1e. Task 3.3 + 5.1 — real-enemy AI + physics + attack damage + death pipeline.
+  // 1e. real-enemy AI + physics + attack damage + death pipeline.
   updateRealEnemies(dt);
 
-  // 1e2. Task 6.1 — boss: camera lock, phase machine, stomp shake, win on death.
+  // 1e2. boss: camera lock, phase machine, stomp shake, win on death.
   updateBoss(dt);
 
-  // 1f. Task 3.3 — particle + coin pool advancement.
+  // 1f. particle + coin pool advancement.
   updateEffects(dt);
 
   // 2b. advance animations for any entity that has one attached.
   // (Hero.update already ticks its own anim; tick the decorative anim-test box.)
   if (animTestEnemy.anim) animTestEnemy.anim.tick(dt);
 
-  // 2c. thorn integration (Task 3.1): advance the pool, cull off-screen shots,
+  // 2c. thorn integration: advance the pool, cull off-screen shots,
   //     then refresh the collision world's live set from the pool.
   projectilePool.updateAll(dt);
   cullOffScreen(projectilePool.activeItems);
@@ -1297,16 +1297,16 @@ export function update(dt) {
   // 4. camera follows the hero (clamped to level bounds, facing look-ahead).
   camera.update(hero);
 
-  // 4b. Task 7.3 — track run distance + time for stats (design §4.1).
+  // 4b. track run distance + time for stats (design §4.1).
   hero.runStats.distanceTraveled += Math.abs(hero.vx * dt);
   hero.runStats.timePlayed += dt;
 
-  // 5. Task 4.1 — the camera-shake instance is stepped by updateEffects() →
+  // 5. the camera-shake instance is stepped by updateEffects() →
   // Effects.update(dt) below (render reads getShakeOffset()).
 }
 
 /**
- * Task 5.2 — called when the skull-fade death sequence completes. Consumes a
+ * called when the skull-fade death sequence completes. Consumes a
  * life; if any remain, respawn at the last checkpoint with full energy + i-frames.
  * If no lives remain, transition to GAME OVER (the state machine then shows the
  * retry/continue/quit screen).
@@ -1359,7 +1359,7 @@ function standingOnOneWay() {
   return false;
 }
 
-// --- Thorn shooting (Task 3.1) -------------------------------------------------
+// --- Thorn shooting -------------------------------------------------
 // G key fires an 8-way thorn from the shared pool. The aim direction is resolved
 // by gameplay context via hero.resolveAim() (design §4/§32): grounded crouch
 // shoots horizontally toward facing, airborne or lockMove + Down shoot straight
@@ -1369,7 +1369,7 @@ function standingOnOneWay() {
 // Friendly projectiles only ever hit ENEMY/BOSS via COLLISION_RULES, so they can
 // never damage the hero — friendly-fire is off by construction.
 
-// --- Shooting (Task 3.1 + design §21) ----------------------------------------
+// --- Shooting (+ design §21) ----------------------------------------
 // ONE shared shoot path: J fires whatever weapon is currently SELECTED on the
 // hero ('thorn' | 'special'). N never fires — it only toggles the selection
 // (hero.toggleWeapon, called by the update step). Each weapon keeps its own
@@ -1481,7 +1481,7 @@ function explodeSpecial(s) {
     const bombCount = 12 + Math.floor(Math.random() * 4);
     Effects.spawnExplosion(cx, cy, s.radius, bombCount); // engine path — warm fire burst sized to AoE
     Effects.bigExplosion();
-    Effects.triggerShake(6); // engine path — camera-shake singleton (task 3.3)
+    Effects.triggerShake(6); // engine path — camera-shake singleton
     if (Debug.enabled) Debug.logEvent('bomb exploded');
   } else {
     // Saw: small fizzle spark, no AoE.
@@ -1489,7 +1489,7 @@ function explodeSpecial(s) {
   }
 }
 
-// --- Melee attack (Task 3.2) -------------------------------------------------
+// --- Melee attack -------------------------------------------------
 // J key starts a swing (hero.tryMelee). During the single ACTIVE frame of the
 // swing, the hero's meleeHitboxWorld is checked against every live enemy; on
 // overlap we route through central damage(). Each enemy can only be hit once
@@ -1616,7 +1616,7 @@ function processAllHitboxes() {
   // --- Process all against all targets ---
   const targets = [h, ...realEnemies, boss, ...barrels, ...woodBarrels, ...coinBarrels].filter(Boolean);
   processHitboxes(_hitboxes, targets, (hb, target, dealt) => {
-    // Self-protection on connect (knockback.md milestone 4): the FIRST clean
+    // Self-protection on connect (knockback.md ): the FIRST clean
     // hit of a special melee swing arms the hero's protection window for the
     // rest of that swing. The callback only fires when the box actually struck
     // a target — a whiff never reaches here, so it grants nothing. Normal
@@ -1679,7 +1679,7 @@ function getEnemyAttackHitbox(e) {
   return null;
 }
 
-// --- Real-enemy update (Task 3.3 jester + Task 5.1 remaining AIs) ------------
+// --- Real-enemy update (jester + remaining AIs) ------------
 // Drives every real Enemy's AI state machine, physics integration, per-type
 // attack hitbox check, solid collision, and death pipeline (sparkle burst +
 // coin drop on full death). The jester-specific whip logic is generalized into a
@@ -1736,8 +1736,8 @@ function updateRealEnemy(e, dt) {
     // preserved verbatim): 12 + floor(rand*4) → 12–15 particles.
     const deathCount = 12 + Math.floor(Math.random() * 4);
     Effects.spawnExplosion(cx, cy, result.radius, deathCount); // engine path — warm fire burst sized to AoE
-    Effects.bigExplosion(); // Task 7.1 — screen flash on big explosion
-    Effects.triggerShake(6); // engine path — camera-shake singleton (task 3.3)
+    Effects.bigExplosion(); // screen flash on big explosion
+    Effects.triggerShake(6); // engine path — camera-shake singleton
     // SFX: explosion
   }
 
@@ -1748,7 +1748,7 @@ function updateRealEnemy(e, dt) {
     const cx = e.x + e.w / 2;
     const cy = e.y + e.h / 2;
     Effects.fireParticleBurst(cx, cy, 7);          // engine path — plain sparkle burst
-    Effects.spawnDeathSparkle(cx, cy, Math.max(e.w, e.h)); // Task 7.1 — sprite-sized burst
+    Effects.spawnDeathSparkle(cx, cy, Math.max(e.w, e.h)); // sprite-sized burst
     coins.dropCoins(e.coinDrop, cx, cy);      // coin drop per config
     world.remove(e);                          // drop from play
     // Telemetry: count the kill by type (design §4.1 enemiesKilled).
@@ -1785,7 +1785,7 @@ function updateRealEnemies(dt) {
   }
 }
 
-// --- Task 6.1 — Boss (Overgrown Elephant) -----------------------------------
+// --- Boss (Overgrown Elephant) -----------------------------------
 // Drives the boss's phase machine, camera lock, stomp screen-shake, and the
 // win-state transition on death. The boss is tracked separately from
 // realEnemies so its custom AI (phase-based, not aggro-based) runs here.
@@ -1832,7 +1832,7 @@ function updateBoss(dt) {
 
   // Stomp shake: doStomp() records a magnitude; convert it into a screen shake.
   if (b.shakeMag > 0) {
-    Effects.triggerShake(b.shakeMag); // engine path — stomp shake (task 3.3)
+    Effects.triggerShake(b.shakeMag); // engine path — stomp shake
     b.shakeMag = 0;
   }
 
@@ -1847,7 +1847,7 @@ function updateBoss(dt) {
     world.remove(b);                           // drop from play
     camera.unlock();                           // release the arena lock
     b.onDeath();                               // boss-side death hook
-    // Task 7.3 — mark boss as killed (design §4.1).
+    // mark boss as killed (design §4.1).
     hero.runStats.bossKilled = true;
     if (getState() === S.PLAY) {
       tryTransition(S.WIN);
@@ -1858,7 +1858,7 @@ function updateBoss(dt) {
 
 // Advance particle + coin pools (called each frame regardless of jester state).
 function updateEffects(dt) {
-  Effects.update(dt); // Task 7.1 — decay vignette / screen flash timers
+  Effects.update(dt); // decay vignette / screen flash timers
   particles.updateAll(dt);
   // Coins bounce off the floor AND any air platform top they land on. We pass
   // the SOLIDS list minus the floor itself (the floor is handled by floorTop).
@@ -1868,7 +1868,7 @@ function updateEffects(dt) {
   syncCoinsToWorld();
 }
 
-// --- Task 4.1 — Barrel destruction / explosion ---------------------------------
+// --- Barrel destruction / explosion ---------------------------------
 // When a barrel's HP hits 0 (from any source: thorn, melee, bomb) we run the
 // explosion pipeline once: AoE damage to everything in radius (enemies AND hero),
 // an orange/red particle burst, a brief screen shake, and removal from the world.
@@ -1899,7 +1899,7 @@ function handleBarrelDestroyed(barrel) {
     }, targets);
     // Real enemies killed by the blast already ran their internal death pipeline
     // via takeDamage() inside resolveExplosion — no manual die() needed here.
-    // Task 7.3 — track if the hero was hit by the explosion (design §4.1).
+    // track if the hero was hit by the explosion (design §4.1).
     if (result.hit.includes(hero)) {
       hero.runStats.hitsTaken.explosion += 1;
       hero.runStats.hitsTaken.total += 1;
@@ -1908,8 +1908,8 @@ function handleBarrelDestroyed(barrel) {
     // verbatim): 12 + floor(rand*4) → 12–15 particles.
     const barrelCount = 12 + Math.floor(Math.random() * 4);
     Effects.spawnExplosion(cx, cy, result.radius, barrelCount); // engine path — warm fire burst sized to AoE
-    Effects.bigExplosion(); // Task 7.1 — brief white screen flash (design §12)
-    Effects.triggerShake(8); // engine path — barrel explosion shake (task 3.3)
+    Effects.bigExplosion(); // brief white screen flash (design §12)
+    Effects.triggerShake(8); // engine path — barrel explosion shake
     // SFX: explosion
   } else if (barrel.coinDrop) {
     // Coin barrel (or any object with a coinDrop config): spawn the burst.

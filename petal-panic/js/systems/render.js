@@ -1,7 +1,6 @@
 // Petal Panic — render system. Draws in 960x540 logical coords; the
 // logical→screen transform is applied by main.js before this runs.
-//
-// Task 1.4: world entities are drawn under a camera translate so the level
+// world entities are drawn under a camera translate so the level
 // Debug mode toggles the unified debug overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../view.js';
@@ -26,7 +25,7 @@ const IFRAME_BLINK_ALPHA_ON = 0.8;   // "on" visibility
 const IFRAME_BLINK_ALPHA_OFF = 0.4;  // "off" visibility
 
 export function render(ctx) {
-  // Milestone 8 — Home & Select are full-screen; skip world rendering entirely.
+  // Home & Select are full-screen; skip world rendering entirely.
   const state = getState();
   if (state === S.HOME || state === S.SELECT || state === S.REMAP) {
     screenUpdate(1 / 60); // advance parallax at fixed step
@@ -44,7 +43,7 @@ export function render(ctx) {
 
   // --- World (camera-translated) -------------------------------------------
   ctx.save();
-  // Task 4.1 — explosion screen shake offsets the whole world by a decaying
+  // explosion screen shake offsets the whole world by a decaying
   // random vector (getShakeOffset returns {x:0,y:0} when idle).
   const shake = getShakeOffset();
   ctx.translate(-cam.x + shake.x, -cam.y + shake.y);
@@ -80,7 +79,7 @@ export function render(ctx) {
     ctx.restore();
   };
   if (showSprites) {
-    // Task 4.1 — destructible barrels (drawn via Entity.draw; white flash on hit).
+    // destructible barrels (drawn via Entity.draw; white flash on hit).
     for (const b of getBarrels()) {
       if (!b.alive) continue;
       drawShaken(ctx, b, () => b.draw(ctx));
@@ -90,7 +89,7 @@ export function render(ctx) {
     for (const p of getPickups()) drawShaken(ctx, p, () => p.draw(ctx));
     for (const e of getEnemies()) {
       if (e.alive === false) continue; // destroyed target — no longer drawn
-      // Task 7.1 — enemy shake: offset the draw position by a random ±3px while
+      // enemy shake: offset the draw position by a random ±3px while
       // hitFlash is running (design §12 "Enemy damaged: fast shake"), plus any
       // carrier-declared sprite-shake-standalone instances on this entity. Both
       // sources compose via the single getEntityShakeTotal() read.
@@ -99,7 +98,7 @@ export function render(ctx) {
       ctx.translate(sh.x, sh.y);
       e.draw(ctx);
       ctx.restore();
-      // Task 3.2 — white flash when struck (melee or projectile).
+      // white flash when struck (melee or projectile).
       if (e.hitFlash > 0) {
         ctx.save();
         ctx.globalAlpha = Math.min(1, e.hitFlash * 10);
@@ -110,7 +109,7 @@ export function render(ctx) {
       }
     }
 
-    // Task 3.3 + 5.1 — real enemies (jester + vine_hound/violetta/jacko/boris).
+    // real enemies (jester + vine_hound/violetta/jacko/boris).
     // Each draws itself including death shrink/fade and its attack telegraph.
     for (const e of getRealEnemies()) {
       if (!e.alive) continue;
@@ -121,20 +120,20 @@ export function render(ctx) {
       ctx.restore();
     }
 
-    // Task 6.1 — boss (Overgrown Elephant).
+    // boss (Overgrown Elephant).
     const boss = getBoss();
     if (boss && boss.alive) drawShaken(ctx, boss, () => boss.draw(ctx));
 
-    // Task 3.3 — sparkle particles + dropped coins.
+    // sparkle particles + dropped coins.
     for (const s of getParticles().activeItems) s.draw(ctx);
     for (const c of getCoins().activeItems) c.draw(ctx);
 
-    // Task 4.3 — checkpoints (flags) + powerups (signboards). Both draw themselves
+    // checkpoints (flags) + powerups (signboards). Both draw themselves
     // (Entity transform pipeline + bob/flash overlays).
     for (const c of getCheckpoints()) drawShaken(ctx, c, () => c.draw(ctx));
     for (const p of getPowerups()) drawShaken(ctx, p, () => p.draw(ctx));
 
-    // Task 4.3 — floating value-text popups (powerup labels, checkpoint ids).
+    // floating value-text popups (powerup labels, checkpoint ids).
     for (const t of getFloatTexts()) t.draw(ctx);
 
     // Projectiles + specials (hero bomb/saw).
@@ -300,7 +299,7 @@ export function render(ctx) {
   //                     SEMITRANSPARENT in both modes (it's always an overlay).
   if (Debug.enabled && Debug.viewMode !== 2) {
     drawDebugOverlay(ctx);
-    // Task 3.3 + 5.1 — per-enemy debug: aggro radius circle + AI state label
+    // per-enemy debug: aggro radius circle + AI state label
     // above each real enemy's head.
     for (const e of getRealEnemies()) drawEnemyDebug(ctx, e);
   }
@@ -350,12 +349,12 @@ export function render(ctx) {
     if (Debug.showLog) drawEventLog(ctx);
   }
 
-  // Task 7.1 — screen-space effect overlays: red damage vignette + white
+  // screen-space effect overlays: red damage vignette + white
   // explosion flash (design §12). Drawn in viewport space after the camera
   // translate is restored so they cover the whole logical frame.
   Effects.drawOverlay(ctx, VIEW_W, VIEW_H);
 
-  // Task 8.3 — Play HUD (design §20): energy bar + shield, ammo/special,
+  // Play HUD (design §20): energy bar + shield, ammo/special,
   // coins, lives, hero portrait, checkpoint progress line. Viewport-space,
   // drawn after the camera restore; only during PLAY (PAUSE/OVER/WIN keep the
   // frozen world visible and their screen overlay is drawn below).
@@ -366,20 +365,20 @@ export function render(ctx) {
   // Harness hint drawn LAST so it sits on top of everything (incl. level map bar).
   if (Debug.enabled) drawHarnessHint(ctx);
 
-  // --- State overlays (Task 8.2): HOME/SELECT handled above; PAUSE/OVER/WIN
+  // --- State overlays: HOME/SELECT handled above; PAUSE/OVER/WIN
   // are drawn here as overlays on top of the frozen game world so the play
   // frame stays visible behind them (dimmed by each screen's own background).
   if (state === S.PAUSE || state === S.OVER || state === S.WIN) {
     drawScreen(ctx, getHero());
   }
 
-  // Effect Theater (task 7.2): debug-only black-screen overlay drawn LAST so it
+  // Effect Theater: debug-only black-screen overlay drawn LAST so it
   // covers everything (game world + HUD + state overlays). No-op when inactive.
   if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
 }
 
 /**
- * Task 5.2 — draw the hero-death skull effect (design §12 "Hero death"). The
+ * draw the hero-death skull effect (design §12 "Hero death"). The
  * 💀 emoji floats upward in a sine wave and fades out over the death duration.
  * Position is derived from hero.deathTimer so it stays in sync with the update
  * loop without storing extra state. Called inside the camera-translated world.
@@ -503,7 +502,7 @@ function drawDebugOverlay(ctx) {
 
   ctx.restore();
 
-  // Task 3.2 — draw the melee hitbox in YELLOW when active (debug only).
+  // draw the melee hitbox in YELLOW when active (debug only).
   const hero = getHero();
   const mh = hero.meleeHitboxWorld;
   if (mh) {
@@ -585,7 +584,7 @@ function solidEntityProxy(box) {
   return { x: box.x, y: box.y, w: box.w, h: box.h, layer: 0b0000001000, worldBox: () => box };
 }
 
-/** Task 3.1 — small HP bar above a targetable enemy so thorn damage is visible. */
+/** small HP bar above a targetable enemy so thorn damage is visible. */
 function drawHpBar(ctx, e) {
   const frac = Math.max(0, e.hp / e.maxHp);
   const w = e.w, h = 4;
@@ -598,7 +597,7 @@ function drawHpBar(ctx, e) {
   ctx.fillRect(x, y, w * frac, h);
 }
 
-// --- Task 6.1 — boss debug + HP helpers --------------------------------------
+// --- boss debug + HP helpers --------------------------------------
 
 /**
  * Wide HP bar for the boss (design §9). Spans the full body width with a thick
@@ -651,7 +650,7 @@ function drawBossDebug(ctx, b) {
   ctx.restore();
 }
 
-// --- Task 3.3 + 5.1 — per-enemy debug overlay --------------------------------
+// --- per-enemy debug overlay --------------------------------
 // Draws each real enemy's aggro radius as a faint circle and its current AI
 // state as a label above its head. Helps validate every state machine during
 // development (jester whip, hound lunge, violetta pace/shoot, jacko roll/launch,
