@@ -134,7 +134,7 @@ Verdict: `PASS` or `FAIL` + numbered findings. No prose padding.
 
 ## Definition of done (epic)
 
-1. All 16 tasks: verify green, both reviews recorded, committed.
+1. All 20 tasks: verify green, both reviews recorded, committed.
 2. Full suite green vs baseline (the 2 known pre-existing failures fixed by 7.3, none new).
 3. Determinism proven: same seed twice → identical Level 1 world layouts.
 4. Full game run completable headlessly: entry screen → areas with clear banners →
