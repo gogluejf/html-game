@@ -282,3 +282,22 @@ Files: ~ petal-panic/js/test/input.test.js
 Snippet: // Simulate a full run headlessly:\n// startGame -> clear 1-1..1-4 (incl. vertical) -> boss intro -> defeat\n// -> reward credits continues -> next level entry screen.\n// Plus: death mid-area restarts same area; continue from 1-3 lands in 1-1.
 Acceptance: node --test petal-panic/js/test/ passes with 0 failures; full-run simulation completes; determinism verified (same seed twice = identical worlds); vertical fall-death and bottom-restart covered
 Verification: node --test petal-panic/js/test/
+
+### TASK: 7.4 - 8 level config entries
+Type: feature
+What: Add all 8 level entries to levelConfigs.js: Level 1 (The Circus) with its real roster/boss from the story doc, Levels 2-4 from the story doc themes, Levels 5-8 as named placeholder themes — each with vertical slot, stage budgets, and tension curve (rising enemy quantities, falling powerup availability, harder macro weights).
+Why: generation.md §5b: the game contains eight levels driven by config; writing them now proves the N-level engine and reduces the future tuning epic to numbers + art only. Rosters beyond Level 1 may reuse existing enemy types as placeholders.
+Files: ~ petal-panic/js/levelConfigs.js
+Snippet: // 8 entries. Tension per level index:\n// enemies up, powerups down, macro difficulty weight up.\n{ name: 'The Circus',        index: 1, boss: 'tusko',       verticalArea: 2, ... },\n{ name: 'Carnival After Dark', index: 2, boss: <placeholder>, verticalArea: 3, ... },\n{ name: 'The Pirate Ship',   index: 3, ... },\n{ name: "Carrot's Republic", index: 4, ... },\n{ name: '<TBD>', index: 5..8, ... } // placeholder themes, tune later
+Acceptance: 8 config entries exist; each has unique name/index/boss/verticalArea (one of -2/-3/-4); budgets show monotonic tension rise across indices; engine can boot any level by index; adding a 9th level = one array entry
+Verification: node --test petal-panic/js/test/
+
+### TASK: 7.5 - Minimal end-of-game screen
+Type: feature
+What: After the final level's boss reward screen, show a minimal full-screen end-of-game presentation: congratulations text + final score + single 'Return Home' option, following the shared screen ergonomics contract. The last boss must not advance into a nonexistent next level.
+Why: lifecycle.md now settles the game-end decision: placeholder congrats screen now, full story ending in the future story epic. Closes the last dangling flow in the epic so 'beat the whole game' is testable headlessly.
+Files: ~ petal-panic/js/screens.js
+Files: ~ petal-panic/js/systems/update.js
+Snippet: // After reward screen of the FINAL level config entry:\n// showEndOfGame({ finalScore }) -> one option: Return Home (S.HOME)\n// Non-final levels still advance to next level area -1 as before.
+Acceptance: Beating the last configured level shows the congrats screen with final score; its only option returns to HOME; non-final bosses still advance normally; screen uses the pause-menu list/keycap pattern; no reference to a level beyond the last exists
+Verification: node --test petal-panic/js/test/

@@ -72,8 +72,12 @@ Clearing an area advances to the next zone without consuming a life or continue.
 The next area receives its own entry screen and fresh playable contents.
 Defeating a boss runs the reward screen before the next level's area -1.
 
-The exact final-game ending presentation is a design-plan concern; the last boss
-of the game must not attempt to advance into a nonexistent next level.
+**Game end:** after the final level's boss and its reward screen, show a minimal
+end-of-game screen — a congratulations presentation with the final score and a
+single option to return home. It follows the shared screen ergonomics contract.
+This is a placeholder: the full ending (story scenes, credits) belongs to the
+future story epic. The last boss must not attempt to advance into a nonexistent
+next level.
 
 ## 6. Lifetime of randomness
 

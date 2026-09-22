@@ -85,6 +85,8 @@ and celebration effects are design-plan concerns.
 After the reward screen, start the next level at area -1 and show its shared
 entry screen: level name, area, lives. That opening area has no entry flag drawn.
 
-The ending after the final boss and reward screen is a design-plan concern.
-Music, reward screen duration, skip behavior, and exact celebration effects will
-be proposed there; none of them are rules of this document.
+For the **final level**, the reward screen is followed by the minimal end-of-game
+screen (congratulations + final score + return home) instead of a next level —
+see [lifecycle](lifecycle.md). Its full presentation is owned by the future
+story epic; music, reward screen duration, skip behavior, and celebration effects
+are design-plan concerns.

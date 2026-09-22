@@ -296,8 +296,8 @@ pre { margin:5px 0 0 0; font-family:Consolas,monospace; color:#ce9178; font-size
                     <span class="ms-name">Level 1 Integration + Gameplay Polish</span>
                 </div>
                 <span class="pattern-tag">Vertical Slice Integration</span> 
-                <p class="ms-count">3 Task(s)</p>
-                <ul class="ms-task-list"><li>7.1 - Wire engine into main loop (replace prototype world)</li><li>7.2 - Concrete design-plan values + tuning pass</li><li>7.3 - Full-flow integration tests + suite green</li></ul>
+                <p class="ms-count">5 Task(s)</p>
+                <ul class="ms-task-list"><li>7.1 - Wire engine into main loop (replace prototype world)</li><li>7.2 - Concrete design-plan values + tuning pass</li><li>7.3 - Full-flow integration tests + suite green</li><li>7.4 - 8 level config entries</li><li>7.5 - Minimal end-of-game screen</li></ul>
             </div>
         </a>
         </div>
@@ -1271,6 +1271,84 @@ export function loadActiveZone(zone) { /* swap world refs */ }
                 <div class="task-cell full-width">
                     <span class="cell-label">Acceptance Criteria</span>
                     <ul class="acceptance-list"><li>node --test petal-panic/js/test/ passes with 0 failures; full-run simulation completes; determinism verified (same seed twice = identical worlds); vertical fall-death and bottom-restart covered</li></ul>
+                </div>
+                </div>
+                <div class="task-footer"><span class="task-verify">✔ node --test petal-panic/js/test/</span> </div>
+            </div>
+            <div class="task-card">
+                <div class="task-header">
+                    <div class="task-title-row">
+                        <span class="task-num"># 7.4</span>
+                        <span class="task-name">8 level config entries</span>
+                        <span class="layer-badge" style="background:#569cd6">feature</span>
+                    </div>
+                </div>
+                <div class="task-grid">
+                    <div class="task-cell">
+                        <span class="cell-label">What</span>
+                        <span class="cell-value">Add all 8 level entries to levelConfigs.js: Level 1 (The Circus) with its real roster/boss from the story doc, Levels 2-4 from the story doc themes, Levels 5-8 as named placeholder themes — each with vertical slot, stage budgets, and tension curve (rising enemy quantities, falling powerup availability, harder macro weights).</span>
+                    </div>
+                    <div class="task-cell">
+                        <span class="cell-label">Why</span>
+                        <span class="cell-value">generation.md §5b: the game contains eight levels driven by config; writing them now proves the N-level engine and reduces the future tuning epic to numbers + art only. Rosters beyond Level 1 may reuse existing enemy types as placeholders.</span>
+                    </div>
+                    
+                <div class="task-cell full-width">
+                    <span class="cell-label">Files</span>
+                    <ul class="files-list"><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/levelConfigs.js</li></ul>
+                </div>
+                    
+                <div class="task-cell full-width snippet-block">
+                    <span class="cell-label">Snippet</span>
+                    <pre><code class="language-js">// 8 entries. Tension per level index:
+// enemies up, powerups down, macro difficulty weight up.
+{ name: &#x27;The Circus&#x27;,        index: 1, boss: &#x27;tusko&#x27;,       verticalArea: 2, ... },
+{ name: &#x27;Carnival After Dark&#x27;, index: 2, boss: &lt;placeholder&gt;, verticalArea: 3, ... },
+{ name: &#x27;The Pirate Ship&#x27;,   index: 3, ... },
+{ name: &quot;Carrot&#x27;s Republic&quot;, index: 4, ... },
+{ name: &#x27;&lt;TBD&gt;&#x27;, index: 5..8, ... } // placeholder themes, tune later</code></pre>
+                </div>
+                    
+                <div class="task-cell full-width">
+                    <span class="cell-label">Acceptance Criteria</span>
+                    <ul class="acceptance-list"><li>8 config entries exist; each has unique name/index/boss/verticalArea (one of -2/-3/-4); budgets show monotonic tension rise across indices; engine can boot any level by index; adding a 9th level = one array entry</li></ul>
+                </div>
+                </div>
+                <div class="task-footer"><span class="task-verify">✔ node --test petal-panic/js/test/</span> </div>
+            </div>
+            <div class="task-card">
+                <div class="task-header">
+                    <div class="task-title-row">
+                        <span class="task-num"># 7.5</span>
+                        <span class="task-name">Minimal end-of-game screen</span>
+                        <span class="layer-badge" style="background:#569cd6">feature</span>
+                    </div>
+                </div>
+                <div class="task-grid">
+                    <div class="task-cell">
+                        <span class="cell-label">What</span>
+                        <span class="cell-value">After the final level&#x27;s boss reward screen, show a minimal full-screen end-of-game presentation: congratulations text + final score + single &#x27;Return Home&#x27; option, following the shared screen ergonomics contract. The last boss must not advance into a nonexistent next level.</span>
+                    </div>
+                    <div class="task-cell">
+                        <span class="cell-label">Why</span>
+                        <span class="cell-value">lifecycle.md now settles the game-end decision: placeholder congrats screen now, full story ending in the future story epic. Closes the last dangling flow in the epic so &#x27;beat the whole game&#x27; is testable headlessly.</span>
+                    </div>
+                    
+                <div class="task-cell full-width">
+                    <span class="cell-label">Files</span>
+                    <ul class="files-list"><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/screens.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/systems/update.js</li></ul>
+                </div>
+                    
+                <div class="task-cell full-width snippet-block">
+                    <span class="cell-label">Snippet</span>
+                    <pre><code class="language-js">// After reward screen of the FINAL level config entry:
+// showEndOfGame({ finalScore }) -&gt; one option: Return Home (S.HOME)
+// Non-final levels still advance to next level area -1 as before.</code></pre>
+                </div>
+                    
+                <div class="task-cell full-width">
+                    <span class="cell-label">Acceptance Criteria</span>
+                    <ul class="acceptance-list"><li>Beating the last configured level shows the congrats screen with final score; its only option returns to HOME; non-final bosses still advance normally; screen uses the pause-menu list/keycap pattern; no reference to a level beyond the last exists</li></ul>
                 </div>
                 </div>
                 <div class="task-footer"><span class="task-verify">✔ node --test petal-panic/js/test/</span> </div>

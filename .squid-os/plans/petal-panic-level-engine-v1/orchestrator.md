@@ -89,7 +89,7 @@ Wave 3: M3 Terrain Generation     (3.1 → 3.2 → 3.3)      Gate 3 (+ determini
 Wave 4: M4 Population             (4.1 → 4.2)            Gate 4 (+ determinism check)
 Wave 5: M5 Vertical Areas         (5.1 → 5.2)            Gate 5 (+ vertical tests)
 Wave 6: M6 Boss Zone              (6.1 → 6.2)            Gate 6 (+ boss sequence tests)
-Wave 7: M7 Integration + Polish   (7.1 → 7.2 → 7.3)      Gate 7 → EPIC DONE
+Wave 7: M7 Integration + Polish   (7.1 → 7.2 → 7.3 → 7.4 → 7.5)  Gate 7 → EPIC DONE
 ```
 
 Tasks within a milestone run in listed order. M1 (lifecycle ops) completes before any zone
@@ -134,11 +134,12 @@ Verdict: `PASS` or `FAIL` + numbered findings. No prose padding.
 
 ## Definition of done (epic)
 
-1. All 14 tasks: verify green, both reviews recorded, committed.
+1. All 16 tasks: verify green, both reviews recorded, committed.
 2. Full suite green vs baseline (the 2 known pre-existing failures fixed by 7.3, none new).
 3. Determinism proven: same seed twice → identical Level 1 world layouts.
-4. Full Level 1 run completable headlessly: entry screen → 4 areas (one vertical) with clear
-   banners → boss approach/intro/fight → reward screen crediting continues → next-level entry.
+4. Full game run completable headlessly: entry screen → areas with clear banners →
+   boss approach/intro/fight → reward screen crediting continues → next level; the FINAL
+   level ends on the minimal end-of-game screen (congrats + score + return home).
 5. Death mid-area restarts the same area with identical arrangement; continue from any area
    lands in area -1 of the current level with restored starting lives.
 6. Continue pool is a growable balance (starts 3, credited by reward screen at 1 per 1000
@@ -146,4 +147,5 @@ Verdict: `PASS` or `FAIL` + numbered findings. No prose padding.
 7. Vertical zone: up-only camera, fall-off-bottom death, bottom-platform restart.
 8. Every "design-plan decision" marker in the docs has a concrete cited value in
    `GAME_RULES` / `levelConfigs.js`.
-9. One commit per task + gate commits; clean tree at each gate; progress file updated.
+9. All 8 level config entries exist with monotonic tension rise; engine boots any level by index.
+10. One commit per task + gate commits; clean tree at each gate; progress file updated.
