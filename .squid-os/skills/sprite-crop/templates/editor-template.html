@@ -144,9 +144,9 @@
   /* ---------- timing section ---------- */
   #timingSection{margin-top:4px;}
   .timing-mode{display:flex;gap:8px;margin:6px 0 10px;}
-  .tbtn.tsm{font-size:11px;padding:5px 12px;border-radius:6px;letter-spacing:.5px;background:var(--panel);border:1px solid var(--line);color:var(--dim);cursor:pointer;font-family:inherit;transition:all .1s;}
-  .tbtn.tsm:hover{border-color:var(--acc);color:var(--txt);}
-  .tbtn.tsm.on{border-color:var(--grn);color:var(--grn);background:rgba(90,255,138,.08);}
+  .tbtn.tsm{font-size:11px;padding:4px 14px;border-radius:8px;letter-spacing:.5px;background:none;border:1.5px solid var(--faint);color:var(--dim);cursor:pointer;font-family:inherit;transition:all .15s;font-weight:bold;}
+  .tbtn.tsm:hover{border-color:var(--acc);color:var(--acc);}
+  .tbtn.tsm.on{border-color:var(--grn);color:var(--grn);}
   .tbtn.tsm:disabled{opacity:.3;cursor:not-allowed;}
   .timing-table{width:100%;border-collapse:collapse;font-size:12px;}
   .timing-table .trow{display:flex;align-items:center;gap:6px;padding:4px 2px;border-bottom:1px solid rgba(27,37,64,.5);}
@@ -161,8 +161,8 @@
   .timing-table .tmult{width:32px;text-align:right;color:var(--dim);flex:none;font-size:11px;}
   .timing-table .tdur{width:48px;text-align:right;color:var(--txt);flex:none;font-size:11px;}
   .timing-total{display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--faint);}
-  .timing-total button{font-family:inherit;font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--dim);cursor:pointer;transition:all .1s;}
-  .timing-total button:hover{border-color:var(--org);color:var(--org);background:rgba(255,157,46,.08);}
+  .timing-total button{font-family:inherit;font-size:11px;padding:4px 14px;border-radius:8px;border:1.5px solid var(--faint);background:none;color:var(--dim);cursor:pointer;transition:all .15s;font-weight:bold;}
+  .timing-total button:hover{border-color:var(--org);color:var(--org);}
   /* ---------- melee boxes list ---------- */
   #meleeBoxList{display:flex;flex-direction:column;gap:8px;}
   .mb-row{padding:8px 0;border-bottom:1px solid rgba(27,37,64,.5);}
@@ -171,8 +171,8 @@
   .mb-label{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:4px;color:var(--txt);font-family:inherit;font-size:12px;padding:4px 8px;width:100%;}
   .mb-label:focus{outline:none;border-color:var(--acc);}
   .mb-label.dup{border-color:#ff5a5a !important;}
-  .mb-del{width:24px;height:24px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--faint);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex:none;transition:all .1s;}
-  .mb-del:hover{border-color:#ff5a5a;color:#ff5a5a;background:rgba(255,90,90,.08);}
+  .mb-del{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--faint);background:none;color:var(--faint);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex:none;transition:all .15s;line-height:1;}
+  .mb-del:hover{border-color:#ff5a5a;color:#ff5a5a;}
   .mb-row-line2{display:flex;gap:8px;}
   .mb-row-line2 .cell{display:flex;align-items:center;gap:4px;flex:1;}
   .mb-row-line2 .cell b{color:var(--faint);font-weight:normal;font-size:10px;width:10px;text-align:center;flex:none;}
@@ -1508,10 +1508,10 @@ function buildMeleeBoxList(){
       if (dup){ lbl.classList.add('dup'); setTimeout(()=>lbl.classList.remove('dup'), 800); lbl.value = b.label; return; }
       if (newLabel !== b.label){ pushUndo(); b.label = newLabel; draw(); saveState(); }
     });
-    lbl.addEventListener('mouseenter', () => { _panelHighlight = 'box_'+i; draw(); });
-    lbl.addEventListener('mouseleave', () => { if (_panelHighlight==='box_'+i){ _panelHighlight = null; draw(); } });
+
     const del = document.createElement('button');
     del.className = 'mb-del'; del.textContent = '\u00D7'; del.title = 'delete box';
+
     del.addEventListener('click', () => deleteMeleeBox(i));
     l1.appendChild(lbl); l1.appendChild(del);
     // line 2: X Y W H
@@ -1523,8 +1523,7 @@ function buildMeleeBoxList(){
       inp.type = 'number'; inp.value = b[axis];
       inp.addEventListener('focus', () => { _panelHighlight = 'box_'+i; draw(); });
       inp.addEventListener('blur', () => { _panelHighlight = null; draw(); });
-      inp.addEventListener('mouseenter', () => { _panelHighlight = 'box_'+i; draw(); });
-      inp.addEventListener('mouseleave', () => { if (_panelHighlight==='box_'+i){ _panelHighlight = null; draw(); } });
+
       inp.addEventListener('change', () => {
         const v = parseFloat(inp.value);
         if (isNaN(v) || !cur || !cur.st || editingLocked()) return;
@@ -1535,6 +1534,9 @@ function buildMeleeBoxList(){
       cell.appendChild(bb); cell.appendChild(inp);
       l2.appendChild(cell);
     });
+    // whole-row hover highlight
+    row.addEventListener('mouseenter', () => { _panelHighlight = 'box_'+i; draw(); });
+    row.addEventListener('mouseleave', () => { if (_panelHighlight==='box_'+i){ _panelHighlight = null; draw(); } });
     row.appendChild(l1); row.appendChild(l2);
     list.appendChild(row);
   });
