@@ -144,8 +144,10 @@
   /* ---------- timing section ---------- */
   #timingSection{margin-top:4px;}
   .timing-mode{display:flex;gap:8px;margin:6px 0 10px;}
-  .tbtn.tsm{font-size:11px;padding:5px 10px;border-radius:6px;letter-spacing:.5px;}
+  .tbtn.tsm{font-size:11px;padding:5px 12px;border-radius:6px;letter-spacing:.5px;background:var(--panel);border:1px solid var(--line);color:var(--dim);cursor:pointer;font-family:inherit;transition:all .1s;}
+  .tbtn.tsm:hover{border-color:var(--acc);color:var(--txt);}
   .tbtn.tsm.on{border-color:var(--grn);color:var(--grn);background:rgba(90,255,138,.08);}
+  .tbtn.tsm:disabled{opacity:.3;cursor:not-allowed;}
   .timing-table{width:100%;border-collapse:collapse;font-size:12px;}
   .timing-table .trow{display:flex;align-items:center;gap:6px;padding:4px 2px;border-bottom:1px solid rgba(27,37,64,.5);}
   .timing-table .trow:last-child{border-bottom:none;}
@@ -158,9 +160,25 @@
   .timing-table .tslider::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--acc);border:2px solid #fff;cursor:pointer;}
   .timing-table .tmult{width:32px;text-align:right;color:var(--dim);flex:none;font-size:11px;}
   .timing-table .tdur{width:48px;text-align:right;color:var(--txt);flex:none;font-size:11px;}
-  .timing-total{display:flex;align-items:center;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--faint);}
-  .timing-total button{font-family:inherit;font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--dim);cursor:pointer;}
-  .timing-total button:hover{border-color:var(--org);color:var(--org);}
+  .timing-total{display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--faint);}
+  .timing-total button{font-family:inherit;font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--dim);cursor:pointer;transition:all .1s;}
+  .timing-total button:hover{border-color:var(--org);color:var(--org);background:rgba(255,157,46,.08);}
+  /* ---------- melee boxes list ---------- */
+  #meleeBoxList{display:flex;flex-direction:column;gap:8px;}
+  .mb-row{padding:8px 0;border-bottom:1px solid rgba(27,37,64,.5);}
+  .mb-row:last-child{border-bottom:none;padding-bottom:0;}
+  .mb-row-line1{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;}
+  .mb-label{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:4px;color:var(--txt);font-family:inherit;font-size:12px;padding:4px 8px;width:100%;}
+  .mb-label:focus{outline:none;border-color:var(--acc);}
+  .mb-label.dup{border-color:#ff5a5a !important;}
+  .mb-del{width:24px;height:24px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--faint);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex:none;transition:all .1s;}
+  .mb-del:hover{border-color:#ff5a5a;color:#ff5a5a;background:rgba(255,90,90,.08);}
+  .mb-row-line2{display:flex;gap:8px;}
+  .mb-row-line2 .cell{display:flex;align-items:center;gap:4px;flex:1;}
+  .mb-row-line2 .cell b{color:var(--faint);font-weight:normal;font-size:10px;width:10px;text-align:center;flex:none;}
+  .mb-row-line2 input{width:100%;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:4px;color:var(--txt);font-family:inherit;font-size:11px;padding:4px 6px;text-align:right;-moz-appearance:textfield;}
+  .mb-row-line2 input::-webkit-inner-spin-button{-webkit-appearance:none;}
+  .mb-row-line2 input:focus{outline:none;border-color:var(--acc);}
   /* ---------- confirm dialog ---------- */
   #confirmDialog{box-sizing:border-box;width:min(420px,90vw);padding:0;color:#e4eaf8;background:#101625;border:1px solid #354361;border-radius:16px;box-shadow:0 20px 60px #000a;font-family:'Courier New',monospace;}
   #confirmDialog::backdrop{background:#040813c9;backdrop-filter:blur(4px);}
@@ -209,7 +227,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" stroke-dasharray="4 3"/></svg>SPRITE BOX</button>
         <button class="tbtn tog on" id="tglCollision" title="show/hide collision box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>COLLISION</button>
-        <button class="tbtn tog" id="tglMeleeView" title="show/hide melee boxes">
+        <button class="tbtn tog" id="tglMeleeView" title="show/hide hit boxes">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 3"/></svg>MELEE VIEW</button>
         <button class="tbtn tog" id="tglAllFrames" title="show/hide ALL frames ghosted at once (while paused) + make edits apply to every frame">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12"/><path d="M7 6v12M11 6v12M15 6v12M19 6v12"/></svg>ALL FRAMES</button>
@@ -224,8 +242,7 @@
       </div>
       <div class="tgroup">
         <span class="gtitle">Tools</span>
-        <button class="tbtn tog" id="tglMeleeOn" title="enable/disable melee box for this frame" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 12l2 2 4-4"/></svg>MELEE ON</button>
+        <button class="tbtn" id="addBoxToolbar" title="add a hit box to this frame (M)">+ BOX</button>
         <button class="tbtn" id="recenterPivotBtn" title="move pivot to collision box center">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><path d="M12 5v3M12 16v3M5 12h3M16 12h3"/></svg>RECENTER PIVOT</button>
         <div style="position:relative;display:inline-flex;">
@@ -339,18 +356,9 @@
       </div>
     </div>
 
-    <h2><span><span class="swatch" style="background:var(--org)"></span>Melee Box</span><span><input type="checkbox" id="p_mon" title="enable melee box for this frame"></span></h2>
-    <div class="row"><span>Position</span>
-      <div class="pair" id="mxy">
-        <div class="cell"><b>X</b><input type="number" id="p_mx"></div>
-        <div class="cell"><b>Y</b><input type="number" id="p_my"></div>
-      </div>
-    </div>
-    <div class="row"><span>Size</span>
-      <div class="pair" id="mwh">
-        <div class="cell"><b>W</b><input type="number" id="p_mw"></div>
-        <div class="cell"><b>H</b><input type="number" id="p_mh"></div>
-      </div>
+    <h2 id="meleeBoxesHeader"><span><span class="swatch" style="background:var(--org)"></span>Hit Boxes</span><button class="tbtn tsm" id="addBoxBtn" title="add a hit box">+ Add</button></h2>
+    <div class="section-body" id="meleeBoxesBody">
+      <div id="meleeBoxList"></div>
     </div>
 
     <h2><span><span class="swatch" style="background:var(--pur)"></span>Rotation</span></h2>
@@ -397,7 +405,7 @@
 </div>
 <dialog id="helpDialog" aria-labelledby="helpTitle" aria-describedby="helpSummary">
   <header class="helpHead"><div><div class="helpEyebrow">Sprite editor · quick reference</div><h2 id="helpTitle">Less hunting. More tuning.</h2><p id="helpSummary">Shortcuts follow button availability. Editing requires paused playback.</p></div><button id="helpClose" aria-label="Close help">×</button></header>
-  <div class="helpGrid"><section class="helpCard"><h3>Playback &amp; navigation</h3><div class="helpItem"><span>Play or pause animation</span><kbd>Space</kbd></div><div class="helpItem"><span>Previous or next frame</span><kbd>← / →</kbd></div><div class="helpItem"><span>Previous or next animation</span><kbd>↑ / ↓</kbd></div><div class="helpItem"><span>Jump directly to frames one through ten</span><kbd>1–9 / 0</kbd></div><div class="helpItem"><span>Decrease or increase playback speed</span><kbd>− / +</kbd></div><div class="helpItem"><span>Preview every frame in the filmstrip</span><kbd>FRAMES</kbd></div></section><section class="helpCard"><h3>Visibility &amp; clean preview</h3><div class="helpItem"><span>Toggle sprite boundary</span><kbd>Shift + S</kbd></div><div class="helpItem"><span>Toggle collision boundary</span><kbd>Shift + C</kbd></div><div class="helpItem"><span>Toggle melee boundaries</span><kbd>Shift + M</kbd></div><div class="helpItem"><span>Ghost all frames; edits affect every frame</span><kbd>Shift + F</kbd></div><div class="helpItem"><span>Toggle coordinate axes</span><kbd>Shift + A</kbd></div><div class="helpItem"><span>Toggle background grid</span><kbd>Shift + G</kbd></div><div class="helpItem"><span>Toggle pivot marker</span><kbd>Shift + P</kbd></div><div class="helpItem"><span>Toggle animation label</span><kbd>Shift + L</kbd></div><div class="helpItem"><span>Hide overlays; press again to restore</span><kbd>Ctrl + H</kbd></div></section><section class="helpCard"><h3>Collision &amp; frame editing</h3><div class="helpItem"><span>Enable or disable current frame’s melee box</span><kbd>M</kbd></div><div class="helpItem"><span>Recenter pivot in collision box</span><kbd>R</kbd></div><div class="helpItem"><span>Move the hovered box</span><kbd>Drag inside</kbd></div><div class="helpItem"><span>Resize using an edge or corner</span><kbd>Drag handle</kbd></div><div class="helpItem"><span>Scale both axes together</span><kbd>Shift + corner drag</kbd></div><div class="helpItem"><span>Nudge frame offset while paused</span><kbd>Shift + arrows</kbd></div><div class="helpItem"><span>Edit exact box, offset, and scale values</span><kbd>Side panel</kbd></div><div class="helpItem"><span>Center pivot within the collision box</span><kbd>RECENTER PIVOT</kbd></div><div class="helpItem"><span>Align frames to the left-bottom origin</span><kbd>LEFT ↓ BOTTOM</kbd></div><div class="helpItem"><span>Center frames on the origin</span><kbd>CENTER</kbd></div></section><section class="helpCard"><h3>View &amp; utilities</h3><div class="helpItem"><span>Pan by dragging empty canvas space</span><kbd>Drag background</kbd></div><div class="helpItem"><span>Zoom around the pointer</span><kbd>Mouse wheel</kbd></div><div class="helpItem"><span>Zoom out or in</span><kbd>Ctrl + − / +</kbd></div><div class="helpItem"><span>Reset zoom and center the view</span><kbd>Ctrl + 0</kbd></div><div class="helpItem"><span>Rotate independently using bottom controls</span><kbd>Rotation controls</kbd></div><div class="helpItem"><span>Choose background using presets or custom colors</span><kbd>Color picker</kbd></div><div class="helpItem"><span>Undo; return to the edited animation</span><kbd>Ctrl + Z</kbd></div><div class="helpItem"><span>Redo the last undone edit</span><kbd>Ctrl + Y</kbd></div><div class="helpItem"><span>Reset frame, animation, or factory settings</span><kbd>RESET</kbd></div><div class="helpItem"><span>Save edits automatically in this browser</span><kbd>Auto-save</kbd></div></section></div>
+  <div class="helpGrid"><section class="helpCard"><h3>Playback &amp; navigation</h3><div class="helpItem"><span>Play or pause animation</span><kbd>Space</kbd></div><div class="helpItem"><span>Previous or next frame</span><kbd>← / →</kbd></div><div class="helpItem"><span>Previous or next animation</span><kbd>↑ / ↓</kbd></div><div class="helpItem"><span>Jump directly to frames one through ten</span><kbd>1–9 / 0</kbd></div><div class="helpItem"><span>Decrease or increase playback speed</span><kbd>− / +</kbd></div><div class="helpItem"><span>Preview every frame in the filmstrip</span><kbd>FRAMES</kbd></div></section><section class="helpCard"><h3>Visibility &amp; clean preview</h3><div class="helpItem"><span>Toggle sprite boundary</span><kbd>Shift + S</kbd></div><div class="helpItem"><span>Toggle collision boundary</span><kbd>Shift + C</kbd></div><div class="helpItem"><span>Toggle hit box boundaries</span><kbd>Shift + M</kbd></div><div class="helpItem"><span>Ghost all frames; edits affect every frame</span><kbd>Shift + F</kbd></div><div class="helpItem"><span>Toggle coordinate axes</span><kbd>Shift + A</kbd></div><div class="helpItem"><span>Toggle background grid</span><kbd>Shift + G</kbd></div><div class="helpItem"><span>Toggle pivot marker</span><kbd>Shift + P</kbd></div><div class="helpItem"><span>Toggle animation label</span><kbd>Shift + L</kbd></div><div class="helpItem"><span>Hide overlays; press again to restore</span><kbd>Ctrl + H</kbd></div></section><section class="helpCard"><h3>Collision &amp; frame editing</h3><div class="helpItem"><span>Add a hit box to current frame</span><kbd>M</kbd></div><div class="helpItem"><span>Recenter pivot in collision box</span><kbd>R</kbd></div><div class="helpItem"><span>Move the hovered box</span><kbd>Drag inside</kbd></div><div class="helpItem"><span>Resize using an edge or corner</span><kbd>Drag handle</kbd></div><div class="helpItem"><span>Scale both axes together</span><kbd>Shift + corner drag</kbd></div><div class="helpItem"><span>Nudge frame offset while paused</span><kbd>Shift + arrows</kbd></div><div class="helpItem"><span>Edit exact box, offset, and scale values</span><kbd>Side panel</kbd></div><div class="helpItem"><span>Center pivot within the collision box</span><kbd>RECENTER PIVOT</kbd></div><div class="helpItem"><span>Align frames to the left-bottom origin</span><kbd>LEFT ↓ BOTTOM</kbd></div><div class="helpItem"><span>Center frames on the origin</span><kbd>CENTER</kbd></div></section><section class="helpCard"><h3>View &amp; utilities</h3><div class="helpItem"><span>Pan by dragging empty canvas space</span><kbd>Drag background</kbd></div><div class="helpItem"><span>Zoom around the pointer</span><kbd>Mouse wheel</kbd></div><div class="helpItem"><span>Zoom out or in</span><kbd>Ctrl + − / +</kbd></div><div class="helpItem"><span>Reset zoom and center the view</span><kbd>Ctrl + 0</kbd></div><div class="helpItem"><span>Rotate independently using bottom controls</span><kbd>Rotation controls</kbd></div><div class="helpItem"><span>Choose background using presets or custom colors</span><kbd>Color picker</kbd></div><div class="helpItem"><span>Undo; return to the edited animation</span><kbd>Ctrl + Z</kbd></div><div class="helpItem"><span>Redo the last undone edit</span><kbd>Ctrl + Y</kbd></div><div class="helpItem"><span>Reset frame, animation, or factory settings</span><kbd>RESET</kbd></div><div class="helpItem"><span>Save edits automatically in this browser</span><kbd>Auto-save</kbd></div></section></div>
   <footer class="helpFoot">Click anywhere or press Escape to close · Shortcuts stay inactive while typing</footer>
 </dialog>
 <dialog id="confirmDialog">
@@ -455,6 +463,7 @@ async function restore(entry){
   if (pos && (!cur || cur.name !== entry.name)) await selectEntity(pos.li, pos.ei, { noRefine:true });
   cur.st = JSON.parse(entry.st);
   cur.st.frameIdx = entry.fi % cur.st.frames.length;
+  _selectedBox = null;
   syncPanel(); draw();
 }
 function doUndo(){
@@ -488,7 +497,7 @@ function collectState(){
       speed: st.speed, playing: st.playing, frameIdx: st.frameIdx,
       playback: st.playback || 'loop',
       collision: st.collision, pivot: st.pivot, rot: st.rot,
-      frames: st.frames.map(f => ({ idx:f.idx, name:f.name, crop:f.crop, offset:f.offset, scale:f.scale, melee:f.melee, durUnits:f.durUnits||1 }))
+      frames: st.frames.map(f => ({ idx:f.idx, name:f.name, crop:f.crop, offset:f.offset, scale:f.scale, boxes:f.boxes||[], durUnits:f.durUnits||1 }))
     };
   }
   return { v:1, entities, view:{ show, isPlaying, bgColor, filmOpen: FILM.on }, active: cur ? cur.name : null };
@@ -581,10 +590,20 @@ function loadState(){
   for (const [name, saved] of Object.entries(data.entities)){
     if (saved && Array.isArray(saved.frames)) S.set(name, saved);
   }
-  // migrate new fields: playback + durUnits (additive, backward-compatible)
+  // migrate new fields: playback + durUnits + boxes (additive, backward-compatible)
   for (const [, st] of S){
     if (!st.playback) st.playback = 'loop';
-    for (const f of st.frames){ if (f.durUnits === undefined || f.durUnits < 1) f.durUnits = 1; }
+    for (const f of st.frames){
+      if (f.durUnits === undefined || f.durUnits < 1) f.durUnits = 1;
+      // melee → boxes migration
+      if (f.melee && !f.boxes){
+        f.boxes = f.melee.on
+          ? [{ label: "attack", x: f.melee.x, y: f.melee.y, w: f.melee.w, h: f.melee.h }]
+          : [];
+        delete f.melee;
+      }
+      if (!f.boxes) f.boxes = [];
+    }
   }
   // restore global view
   if (data.view){
@@ -608,6 +627,8 @@ function applySavedView(){
 }
 let drag = null;         // active pointer drag
 let hover = null;        // {box:'collision'|'melee'|'scale', handle:id} or {box, body:true}
+let _panelHighlight = null;  // box key highlighted from panel hover/focus
+let _selectedBox = null;     // {key:'box_2', idx:2} — clicked/selected on canvas
 let boxZOrder = ['sprite','collision','melee'];   // front-to-back; last-touched moves to front
 let lastT = 0, acc = 0;
 // ---------- sidebar ----------
@@ -692,8 +713,7 @@ function layoutAt(st, imgs, W, H, mode){
     } else {
       f.offset.x = Math.round(fw/2); f.offset.y = -Math.round(fh/2);  // left-bottom by own size
     }
-    f.melee.on = false;
-    f.melee.x = mee.x + dOx; f.melee.y = mee.y + dOy; f.melee.w = mee.w; f.melee.h = mee.h;
+    f.boxes = [];
   }
 }
 function defaultState(name, imgs, paths, crops){
@@ -708,8 +728,8 @@ function defaultState(name, imgs, paths, crops){
     frames: paths.map((p, i) => ({
       idx: i, name: p.split('/').pop(),
       crop: (() => { const c = (crops&&crops[i])||null; return c ? {x:c[0],y:c[1],w:c[2],h:c[3]} : {x:0,y:0,w:good[i]?good[i].naturalWidth:0,h:good[i]?good[i].naturalHeight:0}; })(),
-      offset: { x:0, y:0 }, scale: { sx:1, sy:1 }, melee: { on:false, x:0, y:0, w:0, h:0 },
-      durUnits: 1
+      offset: { x:0, y:0 }, scale: { sx:1, sy:1 },
+      boxes: [], durUnits: 1
     }))
   };
   // initial load = left-bottom anchor (each frame's left/bottom on the axes)
@@ -731,7 +751,7 @@ async function selectEntity(li, ei, opts){
   }
   cur.st = S.get(cur.name);
   cur.st.playing = isPlaying;   // carry global play/pause across animations
-  acc = 0; drag = null; hover = null;
+  acc = 0; drag = null; hover = null; _selectedBox = null;
   panX = 0; panY = 0;
   if (!userZoomed){ zoom = 1; $('zoomval').textContent = '100%'; }   // start each anim at true size
   resizeCanvas(); syncPanel(); draw();
@@ -835,12 +855,11 @@ function hitHandle(rect, sx, sy){
   return null;
 }
 function inside(r, x, y){ return x>=r.x && x<=r.x+r.w && y>=r.y && y<=r.y+r.h; }
-function meleeVisible(){ return show.meleeView && cur.st.frames[curFrameIdx()].melee.on; }
+function boxesVisible(){ return show.meleeView; }
 // ---------- box rects (stored directly in sprite-space) ----------
 // Collision & melee are physically shifted together with the frames on any
 // position reset, so they live in the same space as the sprite and follow it.
 function collisionRect(fi){ return { ...cur.st.collision }; }
-function meleeRect(fi){ return { ...cur.st.frames[fi].melee }; }
 // while playing OR rotating, per-frame sprite edits are locked (view-only)
 function editingLocked(){ return !!(cur && cur.st && (cur.st.playing || (cur.st.rot && cur.st.rot.playing))); }
 // choose a "nice" grid step (1,2,5,10,20,...) so ~40-80px on screen
@@ -932,9 +951,6 @@ function draw(){
     if (playing){
       const [x, y] = s2c(b.rect.x, b.rect.y);
       ctx.save();
-      // Uniform neutral fill so all boxes read at the same visual weight while
-      // playing (a bright color like cyan at equal alpha looks far more opaque
-      // than a dark one). Color identity stays in the border only.
       ctx.fillStyle = 'rgba(255,255,255,.06)';
       ctx.fillRect(x, y, b.rect.w*zoom, b.rect.h*zoom);
       ctx.strokeStyle = b.color;
@@ -944,8 +960,31 @@ function draw(){
     } else {
       const hovered = hover && hover.box===b.key;
       const dragging = drag && drag.kind!=='pan' && drag.key===b.key;
-      drawBox(b.rect, b.color, true, !dragging,
+      // panel highlight or selected: solid fill
+      const panelHl = _panelHighlight === b.key || _selectedBox === b.key;
+      if (panelHl){
+        const [hx, hy] = s2c(b.rect.x, b.rect.y);
+        ctx.save();
+        ctx.fillStyle = hexA(b.color, 0.35);
+        ctx.fillRect(hx, hy, b.rect.w*zoom, b.rect.h*zoom);
+        ctx.strokeStyle = b.color;
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(hx, hy, b.rect.w*zoom, b.rect.h*zoom);
+        ctx.restore();
+      }
+      drawBox(b.rect, b.color, true, !dragging && !(_selectedBox===b.key),
         hovered ? hover.handle : null, !!(hovered && hover.body));
+      // label above box
+      if (b.label){
+        const [lx, ly] = s2c(b.rect.x + b.rect.w/2, b.rect.y);
+        ctx.save();
+        ctx.font = '11px Courier New';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillStyle = b.color;
+        ctx.fillText(b.label, lx, ly - 4);
+        ctx.restore();
+      }
     }
   }
   ctx.restore();
@@ -1011,7 +1050,8 @@ function filmBounds(st){
     const w=im.naturalWidth*f.scale.sx, h=im.naturalHeight*f.scale.sy;
     minX=Math.min(minX,f.offset.x-w/2); minY=Math.min(minY,f.offset.y-h/2);
     maxX=Math.max(maxX,f.offset.x+w/2); maxY=Math.max(maxY,f.offset.y+h/2);
-    if (f.melee.on){ const m=f.melee;
+    const bxArr = f.boxes || [];
+    for (const m of bxArr){
       minX=Math.min(minX,m.x); minY=Math.min(minY,m.y);
       maxX=Math.max(maxX,m.x+m.w); maxY=Math.max(maxY,m.y+m.h); }
   }
@@ -1026,7 +1066,7 @@ function drawFilm(){
     for (let i=0;i<n;i++){
       const cell=document.createElement('div'); cell.className='fcell';
       cell.title='go to frame '+(i+1);
-      cell.addEventListener('click', ()=>{ if(!cur||!cur.st) return; cur.st.frameIdx=i%cur.st.frames.length; syncPanel(); draw(); });
+      cell.addEventListener('click', ()=>{ if(!cur||!cur.st) return; cur.st.frameIdx=i%cur.st.frames.length; acc=0; _selectedBox=null; syncPanel(); draw(); });
       const num=document.createElement('span'); num.className='fnum'; num.textContent=i+1;
       const cv2=document.createElement('canvas');
       cell.appendChild(num); cell.appendChild(cv2);
@@ -1060,8 +1100,9 @@ function drawFilm(){
       g.fillStyle='rgba(62,240,255,.1)'; g.fillRect(bx,by,bw,bh);
       g.strokeStyle='rgba(62,240,255,.7)'; g.strokeRect(bx,by,bw,bh);
     }
-    if (f.melee.on){
-      const mx=X(f.melee.x), my=Y(f.melee.y), mw=f.melee.w*scale, mh=f.melee.h*scale;
+    const fBoxes = f.boxes || [];
+    for (const mb of fBoxes){
+      const mx=X(mb.x), my=Y(mb.y), mw=mb.w*scale, mh=mb.h*scale;
       g.fillStyle='rgba(255,157,46,.1)'; g.fillRect(mx,my,mw,mh);
       g.strokeStyle='rgba(255,157,46,.7)'; g.strokeRect(mx,my,mw,mh);
     }
@@ -1172,6 +1213,7 @@ function tick(t){
       } else {
         cur.st.frameIdx = next;
       }
+      _selectedBox = null;   // clear box selection on frame change
       syncPanel(); draw();
     }
   } else { acc = 0; }
@@ -1221,7 +1263,7 @@ function setPlaying(p){
   syncToggles();   // update MELEE ON disabled state immediately
   saveState();
 }
-function stepFrame(d){ if(!cur||!cur.st)return; const st=cur.st; st.frameIdx=(st.frameIdx+d+st.frames.length)%st.frames.length; acc=0; syncPanel(); draw(); }
+function stepFrame(d){ if(!cur||!cur.st)return; const st=cur.st; st.frameIdx=(st.frameIdx+d+st.frames.length)%st.frames.length; acc=0; _selectedBox=null; syncPanel(); draw(); }
 function setSpeed(v){ if(!cur||!cur.st)return; cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = cur.st.speed+' fps'; $('p_speed').value = cur.st.speed; saveState(); buildTimingTable(); }
 // ---------- timing table (per-frame duration units) ----------
 function baseUnitMs(){ return 1000 / (cur && cur.st ? cur.st.speed : 8); }
@@ -1372,28 +1414,25 @@ function syncPanel(){
   P('p_cx').value=f.crop.x; P('p_cy').value=f.crop.y; P('p_cw').value=f.crop.w; P('p_ch').value=f.crop.h;
   P('p_ox').value=f.offset.x; P('p_oy').value=f.offset.y;
   P('p_sx').value=f.scale.sx; P('p_sy').value=f.scale.sy;
-  P('p_mon').checked=f.melee.on;
-  P('p_mx').value=f.melee.x; P('p_my').value=f.melee.y; P('p_mw').value=f.melee.w; P('p_mh').value=f.melee.h;
   P('p_kx').value=st.collision.x; P('p_ky').value=st.collision.y; P('p_kw').value=st.collision.w; P('p_kh').value=st.collision.h;
   if (st.pivot){ P('p_px').value=st.pivot.x; P('p_py').value=st.pivot.y; }
   if (st.rot){ P('p_rangle').value=Math.round(st.rot.angle); P('p_rspeed').value=st.rot.speed; $('rotSpeedVal').textContent=st.rot.speed+'\u00B0/s'; $('rotAngle').textContent=Math.round(st.rot.angle)+'\u00B0'; $('rotIco').innerHTML=st.rot.playing?'&#10074;&#10074;':'&#9654;'; }
+  buildMeleeBoxList();
   setPlaying(st.playing);
   syncPlaybackButtons();
   buildTimingTable();
-  syncPanelDisabled();   // enable/disable side inputs based on play state + melee
-  syncToggles();   // keep MELEE ON button in sync with current frame
+  syncPanelDisabled();
+  syncToggles();
 }
-// Enable/disable side-panel inputs: locked while animating (like the bottom
-// MELEE ON / RECENTER PIVOT / RESET buttons); melee fields also need melee on.
-const PANEL_EDITABLE = ['p_speed','p_ox','p_oy','p_sx','p_sy','p_mx','p_my','p_mw','p_mh','p_kx','p_ky','p_kw','p_kh','p_px','p_py','p_rspeed'];
+// Enable/disable side-panel inputs: locked while animating
+const PANEL_EDITABLE = ['p_speed','p_ox','p_oy','p_sx','p_sy','p_kx','p_ky','p_kw','p_kh','p_px','p_py','p_rspeed'];
 function syncPanelDisabled(){
   if (!cur || !cur.st) return;
-  const st = cur.st, f = st.frames[curFrameIdx()];
   const locked = editingLocked();
   for (const id of PANEL_EDITABLE) P(id).disabled = locked;
-  P('p_mon').disabled = locked;
-  const md = locked || !f.melee.on;
-  ['p_mx','p_my','p_mw','p_mh'].forEach(id=>{ P(id).disabled = md; P(id).classList.toggle('disabled-dim', md); });
+  // melee box inputs
+  const list = $('meleeBoxList');
+  if (list) list.querySelectorAll('input').forEach(inp => { inp.disabled = locked; });
 }
 function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=parseFloat(P(id).value); if(!isNaN(v)&&cur&&cur.st&&!editingLocked()){ pushUndo(); fn(v); draw(); } else syncPanel(); }); }
 bindNum('p_speed', v=>setSpeed(v));
@@ -1401,10 +1440,6 @@ bindNum('p_ox', v=>{ const st=cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].
 bindNum('p_oy', v=>{ const st=cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].offset.y; targetFrames(fi).forEach(f=>f.offset.y+=d); });
 bindNum('p_sx', v=>{ const st=cur.st, fi=curFrameIdx(); const r=Math.max(.05,v)/st.frames[fi].scale.sx; targetFrames(fi).forEach(f=>f.scale.sx=Math.max(.05,f.scale.sx*r)); });
 bindNum('p_sy', v=>{ const st=cur.st, fi=curFrameIdx(); const r=Math.max(.05,v)/st.frames[fi].scale.sy; targetFrames(fi).forEach(f=>f.scale.sy=Math.max(.05,f.scale.sy*r)); });
-bindNum('p_mx', v=>{ const st=cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].melee.x; targetFrames(fi).forEach(f=>{ if(f.melee.on) f.melee.x+=d; }); });
-bindNum('p_my', v=>{ const st=cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].melee.y; targetFrames(fi).forEach(f=>{ if(f.melee.on) f.melee.y+=d; }); });
-bindNum('p_mw', v=>{ const st=cur.st, fi=curFrameIdx(); const r=Math.max(1,v)/st.frames[fi].melee.w; targetFrames(fi).forEach(f=>{ if(f.melee.on) f.melee.w=Math.max(1,f.melee.w*r); }); });
-bindNum('p_mh', v=>{ const st=cur.st, fi=curFrameIdx(); const r=Math.max(1,v)/st.frames[fi].melee.h; targetFrames(fi).forEach(f=>{ if(f.melee.on) f.melee.h=Math.max(1,f.melee.h*r); }); });
 bindNum('p_kx', v=>cur.st.collision.x=v);
 bindNum('p_ky', v=>cur.st.collision.y=v);
 bindNum('p_kw', v=>cur.st.collision.w=Math.max(1,v));
@@ -1412,14 +1447,99 @@ bindNum('p_kh', v=>cur.st.collision.h=Math.max(1,v));
 bindNum('p_px', v=>{ if(cur.st.pivot) cur.st.pivot.x=v; });
 bindNum('p_py', v=>{ if(cur.st.pivot) cur.st.pivot.y=v; });
 bindNum('p_rspeed', v=>{ if(cur.st.rot) setRotSpeed(v); });
-P('p_mon').addEventListener('change', ()=>{
-  if(!cur||!cur.st) return;
+// ---------- melee boxes panel (dynamic list) ----------
+function nextBoxLabel(boxes){
+  if (!boxes.length) return 'attack';
+  const labels = new Set(boxes.map(b => b.label));
+  if (!labels.has('attack')) return 'attack';
+  let n = 2;
+  while (labels.has('attack_' + n)) n++;
+  return 'attack_' + n;
+}
+function nextBoxPosition(st, fi){
+  const boxes = st.frames[fi].boxes;
+  if (boxes.length === 0){
+    const c = st.collision;
+    const w = Math.max(1, Math.round(c.w * 0.25));
+    const h = c.h;
+    return { x: c.x + c.w + 3, y: c.y, w, h };
+  }
+  const last = boxes[boxes.length - 1];
+  return { x: last.x + 20, y: last.y - 20, w: last.w, h: last.h };
+}
+function addMeleeBox(){
+  if (!cur || !cur.st || editingLocked()) return;
   pushUndo();
-  const f = cur.st.frames[curFrameIdx()];
-  f.melee.on = P('p_mon').checked;
-  if (f.melee.on) show.meleeView = true;   // auto-show melee view when enabling
-  syncToggles(); syncPanel(); draw();
-});
+  const fi = curFrameIdx();
+  const pos = nextBoxPosition(cur.st, fi);
+  const label = nextBoxLabel(cur.st.frames[fi].boxes);
+  cur.st.frames[fi].boxes.push({ label, ...pos });
+  show.meleeView = true;
+  syncToggles(); buildMeleeBoxList(); draw(); saveState();
+}
+function deleteMeleeBox(idx){
+  if (!cur || !cur.st || editingLocked()) return;
+  pushUndo();
+  cur.st.frames[curFrameIdx()].boxes.splice(idx, 1);
+  _panelHighlight = null;
+  buildMeleeBoxList(); draw(); saveState();
+}
+function buildMeleeBoxList(){
+  if (!cur || !cur.st) return;
+  const st = cur.st, fi = curFrameIdx();
+  const boxes = st.frames[fi].boxes || [];
+  const list = $('meleeBoxList');
+  list.innerHTML = '';
+  boxes.forEach((b, i) => {
+    const row = document.createElement('div');
+    row.className = 'mb-row';
+    row.dataset.idx = i;
+    // line 1: label + delete
+    const l1 = document.createElement('div'); l1.className = 'mb-row-line1';
+    const lbl = document.createElement('input');
+    lbl.type = 'text'; lbl.className = 'mb-label'; lbl.value = b.label;
+    lbl.addEventListener('focus', () => { _panelHighlight = 'box_'+i; draw(); });
+    lbl.addEventListener('blur', () => {
+      _panelHighlight = null; draw();
+      // duplicate check on blur
+      const newLabel = lbl.value.trim();
+      if (!newLabel){ lbl.value = b.label; return; }
+      const dup = boxes.some((ob, oi) => oi !== i && ob.label === newLabel);
+      if (dup){ lbl.classList.add('dup'); setTimeout(()=>lbl.classList.remove('dup'), 800); lbl.value = b.label; return; }
+      if (newLabel !== b.label){ pushUndo(); b.label = newLabel; draw(); saveState(); }
+    });
+    lbl.addEventListener('mouseenter', () => { _panelHighlight = 'box_'+i; draw(); });
+    lbl.addEventListener('mouseleave', () => { if (_panelHighlight==='box_'+i){ _panelHighlight = null; draw(); } });
+    const del = document.createElement('button');
+    del.className = 'mb-del'; del.textContent = '\u00D7'; del.title = 'delete box';
+    del.addEventListener('click', () => deleteMeleeBox(i));
+    l1.appendChild(lbl); l1.appendChild(del);
+    // line 2: X Y W H
+    const l2 = document.createElement('div'); l2.className = 'mb-row-line2';
+    ['x','y','w','h'].forEach(axis => {
+      const cell = document.createElement('div'); cell.className = 'cell';
+      const bb = document.createElement('b'); bb.textContent = axis.toUpperCase();
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.value = b[axis];
+      inp.addEventListener('focus', () => { _panelHighlight = 'box_'+i; draw(); });
+      inp.addEventListener('blur', () => { _panelHighlight = null; draw(); });
+      inp.addEventListener('mouseenter', () => { _panelHighlight = 'box_'+i; draw(); });
+      inp.addEventListener('mouseleave', () => { if (_panelHighlight==='box_'+i){ _panelHighlight = null; draw(); } });
+      inp.addEventListener('change', () => {
+        const v = parseFloat(inp.value);
+        if (isNaN(v) || !cur || !cur.st || editingLocked()) return;
+        pushUndo();
+        b[axis] = (axis==='w'||axis==='h') ? Math.max(1,v) : v;
+        draw(); saveState();
+      });
+      cell.appendChild(bb); cell.appendChild(inp);
+      l2.appendChild(cell);
+    });
+    row.appendChild(l1); row.appendChild(l2);
+    list.appendChild(row);
+  });
+}
+$('addBoxBtn').addEventListener('click', addMeleeBox);
 // ---------- toolbar (display toggles only) ----------
 function syncToggles(){
   $('tglCollision').classList.toggle('on', show.collision);
@@ -1427,30 +1547,22 @@ function syncToggles(){
   $('tglAxes').classList.toggle('on', show.axes);
   $('tglGrid').classList.toggle('on', show.grid);
   $('tglSpriteView').classList.toggle('on', show.spriteView);
-  // ALL FRAMES: only meaningful while paused (ghosts are a paused-state view)
   const afBtn = $('tglAllFrames');
   if (afBtn){
     afBtn.classList.toggle('on', show.allFrames);
     afBtn.disabled = !!(cur && cur.st && cur.st.playing);
   }
-  // MELEE ON (Tools): always visible; .on reflects the current frame's melee box;
-  // disabled while playing (can't edit per-frame data during animation)
-  const mon = cur && cur.st ? cur.st.frames[curFrameIdx()].melee.on : false;
-  const btn = $('tglMeleeOn');
-  btn.classList.toggle('on', mon);
+  // + BOX button: disabled while playing
   const locked = !!(cur && cur.st && cur.st.playing);
-  btn.disabled = locked;
-  // MELEE VIEW (Display): a global display preference, ALWAYS freely toggleable.
-  // Never disabled/greyed — the user can turn it on or off at any time regardless
-  // of the current frame's melee state. The ONLY thing that forces it on is
-  // enabling a melee box (MELEE ON / p_mon handlers).
+  const addBtn = $('addBoxBtn');
+  if (addBtn) addBtn.disabled = locked;
+  // MELEE VIEW (Display): global display preference, always toggleable
   const mv = $('tglMeleeView');
   mv.disabled = false;
   mv.classList.toggle('on', show.meleeView);
   $('tglPivot').classList.toggle('on', show.pivot);
-  // LABEL: sprite name over the canvas (viewer-style), drawn in draw()
   $('tglLabel').classList.toggle('on', show.label);
-  $('resetBtn').disabled = locked;   // RESET stays locked during animation (destructive)
+  $('resetBtn').disabled = locked;
 }
 // If the user manually toggles any overlay while ctrl+H "hide mode" is active,
 // cancel hide mode: drop the snapshot so a later ctrl+H starts fresh from the
@@ -1463,15 +1575,7 @@ $('tglMeleeView').addEventListener('click', ()=>{
   // clickable — it's a global display preference, not a per-frame control.
   show.meleeView=!show.meleeView; cancelHideMode(); syncToggles(); draw(); saveState();
 });
-$('tglMeleeOn').addEventListener('click', ()=>{
-  if (!cur || !cur.st || editingLocked()) return;
-  pushUndo();
-  const f = cur.st.frames[curFrameIdx()];
-  f.melee.on = !f.melee.on;
-  if (f.melee.on) show.meleeView = true;   // auto-show melee view when enabling
-  P('p_mon').checked = f.melee.on;
-  syncToggles(); syncPanel(); draw();
-});
+$('addBoxToolbar').addEventListener('click', addMeleeBox);
 $('tglAxes').addEventListener('click', ()=>{ cancelHideMode(); show.axes=!show.axes; syncToggles(); draw(); saveState(); });
 $('tglGrid').addEventListener('click', ()=>{ cancelHideMode(); show.grid=!show.grid; syncToggles(); draw(); saveState(); });
 $('tglSpriteView').addEventListener('click', ()=>{ cancelHideMode(); show.spriteView=!show.spriteView; syncToggles(); draw(); saveState(); });
@@ -1631,10 +1735,8 @@ function factoryReset(){
     f.scale.sx = 1; f.scale.sy = 1;
     if (im){ f.offset.x = Math.round(im.naturalWidth/2); f.offset.y = -Math.round(im.naturalHeight/2); }
     else { f.offset.x = 0; f.offset.y = 0; }
-    // reset melee box: off + default position (25% width, left of collision with gap)
-    f.melee.on = false;
-    f.melee.x = st.collision.x - f.melee.w - 3;
-    f.melee.y = st.collision.y;
+    // reset boxes: clear all
+    f.boxes = [];
   });
 }
 function resetAnimation(){
@@ -1649,7 +1751,7 @@ function resetAnimation(){
 function togglePlay(){
   if (!cur || !cur.st) return;
   if (cur.st.playing){ setPlaying(false); }
-  else { cur.st.frameIdx = 0; acc = 0; setPlaying(true); syncPanel(); draw(); }
+  else { cur.st.frameIdx = 0; acc = 0; _selectedBox = null; setPlaying(true); syncPanel(); draw(); }
 }
 $('playBtn').addEventListener('click', togglePlay);
 $('prevF').addEventListener('click', ()=>stepFrame(-1));
@@ -1772,10 +1874,16 @@ function boxList(){
   const byKey = {};
   if (show.spriteView && im) byKey.sprite    = { key:'sprite',    rect:frameRect(st, fi), color:COL_SCALE };
   if (show.collision)        byKey.collision = { key:'collision', rect:collisionRect(fi), color:COL_COLL  };
-  if (meleeVisible())        byKey.melee     = { key:'melee',     rect:meleeRect(fi),     color:COL_MELEE };
+  // melee boxes collection
+  if (boxesVisible()){
+    const fBoxes = st.frames[fi].boxes || [];
+    fBoxes.forEach((b, i) => {
+      byKey['box_'+i] = { key:'box_'+i, rect:{x:b.x,y:b.y,w:b.w,h:b.h}, color:COL_MELEE, label:b.label, idx:i };
+    });
+  }
   // pivot is a point, not a rect — handled separately in hover/drag
   // return in z-order (front first) so hit-testing respects last-touched
-  return boxZOrder.filter(k => byKey[k]).map(k => byKey[k]);
+  return Object.values(byKey).reverse();
 }
 // pivot hit-test: within ~12 screen-px of the marker center
 function hitPivot(sx, sy){
@@ -1826,7 +1934,8 @@ function sharedScaleCenter(st, before){
     const w=im.naturalWidth*b.sx, h=im.naturalHeight*b.sy;
     minX=Math.min(minX,b.ox-w/2); minY=Math.min(minY,b.oy-h/2);
     maxX=Math.max(maxX,b.ox+w/2); maxY=Math.max(maxY,b.oy+h/2);
-    if (f.melee.on){ const m=b.m;
+    const bxArr = b.bx || [];
+    for (const m of bxArr){
       minX=Math.min(minX,m.x); minY=Math.min(minY,m.y);
       maxX=Math.max(maxX,m.x+m.w); maxY=Math.max(maxY,m.y+m.h); }
   }
@@ -1851,15 +1960,19 @@ function scaleAllAbout(st, before, rx, ry){
   st.collision.h=Math.max(1,Math.round(b0.h*ry));
   st.collision.x=Math.round(C.cx+(ccx-C.cx)*rx - st.collision.w/2);
   st.collision.y=Math.round(C.cy+(ccy-C.cy)*ry - st.collision.h/2);
-  // melee per frame
+  // melee boxes per frame
   for (let i=0;i<st.frames.length;i++){
-    const fr=st.frames[i]; if(!fr.melee.on) continue;
-    const m=before.frames[i].m;
-    const mcx=m.x+m.w/2, mcy=m.y+m.h/2;
-    fr.melee.w=Math.max(1,Math.round(m.w*rx));
-    fr.melee.h=Math.max(1,Math.round(m.h*ry));
-    fr.melee.x=Math.round(C.cx+(mcx-C.cx)*rx - fr.melee.w/2);
-    fr.melee.y=Math.round(C.cy+(mcy-C.cy)*ry - fr.melee.h/2);
+    const fr=st.frames[i];
+    const bxArr = before.frames[i].bx || [];
+    for (let bi=0; bi<bxArr.length; bi++){
+      if (!fr.boxes[bi]) continue;
+      const m=bxArr[bi];
+      const mcx=m.x+m.w/2, mcy=m.y+m.h/2;
+      fr.boxes[bi].w=Math.max(1,Math.round(m.w*rx));
+      fr.boxes[bi].h=Math.max(1,Math.round(m.h*ry));
+      fr.boxes[bi].x=Math.round(C.cx+(mcx-C.cx)*rx - fr.boxes[bi].w/2);
+      fr.boxes[bi].y=Math.round(C.cy+(mcy-C.cy)*ry - fr.boxes[bi].h/2);
+    }
   }
   // pivot: a point — scale its position about the shared center (no size)
   if (st.pivot && before.pivot){
@@ -1882,13 +1995,14 @@ const BOX = {
         const dx=tx-d.before.frames[fi].ox, dy=ty-d.before.frames[fi].oy;
         for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
           const b=d.before.frames[i]; st.frames[i].offset.x=Math.round(b.ox+dx); st.frames[i].offset.y=Math.round(b.oy+dy); }
-        // collision + melee follow the sprite by the same delta
+        // collision + boxes follow the sprite by the same delta
         const bc=d.before.col;
         st.collision.x=Math.round(bc.x+dx); st.collision.y=Math.round(bc.y+dy);
         for (let i=0;i<st.frames.length;i++){
-          const fr=st.frames[i]; if(!fr.melee.on) continue;
-          const m=d.before.frames[i].m;
-          fr.melee.x=Math.round(m.x+dx); fr.melee.y=Math.round(m.y+dy);
+          const fr=st.frames[i];
+          const bxArr=d.before.frames[i].bx||[];
+          for (let bi=0;bi<bxArr.length;bi++){ if(!fr.boxes[bi]) continue;
+            fr.boxes[bi].x=Math.round(bxArr[bi].x+dx); fr.boxes[bi].y=Math.round(bxArr[bi].y+dy); }
         }
         if (st.pivot && d.before.pivot){ st.pivot.x=Math.round(d.before.pivot.x+dx); st.pivot.y=Math.round(d.before.pivot.y+dy); }
       }
@@ -1957,14 +2071,15 @@ const BOX = {
       const st=cur.st, fi=curFrameIdx();
       const nx=Math.round(sx-d.ox), ny=Math.round(sy-d.oy);
       st.collision.x=nx; st.collision.y=ny;
-      // ALL FRAMES: shift every frame's offset + melee by the same delta so the
-      // whole animation slides as one rigid body (collision is shared).
+      // ALL FRAMES: shift every frame's offset + boxes by the same delta
       if (show.allFrames && d.before){
         const dx=nx-d.before.col.x, dy=ny-d.before.col.y;
         for (let i=0;i<st.frames.length;i++){
           const b=d.before.frames[i], fr=st.frames[i];
           fr.offset.x=Math.round(b.ox+dx); fr.offset.y=Math.round(b.oy+dy);
-          if (fr.melee.on){ fr.melee.x=Math.round(b.m.x+dx); fr.melee.y=Math.round(b.m.y+dy); }
+          const bxArr=b.bx||[];
+          for (let bi=0;bi<bxArr.length;bi++){ if(!fr.boxes[bi]) continue;
+            fr.boxes[bi].x=Math.round(bxArr[bi].x+dx); fr.boxes[bi].y=Math.round(bxArr[bi].y+dy); }
         }
         if (st.pivot && d.before.pivot){ st.pivot.x=Math.round(d.before.pivot.x+dx); st.pivot.y=Math.round(d.before.pivot.y+dy); }
       }
@@ -1983,33 +2098,37 @@ const BOX = {
       }
     }
   },
-  melee: {
-    snap(st, fi){ return {...st.frames[fi].melee}; },
-    move(d, sx, sy){
-      const st=cur.st, fi=curFrameIdx();
-      const nx=Math.round(sx-d.ox), ny=Math.round(sy-d.oy);
-      const f0=st.frames[fi]; if(f0.melee.on){ f0.melee.x=nx; f0.melee.y=ny; }
-      if (show.allFrames && d.before && f0.melee.on){
-        const dx=nx-d.before.frames[fi].m.x, dy=ny-d.before.frames[fi].m.y;
-        for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
-          const b=d.before.frames[i], fr=st.frames[i]; if(!fr.melee.on)continue;
-          fr.melee.x=Math.round(b.m.x+dx); fr.melee.y=Math.round(b.m.y+dy); }
-        if (st.pivot && d.before.pivot){ st.pivot.x=Math.round(d.before.pivot.x+dx); st.pivot.y=Math.round(d.before.pivot.y+dy); }
+  // dynamic melee boxes (box_0, box_1, ...) — resolved at runtime via drag.boxIdx
+  getBox(idx){
+    return {
+      snap(st, fi){ const b = st.frames[fi].boxes[idx]; return {...b}; },
+      move(d, sx, sy){
+        const st=cur.st, fi=curFrameIdx();
+        const nx=Math.round(sx-d.ox), ny=Math.round(sy-d.oy);
+        const f0=st.frames[fi]; const b0=f0.boxes[d.boxIdx]; if(!b0) return;
+        b0.x=nx; b0.y=ny;
+        if (show.allFrames && d.before){
+          const dx=nx-d.before.frames[fi].bx[d.boxIdx].x, dy=ny-d.before.frames[fi].bx[d.boxIdx].y;
+          for (let i=0;i<st.frames.length;i++){ if(i===fi)continue;
+            const fr=st.frames[i]; if(!fr.boxes[d.boxIdx]) continue;
+            fr.boxes[d.boxIdx].x=Math.round(d.before.frames[i].bx[d.boxIdx].x+dx);
+            fr.boxes[d.boxIdx].y=Math.round(d.before.frames[i].bx[d.boxIdx].y+dy); }
+          if (st.pivot && d.before.pivot){ st.pivot.x=Math.round(d.before.pivot.x+dx); st.pivot.y=Math.round(d.before.pivot.y+dy); }
+        }
+      },
+      resize(d, sx, sy){
+        const st=cur.st, fi=curFrameIdx(), f0=st.frames[fi];
+        const b0=f0.boxes[d.boxIdx]; if(!b0) return;
+        const m0={...d.box};
+        resizeBox(m0, d.anchor, sx, sy, d.orig, d.ratio);
+        b0.x=m0.x; b0.y=m0.y; b0.w=m0.w; b0.h=m0.h;
+        if (show.allFrames && d.before){
+          const bref=d.before.frames[fi].bx[d.boxIdx];
+          const rx=bref.w>0?m0.w/bref.w:1, ry=bref.h>0?m0.h/bref.h:1;
+          scaleAllAbout(st, d.before, rx, ry);
+        }
       }
-    },
-    resize(d, sx, sy){
-      // compute target from current frame's own box, then scale the WHOLE body
-      const st=cur.st, fi=curFrameIdx(), f0=st.frames[fi];
-      if (!f0.melee.on) return;
-      const m0={...d.box};   // current frame melee (== before state at start)
-      resizeBox(m0, d.anchor, sx, sy, d.orig, d.ratio);
-      f0.melee.x=m0.x; f0.melee.y=m0.y; f0.melee.w=m0.w; f0.melee.h=m0.h;
-      if (show.allFrames && d.before){
-        const b0=d.before.frames[fi].m;
-        const rx=b0.w>0?m0.w/b0.w:1, ry=b0.h>0?m0.h/b0.h:1;
-        scaleAllAbout(st, d.before, rx, ry);
-      }
-    }
+    };
   }
 };
 cv.addEventListener('pointerdown', e=>{
@@ -2032,31 +2151,34 @@ cv.addEventListener('pointerdown', e=>{
     draw(); return;
   }
   // any visible box under the cursor -> unified move/resize
-  if (hover && BOX[hover.box]){
+  if (hover && (BOX[hover.box] || hover.box.startsWith('box_'))){
     bringToFront(hover.box);   // last-touched box wins hit-testing
-    pushUndo();
-    const B = BOX[hover.box];
+    const isDynBox = hover.box.startsWith('box_');
+    const boxIdx = isDynBox ? parseInt(hover.box.slice(4), 10) : -1;
+    // select melee boxes on click
+    if (isDynBox) _selectedBox = hover.box;
+    else _selectedBox = null;
+    const B = isDynBox ? BOX.getBox(boxIdx) : BOX[hover.box];
     const orig = B.snap(st, fi);
-    const ref  = hover.box==='sprite' ? null : (hover.box==='collision' ? st.collision : st.frames[fi].melee);
-    // per-frame BEFORE-state for relative propagation (ALL FRAMES mode): each
-    // frame gets the same DELTA (position) / RATIO (size) applied to its own
-    // starting values, so frames keep their individual sizes/offsets.
+    const ref  = hover.box==='sprite' ? null : (hover.box==='collision' ? st.collision : (isDynBox ? st.frames[fi].boxes[boxIdx] : null));
+    // per-frame BEFORE-state for relative propagation (ALL FRAMES mode)
     const before = {
       frames: st.frames.map(f => ({ ox:f.offset.x, oy:f.offset.y, sx:f.scale.sx, sy:f.scale.sy,
-                                    m:{...f.melee} })),
+                                    bx:(f.boxes||[]).map(b=>({...b})) })),
       col: {...st.collision},
       pivot: st.pivot ? {...st.pivot} : null
     };
-    drag = { key:hover.box, anchor:hover.handle||null, ratio:e.shiftKey, orig,
-             box:ref, ox:sx-orig.x, oy:sy-orig.y,          // grab offset from box TOP-LEFT (shared move math)
+    drag = { key:hover.box, boxIdx, anchor:hover.handle||null, ratio:e.shiftKey, orig,
+             box:ref, ox:sx-orig.x, oy:sy-orig.y,
              ow: cur.imgs[fi]?cur.imgs[fi].naturalWidth:orig.w,
              oh: cur.imgs[fi]?cur.imgs[fi].naturalHeight:orig.h,
-             gx:sx, gy:sy,                                                // grab point (sprite space) for ratio-resize
-             sx0: st.frames[fi].scale.sx, sy0: st.frames[fi].scale.sy,   // frozen start scales (sprite ratio-resize)
-             before };
+             gx:sx, gy:sy,
+             sx0: st.frames[fi].scale.sx, sy0: st.frames[fi].scale.sy,
+             before, undoPushed:false };
     draw(); return;
   }
-  // empty space -> pan
+  // empty space -> pan + deselect
+  _selectedBox = null;
   drag = { kind:'pan', sx0:cx, sy0:cy, panX0:panX, panY0:panY };
   cv.style.cursor = 'grabbing';
 });
@@ -2075,10 +2197,11 @@ cv.addEventListener('pointermove', e=>{
     cur.st.pivot.x=Math.round(sx);
     cur.st.pivot.y=Math.round(sy);
     syncPanel();
-  } else if (BOX[drag.key]){
-    // unified box transform: free anchor moves one edge, shift+corner locks ratio about center
-    if (drag.anchor) BOX[drag.key].resize(drag, sx, sy);
-    else             BOX[drag.key].move(drag, sx, sy);
+  } else if (drag.key && (BOX[drag.key] || drag.key.startsWith('box_'))){
+    if (!drag.undoPushed){ pushUndo(); drag.undoPushed = true; }
+    const B = drag.key.startsWith('box_') ? BOX.getBox(drag.boxIdx) : BOX[drag.key];
+    if (drag.anchor) B.resize(drag, sx, sy);
+    else             B.move(drag, sx, sy);
   }
   syncPanel(); draw();
 });
@@ -2180,7 +2303,7 @@ window.addEventListener('keydown', e=>{
       KeyF:'tglAllFrames', KeyA:'tglAxes', KeyG:'tglGrid',
       KeyP:'tglPivot', KeyL:'tglLabel'
     };
-    const buttonId = e.shiftKey ? displayKeys[e.code] : (e.code==='KeyM' ? 'tglMeleeOn' : (e.code==='KeyR' ? 'recenterPivotBtn' : null));
+    const buttonId = e.shiftKey ? displayKeys[e.code] : (e.code==='KeyM' ? 'addBoxToolbar' : (e.code==='KeyR' ? 'recenterPivotBtn' : null));
     if (buttonId){
       e.preventDefault();
       if (!e.repeat) $(buttonId).click();
@@ -2199,9 +2322,31 @@ window.addEventListener('keydown', e=>{
     if (direct !== null && direct >= 0){
       e.preventDefault();
       const max = st.frames.length - 1;
-      st.frameIdx = Math.min(direct, max);
+      st.frameIdx = Math.min(direct, max); acc=0; _selectedBox=null;
       syncPanel(); draw();
       return;
+    }
+  }
+  // selected melee box: delete, nudge, escape
+  if (_selectedBox && _selectedBox.startsWith('box_')){
+    const selIdx = parseInt(_selectedBox.slice(4), 10);
+    const selFrame = st.frames[fi];
+    if (e.code === 'Delete' || e.code === 'Backspace'){
+      e.preventDefault();
+      if (!editingLocked()){ pushUndo(); selFrame.boxes.splice(selIdx, 1); _selectedBox = null; buildMeleeBoxList(); draw(); saveState(); }
+      return;
+    }
+    if (e.code === 'Escape'){
+      e.preventDefault();
+      _selectedBox = null; draw();
+      return;
+    }
+    if (!editingLocked() && !e.ctrlKey && !e.shiftKey && !e.altKey){
+      const nudge = e.ctrlKey ? 10 : 1;
+      if (e.code === 'ArrowRight'){ e.preventDefault(); pushUndo(); selFrame.boxes[selIdx].x += nudge; syncPanel(); draw(); return; }
+      if (e.code === 'ArrowLeft'){ e.preventDefault(); pushUndo(); selFrame.boxes[selIdx].x -= nudge; syncPanel(); draw(); return; }
+      if (e.code === 'ArrowUp'){ e.preventDefault(); pushUndo(); selFrame.boxes[selIdx].y -= nudge; syncPanel(); draw(); return; }
+      if (e.code === 'ArrowDown'){ e.preventDefault(); pushUndo(); selFrame.boxes[selIdx].y += nudge; syncPanel(); draw(); return; }
     }
   }
   switch (e.code){
