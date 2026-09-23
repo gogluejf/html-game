@@ -1501,11 +1501,11 @@ collisionWorld.on('checkpoint', (a, b) => {
   const heroEnt = a.layer === LAYER.HERO ? a : (b.layer === LAYER.HERO ? b : null);
   if (!cp || !heroEnt) return;
   if (!(cp instanceof Checkpoint)) return;
-  // DEBUG: log every checkpoint overlap to diagnose trigger issues.
-  console.log(`[checkpoint] ${cp.checkpointId} (entry=${cp.isEntry}, triggered=${cp.triggered}) hero.area=${heroEnt.currentArea} hero.x=${Math.round(heroEnt.x)} cp.x=${cp.x}`);
   // Entry flags are naive sprites: zero collision effect, no trigger, no VFX.
   if (cp.isEntry) return;
   if (cp.triggered) return; // already triggered this run
+  // DEBUG: log exit-flag overlaps to diagnose trigger issues.
+  console.log(`[checkpoint] ${cp.checkpointId} hero.area=${heroEnt.currentArea} hero.x=${Math.round(heroEnt.x)} cp.x=${cp.x}`);
 
   const fired = cp.trigger(heroEnt);
   if (!fired) return;
@@ -1545,11 +1545,19 @@ collisionWorld.on('checkpoint', (a, b) => {
  * @returns {string} the area id (e.g. '1-1')
  */
 function formatAreaIdForClear(currentArea) {
-  // Reuse the lifecycle module's formatter. The area being cleared is the
-  // current area; formatAreaId expects the area index where the pre-area
-  // (-1) maps to the first checkpoint id.
-  // Import lazily to avoid a circular dependency at module load.
-  return formatAreaIdSafe(hero.currentLevel, currentArea);
+  // Convert zone-model area (-1,-2,-3,-4,4) to formatAreaId's convention
+  // (-1→'X-1', 0→'X-2', 1→'X-3', 2→'X-4', 3→'X-B').
+  let fmtArea;
+  if (currentArea < 0 && currentArea !== -1) {
+    fmtArea = currentArea + 2; // -2→0, -3→1, -4→2
+  } else if (currentArea >= 4) {
+    fmtArea = 3; // boss
+  } else if (currentArea === -1) {
+    fmtArea = -1; // first area
+  } else {
+    fmtArea = currentArea - 1;
+  }
+  return formatAreaIdSafe(hero.currentLevel, fmtArea);
 }
 
 /**
