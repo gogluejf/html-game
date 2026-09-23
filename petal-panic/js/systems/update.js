@@ -854,7 +854,9 @@ bindAreaContext(hero, areaContext);
 // are declared).
 loadActiveZone(getActiveZone(hero), world.world.get(getActiveZone(hero).areaIdx));
 collisionWorld.add(hero);
-collisionWorld.add(boss);
+// The boss is NOT added here — it is zone-scoped content installed by
+// loadActiveZone() when the hero enters the boss zone. Adding it at boot
+// would leave it physically present in every ordinary area.
 
 /**
  * Install the ACTIVE zone's content into the collision world (structure.md §2:
@@ -878,6 +880,10 @@ export function loadActiveZone(zone, content) {
   for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) collisionWorld.remove(b);
   for (const p of powerups) collisionWorld.remove(p);
   for (const c of checkpoints) collisionWorld.remove(c);
+  // The boss lives ONLY in the boss zone. Remove it from the collision world
+  // when leaving so it cannot physically exist in ordinary areas (same logic
+  // as any enemy — it is zone-scoped content, not a global entity).
+  if (zone.kind !== 'boss') collisionWorld.remove(boss);
   const cwAfterRemove = collisionWorld.entities.size;
 
   // Clear the module-level lists.
@@ -901,6 +907,13 @@ export function loadActiveZone(zone, content) {
   for (const b of content?.barrels ?? []) { barrels.push(b); collisionWorld.add(b); }
   for (const p of content?.powerups ?? []) { powerups.push(p); collisionWorld.add(p); }
   for (const c of content?.checkpoints ?? []) { checkpoints.push(c); collisionWorld.add(c); }
+  // The boss is zone-scoped content: add it to the collision world ONLY when
+  // entering the boss zone. It is positioned by beginBossZoneFlow() (off-screen
+  // right, invisible) once the hero confirms the entry screen.
+  if (zone.kind === 'boss') {
+    collisionWorld.add(boss);
+    console.log(`[loadActiveZone] boss added to collision world`);
+  }
   console.log(`[loadActiveZone] zone=${zone.areaIdx} removed ${JSON.stringify(oldCounts)} cw:${cwBefore}→${cwAfterRemove}, added new, cw final: ${collisionWorld.entities.size}`);
   console.log(`[loadActiveZone] checkpoints: ${checkpoints.map(c => `${c.checkpointId}@(${c.x},${c.y}) layer=${c.layer} alive=${c.alive}`).join(', ')}`);
 

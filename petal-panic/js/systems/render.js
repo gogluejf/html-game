@@ -294,12 +294,11 @@ export function render(ctx) {
       drawLabel(ctx, e.x + e.w / 2, e.y - 10, `${e.type}:${e.aiState}`, frac, layerColor(e));
     }
     // Boss: unified label in the same name:state format as the enemies, with
-    // phase + escalation folded in. Replaces the old duplicate "BOSS PHASE ×n"
-    // text drawBossDebug used to paint 4px below this one. (The wide always-on
-    // gameplay bar above the boss, drawBossHpBar, is a separate HUD element.)
+    // phase + escalation folded in. Only shown while in the boss zone (the
+    // boss is zone-scoped content — it does not exist in ordinary areas).
     {
       const b = getBoss();
-      if (b && b.alive) {
+      if (b && b.alive && getActiveZoneKind() === 'boss') {
         drawLabel(ctx, b.x + b.w / 2, b.y - 28,
           `BOSS:${b.phase}×${b.escalation.toFixed(2)}`, b.hp / b.maxHp, layerColor(b));
       }
