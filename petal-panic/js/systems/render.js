@@ -1198,7 +1198,7 @@ function drawEventLog(ctx) {
  */
 function drawHarnessHint(ctx) {
   const line1 = 'DEBUG | 1-9 spawn | F god | Z spd | T tele | U input | Y hero | L log | E trace | ⇧E collision';
-  const line2 = 'RMB sel | LMB force | arrows scrub | X desel | F2 theater | F3 view | F1 exit debug';
+  const line2 = 'RMB sel | LMB force | arrows scrub | X desel | F2 theater | F3 view | W wrap area | F1 exit';
   ctx.save();
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';

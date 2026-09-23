@@ -350,16 +350,15 @@ export function onExitFlagReached(areaId, nextArea) {
 }
 
 /**
- * Debug (W): wrap the hero to the NEXT area by triggering the same clear
- * sequence as reaching an exit flag — flash + 'X-Y CLEAR' banner + fade out →
- * the next area's entry screen. This lets a developer step through every world
- * (1-1 → 1-2 → … → boss) quickly without walking to each flag.
+ * Debug (W): wrap the hero to the NEXT area immediately — skip the celebratory
+ * banner and fade-out entirely and go straight to the next area's entry screen.
+ * This lets a developer step through every world (1-1 → 1-2 → … → boss) with
+ * one press each, no waiting for the clear animation.
  *
  * Works from PLAY and from the AREA_ENTRY view: while the entry screen is up,
- * pressing W again immediately advances to the following area (the entry view
- * auto-advances to play after its timed hold, so repeated W presses hop area
- * to area). No-op when already mid-clear-sequence (avoid double-triggering) or
- * in the boss zone (no further areas). Gated on Debug.enabled at the caller.
+ * pressing W again immediately advances to the following area. No-op when
+ * already mid-clear-sequence (avoid double-triggering) or in the boss zone.
+ * Gated on Debug.enabled at the caller.
  */
 export function debugWrapToNextArea() {
   // Don't stack another advance while one is already in flight.
@@ -367,9 +366,23 @@ export function debugWrapToNextArea() {
   const zone = getActiveZone(hero);
   if (zone.kind !== 'area') return; // boss zone has no next area
   const nextArea = zone.areaIdx === 4 ? AREA_BOSS : zone.areaIdx + 1;
-  const clearedAreaId = formatAreaIdForClear(hero.currentArea);
   Debug.logEvent(`wrap → ${formatAreaId(hero.currentLevel, nextArea)}`);
-  onExitFlagReached(clearedAreaId, nextArea);
+  // Advance directly: set the hero's area, load the zone content, place the
+  // checkpoint, record the snapshot, and show the entry screen — skipping the
+  // banner + fade-out that onExitFlagReached would otherwise play.
+  hero.currentArea = nextArea;
+  const nextZone = getActiveZone(hero);
+  if (nextZone.kind === 'area' && world.world.has(nextZone.areaIdx)) {
+    loadActiveZone(nextZone, world.world.get(nextZone.areaIdx));
+  }
+  if (nextZone.entryFlag) {
+    hero.checkpoint = { x: nextZone.bounds.x + nextZone.entryFlag.x, y: nextZone.entryFlag.y };
+  } else {
+    hero.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - hero.h };
+  }
+  recordAreaEntrySnapshot(hero);
+  camera.setZoneBounds(nextZone);
+  showAreaEntry(hero, areaContext);
 }
 
 /**
