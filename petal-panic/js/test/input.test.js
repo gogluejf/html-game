@@ -144,7 +144,7 @@ test('disconnect, visibility and focus lifecycle release semantic holds without 
   const f = fixture(), p = pad(2); f.pads.push(null, null, p);
   p.buttons[14].pressed = true; f.engine.poll(); assert.equal(f.engine.nav.held.left, true);
   f.target.emit('gamepaddisconnected', { gamepad: p }); f.pads.length = 0; f.engine.poll();
-  assert.deepEqual(f.engine.nav.released, ['left']); assert.equal(f.engine.state.gamepadLayout, null);
+  assert.deepEqual(f.engine.nav.released, ['left']);
   f.pads.push(p); f.engine.poll(); assert.deepEqual(f.engine.nav.pressed, ['left']);
   f.target.emit('blur'); f.engine.poll(); assert.deepEqual(f.engine.nav.released, ['left']);
   f.target.emit('focus'); f.engine.poll(); assert.equal(f.engine.nav.held.left, undefined);

@@ -40,7 +40,7 @@ const ACTIONS = [
   { id: 'lockMove',     label: 'Lock Movement' },
 ];
 
-const LAYOUT_OPTIONS = ['Auto', 'PS5', 'PS4', 'Xbox', '8BitDo', 'Generic'];
+const LAYOUT_OPTIONS = ['Generic', 'PS5', 'PS4', 'Xbox', '8BitDo', 'Switch'];
 
 export const Remap = {
   // State
@@ -174,7 +174,7 @@ export const Remap = {
 
         for (let j = 0; j < slots; j++) {
           const cx = baseX + j * (chipW + chipGap);
-          const label = formatBinding(this.mapping[src][action.id][j], src, this.gamepadLayout === 'Auto' ? input.state.gamepadLayout || 'Generic' : this.gamepadLayout);
+          const label = formatBinding(this.mapping[src][action.id][j], src, this.gamepadLayout || 'Generic');
           const isFocus = focused && isActive && j === this.chip;
           const isCap = isFocus && this.capturing;
 
@@ -227,6 +227,6 @@ export const Remap = {
   },
 
   formatBinding(value) {
-    return formatBinding(value, this.tab, this.gamepadLayout === 'Auto' ? input.state.gamepadLayout || 'Generic' : this.gamepadLayout);
+    return formatBinding(value, this.tab, this.gamepadLayout || 'Generic');
   },
 };

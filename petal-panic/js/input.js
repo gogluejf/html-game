@@ -83,14 +83,6 @@ const validBinding = (source, b) => typeof b === 'string' && (source === 'keyboa
 const blank = () => ({ moveX: 0, moveY: 0, directionX: 0, directionY: 0, aimX: 0, aimY: 0, aimAngle: 0,
   shooting: false, jump: false, melee: false, supermove: false, switchWeapon: false,
   crouch: false, lockDir: false, lockMove: false, pause: false });
-function layoutOf(pad) {
-  const id = pad.id || '';
-  if (/dualsense|0ce6/i.test(id)) return 'PS5';
-  if (/054c|sony|playstation|dualshock/i.test(id)) return 'PS4';
-  if (/8bitdo/i.test(id)) return '8BitDo';
-  if (/045e|xbox|microsoft/i.test(id)) return 'Xbox';
-  return 'Generic';
-}
 export function formatBinding(binding, source = 'keyboard', layout = 'Generic') {
   if (Array.isArray(binding)) return binding.map(b => formatBinding(b, source, layout)).join(' / ');
   if (!binding) return '—';
@@ -101,9 +93,18 @@ export function formatBinding(binding, source = 'keyboard', layout = 'Generic') 
       return `AXIS ${axis} ${sign === '-1' ? '−' : '+'}`;
     }
     const i = Number(binding.slice(4));
-    const labels = layout.startsWith('PS') ? ['✕','○','□','△','L1','R1','L2','R2','SHARE','OPTIONS','L3','R3','▲','▼','◀','▶']
-      : ['A','B','X','Y','LB','RB','LT','RT','VIEW','MENU','LS','RS','▲','▼','◀','▶'];
-    return layout === 'Generic' ? `BTN ${i}` : labels[i] || `BTN ${i}`;
+    // Per-layout symbol sets (indexed by standard Gamepad button index).
+    // PS: ✕ ○ □ △ · Xbox/8BitDo: A B X Y · Switch (Pro): A B X Y + distinct
+    // shoulder/home glyphs. Generic falls back to "BTN n".
+    const SETS = {
+      PS5:    ['✕','○','□','△','L1','R1','L2','R2','SHARE','OPTIONS','L3','R3','▲','▼','◀','▶'],
+      PS4:    ['✕','○','□','△','L1','R1','L2','R2','SHARE','OPTIONS','L3','R3','▲','▼','◀','▶'],
+      Xbox:   ['A','B','X','Y','LB','RB','LT','RT','VIEW','MENU','LS','RS','▲','▼','◀','▶'],
+      '8BitDo':['A','B','X','Y','LB','RB','LT','RT','VIEW','MENU','LS','RS','▲','▼','◀','▶'],
+      Switch: ['A','B','X','Y','L','R','ZL','ZR','CAPTURE','+','L3','R3','▲','▼','◀','▶'],
+    };
+    const labels = SETS[layout];
+    return !labels ? `BTN ${i}` : (labels[i] || `BTN ${i}`);
   }
   return ({ Space: 'SPACE', ControlLeft: 'CTRL', ControlRight: 'CTRL R', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' })[binding]
     || binding.replace(/^Key|^Digit/, '').toUpperCase();
@@ -125,10 +126,9 @@ const DIRECTIONAL = new Set(['up', 'down', 'left', 'right']);
 
 export function navLabels(action, { source = 'all', simple = false } = {}) {
   const results = [];
-  // Read layout from the singleton input engine (detected pad or user config).
-  const layout = input.gamepadLayout === 'Auto'
-    ? (input.state?.gamepadLayout || 'Generic')
-    : input.gamepadLayout;
+  // Layout is a manual cosmetic choice (no auto-detection): which symbol set
+  // to print for gamepad buttons. Defaults to Generic (BTN n).
+  const layout = input.gamepadLayout || 'Generic';
   const isDir = DIRECTIONAL.has(action);
   if (source === 'keyboard' || source === 'all') {
     for (const [key, actions] of Object.entries(KEY_NAV)) {
@@ -222,8 +222,7 @@ export function navHintEntries(items) {
       }
       // Gamepad bindings for this action.
       if (o.source === 'gamepad' || o.source === 'all') {
-        const layout = input.gamepadLayout === 'Auto'
-          ? (input.state?.gamepadLayout || 'Generic') : input.gamepadLayout;
+        const layout = input.gamepadLayout || 'Generic';
         for (const [btn, acts] of Object.entries(padToActions)) {
           if (!acts.includes(a)) continue;
           if (o.simple && held && btn.startsWith('axis:')) continue; // skip LS axes
@@ -305,9 +304,9 @@ export function createInput({ target = globalThis.window, document = globalThis.
   const listen = (obj, name, fn) => { obj?.addEventListener?.(name, fn); listeners.push(() => obj?.removeEventListener?.(name, fn)); };
   const engine = {
     state: blank(), nav: { held: {}, pressed: [], released: [] }, captureResult: null,
-    mapping: cloneDefaults(), gamepadLayout: 'Auto', source: 'keyboard', generation: 0,
+    mapping: cloneDefaults(), gamepadLayout: 'Generic', source: 'keyboard', generation: 0,
     loadMapping() {
-      this.mapping = cloneDefaults(); this.gamepadLayout = 'Auto';
+      this.mapping = cloneDefaults(); this.gamepadLayout = 'Generic';
       try {
         const data = JSON.parse(storage()?.getItem(STORAGE_KEY) || 'null');
         if (!data || typeof data !== 'object') return;
@@ -333,7 +332,7 @@ export function createInput({ target = globalThis.window, document = globalThis.
             }
           }
         }
-        if (['Auto','PS5','PS4','Xbox','8BitDo','Generic'].includes(data.gamepadLayout)) this.gamepadLayout = data.gamepadLayout;
+        if (['PS5','PS4','Xbox','8BitDo','Switch','Generic'].includes(data.gamepadLayout)) this.gamepadLayout = data.gamepadLayout;
       } catch { /* unavailable/corrupt storage: defaults remain usable */ }
     },
     saveMapping() {
@@ -356,13 +355,13 @@ export function createInput({ target = globalThis.window, document = globalThis.
       if (!bindings || !Number.isInteger(index) || index < 0 || index >= bindings.length) return false;
       bindings.splice(index, 1); this.saveMapping(); return true;
     },
-    resetMapping() { this.mapping = cloneDefaults(); this.gamepadLayout = 'Auto'; this.saveMapping(); },
+    resetMapping() { this.mapping = cloneDefaults(); this.gamepadLayout = 'Generic'; this.saveMapping(); },
     buttonLabel(action, source = this.source) {
       if (action === 'crouch') action = 'moveDown';
-      if (action === 'pause') return source === 'keyboard' ? 'ESC' : formatBinding('btn:9', source, this.state.gamepadLayout || 'Generic');
+      if (action === 'pause') return source === 'keyboard' ? 'ESC' : formatBinding('btn:9', source, this.gamepadLayout || 'Generic');
       if (action === 'aim' && source === 'gamepad') return 'RIGHT STICK';
       if (action === 'move' || action === 'aim') return ['moveUp','moveDown','moveLeft','moveRight'].map(a => this.buttonLabel(a, source)).join(' ');
-      return formatBinding(this.mapping[source]?.[action], source, this.gamepadLayout === 'Auto' ? this.state.gamepadLayout || 'Generic' : this.gamepadLayout);
+      return formatBinding(this.mapping[source]?.[action], source, this.gamepadLayout || 'Generic');
     },
     // Call on every state transition and capture boundary. No time debounce.
     barrier() {
@@ -429,10 +428,10 @@ export function createInput({ target = globalThis.window, document = globalThis.
         change(`k:${code}`, down ? { source: 'keyboard', binding: code, value: 1 } : null);
         observe();
       }
-      const padPhysical = new Map(); let layout = null, connected = false;
+      const padPhysical = new Map(); let connected = false;
       if (!suspended) for (const pad of getGamepads() || []) {
         if (!pad || pad.connected === false) continue;
-        connected = true; layout ||= layoutOf(pad);
+        connected = true;
         const prefix = `p:${pad.index ?? 0}:${pad.id || ''}:`;
         pad.buttons.forEach((b, i) => {
           if (b.pressed || b.value > 0.5) padPhysical.set(prefix + `btn:${i}`, { source: 'gamepad', binding: `btn:${i}`, value: 1 });
@@ -549,7 +548,7 @@ export function createInput({ target = globalThis.window, document = globalThis.
       }
       if (s.lockMove) s.moveX = s.moveY = 0;
       s.pause = pressed.has('pause'); s.source = this.source;
-      s.gamepadConnected = connected; s.gamepadLayout = layout;
+      s.gamepadConnected = connected;
       this.state = s; return s;
     },
     destroy() { for (const off of listeners) off(); },
