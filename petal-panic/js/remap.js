@@ -18,7 +18,7 @@
 
 import { VIEW_W, VIEW_H } from './view.js';
 import { drawMarqueeTitle, drawPrompt, roundRect, drawNavBar } from './fonts.js';
-import { input, formatBinding, bindingSlots, navHintEntries } from './input.js';
+import { input, formatBinding, bindingSlots, navHintEntries, _flashT } from './input.js';
 import { FONT_UI } from './fonts.js';
 
 const CREAM = '#f5e6c8';
@@ -78,12 +78,29 @@ export const Remap = {
   },
   _flashInvalid: 0,      // timer for "INVALID" flash
   _pulseT: 0,            // pulse timer for "PRESS ANY..." text
+  _entrySnapshot: null,  // mapping + layout snapshot taken when entering Controls
 
   get mapping() { return input.mapping; },
   get gamepadLayout() { return input.gamepadLayout; },
   get capturing() { return input.capturing; },
   save() { return input.saveMapping(); },
   reset() { input.resetMapping(); },
+  /** Take a snapshot of the current mapping + layout (called on entry). */
+  _takeSnapshot() {
+    this._entrySnapshot = JSON.parse(JSON.stringify({
+      mapping: input.mapping,
+      gamepadLayout: input.gamepadLayout,
+      keyboardLayout: input.keyboardLayout,
+    }));
+  },
+  /** Revert to the snapshot taken on entry (Cancel behavior). */
+  _revertToSnapshot() {
+    if (!this._entrySnapshot) return;
+    input.mapping = JSON.parse(JSON.stringify(this._entrySnapshot.mapping));
+    input.gamepadLayout = this._entrySnapshot.gamepadLayout;
+    input.keyboardLayout = this._entrySnapshot.keyboardLayout;
+    input.saveMapping();
+  },
   resetState() {
     input.cancelCapture();
     this.focus = 0;
@@ -92,6 +109,7 @@ export const Remap = {
     this.tab = 'keyboard';
     this._flashInvalid = 0;
     this._pulseT = 0;
+    this._takeSnapshot();
   },
   onCapture(result) {
     // A 'cancelled' result (keyboard Escape) STOPS the capture sequence and
@@ -140,7 +158,7 @@ export const Remap = {
   onAction(action) {
     if (this.capturing) return true; // input engine owns capture and cancellation
     const count = this.COUNT;
-    if (action === 'back') { this.save(); return 'exit'; }
+    if (action === 'back') { this._revertToSnapshot(); return 'exit'; }
     if (action === 'up' || action === 'down') {
       const prev = this.focus;
       this.focus = (this.focus + count + (action === 'up' ? -1 : 1)) % count;
@@ -310,12 +328,46 @@ export const Remap = {
         { action: 'back', label: 'Cancel', opts: { source: 'keyboard' } },
       ]));
     } else {
-      drawNavBar(ctx, VIEW_W / 2, 490, navHintEntries([
+      // Build hint entries that reflect the CURRENT remapped bindings for
+      // confirm/back (not the static defaults from KEY_NAV/PAD_NAV).
+      const layout = this.gamepadLayout || 'Generic';
+      const confirmKb = this.mapping.keyboard.confirm;
+      const confirmPad = this.mapping.gamepad.confirm;
+      const backKb = NAV_KB_KEYS.back; // fixed: Escape
+      const backPad = this.mapping.gamepad.back;
+      const now = performance.now();
+      const FLASH_MS = 180;
+      const icons = [];
+      // Row/Chip navigation chips (directional — same as before).
+      const navEntries = navHintEntries([
         { actions: ['up', 'down'], label: 'Row', opts: { groupDir: false } },
         { actions: ['left', 'right'], label: 'Chip', opts: { groupDir: false } },
-        { action: 'confirm', label: 'Edit' },
-        { action: 'back', label: 'Close' },
-      ]));
+      ]);
+      // Confirm chip(s) — use remapped bindings.
+      for (const b of confirmKb) {
+        const bk = `k:${b}`;
+        icons.push({ icon: formatBinding(b, 'keyboard'), action: 'confirm', binding: bk,
+          isActive: () => { const t = _flashT.get(bk) ?? 0; return now - t < FLASH_MS; } });
+      }
+      for (const b of confirmPad) {
+        const bk = `g:${b}`;
+        icons.push({ icon: formatBinding(b, 'gamepad', layout), action: 'confirm', binding: bk,
+          isActive: () => { const t = _flashT.get(bk) ?? 0; return now - t < FLASH_MS; } });
+      }
+      // Back/Close chip(s) — keyboard is fixed (ESC), gamepad is remapped.
+      for (const b of backKb) {
+        const bk = `k:${b}`;
+        icons.push({ icon: formatBinding(b, 'keyboard'), action: 'back', binding: bk,
+          isActive: () => { const t = _flashT.get(bk) ?? 0; return now - t < FLASH_MS; } });
+      }
+      for (const b of backPad) {
+        const bk = `g:${b}`;
+        icons.push({ icon: formatBinding(b, 'gamepad', layout), action: 'back', binding: bk,
+          isActive: () => { const t = _flashT.get(bk) ?? 0; return now - t < FLASH_MS; } });
+      }
+      // Combine: nav entries + a single "Edit" entry with all confirm/back icons.
+      const allEntries = [...navEntries, { icons, label: 'Edit / Close' }];
+      drawNavBar(ctx, VIEW_W / 2, 490, allEntries);
     }
   },
 

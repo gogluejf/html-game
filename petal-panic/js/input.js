@@ -319,7 +319,7 @@ export function navHintEntries(items) {
 // Per-BINDING state (not per-action): which physical controls are currently
 // held and when they were last pressed. Updated once per input tick.
 const _heldBindings = new Map();  // binding key → true
-const _flashT = new Map();        // binding key → timestamp
+export const _flashT = new Map();        // binding key → timestamp
 
 /**
  * Record which physical bindings are held and which were pressed this tick.
