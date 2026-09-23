@@ -78,14 +78,12 @@ export class Camera {
       this.minX = b.x;
       this.maxX = b.x;
     } else if (zone.orientation === 'boss') {
-      // Boss arena: camera completely frozen (min === max on both axes).
-      // Center the arena on the viewport so the whole fight is visible.
-      const cx = b.x + b.w / 2 - this.w / 2;
-      const cy = b.y + b.h / 2 - this.h / 2;
-      this.minX = cx;
-      this.maxX = cx;
-      this.minY = cy;
-      this.maxY = cy;
+      // Boss zone: allow horizontal scrolling during the APPROACH phase so the
+      // hero can walk from the left checkpoint to the arena entry. The camera
+      // is FROZEN (min === max) later by the onLock hook when the arena locks.
+      // Here we just set the normal clamp range for the zone's full width.
+      this.minX = b.x;
+      this.maxX = b.x + b.w - this.w;
     }
 
     // Re-clamp into the new range; a boss lock takes precedence (frozen).

@@ -752,9 +752,14 @@ const bossZoneDef = levelZones[4];
 export const bossZone = makeBossZone(bossZoneDef, boss, {
   onLock: () => {
     // Arena lock (boss-arena.md §2 step 1): lock both sides + freeze the
-    // camera on the fixed arena view.
-    camera.setZoneBounds(bossZoneDef);
-    camera.lockTo(bossZone.arenaX, bossZone.arenaY);
+    // camera on the fixed arena view. Freeze the clamp range (min === max) so
+    // the camera cannot scroll, then position it on the arena center.
+    const b = bossZoneDef.bounds;
+    const cx = Math.round(b.x + b.w / 2 - VIEW_W / 2);
+    const cy = Math.round(b.y + b.h / 2 - VIEW_H / 2);
+    camera.minX = cx; camera.maxX = cx;
+    camera.minY = cy; camera.maxY = cy;
+    camera.lockTo(cx, cy);
   },
   onCombat: () => {
     // Combat enable (boss-arena.md §2 step 8): the boss becomes active and
