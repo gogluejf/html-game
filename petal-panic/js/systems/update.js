@@ -1992,6 +1992,15 @@ onTransition((from, to) => {
     // restart, continue), so the camera is always bound to the active zone and
     // a fresh vertical climb resets its ascent high-water mark.
     camera.setZoneBounds(getActiveZone(hero));
+    // Snap the camera horizontally to the hero so they are on-screen from
+    // frame 1. Without this, the camera may still be showing the previous
+    // zone's x-position and the hero appears off-screen until the follow logic
+    // catches up. Vertical is NOT snapped — the upward-only ratchet owns y.
+    {
+      const h = hero;
+      const cx = h.x + h.w / 2;
+      camera.x = Math.max(camera.minX, Math.min(camera.maxX, cx - camera.w / 2));
+    }
     // Boss zone flow (boss-arena.md §1–§3): when the player confirms the
     // entry screen for the BOSS zone, start (or restart after a death) the
     // approach → lock → intro → combat sequence. The hero is already placed
