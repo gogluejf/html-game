@@ -287,10 +287,18 @@
     },
     "7.5": {
       "number": "7.5",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Minimal end-of-game screen",
       "milestone": "Level 1 Integration + Gameplay Polish",
-      "milestone_number": "7"
+      "milestone_number": "7",
+      "summary": {
+        "confidence": "high",
+        "failures": "None \u2014 reward.test.js 22/22 pass; full suite 354/357 with only the known baseline flakes (hud83, input tabs, Space-jump pause) failing, identical on the pre-change baseline.",
+        "decisions": "Kept the end-of-game data flow as-is (lifecycle.js pushes the final score via setEndOfGameScoreCallback; screen only presents it) \u2014 no changes to update.js were needed since task 6.2 already wired the routing. Kept the nav bar's back keycap labeled 'Return' (not 'Quit') to match the screen's single return-home option.",
+        "tradeoffs": "EndOfGame.onAction handles up/down explicitly (no-op focus) rather than falling through to 'unhandled', so the screen reports every nav action as handled like the other screens.",
+        "done": "Polished the EndOfGame screen (petal-panic/js/screens.js) to the final version of the shared ergonomics contract: prominent CONGRATULATIONS headline + 'YOU HAVE PASSED EVERY LEVEL' subtitle, FINAL SCORE presented in gold title font, single 'Return Home' option rendered with the pause-menu list layout and focus pill, and a keycap nav bar (Confirm + Return) built via navHintEntries/drawNavBar. Added focus state + reset() wired into screenReset, and up/down actions that keep focus on the single option. Removed stale 'placeholder/task 7.5' wording from screens.js and lifecycle.js. Added 7 tests to reward.test.js covering: final level shows congrats screen with the final score, confirm returns to HOME, back returns to HOME, up/down keep single-option focus, the shared ergonomics pattern (navHintEntries confirm+return), non-final levels still advance to the next level (not end-of-game), and no reference to a level beyond the last exists.",
+        "lessons_learned": "The bare Proxy ctx stub in reward.test.js returns undefined from measureText, which breaks fonts.js drawNavBar during draw() calls \u2014 the stub now special-cases measureText to return {width:10}."
+      }
     }
   }
 }

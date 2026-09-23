@@ -29,7 +29,12 @@ import { test } from 'node:test';
 
 // --- Minimal DOM stub (must run BEFORE importing the engine modules) ---------
 const noop = () => {};
-const ctxStub = new Proxy({}, { get: () => noop, set: () => true });
+// measureText must return a shape with a numeric width (fonts.js drawNavBar
+// reads it); a bare noop would return undefined and break the draw path.
+const ctxStub = new Proxy({}, {
+  get: (t, prop) => (prop === 'measureText' ? () => ({ width: 10 }) : noop),
+  set: () => true,
+});
 globalThis.document = {
   createElement: () => ({ width: 0, height: 0, getContext: () => ctxStub, addEventListener: noop }),
 };
@@ -415,6 +420,139 @@ test('runtime: defeating the boss transitions to the reward screen (not the plac
   const after = hero.continues.remaining;
   L.showLevelReward(hero);
   assert.equal(hero.continues.remaining, after, 're-presenting the reward does not re-credit');
+});
+
+// --- End-of-game screen (lifecycle.md §5, task 7.5) ---------------------------
+//
+// The final level's reward confirm presents the minimal end-of-game screen:
+// congratulations + final score + a single 'Return Home' option, following the
+// shared screen ergonomics contract (game-rules.md §3).
+
+test('end-of-game: the final level presents the congrats screen with the final score', () => {
+  L._resetRewardForTest();
+  resetState();
+  const h = makeTestHero();
+  h.currentLevel = LEVELS.length; // the final level
+  tally(h, { kills: { jester: 3 }, coins: 1500 });
+  setState(S.PLAY);
+
+  const data = L.showLevelReward(h);
+  assert.equal(data.isFinalLevel, true, 'the reward screen knows this is the final level');
+
+  L._advanceRewardDwellForTest();
+  L.rewardOnAction('confirm', h);
+
+  assert.equal(getState(), S.END_OF_GAME, 'the congrats screen appears');
+  assert.equal(SC.getEndOfGameScore(), data.score, 'the final score presented is the reward screen\'s score');
+  assert.ok(SC.getEndOfGameScore() > 0, 'the final score is non-trivial');
+  // The screen presents the score via its draw method (no exceptions on a
+  // stub canvas).
+  assert.doesNotThrow(() => SC.EndOfGame.draw(ctxStub), 'the end-of-game screen draws without error');
+});
+
+test('end-of-game: confirming the single option returns home', () => {
+  L._resetRewardForTest();
+  resetState();
+  const h = makeTestHero();
+  h.currentLevel = LEVELS.length;
+  tally(h, { kills: { jester: 1 }, coins: 1000 });
+  setState(S.PLAY);
+  L.showLevelReward(h);
+  L._advanceRewardDwellForTest();
+  L.rewardOnAction('confirm', h);
+  assert.equal(getState(), S.END_OF_GAME, 'the end-of-game screen is up');
+
+  assert.equal(SC.EndOfGame.onAction('confirm'), true, 'confirm is handled');
+  assert.equal(getState(), S.HOME, 'confirming the single option returns home');
+});
+
+test('end-of-game: back also returns home (nav bar return keycap)', () => {
+  L._resetRewardForTest();
+  resetState();
+  const h = makeTestHero();
+  h.currentLevel = LEVELS.length;
+  tally(h, { kills: { jester: 1 }, coins: 500 });
+  setState(S.PLAY);
+  L.showLevelReward(h);
+  L._advanceRewardDwellForTest();
+  L.rewardOnAction('confirm', h);
+  assert.equal(getState(), S.END_OF_GAME, 'the end-of-game screen is up');
+
+  assert.equal(SC.EndOfGame.onAction('back'), true, 'back is handled');
+  assert.equal(getState(), S.HOME, 'back returns home');
+});
+
+test('end-of-game: up/down keep the single option focused (no other action exists)', () => {
+  setState(S.END_OF_GAME);
+  assert.equal(SC.EndOfGame.onAction('up'), true, 'up is handled');
+  assert.equal(SC.EndOfGame.focus, 0, 'up keeps focus on the single option');
+  assert.equal(SC.EndOfGame.onAction('down'), true, 'down is handled');
+  assert.equal(SC.EndOfGame.focus, 0, 'down keeps focus on the single option');
+  assert.equal(getState(), S.END_OF_GAME, 'navigation does not leave the screen');
+});
+
+test('end-of-game: the screen follows the shared ergonomics pattern (list + focus pill + keycap nav bar)', async () => {
+  // game-rules.md §3: the end-of-game screen reuses the pause menu's list
+  // layout / focus pill / keycap nav bar pattern. The nav bar is built with
+  // the same navHintEntries() helper the pause menu uses.
+  const { navHintEntries } = await import('../input.js');
+  const entries = navHintEntries([
+    { action: 'confirm' },
+    { action: 'back', label: 'Return' },
+  ]);
+  assert.equal(entries.length, 2, 'the nav bar has confirm + return entries (same pattern as the pause menu)');
+  assert.ok(entries[0].icons.length > 0, 'the confirm keycap has icons');
+  assert.equal(entries[0].label, 'Confirm', 'the confirm entry is labeled Confirm');
+  assert.equal(entries[1].label, 'Return', 'the back entry is labeled Return');
+  // The screen exposes the shared-pattern pieces.
+  assert.ok(typeof SC.EndOfGame.draw === 'function', 'the screen has a draw method (list + focus pill)');
+  assert.ok(typeof SC.EndOfGame.onAction === 'function', 'the screen handles semantic actions');
+});
+
+test('end-of-game: non-final levels still advance to the next level (not end-of-game)', () => {
+  L._resetRewardForTest();
+  resetState();
+  const h = makeTestHero();
+  h.currentLevel = 1;
+  tally(h, { kills: { jester: 1 }, coins: 1000 });
+  L.bindAreaContext(h, makeAreaContext(h));
+  setState(S.PLAY);
+  L.showLevelReward(h);
+
+  // Simulate a multi-level build so level 1 is NOT the final level.
+  const savedLen = LEVELS.length;
+  LEVELS.push({ name: 'Second Level' });
+  try {
+    L._advanceRewardDwellForTest();
+    L.rewardOnAction('confirm', h);
+  } finally {
+    LEVELS.length = savedLen;
+  }
+
+  assert.equal(getState(), S.AREA_ENTRY, 'a non-final boss advances to the next level\'s entry screen');
+  assert.notEqual(getState(), S.END_OF_GAME, 'the end-of-game screen is NOT shown for a non-final level');
+  assert.equal(h.currentLevel, 2, 'the level advanced');
+  assert.equal(h.currentArea, -1, 'the next level starts at area -1');
+});
+
+test('end-of-game: no reference to a level beyond the last exists', () => {
+  // lifecycle.md §5: the last boss must not advance into a nonexistent next
+  // level. After the final level's reward confirm, the hero's level must not
+  // have moved past LEVELS.length.
+  L._resetRewardForTest();
+  resetState();
+  const h = makeTestHero();
+  h.currentLevel = LEVELS.length;
+  tally(h, { kills: { jester: 1 }, coins: 1000 });
+  setState(S.PLAY);
+  L.showLevelReward(h);
+
+  L._advanceRewardDwellForTest();
+  L.rewardOnAction('confirm', h);
+
+  assert.equal(h.currentLevel, LEVELS.length, 'the final level did not advance past itself');
+  assert.ok(h.currentLevel <= LEVELS.length, 'no reference to a level beyond the last');
+  assert.equal(getState(), S.END_OF_GAME, 'the end-of-game screen takes over');
 });
 
 // --- Minimal area context for the next-level confirm path ---------------------

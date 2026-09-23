@@ -545,3 +545,23 @@ These are the accumulated "runtime still uses legacy corridor" findings. They al
 - R1 minor: Powerup counts for Levels 2-8 are very low (placeholder tuning). **Owner: future tuning epic.**
 - R1 minor: `macroWeights` easy-tier plateaus at 0 for Levels 7-8. **Design decision.**
 - R1 minor: update.js hardcodes LEVELS[0] (pre-existing). **Owner: level-selection task.**
+
+---
+
+## Task 7.5 — Minimal end-of-game screen
+
+**Round 1:**
+
+| Reviewer | Verdict | Key Findings |
+|---|---|---|
+| R1 (Qwen3.8-27B) | PASS | 5 minors: no-op focus assignment, layout magic numbers (pre-existing pattern), option-list duplication (pre-existing), weak ergonomics test, LEVELS mutation (pre-existing pattern) |
+| R2 (GPT-5.6-sol) | FAIL | 1 major: keycap bar omits Navigate entry; 1 minor: ergonomics test doesn't observe EndOfGame.draw |
+
+**Resolution:** R2's major fixed: added `{ action: 'navigate', label: 'Up/Down' }` to the EndOfGame nav bar. R1's minors are pre-existing patterns (layout constants, option-list duplication) or test-depth limitations. Committed.
+
+**Committed:** (pending)
+
+**Remaining findings (non-blocking):**
+- R1 minor: Option-list block duplicated across 5 screens (pre-existing). **Owner: future refactor.**
+- R1 minor: Ergonomics test doesn't observe EndOfGame.draw. **Test-depth limitation.**
+- R1 minor: LEVELS mutation for non-final test. **Pre-existing pattern.**

@@ -781,9 +781,8 @@ export function showLevelReward(h) {
  * (level name, area, lives). For the FINAL level there is no next level —
  * the last boss must not advance into a nonexistent one; instead the
  * end-of-game path takes over (lifecycle.md §5): a minimal congratulations
- * screen with the final score and a single return-home option. That full
- * ending (story scenes, credits) belongs to the future story epic (task 7.5);
- * until then this is the placeholder end-of-game screen.
+ * screen with the final score and a single return-home option. The full
+ * ending (story scenes, credits) belongs to the future story epic.
  *
  * @param {string} action semantic navigation action
  * @param {Hero} h the hero (owns currentLevel + run stats)
@@ -818,8 +817,8 @@ export function rewardOnAction(action, h) {
     if (h.currentLevel >= LEVELS.length) {
       // Final level: end-of-game instead of a next level (lifecycle.md §5).
       // A minimal end-of-game screen (congratulations + final score + return
-      // home) is presented; its full presentation is task 7.5's job. The
-      // presented reward is consumed so a fresh run credits again.
+      // home) is presented. The presented reward is consumed so a fresh run
+      // credits again.
       console.log('[lifecycle] REWARD → END_OF_GAME (final level complete)');
       // The final score is the reward screen's score (the just-finished
       // level's tally). Push it to the end-of-game screen before consuming

@@ -1085,10 +1085,10 @@ export const Reward = {
 // (game-rules.md §3): full-screen, the same list layout / focus pill / keycap
 // nav bar as the pause menu.
 //
-// This is a PLACEHOLDER — the full ending (story scenes, credits) belongs to
-// the future story epic (task 7.5). The state transition and the confirm-to-
-// home flow are owned by lifecycle.js (rewardOnAction → S.END_OF_GAME); this
-// screen only presents the final score and the single return-home option.
+// The state transition and the confirm-to-home flow are owned by lifecycle.js
+// (rewardOnAction → S.END_OF_GAME); this screen only presents the final score
+// and the single return-home option. The full ending (story scenes, credits)
+// belongs to the future story epic.
 // =============================================================================
 
 /** The final score presented (set by the transition into END_OF_GAME). */
@@ -1103,6 +1103,10 @@ setEndOfGameScoreCallback((score) => { endOfGameScore = score; });
 export function getEndOfGameScore() { return endOfGameScore; }
 
 export const EndOfGame = {
+  focus: 0, // 0 = Return Home (the single option)
+
+  reset() { this.focus = 0; },
+
   /** @param {CanvasRenderingContext2D} ctx */
   draw(ctx) {
     // Full-opaque dark background — like the reward and Game Over screens,
@@ -1111,23 +1115,24 @@ export const EndOfGame = {
     ctx.fillStyle = '#0d0d1a';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
-    drawMarqueeTitle(ctx, 'CONGRATULATIONS', VIEW_W / 2, VIEW_H / 2 - 130, 52, { color: CREAM });
-    drawMarqueeTitle(ctx, 'YOU HAVE PASSED EVERY LEVEL', VIEW_W / 2, VIEW_H / 2 - 80, 28, { color: GOLD });
+    // Congratulations — the screen's headline (lifecycle.md §5).
+    drawMarqueeTitle(ctx, 'CONGRATULATIONS', VIEW_W / 2, VIEW_H / 2 - 140, 56, { color: CREAM });
+    drawMarqueeTitle(ctx, 'YOU HAVE PASSED EVERY LEVEL', VIEW_W / 2, VIEW_H / 2 - 85, 28, { color: GOLD });
 
-    // Final score — the screen's headline (lifecycle.md §5).
+    // Final score — the screen's headline number (lifecycle.md §5).
     ctx.textAlign = 'center';
-    drawPrompt(ctx, `FINAL SCORE  ${endOfGameScore}`, VIEW_W / 2, VIEW_H / 2 - 10, 30, {
+    drawPrompt(ctx, `FINAL SCORE  ${endOfGameScore}`, VIEW_W / 2, VIEW_H / 2 - 15, 34, {
       color: GOLD, font: FONT_TITLE,
     });
 
     // Option list — the SAME list layout / focus pill pattern as the pause
     // menu (game-rules.md §3 shared ergonomics contract). A single option.
     const options = ['Return Home'];
-    const startY = VIEW_H / 2 + 50;
+    const startY = VIEW_H / 2 + 55;
     const gap = 40;
     for (let i = 0; i < options.length; i++) {
       const y = startY + i * gap;
-      const focused = i === 0;
+      const focused = i === this.focus;
       if (focused) {
         ctx.save();
         ctx.fillStyle = 'rgba(255,110,199,0.10)';
@@ -1144,10 +1149,11 @@ export const EndOfGame = {
       });
     }
 
-    // Keycap nav bar — the SAME bar as the pause menu (confirm/back) per the
+    // Keycap nav bar — the SAME bar as the pause menu (confirm/return) per the
     // shared ergonomics contract (game-rules.md §3).
     const hintY = startY + options.length * gap + 24;
     drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
+      { action: 'navigate', label: 'Up/Down' },
       { action: 'confirm' },
       { action: 'back', label: 'Return' },
     ]));
@@ -1161,9 +1167,16 @@ export const EndOfGame = {
    * @returns {boolean} whether the action was handled
    */
   onAction(action) {
-    if (action === 'confirm' || action === 'back') {
-      if (tryTransition(S.HOME)) console.log('[screens] END_OF_GAME → HOME');
-      return true;
+    switch (action) {
+      case 'up':
+      case 'down':
+        // A single option: up/down keep focus on it (no-op).
+        this.focus = 0;
+        return true;
+      case 'confirm':
+      case 'back':
+        if (tryTransition(S.HOME)) console.log('[screens] END_OF_GAME → HOME');
+        return true;
     }
     return false;
   },
@@ -1267,6 +1280,7 @@ export function screenReset(s, from) {
   if (s === S.SELECT) Select.reset();
   if (s === S.PAUSE) Pause.reset();
   if (s === S.OVER) GameOver.focus = 0;
+  if (s === S.END_OF_GAME) EndOfGame.reset();
   if (s === S.REMAP) { remapParent = from === S.HOME ? S.HOME : S.PAUSE; Remap.resetState(); }
   // AREA_ENTRY: the screen data is pushed by lifecycle.js (showAreaEntry)
   // IMMEDIATELY before the transition into AREA_ENTRY; the transition listener
