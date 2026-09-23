@@ -372,6 +372,9 @@ export function createInput({ target = globalThis.window, document = globalThis.
       this.nav = { held: {}, pressed: [], released: [...previousNav] };
       for (const action of previousNav) pendingReleases.add(action);
       previousNav.clear(); previousGame.clear(); this.state = blank(); lockedAngle = null;
+      // Clear per-binding state so no stale flash leaks across the boundary.
+      this.heldBindings = new Map(); this.pressedBindings = [];
+      previousPhysical = new Map();
     },
     reset() { lastAim = null; this.barrier(); },
     /** Install the contextual aim resolver used when Lock Direction engages. */
@@ -457,6 +460,9 @@ export function createInput({ target = globalThis.window, document = globalThis.
         }
         if (this.captureResult) { capture = null; this.barrier(); }
         this.nav = { held: {}, pressed: [], released: [] }; this.state = blank();
+        // No binding state during capture — prevents stale flashes leaking
+        // into the next screen's instruction bar.
+        this.heldBindings = new Map(); this.pressedBindings = [];
         return this.state;
       }
       this.nav = { held: Object.fromEntries([...previousNav].map(a => [a, true])),
