@@ -29,6 +29,7 @@ import { LAYER } from './consts.js';
 import { projectilePool } from './projectile.js';
 import { damage } from './damage.js';
 import { Effects } from './effects.js';
+import { fireManual } from './effects/index.js';
 
 export const ELEPHANT_DEF = {
   // The boss id is the authoritative one from the level config
@@ -165,7 +166,7 @@ export class Elephant extends Enemy {
           // Fire the telegraph circle (expand mode: AoE warning) via the effects engine
           const cx = this.x + this.w / 2;
           const cy = this.y + this.h;
-          Effects.fireManual({
+          fireManual({
             type: 'telegraph-circle',
             params: { x: cx, y: cy, radius: 60, minRadius: 12, expand: true, duration: STOMP_DUR / this.escalation, color: '#f39c12' },
           }, null);
