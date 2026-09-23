@@ -919,47 +919,18 @@ export const AreaEntry = {
     ctx.fillStyle = '#0d0d1a';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
-    drawMarqueeTitle(ctx, d.levelName.toUpperCase(), VIEW_W / 2, VIEW_H / 2 - 150, 52, { color: CREAM });
-
+    // The entry view is a NON-interactive presentation: no menu, no options,
+    // no navigation bar. It fades in fast, holds for TUNING.areaEntryHold,
+    // then fades out just as fast and starts play on its own (lifecycle.md §2).
+    // The three information blocks are vertically centered as one group.
+    const cy = VIEW_H / 2;
+    drawMarqueeTitle(ctx, d.levelName.toUpperCase(), VIEW_W / 2, cy - 70, 52, { color: CREAM });
     // Area identifier — the screen's headline.
-    drawMarqueeTitle(ctx, d.areaId, VIEW_W / 2, VIEW_H / 2 - 70, 44, { color: GOLD });
-
+    drawMarqueeTitle(ctx, d.areaId, VIEW_W / 2, cy + 6, 44, { color: GOLD });
     // Lives remaining — emphasized (checkpoints.md §3 allows the life-count
     // decrease to be emphasized within this same screen).
-    drawPrompt(ctx, `LIVES  ${d.lives}`, VIEW_W / 2, VIEW_H / 2 - 10, 26, { color: CREAM, font: FONT_TITLE });
+    drawPrompt(ctx, `LIVES  ${d.lives}`, VIEW_W / 2, cy + 78, 26, { color: CREAM, font: FONT_TITLE });
 
-    // Option list — the SAME list layout / focus pill pattern as the pause
-    // menu (game-rules.md §3 shared ergonomics contract).
-    const options = ['Start', 'Back'];
-    const startY = VIEW_H / 2 + 40;
-    const gap = 40;
-    for (let i = 0; i < options.length; i++) {
-      const y = startY + i * gap;
-      const focused = i === 0;
-      if (focused) {
-        ctx.save();
-        ctx.fillStyle = 'rgba(255,110,199,0.10)';
-        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,110,199,0.4)';
-        ctx.lineWidth = 1;
-        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
-        ctx.stroke();
-        ctx.restore();
-      }
-      drawPrompt(ctx, (focused ? '▸ ' : '  ') + options[i], VIEW_W / 2, y + 2, focused ? 22 : 20, {
-        color: focused ? '#ff6ec7' : '#d8cdb4',
-      });
-    }
-
-    // Keycap nav bar — the SAME bar as the pause menu (navigate/confirm/quit)
-    // per the shared ergonomics contract (game-rules.md §3).
-    const hintY = startY + options.length * gap + 24;
-    drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
-      { actions: ['up', 'down'], label: 'Navigate', opts: { mode: 'select_layout' } },
-      { action: 'confirm', opts: { mode: 'select_layout' } },
-      { action: 'back', label: 'Quit', opts: { mode: 'select_layout' } },
-    ]));
     ctx.restore();
   },
 };

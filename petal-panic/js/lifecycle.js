@@ -534,19 +534,24 @@ export function showAreaEntry(h, ctx) {
  * @param {Hero} h the hero
  * @param {object} [ctx] area context
  */
+/**
+ * Handle input on the area-entry screen. The entry view is a NON-interactive
+ * presentation by default: it fades in, holds for TUNING.areaEntryHold, then
+ * fades out and auto-starts play via stepAreaEntrySequence() in update.js — no
+ * confirm is required. These handlers remain as a manual fast-forward / escape:
+ *   - 'confirm' / 'pause' → skip the timed fade and start the attempt now
+ *     (startLife + AREA_ENTRY → PLAY). This is also what the unit tests drive.
+ *   - 'back' → open the pause menu from the entry view.
+ */
 export function areaEntryOnAction(action, h, ctx) {
   if (action === 'confirm' || action === 'pause') {
-    // The attempt begins from the entry screen: the hero is restored to the
-    // area's preserved arrangement and placed at its entry (startLife).
+    // Manual fast-forward: begin the attempt immediately.
     startLife(h, ctx);
     if (getState() !== S.PLAY) {
-      // The normal path is AREA_ENTRY → PLAY via the transition map. A caller
-      // that entered AREA_ENTRY directly via setState() (tests) is also
-      // honoured, so the screen always ends in PLAY on confirm.
       tryTransition(S.PLAY);
       if (getState() !== S.PLAY) setState(S.PLAY);
     }
-    console.log('[lifecycle] AREA_ENTRY → PLAY (start attempt)');
+    console.log('[lifecycle] AREA_ENTRY → PLAY (manual confirm)');
     return true;
   }
   if (action === 'back') {

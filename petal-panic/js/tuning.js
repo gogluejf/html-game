@@ -44,6 +44,11 @@ export const TUNING = Object.freeze({
   clearBanner:  1.2, // seconds the 'X-Y CLEAR' banner is held (checkpoints.md §2.3)
   clearFadeOut: 0.6, // seconds to fade the cleared area to black
   clearFadeIn:  0.6, // seconds to fade from black into the new zone
+  // --- Area-entry screen (checkpoints.md §3) --------------------------------
+  // The entry screen is a non-interactive presentation: it fades in fast,
+  // holds for this long, then fades out just as fast and starts play — no
+  // confirm / navigation required.
+  areaEntryHold: 1.75, // seconds the level-start view stays up before auto-advancing
   // --- Ordinary death (checkpoints.md §4) ---------------------------------
   deathFade:    0.6, // the "short delay" fade to black after the death presentation
   // --- Boss introduction (boss-arena.md §2) --------------------------------

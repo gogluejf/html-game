@@ -20,7 +20,7 @@ import { projectilePool, specialPool, dirAngle } from '../projectile.js';
 import { damage } from '../damage.js';
 import { applyKnockback } from '../knockback.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../hitbox.js';
-import { S, getState, STATE_NAMES, tryTransition, onTransition } from '../state.js';
+import { S, getState, setState, STATE_NAMES, tryTransition, onTransition } from '../state.js';
 import { dispatchScreenInput } from '../screens.js';
 import { Jester } from '../jester.js';
 import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
@@ -448,6 +448,74 @@ export function beginClearFadeIn() {
   camera.setZoneBounds(zone);
 }
 
+// --- Area-entry auto-advance (checkpoints.md §3) ------------------------------
+// The level-start / area-entry view is a NON-interactive presentation: it fades
+// in fast, holds for TUNING.areaEntryHold seconds, then fades out just as fast
+// and starts play on its own — no confirm or navigation required (lifecycle.md
+// §2: "show the entry screen, then begin play"). This small state machine owns
+// that timing; render.js reads getAreaEntryFadeAlpha() to draw the black overlay
+// (the same mechanism as the clear/death fades).
+const AREA_ENTRY_FADE = 0.4; // seconds for the fast fade-in AND fade-out
+let areaEntrySeq = { state: 'idle', timer: 0 };
+
+/** Begin the area-entry presentation (fast fade-in → hold → fast fade-out). */
+export function beginAreaEntryPresentation() {
+  areaEntrySeq = { state: 'fadeIn', timer: 0 };
+}
+
+/**
+ * Black-overlay alpha for the area-entry presentation. Returns 0 when idle,
+ * ramps 1→0 during the fade-in, holds at 1 while the view is up, and ramps
+ * 1→0 during the fade-out as the world fades back in from black.
+ */
+export function getAreaEntryFadeAlpha() {
+  if (areaEntrySeq.state === 'fadeIn') {
+    const t = areaEntrySeq.timer / AREA_ENTRY_FADE;
+    return Math.max(0, Math.min(1, 1 - t));
+  }
+  if (areaEntrySeq.state === 'hold') return 1;
+  if (areaEntrySeq.state === 'fadeOut') {
+    // Ramp DOWN to 0 over the fade duration (world fades in from black).
+    const t = areaEntrySeq.timer / AREA_ENTRY_FADE;
+    return Math.max(0, Math.min(1, 1 - t));
+  }
+  return 0;
+}
+
+/**
+ * Step the area-entry presentation. Called from update() while the state is
+ * S.AREA_ENTRY. On completion it starts the attempt (startLife) and transitions
+ * to PLAY — the same path the old confirm flow used, now driven by time.
+ */
+export function stepAreaEntrySequence(dt) {
+  if (areaEntrySeq.state === 'idle') return;
+  areaEntrySeq.timer += dt;
+  if (areaEntrySeq.state === 'fadeIn') {
+    if (areaEntrySeq.timer >= AREA_ENTRY_FADE) {
+      areaEntrySeq.state = 'hold';
+      areaEntrySeq.timer = 0;
+    }
+  } else if (areaEntrySeq.state === 'hold') {
+    if (areaEntrySeq.timer >= TUNING.areaEntryHold) {
+      // End of hold: start the attempt NOW and leave the entry screen so the
+      // world is what gets revealed. The fade-out then ramps the black overlay
+      // down over the (now playing) world — a fast fade-from-black into play.
+      areaEntrySeq.state = 'fadeOut';
+      areaEntrySeq.timer = 0;
+      startLife(hero, areaContext);
+      if (getState() !== S.PLAY) {
+        if (!tryTransition(S.PLAY)) setState(S.PLAY);
+      }
+      console.log('[lifecycle] AREA_ENTRY → PLAY (auto-advance)');
+    }
+  } else if (areaEntrySeq.state === 'fadeOut') {
+    if (areaEntrySeq.timer >= AREA_ENTRY_FADE) {
+      areaEntrySeq.state = 'idle';
+      areaEntrySeq.timer = 0;
+    }
+  }
+}
+
 // --- Zone model (task 2.1 — authoritative level structure) -------------------
 // The sealed zone model IS the world (task 7.1). Each zone owns its own bounds,
 // flags, and composed terrain; the ACTIVE zone's content is installed into the
@@ -861,11 +929,39 @@ function spawnFloatText(x, y, text, color) {
  * GameOver screen's `retry` action and the pause menu's "Retry Level" keep
  * working and the state transition (OVER/PAUSE → PLAY) stays local.
  */
-export function retryFromGameOver() {
-  startLife(hero, areaContext);
-  if (tryTransition(S.PLAY)) {
-    console.log('[lifecycle] → PLAY (retry)');
+/**
+ * Rebuild the active zone's FRESH content from the stored population snapshot
+ * and install it into the collision world, so the next attempt starts from a
+ * clean arrangement (defeated enemies, destroyed barrels, and collected
+ * powerups are all restored). This is the BLOCKER 6 reset: restoreArea() alone
+ * cannot re-add defeated entities, so we re-instantiate the whole zone from its
+ * immutable snapshot instead. Shared by the death-restart path
+ * (finishHeroDeath) and the pause/OVER retry path (retryFromGameOver) so both
+ * reset the area identically. No-op for non-area zones (the boss zone keeps its
+ * own flow) or when no content is stored for the zone.
+ */
+function resetActiveZoneContent() {
+  const activeZone = getActiveZone(hero);
+  if (activeZone.kind === 'area' && world.world.has(activeZone.areaIdx)) {
+    const fresh = instantiateZone(
+      activeZone,
+      world.terrain.get(activeZone.areaIdx),
+      world.population.get(activeZone.areaIdx),
+    );
+    loadActiveZone(activeZone, fresh);
   }
+}
+
+export function retryFromGameOver() {
+  // Retry takes the SAME restart path as losing a life — except it does NOT
+  // consume one. It resets the active zone to a fresh arrangement (enemies,
+  // barrels, powerups, coins all restored exactly like a death-restart) and
+  // opens the shared level-start / area-entry view. The timed entry sequence
+  // then fades in, holds, and auto-starts play via startLife (which also
+  // restores the preserved arrangement + hero placement).
+  resetActiveZoneContent();
+  showAreaEntry(hero, areaContext);
+  console.log('[lifecycle] PAUSE/OVER → AREA_ENTRY (retry)');
 }
 
 /**
@@ -1753,6 +1849,15 @@ onTransition((from, to) => {
   }
 });
 
+// --- Area-entry presentation (checkpoints.md §3) ----------------------------
+// Every entry into the shared area-entry view starts its timed, non-interactive
+// presentation: fast fade-in → hold for TUNING.areaEntryHold → fast fade-out →
+// auto-start play. This fires on ALL paths that open the entry screen (new
+// game, clear-sequence advance, death restart, continue, and pause retry).
+onTransition((from, to) => {
+  if (to === S.AREA_ENTRY) beginAreaEntryPresentation();
+});
+
 // AREA_ENTRY → PLAY: when the player confirms the area-entry screen, begin the
 // fade-in into the new zone (checkpoints.md §2 step 6). This only fires when
 // the area was reached via the clear sequence (exit flag → banner → fade-out →
@@ -1851,7 +1956,18 @@ export function update(dt) {
     return;
   }
   // Physics only runs during PLAY; other states are screen-driven ().
-  if (getState() !== S.PLAY) return;
+  if (getState() !== S.PLAY) {
+    // The area-entry view is a timed, non-interactive presentation: it fades in,
+    // holds, then fades out and auto-starts play (checkpoints.md §3). Step that
+    // sequence while the entry screen is up.
+    if (getState() === S.AREA_ENTRY) stepAreaEntrySequence(dt);
+    return;
+  }
+  // The area-entry fade-out ramps down OVER the live world after play has begun
+  // (the attempt starts at the top of the fade-out), so keep stepping the
+  // sequence here until it returns to idle — otherwise the black overlay would
+  // stay pinned at full alpha over the new level.
+  stepAreaEntrySequence(dt);
 
   // DEBUG: track hero position vs exit flag when in area 2.
   if (hero.currentArea === 2 && checkpoints.length > 0) {
@@ -2208,16 +2324,9 @@ function finishHeroDeath() {
     // entities — restoreArea() cannot re-add defeated enemies, destroyed
     // barrels, or collected powerups (lifecycle.md §3: "the previous
     // attempt's kills and destroyed objects do not leave the next attempt
-    // partly cleared").
-    const activeZone = getActiveZone(hero);
-    if (activeZone.kind === 'area' && world.world.has(activeZone.areaIdx)) {
-      const fresh = instantiateZone(
-        activeZone,
-        world.terrain.get(activeZone.areaIdx),
-        world.population.get(activeZone.areaIdx),
-      );
-      loadActiveZone(activeZone, fresh);
-    }
+    // partly cleared"). Shared with retryFromGameOver so a retry resets the
+    // area identically to a death-restart.
+    resetActiveZoneContent();
     // checkpoints.md §4: after the death presentation and the fade, consume
     // one life exactly once and show the SHARED area-entry screen with the new
     // count. The whole area is restored and the attempt starts beside the

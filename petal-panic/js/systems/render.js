@@ -5,7 +5,7 @@
 
 import { VIEW_W, VIEW_H } from '../view.js';
 import { LAYER } from '../consts.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getDeathFadeAlpha, getClearBanner, getClearFadeAlpha, bossZone } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getDeathFadeAlpha, getClearBanner, getClearFadeAlpha, getAreaEntryFadeAlpha, bossZone } from './update.js';
 import { Effects } from '../effects.js';
 import { drawEffects } from '../effects/index.js';
 import { getState, S } from '../state.js';
@@ -435,6 +435,19 @@ export function render(ctx) {
   if (clearFade > 0) {
     ctx.save();
     ctx.globalAlpha = clearFade;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    ctx.restore();
+  }
+
+  // checkpoints.md §3: the area-entry presentation's black overlay. It covers
+  // the opaque entry screen during the fast fade-in + hold, then — once play
+  // has started at the top of the fade-out — it ramps down over the live world
+  // so the level fades in from black. Same mechanism as the clear/death fades.
+  const entryFade = getAreaEntryFadeAlpha();
+  if (entryFade > 0) {
+    ctx.save();
+    ctx.globalAlpha = entryFade;
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     ctx.restore();
