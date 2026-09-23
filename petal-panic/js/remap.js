@@ -331,9 +331,11 @@ export const Remap = {
       // Build hint entries that reflect the CURRENT remapped bindings for
       // confirm/back (not the static defaults from KEY_NAV/PAD_NAV).
       const layout = this.gamepadLayout || 'Generic';
-      const confirmKb = this.mapping.keyboard.confirm;
+      // Keyboard confirm/back are FIXED (not in mapping) — use NAV_KB_KEYS.
+      const confirmKb = NAV_KB_KEYS.confirm; // ['Enter', 'Space']
+      const backKb = NAV_KB_KEYS.back;       // ['Escape']
+      // Gamepad confirm/back ARE remappable — read from mapping.
       const confirmPad = this.mapping.gamepad.confirm;
-      const backKb = NAV_KB_KEYS.back; // fixed: Escape
       const backPad = this.mapping.gamepad.back;
       const now = performance.now();
       const FLASH_MS = 180;
