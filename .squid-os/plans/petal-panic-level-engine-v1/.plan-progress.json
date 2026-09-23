@@ -182,7 +182,7 @@
     },
     "5.2": {
       "number": "5.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Climbing macros for vertical composition",
       "milestone": "Vertical Areas",
       "milestone_number": "5",
