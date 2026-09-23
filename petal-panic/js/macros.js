@@ -709,22 +709,55 @@ const STAGE_DIFFICULTY = Object.freeze(
 /**
  * Filter and weight macros for a given orientation and progression stage.
  *
+ * The base per-stage weights (STAGE_WEIGHTS) shape the WITHIN-level curve
+ * (-1 sparse → -4 dense). A level's `macroWeights` (levelConfigs.js,
+ * generation.md §5/§5b) is an ADDITIONAL, per-level bias that shifts macro
+ * selection toward harder difficulty tiers for later levels:
+ *
+ *   finalWeight(macro) = stageWeight(macro.difficulty)
+ *                       * levelTierWeight(tierFor(macro.difficulty))
+ *
+ * where the four tiers map to the difficulty values (generation.md §5):
+ *   'easy'   → difficulty 1
+ *   'medium' → difficulty 2
+ *   'hard'   → difficulty 3
+ *   'brutal' → a bonus on the stage's HIGHEST difficulty tier (the macro
+ *              vocabulary has no difficulty-4 tier, so the strongest
+ *              permitted combinations stand in for 'brutal').
+ *
+ * The multiplier is applied ON TOP of the stage weights, so the within-level
+ * -1 → -4 progression is preserved and the level bias is multiplicative
+ * (a zero level weight for a tier can still suppress that tier entirely).
+ *
  * @param {string} orientation 'horizontal' | 'vertical'
  * @param {number} stage progression stage (-1 to -4)
+ * @param {object} [macroWeights] optional per-level tier weights
+ *   ({ easy, medium, hard, brutal }); omitted → no level bias
  * @returns {Array<{macro: object, weight: number}>} weighted macro list
  */
-export function selectMacros(orientation, stage) {
+export function selectMacros(orientation, stage, macroWeights = null) {
   const stageKey = String(stage);
   const stageCfg = STAGE_DIFFICULTY[stageKey];
   if (!stageCfg) {
     throw new Error(`selectMacros: unknown stage ${stage}`);
   }
 
+  const tierFor = (difficulty) =>
+    difficulty === 1 ? 'easy' : difficulty === 2 ? 'medium' : 'hard';
+  const topTier = stageCfg.max; // 'brutal' bonus rides the stage's hardest tier
+
   const result = [];
   for (const macro of Object.values(MACROS)) {
     if (macro.orientation !== orientation) continue;
     if (macro.difficulty < stageCfg.min || macro.difficulty > stageCfg.max) continue;
-    const weight = stageCfg.weights[macro.difficulty] ?? 1;
+    let weight = stageCfg.weights[macro.difficulty] ?? 1;
+    if (macroWeights) {
+      let tierWeight = macroWeights[tierFor(macro.difficulty)] ?? 1;
+      if (macro.difficulty === topTier) {
+        tierWeight += macroWeights.brutal ?? 0;
+      }
+      weight *= tierWeight;
+    }
     result.push({ macro, weight });
   }
   return result;
@@ -1483,8 +1516,16 @@ function assignBarrelTypes(barrelSlots, counts, rng) {
  *     totalHeight: number,    // total height in units (vertical: axis length)
  *     placements: Array<object>,  // placement opportunities (from macros)
  *   }
+ *
+ * @param {object} rng the per-game RNG
+ * @param {string} orientation 'horizontal' | 'vertical'
+ * @param {number} stage progression stage (-1 to -4)
+ * @param {number} budget the area's length budget in width-units
+ * @param {object} [macroWeights] optional per-level macro difficulty-tier
+ *   weights ({ easy, medium, hard, brutal } from levelConfigs.js) that bias
+ *   macro selection toward harder tiers for later levels (generation.md §5/§5b)
  */
-export function composeArea(rng, orientation, stage, budget) {
+export function composeArea(rng, orientation, stage, budget, macroWeights = null) {
   if (orientation !== 'horizontal' && orientation !== 'vertical') {
     throw new Error(`composeArea: orientation must be 'horizontal' or 'vertical', got ${orientation}`);
   }
@@ -1508,8 +1549,10 @@ export function composeArea(rng, orientation, stage, budget) {
   // reachable from the ground (at most 1 tier above).
   const initialAxisPos = isVertical ? 0 : entryClear;
 
-  // Step 2: Select compatible macros (generation.md §4 step 2).
-  const candidates = selectMacros(orientation, stage);
+  // Step 2: Select compatible macros (generation.md §4 step 2). The
+  // per-level macroWeights bias selection toward harder tiers (generation.md
+  // §5/§5b: "later levels weight harder macro families more heavily").
+  const candidates = selectMacros(orientation, stage, macroWeights);
   if (candidates.length === 0) {
     throw new Error(`composeArea: no compatible macros for ${orientation} stage ${stage}`);
   }

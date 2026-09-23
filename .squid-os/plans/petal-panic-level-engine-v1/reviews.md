@@ -518,3 +518,30 @@ These are the accumulated "runtime still uses legacy corridor" findings. They al
 - R2 major: Vertical fall-death uses direct isBelowVerticalBottom assertions. **Test-depth limitation.**
 - R1 minor: Enemy count assertion depends on module-level state. **Non-blocking.**
 - R1 minor: LEVELS mutation for multi-level test. **Non-blocking (restored in finally).**
+
+---
+
+## Task 7.4 — 8 level config entries
+
+**Round 1:**
+
+| Reviewer | Verdict | Key Findings |
+|---|---|---|
+| R1 (Qwen3.8-27B) | PASS | 5 minors: stale formula comments, single-type powerups, easy-tier plateau, duplicate verticalArea tests, pre-existing LEVELS[0] hardcode |
+| R2 (GPT-5.6-sol) | FAIL | 4 majors: Level 1 name mismatch, verticalArea uniqueness claim, macroWeights not consumed, boot test only checks lookup; 1 minor: wrong formula docs |
+
+**Round 1 fix dispatched.** All 4 majors + 1 minor fixed: name → "Big Top", verticalArea invariant corrected, macroWeights wired into selectMacros/composeArea/buildWorld, boot tests added for all 8 levels, helper comments corrected.
+
+**Round 2 (final confirmation):**
+
+| Reviewer | Verdict |
+|---|---|
+| R1 (Qwen3.8-27B) | PASS — all 5 RESOLVED |
+| R2 (GPT-5.6-sol) | PASS — all 5 RESOLVED |
+
+**Committed:** (pending)
+
+**Remaining findings (non-blocking):**
+- R1 minor: Powerup counts for Levels 2-8 are very low (placeholder tuning). **Owner: future tuning epic.**
+- R1 minor: `macroWeights` easy-tier plateaus at 0 for Levels 7-8. **Design decision.**
+- R1 minor: update.js hardcodes LEVELS[0] (pre-existing). **Owner: level-selection task.**

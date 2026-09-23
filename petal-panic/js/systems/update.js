@@ -174,7 +174,11 @@ function instantiateZone(zone, layout, population) {
  */
 function buildWorld(levelDef, config, seed) {
   const zones = buildLevelZones(levelDef);
-  const terrain = buildAllZoneTerrain(levelDef, seed); // areaIdx → layout
+  // Compose terrain biased by the level CONFIG's macroWeights (levelConfigs.js,
+  // generation.md §5/§5b) — later levels weight harder macro tiers. The legacy
+  // LEVELS entry (levelDef) carries no macroWeights, so the config is the bias
+  // source; zones still come from levelDef's index/verticalArea.
+  const terrain = buildAllZoneTerrain(config, seed); // areaIdx → layout
   const population = new Map();
   const world = new Map();
   const rng = createRng(seed); // fresh stream for population (terrain consumed its own)

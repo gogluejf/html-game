@@ -425,17 +425,26 @@ const ENTRY_MIN_BUDGET = 12;
  * areaLengthBudget() — a horizontal area gets the ~2x width budget, a vertical
  * area gets the ~3-screen height budget (structure.md §6, generation.md §7).
  *
+ * The level config's macroWeights (levelConfigs.js) bias macro selection
+ * toward harder difficulty tiers for later levels (generation.md §5/§5b:
+ * "later levels weight harder macro families more heavily"). Omit them (or
+ * pass a config without the field) and the composer falls back to the
+ * shared per-stage curve (STAGE_WEIGHTS in macros.js).
+ *
  * @param {object} zone a zone from buildLevelZones()
  * @param {ReturnType<typeof createRng>} rng the per-game RNG (stateful)
+ * @param {object} [levelConfig] the level config (levelConfigs.js); its
+ *   `macroWeights` bias macro difficulty-tier selection for this level
  * @returns {object} the composed terrain layout (same shape as composeArea)
  */
-export function buildZoneTerrain(zone, rng) {
+export function buildZoneTerrain(zone, rng, levelConfig = null) {
   if (zone.kind !== 'area') {
     throw new Error(`buildZoneTerrain: zone kind must be 'area', got ${zone.kind}`);
   }
   const orientation = zone.orientation;
   const stage = zone.areaIdx; // -1 to -4
-  return composeArea(rng, orientation, stage, areaLengthBudget(orientation));
+  const macroWeights = levelConfig?.macroWeights ?? null;
+  return composeArea(rng, orientation, stage, areaLengthBudget(orientation), macroWeights);
 }
 
 /**
@@ -447,7 +456,12 @@ export function buildZoneTerrain(zone, rng) {
  * advances the RNG stream. This is the "rolled once per game" contract:
  * the same seed always produces the same terrain for every area.
  *
- * @param {object} levelDef one entry from LEVELS
+ * The level config's macroWeights (levelConfigs.js) are applied to every
+ * area, so the level's macro difficulty bias shapes the whole world
+ * (generation.md §5/§5b).
+ *
+ * @param {object} levelDef one entry from LEVELS (or a levelConfigs.js entry —
+ *   both carry index/verticalArea; the config's macroWeights are used when present)
  * @param {number|string} seed the per-game seed
  * @returns {Map<number, object>} map of areaIdx → terrain layout
  */
@@ -458,7 +472,7 @@ export function buildAllZoneTerrain(levelDef, seed) {
 
   for (const zone of zones) {
     if (zone.kind !== 'area') continue;
-    const layout = buildZoneTerrain(zone, rng);
+    const layout = buildZoneTerrain(zone, rng, levelDef);
     result.set(zone.areaIdx, layout);
   }
 
