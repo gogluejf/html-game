@@ -887,16 +887,8 @@ export function loadActiveZone(zone, content) {
   for (const c of checkpoints) collisionWorld.remove(c);
   // The boss lives ONLY in the boss zone. Remove it from the collision world
   // when leaving so it cannot physically exist in ordinary areas (same logic
-  // as any enemy — it is zone-scoped content, not a global entity). Also
-  // deactivate the boss zone flow machine so its intro/combat gates don't
-  // block shooting in ordinary areas.
-  if (zone.kind !== 'boss') {
-    collisionWorld.remove(boss);
-    if (bossZone.active) {
-      bossZone.state = null; // dormant — re-armed by beginBossZoneFlow() on next entry
-      console.log('[bossZone] deactivated (left boss zone)');
-    }
-  }
+  // as any enemy — it is zone-scoped content, not a global entity).
+  if (zone.kind !== 'boss') collisionWorld.remove(boss);
   const cwAfterRemove = collisionWorld.entities.size;
 
   // Clear the module-level lists.
@@ -2009,10 +2001,7 @@ onTransition((from, to) => {
     // frame 1. Without this, the camera may still be showing the previous
     // zone's x-position and the hero appears off-screen until the follow logic
     // catches up. Vertical is NOT snapped — the upward-only ratchet owns y.
-    // Skip the snap for the boss zone: the camera follows the hero naturally
-    // during the approach, and snapping causes a visible jump when the arena
-    // locks (the onLock hook re-centers on the arena anyway).
-    if (getActiveZone(hero).kind !== 'boss') {
+    {
       const h = hero;
       const cx = h.x + h.w / 2;
       const snappedX = Math.max(camera.minX, Math.min(camera.maxX, cx - camera.w / 2));

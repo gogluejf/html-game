@@ -121,28 +121,29 @@ export class BossZone {
     this.timer = 0;
 
     // --- Arena geometry -----------------------------------------------------
-    // The hero enters from the LEFT and walks RIGHT ~BOSS_APPROACH_DIST to the
-    // arena entry line. The arena is centered on that entry line so the camera
-    // is already positioned correctly when the arena locks (no jump). The boss
-    // settles on the RIGHT portion of the arena; the hero fights from the left.
+    // The arena is the fixed camera view of the boss zone. The fight occupies
+    // this view. The hero enters from the LEFT (like a regular area) and walks
+    // RIGHT toward the arena. The boss enters from the RIGHT and settles on the
+    // RIGHT portion of the arena (visible, not center) so both combatants are
+    // on screen during the fight.
     const b = zone.bounds;
-    // Approach: hero starts near the zone's left edge and walks right.
-    this.approachStartX = b.x + BOSS_APPROACH_START_PAD;
-    this.arenaEntryX = this.approachStartX + BOSS_APPROACH_DIST;
-    // Clamp the arena entry inside the zone bounds.
-    if (this.arenaEntryX > b.x + b.w - VIEW_W / 2) this.arenaEntryX = b.x + b.w - VIEW_W / 2;
-
-    // The arena (locked camera view) is centered on the arena entry line, so
-    // when the hero reaches it the camera is already showing the arena.
-    this.arenaX = Math.round(this.arenaEntryX - VIEW_W / 2);
-    // Keep the arena within the zone bounds.
-    if (this.arenaX < b.x) this.arenaX = b.x;
-    if (this.arenaX + VIEW_W > b.x + b.w) this.arenaX = b.x + b.w - VIEW_W;
+    // Camera left edge for the locked arena view. Center the view on the zone.
+    this.arenaX = Math.round(b.x + b.w / 2 - VIEW_W / 2);
     this.arenaY = Math.round(b.y + b.h / 2 - VIEW_H / 2);
     this.arenaW = VIEW_W;
     this.arenaH = VIEW_H;
 
+    // Approach (hero enters from LEFT, walks RIGHT ~BOSS_APPROACH_DIST to the
+    // arena entry line). The hero starts near the zone's left edge (beside the
+    // boss checkpoint flag) and walks right until the arena entry line.
+    this.approachStartX = b.x + BOSS_APPROACH_START_PAD;
+    this.arenaEntryX = this.approachStartX + BOSS_APPROACH_DIST;
+    // The arena entry line must stay inside the zone bounds (<= right edge).
+    if (this.arenaEntryX > b.x + b.w) this.arenaEntryX = b.x + b.w;
+
     // Boss rest position: RIGHT portion of the arena (visible, not center).
+    // Place it ~75% across the arena width so it's clearly on the right side
+    // but still fully visible when the camera is locked.
     this.bossRestX = Math.round(this.arenaX + this.arenaW * 0.75 - boss.w / 2);
     this.bossRestY = Math.round(b.y + b.h - boss.h);
     // The boss enters from the right, off the arena's right edge.
