@@ -47,7 +47,9 @@ const NAV_ROWS = [
   { id: 'confirm', label: 'Confirm' },
   { id: 'back',    label: 'Back' },
 ];
-const NAV_KB_LABELS = { confirm: 'ENTER / SPACE', back: 'ESC' };
+// Fixed keyboard bindings for nav rows, shown as individual read-only chips
+// (the same two-chip layout used when a binding has two slots).
+const NAV_KB_KEYS = { confirm: ['Enter', 'Space'], back: ['Escape'] };
 
 const LAYOUT_OPTIONS = ['Keyboard', 'Generic', 'PS5', 'PS4', 'Xbox', '8BitDo', 'Switch'];
 
@@ -179,9 +181,9 @@ export const Remap = {
     const gpX = 580;             // gamepad chips start
     const chipW = 76;
     const chipGap = 8;
-    const rowH = 28;
-    const listTop = 95;          // first row Y
-    const headerY = 70;          // column headers
+    const rowH = 26;
+    const listTop = 90;          // first row Y
+    const headerY = 66;          // column headers
 
     // Column headers — static labels, always visible
     drawPrompt(ctx, 'KEYBOARD', kbX + 76, headerY + 2, 15, { color: CREAM });
@@ -217,17 +219,23 @@ export const Remap = {
       for (const src of ['keyboard', 'gamepad']) {
         const baseX = src === 'keyboard' ? kbX : gpX;
         const isActive = this.tab === src;
-        // Nav rows: keyboard is a single fixed (read-only) chip; gamepad is
-        // the remappable binding. Gameplay rows use normal slot counts.
-        const slots = isNav ? (src === 'keyboard' ? 1 : bindingSlots('gamepad', action.id))
-                            : bindingSlots(src, action.id);
-        const readOnly = isNav && src === 'keyboard';
+        // Nav rows: keyboard shows its fixed keys as individual read-only
+        // chips (like a two-slot binding); gamepad is the remappable binding.
+        // Gameplay rows use normal slot counts.
+        let slots, readOnlyKeys = null;
+        if (isNav) {
+          if (src === 'keyboard') { slots = NAV_KB_KEYS[action.id].length; readOnlyKeys = NAV_KB_KEYS[action.id]; }
+          else slots = bindingSlots('gamepad', action.id);
+        } else {
+          slots = bindingSlots(src, action.id);
+        }
+        const readOnly = !!(readOnlyKeys);
         const dimmed = !isActive || readOnly;
 
         for (let j = 0; j < slots; j++) {
           const cx = baseX + j * (chipW + chipGap);
           let label;
-          if (readOnly) label = NAV_KB_LABELS[action.id];
+          if (readOnly) label = formatBinding(readOnlyKeys[j], 'keyboard');
           else label = formatBinding(this.mapping[src][action.id][j], src, this.gamepadLayout || 'Generic');
           const isFocus = focused && isActive && !readOnly && j === this.chip;
           const isCap = isFocus && this.capturing;
