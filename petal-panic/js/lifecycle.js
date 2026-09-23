@@ -30,6 +30,7 @@ import { Hero } from './hero.js';
 import { createStats, calculateScore, cloneStats } from './stats.js';
 import { Anim, makeTestFrame } from './anim.js';
 import { tryTransition, getState, setState, S } from './state.js';
+import { TUNING } from './tuning.js';
 
 // --- Area-entry accounting snapshot (game-rules.md §2/§4) -------------------
 //
@@ -647,6 +648,30 @@ export function setRewardDataCallback(fn) { _onRewardData = fn; }
 /** Get the last reward screen data presented. */
 export function getRewardData() { return _rewardData; }
 
+/**
+ * Wall-clock timestamp (ms) of the moment the reward screen was last shown.
+ * Used to enforce the minimum dwell time before the reward screen can be
+ * dismissed (TUNING.rewardMinDwell — boss-arena.md §4–5: "Its duration, skip
+ * behavior, and celebration effects are design-plan concerns"). A confirm or
+ * pause pressed before this dwell has elapsed is rejected; the screen stays
+ * up until the dwell expires.
+ *
+ * `null` means no reward screen is currently presented.
+ * @type {number|null}
+ */
+let _rewardShownAt = null;
+
+/**
+ * Test helper: reset the dwell timer so tests can simulate time passing
+ * without waiting. Sets `_rewardShownAt` to a past timestamp such that the
+ * dwell has already elapsed.
+ */
+export function _advanceRewardDwellForTest() {
+  if (_rewardShownAt !== null) {
+    _rewardShownAt = Date.now() - TUNING.rewardMinDwell * 1000 - 1;
+  }
+}
+
 /** Callback registered by screens.js to receive the end-of-game final score. */
 let _onEndOfGameScore = null;
 
@@ -739,6 +764,9 @@ export function showLevelReward(h) {
     checkpointsHit: s.checkpointsHit ?? 0,
   }, h);
   _rewardData = data;
+  // Record when the reward screen was shown so the minimum dwell
+  // (TUNING.rewardMinDwell) is enforced before the confirm/pause is honored.
+  _rewardShownAt = Date.now();
   if (_onRewardData) _onRewardData(data);
   if (tryTransition(S.REWARD)) {
     console.log(`[lifecycle] → REWARD (level ${h.currentLevel}, coins: ${coins}, +${earned} continue${earned === 1 ? '' : 's'})`);
@@ -769,10 +797,24 @@ export function rewardOnAction(action, h) {
     console.log('[lifecycle] REWARD → HOME (quit from reward)');
     _rewardData = null;
     _creditedReward = null;
+    _rewardShownAt = null;
     if (tryTransition(S.HOME)) return true;
     return true;
   }
   if (action === 'confirm' || action === 'pause') {
+    // Enforce the minimum dwell before the reward screen can be dismissed
+    // (TUNING.rewardMinDwell — boss-arena.md §4–5). The celebratory beat
+    // must play out before the confirm/pause is honored; an early press is
+    // rejected (the screen stays up) so the credit to the global continue
+    // pool reads clearly. `back` (quit) is NOT dwell-gated — it is a nav-bar
+    // escape, not the confirm flow.
+    if (_rewardShownAt !== null) {
+      const elapsed = (Date.now() - _rewardShownAt) / 1000;
+      if (elapsed < TUNING.rewardMinDwell) {
+        // Dwell not yet elapsed: reject the confirmation.
+        return false;
+      }
+    }
     if (h.currentLevel >= LEVELS.length) {
       // Final level: end-of-game instead of a next level (lifecycle.md §5).
       // A minimal end-of-game screen (congratulations + final score + return
@@ -785,6 +827,7 @@ export function rewardOnAction(action, h) {
       if (_onEndOfGameScore) _onEndOfGameScore(_rewardData?.score ?? 0);
       _rewardData = null;
       _creditedReward = null;
+      _rewardShownAt = null;
       if (tryTransition(S.END_OF_GAME)) return true;
       return true;
     }
@@ -809,6 +852,7 @@ export function rewardOnAction(action, h) {
     // one and credits again.
     _rewardData = null;
     _creditedReward = null;
+    _rewardShownAt = null;
     showAreaEntry(h, ctxOf(h));
     console.log(`[lifecycle] REWARD → AREA_ENTRY ${h.currentLevel}-${ENTRY_AREA} (next level)`);
     return true;

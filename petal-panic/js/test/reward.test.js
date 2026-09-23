@@ -216,7 +216,7 @@ test('a fresh run credits a new reward even after a previous run finished (block
   setState(S.PLAY);
   L.showLevelReward(h1);
   assert.equal(h1.continues.remaining, GAME_RULES.startingContinues + 2, 'first run credits 2 continues');
-  L.rewardOnAction('confirm', h1); // final level → end-of-game screen
+  L._advanceRewardDwellForTest(); L.rewardOnAction('confirm', h1); // final level → end-of-game screen
   assert.equal(getState(), S.END_OF_GAME, 'final level confirm shows the end-of-game screen');
 
   // --- New game: a genuinely new reward must be credited again. ---
@@ -313,7 +313,7 @@ test('confirming the reward screen starts the next level at area -1 with its ent
   const savedLen = LEVELS.length;
   LEVELS.push({ name: 'Second Level' });
   try {
-    L.rewardOnAction('confirm', h);
+    L._advanceRewardDwellForTest(); L.rewardOnAction('confirm', h);
   } finally {
     LEVELS.length = savedLen;
   }
@@ -346,7 +346,7 @@ test('confirming the reward screen on the final level shows the end-of-game scre
   const data = L.getRewardData();
   assert.equal(data.isFinalLevel, true, 'the screen knows this is the final level');
 
-  L.rewardOnAction('confirm', h);
+  L._advanceRewardDwellForTest(); L.rewardOnAction('confirm', h);
 
   assert.equal(h.currentLevel, LEVELS.length, 'the level did NOT advance');
   assert.notEqual(getState(), S.AREA_ENTRY, 'no entry screen for a nonexistent next level');

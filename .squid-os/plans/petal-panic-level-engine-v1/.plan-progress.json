@@ -257,7 +257,7 @@
     },
     "7.3": {
       "number": "7.3",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Full-flow integration tests + suite green",
       "milestone": "Level 1 Integration + Gameplay Polish",
       "milestone_number": "7"

@@ -16,10 +16,12 @@
 // with a doc citation instead of here. See levelConfigs.js's
 // "DESIGN-PLAN DECISIONS SETTLED HERE" block.
 //
-// This module is PURE data (no DOM, no imports). Consumers (levelConfigs.js,
-// gameRules.js, terrain.js, macros.js, bossZone.js, update.js, lifecycle.js)
-// import the value from here rather than re-declaring a literal, so the cited
-// value has exactly one owner.
+// This module is the single home for every concrete "design-plan decision"
+// value the docs/levels/*.md contract defers to the plan. Consumers
+// (levelConfigs.js, gameRules.js, terrain.js, macros.js, bossZone.js,
+// update.js, lifecycle.js) import the value from here (or from the
+// TUNING_LEVEL appendix below) rather than re-declaring a literal, so the
+// cited value has exactly one owner.
 //
 // Convention: seconds for durations, px for distances, and plain numbers for
 // counts/ratios. `Object.freeze` so a stray assignment can't silently drift a
