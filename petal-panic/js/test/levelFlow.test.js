@@ -513,7 +513,7 @@ test('boss flow: states transition in the documented order', () => {
   assert.equal(m.state, BZ_APPROACH, 'the flow starts in APPROACH');
 
   const seen = [BZ_APPROACH];
-  advanceOne(m, heroAt(m.arenaEntryX - 1)); // APPROACH → LOCKED (hero reaches the arena entry)
+  advanceOne(m, heroAt(m.arenaEntryX + 1)); // APPROACH → LOCKED (hero reaches the arena entry)
   if (m.state !== seen[seen.length - 1]) seen.push(m.state);
   while (m.state !== BZ_COMBAT) {
     advanceOne(m, heroAt(m.arenaEntryX));
@@ -535,7 +535,7 @@ test('boss flow: the boss is invisible until BOSS_ENTER', () => {
   m.begin();
   // Invisible through the entire intro (APPROACH..BAR_FILL).
   for (const s of [BZ_APPROACH, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL]) {
-    if (m.state !== s) advanceOne(m, heroAt(m.arenaEntryX - 1));
+    if (m.state !== s) advanceOne(m, heroAt(m.arenaEntryX + 1));
     assert.equal(m.state, s, `reached ${s}`);
     assert.equal(m.bossVisible(), false, `the boss is invisible during ${s}`);
   }
@@ -555,7 +555,7 @@ test('boss flow: the hero cannot damage the boss before COMBAT', () => {
   m.begin();
   // Untouchable + unshooter throughout the intro.
   for (const s of [BZ_APPROACH, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER]) {
-    if (m.state !== s) advanceOne(m, heroAt(m.arenaEntryX - 1));
+    if (m.state !== s) advanceOne(m, heroAt(m.arenaEntryX + 1));
     assert.equal(m.state, s, `reached ${s}`);
     assert.equal(m.bossCanTakeDamage(), false, `the boss cannot take damage during ${s}`);
     assert.equal(m.heroCanShoot(), false, `the hero cannot shoot during ${s}`);
@@ -571,7 +571,7 @@ test('boss flow: death during the boss zone restarts the flow at APPROACH', () =
   const { zone, boss } = bzFixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  advanceOne(m, heroAt(m.arenaEntryX - 1)); // → LOCKED
+  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
   assert.equal(m.state, BZ_LOCKED);
   // A death during the intro restarts the boss zone at its checkpoint:
   // the approach and the introduction repeat.

@@ -62,7 +62,7 @@ function advanceOne(m, hero, dt = 1 / 60, maxSteps = 600) {
 
 // Run the machine all the way to COMBAT from its current state.
 function runToCombat(m, dt = 1 / 60) {
-  const hero = heroAt(m.arenaEntryX - 1); // finish APPROACH, then hold
+  const hero = heroAt(m.arenaEntryX + 1); // finish APPROACH, then hold
   let guard = 0;
   while (m.state !== BZ_COMBAT && guard++ < 50) {
     advanceOne(m, hero, dt);
@@ -82,28 +82,25 @@ test('approach distance is ~1 screen (provisional reference)', () => {
   assert.ok(BOSS_APPROACH_DIST < VIEW_W * 1.5, 'approach is at most 1.5 screens');
 });
 
-test('approach is leftward: hero starts on the right, walks left to the arena entry', () => {
+test('approach is rightward: hero starts on the left, walks right to the arena entry', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
   const b = zone.bounds;
-  // The hero starts on the RIGHT side of the zone (near the boss checkpoint /
-  // entry flag) and walks LEFT toward the arena (boss-arena.md §1: "running
-  // left toward the arena").
-  assert.ok(m.approachStartX > b.x + b.w / 2,
-    `the hero starts on the right side of the zone (${m.approachStartX})`);
-  // The arena entry line is to the LEFT of the start, so the hero walks away
-  // from the flag, leaving it behind (boss-arena.md §1: "leave the flag
-  // behind"). The distance is the documented ~1-screen approach.
-  assert.ok(m.arenaEntryX < m.approachStartX,
-    `arena entry (${m.arenaEntryX}) is left of the start (${m.approachStartX})`);
-  assert.equal(m.approachStartX - m.arenaEntryX, BOSS_APPROACH_DIST,
+  // The hero starts on the LEFT side of the zone (beside the boss checkpoint)
+  // and walks RIGHT toward the arena (like a regular area).
+  assert.ok(m.approachStartX < b.x + b.w / 2,
+    `the hero starts on the left side of the zone (${m.approachStartX})`);
+  // The arena entry line is to the RIGHT of the start, so the hero walks
+  // forward into the arena. The distance is the documented ~1-screen approach.
+  assert.ok(m.arenaEntryX > m.approachStartX,
+    `arena entry (${m.arenaEntryX}) is right of the start (${m.approachStartX})`);
+  assert.equal(m.arenaEntryX - m.approachStartX, BOSS_APPROACH_DIST,
     'the approach runs exactly one documented screen');
-  // The arena entry must be a reachable, positive position INSIDE the zone
-  // (BLOCKER 2: it must never be negative / off the left of the zone).
-  assert.ok(m.arenaEntryX >= b.x,
+  // The arena entry must be a reachable position INSIDE the zone bounds.
+  assert.ok(m.arenaEntryX <= b.x + b.w,
     `arena entry (${m.arenaEntryX}) is inside the zone bounds`);
-  assert.ok(m.approachStartX <= b.x + b.w,
+  assert.ok(m.approachStartX >= b.x,
     'the hero start is inside the zone bounds');
 });
 
@@ -112,12 +109,12 @@ test('approach is hero-driven: it ends when the hero reaches the arena entry', (
   const m = makeBossZone(zone, boss);
   m.begin();
   assert.equal(m.state, BZ_APPROACH);
-  // Hero at the flag (right side) — still approaching.
+  // Hero at the flag (left side) — still approaching.
   const atFlag = heroAt(m.approachStartX);
   m.update(1 / 60, atFlag);
   assert.equal(m.state, BZ_APPROACH, 'hero at the flag is still approaching');
-  // Hero walks left to the arena entry line → the approach ends.
-  const atEntry = heroAt(m.arenaEntryX - 1);
+  // Hero walks right to the arena entry line → the approach ends.
+  const atEntry = heroAt(m.arenaEntryX + 1);
   m.update(1 / 60, atEntry);
   assert.equal(m.state, BZ_LOCKED, 'reaching the arena entry ends the approach');
 });
@@ -132,7 +129,7 @@ test('arena lock: onLock fires exactly once, at LOCKED', () => {
   const m = makeBossZone(zone, boss, { onLock: () => { lockCalls++; } });
   m.begin();
   // Approach → LOCKED.
-  m.update(1 / 60, heroAt(m.arenaEntryX - 1));
+  m.update(1 / 60, heroAt(m.arenaEntryX + 1));
   assert.equal(m.state, BZ_LOCKED);
   assert.equal(lockCalls, 1, 'onLock fires once when the arena locks');
   assert.equal(m.arenaLocked(), true, 'the arena is locked from LOCKED onward');
@@ -162,7 +159,7 @@ test('states transition in the documented order', () => {
   const m = makeBossZone(zone, boss);
   m.begin();
   // Run to LOCKED (finishes APPROACH).
-  advanceOne(m, heroAt(m.arenaEntryX - 1));
+  advanceOne(m, heroAt(m.arenaEntryX + 1));
   assert.equal(m.state, BZ_LOCKED);
   const seen = [BZ_APPROACH, m.state];
   // LOCKED → INTRO_SWEEP → BAR_FILL → BOSS_ENTER → COMBAT (timer-driven).
@@ -184,7 +181,7 @@ test('INTRO_SWEEP carries opposing motion: graphic L→R, title R→L', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  advanceOne(m, heroAt(m.arenaEntryX - 1)); // → LOCKED
+  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
   advanceOne(m, heroAt(m.arenaEntryX));      // → INTRO_SWEEP
   assert.equal(m.state, BZ_INTRO_SWEEP);
   // The progress() value must advance 0→1 across the sweep (this is what the
@@ -203,7 +200,7 @@ test('INTRO_SWEEP duration is "rapid" (pure tension, boss-arena.md §2)', () => 
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  advanceOne(m, heroAt(m.arenaEntryX - 1)); // → LOCKED
+  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
   advanceOne(m, heroAt(m.arenaEntryX));      // → INTRO_SWEEP
   // The sweep should complete in a short time (a few seconds at most).
   const steps = advanceOne(m, heroAt(m.arenaEntryX));
@@ -225,7 +222,7 @@ test('boss is invisible during the intro (APPROACH..BAR_FILL)', () => {
   assert.equal(m.inIntro, true, 'APPROACH is part of the intro');
   // → LOCKED → INTRO_SWEEP → BAR_FILL.
   for (const s of [BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL]) {
-    advanceOne(m, heroAt(m.arenaEntryX - 1));
+    advanceOne(m, heroAt(m.arenaEntryX + 1));
     assert.equal(m.state, s, 'reached ' + s);
     assert.equal(m.bossVisible(), false, `boss is invisible during ${s}`);
     assert.equal(m.inIntro, true, `${s} is part of the intro`);
@@ -237,7 +234,7 @@ test('boss becomes visible at BOSS_ENTER (it enters from the right)', () => {
   const m = makeBossZone(zone, boss);
   m.begin();
   // Run to BOSS_ENTER.
-  advanceOne(m, heroAt(m.arenaEntryX - 1)); // → LOCKED
+  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
   advanceOne(m, heroAt(m.arenaEntryX));      // → INTRO_SWEEP
   advanceOne(m, heroAt(m.arenaEntryX));      // → BAR_FILL
   advanceOne(m, heroAt(m.arenaEntryX));      // → BOSS_ENTER
@@ -251,7 +248,7 @@ test('boss keeps its position sliding in during BOSS_ENTER', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  advanceOne(m, heroAt(m.arenaEntryX - 1)); // → LOCKED
+  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
   advanceOne(m, heroAt(m.arenaEntryX));      // → INTRO_SWEEP
   advanceOne(m, heroAt(m.arenaEntryX));      // → BAR_FILL
   advanceOne(m, heroAt(m.arenaEntryX));      // → BOSS_ENTER
@@ -275,7 +272,7 @@ test('bar fill continues during BOSS_ENTER (the "final stretch" overlaps the ent
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  advanceOne(m, heroAt(m.arenaEntryX - 1)); // → LOCKED
+  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
   advanceOne(m, heroAt(m.arenaEntryX));      // → INTRO_SWEEP
   advanceOne(m, heroAt(m.arenaEntryX));      // → BAR_FILL
   // In BAR_FILL: step until just before the threshold, then read the bar fill.
@@ -336,7 +333,7 @@ test('boss cannot take damage before COMBAT', () => {
   assert.equal(m.heroCanShoot(), false, 'hero cannot shoot during APPROACH');
   // → LOCKED → INTRO_SWEEP → BAR_FILL → BOSS_ENTER.
   for (const s of [BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER]) {
-    advanceOne(m, heroAt(m.arenaEntryX - 1));
+    advanceOne(m, heroAt(m.arenaEntryX + 1));
     assert.equal(m.state, s);
     assert.equal(m.bossCanTakeDamage(), false, `boss is untouchable during ${s}`);
     assert.equal(m.heroCanShoot(), false, `hero cannot shoot during ${s}`);
@@ -363,7 +360,7 @@ test('reset() restarts the flow at APPROACH (death restart)', () => {
   const m = makeBossZone(zone, boss);
   m.begin();
   // Advance into the intro.
-  advanceOne(m, heroAt(m.arenaEntryX - 1)); // → LOCKED
+  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
   assert.equal(m.state, BZ_LOCKED);
   // A death here resets the machine: the approach + intro repeat.
   m.reset();
@@ -382,7 +379,7 @@ test('a full restart re-runs the documented order from APPROACH', () => {
   // Death during combat → reset → the whole sequence repeats.
   m.reset();
   const seen = [m.state];
-  advanceOne(m, heroAt(m.arenaEntryX - 1));
+  advanceOne(m, heroAt(m.arenaEntryX + 1));
   if (m.state !== seen[seen.length - 1]) seen.push(m.state);
   while (m.state !== BZ_COMBAT) {
     advanceOne(m, heroAt(m.arenaEntryX));

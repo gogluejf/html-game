@@ -121,36 +121,30 @@ export class BossZone {
     this.timer = 0;
 
     // --- Arena geometry -----------------------------------------------------
-    // The arena is the fixed camera view of the boss zone (task 2.3:
-    // orientation 'boss' → min === max). The fight occupies this view.
+    // The arena is the fixed camera view of the boss zone. The fight occupies
+    // this view. The hero enters from the LEFT (like a regular area) and walks
+    // RIGHT toward the arena. The boss enters from the RIGHT and settles on the
+    // RIGHT portion of the arena (visible, not center) so both combatants are
+    // on screen during the fight.
     const b = zone.bounds;
-    this.arenaX = Math.round(b.x + b.w / 2 - VIEW_W / 2); // camera left edge
-    // Arena height is the full logical view (VIEW_H). The boss zone's world
-    // bounds are one screen tall (ZONE_H_HORIZONTAL = VIEW_H, level.js), so
-    // centering the arena on the zone's vertical midpoint yields arenaY = 0
-    // and arenaH = VIEW_H — the fight occupies exactly one logical screen.
-    // (boss-arena.md §1: "The fight occupies a fixed view.") This is the
-    // concrete arena geometry the doc's "fixed view" implies; it is
-    // view-tied (not a px literal) so it stays one screen if the logical
-    // resolution changes.
-    this.arenaY = Math.round(b.y + b.h / 2 - VIEW_H / 2); // arena is one view tall
+    // Camera left edge for the locked arena view. Center the view on the zone.
+    this.arenaX = Math.round(b.x + b.w / 2 - VIEW_W / 2);
+    this.arenaY = Math.round(b.y + b.h / 2 - VIEW_H / 2);
     this.arenaW = VIEW_W;
     this.arenaH = VIEW_H;
 
-    // Approach (boss-arena.md §1): the hero starts beside the boss checkpoint
-    // flag on the RIGHT side of the zone and walks LEFT ~BOSS_APPROACH_DIST
-    // toward the arena. The arena entry line is where the intro presentation
-    // begins. (BLOCKER 2: the previous code derived the start from the entry
-    // flag on the LEFT edge and subtracted the approach distance, yielding a
-    // NEGATIVE arena entry the hero could never reach. The approach is
-    // leftward, so the start is on the right and the entry is to its left.)
-    this.approachStartX = b.x + b.w - BOSS_APPROACH_START_PAD;
-    this.arenaEntryX = this.approachStartX - BOSS_APPROACH_DIST;
-    // The arena entry line must stay inside the zone bounds (>= left edge).
-    if (this.arenaEntryX < b.x) this.arenaEntryX = b.x;
+    // Approach (hero enters from LEFT, walks RIGHT ~BOSS_APPROACH_DIST to the
+    // arena entry line). The hero starts near the zone's left edge (beside the
+    // boss checkpoint flag) and walks right until the arena entry line.
+    this.approachStartX = b.x + BOSS_APPROACH_START_PAD;
+    this.arenaEntryX = this.approachStartX + BOSS_APPROACH_DIST;
+    // The arena entry line must stay inside the zone bounds (<= right edge).
+    if (this.arenaEntryX > b.x + b.w) this.arenaEntryX = b.x + b.w;
 
-    // Boss rest position: mid-arena, feet on the floor.
-    this.bossRestX = Math.round(b.x + b.w / 2 - boss.w / 2);
+    // Boss rest position: RIGHT portion of the arena (visible, not center).
+    // Place it ~75% across the arena width so it's clearly on the right side
+    // but still fully visible when the camera is locked.
+    this.bossRestX = Math.round(this.arenaX + this.arenaW * 0.75 - boss.w / 2);
     this.bossRestY = Math.round(b.y + b.h - boss.h);
     // The boss enters from the right, off the arena's right edge.
     this.bossEnterFromX = this.arenaX + this.arenaW + BOSS_ENTER_TRAVEL - boss.w;
@@ -243,8 +237,8 @@ export class BossZone {
     switch (this.state) {
       case BZ_APPROACH: {
         // Hero-driven: ends when the hero reaches the arena entry line
-        // (walking left ~1 screen from the checkpoint).
-        if (hero.x <= this.arenaEntryX) {
+        // (walking right ~1 screen from the checkpoint).
+        if (hero.x >= this.arenaEntryX) {
           this.enterState(BZ_LOCKED);
         }
         break;
