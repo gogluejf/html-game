@@ -480,6 +480,18 @@ export function continueRun(h, ctx) {
  */
 let _onAreaEntryData = null;
 
+/** Callback registered by update.js to start the area-entry fade-out overlay
+ *  when the player manually confirms/escapes during the view (so the black
+ *  overlay ramps down over the world instead of cutting). */
+let _onAreaEntryFadeOut = null;
+
+/**
+ * Register the callback that begins the area-entry fade-out on manual confirm.
+ * Called by update.js at module evaluation time (avoids a circular import).
+ * @param {() => void} fn
+ */
+export function setAreaEntryFadeOutCallback(fn) { _onAreaEntryFadeOut = fn; }
+
 /** The last area-entry screen data presented (for tests / render). */
 let _areaEntryData = null;
 
@@ -545,12 +557,19 @@ export function showAreaEntry(h, ctx) {
  */
 export function areaEntryOnAction(action, h, ctx) {
   if (action === 'confirm' || action === 'pause') {
-    // Manual fast-forward: begin the attempt immediately.
+    // Manual fast-forward: begin the attempt immediately (synchronous, so the
+    // state is PLAY right away). In real gameplay the screen dispatch layer
+    // also triggers the fade-out overlay so the view fades from black into play
+    // rather than cutting; here we keep the core transition self-contained so
+    // unit tests (which pass their own hero/ctx) work without update.js.
     startLife(h, ctx);
     if (getState() !== S.PLAY) {
       tryTransition(S.PLAY);
       if (getState() !== S.PLAY) setState(S.PLAY);
     }
+    // Kick off the fade-from-black overlay so the world ramps in instead of
+    // the black screen sticking (real gameplay only; no-op in bare tests).
+    if (_onAreaEntryFadeOut) _onAreaEntryFadeOut();
     console.log('[lifecycle] AREA_ENTRY → PLAY (manual confirm)');
     return true;
   }

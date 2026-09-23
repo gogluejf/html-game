@@ -38,7 +38,7 @@ import { resolveExplosion } from '../explosion.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
 import { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../level.js';
-import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId, showLevelReward, recordAreaEntrySnapshot } from '../lifecycle.js';
+import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId, showLevelReward, recordAreaEntrySnapshot, setAreaEntryFadeOutCallback } from '../lifecycle.js';
 import { getLevelConfig, getStageBudget } from '../levelConfigs.js';
 import { populateArea, populationSnapshot, UNIT_PX } from '../macros.js';
 import { createRng, tierToOffset } from '../terrain.js';
@@ -456,12 +456,25 @@ export function beginClearFadeIn() {
 // that timing; render.js reads getAreaEntryFadeAlpha() to draw the black overlay
 // (the same mechanism as the clear/death fades).
 const AREA_ENTRY_FADE = 0.4; // seconds for the fast fade-in AND fade-out
-let areaEntrySeq = { state: 'idle', timer: 0 };
+let areaEntrySeq = { state: 'idle', timer: 0, startedAttempt: false };
 
 /** Begin the area-entry presentation (fast fade-in → hold → fast fade-out). */
 export function beginAreaEntryPresentation() {
-  areaEntrySeq = { state: 'fadeIn', timer: 0 };
+  areaEntrySeq = { state: 'fadeIn', timer: 0, startedAttempt: false };
 }
+
+// Wire lifecycle.js's manual confirm/escape path to begin the fade-out overlay
+// after it has already started the attempt + transitioned to PLAY. This ramps
+// the black overlay down over the live world instead of leaving it pinned.
+setAreaEntryFadeOutCallback(() => {
+  // The attempt is already started by areaEntryOnAction; just arm the fade-out
+  // so stepAreaEntrySequence ramps the overlay to 0 over the next frames.
+  if (areaEntrySeq.state === 'idle' || areaEntrySeq.state === 'fadeIn' || areaEntrySeq.state === 'hold') {
+    areaEntrySeq.state = 'fadeOut';
+    areaEntrySeq.timer = 0;
+    areaEntrySeq.startedAttempt = true; // attempt already begun — don't restart
+  }
+});
 
 /**
  * Black-overlay alpha for the area-entry presentation. Returns 0 when idle,
@@ -497,18 +510,22 @@ export function stepAreaEntrySequence(dt) {
     }
   } else if (areaEntrySeq.state === 'hold') {
     if (areaEntrySeq.timer >= TUNING.areaEntryHold) {
-      // End of hold: start the attempt NOW and leave the entry screen so the
-      // world is what gets revealed. The fade-out then ramps the black overlay
-      // down over the (now playing) world — a fast fade-from-black into play.
+      // End of hold: begin the fade-out into play.
       areaEntrySeq.state = 'fadeOut';
       areaEntrySeq.timer = 0;
+    }
+  } else if (areaEntrySeq.state === 'fadeOut') {
+    // Begin the attempt exactly once, at the top of the fade-out (whether we
+    // got here from the timed hold or a manual fast-forward). The world is what
+    // gets revealed as the overlay ramps down over it.
+    if (!areaEntrySeq.startedAttempt) {
+      areaEntrySeq.startedAttempt = true;
       startLife(hero, areaContext);
       if (getState() !== S.PLAY) {
         if (!tryTransition(S.PLAY)) setState(S.PLAY);
       }
-      console.log('[lifecycle] AREA_ENTRY → PLAY (auto-advance)');
+      console.log('[lifecycle] AREA_ENTRY → PLAY (fade-out begins)');
     }
-  } else if (areaEntrySeq.state === 'fadeOut') {
     if (areaEntrySeq.timer >= AREA_ENTRY_FADE) {
       areaEntrySeq.state = 'idle';
       areaEntrySeq.timer = 0;
