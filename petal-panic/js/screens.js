@@ -10,7 +10,7 @@ import { HEROES } from './heroDefs.js';
 import { VIEW_W, VIEW_H } from './view.js';
 import { calculateScore } from './stats.js';
 import { onTransition } from './state.js';
-import { input, navLabelString, navHintEntries, navLabels } from './input.js';
+import { input, navLabelString, navHintEntries, navLabels, markNavPressed } from './input.js';
 
 // --- Image cache -------------------------------------------------------------
 import {
@@ -366,10 +366,8 @@ export const Home = {
 
 export const Select = {
   focus: -1, // -1 = none, 0 = scarlet, 1 = balthazar
-  _heldLeft: false,   // ArrowLeft physically down (chip stays gold while held)
-  _heldRight: false,  // ArrowRight physically down
 
-  reset() { this.focus = -1; this._heldLeft = false; this._heldRight = false; },
+  reset() { this.focus = -1; },
 
   draw(ctx) {
     // Background — deep midnight so the cream art cards pop.
@@ -516,22 +514,17 @@ export const Select = {
     }
 
     // --- Controls bar (below the card) ---------------------------------------
-    // Keycap chips via drawNavBar + navHintEntries (layout-aware).
-    // Left/Right chips stay gold while held; Confirm flashes on press.
+    // Keycap chips via drawNavBar + navHintEntries (layout-aware). Each chip
+    // highlights ITSELF from the shared input engine — no per-screen wiring.
+    // Left/Right stay lit while held; Confirm flashes on press. The same bar
+    // works identically on every screen that uses it.
     const barY = artY + artH + 23;
     const cx0 = artX + artW / 2;
-    const now = performance.now();
-    const enterFlash = this._flashT === 'enter' && (now - this._flashAt) < 180;
-    const heldL = this._heldLeft;
-    const heldR = this._heldRight;
 
     const entries = navHintEntries([
       { actions: ['left', 'right'], label: 'Select' },
       { action: 'confirm', label: 'Confirm' },
     ]);
-    // Mark active states
-    if (entries[0]) entries[0].active = heldL || heldR;
-    if (entries[1]) entries[1].active = enterFlash;
     drawNavBar(ctx, cx0, barY, entries);
   },
 
@@ -539,12 +532,10 @@ export const Select = {
   onAction(action) {
     switch (action) {
       case 'left':
-        this._heldLeft = true;
         // none(-1) → scarlet(0); otherwise step left (balthazar → scarlet).
         this.focus = this.focus === -1 ? 0 : Math.max(0, this.focus - 1);
         break;
       case 'right':
-        this._heldRight = true;
         // none(-1) → balthazar(1); otherwise step right (scarlet → balthazar).
         // Right means "the hero on the right", so first-press-right lands on
         // Balthazar, not Scarlet.
@@ -559,9 +550,6 @@ export const Select = {
         if (tryTransition(S.HOME)) console.log('[screens] SELECT → HOME (back)');
         break;
       case 'confirm':
-        // Enter flashes the ⏎ chip for 180ms.
-        this._flashT = 'enter';
-        this._flashAt = performance.now();
         if (this.focus < 0) {
           // No selection yet → focus Scarlet (like pressing ←)
           this.focus = 0;
@@ -1267,13 +1255,15 @@ export function screenOnAction(action, hero, actions = {}) {
 // Once per input tick. A state/capture boundary invalidates the entire batch.
 export function dispatchScreenInput(engine, hero, actions) {
   const generation = engine.generation;
+  // Record this tick's physical binding state so the shared instruction bar
+  // can flash its momentary chips (confirm/back/...) even across an immediate
+  // transition, and keep directional chips lit while held.
+  markNavPressed(engine.heldBindings, engine.pressedBindings);
   if (engine.captureResult) { Remap.onCapture(engine.captureResult); engine.captureResult = null; }
   for (const action of engine.nav.pressed) {
     screenOnAction(action, hero, actions);
     if (engine.generation !== generation) break;
   }
-  Select._heldLeft = !!engine.nav.held.left;
-  Select._heldRight = !!engine.nav.held.right;
 }
 
 export function screenReset(s, from) {

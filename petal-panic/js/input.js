@@ -161,15 +161,31 @@ export function navLabelString(action, opts) {
 
 /**
  * Build structured entries for drawNavBar() from a list of nav actions.
- * Each entry is { icons: string[], label } where icons is the full list of
- * button labels (each gets its own chip) and label is the action word.
+ * Each entry is { icons: Icon[], label } where each Icon carries its OWN
+ * highlight trigger so chips light up individually instead of all at once:
+ *   - icon:  the keycap label string (e.g. 'ENTER', 'SPACE', '✕')
+ *   - action: the NAV action this physical control maps to
+ *   - isActive(): () => boolean — called by drawNavBar() each frame; return
+ *     true to highlight THIS chip.
+ *
+ * HIGHLIGHTING IS MODULAR AND SELF-WIRING. Every chip lights itself from the
+ * shared input engine — no per-screen code required. The check is per-PHYSICAL-
+ * BINDING, not per-action: pressing ENTER only lights the ENTER chip, pressing
+ * SPACE only lights SPACE, pressing gamepad A only lights A. Never all three.
+ *
+ *   - directional / held controls (up/down/left/right) → lit while physically
+ *     HELD (reads _heldBindings), so a held arrow stays gold.
+ *   - momentary controls (confirm/back/pause/retry/cont/quit) → lit for a short
+ *     window after their specific binding was pressed (edge-triggered flash),
+ *     so the press is visible even when the action immediately transitions.
+ *
  * Uses simple mode by default (d-pad only for directional, no LS).
  *
  * @param {Array<{action:string, label?:string, opts?:object}>} items
  *   - action: NAV action name ('up', 'confirm', 'back', etc.)
  *   - label: display word (defaults to capitalized action name)
  *   - opts: per-item overrides ({ source, simple })
- * @returns {{icons:string[], label:string, active?:boolean}[]}
+ * @returns {{icons:{icon:string, action:string, isActive:()=>boolean}[], label:string}[]}
  */
 export function navHintEntries(items) {
   const LABELS = {
@@ -177,19 +193,73 @@ export function navHintEntries(items) {
     confirm: 'Confirm', back: 'Close', pause: 'Pause',
     retry: 'Retry', cont: 'Continue', quit: 'Quit', remove: 'Remove',
   };
+  const FLASH_MS = 180;
+  // Invert KEY_NAV / PAD_NAV into binding→actions maps (built once).
+  const keyToActions = Object.fromEntries(
+    Object.entries(KEY_NAV).map(([k, acts]) => [k, acts]));
+  const padToActions = Object.fromEntries(
+    Object.entries(PAD_NAV).map(([b, acts]) => [b, acts]));
+
   return items.map(({ action, actions, label, opts = {} }) => {
-    const o = { simple: true, ...opts };
-    // Support single `action` or multiple `actions` (e.g. ['up','down'])
+    const o = { simple: true, source: 'all', ...opts };
     const actionList = actions || [action];
     const icons = [];
     for (const a of actionList) {
-      for (const lbl of navLabels(a, o)) {
-        if (!icons.includes(lbl)) icons.push(lbl);
+      const held = DIRECTIONAL.has(a);
+      // Keyboard bindings for this action.
+      if (o.source === 'keyboard' || o.source === 'all') {
+        for (const [key, acts] of Object.entries(keyToActions)) {
+          if (!acts.includes(a)) continue;
+          if (o.simple && held) continue; // skip keyboard for directionals in simple mode
+          const lbl = formatBinding(key, 'keyboard');
+          if (icons.some(ic => ic.icon === lbl)) continue;
+          icons.push({ icon: lbl, action: a, binding: `k:${key}`, isActive: () => {
+            if (held) return !!_heldBindings.get(`k:${key}`);
+            const t = _flashT.get(`k:${key}`) ?? 0;
+            return performance.now() - t < FLASH_MS;
+          }});
+        }
+      }
+      // Gamepad bindings for this action.
+      if (o.source === 'gamepad' || o.source === 'all') {
+        const layout = input.gamepadLayout === 'Auto'
+          ? (input.state?.gamepadLayout || 'Generic') : input.gamepadLayout;
+        for (const [btn, acts] of Object.entries(padToActions)) {
+          if (!acts.includes(a)) continue;
+          if (o.simple && held && btn.startsWith('axis:')) continue; // skip LS axes
+          const lbl = formatBinding(btn, 'gamepad', layout);
+          if (icons.some(ic => ic.icon === lbl)) continue;
+          icons.push({ icon: lbl, action: a, binding: `g:${btn}`, isActive: () => {
+            if (held) return !!_heldBindings.get(`g:${btn}`);
+            const t = _flashT.get(`g:${btn}`) ?? 0;
+            return performance.now() - t < FLASH_MS;
+          }});
+        }
       }
     }
     const defaultLabel = label || (actionList.length > 1 ? 'Navigate' : (LABELS[actionList[0]] || actionList[0]));
     return { icons, label: label || defaultLabel };
   });
+}
+
+// Per-BINDING state (not per-action): which physical controls are currently
+// held and when they were last pressed. Updated once per input tick.
+const _heldBindings = new Map();  // binding key → true
+const _flashT = new Map();        // binding key → timestamp
+
+/**
+ * Record which physical bindings are held and which were pressed this tick.
+ * Called once per poll from dispatchScreenInput.
+ * @param {Map<string,boolean>} held — binding keys currently held
+ * @param {string[]} pressed — binding keys pressed this tick
+ */
+export function markNavPressed(held, pressed) {
+  _heldBindings.clear();
+  if (held) for (const [k, v] of held) if (v) _heldBindings.set(k, true);
+  if (Array.isArray(pressed)) {
+    const now = performance.now();
+    for (const k of pressed) _flashT.set(k, now);
+  }
 }
 
 export function createInput({ target = globalThis.window, document = globalThis.document,
@@ -198,6 +268,7 @@ export function createInput({ target = globalThis.window, document = globalThis.
   const keys = new Set(), queue = [], physical = new Map(), blocked = new Set();
   let previousNav = new Set(), previousGame = new Set(), capture = null;
   let lastAim = null, lockedAngle = null, suspended = false, quarantinePads = false;
+  let previousPhysical = new Map(); // binding keys held on the prior poll (for edge detection)
   // Contextual aim resolver (design §5/§32): Lock Direction must freeze the
   // RESOLVED aim, not the raw directional key. The gameplay layer installs a
   // resolver bound to the hero so the capture below applies the same context
@@ -365,6 +436,19 @@ export function createInput({ target = globalThis.window, document = globalThis.
       }
       this.nav = { held: Object.fromEntries([...previousNav].map(a => [a, true])),
         pressed: NAV.filter(a => pressed.has(a)), released: NAV.filter(a => released.has(a)) };
+      // Per-BINDING state for the instruction bar: which physical controls are
+      // currently held and which were just pressed this tick. Stored on the
+      // engine (not on nav) so nav remains a plain-action shape for tests.
+      const heldBindings = new Map(), pressedBindings = [];
+      for (const [id, p] of physical) {
+        if (blocked.has(id) || p.value <= 0.5) continue;
+        const bindingKey = p.source === 'keyboard' ? `k:${p.binding}` : `g:${p.binding}`;
+        heldBindings.set(bindingKey, true);
+        if (!previousPhysical.has(bindingKey)) pressedBindings.push(bindingKey);
+      }
+      previousPhysical = heldBindings;
+      this.heldBindings = heldBindings;
+      this.pressedBindings = pressedBindings;
       const s = blank();
       // --- Direction: ONE source vector from all movement inputs ------------
       // WASD/arrows, dpad buttons and the LEFT stick all feed the same

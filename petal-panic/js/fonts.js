@@ -152,13 +152,15 @@ export function roundRect(ctx, x, y, w, h, r) {
 
 /**
  * Draw a navigation hint bar in the select-screen keycap style.
- * Each entry is { icons: string[], label, active? } — one chip per icon,
- * followed by the action word in bold. Entries separated by "·".
+ * Each entry is { icons, label } where each icon is { icon, action?, isActive? }.
+ * One chip per icon; a chip is highlighted when its own isActive() returns true
+ * (per-chip highlight — never the whole entry). Falls back to a legacy
+ * string[] icons / entry-level `active` for backward compatibility.
  *
  * @param {CanvasRenderingContext2D} ctx
  * @param {number} cx — center X of the bar
  * @param {number} y — vertical center
- * @param {{icons:string[], label:string, active?:boolean}[]} entries
+ * @param {{icons:(string|{icon:string,isActive?:()=>boolean})[], label:string, active?:boolean}[]} entries
  */
 export function drawNavBar(ctx, cx, y, entries) {
   const gap = 8;       // chip-to-chip gap within an entry
@@ -167,20 +169,30 @@ export function drawNavBar(ctx, cx, y, entries) {
   const chipH = 24;
   const chipPadX = 10; // horizontal padding inside chip
 
+  // Normalize each icon to { text, isActive } so both the new object form and
+  // the legacy string form work. Legacy entries fall back to entry.active.
+  const norm = entries.map(e => ({
+    label: e.label,
+    entryActive: !!e.active,
+    icons: (e.icons || []).map(ic => typeof ic === 'string'
+      ? { text: ic, isActive: () => false }
+      : { text: ic.icon, isActive: typeof ic.isActive === 'function' ? ic.isActive : (() => false) }),
+  }));
+
   // Measure total width
   ctx.font = `13px ${FONT_UI}`;
   const wordFont = `bold 14px ${FONT_UI}`;
   let total = 0;
-  const metrics = entries.map((e, i) => {
+  const metrics = norm.map((e, i) => {
     const chipWidths = e.icons.map(icon => {
       ctx.font = `13px ${FONT_UI}`;
-      return ctx.measureText(icon).width + chipPadX * 2;
+      return ctx.measureText(icon.text).width + chipPadX * 2;
     });
     ctx.font = wordFont;
     const wordW = ctx.measureText(e.label).width;
     const entryW = chipWidths.reduce((a, b) => a + b, 0) + (e.icons.length - 1) * gap + wordGap + wordW;
     total += entryW;
-    if (i < entries.length - 1) total += dotGap;
+    if (i < norm.length - 1) total += dotGap;
     return { chipWidths, wordW };
   });
 
@@ -188,13 +200,14 @@ export function drawNavBar(ctx, cx, y, entries) {
   ctx.save();
   ctx.textBaseline = 'middle';
 
-  for (let i = 0; i < entries.length; i++) {
-    const { icons, label, active } = entries[i];
+  for (let i = 0; i < norm.length; i++) {
+    const e = norm[i];
     const { chipWidths, wordW } = metrics[i];
 
-    // Draw each icon as its own chip
-    for (let j = 0; j < icons.length; j++) {
+    // Draw each icon as its own chip, highlighting it only when ITS trigger fires.
+    for (let j = 0; j < e.icons.length; j++) {
       const cw = chipWidths[j];
+      const active = e.icons[j].isActive() || e.entryActive;
       ctx.fillStyle = active ? 'rgba(255,215,0,0.22)' : 'rgba(255,255,255,0.07)';
       roundRect(ctx, px, y - chipH / 2, cw, chipH, 6);
       ctx.fill();
@@ -205,7 +218,7 @@ export function drawNavBar(ctx, cx, y, entries) {
       ctx.font = `13px ${FONT_UI}`;
       ctx.textAlign = 'center';
       ctx.fillStyle = active ? CREAM : '#9a8f78';
-      ctx.fillText(icons[j], px + cw / 2, y + 1);
+      ctx.fillText(e.icons[j].text, px + cw / 2, y + 1);
       px += cw + gap;
     }
     px -= gap; // remove last gap before word
@@ -213,8 +226,8 @@ export function drawNavBar(ctx, cx, y, entries) {
     // Word (bold)
     ctx.font = wordFont;
     ctx.textAlign = 'left';
-    ctx.fillStyle = active ? CREAM : '#6e6552';
-    ctx.fillText(label, px + wordGap, y);
+    ctx.fillStyle = '#6e6552';
+    ctx.fillText(e.label, px + wordGap, y);
     px += wordGap + wordW + dotGap;
   }
   ctx.restore();

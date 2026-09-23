@@ -318,7 +318,7 @@ test('the entry screen reuses the pause-menu ergonomics (list, focus pill, keyca
   assert.equal(entryEntries.length, pauseEntries.length, 'same number of nav entries as the pause menu');
   assert.equal(entryEntries[0].label, 'Navigate', 'same navigate entry as the pause menu');
   assert.equal(entryEntries[1].label, 'Confirm', 'same confirm entry as the pause menu');
-  assert.ok(entryEntries[2].icons.some(i => i.includes('ESCAPE')),
+  assert.ok(entryEntries[2].icons.some(ic => ic.icon.includes('ESCAPE')),
     'the back/quit keycap is shown, like the pause menu');
 });
 
