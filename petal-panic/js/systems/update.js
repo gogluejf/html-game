@@ -28,7 +28,7 @@ import { Violetta, VIOLETTA_DEF } from '../violetta.js';
 import { JackOLantern } from '../jackolantern.js';
 import { BorisLoon, BORIS_DEF, makeBorisBaby } from '../boris_loon.js';
 import { Elephant, makeElephant, BOSS_TRIGGER_RADIUS, WEAK_POINT_MULT } from '../boss.js';
-import { makeBossZone, BZ_COMBAT } from '../bossZone.js';
+import { makeBossZone, BZ_APPROACH, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT } from '../bossZone.js';
 import { particles, coins } from '../particles.js';
 import { Effects } from '../effects.js';
 import { fireManual } from '../effects/index.js';
