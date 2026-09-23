@@ -27,14 +27,16 @@ import { VineHound, VINE_HOUND_DEF } from '../vine_hound.js';
 import { Violetta, VIOLETTA_DEF } from '../violetta.js';
 import { JackOLantern } from '../jackolantern.js';
 import { BorisLoon, BORIS_DEF, makeBorisBaby } from '../boris_loon.js';
-import { Elephant, makeElephant, BOSS_TRIGGER_RADIUS, WEAK_POINT_MULT } from '../boss.js';import { particles, coins } from '../particles.js';
+import { Elephant, makeElephant, BOSS_TRIGGER_RADIUS, WEAK_POINT_MULT } from '../boss.js';
+import { makeBossZone, BZ_COMBAT } from '../bossZone.js';
+import { particles, coins } from '../particles.js';
 import { Effects } from '../effects.js';
 import { fireManual } from '../effects/index.js';
 import { makeBarrel, makeCoinBarrel, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
 import { resolveExplosion } from '../explosion.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
-import { LEVELS, generateLevel, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../level.js';
+import { LEVELS, LEGACY_CORRIDOR, generateLevel, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../level.js';
 import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId } from '../lifecycle.js';
 import { GAME_RULES } from '../gameRules.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from '../debug.js';
@@ -235,6 +237,13 @@ export function beginClearFadeIn() {
 // swaps it for per-zone content. The zone model is built once at boot and
 // stored on the hero so the game loop and camera can reference it.
 export const levelZones = buildLevelZones(LEVEL_DEF);
+// The zone-model currentArea value that maps to the boss zone (zone[4]).
+// getActiveZone() treats a non-negative currentArea as a direct zone index, so
+// the boss zone is reached when currentArea === levelZones.length - 1. This is
+// the same value the legacy boss-activation path used
+// (LEVEL_DEF.LEGACY.checkpoints.length). Declared AFTER levelZones to avoid a
+// temporal-dead-zone reference.
+const BOSS_AREA = levelZones.length - 1;
 /**
  * The zone currently being played. Index into levelZones based on the hero's
  * currentArea. Used for structural decisions (camera clamping, bounds).
@@ -352,6 +361,48 @@ const realEnemies = generated.enemies;
 // `let` because a genuinely new game replaces the boss with a freshly
 // generated one (lifecycle.md §1/§6). regenerateWorld() reassigns it.
 export let boss = makeElephant(LEVEL_LENGTH - 300, FLOOR_TOP);
+
+// --- Boss zone flow (docs/levels/boss-arena.md §1–§3) -------------------------
+// The boss zone (zone[4], orientation 'boss') runs its own introduction
+// state machine: approach → arena lock → intro sweep → bar fill → boss
+// entrance → combat. The machine is created once at boot; it is started (or
+// re-started after a death) by beginBossZoneFlow() when the hero reaches the
+// boss zone. It owns boss visibility, the hero's shooting gate, and the
+// boss's damage gate — the boss is invisible and untouchable until COMBAT.
+const bossZoneDef = levelZones[4];
+export const bossZone = makeBossZone(bossZoneDef, boss, {
+  onLock: () => {
+    // Arena lock (boss-arena.md §2 step 1): lock both sides + freeze the
+    // camera on the fixed arena view.
+    camera.setZoneBounds(bossZoneDef);
+    camera.lockTo(bossZone.arenaX, bossZone.arenaY);
+  },
+  onCombat: () => {
+    // Combat enable (boss-arena.md §2 step 8): the boss becomes active and
+    // the fight begins. The boss's attack patterns are its own
+    // responsibility (the boss/combat system); this only flips the gate.
+    boss.active = true;
+    console.log('[bossZone] COMBAT — boss active, fight enabled');
+  },
+});
+
+/**
+ * Start (or restart) the boss zone flow: the hero has reached the boss zone
+ * (the shared area-entry screen is confirmed) and the approach begins beside
+ * the boss checkpoint. Called from the AREA_ENTRY→PLAY hook and from the
+ * death-restart path (boss-arena.md §3: losing a life restarts the boss zone
+ * at its checkpoint, repeating the approach/introduction).
+ */
+export function beginBossZoneFlow() {
+  bossZone.begin();
+  // The boss is off-screen and invisible until BOSS_ENTER.
+  if (boss.aiState !== 'dead') {
+    boss.active = false;
+    boss.phase = 'idle';
+    boss.phaseTimer = 0;
+  }
+  console.log(`[bossZone] flow started — state ${bossZone.state}`);
+}
 
 // Non-looping anim test. Kept off the live targets (above) so the
 // animation cycle doesn't obscure their destruction; attached to a separate
@@ -1037,6 +1088,13 @@ world.on('hit', (a, b) => {
 
     if (target.layer !== LAYER.ENEMY && target.layer !== LAYER.BOSS) return;
     if (target.hp == null) return;       // non-target placeholder (e.g. anim test box)
+    // Boss zone flow (boss-arena.md §2): the boss cannot take damage before
+    // COMBAT — the presentation must not imply it is attackable. The
+    // projectile passes through (is consumed) but deals no damage.
+    if (target === boss && !bossZone.bossCanTakeDamage()) {
+      allyProj.alive = false;
+      return;
+    }
     // boss weak point: thorns landing in the head/trunk zone deal
     // WEAK_POINT_MULT× damage. Compute the impact point from the projectile's
     // center and route through the boss's takeDamage() for the bonus.
@@ -1090,6 +1148,9 @@ world.on('hit', (a, b) => {
   if (foeProj && !foeProj.friendly) {
     const victim = foeProj === a ? b : a;
     if (victim.layer !== LAYER.HERO) return;
+    // Boss zone flow (boss-arena.md §2): the boss is untouchable before
+    // COMBAT, so it fires no attacks during the intro either.
+    if (foeProj === boss && !bossZone.bossCanTakeDamage()) { foeProj.alive = false; return; }
     // a hero mid-death takes no further damage (skull is playing).
     if (victim.dying) { foeProj.alive = false; return; }
     if (victim.intangible) { foeProj.alive = false; return; } // intangible absorbs it
@@ -1129,6 +1190,8 @@ world.on('contact', (a, b) => {
   // no contact damage while the hero is mid-death.
   if (heroEnt.dying) return;
   if (!source.alive || source.aiState === 'dead') return; // dead enemies don't hurt
+  // Boss zone flow (boss-arena.md §2): the boss is untouchable before COMBAT.
+  if (source === boss && !bossZone.bossCanTakeDamage()) return;
   // i-frames absorb contact hits (prevents melt while overlapping). takeHit()
   // returns false when invincible, so we skip damage + cooldown in that case.
   if (heroEnt.intangible) return;
@@ -1403,6 +1466,14 @@ onTransition((from, to) => {
     // restart, continue), so the camera is always bound to the active zone and
     // a fresh vertical climb resets its ascent high-water mark.
     camera.setZoneBounds(getActiveZone(hero));
+    // Boss zone flow (boss-arena.md §1–§3): when the player confirms the
+    // entry screen for the BOSS zone, start (or restart after a death) the
+    // approach → lock → intro → combat sequence. The hero is already placed
+    // beside the boss checkpoint by startLife; the flow machine takes over
+    // from here.
+    if (getActiveZone(hero)?.kind === 'boss') {
+      beginBossZoneFlow();
+    }
   }
 });
 
@@ -1500,6 +1571,19 @@ export function update(dt) {
     if (dt <= 0) { Effects.update(0); return; } // frozen: skip all physics this step
   }
 
+  // Boss zone flow (boss-arena.md §1–§3): the state machine is DORMANT until
+  // the hero actually reaches the boss zone (BLOCKER 1). The hero is placed at
+  // the boss zone's entry by startLife on the AREA_ENTRY→PLAY confirmation, but
+  // the machine only arms once getActiveZone() resolves to the boss zone. This
+  // re-arms the flow on a death restart too: finishHeroDeath() advances
+  // currentArea to the boss zone, so this branch fires on the first PLAY frame
+  // after the entry screen is confirmed (the AREA_ENTRY→PLAY hook above already
+  // fires beginBossZoneFlow() on the confirm; this is a safety net so the flow
+  // is never left dormant while the hero stands in the boss zone).
+  if (!bossZone.active && getActiveZone(hero)?.kind === 'boss') {
+    beginBossZoneFlow();
+  }
+
   // 1. input → intents (movement/jump/crouch logic lives in Hero.update).
   const input = readInput();
   // One-way platform context (design §13): Down+Jump while standing on a
@@ -1538,11 +1622,17 @@ export function update(dt) {
 
   // 1b. shooting (+ §21): J fires the SELECTED weapon through one
   //     shared path; N toggles the selection without firing anything.
+  //     Boss zone flow (boss-arena.md §2): shooting is disabled during the
+  //     intro (states 1–5) — the presentation must not imply the boss is
+  //     attackable before combat starts.
   if (input.switchWeapon) hero.toggleWeapon(); // edge-triggered, no fire
   // Thorn cooldown ticks EVERY frame regardless of input/selection — a stale
   // cooldown must never freeze while J is released or Special is selected.
   if (hero.fireCooldown > 0) hero.fireCooldown -= dt;
-  tryFire(hero, input, dt);                    // dispatches on hero.selectedWeapon
+  const shootingAllowed = !bossZone.inIntro;
+  if (shootingAllowed) {
+    tryFire(hero, input, dt);                    // dispatches on hero.selectedWeapon
+  }
 
   // 1c. melee swing (+ §17-§19): H starts a swing; during its single
   //     active frame the hero's hitbox is checked against enemies and routed
@@ -1557,7 +1647,7 @@ export function update(dt) {
   //     cancel BEFORE any buffer execution this frame (cancel beats buffer);
   //     this block then handles the NEW melee press for THIS frame — either
   //     starting a fresh swing or buffering into the still-active one.
-  if (input.melee && !hero.hitStunned) {
+  if (input.melee && !hero.hitStunned && shootingAllowed) {
     const wasActive = hero.meleeActive || hero.specialMeleeActive;
     hero.requestMelee(input.down ? 'special' : 'normal');
     if (!wasActive && (hero.meleeActive || hero.specialMeleeActive)) {
@@ -1683,6 +1773,18 @@ export function update(dt) {
   if (wb.x < 0) { hero.x = -hero.box.ox; hero.vx = 0; }
   else if (wb.x + wb.w > LEVEL_LENGTH) { hero.x = LEVEL_LENGTH - hero.box.ox - hero.box.bw; hero.vx = 0; }
 
+  // Boss arena lock (boss-arena.md §3): while the arena is locked (LOCKED
+  // through COMBAT) the hero cannot scroll past the boss or leave through
+  // either side. Clamp the hero's x to the fixed arena view (the same bounds
+  // the frozen camera uses). No-op outside the boss zone (arenaLocked() is
+  // false while the machine is dormant).
+  if (bossZone.arenaLocked()) {
+    const min = bossZone.arenaX;
+    const max = bossZone.arenaX + bossZone.arenaW;
+    if (wb.x < min) { hero.x = min - hero.box.ox; hero.vx = 0; }
+    else if (wb.x + wb.w > max) { hero.x = max - hero.box.ox - hero.box.bw; hero.vx = 0; }
+  }
+
   // 4. camera follows the hero (clamped to level bounds, facing look-ahead).
   camera.update(hero);
 
@@ -1744,7 +1846,31 @@ export function getDeathFadeAlpha() {
 function finishHeroDeath() {
   hero.lives -= 1;
   hero.dying = false; // stop the fade (the entry screen / OVER overlay take over)
+  // Boss zone flow (boss-arena.md §3): losing a life during the intro or
+  // combat restarts the BOSS ZONE at its checkpoint — the approach and the
+  // introduction repeat. The shared area-entry screen is shown for the boss
+  // area (as it is for any area death); when the player confirms it,
+  // beginBossZoneFlow() re-runs the whole sequence.
+  const inBossZone = getActiveZone(hero)?.kind === 'boss';
   if (hero.lives > 0) {
+    if (inBossZone) {
+      // BLOCKER 3: advance the hero's area to the boss zone so getActiveZone()
+      // keeps resolving to the boss zone on the restart. Without this the hero
+      // stayed on the previous area's index, so the flow never re-armed (the
+      // dormant machine never saw a boss zone) and the entry screen showed the
+      // wrong area id. This is the same value the legacy boss-activation path
+      // used (LEVEL_DEF.LEGACY.checkpoints.length).
+      hero.currentArea = BOSS_AREA;
+      // Place the checkpoint at the boss zone's entry (the boss checkpoint)
+      // so startLife puts the hero beside it for the approach.
+      const bz = levelZones[4];
+      if (bz?.entryFlag) {
+        hero.checkpoint = {
+          x: bz.bounds.x + bz.entryFlag.x,
+          y: bz.entryFlag.y,
+        };
+      }
+    }
     // checkpoints.md §4: after the death presentation and the fade, consume
     // one life exactly once and show the SHARED area-entry screen with the new
     // count. The whole area is restored and the attempt starts beside the
@@ -2051,8 +2177,22 @@ function processAllHitboxes() {
   }
 
   // --- Process all against all targets ---
-  const targets = [h, ...realEnemies, boss, ...barrels, ...woodBarrels, ...coinBarrels].filter(Boolean);
+  // Boss zone flow (boss-arena.md §2): the boss cannot take damage before
+  // COMBAT. This gate MUST run BEFORE any damage is applied — processHitboxes
+  // applies damage (takeDamage / hit) internally, so the onHit callback fires
+  // only AFTER the boss has already been damaged. Filtering the boss out of
+  // the target list here is the pre-damage guard: it stops melee, projectiles,
+  // and specials from ever reaching the boss's takeDamage() until COMBAT.
+  // (The onHit callback below keeps a redundant guard as a safety net.)
+  const bossDamageAllowed = bossZone.bossCanTakeDamage();
+  const targets = [h, ...realEnemies,
+    ...(bossDamageAllowed ? [boss] : []),
+    ...barrels, ...woodBarrels, ...coinBarrels].filter(Boolean);
   processHitboxes(_hitboxes, targets, (hb, target, dealt) => {
+    // Safety net (defense in depth): the boss was already excluded from
+    // `targets` above when combat has not started, so this never fires for the
+    // boss pre-COMBAT. Kept for clarity / future refactor safety.
+    if (target === boss && !bossZone.bossCanTakeDamage()) return;
     // Self-protection on connect (knockback.md ): the FIRST clean
     // hit of a special melee swing arms the hero's protection window for the
     // rest of that swing. The callback only fires when the box actually struck
@@ -2240,48 +2380,33 @@ function updateBoss(dt) {
   // Decay the contact cooldown (shared with the 'contact' rule handler).
   if (b._contactCd > 0) b._contactCd -= dt;
 
-  // Activate the fight once the hero is close enough (latches on).
-  if (b.aiState !== 'dead') {
-    const wasActive = b.active;
-    b.shouldActivate(hero);
-    if (b.active && !wasActive) {
-      // First activation: the boss zone is a separate sealed zone
-      // (checkpoints.md §1/§3, structure.md §3) whose arena locks both sides.
-      const bossZone = levelZones[4];
-      // Bind the camera to the boss zone's bounds, which freezes it
-      // (min === max on both axes) so it cannot reveal adjacent zones
-      // (task 2.3, structure.md §3).
-      if (bossZone) camera.setZoneBounds(bossZone);
-      // Keep the boss's own arena lock (centered on spawn) so the fight view
-      // is the arena rather than the whole zone width.
-      camera.lockTo(b.arenaX, 0);
-      // checkpoints.md §1/§3: the boss zone is a separate zone that starts
-      // beside the boss checkpoint and receives the SHARED area-entry screen,
-      // identified as the level's boss area (the last checkpoint of the
-      // level's checkpoint definitions). The player confirms the screen to
-      // begin the encounter (lifecycle.md §2).
-      //
-      // The boss zone lies BEYOND the last ordinary flag. In the zone model
-      // the boss zone is zone[4] (index 4 in levelZones). showAreaEntry()
-      // formats the id from (currentArea - 1), so currentArea must be
-      // checkpoints.length to map onto the level's boss area (formatAreaId:
-      // area >= checkpoints.length - 1 → '1-B').
-      hero.currentArea = LEVEL_DEF.LEGACY.checkpoints.length; // boss zone (zone[4])
-      // checkpoints.md §1: the boss zone restarts beside the boss checkpoint.
-      // Use the zone model's entry flag position for consistency with the
-      // clear-sequence path.
-      if (bossZone?.entryFlag) {
-        hero.checkpoint = {
-          x: bossZone.bounds.x + bossZone.entryFlag.x,
-          y: bossZone.entryFlag.y,
-        };
-      } else {
-        const bossCp = checkpoints[checkpoints.length - 1];
-        if (bossCp) hero.checkpoint = { x: bossCp.x, y: bossCp.y };
-      }
-      showAreaEntry(hero, areaContext);
-      console.log('[boss] fight started — camera locked to arena, boss-zone entry screen shown');
+  // Boss zone flow (docs/levels/boss-arena.md §1–§3). The state machine
+  // owns the approach → arena lock → intro → bar fill → boss entrance →
+  // combat sequence. While the machine is running (states before COMBAT)
+  // the boss is invisible and untouchable; the hero may move but not shoot.
+  if (bossZone.active && bossZone.state !== BZ_COMBAT) {
+    // Step the machine; it drives the boss's entrance position and the
+    // energy-bar fill. The camera is frozen by the machine's onLock hook.
+    bossZone.update(dt, hero);
+    // The boss's own AI must NOT run during the intro: it is invisible and
+    // the fight has not started. (Attack patterns are the boss system's
+    // job; here we simply gate them off until COMBAT.)
+    // We still resolve the boss against solids so its entrance lands on the
+    // floor, but we skip b.update() (AI + integrate) until COMBAT.
+    if (b.alive && b.aiState !== 'dead' && b.gravity > 0) {
+      resolve(b, SOLIDS);
     }
+    return;
+  }
+
+  // COMBAT (or the machine not running): the boss AI drives the fight.
+  // Activation is owned by the boss zone flow's onCombat hook (which sets
+  // boss.active = true when the machine reaches COMBAT). The legacy
+  // distance-based activation (shouldActivate) is no longer the trigger —
+  // the flow machine is. We keep the call as a no-op safety net for the
+  // case where the flow machine was never started (e.g. a debug spawn).
+  if (b.aiState !== 'dead' && !b.active) {
+    b.shouldActivate(hero);
   }
 
   // AI + gravity + integrate (base Enemy.update handles the death pipeline too).

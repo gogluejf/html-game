@@ -5,7 +5,7 @@
 
 import { VIEW_W, VIEW_H } from '../view.js';
 import { LAYER } from '../consts.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getDeathFadeAlpha, getClearBanner, getClearFadeAlpha } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getDeathFadeAlpha, getClearBanner, getClearFadeAlpha, bossZone } from './update.js';
 import { Effects } from '../effects.js';
 import { drawEffects } from '../effects/index.js';
 import { getState, S } from '../state.js';
@@ -127,9 +127,11 @@ export function render(ctx) {
       ctx.restore();
     }
 
-    // boss (Overgrown Elephant).
+    // boss (Overgrown Elephant). Invisible during the boss zone intro
+    // (boss-arena.md §2: the boss is hidden until it enters from the right
+    // during BOSS_ENTER). The flow machine owns the visibility gate.
     const boss = getBoss();
-    if (boss && boss.alive) drawShaken(ctx, boss, () => boss.draw(ctx));
+    if (boss && boss.alive && bossZone.bossVisible()) drawShaken(ctx, boss, () => boss.draw(ctx));
 
     // sparkle particles + dropped coins.
     for (const s of getParticles().activeItems) s.draw(ctx);
@@ -191,6 +193,10 @@ export function render(ctx) {
       if (Debug.enabled && Debug.viewMode !== 2) drawBossDebug(ctx, boss);
     }
   }
+
+  // Boss zone intro presentation (boss-arena.md §2): the full-screen intro
+  // graphic sweep + the top energy bar are drawn in the screen-space pass
+  // below (after ctx.restore), so the sweep covers the whole viewport.
 
   // Debug: show each coin's value as small text above it so the
   // per-type weight/value difference is visible during development.
@@ -341,6 +347,12 @@ export function render(ctx) {
   drawEffects(ctx, undefined, { space: 'world' });
 
   ctx.restore();
+
+  // Boss zone intro presentation (boss-arena.md §2): the full-screen intro
+  // graphic sweep + the top energy bar. Screen space (post camera restore) so
+  // the sweep covers the whole viewport. No-op when the boss zone flow is not
+  // running.
+  drawBossZoneIntro(ctx);
 
   // --- Viewport-space HUD hint (not scrolled with the world) -----------------
   if (Debug.enabled) {
@@ -642,6 +654,97 @@ function drawHpBar(ctx, e) {
   ctx.fillRect(x, y, w, h);
   ctx.fillStyle = '#2ecc71';
   ctx.fillRect(x, y, w * frac, h);
+}
+
+// --- boss zone intro presentation (boss-arena.md §2) ------------------------
+
+/**
+ * Draw the boss zone intro presentation in screen space:
+ *   - INTRO_SWEEP: a full-screen graphic sweeps left→right while the boss
+ *     name/title moves right→left (opposing motion). Placeholder art.
+ *   - BAR_FILL / BOSS_ENTER / COMBAT: the boss energy bar at the top,
+ *     filling during BAR_FILL.
+ * No-op when the boss zone flow is not running.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ */
+function drawBossZoneIntro(ctx) {
+  if (!bossZone.active) return;
+
+  const W = VIEW_W, H = VIEW_H;
+  const state = bossZone.state;
+
+  // --- INTRO_SWEEP: full-screen graphic L→R, title R→L ---------------------
+  if (state === 'INTRO_SWEEP') {
+    const p = bossZone.progress(); // 0..1
+    const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    // Graphic band sweeps left→right across the whole screen.
+    const bandW = W * 0.5;
+    const gx = -bandW + (W + bandW) * ease; // from off-left to off-right
+    ctx.save();
+    // Dark backdrop so the graphic reads.
+    ctx.fillStyle = 'rgba(5,2,12,0.92)';
+    ctx.fillRect(0, 0, W, H);
+    // The sweeping graphic (placeholder: a tall menacing band + boss silhouette).
+    ctx.fillStyle = '#1a0a2e';
+    ctx.fillRect(gx, 0, bandW, H);
+    ctx.strokeStyle = '#8e6bbf';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(gx + 8, 8, bandW - 16, H - 16);
+    // Placeholder boss picture inside the band (a big dark blob + eyes).
+    ctx.fillStyle = '#0d0518';
+    const bx = gx + bandW / 2, by = H / 2;
+    ctx.beginPath();
+    ctx.ellipse(bx, by, bandW * 0.32, H * 0.30, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(bx - 40, by - 30, 14, 14);
+    ctx.fillRect(bx + 26, by - 30, 14, 14);
+    ctx.restore();
+
+    // The boss name/title moves RIGHT→LEFT, opposing the graphic.
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, p * 4, (1 - p) * 4); // fade in/out at edges
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 52px monospace';
+    ctx.textBaseline = 'middle';
+    // Title x goes from off-right to off-left as the graphic goes L→R.
+    const tx = W - (W * 1.2) * ease;
+    ctx.textAlign = 'center';
+    ctx.fillText('OVERGROWN ELEPHANT', tx, H * 0.22);
+    ctx.font = 'bold 22px monospace';
+    ctx.fillStyle = '#ff6ec7';
+    ctx.fillText('— THE FINAL ACT —', tx, H * 0.30);
+    ctx.restore();
+    return;
+  }
+
+  // --- BAR_FILL / BOSS_ENTER / COMBAT: energy bar at the top ----------------
+  if (state === 'BAR_FILL' || state === 'BOSS_ENTER' || state === 'COMBAT') {
+    const fill = state === 'COMBAT'
+      ? Math.max(0, getBoss().hp / getBoss().maxHp) // live HP once combat is on
+      : bossZone.barFill;
+    const barW = W * 0.7;
+    const barH = 14;
+    const bx = (W - barW) / 2;
+    const by = 18;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(bx - 3, by - 3, barW + 6, barH + 6);
+    ctx.fillStyle = '#5a3d8a';
+    ctx.fillRect(bx, by, barW, barH);
+    ctx.fillStyle = fill > 0.5 ? '#2ecc71' : (fill > 0.25 ? '#f39c12' : '#e74c3c');
+    ctx.fillRect(bx, by, barW * Math.max(0, Math.min(1, fill)), barH);
+    ctx.strokeStyle = '#8e6bbf';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx, by, barW, barH);
+    ctx.fillStyle = '#d8cdb4';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('ENERGY', bx, by - 8);
+    ctx.restore();
+  }
 }
 
 // --- boss debug + HP helpers --------------------------------------

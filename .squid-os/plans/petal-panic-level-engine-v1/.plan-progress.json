@@ -197,10 +197,18 @@
     },
     "6.1": {
       "number": "6.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Boss approach + arena lock + intro sequence",
       "milestone": "Boss Zone",
-      "milestone_number": "6"
+      "milestone_number": "6",
+      "summary": {
+        "done": "Created petal-panic/js/bossZone.js: a pure BossZone state machine (APPROACH\u2192LOCKED\u2192INTRO_SWEEP\u2192BAR_FILL\u2192BOSS_ENTER\u2192COMBAT) owning boss visibility, the hero's shooting gate, and the boss's damage gate. Wired it into systems/update.js: onLock hook freezes the camera + locks both sides; onCombat activates the boss; shooting/melee gated off during intro; boss damage gated in the projectile/contact/hitbox/foe-proj rules; updateBoss steps the machine (skipping boss AI until COMBAT); the AREA_ENTRY\u2192PLAY hook starts the flow for the boss zone; finishHeroDeath re-points the checkpoint at the boss checkpoint so a death restarts the approach. Added drawBossZoneIntro() in render.js (full-screen sweep L\u2192R with title R\u2192L, top energy-bar fill) and gated boss sprite visibility on bossZone.bossVisible(). Added 18 state-machine tests in bossZone.test.js.",
+        "decisions": "State machine is a pure module (no DOM) so it is unit-testable in isolation; update.js only drives it and reads its gates. Activation moved from the legacy distance-based shouldActivate trigger to the flow machine's onCombat hook (shouldActivate kept as a no-op safety net). Boss AI is fully skipped during the intro (not just gated) so no attack can fire before COMBAT. Death-restart reuses the shared area-entry screen + startLife, with the checkpoint re-pointed at the boss checkpoint so the approach repeats.",
+        "tradeoffs": "Timings (LOCKED 0.4s, SWEEP 1.4s, BAR_FILL 1.6s, ENTER 0.8s) and approach distance (960px \u2248 1 screen) are design-plan values, not locked. The boss's own attack patterns are out of scope (boss/combat system). The intro presentation is placeholder art (band + blob + text), per the doc allowing placeholders.",
+        "lessons_learned": "The legacy updateBoss() had a local 'const bossZone = levelZones[4]' that shadowed the new module-level bossZone export \u2014 renamed the flow's local to bossZoneDef to avoid the collision. The boss zone is 1600px wide but the view is 960px, so the camera is frozen at the centered arena (min===max) and the boss enters from off-screen right (arenaX+960+400). APPROACH is hero-driven (ends when hero.x <= arenaEntryX), the rest are timer-driven.",
+        "confidence": "high",
+        "failures": "None new. Full suite: 278 pass / 3 fail \u2014 the 3 failures (contextualAim pipeline, 2 input.test.js tests) are pre-existing baseline flakes, confirmed failing on the clean tree via git stash. All 18 new bossZone tests pass."
+      }
     },
     "6.2": {
       "number": "6.2",
