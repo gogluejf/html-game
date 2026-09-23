@@ -350,6 +350,29 @@ export function onExitFlagReached(areaId, nextArea) {
 }
 
 /**
+ * Debug (W): wrap the hero to the NEXT area by triggering the same clear
+ * sequence as reaching an exit flag — flash + 'X-Y CLEAR' banner + fade out →
+ * the next area's entry screen. This lets a developer step through every world
+ * (1-1 → 1-2 → … → boss) quickly without walking to each flag.
+ *
+ * Works from PLAY and from the AREA_ENTRY view: while the entry screen is up,
+ * pressing W again immediately advances to the following area (the entry view
+ * auto-advances to play after its timed hold, so repeated W presses hop area
+ * to area). No-op when already mid-clear-sequence (avoid double-triggering) or
+ * in the boss zone (no further areas). Gated on Debug.enabled at the caller.
+ */
+export function debugWrapToNextArea() {
+  // Don't stack another advance while one is already in flight.
+  if (clearSeq.state !== 'idle') return;
+  const zone = getActiveZone(hero);
+  if (zone.kind !== 'area') return; // boss zone has no next area
+  const nextArea = zone.areaIdx === 4 ? AREA_BOSS : zone.areaIdx + 1;
+  const clearedAreaId = formatAreaIdForClear(hero.currentArea);
+  Debug.logEvent(`wrap → ${formatAreaId(hero.currentLevel, nextArea)}`);
+  onExitFlagReached(clearedAreaId, nextArea);
+}
+
+/**
  * Step the clear-sequence state machine. Called from update() during PLAY.
  * Advances the timer and transitions between phases:
  *   banner → fadeOut → (showAreaEntry) → [entry screen confirmed] → fadeIn → idle
@@ -1266,6 +1289,12 @@ function handleDebugKeys(e) {
     case 'KeyL': // Toggle event-log display
       Debug.showLog = !Debug.showLog;
       break;
+    case 'KeyW': // Wrap to next area (debug): trigger the same clear-sequence
+      // advance as reaching an exit flag — flash + banner + fade → next area's
+      // entry screen. Works from PLAY and from the AREA_ENTRY view (pressing W
+      // again during the entry screen immediately advances to the next area).
+      debugWrapToNextArea();
+      break;
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown':
       // Theater stepping is handled by updateTheaterGamepad (reads input.state.moveX).
       // Don't double-step here. Only drive the anim scrubber when theater is closed.
@@ -1977,7 +2006,13 @@ export function update(dt) {
     // The area-entry view is a timed, non-interactive presentation: it fades in,
     // holds, then fades out and auto-starts play (checkpoints.md §3). Step that
     // sequence while the entry screen is up.
-    if (getState() === S.AREA_ENTRY) stepAreaEntrySequence(dt);
+    if (getState() === S.AREA_ENTRY) {
+      stepAreaEntrySequence(dt);
+      // Debug wrap (W) may have started a clear-sequence advance FROM the entry
+      // view; keep stepping it here so the banner/fade-out/next-entry plays out
+      // even though we're not in PLAY.
+      if (clearSeq.state !== 'idle') stepClearSequence(dt);
+    }
     return;
   }
   // The area-entry fade-out ramps down OVER the live world after play has begun
