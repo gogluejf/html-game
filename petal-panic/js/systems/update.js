@@ -1492,6 +1492,11 @@ collisionWorld.on('checkpoint', (a, b) => {
   const heroEnt = a.layer === LAYER.HERO ? a : (b.layer === LAYER.HERO ? b : null);
   if (!cp || !heroEnt) return;
   if (!(cp instanceof Checkpoint)) return;
+  // Entry flags are naive sprites: zero collision effect, no trigger, no VFX.
+  // They mark where the area starts but do nothing when touched.
+  // (checkpoints.md §1: "arriving beside it must not immediately clear the
+  // newly entered area.")
+  if (cp.isEntry) return;
   if (cp.triggered) return; // already triggered this run
 
   const fired = cp.trigger(heroEnt);
@@ -1514,16 +1519,11 @@ collisionWorld.on('checkpoint', (a, b) => {
   // global checkpoint index. Reaching the active zone's EXIT flag clears the
   // area (flash + 'X-Y CLEAR' banner + fade out) and advances to the next
   // zone. The -4 exit is the boss checkpoint (boss-arena.md §1): it routes
-  // into the boss zone, whose content is loaded on the advance. The entry
-  // flag (at a zone's start) is the starting checkpoint and must NOT trigger
-  // a clear — it is latched by startLife so arriving beside it does not
-  // re-clear the newly entered area.
+  // into the boss zone, whose content is loaded on the advance.
   const zone = getActiveZone(heroEnt);
   if (zone.kind !== 'area') return; // boss zone has no exit flag
-  if (cp.isEntry) return; // entry flags are starting checkpoints, not exits
-  // The next area in the zone model (BLOCKER 3/4): the zone's own areaIdx
-  // drives the advance — areas -1 → -2 → -3 → -4 → boss. The -4 exit routes
-  // into the boss zone (boss-arena.md §1), NOT into a nonexistent fifth area.
+  // The next area in the zone model: areas -1 → -2 → -3 → -4 → boss.
+  // The -4 exit routes into the boss zone (boss-arena.md §1).
   const nextArea = zone.areaIdx === -4 ? BOSS_AREA : zone.areaIdx - 1;
   const clearedAreaId = formatAreaIdForClear(heroEnt.currentArea);
   // checkpoints.md §2: begin the clear sequence (flash + banner + fade).
