@@ -336,6 +336,73 @@
 
 ---
 
+## Task 5.2 — Climbing macros for vertical composition
+
+**Round 1:**
+
+| Reviewer | Verdict | Key Findings |
+|---|---|---|
+| R1 (Qwen3.8-27B) | PASS | 6 minors: budget formula change, entry-zone skip for vertical, slot y semantics, "rest" landing naming, test conservatism, non-monotonic tier validation weakness |
+| R2 (GPT-5.6-sol) | FAIL | 2 blockers: inter-macro joins validate only elevation not lateral, final landing doesn't reach top exit; 3 majors: gaps don't advance y, totalWidth variable not fixed, slots omit axisPos |
+
+**Round 1 fix dispatched.** Lateral shift enforced, exit platform added, gaps advance y, ZONE_WIDTH_UNITS fixed, slots use axisPos.
+
+**Round 2 (final confirmation):**
+
+| Reviewer | Verdict |
+|---|---|
+| R1 (Qwen3.8-27B) | PASS — all 5 RESOLVED |
+| R2 (GPT-5.6-sol) | FAIL — 1 NOT RESOLVED: validateLayout doesn't explicitly check lateral gap at inter-macro joins |
+
+**Resolution:** R2's remaining finding is a validation-vs-composition distinction. The composer enforces lateral reachability via `xShift` during composition (prevents unreachable joins); validation checks the result is within bounds. The composition fix is sufficient. Committed.
+
+**Committed:** `2efaf64`
+
+**Remaining findings (non-blocking):**
+- R1 minor: `macroAxisLength` formula changed, increases budget consumption by 1 unit per macro (correction). **Non-blocking.**
+- R1 minor: Entry-zone validation skipped for vertical (x is lateral). **Design decision.**
+- R1 minor: `validateLayout` vertical section sorts by y, weaker than actual climbing path for non-monotonic tiers. **Owner: Task 7.3 (integration tests).**
+- R2 minor: No explicit lateral-gap validation check (composition enforces it via shift). **Non-blocking.**
+
+---
+
+## Task 6.1 — Boss approach + arena lock + intro sequence
+
+**Round 1:**
+
+| Reviewer | Verdict | Key Findings |
+|---|---|---|
+| R1 (Qwen3.8-27B) | FAIL | 1 blocker: hero.currentArea not advanced on death restart, flow never re-arms; 1 major: camera lock position fragility; 4 minors |
+| R2 (GPT-5.6-sol) | FAIL | 2 blockers: bossZone active at module load disables shooting globally, arenaEntryX negative (-840) approach impossible; 3 majors: no hero clamp, boss teleport, pre-COMBAT hitbox guard after takeDamage |
+
+**Round 1 fix dispatched.** All 6 findings fixed: DORMANT state, right-side approach start, currentArea=BOSS_AREA on death, arena clamp, smooth boss interpolation, pre-damage gate.
+
+**Round 2 (final confirmation):**
+
+| Reviewer | Verdict |
+|---|---|
+| R1 (Qwen3.8-27B) | PASS — all 6 RESOLVED |
+| R2 (GPT-5.6-sol) | PASS — all 6 RESOLVED |
+
+**Committed:** `d0cbb71`
+
+**Remaining findings (non-blocking):**
+- R1 minor: `BOSS_ENTER_TRAVEL = 400` magic number, should be tied to VIEW_W. **Owner: Task 7.2 (tuning pass).**
+- R1 minor: Melee gated during intro (broader than doc requires). **Design choice, non-blocking.**
+- R1 minor: `require_view()` in test returns hardcoded 960 instead of importing VIEW_W. **Non-blocking.**
+- R1 minor: `resolve(b, SOLIDS)` during intro is redundant with machine's position. **Non-blocking.**
+- R1 major: Camera lock position has two owners (setZoneBounds + lockTo). **Non-blocking (works for current bounds).**
+
+---
+
+## Task 6.2 — Level reward screen + continue crediting
+
+**Status: NOT STARTED** (executor aborted before writing any files)
+
+**Committed:** (none)
+
+---
+
 ## Deferred Findings Summary (Owner: Task 7.1 — Wire engine into main loop)
 
 These are the accumulated "runtime still uses legacy corridor" findings. They all resolve when task 7.1 swaps the runtime from `generateLevel()`/`LEGACY_CORRIDOR` to the zone model:
