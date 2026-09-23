@@ -43,7 +43,7 @@ import { getLevelConfig, getStageBudget } from '../levelConfigs.js';
 import { populateArea, populationSnapshot, UNIT_PX } from '../macros.js';
 import { createRng, tierToOffset } from '../terrain.js';
 import { Theater } from '../effects/theater.js';
-import { dumpTrace, record } from '../stats.js';
+import { dumpTrace, record, recordAreaMap } from '../stats.js';
 import { TUNING } from '../tuning.js';
 
 // --- Zone-engine world (task 7.1 — the sealed zone model IS the world) ------
@@ -185,6 +185,10 @@ function buildWorld(levelDef, config, seed) {
   // LEVELS entry (levelDef) carries no macroWeights, so the config is the bias
   // source; zones still come from levelDef's index/verticalArea.
   const terrain = buildAllZoneTerrain(config, seed); // areaIdx → layout
+  // Expose the composed terrain + seed so the trace's areaMap can snapshot how
+  // each area's terrain was generated (stable for the whole game).
+  _lastTerrain = terrain;
+  _lastSeed = seed;
   const population = new Map();
   const world = new Map();
   const rng = createRng(seed); // fresh stream for population (terrain consumed its own)
@@ -208,7 +212,47 @@ function buildWorld(levelDef, config, seed) {
 // choices; death and Continue never reroll, so a run's arrangement is fixed for
 // the whole game. The world is a module-level singleton owned by this module
 // (its collision world, camera, and debug overlay are all bound to it).
+// The most recently composed terrain + seed, exposed so the trace's areaMap can
+// snapshot each area's generated layout (see captureAreaMap). Set by buildWorld.
+let _lastTerrain = null;
+let _lastSeed = null;
+
 let world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, 1);
+
+/**
+ * Snapshot the generated terrain into the hero's trace areaMap (one entry per
+ * ordinary area). Called once per new game, right after startGame builds the
+ * fresh hero + trace. Each entry stores the seed, orientation, stage, budget,
+ * the macro ids placed, and the placed units in UNIT SPACE (the PNG/debug tool
+ * multiplies by UNIT_PX when drawing). The layout is stable for the whole game
+ * (rolled once per seed), so this snapshot stays accurate even if macro
+ * definitions change later.
+ * @param {Hero} h the fresh hero (owns .traceStats)
+ */
+function captureAreaMap(h) {
+  if (!h?.traceStats || !_lastTerrain) return;
+  const level = h.currentLevel ?? 1;
+  for (const [areaIdx, layout] of _lastTerrain) {
+    const areaId = formatAreaId(level, areaIdx);
+    recordAreaMap(h, areaId, {
+      seed: _lastSeed,
+      orientation: layout.orientation,
+      stage: layout.stage,
+      budget: layout.budget,
+      macros: (layout.macros ?? []).map((id) => ({ id })),
+      placedUnits: (layout.units ?? []).map((u) => ({
+        kind: u.kind,
+        x: u.aabb.x,
+        y: u.aabb.y,
+        w: u.aabb.w,
+        h: u.aabb.h,
+        tier: u.tier,
+        height: u.height,
+        oneWay: !!u.oneWay,
+      })),
+    });
+  }
+}
 const collisionWorld = new CollisionWorld({ cellSize: 64 });
 
 // Floor top y (the zone's ground level). Used by bomb/coin bounce logic.
@@ -1674,6 +1718,9 @@ onTransition((from, to) => {
     const def = HEROES[heroId] || HEROES.scarlet;
     const oldHero = hero;
     const nh = startGame({ world: collisionWorld, oldHero, areaContext }, def);
+    // Snapshot the freshly generated terrain into the trace's areaMap (stable
+    // for the whole game — rolled once per seed).
+    captureAreaMap(nh);
     {
       const p = heroEntryPosition(nh);
       nh.x = p.x;
