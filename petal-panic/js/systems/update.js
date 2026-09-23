@@ -1524,7 +1524,7 @@ collisionWorld.on('checkpoint', (a, b) => {
   // The next area in the zone model (BLOCKER 3/4): the zone's own areaIdx
   // drives the advance — areas -1 → -2 → -3 → -4 → boss. The -4 exit routes
   // into the boss zone (boss-arena.md §1), NOT into a nonexistent fifth area.
-  const nextArea = zone.areaIdx === -4 ? BOSS_AREA : zone.areaIdx + 1;
+  const nextArea = zone.areaIdx === -4 ? BOSS_AREA : zone.areaIdx - 1;
   const clearedAreaId = formatAreaIdForClear(heroEnt.currentArea);
   // checkpoints.md §2: begin the clear sequence (flash + banner + fade).
   onExitFlagReached(clearedAreaId, nextArea);

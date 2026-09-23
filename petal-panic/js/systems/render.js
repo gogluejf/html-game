@@ -191,9 +191,11 @@ export function render(ctx) {
   }
 
   // Boss HP bar (gameplay HUD element, not debug) + boss debug extras.
+  // Only drawn when the boss zone flow machine says the boss is visible
+  // (boss-arena.md §2: the boss is hidden until it enters from the right).
   {
     const boss = getBoss();
-    if (boss && boss.alive) {
+    if (boss && boss.alive && bossZone.bossVisible()) {
       if (boss.hp != null && boss.maxHp > 0 && boss.aiState !== 'dead') {
         drawBossHpBar(ctx, boss);
       }
