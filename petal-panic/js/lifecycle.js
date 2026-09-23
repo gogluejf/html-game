@@ -556,12 +556,14 @@ export function showAreaEntry(h, ctx) {
  *   - 'back' → open the pause menu from the entry view.
  */
 export function areaEntryOnAction(action, h, ctx) {
-  if (action === 'confirm' || action === 'pause') {
+  if (action === 'confirm' || action === 'pause' || action === 'back') {
     // Manual fast-forward: begin the attempt immediately (synchronous, so the
     // state is PLAY right away). In real gameplay the screen dispatch layer
     // also triggers the fade-out overlay so the view fades from black into play
     // rather than cutting; here we keep the core transition self-contained so
     // unit tests (which pass their own hero/ctx) work without update.js.
+    // Back (○/Escape) behaves the same as confirm on this view — it is a
+    // non-interactive presentation, so any input just skips ahead to play.
     startLife(h, ctx);
     if (getState() !== S.PLAY) {
       tryTransition(S.PLAY);
@@ -571,10 +573,6 @@ export function areaEntryOnAction(action, h, ctx) {
     // the black screen sticking (real gameplay only; no-op in bare tests).
     if (_onAreaEntryFadeOut) _onAreaEntryFadeOut();
     console.log('[lifecycle] AREA_ENTRY → PLAY (manual confirm)');
-    return true;
-  }
-  if (action === 'back') {
-    if (tryTransition(S.PAUSE)) console.log('[lifecycle] AREA_ENTRY → PAUSE (back)');
     return true;
   }
   return false;

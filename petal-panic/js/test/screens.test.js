@@ -344,7 +344,7 @@ test('confirming the entry screen starts the attempt in the area', () => {
   assert.equal(h.lives, 2, 'lives untouched by the entry screen');
 });
 
-test('back on the entry screen opens the pause menu', () => {
+test('back on the entry screen skips to play (same as confirm)', () => {
   const h = makeTestHero();
   const ctx = makeAreaContext();
   setState(S.PLAY);
@@ -352,7 +352,7 @@ test('back on the entry screen opens the pause menu', () => {
   assert.equal(getState(), S.AREA_ENTRY);
 
   L.areaEntryOnAction('back', h, ctx);
-  assert.equal(getState(), S.PAUSE, 'back opens the pause menu');
+  assert.equal(getState(), S.PLAY, 'back skips to play (non-interactive view)');
 });
 
 // --- 7. Boss-zone entry: identified as '1-B' and restarts beside the boss cp --
