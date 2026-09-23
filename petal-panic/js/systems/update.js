@@ -2001,7 +2001,10 @@ onTransition((from, to) => {
     // frame 1. Without this, the camera may still be showing the previous
     // zone's x-position and the hero appears off-screen until the follow logic
     // catches up. Vertical is NOT snapped — the upward-only ratchet owns y.
-    {
+    // Skip the snap for the boss zone: the camera follows the hero naturally
+    // during the approach, and snapping causes a visible jump when the arena
+    // locks (the onLock hook re-centers on the arena anyway).
+    if (getActiveZone(hero).kind !== 'boss') {
       const h = hero;
       const cx = h.x + h.w / 2;
       const snappedX = Math.max(camera.minX, Math.min(camera.maxX, cx - camera.w / 2));
