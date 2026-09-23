@@ -98,7 +98,10 @@ export const Remap = {
     // leaves focus exactly where it is — it does NOT advance to the next row.
     if (result?.status === 'cancelled') return;
     // A 'bound' result assigns the binding, then auto-advances to the next
-    // editable row (or to DONE after the last row) so a full pass lands on Apply.
+    // editable row (or to DONE after the last row). When the user is on the
+    // keyboard side of a row, we do NOT switch to the gamepad side — we go
+    // straight to the next row. This keeps the flow fast: one bind per side,
+    // no forced tab-switching mid-sequence.
     if (result?.status !== 'bound') return;
     const isGameplay = this.focus < ACTIONS.length;
     // Nav rows are gamepad-only; ignore any keyboard capture result there.
@@ -106,14 +109,26 @@ export const Remap = {
     const actionId = isGameplay ? ACTIONS[this.focus].id : this.navRowId;
     if (!actionId) return;
     if (!input.setBinding(result.source, actionId, result.binding, this.chip)) return;
-    const next = this.focus + 1;
-    if (next < this.ROWS) {
-      this.focus = next;
-      this._enterRow(next);
-      input.beginCapture(this.tab);
-      this._pulseT = 0;
-    } else {
+    // After binding, decide where to go next:
+    // - If we just bound a GAMEPLAY row on the KEYBOARD side and there are
+    //   still nav rows ahead, jump straight to DONE — the nav rows are
+    //   gamepad-only, so continuing from keyboard would just force a tab
+    //   switch with nothing useful to bind.
+    // - Otherwise advance to the next row (or DONE after the last row).
+    const isLastGameplay = isGameplay && this.focus === ACTIONS.length - 1;
+    const fromKeyboard = result.source === 'keyboard';
+    if (isLastGameplay && fromKeyboard) {
       this.focus = this.ROWS; // DONE
+    } else {
+      const next = this.focus + 1;
+      if (next < this.ROWS) {
+        this.focus = next;
+        this._enterRow(next);
+        input.beginCapture(this.tab);
+        this._pulseT = 0;
+      } else {
+        this.focus = this.ROWS; // DONE
+      }
     }
   },
   /** When entering a row, default the cursor: nav rows → gamepad chip. */
