@@ -2222,7 +2222,12 @@ export function update(dt) {
   // Thorn cooldown ticks EVERY frame regardless of input/selection — a stale
   // cooldown must never freeze while J is released or Special is selected.
   if (hero.fireCooldown > 0) hero.fireCooldown -= dt;
-  const shootingAllowed = !bossZone.inIntro;
+  // Shooting is blocked only during the actual intro presentation (LOCKED
+  // through BOSS_ENTER), NOT during APPROACH. The player can shoot the moment
+  // they enter the boss zone; the presentation just needs to play out visually.
+  const shootingAllowed = !(bossZone.active &&
+    (bossZone.state === BZ_LOCKED || bossZone.state === BZ_INTRO_SWEEP ||
+     bossZone.state === BZ_BAR_FILL || bossZone.state === BZ_BOSS_ENTER));
   if (shootingAllowed) {
     tryFire(hero, input, dt);                    // dispatches on hero.selectedWeapon
   }
