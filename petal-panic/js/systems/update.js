@@ -379,6 +379,7 @@ export function debugWrapToNextArea() {
     recordAreaEntrySnapshot(hero);
     camera.setZoneBounds(z1);
     showAreaEntry(hero, areaContext);
+    beginAreaEntryPresentation(); // reset the timer (transition may not fire if already in AREA_ENTRY)
     return;
   }
   if (zone.kind !== 'area') return;
@@ -400,6 +401,7 @@ export function debugWrapToNextArea() {
   recordAreaEntrySnapshot(hero);
   camera.setZoneBounds(nextZone);
   showAreaEntry(hero, areaContext);
+  beginAreaEntryPresentation(); // reset the timer (transition may not fire if already in AREA_ENTRY)
 }
 
 /**
