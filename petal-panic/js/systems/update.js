@@ -392,8 +392,15 @@ export function debugWrapToNextArea() {
   const nextZone = getActiveZone(hero);
   if (nextZone.kind === 'area' && world.world.has(nextZone.areaIdx)) {
     loadActiveZone(nextZone, world.world.get(nextZone.areaIdx));
+  } else if (nextZone.kind === 'boss') {
+    const bossCp = nextZone.entryFlag
+      ? [makeCheckpoint(nextZone.entryFlag.id, nextZone.entryFlag.x, nextZone.entryFlag.y, { isEntry: true, appearance: nextZone.entryFlag.appearance })]
+      : [];
+    loadActiveZone(nextZone, { solids: nextZone.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
   }
-  if (nextZone.entryFlag) {
+  if (nextZone.kind === 'boss') {
+    hero.checkpoint = { x: bossZone.approachStartX - hero.w / 2, y: ZONE_GROUND_Y - hero.h };
+  } else if (nextZone.entryFlag) {
     hero.checkpoint = { x: nextZone.bounds.x + nextZone.entryFlag.x, y: nextZone.entryFlag.y };
   } else {
     hero.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - hero.h };
@@ -439,16 +446,33 @@ export function stepClearSequence(dt) {
       // BLOCKER 2: swap the ACTIVE zone's world content so the previous
       // zone's terrain, enemies, barrels, powerups, and checkpoints do not
       // linger after the advance (structure.md §2: "a new zone replaces it").
+      // The boss zone has no stored population (buildWorld skips non-area
+      // zones), so loadActiveZone uses its fallback (zone.platforms = just
+      // the floor) — clearing all previous-area entities.
       if (nextZone.kind === 'area' && world.world.has(nextZone.areaIdx)) {
         loadActiveZone(nextZone, world.world.get(nextZone.areaIdx));
         console.log(`[zone] loaded zone ${nextZone.areaIdx}, checkpoints: ${checkpoints.map(c => c.checkpointId + (c.isEntry ? '(entry)' : '(exit)')).join(', ')}`);
+      } else if (nextZone.kind === 'boss') {
+        // The boss zone has no composed population, but it DOES install its
+        // entry flag (the boss checkpoint) so the hero can respawn beside it
+        // after a death. Pass a minimal content object with just the checkpoint.
+        const bossCp = nextZone.entryFlag
+          ? [makeCheckpoint(nextZone.entryFlag.id, nextZone.entryFlag.x, nextZone.entryFlag.y, { isEntry: true, appearance: nextZone.entryFlag.appearance })]
+          : [];
+        loadActiveZone(nextZone, { solids: nextZone.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
+        console.log(`[zone] loaded boss zone (empty arena + checkpoint)`);
       } else {
         console.log(`[zone] WARNING: no content for zone ${nextZone.areaIdx} (kind=${nextZone.kind}, has=${world.world.has(nextZone.areaIdx)})`);
       }
       // Set the checkpoint to the next zone's entry flag position so
       // startLife can latch the matching flag. For area 1 (no entry
-      // flag), use the zone's start position.
-      if (nextZone.entryFlag) {
+      // flag), use the zone's start position. For the BOSS zone, place the
+      // hero at the approach START (right side) so the APPROACH state has
+      // room to walk left ~1 screen before the intro presentation begins.
+      if (nextZone.kind === 'boss') {
+        const bz = bossZone;
+        hero.checkpoint = { x: bz.approachStartX - hero.w / 2, y: ZONE_GROUND_Y - hero.h };
+      } else if (nextZone.entryFlag) {
         hero.checkpoint = {
           x: nextZone.bounds.x + nextZone.entryFlag.x,
           y: nextZone.entryFlag.y,
@@ -2011,6 +2035,9 @@ export function getCamera() { return camera; }
 export function getRealEnemies() { return realEnemies; }
 // the boss entity for render + debug.
 export function getBoss() { return boss; }
+/** The kind of the zone the hero is currently in ('area' | 'boss'). Used by
+ *  render.js to gate boss-only visuals (debug box, HP bar) to the boss zone. */
+export function getActiveZoneKind() { return getActiveZone(hero).kind; }
 export function getParticles() { return particles; }
 export function getCoins() { return coins; }
 // barrels (explosive + coin) + explosion screen shake for render.
@@ -2103,6 +2130,22 @@ export function update(dt) {
   // is never left dormant while the hero stands in the boss zone).
   if (!bossZone.active && getActiveZone(hero)?.kind === 'boss') {
     beginBossZoneFlow();
+  }
+
+  // During the intro PRESENTATION (LOCKED → INTRO_SWEEP → BAR_FILL →
+  // BOSS_ENTER) the game is effectively paused: the hero is frozen (no input,
+  // no physics) so the full-screen sweep and bar fill play out cleanly.
+  // APPROACH still allows movement (the hero walks to the arena). COMBAT
+  // resumes normal gameplay.
+  const bzPresentation = bossZone.active &&
+    (bossZone.state === BZ_LOCKED || bossZone.state === BZ_INTRO_SWEEP ||
+     bossZone.state === BZ_BAR_FILL || bossZone.state === BZ_BOSS_ENTER);
+  if (bzPresentation) {
+    bossZone.update(dt, hero);
+    if (b.alive && b.aiState !== 'dead' && b.gravity > 0) resolve(b, SOLIDS);
+    camera.update(hero);
+    Effects.update(dt);
+    return;
   }
 
   // 1. input → intents (movement/jump/crouch logic lives in Hero.update).
@@ -2390,15 +2433,9 @@ function finishHeroDeath() {
       // dormant machine never saw a boss zone) and the entry screen showed the
       // wrong area id. AREA_BOSS is the zone-model value for the boss zone.
       hero.currentArea = AREA_BOSS;
-      // Place the checkpoint at the boss zone's entry (the boss checkpoint)
-      // so startLife puts the hero beside it for the approach.
-      const bz = levelZones[4];
-      if (bz?.entryFlag) {
-        hero.checkpoint = {
-          x: bz.bounds.x + bz.entryFlag.x,
-          y: bz.entryFlag.y,
-        };
-      }
+      // Place the checkpoint at the approach START (right side) so the
+      // APPROACH state has room to walk left before the intro begins.
+      hero.checkpoint = { x: bossZone.approachStartX - hero.w / 2, y: ZONE_GROUND_Y - hero.h };
     }
     // Ensure the active zone's content is installed in the collision world
     // before showing the entry screen. This updates the checkpoints array

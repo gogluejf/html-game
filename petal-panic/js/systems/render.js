@@ -5,7 +5,7 @@
 
 import { VIEW_W, VIEW_H } from '../view.js';
 import { LAYER } from '../consts.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getDeathFadeAlpha, getClearBanner, getClearFadeAlpha, getAreaEntryFadeAlpha, bossZone } from './update.js';
+import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getActiveZoneKind, getDeathFadeAlpha, getClearBanner, getClearFadeAlpha, getAreaEntryFadeAlpha, bossZone } from './update.js';
 import { Effects } from '../effects.js';
 import { drawEffects } from '../effects/index.js';
 import { getState, S } from '../state.js';
@@ -343,8 +343,10 @@ export function render(ctx) {
     ];
     const hero = getHero();
     if (hero && !hero.dying) allEnts.push(hero);
+    // Boss only renders its transform debug box while the hero is in the boss
+    // zone — it lives in the boss zone and must not appear in ordinary areas.
     const boss = getBoss();
-    if (boss && boss.alive) allEnts.push(boss);
+    if (boss && boss.alive && getActiveZoneKind() === 'boss') allEnts.push(boss);
     for (const ent of allEnts) drawEntityTransformDebug(ctx, ent);
     if (Debug.selected) drawSelectionOverlay(ctx, Debug.selected);
   }
@@ -566,9 +568,9 @@ function drawDebugOverlay(ctx) {
                ...getCheckpoints().filter(c => c.alive),
                ...getPowerups().filter(p => p.alive && !p.collected),
                ...getCoins().activeItems.filter(c => c.alive && !c.collected)];
-  // Boss gets a radius circle too.
+  // Boss gets a radius circle too — only while in the boss zone.
   const boss = getBoss();
-  if (boss && boss.alive) all.push(boss);
+  if (boss && boss.alive && getActiveZoneKind() === 'boss') all.push(boss);
 
   for (const ent of all) {
     const layer = ent.layer ?? 0;
