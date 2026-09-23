@@ -2571,6 +2571,31 @@ function updateBoss(dt) {
   // Decay the contact cooldown (shared with the 'contact' rule handler).
   if (b._contactCd > 0) b._contactCd -= dt;
 
+  // Death pipeline completion: spawn effects, drop coins, remove from world,
+  // unlock the camera, and transition to the reward screen exactly once.
+  // This runs regardless of the boss zone flow state — if the boss died
+  // (combat, test, or debug), the death pipeline must complete.
+  if (!b.alive && !b._deathHandled) {
+    b._deathHandled = true;
+    const cx = b.x + b.w / 2;
+    const cy = b.y + b.h / 2;
+    Effects.fireParticleBurst(cx, cy, 14);        // engine path — big victory sparkle burst
+    coins.dropCoins(b.coinDrop, cx, cy);       // generous coin bounty
+    collisionWorld.remove(b);                           // drop from play
+    camera.unlock();                           // release the arena lock
+    b.onDeath();                               // boss-side death hook
+    // mark boss as killed (design §4.1).
+    hero.runStats.bossKilled = true;
+    if (getState() === S.PLAY) {
+      // boss-arena.md §4: the level reward screen replaces the placeholder
+      // post-boss (WIN) screen. showLevelReward() computes the documented
+      // stats and credits the global continue pool exactly once.
+      showLevelReward(hero);
+      console.log(`[state] PLAY → ${STATE_NAMES[S.REWARD]} (boss defeated)`);
+    }
+    return;
+  }
+
   // Boss zone flow (docs/levels/boss-arena.md §1–§3). The state machine
   // owns the approach → arena lock → intro → bar fill → boss entrance →
   // combat sequence. While the machine is running (states before COMBAT)
@@ -2590,12 +2615,15 @@ function updateBoss(dt) {
     return;
   }
 
-  // COMBAT (or the machine not running): the boss AI drives the fight.
+  // The boss AI only runs when the boss zone flow is active AND in COMBAT.
+  // Before the player reaches the boss zone, the boss is dormant — no AI,
+  // no attacks, no movement. (boss-arena.md §1: the boss is created per
+  // boss-zone entry, not at module load.)
+  if (!bossZone.active || bossZone.state !== BZ_COMBAT) return;
+
+  // COMBAT: the boss AI drives the fight.
   // Activation is owned by the boss zone flow's onCombat hook (which sets
-  // boss.active = true when the machine reaches COMBAT). The legacy
-  // distance-based activation (shouldActivate) is no longer the trigger —
-  // the flow machine is. We keep the call as a no-op safety net for the
-  // case where the flow machine was never started (e.g. a debug spawn).
+  // boss.active = true when the machine reaches COMBAT).
   if (b.aiState !== 'dead' && !b.active) {
     b.shouldActivate(hero);
   }
@@ -2621,28 +2649,6 @@ function updateBoss(dt) {
   if (b.shakeMag > 0) {
     Effects.triggerShake(b.shakeMag); // engine path — stomp shake
     b.shakeMag = 0;
-  }
-
-  // Death pipeline completion: spawn effects, drop coins, remove from world,
-  // unlock the camera, and transition to WIN exactly once.
-  if (!b.alive && !b._deathHandled) {
-    b._deathHandled = true;
-    const cx = b.x + b.w / 2;
-    const cy = b.y + b.h / 2;
-    Effects.fireParticleBurst(cx, cy, 14);        // engine path — big victory sparkle burst
-    coins.dropCoins(b.coinDrop, cx, cy);       // generous coin bounty
-    collisionWorld.remove(b);                           // drop from play
-    camera.unlock();                           // release the arena lock
-    b.onDeath();                               // boss-side death hook
-    // mark boss as killed (design §4.1).
-    hero.runStats.bossKilled = true;
-    if (getState() === S.PLAY) {
-      // boss-arena.md §4: the level reward screen replaces the placeholder
-      // post-boss (WIN) screen. showLevelReward() computes the documented
-      // stats and credits the global continue pool exactly once.
-      showLevelReward(hero);
-      console.log(`[state] PLAY → ${STATE_NAMES[S.REWARD]} (boss defeated)`);
-    }
   }
 }
 
