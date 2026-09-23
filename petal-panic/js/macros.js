@@ -400,6 +400,89 @@ export const MACROS = Object.freeze({
     followedBy: Object.freeze([]),
   }),
 
+  /**
+   * Platform hops: a run of one-way platforms at increasing tiers, so the hero
+   * double-jumps up onto each successive landing. Pure-platform macro — no solid
+   * blocks — to give horizontal areas readable elevated routes (structure.md §5:
+   * platforms are one-way landings; tiers spaced for double-jump reach).
+   *
+   * Shape: tier-1 platform → gap → tier-2 platform → gap → tier-3 platform.
+   * Each step is exactly one tier up (MAX_ELEVATION_STEP = 1), reachable by a
+   * full-speed double jump.
+   *
+   * Entry: 3 units clear. Exit: 3 units clear.
+   * Difficulty: 2 (elevated crossing, but only upward steps which are validated).
+   */
+  platformHops: Object.freeze({
+    id: 'platformHops',
+    name: 'Platform Hops',
+    orientation: 'horizontal',
+    difficulty: 2,
+    units: Object.freeze([
+      P(2, 1), // first landing at tier 1
+      G(2),    // airtime to reach the next tier
+      P(2, 2), // second landing at tier 2
+      G(2),    // airtime to reach the top tier
+      P(2, 3), // final landing at tier 3
+    ]),
+    entryClear: 3,
+    exitClear: 3,
+    // Slots rest on each platform's landing face (elev = its tier). The gaps
+    // carry no slots (air). Enough slots for a typical budget.
+    placements: Object.freeze([
+      { slot: 'on-t1', x: 0, type: 'enemy' },
+      { slot: 'on-t2', x: 4, type: 'enemy' },
+      { slot: 'on-t3', x: 8, type: 'powerup' },
+      { slot: 'on-t2-barrel', x: 4, type: 'barrel' },
+      { slot: 'on-t1-barrel', x: 1, type: 'barrel' },
+    ]),
+    variations: Object.freeze([]),
+    follows: Object.freeze([]),
+    followedBy: Object.freeze([]),
+  }),
+
+  /**
+   * Block-and-platform bridge: solid blocks rising on the left, a wide gap,
+   * then a long triple-width platform the hero crosses at tier 2, then blocks
+   * descending on the right. Mixes both terrain kinds in one set piece so
+   * horizontal areas can feature platforms without being all-blocks.
+   *
+   * Shape: B(1) B(2) → G(3) → P(3, 2) → G(3) → B(2) B(1).
+   *
+   * Entry: 2 units clear. Exit: 2 units clear.
+   * Difficulty: 3 (mixed terrain + two gaps + an elevated crossing).
+   */
+  blockPlatformBridge: Object.freeze({
+    id: 'blockPlatformBridge',
+    name: 'Block & Platform Bridge',
+    orientation: 'horizontal',
+    difficulty: 3,
+    units: Object.freeze([
+      B(1), B(2),   // rising blocks on the approach
+      G(3),         // gap to the bridge
+      P(3, 2),      // triple-width platform crossed at tier 2
+      G(3),         // gap off the bridge
+      B(2), B(1),   // descending blocks on the far side
+    ]),
+    entryClear: 2,
+    exitClear: 2,
+    // Slots rest on block tops (elev = height) and the platform face (tier 2).
+    // The gaps (x=2..4 and x=7..9) carry no slots.
+    placements: Object.freeze([
+      { slot: 'on-h1', x: 0, type: 'enemy' },
+      { slot: 'on-h2', x: 1, type: 'enemy' },
+      { slot: 'on-bridge', x: 5, type: 'enemy' },
+      { slot: 'on-bridge2', x: 6, type: 'enemy' },
+      { slot: 'on-bridge-pu', x: 6, type: 'powerup' },
+      { slot: 'on-far-h2', x: 10, type: 'barrel' },
+      { slot: 'on-far-h1', x: 11, type: 'barrel' },
+      { slot: 'on-h2-barrel', x: 1, type: 'barrel' },
+    ]),
+    variations: Object.freeze([]),
+    follows: Object.freeze([]),
+    followedBy: Object.freeze([]),
+  }),
+
   // --- Vertical macros ------------------------------------------------------
   //
   // Lateral variety: each platform unit may carry an `x` offset (width-units
