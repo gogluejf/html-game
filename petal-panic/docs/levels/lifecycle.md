@@ -11,7 +11,7 @@ Starting a genuinely new game establishes:
 - Global starting lives and continues.
 - Fresh game progress and reward accounting.
 - A new set of random generation choices for the game's areas.
-- Entry into the first level's area -1.
+- Entry into the first level's area 1.
 
 The generation choices belong to this entire game. Returning from death or
 using Continue must never invoke a fresh-game reset.
@@ -56,7 +56,7 @@ At Game Over, choosing Continue:
 
 1. Requires a remaining continue and consumes exactly one.
 2. Restores the global starting life count.
-3. Returns to area -1 of the current level.
+3. Returns to area 1 of the current level.
 4. Shows the entry screen and starts a fresh attempt there.
 
 All previously generated areas retain their original arrangements. Example:
@@ -70,7 +70,7 @@ already the current level.
 
 Clearing an area advances to the next zone without consuming a life or continue.
 The next area receives its own entry screen and fresh playable contents.
-Defeating a boss runs the reward screen before the next level's area -1.
+Defeating a boss runs the reward screen before the next level's area 1.
 
 **Game end:** after the final level's boss and its reward screen, show a minimal
 end-of-game screen — a congratulations presentation with the final score and a

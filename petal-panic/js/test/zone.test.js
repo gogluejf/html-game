@@ -7,12 +7,12 @@
 //   docs/levels/checkpoints.md §1 Where flags appear
 //
 // Acceptance criteria covered:
-//   1. Level def yields 5 zones (areas -1..-4 + boss zone)
-//   2. -1 has no entry flag
-//   3. -2..-4 have entry flags at their start
-//   4. -4 exit uses boss-checkpoint appearance
+//   1. Level def yields 5 zones (areas 1..4 + boss zone)
+//   2. area 1 has no entry flag
+//   3. areas 2..4 have entry flags at their start
+//   4. the 4 exit uses boss-checkpoint appearance
 //   5. Zones share no geometry (independent sealed worlds)
-//   6. Exactly one ordinary area is vertical, and it is never -1
+//   6. Exactly one ordinary area is vertical, and it is never 1
 
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
@@ -23,12 +23,12 @@ import { VIEW_H } from '../view.js';
 const def = LEVELS[0];
 const zones = buildLevelZones(def);
 
-test('a level yields exactly 5 sealed zones (areas -1..-4 + boss)', () => {
+test('a level yields exactly 5 sealed zones (areas 1..4 + boss)', () => {
   assert.equal(zones.length, 5, 'five zones: four areas + one boss zone');
   assert.deepEqual(
     zones.map((z) => z.idx),
-    [-1, -2, -3, -4, 'boss'],
-    'zones are in play order: -1, -2, -3, -4, boss',
+    [1, 2, 3, 4, 'boss'],
+    'zones are in play order: 1, 2, 3, 4, boss',
   );
   assert.equal(zones[4].kind, 'boss', 'the final zone is the boss zone');
   assert.equal(zones[4].orientation, 'boss', 'boss zone is its own orientation');
@@ -42,13 +42,13 @@ test('every zone owns its own world bounds', () => {
   }
 });
 
-test('area -1 has no entry flag (checkpoints.md §1)', () => {
-  const z1 = zones.find((z) => z.idx === -1);
-  assert.equal(z1.entryFlag, null, '-1 must not draw an entry checkpoint');
+test('area 1 has no entry flag (checkpoints.md §1)', () => {
+  const z1 = zones.find((z) => z.idx === 1);
+  assert.equal(z1.entryFlag, null, 'area 1 must not draw an entry checkpoint');
 });
 
-test('areas -2..-4 have an entry flag at their start (checkpoints.md §1)', () => {
-  for (const idx of [-2, -3, -4]) {
+test('areas 2..4 have an entry flag at their start (checkpoints.md §1)', () => {
+  for (const idx of [2, 3, 4]) {
     const z = zones.find((zz) => zz.idx === idx);
     assert.ok(z.entryFlag, `${idx} has an entry flag`);
     assert.equal(
@@ -60,7 +60,7 @@ test('areas -2..-4 have an entry flag at their start (checkpoints.md §1)', () =
 });
 
 test('each ordinary area has an exit flag; the boss zone has none', () => {
-  for (const idx of [-1, -2, -3, -4]) {
+  for (const idx of [1, 2, 3, 4]) {
     const z = zones.find((zz) => zz.idx === idx);
     assert.ok(z.exitFlag, `${idx} has an exit flag`);
     assert.ok(z.exitFlag.x > z.bounds.x, `${idx} exit flag is inside the zone`);
@@ -75,15 +75,15 @@ test('each ordinary area has an exit flag; the boss zone has none', () => {
   );
 });
 
-test('the -4 exit uses the boss-checkpoint appearance (checkpoints.md §1)', () => {
-  const z4 = zones.find((z) => z.idx === -4);
+test('the 4 exit uses the boss-checkpoint appearance (checkpoints.md §1)', () => {
+  const z4 = zones.find((z) => z.idx === 4);
   assert.equal(
     z4.exitFlag.appearance,
     BOSS_CHECKPOINT.appearance,
-    '-4 exit is a boss checkpoint leading to the boss zone',
+    'the 4 exit is a boss checkpoint leading to the boss zone',
   );
   // Ordinary exits are plain exits, not boss checkpoints.
-  for (const idx of [-1, -2, -3]) {
+  for (const idx of [1, 2, 3]) {
     const z = zones.find((zz) => zz.idx === idx);
     assert.notEqual(
       z.exitFlag.appearance,
@@ -124,12 +124,12 @@ test('zones share no geometry (structure.md §2 — independent sealed worlds)',
   assert.equal(ids.size, flags.length, 'every flag has a unique id');
 });
 
-test('exactly one ordinary area is vertical, and it is never -1 (structure.md §1)', () => {
+test('exactly one ordinary area is vertical, and it is never 1 (structure.md §1)', () => {
   const ordinary = zones.filter((z) => z.kind === 'area');
   const vertical = ordinary.filter((z) => z.orientation === 'vertical');
   assert.equal(vertical.length, 1, 'exactly one vertical area');
-  assert.notEqual(vertical[0].areaIdx, -1, 'the vertical area is never -1');
-  assert.ok([-2, -3, -4].includes(vertical[0].areaIdx), 'vertical area is -2, -3, or -4');
+  assert.notEqual(vertical[0].areaIdx, 1, 'the vertical area is never 1');
+  assert.ok([2, 3, 4].includes(vertical[0].areaIdx), 'vertical area is 2, 3, or 4');
   const horizontal = ordinary.filter((z) => z.orientation === 'horizontal');
   assert.equal(horizontal.length, 3, 'the other three areas are horizontal');
 });
@@ -183,7 +183,7 @@ test('vertical zone: entry flag at the bottom, exit flag at the top (structure.m
 test('vertical-area slot is explicit config, not an undocumented default', () => {
   // The vertical slot must be declared on the level definition (R1 #2), not read
   // from a field that silently defaults.
-  assert.equal(def.verticalArea, -3, 'LEVELS[0] declares verticalArea explicitly');
+  assert.equal(def.verticalArea, 3, 'LEVELS[0] declares verticalArea explicitly');
   // And buildLevelZones honors it: the declared area is the vertical one.
   const vz = zones.find((z) => z.orientation === 'vertical');
   assert.equal(vz.areaIdx, def.verticalArea, 'the configured area is the vertical one');

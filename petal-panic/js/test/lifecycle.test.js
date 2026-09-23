@@ -2,12 +2,12 @@
 // Run: node --test petal-panic/js/test/lifecycle.test.js
 //
 // Acceptance criteria covered:
-//   1. startGame establishes lives=3, continues pool=3, currentArea=-1
+//   1. startGame establishes lives=3, continues pool=3, currentArea=1
 //   2. startLife restores the area arrangement and places the hero at entry
 //   3. continueRun spends exactly one continue, restores starting lives,
-//      goes to area -1 of the CURRENT level, and never rerolls generation
+//      goes to area 1 of the CURRENT level, and never rerolls generation
 //   4. Death in an area restarts that same area (same arrangement)
-//   5. Continue from 2-3 lands in 2-1 (area -1 of current level)
+//   5. Continue from 2-3 lands in 2-1 (area 1 of current level)
 //   6. No module outside lifecycle.js assigns lives/continues for restart
 
 import { strict as assert } from 'node:assert';
@@ -46,7 +46,7 @@ function makeTestHero() {
     configurable: true,
   });
   h.currentLevel = 1;
-  h.currentArea = -1;
+  h.currentArea = 1;
   h.checkpoint = { x: 100, y: 400 };
   return h;
 }
@@ -96,13 +96,13 @@ function makeAreaContext(hero) {
 
 // --- Tests -------------------------------------------------------------------
 
-test('startGame: establishes lives=3, continues pool=3, currentArea=-1', () => {
+test('startGame: establishes lives=3, continues pool=3, currentArea=1', () => {
   const h = L.makeHero(HEROES.scarlet);
   const result = L.startGame({ oldHero: h }, HEROES.scarlet);
   assert.equal(result.lives, 3, 'starting lives from GAME_RULES');
   assert.equal(result.continues.remaining, 3, 'starting continues from GAME_RULES');
   assert.equal(result.continuesUsed, 0, 'no continues used yet');
-  assert.equal(result.currentArea, -1, 'enters area -1');
+  assert.equal(result.currentArea, 1, 'enters area 1');
   assert.equal(result.currentLevel, 1, 'enters level 1');
   assert.ok(result.runStats, 'fresh run stats');
 });
@@ -176,7 +176,7 @@ test('continueRun: spends exactly one continue, restores starting lives', () => 
   assert.equal(h.continues.remaining, 2, 'one continue spent (3→2)');
   assert.equal(h.continuesUsed, 1, 'continuesUsed reflects spend');
   assert.equal(h.lives, 3, 'lives restored to starting count');
-  assert.equal(h.currentArea, -1, 'back to area -1');
+  assert.equal(h.currentArea, 1, 'back to area 1');
   // checkpoints.md §3: continue shows the shared area-entry screen; the fresh
   // attempt starts when the player confirms it (lifecycle.md §4).
   assert.equal(getState(), S.AREA_ENTRY, 'transitioned to the shared area-entry screen');
@@ -188,7 +188,7 @@ test('continueRun: spends exactly one continue, restores starting lives', () => 
 test('continueRun: returns to area -1 of the CURRENT level (not level 1)', () => {
   const h = makeTestHero();
   h.currentLevel = 2;
-  h.currentArea = 3; // "2-3"
+  h.currentArea = 3; // "1-3" (level index is 1 for the current single-level build)
   h.lives = 0;
   const ctx = makeAreaContext(h);
 
@@ -197,7 +197,7 @@ test('continueRun: returns to area -1 of the CURRENT level (not level 1)', () =>
 
   assert.equal(applied, true);
   assert.equal(h.currentLevel, 2, 'level unchanged (still 2)');
-  assert.equal(h.currentArea, -1, 'area reset to -1 (so 2-1)');
+  assert.equal(h.currentArea, 1, 'area reset to 1 (so 2-1)');
 });
 
 test('continueRun: blocked when no continues remaining', () => {
@@ -306,7 +306,7 @@ test('startGame: establishes fresh generation choices (rerolls when a regenerate
   const newHero = U.getHero();
   assert.notEqual(newHero, prevHero, 'hero rebuilt on new game');
   assert.equal(newHero.lives, 3, 'starting lives');
-  assert.equal(newHero.currentArea, -1, 'enters area -1');
+  assert.equal(newHero.currentArea, 1, 'enters area 1');
   // The world was regenerated with fresh choices.
   const newEnemyXs = U.getRealEnemies().map(e => e.x);
   const moved = newEnemyXs.some((x, i) => Math.abs(x - prevEnemyXs[i]) > 0.5);
@@ -325,20 +325,20 @@ test('startGame: a bare startGame (no areaContext) does NOT reroll', () => {
 test('continueRun: re-positions the hero at the level entry (area -1), not the death spot', () => {
   const h = makeTestHero();
   h.currentLevel = 2;
-  h.currentArea = 3; // "2-3"
+  h.currentArea = 3; // "1-3" (level index is 1 for the current single-level build)
   h.lives = 0;
-  // The hero died deep in 2-3; the checkpoint still points there.
+  // The hero died deep in 1-3; the checkpoint still points there.
   h.checkpoint = { x: 6000, y: 492 };
   h.x = 6000; h.y = 492;
   const ctx = makeAreaContext(h);
   setState(S.OVER);
   L.continueRun(h, ctx);
   // The entry screen is shown; confirming starts the fresh attempt. Continuing
-  // after defeat in 2-3 lands the hero at the level's area -1 entry
+  // after defeat in 1-3 lands the hero at the level's area 1 entry
   // (x=ZONE_ENTRY_X=120, the zone-model start position), NOT at the death
   // spot (x=6000).
   L.areaEntryOnAction('confirm', h, ctx);
-  assert.equal(h.currentArea, -1, 'area reset to -1');
+  assert.equal(h.currentArea, 1, 'area reset to 1');
   assert.equal(h.x, 120, 'hero positioned at the level entry, not the death spot');
   assert.ok(h.intangible, 'respawn i-frames active');
   assert.equal(h.energy, h.maxEnergy, 'full energy after continue');
@@ -430,7 +430,7 @@ test('startLife: accounting rollback — a genuine area advance records a fresh 
   // accumulated run stats (the previous area's kills/coins).
   h.runStats.enemiesKilled.jester += 2;
   h.runStats.coinsCollected.total += 3;
-  h.currentArea = -2; // advance to the next area
+  h.currentArea = 2; // advance to the next area
   L.recordAreaEntrySnapshot(h); // record the NEW entry snapshot (with the accumulated stats)
 
   // Simulate a failed attempt in the new area: more kills/coins accumulate.
@@ -506,7 +506,7 @@ test('integration: continue from 2-3 lands the hero at the level entry (area -1)
   assert.equal(applied, true, 'continue applied');
   assert.equal(getState(), S.AREA_ENTRY, 'continue shows the shared area-entry screen first');
   assert.equal(hero.lives, 3, 'starting lives restored');
-  assert.equal(hero.currentArea, -1, 'area reset to -1');
+  assert.equal(hero.currentArea, 1, 'area reset to 1');
   // Confirming the entry screen starts the fresh attempt at the level's entry
   // (x=ZONE_ENTRY_X=120, the zone-model start position), NOT at the death
   // spot (x=6000).

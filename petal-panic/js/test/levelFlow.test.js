@@ -5,10 +5,10 @@
 // (lifecycle.js, systems/update.js, level.js, macros.js, bossZone.js):
 //   Group 1 — Determinism: same seed → identical terrain + population;
 //             different seeds → different worlds.
-//   Group 2 — Full Level 1 flow: startGame → areas -1..-4 (incl. vertical)
+//   Group 2 — Full Level 1 flow: startGame → areas 1..4 (incl. vertical)
 //             → boss zone → reward → next-level / end-of-game.
-//   Group 3 — Death & continue: death in area -3 restarts the SAME area with
-//             the SAME arrangement; continue lands the hero at area -1 with
+//   Group 3 — Death & continue: death in area 3 restarts the SAME area with
+//             the SAME arrangement; continue lands the hero at area 1 with
 //             restored lives.
 //   Group 4 — Vertical fall death: falling below the bottom platform is
 //             lethal; a restart places the hero back on the bottom platform.
@@ -51,11 +51,11 @@ const BANNER_STEPS = Math.ceil(1.2 / DT);   // TUNING.clearBanner
 const FADE_OUT_STEPS = Math.ceil(0.6 / DT); // TUNING.clearFadeOut
 const FADE_IN_STEPS = Math.ceil(0.6 / DT);  // TUNING.clearFadeIn
 const LEVEL_DEF = LEVELS[0];
-const BOSS_AREA = 4; // zone-model area index of the boss zone (levelZones[4])
+const AREA_BOSS = 5; // zone-model currentArea value for the boss zone (levelZones[4])
 
 // --- Helpers -----------------------------------------------------------------
 
-/** Fresh post-startGame-shaped hero (lives, continue pool, stats, area -1). */
+/** Fresh post-startGame-shaped hero (lives, continue pool, stats, area 1). */
 function makeTestHero() {
   const h = new Hero(HEROES.scarlet, 100, 400);
   h.lives = GAME_RULES.startingLives;
@@ -66,7 +66,7 @@ function makeTestHero() {
     configurable: true,
   });
   h.currentLevel = 1;
-  h.currentArea = -1;
+  h.currentArea = 1;
   h.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - h.h };
   h.runStats = createStats();
   return h;
@@ -112,7 +112,8 @@ function makeAreaContext() {
  */
 function advanceToNextArea(nextArea) {
   setState(S.PLAY);
-  U.onExitFlagReached(`1-${nextArea + 2}`, nextArea);
+  const clearedId = nextArea === AREA_BOSS ? '1-4' : `1-${nextArea - 1}`;
+  U.onExitFlagReached(clearedId, nextArea);
   for (let i = 0; i < BANNER_STEPS + FADE_OUT_STEPS; i++) U.stepClearSequence(DT);
   assert.equal(getState(), S.AREA_ENTRY, 'entry screen is shown after the fade-out');
   assert.equal(U.getHero().currentArea, nextArea, `hero advanced to area ${nextArea}`);
@@ -137,11 +138,11 @@ function drainClearSequence() {
   }
 }
 
-/** Put the runtime back at a clean "playing area -1" baseline. */
-function resetRuntimeToAreaMinus1() {
+/** Put the runtime back at a clean "playing area 1" baseline. */
+function resetRuntimeToAreaOne() {
   drainClearSequence();
   const hero = U.getHero();
-  hero.currentArea = -1;
+  hero.currentArea = 1;
   hero.lives = GAME_RULES.startingLives;
   hero.dying = false;
   hero.alive = true;
@@ -251,45 +252,45 @@ before(() => {
   drainClearSequence();
 });
 
-test('full flow: startGame puts the hero in area -1 with the first zone installed', () => {
-  resetRuntimeToAreaMinus1();
+test('full flow: startGame puts the hero in area 1 with the first zone installed', () => {
+  resetRuntimeToAreaOne();
   const hero = U.getHero();
-  assert.equal(hero.currentArea, -1, 'hero starts in area -1');
+  assert.equal(hero.currentArea, 1, 'hero starts in area 1');
   assert.equal(hero.currentLevel, 1, 'hero starts in level 1');
   const zone = U.getActiveZone(hero);
-  assert.equal(zone.areaIdx, -1, 'area -1 is the active zone');
+  assert.equal(zone.areaIdx, 1, 'area 1 is the active zone');
   assert.equal(zone.kind, 'area', 'the active zone is an ordinary area');
-  assert.ok(U.getSolids().length > 0, 'area -1 has installed solids (terrain)');
+  assert.ok(U.getSolids().length > 0, 'area 1 has installed solids (terrain)');
 });
 
-test('full flow: -1 → -2 → -3 → -4 → boss, each zone installs its content', () => {
-  resetRuntimeToAreaMinus1();
+test('full flow: 1 → 2 → 3 → 4 → boss, each zone installs its content', () => {
+  resetRuntimeToAreaOne();
   const hero = U.getHero();
 
-  // Area -1 → -2 (horizontal).
-  advanceToNextArea(-2);
-  assert.equal(U.getActiveZone(hero).areaIdx, -2, 'area -2 is active');
-  assert.ok(U.getSolids().length > 0, 'area -2 has installed solids');
-  assert.ok(U.getRealEnemies().length > 0, 'area -2 has populated enemies (budget -2)');
+  // Area 1 → 2 (horizontal).
+  advanceToNextArea(2);
+  assert.equal(U.getActiveZone(hero).areaIdx, 2, 'area 2 is active');
+  assert.ok(U.getSolids().length > 0, 'area 2 has installed solids');
+  assert.ok(U.getRealEnemies().length > 0, 'area 2 has populated enemies (budget 2)');
 
-  // Area -2 → -3 (the vertical climb).
-  advanceToNextArea(-3);
+  // Area 2 → 3 (the vertical climb).
+  advanceToNextArea(3);
   const z3 = U.getActiveZone(hero);
-  assert.equal(z3.areaIdx, -3, 'area -3 is active');
-  assert.equal(z3.orientation, 'vertical', 'area -3 is the vertical climb (Level 1)');
-  assert.ok(U.getSolids().length > 0, 'area -3 has installed solids (composed climb)');
-  assert.ok(U.getRealEnemies().length > 0, 'area -3 has populated enemies (budget -3)');
+  assert.equal(z3.areaIdx, 3, 'area 3 is active');
+  assert.equal(z3.orientation, 'vertical', 'area 3 is the vertical climb (Level 1)');
+  assert.ok(U.getSolids().length > 0, 'area 3 has installed solids (composed climb)');
+  assert.ok(U.getRealEnemies().length > 0, 'area 3 has populated enemies (budget 3)');
 
-  // Area -3 → -4 (horizontal).
-  advanceToNextArea(-4);
-  assert.equal(U.getActiveZone(hero).areaIdx, -4, 'area -4 is active');
-  assert.ok(U.getSolids().length > 0, 'area -4 has installed solids');
-  assert.ok(U.getRealEnemies().length > 0, 'area -4 has populated enemies (budget -4)');
+  // Area 3 → 4 (horizontal).
+  advanceToNextArea(4);
+  assert.equal(U.getActiveZone(hero).areaIdx, 4, 'area 4 is active');
+  assert.ok(U.getSolids().length > 0, 'area 4 has installed solids');
+  assert.ok(U.getRealEnemies().length > 0, 'area 4 has populated enemies (budget 4)');
 
-  // Area -4 → boss zone (the -4 exit is the boss checkpoint).
-  advanceToNextArea(BOSS_AREA);
+  // Area 4 → boss zone (the 4 exit is the boss checkpoint).
+  advanceToNextArea(AREA_BOSS);
   const zb = U.getActiveZone(hero);
-  assert.equal(zb.kind, 'boss', 'the boss zone is active after the -4 exit');
+  assert.equal(zb.kind, 'boss', 'the boss zone is active after the 4 exit');
   assert.ok(U.getSolids().length > 0, 'the boss zone has installed solids (its floor)');
   // The boss zone is a self-contained arena: no composed population, but the
   // boss entity is the content. The boss zone's entry flag (boss checkpoint)
@@ -297,7 +298,7 @@ test('full flow: -1 → -2 → -3 → -4 → boss, each zone installs its conten
   assert.ok(U.getCheckpoints().length > 0, 'the boss zone installs its boss checkpoint');
 });
 
-test('full flow: boss defeat → reward → next level starts at area -1', () => {
+test('full flow: boss defeat → reward → next level starts at area 1', () => {
   // Clean reward state + a fresh hero with a known tally.
   L._resetRewardForTest();
   setState(S.PLAY);
@@ -328,7 +329,7 @@ test('full flow: boss defeat → reward → next level starts at area -1', () =>
   }
   assert.equal(getState(), S.AREA_ENTRY, 'the next level opens on the shared entry screen');
   assert.equal(h.currentLevel, 2, 'the level advanced to 2');
-  assert.equal(h.currentArea, -1, 'the next level starts at area -1');
+  assert.equal(h.currentArea, 1, 'the next level starts at area 1');
   assert.equal(h.runStats.coinsCollected.total, 0, 'the per-level coin tally is reset');
 });
 
@@ -354,7 +355,7 @@ test('full flow: boss defeat on the FINAL level → end-of-game (no next level)'
 // Group 3 — Death & continue
 // =============================================================================
 
-test('death in area -3: the same area restarts with the SAME arrangement', () => {
+test('death in area 3: the same area restarts with the SAME arrangement', () => {
   const h = makeTestHero();
   h.lives = 3;
   const ctx = makeAreaContext();
@@ -362,9 +363,9 @@ test('death in area -3: the same area restarts with the SAME arrangement', () =>
   const entryX = ZONE_ENTRY_X;
   const enemyInitX = ctx._enemy._initPos.x;
 
-  // Simulate a failed attempt in area -3: the hero walked to the middle of the
+  // Simulate a failed attempt in area 3: the hero walked to the middle of the
   // area, the enemy moved and took damage, the barrel was destroyed.
-  h.currentArea = -3;
+  h.currentArea = 3;
   h.x = 2500;
   h.y = 460;
   h.checkpoint = { x: entryX, y: ZONE_GROUND_Y - h.h }; // area entry flag position
@@ -381,8 +382,8 @@ test('death in area -3: the same area restarts with the SAME arrangement', () =>
   setState(S.PLAY);
   L.startLife(h, ctx);
 
-  assert.equal(h.currentArea, -3, 'the hero is still in area -3 (same area)');
-  assert.equal(h.x, entryX, 'the hero is at the area -3 entry flag');
+  assert.equal(h.currentArea, 3, 'the hero is still in area 3 (same area)');
+  assert.equal(h.x, entryX, 'the hero is at the area 3 entry flag');
   assert.equal(h.y, ZONE_GROUND_Y - h.h, 'the hero is at the entry flag\'s ground level');
   assert.equal(ctx._enemy.x, enemyInitX, 'the enemy is back at its original position');
   assert.equal(ctx._enemy.hp, 40, 'the enemy\'s HP is restored');
@@ -393,10 +394,10 @@ test('death in area -3: the same area restarts with the SAME arrangement', () =>
   assert.ok(h.intangible, 'respawn i-frames are active at the entry');
 });
 
-test('continue: lands the hero at area -1 with lives restored', () => {
+test('continue: lands the hero at area 1 with lives restored', () => {
   const h = makeTestHero();
   h.lives = 0; // game over
-  h.currentArea = -3; // died deep in the level (area -3)
+  h.currentArea = 3; // died deep in the level (area 3)
   h.x = 3000;
   h.y = 460;
   h.checkpoint = { x: 3000, y: 460 }; // the death spot
@@ -407,14 +408,14 @@ test('continue: lands the hero at area -1 with lives restored', () => {
 
   assert.equal(applied, true, 'the continue was applied');
   assert.equal(h.lives, GAME_RULES.startingLives, 'lives restored to the starting count');
-  assert.equal(h.currentArea, -1, 'the hero returns to area -1 of the CURRENT level');
+  assert.equal(h.currentArea, 1, 'the hero returns to area 1 of the CURRENT level');
   assert.equal(h.continues.remaining, GAME_RULES.startingContinues - 1, 'exactly one continue spent');
   assert.equal(getState(), S.AREA_ENTRY, 'continue shows the shared area-entry screen');
 
-  // Confirming the entry screen starts the fresh attempt at area -1's entry.
+  // Confirming the entry screen starts the fresh attempt at area 1's entry.
   L.areaEntryOnAction('confirm', h, ctx);
   assert.equal(getState(), S.PLAY, 'confirm starts the fresh attempt');
-  assert.equal(h.x, ZONE_ENTRY_X, 'the hero is at area -1\'s entry (not the death spot)');
+  assert.equal(h.x, ZONE_ENTRY_X, 'the hero is at area 1\'s entry (not the death spot)');
   assert.ok(h.intangible, 'respawn i-frames are active after the continue');
 });
 

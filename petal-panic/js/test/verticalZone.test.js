@@ -42,7 +42,7 @@ const U = await import('../systems/update.js');
 const { S, setState, tryTransition } = await import('../state.js');
 
 const zones = buildLevelZones(LEVELS[0]);
-// LEVELS[0].verticalArea is -3 (see level.js config); the vertical zone is the
+// LEVELS[0].verticalArea is 3 (see level.js config); the vertical zone is the
 // one whose orientation is 'vertical'.
 const vzone = zones.find((z) => z.orientation === 'vertical');
 assert.ok(vzone, 'a vertical zone exists in the level');

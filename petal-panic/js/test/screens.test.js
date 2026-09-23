@@ -43,7 +43,7 @@ function makeTestHero() {
     configurable: true,
   });
   h.currentLevel = 1;
-  h.currentArea = -1;
+  h.currentArea = 1;
   h.checkpoint = { x: 100, y: 400 };
   return h;
 }
@@ -77,7 +77,7 @@ function makeAreaContext() {
 test('showAreaEntry: screen data has exactly level name, area id, and lives (no score)', () => {
   const h = makeTestHero();
   h.currentLevel = 1;
-  h.currentArea = 2; // "1-3"
+  h.currentArea = 3; // "1-3"
   h.lives = 2;
   setState(S.PLAY);
 
@@ -91,29 +91,24 @@ test('showAreaEntry: screen data has exactly level name, area id, and lives (no 
 });
 
 test('formatAreaId: area ids come from the level definition (checkpoint ids)', () => {
-  assert.equal(L.formatAreaId(1, -1), '1-1', 'pre-area -1 displays as the level\'s first checkpoint id');
-  assert.equal(L.formatAreaId(1, 0), '1-2', 'first checkpoint area');
-  assert.equal(L.formatAreaId(1, 1), '1-3', 'second checkpoint area');
-  assert.equal(L.formatAreaId(1, 2), '1-4', 'third checkpoint area');
-  assert.equal(L.formatAreaId(2, 0), '2-1', 'unknown levels fall back to positional ids');
+  assert.equal(L.formatAreaId(1, 1), '1-1', 'area 1 displays as the level\'s first checkpoint id');
+  assert.equal(L.formatAreaId(1, 2), '1-2', 'second checkpoint area');
+  assert.equal(L.formatAreaId(1, 3), '1-3', 'third checkpoint area');
+  assert.equal(L.formatAreaId(1, 4), '1-4', 'fourth checkpoint area');
+  assert.equal(L.formatAreaId(2, 1), '2-1', 'level 2 falls back to positional ids');
 });
 
 test('formatAreaId: the boss zone is identified as the level\'s boss area (from the level def)', async () => {
-  const { LEVELS, buildLevelZones } = await import('../level.js');
-  const def = LEVELS[0];
-  // The boss zone is the last zone in the level (zone model: index 4).
-  // formatAreaId uses the OLD convention where the boss index is 3.
-  const zones = buildLevelZones(def);
-  const bossIdx = zones.length - 2; // OLD convention: 3 (zones.length - 1 = 4 is the zone index)
-  assert.equal(L.formatAreaId(1, bossIdx), '1-B', 'the boss area index (from the level def) displays as 1-B');
-  assert.notEqual(L.formatAreaId(1, bossIdx - 1), '1-B', 'the area before the boss is not the boss zone');
+  const { AREA_BOSS } = await import('../systems/update.js');
+  assert.equal(L.formatAreaId(1, AREA_BOSS), '1-B', 'the boss area index (AREA_BOSS) displays as 1-B');
+  assert.notEqual(L.formatAreaId(1, 4), '1-B', 'the area before the boss is not the boss zone');
 });
 
 test('showAreaEntry: the presented data is the same shape the screen renders', () => {
   // The screen (screens.js AreaEntry) renders exactly these three fields;
   // anything else in the data would be a contract violation.
   const h = makeTestHero();
-  h.currentArea = 0; // "1-2"
+  h.currentArea = 2; // "1-2"
   h.lives = 1;
   setState(S.PLAY);
   const data = L.showAreaEntry(h, makeAreaContext());
@@ -158,7 +153,7 @@ test('continue shows the same shared entry screen (not a different one)', () => 
   assert.equal(applied, true, 'continue applied');
   assert.equal(getState(), S.AREA_ENTRY, 'continue lands on the shared entry screen');
   assert.equal(h.lives, GAME_RULES.startingLives, 'lives restored to the starting count');
-  assert.equal(h.currentArea, -1, 'continue returns to area -1 of the current level');
+  assert.equal(h.currentArea, 1, 'continue returns to area 1 of the current level');
   assert.equal(h.currentLevel, 1, 'level unchanged');
 });
 
@@ -167,7 +162,7 @@ test('post-death restart and continue both land on the SAME entry screen state',
   const h1 = makeTestHero();
   const ctx1 = makeAreaContext();
   h1.lives = 2;
-  h1.currentArea = 2; // died in 1-3 with lives remaining
+  h1.currentArea = 3; // died in 1-3 with lives remaining
   setState(S.PLAY);
   L.showAreaEntry(h1, ctx1);
   const afterDeath = getState();
@@ -198,7 +193,7 @@ test('death in 1-3 re-enters 1-3 beside its entry flag (same area, same arrangem
   const hero = U.getHero();
   const checkpoints = U.getCheckpoints();
 
-  // Simulate: the player is in area 1-3 (zone model: areaIdx -3) and dies.
+  // Simulate: the player is in area 1-3 (zone model: areaIdx 3) and dies.
   // The zone model's entry flag for area -3 is at x=ZONE_ENTRY_X (zone-local).
   const entryX = 120; // ZONE_ENTRY_X
   setState(S.PLAY);
@@ -209,7 +204,7 @@ test('death in 1-3 re-enters 1-3 beside its entry flag (same area, same arrangem
   hero.lives = 2; // one death will leave one life
   hero.x = entryX + 500; hero.y = 492;
   hero.checkpoint = { x: entryX, y: 492 }; // the 1-3 entry flag position (zone-local)
-  hero.currentArea = 2; // "1-3" (OLD convention: area index 2)
+  hero.currentArea = 3; // "1-3" (zone model: area index 3)
 
   // Kill the hero and run the death pipeline (skull + fade-to-black) to completion.
   runDeathPipeline(hero);
@@ -234,12 +229,12 @@ test('death in 1-3 re-enters 1-3 beside its entry flag (same area, same arrangem
     assert.equal(enemy.alive, true, 'defeated enemies are restored');
     assert.equal(enemy.hp, enemy.maxHp, 'enemy HP fully restored');
   }
-  // checkpoints.md §1: the ENTRY flag (the one the hero respawns beside, 1-3)
-  // must NOT immediately re-trigger the newly entered area — it is latched so
-  // the next overlap frame is a no-op. The OTHER flags re-arm for the attempt.
+  // checkpoints.md §1: entry flags are PURE VISUAL (no trigger, no latch, no
+  // state) — the hero spawns beside one and nothing about it changes gameplay.
+  // restoreArea re-arms every flag for the fresh attempt.
   const entryCp = checkpoints.find(c => c.checkpointId === '1-3');
   assert.ok(entryCp, 'the 1-3 entry flag exists');
-  assert.equal(entryCp.triggered, true, 'the entry flag is latched so it does not re-trigger');
+  assert.equal(entryCp.triggered, false, 'entry flags have no trigger to latch');
   for (const c of checkpoints) {
     if (c === entryCp) continue;
     assert.equal(c.triggered, false, 'other checkpoints re-arm for the new attempt');
@@ -257,7 +252,7 @@ test('ordinary death fades to black before the entry screen (checkpoints.md §4)
   hero.lives = 2;
   hero.x = 6500; hero.y = 492;
   hero.checkpoint = { x: 6000, y: 492 };
-  hero.currentArea = 2;
+  hero.currentArea = 3;
 
   // Kill the hero and step the presentation + fade.
   hero.energy = 0;
@@ -286,7 +281,7 @@ test('zero lives goes to the existing Game Over screen, not the entry screen', (
   hero.lives = 1; // last life
   hero.x = 6500; hero.y = 492;
   hero.checkpoint = { x: 6000, y: 492 };
-  hero.currentArea = 2;
+  hero.currentArea = 3;
 
   runDeathPipeline(hero);
 
@@ -332,7 +327,7 @@ test('the entry screen reuses the pause-menu ergonomics (list, focus pill, keyca
 test('confirming the entry screen starts the attempt in the area', () => {
   const h = makeTestHero();
   h.lives = 2;
-  h.currentArea = 1; // "1-3" (area index 1 = second checkpoint area)
+  h.currentArea = 3; // "1-3" (area index 3 = third checkpoint area)
   h.checkpoint = { x: 4000, y: 492 };
   const ctx = makeAreaContext();
   ctx._enemy.x = 5000; // moved during a previous attempt
@@ -373,14 +368,14 @@ test('boss-zone entry shows the boss area id (1-B), not the last ordinary area',
   hero.alive = true;
   hero.energy = hero.maxEnergy;
   hero.lives = 3;
-  hero.currentArea = 2; // last ordinary area before the boss (OLD convention: 2 = area 1-4)
+  hero.currentArea = 4; // last ordinary area before the boss (zone model: 4 = area 1-4)
   boss.active = false;
   boss.aiState = 'idle';
 
   // Trigger the boss-zone entry exactly as updateBoss() does on first
   // activation: set currentArea to the boss zone and show the shared entry
   // screen (lifecycle.md §2). We replicate the call-site logic the fix lives in.
-  hero.currentArea = 4; // boss zone (zone model: BOSS_AREA = 4)
+  hero.currentArea = U.AREA_BOSS; // boss zone (zone model: AREA_BOSS = 5)
   const bossCp = checkpoints[checkpoints.length - 1];
   hero.checkpoint = { x: bossCp.x, y: bossCp.y };
   L.showAreaEntry(hero);

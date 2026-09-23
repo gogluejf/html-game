@@ -47,7 +47,7 @@ import { areaLengthBudget } from '../level.js';
 // ---------------------------------------------------------------------------
 
 test('vertical composition uses only vertical macros', () => {
-  for (const stage of [-2, -3, -4]) {
+  for (const stage of [2, 3, 4]) {
     const rng = createRng(42);
     const layout = composeArea(rng, 'vertical', stage, areaLengthBudget('vertical'));
     for (const id of layout.macros) {
@@ -60,7 +60,7 @@ test('vertical composition uses only vertical macros', () => {
 });
 
 test('selectMacros: vertical returns only vertical macros for all stages', () => {
-  for (const stage of [-2, -3, -4]) {
+  for (const stage of [2, 3, 4]) {
     const candidates = selectMacros('vertical', stage);
     assert.ok(candidates.length > 0, `vertical stage ${stage}: has candidates`);
     for (const { macro } of candidates) {
@@ -70,7 +70,7 @@ test('selectMacros: vertical returns only vertical macros for all stages', () =>
 });
 
 test('selectMacros: horizontal never returns vertical macros', () => {
-  for (const stage of [-1, -2, -3, -4]) {
+  for (const stage of [1, 2, 3, 4]) {
     const candidates = selectMacros('horizontal', stage);
     for (const { macro } of candidates) {
       assert.equal(macro.orientation, 'horizontal', `stage ${stage}: ${macro.id} is horizontal`);
@@ -121,7 +121,7 @@ test('all vertical macro landings have horizontal gaps ≤ MAX_CLEARABLE_GAP', (
 
 test('composed vertical layouts pass validateLayout (all landings reachable)', () => {
   const budget = areaLengthBudget('vertical');
-  for (const stage of [-2, -3, -4]) {
+  for (const stage of [2, 3, 4]) {
     for (const seed of [1, 7, 42, 100, 999]) {
       const layout = composeAreaSeeded(seed, 'vertical', stage, budget);
       validateLayout(layout); // throws if any landing is unreachable
@@ -151,7 +151,7 @@ test('vertical macros have lateral variety (multiple distinct x positions)', () 
 test('composed vertical layouts have landings at multiple x positions', () => {
   const budget = areaLengthBudget('vertical');
   for (const seed of [1, 7, 42]) {
-    const layout = composeAreaSeeded(seed, 'vertical', -3, budget);
+    const layout = composeAreaSeeded(seed, 'vertical', 3, budget);
     const platforms = layout.units.filter((u) => u.kind === 'platform');
     const xs = new Set(platforms.map((p) => p.x));
     assert.ok(
@@ -219,7 +219,7 @@ test('vertical progression: macro difficulty rises from -2 to -4', () => {
   const budget = areaLengthBudget('vertical');
   const seeds = Array.from({ length: 20 }, (_, i) => i + 1);
   const avgDiff = {};
-  for (const stage of [-2, -3, -4]) {
+  for (const stage of [2, 3, 4]) {
     let total = 0;
     let count = 0;
     for (const seed of seeds) {
@@ -233,12 +233,12 @@ test('vertical progression: macro difficulty rises from -2 to -4', () => {
     avgDiff[stage] = total / count;
   }
   assert.ok(
-    avgDiff[-4] >= avgDiff[-2],
-    `vertical avg difficulty -4 (${avgDiff[-4].toFixed(2)}) must be >= -2 (${avgDiff[-2].toFixed(2)})`,
+    avgDiff[4] >= avgDiff[2],
+    `vertical avg difficulty -4 (${avgDiff[4].toFixed(2)}) must be >= -2 (${avgDiff[2].toFixed(2)})`,
   );
   assert.ok(
-    avgDiff[-4] >= avgDiff[-3],
-    `vertical avg difficulty -4 (${avgDiff[-4].toFixed(2)}) must be >= -3 (${avgDiff[-3].toFixed(2)})`,
+    avgDiff[4] >= avgDiff[3],
+    `vertical avg difficulty -4 (${avgDiff[4].toFixed(2)}) must be >= -3 (${avgDiff[3].toFixed(2)})`,
   );
 });
 
@@ -249,8 +249,8 @@ test('vertical progression: macro difficulty rises from -2 to -4', () => {
 test('vertical composition is deterministic per seed', () => {
   const seed = 20240517;
   const budget = areaLengthBudget('vertical');
-  const layout1 = composeAreaSeeded(seed, 'vertical', -3, budget);
-  const layout2 = composeAreaSeeded(seed, 'vertical', -3, budget);
+  const layout1 = composeAreaSeeded(seed, 'vertical', 3, budget);
+  const layout2 = composeAreaSeeded(seed, 'vertical', 3, budget);
 
   assert.deepEqual(layout1.macros, layout2.macros, 'same seed: same macro sequence');
   assert.deepEqual(
@@ -264,8 +264,8 @@ test('vertical composition is deterministic per seed', () => {
 
 test('vertical composition: different seeds produce different layouts', () => {
   const budget = areaLengthBudget('vertical');
-  const layout1 = composeAreaSeeded(1, 'vertical', -3, budget);
-  const layout2 = composeAreaSeeded(2, 'vertical', -3, budget);
+  const layout1 = composeAreaSeeded(1, 'vertical', 3, budget);
+  const layout2 = composeAreaSeeded(2, 'vertical', 3, budget);
   const same = JSON.stringify(layout1.macros) === JSON.stringify(layout2.macros)
     && JSON.stringify(layout1.units.map((u) => ({ x: u.x, y: u.y })))
        === JSON.stringify(layout2.units.map((u) => ({ x: u.x, y: u.y })));
@@ -292,7 +292,7 @@ test('vertical macros exceed the three-platform cap (structure.md §4)', () => {
 test('composed vertical area has more than 3 total landings', () => {
   const budget = areaLengthBudget('vertical');
   for (const seed of [1, 7, 42]) {
-    const layout = composeAreaSeeded(seed, 'vertical', -3, budget);
+    const layout = composeAreaSeeded(seed, 'vertical', 3, budget);
     const platformCount = layout.units.filter((u) => u.kind === 'platform').length;
     assert.ok(
       platformCount > 3,

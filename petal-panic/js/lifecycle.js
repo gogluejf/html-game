@@ -8,7 +8,7 @@
 //
 // The four operations (lifecycle.md):
 //   §1 startGame     — from zero: fresh hero, lives, continue pool, fresh
-//                      generation choices, enter the first level's area -1.
+//                      generation choices, enter the first level's area 1.
 //   §2 startArea     — first arrival: fix the area's arrangement from this
 //                      game's generation choices (already done at generation
 //                      time; here we record the area and prepare it), then
@@ -17,7 +17,7 @@
 //                      arrangement, place the hero at its entry with i-frames.
 //                      Lives are untouched (the caller already consumed one).
 //   §4 continueRun   — at Game Over: spend exactly one continue, restore the
-//                      starting life count, return to area -1 of the CURRENT
+//                      starting life count, return to area 1 of the CURRENT
 //                      level, start a fresh attempt. Never rerolls generation.
 //
 // This module is pure over the pieces handed to it (hero, entities, pools,
@@ -47,7 +47,7 @@ import { TUNING } from './tuning.js';
 // The snapshot is keyed to the (level, area) the hero is entering, so a
 // genuine area entry (a new area) records a fresh snapshot, while a death
 // restart of the SAME area restores the original entry snapshot. Continue
-// returns to area -1 of the current level (a new area), so it records a fresh
+// returns to area 1 of the current level (a new area), so it records a fresh
 // snapshot — and, per GAME_RULES.coins.resetOnContinue, the coin tally is
 // additionally zeroed on the continue itself.
 //
@@ -87,14 +87,14 @@ function restoreAreaEntryStats(h) {
 }
 
 // The area a fresh run begins in. Per lifecycle.md §1/§4 a new game and a
-// continue both enter area -1 of their level (the pre-area).
-const ENTRY_AREA = -1;
+// continue both enter area 1 of their level (the first area).
+const ENTRY_AREA = 1;
 
-// The hero's entry position for a level's pre-area (area -1). A new game and
+// The hero's entry position for a level's first area (area 1). A new game and
 // a continue both place the hero here so a continue lands the hero at the
 // level's beginning rather than wherever they died (lifecycle.md §4).
 // MINOR 9: the coordinates are zone-aware (level.js ZONE_ENTRY_X /
-// ZONE_GROUND_Y), not stale prototype constants. Area -1 has no entry flag
+// ZONE_GROUND_Y), not stale prototype constants. Area 1 has no entry flag
 // (checkpoints.md §1), so its entry is the zone's start position.
 
 /**
@@ -290,7 +290,7 @@ export function resetGeneration(ctx) {
 /**
  * §1 Game start — from zero. Establishes the selected hero, global starting
  * lives and continues, fresh progress/reward accounting, fresh generation
- * choices, and entry into the first level's area -1.
+ * choices, and entry into the first level's area 1.
  *
  * Fresh generation choices (lifecycle.md §1/§6): when a regenerate callback is
  * registered (update.js), the previous world is replaced with a freshly
@@ -355,7 +355,7 @@ export function startGame(ctx, heroDef) {
  *
  * @param {Hero} h
  * @param {number} level the level index (1-based)
- * @param {number} areaIdx the area index (pre-area is -1)
+ * @param {number} areaIdx the area index (1..4, or AREA_BOSS for the boss zone)
  */
 export function startArea(h, level, areaIdx) {
   h.currentLevel = level;
@@ -408,7 +408,7 @@ export function startLife(h, ctx) {
 
 /**
  * §4 Game continue. Requires a remaining continue and consumes exactly one,
- * restores the global starting life count, returns to area -1 of the CURRENT
+ * restores the global starting life count, returns to area 1 of the CURRENT
  * level, and starts a fresh attempt there. All previously generated areas keep
  * their arrangements — continue never rerolls generation choices.
  *
@@ -421,24 +421,24 @@ export function continueRun(h, ctx) {
   if (!canSpend(h.continues)) return false;
   spend(h.continues);
   h.lives = GAME_RULES.startingLives;
-  // Return to area -1 of the CURRENT level (lifecycle.md §4). The level is
-  // unchanged; the area index is reset to the pre-area.
+  // Return to area 1 of the CURRENT level (lifecycle.md §4). The level is
+  // unchanged; the area index is reset to the first area.
   h.currentArea = ENTRY_AREA;
   // Coin accounting (game-rules.md §2): what happens to the current level's
   // coin tally after using Continue. The concrete policy is GAME_RULES.coins
   // (the TUNING block): a continue resets the current level's tally so the
   // fresh attempt starts clean and the failed attempt's coins do not count.
   if (GAME_RULES.coins.resetOnContinue) resetLevelCoinTally(h);
-  // Accounting snapshot (game-rules.md §4): the continue returns to area -1
+  // Accounting snapshot (game-rules.md §4): the continue returns to area 1
   // of the current level (a NEW area), so record a fresh entry snapshot. The
   // resetLevelCoinTally above already zeroed the coin tally; the snapshot
   // captures the (now-zeroed) entry totals so a later death restart of area
-  // -1 rolls back to them.
+  // 1 rolls back to them.
   recordAreaEntrySnapshot(h);
-  // Position the hero at area -1's entry (checkpoints.md §5, lifecycle.md §4):
-  // Continue returns to the current level's area -1 with restored lives and
+  // Position the hero at area 1's entry (checkpoints.md §5, lifecycle.md §4):
+  // Continue returns to the current level's area 1 with restored lives and
   // starts a FRESH attempt there — it does NOT resume beside the flag of the
-  // area where the last life was lost. Area -1 has no entry flag, so the entry
+  // area where the last life was lost. Area 1 has no entry flag, so the entry
   // is the zone's start position (the hero's physical position is owned by
   // startLife() via h.checkpoint; task 7.1).
   h.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - h.h };
@@ -454,7 +454,7 @@ export function continueRun(h, ctx) {
 //
 // ONE full-screen presentation, shown for: starting the first area of a new
 // game, advancing to another area or level, restarting an area after an
-// ordinary death, restarting the current level's -1 after Continue, and
+// ordinary death, restarting the current level's area 1 after Continue, and
 // entering/restarting the boss zone. It displays exactly three pieces of
 // information:
 //   1. Level name
@@ -502,32 +502,10 @@ export function getAreaEntryData() { return _areaEntryData; }
  * @returns {object} the screen data as displayed
  */
 export function showAreaEntry(h, ctx) {
-  // Convert the area index to the formatAreaId input convention.
-  //
-  // Two conventions are in play:
-  //   ZONE MODEL: currentArea is -1, -2, -3, -4, or BOSS_AREA (4).
-  //   OLD (test): currentArea is -1, 0, 1, 2, 3, 4 (area index).
-  //
-  // formatAreaId expects: -1 → 'X-1', 0 → 'X-2', 1 → 'X-3', 2 → 'X-4', 3+ → 'X-B'.
-  //
-  // Zone model → formatAreaId:
-  //   -1 → -1, -2 → 0, -3 → 1, -4 → 2, 4 → 3
-  // OLD → formatAreaId (subtract 1):
-  //   -1 → -1 (pre-area, no subtraction), 0 → -1, 1 → 0, 2 → 1, 3 → 2, 4 → 3
-  let fmtArea;
-  if (h.currentArea < 0 && h.currentArea !== -1) {
-    // Zone model negative area (not -1): -2 → 0, -3 → 1, -4 → 2
-    fmtArea = h.currentArea + 2;
-  } else if (h.currentArea >= 4) {
-    // Boss zone (zone model 4 or OLD 4): → 3
-    fmtArea = 3;
-  } else if (h.currentArea === -1) {
-    // Pre-area (both conventions): → -1
-    fmtArea = -1;
-  } else {
-    // OLD convention (0..3): subtract 1
-    fmtArea = h.currentArea - 1;
-  }
+  // currentArea uses the single zone-model convention: 1..4 for the four
+  // ordinary areas, AREA_BOSS (5) for the boss zone. formatAreaId takes the
+  // same value directly (no conversion needed).
+  const fmtArea = h.currentArea;
   const data = {
     levelName: levelName(h.currentLevel),
     areaId: formatAreaId(h.currentLevel, fmtArea),
@@ -595,7 +573,7 @@ function levelName(level) {
 // credited once, not again because the screen redraws or its animation
 // repeats"). The presentation itself (canvas drawing, pause-menu ergonomics)
 // lives in screens.js; this module owns the data, the crediting, and the
-// confirm flow (next level's area -1, or the end-of-game path) so the rules
+// confirm flow (next level's area 1, or the end-of-game path) so the rules
 // are unit-testable in node.
 
 /** Callback registered by screens.js to receive the reward screen data. */
@@ -765,7 +743,7 @@ export function showLevelReward(h) {
 /**
  * Handle input on the reward screen (boss-arena.md §5, lifecycle.md §5).
  *
- * Confirm: the next level starts at area -1 with its shared entry screen
+ * Confirm: the next level starts at area 1 with its shared entry screen
  * (level name, area, lives). For the FINAL level there is no next level —
  * the last boss must not advance into a nonexistent one; instead the
  * end-of-game path takes over (lifecycle.md §5): a minimal congratulations
@@ -819,7 +797,7 @@ export function rewardOnAction(action, h) {
       return true;
     }
     // Next level: establish the level config, reset the per-level reward
-    // accounting, and open the next level at area -1 with its shared entry
+    // accounting, and open the next level at area 1 with its shared entry
     // screen (boss-arena.md §5, lifecycle.md §5). The actual world swap is
     // task 7.1's job; here we set everything the entry screen and the next
     // level's reward accounting need.
@@ -832,7 +810,7 @@ export function rewardOnAction(action, h) {
     h.levelConfig = getLevelConfig(h.currentLevel);
     h.runStats = createStats();
     // Accounting snapshot (game-rules.md §4): record the (fresh) entry totals
-    // for the next level's area -1 so a later death restart can roll the run
+    // for the next level's area 1 so a later death restart can roll the run
     // stats back to them (the 'rollback' policy).
     recordAreaEntrySnapshot(h);
     // The presented reward is consumed; the next boss kill presents a fresh
@@ -848,33 +826,17 @@ export function rewardOnAction(action, h) {
 }
 
 /**
- * Format the area identifier from the level definition (checkpoints.md §1/§3):
- * pre-area -1 → '1-1', area 0 → '1-2', 1 → '1-3', 2 → '1-4', and the level's
- * boss area → '1-B'. The IDs come from the level's checkpoint definitions —
- * the boss zone is a property of the level (the checkpoint whose id ends in
- * '-B'), not a universal index.
+ * Format the area identifier (checkpoints.md §1/§3): areas 1..4 → 'X-N' and
+ * the boss zone (AREA_BOSS, 5) → 'X-B'. The IDs come from the level's
+ * checkpoint definitions — the boss zone is a property of the level (the
+ * checkpoint whose id ends in '-B'), not a universal index.
  *
- * The `area` parameter uses the 0-based checkpoint-index convention:
- *   -1 → first area, 0 → second, 1 → third, 2 → fourth, 3+ → boss.
- * The zone model's area indices (-1, -2, -3, -4, BOSS_AREA) are converted
- * to this convention by the caller (showAreaEntry) before calling this.
+ * The `area` parameter uses the zone-model convention: 1..4 for the ordinary
+ * areas and AREA_BOSS (5) for the boss zone; it is passed through directly.
  */
 export function formatAreaId(level, area) {
-  // For known levels (present in LEVELS), use the checkpoint-based mapping:
-  //   -1 → 'X-1', 0 → 'X-2', 1 → 'X-3', 2 → 'X-4', 3+ → 'X-B'
-  // For unknown levels, fall back to positional ids:
-  //   -1 → 'X-1', 0 → 'X-1', 1 → 'X-2', 2 → 'X-3', 3 → 'X-4', 4+ → 'X-B'
-  const def = LEVELS[level - 1];
-  if (def) {
-    // Known level: checkpoint-based mapping
-    if (area < 0) return `${level}-1`;
-    if (area >= 3) return `${level}-B`;
-    return `${level}-${area + 2}`;
-  }
-  // Unknown level: positional fallback
-  if (area < 0) return `${level}-1`;
-  if (area >= 4) return `${level}-B`;
-  return `${level}-${area + 1}`;
+  if (area >= 5) return `${level}-B`; // boss zone (AREA_BOSS)
+  return `${level}-${area}`;
 }
 
 // --- Internals ---------------------------------------------------------------

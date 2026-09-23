@@ -4,7 +4,7 @@
 // Source of truth:
 //   docs/levels/generation.md   §2 (Macro examples), §3 (What a macro
 //                               describes), §4 (Constructing an area),
-//                               §5 (Progression -1 to -4), §6 (Playability)
+//                               §5 (Progression 1 to 4), §6 (Playability)
 //   docs/levels/structure.md    §5 (Terrain vocabulary)
 //
 // Acceptance criteria covered:
@@ -154,47 +154,47 @@ test('macroWidth: computes total width including entry/exit clear zones', () => 
 // Macro selection by stage (generation.md §5)
 // ---------------------------------------------------------------------------
 
-test('selectMacros: stage -1 only returns difficulty-1 macros', () => {
-  const candidates = selectMacros('horizontal', -1);
-  assert.ok(candidates.length > 0, 'stage -1 has candidates');
+test('selectMacros: stage 1 only returns difficulty-1 macros', () => {
+  const candidates = selectMacros('horizontal', 1);
+  assert.ok(candidates.length > 0, 'stage 1 has candidates');
   for (const { macro } of candidates) {
-    assert.equal(macro.difficulty, 1, `stage -1: ${macro.id} is difficulty 1`);
-    assert.equal(macro.orientation, 'horizontal', `stage -1: ${macro.id} is horizontal`);
+    assert.equal(macro.difficulty, 1, `stage 1: ${macro.id} is difficulty 1`);
+    assert.equal(macro.orientation, 'horizontal', `stage 1: ${macro.id} is horizontal`);
   }
 });
 
-test('selectMacros: stage -2 returns difficulty 1-2 macros', () => {
-  const candidates = selectMacros('horizontal', -2);
-  assert.ok(candidates.length > 0, 'stage -2 has candidates');
+test('selectMacros: stage 2 returns difficulty 1-2 macros', () => {
+  const candidates = selectMacros('horizontal', 2);
+  assert.ok(candidates.length > 0, 'stage 2 has candidates');
   for (const { macro } of candidates) {
-    assert.ok(macro.difficulty >= 1 && macro.difficulty <= 2, `stage -2: ${macro.id} is difficulty 1-2`);
+    assert.ok(macro.difficulty >= 1 && macro.difficulty <= 2, `stage 2: ${macro.id} is difficulty 1-2`);
   }
 });
 
-test('selectMacros: stage -3 returns difficulty 1-3 macros', () => {
-  const candidates = selectMacros('horizontal', -3);
-  assert.ok(candidates.length > 0, 'stage -3 has candidates');
+test('selectMacros: stage 3 returns difficulty 1-3 macros', () => {
+  const candidates = selectMacros('horizontal', 3);
+  assert.ok(candidates.length > 0, 'stage 3 has candidates');
   for (const { macro } of candidates) {
-    assert.ok(macro.difficulty >= 1 && macro.difficulty <= 3, `stage -3: ${macro.id} is difficulty 1-3`);
+    assert.ok(macro.difficulty >= 1 && macro.difficulty <= 3, `stage 3: ${macro.id} is difficulty 1-3`);
   }
 });
 
-test('selectMacros: stage -4 returns difficulty 1-3 macros weighted toward hard', () => {
-  const candidates = selectMacros('horizontal', -4);
-  assert.ok(candidates.length > 0, 'stage -4 has candidates');
+test('selectMacros: stage 4 returns difficulty 1-3 macros weighted toward hard', () => {
+  const candidates = selectMacros('horizontal', 4);
+  assert.ok(candidates.length > 0, 'stage 4 has candidates');
   // The hardest macros should have the highest weight.
   const weights = candidates.map((c) => c.weight);
   const maxWeight = Math.max(...weights);
   const hardCandidates = candidates.filter((c) => c.macro.difficulty === 3);
-  assert.ok(hardCandidates.length > 0, 'stage -4: has difficulty-3 macros');
+  assert.ok(hardCandidates.length > 0, 'stage 4: has difficulty-3 macros');
   for (const hc of hardCandidates) {
-    assert.equal(hc.weight, maxWeight, `stage -4: ${hc.macro.id} has max weight`);
+    assert.equal(hc.weight, maxWeight, `stage 4: ${hc.macro.id} has max weight`);
   }
 });
 
-test('selectMacros: vertical stage -2 returns climbing macros', () => {
-  const candidates = selectMacros('vertical', -2);
-  assert.ok(candidates.length > 0, 'vertical stage -2 has candidates');
+test('selectMacros: vertical stage 2 returns climbing macros', () => {
+  const candidates = selectMacros('vertical', 2);
+  assert.ok(candidates.length > 0, 'vertical stage 2 has candidates');
   for (const { macro } of candidates) {
     assert.equal(macro.orientation, 'vertical', `vertical: ${macro.id} is vertical`);
   }
@@ -202,7 +202,7 @@ test('selectMacros: vertical stage -2 returns climbing macros', () => {
 
 test('selectMacros: throws on unknown stage', () => {
   assert.throws(() => selectMacros('horizontal', 0), /unknown stage/);
-  assert.throws(() => selectMacros('horizontal', -5), /unknown stage/);
+  assert.throws(() => selectMacros('horizontal', 5), /unknown stage/);
 });
 
 // ---------------------------------------------------------------------------
@@ -211,10 +211,10 @@ test('selectMacros: throws on unknown stage', () => {
 
 test('composeArea: returns a layout with the correct shape', () => {
   const rng = createRng(42);
-  const layout = composeArea(rng, 'horizontal', -1, 40);
+  const layout = composeArea(rng, 'horizontal', 1, 40);
 
   assert.equal(layout.orientation, 'horizontal');
-  assert.equal(layout.stage, -1);
+  assert.equal(layout.stage, 1);
   assert.equal(layout.budget, 40);
   assert.equal(layout.entryClear, ENTRY_CLEAR);
   assert.equal(layout.exitClear, EXIT_CLEAR);
@@ -229,7 +229,7 @@ test('composeArea: returns a layout with the correct shape', () => {
 test('composeArea: layout meets the budget (totalWidth >= budget)', () => {
   for (const seed of [1, 7, 42, 100, 999]) {
     const rng = createRng(seed);
-    const layout = composeArea(rng, 'horizontal', -1, 40);
+    const layout = composeArea(rng, 'horizontal', 1, 40);
     assert.ok(
       layout.totalWidth >= layout.budget,
       `seed ${seed}: totalWidth ${layout.totalWidth} >= budget ${layout.budget}`,
@@ -239,13 +239,13 @@ test('composeArea: layout meets the budget (totalWidth >= budget)', () => {
 
 test('composeArea: at least one macro is placed', () => {
   const rng = createRng(1);
-  const layout = composeArea(rng, 'horizontal', -1, 40);
+  const layout = composeArea(rng, 'horizontal', 1, 40);
   assert.ok(layout.macros.length >= 1, 'at least one macro placed');
 });
 
 test('composeArea: units have x positions and valid aabb', () => {
   const rng = createRng(5);
-  const layout = composeArea(rng, 'horizontal', -2, 30);
+  const layout = composeArea(rng, 'horizontal', 2, 30);
   for (const u of layout.units) {
     assert.ok(typeof u.x === 'number', 'unit has x position');
     assert.ok(u.x >= 0, 'unit x is non-negative');
@@ -258,7 +258,7 @@ test('composeArea: units have x positions and valid aabb', () => {
 
 test('composeArea: gaps are within the layout bounds', () => {
   const rng = createRng(10);
-  const layout = composeArea(rng, 'horizontal', -3, 30);
+  const layout = composeArea(rng, 'horizontal', 3, 30);
   for (const gap of layout.gaps) {
     assert.ok(gap.x >= 0, 'gap x is non-negative');
     assert.ok(gap.x + gap.width <= layout.totalWidth, 'gap is within layout bounds');
@@ -273,7 +273,7 @@ test('composeArea: gaps are within the layout bounds', () => {
 test('composeArea: no impossible gaps (gap width <= MAX_CLEARABLE_GAP)', () => {
   for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
     const rng = createRng(seed);
-    const layout = composeArea(rng, 'horizontal', -3, 40);
+    const layout = composeArea(rng, 'horizontal', 3, 40);
     for (const gap of layout.gaps) {
       assert.ok(
         gap.width <= MAX_CLEARABLE_GAP,
@@ -286,7 +286,7 @@ test('composeArea: no impossible gaps (gap width <= MAX_CLEARABLE_GAP)', () => {
 test('composeArea: entry zone is clear (no units in the first ENTRY_CLEAR units)', () => {
   for (const seed of [1, 2, 3, 4, 5]) {
     const rng = createRng(seed);
-    const layout = composeArea(rng, 'horizontal', -2, 25);
+    const layout = composeArea(rng, 'horizontal', 2, 25);
     for (const u of layout.units) {
       assert.ok(
         u.x >= layout.entryClear,
@@ -299,7 +299,7 @@ test('composeArea: entry zone is clear (no units in the first ENTRY_CLEAR units)
 test('composeArea: exit zone is clear (no units in the last EXIT_CLEAR units)', () => {
   for (const seed of [1, 2, 3, 4, 5]) {
     const rng = createRng(seed);
-    const layout = composeArea(rng, 'horizontal', -2, 25);
+    const layout = composeArea(rng, 'horizontal', 2, 25);
     const exitStart = layout.totalWidth - layout.exitClear;
     for (const u of layout.units) {
       const unitEnd = u.x + u.aabb.w;
@@ -314,7 +314,7 @@ test('composeArea: exit zone is clear (no units in the last EXIT_CLEAR units)', 
 test('composeArea: no buried landings (platforms not under blocks)', () => {
   for (const seed of [1, 2, 3, 4, 5]) {
     const rng = createRng(seed);
-    const layout = composeArea(rng, 'horizontal', -3, 35);
+    const layout = composeArea(rng, 'horizontal', 3, 35);
     const platforms = layout.units.filter((u) => u.kind === 'platform');
     const blocks = layout.units.filter((u) => u.kind === 'block');
     for (const p of platforms) {
@@ -338,7 +338,7 @@ test('composeArea: no buried landings (platforms not under blocks)', () => {
 test('composeArea: elevation steps between successive platforms are <= 1 tier', () => {
   for (const seed of [1, 2, 3]) {
     const rng = createRng(seed);
-    const layout = composeArea(rng, 'horizontal', -3, 35);
+    const layout = composeArea(rng, 'horizontal', 3, 35);
     const platforms = layout.units
       .filter((u) => u.kind === 'platform')
       .sort((a, b) => a.x - b.x);
@@ -358,7 +358,7 @@ test('composeArea: elevation steps between successive platforms are <= 1 tier', 
 
 test('composeArea: vertical orientation produces vertical macros', () => {
   const rng = createRng(42);
-  const layout = composeArea(rng, 'vertical', -2, 20);
+  const layout = composeArea(rng, 'vertical', 2, 20);
   assert.equal(layout.orientation, 'vertical');
   assert.ok(layout.macros.length >= 1, 'at least one macro placed');
   for (const id of layout.macros) {
@@ -368,7 +368,7 @@ test('composeArea: vertical orientation produces vertical macros', () => {
 
 test('composeArea: vertical layout has platform units (climbing landings)', () => {
   const rng = createRng(42);
-  const layout = composeArea(rng, 'vertical', -2, 20);
+  const layout = composeArea(rng, 'vertical', 2, 20);
   const platforms = layout.units.filter((u) => u.kind === 'platform');
   assert.ok(platforms.length > 0, 'vertical layout has platform landings');
 });
@@ -377,26 +377,26 @@ test('composeArea: vertical layout has platform units (climbing landings)', () =
 // composeArea: progression stages
 // ---------------------------------------------------------------------------
 
-test('composeArea: stage -1 produces only difficulty-1 macros', () => {
+test('composeArea: stage 1 produces only difficulty-1 macros', () => {
   const rng = createRng(1);
-  const layout = composeArea(rng, 'horizontal', -1, 40);
+  const layout = composeArea(rng, 'horizontal', 1, 40);
   for (const id of layout.macros) {
-    assert.equal(MACROS[id].difficulty, 1, `stage -1: macro ${id} is difficulty 1`);
+    assert.equal(MACROS[id].difficulty, 1, `stage 1: macro ${id} is difficulty 1`);
   }
 });
 
-test('composeArea: stage -3 can include difficulty-3 macros', () => {
-  // With a large budget, stage -3 should eventually place a difficulty-3 macro.
+test('composeArea: stage 3 can include difficulty-3 macros', () => {
+  // With a large budget, stage 3 should eventually place a difficulty-3 macro.
   let found = false;
   for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
     const rng = createRng(seed);
-    const layout = composeArea(rng, 'horizontal', -3, 40);
+    const layout = composeArea(rng, 'horizontal', 3, 40);
     if (layout.macros.some((id) => MACROS[id].difficulty === 3)) {
       found = true;
       break;
     }
   }
-  assert.ok(found, 'stage -3: at least one seed produces a difficulty-3 macro');
+  assert.ok(found, 'stage 3: at least one seed produces a difficulty-3 macro');
 });
 
 // ---------------------------------------------------------------------------
@@ -405,12 +405,12 @@ test('composeArea: stage -3 can include difficulty-3 macros', () => {
 
 test('STAGE_WEIGHTS: -1 is sparse/simple, -4 is dense/hard (generation.md §5)', () => {
   // -1 uses ONLY difficulty-1 macros; -4 weights difficulty-3 heaviest.
-  assert.deepEqual(Object.keys(STAGE_WEIGHTS['-1']), ['1'], '-1: only difficulty 1');
-  assert.ok(STAGE_WEIGHTS['-4'][3] >= 1, '-4: difficulty 3 is the top weight');
-  assert.ok(STAGE_WEIGHTS['-4'][1] < STAGE_WEIGHTS['-4'][3], '-4: difficulty 1 weighted below 3');
+  assert.deepEqual(Object.keys(STAGE_WEIGHTS['1']), ['1'], '-1: only difficulty 1');
+  assert.ok(STAGE_WEIGHTS['4'][3] >= 1, '-4: difficulty 3 is the top weight');
+  assert.ok(STAGE_WEIGHTS['4'][1] < STAGE_WEIGHTS['4'][3], '-4: difficulty 1 weighted below 3');
 });
 
-test('progression: stage -1 areas are visibly sparser than stage -4 (generation.md §5)', () => {
+test('progression: stage 1 areas are visibly sparser than stage 4 (generation.md §5)', () => {
   // -1 must have FEWER obstacles (block/platform units) than -4 at the same
   // (real) horizontal area budget. This is the "visibly sparser" acceptance
   // criterion: fewer, more simply-arranged obstacles with room to move.
@@ -419,8 +419,8 @@ test('progression: stage -1 areas are visibly sparser than stage -4 (generation.
   let density1 = 0;
   let density4 = 0;
   for (const seed of seeds) {
-    const l1 = composeAreaSeeded(seed, 'horizontal', -1, budget);
-    const l4 = composeAreaSeeded(seed, 'horizontal', -4, budget);
+    const l1 = composeAreaSeeded(seed, 'horizontal', 1, budget);
+    const l4 = composeAreaSeeded(seed, 'horizontal', 4, budget);
     // Every stage must produce a completable (validated) route.
     validateLayout(l1);
     validateLayout(l4);
@@ -431,7 +431,7 @@ test('progression: stage -1 areas are visibly sparser than stage -4 (generation.
   const avg4 = density4 / seeds.length;
   assert.ok(
     avg1 < avg4,
-    `stage -1 avg density ${avg1.toFixed(2)} must be less than stage -4 avg density ${avg4.toFixed(2)}`,
+    `stage 1 avg density ${avg1.toFixed(2)} must be less than stage 4 avg density ${avg4.toFixed(2)}`,
   );
 });
 
@@ -441,7 +441,7 @@ test('progression: macro difficulty rises across -1 → -4 (generation.md §5)',
   const budget = areaLengthBudget('horizontal');
   const seeds = Array.from({ length: 40 }, (_, i) => i + 1);
   const avgDiff = {};
-  for (const stage of [-1, -2, -3, -4]) {
+  for (const stage of [1, 2, 3, 4]) {
     let total = 0;
     let count = 0;
     for (const seed of seeds) {
@@ -453,9 +453,9 @@ test('progression: macro difficulty rises across -1 → -4 (generation.md §5)',
     }
     avgDiff[stage] = total / count;
   }
-  assert.ok(avgDiff[-1] < avgDiff[-4], `avg difficulty -1 (${avgDiff[-1].toFixed(2)}) < -4 (${avgDiff[-4].toFixed(2)})`);
-  assert.ok(avgDiff[-2] >= avgDiff[-1], 'avg difficulty -2 >= -1');
-  assert.ok(avgDiff[-4] >= avgDiff[-3], 'avg difficulty -4 >= -3 (strongest combos)');
+  assert.ok(avgDiff[1] < avgDiff[4], `avg difficulty 1 (${avgDiff[1].toFixed(2)}) < 4 (${avgDiff[4].toFixed(2)})`);
+  assert.ok(avgDiff[2] >= avgDiff[1], 'avg difficulty 2 >= 1');
+  assert.ok(avgDiff[4] >= avgDiff[3], 'avg difficulty 4 >= 3 (strongest combos)');
 });
 
 test('progression: all four stages produce completable routes (generation.md §5/§6)', () => {
@@ -464,14 +464,14 @@ test('progression: all four stages produce completable routes (generation.md §5
   // landings, reachable elevations) — i.e. a completable route.
   const budget = areaLengthBudget('horizontal');
   const vBudget = areaLengthBudget('vertical');
-  for (const stage of [-1, -2, -3, -4]) {
+  for (const stage of [1, 2, 3, 4]) {
     for (const seed of [1, 7, 42, 100]) {
       const l = composeAreaSeeded(seed, 'horizontal', stage, budget);
       assert.ok(l.macros.length > 0, `stage ${stage} seed ${seed}: at least one macro`);
       validateLayout(l); // throws if the route is not completable
     }
     // The vertical slot stage must also compose a completable vertical climb.
-    if (stage !== -1) {
+    if (stage !== 1) {
       const lv = composeAreaSeeded(42, 'vertical', stage, vBudget);
       validateLayout(lv);
     }
@@ -520,7 +520,7 @@ test('length: composed horizontal areas meet the doubled budget in px', () => {
   const budget = areaLengthBudget('horizontal');
   const budgetPx = Math.round(budget * UNIT_PX);
   for (const seed of [1, 7, 42, 100]) {
-    const l = composeAreaSeeded(seed, 'horizontal', -4, budget);
+    const l = composeAreaSeeded(seed, 'horizontal', 4, budget);
     const widthPx = l.totalWidth * UNIT_PX;
     assert.ok(
       widthPx >= budgetPx,
@@ -535,13 +535,13 @@ test('length: composed horizontal areas meet the doubled budget in px', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Vertical slot: exactly one of -2/-3/-4 is vertical, fixed for the game
+// Vertical slot: exactly one of 2/3/4 is vertical, fixed for the game
 // (structure.md §1) — the composer respects the configured slot.
 // ---------------------------------------------------------------------------
 
 test('vertical slot: the configured area composes as a vertical climb (structure.md §1)', () => {
   const def = LEVELS[0];
-  assert.ok([-2, -3, -4].includes(def.verticalArea), 'Level 1 vertical slot is -2/-3/-4');
+  assert.ok([2, 3, 4].includes(def.verticalArea), 'Level 1 vertical slot is 2/3/4');
   const zones = buildLevelZones(def);
   const verticalZone = zones.find((z) => z.idx === def.verticalArea);
   assert.equal(verticalZone.orientation, 'vertical', 'the configured area is the vertical one');
@@ -568,8 +568,8 @@ test('vertical slot: exactly one area is vertical and it is fixed for the game (
 
 test('composeArea: same seed produces identical layout (determinism)', () => {
   const seed = 20240517;
-  const layout1 = composeAreaSeeded(seed, 'horizontal', -2, 25);
-  const layout2 = composeAreaSeeded(seed, 'horizontal', -2, 25);
+  const layout1 = composeAreaSeeded(seed, 'horizontal', 2, 25);
+  const layout2 = composeAreaSeeded(seed, 'horizontal', 2, 25);
 
   // The layouts must be deep-equal: same macros, same units, same gaps, same x positions.
   assert.deepEqual(
@@ -597,8 +597,8 @@ test('composeArea: same seed produces identical layout (determinism)', () => {
 test('composeArea: different seeds produce different layouts', () => {
   // Use a realistic area budget so the composition actually varies between
   // seeds (a tiny budget collapses to a single macro and can collide).
-  const layout1 = composeAreaSeeded(1, 'horizontal', -2, 40);
-  const layout2 = composeAreaSeeded(2, 'horizontal', -2, 40);
+  const layout1 = composeAreaSeeded(1, 'horizontal', 2, 40);
+  const layout2 = composeAreaSeeded(2, 'horizontal', 2, 40);
 
   // It's theoretically possible (but extremely unlikely) that two different
   // seeds produce the same macro sequence. We check the full layout shape.
@@ -609,7 +609,7 @@ test('composeArea: different seeds produce different layouts', () => {
 
 test('composeArea: determinism holds across multiple seeds and stages', () => {
   for (const seed of [100, 200, 300]) {
-    for (const stage of [-1, -2, -3]) {
+    for (const stage of [1, 2, 3]) {
       const a = composeAreaSeeded(seed, 'horizontal', stage, 40);
       const b = composeAreaSeeded(seed, 'horizontal', stage, 40);
       assert.deepEqual(a.macros, b.macros, `seed ${seed} stage ${stage}: same macros`);
@@ -628,18 +628,18 @@ test('composeArea: determinism holds across multiple seeds and stages', () => {
 
 test('composeArea: throws on invalid orientation', () => {
   const rng = createRng(1);
-  assert.throws(() => composeArea(rng, 'diagonal', -1, 20), /orientation/);
+  assert.throws(() => composeArea(rng, 'diagonal', 1, 20), /orientation/);
 });
 
 test('composeArea: throws on invalid stage', () => {
   const rng = createRng(1);
   assert.throws(() => composeArea(rng, 'horizontal', 0, 40), /stage/);
-  assert.throws(() => composeArea(rng, 'horizontal', -5, 40), /stage/);
+  assert.throws(() => composeArea(rng, 'horizontal', 5, 40), /stage/);
 });
 
 test('composeArea: throws on budget too small', () => {
   const rng = createRng(1);
-  assert.throws(() => composeArea(rng, 'horizontal', -1, 2), /budget/);
+  assert.throws(() => composeArea(rng, 'horizontal', 1, 2), /budget/);
 });
 
 // ---------------------------------------------------------------------------
@@ -648,7 +648,7 @@ test('composeArea: throws on budget too small', () => {
 
 test('validateLayout: passes on a valid layout', () => {
   const rng = createRng(42);
-  const layout = composeArea(rng, 'horizontal', -2, 25);
+  const layout = composeArea(rng, 'horizontal', 2, 25);
   // Should not throw.
   validateLayout(layout);
 });
@@ -656,7 +656,7 @@ test('validateLayout: passes on a valid layout', () => {
 test('validateLayout: throws on impossible gap', () => {
   const layout = {
     orientation: 'horizontal',
-    stage: -1,
+    stage: 1,
     budget: 20,
     entryClear: ENTRY_CLEAR,
     exitClear: EXIT_CLEAR,
@@ -672,7 +672,7 @@ test('validateLayout: throws on impossible gap', () => {
 test('validateLayout: throws on unit in entry zone', () => {
   const layout = {
     orientation: 'horizontal',
-    stage: -1,
+    stage: 1,
     budget: 20,
     entryClear: ENTRY_CLEAR,
     exitClear: EXIT_CLEAR,
@@ -688,7 +688,7 @@ test('validateLayout: throws on unit in entry zone', () => {
 test('validateLayout: throws on unit in exit zone', () => {
   const layout = {
     orientation: 'horizontal',
-    stage: -1,
+    stage: 1,
     budget: 20,
     entryClear: ENTRY_CLEAR,
     exitClear: EXIT_CLEAR,
@@ -704,7 +704,7 @@ test('validateLayout: throws on unit in exit zone', () => {
 test('validateLayout: throws on buried platform', () => {
   const layout = {
     orientation: 'horizontal',
-    stage: -1,
+    stage: 1,
     budget: 20,
     entryClear: ENTRY_CLEAR,
     exitClear: EXIT_CLEAR,
@@ -725,7 +725,7 @@ test('validateLayout: throws on buried platform', () => {
 test('validateLayout: throws on elevation step > 1 tier', () => {
   const layout = {
     orientation: 'vertical',
-    stage: -2,
+    stage: 2,
     budget: 20,
     entryClear: ENTRY_CLEAR,
     exitClear: EXIT_CLEAR,
@@ -747,7 +747,7 @@ test('validateLayout: throws on unreachable inter-macro join (R2 #2)', () => {
   // cannot double-jump 4 tiers up to y=7 — this is an unreachable join.
   const layout = {
     orientation: 'vertical',
-    stage: -2,
+    stage: 2,
     budget: 20,
     entryClear: ENTRY_CLEAR,
     exitClear: EXIT_CLEAR,
@@ -779,7 +779,7 @@ test('validateLayout: passes on a reachable inter-macro join (R2 #2)', () => {
   // can double-jump 1 tier up to y=4 — this is a reachable join.
   const layout = {
     orientation: 'vertical',
-    stage: -2,
+    stage: 2,
     budget: 20,
     entryClear: ENTRY_CLEAR,
     exitClear: EXIT_CLEAR,

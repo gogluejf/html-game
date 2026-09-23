@@ -7,15 +7,15 @@ within it. Areas are not physically connected pieces of one scrolling map.
 
 Each level contains:
 
-1. Area -1.
-2. Area -2.
-3. Area -3.
-4. Area -4.
+1. Area 1.
+2. Area 2.
+3. Area 3.
+4. Area 4.
 5. A separate boss zone, including its short approach and arena.
 
 For example, Level 1 contains 1-1 through 1-4, then its boss zone.
-**Exactly one of the four ordinary areas is vertical.** It can be -2, -3, or -4;
-never -1. The other three are horizontal. Whether the vertical slot is selected
+**Exactly one of the four ordinary areas is vertical.** It can be 2, 3, or 4;
+never 1. The other three are horizontal. Whether the vertical slot is selected
 by configuration or chosen once per game remains a tuning/design choice; it
 must remain unchanged throughout that game.
 
@@ -29,11 +29,11 @@ Reaching an exit ends the current zone. After the celebration and fade, a new
 zone replaces it. A vertical-to-horizontal transition does not require walking
 back down or building a physical connecting passage.
 
-- Area -1 starts without an entry checkpoint flag.
+- Area 1 starts without an entry checkpoint flag.
 - Later areas begin beside a visible entry flag.
 - The boss zone begins beside a boss checkpoint flag.
 - Each ordinary area ends at its exit flag. There is no scrolling beyond it.
-- The exit of -4 uses the boss checkpoint appearance and leads to the boss zone.
+- The exit of area 4 uses the boss checkpoint appearance and leads to the boss zone.
 
 Death restarts the current zone, not the area before the flag. Details belong
 to [checkpoints](checkpoints.md).

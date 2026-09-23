@@ -5,10 +5,10 @@ an exit clears the area and establishes the next area's starting point.
 
 ## 1. Where flags appear
 
-- Area -1 has no entry checkpoint drawn.
-- Areas -2, -3, and -4 have an entry checkpoint at their start.
+- Area 1 has no entry checkpoint drawn.
+- Areas 2, 3, and 4 have an entry checkpoint at their start.
 - Each ordinary area has an exit checkpoint.
-- The -4 exit is a boss checkpoint; the next, separate boss zone starts beside
+- The area-4 exit is a boss checkpoint; the next, separate boss zone starts beside
   a boss checkpoint too.
 - Vertical-area entry and exit flags sit on supporting platforms, at the bottom
   and top respectively. In screen coordinates (y=0 is top), the entry flag has
@@ -43,7 +43,7 @@ The same full-screen presentation is used for:
 - Starting the first area of a new game.
 - Advancing to another area or level.
 - Restarting an area after an ordinary death.
-- Restarting the current level's -1 after Continue.
+- Restarting the current level's area 1 after Continue.
 - Entering/restarting the boss zone, identified as that level's boss area.
 
 It displays three pieces of information:
@@ -80,6 +80,6 @@ At zero lives, show the **existing Game Over screen** instead of the area-entry
 screen. Keep its score/stat display, opaque dark background, Continue count,
 and Continue / Quit navigation.
 
-Continue starts area -1 of the current level with restored starting lives.
+Continue starts area 1 of the current level with restored starting lives.
 It does not resume beside the flag of the area where the player lost their last
 life. See [game rules](game-rules.md) and [lifecycle](lifecycle.md).

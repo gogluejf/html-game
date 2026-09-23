@@ -2,7 +2,7 @@
 // (docs/levels/structure.md §1–§4, docs/levels/checkpoints.md §1).
 //
 // PRIMARY API: buildLevelZones(levelDef) — a level is FIVE SEALED zones
-// (areas -1..-4 + a boss zone), each owning its own world bounds and its own
+// (areas 1..4 + a boss zone), each owning its own world bounds and its own
 // entry/exit flags. This is the authoritative level structure (task 2.1).
 //
 // Zone terrain is composed by buildZoneTerrain()/buildAllZoneTerrain() (task
@@ -28,7 +28,7 @@ import { createRng } from './terrain.js';
 //
 // A LEVELS entry declares the level's CONTENT and its zone configuration:
 //   - name / index / boss: theme + boss identity
-//   - verticalArea: which ordinary area (-2, -3, or -4; never -1) is the
+//   - verticalArea: which ordinary area (2, 3, or 4; never 1) is the
 //     vertical climb (structure.md §1). Exactly one of the four ordinary
 //     areas is vertical; it is fixed for the whole game.
 //   - spawn: counts of every spawnable item (enemies, barrels, powerups).
@@ -40,9 +40,9 @@ export const LEVELS = [
     name: 'Big Top',
     index: 1,
     boss: 'tusko_wobble',
-    // Which ordinary area is the vertical climb (structure.md §1). -1 is never
-    // vertical; -3 is chosen here as the fixed slot for the whole game.
-    verticalArea: -3,
+    // Which ordinary area is the vertical climb (structure.md §1). 1 is never
+    // vertical; 3 is chosen here as the fixed slot for the whole game.
+    verticalArea: 3,
     spawn: {
       enemies: {
         jester: 6,
@@ -74,7 +74,7 @@ export const LEVELS = [
 // Zone model (docs/levels/structure.md §1–§4, checkpoints.md §1)
 // ---------------------------------------------------------------------------
 // A level is NOT one long scrolling corridor. It is five SEALED zones:
-//   - four ordinary areas, ids -1 … -4
+//   - four ordinary areas, ids 1 … 4
 //   - one separate boss zone (its own approach + arena)
 // Each zone owns its own world bounds and its own flags. Reaching an exit ends
 // the current zone; a new zone then REPLACES it (structure.md §2). Zones are
@@ -150,7 +150,7 @@ export const VERTICAL_TOP_PLATFORM_OFFSET = 56;
 
 /**
  * The boss checkpoint is the visual marker that "leads to the boss zone".
- * checkpoints.md §1: the -4 exit uses the boss-checkpoint appearance, and the
+ * checkpoints.md §1: the 4 exit uses the boss-checkpoint appearance, and the
  * boss zone itself begins beside a boss checkpoint flag too. We mark both with
  * the same appearance id so the renderer can paint one consistent glyph.
  */
@@ -219,18 +219,18 @@ function flagY(zone, kind) {
 }
 
 /**
- * Build the entry flag for a zone (null for area -1).
- * checkpoints.md §1: area -1 has no entry checkpoint drawn; areas -2…-4 have an
+ * Build the entry flag for a zone (null for area 1).
+ * checkpoints.md §1: area 1 has no entry checkpoint drawn; areas 2…4 have an
  * entry checkpoint at their start; the boss zone begins beside a boss checkpoint.
  *
  * @param {object} zone a zone from buildLevelZones()
  * @returns {object|null} a flag descriptor or null
  */
 function zoneEntryFlag(zone) {
-  if (zone.kind === 'area' && zone.areaIdx === -1) return null;
+  if (zone.kind === 'area' && zone.areaIdx === 1) return null;
   const isBoss = zone.kind === 'boss';
   return {
-    id: isBoss ? `${zone.level}-boss` : `${zone.level}${zone.areaIdx}`,
+    id: isBoss ? `${zone.level}-boss` : `${zone.level}-${zone.areaIdx}`,
     x: zone.bounds.x + ZONE_ENTRY_X,
     y: flagY(zone, 'entry'),
     // The boss zone's entry flag carries the boss-checkpoint appearance.
@@ -241,7 +241,7 @@ function zoneEntryFlag(zone) {
 /**
  * Build the exit flag for a zone (null for the boss zone — it has no exit; it
  * is the final zone of the level).
- * checkpoints.md §1: each ordinary area has an exit checkpoint; the -4 exit is a
+ * checkpoints.md §1: each ordinary area has an exit checkpoint; the 4 exit is a
  * boss checkpoint (boss-checkpoint appearance) that leads to the boss zone.
  *
  * @param {object} zone a zone from buildLevelZones()
@@ -249,16 +249,16 @@ function zoneEntryFlag(zone) {
  */
 function zoneExitFlag(zone) {
   if (zone.kind === 'boss') return null;
-  const isBossCheckpoint = zone.areaIdx === -4;
+  const isBossCheckpoint = zone.areaIdx === 4;
   // The exit flag sits at the far end of the zone's playable width, so it
   // scales with the zone's width (horizontal zones are 4000px wide, vertical
   // and boss zones are 1600px wide).
   const exitX = zone.bounds.x + zone.bounds.w - ZONE_EXIT_PAD;
   return {
-    id: isBossCheckpoint ? `${zone.level}-4-exit` : `${zone.level}${zone.areaIdx}-exit`,
+    id: isBossCheckpoint ? `${zone.level}-4-exit` : `${zone.level}-${zone.areaIdx}-exit`,
     x: exitX,
     y: flagY(zone, 'exit'),
-    // -4's exit uses the boss-checkpoint appearance (checkpoints.md §1).
+    // 4's exit uses the boss-checkpoint appearance (checkpoints.md §1).
     appearance: isBossCheckpoint ? BOSS_CHECKPOINT.appearance : 'exit',
   };
 }
@@ -275,22 +275,22 @@ function zoneExitFlag(zone) {
  *            name:string, orientation:'horizontal'|'vertical'|'boss',
  *            bounds:{x:number,y:number,w:number,h:number},
  *            entryFlag:object|null, exitFlag:object|null, platforms:object[]}[]}
- *   the five zones, in play order: -1, -2, -3, -4, boss.
+ *   the five zones, in play order: 1, 2, 3, 4, boss.
  */
 export function buildLevelZones(levelDef) {
   const level = levelDef.index;
   const areas = [
-    { areaIdx: -1, name: `${level}-1` },
-    { areaIdx: -2, name: `${level}-2` },
-    { areaIdx: -3, name: `${level}-3` },
-    { areaIdx: -4, name: `${level}-4` },
+    { areaIdx: 1, name: `${level}-1` },
+    { areaIdx: 2, name: `${level}-2` },
+    { areaIdx: 3, name: `${level}-3` },
+    { areaIdx: 4, name: `${level}-4` },
   ];
 
-  // Exactly one ordinary area is vertical (structure.md §1): it can be -2, -3,
-  // or -4; never -1. The slot is read from the level config (levelDef.verticalArea,
+  // Exactly one ordinary area is vertical (structure.md §1): it can be 2, 3,
+  // or 4; never 1. The slot is read from the level config (levelDef.verticalArea,
   // which is explicit on every LEVELS entry). A missing/invalid value falls back
-  // to -3 so the "exactly one, never -1" invariant holds even for malformed defs.
-  const verticalIdx = levelDef.verticalArea ?? -3;
+  // to 3 so the "exactly one, never 1" invariant holds even for malformed defs.
+  const verticalIdx = levelDef.verticalArea ?? 3;
 
   const zones = areas.map((a) => {
     const orientation = a.areaIdx === verticalIdx ? 'vertical' : 'horizontal';
@@ -442,7 +442,7 @@ export function buildZoneTerrain(zone, rng, levelConfig = null) {
     throw new Error(`buildZoneTerrain: zone kind must be 'area', got ${zone.kind}`);
   }
   const orientation = zone.orientation;
-  const stage = zone.areaIdx; // -1 to -4
+  const stage = zone.areaIdx; // 1 to 4
   const macroWeights = levelConfig?.macroWeights ?? null;
   return composeArea(rng, orientation, stage, areaLengthBudget(orientation), macroWeights);
 }
@@ -452,7 +452,7 @@ export function buildZoneTerrain(zone, rng, levelConfig = null) {
  *
  * This derives one RNG from the seed and composes each area's terrain in
  * sequence. The RNG is stateful, so the composition order matters: areas are
- * composed in play order (-1, -2, -3, -4), and each area's composition
+ * composed in play order (1, 2, 3, 4), and each area's composition
  * advances the RNG stream. This is the "rolled once per game" contract:
  * the same seed always produces the same terrain for every area.
  *

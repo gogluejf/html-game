@@ -26,12 +26,12 @@ function buildZones(levelDef) {
 
 /**
  * The active zone's index within the zone list, from the hero's currentArea
- * (zone-model convention: -1..-4 → zones 0..3, boss → last zone).
+ * (zone-model convention: 1..4 → zones 0..3, AREA_BOSS → last zone).
  */
 function activeZoneIndex(hero, zones) {
   const a = hero?.currentArea;
   if (typeof a !== 'number') return 0;
-  const idx = a <= -1 ? -(a) - 1 : a;
+  const idx = a >= 1 && a <= 4 ? a - 1 : zones.length - 1;
   return Math.min(Math.max(idx, 0), zones.length - 1);
 }
 
@@ -234,7 +234,7 @@ function drawProgressLine(ctx, hero, zones, activeIdx) {
     ctx.arc(cx, lineY, isCurrent ? 6 : 5, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = passed ? 'rgba(255,255,255,0.4)' : '#fff';
-    ctx.fillText(z.kind === 'boss' ? 'B' : `${-z.areaIdx}`, cx, lineY - 8);
+    ctx.fillText(z.kind === 'boss' ? 'B' : `${z.areaIdx}`, cx, lineY - 8);
   });
 
   // Hero position marker: a marker inside the ACTIVE zone's cell, at the

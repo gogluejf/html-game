@@ -62,8 +62,8 @@ function heroAt(x, y) {
 
 test('horizontal zone: max scroll equals the zone length, cannot draw past it', () => {
   const cam = new Camera();
-  const b = zoneBy(-1).bounds;
-  cam.setZoneBounds(zoneBy(-1));
+  const b = zoneBy(1).bounds;
+  cam.setZoneBounds(zoneBy(1));
 
   // minX is the zone's left edge; maxX keeps the right edge inside the zone.
   assert.equal(cam.minX, b.x, 'minX is the zone left edge');
@@ -83,8 +83,8 @@ test('horizontal zone: max scroll equals the zone length, cannot draw past it', 
 
 test('vertical zone: no horizontal camera movement (fixed width)', () => {
   const cam = new Camera();
-  const b = zoneBy(-3).bounds;
-  cam.setZoneBounds(zoneBy(-3));
+  const b = zoneBy(3).bounds;
+  cam.setZoneBounds(zoneBy(3));
 
   assert.equal(cam.minX, b.x, 'vertical zone fixes x to the zone left');
   assert.equal(cam.minX, cam.maxX, 'no horizontal scroll (minX === maxX)');
@@ -116,13 +116,13 @@ test('boss zone: camera is completely frozen (fixed view)', () => {
 test('entering a new zone re-clamps the camera to the new zone length', () => {
   const cam = new Camera();
   // Start in area -1 and push the camera to its right edge.
-  cam.setZoneBounds(zoneBy(-1));
+  cam.setZoneBounds(zoneBy(1));
   cam.x = cam.maxX;
 
   // Enter area -2 (a fresh, independent zone). The camera must re-clamp into
   // the new zone's range and not reveal beyond its length.
-  cam.setZoneBounds(zoneBy(-2));
-  const b2 = zoneBy(-2).bounds;
+  cam.setZoneBounds(zoneBy(2));
+  const b2 = zoneBy(2).bounds;
   assert.equal(cam.minX, b2.x, 'new zone left edge becomes minX');
   assert.equal(cam.maxX, b2.x + b2.w - VIEW_W, 'new zone right edge becomes maxX');
   assert.ok(cam.x >= cam.minX && cam.x <= cam.maxX, 're-clamped x is inside the new zone');
@@ -160,12 +160,12 @@ test('runtime: AREA_ENTRY→PLAY re-clamps the live camera to the new zone', () 
 test('runtime: re-entering a zone re-clamps the camera to that zone length', () => {
   const hero = U.getHero();
   const cam = U.camera;
-  const zone2 = zones.find((z) => z.idx === -2);
+  const zone2 = zones.find((z) => z.idx === 2);
   const range = expectedRange(zone2);
 
-  // Put the hero into area -2 and re-enter via the entry screen. The runtime
-  // camera must be re-clamped to area -2's bounds (not the previous zone's).
-  hero.currentArea = -2;
+  // Put the hero into area 2 and re-enter via the entry screen. The runtime
+  // camera must be re-clamped to area 2's bounds (not the previous zone's).
+  hero.currentArea = 2;
 
   // Desync so we can prove the hook re-clamps to the NEW zone.
   cam.minX = -99999;

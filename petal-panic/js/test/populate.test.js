@@ -49,7 +49,7 @@ test('macros declare typed placement slots (enemy / barrel / powerup)', () => {
 });
 
 test('composed layouts expose placement slots from their macros', () => {
-  const layout = composeAreaSeeded(42, 'horizontal', -3, 60);
+  const layout = composeAreaSeeded(42, 'horizontal', 3, 60);
   assert.ok(Array.isArray(layout.placements), 'layout has a placements array');
   assert.ok(layout.placements.length > 0, 'a real area has at least one slot');
   // Every slot is one of the three population types.
@@ -63,7 +63,7 @@ test('composed layouts expose placement slots from their macros', () => {
 // ---------------------------------------------------------------------------
 
 test('populateArea: every item sits on a valid macro slot (no invented coordinates)', () => {
-  const layout = composeAreaSeeded(7, 'horizontal', -3, 60);
+  const layout = composeAreaSeeded(7, 'horizontal', 3, 60);
   const config = {
     enemies: { jester: 3, vine_hound: 2 },
     powerups: { ammo: 2, shield: 1 },
@@ -89,7 +89,7 @@ test('populateArea: every item sits on a valid macro slot (no invented coordinat
 
 test('populateArea: fixed budgets are met without overcrowding (placed ≤ budget, ≤ slots)', () => {
   for (const seed of [1, 2, 3, 4, 5]) {
-    const layout = composeAreaSeeded(seed, 'horizontal', -3, 60);
+    const layout = composeAreaSeeded(seed, 'horizontal', 3, 60);
     const config = {
       enemies: { jester: 3, vine_hound: 2, boris_loon: 1 },
       powerups: { ammo: 2, shield: 1, rapid: 1 },
@@ -242,7 +242,7 @@ test('populateArea: same seed produces an identical population (determinism)', (
   // The whole world (terrain + population) is rolled once per game from the seed.
   const build = (seed) => {
     const rng = createRng(seed);
-    const layout = composeAreaSeeded(seed, 'horizontal', -3, 60);
+    const layout = composeAreaSeeded(seed, 'horizontal', 3, 60);
     // Re-derive the population from the SAME seed stream the game uses.
     return populateArea(createRng(seed), layout, config);
   };
@@ -262,7 +262,7 @@ test('populateArea: determinism holds across many seeds and stages', () => {
     barrels: { explosive: 3, wood: 1, coin: 1 },
   };
   for (const seed of [100, 200, 300]) {
-    for (const stage of [-1, -2, -3, -4]) {
+    for (const stage of [1, 2, 3, 4]) {
       const mk = () => {
         const layout = composeAreaSeeded(seed, 'horizontal', stage, 60);
         return populateArea(createRng(seed * 100 + stage), layout, config);
@@ -290,7 +290,7 @@ test('after life loss the same population is restored (same seed → same world,
     barrels: { explosive: 6, wood: 3, coin: 3 },
   };
   const worldFromSeed = () => {
-    const layout = composeAreaSeeded(seed, 'horizontal', -3, 60);
+    const layout = composeAreaSeeded(seed, 'horizontal', 3, 60);
     return populateArea(createRng(seed), layout, config);
   };
   const firstAttempt = worldFromSeed();
@@ -305,7 +305,7 @@ test('after life loss the same population is restored (same seed → same world,
 // ---------------------------------------------------------------------------
 
 test('populateArea: empty config produces an empty population (no crash, no items)', () => {
-  const layout = composeAreaSeeded(42, 'horizontal', -3, 60);
+  const layout = composeAreaSeeded(42, 'horizontal', 3, 60);
   const pop = populateArea(createRng(1), layout, {});
   assert.equal(pop.enemies.length, 0, 'no enemies with an empty roster');
   assert.equal(pop.barrels.length, 0, 'no barrels with an empty barrel budget');
@@ -317,7 +317,7 @@ test('populateArea: a real level-1 area populates with the level spawn budgets',
   // Uses the actual Level 1 (Big Top) spawn counts as the area budget. A real
   // composed area should populate deterministically and place every item on a
   // valid slot (acceptance #1 + #4 together on real data).
-  const layout = composeAreaSeeded(12345, 'horizontal', -2, 60);
+  const layout = composeAreaSeeded(12345, 'horizontal', 2, 60);
   const config = {
     enemies: { jester: 6, vine_hound: 4, boris_loon: 3, boris_loon_baby: 6 },
     powerups: { ammo: 3, invincibility: 1, shield: 1, rapid: 2 },
@@ -369,7 +369,7 @@ test('populateArea: all slots in a composed layout are on valid surfaces (no ite
   // at a valid standing position (on top of the supporting surface, never
   // inside a solid block). This is the BLOCKER invariant (task 4.1).
   for (const seed of [1, 2, 3, 4, 5, 100, 200]) {
-    for (const stage of [-1, -2, -3, -4]) {
+    for (const stage of [1, 2, 3, 4]) {
       const layout = composeAreaSeeded(seed, 'horizontal', stage, 60);
       const solidUnits = layout.units.filter((u) => u.kind === 'block');
       for (const slot of layout.placements) {
@@ -403,7 +403,7 @@ test('populateArea: throws if a slot is inside a solid block (defense-in-depth)'
 // ---------------------------------------------------------------------------
 
 test('populationSnapshot: produces a stable, value-only snapshot of the population', () => {
-  const layout = composeAreaSeeded(42, 'horizontal', -3, 60);
+  const layout = composeAreaSeeded(42, 'horizontal', 3, 60);
   const config = {
     enemies: { jester: 3, vine_hound: 2 },
     powerups: { ammo: 2, shield: 1 },
@@ -426,7 +426,7 @@ test('populationSnapshot: produces a stable, value-only snapshot of the populati
 });
 
 test('populationSnapshot: the same population always produces an identical snapshot (stability)', () => {
-  const layout = composeAreaSeeded(42, 'horizontal', -3, 60);
+  const layout = composeAreaSeeded(42, 'horizontal', 3, 60);
   const config = {
     enemies: { jester: 3, vine_hound: 2 },
     powerups: { ammo: 2, shield: 1 },

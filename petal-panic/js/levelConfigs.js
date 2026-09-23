@@ -38,14 +38,14 @@
 //
 // macroWeights biases WHICH MACRO DIFFICULTY FILLs a slot (generation.md §5:
 // "Patterns are grouped or weighted by challenge so progression is deliberate").
-// The four tiers map to the -1 through -4 progression (generation.md §5):
-//   tier 'easy'   — fewer blocks/platforms, simpler arrangements (area -1)
-//   tier 'medium' — increased combinations, more climbing/crossing (-2)
-//   tier 'hard'   — denser obstacles, more substantial set pieces (-3)
-//   tier 'brutal' — strongest permitted combinations, harder elevated routes (-4)
+// The four tiers map to the 1 through 4 progression (generation.md §5):
+//   tier 'easy'   — fewer blocks/platforms, simpler arrangements (area 1)
+//   tier 'medium' — increased combinations, more climbing/crossing (2)
+//   tier 'hard'   — denser obstacles, more substantial set pieces (3)
+//   tier 'brutal' — strongest permitted combinations, harder elevated routes (4)
 // Later levels weight harder tiers more heavily (generation.md §5b: "Macro
 // intensity: later levels weight harder macro families and denser set pieces
-// within the same -1 to -4 curve"). The per-stage budgets (stageBudgets) are
+// within the same 1 to 4 curve"). The per-stage budgets (stageBudgets) are
 // the QUANTITY budget (how many enemies/powerups/barrels); macroWeights is a
 // SEPARATE concern that biases which difficulty tier fills a slot.
 //
@@ -147,16 +147,16 @@ const BARREL_TYPES = {
  * violetta_marionetta from tension ≥ 3), so early levels omit those types
  * regardless of the scale.
  *
- * The per-stage progression (-1 sparse → -4 dense) is preserved within each
+ * The per-stage progression (1 sparse → 4 dense) is preserved within each
  * level (populate.md §1: "the matrix must make that scope explicit so a
  * level-wide quantity is not mistakenly repeated in every area").
  *
  * @param {number} tension 1–8 (the level index; higher = harder)
- * @returns {object} stageBudgets: { '-1': {...}, '-2': {...}, '-3': {...}, '-4': {...} }
+ * @returns {object} stageBudgets: { '1': {...}, '2': {...}, '3': {...}, '4': {...} }
  */
 function buildStageBudgets(tension) {
   // Tension scales the base per-stage counts multiplicatively. The scales are
-  // tuned so that the per-stage progression (-1 → -4) is visible AND the
+  // tuned so that the per-stage progression (1 → 4) is visible AND the
   // per-level totals (summed across stages) strictly increase (enemies/barrels)
   // or decrease (powerups) with tension.
   //
@@ -169,16 +169,16 @@ function buildStageBudgets(tension) {
   const powerupScale = 9 - tension;   // 8..1 — multiplies the base powerup counts (falls)
   const barrelScale = tension;        // 1..8 — multiplies the base barrel counts
 
-  // Per-stage multipliers (the -1 → -4 progression within a level).
+  // Per-stage multipliers (the 1 → 4 progression within a level).
   // Enemy/barrel multipliers sum to 3.5 (sparse → dense).
   // Powerup multipliers sum to 1.8 (the scarcity curve: fewer powerups per
-  // stage, still showing the -1 → -4 progression but at a lower absolute count).
-  const enemyMults = { '-1': 0.5, '-2': 0.75, '-3': 1.0, '-4': 1.25 };
-  const powerupMults = { '-1': 0.3, '-2': 0.4, '-3': 0.5, '-4': 0.6 };
-  const barrelMults = { '-1': 0.5, '-2': 0.75, '-3': 1.0, '-4': 1.25 };
+  // stage, still showing the 1 → 4 progression but at a lower absolute count).
+  const enemyMults = { '1': 0.5, '2': 0.75, '3': 1.0, '4': 1.25 };
+  const powerupMults = { '1': 0.3, '2': 0.4, '3': 0.5, '4': 0.6 };
+  const barrelMults = { '1': 0.5, '2': 0.75, '3': 1.0, '4': 1.25 };
 
   const stages = {};
-  for (const stage of ['-1', '-2', '-3', '-4']) {
+  for (const stage of ['1', '2', '3', '4']) {
     const eMult = enemyMults[stage];
     const pMult = powerupMults[stage];
     const bMult = barrelMults[stage];
@@ -217,15 +217,15 @@ function buildStageBudgets(tension) {
 /**
  * Build the macro difficulty weights for a level given a tension index (1–8).
  *
- * The four tiers map to the -1 through -4 progression (generation.md §5):
- *   'easy'   — fewer blocks/platforms, simpler arrangements (area -1)
- *   'medium' — increased combinations, more climbing/crossing (-2)
- *   'hard'   — denser obstacles, more substantial set pieces (-3)
- *   'brutal' — strongest permitted combinations, harder elevated routes (-4)
+ * The four tiers map to the 1 through 4 progression (generation.md §5):
+ *   'easy'   — fewer blocks/platforms, simpler arrangements (area 1)
+ *   'medium' — increased combinations, more climbing/crossing (2)
+ *   'hard'   — denser obstacles, more substantial set pieces (3)
+ *   'brutal' — strongest permitted combinations, harder elevated routes (4)
  *
  * Later levels weight harder tiers more heavily (generation.md §5b: "Macro
  * intensity: later levels weight harder macro families and denser set pieces
- * within the same -1 to -4 curve"). The brutal-tier weight strictly increases
+ * within the same 1 to 4 curve"). The brutal-tier weight strictly increases
  * from index 1 → 8.
  *
  * @param {number} tension 1–8 (the level index; higher = harder)
@@ -267,10 +267,10 @@ export const LEVEL_CONFIGS = [
     // Nostalgic big-top warmth turning unsettling.
     vibe: 'nostalgic big-top warmth turning unsettling',
 
-    // Which ordinary area (-2, -3, or -4) is the vertical climb.
+    // Which ordinary area (2, 3, or 4) is the vertical climb.
     // Exactly one of the four ordinary areas is vertical; it is fixed per
-    // level. -1 is never vertical (structure.md §1).
-    verticalArea: -3,
+    // level. 1 is never vertical (structure.md §1).
+    verticalArea: 3,
 
     // -----------------------------------------------------------------------
     // Enemy TYPE selection weights (populate.md §4 — separate from the
@@ -280,7 +280,7 @@ export const LEVEL_CONFIGS = [
     // map matching the resolver's expected shape (NOT nested { type: {weight} }).
     //
     // Roster (docs/story/levels.md): Jester, Jack-O-Lantern, Vine Hound, Boris
-    // Loon babies. Stage progression: -1 is the intro (fewer, easier), -4 is
+    // Loon babies. Stage progression: 1 is the intro (fewer, easier), 4 is
     // the hardest before the boss; the mix shifts from Jester-dominant
     // (playful) toward more Boris Loon babies (unsettling) as it progresses.
     // -----------------------------------------------------------------------
@@ -312,34 +312,34 @@ export const LEVEL_CONFIGS = [
     // -----------------------------------------------------------------------
     // Per-stage budgets — CONCRETE design-plan values (populate.md §1: "the
     // matrix must make that scope explicit so a level-wide quantity is not
-    // mistakenly repeated in every area"). Each stage (-1 through -4) gets
+    // mistakenly repeated in every area"). Each stage (1 through 4) gets
     // its own QUANTITY budget (how many of each type appear). These are the
     // concrete per-stage population budgets the doc defers to the plan; the
-    // progression -1 (sparse) → -4 (dense) is visible in the counts.
+    // progression 1 (sparse) → 4 (dense) is visible in the counts.
     //
     // The boss zone is NOT budgeted here — it is a separate self-contained
     // arena with its own rules (structure.md §2).
     // -----------------------------------------------------------------------
     stageBudgets: {
-      '-1': {
+      '1': {
         // Intro: sparse, forgiving. Mostly Jesters, few barrels.
         enemies: { jester: 3, jackolantern: 0, vine_hound: 1, boris_loon_baby: 0 },
         barrels: { explosive: 2, wood: 1, coin: 1 },
         powerups: { ammo: 1, rapid: 1, shield: 0, special: 0, energy: 0, invincibility: 0, clear: 0, oneUp: 0 },
       },
-      '-2': {
+      '2': {
         // Building: introduce Jack-O-Lantern and Boris babies.
         enemies: { jester: 3, jackolantern: 2, vine_hound: 2, boris_loon_baby: 1 },
         barrels: { explosive: 3, wood: 2, coin: 2 },
         powerups: { ammo: 1, rapid: 1, shield: 1, special: 0, energy: 0, invincibility: 0, clear: 0, oneUp: 0 },
       },
-      '-3': {
+      '3': {
         // Vertical climb: moderate density, the "unsettling" shift.
         enemies: { jester: 2, jackolantern: 2, vine_hound: 2, boris_loon_baby: 3 },
         barrels: { explosive: 3, wood: 2, coin: 2 },
         powerups: { ammo: 1, rapid: 1, shield: 1, special: 1, energy: 0, invincibility: 0, clear: 0, oneUp: 0 },
       },
-      '-4': {
+      '4': {
         // Pre-boss: dense, all enemy types present.
         enemies: { jester: 3, jackolantern: 3, vine_hound: 3, boris_loon_baby: 4 },
         barrels: { explosive: 4, wood: 2, coin: 3 },
@@ -350,7 +350,7 @@ export const LEVEL_CONFIGS = [
     // -----------------------------------------------------------------------
     // Macro difficulty weights (generation.md §5 — "Patterns are grouped or
     // weighted by challenge so progression is deliberate"). The four tiers
-    // map to the -1 through -4 progression. Level 1 is the easiest level:
+    // map to the 1 through 4 progression. Level 1 is the easiest level:
     // the easy tier is weighted most heavily, the brutal tier least.
     // -----------------------------------------------------------------------
     macroWeights: { easy: 7, medium: 5, hard: 2, brutal: 1 },
@@ -385,7 +385,7 @@ export const LEVEL_CONFIGS = [
     index: 2,
     boss: 'grim_vertigo',
     vibe: 'magical midnight carnival becoming increasingly surreal',
-    verticalArea: -2,
+    verticalArea: 2,
     enemyWeights: {
       jester:          5,
       jackolantern:    4,
@@ -419,7 +419,7 @@ export const LEVEL_CONFIGS = [
     index: 3,
     boss: 'great_maraboo',
     vibe: 'exotic circus wilderness, adventurous and mysterious',
-    verticalArea: -3,
+    verticalArea: 3,
     enemyWeights: {
       jester:          4,
       jackolantern:    4,
@@ -454,7 +454,7 @@ export const LEVEL_CONFIGS = [
     index: 4,
     boss: 'ratchet_rumbelow',
     vibe: 'grand theatrical pirate adventure, stormy and dangerous',
-    verticalArea: -4,
+    verticalArea: 4,
     enemyWeights: {
       jester:          4,
       jackolantern:    5,
@@ -489,7 +489,7 @@ export const LEVEL_CONFIGS = [
     index: 5,
     boss: 'pizza_cat',
     vibe: 'spooky, grotesque and funny sideshow nightmare',
-    verticalArea: -2,
+    verticalArea: 2,
     enemyWeights: {
       jester:          3,
       jackolantern:    5,
@@ -524,7 +524,7 @@ export const LEVEL_CONFIGS = [
     index: 6,
     boss: 'ironhoof',
     vibe: 'relentless forward motion, fast and out of control',
-    verticalArea: -3,
+    verticalArea: 3,
     enemyWeights: {
       jester:          3,
       jackolantern:    5,
@@ -559,7 +559,7 @@ export const LEVEL_CONFIGS = [
     index: 7,
     boss: 'madame_beetroot',
     vibe: 'beautiful, absurd and slightly spooky vegetable metropolis',
-    verticalArea: -4,
+    verticalArea: 4,
     enemyWeights: {
       jester:          3,
       jackolantern:    5,
@@ -595,7 +595,7 @@ export const LEVEL_CONFIGS = [
     index: 8,
     boss: 'colonel_carrot',
     vibe: 'monumental, theatrical and completely excessive',
-    verticalArea: -2,
+    verticalArea: 2,
     enemyWeights: {
       jester:          3,
       jackolantern:    5,
@@ -632,7 +632,7 @@ export function getLevelConfig(index) {
 /**
  * Get the per-stage budget for a level and stage.
  * @param {object} config a level config entry
- * @param {number} stage the area index (-1 to -4)
+ * @param {number} stage the area index (1 to 4)
  * @returns {object|null} the stage budget or null if the stage has none
  */
 export function getStageBudget(config, stage) {

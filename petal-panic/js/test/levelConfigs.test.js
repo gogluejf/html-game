@@ -92,11 +92,11 @@ test('level bosses are unique', () => {
   assert.equal(new Set(bosses).size, bosses.length, 'all bosses are unique');
 });
 
-test('each level: verticalArea is one of -2/-3/-4 (never -1)', () => {
-  const valid = new Set([-2, -3, -4]);
+test('each level: verticalArea is one of 2/3/4 (never 1)', () => {
+  const valid = new Set([2, 3, 4]);
   for (const cfg of LEVEL_CONFIGS) {
     assert.ok(valid.has(cfg.verticalArea),
-      `level ${cfg.index}: verticalArea ${cfg.verticalArea} is one of ${[...valid]} (never -1)`);
+      `level ${cfg.index}: verticalArea ${cfg.verticalArea} is one of ${[...valid]} (never 1)`);
   }
 });
 
@@ -175,8 +175,8 @@ test('Level 1: powerupWeights are a flat { type: number } map with positive weig
 // 3 valid slots for 8 levels, so values necessarily repeat.
 // ---------------------------------------------------------------------------
 
-test('each level: verticalArea is exactly one of -2, -3, -4', () => {
-  const valid = new Set([-2, -3, -4]);
+test('each level: verticalArea is exactly one of 2, 3, 4', () => {
+  const valid = new Set([2, 3, 4]);
   for (const cfg of LEVEL_CONFIGS) {
     assert.ok(valid.has(cfg.verticalArea),
       `level ${cfg.index}: verticalArea ${cfg.verticalArea} is valid`);
@@ -187,8 +187,8 @@ test('each level: verticalArea is exactly one of -2, -3, -4', () => {
 // Budgets make scope explicit (per-stage, not per-level)
 // ---------------------------------------------------------------------------
 
-test('each level: stageBudgets covers all four stages (-1 through -4)', () => {
-  const stages = ['-1', '-2', '-3', '-4'];
+test('each level: stageBudgets covers all four stages (1 through 4)', () => {
+  const stages = ['1', '2', '3', '4'];
   for (const cfg of LEVEL_CONFIGS) {
     for (const s of stages) {
       assert.ok(cfg.stageBudgets[s], `level ${cfg.index} stage ${s} has a budget`);
@@ -384,7 +384,7 @@ test('getLevelConfig: returns undefined for an undefined level', () => {
 
 test('getStageBudget: returns the correct stage budget for each level', () => {
   for (const cfg of LEVEL_CONFIGS) {
-    for (const stage of [-1, -2, -3, -4]) {
+    for (const stage of [1, 2, 3, 4]) {
       const budget = getStageBudget(cfg, stage);
       assert.ok(budget, `level ${cfg.index} stage ${stage} budget exists`);
       assert.ok(budget.enemies, `level ${cfg.index} stage ${stage} has enemies`);
@@ -420,8 +420,8 @@ test('engine boot: buildLevelZones yields 5 zones with correct orientations for 
     assert.equal(bossZones.length, 1, `level ${cfg.index}: 1 boss zone`);
     assert.deepEqual(
       areaZones.map((z) => z.areaIdx),
-      [-1, -2, -3, -4],
-      `level ${cfg.index}: areas are -1..-4 in play order`,
+      [1, 2, 3, 4],
+      `level ${cfg.index}: areas are 1..4 in play order`,
     );
     // Exactly one ordinary area is vertical, and it is the config's slot.
     const verticalZones = areaZones.filter((z) => z.orientation === 'vertical');
@@ -447,7 +447,7 @@ test('engine boot: buildAllZoneTerrain produces valid terrain for every level', 
     // works — determinism is the point, not a specific layout.
     const terrains = buildAllZoneTerrain(cfg, `boot-level-${cfg.index}`);
     assert.equal(terrains.size, 4, `level ${cfg.index}: terrain for all 4 ordinary areas`);
-    for (const stage of [-1, -2, -3, -4]) {
+    for (const stage of [1, 2, 3, 4]) {
       const layout = terrains.get(stage);
       assert.ok(layout, `level ${cfg.index} stage ${stage}: terrain exists`);
       assert.equal(layout.stage, stage, `level ${cfg.index} stage ${stage}: stage matches`);
@@ -493,8 +493,8 @@ test('macroWeights bias: harder-tier weights shift macro selection toward harder
   const budget = 40;
   const easyWeights = { easy: 10, medium: 1, hard: 1, brutal: 0 };
   const brutalWeights = { easy: 0, medium: 1, hard: 5, brutal: 10 };
-  const a = composeArea(createRng('bias-test'), 'horizontal', -3, budget, easyWeights);
-  const b = composeArea(createRng('bias-test'), 'horizontal', -3, budget, brutalWeights);
+  const a = composeArea(createRng('bias-test'), 'horizontal', 3, budget, easyWeights);
+  const b = composeArea(createRng('bias-test'), 'horizontal', 3, budget, brutalWeights);
   assert.ok(Array.isArray(a.macros) && Array.isArray(b.macros), 'layouts record macro sequences');
   assert.notDeepEqual(a.macros, b.macros,
     'level macroWeights change the composed macro sequence (weights are consumed)');

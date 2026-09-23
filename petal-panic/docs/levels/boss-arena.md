@@ -6,7 +6,7 @@ before combat begins.**
 
 ## 1. Entry and approach
 
-The boss checkpoint at the end of area -4 leads through the normal transition
+The boss checkpoint at the end of area 4 leads through the normal transition
 to the boss zone. The player starts beside its boss checkpoint and travels a
 short distance toward a warning region and the arena.
 
@@ -49,7 +49,7 @@ The arena remains locked during combat. The player cannot scroll past the boss
 or leave through either side.
 
 Losing a life restarts the boss zone at its checkpoint, restoring the encounter
-and repeating the approach/introduction. A continue instead returns to area -1
+and repeating the approach/introduction. A continue instead returns to area 1
 of this level, like defeat in any other area. Random generation choices remain
 unchanged in both cases.
 
@@ -82,7 +82,7 @@ and celebration effects are design-plan concerns.
 
 ## 5. Next level
 
-After the reward screen, start the next level at area -1 and show its shared
+After the reward screen, start the next level at area 1 and show its shared
 entry screen: level name, area, lives. That opening area has no entry flag drawn.
 
 For the **final level**, the reward screen is followed by the minimal end-of-game

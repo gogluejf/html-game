@@ -67,7 +67,7 @@ function makeTestHero() {
     configurable: true,
   });
   h.currentLevel = 1;
-  h.currentArea = -1;
+  h.currentArea = 1;
   h.checkpoint = { x: 100, y: 400 };
   h.runStats = createStats();
   h.runStats.bossKilled = true; // the reward screen is only shown post-boss
@@ -325,7 +325,7 @@ test('confirming the reward screen starts the next level at area -1 with its ent
 
   assert.equal(getState(), S.AREA_ENTRY, 'the next level opens on the shared entry screen');
   assert.equal(h.currentLevel, 2, 'the level advanced');
-  assert.equal(h.currentArea, -1, 'the next level starts at area -1');
+  assert.equal(h.currentArea, 1, 'the next level starts at area 1');
   // Per-level reward accounting is reset for the new level (boss-arena.md §5):
   // the next level's reward must reflect THIS level only, not carry over the
   // previous level's kill/coin tally.
@@ -532,7 +532,7 @@ test('end-of-game: non-final levels still advance to the next level (not end-of-
   assert.equal(getState(), S.AREA_ENTRY, 'a non-final boss advances to the next level\'s entry screen');
   assert.notEqual(getState(), S.END_OF_GAME, 'the end-of-game screen is NOT shown for a non-final level');
   assert.equal(h.currentLevel, 2, 'the level advanced');
-  assert.equal(h.currentArea, -1, 'the next level starts at area -1');
+  assert.equal(h.currentArea, 1, 'the next level starts at area 1');
 });
 
 test('end-of-game: no reference to a level beyond the last exists', () => {

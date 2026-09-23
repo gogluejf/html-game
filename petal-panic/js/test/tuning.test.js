@@ -194,7 +194,7 @@ test('REACH_MARGIN is a concrete, doc-grounded margin (structure.md §5)', () =>
 
 test('per-stage population budgets are concrete (populate.md §1, generation.md §5)', () => {
   const l1 = getLevelConfig(1);
-  const stages = ['-1', '-2', '-3', '-4'];
+  const stages = ['1', '2', '3', '4'];
   for (const s of stages) {
     const b = l1.stageBudgets[s];
     assert.ok(b, `stage ${s} has a budget`);
@@ -207,25 +207,25 @@ test('per-stage population budgets are concrete (populate.md §1, generation.md 
       }
     }
   }
-  // The progression is visible: -1 (sparse) has fewer enemies than -4 (dense).
+  // The progression is visible: 1 (sparse) has fewer enemies than 4 (dense).
   const total = (b) => Object.values(b.enemies).reduce((a, c) => a + c, 0);
-  assert.ok(total(l1.stageBudgets['-4']) > total(l1.stageBudgets['-1']),
-    'stage -4 is denser than stage -1 (deliberate progression)');
+  assert.ok(total(l1.stageBudgets['4']) > total(l1.stageBudgets['1']),
+    'stage 4 is denser than stage 1 (deliberate progression)');
 });
 
-test('breathing room is retained in -2/-3 (generation.md §5)', () => {
+test('breathing room is retained in 2/3 (generation.md §5)', () => {
   // generation.md §5: "Later areas should feel more intense, not impossible.
   // Breathing room and clear landings remain useful even in the hardest
   // patterns." The concrete breathing-room values are the STAGE_WEIGHTS easy-
-  // tier weights: -2 keeps a 1:2 easy:hard split, -3 keeps a ~1:1:3 split.
-  assert.ok(STAGE_WEIGHTS['-2'][1] > 0, '-2 retains an easy tier (breathing room)');
-  assert.ok(STAGE_WEIGHTS['-3'][1] > 0, '-3 retains an easy tier (breathing room)');
+  // tier weights: 2 keeps a 1:2 easy:hard split, 3 keeps a ~1:1:3 split.
+  assert.ok(STAGE_WEIGHTS['2'][1] > 0, '2 retains an easy tier (breathing room)');
+  assert.ok(STAGE_WEIGHTS['3'][1] > 0, '3 retains an easy tier (breathing room)');
   // The easy tier is down-weighted relative to the hard tier (more intense)
   // but NOT removed (breathing room remains).
-  assert.ok(STAGE_WEIGHTS['-2'][1] < STAGE_WEIGHTS['-2'][2], '-2: easy < hard (more intense)');
-  assert.ok(STAGE_WEIGHTS['-3'][1] < STAGE_WEIGHTS['-3'][3], '-3: easy < hard (more intense)');
-  // -1 is the sparse intro: difficulty 1 only.
-  assert.deepEqual(Object.keys(STAGE_WEIGHTS['-1']), ['1'], '-1 is sparse/simple (difficulty 1 only)');
+  assert.ok(STAGE_WEIGHTS['2'][1] < STAGE_WEIGHTS['2'][2], '2: easy < hard (more intense)');
+  assert.ok(STAGE_WEIGHTS['3'][1] < STAGE_WEIGHTS['3'][3], '3: easy < hard (more intense)');
+  // 1 is the sparse intro: difficulty 1 only.
+  assert.deepEqual(Object.keys(STAGE_WEIGHTS['1']), ['1'], '1 is sparse/simple (difficulty 1 only)');
 });
 
 test('anti-repetition is a concrete, bounded constraint (generation.md §5)', () => {

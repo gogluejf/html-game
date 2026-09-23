@@ -12,7 +12,7 @@ defaults, not numbers scattered across level behavior.
 - With lives remaining, restart the **same area** from its beginning.
 - At zero lives, show the existing Game Over screen.
 - Using Continue consumes one continue, restores the configured starting lives
-  (currently 3), and restarts **area -1 of the current level**.
+  (currently 3), and restarts **area 1 of the current level**.
 - Continue does not charge coins or check the coin balance.
 - With no continues remaining, Continue cannot be activated; Quit remains available.
 

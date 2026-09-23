@@ -8,7 +8,7 @@ arbitrary intervals. Each uses macro-specific placement opportunities and chance
 
 Level configuration describes the available enemy roster, boss, powerup mix,
 and population quantities. Area progression determines how those resources are
-distributed across -1 through -4.
+distributed across areas 1 through 4.
 
 Two ideas must stay distinct:
 
@@ -55,7 +55,7 @@ Three arrangement scales:
 - **Super structure:** a much larger set piece with many barrels.
 
 Examples include barrel pyramids and walls. Large structures should be occasional
-highlights, with stronger opportunities especially in -3 and -4, not constant
+highlights, with stronger opportunities especially in areas 3 and 4, not constant
 clutter. Exact frequency and counts remain tuning values.
 
 Explosive barrels can occupy strategic positions within these structures so a

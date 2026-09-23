@@ -51,7 +51,7 @@ import { TUNING } from '../tuning.js';
 //
 // The runtime no longer owns a flat corridor. The authoritative structure is
 // the sealed zone model (buildLevelZones): a level is five independent zones
-// (areas -1..-4 + boss). Each zone's terrain is composed by the macro composer
+// (areas 1..4 + boss). Each zone's terrain is composed by the macro composer
 // (buildAllZoneTerrain) and its enemies/barrels/powerups are resolved by the
 // population resolver (populateArea) from the level's per-stage budgets
 // (levelConfigs.js). The ACTIVE zone's composed content is installed into the
@@ -146,8 +146,8 @@ function instantiateZone(zone, layout, population) {
     return new Powerup(it.type, slotX(zone, it.x), surfaceY(zone, it.y ?? 0) - 28);
   });
 
-  // Checkpoints: the entry flag (areas -2..-4 + boss) and the exit flag
-  // (ordinary areas; the -4 exit is the boss checkpoint). Area -1 has no entry
+  // Checkpoints: the entry flag (areas 2..4 + boss) and the exit flag
+  // (ordinary areas; the 4 exit is the boss checkpoint). Area 1 has no entry
   // flag (checkpoints.md §1). Flags are zone-local flag descriptors.
   const checkpoints = [];
   const mkFlag = (f, isEntry) => {
@@ -333,8 +333,8 @@ export function stepClearSequence(dt) {
       // Mark that the next AREA_ENTRY→PLAY should start the fade-in.
       clearSeq.pendingFadeIn = true;
       // Advance the hero's area to the next zone-model area (BLOCKER 1/2).
-      // The zone model uses areas -1, -2, -3, -4, boss; pendingArea is now
-      // in the zone-model convention (e.g. -2 for the second area).
+      // The zone model uses areas 1, 2, 3, 4, boss; pendingArea is now
+      // in the zone-model convention (e.g. 2 for the second area).
       hero.currentArea = area;
       const nextZone = getActiveZone(hero);
       // BLOCKER 2: swap the ACTIVE zone's world content so the previous
@@ -347,7 +347,7 @@ export function stepClearSequence(dt) {
         console.log(`[zone] WARNING: no content for zone ${nextZone.areaIdx} (kind=${nextZone.kind}, has=${world.world.has(nextZone.areaIdx)})`);
       }
       // Set the checkpoint to the next zone's entry flag position so
-      // startLife can latch the matching flag. For area -1 (no entry
+      // startLife can latch the matching flag. For area 1 (no entry
       // flag), use the zone's start position.
       if (nextZone.entryFlag) {
         hero.checkpoint = {
@@ -411,15 +411,19 @@ export function beginClearFadeIn() {
 // `world` holds the composed terrain + population per area.
 export const levelZones = buildLevelZones(LEVEL_DEF);
 // The zone-model currentArea value that maps to the boss zone (zone[4]).
-const BOSS_AREA = levelZones.length - 1;
+// AREA indices are positive (1..4 for the ordinary areas), so the boss zone
+// gets its own constant AFTER them (5) — it must not collide with area 4.
+export const AREA_BOSS = 5;
 /**
  * The zone currently being played. Index into levelZones based on the hero's
- * currentArea. currentArea uses the zone-model convention: -1 → zone[0],
- * -2 → zone[1], -3 → zone[2], -4 → zone[3], BOSS_AREA → zone[4].
+ * currentArea. currentArea uses the single zone-model convention: 1 → zone[0],
+ * 2 → zone[1], 3 → zone[2], 4 → zone[3], AREA_BOSS (5) → zone[4].
  */
 export function getActiveZone(hero) {
-  const idx = hero.currentArea <= -1 ? -(hero.currentArea) - 1 : hero.currentArea;
-  return levelZones[Math.min(idx, levelZones.length - 1)];
+  const idx = hero.currentArea >= 1 && hero.currentArea <= 4
+    ? hero.currentArea - 1
+    : levelZones.length - 1; // AREA_BOSS (or any out-of-range value) → boss zone
+  return levelZones[idx];
 }
 
 // --- Active-zone world content (task 7.1) ------------------------------------
@@ -634,9 +638,9 @@ const areaContext = {
 };
 bindAreaContext(hero, areaContext);
 
-// Install the initial zone (area -1) into the collision world so the runtime
+// Install the initial zone (area 1) into the collision world so the runtime
 // has a populated collision world from the very first frame. The boot game
-// used the world baked at module load (seed=1); this installs area -1's
+// used the world baked at module load (seed=1); this installs area 1's
 // content (solids, enemies, barrels, powerups, checkpoints) into the
 // collision world. The hero and boss are added here (after the entity lists
 // are declared).
@@ -710,7 +714,7 @@ export function loadActiveZone(zone, content) {
  *
  * The module-level `world` is swapped for a freshly composed one (new seed).
  * The boss is re-created (the level's boss identity is fixed). The active zone
- * (area -1) is installed so the collision world is bound to the fresh world.
+ (area 1) is installed so the collision world is bound to the fresh world.
  * The hero is NOT swapped here — startGame() builds and inserts the fresh hero.
  *
  * @param {object} oldCtx the previous area context (its entity lists)
@@ -735,13 +739,13 @@ function regenerateWorld(oldCtx) {
   if (oldBoss && collisionWorld.entities.has(oldBoss)) collisionWorld.remove(oldBoss);
   collisionWorld.add(boss);
 
-  // Install the FIRST zone (area -1) so the collision world is bound to the
+  // Install the FIRST zone (area 1) so the collision world is bound to the
   // fresh world. MAJOR 7: do NOT read getActiveZone(hero) here — the old
   // hero (still the module-level reference) may be on a later area from the
   // finished game; a new game always starts in the first zone (lifecycle.md
   // §1). The hero is managed by startGame() (removes oldHero / adds the
   // new hero), so we don't touch the hero here.
-  const active = levelZones[0]; // area -1, the first zone
+  const active = levelZones[0]; // area 1, the first zone
   loadActiveZone(active, world.world.get(active.areaIdx));
   camera.setZoneBounds(active);
 
@@ -822,7 +826,7 @@ export function retryFromGameOver() {
 
 /**
  * Continue from game over (lifecycle.md §4). Consumes exactly one continue,
- * restores the global starting life count, and returns to area -1 of the
+ * restores the global starting life count, and returns to area 1 of the
  * CURRENT level. No coin cost. Returns true if the continue was applied.
  *
  * The pool is a growable global balance (gameRules.js); with no continues
@@ -1615,9 +1619,9 @@ collisionWorld.on('checkpoint', (a, b) => {
   // into the boss zone, whose content is loaded on the advance.
   const zone = getActiveZone(heroEnt);
   if (zone.kind !== 'area') return; // boss zone has no exit flag
-  // The next area in the zone model: areas -1 → -2 → -3 → -4 → boss.
-  // The -4 exit routes into the boss zone (boss-arena.md §1).
-  const nextArea = zone.areaIdx === -4 ? BOSS_AREA : zone.areaIdx - 1;
+  // The next area in the zone model: areas 1 → 2 → 3 → 4 → boss.
+  // The 4 exit routes into the boss zone (boss-arena.md §1).
+  const nextArea = zone.areaIdx === 4 ? AREA_BOSS : zone.areaIdx + 1;
   const clearedAreaId = formatAreaIdForClear(heroEnt.currentArea);
   // checkpoints.md §2: begin the clear sequence (flash + banner + fade).
   onExitFlagReached(clearedAreaId, nextArea);
@@ -1630,19 +1634,9 @@ collisionWorld.on('checkpoint', (a, b) => {
  * @returns {string} the area id (e.g. '1-1')
  */
 function formatAreaIdForClear(currentArea) {
-  // Convert zone-model area (-1,-2,-3,-4,4) to formatAreaId's convention
-  // (-1→'X-1', 0→'X-2', 1→'X-3', 2→'X-4', 3→'X-B').
-  let fmtArea;
-  if (currentArea < 0 && currentArea !== -1) {
-    fmtArea = currentArea + 2; // -2→0, -3→1, -4→2
-  } else if (currentArea >= 4) {
-    fmtArea = 3; // boss
-  } else if (currentArea === -1) {
-    fmtArea = -1; // first area
-  } else {
-    fmtArea = currentArea - 1;
-  }
-  return formatAreaIdSafe(hero.currentLevel, fmtArea);
+  // Zone-model area (1..4 or AREA_BOSS) is passed straight through to
+  // formatAreaId (1..4 → 'X-N', AREA_BOSS → 'X-B').
+  return formatAreaIdSafe(hero.currentLevel, currentArea);
 }
 
 /**
@@ -1654,7 +1648,7 @@ function formatAreaIdSafe(level, area) {
     // formatAreaId is imported from lifecycle.js at the top of the module.
     return formatAreaId(level, area);
   } catch {
-    return `${level}-${area < 0 ? 1 : area + 1}`;
+    return area >= 5 ? `${level}-B` : `${level}-${area}`;
   }
 }
 
@@ -1756,7 +1750,7 @@ onTransition((from, to) => {
 // (structure.md §2/§3, checkpoints.md §2). The legacy corridor is still the
 // active geometry until task 7.1; the camera bounds are already zone-driven.
 export const camera = new Camera();
-// Bind the camera to the zone the hero starts in (area -1) so it is clamped
+// Bind the camera to the zone the hero starts in (area 1) so it is clamped
 // from the very first frame.
 camera.setZoneBounds(getActiveZone(hero));
 
@@ -1818,8 +1812,8 @@ export function update(dt) {
   // Physics only runs during PLAY; other states are screen-driven ().
   if (getState() !== S.PLAY) return;
 
-  // DEBUG: track hero position vs exit flag when in area -2.
-  if (hero.currentArea === -2 && checkpoints.length > 0) {
+  // DEBUG: track hero position vs exit flag when in area 2.
+  if (hero.currentArea === 2 && checkpoints.length > 0) {
     const exit = checkpoints.find(c => !c.isEntry);
     if (exit && Math.random() < 0.05) { // ~3x/sec
       const hb = hero.worldBox();
@@ -1829,7 +1823,7 @@ export function update(dt) {
   }
 
   // DEBUG: track clear sequence state.
-  if (hero.currentArea === -2 && Math.random() < 0.02) {
+  if (hero.currentArea === 2 && Math.random() < 0.02) {
     console.log(`[seq] state=${clearSeq.state} timer=${clearSeq.timer.toFixed(2)} pendingFadeIn=${clearSeq.pendingFadeIn}`);
   }
 
@@ -2147,8 +2141,8 @@ function finishHeroDeath() {
       // keeps resolving to the boss zone on the restart. Without this the hero
       // stayed on the previous area's index, so the flow never re-armed (the
       // dormant machine never saw a boss zone) and the entry screen showed the
-      // wrong area id. BOSS_AREA is the zone-model value for the boss zone.
-      hero.currentArea = BOSS_AREA;
+      // wrong area id. AREA_BOSS is the zone-model value for the boss zone.
+      hero.currentArea = AREA_BOSS;
       // Place the checkpoint at the boss zone's entry (the boss checkpoint)
       // so startLife puts the hero beside it for the approach.
       const bz = levelZones[4];

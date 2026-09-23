@@ -83,16 +83,16 @@ Terrain selection is randomized too. The earlier idea that only population was
 random was incorrect. Authored macros constrain randomness; they do not make
 all games use the same terrain sequence.
 
-## 5. Progression across -1 to -4
+## 5. Progression across areas 1 to 4
 
 Patterns are grouped or weighted by challenge so progression is deliberate:
 
-- **-1:** fewer blocks/platforms, simpler arrangements, room to move.
-- **-2:** increased combinations and more climbing/crossing demands.
-- **-3:** denser obstacles and more substantial set pieces.
-- **-4:** the strongest permitted combinations and harder elevated routes.
+- **Area 1:** fewer blocks/platforms, simpler arrangements, room to move.
+- **Area 2:** increased combinations and more climbing/crossing demands.
+- **Area 3:** denser obstacles and more substantial set pieces.
+- **Area 4:** the strongest permitted combinations and harder elevated routes.
 
-Exactly one of -2/-3/-4 is vertical. It follows the same progression principle
+Exactly one of areas 2/3/4 is vertical. It follows the same progression principle
 through climbing complexity, not horizontal length. Pattern repetition is
 allowed, but unconstrained repetition must not replace pacing.
 
@@ -108,7 +108,7 @@ Tension rises from level to level through configuration, not new mechanics:
 - **Enemy pressure:** rosters grow and quantities rise per level.
 - **Resource scarcity:** powerup availability trends down as levels progress.
 - **Macro intensity:** later levels weight harder macro families and denser
-  set pieces within the same -1 to -4 curve.
+  set pieces within the same 1-to-4 curve.
 
 Final enemy rosters for levels beyond the first are not yet decided; early
 configs may reuse existing enemy types as placeholders and be tuned later.

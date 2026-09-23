@@ -3,7 +3,7 @@
 // Source of truth:
 //   docs/levels/generation.md   §2 (Macro examples), §3 (What a macro
 //                               describes), §4 (Constructing an area),
-//                               §5 (Progression -1 to -4), §6 (Playability)
+//                               §5 (Progression 1 to 4), §6 (Playability)
 //   docs/levels/structure.md    §5 (Terrain vocabulary)
 //
 // A macro is an authored terrain SEQUENCE (not a single block). It declares:
@@ -213,8 +213,8 @@ export const MACROS = Object.freeze({
    * solid, rising from ground, so the hero jumps over them).
    *
    * Entry: 5 units clear. Exit: 5 units clear. These simple patterns carry
-   * EXTRA breathing room (generation.md §5: stage -1 is "fewer blocks, room to
-   * move") so a -1 area packs fewer of them and reads as sparser than the
+   * EXTRA breathing room (generation.md §5: stage 1 is "fewer blocks, room to
+   * move") so a 1 area packs fewer of them and reads as sparser than the
    * denser, more tightly-spaced set pieces of later stages.
    * Difficulty: 1 (simple, readable).
    */
@@ -252,7 +252,7 @@ export const MACROS = Object.freeze({
    * A rhythm pattern — the hero jumps over each block in turn.
    *
    * Entry: 5 units clear. Exit: 5 units clear. Like pyramid, this simple
-   * pattern carries extra breathing room so stage -1 areas read as sparser
+   * pattern carries extra breathing room so stage 1 areas read as sparser
    * (generation.md §5). Difficulty: 1 (simple repetition).
    */
   lowRepeated: Object.freeze({
@@ -422,7 +422,7 @@ export const MACROS = Object.freeze({
   /**
    * Simple climb: a 2-landing upward step with a small lateral shift.
    * Tiers ascend 1→2. The simplest vertical pattern — few obstacles,
-   * room to move (generation.md §5: stage -2 "increased combinations").
+   * room to move (generation.md §5: stage 2 "increased combinations").
    *
    * Lateral shift: +2 units (within MAX_CLEARABLE_GAP=3).
    * Entry: 2 units clear. Exit: 2 units clear.
@@ -651,12 +651,12 @@ export const MACROS = Object.freeze({
  * Progression weighting per stage (generation.md §5).
  *
  * The weights are the SINGLE source of truth for how difficulty is weighted
- * within each stage. They encode the deliberate -1 → -4 progression:
+ * within each stage. They encode the deliberate 1 → 4 progression:
  *
- *   -1: sparse & simple — difficulty 1 only, "room to move"
- *   -2: more combinations — difficulty 1-2, more climbing/crossing
- *   -3: denser set pieces — difficulty 1-3, substantial set pieces
- *   -4: strongest combos — difficulty 1-3, weighted toward 3 (hardest)
+ *   1: sparse & simple — difficulty 1 only, "room to move"
+ *   2: more combinations — difficulty 1-2, more climbing/crossing
+ *   3: denser set pieces — difficulty 1-3, substantial set pieces
+ *   4: strongest combos — difficulty 1-3, weighted toward 3 (hardest)
  *
  * Each entry's `weights` map difficulty → selection weight; the min/max are
  * derived from the map keys so a difficulty can never be selected outside its
@@ -666,7 +666,7 @@ export const MACROS = Object.freeze({
  * Breathing room (generation.md §5: "Later areas should feel more intense,
  * not impossible. Breathing room and clear landings remain useful even in the
  * hardest patterns."): the easy-tier weight is kept deliberately HIGHER in
- * -2 and -3 than the raw "more intense" curve would imply. -2 keeps a 1:2
+ * 2 and 3 than the raw "more intense" curve would imply. 2 keeps a 1:2
  * easy:hard split and -3 keeps a ~1:1:3 split, so even the dense stages
  * retain clear landings rather than becoming impossible. These are the
  * concrete breathing-room values the doc defers to the tuning pass.
@@ -680,10 +680,10 @@ export const MACROS = Object.freeze({
  * not a cross-level global.
  */
 export const STAGE_WEIGHTS = Object.freeze({
-  '-1': Object.freeze({ 1: 1 }),
-  '-2': Object.freeze({ 1: 0.5, 2: 1 }),
-  '-3': Object.freeze({ 1: 0.3, 2: 0.5, 3: 1 }),
-  '-4': Object.freeze({ 1: 0.2, 2: 0.4, 3: 1 }),
+  '1': Object.freeze({ 1: 1 }),
+  '2': Object.freeze({ 1: 0.5, 2: 1 }),
+  '3': Object.freeze({ 1: 0.3, 2: 0.5, 3: 1 }),
+  '4': Object.freeze({ 1: 0.2, 2: 0.4, 3: 1 }),
 });
 
 /**
@@ -710,7 +710,7 @@ const STAGE_DIFFICULTY = Object.freeze(
  * Filter and weight macros for a given orientation and progression stage.
  *
  * The base per-stage weights (STAGE_WEIGHTS) shape the WITHIN-level curve
- * (-1 sparse → -4 dense). A level's `macroWeights` (levelConfigs.js,
+  * (1 sparse → 4 dense). A level's `macroWeights` (levelConfigs.js,
  * generation.md §5/§5b) is an ADDITIONAL, per-level bias that shifts macro
  * selection toward harder difficulty tiers for later levels:
  *
@@ -726,11 +726,11 @@ const STAGE_DIFFICULTY = Object.freeze(
  *              permitted combinations stand in for 'brutal').
  *
  * The multiplier is applied ON TOP of the stage weights, so the within-level
- * -1 → -4 progression is preserved and the level bias is multiplicative
+ * 1 → 4 progression is preserved and the level bias is multiplicative
  * (a zero level weight for a tier can still suppress that tier entirely).
  *
  * @param {string} orientation 'horizontal' | 'vertical'
- * @param {number} stage progression stage (-1 to -4)
+ * @param {number} stage progression stage (1 to 4)
  * @param {object} [macroWeights] optional per-level tier weights
  *   ({ easy, medium, hard, brutal }); omitted → no level bias
  * @returns {Array<{macro: object, weight: number}>} weighted macro list
@@ -915,8 +915,8 @@ function lastPlatformAbsY(macro, axisPos) {
  *
  * Gaps are movement challenges (empty space), not "obstacles", so they are not
  * counted — a sparser stage wants fewer BLOCKS/PLATFORMS, not fewer gaps. This
- * is the density measure the progression tests use to assert that stage -1
- * areas are visibly sparser than stage -4 (generation.md §5).
+ * is the density measure the progression tests use to assert that stage 1
+ * areas are visibly sparser than stage 4 (generation.md §5).
  *
  * @param {object} macro a macro from MACROS
  * @returns {number} number of block/platform units
@@ -1486,7 +1486,7 @@ function assignBarrelTypes(barrelSlots, counts, rng) {
  *
  * @param {ReturnType<typeof createRng>} rng the per-game RNG (stateful)
  * @param {'horizontal'|'vertical'} orientation the area's orientation
- * @param {number} stage progression stage (-1 to -4)
+ * @param {number} stage progression stage (1 to 4)
  * @param {number} budget the area's length budget in units (width for
  *   horizontal, height for vertical)
  * @returns {object} the composed area layout
@@ -1519,7 +1519,7 @@ function assignBarrelTypes(barrelSlots, counts, rng) {
  *
  * @param {object} rng the per-game RNG
  * @param {string} orientation 'horizontal' | 'vertical'
- * @param {number} stage progression stage (-1 to -4)
+ * @param {number} stage progression stage (1 to 4)
  * @param {number} budget the area's length budget in width-units
  * @param {object} [macroWeights] optional per-level macro difficulty-tier
  *   weights ({ easy, medium, hard, brutal } from levelConfigs.js) that bias
@@ -1529,8 +1529,8 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
   if (orientation !== 'horizontal' && orientation !== 'vertical') {
     throw new Error(`composeArea: orientation must be 'horizontal' or 'vertical', got ${orientation}`);
   }
-  if (stage < -4 || stage > -1) {
-    throw new Error(`composeArea: stage must be -1 to -4, got ${stage}`);
+  if (stage < 1 || stage > 4) {
+    throw new Error(`composeArea: stage must be 1 to 4, got ${stage}`);
   }
   if (budget < ENTRY_CLEAR + EXIT_CLEAR) {
     throw new Error(`composeArea: budget ${budget} is less than minimum ${ENTRY_CLEAR + EXIT_CLEAR}`);
@@ -2371,7 +2371,7 @@ export function validateLayout(layout) {
  *
  * @param {number|string} seed the per-game seed
  * @param {'horizontal'|'vertical'} orientation
- * @param {number} stage progression stage (-1 to -4)
+ * @param {number} stage progression stage (1 to 4)
  * @param {number} budget length budget in width-units
  * @returns {object} the composed area layout (same shape as composeArea)
  */
