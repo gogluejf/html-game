@@ -203,31 +203,13 @@ test('beginClearFadeIn: starts the fade-in, places hero at zone entry (BLOCKER 4
 
   assert.equal(U.getClearSequence().state, 'fadeIn', 'fade-in started');
   assert.equal(U.getClearSequence().pendingFadeIn, false, 'pending flag consumed');
-  // The hero should be at the new zone's start (beside its entry flag).
+  // The hero should be at the new zone's start on the GROUND.
   assert.equal(hero.x, ZONE_ENTRY_X, 'hero at zone entry x');
-  // For a horizontal zone, the entry flag y is ZONE_GROUND_Y - FLAG_H,
-  // so hero.y = (ZONE_GROUND_Y - FLAG_H) - hero.h.
-  // But beginClearFadeIn uses entryY - hero.h where entryY = bounds.y + entryFlag.y.
-  // For horizontal zones: entryFlag.y = ZONE_GROUND_Y - ZONE_FLAG_H.
-  // So hero.y = ZONE_GROUND_Y - ZONE_FLAG_H - hero.h.
-  // The test previously asserted hero.y = ZONE_GROUND_Y - hero.h, which
-  // would be the case if the flag y were ZONE_GROUND_Y (flag top = ground).
-  // With the fix, the hero stands on the flag's platform, not the ground.
-  // For horizontal zones the flag sits on the ground, so the hero's feet
-  // should be at the ground level. The flag y is the TOP of the flag box,
-  // so the hero's y should be flagY - hero.h (hero top = flag top - hero height).
-  // Actually: the hero should stand ON the ground, with feet at ZONE_GROUND_Y.
-  // hero.y (top) = ZONE_GROUND_Y - hero.h.
-  // The entryFlag.y = ZONE_GROUND_Y - ZONE_FLAG_H (top of flag).
-  // beginClearFadeIn: entryY = bounds.y + entryFlag.y = ZONE_GROUND_Y - ZONE_FLAG_H.
-  // hero.y = entryY - hero.h = ZONE_GROUND_Y - ZONE_FLAG_H - hero.h.
-  // This places the hero's top at flag top - hero height, which means the
-  // hero's bottom (feet) is at ZONE_GROUND_Y - ZONE_FLAG_H. That's the top
-  // of the flag, not the ground. This is correct for standing beside the flag.
+  // For a horizontal zone, the hero stands on the floor (feet at ZONE_GROUND_Y).
   assert.equal(
     hero.y,
-    ZONE_GROUND_Y - 48 - hero.h,
-    'hero at zone entry y (on the flag platform)',
+    ZONE_GROUND_Y - hero.h,
+    'hero at ground level (feet on floor)',
   );
 });
 

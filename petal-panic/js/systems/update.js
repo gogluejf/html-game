@@ -287,6 +287,7 @@ export function getClearFadeAlpha() {
  * @param {number} nextArea the area index to advance to after the fade
  */
 export function onExitFlagReached(areaId, nextArea) {
+  console.log(`[clear] exit flag reached: ${areaId} → next area ${nextArea}`);
   // Fire the celebratory screen flash (reuse the existing screenFlash effect).
   fireManual({ type: 'screen-flash', params: { strength: 1 } }, null, { view: { w: VIEW_W, h: VIEW_H } });
   clearSeq = {
@@ -335,6 +336,9 @@ export function stepClearSequence(dt) {
       // linger after the advance (structure.md §2: "a new zone replaces it").
       if (nextZone.kind === 'area' && world.world.has(nextZone.areaIdx)) {
         loadActiveZone(nextZone, world.world.get(nextZone.areaIdx));
+        console.log(`[zone] loaded zone ${nextZone.areaIdx}, checkpoints: ${checkpoints.map(c => c.checkpointId + (c.isEntry ? '(entry)' : '(exit)')).join(', ')}`);
+      } else {
+        console.log(`[zone] WARNING: no content for zone ${nextZone.areaIdx} (kind=${nextZone.kind}, has=${world.world.has(nextZone.areaIdx)})`);
       }
       // Set the checkpoint to the next zone's entry flag position so
       // startLife can latch the matching flag. For area -1 (no entry
@@ -374,15 +378,20 @@ export function beginClearFadeIn() {
   clearSeq.pendingFadeIn = false;
   clearSeq.state = 'fadeIn';
   clearSeq.timer = 0;
-  // Place the hero at the new zone's start (beside its entry flag).
-  // BLOCKER 4: use the zone's entry flag y-position for vertical zones
-  // (the entry flag sits on the bottom platform, not at ZONE_GROUND_Y).
+  // Place the hero at the new zone's start on the GROUND (not above the
+  // entry flag). The entry flag is a naive sprite with zero collision; the
+  // hero should stand on the floor beside it, not drop onto it.
   const zone = getActiveZone(hero);
-  const entryY = zone.entryFlag
-    ? zone.bounds.y + zone.entryFlag.y
-    : zone.bounds.y + ZONE_GROUND_Y;
-  hero.x = zone.bounds.x + ZONE_ENTRY_X;
-  hero.y = entryY - hero.h;
+  if (zone.orientation === 'vertical') {
+    // Vertical: hero starts on the bottom platform.
+    const bottomY = zone.bounds.y + zone.bounds.h;
+    hero.x = zone.bounds.x + ZONE_ENTRY_X;
+    hero.y = bottomY - hero.h;
+  } else {
+    // Horizontal / boss: hero starts on the floor.
+    hero.x = zone.bounds.x + ZONE_ENTRY_X;
+    hero.y = ZONE_GROUND_Y - hero.h;
+  }
   hero.checkpoint = { x: hero.x, y: hero.y };
   // Re-clamp the camera to the new zone's bounds (task 2.3) so it cannot reveal
   // the previous or next zone; a fresh vertical climb also resets its ascent.
@@ -1492,10 +1501,9 @@ collisionWorld.on('checkpoint', (a, b) => {
   const heroEnt = a.layer === LAYER.HERO ? a : (b.layer === LAYER.HERO ? b : null);
   if (!cp || !heroEnt) return;
   if (!(cp instanceof Checkpoint)) return;
+  // DEBUG: log every checkpoint overlap to diagnose trigger issues.
+  console.log(`[checkpoint] ${cp.checkpointId} (entry=${cp.isEntry}, triggered=${cp.triggered}) hero.area=${heroEnt.currentArea} hero.x=${Math.round(heroEnt.x)} cp.x=${cp.x}`);
   // Entry flags are naive sprites: zero collision effect, no trigger, no VFX.
-  // They mark where the area starts but do nothing when touched.
-  // (checkpoints.md §1: "arriving beside it must not immediately clear the
-  // newly entered area.")
   if (cp.isEntry) return;
   if (cp.triggered) return; // already triggered this run
 
