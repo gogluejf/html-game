@@ -11,6 +11,15 @@ const PAD_NAV = { 'btn:2': ['remove'], 'btn:0': ['confirm'], 'btn:1': ['back'], 
   'btn:12': ['up'], 'btn:13': ['down'], 'btn:14': ['left'], 'btn:15': ['right'],
   'axis:0:-1': ['left'], 'axis:0:1': ['right'], 'axis:1:-1': ['up'], 'axis:1:1': ['down'] };
 const DISCRETE = ['jump', 'shoot', 'melee', 'supermove', 'switchWeapon', 'lockDir', 'lockMove'];
+// Nav actions whose GAMEPAD binding is user-remappable (shown as editable rows
+// in Controls). Their KEYBOARD bindings stay fixed (Enter/Space, Escape) — only
+// the gamepad side is configurable. Keyboard-side defaults live here so they
+// can be displayed read-only and restored by reset.
+export const NAV_REMAPPABLE = [
+  { id: 'confirm', label: 'Confirm' },
+  { id: 'back',    label: 'Back' },
+];
+const NAV_KB_DEFAULTS = { confirm: ['Enter', 'Space'], back: ['Escape'] };
 export const DEFAULT_MAPPING = {
   keyboard: {
     moveUp: ['KeyW', 'ArrowUp'], moveDown: ['KeyS', 'ArrowDown'],
@@ -23,9 +32,14 @@ export const DEFAULT_MAPPING = {
     moveLeft: ['axis:0:-1', 'btn:14'], moveRight: ['axis:0:1', 'btn:15'],
     jump: ['btn:0'], shoot: ['btn:2'], melee: ['btn:3'], supermove: ['btn:1', 'btn:5'],
     switchWeapon: ['btn:4'], lockDir: ['btn:6'], lockMove: ['btn:7'],
+    // Remappable nav actions (gamepad side only). Keyboard confirm/back stay
+    // fixed (Enter/Space, Escape) — see NAV_KB_DEFAULTS.
+    confirm: ['btn:0'], back: ['btn:1'],
   },
 };
-export const bindingSlots = (source, action) => action.startsWith('move') || (source === 'gamepad' && action === 'supermove') ? 2 : 1;
+export const bindingSlots = (source, action) =>
+  action.startsWith('move') || (source === 'gamepad' && action === 'supermove')
+    ? 2 : (action === 'confirm' && source === 'keyboard') ? 2 : 1;
 const STORAGE_KEY = 'petal_panic_mapping';
 const cloneDefaults = () => JSON.parse(JSON.stringify(DEFAULT_MAPPING));
 // Only a complete exact old-default snapshot is safe to upgrade. Partial or
@@ -422,8 +436,34 @@ export function createInput({ target = globalThis.window, document = globalThis.
       if (action === 'crouch') action = 'moveDown';
       if (action === 'pause') return source === 'keyboard' ? 'ESC' : formatBinding('btn:9', source, this.gamepadLayout || 'Generic');
       if (action === 'aim' && source === 'gamepad') return 'RIGHT STICK';
+      if (action === 'move' || source === 'gamepad' && (action === 'confirm' || action === 'back')) {
+        // Remappable gamepad nav actions resolve from the user's mapping.
+        const bindings = this.mapping[source]?.[action];
+        if (bindings) return formatBinding(bindings, source, this.gamepadLayout || 'Generic');
+      }
       if (action === 'move' || action === 'aim') return ['moveUp','moveDown','moveLeft','moveRight'].map(a => this.buttonLabel(a, source)).join(' ');
       return formatBinding(this.mapping[source]?.[action], source, this.gamepadLayout || 'Generic');
+    },
+    /**
+     * Nav actions produced by a GAMEPAD physical binding. Remappable actions
+     * (confirm/back) resolve ONLY from the user's mapping (so reassigning one
+     * fully detaches the default button); all other nav actions are static
+     * (PAD_NAV). Keyboard nav is always fixed and never uses this.
+     */
+    navGamepadActions(binding) {
+      const actions = new Set();
+      // Static nav bindings, minus any that belong to a remappable action
+      // (those are owned by the mapping, not PAD_NAV).
+      for (const action of PAD_NAV[binding] || []) {
+        if (NAV_REMAPPABLE.some(r => r.id === action)) continue;
+        actions.add(action);
+      }
+      // Remappable nav actions come from the user's mapping.
+      for (const { id } of NAV_REMAPPABLE) {
+        const bindings = this.mapping.gamepad?.[id];
+        if (Array.isArray(bindings) && bindings.includes(binding)) actions.add(id);
+      }
+      return [...actions];
     },
     // Call on every state transition and capture boundary. No time debounce.
     barrier() {
@@ -450,7 +490,12 @@ export function createInput({ target = globalThis.window, document = globalThis.
       const navNow = () => {
         const values = new Set();
         for (const [id, p] of physical) if (!blocked.has(id) && p.value > 0.5) {
-          for (const action of (p.source === 'keyboard' ? KEY_NAV[p.binding] : PAD_NAV[p.binding]) || []) values.add(action);
+          // Keyboard nav is fixed (KEY_NAV). Gamepad nav reads the user's
+          // remappable mapping for confirm/back; everything else is static.
+          const actions = p.source === 'keyboard'
+            ? KEY_NAV[p.binding]
+            : this.navGamepadActions(p.binding);
+          for (const action of actions || []) values.add(action);
         }
         return values;
       };
