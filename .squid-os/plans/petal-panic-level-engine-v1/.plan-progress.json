@@ -167,10 +167,18 @@
     },
     "5.1": {
       "number": "5.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Vertical zone orientation",
       "milestone": "Vertical Areas",
-      "milestone_number": "5"
+      "milestone_number": "5",
+      "summary": {
+        "failures": "None introduced. node --test petal-panic/js/test/*.test.js = 244 pass / 2 fail; the 2 failures (input.test.js 'simultaneous sources dispatch once...' and 'Space jump and Circle super never pause...') are pre-existing baseline flakes that fail identically with my changes stashed.",
+        "confidence": "high",
+        "lessons_learned": "The camera ratchet (minYReached high-water mark + Math.min clamp in Camera.update) was already implemented in task 2.3; the real gap for 5.1 was the runtime lethal-bottom death check and confirming restart resets the ratchet. hero.y is the body top (y+h = feet for the standing box), so the bottom-edge test is simply hero.y + hero.h > bounds.y + bounds.h.",
+        "done": "Added vertical zone orientation runtime behavior. The upward-only camera ratchet and fixed horizontal width already existed in camera.js (task 2.3) so I verified and tested them rather than re-implementing. Added isBelowVerticalBottom(hero, zone) to update.js and wired it into the update loop (step 1a2) so falling below the bottom platform of a vertical zone routes through the existing die() -> death-TTL -> finishHeroDeath() pipeline, identical to any other death. Restart already places the hero on the bottom-platform entry flag (hero.checkpoint via stepClearSequence) and the AREA_ENTRY->PLAY hook re-clamps the camera, resetting the ratchet high-water mark. Added verticalZone.test.js with 7 logic tests covering the ratchet (up-only, never back down), no horizontal scroll, lethal-bottom death, safe standing start, non-application to horizontal/boss zones, and restart camera/hero reset. Full suite green except 2 pre-existing input.test.js flakes (confirmed baseline by stashing my changes).",
+        "decisions": "Reused the existing die() death pipeline rather than adding a separate fall-death path, so restart/continue/lives/energy rules stay identical to any other death (checkpoints.md \u00a74). Placed the lethal check in update.js (the runtime frame loop) where the active zone and hero are in scope, exposed isBelowVerticalBottom as an export so it is unit-testable in node without a full physics frame. Kept the camera ratchet in camera.js (its existing owner) instead of moving it.",
+        "tradeoffs": "The lethal-bottom check uses a strict feet>bottom comparison against zone.bounds.y+zone.bounds.h (the bottom platform top). This makes a hero standing exactly on the platform safe (feet == bottom, not > bottom). The check reads the active zone's orientation each frame, so it is a no-op for horizontal/boss zones with negligible cost. terrain.js was listed in the contract but needed no changes: the zone model + bottom platform geometry already live in level.js (zonePlatforms), and the pure unit model in terrain.js is not the right home for a runtime death rule."
+      }
     },
     "5.2": {
       "number": "5.2",

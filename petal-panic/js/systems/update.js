@@ -1517,6 +1517,12 @@ export function update(dt) {
   if (!hero.dying && hero.energy <= 0) {
     hero.die();
   }
+  // 1a2. Lethal bottom emptiness (structure.md §4) runs AFTER collision
+  //      resolution below (step 3): gravity can push a hero's feet past the
+  //      bottom platform top in the same frame the ground snaps them back, so
+  //      the check must see the post-collision position. A hero standing on
+  //      the bottom platform has feet exactly AT the platform top (not >),
+  //      so the strict check does not kill a safe standing hero.
   if (hero.dying) {
     hero.deathTimer += dt;
     if (hero.deathTimer >= hero.DEATH_DURATION + DEATH_FADE_DURATION) {
@@ -1660,6 +1666,18 @@ export function update(dt) {
   // ignored one-way solids); solid terrain still grounds normally.
   hero.setGrounded(isGrounded(hit));
 
+  // 1a2. Lethal bottom emptiness (structure.md §4): in a vertical zone, falling
+  //      below the supporting bottom platform kills exactly like any other
+  //      death — route through the same die() → death-TTL → finishHeroDeath()
+  //      pipeline so the restart/continue/lives rules are identical. Runs
+  //      AFTER collision resolution: a hero whose feet were pushed past the
+  //      platform top by gravity this frame has already been snapped back onto
+  //      the platform (feet == bottom, not >), so only a genuinely fallen
+  //      hero (no platform below to catch them) dies here.
+  if (!hero.dying && isBelowVerticalBottom(hero, getActiveZone(hero))) {
+    hero.die();
+  }
+
   // Keep the hero inside the LEVEL horizontally (test-rig convenience).
   const wb = hero.worldBox();
   if (wb.x < 0) { hero.x = -hero.box.ox; hero.vx = 0; }
@@ -1680,6 +1698,34 @@ export function update(dt) {
 // BLACK. Consume one life exactly once. If lives remain, show the shared
 // entry screen with the new count, then restart the entire current area
 // (the player confirms the screen to begin the attempt).
+/**
+ * structure.md §4: in a vertical zone the hero may fall within the visible
+ * view, but falling into the bottom emptiness — below the supporting bottom
+ * platform — kills them. "Descending cannot recover the earlier part of the
+ * climb," so the camera's upward ratchet (task 2.3) is never reset by a fall;
+ * only a death restart resets it.
+ *
+ * The bottom platform's top surface is the zone's bottom (`bounds.y +
+ * bounds.h`). A standing hero's feet rest exactly on that line, so a hero
+ * standing normally on the entry platform is NOT below it and does not die
+ * (structure.md §4: "the initial supporting platform must allow a safe start;
+ * the lethal bottom rule must not kill a hero standing normally at the entry").
+ * The hero dies only when their feet drop strictly below the platform top.
+ *
+ * @param {Hero} h the hero
+ * @param {object} zone the active zone from buildLevelZones()
+ * @returns {boolean} true if the hero has fallen into the bottom emptiness
+ */
+export function isBelowVerticalBottom(h, zone) {
+  if (!zone || zone.orientation !== 'vertical') return false;
+  const bottom = zone.bounds.y + zone.bounds.h; // bottom platform top surface
+  // World-space collision box (consistent with the rest of the collision
+  // code): feet at the box's bottom edge, y + h.
+  const wb = h.worldBox ? h.worldBox() : { y: h.y, h: h.h };
+  const feet = wb.y + wb.h;
+  return feet > bottom;
+}
+
 /** Length of the fade-to-black after the skull presentation (checkpoints.md §4). */
 const DEATH_FADE_DURATION = 0.6;
 /** Black overlay drawn during the post-skull fade-to-black (render.js reads it). */
