@@ -214,7 +214,7 @@ export function navHintEntries(items) {
           const lbl = formatBinding(key, 'keyboard');
           if (icons.some(ic => ic.icon === lbl)) continue;
           icons.push({ icon: lbl, action: a, binding: `k:${key}`, isActive: () => {
-            if (held) return !!_heldBindings.get(`k:${key}`);
+            if (held) return _actionHeld(a); // any binding for this direction
             const t = _flashT.get(`k:${key}`) ?? 0;
             return performance.now() - t < FLASH_MS;
           }});
@@ -230,7 +230,7 @@ export function navHintEntries(items) {
           const lbl = formatBinding(btn, 'gamepad', layout);
           if (icons.some(ic => ic.icon === lbl)) continue;
           icons.push({ icon: lbl, action: a, binding: `g:${btn}`, isActive: () => {
-            if (held) return !!_heldBindings.get(`g:${btn}`);
+            if (held) return _actionHeld(a); // any binding for this direction
             const t = _flashT.get(`g:${btn}`) ?? 0;
             return performance.now() - t < FLASH_MS;
           }});
@@ -260,6 +260,31 @@ export function markNavPressed(held, pressed) {
     const now = performance.now();
     for (const k of pressed) _flashT.set(k, now);
   }
+}
+
+/**
+ * Returns true if ANY physical binding mapped to the given directional action
+ * is currently held. Used by simple-mode chips so the d-pad arrow lights up
+ * whether the player used ArrowUp, W, d-pad ▲, or the left stick.
+ */
+function _actionHeld(action) {
+  for (const [key, acts] of Object.entries(KEY_NAV)) {
+    if (!acts.includes(action)) continue;
+    if (_heldBindings.get(`k:${key}`)) return true;
+  }
+  for (const [btn, acts] of Object.entries(PAD_NAV)) {
+    if (!acts.includes(action)) continue;
+    if (_heldBindings.get(`g:${btn}`)) return true;
+  }
+  return false;
+}
+
+/**
+ * Clear all flash timestamps. Called on state transitions so a new screen
+ * never shows a stale highlight from the previous screen's press.
+ */
+export function clearNavFlash() {
+  _flashT.clear();
 }
 
 export function createInput({ target = globalThis.window, document = globalThis.document,

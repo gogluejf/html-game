@@ -10,7 +10,7 @@ import { HEROES } from './heroDefs.js';
 import { VIEW_W, VIEW_H } from './view.js';
 import { calculateScore } from './stats.js';
 import { onTransition } from './state.js';
-import { input, navLabelString, navHintEntries, navLabels, markNavPressed } from './input.js';
+import { input, navLabelString, navHintEntries, navLabels, markNavPressed, clearNavFlash } from './input.js';
 
 // --- Image cache -------------------------------------------------------------
 import {
@@ -1284,7 +1284,7 @@ export function screenUpdate(dt) {
   if (s === S.REMAP) Remap.update(dt);
 }
 
-onTransition((from, to) => { input.cancelCapture(); screenReset(to, from); });
+onTransition((from, to) => { input.cancelCapture(); clearNavFlash(); screenReset(to, from); });
 
 // Register the area-entry data callback with lifecycle.js so that
 // showAreaEntry() can push the screen data here without a circular import.
