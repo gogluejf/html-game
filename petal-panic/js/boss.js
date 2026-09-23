@@ -31,7 +31,11 @@ import { damage } from './damage.js';
 import { Effects } from './effects.js';
 
 export const ELEPHANT_DEF = {
-  id: 'elephant',
+  // The boss id is the authoritative one from the level config
+  // (levelConfigs.js: 'tusko_wobble' — docs/story/levels.md "Tusko Wobble").
+  // The class stays `Elephant` (its placeholder art / AI are unchanged); only
+  // the identity id is reconciled so the config and the boss agree (task 7.1).
+  id: 'tusko_wobble',
   name: 'Overgrown Elephant',
   isBoss: true,
   w: 80, h: 100,

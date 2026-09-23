@@ -259,9 +259,22 @@ export class Checkpoint extends Entity {
   }
 }
 
-/** Create a checkpoint with the given id at (x, y). */
-export function makeCheckpoint(id, x, y) {
-  return new Checkpoint(id, x, y);
+/**
+ * Create a checkpoint with the given id at (x, y).
+ * @param {string} id checkpoint identifier (e.g. '1-1', '1-4-exit', '1-boss')
+ * @param {number} x spawn x (top-left of box)
+ * @param {number} y spawn y (top-left of box)
+ * @param {object} [extra] optional descriptor fields carried on the flag:
+ *   { isEntry?: boolean, appearance?: string }. `isEntry` marks the area's
+ *   ENTRY flag (the starting checkpoint — it must not re-clear the area the
+ *   hero just entered, checkpoints.md §1); `appearance` is the flag's visual
+ *   kind ('entry' | 'exit' | 'boss-checkpoint').
+ */
+export function makeCheckpoint(id, x, y, extra = {}) {
+  const c = new Checkpoint(id, x, y);
+  c.isEntry = extra.isEntry ?? false;
+  c.appearance = extra.appearance ?? 'entry';
+  return c;
 }
 
 // ---------------------------------------------------------------------------

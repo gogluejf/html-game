@@ -445,3 +445,28 @@ These are the accumulated "runtime still uses legacy corridor" findings. They al
 3. Sparseness of -1 load-bearing on breathing-room values (3.3)
 4. Anti-repetition constraint for macro selection (3.2)
 5. -2/-3 pacing not re-tuned (3.3)
+
+---
+
+## Task 7.1 — Wire engine into main loop (replace prototype world)
+
+**Round 1:**
+
+| Reviewer | Verdict | Key Findings |
+|---|---|---|
+| R1 (Qwen3.8-27B) | FAIL | 1 blocker: exit-flag handler still uses LEVEL_DEF.LEGACY.checkpoints; 4 majors: HUD reads LEGACY, boss gets wrong world ref, boss placement fixed x, UNIT_PX magic number; 3 minors |
+| R2 (GPT-5.6-sol) | FAIL | 5 blockers: exit-flag LEGACY ref, no loadActiveZone on advance, checkpoint index per-zone, no -4→BOSS_AREA path, boss gets wrong world ref; 3 majors: old hero zone in regenerateWorld, stale areaContext.boss, death restore doesn't re-add entities; 1 major: hero entry coords duplicated |
+
+**Round 1 fix dispatched.** All 6 blockers + 3 majors + 2 minors fixed: checkpoint handler rewritten against zone model, loadActiveZone called on advance, -4→BOSS_AREA routing, collisionWorld passed to boss/enemies, death restore re-instantiates from snapshot, regenerateWorld installs levelZones[0], areaContext.boss updated, ZONE_ENTRY_X used, UNIT_PX imported, HUD zone-model driven.
+
+**Round 2 (final confirmation):**
+
+| Reviewer | Verdict |
+|---|---|
+| R1 (Qwen3.8-27B) | PASS — all 11 RESOLVED |
+
+**Committed:** (pending)
+
+**Remaining findings (non-blocking):**
+- R1 minor: `instantiateZone` measures enemy height by instantiating throwaway entity. **Non-blocking.**
+- R1 minor: `finishHeroDeath` re-calls `loadActiveZone` on every death (idempotent). **Non-blocking.**

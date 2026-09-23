@@ -333,11 +333,12 @@ test('continueRun: re-positions the hero at the level entry (area -1), not the d
   setState(S.OVER);
   L.continueRun(h, ctx);
   // The entry screen is shown; confirming starts the fresh attempt. Continuing
-  // after defeat in 2-3 lands the hero at the level's area -1 entry (x=100),
-  // NOT at the death spot (x=6000).
+  // after defeat in 2-3 lands the hero at the level's area -1 entry
+  // (x=ZONE_ENTRY_X=120, the zone-model start position), NOT at the death
+  // spot (x=6000).
   L.areaEntryOnAction('confirm', h, ctx);
   assert.equal(h.currentArea, -1, 'area reset to -1');
-  assert.equal(h.x, 100, 'hero positioned at the level entry, not the death spot');
+  assert.equal(h.x, 120, 'hero positioned at the level entry, not the death spot');
   assert.ok(h.intangible, 'respawn i-frames active');
   assert.equal(h.energy, h.maxEnergy, 'full energy after continue');
 });
@@ -435,8 +436,9 @@ test('integration: continue from 2-3 lands the hero at the level entry (area -1)
   assert.equal(hero.lives, 3, 'starting lives restored');
   assert.equal(hero.currentArea, -1, 'area reset to -1');
   // Confirming the entry screen starts the fresh attempt at the level's entry
-  // (x=100), NOT at the death spot (x=6000).
+  // (x=ZONE_ENTRY_X=120, the zone-model start position), NOT at the death
+  // spot (x=6000).
   L.areaEntryOnAction('confirm', hero);
   assert.equal(getState(), S.PLAY, 'back in PLAY after confirming the entry screen');
-  assert.ok(Math.abs(hero.x - 100) < 1, `hero at level entry x=${hero.x} (not 6000)`);
+  assert.ok(Math.abs(hero.x - 120) < 1, `hero at level entry x=${hero.x} (not 6000)`);
 });

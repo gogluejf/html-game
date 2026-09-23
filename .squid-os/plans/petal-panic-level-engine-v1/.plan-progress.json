@@ -212,7 +212,7 @@
     },
     "6.2": {
       "number": "6.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Level reward screen + continue crediting",
       "milestone": "Boss Zone",
       "milestone_number": "6",
@@ -227,10 +227,18 @@
     },
     "7.1": {
       "number": "7.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Wire engine into main loop (replace prototype world)",
       "milestone": "Level 1 Integration + Gameplay Polish",
-      "milestone_number": "7"
+      "milestone_number": "7",
+      "summary": {
+        "decisions": "The -4 exit uses the SAME clear sequence (flash + banner + fade + shared entry screen) as ordinary areas, with pendingArea = BOSS_AREA \u2014 boss-arena.md \u00a71 says the boss checkpoint 'leads through the normal transition to the boss zone', and the AREA_ENTRY\u2192PLAY hook already starts the boss zone flow when the active zone is the boss zone. Death-restart restores population by RE-INSTANTIATING entities from the stored snapshot (instantiateZone over world.terrain + world.population) rather than mutating restoreArea to re-add missing entities \u2014 restoreArea keeps its 'replay the same arrangement' semantics over whatever list loadActiveZone installed. HUD progress track: one marker per zone (5 markers: 1,2,3,4,B) with the hero dot placed inside the active zone's cell at the hero's local x fraction, since zones are independent worlds and cross-zone x comparison is meaningless.",
+        "failures": "None \u2014 full suite: 293 pass / 3 fail, all 3 are known baseline flakes (hud83 LEGACY assertions, input simultaneous sources, input Space-jump pause). barrel.solid, effectTheater c2d.ellipse, contextualAim pass cleanly.",
+        "lessons_learned": "Each zone's checkpoint list restarts at index 0 (entry) / 1 (exit), so any global-index-based progression was structurally broken once the corridor was split into sealed zones \u2014 the cp.isEntry flag (set by makeCheckpoint in instantiateZone) is the reliable discriminator, not list position. finishHeroDeath previously re-called loadActiveZone with the SAME instantiated content, which is a no-op for destroyed/collected entities \u2014 restoration requires re-running instantiateZone from the value-only snapshot stored by buildWorld. regenerateWorld runs BEFORE startGame swaps the hero, so getActiveZone(hero) there still sees the OLD hero's area \u2014 the first zone must be installed explicitly. The two lifecycle continueRun tests hard-coded the prototype entry x=100; the zone model's ZONE_ENTRY_X is 120.",
+        "confidence": "high",
+        "tradeoffs": "hud83.test.js still asserts the deprecated LEGACY corridor geometry (corridor.checkpoints / cp.x / length) and is a known baseline flake \u2014 left untouched per the flake list; its checkpoint-line assertions are superseded by the zone-model track. The boss zone has no composed content, so death in the boss zone is restored via the boss entity's _initPos (restoreEnemy) rather than zone re-instantiation, which is consistent with the boss being a single persistent entity per zone flow.",
+        "done": "Fixed all 6 blockers + 3 major + 2 minor review findings. (1) Rewrote the checkpoint handler (update.js ~1500) against the zone model: fires on the active zone's exit flag (cp.isEntry guard), advances via zone.areaIdx + 1, and routes the -4 exit into the boss zone (nextArea = BOSS_AREA); all LEVEL_DEF.LEGACY references removed. (2) The area-advance in stepClearSequence now calls loadActiveZone(nextZone, world.world.get(nextZone.areaIdx)) so the previous zone's terrain/enemies/barrels/powerups/checkpoints are swapped out. (3) Progression no longer uses checkpoints.indexOf(cp) \u2014 the zone's own areaIdx drives the advance. (4) The -4 exit routes into the boss zone (BOSS_AREA) through the normal clear sequence per boss-arena.md \u00a71. (5) Boss and real-enemy updates now receive collisionWorld, not the buildWorld record. (6) finishHeroDeath re-instantiates the active zone's FRESH content from world.terrain + world.population (instantiateZone) before loadActiveZone, so restoreArea replays the original population instead of reusing mutated entities. MAJOR: (7) regenerateWorld installs area -1 explicitly (levelZones[0]) instead of the old hero's zone; (8) areaContext.boss is updated to the re-created boss on regenerateWorld; (9) lifecycle.js continueRun now uses ZONE_ENTRY_X / ZONE_GROUND_Y from level.js instead of stale HERO_ENTRY_X=100/HERO_ENTRY_Y=500 constants. MINOR: (10) UNIT_PX imported from macros.js in update.js (duplicated const removed); (11) hud.js progress track is now zone-model driven (one marker per sealed zone + hero position inside the active zone's cell) \u2014 levelDef.LEGACY removed. Updated clearSequence.test.js boss-checkpoint test to the zone-model routing and lifecycle.test.js continue-entry x expectations (100 \u2192 120 = ZONE_ENTRY_X)."
+      }
     },
     "7.2": {
       "number": "7.2",

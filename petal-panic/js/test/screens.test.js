@@ -99,9 +99,12 @@ test('formatAreaId: area ids come from the level definition (checkpoint ids)', (
 });
 
 test('formatAreaId: the boss zone is identified as the level\'s boss area (from the level def)', async () => {
-  const { LEVELS } = await import('../level.js');
+  const { LEVELS, buildLevelZones } = await import('../level.js');
   const def = LEVELS[0];
-  const bossIdx = def.LEGACY.checkpoints.length - 1; // the last checkpoint of the level is the boss zone
+  // The boss zone is the last zone in the level (zone model: index 4).
+  // formatAreaId uses the OLD convention where the boss index is 3.
+  const zones = buildLevelZones(def);
+  const bossIdx = zones.length - 2; // OLD convention: 3 (zones.length - 1 = 4 is the zone index)
   assert.equal(L.formatAreaId(1, bossIdx), '1-B', 'the boss area index (from the level def) displays as 1-B');
   assert.notEqual(L.formatAreaId(1, bossIdx - 1), '1-B', 'the area before the boss is not the boss zone');
 });
@@ -195,16 +198,18 @@ test('death in 1-3 re-enters 1-3 beside its entry flag (same area, same arrangem
   const hero = U.getHero();
   const checkpoints = U.getCheckpoints();
 
-  // Simulate: the player has passed the 1-3 flag (x=6000) and dies deep in 1-3.
+  // Simulate: the player is in area 1-3 (zone model: areaIdx -3) and dies.
+  // The zone model's entry flag for area -3 is at x=ZONE_ENTRY_X (zone-local).
+  const entryX = 120; // ZONE_ENTRY_X
   setState(S.PLAY);
   hero.dying = false;
   hero.deathTimer = 0;
   hero.alive = true;
   hero.energy = hero.maxEnergy;
   hero.lives = 2; // one death will leave one life
-  hero.x = 6500; hero.y = 492;
-  hero.checkpoint = { x: 6000, y: 492 }; // the 1-3 flag position
-  hero.currentArea = 2; // "1-3" (area index 2 = third checkpoint area)
+  hero.x = entryX + 500; hero.y = 492;
+  hero.checkpoint = { x: entryX, y: 492 }; // the 1-3 entry flag position (zone-local)
+  hero.currentArea = 2; // "1-3" (OLD convention: area index 2)
 
   // Kill the hero and run the death pipeline (skull + fade-to-black) to completion.
   runDeathPipeline(hero);
@@ -219,7 +224,7 @@ test('death in 1-3 re-enters 1-3 beside its entry flag (same area, same arrangem
   // Confirming the screen starts the attempt beside the 1-3 flag.
   L.areaEntryOnAction('confirm', hero);
   assert.equal(getState(), S.PLAY, 'confirm starts the attempt');
-  assert.ok(Math.abs(hero.x - 6000) < 1, `hero placed beside the 1-3 flag (x=${hero.x})`);
+  assert.ok(Math.abs(hero.x - entryX) < 1, `hero placed beside the 1-3 flag (x=${hero.x})`);
   assert.ok(hero.intangible, 'respawn i-frames active');
   assert.equal(hero.energy, hero.maxEnergy, 'full energy for the fresh attempt');
 
@@ -358,9 +363,6 @@ test('back on the entry screen opens the pause menu', () => {
 // --- 7. Boss-zone entry: identified as '1-B' and restarts beside the boss cp --
 
 test('boss-zone entry shows the boss area id (1-B), not the last ordinary area', async () => {
-  const { LEVELS } = await import('../level.js');
-  const def = LEVELS[0];
-
   const hero = U.getHero();
   const boss = U.getBoss();
   const checkpoints = U.getCheckpoints();
@@ -371,14 +373,14 @@ test('boss-zone entry shows the boss area id (1-B), not the last ordinary area',
   hero.alive = true;
   hero.energy = hero.maxEnergy;
   hero.lives = 3;
-  hero.currentArea = def.LEGACY.checkpoints.length - 2; // last ordinary area before the boss
+  hero.currentArea = 2; // last ordinary area before the boss (OLD convention: 2 = area 1-4)
   boss.active = false;
   boss.aiState = 'idle';
 
   // Trigger the boss-zone entry exactly as updateBoss() does on first
   // activation: set currentArea to the boss zone and show the shared entry
   // screen (lifecycle.md §2). We replicate the call-site logic the fix lives in.
-  hero.currentArea = def.LEGACY.checkpoints.length; // boss zone (beyond the last flag)
+  hero.currentArea = 4; // boss zone (zone model: BOSS_AREA = 4)
   const bossCp = checkpoints[checkpoints.length - 1];
   hero.checkpoint = { x: bossCp.x, y: bossCp.y };
   L.showAreaEntry(hero);

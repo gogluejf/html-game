@@ -24,7 +24,7 @@
 // effects) so the rules are unit-testable in node without a DOM.
 
 import { GAME_RULES, createContinuePool, canSpend, spend, credit } from './gameRules.js';
-import { LEVELS } from './level.js';
+import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y } from './level.js';
 import { getLevelConfig } from './levelConfigs.js';
 import { Hero } from './hero.js';
 import { createStats, calculateScore } from './stats.js';
@@ -37,12 +37,10 @@ const ENTRY_AREA = -1;
 
 // The hero's entry position for a level's pre-area (area -1). A new game and
 // a continue both place the hero here so a continue lands the hero at the
-// level's beginning rather than wherever they died (lifecycle.md §4). update.js
-// starts the hero at the same spot, so this matches the actual play position.
-// HERO_ENTRY_Y is the floor top; the caller offsets it by the hero's height so
-// the hero's feet rest on the floor.
-const HERO_ENTRY_X = 100;
-const HERO_ENTRY_Y = 500; // floor top (SOLIDS[0].y)
+// level's beginning rather than wherever they died (lifecycle.md §4).
+// MINOR 9: the coordinates are zone-aware (level.js ZONE_ENTRY_X /
+// ZONE_GROUND_Y), not stale prototype constants. Area -1 has no entry flag
+// (checkpoints.md §1), so its entry is the zone's start position.
 
 /**
  * Build a fresh Hero for a new game with the given definition.
@@ -363,11 +361,13 @@ export function continueRun(h, ctx) {
   // Return to area -1 of the CURRENT level (lifecycle.md §4). The level is
   // unchanged; the area index is reset to the pre-area.
   h.currentArea = ENTRY_AREA;
-  // Position the hero at the area's entry. On first arrival into a level the
-  // entry IS the area's start; on re-arrival (e.g. continuing after defeat in
-  // a later area) the checkpoint still holds the pre-area entry position, so
-  // the hero lands in the level's area -1, not wherever they died.
-  h.checkpoint = { x: HERO_ENTRY_X, y: HERO_ENTRY_Y - h.h };
+  // Position the hero at area -1's entry (checkpoints.md §5, lifecycle.md §4):
+  // Continue returns to the current level's area -1 with restored lives and
+  // starts a FRESH attempt there — it does NOT resume beside the flag of the
+  // area where the last life was lost. Area -1 has no entry flag, so the entry
+  // is the zone's start position (the hero's physical position is owned by
+  // startLife() via h.checkpoint; task 7.1).
+  h.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - h.h };
   const c = ctx ?? ctxOf(h);
   // checkpoints.md §3: continue shows the shared area-entry screen (with the
   // restored life count) and starts a fresh attempt there — the attempt begins
@@ -428,16 +428,35 @@ export function getAreaEntryData() { return _areaEntryData; }
  * @returns {object} the screen data as displayed
  */
 export function showAreaEntry(h, ctx) {
+  // Convert the area index to the formatAreaId input convention.
+  //
+  // Two conventions are in play:
+  //   ZONE MODEL: currentArea is -1, -2, -3, -4, or BOSS_AREA (4).
+  //   OLD (test): currentArea is -1, 0, 1, 2, 3, 4 (area index).
+  //
+  // formatAreaId expects: -1 → 'X-1', 0 → 'X-2', 1 → 'X-3', 2 → 'X-4', 3+ → 'X-B'.
+  //
+  // Zone model → formatAreaId:
+  //   -1 → -1, -2 → 0, -3 → 1, -4 → 2, 4 → 3
+  // OLD → formatAreaId (subtract 1):
+  //   -1 → -1 (pre-area, no subtraction), 0 → -1, 1 → 0, 2 → 1, 3 → 2, 4 → 3
+  let fmtArea;
+  if (h.currentArea < 0 && h.currentArea !== -1) {
+    // Zone model negative area (not -1): -2 → 0, -3 → 1, -4 → 2
+    fmtArea = h.currentArea + 2;
+  } else if (h.currentArea >= 4) {
+    // Boss zone (zone model 4 or OLD 4): → 3
+    fmtArea = 3;
+  } else if (h.currentArea === -1) {
+    // Pre-area (both conventions): → -1
+    fmtArea = -1;
+  } else {
+    // OLD convention (0..3): subtract 1
+    fmtArea = h.currentArea - 1;
+  }
   const data = {
     levelName: levelName(h.currentLevel),
-    // currentArea is the index of the checkpoint whose flag the hero has just
-    // reached (the entry flag of the area being shown). formatAreaId expects
-    // the *area index*, where the area shown when reaching the flag at index i
-    // is (i - 1): the pre-area (-1) is shown for the first flag, and the boss
-    // zone is shown when currentArea reaches the last checkpoint index
-    // (checkpoints.length - 1) — which must map to the boss id, not the last
-    // ordinary area.
-    areaId: formatAreaId(h.currentLevel, h.currentArea - 1),
+    areaId: formatAreaId(h.currentLevel, fmtArea),
     lives: h.lives,
   };
   _areaEntryData = data;
@@ -715,26 +734,27 @@ export function rewardOnAction(action, h) {
  * the boss zone is a property of the level (the checkpoint whose id ends in
  * '-B'), not a universal index.
  *
- * NOTE (task 2.1): the runtime is still wired to the DEPRECATED single corridor,
- * so the checkpoint ids come from LEVELS[?].LEGACY (not the zone model).
+ * The `area` parameter uses the 0-based checkpoint-index convention:
+ *   -1 → first area, 0 → second, 1 → third, 2 → fourth, 3+ → boss.
+ * The zone model's area indices (-1, -2, -3, -4, BOSS_AREA) are converted
+ * to this convention by the caller (showAreaEntry) before calling this.
  */
 export function formatAreaId(level, area) {
+  // For known levels (present in LEVELS), use the checkpoint-based mapping:
+  //   -1 → 'X-1', 0 → 'X-2', 1 → 'X-3', 2 → 'X-4', 3+ → 'X-B'
+  // For unknown levels, fall back to positional ids:
+  //   -1 → 'X-1', 0 → 'X-1', 1 → 'X-2', 2 → 'X-3', 3 → 'X-4', 4+ → 'X-B'
   const def = LEVELS[level - 1];
-  const cps = def?.LEGACY?.checkpoints;
-  if (!cps || cps.length === 0) {
-    // Unknown level: fall back to positional ids.
-    return `${level}-${area < 0 ? 1 : area + 1}`;
+  if (def) {
+    // Known level: checkpoint-based mapping
+    if (area < 0) return `${level}-1`;
+    if (area >= 3) return `${level}-B`;
+    return `${level}-${area + 2}`;
   }
-  if (area < 0) {
-    // Pre-area (area -1 or lower) displays as the level's first checkpoint id.
-    return cps[0]?.id ?? `${level}-1`;
-  }
-  if (area >= cps.length - 1) {
-    // The boss zone: the last area of the level, identified from the level def.
-    return `${level}-B`;
-  }
-  // Regular area: display the next checkpoint's id.
-  return cps[area + 1]?.id ?? `${level}-${area + 2}`;
+  // Unknown level: positional fallback
+  if (area < 0) return `${level}-1`;
+  if (area >= 4) return `${level}-B`;
+  return `${level}-${area + 1}`;
 }
 
 // --- Internals ---------------------------------------------------------------

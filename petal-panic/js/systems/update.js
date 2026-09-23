@@ -32,37 +32,179 @@ import { makeBossZone, BZ_COMBAT } from '../bossZone.js';
 import { particles, coins } from '../particles.js';
 import { Effects } from '../effects.js';
 import { fireManual } from '../effects/index.js';
-import { makeBarrel, makeCoinBarrel, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
+import { makeBarrel, makeWoodBarrel, makeCoinBarrel, GameObj, Checkpoint, makeCheckpoint } from '../object.js';
+import { Debug, initSpawnTable, SPAWN_KEYS } from "../debug.js";
 import { resolveExplosion } from '../explosion.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
-import { LEVELS, LEGACY_CORRIDOR, generateLevel, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../level.js';
+import { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../level.js';
 import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId, showLevelReward } from '../lifecycle.js';
-import { GAME_RULES } from '../gameRules.js';
-import { Debug, initSpawnTable, SPAWN_KEYS } from '../debug.js';
+import { getLevelConfig, getStageBudget } from '../levelConfigs.js';
+import { populateArea, populationSnapshot, UNIT_PX } from '../macros.js';
+import { createRng, tierToOffset } from '../terrain.js';
 import { Theater } from '../effects/theater.js';
 import { dumpStats } from '../stats.js';
 
-// --- Tunables for the test rig ---------------------------------------------
-// (Hero movement feel lives in js/hero.js; level geometry below.)
-
-// Level struct + rogue spawner (design §13). The declarative level
-// definition (LEVELS[0] "Big Top") drives all world content.
+// --- Zone-engine world (task 7.1 — the sealed zone model IS the world) ------
+// (Hero movement feel lives in js/hero.js; level geometry is zone-driven.)
 //
-// NOTE (task 2.1): the authoritative level structure is the sealed zone model
-// (buildLevelZones). The runtime below is still wired to the DEPRECATED single
-// corridor (LEVEL_DEF.LEGACY + generateLevel()) while the zone engine is wired
-// in by later tasks; the camera length and corridor checkpoint count therefore
-// come from the legacy corridor, not from the zone model.
+// The runtime no longer owns a flat corridor. The authoritative structure is
+// the sealed zone model (buildLevelZones): a level is five independent zones
+// (areas -1..-4 + boss). Each zone's terrain is composed by the macro composer
+// (buildAllZoneTerrain) and its enemies/barrels/powerups are resolved by the
+// population resolver (populateArea) from the level's per-stage budgets
+// (levelConfigs.js). The ACTIVE zone's composed content is installed into the
+// collision world; switching zones swaps ALL world contents (structure.md §2).
 const LEVEL_DEF = LEVELS[0];
-// `let` because a genuinely new game (lifecycle.md §1/§6) replaces the whole
-// generated world with fresh random generation choices. startGame() invokes
-// regenerateWorld() (registered below) to re-roll; death and Continue never
-// touch it, so a run's arrangement is fixed for the whole game.
-let generated = generateLevel(LEVEL_DEF);
+// The level config (per-stage budgets, boss, vertical slot) the generator
+// consumes (levelConfigs.js — the authoritative Level 1 config).
+const LEVEL_CONFIG = getLevelConfig(LEVEL_DEF.index) ?? {};
 
-// Level length comes from the level definition (camera clamps to this).
-export const LEVEL_LENGTH = LEVEL_DEF.LEGACY.length;
+// --- Terrain → pixel AABB (unit space from the composer → world pixels) ------
+// A placed unit carries a unit-space aabb {x,y,w,h}: x/y are unit offsets, w/h
+// are unit counts. Horizontal terrain composes along X (units→px via UNIT_PX)
+// and rises from the zone floor (a block of height H occupies the H px above
+// the floor). Vertical terrain composes along Y (a climb of H units is H px
+// above the bottom platform) within the fixed one-screen width.
+// (unit → px via UNIT_PX, imported from macros.js — single source of truth).
+function horizontalUnitBox(zone, u) {
+  const b = zone.bounds;
+  const px = b.x + u.aabb.x * UNIT_PX;
+  const py = b.y + b.h - u.aabb.y * UNIT_PX - u.aabb.h * UNIT_PX;
+  return { x: px, y: py, w: u.aabb.w * UNIT_PX, h: u.aabb.h * UNIT_PX, oneWay: u.oneWay };
+}
+function verticalUnitBox(zone, u) {
+  const b = zone.bounds;
+  const px = b.x + u.aabb.x * UNIT_PX;
+  const py = b.y + b.h - (u.aabb.y + u.aabb.h) * UNIT_PX;
+  return { x: px, y: py, w: u.aabb.w * UNIT_PX, h: u.aabb.h * UNIT_PX, oneWay: u.oneWay };
+}
+/** A slot's surface elevation (units) to the y of its top surface (world px). */
+function surfaceY(zone, elevationUnits) {
+  const b = zone.bounds;
+  return b.y + b.h - elevationUnits * UNIT_PX;
+}
+/** A slot's x position (units) to world px. */
+function slotX(zone, unitX) {
+  return zone.bounds.x + unitX * UNIT_PX;
+}
+
+// --- Entity instantiation from population items (plain {x,y,type} slots) -----
+const ENEMY_FACTORIES = {
+  jester: (x, y) => new Jester(x, y),
+  vine_hound: (x, y) => new VineHound(x, y),
+  violetta_marionetta: (x, y) => new Violetta(x, y),
+  jackolantern: (x, y) => new JackOLantern(x, y),
+  boris_loon: (x, y) => makeBoris(x, y),
+  boris_loon_baby: (x, y) => makeBorisBaby(x, y),
+};
+const BARREL_FACTORIES = {
+  explosive: (x, y) => makeBarrel(x, y),
+  wood: (x, y) => makeWoodBarrel(x, y),
+  coin: (x, y) => makeCoinBarrel(x, y),
+};
+
+/**
+ * Instantiate one zone's playable world from its composed terrain + population
+ * (generation.md §4, populate.md §1–§5). Pure over the inputs — the same zone
+ * + population always yields the same world (deterministic per game).
+ *
+ * @param {object} zone a zone from buildLevelZones()
+ * @param {object} layout the composed terrain layout (buildZoneTerrain)
+ * @param {object} population the resolved population (populateArea)
+ * @returns {{solids:object[], enemies:object[], barrels:object[],
+ *            powerups:object[], checkpoints:object[]}}
+ */
+function instantiateZone(zone, layout, population) {
+  const isVertical = zone.orientation === 'vertical';
+  const boxOf = isVertical ? verticalUnitBox : horizontalUnitBox;
+
+  // Terrain: the zone's structural platforms (floor / bottom+top) plus the
+  // composed macro units (solid blocks + one-way platforms).
+  const solids = zone.platforms.map((p) => ({ ...p }));
+  for (const u of layout?.units ?? []) {
+    if (u.kind === 'block' || u.kind === 'platform') solids.push(boxOf(zone, u));
+  }
+
+  // Enemies / barrels / powerups: instantiate on the slot's surface.
+  const enemies = (population?.enemies ?? []).map((it) => {
+    const f = ENEMY_FACTORIES[it.type];
+    if (!f) return null; // unknown type — skip (soft) rather than crash
+    const x = slotX(zone, it.x);
+    const y = surfaceY(zone, it.y ?? 0) - (f(0, 0).h ?? 0); // feet on the surface
+    return f(x, y);
+  }).filter(Boolean);
+
+  const barrels = (population?.barrels ?? []).map((it) => {
+    const f = BARREL_FACTORIES[it.type];
+    if (!f) return null;
+    return f(slotX(zone, it.x), surfaceY(zone, it.y ?? 0) - 48);
+  }).filter(Boolean);
+
+  const powerups = (population?.powerups ?? []).map((it) => {
+    return new Powerup(it.type, slotX(zone, it.x), surfaceY(zone, it.y ?? 0) - 28);
+  });
+
+  // Checkpoints: the entry flag (areas -2..-4 + boss) and the exit flag
+  // (ordinary areas; the -4 exit is the boss checkpoint). Area -1 has no entry
+  // flag (checkpoints.md §1). Flags are zone-local flag descriptors.
+  const checkpoints = [];
+  const mkFlag = (f, isEntry) =>
+    makeCheckpoint(f.id, zone.bounds.x + f.x, f.y, { isEntry, appearance: f.appearance });
+  if (zone.entryFlag) checkpoints.push(mkFlag(zone.entryFlag, true));
+  if (zone.exitFlag) checkpoints.push(mkFlag(zone.exitFlag, false));
+
+  return { solids, enemies, barrels, powerups, checkpoints };
+}
+
+/**
+ * Build the full per-game world: compose terrain for every ordinary area from
+ * the game seed and resolve each area's population from the level's per-stage
+ * budgets. The boss zone is a self-contained arena (no composed terrain /
+ * population — the boss encounter owns it).
+ *
+ * Deterministic per seed (lifecycle.md §6: rolled ONCE per game).
+ *
+ * @param {object} levelDef the level definition
+ * @param {object} config the level config (levelConfigs.js)
+ * @param {number|string} seed the per-game seed
+ * @returns {{zones:object[], terrain:Map<number,object>, population:Map<number,object>,
+ *            world:Map<number,object>}}
+ */
+function buildWorld(levelDef, config, seed) {
+  const zones = buildLevelZones(levelDef);
+  const terrain = buildAllZoneTerrain(levelDef, seed); // areaIdx → layout
+  const population = new Map();
+  const world = new Map();
+  const rng = createRng(seed); // fresh stream for population (terrain consumed its own)
+  for (const zone of zones) {
+    if (zone.kind !== 'area') continue;
+    const layout = terrain.get(zone.areaIdx);
+    const stageBudget = getStageBudget(config, zone.areaIdx) ?? { enemies: {}, powerups: {}, barrels: {} };
+    const pop = populateArea(rng, layout, {
+      enemies: stageBudget.enemies ?? {},
+      powerups: stageBudget.powerups ?? {},
+      powerupWeights: config.powerupWeights,
+      barrels: stageBudget.barrels ?? {},
+    });
+    population.set(zone.areaIdx, populationSnapshot(pop));
+    world.set(zone.areaIdx, instantiateZone(zone, layout, pop));
+  }
+  return { zones, terrain, population, world };
+}
+
+// A genuinely new game (lifecycle.md §1/§6) establishes fresh random generation
+// choices; death and Continue never reroll, so a run's arrangement is fixed for
+// the whole game. The world is a module-level singleton owned by this module
+// (its collision world, camera, and debug overlay are all bound to it).
+let world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, 1);
+const collisionWorld = new CollisionWorld({ cellSize: 64 });
+
+// Floor top y (the zone's ground level). Used by bomb/coin bounce logic.
+const FLOOR_TOP = ZONE_GROUND_Y;
+// Level length: the active zone's width. The hero is clamped to the zone's
+// bounds (not a fixed corridor length). This is the zone's playable width.
+// (The old fixed 8000px corridor is gone; each zone owns its own bounds.)
 
 // --- Area-clear sequence (checkpoints.md §2) -----------------------------------
 // When the hero reaches an area's EXIT flag the area is cleared and the next
@@ -180,10 +322,16 @@ export function stepClearSequence(dt) {
       // The zone model uses areas -1, -2, -3, -4, boss; pendingArea is now
       // in the zone-model convention (e.g. -2 for the second area).
       hero.currentArea = area;
-      // BLOCKER 3: set the checkpoint to the next zone's entry flag position
-      // so startLife can latch the matching flag. For area -1 (no entry
-      // flag), use the zone's start position.
       const nextZone = getActiveZone(hero);
+      // BLOCKER 2: swap the ACTIVE zone's world content so the previous
+      // zone's terrain, enemies, barrels, powerups, and checkpoints do not
+      // linger after the advance (structure.md §2: "a new zone replaces it").
+      if (nextZone.kind === 'area' && world.world.has(nextZone.areaIdx)) {
+        loadActiveZone(nextZone, world.world.get(nextZone.areaIdx));
+      }
+      // Set the checkpoint to the next zone's entry flag position so
+      // startLife can latch the matching flag. For area -1 (no entry
+      // flag), use the zone's start position.
       if (nextZone.entryFlag) {
         hero.checkpoint = {
           x: nextZone.bounds.x + nextZone.entryFlag.x,
@@ -231,66 +379,70 @@ export function beginClearFadeIn() {
 }
 
 // --- Zone model (task 2.1 — authoritative level structure) -------------------
-// The sealed zone model is the authoritative structure the runtime references
-// for structural decisions (zone bounds, flags, orientation). The LEGACY
-// corridor provides the actual geometry (platforms, checkpoints) until task 7.1
-// swaps it for per-zone content. The zone model is built once at boot and
-// stored on the hero so the game loop and camera can reference it.
+// The sealed zone model IS the world (task 7.1). Each zone owns its own bounds,
+// flags, and composed terrain; the ACTIVE zone's content is installed into the
+// collision world. `levelZones` is the structural zone list (bounds/flags);
+// `world` holds the composed terrain + population per area.
 export const levelZones = buildLevelZones(LEVEL_DEF);
 // The zone-model currentArea value that maps to the boss zone (zone[4]).
-// getActiveZone() treats a non-negative currentArea as a direct zone index, so
-// the boss zone is reached when currentArea === levelZones.length - 1. This is
-// the same value the legacy boss-activation path used
-// (LEVEL_DEF.LEGACY.checkpoints.length). Declared AFTER levelZones to avoid a
-// temporal-dead-zone reference.
 const BOSS_AREA = levelZones.length - 1;
 /**
  * The zone currently being played. Index into levelZones based on the hero's
- * currentArea. Used for structural decisions (camera clamping, bounds).
- * Task 7.1 will fully wire zone geometry into the game loop; for now this
- * exposes the zone model so it is not dead code.
+ * currentArea. currentArea uses the zone-model convention: -1 → zone[0],
+ * -2 → zone[1], -3 → zone[2], -4 → zone[3], BOSS_AREA → zone[4].
  */
 export function getActiveZone(hero) {
-  // currentArea: -1 → zone[0], -2 → zone[1], -3 → zone[2], -4 → zone[3],
-  // checkpoints.length (boss) → zone[4].
   const idx = hero.currentArea <= -1 ? -(hero.currentArea) - 1 : hero.currentArea;
   return levelZones[Math.min(idx, levelZones.length - 1)];
 }
 
-// --- Static solid platforms -------------------------------------------------
-// Plain AABBs from the level definition; also wrapped as layer entities so the
-// debug overlay can draw them and the mask rules are exercised end-to-end.
-export const SOLIDS = generated.platforms;
-
-// Solid wrapper entities (layer-only; no velocity/anim needed).
+// --- Active-zone world content (task 7.1) ------------------------------------
+// The ACTIVE zone's installed content. These module-level lists are what the
+// update loop, render, debug overlay, and lifecycle ops reference; they are
+// REBUILT (cleared + refilled) whenever the active zone changes, so switching
+// zones swaps ALL world contents (structure.md §2).
+export const SOLIDS = [];
+// Solid wrapper entities (layer-only) for the collision world + debug overlay.
 class SolidBox extends Entity {
   constructor(box) {
     super({ x: box.x, y: box.y, w: box.w, h: box.h, gravity: 0, layer: LAYER.SOLID, debugColor: '#ff9f43' });
   }
 }
-const solidEntities = SOLIDS.map(b => new SolidBox(b));
+const solidEntities = [];
+
+// The hero's physical entry position for the active zone. Area -1 has no entry
+// flag (it starts at the zone's start); later areas start beside their entry
+// flag (checkpoints.md §1). startLife() owns placing the hero (lifecycle.md §3);
+// these helpers give the lifecycle ops + boot the correct entry position.
+function entryPosition(zone) {
+  const b = zone.bounds;
+  if (zone.entryFlag) {
+    return { x: b.x + zone.entryFlag.x, y: b.y + zone.entryFlag.y };
+  }
+  // Area -1: start at the zone's start (beside where an entry flag would be).
+  const bottomY = zone.orientation === 'vertical' ? b.y + b.h : ZONE_GROUND_Y;
+  return { x: b.x + ZONE_ENTRY_X, y: bottomY };
+}
+/** The hero's top-left position (top = surfaceY - hero.h) for the active zone. */
+function heroEntryPosition(hero) {
+  const p = entryPosition(getActiveZone(hero));
+  return { x: p.x, y: p.y - hero.h };
+}
 
 // --- Hero ---------------------------------------------------------
 // Real Hero wrapping the Scarlet Vale definition; run/jump/crouch/slide,
 // gravity, ground friction, facing+mirrorX, and crouch-box shrink all live in
-// js/hero.js. Spawn on the floor at x=100 (per design §13 hero start).
-const FLOOR_TOP = SOLIDS[0].y; // ground top (first platform is the full-length floor)
-const HERO_START_X = 100;
-// The module-level hero reference. Boot starts a genuine new game via the
-// lifecycle module (lifecycle.md §1); the SELECT→PLAY hook rebinds it for a
-// new hero. `let` because setHeroRef() reassigns it.
-let hero = new Hero(HEROES.scarlet, HERO_START_X, FLOOR_TOP - HEROES.scarlet.h);
+// js/hero.js. `let` because setHeroRef() reassigns it on new game / swap.
+let hero = new Hero(HEROES.scarlet, ZONE_ENTRY_X, ZONE_GROUND_Y - HEROES.scarlet.h);
 /** Rebind the module-level hero reference (used by debug hero-swap / new game). */
 function setHeroRef(h) { hero = h; }
 
 // thorn fire state. Cooldown is in seconds; rapid powerup halves it.
-// (Hero.stats.projectile_freq is "shots per second", so base interval = 1/freq.)
 hero.fireCooldown = 0;
 
 // Lock Direction must freeze the RESOLVED aim, not the raw directional key
 // (design §5): install the hero's contextual resolver into the input engine so
-// the lock-capture applies the same rules as resolveAim (grounded crouch →
-// horizontal toward facing, airborne/lockMove + Down → straight down, ...).
+// the lock-capture applies the same rules as resolveAim.
 input.setResolveAim((intent) => getHero().resolveAim(intent));
 
 // --- New game (lifecycle.md §1) -------------------------------------------
@@ -299,17 +451,21 @@ input.setResolveAim((intent) => getHero().resolveAim(intent));
 // startGame() owns lives, the continue pool, fresh run stats, and the area
 // position — nothing here assigns them ad hoc.
 hero = startGame({ oldHero: hero }, HEROES.scarlet);
-hero.x = HERO_START_X;
-hero.y = FLOOR_TOP - hero.h;
-hero.checkpoint = { x: hero.x, y: hero.y };
-// Store the zone model on the hero (task 2.1 — the zone model must not be
-// dead code; it is the authoritative structure the runtime references).
+// Place the hero at the active zone's entry (lifecycle.md §1/§3; the physical
+// position is owned here, not in update.js's old ad-hoc start).
+{
+  const p = heroEntryPosition(hero);
+  hero.x = p.x;
+  hero.y = p.y;
+  hero.checkpoint = { x: p.x, y: p.y };
+}
+// Store the zone model on the hero (the authoritative structure the runtime
+// references for structural decisions).
 hero.zones = levelZones;
 // Register the world-regeneration callback so SUBSEQUENT genuinely-new games
 // (SELECT → PLAY) establish fresh generation choices (lifecycle.md §1/§6).
-// The boot game above used the world baked at module load; only a new game
-// after the first rerolls. Death and Continue never call startGame, so they
-// never reroll.
+// The boot game used the world baked at module load; only a new game after the
+// first rerolls. Death and Continue never call startGame, so they never reroll.
 setRegenerateWorld(regenerateWorld);
 // Hero uses no anim (solid debugColor rect). Real sprites later.
 hero.anim = null;
@@ -334,33 +490,18 @@ const superFrames = Array.from({ length: 10 }, (_, i) => {
 });
 hero.anims.supermove = new Anim(superFrames, { speed: 60, loop: false });
 
-// --- Placeholder non-hero entities (debug-color exercise only) ---------------
-// These exist purely so every §16 overlay color is visible on screen. They are
-// static (gravity 0) and do NOT participate in collision resolution this task;
-// real enemy/projectile/powerup behavior lands in later tasks.
-// three red target boxes (HP = 20) that friendly thorns can destroy.
-// These stand in for real enemies: same ENEMY layer + HP, but no death pipeline
-// yet (that lands in ). When hp drops to <= 0 they are culled here.
-const FLOOR_TOP_ENEMY = SOLIDS[0].y; // floor top
-// Legacy placeholder targets removed — real enemies (realEnemies) handle all combat.
-// Kept as empty array so existing code paths (melee, collision, damage) don't break.
-const enemies = [];
+// --- Active-zone entities (task 7.1) -----------------------------------------
+// These are the ACTIVE zone's content. They are mutable module-level lists that
+// installActiveZone() clears and refills on every zone switch, so the update
+// loop, render, and lifecycle ops always see the current zone's world.
+const enemies = []; // (legacy placeholder slot — always empty; realEnemies is live)
+export const realEnemies = []; // active zone's enemies (from the population resolver)
 
-// Real enemies come from generateLevel(LEVELS[0]). The rogue spawner
-// randomly places each type along flat ground with min spacing; flyers hover at
-// their resting altitude, grounders sit on the floor. Every documented AI
-// (jester/vine_hound/violetta/jackolantern/boris_loon/boris_loon_baby) is
-// instantiated per the level's spawn budget.
-const realEnemies = generated.enemies;
-
-// Overgrown Elephant boss (design §9). Spawned at the far end of the
-// level in the boss arena (last 500px stay clear of regular spawns). The camera
-// locks to its arena once the hero gets within BOSS_TRIGGER_RADIUS; defeating it
-// shows the level reward screen (S.REWARD, boss-arena.md §4). Tracked separately
-// from realEnemies so the generic enemy loop never drives the boss's phase machine.
-// `let` because a genuinely new game replaces the boss with a freshly
-// generated one (lifecycle.md §1/§6). regenerateWorld() reassigns it.
-export let boss = makeElephant(LEVEL_LENGTH - 300, FLOOR_TOP);
+// Overgrown Elephant boss (design §9). The boss belongs to the level's boss zone
+// (boss-arena.md §1–§3); it is created ONCE and lives in the boss zone. It is
+// tracked separately from realEnemies so the generic enemy loop never drives the
+// boss's phase machine. `let` because a genuinely new game re-creates it.
+export let boss = makeElephant(0, ZONE_GROUND_Y);
 
 // --- Boss zone flow (docs/levels/boss-arena.md §1–§3) -------------------------
 // The boss zone (zone[4], orientation 'boss') runs its own introduction
@@ -419,20 +560,18 @@ animTestEnemy.anim = new Anim(
 const projectiles = [];
 const pickups = [];
 
-// Destructible solid barrels (design §10 "Object").
-// Barrels are SOLID (block hero + enemy) but carry an HP pool; melee/thorns/bombs
-// chip that HP and it only explodes when HP hits 0. Placed along the floor so the
-// hero has to shoot around/through them. Coin barrels sit nearby as a coin source
-// (no damaging explosion). positions now come from generateLevel().
-const barrels = generated.barrels;
-const woodBarrels = generated.woodBarrels ?? [];
-const coinBarrels = generated.coinBarrels;
+// Destructible solid barrels (design §10 "Object"). Barrels are SOLID (block
+// hero + enemy) but carry an HP pool; they are placed by the population resolver
+// on macro barrel slots (populate.md §3). `barrels` is the ACTIVE zone's full
+// barrel list (explosive + wood + coin) — the three legacy sub-lists are kept as
+// empty views so existing code paths (render, debug, getBarrels) keep working.
+const barrels = [];
+const woodBarrels = [];
+const coinBarrels = [];
 
-// dynamic SOLID registry: world boxes of every LIVE barrel.
-// Barrels are solids like the static platforms (design §10/§16): the hero and
-// grounded enemies resolve() against SOLIDS + this list each step, so they can
-// stand on and be blocked by barrels. The list is refreshed once per fixed
-// step because barrels get destroyed (HP 0 → alive=false) mid-fight.
+// dynamic SOLID registry: world boxes of every LIVE barrel. Barrels are solids
+// like the static platforms (design §10/§16): the hero and grounded enemies
+// resolve() against SOLIDS + this list each step.
 const barrelSolidBoxes = [];
 function refreshBarrelSolidBoxes() {
   barrelSolidBoxes.length = 0;
@@ -441,23 +580,21 @@ function refreshBarrelSolidBoxes() {
   }
 }
 
-// Powerups (design §10). Scattered along the level by the rogue
-// spawner with min spacing. Each sits on the floor (bob animation lifts it
-// visually). The 'clear' powerup is placed wherever the spawner rolls it.
-export const powerups = generated.powerups;
+// Powerups (design §10). Placed by the population resolver on macro powerup
+// slots (populate.md §2). The 'clear' powerup is placed wherever the resolver
+// resolves it.
+export const powerups = [];
 
-// Checkpoints (design §10/§13): four flags at x = 2000/4000/6000/7500
-// with ids '1-1' … '1-4'. Touching one stores its position on hero.checkpoint
-// for death-restart. They are NOT solids — they don't block movement.
-export const checkpoints = generated.checkpoints;
+// Checkpoints (checkpoints.md §1): the active zone's entry + exit flags. Touching
+// an exit flag clears the area; the entry flag is the starting checkpoint.
+// They are NOT solids — they don't block movement.
+export const checkpoints = [];
 
-// --- Area lifecycle context (lifecycle.md §2/§3/§4) -------------------------
-// The generated world IS the area's fixed arrangement. We record each entity's
-// initial position/state ONCE (the arrangement is fixed for the whole game and
-// must never change), then bind that context to the hero so the lifecycle ops
-// (startLife / continueRun) can restore the area without any other module
-// knowing what "start" means. rememberInitial() is idempotent, so this only
-// matters at boot.
+// --- Active-zone installation (task 7.1) -------------------------------------
+// The area lifecycle context references the ACTIVE zone's entity lists. It is
+// REBUILT on every zone switch so restoreArea()/resetGeneration() (lifecycle.js)
+// operate on the current zone's content. The context object's identity is stable
+// (bound to the hero once) but its `barrels` array is refreshed in place.
 const areaContext = {
   enemies: realEnemies,
   boss,
@@ -469,71 +606,126 @@ const areaContext = {
   particles,
   effects: Effects,
 };
-for (const e of realEnemies) rememberInitial(e, { aiState: e.aiState });
-rememberInitial(boss, { aiState: boss.aiState });
-for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) rememberInitial(b);
-for (const p of powerups) rememberInitial(p);
 bindAreaContext(hero, areaContext);
+
+// Install the initial zone (area -1) into the collision world so the runtime
+// has a populated collision world from the very first frame. The boot game
+// used the world baked at module load (seed=1); this installs area -1's
+// content (solids, enemies, barrels, powerups, checkpoints) into the
+// collision world. The hero and boss are added here (after the entity lists
+// are declared).
+loadActiveZone(getActiveZone(hero), world.world.get(getActiveZone(hero).areaIdx));
+collisionWorld.add(hero);
+collisionWorld.add(boss);
+
+/**
+ * Install the ACTIVE zone's content into the collision world (structure.md §2:
+ * "a new zone replaces it"). Removes the previous zone's entities (solids,
+ * enemies, barrels, powerups, checkpoints) and adds the new zone's. The boss is
+ * NOT touched here — it lives in the boss zone and is managed by the boss-zone
+ * flow. This is the runtime seam that makes switching zones swap ALL world
+ * contents.
+ *
+ * @param {object} zone the zone to install (from buildLevelZones)
+ * @param {object} [content] the zone's instantiated content (instantiateZone).
+ *   When omitted (e.g. the boss zone, which has no composed content) only the
+ *   old content is cleared and the structural platforms are installed.
+ */
+export function loadActiveZone(zone, content) {
+  // Remove the previous zone's content from the collision world.
+  for (const s of solidEntities) collisionWorld.remove(s);
+  for (const e of realEnemies) collisionWorld.remove(e);
+  for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) collisionWorld.remove(b);
+  for (const p of powerups) collisionWorld.remove(p);
+  for (const c of checkpoints) collisionWorld.remove(c);
+
+  // Clear the module-level lists.
+  SOLIDS.length = 0;
+  solidEntities.length = 0;
+  realEnemies.length = 0;
+  barrels.length = 0;
+  woodBarrels.length = 0;
+  coinBarrels.length = 0;
+  powerups.length = 0;
+  checkpoints.length = 0;
+
+  // Install the new zone's content.
+  const solids = content?.solids ?? zone.platforms.map((p) => ({ ...p }));
+  for (const s of solids) {
+    SOLIDS.push(s);
+    solidEntities.push(new SolidBox(s));
+    collisionWorld.add(solidEntities[solidEntities.length - 1]);
+  }
+  for (const e of content?.enemies ?? []) { realEnemies.push(e); collisionWorld.add(e); }
+  for (const b of content?.barrels ?? []) { barrels.push(b); collisionWorld.add(b); }
+  for (const p of content?.powerups ?? []) { powerups.push(p); collisionWorld.add(p); }
+  for (const c of content?.checkpoints ?? []) { checkpoints.push(c); collisionWorld.add(c); }
+
+  // Refresh the area context's barrel list (its identity is stable) and re-record
+  // the arrangement ONCE (rememberInitial is idempotent; resetGeneration clears
+  // it on a new game so the fresh world records its own positions).
+  areaContext.barrels.length = 0;
+  areaContext.barrels.push(...barrels);
+  for (const e of realEnemies) rememberInitial(e, { aiState: e.aiState });
+  for (const b of barrels) rememberInitial(b);
+  for (const p of powerups) rememberInitial(p);
+  return areaContext;
+}
 
 /**
  * Re-generate the world with FRESH random generation choices (lifecycle.md
  * §1/§6). Called ONLY by startGame() — a genuinely new game is allowed new
  * choices; death and Continue never reroll, so a run's arrangement stays fixed.
  *
- * The module-level `generated` is swapped for a fresh one and the area context
- * (and the collision world / solid entities) are rebound to the new entity
- * lists. The hero is NOT swapped here — startGame() builds and inserts the
- * fresh hero. The old boss is removed from the collision world; the new one is
- * added. The camera length is unchanged (the level definition is identical).
+ * The module-level `world` is swapped for a freshly composed one (new seed).
+ * The boss is re-created (the level's boss identity is fixed). The active zone
+ * (area -1) is installed so the collision world is bound to the fresh world.
+ * The hero is NOT swapped here — startGame() builds and inserts the fresh hero.
  *
  * @param {object} oldCtx the previous area context (its entity lists)
  * @returns {object} the new area context (bound to the new world)
  */
 function regenerateWorld(oldCtx) {
-  const prev = generated;
-  generated = generateLevel(LEVEL_DEF);
+  world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, newGameSeed());
 
-  // Rebuild the static solid wrapper entities from the fresh platforms.
-  SOLIDS.length = 0;
-  for (const b of generated.platforms) SOLIDS.push(b);
-  solidEntities.length = 0;
-  for (const b of generated.platforms) solidEntities.push(new SolidBox(b));
+  // Re-create the boss for the fresh game (it is a fresh entity per game).
+  const oldBoss = boss;
+  boss = makeElephant(0, ZONE_GROUND_Y);
+  rememberInitial(boss, { aiState: boss.aiState });
+  // The boss-zone flow machine references the boss entity; it reads boss.x/y
+  // live, so it needs no rewiring. (bossZone.boss is the same object reference
+  // the machine moves; the machine is created with the original boss, so keep
+  // it pointing at the fresh one.)
+  bossZone.boss = boss;
+  // MAJOR 8: the area context's boss reference must follow the re-created
+  // boss, so restoreArea() (lifecycle.js) restores the FRESH boss on a
+  // life loss in the new game, not the stale entity from the old one.
+  areaContext.boss = boss;
+  if (oldBoss && collisionWorld.entities.has(oldBoss)) collisionWorld.remove(oldBoss);
+  collisionWorld.add(boss);
 
-  // Swap the generated entity lists into the mutable module references so the
-  // update loop, debug overlay, and getters all see the new world.
-  realEnemies.length = 0; realEnemies.push(...generated.enemies);
-  barrels.length = 0; barrels.push(...generated.barrels);
-  woodBarrels.length = 0; woodBarrels.push(...generated.woodBarrels ?? []);
-  coinBarrels.length = 0; coinBarrels.push(...generated.coinBarrels);
-  powerups.length = 0; powerups.push(...generated.powerups);
-  checkpoints.length = 0; checkpoints.push(...generated.checkpoints);
-
-  // Rebuild the area context around the fresh entity lists.
-  const newCtx = {
-    enemies: realEnemies,
-    boss,
-    barrels: [...barrels, ...woodBarrels, ...coinBarrels],
-    powerups,
-    checkpoints,
-    projectiles: projectilePool,
-    coins,
-    particles,
-    effects: Effects,
-  };
-
-  // Rebind the collision world: drop the old boss + solids, add the new boss +
-  // solids. The hero is managed by startGame() (it removes oldHero / adds the
+  // Install the FIRST zone (area -1) so the collision world is bound to the
+  // fresh world. MAJOR 7: do NOT read getActiveZone(hero) here — the old
+  // hero (still the module-level reference) may be on a later area from the
+  // finished game; a new game always starts in the first zone (lifecycle.md
+  // §1). The hero is managed by startGame() (removes oldHero / adds the
   // new hero), so we don't touch the hero here.
-  world.remove(oldCtx.boss);
-  for (const s of solidEntities) world.add(s);
-  world.add(boss);
+  const active = levelZones[0]; // area -1, the first zone
+  loadActiveZone(active, world.world.get(active.areaIdx));
+  camera.setZoneBounds(active);
 
-  // The fresh entities start WITHOUT a recorded _initPos. startGame() clears
-  // any stale _initPos via resetGeneration() (defensive: the new instances are
-  // already clean), and the first startLife/continueRun of the new game records
-  // the arrangement exactly once via rememberInitial() (idempotent). That first
-  // recording fixes the arrangement for the whole new game (lifecycle.md §2).
-  return newCtx;
+  return areaContext;
+}
+
+/**
+ * The per-game generation seed. A genuinely new game rolls a fresh seed so its
+ * terrain + population differ from the previous game (lifecycle.md §6). Death
+ * and Continue never call this — they reuse the world already built for the
+ * game, so a run's arrangement stays fixed.
+ * @returns {number}
+ */
+function newGameSeed() {
+  return (Math.floor(Math.random() * 0xffffffff) >>> 0);
 }
 
 // --- Floating text (VFX) -------------------------------------------
@@ -818,7 +1010,7 @@ function debugSpawn(type, x, y, state) {
   if (!entry) return null;
   const ent = entry.make(x, y, state);
   // Register so it participates in collisions/rendering like level entities.
-  world.add(ent);
+  collisionWorld.add(ent);
   // Track spawned enemies in realEnemies so the generic update loop drives their
   // AI + death pipeline exactly as level spawns do.
   if (ent.layer === LAYER.ENEMY || ent.layer === LAYER.BOSS) realEnemies.push(ent);
@@ -954,8 +1146,8 @@ function swapHero() {
   );
 
   // Swap the reference inside the collision world.
-  world.remove(hero);
-  world.add(nh);
+  collisionWorld.remove(hero);
+  collisionWorld.add(nh);
   // Rebind the module-level `hero` via the getter indirection: we mutate the
   // exported binding by reassigning the captured variable through a setter.
   setHeroRef(nh);
@@ -1030,39 +1222,11 @@ function applyGodMode(dt) {
   hero.ammo = Infinity;
   hero.specialAmmo = Infinity;
 }
-// --- Collision world -----------------------------------------------------------
-const world = new CollisionWorld({ cellSize: 64 });
-for (const s of solidEntities) world.add(s);
-world.add(hero);
-// Live targets + the decorative anim-test box participate in collisions so
-// thorns can hit them (the anim box has no hp, so it's damage-immune).
-for (const e of enemies) world.add(e);
-world.add(animTestEnemy);
-// remaining enemies participate in collisions (thorn hits, contact,
-// foe projectiles). Flyers use gravity 0 so they never fall; grounders do not.
-for (const e of realEnemies) world.add(e);
-// boss participates in collisions (PROJ_ALLY×BOSS → 'hit',
-// HERO×BOSS → contact). Added after the regular enemies.
-world.add(boss);
-// barrels are SOLID: they block hero + enemy (resolve) and can be
-// hit by friendly thorns (PROJ_ALLY×SOLID → 'hit'). Added now; destroyed ones
-// are removed from the world when their HP hits 0. Both explosive barrels AND
-// coin barrels participate (coin barrels just skip the damaging AoE on death).
-for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) world.add(b);
-// powerups (PICKUP layer; HERO×PICKUP → 'pickup') and checkpoints
-// (CHECKPOINT layer; HERO×CHECKPOINT → 'checkpoint'). Both are non-solid.
-for (const p of powerups) world.add(p);
-for (const c of checkpoints) world.add(c);
-
-// Rule-action handlers — the declarative dispatch path. For this task we only
-// need to observe events; damage/pickup logic arrives with later tasks.
-world.on('resolve', () => {}); // positional correction happens via the resolve()
-                                // calls below (SOLIDS + barrelSolidBoxes)
 
 // friendly thorns hit ENEMY/BOSS (PROJ_ALLY rule). Apply damage and
 // cull the projectile on impact. This is the ONLY place a PROJ_ALLY can interact
 // with an enemy; there is no PROJ_ALLY↔HERO rule, so friendly-fire stays off.
-world.on('hit', (a, b) => {
+collisionWorld.on('hit', (a, b) => {
   // --- Friendly thorns (hero → enemy/barrel) --------------------------------
   const allyProj = a.layer === LAYER.PROJ_ALLY ? a : (b.layer === LAYER.PROJ_ALLY ? b : null);
   if (allyProj && allyProj.friendly) {
@@ -1134,7 +1298,7 @@ world.on('hit', (a, b) => {
     // Placeholders have no death anim: remove immediately when they die. Real
     // enemies play their internal death pipeline (handled by updateRealEnemies).
     if (!isRealEnemy && !target.alive) {
-      world.remove(target);
+      collisionWorld.remove(target);
     }
     return;
   }
@@ -1179,7 +1343,7 @@ world.on('hit', (a, b) => {
 // central damage() (enemy as source, hero as target). A per-enemy cooldown
 // prevents multi-hit drain every frame while overlapping.
 const CONTACT_COOLDOWN = 0.5; // seconds between contact hits from same enemy
-world.on('contact', (a, b) => {
+collisionWorld.on('contact', (a, b) => {
   // the boss is a BOSS-layer entity; treat it like an enemy for
   // contact damage (touching the elephant drains hero energy at its high attack).
   const enemyEnt = a.layer === LAYER.ENEMY ? a : (b.layer === LAYER.ENEMY ? b : null);
@@ -1242,7 +1406,7 @@ world.on('contact', (a, b) => {
 // moment the counter crosses the boundary.
 const ONEUP_THRESHOLD = 100; // total coins collected per extra life (design §14)
 let oneUpProgress = 0;       // running count toward the next 1up
-world.on('collect', (a, b) => {
+collisionWorld.on('collect', (a, b) => {
   const coinEnt = a.layer === LAYER.COIN ? a : (b.layer === LAYER.COIN ? b : null);
   const heroEnt = a.layer === LAYER.HERO ? a : (b.layer === LAYER.HERO ? b : null);
   if (!coinEnt || !heroEnt) return;
@@ -1266,7 +1430,7 @@ world.on('collect', (a, b) => {
   // remove from the pool + collision world.
   coinEnt.collect();
   coins.remove(coinEnt);
-  world.remove(coinEnt);
+  collisionWorld.remove(coinEnt);
   if (Debug.enabled) Debug.logEvent(`coin ${type} +${value}`);
 
   // 1up check: every ONEUP_THRESHOLD total coins grants +1 life.
@@ -1284,7 +1448,7 @@ world.on('collect', (a, b) => {
 // the pickup point, float the effect label above it, and remove the powerup
 // from the collision world. The 'clear' effect needs the live enemy list, so
 // we pass it through context.
-world.on('pickup', (a, b) => {
+collisionWorld.on('pickup', (a, b) => {
   const pu = a.layer === LAYER.PICKUP ? a : (b.layer === LAYER.PICKUP ? b : null);
   const heroEnt = a.layer === LAYER.HERO ? a : (b.layer === LAYER.HERO ? b : null);
   if (!pu || !heroEnt) return;
@@ -1305,14 +1469,14 @@ world.on('pickup', (a, b) => {
   // SFX: powerup
   if (Debug.enabled) Debug.logEvent(`powerup ${pu.def.label}`);
 
-  world.remove(pu);
+  collisionWorld.remove(pu);
 });
 
 // HERO × CHECKPOINT trigger (design §10/§13). Fires when the hero's
 // box overlaps a checkpoint flag. Checkpoint.trigger() stores its position on
 // hero.checkpoint (used by the death-restart pipeline) and latches so re-walking
 // over it is a no-op. A brief flash plays via the entity's flashTimer.
-world.on('checkpoint', (a, b) => {
+collisionWorld.on('checkpoint', (a, b) => {
   const cp = a.layer === LAYER.CHECKPOINT ? a : (b.layer === LAYER.CHECKPOINT ? b : null);
   const heroEnt = a.layer === LAYER.HERO ? a : (b.layer === LAYER.HERO ? b : null);
   if (!cp || !heroEnt) return;
@@ -1333,34 +1497,26 @@ world.on('checkpoint', (a, b) => {
   // SFX: checkpoint
 
   // checkpoints.md §1/§2, structure.md §2: a checkpoint marks an area
-  // boundary. In the sealed-zone model each area has an EXIT flag at its far
-  // end; reaching it clears the area (flash + 'X-Y CLEAR' banner + fade out)
-  // and generates the next zone. The entry flag (at a zone's start) is the
-  // starting checkpoint and must NOT trigger a clear — it is latched by
-  // startLife so arriving beside it does not re-clear the newly entered area.
-  //
-  // The legacy corridor has one flag per area boundary. Reaching the flag at
-  // index i clears the area the hero is currently in and advances to the next
-  // zone-model area. The zone model uses areas -1, -2, -3, -4, boss. The
-  // legacy checkpoint at index i is the EXIT of area -(i+1), so:
-  //   idx 0 → clears area -1, advances to area -2
-  //   idx 1 → clears area -2, advances to area -3
-  //   idx 2 → clears area -3, advances to area -4
-  //   idx 3 → clears area -4, advances to boss (handled by boss activation)
-  //
-  // BLOCKER 6: the last checkpoint (idx 3) is the boss checkpoint. The boss
-  // zone entry is handled by the boss activation path (shouldActivate), NOT
-  // by the clear sequence. The clear sequence only fires for ordinary area
-  // exits (idx 0, 1, 2).
-  const idx = checkpoints.indexOf(cp);
-  if (idx >= 0 && idx < LEVEL_DEF.LEGACY.checkpoints.length - 1) {
-    // The area being cleared is the area the hero is currently in.
-    // The next area in the zone model: legacy idx i → zone area -(i+2).
-    const nextArea = -(idx + 2);
-    const clearedAreaId = formatAreaIdForClear(heroEnt.currentArea);
-    // checkpoints.md §2: begin the clear sequence (flash + banner + fade).
-    onExitFlagReached(clearedAreaId, nextArea);
-  }
+  // boundary. In the sealed-zone model each zone owns its OWN entry flag
+  // (index 0 in its checkpoint list) and its OWN exit flag (index 1); the
+  // indices restart per zone, so progression must use the ZONE MODEL, not a
+  // global checkpoint index. Reaching the active zone's EXIT flag clears the
+  // area (flash + 'X-Y CLEAR' banner + fade out) and advances to the next
+  // zone. The -4 exit is the boss checkpoint (boss-arena.md §1): it routes
+  // into the boss zone, whose content is loaded on the advance. The entry
+  // flag (at a zone's start) is the starting checkpoint and must NOT trigger
+  // a clear — it is latched by startLife so arriving beside it does not
+  // re-clear the newly entered area.
+  const zone = getActiveZone(heroEnt);
+  if (zone.kind !== 'area') return; // boss zone has no exit flag
+  if (cp.isEntry) return; // entry flags are starting checkpoints, not exits
+  // The next area in the zone model (BLOCKER 3/4): the zone's own areaIdx
+  // drives the advance — areas -1 → -2 → -3 → -4 → boss. The -4 exit routes
+  // into the boss zone (boss-arena.md §1), NOT into a nonexistent fifth area.
+  const nextArea = zone.areaIdx === -4 ? BOSS_AREA : zone.areaIdx + 1;
+  const clearedAreaId = formatAreaIdForClear(heroEnt.currentArea);
+  // checkpoints.md §2: begin the clear sequence (flash + banner + fade).
+  onExitFlagReached(clearedAreaId, nextArea);
 });
 
 /**
@@ -1417,10 +1573,13 @@ onTransition((from, to) => {
     const heroId = window.__selectedHero || 'scarlet';
     const def = HEROES[heroId] || HEROES.scarlet;
     const oldHero = hero;
-    const nh = startGame({ world, oldHero, areaContext }, def);
-    nh.x = HERO_START_X;
-    nh.y = FLOOR_TOP - nh.h;
-    nh.checkpoint = { x: nh.x, y: nh.y };
+    const nh = startGame({ world: collisionWorld, oldHero, areaContext }, def);
+    {
+      const p = heroEntryPosition(nh);
+      nh.x = p.x;
+      nh.y = p.y;
+      nh.checkpoint = { x: p.x, y: p.y };
+    }
     // Zone model (task 2.1) — authoritative structure on the hero.
     nh.zones = levelZones;
     // Placeholder anims sized for the new body.
@@ -1499,7 +1658,7 @@ export function getShakeOffset() { return Effects.getShakeOffset(); }
 
 export function getHero() { return hero; }
 export function getSolids() { return SOLIDS; }
-export function getCollisionWorld() { return world; }
+export function getCollisionWorld() { return collisionWorld; }
 export function getEnemies() { return enemies; }
 // all live enemy entities (placeholder targets + jester) used by
 // the 'clear' powerup effect. Excludes dead/dead-animating enemies.
@@ -1748,7 +1907,7 @@ export function update(dt) {
     prevBottom: heroPrevBottom,
     ignoreOneWay: hero.droppingThrough,
   });
-  world.update();
+  collisionWorld.update();
 
   // Grounded: derive from the last resolved axis + a surface-contact probe so
   // the hero can jump again immediately after landing. While dropping through
@@ -1770,8 +1929,9 @@ export function update(dt) {
 
   // Keep the hero inside the LEVEL horizontally (test-rig convenience).
   const wb = hero.worldBox();
-  if (wb.x < 0) { hero.x = -hero.box.ox; hero.vx = 0; }
-  else if (wb.x + wb.w > LEVEL_LENGTH) { hero.x = LEVEL_LENGTH - hero.box.ox - hero.box.bw; hero.vx = 0; }
+  const zw = getActiveZone(hero).bounds;
+  if (wb.x < zw.x) { hero.x = zw.x - hero.box.ox; hero.vx = 0; }
+  else if (wb.x + wb.w > zw.x + zw.w) { hero.x = zw.x + zw.w - hero.box.ox - hero.box.bw; hero.vx = 0; }
 
   // Boss arena lock (boss-arena.md §3): while the arena is locked (LOCKED
   // through COMBAT) the hero cannot scroll past the boss or leave through
@@ -1858,8 +2018,7 @@ function finishHeroDeath() {
       // keeps resolving to the boss zone on the restart. Without this the hero
       // stayed on the previous area's index, so the flow never re-armed (the
       // dormant machine never saw a boss zone) and the entry screen showed the
-      // wrong area id. This is the same value the legacy boss-activation path
-      // used (LEVEL_DEF.LEGACY.checkpoints.length).
+      // wrong area id. BOSS_AREA is the zone-model value for the boss zone.
       hero.currentArea = BOSS_AREA;
       // Place the checkpoint at the boss zone's entry (the boss checkpoint)
       // so startLife puts the hero beside it for the approach.
@@ -1870,6 +2029,24 @@ function finishHeroDeath() {
           y: bz.entryFlag.y,
         };
       }
+    }
+    // Ensure the active zone's content is installed in the collision world
+    // before showing the entry screen. This updates the checkpoints array
+    // to the active zone's flags so startLife can latch the entry flag.
+    // BLOCKER 6: re-instantiate the zone's FRESH content from the stored
+    // population snapshot (buildWorld) rather than reusing the mutated
+    // entities — restoreArea() cannot re-add defeated enemies, destroyed
+    // barrels, or collected powerups (lifecycle.md §3: "the previous
+    // attempt's kills and destroyed objects do not leave the next attempt
+    // partly cleared").
+    const activeZone = getActiveZone(hero);
+    if (activeZone.kind === 'area' && world.world.has(activeZone.areaIdx)) {
+      const fresh = instantiateZone(
+        activeZone,
+        world.terrain.get(activeZone.areaIdx),
+        world.population.get(activeZone.areaIdx),
+      );
+      loadActiveZone(activeZone, fresh);
     }
     // checkpoints.md §4: after the death presentation and the fade, consume
     // one life exactly once and show the SHARED area-entry screen with the new
@@ -2235,7 +2412,7 @@ function processAllHitboxes() {
     }
     // Remove dead enemies from world.
     if (target.alive === false && target !== h) {
-      world.remove(target);
+      collisionWorld.remove(target);
     }
     // Handle barrel destruction.
     if (target.destroyed) {
@@ -2273,7 +2450,8 @@ function updateRealEnemy(e, dt) {
 
   // AI + gravity + integrate (base Enemy.update handles all of this). Flyers
   // have gravity 0 so they never fall; grounders do not.
-  e.update(dt, hero, world);
+  // BLOCKER 5: the AI receives the collision world, not the buildWorld record.
+  e.update(dt, hero, collisionWorld);
 
   // Resolve against solids (static platforms + live barrels) so grounders
   // don't walk through platforms or barrels. Flyers skip solid resolution
@@ -2327,7 +2505,7 @@ function updateRealEnemy(e, dt) {
     Effects.fireParticleBurst(cx, cy, 7);          // engine path — plain sparkle burst
     Effects.spawnDeathSparkle(cx, cy, Math.max(e.w, e.h)); // sprite-sized burst
     coins.dropCoins(e.coinDrop, cx, cy);      // coin drop per config
-    world.remove(e);                          // drop from play
+    collisionWorld.remove(e);                          // drop from play
     // Telemetry: count the kill by type (design §4.1 enemiesKilled).
     hero.runStats.enemiesKilled[e.type] = (hero.runStats.enemiesKilled[e.type] ?? 0) + 1;
     if (Debug.enabled) Debug.logEvent(`kill ${e.type}`);
@@ -2410,7 +2588,8 @@ function updateBoss(dt) {
   }
 
   // AI + gravity + integrate (base Enemy.update handles the death pipeline too).
-  b.update(dt, hero, world);
+  // BLOCKER 5: the AI receives the collision world, not the buildWorld record.
+  b.update(dt, hero, collisionWorld);
 
   // Keep the boss inside the arena horizontally while alive & active.
   if (b.alive && b.aiState !== 'dead' && b.active) {
@@ -2439,7 +2618,7 @@ function updateBoss(dt) {
     const cy = b.y + b.h / 2;
     Effects.fireParticleBurst(cx, cy, 14);        // engine path — big victory sparkle burst
     coins.dropCoins(b.coinDrop, cx, cy);       // generous coin bounty
-    world.remove(b);                           // drop from play
+    collisionWorld.remove(b);                           // drop from play
     camera.unlock();                           // release the arena lock
     b.onDeath();                               // boss-side death hook
     // mark boss as killed (design §4.1).
@@ -2461,7 +2640,7 @@ function updateEffects(dt) {
   // Coins bounce off the floor AND any air platform top they land on. We pass
   // the SOLIDS list minus the floor itself (the floor is handled by floorTop).
   const platforms = SOLIDS.slice(1); // index 0 is the full-length floor
-  coins.updateAll(dt, FLOOR_TOP, LEVEL_LENGTH, platforms);
+  coins.updateAll(dt, FLOOR_TOP, getActiveZone(hero).bounds.w, platforms);
   // Sync coins into the collision world so HERO×COIN collect works.
   syncCoinsToWorld();
 }
@@ -2521,7 +2700,7 @@ function handleBarrelDestroyed(barrel) {
   }
 
   // Remove the dead barrel from the collision world so it stops blocking.
-  world.remove(barrel);
+  collisionWorld.remove(barrel);
   // Telemetry: count the destroyed barrel by type (design §4.1 barrelsDestroyed).
   const bkey = barrel.type; // 'woodBarrel' | 'barrel' | 'coinBarrel'
   hero.runStats.barrelsDestroyed[bkey] = (hero.runStats.barrelsDestroyed[bkey] ?? 0) + 1;
@@ -2531,18 +2710,18 @@ function handleBarrelDestroyed(barrel) {
 /** Keep the collision world's coin set in sync with the pool. */
 function syncCoinsToWorld() {
   const live = coins.activeItems;
-  for (const e of world.entities) {
-    if (e.layer === LAYER.COIN && !live.includes(e)) world.remove(e);
+  for (const e of collisionWorld.entities) {
+    if (e.layer === LAYER.COIN && !live.includes(e)) collisionWorld.remove(e);
   }
   for (const c of live) {
-    if (!world.entities.has(c)) world.add(c);
+    if (!collisionWorld.entities.has(c)) collisionWorld.add(c);
   }
 }
 
 /** Cull thorns that have flown past the level bounds (lifetime cull is in update). */
 function cullOffScreen(items) {
   for (const p of items) {
-    if (p.x + p.w < 0 || p.x > LEVEL_LENGTH || p.y + p.h < -40 || p.y > VIEW_H + 40) {
+    const _zw = getActiveZone(hero).bounds; if (p.x + p.w < _zw.x || p.x > _zw.x + _zw.w || p.y + p.h < -40 || p.y > VIEW_H + 40) {
       p.alive = false;
     }
   }
@@ -2556,14 +2735,14 @@ function cullOffScreen(items) {
 function syncProjectilesToWorld() {
   const live = projectilePool.activeItems;
   // Remove dead projectiles still registered in the world.
-  for (const e of world.entities) {
+  for (const e of collisionWorld.entities) {
     if (e.friendly && (e.layer === LAYER.PROJ_ALLY || e.layer === LAYER.PROJ_FOE) && !live.includes(e)) {
-      world.remove(e);
+      collisionWorld.remove(e);
     }
   }
   // Add any live thorn not yet registered.
   for (const p of live) {
-    if (!world.entities.has(p)) world.add(p);
+    if (!collisionWorld.entities.has(p)) collisionWorld.add(p);
   }
 }
 
@@ -2573,12 +2752,12 @@ function syncProjectilesToWorld() {
 /** Sync live specials into the collision world (same pattern as projectiles). */
 function syncSpecialsToWorld() {
   const live = specialPool.activeItems;
-  for (const e of world.entities) {
+  for (const e of collisionWorld.entities) {
     if (e.type === 'saw' || e.type === 'bomb') {
-      if (!live.includes(e)) world.remove(e);
+      if (!live.includes(e)) collisionWorld.remove(e);
     }
   }
   for (const s of live) {
-    if (!world.entities.has(s)) world.add(s);
+    if (!collisionWorld.entities.has(s)) collisionWorld.add(s);
   }
 }

@@ -14,11 +14,9 @@
 // Area indexing: the zone model uses areas -1, -2, -3, -4, boss.
 //   -1 = first area (no entry flag), -2 = second, -3 = third (vertical),
 //   -4 = fourth, boss = final zone.
-// Legacy checkpoint idx i is the EXIT of area -(i+1), so:
-//   idx 0 → clears -1, advances to -2
-//   idx 1 → clears -2, advances to -3
-//   idx 2 → clears -3, advances to -4
-//   idx 3 → clears -4, advances to boss (handled by boss activation, NOT clear seq)
+// Each zone owns its own entry flag (list index 0) and exit flag (index 1);
+// reaching the active zone's exit flag clears the area and advances to the
+// next zone (zone.areaIdx + 1, or the boss zone for area -4).
 
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
@@ -137,34 +135,26 @@ test('stepClearSequence: fadeOut completes, advances hero to next zone area, sho
 });
 
 test('clear sequence does NOT fire for the boss checkpoint (BLOCKER 6)', () => {
-  // The last legacy checkpoint (idx 3) is the boss checkpoint.
-  // The boss zone entry is handled by the boss activation path, not the
-  // clear sequence. The clear sequence should only fire for idx 0, 1, 2.
+  // The -4 exit is the boss checkpoint (checkpoints.md §1). In the zone model
+  // the -4 exit routes into the BOSS ZONE (currentArea = BOSS_AREA), not into
+  // a nonexistent fifth area. The clear sequence itself still runs (it is the
+  // normal transition per boss-arena.md §1); what must never happen is the
+  // hero landing on an ordinary area index past -4.
   //
-  // We verify this by checking that the checkpoint handler's guard
-  // (idx < checkpoints.length - 1) prevents the clear sequence from
-  // firing for the last checkpoint. This is a structural test: the
-  // handler code at update.js:1270 has the guard.
-  //
-  // The boss activation path sets hero.currentArea to
-  // LEVEL_DEF.LEGACY.checkpoints.length (4) and shows the entry screen
-  // directly — it does NOT call onExitFlagReached.
-  //
-  // We can verify the invariant: the clear sequence's pendingArea should
-  // never be a boss-zone value. The zone model areas are -1..-4; the boss
-  // zone is zone[4] (currentArea = 4). The clear sequence only produces
-  // pendingArea values of -2, -3, -4 (advancing from -1, -2, -3).
+  // We verify the invariant: clearing area -4 (the last ordinary area)
+  // advances the hero to the boss zone, and no clear sequence ever produces a
+  // pendingArea between -4 and the boss zone (there is no such area).
   resetSeq();
-  // Simulate clearing area -4 (the last ordinary area). This would be
-  // idx 2 in the legacy corridor (the third checkpoint). The next area
-  // is -4. The boss checkpoint (idx 3) is NOT handled here.
-  U.onExitFlagReached('1-4', -4);
+  // Simulate clearing area -4 (the last ordinary area). The next area is the
+  // boss zone (BOSS_AREA = zones.length - 1).
+  U.onExitFlagReached('1-4', 4);
   const s = U.getClearSequence();
-  assert.equal(s.pendingArea, -4, 'clearing -4 advances to -4 (not boss)');
-  // The boss zone (currentArea = 4) is never set by the clear sequence.
+  assert.equal(s.pendingArea, 4, 'clearing -4 advances to the boss zone');
+  // The boss zone (currentArea = 4) is set by the clear sequence; it is the
+  // final zone, so the hero must never end up on an ordinary area past -4.
   stepClear(DT, BANNER_STEPS + FADE_OUT_STEPS);
   const hero = U.getHero();
-  assert.equal(hero.currentArea, -4, 'hero is in area -4, not the boss zone');
+  assert.equal(hero.currentArea, 4, 'hero is in the boss zone after -4 exit');
 });
 
 test('getClearBanner: returns null when no banner is active', () => {

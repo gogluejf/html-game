@@ -11,7 +11,7 @@ import { strict as assert } from 'node:assert';
 import { Hero } from '../hero.js';
 import { HEROES } from '../heroDefs.js';
 import { resolve } from '../collision.js';
-import { LEVELS, LEGACY_CORRIDOR } from '../level.js';
+import { LEVELS, buildLevelZones } from '../level.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -37,10 +37,24 @@ function standOn(h, plat) {
 
 console.log('Level definitions');
 ok('air platforms carry oneWay: true; the floor stays solid', () => {
-  const plats = LEGACY_CORRIDOR.platforms;
-  assert.equal(plats[0].oneWay, undefined, 'floor must remain solid (no oneWay flag)');
-  for (const p of plats.slice(1)) {
-    assert.equal(p.oneWay, true, `air platform at x=${p.x} must be oneWay`);
+  // Zone model: each zone's structural platforms include a solid floor.
+  // The floor (first platform) must be solid (no oneWay flag).
+  const zones = buildLevelZones(LEVELS[0]);
+  for (const zone of zones) {
+    const plats = zone.platforms;
+    assert.ok(plats.length > 0, `zone ${zone.name} has platforms`);
+    // The floor is the last platform (or the only one for horizontal zones).
+    // For horizontal zones: one floor platform (solid).
+    // For vertical zones: bottom platform (solid) + top platform (oneWay).
+    // For boss zones: one floor platform (solid).
+    const floor = zone.orientation === 'vertical'
+      ? plats[0] // bottom supporting platform
+      : plats[0]; // floor
+    assert.equal(floor.oneWay, undefined, `zone ${zone.name}: floor must be solid`);
+    // Any additional platforms (top platform in vertical zones) are oneWay.
+    for (const p of plats.slice(1)) {
+      assert.equal(p.oneWay, true, `zone ${zone.name}: air platform at x=${p.x} must be oneWay`);
+    }
   }
 });
 

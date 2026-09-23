@@ -11,19 +11,42 @@
 
 import { VIEW_W, VIEW_H } from './view.js';
 import { FONT_UI, CREAM, GOLD } from './fonts.js';
+import { buildLevelZones } from './level.js';
 
 const PAD = 12;
+
+/**
+ * Resolve the level's zones for the progress track (zone model, MINOR 11).
+ * @param {object} levelDef a LEVELS entry (provides the level index)
+ * @returns {object[]} the zones in play order
+ */
+function buildZones(levelDef) {
+  return buildLevelZones(levelDef);
+}
+
+/**
+ * The active zone's index within the zone list, from the hero's currentArea
+ * (zone-model convention: -1..-4 → zones 0..3, boss → last zone).
+ */
+function activeZoneIndex(hero, zones) {
+  const a = hero?.currentArea;
+  if (typeof a !== 'number') return 0;
+  const idx = a <= -1 ? -(a) - 1 : a;
+  return Math.min(Math.max(idx, 0), zones.length - 1);
+}
 
 /**
  * Draw the full play HUD in viewport space.
  * @param {CanvasRenderingContext2D} ctx
  * @param {object} hero live Hero instance (energy, maxEnergy, shield, ammo,
- *        specialAmmo, coins, lives, x, w, heroDef)
+ *        specialAmmo, coins, lives, x, w, heroDef, currentArea)
  * @param {object} _camera unused for now (kept in signature per design §20;
  *        the HUD is viewport-space and needs no camera math)
- * @param {object} levelDef level definition ({ length, checkpoints: [{id,x}] })
+ * @param {object} levelDef level definition (LEVELS entry; provides index)
+ * @param {object[]} [zones] the level's zones (buildLevelZones); defaults to
+ *        the first level's zones (MINOR 11: zone-model progress track).
  */
-export function drawHUD(ctx, hero, _camera, levelDef) {
+export function drawHUD(ctx, hero, _camera, levelDef, zones) {
   if (!hero || !levelDef) return;
   ctx.save();
   ctx.textBaseline = 'alphabetic';
@@ -33,7 +56,7 @@ export function drawHUD(ctx, hero, _camera, levelDef) {
   drawAmmo(ctx, hero);
   drawCoinsAndLives(ctx, hero);
   drawPortrait(ctx, hero);
-  drawProgressLine(ctx, hero, levelDef);
+  drawProgressLine(ctx, hero, zones ?? buildZones(levelDef), activeZoneIndex(hero, zones ?? buildZones(levelDef)));
 
   ctx.restore();
 }
@@ -174,7 +197,18 @@ function drawPortrait(ctx, hero) {
 
 // --- Checkpoint progress line (bottom-center) ---------------------------------
 
-function drawProgressLine(ctx, hero, levelDef) {
+/**
+ * Draw the zone progress track. MINOR 11: the track is ZONE-MODEL driven —
+ * one marker per sealed zone (areas -1..-4 + boss, in play order) plus a
+ * hero-position marker inside the ACTIVE zone (its own local width). The
+ * deprecated single-corridor track (levelDef.LEGACY) is gone.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {object} hero live Hero instance
+ * @param {object[]} zones the level's zones (buildLevelZones)
+ * @param {number} activeIdx index of the active zone within `zones`
+ */
+function drawProgressLine(ctx, hero, zones, activeIdx) {
   const lineY = VIEW_H - 30;
   const lineX = VIEW_W * 0.2;
   const lineW = VIEW_W * 0.6;
@@ -187,38 +221,33 @@ function drawProgressLine(ctx, hero, levelDef) {
   ctx.lineTo(lineX + lineW, lineY);
   ctx.stroke();
 
-  // Checkpoint markers (dimmed once the hero has passed them).
-  // Task 2.1: the progress track is the DEPRECATED single corridor (the runtime
-  // is still wired to it), so the markers/length come from levelDef.LEGACY.
-  const corridor = levelDef.LEGACY;
-  if (Array.isArray(corridor?.checkpoints)) {
-    ctx.font = `10px ${FONT_UI}`;
-    ctx.textAlign = 'center';
-    for (const cp of corridor.checkpoints) {
-      const frac = Math.max(0, Math.min(1, cp.x / corridor.length));
-      const cx = lineX + frac * lineW;
-      const passed = hero.x >= cp.x;
-      ctx.fillStyle = passed ? 'rgba(243, 156, 18, 0.4)' : '#f39c12';
-      ctx.beginPath();
-      ctx.arc(cx, lineY, 5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = passed ? 'rgba(255,255,255,0.4)' : '#fff';
-      ctx.fillText(cp.id, cx, lineY - 8);
-    }
-  }
+  const n = zones.length;
+  ctx.font = `10px ${FONT_UI}`;
+  ctx.textAlign = 'center';
+  zones.forEach((z, i) => {
+    const cx = lineX + (i + 0.5) / n * lineW;
+    const passed = i < activeIdx;
+    const isCurrent = i === activeIdx;
+    ctx.fillStyle = passed ? 'rgba(243, 156, 18, 0.4)'
+      : isCurrent ? '#2ecc71' : '#f39c12';
+    ctx.beginPath();
+    ctx.arc(cx, lineY, isCurrent ? 6 : 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = passed ? 'rgba(255,255,255,0.4)' : '#fff';
+    ctx.fillText(z.kind === 'boss' ? 'B' : `${-z.areaIdx}`, cx, lineY - 8);
+  });
 
-  // Hero position marker (clamped to the track).
-  const heroFrac = Math.max(0, Math.min(1, (hero.x + hero.w / 2) / corridor.length));
-  const hx = lineX + heroFrac * lineW;
-  ctx.fillStyle = '#2ecc71';
-  ctx.beginPath();
-  ctx.arc(hx, lineY, 6, 0, Math.PI * 2);
-  ctx.fill();
-  // Small triangle pointer below the dot.
-  ctx.beginPath();
-  ctx.moveTo(hx - 4, lineY + 8);
-  ctx.lineTo(hx + 4, lineY + 8);
-  ctx.lineTo(hx, lineY + 14);
-  ctx.closePath();
-  ctx.fill();
+  // Hero position marker: a marker inside the ACTIVE zone's cell, at the
+  // hero's local x fraction (zones are independent worlds, so the hero's
+  // progress is only meaningful within its own zone).
+  const zone = zones[activeIdx];
+  if (zone && zone.bounds && zone.bounds.w > 0) {
+    const frac = Math.max(0, Math.min(1, (hero.x - zone.bounds.x) / zone.bounds.w));
+    const cellW = lineW / n;
+    const hx = lineX + (activeIdx + 0.5 + (frac - 0.5) * 0.8) * cellW;
+    ctx.fillStyle = '#2ecc71';
+    ctx.beginPath();
+    ctx.arc(hx, lineY, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }

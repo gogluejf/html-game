@@ -5,31 +5,17 @@
 // (areas -1..-4 + a boss zone), each owning its own world bounds and its own
 // entry/exit flags. This is the authoritative level structure (task 2.1).
 //
-// LEGACY (deprecated): the prototype was a single 8000px flat corridor driven
-// by LEGACY_CORRIDOR below + generateLevel(). generateLevel() is kept ONLY so
-// the existing runtime (systems/update.js) keeps working while the zone engine
-// is wired in by later tasks; the LEVELS definition no longer encodes that
-// single flat corridor. Do not build new features on the legacy model.
+// Zone terrain is composed by buildZoneTerrain()/buildAllZoneTerrain() (task
+// 3.2/3.3) from the macro composer; the runtime (systems/update.js) consumes
+// the zone model directly (task 7.1). The deprecated prototype single-corridor
+// model (LEGACY_CORRIDOR + generateLevel()) has been removed.
 //
-// Spawnable content (counts per enemy type, barrels, coin barrels, powerups)
-// still lives on each LEVELS entry under `spawn`. The spawner (generateLevel)
-// decides WHERE to place the spawnable items along flat ground, respecting a
-// minimum spacing so spawns never cluster unfairly and keeping the hero-start
-// zone (first SPAWN_START px) and boss arena (last 500 px) clear.
 // Coins are NOT spawned directly. They come from exactly two sources (design
 // §14):
 //   - Coin barrels bursting on destruction (handled by object.js / update.js)
 //   - Enemy death drops (Enemy.coinDrop config, rolled in updateRealEnemy)
-// So `spawn` deliberately has no `coins` field.
 // This module is pure (no DOM, no canvas) so it's unit-testable in node.
 
-import { Jester } from './jester.js';
-import { VineHound } from './vine_hound.js';
-import { Violetta } from './violetta.js';
-import { JackOLantern } from './jackolantern.js';
-import { makeBoris, makeBorisBaby } from './boris_loon.js';
-import { makeBarrel, makeWoodBarrel, makeCoinBarrel, makeCheckpoint } from './object.js';
-import { Powerup } from './powerup.js';
 import { VIEW_H } from './view.js';
 import { composeArea, UNIT_PX } from './macros.js';
 import { createRng } from './terrain.js';
@@ -38,8 +24,7 @@ import { createRng } from './terrain.js';
 // Level definitions (declarative — WHAT, not WHERE)
 // ---------------------------------------------------------------------------
 // v1 ships one level ("Big Top"). Later levels extend this array; the zone
-// model (buildLevelZones) and the legacy spawner (generateLevel) are both
-// agnostic to which definition they're handed.
+// model (buildLevelZones) is agnostic to which definition it's handed.
 //
 // A LEVELS entry declares the level's CONTENT and its zone configuration:
 //   - name / index / boss: theme + boss identity
@@ -47,17 +32,14 @@ import { createRng } from './terrain.js';
 //     vertical climb (structure.md §1). Exactly one of the four ordinary
 //     areas is vertical; it is fixed for the whole game.
 //   - spawn: counts of every spawnable item (enemies, barrels, powerups).
-//
-// The entry does NOT carry the single flat-corridor geometry any more. That
-// legacy geometry (the 8000px ground + air platforms + corridor checkpoints)
-// lives in LEGACY_CORRIDOR below, consumed only by the deprecated
-// generateLevel() while the runtime is still wired to it.
+//     (Population per area is driven by levelConfigs.js stageBudgets at
+//     runtime; `spawn` is the level-level roster reference.)
 
 export const LEVELS = [
   {
     name: 'Big Top',
     index: 1,
-    boss: 'elephant',
+    boss: 'tusko_wobble',
     // Which ordinary area is the vertical climb (structure.md §1). -1 is never
     // vertical; -3 is chosen here as the fixed slot for the whole game.
     verticalArea: -3,
@@ -87,51 +69,6 @@ export const LEVELS = [
     },
   },
 ];
-
-// ---------------------------------------------------------------------------
-// LEGACY single-corridor geometry (DEPRECATED — prototype only)
-// ---------------------------------------------------------------------------
-// The prototype level was ONE flat 8000px corridor: a ground floor, a handful
-// of one-way air platforms, and four corridor checkpoints. That model has been
-// replaced by the sealed zone model above (task 2.1). It is kept here — decoupled
-// from LEVELS — ONLY so the deprecated generateLevel() below (still consumed by
-// systems/update.js while the zone engine is wired in) can keep producing a
-// working world. New code must use buildLevelZones(); do not build on this.
-//
-// Kept as a plain object (not on the LEVELS entry) so the declarative level
-// definition no longer encodes a single flat corridor.
-
-export const LEGACY_CORRIDOR = {
-  length: 8000,
-  checkpoints: [
-    { id: '1-1', x: 2000 },
-    { id: '1-2', x: 4000 },
-    { id: '1-3', x: 6000 },
-    { id: '1-4', x: 7500 },
-  ],
-  platforms: [
-    // Ground: full length. y=500 matches VIEW_H(540) - 40 (floor thickness).
-    // Solid by default (no oneWay flag) — drop-through never affects it (§13).
-    { x: 0, y: 500, w: 8000, h: 40 },
-    // Air platforms (a few) — scattered along the walk for vertical variety.
-    // oneWay: true (design §13): the hero passes up through them and can
-    // drop through with Down+Jump; they only land from above while falling.
-    { x: 800,  y: 380, w: 150, h: 16, oneWay: true },
-    { x: 1500, y: 350, w: 120, h: 16, oneWay: true },
-    { x: 2500, y: 370, w: 180, h: 16, oneWay: true },
-    { x: 3500, y: 340, w: 140, h: 16, oneWay: true },
-    { x: 4500, y: 360, w: 160, h: 16, oneWay: true },
-    { x: 5500, y: 380, w: 130, h: 16, oneWay: true },
-    { x: 6500, y: 350, w: 150, h: 16, oneWay: true },
-  ],
-};
-
-// Attach the legacy corridor to the level definition under a clearly-marked
-// DEPRECATED field so the existing runtime (systems/update.js, lifecycle.js,
-// hud.js) keeps working while the zone engine is wired in by later tasks. The
-// PRIMARY zone API — buildLevelZones() — never reads this; it builds the sealed
-// zones from the level's own config (index, verticalArea).
-LEVELS[0].LEGACY = LEGACY_CORRIDOR;
 
 // ---------------------------------------------------------------------------
 // Zone model (docs/levels/structure.md §1–§4, checkpoints.md §1)
@@ -526,186 +463,4 @@ export function buildAllZoneTerrain(levelDef, seed) {
   }
 
   return result;
-}
-
-// ---------------------------------------------------------------------------
-// Rogue spawner
-// ---------------------------------------------------------------------------
-// Reads a level definition and returns a fully-instantiated world:
-//   { platforms, enemies[], barrels[], coinBarrels[], powerups[], checkpoints[] }
-// All entities are real instances (Jester, VineHound, ..., GameObj, Powerup,
-// Checkpoint) so the caller can drop them straight into the collision world.
-
-/** Minimum horizontal distance between any two spawned items (px). */
-export const MIN_SPACING = 100;
-/** Don't spawn in the first N px (hero start area). */
-export const SPAWN_START = 500;
-/** Don't spawn in the last N px of the level (boss arena). */
-export const BOSS_ARENA_PAD = 500;
-
-/** Y where floor-sitting objects rest their top edge (ground top - object height). */
-const GROUND_Y = 500; // matches LEVELS[0].platforms[0].y
-const BARREL_H = 48;
-const POWERUP_H = 28;
-const CHECKPOINT_H = 48;
-/** Resting altitude offset above the ground for flyer enemies (Boris Loon). */
-const FLYER_REST_ALTITUDE = 150; // adult; baby uses 130 (matches layout)
-const FLYER_BABY_REST_ALTITUDE = 130;
-
-/**
- * Factory map: enemy type key → constructor at (x, y). Centralized here so
- * adding a new enemy type only requires touching this table + the level defs.
- */
-const ENEMY_FACTORIES = {
-  jester:               (x, y) => new Jester(x, y),
-  vine_hound:           (x, y) => new VineHound(x, y),
-  violetta_marionetta:  (x, y) => new Violetta(x, y),
-  jackolantern:         (x, y) => new JackOLantern(x, y),
-  boris_loon:           (x, y) => makeBoris(x, y),
-  boris_loon_baby:      (x, y) => makeBorisBaby(x, y),
-};
-
-/**
- * Compute the spawn Y for an enemy given its type. Grounders sit on the floor
- * (top = GROUND_Y - def.h); flyers hover at a fixed altitude above the floor.
- * @param {string} type enemy type key
- * @returns {number} y (top of box)
- */
-function enemySpawnY(type) {
-  if (type === 'boris_loon') return GROUND_Y - FLYER_REST_ALTITUDE;
-  if (type === 'boris_loon_baby') return GROUND_Y - FLYER_BABY_REST_ALTITUDE;
-  // Grounders: read height from the factory's def via a throwaway instance? No —
-  // we don't want to allocate just to measure. Instead use the known heights:
-  switch (type) {
-    case 'jester':              return GROUND_Y - 48;
-    case 'vine_hound':          return GROUND_Y - 44;
-    case 'violetta_marionetta': return GROUND_Y - 50;
-    case 'jackolantern':        return GROUND_Y - 40;
-    default:                    return GROUND_Y - 48;
-  }
-}
-
-/**
- * Generate `count` random x positions in [SPAWN_START, SPAWN_END] that respect
- * MIN_SPACING against every position in `existing` AND against each other.
- * Returns fewer than `count` when the space runs out (soft cap — better to
- * under-spawn than violate the spacing rule). Attempts are bounded so a
- * pathological budget can't hang the loop.
- *
- * @param {number} count how many positions to generate
- * @param {number[]} existing already-used x positions (across all categories)
- * @param {number} spawnEnd exclusive upper bound (typically level.length - pad)
- * @returns {number[]} the generated positions (sorted ascending)
- */
-export function randomPositions(count, existing = [], spawnEnd = 7500) {
-  const positions = [];
-  let attempts = 0;
-  const MAX_ATTEMPTS = 10000;
-  while (positions.length < count && attempts < MAX_ATTEMPTS) {
-    const x = SPAWN_START + Math.random() * (spawnEnd - SPAWN_START);
-    const all = [...existing, ...positions];
-    if (all.every((px) => Math.abs(px - x) >= MIN_SPACING)) {
-      positions.push(x);
-    }
-    attempts++;
-  }
-  positions.sort((a, b) => a - b);
-  return positions;
-}
-
-/**
- * Build a fully-instantiated world from a level definition. Randomly places
- * every item in `levelDef.spawn` along flat ground with min spacing, and
- * instantiates the legacy single-corridor geometry (platforms, checkpoints)
- * as-is.
- *
- * DEPRECATED (task 2.1): this produces the old single 8000px corridor world,
- * NOT the sealed zone model. It is kept only so systems/update.js keeps running
- * while the zone engine is wired in by later tasks. The fixed geometry comes
- * from LEGACY_CORRIDOR (not from the LEVELS entry, which no longer encodes a
- * flat corridor); spawn counts still come from levelDef.spawn. New code must
- * use buildLevelZones() instead.
- *
- * The returned object is what systems/update.js consumes:
- *   - platforms: plain AABBs ({x,y,w,h}) — same shape as the old SOLIDS export
- *   - enemies:   Enemy instances (one per spawn.enemies entry)
- *   - barrels:   GameObj instances (explosive)
- *   - coinBarrels: GameObj instances (coin-bursting)
- *   - powerups:  Powerup instances
- *   - checkpoints: Checkpoint instances
- *
- * No loose coins are placed anywhere (design §14: coins only from barrel
- * bursts + enemy death drops).
- *
- * @param {object} levelDef one entry from LEVELS (used for its `spawn` counts)
- * @returns {{platforms:object[], enemies:object[], barrels:object[],
- *            coinBarrels:object[], powerups:object[], checkpoints:object[]}}
- */
-export function generateLevel(levelDef) {
-  const platforms = LEGACY_CORRIDOR.platforms.map((p) => ({ ...p }));
-  const checkpoints = LEGACY_CORRIDOR.checkpoints.map((c) =>
-    makeCheckpoint(c.id, c.x, GROUND_Y - CHECKPOINT_H),
-  );
-
-  const spawnEnd = LEGACY_CORRIDOR.length - BOSS_ARENA_PAD;
-  const usedPositions = []; // shared across ALL categories (enemies + barrels + ...)
-
-  // --- Enemies ---------------------------------------------------------------
-  const enemies = [];
-  for (const [type, count] of Object.entries(levelDef.spawn.enemies ?? {})) {
-    const factory = ENEMY_FACTORIES[type];
-    if (!factory) continue; // unknown type — skip rather than crash
-    const y = enemySpawnY(type);
-    const positions = randomPositions(count, usedPositions, spawnEnd);
-    for (const x of positions) {
-      enemies.push(factory(x, y));
-      usedPositions.push(x);
-    }
-  }
-
-  // --- Barrels (destructible solids) -----------------------------------------
-  const barrels = [];
-  const barrelPositions = randomPositions(
-    levelDef.spawn.explosiveBarrels ?? 0, usedPositions, spawnEnd,
-  );
-  for (const x of barrelPositions) {
-    barrels.push(makeBarrel(x, GROUND_Y - BARREL_H));
-    usedPositions.push(x);
-  }
-
-  // --- Wood barrels (plain, non-explosive) -----------------------------------
-  const woodBarrels = [];
-  const woodBarrelPositions = randomPositions(
-    levelDef.spawn.woodBarrels ?? 0, usedPositions, spawnEnd,
-  );
-  for (const x of woodBarrelPositions) {
-    woodBarrels.push(makeWoodBarrel(x, GROUND_Y - BARREL_H));
-    usedPositions.push(x);
-  }
-
-  // --- Coin barrels (coin source) --------------------------------------------
-  const coinBarrels = [];
-  const coinBarrelPositions = randomPositions(
-    levelDef.spawn.coinBarrels ?? 0, usedPositions, spawnEnd,
-  );
-  for (const x of coinBarrelPositions) {
-    coinBarrels.push(makeCoinBarrel(x, GROUND_Y - BARREL_H));
-    usedPositions.push(x);
-  }
-
-  // --- Powerups (scattered pickups) ------------------------------------------
-  // Spawn all powerups as a single batch to maximize available space.
-  const totalPowerups = Object.values(levelDef.spawn.powerups ?? {}).reduce((a, b) => a + b, 0);
-  const puPositions = randomPositions(totalPowerups, usedPositions, spawnEnd);
-  const powerups = [];
-  let puIdx = 0;
-  for (const [type, count] of Object.entries(levelDef.spawn.powerups ?? {})) {
-    for (let i = 0; i < count && puIdx < puPositions.length; i++) {
-      const x = puPositions[puIdx++];
-      powerups.push(new Powerup(type, x, GROUND_Y - POWERUP_H));
-      usedPositions.push(x);
-    }
-  }
-
-  return { platforms, enemies, barrels, woodBarrels, coinBarrels, powerups, checkpoints };
 }
