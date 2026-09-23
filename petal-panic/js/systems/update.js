@@ -1999,7 +1999,9 @@ onTransition((from, to) => {
     {
       const h = hero;
       const cx = h.x + h.w / 2;
-      camera.x = Math.max(camera.minX, Math.min(camera.maxX, cx - camera.w / 2));
+      const snappedX = Math.max(camera.minX, Math.min(camera.maxX, cx - camera.w / 2));
+      if (Debug.enabled) console.log(`[cam-snap] hero.x=${h.x.toFixed(0)} cx=${cx.toFixed(0)} cam.x=${camera.x.toFixed(0)}→${snappedX.toFixed(0)} minX=${camera.minX} maxX=${camera.maxX}`);
+      camera.x = snappedX;
     }
     // Boss zone flow (boss-arena.md §1–§3): when the player confirms the
     // entry screen for the BOSS zone, start (or restart after a death) the
@@ -2164,7 +2166,7 @@ export function update(dt) {
      bossZone.state === BZ_BAR_FILL || bossZone.state === BZ_BOSS_ENTER);
   if (bzPresentation) {
     bossZone.update(dt, hero);
-    if (b.alive && b.aiState !== 'dead' && b.gravity > 0) resolve(b, SOLIDS);
+    if (boss.alive && boss.aiState !== 'dead' && boss.gravity > 0) resolve(boss, SOLIDS);
     camera.update(hero);
     Effects.update(dt);
     return;
