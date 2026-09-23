@@ -12,6 +12,8 @@ export const S = {
   WIN: 5,
   REMAP: 6,   // controls/remap screen
   AREA_ENTRY: 7, // shared area-entry screen (checkpoints.md §3)
+  REWARD: 8,  // level reward screen (boss-arena.md §4)
+  END_OF_GAME: 9, // minimal end-of-game screen (lifecycle.md §5)
 };
 
 // Human-readable names for logging / overlays / future screen dispatch.
@@ -24,6 +26,8 @@ export const STATE_NAMES = {
   [S.WIN]:    'WIN',
   [S.REMAP]:  'REMAP',
   [S.AREA_ENTRY]: 'AREA_ENTRY',
+  [S.REWARD]: 'REWARD',
+  [S.END_OF_GAME]: 'END_OF_GAME',
 };
 
 let cur = S.HOME;
@@ -38,10 +42,12 @@ export function setState(s) {
 const TRANSITIONS = {
   [S.HOME]:   [S.SELECT, S.PLAY, S.REMAP],
   [S.SELECT]: [S.PLAY, S.HOME],
-  [S.PLAY]:   [S.PAUSE, S.OVER, S.WIN, S.AREA_ENTRY],
+  [S.PLAY]:   [S.PAUSE, S.OVER, S.WIN, S.AREA_ENTRY, S.REWARD],
   [S.PAUSE]:  [S.PLAY, S.HOME, S.REMAP, S.AREA_ENTRY],
   [S.OVER]:   [S.PLAY, S.HOME, S.AREA_ENTRY],   // retry/continue show the entry screen first
   [S.AREA_ENTRY]: [S.PLAY, S.PAUSE, S.OVER],    // confirm starts the attempt; back opens pause
+  [S.REWARD]: [S.AREA_ENTRY, S.END_OF_GAME, S.HOME], // confirm → next level's entry / end-of-game; back → home
+  [S.END_OF_GAME]: [S.HOME],                          // return home (lifecycle.md §5)
   [S.WIN]:    [S.SELECT, S.HOME, S.PLAY], // play again or quit; PLAY = debug shortcut
   [S.REMAP]:  [S.PAUSE, S.HOME],      // return to wherever we came from
 };

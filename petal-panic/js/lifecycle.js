@@ -23,10 +23,11 @@
 // This module is pure over the pieces handed to it (hero, entities, pools,
 // effects) so the rules are unit-testable in node without a DOM.
 
-import { GAME_RULES, createContinuePool, canSpend, spend } from './gameRules.js';
+import { GAME_RULES, createContinuePool, canSpend, spend, credit } from './gameRules.js';
 import { LEVELS } from './level.js';
+import { getLevelConfig } from './levelConfigs.js';
 import { Hero } from './hero.js';
-import { createStats } from './stats.js';
+import { createStats, calculateScore } from './stats.js';
 import { Anim, makeTestFrame } from './anim.js';
 import { tryTransition, getState, setState, S } from './state.js';
 
@@ -261,6 +262,12 @@ export function startGame(ctx, heroDef) {
   });
   h.currentLevel = 1;
   h.currentArea = ENTRY_AREA;
+  // A genuinely new game starts with no level reward in flight. Clear the
+  // presented-reward latch so a reward from a PREVIOUS game can never
+  // suppress the credit for a genuinely new reward in this one (game-rules.md
+  // §2: a reward is credited exactly once, keyed to the reward, not to
+  // presentation state left over from a prior run).
+  _rewardData = null;
   aliasCombatStats(h);
   // Fresh generation choices for a genuinely new game (lifecycle.md §1/§6).
   // Only when the caller provided the area context (update.js does); a bare
@@ -476,6 +483,229 @@ export function areaEntryOnAction(action, h, ctx) {
 // LEVELS array is the single source of truth for a level's name.
 function levelName(level) {
   return LEVELS[level - 1]?.name ?? `Level ${level}`;
+}
+
+// --- Level reward screen (boss-arena.md §4–5, game-rules.md §2–3) -------------
+//
+// The boss zone's second screen, shown after the boss's defeat presentation:
+// a full-screen level reward summary (boss beaten, level passed). It presents
+// exactly the documented minimal set (game-rules.md §3):
+//   1. Enemies killed
+//   2. Score
+//   3. Coins collected
+//   4. Continues earned (one per full 1000-coin chunk — GAME_RULES
+//      .coinsPerContinue, a global tuning value)
+//
+// The reward is credited to the GLOBAL continue pool (gameRules.js credit())
+// EXACTLY ONCE, on the first presentation — never again because the screen
+// redraws or its animation repeats (game-rules.md §2: "A reward must be
+// credited once, not again because the screen redraws or its animation
+// repeats"). The presentation itself (canvas drawing, pause-menu ergonomics)
+// lives in screens.js; this module owns the data, the crediting, and the
+// confirm flow (next level's area -1, or the end-of-game path) so the rules
+// are unit-testable in node.
+
+/** Callback registered by screens.js to receive the reward screen data. */
+let _onRewardData = null;
+
+/** The last reward screen data presented (for tests / render). */
+let _rewardData = null;
+
+/**
+ * Identity of the reward whose credit has already been applied to the global
+ * pool. This is the exactly-once latch (game-rules.md §2: "A reward must be
+ * credited once, not again because the screen redraws or its animation
+ * repeats").
+ *
+ * It is keyed to the REWARD — not to presentation state. A repeat
+ * presentation of the same reward (redraw / animation) carries the same
+ * identity and is a no-op, while a genuinely new reward (a different boss
+ * kill, a different level) carries a fresh identity and is credited. Keying to
+ * the reward (rather than to whether a screen is currently up) means a stale
+ * non-null presentation can never suppress the credit for a new reward.
+ *
+ * Shape: { level, coins, earned } — the inputs that make a reward distinct
+ * within a level. The level is part of the identity so a redraw of the same
+ * reward (same level, same coin tally) never re-credits, while a different
+ * level's reward (or a different coin tally) is credited fresh.
+ * @type {{level:number, coins:number, earned:number} | null}
+ */
+let _creditedReward = null;
+
+/**
+ * Register the callback that receives the reward screen data.
+ * Called by screens.js at module evaluation time (same pattern as the
+ * area-entry data callback, to avoid a circular import).
+ * @param {(data: object) => void} fn
+ */
+export function setRewardDataCallback(fn) { _onRewardData = fn; }
+
+/** Get the last reward screen data presented. */
+export function getRewardData() { return _rewardData; }
+
+/** Callback registered by screens.js to receive the end-of-game final score. */
+let _onEndOfGameScore = null;
+
+/**
+ * Register the callback that receives the end-of-game final score.
+ * Called by screens.js at module evaluation time (same pattern as the
+ * reward data callback, to avoid a circular import).
+ * @param {(score: number) => void} fn
+ */
+export function setEndOfGameScoreCallback(fn) { _onEndOfGameScore = fn; }
+
+/**
+ * Test helper: consume the currently presented reward (as rewardOnAction's
+ * confirm does) so the next test starts with a clean presentation. Tests
+ * only — production code resets both the presentation and the credit latch via
+ * rewardOnAction().
+ */
+export function _resetRewardForTest() {
+  _rewardData = null;
+  _creditedReward = null;
+}
+
+/**
+ * The number of continues a coin total earns: one per full
+ * GAME_RULES.coinsPerContinue chunk (game-rules.md §2). 2500 coins earn 2;
+ * 999 coins earn 0.
+ * @param {number} coins
+ * @returns {number}
+ */
+export function continuesEarned(coins) {
+  return Math.floor((coins ?? 0) / GAME_RULES.coinsPerContinue);
+}
+
+/**
+ * Present the level reward screen for the hero's just-finished level.
+ *
+ * Computes the documented stats (kills, score, coins, continues earned),
+ * credits the earned continues to the global continue pool exactly once,
+ * and transitions to S.REWARD. The credit is latched by the reward's IDENTITY
+ * (its level, coins, earned amount, and the pool balance at the moment of
+ * crediting): a repeat presentation of the same reward (redraw/animation) is
+ * a no-op, while a genuinely new reward — a different boss kill, a different
+ * level, or a different coin tally — carries a fresh identity and is credited
+ * again.
+ *
+ * @param {Hero} h the hero (owns the continue pool + run stats + current level)
+ * @returns {object} the screen data as displayed
+ */
+export function showLevelReward(h) {
+  const s = h.runStats ?? {};
+  const kills = Object.values(s.enemiesKilled ?? {}).reduce((a, b) => a + b, 0);
+  const coins = s.coinsCollected?.total ?? 0;
+  const earned = continuesEarned(coins);
+  // Credit the global pool exactly once PER REWARD (game-rules.md §2). The
+  // identity is the reward itself: same (level, coins, earned, balance) → the
+  // same reward being re-presented (redraw / animation) → no re-credit. A
+  // different boss kill / level / tally changes the identity and is credited
+  // fresh. Because the balance is part of the identity, a redraw (balance
+  // already grown) never re-credits; a brand-new reward sees a different
+  // balance and is credited once.
+  const identity = {
+    level: h.currentLevel,
+    coins,
+    earned,
+  };
+  const alreadyCredited =
+    _creditedReward &&
+    _creditedReward.level === identity.level &&
+    _creditedReward.coins === identity.coins &&
+    _creditedReward.earned === identity.earned;
+  if (!alreadyCredited) {
+    if (earned > 0) credit(h.continues, earned);
+    _creditedReward = identity;
+  }
+  const data = {
+    kills,
+    coins,
+    continuesEarned: earned,
+    // The resulting GLOBAL continue-pool balance after this credit is applied.
+    // The screen must show the credit to the global counter, not just the
+    // delta earned (boss-arena.md §4; game-rules.md §2–3).
+    continuesRemaining: h.continues?.remaining ?? 0,
+    isFinalLevel: h.currentLevel >= LEVELS.length,
+  };
+  data.score = calculateScore({
+    enemiesKilled: s.enemiesKilled ?? {},
+    bossKilled: !!s.bossKilled,
+    coinsCollected: s.coinsCollected ?? { total: 0 },
+    barrelsDestroyed: s.barrelsDestroyed ?? { woodBarrel: 0, explosiveBarrel: 0, coinBarrel: 0 },
+    checkpointsHit: s.checkpointsHit ?? 0,
+  }, h);
+  _rewardData = data;
+  if (_onRewardData) _onRewardData(data);
+  if (tryTransition(S.REWARD)) {
+    console.log(`[lifecycle] → REWARD (level ${h.currentLevel}, coins: ${coins}, +${earned} continue${earned === 1 ? '' : 's'})`);
+  }
+  return data;
+}
+
+/**
+ * Handle input on the reward screen (boss-arena.md §5, lifecycle.md §5).
+ *
+ * Confirm: the next level starts at area -1 with its shared entry screen
+ * (level name, area, lives). For the FINAL level there is no next level —
+ * the last boss must not advance into a nonexistent one; instead the
+ * end-of-game path takes over (lifecycle.md §5): a minimal congratulations
+ * screen with the final score and a single return-home option. That full
+ * ending (story scenes, credits) belongs to the future story epic (task 7.5);
+ * until then this is the placeholder end-of-game screen.
+ *
+ * @param {string} action semantic navigation action
+ * @param {Hero} h the hero (owns currentLevel + run stats)
+ * @returns {boolean} whether the action was handled
+ */
+export function rewardOnAction(action, h) {
+  if (action === 'back') {
+    // Quit from the reward screen (the nav bar's "Quit" keycap). The state
+    // transition S.REWARD → S.HOME already exists; the presented reward is
+    // consumed so a fresh run credits again.
+    console.log('[lifecycle] REWARD → HOME (quit from reward)');
+    _rewardData = null;
+    _creditedReward = null;
+    if (tryTransition(S.HOME)) return true;
+    return true;
+  }
+  if (action === 'confirm' || action === 'pause') {
+    if (h.currentLevel >= LEVELS.length) {
+      // Final level: end-of-game instead of a next level (lifecycle.md §5).
+      // A minimal end-of-game screen (congratulations + final score + return
+      // home) is presented; its full presentation is task 7.5's job. The
+      // presented reward is consumed so a fresh run credits again.
+      console.log('[lifecycle] REWARD → END_OF_GAME (final level complete)');
+      // The final score is the reward screen's score (the just-finished
+      // level's tally). Push it to the end-of-game screen before consuming
+      // the presented reward data.
+      if (_onEndOfGameScore) _onEndOfGameScore(_rewardData?.score ?? 0);
+      _rewardData = null;
+      _creditedReward = null;
+      if (tryTransition(S.END_OF_GAME)) return true;
+      return true;
+    }
+    // Next level: establish the level config, reset the per-level reward
+    // accounting, and open the next level at area -1 with its shared entry
+    // screen (boss-arena.md §5, lifecycle.md §5). The actual world swap is
+    // task 7.1's job; here we set everything the entry screen and the next
+    // level's reward accounting need.
+    h.currentLevel += 1;
+    h.currentArea = ENTRY_AREA;
+    // Per-level reward accounting: a new level starts with a fresh kill/coin
+    // tally so the next boss's reward reflects THIS level only (boss-arena.md
+    // §4 — the reward counts the level just cleared). The global continue
+    // pool is preserved (it is a shared remaining balance, game-rules.md §1).
+    h.levelConfig = getLevelConfig(h.currentLevel);
+    h.runStats = createStats();
+    // The presented reward is consumed; the next boss kill presents a fresh
+    // one and credits again.
+    _rewardData = null;
+    _creditedReward = null;
+    showAreaEntry(h, ctxOf(h));
+    console.log(`[lifecycle] REWARD → AREA_ENTRY ${h.currentLevel}-${ENTRY_AREA} (next level)`);
+    return true;
+  }
+  return false;
 }
 
 /**

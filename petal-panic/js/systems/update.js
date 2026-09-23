@@ -37,7 +37,7 @@ import { resolveExplosion } from '../explosion.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
 import { LEVELS, LEGACY_CORRIDOR, generateLevel, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../level.js';
-import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId } from '../lifecycle.js';
+import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId, showLevelReward } from '../lifecycle.js';
 import { GAME_RULES } from '../gameRules.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from '../debug.js';
 import { Theater } from '../effects/theater.js';
@@ -356,8 +356,8 @@ const realEnemies = generated.enemies;
 // Overgrown Elephant boss (design §9). Spawned at the far end of the
 // level in the boss arena (last 500px stay clear of regular spawns). The camera
 // locks to its arena once the hero gets within BOSS_TRIGGER_RADIUS; defeating it
-// transitions to S.WIN. Tracked separately from realEnemies so the generic
-// enemy loop never drives the boss's phase machine.
+// shows the level reward screen (S.REWARD, boss-arena.md §4). Tracked separately
+// from realEnemies so the generic enemy loop never drives the boss's phase machine.
 // `let` because a genuinely new game replaces the boss with a freshly
 // generated one (lifecycle.md §1/§6). regenerateWorld() reassigns it.
 export let boss = makeElephant(LEVEL_LENGTH - 300, FLOOR_TOP);
@@ -2445,8 +2445,11 @@ function updateBoss(dt) {
     // mark boss as killed (design §4.1).
     hero.runStats.bossKilled = true;
     if (getState() === S.PLAY) {
-      tryTransition(S.WIN);
-      console.log(`[state] PLAY → ${STATE_NAMES[S.WIN]} (boss defeated)`);
+      // boss-arena.md §4: the level reward screen replaces the placeholder
+      // post-boss (WIN) screen. showLevelReward() computes the documented
+      // stats and credits the global continue pool exactly once.
+      showLevelReward(hero);
+      console.log(`[state] PLAY → ${STATE_NAMES[S.REWARD]} (boss defeated)`);
     }
   }
 }

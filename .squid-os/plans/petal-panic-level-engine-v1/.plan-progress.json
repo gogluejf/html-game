@@ -197,7 +197,7 @@
     },
     "6.1": {
       "number": "6.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Boss approach + arena lock + intro sequence",
       "milestone": "Boss Zone",
       "milestone_number": "6",
@@ -212,10 +212,18 @@
     },
     "6.2": {
       "number": "6.2",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Level reward screen + continue crediting",
       "milestone": "Boss Zone",
-      "milestone_number": "6"
+      "milestone_number": "6",
+      "summary": {
+        "failures": "None new (full suite: 3 known baseline flakes only \u2014 barrel.solid, input tabs dispatch, Space-jump pause; reward.test.js 15/15 pass)",
+        "done": "Added S.END_OF_GAME state (enum + STATE_NAMES + transitions REWARD\u2192END_OF_GAME and END_OF_GAME\u2192HOME). rewardOnAction final-level confirm now transitions to S.END_OF_GAME (not HOME) and pushes the reward's final score to the screen via a new setEndOfGameScoreCallback. Wired 'back' action in rewardOnAction to transition REWARD\u2192HOME (quit from reward). Added EndOfGame screen to screens.js (congratulations text + final score + single Return Home option with shared keycap nav bar) following the ergonomics contract; added to drawScreen + screenOnAction dispatch. Added END_OF_GAME full-screen branch to render.js. Updated reward.test.js: final-level test now asserts END_OF_GAME appears with the final score and confirming returns HOME; added a test for the back/quit path. Blocker-regression test updated to expect END_OF_GAME.",
+        "tradeoffs": "END_OF_GAME screen is a minimal placeholder per the finding (task 7.5 will polish the full ending). Reused the existing screen data-callback pattern (setRewardDataCallback) to push the final score to avoid a circular import.",
+        "confidence": "high",
+        "decisions": "Modelled END_OF_GAME as an opaque full-screen presentation (like AREA_ENTRY) in render.js so the world is hidden behind it; confirm/back both return home since it has a single documented option.",
+        "lessons_learned": "The blocker-regression test also asserted the old final-level\u2192HOME behavior and needed updating alongside the main test. The final score is the just-finished level's reward score, pushed before the presented-reward data is consumed."
+      }
     },
     "7.1": {
       "number": "7.1",

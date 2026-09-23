@@ -310,9 +310,11 @@ export class Elephant extends Enemy {
 
   /**
    * Death hook. Called by the update system exactly once when the death anim
-   * completes (alive flips to false). Fires the win-state transition. Kept as a
-   * thin hook here so the class stays free of a hard dependency on the state
-   * module's singleton; the update system wires it to tryTransition(S.WIN).
+   * completes (alive flips to false). The update system then shows the level
+   * reward screen (S.REWARD, boss-arena.md §4) and credits the global
+   * continue pool. Kept as a thin hook here so the class stays free of a hard
+   * dependency on the state module's singleton; the update system wires it to
+   * the reward flow.
    */
   onDeath() {
     this.active = false;

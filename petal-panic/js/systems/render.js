@@ -41,6 +41,13 @@ export function render(ctx) {
     if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
     return;
   }
+  // END_OF_GAME is an opaque full-screen presentation (lifecycle.md §5) —
+  // the world is hidden behind it, so skip world rendering like AREA_ENTRY.
+  if (state === S.END_OF_GAME) {
+    drawScreen(ctx);
+    if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
+    return;
+  }
 
   const cam = getCamera();
 
@@ -387,7 +394,7 @@ export function render(ctx) {
   // --- State overlays: HOME/SELECT handled above; PAUSE/OVER/WIN
   // are drawn here as overlays on top of the frozen game world so the play
   // frame stays visible behind them (dimmed by each screen's own background).
-  if (state === S.PAUSE || state === S.OVER || state === S.WIN) {
+  if (state === S.PAUSE || state === S.OVER || state === S.WIN || state === S.REWARD) {
     drawScreen(ctx, getHero());
   }
 

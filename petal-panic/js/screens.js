@@ -5,6 +5,7 @@
 
 import { S, getState, tryTransition, canTransition } from './state.js';
 import { areaEntryOnAction, setAreaEntryDataCallback, getAreaEntryData as getAreaEntryDataFromLifecycle } from './lifecycle.js';
+import { showLevelReward, rewardOnAction, setRewardDataCallback, setEndOfGameScoreCallback } from './lifecycle.js';
 import { HEROES } from './heroDefs.js';
 import { VIEW_W, VIEW_H } from './view.js';
 import { calculateScore } from './stats.js';
@@ -976,6 +977,199 @@ export const AreaEntry = {
 };
 
 // =============================================================================
+// LEVEL REWARD SCREEN (boss-arena.md §4–5, game-rules.md §3)
+//
+// The boss zone's second screen, shown after the boss's defeat presentation:
+// a full-screen level reward summary (boss beaten, level passed). It shows the
+// documented minimal set (game-rules.md §3):
+//   1. Enemies killed
+//   2. Score
+//   3. Coins collected
+//   4. Continues earned (one per full 1000-coin chunk) and their credit to
+//      the global continue pool
+//
+// The data, the pool crediting (exactly once), and the confirm flow (next
+// level's area -1 / end-of-game) are owned by lifecycle.js
+// (showLevelReward / rewardOnAction); this screen only presents that data.
+// It follows the shared screen ergonomics contract (game-rules.md §3): the
+// same list layout / focus pill / keycap nav bar as the pause menu.
+// =============================================================================
+
+/** The screen data as last presented (set by showLevelReward in lifecycle.js). */
+let rewardData = null;
+
+/** Register the reward data callback with lifecycle.js (no circular import). */
+setRewardDataCallback((data) => { rewardData = data; });
+
+/** The currently presented reward data (for tests / render). */
+export function getRewardData() { return rewardData; }
+
+export const Reward = {
+  /** @param {CanvasRenderingContext2D} ctx */
+  draw(ctx) {
+    const d = rewardData ?? { kills: 0, score: 0, coins: 0, continuesEarned: 0, continuesRemaining: 0, isFinalLevel: false };
+    // Full-opaque dark background — like the area-entry and Game Over
+    // screens, the world is hidden behind this full-screen presentation.
+    ctx.save();
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    drawMarqueeTitle(ctx, 'BOSS BEATEN', VIEW_W / 2, VIEW_H / 2 - 210, 52, { color: CREAM });
+    drawMarqueeTitle(ctx, 'LEVEL PASSED', VIEW_W / 2, VIEW_H / 2 - 160, 34, { color: GOLD });
+
+    // The documented minimal set (game-rules.md §3): kills, score, coins,
+    // continues earned.
+    ctx.textAlign = 'center';
+    drawPrompt(ctx, `ENEMIES KILLED  ${d.kills}`, VIEW_W / 2, VIEW_H / 2 - 95, 26, { color: CREAM, font: FONT_TITLE });
+    drawPrompt(ctx, `SCORE  ${d.score}`, VIEW_W / 2, VIEW_H / 2 - 55, 26, { color: CREAM, font: FONT_TITLE });
+    drawPrompt(ctx, `COINS  ${d.coins}`, VIEW_W / 2, VIEW_H / 2 - 15, 26, { color: CREAM, font: FONT_TITLE });
+    // The continue credit is presented visibly (boss-arena.md §4: "visibly
+    // credit the global continue counter"): the delta earned AND the resulting
+    // global continue-pool balance, so the credit to the global counter is
+    // visible, not just the "+N" earned this level.
+    drawPrompt(ctx, d.continuesEarned > 0
+      ? `CONTINUES EARNED  +${d.continuesEarned}`
+      : 'CONTINUES EARNED  0', VIEW_W / 2, VIEW_H / 2 + 25, 26, {
+        color: d.continuesEarned > 0 ? GOLD : '#b9a98a', font: FONT_TITLE,
+      });
+    drawPrompt(ctx, `CONTINUES  ${d.continuesRemaining}`, VIEW_W / 2, VIEW_H / 2 + 65, 26, {
+      color: d.continuesEarned > 0 ? GOLD : CREAM, font: FONT_TITLE,
+    });
+
+    // Option list — the SAME list layout / focus pill pattern as the pause
+    // menu (game-rules.md §3 shared ergonomics contract).
+    const options = [
+      d.isFinalLevel ? 'Continue' : 'Next Level',
+      'Quit to Home',
+    ];
+    const startY = VIEW_H / 2 + 120;
+    const gap = 40;
+    for (let i = 0; i < options.length; i++) {
+      const y = startY + i * gap;
+      const focused = i === 0;
+      if (focused) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,110,199,0.10)';
+        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,110,199,0.4)';
+        ctx.lineWidth = 1;
+        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
+        ctx.stroke();
+        ctx.restore();
+      }
+      drawPrompt(ctx, (focused ? '▸ ' : '  ') + options[i], VIEW_W / 2, y + 2, focused ? 22 : 20, {
+        color: focused ? '#ff6ec7' : '#d8cdb4',
+      });
+    }
+
+    // Keycap nav bar — the SAME bar as the pause menu (navigate/confirm/quit)
+    // per the shared ergonomics contract (game-rules.md §3).
+    const hintY = startY + options.length * gap + 24;
+    drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
+      { actions: ['up', 'down'], label: 'Navigate' },
+      { action: 'confirm' },
+      { action: 'back', label: 'Quit' },
+    ]));
+    ctx.restore();
+  },
+};
+
+// =============================================================================
+// END-OF-GAME SCREEN (lifecycle.md §5, boss-arena.md §5)
+//
+// The minimal full-screen end-of-game presentation, shown after the final
+// level's boss reward screen (lifecycle.md §5: "show a minimal end-of-game
+// screen — a congratulations presentation with the final score and a single
+// option to return home"). It follows the shared screen ergonomics contract
+// (game-rules.md §3): full-screen, the same list layout / focus pill / keycap
+// nav bar as the pause menu.
+//
+// This is a PLACEHOLDER — the full ending (story scenes, credits) belongs to
+// the future story epic (task 7.5). The state transition and the confirm-to-
+// home flow are owned by lifecycle.js (rewardOnAction → S.END_OF_GAME); this
+// screen only presents the final score and the single return-home option.
+// =============================================================================
+
+/** The final score presented (set by the transition into END_OF_GAME). */
+let endOfGameScore = 0;
+
+/** Register the end-of-game data callback with lifecycle.js (no circular import). */
+// lifecycle.js owns the confirm flow; it pushes the final score here so the
+// screen can present it without a circular import.
+setEndOfGameScoreCallback((score) => { endOfGameScore = score; });
+
+/** The currently presented final score (for tests / render). */
+export function getEndOfGameScore() { return endOfGameScore; }
+
+export const EndOfGame = {
+  /** @param {CanvasRenderingContext2D} ctx */
+  draw(ctx) {
+    // Full-opaque dark background — like the reward and Game Over screens,
+    // the world is hidden behind this full-screen presentation.
+    ctx.save();
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    drawMarqueeTitle(ctx, 'CONGRATULATIONS', VIEW_W / 2, VIEW_H / 2 - 130, 52, { color: CREAM });
+    drawMarqueeTitle(ctx, 'YOU HAVE PASSED EVERY LEVEL', VIEW_W / 2, VIEW_H / 2 - 80, 28, { color: GOLD });
+
+    // Final score — the screen's headline (lifecycle.md §5).
+    ctx.textAlign = 'center';
+    drawPrompt(ctx, `FINAL SCORE  ${endOfGameScore}`, VIEW_W / 2, VIEW_H / 2 - 10, 30, {
+      color: GOLD, font: FONT_TITLE,
+    });
+
+    // Option list — the SAME list layout / focus pill pattern as the pause
+    // menu (game-rules.md §3 shared ergonomics contract). A single option.
+    const options = ['Return Home'];
+    const startY = VIEW_H / 2 + 50;
+    const gap = 40;
+    for (let i = 0; i < options.length; i++) {
+      const y = startY + i * gap;
+      const focused = i === 0;
+      if (focused) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,110,199,0.10)';
+        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,110,199,0.4)';
+        ctx.lineWidth = 1;
+        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
+        ctx.stroke();
+        ctx.restore();
+      }
+      drawPrompt(ctx, (focused ? '▸ ' : '  ') + options[i], VIEW_W / 2, y + 2, focused ? 22 : 20, {
+        color: focused ? '#ff6ec7' : '#d8cdb4',
+      });
+    }
+
+    // Keycap nav bar — the SAME bar as the pause menu (confirm/back) per the
+    // shared ergonomics contract (game-rules.md §3).
+    const hintY = startY + options.length * gap + 24;
+    drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
+      { action: 'confirm' },
+      { action: 'back', label: 'Return' },
+    ]));
+    ctx.restore();
+  },
+
+  /**
+   * Handle input. Confirm (or back) returns home — the single documented
+   * option (lifecycle.md §5).
+   * @param {string} action semantic navigation action
+   * @returns {boolean} whether the action was handled
+   */
+  onAction(action) {
+    if (action === 'confirm' || action === 'back') {
+      if (tryTransition(S.HOME)) console.log('[screens] END_OF_GAME → HOME');
+      return true;
+    }
+    return false;
+  },
+};
+
+// =============================================================================
 // Screen dispatch helpers (used by render.js + update.js)
 // =============================================================================
 
@@ -1015,6 +1209,14 @@ export function drawScreen(ctx, hero) {
     AreaEntry.draw(ctx);
     return true;
   }
+  if (s === S.REWARD) {
+    Reward.draw(ctx);
+    return true;
+  }
+  if (s === S.END_OF_GAME) {
+    EndOfGame.draw(ctx);
+    return true;
+  }
   return false;
 }
 
@@ -1044,6 +1246,8 @@ export function screenOnAction(action, hero, actions = {}) {
   if (s === S.OVER) return GameOver.onAction(action, hero, actions);
   if (s === S.WIN) return Win.onAction(action, actions);
   if (s === S.AREA_ENTRY) return areaEntryOnAction(action, hero);
+  if (s === S.REWARD) return rewardOnAction(action, hero);
+  if (s === S.END_OF_GAME) return EndOfGame.onAction(action);
   return false;
 }
 
