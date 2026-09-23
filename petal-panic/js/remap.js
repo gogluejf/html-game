@@ -94,6 +94,11 @@ export const Remap = {
     this._pulseT = 0;
   },
   onCapture(result) {
+    // A 'cancelled' result (keyboard Escape) STOPS the capture sequence and
+    // leaves focus exactly where it is — it does NOT advance to the next row.
+    if (result?.status === 'cancelled') return;
+    // A 'bound' result assigns the binding, then auto-advances to the next
+    // editable row (or to DONE after the last row) so a full pass lands on Apply.
     if (result?.status !== 'bound') return;
     const isGameplay = this.focus < ACTIONS.length;
     // Nav rows are gamepad-only; ignore any keyboard capture result there.
@@ -101,14 +106,14 @@ export const Remap = {
     const actionId = isGameplay ? ACTIONS[this.focus].id : this.navRowId;
     if (!actionId) return;
     if (!input.setBinding(result.source, actionId, result.binding, this.chip)) return;
-    // Auto-advance to the next editable row (nav rows are still editable via
-    // their gamepad chip, so we don't skip them — just move down).
-    let next = this.focus + 1;
+    const next = this.focus + 1;
     if (next < this.ROWS) {
       this.focus = next;
       this._enterRow(next);
       input.beginCapture(this.tab);
       this._pulseT = 0;
+    } else {
+      this.focus = this.ROWS; // DONE
     }
   },
   /** When entering a row, default the cursor: nav rows → gamepad chip. */
@@ -128,7 +133,7 @@ export const Remap = {
     } else if (action === 'left' || action === 'right') {
       if (this.focus >= this.ROWS) {
         // Bottom buttons: left/right cycles between them
-        const order = [this.ROWS, this.ROWS + 2, this.ROWS + 1];
+        const order = [this.ROWS, this.ROWS + 1, this.ROWS + 2];
         const idx = order.indexOf(this.focus);
         this.focus = order[(idx + (action === 'left' ? order.length - 1 : 1)) % order.length];
       } else if (this.isNavRow) {
@@ -143,12 +148,13 @@ export const Remap = {
         else { this.tab = 'gamepad'; this.preferredChip = this._chipPos - kbSlots; }
       }
     } else if (action === 'confirm') {
-      if (this.focus === this.ROWS) this.reset();
-      else if (this.focus === this.ROWS + 1) { this.save(); return 'exit'; }
-      else if (this.focus === this.ROWS + 2) {
+      // Bottom buttons: DONE (ROWS), LAYOUT (ROWS+1), RESET TO DEFAULTS (ROWS+2)
+      if (this.focus === this.ROWS) { this.save(); return 'exit'; }
+      else if (this.focus === this.ROWS + 1) {
         input.gamepadLayout = LAYOUT_OPTIONS[(LAYOUT_OPTIONS.indexOf(input.gamepadLayout) + 1) % LAYOUT_OPTIONS.length];
         this.save();
-      } else if (this.isNavRow) {
+      } else if (this.focus === this.ROWS + 2) this.reset();
+      else if (this.isNavRow) {
         // Nav rows: only the gamepad side is editable.
         this.tab = 'gamepad';
         input.beginCapture('gamepad'); this._pulseT = 0;
@@ -241,6 +247,15 @@ export const Remap = {
           const isCap = isFocus && this.capturing;
 
           ctx.save();
+          // Read-only / disabled chips draw NO box — just a dimmed label. No
+          // fill, no contour, so they read as fixed info, not an editable slot.
+          if (readOnly) {
+            ctx.globalAlpha = 0.55;
+            drawPrompt(ctx, label, cx + chipW/2, y + 2, 14,
+              { color: '#7a7368', font: 'sans-serif' });
+            ctx.restore();
+            continue;
+          }
           ctx.globalAlpha = dimmed ? 0.4 : 1;
           ctx.fillStyle = isCap ? 'rgba(255,110,199,0.5)'
             : isFocus ? 'rgba(255,110,199,0.15)' : '#1a1a2e';
@@ -258,9 +273,9 @@ export const Remap = {
     const botY = 455;
     const btnW = 170, btnH = 28, gap = 30;
     const btns = [
-      { label: 'RESET TO DEFAULTS', x: VIEW_W/2 - btnW - gap/2, focus: this.focus === this.ROWS },
-      { label: `LAYOUT: ${this.gamepadLayout.toUpperCase()}`, x: VIEW_W/2, focus: this.focus === this.ROWS + 2 },
-      { label: 'DONE', x: VIEW_W/2 + btnW + gap/2, focus: this.focus === this.ROWS + 1 },
+      { label: 'DONE', x: VIEW_W/2 - btnW - gap/2, focus: this.focus === this.ROWS },
+      { label: `LAYOUT: ${this.gamepadLayout.toUpperCase()}`, x: VIEW_W/2, focus: this.focus === this.ROWS + 1 },
+      { label: 'RESET TO DEFAULTS', x: VIEW_W/2 + btnW + gap/2, focus: this.focus === this.ROWS + 2 },
     ];
     for (const b of btns) {
       ctx.save();
@@ -274,10 +289,11 @@ export const Remap = {
 
     // Hint — keycap chip style (single line).
     if (this.capturing) {
-      const cancelAction = this.tab === 'keyboard'
-        ? { action: 'back', label: 'Cancel', opts: { source: 'gamepad' } }
-        : { action: 'back', label: 'Cancel', opts: { source: 'keyboard' } };
-      drawNavBar(ctx, VIEW_W / 2, 490, navHintEntries([cancelAction]));
+      // Only the keyboard Escape cancels a capture (a gamepad button always
+      // binds, even the back button), so the hint points at ESC.
+      drawNavBar(ctx, VIEW_W / 2, 490, navHintEntries([
+        { action: 'back', label: 'Cancel', opts: { source: 'keyboard' } },
+      ]));
     } else {
       drawNavBar(ctx, VIEW_W / 2, 490, navHintEntries([
         { actions: ['up', 'down'], label: 'Row', opts: { groupDir: false } },

@@ -487,6 +487,10 @@ export function createInput({ target = globalThis.window, document = globalThis.
       const pressed = new Set(), released = new Set(pendingReleases), gamePressed = new Set(), candidates = [];
       pendingReleases.clear();
       const captureAtStart = capture;
+      // Which physical bindings produced a nav action this tick (for source-
+      // specific capture rules). Keyboard Escape is the ONLY cancel during
+      // capture; a gamepad button always binds (even the back button).
+      let kbEscapePressed = false;
       const navNow = () => {
         const values = new Set();
         for (const [id, p] of physical) if (!blocked.has(id) && p.value > 0.5) {
@@ -495,7 +499,10 @@ export function createInput({ target = globalThis.window, document = globalThis.
           const actions = p.source === 'keyboard'
             ? KEY_NAV[p.binding]
             : this.navGamepadActions(p.binding);
-          for (const action of actions || []) values.add(action);
+          for (const action of actions || []) {
+            values.add(action);
+            if (action === 'back' && p.source === 'keyboard' && p.binding === 'Escape') kbEscapePressed = true;
+          }
         }
         return values;
       };
@@ -557,8 +564,11 @@ export function createInput({ target = globalThis.window, document = globalThis.
       observe();
       this.captureResult = null;
       if (captureAtStart) {
-        // Back (Escape / ○) ALWAYS cancels capture. It cannot be self-assigned.
-        if (pressed.has('back')) this.captureResult = { status: 'cancelled' };
+        // ONLY the keyboard Escape cancels capture. A gamepad button pressed
+        // during capture is always a bind — even the back button — so you can
+        // remap back to any pad button. Keyboard Escape can never be assigned,
+        // so it stays as the universal "bail out of this mapping" key.
+        if (kbEscapePressed) this.captureResult = { status: 'cancelled' };
         else {
           const p = candidates.find(p => p.source === captureAtStart && validBinding(p.source, p.binding)
             && !(p.source === 'keyboard' ? ['Escape','KeyP'].includes(p.binding) : p.binding === 'btn:9'));
