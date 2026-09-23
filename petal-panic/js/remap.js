@@ -218,8 +218,8 @@ export const Remap = {
       drawNavBar(ctx, VIEW_W / 2, 490, navHintEntries([cancelAction]));
     } else {
       drawNavBar(ctx, VIEW_W / 2, 490, navHintEntries([
-        { actions: ['up', 'down'], label: 'Row' },
-        { actions: ['left', 'right'], label: 'Chip' },
+        { actions: ['up', 'down'], label: 'Row', opts: { groupDir: false } },
+        { actions: ['left', 'right'], label: 'Chip', opts: { groupDir: false } },
         { action: 'confirm', label: 'Edit' },
         { action: 'back', label: 'Close' },
       ]));

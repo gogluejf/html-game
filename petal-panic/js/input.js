@@ -231,29 +231,38 @@ export function navHintEntries(items) {
     const icons = [];
     for (const a of actionList) {
       const held = DIRECTIONAL.has(a);
-      // In SIMPLE mode a directional collapses to ONE glyph. Pick that glyph
-      // from whichever device the item is showing (mode/source-resolved):
-      //   keyboard shown  → the arrow key (↑ ↓ ← →)
-      //   gamepad shown   → the d-pad button (▲ ▼ ◀ ▶)
-      // We still fall through to the full loops below for NON-directional
-      // actions and for non-simple rendering.
+      // In SIMPLE mode a directional collapses to compact glyph(s). Show the
+      // glyph for EACH device the item is displaying (mode/source-resolved):
+      //   keyboard shown  -> the arrow key (↑ ↓ ← →)
+      //   gamepad shown   -> the d-pad button (▲ ▼ ◀ ▶ / BTN n)
+      // In 'all' mode both appear; in 'select_layout' only the selected one.
       if (o.simple && held) {
-        let added = false;
+        // In SIMPLE mode the arrow and d-pad normally represent ONE conceptual
+        // direction, so either lighting up means the other should too (shared
+        // group highlight). But on the Controls/Remap screen the arrow and
+        // d-pad are two DISTINCT bindings being edited, so they must highlight
+        // independently — pass opts.groupDir: false for that.
+        const group = o.groupDir !== false;
+        const dirActive = group ? () => _anyBindingHeld(a) : null;
         if (showKb) {
-          // First keyboard binding for this direction is the arrow key.
           for (const [key, acts] of Object.entries(keyToActions)) {
             if (!acts.includes(a)) continue;
             const lbl = formatBinding(key, 'keyboard');
-            icons.push({ icon: lbl, action: a, binding: `k:${key}`, isActive: () => _actionHeld(a) });
-            added = true; break;
+            const bk = `k:${key}`;
+            icons.push({ icon: lbl, action: a, binding: bk,
+              isActive: dirActive ?? (() => !!_heldBindings.get(bk)) });
+            break;
           }
         }
-        if (!added && showPad) {
+        if (showPad) {
           for (const [btn, acts] of Object.entries(padToActions)) {
-            if (!acts.includes(a) || btn.startsWith('axis:')) continue; // d-pad button only
+            if (!acts.includes(a) || btn.startsWith('axis:')) continue;
             const lbl = formatBinding(btn, 'gamepad', layout);
-            icons.push({ icon: lbl, action: a, binding: `g:${btn}`, isActive: () => _actionHeld(a) });
-            added = true; break;
+            if (icons.some(ic => ic.icon === lbl)) continue;
+            const bk = `g:${btn}`;
+            icons.push({ icon: lbl, action: a, binding: bk,
+              isActive: dirActive ?? (() => !!_heldBindings.get(bk)) });
+            break;
           }
         }
         continue;
@@ -264,8 +273,10 @@ export function navHintEntries(items) {
           if (!acts.includes(a)) continue;
           const lbl = formatBinding(key, 'keyboard');
           if (icons.some(ic => ic.icon === lbl)) continue;
-          icons.push({ icon: lbl, action: a, binding: `k:${key}`, isActive: () => {
-            const t = _flashT.get(`k:${key}`) ?? 0;
+          const bk = `k:${key}`;
+          icons.push({ icon: lbl, action: a, binding: bk, isActive: () => {
+            if (held) return !!_heldBindings.get(bk); // directionals: lit while held
+            const t = _flashT.get(bk) ?? 0;           // momentary: flash on press
             return performance.now() - t < FLASH_MS;
           }});
         }
@@ -277,8 +288,10 @@ export function navHintEntries(items) {
           if (o.simple && btn.startsWith('axis:')) continue; // skip LS axes
           const lbl = formatBinding(btn, 'gamepad', layout);
           if (icons.some(ic => ic.icon === lbl)) continue;
-          icons.push({ icon: lbl, action: a, binding: `g:${btn}`, isActive: () => {
-            const t = _flashT.get(`g:${btn}`) ?? 0;
+          const bk = `g:${btn}`;
+          icons.push({ icon: lbl, action: a, binding: bk, isActive: () => {
+            if (held) return !!_heldBindings.get(bk); // directionals: lit while held
+            const t = _flashT.get(bk) ?? 0;           // momentary: flash on press
             return performance.now() - t < FLASH_MS;
           }});
         }
@@ -311,10 +324,10 @@ export function markNavPressed(held, pressed) {
 
 /**
  * Returns true if ANY physical binding mapped to the given directional action
- * is currently held. Used by simple-mode chips so the d-pad arrow lights up
- * whether the player used ArrowUp, W, d-pad ▲, or the left stick.
+ * is currently held. Used by simple-mode chips so the arrow and d-pad light up
+ * together (they represent one conceptual direction).
  */
-function _actionHeld(action) {
+function _anyBindingHeld(action) {
   for (const [key, acts] of Object.entries(KEY_NAV)) {
     if (!acts.includes(action)) continue;
     if (_heldBindings.get(`k:${key}`)) return true;
