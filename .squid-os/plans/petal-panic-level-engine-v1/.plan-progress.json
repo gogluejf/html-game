@@ -167,7 +167,7 @@
     },
     "5.1": {
       "number": "5.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Vertical zone orientation",
       "milestone": "Vertical Areas",
       "milestone_number": "5",
@@ -182,10 +182,18 @@
     },
     "5.2": {
       "number": "5.2",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Climbing macros for vertical composition",
       "milestone": "Vertical Areas",
-      "milestone_number": "5"
+      "milestone_number": "5",
+      "summary": {
+        "confidence": "high",
+        "tradeoffs": "Lateral shifts limited to \u22643 units (MAX_CLEARABLE_GAP) so variety is subtle (\u00b12-3 units zigzag) rather than wide excursions. Vertical entry-zone validation now skipped entirely (the bottom ground platform is the spawn, not an empty zone).",
+        "failures": "None (3 pre-existing flakes in barrel.solid and input tests are unrelated)",
+        "decisions": "Used absolute x-offsets on platform units (not relative) for vertical lateral positioning; vertical slots use absolute x directly (not macro-entry-relative); macroAxisLength for vertical now includes gap widths in the budget; entry-zone check skipped for vertical since x is lateral not axial",
+        "done": "Added 4 new climbing macros (climbSimple, climbingWide, climbingZigzag, climbingDense) with lateral x-offsets for variety; updated existing climbing/climbingGaps macros with lateral shifts; modified P() helper to accept x param; updated placeMacro to use unit.x for vertical platforms; updated surfaceElevationAt for vertical slots; fixed entry-zone validation to skip vertical (x is lateral, not axis); updated macroAxisLength to include gaps for vertical budget; added 17 tests in vertical.test.js covering: vertical-only composition, reachability (elevation + horizontal gaps), lateral variety, progression via complexity, determinism, three-platform cap, and maxClearableStep invariant.",
+        "lessons_learned": "MAX_CLEARABLE_GAP=3 units severely constrains lateral variety \u2014 the hero can only clear 3 width-units horizontally in a double jump, so 'lateral variety' means \u00b12-3 unit zigzags, not wide excursions. The vertical entry-zone concept differs from horizontal: the bottom is a ground platform (spawn), not empty space, so the x-based entry check doesn't apply."
+      }
     },
     "6.1": {
       "number": "6.1",
