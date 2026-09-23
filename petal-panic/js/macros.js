@@ -30,6 +30,7 @@ import { createRng, makeBlock, makePlatform } from './terrain.js';
 import { GRAVITY, DOUBLE_JUMP_FACTOR } from './consts.js';
 import { HEROES } from './heroDefs.js';
 import { BARREL_DEF } from './object.js';
+import { TUNING_BARREL, TUNING_MACRO } from './tuning.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -661,6 +662,22 @@ export const MACROS = Object.freeze({
  * derived from the map keys so a difficulty can never be selected outside its
  * allowed range. A weight of 0 would be redundant with min/max exclusion, so
  * every difficulty in a stage's range carries a positive weight.
+ *
+ * Breathing room (generation.md §5: "Later areas should feel more intense,
+ * not impossible. Breathing room and clear landings remain useful even in the
+ * hardest patterns."): the easy-tier weight is kept deliberately HIGHER in
+ * -2 and -3 than the raw "more intense" curve would imply. -2 keeps a 1:2
+ * easy:hard split and -3 keeps a ~1:1:3 split, so even the dense stages
+ * retain clear landings rather than becoming impossible. These are the
+ * concrete breathing-room values the doc defers to the tuning pass.
+ *
+ * OWNERSHIP (task 7.2 tuning pass): the per-stage difficulty-tier selection
+ * weights are PER-LEVEL in spirit (they shape a level's difficulty curve) but
+ * the current single-level build uses one shared curve, so they are owned
+ * HERE (macros.js) as the composer's concrete value. If a future level
+ * overrides its curve, the per-level config in levelConfigs.js becomes the
+ * owner. They are NOT in the global TUNING block (tuning.js) because they are
+ * not a cross-level global.
  */
 export const STAGE_WEIGHTS = Object.freeze({
   '-1': Object.freeze({ 1: 1 }),
@@ -716,19 +733,32 @@ export function selectMacros(orientation, stage) {
 /**
  * Pick a macro from a weighted list using the given RNG.
  *
+ * Anti-repetition (generation.md §5: "Pattern repetition is allowed, but
+ * unconstrained repetition must not replace pacing"): when `excludeId` is
+ * given, any candidate whose macro id equals it is DOWN-WEIGHTED by
+ * TUNING_MACRO.repeatPenalty (never removed) so a back-to-back repeat is
+ * discouraged while the composer stays total — it can still fall back to the
+ * repeat when nothing else fits.
+ *
  * @param {Array<{macro: object, weight: number}>} candidates
  * @param {ReturnType<typeof createRng>} rng
+ * @param {string|null} [excludeId] the previously placed macro's id to down-weight
  * @returns {object} the selected macro
  */
-function pickWeighted(candidates, rng) {
-  const totalWeight = candidates.reduce((sum, c) => sum + c.weight, 0);
+function pickWeighted(candidates, rng, excludeId = null) {
+  const penalty = TUNING_MACRO.repeatPenalty;
+  const weighted = candidates.map((c) => ({
+    macro: c.macro,
+    weight: c.macro.id === excludeId ? c.weight * penalty : c.weight,
+  }));
+  const totalWeight = weighted.reduce((sum, c) => sum + c.weight, 0);
   let roll = rng.next() * totalWeight;
-  for (const c of candidates) {
+  for (const c of weighted) {
     roll -= c.weight;
     if (roll <= 0) return c.macro;
   }
   // Fallback (floating-point edge case): return the last candidate.
-  return candidates[candidates.length - 1].macro;
+  return weighted[weighted.length - 1].macro;
 }
 
 // ---------------------------------------------------------------------------
@@ -915,7 +945,10 @@ export function layoutDensity(layout) {
 export const BARREL_STRUCTURE = Object.freeze({
   single: Object.freeze({ min: 1, max: 1 }),
   medium: Object.freeze({ min: 4, max: 9 }),
-  super: Object.freeze({ min: 10, max: 99 }),
+  // The super band's upper bound was an arbitrary 99; the concrete ceiling is
+  // owned by the TUNING block (tuning.js, TUNING_BARREL.superMax) so a "super"
+  // structure is a bounded set piece, not an unbounded pile (populate.md §3).
+  super: Object.freeze({ min: 10, max: TUNING_BARREL.superMax }),
 });
 
 /**
@@ -1617,7 +1650,11 @@ export function composeArea(rng, orientation, stage, budget) {
       : filtered.filter(({ macro }) => macroAxisLength(macro) <= remaining);
     if (fitting.length === 0) break; // no macro fits; stop
 
-    const macro = pickWeighted(fitting, rng);
+    // Down-weight the previously placed macro (anti-repetition, generation.md
+    // §5) so unconstrained back-to-back repeats do not replace pacing. The
+    // repeat is never removed, so the composer stays total when nothing else
+    // fits. `lastMacroId` is null for the first macro (nothing to penalize).
+    const macro = pickWeighted(fitting, rng, lastMacroId);
     const axisLen = macroAxisLength(macro);
 
     // VERTICAL: ensure the inter-macro join is reachable. The next macro's

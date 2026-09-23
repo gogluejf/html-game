@@ -30,10 +30,12 @@
 // placeholder intro presentation; render.js consults the machine for boss
 // visibility and the energy bar.
 //
-// Timings below are design-plan values (proposed, not fixed — boss-arena.md
-// §2: "the design plan will propose them").
+// Timings below are the concrete design-plan values (boss-arena.md §2: "the
+// design plan will propose them"). Their single owner is the TUNING block
+// (tuning.js); this module consumes them so the cited value has one owner.
 
-import { VIEW_W } from './view.js';
+import { VIEW_W, VIEW_H } from './view.js';
+import { TUNING } from './tuning.js';
 
 // --- State ids (documented order) -------------------------------------------
 export const BZ_APPROACH = 'APPROACH';
@@ -50,22 +52,24 @@ export const BOSS_ZONE_STATES = [
 
 /**
  * Durations (seconds) per design plan. APPROACH is hero-driven (no timer):
- * it ends when the hero reaches the arena entry.
+ * it ends when the hero reaches the arena entry. Concrete values are owned by
+ * the TUNING block (tuning.js) and cited there to boss-arena.md §2.
  */
 export const BOSS_ZONE_TIMINGS = {
-  LOCKED: 0.4,        // brief beat at the arena edge before the presentation
-  INTRO_SWEEP: 1.4,   // full-screen graphic sweep (rapid, pure tension)
-  BAR_FILL: 1.6,      // energy bar fill; the boss enters once a portion has filled
-  BOSS_ENTER: 0.8,    // boss slides in from the right and settles mid-arena
+  LOCKED: TUNING.bossIntroLocked,      // brief beat at the arena edge before the presentation
+  INTRO_SWEEP: TUNING.bossIntroSweep,  // full-screen graphic sweep (rapid, pure tension)
+  BAR_FILL: TUNING.bossIntroBarFill,   // energy bar fill; the boss enters once a portion has filled
+  BOSS_ENTER: TUNING.bossIntroEnter,   // boss slides in from the right and settles mid-arena
 };
 
 /**
  * How far the approach runs, in px. Roughly one screen (boss-arena.md §1:
- * "around one screen of approach is a provisional reference"). The hero
- * starts beside the boss checkpoint (the zone's entry flag) and walks left
- * until the arena entry line.
+ * "around one screen of approach is a provisional reference"). Tied to the
+ * view width (VIEW_W × TUNING.bossApproachScreens) so it stays ~1 screen if
+ * the logical resolution changes. The hero starts beside the boss checkpoint
+ * (the zone's entry flag) and walks left until the arena entry line.
  */
-export const BOSS_APPROACH_DIST = 960; // ~1 view width
+export const BOSS_APPROACH_DIST = Math.round(VIEW_W * TUNING.bossApproachScreens); // ~1 view width
 
 /**
  * Where the hero starts the approach, measured from the zone's RIGHT edge
@@ -74,10 +78,15 @@ export const BOSS_APPROACH_DIST = 960; // ~1 view width
  * Keeping this small (a short margin) places the hero on the right side of
  * the zone so the leftward approach has room to run within the zone bounds.
  */
-export const BOSS_APPROACH_START_PAD = 100;
+export const BOSS_APPROACH_START_PAD = TUNING.bossApproachStartPad;
 
-/** How far right of the arena the boss enters from (off-screen). */
-const BOSS_ENTER_TRAVEL = 400; // px slid in from the right
+/**
+ * How far right of the arena the boss enters from (off-screen). Tied to the
+ * view width (VIEW_W × TUNING.bossEnterTravelScreens) so the boss's entrance
+ * travel scales with the arena rather than being an arbitrary px literal
+ * (boss-arena.md §2 step 7: "the boss enters the screen from the right").
+ */
+const BOSS_ENTER_TRAVEL = Math.round(VIEW_W * TUNING.bossEnterTravelScreens); // ~half a view width, slid in from the right
 
 /**
  * The boss zone flow state machine.
@@ -116,9 +125,17 @@ export class BossZone {
     // orientation 'boss' → min === max). The fight occupies this view.
     const b = zone.bounds;
     this.arenaX = Math.round(b.x + b.w / 2 - VIEW_W / 2); // camera left edge
-    this.arenaY = Math.round(b.y + b.h / 2 - 540 / 2);
+    // Arena height is the full logical view (VIEW_H). The boss zone's world
+    // bounds are one screen tall (ZONE_H_HORIZONTAL = VIEW_H, level.js), so
+    // centering the arena on the zone's vertical midpoint yields arenaY = 0
+    // and arenaH = VIEW_H — the fight occupies exactly one logical screen.
+    // (boss-arena.md §1: "The fight occupies a fixed view.") This is the
+    // concrete arena geometry the doc's "fixed view" implies; it is
+    // view-tied (not a px literal) so it stays one screen if the logical
+    // resolution changes.
+    this.arenaY = Math.round(b.y + b.h / 2 - VIEW_H / 2); // arena is one view tall
     this.arenaW = VIEW_W;
-    this.arenaH = 540;
+    this.arenaH = VIEW_H;
 
     // Approach (boss-arena.md §1): the hero starts beside the boss checkpoint
     // flag on the RIGHT side of the zone and walks LEFT ~BOSS_APPROACH_DIST
@@ -252,9 +269,14 @@ export class BossZone {
       case BZ_BAR_FILL: {
         this.timer += dt;
         // The bar begins filling as soon as it appears; the boss enters once
-        // a portion has filled (boss-arena.md §2 step 7).
+        // a PORTION of the bar has filled (boss-arena.md §2 step 7: "After a
+        // portion of the bar has filled, the boss enters the screen from the
+        // right"). The concrete threshold is TUNING.bossIntroBarFillPct — the
+        // bar is not allowed to fill completely before the entrance begins,
+        // so the entrance overlaps the final stretch of the fill.
+        const threshold = TUNING.bossIntroBarFillPct; // fraction of the bar (0..1)
         this.barFill = Math.min(1, this.timer / BOSS_ZONE_TIMINGS.BAR_FILL);
-        if (this.timer >= BOSS_ZONE_TIMINGS.BAR_FILL) {
+        if (this.barFill >= threshold) {
           this.enterState(BZ_BOSS_ENTER);
         }
         break;
@@ -273,9 +295,26 @@ export class BossZone {
         this.boss.x = Math.round(this.bossEnterFromX +
           (this.bossRestX - this.bossEnterFromX) * ease);
         this.boss.y = this.bossRestY;
+        // Bar-fill overlap (boss-arena.md §2): the "final stretch" of the bar
+        // fill overlaps the boss entrance. The bar keeps filling during
+        // BOSS_ENTER until it is full — it does NOT freeze at the entrance
+        // threshold. The fill started at the BAR_FILL threshold (when the
+        // boss entered) and continues at the same rate for the remainder of
+        // the entrance, so the bar reaches 1.0 as the boss settles. This is
+        // the concrete "overlap" the doc describes: the entrance and the
+        // final stretch of the fill happen together.
+        //
+        // The bar fill elapsed time is continuous across the BAR_FILL →
+        // BOSS_ENTER boundary: in BAR_FILL the fill is timer/BAR_FILL (which
+        // reached the threshold when the state changed); in BOSS_ENTER we
+        // continue from that threshold, advancing at the same rate
+        // (dt/BAR_FILL per second) until the bar is full.
+        const fillRate = 1 / BOSS_ZONE_TIMINGS.BAR_FILL; // fraction per second
+        this.barFill = Math.min(1, TUNING.bossIntroBarFillPct + this.timer * fillRate);
         if (this.timer >= BOSS_ZONE_TIMINGS.BOSS_ENTER) {
           this.boss.x = this.bossRestX;
           this.boss.y = this.bossRestY;
+          this.barFill = 1; // the bar is full once the boss has settled
           this.enterState(BZ_COMBAT);
         }
         break;

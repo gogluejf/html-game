@@ -265,6 +265,63 @@ test('boss keeps its position sliding in during BOSS_ENTER', () => {
   assert.ok(startX > midX, `boss is sliding left into the arena: ${startX} → ${midX}`);
 });
 
+test('bar fill continues during BOSS_ENTER (the "final stretch" overlaps the entrance)', () => {
+  // boss-arena.md §2: "After a portion of the bar has filled, the boss enters
+  // the screen from the right." The concrete design-plan decision (task 7.2):
+  // the bar keeps filling during BOSS_ENTER until it is full — the "final
+  // stretch" of the fill overlaps the boss entrance. The bar does NOT freeze
+  // at the entrance threshold (TUNING.bossIntroBarFillPct) for the entire
+  // entrance.
+  const { zone, boss } = fixture();
+  const m = makeBossZone(zone, boss);
+  m.begin();
+  advanceOne(m, heroAt(m.arenaEntryX - 1)); // → LOCKED
+  advanceOne(m, heroAt(m.arenaEntryX));      // → INTRO_SWEEP
+  advanceOne(m, heroAt(m.arenaEntryX));      // → BAR_FILL
+  // In BAR_FILL: step until just before the threshold, then read the bar fill.
+  // The bar fill should be a proper fraction (0, 1) — it has been filling.
+  let barFillBeforeEnter = 0;
+  let guard = 0;
+  while (m.state === BZ_BAR_FILL && guard++ < 600) {
+    m.update(1 / 60, heroAt(m.arenaEntryX));
+    barFillBeforeEnter = m.barFill;
+    if (m.barFill >= 0.5) break; // stop once the bar is at least half full
+  }
+  assert.equal(m.state, BZ_BAR_FILL, 'still in BAR_FILL before the threshold');
+  assert.ok(barFillBeforeEnter > 0 && barFillBeforeEnter < 1,
+    `bar fill in BAR_FILL is a proper fraction (${barFillBeforeEnter.toFixed(3)})`);
+  // Now step into BOSS_ENTER (the bar reaches the threshold).
+  while (m.state === BZ_BAR_FILL) {
+    m.update(1 / 60, heroAt(m.arenaEntryX));
+  }
+  assert.equal(m.state, BZ_BOSS_ENTER, 'the machine is in BOSS_ENTER');
+  // The bar fill at the start of BOSS_ENTER should be at (or just past) the
+  // threshold — the bar was filling when the boss entered.
+  const barFillAtEnterStart = m.barFill;
+  assert.ok(barFillAtEnterStart >= barFillBeforeEnter,
+    `bar fill is continuous across the boundary (${barFillAtEnterStart.toFixed(3)} >= ${barFillBeforeEnter.toFixed(3)})`);
+  // Now in BOSS_ENTER: the bar KEEP filling (it does NOT freeze).
+  const barFillMid = m.barFill;
+  m.update(0.2, heroAt(m.arenaEntryX));
+  const barFillLater = m.barFill;
+  m.update(0.2, heroAt(m.arenaEntryX));
+  const barFillEnd = m.barFill;
+  // The bar fill should be strictly increasing during BOSS_ENTER (the "final
+  // stretch" of the fill overlaps the entrance).
+  assert.ok(barFillMid >= barFillAtEnterStart,
+    `bar fill is not decreasing during BOSS_ENTER (${barFillMid.toFixed(3)} >= ${barFillAtEnterStart.toFixed(3)})`);
+  assert.ok(barFillLater >= barFillMid,
+    `bar fill is increasing during BOSS_ENTER (${barFillLater.toFixed(3)} >= ${barFillMid.toFixed(3)})`);
+  assert.ok(barFillEnd >= barFillLater,
+    `bar fill is increasing during BOSS_ENTER (${barFillEnd.toFixed(3)} >= ${barFillLater.toFixed(3)})`);
+  // The bar should reach 1.0 (full) by the end of BOSS_ENTER (or just before
+  // COMBAT). The concrete design: the bar reaches 1.0 as the boss settles.
+  // Run to COMBAT and verify the bar is full.
+  runToCombat(m);
+  assert.equal(m.state, BZ_COMBAT, 'the machine reaches COMBAT');
+  assert.equal(m.barFill, 1, 'the bar is full (1.0) once the boss has settled');
+});
+
 // ===========================================================================
 // 5. Hero cannot damage the boss before COMBAT.
 // ===========================================================================

@@ -38,12 +38,13 @@ import { resolveExplosion } from '../explosion.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
 import { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../level.js';
-import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId, showLevelReward } from '../lifecycle.js';
+import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId, showLevelReward, recordAreaEntrySnapshot } from '../lifecycle.js';
 import { getLevelConfig, getStageBudget } from '../levelConfigs.js';
 import { populateArea, populationSnapshot, UNIT_PX } from '../macros.js';
 import { createRng, tierToOffset } from '../terrain.js';
 import { Theater } from '../effects/theater.js';
 import { dumpStats } from '../stats.js';
+import { TUNING } from '../tuning.js';
 
 // --- Zone-engine world (task 7.1 — the sealed zone model IS the world) ------
 // (Hero movement feel lives in js/hero.js; level geometry is zone-driven.)
@@ -223,11 +224,13 @@ const FLOOR_TOP = ZONE_GROUND_Y;
 // screen is confirmed.
 //
 // State: 'idle' | 'flash' | 'banner' | 'fadeOut' | 'fadeIn'
+// Concrete durations are the design-plan values checkpoints.md §2 defers;
+// their single owner is the TUNING block (tuning.js).
 const CLEAR_SEQ = {
-  FLASH: 0.5,      // seconds of celebratory flash
-  BANNER: 1.2,     // seconds the 'X-Y CLEAR' banner is held
-  FADE_OUT: 0.6,   // seconds to fade to black before the entry screen
-  FADE_IN: 0.6,    // seconds to fade into the new zone after the entry screen
+  FLASH: TUNING.clearFlash,   // seconds of celebratory flash
+  BANNER: TUNING.clearBanner, // seconds the 'X-Y CLEAR' banner is held
+  FADE_OUT: TUNING.clearFadeOut, // seconds to fade to black before the entry screen
+  FADE_IN: TUNING.clearFadeIn,   // seconds to fade into the new zone after the entry screen
 };
 let clearSeq = {
   state: 'idle',
@@ -341,6 +344,10 @@ export function stepClearSequence(dt) {
         // Area -1 has no entry flag; use the zone start position.
         hero.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - hero.h };
       }
+      // Accounting snapshot (game-rules.md §4): record the entry totals for
+      // this genuine area advance so a later death restart of the area can
+      // roll the run stats back to them (the 'rollback' policy).
+      recordAreaEntrySnapshot(hero);
       showAreaEntry(hero, areaContext);
     }
   } else if (clearSeq.state === 'fadeIn') {
@@ -1988,8 +1995,10 @@ export function isBelowVerticalBottom(h, zone) {
   return feet > bottom;
 }
 
-/** Length of the fade-to-black after the skull presentation (checkpoints.md §4). */
-const DEATH_FADE_DURATION = 0.6;
+/** Length of the fade-to-black after the skull presentation (checkpoints.md §4:
+ *  "After the death presentation and a short delay, fade to black"). Concrete
+ *  value owned by the TUNING block (tuning.js). */
+const DEATH_FADE_DURATION = TUNING.deathFade;
 /** Black overlay drawn during the post-skull fade-to-black (render.js reads it). */
 export function getDeathFadeAlpha() {
   if (!hero.dying) return 0;

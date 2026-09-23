@@ -470,3 +470,28 @@ These are the accumulated "runtime still uses legacy corridor" findings. They al
 **Remaining findings (non-blocking):**
 - R1 minor: `instantiateZone` measures enemy height by instantiating throwaway entity. **Non-blocking.**
 - R1 minor: `finishHeroDeath` re-calls `loadActiveZone` on every death (idempotent). **Non-blocking.**
+
+---
+
+## Task 7.2 — Concrete design-plan values + tuning pass
+
+**Round 1:**
+
+| Reviewer | Verdict | Key Findings |
+|---|---|---|
+| R1 (Qwen3.8-27B) | PASS | 1 major: accounting rollback declared but not enforced; 4 minors: BOSS_ENTER_TRAVEL literal, arenaY/arenaH undocumented, TUNING block coverage overstated, resetHeroInventory incomplete |
+| R2 (GPT-5.6-sol) | FAIL | 5 majors: TUNING block incomplete, converted-coin not settled, accounting rollback unenforced, resetHeroInventory incomplete, bar-fill overlap missing; 2 minors: embedded literal, values spread across files |
+
+**Round 1 fix dispatched.** All 6 majors + 3 minors fixed: 5 missing TUNING decisions added, convertedCoins='mark' settled, accounting rollback enforced via WeakMap snapshot, resetHeroInventory completes all fields, bar-fill continues during BOSS_ENTER, ownership split documented, TUNING.bossEnterTravelScreens=0.5.
+
+**Round 2 (final confirmation):**
+
+| Reviewer | Verdict |
+|---|---|
+| R1 (Qwen3.8-27B) | PASS — all 9 RESOLVED |
+
+**Committed:** (pending)
+
+**Remaining findings (non-blocking):**
+- R1 minor: Per-level values owned by levelConfigs.js/macros.js, not the global TUNING block. **Design decision (documented).**
+- R1 minor: Accounting-rollback snapshot is shallow-deep clone. **Non-blocking.**

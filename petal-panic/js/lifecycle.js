@@ -23,13 +23,67 @@
 // This module is pure over the pieces handed to it (hero, entities, pools,
 // effects) so the rules are unit-testable in node without a DOM.
 
-import { GAME_RULES, createContinuePool, canSpend, spend, credit } from './gameRules.js';
+import { GAME_RULES, createContinuePool, canSpend, spend, credit, resetLevelCoinTally, resetHeroInventory } from './gameRules.js';
 import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y } from './level.js';
 import { getLevelConfig } from './levelConfigs.js';
 import { Hero } from './hero.js';
-import { createStats, calculateScore } from './stats.js';
+import { createStats, calculateScore, cloneStats } from './stats.js';
 import { Anim, makeTestFrame } from './anim.js';
 import { tryTransition, getState, setState, S } from './state.js';
+
+// --- Area-entry accounting snapshot (game-rules.md §2/§4) -------------------
+//
+// game-rules.md §4: "Restoring enemies, barrels, and pickups is confirmed;
+// whether their rewards accumulate repeatedly or roll back to the area's entry
+// totals is not." The concrete policy is GAME_RULES.coins.accountingOnFailure
+// (the TUNING block): 'rollback'. This is ENFORCED here, not just declared —
+// a per-area-entry snapshot of the hero's run stats (score inputs, kills,
+// coins) is recorded the first time an area is entered, and restored on every
+// subsequent startLife() so a failed attempt's kills/coins/score do NOT
+// accumulate into the next attempt (which would create the extra-life / coin
+// farming loop the doc warns about).
+//
+// The snapshot is keyed to the (level, area) the hero is entering, so a
+// genuine area entry (a new area) records a fresh snapshot, while a death
+// restart of the SAME area restores the original entry snapshot. Continue
+// returns to area -1 of the current level (a new area), so it records a fresh
+// snapshot — and, per GAME_RULES.coins.resetOnContinue, the coin tally is
+// additionally zeroed on the continue itself.
+//
+// WeakMap so the snapshot is garbage-collected with the hero.
+const _areaEntrySnapshot = new WeakMap();
+
+/**
+ * Record the area-entry snapshot for the hero's current (level, area). Called
+ * on a GENUINE area entry (startArea / continueRun / rewardOnAction next
+ * level / startGame) — NOT on a death restart of the same area, which must
+ * keep the original entry snapshot.
+ * @param {Hero} h
+ */
+export function recordAreaEntrySnapshot(h) {
+  const key = `${h.currentLevel}:${h.currentArea}`;
+  _areaEntrySnapshot.set(h, { key, stats: cloneStats(h.runStats) });
+}
+
+/**
+ * Restore the hero's run stats to the recorded area-entry snapshot (if any).
+ * A no-op when there is no snapshot (e.g. the very first area of a new game,
+ * where runStats is already fresh from startGame) or when the snapshot's key
+ * does not match the current (level, area).
+ * @param {Hero} h
+ */
+function restoreAreaEntryStats(h) {
+  const snap = _areaEntrySnapshot.get(h);
+  if (!snap || snap.key !== `${h.currentLevel}:${h.currentArea}`) return;
+  if (!snap.stats || !h.runStats) return;
+  for (const [k, v] of Object.entries(snap.stats)) {
+    if (v && typeof v === 'object' && h.runStats[k] && typeof h.runStats[k] === 'object') {
+      for (const [k2, v2] of Object.entries(v)) h.runStats[k][k2] = v2;
+    } else {
+      h.runStats[k] = v;
+    }
+  }
+}
 
 // The area a fresh run begins in. Per lifecycle.md §1/§4 a new game and a
 // continue both enter area -1 of their level (the pre-area).
@@ -267,6 +321,10 @@ export function startGame(ctx, heroDef) {
   // presentation state left over from a prior run).
   _rewardData = null;
   aliasCombatStats(h);
+  // Accounting snapshot (game-rules.md §4): record the (fresh) entry totals
+  // for the first area so a later death restart can roll the run stats back
+  // to them (the 'rollback' policy).
+  recordAreaEntrySnapshot(h);
   // Fresh generation choices for a genuinely new game (lifecycle.md §1/§6).
   // Only when the caller provided the area context (update.js does); a bare
   // startGame (e.g. unit tests) leaves the existing world untouched. Death and
@@ -301,6 +359,10 @@ export function startGame(ctx, heroDef) {
 export function startArea(h, level, areaIdx) {
   h.currentLevel = level;
   h.currentArea = areaIdx;
+  // Accounting snapshot (game-rules.md §4): record the entry totals for this
+  // genuine area entry so a later death restart of the same area can roll the
+  // run stats back to them (the 'rollback' policy).
+  recordAreaEntrySnapshot(h);
   // checkpoints.md §3: the shared area-entry screen also opens every area
   // advance (and the boss zone, identified as the level's boss area).
   showAreaEntry(h, ctxOf(h));
@@ -316,6 +378,12 @@ export function startArea(h, level, areaIdx) {
  */
 export function startLife(h, ctx) {
   const c = ctx ?? ctxOf(h);
+  // Accounting rollback (game-rules.md §4, TUNING_COINS.accountingOnFailure):
+  // restore the run stats to the area's entry snapshot so a failed attempt's
+  // kills/coins/score do NOT accumulate into the fresh attempt. This is the
+  // enforcement of the declared 'rollback' policy — without it, repeatable
+  // pickups (extra lives, coins) could be farmed across attempts.
+  restoreAreaEntryStats(h);
   restoreArea(c);
   // Reset transient attempt state (death flags, energy, i-frames) so the new
   // attempt is clean, then place the hero at the area's entry (hero.checkpoint
@@ -323,6 +391,12 @@ export function startLife(h, ctx) {
   // i-frames. Lives are untouched — the caller already consumed one (death)
   // or a continue restored them.
   resetHeroTransient(h);
+  // Inventory persistence (game-rules.md §5): temporary powerups and a charged
+  // super meter do NOT persist into the fresh attempt — the hero is restored
+  // to baseline (energy is restored to full by resetHeroTransient). The policy
+  // is the concrete design-plan decision owned by GAME_RULES.inventory (the
+  // TUNING block).
+  resetHeroInventory(h);
   h.respawn();
   // checkpoints.md §1: the flag the hero is placed beside is the area's ENTRY
   // flag — "arriving beside it must not immediately clear the newly entered
@@ -361,6 +435,17 @@ export function continueRun(h, ctx) {
   // Return to area -1 of the CURRENT level (lifecycle.md §4). The level is
   // unchanged; the area index is reset to the pre-area.
   h.currentArea = ENTRY_AREA;
+  // Coin accounting (game-rules.md §2): what happens to the current level's
+  // coin tally after using Continue. The concrete policy is GAME_RULES.coins
+  // (the TUNING block): a continue resets the current level's tally so the
+  // fresh attempt starts clean and the failed attempt's coins do not count.
+  if (GAME_RULES.coins.resetOnContinue) resetLevelCoinTally(h);
+  // Accounting snapshot (game-rules.md §4): the continue returns to area -1
+  // of the current level (a NEW area), so record a fresh entry snapshot. The
+  // resetLevelCoinTally above already zeroed the coin tally; the snapshot
+  // captures the (now-zeroed) entry totals so a later death restart of area
+  // -1 rolls back to them.
+  recordAreaEntrySnapshot(h);
   // Position the hero at area -1's entry (checkpoints.md §5, lifecycle.md §4):
   // Continue returns to the current level's area -1 with restored lives and
   // starts a FRESH attempt there — it does NOT resume beside the flag of the
@@ -716,6 +801,10 @@ export function rewardOnAction(action, h) {
     // pool is preserved (it is a shared remaining balance, game-rules.md §1).
     h.levelConfig = getLevelConfig(h.currentLevel);
     h.runStats = createStats();
+    // Accounting snapshot (game-rules.md §4): record the (fresh) entry totals
+    // for the next level's area -1 so a later death restart can roll the run
+    // stats back to them (the 'rollback' policy).
+    recordAreaEntrySnapshot(h);
     // The presented reward is consumed; the next boss kill presents a fresh
     // one and credits again.
     _rewardData = null;

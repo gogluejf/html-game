@@ -131,3 +131,26 @@ export function calculateScore(stats, _hero) {
   score += stats.checkpointsHit * 25;
   return score;
 }
+
+/**
+ * Deep-clone a stats object so a snapshot can be restored later without
+ * mutating the live object. Used by the area-entry accounting snapshot
+ * (game-rules.md §4 — score/kill/coin accounting rolls back to the area's
+ * entry totals on a failed attempt).
+ * @param {object} stats a stats object from createStats()
+ * @returns {object} a deep copy
+ */
+export function cloneStats(stats) {
+  if (!stats) return null;
+  const clone = {};
+  for (const [k, v] of Object.entries(stats)) {
+    if (v && typeof v === 'object') {
+      // Nested plain objects (enemiesKilled, coinsCollected, hitsLanded, ...).
+      clone[k] = {};
+      for (const [k2, v2] of Object.entries(v)) clone[k][k2] = v2;
+    } else {
+      clone[k] = v;
+    }
+  }
+  return clone;
+}

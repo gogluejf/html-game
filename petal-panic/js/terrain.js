@@ -158,6 +158,16 @@ export const PLATFORM = Object.freeze({
 
 // GRAVITY and DOUBLE_JUMP_FACTOR are re-exported (imported above) so existing
 // consumers keep a stable import path, but their single owner is consts.js.
+//
+// The usable margin is a design-plan decision (structure.md §5: "Spacing must
+// work for both heroes with a usable margin, not only a perfect jump"). Its
+// concrete value is owned by the single TUNING block (tuning.js) and re-exported
+// here so existing importers keep a stable path.
+import { TUNING_REACH } from './tuning.js';
+
+// Re-export the margin so the terrain test / composer keep their import path;
+// the single owner is tuning.js (TUNING_REACH.reachMargin).
+export const REACH_MARGIN = TUNING_REACH.reachMargin;
 
 /**
  * Hero reach data for playability checks. `jump` is the ground-jump impulse
@@ -173,11 +183,6 @@ export const HERO_REACH = Object.freeze(
     Object.values(HEROES).map((hero) => [hero.id, Object.freeze({ jump: hero.stats.jump })]),
   ),
 );
-
-/** Usable margin (px) reserved below a hero's raw double-jump apex. The tier
- *  step must be at most (minReach − MARGIN) so a normal double jump clears it
- *  without needing the exact apex. */
-export const REACH_MARGIN = 16;
 
 /**
  * Full double-jump reach (px) for a hero, i.e. the height above the launch

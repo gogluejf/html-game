@@ -34,6 +34,25 @@
 // NOTE: importing level.js here is safe — level.js's top level only builds
 // declarative zone data from LEVEL_CONFIGS (no runtime/DOM), so there is no
 // circular-initialization problem.
+//
+// DESIGN-PLAN DECISIONS SETTLED HERE (concrete values, one place to review):
+//   - Area lengths in px (structure.md §6, generation.md §7): the concrete
+//     horizontal (4000px) and vertical (1620px) area length budgets.
+//   - Population budgets per stage (populate.md §1): the concrete per-stage
+//     enemy/barrel/powerup QUANTITY budgets in `stageBudgets` below.
+//   - Vertical slot (structure.md §1): which ordinary area is the vertical
+//     climb, fixed per level (`verticalArea`).
+//   - Stage weights (generation.md §5): the per-stage difficulty-tier
+//     selection weights that bias WHICH macro difficulty fills a slot.
+//
+// OWNERSHIP SPLIT (task 7.2 tuning pass): this file is the owner for PER-LEVEL
+// values (the ones above) because they vary by level. The GLOBAL, cross-level
+// values (transition timings, boss-intro timings, coin/inventory policy,
+// camera/scroll policy, music policy) are owned by the TUNING block
+// (tuning.js). Coin carryover / inventory persistence (game-rules.md §2/§5)
+// are NOT level-specific — the global policy lives in GAME_RULES
+// (gameRules.js), sourced from the TUNING block (tuning.js). Levels do not
+// redefine it.
 
 import { ZONE_WIDTH_HORIZONTAL, ZONE_H_VERTICAL } from './level.js';
 
@@ -101,9 +120,12 @@ export const LEVEL_CONFIGS = [
     },
 
     // -----------------------------------------------------------------------
-    // Per-stage budgets (populate.md §1: "the matrix must make that scope
-    // explicit so a level-wide quantity is not mistakenly repeated in every
-    // area"). Each stage (-1 through -4) gets its own quantity budget.
+    // Per-stage budgets — CONCRETE design-plan values (populate.md §1: "the
+    // matrix must make that scope explicit so a level-wide quantity is not
+    // mistakenly repeated in every area"). Each stage (-1 through -4) gets
+    // its own QUANTITY budget (how many of each type appear). These are the
+    // concrete per-stage population budgets the doc defers to the plan; the
+    // progression -1 (sparse) → -4 (dense) is visible in the counts.
     //
     // The boss zone is NOT budgeted here — it is a separate self-contained
     // arena with its own rules (structure.md §2).
@@ -136,9 +158,12 @@ export const LEVEL_CONFIGS = [
     },
 
     // -----------------------------------------------------------------------
-    // Length budgets (structure.md §6, generation.md §7).
-    //   horizontal: ~2x the ~2000px prototype segment = 4000px.
-    //   vertical:   ~3 screens tall (VIEW_H × 3 = 1620px), tuned separately.
+    // Length budgets — CONCRETE design-plan values (structure.md §6 "Art and
+    // length", generation.md §7 "Tuning boundary").
+    //   horizontal: ~2x the ~2000px prototype segment = 4000px (the measured
+    //     baseline the docs require before selecting exact dimensions).
+    //   vertical:   ~3 screens tall (VIEW_H × 3 = 1620px), tuned separately
+    //     rather than blindly doubled (structure.md §6).
     // These are the CONFIG-LEVEL budgets the composer receives; they are
     // fixed per area (not rolled per game).
     //
