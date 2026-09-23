@@ -364,7 +364,24 @@ export function debugWrapToNextArea() {
   // Don't stack another advance while one is already in flight.
   if (clearSeq.state !== 'idle') return;
   const zone = getActiveZone(hero);
-  if (zone.kind !== 'area') return; // boss zone has no next area
+  if (zone.kind === 'boss') {
+    // At the boss zone there is no further area in this level. Wrap back to
+    // area 1 of the current level so the developer can re-test the run quickly.
+    // (If multiple levels were supported this would advance to the next
+    // level's area 1 instead.)
+    Debug.logEvent('wrap: boss → level 1-1 (restart)');
+    hero.currentArea = 1;
+    const z1 = getActiveZone(hero);
+    if (z1.kind === 'area' && world.world.has(z1.areaIdx)) {
+      loadActiveZone(z1, world.world.get(z1.areaIdx));
+    }
+    hero.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - hero.h };
+    recordAreaEntrySnapshot(hero);
+    camera.setZoneBounds(z1);
+    showAreaEntry(hero, areaContext);
+    return;
+  }
+  if (zone.kind !== 'area') return;
   const nextArea = zone.areaIdx === 4 ? AREA_BOSS : zone.areaIdx + 1;
   Debug.logEvent(`wrap → ${formatAreaId(hero.currentLevel, nextArea)}`);
   // Advance directly: set the hero's area, load the zone content, place the
