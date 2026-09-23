@@ -306,7 +306,7 @@ export const Remap = {
     const botY = 455;
     const btnW = 170, btnH = 28, gap = 30;
     const btns = [
-      { label: 'DONE', x: VIEW_W/2 - btnW - gap/2, focus: this.focus === this.ROWS },
+      { label: 'APPLY', x: VIEW_W/2 - btnW - gap/2, focus: this.focus === this.ROWS },
       { label: `LAYOUT: ${this.gamepadLayout.toUpperCase()}`, x: VIEW_W/2, focus: this.focus === this.ROWS + 1 },
       { label: 'RESET TO DEFAULTS', x: VIEW_W/2 + btnW + gap/2, focus: this.focus === this.ROWS + 2 },
     ];
