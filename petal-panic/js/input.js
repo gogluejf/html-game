@@ -179,12 +179,25 @@ export function navLabelString(action, opts) {
  *     window after their specific binding was pressed (edge-triggered flash),
  *     so the press is visible even when the action immediately transitions.
  *
- * Uses simple mode by default (d-pad only for directional, no LS).
+ * MODE (per-item `opts.mode`, default 'all'):
+ *   - 'all'          → show every keyboard + gamepad button for the action
+ *                      (the original, most-complete behavior).
+ *   - 'select_layout'→ show ONLY the buttons of the currently SELECTED input
+ *                      layout: if the selected layout is a gamepad layout
+ *                      (Generic/Switch/Xbox/…) show just the gamepad buttons;
+ *                      if it is the keyboard layout ('Keyboard') show just the
+ *                      keyboard keys. This keeps compact screens from cluttering
+ *                      the bar with both devices at once.
+ *
+ * SIMPLE (`opts.simple`, default true): for DIRECTIONAL actions only, collapse
+ * to a single arrow/d-pad glyph (↑ ↓ ← →) instead of listing every alias.
+ * Simple is orthogonal to mode — it decides *how many* direction glyphs, mode
+ * decides *which device's* buttons appear.
  *
  * @param {Array<{action:string, label?:string, opts?:object}>} items
  *   - action: NAV action name ('up', 'confirm', 'back', etc.)
  *   - label: display word (defaults to capitalized action name)
- *   - opts: per-item overrides ({ source, simple })
+ *   - opts: per-item overrides ({ source, simple, mode })
  * @returns {{icons:{icon:string, action:string, isActive:()=>boolean}[], label:string}[]}
  */
 export function navHintEntries(items) {
@@ -201,35 +214,70 @@ export function navHintEntries(items) {
     Object.entries(PAD_NAV).map(([b, acts]) => [b, acts]));
 
   return items.map(({ action, actions, label, opts = {} }) => {
-    const o = { simple: true, source: 'all', ...opts };
+    const o = { simple: true, source: 'all', mode: 'all', ...opts };
     const actionList = actions || [action];
+    const layout = input.gamepadLayout || 'Generic';
+    // Which device does the SELECTED layout point at? 'Keyboard' → keyboard;
+    // any pad layout → gamepad. Used by the 'select_layout' mode.
+    const selectedIsPad = layout !== 'Keyboard';
+    // Resolve which sources this item actually shows buttons for.
+    let showKb = o.source === 'keyboard' || o.source === 'all';
+    let showPad = o.source === 'gamepad' || o.source === 'all';
+    if (o.mode === 'select_layout') {
+      showKb = !selectedIsPad;
+      showPad = selectedIsPad;
+    }
+
     const icons = [];
     for (const a of actionList) {
       const held = DIRECTIONAL.has(a);
-      // Keyboard bindings for this action.
-      if (o.source === 'keyboard' || o.source === 'all') {
+      // In SIMPLE mode a directional collapses to ONE glyph. Pick that glyph
+      // from whichever device the item is showing (mode/source-resolved):
+      //   keyboard shown  → the arrow key (↑ ↓ ← →)
+      //   gamepad shown   → the d-pad button (▲ ▼ ◀ ▶)
+      // We still fall through to the full loops below for NON-directional
+      // actions and for non-simple rendering.
+      if (o.simple && held) {
+        let added = false;
+        if (showKb) {
+          // First keyboard binding for this direction is the arrow key.
+          for (const [key, acts] of Object.entries(keyToActions)) {
+            if (!acts.includes(a)) continue;
+            const lbl = formatBinding(key, 'keyboard');
+            icons.push({ icon: lbl, action: a, binding: `k:${key}`, isActive: () => _actionHeld(a) });
+            added = true; break;
+          }
+        }
+        if (!added && showPad) {
+          for (const [btn, acts] of Object.entries(padToActions)) {
+            if (!acts.includes(a) || btn.startsWith('axis:')) continue; // d-pad button only
+            const lbl = formatBinding(btn, 'gamepad', layout);
+            icons.push({ icon: lbl, action: a, binding: `g:${btn}`, isActive: () => _actionHeld(a) });
+            added = true; break;
+          }
+        }
+        continue;
+      }
+      // Keyboard bindings for this action (non-simple or non-directional).
+      if (showKb) {
         for (const [key, acts] of Object.entries(keyToActions)) {
           if (!acts.includes(a)) continue;
-          if (o.simple && held) continue; // skip keyboard for directionals in simple mode
           const lbl = formatBinding(key, 'keyboard');
           if (icons.some(ic => ic.icon === lbl)) continue;
           icons.push({ icon: lbl, action: a, binding: `k:${key}`, isActive: () => {
-            if (held) return _actionHeld(a); // any binding for this direction
             const t = _flashT.get(`k:${key}`) ?? 0;
             return performance.now() - t < FLASH_MS;
           }});
         }
       }
-      // Gamepad bindings for this action.
-      if (o.source === 'gamepad' || o.source === 'all') {
-        const layout = input.gamepadLayout || 'Generic';
+      // Gamepad bindings for this action (non-simple or non-directional).
+      if (showPad) {
         for (const [btn, acts] of Object.entries(padToActions)) {
           if (!acts.includes(a)) continue;
-          if (o.simple && held && btn.startsWith('axis:')) continue; // skip LS axes
+          if (o.simple && btn.startsWith('axis:')) continue; // skip LS axes
           const lbl = formatBinding(btn, 'gamepad', layout);
           if (icons.some(ic => ic.icon === lbl)) continue;
           icons.push({ icon: lbl, action: a, binding: `g:${btn}`, isActive: () => {
-            if (held) return _actionHeld(a); // any binding for this direction
             const t = _flashT.get(`g:${btn}`) ?? 0;
             return performance.now() - t < FLASH_MS;
           }});
@@ -304,9 +352,9 @@ export function createInput({ target = globalThis.window, document = globalThis.
   const listen = (obj, name, fn) => { obj?.addEventListener?.(name, fn); listeners.push(() => obj?.removeEventListener?.(name, fn)); };
   const engine = {
     state: blank(), nav: { held: {}, pressed: [], released: [] }, captureResult: null,
-    mapping: cloneDefaults(), gamepadLayout: 'Generic', source: 'keyboard', generation: 0,
+    mapping: cloneDefaults(), gamepadLayout: 'Generic', keyboardLayout: 'Keyboard', source: 'keyboard', generation: 0,
     loadMapping() {
-      this.mapping = cloneDefaults(); this.gamepadLayout = 'Generic';
+      this.mapping = cloneDefaults(); this.gamepadLayout = 'Generic'; this.keyboardLayout = 'Keyboard';
       try {
         const data = JSON.parse(storage()?.getItem(STORAGE_KEY) || 'null');
         if (!data || typeof data !== 'object') return;
@@ -333,10 +381,11 @@ export function createInput({ target = globalThis.window, document = globalThis.
           }
         }
         if (['PS5','PS4','Xbox','8BitDo','Switch','Generic'].includes(data.gamepadLayout)) this.gamepadLayout = data.gamepadLayout;
+        if (data.keyboardLayout === 'Keyboard') this.keyboardLayout = 'Keyboard';
       } catch { /* unavailable/corrupt storage: defaults remain usable */ }
     },
     saveMapping() {
-      try { storage()?.setItem(STORAGE_KEY, JSON.stringify({ ...this.mapping, version: 3, gamepadLayout: this.gamepadLayout })); return true; }
+      try { storage()?.setItem(STORAGE_KEY, JSON.stringify({ ...this.mapping, version: 3, gamepadLayout: this.gamepadLayout, keyboardLayout: this.keyboardLayout })); return true; }
       catch { return false; } // bindings apply in memory even when storage is blocked
     },
     // Omitted index replaces the first chip, never its siblings; length appends.
@@ -355,7 +404,7 @@ export function createInput({ target = globalThis.window, document = globalThis.
       if (!bindings || !Number.isInteger(index) || index < 0 || index >= bindings.length) return false;
       bindings.splice(index, 1); this.saveMapping(); return true;
     },
-    resetMapping() { this.mapping = cloneDefaults(); this.gamepadLayout = 'Generic'; this.saveMapping(); },
+    resetMapping() { this.mapping = cloneDefaults(); this.gamepadLayout = 'Generic'; this.keyboardLayout = 'Keyboard'; this.saveMapping(); },
     buttonLabel(action, source = this.source) {
       if (action === 'crouch') action = 'moveDown';
       if (action === 'pause') return source === 'keyboard' ? 'ESC' : formatBinding('btn:9', source, this.gamepadLayout || 'Generic');

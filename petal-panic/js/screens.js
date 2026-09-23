@@ -522,8 +522,8 @@ export const Select = {
     const cx0 = artX + artW / 2;
 
     const entries = navHintEntries([
-      { actions: ['left', 'right'], label: 'Select' },
-      { action: 'confirm', label: 'Confirm' },
+      { actions: ['left', 'right'], label: 'Select', opts: { mode: 'select_layout' } },
+      { action: 'confirm', label: 'Confirm', opts: { mode: 'select_layout' } },
     ]);
     drawNavBar(ctx, cx0, barY, entries);
   },
@@ -611,9 +611,9 @@ export const Pause = {
     // Dynamic button hints (keycap chip style, single line).
     const hintY = startY + options.length * gap + 24;
     drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
-      { actions: ['up', 'down'], label: 'Navigate' },
-      { action: 'confirm' },
-      { action: 'back', label: 'Close' },
+      { actions: ['up', 'down'], label: 'Navigate', opts: { mode: 'select_layout' } },
+      { action: 'confirm', opts: { mode: 'select_layout' } },
+      { action: 'back', label: 'Close', opts: { mode: 'select_layout' } },
     ]));
     ctx.restore();
   },
@@ -744,9 +744,9 @@ export const GameOver = {
     // Dynamic button hints (keycap chip style, single line) — same as pause.
     const hintY = startY + options.length * gap + 24;
     drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
-      { actions: ['up', 'down'], label: 'Navigate' },
-      { action: 'confirm' },
-      { action: 'back', label: 'Quit' },
+      { actions: ['up', 'down'], label: 'Navigate', opts: { mode: 'select_layout' } },
+      { action: 'confirm', opts: { mode: 'select_layout' } },
+      { action: 'back', label: 'Quit', opts: { mode: 'select_layout' } },
     ]));
     ctx.restore();
   },
@@ -956,9 +956,9 @@ export const AreaEntry = {
     // per the shared ergonomics contract (game-rules.md §3).
     const hintY = startY + options.length * gap + 24;
     drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
-      { actions: ['up', 'down'], label: 'Navigate' },
-      { action: 'confirm' },
-      { action: 'back', label: 'Quit' },
+      { actions: ['up', 'down'], label: 'Navigate', opts: { mode: 'select_layout' } },
+      { action: 'confirm', opts: { mode: 'select_layout' } },
+      { action: 'back', label: 'Quit', opts: { mode: 'select_layout' } },
     ]));
     ctx.restore();
   },
@@ -1055,9 +1055,9 @@ export const Reward = {
     // per the shared ergonomics contract (game-rules.md §3).
     const hintY = startY + options.length * gap + 24;
     drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
-      { actions: ['up', 'down'], label: 'Navigate' },
-      { action: 'confirm' },
-      { action: 'back', label: 'Quit' },
+      { actions: ['up', 'down'], label: 'Navigate', opts: { mode: 'select_layout' } },
+      { action: 'confirm', opts: { mode: 'select_layout' } },
+      { action: 'back', label: 'Quit', opts: { mode: 'select_layout' } },
     ]));
     ctx.restore();
   },
@@ -1141,9 +1141,9 @@ export const EndOfGame = {
     // shared ergonomics contract (game-rules.md §3).
     const hintY = startY + options.length * gap + 24;
     drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
-      { action: 'navigate', label: 'Up/Down' },
-      { action: 'confirm' },
-      { action: 'back', label: 'Return' },
+      { action: 'navigate', label: 'Up/Down', opts: { mode: 'select_layout' } },
+      { action: 'confirm', opts: { mode: 'select_layout' } },
+      { action: 'back', label: 'Return', opts: { mode: 'select_layout' } },
     ]));
     ctx.restore();
   },

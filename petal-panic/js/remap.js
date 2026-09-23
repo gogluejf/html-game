@@ -40,7 +40,7 @@ const ACTIONS = [
   { id: 'lockMove',     label: 'Lock Movement' },
 ];
 
-const LAYOUT_OPTIONS = ['Generic', 'PS5', 'PS4', 'Xbox', '8BitDo', 'Switch'];
+const LAYOUT_OPTIONS = ['Keyboard', 'Generic', 'PS5', 'PS4', 'Xbox', '8BitDo', 'Switch'];
 
 export const Remap = {
   // State
