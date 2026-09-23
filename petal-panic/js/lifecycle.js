@@ -399,23 +399,11 @@ export function startLife(h, ctx) {
   // TUNING block).
   resetHeroInventory(h);
   h.respawn();
-  // checkpoints.md §1: the flag the hero is placed beside is the area's ENTRY
-  // flag — "arriving beside it must not immediately clear the newly entered
-  // area." restoreArea() above re-armed every checkpoint, so the next overlap
-  // frame would re-trigger the entry flag and immediately re-open the entry
-  // screen. Latch it so it does not re-fire for this attempt; a later genuine
-  // walk-over (next attempt's restoreArea) re-arms it again.
-  //
-  // The entry flag is the one the hero's checkpoint points at. Checkpoint
-  // stores its own x on trigger(), and flags are x-distinct, so matching on x
-  // (with a small tolerance for the hero's body offset) identifies the entry
-  // flag unambiguously regardless of the checkpoint's stored y.
-  const cpX = h.checkpoint?.x;
-  if (cpX !== undefined) {
-    for (const cp of c.checkpoints ?? []) {
-      if (Math.abs(cp.x - cpX) < 1) cp.triggered = true;
-    }
-  }
+  // Entry flags are PURE VISUAL (checkpoints.md §1): no trigger, no latch, no
+  // state. The hero spawns beside one; nothing about it changes gameplay.
+  // (The old code latched the entry flag here by position-matching so a
+  // respawn couldn't "re-trigger" it — but entry flags have no trigger to
+  // re-fire, so the latch only ever created stale-state bugs across zones.)
 }
 
 /**

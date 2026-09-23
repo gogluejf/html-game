@@ -150,8 +150,14 @@ function instantiateZone(zone, layout, population) {
   // (ordinary areas; the -4 exit is the boss checkpoint). Area -1 has no entry
   // flag (checkpoints.md §1). Flags are zone-local flag descriptors.
   const checkpoints = [];
-  const mkFlag = (f, isEntry) =>
-    makeCheckpoint(f.id, zone.bounds.x + f.x, f.y, { isEntry, appearance: f.appearance });
+  const mkFlag = (f, isEntry) => {
+    const c = makeCheckpoint(f.id, zone.bounds.x + f.x, f.y, { isEntry, appearance: f.appearance });
+    // A freshly instantiated flag must start un-triggered (checkpoints.md §2).
+    // If it doesn't, something mutated a shared instance — log loudly so the
+    // stale-state leak is visible instead of silently swallowing area-clears.
+    if (c.triggered) console.warn(`[instantiateZone] ${f.id} created pre-triggered — stale state leak`);
+    return c;
+  };
   if (zone.entryFlag) checkpoints.push(mkFlag(zone.entryFlag, true));
   if (zone.exitFlag) checkpoints.push(mkFlag(zone.exitFlag, false));
 
@@ -653,11 +659,14 @@ collisionWorld.add(boss);
  */
 export function loadActiveZone(zone, content) {
   // Remove the previous zone's content from the collision world.
+  const oldCounts = { solids: solidEntities.length, enemies: realEnemies.length, barrels: [...barrels,...woodBarrels,...coinBarrels].length, powerups: powerups.length, cps: checkpoints.length };
+  const cwBefore = collisionWorld.entities.size;
   for (const s of solidEntities) collisionWorld.remove(s);
   for (const e of realEnemies) collisionWorld.remove(e);
   for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) collisionWorld.remove(b);
   for (const p of powerups) collisionWorld.remove(p);
   for (const c of checkpoints) collisionWorld.remove(c);
+  const cwAfterRemove = collisionWorld.entities.size;
 
   // Clear the module-level lists.
   SOLIDS.length = 0;
@@ -680,6 +689,8 @@ export function loadActiveZone(zone, content) {
   for (const b of content?.barrels ?? []) { barrels.push(b); collisionWorld.add(b); }
   for (const p of content?.powerups ?? []) { powerups.push(p); collisionWorld.add(p); }
   for (const c of content?.checkpoints ?? []) { checkpoints.push(c); collisionWorld.add(c); }
+  console.log(`[loadActiveZone] zone=${zone.areaIdx} removed ${JSON.stringify(oldCounts)} cw:${cwBefore}→${cwAfterRemove}, added new, cw final: ${collisionWorld.entities.size}`);
+  console.log(`[loadActiveZone] checkpoints: ${checkpoints.map(c => `${c.checkpointId}@(${c.x},${c.y}) layer=${c.layer} alive=${c.alive}`).join(', ')}`);
 
   // Refresh the area context's barrel list (its identity is stable) and re-record
   // the arrangement ONCE (rememberInitial is idempotent; resetGeneration clears
@@ -890,6 +901,15 @@ function handleDebugToggle(e, source) {
 window.addEventListener('keydown', (e) => {
   if (input.capturing) return;
   if (['F1', 'F2', 'F3'].includes(e.code)) e.preventDefault();
+  // Shift+E: collision-world JSON dump. Handled BEFORE the F1/F2/debug gates so
+  // it works whether or not debug mode is on (it IS the debug tool). Plain E
+  // (stats dump) stays inside handleDebugKeys; KeyP/KeyD are unavailable —
+  // input.js binds them to nav actions (pause / move-right).
+  if (e.shiftKey && e.code === 'KeyE') {
+    e.preventDefault();
+    handleDebugKeys(e);
+    return;
+  }
   // F1: toggle debug mode. Opening debug from gameplay enters PLAY + harness.
   // Closing debug returns to normal gameplay (and closes theater if open).
   if (e.code === 'F1') { handleDebugToggle(e, 'debug'); return; }
@@ -1095,9 +1115,14 @@ function handleDebugKeys(e) {
     case 'KeyX': // Deselect current entity
       if (Debug.selected) { Debug.selected = null; Debug.logEvent('deselect'); }
       break;
-    case 'KeyE': // Dump stats JSON to disk
-      dumpStats(hero.runStats, hero);
-      Debug.logEvent('stats JSON downloaded');
+    case 'KeyE': // Dump JSON to disk. Plain E = stats; Shift+E = collision world.
+      if (e.shiftKey) {
+        dumpCollisionWorld();
+        Debug.logEvent('collision world JSON downloaded');
+      } else {
+        dumpStats(hero.runStats, hero);
+        Debug.logEvent('stats JSON downloaded');
+      }
       break;
     case 'F3': // Cycle collision view mode (round-robin)
       Debug.viewMode = (Debug.viewMode + 1) % 3;
@@ -1105,6 +1130,66 @@ function handleDebugKeys(e) {
       Debug.logEvent(`view: ${modeNames[Debug.viewMode]}`);
       break;
   }
+}
+
+/**
+ * Debug: serialize every entity registered in the collision world to a JSON
+ * download (P key). Includes layer, alive flag, world box, and identity so a
+ * stale/leaked entity from a previous zone is obvious at a glance.
+ */
+function dumpCollisionWorld() {
+  const LAYER_NAMES = {
+    1: 'HERO', 2: 'ENEMY', 4: 'BOSS', 8: 'SOLID', 16: 'PICKUP',
+    32: 'PROJ_ALLY', 64: 'PROJ_FOE', 128: 'COIN', 256: 'CHECKPOINT', 512: 'HAZARD',
+  };
+  const layerName = (l) => l === 0 ? 'NONE' : (LAYER_NAMES[l] ?? `bits=${l}`);
+  const ents = [...collisionWorld.entities].map((e) => {
+    const b = e.worldBox ? e.worldBox() : { x: e.x, y: e.y, w: e.w, h: e.h };
+    return {
+      ctor: e.constructor?.name ?? '?',
+      type: e.type ?? null,
+      checkpointId: e.checkpointId ?? null,
+      isEntry: e.isEntry ?? null,
+      triggered: e.triggered ?? null,
+      layer: e.layer,
+      layerName: layerName(e.layer),
+      alive: e.alive,
+      intangible: e.intangible ?? null,
+      collected: e.collected ?? null,
+      aiState: e.aiState ?? null,
+      box: {
+        x: Math.round(b.x * 10) / 10,
+        y: Math.round(b.y * 10) / 10,
+        w: b.w, h: b.h,
+        right: Math.round((b.x + b.w) * 10) / 10,
+        bottom: Math.round((b.y + b.h) * 10) / 10,
+      },
+    };
+  });
+  const out = {
+    at: new Date().toISOString(),
+    heroArea: hero.currentArea,
+    heroBox: (() => { const hb = hero.worldBox(); return { x: hb.x, y: hb.y, w: hb.w, h: hb.h }; })(),
+    totalEntities: ents.length,
+    entities: ents,
+  };
+  console.log('[debug] collision world dump:', out.totalEntities, 'entities');
+  if (typeof document !== 'undefined' && typeof URL !== 'undefined' && URL.createObjectURL) {
+    try {
+      const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'petal-panic-collision-' + Date.now() + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.warn('[debug] failed to create download:', err.message);
+    }
+  }
+  return out;
 }
 
 /**
@@ -1732,6 +1817,21 @@ export function update(dt) {
   }
   // Physics only runs during PLAY; other states are screen-driven ().
   if (getState() !== S.PLAY) return;
+
+  // DEBUG: track hero position vs exit flag when in area -2.
+  if (hero.currentArea === -2 && checkpoints.length > 0) {
+    const exit = checkpoints.find(c => !c.isEntry);
+    if (exit && Math.random() < 0.05) { // ~3x/sec
+      const hb = hero.worldBox();
+      const eb = exit.worldBox ? exit.worldBox() : { x: exit.x, y: exit.y, w: exit.w, h: exit.h };
+      console.log(`[debug] hero.worldBox=[${Math.round(hb.x)},${Math.round(hb.y)},${hb.w}x${hb.h}] exit.worldBox=[${Math.round(eb.x)},${Math.round(eb.y)},${eb.w}x${eb.h}] hero.box=${JSON.stringify(hero.box)} exit.box=${JSON.stringify(exit.box)} exit.x=${exit.x} exit.y=${exit.y}`);
+    }
+  }
+
+  // DEBUG: track clear sequence state.
+  if (hero.currentArea === -2 && Math.random() < 0.02) {
+    console.log(`[seq] state=${clearSeq.state} timer=${clearSeq.timer.toFixed(2)} pendingFadeIn=${clearSeq.pendingFadeIn}`);
+  }
 
   // 0. Area-clear sequence (checkpoints.md §2): step the state machine
   //     (banner → fadeOut → entry screen → fadeIn). While the sequence is
@@ -2492,6 +2592,17 @@ function updateRealEnemy(e, dt) {
   // removes the entity from the collision world.
   if (e.alive && e.gravity > 0) {
     resolve(e, [...SOLIDS, ...barrelSolidBoxes]);
+  }
+
+  // Lethal fall cull (mirrors the hero's isBelowVerticalBottom rule): an enemy
+  // that drops below the active zone's floor has no surface left — kill it
+  // immediately so it can't linger as a phantom in the collision world
+  // (observed: a Jack-O-Lantern fell to y≈24,000 while staying registered).
+  // The normal death pipeline (sparkles + coins + world removal) still runs
+  // via the !e.alive branch below; _deathHandled guards against double-credit.
+  const zw = getActiveZone(hero)?.bounds;
+  if (zw && e.alive && e.y > zw.y + zw.h + 200) {
+    e.alive = false;
   }
 
   // Attack hitbox: now handled by the unified processAllHitboxes() system.

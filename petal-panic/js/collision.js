@@ -410,6 +410,13 @@ export class CollisionWorld {
       const boxB = b.worldBox ? b.worldBox() : b;
       if (!aabbOverlap(boxA, boxB)) return;
 
+      // DEBUG: log HERO×CHECKPOINT pairs specifically.
+      const isHeroCp = (a.layer === 1 && b.layer === 256) || (b.layer === 1 && a.layer === 256);
+      if (isHeroCp) {
+        const cp = a.layer === 256 ? a : b;
+        console.log(`[collision] HERO×CP! id=${cp.checkpointId} pos=(${Math.round(cp.x)},${Math.round(cp.y)}) box=${JSON.stringify(cp.box)} worldBox=${JSON.stringify(cp.worldBox())}`);
+      }
+
       // Dispatch every rule this pair satisfies. Order: smaller layer bit first
       // so handlers see a consistent (a, b) orientation.
       const [lo, hi] = a.layer <= b.layer ? [a, b] : [b, a];
