@@ -887,8 +887,16 @@ export function loadActiveZone(zone, content) {
   for (const c of checkpoints) collisionWorld.remove(c);
   // The boss lives ONLY in the boss zone. Remove it from the collision world
   // when leaving so it cannot physically exist in ordinary areas (same logic
-  // as any enemy — it is zone-scoped content, not a global entity).
-  if (zone.kind !== 'boss') collisionWorld.remove(boss);
+  // as any enemy — it is zone-scoped content, not a global entity). Also
+  // deactivate the boss zone flow machine so its intro/combat gates don't
+  // block shooting in ordinary areas.
+  if (zone.kind !== 'boss') {
+    collisionWorld.remove(boss);
+    if (bossZone.active) {
+      bossZone.state = null; // dormant — re-armed by beginBossZoneFlow() on next entry
+      console.log('[bossZone] deactivated (left boss zone)');
+    }
+  }
   const cwAfterRemove = collisionWorld.entities.size;
 
   // Clear the module-level lists.
