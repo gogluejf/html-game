@@ -18,7 +18,7 @@
 
 import { VIEW_W, VIEW_H } from './view.js';
 import { drawMarqueeTitle, drawPrompt, roundRect, drawNavBar } from './fonts.js';
-import { input, formatBinding, bindingSlots, navHintEntries, _flashT } from './input.js';
+import { input, formatBinding, bindingSlots, navHintEntries } from './input.js';
 import { FONT_UI } from './fonts.js';
 
 const CREAM = '#f5e6c8';
@@ -328,48 +328,12 @@ export const Remap = {
         { action: 'back', label: 'Cancel', opts: { source: 'keyboard' } },
       ]));
     } else {
-      // Build hint entries that reflect the CURRENT remapped bindings for
-      // confirm/back (not the static defaults from KEY_NAV/PAD_NAV).
-      const layout = this.gamepadLayout || 'Generic';
-      // Keyboard confirm/back are FIXED (not in mapping) — use NAV_KB_KEYS.
-      const confirmKb = NAV_KB_KEYS.confirm; // ['Enter', 'Space']
-      const backKb = NAV_KB_KEYS.back;       // ['Escape']
-      // Gamepad confirm/back ARE remappable — read from mapping.
-      const confirmPad = this.mapping.gamepad.confirm;
-      const backPad = this.mapping.gamepad.back;
-      const now = performance.now();
-      const FLASH_MS = 180;
-      const icons = [];
-      // Row/Chip navigation chips (directional — same as before).
-      const navEntries = navHintEntries([
+      drawNavBar(ctx, VIEW_W / 2, 490, navHintEntries([
         { actions: ['up', 'down'], label: 'Row', opts: { groupDir: false } },
         { actions: ['left', 'right'], label: 'Chip', opts: { groupDir: false } },
-      ]);
-      // Confirm chip(s) — use remapped bindings.
-      for (const b of confirmKb) {
-        const bk = `k:${b}`;
-        icons.push({ icon: formatBinding(b, 'keyboard'), action: 'confirm', binding: bk,
-          isActive: () => { const t = _flashT.get(bk) ?? 0; return now - t < FLASH_MS; } });
-      }
-      for (const b of confirmPad) {
-        const bk = `g:${b}`;
-        icons.push({ icon: formatBinding(b, 'gamepad', layout), action: 'confirm', binding: bk,
-          isActive: () => { const t = _flashT.get(bk) ?? 0; return now - t < FLASH_MS; } });
-      }
-      // Back/Close chip(s) — keyboard is fixed (ESC), gamepad is remapped.
-      for (const b of backKb) {
-        const bk = `k:${b}`;
-        icons.push({ icon: formatBinding(b, 'keyboard'), action: 'back', binding: bk,
-          isActive: () => { const t = _flashT.get(bk) ?? 0; return now - t < FLASH_MS; } });
-      }
-      for (const b of backPad) {
-        const bk = `g:${b}`;
-        icons.push({ icon: formatBinding(b, 'gamepad', layout), action: 'back', binding: bk,
-          isActive: () => { const t = _flashT.get(bk) ?? 0; return now - t < FLASH_MS; } });
-      }
-      // Combine: nav entries + a single "Edit" entry with all confirm/back icons.
-      const allEntries = [...navEntries, { icons, label: 'Edit / Close' }];
-      drawNavBar(ctx, VIEW_W / 2, 490, allEntries);
+        { action: 'confirm', label: 'Edit' },
+        { action: 'back', label: 'Cancel' },
+      ]));
     }
   },
 

@@ -297,17 +297,38 @@ export function navHintEntries(items) {
       }
       // Gamepad bindings for this action (non-simple or non-directional).
       if (showPad) {
-        for (const [btn, acts] of Object.entries(padToActions)) {
-          if (!acts.includes(a)) continue;
-          if (o.simple && btn.startsWith('axis:')) continue; // skip LS axes
-          const lbl = formatBinding(btn, 'gamepad', layout);
-          if (icons.some(ic => ic.icon === lbl)) continue;
-          const bk = `g:${btn}`;
-          icons.push({ icon: lbl, action: a, binding: bk, isActive: () => {
-            if (held) return !!_heldBindings.get(bk); // directionals: lit while held
-            const t = _flashT.get(bk) ?? 0;           // momentary: flash on press
-            return performance.now() - t < FLASH_MS;
-          }});
+        // Remappable nav actions (confirm/back) read from the user's mapping,
+        // not from the static PAD_NAV defaults. This keeps the instruction bar
+        // in sync with whatever the player has assigned.
+        const isRemappable = NAV_REMAPPABLE.some(r => r.id === a);
+        if (isRemappable) {
+          const bindings = input.mapping.gamepad?.[a];
+          if (Array.isArray(bindings)) {
+            for (const btn of bindings) {
+              if (o.simple && btn.startsWith('axis:')) continue;
+              const lbl = formatBinding(btn, 'gamepad', layout);
+              if (icons.some(ic => ic.icon === lbl)) continue;
+              const bk = `g:${btn}`;
+              icons.push({ icon: lbl, action: a, binding: bk, isActive: () => {
+                if (held) return !!_heldBindings.get(bk);
+                const t = _flashT.get(bk) ?? 0;
+                return performance.now() - t < FLASH_MS;
+              }});
+            }
+          }
+        } else {
+          for (const [btn, acts] of Object.entries(padToActions)) {
+            if (!acts.includes(a)) continue;
+            if (o.simple && btn.startsWith('axis:')) continue;
+            const lbl = formatBinding(btn, 'gamepad', layout);
+            if (icons.some(ic => ic.icon === lbl)) continue;
+            const bk = `g:${btn}`;
+            icons.push({ icon: lbl, action: a, binding: bk, isActive: () => {
+              if (held) return !!_heldBindings.get(bk);
+              const t = _flashT.get(bk) ?? 0;
+              return performance.now() - t < FLASH_MS;
+            }});
+          }
         }
       }
     }
