@@ -78,20 +78,18 @@ export function credit(pool, n) {
 }
 
 /**
- * Reset the current level's coin tally (game-rules.md §2). Called on a new
- * level and on a Continue so the just-cleared level's coins are not
- * double-counted and a continue does not carry the failed tally forward.
+ * Reset the current level's coin tally (game-rules.md §2).
  *
- * @param {object} h the hero (owns runStats.coinsCollected)
+ * NOTE: in the trace/currentStats split this is now a NO-OP. The boss reward
+ * reads a per-level delta (diffCounters since the level-start snapshot), so it
+ * never double-counts across levels or continues — no explicit zeroing is
+ * needed, and zeroing would corrupt the append-only trace. Kept for call-site
+ * compatibility.
+ *
+ * @param {object} h the hero
  */
-export function resetLevelCoinTally(h) {
-  const coins = h.runStats?.coinsCollected;
-  if (coins) {
-    coins.bronze = 0;
-    coins.silver = 0;
-    coins.gold = 0;
-    coins.total = 0;
-  }
+export function resetLevelCoinTally(_h) {
+  // Intentionally empty — see note above.
 }
 
 /**

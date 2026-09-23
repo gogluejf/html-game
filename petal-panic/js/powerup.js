@@ -8,12 +8,13 @@
 // Collection contract (driven by the update system's 'pickup' collision rule):
 //   - collect() latches `collected` + kills the entity so it can't double-apply
 //   - def.apply(hero, context) mutates hero state (ammo/energy/timers/lives...)
-//   - combatStats.powerupsCollected[type] is bumped for telemetry (design §4)
+//   - traceStats.powerupsCollected[type] is bumped for telemetry (design §4)
 //   - VFX (sparkle pop + floating label text) are spawned by the caller so this
 //     module has no particle dependency and stays unit-testable.
 
 import { Entity } from './entity.js';
 import { LAYER } from './consts.js';
+import { record } from './stats.js';
 
 // --- Effect definitions ------------------------------------------------------
 // Each entry: { label, color, duration?, apply(hero, context) }.
@@ -107,11 +108,9 @@ export class Powerup extends Entity {
     // Apply the documented effect.
     this.def.apply(hero, context?.enemies ?? []);
 
-    // Telemetry (design §4: powerupsCollected per type).
-    if (hero.combatStats) {
-      hero.combatStats.powerupsCollected ??= {};
-      hero.combatStats.powerupsCollected[this.powerType] =
-        (hero.combatStats.powerupsCollected[this.powerType] ?? 0) + 1;
+    // Telemetry (design §4: powerupsCollected per type) — into the trace.
+    if (hero.traceStats) {
+      record(hero, { kind: 'powerup', type: this.powerType });
     }
 
     // SFX: powerup

@@ -330,12 +330,17 @@ test('inventory persistence policy is concrete and wired to GAME_RULES (game-rul
   assert.equal(GAME_RULES.inventory.superMeter, TUNING_INVENTORY.superMeter);
 });
 
-// --- resetLevelCoinTally: a continue resets the current level's tally --------
-test('resetLevelCoinTally zeroes the current level coin tally', () => {
+// --- resetLevelCoinTally: obsolete under the trace/currentStats split --------
+// The boss reward now reads a per-level delta (diffCounters since the
+// level-start snapshot), so an explicit coin-tally zeroing is no longer needed
+// — and zeroing would corrupt the append-only trace. The function is kept as a
+// no-op for call-site compatibility.
+test('resetLevelCoinTally is a no-op (reward uses per-level delta accounting)', () => {
   const h = { runStats: { coinsCollected: { bronze: 3, silver: 2, gold: 1, total: 6 } } };
   resetLevelCoinTally(h);
-  assert.deepEqual(h.runStats.coinsCollected, { bronze: 0, silver: 0, gold: 0, total: 0 },
-    'the coin tally is reset to zero');
+  // Untouched: the tally is preserved (the trace must never be zeroed).
+  assert.deepEqual(h.runStats.coinsCollected, { bronze: 3, silver: 2, gold: 1, total: 6 },
+    'the coin tally is NOT reset (no-op by design)');
 });
 
 test('resetLevelCoinTally is a safe no-op when runStats is absent', () => {

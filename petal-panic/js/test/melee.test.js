@@ -8,6 +8,7 @@ import { HEROES } from '../heroDefs.js';
 import { LAYER } from '../consts.js';
 import { Entity } from '../entity.js';
 import { damage } from '../damage.js';
+import { createTrace } from '../stats.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -149,15 +150,13 @@ ok('hero vs hero: target defense DOES reduce incoming damage', () => {
   assert.equal(real, 8, `expected 8 (10 - target def 2), got ${real}`);
   assert.equal(b.energy, 92);
 });
-ok('updates source telemetry (hitsLanded + byMethod + byEnemy)', () => {
+ok('updates source telemetry (hitsLanded) into the trace', () => {
   const src = makeHero();
-  src.combatStats = { hitsLanded: {}, damageDealt: { byMethod: {}, byEnemy: {} } };
+  src.traceStats = createTrace();
   const tgt = makeEnemy(0, 0, 100, 0);
   damage(src, tgt, 10, 'melee');
   damage(src, tgt, 10, 'melee');
-  assert.equal(src.combatStats.hitsLanded.melee, 2);
-  assert.equal(src.combatStats.damageDealt.byMethod.melee, 20);
-  assert.equal(src.combatStats.damageDealt.byEnemy.target, 20);
+  assert.equal(src.traceStats.total.hitsLanded.melee, 2);
 });
 ok('drains hero energy (not hp) for hero targets', () => {
   const src = makeHero();
@@ -193,7 +192,7 @@ ok('works with no combatStats on source (no crash)', () => {
 console.log('\nMelee + damage integration');
 ok('melee attack value routes through damage() to kill a target', () => {
   const h = makeHero();
-  h.combatStats = { hitsLanded: {}, damageDealt: { byMethod: {}, byEnemy: {} } };
+  h.traceStats = createTrace();
   const e = makeEnemy(0, 0, 20, 0); // 20hp, hero attack 10 → 2 swings
   // Simulate two active-frame hits.
   setSwingFrame(h, 3);
@@ -205,7 +204,7 @@ ok('melee attack value routes through damage() to kill a target', () => {
   const dealt2 = damage(h, e, h.stats.attack, 'melee');
   assert.equal(dealt2, 10);
   assert.equal(e.alive, false);
-  assert.equal(h.combatStats.hitsLanded.melee, 2);
+  assert.equal(h.traceStats.total.hitsLanded.melee, 2);
 });
 
 console.log(`\n${passed} assertions passed.`);

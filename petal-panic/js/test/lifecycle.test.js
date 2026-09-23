@@ -30,7 +30,7 @@ const { S, getState, setState, tryTransition } = await import('../state.js');
 const { GAME_RULES } = await import('../gameRules.js');
 const { Hero } = await import('../hero.js');
 const { HEROES } = await import('../heroDefs.js');
-const { createStats } = await import('../stats.js');
+const { createTrace } = await import('../stats.js');
 const U = await import('../systems/update.js');
 
 // --- Helpers -----------------------------------------------------------------
@@ -104,7 +104,8 @@ test('startGame: establishes lives=3, continues pool=3, currentArea=1', () => {
   assert.equal(result.continuesUsed, 0, 'no continues used yet');
   assert.equal(result.currentArea, 1, 'enters area 1');
   assert.equal(result.currentLevel, 1, 'enters level 1');
-  assert.ok(result.runStats, 'fresh run stats');
+  assert.ok(result.wallet?.current, 'fresh wallet');
+  assert.ok(result.traceStats, 'fresh trace');
 });
 
 test('startGame: values come from GAME_RULES, not literals', () => {
@@ -384,58 +385,48 @@ test('startLife: clears a leaked death flag / drained energy from a failed attem
 test('startLife: accounting rollback — a failed attempt\'s kills/coins/score do NOT accumulate (game-rules.md §4)', () => {
   const h = makeTestHero();
   h.lives = 2;
-  // Initialize runStats (normally done by startGame/aliasCombatStats).
-  h.runStats = createStats();
+  // The wallet is created by the Hero constructor. Record the entry snapshot
+  // (fresh wallet → zero coins/kills).
   const ctx = makeAreaContext(h);
-  // Simulate a genuine area entry: record the entry snapshot (the run stats
-  // are fresh from startGame, so the snapshot captures the zero totals).
   L.recordAreaEntrySnapshot(h);
 
-  // Simulate a failed attempt: the hero kills an enemy, collects coins, and
-  // takes damage during the attempt (the run stats accumulate).
-  h.runStats.enemiesKilled.jester += 2;
-  h.runStats.coinsCollected.bronze += 3;
-  h.runStats.coinsCollected.total += 3;
-  h.runStats.barrelsDestroyed.woodBarrel += 1;
-  h.runStats.checkpointsHit += 1;
+  // Simulate a failed attempt: the hero kills an enemy and collects coins
+  // during the attempt (the wallet accumulates).
+  h.wallet.current.kills += 2;
+  h.wallet.current.coins += 3;
 
-  // A death restart of the SAME area: startLife must roll the run stats back
-  // to the area's entry snapshot so the failed attempt's rewards do NOT
-  // accumulate into the fresh attempt (the 'rollback' policy, game-rules.md
+  // A death restart of the SAME area: startLife must roll the wallet back to
+  // the area's entry snapshot so the failed attempt's rewards do NOT
+  // accumulate into the fresh attempt (the anti-farming reset, game-rules.md
   // §4). Without this, repeatable pickups could be farmed across attempts.
   h.x = 3500;
   h.checkpoint = { x: 100, y: 400 };
   setState(S.PLAY);
   L.startLife(h, ctx);
 
-  // The run stats are restored to the entry snapshot (zero totals), NOT the
+  // The wallet is restored to the entry snapshot (zero totals), NOT the
   // accumulated failed-attempt values.
-  assert.equal(h.runStats.enemiesKilled.jester, 0, 'kills rolled back to entry totals');
-  assert.equal(h.runStats.coinsCollected.bronze, 0, 'coins rolled back to entry totals');
-  assert.equal(h.runStats.coinsCollected.total, 0, 'coin total rolled back to entry totals');
-  assert.equal(h.runStats.barrelsDestroyed.woodBarrel, 0, 'barrel kills rolled back to entry totals');
-  assert.equal(h.runStats.checkpointsHit, 0, 'checkpoints rolled back to entry totals');
+  assert.equal(h.wallet.current.kills, 0, 'kills rolled back to entry totals');
+  assert.equal(h.wallet.current.coins, 0, 'coins rolled back to entry totals');
 });
 
 test('startLife: accounting rollback — a genuine area advance records a fresh snapshot (game-rules.md §4)', () => {
   const h = makeTestHero();
   h.lives = 3;
-  // Initialize runStats (normally done by startGame/aliasCombatStats).
-  h.runStats = createStats();
   const ctx = makeAreaContext(h);
-  // Record the entry snapshot for the current area (fresh run stats).
+  // Record the entry snapshot for the current area (fresh wallet).
   L.recordAreaEntrySnapshot(h);
 
   // Simulate a genuine area advance: the hero advances to the next area with
-  // accumulated run stats (the previous area's kills/coins).
-  h.runStats.enemiesKilled.jester += 2;
-  h.runStats.coinsCollected.total += 3;
+  // accumulated wallet (the previous area's kills/coins).
+  h.wallet.current.kills += 2;
+  h.wallet.current.coins += 3;
   h.currentArea = 2; // advance to the next area
   L.recordAreaEntrySnapshot(h); // record the NEW entry snapshot (with the accumulated stats)
 
   // Simulate a failed attempt in the new area: more kills/coins accumulate.
-  h.runStats.enemiesKilled.jester += 1;
-  h.runStats.coinsCollected.total += 1;
+  h.wallet.current.kills += 1;
+  h.wallet.current.coins += 1;
 
   // A death restart of the NEW area: startLife rolls back to the NEW entry
   // snapshot (the accumulated stats from the previous area), NOT the original
@@ -445,11 +436,11 @@ test('startLife: accounting rollback — a genuine area advance records a fresh 
   setState(S.PLAY);
   L.startLife(h, ctx);
 
-  // The run stats are restored to the NEW entry snapshot (the previous
+  // The wallet is restored to the NEW entry snapshot (the previous
   // area's accumulated stats), NOT the original zero totals or the failed
   // attempt's additional stats.
-  assert.equal(h.runStats.enemiesKilled.jester, 2, 'kills rolled back to the NEW entry snapshot (previous area\'s totals)');
-  assert.equal(h.runStats.coinsCollected.total, 3, 'coins rolled back to the NEW entry snapshot (previous area\'s totals)');
+  assert.equal(h.wallet.current.kills, 2, 'kills rolled back to the NEW entry snapshot (previous area\'s totals)');
+  assert.equal(h.wallet.current.coins, 3, 'coins rolled back to the NEW entry snapshot (previous area\'s totals)');
 });
 
 test('integration: full death → continue flow via update.js', async () => {

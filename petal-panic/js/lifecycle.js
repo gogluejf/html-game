@@ -27,7 +27,7 @@ import { GAME_RULES, createContinuePool, canSpend, spend, credit, resetLevelCoin
 import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y } from './level.js';
 import { getLevelConfig } from './levelConfigs.js';
 import { Hero } from './hero.js';
-import { createStats, calculateScore, cloneStats } from './stats.js';
+import { createTrace, record, beginLife, beginContinue, recordAreaMap, calculateScore } from './stats.js';
 import { Anim, makeTestFrame } from './anim.js';
 import { tryTransition, getState, setState, S } from './state.js';
 import { TUNING } from './tuning.js';
@@ -52,38 +52,39 @@ import { TUNING } from './tuning.js';
 // additionally zeroed on the continue itself.
 //
 // WeakMap so the snapshot is garbage-collected with the hero.
-const _areaEntrySnapshot = new WeakMap();
+// (The area-entry wallet snapshot now lives on hero.wallet.snapshot +
+//  hero._walletSnapshotArea — no separate WeakMap needed.)
 
 /**
  * Record the area-entry snapshot for the hero's current (level, area). Called
  * on a GENUINE area entry (startArea / continueRun / rewardOnAction next
  * level / startGame) — NOT on a death restart of the same area, which must
  * keep the original entry snapshot.
+ *
+ * The snapshot is stored ON the wallet (wallet.snapshot), so a death-restart
+ * can restore it with a single copy. We also record WHICH area the snapshot
+ * belongs to so restore only applies within that same area.
  * @param {Hero} h
  */
 export function recordAreaEntrySnapshot(h) {
-  const key = `${h.currentLevel}:${h.currentArea}`;
-  _areaEntrySnapshot.set(h, { key, stats: cloneStats(h.runStats) });
+  if (!h.wallet) return;
+  h.wallet.snapshot = { ...h.wallet.current };
+  h._walletSnapshotArea = `${h.currentLevel}:${h.currentArea}`;
 }
 
 /**
- * Restore the hero's run stats to the recorded area-entry snapshot (if any).
- * A no-op when there is no snapshot (e.g. the very first area of a new game,
- * where runStats is already fresh from startGame) or when the snapshot's key
- * does not match the current (level, area).
+ * Restore the hero's wallet to the recorded area-entry snapshot (if any).
+ * A no-op when there is no snapshot or the snapshot was taken for a DIFFERENT
+ * area (a genuine advance re-snapshots; only a same-area death-restart
+ * restores). This is the anti-farming reset: a failed attempt's coins/ammo/
+ * energy/kills do not carry into the fresh attempt (game-rules.md §4).
+ * The append-only trace is intentionally untouched.
  * @param {Hero} h
  */
 function restoreAreaEntryStats(h) {
-  const snap = _areaEntrySnapshot.get(h);
-  if (!snap || snap.key !== `${h.currentLevel}:${h.currentArea}`) return;
-  if (!snap.stats || !h.runStats) return;
-  for (const [k, v] of Object.entries(snap.stats)) {
-    if (v && typeof v === 'object' && h.runStats[k] && typeof h.runStats[k] === 'object') {
-      for (const [k2, v2] of Object.entries(v)) h.runStats[k][k2] = v2;
-    } else {
-      h.runStats[k] = v;
-    }
-  }
+  if (!h.wallet || h._walletSnapshotArea === undefined) return;
+  if (h._walletSnapshotArea !== `${h.currentLevel}:${h.currentArea}`) return;
+  h.wallet.current = { ...h.wallet.snapshot };
 }
 
 // The area a fresh run begins in. Per lifecycle.md §1/§4 a new game and a
@@ -115,22 +116,6 @@ export function makeHero(heroDef) {
     { speed: 80, loop: false },
   );
   return h;
-}
-
-/**
- * Alias the unified run stats onto a hero so damage.js / powerup.js keep
- * writing into the same object (mirrors the pre-refactor wiring).
- * @param {Hero} h
- */
-function aliasCombatStats(h) {
-  h.runStats = createStats();
-  h.combatStats = {
-    get projectilesShot() { return h.runStats.projectilesShot; },
-    set projectilesShot(v) { h.runStats.projectilesShot = v; },
-    hitsLanded: h.runStats.hitsLanded,
-    damageDealt: h.runStats.damageDealt,
-    powerupsCollected: h.runStats.powerupsCollected,
-  };
 }
 
 // --- Entity restoration (lifecycle.md §3) ------------------------------------
@@ -321,10 +306,18 @@ export function startGame(ctx, heroDef) {
   // §2: a reward is credited exactly once, keyed to the reward, not to
   // presentation state left over from a prior run).
   _rewardData = null;
-  aliasCombatStats(h);
-  // Accounting snapshot (game-rules.md §4): record the (fresh) entry totals
-  // for the first area so a later death restart can roll the run stats back
-  // to them (the 'rollback' policy).
+  // Fresh trace (telemetry black box). The trace only ever accumulates;
+  // gameplay rollback never touches it (see stats.js). The wallet itself is
+  // created in the Hero constructor.
+  h.traceStats = createTrace();
+  // Level-1 reward baseline: the reward reads the wallet delta since this point.
+  h._levelStartWallet = { ...h.wallet.current };
+  // Arm the life-bucket latch: the first startLife after startGame uses the
+  // already-present life #1 bucket (index 0); only death-restarts push new ones.
+  h._lifeBucketArmed = true;
+  // Accounting snapshot (game-rules.md §4): record the (fresh) wallet entry
+  // totals for the first area so a later death restart can roll the wallet
+  // back to them (the anti-farming reset).
   recordAreaEntrySnapshot(h);
   // Fresh generation choices for a genuinely new game (lifecycle.md §1/§6).
   // Only when the caller provided the area context (update.js does); a bare
@@ -379,6 +372,14 @@ export function startArea(h, level, areaIdx) {
  */
 export function startLife(h, ctx) {
   const c = ctx ?? ctxOf(h);
+  // Trace: open a fresh life bucket for each NEW attempt. The very first
+  // attempt after startGame/continueRun reuses the already-present bucket
+  // (index 0 / activeContinue's scope); only subsequent death-restarts push.
+  if (h._lifeBucketArmed) {
+    h._lifeBucketArmed = false; // consume the "first attempt" pass
+  } else {
+    beginLife(h);
+  }
   // Accounting rollback (game-rules.md §4, TUNING_COINS.accountingOnFailure):
   // restore the run stats to the area's entry snapshot so a failed attempt's
   // kills/coins/score do NOT accumulate into the fresh attempt. This is the
@@ -420,6 +421,11 @@ export function startLife(h, ctx) {
 export function continueRun(h, ctx) {
   if (!canSpend(h.continues)) return false;
   spend(h.continues);
+  // Trace: a continue opens a fresh continue bucket. The new attempt in area 1
+  // is a "first attempt" for that continue, so re-arm the life latch (the next
+  // startLife reuses the current life bucket rather than pushing).
+  beginContinue(h);
+  h._lifeBucketArmed = true;
   h.lives = GAME_RULES.startingLives;
   // Return to area 1 of the CURRENT level (lifecycle.md §4). The level is
   // unchanged; the area index is reset to the first area.
@@ -687,9 +693,14 @@ export function continuesEarned(coins) {
  * @returns {object} the screen data as displayed
  */
 export function showLevelReward(h) {
-  const s = h.runStats ?? {};
-  const kills = Object.values(s.enemiesKilled ?? {}).reduce((a, b) => a + b, 0);
-  const coins = s.coinsCollected?.total ?? 0;
+  // The boss reward reads the WALLET delta since this level started (see
+  // _levelStartWallet). The wallet is farming-safe (rolled back on death), so
+  // the delta reflects only this level's kept rewards. The append-only trace is
+  // separate and NOT used here (it would include farmed attempts).
+  const start = h._levelStartWallet ?? {};
+  const cur = h.wallet?.current ?? {};
+  const kills = Math.max(0, (cur.kills ?? 0) - (start.kills ?? 0));
+  const coins = Math.max(0, (cur.coins ?? 0) - (start.coins ?? 0));
   const earned = continuesEarned(coins);
   // Credit the global pool exactly once PER REWARD (game-rules.md §2). The
   // identity is the reward itself: same (level, coins, earned, balance) → the
@@ -722,12 +733,15 @@ export function showLevelReward(h) {
     continuesRemaining: h.continues?.remaining ?? 0,
     isFinalLevel: h.currentLevel >= LEVELS.length,
   };
+  // Score for this level. Kills + coins come from the farming-safe wallet
+  // delta. Barrels + boss come from the trace run-total (approximate for the
+  // multi-level case; the dominant terms — kills and coins — are exact).
+  const tTotal = h.traceStats?.total ?? {};
   data.score = calculateScore({
-    enemiesKilled: s.enemiesKilled ?? {},
-    bossKilled: !!s.bossKilled,
-    coinsCollected: s.coinsCollected ?? { total: 0 },
-    barrelsDestroyed: s.barrelsDestroyed ?? { woodBarrel: 0, explosiveBarrel: 0, coinBarrel: 0 },
-    checkpointsHit: s.checkpointsHit ?? 0,
+    enemiesKilled: { _total: kills },
+    bossKilled: Object.values(tTotal.bossKilled ?? {}).some((n) => n > 0),
+    coinsCollected: { total: coins },
+    barrelsDestroyed: tTotal.barrelsDestroyed ?? {},
   }, h);
   _rewardData = data;
   // Record when the reward screen was shown so the minimum dwell
@@ -808,7 +822,11 @@ export function rewardOnAction(action, h) {
     // §4 — the reward counts the level just cleared). The global continue
     // pool is preserved (it is a shared remaining balance, game-rules.md §1).
     h.levelConfig = getLevelConfig(h.currentLevel);
-    h.runStats = createStats();
+    // Per-level reward accounting: snapshot the wallet's kill/coin tallies so
+    // the next boss's reward reflects THIS level only (boss-arena.md §4). The
+    // wallet keeps accumulating globally; the reward reads the delta since this
+    // snapshot. The append-only trace is separate and unaffected.
+    h._levelStartWallet = { ...h.wallet.current };
     // Accounting snapshot (game-rules.md §4): record the (fresh) entry totals
     // for the next level's area 1 so a later death restart can roll the run
     // stats back to them (the 'rollback' policy).

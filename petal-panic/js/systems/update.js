@@ -43,7 +43,7 @@ import { getLevelConfig, getStageBudget } from '../levelConfigs.js';
 import { populateArea, populationSnapshot, UNIT_PX } from '../macros.js';
 import { createRng, tierToOffset } from '../terrain.js';
 import { Theater } from '../effects/theater.js';
-import { dumpStats } from '../stats.js';
+import { dumpTrace, record } from '../stats.js';
 import { TUNING } from '../tuning.js';
 
 // --- Zone-engine world (task 7.1 — the sealed zone model IS the world) ------
@@ -1124,8 +1124,8 @@ function handleDebugKeys(e) {
         dumpCollisionWorld();
         Debug.logEvent('collision world JSON downloaded');
       } else {
-        dumpStats(hero.runStats, hero);
-        Debug.logEvent('stats JSON downloaded');
+        dumpTrace(hero);
+        Debug.logEvent('trace JSON downloaded');
       }
       break;
     case 'F3': // Cycle collision view mode (round-robin)
@@ -1214,7 +1214,12 @@ function swapHero() {
     selectedWeapon: hero.selectedWeapon,
     checkpoint: hero.checkpoint, continuesUsed: hero.continuesUsed,
     stats: hero.stats,
-    runStats: hero.runStats, // preserve unified telemetry
+    wallet: hero.wallet, // preserve the live wallet (current + snapshot)
+    traceStats: hero.traceStats, // preserve the accumulating trace
+    _levelStartWallet: hero._levelStartWallet,
+    _lifeBucketArmed: hero._lifeBucketArmed,
+    _levelStartTotal: hero._levelStartTotal,
+    _lifeBucketArmed: hero._lifeBucketArmed,
     intangible: hero.intangible, rapidTimer: hero.rapidTimer,
   };
 
@@ -1235,15 +1240,8 @@ function swapHero() {
   // with the old hero's stats object). Stats define speed/jump/special/etc.
   nh.stats = def.stats;
   nh.vx = saved.vx; nh.vy = saved.vy;
-  // Re-alias combatStats into the (preserved) runStats so damage.js / powerup.js
-  // continue writing into the unified structure after the swap.
-  nh.combatStats = {
-    get projectilesShot() { return nh.runStats.projectilesShot; },
-    set projectilesShot(v) { nh.runStats.projectilesShot = v; },
-    hitsLanded: nh.runStats.hitsLanded,
-    damageDealt: nh.runStats.damageDealt,
-    powerupsCollected: nh.runStats.powerupsCollected,
-  };
+  // Wallet + trace are preserved via Object.assign(nh, saved) above (saved
+  // carries hero.wallet / hero.traceStats), so no re-aliasing is needed.
   // Reattach placeholder anims sized for the new body.
   nh.anim = new Anim(
     ['#2ecc71', '#27ae60', '#1abc9c'].map(c => makeTestFrame(nh.w, nh.h, c)),
@@ -1438,8 +1436,7 @@ collisionWorld.on('hit', (a, b) => {
       // red vignette when the hero takes damage (design §12).
       Effects.heroDamaged();
       // track hits taken from enemy projectiles (design §4.1).
-      victim.runStats.hitsTaken.enemyProjectile += 1;
-      victim.runStats.hitsTaken.total += 1;
+      record(victim, { kind: 'hitTaken', source: 'enemyProjectile' });
     }
     foeProj.alive = false; // consumed on impact
     // SFX: hit
@@ -1502,8 +1499,7 @@ collisionWorld.on('contact', (a, b) => {
     // red vignette on contact damage (design §12 "Hero damaged").
     Effects.heroDamaged();
     // track hits taken from enemy contact (design §4.1).
-    heroEnt.runStats.hitsTaken.enemyContact += 1;
-    heroEnt.runStats.hitsTaken.total += 1;
+    record(heroEnt, { kind: 'hitTaken', source: 'enemyContact' });
   }
 });
 
@@ -1525,8 +1521,7 @@ collisionWorld.on('collect', (a, b) => {
   const type = coinEnt.coinType ?? 'bronze';
   const value = coinEnt.value ?? COIN_TYPES.bronze.value;
   heroEnt.coins += value;
-  heroEnt.runStats.coinsCollected[type] = (heroEnt.runStats.coinsCollected[type] ?? 0) + 1;
-  heroEnt.runStats.coinsCollected.total += 1;
+  record(heroEnt, { kind: 'coin', type });
 
   // Pickup VFX: a small sparkle burst at the coin's center (reuses the pooled
   // particle system; no allocation). SFX hook for later audio wiring.
@@ -1599,8 +1594,7 @@ collisionWorld.on('checkpoint', (a, b) => {
   const fired = cp.trigger(heroEnt);
   if (!fired) return;
 
-  // count checkpoint hits (design §4.1).
-  heroEnt.runStats.checkpointsHit += 1;
+  // (checkpoint hits are no longer tracked in the stats model)
 
   // VFX: flash (entity-driven) + floating id label.
   const cx = cp.x + cp.w / 2;
@@ -1931,7 +1925,7 @@ export function update(dt) {
     const wasActive = hero.meleeActive || hero.specialMeleeActive;
     hero.requestMelee(input.down ? 'special' : 'normal');
     if (!wasActive && (hero.meleeActive || hero.specialMeleeActive)) {
-      hero.runStats.meleeSwings += 1; // count the swing start
+      record(hero, { kind: 'meleeSwing' }); // count the swing start
     }
   }
   processAllHitboxes();
@@ -2069,9 +2063,15 @@ export function update(dt) {
   // 4. camera follows the hero (clamped to level bounds, facing look-ahead).
   camera.update(hero);
 
-  // 4b. track run distance + time for stats (design §4.1).
-  hero.runStats.distanceTraveled += Math.abs(hero.vx * dt);
-  hero.runStats.timePlayed += dt;
+  // 4b. track run distance + time for stats (design §4.1). timePlayed = active
+  // play time; sessionTime = wall-clock from start (both accumulate here while
+  // an area is being played).
+  const t = hero.traceStats;
+  if (t) {
+    t.distanceTraveled += Math.abs(hero.vx * dt);
+    t.timePlayed += dt;
+    t.sessionTime += dt;
+  }
 
   // 5. the camera-shake instance is stepped by updateEffects() →
   // Effects.update(dt) below (render reads getShakeOffset()).
@@ -2277,7 +2277,7 @@ function fireThorn(h, input, dt) {
   if (!p) return; // pool exhausted — skip this shot (soft cap, no allocation)
 
   h.ammo -= 1;
-  h.combatStats.projectilesShot += 1;
+  record(h, { kind: 'projectile', subtype: 'thorn' });
 
   // Cooldown: base interval = 1 / shots-per-second; ×0.5 during rapid powerup.
   const base = 1 / h.stats.projectile_freq;
@@ -2306,7 +2306,8 @@ function fireSpecial(h, input) {
   if (!s) return; // pool exhausted
 
   h.specialAmmo -= 1;
-  h.combatStats.specialsUsed = (h.combatStats.specialsUsed ?? 0) + 1;
+  record(h, { kind: 'projectile', subtype: 'special' });
+  record(h, { kind: 'superMove' });
   h.timers.set('special', h.stats.special_freq); // cooldown as a labeled timer
 
   if (Debug.enabled) Debug.logEvent(`special ${type} fired`);
@@ -2641,7 +2642,8 @@ function updateRealEnemy(e, dt) {
     coins.dropCoins(e.coinDrop, cx, cy);      // coin drop per config
     collisionWorld.remove(e);                          // drop from play
     // Telemetry: count the kill by type (design §4.1 enemiesKilled).
-    hero.runStats.enemiesKilled[e.type] = (hero.runStats.enemiesKilled[e.type] ?? 0) + 1;
+    record(hero, { kind: 'enemyKilled', type: e.type });
+    hero.wallet.current.kills += 1; // farming-safe wallet tally (resets on death)
     if (Debug.enabled) Debug.logEvent(`kill ${e.type}`);
   }
 }
@@ -2705,8 +2707,8 @@ function updateBoss(dt) {
     collisionWorld.remove(b);                           // drop from play
     camera.unlock();                           // release the arena lock
     b.onDeath();                               // boss-side death hook
-    // mark boss as killed (design §4.1).
-    hero.runStats.bossKilled = true;
+    // mark boss as killed (design §4.1) — keyed by the level's boss id.
+    record(hero, { kind: 'bossKilled', type: hero.levelConfig?.boss ?? 'boss' });
     if (getState() === S.PLAY) {
       // boss-arena.md §4: the level reward screen replaces the placeholder
       // post-boss (WIN) screen. showLevelReward() computes the documented
@@ -2818,8 +2820,7 @@ function handleBarrelDestroyed(barrel) {
     // via takeDamage() inside resolveExplosion — no manual die() needed here.
     // track if the hero was hit by the explosion (design §4.1).
     if (result.hit.includes(hero)) {
-      hero.runStats.hitsTaken.explosion += 1;
-      hero.runStats.hitsTaken.total += 1;
+      record(hero, { kind: 'hitTaken', source: 'explosion' });
     }
     // Legacy barrel explosion roll (pre-migration spawnExplosionVFX, preserved
     // verbatim): 12 + floor(rand*4) → 12–15 particles.
@@ -2843,7 +2844,7 @@ function handleBarrelDestroyed(barrel) {
   collisionWorld.remove(barrel);
   // Telemetry: count the destroyed barrel by type (design §4.1 barrelsDestroyed).
   const bkey = barrel.type; // 'woodBarrel' | 'barrel' | 'coinBarrel'
-  hero.runStats.barrelsDestroyed[bkey] = (hero.runStats.barrelsDestroyed[bkey] ?? 0) + 1;
+  record(hero, { kind: 'barrel', type: bkey });
   if (Debug.enabled) Debug.logEvent(`barrel destroyed (${bkey})`);
 }
 

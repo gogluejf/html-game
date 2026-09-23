@@ -1028,27 +1028,26 @@ function drawTimerStack(ctx, ent, cx, topY) {
  */
 function drawStatsHUD(ctx) {
   const h = getHero();
-  const s = h.runStats ?? h.stats ?? {};
+  const t = h.traceStats ?? {};
+  const s = t.total ?? {};           // run-total counters (history)
+  const wal = h.wallet?.current ?? {}; // live wallet
   const ek = s.enemiesKilled ?? {};
-  const dd = s.damageDealt ?? {};
-  const bm = dd.byMethod ?? {};
-  const be = dd.byEnemy ?? {};
   const ht = s.hitsTaken ?? {};
   const bc = s.barrelsDestroyed ?? {};
   const cc = s.coinsCollected ?? {};
+  const ps = s.projectilesShot ?? {};
+  const hl = s.hitsLanded ?? {};
 
   const lines = [];
   lines.push('=== TELEMETRY ===');
   // Kills by type.
   const killStr = Object.entries(ek).map(([k, v]) => `${k}:${v}`).join(' ') || 'none';
-  lines.push(`kills   ${killStr}`);
-  lines.push(`coins   ${cc.total ?? 0}  (b/s/g ${cc.bronze ?? 0}/${cc.silver ?? 0}/${cc.gold ?? 0})`);
-  lines.push(`dmg     melee:${bm.melee ?? 0} proj:${bm.projectile ?? 0} special:${bm.special ?? 0}`);
-  const dmgByEnemy = Object.entries(be).map(([k, v]) => `${k}:${Math.round(v)}`).join(' ');
-  lines.push(`byType  ${dmgByEnemy || '—'}`);
+  lines.push(`kills   ${killStr}  (wallet:${wal.kills ?? 0})`);
+  lines.push(`coins   ${cc.total ?? 0}  (b/s/g ${cc.bronze ?? 0}/${cc.silver ?? 0}/${cc.gold ?? 0})  wallet:${wal.coins ?? 0}`);
+  lines.push(`hits    melee:${hl.melee ?? 0} proj:${hl.projectile ?? 0} special:${hl.special ?? 0} super:${hl.superMove ?? 0} expl:${hl.explosion ?? 0}`);
   lines.push(`barrels wood:${bc.woodBarrel ?? 0} expl:${bc.explosiveBarrel ?? 0} coin:${bc.coinBarrel ?? 0}`);
   lines.push(`hitsTkn contact:${ht.enemyContact ?? 0} proj:${ht.enemyProjectile ?? 0} expl:${ht.explosion ?? 0} tot:${ht.total ?? 0}`);
-  lines.push(`dist    ${Math.round(s.distanceTraveled ?? 0)}px  shots:${s.projectilesShot ?? 0} swings:${s.meleeSwings ?? 0}`);
+  lines.push(`dist    ${Math.round(t.distanceTraveled ?? 0)}px  shots thorn:${ps.thorn ?? 0} special:${ps.special ?? 0} swings:${s.meleeSwings ?? 0}`);
 
   // God mode + time scale status line.
   const flags = [Debug.god ? 'GOD' : null, `t=${Debug.timeScale}x`, Debug.showLog ? 'LOG' : null]

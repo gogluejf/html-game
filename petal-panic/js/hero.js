@@ -89,20 +89,36 @@ export class Hero extends Entity {
     this.heroDef = heroDef;
     this.stats = { ...heroDef.stats };
 
-    // Resources / combat state.
-    this.energy = heroDef.stats.stamina;
+    // ---------------------------------------------------------------------
+    // WALLET — the single source of truth for "what I hold right now."
+    //   current  : live values (change as you play)
+    //   snapshot : values captured on area entry (the "photo")
+    // On death-restart, current is restored from snapshot (anti-farming).
+    // `lives` is intentionally NOT here — it is managed by the life/continue
+    // system, not the per-area wallet. Score is computed on demand, not stored.
+    // ---------------------------------------------------------------------
     this.maxEnergy = heroDef.stats.stamina;
+    this.wallet = {
+      current: {
+        coins: 0,
+        ammo: 200,
+        specialAmmo: 0,
+        energy: heroDef.stats.stamina,
+        kills: 0,
+      },
+      snapshot: {
+        coins: 0,
+        ammo: 200,
+        specialAmmo: 0,
+        energy: heroDef.stats.stamina,
+        kills: 0,
+      },
+    };
     this.shield = 0;
-    this.ammo = 200;
-    // §21: each weapon has its own ammo pool. Fresh runs start with no special
-    // ammo (§20: "No ammo: no projectile is created.") — the powerup system
-    // grants special ammo during a run.
-    this.specialAmmo = 0;
     // §21 Weapon Switching: N toggles the SELECTED weapon ('thorn' | 'special');
     // J always fires whatever is selected through one shared shoot path. The
     // selection persists until toggled again.
     this.selectedWeapon = WEAPON_THORN;
-    this.coins = 0;
     this.lives = 3;
     // Invincibility + rapid-fire are now unified labeled timers (see timers.js),
     // exposed via the getters/setters below so legacy call sites
@@ -264,6 +280,25 @@ export class Hero extends Entity {
 
   /** True while the hero is in hit-stun (recovery) — input is locked. */
   get hitStunned() { return this.timers.get('rec') > 0; }
+
+  // --- Wallet field bridges -------------------------------------------------
+  // Legacy call sites read/write hero.coins / hero.ammo / hero.specialAmmo /
+  // hero.energy as if they were plain fields. These accessors route them to
+  // the authoritative wallet.current so there is a single source of truth and
+  // the death-reset (current = snapshot) applies uniformly. maxEnergy stays a
+  // plain field (it is a fixed baseline, not a held resource).
+
+  get coins() { return this.wallet.current.coins; }
+  set coins(v) { this.wallet.current.coins = v; }
+
+  get ammo() { return this.wallet.current.ammo; }
+  set ammo(v) { this.wallet.current.ammo = v; }
+
+  get specialAmmo() { return this.wallet.current.specialAmmo; }
+  set specialAmmo(v) { this.wallet.current.specialAmmo = v; }
+
+  get energy() { return this.wallet.current.energy; }
+  set energy(v) { this.wallet.current.energy = v; }
 
   // --- Composed domain views (§31) -------------------------------------------
   // Pure derivations over the authoritative flags above. Render, anim

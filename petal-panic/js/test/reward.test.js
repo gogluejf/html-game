@@ -46,7 +46,7 @@ const { GAME_RULES } = await import('../gameRules.js');
 const { Hero } = await import('../hero.js');
 const { HEROES } = await import('../heroDefs.js');
 const { LEVELS } = await import('../level.js');
-const { createStats } = await import('../stats.js');
+const { createTrace } = await import('../stats.js');
 const SC = await import('../screens.js');
 const U = await import('../systems/update.js');
 
@@ -69,15 +69,18 @@ function makeTestHero() {
   h.currentLevel = 1;
   h.currentArea = 1;
   h.checkpoint = { x: 100, y: 400 };
-  h.runStats = createStats();
-  h.runStats.bossKilled = true; // the reward screen is only shown post-boss
+  // Fresh level-start baseline (zero), so the reward delta = wallet.current.
+  h._levelStartWallet = { coins: 0, kills: 0, ammo: 200, specialAmmo: 0, energy: h.wallet.current.energy };
+  h.traceStats = createTrace();
+  h.traceStats.total.bossKilled.tusko_wobble = 1; // reward is shown post-boss
   return h;
 }
 
-/** Fill the hero's run stats with a known kill/coin tally. */
+/** Fill the hero's wallet with a known kill/coin tally (this level). */
 function tally(h, { kills = {}, coins = 0 } = {}) {
-  for (const [k, n] of Object.entries(kills)) h.runStats.enemiesKilled[k] = n;
-  h.runStats.coinsCollected.total = coins;
+  const totalKills = Object.values(kills).reduce((a, b) => a + b, 0);
+  h.wallet.current.kills = totalKills;
+  h.wallet.current.coins = coins;
 }
 
 // Reset the global state machine to a clean baseline so each test starts
@@ -229,8 +232,6 @@ test('a fresh run credits a new reward even after a previous run finished (block
   // not suppressed by the previous run's presentation.
   const h2 = L.startGame({ world: null, oldHero: null, areaContext: null }, HEROES.scarlet);
   h2.currentLevel = 1;
-  h2.runStats = createStats();
-  h2.runStats.bossKilled = true;
   tally(h2, { kills: { jester: 1 }, coins: 2500 });
   setState(S.PLAY);
   L.showLevelReward(h2);
@@ -328,11 +329,10 @@ test('confirming the reward screen starts the next level at area -1 with its ent
   assert.equal(h.currentArea, 1, 'the next level starts at area 1');
   // Per-level reward accounting is reset for the new level (boss-arena.md §5):
   // the next level's reward must reflect THIS level only, not carry over the
-  // previous level's kill/coin tally.
-  assert.ok(h.runStats, 'a fresh per-level stats object is established for the next level');
-  assert.equal(Object.values(h.runStats.enemiesKilled).reduce((a, b) => a + b, 0),
-    0, 'per-level kill tally is reset for the next level');
-  assert.equal(h.runStats.coinsCollected.total, 0, 'per-level coin tally is reset for the next level');
+  // previous level's kill/coin tally. The wallet baseline is re-snapshotted.
+  assert.ok(h._levelStartWallet, 'a fresh per-level wallet baseline is established for the next level');
+  assert.equal(h._levelStartWallet.kills - h.wallet.current.kills, 0, 'per-level kill delta resets for the next level');
+  assert.equal(h._levelStartWallet.coins - h.wallet.current.coins, 0, 'per-level coin delta resets for the next level');
   const data = SC.getAreaEntryData();
   assert.ok(data, 'the entry screen data is presented');
   assert.equal(data.lives, h.lives, 'lives shown on the entry screen');
@@ -401,8 +401,8 @@ test('runtime: defeating the boss transitions to the reward screen (not the plac
   setState(S.PLAY);
   hero.dying = false;
   hero.alive = true;
-  hero.runStats.bossKilled = false;
-  hero.runStats.coinsCollected.total = 2500;
+  hero.wallet.current.coins = 2500;
+  if (hero.traceStats) hero.traceStats.total.bossKilled.tusko_wobble = 1;
   boss._deathHandled = false;
   boss.alive = false; // the death pipeline completed (timers expired)
   boss.active = true;
@@ -410,7 +410,8 @@ test('runtime: defeating the boss transitions to the reward screen (not the plac
   U.update(1 / 60);
 
   assert.equal(getState(), S.REWARD, 'boss defeat shows the reward screen');
-  assert.equal(hero.runStats.bossKilled, true, 'the boss kill is recorded');
+  const bossKilled = Object.values(hero.traceStats?.total?.bossKilled ?? {}).some((n) => n > 0);
+  assert.equal(bossKilled, true, 'the boss kill is recorded');
   const data = SC.getRewardData();
   assert.ok(data, 'the reward screen data is presented');
   assert.equal(data.coins, 2500, 'the coins collected this level are presented');

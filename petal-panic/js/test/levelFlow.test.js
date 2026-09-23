@@ -37,7 +37,7 @@ const { populateArea, populationSnapshot, composeArea } = await import('../macro
 const { getLevelConfig, getStageBudget } = await import('../levelConfigs.js');
 const { Hero } = await import('../hero.js');
 const { HEROES } = await import('../heroDefs.js');
-const { createStats } = await import('../stats.js');
+const { createTrace } = await import('../stats.js');
 const { GAME_RULES } = await import('../gameRules.js');
 const U = await import('../systems/update.js');
 const {
@@ -68,7 +68,9 @@ function makeTestHero() {
   h.currentLevel = 1;
   h.currentArea = 1;
   h.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - h.h };
-  h.runStats = createStats();
+  // Fresh level-start baseline (zero) so the reward delta = wallet.current.
+  h._levelStartWallet = { coins: 0, kills: 0, ammo: 200, specialAmmo: 0, energy: h.wallet.current.energy };
+  h.traceStats = createTrace();
   return h;
 }
 
@@ -303,9 +305,9 @@ test('full flow: boss defeat → reward → next level starts at area 1', () => 
   L._resetRewardForTest();
   setState(S.PLAY);
   const h = makeTestHero();
-  h.runStats.bossKilled = true;
-  h.runStats.enemiesKilled.jester = 5;
-  h.runStats.coinsCollected.total = 2500;
+  h.wallet.current.kills = 5;
+  h.wallet.current.coins = 2500;
+  h.traceStats.total.bossKilled.tusko_wobble = 1;
   L.bindAreaContext(h, makeAreaContext());
 
   const before = h.continues.remaining;
@@ -330,7 +332,8 @@ test('full flow: boss defeat → reward → next level starts at area 1', () => 
   assert.equal(getState(), S.AREA_ENTRY, 'the next level opens on the shared entry screen');
   assert.equal(h.currentLevel, 2, 'the level advanced to 2');
   assert.equal(h.currentArea, 1, 'the next level starts at area 1');
-  assert.equal(h.runStats.coinsCollected.total, 0, 'the per-level coin tally is reset');
+  // Per-level wallet baseline re-snapshotted: the delta since it is zero.
+  assert.equal(h.wallet.current.coins - h._levelStartWallet.coins, 0, 'the per-level coin delta resets');
 });
 
 test('full flow: boss defeat on the FINAL level → end-of-game (no next level)', () => {
@@ -338,8 +341,8 @@ test('full flow: boss defeat on the FINAL level → end-of-game (no next level)'
   setState(S.PLAY);
   const h = makeTestHero();
   h.currentLevel = LEVELS.length; // the final level
-  h.runStats.bossKilled = true;
-  h.runStats.coinsCollected.total = 1000;
+  h.wallet.current.coins = 1000;
+  h.traceStats.total.bossKilled.tusko_wobble = 1;
 
   const data = L.showLevelReward(h);
   assert.equal(data.isFinalLevel, true, 'the reward screen knows this is the final level');

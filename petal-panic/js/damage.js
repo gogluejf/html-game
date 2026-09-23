@@ -9,18 +9,23 @@
 //   - `amt` is the RAW attack value (e.g. hero.stats.attack).
 //   - Defense reduces it; the result never drops below 1 (a hit always lands).
 //   - The target's energy (hero) or hp (enemy) is drained by the real amount.
-//   - Telemetry on the SOURCE is updated when present (combatStats).
+//   - Telemetry on the SOURCE is updated when present (traceStats).
 //   - Death is flagged (alive = false); the CALLER owns the death pipeline
 //     (death anim, sparkles, coin drop, world removal) so this stays pure.
 //
 // Returns the real (post-defense) damage dealt, or 0 if the target was already
 // dead.
 
+import { record } from './stats.js';
+
+/** Hit-landed method buckets that damage() may write (subset of stats HIT_METHODS). */
+const HITS_LANDED_METHODS = new Set(['melee', 'projectile', 'special', 'specialMelee', 'superMove', 'explosion']);
+
 /**
  * Apply a single hit from `source` to `target`.
  *
  * @param {object} source   attacker (hero, enemy, explosion...). May carry
- *                          `.combatStats` for telemetry; optional.
+ *                          `.traceStats` for telemetry; optional.
  * @param {object} target   victim. Reads `.stats?.defense`, drains `.energy`
  *                          (heroes) or `.hp` (enemies), sets `.alive=false` on
  *                          death.
@@ -50,14 +55,12 @@ export function damage(source, target, amt, method = 'projectile') {
   }
 
   // --- Telemetry (only when the source tracks it) ---------------------------
-  if (source.combatStats) {
-    const cs = source.combatStats;
-    cs.hitsLanded[method] = (cs.hitsLanded[method] ?? 0) + 1;
-    cs.damageDealt.byMethod[method] = (cs.damageDealt.byMethod[method] ?? 0) + real;
-    if (target.type) {
-      cs.damageDealt.byEnemy[target.type] =
-        (cs.damageDealt.byEnemy[target.type] ?? 0) + real;
-    }
+  // Hits-landed is recorded into the trace via record(). damageDealt is no
+  // longer tracked in the stats model (dropped per design). Map the raw
+  // method onto a known hit-landed bucket; unknown methods are ignored so a
+  // new attack type can't throw.
+  if (source.traceStats && HITS_LANDED_METHODS.has(method)) {
+    record(source, { kind: 'hitLanded', method });
   }
 
   // --- Death flag (caller runs the actual death pipeline) --------------------

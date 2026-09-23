@@ -695,10 +695,10 @@ export const GameOver = {
     ctx.fillStyle = '#0d0d1a';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
-    const s = hero.runStats ?? {};
+    const s = hero.traceStats?.total ?? {};
     const kills = Object.values(s.enemiesKilled ?? {}).reduce((a, b) => a + b, 0);
     const coins = s.coinsCollected?.total ?? 0;
-    const distance = Math.round(s.distanceTraveled ?? 0);
+    const distance = Math.round(hero.traceStats?.distanceTraveled ?? 0);
     const score = calculateScore(s, hero);
 
     drawMenace(ctx, 'GAME OVER', VIEW_W / 2, VIEW_H / 2 - 130, 56);
@@ -814,7 +814,8 @@ export const Win = {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
-    const s = hero.runStats ?? {};
+    const s = hero.traceStats?.total ?? {};
+    const t = hero.traceStats ?? {};
     const kills = Object.values(s.enemiesKilled ?? {}).reduce((a, b) => a + b, 0);
     const barrels = (s.barrelsDestroyed?.barrel ?? 0) + (s.barrelsDestroyed?.coinBarrel ?? 0);
     const score = calculateScore(s, hero);
@@ -831,13 +832,12 @@ export const Win = {
     ctx.fillStyle = '#d8cdb4';
     const lines = [
       `Hero: ${hero.heroDef?.name ?? ''}`,
-      `Time: ${(s.timePlayed ?? 0).toFixed(1)}s`,
+      `Time: ${(t.timePlayed ?? 0).toFixed(1)}s`,
       `Enemies: ${kills}`,
-      `Boss: ${s.bossKilled ? 'DEFEATED ✓' : '—'}`,
+      `Boss: ${Object.values(s.bossKilled ?? {}).some(n => n > 0) ? 'DEFEATED ✓' : '—'}`,
       `Coins: ${s.coinsCollected?.total ?? 0}`,
       `Barrels: ${barrels}`,
-      `Checkpoints: ${s.checkpointsHit ?? 0}`,
-      `Distance: ${Math.round(s.distanceTraveled ?? 0)}px`,
+      `Distance: ${Math.round(t.distanceTraveled ?? 0)}px`,
     ];
     let y = 200;
     for (const line of lines) {
