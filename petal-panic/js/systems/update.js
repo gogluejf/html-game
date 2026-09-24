@@ -68,22 +68,24 @@ const LEVEL_CONFIG = getLevelConfig(LEVEL_DEF.index) ?? {};
 // the floor). Vertical terrain composes along Y (a climb of H units is H px
 // above the bottom platform) within the fixed one-screen width.
 // (unit → px via UNIT_PX, imported from macros.js — single source of truth).
+// BUGFIX: unit-space y=0 means "resting on the floor top", which is at
+// ZONE_GROUND_Y (500) — NOT the zone bottom (b.y + b.h = 540). Anchoring to
+// the zone bottom sank every block 40px (ZONE_FLOOR_H) into the floor slab.
 function horizontalUnitBox(zone, u) {
   const b = zone.bounds;
   const px = b.x + u.aabb.x * UNIT_PX;
-  const py = b.y + b.h - u.aabb.y * UNIT_PX - u.aabb.h * UNIT_PX;
+  const py = ZONE_GROUND_Y - u.aabb.y * UNIT_PX - u.aabb.h * UNIT_PX;
   return { x: px, y: py, w: u.aabb.w * UNIT_PX, h: u.aabb.h * UNIT_PX, oneWay: u.oneWay };
 }
 function verticalUnitBox(zone, u) {
   const b = zone.bounds;
   const px = b.x + u.aabb.x * UNIT_PX;
-  const py = b.y + b.h - (u.aabb.y + u.aabb.h) * UNIT_PX;
+  const py = ZONE_GROUND_Y - (u.aabb.y + u.aabb.h) * UNIT_PX;
   return { x: px, y: py, w: u.aabb.w * UNIT_PX, h: u.aabb.h * UNIT_PX, oneWay: u.oneWay };
 }
 /** A slot's surface elevation (units) to the y of its top surface (world px). */
 function surfaceY(zone, elevationUnits) {
-  const b = zone.bounds;
-  return b.y + b.h - elevationUnits * UNIT_PX;
+  return ZONE_GROUND_Y - elevationUnits * UNIT_PX;
 }
 /** A slot's x position (units) to world px. */
 function slotX(zone, unitX) {
@@ -817,6 +819,13 @@ export function enterBossRoom() {
   // Make sure the boss is in the collision world (loadActiveZone adds it on
   // zone entry; this guards the death-restart path where it was removed).
   if (!collisionWorld.entities.has(boss)) collisionWorld.add(boss);
+  // The boss checkpoint flag is only present during the RUN phase. Once the
+  // card triggers, the fixed battle room takes over and the flag must not be
+  // visible (or collidable) anymore — hide it until the zone restarts (death /
+  // debug wrap re-instantiate a fresh, visible flag).
+  for (const c of getCheckpoints()) {
+    if (c.isEntry) c.visible = false;
+  }
   // Instant black: the clear-fade overlay is the existing full-screen black
   // mechanism (render.js draws it at getClearFadeAlpha()). Pin it to 1 so the
   // world vanishes the same frame the card starts; liftBlackAtCombat() ramps
