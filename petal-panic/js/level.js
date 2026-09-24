@@ -133,7 +133,7 @@ export const ZONE_EXIT_X = ZONE_WIDTH_VERTICAL - ZONE_EXIT_PAD;
  * invisible line to start the battle room (update.js: hero.x >= triggerX).
  * It is a TRIGGER, not a flag — nothing is drawn there.
  */
-export const BOSS_TRIGGER_X = 1280; // ~1.3 screens in: card plays with room to spare, not at the wall
+export const BOSS_TRIGGER_X = 1080; // ~1.1 screens in: card fires before the scroll end
 /** Checkpoint flag height (matches CHECKPOINT_DEF in object.js). */
 export const ZONE_FLAG_H = 48;
 /**

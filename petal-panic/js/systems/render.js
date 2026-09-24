@@ -15,7 +15,7 @@ import { input, formatBinding } from '../input.js';
 import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../timers.js';
 import { drawScreen, screenUpdate } from '../screens.js';
 import { drawHUD } from '../hud.js';
-import { LEVELS } from '../level.js';
+import { LEVELS, BOSS_TRIGGER_X, ZONE_GROUND_Y } from '../level.js';
 
 // I-frame blink tuning (design §27): the flicker phase is derived from the
 // 'intangible' timer's remaining fraction, so these only set LOOK — the timing
@@ -658,6 +658,22 @@ function drawDebugOverlay(ctx) {
       ctx.stroke();
       ctx.restore();
     }
+  }
+
+  // Boss-card trigger line (debug): a gray dotted vertical at BOSS_TRIGGER_X
+  // while in the boss zone, so the invisible trigger is visible on the
+  // collision layer.
+  if (getActiveZoneKind() === 'boss') {
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = '#95a5a6';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo(BOSS_TRIGGER_X, 0);
+    ctx.lineTo(BOSS_TRIGGER_X, ZONE_GROUND_Y);
+    ctx.stroke();
+    ctx.restore();
   }
 }
 
