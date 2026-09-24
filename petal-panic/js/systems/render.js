@@ -689,7 +689,7 @@ function solidEntityProxy(box) {
     // R5.1: one-way platforms use the PLATFORM layer (thin, pass-through from
     // below/sides) — they only land the hero from above via resolve()'s
     // oneWay branch. Solid blocks/barrels keep SOLID.
-    const layer = s.oneWay ? LAYER.PLATFORM : LAYER.SOLID;
+    const layer = box.oneWay ? LAYER.PLATFORM : LAYER.SOLID;
     return { x: box.x, y: box.y, w: box.w, h: box.h, layer, worldBox: () => box };
 }
 
