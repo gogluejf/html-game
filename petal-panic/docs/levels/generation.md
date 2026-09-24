@@ -27,9 +27,9 @@ Examples from the design discussion, to become a tunable pattern vocabulary:
   platform at tier 2; then height-3, height-2, height-1 blocks.
 - **Climbing pattern:** a sequence of reachable landings that continues upward
   within the vertical area's fixed screen width.
-- **Gap/drop:** a wide gap followed by a lower landing (a solid block). The
-  hero must jump the gap and land on the block. Not a lethal pit — the landing
-  is a real surface, not air.
+- **Gap landing run:** a wide gap followed by a short run of solid blocks. The
+  hero must jump the gap and land on the block run. Not a lethal pit — the
+  landing is a real surface, not air.
 
 These are families of arrangements, not final spacing values. A gap or drop is
 a movement challenge; this does not automatically mean a lethal pit.
@@ -74,10 +74,11 @@ soft pacing hints; orientation is the hard structural constraint).
 
 **Elevation validation.** The route is validated for playability: only
 UPWARD elevation steps are constrained (a hero can reach at most one tier
-higher per jump). Downward steps are always possible (falling), so they are
-not validated. In vertical areas, the climb must continue upward between
-macros — the next macro's first landing must be at a higher elevation than
-the previous macro's last landing.
+higher per jump), measured between the surfaces the hero actually stands on.
+Downward steps are always possible (falling), so they are not validated. In
+vertical areas, the climb must continue upward between macros — the next
+macro's first landing must be at a higher elevation than the previous
+macro's last landing.
 
 Terrain selection is randomized too. The earlier idea that only population was
 random was incorrect. Authored macros constrain randomness; they do not make
@@ -126,6 +127,9 @@ curve (config); what is rolled is the concrete layout, once per game.
   double-jump airtime). Any gap wider than this is impossible.
 - Solid blocks cannot be treated as jump-through platforms.
 - Required landings must not be buried beneath barrel walls or other solids.
+- Stacked terrain needs real headroom: a floating block or an overhead
+  platform must leave enough clear space above the surface below it for the
+  hero to pass under or reach it.
 - Pattern joins must not create impossible gaps or trapped starts.
 - In vertical areas, the route must remain usable under an upward-only camera.
 - The start and exit must not require a random powerup to be reachable.

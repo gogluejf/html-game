@@ -104,7 +104,7 @@ are not interchangeable, even when their top surfaces share a height.
 ### Platforms
 
 - One platform thickness; widths are one, two, or three units.
-- Can occupy elevation tier 1, 2, or 3.
+- Occupies one elevation tier (1, 2, or 3); the hero stands on its top face.
 - Support the normal jump-through and Down + Jump drop-through rules from
   [hero mechanics](../architecture/hero-mechanics.md).
 

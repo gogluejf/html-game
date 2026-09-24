@@ -86,6 +86,9 @@ Do not force the same enemy mix into every macro simply to reach a total.
 
 Resolve placements together so one layer does not invalidate another:
 
+- One position holds at most one item: a terrain position is offered as a
+  single opportunity, never several stacked ones, so items can never spawn
+  on top of each other.
 - A barrel structure must not bury a powerup or entry flag.
 - Required landing surfaces must remain usable.
 - An enemy must not begin trapped inside solid terrain or barrel geometry.
