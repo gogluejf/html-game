@@ -775,11 +775,13 @@ export let boss = makeElephant(-9999, ZONE_GROUND_Y); // parked off-world until 
 const bossZoneDef = levelZones[4];
 export const bossZone = makeBossZone(bossZoneDef, boss, {
   onCombat: () => {
-    // Combat enable (boss-arena.md §2 step 8): the boss becomes active and
-    // the fight begins. The boss's attack patterns are its own
-    // responsibility (the boss/combat system); this only flips the gate.
+    // Combat enable (boss-arena.md §2 step 8): the intro is done — settle
+    // into the battle room (hero to the room's left entry, camera frozen on
+    // the fixed-width room) and activate the boss. The boss's attack patterns
+    // are its own responsibility (the boss/combat system); this flips the gate.
+    settleIntoBossRoom();
     boss.active = true;
-    console.log('[bossZone] COMBAT — boss active, fight enabled');
+    console.log('[bossZone] COMBAT — settled into room, boss active');
   },
 });
 
@@ -793,26 +795,38 @@ export const bossZone = makeBossZone(bossZoneDef, boss, {
  * before the camera freezes, so nothing jumps.
  */
 export function enterBossRoom() {
-  // 1. Freeze the camera on the room: the leftmost VIEW_W of the zone, at the
-  //    origin. minX === maxX makes Camera.update() a no-op (frozen). The entry
-  //    flag is purely visual (like any other level's) and stays in place —
-  //    it is never triggered or removed.
+  // The card plays IN PLACE: no camera freeze, no hero teleport yet. The
+  // hero stays where they crossed the line, the camera keeps its current
+  // framing, and the full-screen presentation covers the view. When the intro
+  // finishes (BOSS_ENTER → COMBAT), settleIntoBossRoom() snaps the hero to the
+  // room's left entry and freezes the camera on the fixed-width room.
+  // Make sure the boss is in the collision world (loadActiveZone adds it on
+  // zone entry; this guards the death-restart path where it was removed).
+  if (!collisionWorld.entities.has(boss)) collisionWorld.add(boss);
+  // Start the presentation machine (LOCKED → … → COMBAT).
+  beginBossZoneFlow();
+  console.log(`[bossZone] trigger line crossed — card playing in place, hero @${Math.round(hero.x)}, state ${bossZone.state}`);
+}
+
+/**
+ * Settle into the battle room: called exactly once when the intro presentation
+ * finishes (the BOSS_ENTER → COMBAT transition). Snaps the hero to the room's
+ * left entry (same spot as any level start) and freezes the camera on the
+ * fixed-width room (minX === maxX = roomX; screen x = world x). The snap
+ * happens UNDER the just-finished presentation, so it reads as "the card ends
+ * and you are now in the arena" rather than a mid-walk teleport.
+ */
+export function settleIntoBossRoom() {
   camera.minX = camera.maxX = bossZone.roomX;
   camera.minY = camera.maxY = 0;
   camera.x = bossZone.roomX;
   camera.y = 0;
-  // 2. Place the hero at the room's left entry (same spot as any level start).
   hero.x = ZONE_ENTRY_X;
   hero.y = ZONE_GROUND_Y - hero.h;
   hero.vx = 0;
   hero.vy = 0;
   hero.checkpoint = { x: hero.x, y: hero.y };
-  // 3. Make sure the boss is in the collision world (loadActiveZone adds it on
-  //    zone entry; this guards the death-restart path where it was removed).
-  if (!collisionWorld.entities.has(boss)) collisionWorld.add(boss);
-  // 4. Start the presentation machine (LOCKED → … → COMBAT).
-  beginBossZoneFlow();
-  console.log(`[bossZone] room entered — cam frozen @${camera.x}, hero @${hero.x}, state ${bossZone.state}`);
+  console.log(`[bossZone] settled into room — cam frozen @${camera.x}, hero @${hero.x}`);
 }
 
 /**
@@ -2214,7 +2228,10 @@ export function update(dt) {
   if (bzPresentation) {
     bossZone.update(dt, hero);
     if (boss.alive && boss.aiState !== 'dead' && boss.gravity > 0) resolve(boss, SOLIDS);
-    camera.update(hero);
+    // The card plays IN PLACE: hold the camera exactly where it is (no follow,
+    // no drift) so the full-screen presentation reads cleanly. The snap to the
+    // room happens once, at the BOSS_ENTER → COMBAT boundary (onCombat →
+    // settleIntoBossRoom).
     Effects.update(dt);
     return;
   }
