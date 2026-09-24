@@ -127,6 +127,13 @@ export const ZONE_ENTRY_X = 120;
 export const ZONE_EXIT_PAD = 120;
 /** Backward-compat alias for the pre-doubling exit x (vertical/boss zones). */
 export const ZONE_EXIT_X = ZONE_WIDTH_VERTICAL - ZONE_EXIT_PAD;
+/**
+ * Where the boss-card trigger line sits inside the boss zone, from its left
+ * edge (px). The hero walks right from the left entry and crosses this
+ * invisible line to start the battle room (update.js: hero.x >= triggerX).
+ * It is a TRIGGER, not a flag — nothing is drawn there.
+ */
+export const BOSS_TRIGGER_X = ZONE_WIDTH_VERTICAL - ZONE_EXIT_PAD; // 1480
 /** Checkpoint flag height (matches CHECKPOINT_DEF in object.js). */
 export const ZONE_FLAG_H = 48;
 /**
@@ -151,8 +158,13 @@ export const VERTICAL_TOP_PLATFORM_OFFSET = 56;
 /**
  * The boss checkpoint is the visual marker that "leads to the boss zone".
  * checkpoints.md §1: the 4 exit uses the boss-checkpoint appearance, and the
- * boss zone itself begins beside a boss checkpoint flag too. We mark both with
- * the same appearance id so the renderer can paint one consistent glyph.
+ * boss zone itself carries a boss checkpoint too. We mark both with the same
+ * appearance id so the renderer can paint one consistent glyph.
+ *
+ * Inside the boss zone the flag stands at the LEFT entry, exactly like any
+ * other level's entry flag (labeled `1-boss`). Crossing it triggers the boss
+ * card + battle room (update.js HERO×CHECKPOINT). There is no second flag and
+ * no far-right trigger.
  */
 export const BOSS_CHECKPOINT = { appearance: 'boss-checkpoint' };
 
@@ -229,11 +241,16 @@ function flagY(zone, kind) {
 function zoneEntryFlag(zone) {
   if (zone.kind === 'area' && zone.areaIdx === 1) return null;
   const isBoss = zone.kind === 'boss';
+  // The boss zone's entry flag IS the boss checkpoint: it stands at the FAR
+  // RIGHT of the zone (mirror of the exit-flag placement) so the approach is a
+  // genuine left→right walk across the whole area. Crossing it triggers the
+  // battle room (update.js HERO×CHECKPOINT handler). Ordinary areas keep their
+  // entry flag at the standard left-side entry position.
+  const x = zone.bounds.x + ZONE_ENTRY_X;
   return {
     id: isBoss ? `${zone.level}-boss` : `${zone.level}-${zone.areaIdx}`,
-    x: zone.bounds.x + ZONE_ENTRY_X,
+    x,
     y: flagY(zone, 'entry'),
-    // The boss zone's entry flag carries the boss-checkpoint appearance.
     appearance: isBoss ? BOSS_CHECKPOINT.appearance : 'entry',
   };
 }

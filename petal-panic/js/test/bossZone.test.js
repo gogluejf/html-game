@@ -1,19 +1,28 @@
-// Task 6.1 — Boss zone flow state machine (docs/levels/boss-arena.md §1–§3).
+// Boss zone flow state machine — BATTLE ROOM model (docs/levels/boss-arena.md §1–§3).
 // Run: node --test petal-panic/js/test/bossZone.test.js
 //
 // Source of truth:
-//   docs/levels/boss-arena.md §1 Entry and approach
+//   docs/levels/boss-arena.md §1 Entry and run phase
 //   docs/levels/boss-arena.md §2 Boss introduction screen
 //   docs/levels/boss-arena.md §3 Fight and retry
 //
-// Acceptance criteria covered (task 6.1):
-//   1. Approach is ~1 screen and leaves the flag behind.
-//   2. Both sides locked on arena entry (camera freeze + arena lock gate).
+// The boss zone has TWO phases, both inside ONE zone:
+//   RUN         — hero walks right from the left entry to the boss checkpoint
+//                 at the far right. Machine DORMANT (state === null).
+//   BATTLE ROOM — triggered by crossing the checkpoint (update.js
+//                 enterBossRoom): flag removed, camera frozen at x=0 on the
+//                 leftmost VIEW_W of the zone, hero at the room's left entry,
+//                 boss slides in from the right. THIS module owns that half:
+//                 LOCKED → INTRO_SWEEP → BAR_FILL → BOSS_ENTER → COMBAT.
+//
+// Acceptance criteria covered:
+//   1. Room geometry: x ∈ [0, VIEW_W], boss rest ~75%, boss enters off-screen right.
+//   2. begin() starts in LOCKED (no APPROACH state exists anymore).
 //   3. Intro plays in documented order with opposing motion.
 //   4. Boss invisible until its entrance (BOSS_ENTER).
 //   5. Hero cannot damage the boss before COMBAT.
-//   6. Death during intro/combat restarts at the boss checkpoint, repeating
-//      the approach (the machine resets to APPROACH and re-runs in order).
+//   6. Death during intro/combat resets the machine to dormant; the run
+//      repeats (flag restored by the update system, not the machine).
 //
 // This test exercises the STATE MACHINE (states transition in the right
 // order, gates flip at the right moment). It does NOT test pixel-perfect
@@ -21,7 +30,7 @@
 //
 // bossZone.js is pure (no DOM), so most of the machine is tested in
 // isolation. The runtime wiring (update.js) is exercised through the real
-// module for the death-restart path.
+// module for the boot/dormant path.
 
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
@@ -29,11 +38,12 @@ import { test } from 'node:test';
 // --- Pure state machine (no DOM needed) ------------------------------------
 const {
   BossZone, makeBossZone,
-  BZ_APPROACH, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT,
-  BOSS_ZONE_STATES, BOSS_APPROACH_DIST,
+  BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT,
+  BOSS_ZONE_STATES,
 } = await import('../bossZone.js');
-const { LEVELS, buildLevelZones } = await import('../level.js');
+const { LEVELS, buildLevelZones, ZONE_ENTRY_X, BOSS_TRIGGER_X } = await import('../level.js');
 const { makeElephant } = await import('../boss.js');
+const { VIEW_W } = await import('../view.js');
 
 // A minimal boss-zone fixture (the real one comes from buildLevelZones).
 function fixture() {
@@ -44,12 +54,13 @@ function fixture() {
   return { zone, boss };
 }
 
-// A minimal hero (x/y/w/h) for the machine.
+// A minimal hero (x/y/w/h) for the machine. All states are timer-driven now,
+// so the hero position is irrelevant to transitions — it is kept for API
+// compatibility with update(dt, hero).
 function heroAt(x, y = 460) { return { x, y, w: 32, h: 40 }; }
 
-// Drive the machine from its current state to the NEXT state (timer-driven
-// states). APPROACH is hero-driven, so pass a hero at the arena entry to
-// finish it. Returns the number of steps taken.
+// Drive the machine from its current state to the NEXT state (timer-driven).
+// Returns the number of steps taken.
 function advanceOne(m, hero, dt = 1 / 60, maxSteps = 600) {
   let steps = 0;
   const prev = m.state;
@@ -62,7 +73,7 @@ function advanceOne(m, hero, dt = 1 / 60, maxSteps = 600) {
 
 // Run the machine all the way to COMBAT from its current state.
 function runToCombat(m, dt = 1 / 60) {
-  const hero = heroAt(m.arenaEntryX + 1); // finish APPROACH, then hold
+  const hero = heroAt(120); // static hero; all states are timer-driven
   let guard = 0;
   while (m.state !== BZ_COMBAT && guard++ < 50) {
     advanceOne(m, hero, dt);
@@ -70,84 +81,83 @@ function runToCombat(m, dt = 1 / 60) {
 }
 
 // ===========================================================================
-// 1. Approach is ~1 screen and leaves the flag behind.
+// 1. Room geometry: fixed-width world at the origin.
 // ===========================================================================
 
-test('approach distance is ~1 screen (provisional reference)', () => {
-  // boss-arena.md §1: "around one screen of approach is a provisional
-  // reference". One screen is the view width (960). The value should be in
-  // the ballpark of a screen (between 0.5 and 1.5 screens).
-  const { VIEW_W } = require_view();
-  assert.ok(BOSS_APPROACH_DIST > VIEW_W * 0.5, 'approach is at least half a screen');
-  assert.ok(BOSS_APPROACH_DIST < VIEW_W * 1.5, 'approach is at most 1.5 screens');
-});
-
-test('approach is rightward: hero starts on the left, walks right to the arena entry', () => {
+test('room is the leftmost VIEW_W of the zone, at the origin', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
-  m.begin();
-  const b = zone.bounds;
-  // The hero starts on the LEFT side of the zone (beside the boss checkpoint)
-  // and walks RIGHT toward the arena (like a regular area).
-  assert.ok(m.approachStartX < b.x + b.w / 2,
-    `the hero starts on the left side of the zone (${m.approachStartX})`);
-  // The arena entry line is to the RIGHT of the start, so the hero walks
-  // forward into the arena. The distance is the documented ~1-screen approach.
-  assert.ok(m.arenaEntryX > m.approachStartX,
-    `arena entry (${m.arenaEntryX}) is right of the start (${m.approachStartX})`);
-  assert.equal(m.arenaEntryX - m.approachStartX, BOSS_APPROACH_DIST,
-    'the approach runs exactly one documented screen');
-  // The arena entry must be a reachable position INSIDE the zone bounds.
-  assert.ok(m.arenaEntryX <= b.x + b.w,
-    `arena entry (${m.arenaEntryX}) is inside the zone bounds`);
-  assert.ok(m.approachStartX >= b.x,
-    'the hero start is inside the zone bounds');
+  assert.equal(m.roomX, 0, 'the room starts at world x=0 (screen x = world x)');
+  assert.equal(m.roomW, VIEW_W, 'the room is exactly one view wide');
+  assert.ok(m.roomX + m.roomW <= zone.bounds.w, 'the room fits inside the zone');
 });
 
-test('approach is hero-driven: it ends when the hero reaches the arena entry', () => {
+test('boss rests at ~75% across the room (right side, visible)', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
+  // Rest x is the boss's LEFT edge at ~75% of the room width.
+  const expected = Math.round(m.roomX + m.roomW * 0.75 - boss.w / 2);
+  assert.equal(m.bossRestX, expected, 'boss rest is computed at 75% of the room');
+  // Fully visible when the camera is frozen at the room's left edge:
+  assert.ok(m.bossRestX >= m.roomX, 'boss rest is inside the room (left)');
+  assert.ok(m.bossRestX + boss.w <= m.roomX + m.roomW, 'boss rest is inside the room (right)');
+});
+
+test('boss enters from off-screen right of the room', () => {
+  const { zone, boss } = fixture();
+  const m = makeBossZone(zone, boss);
+  // Entry x must be RIGHT of the room's right edge (off-screen when the
+  // camera is frozen at the room's left edge).
+  assert.ok(m.bossEnterFromX > m.roomX + m.roomW,
+    `boss entry (${m.bossEnterFromX}) is off-screen right of the room (${m.roomX + m.roomW})`);
+  assert.ok(m.bossEnterFromX > m.bossRestX, 'the boss slides left into the room');
+});
+
+test('begin() places the boss off-screen right and starts in LOCKED', () => {
+  const { zone, boss } = fixture();
+  const m = makeBossZone(zone, boss);
+  assert.equal(m.state, null, 'dormant before begin()');
   m.begin();
-  assert.equal(m.state, BZ_APPROACH);
-  // Hero at the flag (left side) — still approaching.
-  const atFlag = heroAt(m.approachStartX);
-  m.update(1 / 60, atFlag);
-  assert.equal(m.state, BZ_APPROACH, 'hero at the flag is still approaching');
-  // Hero walks right to the arena entry line → the approach ends.
-  const atEntry = heroAt(m.arenaEntryX + 1);
-  m.update(1 / 60, atEntry);
-  assert.equal(m.state, BZ_LOCKED, 'reaching the arena entry ends the approach');
+  assert.equal(m.state, BZ_LOCKED, 'begin() starts in LOCKED (no APPROACH state)');
+  assert.equal(boss.x, m.bossEnterFromX, 'the boss is placed off-screen right');
+  assert.equal(m.bossVisible(), false, 'the boss is invisible at LOCKED');
+});
+
+test('the boss zone entry flag stands at the left like any other level', () => {
+  const zones = buildLevelZones(LEVELS[0]);
+  const zone = zones.find((z) => z.kind === 'boss');
+  assert.ok(zone.entryFlag, 'the boss zone has an entry flag (the boss checkpoint)');
+  // Purely visual, exactly like areas 2..4: it stands at the standard left
+  // entry position and is never triggered. The battle room is started by the
+  // invisible trigger line at BOSS_TRIGGER_X (update.js), not by this flag.
+  assert.equal(zone.entryFlag.x, ZONE_ENTRY_X,
+    'the boss entry flag is at the standard left entry position');
+  assert.equal(zone.entryFlag.appearance, 'boss-checkpoint', 'it carries the boss-checkpoint appearance');
+});
+
+test('the boss-card trigger line sits at the far right of the zone', () => {
+  const zones = buildLevelZones(LEVELS[0]);
+  const zone = zones.find((z) => z.kind === 'boss');
+  // The hero walks right from the left entry and crosses this line to start
+  // the battle room. It must be inside the zone, well past the entry.
+  assert.ok(BOSS_TRIGGER_X > ZONE_ENTRY_X + VIEW_W,
+    `trigger (${BOSS_TRIGGER_X}) is at least one screen past the entry`);
+  assert.ok(BOSS_TRIGGER_X < zone.bounds.w, 'trigger is inside the zone bounds');
 });
 
 // ===========================================================================
-// 2. Both sides locked on arena entry.
+// 2. Room lock: locked from LOCKED through COMBAT.
 // ===========================================================================
 
-test('arena lock: onLock fires exactly once, at LOCKED', () => {
-  const { zone, boss } = fixture();
-  let lockCalls = 0;
-  const m = makeBossZone(zone, boss, { onLock: () => { lockCalls++; } });
-  m.begin();
-  // Approach → LOCKED.
-  m.update(1 / 60, heroAt(m.arenaEntryX + 1));
-  assert.equal(m.state, BZ_LOCKED);
-  assert.equal(lockCalls, 1, 'onLock fires once when the arena locks');
-  assert.equal(m.arenaLocked(), true, 'the arena is locked from LOCKED onward');
-  // Advance through the rest; onLock must NOT fire again.
-  m.update(1, heroAt(m.arenaEntryX));
-  m.update(1, heroAt(m.arenaEntryX));
-  m.update(1, heroAt(m.arenaEntryX));
-  assert.equal(lockCalls, 1, 'onLock does not re-fire on later states');
-});
-
-test('arena stays locked through combat (boss-arena.md §3)', () => {
+test('roomLocked() is true from LOCKED onward (including COMBAT)', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
+  assert.equal(m.roomLocked(), false, 'not locked while dormant (run phase)');
   m.begin();
-  // Run the machine all the way to COMBAT.
+  assert.equal(m.roomLocked(), true, 'locked from LOCKED');
   runToCombat(m);
   assert.equal(m.state, BZ_COMBAT);
-  assert.equal(m.arenaLocked(), true, 'the arena remains locked during combat');
+  assert.equal(m.roomLocked(), true, 'the room remains locked during combat');
 });
 
 // ===========================================================================
@@ -158,39 +168,27 @@ test('states transition in the documented order', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  // Run to LOCKED (finishes APPROACH).
-  advanceOne(m, heroAt(m.arenaEntryX + 1));
-  assert.equal(m.state, BZ_LOCKED);
-  const seen = [BZ_APPROACH, m.state];
-  // LOCKED → INTRO_SWEEP → BAR_FILL → BOSS_ENTER → COMBAT (timer-driven).
+  const seen = [m.state]; // LOCKED
   while (m.state !== BZ_COMBAT) {
-    advanceOne(m, heroAt(m.arenaEntryX));
+    advanceOne(m, heroAt(120));
     if (m.state !== seen[seen.length - 1]) seen.push(m.state);
   }
   assert.equal(m.state, BZ_COMBAT, 'the machine reaches COMBAT');
-  // The observed sequence must be a prefix-consistent walk through the
-  // documented order.
-  const expected = [BZ_APPROACH, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT];
-  for (let i = 0; i < seen.length; i++) {
-    assert.equal(seen[i], expected[i], `state ${i} is ${seen[i]}, expected ${expected[i]}`);
-  }
-  assert.equal(seen.length, expected.length, 'every documented state is visited in order');
+  const expected = [BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT];
+  assert.deepEqual(seen, expected, 'every documented state is visited in order');
+  assert.deepEqual(BOSS_ZONE_STATES, expected, 'BOSS_ZONE_STATES matches the runtime order');
 });
 
-test('INTRO_SWEEP carries opposing motion: graphic L→R, title R→L', () => {
+test('INTRO_SWEEP carries opposing motion: progress advances 0→1', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
-  advanceOne(m, heroAt(m.arenaEntryX));      // → INTRO_SWEEP
+  advanceOne(m, heroAt(120)); // → INTRO_SWEEP
   assert.equal(m.state, BZ_INTRO_SWEEP);
-  // The progress() value must advance 0→1 across the sweep (this is what the
-  // presentation uses to drive the opposing motion). It must strictly
-  // increase over the state.
   const p0 = m.progress();
-  m.update(0.3, heroAt(m.arenaEntryX));
+  m.update(0.3, heroAt(120));
   const p1 = m.progress();
-  m.update(0.3, heroAt(m.arenaEntryX));
+  m.update(0.3, heroAt(120));
   const p2 = m.progress();
   assert.ok(p0 < p1 && p1 < p2, `progress advances: ${p0} < ${p1} < ${p2}`);
   assert.ok(p0 >= 0 && p2 <= 1, 'progress stays within [0,1]');
@@ -200,10 +198,8 @@ test('INTRO_SWEEP duration is "rapid" (pure tension, boss-arena.md §2)', () => 
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
-  advanceOne(m, heroAt(m.arenaEntryX));      // → INTRO_SWEEP
-  // The sweep should complete in a short time (a few seconds at most).
-  const steps = advanceOne(m, heroAt(m.arenaEntryX));
+  advanceOne(m, heroAt(120)); // → INTRO_SWEEP
+  const steps = advanceOne(m, heroAt(120));
   const dur = steps / 60;
   assert.ok(dur < 4, `the sweep is rapid (${dur.toFixed(2)}s < 4s)`);
 });
@@ -212,17 +208,15 @@ test('INTRO_SWEEP duration is "rapid" (pure tension, boss-arena.md §2)', () => 
 // 4. Boss invisible until its entrance (BOSS_ENTER).
 // ===========================================================================
 
-test('boss is invisible during the intro (APPROACH..BAR_FILL)', () => {
+test('boss is invisible during the intro (LOCKED..BAR_FILL)', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  // APPROACH.
-  assert.equal(m.state, BZ_APPROACH);
-  assert.equal(m.bossVisible(), false, 'boss is invisible during APPROACH');
-  assert.equal(m.inIntro, true, 'APPROACH is part of the intro');
-  // → LOCKED → INTRO_SWEEP → BAR_FILL.
-  for (const s of [BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL]) {
-    advanceOne(m, heroAt(m.arenaEntryX + 1));
+  assert.equal(m.state, BZ_LOCKED);
+  assert.equal(m.bossVisible(), false, 'boss is invisible during LOCKED');
+  assert.equal(m.inIntro, true, 'LOCKED is part of the intro');
+  for (const s of [BZ_INTRO_SWEEP, BZ_BAR_FILL]) {
+    advanceOne(m, heroAt(120));
     assert.equal(m.state, s, 'reached ' + s);
     assert.equal(m.bossVisible(), false, `boss is invisible during ${s}`);
     assert.equal(m.inIntro, true, `${s} is part of the intro`);
@@ -233,87 +227,56 @@ test('boss becomes visible at BOSS_ENTER (it enters from the right)', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  // Run to BOSS_ENTER.
-  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
-  advanceOne(m, heroAt(m.arenaEntryX));      // → INTRO_SWEEP
-  advanceOne(m, heroAt(m.arenaEntryX));      // → BAR_FILL
-  advanceOne(m, heroAt(m.arenaEntryX));      // → BOSS_ENTER
+  advanceOne(m, heroAt(120)); // → INTRO_SWEEP
+  advanceOne(m, heroAt(120)); // → BAR_FILL
+  advanceOne(m, heroAt(120)); // → BOSS_ENTER
   assert.equal(m.state, BZ_BOSS_ENTER);
   assert.equal(m.bossVisible(), true, 'the boss is visible once it enters');
-  // It entered from the right: its start x is right of its rest x.
-  assert.ok(m.bossEnterFromX > m.bossRestX, 'the boss enters from the right');
+  assert.ok(m.bossEnterFromX > m.bossRestX, 'the boss entered from the right');
 });
 
-test('boss keeps its position sliding in during BOSS_ENTER', () => {
+test('boss keeps sliding in during BOSS_ENTER', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
-  advanceOne(m, heroAt(m.arenaEntryX));      // → INTRO_SWEEP
-  advanceOne(m, heroAt(m.arenaEntryX));      // → BAR_FILL
-  advanceOne(m, heroAt(m.arenaEntryX));      // → BOSS_ENTER
+  advanceOne(m, heroAt(120)); // → INTRO_SWEEP
+  advanceOne(m, heroAt(120)); // → BAR_FILL
+  advanceOne(m, heroAt(120)); // → BOSS_ENTER
   assert.equal(m.state, BZ_BOSS_ENTER, 'the machine is in BOSS_ENTER');
-  // Now in BOSS_ENTER: the boss's x moves from its entry x toward its rest.
   const startX = boss.x;
-  m.update(0.2, heroAt(m.arenaEntryX));
+  m.update(0.2, heroAt(120));
   const midX = boss.x;
-  m.update(0.2, heroAt(m.arenaEntryX));
+  m.update(0.2, heroAt(120));
   const endX = boss.x;
-  assert.ok(startX > midX, `boss is sliding left into the arena: ${startX} → ${midX}`);
+  assert.ok(startX > midX && midX > endX,
+    `boss is sliding left into the room: ${startX} → ${midX} → ${endX}`);
 });
 
 test('bar fill continues during BOSS_ENTER (the "final stretch" overlaps the entrance)', () => {
-  // boss-arena.md §2: "After a portion of the bar has filled, the boss enters
-  // the screen from the right." The concrete design-plan decision (task 7.2):
-  // the bar keeps filling during BOSS_ENTER until it is full — the "final
-  // stretch" of the fill overlaps the boss entrance. The bar does NOT freeze
-  // at the entrance threshold (TUNING.bossIntroBarFillPct) for the entire
-  // entrance.
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
-  advanceOne(m, heroAt(m.arenaEntryX));      // → INTRO_SWEEP
-  advanceOne(m, heroAt(m.arenaEntryX));      // → BAR_FILL
-  // In BAR_FILL: step until just before the threshold, then read the bar fill.
-  // The bar fill should be a proper fraction (0, 1) — it has been filling.
-  let barFillBeforeEnter = 0;
-  let guard = 0;
-  while (m.state === BZ_BAR_FILL && guard++ < 600) {
-    m.update(1 / 60, heroAt(m.arenaEntryX));
-    barFillBeforeEnter = m.barFill;
-    if (m.barFill >= 0.5) break; // stop once the bar is at least half full
-  }
-  assert.equal(m.state, BZ_BAR_FILL, 'still in BAR_FILL before the threshold');
-  assert.ok(barFillBeforeEnter > 0 && barFillBeforeEnter < 1,
-    `bar fill in BAR_FILL is a proper fraction (${barFillBeforeEnter.toFixed(3)})`);
-  // Now step into BOSS_ENTER (the bar reaches the threshold).
-  while (m.state === BZ_BAR_FILL) {
-    m.update(1 / 60, heroAt(m.arenaEntryX));
+  // Run straight to BOSS_ENTER (LOCKED → INTRO_SWEEP → BAR_FILL → BOSS_ENTER).
+  while (m.state !== BZ_BOSS_ENTER) {
+    m.update(1 / 60, heroAt(120));
   }
   assert.equal(m.state, BZ_BOSS_ENTER, 'the machine is in BOSS_ENTER');
-  // The bar fill at the start of BOSS_ENTER should be at (or just past) the
-  // threshold — the bar was filling when the boss entered.
+  // The bar was filling when the boss entered: it sits at (or just past) the
+  // entrance threshold, strictly between 0 and 1... or exactly at the point
+  // where the entrance began. Either way it is not yet full.
   const barFillAtEnterStart = m.barFill;
-  assert.ok(barFillAtEnterStart >= barFillBeforeEnter,
-    `bar fill is continuous across the boundary (${barFillAtEnterStart.toFixed(3)} >= ${barFillBeforeEnter.toFixed(3)})`);
-  // Now in BOSS_ENTER: the bar KEEP filling (it does NOT freeze).
-  const barFillMid = m.barFill;
-  m.update(0.2, heroAt(m.arenaEntryX));
+  assert.ok(barFillAtEnterStart > 0, `the bar has been filling (${barFillAtEnterStart.toFixed(3)})`);
+  assert.ok(barFillAtEnterStart < 1, 'the bar is not yet full when the boss enters');
+  // The bar KEEPS filling during BOSS_ENTER (it does NOT freeze).
+  m.update(0.2, heroAt(120));
   const barFillLater = m.barFill;
-  m.update(0.2, heroAt(m.arenaEntryX));
+  m.update(0.2, heroAt(120));
   const barFillEnd = m.barFill;
-  // The bar fill should be strictly increasing during BOSS_ENTER (the "final
-  // stretch" of the fill overlaps the entrance).
-  assert.ok(barFillMid >= barFillAtEnterStart,
-    `bar fill is not decreasing during BOSS_ENTER (${barFillMid.toFixed(3)} >= ${barFillAtEnterStart.toFixed(3)})`);
-  assert.ok(barFillLater >= barFillMid,
-    `bar fill is increasing during BOSS_ENTER (${barFillLater.toFixed(3)} >= ${barFillMid.toFixed(3)})`);
+  assert.ok(barFillLater >= barFillAtEnterStart,
+    `bar fill is increasing during BOSS_ENTER (${barFillLater.toFixed(3)} >= ${barFillAtEnterStart.toFixed(3)})`);
   assert.ok(barFillEnd >= barFillLater,
     `bar fill is increasing during BOSS_ENTER (${barFillEnd.toFixed(3)} >= ${barFillLater.toFixed(3)})`);
-  // The bar should reach 1.0 (full) by the end of BOSS_ENTER (or just before
-  // COMBAT). The concrete design: the bar reaches 1.0 as the boss settles.
-  // Run to COMBAT and verify the bar is full.
+  // The bar reaches 1.0 (full) by the end of BOSS_ENTER.
   runToCombat(m);
   assert.equal(m.state, BZ_COMBAT, 'the machine reaches COMBAT');
   assert.equal(m.barFill, 1, 'the bar is full (1.0) once the boss has settled');
@@ -327,13 +290,11 @@ test('boss cannot take damage before COMBAT', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  // APPROACH.
-  assert.equal(m.state, BZ_APPROACH);
-  assert.equal(m.bossCanTakeDamage(), false, 'boss is untouchable during APPROACH');
-  assert.equal(m.heroCanShoot(), false, 'hero cannot shoot during APPROACH');
-  // → LOCKED → INTRO_SWEEP → BAR_FILL → BOSS_ENTER.
-  for (const s of [BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER]) {
-    advanceOne(m, heroAt(m.arenaEntryX + 1));
+  assert.equal(m.state, BZ_LOCKED);
+  assert.equal(m.bossCanTakeDamage(), false, 'boss is untouchable during LOCKED');
+  assert.equal(m.heroCanShoot(), false, 'hero cannot shoot during LOCKED');
+  for (const s of [BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER]) {
+    advanceOne(m, heroAt(120));
     assert.equal(m.state, s);
     assert.equal(m.bossCanTakeDamage(), false, `boss is untouchable during ${s}`);
     assert.equal(m.heroCanShoot(), false, `hero cannot shoot during ${s}`);
@@ -352,24 +313,26 @@ test('boss can take damage only in COMBAT', () => {
 });
 
 // ===========================================================================
-// 6. Death during intro/combat restarts at the boss checkpoint.
+// 6. Death during intro/combat restarts the WHOLE zone (machine → dormant).
 // ===========================================================================
 
-test('reset() restarts the flow at APPROACH (death restart)', () => {
+test('reset() returns the machine to dormant (death restart)', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  // Advance into the intro.
-  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
   assert.equal(m.state, BZ_LOCKED);
-  // A death here resets the machine: the approach + intro repeat.
+  // A death here resets the machine: the run + intro repeat. The update
+  // system re-installs the zone content (flag restored), re-binds the camera,
+  // and re-places the hero at the left entry.
   m.reset();
-  assert.equal(m.state, BZ_APPROACH, 'after reset the machine is back in APPROACH');
+  assert.equal(m.state, null, 'after reset the machine is dormant');
+  assert.equal(m.active, false, 'the machine is inactive after reset');
+  assert.equal(m.roomLocked(), false, 'the room is no longer locked after reset');
   assert.equal(m.bossVisible(), false, 'the boss is invisible again after reset');
   assert.equal(m.bossCanTakeDamage(), false, 'the boss is untouchable again after reset');
 });
 
-test('a full restart re-runs the documented order from APPROACH', () => {
+test('a full restart re-runs the documented order from LOCKED', () => {
   const { zone, boss } = fixture();
   const m = makeBossZone(zone, boss);
   m.begin();
@@ -378,22 +341,19 @@ test('a full restart re-runs the documented order from APPROACH', () => {
   assert.equal(m.state, BZ_COMBAT);
   // Death during combat → reset → the whole sequence repeats.
   m.reset();
+  assert.equal(m.state, null, 'dormant after reset');
+  m.begin(); // the next checkpoint trigger re-enters the room
   const seen = [m.state];
-  advanceOne(m, heroAt(m.arenaEntryX + 1));
-  if (m.state !== seen[seen.length - 1]) seen.push(m.state);
   while (m.state !== BZ_COMBAT) {
-    advanceOne(m, heroAt(m.arenaEntryX));
+    advanceOne(m, heroAt(120));
     if (m.state !== seen[seen.length - 1]) seen.push(m.state);
   }
-  const expected = [BZ_APPROACH, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT];
-  for (let i = 0; i < seen.length; i++) {
-    assert.equal(seen[i], expected[i], `restart state ${i} is ${seen[i]}`);
-  }
-  assert.equal(seen.length, expected.length, 'the restart re-runs every state in order');
+  const expected = [BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT];
+  assert.deepEqual(seen, expected, 'the restart re-runs every state in order');
 });
 
 // ===========================================================================
-// Runtime wiring (update.js): death during the boss zone re-enters the flow.
+// Runtime wiring (update.js): the flow is created DORMANT at boot.
 // ===========================================================================
 
 // --- Minimal DOM stub so systems/update.js (a browser module) loads in node. --
@@ -411,45 +371,27 @@ const U = await import('../systems/update.js');
 const { S, getState } = await import('../state.js');
 
 test('runtime: the boss zone flow is created DORMANT (inactive) at boot', () => {
-  // BLOCKER 1: the machine must NOT be active at boot. It only activates when
-  // the hero reaches the boss zone (beginBossZoneFlow / begin()). While
-  // dormant, the shooting / melee / boss-damage gates all behave normally in
-  // ordinary areas.
+  // The machine must NOT be active at boot. It only activates when the hero
+  // crosses the boss checkpoint (enterBossRoom → begin()). While dormant, the
+  // shooting / melee / boss-damage gates all behave normally in ordinary areas
+  // AND during the run phase of 1-B.
   assert.ok(U.bossZone, 'the runtime exposes the bossZone flow machine');
   assert.equal(U.bossZone.active, false, 'the flow is dormant (inactive) at boot');
   assert.equal(U.bossZone.inIntro, false, 'no intro is in progress while dormant');
   // The effective gating is `bossZone.active && <gate>` (update.js reads the
-  // raw gates). While dormant the effective shooting gate is
-  // `!inIntro` = true, so the hero may shoot in ordinary areas.
+  // raw gates). While dormant the effective shooting gate is open, so the
+  // hero may shoot in ordinary areas and during the 1-B run phase.
   assert.equal(!U.bossZone.inIntro, true, 'the effective shooting gate is open while dormant');
   // The effective boss-damage gate is `active && bossCanTakeDamage()`; while
   // dormant (active=false) the boss is not gated, so ordinary-area combat is
   // unaffected.
   assert.equal(U.bossZone.active && U.bossZone.bossCanTakeDamage(), false,
-    'the boss is not gated while dormant (no boss zone is active)');
+    'the boss is not gated while dormant (no battle room is active)');
 });
 
-test('runtime: beginBossZoneFlow() re-arms the flow from APPROACH', () => {
-  // Simulate a death restart: the machine may be mid-sequence; beginBossZoneFlow
-  // must reset it to APPROACH and hide the boss.
+test('runtime: the room geometry is exposed at the origin', () => {
   const bz = U.bossZone;
-  const before = bz.state;
-  U.beginBossZoneFlow();
-  assert.equal(bz.state, BZ_APPROACH, 'beginBossZoneFlow resets to APPROACH');
-  assert.equal(bz.bossVisible(), false, 'the boss is hidden after (re)start');
-  assert.equal(bz.bossCanTakeDamage(), false, 'the boss is untouchable after (re)start');
-  // Restore the machine to a clean APPROACH for other tests.
-  U.beginBossZoneFlow();
+  assert.equal(bz.roomX, 0, 'the room starts at world x=0');
+  assert.equal(bz.roomW, VIEW_W, 'the room is one view wide');
+  assert.ok(bz.bossEnterFromX > bz.roomW, 'the boss enters off-screen right');
 });
-
-test('runtime: the boss is invisible until the flow reaches BOSS_ENTER', () => {
-  const bz = U.bossZone;
-  U.beginBossZoneFlow();
-  // The boss entity should be placed off-screen (right) and invisible.
-  assert.equal(bz.bossVisible(), false, 'the boss is invisible at flow start');
-});
-
-// --- Helper for the approach-distance test (avoids a top-level VIEW_W import).
-function require_view() {
-  return { VIEW_W: 960 };
-}

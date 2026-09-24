@@ -1,30 +1,33 @@
 # Petal Panic — Boss Zone
 
-The boss zone is the fifth, separate zone of a level. It contains a checkpoint,
-a short approach, and a fixed arena. **The introduction builds anticipation
+The boss zone is the fifth, separate zone of a level. It contains one boss
+checkpoint and a fixed battle room. **The introduction builds anticipation
 before combat begins.**
 
-## 1. Entry and approach
+## 1. Entry and run phase
 
 The boss checkpoint at the end of area 4 leads through the normal transition
-to the boss zone. The player starts beside its boss checkpoint and travels a
-short distance toward a warning region and the arena.
+to the boss zone. The player enters the boss zone from the left, exactly like
+any other area start: a boss checkpoint flag stands at the left entry (labeled
+like any other level's entry flag — it is purely visual and never triggers
+anything), and the player walks right with the normal camera following.
 
-Around one screen of approach is a provisional reference, not a locked distance.
-It should be long enough to leave the flag behind and anticipate the encounter,
-without becoming a long repeated walk after death.
+Near the far right end of the zone there is an invisible trigger line. When
+the player crosses it, the battle room takes over immediately.
 
-**Direction detail:** the initial description specified running left toward
-the arena. The later clarification confirmed the short approach but did not
-change that direction. Keep leftward approach as the recorded proposal; do not
-silently assume rightward travel just because ordinary areas progress right.
-The boss's own entrance from the right is confirmed independently.
+**Direction detail:** the player enters from the left and walks right (like a
+regular area). The boss's own entrance is from the right, independently
+confirmed.
 
 Music will be added later. The visual sequence must communicate tension on its own.
 
 ## 2. Boss introduction screen
 
-On reaching the arena, a dedicated full-screen presentation plays before combat:
+When the player crosses the trigger line, the battle room takes over the
+zone: the camera locks to a fixed view exactly one screen wide (no
+scrolling), and the player stands at the left side of that view, in the same
+spot as any level start. Then a dedicated full-screen presentation plays
+before combat:
 
 1. Lock both sides and stop camera scrolling. The fight occupies a fixed view.
 2. Keep the boss invisible initially.
@@ -34,7 +37,9 @@ On reaching the arena, a dedicated full-screen presentation plays before combat:
 4. The boss name/title moves **right to left**, opposing the graphic.
 5. The introduction graphic disappears.
 6. The boss energy bar appears at the top and begins filling.
-7. After a portion of the bar has filled, the boss enters the screen **from the right**.
+7. After a portion of the bar has filled, the boss enters the screen **from the right**
+   and settles on the right side of the view (about three quarters across), so
+   both combatants are visible during the fight.
 8. Hand over to the fight.
 
 The exact timings, entrance duration, bar-fill threshold, music, and the precise
@@ -45,13 +50,13 @@ before combat actually starts.
 
 ## 3. Fight and retry
 
-The arena remains locked during combat. The player cannot scroll past the boss
-or leave through either side.
+The battle room remains locked during combat. The player cannot scroll past the
+boss or leave through either side.
 
-Losing a life restarts the boss zone at its checkpoint, restoring the encounter
-and repeating the approach/introduction. A continue instead returns to area 1
-of this level, like defeat in any other area. Random generation choices remain
-unchanged in both cases.
+Losing a life restarts the WHOLE boss zone: the player stands at the left
+entry again, and the walk + introduction repeat. A
+continue instead returns to area 1 of this level, like defeat in any other
+area. Random generation choices remain unchanged in both cases.
 
 This document does not define boss attack patterns or rebalance damage. Those
 remain the boss/combat systems' responsibility.
