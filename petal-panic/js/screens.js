@@ -995,40 +995,11 @@ export const Reward = {
       color: d.continuesEarned > 0 ? GOLD : CREAM, font: FONT_TITLE,
     });
 
-    // Option list — the SAME list layout / focus pill pattern as the pause
-    // menu (game-rules.md §3 shared ergonomics contract).
-    const options = [
-      d.isFinalLevel ? 'Continue' : 'Next Level',
-      'Quit to Home',
-    ];
-    const startY = VIEW_H / 2 + 120;
-    const gap = 40;
-    for (let i = 0; i < options.length; i++) {
-      const y = startY + i * gap;
-      const focused = i === 0;
-      if (focused) {
-        ctx.save();
-        ctx.fillStyle = 'rgba(255,110,199,0.10)';
-        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,110,199,0.4)';
-        ctx.lineWidth = 1;
-        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
-        ctx.stroke();
-        ctx.restore();
-      }
-      drawPrompt(ctx, (focused ? '▸ ' : '  ') + options[i], VIEW_W / 2, y + 2, focused ? 22 : 20, {
-        color: focused ? '#ff6ec7' : '#d8cdb4',
-      });
-    }
-
-    // Keycap nav bar — the SAME bar as the pause menu (navigate/confirm/quit)
-    // per the shared ergonomics contract (game-rules.md §3).
-    const hintY = startY + options.length * gap + 24;
+    // No menu on this screen: the regular navigation bar only, with the
+    // confirm keycap relabeled to what it does. Back triggers the same move.
+    const hintY = VIEW_H / 2 + 130;
     drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
-      { actions: ['up', 'down'], label: 'Navigate', opts: { mode: 'select_layout' } },
-      { action: 'confirm', opts: { mode: 'select_layout' } },
-      { action: 'back', label: 'Quit', opts: { mode: 'select_layout' } },
+      { action: 'confirm', label: d.isFinalLevel ? 'Continue' : 'Next Level', opts: { mode: 'select_layout' } },
     ]));
     ctx.restore();
   },
@@ -1062,10 +1033,6 @@ setEndOfGameScoreCallback((score) => { endOfGameScore = score; });
 export function getEndOfGameScore() { return endOfGameScore; }
 
 export const EndOfGame = {
-  focus: 0, // 0 = Return Home (the single option)
-
-  reset() { this.focus = 0; },
-
   /** @param {CanvasRenderingContext2D} ctx */
   draw(ctx) {
     // Full-opaque dark background — like the reward and Game Over screens,
@@ -1084,37 +1051,11 @@ export const EndOfGame = {
       color: GOLD, font: FONT_TITLE,
     });
 
-    // Option list — the SAME list layout / focus pill pattern as the pause
-    // menu (game-rules.md §3 shared ergonomics contract). A single option.
-    const options = ['Return Home'];
-    const startY = VIEW_H / 2 + 55;
-    const gap = 40;
-    for (let i = 0; i < options.length; i++) {
-      const y = startY + i * gap;
-      const focused = i === this.focus;
-      if (focused) {
-        ctx.save();
-        ctx.fillStyle = 'rgba(255,110,199,0.10)';
-        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,110,199,0.4)';
-        ctx.lineWidth = 1;
-        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
-        ctx.stroke();
-        ctx.restore();
-      }
-      drawPrompt(ctx, (focused ? '▸ ' : '  ') + options[i], VIEW_W / 2, y + 2, focused ? 22 : 20, {
-        color: focused ? '#ff6ec7' : '#d8cdb4',
-      });
-    }
-
-    // Keycap nav bar — the SAME bar as the pause menu (confirm/return) per the
-    // shared ergonomics contract (game-rules.md §3).
-    const hintY = startY + options.length * gap + 24;
+    // No menu on this screen: the regular navigation bar only, with the
+    // confirm keycap relabeled. Back triggers the same move.
+    const hintY = VIEW_H / 2 + 55;
     drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
-      { action: 'navigate', label: 'Up/Down', opts: { mode: 'select_layout' } },
-      { action: 'confirm', opts: { mode: 'select_layout' } },
-      { action: 'back', label: 'Return', opts: { mode: 'select_layout' } },
+      { action: 'confirm', label: 'Return to Home', opts: { mode: 'select_layout' } },
     ]));
     ctx.restore();
   },
@@ -1129,8 +1070,7 @@ export const EndOfGame = {
     switch (action) {
       case 'up':
       case 'down':
-        // A single option: up/down keep focus on it (no-op).
-        this.focus = 0;
+        // No menu: navigation is a no-op.
         return true;
       case 'confirm':
       case 'back':
@@ -1241,7 +1181,6 @@ export function screenReset(s, from) {
   if (s === S.SELECT) Select.reset();
   if (s === S.PAUSE) Pause.reset();
   if (s === S.OVER) GameOver.focus = 0;
-  if (s === S.END_OF_GAME) EndOfGame.reset();
   if (s === S.REMAP) { remapParent = from === S.HOME ? S.HOME : S.PAUSE; Remap.resetState(); }
   // AREA_ENTRY: the screen data is pushed by lifecycle.js (showAreaEntry)
   // IMMEDIATELY before the transition into AREA_ENTRY; the transition listener

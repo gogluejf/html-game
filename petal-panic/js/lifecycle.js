@@ -791,18 +791,9 @@ export function showLevelReward(h) {
  * @returns {boolean} whether the action was handled
  */
 export function rewardOnAction(action, h) {
-  if (action === 'back') {
-    // Quit from the reward screen (the nav bar's "Quit" keycap). The state
-    // transition S.REWARD → S.HOME already exists; the presented reward is
-    // consumed so a fresh run credits again.
-    console.log('[lifecycle] REWARD → HOME (quit from reward)');
-    _rewardData = null;
-    _creditedReward = null;
-    _rewardShownAt = null;
-    if (tryTransition(S.HOME)) return true;
-    return true;
-  }
-  if (action === 'confirm' || action === 'pause') {
+  if (action === 'confirm' || action === 'pause' || action === 'back') {
+    // No menu on the reward screen: confirm AND back both advance. Back is a
+    // "continue" here — it never quits to home.
     // Enforce the minimum dwell before the reward screen can be dismissed
     // (TUNING.rewardMinDwell — boss-arena.md §4–5). The celebratory beat
     // must play out before the confirm/pause is honored; an early press is

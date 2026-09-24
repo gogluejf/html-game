@@ -79,6 +79,10 @@ This replaces the current placeholder post-boss screen in code; it shows this
 minimal set for now and can grow later. It follows the shared screen ergonomics
 contract from [game rules](game-rules.md).
 
+The reward screen has **no menu**: it shows a single instruction line and the
+regular navigation bar. Confirm advances (next level, or end-of-game on the
+final level); back does the SAME — it never quits to home.
+
 Count the coin reward and show each qualifying 1000-coin chunk earning another
 continue, then visibly credit the global continue counter. The rate is a global
 setting, not boss-specific behavior. Conversion is automatic; there is no shop

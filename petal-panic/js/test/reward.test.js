@@ -373,10 +373,9 @@ test('confirming the reward screen on the final level shows the end-of-game scre
   assert.equal(getState(), S.HOME, 'confirming the end-of-game screen returns home');
 });
 
-test('back on the reward screen quits to home (finding: nav bar Quit keycap)', async () => {
-  // The reward screen's nav bar shows a "Quit" keycap (back action). The
-  // state transition S.REWARD → S.HOME already exists; rewardOnAction must
-  // handle the 'back' action and transition to HOME.
+test('back on the reward screen CONTINUES (no menu — back never quits to home)', async () => {
+  // The reward screen has no menu: confirm and back both advance. Back must
+  // NOT quit to home; it continues exactly like confirm (dwell-gated).
   L._resetRewardForTest();
   resetState();
   const h = makeTestHero();
@@ -386,9 +385,9 @@ test('back on the reward screen quits to home (finding: nav bar Quit keycap)', a
   L.showLevelReward(h);
   assert.equal(getState(), S.REWARD);
 
+  L._advanceRewardDwellForTest();
   assert.equal(L.rewardOnAction('back', h), true, 'the back action is handled');
-  assert.equal(getState(), S.HOME, 'back quits the reward screen to home');
-  assert.equal(L.getRewardData(), null, 'the presented reward is consumed on quit');
+  assert.notEqual(getState(), S.HOME, 'back does NOT quit to home');
 });
 
 // --- 5. Runtime wiring: defeating the boss shows the reward screen ------------
@@ -483,12 +482,10 @@ test('end-of-game: back also returns home (nav bar return keycap)', () => {
   assert.equal(getState(), S.HOME, 'back returns home');
 });
 
-test('end-of-game: up/down keep the single option focused (no other action exists)', () => {
+test('end-of-game: up/down are no-ops (no menu on the screen)', () => {
   setState(S.END_OF_GAME);
   assert.equal(SC.EndOfGame.onAction('up'), true, 'up is handled');
-  assert.equal(SC.EndOfGame.focus, 0, 'up keeps focus on the single option');
   assert.equal(SC.EndOfGame.onAction('down'), true, 'down is handled');
-  assert.equal(SC.EndOfGame.focus, 0, 'down keeps focus on the single option');
   assert.equal(getState(), S.END_OF_GAME, 'navigation does not leave the screen');
 });
 

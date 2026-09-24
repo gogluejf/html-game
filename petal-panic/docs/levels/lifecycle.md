@@ -73,11 +73,11 @@ The next area receives its own entry screen and fresh playable contents.
 Defeating a boss runs the reward screen before the next level's area 1.
 
 **Game end:** after the final level's boss and its reward screen, show a minimal
-end-of-game screen — a congratulations presentation with the final score and a
-single option to return home. It follows the shared screen ergonomics contract.
-This is a placeholder: the full ending (story scenes, credits) belongs to the
-future story epic. The last boss must not attempt to advance into a nonexistent
-next level.
+end-of-game screen — a congratulations presentation with the final score. It has
+**no menu**: a single instruction line plus the regular navigation bar; confirm
+and back both return home. This is a placeholder: the full ending (story scenes,
+credits) belongs to the future story epic. The last boss must not attempt to
+advance into a nonexistent next level.
 
 ## 6. Lifetime of randomness
 
