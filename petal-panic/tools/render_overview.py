@@ -81,7 +81,9 @@ def render(trace_path: str, out_path: str):
             continue
 
         sx = lambda gx: x_left + int((gx / h_w) * H_RENDER_W)
-        sy = lambda tier: floor_y - int((tier + 1) * UNIT_PX_Y * scale)
+        # PURE COORDINATE mapper: row N -> floor - N*48*scale. No +1 here:
+        # callers pass the exact line they want (block top, slot surface, platform face).
+        sy = lambda tier: floor_y - int(tier * UNIT_PX_Y * scale)
 
         for u in units:
             kind = u.get("kind")
@@ -96,7 +98,9 @@ def render(trace_path: str, out_path: str):
                     tier = max(1, round(uy / 85)) if uy > 5 else 1
                 px = sx(ux * UNIT_PX_X)
                 pw = max(3, int(uw * UNIT_PX_X * scale))
-                py = sy(tier)
+                # Platform occupies row `tier`; its standing FACE is the top of that
+                # cell = tier+1. (Slots already store their face line, so no +1 there.)
+                py = sy(tier + 1)
                 draw.rectangle([px, py - int(plat_thick_px * scale), px + pw - 1, py - 1], fill=(255, 165, 0))
             elif kind == "block":
                 px = sx(ux * UNIT_PX_X)
