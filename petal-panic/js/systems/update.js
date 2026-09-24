@@ -10,7 +10,7 @@
 import { input } from '../input.js';
 import { VIEW_W, VIEW_H } from '../view.js';
 import { Entity } from '../entity.js';
-import { LAYER } from '../consts.js';
+import { LAYER, GRAVITY, MAX_FALL_SPEED } from '../consts.js';
 import { CollisionWorld, resolve, aabbOverlap } from '../collision.js';
 import { Camera } from '../camera.js';
 import { Anim, makeTestFrame } from '../anim.js';
@@ -107,6 +107,17 @@ function slotX(zone, unitX) {
   return zone.bounds.x + unitX * UNIT_PX_X;
 }
 
+/**
+ * Center an item of pixel width `itemW` on its slot cell: the cell spans
+ * [slotX, slotX + UNIT_PX_X), so the item's left edge is offset by half the
+ * leftover space. BUGFIX: items were previously placed at the cell's LEFT
+ * EDGE, so a 32px barrel in a 72px cell hung ~20px left of center — reading
+ * as "under the platform" instead of "on it".
+ */
+function slotCenterX(zone, unitX, itemW) {
+  return slotX(zone, unitX) + Math.max(0, (UNIT_PX_X - itemW) / 2);
+}
+
 // --- Entity instantiation from population items (plain {x,y,type} slots) -----
 const ENEMY_FACTORIES = {
   jester: (x, y) => new Jester(x, y),
@@ -145,22 +156,65 @@ function instantiateZone(zone, layout, population) {
   }
 
   // Enemies / barrels / powerups: instantiate on the slot's surface.
+  // BUGFIX (offsets): items were placed at the cell's LEFT edge with a
+  // hardcoded vertical offset (-48 / -28) that only matched some item
+  // heights — so they hung off-center and read as "under" the platform.
+  // Now: centered on the cell, feet exactly on the slot's surface elevation
+  // using each item's OWN height (no magic numbers).
+  //
+  // SAFETY NET (spawn-inside): a slot's elevation can be wrong (the composer
+  // picks the supporting surface by x-range, which is ambiguous in narrow
+  // vertical climbs where many platforms stack at the same x). If the slot's
+  // surface has NO solid directly under it, the item would spawn in mid-air or
+  // inside a platform and fall through one-way landings. Fix: drop the feet
+  // down to the nearest real surface below. Items on valid slots are already
+  // resting on a surface, so this is a no-op for them.
+  const snapFeetToSurface = (feetY, leftX, rightX) => {
+    let best = null;
+    for (const s of solids) {
+      if (rightX <= s.x || leftX >= s.x + s.w) continue; // no horizontal overlap
+      // Surface at/below the feet → candidate to stand on.
+      if (s.y >= feetY - 1) {
+        if (best === null || s.y < best) best = s.y; // nearest surface below
+        continue;
+      }
+      // Surface ABOVE the feet: only counts if the feet are INSIDE that solid
+      // (feet below its top but above its bottom) — i.e. spawned inside it.
+      // Snap up onto its top face. Nearest such top wins.
+      if (s.y + s.h > feetY) {
+        if (best === null || s.y > best) best = s.y;
+      }
+    }
+    return best !== null ? best : feetY;
+  };
   const enemies = (population?.enemies ?? []).map((it) => {
     const f = ENEMY_FACTORIES[it.type];
     if (!f) return null; // unknown type — skip (soft) rather than crash
-    const x = slotX(zone, it.x);
-    const y = surfaceY(zone, it.y ?? 0) - (f(0, 0).h ?? 0); // feet on the surface
+    const probe = f(0, 0);
+    const x = slotCenterX(zone, it.x, probe.w);
+    const feet = snapFeetToSurface(surfaceY(zone, it.y ?? 0), x, x + probe.w);
+    const y = feet - probe.h; // feet on the surface
     return f(x, y);
   }).filter(Boolean);
 
   const barrels = (population?.barrels ?? []).map((it) => {
     const f = BARREL_FACTORIES[it.type];
     if (!f) return null;
-    return f(slotX(zone, it.x), surfaceY(zone, it.y ?? 0) - 48);
+    const probe = f(0, 0);
+    const x = slotCenterX(zone, it.x, probe.w);
+    const feet = snapFeetToSurface(surfaceY(zone, it.y ?? 0), x, x + probe.w);
+    const y = feet - probe.h; // feet on the surface
+    return f(x, y);
   }).filter(Boolean);
 
   const powerups = (population?.powerups ?? []).map((it) => {
-    return new Powerup(it.type, slotX(zone, it.x), surfaceY(zone, it.y ?? 0) - 28);
+    const p = new Powerup(it.type, 0, 0);
+    const x = slotCenterX(zone, it.x, p.w);
+    const feet = snapFeetToSurface(surfaceY(zone, it.y ?? 0), x, x + p.w);
+    const y = feet - p.h; // bottom on the surface
+    p.x = x;
+    p.y = y;
+    return p;
   });
 
   // Checkpoints: the entry flag (areas 2..4 + boss) and the exit flag
@@ -2424,9 +2478,26 @@ export function update(dt) {
     if (e.hitFlash > 0) e.hitFlash -= dt;
   }
 
-  // 1d2. tick live barrels (decays their hit-flash timer).
+  // 1d2. tick live barrels (decays their hit-flash timer) + gravity: a barrel
+  // whose supporting surface disappeared (block destroyed, platform dropped)
+  // falls and lands on whatever is below — resolve() snaps it onto the
+  // surface top, exactly like the hero's landing. Barrels spawn feet-on-
+  // surface (instantiateZone), so at rest vy stays 0 and this is a no-op.
   for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) {
-    if (b.alive) b.update(dt);
+    if (!b.alive) continue;
+    b.update(dt);
+    if (b.vy == null) b.vy = 0;
+    b.vy = Math.min(b.vy + GRAVITY * dt, MAX_FALL_SPEED);
+    b.y += b.vy * dt;
+    const prevBottom = b.worldBox().y + b.worldBox().h - b.vy * dt;
+    resolve(b, SOLIDS, { prevBottom });
+    // Landing snap: zero fall velocity when resting on a surface.
+    const wb = b.worldBox();
+    for (const s of SOLIDS) {
+      if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
+      const gap = s.y - (wb.y + wb.h);
+      if (gap >= -2 && gap <= 2 && b.vy > 0) { b.vy = 0; break; }
+    }
   }
 
   // 1d3. tick powerups (bob anim), checkpoints (flash decay), and

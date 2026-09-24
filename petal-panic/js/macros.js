@@ -2162,7 +2162,12 @@ function surfaceElevationAt(macro, p, isVertical) {
       } else if (u.kind === 'platform') {
         const ux = u.x !== undefined ? u.x : 0;
         if (p.x >= ux && p.x < ux + u.width) {
-          return gapOffset + u.tier;
+          // BUGFIX: an item standing ON a platform occupies the row ABOVE its
+          // landing face (face at row T -> item bottom at row T+1), exactly
+          // like a block whose slot elevation is base+height (its top).
+          // Returning the bare tier put the item's bottom INSIDE the
+          // platform's own row — reading as "under the platform".
+          return gapOffset + u.tier + 1;
         }
       }
     }
@@ -2182,7 +2187,9 @@ function surfaceElevationAt(macro, p, isVertical) {
       // The slot is above this unit. A solid block → stand on its top (height);
       // a platform → stand on its landing face (tier); a gap → ground (0).
       if (u.kind === 'block') return u.height;
-      if (u.kind === 'platform') return u.tier ?? 0;
+      // BUGFIX: items on a platform occupy the row ABOVE its landing face
+      // (tier T -> elevation T+1), mirroring blocks (elevation = top).
+      if (u.kind === 'platform') return (u.tier ?? 0) + 1;
       return 0; // gap
     }
     cursor = uEnd;

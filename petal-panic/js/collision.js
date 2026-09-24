@@ -91,7 +91,16 @@ export function resolve(entity, solids, opts = {}) {
       // Exact-edge contact (prevBottom === s.y, standing on the surface) must
       // NOT skip — the hero is at rest ON the platform and gravity will pull it
       // in this frame; skipping would let it sink through every frame.
-      if (opts.ignoreOneWay || entity.vy < 0 || prevBottom > s.y) continue;
+      //
+      // BUGFIX (spawn-inside): prevBottom > s.y normally means "came from
+      // underneath" (jump-through rule) → skip. But if LAST FRAME the feet were
+      // already inside the platform's thickness (below the face, above its
+      // bottom), the entity was spawned inside it / sank past the face —
+      // skipping lets it fall through forever. A real jump starts with feet
+      // ABOVE the face (prevBottom < s.y), so this never triggers for jumps.
+      // In the stuck case we fall through to the landing snap below.
+      const stuckInside = prevBottom > s.y && prevBottom <= s.y + s.h;
+      if (opts.ignoreOneWay || entity.vy < 0 || (prevBottom > s.y && !stuckInside)) continue;
       // Must actually overlap the platform box (X AND Y) before snapping:
       // a hero far to the left/right of the platform must not be teleported
       // onto it just because its bottom crossed the top edge.
