@@ -385,14 +385,14 @@ export function render(ctx) {
   Effects.drawOverlay(ctx, VIEW_W, VIEW_H);
 
   // Play HUD (design §20): energy bar + shield, ammo/special,
-  // coins, lives, hero portrait, checkpoint progress line. Viewport-space,
+  // coins, lives, hero portrait. Viewport-space,
   // drawn after the camera restore; only during PLAY (PAUSE/OVER/WIN keep the
   // frozen world visible and their screen overlay is drawn below).
   if (state === S.PLAY) {
     drawHUD(ctx, getHero(), cam, LEVELS[0]);
   }
 
-  // Harness hint drawn LAST so it sits on top of everything (incl. level map bar).
+  // Harness hint drawn LAST so it sits on top of everything.
   if (Debug.enabled) drawHarnessHint(ctx);
 
   // --- State overlays: HOME/SELECT handled above; PAUSE/OVER/WIN

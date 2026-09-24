@@ -3,7 +3,7 @@
 //
 // Verifies drawHUD renders all design §20 elements against a fake ctx that
 // records fills/text, and that values track live hero state (energy bar fill,
-// shield overlay, ammo/special/coins/lives, checkpoint markers + hero marker).
+// shield overlay, ammo/special/coins/lives).
 
 import { strict as assert } from 'node:assert';
 
@@ -50,7 +50,7 @@ function makeFakeCtx() {
 const U = await import('../systems/update.js');
 const { S, setState } = await import('../state.js');
 const { LEVELS } = await import('../level.js');
-const { VIEW_W, VIEW_H } = await import('../view.js');
+const { VIEW_W } = await import('../view.js');
 const { drawHUD } = await import('../hud.js');
 
 let passed = 0;
@@ -63,9 +63,6 @@ console.log('\nTask 8.3 — Play HUD\n');
 
 const hero = U.getHero();
 const levelDef = LEVELS[0];
-// Task 2.1: the HUD progress track renders the DEPRECATED single corridor, so
-// its geometry (checkpoints, length) lives on levelDef.LEGACY.
-const corridor = levelDef.LEGACY;
 const cam = U.getCamera();
 
 ok('drawHUD runs without throwing (full state)', () => {
@@ -126,57 +123,6 @@ ok('coins + lives display live', () => {
   const joined = ctx.texts.map(t => t.t).join(' | ');
   assert.ok(joined.includes('💰 150'), `coin readout (${joined})`);
   assert.ok(joined.includes('❤️ × 2'), 'lives readout');
-});
-
-ok('checkpoint line: markers for every checkpoint id', () => {
-  const ctx = makeFakeCtx();
-  drawHUD(ctx, hero, cam, levelDef);
-  const ids = corridor.checkpoints.map(c => c.id);
-  for (const id of ids) {
-    assert.ok(ctx.texts.some(t => t.t === id), `marker label "${id}" drawn`);
-  }
-  // One arc per checkpoint marker + one for the hero dot.
-  assert.ok(ctx.arcs.length >= ids.length + 1, `arcs ≥ checkpoints+hero (${ctx.arcs.length})`);
-});
-
-ok('checkpoint line: marker positions scale by cp.x / length', () => {
-  const ctx = makeFakeCtx();
-  drawHUD(ctx, hero, cam, levelDef);
-  const lineX = VIEW_W * 0.2, lineW = VIEW_W * 0.6;
-  for (const cp of corridor.checkpoints) {
-    const expectX = lineX + (cp.x / corridor.length) * lineW;
-    const m = ctx.arcs.find(a => a.r === 5 && Math.abs(a.x - expectX) < 1);
-    assert.ok(m, `checkpoint ${cp.id} marker at expected x≈${expectX.toFixed(1)}`);
-  }
-});
-
-ok('hero position marker clamped to [start, end] of track', () => {
-  const lineX = VIEW_W * 0.2, lineW = VIEW_W * 0.6;
-  const before = hero.x;
-  try {
-    // At start → marker near track start.
-    hero.x = 0;
-    let ctx = makeFakeCtx();
-    drawHUD(ctx, hero, cam, levelDef);
-    let dot = ctx.arcs.find(a => a.r === 6);
-    assert.ok(dot && Math.abs(dot.x - lineX) < 2, 'hero dot at track start');
-
-    // Mid-level → proportional position.
-    hero.x = corridor.length / 2;
-    ctx = makeFakeCtx();
-    drawHUD(ctx, hero, cam, levelDef);
-    dot = ctx.arcs.find(a => a.r === 6);
-    assert.ok(dot && Math.abs(dot.x - (lineX + lineW / 2)) < 2, 'hero dot mid-track');
-
-    // Past the end → clamped to track end.
-    hero.x = corridor.length * 2;
-    ctx = makeFakeCtx();
-    drawHUD(ctx, hero, cam, levelDef);
-    dot = ctx.arcs.find(a => a.r === 6);
-    assert.ok(dot && Math.abs(dot.x - (lineX + lineW)) < 2, 'hero dot clamped at track end');
-  } finally {
-    hero.x = before;
-  }
 });
 
 ok('portrait: 32×32 box drawn in top-right corner', () => {
