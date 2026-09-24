@@ -13,9 +13,8 @@ like any other level's entry flag — it is purely visual and never triggers
 anything), and the player walks right with the normal camera following.
 
 A little before the far right end of the zone there is an invisible trigger
-line. When the player crosses it, the boss card plays immediately — right
-there, in place, with the world still visible behind it. No teleport, no
-delay.
+line. The moment the player crosses it, the screen goes black instantly and
+the boss card plays on the black. No delay, no teleport.
 
 **Direction detail:** the player enters from the left and walks right (like a
 regular area). The boss's own entrance is from the right, independently
@@ -25,10 +24,12 @@ Music will be added later. The visual sequence must communicate tension on its o
 
 ## 2. Boss introduction screen
 
-The card plays where the player crossed the line. When it finishes, the
-battle room takes over the zone: the camera locks to a fixed view exactly
-one screen wide (no scrolling), and the player stands at the left side of
-that view, in the same spot as any level start. The presentation sequence:
+When the card finishes, the battle room is already in place: a real room
+exactly one screen wide (its left edge is screen pixel 0, its right edge is
+screen pixel 960), the camera locked to it (no scrolling), and the player
+standing at the left side of that view, in the same spot as any level start.
+The black lifts to reveal the room as the boss slides in from the right.
+The presentation sequence:
 
 1. Lock both sides and stop camera scrolling. The fight occupies a fixed view.
 2. Keep the boss invisible initially.

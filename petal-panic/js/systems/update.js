@@ -37,7 +37,7 @@ import { Debug, initSpawnTable, SPAWN_KEYS } from "../debug.js";
 import { resolveExplosion } from '../explosion.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../powerup.js';
 import { COIN_TYPES } from '../coin.js';
-import { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y, BOSS_TRIGGER_X } from '../level.js';
+import { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y, ZONE_FLOOR_H, BOSS_TRIGGER_X } from '../level.js';
 import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId, showLevelReward, recordAreaEntrySnapshot, setAreaEntryFadeOutCallback } from '../lifecycle.js';
 import { getLevelConfig, getStageBudget } from '../levelConfigs.js';
 import { populateArea, populationSnapshot, UNIT_PX } from '../macros.js';
@@ -375,6 +375,10 @@ export function debugWrapToNextArea() {
       bossZone.reset();
       camera.unlock();
     }
+    // If a battle room was up, its 960px floor replaced the run floor —
+    // restore it before loading area 1 (loadActiveZone will replace solids
+    // anyway, but this keeps the boss zone's own state consistent for a
+    // later wrap back into 1-B).
     hero.currentArea = 1;
     const z1 = getActiveZone(hero);
     if (z1.kind === 'area' && world.world.has(z1.areaIdx)) {
@@ -781,7 +785,9 @@ export const bossZone = makeBossZone(bossZoneDef, boss, {
     // are its own responsibility (the boss/combat system); this flips the gate.
     settleIntoBossRoom();
     boss.active = true;
-    console.log('[bossZone] COMBAT — settled into room, boss active');
+    // Lift the instant-black over the fade-in duration so the room reveals.
+    clearSeq.timer = 0;
+    console.log('[bossZone] COMBAT — settled into room, black lifting, boss active');
   },
 });
 
@@ -803,9 +809,16 @@ export function enterBossRoom() {
   // Make sure the boss is in the collision world (loadActiveZone adds it on
   // zone entry; this guards the death-restart path where it was removed).
   if (!collisionWorld.entities.has(boss)) collisionWorld.add(boss);
+  // Instant black: the clear-fade overlay is the existing full-screen black
+  // mechanism (render.js draws it at getClearFadeAlpha()). Pin it to 1 so the
+  // world vanishes the same frame the card starts; liftBlackAtCombat() ramps
+  // it back down when the room is settled.
+  clearSeq.pendingFadeIn = true;
+  clearSeq.state = 'fadeIn';
+  clearSeq.timer = CLEAR_SEQ.FADE_IN; // alpha = 1 immediately (no ramp-up)
   // Start the presentation machine (LOCKED → … → COMBAT).
   beginBossZoneFlow();
-  console.log(`[bossZone] trigger line crossed — card playing in place, hero @${Math.round(hero.x)}, state ${bossZone.state}`);
+  console.log(`[bossZone] trigger line crossed — instant black, card starting, hero @${Math.round(hero.x)}, state ${bossZone.state}`);
 }
 
 /**
@@ -817,16 +830,49 @@ export function enterBossRoom() {
  * and you are now in the arena" rather than a mid-walk teleport.
  */
 export function settleIntoBossRoom() {
+  // Swap the world to the battle room: a real 960px floor at [0, 960]. The
+  // run floor (0..1600) is replaced so the room's left edge IS screen pixel 0
+  // and its right edge IS screen pixel 960 — no offset math, no second
+  // coordinate frame. The boss enters from off-screen right of THIS floor.
+  const oldSolids = [...solidEntities];
+  for (const e of oldSolids) collisionWorld.remove(e);
+  SOLIDS.length = 0;
+  solidEntities.length = 0;
+  const roomFloor = { x: 0, y: ZONE_GROUND_Y, w: VIEW_W, h: ZONE_FLOOR_H };
+  SOLIDS.push(roomFloor);
+  const se = new SolidBox(roomFloor);
+  solidEntities.push(se);
+  collisionWorld.add(se);
+  // Freeze the camera on the room (screen x = world x).
   camera.minX = camera.maxX = bossZone.roomX;
   camera.minY = camera.maxY = 0;
   camera.x = bossZone.roomX;
   camera.y = 0;
+  // Hero at the room's left entry (same spot as any level start).
   hero.x = ZONE_ENTRY_X;
   hero.y = ZONE_GROUND_Y - hero.h;
   hero.vx = 0;
   hero.vy = 0;
   hero.checkpoint = { x: hero.x, y: hero.y };
-  console.log(`[bossZone] settled into room — cam frozen @${camera.x}, hero @${hero.x}`);
+  // Lift the black over the fade-in duration so the room reveals cleanly.
+  clearSeq.timer = 0;
+  console.log(`[bossZone] settled into room — floor swapped to [0,${VIEW_W}], cam @${camera.x}, hero @${hero.x}`);
+}
+
+/** Restore the run-phase floor (0..zone width) after a death / debug wrap. */
+export function restoreBossRunFloor() {
+  const zone = bossZoneDef;
+  const oldSolids = [...solidEntities];
+  for (const e of oldSolids) collisionWorld.remove(e);
+  SOLIDS.length = 0;
+  solidEntities.length = 0;
+  for (const p of zone.platforms) {
+    const sp = { ...p };
+    SOLIDS.push(sp);
+    const se = new SolidBox(sp);
+    solidEntities.push(se);
+    collisionWorld.add(se);
+  }
 }
 
 /**
@@ -1131,6 +1177,11 @@ function resetActiveZoneContent() {
       ? [makeCheckpoint(activeZone.entryFlag.id, activeZone.entryFlag.x, activeZone.entryFlag.y, { isEntry: true, appearance: activeZone.entryFlag.appearance })]
       : [];
     loadActiveZone(activeZone, { solids: activeZone.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
+    // If a battle room was up, its 960px floor replaced the run floor —
+    // restore the full zone floor so the re-walk has ground under it.
+    if (SOLIDS.length === 1 && solidEntities[0] && SOLIDS[0].w === VIEW_W) {
+      restoreBossRunFloor();
+    }
     collisionWorld.remove(boss);
     bossZone.reset();
     camera.unlock();
