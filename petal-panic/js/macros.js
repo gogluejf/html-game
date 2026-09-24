@@ -1567,7 +1567,7 @@ function assignBarrelTypes(barrelSlots, counts, rng) {
  *   - HORIZONTAL areas compose along X. The budget is a WIDTH budget; macros
  *     are placed left to right, each one extending the route's x position.
  *   - VERTICAL areas compose along Y. The budget is a HEIGHT budget (the
- *     zone is VIEW_H·3 ≈ 1620 px tall, one screen wide). Macros are stacked
+ *     zone is VIEW_H·5 = 2700 px tall, one screen wide). Macros are stacked
  *     upward: each macro's entry sits at the current climb elevation and its
  *     exit raises the hero's position. The zone's width is fixed (one screen
  *     wide), so horizontal positioning is constrained — the layout records

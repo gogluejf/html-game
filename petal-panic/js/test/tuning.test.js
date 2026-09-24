@@ -165,9 +165,9 @@ test('converted-coin decision is concrete and wired to GAME_RULES (game-rules.md
 test('area lengths in px are concrete and match the documented budget', () => {
   // structure.md §6: horizontal ~2x the ~2000px prototype = 4000px.
   assert.equal(ZONE_WIDTH_HORIZONTAL, 4000, 'horizontal area length is the documented 4000px');
-  // structure.md §4/§6: vertical is ~3 screens tall (VIEW_H × 3 = 1620px).
-  assert.equal(ZONE_H_VERTICAL, VIEW_H * 3, 'vertical area length is 3 screens (VIEW_H × 3)');
-  assert.equal(ZONE_H_VERTICAL, 1620, 'vertical area length is 1620px');
+  // structure.md §4/§6: vertical is a multi-screen climb (VIEW_H × 5 = 2700px).
+  assert.equal(ZONE_H_VERTICAL, VIEW_H * 5, 'vertical area length is 5 screens (VIEW_H × 5)');
+  assert.equal(ZONE_H_VERTICAL, 2700, 'vertical area length is 2700px');
   // The Level 1 config references these single-source constants (no re-declared
   // literals) — levelConfigs.js cites structure.md §6.
   const l1 = getLevelConfig(1);

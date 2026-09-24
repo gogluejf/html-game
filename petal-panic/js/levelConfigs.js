@@ -60,7 +60,7 @@
 //
 // DESIGN-PLAN DECISIONS SETTLED HERE (concrete values, one place to review):
 //   - Area lengths in px (structure.md §6, generation.md §7): the concrete
-//     horizontal (4000px) and vertical (1620px) area length budgets.
+//     horizontal (4000px) and vertical (2700px) area length budgets.
 //   - Population budgets per stage (populate.md §1): the concrete per-stage
 //     enemy/barrel/powerup QUANTITY budgets in `stageBudgets` below.
 //   - Vertical slot (structure.md §1): which ordinary area is the vertical
@@ -360,7 +360,7 @@ export const LEVEL_CONFIGS = [
     // length", generation.md §7 "Tuning boundary").
     //   horizontal: ~2x the ~2000px prototype segment = 4000px (the measured
     //     baseline the docs require before selecting exact dimensions).
-    //   vertical:   ~3 screens tall (VIEW_H × 3 = 1620px), tuned separately
+    //   vertical:   5 screens tall (VIEW_H × 5 = 2700px), tuned separately
     //     rather than blindly doubled (structure.md §6).
     // These are the CONFIG-LEVEL budgets the composer receives; they are
     // fixed per area (not rolled per game).

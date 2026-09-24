@@ -385,7 +385,7 @@ export function buildLevelZones(levelDef) {
 //   - HORIZONTAL areas: budget is a WIDTH budget (px → width-units via
 //     UNIT_PX_X from macros.js). ~4000px / UNIT_PX_X(72) ≈ 55 units.
 //   - VERTICAL areas: budget is a HEIGHT budget (structure.md §4 — the zone is
-//     VIEW_H × 3 ≈ 1620px tall). We pass that height in units (y-units are
+//     VIEW_H × 5 = 2700px tall). We pass that height in units (y-units are
 //     48px, so the height in units ≈ the height in px / UNIT_PX_Y).
 //     Vertical length is tuned separately, NOT blindly doubled (structure.md
 //     §6), so it stays at the one-screen-wide climb height, not 2x.
@@ -398,7 +398,7 @@ export function buildLevelZones(levelDef) {
 export const HORIZONTAL_AREA_LENGTH_PX = 4000;
 /**
  * Target height of a vertical area (px): the zone is ~3 screens tall
- * (VIEW_H × 3 ≈ 1620). Tuned separately, not doubled (structure.md §6).
+ * (VIEW_H × 5 = 2700). Tuned separately, not doubled (structure.md §6).
  */
 export const VERTICAL_AREA_LENGTH_PX = ZONE_H_VERTICAL;
 
