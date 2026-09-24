@@ -359,7 +359,41 @@ test('a full restart re-runs the documented order from LOCKED', () => {
 // Runtime wiring (update.js): the flow is created DORMANT at boot.
 // ===========================================================================
 
-// --- Minimal DOM stub so systems/update.js (a browser module) loads in node. --
+test('begin() restores a defeated boss to full energy (no HP leak across fights)', () => {
+  const { zone, boss } = fixture();
+  const m = makeBossZone(zone, boss);
+  // First fight: begin → combat, then damage the boss down.
+  m.begin();
+  runToCombat(m);
+  assert.equal(boss.hp, boss.maxHp, 'fresh fight starts at full HP');
+  boss.takeDamage(120, { name: 'hero' }, 'projectile');
+  assert.ok(boss.hp < boss.maxHp, 'the boss took damage during the fight');
+  // The hero leaves via debug wrap (machine reset) and re-enters the room.
+  m.reset();
+  m.begin();
+  assert.equal(boss.hp, boss.maxHp, 're-entering the battle room restores full HP');
+});
+
+test('begin() clears a dead boss so it can fight again', () => {
+  const { zone, boss } = fixture();
+  const m = makeBossZone(zone, boss);
+  m.begin();
+  runToCombat(m);
+  // Kill the boss outright (death pipeline: alive=false after the anim).
+  boss.takeDamage(9999, { name: 'hero' }, 'projectile');
+  boss.alive = false; // simulates the death anim completing
+  boss._deathHandled = true; // the update system credited the kill once
+  m.reset();
+  m.begin();
+  assert.equal(boss.alive, true, 'a defeated boss is alive again on re-entry');
+  assert.equal(boss.aiState, 'idle', 'the boss is not stuck in its death state');
+  assert.equal(boss.hp, boss.maxHp, 'the boss returns at full energy');
+  assert.equal(boss._deathHandled, false, 'the death credit latch is cleared for the next fight');
+});
+
+// ===========================================================================
+// Runtime wiring (systems/update.js) — boot/dormant path.
+// ===========================================================================
 const noop = () => {};
 const ctxStub = new Proxy({}, { get: () => noop, set: () => true });
 globalThis.document = {

@@ -40,6 +40,13 @@
 // placeholder intro presentation; render.js consults the machine for boss
 // visibility and the energy bar.
 //
+// Boss reset on re-entry: the boss entity is long-lived (one instance per
+// game), so a fresh battle room must also restore its combat state. begin()
+// calls resetBossCombatState(): full HP + alive, phase machine idle, death
+// pipeline cleared (death timer / _deathHandled latch) so a defeated boss
+// restarts at full energy instead of leaking its last fight's remaining HP
+// into the next one (debug wrap / death-restart both re-enter via begin()).
+//
 // Timings below are the concrete design-plan values (boss-arena.md §2: "the
 // design plan will propose them"). Their single owner is the TUNING block
 // (tuning.js); this module consumes them so the cited value has one owner.
@@ -91,6 +98,34 @@ const BOSS_ENTER_TRAVEL = Math.round(VIEW_W * TUNING.bossEnterTravelScreens); //
  * @param {function} [opts.onCombat] called once when combat enables. The
  *   update system activates the boss fight here.
  */
+/**
+ * Restore the boss to a pristine combat state before a battle room begins.
+ * The boss is a long-lived entity (one per game), so its HP / phase machine /
+ * death pipeline must be reset whenever a NEW fight starts — otherwise a
+ * defeated or damaged boss re-enters with its last fight's remaining energy.
+ * Called by begin() only (reset() is for deaths, where the hero died and the
+ * boss was never hurt).
+ */
+function resetBossCombatState(boss) {
+  if (!boss) return;
+  boss.hp = boss.maxHp;
+  boss.alive = true;
+  boss.aiState = 'idle';
+  boss.fading = false;
+  boss.hitFlash = 0;
+  boss.active = false;
+  boss.phase = 'idle';
+  boss.phaseTimer = 0;
+  boss._blastFired = false;
+  boss._stomped = false;
+  boss.escalation = 1.0;
+  boss.shakeMag = 0;
+  // Death pipeline: clear the countdown timer and the once-only credit latch
+  // so a boss that died in a previous fight can die (and credit) again.
+  boss.timers?.clear?.('death');
+  boss._deathHandled = false;
+}
+
 export class BossZone {
   constructor({ zone, boss, heroRef = null, onSweepDone = null, onCombat = null }) {
     this.zone = zone;
@@ -198,6 +233,9 @@ export class BossZone {
     this.barFill = 0;
     this._sweepDone = false;
     this._combat = false;
+    // A new battle room always starts against a pristine boss (full energy,
+    // no death pipeline residue) — see resetBossCombatState().
+    resetBossCombatState(this.boss);
     // The boss stands off-screen to the right, hidden until BOSS_ENTER.
     this.boss.x = this.bossEnterFromX;
     this.boss.y = this.bossRestY;
