@@ -2164,6 +2164,21 @@ onTransition((from, to) => {
     const heroId = window.__selectedHero || 'scarlet';
     const def = HEROES[heroId] || HEROES.scarlet;
     const oldHero = hero;
+    // FLUSH boss state (game-beat leak): beating the game leaves the boss-zone
+    // flow machine in COMBAT — the death path never calls reset() (only the
+    // debug wrap and death-restart do). Without this flush, a new game starts
+    // with the energy bar still drawing, roomLocked() clamping the hero to the
+    // arena x-range, and the trigger line re-firing instantly at area 1's
+    // entry x. A finished game must leave NO boss residue.
+    if (bossZone.active) {
+      bossZone.reset();
+      camera.unlock();
+    }
+    // The battle-room floor swap (settleIntoBossRoom) replaced the run floor
+    // with the fixed 960px arena floor; restore the run-phase floor so area 1
+    // gets its real terrain. loadActiveZone replaces solids anyway, but this
+    // keeps the boss zone's own state consistent for a later entry into 1-B.
+    restoreBossRunFloor();
     const nh = startGame({ world: collisionWorld, oldHero, areaContext }, def);
     // Snapshot the freshly generated terrain into the trace's areaMap (stable
     // for the whole game — rolled once per seed).
