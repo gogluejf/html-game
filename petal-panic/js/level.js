@@ -147,7 +147,7 @@ export const ZONE_H_HORIZONTAL = VIEW_H;
  * single view. The climb is authored per-zone by later tasks; this fixed height
  * is the structural bound every vertical zone must have.
  */
-export const ZONE_H_VERTICAL = VIEW_H * 3;
+export const ZONE_H_VERTICAL = VIEW_H * 5;
 /**
  * Y offset (from the top of the zone's bounds) where the top platform sits in
  * a vertical zone. The exit flag rests on this platform. In screen coordinates
