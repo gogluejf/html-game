@@ -289,7 +289,12 @@ export function recordAreaMap(hero, areaId, info) {
     orientation: info.orientation ?? null,
     stage: info.stage ?? null,
     budget: info.budget ?? null,
+    zoneWidthPx: info.zoneWidthPx ?? null,
+    zoneHeightPx: info.zoneHeightPx ?? null,
+    unitPxX: info.unitPxX ?? null,
+    unitPxY: info.unitPxY ?? null,
     macros: info.macros ?? [],
+    slots: info.slots ?? [],
     placedUnits: info.placedUnits ?? [],
   };
 }
