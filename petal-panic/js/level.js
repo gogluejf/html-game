@@ -17,7 +17,7 @@
 // This module is pure (no DOM, no canvas) so it's unit-testable in node.
 
 import { VIEW_H } from './view.js';
-import { composeArea, UNIT_PX } from './macros.js';
+import { composeArea, UNIT_PX_X, UNIT_PX_Y } from './macros.js';
 import { createRng } from './terrain.js';
 
 // ---------------------------------------------------------------------------
@@ -383,10 +383,10 @@ export function buildLevelZones(levelDef) {
 // segment.
 //
 //   - HORIZONTAL areas: budget is a WIDTH budget (px → width-units via
-//     UNIT_PX from macros.js). ~4000px / UNIT_PX(48) = 83 units.
+//     UNIT_PX_X from macros.js). ~4000px / UNIT_PX_X(72) ≈ 55 units.
 //   - VERTICAL areas: budget is a HEIGHT budget (structure.md §4 — the zone is
-//     VIEW_H × 3 ≈ 1620px tall). We pass that height in units (units are
-//     roughly square, so the height in units ≈ the height in px / UNIT_PX).
+//     VIEW_H × 3 ≈ 1620px tall). We pass that height in units (y-units are
+//     48px, so the height in units ≈ the height in px / UNIT_PX_Y).
 //     Vertical length is tuned separately, NOT blindly doubled (structure.md
 //     §6), so it stays at the one-screen-wide climb height, not 2x.
 //
@@ -410,9 +410,9 @@ export const VERTICAL_AREA_LENGTH_PX = ZONE_H_VERTICAL;
  *   - vertical   → a HEIGHT budget (the ~3-screen climb height, tuned
  *     separately and NOT doubled)
  *
- * Both are converted to unit space using UNIT_PX so the composer (which works
- * in units) receives a consistent budget. The budgets are fixed per area, not
- * rolled per game.
+ * Both are converted to unit space using UNIT_PX_X (horizontal) or UNIT_PX_Y
+ * (vertical) so the composer (which works in units) receives a consistent
+ * budget. The budgets are fixed per area, not rolled per game.
  *
  * @param {'horizontal'|'vertical'} orientation the area's orientation
  * @returns {number} the area's length budget in width-units
@@ -421,7 +421,10 @@ export function areaLengthBudget(orientation) {
   const px = orientation === 'vertical'
     ? VERTICAL_AREA_LENGTH_PX
     : HORIZONTAL_AREA_LENGTH_PX;
-  return Math.max(ENTRY_MIN_BUDGET, Math.round(px / UNIT_PX));
+  // Anisotropic units (R6): horizontal budgets divide by UNIT_PX_X, vertical
+  // (climb height) budgets by UNIT_PX_Y.
+  const unitPx = orientation === 'vertical' ? UNIT_PX_Y : UNIT_PX_X;
+  return Math.max(ENTRY_MIN_BUDGET, Math.round(px / unitPx));
 }
 
 /**

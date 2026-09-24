@@ -276,7 +276,7 @@ export function beginContinue(hero) {
 /**
  * Record the terrain-generation snapshot for one area (stable, once per game).
  * Stored in UNIT SPACE (width-units / tiers) — the PNG tool multiplies by
- * UNIT_PX when drawing.
+ * UNIT_PX_X / UNIT_PX_Y when drawing.
  * @param {object} hero
  * @param {string} areaId e.g. "1-3"
  * @param {object} info { seed, orientation, stage, budget, macros, placedUnits }

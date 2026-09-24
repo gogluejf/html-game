@@ -37,7 +37,7 @@ import {
   macroDensity,
   MAX_CLEARABLE_GAP,
   MAX_ELEVATION_STEP,
-  UNIT_PX,
+  UNIT_PX_X,
 } from '../macros.js';
 import { createRng, maxClearableStep } from '../terrain.js';
 import { areaLengthBudget } from '../level.js';
@@ -162,8 +162,8 @@ test('composed vertical layouts have landings at multiple x positions', () => {
 });
 
 test('lateral positions stay within the fixed screen width', () => {
-  // The zone is 1600px wide = 1600/48 ≈ 33 units.
-  const ZONE_WIDTH_UNITS = Math.floor(1600 / UNIT_PX);
+  // The zone is 1600px wide = 1600/UNIT_PX_X units (R6: anisotropic).
+  const ZONE_WIDTH_UNITS = Math.floor(1600 / UNIT_PX_X);
   for (const [id, macro] of Object.entries(MACROS)) {
     if (macro.orientation !== 'vertical') continue;
     const platforms = macro.units.filter((u) => u.kind === 'platform');

@@ -40,7 +40,7 @@ import { COIN_TYPES } from '../coin.js';
 import { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y, ZONE_FLOOR_H, BOSS_TRIGGER_X } from '../level.js';
 import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId, showLevelReward, recordAreaEntrySnapshot, setAreaEntryFadeOutCallback } from '../lifecycle.js';
 import { getLevelConfig, getStageBudget } from '../levelConfigs.js';
-import { populateArea, populationSnapshot, UNIT_PX } from '../macros.js';
+import { populateArea, populationSnapshot, UNIT_PX_X, UNIT_PX_Y } from '../macros.js';
 import { createRng, tierToOffset } from '../terrain.js';
 import { Theater } from '../effects/theater.js';
 import { dumpTrace, record, recordAreaMap } from '../stats.js';
@@ -63,33 +63,34 @@ const LEVEL_CONFIG = getLevelConfig(LEVEL_DEF.index) ?? {};
 
 // --- Terrain → pixel AABB (unit space from the composer → world pixels) ------
 // A placed unit carries a unit-space aabb {x,y,w,h}: x/y are unit offsets, w/h
-// are unit counts. Horizontal terrain composes along X (units→px via UNIT_PX)
+// are unit counts. Horizontal terrain composes along X (units→px via UNIT_PX_X)
 // and rises from the zone floor (a block of height H occupies the H px above
 // the floor). Vertical terrain composes along Y (a climb of H units is H px
 // above the bottom platform) within the fixed one-screen width.
-// (unit → px via UNIT_PX, imported from macros.js — single source of truth).
+// (unit → px via UNIT_PX_X / UNIT_PX_Y, imported from macros.js — single
+// source of truth; anisotropic since R6: x-units are wider than y-units).
 // BUGFIX: unit-space y=0 means "resting on the floor top", which is at
 // ZONE_GROUND_Y (500) — NOT the zone bottom (b.y + b.h = 540). Anchoring to
 // the zone bottom sank every block 40px (ZONE_FLOOR_H) into the floor slab.
 function horizontalUnitBox(zone, u) {
   const b = zone.bounds;
-  const px = b.x + u.aabb.x * UNIT_PX;
-  const py = ZONE_GROUND_Y - u.aabb.y * UNIT_PX - u.aabb.h * UNIT_PX;
-  return { x: px, y: py, w: u.aabb.w * UNIT_PX, h: u.aabb.h * UNIT_PX, oneWay: u.oneWay };
+  const px = b.x + u.aabb.x * UNIT_PX_X;
+  const py = ZONE_GROUND_Y - u.aabb.y * UNIT_PX_Y - u.aabb.h * UNIT_PX_Y;
+  return { x: px, y: py, w: u.aabb.w * UNIT_PX_X, h: u.aabb.h * UNIT_PX_Y, oneWay: u.oneWay };
 }
 function verticalUnitBox(zone, u) {
   const b = zone.bounds;
-  const px = b.x + u.aabb.x * UNIT_PX;
-  const py = ZONE_GROUND_Y - (u.aabb.y + u.aabb.h) * UNIT_PX;
-  return { x: px, y: py, w: u.aabb.w * UNIT_PX, h: u.aabb.h * UNIT_PX, oneWay: u.oneWay };
+  const px = b.x + u.aabb.x * UNIT_PX_X;
+  const py = ZONE_GROUND_Y - (u.aabb.y + u.aabb.h) * UNIT_PX_Y;
+  return { x: px, y: py, w: u.aabb.w * UNIT_PX_X, h: u.aabb.h * UNIT_PX_Y, oneWay: u.oneWay };
 }
 /** A slot's surface elevation (units) to the y of its top surface (world px). */
 function surfaceY(zone, elevationUnits) {
-  return ZONE_GROUND_Y - elevationUnits * UNIT_PX;
+  return ZONE_GROUND_Y - elevationUnits * UNIT_PX_Y;
 }
 /** A slot's x position (units) to world px. */
 function slotX(zone, unitX) {
-  return zone.bounds.x + unitX * UNIT_PX;
+  return zone.bounds.x + unitX * UNIT_PX_X;
 }
 
 // --- Entity instantiation from population items (plain {x,y,type} slots) -----
@@ -226,7 +227,7 @@ let world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, 1);
  * ordinary area). Called once per new game, right after startGame builds the
  * fresh hero + trace. Each entry stores the seed, orientation, stage, budget,
  * the macro ids placed, and the placed units in UNIT SPACE (the PNG/debug tool
- * multiplies by UNIT_PX when drawing). The layout is stable for the whole game
+ * multiplies by UNIT_PX_X / UNIT_PX_Y when drawing). The layout is stable for
  * (rolled once per seed), so this snapshot stays accurate even if macro
  * definitions change later.
  * @param {Hero} h the fresh hero (owns .traceStats)

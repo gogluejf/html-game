@@ -42,7 +42,7 @@ import {
   buildLevelZones,
   LEVELS,
 } from '../level.js';
-import { UNIT_PX } from '../macros.js';
+import { UNIT_PX_X, UNIT_PX_Y } from '../macros.js';
 
 // ---------------------------------------------------------------------------
 // Macro vocabulary (generation.md §2, §3)
@@ -491,10 +491,10 @@ test('length: horizontal area budget is ~2x the prototype segment (structure.md 
     2 * PROTOTYPE_SEGMENT_PX,
     'horizontal area length is exactly 2x the prototype segment',
   );
-  // In unit space the budget is the px target scaled by UNIT_PX.
+  // In unit space the budget is the px target scaled by UNIT_PX_X (R6: anisotropic).
   assert.equal(
     areaLengthBudget('horizontal'),
-    Math.round(HORIZONTAL_AREA_LENGTH_PX / UNIT_PX),
+    Math.round(HORIZONTAL_AREA_LENGTH_PX / UNIT_PX_X),
     'horizontal budget is the px target in width-units',
   );
 });
@@ -508,27 +508,27 @@ test('length: vertical area budget is the ~3-screen climb height, NOT doubled (s
   );
   assert.equal(
     areaLengthBudget('vertical'),
-    Math.round(VERTICAL_AREA_LENGTH_PX / UNIT_PX),
+    Math.round(VERTICAL_AREA_LENGTH_PX / UNIT_PX_Y),
     'vertical budget is the climb height in units',
   );
 });
 
 test('length: composed horizontal areas meet the doubled budget in px', () => {
-  // A composed horizontal area's total width in px (units × UNIT_PX) must be
+  // A composed horizontal area's total width in px (units × UNIT_PX_X) must be
   // at least the budget's px target (≈4000px). totalWidth = max(budget, axisPos),
   // so it is always >= budget; the budget itself is the ~2x prototype segment.
   const budget = areaLengthBudget('horizontal');
-  const budgetPx = Math.round(budget * UNIT_PX);
+  const budgetPx = Math.round(budget * UNIT_PX_X);
   for (const seed of [1, 7, 42, 100]) {
     const l = composeAreaSeeded(seed, 'horizontal', 4, budget);
-    const widthPx = l.totalWidth * UNIT_PX;
+    const widthPx = l.totalWidth * UNIT_PX_X;
     assert.ok(
       widthPx >= budgetPx,
       `seed ${seed}: composed width ${widthPx}px is at least the budget ${budgetPx}px`,
     );
     // And the budget is ~2x the prototype segment (within rounding tolerance).
     assert.ok(
-      Math.abs(budgetPx - HORIZONTAL_AREA_LENGTH_PX) <= UNIT_PX,
+      Math.abs(budgetPx - HORIZONTAL_AREA_LENGTH_PX) <= UNIT_PX_X,
       `budget ${budgetPx}px is within one unit of the 2x target ${HORIZONTAL_AREA_LENGTH_PX}px`,
     );
   }

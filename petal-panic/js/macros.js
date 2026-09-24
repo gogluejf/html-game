@@ -65,9 +65,9 @@ export const EXIT_CLEAR = 3;
  *
  * A hero running full speed the whole airtime covers
  * speed · (t1 + t2) px. We take the minimum over both heroes, then divide by
- * the pixel width of one layout unit (UNIT_PX, see below) and floor to whole
- * units: any gap wider than this is IMPOSSIBLE and must be flagged by
- * validation.
+ * the pixel width of one horizontal layout unit (UNIT_PX_X, see below) and
+ * floor to whole units: any gap wider than this is IMPOSSIBLE and must be
+ * flagged by validation.
  *
  * With the current stats (scarlet: 250 px/s, jump 500; balthazar: 180 px/s,
  * jump 420; GRAVITY 1500; DOUBLE_JUMP_FACTOR 0.85):
@@ -77,11 +77,17 @@ export const EXIT_CLEAR = 3;
  */
 
 /**
- * Pixel width of one layout width-unit. The unit → pixel scale is owned by
- * the pixel-scaling task (3.3 / 7.2); this is the working scale the composer
+ * Pixel size of one layout unit. Units are ANISOTROPIC (R6): a cell is wider
+ * than it is tall, so blocks read less chunky and horizontal areas get more
+ * room per unit while vertical physics (jump height, tier steps, clearance)
+ * stays exactly as tuned at 48px. The unit → pixel scale is owned by the
+ * pixel-scaling task (3.3 / 7.2); these are the working scales the composer
  * uses to translate physics-derived reach into unit space.
  */
-export const UNIT_PX = 48;
+export const UNIT_PX_X = 72; // horizontal cell width (px)
+export const UNIT_PX_Y = 48; // vertical cell height (px)
+/** @deprecated use UNIT_PX_X or UNIT_PX_Y — kept only as an elevation-step alias. */
+export const UNIT_PX = UNIT_PX_Y;
 
 /**
  * Minimum horizontal clear distance (px) across ALL heroes for a full-speed
@@ -106,7 +112,7 @@ export function minHeroGapClearPx() {
  * Maximum clearable horizontal gap (whole width-units) for a double jump at
  * full run speed, derived from hero physics (see minHeroGapClearPx).
  */
-export const MAX_CLEARABLE_GAP = Math.max(1, Math.floor(minHeroGapClearPx() / UNIT_PX));
+export const MAX_CLEARABLE_GAP = Math.max(1, Math.floor(minHeroGapClearPx() / UNIT_PX_X));
 
 /**
  * Fixed width of a vertical zone (one screen wide = 1600px) in width-units.
@@ -115,7 +121,7 @@ export const MAX_CLEARABLE_GAP = Math.max(1, Math.floor(minHeroGapClearPx() / UN
  * fixed and NOT derived from the placed platforms — platforms are constrained
  * to fit within this width. This is the canonical width for vertical layouts.
  */
-export const ZONE_WIDTH_UNITS = Math.floor(1600 / UNIT_PX);
+export const ZONE_WIDTH_UNITS = Math.floor(1600 / UNIT_PX_X);
 
 /**
  * Maximum elevation step (tiers) between successive landings. A hero can
@@ -336,7 +342,7 @@ export const MACROS = Object.freeze({
     difficulty: 3,
     units: Object.freeze([
       B(1), B(2), B(3),
-      G(3), // gap — must be cleared with a double jump
+      G(2), // gap — must be cleared with a double jump (max at UNIT_PX_X=72)
       P(3, 2), // triple-width platform at tier 2
       B(3), B(2), B(1), // descent after the platform
     ]),
@@ -380,7 +386,7 @@ export const MACROS = Object.freeze({
     orientation: 'horizontal',
     difficulty: 2,
     units: Object.freeze([
-      G(3), // gap — must be cleared with a double jump
+      G(2), // gap — must be cleared with a double jump (max at UNIT_PX_X=72)
       B(1), // lower landing block (the "drop")
     ]),
     entryClear: 2,
@@ -447,7 +453,7 @@ export const MACROS = Object.freeze({
    * descending on the right. Mixes both terrain kinds in one set piece so
    * horizontal areas can feature platforms without being all-blocks.
    *
-   * Shape: B(1) B(2) → G(3) → P(3, 2) → G(3) → B(2) B(1).
+   * Shape: B(1) B(2) → G(2) → P(3, 2) → G(2) → B(2) B(1).
    *
    * Entry: 2 units clear. Exit: 2 units clear.
    * Difficulty: 3 (mixed terrain + two gaps + an elevated crossing).
@@ -459,9 +465,9 @@ export const MACROS = Object.freeze({
     difficulty: 3,
     units: Object.freeze([
       B(1), B(2),   // rising blocks on the approach
-      G(3),         // gap to the bridge
+      G(2),         // gap to the bridge (max clearable at UNIT_PX_X=72)
       P(3, 2),      // triple-width platform crossed at tier 2
-      G(3),         // gap off the bridge
+      G(2),         // gap off the bridge
       B(2), B(1),   // descending blocks on the far side
     ]),
     entryClear: 2,
@@ -486,8 +492,8 @@ export const MACROS = Object.freeze({
   // --- Vertical macros ------------------------------------------------------
   //
   // Lateral variety: each platform unit may carry an `x` offset (width-units
-  // from the zone's left edge). The zone is one screen wide (1600px ≈ 33 units
-  // at UNIT_PX=48). Landings shift left/right within that width so the climb
+  // from the zone's left edge). The zone is one screen wide (1600px ≈ 22 units
+  // at UNIT_PX_X=72). Landings shift left/right within that width so the climb
   // is not a single-file staircase (structure.md §4: "three tiers must not
   // accidentally become a three-platform cap on the entire ascent").
   //
@@ -581,9 +587,9 @@ export const MACROS = Object.freeze({
     difficulty: 2,
     units: Object.freeze([
       P(2, 1, 10), // tier 1, left
-      P(2, 2, 13), // tier 2, shift +3
-      P(2, 1, 11), // tier 1, shift -2 (rest)
-      P(2, 2, 14), // tier 2, shift +3 (peak)
+      P(2, 2, 12), // tier 2, shift +2
+      P(2, 1, 11), // tier 1, shift -1 (rest)
+      P(2, 2, 12), // tier 2, shift +1 (peak)
     ]),
     entryClear: 2,
     exitClear: 2,
@@ -615,10 +621,10 @@ export const MACROS = Object.freeze({
     difficulty: 2,
     units: Object.freeze([
       P(2, 1, 10), // tier 1, left
-      P(2, 2, 13), // tier 2, shift +3
-      P(2, 3, 11), // tier 3, shift -2 (first peak)
-      P(2, 2, 14), // tier 2, shift +3 (rest)
-      P(2, 3, 12), // tier 3, shift -2 (final peak)
+      P(2, 2, 12), // tier 2, shift +2
+      P(2, 3, 11), // tier 3, shift -1 (first peak)
+      P(2, 2, 12), // tier 2, shift +1 (rest)
+      P(2, 3, 12), // tier 3, same x (final peak)
     ]),
     entryClear: 2,
     exitClear: 2,
@@ -658,11 +664,11 @@ export const MACROS = Object.freeze({
     units: Object.freeze([
       P(1, 1, 10),  // tier 1, y=1
       G(1),         // gapOffset=1
-      P(1, 1, 13),  // tier 1, y=1+1=2 (step from P1: 1)
+      P(1, 1, 12),  // tier 1, y=1+1=2 (step from P1: 1)
       G(1),         // gapOffset=2
       P(1, 1, 11),  // tier 1, y=2+1=3 (step from P2: 1)
       G(1),         // gapOffset=3
-      P(1, 1, 14),  // tier 1, y=3+1=4 (step from P3: 1)
+      P(1, 1, 13),  // tier 1, y=3+1=4 (step from P3: 1)
     ]),
     entryClear: 2,
     exitClear: 2,
@@ -698,13 +704,13 @@ export const MACROS = Object.freeze({
     // must be 0 when a gap precedes the platform.
     units: Object.freeze([
       P(1, 1, 10),  // tier 1, y=1
-      P(1, 2, 13),  // tier 2, y=2 (step: 1)
+      P(1, 2, 12),  // tier 2, y=2 (step: 1)
       G(1),         // gapOffset=1
       P(1, 2, 11),  // tier 2, y=1+2=3 (step from P2: 1)
       G(1),         // gapOffset=2
-      P(1, 1, 14),  // tier 1, y=2+1=3 (step from P3: 0, downward)
+      P(1, 1, 13),  // tier 1, y=2+1=3 (step from P3: 0, downward)
       P(1, 2, 12),  // tier 2, y=2+2=4 (step from P4: 1)
-      P(1, 3, 15),  // tier 3, y=2+3=5 (step from P5: 1)
+      P(1, 3, 14),  // tier 3, y=2+3=5 (step from P5: 1)
     ]),
     entryClear: 2,
     exitClear: 2,
@@ -1087,7 +1093,7 @@ const BARREL_EXPLOSION_RADIUS_PX = BARREL_DEF.explosion.radius;
 /** Max horizontal spacing (width-units) between two barrels for a chain. */
 export const BARREL_CHAIN_MAX_UNITS = Math.max(
   1,
-  Math.ceil((BARREL_EXPLOSION_RADIUS_PX - BARREL_PX) / UNIT_PX),
+  Math.ceil((BARREL_EXPLOSION_RADIUS_PX - BARREL_PX) / UNIT_PX_X),
 );
 
 /**
@@ -1846,6 +1852,17 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
           const excess = lateralGap - MAX_CLEARABLE_GAP;
           placementXShift = nextX > prevPeakX ? -excess : excess;
         }
+
+        // R6 FIT: after the reachability shift, clamp the macro's whole x-span
+        // into the fixed zone width [0, ZONE_WIDTH_UNITS]. The shift above can
+        // push a wide macro past the right edge at UNIT_PX_X=72 (zone = 22
+        // units); clamping keeps every unit inside the screen.
+        const minX = Math.min(...macro.units.map((u) => u.x ?? 0));
+        const maxX = Math.max(...macro.units.map((u) => (u.x ?? 0) + u.width));
+        if (minX + placementXShift < 0) placementXShift -= minX + placementXShift;
+        if (maxX + placementXShift > ZONE_WIDTH_UNITS) {
+          placementXShift -= maxX + placementXShift - ZONE_WIDTH_UNITS;
+        }
       }
     }
 
@@ -2176,12 +2193,20 @@ export function validateLayout(layout) {
   const isVertical = layout.orientation === 'vertical';
 
   // 1. No impossible gaps.
-  for (const gap of gaps) {
-    if (gap.width > MAX_CLEARABLE_GAP) {
-      throw new Error(
-        `validateLayout: impossible gap of ${gap.width} units at x=${gap.x} ` +
-          `(max clearable: ${MAX_CLEARABLE_GAP})`,
-      );
+  //    HORIZONTAL: a gap is a horizontal air distance — it must be clearable
+  //    by a double jump (≤ MAX_CLEARABLE_GAP width-units, physics-derived).
+  //    VERTICAL: a gap is vertical breathing room between successive landings
+  //    (fall distance); the hero descends through it and re-lands, so there is
+  //    no horizontal-clear constraint. Only its contribution to the climb
+  //    height matters (checked via the elevation-step rule below).
+  if (!isVertical) {
+    for (const gap of gaps) {
+      if (gap.width > MAX_CLEARABLE_GAP) {
+        throw new Error(
+          `validateLayout: impossible gap of ${gap.width} units at x=${gap.x} ` +
+            `(max clearable: ${MAX_CLEARABLE_GAP})`,
+        );
+      }
     }
   }
 
