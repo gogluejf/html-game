@@ -17,7 +17,6 @@
 // Camera lock + win-state transition are owned by the update system (it owns
 // the camera + state machine); this class exposes the data it needs:
 //   - BOSS_TRIGGER_RADIUS : distance at which the fight activates
-//   - arenaX / arenaW     : the locked camera bounds
 //   - onDeath()           : called once when the death anim completes
 //
 // Contact damage rides the shared HERO×BOSS 'contact' rule in update.js (the
@@ -67,8 +66,9 @@ const TRUNK_FAN_ANGLES = [-0.35, 0, 0.35]; // radians around the facing axis
 const TRUNK_SPEED = 420;                  // px/s for the boss shots
 const TRUNK_DAMAGE = 12;                  // per-shot damage (defense-mitigated)
 
-// --- Arena / trigger tuning --------------------------------------------------
-export const BOSS_ARENA_WIDTH = 400;   // width of the locked camera arena
+// --- Trigger tuning ----------------------------------------------------------
+// The battle room bounds are owned by the boss zone flow machine
+// (bossZone.js: roomX/roomW); the update system clamps the boss to them.
 export const BOSS_TRIGGER_RADIUS = 300; // hero within this of the boss → activate
 
 /**
@@ -95,11 +95,6 @@ export class Elephant extends Enemy {
 
     // --- Escalation: multiplier that grows as HP drops (1.0 → up to 1.5) ----
     this.escalation = 1.0;
-
-    // --- Arena bounds (camera lock target) ----------------------------------
-    // Centered on the spawn x so the boss sits mid-arena at the start.
-    this.arenaX = Math.round(x - BOSS_ARENA_WIDTH / 2 + this.w / 2);
-    this.arenaW = BOSS_ARENA_WIDTH;
 
     // --- Fight activation ---------------------------------------------------
     // The boss stands still until the hero gets close (see shouldActivate()).

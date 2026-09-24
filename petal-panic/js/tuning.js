@@ -56,13 +56,7 @@ export const TUNING = Object.freeze({
   bossIntroSweep:     1.4, // full-screen graphic sweep (rapid, pure tension)
   bossIntroBarFill:   1.6, // energy bar fill duration
   bossIntroBarFillPct: 0.7, // fraction (0..1) of the bar filled before the boss enters
-  bossIntroEnter:     0.8, // boss slides in from the right and settles mid-arena
-  // --- Boss approach (boss-arena.md §1) ------------------------------------
-  // "Around one screen of approach is a provisional reference, not a locked
-  // distance." Tied to the view width (view.js) so it stays ~1 screen if the
-  // logical resolution ever changes.
-  bossApproachScreens: 1,   // approach length in view-widths (VIEW_W × this)
-  bossApproachStartPad: 100, // px: how far in from the zone's right edge the hero starts
+  bossIntroEnter:     0.8, // boss slides in from the right and settles mid-room
   // --- Boss entrance travel (boss-arena.md §2 step 7) -----------------------
   // "The boss enters the screen from the right." How far off the arena's right
   // edge the boss begins its slide-in, in view-widths. Tied to VIEW_W so the
