@@ -92,10 +92,11 @@ const BOSS_ENTER_TRAVEL = Math.round(VIEW_W * TUNING.bossEnterTravelScreens); //
  *   update system activates the boss fight here.
  */
 export class BossZone {
-  constructor({ zone, boss, heroRef = null, onCombat = null }) {
+  constructor({ zone, boss, heroRef = null, onSweepDone = null, onCombat = null }) {
     this.zone = zone;
     this.boss = boss;
     this.heroRef = heroRef;
+    this.onSweepDone = onSweepDone;
     this.onCombat = onCombat;
 
     // DORMANT by default: the machine is only active while the battle room is
@@ -129,6 +130,7 @@ export class BossZone {
     this.barFill = 0;
 
     // Latches.
+    this._sweepDone = false;
     this._combat = false;
   }
 
@@ -194,6 +196,7 @@ export class BossZone {
     this.state = BZ_LOCKED;
     this.timer = 0;
     this.barFill = 0;
+    this._sweepDone = false;
     this._combat = false;
     // The boss stands off-screen to the right, hidden until BOSS_ENTER.
     this.boss.x = this.bossEnterFromX;
@@ -224,6 +227,13 @@ export class BossZone {
       case BZ_INTRO_SWEEP: {
         this.timer += dt;
         if (this.timer >= BOSS_ZONE_TIMINGS.INTRO_SWEEP) {
+          // The card has disappeared: fire the settle hook ONCE so the update
+          // system can swap into the battle room under the black BEFORE the
+          // bar fill / boss entrance play.
+          if (!this._sweepDone) {
+            this._sweepDone = true;
+            if (this.onSweepDone) this.onSweepDone();
+          }
           this.enterState(BZ_BAR_FILL);
         }
         break;
@@ -318,6 +328,7 @@ export class BossZone {
     this.state = null;
     this.timer = 0;
     this.barFill = 0;
+    this._sweepDone = false;
     this._combat = false;
   }
 }

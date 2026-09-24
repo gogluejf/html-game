@@ -24,12 +24,14 @@ Music will be added later. The visual sequence must communicate tension on its o
 
 ## 2. Boss introduction screen
 
-When the card finishes, the battle room is already in place: a real room
-exactly one screen wide (its left edge is screen pixel 0, its right edge is
-screen pixel 960), the camera locked to it (no scrolling), and the player
-standing at the left side of that view, in the same spot as any level start.
-The black lifts to reveal the room as the boss slides in from the right.
-The presentation sequence:
+As soon as the card graphic disappears (the sweep is done — before the
+energy bar even appears), the battle room is put in place under the black:
+a real room exactly one screen wide (its left edge is screen pixel 0, its
+right edge is screen pixel 960), the camera locked to it (no scrolling), and
+the player standing at the left side of that view, in the same spot as any
+level start. Only then does the energy bar appear and begin filling, and the
+boss slide in from the right — revealed as the black lifts. The presentation
+sequence:
 
 1. Lock both sides and stop camera scrolling. The fight occupies a fixed view.
 2. Keep the boss invisible initially.

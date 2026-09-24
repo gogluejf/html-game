@@ -778,16 +778,24 @@ export let boss = makeElephant(-9999, ZONE_GROUND_Y); // parked off-world until 
 // BOSS_TRIGGER_X) and re-started after a death via the same path.
 const bossZoneDef = levelZones[4];
 export const bossZone = makeBossZone(bossZoneDef, boss, {
-  onCombat: () => {
-    // Combat enable (boss-arena.md §2 step 8): the intro is done — settle
-    // into the battle room (hero to the room's left entry, camera frozen on
-    // the fixed-width room) and activate the boss. The boss's attack patterns
-    // are its own responsibility (the boss/combat system); this flips the gate.
+  onSweepDone: () => {
+    // The card (full-screen sweep) has disappeared — settle into the battle
+    // room NOW, while the screen is still black: swap the floor to the real
+    // 960px room at [0, 960], freeze the camera at 0, place the hero at the
+    // left entry. The bar fill + boss entrance then play in the correct room
+    // coordinates, revealed as the black lifts.
     settleIntoBossRoom();
+    console.log('[bossZone] sweep done — settled into room under the black');
+  },
+  onCombat: () => {
+    // Combat enable (boss-arena.md §2 step 8): the room was already settled
+    // when the sweep finished (onSweepDone); here we only activate the boss
+    // and lift the instant-black over the fade-in duration so the room
+    // reveals. The boss's attack patterns are its own responsibility (the
+    // boss/combat system); this flips the gate.
     boss.active = true;
-    // Lift the instant-black over the fade-in duration so the room reveals.
     clearSeq.timer = 0;
-    console.log('[bossZone] COMBAT — settled into room, black lifting, boss active');
+    console.log('[bossZone] COMBAT — black lifting, boss active');
   },
 });
 
