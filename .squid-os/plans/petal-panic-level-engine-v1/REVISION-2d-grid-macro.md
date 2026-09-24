@@ -31,6 +31,8 @@ platforms alike. Violation → authoring error.
 - Horizontal and vertical configure identically (row = up-from-ground, col = from-left).
 - `G()` gone; gaps are empty cells. No auto-assign — every macro declares explicit positions.
 - Platforms render thin (`UNIT_PX / 8`) and the dump reflects that height.
+- Unit pixels are anisotropic (`UNIT_PX_X = 72`, `UNIT_PX_Y = 48`); the dump stores
+  unit-space data + the constants header, so it stays correct across re-tuning (R6).
 - Composer still validates reachability (clearance rule, upward steps ≤ 1 tier, clearable gaps,
   both heroes complete the route).
 - Trace areaMap stores the full 2D layout (accurate per seed).
@@ -66,10 +68,12 @@ What: Replace the single-cursor walk with grid placement. For each unit compute 
 Same formula for horizontal and vertical (row is always up-from-ground). Rules:
   - **No fallback:** every unit must carry explicit `(row, col)`; missing → throw.
   - **Clearance rule (unified):** any unit whose base/face is above row 0 must be ≥ 2 rows above the
-    top of whatever is directly below it in the same column span (floor at row 0, a platform's face, or
-    a block's top = its base+height). A block may sit at row 0 on the floor with no clearance needed.
-    This single rule covers both "two blocks need ≥ 2 units between them" and "platform over block /
-    block over platform needs ≥ 2 units". Violation → throw.
+    top of whatever is directly below it in its column span. "Below" means, per column the unit spans:
+    the highest surface under that column — the floor (row 0) if nothing else is there, a platform's
+    face row, or a block's top (base + height). The unit must clear ≥ 2 rows above the *highest* such
+    surface across all columns it spans. A block may sit at row 0 on the floor with no clearance needed.
+    This single rule covers: block floating over empty floor (clears floor), block over block
+    (≥ 2 units between them), platform over block / block over platform (≥ 2 units). Violation → throw.
   - Vertical areas: the climb still advances along row; col gives lateral variety within the fixed width.
 Why: This is the core change making a block + overhead platform in the same column legal, with one
 formula for both orientations.
@@ -201,6 +205,79 @@ Verification: node --test petal-panic/js/test/ + manual JSON inspection
 
 ---
 
+## MILESTONE: R6 — Anisotropic Unit Pixels (UNIT_PX_X / UNIT_PX_Y)
+
+**Why:** Square 48×48 units make blocks look chunky and waste horizontal space
+(`ZONE_WIDTH_UNITS = floor(1600/48) = 33` cols). Wider x-units (e.g. 72px) give
+more horizontal room per unit and a less blocky look, while y stays 48px so all
+vertical physics (jump height, tier steps, clearance, row bounds) is untouched.
+The grid model (R1) is resolution-independent — `(row, col)` addressing doesn't
+care about pixel aspect — so this is a pure unit-space → pixel-space change.
+
+### TASK: R6.1 — Split UNIT_PX into UNIT_PX_X / UNIT_PX_Y
+Type: refactor
+What: Replace the single `UNIT_PX` constant with two, both trivially changeable:
+  - `export const UNIT_PX_X = 72;`  // horizontal cell width (px)
+  - `export const UNIT_PX_Y = 48;`  // vertical cell height (px)
+Keep `export const UNIT_PX = UNIT_PX_Y;` as a deprecated alias ONLY for code that
+genuinely means "one elevation step" (none expected after this task — remove if
+unused). Update every conversion site:
+  - macros.js:109  MAX_CLEARABLE_GAP   → divide by UNIT_PX_X (gap is horizontal)
+  - macros.js:118  ZONE_WIDTH_UNITS    → floor(1600 / UNIT_PX_X)  // 33 → 22 at 72px
+  - macros.js:1090 BARREL_CHAIN_MAX_UNITS → divide by UNIT_PX_X (horizontal spacing)
+  - level.js:424   areaLengthBudget    → px / UNIT_PX_X for horizontal budgets
+  - update.js      horizontalUnitBox / verticalUnitBox / surfaceY / slotX →
+                   x-sites use UNIT_PX_X, y-sites use UNIT_PX_Y
+  - stats.js:279   doc comment         → reference both constants
+Vertical budgets (level.js VERTICAL_AREA_LENGTH_PX path) divide by UNIT_PX_Y.
+Why: One-line config change now; any future re-tuning (e.g. 64×48) touches two
+numbers and everything downstream follows.
+Files: ~ petal-panic/js/macros.js
+Files: ~ petal-panic/js/level.js
+Files: ~ petal-panic/js/systems/update.js
+Files: ~ petal-panic/js/stats.js
+Acceptance: With 72×48, a col-5 unit renders at x = origin + 360px and a row-2
+unit's top at groundY - 96px; MAX_CLEARABLE_GAP recomputed from jump distance ÷ 72;
+all existing tests pass or are updated to the new unit counts (not the pixel math).
+Verification: node --test petal-panic/js/test/
+
+### TASK: R6.2 — Macro widths/budgets sanity pass at 72px
+Type: feature
+What: At UNIT_PX_X=72, ZONE_WIDTH_UNITS drops 33 → 22 and horizontal budget
+(~4000px) drops ~83 → ~55 units. Review MACROS whose sequential width exceeds the
+new zone width or whose gaps now measure differently in units; trim or re-flow the
+offenders so composeArea still fills areas without overflow errors. Re-check
+MAX_CLEARABLE_GAP against actual hero jump distance (playtest one double-jump gap)
+and adjust the hero jump tuning OR the gap constant — whichever is the lie.
+Why: The math adjusts automatically, but authored macro shapes were tuned for 48px
+columns; some will no longer fit or will feel too sparse/dense.
+Files: ~ petal-panic/js/macros.js
+Acceptance: All stages compose without overflow at 72px; a double-jump gap feels
+identical to before in pixels; no macro is wider than ZONE_WIDTH_UNITS.
+Verification: node --test petal-panic/js/test/ + manual playthrough of stages 1–4
+
+### TASK: R6.3 — Dump stores unit-pixel constants (self-describing trace)
+Type: refactor
+What: `recordAreaMap` writes a header into each areaMap entry:
+  `{ unitPxX: UNIT_PX_X, unitPxY: UNIT_PX_Y, groundY: ZONE_GROUND_Y }`
+`placedUnits` and the layout bounding box stay in UNIT SPACE (col/row/w/h as unit
+counts) — never pixels. Any consumer (debug renderer, future PNG tool) converts
+with the stored constants, so dumps captured at 72×48 render identically even if
+the constants change later.
+Why: Makes the dump permanently correct across unit-size changes (see R4.1).
+Files: ~ petal-panic/js/stats.js
+Files: ~ petal-panic/js/systems/update.js
+Acceptance: A dumped areaMap contains the constants header; reconstructing pixel
+rects from (col,row,w,h) + header matches on-screen positions; changing
+UNIT_PX_X later does not alter how old dumps render.
+Verification: node --test petal-panic/js/test/ + manual JSON inspection
+
+**Ordering note:** R6 is orthogonal to R1–R5 and can land either before R1
+(cursor code converts pixels the same way) or after R5. If landed before R1,
+R1.2's pixel formula uses UNIT_PX_X/UNIT_PX_Y directly from the start.
+
+---
+
 ## Decisions (confirmed)
 1. **`P()` 2nd arg = `row`** — `tier` renamed to `row` everywhere (same meaning: elevation in units
    from ground). ✅ Confirmed.
@@ -213,5 +290,6 @@ Verification: node --test petal-panic/js/test/ + manual JSON inspection
    directly below it in its column span (floor = row 0, platform face, or block top). Covers both
    "two blocks need ≥ 2 units between them" and "platform over block / block over platform needs
    ≥ 2 units". A block at row 0 on the floor needs no clearance. Violation → throw. ✅ Confirmed.
-6. **Cell size** stays 1 unit = UNIT_PX (48px). ✅ Confirmed.
+6. **Cell size** — now anisotropic (R6): `UNIT_PX_X = 72`, `UNIT_PX_Y = 48`. Both are single
+   constants; changing them later re-tunes everything downstream automatically. ✅ Confirmed.
 7. **No fallback** (restated): migration is complete and explicit — see decision 2. ✅ Confirmed.
