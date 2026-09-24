@@ -17,7 +17,7 @@
 // This module is pure (no DOM, no canvas) so it's unit-testable in node.
 
 import { VIEW_H } from './view.js';
-import { composeArea, UNIT_PX_X, UNIT_PX_Y } from './macros.js';
+import { composeArea, UNIT_PX_X, UNIT_PX_Y, PLATFORM_DRAW_H } from './macros.js';
 import { createRng } from './terrain.js';
 
 // ---------------------------------------------------------------------------
@@ -191,7 +191,7 @@ function zonePlatforms(zone) {
     const topY = VERTICAL_TOP_PLATFORM_OFFSET;
     return [
       { x: b.x, y: bottomY, w: b.w, h: ZONE_FLOOR_H },
-      { x: b.x + ZONE_EXIT_X - 60, y: topY, w: 120, h: 16, oneWay: true },
+      { x: b.x + ZONE_EXIT_X - 60, y: topY, w: 120, h: Math.min(16, PLATFORM_DRAW_H), oneWay: true },
     ];
   }
   // Horizontal / boss: floor at the standard ground level.

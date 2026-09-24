@@ -43,4 +43,5 @@ export const LAYER = {
   COIN:       0b0010000000,
   CHECKPOINT: 0b0100000000,
   HAZARD:     0b1000000000,   // spikes, shockwaves, explosion AoE
+  PLATFORM:   0b10000000000,  // one-way landing faces (thin; pass-through from below/sides)
 };

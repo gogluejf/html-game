@@ -16,6 +16,7 @@ import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../timers.js';
 import { drawScreen, screenUpdate } from '../screens.js';
 import { drawHUD } from '../hud.js';
 import { LEVELS, BOSS_TRIGGER_X, ZONE_GROUND_Y } from '../level.js';
+import { PLATFORM_DRAW_H } from '../macros.js';
 
 // I-frame blink tuning (design §27): the flicker phase is derived from the
 // 'intangible' timer's remaining fraction, so these only set LOOK — the timing
@@ -68,7 +69,11 @@ export function render(ctx) {
   if (!(Debug.viewMode === 1)) {
     for (const s of getSolids()) {
       ctx.fillStyle = '#ff9f43';
-      ctx.fillRect(s.x, s.y, s.w, s.h);
+      // R5.1: one-way platforms draw as a thin strip (PLATFORM_DRAW_H px)
+      // anchored to their landing face — the top of the drawn rect sits at
+      // the surface the hero stands on. Solid blocks keep their full box.
+      const h = s.oneWay ? Math.min(s.h, PLATFORM_DRAW_H) : s.h;
+      ctx.fillRect(s.x, s.y, s.w, h);
     }
   }
 
@@ -551,6 +556,7 @@ function drawDebugOverlay(ctx) {
 
   const layers = [
     { match: L => L & 0b0000001000, color: '#ff9f43' }, // SOLID → orange
+    { match: L => L & LAYER.PLATFORM, color: '#ffb86c' }, // PLATFORM (one-way) → light orange
     { match: L => L & 0b0000000001, color: '#2ecc71' }, // HERO  → green
     { match: L => L & 0b0000000010, color: '#e74c3c' }, // ENEMY → red
     { match: L => L & 0b0000000100, color: '#9b59b6' }, // BOSS  → purple
@@ -680,7 +686,11 @@ function drawDebugOverlay(ctx) {
 // SOLIDS are plain AABBs ({x,y,w,h}); wrap them as a minimal proxy so the
 // overlay loop can treat them uniformly with Entity instances (worldBox()).
 function solidEntityProxy(box) {
-  return { x: box.x, y: box.y, w: box.w, h: box.h, layer: 0b0000001000, worldBox: () => box };
+    // R5.1: one-way platforms use the PLATFORM layer (thin, pass-through from
+    // below/sides) — they only land the hero from above via resolve()'s
+    // oneWay branch. Solid blocks/barrels keep SOLID.
+    const layer = s.oneWay ? LAYER.PLATFORM : LAYER.SOLID;
+    return { x: box.x, y: box.y, w: box.w, h: box.h, layer, worldBox: () => box };
 }
 
 /** small HP bar above a targetable enemy so thorn damage is visible. */

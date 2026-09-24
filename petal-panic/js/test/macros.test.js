@@ -801,3 +801,27 @@ test('validateLayout: passes on a reachable inter-macro join (R2 #2)', () => {
   // Should NOT throw.
   validateLayout(layout);
 });
+
+// ---------------------------------------------------------------------------
+// Unit-space invariant: a horizontal platform's aabb.y is its landing-face
+// elevation in UNITS (== tier), never pixels. Regression test for the bug
+// where placeMacro copied makePlatform().aabb.y (tierToOffset = tier ×
+// maxClearableStep, in px) into the unit-space layout — sinking platforms
+// ~2.8 rows too high and breaking their draw box.
+// ---------------------------------------------------------------------------
+test('composeArea: horizontal platform aabb.y equals tier (unit space, not pixels)', () => {
+  for (const seed of [1, 7, 42]) {
+    const layout = composeAreaSeeded(seed, 'horizontal', 3, 4000);
+    const platforms = layout.units.filter((u) => u.kind === 'platform');
+    assert.ok(platforms.length > 0, `seed ${seed}: stage 3 should contain platforms`);
+    for (const p of platforms) {
+      assert.equal(p.aabb.y, p.tier,
+        `seed ${seed}: platform at x=${p.x} tier ${p.tier} has aabb.y=${p.aabb.y} (must be unit rows, not px)`);
+      // R5.1: the logical footprint stays one unit row — only the DRAW box
+      // (and now the collision box) is thin (PLATFORM_DRAW_H). Validation,
+      // clearance and budget math all run on this unit-space footprint.
+      assert.equal(p.aabb.h, 1,
+        `seed ${seed}: platform occupies one unit row of clearance space`);
+    }
+  }
+});

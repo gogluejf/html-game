@@ -196,6 +196,23 @@ function P(width, tier, x) {
 }
 
 /**
+ * A platform's thickness in unit space. The landing face occupies one row of
+ * clearance space even though it DRAWS thin (R5: PLATFORM_DRAW_H px). Keeping
+ * h=1 here means every consumer — pixel boxes, validation, dumps — treats the
+ * platform as a full unit cell, which is what the grid model requires.
+ */
+const PLATFORM_UNIT_H = 1;
+
+/**
+ * R5.1 — a platform's DRAWN height (px): a thin landing strip, not a full
+ * unit slab. Anchored to the landing-face elevation (the top of the drawn
+ * rect sits at the face; the hero stands on that top). Collision keeps using
+ * the full unit box (oneWay logic) — only the draw changes. Single source of
+ * truth shared by the renderer and the dump (R5.2).
+ */
+export const PLATFORM_DRAW_H = Math.max(2, Math.round(UNIT_PX_Y / 8)); // 6px at 48
+
+/**
  * Build a unit descriptor for a gap of given width.
  * @param {number} width
  */
@@ -2042,16 +2059,21 @@ function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, entryCl
           placementId: instanceId,
           x: px,
           y,
-          aabb: { x: px, y, w: platform.aabb.w, h: platform.aabb.h },
+          aabb: { x: px, y, w: platform.aabb.w, h: PLATFORM_UNIT_H },
         });
         cursor += u.width;
       } else {
+        // BUGFIX: makePlatform().aabb.y is in PIXELS (tierToOffset = tier ×
+        // maxClearableStep), but this layout is UNIT space — mixing the two
+        // sank horizontal platforms ~2.8 rows too high and broke their draw
+        // box. The landing face elevation IS the tier (unit rows from ground).
+        const py = u.tier;
         placedUnits.push({
           ...platform,
           placementId: instanceId,
           x: cursor,
-          y: 0,
-          aabb: { x: cursor, y: platform.aabb.y, w: platform.aabb.w, h: platform.aabb.h },
+          y: py,
+          aabb: { x: cursor, y: py, w: platform.aabb.w, h: PLATFORM_UNIT_H },
         });
         cursor += u.width;
       }

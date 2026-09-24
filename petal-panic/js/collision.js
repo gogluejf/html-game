@@ -228,6 +228,8 @@ export function wasBlockedX(entity) {
 export const COLLISION_RULES = [
   { a: LAYER.HERO,      b: LAYER.SOLID,       action: 'resolve'    },
   { a: LAYER.ENEMY,     b: LAYER.SOLID,       action: 'resolve'    },
+  // One-way platforms are NOT solid AABBs (R5.1): they only land the hero
+  // from above via resolve()'s oneWay branch — no side/below blocking.
   { a: LAYER.PROJ_ALLY, b: LAYER.ENEMY,       action: 'hit'        },
   { a: LAYER.PROJ_ALLY, b: LAYER.BOSS,        action: 'hit'        },
   { a: LAYER.PROJ_ALLY, b: LAYER.SOLID,       action: 'hit'        }, // thorns chip barrels ()

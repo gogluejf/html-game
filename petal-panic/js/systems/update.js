@@ -40,7 +40,7 @@ import { COIN_TYPES } from '../coin.js';
 import { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y, ZONE_FLOOR_H, BOSS_TRIGGER_X } from '../level.js';
 import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId, showLevelReward, recordAreaEntrySnapshot, setAreaEntryFadeOutCallback } from '../lifecycle.js';
 import { getLevelConfig, getStageBudget } from '../levelConfigs.js';
-import { populateArea, populationSnapshot, UNIT_PX_X, UNIT_PX_Y } from '../macros.js';
+import { populateArea, populationSnapshot, UNIT_PX_X, UNIT_PX_Y, PLATFORM_DRAW_H } from '../macros.js';
 import { createRng, tierToOffset } from '../terrain.js';
 import { Theater } from '../effects/theater.js';
 import { dumpTrace, record, recordAreaMap } from '../stats.js';
@@ -76,13 +76,17 @@ function horizontalUnitBox(zone, u) {
   const b = zone.bounds;
   const px = b.x + u.aabb.x * UNIT_PX_X;
   const py = ZONE_GROUND_Y - u.aabb.y * UNIT_PX_Y - u.aabb.h * UNIT_PX_Y;
-  return { x: px, y: py, w: u.aabb.w * UNIT_PX_X, h: u.aabb.h * UNIT_PX_Y, oneWay: u.oneWay };
+  // R5.1: one-way platforms get a THIN box (PLATFORM_DRAW_H px) anchored to
+  // the landing face — collision matches the draw. Blocks keep full height.
+  const h = u.oneWay ? Math.min(u.aabb.h * UNIT_PX_Y, PLATFORM_DRAW_H) : u.aabb.h * UNIT_PX_Y;
+  return { x: px, y: py, w: u.aabb.w * UNIT_PX_X, h, oneWay: u.oneWay };
 }
 function verticalUnitBox(zone, u) {
   const b = zone.bounds;
   const px = b.x + u.aabb.x * UNIT_PX_X;
   const py = ZONE_GROUND_Y - (u.aabb.y + u.aabb.h) * UNIT_PX_Y;
-  return { x: px, y: py, w: u.aabb.w * UNIT_PX_X, h: u.aabb.h * UNIT_PX_Y, oneWay: u.oneWay };
+  const h = u.oneWay ? Math.min(u.aabb.h * UNIT_PX_Y, PLATFORM_DRAW_H) : u.aabb.h * UNIT_PX_Y;
+  return { x: px, y: py, w: u.aabb.w * UNIT_PX_X, h, oneWay: u.oneWay };
 }
 /** A slot's surface elevation (units) to the y of its top surface (world px). */
 function surfaceY(zone, elevationUnits) {
@@ -257,7 +261,11 @@ function captureAreaMap(h) {
         x: u.aabb.x,
         y: u.kind === 'platform' && layout.orientation !== 'vertical' ? (u.tier ?? 0) : u.aabb.y,
         w: u.aabb.w,
-        h: u.aabb.h,
+        // R5.2: platforms carry their THIN draw height (fractional units) so
+        // the dump distinguishes a thin platform from a solid block purely
+        // from the data; blocks keep full integer heights. The logical
+        // footprint (h=1 unit of clearance space) is unchanged.
+        h: u.kind === 'platform' ? PLATFORM_DRAW_H / UNIT_PX_Y : u.aabb.h,
         tier: u.tier,
         height: u.height,
         oneWay: !!u.oneWay,
@@ -673,7 +681,11 @@ export const SOLIDS = [];
 // Solid wrapper entities (layer-only) for the collision world + debug overlay.
 class SolidBox extends Entity {
   constructor(box) {
-    super({ x: box.x, y: box.y, w: box.w, h: box.h, gravity: 0, layer: LAYER.SOLID, debugColor: '#ff9f43' });
+    // R5.1: one-way platforms use the PLATFORM layer (no SOLID rules — they
+    // only land the hero from above via resolve()'s oneWay branch, never
+    // block sides/below or chip projectiles). Solid blocks/barrels keep SOLID.
+    const layer = box.oneWay ? LAYER.PLATFORM : LAYER.SOLID;
+    super({ x: box.x, y: box.y, w: box.w, h: box.h, gravity: 0, layer, debugColor: '#ff9f43' });
   }
 }
 const solidEntities = [];
