@@ -78,10 +78,10 @@ export class Camera {
       this.minX = b.x;
       this.maxX = b.x;
     } else if (zone.orientation === 'boss') {
-      // Boss zone: allow horizontal scrolling during the APPROACH phase so the
-      // hero can walk from the left checkpoint to the arena entry. The camera
-      // is FROZEN (min === max) later by the onLock hook when the arena locks.
-      // Here we just set the normal clamp range for the zone's full width.
+      // Boss zone RUN phase: allow horizontal scrolling across the full zone
+      // width so the hero can walk from the left entry to the boss checkpoint
+      // at the far right. When the checkpoint is crossed, enterBossRoom()
+      // (update.js) freezes the camera on the battle room (minX === maxX = 0).
       this.minX = b.x;
       this.maxX = b.x + b.w - this.w;
     }

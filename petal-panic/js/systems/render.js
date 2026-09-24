@@ -294,11 +294,12 @@ export function render(ctx) {
       drawLabel(ctx, e.x + e.w / 2, e.y - 10, `${e.type}:${e.aiState}`, frac, layerColor(e));
     }
     // Boss: unified label in the same name:state format as the enemies, with
-    // phase + escalation folded in. Only shown while in the boss zone (the
-    // boss is zone-scoped content — it does not exist in ordinary areas).
+    // phase + escalation folded in. Only shown while the boss is actually
+    // visible (battle room up) — not during the 1-B run phase, when the boss
+    // is parked off-world and must not leak a debug label at its spawn x.
     {
       const b = getBoss();
-      if (b && b.alive && getActiveZoneKind() === 'boss') {
+      if (b && b.alive && bossZone.bossVisible()) {
         drawLabel(ctx, b.x + b.w / 2, b.y - 28,
           `BOSS:${b.phase}×${b.escalation.toFixed(2)}`, b.hp / b.maxHp, layerColor(b));
       }
@@ -342,10 +343,10 @@ export function render(ctx) {
     ];
     const hero = getHero();
     if (hero && !hero.dying) allEnts.push(hero);
-    // Boss only renders its transform debug box while the hero is in the boss
-    // zone — it lives in the boss zone and must not appear in ordinary areas.
+    // Boss only renders its transform debug box while the boss is actually
+    // visible (battle room up) — not during the 1-B run phase.
     const boss = getBoss();
-    if (boss && boss.alive && getActiveZoneKind() === 'boss') allEnts.push(boss);
+    if (boss && boss.alive && bossZone.bossVisible()) allEnts.push(boss);
     for (const ent of allEnts) drawEntityTransformDebug(ctx, ent);
     if (Debug.selected) drawSelectionOverlay(ctx, Debug.selected);
   }
@@ -567,9 +568,9 @@ function drawDebugOverlay(ctx) {
                ...getCheckpoints().filter(c => c.alive),
                ...getPowerups().filter(p => p.alive && !p.collected),
                ...getCoins().activeItems.filter(c => c.alive && !c.collected)];
-  // Boss gets a radius circle too — only while in the boss zone.
+  // Boss gets a radius circle too — only while the boss is actually visible.
   const boss = getBoss();
-  if (boss && boss.alive && getActiveZoneKind() === 'boss') all.push(boss);
+  if (boss && boss.alive && bossZone.bossVisible()) all.push(boss);
 
   for (const ent of all) {
     const layer = ent.layer ?? 0;
@@ -802,15 +803,15 @@ function drawBossHpBar(ctx, b) {
  * @param {import('../boss.js').Elephant} b
  */
 function drawBossDebug(ctx, b) {
-  // Arena bounds (dashed verticals).
+  // Battle room bounds (dashed verticals) — owned by the flow machine.
   ctx.save();
   ctx.globalAlpha = 0.3;
   ctx.strokeStyle = '#8e6bbf';
   ctx.setLineDash([6, 6]);
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(b.arenaX, 0); ctx.lineTo(b.arenaX, VIEW_H);
-  ctx.moveTo(b.arenaX + b.arenaW, 0); ctx.lineTo(b.arenaX + b.arenaW, VIEW_H);
+  ctx.moveTo(bossZone.roomX, 0); ctx.lineTo(bossZone.roomX, VIEW_H);
+  ctx.moveTo(bossZone.roomX + bossZone.roomW, 0); ctx.lineTo(bossZone.roomX + bossZone.roomW, VIEW_H);
   ctx.stroke();
   ctx.restore();
 
