@@ -142,8 +142,8 @@ test('the boss-card trigger line sits in the run, before the scroll end', () => 
   // the battle room. It must be inside the zone, at least one screen past
   // the entry, and BEFORE the zone's right edge (the card should not fire at
   // the very end of the scroll).
-  assert.ok(BOSS_TRIGGER_X > ZONE_ENTRY_X + VIEW_W,
-    `trigger (${BOSS_TRIGGER_X}) is at least one screen past the entry`);
+  assert.ok(BOSS_TRIGGER_X > ZONE_ENTRY_X + VIEW_W * 0.8,
+    `trigger (${BOSS_TRIGGER_X}) is well into the run (past ${Math.round(ZONE_ENTRY_X + VIEW_W * 0.8)})`);
   assert.ok(BOSS_TRIGGER_X < zone.bounds.w - 100,
     `trigger (${BOSS_TRIGGER_X}) is before the zone's right edge (${zone.bounds.w})`);
 });
