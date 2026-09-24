@@ -49,7 +49,7 @@ import { UNIT_PX_X, UNIT_PX_Y } from '../macros.js';
 // ---------------------------------------------------------------------------
 
 test('macro vocabulary: all six required macros are present', () => {
-  const required = ['pyramid', 'lowRepeated', 'stretchedPyramid', 'mixedCrossing', 'climbing', 'gapDrop'];
+  const required = ['pyramid', 'lowRepeated', 'stretchedPyramid', 'mixedCrossing', 'climbing', 'gapLanding'];
   for (const id of required) {
     assert.ok(MACROS[id], `macro "${id}" must exist`);
   }
@@ -137,12 +137,16 @@ test('macro vocabulary: climbing is vertical with upward landings (generation.md
   assert.equal(climb.difficulty, 2);
 });
 
-test('macro vocabulary: gapDrop is a movement challenge (generation.md §2)', () => {
-  const gd = MACROS.gapDrop;
+test('macro vocabulary: gapLanding is a movement challenge (generation.md §2)', () => {
+  const gd = MACROS.gapLanding;
   assert.equal(gd.orientation, 'horizontal');
   // 2D grid model: the leading gap is unoccupied cells before the first unit.
   const firstCol = Math.min(...gd.units.map((u) => u.col));
-  assert.ok(firstCol >= 2, 'gapDrop: starts with empty cells (the gap) before the landing block');
+  assert.ok(firstCol >= 2, 'gapLanding: starts with empty cells (the gap) before the landing run');
+  // The landing run is five height-1 blocks — one under every slot.
+  const blocks = gd.units.filter((u) => u.kind === 'block');
+  assert.equal(blocks.length, 5, 'gapLanding: five landing blocks');
+  assert.ok(blocks.every((b) => b.height === 1), 'gapLanding: all landing blocks are height 1');
   assert.equal(gd.difficulty, 2);
 });
 

@@ -263,16 +263,12 @@ export const MACROS = Object.freeze({
     // with 5 blocks declares enough slots that a typical budget can be met
     // (task 4.1: 3-4 enemy, 2-3 barrel, 1-2 powerup).
     placements: Object.freeze([
-      // Enemies patrol the base / on top of the low blocks.
+      // One slot per position (no-overlap rule): enemies on the low blocks,
+      // a barrel mid, a powerup on the peak.
       { slot: 'base', x: 0, type: 'enemy' },
-      { slot: 'on-h1', x: 0, type: 'enemy' },
       { slot: 'on-h2', x: 1, type: 'enemy' },
       { slot: 'on-h2b', x: 3, type: 'enemy' },
-      // Barrels sit on top of the mid/peak blocks.
-      { slot: 'peak', x: 2, type: 'barrel' },
-      { slot: 'on-h2-mid', x: 1, type: 'barrel' },
-      // Powerups perch on the peak.
-      { slot: 'peak-powerup', x: 2, type: 'powerup' },
+      { slot: 'peak-barrel', x: 2, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]), // can follow any macro
@@ -302,12 +298,8 @@ export const MACROS = Object.freeze({
       { slot: 'e1', x: 0, type: 'enemy' },
       { slot: 'e2', x: 1, type: 'enemy' },
       { slot: 'e3', x: 2, type: 'enemy' },
-      { slot: 'e4', x: 4, type: 'enemy' },
-      { slot: 'b1', x: 2, type: 'barrel' },
-      { slot: 'b2', x: 3, type: 'barrel' },
-      { slot: 'b3', x: 1, type: 'barrel' },
-      { slot: 'p1', x: 2, type: 'powerup' },
-      { slot: 'p2', x: 4, type: 'powerup' },
+      { slot: 'b1', x: 3, type: 'barrel' },
+      { slot: 'p1', x: 4, type: 'powerup' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -343,11 +335,8 @@ export const MACROS = Object.freeze({
       { slot: 'low', x: 2, type: 'enemy' },
       { slot: 'low2', x: 3, type: 'enemy' },
       { slot: 'mid-enemy', x: 7, type: 'enemy' },
-      { slot: 'high-enemy', x: 12, type: 'enemy' },
-      { slot: 'mid', x: 7, type: 'barrel' },
       { slot: 'mid2', x: 8, type: 'barrel' },
       { slot: 'high-barrel', x: 12, type: 'barrel' },
-      { slot: 'high', x: 12, type: 'powerup' },
       { slot: 'high2', x: 13, type: 'powerup' },
     ]),
     variations: Object.freeze([]),
@@ -385,11 +374,8 @@ export const MACROS = Object.freeze({
       { slot: 'before-gap', x: 2, type: 'enemy' },
       { slot: 'on-platform', x: 5, type: 'enemy' },
       { slot: 'on-platform2', x: 6, type: 'enemy' },
-      { slot: 'on-platform', x: 5, type: 'powerup' },
-      { slot: 'on-platform-pu', x: 6, type: 'powerup' },
       { slot: 'after-platform', x: 9, type: 'barrel' },
       { slot: 'on-h3', x: 8, type: 'barrel' },
-      { slot: 'on-h2', x: 9, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -397,38 +383,44 @@ export const MACROS = Object.freeze({
   }),
 
   /**
-   * Gap/drop: a wide gap followed by a lower landing (descent).
+   * Gap landing run: a 2-cell gap followed by a five-block landing run.
    * A movement challenge — the hero must jump the gap and land on the
-   * lower ground. Not a lethal pit (generation.md §2).
+   * block run. Not a lethal pit (generation.md §2).
    *
-   * Shape: gap → a solid block landing (the "drop"). The block is the
-   * landing surface after the gap; the hero drops onto / past it. Two
-   * adjacent gaps with no lower landing would be a lethal pit, which the
-   * docs explicitly forbid — so the landing is a real surface, not air.
+   * Shape: 2-cell gap → five height-1 blocks (one under every slot, so
+   * items always stand on a surface, never bare ground). The block run is
+   * the landing surface after the gap; two adjacent gaps with no lower
+   * landing would be a lethal pit, which the docs explicitly forbid — so
+   * the landing is a real surface, not air.
    *
    * Entry: 2 units clear. Exit: 2 units clear.
-   * Difficulty: 2 (gap + drop).
+   * Difficulty: 2 (gap + landing run).
    */
-  gapDrop: Object.freeze({
-    id: 'gapDrop',
-    name: 'Gap / Drop',
+  gapLanding: Object.freeze({
+    id: 'gapLanding',
+    name: 'Gap Landing Run',
     orientation: 'horizontal',
     difficulty: 2,
-    // A 2-cell empty gap (cols 0-1), then the lower landing block at col 2.
+    // A 2-cell empty gap (cols 0-1), then FIVE height-1 landing blocks
+    // (cols 2-6) — one under every slot, so no item ever stands on bare
+    // ground. The hero drops across the gap and lands on the block run.
     units: Object.freeze([
-      B(1, 0, 2), // lower landing block (the "drop")
+      B(1, 0, 2),
+      B(1, 0, 3),
+      B(1, 0, 4),
+      B(1, 0, 5),
+      B(1, 0, 6),
     ]),
     entryClear: 2,
     exitClear: 2,
-    // The hero drops onto the landing block (x=3, h1 → elev 1). The before-gap
-    // slot is on the entry ground (elev 0). Enough slots for a typical budget.
+    // Every slot sits on a block top (elev 1) — no items on bare ground.
+    // Enough slots for a typical budget.
     placements: Object.freeze([
-      { slot: 'before-gap', x: 0, type: 'enemy' },
-      { slot: 'before-gap2', x: 1, type: 'enemy' },
-      { slot: 'landing-enemy', x: 3, type: 'enemy' },
+      { slot: 'landing-enemy', x: 2, type: 'enemy' },
+      { slot: 'landing-enemy2', x: 4, type: 'enemy' },
+      { slot: 'landing-enemy3', x: 6, type: 'enemy' },
       { slot: 'landing', x: 3, type: 'powerup' },
-      { slot: 'landing-barrel', x: 3, type: 'barrel' },
-      { slot: 'before-gap-barrel', x: 0, type: 'barrel' },
+      { slot: 'landing-barrel', x: 5, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -468,7 +460,6 @@ export const MACROS = Object.freeze({
       { slot: 'on-t1', x: 0, type: 'enemy' },
       { slot: 'on-t2', x: 4, type: 'enemy' },
       { slot: 'on-t3', x: 8, type: 'powerup' },
-      { slot: 'on-t2-barrel', x: 4, type: 'barrel' },
       { slot: 'on-t1-barrel', x: 1, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
@@ -507,11 +498,9 @@ export const MACROS = Object.freeze({
       { slot: 'on-h1', x: 0, type: 'enemy' },
       { slot: 'on-h2', x: 1, type: 'enemy' },
       { slot: 'on-bridge', x: 5, type: 'enemy' },
-      { slot: 'on-bridge2', x: 6, type: 'enemy' },
       { slot: 'on-bridge-pu', x: 6, type: 'powerup' },
       { slot: 'on-far-h2', x: 10, type: 'barrel' },
       { slot: 'on-far-h1', x: 11, type: 'barrel' },
-      { slot: 'on-h2-barrel', x: 1, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -584,7 +573,6 @@ export const MACROS = Object.freeze({
     exitClear: 3,
     placements: Object.freeze([
       { slot: 'on-wall', x: 0, type: 'enemy' },
-      { slot: 'on-wall2', x: 1, type: 'barrel' },
       { slot: 'on-bridge', x: 1, type: 'powerup' },
       { slot: 'on-bridge2', x: 2, type: 'barrel' },
     ]),
@@ -665,12 +653,8 @@ export const MACROS = Object.freeze({
     exitClear: 2,
     placements: Object.freeze([
       { slot: 'tier1', x: 12, type: 'enemy' },
-      { slot: 'tier1b', x: 13, type: 'enemy' },
       { slot: 'tier2', x: 14, type: 'enemy' },
-      { slot: 'tier3', x: 12, type: 'powerup' },
       { slot: 'tier3b', x: 13, type: 'powerup' },
-      { slot: 'tier2-barrel', x: 14, type: 'barrel' },
-      { slot: 'tier1-barrel', x: 12, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -702,9 +686,6 @@ export const MACROS = Object.freeze({
       { slot: 'tier2-right', x: 13, type: 'enemy' },
       { slot: 'tier1-rest', x: 11, type: 'enemy' },
       { slot: 'tier2-peak', x: 14, type: 'powerup' },
-      { slot: 'tier2-peak2', x: 13, type: 'powerup' },
-      { slot: 'tier1-barrel', x: 11, type: 'barrel' },
-      { slot: 'tier2-barrel', x: 14, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -738,9 +719,6 @@ export const MACROS = Object.freeze({
       { slot: 'tier3-peak', x: 11, type: 'enemy' },
       { slot: 'tier2-rest', x: 14, type: 'enemy' },
       { slot: 'tier3-final', x: 12, type: 'powerup' },
-      { slot: 'tier3-final2', x: 13, type: 'powerup' },
-      { slot: 'tier1-barrel', x: 11, type: 'barrel' },
-      { slot: 'tier2-barrel', x: 14, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -777,9 +755,6 @@ export const MACROS = Object.freeze({
       { slot: 'tier2', x: 13, type: 'enemy' },
       { slot: 'tier3', x: 11, type: 'enemy' },
       { slot: 'tier3b', x: 14, type: 'powerup' },
-      { slot: 'tier3c', x: 13, type: 'powerup' },
-      { slot: 'tier2-barrel', x: 14, type: 'barrel' },
-      { slot: 'tier1-barrel', x: 11, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -818,10 +793,6 @@ export const MACROS = Object.freeze({
       { slot: 'tier1-reset', x: 14, type: 'enemy' },
       { slot: 'tier2-mid', x: 12, type: 'enemy' },
       { slot: 'tier3-peak2', x: 15, type: 'powerup' },
-      { slot: 'tier3-peak2b', x: 14, type: 'powerup' },
-      { slot: 'tier1-barrel', x: 11, type: 'barrel' },
-      { slot: 'tier2-barrel', x: 14, type: 'barrel' },
-      { slot: 'tier3-barrel', x: 11, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -2209,7 +2180,12 @@ function surfaceElevationAt(macro, p, isVertical) {
     const uStart = u.col;
     const uEnd = u.col + (u.kind === 'block' ? 1 : u.width);
     if (col >= uStart && col < uEnd) {
-      const surface = u.kind === 'block' ? u.row + u.height : u.row;
+      // The slot rests on the unit's STANDING SURFACE — the top of the cell
+      // it occupies. Block: base row + height. Platform: its face sits at the
+      // ceiling of the occupied row (row + 1), matching the pixel render and
+      // the validator's landing elevations. A slot's y is therefore ALWAYS
+      // "the exact line the hero stands on" — pure coordinate truth in dumps.
+      const surface = u.kind === 'block' ? u.row + u.height : u.row + 1;
       if (surface > best) best = surface;
     }
   }
@@ -2304,6 +2280,25 @@ export function validateLayout(layout) {
     }
   }
 
+  // 3c. NO-OVERLAP SLOT RULE: a slot position (x, y) may be declared at most
+  //     ONCE per layout. Two slots at the same position let the resolver fill
+  //     BOTH (e.g. a barrel AND a powerup in the same cell), producing
+  //     overlapping sprites. One position = one item, full stop.
+  const seenSlotPos = new Set();
+  const seenSlotDupName = new Map();
+  for (const s of layout.placements ?? []) {
+    const key = `${s.x},${s.y ?? 0}`;
+    if (seenSlotPos.has(key)) {
+      throw new Error(
+        `validateLayout: duplicate slot position x=${s.x} y=${s.y ?? 0} ` +
+          `(slots "${seenSlotDupName.get(key)}" and "${s.slot}") — each position ` +
+          `may hold at most one slot`,
+      );
+    }
+    seenSlotPos.add(key);
+    seenSlotDupName.set(key, s.slot);
+  }
+
   // 4a. Legacy buried-landing check: a platform must not be UNDERNEATH a
   //     solid block at an overlapping x (block top at or above the platform's
   //     face). This is the "buried" case the playability tests assert on; it
@@ -2327,16 +2322,31 @@ export function validateLayout(layout) {
     }
   }
 
-  // 4b. The unified CLEARANCE RULE (REVISION R2.2):
-  //    any unit whose base/face is above row 0 must be ≥ 2 rows above the top
-  //    of whatever is directly below it in its column span (floor = row 0; a
-  //    block's top = base + height; a platform's face = its row). A block may
-  //    sit at row 0 on the floor freely. This single rule covers
-  //    blocks-above-blocks and platforms-over-blocks / blocks-over-platforms
-  //    alike. Violation → authoring error.
-  const unitTop = (u) => (u.kind === 'block' ? (u.row ?? 0) + u.height : (u.row ?? u.tier ?? 0));
+  // 4b. The CLEARANCE RULE (REVISION R2.2, restated): units occupy grid CELLS;
+  //     a unit's standing surface is the TOP of its cell (blocks: row + height;
+  //     platforms: row + 1 — the face sits at the ceiling of the occupied row,
+  //     matching the pixel render where P@row N faces at (N+1) × UNIT_PX_Y).
+  //     Clearance = empty cells between the upper unit's cell FLOOR (its row)
+  //     and the lower unit's surface line. The upper unit's own cell is NOT
+  //     clearance — it is occupied. Rules:
+  //       - block on the floor (row 0): always legal (may touch the ground)
+  //       - block with clearance 0 (touching stack): legal
+  //       - block with clearance >= 2: legal (hero fits/jumps underneath)
+  //       - block with clearance exactly 1: ILLEGAL (not a stack, not clearable)
+  //       - platform: clearance must be >= 1 (thin one-way landing needs one
+  //         air row; it can never rest ON a surface), and a platform may never
+  //         be declared at row 0.
+  const cellFloor = (u) => (u.row ?? u.tier ?? 0);
+  const surfaceLine = (u) => (u.kind === 'block' ? (u.row ?? 0) + u.height : (u.row ?? u.tier ?? 0) + 1);
   for (const upper of units) {
-    if ((upper.row ?? 0) <= 0) continue; // resting on the floor — no clearance needed
+    const uRow = cellFloor(upper);
+    if (upper.kind === 'platform' && uRow <= 0) {
+      throw new Error(
+        `validateLayout: platform at x=${upper.x} declared at row ${uRow} — ` +
+          `platforms are elevated landings and may not sit at row 0`,
+      );
+    }
+    if (uRow <= 0) continue; // block resting on the floor — no clearance needed
     for (const lower of units) {
       if (lower === upper) continue;
       // The rule applies WITHIN a single macro instance (true 2D stacking,
@@ -2344,30 +2354,35 @@ export function validateLayout(layout) {
       // the climb landings — governed by the elevation-step rule instead.
       if (upper.placementId !== undefined && lower.placementId !== undefined
           && upper.placementId !== lower.placementId) continue;
-      // The rule applies to whatever is DIRECTLY BELOW in the same column
-      // span: skip units that are not below (their top is not under the
-      // upper unit's base/face).
-      if (unitTop(lower) >= unitTop(upper)) continue;
-      // The rule applies to whatever is DIRECTLY BELOW in the column span:
-      // the upper unit's base/face must sit strictly above the lower's top.
-      // Side-by-side landings at similar heights (the normal climb case) are
-      // governed by the elevation-step rule instead, not this one.
-      const upperBase = upper.kind === 'block' ? (upper.row ?? 0) : (upper.row ?? upper.tier ?? 0);
-      if (upperBase <= unitTop(lower)) continue;
+      // Only units whose surface lies strictly BELOW the upper unit's cell
+      // floor are "below" it. Same-cell or higher units are side-by-side
+      // landings (governed by the elevation-step rule), not stacking.
+      if (surfaceLine(lower) >= uRow) continue;
 
       const lStart = lower.x;
       const lEnd = lower.x + lower.aabb.w;
       const uStart = upper.x;
       const uEnd = upper.x + upper.aabb.w;
       if (uStart < lEnd && uEnd > lStart) {
-        // Column overlap: the upper unit must clear the lower's top by ≥ 2 rows.
-        const clearance = unitTop(upper) - unitTop(lower);
-        if (clearance < 2) {
-          throw new Error(
-            `validateLayout: ${upper.kind} at x=${upper.x} (top row ${unitTop(upper)}) ` +
-              `is only ${clearance} row(s) above ${lower.kind} at x=${lower.x} ` +
-              `(top row ${unitTop(lower)}) — needs ≥ 2 rows of clearance`,
-          );
+        // Column overlap: count the empty rows between the surfaces.
+        const clearance = uRow - surfaceLine(lower);
+        if (upper.kind === 'platform') {
+          if (clearance < 1) {
+            throw new Error(
+              `validateLayout: platform at x=${upper.x} (face row ${uRow + 1}) ` +
+                `rests on ${lower.kind} at x=${lower.x} (surface row ${surfaceLine(lower)}) ` +
+                `— platforms need ≥ 1 empty row below their face`,
+            );
+          }
+        } else {
+          if (clearance === 1) {
+            throw new Error(
+              `validateLayout: block at x=${upper.x} (base row ${uRow}) floats ` +
+                `exactly 1 row above ${lower.kind} at x=${lower.x} ` +
+                `(surface row ${surfaceLine(lower)}) — a gap must be 0 (stack) ` +
+                `or ≥ 2 rows (clearable)`,
+            );
+          }
         }
       }
     }
@@ -2392,7 +2407,12 @@ export function validateLayout(layout) {
   //   - within each macro: successive platforms differ by ≤ 1 tier
   //   - between macros: the next macro's first platform tier must be
   //     reachable from the previous macro's peak (the climb continues)
-  const landingElevation = (u) => (u.kind === 'block' ? u.height : u.tier);
+  // Each unit's landing elevation is where the hero STANDS on it — the TOP of
+  // the cell it occupies (the same line the pixel render draws):
+  //   - block: row + height (a ground block → its height)
+  //   - platform: tier + 1 (the face sits at the ceiling of the occupied row;
+  //     P@row 1 faces one full cell above a B(h1)@0 top)
+  const landingElevation = (u) => (u.kind === 'block' ? (u.row ?? 0) + u.height : (u.tier ?? u.row ?? 0) + 1);
 
   if (!isVertical) {
     // Horizontal: full route in x order.
@@ -2476,10 +2496,9 @@ export function validateLayout(layout) {
     // Since all vertical units share the same x, we sort by y (climb order);
     // ties are broken by placementId so the authoring order within a macro
     // is preserved.
-    // A vertical platform's absolute climb elevation is its y position.
-    // placeMacro sets `y` directly on the unit; synthetic test layouts may
-    // only carry `aabb.y`. Use whichever is present.
-    const platformY = (p) => (p.y ?? p.aabb?.y ?? 0);
+    // A vertical platform's absolute climb elevation is the TOP of its cell:
+    // its y (cell floor) + 1 — the face line where the hero stands.
+    const platformY = (p) => ((p.y ?? p.aabb?.y ?? 0) + 1);
 
     const platforms = units
       .filter((u) => u.kind === 'platform')
@@ -2541,15 +2560,19 @@ export function validateLayout(layout) {
       }
     }
 
-    // Check ground → first platform. The hero starts at the bottom of the
-    // zone (y=0) and must be able to reach the first platform with a jump.
+    // Check ground → first platform. The hero starts on the bottom support
+    // platform (elevation 0) and must reach the first landing with a jump.
+    // A macro's first platform occupies cell row 1, so its FACE (standing
+    // surface) is at elevation 2 — exactly one double-jump step above the
+    // start platform. Measuring from the face keeps this check consistent
+    // with every other step measured between standing surfaces.
     if (platforms.length > 0) {
       const first = platforms[0];
-      const step = platformY(first) - 0;
+      const step = platformY(first) - 1;
       if (step > MAX_ELEVATION_STEP) {
         throw new Error(
-          `validateLayout: elevation step of ${step} tiers UP between ground ` +
-            `(elevation 0) and first platform at y=${platformY(first)} ` +
+          `validateLayout: elevation step of ${step} tiers UP between the start ` +
+            `platform (elevation 1) and first platform face at y=${platformY(first)} ` +
             `exceeds max upward step ${MAX_ELEVATION_STEP}`,
         );
       }

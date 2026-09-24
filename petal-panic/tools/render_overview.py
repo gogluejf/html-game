@@ -81,7 +81,7 @@ def render(trace_path: str, out_path: str):
             continue
 
         sx = lambda gx: x_left + int((gx / h_w) * H_RENDER_W)
-        sy = lambda tier: floor_y - int(tier * UNIT_PX_Y * scale)
+        sy = lambda tier: floor_y - int((tier + 1) * UNIT_PX_Y * scale)
 
         for u in units:
             kind = u.get("kind")
@@ -112,6 +112,7 @@ def render(trace_path: str, out_path: str):
             stype = s.get("type", "")
             color = slot_colors.get(stype, (128, 128, 128))
             sxp = sx(s["x"] * UNIT_PX_X + UNIT_PX_X * 0.5)
+            # PURE COORDINATE: slot y IS the surface row — floor − y×48. No +1.
             syp = sy(s.get("y", 0)) - dot_r
             draw.ellipse([sxp - dot_r, syp - dot_r, sxp + dot_r, syp + dot_r], fill=color)
 
@@ -155,7 +156,9 @@ def render(trace_path: str, out_path: str):
                 if kind == "platform":
                     px = sx(ux * UNIT_PX_X)
                     pw = max(3, int(uw * UNIT_PX_X * scale))
-                    py = sy(uy * UNIT_PX_Y)
+                    # Face sits at the TOP of the occupied cell: (row+1) rows up,
+                    # same convention as the game render and the block branch below.
+                    py = sy((uy + 1) * UNIT_PX_Y)
                     draw.rectangle([px, py - int(plat_thick_px * scale), px + pw - 1, py - 1], fill=(255, 165, 0))
                 elif kind == "block":
                     px = sx(ux * UNIT_PX_X)
@@ -171,6 +174,7 @@ def render(trace_path: str, out_path: str):
                 stype = s.get("type", "")
                 color = slot_colors.get(stype, (128, 128, 128))
                 sxp = sx(s["x"] * UNIT_PX_X + UNIT_PX_X * 0.5)
+                # PURE COORDINATE: slot y IS the surface row — no +1.
                 syp = sy(s.get("y", 0) * UNIT_PX_Y) - dot_r
                 draw.ellipse([sxp - dot_r, syp - dot_r, sxp + dot_r, syp + dot_r], fill=color)
 
