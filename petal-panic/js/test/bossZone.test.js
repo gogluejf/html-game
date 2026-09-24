@@ -135,14 +135,17 @@ test('the boss zone entry flag stands at the left like any other level', () => {
   assert.equal(zone.entryFlag.appearance, 'boss-checkpoint', 'it carries the boss-checkpoint appearance');
 });
 
-test('the boss-card trigger line sits at the far right of the zone', () => {
+test('the boss-card trigger line sits in the run, before the scroll end', () => {
   const zones = buildLevelZones(LEVELS[0]);
   const zone = zones.find((z) => z.kind === 'boss');
   // The hero walks right from the left entry and crosses this line to start
-  // the battle room. It must be inside the zone, well past the entry.
+  // the battle room. It must be inside the zone, at least one screen past
+  // the entry, and BEFORE the zone's right edge (the card should not fire at
+  // the very end of the scroll).
   assert.ok(BOSS_TRIGGER_X > ZONE_ENTRY_X + VIEW_W,
     `trigger (${BOSS_TRIGGER_X}) is at least one screen past the entry`);
-  assert.ok(BOSS_TRIGGER_X < zone.bounds.w, 'trigger is inside the zone bounds');
+  assert.ok(BOSS_TRIGGER_X < zone.bounds.w - 100,
+    `trigger (${BOSS_TRIGGER_X}) is before the zone's right edge (${zone.bounds.w})`);
 });
 
 // ===========================================================================
