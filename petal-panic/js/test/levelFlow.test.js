@@ -41,7 +41,7 @@ const { createTrace } = await import('../stats.js');
 const { GAME_RULES } = await import('../gameRules.js');
 const U = await import('../systems/update.js');
 const {
-  makeBossZone, BZ_APPROACH, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT,
+  makeBossZone, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT,
 } = await import('../bossZone.js');
 const { makeElephant } = await import('../boss.js');
 
@@ -504,28 +504,24 @@ const heroAt = (x) => ({ x, y: 460, w: 32, h: 40 });
 
 test('boss flow: states transition in the documented order', () => {
   const { zone, boss } = bzFixture();
-  let lockCalls = 0, combatCalls = 0;
+  let combatCalls = 0;
   const m = makeBossZone(zone, boss, {
-    onLock: () => { lockCalls++; },
     onCombat: () => { combatCalls++; },
   });
   m.begin();
-  assert.equal(m.state, BZ_APPROACH, 'the flow starts in APPROACH');
+  assert.equal(m.state, BZ_LOCKED, 'the flow starts in LOCKED (no APPROACH state)');
 
-  const seen = [BZ_APPROACH];
-  advanceOne(m, heroAt(m.arenaEntryX + 1)); // APPROACH → LOCKED (hero reaches the arena entry)
-  if (m.state !== seen[seen.length - 1]) seen.push(m.state);
+  const seen = [BZ_LOCKED];
   while (m.state !== BZ_COMBAT) {
-    advanceOne(m, heroAt(m.arenaEntryX));
+    advanceOne(m, heroAt(120)); // all states are timer-driven now
     if (m.state !== seen[seen.length - 1]) seen.push(m.state);
   }
-  const expected = [BZ_APPROACH, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT];
+  const expected = [BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT];
   for (let i = 0; i < seen.length; i++) {
     assert.equal(seen[i], expected[i], `state ${i} is ${seen[i]}, expected ${expected[i]}`);
   }
   assert.equal(seen.length, expected.length, 'every documented state is visited in order');
   assert.equal(m.state, BZ_COMBAT, 'the flow reaches COMBAT');
-  assert.equal(lockCalls, 1, 'onLock fires exactly once (at LOCKED)');
   assert.equal(combatCalls, 1, 'onCombat fires exactly once (at COMBAT)');
 });
 
@@ -533,18 +529,18 @@ test('boss flow: the boss is invisible until BOSS_ENTER', () => {
   const { zone, boss } = bzFixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  // Invisible through the entire intro (APPROACH..BAR_FILL).
-  for (const s of [BZ_APPROACH, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL]) {
-    if (m.state !== s) advanceOne(m, heroAt(m.arenaEntryX + 1));
+  // Invisible through the entire intro (LOCKED..BAR_FILL).
+  for (const s of [BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL]) {
+    if (m.state !== s) advanceOne(m, heroAt(120));
     assert.equal(m.state, s, `reached ${s}`);
     assert.equal(m.bossVisible(), false, `the boss is invisible during ${s}`);
   }
   // Visible once the boss enters (BOSS_ENTER).
-  advanceOne(m, heroAt(m.arenaEntryX)); // → BOSS_ENTER
+  advanceOne(m, heroAt(120)); // → BOSS_ENTER
   assert.equal(m.state, BZ_BOSS_ENTER);
   assert.equal(m.bossVisible(), true, 'the boss is visible once it enters');
   // And still visible in COMBAT.
-  advanceOne(m, heroAt(m.arenaEntryX)); // → COMBAT
+  advanceOne(m, heroAt(120)); // → COMBAT
   assert.equal(m.state, BZ_COMBAT);
   assert.equal(m.bossVisible(), true, 'the boss stays visible in COMBAT');
 });
@@ -554,29 +550,30 @@ test('boss flow: the hero cannot damage the boss before COMBAT', () => {
   const m = makeBossZone(zone, boss);
   m.begin();
   // Untouchable + unshooter throughout the intro.
-  for (const s of [BZ_APPROACH, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER]) {
-    if (m.state !== s) advanceOne(m, heroAt(m.arenaEntryX + 1));
+  for (const s of [BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER]) {
+    if (m.state !== s) advanceOne(m, heroAt(120));
     assert.equal(m.state, s, `reached ${s}`);
     assert.equal(m.bossCanTakeDamage(), false, `the boss cannot take damage during ${s}`);
     assert.equal(m.heroCanShoot(), false, `the hero cannot shoot during ${s}`);
   }
   // Attackable only in COMBAT.
-  advanceOne(m, heroAt(m.arenaEntryX)); // → COMBAT
+  advanceOne(m, heroAt(120)); // → COMBAT
   assert.equal(m.state, BZ_COMBAT);
   assert.equal(m.bossCanTakeDamage(), true, 'the boss can take damage in COMBAT');
   assert.equal(m.heroCanShoot(), true, 'the hero can shoot in COMBAT');
 });
 
-test('boss flow: death during the boss zone restarts the flow at APPROACH', () => {
+test('boss flow: death during the boss zone restarts the whole zone (dormant)', () => {
   const { zone, boss } = bzFixture();
   const m = makeBossZone(zone, boss);
   m.begin();
-  advanceOne(m, heroAt(m.arenaEntryX + 1)); // → LOCKED
   assert.equal(m.state, BZ_LOCKED);
-  // A death during the intro restarts the boss zone at its checkpoint:
-  // the approach and the introduction repeat.
+  // A death during the intro/combat restarts the WHOLE zone: the machine goes
+  // dormant, the update system restores the flag + camera + hero at the left
+  // entry, and the run repeats.
   m.reset();
-  assert.equal(m.state, BZ_APPROACH, 'after reset the flow is back in APPROACH');
+  assert.equal(m.state, null, 'after reset the flow is dormant');
+  assert.equal(m.active, false, 'the machine is inactive after reset');
   assert.equal(m.bossVisible(), false, 'the boss is invisible again after reset');
   assert.equal(m.bossCanTakeDamage(), false, 'the boss is untouchable again after reset');
 });

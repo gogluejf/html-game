@@ -97,31 +97,30 @@ test('vertical zone: no horizontal camera movement (fixed width)', () => {
   assert.equal(cam.x, b.x, 'camera x is pinned to the zone left edge');
 });
 
-test('boss zone: camera scrolls during approach, freezes on lock', () => {
+test('boss zone: camera scrolls during the run, freezes on the battle room', () => {
   const cam = new Camera();
   cam.setZoneBounds(zoneBy('boss'));
 
-  // During APPROACH the camera can scroll horizontally (minX < maxX).
-  assert.ok(cam.minX < cam.maxX, 'boss zone: x is scrollable during approach');
+  // During the RUN phase the camera can scroll horizontally (minX < maxX).
+  assert.ok(cam.minX < cam.maxX, 'boss zone: x is scrollable during the run');
 
-  // Simulate the arena lock (onLock hook): freeze the clamp range.
-  const b = zoneBy('boss').bounds;
-  const cx = Math.round(b.x + b.w / 2 - cam.w / 2);
-  const cy = Math.round(b.y + b.h / 2 - cam.h / 2);
-  cam.minX = cx; cam.maxX = cx;
-  cam.minY = cy; cam.maxY = cy;
-  cam.lockTo(cx, cy);
+  // Simulate the battle-room freeze (enterBossRoom in update.js): the camera
+  // is pinned to the room's left edge — the origin. minX === maxX makes
+  // update() a no-op; lockTo additionally suspends hero-following.
+  cam.minX = 0; cam.maxX = 0;
+  cam.minY = 0; cam.maxY = 0;
+  cam.lockTo(0, 0);
 
-  assert.equal(cam.minX, cam.maxX, 'after lock: x is frozen (minX === maxX)');
-  assert.equal(cam.minY, cam.maxY, 'after lock: y is frozen (minY === maxY)');
+  assert.equal(cam.minX, cam.maxX, 'after freeze: x is frozen (minX === maxX) at the origin');
+  assert.equal(cam.minY, cam.maxY, 'after freeze: y is frozen (minY === maxY)');
 
-  // Moving the hero must not move the locked camera.
+  // Moving the hero must not move the frozen camera.
   const fx = cam.x;
   const fy = cam.y;
   cam.update(heroAt(0, 0));
   cam.update(heroAt(1000, 1000));
-  assert.equal(cam.x, fx, 'locked camera x does not move with the hero');
-  assert.equal(cam.y, fy, 'locked camera y does not move with the hero');
+  assert.equal(cam.x, fx, 'frozen camera x does not move with the hero');
+  assert.equal(cam.y, fy, 'frozen camera y does not move with the hero');
 });
 
 test('entering a new zone re-clamps the camera to the new zone length', () => {

@@ -25,7 +25,7 @@ import { TUNING, TUNING_REACH, TUNING_BARREL, TUNING_MACRO, TUNING_COINS, TUNING
 import { GAME_RULES, resetLevelCoinTally, resetHeroInventory } from '../gameRules.js';
 import { REACH_MARGIN } from '../terrain.js';
 import { BARREL_STRUCTURE, STAGE_WEIGHTS, classifyBarrelStructure } from '../macros.js';
-import { BOSS_APPROACH_DIST, BOSS_ZONE_TIMINGS } from '../bossZone.js';
+import { BOSS_ZONE_TIMINGS } from '../bossZone.js';
 import { VIEW_W, VIEW_H } from '../view.js';
 import { LEVEL_CONFIGS, getLevelConfig } from '../levelConfigs.js';
 import { ZONE_WIDTH_HORIZONTAL, ZONE_H_VERTICAL } from '../level.js';
@@ -44,7 +44,6 @@ test('TUNING block is the single owner (frozen, non-empty, all concrete numbers)
     'deathFade',
     'bossIntroLocked', 'bossIntroSweep', 'bossIntroBarFill',
     'bossIntroEnter',
-    'bossApproachScreens', 'bossApproachStartPad',
     'bossEnterTravelScreens',
     'rewardMinDwell',
   ];
@@ -267,15 +266,6 @@ test('boss intro timings are concrete and wired to the TUNING block (boss-arena.
   assert.equal(BOSS_ZONE_TIMINGS.BOSS_ENTER, TUNING.bossIntroEnter);
   // The sweep is "rapid" (pure tension): a short duration.
   assert.ok(BOSS_ZONE_TIMINGS.INTRO_SWEEP < 3, 'the intro sweep is rapid (<3s)');
-});
-
-test('boss approach is tied to the view width (boss-arena.md §1)', () => {
-  // boss-arena.md §1: "around one screen of approach is a provisional
-  // reference." The concrete value is tied to VIEW_W so it stays ~1 screen.
-  assert.equal(BOSS_APPROACH_DIST, Math.round(VIEW_W * TUNING.bossApproachScreens),
-    'approach distance is tied to VIEW_W');
-  assert.ok(BOSS_APPROACH_DIST > VIEW_W * 0.5, 'approach is at least half a screen');
-  assert.ok(BOSS_APPROACH_DIST < VIEW_W * 1.5, 'approach is at most 1.5 screens');
 });
 
 // ===========================================================================
