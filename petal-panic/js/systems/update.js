@@ -2237,27 +2237,16 @@ export function update(dt) {
   // stay pinned at full alpha over the new level.
   stepAreaEntrySequence(dt);
 
-  // DEBUG: track hero position vs exit flag when in area 2.
-  if (hero.currentArea === 2 && checkpoints.length > 0) {
-    const exit = checkpoints.find(c => !c.isEntry);
-    if (exit && Math.random() < 0.05) { // ~3x/sec
-      const hb = hero.worldBox();
-      const eb = exit.worldBox ? exit.worldBox() : { x: exit.x, y: exit.y, w: exit.w, h: exit.h };
-      console.log(`[debug] hero.worldBox=[${Math.round(hb.x)},${Math.round(hb.y)},${hb.w}x${hb.h}] exit.worldBox=[${Math.round(eb.x)},${Math.round(eb.y)},${eb.w}x${eb.h}] hero.box=${JSON.stringify(hero.box)} exit.box=${JSON.stringify(exit.box)} exit.x=${exit.x} exit.y=${exit.y}`);
-    }
-  }
-
-  // DEBUG: track clear sequence state.
-  if (hero.currentArea === 2 && Math.random() < 0.02) {
-    console.log(`[seq] state=${clearSeq.state} timer=${clearSeq.timer.toFixed(2)} pendingFadeIn=${clearSeq.pendingFadeIn}`);
-  }
-
   // 0. Area-clear sequence (checkpoints.md §2): step the state machine
   //     (banner → fadeOut → entry screen → fadeIn). While the sequence is
   //     active the hero is frozen (no input, no physics) so the camera
   //     cannot scroll past the exit into the next zone.
   if (clearSeq.state !== 'idle') {
     stepClearSequence(dt);
+    // Completing fade-out opens AREA_ENTRY and installs a new zone, but
+    // the hero is not respawned until that card finishes. End this frame
+    // before physics, collisions, or the boss trigger see the old position.
+    if (getState() !== S.PLAY) return;
     // While the clear sequence is active (banner/fadeOut/fadeIn), skip
     // gameplay physics: the hero is frozen and the camera stays put.
     // The fade-in completes and returns to normal play.
