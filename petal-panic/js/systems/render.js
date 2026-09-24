@@ -232,7 +232,7 @@ export function render(ctx) {
       ctx.fillText(p.def.label, cx, cy);
     }
     for (const c of getCheckpoints()) {
-      if (!c.alive) continue;
+      if (!c.alive || c.visible === false) continue;
       const cx = c.x + c.w / 2;
       const cy = c.y - 6;
       ctx.fillStyle = c.triggered ? 'rgba(255,215,0,0.4)' : '#ffd700';
@@ -561,13 +561,13 @@ function drawDebugOverlay(ctx) {
   ];
 
   const all = [...getSolids().map(s => solidEntityProxy(s)),
-               ...getPickups(), ...getEnemies().filter(e => e.alive !== false),
-               ...getRealEnemies().filter(e => e.alive),
+               ...getPickups(), ...getEnemies().filter(e => e.alive !== false && e.visible !== false),
+               ...getRealEnemies().filter(e => e.alive && e.visible !== false),
                ...getProjectiles(), ...getSpecials(), getHero(),
-               ...getBarrels().filter(b => b.alive),
-               ...getCheckpoints().filter(c => c.alive),
-               ...getPowerups().filter(p => p.alive && !p.collected),
-               ...getCoins().activeItems.filter(c => c.alive && !c.collected)];
+               ...getBarrels().filter(b => b.alive && b.visible !== false),
+               ...getCheckpoints().filter(c => c.alive && c.visible !== false),
+               ...getPowerups().filter(p => p.alive && !p.collected && p.visible !== false),
+               ...getCoins().activeItems.filter(c => c.alive && !c.collected && c.visible !== false)];
   // Boss gets a radius circle too — only while the boss is actually visible.
   const boss = getBoss();
   if (boss && boss.alive && bossZone.bossVisible()) all.push(boss);

@@ -57,6 +57,7 @@ export class Entity {
 
     // --- State ----------------------------------------------------------------
     this.alive = true;
+    this.visible = true;   // false = engine skips its sprite AND its collision box
     this.intangible = false;  // true = enemy hitboxes pass through, no damage taken
     this.debugColor = opts.debugColor ?? '#fff';
 
@@ -199,6 +200,7 @@ export class Entity {
    * remains the single source of truth for its on-screen look.
    */
   draw(ctx) {
+    if (this.visible === false) return; // engine contract: invisible = not drawn
     ctx.save();
     // Pivot at the entity's visual center.
     ctx.translate(this.x + this.w / 2, this.y + this.h / 2);

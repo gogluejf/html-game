@@ -399,7 +399,7 @@ export class CollisionWorld {
   update() {
     this.grid.clear();
     for (const e of this.entities) {
-      if (e.alive === false) continue;
+      if (e.alive === false || e.visible === false) continue;
       this.grid.insert(e);
     }
 
