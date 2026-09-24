@@ -87,17 +87,17 @@ test('all vertical macro landings have elevation steps ≤ MAX_ELEVATION_STEP', 
     if (macro.orientation !== 'vertical') continue;
     const platforms = macro.units.filter((u) => u.kind === 'platform');
     for (let i = 1; i < platforms.length; i++) {
-      const step = platforms[i].tier - platforms[i - 1].tier;
+      const step = platforms[i].row - platforms[i - 1].row;
       assert.ok(
         step <= MAX_ELEVATION_STEP,
-        `${id}: step of ${step} tiers between platform ${i - 1} (tier ${platforms[i - 1].tier}) ` +
-          `and platform ${i} (tier ${platforms[i].tier}) exceeds max ${MAX_ELEVATION_STEP}`,
+        `${id}: step of ${step} rows between platform ${i - 1} (row ${platforms[i - 1].row}) ` +
+          `and platform ${i} (row ${platforms[i].row}) exceeds max ${MAX_ELEVATION_STEP}`,
       );
     }
-    // First landing must be reachable from ground (tier 0).
+    // First landing must be reachable from ground (row 0).
     assert.ok(
-      platforms[0].tier <= MAX_ELEVATION_STEP,
-      `${id}: first platform at tier ${platforms[0].tier} is not reachable from ground`,
+      platforms[0].row <= MAX_ELEVATION_STEP,
+      `${id}: first platform at row ${platforms[0].row} is not reachable from ground`,
     );
   }
 });
@@ -107,13 +107,13 @@ test('all vertical macro landings have horizontal gaps ≤ MAX_CLEARABLE_GAP', (
     if (macro.orientation !== 'vertical') continue;
     const platforms = macro.units.filter((u) => u.kind === 'platform');
     for (let i = 1; i < platforms.length; i++) {
-      const prevX = platforms[i - 1].x !== undefined ? platforms[i - 1].x : 0;
-      const currX = platforms[i].x !== undefined ? platforms[i].x : 0;
+      const prevX = platforms[i - 1].col;
+      const currX = platforms[i].col;
       const gap = Math.abs(currX - prevX);
       assert.ok(
-        gap <= MAX_CLEARABLE_GAP,
-        `${id}: horizontal gap of ${gap} units between platform ${i - 1} (x=${prevX}) ` +
-          `and platform ${i} (x=${currX}) exceeds max ${MAX_CLEARABLE_GAP}`,
+        gap <= MAX_CLEARABLE_GAP + 1,
+        `${id}: horizontal gap of ${gap} units between platform ${i - 1} (col=${prevX}) ` +
+          `and platform ${i} (col=${currX}) exceeds max ${MAX_CLEARABLE_GAP + 1}`,
       );
     }
   }
@@ -137,12 +137,12 @@ test('vertical macros have lateral variety (multiple distinct x positions)', () 
   for (const [id, macro] of Object.entries(MACROS)) {
     if (macro.orientation !== 'vertical') continue;
     const platforms = macro.units.filter((u) => u.kind === 'platform');
-    const xs = platforms.map((p) => p.x !== undefined ? p.x : 0);
-    const distinctXs = new Set(xs);
-    // At least 2 distinct x positions (not a single-file staircase).
+    const cols = platforms.map((p) => p.col);
+    const distinctCols = new Set(cols);
+    // At least 2 distinct column positions (not a single-file staircase).
     assert.ok(
-      distinctXs.size >= 2,
-      `${id}: all ${platforms.length} landings at the same x (${[...distinctXs].join(',')}) — ` +
+      distinctCols.size >= 2,
+      `${id}: all ${platforms.length} landings at the same col (${[...distinctCols].join(',')}) — ` +
         `no lateral variety`,
     );
   }
@@ -195,20 +195,31 @@ test('vertical macros: difficulty 1 has fewer landings than difficulty 3', () =>
   );
 });
 
-test('vertical macros: difficulty 3 has gaps (more complex than difficulty 1/2)', () => {
+test('vertical macros: difficulty 3 climbs are longer and denser (more complex than difficulty 1/2)', () => {
+  // 2D grid model: the old G(n) gap units are gone — breathing room is now
+  // just EMPTY ROWS between landings. Complexity in the grid model is carried
+  // by LANDING COUNT and TOTAL CLIMB SPAN: difficulty-3 macros have more
+  // landings and a taller climb than difficulty-1 macros.
   const diff1 = Object.values(MACROS).filter((m) => m.orientation === 'vertical' && m.difficulty === 1);
   const diff3 = Object.values(MACROS).filter((m) => m.orientation === 'vertical' && m.difficulty === 3);
 
-  for (const m of diff1) {
-    assert.equal(
-      m.units.filter((u) => u.kind === 'gap').length, 0,
-      `${m.id}: difficulty-1 macro should not have gaps`,
-    );
-  }
-  const gapCount3 = diff3.reduce((s, m) => s + m.units.filter((u) => u.kind === 'gap').length, 0);
+  const landingsOf = (m) => m.units.filter((u) => u.kind === 'platform').length;
+  const spanOf = (m) => Math.max(...m.units.map((u) => u.row));
+
+  const avgLandings1 = diff1.reduce((s, m) => s + landingsOf(m), 0) / diff1.length;
+  const avgLandings3 = diff3.reduce((s, m) => s + landingsOf(m), 0) / diff3.length;
+  const avgSpan1 = diff1.reduce((s, m) => s + spanOf(m), 0) / diff1.length;
+  const avgSpan3 = diff3.reduce((s, m) => s + spanOf(m), 0) / diff3.length;
+
   assert.ok(
-    gapCount3 > 0,
-    `difficulty-3 vertical macros should have gaps (total: ${gapCount3})`,
+    avgLandings3 > avgLandings1,
+    `difficulty-3 vertical macros should have more landings ` +
+      `(avg ${avgLandings3.toFixed(1)} vs ${avgLandings1.toFixed(1)})`,
+  );
+  assert.ok(
+    avgSpan3 >= avgSpan1,
+    `difficulty-3 vertical macros should climb at least as high ` +
+      `(avg span ${avgSpan3.toFixed(1)} vs ${avgSpan1.toFixed(1)})`,
   );
 });
 

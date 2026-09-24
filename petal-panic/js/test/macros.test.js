@@ -96,12 +96,14 @@ test('macro vocabulary: lowRepeated has five height-1 blocks (generation.md §2)
 test('macro vocabulary: stretchedPyramid has 5×h1, 5×h2, 5×h3, then descent (generation.md §2)', () => {
   const sp = MACROS.stretchedPyramid;
   const blocks = sp.units.filter((u) => u.kind === 'block');
-  const gaps = sp.units.filter((u) => u.kind === 'gap');
   assert.equal(blocks.length, 15, 'stretchedPyramid: 15 blocks total');
   assert.equal(blocks.slice(0, 5).every((b) => b.height === 1), true, 'first 5 are height 1');
   assert.equal(blocks.slice(5, 10).every((b) => b.height === 2), true, 'next 5 are height 2');
   assert.equal(blocks.slice(10, 15).every((b) => b.height === 3), true, 'last 5 are height 3');
-  assert.ok(gaps.length >= 1, 'stretchedPyramid: has a descent/drop gap');
+  // 2D grid model: the old trailing G(2) drop is now just unoccupied cells
+  // after the last block's column (the footprint extends past col 14).
+  const maxCol = Math.max(...sp.units.map((u) => u.col + (u.kind === 'block' ? 1 : u.width)));
+  assert.ok(maxCol >= 15, 'stretchedPyramid: footprint extends past the h3 band (descent cells)');
   assert.equal(sp.orientation, 'horizontal');
   assert.equal(sp.difficulty, 2);
 });
@@ -114,8 +116,11 @@ test('macro vocabulary: mixedCrossing has blocks, gap, triple platform tier 2, b
   assert.equal(blocks.length, 6, 'mixedCrossing: 6 blocks (3 before + 3 after)');
   assert.equal(platforms.length, 1, 'mixedCrossing: 1 platform');
   assert.equal(platforms[0].width, 3, 'mixedCrossing: triple-width platform');
-  assert.equal(platforms[0].tier, 2, 'mixedCrossing: platform at tier 2');
-  assert.ok(gaps.length >= 1, 'mixedCrossing: has a gap');
+  assert.equal(platforms[0].row, 2, 'mixedCrossing: platform face at row 2');
+  // 2D grid model: the gap is an unoccupied cell span between the blocks
+  // (cols 3-4) and the platform (cols 5-7).
+  const cols = mc.units.map((u) => u.col);
+  assert.ok(Math.min(...cols) < 3 && Math.max(...cols) > 4, 'mixedCrossing: spans across the empty gap cells');
   assert.equal(mc.orientation, 'horizontal');
   assert.equal(mc.difficulty, 3);
 });
@@ -126,27 +131,36 @@ test('macro vocabulary: climbing is vertical with upward landings (generation.md
   const platforms = climb.units.filter((u) => u.kind === 'platform');
   assert.ok(platforms.length >= 2, 'climbing: at least 2 platform landings');
   // The landings should include upward progression (some platform at a higher tier).
-  const tiers = platforms.map((p) => p.tier);
-  const maxTier = Math.max(...tiers);
-  assert.ok(maxTier >= 2, 'climbing: reaches at least tier 2 (upward progression)');
+  const rows = platforms.map((p) => p.row);
+  const maxRow = Math.max(...rows);
+  assert.ok(maxRow >= 2, 'climbing: reaches at least row 2 (upward progression)');
   assert.equal(climb.difficulty, 2);
 });
 
 test('macro vocabulary: gapDrop is a movement challenge (generation.md §2)', () => {
   const gd = MACROS.gapDrop;
   assert.equal(gd.orientation, 'horizontal');
-  const gaps = gd.units.filter((u) => u.kind === 'gap');
-  assert.ok(gaps.length >= 1, 'gapDrop: has at least one gap');
+  // 2D grid model: the leading gap is unoccupied cells before the first unit.
+  const firstCol = Math.min(...gd.units.map((u) => u.col));
+  assert.ok(firstCol >= 2, 'gapDrop: starts with empty cells (the gap) before the landing block');
   assert.equal(gd.difficulty, 2);
 });
 
-test('macroWidth: computes total width including entry/exit clear zones', () => {
+test('macroWidth: computes the bounding-box footprint plus clear zones (R1.3)', () => {
   for (const [id, macro] of Object.entries(MACROS)) {
     const w = macroWidth(macro);
-    // Width must be at least entryClear + exitClear + at least one unit.
-    assert.ok(w >= macro.entryClear + macro.exitClear + 1, `${id}: width ${w} is reasonable`);
+    // Width must cover the entry clear zone and at least one unit column.
+    assert.ok(w >= macro.entryClear + 1, `${id}: width ${w} covers entry + a unit`);
     // Width must be an integer.
     assert.ok(Number.isInteger(w), `${id}: width is an integer`);
+    // And it must equal the bounding-box extent + clears exactly.
+    let expect = macro.entryClear;
+    for (const u of macro.units) {
+      const span = u.col + (u.kind === 'block' ? 1 : u.width);
+      if (span > expect) expect = span;
+    }
+    expect += macro.exitClear;
+    assert.equal(w, expect, `${id}: width matches the bounding box + clears`);
   }
 });
 

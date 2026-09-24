@@ -143,11 +143,9 @@ export const MAX_ELEVATION_STEP = 1;
  * @returns {number} net elevation gain in tiers (≥ 0)
  */
 export function macroElevationGain(macro) {
-  const tiers = macro.units
-    .filter((u) => u.kind === 'platform')
-    .map((u) => u.tier);
-  if (tiers.length === 0) return 0;
-  return Math.max(...tiers);
+  const rows = macro.units.map((u) => (u.kind === 'block' ? u.row + u.height : u.row));
+  if (rows.length === 0) return 0;
+  return Math.max(...rows);
 }
 
 // ---------------------------------------------------------------------------
@@ -166,33 +164,44 @@ export function macroElevationGain(macro) {
 //   - follows: list of macro ids that can precede this one (empty = any)
 //   - followedBy: list of macro ids that can follow this one (empty = any)
 //
-// Unit descriptor shape:
-//   { kind: 'block', height: 1|2|3 }
-//   { kind: 'platform', width: 1|2|3, tier: 1|2|3 }
-//   { kind: 'gap', width: n }  // n width-units of empty space
+// Unit descriptor shape (REVISION 2D-grid-macro):
+//   { kind: 'block', height: 1|2|3, row, col }      // row = BASE row (rises up by height)
+//   { kind: 'platform', width: 1|2|3, row, col }    // row = landing-face elevation (was `tier`)
+//
+// The 2D grid model: every unit is placed at an explicit (row, col) cell.
+//   - row = units UP from the ground (0 = on the ground), counted the SAME way
+//     for horizontal and vertical areas.
+//   - col = units FROM THE LEFT of the macro's footprint (0 = left edge).
+// Empty cells are gaps — there is no G() unit anymore; a "hole" is just an
+// unoccupied cell. Omitting row/col is an authoring error (throws below).
 
 /**
- * Build a unit descriptor for a block of given height.
- * @param {1|2|3} height
+ * Build a unit descriptor for a solid block.
+ *
+ * @param {1|2|3} height block height in units (it rises UP by this many rows)
+ * @param {number} row base row — the row the block sits ON (0 = on the ground);
+ *   its top surface is at row + height
+ * @param {number} col column from the left edge of the macro's footprint
  */
-function B(height) {
-  return { kind: 'block', height };
+export function B(height, row, col) {
+  if (row == null || col == null) {
+    throw new Error(`B(${height}, row, col): explicit row and col are required (no auto-assign)`);
+  }
+  return Object.freeze({ kind: 'block', height, row, col });
 }
 
 /**
- * Build a unit descriptor for a platform of given width and tier.
+ * Build a unit descriptor for a one-way platform.
  *
- * @param {1|2|3} width
- * @param {1|2|3} tier
- * @param {number} [x] optional lateral offset (width-units from the zone's
- *   left edge) for vertical macros. When omitted, the composer centers the
- *   platform (CENTER_X). When provided, the platform is placed at that x,
- *   giving the climb lateral variety within the fixed screen width.
+ * @param {1|2|3} width platform width in units
+ * @param {number} row landing-face elevation (units up from the ground; was `tier`)
+ * @param {number} col column from the left edge of the macro's footprint
  */
-function P(width, tier, x) {
-  const base = { kind: 'platform', width, tier };
-  if (x !== undefined) base.x = x;
-  return base;
+export function P(width, row, col) {
+  if (row == null || col == null) {
+    throw new Error(`P(${width}, row, col): explicit row and col are required (no auto-assign)`);
+  }
+  return Object.freeze({ kind: 'platform', width, row, col });
 }
 
 /**
@@ -213,19 +222,18 @@ const PLATFORM_UNIT_H = 1;
 export const PLATFORM_DRAW_H = Math.max(2, Math.round(UNIT_PX_Y / 8)); // 6px at 48
 
 /**
- * Build a unit descriptor for a gap of given width.
- * @param {number} width
- */
-function G(width) {
-  return { kind: 'gap', width };
-}
-
-/**
- * The macro vocabulary. Each entry is an authored terrain sequence with
- * a readable challenge, an entry, and an exit (generation.md §2, §3).
+ * The macro vocabulary (REVISION 2d-grid-macro). Each entry is an authored
+ * terrain GRID with a readable challenge, an entry, and an exit
+ * (generation.md §2, §3).
  *
- * These are FAMILIES of arrangements, not final spacing values
- * (generation.md §2). The composer selects and arranges them.
+ * 2D grid convention:
+ *   - row = units UP from the ground (0 = on the ground), same for both
+ *     orientations. A block's row is its BASE (it rises up by its height);
+ *     a platform's row is its LANDING FACE elevation.
+ *   - col = units FROM THE LEFT of the macro's footprint (0 = left edge).
+ *   - Empty cells are gaps. No G() unit exists anymore.
+ *   - Clearance rule: any unit whose base/face is above row 0 must be ≥ 2 rows
+ *     above the top of whatever is directly below it in its column span.
  */
 export const MACROS = Object.freeze({
   // --- Horizontal macros ----------------------------------------------------
@@ -246,7 +254,8 @@ export const MACROS = Object.freeze({
     name: 'Pyramid',
     orientation: 'horizontal',
     difficulty: 1,
-    units: Object.freeze([B(1), B(2), B(3), B(2), B(1)]),
+    // Blocks at row 0 (on the ground), cols 0..4 — heights 1,2,3,2,1.
+    units: Object.freeze([B(1, 0, 0), B(2, 0, 1), B(3, 0, 2), B(2, 0, 3), B(1, 0, 4)]),
     entryClear: 5,
     exitClear: 5,
     // Slots sit on the TOP surface of the unit below them (block height /
@@ -283,7 +292,8 @@ export const MACROS = Object.freeze({
     name: 'Low Repeated Obstacles',
     orientation: 'horizontal',
     difficulty: 1,
-    units: Object.freeze([B(1), B(1), B(1), B(1), B(1)]),
+    // Five height-1 blocks on the ground, cols 0..4.
+    units: Object.freeze([B(1, 0, 0), B(1, 0, 1), B(1, 0, 2), B(1, 0, 3), B(1, 0, 4)]),
     entryClear: 5,
     exitClear: 5,
     // Five height-1 blocks: enemies + barrels sit on TOP of the blocks
@@ -317,11 +327,12 @@ export const MACROS = Object.freeze({
     name: 'Stretched Pyramid',
     orientation: 'horizontal',
     difficulty: 2,
+    // Bands of five blocks each (h1 cols 0-4, h2 cols 5-9, h3 cols 10-14);
+    // the old trailing G(2) drop is now just unoccupied cells after col 14.
     units: Object.freeze([
-      B(1), B(1), B(1), B(1), B(1),
-      B(2), B(2), B(2), B(2), B(2),
-      B(3), B(3), B(3), B(3), B(3),
-      G(2), // descent/drop
+      B(1, 0, 0), B(1, 0, 1), B(1, 0, 2), B(1, 0, 3), B(1, 0, 4),
+      B(2, 0, 5), B(2, 0, 6), B(2, 0, 7), B(2, 0, 8), B(2, 0, 9),
+      B(3, 0, 10), B(3, 0, 11), B(3, 0, 12), B(3, 0, 13), B(3, 0, 14),
     ]),
     entryClear: 2,
     exitClear: 3,
@@ -357,11 +368,12 @@ export const MACROS = Object.freeze({
     name: 'Mixed Crossing',
     orientation: 'horizontal',
     difficulty: 3,
+    // Blocks rising cols 0-2, a 2-cell empty gap (cols 3-4), a triple
+    // platform at face row 2 over cols 5-7, then blocks descending cols 8-10.
     units: Object.freeze([
-      B(1), B(2), B(3),
-      G(2), // gap — must be cleared with a double jump (max at UNIT_PX_X=72)
-      P(3, 2), // triple-width platform at tier 2
-      B(3), B(2), B(1), // descent after the platform
+      B(1, 0, 0), B(2, 0, 1), B(3, 0, 2),
+      P(3, 2, 5), // triple-width platform, landing face at row 2
+      B(3, 0, 8), B(2, 0, 9), B(1, 0, 10), // descent after the platform
     ]),
     entryClear: 2,
     exitClear: 2,
@@ -402,9 +414,9 @@ export const MACROS = Object.freeze({
     name: 'Gap / Drop',
     orientation: 'horizontal',
     difficulty: 2,
+    // A 2-cell empty gap (cols 0-1), then the lower landing block at col 2.
     units: Object.freeze([
-      G(2), // gap — must be cleared with a double jump (max at UNIT_PX_X=72)
-      B(1), // lower landing block (the "drop")
+      B(1, 0, 2), // lower landing block (the "drop")
     ]),
     entryClear: 2,
     exitClear: 2,
@@ -441,12 +453,12 @@ export const MACROS = Object.freeze({
     name: 'Platform Hops',
     orientation: 'horizontal',
     difficulty: 2,
+    // Three one-way platforms stepping up: face row 1 (cols 0-1), row 2
+    // (cols 4-5), row 3 (cols 8-9) — 2-cell air gaps between each hop.
     units: Object.freeze([
-      P(2, 1), // first landing at tier 1
-      G(2),    // airtime to reach the next tier
-      P(2, 2), // second landing at tier 2
-      G(2),    // airtime to reach the top tier
-      P(2, 3), // final landing at tier 3
+      P(2, 1, 0), // first landing at row 1
+      P(2, 2, 4), // second landing at row 2
+      P(2, 3, 8), // final landing at row 3
     ]),
     entryClear: 3,
     exitClear: 3,
@@ -480,12 +492,12 @@ export const MACROS = Object.freeze({
     name: 'Block & Platform Bridge',
     orientation: 'horizontal',
     difficulty: 3,
+    // Blocks rising cols 0-1, gap (cols 2-3), triple platform at face row 2
+    // over cols 4-6, gap (cols 7-8), blocks descending cols 9-10.
     units: Object.freeze([
-      B(1), B(2),   // rising blocks on the approach
-      G(2),         // gap to the bridge (max clearable at UNIT_PX_X=72)
-      P(3, 2),      // triple-width platform crossed at tier 2
-      G(2),         // gap off the bridge
-      B(2), B(1),   // descending blocks on the far side
+      B(1, 0, 0), B(2, 0, 1),   // rising blocks on the approach
+      P(3, 2, 4),               // triple-width platform crossed at row 2
+      B(2, 0, 9), B(1, 0, 10),  // descending blocks on the far side
     ]),
     entryClear: 2,
     exitClear: 2,
@@ -500,6 +512,81 @@ export const MACROS = Object.freeze({
       { slot: 'on-far-h2', x: 10, type: 'barrel' },
       { slot: 'on-far-h1', x: 11, type: 'barrel' },
       { slot: 'on-h2-barrel', x: 1, type: 'barrel' },
+    ]),
+    variations: Object.freeze([]),
+    follows: Object.freeze([]),
+    followedBy: Object.freeze([]),
+  }),
+
+  /**
+   * Easy platform hop (REVISION R3.2): a difficulty-1 horizontal macro with a
+   * platform, so stage 1 areas show platforms from the start (previously
+   * platforms only appeared in stages 3-4). Two gentle one-way landings at
+   * face rows 1 and 2, each reachable by a single double jump from the ground
+   * or the previous landing.
+   *
+   * Entry: 3 units clear. Exit: 3 units clear.
+   * Difficulty: 1 (simple elevated hops).
+   */
+  easyPlatformHop: Object.freeze({
+    id: 'easyPlatformHop',
+    name: 'Easy Platform Hop',
+    orientation: 'horizontal',
+    difficulty: 1,
+    // Face row 1 over cols 0-1; face row 2 over cols 4-5 (2-cell air gap).
+    units: Object.freeze([
+      P(2, 1, 0),
+      P(2, 2, 4),
+    ]),
+    entryClear: 3,
+    exitClear: 3,
+    placements: Object.freeze([
+      { slot: 'on-t1', x: 0, type: 'enemy' },
+      { slot: 'on-t1b', x: 1, type: 'barrel' },
+      { slot: 'on-t2', x: 4, type: 'powerup' },
+      { slot: 'on-t2b', x: 5, type: 'barrel' },
+    ]),
+    variations: Object.freeze([]),
+    follows: Object.freeze([]),
+    followedBy: Object.freeze([]),
+  }),
+
+  /**
+   * Block bridge (REVISION R3.2): the STACKED set piece that proves the 2D
+   * grid model — a block wall with an overhead platform bridge in the same
+   * columns, plus a step-up block on the far side so the hero can climb onto
+   * the bridge (the route must respect the ≤1-row upward step rule).
+   *
+   * Geometry: blocks of height 2 at row 0 (cols 0-1) → their tops are at
+   * row 2. The platform's landing face is at row 4 over cols 0-2, i.e. exactly
+   * 2 rows above the block tops — satisfying the clearance rule (≥ 2 rows
+   * above whatever is directly below). A height-2 step block at col 3 (top
+   * row 2) lets the hero walk up from the ground and hop onto the bridge
+   * (row 2 → row 4 = 1 row up), then drop off the far side.
+   *
+   * Entry: 3 units clear. Exit: 3 units clear.
+   * Difficulty: 2 (stacked geometry + a single crossing).
+   */
+  blockBridge: Object.freeze({
+    id: 'blockBridge',
+    name: 'Block Bridge',
+    orientation: 'horizontal',
+    difficulty: 2,
+    // Block wall: B(2) at row 0, cols 0-1 (tops at row 2).
+    // Overhead bridge: P(3) face at row 4, cols 0-2 (2 rows clear of the tops).
+    // Step-up: B(2) at col 3 (top row 2) — the approach onto the bridge.
+    units: Object.freeze([
+      B(2, 0, 0), B(2, 0, 1),
+      P(3, 4, 0),
+      B(2, 0, 3),
+    ]),
+    entryClear: 3,
+    exitClear: 3,
+    placements: Object.freeze([
+      { slot: 'on-wall', x: 0, type: 'enemy' },
+      { slot: 'on-wall2', x: 1, type: 'barrel' },
+      { slot: 'on-bridge', x: 1, type: 'powerup' },
+      { slot: 'on-bridge2', x: 2, type: 'barrel' },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -540,8 +627,8 @@ export const MACROS = Object.freeze({
     orientation: 'vertical',
     difficulty: 1,
     units: Object.freeze([
-      P(2, 1, 12), // tier 1
-      P(2, 2, 14), // tier 2, shift +2
+      P(2, 1, 12), // row 1
+      P(2, 2, 14), // row 2, shift +2
     ]),
     entryClear: 2,
     exitClear: 2,
@@ -570,9 +657,9 @@ export const MACROS = Object.freeze({
     orientation: 'vertical',
     difficulty: 2,
     units: Object.freeze([
-      P(2, 1, 12), // tier 1
-      P(2, 2, 14), // tier 2, shift +2
-      P(2, 3, 12), // tier 3, shift -2
+      P(2, 1, 12), // row 1
+      P(2, 2, 14), // row 2, shift +2
+      P(2, 3, 12), // row 3, shift -2
     ]),
     entryClear: 2,
     exitClear: 2,
@@ -603,10 +690,10 @@ export const MACROS = Object.freeze({
     orientation: 'vertical',
     difficulty: 2,
     units: Object.freeze([
-      P(2, 1, 10), // tier 1, left
-      P(2, 2, 12), // tier 2, shift +2
-      P(2, 1, 11), // tier 1, shift -1 (rest)
-      P(2, 2, 12), // tier 2, shift +1 (peak)
+      P(2, 1, 10), // row 1, left
+      P(2, 2, 13), // row 2, shift +3 (clear of the rest landing's columns)
+      P(2, 1, 11), // row 1, shift -1 (rest)
+      P(2, 2, 14), // row 2, peak (clear of the rest landing's columns)
     ]),
     entryClear: 2,
     exitClear: 2,
@@ -637,11 +724,11 @@ export const MACROS = Object.freeze({
     orientation: 'vertical',
     difficulty: 2,
     units: Object.freeze([
-      P(2, 1, 10), // tier 1, left
-      P(2, 2, 12), // tier 2, shift +2
-      P(2, 3, 11), // tier 3, shift -1 (first peak)
-      P(2, 2, 12), // tier 2, shift +1 (rest)
-      P(2, 3, 12), // tier 3, same x (final peak)
+      P(2, 1, 10), // row 1, left
+      P(2, 2, 13), // row 2, shift +3
+      P(2, 3, 11), // row 3, first peak
+      P(2, 2, 14), // row 2, rest (right of the peak, within jump reach)
+      P(2, 3, 16), // row 3, final peak
     ]),
     entryClear: 2,
     exitClear: 2,
@@ -673,19 +760,15 @@ export const MACROS = Object.freeze({
     name: 'Climbing with Gaps',
     orientation: 'vertical',
     difficulty: 3,
-    // MAJOR 1 FIX: tiers are relative to the macro entry. Gaps add extra
-    // height, so the y-step between successive platforms is (tier_diff +
-    // gap_width). To keep each step ≤ MAX_ELEVATION_STEP (1), the tier
-    // values must account for the gaps: a gap of 1 means the next platform's
-    // tier must be ≤ previous tier (so the step = 0 + 1 = 1).
+    // 2D grid: each landing sits at an explicit row (up from the ground).
+    // The rows ascend by exactly 1 per landing — the empty rows between them
+    // are the "breathing room" (the old G(1) vertical gaps, now just empty
+    // cells).
     units: Object.freeze([
-      P(1, 1, 10),  // tier 1, y=1
-      G(1),         // gapOffset=1
-      P(1, 1, 12),  // tier 1, y=1+1=2 (step from P1: 1)
-      G(1),         // gapOffset=2
-      P(1, 1, 11),  // tier 1, y=2+1=3 (step from P2: 1)
-      G(1),         // gapOffset=3
-      P(1, 1, 13),  // tier 1, y=3+1=4 (step from P3: 1)
+      P(1, 1, 10),  // row 1
+      P(1, 2, 12),  // row 2 (step 1)
+      P(1, 3, 11),  // row 3 (step 1)
+      P(1, 4, 13),  // row 4 (step 1)
     ]),
     entryClear: 2,
     exitClear: 2,
@@ -716,18 +799,15 @@ export const MACROS = Object.freeze({
     name: 'Dense Climbing',
     orientation: 'vertical',
     difficulty: 3,
-    // MAJOR 1 FIX: tiers adjusted so that y-steps (including gaps) are
-    // ≤ MAX_ELEVATION_STEP. Gaps of 1 add 1 to the y, so the tier step
-    // must be 0 when a gap precedes the platform.
+    // 2D grid: rows ascend by ≤ 1 per landing (the old G(1) gaps are now
+    // just empty cells — the row numbers carry the spacing directly).
     units: Object.freeze([
-      P(1, 1, 10),  // tier 1, y=1
-      P(1, 2, 12),  // tier 2, y=2 (step: 1)
-      G(1),         // gapOffset=1
-      P(1, 2, 11),  // tier 2, y=1+2=3 (step from P2: 1)
-      G(1),         // gapOffset=2
-      P(1, 1, 13),  // tier 1, y=2+1=3 (step from P3: 0, downward)
-      P(1, 2, 12),  // tier 2, y=2+2=4 (step from P4: 1)
-      P(1, 3, 14),  // tier 3, y=2+3=5 (step from P5: 1)
+      P(1, 1, 10),  // row 1
+      P(1, 2, 12),  // row 2 (step 1)
+      P(1, 3, 11),  // row 3 (step 1)
+      P(1, 4, 13),  // row 4 (step 1)
+      P(1, 5, 12),  // row 5 (step 1)
+      P(1, 6, 14),  // row 6 (step 1)
     ]),
     entryClear: 2,
     exitClear: 2,
@@ -911,11 +991,13 @@ function pickWeighted(candidates, rng, excludeId = null) {
  * @returns {number} total width in units
  */
 export function macroWidth(macro) {
+  // REVISION R1.3: with 2D placement a macro's footprint is its bounding box —
+  // width = max(col + unitWidth) − min(col). Empty cells inside the footprint
+  // are gaps; they still count toward the width because the hero crosses them.
   let width = macro.entryClear;
   for (const u of macro.units) {
-    if (u.kind === 'block') width += 1; // blocks are always 1 width unit
-    else if (u.kind === 'platform') width += u.width;
-    else if (u.kind === 'gap') width += u.width;
+    const span = u.col + (u.kind === 'block' ? 1 : u.width);
+    if (span > width) width = span;
   }
   width += macro.exitClear;
   return width;
@@ -936,21 +1018,12 @@ export function macroWidth(macro) {
  */
 export function macroAxisLength(macro) {
   if (macro.orientation === 'vertical') {
-    // MAJOR 1 FIX: the axis length is the peak y + exit clear. The peak y is
-    // the maximum of (cumulativeGapOffset + tier) across all platforms.
-    // Gaps add to the y-axis, so the peak y includes the gap offsets.
-    let gapOffset = 0;
+    // REVISION R1.3: the axis length is the bounding-box top (peak row) +
+    // clears. A block's top is row + height; a platform's face IS its row.
     let peakY = 0;
     for (const u of macro.units) {
-      if (u.kind === 'gap') {
-        gapOffset += u.width;
-      } else if (u.kind === 'platform') {
-        const y = gapOffset + u.tier;
-        if (y > peakY) peakY = y;
-      } else if (u.kind === 'block') {
-        const y = gapOffset + u.height;
-        if (y > peakY) peakY = y;
-      }
+      const y = u.kind === 'block' ? u.row + u.height : u.row;
+      if (y > peakY) peakY = y;
     }
     return macro.entryClear + peakY + macro.exitClear;
   }
@@ -970,18 +1043,11 @@ export function macroAxisLength(macro) {
  * @returns {number} absolute climb elevation of the first platform
  */
 function firstPlatformAbsY(macro, axisPos) {
-  // MAJOR 1 FIX: the first platform's absolute y includes the cumulative gap
-  // offset before it (though in practice the first platform usually has no
-  // gaps before it, this is the correct general computation).
-  let gapOffset = 0;
-  for (const u of macro.units) {
-    if (u.kind === 'gap') {
-      gapOffset += u.width;
-    } else if (u.kind === 'platform') {
-      return axisPos + gapOffset + u.tier;
-    }
-  }
-  return axisPos;
+  // The first platform (lowest col) sits at absolute elevation axisPos + row.
+  const platforms = macro.units.filter((u) => u.kind === 'platform');
+  if (platforms.length === 0) return axisPos;
+  const first = platforms.reduce((a, b) => (a.col < b.col ? a : b));
+  return axisPos + first.row;
 }
 
 /**
@@ -997,23 +1063,15 @@ function firstPlatformAbsY(macro, axisPos) {
  * @returns {number} absolute climb elevation of the last (peak) platform
  */
 function lastPlatformAbsY(macro, axisPos) {
-  // MAJOR 1 FIX: the peak platform's absolute y includes the cumulative gap
-  // offset before it. Walk the units in order, accumulating gap widths, and
-  // find the peak platform's actual y = axisPos + gapOffsetAtPeak + peakTier.
-  let gapOffset = 0;
-  let peakY = axisPos;
+  // The peak is the highest top surface across ALL units (a block's top can
+  // exceed the highest platform face): block top = row + height, platform
+  // face = row. Absolute elevation = axisPos + local peak.
+  let peakY = 0;
   for (const u of macro.units) {
-    if (u.kind === 'gap') {
-      gapOffset += u.width;
-    } else if (u.kind === 'platform') {
-      const y = axisPos + gapOffset + u.tier;
-      if (y > peakY) peakY = y;
-    } else if (u.kind === 'block') {
-      const y = axisPos + gapOffset + u.height;
-      if (y > peakY) peakY = y;
-    }
+    const y = u.kind === 'block' ? u.row + u.height : u.row;
+    if (y > peakY) peakY = y;
   }
-  return peakY;
+  return axisPos + peakY;
 }
 
 /**
@@ -1642,6 +1700,40 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
     throw new Error(`composeArea: budget ${budget} is less than minimum ${ENTRY_CLEAR + EXIT_CLEAR}`);
   }
 
+
+  // Step 5: Validate the complete route (generation.md §4 step 5, §6).
+  //
+  // If validation fails, retry with a fresh rng stream derived from the same
+  // If validation fails, retry with a fresh rng stream derived from the same
+  // seed. This keeps composeArea total — every returned layout passes
+  // validation — while staying deterministic per seed.
+  const tryCompose = (r) => {
+    const l = runCompose(r, orientation, stage, budget, macroWeights);
+    validateLayout(l); // throws if the route is not completable
+    return l;
+  };
+  let layout;
+  try {
+    layout = tryCompose(rng);
+  } catch (firstErr) {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const retryRng = createRng((rng.next() * 1e9) | 0);
+      try {
+        layout = tryCompose(retryRng);
+        break;
+      } catch { /* keep retrying */ }
+    }
+    if (!layout) throw firstErr;
+  }
+
+  return layout;
+}
+
+/**
+ * The core composition loop (no final validation) — split out so composeArea
+ * can retry with a fresh rng stream when a composed route fails validation.
+ */
+function runCompose(rng, orientation, stage, budget, macroWeights) {
   // Step 1: Reserve safe entry and exit (generation.md §4 step 1).
   const entryClear = ENTRY_CLEAR;
   const exitClear = EXIT_CLEAR;
@@ -1826,10 +1918,10 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
     let placementAxisPos = axisPos;
     let placementXShift = 0;
     if (isVertical && prevPeakAbsY !== null) {
-      const firstLocalTier = Math.min(...macro.units
-        .filter((u) => u.kind === 'platform')
-        .map((u) => u.tier));
-      const naturalFirstAbsY = axisPos + firstLocalTier;
+      const platforms = macro.units.filter((u) => u.kind === 'platform');
+      const firstLocalRow = platforms.length > 0
+        ? Math.min(...platforms.map((u) => u.row)) : 0;
+      const naturalFirstAbsY = axisPos + firstLocalRow;
       const maxReachable = prevPeakAbsY + MAX_ELEVATION_STEP;
       if (naturalFirstAbsY > maxReachable) {
         // Shift the macro down so its first platform is at maxReachable.
@@ -1845,14 +1937,13 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
       // horizontal gap between the previous macro's peak platform and the
       // next macro's first platform must be ≤ MAX_CLEARABLE_GAP. If it
       // exceeds, shift the next macro's x-offset to align them.
-      const nextPlatforms = macro.units.filter((u) => u.kind === 'platform');
-      if (nextPlatforms.length > 0) {
-        // The "first platform" of the next macro (lowest tier, first in sequence).
-        const firstPlat = nextPlatforms.reduce(
-          (best, p) => (p.tier < best.tier || (p.tier === best.tier && p.x < best.x)) ? p : best,
-          nextPlatforms[0],
+      if (platforms.length > 0) {
+        // The "first platform" of the next macro (lowest row, then lowest col).
+        const firstPlat = platforms.reduce(
+          (best, p) => (p.row < best.row || (p.row === best.row && p.col < best.col)) ? p : best,
+          platforms[0],
         );
-        const nextX = firstPlat.x !== undefined ? firstPlat.x : ENTRY_CLEAR;
+        const nextX = firstPlat.col;
         const nextW = firstPlat.width;
 
         // Edge-to-edge gap between prevPeak [prevPeakX, prevPeakX+prevPeakW]
@@ -1870,16 +1961,20 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
           placementXShift = nextX > prevPeakX ? -excess : excess;
         }
 
-        // R6 FIT: after the reachability shift, clamp the macro's whole x-span
-        // into the fixed zone width [0, ZONE_WIDTH_UNITS]. The shift above can
-        // push a wide macro past the right edge at UNIT_PX_X=72 (zone = 22
-        // units); clamping keeps every unit inside the screen.
-        const minX = Math.min(...macro.units.map((u) => u.x ?? 0));
-        const maxX = Math.max(...macro.units.map((u) => (u.x ?? 0) + u.width));
-        if (minX + placementXShift < 0) placementXShift -= minX + placementXShift;
-        if (maxX + placementXShift > ZONE_WIDTH_UNITS) {
-          placementXShift -= maxX + placementXShift - ZONE_WIDTH_UNITS;
-        }
+        // (x-span clamp moved outside — see below)
+      }
+    }
+
+    // R6 FIT (vertical): clamp the macro's whole x-span into the fixed zone
+    // width [0, ZONE_WIDTH_UNITS] — always, because authored cols can already
+    // exceed the 72px zone width (22 units). Done before placement so every
+    // unit lands inside the screen.
+    if (isVertical) {
+      const vMinX = Math.min(...macro.units.map((u) => u.col));
+      const vMaxX = Math.max(...macro.units.map((u) => u.col + (u.kind === 'block' ? 1 : u.width)));
+      if (vMinX + placementXShift < 0) placementXShift -= vMinX + placementXShift;
+      if (vMaxX + placementXShift > ZONE_WIDTH_UNITS) {
+        placementXShift -= vMaxX + placementXShift - ZONE_WIDTH_UNITS;
       }
     }
 
@@ -1891,11 +1986,15 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
       const prevPeakBefore = prevPeakAbsY; // peak y before this macro
       prevPeakAbsY = lastPlatformAbsY(macro, placementAxisPos);
       // Track the peak platform's x and width for the next lateral check.
-      const peakPlat = macro.units
-        .filter((u) => u.kind === 'platform')
-        .reduce((best, p) => (p.tier > best.tier || (p.tier === best.tier && p.x > best.x)) ? p : best, macro.units.filter((u) => u.kind === 'platform')[0]);
-      prevPeakX = (peakPlat.x !== undefined ? peakPlat.x : ENTRY_CLEAR) + placementXShift;
-      prevPeakW = peakPlat.width;
+      const vPlatforms = macro.units.filter((u) => u.kind === 'platform');
+      if (vPlatforms.length > 0) {
+        const peakPlat = vPlatforms.reduce(
+          (best, p) => (p.row > best.row || (p.row === best.row && p.col > best.col)) ? p : best,
+          vPlatforms[0],
+        );
+        prevPeakX = peakPlat.col + placementXShift;
+        prevPeakW = peakPlat.width;
+      }
       // MAJOR 1 FIX: the axis advances to the macro's peak y (the actual
       // climb gained), not the full axis length (which includes entry/exit
       // clears that don't contribute to the climb).
@@ -1951,13 +2050,18 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
       // Add a synthetic exit platform one step above the highest platform.
       const exitPlatY = highestPlatformY + MAX_ELEVATION_STEP;
       const exitPlatX = Math.floor(ZONE_WIDTH_UNITS / 2);
-      const exitPlat = makePlatform(2, 1);
       placedUnits.push({
-        ...exitPlat,
+        kind: 'platform',
+        width: 2,
+        tier: exitPlatY,
+        row: exitPlatY,
+        col: exitPlatX,
         placementId: -1, // synthetic, not from a macro
         x: exitPlatX,
         y: exitPlatY,
-        aabb: { x: exitPlatX, y: exitPlatY, w: exitPlat.aabb.w, h: exitPlat.aabb.h },
+        solid: false,
+        oneWay: true,
+        aabb: { x: exitPlatX, y: exitPlatY, w: 2, h: PLATFORM_UNIT_H },
       });
       // The exit flag sits one step above the exit platform.
       finalTotalHeight = exitPlatY + MAX_ELEVATION_STEP;
@@ -1978,21 +2082,19 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
     placements,
   };
 
-  // Step 5: Validate the complete route (generation.md §4 step 5, §6).
-  validateLayout(layout);
-
   return layout;
 }
 
 /**
- * Place a macro's units at the given axis offset.
+ * Place a macro's units at the given axis offset (REVISION R1.2 — 2D grid).
  *
- * Horizontal: units are placed left to right starting at `axisPos` (x).
- * Vertical: the macro is stacked at climb elevation `axisPos` (y). The
- * entry surface sits at y = axisPos; a platform at tier T is placed at
- * y = axisPos + T, so each successive macro (entered at a higher y)
- * continues the climb. The zone width is fixed (one screen wide), so the
- * horizontal x is centered within the zone's screen width.
+ * Every unit carries an explicit (row, col) cell; there is no sequential
+ * cursor and no auto-assign. Rect from the grid:
+ *   - x = axisPos + entryClear + col          (horizontal composition)
+ *   - y = row                                 (row counted UP from ground)
+ * The SAME formula works for horizontal and vertical areas — row is always
+ * up-from-ground, col is always from-left. For vertical macros the zone width
+ * is fixed (one screen wide), so col IS the lateral position within it.
  *
  * @param {object} macro the macro to place
  * @param {number} axisPos the macro's start position on the composition axis
@@ -2006,116 +2108,75 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
  *   inter-macro lateral alignment; BLOCKER 1 fix)
  */
 function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, entryClear, isVertical, instanceId, xShift = 0) {
-  // Horizontal: cursor walks the x axis.
-  // Vertical: cursor walks the y axis (climb elevation).
-  let cursor = axisPos + macro.entryClear;
-
-  // For vertical placement, the horizontal x defaults to CENTER_X (the zone's
-  // center). Platform units may carry an explicit `x` offset for lateral
-  // variety within the fixed screen width (structure.md §4: "the climb is not
-  // a single-file staircase"). Gaps and blocks use CENTER_X.
-  const CENTER_X = ENTRY_CLEAR; // default center for units without an explicit x
-
-  // MAJOR 1 FIX: In vertical macros, gaps add extra height to the climb.
-  // The gap IS the extra vertical space — platforms after a gap must be
-  // higher than they would be without the gap. We track the cumulative gap
-  // offset so that each subsequent platform's y is shifted up by the total
-  // gap width before it.
-  let gapOffset = 0;
+  // Horizontal: x origin is the macro's start along the composition axis.
+  // Vertical: the composition axis is Y (climb); x is purely lateral (col),
+  // so the origin is 0 — axisPos must NOT leak into the x coordinate.
+  const originX = isVertical ? 0 : axisPos + macro.entryClear;
 
   for (const u of macro.units) {
+    if (u.row == null || u.col == null) {
+      throw new Error(`placeMacro: unit missing explicit row/col in macro "${macro.id}"`);
+    }
     if (u.kind === 'block') {
       const block = makeBlock(u.height);
-      if (isVertical) {
-        // Vertical: blocks act as ledges at the current climb elevation.
-        const y = axisPos + gapOffset + u.height;
-        placedUnits.push({
-          ...block,
-          placementId: instanceId,
-          x: CENTER_X,
-          y,
-          aabb: { x: CENTER_X, y, w: block.aabb.w, h: block.aabb.h },
-        });
-        cursor += 1;
-      } else {
-        placedUnits.push({
-          ...block,
-          placementId: instanceId,
-          x: cursor,
-          y: 0,
-          aabb: { x: cursor, y: 0, w: block.aabb.w, h: block.aabb.h },
-        });
-        cursor += 1;
-      }
+      const px = originX + u.col + xShift;
+      // Horizontal: y is the base row (0 for ground blocks). Vertical: y is
+      // the absolute climb row (axisPos + local row).
+      const py = isVertical ? axisPos + u.row : u.row;
+      // Block base sits at its row; top surface at row + height.
+      placedUnits.push({
+        ...block,
+        placementId: instanceId,
+        row: u.row,
+        col: u.col,
+        x: px,
+        y: py,
+        aabb: { x: px, y: py, w: 1, h: u.height },
+      });
     } else if (u.kind === 'platform') {
-      const platform = makePlatform(u.width, u.tier);
-      if (isVertical) {
-        const y = axisPos + gapOffset + u.tier;
-        // Lateral variety: use the unit's explicit x if provided, else center.
-        // BLOCKER 1 FIX: apply xShift for inter-macro lateral alignment.
-        const px = (u.x !== undefined ? u.x : CENTER_X) + xShift;
-        placedUnits.push({
-          ...platform,
-          placementId: instanceId,
-          x: px,
-          y,
-          aabb: { x: px, y, w: platform.aabb.w, h: PLATFORM_UNIT_H },
-        });
-        cursor += u.width;
-      } else {
-        // BUGFIX: makePlatform().aabb.y is in PIXELS (tierToOffset = tier ×
-        // maxClearableStep), but this layout is UNIT space — mixing the two
-        // sank horizontal platforms ~2.8 rows too high and broke their draw
-        // box. The landing face elevation IS the tier (unit rows from ground).
-        const py = u.tier;
-        placedUnits.push({
-          ...platform,
-          placementId: instanceId,
-          x: cursor,
-          y: py,
-          aabb: { x: cursor, y: py, w: platform.aabb.w, h: PLATFORM_UNIT_H },
-        });
-        cursor += u.width;
-      }
-    } else if (u.kind === 'gap') {
-      if (isVertical) {
-        // Vertical gaps are vertical breathing room (fall distance).
-        // MAJOR 1 FIX: the gap advances the y-axis so subsequent platforms
-        // are higher than they would be without the gap.
-        gapOffset += u.width;
-        placedGaps.push({ x: CENTER_X, y: axisPos + gapOffset, width: u.width });
-      } else {
-        placedGaps.push({ x: cursor, width: u.width });
-      }
-      cursor += u.width;
+      const px = originX + u.col + xShift;
+      // Landing face elevation IS the row (unit rows from ground). Platform
+      // metadata comes from the terrain.js PLATFORM grammar (one-way,
+      // non-solid); the aabb is built here in UNIT space (the factory's
+      // aabb is in px and caps tier at 3).
+      const py = isVertical ? axisPos + u.row : u.row;
+      placedUnits.push({
+        kind: 'platform',
+        width: u.width,
+        solid: false,
+        oneWay: true,
+        placementId: instanceId,
+        tier: u.row, // legacy alias — consumers read the face elevation
+        row: u.row,
+        col: u.col,
+        x: px,
+        y: py,
+        aabb: { x: px, y: py, w: u.width, h: PLATFORM_UNIT_H },
+      });
     }
+    // No 'gap' kind exists anymore — empty cells are just unoccupied.
   }
 
   // Record placement opportunities (relative to macro start).
   //
   // A slot's y is the ELEVATION OF ITS SUPPORTING SURFACE, not a fixed 0:
-  //   - a slot above a solid block of height H sits at elevation H (the block's
-  //     TOP surface — the hero/items stand ON the block, never inside it);
-  //   - a slot above a platform of tier T sits at elevation T (the platform's
-  //     landing face);
-  //   - a slot on open ground sits at elevation 0.
+  //   - a slot above a solid block whose column covers the slot's col sits at
+  //     the block's top (base row + height);
+  //   - a slot above a platform covering the slot's col sits at the
+  //     platform's landing face (its row);
+  //   - a slot over an empty cell sits at elevation 0 (open ground).
   // This is the BLOCKER fix (items spawning inside solids): the slot y MUST be
   // at the top of whatever surface is below it, so an item placed there rests
   // on a valid standing position. (populate.md §1: slots are meaningful,
   // terrain-valid positions, not arbitrary coordinates.)
-  //
-  // MAJOR 3 FIX: For vertical macros, the slot's y must include the macro's
-  // absolute `axisPos` offset so the slot follows the platform's absolute
-  // position upward, not just its local tier. Without this, slots from
-  // stacked macros all cluster near y=0-3 instead of following the climb.
   for (const p of macro.placements) {
     const surface = surfaceElevationAt(macro, p, isVertical);
     placements.push({
       ...p,
       // Vertical slots carry absolute x (lateral position within the zone);
       // horizontal slots are relative to the macro's entry clear zone.
-      // BLOCKER 1 FIX: apply xShift to vertical slots too.
-      x: isVertical ? p.x + xShift : axisPos + macro.entryClear + p.x,
+      // Apply xShift to both (inter-macro lateral alignment).
+      x: isVertical ? p.x + xShift : originX + p.x + xShift,
       y: isVertical ? axisPos + surface : surface,
       placementId: instanceId,
     });
@@ -2124,78 +2185,35 @@ function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, entryCl
 
 /**
  * Elevation (in units) of the supporting surface directly below a slot at
- * local unit-x `p.x`, relative to the macro's entry line.
+ * local col `p.x`, relative to the macro's entry line.
  *
- * A slot stands on whatever surface is under it:
- *   - a solid block of height H → elevation H (stand on the block's top);
- *   - a platform of tier T → elevation T (stand on the platform's landing
- *     face — platforms are one-way landings, not solids the hero walks inside);
- *   - open ground (a gap or empty space) → elevation 0.
+ * A slot stands on whatever surface is under it (2D grid model):
+ *   - a solid block whose column covers the slot's col → its TOP
+ *     (base row + height);
+ *   - a platform whose column span covers the slot's col → its landing face
+ *     (its row);
+ *   - an empty cell → elevation 0 (open ground).
  *
- * Horizontal macros compose left-to-right along x. The local cursor for unit i
- * (0-based) is `entryClear + sum(widths of units[0..i-1])`; a slot at p.x sits
- * in the unit whose x-range covers p.x (or on the ground if none does — the
- * slot is in a gap / clear zone). We walk the MACRO'S OWN unit sequence (not
- * the cumulative placedUnits, which would include prior macros' units at
- * overlapping absolute x).
- *
- * Vertical macros place every unit at the same x (CENTER_X), so the
- * "supporting surface" is the ground at elevation 0; the macro's own platforms
- * are the climb landings, not the surface under a slot.
+ * When several surfaces cover the same col (stacking), the HIGHEST one wins —
+ * that is what the hero actually lands on.
  *
  * @param {object} macro the macro being placed (its `units` + `entryClear`)
- * @param {object} p the slot descriptor (its local `x`)
+ * @param {object} p the slot descriptor (its local `x` = col offset)
  * @param {boolean} isVertical whether the area is vertical
  * @returns {number} the surface elevation (units) the slot rests on
  */
 function surfaceElevationAt(macro, p, isVertical) {
-  if (isVertical) {
-    // Vertical: the slot's x is an absolute lateral position. Find the
-    // platform whose x-range covers the slot's x and return its local
-    // surface elevation (gapOffset + tier). MAJOR 1 FIX: include the
-    // cumulative gap offset so the surface elevation matches the
-    // platform's actual y position.
-    let gapOffset = 0;
-    for (const u of macro.units) {
-      if (u.kind === 'gap') {
-        gapOffset += u.width;
-      } else if (u.kind === 'platform') {
-        const ux = u.x !== undefined ? u.x : 0;
-        if (p.x >= ux && p.x < ux + u.width) {
-          // BUGFIX: an item standing ON a platform occupies the row ABOVE its
-          // landing face (face at row T -> item bottom at row T+1), exactly
-          // like a block whose slot elevation is base+height (its top).
-          // Returning the bare tier put the item's bottom INSIDE the
-          // platform's own row — reading as "under the platform".
-          return gapOffset + u.tier + 1;
-        }
-      }
-    }
-    return 0;
-  }
-  // Horizontal: walk the macro's own units left-to-right, accumulating the
-  // local cursor, and find the unit whose x-range covers the slot's p.x.
-  //
-  // The slot's p.x is the offset from the ENTRY CLEAR ZONE START (not the
-  // macro's start). The first unit is at local x = 0 (relative to the entry
-  // clear zone start), so the cursor starts at 0, not at macro.entryClear.
-  let cursor = 0;
+  const col = p.x;
+  let best = 0;
   for (const u of macro.units) {
-    const uStart = cursor;
-    const uEnd = cursor + (u.width ?? 1);
-    if (p.x >= uStart && p.x < uEnd) {
-      // The slot is above this unit. A solid block → stand on its top (height);
-      // a platform → stand on its landing face (tier); a gap → ground (0).
-      if (u.kind === 'block') return u.height;
-      // BUGFIX: items on a platform occupy the row ABOVE its landing face
-      // (tier T -> elevation T+1), mirroring blocks (elevation = top).
-      if (u.kind === 'platform') return (u.tier ?? 0) + 1;
-      return 0; // gap
+    const uStart = u.col;
+    const uEnd = u.col + (u.kind === 'block' ? 1 : u.width);
+    if (col >= uStart && col < uEnd) {
+      const surface = u.kind === 'block' ? u.row + u.height : u.row;
+      if (surface > best) best = surface;
     }
-    cursor = uEnd;
   }
-  // No unit covers the slot's x — it is on open ground (gap / clear zone).
-  return 0;
+  return best;
 }
 
 // ---------------------------------------------------------------------------
@@ -2286,30 +2304,69 @@ export function validateLayout(layout) {
     }
   }
 
-  // 4. No buried landings: a platform must not be underneath a solid block
-  //    at the same x position. (A platform at tier T is at y = tierToOffset(T);
-  //    a block of height H occupies y = 0..H. If H >= tierToOffset(T) at the
-  //    same x, the platform is buried.)
-  //
-  // Since we work in unit space (not pixels), we check: if a block's height
-  // (in units) >= a platform's tier (in units) at overlapping x, the platform
-  // is buried. (This is an approximation in unit space; the exact pixel check
-  // would use tierToOffset, but the unit-space check is sufficient for
-  // structural validation.)
+  // 4a. Legacy buried-landing check: a platform must not be UNDERNEATH a
+  //     solid block at an overlapping x (block top at or above the platform's
+  //     face). This is the "buried" case the playability tests assert on; it
+  //     is stricter than the clearance rule below and catches true burial.
   for (const platform of units.filter((u) => u.kind === 'platform')) {
     for (const block of units.filter((u) => u.kind === 'block')) {
-      // Check x overlap.
       const pStart = platform.x;
       const pEnd = platform.x + platform.aabb.w;
       const bStart = block.x;
       const bEnd = block.x + block.aabb.w;
       if (pStart < bEnd && pEnd > bStart) {
-        // X overlap: check if the block is tall enough to bury the platform.
-        // Block height (units) >= platform tier (units) → buried.
-        if (block.height >= platform.tier) {
+        const blockTop = (block.row ?? 0) + block.height;
+        const platFace = platform.row ?? platform.tier ?? 0;
+        if (blockTop >= platFace) {
           throw new Error(
-            `validateLayout: platform at x=${platform.x} (tier ${platform.tier}) ` +
+            `validateLayout: platform at x=${platform.x} (tier ${platFace}) ` +
               `is buried by block at x=${block.x} (height ${block.height})`,
+          );
+        }
+      }
+    }
+  }
+
+  // 4b. The unified CLEARANCE RULE (REVISION R2.2):
+  //    any unit whose base/face is above row 0 must be ≥ 2 rows above the top
+  //    of whatever is directly below it in its column span (floor = row 0; a
+  //    block's top = base + height; a platform's face = its row). A block may
+  //    sit at row 0 on the floor freely. This single rule covers
+  //    blocks-above-blocks and platforms-over-blocks / blocks-over-platforms
+  //    alike. Violation → authoring error.
+  const unitTop = (u) => (u.kind === 'block' ? (u.row ?? 0) + u.height : (u.row ?? u.tier ?? 0));
+  for (const upper of units) {
+    if ((upper.row ?? 0) <= 0) continue; // resting on the floor — no clearance needed
+    for (const lower of units) {
+      if (lower === upper) continue;
+      // The rule applies WITHIN a single macro instance (true 2D stacking,
+      // e.g. blockBridge). Units from different stacked macro instances are
+      // the climb landings — governed by the elevation-step rule instead.
+      if (upper.placementId !== undefined && lower.placementId !== undefined
+          && upper.placementId !== lower.placementId) continue;
+      // The rule applies to whatever is DIRECTLY BELOW in the same column
+      // span: skip units that are not below (their top is not under the
+      // upper unit's base/face).
+      if (unitTop(lower) >= unitTop(upper)) continue;
+      // The rule applies to whatever is DIRECTLY BELOW in the column span:
+      // the upper unit's base/face must sit strictly above the lower's top.
+      // Side-by-side landings at similar heights (the normal climb case) are
+      // governed by the elevation-step rule instead, not this one.
+      const upperBase = upper.kind === 'block' ? (upper.row ?? 0) : (upper.row ?? upper.tier ?? 0);
+      if (upperBase <= unitTop(lower)) continue;
+
+      const lStart = lower.x;
+      const lEnd = lower.x + lower.aabb.w;
+      const uStart = upper.x;
+      const uEnd = upper.x + upper.aabb.w;
+      if (uStart < lEnd && uEnd > lStart) {
+        // Column overlap: the upper unit must clear the lower's top by ≥ 2 rows.
+        const clearance = unitTop(upper) - unitTop(lower);
+        if (clearance < 2) {
+          throw new Error(
+            `validateLayout: ${upper.kind} at x=${upper.x} (top row ${unitTop(upper)}) ` +
+              `is only ${clearance} row(s) above ${lower.kind} at x=${lower.x} ` +
+              `(top row ${unitTop(lower)}) — needs ≥ 2 rows of clearance`,
           );
         }
       }
@@ -2350,19 +2407,40 @@ export function validateLayout(layout) {
     // possible (falling), so they are not validated. This matches the
     // physical reality: you can always fall, but you can't jump up more
     // than one tier.
+    // The route is the sequence of DISTINCT landing columns along x. At each
+    // column the hero stands on the HIGHEST surface there (that is what they
+    // actually reach); lower surfaces in the same column are under their feet
+    // and are not separate landings. This is what makes stacked set pieces
+    // (a platform over a block wall) legal: the column's landing elevation is
+    // the platform's face, reached via whatever step-up exists nearby.
     const route = units
       .slice()
       .sort((a, b) => (a.x !== b.x ? a.x - b.x : (a.y ?? 0) - (b.y ?? 0)));
 
+    const byCol = new Map();
+    for (const u of route) {
+      const elev = landingElevation(u);
+      if (!byCol.has(u.x) || elev > byCol.get(u.x).elevation) {
+        byCol.set(u.x, { label: `${u.kind} at x=${u.x}`, elevation: elev, x: u.x });
+      }
+    }
     const landings = [
       { label: 'ground', elevation: 0, x: 0 },
-      ...route.map((u) => ({ label: `${u.kind} at x=${u.x}`, elevation: landingElevation(u), x: u.x })),
+      ...[...byCol.values()].sort((a, b) => a.x - b.x),
       { label: 'exit', elevation: 0, x: totalWidth },
     ];
 
     for (let i = 1; i < landings.length; i++) {
       const prev = landings[i - 1];
       const curr = landings[i];
+      // Only SUCCESSIVE landings are constrained: the hero can always walk
+      // along the ground between distant features, so an upward step is only
+      // "impossible" when the next landing is within one jump's horizontal
+      // reach AND more than MAX_ELEVATION_STEP above. Distant landings are
+      // reachable by walking to them first (at ground level or via whatever
+      // steps exist in between).
+      const dx = curr.x - prev.x;
+      if (dx > MAX_CLEARABLE_GAP + 1) continue;
       const step = curr.elevation - prev.elevation; // positive = upward
       if (step > MAX_ELEVATION_STEP) {
         throw new Error(

@@ -324,6 +324,11 @@ function captureAreaMap(h) {
         y: p.y,
         type: p.type,
       })),
+      // R4.1: placedUnits carry the 2D GRID layout in unit space — (col, row)
+      // plus width/height in unit counts — so the dump fully reconstructs each
+      // area's terrain including stacked units. `x`/`y` remain for consumers
+      // that still read pixel-ish offsets; the authoritative positions are
+      // col/row (convert with the stored unitPxX/unitPxY header).
       placedUnits: (layout.units ?? []).map((u) => ({
         kind: u.kind,
         x: u.aabb.x,
@@ -336,6 +341,8 @@ function captureAreaMap(h) {
         h: u.kind === 'platform' ? PLATFORM_DRAW_H / UNIT_PX_Y : u.aabb.h,
         tier: u.tier,
         height: u.height,
+        row: u.row,
+        col: u.col,
         oneWay: !!u.oneWay,
       })),
     });
