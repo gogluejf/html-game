@@ -52,7 +52,10 @@ def render(trace_path: str, out_path: str):
     except OSError:
         font = ImageFont.load_default()
 
-    plat_thick = max(2, int((UNIT_PX_Y / 8) * scale))
+    # Platform draw height (px): consumed from the dump header (single source
+    # of truth = PLATFORM_DRAW_H in macros.js). Old dumps without the field
+    # fall back to the historical unitPxY/8 derivation.
+    plat_thick_px = h_ref.get("platformDrawH") or max(2, round(UNIT_PX_Y / 8))
 
     # --- Horizontal rows (left side) ---
     for row_idx, area_id in enumerate(horiz_areas[:3]):
@@ -94,7 +97,7 @@ def render(trace_path: str, out_path: str):
                 px = sx(ux * UNIT_PX_X)
                 pw = max(3, int(uw * UNIT_PX_X * scale))
                 py = sy(tier)
-                draw.rectangle([px, py - plat_thick, px + pw - 1, py - 1], fill=(255, 165, 0))
+                draw.rectangle([px, py - int(plat_thick_px * scale), px + pw - 1, py - 1], fill=(255, 165, 0))
             elif kind == "block":
                 px = sx(ux * UNIT_PX_X)
                 pw = max(3, int(uw * UNIT_PX_X * scale))
@@ -153,7 +156,7 @@ def render(trace_path: str, out_path: str):
                     px = sx(ux * UNIT_PX_X)
                     pw = max(3, int(uw * UNIT_PX_X * scale))
                     py = sy(uy * UNIT_PX_Y)
-                    draw.rectangle([px, py - plat_thick, px + pw - 1, py - 1], fill=(255, 165, 0))
+                    draw.rectangle([px, py - int(plat_thick_px * scale), px + pw - 1, py - 1], fill=(255, 165, 0))
                 elif kind == "block":
                     px = sx(ux * UNIT_PX_X)
                     pw = max(3, int(uw * UNIT_PX_X * scale))

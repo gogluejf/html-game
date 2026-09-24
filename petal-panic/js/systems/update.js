@@ -250,6 +250,10 @@ function captureAreaMap(h) {
       zoneHeightPx: layout.orientation === 'vertical' ? layout.budget * UNIT_PX_Y : VIEW_H,
       unitPxX: UNIT_PX_X,
       unitPxY: UNIT_PX_Y,
+      // R5.2: the platform's DRAW height in px (single source of truth =
+      // PLATFORM_DRAW_H). Consumers (PNG tool) multiply by their render
+      // scale; old dumps without this field fall back to unitPxY/8.
+      platformDrawH: PLATFORM_DRAW_H,
       macros: (layout.macros ?? []).map((id) => ({ id })),
       slots: (layout.placements ?? []).map((p) => ({
         x: p.x,
