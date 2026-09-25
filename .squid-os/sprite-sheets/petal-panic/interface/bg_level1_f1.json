@@ -1,0 +1,15 @@
+{
+  "label": "interface",
+  "file": "petal-panic/assets/interface/bg_level1_f1.png",
+  "cropped_path": "petal-panic/assets/interface",
+  "rows": 1,
+  "cols": 1,
+  "description": "Level 1 back parallax layer: full circus tent backdrop with striped canopy, CIRCUS entrance, banners (single image)",
+  "entities": [{
+    "name": "bg_level1_tent",
+    "anim": "idle",
+    "frames": [
+      {"file": "bg_level1_f1.png", "row": null, "col": null, "bbox": null}
+    ]
+  }]
+}

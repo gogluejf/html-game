@@ -1,0 +1,52 @@
+{
+  "label": "projectiles",
+  "file": "petal-panic/assets/projectile_sheet_3.png",
+  "cropped_path": "petal-panic/assets/projectiles",
+  "rows": 3,
+  "cols": 8,
+  "description": "Projectile 3 \u2014 tomato (rolling+splat), carrot (spinning), pea (swirling)",
+  "entities": [{
+    "name": "tomato",
+    "anim": "projectile",
+    "frames": [
+      {"file": "projectile_3_tomato_f1.png", "row": 0, "col": 0, "bbox": [12, 168, 164, 174]},
+      {"file": "projectile_3_tomato_f2.png", "row": 0, "col": 1, "bbox": [186, 168, 189, 175]},
+      {"file": "projectile_3_tomato_f3.png", "row": 0, "col": 2, "bbox": [374, 175, 194, 172]},
+      {"file": "projectile_3_tomato_f4.png", "row": 0, "col": 3, "bbox": [565, 171, 216, 179]},
+      {"file": "projectile_3_tomato_f5.png", "row": 0, "col": 4, "bbox": [758, 173, 195, 178]},
+      {"file": "projectile_3_tomato_f6.png", "row": 0, "col": 5, "bbox": [949, 171, 206, 184]},
+      {"file": "projectile_3_tomato_f7.png", "row": 0, "col": 6, "bbox": [1129, 106, 218, 287]},
+      {"file": "projectile_3_tomato_f8.png", "row": 0, "col": 7, "bbox": [1334, 108, 198, 279]}
+    ]
+  }, {
+    "name": "carrot",
+    "anim": "projectile",
+    "frames": [
+      {"file": "projectile_3_carrot_f1.png", "row": 1, "col": 0, "bbox": [0, 479, 196, 149]},
+      {"file": "projectile_3_carrot_f2.png", "row": 1, "col": 1, "bbox": [188, 482, 201, 151]},
+      {"file": "projectile_3_carrot_f3.png", "row": 1, "col": 2, "bbox": [378, 464, 203, 183]},
+      {"file": "projectile_3_carrot_f4.png", "row": 1, "col": 3, "bbox": [566, 459, 206, 188]},
+      {"file": "projectile_3_carrot_f5.png", "row": 1, "col": 4, "bbox": [762, 456, 199, 190]},
+      {"file": "projectile_3_carrot_f6.png", "row": 1, "col": 5, "bbox": [949, 459, 207, 194]},
+      {"file": "projectile_3_carrot_f7.png", "row": 1, "col": 6, "bbox": [1146, 461, 204, 198]},
+      {"file": "projectile_3_carrot_f8.png", "row": 1, "col": 7, "bbox": [1345, 457, 191, 195]}
+    ]
+  }, {
+    "name": "pea",
+    "anim": "projectile",
+    "frames": [
+      {"file": "projectile_3_pea_f1.png", "row": 2, "col": 0, "bbox": [11, 769, 174, 146]},
+      {"file": "projectile_3_pea_f2.png", "row": 2, "col": 1, "bbox": [193, 762, 192, 152]},
+      {"file": "projectile_3_pea_f3.png", "row": 2, "col": 2, "bbox": [384, 756, 186, 163]},
+      {"file": "projectile_3_pea_f4.png", "row": 2, "col": 3, "bbox": [571, 748, 195, 178]},
+      {"file": "projectile_3_pea_f5.png", "row": 2, "col": 4, "bbox": [765, 746, 194, 184]},
+      {"file": "projectile_3_pea_f6.png", "row": 2, "col": 5, "bbox": [956, 754, 188, 183]},
+      {"file": "projectile_3_pea_f7.png", "row": 2, "col": 6, "bbox": [1146, 746, 193, 193]},
+      {"file": "projectile_3_pea_f8.png", "row": 2, "col": 7, "bbox": [1338, 758, 192, 170]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/projectiles",
+    "pass": "/tmp/proj3-final"
+  }
+}

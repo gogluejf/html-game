@@ -1,0 +1,31 @@
+{
+  "label": "heroes",
+  "file": "petal-panic/assets/scarlet_vale_sheet_7.png",
+  "cropped_path": "petal-panic/assets/heroes",
+  "size": "1774x887",
+  "rows": 2,
+  "cols": 5,
+  "cell": 355,
+  "description": "Scarlet Vale hero sheet 7, supermove \u2014 forward dash/slide (row1) + glide deceleration (row2), 2x5",
+  "original_prompt": "Scarlet Vale supermove sheet \u2014 forward dash slide + glide, 2x5, hand-painted circus style",
+  "entities": [{
+    "name": "scarlet_vale",
+    "anim": "supermove",
+    "frames": [
+      {"file": "scarlet_vale_supermove_f1.png", "row": 0, "col": 0, "bbox": [5, 78, 300, 373]},
+      {"file": "scarlet_vale_supermove_f2.png", "row": 0, "col": 1, "bbox": [314, 82, 382, 369]},
+      {"file": "scarlet_vale_supermove_f3.png", "row": 0, "col": 2, "bbox": [674, 64, 371, 389]},
+      {"file": "scarlet_vale_supermove_f4.png", "row": 0, "col": 3, "bbox": [1028, 48, 389, 373]},
+      {"file": "scarlet_vale_supermove_f5.png", "row": 0, "col": 4, "bbox": [1380, 52, 394, 397]},
+      {"file": "scarlet_vale_supermove_f6.png", "row": 1, "col": 0, "bbox": [24, 445, 282, 434]},
+      {"file": "scarlet_vale_supermove_f7.png", "row": 1, "col": 1, "bbox": [318, 472, 383, 342]},
+      {"file": "scarlet_vale_supermove_f8.png", "row": 1, "col": 2, "bbox": [688, 451, 369, 374]},
+      {"file": "scarlet_vale_supermove_f9.png", "row": 1, "col": 3, "bbox": [1050, 475, 366, 328]},
+      {"file": "scarlet_vale_supermove_f10.png", "row": 1, "col": 4, "bbox": [1372, 537, 401, 312]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes",
+    "pass": "/tmp/scarlet_supermove-final"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "label": "heroes",
+  "file": "petal-panic/assets/scarlet_vale_sheet_6.png",
+  "cropped_path": "petal-panic/assets/heroes",
+  "rows": 2,
+  "cols": 5,
+  "description": "Scarlet Vale hero cartwheel/acrobatic flip, 10 frames (2x5 grid)",
+  "original_prompt": "Cartwheel/acrobatic flip sheet \u2014 reverse-engineered; to be regenerated via transparent regen pass.",
+  "entities": [{
+    "name": "scarlet_vale",
+    "anim": "cartwheel",
+    "frames": [
+      {"file": "scarlet_vale_cartwheel_f1.png", "row": 0, "col": 0, "bbox": [10, 83, 289, 359]},
+      {"file": "scarlet_vale_cartwheel_f2.png", "row": 0, "col": 1, "bbox": [349, 148, 348, 296]},
+      {"file": "scarlet_vale_cartwheel_f3.png", "row": 0, "col": 2, "bbox": [720, 39, 329, 407]},
+      {"file": "scarlet_vale_cartwheel_f4.png", "row": 0, "col": 3, "bbox": [1072, 27, 350, 419]},
+      {"file": "scarlet_vale_cartwheel_f5.png", "row": 0, "col": 4, "bbox": [1414, 92, 352, 352]},
+      {"file": "scarlet_vale_cartwheel_f6.png", "row": 1, "col": 0, "bbox": [4, 498, 370, 319]},
+      {"file": "scarlet_vale_cartwheel_f7.png", "row": 1, "col": 1, "bbox": [368, 501, 354, 317]},
+      {"file": "scarlet_vale_cartwheel_f8.png", "row": 1, "col": 2, "bbox": [731, 521, 330, 304]},
+      {"file": "scarlet_vale_cartwheel_f9.png", "row": 1, "col": 3, "bbox": [1075, 498, 323, 340]},
+      {"file": "scarlet_vale_cartwheel_f10.png", "row": 1, "col": 4, "bbox": [1448, 485, 292, 353]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes",
+    "pass": "/tmp/redo2-scarlet-v3+v4"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "label": "heroes",
+  "file": "petal-panic/assets/balthazar_sheet_2.png",
+  "cropped_path": "petal-panic/assets/heroes",
+  "rows": 1,
+  "cols": 8,
+  "description": "Balthazar tiger ringmaster hero sheet 2, idle x 8 frames",
+  "entities": [{
+    "name": "balthazar",
+    "anim": "idle",
+    "frames": [
+      {"file": "balthazar_idle_f1.png", "row": 0, "col": 0, "bbox": [8, 133, 279, 452]},
+      {"file": "balthazar_idle_f2.png", "row": 0, "col": 1, "bbox": [265, 133, 290, 452]},
+      {"file": "balthazar_idle_f3.png", "row": 0, "col": 2, "bbox": [542, 129, 274, 458]},
+      {"file": "balthazar_idle_f4.png", "row": 0, "col": 3, "bbox": [807, 129, 275, 455]},
+      {"file": "balthazar_idle_f5.png", "row": 0, "col": 4, "bbox": [1065, 130, 282, 455]},
+      {"file": "balthazar_idle_f6.png", "row": 0, "col": 5, "bbox": [1332, 130, 281, 456]},
+      {"file": "balthazar_idle_f7.png", "row": 0, "col": 6, "bbox": [1599, 131, 293, 454]},
+      {"file": "balthazar_idle_f8.png", "row": 0, "col": 7, "bbox": [1881, 131, 285, 453]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes",
+    "pass": "/tmp/redo-balthazar-sheet2-v1"
+  }
+}

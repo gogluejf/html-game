@@ -1,0 +1,40 @@
+{
+  "label": "objects",
+  "file": "petal-panic/assets/platforms_level3_sheet.png",
+  "cropped_path": "petal-panic/assets/objects",
+  "rows": 4,
+  "cols": 3,
+  "description": "Platform tiles level 3 (3x3 grid) + row 4: naked platforms (S/M/L)",
+  "entities": [{
+    "name": "platforms_level3",
+    "anim": "single",
+    "frames": [
+      {"file": "platforms_level3_single_f1.png", "row": 0, "col": 0, "bbox": [43, 137, 299, 222]},
+      {"file": "platforms_level3_single_f2.png", "row": 1, "col": 0, "bbox": [43, 423, 287, 229]},
+      {"file": "platforms_level3_single_f3.png", "row": 2, "col": 0, "bbox": [55, 708, 275, 264]},
+      {"file": "platforms_level3_single_f4.png", "row": 3, "col": 0, "bbox": [44, 1056, 298, 158]}
+    ]
+  }, {
+    "name": "platforms_level3",
+    "anim": "double",
+    "frames": [
+      {"file": "platforms_level3_double_f1.png", "row": 0, "col": 1, "bbox": [425, 87, 411, 272]},
+      {"file": "platforms_level3_double_f2.png", "row": 1, "col": 1, "bbox": [417, 432, 414, 223]},
+      {"file": "platforms_level3_double_f3.png", "row": 2, "col": 1, "bbox": [417, 664, 441, 316]},
+      {"file": "platforms_level3_double_f4.png", "row": 3, "col": 1, "bbox": [417, 1056, 441, 180]}
+    ]
+  }, {
+    "name": "platforms_level3",
+    "anim": "triple",
+    "frames": [
+      {"file": "platforms_level3_triple_f1.png", "row": 0, "col": 2, "bbox": [918, 97, 585, 272]},
+      {"file": "platforms_level3_triple_f2.png", "row": 1, "col": 2, "bbox": [905, 427, 586, 237]},
+      {"file": "platforms_level3_triple_f3.png", "row": 2, "col": 2, "bbox": [896, 725, 583, 258]},
+      {"file": "platforms_level3_triple_f4.png", "row": 3, "col": 2, "bbox": [908, 1036, 582, 173]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects",
+    "pass": "/tmp/plat-l3-v1"
+  }
+}

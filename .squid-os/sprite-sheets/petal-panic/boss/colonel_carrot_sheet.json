@@ -1,0 +1,43 @@
+{
+  "label": "boss",
+  "file": "petal-panic/assets/colonel_carrot_sheet.png",
+  "cropped_path": "petal-panic/assets/boss",
+  "rows": 3,
+  "cols": 5,
+  "description": "Colonel Carrot final boss (carrot-bodied colonel on red scooter), 3 actions x 5 frames (idle, charge, attack)",
+  "entities": [{
+    "name": "colonel_carrot",
+    "anim": "idle",
+    "frames": [
+      {"file": "colonel_carrot_idle_f1.png", "row": 0, "col": 0, "bbox": [12, 21, 258, 337]},
+      {"file": "colonel_carrot_idle_f2.png", "row": 0, "col": 1, "bbox": [320, 60, 252, 298]},
+      {"file": "colonel_carrot_idle_f3.png", "row": 0, "col": 2, "bbox": [625, 18, 264, 340]},
+      {"file": "colonel_carrot_idle_f4.png", "row": 0, "col": 3, "bbox": [918, 50, 273, 309]},
+      {"file": "colonel_carrot_idle_f5.png", "row": 0, "col": 4, "bbox": [1242, 28, 259, 330]}
+    ]
+  }, {
+    "name": "colonel_carrot",
+    "anim": "charge",
+    "frames": [
+      {"file": "colonel_carrot_charge_f1.png", "row": 1, "col": 0, "bbox": [6, 370, 281, 288]},
+      {"file": "colonel_carrot_charge_f2.png", "row": 1, "col": 1, "bbox": [316, 366, 288, 292]},
+      {"file": "colonel_carrot_charge_f3.png", "row": 1, "col": 2, "bbox": [626, 374, 292, 284]},
+      {"file": "colonel_carrot_charge_f4.png", "row": 1, "col": 3, "bbox": [929, 374, 287, 284]},
+      {"file": "colonel_carrot_charge_f5.png", "row": 1, "col": 4, "bbox": [1240, 375, 284, 283]}
+    ]
+  }, {
+    "name": "colonel_carrot",
+    "anim": "attack",
+    "frames": [
+      {"file": "colonel_carrot_attack_f1.png", "row": 2, "col": 0, "bbox": [16, 672, 291, 300]},
+      {"file": "colonel_carrot_attack_f2.png", "row": 2, "col": 1, "bbox": [325, 662, 277, 311]},
+      {"file": "colonel_carrot_attack_f3.png", "row": 2, "col": 2, "bbox": [651, 673, 258, 304]},
+      {"file": "colonel_carrot_attack_f4.png", "row": 2, "col": 3, "bbox": [939, 654, 260, 324]},
+      {"file": "colonel_carrot_attack_f5.png", "row": 2, "col": 4, "bbox": [1260, 674, 266, 299]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/boss",
+    "pass": "/tmp/redo-colonel_carrot_1-v1"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "label": "boss",
+  "file": "petal-panic/assets/ratchet_rumbelow_sheet_5.png",
+  "cropped_path": "petal-panic/assets/boss",
+  "rows": 2,
+  "cols": 3,
+  "description": "Ratchet Rumbelow boss, sheet 5/5 \u2014 6 frames (roar)",
+  "entities": [{
+    "name": "ratchet_rumbelow",
+    "anim": "roar",
+    "frames": [
+      {"file": "ratchet_rumbelow_roar_f1.png", "row": 0, "col": 0, "bbox": [0, 25, 511, 459]},
+      {"file": "ratchet_rumbelow_roar_f2.png", "row": 0, "col": 1, "bbox": [505, 25, 520, 458]},
+      {"file": "ratchet_rumbelow_roar_f3.png", "row": 0, "col": 2, "bbox": [1018, 21, 518, 462]},
+      {"file": "ratchet_rumbelow_roar_f4.png", "row": 1, "col": 0, "bbox": [0, 510, 514, 470]},
+      {"file": "ratchet_rumbelow_roar_f5.png", "row": 1, "col": 1, "bbox": [505, 508, 524, 472]},
+      {"file": "ratchet_rumbelow_roar_f6.png", "row": 1, "col": 2, "bbox": [1018, 516, 518, 463]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/boss",
+    "pass": "/tmp/redo-ratchet_rumbelow-roar-v1"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "label": "enemies",
+  "file": "petal-panic/assets/doodle_dink_sheet.png",
+  "cropped_path": "petal-panic/assets/enemies",
+  "rows": 3,
+  "cols": 5,
+  "description": "Doodle Dink striped jester \u2014 teleport, tomato_throw, headbutt",
+  "entities": [{
+    "name": "doodle_dink",
+    "anim": "teleport",
+    "frames": [
+      {"file": "doodle_dink_teleport_f1.png", "row": 0, "col": 0, "bbox": [24, 14, 257, 322]},
+      {"file": "doodle_dink_teleport_f2.png", "row": 0, "col": 1, "bbox": [322, 10, 291, 330]},
+      {"file": "doodle_dink_teleport_f3.png", "row": 0, "col": 2, "bbox": [635, 9, 272, 336]},
+      {"file": "doodle_dink_teleport_f4.png", "row": 0, "col": 3, "bbox": [937, 8, 270, 339]},
+      {"file": "doodle_dink_teleport_f5.png", "row": 0, "col": 4, "bbox": [1256, 23, 280, 323]}
+    ]
+  }, {
+    "name": "doodle_dink",
+    "anim": "tomato_throw",
+    "frames": [
+      {"file": "doodle_dink_tomato_throw_f1.png", "row": 1, "col": 0, "bbox": [24, 367, 265, 306]},
+      {"file": "doodle_dink_tomato_throw_f2.png", "row": 1, "col": 1, "bbox": [330, 346, 268, 328]},
+      {"file": "doodle_dink_tomato_throw_f3.png", "row": 1, "col": 2, "bbox": [633, 363, 270, 311]},
+      {"file": "doodle_dink_tomato_throw_f4.png", "row": 1, "col": 3, "bbox": [913, 377, 287, 294]},
+      {"file": "doodle_dink_tomato_throw_f5.png", "row": 1, "col": 4, "bbox": [1197, 336, 339, 334]}
+    ]
+  }, {
+    "name": "doodle_dink",
+    "anim": "headbutt",
+    "frames": [
+      {"file": "doodle_dink_headbutt_f1.png", "row": 2, "col": 0, "bbox": [33, 683, 263, 310]},
+      {"file": "doodle_dink_headbutt_f2.png", "row": 2, "col": 1, "bbox": [323, 692, 312, 301]},
+      {"file": "doodle_dink_headbutt_f3.png", "row": 2, "col": 2, "bbox": [601, 698, 330, 291]},
+      {"file": "doodle_dink_headbutt_f4.png", "row": 2, "col": 3, "bbox": [868, 692, 376, 297]},
+      {"file": "doodle_dink_headbutt_f5.png", "row": 2, "col": 4, "bbox": [1248, 686, 288, 311]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies",
+    "pass": "/tmp/redo-doodle-dink-v1"
+  }
+}

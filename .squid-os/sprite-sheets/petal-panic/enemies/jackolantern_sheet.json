@@ -1,0 +1,44 @@
+{
+  "label": "enemies",
+  "file": "petal-panic/assets/jackolantern_sheet.png",
+  "cropped_path": "petal-panic/assets/enemies",
+  "rows": 3,
+  "cols": 5,
+  "description": "Jack-O-Lantern pumpkin clown enemy, 3 actions x 5 frames (roll/launch/explode)",
+  "original_prompt": "Hand-painted circus-style sprite sheet of \"Jack-O-Lantern\", a sinister jack-o-lantern enemy for a side-scrolling game. Its head is a big glossy orange pumpkin with a classic carved grin \u2014 jagged triangular teeth, glowing yellow-orange eyes, and a crooked nose cut-out that glows from within; a thick dark-green curled stem sprouts from the top, bent into a hook. The pumpkin wears a tattered circus costume: a red-and-cream vertically striped ruffled collar/bodice around its midsection, ragged frilled cuffs and hem in cream with tiny gold beads, and two long black-gloved clawed hands with exaggerated fingers. Its legs are thin dark leather boots with curled pointed toes and small gold bells at the tips. Expression is menacing and theatrical \u2014 a twisted grinning face, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep orange, crimson red, bone/cream white, gold accents, dark browns and greens), dynamic poses, subtle motion smears and speed lines on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action). Each row is one action, left to right:\n\nRow 1 \u2014 Move / Roll (5 frames): the pumpkin sprints across the frame, then tumbles end-over-end into a rolling ball (frames 3-4 show it fully rounded with circular motion-smear trails and a few flying debris bits), then pops back upright into a stride. Legs striding wide, arms pumping with clawed hands, body leaning forward.\n\nRow 2 \u2014 Attack / Launch (5 frames): a leaping, lunging attack \u2014 crouched wind-up -> rising -> apex -> falling toward the player with both clawed arms flung out wide and tan/pink speed-line trails behind, ending in a final impact frame where he slams down low with a splash/burst of orange debris and dust at his feet.\n\nRow 3 \u2014 Death / Explode (5 frames): the pumpkin bursts apart \u2014 frame 1 intact, then progressively cracking open until it detonates into a radial spray of loose orange pumpkin chunks, seeds, and fragments that scatter outward and fade, leaving only drifting shards by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames.",
+  "entities": [{
+    "name": "jackolantern",
+    "anim": "roll",
+    "frames": [
+      {"file": "jackolantern_roll_f1.png", "row": 0, "col": 0, "bbox": [49, 15, 283, 290]},
+      {"file": "jackolantern_roll_f2.png", "row": 0, "col": 1, "bbox": [388, 60, 266, 244]},
+      {"file": "jackolantern_roll_f3.png", "row": 0, "col": 2, "bbox": [682, 68, 267, 234]},
+      {"file": "jackolantern_roll_f4.png", "row": 0, "col": 3, "bbox": [970, 75, 296, 231]},
+      {"file": "jackolantern_roll_f5.png", "row": 0, "col": 4, "bbox": [1299, 15, 297, 290]}
+    ]
+  }, {
+    "name": "jackolantern",
+    "anim": "launch",
+    "frames": [
+      {"file": "jackolantern_launch_f1.png", "row": 1, "col": 0, "bbox": [68, 384, 265, 230]},
+      {"file": "jackolantern_launch_f2.png", "row": 1, "col": 1, "bbox": [373, 384, 230, 232]},
+      {"file": "jackolantern_launch_f3.png", "row": 1, "col": 2, "bbox": [643, 323, 307, 284]},
+      {"file": "jackolantern_launch_f4.png", "row": 1, "col": 3, "bbox": [962, 377, 345, 209]},
+      {"file": "jackolantern_launch_f5.png", "row": 1, "col": 4, "bbox": [1293, 332, 320, 284]}
+    ]
+  }, {
+    "name": "jackolantern",
+    "anim": "explode",
+    "frames": [
+      {"file": "jackolantern_explode_f1.png", "row": 2, "col": 0, "bbox": [48, 637, 300, 294]},
+      {"file": "jackolantern_explode_f2.png", "row": 2, "col": 1, "bbox": [359, 629, 290, 305]},
+      {"file": "jackolantern_explode_f3.png", "row": 2, "col": 2, "bbox": [663, 639, 305, 294]},
+      {"file": "jackolantern_explode_f4.png", "row": 2, "col": 3, "bbox": [975, 622, 310, 314]},
+      {"file": "jackolantern_explode_f5.png", "row": 2, "col": 4, "bbox": [1304, 663, 301, 271]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies",
+    "pass": "/tmp/redo-jackolantern-v1"
+  }
+}

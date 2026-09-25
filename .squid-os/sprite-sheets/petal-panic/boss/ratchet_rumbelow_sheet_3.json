@@ -1,0 +1,24 @@
+{
+  "label": "boss",
+  "file": "petal-panic/assets/ratchet_rumbelow_sheet_3.png",
+  "cropped_path": "petal-panic/assets/boss",
+  "rows": 2,
+  "cols": 3,
+  "description": "Ratchet Rumbelow boss, sheet 3/5 \u2014 6 frames (stomp)",
+  "entities": [{
+    "name": "ratchet_rumbelow",
+    "anim": "stomp",
+    "frames": [
+      {"file": "ratchet_rumbelow_stomp_f1.png", "row": 0, "col": 0, "bbox": [4, 103, 499, 390]},
+      {"file": "ratchet_rumbelow_stomp_f2.png", "row": 0, "col": 1, "bbox": [507, 106, 522, 387]},
+      {"file": "ratchet_rumbelow_stomp_f3.png", "row": 0, "col": 2, "bbox": [1033, 7, 465, 492]},
+      {"file": "ratchet_rumbelow_stomp_f4.png", "row": 1, "col": 0, "bbox": [6, 519, 467, 462]},
+      {"file": "ratchet_rumbelow_stomp_f5.png", "row": 1, "col": 1, "bbox": [504, 567, 524, 410]},
+      {"file": "ratchet_rumbelow_stomp_f6.png", "row": 1, "col": 2, "bbox": [1026, 576, 508, 410]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/boss",
+    "pass": "/tmp/redo-ratchet_rumbelow-stomp-v1"
+  }
+}

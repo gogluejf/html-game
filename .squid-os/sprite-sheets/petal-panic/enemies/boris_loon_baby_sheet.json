@@ -1,0 +1,44 @@
+{
+  "label": "enemies",
+  "file": "petal-panic/assets/boris_loon_baby_sheet.png",
+  "cropped_path": "petal-panic/assets/enemies",
+  "rows": 3,
+  "cols": 5,
+  "description": "Boris Loon Baby bat-clown enemy, 3 actions x 5 frames (fly/attack/death)",
+  "original_prompt": "Hand-painted circus-style sprite sheet of \"Boris Loon Baby\" (Baby Bat), a small sinister flying bat-clown enemy for a side-scrolling game. Its body is a big glossy red-and-white striped clown ball (like a juggling ball / beach-ball) with a classic menacing clown face painted on it: hollow black eye sockets with glowing yellow eyes, a wide grinning mouth full of sharp jagged teeth, a small round red clown nose, and white star shapes scattered across the red panels. On top of the ball sits a tiny red-and-cream striped conical party hat tipped with a gold bell/finial. Around the lower half of the ball is a ruffled collar made of glossy deep-red flower petals (a peony/poppy-like bloom), each petal tipped with a tiny gold bead. Two large dark crimson bat wings sprout from the sides of the ball, membranous with visible finger-bone struts and little gold stars on the wing membranes. Hanging below the ball are two thin spindly legs ending in little red tassel/foot bells. Expression is menacing and theatrical \u2014 a twisted grin, glowing eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone/cream white, gold accents, dark browns), dynamic poses, subtle motion smears and speed lines on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells, plus a narrow left-hand label column (rotated text naming each row's action: \"1. BABY BAT A\", \"2. BABY BAT B\", \"3. BABY BAT C\"). Each row is one action, left to right:\n\nRow 1 \u2014 Fly (5 frames): a hovering flight cycle, the clown ball drifting up and down with its bat wings flapping through a full open->half->open beat, body bobbing gently, legs dangling, a looping hover.\n\nRow 2 \u2014 Attack (5 frames): a lunging shriek attack \u2014 wind-up with a swirling tan/pink motion trail around the ball -> crouch/rise -> the clown face opens into a huge gaping maw with a long tongue and ringed teeth flung out to the right, spraying a burst of red droplets/debris -> follow-through -> recovery back to a ready hover.\n\nRow 3 \u2014 Death (5 frames): the clown ball bursts apart \u2014 frame 1 intact but cracking, then progressively disintegrating into a radial spray of loose red shards, petals, and fragments that scatter outward and fade, leaving only drifting debris by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames.",
+  "entities": [{
+    "name": "boris_loon_baby",
+    "anim": "fly_1",
+    "frames": [
+      {"file": "boris_loon_baby_fly_1_f1.png", "row": 0, "col": 0, "bbox": [17, 71, 301, 255]},
+      {"file": "boris_loon_baby_fly_1_f2.png", "row": 0, "col": 1, "bbox": [322, 95, 299, 240]},
+      {"file": "boris_loon_baby_fly_1_f3.png", "row": 0, "col": 2, "bbox": [636, 99, 262, 240]},
+      {"file": "boris_loon_baby_fly_1_f4.png", "row": 0, "col": 3, "bbox": [913, 72, 314, 259]},
+      {"file": "boris_loon_baby_fly_1_f5.png", "row": 0, "col": 4, "bbox": [1222, 101, 306, 235]}
+    ]
+  }, {
+    "name": "boris_loon_baby",
+    "anim": "fly_2",
+    "frames": [
+      {"file": "boris_loon_baby_fly_2_f1.png", "row": 1, "col": 0, "bbox": [15, 396, 305, 249]},
+      {"file": "boris_loon_baby_fly_2_f2.png", "row": 1, "col": 1, "bbox": [320, 411, 310, 243]},
+      {"file": "boris_loon_baby_fly_2_f3.png", "row": 1, "col": 2, "bbox": [624, 429, 286, 225]},
+      {"file": "boris_loon_baby_fly_2_f4.png", "row": 1, "col": 3, "bbox": [913, 382, 309, 279]},
+      {"file": "boris_loon_baby_fly_2_f5.png", "row": 1, "col": 4, "bbox": [1209, 424, 326, 237]}
+    ]
+  }, {
+    "name": "boris_loon_baby",
+    "anim": "fly_3",
+    "frames": [
+      {"file": "boris_loon_baby_fly_3_f1.png", "row": 2, "col": 0, "bbox": [26, 711, 289, 243]},
+      {"file": "boris_loon_baby_fly_3_f2.png", "row": 2, "col": 1, "bbox": [315, 727, 293, 229]},
+      {"file": "boris_loon_baby_fly_3_f3.png", "row": 2, "col": 2, "bbox": [623, 718, 292, 248]},
+      {"file": "boris_loon_baby_fly_3_f4.png", "row": 2, "col": 3, "bbox": [915, 713, 305, 254]},
+      {"file": "boris_loon_baby_fly_3_f5.png", "row": 2, "col": 4, "bbox": [1212, 722, 312, 244]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies",
+    "pass": "/tmp/redo-boris_loon_baby-v1"
+  }
+}

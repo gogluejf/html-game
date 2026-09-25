@@ -281,47 +281,57 @@ def cmd_screenshot(args):
     print(f"SAVED: {args.output} ({len(data)} bytes)")
 
 
+def _meta_path(state_dir):
+    """Meta file sits at the sprite-sheets/ level, next to the project dir."""
+    state_dir = os.path.normpath(state_dir)
+    return os.path.join(os.path.dirname(state_dir),
+                        os.path.basename(state_dir) + ".meta.json")
+
+
 def cmd_state(args):
-    path = args.state
+    # --state is now a PROJECT DIR under .squid-os/sprite-sheets/, e.g.
+    #   .squid-os/sprite-sheets/petal-panic/
+    # It holds <label>/<sheet>.json (one file per sheet) plus <project>.meta.json.
+    state_dir = os.path.normpath(args.state)
+    if not state_dir.endswith("/"):
+        state_dir += "/"
+    proj = os.path.basename(os.path.normpath(args.state))
+    meta = _meta_path(state_dir)
 
     # --- init subcommand ---
     if args.init:
-        if os.path.exists(path):
-            print(f"ERROR: {path} already exists. Use --set to update.", file=sys.stderr)
+        if os.path.exists(meta):
+            print(f"ERROR: {meta} already exists. Use --set to update.", file=sys.stderr)
             sys.exit(1)
-        state = {
+        meta_data = {
+            "project": proj,
             "chat_url": args.chat_url or None,
-            "style_name": args.style_name or None,
             "palette": [],
             "assets_dir": args.assets_dir or "",
-            "folders": {},
-            "updated": time.strftime("%Y-%m-%dT%H:%M:%S")
+            "updated": time.strftime("%Y-%m-%dT%H:%M:%S"),
         }
-        # fall through: --add-sheet (if given) is processed below, then saved once
-
-    # --- load or error (skip if we just built a fresh state via --init) ---
-    if not args.init:
-        if not os.path.exists(path):
-            print(f"ERROR: {path} does not exist. Run 'state --init' first.", file=sys.stderr)
+        # fall through: --add-sheet (if given) is processed below, then meta saved once
+    else:
+        if args.set and not os.path.exists(meta):
+            print(f"ERROR: {meta} does not exist. Run 'state --init' first.", file=sys.stderr)
             sys.exit(1)
-        with open(path) as f:
-            state = json.load(f)
+        meta_data = json.load(open(meta)) if os.path.exists(meta) else {"project": proj}
 
-    # --- set root fields ---
+    # --- set meta fields ---
     if args.set:
         for kv in args.set:
             key, val = kv.split("=", 1)
             allowed = {"chat_url", "style_name", "palette", "assets_dir"}
             if key not in allowed:
-                print(f"ERROR: cannot set '{key}'. Allowed root fields: {allowed}", file=sys.stderr)
+                print(f"ERROR: cannot set '{key}'. Allowed meta fields: {allowed}", file=sys.stderr)
                 sys.exit(1)
             if key == "palette":
-                state[key] = val.split(",")
+                meta_data[key] = val.split(",")
             else:
-                state[key] = val
-        state["updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+                meta_data[key] = val
+        meta_data["updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
 
-    # --- add-sheet (strict schema) ---
+    # --- add-sheet (strict schema) -> ONE file per sheet ---
     if args.add_sheet:
         parts = dict(kv.split("=", 1) for kv in args.add_sheet)
         name = parts.pop("name")
@@ -368,55 +378,40 @@ def cmd_state(args):
             with open(args.prompt_file) as pf:
                 sheet["original_prompt"] = pf.read().strip()
 
-        # Determine target folder (REQUIRED — sheets always live under folders.<name>)
-        folder = parts.pop("folder", None)
-        if not folder:
-            print(f"ERROR: --add-sheet requires 'folder=<name>' so the sheet lands in "
-                  f"folders.<name>.sheets (the structure render_editor.py reads). "
-                  f"Omitting it would orphan the sheet in a top-level dict the editor ignores.",
+        # Label = the subfolder this sheet lives in (also its editor group).
+        label = parts.pop("label", None)
+        if not label:
+            print(f"ERROR: --add-sheet requires 'label=<name>' so the sheet lands in "
+                  f"<project>/<label>/<sheet>.json (the structure render_editor.py reads).",
                   file=sys.stderr)
             sys.exit(1)
 
+        # cropped_path: where cropped frames land (defaults to <proj>/assets/<label>).
+        cropped = parts.pop("cropped_path", None) or f"{proj}/assets/{label}"
+        sheet["cropped_path"] = cropped
+
         # Reject unknown fields
-        allowed_sheet_fields = {"file", "size", "rows", "cols", "cell", "description", "entities", "original_prompt", "crop"}
+        allowed_sheet_fields = {"file", "size", "rows", "cols", "cell", "description",
+                                "entities", "original_prompt", "crop"}
         extra = set(parts.keys()) - allowed_sheet_fields
         if extra:
             print(f"WARNING: ignoring unknown fields: {extra}", file=sys.stderr)
 
-        # Folder-based, IDEMPOTENT: replace any existing sheet with the same file path.
-        if "folders" not in state:
-            state["folders"] = {}
-        if folder not in state["folders"]:
-            state["folders"][folder] = {"path": "", "sheets": []}
-        bucket = state["folders"][folder]["sheets"]
-        file_path = sheet["file"]
-        replaced = False
-        for i, existing in enumerate(bucket):
-            if existing.get("file") == file_path:
-                bucket[i] = sheet
-                replaced = True
-                break
-        if not replaced:
-            bucket.append(sheet)
-        verb = "replaced" if replaced else "added"
-        print(f"  {verb} sheet '{file_path}' in folders.{folder}")
+        # One file per sheet, IDEMPOTENT: overwrite any existing file with the same name.
+        stem = os.path.splitext(os.path.basename(sheet["file"]))[0]
+        out = os.path.join(state_dir, label, stem + ".json")
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        verb = "replaced" if os.path.exists(out) else "added"
+        with open(out, "w") as f:
+            json.dump(sheet, f, indent=2)
+        print(f"  {verb} sheet '{out}'")
 
-        state["updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
-
-    # --- migrate/clean legacy flat sheets{} (orphaned, not read by render_editor) ---
-    legacy = state.get("sheets")
-    if isinstance(legacy, dict) and legacy:
-        print(f"WARNING: found {len(legacy)} sheet(s) in legacy top-level 'sheets' "
-              f"({list(legacy.keys())}). These are NOT read by render_editor.py. "
-              f"Move them into folders.<name>.sheets manually.", file=sys.stderr)
-    elif isinstance(legacy, dict):
-        del state["sheets"]  # drop empty legacy key
-
-    outdir = os.path.dirname(path)
-    if outdir: os.makedirs(outdir, exist_ok=True)
-    with open(path, "w") as f:
-        json.dump(state, f, indent=2)
-    print(f"STATE SAVED: {path}")
+    # --- save meta (only when it was loaded/created) ---
+    if args.init or args.set:
+        os.makedirs(state_dir, exist_ok=True)
+        with open(meta, "w") as f:
+            json.dump(meta_data, f, indent=2)
+        print(f"META SAVED: {meta}")
 
 
 def main():

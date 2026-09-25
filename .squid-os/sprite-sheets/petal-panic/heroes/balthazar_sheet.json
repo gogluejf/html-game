@@ -1,0 +1,44 @@
+{
+  "label": "heroes",
+  "file": "petal-panic/assets/balthazar_sheet.png",
+  "cropped_path": "petal-panic/assets/heroes",
+  "rows": 3,
+  "cols": 5,
+  "description": "Balthazar tiger ringmaster hero, 3 actions x 5 frames",
+  "original_prompt": "Hand-painted circus-style sprite sheet of \"Balthazar\", an anthropomorphic orange-and-black striped tiger dressed as a ringmaster/master of ceremonies. He wears a fitted black tuxedo jacket with satin lapels, a white dress shirt, a red bow tie, a red sash/sash-tie at the waist, and dark trousers; he has large expressive paws (orange with black stripes and cream claws), a long striped tail, and a confident, theatrical expression. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors, dynamic poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells. Each row is one action, left to right:\n\nRow 1 \u2014 Run cycle (5 frames): full sprint across the frame, contact -> down -> passing -> up -> contact, legs striding wide, tail streaming behind, body leaning forward.\n\nRow 2 \u2014 Jump/leap arc (5 frames): rising -> apex -> falling, both arms raised in a triumphant ringmaster gesture, coat tails flaring, big bounding leap.\n\nRow 3 \u2014 Attack with cane (5 frames): wind-up -> overhead swing -> follow-through -> impact -> recovery, wielding a gold-tipped cane/baton that leaves a glowing tan whip-like motion trail; final frame shows him standing upright resting on the cane, composed.\n\nCharacter faces right, consistent proportions and palette across all 15 frames.",
+  "entities": [{
+    "name": "balthazar",
+    "anim": "run",
+    "frames": [
+      {"file": "balthazar_run_f1.png", "row": 0, "col": 0, "bbox": [12, 15, 311, 291]},
+      {"file": "balthazar_run_f2.png", "row": 0, "col": 1, "bbox": [336, 19, 284, 288]},
+      {"file": "balthazar_run_f3.png", "row": 0, "col": 2, "bbox": [649, 19, 305, 289]},
+      {"file": "balthazar_run_f4.png", "row": 0, "col": 3, "bbox": [977, 18, 297, 290]},
+      {"file": "balthazar_run_f5.png", "row": 0, "col": 4, "bbox": [1304, 17, 314, 291]}
+    ]
+  }, {
+    "name": "balthazar",
+    "anim": "jump",
+    "frames": [
+      {"file": "balthazar_jump_f1.png", "row": 1, "col": 0, "bbox": [7, 313, 294, 323]},
+      {"file": "balthazar_jump_f2.png", "row": 1, "col": 1, "bbox": [339, 319, 291, 297]},
+      {"file": "balthazar_jump_f3.png", "row": 1, "col": 2, "bbox": [657, 335, 313, 301]},
+      {"file": "balthazar_jump_f4.png", "row": 1, "col": 3, "bbox": [985, 323, 291, 314]},
+      {"file": "balthazar_jump_f5.png", "row": 1, "col": 4, "bbox": [1311, 325, 301, 312]}
+    ]
+  }, {
+    "name": "balthazar",
+    "anim": "attack",
+    "frames": [
+      {"file": "balthazar_attack_f1.png", "row": 2, "col": 0, "bbox": [0, 655, 329, 283]},
+      {"file": "balthazar_attack_f2.png", "row": 2, "col": 1, "bbox": [327, 642, 321, 299]},
+      {"file": "balthazar_attack_f3.png", "row": 2, "col": 2, "bbox": [644, 646, 375, 288]},
+      {"file": "balthazar_attack_f4.png", "row": 2, "col": 3, "bbox": [975, 665, 327, 284]},
+      {"file": "balthazar_attack_f5.png", "row": 2, "col": 4, "bbox": [1258, 637, 325, 320]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes",
+    "pass": "/tmp/jumpfix-bal-v1"
+  }
+}

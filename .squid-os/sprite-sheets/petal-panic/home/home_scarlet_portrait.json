@@ -1,0 +1,19 @@
+{
+  "label": "home",
+  "file": "petal-panic/assets/home_scarlet_portrait.png",
+  "cropped_path": "petal-panic/assets/home",
+  "rows": 1,
+  "cols": 1,
+  "description": "Scarlet Vale aerialist portrait (single image)",
+  "entities": [{
+    "name": "home_scarlet_portrait",
+    "anim": "idle",
+    "frames": [
+      {"file": "home_scarlet_portrait_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 1024, 1536]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/home",
+    "pass": "opaque-copy"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "label": "bosses",
+  "file": "abyss-qwen/assets/bosses_sheet.png",
+  "cropped_path": "abyss-qwen/assets/bosses",
+  "rows": 3,
+  "cols": 4,
+  "description": "3 large boss creatures, 4 animation frames each",
+  "original_prompt": "Now generate a sprite sheet of 3 huge retro arcade BOSS sprites for the SAME game, continuing the exact same AQUATIC / deep-sea alien theme and pixel-art style as the enemy sheet above (same neon palette, same black background, same crisp 16-bit look). These are large menacing final-boss creatures, bigger and more detailed than the regular enemies. LAYOUT: 3 rows x 4 columns on a solid pure black background. Each row is one unique boss; the 4 columns in that row are its 4 animation frames shown left-to-right. All cells exactly the same size (512x512 px), evenly spaced, no text, no labels, no borders between cells. Image 2048 wide x 1536 tall. STYLE: identical to the enemy sheet - crisp 16-bit neo-arcade pixel art, underwater bioluminescent neon colors (cyan, teal, magenta, poison-green, orange, red) glowing against dark abyss-black. Sharp hard edges, NO anti-aliasing, NO gradients, flat shading with highlight + shadow steps, high contrast, symmetrical, front-facing, no perspective. Glowing accent eyes/cores. 1px dark rim outline. Large intimidating bosses filling most of each cell. ROWS (top to bottom), 4 distinct loopable frames each: 1. GIANT EVIL OCTOPUS - massive purple/magenta octopus with many long writhing tentacles, huge glowing red eyes, menacing open maw with teeth. Frames: tentacle spread cycle (wide -> mid -> tight -> mid). 2. MEGALODON LEVIATHAN SHARK - colossal armored cyan/teal mega-shark with metallic plating, glowing green eyes, rows of huge teeth, dorsal fin. Frames: jaw open/close + fin flick cycle (closed -> opening -> wide open -> closing). 3. ABYSSAL KRAKEN DREADNOUGHT - enormous dark teal kraken with thick armored tentacles, multiple glowing orange eyes, crown of spikes, central glowing core. Frames: tentacle wave + core glow pulse cycle (phase 1 -> 2 -> 3 -> 4). Frames within each row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable, consistent scale so all three read as same-tier bosses matching the enemy sheet style.",
+  "entities": [{
+    "name": "boss",
+    "anim": "octopus",
+    "frames": [
+      {"file": "boss_octopus_f1.png", "row": 0, "col": 0, "bbox": [2, 8, 358, 348]},
+      {"file": "boss_octopus_f2.png", "row": 0, "col": 1, "bbox": [375, 3, 338, 345]},
+      {"file": "boss_octopus_f3.png", "row": 0, "col": 2, "bbox": [752, 4, 305, 341]},
+      {"file": "boss_octopus_f4.png", "row": 0, "col": 3, "bbox": [1096, 3, 342, 340]}
+    ]
+  }, {
+    "name": "boss",
+    "anim": "shark",
+    "frames": [
+      {"file": "boss_shark_f1.png", "row": 1, "col": 0, "bbox": [5, 354, 353, 377]},
+      {"file": "boss_shark_f2.png", "row": 1, "col": 1, "bbox": [365, 356, 353, 374]},
+      {"file": "boss_shark_f3.png", "row": 1, "col": 2, "bbox": [728, 356, 354, 374]},
+      {"file": "boss_shark_f4.png", "row": 1, "col": 3, "bbox": [1087, 356, 356, 375]}
+    ]
+  }, {
+    "name": "boss",
+    "anim": "kraken",
+    "frames": [
+      {"file": "boss_kraken_f1.png", "row": 2, "col": 0, "bbox": [4, 690, 351, 393]},
+      {"file": "boss_kraken_f2.png", "row": 2, "col": 1, "bbox": [366, 690, 353, 393]},
+      {"file": "boss_kraken_f3.png", "row": 2, "col": 2, "bbox": [729, 690, 353, 383]},
+      {"file": "boss_kraken_f4.png", "row": 2, "col": 3, "bbox": [1090, 690, 355, 394]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "abyss-qwen/assets/bosses",
+    "pass": "/home/goglue/tmp/abyss-final-bosses"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "label": "boss",
+  "file": "petal-panic/assets/grim_vertigo_sheet.png",
+  "cropped_path": "petal-panic/assets/boss",
+  "rows": 4,
+  "cols": 4,
+  "description": "Grim Vertigo carousel mid-boss, 4 actions x 4 frames (idle/rotate, angry/transform, attack/hazards, death)",
+  "entities": [{
+    "name": "grim_vertigo",
+    "anim": "idle",
+    "frames": [
+      {"file": "grim_vertigo_idle_f1.png", "row": 0, "col": 0, "bbox": [138, 0, 257, 253]},
+      {"file": "grim_vertigo_idle_f2.png", "row": 0, "col": 1, "bbox": [477, 0, 260, 254]},
+      {"file": "grim_vertigo_idle_f3.png", "row": 0, "col": 2, "bbox": [808, 0, 280, 253]},
+      {"file": "grim_vertigo_idle_f4.png", "row": 0, "col": 3, "bbox": [1170, 0, 257, 253]}
+    ]
+  }, {
+    "name": "grim_vertigo",
+    "anim": "angry",
+    "frames": [
+      {"file": "grim_vertigo_angry_f1.png", "row": 1, "col": 0, "bbox": [120, 246, 288, 250]},
+      {"file": "grim_vertigo_angry_f2.png", "row": 1, "col": 1, "bbox": [455, 247, 301, 249]},
+      {"file": "grim_vertigo_angry_f3.png", "row": 1, "col": 2, "bbox": [793, 246, 319, 250]},
+      {"file": "grim_vertigo_angry_f4.png", "row": 1, "col": 3, "bbox": [1158, 246, 311, 250]}
+    ]
+  }, {
+    "name": "grim_vertigo",
+    "anim": "attack",
+    "frames": [
+      {"file": "grim_vertigo_attack_f1.png", "row": 2, "col": 0, "bbox": [133, 487, 283, 247]},
+      {"file": "grim_vertigo_attack_f2.png", "row": 2, "col": 1, "bbox": [475, 487, 277, 247]},
+      {"file": "grim_vertigo_attack_f3.png", "row": 2, "col": 2, "bbox": [774, 487, 332, 247]},
+      {"file": "grim_vertigo_attack_f4.png", "row": 2, "col": 3, "bbox": [1143, 487, 328, 248]}
+    ]
+  }, {
+    "name": "grim_vertigo",
+    "anim": "death",
+    "frames": [
+      {"file": "grim_vertigo_death_f1.png", "row": 3, "col": 0, "bbox": [126, 728, 252, 271]},
+      {"file": "grim_vertigo_death_f2.png", "row": 3, "col": 1, "bbox": [421, 731, 319, 268]},
+      {"file": "grim_vertigo_death_f3.png", "row": 3, "col": 2, "bbox": [751, 728, 363, 280]},
+      {"file": "grim_vertigo_death_f4.png", "row": 3, "col": 3, "bbox": [1113, 746, 394, 263]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/boss",
+    "pass": "/tmp/redo-grim_vertigo-v1"
+  }
+}

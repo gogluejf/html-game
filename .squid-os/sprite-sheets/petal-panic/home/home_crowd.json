@@ -1,0 +1,19 @@
+{
+  "label": "home",
+  "file": "petal-panic/assets/home_crowd.png",
+  "cropped_path": "petal-panic/assets/home",
+  "rows": 1,
+  "cols": 1,
+  "description": "Audience crowd silhouette parallax layer (single image)",
+  "entities": [{
+    "name": "home_crowd",
+    "anim": "idle",
+    "frames": [
+      {"file": "home_crowd_f1.png", "row": 0, "col": 0, "bbox": [0, 555, 1535, 469]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/home",
+    "pass": "/tmp/redo-single"
+  }
+}

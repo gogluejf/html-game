@@ -1,0 +1,24 @@
+{
+  "label": "boss",
+  "file": "petal-panic/assets/ratchet_rumbelow_sheet_2.png",
+  "cropped_path": "petal-panic/assets/boss",
+  "rows": 2,
+  "cols": 3,
+  "description": "Ratchet Rumbelow boss, sheet 2/5 \u2014 6 frames (ground_slam x2 rows)",
+  "entities": [{
+    "name": "ratchet_rumbelow",
+    "anim": "ground_slam",
+    "frames": [
+      {"file": "ratchet_rumbelow_ground_slam_f1.png", "row": 0, "col": 0, "bbox": [10, 104, 493, 391]},
+      {"file": "ratchet_rumbelow_ground_slam_f2.png", "row": 0, "col": 1, "bbox": [541, 41, 485, 461]},
+      {"file": "ratchet_rumbelow_ground_slam_f3.png", "row": 0, "col": 2, "bbox": [1049, 45, 487, 459]},
+      {"file": "ratchet_rumbelow_ground_slam_f4.png", "row": 1, "col": 0, "bbox": [2, 541, 509, 400]},
+      {"file": "ratchet_rumbelow_ground_slam_f5.png", "row": 1, "col": 1, "bbox": [509, 570, 512, 407]},
+      {"file": "ratchet_rumbelow_ground_slam_f6.png", "row": 1, "col": 2, "bbox": [1018, 590, 518, 382]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/boss",
+    "pass": "/tmp/redo-ratchet_rumbelow-ground_slam-v1"
+  }
+}

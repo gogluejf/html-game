@@ -1,0 +1,43 @@
+{
+  "label": "boss",
+  "file": "petal-panic/assets/colonel_carrot_sheet_3.png",
+  "cropped_path": "petal-panic/assets/boss",
+  "rows": 3,
+  "cols": 5,
+  "description": "Colonel Carrot final boss (carrot-bodied colonel on red scooter) sheet 3/4, 3 actions x 5 frames (sulk, punch, defeat)",
+  "entities": [{
+    "name": "colonel_carrot",
+    "anim": "sulk",
+    "frames": [
+      {"file": "colonel_carrot_sulk_f1.png", "row": 0, "col": 0, "bbox": [7, 65, 275, 282]},
+      {"file": "colonel_carrot_sulk_f2.png", "row": 0, "col": 1, "bbox": [305, 12, 291, 319]},
+      {"file": "colonel_carrot_sulk_f3.png", "row": 0, "col": 2, "bbox": [617, 8, 271, 311]},
+      {"file": "colonel_carrot_sulk_f4.png", "row": 0, "col": 3, "bbox": [919, 17, 265, 326]},
+      {"file": "colonel_carrot_sulk_f5.png", "row": 0, "col": 4, "bbox": [1243, 70, 282, 280]}
+    ]
+  }, {
+    "name": "colonel_carrot",
+    "anim": "punch",
+    "frames": [
+      {"file": "colonel_carrot_punch_f1.png", "row": 1, "col": 0, "bbox": [2, 350, 259, 314]},
+      {"file": "colonel_carrot_punch_f2.png", "row": 1, "col": 1, "bbox": [318, 362, 250, 302]},
+      {"file": "colonel_carrot_punch_f3.png", "row": 1, "col": 2, "bbox": [553, 360, 314, 303]},
+      {"file": "colonel_carrot_punch_f4.png", "row": 1, "col": 3, "bbox": [839, 361, 368, 302]},
+      {"file": "colonel_carrot_punch_f5.png", "row": 1, "col": 4, "bbox": [1231, 375, 299, 289]}
+    ]
+  }, {
+    "name": "colonel_carrot",
+    "anim": "defeat",
+    "frames": [
+      {"file": "colonel_carrot_defeat_f1.png", "row": 2, "col": 0, "bbox": [1, 666, 264, 322]},
+      {"file": "colonel_carrot_defeat_f2.png", "row": 2, "col": 1, "bbox": [305, 669, 278, 319]},
+      {"file": "colonel_carrot_defeat_f3.png", "row": 2, "col": 2, "bbox": [615, 658, 271, 335]},
+      {"file": "colonel_carrot_defeat_f4.png", "row": 2, "col": 3, "bbox": [911, 657, 298, 342]},
+      {"file": "colonel_carrot_defeat_f5.png", "row": 2, "col": 4, "bbox": [1173, 723, 361, 263]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/boss",
+    "pass": "/tmp/redo-colonel_carrot_3-v1"
+  }
+}

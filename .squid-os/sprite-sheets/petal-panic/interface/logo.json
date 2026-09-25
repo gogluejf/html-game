@@ -1,0 +1,19 @@
+{
+  "label": "interface",
+  "file": "petal-panic/assets/logo.png",
+  "cropped_path": "petal-panic/assets/interface",
+  "rows": 1,
+  "cols": 1,
+  "description": "Game logo (single image)",
+  "entities": [{
+    "name": "logo",
+    "anim": "idle",
+    "frames": [
+      {"file": "logo_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 1536, 994]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/interface",
+    "pass": "/tmp/redo-single"
+  }
+}

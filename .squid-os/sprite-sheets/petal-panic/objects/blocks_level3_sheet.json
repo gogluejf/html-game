@@ -1,0 +1,36 @@
+{
+  "label": "objects",
+  "file": "petal-panic/assets/blocks_level3_sheet.png",
+  "cropped_path": "petal-panic/assets/objects",
+  "size": "1536x2048",
+  "rows": 2,
+  "cols": 3,
+  "cell": 512,
+  "description": "Level 3 block tiles combined: row 1 with props, row 2 naked (small/medium/large)",
+  "entities": [{
+    "name": "blocks_level3",
+    "anim": "single",
+    "frames": [
+      {"file": "blocks_level3_single_f1.png", "row": 0, "col": 0, "bbox": [29, 572, 471, 372]},
+      {"file": "blocks_level3_single_f2.png", "row": 1, "col": 0, "bbox": [49, 1620, 466, 319]}
+    ]
+  }, {
+    "name": "blocks_level3",
+    "anim": "double",
+    "frames": [
+      {"file": "blocks_level3_double_f1.png", "row": 0, "col": 1, "bbox": [517, 300, 483, 644]},
+      {"file": "blocks_level3_double_f2.png", "row": 1, "col": 1, "bbox": [540, 1414, 451, 525]}
+    ]
+  }, {
+    "name": "blocks_level3",
+    "anim": "triple",
+    "frames": [
+      {"file": "blocks_level3_triple_f1.png", "row": 0, "col": 2, "bbox": [1013, 26, 491, 918]},
+      {"file": "blocks_level3_triple_f2.png", "row": 1, "col": 2, "bbox": [1009, 1194, 495, 746]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects",
+    "pass": "/tmp/blocks-l3-v1"
+  }
+}

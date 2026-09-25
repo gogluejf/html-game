@@ -1,0 +1,23 @@
+{
+  "label": "player",
+  "file": "abyss-qwen/assets/player_sheet.png",
+  "cropped_path": "abyss-qwen/assets/player",
+  "rows": 1,
+  "cols": 4,
+  "description": "Player hero ship - Manta Ray fighter viewed from below, 4 wing-fin animation frames",
+  "original_prompt": "Generate a sprite sheet of the PLAYER HERO ship for this same aquatic Galaga game. Same 16-bit neon pixel-art style and black background as the other sheets. THE HERO: A sleek MANTA RAY fighter craft, viewed from BELOW (so we see its underside), pointing UP (nose at top). It has wide sweeping wings/fins that look like a spaceship when seen from below. Exotic color scheme: brown/bronze body with a blue/cyan gradient toward the wing tips, scattered small glowing dots (bioluminescent spots) across the body. A bright cyan cockpit/core glow in the center. Two small thruster glows at the rear. LAYOUT: 1 row x 4 columns on pure black background. The 4 columns are 4 animation frames showing the manta ray's wing fins flapping/swimming: frame 1 = wings fully spread wide, frame 2 = wings slightly swept back, frame 3 = wings most swept (narrow), frame 4 = wings slightly swept back. Subtle but clearly distinct fin positions between frames. Each cell 256x256px, evenly spaced, no text/borders. Image 1024x256 pixels. STYLE: crisp 16-bit neo-arcade pixel art, hard edges, no anti-aliasing, flat shading + highlight steps, high contrast, symmetrical, front-facing (from below looking up). Glowing accents. 1px dark rim outline. The manta should read clearly as a fast elegant player ship.",
+  "entities": [{
+    "name": "player",
+    "anim": "manta_ray",
+    "frames": [
+      {"file": "player_manta_ray_f1.png", "row": 0, "col": 0, "bbox": [0, 99, 560, 531]},
+      {"file": "player_manta_ray_f2.png", "row": 0, "col": 1, "bbox": [584, 85, 510, 545]},
+      {"file": "player_manta_ray_f3.png", "row": 0, "col": 2, "bbox": [1221, 84, 318, 546]},
+      {"file": "player_manta_ray_f4.png", "row": 0, "col": 3, "bbox": [1657, 99, 509, 531]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "abyss-qwen/assets/player",
+    "pass": "/home/goglue/tmp/abyss-final-player"
+  }
+}

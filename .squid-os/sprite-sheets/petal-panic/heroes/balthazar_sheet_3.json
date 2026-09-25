@@ -1,0 +1,26 @@
+{
+  "label": "heroes",
+  "file": "petal-panic/assets/balthazar_sheet_3.png",
+  "cropped_path": "petal-panic/assets/heroes",
+  "rows": 1,
+  "cols": 8,
+  "description": "Balthazar tiger ringmaster hero sheet 3, crouch x 8 frames",
+  "entities": [{
+    "name": "balthazar",
+    "anim": "crouch",
+    "frames": [
+      {"file": "balthazar_crouch_f1.png", "row": 0, "col": 0, "bbox": [21, 143, 268, 437]},
+      {"file": "balthazar_crouch_f2.png", "row": 0, "col": 1, "bbox": [266, 175, 294, 407]},
+      {"file": "balthazar_crouch_f3.png", "row": 0, "col": 2, "bbox": [539, 254, 290, 329]},
+      {"file": "balthazar_crouch_f4.png", "row": 0, "col": 3, "bbox": [819, 309, 278, 278]},
+      {"file": "balthazar_crouch_f5.png", "row": 0, "col": 4, "bbox": [1090, 305, 275, 281]},
+      {"file": "balthazar_crouch_f6.png", "row": 0, "col": 5, "bbox": [1356, 253, 267, 333]},
+      {"file": "balthazar_crouch_f7.png", "row": 0, "col": 6, "bbox": [1612, 175, 289, 407]},
+      {"file": "balthazar_crouch_f8.png", "row": 0, "col": 7, "bbox": [1883, 142, 262, 440]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes",
+    "pass": "/tmp/redo-balthazar-s3-v1"
+  }
+}

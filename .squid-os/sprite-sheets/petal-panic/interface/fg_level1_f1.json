@@ -1,0 +1,15 @@
+{
+  "label": "interface",
+  "file": "petal-panic/assets/interface/fg_level1_f1.png",
+  "cropped_path": "petal-panic/assets/interface",
+  "rows": 1,
+  "cols": 1,
+  "description": "Level 1 foreground parallax layer: circus props on stage platform with red bunting (single image)",
+  "entities": [{
+    "name": "bg_level1_foreground",
+    "anim": "idle",
+    "frames": [
+      {"file": "fg_level1_f1.png", "row": null, "col": null, "bbox": null}
+    ]
+  }]
+}

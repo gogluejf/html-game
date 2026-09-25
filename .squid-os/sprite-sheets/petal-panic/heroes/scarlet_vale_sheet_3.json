@@ -1,0 +1,26 @@
+{
+  "label": "heroes",
+  "file": "petal-panic/assets/scarlet_vale_sheet_3.png",
+  "cropped_path": "petal-panic/assets/heroes",
+  "rows": 1,
+  "cols": 8,
+  "description": "Scarlet Vale hero sheet 3, crouch x 8 frames",
+  "entities": [{
+    "name": "scarlet_vale",
+    "anim": "crouch",
+    "frames": [
+      {"file": "scarlet_vale_crouch_f1.png", "row": 0, "col": 0, "bbox": [24, 143, 231, 458]},
+      {"file": "scarlet_vale_crouch_f2.png", "row": 0, "col": 1, "bbox": [275, 217, 264, 382]},
+      {"file": "scarlet_vale_crouch_f3.png", "row": 0, "col": 2, "bbox": [545, 265, 276, 335]},
+      {"file": "scarlet_vale_crouch_f4.png", "row": 0, "col": 3, "bbox": [825, 314, 266, 286]},
+      {"file": "scarlet_vale_crouch_f5.png", "row": 0, "col": 4, "bbox": [1089, 314, 259, 287]},
+      {"file": "scarlet_vale_crouch_f6.png", "row": 0, "col": 5, "bbox": [1355, 262, 259, 339]},
+      {"file": "scarlet_vale_crouch_f7.png", "row": 0, "col": 6, "bbox": [1625, 218, 249, 382]},
+      {"file": "scarlet_vale_crouch_f8.png", "row": 0, "col": 7, "bbox": [1913, 143, 225, 458]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes",
+    "pass": "/tmp/redo-scarlet_vale-sheet3-v1"
+  }
+}

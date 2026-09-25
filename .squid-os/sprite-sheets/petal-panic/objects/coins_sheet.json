@@ -1,0 +1,40 @@
+{
+  "label": "objects",
+  "file": "petal-panic/assets/coins_sheet.png",
+  "cropped_path": "petal-panic/assets/objects",
+  "rows": 3,
+  "cols": 4,
+  "description": "Circus coins (bronze small, silver medium, gold large), 3 rows x 4 cols flip animation (front, edge, back, edge)",
+  "entities": [{
+    "name": "coin_bronze",
+    "anim": "flip",
+    "frames": [
+      {"file": "coin_bronze_f1.png", "row": 0, "col": 0, "bbox": [262, 76, 196, 192]},
+      {"file": "coin_bronze_f2.png", "row": 0, "col": 1, "bbox": [602, 58, 84, 219]},
+      {"file": "coin_bronze_f3.png", "row": 0, "col": 2, "bbox": [827, 62, 215, 215]},
+      {"file": "coin_bronze_f4.png", "row": 0, "col": 3, "bbox": [1182, 58, 85, 219]}
+    ]
+  }, {
+    "name": "coin_silver",
+    "anim": "flip_2",
+    "frames": [
+      {"file": "coin_silver_f1.png", "row": 1, "col": 0, "bbox": [239, 343, 260, 258]},
+      {"file": "coin_silver_f2.png", "row": 1, "col": 1, "bbox": [589, 332, 106, 273]},
+      {"file": "coin_silver_f3.png", "row": 1, "col": 2, "bbox": [791, 331, 284, 279]},
+      {"file": "coin_silver_f4.png", "row": 1, "col": 3, "bbox": [1176, 331, 109, 273]}
+    ]
+  }, {
+    "name": "coin_gold",
+    "anim": "flip_3",
+    "frames": [
+      {"file": "coin_gold_f1.png", "row": 2, "col": 0, "bbox": [214, 638, 322, 322]},
+      {"file": "coin_gold_f2.png", "row": 2, "col": 1, "bbox": [585, 626, 126, 339]},
+      {"file": "coin_gold_f3.png", "row": 2, "col": 2, "bbox": [767, 630, 332, 333]},
+      {"file": "coin_gold_f4.png", "row": 2, "col": 3, "bbox": [1167, 627, 129, 338]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects",
+    "pass": "/home/goglue/tmp/coins-v1"
+  }
+}

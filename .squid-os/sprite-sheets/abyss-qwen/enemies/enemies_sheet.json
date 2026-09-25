@@ -1,0 +1,68 @@
+{
+  "label": "enemies",
+  "file": "abyss-qwen/assets/enemies_sheet.png",
+  "cropped_path": "abyss-qwen/assets/enemies",
+  "rows": 6,
+  "cols": 4,
+  "description": "6 aquatic enemy types, 4 animation frames each",
+  "original_prompt": "Generate a sprite sheet of retro arcade space-invasion enemy sprites for a Galaga-style game, but with an AQUATIC / deep-sea alien theme. LAYOUT: 6 rows x 4 columns on a solid pure black background. Each row is one unique aquatic enemy; the 4 columns in that row are its 4 animation frames shown left-to-right. All cells exactly the same size (256x256 px), evenly spaced, no text, no labels, no borders between cells. Square image 1024 wide x 1536 tall. STYLE: crisp 16-bit neo-arcade pixel art, underwater bioluminescent neon colors (cyan, teal, magenta, poison-green, orange) glowing against dark abyss-black. Sharp hard edges, NO anti-aliasing, NO gradients, flat shading with one highlight + one shadow step, high contrast, symmetrical, front-facing, no perspective. Consistent style across every sprite. Each enemy centered in its cell with consistent scale. Add glowing accent cores/eyes. 1px dark rim outline so sprites pop off black. ROWS (top to bottom), 4 distinct loopable frames each: 1. Pufferfish (spiky round fish) - puff cycle: small -> mid -> big with spikes out -> mid 2. Flying Mantis Crab (hovering crustacean with big pincers) - pincers: open -> closing -> snap shut -> opening 3. Jellyfish (dome with trailing tentacles) - tentacle sway: phase 1 -> 2 -> 3 -> 4 4. Anglerfish (dark fish with glowing lure on stalk and big toothy jaw) - jaw: open -> biting -> closed -> lure flicker 5. Mech-Shark / Orca (sleek armored fast diver) - fin flick + mouth open/close cycle, 4 poses 6. Sea Dragon (horned serpent-like beast with small tentacles) - tentacle wave + horn glow pulse, 4 phases. Frames within each row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable.",
+  "entities": [{
+    "name": "enemy",
+    "anim": "pufferfish",
+    "frames": [
+      {"file": "enemy_pufferfish_f1.png", "row": 0, "col": 0, "bbox": [36, 54, 182, 165]},
+      {"file": "enemy_pufferfish_f2.png", "row": 0, "col": 1, "bbox": [280, 31, 208, 201]},
+      {"file": "enemy_pufferfish_f3.png", "row": 0, "col": 2, "bbox": [533, 11, 214, 233]},
+      {"file": "enemy_pufferfish_f4.png", "row": 0, "col": 3, "bbox": [797, 35, 198, 193]}
+    ]
+  }, {
+    "name": "enemy",
+    "anim": "mantis_crab",
+    "frames": [
+      {"file": "enemy_mantis_crab_f1.png", "row": 1, "col": 0, "bbox": [6, 266, 246, 240]},
+      {"file": "enemy_mantis_crab_f2.png", "row": 1, "col": 1, "bbox": [279, 267, 209, 251]},
+      {"file": "enemy_mantis_crab_f3.png", "row": 1, "col": 2, "bbox": [533, 267, 214, 201]},
+      {"file": "enemy_mantis_crab_f4.png", "row": 1, "col": 3, "bbox": [773, 268, 245, 204]}
+    ]
+  }, {
+    "name": "enemy",
+    "anim": "jellyfish",
+    "frames": [
+      {"file": "enemy_jellyfish_f1.png", "row": 2, "col": 0, "bbox": [21, 481, 184, 262]},
+      {"file": "enemy_jellyfish_f2.png", "row": 2, "col": 1, "bbox": [305, 485, 179, 250]},
+      {"file": "enemy_jellyfish_f3.png", "row": 2, "col": 2, "bbox": [564, 484, 152, 265]},
+      {"file": "enemy_jellyfish_f4.png", "row": 2, "col": 3, "bbox": [819, 481, 188, 262]}
+    ]
+  }, {
+    "name": "enemy",
+    "anim": "anglerfish",
+    "frames": [
+      {"file": "enemy_anglerfish_f1.png", "row": 3, "col": 0, "bbox": [21, 751, 227, 222]},
+      {"file": "enemy_anglerfish_f2.png", "row": 3, "col": 1, "bbox": [276, 759, 208, 217]},
+      {"file": "enemy_anglerfish_f3.png", "row": 3, "col": 2, "bbox": [531, 764, 226, 208]},
+      {"file": "enemy_anglerfish_f4.png", "row": 3, "col": 3, "bbox": [788, 751, 226, 222]}
+    ]
+  }, {
+    "name": "enemy",
+    "anim": "mech_shark",
+    "frames": [
+      {"file": "enemy_mech_shark_f1.png", "row": 4, "col": 0, "bbox": [10, 988, 237, 223]},
+      {"file": "enemy_mech_shark_f2.png", "row": 4, "col": 1, "bbox": [266, 988, 236, 220]},
+      {"file": "enemy_mech_shark_f3.png", "row": 4, "col": 2, "bbox": [522, 988, 238, 221]},
+      {"file": "enemy_mech_shark_f4.png", "row": 4, "col": 3, "bbox": [777, 988, 237, 223]}
+    ]
+  }, {
+    "name": "enemy",
+    "anim": "sea_dragon",
+    "frames": [
+      {"file": "enemy_sea_dragon_f1.png", "row": 5, "col": 0, "bbox": [9, 1237, 238, 284]},
+      {"file": "enemy_sea_dragon_f2.png", "row": 5, "col": 1, "bbox": [266, 1227, 237, 298]},
+      {"file": "enemy_sea_dragon_f3.png", "row": 5, "col": 2, "bbox": [524, 1227, 232, 297]},
+      {"file": "enemy_sea_dragon_f4.png", "row": 5, "col": 3, "bbox": [777, 1237, 238, 287]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "abyss-qwen/assets/enemies",
+    "pass": "/home/goglue/tmp/abyss-final-enemies"
+  }
+}

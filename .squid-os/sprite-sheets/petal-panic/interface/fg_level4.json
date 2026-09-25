@@ -1,0 +1,19 @@
+{
+  "label": "interface",
+  "file": "petal-panic/assets/fg_level4.png",
+  "cropped_path": "petal-panic/assets/interface",
+  "rows": 1,
+  "cols": 1,
+  "description": "Foreground strip level 4",
+  "entities": [{
+    "name": "fg_level4",
+    "anim": "idle",
+    "frames": [
+      {"file": "fg_level4_f1.png", "row": 0, "col": 0, "bbox": [0, 59, 2172, 641]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/interface",
+    "pass": "/tmp/redo-single-fg-level4"
+  }
+}

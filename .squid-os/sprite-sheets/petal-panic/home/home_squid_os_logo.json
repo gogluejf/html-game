@@ -1,0 +1,19 @@
+{
+  "label": "home",
+  "file": "petal-panic/assets/home_squid_os_logo.png",
+  "cropped_path": "petal-panic/assets/home",
+  "rows": 1,
+  "cols": 1,
+  "description": "Squid OS logo for credits splash (single image)",
+  "entities": [{
+    "name": "squid_os_logo",
+    "anim": "idle",
+    "frames": [
+      {"file": "squid_os_logo_f1.png", "row": 0, "col": 0, "bbox": [12, 12, 1733, 558]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/home",
+    "pass": "/tmp/redo-single"
+  }
+}

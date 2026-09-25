@@ -8,7 +8,7 @@ allowed-tools: bash read_file write_file inspect_media open
 Crops animation frames from transparent-background sprite sheets by discovering which foreground pixels belong to each frame, then deriving rectangles — never the other way around. Pipeline: vision assessment of expected structure → alpha mask → connected components → row grouping → per-row frame clustering (constrained by expected counts) → component ownership including detached satellites → bounding-rect crops → deterministic validation (counts, edge-touching, orphans). Every stage emits a readable trace plus optional JSON for debugging and state recording. Vision is used only for the initial structural assessment and for flagged low-confidence cases; all pixel work is deterministic.
 
 ## Variables
-- `<skill-folder>` — directory containing this SKILL.md\n- `<working-dir>` — the REPO ROOT (e.g. ~/src/html-game), NOT the game subfolder\n- `<state-file>` — sprite-gen state file <working-dir>/.squid-os/sprite-gen/state-<PROJECT>.json (source of truth for sheet paths, rows/cols, entity names)\n- `<assets-dir>` — project asset folder from state (assets_dir, e.g. petal-panic/assets)
+- `<skill-folder>` — directory containing this SKILL.md\n- `<working-dir>` — the REPO ROOT (e.g. ~/src/html-game), NOT the game subfolder\n- `<sheets-root>` — <working-dir>/.squid-os/sprite-sheets/ — one dir per project, each holding `<label>/<sheet>.json` (ONE file per sheet) plus a sibling `<project>.meta.json`\n- `<sheet-file>` — the single sheet json for the sheet being cropped, e.g. .squid-os/sprite-sheets/<PROJECT>/<label>/<sheet>.json (source of truth for that sheet's paths, rows/cols, entity names)\n- `<assets-dir>` — project asset folder from meta (assets_dir, e.g. petal-panic/assets)
 
 ## Instructions
 **PRIMARY METHOD:** the deterministic CLI does all pixel math — you supply the structural assessment and do verification:
@@ -68,34 +68,35 @@ Use @tool:open on the destination folder so the user can review.
 
 ### 5. Record crop params in state (via CLI — NEVER hand-edit JSON)
 
-The extract step MUST be run with `--json <out-dir>/result.json`. After frames are verified and installed, record the exact per-frame coordinates:
+The extract step MUST be run with `--json <out-dir>/result.json`. After frames are verified and installed, record the exact per-frame coordinates into that ONE sheet's json:
 ```bash
 python3 <working-dir>/.squid-os/skills/sprite-crop/scripts/record_crop.py \
-  --state <state-file> --result <out-dir>/result.json \
+  --sheet <sheet-file> --result <out-dir>/result.json \
   [--frames-dir "<assets-dir>/<label>"]
 ```
-This is IDEMPOTENT: re-running for a re-cropped sheet REPLACES the `crop` block (no duplicates). It writes only:
+`--sheet` is the single sheet json (`.squid-os/sprite-sheets/<PROJECT>/<label>/<sheet>.json`). The CLI reads ONLY that file — it never loads sibling sheets — so a single-sheet crop touches a few KB, not the whole project. This is IDEMPOTENT: re-running for a re-cropped sheet REPLACES `entities` and the `crop` block (no duplicates). It writes only:
 ```json
 "crop": {
   "frames_dir": "...",
-  "pass": "<tmp dir>",
-  "frames_bbox": { "entity_action_f1.png": [x, y, w, h], ... }
+  "pass": "<tmp dir>"
 }
 ```
-All legacy grid fields (`row_y`, `col_x`, `frame_size`, `bg_color`, `bg_tol`) are dropped on record.
+Each entity's frames carry their bbox inline: `{name, anim, frames:[{file,row,col,bbox}]}`. All legacy grid fields (`row_y`, `col_x`, `frame_size`, `bg_color`, `bg_tol`) are dropped on record.
 
 ### 6. Sprite editor (on demand, for crop verification)
 
 The editor is a single-file HTML app that shows every sheet with its recorded
-crop bboxes overlaid — use it to verify cuts after a crop pass.
+crop bboxes overlaid — use it to verify cuts after a crop pass. It scans the
+one-json-per-sheet tree and groups by label subfolder.
 
 ```bash
 python3 <working-dir>/.squid-os/skills/sprite-crop/scripts/render_editor.py [project ...]
+# reads:   <working-dir>/.squid-os/sprite-sheets/<project>/<label>/*.json
 # outputs: <working-dir>/.squid-os/sprite-gen/editor-<project>.html
 ```
 
 Template: `skills/sprite-crop/templates/editor-template.html`. Re-run after any
-state change (new crops, bbox edits) and open the generated file to inspect.
+sheet change (new crops, bbox edits) and open the generated file to inspect.
 
 ## Rules
 - **Frames are clusters, not cells.** Ownership first, rectangles second. Never treat a virtual grid or measured separator as a clipping boundary — limbs/attacks may cross into neighbor territory and must stay whole.
@@ -107,7 +108,7 @@ state change (new crops, bbox edits) and open the generated file to inspect.
 - **Iterate until perfect, max 4 passes.** Fresh tmp dir per pass (`<label>-v1`, `-v2`...). After 4 failed passes, escalate to the user with trace + worst crops.
 - **Filenames are ALWAYS `<entity>_<action>_f<N>.png`.** Entity prefix on every file, one action word per row, _fN sequential within that row. Game code loads by this pattern. EXCEPTION: with `--span`, _fN runs continuously across all rows (one animation), so a 2×5 special yields `f1..f10` in a single sequence.
 - **Only verified frames reach the project.** Nothing is copied into <assets-dir> until its pass passed inspection AND validation reported PASS (or issues were explicitly accepted by the user).
-- **State is written ONLY via CLI** (record-crop). NEVER hand-edit the state JSON.
+- **State is written ONLY via CLI** (record-crop). NEVER hand-edit the sheet JSON.
 - **Flat frame structure.** Frames go directly in assets/<label>/ — NO per-entity subfolders.
 - **Single-image sheets** (backgrounds, single props, no animation): skip extract entirely — the image is already one transparent PNG; just copy it into <assets-dir>/ and register it in state like before.
 - **Vision resolves ambiguity, code moves pixels.** Low-confidence ownership flags get a vision look; never silently guess satellite ownership, and never use vision to guess pixel coordinates.

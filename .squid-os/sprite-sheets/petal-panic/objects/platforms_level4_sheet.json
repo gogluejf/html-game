@@ -1,0 +1,41 @@
+{
+  "label": "objects",
+  "file": "petal-panic/assets/platforms_level4_sheet.png",
+  "cropped_path": "petal-panic/assets/objects",
+  "size": "1536x1024",
+  "rows": 4,
+  "cols": 3,
+  "description": "Colonel Carrot fortress platform tiles (stone blocks with carrot-crest shields, lanterns, bunting), 3x3 grid with props on top + row 4: naked platforms (S/M/L)",
+  "entities": [{
+    "name": "platforms_level4",
+    "anim": "single",
+    "frames": [
+      {"file": "platforms_level4_single_f1.png", "row": 0, "col": 0, "bbox": [34, 40, 285, 284]},
+      {"file": "platforms_level4_single_f2.png", "row": 1, "col": 0, "bbox": [31, 371, 287, 282]},
+      {"file": "platforms_level4_single_f3.png", "row": 2, "col": 0, "bbox": [29, 660, 290, 345]},
+      {"file": "platforms_level4_single_f4.png", "row": 3, "col": 0, "bbox": [30, 1056, 289, 270]}
+    ]
+  }, {
+    "name": "platforms_level4",
+    "anim": "double",
+    "frames": [
+      {"file": "platforms_level4_double_f1.png", "row": 0, "col": 1, "bbox": [346, 39, 454, 280]},
+      {"file": "platforms_level4_double_f2.png", "row": 1, "col": 1, "bbox": [347, 369, 448, 284]},
+      {"file": "platforms_level4_double_f3.png", "row": 2, "col": 1, "bbox": [346, 641, 445, 364]},
+      {"file": "platforms_level4_double_f4.png", "row": 3, "col": 1, "bbox": [346, 1056, 453, 254]}
+    ]
+  }, {
+    "name": "platforms_level4",
+    "anim": "triple",
+    "frames": [
+      {"file": "platforms_level4_triple_f1.png", "row": 0, "col": 2, "bbox": [816, 38, 703, 293]},
+      {"file": "platforms_level4_triple_f2.png", "row": 1, "col": 2, "bbox": [821, 350, 696, 319]},
+      {"file": "platforms_level4_triple_f3.png", "row": 2, "col": 2, "bbox": [815, 641, 706, 364]},
+      {"file": "platforms_level4_triple_f4.png", "row": 3, "col": 2, "bbox": [829, 1036, 677, 296]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects",
+    "pass": "/tmp/plat-l4-v1"
+  }
+}

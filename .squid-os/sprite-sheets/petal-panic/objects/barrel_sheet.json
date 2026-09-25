@@ -1,0 +1,19 @@
+{
+  "label": "objects",
+  "file": "petal-panic/assets/barrel_sheet.png",
+  "cropped_path": "petal-panic/assets/objects",
+  "rows": 1,
+  "cols": 1,
+  "description": "Circus barrel prop (single image)",
+  "entities": [{
+    "name": "barrel",
+    "anim": "idle",
+    "frames": [
+      {"file": "barrel_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 305, 386]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects",
+    "pass": "/tmp/redo-single"
+  }
+}

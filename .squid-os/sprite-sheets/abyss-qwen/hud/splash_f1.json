@@ -1,0 +1,16 @@
+{
+  "label": "hud",
+  "file": "abyss-qwen/assets/hud/splash_f1.png",
+  "cropped_path": "abyss-qwen/assets/hud",
+  "rows": 1,
+  "cols": 1,
+  "description": "Cinematic splash/hero: massive kraken looming with tentacles framing edges, small manta ray ship flying diagonally in foreground, exchanging energy bolts, 3D perspective depth, dark abyss ruins background",
+  "original_prompt": "Generate a single cinematic splash/hero image for a game title screen, continuing the exact same aquatic neo-arcade deep-sea pixel-art style as the sprites above (crisp 16-bit neo-arcade, bioluminescent neon cyan/teal/magenta/poison-green/orange glowing against abyss-black, sharp hard edges, no anti-aliasing, flat shading with one highlight + one shadow step, high contrast, 1px dark rim outline).\n\nCOMPOSITION \u2014 forced 3D perspective depth, portrait orientation, 1024 wide x 1536 tall:\n- FAR BACKGROUND: the deep abyss fading to pure black at top and bottom edges, faint bioluminescent particles and bubbles drifting upward, your existing dark underwater ruins/coral/kelp scene heavily darkened and blurred for depth.\n- MID-GROUND (the threat): a MASSIVE kraken rising from the depths, huge and looming, positioned upper-center but so large its curling tentacles wrap around the left and right frame edges like it is emerging from below. Glowing orange core, menacing eyes. It should feel colossal and dangerous, partially out of frame.\n- FOREGROUND (the hero): the manta ray ship, much smaller than the kraken, in dynamic diagonal flight pose angled toward the viewer (foreshortened, dramatic), bright and sharp, positioned in the lower third. Its scale vs the kraken shows how tiny the hero is against the giant threat.\n- ACTION: both are exchanging fire \u2014 glowing energy bolts/projectiles streaking between the small manta and the huge kraken across the mid-space, adding motion and conflict.\n- TITLE SPACE: keep the upper-center area relatively dark and clear (just faint abyss) so a game logo can be overlaid on top later. Do NOT put any text, letters, or words anywhere in the image.\n\nStyle must match the prior sprite sheets exactly. Solid pure black background at the outer edges so it blends into a dark UI. No text, no labels, no borders, no watermark. Make it dramatic, high-contrast, and clean.",
+  "entities": [{
+    "name": "splash",
+    "anim": "",
+    "frames": [
+      {"file": "splash_f1.png", "row": null, "col": null, "bbox": null}
+    ]
+  }]
+}

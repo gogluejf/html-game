@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 """
-record-crop — the ONLY writer of crop data into the sprite-gen state file.
+record-crop — the ONLY writer of crop data into a sheet's json file.
 
-Reads the extract_frames.py --json result and, for the matching sheet entry:
+One-json-per-sheet model: each sheet lives at
+  .squid-os/sprite-sheets/<project>/<label>/<sheet>.json
+This CLI is pointed at that ONE file (--sheet) and rewrites only it. It never
+reads sibling sheets, so a single-sheet crop touches a few KB, not the whole
+project state.
+
+Reads the extract_frames.py --json result and, for the given sheet file:
   1. REPLACES sheet.entities ENTIRELY from the result (idempotent full rewrite).
      The result is the single source of truth for entity/frame data. No
      matching against old entries, no merge, no WARN path.
   2. REPLACES the `crop` block with clean data (idempotent — safe on re-crops)
-  3. VERIFIES every frames[].file exists in frames_dir; warns on orphan PNGs
-     in frames_dir not referenced by any entity on this sheet.
+  3. VERIFIES every frames[].file exists in cropped_path; warns on orphan PNGs
+     in cropped_path not referenced by any entity on this sheet.
 
 Sheet-level fields (file, size, rows, cols, cell, description, original_prompt)
 belong to sprite-gen (--add-sheet) and are NEVER touched here.
@@ -17,8 +23,8 @@ Nothing else may write crop data or frame lists. Agents never touch state;
 this CLI is called once per sheet after frames are verified + installed.
 
 Usage:
-  python3 record_crop.py --state <state.json> --result <extract-result.json>
-                         [--frames-dir <dir>]
+  python3 record_crop.py --sheet <sprite-sheets/proj/label/sheet.json> \
+                         --result <extract-result.json> [--frames-dir <dir>]
 
 Crop block written (legacy row_y/col_x/frame_size/bg_* are DROPPED; bbox now
 lives inline on each frame, so crop only keeps sheet-level fields):
@@ -35,35 +41,28 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from state_format import compact as _compact_json
 
 
-def find_sheet(state, result):
-    """Locate the sheet entry whose file matches the result's sheet path."""
-    sheet_name = os.path.basename(result.get("sheet", ""))
-    for folder, f in state.get("folders", {}).items():
-        for sh in f.get("sheets", []):
-            if os.path.basename(sh.get("file", "")) == sheet_name:
-                return folder, sh
-    for name, sh in state.get("sheets", {}).items():
-        if os.path.basename(sh.get("file", "")) == sheet_name:
-            return None, sh
-    return None, None
-
-
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--state", required=True)
+    p.add_argument("--sheet", required=True,
+                   help="path to the single sheet json to update")
     p.add_argument("--result", required=True, help="extract_frames.py --json output")
     p.add_argument("--frames-dir", help="override frames_dir in crop block")
     args = p.parse_args()
 
-    with open(args.state) as f:
-        state = json.load(f)
+    if not os.path.exists(args.sheet):
+        print(f"ERROR: sheet file not found: {args.sheet}", file=sys.stderr)
+        sys.exit(1)
+    with open(args.sheet) as f:
+        sheet = json.load(f)
     with open(args.result) as f:
         result = json.load(f)
 
-    folder, sheet = find_sheet(state, result)
-    if sheet is None:
-        print(f"ERROR: no sheet entry matches {result.get('sheet')}", file=sys.stderr)
-        sys.exit(1)
+    # Sanity: the result's sheet path should match this file's 'file' field.
+    res_sheet = os.path.basename(result.get("sheet", ""))
+    my_sheet = os.path.basename(sheet.get("file", ""))
+    if res_sheet and my_sheet and res_sheet != my_sheet:
+        print(f"WARNING: result sheet '{res_sheet}' != this file '{my_sheet}'. "
+              f"Recording anyway.", file=sys.stderr)
 
     frames = result.get("frames", [])
     if not frames:
@@ -103,16 +102,16 @@ def main():
     crop = sheet.get("crop", {})
     new_crop = {
         "frames_dir": args.frames_dir or crop.get("frames_dir")
-                     or (folder and state["folders"][folder]["path"]) or "",
+                     or sheet.get("cropped_path", "") or "",
         "pass": result.get("out_dir", ""),
     }
     if "margin" in crop:
         new_crop["margin"] = crop["margin"]
     sheet["crop"] = new_crop
-    state["updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    sheet["updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
 
-    with open(args.state, "w") as f:
-        f.write(_compact_json(state, 0) + "\n")
+    with open(args.sheet, "w") as f:
+        f.write(_compact_json(sheet, 0) + "\n")
 
     # --- verify: recorded files exist on disk; warn on orphans ---
     fd = new_crop["frames_dir"]
@@ -136,7 +135,7 @@ def main():
 
     n_frames = sum(len(e["frames"]) for e in new_entities)
     ents = ", ".join(f"{e['name']}/{e['anim']}x{len(e['frames'])}" for e in new_entities)
-    print(f"RECORDED: {os.path.basename(sheet['file'])} -> {n_frames} frames ({ents})")
+    print(f"RECORDED: {os.path.basename(sheet.get('file','?'))} -> {n_frames} frames ({ents})")
 
 
 if __name__ == "__main__":

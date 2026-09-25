@@ -1,0 +1,52 @@
+{
+  "label": "projectiles",
+  "file": "petal-panic/assets/projectile_sheet_4.png",
+  "cropped_path": "petal-panic/assets/projectiles",
+  "rows": 3,
+  "cols": 8,
+  "description": "Projectile 4 \u2014 fish_bone, circus_ball, peas_tornado",
+  "entities": [{
+    "name": "fish_bone",
+    "anim": "projectile",
+    "frames": [
+      {"file": "projectile_4_fish_bone_f1.png", "row": 0, "col": 0, "bbox": [6, 118, 191, 169]},
+      {"file": "projectile_4_fish_bone_f2.png", "row": 0, "col": 1, "bbox": [196, 104, 193, 186]},
+      {"file": "projectile_4_fish_bone_f3.png", "row": 0, "col": 2, "bbox": [387, 101, 187, 200]},
+      {"file": "projectile_4_fish_bone_f4.png", "row": 0, "col": 3, "bbox": [574, 103, 197, 193]},
+      {"file": "projectile_4_fish_bone_f5.png", "row": 0, "col": 4, "bbox": [768, 111, 200, 182]},
+      {"file": "projectile_4_fish_bone_f6.png", "row": 0, "col": 5, "bbox": [958, 124, 198, 155]},
+      {"file": "projectile_4_fish_bone_f7.png", "row": 0, "col": 6, "bbox": [1148, 114, 201, 200]},
+      {"file": "projectile_4_fish_bone_f8.png", "row": 0, "col": 7, "bbox": [1340, 85, 196, 245]}
+    ]
+  }, {
+    "name": "circus_ball",
+    "anim": "projectile",
+    "frames": [
+      {"file": "projectile_4_circus_ball_f1.png", "row": 1, "col": 0, "bbox": [19, 436, 161, 166]},
+      {"file": "projectile_4_circus_ball_f2.png", "row": 1, "col": 1, "bbox": [190, 431, 193, 178]},
+      {"file": "projectile_4_circus_ball_f3.png", "row": 1, "col": 2, "bbox": [390, 420, 183, 193]},
+      {"file": "projectile_4_circus_ball_f4.png", "row": 1, "col": 3, "bbox": [581, 415, 181, 199]},
+      {"file": "projectile_4_circus_ball_f5.png", "row": 1, "col": 4, "bbox": [742, 444, 211, 157]},
+      {"file": "projectile_4_circus_ball_f6.png", "row": 1, "col": 5, "bbox": [954, 453, 199, 144]},
+      {"file": "projectile_4_circus_ball_f7.png", "row": 1, "col": 6, "bbox": [1144, 472, 203, 159]},
+      {"file": "projectile_4_circus_ball_f8.png", "row": 1, "col": 7, "bbox": [1339, 409, 193, 229]}
+    ]
+  }, {
+    "name": "peas_tornado",
+    "anim": "projectile",
+    "frames": [
+      {"file": "projectile_4_peas_tornado_f1.png", "row": 2, "col": 0, "bbox": [24, 758, 160, 160]},
+      {"file": "projectile_4_peas_tornado_f2.png", "row": 2, "col": 1, "bbox": [199, 740, 175, 198]},
+      {"file": "projectile_4_peas_tornado_f3.png", "row": 2, "col": 2, "bbox": [395, 723, 168, 226]},
+      {"file": "projectile_4_peas_tornado_f4.png", "row": 2, "col": 3, "bbox": [582, 699, 164, 260]},
+      {"file": "projectile_4_peas_tornado_f5.png", "row": 2, "col": 4, "bbox": [781, 727, 167, 239]},
+      {"file": "projectile_4_peas_tornado_f6.png", "row": 2, "col": 5, "bbox": [960, 749, 185, 173]},
+      {"file": "projectile_4_peas_tornado_f7.png", "row": 2, "col": 6, "bbox": [1145, 724, 189, 214]},
+      {"file": "projectile_4_peas_tornado_f8.png", "row": 2, "col": 7, "bbox": [1342, 738, 180, 206]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/projectiles",
+    "pass": "/home/goglue/tmp/proj4-v1"
+  }
+}

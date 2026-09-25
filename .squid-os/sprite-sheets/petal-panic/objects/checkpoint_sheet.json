@@ -1,0 +1,19 @@
+{
+  "label": "objects",
+  "file": "petal-panic/assets/checkpoint_sheet.png",
+  "cropped_path": "petal-panic/assets/objects",
+  "rows": 1,
+  "cols": 1,
+  "description": "Checkpoint flag pole prop (single image)",
+  "entities": [{
+    "name": "checkpoint",
+    "anim": "idle",
+    "frames": [
+      {"file": "checkpoint_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 332, 525]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects",
+    "pass": "/tmp/redo-single"
+  }
+}

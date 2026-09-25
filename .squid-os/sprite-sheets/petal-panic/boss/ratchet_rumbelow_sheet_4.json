@@ -1,0 +1,24 @@
+{
+  "label": "boss",
+  "file": "petal-panic/assets/ratchet_rumbelow_sheet_4.png",
+  "cropped_path": "petal-panic/assets/boss",
+  "rows": 2,
+  "cols": 3,
+  "description": "Ratchet Rumbelow boss, sheet 4/5 \u2014 6 frames (death x2 rows)",
+  "entities": [{
+    "name": "ratchet_rumbelow",
+    "anim": "death",
+    "frames": [
+      {"file": "ratchet_rumbelow_death_f1.png", "row": 0, "col": 0, "bbox": [0, 23, 510, 471]},
+      {"file": "ratchet_rumbelow_death_f2.png", "row": 0, "col": 1, "bbox": [516, 11, 504, 470]},
+      {"file": "ratchet_rumbelow_death_f3.png", "row": 0, "col": 2, "bbox": [1021, 42, 514, 454]},
+      {"file": "ratchet_rumbelow_death_f4.png", "row": 1, "col": 0, "bbox": [0, 534, 517, 436]},
+      {"file": "ratchet_rumbelow_death_f5.png", "row": 1, "col": 1, "bbox": [505, 523, 524, 450]},
+      {"file": "ratchet_rumbelow_death_f6.png", "row": 1, "col": 2, "bbox": [1024, 603, 512, 363]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/boss",
+    "pass": "/tmp/redo-ratchet_rumbelow-death-v1"
+  }
+}

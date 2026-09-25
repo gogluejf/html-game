@@ -1,0 +1,23 @@
+{
+  "label": "enemies",
+  "file": "petal-panic/assets/doodle_dink_sheet_2.png",
+  "cropped_path": "petal-panic/assets/enemies",
+  "rows": 1,
+  "cols": 5,
+  "description": "Doodle Dink death dissolve \u2014 1x5 strip",
+  "entities": [{
+    "name": "doodle_dink",
+    "anim": "death",
+    "frames": [
+      {"file": "doodle_dink_death_f1.png", "row": 0, "col": 0, "bbox": [13, 126, 384, 549]},
+      {"file": "doodle_dink_death_f2.png", "row": 0, "col": 1, "bbox": [402, 137, 401, 538]},
+      {"file": "doodle_dink_death_f3.png", "row": 0, "col": 2, "bbox": [809, 154, 401, 516]},
+      {"file": "doodle_dink_death_f4.png", "row": 0, "col": 3, "bbox": [1195, 295, 418, 389]},
+      {"file": "doodle_dink_death_f5.png", "row": 0, "col": 4, "bbox": [1596, 475, 418, 226]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies",
+    "pass": "/tmp/redo-doodle-dink-v1"
+  }
+}

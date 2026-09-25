@@ -1,0 +1,44 @@
+{
+  "label": "enemies",
+  "file": "petal-panic/assets/jester_sheet_2.png",
+  "cropped_path": "petal-panic/assets/enemies",
+  "rows": 3,
+  "cols": 5,
+  "description": "Jester skull-clown enemy sheet 2, 3 actions x 5 frames (idle/whip/death)",
+  "original_prompt": "Hand-painted circus-style sprite sheet of \"Jester\", the same sinister clown-jester enemy as before: gaunt white skull-like face, hollow black eye sockets, wide grinning mouth full of sharp teeth, small red clown nose, pale bone-white skin; a large ruff collar of glossy deep-red flower petals each tipped with a tiny gold bead; tattered jester costume in red-and-cream vertical stripes with ragged frilled cuffs/hem in cream and gold; dark leather boots with curled pointed toes and gold bells; long clawed black-gloved hands. Menacing theatrical expression, glowing red eyes. Art style: painterly hand-drawn animation, bold clean outlines, warm saturated colors (deep crimson reds, bone white, gold accents, dark browns), dynamic poses, subtle motion smears on fast moves.\n\nSheet layout: 3 rows x 5 columns on a solid pink background with a faint light grid dividing the cells. Each row is one action, left to right:\n\nRow 1 \u2014 Idle/hover (5 frames): a menacing crouched idle stance, body swaying subtly side to side, arms hanging low with clawed hands, petal-ruff shifting slightly, weight shifting between feet \u2014 a looping threat pose.\n\nRow 2 \u2014 Whip attack (5 frames): he wields a long thorny stem ending in a huge open-mouthed carnivorous flower head (a snapping venus-flytrap-like bloom with ringed teeth). Wind-up -> extending the thorn whip forward -> full extension with the flower head flung out to the right -> a sweeping arc with a glowing tan/pink motion trail behind the flower -> recovery back to a ready stance.\n\nRow 3 \u2014 Death/dissolve (5 frames): the jester bursts apart into a spray of loose red petals and fragments that scatter outward and fade \u2014 frame 1 intact, then progressively disintegrating until only drifting petals remain by the final frame.\n\nCharacter faces right, consistent proportions and palette across all 15 frames.",
+  "entities": [{
+    "name": "jester",
+    "anim": "idle",
+    "frames": [
+      {"file": "jester_idle_f1.png", "row": 0, "col": 0, "bbox": [24, 2, 264, 325]},
+      {"file": "jester_idle_f2.png", "row": 0, "col": 1, "bbox": [356, 1, 260, 327]},
+      {"file": "jester_idle_f3.png", "row": 0, "col": 2, "bbox": [682, 2, 260, 326]},
+      {"file": "jester_idle_f4.png", "row": 0, "col": 3, "bbox": [1004, 2, 261, 325]},
+      {"file": "jester_idle_f5.png", "row": 0, "col": 4, "bbox": [1331, 1, 261, 326]}
+    ]
+  }, {
+    "name": "jester",
+    "anim": "attack",
+    "frames": [
+      {"file": "jester_attack_f1.png", "row": 1, "col": 0, "bbox": [19, 340, 276, 292]},
+      {"file": "jester_attack_f2.png", "row": 1, "col": 1, "bbox": [318, 359, 339, 271]},
+      {"file": "jester_attack_f3.png", "row": 1, "col": 2, "bbox": [643, 358, 335, 275]},
+      {"file": "jester_attack_f4.png", "row": 1, "col": 3, "bbox": [972, 346, 322, 287]},
+      {"file": "jester_attack_f5.png", "row": 1, "col": 4, "bbox": [1312, 339, 267, 293]}
+    ]
+  }, {
+    "name": "jester",
+    "anim": "death",
+    "frames": [
+      {"file": "jester_death_f1.png", "row": 2, "col": 0, "bbox": [20, 629, 272, 317]},
+      {"file": "jester_death_f2.png", "row": 2, "col": 1, "bbox": [330, 639, 302, 308]},
+      {"file": "jester_death_f3.png", "row": 2, "col": 2, "bbox": [653, 640, 311, 304]},
+      {"file": "jester_death_f4.png", "row": 2, "col": 3, "bbox": [980, 640, 309, 305]},
+      {"file": "jester_death_f5.png", "row": 2, "col": 4, "bbox": [1308, 642, 295, 294]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies",
+    "pass": "/tmp/redo-jester2-v1"
+  }
+}

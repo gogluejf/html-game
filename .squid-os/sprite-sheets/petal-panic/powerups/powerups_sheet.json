@@ -1,0 +1,58 @@
+{
+  "label": "powerups",
+  "file": "petal-panic/assets/powerups_sheet.png",
+  "cropped_path": "petal-panic/assets/powerups",
+  "rows": 5,
+  "cols": 4,
+  "description": "Wooden signboard powerup sprites, 5 types x 4 frames (NORMAL/INFLATE/PEAK/DEFLATE)",
+  "entities": [{
+    "name": "scarlet_1up",
+    "anim": "idle",
+    "frames": [
+      {"file": "scarlet_1up_f1.png", "row": 0, "col": 0, "bbox": [175, 22, 308, 159]},
+      {"file": "scarlet_1up_f2.png", "row": 0, "col": 1, "bbox": [596, 20, 367, 162]},
+      {"file": "scarlet_1up_f3.png", "row": 0, "col": 2, "bbox": [1051, 10, 415, 175]},
+      {"file": "scarlet_1up_f4.png", "row": 0, "col": 3, "bbox": [1550, 21, 309, 160]}
+    ]
+  }, {
+    "name": "balthazar_1up",
+    "anim": "idle",
+    "frames": [
+      {"file": "balthazar_1up_f1.png", "row": 1, "col": 0, "bbox": [173, 171, 312, 163]},
+      {"file": "balthazar_1up_f2.png", "row": 1, "col": 1, "bbox": [606, 170, 361, 166]},
+      {"file": "balthazar_1up_f3.png", "row": 1, "col": 2, "bbox": [1059, 177, 400, 147]},
+      {"file": "balthazar_1up_f4.png", "row": 1, "col": 3, "bbox": [1552, 171, 318, 164]}
+    ]
+  }, {
+    "name": "rapid_fire",
+    "anim": "idle",
+    "frames": [
+      {"file": "rapid_fire_f1.png", "row": 2, "col": 0, "bbox": [171, 317, 319, 153]},
+      {"file": "rapid_fire_f2.png", "row": 2, "col": 1, "bbox": [598, 316, 373, 154]},
+      {"file": "rapid_fire_f3.png", "row": 2, "col": 2, "bbox": [1057, 324, 402, 140]},
+      {"file": "rapid_fire_f4.png", "row": 2, "col": 3, "bbox": [1547, 317, 326, 153]}
+    ]
+  }, {
+    "name": "invincibility",
+    "anim": "idle",
+    "frames": [
+      {"file": "invincibility_f1.png", "row": 3, "col": 0, "bbox": [165, 461, 326, 155]},
+      {"file": "invincibility_f2.png", "row": 3, "col": 1, "bbox": [605, 460, 359, 155]},
+      {"file": "invincibility_f3.png", "row": 3, "col": 2, "bbox": [1050, 455, 418, 162]},
+      {"file": "invincibility_f4.png", "row": 3, "col": 3, "bbox": [1541, 461, 333, 155]}
+    ]
+  }, {
+    "name": "panic_clear",
+    "anim": "idle",
+    "frames": [
+      {"file": "panic_clear_f1.png", "row": 4, "col": 0, "bbox": [166, 607, 332, 166]},
+      {"file": "panic_clear_f2.png", "row": 4, "col": 1, "bbox": [598, 607, 369, 169]},
+      {"file": "panic_clear_f3.png", "row": 4, "col": 2, "bbox": [1049, 605, 427, 172]},
+      {"file": "panic_clear_f4.png", "row": 4, "col": 3, "bbox": [1541, 608, 335, 168]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/powerups",
+    "pass": "/tmp/redo-pp1-v1"
+  }
+}

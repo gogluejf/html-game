@@ -1,0 +1,58 @@
+{
+  "label": "powerups",
+  "file": "petal-panic/assets/powerups_sheet_2.png",
+  "cropped_path": "petal-panic/assets/powerups",
+  "rows": 5,
+  "cols": 4,
+  "description": "Wooden signboard powerup sprites, 5 types x 4 frames (NORMAL/INFLATE/PEAK/DEFLATE)",
+  "entities": [{
+    "name": "energy",
+    "anim": "idle",
+    "frames": [
+      {"file": "energy_f1.png", "row": 0, "col": 0, "bbox": [387, 8, 240, 152]},
+      {"file": "energy_f2.png", "row": 0, "col": 1, "bbox": [725, 4, 266, 156]},
+      {"file": "energy_f3.png", "row": 0, "col": 2, "bbox": [1042, 0, 352, 161]},
+      {"file": "energy_f4.png", "row": 0, "col": 3, "bbox": [1442, 8, 245, 152]}
+    ]
+  }, {
+    "name": "bomb",
+    "anim": "idle",
+    "frames": [
+      {"file": "bomb_f1.png", "row": 1, "col": 0, "bbox": [379, 155, 257, 156]},
+      {"file": "bomb_f2.png", "row": 1, "col": 1, "bbox": [721, 155, 277, 158]},
+      {"file": "bomb_f3.png", "row": 1, "col": 2, "bbox": [1045, 154, 349, 159]},
+      {"file": "bomb_f4.png", "row": 1, "col": 3, "bbox": [1437, 155, 259, 156]}
+    ]
+  }, {
+    "name": "petal_saw",
+    "anim": "idle",
+    "frames": [
+      {"file": "petal_saw_f1.png", "row": 2, "col": 0, "bbox": [365, 305, 279, 162]},
+      {"file": "petal_saw_f2.png", "row": 2, "col": 1, "bbox": [711, 305, 289, 162]},
+      {"file": "petal_saw_f3.png", "row": 2, "col": 2, "bbox": [1039, 302, 356, 164]},
+      {"file": "petal_saw_f4.png", "row": 2, "col": 3, "bbox": [1427, 305, 276, 159]}
+    ]
+  }, {
+    "name": "thorn_missile",
+    "anim": "idle",
+    "frames": [
+      {"file": "thorn_missile_f1.png", "row": 3, "col": 0, "bbox": [375, 455, 270, 156]},
+      {"file": "thorn_missile_f2.png", "row": 3, "col": 1, "bbox": [720, 455, 283, 156]},
+      {"file": "thorn_missile_f3.png", "row": 3, "col": 2, "bbox": [1039, 454, 356, 157]},
+      {"file": "thorn_missile_f4.png", "row": 3, "col": 3, "bbox": [1438, 455, 268, 156]}
+    ]
+  }, {
+    "name": "shield",
+    "anim": "idle",
+    "frames": [
+      {"file": "shield_f1.png", "row": 4, "col": 0, "bbox": [370, 607, 274, 172]},
+      {"file": "shield_f2.png", "row": 4, "col": 1, "bbox": [716, 607, 286, 173]},
+      {"file": "shield_f3.png", "row": 4, "col": 2, "bbox": [1042, 607, 348, 175]},
+      {"file": "shield_f4.png", "row": 4, "col": 3, "bbox": [1433, 607, 273, 172]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/powerups",
+    "pass": "/tmp/redo-pp2-v1"
+  }
+}

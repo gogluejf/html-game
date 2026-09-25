@@ -1,0 +1,36 @@
+{
+  "label": "objects",
+  "file": "petal-panic/assets/blocks_level4_sheet.png",
+  "cropped_path": "petal-panic/assets/objects",
+  "size": "1536x2048",
+  "rows": 2,
+  "cols": 3,
+  "cell": 512,
+  "description": "Level 4 block tiles combined: row 1 with props, row 2 naked (small/medium/large)",
+  "entities": [{
+    "name": "blocks_level4",
+    "anim": "single",
+    "frames": [
+      {"file": "blocks_level4_single_f1.png", "row": 0, "col": 0, "bbox": [10, 562, 489, 409]},
+      {"file": "blocks_level4_single_f2.png", "row": 1, "col": 0, "bbox": [12, 1581, 488, 414]}
+    ]
+  }, {
+    "name": "blocks_level4",
+    "anim": "double",
+    "frames": [
+      {"file": "blocks_level4_double_f1.png", "row": 0, "col": 1, "bbox": [516, 238, 487, 733]},
+      {"file": "blocks_level4_double_f2.png", "row": 1, "col": 1, "bbox": [516, 1323, 488, 672]}
+    ]
+  }, {
+    "name": "blocks_level4",
+    "anim": "triple",
+    "frames": [
+      {"file": "blocks_level4_triple_f1.png", "row": 0, "col": 2, "bbox": [1011, 34, 515, 938]},
+      {"file": "blocks_level4_triple_f2.png", "row": 1, "col": 2, "bbox": [1011, 1069, 515, 926]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects",
+    "pass": "/home/goglue/tmp/blocks-regen/l4-v2"
+  }
+}

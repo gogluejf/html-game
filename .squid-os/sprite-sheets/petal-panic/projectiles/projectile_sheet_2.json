@@ -1,0 +1,23 @@
+{
+  "label": "projectiles",
+  "file": "petal-panic/assets/projectile_sheet_2.png",
+  "cropped_path": "petal-panic/assets/projectiles",
+  "rows": 1,
+  "cols": 5,
+  "description": "Spinning dumbbell projectile \u2014 1x5 strip",
+  "entities": [{
+    "name": "dumbbell",
+    "anim": "projectile",
+    "frames": [
+      {"file": "projectile_2_spin_f1.png", "row": 0, "col": 0, "bbox": [16, 245, 429, 217]},
+      {"file": "projectile_2_spin_f2.png", "row": 0, "col": 1, "bbox": [467, 165, 394, 355]},
+      {"file": "projectile_2_spin_f3.png", "row": 0, "col": 2, "bbox": [965, 156, 236, 401]},
+      {"file": "projectile_2_spin_f4.png", "row": 0, "col": 3, "bbox": [1323, 156, 377, 379]},
+      {"file": "projectile_2_spin_f5.png", "row": 0, "col": 4, "bbox": [1724, 239, 429, 237]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/projectiles",
+    "pass": "/tmp/redo-projectile-2-v1"
+  }
+}
