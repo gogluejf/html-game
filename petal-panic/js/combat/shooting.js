@@ -4,7 +4,8 @@
 // weapon keeps its own ammo pool and its own cooldown timer.
 
 import { WEAPON_SPECIAL } from '../hero/hero.js';
-import { projectilePool, specialPool, dirAngle } from '../objects/projectile.js';
+import { projectilePool, specialPool } from '../objects/projectile.js';
+import { dirAngle } from '../core/vec.js';
 import { damage } from './damage.js';
 import { record } from '../stats.js';
 import { Effects } from '../effects.js';

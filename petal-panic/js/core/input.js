@@ -1,7 +1,7 @@
 // Physical input boundary. Screens consume nav actions; gameplay consumes state.
 // Keyboard events are queued (including taps between ticks); pads are sampled.
 // A context/capture boundary quarantines held controls until physical release.
-import { dirAngle } from '../objects/projectile.js';
+import { dirAngle } from './vec.js';
 const NAV = ['back', 'pause', 'up', 'down', 'left', 'right', 'confirm', 'retry', 'cont', 'quit', 'remove'];
 const KEY_NAV = { Escape: ['back', 'pause'], KeyP: ['pause'], Enter: ['confirm'], Space: ['confirm'],
   ArrowUp: ['up'], KeyW: ['up'], ArrowDown: ['down'], KeyS: ['down'],

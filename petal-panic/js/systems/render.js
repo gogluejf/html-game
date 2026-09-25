@@ -5,7 +5,7 @@
 
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { LAYER } from '../consts.js';
-import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getActiveZoneKind, getDeathFadeAlpha, getClearBanner, getClearFadeAlpha, getAreaEntryFadeAlpha, bossZone } from './update.js';
+import { getHero, getSolids, getEnemies, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getActiveZoneKind, getDeathFadeAlpha, getClearBanner, getClearFadeAlpha, getAreaEntryFadeAlpha, bossZone } from './update.js';
 import { Effects } from '../effects.js';
 import { drawEffects } from '../effects/index.js';
 import { getState, S } from '../core/state.js';
@@ -160,10 +160,6 @@ export function render(ctx) {
     // Projectiles + specials (hero bomb/saw).
     for (const p of getProjectiles()) drawShaken(ctx, p, () => p.draw(ctx));
     for (const s of getSpecials()) drawShaken(ctx, s, () => s.draw(ctx));
-
-    // Anim-test enemy (harness spawn).
-    const at = getAnimTestEnemy();
-    if (at.alive) drawShaken(ctx, at, () => at.draw(ctx));
 
     // Hero — invincibility blink and death skull are gameplay effects, so they
     // live inside the sprite layer too. The flicker is driven by the 'intangible'

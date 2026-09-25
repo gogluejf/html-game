@@ -242,6 +242,17 @@ let _lastTerrain = null;
 let _lastSeed = null;
 
 /**
+ * The per-game generation seed. A genuinely new game rolls a fresh seed so its
+ * terrain + population differ from the previous game (lifecycle.md §6). Death
+ * and Continue never call this — they reuse the world already built for the
+ * game, so a run's arrangement stays fixed.
+ * @returns {number}
+ */
+export function newGameSeed() {
+  return (Math.floor(Math.random() * 0xffffffff) >>> 0);
+}
+
+/**
  * Snapshot the generated terrain into the hero's trace areaMap (one entry per
  * ordinary area). Called once per new game, right after startGame builds the
  * fresh hero + trace. Each entry stores the seed, orientation, stage, budget,

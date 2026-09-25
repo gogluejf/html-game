@@ -21,9 +21,5 @@ export const ctx = {
   coins: null,
   projectilePool: null,
   bossZoneDef: null,
-  enemies: [],
-  pickups: [],
-  animTestEnemy: null,
   specialPool: null,
-  FLOOR_TOP: 0,
 };

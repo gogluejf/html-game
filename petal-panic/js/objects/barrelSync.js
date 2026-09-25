@@ -4,6 +4,7 @@
 import { ctx } from '../world/context.js';
 import { LAYER } from '../consts.js';
 import { VIEW_H } from '../core/view.js';
+import { ZONE_GROUND_Y } from '../world/level.js';
 import { Effects } from '../effects.js';
 import { particles, coins } from '../effects/particles.js';
 import { resolveExplosion } from '../combat/explosion.js';
@@ -36,7 +37,7 @@ export function handleBarrelDestroyed(barrel) {
     // and shoves everyone radially. Hero knockback is routed through takeHit('explosion')
     // inside resolveExplosion, preserving the exact pre-refactor rec/intangible behavior.
     // Same generic path as any other detonating entity — only the trigger differs.
-    const targets = [hero, ...ctx.enemies, ...ctx.realEnemies];
+    const targets = [hero, ...ctx.realEnemies];
     const result = resolveExplosion({
       ...barrel.explosion,
       cx, cy,
@@ -134,7 +135,7 @@ export function updateEffects(dt) {
   // Coins bounce off the floor AND any air platform top they land on. We pass
   // the SOLIDS list minus the floor itself (the floor is handled by floorTop).
   const platforms = ctx.solids.slice(1); // index 0 is the full-length floor
-  coins.updateAll(dt, ctx.FLOOR_TOP, ctx.getActiveZone(ctx.hero).bounds.w, platforms);
+  coins.updateAll(dt, ZONE_GROUND_Y, ctx.getActiveZone(ctx.hero).bounds.w, platforms);
   // Sync coins into the collision world so HERO×COIN collect works.
   syncCoinsToWorld();
 }

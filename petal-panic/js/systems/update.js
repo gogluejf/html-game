@@ -9,9 +9,8 @@
 
 import { input } from '../core/input.js';
 import { VIEW_W } from '../core/view.js';
-import { Entity } from '../core/entity.js';
 import { SolidBox } from '../core/solidBox.js';
-import { LAYER, GRAVITY, MAX_FALL_SPEED } from '../consts.js';
+import { GRAVITY, MAX_FALL_SPEED } from '../consts.js';
 import { CollisionWorld, resolve } from '../core/collision.js';
 import { Camera } from '../core/camera.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
@@ -26,7 +25,7 @@ import { particles, coins } from '../effects/particles.js';
 import { Effects } from '../effects.js';
 import { Debug } from "../debug/debug.js";
 import { applyGodMode, updateTheaterGamepad, setHeroRefSetter } from '../debug/debugHarness.js';
-import { buildWorld, captureAreaMap } from '../world/build.js';
+import { buildWorld, captureAreaMap, newGameSeed } from '../world/build.js';
 import { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver } from '../world/zoneLifecycle.js';
 export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver };
 import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, BOSS_TRIGGER_X } from '../world/level.js';
@@ -34,6 +33,10 @@ import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAr
 import { getLevelConfig } from '../world/levelConfigs.js';
 import { Theater } from '../debug/theater.js';
 import { record } from '../stats.js';
+import { isGrounded, standingOnOneWay } from '../hero/physics.js';
+import { isBelowVerticalBottom, getDeathFadeAlpha, finishHeroDeath, DEATH_FADE_DURATION } from '../hero/death.js';
+export { isBelowVerticalBottom, getDeathFadeAlpha, finishHeroDeath };
+import { ctx } from '../world/context.js';
 import { TUNING } from '../tuning.js';
 
 // --- Zone-engine world (task 7.1 — the sealed zone model IS the world) ------
@@ -59,8 +62,6 @@ let world = buildWorld(LEVEL_DEF, LEVEL_CONFIG, 1);
 
 const collisionWorld = new CollisionWorld({ cellSize: 64 });
 
-// Floor top y (the zone's ground level). Used by bomb/coin bounce logic.
-const FLOOR_TOP = ZONE_GROUND_Y;
 // Level length: the active zone's width. The hero is clamped to the zone's
 // bounds (not a fixed corridor length). This is the zone's playable width.
 // (The old fixed 8000px corridor is gone; each zone owns its own bounds.)
@@ -146,31 +147,10 @@ setRegenerateWorld(regenerateWorld);
 // Hero uses no anim (solid debugColor rect). Real sprites later.
 hero.anim = null;
 
-// Melee attack animation (5 placeholder frames).
-// Frame 3 (index) is the "active" frame where the hitbox is live.
-// Colors progress from dark → bright → dim to visually mark the peak.
-const attackFrames = ['#555555', '#888888', '#aaaaaa', '#ffffff', '#666666'];
-hero.anims.attack = new Anim(
-  attackFrames.map(c => makeTestFrame(hero.w, hero.h, c)),
-  { speed: 80, loop: false }, // 80ms per frame matches MELEE_FRAME_DURATION
-);
-
-// Super move animation (10 placeholder frames — purple gradient).
-// Will be replaced with real supermove sprite frames when loaded.
-const superFrames = Array.from({ length: 10 }, (_, i) => {
-  const t = i / 9;
-  const r = Math.round(155 - t * 100);
-  const g = Math.round(89 + t * 60);
-  const b = Math.round(182 - t * 50);
-  return makeTestFrame(hero.w, hero.h, `rgb(${r},${g},${b})`);
-});
-hero.anims.supermove = new Anim(superFrames, { speed: 60, loop: false });
-
 // --- Active-zone entities (task 7.1) -----------------------------------------
 // These are the ACTIVE zone's content. They are mutable module-level lists that
 // installActiveZone() clears and refills on every zone switch, so the update
 // loop, render, and lifecycle ops always see the current zone's world.
-const enemies = []; // (legacy placeholder slot — always empty; realEnemies is live)
 export const realEnemies = []; // active zone's enemies (from the population resolver)
 
 // Overgrown Elephant boss (design §9). The boss belongs to the level's boss zone
@@ -212,21 +192,6 @@ export const bossZone = makeBossZone(bossZoneDef, boss, {
     console.log('[bossZone] COMBAT — black lifting, boss active');
   },
 });
-
-// Non-looping anim test. Kept off the live targets (above) so the
-// animation cycle doesn't obscure their destruction; attached to a separate
-// decorative placeholder that never takes damage.
-// Legacy placeholder entities (Tasks 1.2–3.1) — disabled. Real entities come
-// from generateLevel() / projectilePool / powerups array. Kept as inert objects
-// so existing code references don't break.
-const animTestEnemy = new Entity({ x: -9999, y: -9999, w: 36, h: 40, gravity: 0, layer: LAYER.ENEMY, debugColor: '#9b59b6' });
-animTestEnemy.alive = false;
-animTestEnemy.anim = new Anim(
-  ['#e74c3c', '#f39c12', '#9b59b6'].map(c => makeTestFrame(36, 40, c)),
-  { speed: 400, loop: false },
-);
-const projectiles = [];
-const pickups = [];
 
 // Destructible solid barrels (design §10 "Object"). Barrels are SOLID (block
 // hero + enemy) but carry an HP pool; they are placed by the population resolver
@@ -399,17 +364,6 @@ function regenerateWorld(oldCtx) {
   camera.setZoneBounds(active);
 
   return areaContext;
-}
-
-/**
- * The per-game generation seed. A genuinely new game rolls a fresh seed so its
- * terrain + population differ from the previous game (lifecycle.md §6). Death
- * and Continue never call this — they reuse the world already built for the
- * game, so a run's arrangement stays fixed.
- * @returns {number}
- */
-function newGameSeed() {
-  return (Math.floor(Math.random() * 0xffffffff) >>> 0);
 }
 
 import { floatTexts } from '../hero/floatText.js';
@@ -624,16 +578,12 @@ ctx.camera = camera;
 ctx.world = world;
 ctx.levelZones = levelZones;
 ctx.areaContext = areaContext;
-ctx.enemies = enemies;
 ctx.barrelSolidBoxes = barrelSolidBoxes;
 ctx.bossZone = bossZone;
-ctx.pickups = pickups;
-ctx.animTestEnemy = animTestEnemy;
 ctx.handleBarrelDestroyed = handleBarrelDestroyed;
 ctx.coins = coins;
 ctx.projectilePool = projectilePool;
 ctx.specialPool = specialPool;
-ctx.FLOOR_TOP = FLOOR_TOP;
 ctx.bossZoneDef = bossZoneDef;
 ctx.clearSeq = clearSeq;
 ctx.CLEAR_SEQ = CLEAR_SEQ;
@@ -650,7 +600,7 @@ setHeroRefSetter(setHeroRef);
 // render.js reads getShakeOffset(), which now returns the tracked instance's
 // current offset ({0,0} when idle/done). World accessors are extracted into
 // world/accessors.js; re-exported here so existing importers keep working.
-export { getShakeOffset, getHero, getSolids, getCollisionWorld, getEnemies, getLiveEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getRealEnemies, getBoss, getActiveZoneKind, getParticles, getCoins, getBarrels, getCoinBarrels, getPowerups, getCheckpoints, getFloatTexts } from '../world/accessors.js';
+export { getShakeOffset, getHero, getSolids, getCollisionWorld, getEnemies, getLiveEnemies, getProjectiles, getSpecials, getPickups, getCamera, getRealEnemies, getBoss, getActiveZoneKind, getParticles, getCoins, getBarrels, getCoinBarrels, getPowerups, getCheckpoints, getFloatTexts } from '../world/accessors.js';
 import { getCheckpoints, getHero } from '../world/accessors.js';
 
 // --- Per-frame step ------------------------------------------------------------
@@ -867,8 +817,7 @@ export function update(dt) {
   updateEffects(dt);
 
   // 2b. advance animations for any entity that has one attached.
-  // (Hero.update already ticks its own anim; tick the decorative anim-test box.)
-  if (animTestEnemy.anim) animTestEnemy.anim.tick(dt);
+  // (Hero.update already ticks its own anim.)
 
   // 2c. thorn integration: advance the pool, cull off-screen shots,
   //     then refresh the collision world's live set from the pool.
@@ -883,8 +832,8 @@ export function update(dt) {
     if (!s.alive || s.type !== 'bomb') continue;
     const bottom = s.y + s.h;
     // Floor bounce.
-    if (bottom >= FLOOR_TOP && s.vy > 0) {
-      s.y = FLOOR_TOP - s.h;
+    if (bottom >= ZONE_GROUND_Y && s.vy > 0) {
+      s.y = ZONE_GROUND_Y - s.h;
       s.vy *= -0.5; // restitution
       s.vx *= 0.7;  // friction
     }
@@ -981,136 +930,6 @@ export function update(dt) {
   // Effects.update(dt) below (render reads getShakeOffset()).
 }
 
-// checkpoints.md §4: after the death presentation and a short delay, FADE TO
-// BLACK. Consume one life exactly once. If lives remain, show the shared
-// entry screen with the new count, then restart the entire current area
-// (the player confirms the screen to begin the attempt).
-/**
- * structure.md §4: in a vertical zone the hero may fall within the visible
- * view, but falling into the bottom emptiness — below the supporting bottom
- * platform — kills them. "Descending cannot recover the earlier part of the
- * climb," so the camera's upward ratchet (task 2.3) is never reset by a fall;
- * only a death restart resets it.
- *
- * The bottom platform's top surface is the zone's bottom (`bounds.y +
- * bounds.h`). A standing hero's feet rest exactly on that line, so a hero
- * standing normally on the entry platform is NOT below it and does not die
- * (structure.md §4: "the initial supporting platform must allow a safe start;
- * the lethal bottom rule must not kill a hero standing normally at the entry").
- * The hero dies only when their feet drop strictly below the platform top.
- *
- * @param {Hero} h the hero
- * @param {object} zone the active zone from buildLevelZones()
- * @returns {boolean} true if the hero has fallen into the bottom emptiness
- */
-export function isBelowVerticalBottom(h, zone) {
-  if (!zone || zone.orientation !== 'vertical') return false;
-  const bottom = zone.bounds.y + zone.bounds.h; // bottom platform top surface
-  // World-space collision box (consistent with the rest of the collision
-  // code): feet at the box's bottom edge, y + h.
-  const wb = h.worldBox ? h.worldBox() : { y: h.y, h: h.h };
-  const feet = wb.y + wb.h;
-  return feet > bottom;
-}
-
-/** Length of the fade-to-black after the skull presentation (checkpoints.md §4:
- *  "After the death presentation and a short delay, fade to black"). Concrete
- *  value owned by the TUNING block (tuning.js). */
-const DEATH_FADE_DURATION = TUNING.deathFade;
-/** Black overlay drawn during the post-skull fade-to-black (render.js reads it). */
-export function getDeathFadeAlpha() {
-  if (!hero.dying) return 0;
-  const t = (hero.deathTimer - hero.DEATH_DURATION) / DEATH_FADE_DURATION;
-  return Math.max(0, Math.min(1, t));
-}
-
-/**
- * Called when the death presentation + fade-to-black completes. Consumes one
- * life exactly once; if any remain, show the SHARED area-entry screen
- * (lifecycle.md §3); if no lives remain, transition to GAME OVER (the
- * state machine then shows the continue/quit screen).
- */
-function finishHeroDeath() {
-  hero.lives -= 1;
-  hero.dying = false; // stop the fade (the entry screen / OVER overlay take over)
-  // Boss zone flow (boss-arena.md §3): losing a life during the intro or
-  // combat restarts the BOSS ZONE at its checkpoint — the approach and the
-  // introduction repeat. The shared area-entry screen is shown for the boss
-  // area (as it is for any area death); when the player confirms it,
-  // beginBossZoneFlow() re-runs the whole sequence.
-  const inBossZone = getActiveZone(hero)?.kind === 'boss';
-  if (hero.lives > 0) {
-    if (inBossZone) {
-      // Keep the hero's area on the boss zone so getActiveZone() keeps
-      // resolving to it. The reset below (resetActiveZoneContent) tears down
-      // any active battle room and restores the run phase: flag back at the
-      // far right, camera re-bound to the full zone width, machine dormant,
-      // hero checkpoint at the left entry. Death in the room restarts the
-      // WHOLE area (boss-arena.md §3).
-      hero.currentArea = AREA_BOSS;
-    }
-    // Ensure the active zone's content is installed in the collision world
-    // before showing the entry screen. This updates the checkpoints array
-    // to the active zone's flags so startLife can latch the entry flag.
-    // BLOCKER 6: re-instantiate the zone's FRESH content from the stored
-    // population snapshot (buildWorld) rather than reusing the mutated
-    // entities — restoreArea() cannot re-add defeated enemies, destroyed
-    // barrels, or collected powerups (lifecycle.md §3: "the previous
-    // attempt's kills and destroyed objects do not leave the next attempt
-    // partly cleared"). Shared with retryFromGameOver so a retry resets the
-    // area identically to a death-restart.
-    resetActiveZoneContent();
-    // checkpoints.md §4: after the death presentation and the fade, consume
-    // one life exactly once and show the SHARED area-entry screen with the new
-    // count. The whole area is restored and the attempt starts beside the
-    // area's entry flag (e.g. death in 1-3 restarts 1-3 beside its flag) when
-    // the player confirms the screen.
-    showAreaEntry(hero, areaContext);
-  } else {
-    // checkpoints.md §5: at zero lives the EXISTING Game Over screen takes
-    // over instead of the area-entry screen — untouched.
-    tryTransition(S.OVER);
-  }
-}
-
-/**
- * Grounded = resting on a solid's top surface. Combines the last resolve()
- * result (pushed down onto a floor this frame) with a small epsilon contact
- * probe so the flag stays true while standing still.
- */
-function isGrounded(hit) {
-  if (hit && hit.axis === 'y' && hit.dir === 1) return true; // landed on a surface
-  const wb = hero.worldBox();
-  // Static platforms + live barrels both count as floor surfaces (the probe
-  // also covers the "standing on a barrel" case). One-way solids currently
-  // being dropped through are excluded — the hero is intentionally passing
-  // below them, not standing on them (design §13 drop-through).
-  for (const s of [...SOLIDS, ...barrelSolidBoxes]) {
-    if (s.oneWay && hero.droppingThrough) continue;
-    if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
-    const gap = s.y - (wb.y + wb.h);
-    if (gap >= -2 && gap <= 4 && hero.vy >= 0) return true;
-  }
-  return false;
-}
-
-/**
- * True when the hero is grounded on a one-way platform (design §13): the
- * Down+Jump drop-through intent is only valid there. Solid terrain never
- * qualifies, so normal jumps over floors/barrels are unaffected.
- */
-function standingOnOneWay() {
-  if (!hero.grounded) return false;
-  const wb = hero.worldBox();
-  for (const s of SOLIDS) {
-    if (!s.oneWay) continue;
-    if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
-    const gap = s.y - (wb.y + wb.h);
-    if (gap >= -2 && gap <= 4) return true;
-  }
-  return false;
-}
-
 // --- Thorn shooting -------------------------------------------------
 // G key fires an 8-way thorn from the shared pool. The aim direction is resolved
 // by gameplay context via hero.resolveAim() (design §4/§32): grounded crouch
@@ -1126,5 +945,4 @@ import { processAllHitboxes } from '../combat/hitboxes.js';
 import { registerCollisionHandlers } from '../combat/collisionHandlers.js';
 import { enterBossRoom, settleIntoBossRoom, restoreBossRunFloor, beginBossZoneFlow, updateBoss } from '../boss/bossFlow.js';
 import { updateRealEnemies } from '../enemies/enemyUpdate.js';
-import { ctx } from '../world/context.js';
 import { refreshBarrelSolidBoxes, handleBarrelDestroyed, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';

@@ -12,23 +12,20 @@ export function getShakeOffset() { return Effects.getShakeOffset(); }
 export function getHero() { return ctx.hero; }
 export function getSolids() { return ctx.solids; }
 export function getCollisionWorld() { return ctx.collisionWorld; }
-export function getEnemies() { return ctx.enemies; }
+export function getEnemies() { return []; }
 // all live enemy entities (placeholder targets + jester) used by
 // the 'clear' powerup effect. Excludes dead/dead-animating enemies.
 export function getLiveEnemies() {
   const out = [];
-  for (const e of ctx.enemies) if (e.alive !== false) out.push(e);
   for (const e of ctx.realEnemies) {
     if (e.alive !== false && e.aiState !== 'dead') out.push(e);
   }
   return out;
 }
-// decorative anim-test box (damage-immune placeholder).
-export function getAnimTestEnemy() { return ctx.animTestEnemy; }
 // live thorns come from the shared pool (pooled, no allocation).
 export function getProjectiles() { return projectilePool.activeItems; }
 export function getSpecials() { return specialPool.activeItems; }
-export function getPickups() { return ctx.pickups; }
+export function getPickups() { return []; }
 export function getCamera() { return ctx.camera; }
 // full real-enemy list (from generateLevel) for render/debug.
 export function getRealEnemies() { return ctx.realEnemies; }
