@@ -8,35 +8,29 @@
 // debug-overlay color.
 
 import { input } from '../core/input.js';
-import { VIEW_W, VIEW_H } from '../core/view.js';
+import { VIEW_W } from '../core/view.js';
 import { Entity } from '../core/entity.js';
 import { SolidBox } from '../core/solidBox.js';
 import { LAYER, GRAVITY, MAX_FALL_SPEED } from '../consts.js';
-import { CollisionWorld, resolve, aabbOverlap } from '../core/collision.js';
+import { CollisionWorld, resolve } from '../core/collision.js';
 import { Camera } from '../core/camera.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
-import { Hero, WEAPON_SPECIAL } from '../hero/hero.js';
+import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
-import { projectilePool, specialPool, dirAngle } from '../objects/projectile.js';
-import { damage } from '../combat/damage.js';
-import { applyKnockback } from '../combat/knockback.js';
-import { S, getState, setState, STATE_NAMES, tryTransition, onTransition } from '../core/state.js';
+import { projectilePool, specialPool } from '../objects/projectile.js';
+import { S, getState, tryTransition, onTransition } from '../core/state.js';
 import { dispatchScreenInput } from '../ui/screens.js';
-import { Elephant, makeElephant, BOSS_TRIGGER_RADIUS, WEAK_POINT_MULT } from '../boss/boss.js';
-import { makeBossZone, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT } from '../boss/bossZone.js';
+import { makeElephant } from '../boss/boss.js';
+import { makeBossZone, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER } from '../boss/bossZone.js';
 import { particles, coins } from '../effects/particles.js';
 import { Effects } from '../effects.js';
-import { GameObj, Checkpoint } from '../objects/object.js';
 import { Debug } from "../debug/debug.js";
-import { applyGodMode, updateTheaterGamepad, selectEntityAt, forceStateAt, setHeroRefSetter } from '../debug/debugHarness.js';
-import { resolveExplosion } from '../combat/explosion.js';
-import { Powerup } from '../objects/powerup.js';
-import { COIN_TYPES } from '../objects/coin.js';
-import { instantiateZone, buildWorld, captureAreaMap } from '../world/build.js';
+import { applyGodMode, updateTheaterGamepad, setHeroRefSetter } from '../debug/debugHarness.js';
+import { buildWorld, captureAreaMap } from '../world/build.js';
 import { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver } from '../world/zoneLifecycle.js';
 export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver };
 import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, BOSS_TRIGGER_X } from '../world/level.js';
-import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId } from '../systems/lifecycle.js';
+import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry } from '../systems/lifecycle.js';
 import { getLevelConfig } from '../world/levelConfigs.js';
 import { Theater } from '../debug/theater.js';
 import { record } from '../stats.js';
@@ -418,7 +412,7 @@ function newGameSeed() {
   return (Math.floor(Math.random() * 0xffffffff) >>> 0);
 }
 
-import { floatTexts, spawnFloatText } from '../hero/floatText.js';
+import { floatTexts } from '../hero/floatText.js';
 
 // --- Input -------------------------------------------------------------------
 export function processInput() {
@@ -828,11 +822,6 @@ export function update(dt) {
   }
   processAllHitboxes();
 
-  // 1d. decay hit-flash timers on enemies (white flash when struck).
-  for (const e of enemies) {
-    if (e.hitFlash > 0) e.hitFlash -= dt;
-  }
-
   // 1d2. tick live barrels (decays their hit-flash timer) + gravity: a barrel
   // whose supporting surface disappeared (block destroyed, platform dropped)
   // falls and lands on whatever is below — resolve() snaps it onto the
@@ -1138,11 +1127,4 @@ import { registerCollisionHandlers } from '../combat/collisionHandlers.js';
 import { enterBossRoom, settleIntoBossRoom, restoreBossRunFloor, beginBossZoneFlow, updateBoss } from '../boss/bossFlow.js';
 import { updateRealEnemies } from '../enemies/enemyUpdate.js';
 import { ctx } from '../world/context.js';
-import { refreshBarrelSolidBoxes, handleBarrelDestroyed, syncCoinsToWorld, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';
-
-// --- Melee attack -------------------------------------------------
-// J key starts a swing (hero.tryMelee). During the single ACTIVE frame of the
-// swing, the hero's meleeHitboxWorld is checked against every live enemy; on
-// overlap we route through central damage(). Each enemy can only be hit once
-// per swing (tracked in _meleeHitSet), so a multi-enemy overlap still deals
-// exactly one hit each. The cooldown prevents spamming.
+import { refreshBarrelSolidBoxes, handleBarrelDestroyed, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';
