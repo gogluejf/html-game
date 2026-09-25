@@ -20,8 +20,8 @@ globalThis.window = { devicePixelRatio: 1, innerWidth: 960, innerHeight: 540, ad
 globalThis.requestAnimationFrame = noop;
 
 const { update, getCoins, getRealEnemies } = await import('../systems/update.js');
-const { coins } = await import('../coin.js');
-const { tryTransition, S } = await import('../state.js');
+const { coins } = await import('../objects/coin.js');
+const { tryTransition, S } = await import('../core/state.js');
 tryTransition(S.PLAY); // enter PLAY so update() runs physics (HOME returns early)
 
 const DT = 1 / 60;
@@ -37,7 +37,7 @@ const enemies = getRealEnemies();
 console.log('live real enemies:', enemies.filter(e => e.alive).length);
 
 // --- Bomb special: spawn, watch it explode on fuse expiry --------------------
-const { specialPool } = await import('../projectile.js');
+const { specialPool } = await import('../objects/projectile.js');
 const bomb = specialPool.spawn(400, 100, 2, 'bomb'); // dir 2 = down-ish
 console.log('\nbomb spawned:', !!bomb, 'alive:', bomb?.alive, 'ttl:', bomb?.ttl?.toFixed(2));
 step(60 * 2); // 2s > BOMB_FUSE(1.5)

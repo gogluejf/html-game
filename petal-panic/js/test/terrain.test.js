@@ -24,7 +24,7 @@ import {
   REACH_MARGIN,
   GRAVITY,
   DOUBLE_JUMP_FACTOR,
-} from '../terrain.js';
+} from '../world/terrain.js';
 
 let passed = 0;
 function ok(name, fn) {

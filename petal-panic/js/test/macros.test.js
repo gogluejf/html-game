@@ -31,8 +31,8 @@ import {
   ENTRY_CLEAR,
   EXIT_CLEAR,
   MAX_CLEARABLE_GAP,
-} from '../macros.js';
-import { createRng } from '../terrain.js';
+} from '../world/macros.js';
+import { createRng } from '../world/terrain.js';
 import {
   HORIZONTAL_AREA_LENGTH_PX,
   VERTICAL_AREA_LENGTH_PX,
@@ -41,8 +41,8 @@ import {
   buildAllZoneTerrain,
   buildLevelZones,
   LEVELS,
-} from '../level.js';
-import { UNIT_PX_X, UNIT_PX_Y } from '../macros.js';
+} from '../world/level.js';
+import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 
 // ---------------------------------------------------------------------------
 // Macro vocabulary (generation.md §2, §3)

@@ -6,7 +6,7 @@ import { strict as assert } from 'node:assert';
 import {
   Projectile, Pool, projectilePool, MAX_PROJECTILES,
   dirAngle, aimFromInput,
-} from '../projectile.js';
+} from '../objects/projectile.js';
 import { LAYER } from '../consts.js';
 
 let passed = 0;

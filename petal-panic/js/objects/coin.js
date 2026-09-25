@@ -14,8 +14,8 @@
 // oldest live coin is recycled (auto-collected without credit) so the newest
 // coins always get their chance to be picked up.
 
-import { Entity } from './entity.js';
-import { LAYER, GRAVITY, MAX_FALL_SPEED, COIN_TTL, TTL_SPEED } from './consts.js';
+import { Entity } from '../core/entity.js';
+import { LAYER, GRAVITY, MAX_FALL_SPEED, COIN_TTL, TTL_SPEED } from '../consts.js';
 
 // --- Tunables ----------------------------------------------------------------
 export const MAX_COINS = 30;                 // hard cap on live coins (§17 perf param)

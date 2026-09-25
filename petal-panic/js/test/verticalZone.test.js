@@ -22,9 +22,9 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
-import { Camera } from '../camera.js';
-import { VIEW_H } from '../view.js';
-import { LEVELS, buildLevelZones } from '../level.js';
+import { Camera } from '../core/camera.js';
+import { VIEW_H } from '../core/view.js';
+import { LEVELS, buildLevelZones } from '../world/level.js';
 
 // --- Minimal DOM stub so systems/update.js (a browser module) loads in node. --
 // Same pattern as camera.test.js / clearSequence.test.js.
@@ -39,7 +39,7 @@ globalThis.window = { devicePixelRatio: 1, innerWidth: 960, innerHeight: 540, ad
 globalThis.requestAnimationFrame = noop;
 
 const U = await import('../systems/update.js');
-const { S, setState, tryTransition } = await import('../state.js');
+const { S, setState, tryTransition } = await import('../core/state.js');
 
 const zones = buildLevelZones(LEVELS[0]);
 // LEVELS[0].verticalArea is 3 (see level.js config); the vertical zone is the

@@ -15,7 +15,7 @@
 // jab (one hit per swing) for very close targets.
 
 import { Enemy } from './enemy.js';
-import { projectilePool } from './projectile.js';
+import { projectilePool } from '../objects/projectile.js';
 
 export const VIOLETTA_DEF = {
   id: 'violetta_marionetta',

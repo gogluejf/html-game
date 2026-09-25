@@ -16,7 +16,7 @@
 // Returns the real (post-defense) damage dealt, or 0 if the target was already
 // dead.
 
-import { record } from './stats.js';
+import { record } from '../stats.js';
 
 /** Hit-landed method buckets that damage() may write (subset of stats HIT_METHODS). */
 const HITS_LANDED_METHODS = new Set(['melee', 'projectile', 'special', 'specialMelee', 'superMove', 'explosion']);

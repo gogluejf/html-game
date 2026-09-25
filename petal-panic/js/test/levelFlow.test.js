@@ -29,21 +29,21 @@ globalThis.document = {
 };
 globalThis.window = { addEventListener: noop, __selectedHero: 'scarlet' };
 
-const L = await import('../lifecycle.js');
-const { S, getState, setState, tryTransition } = await import('../state.js');
-const { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y } = await import('../level.js');
-const { createRng } = await import('../terrain.js');
-const { populateArea, populationSnapshot, composeArea } = await import('../macros.js');
-const { getLevelConfig, getStageBudget } = await import('../levelConfigs.js');
-const { Hero } = await import('../hero.js');
-const { HEROES } = await import('../heroDefs.js');
+const L = await import('../systems/lifecycle.js');
+const { S, getState, setState, tryTransition } = await import('../core/state.js');
+const { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y } = await import('../world/level.js');
+const { createRng } = await import('../world/terrain.js');
+const { populateArea, populationSnapshot, composeArea } = await import('../world/macros.js');
+const { getLevelConfig, getStageBudget } = await import('../world/levelConfigs.js');
+const { Hero } = await import('../hero/hero.js');
+const { HEROES } = await import('../hero/heroDefs.js');
 const { createTrace } = await import('../stats.js');
-const { GAME_RULES } = await import('../gameRules.js');
+const { GAME_RULES } = await import('../systems/gameRules.js');
 const U = await import('../systems/update.js');
 const {
   makeBossZone, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT,
-} = await import('../bossZone.js');
-const { makeElephant } = await import('../boss.js');
+} = await import('../boss/bossZone.js');
+const { makeElephant } = await import('../boss/boss.js');
 
 // --- Constants (from TUNING via the runtime) ---------------------------------
 const DT = 1 / 60;

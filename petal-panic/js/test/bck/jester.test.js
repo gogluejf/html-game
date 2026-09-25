@@ -6,7 +6,7 @@
 import { strict as assert } from 'node:assert';
 import { Enemy } from '../enemy.js';
 import { Jester, JESTER_DEF } from '../jester.js';
-import { ParticleSystem, CoinPool } from '../particles.js';
+import { ParticleSystem, CoinPool } from '../effects/particles.js';
 import { LAYER } from '../consts.js';
 import { Hero } from '../hero.js';
 import { HEROES } from '../heroDefs.js';

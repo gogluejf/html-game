@@ -10,8 +10,8 @@
 // re-exported here so the lifecycle/reward systems read the settled policy
 // from one owner (GAME_RULES) rather than a scattered literal.
 
-import { TUNING_COINS, TUNING_INVENTORY } from './tuning.js';
-import { WEAPON_THORN } from './hero.js';
+import { TUNING_COINS, TUNING_INVENTORY } from '../tuning.js';
+import { WEAPON_THORN } from '../hero/hero.js';
 
 export const GAME_RULES = Object.freeze({
   // A new game starts with 3 lives and 3 continues.

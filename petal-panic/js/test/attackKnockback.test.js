@@ -9,9 +9,9 @@
 // knockback field anywhere in heroDefs.
 
 import { strict as assert } from 'node:assert';
-import { Hero } from '../hero.js';
-import { HEROES, ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from '../heroDefs.js';
-import { applyKnockback } from '../knockback.js';
+import { Hero } from '../hero/hero.js';
+import { HEROES, ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from '../hero/heroDefs.js';
+import { applyKnockback } from '../combat/knockback.js';
 
 let passed = 0;
 function ok(name, fn) {

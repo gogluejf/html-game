@@ -8,9 +8,9 @@
 // pool so existing callers (`import { coins } from './particles.js'`) keep
 // working unchanged.
 
-import { LAYER } from './consts.js';
-import { Entity } from './entity.js';
-import { coins, CoinPool } from './coin.js'; // re-exported below for backward compat
+import { LAYER } from '../consts.js';
+import { Entity } from '../core/entity.js';
+import { coins, CoinPool } from '../objects/coin.js'; // re-exported below for backward compat
 
 // --- Tunables ----------------------------------------------------------------
 export const MAX_PARTICLES = 50;       // hard cap on live sparkles (§17 perf param)

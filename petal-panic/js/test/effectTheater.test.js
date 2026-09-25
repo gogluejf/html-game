@@ -19,7 +19,7 @@
 
 import { strict as assert } from 'node:assert';
 import { theaterList, fireManual, activeCount } from '../effects/index.js';
-import { Theater } from '../effects/theater.js';
+import { Theater } from '../debug/theater.js';
 import '../effects/registry.js'; // side effect: registers all types
 
 const DT = 1 / 60;

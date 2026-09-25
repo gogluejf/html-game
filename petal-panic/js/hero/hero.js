@@ -6,9 +6,9 @@
 // top edge drops by h*0.4 while keeping the feet planted — this validates the
 // offset-box model end-to-end (the debug overlay shows the box get shorter).
 
-import { Entity } from './entity.js';
-import { GRAVITY, MAX_FALL_SPEED, LAYER, DOUBLE_JUMP_FACTOR } from './consts.js';
-import { aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } from './projectile.js';
+import { Entity } from '../core/entity.js';
+import { GRAVITY, MAX_FALL_SPEED, LAYER, DOUBLE_JUMP_FACTOR } from '../consts.js';
+import { aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } from '../objects/projectile.js';
 import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from './heroDefs.js';
 
 // Feel knobs (tune freely; these are not per-hero stats).

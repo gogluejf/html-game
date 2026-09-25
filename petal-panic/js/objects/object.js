@@ -12,9 +12,9 @@
 // central damage() to everything inside the radius — keeping the math
 // unit-testable without a DOM.
 
-import { Entity } from './entity.js';
-import { LAYER } from './consts.js';
-import { BARREL_EXPLOSION_KNOCKBACK, ALIGNMENT } from './explosion.js';
+import { Entity } from '../core/entity.js';
+import { LAYER } from '../consts.js';
+import { BARREL_EXPLOSION_KNOCKBACK, ALIGNMENT } from '../combat/explosion.js';
 
 // --- Tunables ----------------------------------------------------------------
 export const BARREL_DAMAGE = 25;        // AoE damage dealt by a barrel explosion

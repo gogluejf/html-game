@@ -25,11 +25,11 @@ globalThis.document = {
 };
 globalThis.window = { addEventListener: noop };
 
-const L = await import('../lifecycle.js');
-const { S, getState, setState, tryTransition } = await import('../state.js');
-const { GAME_RULES } = await import('../gameRules.js');
-const { Hero } = await import('../hero.js');
-const { HEROES } = await import('../heroDefs.js');
+const L = await import('../systems/lifecycle.js');
+const { S, getState, setState, tryTransition } = await import('../core/state.js');
+const { GAME_RULES } = await import('../systems/gameRules.js');
+const { Hero } = await import('../hero/hero.js');
+const { HEROES } = await import('../hero/heroDefs.js');
 const { createTrace } = await import('../stats.js');
 const U = await import('../systems/update.js');
 

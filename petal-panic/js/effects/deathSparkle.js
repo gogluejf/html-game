@@ -9,7 +9,7 @@
 // params: { x, y, size? } — size defaults to 32px.
 // Count formula (unchanged): max(4, round(8 + size * 0.25)).
 
-import { particles } from '../particles.js';
+import { particles } from './particles.js';
 
 const DEATH_SPARKLE_BASE = 8; // baseline sparkle count at 32px sprite width
 

@@ -38,9 +38,9 @@ import {
   MAX_CLEARABLE_GAP,
   MAX_ELEVATION_STEP,
   UNIT_PX_X,
-} from '../macros.js';
-import { createRng, maxClearableStep } from '../terrain.js';
-import { areaLengthBudget } from '../level.js';
+} from '../world/macros.js';
+import { createRng, maxClearableStep } from '../world/terrain.js';
+import { areaLengthBudget } from '../world/level.js';
 
 // ---------------------------------------------------------------------------
 // 1. Vertical areas compose from climbing macros only

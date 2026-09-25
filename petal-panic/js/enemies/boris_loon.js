@@ -13,7 +13,7 @@
 // and lower HP (15); swarms of 2–3 are handled by the spawner, not the AI.
 
 import { Enemy } from './enemy.js';
-import { projectilePool } from './projectile.js';
+import { projectilePool } from '../objects/projectile.js';
 
 const BASE_W = 44, BASE_H = 40;
 

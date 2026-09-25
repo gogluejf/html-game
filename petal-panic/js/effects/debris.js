@@ -31,7 +31,7 @@
 //   size          — fragment side length in px (default 4); scales the
 //                   drawn square down linearly toward the end of life
 
-import { particles } from '../particles.js';
+import { particles } from './particles.js';
 import { FIRE_COLORS } from './palettes.js';
 
 const DEFAULT_COUNT = 8;

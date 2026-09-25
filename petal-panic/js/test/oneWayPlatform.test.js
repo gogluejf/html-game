@@ -8,10 +8,10 @@
 // not pixel offsets or tuning constants.
 
 import { strict as assert } from 'node:assert';
-import { Hero } from '../hero.js';
-import { HEROES } from '../heroDefs.js';
-import { resolve } from '../collision.js';
-import { LEVELS, buildLevelZones } from '../level.js';
+import { Hero } from '../hero/hero.js';
+import { HEROES } from '../hero/heroDefs.js';
+import { resolve } from '../core/collision.js';
+import { LEVELS, buildLevelZones } from '../world/level.js';
 
 let passed = 0;
 function ok(name, fn) {

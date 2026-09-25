@@ -24,13 +24,13 @@
 // effects) so the rules are unit-testable in node without a DOM.
 
 import { GAME_RULES, createContinuePool, canSpend, spend, credit, resetLevelCoinTally, resetHeroInventory } from './gameRules.js';
-import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y } from './level.js';
-import { getLevelConfig } from './levelConfigs.js';
-import { Hero } from './hero.js';
-import { createTrace, record, beginLife, beginContinue, recordAreaMap, calculateScore } from './stats.js';
-import { Anim, makeTestFrame } from './anim.js';
-import { tryTransition, getState, setState, S } from './state.js';
-import { TUNING } from './tuning.js';
+import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../world/level.js';
+import { getLevelConfig } from '../world/levelConfigs.js';
+import { Hero } from '../hero/hero.js';
+import { createTrace, record, beginLife, beginContinue, recordAreaMap, calculateScore } from '../stats.js';
+import { Anim, makeTestFrame } from '../core/anim.js';
+import { tryTransition, getState, setState, S } from '../core/state.js';
+import { TUNING } from '../tuning.js';
 
 // --- Area-entry accounting snapshot (game-rules.md §2/§4) -------------------
 //

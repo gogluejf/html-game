@@ -27,8 +27,8 @@
 // tracked 'camera-shake' instance through the engine with the legacy
 // max-kick merge rule, and Effects.getShakeOffset() reads its current offset.
 
-import { particles } from './particles.js';
-import { VIEW_W, VIEW_H } from './view.js'; // viewport dims for screen-space overlay fires
+import { particles } from './effects/particles.js';
+import { VIEW_W, VIEW_H } from './core/view.js'; // viewport dims for screen-space overlay fires
 import {
   fireManual,
   updateEffects as stepEngine,

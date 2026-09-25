@@ -30,7 +30,7 @@
 
 import { strict as assert } from 'node:assert';
 import { compositeExplosion } from '../effects/compositeExplosion.js';
-import { particles, MAX_PARTICLES } from '../particles.js';
+import { particles, MAX_PARTICLES } from '../effects/particles.js';
 import { hasEffect, fireManual, fire, resetEffects, activeCount, activeInstances, updateEffects, drawEffects } from '../effects/index.js';
 import '../effects/registry.js'; // side effect: registers the types
 

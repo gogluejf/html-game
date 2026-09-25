@@ -4,7 +4,7 @@
 // Fixed dt = 1/60 per project convention.
 
 import { strict as assert } from 'node:assert';
-import { particles } from '../particles.js';
+import { particles } from '../effects/particles.js';
 import { hitSparkle } from '../effects/hitSparkle.js';
 import { deathSparkle } from '../effects/deathSparkle.js';
 import { pickupPop } from '../effects/pickupPop.js';

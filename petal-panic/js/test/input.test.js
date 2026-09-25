@@ -12,10 +12,10 @@ const noop = () => {};
 globalThis.document = Object.assign(new Events(), { createElement: () => ({ getContext: () => new Proxy({}, { get: () => noop }) }) });
 const pads = [];
 Object.defineProperty(globalThis, 'navigator', { value: { getGamepads: () => pads }, configurable: true });
-const { createInput, input, DEFAULT_MAPPING, formatBinding } = await import('../input.js');
-const { S, setState, getState, tryTransition } = await import('../state.js');
-const { Select, Pause, GameOver } = await import('../screens.js');
-const { Remap } = await import('../remap.js');
+const { createInput, input, DEFAULT_MAPPING, formatBinding } = await import('../core/input.js');
+const { S, setState, getState, tryTransition } = await import('../core/state.js');
+const { Select, Pause, GameOver } = await import('../ui/screens.js');
+const { Remap } = await import('../core/remap.js');
 const U = await import('../systems/update.js');
 function pad(index = 0) { return { index, connected: true, id: 'DualSense 054c 0ce6', buttons: Array.from({ length: 16 }, () => ({ pressed: false })), axes: [0, 0, 0, 0] }; }
 function fixture() {
@@ -265,7 +265,7 @@ test('migration upgrades only exact complete old defaults, preserving custom and
 
 
 test('actual shot octants honor direction lock and all eight stationary aim directions on both devices', async () => {
-  const { aimFromInput, Projectile } = await import('../projectile.js');
+  const { aimFromInput, Projectile } = await import('../objects/projectile.js');
   const directions=[[1,0,0],[1,-1,1],[0,-1,2],[-1,-1,3],[-1,0,4],[-1,1,5],[0,1,6],[1,1,7]];
   for (const source of ['keyboard','gamepad']) {
     const f=fixture(), p=pad(); f.pads.push(p);

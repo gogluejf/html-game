@@ -14,9 +14,9 @@
 // a ctx stub).
 
 import { theaterList } from './theater-scenes.js';
-import { resetEffects, DEMO_VIEW } from './index.js';
-import { particles } from '../particles.js';
-import { navLabelString, navLabels } from '../input.js';
+import { resetEffects, DEMO_VIEW } from '../effects/index.js';
+import { particles } from '../effects/particles.js';
+import { navLabelString, navLabels } from '../core/input.js';
 import { EFFECT_META } from './theater-meta.js';
 
 // Built once at import: the catalog is static for the life of the process.

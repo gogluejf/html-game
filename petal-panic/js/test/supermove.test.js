@@ -4,8 +4,8 @@
 // plain intent objects. No DOM key simulation, no input.js polling.
 
 import { strict as assert } from 'node:assert';
-import { Hero } from '../hero.js';
-import { HEROES } from '../heroDefs.js';
+import { Hero } from '../hero/hero.js';
+import { HEROES } from '../hero/heroDefs.js';
 
 // --- Minimal DOM stub (render.js → update.js builds placeholder frames at
 // import time). Same pattern as heroAnim.test.js.

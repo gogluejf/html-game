@@ -29,8 +29,8 @@ import {
   MACROS,
   slotIsOnValidSurface,
   populationSnapshot,
-} from '../macros.js';
-import { createRng } from '../terrain.js';
+} from '../world/macros.js';
+import { createRng } from '../world/terrain.js';
 
 // ---------------------------------------------------------------------------
 // Macro placement opportunities (the slots the resolver fills)

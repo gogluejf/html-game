@@ -23,7 +23,7 @@ const press = (code) => listeners.keydown.forEach(fn => fn({ code, preventDefaul
 const release = (code) => listeners.keyup.forEach(fn => fn({ code, preventDefault: noop }));
 
 const U = await import('../systems/update.js');
-const { S, setState } = await import('../state.js');
+const { S, setState } = await import('../core/state.js');
 
 let passed = 0;
 function ok(name, fn) {

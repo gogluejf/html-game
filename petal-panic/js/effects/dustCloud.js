@@ -32,7 +32,7 @@
 //                   (default 0 → gentle drift, no fall); positive values make
 //                   the cloud settle back down, negative floats it upward
 
-import { particles } from '../particles.js';
+import { particles } from './particles.js';
 import { DUST_COLORS } from './palettes.js';
 
 const DEFAULT_COUNT = 6;

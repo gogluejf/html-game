@@ -9,8 +9,8 @@
 // debug color. Friendly (hero) projectiles only ever hit ENEMY/BOSS per the
 // COLLISION_RULES masks — they can NEVER touch the hero (acceptance #3).
 
-import { Entity } from './entity.js';
-import { LAYER } from './consts.js';
+import { Entity } from '../core/entity.js';
+import { LAYER } from '../consts.js';
 
 // --- Tunables ----------------------------------------------------------------
 export const MAX_PROJECTILES = 64;        // hard cap on live projectiles (perf param, §17)

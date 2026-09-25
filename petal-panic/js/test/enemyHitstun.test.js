@@ -6,7 +6,7 @@
 // enemy resumes its prior AI state. Fixed dt = 1/60.
 
 import { strict as assert } from 'node:assert';
-import { Enemy } from '../enemy.js';
+import { Enemy } from '../enemies/enemy.js';
 import { GRAVITY } from '../consts.js';
 
 let passed = 0;

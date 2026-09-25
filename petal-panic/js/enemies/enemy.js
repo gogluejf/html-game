@@ -17,9 +17,9 @@
 //     the Enemy class free of particle/pool dependencies so other enemies can
 //     inherit cleanly.
 
-import { Entity } from './entity.js';
-import { LAYER, GRAVITY, MAX_FALL_SPEED } from './consts.js';
-import { damage } from './damage.js';
+import { Entity } from '../core/entity.js';
+import { LAYER, GRAVITY, MAX_FALL_SPEED } from '../consts.js';
+import { damage } from '../combat/damage.js';
 
 export class Enemy extends Entity {
   /**

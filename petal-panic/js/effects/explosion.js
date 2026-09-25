@@ -13,7 +13,7 @@
 // Default count formula: min(24, 12 + round(radius * 0.15));
 // speeds 120..(120 + radius * 1.5) px/s; colors cycle FIRE_COLORS by index.
 
-import { particles } from '../particles.js';
+import { particles } from './particles.js';
 import { FIRE_COLORS } from './palettes.js';
 
 const EXPLOSION_MIN = 12;        // min particles for an explosion blast

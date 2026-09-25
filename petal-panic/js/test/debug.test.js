@@ -4,7 +4,7 @@
 // We stub `performance` (present in node) and drive the pure API surface.
 
 import { strict as assert } from 'node:assert';
-import { Debug, initSpawnTable, SPAWN_KEYS } from '../debug.js';
+import { Debug, initSpawnTable, SPAWN_KEYS } from '../debug/debug.js';
 
 let passed = 0;
 function ok(name, fn) {

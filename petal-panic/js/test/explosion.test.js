@@ -11,11 +11,11 @@
 //   * hero behavior preservation (routed through takeHit('explosion'))
 
 import { strict as assert } from 'node:assert';
-import { Hero } from '../hero.js';
-import { HEROES } from '../heroDefs.js';
+import { Hero } from '../hero/hero.js';
+import { HEROES } from '../hero/heroDefs.js';
 import {
   resolveExplosion, isValidTarget, ALIGNMENT,
-} from '../explosion.js';
+} from '../combat/explosion.js';
 
 let passed = 0;
 const ok = (name, fn) => {

@@ -40,10 +40,10 @@ const {
   BossZone, makeBossZone,
   BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT,
   BOSS_ZONE_STATES,
-} = await import('../bossZone.js');
-const { LEVELS, buildLevelZones, ZONE_ENTRY_X, BOSS_TRIGGER_X } = await import('../level.js');
-const { makeElephant } = await import('../boss.js');
-const { VIEW_W } = await import('../view.js');
+} = await import('../boss/bossZone.js');
+const { LEVELS, buildLevelZones, ZONE_ENTRY_X, BOSS_TRIGGER_X } = await import('../world/level.js');
+const { makeElephant } = await import('../boss/boss.js');
+const { VIEW_W } = await import('../core/view.js');
 
 // A minimal boss-zone fixture (the real one comes from buildLevelZones).
 function fixture() {
@@ -405,7 +405,7 @@ globalThis.window = { devicePixelRatio: 1, innerWidth: 960, innerHeight: 540, ad
 globalThis.requestAnimationFrame = noop;
 
 const U = await import('../systems/update.js');
-const { S, getState } = await import('../state.js');
+const { S, getState } = await import('../core/state.js');
 
 test('runtime: the boss zone flow is created DORMANT (inactive) at boot', () => {
   // The machine must NOT be active at boot. It only activates when the hero

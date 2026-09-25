@@ -12,7 +12,7 @@ import { strict as assert } from 'node:assert';
 import { LAYER } from '../consts.js';
 import {
   Coin, COIN_TYPES, CoinPool, rollCoinType, MAX_COINS,
-} from '../coin.js';
+} from '../objects/coin.js';
 
 let passed = 0;
 function ok(name, fn) {

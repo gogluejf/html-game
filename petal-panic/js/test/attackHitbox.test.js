@@ -3,8 +3,8 @@
 // No DOM needed: entity.js / consts.js / hero.js / heroDefs.js are pure modules.
 
 import { strict as assert } from 'node:assert';
-import { Hero } from '../hero.js';
-import { HEROES, ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from '../heroDefs.js';
+import { Hero } from '../hero/hero.js';
+import { HEROES, ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from '../hero/heroDefs.js';
 
 let passed = 0;
 function ok(name, fn) {

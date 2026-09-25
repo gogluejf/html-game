@@ -4,8 +4,8 @@
 // absorption, hit-stun input lock, and clean control resumption. No DOM needed.
 
 import { strict as assert } from 'node:assert';
-import { Hero, KNOCKBACK_PROFILES } from '../hero.js';
-import { HEROES } from '../heroDefs.js';
+import { Hero, KNOCKBACK_PROFILES } from '../hero/hero.js';
+import { HEROES } from '../hero/heroDefs.js';
 
 let passed = 0;
 function ok(name, fn) {

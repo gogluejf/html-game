@@ -7,7 +7,7 @@
 
 import { strict as assert } from 'node:assert';
 import { debris } from '../effects/debris.js';
-import { particles } from '../particles.js';
+import { particles } from '../effects/particles.js';
 import { FIRE_COLORS } from '../effects/palettes.js';
 import { hasEffect, fireManual, fire, resetEffects, activeCount, updateEffects, drawEffects } from '../effects/index.js';
 import '../effects/registry.js'; // side effect: registers the types

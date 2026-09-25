@@ -40,14 +40,14 @@ globalThis.document = {
 };
 globalThis.window = { addEventListener: noop };
 
-const L = await import('../lifecycle.js');
-const { S, getState, setState } = await import('../state.js');
-const { GAME_RULES } = await import('../gameRules.js');
-const { Hero } = await import('../hero.js');
-const { HEROES } = await import('../heroDefs.js');
-const { LEVELS } = await import('../level.js');
+const L = await import('../systems/lifecycle.js');
+const { S, getState, setState } = await import('../core/state.js');
+const { GAME_RULES } = await import('../systems/gameRules.js');
+const { Hero } = await import('../hero/hero.js');
+const { HEROES } = await import('../hero/heroDefs.js');
+const { LEVELS } = await import('../world/level.js');
 const { createTrace } = await import('../stats.js');
-const SC = await import('../screens.js');
+const SC = await import('../ui/screens.js');
 const U = await import('../systems/update.js');
 
 // --- Helpers -----------------------------------------------------------------
@@ -294,7 +294,7 @@ test('the reward screen follows the shared ergonomics contract (keycap nav bar)'
   // game-rules.md §3: all screens share the same list layout, focus pill,
   // and button-instruction/keycap bar as the pause menu. The reward screen
   // builds its nav bar through the same navHintEntries() pattern.
-  const { navHintEntries } = await import('../input.js');
+  const { navHintEntries } = await import('../core/input.js');
   const entries = navHintEntries([{ action: 'confirm' }]);
   assert.ok(Array.isArray(entries) && entries.length === 1, 'a single confirm entry');
   assert.ok(Array.isArray(entries[0].icons) && entries[0].icons.length > 0, 'keycap icons present');
@@ -493,7 +493,7 @@ test('end-of-game: the screen follows the shared ergonomics pattern (list + focu
   // game-rules.md §3: the end-of-game screen reuses the pause menu's list
   // layout / focus pill / keycap nav bar pattern. The nav bar is built with
   // the same navHintEntries() helper the pause menu uses.
-  const { navHintEntries } = await import('../input.js');
+  const { navHintEntries } = await import('../core/input.js');
   const entries = navHintEntries([
     { action: 'confirm' },
     { action: 'back', label: 'Return' },

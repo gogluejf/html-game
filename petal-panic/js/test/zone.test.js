@@ -17,8 +17,8 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
-import { LEVELS, buildLevelZones, BOSS_CHECKPOINT, ZONE_H_HORIZONTAL, ZONE_H_VERTICAL, ZONE_WIDTH_HORIZONTAL, ZONE_WIDTH_VERTICAL } from '../level.js';
-import { VIEW_H } from '../view.js';
+import { LEVELS, buildLevelZones, BOSS_CHECKPOINT, ZONE_H_HORIZONTAL, ZONE_H_VERTICAL, ZONE_WIDTH_HORIZONTAL, ZONE_WIDTH_VERTICAL } from '../world/level.js';
+import { VIEW_H } from '../core/view.js';
 
 const def = LEVELS[0];
 const zones = buildLevelZones(def);

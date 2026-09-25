@@ -9,7 +9,7 @@
 // params: { x, y, count? } — count omitted → random int in [3, 5] (old roll).
 // Speeds uniform [60, 140] px/s; colors cycle BLOOD_COLORS by index.
 
-import { particles } from '../particles.js';
+import { particles } from './particles.js';
 import { BLOOD_COLORS } from './palettes.js';
 
 const HIT_SPARKLE_COUNT = [3, 5];   // design §12: 3–5 red sparkles per hit

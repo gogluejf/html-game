@@ -14,8 +14,8 @@
 // resolver; this class only latches the blast and fires onExplode().
 
 import { Enemy } from './enemy.js';
-import { LAYER } from './consts.js';
-import { JACKO_EXPLOSION_KNOCKBACK, ALIGNMENT } from './explosion.js';
+import { LAYER } from '../consts.js';
+import { JACKO_EXPLOSION_KNOCKBACK, ALIGNMENT } from '../combat/explosion.js';
 
 export const JACKO_DEF = {
   id: 'jackolantern',

@@ -5,9 +5,9 @@ const ctx = new Proxy({}, { get: () => noop, set: () => true });
 globalThis.document = { createElement: () => ({ getContext: () => ctx, addEventListener: noop }) };
 globalThis.window = { addEventListener: noop, __selectedHero: 'scarlet' };
 const U = await import('../systems/update.js');
-const { S, setState, getState } = await import('../state.js');
-const { makeCheckpoint } = await import('../object.js');
-const { ZONE_ENTRY_X, ZONE_GROUND_Y } = await import('../level.js');
+const { S, setState, getState } = await import('../core/state.js');
+const { makeCheckpoint } = await import('../objects/object.js');
+const { ZONE_ENTRY_X, ZONE_GROUND_Y } = await import('../world/level.js');
 const DT = 1 / 60;
 
 for (const from of [1, 4]) {

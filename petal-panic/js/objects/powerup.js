@@ -12,9 +12,9 @@
 //   - VFX (sparkle pop + floating label text) are spawned by the caller so this
 //     module has no particle dependency and stays unit-testable.
 
-import { Entity } from './entity.js';
-import { LAYER } from './consts.js';
-import { record } from './stats.js';
+import { Entity } from '../core/entity.js';
+import { LAYER } from '../consts.js';
+import { record } from '../stats.js';
 
 // --- Effect definitions ------------------------------------------------------
 // Each entry: { label, color, duration?, apply(hero, context) }.

@@ -27,10 +27,10 @@
 // Pixel scaling is a later task (3.3 / 7.2).
 
 import { createRng, makeBlock, makePlatform } from './terrain.js';
-import { GRAVITY, DOUBLE_JUMP_FACTOR } from './consts.js';
-import { HEROES } from './heroDefs.js';
-import { BARREL_DEF } from './object.js';
-import { TUNING_BARREL, TUNING_MACRO } from './tuning.js';
+import { GRAVITY, DOUBLE_JUMP_FACTOR } from '../consts.js';
+import { HEROES } from '../hero/heroDefs.js';
+import { BARREL_DEF } from '../objects/object.js';
+import { TUNING_BARREL, TUNING_MACRO } from '../tuning.js';
 
 // ---------------------------------------------------------------------------
 // Constants

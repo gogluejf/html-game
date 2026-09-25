@@ -16,7 +16,7 @@
 //   - Enemy death drops (Enemy.coinDrop config, rolled in updateRealEnemy)
 // This module is pure (no DOM, no canvas) so it's unit-testable in node.
 
-import { VIEW_H } from './view.js';
+import { VIEW_H } from '../core/view.js';
 import { composeArea, UNIT_PX_X, UNIT_PX_Y, PLATFORM_DRAW_H } from './macros.js';
 import { createRng } from './terrain.js';
 

@@ -9,7 +9,7 @@
 // Subclasses override update() / draw() as needed; the defaults here give a
 // working falling-box entity out of the box.
 
-import { GRAVITY, MAX_FALL_SPEED } from './consts.js';
+import { GRAVITY, MAX_FALL_SPEED } from '../consts.js';
 import { Timers } from './timers.js';
 
 export class Entity {

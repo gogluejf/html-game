@@ -4,7 +4,7 @@
 
 import { strict as assert } from 'node:assert';
 import { Effects } from '../effects.js';
-import { particles } from '../particles.js';
+import { particles } from '../effects/particles.js';
 
 let passed = 0;
 function ok(name, fn) {

@@ -4,8 +4,8 @@
 // call hero.requestMelee(kind) for input and hero.update(DT, intent) for ticks.
 
 import { strict as assert } from 'node:assert';
-import { Hero } from '../hero.js';
-import { HEROES } from '../heroDefs.js';
+import { Hero } from '../hero/hero.js';
+import { HEROES } from '../hero/heroDefs.js';
 
 let passed = 0;
 function ok(name, fn) {

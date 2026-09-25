@@ -1,10 +1,10 @@
 // Integration: barrel blocks hero via resolve() AND thorn hits barrel via CollisionWorld.
 import { strict as assert } from 'node:assert';
 import { LAYER } from '../consts.js';
-import { Entity } from '../entity.js';
-import { CollisionWorld, resolve } from '../collision.js';
-import { makeBarrel, GameObj } from '../object.js';
-import { Projectile } from '../projectile.js';
+import { Entity } from '../core/entity.js';
+import { CollisionWorld, resolve } from '../core/collision.js';
+import { makeBarrel, GameObj } from '../objects/object.js';
+import { Projectile } from '../objects/projectile.js';
 
 let passed = 0;
 const ok = (n, f) => { try { f(); passed++; console.log('  ✓', n); } catch(e){ console.error('  ✗', n, '\n   ', e.message); process.exitCode=1; } };

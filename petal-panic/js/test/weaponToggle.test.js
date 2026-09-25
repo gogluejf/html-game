@@ -8,9 +8,9 @@
 // path; each weapon has independent ammo + cooldown; selection persists.
 
 import { strict as assert } from 'node:assert';
-import { Hero, WEAPON_THORN, WEAPON_SPECIAL } from '../hero.js';
-import { HEROES } from '../heroDefs.js';
-import { projectilePool, specialPool } from '../projectile.js';
+import { Hero, WEAPON_THORN, WEAPON_SPECIAL } from '../hero/hero.js';
+import { HEROES } from '../hero/heroDefs.js';
+import { projectilePool, specialPool } from '../objects/projectile.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -189,7 +189,7 @@ ok('swapHero preserves the selection (update.js saved-state contract)', () => {
 console.log('HUD indication (AC #5)');
 ok('hud.js marks the selected weapon in the ammo readout', async () => {
   const fs = await import('node:fs');
-  const src = fs.readFileSync(new URL('../hud.js', import.meta.url), 'utf8');
+  const src = fs.readFileSync(new URL('../systems/hud.js', import.meta.url), 'utf8');
   assert.ok(src.includes('selectedWeapon'), 'drawAmmo reads hero.selectedWeapon');
   assert.ok(src.includes('> '), 'selected weapon gets a ">" marker');
 });

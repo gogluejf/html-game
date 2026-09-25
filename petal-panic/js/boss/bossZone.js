@@ -51,8 +51,8 @@
 // design plan will propose them"). Their single owner is the TUNING block
 // (tuning.js); this module consumes them so the cited value has one owner.
 
-import { VIEW_W, VIEW_H } from './view.js';
-import { TUNING } from './tuning.js';
+import { VIEW_W, VIEW_H } from '../core/view.js';
+import { TUNING } from '../tuning.js';
 
 // --- State ids (documented order) -------------------------------------------
 export const BZ_LOCKED = 'LOCKED';

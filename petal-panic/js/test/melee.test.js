@@ -3,11 +3,11 @@
 // No DOM needed: entity.js / consts.js / hero.js / damage.js are pure modules.
 
 import { strict as assert } from 'node:assert';
-import { Hero } from '../hero.js';
-import { HEROES } from '../heroDefs.js';
+import { Hero } from '../hero/hero.js';
+import { HEROES } from '../hero/heroDefs.js';
 import { LAYER } from '../consts.js';
-import { Entity } from '../entity.js';
-import { damage } from '../damage.js';
+import { Entity } from '../core/entity.js';
+import { damage } from '../combat/damage.js';
 import { createTrace } from '../stats.js';
 
 let passed = 0;

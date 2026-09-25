@@ -6,7 +6,7 @@
 
 import { strict as assert } from 'node:assert';
 import { Effects } from '../effects.js';
-import { particles } from '../particles.js';
+import { particles } from '../effects/particles.js';
 import { fire, fireManual } from '../effects/index.js';
 
 const DT = 1 / 60;

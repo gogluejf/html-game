@@ -18,8 +18,8 @@
 // Physics + hero stats are owned by consts.js / heroDefs.js. We import the REAL
 // values (not mirror copies) so that if hero physics change, tier
 // reachability stays in lockstep automatically.
-import { GRAVITY, DOUBLE_JUMP_FACTOR } from './consts.js';
-import { HEROES } from './heroDefs.js';
+import { GRAVITY, DOUBLE_JUMP_FACTOR } from '../consts.js';
+import { HEROES } from '../hero/heroDefs.js';
 
 // Re-export for consumers that import these from terrain.js (e.g. the terrain
 // test). The single owner is consts.js; this is a pass-through alias.
@@ -163,7 +163,7 @@ export const PLATFORM = Object.freeze({
 // work for both heroes with a usable margin, not only a perfect jump"). Its
 // concrete value is owned by the single TUNING block (tuning.js) and re-exported
 // here so existing importers keep a stable path.
-import { TUNING_REACH } from './tuning.js';
+import { TUNING_REACH } from '../tuning.js';
 
 // Re-export the margin so the terrain test / composer keep their import path;
 // the single owner is tuning.js (TUNING_REACH.reachMargin).

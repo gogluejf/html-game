@@ -3,7 +3,7 @@
 // Pure logic; no DOM/canvas needed.
 
 import { strict as assert } from 'node:assert';
-import { Timers, TIMER_COLORS } from '../timers.js';
+import { Timers, TIMER_COLORS } from '../core/timers.js';
 
 let passed = 0;
 function ok(name, fn) {

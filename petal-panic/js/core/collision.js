@@ -10,7 +10,7 @@
 //   - Broadphase is a uniform spatial hash grid → O(n·k), not O(n²).
 //   - All boxes are plain {x, y, w, h} world-space AABBs.
 
-import { LAYER } from './consts.js';
+import { LAYER } from '../consts.js';
 
 // ---------------------------------------------------------------------------
 // aabbOverlap

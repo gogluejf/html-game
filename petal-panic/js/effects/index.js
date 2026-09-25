@@ -316,7 +316,7 @@ export function resetEffects() {
 // passes an increasing `t` (or restarts at 0 when stepping); no hidden
 // per-entry mutable clock exists. Fixed dt = 1/60 (project convention).
 
-import { particles } from '../particles.js';
+import { particles } from './particles.js';
 
 const DEMO_DT = 1 / 60;          // fixed step (project convention)
 export const DEMO_VIEW = { w: 320, h: 180 }; // neutral-stage viewport for screen-space overlays
@@ -371,4 +371,4 @@ export const CATALOG = [
 // visible proxy driven by the instance's getOffset() so the jitter reads.
 
 // Theater scenes live in theater-scenes.js (debug-only, not loaded in gameplay).
-export { theaterList } from './theater-scenes.js';
+export { theaterList } from '../debug/theater-scenes.js';

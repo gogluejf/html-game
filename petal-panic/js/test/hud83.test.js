@@ -48,10 +48,10 @@ function makeFakeCtx() {
 
 // Dynamic imports AFTER the stub is in place.
 const U = await import('../systems/update.js');
-const { S, setState } = await import('../state.js');
-const { LEVELS } = await import('../level.js');
-const { VIEW_W } = await import('../view.js');
-const { drawHUD } = await import('../hud.js');
+const { S, setState } = await import('../core/state.js');
+const { LEVELS } = await import('../world/level.js');
+const { VIEW_W } = await import('../core/view.js');
+const { drawHUD } = await import('../systems/hud.js');
 
 let passed = 0;
 function ok(name, fn) {

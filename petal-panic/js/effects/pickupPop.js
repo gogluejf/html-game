@@ -9,7 +9,7 @@
 // params: { x, y, color? } — color defaults to '#ffffff'.
 // Speeds 100..180 px/s; angles evenly spaced (i / 8) * 2π.
 
-import { particles } from '../particles.js';
+import { particles } from './particles.js';
 
 const PICKUP_POP_COUNT = 8;
 const PICKUP_POP_SPEED = [100, 180]; // px/s spread of the pop ring

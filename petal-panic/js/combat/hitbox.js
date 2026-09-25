@@ -14,7 +14,7 @@
 // The engine never asks "who owns this" or "how did it come about." It reads
 // team + box + damage + method and routes accordingly.
 
-import { LAYER } from './consts.js';
+import { LAYER } from '../consts.js';
 
 /** Target layer masks per team. */
 const TEAM_TARGETS = {

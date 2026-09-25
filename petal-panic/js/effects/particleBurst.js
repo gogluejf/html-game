@@ -10,7 +10,7 @@
 //
 // params: { x, y, count? } — count defaults to 6 (pool default).
 
-import { particles } from '../particles.js';
+import { particles } from './particles.js';
 
 /**
  * @param {{x:number, y:number, count?:number}} params

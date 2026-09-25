@@ -23,12 +23,12 @@
 // boss is an Enemy with layer LAYER.BOSS), so no special wiring is needed here
 // beyond giving it a high stats.attack.
 
-import { Enemy } from './enemy.js';
-import { LAYER } from './consts.js';
-import { projectilePool } from './projectile.js';
-import { damage } from './damage.js';
-import { Effects } from './effects.js';
-import { fireManual } from './effects/index.js';
+import { Enemy } from '../enemies/enemy.js';
+import { LAYER } from '../consts.js';
+import { projectilePool } from '../objects/projectile.js';
+import { damage } from '../combat/damage.js';
+import { Effects } from '../effects.js';
+import { fireManual } from '../effects/index.js';
 
 export const ELEPHANT_DEF = {
   // The boss id is the authoritative one from the level config

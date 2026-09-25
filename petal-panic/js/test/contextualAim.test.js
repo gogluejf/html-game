@@ -25,12 +25,12 @@ globalThis.Image = class {
 globalThis.requestAnimationFrame = noop;
 globalThis.performance = { now: () => Date.now() };
 
-const HeroMod = await import('../hero.js');
-const { HEROES } = await import('../heroDefs.js');
-const { dirAngle, aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } = await import('../projectile.js');
+const HeroMod = await import('../hero/hero.js');
+const { HEROES } = await import('../hero/heroDefs.js');
+const { dirAngle, aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } = await import('../objects/projectile.js');
 const U = await import('../systems/update.js');
-const { S, setState } = await import('../state.js');
-const { input } = await import('../input.js');
+const { S, setState } = await import('../core/state.js');
+const { input } = await import('../core/input.js');
 
 let passed = 0;
 function ok(name, fn) {
@@ -121,7 +121,7 @@ ok('lockDir freezes the aim: frozen right + airborne Down keeps shooting right',
 // key. The gameplay layer installs hero.resolveAim as the resolver, so a
 // grounded crouched hero pressing I while holding Down locks horizontal
 // toward facing, never straight-down.
-const { createInput } = await import('../input.js');
+const { createInput } = await import('../core/input.js');
 class Events {
   handlers = new Map();
   addEventListener(name, fn) { if (!this.handlers.has(name)) this.handlers.set(name, new Set()); this.handlers.get(name).add(fn); }

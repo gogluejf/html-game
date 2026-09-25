@@ -17,9 +17,9 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
-import { Camera } from '../camera.js';
-import { VIEW_W, VIEW_H } from '../view.js';
-import { LEVELS, buildLevelZones } from '../level.js';
+import { Camera } from '../core/camera.js';
+import { VIEW_W, VIEW_H } from '../core/view.js';
+import { LEVELS, buildLevelZones } from '../world/level.js';
 
 // --- Runtime wiring (systems/update.js) --------------------------------------
 // The camera math above is covered directly. The reviewer finding is that the
@@ -38,7 +38,7 @@ globalThis.window = { devicePixelRatio: 1, innerWidth: 960, innerHeight: 540, ad
 globalThis.requestAnimationFrame = noop;
 
 const U = await import('../systems/update.js');
-const { S, getState, setState, tryTransition } = await import('../state.js');
+const { S, getState, setState, tryTransition } = await import('../core/state.js');
 
 // Expected clamp range for a given zone, mirroring camera.js setZoneBounds().
 function expectedRange(zone) {

@@ -3,20 +3,20 @@
 // world entities are drawn under a camera translate so the level
 // Debug mode toggles the unified debug overlay (orange/green/red/blue/pink by collision layer).
 
-import { VIEW_W, VIEW_H } from '../view.js';
+import { VIEW_W, VIEW_H } from '../core/view.js';
 import { LAYER } from '../consts.js';
 import { getHero, getSolids, getEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getActiveZoneKind, getDeathFadeAlpha, getClearBanner, getClearFadeAlpha, getAreaEntryFadeAlpha, bossZone } from './update.js';
 import { Effects } from '../effects.js';
 import { drawEffects } from '../effects/index.js';
-import { getState, S } from '../state.js';
-import { Debug } from '../debug.js';
-import { Theater } from '../effects/theater.js';
-import { input, formatBinding } from '../input.js';
-import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../timers.js';
-import { drawScreen, screenUpdate } from '../screens.js';
-import { drawHUD } from '../hud.js';
-import { LEVELS, BOSS_TRIGGER_X, ZONE_GROUND_Y } from '../level.js';
-import { PLATFORM_DRAW_H } from '../macros.js';
+import { getState, S } from '../core/state.js';
+import { Debug } from '../debug/debug.js';
+import { Theater } from '../debug/theater.js';
+import { input, formatBinding } from '../core/input.js';
+import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../core/timers.js';
+import { drawScreen, screenUpdate } from '../ui/screens.js';
+import { drawHUD } from '../systems/hud.js';
+import { LEVELS, BOSS_TRIGGER_X, ZONE_GROUND_Y } from '../world/level.js';
+import { PLATFORM_DRAW_H } from '../world/macros.js';
 
 // I-frame blink tuning (design §27): the flicker phase is derived from the
 // 'intangible' timer's remaining fraction, so these only set LOOK — the timing
@@ -803,7 +803,7 @@ function drawBossZoneIntro(ctx) {
  * Wide HP bar for the boss (design §9). Spans the full body width with a thick
  * fill so the fight's progress reads at a glance.
  * @param {CanvasRenderingContext2D} ctx
- * @param {import('../boss.js').Elephant} b
+ * @param {import('../boss/boss.js').Elephant} b
  */
 function drawBossHpBar(ctx, b) {
   const frac = Math.max(0, b.hp / b.maxHp);
@@ -826,7 +826,7 @@ function drawBossHpBar(ctx, b) {
  * arena bounds as dashed lines. (Phase + escalation show in the unified debug
  * label above the boss — see the drawLabel block in render().)
  * @param {CanvasRenderingContext2D} ctx
- * @param {import('../boss.js').Elephant} b
+ * @param {import('../boss/boss.js').Elephant} b
  */
 function drawBossDebug(ctx, b) {
   // Battle room bounds (dashed verticals) — owned by the flow machine.
@@ -902,7 +902,7 @@ function drawArrow(ctx, x, y, dx, dy, color, len) {
  *   Level 2 — if this is the selected entity, add a numeric inspection panel.
  * Drawn in world space (caller is inside the camera translate).
  * @param {CanvasRenderingContext2D} ctx
- * @param {import('../entity.js').Entity} ent
+ * @param {import('../core/entity.js').Entity} ent
  */
 function drawEntityTransformDebug(ctx, ent) {
   if (!ent || !ent.worldBox) return;
@@ -1026,7 +1026,7 @@ function drawSelectionOverlay(ctx, sel) {
  * Kept quiet — labels are dim so a busy screen of many entities stays readable.
  * No-op when the entity has no timers or none are active.
  * @param {CanvasRenderingContext2D} ctx
- * @param {import('../entity.js').Entity} ent
+ * @param {import('../core/entity.js').Entity} ent
  * @param {number} cx horizontal center to stack around
  * @param {number} topY y of the topmost row (bars grow downward from here)
  */

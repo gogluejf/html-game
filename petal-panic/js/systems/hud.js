@@ -8,8 +8,8 @@
 //   - selected-hero portrait (32×32, top-right corner)
 // ES module, no frameworks. No DOM access beyond the passed ctx.
 
-import { VIEW_W } from './view.js';
-import { FONT_UI, GOLD } from './fonts.js';
+import { VIEW_W } from '../core/view.js';
+import { FONT_UI, GOLD } from '../ui/fonts.js';
 
 const PAD = 12;
 

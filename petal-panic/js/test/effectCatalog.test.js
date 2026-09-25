@@ -17,7 +17,7 @@
 
 import { strict as assert } from 'node:assert';
 import { theaterList, fireManual, resetEffects, activeCount, updateEffects, drawEffects } from '../effects/index.js';
-import { particles } from '../particles.js';
+import { particles } from '../effects/particles.js';
 import '../effects/registry.js'; // side effect: registers all types
 
 const DT = 1 / 60;

@@ -22,14 +22,14 @@ import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
 import { TUNING, TUNING_REACH, TUNING_BARREL, TUNING_MACRO, TUNING_COINS, TUNING_INVENTORY, TUNING_SCROLL, TUNING_LIVES, TUNING_MUSIC } from '../tuning.js';
-import { GAME_RULES, resetLevelCoinTally, resetHeroInventory } from '../gameRules.js';
-import { REACH_MARGIN } from '../terrain.js';
-import { BARREL_STRUCTURE, STAGE_WEIGHTS, classifyBarrelStructure } from '../macros.js';
-import { BOSS_ZONE_TIMINGS } from '../bossZone.js';
-import { VIEW_W, VIEW_H } from '../view.js';
-import { LEVEL_CONFIGS, getLevelConfig } from '../levelConfigs.js';
-import { ZONE_WIDTH_HORIZONTAL, ZONE_H_VERTICAL } from '../level.js';
-import { Timers } from '../timers.js';
+import { GAME_RULES, resetLevelCoinTally, resetHeroInventory } from '../systems/gameRules.js';
+import { REACH_MARGIN } from '../world/terrain.js';
+import { BARREL_STRUCTURE, STAGE_WEIGHTS, classifyBarrelStructure } from '../world/macros.js';
+import { BOSS_ZONE_TIMINGS } from '../boss/bossZone.js';
+import { VIEW_W, VIEW_H } from '../core/view.js';
+import { LEVEL_CONFIGS, getLevelConfig } from '../world/levelConfigs.js';
+import { ZONE_WIDTH_HORIZONTAL, ZONE_H_VERTICAL } from '../world/level.js';
+import { Timers } from '../core/timers.js';
 
 // ===========================================================================
 // Single owner: the TUNING block is the one place the deferred values live.

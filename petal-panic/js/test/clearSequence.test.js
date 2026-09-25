@@ -34,8 +34,8 @@ globalThis.document = {
 globalThis.window = { addEventListener: noop };
 
 const U = await import('../systems/update.js');
-const { S, getState, setState } = await import('../state.js');
-const { ZONE_ENTRY_X, ZONE_GROUND_Y, buildLevelZones, LEVELS } = await import('../level.js');
+const { S, getState, setState } = await import('../core/state.js');
+const { ZONE_ENTRY_X, ZONE_GROUND_Y, buildLevelZones, LEVELS } = await import('../world/level.js');
 
 // --- Helpers -----------------------------------------------------------------
 

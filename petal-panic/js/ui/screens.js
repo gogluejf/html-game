@@ -3,14 +3,14 @@
 // main.js at startup; draw methods handle missing images gracefully with
 // placeholder boxes.
 
-import { S, getState, tryTransition, canTransition } from './state.js';
-import { areaEntryOnAction, setAreaEntryDataCallback, getAreaEntryData as getAreaEntryDataFromLifecycle } from './lifecycle.js';
-import { showLevelReward, rewardOnAction, setRewardDataCallback, setEndOfGameScoreCallback } from './lifecycle.js';
-import { HEROES } from './heroDefs.js';
-import { VIEW_W, VIEW_H } from './view.js';
-import { calculateScore } from './stats.js';
-import { onTransition } from './state.js';
-import { input, navLabelString, navHintEntries, navLabels, markNavPressed, clearNavFlash } from './input.js';
+import { S, getState, tryTransition, canTransition } from '../core/state.js';
+import { areaEntryOnAction, setAreaEntryDataCallback, getAreaEntryData as getAreaEntryDataFromLifecycle } from '../systems/lifecycle.js';
+import { showLevelReward, rewardOnAction, setRewardDataCallback, setEndOfGameScoreCallback } from '../systems/lifecycle.js';
+import { HEROES } from '../hero/heroDefs.js';
+import { VIEW_W, VIEW_H } from '../core/view.js';
+import { calculateScore } from '../stats.js';
+import { onTransition } from '../core/state.js';
+import { input, navLabelString, navHintEntries, navLabels, markNavPressed, clearNavFlash } from '../core/input.js';
 
 // --- Image cache -------------------------------------------------------------
 import {
@@ -18,7 +18,7 @@ import {
   drawMarqueeTitle, drawPrompt, drawMenace, drawNavBar,
 } from './fonts.js';
 
-import { Remap } from './remap.js';
+import { Remap } from '../core/remap.js';
 const images = {};
 let loadedCount = 0;
 let totalCount = 0;

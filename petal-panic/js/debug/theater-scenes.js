@@ -2,8 +2,8 @@
 // Real carrier objects + scene definitions for the Effect Theater.
 // NOT loaded in gameplay — only imported by theater.js.
 
-import { fireManual, resetEffects, updateEffects, drawEffects, DEMO_VIEW, CATALOG } from './index.js';
-import { particles } from '../particles.js';
+import { fireManual, resetEffects, updateEffects, drawEffects, DEMO_VIEW, CATALOG } from '../effects/index.js';
+import { particles } from '../effects/particles.js';
 
 const STAGE_X = 160, STAGE_Y = 90;
 const BOX = { x: STAGE_X - 20, y: STAGE_Y - 25, w: 40, h: 50 };

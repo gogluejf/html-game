@@ -23,12 +23,12 @@ globalThis.document = {
 };
 globalThis.window = { addEventListener: noop };
 
-const L = await import('../lifecycle.js');
-const { S, getState, setState, tryTransition } = await import('../state.js');
-const { GAME_RULES } = await import('../gameRules.js');
-const { Hero } = await import('../hero.js');
-const { HEROES } = await import('../heroDefs.js');
-const SC = await import('../screens.js');
+const L = await import('../systems/lifecycle.js');
+const { S, getState, setState, tryTransition } = await import('../core/state.js');
+const { GAME_RULES } = await import('../systems/gameRules.js');
+const { Hero } = await import('../hero/hero.js');
+const { HEROES } = await import('../hero/heroDefs.js');
+const SC = await import('../ui/screens.js');
 const U = await import('../systems/update.js');
 
 // --- Helpers -----------------------------------------------------------------
@@ -299,7 +299,7 @@ test('the entry screen reuses the pause-menu ergonomics (list, focus pill, keyca
   // Both screens build their nav bar via navHintEntries with the same entry
   // shape (navigate / confirm / back), per game-rules.md §3 shared
   // ergonomics contract.
-  const { navHintEntries } = await import('../input.js');
+  const { navHintEntries } = await import('../core/input.js');
   const pauseEntries = navHintEntries([
     { actions: ['up', 'down'], label: 'Navigate' },
     { action: 'confirm' },

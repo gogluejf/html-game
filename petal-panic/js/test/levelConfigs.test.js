@@ -22,7 +22,7 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
-import { LEVEL_CONFIGS, getLevelConfig, getStageBudget } from '../levelConfigs.js';
+import { LEVEL_CONFIGS, getLevelConfig, getStageBudget } from '../world/levelConfigs.js';
 // Length budgets are sourced from level.js (single source of truth) — import
 // the same constants so the assertions check identity/equality against the
 // real values rather than hard-coded literals.
@@ -31,9 +31,9 @@ import {
   ZONE_H_VERTICAL,
   buildLevelZones,
   buildAllZoneTerrain,
-} from '../level.js';
-import { composeArea, MACROS } from '../macros.js';
-import { createRng } from '../terrain.js';
+} from '../world/level.js';
+import { composeArea, MACROS } from '../world/macros.js';
+import { createRng } from '../world/terrain.js';
 
 // ---------------------------------------------------------------------------
 // Structure: LEVEL_CONFIGS is a non-empty array with exactly 8 entries

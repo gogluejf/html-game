@@ -3,7 +3,7 @@
 // Pure math on Entity fields; no DOM/canvas needed.
 
 import { strict as assert } from 'node:assert';
-import { Entity } from '../entity.js';
+import { Entity } from '../core/entity.js';
 
 let passed = 0;
 function ok(name, fn) {

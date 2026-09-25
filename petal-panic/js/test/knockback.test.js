@@ -5,7 +5,7 @@
 // the zero/absent no-op case. Fixed inputs, exact expected numbers within epsilon.
 
 import { strict as assert } from 'node:assert';
-import { applyKnockback } from '../knockback.js';
+import { applyKnockback } from '../combat/knockback.js';
 
 let passed = 0;
 function ok(name, fn) {

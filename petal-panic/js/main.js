@@ -2,11 +2,11 @@
 // All logic runs in a fixed 960x540 logical space; the render layer maps it
 // to the screen (dpr-aware, 16:9 letterbox, GAME_SCALE knob).
 
-import { VIEW_W, VIEW_H } from './view.js';
+import { VIEW_W, VIEW_H } from './core/view.js';
 import { update } from './systems/update.js';
 import { render } from './systems/render.js';
-import { loadImages } from './screens.js';
-import { waitForFonts } from './fonts.js';
+import { loadImages } from './ui/screens.js';
+import { waitForFonts } from './ui/fonts.js';
 import * as CONSTS from './consts.js';
 
 // Load screen assets (Home/Select) immediately on page load.

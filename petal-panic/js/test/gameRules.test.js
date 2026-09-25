@@ -14,7 +14,7 @@ import {
   canSpend,
   spend,
   credit,
-} from '../gameRules.js';
+} from '../systems/gameRules.js';
 
 let passed = 0;
 function ok(name, fn) {
