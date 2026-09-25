@@ -161,15 +161,61 @@ def validate_tracks(tracks):
         check_track(t, i)
 
 
-def state_path(game, working_dir):
-    return os.path.join(working_dir, ".squid-os", "music-composer", f"{game}.json")
+def state_dir(game, working_dir):
+    """One dir per game holding one JSON file per song."""
+    return os.path.join(working_dir, ".squid-os", "music-composer", game)
+
+
+def _slugify(name):
+    import re as _re
+    s = _re.sub(r"[^a-z0-9]+", "-", (name or "").lower()).strip("-")
+    return s or "untitled"
+
+
+def _song_path(dirpath, track):
+    return os.path.join(dirpath, _slugify(track.get("name")) + ".json")
+
+
+def _load_state(game, working_dir):
+    """Load all songs in a game dir, sorted by createdAt (playlist order)."""
+    d = state_dir(game, working_dir)
+    if not os.path.isdir(d):
+        _err(f"no songs dir {d} (run compose first)")
+    tracks = []
+    for fn in os.listdir(d):
+        if not fn.endswith(".json"):
+            continue
+        try:
+            with open(os.path.join(d, fn)) as f:
+                t = json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            _err(f"cannot read {fn}: {e}")
+        if isinstance(t, dict):
+            tracks.append(t)
+    # playlist order = createdAt ascending; stable fallback to name for ties/missing
+    tracks.sort(key=lambda t: (t.get("createdAt") or "", t.get("name") or ""))
+    return d, {"game": game, "tracks": tracks}
+
+
+def _save_song(dirpath, track):
+    path = _song_path(dirpath, track)
+    with open(path, "w") as f:
+        json.dump(track, f, indent=2)
+    return path
+
+
+def _remove_song(dirpath, track):
+    path = _song_path(dirpath, track)
+    if os.path.exists(path):
+        os.remove(path)
 
 
 def _stamp_tracks(tracks):
-    """Ensure every track has createdAt (ISO local datetime) and revision (int).
+    """Ensure every track has createdAt (ISO local datetime, microsecond
+    precision so new songs always sort AFTER existing ones) and revision (int).
     genre is left as-is (may be absent)."""
     from datetime import datetime
-    now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
     for t in tracks:
         if not isinstance(t, dict):
             continue
@@ -193,11 +239,11 @@ def cmd_compose(a):
             _err(f"--tracks is not valid JSON: {e}")
     validate_tracks(tracks)
     _stamp_tracks(tracks)
-    path = state_path(a.game, a.working_dir)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as f:
-        json.dump({"game": a.game, "tracks": tracks}, f, indent=2)
-    print(f"PASS: wrote {path} ({len(tracks)} tracks)")
+    d = state_dir(a.game, a.working_dir)
+    os.makedirs(d, exist_ok=True)
+    for t in tracks:
+        _save_song(d, t)
+    print(f"PASS: wrote {len(tracks)} song file(s) -> {d}")
 
 
 def cmd_validate(a):
@@ -206,23 +252,6 @@ def cmd_validate(a):
     tracks = data.get("tracks", data)
     validate_tracks(tracks)
     print(f"PASS: {a.file} ({len(tracks)} tracks)")
-
-
-def _load_state(game, working_dir):
-    path = state_path(game, working_dir)
-    try:
-        with open(path) as f:
-            data = json.load(f)
-    except (json.JSONDecodeError, OSError) as e:
-        _err(f"cannot read state {path}: {e}")
-    if not isinstance(data, dict) or "tracks" not in data:
-        _err(f"{path} is not a valid state file (missing 'tracks')")
-    return path, data
-
-
-def _save_state(path, data):
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
 
 
 def cmd_add(a):
@@ -251,9 +280,9 @@ def cmd_add(a):
     dupes = [t.get("name") for t in new_tracks if t.get("name") in existing]
     if dupes:
         _err(f"track(s) already present: {', '.join(dupes)}")
-    data["tracks"].extend(new_tracks)
-    _save_state(path, data)
-    print(f"PASS: added {len(new_tracks)} -> {path} ({len(data['tracks'])} tracks)")
+    for t in new_tracks:
+        _save_song(path, t)
+    print(f"PASS: added {len(new_tracks)} -> {path} ({len(data['tracks']) + len(new_tracks)} tracks)")
 
 
 def cmd_remove(a):
@@ -263,18 +292,15 @@ def cmd_remove(a):
     idxs = set(int(x) for x in (a.index or []))
     if not names and not idxs:
         _err("provide at least one --name or --index")
-    kept, removed = [], 0
+    removed = 0
     for i, t in enumerate(data["tracks"]):
         hit = (i in idxs) or (t.get("name") in names)
         if hit:
+            _remove_song(path, t)
             removed += 1
-        else:
-            kept.append(t)
     if removed == 0:
         _err(f"no matching track(s) found (names={sorted(names)}, indices={sorted(idxs)})")
-    data["tracks"] = kept
-    _save_state(path, data)
-    print(f"PASS: removed {removed} -> {path} ({len(kept)} tracks)")
+    print(f"PASS: removed {removed} -> {path} ({len(data['tracks']) - removed} tracks)")
 
 
 def cmd_list(a):
@@ -325,8 +351,8 @@ def cmd_set_vibe(a):
     updated = 0
     for idx, vibe in zip(targets, vibes):
         data["tracks"][idx]["vibe"] = vibe.strip()
+        _save_song(path, data["tracks"][idx])
         updated += 1
-    _save_state(path, data)
     print(f"PASS: set vibe on {updated} track(s) -> {path}")
 
 
@@ -361,6 +387,9 @@ def cmd_edit(a):
     updates = _parse_kv(a.set)
     if not updates:
         _err("provide at least one --set key=value")
+    # createdAt is the ORDER key — never let an edit reorder a song.
+    if "createdAt" in updates:
+        _err("cannot set 'createdAt' (it encodes playlist order; use remove+add or edit another field)")
     edited = 0
     for i, t in enumerate(data["tracks"]):
         hit = (i in idxs) or (t.get("name") in names)
@@ -369,10 +398,10 @@ def cmd_edit(a):
         for k, v in updates.items():
             t[k] = v
         t["revision"] = int(t.get("revision", 0)) + 1
+        _save_song(path, t)
         edited += 1
     if edited == 0:
         _err(f"no matching track(s) found (names={sorted(names)}, indices={sorted(idxs)})")
-    _save_state(path, data)
     print(f"PASS: edited {edited} track(s) -> {path}")
 
 
@@ -1222,11 +1251,7 @@ tlTitle.textContent = '1. ' + sc.tracks[sc.current].name;
 
 
 def cmd_player(a):
-    path = state_path(a.game, a.working_dir)
-    if not os.path.exists(path):
-        _err(f"state file not found: {path} (run compose first)")
-    with open(path) as f:
-        data = json.load(f)
+    path, data = _load_state(a.game, a.working_dir)
     engine_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "engine.js")
     engine_path = os.path.normpath(engine_path)
     if not os.path.exists(engine_path):
