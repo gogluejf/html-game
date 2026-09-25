@@ -27,7 +27,7 @@ import { Enemy } from '../enemies/enemy.js';
 import { LAYER } from '../consts.js';
 import { projectilePool } from '../objects/projectile.js';
 import { damage } from '../combat/damage.js';
-import { Effects } from '../effects.js';
+
 import { fireManual } from '../effects/index.js';
 
 export const ELEPHANT_DEF = {

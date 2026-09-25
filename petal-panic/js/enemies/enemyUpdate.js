@@ -8,7 +8,7 @@
 
 import { ctx } from '../world/context.js';
 import { resolve } from '../core/collision.js';
-import { LAYER } from '../consts.js';
+
 import { Effects } from '../effects.js';
 import { resolveExplosion } from '../combat/explosion.js';
 import { record } from '../stats.js';

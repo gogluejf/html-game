@@ -26,7 +26,7 @@
 // The layout is in UNIT SPACE (width-units and tier-units), not pixels.
 // Pixel scaling is a later task (3.3 / 7.2).
 
-import { createRng, makeBlock, makePlatform } from './terrain.js';
+import {createRng, makeBlock} from './terrain.js';
 import { GRAVITY, DOUBLE_JUMP_FACTOR } from '../consts.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { BARREL_DEF } from '../objects/object.js';

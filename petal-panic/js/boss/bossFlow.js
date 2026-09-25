@@ -6,7 +6,7 @@
 import { ctx } from '../world/context.js';
 import { ZONE_GROUND_Y, ZONE_ENTRY_X, ZONE_FLOOR_H } from '../world/level.js';
 import { VIEW_W } from '../core/view.js';
-import { BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER, BZ_COMBAT } from './bossZone.js';
+import {BZ_COMBAT} from './bossZone.js';
 import { resolve } from '../core/collision.js';
 import { Effects } from '../effects.js';
 import { record } from '../stats.js';

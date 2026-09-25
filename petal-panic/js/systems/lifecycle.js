@@ -27,7 +27,7 @@ import { GAME_RULES, createContinuePool, canSpend, spend, credit, resetLevelCoin
 import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../world/level.js';
 import { getLevelConfig } from '../world/levelConfigs.js';
 import { Hero } from '../hero/hero.js';
-import { createTrace, record, beginLife, beginContinue, recordAreaMap, calculateScore } from '../stats.js';
+import {createTrace, record, beginLife, beginContinue, calculateScore} from '../stats.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
 import { tryTransition, getState, setState, S } from '../core/state.js';
 import { TUNING } from '../tuning.js';

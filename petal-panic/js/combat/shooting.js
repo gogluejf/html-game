@@ -10,7 +10,7 @@ import { damage } from './damage.js';
 import { record } from '../stats.js';
 import { Effects } from '../effects.js';
 import { Debug } from '../debug/debug.js';
-import { LAYER } from '../consts.js';
+
 import { ctx } from '../world/context.js';
 
 /**

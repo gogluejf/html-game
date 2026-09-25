@@ -10,12 +10,12 @@ import { Jester } from '../enemies/jester.js';
 import { VineHound } from '../enemies/vine_hound.js';
 import { Violetta } from '../enemies/violetta.js';
 import { JackOLantern } from '../enemies/jackolantern.js';
-import { BorisLoon, makeBoris, makeBorisBaby } from '../enemies/boris_loon.js';
+import {makeBoris, makeBorisBaby} from '../enemies/boris_loon.js';
 import { makeBarrel, makeWoodBarrel, makeCoinBarrel, makeCheckpoint } from '../objects/object.js';
 import { Powerup } from '../objects/powerup.js';
 import { recordAreaMap } from '../stats.js';
 import { formatAreaId } from '../systems/lifecycle.js';
-import { getLevelConfig, getStageBudget } from './levelConfigs.js';
+import {getStageBudget} from './levelConfigs.js';
 import { createRng } from './terrain.js';
 
 // --- Terrain → pixel AABB (unit space from the composer → world pixels) ------

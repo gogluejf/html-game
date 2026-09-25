@@ -19,7 +19,7 @@
 import { VIEW_W, VIEW_H } from './view.js';
 import { drawMarqueeTitle, drawPrompt, roundRect, drawNavBar } from '../ui/fonts.js';
 import { input, formatBinding, bindingSlots, navHintEntries } from './input.js';
-import { FONT_UI } from '../ui/fonts.js';
+
 
 const CREAM = '#f5e6c8';
 const PINK = '#ff6ec7';
