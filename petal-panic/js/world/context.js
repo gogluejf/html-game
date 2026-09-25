@@ -18,4 +18,6 @@ export const ctx = {
   levelZones: null,
   areaContext: null,
   floatTexts: null,
+  coins: null,
+  bossZoneDef: null,
 };

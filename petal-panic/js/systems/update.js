@@ -10,16 +10,16 @@
 import { input } from '../core/input.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { Entity } from '../core/entity.js';
+import { SolidBox } from '../core/solidBox.js';
 import { LAYER, GRAVITY, MAX_FALL_SPEED } from '../consts.js';
 import { CollisionWorld, resolve, aabbOverlap } from '../core/collision.js';
 import { Camera } from '../core/camera.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
 import { Hero, WEAPON_SPECIAL } from '../hero/hero.js';
-import { HEROES, ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from '../hero/heroDefs.js';
+import { HEROES } from '../hero/heroDefs.js';
 import { projectilePool, specialPool, dirAngle } from '../objects/projectile.js';
 import { damage } from '../combat/damage.js';
 import { applyKnockback } from '../combat/knockback.js';
-import { makeHitbox, resetHitbox, processHitboxes } from '../combat/hitbox.js';
 import { S, getState, setState, STATE_NAMES, tryTransition, onTransition } from '../core/state.js';
 import { dispatchScreenInput } from '../ui/screens.js';
 import { Jester } from '../enemies/jester.js';
@@ -37,8 +37,8 @@ import { Debug, initSpawnTable, SPAWN_KEYS } from "../debug/debug.js";
 import { resolveExplosion } from '../combat/explosion.js';
 import { Powerup, POWERUP_DEFS, POWERUP_TYPES } from '../objects/powerup.js';
 import { COIN_TYPES } from '../objects/coin.js';
-import { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y, ZONE_FLOOR_H, BOSS_TRIGGER_X } from '../world/level.js';
-import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId, showLevelReward, recordAreaEntrySnapshot, setAreaEntryFadeOutCallback } from '../systems/lifecycle.js';
+import { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y, BOSS_TRIGGER_X } from '../world/level.js';
+import { startGame, startLife, continueRun, restoreArea, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry, formatAreaId, recordAreaEntrySnapshot, setAreaEntryFadeOutCallback } from '../systems/lifecycle.js';
 import { getLevelConfig, getStageBudget } from '../world/levelConfigs.js';
 import { populateArea, populationSnapshot, UNIT_PX_X, UNIT_PX_Y, PLATFORM_DRAW_H } from '../world/macros.js';
 import { createRng, tierToOffset } from '../world/terrain.js';
@@ -754,15 +754,8 @@ export function getActiveZone(hero) {
 // zones swaps ALL world contents (structure.md §2).
 export const SOLIDS = [];
 // Solid wrapper entities (layer-only) for the collision world + debug overlay.
-class SolidBox extends Entity {
-  constructor(box) {
-    // R5.1: one-way platforms use the PLATFORM layer (no SOLID rules — they
-    // only land the hero from above via resolve()'s oneWay branch, never
-    // block sides/below or chip projectiles). Solid blocks/barrels keep SOLID.
-    const layer = box.oneWay ? LAYER.PLATFORM : LAYER.SOLID;
-    super({ x: box.x, y: box.y, w: box.w, h: box.h, gravity: 0, layer, debugColor: '#ff9f43' });
-  }
-}
+// The SolidBox class now lives in core/solidBox.js (extracted to break the
+// circular dependency with boss/bossFlow.js).
 const solidEntities = [];
 
 // The hero's physical entry position for the active zone. Area -1 has no entry
@@ -897,113 +890,6 @@ export const bossZone = makeBossZone(bossZoneDef, boss, {
     console.log('[bossZone] COMBAT — black lifting, boss active');
   },
 });
-
-/**
- * Enter the battle room: called exactly once when the hero crosses the boss
- * checkpoint (HERO×CHECKPOINT handler). Re-draws the fixed-width room over the
- * run — the flag is removed, the camera freezes at the room's left edge
- * (x=0; screen x = world x), the hero is placed at the room's left entry, the
- * boss is added off-screen right, and the presentation machine starts in
- * LOCKED. No computed center, no teleport: the hero is placed INSIDE the room
- * before the camera freezes, so nothing jumps.
- */
-export function enterBossRoom() {
-  // The card plays IN PLACE: no camera freeze, no hero teleport yet. The
-  // hero stays where they crossed the line, the camera keeps its current
-  // framing, and the full-screen presentation covers the view. When the intro
-  // finishes (BOSS_ENTER → COMBAT), settleIntoBossRoom() snaps the hero to the
-  // room's left entry and freezes the camera on the fixed-width room.
-  // Make sure the boss is in the collision world (loadActiveZone adds it on
-  // zone entry; this guards the death-restart path where it was removed).
-  if (!collisionWorld.entities.has(boss)) collisionWorld.add(boss);
-  // The boss checkpoint flag is only present during the RUN phase. Once the
-  // card triggers, the fixed battle room takes over and the flag must not be
-  // visible (or collidable) anymore — hide it until the zone restarts (death /
-  // debug wrap re-instantiate a fresh, visible flag).
-  for (const c of getCheckpoints()) {
-    if (c.isEntry) c.visible = false;
-  }
-  // Instant black: the clear-fade overlay is the existing full-screen black
-  // mechanism (render.js draws it at getClearFadeAlpha()). Pin it to 1 so the
-  // world vanishes the same frame the card starts; liftBlackAtCombat() ramps
-  // it back down when the room is settled.
-  clearSeq.pendingFadeIn = true;
-  clearSeq.state = 'fadeIn';
-  clearSeq.timer = CLEAR_SEQ.FADE_IN; // alpha = 1 immediately (no ramp-up)
-  // Start the presentation machine (LOCKED → … → COMBAT).
-  beginBossZoneFlow();
-  console.log(`[bossZone] trigger line crossed — instant black, card starting, hero @${Math.round(hero.x)}, state ${bossZone.state}`);
-}
-
-/**
- * Settle into the battle room: called exactly once when the intro presentation
- * finishes (the BOSS_ENTER → COMBAT transition). Snaps the hero to the room's
- * left entry (same spot as any level start) and freezes the camera on the
- * fixed-width room (minX === maxX = roomX; screen x = world x). The snap
- * happens UNDER the just-finished presentation, so it reads as "the card ends
- * and you are now in the arena" rather than a mid-walk teleport.
- */
-export function settleIntoBossRoom() {
-  // Swap the world to the battle room: a real 960px floor at [0, 960]. The
-  // run floor (0..1600) is replaced so the room's left edge IS screen pixel 0
-  // and its right edge IS screen pixel 960 — no offset math, no second
-  // coordinate frame. The boss enters from off-screen right of THIS floor.
-  const oldSolids = [...solidEntities];
-  for (const e of oldSolids) collisionWorld.remove(e);
-  SOLIDS.length = 0;
-  solidEntities.length = 0;
-  const roomFloor = { x: 0, y: ZONE_GROUND_Y, w: VIEW_W, h: ZONE_FLOOR_H };
-  SOLIDS.push(roomFloor);
-  const se = new SolidBox(roomFloor);
-  solidEntities.push(se);
-  collisionWorld.add(se);
-  // Freeze the camera on the room (screen x = world x).
-  camera.minX = camera.maxX = bossZone.roomX;
-  camera.minY = camera.maxY = 0;
-  camera.x = bossZone.roomX;
-  camera.y = 0;
-  // Hero at the room's left entry (same spot as any level start).
-  hero.x = ZONE_ENTRY_X;
-  hero.y = ZONE_GROUND_Y - hero.h;
-  hero.vx = 0;
-  hero.vy = 0;
-  hero.checkpoint = { x: hero.x, y: hero.y };
-  // Lift the black over the fade-in duration so the room reveals cleanly.
-  clearSeq.timer = 0;
-  console.log(`[bossZone] settled into room — floor swapped to [0,${VIEW_W}], cam @${camera.x}, hero @${hero.x}`);
-}
-
-/** Restore the run-phase floor (0..zone width) after a death / debug wrap. */
-export function restoreBossRunFloor() {
-  const zone = bossZoneDef;
-  const oldSolids = [...solidEntities];
-  for (const e of oldSolids) collisionWorld.remove(e);
-  SOLIDS.length = 0;
-  solidEntities.length = 0;
-  for (const p of zone.platforms) {
-    const sp = { ...p };
-    SOLIDS.push(sp);
-    const se = new SolidBox(sp);
-    solidEntities.push(se);
-    collisionWorld.add(se);
-  }
-}
-
-/**
- * Start (or restart) the battle-room presentation: place the boss off-screen
- * right (invisible until BOSS_ENTER) and run the state machine. Called from
- * enterBossRoom() only — the camera freeze and hero placement happen there.
- */
-export function beginBossZoneFlow() {
-  bossZone.begin();
-  // The boss is off-screen and invisible until BOSS_ENTER.
-  if (boss.aiState !== 'dead') {
-    boss.active = false;
-    boss.phase = 'idle';
-    boss.phaseTimer = 0;
-  }
-  console.log(`[bossZone] flow started — state ${bossZone.state}`);
-}
 
 // Non-looping anim test. Kept off the live targets (above) so the
 // animation cycle doesn't obscure their destruction; attached to a separate
@@ -2243,6 +2129,36 @@ export const camera = new Camera();
 // from the very first frame.
 camera.setZoneBounds(getActiveZone(hero));
 
+// --- Shared mutable state context (world/context.js) -------------------------
+// Extracted modules (combat/, boss/, enemies/) read/write shared state through
+// this single object instead of importing update.js (which would be circular).
+// Wired AFTER all module-level declarations are initialized below.
+ctx.hero = hero;
+ctx.collisionWorld = collisionWorld;
+ctx.solids = SOLIDS;
+ctx.solidEntities = solidEntities;
+ctx.realEnemies = realEnemies;
+ctx.barrels = barrels;
+ctx.woodBarrels = woodBarrels;
+ctx.coinBarrels = coinBarrels;
+ctx.powerups = powerups;
+ctx.checkpoints = checkpoints;
+ctx.boss = boss;
+ctx.camera = camera;
+ctx.world = world;
+ctx.levelZones = levelZones;
+ctx.areaContext = areaContext;
+ctx.enemies = enemies;
+ctx.barrelSolidBoxes = barrelSolidBoxes;
+ctx.bossZone = bossZone;
+ctx.handleBarrelDestroyed = handleBarrelDestroyed;
+ctx.coins = coins;
+ctx.bossZoneDef = bossZoneDef;
+ctx.clearSeq = clearSeq;
+ctx.CLEAR_SEQ = CLEAR_SEQ;
+ctx.getActiveZone = getActiveZone;
+ctx.getCheckpoints = getCheckpoints;
+
 // brief screen shake on barrel explosions (optional juice). The
 // camera-shake effect engine instance is the single owner of the shake state
 // (effects/cameraShake.js); triggerShake()/updateShake() used to live here as
@@ -2763,6 +2679,10 @@ function standingOnOneWay() {
 // never damage the hero — friendly-fire is off by construction.
 
 import { tryFire, explodeSpecial } from '../combat/shooting.js';
+import { processAllHitboxes } from '../combat/hitboxes.js';
+import { enterBossRoom, settleIntoBossRoom, restoreBossRunFloor, beginBossZoneFlow, updateBoss } from '../boss/bossFlow.js';
+import { updateRealEnemies } from '../enemies/enemyUpdate.js';
+import { ctx } from '../world/context.js';
 
 // --- Melee attack -------------------------------------------------
 // J key starts a swing (hero.tryMelee). During the single ACTIVE frame of the
@@ -2770,422 +2690,6 @@ import { tryFire, explodeSpecial } from '../combat/shooting.js';
 // overlap we route through central damage(). Each enemy can only be hit once
 // per swing (tracked in _meleeHitSet), so a multi-enemy overlap still deals
 // exactly one hit each. The cooldown prevents spamming.
-
-// --- Unified hitbox system ---------------------------------------------------
-// All attack hitboxes register here each frame. One generic loop processes
-// them via processHitboxes(). Each hitbox "slot" follows the same lifecycle:
-//   box appears → activate + reset hitSet (fresh instance)
-//   box persists → stay active, hitSet prevents re-hits
-//   box disappears → deactivate, flag ready for next instance
-
-const _hitboxes = []; // registered hitbox instances (reused, not allocated per frame)
-
-/**
- * A hitbox slot: pairs a persistent Hitbox object with the state needed to
- * track its instance lifecycle (reset-on-first-frame pattern).
- */
-function makeSlot(hb, { ownerGet, boxGet, damageGet, resetFlag }) {
-  return { hb, ownerGet, boxGet, damageGet, resetFlag };
-}
-
-/**
- * Update one hitbox slot for this tick. Returns nothing; mutates the slot's
- * hitbox in place. The resetFlag is a [getter, setter] pair on the owner so
- * each entity tracks its own "has this instance already reset?" state.
- */
-function updateSlot(slot) {
-  const { hb, ownerGet, boxGet, damageGet, resetFlag } = slot;
-  const owner = ownerGet();
-  const box = boxGet();
-  if (box && owner) {
-    hb.owner = owner;
-    hb.box = box;
-    hb.damage = damageGet();
-    // Knockback rides on the resolved box (heroDefs data → attackHitboxWorld).
-    // Copy it onto the hitbox so processAllHitboxes reads hb.knockback at impact.
-    hb.knockback = box.knockback;
-    hb.active = true;
-    if (!resetFlag.get()) {
-      resetHitbox(hb);
-      resetFlag.set(true);
-    }
-  } else {
-    hb.active = false;
-    resetFlag.set(false);
-  }
-}
-
-// Hero melee slot.
-const _hbMelee = makeHitbox({ owner: null, team: 'ally', box: null, damage: 0, method: 'melee' });
-_hitboxes.push(_hbMelee);
-const _slotMelee = makeSlot(_hbMelee, {
-  ownerGet: () => hero,
-  boxGet: () => hero.attackHitboxWorld(ATTACK_MELEE),
-  damageGet: () => hero.stats.attack,
-  resetFlag: { get: () => !!hero._meleeHbReset, set: v => hero._meleeHbReset = v },
-});
-
-// Hero supermove dash slot.
-const _hbSuper = makeHitbox({ owner: null, team: 'ally', box: null, damage: 0, method: 'super' });
-_hitboxes.push(_hbSuper);
-const _slotSuper = makeSlot(_hbSuper, {
-  ownerGet: () => hero,
-  boxGet: () => hero.attackHitboxWorld(ATTACK_SUPERMOVE),
-  damageGet: () => hero.stats.attack * 2,
-  resetFlag: { get: () => !!hero._supermoveHbReset, set: v => hero._supermoveHbReset = v },
-});
-
-// Hero special melee slot (design §15): Down+Melee per-hero trajectory swing.
-// Same lifecycle as the normal melee slot — only the active phase exposes a
-// box; damage routes through the same central damage() system.
-const _hbSpecialMelee = makeHitbox({ owner: null, team: 'ally', box: null, damage: 0, method: 'specialMelee' });
-_hitboxes.push(_hbSpecialMelee);
-const _slotSpecialMelee = makeSlot(_hbSpecialMelee, {
-  ownerGet: () => hero,
-  boxGet: () => hero.attackHitboxWorld(ATTACK_SPECIAL_MELEE),
-  damageGet: () => hero.stats.attack,
-  resetFlag: { get: () => !!hero._specialMeleeHbReset, set: v => hero._specialMeleeHbReset = v },
-});
-
-/**
- * Register active hitboxes for this frame and process them all in one pass.
- * Called once per update tick after all entities have integrated.
- */
-function processAllHitboxes() {
-  const h = hero;
-
-  // --- Hero slots (melee + special melee + supermove) ---
-  updateSlot(_slotMelee);
-  updateSlot(_slotSpecialMelee);
-  updateSlot(_slotSuper);
-
-  // --- Enemy attack hitboxes (whip, lunge, jab) ---
-  // Each real enemy exposes an attack hitbox getter. Register dynamically.
-  for (const e of realEnemies) {
-    if (!e.alive || e.aiState === 'dead') continue;
-    const ehb = getEnemyAttackHitbox(e);
-    if (!ehb) {
-      // No box this frame → deactivate + ready for next attack.
-      if (e._hitbox) {
-        e._hitbox.active = false;
-        e._hitboxReset = false;
-      }
-      continue;
-    }
-    let hb = e._hitbox;
-    if (!hb) {
-      hb = makeHitbox({ owner: e, team: 'foe', box: null, damage: e.stats.attack, method: 'melee' });
-      e._hitbox = hb;
-      _hitboxes.push(hb);
-    }
-    hb.owner = e;
-    hb.box = ehb;
-    hb.damage = e.stats.attack;
-    hb.active = true;
-    if (!e._hitboxReset) {
-      resetHitbox(hb);
-      e._hitboxReset = true;
-    }
-  }
-
-  // --- Process all against all targets ---
-  // Boss zone flow (boss-arena.md §2): the boss cannot take damage before
-  // COMBAT. This gate MUST run BEFORE any damage is applied — processHitboxes
-  // applies damage (takeDamage / hit) internally, so the onHit callback fires
-  // only AFTER the boss has already been damaged. Filtering the boss out of
-  // the target list here is the pre-damage guard: it stops melee, projectiles,
-  // and specials from ever reaching the boss's takeDamage() until COMBAT.
-  // (The onHit callback below keeps a redundant guard as a safety net.)
-  const bossDamageAllowed = bossZone.bossCanTakeDamage();
-  const targets = [h, ...realEnemies,
-    ...(bossDamageAllowed ? [boss] : []),
-    ...barrels, ...woodBarrels, ...coinBarrels].filter(Boolean);
-  processHitboxes(_hitboxes, targets, (hb, target, dealt) => {
-    // Safety net (defense in depth): the boss was already excluded from
-    // `targets` above when combat has not started, so this never fires for the
-    // boss pre-COMBAT. Kept for clarity / future refactor safety.
-    if (target === boss && !bossZone.bossCanTakeDamage()) return;
-    // Self-protection on connect (knockback.md ): the FIRST clean
-    // hit of a special melee swing arms the hero's protection window for the
-    // rest of that swing. The callback only fires when the box actually struck
-    // a target — a whiff never reaches here, so it grants nothing. Normal
-    // melee and supermove connects intentionally do NOT arm it (acceptance #4).
-    if (hb.method === 'specialMelee' && hb.owner === h) {
-      h.markSpecialConnect();
-    }
-    // VFX / juice on hit.
-    if (target.layer === LAYER.HERO) {
-      Effects.heroDamaged();
-    } else {
-      Effects.beginEnemyShake(target);
-      if (target.hitFlash !== undefined) target.hitFlash = 0.1;
-
-      // Hero→enemy knockback: if the attack hitbox carries a `knockback`
-      // setting, apply the physical reaction to the enemy. No per-attack-type
-      // branching — presence of the data is the only gate. The setting lives on
-      // the hitbox (design §7), not the hero; the hero is used for motion/dir.
-      const source = hb.owner;
-      if (hb.knockback) {
-        const dirMode = hb.knockback.dirMode || 'fromAttacker';
-        let nx, ny;
-        if (dirMode === 'alongVelocity') {
-          const len = Math.hypot(source.vx || 0, source.vy || 0) || 1;
-          nx = (source.vx || 0) / len;
-          ny = (source.vy || 0) / len;
-        } else {
-          // 'fromAttacker' or 'radial': direction from source center to enemy center
-          const scx = source.x + (source.w || 0) / 2;
-          const scy = source.y + (source.h || 0) / 2;
-          const ecx = target.x + target.w / 2;
-          const ecy = target.y + target.h / 2;
-          const dx = ecx - scx, dy = ecy - scy;
-          const len = Math.hypot(dx, dy) || 1;
-          nx = dx / len; ny = dy / len;
-        }
-        applyKnockback(target, source, hb.knockback, { x: nx, y: ny });
-      }
-    }
-    // Remove dead enemies from world.
-    if (target.alive === false && target !== h) {
-      collisionWorld.remove(target);
-    }
-    // Handle barrel destruction.
-    if (target.destroyed) {
-      handleBarrelDestroyed(target);
-    }
-  });
-}
-
-/**
- * Get the current attack hitbox for a real enemy, or null.
- * Each enemy type stores its hitbox getter under a known property name.
- */
-function getEnemyAttackHitbox(e) {
-  // Jester: whipHitboxWorld, VineHound: lungeHitboxWorld, Violetta: meleeHitboxWorld
-  if (e.whipHitboxWorld != null) return e.whipHitboxWorld;
-  if (e.lungeHitboxWorld != null) return e.lungeHitboxWorld;
-  if (e.meleeHitboxWorld != null) return e.meleeHitboxWorld;
-  return null;
-}
-
-// --- Real-enemy update (jester + remaining AIs) ------------
-// Drives every real Enemy's AI state machine, physics integration, per-type
-// attack hitbox check, solid collision, and death pipeline (sparkle burst +
-// coin drop on full death). The jester-specific whip logic is generalized into a
-// per-enemy "attack hitbox" accessor so one loop covers all six types.
-
-/**
- * Per-frame step for a single real enemy. Called from updateRealEnemies().
- * @param {Enemy} e the enemy entity
- * @param {number} dt seconds
- */
-function updateRealEnemy(e, dt) {
-  // Decay contact cooldown (shared by all real enemies via the 'contact' rule).
-  if (e._contactCd > 0) e._contactCd -= dt;
-
-  // AI + gravity + integrate (base Enemy.update handles all of this). Flyers
-  // have gravity 0 so they never fall; grounders do not.
-  // BLOCKER 5: the AI receives the collision world, not the buildWorld record.
-  e.update(dt, hero, collisionWorld);
-
-  // Resolve against solids (static platforms + live barrels) so grounders
-  // don't walk through platforms or barrels. Flyers skip solid resolution
-  // (they fly over/through them by design). Dying enemies (aiState === 'dead')
-  // still resolve: their death pipeline integrates vx/vy + gravity, so a body
-  // knocked back mid-death must land on platforms and slide along the ground
-  // instead of ghosting through floors. Resolution stops only when alive
-  // flips to false (death fade complete), at which point updateRealEnemy()
-  // removes the entity from the collision world.
-  if (e.alive && e.gravity > 0) {
-    resolve(e, [...SOLIDS, ...barrelSolidBoxes]);
-  }
-
-  // Lethal fall cull (mirrors the hero's isBelowVerticalBottom rule): an enemy
-  // that drops below the active zone's floor has no surface left — kill it
-  // immediately so it can't linger as a phantom in the collision world
-  // (observed: a Jack-O-Lantern fell to y≈24,000 while staying registered).
-  // The normal death pipeline (sparkles + coins + world removal) still runs
-  // via the !e.alive branch below; _deathHandled guards against double-credit.
-  const zw = getActiveZone(hero)?.bounds;
-  if (zw && e.alive && e.y > zw.y + zw.h + 200) {
-    e.alive = false;
-  }
-
-  // Attack hitbox: now handled by the unified processAllHitboxes() system.
-  // The old inline check is removed; enemy hitboxes register as team:'foe'
-  // and the generic loop routes them against the hero.
-  const atkHb = getAttackHitbox(e);
-  if (!atkHb) e._atkHitDone = false; // reset when window closes (hitbox system uses its own hitSet)
-
-  // Explosion (generic): any entity that carries an `explosion` property and has
-  // latched its detonation fires the AoE blast here — the SAME path a barrel uses.
-  // The only per-source difference is WHEN the trigger fires: barrels detonate on
-  // destruction, the Jack-O-Lantern latches `exploded` when it blows up. No
-  // instanceof checks; the engine reads e.explosion and resolves uniformly.
-  if (e.explosion && e.exploded && !e._explodeHandled) {
-    e._explodeHandled = true;
-    const cx = e.x + e.w / 2;
-    const cy = e.y + e.h / 2;
-    const targets = [hero, ...enemies, ...realEnemies];
-    const result = resolveExplosion({
-      ...e.explosion,
-      cx, cy,
-      self: e,
-      ctx: { hero },
-    }, targets);
-    // Legacy enemy-death explosion roll (pre-migration spawnExplosionVFX,
-    // preserved verbatim): 12 + floor(rand*4) → 12–15 particles.
-    const deathCount = 12 + Math.floor(Math.random() * 4);
-    Effects.spawnExplosion(cx, cy, result.radius, deathCount); // engine path — warm fire burst sized to AoE
-    Effects.bigExplosion(); // screen flash on big explosion
-    Effects.triggerShake(6); // engine path — camera-shake singleton
-    // SFX: explosion
-  }
-
-  // Death pipeline completion: when alive flips to false after the anim,
-  // spawn sparkles + coins and remove from the collision world.
-  if (!e.alive && !e._deathHandled) {
-    e._deathHandled = true;
-    const cx = e.x + e.w / 2;
-    const cy = e.y + e.h / 2;
-    Effects.fireParticleBurst(cx, cy, 7);          // engine path — plain sparkle burst
-    Effects.spawnDeathSparkle(cx, cy, Math.max(e.w, e.h)); // sprite-sized burst
-    coins.dropCoins(e.coinDrop, cx, cy);      // coin drop per config
-    collisionWorld.remove(e);                          // drop from play
-    // Telemetry: count the kill by type (design §4.1 enemiesKilled).
-    record(hero, { kind: 'enemyKilled', type: e.type });
-    hero.wallet.current.kills += 1; // farming-safe wallet tally (resets on death)
-    if (Debug.enabled) Debug.logEvent(`kill ${e.type}`);
-  }
-}
-
-/**
- * Resolve the current active attack hitbox for a real enemy, or null when no
- * damage should be dealt this frame. Each type stores its own getter name; the
- * jester uses whipHitboxWorld, the vine hound lungeHitboxWorld, violetta
- * meleeHitboxWorld. Boris Loon has no melee hitbox (it attacks via dive/contact
- * + projectile).
- * @param {Enemy} e
- * @returns {{x:number,y:number,w:number,h:number}|null}
- */
-function getAttackHitbox(e) {
-  if (e.whipHitboxWorld != null) return e.whipHitboxWorld;       // jester
-  if (e.lungeHitboxWorld != null) return e.lungeHitboxWorld;     // vine hound
-  if (e.meleeHitboxWorld != null) return e.meleeHitboxWorld;     // violetta
-  return null;
-}
-
-/**
- * Advance every real enemy this step. Called from update() in place of the old
- * single-jester call.
- * @param {number} dt seconds
- */
-function updateRealEnemies(dt) {
-  for (const e of realEnemies) {
-    if (e === undefined || e === null) continue;
-    updateRealEnemy(e, dt);
-  }
-}
-
-// --- Boss (Overgrown Elephant) -----------------------------------
-// Drives the boss's phase machine, camera lock, stomp screen-shake, and the
-// win-state transition on death. The boss is tracked separately from
-// realEnemies so its custom AI (phase-based, not aggro-based) runs here.
-
-/**
- * Per-frame boss step: activate the fight when the hero approaches, run the
- * phase AI + physics, resolve against solids, trigger the stomp shake, and
- * handle the death → win pipeline.
- * @param {number} dt seconds
- */
-function updateBoss(dt) {
-  const b = boss;
-  if (!b) return;
-
-  // Decay the contact cooldown (shared with the 'contact' rule handler).
-  if (b._contactCd > 0) b._contactCd -= dt;
-
-  // Death pipeline completion: spawn effects, drop coins, remove from world,
-  // unlock the camera, and transition to the reward screen exactly once.
-  // This runs regardless of the boss zone flow state — if the boss died
-  // (combat, test, or debug), the death pipeline must complete.
-  if (!b.alive && !b._deathHandled) {
-    b._deathHandled = true;
-    const cx = b.x + b.w / 2;
-    const cy = b.y + b.h / 2;
-    Effects.fireParticleBurst(cx, cy, 14);        // engine path — big victory sparkle burst
-    coins.dropCoins(b.coinDrop, cx, cy);       // generous coin bounty
-    collisionWorld.remove(b);                           // drop from play
-    camera.unlock();                           // release the arena lock
-    b.onDeath();                               // boss-side death hook
-    // mark boss as killed (design §4.1) — keyed by the level's boss id.
-    record(hero, { kind: 'bossKilled', type: hero.levelConfig?.boss ?? 'boss' });
-    if (getState() === S.PLAY) {
-      // boss-arena.md §4: the level reward screen replaces the placeholder
-      // post-boss (WIN) screen. showLevelReward() computes the documented
-      // stats and credits the global continue pool exactly once.
-      showLevelReward(hero);
-      console.log(`[state] PLAY → ${STATE_NAMES[S.REWARD]} (boss defeated)`);
-    }
-    return;
-  }
-
-  // Boss zone flow (docs/levels/boss-arena.md §1–§3). The state machine
-  // owns the approach → arena lock → intro → bar fill → boss entrance →
-  // combat sequence. While the machine is running (states before COMBAT)
-  // the boss is invisible and untouchable; the hero may move but not shoot.
-  if (bossZone.active && bossZone.state !== BZ_COMBAT) {
-    // Step the machine; it drives the boss's entrance position and the
-    // energy-bar fill. The camera is frozen by enterBossRoom() at the trigger.
-    bossZone.update(dt, hero);
-    // The boss's own AI must NOT run during the intro: it is invisible and
-    // the fight has not started. (Attack patterns are the boss system's
-    // job; here we simply gate them off until COMBAT.)
-    // We still resolve the boss against solids so its entrance lands on the
-    // floor, but we skip b.update() (AI + integrate) until COMBAT.
-    if (b.alive && b.aiState !== 'dead' && b.gravity > 0) {
-      resolve(b, SOLIDS);
-    }
-    return;
-  }
-
-  // The boss AI only runs when the boss zone flow is active AND in COMBAT.
-  // Before the player reaches the boss zone, the boss is dormant — no AI,
-  // no attacks, no movement. (boss-arena.md §1: the boss is created per
-  // boss-zone entry, not at module load.)
-  if (!bossZone.active || bossZone.state !== BZ_COMBAT) return;
-
-  // COMBAT: the boss AI drives the fight.
-  // Activation is owned by the boss zone flow's onCombat hook (which sets
-  // boss.active = true when the machine reaches COMBAT).
-  if (b.aiState !== 'dead' && !b.active) {
-    b.shouldActivate(hero);
-  }
-
-  // AI + gravity + integrate (base Enemy.update handles the death pipeline too).
-  // BLOCKER 5: the AI receives the collision world, not the buildWorld record.
-  b.update(dt, hero, collisionWorld);
-
-  // Keep the boss inside the room horizontally while alive & active. The room
-  // bounds are owned by the flow machine (bossZone.roomX/roomW).
-  if (b.alive && b.aiState !== 'dead' && b.active) {
-    const minX = bossZone.roomX;
-    const maxX = bossZone.roomX + bossZone.roomW - b.w;
-    if (b.x < minX) { b.x = minX; b.vx = Math.abs(b.vx); }
-    else if (b.x > maxX) { b.x = maxX; b.vx = -Math.abs(b.vx); }
-  }
-
-  // Resolve against solids so the boss rests on the floor (it has gravity 1).
-  if (b.alive && b.aiState !== 'dead' && b.gravity > 0) {
-    resolve(b, SOLIDS);
-  }
-
-  // Stomp shake: doStomp() records a magnitude; convert it into a screen shake.
-  if (b.shakeMag > 0) {
-    Effects.triggerShake(b.shakeMag); // engine path — stomp shake
-    b.shakeMag = 0;
-  }
-}
 
 // Advance particle + coin pools (called each frame regardless of jester state).
 function updateEffects(dt) {
