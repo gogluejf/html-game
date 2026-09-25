@@ -130,6 +130,7 @@ Tested in browser: yes/no
 ### Scripts
 - [compose.py](scripts/compose.py) — Executable script (one file per song; order via createdAt)
 - [split_songs.py](scripts/split_songs.py) — One-time migration: split a legacy `<GAME>.json` into one file per song, rewriting `createdAt` to preserve playlist order
+- [compact_songs.py](scripts/compact_songs.py) — Cosmetic compactor: inlines leaf note/drum arrays (bass/leads/pads/drums) onto single lines; run after compose/add/edit, idempotent
 
 ### References
 - [song-structure.md](references/song-structure.md) — Additional documentation
