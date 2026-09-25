@@ -247,12 +247,6 @@ const coinBarrels = [];
 // like the static platforms (design §10/§16): the hero and grounded enemies
 // resolve() against SOLIDS + this list each step.
 const barrelSolidBoxes = [];
-function refreshBarrelSolidBoxes() {
-  barrelSolidBoxes.length = 0;
-  for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) {
-    if (b.alive) barrelSolidBoxes.push(b.worldBox());
-  }
-}
 
 // Powerups (design §10). Placed by the population resolver on macro powerup
 // slots (populate.md §2). The 'clear' powerup is placed wherever the resolver
@@ -639,9 +633,13 @@ ctx.areaContext = areaContext;
 ctx.enemies = enemies;
 ctx.barrelSolidBoxes = barrelSolidBoxes;
 ctx.bossZone = bossZone;
+ctx.pickups = pickups;
+ctx.animTestEnemy = animTestEnemy;
 ctx.handleBarrelDestroyed = handleBarrelDestroyed;
 ctx.coins = coins;
 ctx.projectilePool = projectilePool;
+ctx.specialPool = specialPool;
+ctx.FLOOR_TOP = FLOOR_TOP;
 ctx.bossZoneDef = bossZoneDef;
 ctx.clearSeq = clearSeq;
 ctx.CLEAR_SEQ = CLEAR_SEQ;
@@ -656,46 +654,10 @@ setHeroRefSetter(setHeroRef);
 // (effects/cameraShake.js); triggerShake()/updateShake() used to live here as
 // module locals but were migrated through the Effects shim (review):
 // render.js reads getShakeOffset(), which now returns the tracked instance's
-// current offset ({0,0} when idle/done).
-export function getShakeOffset() { return Effects.getShakeOffset(); }
-
-export function getHero() { return hero; }
-export function getSolids() { return SOLIDS; }
-export function getCollisionWorld() { return collisionWorld; }
-export function getEnemies() { return enemies; }
-// all live enemy entities (placeholder targets + jester) used by
-// the 'clear' powerup effect. Excludes dead/dead-animating enemies.
-export function getLiveEnemies() {
-  const out = [];
-  for (const e of enemies) if (e.alive !== false) out.push(e);
-  for (const e of realEnemies) {
-    if (e.alive !== false && e.aiState !== 'dead') out.push(e);
-  }
-  return out;
-}
-// decorative anim-test box (damage-immune placeholder).
-export function getAnimTestEnemy() { return animTestEnemy; }
-// live thorns come from the shared pool (pooled, no allocation).
-export function getProjectiles() { return projectilePool.activeItems; }
-export function getSpecials() { return specialPool.activeItems; }
-export function getPickups() { return pickups; }
-export function getCamera() { return camera; }
-// full real-enemy list (from generateLevel) for render/debug.
-export function getRealEnemies() { return realEnemies; }
-// the boss entity for render + debug.
-export function getBoss() { return boss; }
-/** The kind of the zone the hero is currently in ('area' | 'boss'). Used by
- *  render.js to gate boss-only visuals (debug box, HP bar) to the boss zone. */
-export function getActiveZoneKind() { return getActiveZone(hero).kind; }
-export function getParticles() { return particles; }
-export function getCoins() { return coins; }
-// barrels (explosive + coin) + explosion screen shake for render.
-export function getBarrels() { return [...barrels, ...woodBarrels, ...coinBarrels]; }
-export function getCoinBarrels() { return coinBarrels; }
-// powerups, checkpoints, floating text for render + debug.
-export function getPowerups() { return powerups; }
-export function getCheckpoints() { return checkpoints; }
-export function getFloatTexts() { return floatTexts; }
+// current offset ({0,0} when idle/done). World accessors are extracted into
+// world/accessors.js; re-exported here so existing importers keep working.
+export { getShakeOffset, getHero, getSolids, getCollisionWorld, getEnemies, getLiveEnemies, getAnimTestEnemy, getProjectiles, getSpecials, getPickups, getCamera, getRealEnemies, getBoss, getActiveZoneKind, getParticles, getCoins, getBarrels, getCoinBarrels, getPowerups, getCheckpoints, getFloatTexts } from '../world/accessors.js';
+import { getCheckpoints, getHero } from '../world/accessors.js';
 
 // --- Per-frame step ------------------------------------------------------------
 export function update(dt) {
@@ -1176,6 +1138,7 @@ import { registerCollisionHandlers } from '../combat/collisionHandlers.js';
 import { enterBossRoom, settleIntoBossRoom, restoreBossRunFloor, beginBossZoneFlow, updateBoss } from '../boss/bossFlow.js';
 import { updateRealEnemies } from '../enemies/enemyUpdate.js';
 import { ctx } from '../world/context.js';
+import { refreshBarrelSolidBoxes, handleBarrelDestroyed, syncCoinsToWorld, cullOffScreen, syncProjectilesToWorld, syncSpecialsToWorld, updateEffects } from '../objects/barrelSync.js';
 
 // --- Melee attack -------------------------------------------------
 // J key starts a swing (hero.tryMelee). During the single ACTIVE frame of the
@@ -1183,131 +1146,3 @@ import { ctx } from '../world/context.js';
 // overlap we route through central damage(). Each enemy can only be hit once
 // per swing (tracked in _meleeHitSet), so a multi-enemy overlap still deals
 // exactly one hit each. The cooldown prevents spamming.
-
-// Advance particle + coin pools (called each frame regardless of jester state).
-function updateEffects(dt) {
-  Effects.update(dt); // decay vignette / screen flash timers
-  particles.updateAll(dt);
-  // Coins bounce off the floor AND any air platform top they land on. We pass
-  // the SOLIDS list minus the floor itself (the floor is handled by floorTop).
-  const platforms = SOLIDS.slice(1); // index 0 is the full-length floor
-  coins.updateAll(dt, FLOOR_TOP, getActiveZone(hero).bounds.w, platforms);
-  // Sync coins into the collision world so HERO×COIN collect works.
-  syncCoinsToWorld();
-}
-
-// --- Barrel destruction / explosion ---------------------------------
-// When a barrel's HP hits 0 (from any source: thorn, melee, bomb) we run the
-// explosion pipeline once: AoE damage to everything in radius (enemies AND hero),
-// an orange/red particle burst, a brief screen shake, and removal from the world.
-// Coin barrels skip the damaging AoE but still pop coins.
-
-/**
- * Handle a barrel that just reached 0 HP. Runs the explosion AoE (damaging
- * barrel only), spawns VFX, drops coins for coin barrels, shakes the screen,
- * and removes the barrel from the collision world.
- * @param {GameObj} barrel the destroyed object
- */
-function handleBarrelDestroyed(barrel) {
-  const { cx, cy } = { cx: barrel.x + barrel.w / 2, cy: barrel.y + barrel.h / 2 };
-
-  if (barrel.explosion) {
-    // AoE damage to every live entity in radius (enemies + hero). The pure
-    // resolveExplosion() routes through central damage(); we pass the full live set.
-    // A barrel is a NEUTRAL blast: it hurts whoever stands in range (hero AND enemies)
-    // and shoves everyone radially. Hero knockback is routed through takeHit('explosion')
-    // inside resolveExplosion, preserving the exact pre-refactor rec/intangible behavior.
-    // Same generic path as any other detonating entity — only the trigger differs.
-    const targets = [hero, ...enemies, ...realEnemies];
-    const result = resolveExplosion({
-      ...barrel.explosion,
-      cx, cy,
-      self: barrel,
-      ctx: { hero },
-    }, targets);
-    // Real enemies killed by the blast already ran their internal death pipeline
-    // via takeDamage() inside resolveExplosion — no manual die() needed here.
-    // track if the hero was hit by the explosion (design §4.1).
-    if (result.hit.includes(hero)) {
-      record(hero, { kind: 'hitTaken', source: 'explosion' });
-    }
-    // Legacy barrel explosion roll (pre-migration spawnExplosionVFX, preserved
-    // verbatim): 12 + floor(rand*4) → 12–15 particles.
-    const barrelCount = 12 + Math.floor(Math.random() * 4);
-    Effects.spawnExplosion(cx, cy, result.radius, barrelCount); // engine path — warm fire burst sized to AoE
-    Effects.bigExplosion(); // brief white screen flash (design §12)
-    Effects.triggerShake(8); // engine path — barrel explosion shake
-    // SFX: explosion
-  } else if (barrel.coinDrop) {
-    // Coin barrel (or any object with a coinDrop config): spawn the burst.
-    coins.dropCoins(barrel.coinDrop, cx, cy);
-    Effects.fireParticleBurst(cx, cy, 6); // engine path — plain sparkle burst
-    // SFX: coin
-  } else {
-    // Wood barrel (plain): just breaks into wood-chip particles. No damage, no coins.
-    Effects.fireParticleBurst(cx, cy, 8); // engine path — plain sparkle burst
-    // SFX: break
-  }
-
-  // Remove the dead barrel from the collision world so it stops blocking.
-  collisionWorld.remove(barrel);
-  // Telemetry: count the destroyed barrel by type (design §4.1 barrelsDestroyed).
-  const bkey = barrel.type; // 'woodBarrel' | 'barrel' | 'coinBarrel'
-  record(hero, { kind: 'barrel', type: bkey });
-  if (Debug.enabled) Debug.logEvent(`barrel destroyed (${bkey})`);
-}
-
-/** Keep the collision world's coin set in sync with the pool. */
-function syncCoinsToWorld() {
-  const live = coins.activeItems;
-  for (const e of collisionWorld.entities) {
-    if (e.layer === LAYER.COIN && !live.includes(e)) collisionWorld.remove(e);
-  }
-  for (const c of live) {
-    if (!collisionWorld.entities.has(c)) collisionWorld.add(c);
-  }
-}
-
-/** Cull thorns that have flown past the level bounds (lifetime cull is in update). */
-function cullOffScreen(items) {
-  for (const p of items) {
-    const _zw = getActiveZone(hero).bounds; if (p.x + p.w < _zw.x || p.x > _zw.x + _zw.w || p.y + p.h < -40 || p.y > VIEW_H + 40) {
-      p.alive = false;
-    }
-  }
-}
-
-/**
- * Keep the collision world's live set in sync with the pool: add newly-spawned
- * thorns, drop ones that died since last frame. The world skips !alive entities
- * each pass, so this only needs to handle membership churn.
- */
-function syncProjectilesToWorld() {
-  const live = projectilePool.activeItems;
-  // Remove dead projectiles still registered in the world.
-  for (const e of collisionWorld.entities) {
-    if (e.friendly && (e.layer === LAYER.PROJ_ALLY || e.layer === LAYER.PROJ_FOE) && !live.includes(e)) {
-      collisionWorld.remove(e);
-    }
-  }
-  // Add any live thorn not yet registered.
-  for (const p of live) {
-    if (!collisionWorld.entities.has(p)) collisionWorld.add(p);
-  }
-}
-
-
-
-
-/** Sync live specials into the collision world (same pattern as projectiles). */
-function syncSpecialsToWorld() {
-  const live = specialPool.activeItems;
-  for (const e of collisionWorld.entities) {
-    if (e.type === 'saw' || e.type === 'bomb') {
-      if (!live.includes(e)) collisionWorld.remove(e);
-    }
-  }
-  for (const s of live) {
-    if (!collisionWorld.entities.has(s)) collisionWorld.add(s);
-  }
-}
