@@ -19,5 +19,6 @@ export const ctx = {
   areaContext: null,
   floatTexts: null,
   coins: null,
+  projectilePool: null,
   bossZoneDef: null,
 };
