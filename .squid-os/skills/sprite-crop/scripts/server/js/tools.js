@@ -22,6 +22,15 @@ export function syncToggles(){
   const locked = !!(app.cur && app.cur.st && app.cur.st.playing);
   const addBtn = $('addBoxBtn');
   if (addBtn) addBtn.disabled = locked;
+  const addBtn2 = $('addBoxToolbar');
+  if (addBtn2) addBtn2.disabled = locked;
+  // recenter pivot + markers also lock while playing
+  const recBtn = $('recenterPivotBtn');
+  if (recBtn) recBtn.disabled = locked;
+  const mkBtn1 = $('addMarkerBtn');
+  if (mkBtn1) mkBtn1.disabled = locked;
+  const mkBtn2 = $('addMarkerToolbar');
+  if (mkBtn2) mkBtn2.disabled = locked;
   // MELEE VIEW (Display): global display preference, always toggleable
   const mv = $('tglMeleeView');
   mv.disabled = false;
