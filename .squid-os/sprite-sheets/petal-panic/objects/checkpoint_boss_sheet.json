@@ -5,7 +5,6 @@
   "size": "413x440",
   "rows": 1,
   "cols": 1,
-  "cell": 413,
   "description": "Checkpoint boss target drum (single image)",
   "entities": [{
     "name": "checkpoint_boss",

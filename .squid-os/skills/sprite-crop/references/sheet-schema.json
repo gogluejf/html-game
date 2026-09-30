@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://squid-os.local/skills/sprite-crop/sheet-schema.json",
+  "$comment": "Validates per-sheet sprite JSON files produced by the sprite-crop skill. Each file describes one source sprite sheet PNG, its grid geometry, and the entities/animations cropped from it. Forward-compatible: unknown properties are allowed at every level so gameplay metadata (collision_box, hitboxes, markers, ...) can be added later without breaking validation.",
+  "title": "Sprite Sheet Manifest",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "file",
+    "size",
+    "rows",
+    "cols",
+    "description",
+    "entities"
+  ],
+  "properties": {
+    "label": {
+      "type": "string",
+      "description": "Label subfolder name (e.g. 'heroes', 'boss', 'enemies')."
+    },
+    "file": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative path to the source sheet PNG."
+    },
+    "size": {
+      "type": "string",
+      "pattern": "^\\d+x\\d+$",
+      "description": "Sheet pixel dimensions as 'WxH', e.g. '1619x971'."
+    },
+    "rows": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of rows in the sheet grid."
+    },
+    "cols": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of columns in the sheet grid."
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable summary of the sheet."
+    },
+    "original_prompt": {
+      "type": "string",
+      "description": "The image-generation prompt used to create the source sheet."
+    },
+    "cropped_path": {
+      "type": "string",
+      "description": "Directory where cropped frames land."
+    },
+    "crop": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Written by record_crop.py after a crop pass.",
+      "properties": {
+        "frames_dir": {
+          "type": "string",
+          "description": "Directory containing the cropped frame PNGs."
+        },
+        "pass": {
+          "type": "string",
+          "description": "Identifier for this crop pass (a temp dir path or a label)."
+        }
+      }
+    },
+    "schema_version": {
+      "type": "integer",
+      "default": 1,
+      "description": "Future-proofing version tag for the manifest format."
+    },
+    "entities": {
+      "type": "array",
+      "minItems": 1,
+      "description": "One entry per animation row (or spanned group).",
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
+    }
+  },
+  "$defs": {
+    "entity": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["name", "anim"],
+      "properties": {
+        "row": {
+          "description": "Grid row index, or an array of rows when --span was used.",
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "integer", "minimum": 0 }
+            }
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Entity identifier (e.g. 'scarlet_vale', 'enemy')."
+        },
+        "anim": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Animation name (e.g. 'run', 'jump', 'pufferfish')."
+        },
+        "frames": {
+          "type": "array",
+          "description": "Cropped frames for this animation (populated after cropping).",
+          "items": {
+            "$ref": "#/$defs/frame"
+          }
+        }
+      }
+    },
+    "frame": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["file"],
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Filename of the cropped frame PNG."
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Source grid row of this frame."
+        },
+        "col": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Source grid column of this frame."
+        },
+        "bbox": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": { "type": "integer" },
+          "description": "Crop bounding box [x, y, w, h] in source-sheet pixels."
+        }
+      }
+    }
+  }
+}

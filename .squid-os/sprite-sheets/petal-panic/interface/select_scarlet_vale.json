@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/interface",
   "rows": 1,
   "cols": 1,
+  "size": "1212x1297",
   "description": "Scarlet Vale character-select HUD panel (single image)",
   "entities": [{
     "name": "select_scarlet_vale",

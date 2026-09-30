@@ -4,6 +4,7 @@
   "cropped_path": "abyss-qwen/assets/hud",
   "rows": 0,
   "cols": 0,
+  "size": "1586x992",
   "description": "Static scrolling backdrop - dark biomech deep-sea abyss, tileable horizontally",
   "original_prompt": "Now generate a BACKGROUND image for the SAME aquatic Galaga game, matching the exact same 16-bit neo-arcade pixel-art style and neon palette as the enemy/boss/powerup sheets above. This is a dark atmospheric deep-sea backdrop that bright sprites will be drawn on top of. CONTENT: A vast underwater abyss scene. Distant biomech alien structures - huge silhouettes of organic-mechanical towers, coral-like spires, and tentacle-wrapped pillars in the far background (very dim). Mid-ground has swaying kelp tendrils and scattered bioluminescent nodes (dim glowing dots in cyan/magenta). Overall mood: dark, mysterious, deep ocean. CRITICAL RULES: Keep EVERYTHING VERY DARK (below 20% brightness) so bright neon sprites pop against it. The background must NOT compete with foreground sprites. Color palette limited to: near-black, very dark teal, deep purple, faint dim cyan. NO bright colors. No text, no borders, no UI elements. Pure black at the top fading to very dark teal/navy at the bottom (depth gradient). Tileable horizontally (left and right edges should match seamlessly for parallax scrolling). DIMENSIONS: 1024 wide x 640 tall pixels (matching the game canvas aspect ratio). Style: crisp 16-bit pixel art, hard edges, no anti-aliasing, flat shading, consistent with the other sheets.",
   "entities": [{

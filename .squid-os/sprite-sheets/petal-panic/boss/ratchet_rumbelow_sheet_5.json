@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/boss",
   "rows": 2,
   "cols": 3,
+  "size": "1536x1024",
   "description": "Ratchet Rumbelow boss, sheet 5/5 \u2014 6 frames (roar)",
   "entities": [{
     "name": "ratchet_rumbelow",

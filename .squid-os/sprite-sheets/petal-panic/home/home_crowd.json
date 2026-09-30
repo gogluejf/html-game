@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/home",
   "rows": 1,
   "cols": 1,
+  "size": "1535x1024",
   "description": "Audience crowd silhouette parallax layer (single image)",
   "entities": [{
     "name": "home_crowd",

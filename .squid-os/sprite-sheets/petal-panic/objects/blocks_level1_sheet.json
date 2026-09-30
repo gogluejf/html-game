@@ -5,7 +5,6 @@
   "size": "1536x2048",
   "rows": 2,
   "cols": 3,
-  "cell": 512,
   "description": "Level 1 block tiles combined: row 1 with props, row 2 naked (small/medium/large)",
   "entities": [{
     "name": "blocks_level1",

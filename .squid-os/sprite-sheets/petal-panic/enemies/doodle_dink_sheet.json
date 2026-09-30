@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/enemies",
   "rows": 3,
   "cols": 5,
+  "size": "1536x1024",
   "description": "Doodle Dink striped jester \u2014 teleport, tomato_throw, headbutt",
   "entities": [{
     "name": "doodle_dink",

@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/projectiles",
   "rows": 1,
   "cols": 5,
+  "size": "2172x724",
   "description": "Spinning dumbbell projectile \u2014 1x5 strip",
   "entities": [{
     "name": "dumbbell",

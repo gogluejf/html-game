@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/enemies",
   "rows": 4,
   "cols": 5,
+  "size": "1536x1024",
   "description": "Clown rat ringleader enemy, 4 actions x 5 frames (run, attack/fish-throw, charge, death)",
   "entities": [{
     "name": "ratzo_ringleader",

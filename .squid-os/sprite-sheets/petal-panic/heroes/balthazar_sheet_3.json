@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/heroes",
   "rows": 1,
   "cols": 8,
+  "size": "2172x724",
   "description": "Balthazar tiger ringmaster hero sheet 3, crouch x 8 frames",
   "entities": [{
     "name": "balthazar",

@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/heroes",
   "rows": 3,
   "cols": 5,
+  "size": "1619x971",
   "description": "Scarlet Vale hero, 3 actions x 5 frames",
   "entities": [{
     "name": "scarlet_vale",

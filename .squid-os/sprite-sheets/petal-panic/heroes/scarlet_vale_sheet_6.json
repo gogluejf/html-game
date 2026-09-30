@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/heroes",
   "rows": 2,
   "cols": 5,
+  "size": "1774x887",
   "description": "Scarlet Vale hero cartwheel/acrobatic flip, 10 frames (2x5 grid)",
   "original_prompt": "Cartwheel/acrobatic flip sheet \u2014 reverse-engineered; to be regenerated via transparent regen pass.",
   "entities": [{

@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/home",
   "rows": 1,
   "cols": 1,
+  "size": "1757x582",
   "description": "Squid OS logo for credits splash (single image)",
   "entities": [{
     "name": "squid_os_logo",

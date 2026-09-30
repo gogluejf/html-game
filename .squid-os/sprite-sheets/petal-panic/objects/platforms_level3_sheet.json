@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/objects",
   "rows": 4,
   "cols": 3,
+  "size": "1536x1244",
   "description": "Platform tiles level 3 (3x3 grid) + row 4: naked platforms (S/M/L)",
   "entities": [{
     "name": "platforms_level3",

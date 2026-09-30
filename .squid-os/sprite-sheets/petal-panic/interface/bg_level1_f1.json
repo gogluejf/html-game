@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/interface",
   "rows": 1,
   "cols": 1,
+  "size": "2172x724",
   "description": "Level 1 back parallax layer: full circus tent backdrop with striped canopy, CIRCUS entrance, banners (single image)",
   "entities": [{
     "name": "bg_level1_tent",

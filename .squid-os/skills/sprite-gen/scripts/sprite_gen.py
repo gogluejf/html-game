@@ -15,6 +15,24 @@ Subcommands:
 """
 import argparse, base64, json, os, socket, sys, time
 
+# PIL is optional — used to auto-read sheet size from the source PNG.
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+
+
+def _png_size(path):
+    """Return 'WxH' for a PNG at path, or None if unreadable / no PIL."""
+    if Image is None:
+        return None
+    try:
+        with Image.open(path) as im:
+            w, h = im.size
+        return f"{w}x{h}"
+    except Exception:
+        return None
+
 # ---------------------------------------------------------------------------
 # IPC to the browser-harness daemon (preferred — no popups)
 # ---------------------------------------------------------------------------
@@ -336,21 +354,32 @@ def cmd_state(args):
         parts = dict(kv.split("=", 1) for kv in args.add_sheet)
         name = parts.pop("name")
 
-        # Required fields
-        required = ["file", "size", "rows", "cols", "cell", "description", "entities"]
+        # Required fields ('size' is auto-read from the PNG when possible).
+        required = ["file", "rows", "cols", "description", "entities"]
         missing = [r for r in required if r not in parts]
         if missing:
             print(f"ERROR: missing required fields: {missing}", file=sys.stderr)
-            print(f"  Usage: --add-sheet name=X file=X size=WxH rows=N cols=N cell=N description=\"...\" entities='[{{\"row\":1,\"name\":\"X\",\"anim\":\"...\"}},...]'", file=sys.stderr)
-            print(f"  Note: 'row' may be an int (single row) or an array of ints (one animation spanning multiple grid rows, e.g. \"row\":[1,2]).", file=sys.stderr)
+            print(f"  Usage: --add-sheet name=X file=X rows=N cols=N description=\"...\" entities='[{{\"name\":\"X\",\"anim\":\"...\"}},...]'", file=sys.stderr)
+            print(f"  Note: 'row' (optional) may be an int (single row) or an array of ints (one animation spanning multiple grid rows, e.g. \"row\":[1,2]).", file=sys.stderr)
+            sys.exit(1)
+
+        # size: prefer auto-reading from the source PNG; fall back to --size arg.
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+        file_rel = parts["file"]
+        png_path = file_rel if os.path.isabs(file_rel) else os.path.join(repo_root, file_rel)
+        size = _png_size(png_path)
+        if size is None and "size" in parts:
+            size = parts["size"]
+        if size is None:
+            print(f"ERROR: could not determine sheet size. Auto-read failed for '{file_rel}' "
+                  f"(PIL unavailable or PNG missing) and no --size was provided.", file=sys.stderr)
             sys.exit(1)
 
         sheet = {}
         sheet["file"] = parts["file"]
-        sheet["size"] = parts["size"]
+        sheet["size"] = size
         sheet["rows"] = int(parts["rows"])
         sheet["cols"] = int(parts["cols"])
-        sheet["cell"] = int(parts["cell"])
         sheet["description"] = parts["description"]
 
         # Parse entities JSON array
@@ -359,13 +388,14 @@ def cmd_state(args):
             if not isinstance(entities, list):
                 raise ValueError("entities must be a JSON array")
             for i, e in enumerate(entities):
-                if not isinstance(e, dict) or "row" not in e or "name" not in e or "anim" not in e:
-                    print(f"ERROR: entities[{i}] must have 'row', 'name', 'anim' keys", file=sys.stderr)
+                if not isinstance(e, dict) or "name" not in e or "anim" not in e:
+                    print(f"ERROR: entities[{i}] must have 'name' and 'anim' keys", file=sys.stderr)
                     sys.exit(1)
-                # 'row' may be a single int OR an array of ints (one animation
-                # spanning multiple grid rows, e.g. a long anim laid out 2xN).
-                r = e["row"]
-                if not (isinstance(r, int) or (isinstance(r, list) and all(isinstance(x, int) for x in r))):
+                # 'row' is OPTIONAL provenance. When present it may be a single
+                # int OR an array of ints (one animation spanning multiple grid
+                # rows, e.g. a long anim laid out 2xN).
+                r = e.get("row")
+                if r is not None and not (isinstance(r, int) or (isinstance(r, list) and all(isinstance(x, int) for x in r))):
                     print(f"ERROR: entities[{i}].row must be an int or an array of ints", file=sys.stderr)
                     sys.exit(1)
             sheet["entities"] = entities
@@ -391,7 +421,7 @@ def cmd_state(args):
         sheet["cropped_path"] = cropped
 
         # Reject unknown fields
-        allowed_sheet_fields = {"file", "size", "rows", "cols", "cell", "description",
+        allowed_sheet_fields = {"file", "size", "rows", "cols", "description",
                                 "entities", "original_prompt", "crop"}
         extra = set(parts.keys()) - allowed_sheet_fields
         if extra:

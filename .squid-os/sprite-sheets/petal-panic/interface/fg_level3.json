@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/interface",
   "rows": 1,
   "cols": 1,
+  "size": "2172x724",
   "description": "Foreground strip level 3",
   "entities": [{
     "name": "fg_level3",

@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/boss",
   "rows": 4,
   "cols": 4,
+  "size": "1536x1024",
   "description": "Grim Vertigo carousel mid-boss, 4 actions x 4 frames (idle/rotate, angry/transform, attack/hazards, death)",
   "entities": [{
     "name": "grim_vertigo",

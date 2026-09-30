@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/enemies",
   "rows": 1,
   "cols": 5,
+  "size": "2014x793",
   "description": "Doodle Dink death dissolve \u2014 1x5 strip",
   "entities": [{
     "name": "doodle_dink",

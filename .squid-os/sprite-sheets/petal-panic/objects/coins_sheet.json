@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/objects",
   "rows": 3,
   "cols": 4,
+  "size": "1536x1024",
   "description": "Circus coins (bronze small, silver medium, gold large), 3 rows x 4 cols flip animation (front, edge, back, edge)",
   "entities": [{
     "name": "coin_bronze",

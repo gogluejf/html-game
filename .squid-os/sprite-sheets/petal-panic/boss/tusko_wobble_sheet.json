@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/boss",
   "rows": 4,
   "cols": 5,
+  "size": "1619x971",
   "description": "Overgrown Elephant boss, 4 actions x 5 frames (charge, stomp, trunk blast, death)",
   "entities": [{
     "name": "tusko_wobble",

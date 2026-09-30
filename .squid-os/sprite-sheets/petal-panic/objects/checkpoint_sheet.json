@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/objects",
   "rows": 1,
   "cols": 1,
+  "size": "332x525",
   "description": "Checkpoint flag pole prop (single image)",
   "entities": [{
     "name": "checkpoint",

@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/powerups",
   "rows": 5,
   "cols": 4,
+  "size": "1983x793",
   "description": "Wooden signboard powerup sprites, 5 types x 4 frames (NORMAL/INFLATE/PEAK/DEFLATE)",
   "entities": [{
     "name": "scarlet_1up",

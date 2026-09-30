@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/enemies",
   "rows": 4,
   "cols": 5,
+  "size": "1536x1024",
   "description": "Toadstool Tilly clown-mushroom enemy, 4 actions x 5 frames (idle, spore cloud, ground eruption, death)",
   "entities": [{
     "name": "toadstool_tilly",

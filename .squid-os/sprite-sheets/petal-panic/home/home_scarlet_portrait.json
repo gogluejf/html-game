@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/home",
   "rows": 1,
   "cols": 1,
+  "size": "1024x1536",
   "description": "Scarlet Vale aerialist portrait (single image)",
   "entities": [{
     "name": "home_scarlet_portrait",

@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/objects",
   "rows": 1,
   "cols": 1,
+  "size": "322x495",
   "description": "Bomb barrel prop with lit fuse (single image)",
   "entities": [{
     "name": "barrel_bomb",

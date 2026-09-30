@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/projectiles",
   "rows": 3,
   "cols": 8,
+  "size": "1536x1024",
   "description": "Projectile 4 \u2014 fish_bone, circus_ball, peas_tornado",
   "entities": [{
     "name": "fish_bone",

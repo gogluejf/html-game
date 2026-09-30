@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/projectiles",
   "rows": 3,
   "cols": 8,
+  "size": "1536x1024",
   "description": "Projectile 3 \u2014 tomato (rolling+splat), carrot (spinning), pea (swirling)",
   "entities": [{
     "name": "tomato",

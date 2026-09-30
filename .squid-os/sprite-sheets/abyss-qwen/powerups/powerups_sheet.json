@@ -4,6 +4,7 @@
   "cropped_path": "abyss-qwen/assets/powerups",
   "rows": 4,
   "cols": 4,
+  "size": "1254x1254",
   "description": "4 collectible power-up capsules (bubbly sausage/popper style), 4 inflate/squeeze frames each",
   "original_prompt": "Make a NEW sprite sheet of 4 power-up items. IMPORTANT: these must be BUBBLY SAUSAGE / POPPER shapes - like a plump inflated pill or party-cracker with a small TIED KNOT/BAND on EACH END (like a tied sausage link). Round glossy gelatinous body with a bright highlight. NOT ornate badges - simple round bubbly capsules. LAYOUT: 4 rows x 4 columns, pure black background, each cell 256x256px, evenly spaced, no text/borders. Image 1024x1024. CRITICAL ANIMATION: Each row must show 4 CLEARLY DIFFERENT frames of a squeeze/inflate cycle: frame 1 = fully inflated (fat/round), frame 2 = slightly squished, frame 3 = most squished (thin/wide), frame 4 = slightly squished. The capsule visibly changes shape between frames. Do NOT make all 4 frames identical. STYLE: same crisp 16-bit neon pixel art as the enemy/boss sheets above, black bg, hard edges, no anti-aliasing, flat shading + highlight, glowing center icon, 1px dark rim. ROWS top to bottom: 1. CYAN capsule, tied knots both ends, center icon = shield hexagon 2. YELLOW/GOLD capsule, tied knots both ends, center icon = three arrows fanning up 3. PURPLE capsule, tied knots both ends, center icon = hourglass 4. RED/ORANGE capsule, tied knots both ends, center icon = bomb/explosion star. Each row: 4 distinct inflate/squeeze frames. Clean and croppable.",
   "entities": [{

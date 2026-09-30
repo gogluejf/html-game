@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/boss",
   "rows": 3,
   "cols": 5,
+  "size": "1536x1024",
   "description": "Colonel Carrot final boss (carrot-bodied colonel on red scooter) sheet 3/4, 3 actions x 5 frames (sulk, punch, defeat)",
   "entities": [{
     "name": "colonel_carrot",

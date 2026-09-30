@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/projectiles",
   "rows": 3,
   "cols": 8,
+  "size": "2172x724",
   "description": "Projectiles: thorn missile w/ petal trail (row1), bomb fuse + explosion burst (row2), spinning petal saw (row3); 3 rows x 8 frames",
   "entities": [{
     "name": "thorn",

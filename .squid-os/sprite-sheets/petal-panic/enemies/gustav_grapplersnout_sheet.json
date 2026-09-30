@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/enemies",
   "rows": 4,
   "cols": 5,
+  "size": "1536x1024",
   "description": "Gustav Grapplersnout strongman caterpillar \u2014 crawl, dumbbell_throw, ground_punch, death",
   "entities": [{
     "name": "gustav_grapplersnout",

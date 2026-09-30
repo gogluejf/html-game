@@ -4,6 +4,7 @@
   "cropped_path": "petal-panic/assets/interface",
   "rows": 1,
   "cols": 1,
+  "size": "1536x1024",
   "description": "Game logo (single image)",
   "entities": [{
     "name": "logo",
