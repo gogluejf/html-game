@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SPRITE EDITOR</title>
+<link rel="stylesheet" href="css/editor.css">
+</head>
+<body>
+<div id="app">
+  <div id="side">
+    <h1>Sprite Editor</h1>
+    <div class="sub" id="projectLabel"></div>
+    <div id="tree"></div>
+  </div>
+  <div id="mid">
+    <div id="toolbar" class="booting">
+      <div class="tgroup">
+        <span class="gtitle">Display</span>
+        <button class="tbtn tog on" id="tglSpriteView" title="show/hide sprite box (handles appear on hover)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" stroke-dasharray="4 3"/></svg>SPRITE BOX</button>
+        <button class="tbtn tog on" id="tglCollision" title="show/hide collision box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>COLLISION</button>
+        <button class="tbtn tog" id="tglMeleeView" title="show/hide hit boxes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 3"/></svg>HIT BOXES</button>
+          <button class="tbtn tog" id="tglMarkerView" title="show/hide markers (Shift+M)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></svg>MARKERS</button>
+        <button class="tbtn tog" id="tglAllFrames" title="show/hide ALL frames ghosted at once (while paused) + make edits apply to every frame">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12"/><path d="M7 6v12M11 6v12M15 6v12M19 6v12"/></svg>ALL FRAMES</button>
+        <button class="tbtn tog on" id="tglAxes" title="show/hide axes crosshair">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>AXES</button>
+        <button class="tbtn tog on" id="tglGrid" title="show/hide background grid">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>GRID</button>
+        <button class="tbtn tog on" id="tglPivot" title="show/hide pivot point (drag to move)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>PIVOT</button>
+        <button class="tbtn tog on" id="tglLabel" title="show/hide sprite name label over the canvas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h10M4 17h13"/></svg>LABEL</button>
+      </div>
+      <div class="tgroup">
+        <span class="gtitle">Tools</span>
+        <button class="tbtn" id="addBoxToolbar" title="add a hit box to this frame (M)">+ BOX</button>
+        <button class="tbtn" id="addMarkerToolbar" title="add a marker">+ MARKER</button>
+        <button class="tbtn" id="recenterPivotBtn" title="move pivot to collision box center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/><path d="M12 5v3M12 16v3M5 12h3M16 12h3"/></svg>RECENTER PIVOT</button>
+        <div style="position:relative;display:inline-flex;">
+          <button class="tbtn" id="resetBtn" title="reset boxes to original position" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>RESET</button>
+          <div id="resetMenu" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;z-index:10;min-width:160px;white-space:nowrap;">
+            <div class="reset-opt" data-scope="frame" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:var(--txt);">Reset Frame</div>
+            <div class="reset-opt" data-scope="anim" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:var(--txt);">Reset Animation</div>
+            <div style="height:1px;background:var(--line);margin:4px 2px;"></div>
+            <div class="reset-opt" data-scope="factory" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:#ff5a5a;">Reset to Factory…</div>
+          </div>
+        </div>
+      </div>
+      <div class="tgroup">
+        <span class="gtitle">Position</span>
+        <button class="tbtn" id="posOriginBtn" title="align sprite left edge to X axis and bottom to Y axis (based on frame 1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16h16"/><rect x="9" y="9" width="7" height="7"/></svg>LEFT&#8595; BOTTOM</button>
+        <button class="tbtn" id="posCenterBtn" title="center sprite on the X/Y axis origin (based on frame 1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><rect x="8" y="8" width="8" height="8"/></svg>CENTER</button>
+      </div>
+      <span id="saveIndicator" style="font-size:10px;color:var(--grn);opacity:0;transition:opacity .3s;margin-left:auto;margin-right:8px;">✓ saved</span>
+      <div class="tgroup">
+        <button class="tbtn" id="undoBtn" title="undo last transformation (ctrl+Z)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7L4 12l5 5"/><path d="M4 12h11a5 5 0 0 1 0 10h-1"/></svg></button>
+        <button class="tbtn" id="redoBtn" title="redo (ctrl+Y / ctrl+shift+Z)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 7l5 5-5 5"/><path d="M20 12H9a5 5 0 0 0 0 10h1"/></svg></button>
+      </div>
+    </div>
+    <div id="stage">
+      <canvas id="cv"></canvas>
+      <div id="filmDrawer">
+        <div id="filmScroll"></div>
+        <button id="filmBtn" title="show/hide all-frames filmstrip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>FRAMES</button>
+      </div>
+    </div>
+    <div id="transport">
+      <button id="prevF" title="previous frame (&#8592;)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM19 5l-10 7 10 7z"/></svg></button>
+      <button id="playBtn" title="play/pause (space)"><span id="playIco">&#9654;</span></button>
+      <button id="nextF" title="next frame (&#8594;)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM5 5l10 7-10 7z"/></svg></button>
+      <div id="fpsbox">
+        <button id="slower" title="slower (&#8722;)">&#8722;</button>
+        <div id="fpsval">8 fps</div>
+        <button id="faster" title="faster (+)">&#43;</button>
+      </div>
+      <div id="zoombox" title="zoom: mouse wheel / ctrl+&#8722; / ctrl++">
+        <button id="zoomOut" title="zoom out (ctrl&#8722;)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6M20 20l-4-4"/></svg></button>
+        <div id="zoomval">100%</div>
+        <button id="zoomIn" title="zoom in (ctrl+)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6M20 20l-4-4"/></svg></button>
+      </div>
+      <div id="rotbox" title="rotation: independent of frame animation · click canvas to pause + reset to 0°">
+        <button id="rotPrev" title="rotate &#8722;15&#176;">&#8634;</button>
+        <button id="rotPlay" title="play/pause rotation"><span id="rotIco">&#9654;</span></button>
+        <button id="rotNext" title="rotate +15&#176;">&#8635;</button>
+        <div id="rotSpeedBox">
+          <button id="rotSlower" title="slower rot speed">&#8722;</button>
+          <div id="rotSpeedVal">360&#176;/s</div>
+          <button id="rotFaster" title="faster rot speed">&#43;</button>
+        </div>
+        <div id="rotAngle">0&#176;</div>
+      </div>
+      <div id="bgbox" title="canvas background color">
+        <span class="bglab">BG</span>
+        <div id="bgSwatch"></div>
+        <span id="bgval">#000000</span>
+        <div id="bgPop">
+          <h3>Background <span class="close" id="bgClose">&#10005;</span></h3>
+          <div id="bgSatsqWrap"><canvas id="bgSatsq" width="224" height="150"></canvas><div id="bgSqDot"></div></div>
+          <div id="bgHueRow"><label>H</label><input type="range" id="bgHue" min="0" max="360" value="0"></div>
+          <div id="bgLightRow"><label>L</label><input type="range" id="bgLight" min="0" max="100" value="0"></div>
+          <div id="bgHexRow"><label>HEX</label><input type="text" id="bgHex" maxlength="7" spellcheck="false" value="#000000"></div>
+          <div id="bgPresets"></div>
+        </div>
+      </div>
+      <div id="finfo"></div>
+    </div>
+    <div id="helpBar"><button id="helpBtn" class="tbtn" aria-haspopup="dialog" aria-controls="helpDialog">? &nbsp; HELP &amp; SHORTCUTS</button></div>
+  </div>
+  <div id="panel">
+    <div class="sprite-title" id="p_stitle">&mdash;</div>
+
+    <h2><span><span class="swatch" style="background:var(--pur)"></span>Sprite Frame</span></h2>
+    <div class="row"><span>Index</span><span class="ro" id="p_fidx">&mdash;</span></div>
+    <div class="row"><span>Name</span><span class="ro" id="p_fname">&mdash;</span></div>
+    <div class="row"><span>Crop position</span>
+      <div class="pair">
+        <div class="cell"><b>X</b><input type="number" id="p_cx" disabled></div>
+        <div class="cell"><b>Y</b><input type="number" id="p_cy" disabled></div>
+      </div>
+    </div>
+    <div class="row"><span>Crop size</span>
+      <div class="pair">
+        <div class="cell"><b>W</b><input type="number" id="p_cw" disabled></div>
+        <div class="cell"><b>H</b><input type="number" id="p_ch" disabled></div>
+      </div>
+    </div>
+    <div class="row"><span>Offset</span>
+      <div class="pair">
+        <div class="cell"><b>X</b><input type="number" id="p_ox"></div>
+        <div class="cell"><b>Y</b><input type="number" id="p_oy"></div>
+      </div>
+    </div>
+    <div class="row"><span>Scale</span>
+      <div class="pair">
+        <div class="cell"><b>X</b><input type="number" step="0.05" id="p_sx"></div>
+        <div class="cell"><b>Y</b><input type="number" id="p_sy"></div>
+      </div>
+    </div>
+
+
+
+
+    <h2><span><span class="swatch" style="background:var(--acc)"></span>Collision Box</span></h2>
+    <div class="row"><span>Position</span>
+      <div class="pair">
+        <div class="cell"><b>X</b><input type="number" id="p_kx"></div>
+        <div class="cell"><b>Y</b><input type="number" id="p_ky"></div>
+      </div>
+    </div>
+    <div class="row"><span>Size</span>
+      <div class="pair">
+        <div class="cell"><b>W</b><input type="number" id="p_kw"></div>
+        <div class="cell"><b>H</b><input type="number" id="p_kh"></div>
+      </div>
+    </div>
+
+    <h2><span><span class="swatch" style="background:var(--yel)"></span>Pivot Point</span></h2>
+    <div class="row"><span>Position</span>
+      <div class="pair">
+        <div class="cell"><b>X</b><input type="number" id="p_px"></div>
+        <div class="cell"><b>Y</b><input type="number" id="p_py"></div>
+      </div>
+    </div>
+
+    <h2><span><span class="swatch" style="background:var(--pur)"></span>Rotation</span></h2>
+    <div class="row"><span>Angle</span><span class="sp"></span><input type="number" id="p_rangle" disabled></div>
+    <div class="row"><span>Speed (&#176;/s)</span><div class="pair"><div class="cell"><b>V</b><input type="number" id="p_rspeed" min="1" max="360" value="30"></div></div></div>
+
+    <h2><span><span class="swatch" style="background:var(--grn)"></span>Timing</span></h2>
+    <div id="timingSection">
+      <div class="row" style="flex-wrap:nowrap;"><span>Frames</span><span class="sp"></span><input type="number" id="p_acount" disabled><div class="timing-mode-inline">
+        <button class="tbtn tsm tog on" id="pbLoop" title="loop playback">&#8635; Loop</button>
+        <button class="tbtn tsm tog" id="pbOnce" title="play once then stop">&#9654; Once</button>
+      </div></div>
+      <div class="row"><span>Speed (fps)</span><div class="pair"><div class="cell"><b>V</b><input type="number" id="p_speed" min="1" max="60" value="8"></div></div></div>
+      <div class="timing-table" id="timingTable"></div>
+      <div class="timing-total">
+        <span id="timingTotal">&mdash;</span>
+        <button id="timingResetBtn">Reset All</button>
+      </div>
+    </div>
+
+    <h2 id="markersHeader"><span><span class="swatch" style="background:#ff5a5a;border-radius:50%"></span>Markers</span><button class="tbtn tsm" id="addMarkerBtn" title="add a marker">+ Add</button></h2>
+    <div class="section-body" id="markersBody">
+      <div id="markerList"></div>
+    </div>
+
+    <h2 id="meleeBoxesHeader"><span><span class="swatch" style="background:var(--org)"></span>Hit Boxes</span><button class="tbtn tsm" id="addBoxBtn" title="add a hit box">+ Add</button></h2>
+    <div class="section-body" id="meleeBoxesBody">
+      <div id="meleeBoxList"></div>
+    </div>
+  </div>
+</div>
+<dialog id="helpDialog" aria-labelledby="helpTitle" aria-describedby="helpSummary">
+  <header class="helpHead"><div><div class="helpEyebrow">Sprite editor · quick reference</div><h2 id="helpTitle">Less hunting. More tuning.</h2><p id="helpSummary">Shortcuts follow button availability. Editing requires paused playback.</p></div><button id="helpClose" aria-label="Close help">×</button></header>
+  <div class="helpGrid"><section class="helpCard"><h3>Playback &amp; navigation</h3><div class="helpItem"><span>Play or pause animation</span><kbd>Space</kbd></div><div class="helpItem"><span>Previous or next frame</span><kbd>← / →</kbd></div><div class="helpItem"><span>Previous or next animation</span><kbd>↑ / ↓</kbd></div><div class="helpItem"><span>Jump directly to frames one through ten</span><kbd>1–9 / 0</kbd></div><div class="helpItem"><span>Decrease or increase playback speed</span><kbd>− / +</kbd></div><div class="helpItem"><span>Preview every frame in the filmstrip</span><kbd>FRAMES</kbd></div></section><section class="helpCard"><h3>View toggles</h3><div class="helpItem"><span>Select / deselect sprite</span><kbd>S</kbd></div><div class="helpItem"><span>Select / deselect collision</span><kbd>C</kbd></div><div class="helpItem"><span>Add or cycle-select hit box</span><kbd>H</kbd></div><div class="helpItem"><span>Add or cycle-select marker</span><kbd>M</kbd></div><div class="helpItem"><span>Ghost all frames; edits affect every frame</span><kbd>F</kbd></div><div class="helpItem"><span>Toggle coordinate axes</span><kbd>A</kbd></div><div class="helpItem"><span>Toggle background grid</span><kbd>G</kbd></div><div class="helpItem"><span>Toggle pivot marker</span><kbd>P</kbd></div><div class="helpItem"><span>Toggle animation label</span><kbd>L</kbd></div><div class="helpItem"><span>Hide/restore ALL overlays</span><kbd>Ctrl + Shift + H</kbd></div></section><section class="helpCard"><h3>Editing</h3><div class="helpItem"><span>Recenter pivot in collision box</span><kbd>R</kbd></div><div class="helpItem"><span>Select element (click) then nudge</span><kbd>Arrows</kbd></div><div class="helpItem"><span>Delete selected hit box or marker</span><kbd>Delete</kbd></div><div class="helpItem"><span>Deselect (click empty / Escape)</span><kbd>Esc</kbd></div><div class="helpItem"><span>Move the hovered box</span><kbd>Drag inside</kbd></div><div class="helpItem"><span>Resize using an edge or corner</span><kbd>Drag handle</kbd></div><div class="helpItem"><span>Scale both axes together</span><kbd>Shift + corner drag</kbd></div><div class="helpItem"><span>Nudge frame offset while paused</span><kbd>Shift + arrows</kbd></div><div class="helpItem"><span>Edit exact values</span><kbd>Side panel</kbd></div></section><section class="helpCard"><h3>View &amp; utilities</h3><div class="helpItem"><span>Pan by dragging empty canvas space</span><kbd>Drag background</kbd></div><div class="helpItem"><span>Zoom around the pointer</span><kbd>Mouse wheel</kbd></div><div class="helpItem"><span>Zoom out or in</span><kbd>Ctrl + − / +</kbd></div><div class="helpItem"><span>Reset zoom and center the view</span><kbd>Ctrl + 0</kbd></div><div class="helpItem"><span>Rotate independently using bottom controls</span><kbd>Rotation controls</kbd></div><div class="helpItem"><span>Choose background using presets or custom colors</span><kbd>Color picker</kbd></div><div class="helpItem"><span>Undo</span><kbd>Ctrl + Z</kbd></div><div class="helpItem"><span>Redo</span><kbd>Ctrl + Y</kbd></div><div class="helpItem"><span>Reset frame, animation, or factory</span><kbd>RESET</kbd></div><div class="helpItem"><span>Save edits automatically in this browser</span><kbd>Auto-save</kbd></div></section></div>
+  <footer class="helpFoot">Click anywhere or press Escape to close · Shortcuts stay inactive while typing</footer>
+</dialog>
+<dialog id="confirmDialog">
+  <div class="cd-body">
+    <div class="cd-title">⚠ Confirm Reset</div>
+    <div class="cd-msg" id="cdMsg"></div>
+  </div>
+  <div class="cd-actions">
+    <button class="cd-btn" id="cdCancel">Cancel</button>
+    <button class="cd-btn danger" id="cdYes">Yes, Reset</button>
+  </div>
+</dialog>
+<script type="module" src="js/main.js?v=2"></script>
+</body>
+</html>
