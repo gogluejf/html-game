@@ -4,6 +4,7 @@ import { $, tree, resizeCanvas } from './viewport.js';
 import { frameUrls } from './loader.js';
 import { syncPanel } from './panel.js';
 import { draw, boxList } from './draw.js';
+import { curFrameIdx } from './geometry.js';
 import { FILM, drawFilm, filmFitWidth, applyFilmState } from './filmstrip.js';
 import { syncUndoButtons } from './undo.js';
 import { saveState } from './save.js';
@@ -72,30 +73,34 @@ export function defaultBoxes(w, h){
   return { col, mee };
 }
 
-// single source of truth for "initial layout at an anchor"
-// Positions every frame + collision/pivot/melee relative to frame 1. Used by
-// initial load, Reset Animation, and the Position buttons so they never drift.
-//   mode 'leftbottom' -> each frame's left edge on X axis & bottom on Y axis
-//                        (per-frame dims, so all frames align on their corner)
-//   mode 'center'     -> each frame centered on the X/Y origin
+// single source of truth for "anchor the SPRITE to the origin".
+// Per-FRAME translation based on EACH frame's own sprite box (offset + scaled size).
+//   mode 'center'     -> each frame's sprite-box CENTER lands on origin (0,0)
+//   mode 'leftbottom' -> each frame's sprite-box BOTTOM-LEFT corner lands on origin
+//                        (y-axis points DOWN here, so bottom = largest y)
+// Every frame is repositioned independently (frames have different sizes), and each
+// frame's melee boxes + markers follow THAT frame's shift. COLLISION and PIVOT are
+// left completely untouched — they are independent of sprite placement.
 export function layoutAt(st, imgs, W, H, mode){
-  const { col, mee } = defaultBoxes(W, H);
-  // shift the initial (origin-anchored) boxes so frame 1 lands on the target
-  const dOx = mode==='center' ? -Math.round(W/2) : 0;
-  const dOy = mode==='center' ?  Math.round(H/2) : 0;
-  st.collision = { x: col.x + dOx, y: col.y + dOy, w: col.w, h: col.h };
-  st.pivot = { x: Math.round(st.collision.x + st.collision.w/2), y: Math.round(st.collision.y + st.collision.h/2) };
+  let curDx = 0, curDy = 0;   // shift applied to the current frame (markers follow this)
+  const fi = curFrameIdx();
   for (let i=0;i<st.frames.length;i++){
     const f = st.frames[i], im = imgs[i];
-    const fw = im ? im.naturalWidth : W, fh = im ? im.naturalHeight : H;
-    f.scale.sx = 1; f.scale.sy = 1;
-    if (mode==='center'){
-      f.offset.x = 0; f.offset.y = 0;                       // center this frame on origin
-    } else {
-      f.offset.x = Math.round(fw/2); f.offset.y = -Math.round(fh/2);  // left-bottom by own size
-    }
-    f.boxes = [];
+    if (!f || !im) continue;
+    const w = im.naturalWidth * f.scale.sx, h = im.naturalHeight * f.scale.sy;
+    // current sprite-box center (offset places the frame so its center sits there)
+    const ccx = f.offset.x, ccy = f.offset.y;
+    // target position of the anchor point
+    const tx = mode==='center' ? 0 : w/2;           // center→0 ; leftbottom→left edge at 0 (offset.x = w/2)
+    const ty = mode==='center' ? 0 : -h/2;          // center→0 ; leftbottom→bottom at 0 (offset.y = -h/2)
+    const dx = tx - ccx, dy = ty - ccy;             // this frame's shift
+    if (i === fi){ curDx = dx; curDy = dy; }        // remember the current frame's shift
+    f.offset.x += dx; f.offset.y += dy;
+    for (const b of f.boxes){ b.x += dx; b.y += dy; }
   }
+  // markers (animation-level) follow the CURRENT frame's anchor shift
+  for (const m of st.markers || []){ m.x += curDx; m.y += curDy; }
+  // NOTE: collision + pivot intentionally NOT moved
 }
 
 export function defaultState(name, imgs, paths, crops){
@@ -114,7 +119,10 @@ export function defaultState(name, imgs, paths, crops){
       boxes: [], durUnits: 1
     }))
   };
-  // initial load = left-bottom anchor (each frame's left/bottom on the axes)
+  // initial load: build default boxes, then anchor left-bottom on origin
+  const db = defaultBoxes(W, H);
+  st.collision = { ...db.col };
+  st.pivot = { x: Math.round(db.col.x + db.col.w/2), y: Math.round(db.col.y + db.col.h/2) };
   layoutAt(st, imgs, W, H, 'leftbottom');
   return st;
 }
