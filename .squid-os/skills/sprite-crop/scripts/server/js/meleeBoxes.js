@@ -6,6 +6,7 @@ import { draw } from './draw.js';
 import { pushUndo } from './undo.js';
 import { saveState } from './save.js';
 import { syncToggles } from './tools.js';
+import { shiftAll } from './rigidbody.js';
 
 export function nextBoxLabel(boxes){
   if (!boxes.length) return 'attack';
@@ -92,7 +93,13 @@ export function buildMeleeBoxList(){
         const v = parseFloat(inp.value);
         if (isNaN(v) || !app.cur || !app.cur.st || editingLocked()) return;
         pushUndo();
-        b[axis] = (axis==='w'||axis==='h') ? Math.max(1,v) : v;
+        if ((axis==='x'||axis==='y') && app.show.allFrames){
+          // moving a hit box moves the whole body — same as drag
+          const d = v - b[axis];
+          shiftAll(axis==='x'?d:0, axis==='y'?d:0);
+        } else {
+          b[axis] = (axis==='w'||axis==='h') ? Math.max(1,v) : v;
+        }
         draw(); saveState();
       });
       cell.appendChild(bb); cell.appendChild(inp);
