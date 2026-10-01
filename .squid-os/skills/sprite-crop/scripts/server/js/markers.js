@@ -3,8 +3,8 @@ import { app, COL_MARKER } from './state.js';
 import { $ } from './viewport.js';
 import { editingLocked } from './geometry.js';
 import { draw } from './draw.js';
-import { pushUndo } from './undo.js';
-import { markGameDataChanged } from './save.js';
+import { commit } from './commit.js';
+import { saveState } from './save.js';
 import { syncToggles } from './tools.js';
 
 export function nextMarkerLabel(markers){
@@ -27,7 +27,6 @@ export function nextMarkerPosition(st){
 
 export function addMarker(){
   if (!app.cur || !app.cur.st || editingLocked()) return;
-  pushUndo();
   const pos = nextMarkerPosition(app.cur.st);
   const label = nextMarkerLabel(app.cur.st.markers);
   // inherit radius settings from last marker (or default 400/on for first)
@@ -35,18 +34,21 @@ export function addMarker(){
   const last = markers.length > 0 ? markers[markers.length - 1] : null;
   const radiusOn = last ? last.radiusOn : true;
   const radius = (last && last.radius > 0) ? last.radius : 400;
-  app.cur.st.markers.push({ label, x:pos.x, y:pos.y, radiusOn, radius });
+  commit(() => {
+    app.cur.st.markers.push({ label, x:pos.x, y:pos.y, radiusOn, radius });
+  });
   app._selectedBox = 'marker_' + (app.cur.st.markers.length - 1);
   app.show.markerView = true;
-  syncToggles(); buildMarkerList(); draw(); markGameDataChanged();
+  syncToggles(); buildMarkerList(); draw();
 }
 
 export function deleteMarker(idx){
   if (!app.cur || !app.cur.st || editingLocked()) return;
-  pushUndo();
-  app.cur.st.markers.splice(idx, 1);
+  commit(() => {
+    app.cur.st.markers.splice(idx, 1);
+  });
   app._panelHighlight = null;
-  buildMarkerList(); draw(); markGameDataChanged();
+  buildMarkerList(); draw();
 }
 
 export function buildMarkerList(){
@@ -72,17 +74,18 @@ export function buildMarkerList(){
       if (!newLabel){ lbl.value = m.label; return; }
       const dup = markers.some((om, oi) => oi !== i && om.label === newLabel);
       if (dup){ lbl.classList.add('dup'); setTimeout(()=>lbl.classList.remove('dup'), 800); lbl.value = m.label; return; }
-      if (newLabel !== m.label){ pushUndo(); m.label = newLabel; draw(); markGameDataChanged(); }
+      if (newLabel !== m.label){ commit(() => { m.label = newLabel; }); }
     });
     const radBtn = document.createElement('button');
     radBtn.className = 'tbtn tsm'; radBtn.style.padding='2px 6px'; radBtn.style.fontSize='10px';
     radBtn.textContent = m.radiusOn ? '\u25CF R' : '\u25CB R';
     radBtn.title = 'toggle radius';
     radBtn.addEventListener('click', () => {
-      pushUndo();
-      m.radiusOn = !m.radiusOn;
-      if (m.radiusOn && m.radius === 0) m.radius = 30;
-      buildMarkerList(); draw(); markGameDataChanged();
+      commit(() => {
+        m.radiusOn = !m.radiusOn;
+        if (m.radiusOn && m.radius === 0) m.radius = 30;
+      });
+      buildMarkerList(); draw();
     });
     const del = document.createElement('button');
     del.className = 'mb-del'; del.textContent = '\u00D7'; del.title = 'delete marker';
@@ -100,7 +103,7 @@ export function buildMarkerList(){
       inp.addEventListener('change', () => {
         const v = parseFloat(inp.value);
         if (isNaN(v) || !app.cur || !app.cur.st || editingLocked()) return;
-        pushUndo(); m[axis] = v; draw(); markGameDataChanged();
+        commit(() => { m[axis] = v; });
       });
       cell.appendChild(bb); cell.appendChild(inp);
       l2.appendChild(cell);
@@ -117,7 +120,7 @@ export function buildMarkerList(){
     rInp.addEventListener('change', () => {
       const v = parseFloat(rInp.value);
       if (isNaN(v) || !app.cur || !app.cur.st || editingLocked()) return;
-      pushUndo(); m.radius = Math.max(1, v); draw(); markGameDataChanged();
+      commit(() => { m.radius = Math.max(1, v); });
     });
     rCell.appendChild(rb); rCell.appendChild(rInp);
     l2.appendChild(rCell);
@@ -133,7 +136,7 @@ export function initMarkerControls(){
   $('addMarkerBtn').addEventListener('click', addMarker);
   $('addMarkerToolbar').addEventListener('click', addMarker);
   $('tglMarkerView').addEventListener('click', ()=>{
-    app.show.markerView = !app.show.markerView; cancelHideMode(); syncToggles(); draw(); markGameDataChanged();
+    app.show.markerView = !app.show.markerView; cancelHideMode(); syncToggles(); draw(); saveState();
   });
 }
 

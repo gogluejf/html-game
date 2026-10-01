@@ -4,6 +4,7 @@ import { $ } from './viewport.js';
 import { curFrameIdx } from './geometry.js';
 import { pushUndo } from './undo.js';
 import { saveState, markGameDataChanged } from './save.js';
+import { commit } from './commit.js';
 import { confirmDialog } from './dialog.js';
 
 export function baseUnitMs(){ return 1000 / (app.cur && app.cur.st ? app.cur.st.speed : 8); }
@@ -48,12 +49,12 @@ export function buildTimingTable(){
     });
     sl.addEventListener('change', () => { sl.blur(); _slUndoPushed = false; });   // release focus so shortcuts work
     sl.addEventListener('dblclick', () => {
-      pushUndo();
-      f.durUnits = 1; sl.value = '1';
+      commit(() => { f.durUnits = 1; });
+      sl.value = '1';
       row.classList.remove('custom');
       multEl.textContent = '\u00D71';
       durEl.textContent = Math.round(baseUnitMs()) + 'ms';
-      updateTimingTotal(); markGameDataChanged();
+      updateTimingTotal();
     });
     // multiplier + duration labels
     const multEl = document.createElement('span'); multEl.className = 'tmult'; multEl.textContent = '\u00D7' + units;
@@ -76,20 +77,23 @@ export function updateTimingTotal(){
 export function initTimingControls(){
   $('pbLoop').addEventListener('click', () => {
     if (!app.cur || !app.cur.st) return;
-    app.cur.st.playback = 'loop'; syncPlaybackButtons(); markGameDataChanged();
+    commit(() => { app.cur.st.playback = 'loop'; });
+    syncPlaybackButtons();
   });
   $('pbOnce').addEventListener('click', () => {
     if (!app.cur || !app.cur.st) return;
-    app.cur.st.playback = 'once'; syncPlaybackButtons(); markGameDataChanged();
+    commit(() => { app.cur.st.playback = 'once'; });
+    syncPlaybackButtons();
   });
   // reset all timing
   $('timingResetBtn').addEventListener('click', () => {
     if (!app.cur || !app.cur.st) return;
     const n = app.cur.st.frames.length;
     confirmDialog('Reset per-frame timing for all ' + n + ' frames?', () => {
-      pushUndo();
-      app.cur.st.frames.forEach(f => { f.durUnits = 1; });
-      buildTimingTable(); markGameDataChanged();
+      commit(() => {
+        app.cur.st.frames.forEach(f => { f.durUnits = 1; });
+      });
+      buildTimingTable();
     });
   });
 }

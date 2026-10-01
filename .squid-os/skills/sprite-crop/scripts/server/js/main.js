@@ -19,6 +19,7 @@ import { doUndo, doRedo, syncUndoButtons } from './undo.js';
 import { saveState, loadState, applySavedView, LS_KEY } from './save.js';
 import { initRecenterPivot, initPositionButtons, initResetTool } from './reset.js';
 import { curFrameIdx, editingLocked, targetFrames } from './geometry.js';
+import { commit } from './commit.js';
 import { pushUndo } from './undo.js';
 import { shiftElement } from './rigidbody.js';
 import { buildMeleeBoxList } from './meleeBoxes.js';
@@ -38,10 +39,10 @@ function setRotPlaying(p){
 }
 function stepRot(deg){
   if (!app.cur || !app.cur.st) return;
-  pushUndo();
-  app.cur.st.rot.angle = ((app.cur.st.rot.angle + deg) % 360 + 360) % 360;
+  commit(() => {
+    app.cur.st.rot.angle = ((app.cur.st.rot.angle + deg) % 360 + 360) % 360;
+  });
   $('rotAngle').textContent = Math.round(app.cur.st.rot.angle)+'\u00B0';
-  draw();
 }
 // hold-to-rotate: tap (<200ms) = 15° step, hold = continuous spin with accel/decel
 function startRotHold(dir){
@@ -263,12 +264,12 @@ function initKeyboard(){
         if (!editingLocked()){
           if (app._selectedBox.startsWith('box_')){
             const selIdx = parseInt(app._selectedBox.slice(4), 10);
-            pushUndo(); st.frames[fi].boxes.splice(selIdx, 1);
-            app._selectedBox = null; buildMeleeBoxList(); draw(); markGameDataChanged();
+            commit(() => { st.frames[fi].boxes.splice(selIdx, 1); });
+            app._selectedBox = null; buildMeleeBoxList(); draw();
           } else {
             const selIdx = parseInt(app._selectedBox.slice(7), 10);
-            pushUndo(); st.markers.splice(selIdx, 1);
-            app._selectedBox = null; buildMarkerList(); draw(); markGameDataChanged();
+            commit(() => { st.markers.splice(selIdx, 1); });
+            app._selectedBox = null; buildMarkerList(); draw();
           }
         }
         return;
@@ -282,32 +283,32 @@ function initKeyboard(){
         else if (e.code === 'ArrowDown') dy = nudge;
         else return;
         e.preventDefault();
-        pushUndo();
-        if (app._selectedBox.startsWith('box_')){
-          shiftElement('box', parseInt(app._selectedBox.slice(4), 10), dx, dy);
-        } else if (app._selectedBox === 'sprite'){
-          shiftElement('sprite', -1, dx, dy);
-        } else if (app._selectedBox === 'collision'){
-          shiftElement('collision', -1, dx, dy);
-        } else if (app._selectedBox.startsWith('marker_')){
-          const mi = parseInt(app._selectedBox.slice(7), 10);
-          const m = st.markers[mi];
-          if (m){ m.x += dx; m.y += dy; }
-        }
-        syncPanel(); draw(); markGameDataChanged();
+        commit(() => {
+          if (app._selectedBox.startsWith('box_')){
+            shiftElement('box', parseInt(app._selectedBox.slice(4), 10), dx, dy);
+          } else if (app._selectedBox === 'sprite'){
+            shiftElement('sprite', -1, dx, dy);
+          } else if (app._selectedBox === 'collision'){
+            shiftElement('collision', -1, dx, dy);
+          } else if (app._selectedBox.startsWith('marker_')){
+            const mi = parseInt(app._selectedBox.slice(7), 10);
+            const m = st.markers[mi];
+            if (m){ m.x += dx; m.y += dy; }
+          }
+        });
         return;
       }
     }
     switch (e.code){
       case 'Space': e.preventDefault(); togglePlay(); break;
-      case 'ArrowRight': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); targetFrames(fi).forEach(fr=>fr.offset.x+=off); syncPanel(); draw(); } else stepFrame(1); break;
-      case 'ArrowLeft': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); targetFrames(fi).forEach(fr=>fr.offset.x-=off); syncPanel(); draw(); } else stepFrame(-1); break;
+      case 'ArrowRight': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ commit(()=>targetFrames(fi).forEach(fr=>fr.offset.x+=off)); } else stepFrame(1); break;
+      case 'ArrowLeft': e.preventDefault(); if (e.shiftKey && !e.ctrlKey && !editingLocked()){ commit(()=>targetFrames(fi).forEach(fr=>fr.offset.x-=off)); } else stepFrame(-1); break;
       case 'ArrowUp': e.preventDefault();
-        if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); targetFrames(fi).forEach(fr=>fr.offset.y-=off); syncPanel(); draw(); }
+        if (e.shiftKey && !e.ctrlKey && !editingLocked()){ commit(()=>targetFrames(fi).forEach(fr=>fr.offset.y-=off)); }
         else if (app.flatIdx>0){ app.flatIdx--; const q=app.flatList[app.flatIdx]; selectEntity(q.li,q.ei); }
         break;
       case 'ArrowDown': e.preventDefault();
-        if (e.shiftKey && !e.ctrlKey && !editingLocked()){ pushUndo(); targetFrames(fi).forEach(fr=>fr.offset.y+=off); syncPanel(); draw(); }
+        if (e.shiftKey && !e.ctrlKey && !editingLocked()){ commit(()=>targetFrames(fi).forEach(fr=>fr.offset.y+=off)); }
         else if (app.flatIdx<app.flatList.length-1){ app.flatIdx++; const q=app.flatList[app.flatIdx]; selectEntity(q.li,q.ei); }
         break;
       case 'Minus': case 'NumpadSubtract': e.preventDefault(); if (e.ctrlKey){ setZoom(app.zoom/1.25); } else setSpeed(st.speed-1); break;

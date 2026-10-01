@@ -6,6 +6,7 @@ import { draw } from './draw.js';
 import { syncPanel } from './panel.js';
 import { pushUndo } from './undo.js';
 import { saveState } from './save.js';
+import { commit } from './commit.js';
 import { confirmDialog } from './dialog.js';
 import { layoutAt, defaultBoxes } from './sidebar.js';
 import { selectEntity } from './sidebar.js';
@@ -20,11 +21,11 @@ import { curFrameIdx } from './geometry.js';
 export function initRecenterPivot(){
   $('recenterPivotBtn').addEventListener('click', ()=>{
     if (!app.cur || !app.cur.st) return;
-    pushUndo();
-    const c = app.cur.st.collision;
-    app.cur.st.pivot.x = Math.round(c.x + c.w/2);
-    app.cur.st.pivot.y = Math.round(c.y + c.h/2);
-    syncPanel(); draw(); saveState();
+    commit(() => {
+      const c = app.cur.st.collision;
+      app.cur.st.pivot.x = Math.round(c.x + c.w/2);
+      app.cur.st.pivot.y = Math.round(c.y + c.h/2);
+    });
   });
 }
 
@@ -38,12 +39,12 @@ function frame1Dims(){
 }
 function applyPosition(mode){
   if (!app.cur || !app.cur.st) return;
-  pushUndo();
   const st = app.cur.st;
   const { W, H } = frame1Dims();
   // CENTER -> centered on origin; LEFT-BOTTOM -> each frame's left/bottom on axes
-  layoutAt(st, app.cur.imgs, W, H, mode==='origin' ? 'leftbottom' : 'center');
-  syncPanel(); draw(); saveState();
+  commit(() => {
+    layoutAt(st, app.cur.imgs, W, H, mode==='origin' ? 'leftbottom' : 'center');
+  });
 }
 export function initPositionButtons(){
   $('posOriginBtn').addEventListener('click', ()=>applyPosition('origin'));
@@ -68,11 +69,11 @@ export function initResetTool(){
       if (!app.cur || !app.cur.st || editingLocked()) return;
       if (scope === 'frame'){
         confirmDialog('Reset current frame (offset, scale, boxes, markers)?', () => {
-          pushUndo(); resetFrame(); syncPanel(); draw();
+          commit(resetFrame);
         });
       } else {
         confirmDialog('Reset all frames and animation-level settings for this entity?', () => {
-          pushUndo(); resetAnimation(); syncPanel(); draw();
+          commit(resetAnimation);
         });
       }
     });

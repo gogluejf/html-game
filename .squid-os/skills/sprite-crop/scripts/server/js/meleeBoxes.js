@@ -3,8 +3,7 @@ import { app } from './state.js';
 import { $ } from './viewport.js';
 import { curFrameIdx, editingLocked } from './geometry.js';
 import { draw } from './draw.js';
-import { pushUndo } from './undo.js';
-import { markGameDataChanged } from './save.js';
+import { commit } from './commit.js';
 import { syncToggles } from './tools.js';
 import { shiftAll } from './rigidbody.js';
 
@@ -31,22 +30,24 @@ export function nextBoxPosition(st, fi){
 
 export function addMeleeBox(){
   if (!app.cur || !app.cur.st || editingLocked()) return;
-  pushUndo();
   const fi = curFrameIdx();
   const pos = nextBoxPosition(app.cur.st, fi);
   const label = nextBoxLabel(app.cur.st.frames[fi].boxes);
-  app.cur.st.frames[fi].boxes.push({ label, ...pos });
+  commit(() => {
+    app.cur.st.frames[fi].boxes.push({ label, ...pos });
+  });
   app._selectedBox = 'box_' + (app.cur.st.frames[fi].boxes.length - 1);
   app.show.meleeView = true;
-  syncToggles(); buildMeleeBoxList(); draw(); markGameDataChanged();
+  syncToggles(); buildMeleeBoxList(); draw();
 }
 
 export function deleteMeleeBox(idx){
   if (!app.cur || !app.cur.st || editingLocked()) return;
-  pushUndo();
-  app.cur.st.frames[curFrameIdx()].boxes.splice(idx, 1);
+  commit(() => {
+    app.cur.st.frames[curFrameIdx()].boxes.splice(idx, 1);
+  });
   app._panelHighlight = null;
-  buildMeleeBoxList(); draw(); markGameDataChanged();
+  buildMeleeBoxList(); draw();
 }
 
 export function buildMeleeBoxList(){
@@ -71,7 +72,7 @@ export function buildMeleeBoxList(){
       if (!newLabel){ lbl.value = b.label; return; }
       const dup = boxes.some((ob, oi) => oi !== i && ob.label === newLabel);
       if (dup){ lbl.classList.add('dup'); setTimeout(()=>lbl.classList.remove('dup'), 800); lbl.value = b.label; return; }
-      if (newLabel !== b.label){ pushUndo(); b.label = newLabel; draw(); markGameDataChanged(); }
+      if (newLabel !== b.label){ commit(() => { b.label = newLabel; }); }
     });
 
     const del = document.createElement('button');
@@ -92,15 +93,15 @@ export function buildMeleeBoxList(){
       inp.addEventListener('change', () => {
         const v = parseFloat(inp.value);
         if (isNaN(v) || !app.cur || !app.cur.st || editingLocked()) return;
-        pushUndo();
-        if ((axis==='x'||axis==='y') && app.show.allFrames){
-          // moving a hit box moves the whole body — same as drag
-          const d = v - b[axis];
-          shiftAll(axis==='x'?d:0, axis==='y'?d:0);
-        } else {
-          b[axis] = (axis==='w'||axis==='h') ? Math.max(1,v) : v;
-        }
-        draw(); markGameDataChanged();
+        commit(() => {
+          if ((axis==='x'||axis==='y') && app.show.allFrames){
+            // moving a hit box moves the whole body — same as drag
+            const d = v - b[axis];
+            shiftAll(axis==='x'?d:0, axis==='y'?d:0);
+          } else {
+            b[axis] = (axis==='w'||axis==='h') ? Math.max(1,v) : v;
+          }
+        });
       });
       cell.appendChild(bb); cell.appendChild(inp);
       l2.appendChild(cell);
