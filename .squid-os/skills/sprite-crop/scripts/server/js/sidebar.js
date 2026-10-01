@@ -83,7 +83,8 @@ export function defaultBoxes(w, h){
 // left completely untouched — they are independent of sprite placement.
 export function layoutAt(st, imgs, W, H, mode){
   let curDx = 0, curDy = 0;   // shift applied to the current frame (markers follow this)
-  const fi = curFrameIdx();
+  // current frame index — fall back to 0 when app.cur.st isn't set yet (e.g. during defaultState)
+  const fi = (app.cur && app.cur.st) ? curFrameIdx() : 0;
   for (let i=0;i<st.frames.length;i++){
     const f = st.frames[i], im = imgs[i];
     if (!f || !im) continue;
