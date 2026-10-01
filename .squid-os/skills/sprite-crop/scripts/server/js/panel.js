@@ -1,7 +1,8 @@
 // ---------- side panel: sync + number inputs ----------
 import { app } from './state.js';
 import { $ } from './viewport.js';
-import { curFrameIdx, targetFrames, editingLocked } from './geometry.js';
+import { curFrameIdx, editingLocked } from './geometry.js';
+import { shiftAll, scaleAllAbout } from './rigidbody.js';
 import { draw } from './draw.js';
 import { buildMeleeBoxList } from './meleeBoxes.js';
 import { buildMarkerList } from './markers.js';
@@ -67,10 +68,10 @@ export function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=
 
 export function initPanelBindings(){
   bindNum('p_speed', v=>setSpeed(v));
-  bindNum('p_ox', v=>{ const st=app.cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].offset.x; targetFrames(fi).forEach(f=>f.offset.x+=d); });
-  bindNum('p_oy', v=>{ const st=app.cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].offset.y; targetFrames(fi).forEach(f=>f.offset.y+=d); });
-  bindNum('p_sx', v=>{ const st=app.cur.st, fi=curFrameIdx(); const r=Math.max(.05,v)/st.frames[fi].scale.sx; targetFrames(fi).forEach(f=>f.scale.sx=Math.max(.05,f.scale.sx*r)); });
-  bindNum('p_sy', v=>{ const st=app.cur.st, fi=curFrameIdx(); const r=Math.max(.05,v)/st.frames[fi].scale.sy; targetFrames(fi).forEach(f=>f.scale.sy=Math.max(.05,f.scale.sy*r)); });
+  bindNum('p_ox', v=>{ const st=app.cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].offset.x; if(app.show.allFrames) shiftAll(d,0); else st.frames[fi].offset.x+=d; });
+  bindNum('p_oy', v=>{ const st=app.cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].offset.y; if(app.show.allFrames) shiftAll(0,d); else st.frames[fi].offset.y+=d; });
+  bindNum('p_sx', v=>{ const st=app.cur.st, fi=curFrameIdx(); const r=Math.max(.05,v)/st.frames[fi].scale.sx; if(app.show.allFrames) scaleAllAbout(r,1); else st.frames[fi].scale.sx=Math.max(.05,st.frames[fi].scale.sx*r); });
+  bindNum('p_sy', v=>{ const st=app.cur.st, fi=curFrameIdx(); const r=Math.max(.05,v)/st.frames[fi].scale.sy; if(app.show.allFrames) scaleAllAbout(1,r); else st.frames[fi].scale.sy=Math.max(.05,st.frames[fi].scale.sy*r); });
   bindNum('p_kx', v=>app.cur.st.collision.x=v);
   bindNum('p_ky', v=>app.cur.st.collision.y=v);
   bindNum('p_kw', v=>app.cur.st.collision.w=Math.max(1,v));

@@ -7,7 +7,7 @@ import { syncPanel } from './panel.js';
 import { pushUndo } from './undo.js';
 import { buildMeleeBoxList } from './meleeBoxes.js';
 import { buildMarkerList } from './markers.js';
-import { shiftElement } from './rigidbody.js';
+import { shiftElement, shiftAll } from './rigidbody.js';
 import { LS_KEY } from './save.js';
 
 // ---------- box resize math ----------
@@ -97,7 +97,7 @@ export const BOX = {
       const st=app.cur.st, fi=curFrameIdx();
       const tx=Math.round(sx-d.ox+d.orig.w/2), ty=Math.round(sy-d.oy+d.orig.h/2);
       const dx=tx-st.frames[fi].offset.x, dy=ty-st.frames[fi].offset.y;
-      if (app.show.allFrames){ shiftAllLocal(dx, dy); }
+      if (app.show.allFrames){ shiftAll(dx, dy); }
       else { st.frames[fi].offset.x=tx; st.frames[fi].offset.y=ty; }
     },
     resize(d, sx, sy){
@@ -164,7 +164,7 @@ export const BOX = {
       const st=app.cur.st;
       const nx=Math.round(sx-d.ox), ny=Math.round(sy-d.oy);
       const dx=nx-st.collision.x, dy=ny-st.collision.y;
-      if (app.show.allFrames){ shiftAllLocal(dx, dy); }
+      if (app.show.allFrames){ shiftAll(dx, dy); }
       else { st.collision.x=nx; st.collision.y=ny; }
     },
     resize(d, sx, sy){
@@ -190,7 +190,7 @@ export const BOX = {
         const nx=Math.round(sx-d.ox), ny=Math.round(sy-d.oy);
         const b0=st.frames[fi].boxes[idx]; if(!b0) return;
         const dx=nx-b0.x, dy=ny-b0.y;
-        if (app.show.allFrames){ shiftAllLocal(dx, dy); }
+        if (app.show.allFrames){ shiftAll(dx, dy); }
         else { b0.x=nx; b0.y=ny; }
       },
       resize(d, sx, sy){
@@ -211,18 +211,6 @@ export const BOX = {
 };
 
 // local rigid-body helpers (kept here so the BOX table is self-contained)
-function shiftAllLocal(dx, dy){
-  const st = app.cur.st;
-  for (let i=0;i<st.frames.length;i++){
-    st.frames[i].offset.x += dx;
-    st.frames[i].offset.y += dy;
-    const bxArr = st.frames[i].boxes || [];
-    for (const b of bxArr){ b.x += dx; b.y += dy; }
-  }
-  st.collision.x += dx; st.collision.y += dy;
-  if (st.pivot){ st.pivot.x += dx; st.pivot.y += dy; }
-  for (const m of st.markers){ m.x += dx; m.y += dy; }
-}
 function sharedScaleCenter(st, before){
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   const b0=before.col;
