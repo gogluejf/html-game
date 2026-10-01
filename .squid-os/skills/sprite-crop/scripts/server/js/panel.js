@@ -70,8 +70,8 @@ export function initPanelBindings(){
   bindNum('p_speed', v=>setSpeed(v));
   bindNum('p_ox', v=>{ const st=app.cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].offset.x; if(app.show.allFrames) shiftAll(d,0); else st.frames[fi].offset.x+=d; });
   bindNum('p_oy', v=>{ const st=app.cur.st, fi=curFrameIdx(); const d=v-st.frames[fi].offset.y; if(app.show.allFrames) shiftAll(0,d); else st.frames[fi].offset.y+=d; });
-  bindNum('p_sx', v=>{ const st=app.cur.st, fi=curFrameIdx(); const r=Math.max(.05,v)/st.frames[fi].scale.sx; if(app.show.allFrames) scaleAllAbout(r,1); else st.frames[fi].scale.sx=Math.max(.05,st.frames[fi].scale.sx*r); });
-  bindNum('p_sy', v=>{ const st=app.cur.st, fi=curFrameIdx(); const r=Math.max(.05,v)/st.frames[fi].scale.sy; if(app.show.allFrames) scaleAllAbout(1,r); else st.frames[fi].scale.sy=Math.max(.05,st.frames[fi].scale.sy*r); });
+  bindNum('p_sx', v=>{ const st=app.cur.st, fi=curFrameIdx(); const r=Math.max(.05,v)/st.frames[fi].scale.sx; if(app.show.allFrames) scaleAllAbout(r,1); else st.frames[fi].scale.sx=Math.max(.05,st.frames[fi].scale.sx*r); syncPanel(); });
+  bindNum('p_sy', v=>{ const st=app.cur.st, fi=curFrameIdx(); const r=Math.max(.05,v)/st.frames[fi].scale.sy; if(app.show.allFrames) scaleAllAbout(1,r); else st.frames[fi].scale.sy=Math.max(.05,st.frames[fi].scale.sy*r); syncPanel(); });
   bindNum('p_kx', v=>{ const st=app.cur.st; const d=v-st.collision.x; if(app.show.allFrames) shiftAll(d,0); else st.collision.x=v; });
   bindNum('p_ky', v=>{ const st=app.cur.st; const d=v-st.collision.y; if(app.show.allFrames) shiftAll(0,d); else st.collision.y=v; });
   bindNum('p_kw', v=>app.cur.st.collision.w=Math.max(1,v));
