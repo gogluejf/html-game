@@ -26,7 +26,7 @@ function resizeBox(box, anchorId, sx, sy, orig, keepRatio){
 }
 
 // ---------- hover detection (unified for all boxes) ----------
-function bringToFront(key){
+export function bringToFront(key){
   // Remove every prior occurrence, including index 0, before moving to front.
   // Duplicate entries draw the same translucent fill repeatedly.
   app.boxZOrder = [key, ...app.boxZOrder.filter(k => k !== key)];
@@ -292,6 +292,7 @@ cv.addEventListener('pointerdown', e=>{
   if (!app.cur || !app.cur.st) return;
   cv.setPointerCapture(e.pointerId);
   const [cx, cy] = evPos(e); const [sx, sy] = c2s(cx, cy);
+  updateHover(sx, sy);   // recompute from the ACTUAL click point (z-order aware)
   const st = app.cur.st, fi = curFrameIdx();
   // while playing: no edits, only pan
   if (editingLocked()){

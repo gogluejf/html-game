@@ -47,6 +47,8 @@ function buildLabelEntities(labelName, sheets){
   for (const sh of sheets){
     const cpath = sh.cropped_path || '';
     const sheetFile = sh.file || '';
+    // repo-relative path of this sheet JSON (for PUT saves; see save.js)
+    const sheetPath = `.squid-os/sprite-sheets/${app.project}/${labelName}/${sh._file}`;
     for (const e of (sh.entities || [])){
       const name = `${e.name || 'x'}_${e.anim || 'a'}`;
       if (seen.has(name) || !e.frames) continue;
@@ -64,6 +66,21 @@ function buildLabelEntities(labelName, sheets){
         frames,
         sheetFile,
         croppedPath: cpath,
+        sheetPath,
+        // existing tuning data persisted in the sheet JSON (I3/L2)
+        tuning: {
+          speed: e.speed ?? null,
+          playback: e.playback ?? null,
+          collision: e.collision ?? null,
+          pivot: e.pivot ?? null,
+          markers: e.markers ?? null,
+          frames: (e.frames || []).map(f => ({
+            offset: f.offset ?? null,
+            scale: f.scale ?? null,
+            boxes: f.boxes ?? null,
+            durUnits: f.durUnits ?? null
+          }))
+        }
       });
     }
   }

@@ -46,11 +46,20 @@ const redoStack = [];
 // display toggles
 const show = { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false, grid:true, markerView:false };
 
+// Game unit convention (petal-panic): ANISOTROPIC cell — 72px wide × 48px tall.
+// Source of truth: petal-panic/js/world/macros.js (UNIT_PX_X / UNIT_PX_Y).
+// The background grid draws at these sizes so sprites align to the game grid.
+export const UNIT_PX_X = 72;
+export const UNIT_PX_Y = 48;
+
 let bgColor = '#000000';   // canvas background fill
 let isPlaying = true;      // global play/pause, carried across animations
 
 // localStorage persistence
 let _loadingState = false;   // guard: suppress saves while restoring from localStorage
+
+// per-entity checksums (see save.js) — disk-copy fingerprints for change detection
+const checksums = {};        // { "char_anim": "hex16" }
 
 // pointer interaction
 let drag = null;         // active pointer drag
@@ -108,6 +117,7 @@ export const app = {
   get bgColor(){ return bgColor; }, set bgColor(v){ bgColor = v; },
   get isPlaying(){ return isPlaying; }, set isPlaying(v){ isPlaying = v; },
   get _loadingState(){ return _loadingState; }, set _loadingState(v){ _loadingState = v; },
+  checksums,
   get drag(){ return drag; }, set drag(v){ drag = v; },
   get hover(){ return hover; }, set hover(v){ hover = v; },
   get _panelHighlight(){ return _panelHighlight; }, set _panelHighlight(v){ _panelHighlight = v; },

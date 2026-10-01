@@ -5,7 +5,7 @@ import { curFrameIdx, editingLocked } from './geometry.js';
 import { draw } from './draw.js';
 import { syncPanel, setRotSpeed } from './panel.js';
 import { buildTimingTable } from './timing.js';
-import { saveState } from './save.js';
+import { saveState, markGameDataChanged } from './save.js';
 import { syncToggles } from './tools.js';
 import { pushUndo } from './undo.js';
 
@@ -92,7 +92,7 @@ export function setPlaying(p){
 
 export function stepFrame(d){ if(!app.cur||!app.cur.st)return; const st=app.cur.st; st.frameIdx=(st.frameIdx+d+st.frames.length)%st.frames.length; app.acc=0; app._selectedBox=null; syncPanel(); draw(); }
 
-export function setSpeed(v){ if(!app.cur||!app.cur.st)return; app.cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = app.cur.st.speed+' fps'; $('p_speed').value = app.cur.st.speed; saveState(); buildTimingTable(); }
+export function setSpeed(v){ if(!app.cur||!app.cur.st)return; app.cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = app.cur.st.speed+' fps'; $('p_speed').value = app.cur.st.speed; markGameDataChanged(); buildTimingTable(); }
 
 // Enable/disable side-panel inputs: locked while animating
 const PANEL_EDITABLE = ['p_speed','p_ox','p_oy','p_sx','p_sy','p_kx','p_ky','p_kw','p_kh','p_px','p_py','p_rspeed'];

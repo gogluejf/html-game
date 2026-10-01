@@ -12,7 +12,7 @@ import { initMeleeControls } from './meleeBoxes.js';
 import { addMeleeBox } from './meleeBoxes.js';
 import { initMarkerControls, addMarker } from './markers.js';
 import { initToolbar, syncToggles, setBg } from './tools.js';
-import { initPointer } from './pointer.js';
+import { initPointer, bringToFront } from './pointer.js';
 import { initFilmstrip, applyFilmState, drawFilm } from './filmstrip.js';
 import { initConfirmDialog } from './dialog.js';
 import { doUndo, doRedo, syncUndoButtons } from './undo.js';
@@ -181,18 +181,20 @@ function initKeyboard(){
     if (!e.ctrlKey && !e.metaKey && !e.altKey){
       if (e.code === 'KeyS'){
         e.preventDefault();
-        app._selectedBox = (app._selectedBox === 'sprite') ? null : 'sprite';
+        if (app._selectedBox === 'sprite'){ app._selectedBox = null; }
+        else { app._selectedBox = 'sprite'; bringToFront('sprite'); }
         draw(); return;
       }
       if (e.code === 'KeyC'){
         e.preventDefault();
-        app._selectedBox = (app._selectedBox === 'collision') ? null : 'collision';
+        if (app._selectedBox === 'collision'){ app._selectedBox = null; }
+        else { app._selectedBox = 'collision'; bringToFront('collision'); }
         draw(); return;
       }
       if (e.code === 'KeyH'){
         e.preventDefault();
         const boxes = app.cur.st.frames[curFrameIdx()].boxes || [];
-        if (boxes.length === 0){ addMeleeBox(); app._selectedBox = 'box_0'; draw(); }
+        if (boxes.length === 0){ addMeleeBox(); app._selectedBox = 'box_0'; bringToFront('box_0'); draw(); }
         else {
           // cycle: find current selected box index, go to next
           let curIdx = -1;
@@ -201,6 +203,7 @@ function initKeyboard(){
           app._selectedBox = (curIdx === boxes.length - 1 && nextIdx === 0) ? 'box_0' : 'box_'+nextIdx;
           // if we were not selecting a box before, start at 0
           if (curIdx === -1) app._selectedBox = 'box_0';
+          bringToFront(app._selectedBox);
           draw();
         }
         return;
@@ -208,7 +211,7 @@ function initKeyboard(){
       if (e.code === 'KeyM'){
         e.preventDefault();
         const markers = app.cur.st.markers || [];
-        if (markers.length === 0){ addMarker(); app._selectedBox = 'marker_0'; draw(); }
+        if (markers.length === 0){ addMarker(); app._selectedBox = 'marker_0'; bringToFront('marker_0'); draw(); }
         else {
           let curIdx = -1;
           if (app._selectedBox && app._selectedBox.startsWith('marker_')) curIdx = parseInt(app._selectedBox.slice(7), 10);
@@ -217,6 +220,7 @@ function initKeyboard(){
             const nextIdx = (curIdx + 1) % markers.length;
             app._selectedBox = 'marker_'+nextIdx;
           }
+          bringToFront(app._selectedBox);
           draw();
         }
         return;

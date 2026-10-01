@@ -3,7 +3,7 @@ import { app } from './state.js';
 import { $ } from './viewport.js';
 import { curFrameIdx } from './geometry.js';
 import { pushUndo } from './undo.js';
-import { saveState } from './save.js';
+import { saveState, markGameDataChanged } from './save.js';
 import { confirmDialog } from './dialog.js';
 
 export function baseUnitMs(){ return 1000 / (app.cur && app.cur.st ? app.cur.st.speed : 8); }
@@ -44,7 +44,7 @@ export function buildTimingTable(){
       multEl.textContent = '\u00D7' + v;
       durEl.textContent = Math.round(baseUnitMs() * v) + 'ms';
       updateTimingTotal();
-      saveState();
+      markGameDataChanged();
     });
     sl.addEventListener('change', () => { sl.blur(); _slUndoPushed = false; });   // release focus so shortcuts work
     sl.addEventListener('dblclick', () => {
@@ -53,7 +53,7 @@ export function buildTimingTable(){
       row.classList.remove('custom');
       multEl.textContent = '\u00D71';
       durEl.textContent = Math.round(baseUnitMs()) + 'ms';
-      updateTimingTotal(); saveState();
+      updateTimingTotal(); markGameDataChanged();
     });
     // multiplier + duration labels
     const multEl = document.createElement('span'); multEl.className = 'tmult'; multEl.textContent = '\u00D7' + units;
@@ -76,11 +76,11 @@ export function updateTimingTotal(){
 export function initTimingControls(){
   $('pbLoop').addEventListener('click', () => {
     if (!app.cur || !app.cur.st) return;
-    app.cur.st.playback = 'loop'; syncPlaybackButtons(); saveState();
+    app.cur.st.playback = 'loop'; syncPlaybackButtons(); markGameDataChanged();
   });
   $('pbOnce').addEventListener('click', () => {
     if (!app.cur || !app.cur.st) return;
-    app.cur.st.playback = 'once'; syncPlaybackButtons(); saveState();
+    app.cur.st.playback = 'once'; syncPlaybackButtons(); markGameDataChanged();
   });
   // reset all timing
   $('timingResetBtn').addEventListener('click', () => {
@@ -89,7 +89,7 @@ export function initTimingControls(){
     confirmDialog('Reset per-frame timing for all ' + n + ' frames?', () => {
       pushUndo();
       app.cur.st.frames.forEach(f => { f.durUnits = 1; });
-      buildTimingTable(); saveState();
+      buildTimingTable(); markGameDataChanged();
     });
   });
 }

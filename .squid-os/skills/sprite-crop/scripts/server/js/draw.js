@@ -292,6 +292,10 @@ export function boxList(){
     });
   }
   // pivot is a point, not a rect — handled separately in hover/drag
-  // return in z-order (front first) so hit-testing respects last-touched
-  return Object.values(byKey).reverse();
+  // return in z-order (front first) so hit-testing respects last-touched:
+  // app.boxZOrder holds keys front-to-back; unknown keys fall behind.
+  const ordered = [];
+  for (const k of app.boxZOrder){ if (byKey[k]) ordered.push(byKey[k]); }
+  for (const b of Object.values(byKey)) if (!ordered.includes(b)) ordered.push(b);
+  return ordered;
 }

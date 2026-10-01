@@ -4,9 +4,13 @@ import { $ } from './viewport.js';
 
 const cdDialog = $('confirmDialog');
 
-export function confirmDialog(message, onYes){
+export function confirmDialog(message, onYes, opts = {}){
+  const title = opts.title || '⚠ Confirm';
+  const yesLabel = opts.yesLabel || 'Confirm';
   return new Promise(resolve => {
+    $('cdTitle').textContent = title;
     $('cdMsg').textContent = message;
+    $('cdYes').textContent = yesLabel;
     app._cdResolve = resolve;
     cdDialog.showModal();
     $('cdYes').focus();

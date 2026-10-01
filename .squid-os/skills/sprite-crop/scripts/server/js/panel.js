@@ -9,7 +9,7 @@ import { setPlaying, setSpeed, syncPanelDisabled } from './playback.js';
 import { syncPlaybackButtons, buildTimingTable } from './timing.js';
 import { syncToggles } from './tools.js';
 import { pushUndo } from './undo.js';
-import { saveState } from './save.js';
+import { markGameDataChanged } from './save.js';
 
 const P = id => $(id);
 
@@ -63,7 +63,7 @@ export function syncPanel(){
   syncToggles();
 }
 
-export function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=parseFloat(P(id).value); if(!isNaN(v)&&app.cur&&app.cur.st&&!editingLocked()){ pushUndo(); fn(v); draw(); saveState(); } else syncPanel(); }); }
+export function bindNum(id, fn){ P(id).addEventListener('change', ()=>{ const v=parseFloat(P(id).value); if(!isNaN(v)&&app.cur&&app.cur.st&&!editingLocked()){ pushUndo(); fn(v); draw(); markGameDataChanged(); } else syncPanel(); }); }
 
 export function initPanelBindings(){
   bindNum('p_speed', v=>setSpeed(v));
