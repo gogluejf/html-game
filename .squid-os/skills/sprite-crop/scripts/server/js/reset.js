@@ -7,7 +7,7 @@ import { syncPanel } from './panel.js';
 import { pushUndo } from './undo.js';
 import { saveState } from './save.js';
 import { confirmDialog } from './dialog.js';
-import { layoutAt } from './sidebar.js';
+import { layoutAt, defaultBoxes } from './sidebar.js';
 import { selectEntity } from './sidebar.js';
 import { setBg, paintSatSquareFn } from './tools.js';
 import { _bgState } from './state.js';
@@ -118,7 +118,21 @@ function resetAnimation(){
   const f1 = good[0];
   const W = f1 ? f1.naturalWidth : 1, H = f1 ? f1.naturalHeight : 1;
   st.rot = { angle: 0, speed: 360, playing: false };
-  layoutAt(st, app.cur.imgs, W, H, 'leftbottom');   // same as initial load
+  // reset EVERY frame (offset, scale, boxes) + clear markers
+  for (let i=0;i<st.frames.length;i++){
+    const f = st.frames[i], im = app.cur.imgs[i];
+    f.scale.sx = 1; f.scale.sy = 1;
+    if (im){ f.offset.x = Math.round(im.naturalWidth/2); f.offset.y = -Math.round(im.naturalHeight/2); }
+    else { f.offset.x = 0; f.offset.y = 0; }
+    f.boxes = [];
+  }
+  st.markers = [];
+  // reset the shared collision box to its default (frame-1 size minus pad)
+  const db = defaultBoxes(W, H);
+  st.collision = { ...db.col };
+  // reset the pivot to the center of the collision box
+  st.pivot = { x: Math.round(db.col.x + db.col.w/2), y: Math.round(db.col.y + db.col.h/2) };
+  layoutAt(st, app.cur.imgs, W, H, 'leftbottom');   // anchor left-bottom like initial load
 }
 
 // Reset the current frame's per-frame fields back to defaults.
@@ -129,4 +143,6 @@ function resetFrame(){
   if (im){ f.offset.x = Math.round(im.naturalWidth/2); f.offset.y = -Math.round(im.naturalHeight/2); }
   else { f.offset.x = 0; f.offset.y = 0; }
   f.boxes = [];
+  // markers are animation-level — clear them too so a frame reset is clean
+  st.markers = [];
 }

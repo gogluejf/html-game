@@ -64,7 +64,7 @@ export function buildSidebar(){
 // Collision = frame-1 size minus a few px (centered → looks inside the sprite box).
 // Melee = 25% of collision width, same height, left of collision with a small gap.
 import { COLL_PAD, MEELE_RATIO, MEELE_GAP } from './state.js';
-function defaultBoxes(w, h){
+export function defaultBoxes(w, h){
   const cw = Math.max(1, w - COLL_PAD*2), ch = Math.max(1, h - COLL_PAD*2);
   const col = { x:COLL_PAD, y:-h+COLL_PAD, w:cw, h:ch };
   const mw = Math.max(1, Math.round(cw*MEELE_RATIO)), mh = ch;
