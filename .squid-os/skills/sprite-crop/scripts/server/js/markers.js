@@ -4,7 +4,7 @@ import { $ } from './viewport.js';
 import { editingLocked } from './geometry.js';
 import { draw } from './draw.js';
 import { pushUndo } from './undo.js';
-import { saveState } from './save.js';
+import { markGameDataChanged } from './save.js';
 import { syncToggles } from './tools.js';
 
 export function nextMarkerLabel(markers){
@@ -38,7 +38,7 @@ export function addMarker(){
   app.cur.st.markers.push({ label, x:pos.x, y:pos.y, radiusOn, radius });
   app._selectedBox = 'marker_' + (app.cur.st.markers.length - 1);
   app.show.markerView = true;
-  syncToggles(); buildMarkerList(); draw(); saveState();
+  syncToggles(); buildMarkerList(); draw(); markGameDataChanged();
 }
 
 export function deleteMarker(idx){
@@ -46,7 +46,7 @@ export function deleteMarker(idx){
   pushUndo();
   app.cur.st.markers.splice(idx, 1);
   app._panelHighlight = null;
-  buildMarkerList(); draw(); saveState();
+  buildMarkerList(); draw(); markGameDataChanged();
 }
 
 export function buildMarkerList(){
@@ -72,7 +72,7 @@ export function buildMarkerList(){
       if (!newLabel){ lbl.value = m.label; return; }
       const dup = markers.some((om, oi) => oi !== i && om.label === newLabel);
       if (dup){ lbl.classList.add('dup'); setTimeout(()=>lbl.classList.remove('dup'), 800); lbl.value = m.label; return; }
-      if (newLabel !== m.label){ pushUndo(); m.label = newLabel; draw(); saveState(); }
+      if (newLabel !== m.label){ pushUndo(); m.label = newLabel; draw(); markGameDataChanged(); }
     });
     const radBtn = document.createElement('button');
     radBtn.className = 'tbtn tsm'; radBtn.style.padding='2px 6px'; radBtn.style.fontSize='10px';
@@ -82,7 +82,7 @@ export function buildMarkerList(){
       pushUndo();
       m.radiusOn = !m.radiusOn;
       if (m.radiusOn && m.radius === 0) m.radius = 30;
-      buildMarkerList(); draw(); saveState();
+      buildMarkerList(); draw(); markGameDataChanged();
     });
     const del = document.createElement('button');
     del.className = 'mb-del'; del.textContent = '\u00D7'; del.title = 'delete marker';
@@ -100,7 +100,7 @@ export function buildMarkerList(){
       inp.addEventListener('change', () => {
         const v = parseFloat(inp.value);
         if (isNaN(v) || !app.cur || !app.cur.st || editingLocked()) return;
-        pushUndo(); m[axis] = v; draw(); saveState();
+        pushUndo(); m[axis] = v; draw(); markGameDataChanged();
       });
       cell.appendChild(bb); cell.appendChild(inp);
       l2.appendChild(cell);
@@ -117,7 +117,7 @@ export function buildMarkerList(){
     rInp.addEventListener('change', () => {
       const v = parseFloat(rInp.value);
       if (isNaN(v) || !app.cur || !app.cur.st || editingLocked()) return;
-      pushUndo(); m.radius = Math.max(1, v); draw(); saveState();
+      pushUndo(); m.radius = Math.max(1, v); draw(); markGameDataChanged();
     });
     rCell.appendChild(rb); rCell.appendChild(rInp);
     l2.appendChild(rCell);
@@ -133,7 +133,7 @@ export function initMarkerControls(){
   $('addMarkerBtn').addEventListener('click', addMarker);
   $('addMarkerToolbar').addEventListener('click', addMarker);
   $('tglMarkerView').addEventListener('click', ()=>{
-    app.show.markerView = !app.show.markerView; cancelHideMode(); syncToggles(); draw(); saveState();
+    app.show.markerView = !app.show.markerView; cancelHideMode(); syncToggles(); draw(); markGameDataChanged();
   });
 }
 

@@ -264,11 +264,11 @@ function initKeyboard(){
           if (app._selectedBox.startsWith('box_')){
             const selIdx = parseInt(app._selectedBox.slice(4), 10);
             pushUndo(); st.frames[fi].boxes.splice(selIdx, 1);
-            app._selectedBox = null; buildMeleeBoxList(); draw(); saveState();
+            app._selectedBox = null; buildMeleeBoxList(); draw(); markGameDataChanged();
           } else {
             const selIdx = parseInt(app._selectedBox.slice(7), 10);
             pushUndo(); st.markers.splice(selIdx, 1);
-            app._selectedBox = null; buildMarkerList(); draw(); saveState();
+            app._selectedBox = null; buildMarkerList(); draw(); markGameDataChanged();
           }
         }
         return;
@@ -294,7 +294,7 @@ function initKeyboard(){
           const m = st.markers[mi];
           if (m){ m.x += dx; m.y += dy; }
         }
-        syncPanel(); draw(); saveState();
+        syncPanel(); draw(); markGameDataChanged();
         return;
       }
     }
