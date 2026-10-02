@@ -332,5 +332,6 @@ python3 compose.py set-vibe --game GAME --name NAME --vibe "..."
 - [compiler.js](server/js/compiler.js) — backbone+parts → engine grid (browser-side)
 
 ### References
-- [song-structure.md](references/song-structure.md) — format spec + structural guidelines
+- [song-anatomy.md](references/song-anatomy.md) — the unit ladder (song/part/measure/beat/step), worked example, anti-boring rules, who-decides-what contract
+- [song-structure.md](references/song-structure.md) — format spec + structural guidelines + laws of good music
 - [behavior-spec.md](references/behavior-spec.md) — jukebox transport/UI behavior
