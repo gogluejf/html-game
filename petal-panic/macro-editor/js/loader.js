@@ -13,7 +13,7 @@ export async function loadGameConstants(){
   const fallback = {
     unitPxX:CONSTS.UNIT_PX_X, unitPxY:CONSTS.UNIT_PX_Y, platformDrawH:CONSTS.PLATFORM_DRAW_H,
     entryClear:3, exitClear:3,
-    hBudgetUnits:56, vBudgetUnits:56, vZoneWidthUnits:22,
+    hBudgetUnits:56, vBudgetUnits:56, vZoneWidthUnits:22, hZoneHeightUnits:11.25,
   };
   try{
     const mod = await import('../../js/world/macros.js');
@@ -27,6 +27,10 @@ export async function loadGameConstants(){
       // Area length budget in UNITS (what the composer fills), per orientation.
       hBudgetUnits: Math.round(lvl.HORIZONTAL_AREA_LENGTH_PX / (mod.UNIT_PX_X || fallback.unitPxX)),
       vBudgetUnits: Math.round(lvl.VERTICAL_AREA_LENGTH_PX / (mod.UNIT_PX_Y || fallback.unitPxY)),
+      // Zone HEIGHTS in units: horizontal area is one screen tall (VIEW_H);
+      // vertical is the climb budget (already vBudgetUnits). A horizontal level
+      // is NOT "as tall as its terrain" — it's a full-screen-tall world.
+      hZoneHeightUnits: lvl.ZONE_H_HORIZONTAL / (mod.UNIT_PX_Y || fallback.unitPxY),
       // Vertical zone is one screen wide — the lateral bound for vertical macros.
       vZoneWidthUnits: Math.floor(lvl.ZONE_WIDTH_VERTICAL / (mod.UNIT_PX_X || fallback.unitPxX)),
     };

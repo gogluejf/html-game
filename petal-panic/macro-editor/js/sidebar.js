@@ -4,9 +4,9 @@
 
 import { app } from './state.js';
 import { $, tree } from './viewport.js';
-import { draw } from './draw.js';
+import { draw, zoneExtents } from './draw.js';
 import { setZoom } from './viewport.js';
-import { updateDirtyDots, updateSaveButton } from './save.js';
+import { updateDirtyDots, updateSaveButton, saveActive } from './save.js';
 
 export function buildSidebar(macros){
   tree.innerHTML = '';
@@ -54,6 +54,7 @@ export function selectMacro(id){
   }
   app.cur = { id, macro, st };
 
+  saveActive(id);   // remember this macro so a refresh lands back on it
   syncPanel();
   fitView(st);
   draw();
@@ -62,26 +63,18 @@ export function selectMacro(id){
   const tb = $('toolbar'); if (tb) tb.classList.remove('booting');
 }
 
-// Fit the macro's bounding box into view (respects anisotropic units).
+// Fit the WHOLE AREA (zone box) into view — not just the macro's footprint —
+// so the full level size + entry/exit are always visible on first select.
 function fitView(st){
   const ux = app.consts.unitPxX, uy = app.consts.unitPxY;
-  const units = st.units || [];
-  if (!units.length){ app.panX = 0; app.panY = 0; setZoom(1); return; }
-  let minX=Infinity,maxX=-Infinity,minY=0,maxY=-Infinity;
-  for (const u of units){
-    const x = u.x ?? 0;
-    const y = u.y ?? 0;
-    const w = u.kind==='block' ? 1 : (u.width ?? 1);
-    const h = u.kind==='block' ? (u.height ?? 1) : 1;
-    minX = Math.min(minX, x*ux);
-    maxX = Math.max(maxX, (x+w)*ux);
-    maxY = Math.max(maxY, (y+h)*uy);
-  }
+  const { ax0, ax1, ay0, ay1 } = zoneExtents(st);
+  if (!isFinite(ax1)){ app.panX = 0; app.panY = 0; setZoom(1); return; }
+  const minX = ax0*ux, maxX = ax1*ux, minY = ay0*uy, maxY = ay1*uy;
   const pad = 60;
   const bw = (maxX-minX)+pad*2, bh = (maxY-minY)+pad*2;
   const z = Math.min(app.cssW/bw, app.cssH/bh);
   app.zoom = Math.max(.05, Math.min(8, z));
-  // Center on bbox midpoint. From s2c: to map world (midX,midY) to canvas
+  // Center on the area's midpoint. From s2c: to map world (midX,midY) to canvas
   // center (cssW/2, cssH/2), pan must equal the world midpoint.
   const midX = (minX+maxX)/2, midY = (minY+maxY)/2;
   app.panX = midX;

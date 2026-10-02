@@ -10,7 +10,7 @@ import { buildSidebar, selectMacro } from './sidebar.js';
 import { draw, setConstants } from './draw.js';
 import { initConfirmDialog } from './dialog.js';
 import { showToast } from './toast.js';
-import { markChanged, saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft } from './save.js';
+import { markChanged, saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft, readActive } from './save.js';
 
 // ---------- toolbar toggles ----------
 function syncToggles(){
@@ -102,15 +102,23 @@ function initKeyboard(){
 }
 
 // ---------- boot ----------
+const APP_VERSION = 'v3-zone-fit';   // bump to bust module cache; shown in console + title
 async function boot(){
-  document.title = 'MACRO EDITOR — petal-panic';
+  document.title = `MACRO EDITOR — petal-panic [${APP_VERSION}]`;
   $('projectLabel').textContent = 'petal-panic · macros/levels';
+  console.info(`[macro-editor] ${APP_VERSION} boot`);
 
   app.consts = await loadGameConstants();
   setConstants(app.consts);
 
   app.macros = await loadMacros();
   console.info(`[macro-editor] loaded ${Object.keys(app.macros).length} macros`);
+  // Debug: log each macro's orientation + unit count so a stale-cache mismatch is obvious.
+  for (const [id, m] of Object.entries(app.macros)){
+    const plats = (m.units||[]).filter(u=>u.kind==='platform').length;
+    const blocks = (m.units||[]).filter(u=>u.kind==='block').length;
+    console.info(`  ${id}: ${m.orientation} · ${blocks}B ${plats}P · ${(m.placements||[]).length} slots`);
+  }
 
   captureBaselines();   // fingerprint canonical files for external-change guard
   restoreDrafts();
@@ -123,9 +131,11 @@ async function boot(){
   resizeCanvas();
   updateDirtyDots();
 
-  // select the first macro
-  if (app.flatList.length){
-    selectMacro(app.flatList[0].id);
+  // select the last-opened macro if we have one saved; otherwise the first.
+  const lastId = readActive();
+  const startId = (lastId && app.macros[lastId]) ? lastId : (app.flatList.length ? app.flatList[0].id : null);
+  if (startId){
+    selectMacro(startId);
   } else {
     draw();
     const tb = $('toolbar'); if (tb) tb.classList.remove('booting');

@@ -14,6 +14,9 @@ import { selectMacro } from './sidebar.js';
 
 const LS_PREFIX = 'macro-editor-draft-v1-';
 export const draftKey = id => LS_PREFIX + id;
+// Config key: remembers the last-selected macro so a refresh lands back on it
+// (mirrors the sprite editor's `active`). Separate from the per-macro drafts.
+const LS_ACTIVE = 'macro-editor-active-v1-';
 // Fingerprint of the canonical file as loaded (for external-change detection).
 // Keyed by macro id. Compared against disk-at-save-time, NOT against the draft
 // (the draft is *supposed* to differ from disk when dirty).
@@ -22,6 +25,11 @@ const baseFingerprint = {};   // id -> JSON string of canonical at load
 export function hasDraft(id){ try { return !!localStorage.getItem(draftKey(id)); } catch(e){ return false; } }
 function storeDraft(id, data){ try { localStorage.setItem(draftKey(id), JSON.stringify(data)); } catch(e){} }
 function clearDraft(id){ try { localStorage.removeItem(draftKey(id)); } catch(e){} }
+
+// ---------- last-selected macro (config) ----------
+// Persist which macro was open so a refresh/relaunch lands back on it.
+export function saveActive(id){ try { if (id) localStorage.setItem(LS_ACTIVE, id); } catch(e){} }
+export function readActive(){ try { return localStorage.getItem(LS_ACTIVE); } catch(e){ return null; } }
 
 // Called whenever the current macro's working copy mutates. Writes the draft
 // and refreshes the dot + save button. This is the ONLY thing that marks dirty.
