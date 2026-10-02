@@ -7,7 +7,9 @@ import { app, SLOT_COLORS, COL_BLOCK, COL_PLATFORM, COL_GRID, COL_GRID_MAJOR } f
 import { cv, ctx, s2c, setDrawHook } from './viewport.js';
 
 let _consts = { unitPxX:72, unitPxY:48, platformDrawH:6 };
-export function setConstants(c){ _consts = c; }
+export function setConstants(c){ 
+  _consts = c; 
+}
 
 // world (unit*px, y-up) -> canvas px via viewport transform
 function W(x, y){ return s2c(x, y); }
@@ -131,7 +133,9 @@ function drawMacro(macro){
 
   // Offset: area entry clear + macro entry clear. The y-axis (x=0) sits at this
   // offset — after both clearance zones, at the first block's left edge.
-  const areaEc = _consts.entryClear ?? 3;
+  // Vertical has NO area entry clear (starts at ground).
+  const vertical = macro.orientation === 'vertical';
+  const areaEc = vertical ? _consts.vEntryClear : _consts.hEntryClear;
   const macroEc = macro.entryClear ?? 2;
   const bodyOffset = areaEc + macroEc;
 
@@ -275,9 +279,11 @@ export function contentExtents(macro){
 function drawZoneBox(macro){
   const c = _consts;
   const ux = c.unitPxX, uy = c.unitPxY;
-  const ec = c.entryClear ?? 3, xc = c.exitClear ?? 3;
-  const { ax0, ax1, ay0, ay1 } = zoneExtents(macro);
   const vertical = macro.orientation === 'vertical';
+  // Use orientation-specific clear values from the game's constants.
+  const ec = vertical ? c.vEntryClear : c.hEntryClear;
+  const xc = vertical ? c.vExitClear : c.hExitClear;
+  const { ax0, ax1, ay0, ay1 } = zoneExtents(macro);
 
   // Dashed bounding box around the whole area.
   const [bx0, byTop] = W(ax0*ux, ay1*uy);
@@ -305,7 +311,7 @@ function drawZoneBox(macro){
   const bodyOffset = ec + macroEc;   // where blocks start (after area-in + macro-in)
   const macroEndX = bodyOffset + macroMaxX;   // where the last block ends
   if (vertical){
-    // Vertical: entry at BOTTOM, exit at TOP.
+    // Vertical: entry at BOTTOM (may be 0), exit at TOP.
     let macroMaxY = 0;
     for (const u of (macro.units || [])){
       const yTop = (u.y ?? 0) + (u.kind === 'block' ? (u.height ?? 1) : 1);
@@ -313,22 +319,30 @@ function drawZoneBox(macro){
     }
     const vBodyOffset = ec + macroEc;
     const vMacroEndY = vBodyOffset + macroMaxY;
-    ctx.fillStyle = DARK;
-    const [ex0, eyTop] = W(ax0*ux, ec*uy);
-    const [ex1, eyBot] = W(ax1*ux, 0);
-    ctx.fillRect(ex0, eyTop, ex1-ex0, eyBot-eyTop);          // area entry (bottom)
-    ctx.fillStyle = LIGHT;
-    const [mx0, myTop] = W(ax0*ux, (ec+macroEc)*uy);
-    const [mx1, myBot] = W(ax1*ux, ec*uy);
-    ctx.fillRect(mx0, myTop, mx1-mx0, myBot-myTop);          // macro entry
+    // Area entry (bottom) — only draw if ec > 0
+    if (ec > 0){
+      ctx.fillStyle = DARK;
+      const [ex0, eyTop] = W(ax0*ux, ec*uy);
+      const [ex1, eyBot] = W(ax1*ux, 0);
+      ctx.fillRect(ex0, eyTop, ex1-ex0, eyBot-eyTop);
+    }
+    // Macro entry — only draw if macroEc > 0
+    if (macroEc > 0){
+      ctx.fillStyle = LIGHT;
+      const [mx0, myTop] = W(ax0*ux, (ec+macroEc)*uy);
+      const [mx1, myBot] = W(ax1*ux, ec*uy);
+      ctx.fillRect(mx0, myTop, mx1-mx0, myBot-myTop);
+    }
+    // Macro exit (right after blocks)
     ctx.fillStyle = LIGHT;
     const [mxx0, mxyTop] = W(ax0*ux, (vMacroEndY+macroXc)*uy);
     const [mxx1, mxyBot] = W(ax1*ux, vMacroEndY*uy);
-    ctx.fillRect(mxx0, mxyTop, mxx1-mxx0, mxyBot-mxyTop);    // macro exit (right after blocks)
+    ctx.fillRect(mxx0, mxyTop, mxx1-mxx0, mxyBot-mxyTop);
+    // Area exit (top, at very end)
     ctx.fillStyle = DARK;
     const [ax0b, axyTop] = W(ax0*ux, ay1*uy);
     const [ax1b, axyBot] = W(ax1*ux, (ay1-xc)*uy);
-    ctx.fillRect(ax0b, axyTop, ax1b-ax0b, axyBot-axyTop);    // area exit (top, at very end)
+    ctx.fillRect(ax0b, axyTop, ax1b-ax0b, axyBot-axyTop);
   } else {
     // Horizontal: entry at LEFT, exit at RIGHT.
     ctx.fillStyle = DARK;

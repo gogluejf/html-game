@@ -48,6 +48,24 @@ export const ENTRY_CLEAR = 3;
  */
 export const EXIT_CLEAR = 3;
 
+// ---------------------------------------------------------------------------
+// Orientation-specific clearance values
+// ---------------------------------------------------------------------------
+// Horizontal areas: entry/exit clear = empty space (no terrain).
+// Vertical areas: entry clear = 0 (first macro starts at ground), exit clear = reserved at top.
+
+/** Entry clear for horizontal areas. */
+export const H_ENTRY_CLEAR = ENTRY_CLEAR;   // 3
+
+/** Exit clear for horizontal areas. */
+export const H_EXIT_CLEAR = EXIT_CLEAR;     // 3
+
+/** Entry clear for vertical areas (0 — first macro starts at ground). */
+export const V_ENTRY_CLEAR = 0;
+
+/** Exit clear for vertical areas. */
+export const V_EXIT_CLEAR = EXIT_CLEAR;     // 3
+
 /**
  * Maximum horizontal gap (width-units) that a hero can clear with a double
  * jump.
@@ -1691,8 +1709,12 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
   if (stage < 1 || stage > 4) {
     throw new Error(`composeArea: stage must be 1 to 4, got ${stage}`);
   }
-  if (budget < ENTRY_CLEAR + EXIT_CLEAR) {
-    throw new Error(`composeArea: budget ${budget} is less than minimum ${ENTRY_CLEAR + EXIT_CLEAR}`);
+  // Use orientation-specific clearance values for budget validation.
+  const minClear = orientation === 'vertical' 
+    ? V_ENTRY_CLEAR + V_EXIT_CLEAR 
+    : H_ENTRY_CLEAR + H_EXIT_CLEAR;
+  if (budget < minClear) {
+    throw new Error(`composeArea: budget ${budget} is less than minimum ${minClear}`);
   }
 
 
@@ -1739,17 +1761,16 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
  */
 function runCompose(rng, orientation, stage, budget, macroWeights) {
   // Step 1: Reserve safe entry and exit (generation.md §4 step 1).
-  const entryClear = ENTRY_CLEAR;
-  const exitClear = EXIT_CLEAR;
-  const available = budget - entryClear - exitClear;
+  // Use orientation-specific clearance values.
   const isVertical = orientation === 'vertical';
+  const entryClear = isVertical ? V_ENTRY_CLEAR : H_ENTRY_CLEAR;
+  const exitClear = isVertical ? V_EXIT_CLEAR : H_EXIT_CLEAR;
+  const available = budget - entryClear - exitClear;
 
   // In a vertical area, the hero starts at the bottom of the zone (y=0) and
-  // climbs up. The entry clear zone is the space at the BOTTOM (y=0 to
-  // y=entryClear), not above the first platform. So the first macro is
-  // placed at y=0, not y=entryClear. This ensures the first platform is
-  // reachable from the ground (at most 1 tier above).
-  const initialAxisPos = isVertical ? 0 : entryClear;
+  // climbs up. Since V_ENTRY_CLEAR = 0, the first macro is placed at y=0.
+  // For horizontal, H_ENTRY_CLEAR = 3, so the first macro starts at x=3.
+  let axisPos = entryClear; // current position on the composition axis
 
   // Step 2: Select compatible macros (generation.md §4 step 2). The
   // per-level macroWeights bias selection toward harder tiers (generation.md
@@ -1767,7 +1788,6 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
   const placedUnits = [];
   const placedGaps = [];
   const placements = [];
-  let axisPos = initialAxisPos; // current position on the composition axis
   let axisUsed = 0;         // budget consumed by placed macros
 
   // Track the last macro id for follow-condition validation.

@@ -22,8 +22,11 @@ export async function loadGameConstants(){
       unitPxX: mod.UNIT_PX_X ?? fallback.unitPxX,
       unitPxY: mod.UNIT_PX_Y ?? fallback.unitPxY,
       platformDrawH: mod.PLATFORM_DRAW_H ?? fallback.platformDrawH,
-      entryClear: mod.ENTRY_CLEAR ?? fallback.entryClear,
-      exitClear: mod.EXIT_CLEAR ?? fallback.exitClear,
+      // Orientation-specific clearance values (single source of truth in macros.js)
+      hEntryClear: mod.H_ENTRY_CLEAR ?? 3,
+      hExitClear: mod.H_EXIT_CLEAR ?? 3,
+      vEntryClear: mod.V_ENTRY_CLEAR ?? 0,
+      vExitClear: mod.V_EXIT_CLEAR ?? 3,
       // Area length budget in UNITS (what the composer fills), per orientation.
       hBudgetUnits: Math.round(lvl.HORIZONTAL_AREA_LENGTH_PX / (mod.UNIT_PX_X || fallback.unitPxX)),
       vBudgetUnits: Math.round(lvl.VERTICAL_AREA_LENGTH_PX / (mod.UNIT_PX_Y || fallback.unitPxY)),
