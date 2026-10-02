@@ -68,16 +68,21 @@ This makes the macro editor's row 0 == the real game floor, so editor grid and g
 
 ---
 
-## Done when
+## Done when (Pass 1 — ✅ COMPLETE)
 
-- [ ] `server.sh go` (port 8767) opens clean
-- [ ] Left menu shows all 15 macros under difficulty 1/2/3
-- [ ] Click a macro → canvas draws its blocks/platforms + placement dots
-- [ ] Grid aligned to 72×48, zoom/pan works
-- [ ] Test/Dump button adds a block → yellow dirty dot appears
-- [ ] Save writes JSON to disk → dot clears → reload persists the block
-- [ ] Ground normalized to 1 unit from tuning; game tests still pass
-- [ ] No console errors
+- [x] `server.sh go` (port 8767) opens clean
+- [x] Left menu shows all 15 macros under difficulty 1/2/3
+- [x] Click a macro → canvas draws its blocks/platforms + placement dots
+- [x] Grid aligned to 72×48, zoom/pan works (wheel zoom about cursor, drag pan, FIT)
+- [x] Test/Dump button adds a block → yellow dirty dot appears
+- [x] Save writes JSON to disk → dot clears → reload persists the block
+- [ ] Ground normalized to 1 unit from tuning; game tests still pass  ← DEFERRED (separate task)
+- [x] No console errors
+
+Verified end-to-end via headless Chromium: boot loads 15 macros, draft→dirty-dot→save pipeline persists to `macros/levels/*.json`, render shows centered grid + blocks + platforms + colored slot dots.
+
+### Note on ground normalization
+Deferred out of Pass 1 (it ripples into hero spawn / flags / vertical-zone math and needs the full test suite). Tracked as a follow-up before Pass 2 editing tools land, so the editor's row 0 == the real game floor.
 
 ## Explicitly NOT in Pass 1
 

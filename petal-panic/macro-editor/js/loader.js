@@ -1,0 +1,47 @@
+// ---------- loader (macro editor) ----------
+// Reads game constants from the real module (single source of truth) and loads
+// all macros from petal-panic/macros/levels/*.json — the SAME files the game uses.
+
+import { app } from './state.js';
+import * as CONSTS from './state.js';
+
+const MACRO_DIR = '../macros/levels/';   // relative to /petal-panic/macro-editor/
+
+// Pull the authoritative unit constants from the game's own module so the
+// editor grid can never drift from the game. Stored on app; draw.js reads them.
+export async function loadGameConstants(){
+  const fallback = { unitPxX:CONSTS.UNIT_PX_X, unitPxY:CONSTS.UNIT_PX_Y, platformDrawH:CONSTS.PLATFORM_DRAW_H };
+  try{
+    const mod = await import('../../js/world/macros.js');
+    return {
+      unitPxX: mod.UNIT_PX_X ?? fallback.unitPxX,
+      unitPxY: mod.UNIT_PX_Y ?? fallback.unitPxY,
+      platformDrawH: mod.PLATFORM_DRAW_H ?? fallback.platformDrawH,
+    };
+  }catch(e){
+    console.warn('[macro-editor] using fallback constants:', e.message);
+    return fallback;
+  }
+}
+
+/**
+ * Fetch every macro JSON in the directory. Returns a map id -> macro object.
+ */
+export async function loadMacros(){
+  const res = await fetch(MACRO_DIR);
+  if (!res.ok) throw new Error(`cannot list ${MACRO_DIR} (HTTP ${res.status})`);
+  const html = await res.text();
+  const files = [...html.matchAll(/href="([^"]+\.json)"/g)].map(m => m[1]);
+  if (!files.length) throw new Error(`no macro JSON files in ${MACRO_DIR}`);
+
+  const entries = await Promise.all(files.map(async file => {
+    const r = await fetch(`${MACRO_DIR}${file}`);
+    if (!r.ok) throw new Error(`failed to fetch ${file} (HTTP ${r.status})`);
+    const macro = await r.json();
+    return [file.replace(/\.json$/, ''), macro];
+  }));
+
+  const macros = {};
+  for (const [id, macro] of entries) macros[id] = macro;
+  return macros;
+}
