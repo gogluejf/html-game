@@ -5,7 +5,7 @@ import { curFrameIdx, editingLocked } from './geometry.js';
 import { draw } from './draw.js';
 import { commit } from './commit.js';
 import { syncToggles } from './tools.js';
-import { shiftAll, scaleAllAbout } from './rigidbody.js';
+import { moveElement, resizeElement } from './rigidbody.js';
 
 export function nextBoxLabel(boxes){
   if (!boxes.length) return 'attack';
@@ -93,18 +93,11 @@ export function buildMeleeBoxList(){
       inp.addEventListener('change', () => {
         const v = parseFloat(inp.value);
         if (isNaN(v) || !app.cur || !app.cur.st || editingLocked()) return;
+        const key = 'box_'+i;
         commit(() => {
-          if ((axis==='x'||axis==='y') && app.show.allFrames){
-            // moving a hit box moves the whole body — same as drag
-            const d = v - b[axis];
-            shiftAll(axis==='x'?d:0, axis==='y'?d:0);
-          } else if ((axis==='w'||axis==='h') && app.show.allFrames){
-            // resizing scales the whole body about its center — same as canvas resize
-            const r = Math.max(1,v) / b[axis];
-            scaleAllAbout(axis==='w'?r:1, axis==='h'?r:1);
-          } else {
-            b[axis] = (axis==='w'||axis==='h') ? Math.max(1,v) : v;
-          }
+          if (axis==='x') moveElement(key, v, b.y);
+          else if (axis==='y') moveElement(key, b.x, v);
+          else resizeElement(key, axis==='w'?Math.max(1,v):b.w, axis==='h'?Math.max(1,v):b.h);
         });
       });
       cell.appendChild(bb); cell.appendChild(inp);

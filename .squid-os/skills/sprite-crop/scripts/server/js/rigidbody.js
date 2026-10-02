@@ -84,3 +84,72 @@ export function scaleAllAbout(rx, ry){
     if (m.radiusOn) m.radius=Math.max(1,Math.round(m.radius*rx));
   }
 }
+
+// ---------- element intents: the ONLY move/resize API ----------
+// UI code (panel, canvas drag, keyboard) calls these. They make the
+// ALL-FRAMES decision in ONE place, so every input path behaves identically:
+//   single frame -> only that element changes
+//   ALL FRAMES   -> the whole body moves / scales as one rigid unit
+// key: 'sprite' | 'collision' | 'box_<i>'
+
+export function moveElement(key, nx, ny){
+  const st = app.cur.st;
+  if (key === 'sprite'){
+    const fi = Math.round(st.frameIdx % st.frames.length);
+    const f = st.frames[fi];
+    if (app.show.allFrames){ shiftAll(nx - f.offset.x, ny - f.offset.y); }
+    else { f.offset.x = nx; f.offset.y = ny; }
+  } else if (key === 'collision'){
+    if (app.show.allFrames){ shiftAll(nx - st.collision.x, ny - st.collision.y); }
+    else { st.collision.x = nx; st.collision.y = ny; }
+  } else if (key.startsWith('box_')){
+    const b = st.frames[Math.round(st.frameIdx % st.frames.length)].boxes[parseInt(key.slice(4), 10)];
+    if (!b) return;
+    if (app.show.allFrames){ shiftAll(nx - b.x, ny - b.y); }
+    else { b.x = nx; b.y = ny; }
+  }
+}
+
+export function resizeElement(key, nw, nh){
+  const st = app.cur.st;
+  const fi = Math.round(st.frameIdx % st.frames.length);
+  if (key === 'sprite'){
+    const im = app.cur.imgs[fi]; if (!im) return;
+    const f = st.frames[fi];
+    const rx = nw / (im.naturalWidth * f.scale.sx), ry = nh / (im.naturalHeight * f.scale.sy);
+    if (app.show.allFrames){ scaleAllAbout(rx, ry); }
+    else { f.scale.sx = Math.max(.05, f.scale.sx * rx); f.scale.sy = Math.max(.05, f.scale.sy * ry); }
+  } else if (key === 'collision'){
+    const c = st.collision;
+    const rx = nw / c.w, ry = nh / c.h;
+    if (app.show.allFrames){ scaleAllAbout(rx, ry); }
+    else { c.w = Math.max(1, nw); c.h = Math.max(1, nh); }
+  } else if (key.startsWith('box_')){
+    const b = st.frames[fi].boxes[parseInt(key.slice(4), 10)];
+    if (!b) return;
+    const rx = nw / b.w, ry = nh / b.h;
+    if (app.show.allFrames){ scaleAllAbout(rx, ry); }
+    else { b.w = Math.max(1, nw); b.h = Math.max(1, nh); }
+  }
+}
+
+// Scale ONE element's size by ratio about its own center (position untouched).
+// Used by panel scale inputs where the user types a target scale value.
+export function scaleElement(key, rx, ry){
+  const st = app.cur.st;
+  const fi = Math.round(st.frameIdx % st.frames.length);
+  if (key === 'sprite'){
+    const f = st.frames[fi];
+    if (app.show.allFrames){ scaleAllAbout(rx, ry); }
+    else { f.scale.sx = Math.max(.05, f.scale.sx * rx); f.scale.sy = Math.max(.05, f.scale.sy * ry); }
+  } else if (key === 'collision'){
+    const c = st.collision;
+    if (app.show.allFrames){ scaleAllAbout(rx, ry); }
+    else { c.w = Math.max(1, Math.round(c.w * rx)); c.h = Math.max(1, Math.round(c.h * ry)); }
+  } else if (key.startsWith('box_')){
+    const b = st.frames[fi].boxes[parseInt(key.slice(4), 10)];
+    if (!b) return;
+    if (app.show.allFrames){ scaleAllAbout(rx, ry); }
+    else { b.w = Math.max(1, Math.round(b.w * rx)); b.h = Math.max(1, Math.round(b.h * ry)); }
+  }
+}

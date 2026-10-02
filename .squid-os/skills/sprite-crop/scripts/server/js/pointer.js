@@ -7,7 +7,7 @@ import { syncPanel } from './panel.js';
 import { pushUndo } from './undo.js';
 import { buildMeleeBoxList } from './meleeBoxes.js';
 import { buildMarkerList } from './markers.js';
-import { shiftElement, shiftAll } from './rigidbody.js';
+import { moveElement } from './rigidbody.js';
 import { LS_KEY } from './save.js';
 
 // ---------- box resize math ----------
@@ -94,11 +94,9 @@ export const BOX = {
   sprite: {
     snap(st, fi){ const f=st.frames[fi], im=app.cur.imgs[fi]; return { x:f.offset.x-im.naturalWidth*f.scale.sx/2, y:f.offset.y-im.naturalHeight*f.scale.sy/2, w:im.naturalWidth*f.scale.sx, h:im.naturalHeight*f.scale.sy }; },
     move(d, sx, sy){
-      const st=app.cur.st, fi=curFrameIdx();
+      const st=app.cur.st;
       const tx=Math.round(sx-d.ox+d.orig.w/2), ty=Math.round(sy-d.oy+d.orig.h/2);
-      const dx=tx-st.frames[fi].offset.x, dy=ty-st.frames[fi].offset.y;
-      if (app.show.allFrames){ shiftAll(dx, dy); }
-      else { st.frames[fi].offset.x=tx; st.frames[fi].offset.y=ty; }
+      moveElement('sprite', tx, ty);
     },
     resize(d, sx, sy){
       const o=d.orig, ow=d.ow, oh=d.oh;
@@ -161,11 +159,7 @@ export const BOX = {
   collision: {
     snap(st, fi){ return {...st.collision}; },
     move(d, sx, sy){
-      const st=app.cur.st;
-      const nx=Math.round(sx-d.ox), ny=Math.round(sy-d.oy);
-      const dx=nx-st.collision.x, dy=ny-st.collision.y;
-      if (app.show.allFrames){ shiftAll(dx, dy); }
-      else { st.collision.x=nx; st.collision.y=ny; }
+      moveElement('collision', Math.round(sx-d.ox), Math.round(sy-d.oy));
     },
     resize(d, sx, sy){
       const st=app.cur.st, fi=curFrameIdx();
@@ -186,12 +180,7 @@ export const BOX = {
     return {
       snap(st, fi){ const b = st.frames[fi].boxes[idx]; return {...b}; },
       move(d, sx, sy){
-        const st=app.cur.st, fi=curFrameIdx();
-        const nx=Math.round(sx-d.ox), ny=Math.round(sy-d.oy);
-        const b0=st.frames[fi].boxes[idx]; if(!b0) return;
-        const dx=nx-b0.x, dy=ny-b0.y;
-        if (app.show.allFrames){ shiftAll(dx, dy); }
-        else { b0.x=nx; b0.y=ny; }
+        moveElement('box_'+idx, Math.round(sx-d.ox), Math.round(sy-d.oy));
       },
       resize(d, sx, sy){
         const st=app.cur.st, fi=curFrameIdx(), f0=st.frames[fi];

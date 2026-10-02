@@ -21,7 +21,7 @@ import { initRecenterPivot, initPositionButtons, initResetTool } from './reset.j
 import { curFrameIdx, editingLocked, targetFrames } from './geometry.js';
 import { commit } from './commit.js';
 import { pushUndo } from './undo.js';
-import { shiftElement } from './rigidbody.js';
+import { moveElement } from './rigidbody.js';
 import { buildMeleeBoxList } from './meleeBoxes.js';
 import { buildMarkerList } from './markers.js';
 
@@ -289,9 +289,9 @@ function initKeyboard(){
             const b = st.frames[fi].boxes[parseInt(app._selectedBox.slice(4), 10)];
             if (b){ b.x += dx; b.y += dy; }
           } else if (app._selectedBox === 'sprite'){
-            shiftElement('sprite', -1, dx, dy);
+            moveElement('sprite', st.frames[fi].offset.x + dx, st.frames[fi].offset.y + dy);
           } else if (app._selectedBox === 'collision'){
-            shiftElement('collision', -1, dx, dy);
+            moveElement('collision', st.collision.x + dx, st.collision.y + dy);
           } else if (app._selectedBox.startsWith('marker_')){
             const mi = parseInt(app._selectedBox.slice(7), 10);
             const m = st.markers[mi];
