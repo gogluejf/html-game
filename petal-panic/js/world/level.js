@@ -110,10 +110,19 @@ export const ZONE_WIDTH_VERTICAL = 1600;
  * ZONE_WIDTH_HORIZONTAL or ZONE_WIDTH_VERTICAL explicitly.
  */
 export const ZONE_WIDTH = ZONE_WIDTH_VERTICAL;
-/** Y of the floor top inside a zone (matches the prototype GROUND_Y). */
-export const ZONE_GROUND_Y = 500;
-/** Floor thickness. */
-export const ZONE_FLOOR_H = 40;
+/**
+ * Y of the floor top inside a zone (screen coords, y=0 at top).
+ *
+ * ANCHORED TO THE UNIT GRID: the ground surface sits at an exact whole number
+ * of vertical units (GROUND_UNITS × UNIT_PX_Y) so the macro editor's row-0
+ * grid line and the game's floor share the same reference — no sub-pixel
+ * drift between authored macros and the rendered floor. GROUND_UNITS is chosen
+ * so the floor stays near the bottom of the VIEW_H-tall zone.
+ */
+export const GROUND_UNITS = 10;                 // ground surface elevation in units
+export const ZONE_GROUND_Y = GROUND_UNITS * UNIT_PX_Y;   // 10 × 48 = 480
+/** Floor thickness — exactly ONE unit tall (grid-aligned). */
+export const ZONE_FLOOR_H = UNIT_PX_Y;          // 48
 /** Where the hero / entry flag start inside a zone, from its left edge (px). */
 export const ZONE_ENTRY_X = 120;
 /**
