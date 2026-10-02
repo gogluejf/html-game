@@ -78,10 +78,10 @@ function drawMacro(macro){
   // blocks first (behind platforms)
   for (const u of units){
     if (u.kind !== 'block') continue;
-    const col = u.col ?? u.x ?? 0;
-    const row = u.row ?? u.tier ?? 0;
+    const x = u.x ?? 0;
+    const y = u.y ?? 0;
     const h = u.height ?? 1;
-    const x0 = col * ux, y0 = row * uy, x1 = (col+1)*ux, y1 = (row+h)*uy;
+    const x0 = x * ux, y0 = y * uy, x1 = (x+1)*ux, y1 = (y+h)*uy;
     const [sx0, syTop] = W(x0, y1);   // top-left (higher y = up)
     const [sx1, syBot] = W(x1, y0);   // bottom-right
     ctx.fillStyle = 'rgba(90,255,138,.28)';
@@ -97,11 +97,11 @@ function drawMacro(macro){
   // platforms (thin surface at the top of their occupied row)
   for (const u of units){
     if (u.kind !== 'platform') continue;
-    const col = u.col ?? u.x ?? 0;
-    const row = u.row ?? u.tier ?? 0;
+    const x = u.x ?? 0;
+    const y = u.y ?? 0;
     const w = u.width ?? 1;
-    const faceY = (row+1) * uy;          // landing face elevation
-    const x0 = col * ux, x1 = (col+w)*ux;
+    const faceY = (y+1) * uy;          // landing face elevation
+    const x0 = x * ux, x1 = (x+w)*ux;
     const [sx0, syFace] = W(x0, faceY);
     const [sx1] = W(x1, faceY);
     ctx.fillStyle = 'rgba(62,240,255,.35)';

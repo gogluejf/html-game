@@ -15,9 +15,10 @@
   .ent:hover{background:rgba(62,240,255,.08);color:var(--txt);}
   .ent.on{background:rgba(255,226,62,.12);color:#fff;}
   .ent .cnt{color:var(--faint);font-size:12px;white-space:nowrap;}
+  .ent .cntgrp{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
   .ent.on .cnt{color:var(--yel);}
   /* unsaved-changes indicator (toggled by save.js updateDirtyDots) */
-  .dirty-dot{color:#ff9f43;margin-left:4px;font-size:0.7em;}
+  .dirty-dot{color:#ff9f43;font-size:0.7em;line-height:1;}
   /* character sub-group header */
   .char{font-size:13px;color:var(--acc);margin:8px 0 2px;padding-left:4px;letter-spacing:.5px;}
   /* animation row (indented under character) */
@@ -46,6 +47,8 @@
   #saveBtn.active{border-color:var(--grn);color:var(--grn);box-shadow:0 0 10px rgba(90,255,138,.25);}
   #saveBtn.saved-flash{background:var(--grn);color:#000;border-color:var(--grn);transition:all .3s;}
   .reset-opt:hover{background:rgba(62,240,255,.12);color:var(--acc);}
+  .reset-opt.disabled{opacity:.4;cursor:not-allowed !important;}
+  .reset-opt.disabled:hover{background:none;color:inherit;}
   /* ---------- stage ---------- */
   #stage{flex:1;position:relative;overflow:hidden;background:#0a0c14;}
   /* ---------- frame filmstrip (bottom-right drawer, slides left/right) ---------- */

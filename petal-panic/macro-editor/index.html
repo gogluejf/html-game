@@ -39,6 +39,13 @@
         <button class="tbtn" id="dumpBtn" title="cheat: add/remove a test block to exercise draft→dirty→save">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V4M4 20h16"/><rect x="8" y="12" width="4" height="4"/></svg>DUMP BLOCK</button>
       </div>
+      <div style="position:relative;display:inline-flex;">
+        <button class="tbtn" id="resetBtn" title="reset options">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>RESET</button>
+        <div id="resetMenu" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;z-index:10;min-width:160px;white-space:nowrap;">
+          <div class="reset-opt" data-scope="discard" style="padding:6px 10px;cursor:pointer;border-radius:6px;font-size:13px;color:#ffb454;">Discard Draft…</div>
+        </div>
+      </div>
       <span id="saveIndicator" style="font-size:10px;color:var(--grn);opacity:0;transition:opacity .3s;margin-left:auto;margin-right:8px;">✓</span>
       <div class="tgroup">
         <button class="tbtn" id="saveBtn" title="save macro to disk (ctrl+S)" disabled>

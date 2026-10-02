@@ -10,7 +10,7 @@ import { buildSidebar, selectMacro } from './sidebar.js';
 import { draw, setConstants } from './draw.js';
 import { initConfirmDialog } from './dialog.js';
 import { showToast } from './toast.js';
-import { markChanged, saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton } from './save.js';
+import { markChanged, saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft } from './save.js';
 
 // ---------- toolbar toggles ----------
 function syncToggles(){
@@ -73,9 +73,9 @@ function dumpBlock(){
     _dumped = false;
     showToast(`Removed test block from ${app.cur.id}`, 'info');
   } else {
-    st.units.push({ kind:'block', height:1, row:0, col:0, _tag:tag });
+    st.units.push({ kind:'block', height:1, y:0, x:0, _tag:tag });
     _dumped = true;
-    showToast(`Added test block (col 0, row 0) to ${app.cur.id}`, 'success');
+    showToast(`Added test block (x 0, y 0) to ${app.cur.id}`, 'success');
   }
   markChanged();   // → writes draft, lights dirty dot, enables SAVE
   draw();
@@ -130,6 +130,31 @@ async function boot(){
 
   $('saveBtn').addEventListener('click', saveToDisk);
   $('dumpBtn').addEventListener('click', dumpBlock);
+
+  // RESET menu: Discard Draft (flush local draft, reload from file)
+  const resetBtn = $('resetBtn'), resetMenu = $('resetMenu');
+  if (resetBtn && resetMenu){
+    resetBtn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const open = resetMenu.style.display !== 'none';
+      // Grey out Discard Draft when the current macro has no draft to discard.
+      const discOpt = resetMenu.querySelector('.reset-opt[data-scope="discard"]');
+      if (discOpt && app.cur){
+        const has = hasDraft(app.cur.id);
+        discOpt.classList.toggle('disabled', !has);
+      }
+      resetMenu.style.display = open ? 'none' : 'block';
+    });
+    document.addEventListener('click', ()=>{ resetMenu.style.display = 'none'; });
+    resetMenu.addEventListener('click', e=>{ e.stopPropagation(); });
+    resetMenu.querySelectorAll('.reset-opt').forEach(opt => {
+      opt.addEventListener('click', ()=>{
+        if (opt.classList.contains('disabled')) return;   // greyed out — ignore
+        resetMenu.style.display = 'none';
+        if (opt.dataset.scope === 'discard') discardDraft();
+      });
+    });
+  }
 }
 
 boot().catch(err => {

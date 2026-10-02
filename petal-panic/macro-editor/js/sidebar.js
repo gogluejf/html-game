@@ -69,13 +69,13 @@ function fitView(st){
   if (!units.length){ app.panX = 0; app.panY = 0; setZoom(1); return; }
   let minX=Infinity,maxX=-Infinity,minY=0,maxY=-Infinity;
   for (const u of units){
-    const col = u.col ?? u.x ?? 0;
-    const row = u.row ?? u.tier ?? 0;
+    const x = u.x ?? 0;
+    const y = u.y ?? 0;
     const w = u.kind==='block' ? 1 : (u.width ?? 1);
     const h = u.kind==='block' ? (u.height ?? 1) : 1;
-    minX = Math.min(minX, col*ux);
-    maxX = Math.max(maxX, (col+w)*ux);
-    maxY = Math.max(maxY, (row+h)*uy);
+    minX = Math.min(minX, x*ux);
+    maxX = Math.max(maxX, (x+w)*ux);
+    maxY = Math.max(maxY, (y+h)*uy);
   }
   const pad = 60;
   const bw = (maxX-minX)+pad*2, bh = (maxY-minY)+pad*2;

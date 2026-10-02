@@ -10,6 +10,7 @@ import { app } from './state.js';
 import { $ } from './viewport.js';
 import { confirmDialog } from './dialog.js';
 import { showToast } from './toast.js';
+import { selectMacro } from './sidebar.js';
 
 const LS_PREFIX = 'macro-editor-draft-v1-';
 export const draftKey = id => LS_PREFIX + id;
@@ -18,7 +19,7 @@ export const draftKey = id => LS_PREFIX + id;
 // (the draft is *supposed* to differ from disk when dirty).
 const baseFingerprint = {};   // id -> JSON string of canonical at load
 
-function hasDraft(id){ try { return !!localStorage.getItem(draftKey(id)); } catch(e){ return false; } }
+export function hasDraft(id){ try { return !!localStorage.getItem(draftKey(id)); } catch(e){ return false; } }
 function storeDraft(id, data){ try { localStorage.setItem(draftKey(id), JSON.stringify(data)); } catch(e){} }
 function clearDraft(id){ try { localStorage.removeItem(draftKey(id)); } catch(e){} }
 
@@ -48,7 +49,15 @@ export function updateDirtyDots(){
     if (!el || typeof el.querySelector !== 'function') continue;
     let dot = el.querySelector('.dirty-dot');
     if (hasDraft(f.id)){
-      if (!dot){ dot = document.createElement('span'); dot.className='dirty-dot'; dot.textContent='●'; el.insertBefore(dot, el.querySelector('.cnt')); }
+      if (!dot){
+        const cnt = el.querySelector('.cnt');
+        const grp = document.createElement('span');
+        grp.className = 'cntgrp';
+        dot = document.createElement('span'); dot.className='dirty-dot'; dot.textContent='●';
+        cnt.parentNode.insertBefore(grp, cnt);
+        grp.appendChild(dot);
+        grp.appendChild(cnt);
+      }
     } else if (dot){ dot.remove(); }
   }
 }
@@ -112,6 +121,27 @@ export async function saveToDisk(){
   const btn = $('saveBtn');
   if (btn){ btn.classList.add('saved-flash'); setTimeout(()=>btn.classList.remove('saved-flash'), 1000); }
   showToast(`Saved ${id} → macros/levels/${id}.json`, 'success');
+}
+
+// ---------- discard draft: flush the CURRENT macro's local draft, reload from file ----------
+// Does NOT touch saved data on disk. Removes this macro's unsaved localStorage
+// draft (the dirty-dot / SAVE-button source) + its in-memory working copy, then
+// re-selects the macro so state rebuilds fresh from the canonical file.
+export function discardDraft(){
+  if (!app.cur) return;
+  const id = app.cur.id;
+  if (!hasDraft(id)){
+    showToast('No draft to discard for ' + id, 'info');
+    return;
+  }
+  confirmDialog(`Discard unsaved draft for ${id}? Saved data on disk is kept; the macro reloads from the file.`, () => {
+    clearDraft(id);                 // drop the per-macro draft key
+    app.drafts.delete(id);          // drop the in-memory working copy
+    selectMacro(id);                // rebuild st from the canonical macro
+    updateSaveButton();             // draft gone → button off, dot cleared
+    updateDirtyDots();
+    showToast(`Draft discarded — ${id} reloaded from file`, 'success');
+  });
 }
 
 // Capture the canonical fingerprint for every macro at boot (called after
