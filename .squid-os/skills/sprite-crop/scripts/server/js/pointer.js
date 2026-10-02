@@ -88,8 +88,12 @@ function updateHover(sx, sy){
       if (h){ app.hover = { box:b.key, handle:h }; break; }
       if (inside(b.rect, sx, sy)){ app.hover = { box:b.key, body:true }; break; }
     }
-    // hovered layer wins hit-testing from now on — promote it to the front
-    if (app.hover && app.hover.box !== 'pivot') bringToFront(app.hover.box);
+    // Selection is STICKY: the selected layer keeps front priority while the
+    // cursor wanders over other layers. Only an actual click (pointerdown) or
+    // keyboard selection changes who's on top.
+    if (app.hover && app.hover.box !== 'pivot' && app._selectedBox === app.hover.box){
+      bringToFront(app.hover.box);
+    }
   }
   finishHover(prev);
 }
