@@ -14,7 +14,8 @@ import { setBg, paintSatSquareFn } from './tools.js';
 import { _bgState } from './state.js';
 import { FILM, drawFilm } from './filmstrip.js';
 import { syncUndoButtons, clearHistory } from './undo.js';
-import { LS_KEY, clearGameData, updateSaveButton, updateDirtyDots } from './save.js';
+import { showToast } from './toast.js';
+import { clearConfigBlob, clearGameData, hasGameData, updateSaveButton, updateDirtyDots } from './save.js';
 import { curFrameIdx } from './geometry.js';
 
 // ---------- RECENTER PIVOT ----------
@@ -57,6 +58,13 @@ export function initResetTool(){
   resetBtn.addEventListener('click', e=>{
     e.stopPropagation();
     const open = resetMenu.style.display !== 'none';
+    // Reflect whether the CURRENT entity has a draft to discard (grey out when clean).
+    const discOpt = resetMenu.querySelector('.reset-opt[data-scope="discard"]');
+    if (discOpt && app.cur && app.flatList[app.flatIdx]){
+      const en = app.manifest.labels[app.flatList[app.flatIdx].li].entities[app.flatList[app.flatIdx].ei];
+      const has = hasGameData(`${en.char}_${en.anim}`);
+      discOpt.classList.toggle('disabled', !has);
+    }
     resetMenu.style.display = open ? 'none' : 'block';
   });
   document.addEventListener('click', ()=>{ resetMenu.style.display = 'none'; });
@@ -64,8 +72,10 @@ export function initResetTool(){
   resetMenu.querySelectorAll('.reset-opt').forEach(opt => {
     opt.addEventListener('click', ()=>{
       const scope = opt.dataset.scope;
+      if (opt.classList.contains('disabled')) return;   // greyed out — ignore
       resetMenu.style.display = 'none';
       if (scope === 'factory'){ factoryReset(); return; }   // destructive — own confirm flow
+      if (scope === 'discard'){ discardDraft(); return; }   // flush local draft, reload from disk
       if (!app.cur || !app.cur.st || editingLocked()) return;
       if (scope === 'frame'){
         confirmDialog('Reset current frame (offset, scale, boxes, markers)?', () => {
@@ -84,21 +94,12 @@ export function initResetTool(){
 function factoryReset(){
   confirmDialog('Restore factory defaults for ALL entities? This permanently deletes all saved editor state and cannot be undone.', () => {
     app._loadingState = true;                       // suppress saves during the wipe
-    try{ localStorage.removeItem(LS_KEY); }catch(e){}
+    clearConfigBlob();                              // nuke the config blob (full wipe)
     // nuke every entity's draft game-data key (the dirty-dot / SAVE-button source)
     for (const {li, ei} of app.flatList){
       const en = app.manifest.labels[li].entities[ei];
       clearGameData(en.char + '_' + en.anim);
     }
-    // purge any legacy inline game data still sitting in the main blob
-    try{
-      const raw = localStorage.getItem(LS_KEY);
-      if (raw){
-        const d = JSON.parse(raw);
-        if (d.entities) for (const k of Object.keys(d.entities)) delete d.entities[k];
-        localStorage.setItem(LS_KEY, JSON.stringify(d));
-      }
-    }catch(e){}
     app.S.clear();                                  // drop all per-entity editor state
     app.undoStack.length = 0; app.redoStack.length = 0; // clear history
     Object.assign(app.show, { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false, grid:true, markerView:false });
@@ -120,6 +121,34 @@ function factoryReset(){
     });
   });
 }
+// ---------- discard draft: flush the CURRENT entity's local draft, reload from disk ----------
+// Does NOT touch saved data on disk and does NOT change RESET behavior. It only
+// removes this entity's unsaved localStorage draft (the dirty-dot / SAVE-button
+// source), then re-selects the entity so its state is rebuilt fresh from
+// defaults + disk tuning. The checksum is left alone — it still guards against
+// external edits of the committed sheet.
+function discardDraft(){
+  if (!app.cur || !app.flatList[app.flatIdx]) return;
+  const q = app.flatList[app.flatIdx];
+  const en = app.manifest.labels[q.li].entities[q.ei];
+  const key = `${en.char}_${en.anim}`;
+  if (!hasGameData(key)){
+    showToast('No draft to discard for ' + en.char + '/' + en.anim, 'info');
+    return;
+  }
+  confirmDialog(`Discard unsaved draft for ${en.char}/${en.anim}? Saved data on disk is kept; the editor reloads from the file.`, () => {
+    app._loadingState = true;                       // suppress saves during the wipe
+    clearGameData(key);                             // drop the per-entity draft key
+    selectEntity(q.li, q.ei).then(()=>{             // rebuild state from defaults + disk tuning
+      app._loadingState = false;
+      if (FILM.on) drawFilm();
+      updateSaveButton();   // draft gone → button off, dot cleared
+      updateDirtyDots();
+      showToast(`Draft discarded — ${en.char}/${en.anim} reloaded from file`, 'success');
+    });
+  });
+}
+
 const bgSwatchRef = document.getElementById('bgSwatch');
 const bgHexRef = document.getElementById('bgHex');
 

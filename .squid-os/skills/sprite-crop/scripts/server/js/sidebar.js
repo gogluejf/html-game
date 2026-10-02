@@ -7,7 +7,7 @@ import { draw, boxList } from './draw.js';
 import { curFrameIdx } from './geometry.js';
 import { FILM, drawFilm, filmFitWidth, applyFilmState } from './filmstrip.js';
 import { syncUndoButtons } from './undo.js';
-import { saveState, gameDataKey, updateSaveButton, updateDirtyDots } from './save.js';
+import { saveState, readGameData, updateSaveButton, updateDirtyDots } from './save.js';
 import { setZoom } from './viewport.js';
 
 export function loadFrames(paths){
@@ -158,28 +158,23 @@ export async function selectEntity(li, ei, opts){
       });
     }
   }
-  try{
-    const raw = localStorage.getItem(gameDataKey(`${en.char}_${en.anim}`));
-    if (raw){
-      const gd = JSON.parse(raw);
-      if (Array.isArray(gd.frames) && gd.frames.length === st.frames.length){
-        Object.assign(st, {
-          speed: gd.speed ?? st.speed,
-          playback: gd.playback || st.playback,
-          collision: gd.collision || st.collision,
-          pivot: gd.pivot || st.pivot,
-          markers: Array.isArray(gd.markers) ? gd.markers : [],
-        });
-        gd.frames.forEach((gf, i) => {
-          if (!gf) return;
-          if (gf.offset) st.frames[i].offset = gf.offset;
-          if (gf.scale) st.frames[i].scale = gf.scale;
-          if (Array.isArray(gf.boxes)) st.frames[i].boxes = gf.boxes;
-          if (gf.durUnits >= 1) st.frames[i].durUnits = gf.durUnits;
-        });
-      }
-    }
-  }catch(e){}
+  const gd = readGameData(`${en.char}_${en.anim}`);   // null when no draft / corrupt
+  if (gd && Array.isArray(gd.frames) && gd.frames.length === st.frames.length){
+    Object.assign(st, {
+      speed: gd.speed ?? st.speed,
+      playback: gd.playback || st.playback,
+      collision: gd.collision || st.collision,
+      pivot: gd.pivot || st.pivot,
+      markers: Array.isArray(gd.markers) ? gd.markers : [],
+    });
+    gd.frames.forEach((gf, i) => {
+      if (!gf) return;
+      if (gf.offset) st.frames[i].offset = gf.offset;
+      if (gf.scale) st.frames[i].scale = gf.scale;
+      if (Array.isArray(gf.boxes)) st.frames[i].boxes = gf.boxes;
+      if (gf.durUnits >= 1) st.frames[i].durUnits = gf.durUnits;
+    });
+  }
   app.S.set(app.cur.name, st);
   app.cur.st = st;
   app.cur.st.playing = app.isPlaying;   // carry global play/pause across animations

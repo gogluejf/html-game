@@ -63,7 +63,7 @@ export function collectConfig(){
 // enabled iff that key exists. A successful saveToDisk() deletes it.
 export function gameDataKey(entityKey){ return 'sprite-editor-game-v1-' + app.project + '-' + entityKey; }
 
-function hasGameData(entityKey){
+export function hasGameData(entityKey){
   try { return !!localStorage.getItem(gameDataKey(entityKey)); } catch(e){ return false; }
 }
 
@@ -75,20 +75,51 @@ export function clearGameData(entityKey){
   try { localStorage.removeItem(gameDataKey(entityKey)); } catch(e){}
 }
 
+// Read + parse a single entity's draft game data. Returns null when absent/corrupt.
+// The ONLY place that touches the per-entity draft key for reads (single source of truth).
+export function readGameData(entityKey){
+  try{
+    const raw = localStorage.getItem(gameDataKey(entityKey));
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
+// Wipe the entire config blob (first-run / factory-reset only). The one place a
+// full-blob removal is allowed; everything else goes through the granular API.
+export function clearConfigBlob(){
+  try { localStorage.removeItem(LS_KEY); } catch(e){}
+}
+
+// True iff ANY saved state exists at all (config blob or any per-entity draft).
+// Used to decide first-run defaults without leaking raw storage reads to callers.
+export function hasAnySavedState(){
+  try{
+    if (localStorage.getItem(LS_KEY)) return true;
+    for (let i = 0; i < localStorage.length; i++){
+      if (localStorage.key(i) && localStorage.key(i).startsWith('sprite-editor-game-v1-')) return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+// The last-edited entity name from the config blob, or null. Read-only accessor
+// so boot code never parses LS_KEY by hand.
+export function readConfigActive(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    return (d && typeof d.active === 'string') ? d.active : null;
+  }catch(e){ return null; }
+}
+
 // Clear tuning for current entity: local draft + disk.
 export async function clearTuning(){
   if (!app.cur || !app.flatList[app.flatIdx]) return;
   const en = app.manifest.labels[app.flatList[app.flatIdx].li].entities[app.flatList[app.flatIdx].ei];
   const key = `${en.char}_${en.anim}`;
-  // Clear local draft (per-entity key + any legacy inline copy in the main blob)
+  // Clear local draft (per-entity key)
   clearGameData(key);
-  try{
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw){
-      const d = JSON.parse(raw);
-      if (d.entities && d.entities[app.cur.name]){ delete d.entities[app.cur.name]; localStorage.setItem(LS_KEY, JSON.stringify(d)); }
-    }
-  }catch(e){}
   // Clear from disk via server (calls record_tuning.py clear)
   try {
     await fetch('/sprite-sheets/', {
@@ -145,7 +176,17 @@ export function updateDirtyDots(){
     if (!el) return;
     let dot = el.querySelector('.dirty-dot');
     if (hasGameData(key)) {
-      if (!dot) { dot = document.createElement('span'); dot.className='dirty-dot'; dot.textContent='●'; el.insertBefore(dot, el.querySelector('.cnt')); }
+      if (!dot) {
+        const cnt = el.querySelector('.cnt');
+        const grp = document.createElement('span');
+        grp.className = 'cntgrp';
+        dot = document.createElement('span'); dot.className='dirty-dot'; dot.textContent='●';
+        // Wrap the existing count + the new dot in one right-aligned group so the
+        // dot sits immediately to the LEFT of the "Nf" (not scattered by space-between).
+        cnt.parentNode.insertBefore(grp, cnt);
+        grp.appendChild(dot);
+        grp.appendChild(cnt);
+      }
     } else {
       if (dot) dot.remove();
     }
@@ -232,13 +273,6 @@ export async function saveToDisk(){
     }))
   };
   clearGameData(entityKey);   // disk now matches editor — drop the draft
-  try{
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw){
-      const d = JSON.parse(raw);
-      if (d.entities && d.entities[app.cur.name]){ delete d.entities[app.cur.name]; localStorage.setItem(LS_KEY, JSON.stringify(d)); }
-    }
-  }catch(e){}
   saveConfig();
   updateSaveButton();
   updateDirtyDots();

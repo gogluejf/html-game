@@ -16,7 +16,7 @@ import { initPointer, bringToFront } from './pointer.js';
 import { initFilmstrip, applyFilmState, drawFilm } from './filmstrip.js';
 import { initConfirmDialog } from './dialog.js';
 import { doUndo, doRedo, syncUndoButtons } from './undo.js';
-import { saveState, loadState, applySavedView, LS_KEY, saveToDisk } from './save.js';
+import { saveState, loadState, applySavedView, LS_KEY, saveToDisk, hasAnySavedState, readConfigActive } from './save.js';
 import { initRecenterPivot, initPositionButtons, initResetTool } from './reset.js';
 import { curFrameIdx, editingLocked, targetFrames } from './geometry.js';
 import { commit } from './commit.js';
@@ -364,23 +364,18 @@ async function boot(){
   $('zoomval').textContent = Math.round(app.zoom*100)+'%';
 
   loadState();          // restore per-entity state + view from localStorage (keeps guard ON)
-  if (!localStorage.getItem(LS_KEY)) setBg('#000000');   // default bg only if truly no save exists
+  if (!hasAnySavedState()) setBg('#000000');   // default bg only on a true first run
   applySavedView();     // apply restored view (bg, play, toggles) to the UI — no save (guard on)
   syncToggles();   // set toolbar lit states from `show` BEFORE first paint (no flash)
   syncUndoButtons();   // disable undo/redo while stacks are empty
 
   // Restore the last-edited entity if we have one saved; otherwise start at the first.
   let startLi = 0, startEi = 0;
-  try{
-    const _raw = localStorage.getItem(LS_KEY);
-    if (_raw){
-      const _d = JSON.parse(_raw);
-      if (_d && _d.active){
-        const hit = app.flatList.findIndex(f => app.manifest.labels[f.li].entities[f.ei].name === _d.active);
-        if (hit >= 0){ startLi = app.flatList[hit].li; startEi = app.flatList[hit].ei; }
-      }
-    }
-  }catch(e){}
+  const _active = readConfigActive();
+  if (_active){
+    const hit = app.flatList.findIndex(f => app.manifest.labels[f.li].entities[f.ei].name === _active);
+    if (hit >= 0){ startLi = app.flatList[hit].li; startEi = app.flatList[hit].ei; }
+  }
   if (app.manifest.labels.length){
     selectEntity(startLi, startEi).then(()=>{ app._loadingState = false; applyFilmState(); });  // re-enable auto-save ONLY after async load done
   } else {
