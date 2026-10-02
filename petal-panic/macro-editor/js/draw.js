@@ -169,9 +169,9 @@ function drawMacro(macro){
   if (app.show.slots){
     for (const p of placements){
       const col = p.x ?? 0;
-      const row = p.y ?? 0;             // elevation the slot rests ON
+      const row = p.y ?? 0;             // the surface elevation the slot rests ON
       const cx = (col + 0.5) * ux;
-      const cy = (row + 1) * uy;        // one level above the supporting surface
+      const cy = (row + 0.5) * uy;      // center of the cell directly above that surface
       const [sx, sy] = W(cx, cy);
       const color = SLOT_COLORS[p.type] || '#fff';
       ctx.beginPath();
