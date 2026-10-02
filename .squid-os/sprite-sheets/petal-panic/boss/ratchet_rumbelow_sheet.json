@@ -6,18 +6,153 @@
   "cols": 3,
   "size": "1536x1024",
   "description": "Ratchet Rumbelow boss, sheet 1/5 \u2014 6 frames (earthquake x2 rows)",
-  "entities": [{
-    "name": "ratchet_rumbelow",
-    "anim": "earthquake",
-    "frames": [
-      {"file": "ratchet_rumbelow_earthquake_f1.png", "row": 0, "col": 0, "bbox": [0, 102, 539, 408]},
-      {"file": "ratchet_rumbelow_earthquake_f2.png", "row": 0, "col": 1, "bbox": [514, 8, 517, 500]},
-      {"file": "ratchet_rumbelow_earthquake_f3.png", "row": 0, "col": 2, "bbox": [1002, 83, 533, 432]},
-      {"file": "ratchet_rumbelow_earthquake_f4.png", "row": 1, "col": 0, "bbox": [0, 509, 519, 486]},
-      {"file": "ratchet_rumbelow_earthquake_f5.png", "row": 1, "col": 1, "bbox": [510, 557, 502, 416]},
-      {"file": "ratchet_rumbelow_earthquake_f6.png", "row": 1, "col": 2, "bbox": [1001, 579, 535, 403]}
-    ]
-  }],
+  "entities": [
+    {
+      "name": "ratchet_rumbelow",
+      "anim": "earthquake",
+      "frames": [
+        {
+          "file": "ratchet_rumbelow_earthquake_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            102,
+            539,
+            408
+          ],
+          "offset": {
+            "x": 364,
+            "y": -277
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "ratchet_rumbelow_earthquake_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            514,
+            8,
+            517,
+            500
+          ],
+          "offset": {
+            "x": 258.5,
+            "y": -250
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "ratchet_rumbelow_earthquake_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1002,
+            83,
+            533,
+            432
+          ],
+          "offset": {
+            "x": 266.5,
+            "y": -216
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "ratchet_rumbelow_earthquake_f4.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            509,
+            519,
+            486
+          ],
+          "offset": {
+            "x": 259.5,
+            "y": -243
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "ratchet_rumbelow_earthquake_f5.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            510,
+            557,
+            502,
+            416
+          ],
+          "offset": {
+            "x": 251,
+            "y": -208
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "ratchet_rumbelow_earthquake_f6.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            1001,
+            579,
+            535,
+            403
+          ],
+          "offset": {
+            "x": 267.5,
+            "y": -201.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "collision": {
+        "x": 4,
+        "y": -404,
+        "w": 531,
+        "h": 400
+      },
+      "pivot": {
+        "x": 270,
+        "y": -204
+      },
+      "markers": []
+    }
+  ],
   "crop": {
     "frames_dir": "petal-panic/assets/boss",
     "pass": "/tmp/redo-ratchet_rumbelow-earthquake-v4"
