@@ -7,32 +7,32 @@
     {
       "kind": "platform",
       "width": 2,
-      "row": 1,
-      "col": 10
+      "y": 1,
+      "x": 10
     },
     {
       "kind": "platform",
       "width": 2,
-      "row": 2,
-      "col": 13
+      "y": 2,
+      "x": 13
     },
     {
       "kind": "platform",
       "width": 2,
-      "row": 3,
-      "col": 11
+      "y": 3,
+      "x": 11
     },
     {
       "kind": "platform",
       "width": 2,
-      "row": 2,
-      "col": 14
+      "y": 2,
+      "x": 14
     },
     {
       "kind": "platform",
       "width": 2,
-      "row": 3,
-      "col": 16
+      "y": 3,
+      "x": 16
     }
   ],
   "entryClear": 2,
@@ -41,27 +41,32 @@
     {
       "slot": "tier1",
       "x": 10,
-      "type": "enemy"
+      "type": "enemy",
+      "y": 2
     },
     {
       "slot": "tier2",
       "x": 13,
-      "type": "enemy"
+      "type": "enemy",
+      "y": 3
     },
     {
       "slot": "tier3-peak",
       "x": 11,
-      "type": "enemy"
+      "type": "enemy",
+      "y": 4
     },
     {
       "slot": "tier2-rest",
       "x": 14,
-      "type": "enemy"
+      "type": "enemy",
+      "y": 3
     },
     {
       "slot": "tier3-final",
       "x": 12,
-      "type": "powerup"
+      "type": "powerup",
+      "y": 4
     }
   ],
   "variations": [],

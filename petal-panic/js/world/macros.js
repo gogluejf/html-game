@@ -143,7 +143,7 @@ export const MAX_ELEVATION_STEP = 1;
  * @returns {number} net elevation gain in tiers (≥ 0)
  */
 export function macroElevationGain(macro) {
-  const rows = macro.units.map((u) => (u.kind === 'block' ? u.row + u.height : u.row));
+  const rows = macro.units.map((u) => (u.kind === 'block' ? u.y + u.height : u.y));
   if (rows.length === 0) return 0;
   return Math.max(...rows);
 }
@@ -185,9 +185,9 @@ export function macroElevationGain(macro) {
  */
 export function B(height, row, col) {
   if (row == null || col == null) {
-    throw new Error(`B(${height}, row, col): explicit row and col are required (no auto-assign)`);
+    throw new Error(`B(${height}, y, x): explicit y and x are required (no auto-assign)`);
   }
-  return Object.freeze({ kind: 'block', height, row, col });
+  return Object.freeze({ kind: 'block', height, y: row, x: col });
 }
 
 /**
@@ -199,9 +199,9 @@ export function B(height, row, col) {
  */
 export function P(width, row, col) {
   if (row == null || col == null) {
-    throw new Error(`P(${width}, row, col): explicit row and col are required (no auto-assign)`);
+    throw new Error(`P(${width}, y, x): explicit y and x are required (no auto-assign)`);
   }
-  return Object.freeze({ kind: 'platform', width, row, col });
+  return Object.freeze({ kind: 'platform', width, y: row, x: col });
 }
 
 /**
@@ -265,16 +265,16 @@ export let MACROS = Object.freeze({
     entryClear: 5,
     exitClear: 5,
     // Slots sit on the TOP surface of the unit below them (block height /
-    // platform tier / ground 0) — see surfaceElevationAt in placeMacro. A macro
+    // platform tier / ground 0) — each slot carries an explicit y (its surface). A macro
     // with 5 blocks declares enough slots that a typical budget can be met
     // (task 4.1: 3-4 enemy, 2-3 barrel, 1-2 powerup).
     placements: Object.freeze([
       // One slot per position (no-overlap rule): enemies on the low blocks,
       // a barrel mid, a powerup on the peak.
-      { slot: 'base', x: 0, type: 'enemy' },
-      { slot: 'on-h2', x: 1, type: 'enemy' },
-      { slot: 'on-h2b', x: 3, type: 'enemy' },
-      { slot: 'peak-barrel', x: 2, type: 'barrel' },
+      { slot: 'base', x: 0, type: 'enemy', y: 1 },
+      { slot: 'on-h2', x: 1, type: 'enemy', y: 2 },
+      { slot: 'on-h2b', x: 3, type: 'enemy', y: 2 },
+      { slot: 'peak-barrel', x: 2, type: 'barrel', y: 3 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]), // can follow any macro
@@ -301,11 +301,11 @@ export let MACROS = Object.freeze({
     // Five height-1 blocks: enemies + barrels sit on TOP of the blocks
     // (elevation 1), not inside them. Enough slots for a typical budget.
     placements: Object.freeze([
-      { slot: 'e1', x: 0, type: 'enemy' },
-      { slot: 'e2', x: 1, type: 'enemy' },
-      { slot: 'e3', x: 2, type: 'enemy' },
-      { slot: 'b1', x: 3, type: 'barrel' },
-      { slot: 'p1', x: 4, type: 'powerup' },
+      { slot: 'e1', x: 0, type: 'enemy', y: 1 },
+      { slot: 'e2', x: 1, type: 'enemy', y: 1 },
+      { slot: 'e3', x: 2, type: 'enemy', y: 1 },
+      { slot: 'b1', x: 3, type: 'barrel', y: 1 },
+      { slot: 'p1', x: 4, type: 'powerup', y: 1 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -335,15 +335,15 @@ export let MACROS = Object.freeze({
     entryClear: 2,
     exitClear: 3,
     // Slots sit on the TOP of each block band: low (h1, elev 1), mid (h2,
-    // elev 2), high (h3, elev 3). The resolver reads surfaceElevationAt, so
+    // elev 2), high (h3, elev 3). Each slot carries its explicit surface y, so
     // each slot rests on its band's surface, never inside a block.
     placements: Object.freeze([
-      { slot: 'low', x: 2, type: 'enemy' },
-      { slot: 'low2', x: 3, type: 'enemy' },
-      { slot: 'mid-enemy', x: 7, type: 'enemy' },
-      { slot: 'mid2', x: 8, type: 'barrel' },
-      { slot: 'high-barrel', x: 12, type: 'barrel' },
-      { slot: 'high2', x: 13, type: 'powerup' },
+      { slot: 'low', x: 2, type: 'enemy', y: 1 },
+      { slot: 'low2', x: 3, type: 'enemy', y: 1 },
+      { slot: 'mid-enemy', x: 7, type: 'enemy', y: 2 },
+      { slot: 'mid2', x: 8, type: 'barrel', y: 2 },
+      { slot: 'high-barrel', x: 12, type: 'barrel', y: 3 },
+      { slot: 'high2', x: 13, type: 'powerup', y: 3 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -376,12 +376,12 @@ export let MACROS = Object.freeze({
     // and on the platform's landing face (elev = tier 2). Enough slots for a
     // typical budget; the gap (x=3..5) carries no slots.
     placements: Object.freeze([
-      { slot: 'on-h1', x: 0, type: 'enemy' },
-      { slot: 'before-gap', x: 2, type: 'enemy' },
-      { slot: 'on-platform', x: 5, type: 'enemy' },
-      { slot: 'on-platform2', x: 6, type: 'enemy' },
-      { slot: 'after-platform', x: 9, type: 'barrel' },
-      { slot: 'on-h3', x: 8, type: 'barrel' },
+      { slot: 'on-h1', x: 0, type: 'enemy', y: 1 },
+      { slot: 'before-gap', x: 2, type: 'enemy', y: 3 },
+      { slot: 'on-platform', x: 5, type: 'enemy', y: 3 },
+      { slot: 'on-platform2', x: 6, type: 'enemy', y: 3 },
+      { slot: 'after-platform', x: 9, type: 'barrel', y: 2 },
+      { slot: 'on-h3', x: 8, type: 'barrel', y: 3 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -422,11 +422,11 @@ export let MACROS = Object.freeze({
     // Every slot sits on a block top (elev 1) — no items on bare ground.
     // Enough slots for a typical budget.
     placements: Object.freeze([
-      { slot: 'landing-enemy', x: 2, type: 'enemy' },
-      { slot: 'landing-enemy2', x: 4, type: 'enemy' },
-      { slot: 'landing-enemy3', x: 6, type: 'enemy' },
-      { slot: 'landing', x: 3, type: 'powerup' },
-      { slot: 'landing-barrel', x: 5, type: 'barrel' },
+      { slot: 'landing-enemy', x: 2, type: 'enemy', y: 1 },
+      { slot: 'landing-enemy2', x: 4, type: 'enemy', y: 1 },
+      { slot: 'landing-enemy3', x: 6, type: 'enemy', y: 1 },
+      { slot: 'landing', x: 3, type: 'powerup', y: 1 },
+      { slot: 'landing-barrel', x: 5, type: 'barrel', y: 1 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -463,10 +463,10 @@ export let MACROS = Object.freeze({
     // Slots rest on each platform's landing face (elev = its tier). The gaps
     // carry no slots (air). Enough slots for a typical budget.
     placements: Object.freeze([
-      { slot: 'on-t1', x: 0, type: 'enemy' },
-      { slot: 'on-t2', x: 4, type: 'enemy' },
-      { slot: 'on-t3', x: 8, type: 'powerup' },
-      { slot: 'on-t1-barrel', x: 1, type: 'barrel' },
+      { slot: 'on-t1', x: 0, type: 'enemy', y: 2 },
+      { slot: 'on-t2', x: 4, type: 'enemy', y: 3 },
+      { slot: 'on-t3', x: 8, type: 'powerup', y: 4 },
+      { slot: 'on-t1-barrel', x: 1, type: 'barrel', y: 2 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -501,12 +501,12 @@ export let MACROS = Object.freeze({
     // Slots rest on block tops (elev = height) and the platform face (tier 2).
     // The gaps (x=2..4 and x=7..9) carry no slots.
     placements: Object.freeze([
-      { slot: 'on-h1', x: 0, type: 'enemy' },
-      { slot: 'on-h2', x: 1, type: 'enemy' },
-      { slot: 'on-bridge', x: 5, type: 'enemy' },
-      { slot: 'on-bridge-pu', x: 6, type: 'powerup' },
-      { slot: 'on-far-h2', x: 10, type: 'barrel' },
-      { slot: 'on-far-h1', x: 11, type: 'barrel' },
+      { slot: 'on-h1', x: 0, type: 'enemy', y: 1 },
+      { slot: 'on-h2', x: 1, type: 'enemy', y: 2 },
+      { slot: 'on-bridge', x: 5, type: 'enemy', y: 3 },
+      { slot: 'on-bridge-pu', x: 6, type: 'powerup', y: 3 },
+      { slot: 'on-far-h2', x: 10, type: 'barrel', y: 1 },
+      { slot: 'on-far-h1', x: 11, type: 'barrel', y: 0 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -536,10 +536,10 @@ export let MACROS = Object.freeze({
     entryClear: 3,
     exitClear: 3,
     placements: Object.freeze([
-      { slot: 'on-t1', x: 0, type: 'enemy' },
-      { slot: 'on-t1b', x: 1, type: 'barrel' },
-      { slot: 'on-t2', x: 4, type: 'powerup' },
-      { slot: 'on-t2b', x: 5, type: 'barrel' },
+      { slot: 'on-t1', x: 0, type: 'enemy', y: 2 },
+      { slot: 'on-t1b', x: 1, type: 'barrel', y: 2 },
+      { slot: 'on-t2', x: 4, type: 'powerup', y: 3 },
+      { slot: 'on-t2b', x: 5, type: 'barrel', y: 3 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -578,9 +578,9 @@ export let MACROS = Object.freeze({
     entryClear: 3,
     exitClear: 3,
     placements: Object.freeze([
-      { slot: 'on-wall', x: 0, type: 'enemy' },
-      { slot: 'on-bridge', x: 1, type: 'powerup' },
-      { slot: 'on-bridge2', x: 2, type: 'barrel' },
+      { slot: 'on-wall', x: 0, type: 'enemy', y: 5 },
+      { slot: 'on-bridge', x: 1, type: 'powerup', y: 5 },
+      { slot: 'on-bridge2', x: 2, type: 'barrel', y: 5 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -627,9 +627,9 @@ export let MACROS = Object.freeze({
     entryClear: 2,
     exitClear: 2,
     placements: Object.freeze([
-      { slot: 'tier1', x: 12, type: 'enemy' },
-      { slot: 'tier2', x: 14, type: 'powerup' },
-      { slot: 'tier1-barrel', x: 13, type: 'barrel' },
+      { slot: 'tier1', x: 12, type: 'enemy', y: 2 },
+      { slot: 'tier2', x: 14, type: 'powerup', y: 3 },
+      { slot: 'tier1-barrel', x: 13, type: 'barrel', y: 2 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -658,9 +658,9 @@ export let MACROS = Object.freeze({
     entryClear: 2,
     exitClear: 2,
     placements: Object.freeze([
-      { slot: 'tier1', x: 12, type: 'enemy' },
-      { slot: 'tier2', x: 14, type: 'enemy' },
-      { slot: 'tier3b', x: 13, type: 'powerup' },
+      { slot: 'tier1', x: 12, type: 'enemy', y: 4 },
+      { slot: 'tier2', x: 14, type: 'enemy', y: 3 },
+      { slot: 'tier3b', x: 13, type: 'powerup', y: 4 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -688,10 +688,10 @@ export let MACROS = Object.freeze({
     entryClear: 2,
     exitClear: 2,
     placements: Object.freeze([
-      { slot: 'tier1-left', x: 10, type: 'enemy' },
-      { slot: 'tier2-right', x: 13, type: 'enemy' },
-      { slot: 'tier1-rest', x: 11, type: 'enemy' },
-      { slot: 'tier2-peak', x: 14, type: 'powerup' },
+      { slot: 'tier1-left', x: 10, type: 'enemy', y: 2 },
+      { slot: 'tier2-right', x: 13, type: 'enemy', y: 3 },
+      { slot: 'tier1-rest', x: 11, type: 'enemy', y: 2 },
+      { slot: 'tier2-peak', x: 14, type: 'powerup', y: 3 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -720,11 +720,11 @@ export let MACROS = Object.freeze({
     entryClear: 2,
     exitClear: 2,
     placements: Object.freeze([
-      { slot: 'tier1', x: 10, type: 'enemy' },
-      { slot: 'tier2', x: 13, type: 'enemy' },
-      { slot: 'tier3-peak', x: 11, type: 'enemy' },
-      { slot: 'tier2-rest', x: 14, type: 'enemy' },
-      { slot: 'tier3-final', x: 12, type: 'powerup' },
+      { slot: 'tier1', x: 10, type: 'enemy', y: 2 },
+      { slot: 'tier2', x: 13, type: 'enemy', y: 3 },
+      { slot: 'tier3-peak', x: 11, type: 'enemy', y: 4 },
+      { slot: 'tier2-rest', x: 14, type: 'enemy', y: 3 },
+      { slot: 'tier3-final', x: 12, type: 'powerup', y: 4 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -757,10 +757,10 @@ export let MACROS = Object.freeze({
     entryClear: 2,
     exitClear: 2,
     placements: Object.freeze([
-      { slot: 'tier1', x: 10, type: 'enemy' },
-      { slot: 'tier2', x: 13, type: 'enemy' },
-      { slot: 'tier3', x: 11, type: 'enemy' },
-      { slot: 'tier3b', x: 14, type: 'powerup' },
+      { slot: 'tier1', x: 10, type: 'enemy', y: 2 },
+      { slot: 'tier2', x: 13, type: 'enemy', y: 5 },
+      { slot: 'tier3', x: 11, type: 'enemy', y: 4 },
+      { slot: 'tier3b', x: 14, type: 'powerup', y: 0 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -793,12 +793,12 @@ export let MACROS = Object.freeze({
     entryClear: 2,
     exitClear: 2,
     placements: Object.freeze([
-      { slot: 'tier1', x: 10, type: 'enemy' },
-      { slot: 'tier2', x: 13, type: 'enemy' },
-      { slot: 'tier3-peak1', x: 11, type: 'enemy' },
-      { slot: 'tier1-reset', x: 14, type: 'enemy' },
-      { slot: 'tier2-mid', x: 12, type: 'enemy' },
-      { slot: 'tier3-peak2', x: 15, type: 'powerup' },
+      { slot: 'tier1', x: 10, type: 'enemy', y: 2 },
+      { slot: 'tier2', x: 13, type: 'enemy', y: 5 },
+      { slot: 'tier3-peak1', x: 11, type: 'enemy', y: 4 },
+      { slot: 'tier1-reset', x: 14, type: 'enemy', y: 7 },
+      { slot: 'tier2-mid', x: 12, type: 'enemy', y: 6 },
+      { slot: 'tier3-peak2', x: 15, type: 'powerup', y: 0 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
@@ -986,7 +986,7 @@ export function macroWidth(macro) {
   // are gaps; they still count toward the width because the hero crosses them.
   let width = macro.entryClear;
   for (const u of macro.units) {
-    const span = u.col + (u.kind === 'block' ? 1 : u.width);
+    const span = u.x + (u.kind === 'block' ? 1 : u.width);
     if (span > width) width = span;
   }
   width += macro.exitClear;
@@ -1012,7 +1012,7 @@ export function macroAxisLength(macro) {
     // clears. A block's top is row + height; a platform's face IS its row.
     let peakY = 0;
     for (const u of macro.units) {
-      const y = u.kind === 'block' ? u.row + u.height : u.row;
+      const y = u.kind === 'block' ? u.y + u.height : u.y;
       if (y > peakY) peakY = y;
     }
     return macro.entryClear + peakY + macro.exitClear;
@@ -1036,8 +1036,8 @@ function firstPlatformAbsY(macro, axisPos) {
   // The first platform (lowest col) sits at absolute elevation axisPos + row.
   const platforms = macro.units.filter((u) => u.kind === 'platform');
   if (platforms.length === 0) return axisPos;
-  const first = platforms.reduce((a, b) => (a.col < b.col ? a : b));
-  return axisPos + first.row;
+  const first = platforms.reduce((a, b) => (a.x < b.x ? a : b));
+  return axisPos + first.y;
 }
 
 /**
@@ -1058,7 +1058,7 @@ function lastPlatformAbsY(macro, axisPos) {
   // face = row. Absolute elevation = axisPos + local peak.
   let peakY = 0;
   for (const u of macro.units) {
-    const y = u.kind === 'block' ? u.row + u.height : u.row;
+    const y = u.kind === 'block' ? u.y + u.height : u.y;
     if (y > peakY) peakY = y;
   }
   return axisPos + peakY;
@@ -1465,9 +1465,8 @@ export function populateArea(rng, layout, config = {}) {
 
   // BLOCKER guard (task 4.1): before any item is placed, verify every slot is
   // at a VALID standing position — i.e. NOT inside a solid block (checked
-  // against the layout's block AABBs). The composer's surfaceElevationAt
-  // already sets each slot's y to the top of the supporting surface, so this
-  // check is a defense-in-depth invariant: it throws if a slot ever ends up
+  // against the layout's block AABBs). Each slot carries an explicit y (its
+  // supporting surface), so this check is a defense-in-depth invariant: it throws if a slot ever ends up
   // inside a solid, rather than silently spawning an item in a block.
   const solidUnits = (layout.units ?? []).filter((u) => u.kind === 'block');
   for (const slot of layout.placements ?? []) {
@@ -1910,7 +1909,7 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
     if (isVertical && prevPeakAbsY !== null) {
       const platforms = macro.units.filter((u) => u.kind === 'platform');
       const firstLocalRow = platforms.length > 0
-        ? Math.min(...platforms.map((u) => u.row)) : 0;
+        ? Math.min(...platforms.map((u) => u.y)) : 0;
       const naturalFirstAbsY = axisPos + firstLocalRow;
       const maxReachable = prevPeakAbsY + MAX_ELEVATION_STEP;
       if (naturalFirstAbsY > maxReachable) {
@@ -1930,10 +1929,10 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
       if (platforms.length > 0) {
         // The "first platform" of the next macro (lowest row, then lowest col).
         const firstPlat = platforms.reduce(
-          (best, p) => (p.row < best.row || (p.row === best.row && p.col < best.col)) ? p : best,
+          (best, p) => (p.y < best.y || (p.y === best.y && p.x < best.x)) ? p : best,
           platforms[0],
         );
-        const nextX = firstPlat.col;
+        const nextX = firstPlat.x;
         const nextW = firstPlat.width;
 
         // Edge-to-edge gap between prevPeak [prevPeakX, prevPeakX+prevPeakW]
@@ -1960,8 +1959,8 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
     // exceed the 72px zone width (22 units). Done before placement so every
     // unit lands inside the screen.
     if (isVertical) {
-      const vMinX = Math.min(...macro.units.map((u) => u.col));
-      const vMaxX = Math.max(...macro.units.map((u) => u.col + (u.kind === 'block' ? 1 : u.width)));
+      const vMinX = Math.min(...macro.units.map((u) => u.x));
+      const vMaxX = Math.max(...macro.units.map((u) => u.x + (u.kind === 'block' ? 1 : u.width)));
       if (vMinX + placementXShift < 0) placementXShift -= vMinX + placementXShift;
       if (vMaxX + placementXShift > ZONE_WIDTH_UNITS) {
         placementXShift -= vMaxX + placementXShift - ZONE_WIDTH_UNITS;
@@ -1979,10 +1978,10 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
       const vPlatforms = macro.units.filter((u) => u.kind === 'platform');
       if (vPlatforms.length > 0) {
         const peakPlat = vPlatforms.reduce(
-          (best, p) => (p.row > best.row || (p.row === best.row && p.col > best.col)) ? p : best,
+          (best, p) => (p.y > best.y || (p.y === best.y && p.x > best.x)) ? p : best,
           vPlatforms[0],
         );
-        prevPeakX = peakPlat.col + placementXShift;
+        prevPeakX = peakPlat.x + placementXShift;
         prevPeakW = peakPlat.width;
       }
       // MAJOR 1 FIX: the axis advances to the macro's peak y (the actual
@@ -2044,11 +2043,9 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
         kind: 'platform',
         width: 2,
         tier: exitPlatY,
-        row: exitPlatY,
-        col: exitPlatX,
-        placementId: -1, // synthetic, not from a macro
         x: exitPlatX,
         y: exitPlatY,
+        placementId: -1, // synthetic, not from a macro
         solid: false,
         oneWay: true,
         aabb: { x: exitPlatX, y: exitPlatY, w: 2, h: PLATFORM_UNIT_H },
@@ -2104,41 +2101,37 @@ function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, entryCl
   const originX = isVertical ? 0 : axisPos + macro.entryClear;
 
   for (const u of macro.units) {
-    if (u.row == null || u.col == null) {
-      throw new Error(`placeMacro: unit missing explicit row/col in macro "${macro.id}"`);
+    if (u.y == null || u.x == null) {
+      throw new Error(`placeMacro: unit missing explicit x/y in macro "${macro.id}"`);
     }
     if (u.kind === 'block') {
       const block = makeBlock(u.height);
-      const px = originX + u.col + xShift;
+      const px = originX + u.x + xShift;
       // Horizontal: y is the base row (0 for ground blocks). Vertical: y is
       // the absolute climb row (axisPos + local row).
-      const py = isVertical ? axisPos + u.row : u.row;
+      const py = isVertical ? axisPos + u.y : u.y;
       // Block base sits at its row; top surface at row + height.
       placedUnits.push({
         ...block,
         placementId: instanceId,
-        row: u.row,
-        col: u.col,
         x: px,
         y: py,
         aabb: { x: px, y: py, w: 1, h: u.height },
       });
     } else if (u.kind === 'platform') {
-      const px = originX + u.col + xShift;
+      const px = originX + u.x + xShift;
       // Landing face elevation IS the row (unit rows from ground). Platform
       // metadata comes from the terrain.js PLATFORM grammar (one-way,
       // non-solid); the aabb is built here in UNIT space (the factory's
       // aabb is in px and caps tier at 3).
-      const py = isVertical ? axisPos + u.row : u.row;
+      const py = isVertical ? axisPos + u.y : u.y;
       placedUnits.push({
         kind: 'platform',
         width: u.width,
         solid: false,
         oneWay: true,
         placementId: instanceId,
-        tier: u.row, // legacy alias — consumers read the face elevation
-        row: u.row,
-        col: u.col,
+        tier: u.y, // legacy alias — consumers read the face elevation
         x: px,
         y: py,
         aabb: { x: px, y: py, w: u.width, h: PLATFORM_UNIT_H },
@@ -2149,66 +2142,23 @@ function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, entryCl
 
   // Record placement opportunities (relative to macro start).
   //
-  // A slot's y is the ELEVATION OF ITS SUPPORTING SURFACE, not a fixed 0:
-  //   - a slot above a solid block whose column covers the slot's col sits at
-  //     the block's top (base row + height);
-  //   - a slot above a platform covering the slot's col sits at the
-  //     platform's landing face (its row);
-  //   - a slot over an empty cell sits at elevation 0 (open ground).
-  // This is the BLOCKER fix (items spawning inside solids): the slot y MUST be
-  // at the top of whatever surface is below it, so an item placed there rests
-  // on a valid standing position. (populate.md §1: slots are meaningful,
+  // A slot's y is now EXPLICIT in the authored data: it is the surface
+  // elevation the slot rests on (top of the block / face of the platform under
+  // its column; ground 0 over an empty cell). The composer no longer computes
+  // it — it trusts the authored value and only applies the vertical-axis
+  // offset for stacked vertical macros. (populate.md §1: slots are meaningful,
   // terrain-valid positions, not arbitrary coordinates.)
   for (const p of macro.placements) {
-    const surface = surfaceElevationAt(macro, p, isVertical);
     placements.push({
       ...p,
       // Vertical slots carry absolute x (lateral position within the zone);
       // horizontal slots are relative to the macro's entry clear zone.
       // Apply xShift to both (inter-macro lateral alignment).
       x: isVertical ? p.x + xShift : originX + p.x + xShift,
-      y: isVertical ? axisPos + surface : surface,
+      y: isVertical ? axisPos + p.y : p.y,
       placementId: instanceId,
     });
   }
-}
-
-/**
- * Elevation (in units) of the supporting surface directly below a slot at
- * local col `p.x`, relative to the macro's entry line.
- *
- * A slot stands on whatever surface is under it (2D grid model):
- *   - a solid block whose column covers the slot's col → its TOP
- *     (base row + height);
- *   - a platform whose column span covers the slot's col → its landing face
- *     (its row);
- *   - an empty cell → elevation 0 (open ground).
- *
- * When several surfaces cover the same col (stacking), the HIGHEST one wins —
- * that is what the hero actually lands on.
- *
- * @param {object} macro the macro being placed (its `units` + `entryClear`)
- * @param {object} p the slot descriptor (its local `x` = col offset)
- * @param {boolean} isVertical whether the area is vertical
- * @returns {number} the surface elevation (units) the slot rests on
- */
-function surfaceElevationAt(macro, p, isVertical) {
-  const col = p.x;
-  let best = 0;
-  for (const u of macro.units) {
-    const uStart = u.col;
-    const uEnd = u.col + (u.kind === 'block' ? 1 : u.width);
-    if (col >= uStart && col < uEnd) {
-      // The slot rests on the unit's STANDING SURFACE — the top of the cell
-      // it occupies. Block: base row + height. Platform: its face sits at the
-      // ceiling of the occupied row (row + 1), matching the pixel render and
-      // the validator's landing elevations. A slot's y is therefore ALWAYS
-      // "the exact line the hero stands on" — pure coordinate truth in dumps.
-      const surface = u.kind === 'block' ? u.row + u.height : u.row + 1;
-      if (surface > best) best = surface;
-    }
-  }
-  return best;
 }
 
 // ---------------------------------------------------------------------------
@@ -2329,8 +2279,8 @@ export function validateLayout(layout) {
       const bStart = block.x;
       const bEnd = block.x + block.aabb.w;
       if (pStart < bEnd && pEnd > bStart) {
-        const blockTop = (block.row ?? 0) + block.height;
-        const platFace = platform.row ?? platform.tier ?? 0;
+        const blockTop = (block.y ?? 0) + block.height;
+        const platFace = platform.y ?? platform.tier ?? 0;
         if (blockTop >= platFace) {
           throw new Error(
             `validateLayout: platform at x=${platform.x} (tier ${platFace}) ` +
@@ -2355,8 +2305,8 @@ export function validateLayout(layout) {
   //       - platform: clearance must be >= 1 (thin one-way landing needs one
   //         air row; it can never rest ON a surface), and a platform may never
   //         be declared at row 0.
-  const cellFloor = (u) => (u.row ?? u.tier ?? 0);
-  const surfaceLine = (u) => (u.kind === 'block' ? (u.row ?? 0) + u.height : (u.row ?? u.tier ?? 0) + 1);
+  const cellFloor = (u) => (u.y ?? u.tier ?? 0);
+  const surfaceLine = (u) => (u.kind === 'block' ? (u.y ?? 0) + u.height : (u.y ?? u.tier ?? 0) + 1);
   for (const upper of units) {
     const uRow = cellFloor(upper);
     if (upper.kind === 'platform' && uRow <= 0) {
@@ -2431,7 +2381,7 @@ export function validateLayout(layout) {
   //   - block: row + height (a ground block → its height)
   //   - platform: tier + 1 (the face sits at the ceiling of the occupied row;
   //     P@row 1 faces one full cell above a B(h1)@0 top)
-  const landingElevation = (u) => (u.kind === 'block' ? (u.row ?? 0) + u.height : (u.tier ?? u.row ?? 0) + 1);
+  const landingElevation = (u) => (u.kind === 'block' ? (u.y ?? 0) + u.height : (u.tier ?? u.y ?? 0) + 1);
 
   if (!isVertical) {
     // Horizontal: full route in x order.

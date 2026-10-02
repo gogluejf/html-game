@@ -87,17 +87,17 @@ test('all vertical macro landings have elevation steps ≤ MAX_ELEVATION_STEP', 
     if (macro.orientation !== 'vertical') continue;
     const platforms = macro.units.filter((u) => u.kind === 'platform');
     for (let i = 1; i < platforms.length; i++) {
-      const step = platforms[i].row - platforms[i - 1].row;
+      const step = platforms[i].y - platforms[i - 1].y;
       assert.ok(
         step <= MAX_ELEVATION_STEP,
-        `${id}: step of ${step} rows between platform ${i - 1} (row ${platforms[i - 1].row}) ` +
-          `and platform ${i} (row ${platforms[i].row}) exceeds max ${MAX_ELEVATION_STEP}`,
+        `${id}: step of ${step} rows between platform ${i - 1} (row ${platforms[i - 1].y}) ` +
+          `and platform ${i} (row ${platforms[i].y}) exceeds max ${MAX_ELEVATION_STEP}`,
       );
     }
     // First landing must be reachable from ground (row 0).
     assert.ok(
-      platforms[0].row <= MAX_ELEVATION_STEP,
-      `${id}: first platform at row ${platforms[0].row} is not reachable from ground`,
+      platforms[0].y <= MAX_ELEVATION_STEP,
+      `${id}: first platform at row ${platforms[0].y} is not reachable from ground`,
     );
   }
 });
@@ -107,8 +107,8 @@ test('all vertical macro landings have horizontal gaps ≤ MAX_CLEARABLE_GAP', (
     if (macro.orientation !== 'vertical') continue;
     const platforms = macro.units.filter((u) => u.kind === 'platform');
     for (let i = 1; i < platforms.length; i++) {
-      const prevX = platforms[i - 1].col;
-      const currX = platforms[i].col;
+      const prevX = platforms[i - 1].x;
+      const currX = platforms[i].x;
       const gap = Math.abs(currX - prevX);
       assert.ok(
         gap <= MAX_CLEARABLE_GAP + 1,
@@ -137,7 +137,7 @@ test('vertical macros have lateral variety (multiple distinct x positions)', () 
   for (const [id, macro] of Object.entries(MACROS)) {
     if (macro.orientation !== 'vertical') continue;
     const platforms = macro.units.filter((u) => u.kind === 'platform');
-    const cols = platforms.map((p) => p.col);
+    const cols = platforms.map((p) => p.x);
     const distinctCols = new Set(cols);
     // At least 2 distinct column positions (not a single-file staircase).
     assert.ok(
@@ -204,7 +204,7 @@ test('vertical macros: difficulty 3 climbs are longer and denser (more complex t
   const diff3 = Object.values(MACROS).filter((m) => m.orientation === 'vertical' && m.difficulty === 3);
 
   const landingsOf = (m) => m.units.filter((u) => u.kind === 'platform').length;
-  const spanOf = (m) => Math.max(...m.units.map((u) => u.row));
+  const spanOf = (m) => Math.max(...m.units.map((u) => u.y));
 
   const avgLandings1 = diff1.reduce((s, m) => s + landingsOf(m), 0) / diff1.length;
   const avgLandings3 = diff3.reduce((s, m) => s + landingsOf(m), 0) / diff3.length;

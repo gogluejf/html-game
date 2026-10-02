@@ -102,7 +102,7 @@ test('macro vocabulary: stretchedPyramid has 5×h1, 5×h2, 5×h3, then descent (
   assert.equal(blocks.slice(10, 15).every((b) => b.height === 3), true, 'last 5 are height 3');
   // 2D grid model: the old trailing G(2) drop is now just unoccupied cells
   // after the last block's column (the footprint extends past col 14).
-  const maxCol = Math.max(...sp.units.map((u) => u.col + (u.kind === 'block' ? 1 : u.width)));
+  const maxCol = Math.max(...sp.units.map((u) => u.x + (u.kind === 'block' ? 1 : u.width)));
   assert.ok(maxCol >= 15, 'stretchedPyramid: footprint extends past the h3 band (descent cells)');
   assert.equal(sp.orientation, 'horizontal');
   assert.equal(sp.difficulty, 2);
@@ -116,10 +116,10 @@ test('macro vocabulary: mixedCrossing has blocks, gap, triple platform tier 2, b
   assert.equal(blocks.length, 6, 'mixedCrossing: 6 blocks (3 before + 3 after)');
   assert.equal(platforms.length, 1, 'mixedCrossing: 1 platform');
   assert.equal(platforms[0].width, 3, 'mixedCrossing: triple-width platform');
-  assert.equal(platforms[0].row, 2, 'mixedCrossing: platform face at row 2');
+  assert.equal(platforms[0].y, 2, 'mixedCrossing: platform face at row 2');
   // 2D grid model: the gap is an unoccupied cell span between the blocks
   // (cols 3-4) and the platform (cols 5-7).
-  const cols = mc.units.map((u) => u.col);
+  const cols = mc.units.map((u) => u.x);
   assert.ok(Math.min(...cols) < 3 && Math.max(...cols) > 4, 'mixedCrossing: spans across the empty gap cells');
   assert.equal(mc.orientation, 'horizontal');
   assert.equal(mc.difficulty, 3);
@@ -131,7 +131,7 @@ test('macro vocabulary: climbing is vertical with upward landings (generation.md
   const platforms = climb.units.filter((u) => u.kind === 'platform');
   assert.ok(platforms.length >= 2, 'climbing: at least 2 platform landings');
   // The landings should include upward progression (some platform at a higher tier).
-  const rows = platforms.map((p) => p.row);
+  const rows = platforms.map((p) => p.y);
   const maxRow = Math.max(...rows);
   assert.ok(maxRow >= 2, 'climbing: reaches at least row 2 (upward progression)');
   assert.equal(climb.difficulty, 2);
@@ -141,7 +141,7 @@ test('macro vocabulary: gapLanding is a movement challenge (generation.md §2)',
   const gd = MACROS.gapLanding;
   assert.equal(gd.orientation, 'horizontal');
   // 2D grid model: the leading gap is unoccupied cells before the first unit.
-  const firstCol = Math.min(...gd.units.map((u) => u.col));
+  const firstCol = Math.min(...gd.units.map((u) => u.x));
   assert.ok(firstCol >= 2, 'gapLanding: starts with empty cells (the gap) before the landing run');
   // The landing run is five height-1 blocks — one under every slot.
   const blocks = gd.units.filter((u) => u.kind === 'block');
@@ -160,7 +160,7 @@ test('macroWidth: computes the bounding-box footprint plus clear zones (R1.3)', 
     // And it must equal the bounding-box extent + clears exactly.
     let expect = macro.entryClear;
     for (const u of macro.units) {
-      const span = u.col + (u.kind === 'block' ? 1 : u.width);
+      const span = u.x + (u.kind === 'block' ? 1 : u.width);
       if (span > expect) expect = span;
     }
     expect += macro.exitClear;

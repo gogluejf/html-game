@@ -7,26 +7,26 @@
     {
       "kind": "block",
       "height": 2,
-      "row": 0,
-      "col": 0
+      "y": 0,
+      "x": 0
     },
     {
       "kind": "block",
       "height": 2,
-      "row": 0,
-      "col": 1
+      "y": 0,
+      "x": 1
     },
     {
       "kind": "platform",
       "width": 3,
-      "row": 4,
-      "col": 0
+      "y": 4,
+      "x": 0
     },
     {
       "kind": "block",
       "height": 2,
-      "row": 0,
-      "col": 3
+      "y": 0,
+      "x": 3
     }
   ],
   "entryClear": 3,
@@ -35,17 +35,20 @@
     {
       "slot": "on-wall",
       "x": 0,
-      "type": "enemy"
+      "type": "enemy",
+      "y": 5
     },
     {
       "slot": "on-bridge",
       "x": 1,
-      "type": "powerup"
+      "type": "powerup",
+      "y": 5
     },
     {
       "slot": "on-bridge2",
       "x": 2,
-      "type": "barrel"
+      "type": "barrel",
+      "y": 5
     }
   ],
   "variations": [],

@@ -7,44 +7,44 @@
     {
       "kind": "block",
       "height": 1,
-      "row": 0,
-      "col": 0
+      "y": 0,
+      "x": 0
     },
     {
       "kind": "block",
       "height": 2,
-      "row": 0,
-      "col": 1
+      "y": 0,
+      "x": 1
     },
     {
       "kind": "block",
       "height": 3,
-      "row": 0,
-      "col": 2
+      "y": 0,
+      "x": 2
     },
     {
       "kind": "platform",
       "width": 3,
-      "row": 2,
-      "col": 5
+      "y": 2,
+      "x": 5
     },
     {
       "kind": "block",
       "height": 3,
-      "row": 0,
-      "col": 8
+      "y": 0,
+      "x": 8
     },
     {
       "kind": "block",
       "height": 2,
-      "row": 0,
-      "col": 9
+      "y": 0,
+      "x": 9
     },
     {
       "kind": "block",
       "height": 1,
-      "row": 0,
-      "col": 10
+      "y": 0,
+      "x": 10
     }
   ],
   "entryClear": 2,
@@ -53,32 +53,38 @@
     {
       "slot": "on-h1",
       "x": 0,
-      "type": "enemy"
+      "type": "enemy",
+      "y": 1
     },
     {
       "slot": "before-gap",
       "x": 2,
-      "type": "enemy"
+      "type": "enemy",
+      "y": 3
     },
     {
       "slot": "on-platform",
       "x": 5,
-      "type": "enemy"
+      "type": "enemy",
+      "y": 3
     },
     {
       "slot": "on-platform2",
       "x": 6,
-      "type": "enemy"
+      "type": "enemy",
+      "y": 3
     },
     {
       "slot": "after-platform",
       "x": 9,
-      "type": "barrel"
+      "type": "barrel",
+      "y": 2
     },
     {
       "slot": "on-h3",
       "x": 8,
-      "type": "barrel"
+      "type": "barrel",
+      "y": 3
     }
   ],
   "variations": [],
