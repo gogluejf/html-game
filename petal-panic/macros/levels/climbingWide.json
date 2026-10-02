@@ -1,0 +1,59 @@
+{
+  "id": "climbingWide",
+  "name": "Wide Climbing",
+  "orientation": "vertical",
+  "difficulty": 2,
+  "units": [
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 1,
+      "col": 10
+    },
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 2,
+      "col": 13
+    },
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 1,
+      "col": 11
+    },
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 2,
+      "col": 14
+    }
+  ],
+  "entryClear": 2,
+  "exitClear": 2,
+  "placements": [
+    {
+      "slot": "tier1-left",
+      "x": 10,
+      "type": "enemy"
+    },
+    {
+      "slot": "tier2-right",
+      "x": 13,
+      "type": "enemy"
+    },
+    {
+      "slot": "tier1-rest",
+      "x": 11,
+      "type": "enemy"
+    },
+    {
+      "slot": "tier2-peak",
+      "x": 14,
+      "type": "powerup"
+    }
+  ],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}

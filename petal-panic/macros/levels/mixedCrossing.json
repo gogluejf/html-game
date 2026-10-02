@@ -1,0 +1,87 @@
+{
+  "id": "mixedCrossing",
+  "name": "Mixed Crossing",
+  "orientation": "horizontal",
+  "difficulty": 3,
+  "units": [
+    {
+      "kind": "block",
+      "height": 1,
+      "row": 0,
+      "col": 0
+    },
+    {
+      "kind": "block",
+      "height": 2,
+      "row": 0,
+      "col": 1
+    },
+    {
+      "kind": "block",
+      "height": 3,
+      "row": 0,
+      "col": 2
+    },
+    {
+      "kind": "platform",
+      "width": 3,
+      "row": 2,
+      "col": 5
+    },
+    {
+      "kind": "block",
+      "height": 3,
+      "row": 0,
+      "col": 8
+    },
+    {
+      "kind": "block",
+      "height": 2,
+      "row": 0,
+      "col": 9
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "row": 0,
+      "col": 10
+    }
+  ],
+  "entryClear": 2,
+  "exitClear": 2,
+  "placements": [
+    {
+      "slot": "on-h1",
+      "x": 0,
+      "type": "enemy"
+    },
+    {
+      "slot": "before-gap",
+      "x": 2,
+      "type": "enemy"
+    },
+    {
+      "slot": "on-platform",
+      "x": 5,
+      "type": "enemy"
+    },
+    {
+      "slot": "on-platform2",
+      "x": 6,
+      "type": "enemy"
+    },
+    {
+      "slot": "after-platform",
+      "x": 9,
+      "type": "barrel"
+    },
+    {
+      "slot": "on-h3",
+      "x": 8,
+      "type": "barrel"
+    }
+  ],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}

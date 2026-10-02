@@ -1,0 +1,47 @@
+{
+  "id": "easyPlatformHop",
+  "name": "Easy Platform Hop",
+  "orientation": "horizontal",
+  "difficulty": 1,
+  "units": [
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 1,
+      "col": 0
+    },
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 2,
+      "col": 4
+    }
+  ],
+  "entryClear": 3,
+  "exitClear": 3,
+  "placements": [
+    {
+      "slot": "on-t1",
+      "x": 0,
+      "type": "enemy"
+    },
+    {
+      "slot": "on-t1b",
+      "x": 1,
+      "type": "barrel"
+    },
+    {
+      "slot": "on-t2",
+      "x": 4,
+      "type": "powerup"
+    },
+    {
+      "slot": "on-t2b",
+      "x": 5,
+      "type": "barrel"
+    }
+  ],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}

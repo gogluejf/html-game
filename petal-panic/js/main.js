@@ -8,9 +8,22 @@ import { render } from './systems/render.js';
 import { loadImages } from './ui/screens.js';
 import { waitForFonts } from './ui/fonts.js';
 import * as CONSTS from './consts.js';
+import { loadMacros } from './world/macroLoader.js';
+import { setMacros } from './world/macros.js';
 
 // Load screen assets (Home/Select) immediately on page load.
 loadImages();
+
+// Load macro data from macros/levels/*.json (canonical source). Falls back to
+// the inline MACROS object in macros.js when not served over HTTP.
+loadMacros()
+  .then((macros) => {
+    setMacros(macros);
+    console.info(`[macros] loaded ${Object.keys(macros).length} macros from macros/levels/`);
+  })
+  .catch((err) => {
+    console.warn(`[macros] using built-in fallback (${err.message})`);
+  });
 
 // Wait for the display fonts before the first frame so titles/prompts render
 // in Alfa Slab One / Lilita One / Pirata One (not a fallback). Resolves after

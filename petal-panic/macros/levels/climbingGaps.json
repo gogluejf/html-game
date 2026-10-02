@@ -1,0 +1,59 @@
+{
+  "id": "climbingGaps",
+  "name": "Climbing with Gaps",
+  "orientation": "vertical",
+  "difficulty": 3,
+  "units": [
+    {
+      "kind": "platform",
+      "width": 1,
+      "row": 1,
+      "col": 10
+    },
+    {
+      "kind": "platform",
+      "width": 1,
+      "row": 2,
+      "col": 12
+    },
+    {
+      "kind": "platform",
+      "width": 1,
+      "row": 3,
+      "col": 11
+    },
+    {
+      "kind": "platform",
+      "width": 1,
+      "row": 4,
+      "col": 13
+    }
+  ],
+  "entryClear": 2,
+  "exitClear": 2,
+  "placements": [
+    {
+      "slot": "tier1",
+      "x": 10,
+      "type": "enemy"
+    },
+    {
+      "slot": "tier2",
+      "x": 13,
+      "type": "enemy"
+    },
+    {
+      "slot": "tier3",
+      "x": 11,
+      "type": "enemy"
+    },
+    {
+      "slot": "tier3b",
+      "x": 14,
+      "type": "powerup"
+    }
+  ],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}

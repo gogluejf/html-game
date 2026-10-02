@@ -1,0 +1,54 @@
+{
+  "id": "blockBridge",
+  "name": "Block Bridge",
+  "orientation": "horizontal",
+  "difficulty": 2,
+  "units": [
+    {
+      "kind": "block",
+      "height": 2,
+      "row": 0,
+      "col": 0
+    },
+    {
+      "kind": "block",
+      "height": 2,
+      "row": 0,
+      "col": 1
+    },
+    {
+      "kind": "platform",
+      "width": 3,
+      "row": 4,
+      "col": 0
+    },
+    {
+      "kind": "block",
+      "height": 2,
+      "row": 0,
+      "col": 3
+    }
+  ],
+  "entryClear": 3,
+  "exitClear": 3,
+  "placements": [
+    {
+      "slot": "on-wall",
+      "x": 0,
+      "type": "enemy"
+    },
+    {
+      "slot": "on-bridge",
+      "x": 1,
+      "type": "powerup"
+    },
+    {
+      "slot": "on-bridge2",
+      "x": 2,
+      "type": "barrel"
+    }
+  ],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}

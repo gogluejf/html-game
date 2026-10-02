@@ -1,0 +1,65 @@
+{
+  "id": "pyramid",
+  "name": "Pyramid",
+  "orientation": "horizontal",
+  "difficulty": 1,
+  "units": [
+    {
+      "kind": "block",
+      "height": 1,
+      "row": 0,
+      "col": 0
+    },
+    {
+      "kind": "block",
+      "height": 2,
+      "row": 0,
+      "col": 1
+    },
+    {
+      "kind": "block",
+      "height": 3,
+      "row": 0,
+      "col": 2
+    },
+    {
+      "kind": "block",
+      "height": 2,
+      "row": 0,
+      "col": 3
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "row": 0,
+      "col": 4
+    }
+  ],
+  "entryClear": 5,
+  "exitClear": 5,
+  "placements": [
+    {
+      "slot": "base",
+      "x": 0,
+      "type": "enemy"
+    },
+    {
+      "slot": "on-h2",
+      "x": 1,
+      "type": "enemy"
+    },
+    {
+      "slot": "on-h2b",
+      "x": 3,
+      "type": "enemy"
+    },
+    {
+      "slot": "peak-barrel",
+      "x": 2,
+      "type": "barrel"
+    }
+  ],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}

@@ -1,0 +1,75 @@
+{
+  "id": "blockPlatformBridge",
+  "name": "Block & Platform Bridge",
+  "orientation": "horizontal",
+  "difficulty": 3,
+  "units": [
+    {
+      "kind": "block",
+      "height": 1,
+      "row": 0,
+      "col": 0
+    },
+    {
+      "kind": "block",
+      "height": 2,
+      "row": 0,
+      "col": 1
+    },
+    {
+      "kind": "platform",
+      "width": 3,
+      "row": 2,
+      "col": 4
+    },
+    {
+      "kind": "block",
+      "height": 2,
+      "row": 0,
+      "col": 9
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "row": 0,
+      "col": 10
+    }
+  ],
+  "entryClear": 2,
+  "exitClear": 2,
+  "placements": [
+    {
+      "slot": "on-h1",
+      "x": 0,
+      "type": "enemy"
+    },
+    {
+      "slot": "on-h2",
+      "x": 1,
+      "type": "enemy"
+    },
+    {
+      "slot": "on-bridge",
+      "x": 5,
+      "type": "enemy"
+    },
+    {
+      "slot": "on-bridge-pu",
+      "x": 6,
+      "type": "powerup"
+    },
+    {
+      "slot": "on-far-h2",
+      "x": 10,
+      "type": "barrel"
+    },
+    {
+      "slot": "on-far-h1",
+      "x": 11,
+      "type": "barrel"
+    }
+  ],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}

@@ -1,0 +1,53 @@
+{
+  "id": "platformHops",
+  "name": "Platform Hops",
+  "orientation": "horizontal",
+  "difficulty": 2,
+  "units": [
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 1,
+      "col": 0
+    },
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 2,
+      "col": 4
+    },
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 3,
+      "col": 8
+    }
+  ],
+  "entryClear": 3,
+  "exitClear": 3,
+  "placements": [
+    {
+      "slot": "on-t1",
+      "x": 0,
+      "type": "enemy"
+    },
+    {
+      "slot": "on-t2",
+      "x": 4,
+      "type": "enemy"
+    },
+    {
+      "slot": "on-t3",
+      "x": 8,
+      "type": "powerup"
+    },
+    {
+      "slot": "on-t1-barrel",
+      "x": 1,
+      "type": "barrel"
+    }
+  ],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}

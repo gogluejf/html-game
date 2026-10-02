@@ -1,0 +1,42 @@
+{
+  "id": "climbSimple",
+  "name": "Simple Climb",
+  "orientation": "vertical",
+  "difficulty": 1,
+  "units": [
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 1,
+      "col": 12
+    },
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 2,
+      "col": 14
+    }
+  ],
+  "entryClear": 2,
+  "exitClear": 2,
+  "placements": [
+    {
+      "slot": "tier1",
+      "x": 12,
+      "type": "enemy"
+    },
+    {
+      "slot": "tier2",
+      "x": 14,
+      "type": "powerup"
+    },
+    {
+      "slot": "tier1-barrel",
+      "x": 13,
+      "type": "barrel"
+    }
+  ],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}

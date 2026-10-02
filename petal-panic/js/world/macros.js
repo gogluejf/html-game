@@ -226,6 +226,12 @@ export const PLATFORM_DRAW_H = Math.max(2, Math.round(UNIT_PX_Y / 8)); // 6px at
  * terrain GRID with a readable challenge, an entry, and an exit
  * (generation.md §2, §3).
  *
+ * CANONICAL DATA: `macros/levels/<id>.json` — one file per macro, filename =
+ * id. `js/main.js` fetches them at boot via `loadMacros()` and assigns the
+ * result to `MACROS`. This inline object is the FALLBACK used when the game
+ * is not served over HTTP (fetch unavailable/fails), so it must stay in sync
+ * with the JSON files (see tools/export_macros.mjs).
+ *
  * 2D grid convention:
  *   - row = units UP from the ground (0 = on the ground), same for both
  *     orientations. A block's row is its BASE (it rises up by its height);
@@ -235,7 +241,7 @@ export const PLATFORM_DRAW_H = Math.max(2, Math.round(UNIT_PX_Y / 8)); // 6px at
  *   - Clearance rule: any unit whose base/face is above row 0 must be ≥ 2 rows
  *     above the top of whatever is directly below it in its column span.
  */
-export const MACROS = Object.freeze({
+export let MACROS = Object.freeze({
   // --- Horizontal macros ----------------------------------------------------
 
   /**
@@ -799,6 +805,19 @@ export const MACROS = Object.freeze({
     followedBy: Object.freeze([]),
   }),
 });
+
+/**
+ * Replace the macro vocabulary with data loaded from `macros/levels/*.json`.
+ * Called once at boot by main.js (browser only). Tests and node contexts keep
+ * the inline fallback object.
+ *
+ * @param {Object<string, object>} macros id → macro map from loadMacros()
+ */
+export function setMacros(macros) {
+  MACROS = Object.freeze(
+    Object.fromEntries(Object.entries(macros).map(([id, m]) => [id, Object.freeze(m)]))
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Macro selection by progression stage (generation.md §5)

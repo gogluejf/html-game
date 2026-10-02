@@ -1,0 +1,70 @@
+{
+  "id": "climbingZigzag",
+  "name": "Zigzag Climb",
+  "orientation": "vertical",
+  "difficulty": 2,
+  "units": [
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 1,
+      "col": 10
+    },
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 2,
+      "col": 13
+    },
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 3,
+      "col": 11
+    },
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 2,
+      "col": 14
+    },
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 3,
+      "col": 16
+    }
+  ],
+  "entryClear": 2,
+  "exitClear": 2,
+  "placements": [
+    {
+      "slot": "tier1",
+      "x": 10,
+      "type": "enemy"
+    },
+    {
+      "slot": "tier2",
+      "x": 13,
+      "type": "enemy"
+    },
+    {
+      "slot": "tier3-peak",
+      "x": 11,
+      "type": "enemy"
+    },
+    {
+      "slot": "tier2-rest",
+      "x": 14,
+      "type": "enemy"
+    },
+    {
+      "slot": "tier3-final",
+      "x": 12,
+      "type": "powerup"
+    }
+  ],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}

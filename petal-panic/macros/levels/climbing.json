@@ -1,0 +1,48 @@
+{
+  "id": "climbing",
+  "name": "Climbing Pattern",
+  "orientation": "vertical",
+  "difficulty": 2,
+  "units": [
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 1,
+      "col": 12
+    },
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 2,
+      "col": 14
+    },
+    {
+      "kind": "platform",
+      "width": 2,
+      "row": 3,
+      "col": 12
+    }
+  ],
+  "entryClear": 2,
+  "exitClear": 2,
+  "placements": [
+    {
+      "slot": "tier1",
+      "x": 12,
+      "type": "enemy"
+    },
+    {
+      "slot": "tier2",
+      "x": 14,
+      "type": "enemy"
+    },
+    {
+      "slot": "tier3b",
+      "x": 13,
+      "type": "powerup"
+    }
+  ],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}

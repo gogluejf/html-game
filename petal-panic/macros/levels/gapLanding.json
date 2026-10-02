@@ -1,0 +1,70 @@
+{
+  "id": "gapLanding",
+  "name": "Gap Landing Run",
+  "orientation": "horizontal",
+  "difficulty": 2,
+  "units": [
+    {
+      "kind": "block",
+      "height": 1,
+      "row": 0,
+      "col": 2
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "row": 0,
+      "col": 3
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "row": 0,
+      "col": 4
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "row": 0,
+      "col": 5
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "row": 0,
+      "col": 6
+    }
+  ],
+  "entryClear": 2,
+  "exitClear": 2,
+  "placements": [
+    {
+      "slot": "landing-enemy",
+      "x": 2,
+      "type": "enemy"
+    },
+    {
+      "slot": "landing-enemy2",
+      "x": 4,
+      "type": "enemy"
+    },
+    {
+      "slot": "landing-enemy3",
+      "x": 6,
+      "type": "enemy"
+    },
+    {
+      "slot": "landing",
+      "x": 3,
+      "type": "powerup"
+    },
+    {
+      "slot": "landing-barrel",
+      "x": 5,
+      "type": "barrel"
+    }
+  ],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}
