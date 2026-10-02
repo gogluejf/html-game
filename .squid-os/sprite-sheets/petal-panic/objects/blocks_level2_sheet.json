@@ -6,28 +6,125 @@
   "rows": 2,
   "cols": 3,
   "description": "Level 2 block tiles combined: row 1 with props, row 2 naked (small/medium/large)",
-  "entities": [{
-    "name": "blocks_level2",
-    "anim": "single",
-    "frames": [
-      {"file": "blocks_level2_single_f1.png", "row": 0, "col": 0, "bbox": [34, 570, 452, 320]},
-      {"file": "blocks_level2_single_f2.png", "row": 1, "col": 0, "bbox": [35, 1625, 461, 267]}
-    ]
-  }, {
-    "name": "blocks_level2",
-    "anim": "double",
-    "frames": [
-      {"file": "blocks_level2_double_f1.png", "row": 0, "col": 1, "bbox": [501, 250, 479, 640]},
-      {"file": "blocks_level2_double_f2.png", "row": 1, "col": 1, "bbox": [516, 1430, 468, 462]}
-    ]
-  }, {
-    "name": "blocks_level2",
-    "anim": "triple",
-    "frames": [
-      {"file": "blocks_level2_triple_f1.png", "row": 0, "col": 2, "bbox": [992, 15, 535, 876]},
-      {"file": "blocks_level2_triple_f2.png", "row": 1, "col": 2, "bbox": [1004, 1255, 503, 637]}
-    ]
-  }],
+  "entities": [
+    {
+      "name": "blocks_level2",
+      "anim": "single",
+      "frames": [
+        {
+          "file": "blocks_level2_single_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            34,
+            570,
+            452,
+            320
+          ]
+        },
+        {
+          "file": "blocks_level2_single_f2.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            35,
+            1625,
+            461,
+            267
+          ]
+        }
+      ]
+    },
+    {
+      "name": "blocks_level2",
+      "anim": "double",
+      "frames": [
+        {
+          "file": "blocks_level2_double_f1.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            501,
+            250,
+            479,
+            640
+          ],
+          "offset": {
+            "x": 239.5,
+            "y": -320
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "blocks_level2_double_f2.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            516,
+            1430,
+            468,
+            462
+          ],
+          "offset": {
+            "x": 234,
+            "y": -231
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "collision": {
+        "x": 0,
+        "y": -373,
+        "w": 757,
+        "h": 374
+      },
+      "pivot": {
+        "x": 240,
+        "y": -320
+      },
+      "markers": []
+    },
+    {
+      "name": "blocks_level2",
+      "anim": "triple",
+      "frames": [
+        {
+          "file": "blocks_level2_triple_f1.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            992,
+            15,
+            535,
+            876
+          ]
+        },
+        {
+          "file": "blocks_level2_triple_f2.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            1004,
+            1255,
+            503,
+            637
+          ]
+        }
+      ]
+    }
+  ],
   "crop": {
     "frames_dir": "petal-panic/assets/objects",
     "pass": "/home/goglue/tmp/blocks-regen/l2-v2"

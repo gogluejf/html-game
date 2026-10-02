@@ -6,20 +6,102 @@
   "cols": 8,
   "size": "2172x724",
   "description": "Scarlet Vale hero sheet 2, idle x 8 frames",
-  "entities": [{
-    "name": "scarlet_vale",
-    "anim": "idle",
-    "frames": [
-      {"file": "scarlet_vale_idle_f1.png", "row": 0, "col": 0, "bbox": [0, 74, 252, 559]},
-      {"file": "scarlet_vale_idle_f2.png", "row": 0, "col": 1, "bbox": [270, 77, 236, 556]},
-      {"file": "scarlet_vale_idle_f3.png", "row": 0, "col": 2, "bbox": [548, 77, 249, 556]},
-      {"file": "scarlet_vale_idle_f4.png", "row": 0, "col": 3, "bbox": [822, 78, 229, 555]},
-      {"file": "scarlet_vale_idle_f5.png", "row": 0, "col": 4, "bbox": [1086, 77, 253, 556]},
-      {"file": "scarlet_vale_idle_f6.png", "row": 0, "col": 5, "bbox": [1355, 78, 290, 555]},
-      {"file": "scarlet_vale_idle_f7.png", "row": 0, "col": 6, "bbox": [1631, 74, 264, 559]},
-      {"file": "scarlet_vale_idle_f8.png", "row": 0, "col": 7, "bbox": [1912, 75, 226, 558]}
-    ]
-  }],
+  "entities": [
+    {
+      "name": "scarlet_vale",
+      "anim": "idle",
+      "frames": [
+        {
+          "file": "scarlet_vale_idle_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            74,
+            252,
+            559
+          ]
+        },
+        {
+          "file": "scarlet_vale_idle_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            270,
+            77,
+            236,
+            556
+          ]
+        },
+        {
+          "file": "scarlet_vale_idle_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            548,
+            77,
+            249,
+            556
+          ]
+        },
+        {
+          "file": "scarlet_vale_idle_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            822,
+            78,
+            229,
+            555
+          ]
+        },
+        {
+          "file": "scarlet_vale_idle_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1086,
+            77,
+            253,
+            556
+          ]
+        },
+        {
+          "file": "scarlet_vale_idle_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1355,
+            78,
+            290,
+            555
+          ]
+        },
+        {
+          "file": "scarlet_vale_idle_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            1631,
+            74,
+            264,
+            559
+          ]
+        },
+        {
+          "file": "scarlet_vale_idle_f8.png",
+          "row": 0,
+          "col": 7,
+          "bbox": [
+            1912,
+            75,
+            226,
+            558
+          ]
+        }
+      ]
+    }
+  ],
   "crop": {
     "frames_dir": "petal-panic/assets/heroes",
     "pass": "/tmp/redo-scarlet_vale-sheet2-v1"

@@ -6,46 +6,367 @@
   "cols": 5,
   "size": "1619x971",
   "description": "Overgrown Elephant boss, 4 actions x 5 frames (charge, stomp, trunk blast, death)",
-  "entities": [{
-    "name": "tusko_wobble",
-    "anim": "charge",
-    "frames": [
-      {"file": "tusko_wobble_charge_f1.png", "row": 0, "col": 0, "bbox": [24, 10, 317, 226]},
-      {"file": "tusko_wobble_charge_f2.png", "row": 0, "col": 1, "bbox": [342, 9, 318, 227]},
-      {"file": "tusko_wobble_charge_f3.png", "row": 0, "col": 2, "bbox": [648, 20, 331, 217]},
-      {"file": "tusko_wobble_charge_f4.png", "row": 0, "col": 3, "bbox": [976, 17, 327, 221]},
-      {"file": "tusko_wobble_charge_f5.png", "row": 0, "col": 4, "bbox": [1296, 21, 319, 216]}
-    ]
-  }, {
-    "name": "tusko_wobble",
-    "anim": "stomp",
-    "frames": [
-      {"file": "tusko_wobble_stomp_f1.png", "row": 1, "col": 0, "bbox": [37, 249, 288, 220]},
-      {"file": "tusko_wobble_stomp_f2.png", "row": 1, "col": 1, "bbox": [345, 243, 297, 227]},
-      {"file": "tusko_wobble_stomp_f3.png", "row": 1, "col": 2, "bbox": [650, 253, 327, 229]},
-      {"file": "tusko_wobble_stomp_f4.png", "row": 1, "col": 3, "bbox": [967, 241, 331, 242]},
-      {"file": "tusko_wobble_stomp_f5.png", "row": 1, "col": 4, "bbox": [1307, 248, 300, 224]}
-    ]
-  }, {
-    "name": "tusko_wobble",
-    "anim": "trunk_blast",
-    "frames": [
-      {"file": "tusko_wobble_trunk_blast_f1.png", "row": 2, "col": 0, "bbox": [24, 494, 318, 209]},
-      {"file": "tusko_wobble_trunk_blast_f2.png", "row": 2, "col": 1, "bbox": [328, 495, 643, 211]},
-      {"file": "tusko_wobble_trunk_blast_f3.png", "row": 2, "col": 3, "bbox": [963, 494, 342, 214]},
-      {"file": "tusko_wobble_trunk_blast_f4.png", "row": 2, "col": 4, "bbox": [1301, 500, 312, 206]}
-    ]
-  }, {
-    "name": "tusko_wobble",
-    "anim": "death",
-    "frames": [
-      {"file": "tusko_wobble_death_f1.png", "row": 3, "col": 0, "bbox": [29, 728, 297, 211]},
-      {"file": "tusko_wobble_death_f2.png", "row": 3, "col": 1, "bbox": [330, 732, 329, 199]},
-      {"file": "tusko_wobble_death_f3.png", "row": 3, "col": 2, "bbox": [652, 733, 324, 200]},
-      {"file": "tusko_wobble_death_f4.png", "row": 3, "col": 3, "bbox": [969, 728, 330, 207]},
-      {"file": "tusko_wobble_death_f5.png", "row": 3, "col": 4, "bbox": [1288, 732, 324, 203]}
-    ]
-  }],
+  "entities": [
+    {
+      "name": "tusko_wobble",
+      "anim": "charge",
+      "frames": [
+        {
+          "file": "tusko_wobble_charge_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            24,
+            10,
+            317,
+            226
+          ],
+          "offset": {
+            "x": 93,
+            "y": 41
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "tusko_wobble_charge_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            342,
+            9,
+            318,
+            227
+          ],
+          "offset": {
+            "x": 159,
+            "y": -113.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "tusko_wobble_charge_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            648,
+            20,
+            331,
+            217
+          ],
+          "offset": {
+            "x": 165.5,
+            "y": -108.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "tusko_wobble_charge_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            976,
+            17,
+            327,
+            221
+          ],
+          "offset": {
+            "x": 163.5,
+            "y": -110.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "tusko_wobble_charge_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1296,
+            21,
+            319,
+            216
+          ],
+          "offset": {
+            "x": 159.5,
+            "y": -108
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "collision": {
+        "x": 4,
+        "y": -222,
+        "w": 309,
+        "h": 218
+      },
+      "pivot": {
+        "x": 159,
+        "y": -113
+      },
+      "markers": []
+    },
+    {
+      "name": "tusko_wobble",
+      "anim": "stomp",
+      "frames": [
+        {
+          "file": "tusko_wobble_stomp_f1.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            37,
+            249,
+            288,
+            220
+          ]
+        },
+        {
+          "file": "tusko_wobble_stomp_f2.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            345,
+            243,
+            297,
+            227
+          ]
+        },
+        {
+          "file": "tusko_wobble_stomp_f3.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            650,
+            253,
+            327,
+            229
+          ]
+        },
+        {
+          "file": "tusko_wobble_stomp_f4.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            967,
+            241,
+            331,
+            242
+          ]
+        },
+        {
+          "file": "tusko_wobble_stomp_f5.png",
+          "row": 1,
+          "col": 4,
+          "bbox": [
+            1307,
+            248,
+            300,
+            224
+          ]
+        }
+      ]
+    },
+    {
+      "name": "tusko_wobble",
+      "anim": "trunk_blast",
+      "frames": [
+        {
+          "file": "tusko_wobble_trunk_blast_f1.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            24,
+            494,
+            318,
+            209
+          ]
+        },
+        {
+          "file": "tusko_wobble_trunk_blast_f2.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            328,
+            495,
+            643,
+            211
+          ]
+        },
+        {
+          "file": "tusko_wobble_trunk_blast_f3.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            963,
+            494,
+            342,
+            214
+          ]
+        },
+        {
+          "file": "tusko_wobble_trunk_blast_f4.png",
+          "row": 2,
+          "col": 4,
+          "bbox": [
+            1301,
+            500,
+            312,
+            206
+          ]
+        }
+      ]
+    },
+    {
+      "name": "tusko_wobble",
+      "anim": "death",
+      "frames": [
+        {
+          "file": "tusko_wobble_death_f1.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            29,
+            728,
+            297,
+            211
+          ],
+          "offset": {
+            "x": -89,
+            "y": 147
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "tusko_wobble_death_f2.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            330,
+            732,
+            329,
+            199
+          ],
+          "offset": {
+            "x": 164.5,
+            "y": -99.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "tusko_wobble_death_f3.png",
+          "row": 3,
+          "col": 2,
+          "bbox": [
+            652,
+            733,
+            324,
+            200
+          ],
+          "offset": {
+            "x": 162,
+            "y": -100
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "tusko_wobble_death_f4.png",
+          "row": 3,
+          "col": 3,
+          "bbox": [
+            969,
+            728,
+            330,
+            207
+          ],
+          "offset": {
+            "x": 165,
+            "y": -103.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "tusko_wobble_death_f5.png",
+          "row": 3,
+          "col": 4,
+          "bbox": [
+            1288,
+            732,
+            324,
+            203
+          ],
+          "offset": {
+            "x": 162,
+            "y": -101.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "collision": {
+        "x": 4,
+        "y": -207,
+        "w": 289,
+        "h": 203
+      },
+      "pivot": {
+        "x": 149,
+        "y": -105
+      },
+      "markers": []
+    }
+  ],
   "crop": {
     "frames_dir": "petal-panic/assets/boss",
     "pass": "/tmp/redo-tusko-v2"
