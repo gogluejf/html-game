@@ -7,7 +7,7 @@ import { draw, boxList } from './draw.js';
 import { curFrameIdx } from './geometry.js';
 import { FILM, drawFilm, filmFitWidth, applyFilmState } from './filmstrip.js';
 import { syncUndoButtons } from './undo.js';
-import { saveState, gameDataKey } from './save.js';
+import { saveState, gameDataKey, updateSaveButton, updateDirtyDots } from './save.js';
 import { setZoom } from './viewport.js';
 
 export function loadFrames(paths){
@@ -188,6 +188,8 @@ export async function selectEntity(li, ei, opts){
   if (!app.userZoomed){ app.zoom = 1; $('zoomval').textContent = '100%'; }   // start each anim at true size
   resizeCanvas(); syncPanel(); draw();
   syncUndoButtons();   // reflect current undo/redo stack state
+  updateSaveButton();  // per-entity: enable iff THIS entity has an unsaved draft
+  updateDirtyDots();
   // refresh the filmstrip for this sprite (rebuild cells + refit drawer width)
   if (FILM.on){ drawFilm(); requestAnimationFrame(filmFitWidth); }
   // toolbar was hidden during boot; now that state is settled, reveal it
