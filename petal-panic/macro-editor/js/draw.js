@@ -214,22 +214,26 @@ function drawZoneBox(macro){
   ctx.restore();
 
   // Entry / exit clear zones (shaded bands along the composition axis).
+  // BOTH corners come from W() so the band's position AND size scale together
+  // with zoom/pan — matching how the grid and units are drawn. (Previously the
+  // size was a raw world-pixel value that never zoomed, so the band detached
+  // from the grid whenever you scrolled.)
   ctx.fillStyle = 'rgba(90,255,138,.10)';
   if (vertical){
     // Vertical composes along Y: entry at the BOTTOM, exit at the TOP.
-    const [ex0, eyA] = W(ax0*ux, ec*uy);
-    const [, eyB] = W(ax1*ux, 0);
-    ctx.fillRect(ex0, eyA, (ax1-ax0)*ux, eyB-eyA);          // entry band (bottom)
-    const [xx0, xyA] = W(ax0*ux, ay1*uy);
-    const [, xyB] = W(ax1*ux, (ay1-xc)*uy);
-    ctx.fillRect(xx0, xyA, (ax1-ax0)*ux, xyB-xyA);          // exit band (top)
+    const [ex0, eyTop] = W(ax0*ux, ec*uy);
+    const [ex1, eyBot] = W(ax1*ux, 0);
+    ctx.fillRect(ex0, eyTop, ex1-ex0, eyBot-eyTop);          // entry band (bottom)
+    const [xx0, xyTop] = W(ax0*ux, ay1*uy);
+    const [xx1, xyBot] = W(ax1*ux, (ay1-xc)*uy);
+    ctx.fillRect(xx0, xyTop, xx1-xx0, xyBot-xyTop);          // exit band (top)
   } else {
-    const [enx0, enyA] = W(0, ay1*uy);
-    const [enx1] = W(ec*ux, 0);
-    ctx.fillRect(enx0, enyA, ec*ux, (ay1-ay0)*uy);          // entry band (left)
-    const [exx0, exyA] = W((ax1-xc)*ux, ay1*uy);
-    const [exx1] = W(ax1*ux, 0);
-    ctx.fillRect(exx0, exyA, xc*ux, (ay1-ay0)*uy);          // exit band (right)
+    const [enx0, enyTop] = W(0, ay1*uy);
+    const [enx1, enyBot] = W(ec*ux, 0);
+    ctx.fillRect(enx0, enyTop, enx1-enx0, enyBot-enyTop);    // entry band (left)
+    const [exx0, exyTop] = W((ax1-xc)*ux, ay1*uy);
+    const [exx1, exyBot] = W(ax1*ux, 0);
+    ctx.fillRect(exx0, exyTop, exx1-exx0, exyBot-exyTop);    // exit band (right)
   }
 
   // Entry marker "X" (where the hero spawns) + exit flag — both on the GROUND.
