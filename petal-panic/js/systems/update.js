@@ -101,6 +101,40 @@ export const SOLIDS = [];
 // circular dependency with boss/bossFlow.js).
 const solidEntities = [];
 
+/**
+ * Shared physics step for any DYNAMIC solid — an entity that has gravity and
+ * is itself a standable surface (barrels today; crates/moving platforms later).
+ *
+ * This is the ONE place "what counts as a surface" is answered: static terrain
+ * PLUS every other live dynamic solid. No caller needs to know what a surface
+ * is or maintain per-entity resolve lists — that was the bug that kept barrels
+ * from stacking on each other (each barrel only resolved against `SOLIDS`).
+ *
+ * Ordering note: `peers` should be passed bottom-up (lowest y first) so lower
+ * bodies settle before upper ones land on them within the same frame.
+ *
+ * @param {object} e entity with x/y/w/h, vx/vy, alive, worldBox()
+ * @param {number} dt seconds
+ * @param {object[]} statics static terrain boxes (SOLID/PLATFORM)
+ * @param {object[]} peers all dynamic solids INCLUDING e (self is filtered out)
+ */
+export function stepDynamicSolid(e, dt, statics, peers) {
+  if (!e.alive) return;
+  if (e.vy == null) e.vy = 0;
+  e.vy = Math.min(e.vy + GRAVITY * dt, MAX_FALL_SPEED);
+  e.y += e.vy * dt;
+  const prevBottom = e.worldBox().y + e.worldBox().h - e.vy * dt;
+  const others = peers.filter(p => p !== e && p.alive);
+  resolve(e, [...statics, ...others.map(p => p.worldBox())], { prevBottom });
+  // Landing snap: zero fall velocity when resting on a surface.
+  const wb = e.worldBox();
+  for (const s of statics) {
+    if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
+    const gap = s.y - (wb.y + wb.h);
+    if (gap >= -2 && gap <= 2 && e.vy > 0) { e.vy = 0; break; }
+  }
+}
+
 // The hero's physical entry position for the active zone. Area -1 has no entry
 // flag (it starts at the zone's start); later areas start beside their entry
 // flag (checkpoints.md §1). startLife() owns placing the hero (lifecycle.md §3);
@@ -772,26 +806,20 @@ export function update(dt) {
   }
   processAllHitboxes();
 
-  // 1d2. tick live barrels (decays their hit-flash timer) + gravity: a barrel
-  // whose supporting surface disappeared (block destroyed, platform dropped)
-  // falls and lands on whatever is below — resolve() snaps it onto the
-  // surface top, exactly like the hero's landing. Barrels spawn feet-on-
-  // surface (instantiateZone), so at rest vy stays 0 and this is a no-op.
-  for (const b of [...barrels, ...woodBarrels, ...coinBarrels]) {
-    if (!b.alive) continue;
+  // 1d2. tick live barrels (decays their hit-flash timer) + gravity, via the
+  //     SHARED dynamic-solid step: any entity with gravity integrates and
+  //     resolves against static terrain AND every other live dynamic solid.
+  //     That is what lets barrels stack on each other and drop when the one
+  //     beneath them is destroyed — no per-entity knowledge of "what counts
+  //     as a surface". Barrels spawn feet-on-surface (instantiateZone), so at
+  //     rest vy stays 0 and this is a no-op. Hero/enemies are NOT dynamic
+  //     solids: they fall onto surfaces but are never themselves a surface.
+  const dynBarrels = [...barrels, ...woodBarrels, ...coinBarrels]
+    .filter(b => b.alive)
+    .sort((a, b) => b.y - a.y); // bottom-up: lower barrels settle first
+  for (const b of dynBarrels) {
     b.update(dt);
-    if (b.vy == null) b.vy = 0;
-    b.vy = Math.min(b.vy + GRAVITY * dt, MAX_FALL_SPEED);
-    b.y += b.vy * dt;
-    const prevBottom = b.worldBox().y + b.worldBox().h - b.vy * dt;
-    resolve(b, SOLIDS, { prevBottom });
-    // Landing snap: zero fall velocity when resting on a surface.
-    const wb = b.worldBox();
-    for (const s of SOLIDS) {
-      if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
-      const gap = s.y - (wb.y + wb.h);
-      if (gap >= -2 && gap <= 2 && b.vy > 0) { b.vy = 0; break; }
-    }
+    stepDynamicSolid(b, dt, SOLIDS, dynBarrels);
   }
 
   // 1d3. tick powerups (bob anim), checkpoints (flash decay), and
