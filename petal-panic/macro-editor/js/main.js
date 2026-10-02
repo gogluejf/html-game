@@ -17,11 +17,13 @@ function syncToggles(){
   $('tglGrid').classList.toggle('on', app.show.grid);
   $('tglSlots').classList.toggle('on', app.show.slots);
   $('tglLabels').classList.toggle('on', app.show.labels);
+  $('tglZone').classList.toggle('on', app.show.zone);
 }
 function initToolbar(){
   $('tglGrid').addEventListener('click', ()=>{ app.show.grid=!app.show.grid; syncToggles(); draw(); });
   $('tglSlots').addEventListener('click', ()=>{ app.show.slots=!app.show.slots; syncToggles(); draw(); });
   $('tglLabels').addEventListener('click', ()=>{ app.show.labels=!app.show.labels; syncToggles(); draw(); });
+  $('tglZone').addEventListener('click', ()=>{ app.show.zone=!app.show.zone; syncToggles(); draw(); });
   $('newBtn').addEventListener('click', ()=>showToast('New macro: not wired in Pass 1', 'info'));
 }
 
@@ -92,6 +94,7 @@ function initKeyboard(){
       if (e.code==='KeyG'){ e.preventDefault(); $('tglGrid').click(); return; }
       if (e.code==='KeyS'){ e.preventDefault(); $('tglSlots').click(); return; }
       if (e.code==='KeyL'){ e.preventDefault(); $('tglLabels').click(); return; }
+      if (e.code==='KeyZ'){ e.preventDefault(); $('tglZone').click(); return; }
       if (e.code==='ArrowUp' && app.flatIdx>0){ e.preventDefault(); selectMacro(app.flatList[app.flatIdx-1].id); return; }
       if (e.code==='ArrowDown' && app.flatIdx<app.flatList.length-1){ e.preventDefault(); selectMacro(app.flatList[app.flatIdx+1].id); return; }
     }

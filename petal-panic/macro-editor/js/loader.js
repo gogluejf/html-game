@@ -10,13 +10,25 @@ const MACRO_DIR = '../macros/levels/';   // relative to /petal-panic/macro-edito
 // Pull the authoritative unit constants from the game's own module so the
 // editor grid can never drift from the game. Stored on app; draw.js reads them.
 export async function loadGameConstants(){
-  const fallback = { unitPxX:CONSTS.UNIT_PX_X, unitPxY:CONSTS.UNIT_PX_Y, platformDrawH:CONSTS.PLATFORM_DRAW_H };
+  const fallback = {
+    unitPxX:CONSTS.UNIT_PX_X, unitPxY:CONSTS.UNIT_PX_Y, platformDrawH:CONSTS.PLATFORM_DRAW_H,
+    entryClear:3, exitClear:3,
+    hBudgetUnits:56, vBudgetUnits:56, vZoneWidthUnits:22,
+  };
   try{
     const mod = await import('../../js/world/macros.js');
+    const lvl = await import('../../js/world/level.js');
     return {
       unitPxX: mod.UNIT_PX_X ?? fallback.unitPxX,
       unitPxY: mod.UNIT_PX_Y ?? fallback.unitPxY,
       platformDrawH: mod.PLATFORM_DRAW_H ?? fallback.platformDrawH,
+      entryClear: mod.ENTRY_CLEAR ?? fallback.entryClear,
+      exitClear: mod.EXIT_CLEAR ?? fallback.exitClear,
+      // Area length budget in UNITS (what the composer fills), per orientation.
+      hBudgetUnits: Math.round(lvl.HORIZONTAL_AREA_LENGTH_PX / (mod.UNIT_PX_X || fallback.unitPxX)),
+      vBudgetUnits: Math.round(lvl.VERTICAL_AREA_LENGTH_PX / (mod.UNIT_PX_Y || fallback.unitPxY)),
+      // Vertical zone is one screen wide — the lateral bound for vertical macros.
+      vZoneWidthUnits: Math.floor(lvl.ZONE_WIDTH_VERTICAL / (mod.UNIT_PX_X || fallback.unitPxX)),
     };
   }catch(e){
     console.warn('[macro-editor] using fallback constants:', e.message);

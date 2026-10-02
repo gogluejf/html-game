@@ -29,7 +29,7 @@ let cur = null;        // {id, macro, st} | null
 // per-macro draft (in-memory working copy): id -> macro object
 const drafts = new Map();
 
-const show = { grid:true, slots:true, labels:true };
+const show = { grid:true, slots:true, labels:true, zone:true };
 
 let _loadingState = false;
 

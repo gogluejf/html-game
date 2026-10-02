@@ -21,6 +21,7 @@ export function draw(){
 
   if (app.show.grid) drawGrid();
   if (app.cur && app.cur.st){
+    if (app.show.zone) drawZoneBox(app.cur.st);   // area bounding box + entry/exit (behind units)
     drawMacro(app.cur.st);
   } else {
     ctx.fillStyle = 'rgba(255,255,255,.3)';
@@ -132,6 +133,131 @@ function drawMacro(macro){
       ctx.stroke();
     }
   }
+}
+
+// ---------- area bounding box + entry/exit markers ----------
+// Shows the full AREA a macro lives inside (the composer's length budget), so
+// you can see how much of a level one macro consumes and where the hero enters
+// (X) and exits (flag). The box is the whole area: entry clear → units → exit
+// clear. For vertical macros the width is the fixed one-screen zone width.
+function drawZoneBox(macro){
+  const c = _consts;
+  const ux = c.unitPxX, uy = c.unitPxY;
+  const ec = c.entryClear ?? 3, xc = c.exitClear ?? 3;
+  const vertical = macro.orientation === 'vertical';
+
+  // Macro footprint in unit space (bounding box of its units).
+  const units = macro.units || [];
+  let minX = Infinity, maxX = -Infinity, maxY = 0;
+  for (const u of units){
+    const x0 = u.x ?? 0;
+    const x1 = x0 + (u.kind === 'block' ? 1 : (u.width ?? 1));
+    const yTop = (u.y ?? 0) + (u.kind === 'block' ? (u.height ?? 1) : 1);
+    if (x0 < minX) minX = x0;
+    if (x1 > maxX) maxX = x1;
+    if (yTop > maxY) maxY = yTop;
+  }
+  if (!isFinite(minX)){ minX = 0; maxX = 0; }   // empty macro
+
+  // Area extents (unit space). Origin = bottom-left of the area (ground line).
+  let ax0, ax1, ay1;
+  if (vertical){
+    // Vertical: fixed one-screen width; height = the climb budget.
+    ax0 = 0;
+    ax1 = c.vZoneWidthUnits ?? Math.max(maxX, 22);
+    ay1 = c.vBudgetUnits ?? Math.max(maxY + ec + xc, 56);
+  } else {
+    // Horizontal: width = the area length budget; height = whatever the macro
+    // needs (entry/exit sit on the ground, so at least a couple of rows tall).
+    ax0 = 0;
+    ax1 = c.hBudgetUnits ?? Math.max(maxX + ec + xc, 56);
+    ay1 = Math.max(maxY + 1, 4);
+  }
+  const ay0 = 0;   // ground
+
+  // Dashed bounding box around the whole area.
+  const [bx0, byTop] = W(ax0*ux, ay1*uy);
+  const [bx1, byBot] = W(ax1*ux, ay0*uy);
+  ctx.save();
+  ctx.setLineDash([8, 6]);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255,226,62,.55)';
+  ctx.strokeRect(bx0, byTop, bx1-bx0, byBot-byTop);
+  ctx.restore();
+
+  // Entry / exit clear zones (shaded bands along the composition axis).
+  ctx.fillStyle = 'rgba(90,255,138,.10)';
+  if (vertical){
+    // Vertical composes along Y: entry at the BOTTOM, exit at the TOP.
+    const [ex0, eyA] = W(ax0*ux, ec*uy);
+    const [, eyB] = W(ax1*ux, 0);
+    ctx.fillRect(ex0, eyA, (ax1-ax0)*ux, eyB-eyA);          // entry band (bottom)
+    const [xx0, xyA] = W(ax0*ux, ay1*uy);
+    const [, xyB] = W(ax1*ux, (ay1-xc)*uy);
+    ctx.fillRect(xx0, xyA, (ax1-ax0)*ux, xyB-xyA);          // exit band (top)
+  } else {
+    const [enx0, enyA] = W(0, ay1*uy);
+    const [enx1] = W(ec*ux, 0);
+    ctx.fillRect(enx0, enyA, ec*ux, (ay1-ay0)*uy);          // entry band (left)
+    const [exx0, exyA] = W((ax1-xc)*ux, ay1*uy);
+    const [exx1] = W(ax1*ux, 0);
+    ctx.fillRect(exx0, exyA, xc*ux, (ay1-ay0)*uy);          // exit band (right)
+  }
+
+  // Entry marker "X" (where the hero spawns) + exit flag.
+  const markSize = Math.max(10, 14*app.zoom);
+  if (vertical){
+    drawEntryX(W((ax0+ax1)/2*ux, (ec/2)*uy), markSize);
+    drawExitFlag(W((ax0+ax1)/2*ux, (ay1 - xc/2)*uy), markSize);
+  } else {
+    drawEntryX(W((ec/2)*ux, (ay1*uy)/2), markSize);
+    drawExitFlag(W((ax1 - xc/2)*ux, (ay1*uy)/2), markSize);
+  }
+
+  // Dimension label along the composition axis.
+  const dimLabel = vertical
+    ? `${Math.round(ay1)}u tall · ${Math.round(ax1)}u wide`
+    : `${Math.round(ax1)}u wide · ${Math.round(ay1)}u tall`;
+  ctx.fillStyle = 'rgba(255,226,62,.8)';
+  ctx.font = `${Math.max(10, 12*app.zoom)}px monospace`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(`AREA  ${dimLabel}`, bx0 + 6, byTop + 4);
+  ctx.textBaseline = 'alphabetic';
+}
+
+// An "X" marking the entry point (hero spawn).
+function drawEntryX([sx, sy], s){
+  ctx.strokeStyle = '#5aff8a';
+  ctx.lineWidth = Math.max(2, 2.5*app.zoom);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(sx - s/2, sy - s/2); ctx.lineTo(sx + s/2, sy + s/2);
+  ctx.moveTo(sx + s/2, sy - s/2); ctx.lineTo(sx - s/2, sy + s/2);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+  // small ring so it reads as a marker, not a stray crosshair
+  ctx.beginPath();
+  ctx.arc(sx, sy, s*0.72, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(90,255,138,.5)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+// A little flag marking the exit.
+function drawExitFlag([sx, sy], s){
+  ctx.strokeStyle = '#ff5a5a';
+  ctx.fillStyle = '#ff5a5a';
+  ctx.lineWidth = Math.max(2, 2*app.zoom);
+  // pole
+  ctx.beginPath(); ctx.moveTo(sx, sy + s/2); ctx.lineTo(sx, sy - s/2); ctx.stroke();
+  // pennant
+  ctx.beginPath();
+  ctx.moveTo(sx, sy - s/2);
+  ctx.lineTo(sx + s*0.8, sy - s/2 + s*0.28);
+  ctx.lineTo(sx, sy - s/2 + s*0.56);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function labelAt(x, y, text){
