@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MUSIC JUKEBOX</title>
+<link rel="stylesheet" href="css/jukebox.css">
+</head>
+<body>
+<div id="log-ind">&#9679; LOGGING &#8212; press L to save</div>
+<div id="wrap">
+  <div id="main-col">
+    <div id="header">
+      <h1 id="title">Music for &#8212;</h1><div id="sub">JUKEBOX</div>
+      <div id="now">&nbsp;</div>
+    </div>
+    <div id="list"></div>
+  </div>
+  <aside id="side-panel" class="hidden">
+    <div id="sp-card">
+      <div id="sp-art">&#9834;</div>
+      <div id="sp-title">&ndash;</div>
+      <div id="sp-badges">
+        <span id="sp-genre">&ndash;</span>
+        <span id="sp-bpm">&ndash;</span>
+        <span id="sp-fav" title="Favorite"></span>
+      </div>
+      <div id="sp-meta">
+        <div><span class="k">Created</span><span class="v" id="sp-created">&ndash;</span></div>
+        <div><span class="k">Revision</span><span class="v" id="sp-revision">&ndash;</span></div>
+      </div>
+      <div id="sp-vibe-label">Vibe</div>
+      <div id="sp-vibe">&ndash;</div>
+    </div>
+    <div id="sp-transport">
+      <div id="sp-btns">
+        <button class="tbtn" id="sp-prev" title="Restart / previous"><svg viewBox="0 0 24 24"><polygon points="15 4 5 12 15 20 15 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
+        <button class="tbtn play-btn" id="sp-play" title="Play/Pause"><svg viewBox="0 0 24 24" id="sp-play-icon"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></button>
+        <button class="tbtn" id="sp-next" title="Next song"><svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="5" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
+      </div>
+      <div id="sp-tl-head"><span id="sp-time-cur">0:00</span><span id="sp-time-dur">0:00</span></div>
+      <div id="sp-timeline"><div id="sp-tl-track"></div><div id="sp-tl-progress"></div><div id="sp-tl-dot"></div></div>
+    </div>
+  </aside>
+</div>
+<div id="transport">
+  <button class="tbtn" id="tb-prev" title="Restart song / double-click for previous"><svg viewBox="0 0 24 24"><polygon points="15 4 5 12 15 20 15 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
+  <button class="tbtn play-btn" id="tb-play" title="Play/Pause (Space)"><svg viewBox="0 0 24 24" id="play-icon"><polygon points="7 4 20 12 7 20 7 4"></polygon></svg></button>
+  <button class="tbtn" id="tb-next" title="Next song"><svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="5" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2"></line></svg></button>
+  <div id="tl-wrap">
+    <div id="tl-head"><span id="tl-title"></span><span id="tl-time">0:00 / 0:00</span></div>
+    <div id="phrase-labels"></div>
+    <div id="timeline"><div id="tl-progress"></div><div id="tl-dividers"></div><div id="tl-dot"></div></div>
+  </div>
+  <div id="modes-t">
+    <div class="mode" id="mt-seq" title="Sequence (S)"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;display:inline;vertical-align:-2px;margin-right:4px;"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line></svg>SEQ</div>
+    <div class="mode" id="mt-rep" title="Repeat (R)"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;display:inline;vertical-align:-2px;margin-right:4px;"><polyline points="17 2 21 6 17 10"></polyline><path d="M3 12v-2a4 4 0 0 1 4-4h14"></path><polyline points="7 22 3 18 7 14"></polyline><path d="M21 12v2a4 4 0 0 1-4 4H3"></path></svg>REP</div>
+    <div class="mode" id="mt-shf" title="Shuffle (H)"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;display:inline;vertical-align:-2px;margin-right:4px;"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>SHF</div>
+  </div>
+</div>
+<!-- Engine first (classic script, defines window.MusicSequencer), then the UI module. -->
+<script src="js/notes.js"></script>
+<script src="js/sequencer.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
