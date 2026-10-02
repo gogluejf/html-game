@@ -109,6 +109,7 @@ function factoryReset(){
       updateSaveButton();   // reflect the wiped drafts (no dot, button off)
       updateDirtyDots();
     });
+  });
 }
 const bgSwatchRef = document.getElementById('bgSwatch');
 const bgHexRef = document.getElementById('bgHex');
