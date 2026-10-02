@@ -285,7 +285,9 @@ function initKeyboard(){
         e.preventDefault();
         commit(() => {
           if (app._selectedBox.startsWith('box_')){
-            shiftElement('box', parseInt(app._selectedBox.slice(4), 10), dx, dy);
+            // nudge ONLY this hit box (same as markers) — the body stays put
+            const b = st.frames[fi].boxes[parseInt(app._selectedBox.slice(4), 10)];
+            if (b){ b.x += dx; b.y += dy; }
           } else if (app._selectedBox === 'sprite'){
             shiftElement('sprite', -1, dx, dy);
           } else if (app._selectedBox === 'collision'){
