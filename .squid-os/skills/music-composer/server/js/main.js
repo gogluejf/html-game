@@ -38,7 +38,7 @@ async function loadTracks(gameName) {
     const base = f.slice('parts-'.length, -'.json'.length);
     const bbFile = 'backbones/' + base + '.json';
     const backbone = await getJSON(dir + '/' + bbFile).catch(() => null);
-    if (!backbone || !Array.isArray(backbone.form)) {
+    if (!backbone || (!Array.isArray(backbone.parts) && !Array.isArray(backbone.form))) {
       console.warn('[jukebox] missing backbone for ' + f);
       continue;
     }
