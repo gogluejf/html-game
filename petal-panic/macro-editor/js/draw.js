@@ -97,31 +97,47 @@ function drawGrid(){
   ctx.beginPath(); ctx.moveTo(gx0, gy0); ctx.lineTo(gx1, gy0); ctx.stroke();
 
   // ---------- origin axes (like the sprite editor) ----------
-  // The y-axis (x=0) sits AFTER the area-entry + macro-entry clearance zones,
-  // at the first block's left edge. This makes "0,0" land where the playable
-  // area actually begins, not at the far-left edge of the reserved spawn zone.
+  // Draw X and Y axes at the body origin (after clearance zones).
+  // Horizontal: x-axis = ground line (y=0), y-axis = after area-in + macro-in
+  // Vertical: x-axis = after area-in + macro-in (along the climb), y-axis = left edge
   const c = _consts;
-  const areaEc = c.entryClear ?? 3;
+  const vertical = app.cur?.st?.orientation === 'vertical';
+  const areaEc = vertical ? c.vEntryClear : c.hEntryClear;
   const macroEc = app.cur?.st?.entryClear ?? 2;
-  const bodyOriginX = (areaEc + macroEc) * c.unitPxX;   // world-x where blocks start
-  const [ox, oy] = W(bodyOriginX, 0);   // body origin on screen
-  if (ox >= -40 && ox <= app.cssW + 40 && oy >= -40 && oy <= app.cssH + 40){
+  const bodyOffset = areaEc + macroEc;   // total offset before blocks start
+  
+  let ox, oy;
+  if (vertical){
+    // Vertical: composition axis is Y (climb). The "origin" is at the bottom
+    // of the macro (after entry clear), on the left edge.
+    ox = 0;   // left edge (no x-offset for vertical)
+    oy = bodyOffset * c.unitPxY;   // up by the entry clear amount
+  } else {
+    // Horizontal: composition axis is X. The "origin" is at the ground (y=0),
+    // after the entry clear zones.
+    ox = bodyOffset * c.unitPxX;   // right by the entry clear amount
+    oy = 0;   // ground level
+  }
+  const [screenX, screenY] = W(ox, oy);
+  if (screenX >= -40 && screenX <= app.cssW + 40 && screenY >= -40 && screenY <= app.cssH + 40){
     ctx.save();
-    // y-axis (col 0) through the visible range
+    // Draw both axes through the origin point
     ctx.strokeStyle = 'rgba(90,106,144,.8)';
     ctx.lineWidth = 1.5;
+    // Y-axis (vertical line)
     ctx.beginPath();
-    ctx.moveTo(ox, 0); ctx.lineTo(ox, app.cssH);
+    ctx.moveTo(screenX, 0); ctx.lineTo(screenX, app.cssH);
+    ctx.stroke();
+    // X-axis (horizontal line)
+    ctx.beginPath();
+    ctx.moveTo(0, screenY); ctx.lineTo(app.cssW, screenY);
     ctx.stroke();
     // origin dot
     ctx.fillStyle = 'rgba(150,170,210,.9)';
     ctx.font = '11px Courier New';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('0,0', ox + 4, oy - 4);
-    ctx.fillText('+x \u25B6', ox + ux*app.zoom + 4, oy - 4);
-    ctx.textBaseline = 'top';
-    ctx.fillText('\u25BC +y', ox + 4, oy + 4);
+    ctx.fillText('0,0', screenX + 4, screenY - 4);
     ctx.restore();
   }
 }
