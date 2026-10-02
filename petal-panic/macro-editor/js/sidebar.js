@@ -4,7 +4,7 @@
 
 import { app } from './state.js';
 import { $, tree } from './viewport.js';
-import { draw, zoneExtents } from './draw.js';
+import { draw, zoneExtents, contentExtents } from './draw.js';
 import { setZoom } from './viewport.js';
 import { updateDirtyDots, updateSaveButton, saveActive } from './save.js';
 
@@ -67,7 +67,10 @@ export function selectMacro(id){
 // so the full level size + entry/exit are always visible on first select.
 function fitView(st){
   const ux = app.consts.unitPxX, uy = app.consts.unitPxY;
-  const { ax0, ax1, ay0, ay1 } = zoneExtents(st);
+  // Fit to the CONTENT (terrain + entry/exit bands), not the full zone box —
+  // a horizontal area is one screen tall but its terrain sits in the bottom
+  // few rows, so fitting the full box would center empty air below the ground.
+  const { ax0, ax1, ay0, ay1 } = contentExtents(st);
   if (!isFinite(ax1)){ app.panX = 0; app.panY = 0; setZoom(1); return; }
   const minX = ax0*ux, maxX = ax1*ux, minY = ay0*uy, maxY = ay1*uy;
   const pad = 60;

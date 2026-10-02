@@ -93,6 +93,32 @@ function drawGrid(){
   const [gx0, gy0] = W(minX, 0);
   const [gx1] = W(maxX, 0);
   ctx.beginPath(); ctx.moveTo(gx0, gy0); ctx.lineTo(gx1, gy0); ctx.stroke();
+
+  // ---------- origin axes (like the sprite editor) ----------
+  // The x-axis is the ground line (row 0) drawn above; here we draw the y-axis
+  // (col 0) and a "0,0" origin marker + direction hints so you can see exactly
+  // where bottom-left (0,0) lands. This makes the zone box's bottom/left edges
+  // verifiable against the grid instead of floating in nowhere.
+  const [ox, oy] = W(0, 0);   // world origin on screen
+  if (ox >= -40 && ox <= app.cssW + 40 && oy >= -40 && oy <= app.cssH + 40){
+    ctx.save();
+    // y-axis (col 0) through the visible range
+    ctx.strokeStyle = 'rgba(90,106,144,.8)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(ox, 0); ctx.lineTo(ox, app.cssH);
+    ctx.stroke();
+    // origin dot
+    ctx.fillStyle = 'rgba(150,170,210,.9)';
+    ctx.font = '11px Courier New';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('0,0', ox + 4, oy - 4);
+    ctx.fillText('+x \u25B6', ox + ux*app.zoom + 4, oy - 4);
+    ctx.textBaseline = 'top';
+    ctx.fillText('\u25BC +y', ox + 4, oy + 4);
+    ctx.restore();
+  }
 }
 
 function drawMacro(macro){
@@ -194,6 +220,45 @@ export function zoneExtents(macro){
     ay1 = c.hZoneHeightUnits ?? Math.max(maxY + 4, 11);
   }
   return { ax0, ax1, ay0: 0, ay1 };
+}
+
+// Content extents for FIT-TO-VIEW only: the actual terrain plus the entry/exit
+// clear bands, but NOT the full zone height. A horizontal area is one screen
+// tall (11.25u) yet its terrain sits in the bottom few rows — fitting to the
+// full box would center ~8u of empty air and make the zone look oversized.
+// Fitting to the content keeps the ground line near the canvas center so the
+// zone box reads correctly. The zone OVERLAY itself still draws at full height.
+export function contentExtents(macro){
+  const c = _consts;
+  const ec = c.entryClear ?? 3, xc = c.exitClear ?? 3;
+  const vertical = macro.orientation === 'vertical';
+  const units = macro.units || [];
+  let minX = Infinity, maxX = -Infinity, maxY = 0;
+  for (const u of units){
+    const x0 = u.x ?? 0;
+    const x1 = x0 + (u.kind === 'block' ? 1 : (u.width ?? 1));
+    const yTop = (u.y ?? 0) + (u.kind === 'block' ? (u.height ?? 1) : 1);
+    if (x0 < minX) minX = x0;
+    if (x1 > maxX) maxX = x1;
+    if (yTop > maxY) maxY = yTop;
+  }
+  if (!isFinite(minX)){ minX = 0; maxX = 0; }   // empty macro
+  let cx0, cx1, cy1;
+  if (vertical){
+    // Full one-screen width; height = terrain top + exit clear band.
+    cx0 = 0;
+    cx1 = c.vZoneWidthUnits ?? Math.max(maxX, 22);
+    cy1 = maxY + xc;
+  } else {
+    // Fit to the ACTUAL terrain span (plus a little breathing room), NOT the
+    // 56u composition budget — fitting the full budget zooms way out and makes
+    // the zone box look like a giant slab. A single macro's entry/exit markers
+    // sit within this span, so they stay in frame too.
+    cx0 = Math.min(0, minX) - 1;
+    cx1 = maxX + 1;
+    cy1 = Math.max(maxY + 1, 3);
+  }
+  return { ax0: cx0, ax1: cx1, ay0: 0, ay1: cy1 };
 }
 
 function drawZoneBox(macro){
