@@ -169,40 +169,63 @@ def parse_drum_spec(spec_str, step_width=16):
     into a 32-step [{k,s,h}] array (always 32 for engine compatibility).
     """
     STEPS = 32
-    k_set, s_set, h_set = set(), set(), set()
+    k_set, s_set, h_set, c_set, oh_set = set(), set(), set(), set(), set()
     named = {"quarters": 4, "eighths": 2, "sixteenths": 1}
 
     if not spec_str or spec_str.strip() == "{}":
         return [{"k": False, "s": False, "h": False} for _ in range(STEPS)]
 
-    # Parse key:value pairs
-    pairs = re.findall(r'(\w+)\s*:\s*"([^"]*)"', spec_str)
-    for inst, val in pairs:
-        val = val.strip()
+    # Parse key:value pairs — value is either "quoted beats" or a bare named pattern
+    pairs = re.findall(r'(\w+)\s*:\s*(?:"([^"]*)"|(\w+))', spec_str)
+    for inst, quoted, bare in pairs:
+        val = (quoted if quoted else bare).strip()
+        if inst == "openHat":
+            target = oh_set
+        elif inst == "crash":
+            target = c_set
+        elif inst == "hat":
+            target = h_set
+        else:
+            target = None
         if val in named:
             interval = named[val]
             for i in range(0, STEPS, interval):
-                _add_drum(inst, i, k_set, s_set, h_set)
+                _add_drum(inst, i, k_set, s_set, h_set, c_set, oh_set)
         else:
             for beat_str in val.split():
                 try:
                     beat = float(beat_str)
                     step = round(beat * 4)  # beat → 16th note step
                     if 0 <= step < STEPS:
-                        _add_drum(inst, step, k_set, s_set, h_set)
+                        _add_drum(inst, step, k_set, s_set, h_set, c_set, oh_set)
                 except ValueError:
                     pass
 
-    return [{"k": i in k_set, "s": i in s_set, "h": i in h_set} for i in range(STEPS)]
+    out = []
+    for i in range(STEPS):
+        cell = {"k": i in k_set, "s": i in s_set, "h": i in h_set}
+        if i in c_set:
+            cell["c"] = True
+        if i in oh_set:
+            cell["oh"] = True
+        out.append(cell)
+    return out
 
 
-def _add_drum(inst, step, k_set, s_set, h_set):
+def _add_drum(inst, step, k_set, s_set, h_set, c_set=None, oh_set=None):
     if inst == "kick":
         k_set.add(step)
     elif inst == "snare":
         s_set.add(step)
     elif inst == "hat":
         h_set.add(step)
+    elif inst == "openHat":
+        if oh_set is not None:
+            oh_set.add(step)
+        h_set.add(step)
+    elif inst == "crash":
+        if c_set is not None:
+            c_set.add(step)
 
 
 # ─── Pad parser ─────────────────────────────────────────────────────────────

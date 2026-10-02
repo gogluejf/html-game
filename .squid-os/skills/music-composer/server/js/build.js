@@ -16,7 +16,7 @@ const _NOTE = window._NOTE;
   export function resolvePhrase(arr) { return arr.map(resolveNote); }
 
   export function buildTrack(t) {
-    const drums = t.drums.map(set => set.map(d => ({ k: !!d.k, s: !!d.s, h: !!d.h })));
+    const drums = t.drums.map(set => set.map(d => ({ k: !!d.k, s: !!d.s, h: !!d.h, c: !!d.c, oh: d.oh === true, v: (typeof d.v === 'number') ? d.v : undefined })));
     // bass: single 32-step phrase OR a per-phrase bank (same length as leads).
     const isBassBank = Array.isArray(t.bass) && t.bass.length > 0 && Array.isArray(t.bass[0]);
     const bass = isBassBank ? t.bass.map(resolvePhrase) : resolvePhrase(t.bass);

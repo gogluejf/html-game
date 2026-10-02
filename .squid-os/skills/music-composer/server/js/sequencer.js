@@ -279,9 +279,10 @@ class MusicSequencer {
     // Phrase-count-driven drums: light -> medium -> full (drifts across phrases).
     const drumSet = (trk.drums[lvl] != null) ? trk.drums[lvl] : trk.drums;
     const d = drumSet[step];
-    if (d.k) this._kick(t, trk);
-    if (d.s) this._snare(t, trk);
-    if (d.h) this._hat(t, trk);
+    if (d.k) this._kick(t, trk, d.v);
+    if (d.s) this._snare(t, trk, d.v);
+    if (d.h) this._hat(t, trk, d.oh === true, d.v);
+    if (d.c) this._crash(t, trk, d.v);
     const b = (Array.isArray(trk.bass) && trk.bass[pi] != null) ? trk.bass[pi][step] : trk.bass[step];
     if (b) this._bass(t, b.hz, trk, b.mul);
     if (padPhrase && padPhrase[step]) this._pad(t, padPhrase[step], trk);
@@ -298,21 +299,23 @@ class MusicSequencer {
 
   /* -- voices -------------------------------------------------------------- */
 
-  _kick(t, trk) {
+  _kick(t, trk, v) {
+    const vel = (v != null) ? Math.max(0.1, Math.min(1, v)) : 1;
     const osc = this.ctx.createOscillator();
     osc.type = "sine";
     osc.frequency.setValueAtTime(trk.kickTop || 140, t);
     osc.frequency.exponentialRampToValueAtTime(trk.kickBot || 45, t + 0.12);
     const g = this.ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.9, t + 0.004);
+    g.gain.linearRampToValueAtTime(0.9 * vel, t + 0.004);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
     osc.connect(g); g.connect(this._busFilter);
     osc.start(t); osc.stop(t + 0.18);
     this._track(osc, t + 0.2);
   }
 
-  _snare(t, trk) {
+  _snare(t, trk, v) {
+    const vel = (v != null) ? Math.max(0.1, Math.min(1, v)) : 1;
     const src = this.ctx.createBufferSource();
     src.buffer = this.noiseBuffer;
     const hp = this.ctx.createBiquadFilter();
@@ -322,26 +325,47 @@ class MusicSequencer {
     const g = this.ctx.createGain();
     const dur = 0.14;
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.5, t + 0.003);
+    g.gain.linearRampToValueAtTime(0.5 * vel, t + 0.003);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     src.connect(hp); hp.connect(bp); bp.connect(g); g.connect(this._busFilter);
     src.start(t); src.stop(t + dur + 0.02);
     this._track(src, t + dur + 0.05);
   }
 
-  _hat(t, trk) {
+  /** Hi-hat: closed (short tick) or open (long wash) via `open`. */
+  _hat(t, trk, open, v) {
+    const vel = (v != null) ? Math.max(0.1, Math.min(1, v)) : 1;
     const src = this.ctx.createBufferSource();
     src.buffer = this.noiseBuffer;
     const hp = this.ctx.createBiquadFilter();
-    hp.type = "highpass"; hp.frequency.value = 7000;
+    hp.type = "highpass"; hp.frequency.value = open ? 5500 : 7000;
     const g = this.ctx.createGain();
-    const dur = 0.03;
+    const dur = open ? 0.28 : 0.03;
+    const peak = (open ? 0.14 : 0.16) * vel;
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.16, t + 0.002);
+    g.gain.linearRampToValueAtTime(peak, t + 0.002);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     src.connect(hp); hp.connect(g); g.connect(this._busFilter);
     src.start(t); src.stop(t + dur + 0.02);
     this._track(src, t + dur + 0.05);
+  }
+
+  /** Crash cymbal: long-decay bright noise burst for section hits / peaks. */
+  _crash(t, trk, v) {
+    const vel = (v != null) ? Math.max(0.1, Math.min(1, v)) : 1;
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+    src.playbackRate.value = 0.9;
+    const hp = this.ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 4000;
+    const g = this.ctx.createGain();
+    const dur = 0.9;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.35 * vel, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(hp); hp.connect(g); g.connect(this._busFilter);
+    src.start(t); src.stop(t + dur + 0.05);
+    this._track(src, t + dur + 0.1);
   }
 
   _bass(t, freq, trk, mul) {

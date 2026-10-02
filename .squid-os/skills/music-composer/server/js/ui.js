@@ -116,6 +116,7 @@ export function initUI(sc, gameName) {
     const names = sc.tracks.map(t => t.name);
     nowEl.textContent = '\u25cf NOW PLAYING: ' + (i+1) + ' ' + names[i];
     tlTitle.textContent = (i+1) + '. ' + names[i];
+    buildTimeline();
     renderList();
     renderSidePanel();
   };
@@ -209,15 +210,28 @@ export function initUI(sc, gameName) {
   });
 
   // ── Timeline rendering (reads from sc.position()) ────────────────────────
-  (function buildTimeline() {
-    const divs = document.getElementById('tl-dividers');
-    const labels = document.getElementById('phrase-labels');
-    const names = ['0','0b','1','1b','2','3','4','tag'];
-    for (let i = 0; i < 8; i++) {
-      const d = document.createElement('div'); d.className = 'div'; divs.appendChild(d);
-      const l = document.createElement('span'); l.textContent = names[i]; labels.appendChild(l);
+  // Built dynamically per track: one slot per backbone section, sized by its
+  // share of total bars so dividers land on real section boundaries.
+  const tlDivs = document.getElementById('tl-dividers');
+  const tlLabels = document.getElementById('phrase-labels');
+  function buildTimeline() {
+    const trk = sc.tracks[sc.current];
+    if (!trk) return;
+    const secs = trk.sections || [];
+    const lens = trk.phraseLens || [1,1,1,1,1,1,1,1];
+    const total = lens.reduce((a, b) => a + b, 0) || 1;
+    tlDivs.innerHTML = '';
+    tlLabels.innerHTML = '';
+    for (let i = 0; i < secs.length; i++) {
+      const d = document.createElement('div'); d.className = 'div';
+      d.style.flex = lens[i] + ' 0 0';
+      tlDivs.appendChild(d);
+      const l = document.createElement('span');
+      l.textContent = secs[i].section;
+      l.style.flex = lens[i] + ' 0 0';
+      tlLabels.appendChild(l);
     }
-  })();
+  }
 
   function fmt(s) {
     const m = Math.floor(s / 60);
@@ -323,5 +337,6 @@ export function initUI(sc, gameName) {
   // otherwise stay blank until the user switches songs.
   tlTitle.textContent = (sc.current + 1) + '. ' + sc.tracks[sc.current].name;
   nowEl.textContent = '\u25cb READY: ' + (sc.current + 1) + ' ' + sc.tracks[sc.current].name;
+  buildTimeline();
 }
 

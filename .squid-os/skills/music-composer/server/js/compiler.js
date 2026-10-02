@@ -53,10 +53,10 @@ function chordNotes(name, rootOct = 1) {
 function expandKitEntry(entry) {
   // Verbatim 32-step form (list of {k,s,h}) — lossless migration format.
   if (Array.isArray(entry)) {
-    return entry.slice(0, STEPS).map(d => ({ k: !!d.k, s: !!d.s, h: !!d.h }));
+    return entry.slice(0, STEPS).map(d => ({ k: !!d.k, s: !!d.s, h: !!d.h, c: !!d.c, oh: d.oh === true, v: (typeof d.v === 'number') ? d.v : undefined }));
   }
   // Beat-notation form (dict): kick/snare beat positions or named patterns.
-  const k = new Set(), s = new Set(), h = new Set();
+  const k = new Set(), s = new Set(), h = new Set(), c = new Set(), openHats = new Set();
   const named = { quarters: 4, eighths: 2, sixteenths: 1 };
   for (const inst of ['kick', 'snare']) {
     const val = entry[inst];
@@ -77,7 +77,25 @@ function expandKitEntry(entry) {
       for (const beat of String(hat).split(/\s+/)) h.add(Math.round(parseFloat(beat) * 4));
     }
   }
-  return Array.from({ length: STEPS }, (_, i) => ({ k: k.has(i), s: s.has(i), h: h.has(i) }));
+  // Open hats: explicit beat list, each marked oh=true.
+  const ohat = entry.openHat;
+  if (ohat) {
+    if (typeof ohat === 'string' && ohat in named) {
+      for (let i = 0; i < STEPS; i += named[ohat]) h.add(i), openHats.add(i);
+    } else {
+      for (const beat of String(ohat).split(/\s+/)) { const i = Math.round(parseFloat(beat) * 4); h.add(i); openHats.add(i); }
+    }
+  }
+  // Crash cymbal: explicit beat list.
+  const crash = entry.crash;
+  if (crash) {
+    if (typeof crash === 'string' && crash in named) {
+      for (let i = 0; i < STEPS; i += named[crash]) c.add(i);
+    } else {
+      for (const beat of String(crash).split(/\s+/)) c.add(Math.round(parseFloat(beat) * 4));
+    }
+  }
+  return Array.from({ length: STEPS }, (_, i) => ({ k: k.has(i), s: s.has(i), h: h.has(i), c: c.has(i), oh: openHats.has(i) || undefined }));
 }
 
 /** bars (arrays of cells each) -> flat cells (identity, padded to stepWidth/bar). */
@@ -180,6 +198,7 @@ export function compile(backbone, parts) {
       ? [...backbone.drumLevels]
       : phrases.map(ph => setIdx.get(JSON.stringify(ph.drums.map(d => [d.k, d.s, d.h])))),
     phraseLens: form.map(f => f.bars / 2),
+    sections: form,
     leads: phrases.map(ph => ph.lead),
     pads: phrases.map(ph => ph.pad),
     bass: allBassSame ? phrases[0].bass : phrases.map(ph => ph.bass),
