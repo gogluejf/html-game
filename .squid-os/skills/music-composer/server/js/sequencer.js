@@ -10,7 +10,7 @@ class MusicSequencer {
     this.playing = false;
     this.current = 0;         // active track index
     this.stepIndex = 0;       // next 16th-note to schedule
-    this.barCount = 0;        // total 2-bar blocks played (drives phrase progression)
+    this.measureCount = 0;    // total measures played (drives measure progression)
     this.nextNoteTime = 0;    // audio-clock time of next step
     this.timerId = null;
     this._liveOscs = new Set();
@@ -49,8 +49,7 @@ class MusicSequencer {
     this.current = Math.max(0, Math.min(this.tracks.length - 1, trackIndex | 0));
     this.playing = true;
     this.stepIndex = 0;
-    this.barCount = 0;
-    this.phraseCount = 0;   // total phrase-events played (drives drum level)
+    this.measureCount = 0;
     this.nextNoteTime = this.ctx.currentTime + 0.06;
     this._log('START done nextNoteTime=' + this.nextNoteTime.toFixed(4) + ' delta=' + (this.nextNoteTime - this.ctx.currentTime).toFixed(4));
 
@@ -78,8 +77,7 @@ class MusicSequencer {
     this._log('LOOP_RESTART track=' + i + ' nextNoteTime=' + this.nextNoteTime.toFixed(4) + ' ctxNow=' + this.ctx.currentTime.toFixed(4) + ' lead=' + (this.nextNoteTime - this.ctx.currentTime).toFixed(4));
     this.current = i;
     this.stepIndex = 0;
-    this.barCount = 0;
-    this.phraseCount = 0;
+    this.measureCount = 0;
     // Rebuild the audio bus only if it was torn down (normally it persists).
     if (!this._busFilter) {
       this._busFilter = this.ctx.createBiquadFilter();
@@ -115,7 +113,7 @@ class MusicSequencer {
   }
 
   stop() {
-    this._log('STOP playing=' + this.playing + ' stepIdx=' + this.stepIndex + ' bar=' + this.barCount);
+    this._log('STOP playing=' + this.playing + ' stepIdx=' + this.stepIndex + ' measure=' + this.measureCount);
     if (this.timerId !== null) { clearInterval(this.timerId); this.timerId = null; }
     this.playing = false;
     const t = this.ctx.currentTime;
@@ -136,8 +134,7 @@ class MusicSequencer {
     this._liveOscs.clear();
     // Save position so resume() can pick up exactly here.
     this._pausedStep = this.stepIndex;
-    this._pausedBar = this.barCount;
-    this._pausedPhrase = this.phraseCount;
+    this._pausedMeasure = this.measureCount;
     this._pausedTrack = this.current;
   }
 
@@ -147,8 +144,7 @@ class MusicSequencer {
     const trk = this.tracks[this._pausedTrack != null ? this._pausedTrack : this.current];
     this.current = this._pausedTrack != null ? this._pausedTrack : this.current;
     this.stepIndex = this._pausedStep || 0;
-    this.barCount = this._pausedBar || 0;
-    this.phraseCount = this._pausedPhrase || 0;
+    this.measureCount = this._pausedMeasure || 0;
     this.playing = true;
     this.nextNoteTime = this.ctx.currentTime + 0.06;
     // Rebuild the bus if it was torn down.
@@ -170,8 +166,7 @@ class MusicSequencer {
     this.current = i;
     if (this.playing) {
       this.stepIndex = 0;
-      this.barCount = 0;
-      this.phraseCount = 0;
+      this.measureCount = 0;
       this.nextNoteTime = this.ctx.currentTime + 0.04;
     } else {
       // Not playing: a track switch invalidates any saved pause snapshot so a
@@ -179,25 +174,22 @@ class MusicSequencer {
       // of snapping back to the track that was paused.
       this._pausedTrack = null;
       this._pausedStep = 0;
-      this._pausedBar = 0;
-      this._pausedPhrase = 0;
+      this._pausedMeasure = 0;
     }
   }
 
   /** Seek to an absolute step within the current track (0-based).
-   *  Computes the correct barCount/phraseCount so phrase progression
-   *  and drum levels are accurate at the seek point. */
+   *  Computes the correct measureCount so measure progression
+   *  and per-measure drums are accurate at the seek point. */
   seekToStep(absStep) {
     const trk = this.tracks[this.current];
     if (!trk) return;
-    const lens = trk.phraseLens || trk.leads.map(() => 1);
-    const totalBlocks = lens.reduce((a, b) => a + b, 0);
-    // Each block = 32 steps. Find which block and step-within-block.
-    const block = Math.floor(absStep / 32);
-    const stepInBlock = absStep % 32;
-    this.stepIndex = stepInBlock;
-    this.barCount = block;
-    this.phraseCount = block;
+    const spm = trk.stepsPerMeasure || 32;
+    // Flat measure walk: which measure, and which step within it.
+    const measure = Math.floor(absStep / spm);
+    const stepInMeasure = absStep % spm;
+    this.stepIndex = stepInMeasure;
+    this.measureCount = measure;
     this.nextNoteTime = this.ctx.currentTime + 0.06;
     // Kill any lingering oscillators from before the seek.
     const t = this.ctx.currentTime;
@@ -216,19 +208,20 @@ class MusicSequencer {
 
   _schedule() {
     const trk = this.tracks[this.current];
-    const lens = trk.phraseLens || trk.leads.map(() => 1);
-    const totalBlocks = lens.reduce((a, b) => a + b, 0);
+    const spm = trk.stepsPerMeasure || 32;
+    const totalMeasures = trk.leads.length;
     while (this.nextNoteTime < this.ctx.currentTime + this.lookahead) {
-      this._log('TICK step=' + this.stepIndex + ' bar=' + this.barCount + ' t=' + this.nextNoteTime.toFixed(4) + ' ctxNow=' + this.ctx.currentTime.toFixed(4) + ' lead=' + (trk.leads[this._phraseIndex(trk)][this.stepIndex] ? 'Y':'-'));
+      const mi = this._measureIndex(trk);
+      this._log('TICK step=' + this.stepIndex + ' measure=' + mi + ' t=' + this.nextNoteTime.toFixed(4) + ' ctxNow=' + this.ctx.currentTime.toFixed(4) + ' lead=' + (trk.leads[mi][this.stepIndex] ? 'Y':'-'));
       this._playStep(trk, this.stepIndex, this.nextNoteTime);
       const spb = 60.0 / trk.bpm;
       this.nextNoteTime += spb / 4;              // one 16th note
-      this.stepIndex = (this.stepIndex + 1) % trk.steps;
-      if (this.stepIndex === 0) { this.barCount++; this.phraseCount++; } // finished a 2-bar block (= one phrase)
+      this.stepIndex = (this.stepIndex + 1) % spm;
+      if (this.stepIndex === 0) { this.measureCount++; } // finished one measure
       // Song-sequence mode: when the whole song has played through every
-      // phrase exactly once (one full cycle), decide what happens next:
-      if (trk.autoNext && this.barCount > 0 && this.barCount % totalBlocks === 0) {
-        this._log('LOOP detected at bar=' + this.barCount + ' totalBlocks=' + totalBlocks + ' autoNext=' + trk.autoNext);
+      // measure exactly once (one full cycle), decide what happens next:
+      if (trk.autoNext && this.measureCount > 0 && this.measureCount % totalMeasures === 0) {
+        this._log('LOOP detected at measure=' + this.measureCount + ' totalMeasures=' + totalMeasures + ' autoNext=' + trk.autoNext);
         // Delegate the "what plays next" decision to the host (SongController
         // overrides next()/shuffleNext() to run its rep/seq/shf mode logic).
         // repeatOne is a pure-engine flag for standalone use; when set we loop
@@ -240,59 +233,35 @@ class MusicSequencer {
     }
   }
 
-  /**
-   * Map the current bar-block count to a phrase index using each track's
-   * per-phrase length table (in bars). e.g. lengths [2,2,1,1] means:
-   *   phrase0 for 2 blocks, phrase1 for 2 blocks, phrase2 for 1, phrase3 for 1,
-   * then the whole cycle repeats. This gives a build-up feel (long phrases
-   * first, quick hits last) instead of a flat round-robin.
-   */
-  _phraseIndex(trk) {
-    const lens = trk.phraseLens || trk.leads.map(() => 1);
-    const total = lens.reduce((a, b) => a + b, 0);
-    let pos = this.barCount % total;
-    for (let i = 0; i < lens.length; i++) {
-      if (pos < lens[i]) return i;
-      pos -= lens[i];
-    }
-    return 0;
-  }
-
-  /**
-   * Drum/arrangement intensity for the current phrase.
-   * Preferred: explicit per-phrase table `trk.drumLevels` (one entry per
-   * phrase, values 0..3) — required for >4-phrase tracks (dream construction).
-   * Fallback (classic 4-phrase tracks): level = phrase index (0->none,
-   * 1->light, 2->medium, 3->full).
-   */
-  _drumLevel(trk) {
-    const pi = this._phraseIndex(trk);
-    if (trk.drumLevels && trk.drumLevels[pi] != null) return trk.drumLevels[pi];
-    return pi;
+  /** Current measure index within one song cycle (flat walk). */
+  _measureIndex(trk) {
+    const total = trk.leads.length;
+    return this.measureCount % total;
   }
 
   _playStep(trk, step, t) {
-    const pi = this._phraseIndex(trk);
-    const lvl = this._drumLevel(trk);
-    const leadPhrase = trk.leads[pi];
-    const padPhrase  = trk.pads[pi];
-    // Phrase-count-driven drums: light -> medium -> full (drifts across phrases).
-    const drumSet = (trk.drums[lvl] != null) ? trk.drums[lvl] : trk.drums;
+    const mi = this._measureIndex(trk);
+    const leadMeasure = trk.leads[mi];
+    const padMeasure  = trk.pads[mi];
+    // Per-measure drum set: authoritative from the architect's backbone.
+    const lvl = (trk.drumLevels && trk.drumLevels[mi] != null) ? trk.drumLevels[mi] : mi % (trk.drumSets ? trk.drumSets.length : 1);
+    const drumBank = trk.drumSets || trk.drums;
+    const drumSet = (drumBank[lvl] != null) ? drumBank[lvl] : drumBank[0];
     const d = drumSet[step];
     if (d.k) this._kick(t, trk, d.v);
     if (d.s) this._snare(t, trk, d.v);
     if (d.h) this._hat(t, trk, d.oh === true, d.v);
     if (d.c) this._crash(t, trk, d.v);
-    const b = (Array.isArray(trk.bass) && trk.bass[pi] != null) ? trk.bass[pi][step] : trk.bass[step];
+    const b = (Array.isArray(trk.bass) && trk.bass[mi] != null) ? trk.bass[mi][step] : trk.bass[step];
     if (b) this._bass(t, b.hz, trk, b.mul);
-    if (padPhrase && padPhrase[step]) this._pad(t, padPhrase[step], trk);
-    const l = leadPhrase[step];
+    if (padMeasure && padMeasure[step]) this._pad(t, padMeasure[step], trk);
+    const l = leadMeasure[step];
     if (l) this._lead(t, l.hz, trk, l.mul);
     // Extra lead layer: per-phrase banks (null = no layer for that phrase).
     // v2: leadLayers is a flat array with ONE 32-step entry per phrase index,
     // so any number of phrases works (classic tracks put banks at 2 & 3).
-    if (trk.leadLayers && trk.leadLayers[pi]) {
-      const xl = trk.leadLayers[pi][step];
+    if (trk.leadLayers && trk.leadLayers[mi]) {
+      const xl = trk.leadLayers[mi][step];
       if (xl) this._leadLayer(t, xl.hz, trk, lvl, xl.mul);
     }
   }
@@ -476,7 +445,7 @@ class MusicSequencer {
   }
 
   /* -- track definitions --------------------------------------------------- */
-  /* leads/pads are banks of 32-step phrases; phraseLens = bars per phrase. */
+  /* leads/pads are flat per-measure arrays (one entry per measure, song order). */
 
   _punk() {
     const E1=_NOTE.E1,E2=_NOTE.E2;
@@ -534,7 +503,7 @@ class MusicSequencer {
       ],
     ];
     return {
-      name:"PUNK", bpm:182, steps:32, drums, bass, leads, pads, phraseLens:[2,2,1,1],
+      name:"PUNK", bpm:182, stepsPerMeasure:32, beatsInMeasure:4, drumSets:drums, bass, leads, pads, drumLevels:[0,0,1,1,2,2,3,3],
       numCycles:3, leadLayers,
       bassType:"sawtooth", bassCut:1100, bassDur:0.16,
       padType:"sawtooth", padCut:1800, padDur:0.5,
@@ -599,7 +568,7 @@ class MusicSequencer {
       ],
     ];
     return {
-      name:"METAL", bpm:158, steps:32, drums, bass, leads, pads, phraseLens:[2,2,1,1],
+      name:"METAL", bpm:158, stepsPerMeasure:32, beatsInMeasure:4, drumSets:drums, bass, leads, pads, drumLevels:[0,0,1,1,2,2,3,3],
       numCycles:3, leadLayers,
       bassType:"sawtooth", bassCut:950, bassDur:0.17,
       padType:"sawtooth", padCut:1500, padDur:0.4,
@@ -674,7 +643,7 @@ class MusicSequencer {
       ],
     ];
     return {
-      name:"SYNTHWAVE", bpm:118, steps:32, drums, bass, leads, pads, phraseLens:[2,2,1,1],
+      name:"SYNTHWAVE", bpm:118, stepsPerMeasure:32, beatsInMeasure:4, drumSets:drums, bass, leads, pads, drumLevels:[0,0,1,1,2,2,3,3],
       numCycles:3, leadLayers,
       bassType:"sawtooth", bassCut:800, bassDur:0.22,
       padType:"sawtooth", padCut:2200, padDur:0.5,
@@ -741,7 +710,7 @@ class MusicSequencer {
       ],
     ];
     return {
-      name:"ACID JAZZ", bpm:104, steps:32, drums, bass, leads, pads, phraseLens:[2,2,1,1],
+      name:"ACID JAZZ", bpm:104, stepsPerMeasure:32, beatsInMeasure:4, drumSets:drums, bass, leads, pads, drumLevels:[0,0,1,1,2,2,3,3],
       numCycles:3, leadLayers,
       bassType:"triangle", bassCut:700, bassDur:0.24,
       padType:"triangle", padCut:2600, padDur:0.7,

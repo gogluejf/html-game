@@ -31,7 +31,7 @@ export class SongController {
   _logAction(action) {
     const t = (performance.now() / 1000).toFixed(3);
     const pos = this.position().toFixed(4);
-    const eng = this.player ? ('bar=' + this.player.seq.barCount + '/step=' + this.player.seq.stepIndex) : 'noEngine';
+    const eng = this.player ? ('measure=' + this.player.seq.measureCount + '/step=' + this.player.seq.stepIndex) : 'noEngine';
     const line = t + ' | ' + action + ' | track=' + (this.current+1) + ' "' + this.tracks[this.current].name + '" | playing=' + this.playing + ' | pos=' + pos + ' | manualPos=' + this._manualPos + ' | ' + eng;
     this._actionLog.push(line);
     if (this._actionLog.length > 2000) this._actionLog.splice(0, 500);
@@ -270,15 +270,15 @@ export class SongController {
     if (!this.player) return;
     const trk = this.player.seq.tracks[this.current];
     if (!trk) return;
-    const pl = trk.phraseLens || [1,1,1,1,1,1,1,1];
-    const totalSteps = pl.reduce((s, l) => s + 32 * l, 0);
+    const spm = trk.stepsPerMeasure || 32;
+    const totalSteps = trk.leads.length * spm;
     const targetStep = Math.floor(frac * totalSteps);
     this.player.seekToStep(targetStep);
   }
 
   /**
    * Current position as fraction 0..1.
-   * Reads the ENGINE'S ACTUAL stepIndex + barCount so it stays in sync
+   * Reads the ENGINE'S ACTUAL stepIndex + measureCount so it stays in sync
    * with real audio playback (including pause/seek/loop).
    */
   position() {
@@ -288,25 +288,22 @@ export class SongController {
     const seq = this.player.seq;
     const trk = seq.tracks[this.current];
     if (!trk) return 0;
-    const pl = trk.phraseLens || [1,1,1,1,1,1,1,1];
-    const totalSteps = pl.reduce((s, l) => s + 32 * l, 0);
-    // Absolute step = barCount full blocks of 32 + current stepIndex within block
-    const absStep = (seq.barCount || 0) * 32 + (seq.stepIndex || 0);
-    // barCount wraps via modulo in the engine? No — it increments forever.
-    // But the song loops when barCount hits totalBlocks. We need position
-    // within ONE song cycle:
-    const totalBlocks = pl.reduce((a, b) => a + b, 0);
-    const cycleBlock = (seq.barCount || 0) % totalBlocks;
-    const pos = (cycleBlock * 32 + (seq.stepIndex || 0)) / totalSteps;
+    const spm = trk.stepsPerMeasure || 32;
+    const totalMeasures = trk.leads.length;
+    const totalSteps = totalMeasures * spm;
+    // Absolute step = measureCount full measures + current stepIndex within measure
+    const cycleMeasure = (seq.measureCount || 0) % totalMeasures;
+    const pos = (cycleMeasure * spm + (seq.stepIndex || 0)) / totalSteps;
     return Math.max(0, Math.min(1, pos));
   }
 
   duration() {
     const trk = this.player ? this.player.seq.tracks[this.current] : this.tracks[this.current];
     if (!trk) return 0;
-    const pl = trk.phraseLens || [1,1,1,1,1,1,1,1];
-    const totalSteps = pl.reduce((s, l) => s + 32 * l, 0);
-    return totalSteps * (60 / trk.bpm) / 4;
+    const spm = trk.stepsPerMeasure || 32;
+    const beats = trk.beatsInMeasure || 4;
+    const measureDuration = beats * (60 / trk.bpm); // seconds per measure
+    return trk.leads.length * measureDuration;
   }
 
   name() {

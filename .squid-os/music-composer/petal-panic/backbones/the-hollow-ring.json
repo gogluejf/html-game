@@ -2,48 +2,6 @@
   "name": "The Hollow Ring",
   "bpm": 58,
   "timeSig": "4/4",
-  "form": [
-    {
-      "section": "s0",
-      "bars": 2,
-      "drums": "lvl0"
-    },
-    {
-      "section": "s1",
-      "bars": 2,
-      "drums": "lvl0"
-    },
-    {
-      "section": "s2",
-      "bars": 2,
-      "drums": "lvl0"
-    },
-    {
-      "section": "s3",
-      "bars": 2,
-      "drums": "lvl0"
-    },
-    {
-      "section": "s4",
-      "bars": 2,
-      "drums": "lvl1"
-    },
-    {
-      "section": "s5",
-      "bars": 2,
-      "drums": "lvl1"
-    },
-    {
-      "section": "s6",
-      "bars": 2,
-      "drums": "lvl1"
-    },
-    {
-      "section": "s7",
-      "bars": 2,
-      "drums": "lvl0"
-    }
-  ],
   "drumLevels": [
     0,
     0,
@@ -53,5 +11,47 @@
     1,
     1,
     0
+  ],
+  "parts": [
+    {
+      "part": "s0",
+      "measures": 2,
+      "drum": "lvl0"
+    },
+    {
+      "part": "s1",
+      "measures": 2,
+      "drum": "lvl0"
+    },
+    {
+      "part": "s2",
+      "measures": 2,
+      "drum": "lvl0"
+    },
+    {
+      "part": "s3",
+      "measures": 2,
+      "drum": "lvl0"
+    },
+    {
+      "part": "s4",
+      "measures": 2,
+      "drum": "lvl1"
+    },
+    {
+      "part": "s5",
+      "measures": 2,
+      "drum": "lvl1"
+    },
+    {
+      "part": "s6",
+      "measures": 2,
+      "drum": "lvl1"
+    },
+    {
+      "part": "s7",
+      "measures": 2,
+      "drum": "lvl0"
+    }
   ]
 }

@@ -2,48 +2,6 @@
   "name": "STORM AT SEA REMIX",
   "bpm": 84,
   "timeSig": "4/4",
-  "form": [
-    {
-      "section": "s0",
-      "bars": 2,
-      "drums": "lvl0"
-    },
-    {
-      "section": "s1",
-      "bars": 2,
-      "drums": "lvl0"
-    },
-    {
-      "section": "s2",
-      "bars": 2,
-      "drums": "lvl1"
-    },
-    {
-      "section": "s3",
-      "bars": 2,
-      "drums": "lvl1"
-    },
-    {
-      "section": "s4",
-      "bars": 2,
-      "drums": "lvl2"
-    },
-    {
-      "section": "s5",
-      "bars": 2,
-      "drums": "lvl3"
-    },
-    {
-      "section": "s6",
-      "bars": 2,
-      "drums": "lvl3"
-    },
-    {
-      "section": "s7",
-      "bars": 2,
-      "drums": "lvl2"
-    }
-  ],
   "drumLevels": [
     0,
     0,
@@ -53,5 +11,47 @@
     3,
     3,
     2
+  ],
+  "parts": [
+    {
+      "part": "s0",
+      "measures": 2,
+      "drum": "lvl0"
+    },
+    {
+      "part": "s1",
+      "measures": 2,
+      "drum": "lvl0"
+    },
+    {
+      "part": "s2",
+      "measures": 2,
+      "drum": "lvl1"
+    },
+    {
+      "part": "s3",
+      "measures": 2,
+      "drum": "lvl1"
+    },
+    {
+      "part": "s4",
+      "measures": 2,
+      "drum": "lvl2"
+    },
+    {
+      "part": "s5",
+      "measures": 2,
+      "drum": "lvl3"
+    },
+    {
+      "part": "s6",
+      "measures": 2,
+      "drum": "lvl3"
+    },
+    {
+      "part": "s7",
+      "measures": 2,
+      "drum": "lvl2"
+    }
   ]
 }

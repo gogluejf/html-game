@@ -2,46 +2,46 @@
   "name": "PETAL PUNK",
   "bpm": 176,
   "timeSig": "4/4",
-  "form": [
+  "parts": [
     {
-      "section": "hook",
-      "bars": 4,
-      "drums": "light"
+      "part": "hook",
+      "measures": 4,
+      "drum": "light"
     },
     {
-      "section": "verse",
-      "bars": 4,
-      "drums": "medium"
+      "part": "verse",
+      "measures": 4,
+      "drum": "medium"
     },
     {
-      "section": "build",
-      "bars": 4,
-      "drums": "heavy"
+      "part": "build",
+      "measures": 4,
+      "drum": "heavy"
     },
     {
-      "section": "peak",
-      "bars": 4,
-      "drums": "full"
+      "part": "peak",
+      "measures": 4,
+      "drum": "full"
     },
     {
-      "section": "break",
-      "bars": 2,
-      "drums": "none"
+      "part": "break",
+      "measures": 2,
+      "drum": "none"
     },
     {
-      "section": "hook-b",
-      "bars": 4,
-      "drums": "light"
+      "part": "hook-b",
+      "measures": 4,
+      "drum": "light"
     },
     {
-      "section": "peak-b",
-      "bars": 4,
-      "drums": "full"
+      "part": "peak-b",
+      "measures": 4,
+      "drum": "full"
     },
     {
-      "section": "tag",
-      "bars": 4,
-      "drums": "medium"
+      "part": "tag",
+      "measures": 4,
+      "drum": "medium"
     }
   ]
 }

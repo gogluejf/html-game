@@ -210,25 +210,25 @@ export function initUI(sc, gameName) {
   });
 
   // ── Timeline rendering (reads from sc.position()) ────────────────────────
-  // Built dynamically per track: one slot per backbone section, sized by its
-  // share of total bars so dividers land on real section boundaries.
+  // Built dynamically per track: one slot per PART from the architect's
+  // backbone, sized by its share of total measures so dividers land on real
+  // part boundaries.
   const tlDivs = document.getElementById('tl-dividers');
   const tlLabels = document.getElementById('phrase-labels');
   function buildTimeline() {
     const trk = sc.tracks[sc.current];
     if (!trk) return;
-    const secs = trk.sections || [];
-    const lens = trk.phraseLens || [1,1,1,1,1,1,1,1];
-    const total = lens.reduce((a, b) => a + b, 0) || 1;
+    const partsList = trk.parts || trk.sections || [];
     tlDivs.innerHTML = '';
     tlLabels.innerHTML = '';
-    for (let i = 0; i < secs.length; i++) {
+    for (const pf of partsList) {
+      const n = pf.measures != null ? pf.measures : pf.bars || 1;
       const d = document.createElement('div'); d.className = 'div';
-      d.style.flex = lens[i] + ' 0 0';
+      d.style.flex = n + ' 0 0';
       tlDivs.appendChild(d);
       const l = document.createElement('span');
-      l.textContent = secs[i].section;
-      l.style.flex = lens[i] + ' 0 0';
+      l.textContent = pf.part || pf.section;
+      l.style.flex = n + ' 0 0';
       tlLabels.appendChild(l);
     }
   }

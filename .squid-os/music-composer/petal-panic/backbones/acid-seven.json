@@ -2,41 +2,41 @@
   "name": "ACID SEVEN",
   "bpm": 148,
   "timeSig": "4/7",
-  "form": [
+  "parts": [
     {
-      "section": "intro",
-      "bars": 2,
-      "drums": "none"
+      "part": "intro",
+      "measures": 2,
+      "drum": "none"
     },
     {
-      "section": "groove-a",
-      "bars": 4,
-      "drums": "light"
+      "part": "groove-a",
+      "measures": 4,
+      "drum": "light"
     },
     {
-      "section": "groove-b",
-      "bars": 4,
-      "drums": "medium"
+      "part": "groove-b",
+      "measures": 4,
+      "drum": "medium"
     },
     {
-      "section": "build",
-      "bars": 4,
-      "drums": "heavy"
+      "part": "build",
+      "measures": 4,
+      "drum": "heavy"
     },
     {
-      "section": "solo",
-      "bars": 8,
-      "drums": "solo"
+      "part": "solo",
+      "measures": 8,
+      "drum": "solo"
     },
     {
-      "section": "peak",
-      "bars": 4,
-      "drums": "full"
+      "part": "peak",
+      "measures": 4,
+      "drum": "full"
     },
     {
-      "section": "tag",
-      "bars": 2,
-      "drums": "full"
+      "part": "tag",
+      "measures": 2,
+      "drum": "full"
     }
   ]
 }

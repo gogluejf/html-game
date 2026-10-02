@@ -3,7 +3,7 @@
   "genre": "Punk Hardcore",
   "vibe": "Way faster hardcore-punk greatest hit in A major at 208 BPM \u2014 driving eighth-note square lead, pounding punk kick-snare engine, sixteenth-hat peak with ghost snare",
   "createdAt": "2026-10-02T16:49:56.159473",
-  "revision": 11,
+  "revision": 12,
   "drumKit": {
     "none": [
       {
@@ -877,44 +877,6 @@
         null
       ]
     ],
-    "tag": [
-      [
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null
-      ],
-      [
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null
-      ]
-    ],
     "outro": [
       [
         "G#4",
@@ -1077,11 +1039,11 @@
         null,
         null,
         null,
-        "D3",
+        "F3",
         null,
         null,
         null,
-        "A3",
+        "G3",
         null,
         null,
         null
@@ -1151,11 +1113,11 @@
         null,
         null,
         null,
+        "G2",
+        null,
+        null,
+        null,
         "F#2",
-        null,
-        null,
-        null,
-        "D3",
         null,
         null,
         null
@@ -1225,11 +1187,11 @@
         null,
         null,
         null,
+        "D3",
+        null,
+        null,
+        null,
         "C#3",
-        null,
-        null,
-        null,
-        "A3",
         null,
         null,
         null
@@ -1290,44 +1252,6 @@
         null,
         null
       ]
-    ],
-    "tag": [
-      [
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null
-      ],
-      [
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null
-      ]
     ]
   },
   "pad": {
@@ -1366,8 +1290,7 @@
         "G#3",
         "B3"
       ]
-    },
-    "tag": {}
+    }
   },
   "_bass_single": false,
   "voices": {

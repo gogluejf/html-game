@@ -326,6 +326,14 @@ def parse_voices(kv_list):
 
 # ─── File paths ─────────────────────────────────────────────────────────────
 
+
+def _bb_parts(b):
+    """Normalize a backbone to the parts schema (new 'parts' or legacy 'form')."""
+    if b.get("parts"): return b["parts"]
+    return [{"part": e.get("part") or e["section"],
+             "measures": e.get("measures", e["bars"]),
+             "drum": e.get("drum") or e["drums"]} for e in b.get("form", [])]
+
 def state_dir(game, working_dir="."):
     return os.path.join(working_dir, ".squid-os", "music-composer", game)
 
@@ -338,20 +346,23 @@ def slugify(name):
 # ─── Commands ───────────────────────────────────────────────────────────────
 
 def cmd_arch(a):
-    """Create a backbone from musical args."""
-    sections = []
-    for s in a.section:
-        parts = s.split(",")
-        if len(parts) != 3:
-            _err(f"--section expects name,bars,drums got {s!r}")
-        sec_name, bars, drums = parts[0].strip(), int(parts[1]), parts[2].strip()
-        sections.append({"section": sec_name, "bars": bars, "drums": drums})
+    """Create a backbone from musical args. The architect drives everything:
+    parts (name + measure count + drum track), bpm, timeSig. Nothing else."""
+    part_list = []
+    for s in a.part:
+        fields = s.split(",")
+        if len(fields) != 3:
+            _err(f"--part expects name,measures,drum got {s!r}")
+        p_name, n_measures, drum = fields[0].strip(), int(fields[1]), fields[2].strip()
+        if n_measures < 2:
+            _err(f"part '{p_name}': measures must be >= 2 (got {n_measures})")
+        part_list.append({"part": p_name, "measures": n_measures, "drum": drum})
 
     backbone = {
         "name": a.name,
         "bpm": a.bpm,
         "timeSig": a.time_sig,
-        "form": sections,
+        "parts": part_list,
     }
 
     d = state_dir(a.game, a.working_dir)
@@ -363,12 +374,12 @@ def cmd_arch(a):
     with open(path, "w") as f:
         json.dump(backbone, f, indent=2)
 
-    total_bars = sum(s["bars"] for s in sections)
-    spb = resolve_time_sig(a.time_sig)
-    secs_per_bar = spb / 4 / (a.bpm / 60)  # rough: steps_per_bar / 4 beats / bpm*60
-    duration = total_bars * (4 / (a.bpm / 60))  # bars * seconds_per_bar (4 beats)
+    total_measures = sum(p["measures"] for p in part_list)
+    m = a.time_sig.split("/")
+    beats = int(m[0]) if m and m[0].isdigit() else 4
+    duration = total_measures * beats * (60 / a.bpm)  # measures × seconds/measure
     print(f"PASS: backbone '{a.name}' → {path}")
-    print(f"      {len(sections)} sections, {total_bars} bars, {a.time_sig}, {a.bpm} BPM, ~{int(duration//60)}:{int(duration%60):02d}")
+    print(f"      {len(part_list)} parts, {total_measures} measures, {a.time_sig}, {a.bpm} BPM, ~{int(duration//60)}:{int(duration%60):02d}")
 
 
 def cmd_parts(a):
@@ -388,10 +399,10 @@ def cmd_parts(a):
         with open(bb_path) as f:
             bb = json.load(f)
         step_width = resolve_time_sig(bb.get("timeSig", "4/4"))
-        total_bars_by_section = {}
-        for entry in bb.get("form", []):
-            sec = entry["section"]
-            total_bars_by_section[sec] = total_bars_by_section.get(sec, 0) + entry["bars"]
+        total_measures_by_part = {}
+        for entry in _bb_parts(bb):
+            pn = entry["part"]
+            total_measures_by_part[pn] = total_measures_by_part.get(pn, 0) + entry["measures"]
     else:
         _err(f"backbone not found: {bb_path} (run arch first)")
 
@@ -432,7 +443,7 @@ def cmd_parts(a):
         sec, notation = spec.split("=", 1)
         sec = sec.strip()
         bars = parse_beat_notation(notation.strip(), step_width)
-        expected = total_bars_by_section.get(sec, len(bars))
+        expected = total_measures_by_part.get(sec, len(bars))
         while len(bars) < expected:
             bars.append([None] * step_width)
         parts.setdefault("lead", {})[sec] = bars[:expected]
@@ -444,7 +455,7 @@ def cmd_parts(a):
         sec, notation = spec.split("=", 1)
         sec = sec.strip()
         bars = parse_beat_notation(notation.strip(), step_width)
-        expected = total_bars_by_section.get(sec, len(bars))
+        expected = total_measures_by_part.get(sec, len(bars))
         while len(bars) < expected:
             bars.append([None] * step_width)
         parts.setdefault("layer", {})[sec] = bars[:expected]
@@ -457,15 +468,15 @@ def cmd_parts(a):
                 sec, notation = spec.split("=", 1)
                 sec = sec.strip()
                 bars = parse_beat_notation(notation.strip(), step_width)
-                expected = total_bars_by_section.get(sec, len(bars))
+                expected = total_measures_by_part.get(sec, len(bars))
                 while len(bars) < expected:
                     bars.append([None] * step_width)
                 parts.setdefault("bass", {})[sec] = bars[:expected]
                 bass_single = False   # per-section bass overrides shared mode
             else:
                 bars = parse_beat_notation(spec.strip(), step_width)
-                first_sec = bb["form"][0]["section"] if bb.get("form") else "s0"
-                expected = total_bars_by_section.get(first_sec, len(bars))
+                first_sec = _bb_parts(bb)[0]["part"] if _bb_parts(bb) else "s0"
+                expected = total_measures_by_part.get(first_sec, len(bars))
                 while len(bars) < expected:
                     bars.append([None] * step_width)
                 parts.setdefault("bass", {})[first_sec] = bars[:expected]
@@ -482,7 +493,7 @@ def cmd_parts(a):
             continue
         sec, notation = spec.split("=", 1)
         sec = sec.strip()
-        expected = total_bars_by_section.get(sec, 4)
+        expected = total_measures_by_part.get(sec, 4)
         parts.setdefault("pad", {})[sec] = parse_pad_spec(notation.strip(), expected, step_width)
 
     # Merge drum kit
@@ -506,9 +517,9 @@ def cmd_parts(a):
         json.dump(parts, f, indent=2)
 
     action = "updated" if is_update else "created"
-    n_sections = len(set(e["section"] for e in bb.get("form", [])))
+    n_parts = len(set(e["part"] for e in _bb_parts(bb)))
     print(f"PASS: {action} parts '{a.name}' → {parts_path} (rev {parts['revision']})")
-    print(f"      {n_sections} sections in backbone, {len(parts.get('drumKit',{}))} drum patterns")
+    print(f"      {n_parts} parts in backbone, {len(parts.get('drumKit',{}))} drum tracks")
 
 
 def cmd_validate(a):
@@ -534,16 +545,16 @@ def cmd_validate(a):
             with open(os.path.join(d, pf)) as f:
                 parts = json.load(f)
             # Basic checks
-            form = bb.get("form", [])
-            sections_in_form = set(e["section"] for e in form)
-            lead_sections = set(parts.get("lead", {}).keys())
-            missing = sections_in_form - lead_sections
+            plist = _bb_parts(bb)
+            part_names = set(e["part"] for e in plist)
+            lead_parts = set(parts.get("lead", {}).keys())
+            missing = part_names - lead_parts
             if missing:
-                print(f"  ✗ {pf}: lead missing sections: {missing}")
+                print(f"  ✗ {pf}: lead missing parts: {missing}")
                 fail += 1
                 continue
             drum_keys = set(parts.get("drumKit", {}).keys())
-            drum_refs = set(e["drums"] for e in form)
+            drum_refs = set(e["drum"] for e in plist)
             bad_drums = drum_refs - drum_keys
             if bad_drums:
                 print(f"  ✗ {pf}: drum refs not in kit: {bad_drums}")
@@ -561,14 +572,15 @@ def cmd_validate(a):
 
 
 def cmd_audit(a):
-    """Craft-law audit: check a song's notes against the architect's progression.
+    """Craft-law audit: check a song's notes against the architect's plan.
 
     Checks (from references/song-structure.md laws):
-      A. Consistency  — parts sections match backbone form exactly (no stale/missing)
-      B. Law 1        — bass moves: >=4 distinct pitch events per 4-bar section
-      C. Law 2        — drum levels strictly additive (each adds hits, never removes)
-      D. Law 4        — no two consecutive identical bars in any section
-      E. Law 9        — intensity ladder: score per bar, +1 pt / 2 bars through body
+      A. Consistency  — parts keys match backbone parts exactly (no stale/missing)
+      B. Law 1        — bass moves: >=4 distinct pitch events per 4-measure part
+      C. Drums        — every drum track referenced exists and is non-silent
+      D. Law 4        — no identical consecutive measures, no period-2 cells,
+                        no echo repeats (lead AND bass)
+      E. Law 9        — intensity ladder: score per measure, climbs through body
       F. Law 6        — peak register must reach or exceed build's top note
     Exit 1 on any FAIL; WARN does not block.
     """
@@ -583,45 +595,44 @@ def cmd_audit(a):
     with open(parts_path) as f:
         parts = json.load(f)
 
-    form = bb.get("form", [])
+    plist = _bb_parts(bb)
     step_width = resolve_time_sig(bb.get("timeSig", "4/4"))
     errors, warns = [], []
 
-    # ── A. Consistency: parts keys vs backbone form ────────────────────────
-    form_secs = set(e["section"] for e in form)
-    lead_secs = set(parts.get("lead", {}).keys())
-    stale = lead_secs - form_secs
-    missing = form_secs - lead_secs
+    # ── A. Consistency: parts keys vs backbone parts ───────────────────────
+    part_names = set(e["part"] for e in plist)
+    lead_parts = set(parts.get("lead", {}).keys())
+    stale = lead_parts - part_names
+    missing = part_names - lead_parts
     if missing:
-        errors.append(f"A: lead missing sections from backbone: {sorted(missing)}")
+        errors.append(f"A: lead missing parts from backbone: {sorted(missing)}")
     if stale:
-        warns.append(f"A: stale parts sections not in backbone (dead data): {sorted(stale)}")
+        warns.append(f"A: stale parts entries not in backbone (dead data): {sorted(stale)}")
     kit = parts.get("drumKit", {})
-    bad_refs = set(e["drums"] for e in form) - set(kit.keys())
+    bad_refs = set(e["drum"] for e in plist) - set(kit.keys())
     if bad_refs:
-        errors.append(f"A: drum refs not in drumKit: {sorted(bad_refs)}")
+        errors.append(f"A: drum tracks referenced but not defined: {sorted(bad_refs)}")
 
     # ── B. Law 1: bass must move ───────────────────────────────────────────
     bass_single = bool(parts.get("_bass_single"))
     bass_map = parts.get("bass", {})
-    for sec in sorted(form_secs):
-        bars = bass_map.get(sec)
+    for pn in sorted(part_names):
+        bars = bass_map.get(pn)
         if bars is None and bass_single:
-            bars = bass_map.get(next(iter(form_secs)))
+            bars = bass_map.get(next(iter(part_names)))
         if not bars:
             continue
         pitches = [c for bar in bars for c in bar if c]
         distinct = len(set(pitches))
-        n_bars = len(bars)
-        if n_bars >= 4 and distinct < 4:
-            errors.append(f"B(Law1): bass '{sec}' has only {distinct} distinct pitch(es) over {n_bars} bars (root pedal)")
+        n_meas = len(bars)
+        if n_meas >= 4 and distinct < 4:
+            errors.append(f"B(Law1): bass '{pn}' has only {distinct} distinct pitch(es) over {n_meas} measures (root pedal)")
 
-    # ── C. Law 2: drums strictly additive across form order ───────────────
+    # ── C. Drum tracks exist and are non-silent where assigned ────────────
     def drum_hits(name):
         entry = kit.get(name, {})
-        # Verbatim 32-step form (list of {k,s,h}) — lossless migration format.
         if isinstance(entry, list):
-            return sum(1 for d in entry if d.get("k") or d.get("s") or d.get("h"))
+            return sum(1 for dd in entry if dd.get("k") or dd.get("s") or dd.get("h"))
         total = 0
         for inst in ("kick", "snare", "hat"):
             v = entry.get(inst)
@@ -632,52 +643,37 @@ def cmd_audit(a):
                 total += sum(1 for x in v if x)
         return total
 
-    seen = {}
-    prev_name, prev_hits = None, 0
-    for e in form:
-        nm = e["drums"]
-        h = drum_hits(nm)
-        if nm in seen:
-            if h != seen[nm]:
-                errors.append(f"C(Law2): drum level '{nm}' inconsistent between uses")
-        else:
-            seen[nm] = h
-            if prev_name and prev_name != "none" and h < prev_hits:
-                errors.append(f"C(Law2): drum level '{nm}' ({h} hits/bar) REMOVES density vs '{prev_name}' ({prev_hits})")
-        prev_name, prev_hits = nm, h
-
-    # ── D. Law 4: no repeated bars (consecutive OR period-2 cell repeat) ───
-    for sec in sorted(form_secs):
-        bars = parts.get("lead", {}).get(sec)
-        if not bars:
+    for e in plist:
+        nm = e["drum"]
+        if nm == "none":
             continue
+        if nm not in kit:
+            continue  # already reported in A
+        if drum_hits(nm) == 0:
+            warns.append(f"C: drum track '{nm}' assigned to part '{e['part']}' but is silent")
+
+    # ── D. Law 4: no repeated measures (consecutive / period-2 / echo) ─────
+    def repeat_check(kind, sec_name, bars):
         for i in range(1, len(bars)):
             if bars[i] == bars[i - 1]:
-                errors.append(f"D(Law4): lead '{sec}' bar {i+1} is identical to bar {i}")
-        # Period-2 detection: X X Y Y pattern (a 2-bar cell played twice).
+                errors.append(f"D(Law4): {kind} '{sec_name}' measure {i+1} is identical to measure {i}")
         if len(bars) >= 4:
             for i in range(len(bars) - 3):
                 if bars[i] == bars[i + 1] and bars[i + 2] == bars[i + 3] \
                    and bars[i] != bars[i + 2]:
-                    errors.append(f"D(Law4): lead '{sec}' bars {i+1}-{i+4} are a repeated 2-bar cell")
-        # Echo detection: bar N+2 identical to bar N (A-B-A-C call repeating).
+                    errors.append(f"D(Law4): {kind} '{sec_name}' measures {i+1}-{i+4} are a repeated 2-measure cell")
         if len(bars) >= 3:
             for i in range(len(bars) - 2):
                 if bars[i + 2] == bars[i]:
-                    errors.append(f"D(Law4): lead '{sec}' bar {i+3} repeats bar {i+1} (echo)")
-    # Bass gets the same treatment (repeated bass cells dominate the mix).
-    for sec in sorted(form_secs):
-        bars = parts.get("bass", {}).get(sec)
-        if not bars:
-            continue
-        for i in range(1, len(bars)):
-            if bars[i] == bars[i - 1]:
-                errors.append(f"D(Law4): bass '{sec}' bar {i+1} is identical to bar {i}")
-        if len(bars) >= 4:
-            for i in range(len(bars) - 3):
-                if bars[i] == bars[i + 1] and bars[i + 2] == bars[i + 3] \
-                   and bars[i] != bars[i + 2]:
-                    errors.append(f"D(Law4): bass '{sec}' bars {i+1}-{i+4} are a repeated 2-bar cell")
+                    errors.append(f"D(Law4): {kind} '{sec_name}' measure {i+3} repeats measure {i+1} (echo)")
+
+    for pn in sorted(part_names):
+        lead = parts.get("lead", {}).get(pn)
+        if lead:
+            repeat_check("lead", pn, lead)
+        bass = parts.get("bass", {}).get(pn)
+        if bass:
+            repeat_check("bass", pn, bass)
 
     # ── E/F. Intensity ladder + peak register ─────────────────────────────
     def note_top(cell_list):
@@ -686,43 +682,41 @@ def cmd_audit(a):
 
     def bar_score(lead_bar, layer_bar, drum_name, layers_on):
         n_notes = sum(1 for c in (lead_bar or []) if c) + sum(1 for c in (layer_bar or []) if c)
-        s = min(3, n_notes // 3)                      # note count
+        sc = min(3, n_notes // 3)                      # note count
         reg = note_top(lead_bar or [])
-        s += 0 if reg <= 4 else 2                     # register: oct5 = high
-        s += min(3, drum_hits(drum_name) // 7)        # drum density
-        s += 1 if layers_on else 0                    # extra layer voice
-        return s
+        sc += 0 if reg <= 4 else 2                     # register: oct5 = high
+        sc += min(3, drum_hits(drum_name) // 7)        # drum density
+        sc += 1 if layers_on else 0                    # extra layer voice
+        return sc
 
     scores = []
     build_top, peak_top = 0, 0
-    for fi, e in enumerate(form):
-        sec = e["section"]
-        lead = parts.get("lead", {}).get(sec, [])
-        layer = parts.get("layer", {}).get(sec, [])
-        nph = e["bars"] // 2
-        for p in range(nph):
-            lo, hi = p * 2 * step_width, (p + 2) * step_width
-            for b in range(2):
-                s0 = lo + b * step_width
-                lb = lead[s0:s0 + step_width] if s0 < len(lead) else []
-                lbr = layer[s0:s0 + step_width] if layer and s0 < len(layer) else []
-                t = note_top(lb)
-                if sec.startswith("build"):
-                    build_top = max(build_top, t)
-                if sec.startswith("peak"):
-                    peak_top = max(peak_top, t)
-                scores.append(bar_score(lb, lbr, e["drums"], bool(lbr)))
+    for e in plist:
+        pn = e["part"]
+        lead = parts.get("lead", {}).get(pn, [])
+        layer = parts.get("layer", {}).get(pn, [])
+        for m in range(e["measures"]):
+            s0 = m * step_width
+            lb = lead[s0:s0 + step_width] if s0 < len(lead) else []
+            lbr = layer[s0:s0 + step_width] if layer and s0 < len(layer) else []
+            t = note_top(lb)
+            if pn.startswith("build"):
+                build_top = max(build_top, t)
+            if pn.startswith("peak"):
+                peak_top = max(peak_top, t)
+            scores.append(bar_score(lb, lbr, e["drum"], bool(lbr)))
 
-    # Ladder: average gain across the body (exclude last outro/tag section)
+    # Ladder: average gain across the body (exclude last outro/tag part)
     if len(scores) >= 4:
         body = scores[:-min(2, len(scores) // 3)]
         avg_gain = (body[-1] - body[0]) / max(1, (len(body) - 1) / 2)
         if avg_gain < 0.5:
-            warns.append(f"E(Law9): intensity barely climbs: first={body[0]} last={body[-1]} (avg {avg_gain:.2f} pt/2bars, need >=0.5)")
+            warns.append(f"E(Law9): intensity barely climbs: first={body[0]} last={body[-1]} (avg {avg_gain:.2f} pt/2meas, need >=0.5)")
     if build_top and peak_top < build_top:
         errors.append(f"F(Law6): peak top note (oct {peak_top}) never exceeds build's glimpse (oct {build_top})")
 
-    print(f"audit: {a.name} ({bb.get('bpm')} BPM, {bb.get('timeSig')}, {sum(e['bars'] for e in form)} bars)")
+    total_measures = sum(e["measures"] for e in plist)
+    print(f"audit: {a.name} ({bb.get('bpm')} BPM, {bb.get('timeSig')}, {total_measures} measures)")
     for w in warns:
         print(f"  ⚠ WARN  {w}")
     for e_ in errors:
@@ -776,25 +770,27 @@ def cmd_show_arch(a):
     print(f"  {bb['name']}")
     print(f"  {bb['bpm']} BPM  {bb.get('timeSig','4/4')}")
     print(f"{'='*50}")
-    total_bars = 0
-    cur_bar = 0
-    for i, entry in enumerate(bb["form"]):
-        bars = entry["bars"]
-        total_bars += bars
-        print(f"  {i+1:>2}. {entry['section']:<12} bars {cur_bar+1:>2}-{cur_bar+bars:<2}  drums={entry['drums']}")
-        cur_bar += bars
-    spb = resolve_time_sig(bb.get("timeSig", "4/4"))
-    duration = total_bars * (spb / 4) / (bb["bpm"] / 60)
+    plist = _bb_parts(bb)
+    total_measures = 0
+    cur = 0
+    for i, entry in enumerate(plist):
+        n = entry["measures"]
+        total_measures += n
+        print(f"  {i+1:>2}. {entry['part']:<12} measures {cur+1:>2}-{cur+n:<2}  drum={entry['drum']}")
+        cur += n
+    m = bb.get("timeSig", "4/4").split("/")
+    beats = int(m[0]) if m and m[0].isdigit() else 4
+    duration = total_measures * beats * (60 / bb["bpm"])
     print(f"{'-'*50}")
-    print(f"  Total: {total_bars} bars, ~{int(duration//60)}:{int(duration%60):02d}")
-    # Show distinct sections and their total bar counts
+    print(f"  Total: {total_measures} measures, ~{int(duration//60)}:{int(duration%60):02d}")
+    # Show distinct parts and their total measure counts
     from collections import OrderedDict
-    sec_bars = OrderedDict()
-    for e in bb["form"]:
-        sec_bars[e["section"]] = sec_bars.get(e["section"], 0) + e["bars"]
-    print(f"\n  Distinct sections (for --lead/--pad/--bass):")
-    for sec, bars in sec_bars.items():
-        print(f"    {sec:<12} {bars} bars")
+    part_meas = OrderedDict()
+    for e in plist:
+        part_meas[e["part"]] = part_meas.get(e["part"], 0) + e["measures"]
+    print(f"\n  Distinct parts (for --lead/--pad/--bass):")
+    for pn, n in part_meas.items():
+        print(f"    {pn:<12} {n} measures")
 
 
 def cmd_show_parts(a):
@@ -886,8 +882,8 @@ def main():
     ar.add_argument("--name", required=True)
     ar.add_argument("--bpm", type=int, required=True)
     ar.add_argument("--time-sig", default="4/4")
-    ar.add_argument("--section", action="append", required=True,
-                    help="name,bars,drums (repeatable). e.g. hook,4,light")
+    ar.add_argument("--part", action="append", required=True,
+                    help="name,measures,drum (repeatable). e.g. hook,4,light")
     ar.add_argument("--working-dir", default=".")
 
     # parts
@@ -897,14 +893,14 @@ def main():
     pa.add_argument("--genre", default="")
     pa.add_argument("--vibe", default="")
     pa.add_argument("--lead", action="append",
-                    help="section=beat_notation (repeatable)")
+                    help="part=measure_notation (repeatable)")
     pa.add_argument("--layer", action="append",
-                    help="section=beat_notation (repeatable)")
+                    help="part=measure_notation (repeatable)")
     pa.add_argument("--bass", action="append",
-                    help="section=beat_notation or bare notation for shared bass")
+                    help="part=measure_notation or bare notation for shared bass")
     pa.add_argument("--bass-single", action="store_true")
     pa.add_argument("--pad", action="append",
-                    help="section=chord_spec (repeatable). e.g. hook='Em x4'")
+                    help="part=chord_spec (repeatable). e.g. hook='Em x4'")
     pa.add_argument("--drum", action="append",
                     help='name=spec (repeatable). e.g. full=\'snare:"2 4" kick:"1 2 3 4" hat:eighths\'')
     pa.add_argument("--voice", action="append",

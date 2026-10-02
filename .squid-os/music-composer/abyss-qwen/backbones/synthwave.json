@@ -2,32 +2,32 @@
   "name": "SYNTHWAVE",
   "bpm": 118,
   "timeSig": "4/4",
-  "form": [
-    {
-      "section": "s0",
-      "bars": 2,
-      "drums": "lvl0"
-    },
-    {
-      "section": "s1",
-      "bars": 2,
-      "drums": "lvl1"
-    },
-    {
-      "section": "s2",
-      "bars": 2,
-      "drums": "lvl2"
-    },
-    {
-      "section": "s3",
-      "bars": 2,
-      "drums": "lvl3"
-    }
-  ],
   "drumLevels": [
     0,
     1,
     2,
     3
+  ],
+  "parts": [
+    {
+      "part": "s0",
+      "measures": 2,
+      "drum": "lvl0"
+    },
+    {
+      "part": "s1",
+      "measures": 2,
+      "drum": "lvl1"
+    },
+    {
+      "part": "s2",
+      "measures": 2,
+      "drum": "lvl2"
+    },
+    {
+      "part": "s3",
+      "measures": 2,
+      "drum": "lvl3"
+    }
   ]
 }

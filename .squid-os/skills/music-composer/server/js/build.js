@@ -13,14 +13,15 @@ const _NOTE = window._NOTE;
     }
     throw new Error('Bad note token: ' + JSON.stringify(v));
   }
-  export function resolvePhrase(arr) { return arr.map(resolveNote); }
+  export function resolveMeasure(arr) { return arr.map(resolveNote); }
 
   export function buildTrack(t) {
-    const drums = t.drums.map(set => set.map(d => ({ k: !!d.k, s: !!d.s, h: !!d.h, c: !!d.c, oh: d.oh === true, v: (typeof d.v === 'number') ? d.v : undefined })));
-    // bass: single 32-step phrase OR a per-phrase bank (same length as leads).
+    const stepsPerMeasure = t.stepsPerMeasure || t.steps || 32;
+    const drums = (t.drumSets || t.drums).map(set => set.map(d => ({ k: !!d.k, s: !!d.s, h: !!d.h, c: !!d.c, oh: d.oh === true, v: (typeof d.v === 'number') ? d.v : undefined })));
+    // bass: single measure OR a per-measure bank (same length as leads).
     const isBassBank = Array.isArray(t.bass) && t.bass.length > 0 && Array.isArray(t.bass[0]);
-    const bass = isBassBank ? t.bass.map(resolvePhrase) : resolvePhrase(t.bass);
-    const leads = t.leads.map(resolvePhrase);
+    const bass = isBassBank ? t.bass.map(resolveMeasure) : resolveMeasure(t.bass);
+    const leads = t.leads.map(resolveMeasure);
     const pads = t.pads.map(p => {
       const o = {};
       for (const k in p) o[k] = p[k].map(n => resolveNote(n));
@@ -28,22 +29,26 @@ const _NOTE = window._NOTE;
     });
     let leadLayers = null;
     if (t.leadLayers) {
-      // v2 flat form: one 32-step phrase (or null) per phrase index.
-      // Legacy nested form (banks of phrases indexed by level) is normalized:
-      // a non-null bank contributes its first phrase to each level slot.
+      // Flat form: one measure (or null) per measure index.
+      // Legacy nested form (banks of measures indexed by level) is normalized:
+      // a non-null bank contributes its first measure to each level slot.
       const arr = t.leadLayers;
-      const looksNested = arr.some(b => b !== null && Array.isArray(b) && Array.isArray(b[0]) && b[0].length === (t.steps || 32));
+      const looksNested = arr.some(b => b !== null && Array.isArray(b) && Array.isArray(b[0]) && b[0].length === stepsPerMeasure);
       if (looksNested) {
-        leadLayers = arr.map(bank => bank === null ? null : resolvePhrase(bank[0]));
+        leadLayers = arr.map(bank => bank === null ? null : resolveMeasure(bank[0]));
       } else {
-        leadLayers = arr.map(b => b === null ? null : resolvePhrase(b));
+        leadLayers = arr.map(b => b === null ? null : resolveMeasure(b));
       }
     }
     return {
-      name: t.name, bpm: t.bpm, steps: t.steps || 32,
-      drums, bass, leads, pads,
-      phraseLens: t.phraseLens || [1,1,1,1],
-      drumLevels: t.drumLevels || null,
+      name: t.name, bpm: t.bpm,
+      stepsPerMeasure,
+      beatsInMeasure: t.beatsInMeasure || 4,
+      parts: t.parts || t.sections || [],
+      drumSets: drums,
+      drumLevels: t.drumLevels || null,   // per-measure drum-set index (authoritative from backbone)
+      bass, leads, pads,
+      phraseLens: t.phraseLens || t.leads.map(() => 1), // legacy alias: every unit is one measure
       numCycles: t.numCycles || 3,
       leadLayers,
       bassType:t.bassType, bassCut:t.bassCut, bassDur:t.bassDur,
@@ -53,5 +58,3 @@ const _NOTE = window._NOTE;
       kickTop:t.kickTop, kickBot:t.kickBot,
     };
   }
-
-  

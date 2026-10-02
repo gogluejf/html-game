@@ -2,41 +2,41 @@
   "name": "MIDNIGHT REAPING",
   "bpm": 185,
   "timeSig": "4/4",
-  "form": [
+  "parts": [
     {
-      "section": "intro",
-      "bars": 2,
-      "drums": "none"
+      "part": "intro",
+      "measures": 2,
+      "drum": "none"
     },
     {
-      "section": "hook",
-      "bars": 4,
-      "drums": "light"
+      "part": "hook",
+      "measures": 4,
+      "drum": "light"
     },
     {
-      "section": "build",
-      "bars": 4,
-      "drums": "medium"
+      "part": "build",
+      "measures": 4,
+      "drum": "medium"
     },
     {
-      "section": "peak",
-      "bars": 4,
-      "drums": "full"
+      "part": "peak",
+      "measures": 4,
+      "drum": "full"
     },
     {
-      "section": "bridge",
-      "bars": 4,
-      "drums": "break"
+      "part": "bridge",
+      "measures": 4,
+      "drum": "break"
     },
     {
-      "section": "peak-b",
-      "bars": 4,
-      "drums": "blast"
+      "part": "peak-b",
+      "measures": 4,
+      "drum": "blast"
     },
     {
-      "section": "tag",
-      "bars": 4,
-      "drums": "light"
+      "part": "tag",
+      "measures": 4,
+      "drum": "light"
     }
   ]
 }

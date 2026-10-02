@@ -2,26 +2,26 @@
   "name": "PETAL PANIC V2",
   "bpm": 208,
   "timeSig": "4/4",
-  "form": [
+  "parts": [
     {
-      "section": "hook",
-      "bars": 4,
-      "drums": "light"
+      "part": "hook",
+      "measures": 4,
+      "drum": "light"
     },
     {
-      "section": "build",
-      "bars": 4,
-      "drums": "medium"
+      "part": "build",
+      "measures": 4,
+      "drum": "medium"
     },
     {
-      "section": "peak",
-      "bars": 4,
-      "drums": "full"
+      "part": "peak",
+      "measures": 4,
+      "drum": "full"
     },
     {
-      "section": "outro",
-      "bars": 2,
-      "drums": "light"
+      "part": "outro",
+      "measures": 2,
+      "drum": "light"
     }
   ]
 }
