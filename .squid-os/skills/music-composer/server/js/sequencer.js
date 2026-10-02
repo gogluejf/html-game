@@ -95,7 +95,7 @@ class MusicSequencer {
     if (this.timerId === null) { this.timerId = setInterval(() => this._schedule(), this.tickMs); }
   }
 
-  /** Advance to the next track, restarting from phrase 0. */
+  /** Advance to the next track, restarting from measure 0. */
   next() {
     const n = this.tracks.length;
     if (n < 2) return;
@@ -257,9 +257,7 @@ class MusicSequencer {
     if (padMeasure && padMeasure[step]) this._pad(t, padMeasure[step], trk);
     const l = leadMeasure[step];
     if (l) this._lead(t, l.hz, trk, l.mul);
-    // Extra lead layer: per-phrase banks (null = no layer for that phrase).
-    // v2: leadLayers is a flat array with ONE 32-step entry per phrase index,
-    // so any number of phrases works (classic tracks put banks at 2 & 3).
+    // Extra lead layer: per-measure (null = no layer for that measure).
     if (trk.leadLayers && trk.leadLayers[mi]) {
       const xl = trk.leadLayers[mi][step];
       if (xl) this._leadLayer(t, xl.hz, trk, lvl, xl.mul);
@@ -477,7 +475,7 @@ class MusicSequencer {
       {0:[_NOTE.G2,_NOTE.B3,_NOTE.D4],16:[_NOTE.A2,_NOTE.C4,_NOTE.E4]},
       {0:[_NOTE.E2,_NOTE.B2,_NOTE.E3],16:[_NOTE.E2,_NOTE.B2,_NOTE.E3]},
     ];
-    // Extra harmony layer: plays on cycles 1 & 2 (index 1,2), one per phrase.
+    // Extra harmony layer: plays on cycles 1 & 2 (index 1,2), one per measure.
     const leadLayers=[
       null, // p0: no layer
       null, // p1: no layer
@@ -594,10 +592,10 @@ class MusicSequencer {
     const bass=[];
     for(let i=0;i<32;i++){bass.push(i%2===0?A1:A2);}
     // EMOTIONAL ARC across the 0-0-1-1-2-3 cycle:
-    //   phrase0 = big SLOW hook (quarter notes, wide intervals) -- the "good" one
-    //   phrase1 = building rising run into the chorus
-    //   phrase2 = HIGH climax (peak register, driving 8ths)
-    //   phrase3 = dark LOW drop + resolve back to the hook
+    //   measure group 0 = big SLOW hook (quarter notes, wide intervals)
+    //   measure group 1 = building rising run into the chorus
+    //   measure group 2 = HIGH climax (peak register, driving 8ths)
+    //   measure group 3 = dark LOW drop + resolve back to the hook
     const leads=[
       // 0: the hook -- spacious, singable, memorable
       [A4,R4,C5,R4, E5,R4,C5,R4, A4,R4,B4,R4, C5,R4,E5,R4,

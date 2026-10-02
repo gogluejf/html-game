@@ -439,7 +439,7 @@ def cmd_parts(a):
     # Merge lead sections (only the ones you pass)
     for spec in a.lead or []:
         if "=" not in spec:
-            _err(f"--lead expects section=notation got {spec!r}")
+            _err(f"--lead expects part=notation got {spec!r}")
         sec, notation = spec.split("=", 1)
         sec = sec.strip()
         bars = parse_beat_notation(notation.strip(), step_width)
@@ -742,16 +742,16 @@ def cmd_list(a):
         slug = pf[6:-5]
         bb_path = os.path.join(d, "backbones", f"{slug}.json")
         time_sig = "?"
-        n_sections = "?"
+        n_parts = "?"
         if os.path.exists(bb_path):
             with open(bb_path) as f:
                 bb = json.load(f)
             time_sig = bb.get("timeSig", "?")
-            n_sections = len(bb.get("form", []))
+            n_parts = len(set(e["part"] for e in _bb_parts(bb)))
         bpm = p.get("bpm") or bb.get("bpm", "?") if os.path.exists(bb_path) else p.get("bpm", "?")
         genre = p.get("genre", "?")
         vibe = (p.get("vibe") or "")[:40]
-        print(f"{i:>3}  {str(bpm) + ' BPM':>8}  {time_sig:>4}  {n_sections:>2} sec  [{genre}]  {p.get('name','?')}")
+        print(f"{i:>3}  {str(bpm) + ' BPM':>8}  {time_sig:>4}  {n_parts:>2} pt  [{genre}]  {p.get('name','?')}")
         if vibe:
             print(f"       {vibe}")
     print(f"({len(parts_files)} songs)")
@@ -813,22 +813,22 @@ def cmd_show_parts(a):
         snares = sum(1 for x in pattern if x.get("s"))
         hats = sum(1 for x in pattern if x.get("h"))
         print(f"    {name:<10} kick={kicks} snare={snares} hat={hats}")
-    print(f"\n  Lead sections:")
+    print(f"\n  Lead parts:")
     for sec, bars in p.get("lead", {}).items():
         notes = sum(1 for bar in bars for cell in bar if cell is not None)
         total_cells = sum(len(bar) for bar in bars)
-        print(f"    {sec:<12} {len(bars)} bars, {notes}/{total_cells} cells filled")
+        print(f"    {sec:<12} {len(bars)} measures, {notes}/{total_cells} cells filled")
     if p.get("layer"):
-        print(f"\n  Layer sections:")
+        print(f"\n  Layer parts:")
         for sec, bars in p["layer"].items():
             notes = sum(1 for bar in bars for cell in bar if cell is not None)
-            print(f"    {sec:<12} {len(bars)} bars, {notes} notes")
-    print(f"\n  Bass: {'shared (single)' if p.get('_bass_single') else 'per-section'}")
+            print(f"    {sec:<12} {len(bars)} measures, {notes} notes")
+    print(f"\n  Bass: {'shared (single)' if p.get('_bass_single') else 'per-part'}")
     for sec, bars in p.get("bass", {}).items():
         notes = sum(1 for bar in bars for cell in bar if cell is not None)
-        print(f"    {sec:<12} {len(bars)} bars, {notes} notes")
+        print(f"    {sec:<12} {len(bars)} measures, {notes} notes")
     if p.get("pad"):
-        print(f"\n  Pad sections:")
+        print(f"\n  Pad parts:")
         for sec, chords in p["pad"].items():
             print(f"    {sec:<12} {len(chords)} chord placements")
     if p.get("voices"):

@@ -251,7 +251,7 @@ export function compile(rawBackbone, parts) {
     // Legacy aliases so old engine code paths keep working during migration:
     steps: stepsPerMeasure,
     drums: drumSets,
-    phraseLens: measures.map(() => 1),     // every "phrase" is exactly one measure now
+    phraseLens: measures.map(() => 1),     // legacy alias (every unit = one measure)
     drumLevels: measures.map(mm => mm.drum),
     sections: partList,
   };
