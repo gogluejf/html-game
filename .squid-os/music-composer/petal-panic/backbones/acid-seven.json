@@ -1,0 +1,42 @@
+{
+  "name": "ACID SEVEN",
+  "bpm": 148,
+  "timeSig": "4/7",
+  "form": [
+    {
+      "section": "intro",
+      "bars": 2,
+      "drums": "none"
+    },
+    {
+      "section": "groove-a",
+      "bars": 4,
+      "drums": "light"
+    },
+    {
+      "section": "groove-b",
+      "bars": 4,
+      "drums": "medium"
+    },
+    {
+      "section": "build",
+      "bars": 4,
+      "drums": "heavy"
+    },
+    {
+      "section": "solo",
+      "bars": 8,
+      "drums": "solo"
+    },
+    {
+      "section": "peak",
+      "bars": 4,
+      "drums": "full"
+    },
+    {
+      "section": "tag",
+      "bars": 2,
+      "drums": "full"
+    }
+  ]
+}
