@@ -61,17 +61,35 @@ function hitMarkerRadiusHandle(sx, sy){
   return -1;
 }
 
+// true if any RECT box (sprite/collision/melee) claims this point via its
+// handles or body — used to let the front-most element beat marker dots.
+function rectBoxAt(sx, sy){
+  for (const b of boxList()){
+    if (!b.rect) break;   // reached the first point entry — nothing above claims it
+    if (hitHandle(b.rect, sx, sy)) return true;
+    if (inside(b.rect, sx, sy)) return true;
+  }
+  return false;
+}
+
 function updateHover(sx, sy){
   const prev = app.hover; app.hover = null;
   if (!editingLocked()){
     // pivot takes priority (small target, drawn on top)
     if (hitPivot(sx, sy)){ app.hover = { box:'pivot' }; finishHover(prev); return; }
-    // first box hit wins (sprite drawn on top, then collision, then melee)
+    // first element hit wins, in z-order (front-most layer, e.g. the selected one)
     for (const b of boxList()){
+      if (!b.rect){
+        // marker dot: only wins if no box in front of it claims the point
+        if (hitMarker(sx, sy) === b.idx){ app.hover = { box:'marker_'+b.idx, body:true }; break; }
+        continue;
+      }
       const h = hitHandle(b.rect, sx, sy);
       if (h){ app.hover = { box:b.key, handle:h }; break; }
       if (inside(b.rect, sx, sy)){ app.hover = { box:b.key, body:true }; break; }
     }
+    // hovered layer wins hit-testing from now on — promote it to the front
+    if (app.hover && app.hover.box !== 'pivot') bringToFront(app.hover.box);
   }
   finishHover(prev);
 }
@@ -277,10 +295,12 @@ cv.addEventListener('pointerdown', e=>{
     cv.style.cursor = 'grabbing';
     return;
   }
-  // marker radius handle -> drag to resize radius
+  // marker radius handle -> drag to resize radius (only when no box in front
+  // of the marker claims the point — the front-most element wins)
   const radIdx = hitMarkerRadiusHandle(sx, sy);
-  if (radIdx >= 0){
+  if (radIdx >= 0 && !rectBoxAt(sx, sy)){
     app._selectedBox = 'marker_'+radIdx;   // auto-select the marker
+    bringToFront('marker_'+radIdx);
     pushUndo();
     app.drag = { key:'markerRadius', markerIdx:radIdx, undoPushed:true };
     cv.style.cursor = 'nwse-resize';
@@ -288,8 +308,9 @@ cv.addEventListener('pointerdown', e=>{
   }
   // marker -> click to select, drag to move (only the marker moves)
   const mkIdx = hitMarker(sx, sy);
-  if (mkIdx >= 0){
+  if (mkIdx >= 0 && !rectBoxAt(sx, sy)){
     app._selectedBox = 'marker_'+mkIdx;
+    bringToFront('marker_'+mkIdx);
     pushUndo();
     app.drag = { key:'marker', markerIdx:mkIdx, sx, sy, undoPushed:false };
     cv.style.cursor = 'grabbing';

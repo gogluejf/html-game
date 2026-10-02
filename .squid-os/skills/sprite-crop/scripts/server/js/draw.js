@@ -127,6 +127,7 @@ export function draw(){
   const playing = !!st.playing;
   const boxes = boxList();
   for (const b of [...boxes].reverse()){
+    if (!b.rect) continue;   // point elements (markers) are drawn separately
     if (playing){
       const [x, y] = s2c(b.rect.x, b.rect.y);
       ctx.save();
@@ -289,6 +290,12 @@ export function boxList(){
     const fBoxes = st.frames[fi].boxes || [];
     fBoxes.forEach((b, i) => {
       byKey['box_'+i] = { key:'box_'+i, rect:{x:b.x,y:b.y,w:b.w,h:b.h}, color:COL_MELEE, label:b.label, idx:i };
+    });
+  }
+  // markers are points (rect:null) — included so they participate in z-order
+  if (app.show.markerView && st.markers){
+    st.markers.forEach((m, i) => {
+      byKey['marker_'+i] = { key:'marker_'+i, rect:null, color:COL_MARKER, idx:i };
     });
   }
   // pivot is a point, not a rect — handled separately in hover/drag
