@@ -90,6 +90,15 @@ function factoryReset(){
       const en = app.manifest.labels[li].entities[ei];
       clearGameData(en.char + '_' + en.anim);
     }
+    // purge any legacy inline game data still sitting in the main blob
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw){
+        const d = JSON.parse(raw);
+        if (d.entities) for (const k of Object.keys(d.entities)) delete d.entities[k];
+        localStorage.setItem(LS_KEY, JSON.stringify(d));
+      }
+    }catch(e){}
     app.S.clear();                                  // drop all per-entity editor state
     app.undoStack.length = 0; app.redoStack.length = 0; // clear history
     Object.assign(app.show, { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false, grid:true, markerView:false });

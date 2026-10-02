@@ -7,7 +7,7 @@ import { draw, boxList } from './draw.js';
 import { curFrameIdx } from './geometry.js';
 import { FILM, drawFilm, filmFitWidth, applyFilmState } from './filmstrip.js';
 import { syncUndoButtons } from './undo.js';
-import { saveState } from './save.js';
+import { saveState, gameDataKey } from './save.js';
 import { setZoom } from './viewport.js';
 
 export function loadFrames(paths){
@@ -136,12 +136,34 @@ export async function selectEntity(li, ei, opts){
   app.flatIdx = app.flatList.findIndex(f => f.li===li && f.ei===ei);
   const imgs = await loadFrames(frameUrls(en));
   app.cur = { name: en.name, paths: frameUrls(en), imgs: imgs.filter(Boolean), crops: (en.frames||[]).map(f => f.bbox) };
-  // use saved per-entity state if present AND frame count still matches; else fresh defaults
-  const saved = app.S.get(app.cur.name);
-  if (!saved || !Array.isArray(saved.frames) || saved.frames.length !== en.frames.length){
-    app.S.set(app.cur.name, defaultState(app.cur.name, app.cur.imgs, app.cur.paths, app.cur.crops));
-  }
-  app.cur.st = app.S.get(app.cur.name);
+  // Fresh defaults, then merge the per-entity DRAFT (localStorage game-data key)
+  // over it. The draft is the single source of truth for unsaved changes; the
+  // main LS blob is config-only and no longer carries game data.
+  const st = defaultState(app.cur.name, app.cur.imgs, app.cur.paths, app.cur.crops);
+  try{
+    const raw = localStorage.getItem(gameDataKey(`${en.char}_${en.anim}`));
+    if (raw){
+      const gd = JSON.parse(raw);
+      if (Array.isArray(gd.frames) && gd.frames.length === st.frames.length){
+        Object.assign(st, {
+          speed: gd.speed ?? st.speed,
+          playback: gd.playback || st.playback,
+          collision: gd.collision || st.collision,
+          pivot: gd.pivot || st.pivot,
+          markers: Array.isArray(gd.markers) ? gd.markers : [],
+        });
+        gd.frames.forEach((gf, i) => {
+          if (!gf) return;
+          if (gf.offset) st.frames[i].offset = gf.offset;
+          if (gf.scale) st.frames[i].scale = gf.scale;
+          if (Array.isArray(gf.boxes)) st.frames[i].boxes = gf.boxes;
+          if (gf.durUnits >= 1) st.frames[i].durUnits = gf.durUnits;
+        });
+      }
+    }
+  }catch(e){}
+  app.S.set(app.cur.name, st);
+  app.cur.st = st;
   app.cur.st.playing = app.isPlaying;   // carry global play/pause across animations
   app.acc = 0; app.drag = null; app.hover = null; app._selectedBox = null;
   app.panX = 0; app.panY = 0;

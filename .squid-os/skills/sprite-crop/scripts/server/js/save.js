@@ -61,7 +61,7 @@ export function collectConfig(){
 // ---------- per-entity game data in localStorage ----------
 // Game data for an entity lives under its own LS key. The SAVE button is
 // enabled iff that key exists. A successful saveToDisk() deletes it.
-function gameDataKey(entityKey){ return 'sprite-editor-game-v1-' + app.project + '-' + entityKey; }
+export function gameDataKey(entityKey){ return 'sprite-editor-game-v1-' + app.project + '-' + entityKey; }
 
 function hasGameData(entityKey){
   try { return !!localStorage.getItem(gameDataKey(entityKey)); } catch(e){ return false; }
@@ -75,13 +75,20 @@ export function clearGameData(entityKey){
   try { localStorage.removeItem(gameDataKey(entityKey)); } catch(e){}
 }
 
-// Clear tuning for current entity: local draft + disk. Called by Reset.
+// Clear tuning for current entity: local draft + disk.
 export async function clearTuning(){
   if (!app.cur || !app.flatList[app.flatIdx]) return;
   const en = app.manifest.labels[app.flatList[app.flatIdx].li].entities[app.flatList[app.flatIdx].ei];
   const key = `${en.char}_${en.anim}`;
-  // Clear local draft
+  // Clear local draft (per-entity key + any legacy inline copy in the main blob)
   clearGameData(key);
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw){
+      const d = JSON.parse(raw);
+      if (d.entities && d.entities[app.cur.name]){ delete d.entities[app.cur.name]; localStorage.setItem(LS_KEY, JSON.stringify(d)); }
+    }
+  }catch(e){}
   // Clear from disk via server (calls record_tuning.py clear)
   try {
     await fetch('/sprite-sheets/', {
@@ -208,6 +215,13 @@ export async function saveToDisk(){
   // 5. Recompute checksum post-save, clear local game data, persist config.
   app.checksums[entityKey] = await computeEntityChecksum(freshEntity);
   clearGameData(entityKey);   // disk now matches editor — drop the draft
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw){
+      const d = JSON.parse(raw);
+      if (d.entities && d.entities[app.cur.name]){ delete d.entities[app.cur.name]; localStorage.setItem(LS_KEY, JSON.stringify(d)); }
+    }
+  }catch(e){}
   saveConfig();
   updateSaveButton();
   updateDirtyDots();
@@ -223,31 +237,19 @@ export async function saveToDisk(){
 
 // ---------- localStorage draft: full state (game data + config) ----------
 // Auto-saved on every edit. Never touches the server.
+// Config-only snapshot: view prefs, active entity, checksums. Game data lives
+// exclusively in the per-entity draft keys (gameDataKey) — those are the single
+// source of truth for unsaved changes (dirty dots / SAVE button).
 export function collectState(){
-  const entities = {};
-  for (const [name, st] of app.S){
-    entities[name] = {
-      speed: st.speed, playing: st.playing, frameIdx: st.frameIdx,
-      playback: st.playback || 'loop',
-      collision: st.collision, pivot: st.pivot, markers: st.markers||[], rot: st.rot,
-      frames: st.frames.map(f => ({ idx:f.idx, name:f.name, crop:f.crop, offset:f.offset, scale:f.scale, boxes:f.boxes||[], durUnits:f.durUnits||1 }))
-    };
-  }
-  return { v:1, entities, ...collectConfig() };
+  return { v:1, entities: {}, ...collectConfig() };
 }
 
 export function saveState(){
   if (app._loadingState) return;   // don't overwrite saved data mid-restore
   try{
-    const state = collectState();
-    // Never write an empty blob over existing saved data — that clobbers real state.
-    if (Object.keys(state.entities).length === 0) return;
-    localStorage.setItem(LS_KEY, JSON.stringify(state));
-    // NOTE: this is CONFIG-only (view/active/checksums + full draft snapshot for
-    // reload recovery). It deliberately does NOT touch per-entity game data or the
-    // SAVE button / dirty dots — those are driven by markGameDataChanged() so that
-    // view toggles, play/pause, bg color, frame stepping, etc. don't flag a false
-    // "unsaved changes" state.
+    localStorage.setItem(LS_KEY, JSON.stringify(collectState()));
+    // Config-only. Per-entity game data is written ONLY by markGameDataChanged()
+    // (via storeGameData) and cleared by saveToDisk()/clearTuning()/factoryReset.
   }catch(e){ /* quota / private mode */ }
 }
 
@@ -324,26 +326,36 @@ export function loadState(){
   }
   localStorage.setItem(LS_KEY, JSON.stringify(data));
 
-  // restore per-entity state
-  for (const [name, saved] of Object.entries(data.entities)){
-    if (saved && Array.isArray(saved.frames)) app.S.set(name, saved);
+  // Legacy adoption: old blobs carried full per-entity game data inline.
+  // Move any that have no per-entity draft key yet into one (one-time).
+  for (const [name, saved] of Object.entries(data.entities||{})){
+    if (!saved || !Array.isArray(saved.frames)) continue;
+    const en = app.manifest.labels.flatMap(l => l.entities).find(e => e.name === name);
+    if (!en) continue;
+    const gk = gameDataKey(`${en.char}_${en.anim}`);
+    try{ if (!localStorage.getItem(gk)) localStorage.setItem(gk, JSON.stringify(collectGameData(saved))); }catch(e){}
   }
-  // migrate new fields: playback + durUnits + boxes (additive, backward-compatible)
-  for (const [, st] of app.S){
-    if (!st.playback) st.playback = 'loop';
-    if (!st.markers) st.markers = [];
-    for (const f of st.frames){
-      if (f.durUnits === undefined || f.durUnits < 1) f.durUnits = 1;
-      // melee → boxes migration
-      if (f.melee && !f.boxes){
-        f.boxes = f.melee.on
-          ? [{ label: "attack", x: f.melee.x, y: f.melee.y, w: f.melee.w, h: f.melee.h }]
-          : [];
-        delete f.melee;
+  // Per-entity draft keys are the single source of truth for game data.
+  // selectEntity() merges them over fresh defaults when each entity loads.
+  // Migrate old draft shapes in place (playback/durUnits/boxes additive).
+  app.manifest.labels.forEach(lbl => lbl.entities.forEach(en => {
+    const gk = gameDataKey(`${en.char}_${en.anim}`);
+    try{
+      const raw = localStorage.getItem(gk); if (!raw) return;
+      const gd = JSON.parse(raw); let changed = false;
+      if (!gd.playback){ gd.playback = 'loop'; changed = true; }
+      if (!Array.isArray(gd.markers)){ gd.markers = []; changed = true; }
+      for (const f of gd.frames||[]){
+        if (f.durUnits === undefined || f.durUnits < 1){ f.durUnits = 1; changed = true; }
+        if (f.melee && !f.boxes){
+          f.boxes = f.melee.on ? [{ label:"attack", x:f.melee.x, y:f.melee.y, w:f.melee.w, h:f.melee.h }] : [];
+          delete f.melee; changed = true;
+        }
+        if (!f.boxes){ f.boxes = []; changed = true; }
       }
-      if (!f.boxes) f.boxes = [];
-    }
-  }
+      if (changed) localStorage.setItem(gk, JSON.stringify(gd));
+    }catch(e){}
+  }));
   // restore global view
   if (data.view){
     if (data.view.show) Object.assign(app.show, data.view.show);
