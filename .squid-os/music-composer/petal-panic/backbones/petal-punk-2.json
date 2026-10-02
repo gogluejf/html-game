@@ -1,0 +1,47 @@
+{
+  "name": "PETAL PUNK 2",
+  "bpm": 184,
+  "timeSig": "4/4",
+  "form": [
+    {
+      "section": "hook",
+      "bars": 4,
+      "drums": "light"
+    },
+    {
+      "section": "verse",
+      "bars": 4,
+      "drums": "medium"
+    },
+    {
+      "section": "build",
+      "bars": 4,
+      "drums": "heavy"
+    },
+    {
+      "section": "peak",
+      "bars": 4,
+      "drums": "full"
+    },
+    {
+      "section": "break",
+      "bars": 2,
+      "drums": "none"
+    },
+    {
+      "section": "hook-b",
+      "bars": 4,
+      "drums": "light"
+    },
+    {
+      "section": "peak-b",
+      "bars": 4,
+      "drums": "full"
+    },
+    {
+      "section": "tag",
+      "bars": 4,
+      "drums": "medium"
+    }
+  ]
+}

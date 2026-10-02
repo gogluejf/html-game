@@ -1,0 +1,27 @@
+{
+  "name": "PETAL PANIC",
+  "bpm": 176,
+  "timeSig": "4/4",
+  "form": [
+    {
+      "section": "hook",
+      "bars": 4,
+      "drums": "light"
+    },
+    {
+      "section": "build",
+      "bars": 4,
+      "drums": "medium"
+    },
+    {
+      "section": "peak",
+      "bars": 4,
+      "drums": "full"
+    },
+    {
+      "section": "tag",
+      "bars": 2,
+      "drums": "light"
+    }
+  ]
+}
