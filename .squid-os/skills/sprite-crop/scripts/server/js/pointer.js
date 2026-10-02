@@ -5,6 +5,7 @@ import { curFrameIdx, editingLocked } from './geometry.js';
 import { draw, boxList, hitHandle, inside } from './draw.js';
 import { syncPanel } from './panel.js';
 import { pushUndo } from './undo.js';
+import { markGameDataChanged } from './save.js';
 import { buildMeleeBoxList } from './meleeBoxes.js';
 import { buildMarkerList } from './markers.js';
 import { moveElement } from './rigidbody.js';
@@ -377,25 +378,28 @@ cv.addEventListener('pointermove', e=>{
     if (m){
       const dist = Math.sqrt((sx-m.x)*(sx-m.x) + (sy-m.y)*(sy-m.y));
       m.radius = Math.max(1, Math.round(dist));
+      app.drag.mutated = true;
     }
     syncPanel(); draw(); return;
   } else if (app.drag.key==='marker'){
     // Moving a marker affects ONLY that marker
     if (!app.drag.undoPushed){ pushUndo(); app.drag.undoPushed = true; }
     const m = app.cur.st.markers[app.drag.markerIdx];
-    if (m){ m.x=Math.round(sx); m.y=Math.round(sy); }
+    if (m){ m.x=Math.round(sx); m.y=Math.round(sy); app.drag.mutated = true; }
     syncPanel(); draw(); return;
   } else if (app.drag.key==='pivot'){
     // Moving the pivot affects ONLY the pivot — zero effect on sprite/collision/
     // melee. (Pivot follows those elements when THEY are moved/resized instead.)
     app.cur.st.pivot.x=Math.round(sx);
     app.cur.st.pivot.y=Math.round(sy);
+    app.drag.mutated = true;
     syncPanel();
   } else if (app.drag.key && (BOX[app.drag.key] || app.drag.key.startsWith('box_'))){
     if (!app.drag.undoPushed){ pushUndo(); app.drag.undoPushed = true; }
     const B = app.drag.key.startsWith('box_') ? BOX.getBox(app.drag.boxIdx) : BOX[app.drag.key];
     if (app.drag.anchor) B.resize(app.drag, sx, sy);
     else                 B.move(app.drag, sx, sy);
+    app.drag.mutated = true;
   }
   syncPanel(); draw();
 });
@@ -415,6 +419,7 @@ window.addEventListener('pointerup', e=>logEv('UP', e));
 
 function endDrag(e){
   const wasDragging = !!app.drag;
+  const mutated = wasDragging && !!app.drag.mutated;   // did the drag actually change game data?
   app.drag = null;
   if (!app.cur || !app.cur.st) return;
   // Recompute hover from the actual release position. With pointer capture the event
@@ -425,7 +430,8 @@ function endDrag(e){
     const [cx, cy] = evPos(e); [sx, sy] = c2s(cx, cy);
   }
   updateHover(sx, sy);          // always redraws when state changes; force it below
-  if (wasDragging) draw();      // guarantee the solid line drops back to dotted
+  if (wasDragging) draw();
+  if (mutated) markGameDataChanged();   // persist draft on release so the dirty dot / SAVE button reflect canvas edits
   cv.style.cursor = 'default';  // release the grabbing cursor after a pan
 }
 window.addEventListener('pointerup', endDrag);

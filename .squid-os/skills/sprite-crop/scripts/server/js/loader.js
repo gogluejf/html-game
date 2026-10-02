@@ -101,7 +101,10 @@ export async function loadProject(projectName){
     const sheets = [];
     for (const jf of jsonFiles){
       try{
-        const res = await fetch(`${base}${encodeURIComponent(labelName)}/${jf}`);
+        // Cache-buster: browsers sometimes serve stale disk-cached copies even
+        // with no-store headers (files cached before the header existed). The
+        // editor's whole model depends on reading fresh tuning data from disk.
+        const res = await fetch(`${base}${encodeURIComponent(labelName)}/${jf}?t=${Date.now()}`);
         if (!res.ok) continue;
         const sh = await res.json();
         sh._file = jf;

@@ -6,37 +6,254 @@
   "cols": 5,
   "size": "1536x1024",
   "description": "Colonel Carrot final boss (carrot-bodied colonel on red scooter) sheet 2/4, 3 actions x 5 frames (launch, stomp, shout)",
-  "entities": [{
-    "name": "colonel_carrot",
-    "anim": "launch",
-    "frames": [
-      {"file": "colonel_carrot_launch_f1.png", "row": 0, "col": 0, "bbox": [11, 19, 237, 324]},
-      {"file": "colonel_carrot_launch_f2.png", "row": 0, "col": 1, "bbox": [296, 24, 311, 319]},
-      {"file": "colonel_carrot_launch_f3.png", "row": 0, "col": 2, "bbox": [603, 22, 268, 322]},
-      {"file": "colonel_carrot_launch_f4.png", "row": 0, "col": 3, "bbox": [896, 31, 338, 312]},
-      {"file": "colonel_carrot_launch_f5.png", "row": 0, "col": 4, "bbox": [1228, 48, 290, 296]}
-    ]
-  }, {
-    "name": "colonel_carrot",
-    "anim": "stomp",
-    "frames": [
-      {"file": "colonel_carrot_stomp_f1.png", "row": 1, "col": 0, "bbox": [9, 348, 248, 312]},
-      {"file": "colonel_carrot_stomp_f2.png", "row": 1, "col": 1, "bbox": [301, 376, 280, 283]},
-      {"file": "colonel_carrot_stomp_f3.png", "row": 1, "col": 2, "bbox": [605, 344, 278, 315]},
-      {"file": "colonel_carrot_stomp_f4.png", "row": 1, "col": 3, "bbox": [914, 340, 298, 318]},
-      {"file": "colonel_carrot_stomp_f5.png", "row": 1, "col": 4, "bbox": [1245, 342, 287, 321]}
-    ]
-  }, {
-    "name": "colonel_carrot",
-    "anim": "shout",
-    "frames": [
-      {"file": "colonel_carrot_shout_f1.png", "row": 2, "col": 0, "bbox": [5, 662, 283, 321]},
-      {"file": "colonel_carrot_shout_f2.png", "row": 2, "col": 1, "bbox": [296, 659, 292, 324]},
-      {"file": "colonel_carrot_shout_f3.png", "row": 2, "col": 2, "bbox": [603, 668, 265, 315]},
-      {"file": "colonel_carrot_shout_f4.png", "row": 2, "col": 3, "bbox": [878, 669, 353, 312]},
-      {"file": "colonel_carrot_shout_f5.png", "row": 2, "col": 4, "bbox": [1231, 682, 305, 301]}
-    ]
-  }],
+  "entities": [
+    {
+      "name": "colonel_carrot",
+      "anim": "launch",
+      "frames": [
+        {
+          "file": "colonel_carrot_launch_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            11,
+            19,
+            237,
+            324
+          ],
+          "offset": {
+            "x": 8,
+            "y": -192
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "colonel_carrot_launch_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            296,
+            24,
+            311,
+            319
+          ],
+          "offset": {
+            "x": 155.5,
+            "y": -159.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "colonel_carrot_launch_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            603,
+            22,
+            268,
+            322
+          ],
+          "offset": {
+            "x": 134,
+            "y": -161
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "colonel_carrot_launch_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            896,
+            31,
+            338,
+            312
+          ],
+          "offset": {
+            "x": 169,
+            "y": -156
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "colonel_carrot_launch_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1228,
+            48,
+            290,
+            296
+          ],
+          "offset": {
+            "x": 145,
+            "y": -148
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "collision": {
+        "x": 4,
+        "y": -320,
+        "w": 229,
+        "h": 316
+      },
+      "pivot": {
+        "x": 119,
+        "y": -162
+      },
+      "markers": []
+    },
+    {
+      "name": "colonel_carrot",
+      "anim": "stomp",
+      "frames": [
+        {
+          "file": "colonel_carrot_stomp_f1.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            9,
+            348,
+            248,
+            312
+          ]
+        },
+        {
+          "file": "colonel_carrot_stomp_f2.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            301,
+            376,
+            280,
+            283
+          ]
+        },
+        {
+          "file": "colonel_carrot_stomp_f3.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            605,
+            344,
+            278,
+            315
+          ]
+        },
+        {
+          "file": "colonel_carrot_stomp_f4.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            914,
+            340,
+            298,
+            318
+          ]
+        },
+        {
+          "file": "colonel_carrot_stomp_f5.png",
+          "row": 1,
+          "col": 4,
+          "bbox": [
+            1245,
+            342,
+            287,
+            321
+          ]
+        }
+      ]
+    },
+    {
+      "name": "colonel_carrot",
+      "anim": "shout",
+      "frames": [
+        {
+          "file": "colonel_carrot_shout_f1.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            5,
+            662,
+            283,
+            321
+          ]
+        },
+        {
+          "file": "colonel_carrot_shout_f2.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            296,
+            659,
+            292,
+            324
+          ]
+        },
+        {
+          "file": "colonel_carrot_shout_f3.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            603,
+            668,
+            265,
+            315
+          ]
+        },
+        {
+          "file": "colonel_carrot_shout_f4.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            878,
+            669,
+            353,
+            312
+          ]
+        },
+        {
+          "file": "colonel_carrot_shout_f5.png",
+          "row": 2,
+          "col": 4,
+          "bbox": [
+            1231,
+            682,
+            305,
+            301
+          ]
+        }
+      ]
+    }
+  ],
   "crop": {
     "frames_dir": "petal-panic/assets/boss",
     "pass": "/tmp/redo-colonel_carrot_2-v1"

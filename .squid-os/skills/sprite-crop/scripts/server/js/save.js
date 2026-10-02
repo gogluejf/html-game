@@ -97,6 +97,10 @@ export async function clearTuning(){
       body: JSON.stringify({ sheet: en.sheetPath, name: en.char, anim: en.anim, clear: true })
     });
   } catch(e) { /* server might be down — local clear still worked */ }
+  // Mirror the disk clear into the in-memory manifest so in-app navigation
+  // doesn't re-merge the now-deleted tuning until a page refresh.
+  en.tuning = { speed: null, playback: null, collision: null, pivot: null, markers: null,
+                frames: en.frames.map(() => ({ offset:null, scale:null, boxes:null, durUnits:null })) };
   updateSaveButton();
   updateDirtyDots();
 }
@@ -214,6 +218,19 @@ export async function saveToDisk(){
 
   // 5. Recompute checksum post-save, clear local game data, persist config.
   app.checksums[entityKey] = await computeEntityChecksum(freshEntity);
+  // Update the in-memory manifest tuning so in-app navigation (away + back)
+  // merges against the COMMITTED state, not the stale boot-time copy. Without
+  // this, selectEntity() would re-merge pre-save values until a page refresh.
+  en.tuning = {
+    speed: gameData.speed,
+    playback: gameData.playback,
+    collision: gameData.collision,
+    pivot: gameData.pivot,
+    markers: gameData.markers,
+    frames: gameData.frames.map(f => ({
+      offset: f.offset, scale: f.scale, boxes: f.boxes, durUnits: f.durUnits
+    }))
+  };
   clearGameData(entityKey);   // disk now matches editor — drop the draft
   try{
     const raw = localStorage.getItem(LS_KEY);

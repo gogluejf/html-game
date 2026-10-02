@@ -136,10 +136,28 @@ export async function selectEntity(li, ei, opts){
   app.flatIdx = app.flatList.findIndex(f => f.li===li && f.ei===ei);
   const imgs = await loadFrames(frameUrls(en));
   app.cur = { name: en.name, paths: frameUrls(en), imgs: imgs.filter(Boolean), crops: (en.frames||[]).map(f => f.bbox) };
-  // Fresh defaults, then merge the per-entity DRAFT (localStorage game-data key)
-  // over it. The draft is the single source of truth for unsaved changes; the
-  // main LS blob is config-only and no longer carries game data.
+  // Fresh defaults, then merge DISK tuning (sheet JSON), then the per-entity
+  // DRAFT (localStorage game-data key) over that. Disk is the committed state;
+  // the draft is unsaved work layered on top. Without the disk merge, a refresh
+  // with no draft would show factory defaults even though the sheet has data.
   const st = defaultState(app.cur.name, app.cur.imgs, app.cur.paths, app.cur.crops);
+  if (en.tuning){
+    const t = en.tuning;
+    if (t.speed != null) st.speed = t.speed;
+    if (t.playback) st.playback = t.playback;
+    if (t.collision) st.collision = t.collision;
+    if (t.pivot) st.pivot = t.pivot;
+    if (Array.isArray(t.markers)) st.markers = t.markers;
+    if (Array.isArray(t.frames) && t.frames.length === st.frames.length){
+      t.frames.forEach((tf, i) => {
+        if (!tf) return;
+        if (tf.offset) st.frames[i].offset = tf.offset;
+        if (tf.scale) st.frames[i].scale = tf.scale;
+        if (Array.isArray(tf.boxes)) st.frames[i].boxes = tf.boxes;
+        if (tf.durUnits >= 1) st.frames[i].durUnits = tf.durUnits;
+      });
+    }
+  }
   try{
     const raw = localStorage.getItem(gameDataKey(`${en.char}_${en.anim}`));
     if (raw){

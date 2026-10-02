@@ -16,7 +16,7 @@ import { initPointer, bringToFront } from './pointer.js';
 import { initFilmstrip, applyFilmState, drawFilm } from './filmstrip.js';
 import { initConfirmDialog } from './dialog.js';
 import { doUndo, doRedo, syncUndoButtons } from './undo.js';
-import { saveState, loadState, applySavedView, LS_KEY } from './save.js';
+import { saveState, loadState, applySavedView, LS_KEY, saveToDisk } from './save.js';
 import { initRecenterPivot, initPositionButtons, initResetTool } from './reset.js';
 import { curFrameIdx, editingLocked, targetFrames } from './geometry.js';
 import { commit } from './commit.js';
@@ -121,6 +121,8 @@ function initTransportAndZoom(){
   // undo / redo controls
   $('undoBtn').addEventListener('click', doUndo);
   $('redoBtn').addEventListener('click', doRedo);
+  // save to disk (explicit flush of the local draft into the sheet JSON)
+  $('saveBtn').addEventListener('click', saveToDisk);
 }
 
 // ---------- help dialog ----------
@@ -149,6 +151,12 @@ function initKeyboard(){
     if ((e.ctrlKey||e.metaKey) && e.code==='KeyY'){
       e.preventDefault();
       doRedo();
+      return;
+    }
+    // ctrl+S -> save current entity to disk (explicit flush of the local draft)
+    if ((e.ctrlKey||e.metaKey) && e.code==='KeyS'){
+      e.preventDefault();
+      saveToDisk();
       return;
     }
     // ctrl+0 -> reset zoom to 100% (centered on origin)
