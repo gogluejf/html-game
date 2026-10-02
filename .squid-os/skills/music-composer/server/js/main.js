@@ -1,37 +1,59 @@
 /* main.js — boot: fetch the game's songs over HTTP (playlist order = createdAt
- * ascending, same rule as compose.py list), build the SongController, wire UI.
- * Deep link: ?game=<name>&track=<slug-or-name>. */
+ * ascending), compile backbone+parts pairs into engine grids, build the
+ * SongController, wire UI. Deep link: ?game=<name>&track=<slug-or-name>. */
 import { SongController } from './controller.js';
 import { initUI } from './ui.js';
 // Expose the Player facade to classic-script land (controller.js reads it off window).
 import * as MusicPlayer from './player.js';
 window.MusicPlayer = MusicPlayer;
+import { compile } from './compiler.js';
 
 const params = new URLSearchParams(location.search);
 const game = params.get('game') || 'petal-panic';
+
+async function getJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw null;
+  return r.json();
+}
 
 async function loadTracks(gameName) {
   // Songs live at <repo-root>/.squid-os/music-composer/<game>/; the page is served
   // from <repo-root>/.squid-os/skills/music-composer/server/, so go up three levels.
   const dir = '../../../music-composer/' + encodeURIComponent(gameName);
-  // Static file serving already exposes every song JSON; no API endpoint needed.
+  // List parts-*.json files (each has a matching backbones/<slug>.json).
   const files = await fetch(dir + '/').then(async r => {
     if (!r.ok) throw new Error('no songs dir for game "' + gameName + '" (' + r.status + ')');
     const html = await r.text();
-    // SimpleHTTPRequestHandler directory listing: <a href="file.json"> entries.
     const out = [];
     const re = /href="([^"]+\.json)"/g;
     let m;
     while ((m = re.exec(html))) out.push(m[1]);
     return out;
   });
-  const tracks = await Promise.all(files.map(f =>
-    fetch(dir + '/' + f).then(r => {
-      if (!r.ok) throw new Error('cannot load ' + f + ' (' + r.status + ')');
-      return r.json();
-    })
-  ));
-  // Playlist order = createdAt ascending; stable fallback to name (mirrors _load_state).
+
+  const tracks = [];
+  for (const f of files) {
+    if (!f.startsWith('parts-') || !f.endsWith('.json')) continue;
+    const base = f.slice('parts-'.length, -'.json'.length);
+    const bbFile = 'backbones/' + base + '.json';
+    const backbone = await getJSON(dir + '/' + bbFile).catch(() => null);
+    if (!backbone || !Array.isArray(backbone.form)) {
+      console.warn('[jukebox] missing backbone for ' + f);
+      continue;
+    }
+    const parts = await getJSON(dir + '/' + f).catch(() => null);
+    if (!parts) { console.warn('[jukebox] missing parts for ' + f); continue; }
+    try {
+      const t = compile(backbone, parts);
+      tracks.push(t);
+      console.log('[jukebox] loaded:', t.name);
+    } catch (e) {
+      console.error('[jukebox] compile failed for ' + f, e);
+    }
+  }
+
+  // Playlist order = createdAt ascending; stable fallback to name.
   tracks.sort((a, b) => {
     const ka = a.createdAt || '', kb = b.createdAt || '';
     if (ka !== kb) return ka < kb ? -1 : 1;

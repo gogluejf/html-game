@@ -1,0 +1,131 @@
+{
+  "name": "PYRA",
+  "genre": "Punk Metal",
+  "vibe": "Fast 150 BPM Egyptian punk-metal with NES chiptune flavor \u2014 heavy E minor riffing laced with phrygian-dominant and chromatic notes for an ancient, aggressive feel.",
+  "createdAt": "2026-09-17T06:22:54",
+  "revision": 1,
+  "drumKit": {
+    "lvl0": [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}],
+    "lvl1": [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}],
+    "lvl2": [{"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}],
+    "lvl3": [{"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}]
+  },
+  "lead": {
+    "s0": [
+      ["E4", null, "E4", "G#4", "A4", null, "G#4", "E4", null, null, "E4", null, "G#4", null, "E4", "D4"],
+      ["C#4", null, "C#4", "D4", "E4", null, "D4", "C#4", "B3", null, "B3", "D4", "E4", null, "G#4", "E4"]
+    ],
+    "s1": [
+      ["E4", null, "E4", "G#4", "A4", null, "G#4", "E4", null, null, "E4", null, "G#4", null, "E4", "D4"],
+      ["C#4", null, "C#4", "D4", "E4", null, "D4", "C#4", "B3", null, "B3", "D4", "E4", null, "E4", null]
+    ],
+    "s2": [
+      ["B3", null, "B3", "D4", "E4", null, "D4", "B3", null, null, "B3", null, "D4", null, "E4", "G#4"],
+      ["G#4", null, "G#4", "G#4", "E4", null, "D4", "C#4", "B3", null, "B3", "D4", "E4", null, "D4", "B3"]
+    ],
+    "s3": [
+      ["B3", null, "B3", "D4", "E4", null, "D4", "B3", null, null, "B3", null, "D4", null, "E4", "G#4"],
+      ["G#4", null, "G#4", "G#4", "E4", null, "D4", "C#4", "B3", null, "B3", "D4", "E4", null, "B3", null]
+    ],
+    "s4": [
+      ["E5", null, "E5", "G#5", "A5", null, "G#5", "E5", null, null, "E5", null, "G#5", null, "E5", "D5"],
+      ["C#5", null, "C#5", "D5", "E5", null, "D5", "C#5", "B4", null, "B4", "D5", "E5", null, "G#5", "E5"]
+    ],
+    "s5": [
+      ["E5", null, "E5", "G#5", "A5", null, "G#5", "E5", null, null, "E5", null, "G#5", null, "E5", "D5"],
+      ["C#5", null, "C#5", "D5", "E5", null, "D5", "C#5", "B4", null, "B4", "D5", "E5", null, "E5", null]
+    ],
+    "s6": [
+      ["E5", null, null, null, "D5", null, null, null, "C#5", null, null, null, "B4", null, null, null],
+      ["A4", null, null, null, "G#4", null, null, null, "E4", null, null, null, "E4", null, null, null]
+    ],
+    "s7": [
+      ["E4", null, null, null, "G#4", null, null, null, "A4", null, null, null, "G#4", null, null, null],
+      ["E4", null, null, null, "E4", null, null, null, "E4", null, null, null, "E4", null, null, null]
+    ]
+  },
+  "layer": {
+    "s4": [
+      ["E4", null, "E4", "G#4", "A4", null, "G#4", "E4", null, null, "E4", null, "G#4", null, "E4", "D4"],
+      ["C#4", null, "C#4", "D4", "E4", null, "D4", "C#4", "B3", null, "B3", "D4", "E4", null, "G#4", "E4"]
+    ],
+    "s5": [
+      ["E4", null, "E4", "G#4", "A4", null, "G#4", "E4", null, null, "E4", null, "G#4", null, "E4", "D4"],
+      ["C#4", null, "C#4", "D4", "E4", null, "D4", "C#4", "B3", null, "B3", "D4", "E4", null, "E4", null]
+    ]
+  },
+  "bass": {
+    "s0": [
+      ["E2", "E2", "E2", "E2", "G#2", "G#2", "G#2", "G#2", "A2", "A2", "A2", "A2", "B2", "B2", "B2", "B2"],
+      ["C#3", "C#3", "C#3", "C#3", "D3", "D3", "D3", "D3", "E2", "E2", "E2", "E2", "G#2", "G#2", "G#2", "G#2"]
+    ]
+  },
+  "pad": {
+    "s0": {
+      "0": ["E2", "G#3", "E4"],
+      "8": ["E2", "G#3", "E4"],
+      "16": ["E2", "G#3", "E4"],
+      "24": ["E2", "G#3", "E4"]
+    },
+    "s1": {
+      "0": ["E2", "G#3", "E4"],
+      "8": ["E2", "G#3", "E4"],
+      "16": ["E2", "G#3", "E4"],
+      "24": ["E2", "G#3", "E4"]
+    },
+    "s2": {
+      "0": ["A2", "C#3", "E4"],
+      "8": ["A2", "C#3", "E4"],
+      "16": ["A2", "C#3", "E4"],
+      "24": ["A2", "C#3", "E4"]
+    },
+    "s3": {
+      "0": ["A2", "C#3", "E4"],
+      "8": ["A2", "C#3", "E4"],
+      "16": ["A2", "C#3", "E4"],
+      "24": ["A2", "C#3", "E4"]
+    },
+    "s4": {
+      "0": ["E2", "G#3", "E4"],
+      "8": ["E2", "G#3", "E4"],
+      "16": ["E2", "G#3", "E4"],
+      "24": ["E2", "G#3", "E4"]
+    },
+    "s5": {
+      "0": ["E2", "G#3", "E4"],
+      "8": ["E2", "G#3", "E4"],
+      "16": ["E2", "G#3", "E4"],
+      "24": ["E2", "G#3", "E4"]
+    },
+    "s6": {
+      "0": ["B2", "D3", "E4"],
+      "8": ["B2", "D3", "E4"],
+      "16": ["G#2", "B3", "D4"],
+      "24": ["E2", "G#3", "E4"]
+    },
+    "s7": {
+      "0": ["E2", "G#3", "E4"],
+      "8": ["E2", "G#3", "E4"],
+      "16": ["E2", "G#3", "E4"],
+      "24": ["E2", "G#3", "E4"]
+    }
+  },
+  "_bass_single": true,
+  "voices": {
+    "bassType": "square",
+    "bassCut": 900,
+    "bassDur": 0.2,
+    "padType": "sawtooth",
+    "padCut": 1800,
+    "padDur": 0.4,
+    "leadType": "square",
+    "leadCut": 3600,
+    "leadDur": 0.2,
+    "vib": 7,
+    "layerType": "triangle",
+    "layerCut": 2800,
+    "layerDur": 0.2,
+    "kickTop": 130,
+    "kickBot": 42
+  }
+}

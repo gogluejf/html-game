@@ -1,0 +1,57 @@
+{
+  "name": "CELTIC PIRATES REMIX",
+  "bpm": 140,
+  "timeSig": "4/4",
+  "form": [
+    {
+      "section": "s0",
+      "bars": 2,
+      "drums": "lvl0"
+    },
+    {
+      "section": "s1",
+      "bars": 2,
+      "drums": "lvl0"
+    },
+    {
+      "section": "s2",
+      "bars": 2,
+      "drums": "lvl1"
+    },
+    {
+      "section": "s3",
+      "bars": 2,
+      "drums": "lvl1"
+    },
+    {
+      "section": "s4",
+      "bars": 2,
+      "drums": "lvl2"
+    },
+    {
+      "section": "s5",
+      "bars": 2,
+      "drums": "lvl3"
+    },
+    {
+      "section": "s6",
+      "bars": 2,
+      "drums": "lvl3"
+    },
+    {
+      "section": "s7",
+      "bars": 2,
+      "drums": "lvl2"
+    }
+  ],
+  "drumLevels": [
+    0,
+    0,
+    1,
+    1,
+    2,
+    3,
+    3,
+    2
+  ]
+}

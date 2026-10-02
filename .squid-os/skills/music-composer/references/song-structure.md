@@ -1,146 +1,235 @@
-# Song Structure (music-composer)
+# Song Structure — Universal Format (v3)
 
-The composition is a JSON array of **track** objects. The engine (`assets/engine.js`)
-resolves note names to Hz and plays them. This is the exact format the in-game
-`MusicSequencer` uses, so generated music sounds identical in the player and in-game.
-
-## Note names
-
-Notes are written as `letter+octave` (e.g. `"A4"`, `"C5"`, `"E1"`), optionally with an
-accidental for sharps/flats: `"C#4"`, `"Db4"`, `"G#2"`. A rest is `null`.
-The engine's `_NOTE` table covers C1..B5 including all black keys:
+One format, one pipeline. Every song is **backbone + parts**; the engine grid
+is an internal compiled detail only.
 
 ```
-C1 32.70  D1 36.71  E1 41.20  F1 43.65  G1 49.00  A1 55.00  B1 61.74
-C2 65.41  D2 73.42  E2 82.41  F2 87.31  G2 98.00  A2 110.00 B2 123.47
-C3 130.81 D3 146.83 E3 164.81 F3 174.61 G3 196.00 A3 220.00 B3 246.94
-C4 261.63 D4 293.66 E4 329.63 F4 349.23 G4 392.00 A4 440.00 B4 493.88
-C5 523.25 D5 587.33 E5 659.25 F5 698.46 G5 783.99 A5 880.00 B5 987.77
+backbone.json + parts-<slug>.json ──▶ compiler.js ──▶ engine grid ──▶ jukebox
+   (architect)         (composer)        (automatic)
 ```
 
-Never use raw Hz or bare identifiers — every cell must be a name string or null.
+No legacy path. No rendered HTML. One code path in the jukebox.
 
-Accidentals use **sharp spelling only** (`C#n`, `D#n`, `F#n`, `G#n`, `A#n` —
-each = one semitone above the preceding natural, computed as
-`natural * 2^(1/12)`). Flat spellings (`Db`, `Eb`, ...) are accepted by the
-engine as aliases of their sharp equivalents but should NOT be written in new
-compositions — keep the vocabulary to a single format. There is no `E#`/`B#`
-— those keys don't exist.
+## Music hierarchy
 
-## Track object
+| Unit | Size | In our format |
+|---|---|---|
+| beat | the pulse | notes hang off beats with durations |
+| bar | N beats (from timeSig) | `bars` counts, chord spans |
+| phrase | one melodic idea, 1–4 bars | a part's content per section |
+| section | named role: hook/build/peak/bridge/tag… | one entry in `form` |
+| song | ordered sections | the whole backbone |
+
+Nothing caps section count or length. A 3-section 12-bar banger and a
+12-section 60-bar epic are equally legal. Unlimited named drum patterns per song.
+
+## Time signature
+
+`timeSig` is a string in `"beats/noteValue"` format: `"4/4"`, `"3/4"`, `"6/8"`, `"7/8"`.
+
+The engine resolves this to steps-per-bar at 16th-note resolution:
+- `4/4` → 16 steps/bar (default)
+- `3/4` → 12 steps/bar
+- `6/8` → 24 steps/bar (grouped as 2×3)
+- `7/8` → 28 steps/bar
+
+Bar arrays in parts must match the resolved step count. The compiler handles
+the math; the composer writes one bar array per bar regardless of sig.
+
+## File layout
+
+```
+.squid-os/music-composer/<game>/
+  backbones/<slug>.json     ← structure (architect owns)
+  parts-<slug>.json         ← notes (composer owns)
+```
+
+Playlist order = each song's `createdAt` (in the parts file).
+
+## Backbone (`backbones/<slug>.json`)
 
 ```jsonc
 {
-  "name": "SYNTHWAVE",
-  "bpm": 118,
-  "steps": 32,                 // fixed; one phrase = 32 sixteenth-notes (2 bars)
-  "drums": [ set0, set1, set2, set3 ],   // indexed by phrase: none/light/medium/full
-  "bass":  [ ...32... ],        // steady groove, note names or null
-  "leads": [ phrase0, phrase1, phrase2, phrase3 ],  // melody phrase bank
-  "pads":  [ padPhrase0, padPhrase1, padPhrase2, padPhrase3 ], // chord phrase bank
-  "phraseLens": [2,2,1,1],      // bars each phrase plays before advancing
-  "leadLayers": [null, null, layerBankA, layerBankB], // optional extra line on phrases 2,3
-  // voice params:
-  "bassType":"sawtooth","bassCut":800,"bassDur":0.22,
-  "padType":"sawtooth","padCut":2200,"padDur":0.5,
-  "leadType":"square","leadCut":3400,"leadDur":0.22,"vib":6,
-  "layerType":"triangle","layerCut":3000,"layerDur":0.22,
-  "kickTop":120,"kickBot":40
+  "name": "BIG TOP SHRED",
+  "bpm": 190,
+  "timeSig": "4/4",
+  "form": [
+    { "section": "intro",  "bars": 2, "drums": "none"   },
+    { "section": "hook",   "bars": 4, "drums": "light"  },
+    { "section": "build",  "bars": 4, "drums": "medium" },
+    { "section": "peak",   "bars": 4, "drums": "full"   },
+    { "section": "bridge", "bars": 2, "drums": "medium" },
+    { "section": "tag",    "bars": 2, "drums": "light"  }
+  ]
 }
-```
-
-### Phrase arrays
-- `leads[i]`, `pads[i]`, `bass`: exactly **32** entries.
-- `pads[i]` is an object mapping step-index -> chord (array of note names), e.g.
-  `{"0":["A2","C4","E4"],"8":["F2","A3","C4"]}`. Only listed steps sound; others rest.
-
-### Drums
-`drums` is an array of **4** sets (one per phrase level). Each set is 32 objects
-`{"k":bool,"s":bool,"h":bool}` (kick/snare/hat). Stack instruments by level:
-- index 0 (none): all false
-- index 1 (light): snare backbeat only
-- index 2 (medium): + kick
-- index 3 (full): + busy 16th hats and ghost notes
-
-### phraseLens
-Bars each phrase plays before moving to the next. `[2,2,1,1]` means:
-phrase0 x2 blocks, phrase1 x2, phrase2 x1, phrase3 x1, then repeat. Drum level
-follows the current phrase (0->none, 1->light, 2->medium, 3->full).
-
-### drumLevels (v2, optional — required for >4 phrases)
-Explicit per-phrase drum intensity table: one value `0..3` per phrase
-(0=none, 1=light, 2=medium, 3=full). Classic 4-phrase tracks may omit it
-(level = phrase index). Dream-construction tracks (8 phrases) MUST provide it,
-e.g. `[0,0,1,1,2,3,3,2]` — the tag phrase (7) drops back to medium so the loop
-into phrase 0 feels like a resolution, not a restart.
-
-### leadLayers (optional)
-**v2 flat form (preferred):** one 32-step phrase (or `null`) per phrase index —
-length must equal the number of phrases. Put layers on the climax/tag phrases:
-`[null,null,null,null,layerA,layerB,layerC,layerD]`.
-
-**Legacy nested form (still accepted):** `[bank0,bank1,bank2,bank3]` indexed by
-drum level, each bank = N phrases (or null). The engine normalizes it by taking
-each non-null bank's first phrase.
-
-## Dream Construction (v2)
-
-The classic 4-phrase cycle (`0,0,1,1,2,3` via `phraseLens [2,2,1,1]`) has two
-weaknesses: repeated phrases sound redundant, and the fast 2→3 climax fires and
-loops back too quickly. The **dream construction** fixes both with 8 phrases:
-
-```
-phrase:   0    0b   1    1b   2     3     4      5
-role:     hook hook build build peak  peak  bridge tag->home
-lens:     1    1    1    1    1     1     1      1      (phraseLens [1,1,1,1,1,1,1,1])
-drums:    0    0    1    1    2     3     3      2      (drumLevels)
 ```
 
 Rules:
-- **b-phrases (0b, 1b)** = the SAME melody as their base with a *tiny* variation
-  in the last 4–8 steps (a passing note, an ending that lands differently).
-  Kills A-A redundancy without breaking familiarity (classic A-A' form).
-- **Phrases 2 & 3** = the peak, now given room to breathe (two full blocks at
-  full/medium drums instead of a quick 2→3 flash).
-- **Phrase 4** = extra climax/hype phrase at full drums — the joyful top.
-- **Phrase 5 (tag)** = bridge resolving HOME: melodically points back to the
-  hook, drums drop to medium (level 2) so the loop into phrase 0 lands softly.
-- Bass stays steady across all 8; pads carry the chord progression; leadLayers
-  (flat form) typically join on phrases 4–5.
+- `section`: any lowercase name. Conventional roles: intro, verse, pre-chorus,
+  chorus, hook, build, peak, break, bridge, drop, tag, outro. Repeating a name
+  groups those blocks as one compositional unit (same notes, different context).
+- **Variations:** to repeat a section with *different* notes, use a suffix:
+  `hook`, `hook-b`, `hook-c` or `verse`, `verse-2`. The `-b`/`-c`/`-2` naming
+  is convention, not enforced — the compiler treats every name as unique.
+  Same name = same content reused. Different name = different `--lead` entry.
+- `bars`: positive int. Total bars × seconds-per-bar should land in 0:40–3:00
+  for game music (softer target, not a hard limit).
+- `drums`: a key from the song's `drumKit` (parts file). It selects which drum
+  pattern plays during the section — NOT a volume knob.
+- `timeSig`: string `"beats/note"`. Default `"4/4"`. Must be valid.
 
-Example skeleton (E minor):
+## Parts (`parts-<slug>.json`)
+
 ```jsonc
 {
-  "name": "DREAM", "bpm": 140, "steps": 32,
-  "drums": [setNone, setLight, setMedium, setFull],   // still 4 sets
-  "drumLevels": [0,0,1,1,2,3,3,2],
-  "phraseLens": [1,1,1,1,1,1,1,1],
-  "leads": [hook, hookVar, build, buildVar, peak, peak2, hype, tag],
-  "pads":  [pad0, pad0b, pad1, pad1b, pad2, pad3, pad4, pad5],
-  "leadLayers": [null,null,null,null,layerA,layerB,layerC,layerD]
+  "name": "BIG TOP SHRED",
+  "genre": "Speed Metal",
+  "vibe": "Blazing speed-metal circus at 190 BPM — galloping E-minor root chug, soaring square-wave lead",
+  "createdAt": "2026-10-02T13:04:47",
+  "revision": 1,
+
+  // Drum patterns referenced by name from backbone form entries.
+  // Beat positions within a bar. Named patterns: "quarters", "eighths", "sixteenths".
+  "drumKit": {
+    "none":   {},
+    "light":  { "snare": "2 4" },
+    "medium": { "snare": "2 4", "kick": "1 2 3 4" },
+    "full":   { "snare": "2 4 3.5", "kick": "1 2 3 4", "hat": "eighths" }
+  },
+
+  // One entry per DISTINCT section name in the backbone.
+  // Each value = array of bars; each bar = array of 16 cells (note name or null).
+  "lead": {
+    "intro": [[null,null,"E4",null,...], [...]],
+    "hook":  [[...], [...], [...], [...]],
+    "peak":  [[...], [...]]
+  },
+  "layer": {                          // optional counter-line
+    "peak":  [[...], [...]]
+  },
+  "bass": {
+    "intro": [[...], [...]]
+  },
+  "_bass_single": true,               // true = use first section's bass for all
+
+  // Pads: step-offset → chord notes, per section
+  "pad": {
+    "hook": { "0": ["C3","E4","G4"], "16": ["C3","E4","G4"] }
+  },
+
+  // Voice timbres
+  "voices": {
+    "bassType": "triangle", "bassCut": 400, "bassDur": 0.3,
+    "padType": "sine", "padCut": 1800, "padDur": 0.9,
+    "leadType": "square", "leadCut": 2600, "leadDur": 0.25, "vib": 4,
+    "layerType": "triangle", "layerCut": 3000, "layerDur": 0.22,
+    "kickTop": 110, "kickBot": 45
+  }
 }
 ```
 
-## Progression guidance
-Write distinct phrases with a real arc (hook -> build -> climax -> drop). Vary range
-and rhythm between phrases; keep the bass steady. Avoid one repeated 2-bar loop.
+### Note format
+- Cells are note names (`"A4"`, `"C#5"`) or `null` for rest.
+- Sharp spelling only (no flats).
+- Bar width = 16 cells for 4/4 (one bar of 16th notes). For other time sigs,
+  bar width changes accordingly (see Time signature above).
+- A section with `bars: N` gets N bar arrays in its lead/bass/layer entries.
 
-### Universal composition rules (any style, tempo, or genre)
+### Drum kit notation
+- Kick/snare: beat numbers as space-separated string (`"1 2.5 3"`) or named
+  pattern (`"quarters"`, `"eighths"`, `"sixteenths"`).
+- Hat: same notation.
+- Empty object `{}` = silence.
+- Unlimited named patterns per song.
 
-These hold for chiptune punk, waltzes, acid jazz, marches — anything:
+### Pad chords
+- Step offset keys (`"0"`, `"8"`, `"16"`, etc.) relative to section start.
+- Value = array of note names (chord voicing).
+- Compiler maps to simultaneous oscillators.
 
-1. **One rhythmic template per song.** Phrase 0 defines the note/rest cell pattern
-   (e.g. `X X X .  X X . .`). Every other phrase reuses that template. Intensity
-   comes from drums + register + pad motion — NEVER from packing more notes.
-   Driving 16th/8th-note runs in the peak break the song's voice and read as "too much".
-2. **Peak/hype = same cells, higher register, sparser if anything.** The peak wears
-   the hook's shape one octave up; it does not become a different rhythmic animal.
-3. **Bridge/tag = arrival, never preview.** A descent from near the peak's top note,
-   stepwise toward the tonic, in the song's own template. It must NOT quote the
-   hook's opening figure (that makes the loop feel like a duplicate). End on a
-   sustained tonic (held root + mostly rests, 8+ steps) over a home-chord pad with
-   drums dropped one level (e.g. 3→2) so the hook's restart feels like a lift-off.
-   Handoff: the phrase before the bridge should end pointing INTO the bridge's first note.
-4. **b-phrases vary ONLY the last 4–8 steps**, and the variation is derived from the
-   phrase's own earlier cells (echo a cell, arpeggiate the held ending) — not invented
-   from nowhere. First 24 steps stay byte-identical. If more differs, it's a new phrase.
+## Compiler contract
+
+`compiler.js` (browser) and `universal.py` (CLI reference) do the same thing:
+
+1. Read backbone `form` → determine section order, bar counts, drum assignments.
+2. Read parts → look up notes per section name.
+3. Expand drum kit entries to step-level `{k,s,h}` arrays.
+4. Produce engine grid: `leads[]`, `bass`, `pads[]`, `leadLayers[]`, `drums[]`,
+   `drumLevels[]`, `phraseLens[]`.
+5. Jukebox plays the grid. Done.
+
+The compiler is the ONLY reader of universal files. There is no other playback path.
+
+## Structural guidelines (architect's craft)
+
+These are **craft guidelines**, not validation rules. The architect uses them
+to design compelling structures based on genre and vibe:
+
+### Intensity arc
+- Most songs build: quiet → loud → release. But boss fights stay loud.
+  Ambient loops stay flat. Circus music swings wildly.
+- The drum assignment per section IS the intensity curve. Design it deliberately.
+- Tag/outro should be quieter than peak (resolution feel), unless the genre
+  calls for a hard stop.
+
+### Section naming
+- Use names that communicate function: `intro`, `verse`, `chorus`, `hook`,
+  `build`, `peak`, `break`, `bridge`, `drop`, `tag`, `outro`.
+- For non-standard forms, invent clear names: `call`, `response`, `phase2`,
+  `rage`, `seamless-loop-a`.
+- Repeating a name means "same musical material, different context" (e.g. two
+  `chorus` entries with different drums).
+
+### Duration targets (game music)
+- Menu/ambient: 0:30–1:00 (loops)
+- Normal play: 0:40–1:30
+- Boss fight: 1:00–2:00
+- Epic/cutscene: 2:00–3:00+
+- These are soft targets. A 35-second punk track is fine.
+
+### Genre-specific patterns (starting points, not rules)
+
+**Metal / Speed metal:** Short sections (2–4 bars), fast escalation, hook is
+immediate, peak adds double-time drums + higher register, bridge drops to half
+time or clean tone, tag resolves on tonic.
+
+**Synthwave / Retro:** Steady 4/4 pulse, sidechain-style pad pumping, verse→
+chorus contrast via layer addition rather than tempo change, longer sections
+(4–8 bars), smooth transitions.
+
+**Punk / Hardcore:** Minimal intro (0–2 bars), immediate hook, short total
+length (<1 min), energy stays high, tag is abrupt.
+
+**Jazz / Funk / Soul:** Rubbery timing (use 6/8 or swing feel), sparse drums
+(comping, not driving), solo sections get more bars, head-in/head-out form.
+
+**Boss / Fight:** Phases instead of verses. Each phase adds a layer or raises
+BPM feel. Never drops below phase-1 intensity. Rage section = everything maxed.
+
+**Circus / Carnival:** Playful contrasts, unexpected key shifts, call-and-
+response, dynamic swings (sudden quiet → sudden loud), tag is a big finish.
+
+**Ambient / Loop:** No strong start or end. Two or three gentle variations that
+crossfade. Dynamics stay narrow. Seamless loop point is critical.
+
+### Melodic craft (composer's domain, but architect sets the stage)
+- Hook should be singable/memorable: 4–8 notes, rhythmic identity.
+- Build sections raise tension: ascending lines, increasing rhythm density,
+  harmonic movement away from tonic.
+- Peak releases tension: highest register, fullest drums, simplest melody
+  (sparsity = power).
+- Bridge descends toward tonic, ends on sustained root. Never quotes the hook.
+- Tag resolves home: brief, final, lands on tonic.
+
+## Workflow
+
+1. **Architect** designs the backbone: sections, bars, drums, timeSig.
+   Iterates until the arc feels right. (No notes yet.)
+2. **Composer** fills parts: lead, bass, pad, layer, drumKit, voices.
+   Writes into the frozen structure.
+3. **Jukebox** compiles and plays. If melody fights the arc → fix notes.
+   If structure is wrong → fix backbone. Separate concerns.
+
+Both roles can be the same AI session. The separation is conceptual:
+decide structure first, then fill it. Don't write notes before the skeleton
+exists.

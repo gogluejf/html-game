@@ -1,0 +1,60 @@
+{
+  "name": "BIG TOP SHRED",
+  "bpm": 190,
+  "timeSig": [
+    4,
+    4
+  ],
+  "form": [
+    {
+      "section": "intro",
+      "bars": 2,
+      "drums": "lvl0"
+    },
+    {
+      "section": "hook",
+      "bars": 2,
+      "drums": "lvl0"
+    },
+    {
+      "section": "build",
+      "bars": 2,
+      "drums": "lvl1"
+    },
+    {
+      "section": "build",
+      "bars": 2,
+      "drums": "lvl1"
+    },
+    {
+      "section": "peak",
+      "bars": 2,
+      "drums": "lvl2"
+    },
+    {
+      "section": "peak",
+      "bars": 2,
+      "drums": "lvl3"
+    },
+    {
+      "section": "bridge",
+      "bars": 2,
+      "drums": "lvl3"
+    },
+    {
+      "section": "tag",
+      "bars": 2,
+      "drums": "lvl2"
+    }
+  ],
+  "drumLevels": [
+    0,
+    0,
+    1,
+    1,
+    2,
+    3,
+    3,
+    2
+  ]
+}

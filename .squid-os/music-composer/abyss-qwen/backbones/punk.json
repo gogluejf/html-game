@@ -1,0 +1,33 @@
+{
+  "name": "PUNK",
+  "bpm": 182,
+  "timeSig": "4/4",
+  "form": [
+    {
+      "section": "s0",
+      "bars": 2,
+      "drums": "lvl0"
+    },
+    {
+      "section": "s1",
+      "bars": 2,
+      "drums": "lvl1"
+    },
+    {
+      "section": "s2",
+      "bars": 2,
+      "drums": "lvl2"
+    },
+    {
+      "section": "s3",
+      "bars": 2,
+      "drums": "lvl3"
+    }
+  ],
+  "drumLevels": [
+    0,
+    1,
+    2,
+    3
+  ]
+}

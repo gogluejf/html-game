@@ -1,0 +1,139 @@
+{
+  "name": "Petal Panic Title v1 dream REMIX",
+  "genre": "Chiptune",
+  "vibe": "Grand triumphant circus calliope fanfare in fast 8-bit chiptune \u2014 square-wave leads, punchy saw bass, fist-like drums \u2014 that curdles into uneasy whimsical horror as a tritone creeps in.",
+  "createdAt": "2026-09-17T06:24:54",
+  "revision": 1,
+  "drumKit": {
+    "lvl0": [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}],
+    "lvl1": [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}],
+    "lvl2": [{"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}],
+    "lvl3": [{"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": true, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": true, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": true, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": true, "h": false}]
+  },
+  "lead": {
+    "s0": [
+      ["A4:2", "A4", null, null, "C5:2", "C5", null, null, "D5:2", "D5", null, null, "E5:2", "E5", null, null],
+      ["E5:2", "D5", "C5", "B4", "A4:4", null, null, null, null, null, null, null, null, null, null, null]
+    ],
+    "s1": [
+      ["A4:2", "A4", null, null, "C5:2", "C5", null, null, "D5:2", "D5", null, null, "E5:2", "E5", null, null],
+      ["E5:2", "D5", "C5", "B4", "A4:2", "A4", null, null, "A4", null, "C5", null, "D5", null, "E5:2", null]
+    ],
+    "s2": [
+      ["A4", null, "C5", null, "D5", null, "E5", null, "F5", null, "G5", null, "A5:2", null, "G5", null],
+      ["F5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "B4", null, "C5", null]
+    ],
+    "s3": [
+      ["A4", null, "C5", null, "D5", null, "E5", null, "F5", null, "G5", null, "A5:2", null, "G5", null],
+      ["F5", null, "E5", null, "D5", null, "C5", null, "B4", null, "A4", null, "B4", null, "C5", null]
+    ],
+    "s4": [
+      ["A5:2", "G5", "E5", null, "A5", "B5:2", null, null, "B5:2", "C5", "B5", null, "A5", "G5", null, null],
+      ["F5:2", "E5:2", "D5:2", null, "E5", "F5", null, null, null, null, null, null, null, null, null, null]
+    ],
+    "s5": [
+      ["E5:2", "D5", "C5", null, "B5:2", "A5", null, null, "A5:2", "C5", "E5", null, "D5:2", "C5", null, null],
+      ["B5:2", "A5", null, null, "A5:2", null, null, null, null, null, null, null, null, null, null, null]
+    ],
+    "s6": [
+      ["A5:2", "G5", "E5", null, "A5", "B5:2", null, null, "A5", "G5", "E5", null, "F5", "E5", null, null],
+      ["D5", "E5", "F5", null, "G5:2", "A5:2", null, null, "B5:4", null, null, null, null, null, null, null]
+    ],
+    "s7": [
+      ["E5:2", "D5", "C5", null, "B4:2", "A4", null, null, "G4:2", "A4", null, null, "A4:2", null, null, null],
+      ["A4:2", "A4", null, null, "A4:2", null, null, null, "A4:2", null, null, null, "A4:8", null, null, null]
+    ]
+  },
+  "layer": {
+    "s4": [
+      ["A4", null, "G4", null, "E4", null, null, null, "A4", null, "B4", null, null, null, null, null],
+      ["B4", null, "C4", null, "B4", null, null, null, "A4", null, "G4", null, null, null, null, null]
+    ],
+    "s5": [
+      ["E4", "D4", "C4", null, "B4", "A4", null, null, "A4", "C4", "E4", null, "D4", "C4", null, null],
+      ["B4", "A4", null, null, "A4", null, null, null, null, null, null, null, null, null, null, null]
+    ],
+    "s6": [
+      ["E5", "E5", "C5", "C5", "C5", "C5", "E5", "E5", "E5", "E5", "C5", "C5", "A4", "A4", "C5", "C5"],
+      ["E5", "E5", "E5", "C5", "C5", "C5", "C5", "C5", "F5", "F5", "F5", "F5", "F5", "F5", "F5", "F5"]
+    ],
+    "s7": [
+      ["F5", null, null, null, null, null, null, null, "E5", null, null, null, null, null, null, null],
+      ["C5", null, null, null, null, null, null, null, "F4", null, null, null, null, null, null, null]
+    ]
+  },
+  "bass": {
+    "s0": [
+      ["A1", "A1", "A1", "A1:2", "A1", "A1", "A1", "A1:2", "F1", "F1", "F1", "F1:2", "F1", "F1", "F1", "F1:2"],
+      ["G1", "G1", "G1", "G1:2", "G1", "G1", "G1", "G1:2", "E1", "E1", "E1", "E1:2", "F1", "F1", "F1", "F1:2"]
+    ]
+  },
+  "pad": {
+    "s0": {
+      "0": ["A2", "E3", "A3", "C4", "E4"],
+      "8": ["F2", "C3", "F3", "A3", "C4"],
+      "16": ["G2", "D3", "G3", "B3", "D4"],
+      "24": ["A2", "E3", "A3", "C4", "E4"]
+    },
+    "s1": {
+      "0": ["A2", "E3", "A3", "C4", "E4"],
+      "8": ["F2", "C3", "F3", "A3", "C4"],
+      "16": ["G2", "D3", "G3", "B3", "D4"],
+      "24": ["A2", "E3", "A3", "C4", "E4"]
+    },
+    "s2": {
+      "0": ["A2", "E3", "A3", "C4", "E4"],
+      "8": ["F2", "C3", "F3", "A3", "C4"],
+      "16": ["G2", "D3", "G3", "B3", "D4"],
+      "24": ["A2", "E3", "A3", "C4", "E4"]
+    },
+    "s3": {
+      "0": ["A2", "E3", "A3", "C4", "E4"],
+      "8": ["F2", "C3", "F3", "A3", "C4"],
+      "16": ["G2", "D3", "G3", "B3", "D4"],
+      "24": ["A2", "E3", "A3", "C4", "E4"]
+    },
+    "s4": {
+      "0": ["A2", "E3", "A3", "C4", "E4"],
+      "8": ["A2", "E3", "A3", "C4", "E4"],
+      "16": ["F2", "C3", "F3", "A3", "C4"],
+      "24": ["G2", "D3", "G3", "B3", "D4"]
+    },
+    "s5": {
+      "0": ["G2", "D3", "G3", "B3", "D4"],
+      "8": ["E2", "B3", "E4", "G4", "B4"],
+      "16": ["F2", "C3", "F3", "A3", "C4"],
+      "24": ["A2", "E3", "A3", "C4", "E4"]
+    },
+    "s6": {
+      "0": ["A2", "E3", "A3", "C4", "E4"],
+      "8": ["F2", "C3", "F3", "A3", "C4"],
+      "16": ["G2", "D3", "G3", "B3", "D4"],
+      "24": ["B2", "F3", "B3", "D4", "F4"]
+    },
+    "s7": {
+      "0": ["B2", "F3", "B3", "D4", "F4"],
+      "8": ["A2", "E3", "A3", "C4", "E4"],
+      "16": ["A2", "E3", "A3", "C4", "E4"],
+      "24": ["A2", "E3", "A3", "C4", "E4"]
+    }
+  },
+  "_bass_single": true,
+  "voices": {
+    "bassType": "sawtooth",
+    "bassCut": 900,
+    "bassDur": 0.24,
+    "padType": "sawtooth",
+    "padCut": 2400,
+    "padDur": 0.55,
+    "leadType": "square",
+    "leadCut": 3600,
+    "leadDur": 0.24,
+    "vib": 6,
+    "layerType": "triangle",
+    "layerCut": 3000,
+    "layerDur": 0.24,
+    "kickTop": 120,
+    "kickBot": 40
+  }
+}

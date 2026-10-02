@@ -1,0 +1,119 @@
+{
+  "name": "CRYPT WALTZ REMIX",
+  "genre": "Gothic",
+  "vibe": "Slow E-minor gothic dirge waltz; deep triangle bass on downbeats, mournful vibrato square lead, sparse building funeral-kick drums \u2014 dark, atmospheric bat-cave energy.",
+  "createdAt": "2026-09-17T06:30:54",
+  "revision": 1,
+  "drumKit": {
+    "lvl0": [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}],
+    "lvl1": [{"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}],
+    "lvl2": [{"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": false}],
+    "lvl3": [{"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": true, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": true, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}, {"k": false, "s": false, "h": true}, {"k": false, "s": false, "h": false}]
+  },
+  "lead": {
+    "s0": [
+      ["E4", null, null, "G4", null, null, "B4", null, "E5", null, null, "D5", null, null, "B4", null],
+      ["A4", null, null, "C5", null, null, "E5", null, "D5", null, null, "C5", null, null, "B4", null]
+    ],
+    "s1": [
+      ["E4", null, null, "G4", null, null, "B4", null, "E5", null, null, "D5", null, null, "B4", null],
+      ["A4", null, null, "C5", null, null, "E5", null, "D4", null, null, "C5", null, null, "B3", null]
+    ],
+    "s2": [
+      ["E5", null, "D5", null, "B4", null, "G4", null, "E4", null, "G4", null, "B4", null, "D5", null],
+      ["C5", null, "A4", null, "G4", null, "E4", null, "G4", null, "B4", null, "C5", null, "D5", null]
+    ],
+    "s3": [
+      ["E5", null, "D5", null, "B4", null, "G4", null, "E4", null, "G4", null, "B4", null, "D5", null],
+      ["C5", null, "A4", null, "G4", null, "E4", null, "G3", null, "B3", null, "C4", null, "D4", null]
+    ],
+    "s4": [
+      ["E5", null, null, null, null, null, "B5", null, "E5:2", null, null, null, null, null, "B5", null],
+      ["A5", null, null, null, null, null, "E5", null, "D5", null, null, null, null, null, "B5", null]
+    ],
+    "s5": [
+      ["E5", null, null, "F5", null, null, "E5", null, "D5", null, null, "C5", null, null, "B5", null],
+      ["G5", null, null, "E5", null, null, "D5", null, "C5", null, null, "B5", null, null, "G5", null]
+    ],
+    "s6": [
+      ["E5", null, null, "F5", null, null, "E5", null, "D5", null, null, "C5", null, null, "B5", null],
+      ["G5", null, null, "E5", null, null, "D5", null, "C5", null, null, "B5", null, null, "G5", null]
+    ],
+    "s7": [
+      ["E5", "D5", "B4", "G4", "E4", "G4", "B4", "D5", "E5", "D5", "B4", "G4", "E4", "G4", "B4", "D5"],
+      ["C5", "B4", "G4", "E4", "G4", "B4", "C5", "B4", "G4", "E4", "G4", "B4", "C5", "B4", "G4", "E4:4"]
+    ]
+  },
+  "layer": {
+    "s4": [
+      ["E4", null, null, null, null, null, "B4", null, "E4:2", null, null, null, null, null, "B4", null],
+      ["A4", null, null, null, null, null, "E4", null, "D4", null, null, null, null, null, "B4", null]
+    ],
+    "s5": [
+      ["E4", null, null, "F4", null, null, "E4", null, "D4", null, null, "C4", null, null, "B4", null],
+      ["G4", null, null, "E4", null, null, "D4", null, "C4", null, null, "B4", null, null, "G4", null]
+    ],
+    "s6": [
+      ["E4", null, null, "F4", null, null, "E4", null, "D4", null, null, "C4", null, null, "B4", null],
+      ["G4", null, null, "E4", null, null, "D4", null, "C4", null, null, "B4", null, null, "G4", null]
+    ]
+  },
+  "bass": {
+    "s0": [
+      ["E1", null, null, null, "E2", null, null, null, "E2", null, null, null, "E2", null, null, null],
+      ["A1", null, null, null, "A2", null, null, null, "A2", null, null, null, "A2", null, null, null]
+    ]
+  },
+  "pad": {
+    "s0": {
+      "0": ["E2", "E3", "G3", "B3"],
+      "16": ["E2", "E3", "G3", "B3"]
+    },
+    "s1": {
+      "0": ["E2", "E3", "G3", "B3"],
+      "16": ["E2", "E3", "G3", "B3"]
+    },
+    "s2": {
+      "0": ["E2", "E3", "G3", "B3"],
+      "16": ["C2", "E3", "G3", "C4"]
+    },
+    "s3": {
+      "0": ["E2", "E3", "G3", "B3"],
+      "16": ["C2", "E3", "G3", "C4"]
+    },
+    "s4": {
+      "0": ["A2", "C3", "E3", "A3"],
+      "16": ["G2", "B2", "D3", "G3"]
+    },
+    "s5": {
+      "0": ["A2", "C3", "E3", "A3"],
+      "16": ["G2", "B2", "D3", "G3"]
+    },
+    "s6": {
+      "0": ["E2", "E3", "G3", "B3"],
+      "16": ["C2", "E3", "G3", "C4"]
+    },
+    "s7": {
+      "0": ["E2", "E3", "G3", "B3"],
+      "16": ["C2", "E3", "G3", "C4"]
+    }
+  },
+  "_bass_single": true,
+  "voices": {
+    "bassType": "triangle",
+    "bassCut": 600,
+    "bassDur": 0.45,
+    "padType": "sawtooth",
+    "padCut": 1600,
+    "padDur": 0.9,
+    "leadType": "square",
+    "leadCut": 2600,
+    "leadDur": 0.35,
+    "vib": 4,
+    "layerType": "triangle",
+    "layerCut": 2400,
+    "layerDur": 0.4,
+    "kickTop": 100,
+    "kickBot": 35
+  }
+}
