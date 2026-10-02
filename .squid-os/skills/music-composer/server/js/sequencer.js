@@ -301,6 +301,7 @@ class MusicSequencer {
 
   _kick(t, trk, v) {
     const vel = (v != null) ? Math.max(0.1, Math.min(1, v)) : 1;
+    // Punchy kick: sine pitch-drop for the body + short square click for attack.
     const osc = this.ctx.createOscillator();
     osc.type = "sine";
     osc.frequency.setValueAtTime(trk.kickTop || 140, t);
@@ -312,14 +313,22 @@ class MusicSequencer {
     osc.connect(g); g.connect(this._busFilter);
     osc.start(t); osc.stop(t + 0.18);
     this._track(osc, t + 0.2);
+    const click = this.ctx.createOscillator();
+    click.type = "square";
+    click.frequency.value = trk.kickTop || 140;
+    const cg = this.ctx.createGain();
+    cg.gain.setValueAtTime(0.35 * vel, t);
+    cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    click.connect(cg); cg.connect(this._busFilter);
+    click.start(t); click.stop(t + 0.04);
+    this._track(click, t + 0.05);
   }
 
   _snare(t, trk, v) {
     const vel = (v != null) ? Math.max(0.1, Math.min(1, v)) : 1;
+    // Body: bandpassed noise. Crackle: highpassed noise. Together = real snare.
     const src = this.ctx.createBufferSource();
     src.buffer = this.noiseBuffer;
-    const hp = this.ctx.createBiquadFilter();
-    hp.type = "highpass"; hp.frequency.value = 1400;
     const bp = this.ctx.createBiquadFilter();
     bp.type = "bandpass"; bp.frequency.value = 2200; bp.Q.value = 0.8;
     const g = this.ctx.createGain();
@@ -327,9 +336,21 @@ class MusicSequencer {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.linearRampToValueAtTime(0.5 * vel, t + 0.003);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(hp); hp.connect(bp); bp.connect(g); g.connect(this._busFilter);
+    src.connect(bp); bp.connect(g); g.connect(this._busFilter);
     src.start(t); src.stop(t + dur + 0.02);
     this._track(src, t + dur + 0.05);
+    const src2 = this.ctx.createBufferSource();
+    src2.buffer = this.noiseBuffer;
+    src2.playbackRate.value = 1.4;
+    const hp = this.ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 5000;
+    const g2 = this.ctx.createGain();
+    g2.gain.setValueAtTime(0.0001, t);
+    g2.gain.linearRampToValueAtTime(0.35 * vel, t + 0.002);
+    g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+    src2.connect(hp); hp.connect(g2); g2.connect(this._busFilter);
+    src2.start(t); src2.stop(t + 0.1);
+    this._track(src2, t + 0.12);
   }
 
   /** Hi-hat: closed (short tick) or open (long wash) via `open`. */

@@ -136,6 +136,17 @@ full/heavy add ghost notes, offbeat kicks, and sixteenth hats. Muffled
 triangle/sine defaults make everything sound dull — use the punchy sawtooth/
 square voices above for any energetic genre.
 
+**Genre drum grammar — map the genre to its actual vocabulary, don't improvise.**
+Pasting one genre's beat onto another is how "punk" ends up sounding like disco:
+
+| Genre | Kick | Snare | Hats |
+|---|---|---|---|
+| Punk/hardcore | driving 1+3, offbeat push (2.5, 3.75) at peak | backbeat 2+4, ghosts at peak | eighths → sixteenths at peak |
+| Speed metal | double-time 8th-note kick | backbeat + fills | constant sixteenths |
+| Synthwave | four-on-floor (this is where it belongs) | rim/ghost on 2+4 | eighths, open on offbeats |
+| Acid jazz/funk | syncopated, sparse | rim clicks, comping | soft eighths |
+| Boss fight | relentless quarters + accents | heavy backbeat, layered ghosts | dense, always moving |
+
 **Note notation** (for `--lead`, `--layer`, `--bass`):
 - `|` separates bars. Within a bar, tokens are placed on an eighth-note grid
   by default (token N lands at position N×(step_width/8)).
@@ -163,7 +174,9 @@ bar starts within the section (`"Em x4 C x2"` = Em for 4 bars, then C for 2).
 - Actual note content (melodies, bass lines, chord voicings)
 - Which sections get layers (typically peak/climax only)
 - Whether bass is shared (`--bass-single` with a single `--bass` pattern) or
-  per-section (`--bass section="..."`)
+  per-section (`--bass section="..."`). **Default to per-section**: a shared
+  bass is a root pedal waiting to happen. Per-section specs also clear the
+  stale `_bass_single` flag automatically.
 - Pad chord placement
 - Voice timbres (waveform type, filter cutoff, duration, vibrato)
 - Drum kit patterns (kick/snare/hat positions per named level)
@@ -216,7 +229,9 @@ All songs compile automatically at load. No render step. No HTML generation.
 ### 5. Iterate / Overwrite
 
 **`parts` is modular.** Pass only what you want to change. Existing sections,
-drums, voices, pads are preserved. Revision bumps automatically.
+drums, voices, pads are preserved. Revision bumps automatically. **But merges
+leave stale data**: if the backbone's section set changed (rename/remove), old
+section entries survive in parts. `audit` flags them — delete or repurpose.
 
 ```bash
 # Fix just the hook-b melody (everything else stays):
@@ -249,6 +264,9 @@ parts for any new/renamed sections.
 - Sections need ≥ 2 bars.
 - `createdAt` sets playlist order; the CLI manages it — don't touch it.
 - Validate before declaring done: `compose.py validate --game GAME`.
+- **Audit before declaring done: `compose.py audit --game GAME --name NAME`** —
+  it mechanically checks the notes against the architect's progression
+  (consistency, Laws 1/2/4/6/9). Fix every FAIL; WARNs are judgment calls.
 - Test in browser before declaring done.
 
 ## Output Format
@@ -282,10 +300,15 @@ python3 compose.py show-arch --game GAME --name NAME
 python3 compose.py parts --game GAME --name NAME --genre G --vibe V \
   --lead section="notes | notes | ..." [repeatable] \
   --layer section="notes | ..." [repeatable] \
-  --bass "pattern xN" [--bass-single] | --bass section="pattern" \
+  --bass "pattern xN" [--bass-single] | --bass section="pattern" [repeatable] \
   --pad section="Chord xN Chord xN" [repeatable] \
   --drum name='snare:"2 4" kick:"1 2 3 4" hat:eighths' [repeatable] \
   --voice key=value [repeatable]
+
+# Craft-law audit of one song: consistency vs backbone, Law 1 (bass moves),
+# Law 2 (drums additive), Law 4 (no identical consecutive bars),
+# Law 9 (intensity ladder), Law 6 (peak register). Exit 1 on FAIL.
+python3 compose.py audit --game GAME --name NAME
 
 # Show parts summary (sections, drum patterns, voices)
 python3 compose.py show-parts --game GAME --name NAME

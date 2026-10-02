@@ -180,12 +180,20 @@ export function compile(backbone, parts) {
     }
   }
   for (const ph of phrases) {
-    const key = JSON.stringify(ph.drums.map(d => [d.k, d.s, d.h]));
+    const key = JSON.stringify(ph.drums.map(d => [!!d.k, !!d.s, !!d.h]));
     if (!setIdx.has(key)) {
       setIdx.set(key, uniqueSets.length);
-      uniqueSets.push(ph.drums);
+      uniqueSets.push(ph.drums.map(d => ({ k: !!d.k, s: !!d.s, h: !!d.h })));
     }
   }
+
+  // Per-phrase drum level table. Authoritative source = backbone form's drum
+  // assignment: each phrase gets the setIdx of ITS OWN section's pattern.
+  // This guarantees the engine plays exactly what the architect assigned —
+  // not a dedup-order coincidence.
+  const drumLevels = form.flatMap(f =>
+    Array.from({ length: f.bars / 2 }, () => setIdx.get(JSON.stringify(
+      expandKitEntry(kit[f.drums] || {}).map(d => [!!d.k, !!d.s, !!d.h])))));
 
   const allBassSame = new Set(phrases.map(p => JSON.stringify(p.bass))).size === 1;
   const track = {
@@ -194,9 +202,7 @@ export function compile(backbone, parts) {
     bpm: backbone.bpm,
     steps: STEPS,
     drums: uniqueSets,
-    drumLevels: backbone.drumLevels
-      ? [...backbone.drumLevels]
-      : phrases.map(ph => setIdx.get(JSON.stringify(ph.drums.map(d => [d.k, d.s, d.h])))),
+    drumLevels,
     phraseLens: form.map(f => f.bars / 2),
     sections: form,
     leads: phrases.map(ph => ph.lead),
