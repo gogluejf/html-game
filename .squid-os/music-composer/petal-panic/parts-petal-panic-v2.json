@@ -3,7 +3,7 @@
   "genre": "Punk Hardcore",
   "vibe": "Way faster hardcore-punk greatest hit in A major at 208 BPM \u2014 driving eighth-note square lead, pounding punk kick-snare engine, sixteenth-hat peak with ghost snare",
   "createdAt": "2026-10-02T16:49:56.159473",
-  "revision": 7,
+  "revision": 10,
   "drumKit": {
     "none": [
       {
@@ -1051,7 +1051,11 @@
         null
       ],
       [
-        "A2",
+        "C3",
+        null,
+        null,
+        null,
+        "A3",
         null,
         null,
         null,
@@ -1059,11 +1063,7 @@
         null,
         null,
         null,
-        "D3",
-        null,
-        null,
-        null,
-        "A3",
+        "G3",
         null,
         null,
         null
@@ -1087,19 +1087,19 @@
         null
       ],
       [
-        "A2",
-        null,
-        null,
-        null,
-        "E3",
-        null,
-        null,
-        null,
-        "D3",
+        "C3",
         null,
         null,
         null,
         "A3",
+        null,
+        null,
+        null,
+        "B3",
+        null,
+        null,
+        null,
+        "C4",
         null,
         null,
         null
@@ -1125,10 +1125,6 @@
         null
       ],
       [
-        "D2",
-        null,
-        null,
-        null,
         "A2",
         null,
         null,
@@ -1138,6 +1134,10 @@
         null,
         null,
         "D3",
+        null,
+        null,
+        null,
+        "C#3",
         null,
         null,
         null
@@ -1161,10 +1161,6 @@
         null
       ],
       [
-        "D2",
-        null,
-        null,
-        null,
         "A2",
         null,
         null,
@@ -1174,6 +1170,10 @@
         null,
         null,
         "D3",
+        null,
+        null,
+        null,
+        "E3",
         null,
         null,
         null
@@ -1199,11 +1199,11 @@
         null
       ],
       [
-        "A2",
-        null,
-        null,
-        null,
         "E3",
+        null,
+        null,
+        null,
+        "A3",
         null,
         null,
         null,
@@ -1211,7 +1211,7 @@
         null,
         null,
         null,
-        "A3",
+        "G#3",
         null,
         null,
         null
@@ -1235,11 +1235,11 @@
         null
       ],
       [
-        "A2",
-        null,
-        null,
-        null,
         "E3",
+        null,
+        null,
+        null,
+        "A3",
         null,
         null,
         null,
@@ -1247,7 +1247,7 @@
         null,
         null,
         null,
-        "A3",
+        "D4",
         null,
         null,
         null

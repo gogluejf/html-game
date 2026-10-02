@@ -646,7 +646,7 @@ def cmd_audit(a):
                 errors.append(f"C(Law2): drum level '{nm}' ({h} hits/bar) REMOVES density vs '{prev_name}' ({prev_hits})")
         prev_name, prev_hits = nm, h
 
-    # ── D. Law 4: no two consecutive identical bars ────────────────────────
+    # ── D. Law 4: no repeated bars (consecutive OR period-2 cell repeat) ───
     for sec in sorted(form_secs):
         bars = parts.get("lead", {}).get(sec)
         if not bars:
@@ -654,6 +654,25 @@ def cmd_audit(a):
         for i in range(1, len(bars)):
             if bars[i] == bars[i - 1]:
                 errors.append(f"D(Law4): lead '{sec}' bar {i+1} is identical to bar {i}")
+        # Period-2 detection: X X Y Y pattern (a 2-bar cell played twice).
+        if len(bars) >= 4:
+            for i in range(len(bars) - 3):
+                if bars[i] == bars[i + 1] and bars[i + 2] == bars[i + 3] \
+                   and bars[i] != bars[i + 2]:
+                    errors.append(f"D(Law4): lead '{sec}' bars {i+1}-{i+4} are a repeated 2-bar cell")
+    # Bass gets the same treatment (repeated bass cells dominate the mix).
+    for sec in sorted(form_secs):
+        bars = parts.get("bass", {}).get(sec)
+        if not bars:
+            continue
+        for i in range(1, len(bars)):
+            if bars[i] == bars[i - 1]:
+                errors.append(f"D(Law4): bass '{sec}' bar {i+1} is identical to bar {i}")
+        if len(bars) >= 4:
+            for i in range(len(bars) - 3):
+                if bars[i] == bars[i + 1] and bars[i + 2] == bars[i + 3] \
+                   and bars[i] != bars[i + 2]:
+                    errors.append(f"D(Law4): bass '{sec}' bars {i+1}-{i+4} are a repeated 2-bar cell")
 
     # ── E/F. Intensity ladder + peak register ─────────────────────────────
     def note_top(cell_list):
