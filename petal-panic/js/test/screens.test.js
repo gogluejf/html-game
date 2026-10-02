@@ -12,6 +12,9 @@
 //   5. The entry screen follows the pause-menu ergonomics contract (same
 //      keycap nav bar pattern).
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 

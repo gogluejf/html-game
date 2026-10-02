@@ -5,6 +5,9 @@
 // records fills/text, and that values track live hero state (energy bar fill,
 // shield overlay, ammo/special/coins/lives).
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 
 // --- Minimal DOM stub (must run BEFORE importing update.js) ------------------

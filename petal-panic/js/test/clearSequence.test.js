@@ -18,6 +18,9 @@
 // reaching the active zone's exit flag clears the area and advances to the
 // next zone (zone.areaIdx + 1, or the boss zone for area 4).
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 

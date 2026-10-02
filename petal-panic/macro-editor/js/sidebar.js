@@ -96,8 +96,6 @@ function syncPanel(){
   $('p_blocks').textContent = blocks;
   $('p_plats').textContent = plats;
   $('p_slots').textContent = (st.placements||[]).length;
-  $('p_entry').textContent = st.entryClear ?? '—';
-  $('p_exit').textContent = st.exitClear ?? '—';
   $('p_cellw').textContent = app.consts.unitPxX + ' px';
   $('p_cellh').textContent = app.consts.unitPxY + ' px';
   $('p_plath').textContent = app.consts.platformDrawH + ' px';

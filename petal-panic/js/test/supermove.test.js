@@ -3,6 +3,9 @@
 // Direct-intent pattern (see jumpslide.test.js): hero.update(DT, intent) with
 // plain intent objects. No DOM key simulation, no input.js polling.
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';

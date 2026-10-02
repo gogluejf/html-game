@@ -54,10 +54,10 @@ export const EXIT_CLEAR = 3;
 // Horizontal areas: entry/exit clear = empty space (no terrain).
 // Vertical areas: entry clear = 0 (first macro starts at ground), exit clear = reserved at top.
 
-/** Entry clear for horizontal areas. */
+/** Entry clear for horizontal areas (area-level, reserved at the area start). */
 export const H_ENTRY_CLEAR = ENTRY_CLEAR;   // 3
 
-/** Exit clear for horizontal areas. */
+/** Exit clear for horizontal areas (area-level, reserved at the area end). */
 export const H_EXIT_CLEAR = EXIT_CLEAR;     // 3
 
 /** Entry clear for vertical areas (0 — first macro starts at ground). */
@@ -65,6 +65,10 @@ export const V_ENTRY_CLEAR = 0;
 
 /** Exit clear for vertical areas. */
 export const V_EXIT_CLEAR = EXIT_CLEAR;     // 3
+
+// NOTE: macros carry NO entry/exit clear of their own anymore — spacing
+// between set-pieces is baked into each macro's authored unit coordinates.
+// The constants above are AREA-level only (hero spawn / exit flag zones).
 
 /**
  * Maximum horizontal gap (width-units) that a hero can clear with a double
@@ -175,8 +179,6 @@ export function macroElevationGain(macro) {
 //   - orientation: 'horizontal' | 'vertical'
 //   - difficulty: 1 (easy) | 2 (medium) | 3 (hard)
 //   - units: ordered list of terrain unit descriptors
-//   - entryClear: width-units of clear ground before the first unit
-//   - exitClear: width-units of clear ground after the last unit
 //   - placements: list of placement opportunity descriptors
 //   - variations: list of alternative unit sequences with weights
 //   - follows: list of macro ids that can precede this one (empty = any)
@@ -241,14 +243,12 @@ export const PLATFORM_DRAW_H = Math.max(2, Math.round(UNIT_PX_Y / 8)); // 6px at
 
 /**
  * The macro vocabulary (REVISION 2d-grid-macro). Each entry is an authored
- * terrain GRID with a readable challenge, an entry, and an exit
- * (generation.md §2, §3).
+ * terrain GRID with a readable challenge.
  *
  * CANONICAL DATA: `macros/levels/<id>.json` — one file per macro, filename =
- * id. `js/main.js` fetches them at boot via `loadMacros()` and assigns the
- * result to `MACROS`. This inline object is the FALLBACK used when the game
- * is not served over HTTP (fetch unavailable/fails), so it must stay in sync
- * with the JSON files (see tools/export_macros.mjs).
+ * id. Loaded at boot by main.js (browser) or by test setup (node) via
+ * setMacros(). This module starts with an empty MACROS map; it MUST be
+ * populated before any composer/populate function is called.
  *
  * 2D grid convention:
  *   - row = units UP from the ground (0 = on the ground), same for both
@@ -259,581 +259,11 @@ export const PLATFORM_DRAW_H = Math.max(2, Math.round(UNIT_PX_Y / 8)); // 6px at
  *   - Clearance rule: any unit whose base/face is above row 0 must be ≥ 2 rows
  *     above the top of whatever is directly below it in its column span.
  */
-export let MACROS = Object.freeze({
-  // --- Horizontal macros ----------------------------------------------------
-
-  /**
-   * Pyramid: blocks of heights 1, 2, 3, 2, 1.
-   * A symmetric rise-and-fall. The hero walks over the blocks (they are
-   * solid, rising from ground, so the hero jumps over them).
-   *
-   * Entry: 5 units clear. Exit: 5 units clear. These simple patterns carry
-   * EXTRA breathing room (generation.md §5: stage 1 is "fewer blocks, room to
-   * move") so a 1 area packs fewer of them and reads as sparser than the
-   * denser, more tightly-spaced set pieces of later stages.
-   * Difficulty: 1 (simple, readable).
-   */
-  pyramid: Object.freeze({
-    id: 'pyramid',
-    name: 'Pyramid',
-    orientation: 'horizontal',
-    difficulty: 1,
-    // Blocks at row 0 (on the ground), cols 0..4 — heights 1,2,3,2,1.
-    units: Object.freeze([B(1, 0, 0), B(2, 0, 1), B(3, 0, 2), B(2, 0, 3), B(1, 0, 4)]),
-    entryClear: 5,
-    exitClear: 5,
-    // Slots sit on the TOP surface of the unit below them (block height /
-    // platform tier / ground 0) — each slot carries an explicit y (its surface). A macro
-    // with 5 blocks declares enough slots that a typical budget can be met
-    // (task 4.1: 3-4 enemy, 2-3 barrel, 1-2 powerup).
-    placements: Object.freeze([
-      // One slot per position (no-overlap rule): enemies on the low blocks,
-      // a barrel mid, a powerup on the peak.
-      { slot: 'base', x: 0, type: 'enemy', y: 1 },
-      { slot: 'on-h2', x: 1, type: 'enemy', y: 2 },
-      { slot: 'on-h2b', x: 3, type: 'enemy', y: 2 },
-      { slot: 'peak-barrel', x: 2, type: 'barrel', y: 3 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]), // can follow any macro
-    followedBy: Object.freeze([]), // can be followed by any macro
-  }),
-
-  /**
-   * Low repeated obstacles: five single-height blocks in sequence.
-   * A rhythm pattern — the hero jumps over each block in turn.
-   *
-   * Entry: 5 units clear. Exit: 5 units clear. Like pyramid, this simple
-   * pattern carries extra breathing room so stage 1 areas read as sparser
-   * (generation.md §5). Difficulty: 1 (simple repetition).
-   */
-  lowRepeated: Object.freeze({
-    id: 'lowRepeated',
-    name: 'Low Repeated Obstacles',
-    orientation: 'horizontal',
-    difficulty: 1,
-    // Five height-1 blocks on the ground, cols 0..4.
-    units: Object.freeze([B(1, 0, 0), B(1, 0, 1), B(1, 0, 2), B(1, 0, 3), B(1, 0, 4)]),
-    entryClear: 5,
-    exitClear: 5,
-    // Five height-1 blocks: enemies + barrels sit on TOP of the blocks
-    // (elevation 1), not inside them. Enough slots for a typical budget.
-    placements: Object.freeze([
-      { slot: 'e1', x: 0, type: 'enemy', y: 1 },
-      { slot: 'e2', x: 1, type: 'enemy', y: 1 },
-      { slot: 'e3', x: 2, type: 'enemy', y: 1 },
-      { slot: 'b1', x: 3, type: 'barrel', y: 1 },
-      { slot: 'p1', x: 4, type: 'powerup', y: 1 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-  }),
-
-  /**
-   * Stretched pyramid: five height-1 blocks, five height-2 blocks,
-   * five height-3 blocks, followed by a descent/drop.
-   * A long, sustained climb with a drop at the end.
-   *
-   * Entry: 2 units clear. Exit: 3 units clear (extra room after the drop).
-   * Difficulty: 2 (longer, more sustained).
-   */
-  stretchedPyramid: Object.freeze({
-    id: 'stretchedPyramid',
-    name: 'Stretched Pyramid',
-    orientation: 'horizontal',
-    difficulty: 2,
-    // Bands of five blocks each (h1 cols 0-4, h2 cols 5-9, h3 cols 10-14);
-    // the old trailing G(2) drop is now just unoccupied cells after col 14.
-    units: Object.freeze([
-      B(1, 0, 0), B(1, 0, 1), B(1, 0, 2), B(1, 0, 3), B(1, 0, 4),
-      B(2, 0, 5), B(2, 0, 6), B(2, 0, 7), B(2, 0, 8), B(2, 0, 9),
-      B(3, 0, 10), B(3, 0, 11), B(3, 0, 12), B(3, 0, 13), B(3, 0, 14),
-    ]),
-    entryClear: 2,
-    exitClear: 3,
-    // Slots sit on the TOP of each block band: low (h1, elev 1), mid (h2,
-    // elev 2), high (h3, elev 3). Each slot carries its explicit surface y, so
-    // each slot rests on its band's surface, never inside a block.
-    placements: Object.freeze([
-      { slot: 'low', x: 2, type: 'enemy', y: 1 },
-      { slot: 'low2', x: 3, type: 'enemy', y: 1 },
-      { slot: 'mid-enemy', x: 7, type: 'enemy', y: 2 },
-      { slot: 'mid2', x: 8, type: 'barrel', y: 2 },
-      { slot: 'high-barrel', x: 12, type: 'barrel', y: 3 },
-      { slot: 'high2', x: 13, type: 'powerup', y: 3 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-  }),
-
-  /**
-   * Mixed crossing: height-1, height-2, height-3 blocks; a gap;
-   * a triple-width platform at tier 2; then height-3, height-2, height-1 blocks.
-   * Combines blocks and platforms with a gap in the middle.
-   *
-   * Entry: 2 units clear. Exit: 2 units clear.
-   * Difficulty: 3 (mixed terrain, gap, platform crossing).
-   */
-  mixedCrossing: Object.freeze({
-    id: 'mixedCrossing',
-    name: 'Mixed Crossing',
-    orientation: 'horizontal',
-    difficulty: 3,
-    // Blocks rising cols 0-2, a 2-cell empty gap (cols 3-4), a triple
-    // platform at face row 2 over cols 5-7, then blocks descending cols 8-10.
-    units: Object.freeze([
-      B(1, 0, 0), B(2, 0, 1), B(3, 0, 2),
-      P(3, 2, 5), // triple-width platform, landing face at row 2
-      B(3, 0, 8), B(2, 0, 9), B(1, 0, 10), // descent after the platform
-    ]),
-    entryClear: 2,
-    exitClear: 2,
-    // Slots rest on the supporting surface: on-top of blocks (elev = height)
-    // and on the platform's landing face (elev = tier 2). Enough slots for a
-    // typical budget; the gap (x=3..5) carries no slots.
-    placements: Object.freeze([
-      { slot: 'on-h1', x: 0, type: 'enemy', y: 1 },
-      { slot: 'before-gap', x: 2, type: 'enemy', y: 3 },
-      { slot: 'on-platform', x: 5, type: 'enemy', y: 3 },
-      { slot: 'on-platform2', x: 6, type: 'enemy', y: 3 },
-      { slot: 'after-platform', x: 9, type: 'barrel', y: 2 },
-      { slot: 'on-h3', x: 8, type: 'barrel', y: 3 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-  }),
-
-  /**
-   * Gap landing run: a 2-cell gap followed by a five-block landing run.
-   * A movement challenge — the hero must jump the gap and land on the
-   * block run. Not a lethal pit (generation.md §2).
-   *
-   * Shape: 2-cell gap → five height-1 blocks (one under every slot, so
-   * items always stand on a surface, never bare ground). The block run is
-   * the landing surface after the gap; two adjacent gaps with no lower
-   * landing would be a lethal pit, which the docs explicitly forbid — so
-   * the landing is a real surface, not air.
-   *
-   * Entry: 2 units clear. Exit: 2 units clear.
-   * Difficulty: 2 (gap + landing run).
-   */
-  gapLanding: Object.freeze({
-    id: 'gapLanding',
-    name: 'Gap Landing Run',
-    orientation: 'horizontal',
-    difficulty: 2,
-    // A 2-cell empty gap (cols 0-1), then FIVE height-1 landing blocks
-    // (cols 2-6) — one under every slot, so no item ever stands on bare
-    // ground. The hero drops across the gap and lands on the block run.
-    units: Object.freeze([
-      B(1, 0, 2),
-      B(1, 0, 3),
-      B(1, 0, 4),
-      B(1, 0, 5),
-      B(1, 0, 6),
-    ]),
-    entryClear: 2,
-    exitClear: 2,
-    // Every slot sits on a block top (elev 1) — no items on bare ground.
-    // Enough slots for a typical budget.
-    placements: Object.freeze([
-      { slot: 'landing-enemy', x: 2, type: 'enemy', y: 1 },
-      { slot: 'landing-enemy2', x: 4, type: 'enemy', y: 1 },
-      { slot: 'landing-enemy3', x: 6, type: 'enemy', y: 1 },
-      { slot: 'landing', x: 3, type: 'powerup', y: 1 },
-      { slot: 'landing-barrel', x: 5, type: 'barrel', y: 1 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-  }),
-
-  /**
-   * Platform hops: a run of one-way platforms at increasing tiers, so the hero
-   * double-jumps up onto each successive landing. Pure-platform macro — no solid
-   * blocks — to give horizontal areas readable elevated routes (structure.md §5:
-   * platforms are one-way landings; tiers spaced for double-jump reach).
-   *
-   * Shape: tier-1 platform → gap → tier-2 platform → gap → tier-3 platform.
-   * Each step is exactly one tier up (MAX_ELEVATION_STEP = 1), reachable by a
-   * full-speed double jump.
-   *
-   * Entry: 3 units clear. Exit: 3 units clear.
-   * Difficulty: 2 (elevated crossing, but only upward steps which are validated).
-   */
-  platformHops: Object.freeze({
-    id: 'platformHops',
-    name: 'Platform Hops',
-    orientation: 'horizontal',
-    difficulty: 2,
-    // Three one-way platforms stepping up: face row 1 (cols 0-1), row 2
-    // (cols 4-5), row 3 (cols 8-9) — 2-cell air gaps between each hop.
-    units: Object.freeze([
-      P(2, 1, 0), // first landing at row 1
-      P(2, 2, 4), // second landing at row 2
-      P(2, 3, 8), // final landing at row 3
-    ]),
-    entryClear: 3,
-    exitClear: 3,
-    // Slots rest on each platform's landing face (elev = its tier). The gaps
-    // carry no slots (air). Enough slots for a typical budget.
-    placements: Object.freeze([
-      { slot: 'on-t1', x: 0, type: 'enemy', y: 2 },
-      { slot: 'on-t2', x: 4, type: 'enemy', y: 3 },
-      { slot: 'on-t3', x: 8, type: 'powerup', y: 4 },
-      { slot: 'on-t1-barrel', x: 1, type: 'barrel', y: 2 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-  }),
-
-  /**
-   * Block-and-platform bridge: solid blocks rising on the left, a wide gap,
-   * then a long triple-width platform the hero crosses at tier 2, then blocks
-   * descending on the right. Mixes both terrain kinds in one set piece so
-   * horizontal areas can feature platforms without being all-blocks.
-   *
-   * Shape: B(1) B(2) → G(2) → P(3, 2) → G(2) → B(2) B(1).
-   *
-   * Entry: 2 units clear. Exit: 2 units clear.
-   * Difficulty: 3 (mixed terrain + two gaps + an elevated crossing).
-   */
-  blockPlatformBridge: Object.freeze({
-    id: 'blockPlatformBridge',
-    name: 'Block & Platform Bridge',
-    orientation: 'horizontal',
-    difficulty: 3,
-    // Blocks rising cols 0-1, gap (cols 2-3), triple platform at face row 2
-    // over cols 4-6, gap (cols 7-8), blocks descending cols 9-10.
-    units: Object.freeze([
-      B(1, 0, 0), B(2, 0, 1),   // rising blocks on the approach
-      P(3, 2, 4),               // triple-width platform crossed at row 2
-      B(2, 0, 9), B(1, 0, 10),  // descending blocks on the far side
-    ]),
-    entryClear: 2,
-    exitClear: 2,
-    // Slots rest on block tops (elev = height) and the platform face (tier 2).
-    // The gaps (x=2..4 and x=7..9) carry no slots.
-    placements: Object.freeze([
-      { slot: 'on-h1', x: 0, type: 'enemy', y: 1 },
-      { slot: 'on-h2', x: 1, type: 'enemy', y: 2 },
-      { slot: 'on-bridge', x: 5, type: 'enemy', y: 3 },
-      { slot: 'on-bridge-pu', x: 6, type: 'powerup', y: 3 },
-      { slot: 'on-far-h2', x: 10, type: 'barrel', y: 1 },
-      { slot: 'on-far-h1', x: 11, type: 'barrel', y: 0 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-  }),
-
-  /**
-   * Easy platform hop (REVISION R3.2): a difficulty-1 horizontal macro with a
-   * platform, so stage 1 areas show platforms from the start (previously
-   * platforms only appeared in stages 3-4). Two gentle one-way landings at
-   * face rows 1 and 2, each reachable by a single double jump from the ground
-   * or the previous landing.
-   *
-   * Entry: 3 units clear. Exit: 3 units clear.
-   * Difficulty: 1 (simple elevated hops).
-   */
-  easyPlatformHop: Object.freeze({
-    id: 'easyPlatformHop',
-    name: 'Easy Platform Hop',
-    orientation: 'horizontal',
-    difficulty: 1,
-    // Face row 1 over cols 0-1; face row 2 over cols 4-5 (2-cell air gap).
-    units: Object.freeze([
-      P(2, 1, 0),
-      P(2, 2, 4),
-    ]),
-    entryClear: 3,
-    exitClear: 3,
-    placements: Object.freeze([
-      { slot: 'on-t1', x: 0, type: 'enemy', y: 2 },
-      { slot: 'on-t1b', x: 1, type: 'barrel', y: 2 },
-      { slot: 'on-t2', x: 4, type: 'powerup', y: 3 },
-      { slot: 'on-t2b', x: 5, type: 'barrel', y: 3 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-  }),
-
-  /**
-   * Block bridge (REVISION R3.2): the STACKED set piece that proves the 2D
-   * grid model — a block wall with an overhead platform bridge in the same
-   * columns, plus a step-up block on the far side so the hero can climb onto
-   * the bridge (the route must respect the ≤1-row upward step rule).
-   *
-   * Geometry: blocks of height 2 at row 0 (cols 0-1) → their tops are at
-   * row 2. The platform's landing face is at row 4 over cols 0-2, i.e. exactly
-   * 2 rows above the block tops — satisfying the clearance rule (≥ 2 rows
-   * above whatever is directly below). A height-2 step block at col 3 (top
-   * row 2) lets the hero walk up from the ground and hop onto the bridge
-   * (row 2 → row 4 = 1 row up), then drop off the far side.
-   *
-   * Entry: 3 units clear. Exit: 3 units clear.
-   * Difficulty: 2 (stacked geometry + a single crossing).
-   */
-  blockBridge: Object.freeze({
-    id: 'blockBridge',
-    name: 'Block Bridge',
-    orientation: 'horizontal',
-    difficulty: 2,
-    // Block wall: B(2) at row 0, cols 0-1 (tops at row 2).
-    // Overhead bridge: P(3) face at row 4, cols 0-2 (2 rows clear of the tops).
-    // Step-up: B(2) at col 3 (top row 2) — the approach onto the bridge.
-    units: Object.freeze([
-      B(2, 0, 0), B(2, 0, 1),
-      P(3, 4, 0),
-      B(2, 0, 3),
-    ]),
-    entryClear: 3,
-    exitClear: 3,
-    placements: Object.freeze([
-      { slot: 'on-wall', x: 0, type: 'enemy', y: 5 },
-      { slot: 'on-bridge', x: 1, type: 'powerup', y: 5 },
-      { slot: 'on-bridge2', x: 2, type: 'barrel', y: 5 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-  }),
-
-  // --- Vertical macros ------------------------------------------------------
-  //
-  // Lateral variety: each platform unit may carry an `x` offset (width-units
-  // from the zone's left edge). The zone is one screen wide (1600px ≈ 22 units
-  // at UNIT_PX_X=72). Landings shift left/right within that width so the climb
-  // is not a single-file staircase (structure.md §4: "three tiers must not
-  // accidentally become a three-platform cap on the entire ascent").
-  //
-  // Reachability: every step between successive landings is at most
-  // MAX_ELEVATION_STEP (1 tier) UP and at most MAX_CLEARABLE_GAP (3 units)
-  // horizontal. These bounds are derived from hero physics (terrain.js
-  // maxClearableStep, macros.js minHeroGapClearPx), so both heroes can
-  // double-jump every step.
-  //
-  // Progression (generation.md §5): vertical difficulty rises via climbing
-  // complexity (more landings, wider lateral range, gaps), not horizontal
-  // length. Difficulty 1 = 2 landings (simple); 2 = 3-5 landings (sustained);
-  // 3 = 5-6 landings with gaps (dense/complex).
-
-  /**
-   * Simple climb: a 2-landing upward step with a small lateral shift.
-   * Tiers ascend 1→2. The simplest vertical pattern — few obstacles,
-   * room to move (generation.md §5: stage 2 "increased combinations").
-   *
-   * Lateral shift: +2 units (within MAX_CLEARABLE_GAP=3).
-   * Entry: 2 units clear. Exit: 2 units clear.
-   * Difficulty: 1 (simple climbing, 2 landings).
-   */
-  climbSimple: Object.freeze({
-    id: 'climbSimple',
-    name: 'Simple Climb',
-    orientation: 'vertical',
-    difficulty: 1,
-    units: Object.freeze([
-      P(2, 1, 12), // row 1
-      P(2, 2, 14), // row 2, shift +2
-    ]),
-    entryClear: 2,
-    exitClear: 2,
-    placements: Object.freeze([
-      { slot: 'tier1', x: 12, type: 'enemy', y: 2 },
-      { slot: 'tier2', x: 14, type: 'powerup', y: 3 },
-      { slot: 'tier1-barrel', x: 13, type: 'barrel', y: 2 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-
-  }),
-
-  /**
-   * Climbing pattern: a 3-landing upward staircase with lateral zigzag.
-   * Tiers ascend 1→2→3; each landing shifts laterally (±2 units) so the
-   * climb zigzags within the fixed screen width.
-   *
-   * Lateral shifts: +2, -2 (all within MAX_CLEARABLE_GAP=3).
-   * Entry: 2 units clear. Exit: 2 units clear.
-   * Difficulty: 2 (sustained climbing, 3 landings).
-   */
-  climbing: Object.freeze({
-    id: 'climbing',
-    name: 'Climbing Pattern',
-    orientation: 'vertical',
-    difficulty: 2,
-    units: Object.freeze([
-      P(2, 1, 12), // row 1
-      P(2, 2, 14), // row 2, shift +2
-      P(2, 3, 12), // row 3, shift -2
-    ]),
-    entryClear: 2,
-    exitClear: 2,
-    placements: Object.freeze([
-      { slot: 'tier1', x: 12, type: 'enemy', y: 4 },
-      { slot: 'tier2', x: 14, type: 'enemy', y: 3 },
-      { slot: 'tier3b', x: 13, type: 'powerup', y: 4 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-
-  }),
-
-  /**
-   * Wide climbing: 4 landings with lateral zigzag. Tiers: 1→2→1→2 (two
-   * "floors" with a rest landing). Each lateral shift is ≤ 3 units.
-   *
-   * Entry: 2 units clear. Exit: 2 units clear.
-   * Difficulty: 2 (more landings, sustained lateral variety).
-   */
-  climbingWide: Object.freeze({
-    id: 'climbingWide',
-    name: 'Wide Climbing',
-    orientation: 'vertical',
-    difficulty: 2,
-    units: Object.freeze([
-      P(2, 1, 10), // row 1, left
-      P(2, 2, 13), // row 2, shift +3
-      P(2, 1, 12), // row 1, rest (adjacent to the left landing — touching, not overlapping)
-      P(2, 2, 15), // row 2, peak (adjacent to the row-2 landing)
-    ]),
-    entryClear: 2,
-    exitClear: 2,
-    placements: Object.freeze([
-      { slot: 'tier1-left', x: 10, type: 'enemy', y: 2 },
-      { slot: 'tier2-right', x: 13, type: 'enemy', y: 3 },
-      { slot: 'tier1-rest', x: 12, type: 'enemy', y: 2 },
-      { slot: 'tier2-peak', x: 15, type: 'powerup', y: 3 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-
-  }),
-
-  /**
-   * Zigzag climb: 5 landings alternating left and right. Tiers ascend
-   * 1→2→3→2→3 (two peaks). Each lateral shift is ≤ 3 units.
-   *
-   * Entry: 2 units clear. Exit: 2 units clear.
-   * Difficulty: 2 (5 landings, sustained lateral variety).
-   */
-  climbingZigzag: Object.freeze({
-    id: 'climbingZigzag',
-    name: 'Zigzag Climb',
-    orientation: 'vertical',
-    difficulty: 2,
-    units: Object.freeze([
-      P(2, 1, 10), // row 1, left
-      P(2, 2, 13), // row 2, shift +3
-      P(2, 3, 11), // row 3, first peak
-      P(2, 2, 15), // row 2, rest (adjacent to the other tier-2 landing — touching, not overlapping)
-      P(2, 3, 16), // row 3, final peak
-    ]),
-    entryClear: 2,
-    exitClear: 2,
-    placements: Object.freeze([
-      { slot: 'tier1', x: 10, type: 'enemy', y: 2 },
-      { slot: 'tier2', x: 13, type: 'enemy', y: 3 },
-      { slot: 'tier3-peak', x: 11, type: 'enemy', y: 4 },
-      { slot: 'tier2-rest', x: 15, type: 'enemy', y: 3 },
-      { slot: 'tier3-final', x: 12, type: 'powerup', y: 4 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-
-  }),
-
-  /**
-   * Climbing with gaps: a vertical climb with gaps between landings.
-   * Tiers ascend: 1→2→3→3. Gaps add vertical breathing room.
-   * Lateral shifts (≤3 units) break the single-file pattern.
-   *
-   * Entry: 2 units clear. Exit: 2 units clear.
-   * Difficulty: 3 (climbing + gaps + lateral variety).
-   */
-  climbingGaps: Object.freeze({
-    id: 'climbingGaps',
-    name: 'Climbing with Gaps',
-    orientation: 'vertical',
-    difficulty: 3,
-    // 2D grid: each landing sits at an explicit row (up from the ground).
-    // The rows ascend by exactly 1 per landing — the empty rows between them
-    // are the "breathing room" (the old G(1) vertical gaps, now just empty
-    // cells).
-    units: Object.freeze([
-      P(1, 1, 10),  // row 1
-      P(1, 2, 12),  // row 2 (step 1)
-      P(1, 3, 11),  // row 3 (step 1)
-      P(1, 4, 13),  // row 4 (step 1)
-    ]),
-    entryClear: 2,
-    exitClear: 2,
-    placements: Object.freeze([
-      { slot: 'tier1', x: 10, type: 'enemy', y: 2 },
-      { slot: 'tier2', x: 13, type: 'enemy', y: 5 },
-      { slot: 'tier3', x: 11, type: 'enemy', y: 4 },
-      { slot: 'tier3b', x: 14, type: 'powerup', y: 0 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-
-  }),
-
-  /**
-   * Dense climbing: 6 landings with gaps and lateral zigzag.
-   * The highest-complexity climbing pattern. Tiers: 1→2→3→1→2→3 (two
-   * full climbs). Each lateral shift ≤ 3 units.
-   *
-   * Entry: 2 units clear. Exit: 2 units clear.
-   * Difficulty: 3 (dense climbing, complex route).
-   */
-  climbingDense: Object.freeze({
-    id: 'climbingDense',
-    name: 'Dense Climbing',
-    orientation: 'vertical',
-    difficulty: 3,
-    // 2D grid: rows ascend by ≤ 1 per landing (the old G(1) gaps are now
-    // just empty cells — the row numbers carry the spacing directly).
-    units: Object.freeze([
-      P(1, 1, 10),  // row 1
-      P(1, 2, 12),  // row 2 (step 1)
-      P(1, 3, 11),  // row 3 (step 1)
-      P(1, 4, 13),  // row 4 (step 1)
-      P(1, 5, 12),  // row 5 (step 1)
-      P(1, 6, 14),  // row 6 (step 1)
-    ]),
-    entryClear: 2,
-    exitClear: 2,
-    placements: Object.freeze([
-      { slot: 'tier1', x: 10, type: 'enemy', y: 2 },
-      { slot: 'tier2', x: 13, type: 'enemy', y: 5 },
-      { slot: 'tier3-peak1', x: 11, type: 'enemy', y: 4 },
-      { slot: 'tier1-reset', x: 14, type: 'enemy', y: 7 },
-      { slot: 'tier2-mid', x: 12, type: 'enemy', y: 6 },
-      { slot: 'tier3-peak2', x: 15, type: 'powerup', y: 0 },
-    ]),
-    variations: Object.freeze([]),
-    follows: Object.freeze([]),
-    followedBy: Object.freeze([]),
-
-  }),
-});
+export let MACROS = Object.freeze({});
 
 /**
  * Replace the macro vocabulary with data loaded from `macros/levels/*.json`.
- * Called once at boot by main.js (browser only). Tests and node contexts keep
- * the inline fallback object.
+ * Called once at boot by main.js (browser) or by test setup (node).
  *
  * @param {Object<string, object>} macros id → macro map from loadMacros()
  */
@@ -1006,14 +436,13 @@ function pickWeighted(candidates, rng, excludeId = null) {
  */
 export function macroWidth(macro) {
   // REVISION R1.3: with 2D placement a macro's footprint is its bounding box —
-  // width = max(col + unitWidth) − min(col). Empty cells inside the footprint
-  // are gaps; they still count toward the width because the hero crosses them.
-  let width = macro.entryClear;
+  // width = max(col + unitWidth). No reserved entry/exit zones on the macro:
+  // spacing between set-pieces is baked into the authored coordinates.
+  let width = 0;
   for (const u of macro.units) {
     const span = u.x + (u.kind === 'block' ? 1 : u.width);
     if (span > width) width = span;
   }
-  width += macro.exitClear;
   return width;
 }
 
@@ -1032,14 +461,15 @@ export function macroWidth(macro) {
  */
 export function macroAxisLength(macro) {
   if (macro.orientation === 'vertical') {
-    // REVISION R1.3: the axis length is the bounding-box top (peak row) +
-    // clears. A block's top is row + height; a platform's face IS its row.
+    // REVISION R1.3: the axis length is the bounding-box top (peak row).
+    // A block's top is row + height; a platform's face IS its row. No
+    // reserved entry/exit zones on the macro — it occupies exactly its units.
     let peakY = 0;
     for (const u of macro.units) {
       const y = u.kind === 'block' ? u.y + u.height : u.y;
       if (y > peakY) peakY = y;
     }
-    return macro.entryClear + peakY + macro.exitClear;
+    return peakY;
   }
   return macroWidth(macro);
 }
@@ -1325,23 +755,18 @@ function buildSlotPools(layout) {
  * @returns {boolean} true if the slot is at a valid standing position
  */
 export function slotIsOnValidSurface(slot, units) {
-  if (!units) return true; // no terrain to check against
+  if (!units) return true;
+  const surfaceY = slot.y ?? 0;
   for (const u of units) {
-    if (u.kind !== 'block') continue; // platforms are one-way landings, not solids
-    // The slot's x is the CENTER of its unit cell. A block of width W at x=u.x
-    // occupies [u.x, u.x+W). The slot is at the same unit cell as the block
-    // when slot.x is within [u.x, u.x+W). Since both are unit-aligned, the
-    // slot's x matches the block's x exactly (slot.x === u.x for a slot on
-    // top of the block). We check: does the slot's x fall within the block's
-    // x-range? If so, the slot must be at or above the block's top.
+    if (u.kind !== 'block') continue; // platforms are one-way, not solids
     const uStart = u.x;
     const uEnd = u.x + u.aabb.w;
     if (slot.x >= uStart && slot.x < uEnd) {
-      // The slot is above this block. It must be at or above the block's top
-      // (height H) — i.e. y >= H. If y < H, the slot is INSIDE the block.
-      const surfaceY = slot.y ?? 0;
+      // Slot is in the same column as a block. If its y is below the block's
+      // top, it's INSIDE the solid. Items spawn at y and gravity handles the
+      // rest — we only care about not spawning IN rock.
       if (surfaceY < u.height) {
-        return false; // the slot is INSIDE the block (below its top)
+        return false;
       }
     }
   }
@@ -1487,17 +912,16 @@ function assignPowerupTypes(powerupSlots, mix, weights, rng) {
 export function populateArea(rng, layout, config = {}) {
   const pools = buildSlotPools(layout);
 
-  // BLOCKER guard (task 4.1): before any item is placed, verify every slot is
-  // at a VALID standing position — i.e. NOT inside a solid block (checked
-  // against the layout's block AABBs). Each slot carries an explicit y (its
-  // supporting surface), so this check is a defense-in-depth invariant: it throws if a slot ever ends up
-  // inside a solid, rather than silently spawning an item in a block.
+  // BLOCKER guard (task 4.1): items must never spawn INSIDE a solid block.
+  // Powerups are exempt (they float by design). Barrels/enemies at y < block
+  // height in the same column = inside rock → throw.
   const solidUnits = (layout.units ?? []).filter((u) => u.kind === 'block');
   for (const slot of layout.placements ?? []) {
+    if (slot.type === 'powerup') continue; // powerups float, no check needed
     if (!slotIsOnValidSurface(slot, solidUnits)) {
       throw new Error(
         `populateArea: slot ${slot.slot} at x=${slot.x} y=${slot.y ?? 0} ` +
-          `is inside a solid block — items must never spawn in solids`,
+          `is INSIDE a solid block — items must never spawn in solids`,
       );
     }
   }
@@ -1673,8 +1097,8 @@ function assignBarrelTypes(barrelSlots, counts, rng) {
  *     orientation: 'horizontal' | 'vertical',
  *     stage: number,
  *     budget: number,
- *     entryClear: number,     // clear units at the start of the axis
- *     exitClear: number,      // clear units at the end of the axis
+ *     entryClear: number,     // AREA-level clear units at the start of the axis
+ *     exitClear: number,      // AREA-level clear units at the end of the axis
  *     macros: string[],       // ids of macros used, in order
  *     units: Array<{          // placed terrain units with axis positions
  *       kind: 'block'|'platform',
@@ -1760,8 +1184,8 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
  * can retry with a fresh rng stream when a composed route fails validation.
  */
 function runCompose(rng, orientation, stage, budget, macroWeights) {
-  // Step 1: Reserve safe entry and exit (generation.md §4 step 1).
-  // Use orientation-specific clearance values.
+  // Step 1: Reserve safe AREA entry and exit (generation.md §4 step 1).
+  // Area-level clearance only — macros carry no clears of their own.
   const isVertical = orientation === 'vertical';
   const entryClear = isVertical ? V_ENTRY_CLEAR : H_ENTRY_CLEAR;
   const exitClear = isVertical ? V_EXIT_CLEAR : H_EXIT_CLEAR;
@@ -1907,9 +1331,8 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
     const fitting = isVertical
       ? filtered.filter(({ macro }) => {
           // The macro's peak y (relative to its start) must fit the remaining
-          // climb. The peak y is macroAxisLength - entryClear - exitClear
-          // (approximation; the exact peak y depends on the unit sequence).
-          const peakY = macroAxisLength(macro) - macro.entryClear - macro.exitClear;
+          // climb. With no macro-level clears, the axis length IS the peak y.
+          const peakY = macroAxisLength(macro);
           return peakY <= remaining;
         })
       : filtered.filter(({ macro }) => macroAxisLength(macro) <= remaining);
@@ -1930,7 +1353,7 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
     // its first platform sits at prevPeakAbsY + MAX_ELEVATION_STEP.
     //
     // This is the fix for the unreachable inter-macro join: instead of
-    // blindly stacking at axisPos (which leaves a gap of entryClear +
+    // blindly stacking at axisPos (which leaves a gap of firstLocalTier
     // firstLocalTier tiers between the previous peak and the next first
     // platform), we anchor the next macro's first platform to a reachable
     // elevation. The macro's subsequent platforms (higher tiers) continue
@@ -2003,7 +1426,7 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
     }
 
     // Place the macro at its (possibly adjusted) axis position with x-shift.
-    placeMacro(macro, placementAxisPos, placedUnits, placedGaps, placements, entryClear, isVertical, placementSeq++, placementXShift);
+    placeMacro(macro, placementAxisPos, placedUnits, placedGaps, placements, isVertical, placementSeq++, placementXShift);
     macroIds.push(macro.id);
     lastMacroId = macro.id;
     if (isVertical) {
@@ -2112,8 +1535,8 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
  *
  * Every unit carries an explicit (row, col) cell; there is no sequential
  * cursor and no auto-assign. Rect from the grid:
- *   - x = axisPos + entryClear + col          (horizontal composition)
- *   - y = row                                 (row counted UP from ground)
+ *   - x = axisPos + col                     (horizontal composition)
+ *   - y = row                               (row counted UP from ground)
  * The SAME formula works for horizontal and vertical areas — row is always
  * up-from-ground, col is always from-left. For vertical macros the zone width
  * is fixed (one screen wide), so col IS the lateral position within it.
@@ -2123,17 +1546,16 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
  * @param {object[]} placedUnits array to push placed units into
  * @param {object[]} placedGaps array to push placed gaps into
  * @param {object[]} placements array to push placement opportunities into
- * @param {number} entryClear the entry clear zone size
  * @param {boolean} isVertical whether the area is vertical
  * @param {number} instanceId unique id for this macro placement instance
  * @param {number} [xShift=0] horizontal shift applied to all units (for
  *   inter-macro lateral alignment; BLOCKER 1 fix)
  */
-function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, entryClear, isVertical, instanceId, xShift = 0) {
+function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, isVertical, instanceId, xShift = 0) {
   // Horizontal: x origin is the macro's start along the composition axis.
   // Vertical: the composition axis is Y (climb); x is purely lateral (col),
   // so the origin is 0 — axisPos must NOT leak into the x coordinate.
-  const originX = isVertical ? 0 : axisPos + macro.entryClear;
+  const originX = isVertical ? 0 : axisPos;
 
   for (const u of macro.units) {
     if (u.y == null || u.x == null) {

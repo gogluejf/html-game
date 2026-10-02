@@ -19,6 +19,9 @@
 // through the vertical-zone path and the lethal-bottom rule through the real
 // runtime (systems/update.js), which is where the death check is wired.
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 

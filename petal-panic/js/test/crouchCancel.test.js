@@ -12,6 +12,9 @@
 //   - heroAnimName (§29) matches the authoritative gameplay state after each
 //     transition: jump-from-crouch, melee end, hit-stun end, dash end.
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';

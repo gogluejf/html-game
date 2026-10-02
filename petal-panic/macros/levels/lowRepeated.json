@@ -8,63 +8,61 @@
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 0
+      "x": 5
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 1
+      "x": 6
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 2
+      "x": 7
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 3
+      "x": 8
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 4
+      "x": 9
     }
   ],
-  "entryClear": 5,
-  "exitClear": 5,
   "placements": [
     {
       "slot": "e1",
-      "x": 0,
+      "x": 5,
       "type": "enemy",
       "y": 1
     },
     {
       "slot": "e2",
-      "x": 1,
+      "x": 6,
       "type": "enemy",
       "y": 1
     },
     {
       "slot": "e3",
-      "x": 2,
+      "x": 7,
       "type": "enemy",
       "y": 1
     },
     {
       "slot": "b1",
-      "x": 3,
+      "x": 8,
       "type": "barrel",
       "y": 1
     },
     {
       "slot": "p1",
-      "x": 4,
+      "x": 9,
       "type": "powerup",
       "y": 1
     }

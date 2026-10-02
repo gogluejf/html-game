@@ -27,6 +27,9 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import {
   MACROS,
   selectMacros,

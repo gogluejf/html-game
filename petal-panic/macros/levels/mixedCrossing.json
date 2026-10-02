@@ -8,81 +8,79 @@
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 0
+      "x": 2
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 1
+      "x": 3
     },
     {
       "kind": "block",
       "height": 3,
       "y": 0,
-      "x": 2
+      "x": 4
     },
     {
       "kind": "platform",
       "width": 3,
       "y": 2,
-      "x": 5
+      "x": 7
     },
     {
       "kind": "block",
       "height": 3,
       "y": 0,
-      "x": 8
+      "x": 10
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 9
+      "x": 11
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 10
+      "x": 12
     }
   ],
-  "entryClear": 2,
-  "exitClear": 2,
   "placements": [
     {
       "slot": "on-h1",
-      "x": 0,
+      "x": 2,
       "type": "enemy",
       "y": 1
     },
     {
       "slot": "before-gap",
-      "x": 2,
+      "x": 4,
       "type": "enemy",
       "y": 3
     },
     {
       "slot": "on-platform",
-      "x": 5,
+      "x": 7,
       "type": "enemy",
       "y": 3
     },
     {
       "slot": "on-platform2",
-      "x": 6,
+      "x": 8,
       "type": "enemy",
       "y": 3
     },
     {
       "slot": "after-platform",
-      "x": 9,
+      "x": 11,
       "type": "barrel",
       "y": 2
     },
     {
       "slot": "on-h3",
-      "x": 8,
+      "x": 10,
       "type": "barrel",
       "y": 3
     }

@@ -18,6 +18,9 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import {
   MACROS,
   macroWidth,
@@ -64,8 +67,8 @@ test('macro vocabulary: each macro declares orientation, difficulty, units, entr
     );
     assert.ok(macro.difficulty >= 1 && macro.difficulty <= 3, `${id}: difficulty 1-3`);
     assert.ok(Array.isArray(macro.units) && macro.units.length > 0, `${id}: has units`);
-    assert.ok(typeof macro.entryClear === 'number' && macro.entryClear >= 0, `${id}: has entryClear`);
-    assert.ok(typeof macro.exitClear === 'number' && macro.exitClear >= 0, `${id}: has exitClear`);
+    assert.ok(!('entryClear' in macro), `${id}: no entryClear field (removed)`);
+    assert.ok(!('exitClear' in macro), `${id}: no exitClear field (removed)`);
     assert.ok(Array.isArray(macro.placements), `${id}: has placements array`);
     assert.ok(Array.isArray(macro.variations), `${id}: has variations array`);
     assert.ok(Array.isArray(macro.follows), `${id}: has follows array`);
@@ -150,21 +153,20 @@ test('macro vocabulary: gapLanding is a movement challenge (generation.md §2)',
   assert.equal(gd.difficulty, 2);
 });
 
-test('macroWidth: computes the bounding-box footprint plus clear zones (R1.3)', () => {
+test('macroWidth: computes the bounding-box footprint (R1.3, no macro clears)', () => {
   for (const [id, macro] of Object.entries(MACROS)) {
     const w = macroWidth(macro);
-    // Width must cover the entry clear zone and at least one unit column.
-    assert.ok(w >= macro.entryClear + 1, `${id}: width ${w} covers entry + a unit`);
+    // Width must cover at least one unit column.
+    assert.ok(w >= 1, `${id}: width ${w} covers a unit`);
     // Width must be an integer.
     assert.ok(Number.isInteger(w), `${id}: width is an integer`);
-    // And it must equal the bounding-box extent + clears exactly.
-    let expect = macro.entryClear;
+    // And it must equal the bounding-box extent exactly (no clears added).
+    let expect = 0;
     for (const u of macro.units) {
       const span = u.x + (u.kind === 'block' ? 1 : u.width);
       if (span > expect) expect = span;
     }
-    expect += macro.exitClear;
-    assert.equal(w, expect, `${id}: width matches the bounding box + clears`);
+    assert.equal(w, expect, `${id}: width matches the bounding box`);
   }
 });
 
@@ -357,15 +359,24 @@ test('composeArea: elevation steps between successive platforms are <= 1 tier', 
   for (const seed of [1, 2, 3]) {
     const rng = createRng(seed);
     const layout = composeArea(rng, 'horizontal', 3, 35);
-    const platforms = layout.units
-      .filter((u) => u.kind === 'platform')
-      .sort((a, b) => a.x - b.x);
-    for (let i = 1; i < platforms.length; i++) {
-      const step = Math.abs(platforms[i].tier - platforms[i - 1].tier);
-      assert.ok(
-        step <= 1,
-        `seed ${seed}: elevation step of ${step} between platforms at x=${platforms[i - 1].x} and x=${platforms[i].x}`,
-      );
+    // Group platforms by macro instance; only check WITHIN a single macro.
+    // Inter-macro platform jumps are governed by the climb/elevation rules
+    // in validateLayout, not by this per-macro authoring constraint.
+    const byPid = new Map();
+    for (const u of layout.units) {
+      if (u.kind !== 'platform') continue;
+      if (!byPid.has(u.placementId)) byPid.set(u.placementId, []);
+      byPid.get(u.placementId).push(u);
+    }
+    for (const [pid, plats] of byPid) {
+      const sorted = plats.sort((a, b) => a.x - b.x);
+      for (let i = 1; i < sorted.length; i++) {
+        const step = Math.abs(sorted[i].tier - sorted[i - 1].tier);
+        assert.ok(
+          step <= 1,
+          `seed ${seed}: elevation step of ${step} within macro pid=${pid} between platforms at x=${sorted[i - 1].x} and x=${sorted[i].x}`,
+        );
+      }
     }
   }
 });

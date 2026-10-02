@@ -10,6 +10,9 @@
 //   5. Continue from 2-3 lands in 2-1 (area 1 of current level)
 //   6. No module outside lifecycle.js assigns lives/continues for restart
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 

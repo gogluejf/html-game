@@ -8,18 +8,6 @@
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 2
-    },
-    {
-      "kind": "block",
-      "height": 1,
-      "y": 0,
-      "x": 3
-    },
-    {
-      "kind": "block",
-      "height": 1,
-      "y": 0,
       "x": 4
     },
     {
@@ -33,38 +21,48 @@
       "height": 1,
       "y": 0,
       "x": 6
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "y": 0,
+      "x": 7
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "y": 0,
+      "x": 8
     }
   ],
-  "entryClear": 2,
-  "exitClear": 2,
   "placements": [
     {
       "slot": "landing-enemy",
-      "x": 2,
-      "type": "enemy",
-      "y": 1
-    },
-    {
-      "slot": "landing-enemy2",
       "x": 4,
       "type": "enemy",
       "y": 1
     },
     {
-      "slot": "landing-enemy3",
+      "slot": "landing-enemy2",
       "x": 6,
       "type": "enemy",
       "y": 1
     },
     {
+      "slot": "landing-enemy3",
+      "x": 8,
+      "type": "enemy",
+      "y": 1
+    },
+    {
       "slot": "landing",
-      "x": 3,
+      "x": 5,
       "type": "powerup",
       "y": 1
     },
     {
       "slot": "landing-barrel",
-      "x": 5,
+      "x": 7,
       "type": "barrel",
       "y": 1
     }

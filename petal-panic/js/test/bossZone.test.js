@@ -32,6 +32,9 @@
 // isolation. The runtime wiring (update.js) is exercised through the real
 // module for the boot/dormant path.
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 

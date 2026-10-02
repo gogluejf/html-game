@@ -1,3 +1,6 @@
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 class Events {

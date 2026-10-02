@@ -2,6 +2,15 @@
 // Renders the selected macro: unit grid, blocks (filled), platforms (thin
 // surface), and placement slots (colored dots). Macro space: x right, y UP,
 // row 0 = ground at the bottom. Canvas flips y so ground sits low on screen.
+//
+// Clearance model:
+//   - AREA entry/exit clear (hEntryClear/hExitClear, vEntryClear/vExitClear)
+//     are GAME-LEVEL zones (hero spawn / exit flag) — drawn as dark-yellow
+//     bands at the two ends of the area box. The first macro starts AFTER the
+//     area entry band; the last macro ends BEFORE the area exit band.
+//   - Macros carry NO entry/exit clear of their own anymore: spacing between
+//     set-pieces is baked into each macro's authored unit coordinates. Units
+//     draw at (areaEc + u.x) for horizontal, at (u.x) for vertical.
 
 import { app, SLOT_COLORS, COL_BLOCK, COL_PLATFORM, COL_GRID, COL_GRID_MAJOR } from './state.js';
 import { cv, ctx, s2c, setDrawHook } from './viewport.js';
@@ -86,7 +95,7 @@ function drawGrid(){
     const major = Math.round(y/uy) % 4 === 0;
     ctx.strokeStyle = major ? COL_GRID_MAJOR : COL_GRID;
     const [sx0, sy0] = W(minX, y);
-    const [sx1] = W(maxX, y);
+    const [sx1, sy1] = W(maxX, y);
     ctx.beginPath(); ctx.moveTo(sx0, sy0); ctx.lineTo(sx1, sy0); ctx.stroke();
   }
   // ground line (row 0) emphasized
@@ -97,26 +106,20 @@ function drawGrid(){
   ctx.beginPath(); ctx.moveTo(gx0, gy0); ctx.lineTo(gx1, gy0); ctx.stroke();
 
   // ---------- origin axes (like the sprite editor) ----------
-  // Draw X and Y axes at the body origin (after clearance zones).
-  // Horizontal: x-axis = ground line (y=0), y-axis = after area-in + macro-in
-  // Vertical: x-axis = after area-in + macro-in (along the climb), y-axis = left edge
+  // Draw X and Y axes at the BODY origin: after the AREA entry clear only.
+  // Horizontal: x-axis = ground line (y=0), y-axis = after the area-in band.
+  // Vertical: V_ENTRY_CLEAR = 0, so the origin is at the zone bottom/left edge.
   const c = _consts;
   const vertical = app.cur?.st?.orientation === 'vertical';
   const areaEc = vertical ? c.vEntryClear : c.hEntryClear;
-  const macroEc = app.cur?.st?.entryClear ?? 2;
-  const bodyOffset = areaEc + macroEc;   // total offset before blocks start
-  
+
   let ox, oy;
   if (vertical){
-    // Vertical: composition axis is Y (climb). The "origin" is at the bottom
-    // of the macro (after entry clear), on the left edge.
-    ox = 0;   // left edge (no x-offset for vertical)
-    oy = bodyOffset * c.unitPxY;   // up by the entry clear amount
+    ox = 0;                       // left edge (no x-offset for vertical)
+    oy = areaEc * c.unitPxY;      // up by the area entry amount (0 in practice)
   } else {
-    // Horizontal: composition axis is X. The "origin" is at the ground (y=0),
-    // after the entry clear zones.
-    ox = bodyOffset * c.unitPxX;   // right by the entry clear amount
-    oy = 0;   // ground level
+    ox = areaEc * c.unitPxX;      // right by the area entry amount
+    oy = 0;                       // ground level
   }
   const [screenX, screenY] = W(ox, oy);
   if (screenX >= -40 && screenX <= app.cssW + 40 && screenY >= -40 && screenY <= app.cssH + 40){
@@ -147,15 +150,16 @@ function drawMacro(macro){
   const units = macro.units || [];
   const placements = macro.placements || [];
 
-  // Offset: area entry clear + macro entry clear. The y-axis (x=0) sits at this
-  // offset — after both clearance zones, at the first block's left edge.
-  // Vertical has NO area entry clear (starts at ground).
+  // Offset matches the game's placeMacro exactly:
+  //   Horizontal: px = axisPos + u.x  where axisPos starts at H_ENTRY_CLEAR
+  //               → areaEc + u.x (macros have no clears of their own)
+  //   Vertical:   py = axisPos + u.y  where axisPos starts at V_ENTRY_CLEAR (0)
+  //               → u.y
   const vertical = macro.orientation === 'vertical';
   const areaEc = vertical ? _consts.vEntryClear : _consts.hEntryClear;
-  const macroEc = macro.entryClear ?? 2;
-  const bodyOffset = areaEc + macroEc;
+  const bodyOffset = areaEc;
 
-  // blocks (offset by bodyOffset so they start AFTER the clearance zones)
+  // blocks (offset by the area entry clear only)
   for (const u of units){
     if (u.kind !== 'block') continue;
     const x = (u.x ?? 0) + bodyOffset;
@@ -174,7 +178,7 @@ function drawMacro(macro){
     }
   }
 
-  // platforms (offset by bodyOffset)
+  // platforms (offset by the area entry clear only)
   for (const u of units){
     if (u.kind !== 'platform') continue;
     const x = (u.x ?? 0) + bodyOffset;
@@ -194,7 +198,7 @@ function drawMacro(macro){
     }
   }
 
-  // slots (offset by bodyOffset)
+  // slots (offset by the area entry clear only)
   if (app.show.slots){
     for (const p of placements){
       const col = (p.x ?? 0) + bodyOffset;
@@ -217,15 +221,16 @@ function drawMacro(macro){
 // ---------- area bounding box + entry/exit markers ----------
 // Shows the full AREA a macro lives inside (the composer's length budget), so
 // you can see how much of a level one macro consumes and where the hero enters
-// (X) and exits (flag). The box is the whole area: entry clear → units → exit
-// clear. For vertical macros the width is the fixed one-screen zone width.
+// (X) and exits (flag). The box is the whole area: AREA entry clear → macros →
+// AREA exit clear. For vertical macros the width is the fixed one-screen zone
+// width.
 
 // Compute the area's unit-space extents for a macro. Shared by the zone overlay
 // AND the fit-to-view logic so both always agree on what "the whole area" is.
 // Returns { ax0, ax1, ay0, ay1 } in unit space (ay0 = ground = 0).
 export function zoneExtents(macro){
   const c = _consts;
-  const ec = c.entryClear ?? 3, xc = c.exitClear ?? 3;
+  const ec = c.hEntryClear ?? 3, xc = c.hExitClear ?? 3;
   const vertical = macro.orientation === 'vertical';
   const units = macro.units || [];
   let minX = Infinity, maxX = -Infinity, maxY = 0;
@@ -246,8 +251,8 @@ export function zoneExtents(macro){
   } else {
     // The box is the FULL AREA length (the level's horizontal budget), NOT the
     // macro's footprint. A single macro occupies only a slice of the area; the
-    // rest is filled by other macros at runtime. The entry/exit clear bands sit
-    // at the two ends of this full-length box.
+    // rest is filled by other macros at runtime. The area entry/exit clear
+    // bands sit at the two ends of this full-length box.
     ax0 = 0;
     ax1 = c.hBudgetUnits ?? 56;
     ay1 = c.hZoneHeightUnits ?? Math.max(maxY + 4, 11);
@@ -255,15 +260,16 @@ export function zoneExtents(macro){
   return { ax0, ax1, ay0: 0, ay1 };
 }
 
-// Content extents for FIT-TO-VIEW only: the actual terrain plus the entry/exit
-// clear bands, but NOT the full zone height. A horizontal area is one screen
-// tall (11.25u) yet its terrain sits in the bottom few rows — fitting to the
-// full box would center ~8u of empty air and make the zone look oversized.
-// Fitting to the content keeps the ground line near the canvas center so the
-// zone box reads correctly. The zone OVERLAY itself still draws at full height.
+// Content extents for FIT-TO-VIEW only: the actual terrain plus the area
+// entry/exit clear bands, but NOT the full zone height. A horizontal area is
+// one screen tall (11.25u) yet its terrain sits in the bottom few rows —
+// fitting to the full box would center ~8u of empty air and make the zone look
+// oversized. Fitting to the content keeps the ground line near the canvas
+// center so the zone box reads correctly. The zone OVERLAY itself still draws
+// at full height.
 export function contentExtents(macro){
   const c = _consts;
-  const ec = c.entryClear ?? 3, xc = c.exitClear ?? 3;
+  const ec = c.hEntryClear ?? 3, xc = c.hExitClear ?? 3;
   const vertical = macro.orientation === 'vertical';
   const units = macro.units || [];
   let minX = Infinity, maxX = -Infinity, maxY = 0;
@@ -278,13 +284,14 @@ export function contentExtents(macro){
   if (!isFinite(minX)){ minX = 0; maxX = 0; }   // empty macro
   let cx0, cx1, cy1;
   if (vertical){
-    // Full one-screen width; height = terrain top + exit clear band.
+    // Full one-screen width; height = terrain top + area exit clear band.
     cx0 = 0;
     cx1 = c.vZoneWidthUnits ?? Math.max(maxX, 22);
     cy1 = maxY + xc;
   } else {
     // Fit to the FULL AREA length (same as the zone box), so the whole 56-unit
-    // level — including both entry/exit clear bands at its ends — stays in frame.
+    // level — including both area entry/exit clear bands at its ends — stays
+    // in frame.
     cx0 = 0;
     cx1 = c.hBudgetUnits ?? 56;
     cy1 = Math.max(maxY + 1, 3);
@@ -296,7 +303,8 @@ function drawZoneBox(macro){
   const c = _consts;
   const ux = c.unitPxX, uy = c.unitPxY;
   const vertical = macro.orientation === 'vertical';
-  // Use orientation-specific clear values from the game's constants.
+  // Area-level clearance values from the game's constants (single source of
+  // truth in macros.js). Macros have no clears of their own.
   const ec = vertical ? c.vEntryClear : c.hEntryClear;
   const xc = vertical ? c.vExitClear : c.hExitClear;
   const { ax0, ax1, ay0, ay1 } = zoneExtents(macro);
@@ -311,49 +319,18 @@ function drawZoneBox(macro){
   ctx.strokeRect(bx0, byTop, bx1-bx0, byBot-byTop);
   ctx.restore();
 
-  // Entry / exit clear zones (shaded bands along the composition axis).
-  // Layout: [area-in][macro-in] ...blocks... [macro-out] ...rest of level... [area-out]
-  // macro-out sits RIGHT AFTER the last block; area-out sits at the very end.
+  // AREA entry / exit clear zones (shaded bands along the composition axis).
+  // Layout: [area-in] ...macros... [area-out]. No macro-level bands anymore —
+  // spacing between set-pieces is baked into the authored coordinates.
   const DARK = 'rgba(255,226,62,.18)';   // area clearance
-  const LIGHT = 'rgba(255,226,62,.10)';  // macro clearance
-  const macroEc = macro.entryClear ?? 2;
-  const macroXc = macro.exitClear ?? 2;
-  // Compute the macro's actual footprint end (raw coords, before offset).
-  let macroMaxX = 0;
-  for (const u of (macro.units || [])){
-    const x1 = (u.x ?? 0) + (u.kind === 'block' ? 1 : (u.width ?? 1));
-    if (x1 > macroMaxX) macroMaxX = x1;
-  }
-  const bodyOffset = ec + macroEc;   // where blocks start (after area-in + macro-in)
-  const macroEndX = bodyOffset + macroMaxX;   // where the last block ends
   if (vertical){
     // Vertical: entry at BOTTOM (may be 0), exit at TOP.
-    let macroMaxY = 0;
-    for (const u of (macro.units || [])){
-      const yTop = (u.y ?? 0) + (u.kind === 'block' ? (u.height ?? 1) : 1);
-      if (yTop > macroMaxY) macroMaxY = yTop;
-    }
-    const vBodyOffset = ec + macroEc;
-    const vMacroEndY = vBodyOffset + macroMaxY;
-    // Area entry (bottom) — only draw if ec > 0
     if (ec > 0){
       ctx.fillStyle = DARK;
       const [ex0, eyTop] = W(ax0*ux, ec*uy);
       const [ex1, eyBot] = W(ax1*ux, 0);
       ctx.fillRect(ex0, eyTop, ex1-ex0, eyBot-eyTop);
     }
-    // Macro entry — only draw if macroEc > 0
-    if (macroEc > 0){
-      ctx.fillStyle = LIGHT;
-      const [mx0, myTop] = W(ax0*ux, (ec+macroEc)*uy);
-      const [mx1, myBot] = W(ax1*ux, ec*uy);
-      ctx.fillRect(mx0, myTop, mx1-mx0, myBot-myTop);
-    }
-    // Macro exit (right after blocks)
-    ctx.fillStyle = LIGHT;
-    const [mxx0, mxyTop] = W(ax0*ux, (vMacroEndY+macroXc)*uy);
-    const [mxx1, mxyBot] = W(ax1*ux, vMacroEndY*uy);
-    ctx.fillRect(mxx0, mxyTop, mxx1-mxx0, mxyBot-mxyTop);
     // Area exit (top, at very end)
     ctx.fillStyle = DARK;
     const [ax0b, axyTop] = W(ax0*ux, ay1*uy);
@@ -365,14 +342,6 @@ function drawZoneBox(macro){
     const [enx0, enyTop] = W(0, ay1*uy);
     const [enx1, enyBot] = W(ec*ux, 0);
     ctx.fillRect(enx0, enyTop, enx1-enx0, enyBot-enyTop);    // area entry (left)
-    ctx.fillStyle = LIGHT;
-    const [menx0, menyTop] = W(ec*ux, ay1*uy);
-    const [menx1, menyBot] = W((ec+macroEc)*ux, 0);
-    ctx.fillRect(menx0, menyTop, menx1-menx0, menyBot-menyTop); // macro entry
-    ctx.fillStyle = LIGHT;
-    const [mexx0, mextop] = W((macroEndX+macroXc)*ux, ay1*uy);
-    const [mexx1, mexbot] = W(macroEndX*ux, 0);
-    ctx.fillRect(mexx0, mextop, mexx1-mexx0, mexbot-mextop);  // macro exit (right after blocks)
     ctx.fillStyle = DARK;
     const [aexx0, aextop] = W((ax1-xc)*ux, ay1*uy);
     const [aexx1, aexbot] = W(ax1*ux, 0);

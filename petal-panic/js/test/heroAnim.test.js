@@ -3,6 +3,9 @@
 // flight once a jump is initiated, not depend on vy.
 // Run: node js/test/heroAnim.test.js
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 
 // --- Minimal DOM stub (render.js → update.js builds placeholder frames at

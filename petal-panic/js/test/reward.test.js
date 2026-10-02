@@ -24,6 +24,9 @@
 //      screen.
 //   5. The final boss does not advance into a nonexistent level.
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 

@@ -18,6 +18,9 @@
 //
 // Only the test file is added — no source files are modified.
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 import { test, before } from 'node:test';
 

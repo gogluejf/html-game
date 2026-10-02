@@ -3,8 +3,6 @@
 // to the screen (dpr-aware, 16:9 letterbox, GAME_SCALE knob).
 
 import { VIEW_W, VIEW_H } from './core/view.js';
-import { update } from './systems/update.js';
-import { render } from './systems/render.js';
 import { loadImages } from './ui/screens.js';
 import { waitForFonts } from './ui/fonts.js';
 import * as CONSTS from './consts.js';
@@ -13,17 +11,6 @@ import { setMacros } from './world/macros.js';
 
 // Load screen assets (Home/Select) immediately on page load.
 loadImages();
-
-// Load macro data from macros/levels/*.json (canonical source). Falls back to
-// the inline MACROS object in macros.js when not served over HTTP.
-loadMacros()
-  .then((macros) => {
-    setMacros(macros);
-    console.info(`[macros] loaded ${Object.keys(macros).length} macros from macros/levels/`);
-  })
-  .catch((err) => {
-    console.warn(`[macros] using built-in fallback (${err.message})`);
-  });
 
 // Wait for the display fonts before the first frame so titles/prompts render
 // in Alfa Slab One / Lilita One / Pirata One (not a fallback). Resolves after
@@ -50,18 +37,12 @@ let accumulator = 0;
 let lastTime = 0;
 
 // --- Responsive fit (render-only; logic never sees display size) -----------
-// Sizing: canvas CSS box is fit-to-window with 16:9 preserved (letterboxed by
-// the black page background). Backing store = cssSize * dpr for crispness.
-// Transform: maps 960x540 logical coords onto the backing store each frame.
 function fitCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const aspect = VIEW_W / VIEW_H;
-
-  // Largest 16:9 box that fits the viewport (GAME_SCALE upscales beyond fit).
   const fitW = Math.min(window.innerWidth, window.innerHeight * aspect);
   const cssW = Math.floor(fitW * GAME_SCALE);
   const cssH = Math.floor(cssW / aspect);
-
   canvas.style.width = `${cssW}px`;
   canvas.style.height = `${cssH}px`;
   canvas.width = Math.round(cssW * dpr);
@@ -71,38 +52,51 @@ function fitCanvas() {
 window.addEventListener('resize', fitCanvas);
 fitCanvas();
 
-// Per-frame logical→screen transform (applied once; drawing uses 960x540).
 function applyTransform() {
   const sx = canvas.width / VIEW_W;
   const sy = canvas.height / VIEW_H;
   ctx.setTransform(sx, 0, 0, sy, 0, 0);
 }
 
-// --- Main loop --------------------------------------------------------------
-function frame(t) {
-  if (!lastTime) lastTime = t;
-  const delta = Math.min(MAX_FRAME, (t - lastTime) / 1000);
-  lastTime = t;
-
-  accumulator += delta;
-  while (accumulator >= FIXED_DT) {
-    update(FIXED_DT);
-    accumulator -= FIXED_DT;
+// --- Boot: load macros FIRST, then start the game ---------------------------
+// update.js calls buildWorld() at module scope, which requires MACROS to be
+// populated. We must await loadMacros() BEFORE importing update.js.
+async function boot() {
+  try {
+    const macros = await loadMacros();
+    setMacros(macros);
+    console.info(`[macros] loaded ${Object.keys(macros).length} macros from macros/levels/`);
+  } catch (err) {
+    console.error(`[macros] FAILED to load macros: ${err.message}`);
+    throw err;
   }
 
-  applyTransform();
-  render(ctx);
+  // Dynamic import AFTER macros are ready.
+  const { update } = await import('./systems/update.js');
+  const { render } = await import('./systems/render.js');
+
+  function frame(t) {
+    if (!lastTime) lastTime = t;
+    const delta = Math.min(MAX_FRAME, (t - lastTime) / 1000);
+    lastTime = t;
+    accumulator += delta;
+    while (accumulator >= FIXED_DT) {
+      update(FIXED_DT);
+      accumulator -= FIXED_DT;
+    }
+    applyTransform();
+    render(ctx);
+    requestAnimationFrame(frame);
+  }
+
+  window.setGameScale = setGameScale;
+  Object.defineProperty(window, 'TTL_SPEED', {
+    get: () => CONSTS.TTL_SPEED,
+    set: (v) => { CONSTS.TTL_SPEED = v; },
+    configurable: true,
+  });
+
   requestAnimationFrame(frame);
 }
 
-// Expose for console/debug tuning: window.setGameScale(2) (live, uniform upscale).
-window.setGameScale = setGameScale;
-
-// Expose TTL_SPEED for live tuning: window.TTL_SPEED = 0.5 (slower coin expiry).
-Object.defineProperty(window, 'TTL_SPEED', {
-  get: () => CONSTS.TTL_SPEED,
-  set: (v) => { CONSTS.TTL_SPEED = v; },
-  configurable: true,
-});
-
-requestAnimationFrame(frame);
+boot();

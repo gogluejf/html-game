@@ -14,6 +14,9 @@
 // The vertical up-only ratchet (camera never follows back down) is task 5.1's
 // concern and is tested there — not here.
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 

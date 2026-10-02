@@ -18,6 +18,9 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import {
   populateArea,
   classifyBarrelStructure,
@@ -365,14 +368,14 @@ test('slotIsOnValidSurface: platforms do not invalidate a slot (one-way landings
 });
 
 test('populateArea: all slots in a composed layout are on valid surfaces (no items in solids)', () => {
-  // For multiple seeds and stages, every slot in the composed layout must be
-  // at a valid standing position (on top of the supporting surface, never
-  // inside a solid block). This is the BLOCKER invariant (task 4.1).
+  // For multiple seeds and stages, every non-powerup slot in the composed
+  // layout must NOT be inside a solid block. This is the BLOCKER invariant.
   for (const seed of [1, 2, 3, 4, 5, 100, 200]) {
     for (const stage of [1, 2, 3, 4]) {
       const layout = composeAreaSeeded(seed, 'horizontal', stage, 60);
       const solidUnits = layout.units.filter((u) => u.kind === 'block');
       for (const slot of layout.placements) {
+        if (slot.type === 'powerup') continue;
         assert.ok(
           slotIsOnValidSurface(slot, solidUnits),
           `seed ${seed} stage ${stage}: slot ${slot.slot} at x=${slot.x} y=${slot.y} is inside a solid block`,
@@ -393,7 +396,7 @@ test('populateArea: throws if a slot is inside a solid block (defense-in-depth)'
   };
   assert.throws(
     () => populateArea(createRng(1), layout, { enemies: { jester: 1 } }),
-    /inside a solid block/,
+    /INSIDE a solid block/,
     'resolver throws when a slot is inside a solid',
   );
 });

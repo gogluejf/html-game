@@ -8,57 +8,55 @@
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 0
+      "x": 5
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 1
+      "x": 6
     },
     {
       "kind": "block",
       "height": 3,
       "y": 0,
-      "x": 2
+      "x": 7
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 3
+      "x": 8
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 4
+      "x": 9
     }
   ],
-  "entryClear": 5,
-  "exitClear": 5,
   "placements": [
     {
       "slot": "base",
-      "x": 0,
+      "x": 5,
       "type": "enemy",
       "y": 1
     },
     {
       "slot": "on-h2",
-      "x": 1,
+      "x": 6,
       "type": "enemy",
       "y": 2
     },
     {
       "slot": "on-h2b",
-      "x": 3,
+      "x": 8,
       "type": "enemy",
       "y": 2
     },
     {
       "slot": "peak-barrel",
-      "x": 2,
+      "x": 7,
       "type": "barrel",
       "y": 3
     }

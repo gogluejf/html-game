@@ -7,6 +7,9 @@
 // We assert behavior invariants (pass-through, landing, no-jump-on-drop),
 // not pixel offsets or tuning constants.
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';

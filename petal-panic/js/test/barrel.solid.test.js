@@ -3,6 +3,9 @@
 // and a destroyed barrel stops blocking.
 // Run: node js/test/barrel.solid.test.js
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 
 // --- DOM stub + event-listener capture so we can inject key input ----------
@@ -60,7 +63,9 @@ const heroBottom = () => hero.y + hero.h;
 console.log(`Barrel at x=${barrel.x}, top=${barrel.y}`);
 
 ok('hero cannot pass through a barrel (blocked like a platform)', () => {
-  placeHero(barrel.x - hero.w - 40, FLOOR_TOP - hero.h);
+  // Place hero at the same elevation as the barrel (it may be on a block/platform).
+  const heroY = barrel.y - hero.h;
+  placeHero(barrel.x - hero.w - 40, heroY);
   press('KeyD'); // hold right
   const startX = hero.x;
   for (let i = 0; i < 90; i++) U.update(DT);

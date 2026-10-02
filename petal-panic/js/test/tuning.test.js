@@ -18,6 +18,9 @@
 // import from there. These tests assert the values are concrete, in-range, and
 // wired to their single owner — no magic numbers left uncited.
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 

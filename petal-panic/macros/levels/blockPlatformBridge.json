@@ -8,74 +8,80 @@
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 0
+      "x": 2
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 1
+      "x": 3
     },
     {
       "kind": "platform",
       "width": 3,
       "y": 2,
-      "x": 4
+      "x": 6
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 9
+      "x": 11
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 10
+      "x": 12
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "y": 0,
+      "x": 0,
+      "_tag": "__dump_test__"
     }
   ],
-  "entryClear": 2,
-  "exitClear": 2,
   "placements": [
     {
       "slot": "on-h1",
-      "x": 0,
+      "x": 2,
       "type": "enemy",
       "y": 1
     },
     {
       "slot": "on-h2",
-      "x": 1,
+      "x": 3,
       "type": "enemy",
       "y": 2
     },
     {
       "slot": "on-bridge",
-      "x": 5,
+      "x": 7,
       "type": "enemy",
       "y": 3
     },
     {
       "slot": "on-bridge-pu",
-      "x": 6,
+      "x": 8,
       "type": "powerup",
       "y": 3
     },
     {
       "slot": "on-far-h2",
-      "x": 10,
+      "x": 12,
       "type": "barrel",
       "y": 1
     },
     {
       "slot": "on-far-h1",
-      "x": 11,
+      "x": 13,
       "type": "barrel",
       "y": 0
     }
   ],
   "variations": [],
   "follows": [],
-  "followedBy": []
+  "followedBy": [],
+  "_el": {}
 }

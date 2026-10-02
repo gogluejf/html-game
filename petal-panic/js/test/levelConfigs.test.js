@@ -32,6 +32,9 @@ import {
   buildLevelZones,
   buildAllZoneTerrain,
 } from '../world/level.js';
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { composeArea, MACROS } from '../world/macros.js';
 import { createRng } from '../world/terrain.js';
 

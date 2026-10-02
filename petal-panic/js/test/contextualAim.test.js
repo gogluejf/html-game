@@ -6,6 +6,9 @@
 // section drives the real readInput → tryFire pipeline with stubbed DOM
 // listeners to prove the resolved aim actually reaches the projectile spawn.
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 
 // --- Minimal DOM stub (must run BEFORE importing update.js) --------------------

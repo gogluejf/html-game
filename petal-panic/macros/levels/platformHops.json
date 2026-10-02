@@ -8,45 +8,43 @@
       "kind": "platform",
       "width": 2,
       "y": 1,
-      "x": 0
+      "x": 3
     },
     {
       "kind": "platform",
       "width": 2,
       "y": 2,
-      "x": 4
+      "x": 7
     },
     {
       "kind": "platform",
       "width": 2,
       "y": 3,
-      "x": 8
+      "x": 11
     }
   ],
-  "entryClear": 3,
-  "exitClear": 3,
   "placements": [
     {
       "slot": "on-t1",
-      "x": 0,
+      "x": 3,
       "type": "enemy",
       "y": 2
     },
     {
       "slot": "on-t2",
-      "x": 4,
+      "x": 7,
       "type": "enemy",
       "y": 3
     },
     {
       "slot": "on-t3",
-      "x": 8,
+      "x": 11,
       "type": "powerup",
       "y": 4
     },
     {
       "slot": "on-t1-barrel",
-      "x": 1,
+      "x": 4,
       "type": "barrel",
       "y": 2
     }

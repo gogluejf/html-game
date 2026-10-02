@@ -14,6 +14,9 @@
 //   5. Zones share no geometry (independent sealed worlds)
 //   6. Exactly one ordinary area is vertical, and it is never 1
 
+import { loadTestMacros } from './_macroSetup.mjs';
+loadTestMacros();
+
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
