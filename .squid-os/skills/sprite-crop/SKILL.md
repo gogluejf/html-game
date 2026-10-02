@@ -83,20 +83,19 @@ python3 <working-dir>/.squid-os/skills/sprite-crop/scripts/record_crop.py \
 ```
 Each entity's frames carry their bbox inline: `{name, anim, frames:[{file,row,col,bbox}]}`. All legacy grid fields (`row_y`, `col_x`, `frame_size`, `bg_color`, `bg_tol`) are dropped on record.
 
-### 6. Sprite editor (on demand, for crop verification)
+### 6. Sprite editor (served app)
 
-The editor is a single-file HTML app that shows every sheet with its recorded
-crop bboxes overlaid — use it to verify cuts after a crop pass. It scans the
-one-json-per-sheet tree and groups by label subfolder.
+The editor is a multi-file ES module app served by the local server. It loads
+per-sheet JSONs at runtime — no render step needed.
 
 ```bash
-python3 <working-dir>/.squid-os/skills/sprite-crop/scripts/render_editor.py [project ...]
-# reads:   <working-dir>/.squid-os/sprite-sheets/<project>/<label>/*.json
-# outputs: <working-dir>/.squid-os/sprite-gen/editor-<project>.html
+bash <working-dir>/.squid-os/skills/sprite-crop/scripts/server/server.sh go
+# → http://localhost:8766
 ```
 
-Template: `skills/sprite-crop/templates/editor-template.html`. Re-run after any
-sheet change (new crops, bbox edits) and open the generated file to inspect.
+Open: `http://localhost:8766/.squid-os/skills/sprite-crop/scripts/server/index.html?project=<name>`
+
+Both projects load instantly by changing the `?project=` param. No re-render.
 
 ## Rules
 - **Frames are clusters, not cells.** Ownership first, rectangles second. Never treat a virtual grid or measured separator as a clipping boundary — limbs/attacks may cross into neighbor territory and must stay whole.
@@ -181,10 +180,8 @@ Skill actions:
 
 ### Scripts
 - [extract_frames.py](scripts/extract_frames.py) — Executable script
-- [render_editor.py](scripts/render_editor.py) — Renders editor-<project>.html from state JSON + template
-
-### Templates
-- [editor-template.html](templates/editor-template.html) — Editor UI with `/*__MANIFEST__*/` placeholder
+- [server/](scripts/server/) — Served sprite editor app (multi-file ES modules + Python server)
+- [record_tuning.py](scripts/record_tuning.py) — CLI: read/write/list/clear tuning data in sheet JSONs
 
 ### References
 - [extraction-design.md](references/extraction-design.md) — Additional documentation

@@ -49,7 +49,7 @@ cmd_start() {
 
   cd "$DIR" || exit 1
   # Detach fully: new session (setsid), ignore HUP (nohup), redirect IO, then disown.
-  nohup setsid python3 -m http.server "$PORT" > "$LOGFILE" 2>&1 &
+  nohup setsid python3 "$SCRIPT_DIR/server.py" "$PORT" > "$LOGFILE" 2>&1 &
   local pid=$!
   disown "$pid" 2>/dev/null || true
   echo "$pid" > "$PIDFILE"

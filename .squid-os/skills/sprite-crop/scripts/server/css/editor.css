@@ -16,6 +16,8 @@
   .ent.on{background:rgba(255,226,62,.12);color:#fff;}
   .ent .cnt{color:var(--faint);font-size:12px;white-space:nowrap;}
   .ent.on .cnt{color:var(--yel);}
+  /* unsaved-changes indicator (toggled by save.js updateDirtyDots) */
+  .dirty-dot{color:#ff9f43;margin-left:4px;font-size:0.7em;}
   /* character sub-group header */
   .char{font-size:13px;color:var(--acc);margin:8px 0 2px;padding-left:4px;letter-spacing:.5px;}
   /* animation row (indented under character) */
@@ -39,6 +41,10 @@
   .tbtn.tog.on svg{stroke:var(--yel);}
   .tbtn:disabled{opacity:.3;cursor:not-allowed;border-color:var(--line);color:var(--faint);background:var(--panel);}
   .tbtn:disabled:hover{border-color:var(--line);color:var(--faint);}
+  /* SAVE button states: disabled (clean) / active (dirty, unsaved changes) / saved-flash */
+  #saveBtn:disabled{opacity:.4;cursor:default;}
+  #saveBtn.active{border-color:var(--grn);color:var(--grn);box-shadow:0 0 10px rgba(90,255,138,.25);}
+  #saveBtn.saved-flash{background:var(--grn);color:#000;border-color:var(--grn);transition:all .3s;}
   .reset-opt:hover{background:rgba(62,240,255,.12);color:var(--acc);}
   /* ---------- stage ---------- */
   #stage{flex:1;position:relative;overflow:hidden;background:#0a0c14;}

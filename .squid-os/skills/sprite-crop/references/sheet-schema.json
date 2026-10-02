@@ -112,6 +112,41 @@
           "items": {
             "$ref": "#/$defs/frame"
           }
+        },
+        "speed": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60,
+          "description": "Playback speed in frames per second."
+        },
+        "playback": {
+          "type": "string",
+          "enum": ["loop", "once"],
+          "description": "Whether the animation loops or plays once."
+        },
+        "collision": {
+          "type": "object",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "w": { "type": "number" },
+            "h": { "type": "number" }
+          },
+          "required": ["x", "y", "w", "h"],
+          "description": "Collision box relative to the frame origin."
+        },
+        "pivot": {
+          "type": "object",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" }
+          },
+          "required": ["x", "y"],
+          "description": "Rotation/anchor pivot point."
+        },
+        "markers": {
+          "type": "array",
+          "description": "Named marker points (e.g. weapon muzzle, feet)."
         }
       }
     },
@@ -141,6 +176,33 @@
           "maxItems": 4,
           "items": { "type": "integer" },
           "description": "Crop bounding box [x, y, w, h] in source-sheet pixels."
+        },
+        "offset": {
+          "type": "object",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" }
+          },
+          "required": ["x", "y"],
+          "description": "Per-frame positional offset from the entity origin."
+        },
+        "scale": {
+          "type": "object",
+          "properties": {
+            "sx": { "type": "number" },
+            "sy": { "type": "number" }
+          },
+          "required": ["sx", "sy"],
+          "description": "Per-frame non-uniform scale factors."
+        },
+        "boxes": {
+          "type": "array",
+          "description": "Per-frame hitbox/collision boxes."
+        },
+        "durUnits": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Duration of this frame in time units (overrides global speed)."
         }
       }
     }
