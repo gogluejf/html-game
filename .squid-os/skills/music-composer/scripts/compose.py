@@ -660,6 +660,11 @@ def cmd_audit(a):
                 if bars[i] == bars[i + 1] and bars[i + 2] == bars[i + 3] \
                    and bars[i] != bars[i + 2]:
                     errors.append(f"D(Law4): lead '{sec}' bars {i+1}-{i+4} are a repeated 2-bar cell")
+        # Echo detection: bar N+2 identical to bar N (A-B-A-C call repeating).
+        if len(bars) >= 3:
+            for i in range(len(bars) - 2):
+                if bars[i + 2] == bars[i]:
+                    errors.append(f"D(Law4): lead '{sec}' bar {i+3} repeats bar {i+1} (echo)")
     # Bass gets the same treatment (repeated bass cells dominate the mix).
     for sec in sorted(form_secs):
         bars = parts.get("bass", {}).get(sec)

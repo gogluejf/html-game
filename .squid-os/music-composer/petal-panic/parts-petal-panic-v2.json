@@ -3,7 +3,7 @@
   "genre": "Punk Hardcore",
   "vibe": "Way faster hardcore-punk greatest hit in A major at 208 BPM \u2014 driving eighth-note square lead, pounding punk kick-snare engine, sixteenth-hat peak with ghost snare",
   "createdAt": "2026-10-02T16:49:56.159473",
-  "revision": 10,
+  "revision": 11,
   "drumKit": {
     "none": [
       {
@@ -767,11 +767,11 @@
         null
       ],
       [
-        "D5",
+        "A5",
         null,
         null,
         null,
-        "E5",
+        "G#5",
         null,
         "F#5",
         null,
@@ -785,13 +785,13 @@
         null
       ],
       [
-        "G#5",
+        "E5",
         null,
         null,
         null,
-        "A5",
+        "D5",
         null,
-        null,
+        "C#5",
         null,
         null,
         null,
