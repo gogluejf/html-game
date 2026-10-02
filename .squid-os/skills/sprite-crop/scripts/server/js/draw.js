@@ -216,10 +216,11 @@ export function draw(){
       const [mx, my] = s2c(m.x, m.y);
       const selected = app._selectedBox === 'marker_'+mi;
       const panelHl = app._panelHighlight === 'marker_'+mi;
+      const hovered = app.hover && app.hover.box === 'marker_'+mi;
       ctx.save();
       // radius circle
       if (m.radiusOn && m.radius > 0){
-        const hl = selected || panelHl;
+        const hl = selected || panelHl || hovered;
         if (hl){
           ctx.fillStyle = hexA(COL_MARKER, 0.15);
           ctx.beginPath();
@@ -235,7 +236,7 @@ export function draw(){
         ctx.setLineDash([]);
       }
       // dot
-      const dotR = selected ? 7 : 5;
+      const dotR = selected ? 7 : (hovered ? 6.5 : 5);
       ctx.fillStyle = COL_MARKER;
       ctx.beginPath();
       ctx.arc(mx, my, dotR, 0, Math.PI*2);
@@ -243,18 +244,20 @@ export function draw(){
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 2;
       ctx.stroke();
-      // selection ring
-      if (selected || panelHl){
+      // selection / hover ring
+      if (selected || panelHl || hovered){
         ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = hovered && !selected && !panelHl ? 1 : 1.5;
+        ctx.setLineDash(hovered && !selected && !panelHl ? [3,3] : []);
         ctx.beginPath();
         ctx.arc(mx, my, 12, 0, Math.PI*2);
         ctx.stroke();
+        ctx.setLineDash([]);
       }
       // radius resize handle at 3 o'clock (visible when paused + radius on)
       if (m.radiusOn && m.radius > 0 && !st.playing){
         const [hx, hy] = s2c(m.x + m.radius, m.y);
-        const hot = (selected || panelHl);
+        const hot = (selected || panelHl || hovered);
         ctx.fillStyle = hot ? '#fff' : COL_MARKER;
         ctx.fillRect(hx-4, hy-4, 8, 8);
         ctx.strokeStyle = '#fff';

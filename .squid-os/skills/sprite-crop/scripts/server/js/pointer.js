@@ -98,6 +98,7 @@ function finishHover(prev){
   const changed = JSON.stringify(prev) !== JSON.stringify(app.hover);
   if (changed) draw();
   if (app.hover && app.hover.box==='pivot') cv.style.cursor = 'grab';
+  else if (app.hover && app.hover.box && app.hover.box.startsWith('marker_')) cv.style.cursor = 'move';
   else if (app.hover && app.hover.handle){
     const c = { nw:'nwse-resize', se:'nwse-resize', ne:'nesw-resize', sw:'nesw-resize',
                 n:'ns-resize', s:'ns-resize', e:'ew-resize', w:'ew-resize' }[app.hover.handle];
