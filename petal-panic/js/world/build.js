@@ -285,25 +285,35 @@ export function captureAreaMap(h) {
         x: p.x,
         y: p.y,
         type: p.type,
+        // Which authored macro this slot belongs to (for the overview tool's
+        // per-macro grouping). placementId is the 0-based macro sequence index;
+        // `macro` is its id. Both are kept: placementId distinguishes REPEATED
+        // instances of the same macro (the tool groups by instance, not id).
+        macro: layout.macros?.[p.placementId] ?? null,
+        placementId: p.placementId,
       })),
-      // R4.1: placedUnits carry the 2D GRID layout in unit space — (x, y)
-      // plus width/height in unit counts — so the dump fully reconstructs each
-      // area's terrain including stacked units. `x`/`y` are the authoritative
-      // grid positions (convert with the stored unitPxX/unitPxY header).
-      placedUnits: (layout.units ?? []).map((u) => ({
-        kind: u.kind,
-        x: u.aabb.x,
-        y: u.kind === 'platform' && layout.orientation !== 'vertical' ? (u.tier ?? 0) : u.aabb.y,
-        w: u.aabb.w,
-        // R5.2: platforms carry their THIN draw height (fractional units) so
-        // the dump distinguishes a thin platform from a solid block purely
-        // from the data; blocks keep full integer heights. The logical
-        // footprint (h=1 unit of clearance space) is unchanged.
-        h: u.kind === 'platform' ? PLATFORM_DRAW_H / UNIT_PX_Y : u.aabb.h,
-        tier: u.tier,
-        height: u.height,
-        oneWay: !!u.oneWay,
-      })),
+        // R4.1: placedUnits carry the 2D GRID layout in unit space — (x, y)
+        // plus width/height in unit counts — so the dump fully reconstructs each
+        // area's terrain including stacked units. `x`/`y` are the authoritative
+        // grid positions (convert with the stored unitPxX/unitPxY header).
+        // placementId distinguishes REPEATED instances of the same macro id
+        // (the overview tool groups by instance, not id).
+        placedUnits: (layout.units ?? []).map((u) => ({
+          kind: u.kind,
+          x: u.aabb.x,
+          y: u.kind === 'platform' && layout.orientation !== 'vertical' ? (u.tier ?? 0) : u.aabb.y,
+          w: u.aabb.w,
+          // R5.2: platforms carry their THIN draw height (fractional units) so
+          // the dump distinguishes a thin platform from a solid block purely
+          // from the data; blocks keep full integer heights. The logical
+          // footprint (h=1 unit of clearance space) is unchanged.
+          h: u.kind === 'platform' ? PLATFORM_DRAW_H / UNIT_PX_Y : u.aabb.h,
+          tier: u.tier,
+          height: u.height,
+          oneWay: !!u.oneWay,
+          macro: layout.macros?.[u.placementId] ?? null,
+          placementId: u.placementId,
+        })),
     });
   }
 }

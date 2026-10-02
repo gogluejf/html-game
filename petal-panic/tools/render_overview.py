@@ -41,8 +41,11 @@ def render(trace_path: str, out_path: str):
     MARGIN = 50
     GAP = 10
 
+    # Size the canvas for ALL horizontal areas (not a fixed 3) so none are
+    # dropped or drawn off-canvas when a level has more than 3 horizontal zones.
+    n_horiz = max(1, len(horiz_areas))
     CANVAS_W = MARGIN + H_RENDER_W + GAP + V_RENDER_W + 10
-    CANVAS_H = max(MARGIN * 2 + V_RENDER_H, MARGIN + H_RENDER_H * 3 + GAP * 2 + 10)
+    CANVAS_H = max(MARGIN * 2 + V_RENDER_H, MARGIN + H_RENDER_H * n_horiz + GAP * (n_horiz - 1) + 10)
 
     img = Image.new("RGB", (CANVAS_W, CANVAS_H), (0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -57,8 +60,8 @@ def render(trace_path: str, out_path: str):
     # fall back to the historical unitPxY/8 derivation.
     plat_thick_px = h_ref.get("platformDrawH") or max(2, round(UNIT_PX_Y / 8))
 
-    # --- Horizontal rows (left side) ---
-    for row_idx, area_id in enumerate(horiz_areas[:3]):
+    # --- Horizontal rows (left side) — draw ALL of them, not just the first 3 ---
+    for row_idx, area_id in enumerate(horiz_areas):
         info = area_map[area_id]
         units = info.get("placedUnits", [])
         h_w = info["zoneWidthPx"]
@@ -84,6 +87,47 @@ def render(trace_path: str, out_path: str):
         # PURE COORDINATE mapper: row N -> floor - N*48*scale. No +1 here:
         # callers pass the exact line they want (block top, slot surface, platform face).
         sy = lambda tier: floor_y - int(tier * UNIT_PX_Y * scale)
+
+        # Per-macro-instance grouping: units/slots carry placementId (0-based
+        # macro sequence index). The composer emits them in placement order with
+        # NON-DECREASING placementId, so each instance is a contiguous block in
+        # file order. Group by INSTANCE (not id) — ids repeat (e.g. easyPlatformHop
+        # placed twice), and grouping by id would merge separate instances into one
+        # span (vanishing labels / giant bands). Old dumps without placementId fall
+        # back to no per-macro annotation.
+        has_pid = any(u.get("placementId") is not None for u in units)
+        if has_pid:
+            instances = []  # list of {pid, label} in file order
+            for u in units:
+                pid = u.get("placementId")
+                if instances and instances[-1]["pid"] == pid:
+                    continue
+                instances.append({"pid": pid, "label": u.get("macro") or f"#{pid}"})
+            # Map each unit/slot to its instance index by walking the ordered stream.
+            def inst_index(pid):
+                for i, inst in enumerate(instances):
+                    if inst["pid"] == pid:
+                        return i
+                return -1
+            # Build per-instance x-extents from units + slots.
+            inst_x0 = [None] * len(instances)
+            inst_x1 = [None] * len(instances)
+            def upd(i, x0, x1):
+                if i < 0: return
+                inst_x0[i] = min(inst_x0[i], x0) if inst_x0[i] is not None else x0
+                inst_x1[i] = max(inst_x1[i], x1) if inst_x1[i] is not None else x1
+            for u in units:
+                i = inst_index(u.get("placementId"))
+                upd(i, u["x"] * UNIT_PX_X, u["x"] * UNIT_PX_X + u["w"] * UNIT_PX_X)
+            for s in info.get("slots", []):
+                i = inst_index(s.get("placementId"))
+                upd(i, s["x"] * UNIT_PX_X, s["x"] * UNIT_PX_X + UNIT_PX_X)
+            for i, inst in enumerate(instances):
+                if inst_x0[i] is None:
+                    continue
+                bx0 = sx(inst_x0[i])
+                draw.line([bx0, y_top, bx0, y_bot - 1], fill=(70, 70, 70), width=1)
+                draw.text((bx0 + 3, y_top + 2), inst["label"], fill=(150, 150, 150), font=font)
 
         for u in units:
             kind = u.get("kind")
@@ -149,6 +193,42 @@ def render(trace_path: str, out_path: str):
 
             sx = lambda gx: v_x_left + x_offset + int(((gx - min_x) / v_w) * V_RENDER_W)
             sy = lambda gy: v_floor_y - int((gy / v_h) * V_RENDER_H)
+
+            # Per-macro-instance grouping (vertical): group by placementId
+            # (INSTANCE), not id — ids repeat across stacked instances. Units are
+            # emitted in placement order (non-decreasing placementId), so each
+            # instance is a contiguous block. Draw a faint divider at each
+            # instance's content top + a gray id label at the band's left.
+            has_pid = any(u.get("placementId") is not None for u in units)
+            if has_pid:
+                instances = []
+                for u in units:
+                    pid = u.get("placementId")
+                    if instances and instances[-1]["pid"] == pid:
+                        continue
+                    instances.append({"pid": pid, "label": u.get("macro") or f"#{pid}"})
+                def inst_index(pid):
+                    for i, inst in enumerate(instances):
+                        if inst["pid"] == pid:
+                            return i
+                    return -1
+                inst_top = [None] * len(instances)
+                def upd(i, ytop):
+                    if i < 0: return
+                    inst_top[i] = max(inst_top[i], ytop) if inst_top[i] is not None else ytop
+                for u in units:
+                    upd(inst_index(u.get("placementId")), (u["y"] + u["h"]) * UNIT_PX_Y)
+                for s in info.get("slots", []):
+                    upd(inst_index(s.get("placementId")), s.get("y", 0) * UNIT_PX_Y + UNIT_PX_Y)
+                safe_top = v_y_top + 20
+                for i, inst in enumerate(instances):
+                    if inst_top[i] is None:
+                        continue
+                    band_top = sy(inst_top[i])
+                    if band_top < safe_top:
+                        band_top = safe_top
+                    draw.line([v_x_left, band_top, v_x_right - 1, band_top], fill=(70, 70, 70), width=1)
+                    draw.text((v_x_left + 3, band_top + 2), inst["label"], fill=(150, 150, 150), font=font)
 
             for u in units:
                 kind = u.get("kind")
