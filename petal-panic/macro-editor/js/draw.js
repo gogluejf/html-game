@@ -95,11 +95,14 @@ function drawGrid(){
   ctx.beginPath(); ctx.moveTo(gx0, gy0); ctx.lineTo(gx1, gy0); ctx.stroke();
 
   // ---------- origin axes (like the sprite editor) ----------
-  // The x-axis is the ground line (row 0) drawn above; here we draw the y-axis
-  // (col 0) and a "0,0" origin marker + direction hints so you can see exactly
-  // where bottom-left (0,0) lands. This makes the zone box's bottom/left edges
-  // verifiable against the grid instead of floating in nowhere.
-  const [ox, oy] = W(0, 0);   // world origin on screen
+  // The y-axis (x=0) sits AFTER the area-entry + macro-entry clearance zones,
+  // at the first block's left edge. This makes "0,0" land where the playable
+  // area actually begins, not at the far-left edge of the reserved spawn zone.
+  const c = _consts;
+  const areaEc = c.entryClear ?? 3;
+  const macroEc = app.cur?.st?.entryClear ?? 2;
+  const bodyOriginX = (areaEc + macroEc) * c.unitPxX;   // world-x where blocks start
+  const [ox, oy] = W(bodyOriginX, 0);   // body origin on screen
   if (ox >= -40 && ox <= app.cssW + 40 && oy >= -40 && oy <= app.cssH + 40){
     ctx.save();
     // y-axis (col 0) through the visible range
@@ -126,15 +129,21 @@ function drawMacro(macro){
   const units = macro.units || [];
   const placements = macro.placements || [];
 
-  // blocks first (behind platforms)
+  // Offset: area entry clear + macro entry clear. The y-axis (x=0) sits at this
+  // offset — after both clearance zones, at the first block's left edge.
+  const areaEc = _consts.entryClear ?? 3;
+  const macroEc = macro.entryClear ?? 2;
+  const bodyOffset = areaEc + macroEc;
+
+  // blocks (offset by bodyOffset so they start AFTER the clearance zones)
   for (const u of units){
     if (u.kind !== 'block') continue;
-    const x = u.x ?? 0;
+    const x = (u.x ?? 0) + bodyOffset;
     const y = u.y ?? 0;
     const h = u.height ?? 1;
     const x0 = x * ux, y0 = y * uy, x1 = (x+1)*ux, y1 = (y+h)*uy;
-    const [sx0, syTop] = W(x0, y1);   // top-left (higher y = up)
-    const [sx1, syBot] = W(x1, y0);   // bottom-right
+    const [sx0, syTop] = W(x0, y1);
+    const [sx1, syBot] = W(x1, y0);
     ctx.fillStyle = 'rgba(90,255,138,.28)';
     ctx.fillRect(sx0, syTop, sx1-sx0, syBot-syTop);
     ctx.strokeStyle = COL_BLOCK;
@@ -145,13 +154,13 @@ function drawMacro(macro){
     }
   }
 
-  // platforms (thin surface at the top of their occupied row)
+  // platforms (offset by bodyOffset)
   for (const u of units){
     if (u.kind !== 'platform') continue;
-    const x = u.x ?? 0;
+    const x = (u.x ?? 0) + bodyOffset;
     const y = u.y ?? 0;
     const w = u.width ?? 1;
-    const faceY = (y+1) * uy;          // landing face elevation
+    const faceY = (y+1) * uy;
     const x0 = x * ux, x1 = (x+w)*ux;
     const [sx0, syFace] = W(x0, faceY);
     const [sx1] = W(x1, faceY);
@@ -165,13 +174,13 @@ function drawMacro(macro){
     }
   }
 
-  // slots (dots) — type-colored, sitting one level above their support
+  // slots (offset by bodyOffset)
   if (app.show.slots){
     for (const p of placements){
-      const col = p.x ?? 0;
-      const row = p.y ?? 0;             // the surface elevation the slot rests ON
+      const col = (p.x ?? 0) + bodyOffset;
+      const row = p.y ?? 0;
       const cx = (col + 0.5) * ux;
-      const cy = (row + 0.5) * uy;      // center of the cell directly above that surface
+      const cy = (row + 0.5) * uy;
       const [sx, sy] = W(cx, cy);
       const color = SLOT_COLORS[p.type] || '#fff';
       ctx.beginPath();
@@ -215,8 +224,12 @@ export function zoneExtents(macro){
     ax1 = c.vZoneWidthUnits ?? Math.max(maxX, 22);
     ay1 = c.vBudgetUnits ?? Math.max(maxY + ec + xc, 56);
   } else {
+    // The box is the FULL AREA length (the level's horizontal budget), NOT the
+    // macro's footprint. A single macro occupies only a slice of the area; the
+    // rest is filled by other macros at runtime. The entry/exit clear bands sit
+    // at the two ends of this full-length box.
     ax0 = 0;
-    ax1 = c.hBudgetUnits ?? Math.max(maxX + ec + xc, 56);
+    ax1 = c.hBudgetUnits ?? 56;
     ay1 = c.hZoneHeightUnits ?? Math.max(maxY + 4, 11);
   }
   return { ax0, ax1, ay0: 0, ay1 };
@@ -250,12 +263,10 @@ export function contentExtents(macro){
     cx1 = c.vZoneWidthUnits ?? Math.max(maxX, 22);
     cy1 = maxY + xc;
   } else {
-    // Fit to the ACTUAL terrain span (plus a little breathing room), NOT the
-    // 56u composition budget — fitting the full budget zooms way out and makes
-    // the zone box look like a giant slab. A single macro's entry/exit markers
-    // sit within this span, so they stay in frame too.
-    cx0 = Math.min(0, minX) - 1;
-    cx1 = maxX + 1;
+    // Fit to the FULL AREA length (same as the zone box), so the whole 56-unit
+    // level — including both entry/exit clear bands at its ends — stays in frame.
+    cx0 = 0;
+    cx1 = c.hBudgetUnits ?? 56;
     cy1 = Math.max(maxY + 1, 3);
   }
   return { ax0: cx0, ax1: cx1, ay0: 0, ay1: cy1 };
@@ -279,26 +290,48 @@ function drawZoneBox(macro){
   ctx.restore();
 
   // Entry / exit clear zones (shaded bands along the composition axis).
-  // BOTH corners come from W() so the band's position AND size scale together
-  // with zoom/pan — matching how the grid and units are drawn. (Previously the
-  // size was a raw world-pixel value that never zoomed, so the band detached
-  // from the grid whenever you scrolled.)
-  ctx.fillStyle = 'rgba(90,255,138,.10)';
+  // Layout: [area-in][macro-in] ...blocks... [macro-out][area-out]
+  // All bands are dark yellow; macro bands are slightly lighter to distinguish.
+  const DARK = 'rgba(255,226,62,.18)';   // area clearance
+  const LIGHT = 'rgba(255,226,62,.10)';  // macro clearance
+  const macroEc = macro.entryClear ?? 2;
+  const macroXc = macro.exitClear ?? 2;
   if (vertical){
-    // Vertical composes along Y: entry at the BOTTOM, exit at the TOP.
+    // Vertical: entry at BOTTOM, exit at TOP.
+    ctx.fillStyle = DARK;
     const [ex0, eyTop] = W(ax0*ux, ec*uy);
     const [ex1, eyBot] = W(ax1*ux, 0);
-    ctx.fillRect(ex0, eyTop, ex1-ex0, eyBot-eyTop);          // entry band (bottom)
-    const [xx0, xyTop] = W(ax0*ux, ay1*uy);
+    ctx.fillRect(ex0, eyTop, ex1-ex0, eyBot-eyTop);          // area entry (bottom)
+    ctx.fillStyle = LIGHT;
+    const [mx0, myTop] = W(ax0*ux, (ec+macroEc)*uy);
+    const [mx1, myBot] = W(ax1*ux, ec*uy);
+    ctx.fillRect(mx0, myTop, mx1-mx0, myBot-myTop);          // macro entry
+    ctx.fillStyle = LIGHT;
+    const [xx0, xyTop] = W(ax0*ux, (ay1-xc-macroXc)*uy);
     const [xx1, xyBot] = W(ax1*ux, (ay1-xc)*uy);
-    ctx.fillRect(xx0, xyTop, xx1-xx0, xyBot-xyTop);          // exit band (top)
+    ctx.fillRect(xx0, xyTop, xx1-xx0, xyBot-xyTop);          // macro exit
+    ctx.fillStyle = DARK;
+    const [ax0b, axyTop] = W(ax0*ux, ay1*uy);
+    const [ax1b, axyBot] = W(ax1*ux, (ay1-xc)*uy);
+    ctx.fillRect(ax0b, axyTop, ax1b-ax0b, axyBot-axyTop);    // area exit (top)
   } else {
+    // Horizontal: entry at LEFT, exit at RIGHT.
+    ctx.fillStyle = DARK;
     const [enx0, enyTop] = W(0, ay1*uy);
     const [enx1, enyBot] = W(ec*ux, 0);
-    ctx.fillRect(enx0, enyTop, enx1-enx0, enyBot-enyTop);    // entry band (left)
-    const [exx0, exyTop] = W((ax1-xc)*ux, ay1*uy);
-    const [exx1, exyBot] = W(ax1*ux, 0);
-    ctx.fillRect(exx0, exyTop, exx1-exx0, exyBot-exyTop);    // exit band (right)
+    ctx.fillRect(enx0, enyTop, enx1-enx0, enyBot-enyTop);    // area entry (left)
+    ctx.fillStyle = LIGHT;
+    const [menx0, menyTop] = W(ec*ux, ay1*uy);
+    const [menx1, menyBot] = W((ec+macroEc)*ux, 0);
+    ctx.fillRect(menx0, menyTop, menx1-menx0, menyBot-menyTop); // macro entry
+    ctx.fillStyle = LIGHT;
+    const [mexx0, mextop] = W((ax1-xc-macroXc)*ux, ay1*uy);
+    const [mexx1, mexbot] = W((ax1-xc)*ux, 0);
+    ctx.fillRect(mexx0, mextop, mexx1-mexx0, mexbot-mextop);  // macro exit
+    ctx.fillStyle = DARK;
+    const [aexx0, aextop] = W((ax1-xc)*ux, ay1*uy);
+    const [aexx1, aexbot] = W(ax1*ux, 0);
+    ctx.fillRect(aexx0, aextop, aexx1-aexx0, aexbot-aextop);  // area exit (right)
   }
 
   // Entry marker "X" (where the hero spawns) + exit flag — both on the GROUND.
