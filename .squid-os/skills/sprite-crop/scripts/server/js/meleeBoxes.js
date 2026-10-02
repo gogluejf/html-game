@@ -5,7 +5,7 @@ import { curFrameIdx, editingLocked } from './geometry.js';
 import { draw } from './draw.js';
 import { commit } from './commit.js';
 import { syncToggles } from './tools.js';
-import { shiftAll } from './rigidbody.js';
+import { shiftAll, scaleAllAbout } from './rigidbody.js';
 
 export function nextBoxLabel(boxes){
   if (!boxes.length) return 'attack';
@@ -98,6 +98,10 @@ export function buildMeleeBoxList(){
             // moving a hit box moves the whole body — same as drag
             const d = v - b[axis];
             shiftAll(axis==='x'?d:0, axis==='y'?d:0);
+          } else if ((axis==='w'||axis==='h') && app.show.allFrames){
+            // resizing scales the whole body about its center — same as canvas resize
+            const r = Math.max(1,v) / b[axis];
+            scaleAllAbout(axis==='w'?r:1, axis==='h'?r:1);
           } else {
             b[axis] = (axis==='w'||axis==='h') ? Math.max(1,v) : v;
           }
