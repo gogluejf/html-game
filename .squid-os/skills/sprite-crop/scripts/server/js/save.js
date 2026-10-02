@@ -71,7 +71,7 @@ function storeGameData(entityKey, data){
   try { localStorage.setItem(gameDataKey(entityKey), JSON.stringify(data)); } catch(e){}
 }
 
-function clearGameData(entityKey){
+export function clearGameData(entityKey){
   try { localStorage.removeItem(gameDataKey(entityKey)); } catch(e){}
 }
 
@@ -126,7 +126,7 @@ export function updateSaveButton(){
 }
 
 // Show/hide the .dirty-dot indicator on each sidebar row.
-function updateDirtyDots(){
+export function updateDirtyDots(){
   app.flatList.forEach(({li, ei}) => {
     const en = app.manifest.labels[li].entities[ei];
     const key = `${en.char}_${en.anim}`;

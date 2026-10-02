@@ -14,7 +14,7 @@ import { setBg, paintSatSquareFn } from './tools.js';
 import { _bgState } from './state.js';
 import { FILM, drawFilm } from './filmstrip.js';
 import { syncUndoButtons, clearHistory } from './undo.js';
-import { LS_KEY } from './save.js';
+import { LS_KEY, clearGameData, updateSaveButton, updateDirtyDots } from './save.js';
 import { curFrameIdx } from './geometry.js';
 
 // ---------- RECENTER PIVOT ----------
@@ -85,6 +85,11 @@ function factoryReset(){
   confirmDialog('Restore factory defaults for ALL entities? This permanently deletes all saved editor state and cannot be undone.', () => {
     app._loadingState = true;                       // suppress saves during the wipe
     try{ localStorage.removeItem(LS_KEY); }catch(e){}
+    // nuke every entity's draft game-data key (the dirty-dot / SAVE-button source)
+    for (const {li, ei} of app.flatList){
+      const en = app.manifest.labels[li].entities[ei];
+      clearGameData(en.char + '_' + en.anim);
+    }
     app.S.clear();                                  // drop all per-entity editor state
     app.undoStack.length = 0; app.redoStack.length = 0; // clear history
     Object.assign(app.show, { collision:true, meleeView:false, axes:true, spriteView:true, pivot:true, label:true, allFrames:false, grid:true, markerView:false });
@@ -98,16 +103,12 @@ function factoryReset(){
     $('bgHue').value = 0; $('bgLight').value = 0; paintSatSquareFn();
     syncUndoButtons();
     // reload the first entity fresh from defaults and re-enable saving
-    selectEntity(0, 0).then(()=>{ app._loadingState = false; if (FILM.on) drawFilm(); });
-    const st = app.cur.st, fi = curFrameIdx(), f = st.frames[fi];
-    // reset sprite offset/scale: scale back to 1, left-bottom corner at origin (0,0)
-    const im = app.cur.imgs[fi];
-    f.scale.sx = 1; f.scale.sy = 1;
-    if (im){ f.offset.x = Math.round(im.naturalWidth/2); f.offset.y = -Math.round(im.naturalHeight/2); }
-    else { f.offset.x = 0; f.offset.y = 0; }
-    // reset boxes: clear all
-    f.boxes = [];
-  });
+    selectEntity(0, 0).then(()=>{
+      app._loadingState = false;
+      if (FILM.on) drawFilm();
+      updateSaveButton();   // reflect the wiped drafts (no dot, button off)
+      updateDirtyDots();
+    });
 }
 const bgSwatchRef = document.getElementById('bgSwatch');
 const bgHexRef = document.getElementById('bgHex');
