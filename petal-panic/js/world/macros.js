@@ -634,6 +634,7 @@ export let MACROS = Object.freeze({
     variations: Object.freeze([]),
     follows: Object.freeze([]),
     followedBy: Object.freeze([]),
+
   }),
 
   /**
@@ -665,6 +666,7 @@ export let MACROS = Object.freeze({
     variations: Object.freeze([]),
     follows: Object.freeze([]),
     followedBy: Object.freeze([]),
+
   }),
 
   /**
@@ -681,21 +683,22 @@ export let MACROS = Object.freeze({
     difficulty: 2,
     units: Object.freeze([
       P(2, 1, 10), // row 1, left
-      P(2, 2, 13), // row 2, shift +3 (clear of the rest landing's columns)
-      P(2, 1, 11), // row 1, shift -1 (rest)
-      P(2, 2, 14), // row 2, peak (clear of the rest landing's columns)
+      P(2, 2, 13), // row 2, shift +3
+      P(2, 1, 12), // row 1, rest (adjacent to the left landing — touching, not overlapping)
+      P(2, 2, 15), // row 2, peak (adjacent to the row-2 landing)
     ]),
     entryClear: 2,
     exitClear: 2,
     placements: Object.freeze([
       { slot: 'tier1-left', x: 10, type: 'enemy', y: 2 },
       { slot: 'tier2-right', x: 13, type: 'enemy', y: 3 },
-      { slot: 'tier1-rest', x: 11, type: 'enemy', y: 2 },
-      { slot: 'tier2-peak', x: 14, type: 'powerup', y: 3 },
+      { slot: 'tier1-rest', x: 12, type: 'enemy', y: 2 },
+      { slot: 'tier2-peak', x: 15, type: 'powerup', y: 3 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
     followedBy: Object.freeze([]),
+
   }),
 
   /**
@@ -714,7 +717,7 @@ export let MACROS = Object.freeze({
       P(2, 1, 10), // row 1, left
       P(2, 2, 13), // row 2, shift +3
       P(2, 3, 11), // row 3, first peak
-      P(2, 2, 14), // row 2, rest (right of the peak, within jump reach)
+      P(2, 2, 15), // row 2, rest (adjacent to the other tier-2 landing — touching, not overlapping)
       P(2, 3, 16), // row 3, final peak
     ]),
     entryClear: 2,
@@ -723,12 +726,13 @@ export let MACROS = Object.freeze({
       { slot: 'tier1', x: 10, type: 'enemy', y: 2 },
       { slot: 'tier2', x: 13, type: 'enemy', y: 3 },
       { slot: 'tier3-peak', x: 11, type: 'enemy', y: 4 },
-      { slot: 'tier2-rest', x: 14, type: 'enemy', y: 3 },
+      { slot: 'tier2-rest', x: 15, type: 'enemy', y: 3 },
       { slot: 'tier3-final', x: 12, type: 'powerup', y: 4 },
     ]),
     variations: Object.freeze([]),
     follows: Object.freeze([]),
     followedBy: Object.freeze([]),
+
   }),
 
   /**
@@ -765,6 +769,7 @@ export let MACROS = Object.freeze({
     variations: Object.freeze([]),
     follows: Object.freeze([]),
     followedBy: Object.freeze([]),
+
   }),
 
   /**
@@ -803,6 +808,7 @@ export let MACROS = Object.freeze({
     variations: Object.freeze([]),
     follows: Object.freeze([]),
     followedBy: Object.freeze([]),
+
   }),
 });
 
@@ -1696,6 +1702,15 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
   // If validation fails, retry with a fresh rng stream derived from the same
   // seed. This keeps composeArea total — every returned layout passes
   // validation — while staying deterministic per seed.
+  //
+  // RETRY BUDGET: vertical areas stack many macro instances and the composer's
+  // inter-macro x-shifts can land two different macros' slots on the same
+  // absolute cell (the no-overlap slot rule rejects this). With ~10-15
+  // stacked instances per area, slot collisions are frequent enough that 8
+  // retries is not always sufficient — so we retry up to 64 times before
+  // giving up. Each retry is cheap (a few hundred unit placements), and the
+  // bound keeps pathological seeds from spinning forever.
+  const MAX_COMPOSE_ATTEMPTS = 64;
   const tryCompose = (r) => {
     const l = runCompose(r, orientation, stage, budget, macroWeights);
     validateLayout(l); // throws if the route is not completable
@@ -1705,7 +1720,7 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
   try {
     layout = tryCompose(rng);
   } catch (firstErr) {
-    for (let attempt = 0; attempt < 8; attempt++) {
+    for (let attempt = 0; attempt < MAX_COMPOSE_ATTEMPTS; attempt++) {
       const retryRng = createRng((rng.next() * 1e9) | 0);
       try {
         layout = tryCompose(retryRng);
@@ -2253,6 +2268,12 @@ export function validateLayout(layout) {
   //     ONCE per layout. Two slots at the same position let the resolver fill
   //     BOTH (e.g. a barrel AND a powerup in the same cell), producing
   //     overlapping sprites. One position = one item, full stop.
+  //
+  // The check is on ABSOLUTE position only — not qualified by placementId.
+  // In vertical areas the composer x-shifts stacked macro instances for
+  // lateral alignment, so two DIFFERENT macros' slots can land on the same
+  // absolute cell after shifting; that is exactly the overlap this rule must
+  // catch (the compose retry loop then picks a non-colliding sequence).
   const seenSlotPos = new Set();
   const seenSlotDupName = new Map();
   for (const s of layout.placements ?? []) {
@@ -2266,6 +2287,51 @@ export function validateLayout(layout) {
     }
     seenSlotPos.add(key);
     seenSlotDupName.set(key, s.slot);
+  }
+
+  // 3d. NO TRUE-INTERSECTION RULE (within a macro): two PLATFORMS on the SAME
+  //     row whose x-ranges actually intersect (overlap > 0) are drawn
+  //     overlapping and are never legal. Adjacent (touching, gap = 0) is legal
+  //     — that is just two landings edge-to-edge. Scoped to WITHIN one macro
+  //     instance: the composer's inter-macro shifts move whole macros relative
+  //     to each other, so they cannot create an intersection inside a single
+  //     macro's own authored grid. Catches e.g. two width-2 platforms at
+  //     x=13 and x=14 on the same row (intersect by 1 column).
+  //
+  // "Same row" means the SAME ABSOLUTE y (the cell floor). In a vertical
+  // layout, stacked macro instances live at different absolute y — two
+  // platforms sharing a lateral column at different heights is the normal
+  // climb, never an overlap. Synthetic test layouts may omit `y` (using
+  // legacy `tier`); treat a missing y as "not comparable" and skip.
+  //
+  // Platforms only: a platform sitting in a block's column is LEGAL stacking
+  //     (a landing face above solid ground) and is governed by rules 4a/4b
+  //     (burial + clearance), not by this rule.
+  const platsByPlacement = new Map();
+  for (const u of units) {
+    if (u.kind !== 'platform') continue;
+    const pid = u.placementId ?? -1; // synthetic layouts group under -1
+    if (!platsByPlacement.has(pid)) platsByPlacement.set(pid, []);
+    platsByPlacement.get(pid).push(u);
+  }
+  for (const [pid, group] of platsByPlacement) {
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        const a = group[i], b = group[j];
+        if (a.y == null || b.y == null) continue; // legacy tier-only units: not comparable
+        if (a.y !== b.y) continue; // different rows: stacking rules apply
+        const aEnd = a.x + a.aabb.w;
+        const bEnd = b.x + b.aabb.w;
+        const overlap = Math.min(aEnd, bEnd) - Math.max(a.x, b.x);
+        if (overlap > 0) {
+          throw new Error(
+            `validateLayout: platform at x=${a.x} and platform at x=${b.x} ` +
+              `(row ${a.y}) intersect by ${overlap} unit(s) — same-row platforms ` +
+              `may touch (adjacent) but never overlap`,
+          );
+        }
+      }
+    }
   }
 
   // 4a. Legacy buried-landing check: a platform must not be UNDERNEATH a

@@ -107,13 +107,20 @@ test('all vertical macro landings have horizontal gaps ≤ MAX_CLEARABLE_GAP', (
     if (macro.orientation !== 'vertical') continue;
     const platforms = macro.units.filter((u) => u.kind === 'platform');
     for (let i = 1; i < platforms.length; i++) {
-      const prevX = platforms[i - 1].x;
-      const currX = platforms[i].x;
-      const gap = Math.abs(currX - prevX);
+      // EDGE-TO-EDGE gap: the hero jumps from one platform's edge to the
+      // other's, so the clearable distance is between the nearest edges —
+      // not between the platforms' origin columns. Two width-2 platforms at
+      // cols 11 and 15 are adjacent (gap 0); their origins are 4 apart.
+      const prev = platforms[i - 1];
+      const curr = platforms[i];
+      const prevEnd = prev.x + prev.width;
+      const currEnd = curr.x + curr.width;
+      const gap = Math.max(0, curr.x - prevEnd, prev.x - currEnd);
       assert.ok(
-        gap <= MAX_CLEARABLE_GAP + 1,
-        `${id}: horizontal gap of ${gap} units between platform ${i - 1} (col=${prevX}) ` +
-          `and platform ${i} (col=${currX}) exceeds max ${MAX_CLEARABLE_GAP + 1}`,
+        gap <= MAX_CLEARABLE_GAP,
+        `${id}: horizontal gap of ${gap} units between platform ${i - 1} ` +
+          `(cols ${prev.x}-${prevEnd}) and platform ${i} (cols ${curr.x}-${currEnd}) ` +
+          `exceeds max ${MAX_CLEARABLE_GAP}`,
       );
     }
   }
