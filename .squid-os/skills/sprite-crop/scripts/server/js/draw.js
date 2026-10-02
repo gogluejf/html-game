@@ -154,8 +154,8 @@ export function draw(){
       }
       drawBox(b.rect, b.color, true, !dragging && !(app._selectedBox===b.key),
         hovered ? app.hover.handle : null, !!(hovered && app.hover.body));
-      // label above box
-      if (b.label){
+      // label above box — follows the master label toggle (L / tglLabel)
+      if (b.label && app.show.label){
         const [lx, ly] = s2c(b.rect.x + b.rect.w/2, b.rect.y);
         ctx.save();
         ctx.font = '11px Courier New';
@@ -264,8 +264,8 @@ export function draw(){
         ctx.lineWidth = 1.5;
         ctx.strokeRect(hx-4, hy-4, 8, 8);
       }
-      // label above dot (or above radius circle)
-      if (m.label){
+      // label above dot (or above radius circle) — follows the master label toggle
+      if (m.label && app.show.label){
         const labelY = m.radiusOn && m.radius > 0 ? my - m.radius*app.zoom - 6 : my - dotR - 6;
         ctx.font = '11px Courier New';
         ctx.textAlign = 'center';

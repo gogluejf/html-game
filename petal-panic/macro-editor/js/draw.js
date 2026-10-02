@@ -23,12 +23,36 @@ export function draw(){
   if (app.cur && app.cur.st){
     if (app.show.zone) drawZoneBox(app.cur.st);   // area bounding box + entry/exit (behind units)
     drawMacro(app.cur.st);
+    drawTitle(app.cur.st);                        // fixed top-center name label (viewer-style)
   } else {
     ctx.fillStyle = 'rgba(255,255,255,.3)';
     ctx.font = '16px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('select a macro', cssW/2, cssH/2);
   }
+}
+
+// ---------- macro name label — fixed at top-center of canvas (viewer-style) ----------
+// Mirrors the sprite editor's master label: bold cyan with glow + dark outline.
+// Follows the same labels toggle (L / tglLabels) as the block/platform labels.
+function drawTitle(macro){
+  if (!app.show.labels) return;
+  const text = macro.name || macro.id || '';
+  if (!text) return;
+  ctx.save();
+  ctx.font = 'bold 26px Courier New';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  const tx = app.cssW/2, ty = 14;
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = 'rgba(7,9,18,.9)';
+  ctx.strokeText(text, tx, ty);
+  ctx.shadowColor = '#3ef0ff';
+  ctx.shadowBlur = 14;
+  ctx.fillStyle = '#3ef0ff';
+  ctx.fillText(text, tx, ty);
+  ctx.restore();
 }
 
 function drawGrid(){
@@ -140,13 +164,14 @@ function drawMacro(macro){
 // you can see how much of a level one macro consumes and where the hero enters
 // (X) and exits (flag). The box is the whole area: entry clear → units → exit
 // clear. For vertical macros the width is the fixed one-screen zone width.
-function drawZoneBox(macro){
+
+// Compute the area's unit-space extents for a macro. Shared by the zone overlay
+// AND the fit-to-view logic so both always agree on what "the whole area" is.
+// Returns { ax0, ax1, ay0, ay1 } in unit space (ay0 = ground = 0).
+export function zoneExtents(macro){
   const c = _consts;
-  const ux = c.unitPxX, uy = c.unitPxY;
   const ec = c.entryClear ?? 3, xc = c.exitClear ?? 3;
   const vertical = macro.orientation === 'vertical';
-
-  // Macro footprint in unit space (bounding box of its units).
   const units = macro.units || [];
   let minX = Infinity, maxX = -Infinity, maxY = 0;
   for (const u of units){
@@ -158,22 +183,25 @@ function drawZoneBox(macro){
     if (yTop > maxY) maxY = yTop;
   }
   if (!isFinite(minX)){ minX = 0; maxX = 0; }   // empty macro
-
-  // Area extents (unit space). Origin = bottom-left of the area (ground line).
   let ax0, ax1, ay1;
   if (vertical){
-    // Vertical: fixed one-screen width; height = the climb budget.
     ax0 = 0;
     ax1 = c.vZoneWidthUnits ?? Math.max(maxX, 22);
     ay1 = c.vBudgetUnits ?? Math.max(maxY + ec + xc, 56);
   } else {
-    // Horizontal: width = the area length budget; height = whatever the macro
-    // needs (entry/exit sit on the ground, so at least a couple of rows tall).
     ax0 = 0;
     ax1 = c.hBudgetUnits ?? Math.max(maxX + ec + xc, 56);
-    ay1 = Math.max(maxY + 1, 4);
+    ay1 = c.hZoneHeightUnits ?? Math.max(maxY + 4, 11);
   }
-  const ay0 = 0;   // ground
+  return { ax0, ax1, ay0: 0, ay1 };
+}
+
+function drawZoneBox(macro){
+  const c = _consts;
+  const ux = c.unitPxX, uy = c.unitPxY;
+  const ec = c.entryClear ?? 3, xc = c.exitClear ?? 3;
+  const { ax0, ax1, ay0, ay1 } = zoneExtents(macro);
+  const vertical = macro.orientation === 'vertical';
 
   // Dashed bounding box around the whole area.
   const [bx0, byTop] = W(ax0*ux, ay1*uy);
@@ -204,14 +232,17 @@ function drawZoneBox(macro){
     ctx.fillRect(exx0, exyA, xc*ux, (ay1-ay0)*uy);          // exit band (right)
   }
 
-  // Entry marker "X" (where the hero spawns) + exit flag.
+  // Entry marker "X" (where the hero spawns) + exit flag — both on the GROUND.
   const markSize = Math.max(10, 14*app.zoom);
   if (vertical){
     drawEntryX(W((ax0+ax1)/2*ux, (ec/2)*uy), markSize);
     drawExitFlag(W((ax0+ax1)/2*ux, (ay1 - xc/2)*uy), markSize);
   } else {
-    drawEntryX(W((ec/2)*ux, (ay1*uy)/2), markSize);
-    drawExitFlag(W((ax1 - xc/2)*ux, (ay1*uy)/2), markSize);
+    // Horizontal: entry at the left edge, exit at the right edge, both resting
+    // on the ground line (y=0), a little above it so they're visible.
+    const gy = uy * 0.5;   // half a unit up from the ground
+    drawEntryX(W((ec/2)*ux, gy), markSize);
+    drawExitFlag(W((ax1 - xc/2)*ux, gy), markSize);
   }
 
   // Dimension label along the composition axis.
