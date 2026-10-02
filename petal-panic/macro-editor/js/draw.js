@@ -290,14 +290,29 @@ function drawZoneBox(macro){
   ctx.restore();
 
   // Entry / exit clear zones (shaded bands along the composition axis).
-  // Layout: [area-in][macro-in] ...blocks... [macro-out][area-out]
-  // All bands are dark yellow; macro bands are slightly lighter to distinguish.
+  // Layout: [area-in][macro-in] ...blocks... [macro-out] ...rest of level... [area-out]
+  // macro-out sits RIGHT AFTER the last block; area-out sits at the very end.
   const DARK = 'rgba(255,226,62,.18)';   // area clearance
   const LIGHT = 'rgba(255,226,62,.10)';  // macro clearance
   const macroEc = macro.entryClear ?? 2;
   const macroXc = macro.exitClear ?? 2;
+  // Compute the macro's actual footprint end (raw coords, before offset).
+  let macroMaxX = 0;
+  for (const u of (macro.units || [])){
+    const x1 = (u.x ?? 0) + (u.kind === 'block' ? 1 : (u.width ?? 1));
+    if (x1 > macroMaxX) macroMaxX = x1;
+  }
+  const bodyOffset = ec + macroEc;   // where blocks start (after area-in + macro-in)
+  const macroEndX = bodyOffset + macroMaxX;   // where the last block ends
   if (vertical){
     // Vertical: entry at BOTTOM, exit at TOP.
+    let macroMaxY = 0;
+    for (const u of (macro.units || [])){
+      const yTop = (u.y ?? 0) + (u.kind === 'block' ? (u.height ?? 1) : 1);
+      if (yTop > macroMaxY) macroMaxY = yTop;
+    }
+    const vBodyOffset = ec + macroEc;
+    const vMacroEndY = vBodyOffset + macroMaxY;
     ctx.fillStyle = DARK;
     const [ex0, eyTop] = W(ax0*ux, ec*uy);
     const [ex1, eyBot] = W(ax1*ux, 0);
@@ -307,13 +322,13 @@ function drawZoneBox(macro){
     const [mx1, myBot] = W(ax1*ux, ec*uy);
     ctx.fillRect(mx0, myTop, mx1-mx0, myBot-myTop);          // macro entry
     ctx.fillStyle = LIGHT;
-    const [xx0, xyTop] = W(ax0*ux, (ay1-xc-macroXc)*uy);
-    const [xx1, xyBot] = W(ax1*ux, (ay1-xc)*uy);
-    ctx.fillRect(xx0, xyTop, xx1-xx0, xyBot-xyTop);          // macro exit
+    const [mxx0, mxyTop] = W(ax0*ux, (vMacroEndY+macroXc)*uy);
+    const [mxx1, mxyBot] = W(ax1*ux, vMacroEndY*uy);
+    ctx.fillRect(mxx0, mxyTop, mxx1-mxx0, mxyBot-mxyTop);    // macro exit (right after blocks)
     ctx.fillStyle = DARK;
     const [ax0b, axyTop] = W(ax0*ux, ay1*uy);
     const [ax1b, axyBot] = W(ax1*ux, (ay1-xc)*uy);
-    ctx.fillRect(ax0b, axyTop, ax1b-ax0b, axyBot-axyTop);    // area exit (top)
+    ctx.fillRect(ax0b, axyTop, ax1b-ax0b, axyBot-axyTop);    // area exit (top, at very end)
   } else {
     // Horizontal: entry at LEFT, exit at RIGHT.
     ctx.fillStyle = DARK;
@@ -325,13 +340,13 @@ function drawZoneBox(macro){
     const [menx1, menyBot] = W((ec+macroEc)*ux, 0);
     ctx.fillRect(menx0, menyTop, menx1-menx0, menyBot-menyTop); // macro entry
     ctx.fillStyle = LIGHT;
-    const [mexx0, mextop] = W((ax1-xc-macroXc)*ux, ay1*uy);
-    const [mexx1, mexbot] = W((ax1-xc)*ux, 0);
-    ctx.fillRect(mexx0, mextop, mexx1-mexx0, mexbot-mextop);  // macro exit
+    const [mexx0, mextop] = W((macroEndX+macroXc)*ux, ay1*uy);
+    const [mexx1, mexbot] = W(macroEndX*ux, 0);
+    ctx.fillRect(mexx0, mextop, mexx1-mexx0, mexbot-mextop);  // macro exit (right after blocks)
     ctx.fillStyle = DARK;
     const [aexx0, aextop] = W((ax1-xc)*ux, ay1*uy);
     const [aexx1, aexbot] = W(ax1*ux, 0);
-    ctx.fillRect(aexx0, aextop, aexx1-aexx0, aexbot-aextop);  // area exit (right)
+    ctx.fillRect(aexx0, aextop, aexx1-aexx0, aexbot-aextop);  // area exit (right, at very end)
   }
 
   // Entry marker "X" (where the hero spawns) + exit flag — both on the GROUND.
