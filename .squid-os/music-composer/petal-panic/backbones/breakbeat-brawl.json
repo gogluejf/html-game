@@ -1,0 +1,22 @@
+{
+  "name": "BREAKBEAT BRAWL",
+  "bpm": 132,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "hook",
+      "measures": 8,
+      "drum": "light"
+    },
+    {
+      "part": "break",
+      "measures": 4,
+      "drum": "breakdrums"
+    },
+    {
+      "part": "drop",
+      "measures": 8,
+      "drum": "full"
+    }
+  ]
+}

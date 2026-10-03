@@ -1,0 +1,27 @@
+{
+  "name": "CIRCUS CARNIVAL FRENZY",
+  "bpm": 140,
+  "timeSig": "2/4",
+  "parts": [
+    {
+      "part": "call",
+      "measures": 8,
+      "drum": "light"
+    },
+    {
+      "part": "response",
+      "measures": 8,
+      "drum": "medium"
+    },
+    {
+      "part": "climax",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "light"
+    }
+  ]
+}

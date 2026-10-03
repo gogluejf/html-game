@@ -1,0 +1,1177 @@
+{
+  "name": "DARK AMBIENT DRIFT",
+  "uuid": "773aceb7-4a79-4717-85b2-953f8cc3a02f",
+  "genre": "Dark Ambient Chiptune",
+  "vibe": "Slow 6/8 drones in A minor \u2014 sparse eerie piano over a drifting low bass, spacious creepy level ambience that loops seamlessly.",
+  "createdAt": "2026-10-02T21:30:00.345499",
+  "revision": 3,
+  "drumKit": {
+    "none": [
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      }
+    ]
+  },
+  "lead": {
+    "drift-a": [
+      [
+        "A4",
+        null,
+        null,
+        "E5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "C5",
+        null,
+        null,
+        "B4",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "D5",
+        null,
+        null,
+        "C5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "G4",
+        null,
+        null,
+        "A4",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "E5",
+        null,
+        null,
+        "D5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "F5",
+        null,
+        null,
+        "E5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "G5",
+        null,
+        null,
+        "E5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "A5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "drift-b": [
+      [
+        "C5",
+        null,
+        null,
+        "B4",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "D5",
+        null,
+        null,
+        "C5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "E5",
+        null,
+        null,
+        "D5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "F5",
+        null,
+        null,
+        "E5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "G5",
+        null,
+        null,
+        "F5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "A5",
+        null,
+        null,
+        "G5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "E5",
+        null,
+        null,
+        "D5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "C5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "drift-a-b": [
+      [
+        "A4",
+        null,
+        null,
+        "E5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "C5",
+        null,
+        null,
+        "B4",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "D5",
+        null,
+        null,
+        "C5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "G4",
+        null,
+        null,
+        "A4",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "E5",
+        null,
+        null,
+        "D5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "F5",
+        null,
+        null,
+        "E5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "G5",
+        null,
+        null,
+        "E5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "C6",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ]
+  },
+  "layer": {
+    "drift-b": [
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "E5",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "D5",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "C5",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "B4",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "A4",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "E4",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "drift-a-b": [
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "E5",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ]
+  },
+  "bass": {
+    "drift-a": [
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        "E3",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "F2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "G2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "E3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "F3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "G2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "E2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "B2",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "drift-b": [
+      [
+        "F2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "G2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "E3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "G2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "E3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "E2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "B2",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "F2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "D2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "drift-a-b": [
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        "E3",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "F2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "G2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "E3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "F3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "G2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "E2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "B2",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ]
+  },
+  "pad": {
+    "drift-a": {
+      "0": [
+        "A3",
+        "C4",
+        "E4"
+      ],
+      "24": [
+        "F3",
+        "A3",
+        "C4"
+      ],
+      "48": [
+        "G3",
+        "B3",
+        "D4"
+      ],
+      "72": [
+        "A3",
+        "C4",
+        "E4"
+      ]
+    },
+    "drift-b": {
+      "0": [
+        "F3",
+        "A3",
+        "C4"
+      ],
+      "24": [
+        "G3",
+        "B3",
+        "D4"
+      ],
+      "48": [
+        "A3",
+        "C4",
+        "E4"
+      ],
+      "72": [
+        "E3",
+        "G#3",
+        "B3"
+      ]
+    },
+    "drift-a-b": {
+      "0": [
+        "A3",
+        "C4",
+        "E4"
+      ],
+      "24": [
+        "F3",
+        "A3",
+        "C4"
+      ],
+      "48": [
+        "G3",
+        "B3",
+        "D4"
+      ],
+      "72": [
+        "A3",
+        "C4",
+        "E4"
+      ]
+    }
+  },
+  "_bass_single": false,
+  "voices": {
+    "bassType": "sawtooth",
+    "bassCut": 700,
+    "bassDur": 0.9,
+    "padType": "sine",
+    "padCut": 1400,
+    "padDur": 1.8,
+    "leadType": "triangle",
+    "leadCut": 2600,
+    "leadDur": 1.1,
+    "vib": 6,
+    "layerType": "triangle",
+    "layerCut": 2000,
+    "layerDur": 0.6,
+    "kickTop": 110,
+    "kickBot": 44
+  },
+  "scale": "A-minor"
+}

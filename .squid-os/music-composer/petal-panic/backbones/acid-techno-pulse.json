@@ -1,0 +1,27 @@
+{
+  "name": "ACID TECHNO PULSE",
+  "bpm": 135,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "build",
+      "measures": 8,
+      "drum": "none"
+    },
+    {
+      "part": "drop",
+      "measures": 8,
+      "drum": "light"
+    },
+    {
+      "part": "break",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "drop-b",
+      "measures": 8,
+      "drum": "breakbeat"
+    }
+  ]
+}

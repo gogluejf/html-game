@@ -1,0 +1,17 @@
+{
+  "name": "TROPICAL HOUSE CHILL",
+  "bpm": 100,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "loop-a",
+      "measures": 8,
+      "drum": "light"
+    },
+    {
+      "part": "loop-b",
+      "measures": 8,
+      "drum": "sunrise"
+    }
+  ]
+}

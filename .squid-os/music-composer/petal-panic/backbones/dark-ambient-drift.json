@@ -1,0 +1,22 @@
+{
+  "name": "DARK AMBIENT DRIFT",
+  "bpm": 60,
+  "timeSig": "6/8",
+  "parts": [
+    {
+      "part": "drift-a",
+      "measures": 8,
+      "drum": "none"
+    },
+    {
+      "part": "drift-b",
+      "measures": 8,
+      "drum": "none"
+    },
+    {
+      "part": "drift-a-b",
+      "measures": 8,
+      "drum": "none"
+    }
+  ]
+}

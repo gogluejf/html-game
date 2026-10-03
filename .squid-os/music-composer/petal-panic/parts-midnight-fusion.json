@@ -1,0 +1,1388 @@
+{
+  "name": "MIDNIGHT FUSION",
+  "uuid": "79b6d58a-f065-4feb-ab53-183af9e1596c",
+  "genre": "Acid Jazz Fusion",
+  "vibe": "Fast 168 BPM minor acid-jazz fusion in D natural minor: syncopated walking bass, call-and-response triangle lead, chromatic turnaround, sixteenth-note solo runs, lush 9th/7th pads",
+  "createdAt": "2026-10-02T20:38:46.259016",
+  "revision": 3,
+  "drumKit": {
+    "none": [
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      }
+    ],
+    "light": [
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      }
+    ],
+    "medium": [
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      }
+    ],
+    "heavy": [
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      }
+    ]
+  },
+  "lead": {
+    "riff": [
+      [
+        "D5",
+        null,
+        null,
+        null,
+        "F5",
+        null,
+        "G5",
+        null,
+        "A5",
+        null,
+        null,
+        null,
+        "F5",
+        null,
+        "E5",
+        null
+      ],
+      [
+        "D5",
+        null,
+        null,
+        null,
+        "F5",
+        null,
+        "G5",
+        null,
+        "A5",
+        null,
+        null,
+        null,
+        "A4",
+        null,
+        "G5",
+        null
+      ]
+    ],
+    "head": [
+      [
+        "D5",
+        null,
+        null,
+        null,
+        "F5",
+        null,
+        null,
+        null,
+        "G5",
+        null,
+        "A5",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Bb4",
+        null,
+        null,
+        null,
+        "C5",
+        null,
+        null,
+        null
+      ],
+      [
+        "F5",
+        null,
+        null,
+        null,
+        "A5",
+        null,
+        null,
+        null,
+        "Bb5",
+        null,
+        null,
+        null,
+        "A5",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "G5",
+        null,
+        null,
+        null,
+        "F5",
+        null,
+        "E5",
+        null
+      ]
+    ],
+    "turnaround": [
+      [
+        "F5",
+        null,
+        null,
+        null,
+        "A5",
+        null,
+        "Bb5",
+        null,
+        "C6",
+        null,
+        null,
+        null,
+        "Bb5",
+        null,
+        "A5",
+        null
+      ],
+      [
+        "A5",
+        null,
+        null,
+        null,
+        "Bb5",
+        null,
+        "C6",
+        null,
+        "D6",
+        null,
+        null,
+        null,
+        "C6",
+        null,
+        "Bb5",
+        null
+      ],
+      [
+        "Bb5",
+        null,
+        null,
+        null,
+        "A5",
+        null,
+        "G5",
+        null,
+        "F5",
+        null,
+        null,
+        null,
+        "E5",
+        null,
+        "D5",
+        null
+      ],
+      [
+        "C5",
+        null,
+        null,
+        null,
+        "Bb4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        null,
+        null,
+        "F4",
+        null,
+        "E5",
+        null
+      ]
+    ],
+    "solo": [
+      [
+        "D6",
+        null,
+        "C6",
+        null,
+        "Bb5",
+        null,
+        "A5",
+        null,
+        "G5",
+        null,
+        "A5",
+        null,
+        "Bb5",
+        null,
+        "C6",
+        null
+      ],
+      [
+        "D6",
+        null,
+        "C6",
+        null,
+        "Bb5",
+        null,
+        "A5",
+        null,
+        "G5",
+        null,
+        "F5",
+        null,
+        "E5",
+        null,
+        "D5",
+        null
+      ],
+      [
+        "F5",
+        null,
+        "G5",
+        null,
+        "A5",
+        null,
+        "Bb5",
+        null,
+        "C6",
+        null,
+        "D6",
+        null,
+        "E6",
+        null,
+        "F6",
+        null
+      ],
+      [
+        "A6",
+        null,
+        null,
+        null,
+        "G6",
+        null,
+        "F6",
+        null,
+        "E6",
+        null,
+        null,
+        null,
+        "D6",
+        null,
+        null,
+        null
+      ]
+    ],
+    "tag": [
+      [
+        "C5",
+        null,
+        null,
+        null,
+        "Bb4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        null,
+        null,
+        "F4",
+        null,
+        null,
+        null
+      ],
+      [
+        "D5",
+        null,
+        null,
+        null,
+        "D4",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ]
+  },
+  "layer": {
+    "solo": [
+      [
+        "D5",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        "Bb4",
+        null,
+        "C5",
+        null
+      ],
+      [
+        "D5",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        "D4",
+        null
+      ],
+      [
+        "F4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        "Bb4",
+        null,
+        "C5",
+        null,
+        "D5",
+        null,
+        "E5",
+        null,
+        "F5",
+        null
+      ],
+      [
+        "A5",
+        null,
+        null,
+        null,
+        "G5",
+        null,
+        "F5",
+        null,
+        "E5",
+        null,
+        null,
+        null,
+        "D5",
+        null,
+        null,
+        null
+      ]
+    ]
+  },
+  "bass": {
+    "riff": [
+      [
+        "D2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        "C3",
+        null,
+        null,
+        null
+      ],
+      [
+        "Bb2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        "G2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        "E2",
+        null,
+        null,
+        null
+      ]
+    ],
+    "head": [
+      [
+        "D2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        "C3",
+        null,
+        null,
+        null
+      ],
+      [
+        "Bb2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        "G2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        "E2",
+        null,
+        null,
+        null
+      ],
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "F3",
+        null,
+        "E3",
+        null,
+        null,
+        null
+      ],
+      [
+        "E2",
+        null,
+        null,
+        null,
+        "G2",
+        null,
+        "Bb2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        "C3",
+        null,
+        null,
+        null
+      ]
+    ],
+    "turnaround": [
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "F3",
+        null,
+        "E3",
+        null,
+        null,
+        null
+      ],
+      [
+        "E2",
+        null,
+        null,
+        null,
+        "G2",
+        null,
+        "Bb2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        "C3",
+        null,
+        null,
+        null
+      ],
+      [
+        "D2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        "C3",
+        null,
+        null,
+        null
+      ],
+      [
+        "Bb2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        "G2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        "E2",
+        null,
+        null,
+        null
+      ]
+    ],
+    "solo": [
+      [
+        "D2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        "C3",
+        null,
+        null,
+        null
+      ],
+      [
+        "Bb2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        "G2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        "E2",
+        null,
+        null,
+        null
+      ],
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "F3",
+        null,
+        "E3",
+        null,
+        null,
+        null
+      ],
+      [
+        "E2",
+        null,
+        null,
+        null,
+        "G2",
+        null,
+        "Bb2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        "C3",
+        null,
+        null,
+        null
+      ]
+    ],
+    "tag": [
+      [
+        "G2",
+        null,
+        null,
+        null,
+        "Bb2",
+        null,
+        "D3",
+        null,
+        null,
+        null,
+        "G3",
+        null,
+        "F3",
+        null,
+        null,
+        null
+      ],
+      [
+        "D2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ]
+  },
+  "pad": {
+    "head": {
+      "0": [
+        "C2"
+      ],
+      "32": [
+        "G3",
+        "B3",
+        "D4",
+        "F4"
+      ]
+    },
+    "turnaround": {
+      "0": [
+        "A3",
+        "C#4",
+        "E4",
+        "G4"
+      ],
+      "32": [
+        "C2"
+      ]
+    },
+    "solo": {
+      "0": [
+        "C2"
+      ],
+      "32": [
+        "G3",
+        "B3",
+        "D4",
+        "F4"
+      ]
+    }
+  },
+  "_bass_single": false,
+  "voices": {
+    "bassType": "triangle",
+    "bassCut": 700,
+    "bassDur": 0.24,
+    "padType": "triangle",
+    "padCut": 2600,
+    "padDur": 0.7,
+    "leadType": "triangle",
+    "leadCut": 3800,
+    "leadDur": 0.3,
+    "vib": 10,
+    "layerType": "triangle",
+    "layerCut": 3400,
+    "layerDur": 0.3,
+    "kickTop": 110,
+    "kickBot": 44
+  },
+  "scale": "D-minor"
+}

@@ -1,0 +1,22 @@
+{
+  "name": "8-BIT BOSS STOMP",
+  "bpm": 150,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "riff",
+      "measures": 4,
+      "drum": "drive"
+    },
+    {
+      "part": "phase2",
+      "measures": 8,
+      "drum": "slam"
+    },
+    {
+      "part": "rage",
+      "measures": 8,
+      "drum": "blast"
+    }
+  ]
+}

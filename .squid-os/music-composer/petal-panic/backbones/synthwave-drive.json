@@ -1,0 +1,22 @@
+{
+  "name": "SYNTHWAVE DRIVE",
+  "bpm": 112,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "verse",
+      "measures": 8,
+      "drum": "pads"
+    },
+    {
+      "part": "chorus",
+      "measures": 8,
+      "drum": "floor"
+    },
+    {
+      "part": "outro",
+      "measures": 4,
+      "drum": "pads"
+    }
+  ]
+}

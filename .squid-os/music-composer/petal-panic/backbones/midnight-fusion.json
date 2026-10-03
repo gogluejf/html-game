@@ -1,0 +1,32 @@
+{
+  "name": "MIDNIGHT FUSION",
+  "bpm": 168,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "riff",
+      "measures": 2,
+      "drum": "light"
+    },
+    {
+      "part": "head",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "turnaround",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "solo",
+      "measures": 4,
+      "drum": "heavy"
+    },
+    {
+      "part": "tag",
+      "measures": 2,
+      "drum": "light"
+    }
+  ]
+}

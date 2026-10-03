@@ -1,0 +1,27 @@
+{
+  "name": "SPEED METAL SHRED",
+  "bpm": 200,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "intro",
+      "measures": 2,
+      "drum": "none"
+    },
+    {
+      "part": "hook",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "solo",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 2,
+      "drum": "light"
+    }
+  ]
+}

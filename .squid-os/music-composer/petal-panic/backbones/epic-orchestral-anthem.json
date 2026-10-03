@@ -1,0 +1,27 @@
+{
+  "name": "EPIC ORCHESTRAL ANTHEM",
+  "bpm": 120,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "call",
+      "measures": 4,
+      "drum": "none"
+    },
+    {
+      "part": "build",
+      "measures": 8,
+      "drum": "light"
+    },
+    {
+      "part": "climax",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "medium"
+    }
+  ]
+}

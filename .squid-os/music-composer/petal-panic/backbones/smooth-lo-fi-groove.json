@@ -1,0 +1,22 @@
+{
+  "name": "SMOOTH LO-FI GROOVE",
+  "bpm": 84,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "head",
+      "measures": 8,
+      "drum": "brushed"
+    },
+    {
+      "part": "solo",
+      "measures": 16,
+      "drum": "comping"
+    },
+    {
+      "part": "head-out",
+      "measures": 8,
+      "drum": "brushed"
+    }
+  ]
+}
