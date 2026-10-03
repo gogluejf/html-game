@@ -1,0 +1,47 @@
+{
+  "name": "SHIP TUNE",
+  "bpm": 150,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "intro",
+      "measures": 2,
+      "drum": "clap"
+    },
+    {
+      "part": "hook",
+      "measures": 4,
+      "drum": "snare"
+    },
+    {
+      "part": "build",
+      "measures": 8,
+      "drum": "kick"
+    },
+    {
+      "part": "chorus",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "bridge",
+      "measures": 4,
+      "drum": "snare"
+    },
+    {
+      "part": "solo",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "climax",
+      "measures": 8,
+      "drum": "blast"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "clap"
+    }
+  ]
+}
