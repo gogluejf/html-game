@@ -2,30 +2,24 @@
   "name": "ACID JAZZ",
   "bpm": 104,
   "timeSig": "4/4",
-  "drumLevels": [
-    0,
-    1,
-    2,
-    3
-  ],
   "parts": [
     {
-      "part": "s0",
+      "part": "riff",
       "measures": 2,
       "drum": "lvl0"
     },
     {
-      "part": "s1",
+      "part": "hook",
       "measures": 2,
       "drum": "lvl1"
     },
     {
-      "part": "s2",
+      "part": "build",
       "measures": 2,
       "drum": "lvl2"
     },
     {
-      "part": "s3",
+      "part": "peak",
       "measures": 2,
       "drum": "lvl3"
     }
