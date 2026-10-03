@@ -6,7 +6,7 @@ const _NOTE = window._NOTE;
     if (v === null || v === undefined) return null;
     if (typeof v === 'number') return { hz: v, mul: 1 };
     if (typeof v === 'string') {
-      const m = v.match(/^([A-G][#b]?[1-5])(?::([1-8]))?$/);
+      const m = v.match(/^([A-G][#b]?[1-6])(?::([1-8]))?$/);
       if (m && Object.prototype.hasOwnProperty.call(_NOTE, m[1])) {
         return { hz: _NOTE[m[1]], mul: m[2] ? parseInt(m[2], 10) : 1 };
       }
