@@ -78,7 +78,7 @@ _FROM_SEMI = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"]
 
 
 def _pc(s):
-    m = re.match(r"^([A-G])(#?)[1-5]$", s)
+    m = re.match(r"^([A-G])(#?)[1-6]$", s)
     return (m.group(1), m.group(2)) if m else None
 
 
