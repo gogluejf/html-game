@@ -12,7 +12,7 @@ Subcommands:
 The AI passes musical decisions as structured arguments. This script builds
 the JSON files underneath. No manual JSON editing needed.
 """
-import argparse, json, os, re, sys
+import argparse, json, os, re, sys, uuid
 from datetime import datetime
 
 # ─── Note validation ────────────────────────────────────────────────────────
@@ -416,6 +416,7 @@ def cmd_parts(a):
     else:
         parts = {
             "name": a.name,
+            "uuid": str(uuid.uuid4()),
             "genre": "",
             "vibe": "",
             "createdAt": datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f"),
@@ -435,6 +436,8 @@ def cmd_parts(a):
         parts["genre"] = a.genre
     if a.vibe:
         parts["vibe"] = a.vibe
+    if a.scale:
+        parts["scale"] = a.scale
 
     # Merge lead sections (only the ones you pass)
     for spec in a.lead or []:
@@ -447,6 +450,12 @@ def cmd_parts(a):
         while len(bars) < expected:
             bars.append([None] * step_width)
         parts.setdefault("lead", {})[sec] = bars[:expected]
+        # M2 density report — sparsity visible at write time
+        sparse_ok = "-sparse" in sec
+        for bi, bar in enumerate(bars[:expected]):
+            fill = sum(1 for c in bar if c) / max(1, len(bar))
+            flag = "" if (fill >= 0.5 or sparse_ok) else "  ← BELOW 50% FLOOR"
+            print(f"    lead {sec} bar{bi+1}: {int(fill*100):3d}% filled{flag}")
 
     # Merge layer sections
     for spec in a.layer or []:
@@ -717,6 +726,10 @@ def cmd_audit(a):
 
     total_measures = sum(e["measures"] for e in plist)
     print(f"audit: {a.name} ({bb.get('bpm')} BPM, {bb.get('timeSig')}, {total_measures} measures)")
+
+    # ── Craft instructions (M1–M5, B1, H1, D1–D5) ─────────────────────────
+    run_craft_checks(parts, plist, errors, warns)
+
     for w in warns:
         print(f"  ⚠ WARN  {w}")
     for e_ in errors:
@@ -728,33 +741,40 @@ def cmd_audit(a):
 
 
 def cmd_list(a):
-    """List songs in a game dir."""
+    """List songs in a game dir, in JUKEBOX order (createdAt asc, 1-indexed)."""
     d = state_dir(a.game, a.working_dir)
     if not os.path.isdir(d):
         _err(f"no songs dir: {d}")
-    parts_files = sorted(f for f in os.listdir(d) if f.startswith("parts-") and f.endswith(".json"))
+    parts_files = [f for f in os.listdir(d) if f.startswith("parts-") and f.endswith(".json")]
     if not parts_files:
         print("(no songs)")
         return
-    for i, pf in enumerate(parts_files):
+    # Load all, then sort by createdAt (same key as the jukebox playlist).
+    loaded = []
+    for pf in parts_files:
         with open(os.path.join(d, pf)) as f:
             p = json.load(f)
+        loaded.append((p.get("createdAt", ""), pf, p))
+    loaded.sort(key=lambda x: x[0])
+    for i, (created, pf, p) in enumerate(loaded):
         slug = pf[6:-5]
         bb_path = os.path.join(d, "backbones", f"{slug}.json")
         time_sig = "?"
         n_parts = "?"
+        bpm = p.get("bpm", "?")
         if os.path.exists(bb_path):
             with open(bb_path) as f:
                 bb = json.load(f)
             time_sig = bb.get("timeSig", "?")
             n_parts = len(set(e["part"] for e in _bb_parts(bb)))
-        bpm = p.get("bpm") or bb.get("bpm", "?") if os.path.exists(bb_path) else p.get("bpm", "?")
+            bpm = p.get("bpm") or bb.get("bpm", "?")
         genre = p.get("genre", "?")
+        uid = (p.get("uuid") or "")[:8]
         vibe = (p.get("vibe") or "")[:40]
-        print(f"{i:>3}  {str(bpm) + ' BPM':>8}  {time_sig:>4}  {n_parts:>2} pt  [{genre}]  {p.get('name','?')}")
+        print(f"{i+1:>3}  {str(bpm) + ' BPM':>8}  {time_sig:>4}  {n_parts:>2} pt  [{genre}]  {p.get('name','?')}  ({uid})")
         if vibe:
             print(f"       {vibe}")
-    print(f"({len(parts_files)} songs)")
+    print(f"({len(loaded)} songs)")
 
 
 def cmd_show_arch(a):
@@ -870,7 +890,362 @@ def cmd_set_vibe(a):
     print(f"PASS: set vibe on '{a.name}' (rev {p['revision']})")
 
 
-# ─── Main ───────────────────────────────────────────────────────────────────
+# ─── Craft-instruction checks (M1–M5, B1, H1, D1–D5) ──────────────────────
+# See references/craft-instructions.md. These are hard FAILs/WARNs computed
+# from the notes themselves — the CLI refuses to bless a song that violates
+# them, so bad drafts can't ship silently.
+
+_SCALE_DEFS = {
+    "major":       [0, 2, 4, 5, 7, 9, 11],
+    "minor":       [0, 2, 3, 5, 7, 8, 10],
+    "phrygian":    [0, 1, 3, 5, 7, 8, 10],
+    "dorian":      [0, 2, 3, 5, 7, 9, 10],
+    "pentatonic-minor":   [0, 3, 5, 7, 10],
+    "pentatonic-major":   [0, 2, 4, 7, 9],
+}
+_SEMI_PC = {"C": 0, "C#": 1, "D": 2, "D#": 3, "E": 4, "F": 5,
+            "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10, "B": 11}
+
+
+def _parse_scale(spec):
+    """'E-phrygian' / 'Em' / 'C major' -> (root_semitone, allowed_pc_set) or None."""
+    if not spec:
+        return None
+    s = str(spec).replace(" ", "-").lower()
+    m = re.match(r"^([a-g])(#?)-(major|minor|phrygian|dorian|pentatonic-minor|pentatonic-major)$", s)
+    if not m:
+        m = re.match(r"^([a-g])(#?)(m|major|phrygian|dorian)$", s)
+        if not m:
+            return None
+        root, sharp, qual = m.group(1).upper(), m.group(2), m.group(3)
+        qual = {"m": "minor", "major": "major"}.get(qual, qual)
+    else:
+        root, sharp, qual = m.group(1).upper(), m.group(2), m.group(3)
+    intervals = _SCALE_DEFS.get(qual)
+    if not intervals:
+        return None
+    root_semi = _SEMI_PC[root + sharp]
+    allowed = {(root_semi + iv) % 12 for iv in intervals}
+    # chromatic seasoning: lowered 7th (dorian color) + raised leading tone.
+    # For phrygian the b2 is IN the scale; add the natural 2 (F# in E) as color.
+    if qual == "minor":
+        allowed |= {(root_semi + 10) % 12, (root_semi + 11) % 12}
+    if qual == "phrygian":
+        # Color notes ABOVE the phrygian base. For E-phrygian (base: E F# G# A B C D),
+        # the extra pitches used as seasoning are:
+        #   G# = major 3rd  -> root+4
+        #   B  = natural 6th -> root+7
+        #   C# = minor 7th  -> root+10
+        #   D# = leading tone -> root+11
+        # (F# is already in the base as the b2.)
+        # E-phrygian base intervals [0,1,3,5,7,8,10] from root E(4):
+        #   E(4) F#(5) G#(6) A(7) B(8) C(9) D(10)
+        # Seasoning for metal/Egyptian color:
+        allowed.add((root_semi + 11) % 12)  # D#(3) — leading tone pull into E
+        allowed.add((root_semi + 10) % 12)  # C#(2) — wait, that's D... 
+        # Actually: root_semi=4, so:
+        #   +10 = 14%12 = 2 = C#  ✓ (minor 7th color)
+        #   +11 = 15%12 = 3 = D#  ✓ (leading tone)
+        # G# is pc 8 = root+4. Add it explicitly (it's the phrygian b3, should be in base):
+        allowed.add((root_semi + 4) % 12)   # G#(8) — phrygian b3, ensure present
+        allowed.add((root_semi + 2) % 12)   # F#(6) — phrygian b2, ensure present
+        allowed.add((root_semi + 10) % 12)  # A#(10) — wait no. root=4, +10=14%12=2=C#. 
+        # A# is pc 10 = root+6 from E(4). Add it:
+        allowed.add((root_semi + 6) % 12)   # A#(10) — augmented 4th / phrygian #4 color
+    return root_semi, allowed
+
+
+def _pc_of(note):
+    m = re.match(r"^([A-G])(#?)[1-6]$", note or "")
+    if not m:
+        return None
+    return (_SEMI_PC[m.group(1) + m.group(2)]) % 12
+
+
+def _note_height(note):
+    """Comparable pitch height (semitones from C1) for interval math."""
+    m = re.match(r"^([A-G])(#?)([1-6])$", note or "")
+    if not m:
+        return None
+    return int(m.group(3)) * 12 + _SEMI_PC[m.group(1) + m.group(2)]
+
+
+def check_m1_scale(parts, errors, warns):
+    scale = _parse_scale(parts.get("scale"))
+    if not scale:
+        warns.append("M1: no 'scale' declared (e.g. \"scale\": \"E-phrygian\") — off-scale check skipped")
+        return
+    _, allowed = scale
+    for voice in ("lead", "layer"):
+        for sec, bars in parts.get(voice, {}).items():
+            for bi, bar in enumerate(bars):
+                bad = [c for c in bar if isinstance(c, str) and _pc_of(c) is not None
+                       and _pc_of(c) not in allowed]
+                if bad:
+                    errors.append(f"M1(scale): {voice} '{sec}' bar {bi+1} off-scale: {bad}")
+    for sec, bars in parts.get("bass", {}).items():
+        for bi, bar in enumerate(bars):
+            bad = [c for c in bar if isinstance(c, str) and _pc_of(c) is not None
+                   and _pc_of(c) not in allowed]
+            if bad:
+                errors.append(f"M1(scale): bass '{sec}' bar {bi+1} off-scale: {bad}")
+
+
+def _section_pcs(bars):
+    pcs = {}
+    for bar in bars:
+        for c in bar:
+            pc = _pc_of(c) if isinstance(c, str) else None
+            if pc is not None:
+                pcs[pc] = pcs.get(pc, 0) + 1
+    return frozenset(pcs.keys())
+
+
+def _section_signature(bars):
+    """Compact signature of a section's lead for variation comparison."""
+    notes = [c for bar in bars for c in bar if isinstance(c, str)]
+    tops = [_note_height(c) for c in notes if _note_height(c) is not None]
+    top = max(tops) if tops else 0
+    density = sum(1 for bar in bars for c in bar if c) / max(1, sum(len(bar) for bar in bars))
+    return {"top": top, "density": round(density, 2),
+            "last_bar": tuple(bars[-1]) if bars else ()}
+
+
+def check_m3_progression(parts, plist, errors, warns):
+    """M3 — surprise on repeat.
+
+    Two clean checks (replaces the old '>=3 new notes' + 'clone' rules):
+      1. No two ADJACENT body sections may be identical (lazy copy-paste).
+      2. A RETURNING hook (a section name that appears again) must VARY at
+         least one dimension vs its first appearance:
+             ending (last bar) / higher top note / added layer / density / drums.
+         Repeating the riff is GOOD; repeating it with zero change is boring.
+    """
+    body_idx = [i for i, e in enumerate(plist)
+                if not e["part"].startswith(("intro", "tag", "outro"))]
+    lead = parts.get("lead", {})
+    layer = parts.get("layer", {})
+    drum_of = {e["part"]: e["drum"] for e in plist}
+
+    def has_layer(pn):
+        return bool(layer.get(pn))
+
+    sigs = {}   # part name -> first signature seen
+    for i in body_idx:
+        pn = plist[i]["part"]
+        bars = lead.get(pn)
+        if not bars:
+            continue
+        if pn not in sigs:
+            sigs[pn] = _section_signature(bars)
+            sigs[pn]["drum"] = drum_of.get(pn)
+            sigs[pn]["layer"] = has_layer(pn)
+        else:
+            # RETURN of an earlier section — require a variation.
+            prev = sigs[pn]
+            cur = _section_signature(bars)
+            varied = (
+                cur["last_bar"] != prev["last_bar"]             # different ending
+                or cur["top"] > prev["top"]                     # higher top note
+                or (has_layer(pn) and not prev["layer"])        # added layer
+                or abs(cur["density"] - prev["density"]) > 0.15  # busier/sparser
+                or drum_of.get(pn) != prev["drum"]              # drums stepped
+            )
+            if not varied:
+                errors.append(f"M3(repeat): '{pn}' returns but changes nothing vs its first appearance — add a surprise (new ending, higher top note, extra layer, or denser drums)")
+
+    # Adjacent-identical check across the whole body sequence (by content).
+    content_seq = []
+    for i in body_idx:
+        pn = plist[i]["part"]
+        bars = lead.get(pn)
+        if bars:
+            content_seq.append((pn, tuple(tuple(b) for b in bars)))
+    for a, b in zip(content_seq, content_seq[1:]):
+        if a[1] == b[1]:
+            errors.append(f"M3(copy): '{a[0]}' and '{b[0]}' are back-to-back identical sections — vary one of them")
+
+
+def check_m4_ceiling(parts, plist, errors, warns):
+    tops = {}
+    for e in plist:
+        pn = e["part"]
+        bars = parts.get("lead", {}).get(pn) or []
+        hts = [_note_height(c) for bar in bars for c in bar
+               if isinstance(c, str) and _note_height(c) is not None]
+        if hts:
+            tops[pn] = max(hts)
+    def top(prefix):
+        return max((v for k, v in tops.items() if k.startswith(prefix)), default=None)
+    hook_t, build_t, peak_t = top("hook"), top("build"), top("peak")
+    if hook_t and peak_t is not None and peak_t <= hook_t:
+        errors.append(f"M4(ceiling): peak top note ({peak_t}) never exceeds hook top ({hook_t}) — the peak has nowhere to go")
+    if build_t and peak_t is not None and peak_t < build_t:
+        errors.append(f"M4(ceiling): peak top ({peak_t}) below build glimpse ({build_t})")
+    traj = " ".join(f"{k}={v}" for k, v in tops.items())
+    print(f"  top-note trajectory: {traj}")
+
+
+def check_m5_walk(parts, errors, warns):
+    for sec, bars in parts.get("lead", {}).items():
+        seq = [c for bar in bars for c in bar if isinstance(c, str) and _note_height(c) is not None]
+        leaps, steps = 0, 0
+        unanchored = []
+        for i in range(1, len(seq)):
+            d = abs(_note_height(seq[i]) - _note_height(seq[i - 1]))
+            if d <= 4:                      # step / small skip / repeat
+                steps += 1
+            elif d <= 7:                    # leap
+                leaps += 1
+                up = _note_height(seq[i]) > _note_height(seq[i - 1])
+                first_bar = i < 8           # entry leap allowance (roughly bar 1)
+                # resolution leap down at section end
+                tail = i >= len(seq) - 4
+                if not (up or first_bar or (not up and tail)):
+                    unanchored.append((seq[i - 1], seq[i]))
+        total = steps + leaps
+        if total >= 8 and leaps / total > 0.30:
+            warns.append(f"M5(walk): lead '{sec}' is {leaps}/{total} leaps (>30%) — melody teleports instead of walking")
+        if len(unanchored) >= 3:
+            errors.append(f"M5(walk): lead '{sec}' has {len(unanchored)} unanchored leaps (downward, mid-section): {unanchored[:3]}")
+
+
+def check_b1_bass(parts, plist, errors, warns):
+    for e in plist:
+        pn = e["part"]
+        bars = parts.get("bass", {}).get(pn)
+        if not bars:
+            continue
+        roots_per_bar = []
+        for bar in bars:
+            rs = {_pc_of(c) for c in bar if isinstance(c, str) and _pc_of(c) is not None}
+            roots_per_bar.append(rs)
+        # pedal check: same single root for 3+ consecutive bars
+        run = 1
+        for i in range(1, len(roots_per_bar)):
+            if roots_per_bar[i] and roots_per_bar[i] == roots_per_bar[i - 1]:
+                run += 1
+                if run >= 3 and "-pedal" not in pn:
+                    errors.append(f"B1(pedal): bass '{pn}' holds one root for {run} bars (bars {i-1+1}-{i+1}) — make it move")
+                    break
+            else:
+                run = 1
+        # register check
+        for bar in bars:
+            for c in bar:
+                m = re.match(r"^[A-G]#?([1-6])$", c or "")
+                if m and int(m.group(1)) > 3:
+                    errors.append(f"B1(register): bass '{pn}' note {c} above octave 3")
+                    break
+
+
+def check_h1_pads(parts, plist, errors, warns):
+    scale = _parse_scale(parts.get("scale"))
+    tonic = scale[0] if scale else None
+    for e in plist:
+        pn = e["part"]
+        pad = parts.get("pad", {}).get(pn)
+        if not pad or e["measures"] < 4:
+            continue
+        chords = sorted(pad.items(), key=lambda kv: int(kv[0]))
+        if len(chords) < 2:
+            errors.append(f"H1(static): pads '{pn}' hold one chord across {e['measures']} bars — move the harmony")
+        if tonic is not None and pn.startswith("build"):
+            for off, notes in chords:
+                pcs = {_pc_of(n) for n in notes if _pc_of(n) is not None}
+                triad = {(tonic + iv) % 12 for iv in (0, 4, 7)} | {(tonic + iv) % 12 for iv in (0, 3, 7)}
+                if pcs and pcs <= triad:
+                    warns.append(f"H1(arc): build '{pn}' bar {int(off)//16 + 1} sits on tonic — builds should leave home")
+
+
+_KICK_BLOCKS = {
+    "quarters": {0, 8, 16, 24},
+    "eighths": set(range(0, 32, 2)),
+    "blast": set(range(32)),
+    "push": {0, 10, 16, 26},
+}
+_FILL_UP = {29, 30, 31}
+
+
+def _kit_steps(entry, inst):
+    letter = {"k": "kick", "s": "snare", "h": "hat"}[inst]
+    if isinstance(entry, list):
+        return {i for i, d in enumerate(entry) if d.get(inst)}
+    val = entry.get(letter) or entry.get(inst)
+    out = set()
+    named = {"quarters": 4, "eighths": 2, "sixteenths": 1}
+    if isinstance(val, str):
+        if val in named:
+            step = named[val]
+            out = set(range(0, 32, step))
+        else:
+            for b in val.split():
+                try:
+                    out.add(round(float(b) * 4))
+                except ValueError:
+                    pass
+    return out
+
+
+def check_drum_kits(parts, plist, errors, warns):
+    kit = parts.get("drumKit", {})
+    levels = [e["drum"] for e in plist if e["drum"] != "none"]
+    ordered = []
+    for nm in levels:
+        if nm not in ordered:
+            ordered.append(nm)
+    # D1 backbeat (bar-local: beat 2 = step 8, beat 4 = step 16 of a 32-step bar)
+    for nm in ordered:
+        entry = kit.get(nm)
+        if entry is None or isinstance(entry, list):
+            continue
+        snare = _kit_steps(entry, "s")
+        if snare and not ({8, 16} <= snare):
+            errors.append(f"D1(backbeat): kit '{nm}' snare missing beats 2/4 (has steps {sorted(snare)})")
+    for nm in ordered:
+        entry = kit.get(nm)
+        if entry is None:
+            continue
+        snare = _kit_steps(entry, "s")
+        kick = _kit_steps(entry, "k")
+        hat = _kit_steps(entry, "h")
+        # D4 noise floor + downbeat
+        if len(kick) > 24:
+            errors.append(f"D4(noise-floor): kit '{nm}' has {len(kick)} kick hits/bar (max 24) — it's a wall, not a beat")
+        if kick and 0 not in kick:
+            errors.append(f"D4(downbeat): kit '{nm}' kicks exist but step 0 (downbeat) is empty")
+        # D4 snare attack zone (bar-local: steps 8-9 and 16-17)
+        clash = kick & ({8, 9, 16, 17})
+        if clash and snare:
+            warns.append(f"D4(snare-zone): kit '{nm}' kicks under the snare at steps {sorted(clash)} — backbeat gets muddy")
+        # D2 kick vocabulary
+        if kick:
+            base = kick - _FILL_UP
+            matched = any(base <= block for block in _KICK_BLOCKS.values())
+            if not matched:
+                warns.append(f"D2(vocabulary): kit '{nm}' kick pattern {sorted(kick)} doesn't match a standard block (quarters/eighths/blast/push) — verify it sounds like a beat")
+    # D3 additive ladder by drum-density order
+    def density(nm):
+        e = kit.get(nm, {})
+        return sum(len(_kit_steps(e, i)) for i in ("k", "s", "h"))
+    ranked = sorted([nm for nm in ordered if nm in kit], key=density)
+    for i in range(1, len(ranked)):
+        lo, hi = ranked[i - 1], ranked[i]
+        for inst, letter in (("k", "kick"), ("s", "snare"), ("h", "hat")):
+            a, b = _kit_steps(kit[lo], inst), _kit_steps(kit[hi], inst)
+            removed = a - b
+            if removed:
+                errors.append(f"D3(additive): kit '{hi}' removes {letter} hits present in '{lo}' (steps {sorted(removed)}) — levels must only add")
+
+
+def run_craft_checks(parts, plist, errors, warns):
+    check_m1_scale(parts, errors, warns)
+    check_m3_progression(parts, plist, errors, warns)
+    check_m4_ceiling(parts, plist, errors, warns)
+    check_m5_walk(parts, errors, warns)
+    check_b1_bass(parts, plist, errors, warns)
+    check_h1_pads(parts, plist, errors, warns)
+    check_drum_kits(parts, plist, errors, warns)
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -892,6 +1267,8 @@ def main():
     pa.add_argument("--name", required=True)
     pa.add_argument("--genre", default="")
     pa.add_argument("--vibe", default="")
+    pa.add_argument("--scale", default="",
+                    help="scale lock, e.g. 'E-phrygian', 'E-minor', 'C-major' (M1)")
     pa.add_argument("--lead", action="append",
                     help="part=measure_notation (repeatable)")
     pa.add_argument("--layer", action="append",
