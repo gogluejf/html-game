@@ -74,23 +74,30 @@ def resolve_time_sig(ts):
 # Format: notes separated by spaces, bars separated by |
 # Duration suffixes: . (dotted = 1.5x), ~ (hold = 2 beats)
 # Rest: _
-# NOTE: no repeat shorthand (xN). Write every bar explicitly — repetition is
-# how songs get boring; M3 (progression) requires new material per section.
+# NOTE: xN repeat shorthand is supported (e.g. 'C D x4' repeats the pair 4x).
+# Craft preference: write bars out and vary them when you can — verbatim
+# repetition is what makes songs boring, and M3 (progression) rewards new
+# material. But xN must parse cleanly; it is NOT an error.
 
 def parse_beat_notation(s, step_width=16):
     """Parse beat notation into a list of bar arrays (each bar = step_width cells).
 
     Notes are placed on eighth-note grid by default (2 steps per beat in 4/4).
     | separates bars. . doubles duration. ~ holds 2 beats. _ is rest.
-    There is NO xN repeat — write each bar out explicitly.
+    'xN' after a token group repeats that group N times (bar-level shorthand).
     """
     s = s.strip()
     if not s:
         return []
 
-    # Reject any leftover xN repeat token with a clear message (it was removed).
-    if re.search(r"\bx\d+", s):
-        _err(f"xN repeat not supported: {s!r} — write each bar explicitly and vary them")
+    # Expand xN repeat shorthand BEFORE splitting into bars:
+    # every maximal run of note/rest tokens followed by 'xN' is repeated N times.
+    while True:
+        m = re.search(r"((?:[^\s|]+\s+)+)x(\d+)", s)
+        if not m:
+            break
+        group, n = m.group(1), int(m.group(2))
+        s = s[:m.start()] + " ".join([group] * n) + s[m.end():]
 
     # Standard: split by | into bars
     bar_strs = [b.strip() for b in s.split("|")]
