@@ -256,7 +256,7 @@ export function compile(rawBackbone, parts) {
     sections: partList,
   };
   for (const [k, v] of Object.entries(voices)) if (v != null) track[k] = v;
-  for (const k of ['genre', 'vibe', 'createdAt', 'revision']) {
+  for (const k of ['genre', 'vibe', 'createdAt', 'revision', 'uuid']) {
     if (parts[k] != null) track[k] = parts[k];
   }
   return track;

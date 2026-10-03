@@ -19,10 +19,13 @@ export class SongController {
     // Set by seek()/select() while paused/stopped; cleared on play(). The render
     // loop honors it instead of clobbering the dot with live engine position.
     this._manualPos = null;
-    // -- favorites (track indices), persisted to localStorage --
+    // -- favorites (track UUIDs), persisted to localStorage --
+    // Stored by UUID so deleting/reordering songs never shifts a heart off its
+    // song. Legacy index-based favs are migrated on load (see _migrateFavs).
     // Must be initialized BEFORE _loadPrefs() so the saved favs aren't wiped.
     this.favorites = [];
     this._loadPrefs();
+    this._migrateFavs();
     // -- always-on action log --
     this._actionLog = [];
   }
@@ -57,14 +60,39 @@ export class SongController {
       if (typeof p.cur === 'number' && p.cur >= 0 && p.cur < this.tracks.length) this.current = p.cur;
     } catch (e) {}
   }
+  /** Migrate legacy index-based favorites to UUID-based. Old favs stored a
+   *  numeric list of track positions; those drift when songs are added/removed.
+   *  We map each old index to the track's UUID at load time, then rewrite.
+   *  If a song was deleted since the fav was saved, that heart is dropped
+   *  (unavoidable — the song is gone). */
+  _migrateFavs() {
+    let changed = false;
+    const migrated = [];
+    for (const f of this.favorites) {
+      if (typeof f === 'number') {
+        // Legacy: f is a track index. Resolve to UUID if that track still exists.
+        const t = this.tracks[f];
+        if (t && t.uuid) { migrated.push(t.uuid); changed = true; }
+        // else: song was deleted — drop this stale heart.
+      } else if (typeof f === 'string') {
+        migrated.push(f);  // already a UUID
+      }
+    }
+    if (changed) {
+      this.favorites = migrated;
+      this._savePrefs();
+    }
+  }
   _savePrefs() {
     try { localStorage.setItem('jukebox-prefs', JSON.stringify({ seq: this.seq, rep: this.rep, shf: this.shf, favs: this.favorites, cur: this.current })); } catch (e) {}
   }
 
-  isFav(i) { return this.favorites.indexOf(i) !== -1; }
+  isFav(i) { return this.favorites.indexOf(this.tracks[i].uuid) !== -1; }
   toggleFav(i) {
-    const at = this.favorites.indexOf(i);
-    if (at === -1) this.favorites.push(i); else this.favorites.splice(at, 1);
+    const uid = this.tracks[i].uuid;
+    if (!uid) return false;   // no uuid (shouldn't happen post-migration)
+    const at = this.favorites.indexOf(uid);
+    if (at === -1) this.favorites.push(uid); else this.favorites.splice(at, 1);
     this._savePrefs();
     // Update just the heart in place (no full re-render, keeps hover state).
     const el = document.querySelector('#list .row[data-i="' + i + '"] .fav');
