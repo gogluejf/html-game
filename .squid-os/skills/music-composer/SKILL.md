@@ -47,6 +47,21 @@ One-liner brief? Infer sensible defaults. Don't over-ask.
 
 ### 2. Architect: design the backbone
 
+Pick a **construction** first — these are proven part-arc templates with
+drum ladders and variation rules (see `references/constructions/`):
+
+- **DREAM** (`dream.md`) — the classic 8-part loop: paired sections
+  (`riff → riff-b → run → run-b → peak → drop → climax → tag`), each pair
+  brings new melodic material, b-phrases vary only the ending, sparse drop
+  before the climax, drum ladder `[0,0,1,1,2,3,3,2]`. Call-and-answer
+  two-melody songs use the same skeleton (make riff/run a true A/B pair).
+
+Each file has the exact `arch` command, the per-part rules, voice guidance,
+and variants. When the user's brief implies a known shape (boss loop,
+call-and-answer punk, etc.), use the matching construction verbatim. Free-form
+`--part` design is still allowed for songs that genuinely need a non-standard
+shape — but default to a construction; freestyle is where lazy drafts come from.
+
 Design the structure in your head first (part names, bar counts, drum
 levels, time sig), then create it with ONE `arch` call:
 
@@ -108,48 +123,13 @@ part names you'll fill in parts.
 ### 3. Composer: write the parts
 
 Fill notes with ONE `parts` call (or several — `parts` merges; see step 5).
-This example is a real, complete E-minor arcade-punk song — study its shape:
-full bars (no half-bar holes), durations that create rhythm (`~`, `.`), every
-bar different from the last, register climbing riff → hook → peak, and a tag
-that walks home to the tonic:
-
-```bash
-python3 <skill-folder>/scripts/compose.py parts --game GAME \
-  --name "SONG NAME" --genre "Arcade Punk" \
-  --vibe "one-line description of the sound" \
-  --lead riff="E4~ _ B4 C5 | D5 E4 B4 A4" \
-  --lead hook="B4. D5 E5 F#5 | G5~ F#5 E5 D5" \
-  --lead peak="F#5 G5 A5~ _ | A5 G5 F#5 E5 D5 C5 B4" \
-  --lead tag="A5~ G5 F#5 E5 | E4~ _ _ _" \
-  --layer peak="A4~ C5 D5 E5 | E5 D5 C5 B4" \
-  --bass riff="E2~ E3 _ E2 | E2~ G2 _ E3" \
-  --bass hook="A2~ A3 _ A2 | G2~ G3 _ A2" \
-  --bass peak="F#2~ A2 _ F#2 | E2~ G2 _ B2" \
-  --bass tag="E2~ E3 _ E2 | E2~ _ _ _" \
-  --pad riff="Em x2" \
-  --pad hook="Am x2" \
-  --pad peak="F#m x1 E x1" \
-  --drum none='{}' \
-  --drum light='snare:"2 4" hat:eighths' \
-  --drum medium='kick:"0 2" snare:"2 4" hat:eighths' \
-  --drum full='kick:"0 1 2 3" snare:"2 4" hat:eighths' \
-  --voice bassType=sawtooth --voice bassCut=900 --voice bassDur=0.14 \
-  --voice padType=sawtooth --voice padCut=1400 --voice padDur=0.4 \
-  --voice leadType=square --voice leadCut=3800 --voice leadDur=0.16 --voice vib=14 \
-  --voice layerType=triangle --voice layerCut=3000 --voice layerDur=0.18 \
-  --voice kickTop=150 --voice kickBot=42
-```
-
-What makes this example work (copy these habits, not the notes):
-- **Rhythm, not just pitch.** `E4~` (held) vs `B4 C5` (quick pair) vs `_`
-  (placed rest) — the contrast IS the groove. Even eighths all the way is
-  what makes melodies sound robotic.
-- **Every bar differs.** No bar is copied verbatim; even repeated grooves get
-  a changed ending note or passing tone.
-- **The arc is audible.** Riff lives in E4–D5, hook climbs to G5, peak hits
-  A5 (the song's ceiling), tag descends stepwise and lands on E4 (tonic).
-- **Bass moves.** Roots change with the harmony (E→A→G→F#→E) and octave
-  jumps (E2↔E3) keep it alive — never one root held for 3+ bars.
+Compose original material. There is deliberately NO worked note example in
+this skill: past concrete melodies get copied verbatim into every new song
+and the library turns into one riff in different keys. Write pitches that
+serve THIS brief — a different key center, a different rhythmic identity,
+a different register arc than the songs already in the game. Before writing,
+check what keys/keys-shapes existing songs use (`list --game GAME`) and
+steer away from them.
 
 **Drums — compose them, don't template them.** This is where tracks live or die.
 A good drum pattern has *rhythm*: grouped hits, placed ghosts, a syncopated or
@@ -359,6 +339,7 @@ python3 compose.py set-vibe --game GAME --name NAME --vibe "..."
 - [compiler.js](server/js/compiler.js) — backbone+parts → engine grid (browser-side)
 
 ### References
+- [constructions/dream.md](references/constructions/dream.md) — DREAM construction: the classic 8-part loop (riff/riff-b/run/run-b/peak/drop/climax/tag), paired variation, sparse drop, drum ladder
 - [craft-instructions.md](references/craft-instructions.md) — musical goals and the scale/voice vocabulary. Most of it is now advisory (audit only WARNs); read it for guidance, not as a rulebook to obey.
 - [song-anatomy.md](references/song-anatomy.md) — the unit ladder (song/part/measure/beat/step), worked example, who-decides-what contract
 - [song-structure.md](references/song-structure.md) — file format spec + chiptune voice recipes only. (Its "Laws of good music" part is unused; the active rules are in craft-instructions.md.)

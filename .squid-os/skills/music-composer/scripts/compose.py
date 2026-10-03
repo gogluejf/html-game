@@ -517,6 +517,25 @@ def cmd_parts(a):
     if is_update:
         parts["revision"] = int(parts.get("revision", 0)) + 1
 
+    # Voice completeness: NO silent defaults. Every song must declare its
+    # full sound explicitly — the composer decides, never the player fallback.
+    v = parts.get("voices", {})
+    required_voices = [
+        "leadType", "leadCut", "leadDur", "vib",
+        "bassType", "bassCut", "bassDur",
+        "padType", "padCut", "padDur",
+        "kickTop", "kickBot",
+    ]
+    if parts.get("layer"):
+        required_voices += ["layerType", "layerCut", "layerDur"]
+    missing = [k for k in required_voices if k not in v]
+    if missing:
+        _err(f"voice spec incomplete — every song must declare its full sound "
+             f"(no defaults). Missing: {', '.join(missing)}\n"
+             f"      pass them via --voice key=value, e.g.\n"
+             f"      --voice leadType=square --voice leadCut=4000 --voice leadDur=0.13 "
+             f"--voice vib=6 ...")
+
     os.makedirs(d, exist_ok=True)
     with open(parts_path, "w") as f:
         json.dump(parts, f, indent=2)
