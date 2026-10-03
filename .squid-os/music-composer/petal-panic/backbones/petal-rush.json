@@ -1,0 +1,32 @@
+{
+  "name": "PETAL RUSH",
+  "bpm": 164,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "riff",
+      "measures": 2,
+      "drum": "light"
+    },
+    {
+      "part": "hook",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "build",
+      "measures": 4,
+      "drum": "heavy"
+    },
+    {
+      "part": "peak",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 2,
+      "drum": "light"
+    }
+  ]
+}
