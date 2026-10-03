@@ -72,39 +72,25 @@ def resolve_time_sig(ts):
 
 # ─── Beat notation parser ───────────────────────────────────────────────────
 # Format: notes separated by spaces, bars separated by |
-# Duration suffixes: . (dotted = 2x), ~ (hold = 2 beats)
+# Duration suffixes: . (dotted = 1.5x), ~ (hold = 2 beats)
 # Rest: _
-# Bass shorthand: "E2 E3 x16" = repeat pair 16 times
+# NOTE: no repeat shorthand (xN). Write every bar explicitly — repetition is
+# how songs get boring; M3 (progression) requires new material per section.
 
 def parse_beat_notation(s, step_width=16):
     """Parse beat notation into a list of bar arrays (each bar = step_width cells).
-    
+
     Notes are placed on eighth-note grid by default (2 steps per beat in 4/4).
     | separates bars. . doubles duration. ~ holds 2 beats. _ is rest.
+    There is NO xN repeat — write each bar out explicitly.
     """
     s = s.strip()
     if not s:
         return []
 
-    # Handle bass shorthand: "X Y xN"
-    m = re.match(r"^(.+?)\s+x(\d+)$", s)
-    if m:
-        pattern_str = m.group(1)
-        repeats = int(m.group(2))
-        # Parse one cycle of the pattern
-        cycle_cells = _parse_single_bar(pattern_str, step_width)
-        # Tile to fill required bars
-        total_cells = []
-        for _ in range(repeats * 2):  # xN means N pairs = N*2 bars worth
-            total_cells.extend(cycle_cells)
-        # Split into bars
-        bars = []
-        for i in range(0, len(total_cells), step_width):
-            bar = total_cells[i:i+step_width]
-            while len(bar) < step_width:
-                bar.append(None)
-            bars.append(bar)
-        return bars
+    # Reject any leftover xN repeat token with a clear message (it was removed).
+    if re.search(r"\bx\d+", s):
+        _err(f"xN repeat not supported: {s!r} — write each bar explicitly and vary them")
 
     # Standard: split by | into bars
     bar_strs = [b.strip() for b in s.split("|")]
@@ -450,12 +436,15 @@ def cmd_parts(a):
         while len(bars) < expected:
             bars.append([None] * step_width)
         parts.setdefault("lead", {})[sec] = bars[:expected]
-        # M2 density report — sparsity visible at write time
+        # M2 density report — INFORMATIONAL only. Sparsity is often correct
+        # (jazz/ambient/lo-fi). This line never blocks or fails; it just makes
+        # fill ratio visible at write time. Do NOT re-run parts to raise density
+        # just to clear this note.
         sparse_ok = "-sparse" in sec
         for bi, bar in enumerate(bars[:expected]):
             fill = sum(1 for c in bar if c) / max(1, len(bar))
-            flag = "" if (fill >= 0.5 or sparse_ok) else "  ← BELOW 50% FLOOR"
-            print(f"    lead {sec} bar{bi+1}: {int(fill*100):3d}% filled{flag}")
+            tag = "" if (fill >= 0.5 or sparse_ok) else "  (sparse — fine for jazz/ambient/ballad)"
+            print(f"    info: lead {sec} bar{bi+1}: {int(fill*100):3d}% filled{tag}")
 
     # Merge layer sections
     for spec in a.layer or []:
@@ -581,16 +570,17 @@ def cmd_validate(a):
 
 
 def cmd_audit(a):
-    """Craft-law audit: check a song's notes against the architect's plan.
+    """Craft-instruction audit: check a song's notes against the architect's plan.
 
-    Checks (from references/song-structure.md laws):
+    Checks (from references/craft-instructions.md, the M/B/H/D instructions):
       A. Consistency  — parts keys match backbone parts exactly (no stale/missing)
-      B. Law 1        — bass moves: >=4 distinct pitch events per 4-measure part
+      B. Bass moves   — >=4 distinct pitch events per 4-measure part (B1)
       C. Drums        — every drum track referenced exists and is non-silent
-      D. Law 4        — no identical consecutive measures, no period-2 cells,
-                        no echo repeats (lead AND bass)
-      E. Law 9        — intensity ladder: score per measure, climbs through body
-      F. Law 6        — peak register must reach or exceed build's top note
+      D. Repetition   — WARN on identical adjacent bars; FAIL only on a pure
+                        static section (all bars identical, zero motion)
+      E. Intensity    — ladder climb through the body (WARN only)
+      F. Peak register— peak must reach/exceed build's top note (M4)
+      M/B/H/D        — scale lock, progression, ceiling, walk, bass, pads, drums
     Exit 1 on any FAIL; WARN does not block.
     """
     d = state_dir(a.game, a.working_dir)
@@ -622,7 +612,7 @@ def cmd_audit(a):
     if bad_refs:
         errors.append(f"A: drum tracks referenced but not defined: {sorted(bad_refs)}")
 
-    # ── B. Law 1: bass must move ───────────────────────────────────────────
+    # ── B. Bass must move (B1) ────────────────────────────────────────────
     bass_single = bool(parts.get("_bass_single"))
     bass_map = parts.get("bass", {})
     for pn in sorted(part_names):
@@ -661,20 +651,24 @@ def cmd_audit(a):
         if drum_hits(nm) == 0:
             warns.append(f"C: drum track '{nm}' assigned to part '{e['part']}' but is silent")
 
-    # ── D. Law 4: no repeated measures (consecutive / period-2 / echo) ─────
+    # ── D. Repeated measures (relaxed) ────────────────────────────────────
+    # Repetition WITHIN a groove is normal and good. What we actually care
+    # about is a section that is a lazy full copy of another (M3 handles that)
+    # or a bass/lead that never changes across its whole span. So:
+    #   - two identical ADJACENT bars  → WARN (nudge toward variation, not FAIL)
+    #   - a bar echoing the one 2 back (period-2) across 4+ bars → WARN
+    #   - an ENTIRE section identical to its content in every bar (pure static
+    #     loop, zero motion) → FAIL
     def repeat_check(kind, sec_name, bars):
-        for i in range(1, len(bars)):
-            if bars[i] == bars[i - 1]:
-                errors.append(f"D(Law4): {kind} '{sec_name}' measure {i+1} is identical to measure {i}")
-        if len(bars) >= 4:
-            for i in range(len(bars) - 3):
-                if bars[i] == bars[i + 1] and bars[i + 2] == bars[i + 3] \
-                   and bars[i] != bars[i + 2]:
-                    errors.append(f"D(Law4): {kind} '{sec_name}' measures {i+1}-{i+4} are a repeated 2-measure cell")
-        if len(bars) >= 3:
-            for i in range(len(bars) - 2):
-                if bars[i + 2] == bars[i]:
-                    errors.append(f"D(Law4): {kind} '{sec_name}' measure {i+3} repeats measure {i+1} (echo)")
+        n = len(bars)
+        if n == 0:
+            return
+        adj_same = sum(1 for i in range(1, n) if bars[i] == bars[i - 1])
+        if adj_same:
+            warns.append(f"D(repeat): {kind} '{sec_name}' has {adj_same} identical adjacent bar(s) — consider varying at least one (new ending, passing note, or top note)")
+        # Pure-static-section check: every bar byte-identical = no motion at all.
+        if n >= 2 and all(b == bars[0] for b in bars):
+            errors.append(f"D(static): {kind} '{sec_name}' is a pure static loop — all {n} bars identical, zero motion. Vary the bars.")
 
     for pn in sorted(part_names):
         lead = parts.get("lead", {}).get(pn)
@@ -898,6 +892,7 @@ def cmd_set_vibe(a):
 _SCALE_DEFS = {
     "major":       [0, 2, 4, 5, 7, 9, 11],
     "minor":       [0, 2, 3, 5, 7, 8, 10],
+    "harmonic-minor": [0, 2, 3, 4, 5, 7, 9, 11],   # natural minor + raised 6th(A) & leading tone(B)
     "phrygian":    [0, 1, 3, 5, 7, 8, 10],
     "dorian":      [0, 2, 3, 5, 7, 9, 10],
     "pentatonic-minor":   [0, 3, 5, 7, 10],
@@ -912,9 +907,9 @@ def _parse_scale(spec):
     if not spec:
         return None
     s = str(spec).replace(" ", "-").lower()
-    m = re.match(r"^([a-g])(#?)-(major|minor|phrygian|dorian|pentatonic-minor|pentatonic-major)$", s)
+    m = re.match(r"^([a-g])(#?)-(major|minor|harmonic-minor|phrygian|dorian|pentatonic-minor|pentatonic-major)$", s)
     if not m:
-        m = re.match(r"^([a-g])(#?)(m|major|phrygian|dorian)$", s)
+        m = re.match(r"^([a-g])(#?)(m|major|minor|phrygian|dorian)$", s)
         if not m:
             return None
         root, sharp, qual = m.group(1).upper(), m.group(2), m.group(3)
@@ -928,7 +923,7 @@ def _parse_scale(spec):
     allowed = {(root_semi + iv) % 12 for iv in intervals}
     # chromatic seasoning: lowered 7th (dorian color) + raised leading tone.
     # For phrygian the b2 is IN the scale; add the natural 2 (F# in E) as color.
-    if qual == "minor":
+    if qual in ("minor", "harmonic-minor"):
         allowed |= {(root_semi + 10) % 12, (root_semi + 11) % 12}
     if qual == "phrygian":
         # Color notes ABOVE the phrygian base. For E-phrygian (base: E F# G# A B C D),
@@ -1014,7 +1009,7 @@ def _section_signature(bars):
 def check_m3_progression(parts, plist, errors, warns):
     """M3 — surprise on repeat.
 
-    Two clean checks (replaces the old '>=3 new notes' + 'clone' rules):
+    Two clean checks:
       1. No two ADJACENT body sections may be identical (lazy copy-paste).
       2. A RETURNING hook (a section name that appears again) must VARY at
          least one dimension vs its first appearance:
@@ -1285,7 +1280,7 @@ def main():
     pa.add_argument("--working-dir", default=".")
 
     # audit
-    au = sub.add_parser("audit", help="craft-law audit of one song (laws 1/2/4/6/9 + consistency)")
+    au = sub.add_parser("audit", help="craft-instruction audit of one song (M/B/H/D + consistency)")
     au.add_argument("--game", required=True)
     au.add_argument("--name", required=True)
     au.add_argument("--working-dir", default=".")

@@ -124,9 +124,8 @@ Positions: beat numbers (`"1 2.5 3"`) or named patterns (`quarters`, `eighths`, 
 Same name repeated in the backbone = same notes replayed.
 Want different notes? New name: `hook-b`, `verse-2`.
 
-## What "phrase" means now
+## Vocabulary
 
-Nothing. The word is deleted from the system. If you hear it in old docs or
-comments, ignore it. A musical phrase (a 2–4 measure melodic idea) is a
-*writing discipline*, not a tracked unit. We don't store it, count it, or
-enforce it structurally — audit checks measures directly.
+The only unit words in the system: **step, beat, bar (= measure), part, song.**
+There is no "phrase" or "section." A melodic idea spanning 2–4 bars is a
+*writing choice*, not a tracked unit — audit checks bars directly.

@@ -7,7 +7,7 @@ checks after the fact; an instruction is something the composer follows
 it's a wish.
 
 The source material: our own failure post-mortems (sparse GOLDEN SCARAB,
-transposed-everything sections, lopsided kick patterns) + the standard
+transposed-everything parts, lopsided kick patterns) + the standard
 constrained-composition framework (scale lock, grid lock, layer-by-function,
 drunkard's walk, repetition-with-variation).
 
@@ -36,7 +36,7 @@ Per bar, count filled lead cells / total cells:
 
 | Voice | Floor | Escape hatch |
 |---|---|---|
-| lead | ≥ 50% | section name suffixed `-sparse` (breaks, tags, cries) |
+| lead | ≥ 50% | part name suffixed `-sparse` (breaks, tags, cries) |
 | bass | ≥ 40% | same |
 | layer | n/a (optional voice) | — |
 
@@ -48,20 +48,20 @@ tracks that sound good fill 50–100% of every cell.
 
 ## M3 — Progression (every part gets new melodic material)
 
-- **New-pitch rule:** each body section (hook/build/peak/…) must contain at
+- **New-pitch rule:** each body part (hook/build/peak/…) must contain at
   least **3 pitch classes its predecessor doesn't have**. Octave shifts don't
   count — compare pitch classes only.
-- **No-clone rule:** no two body sections may share > 70% of their pitch-class
+- **No-clone rule:** no two body parts may share > 70% of their pitch-class
   multiset (octave-folded). Hook and peak may *rhyme* (same ending figure,
   same rhythm shape) but the bodies must differ.
-- **AABA within a section:** a 4-bar section should state a phrase in bars
+- **AABA within a part:** a 4-bar part should state an idea in bars
   1–2, answer/vary in bar 3, and **return bar 1's rhythm with a changed
   ending** in bar 4. Repetition creates legitimacy; identical endings create
   boredom.
 
 Why: this is exactly today's bug — peak was hook transposed up a step per
 bar. Legally valid under the old Law 4 (which only checked *within* a
-section), musically dead.
+part), musically dead.
 
 ## M4 — Ceiling climb (register arc)
 
@@ -72,10 +72,10 @@ intro ≤ hook < build ≤ peak        (strictly rising through the body)
 tag: descends stepwise to tonic     (and states peak's top note once = farewell)
 ```
 
-- `audit` prints the per-section top-note table.
+- `audit` prints the per-part top-note table.
 - peak_top ≤ hook_top = FAIL.
 - The peak's top note appearing *casually early* steals the ceiling: if a
-  section before the peak reaches the peak's top note, WARN (glimpses are
+  part before the peak reaches the peak's top note, WARN (glimpses are
   allowed in build only, max one bar).
 
 Why: if everything already hit A5 in the hook, the peak has nowhere to go.
@@ -88,9 +88,9 @@ in a lead line (ignore rests):
 - **≥ 70%** of intervals must be a 2nd or 3rd (step or small skip) in the
   scale, or a repeated note.
 - **≤ 30%** may be leaps (4th+). A leap must satisfy ONE of:
-  - it goes **up** and lands in a register the section hasn't reached yet
-    (leaps are how sections climb), or
-  - it's the **first note of a new section** (entry leap), or
+  - it goes **up** and lands in a register the part hasn't reached yet
+    (leaps are how parts climb), or
+  - it's the **first note of a new part** (entry leap), or
   - it's the **final descent** in a tag/break (resolution leap down).
 - Random upward-and-downward leaping with no destination = FAIL
   ("lead line has N unanchored leaps").
@@ -100,13 +100,13 @@ is local motion with purposeful escapes. My first GOLDEN SCARAB draft had
 wide phrygian jumps everywhere with no landing — it sounded like a pinball,
 not a riff.
 
-## B1 — Bass is the engine (per-section identity)
+## B1 — Bass is the engine (per-part identity)
 
 - Bass must change its **root at least once per 2 bars** (a pedal longer
-  than 2 bars = FAIL, except tagged `-pedal` sections).
-- Bass outline per section must differ from the previous section's outline
+  than 2 bars = FAIL, except tagged `-pedal` parts).
+- Bass outline per part must differ from the previous part's outline
   (same M3 no-clone rule, applied to bass roots).
-- Register: octaves 1–3. One octave jump per phrase max.
+- Register: octaves 1–3. One octave jump per part max.
 - The bass root on beat 1 of each bar should match the pad chord's root
   (or its 5th) — if it doesn't for a whole bar, WARN ("bass/chord clash").
 
@@ -117,8 +117,8 @@ pad chords sounds like two songs fighting.
 
 - Pad progression must **move away from tonic in builds** (ii, bIII, IV, V —
   anything but the i chord) and **resolve home at peak/tag**.
-- At least one chord change per 2 bars in any section longer than 2 bars.
-- Static one-chord pads across a 4+ bar section = FAIL.
+- At least one chord change per 2 bars in any part longer than 2 bars.
+- Static one-chord pads across a 4+ bar part = FAIL.
 
 Why: if the harmony doesn't travel, the melody's climbing feels arbitrary.
 
@@ -138,10 +138,10 @@ Kick patterns must be built from named blocks, not freehand beat math:
 | `kick_eighths` | every 8th note | speed metal body (double-time feel) |
 | `kick_blast` | every 16th note | peak/rage ONLY |
 | `kick_push` | 1 2.5 3 3.75 | punk offbeat push |
-| `fill_up` | 3.25 3.5 3.75 | last bar of a build, points into next section |
+| `fill_up` | 3.25 3.5 3.75 | last bar of a build, points into next part |
 
 A level's kick = one block (optionally + `fill_up` in the final bar of a
-build-type section). Freehand beat lists are rejected unless they exactly
+build-type part). Freehand beat lists are rejected unless they exactly
 match one of these expansions.
 
 Why: `kick:"1 2.5 3 4.5"` looked like a driving pattern and expanded to a
@@ -164,9 +164,9 @@ a denser subdivision, or ghost/fill events.
 
 ## D5 — Fills point forward
 
-The last bar of any build-type section ends with either `fill_up` (kick run
+The last bar of any build-type part ends with either `fill_up` (kick run
 into the downbeat) or hats stepping up a subdivision (eighths→sixteenths).
-A build that ends flat = WARN ("no transition into next section").
+A build that ends flat = WARN ("no transition into next part").
 
 ---
 

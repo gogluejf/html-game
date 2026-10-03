@@ -1,6 +1,6 @@
 ---
 name: music-composer
-description: Composes procedural chiptune/synth music for games using a backbone-first workflow. The architect designs song structure (sections, intensity arc, time signature) and the composer writes notes into that structure. A compiler produces the engine grid; the jukebox server plays everything.
+description: Composes procedural chiptune/synth music for games using a backbone-first workflow. The architect designs song structure (parts, intensity arc, time signature) and the composer writes notes into that structure. A compiler produces the engine grid; the jukebox server plays everything.
 version: 3.1.0
 allowed-tools: bash read_file write_file edit_file open
 ---
@@ -10,14 +10,14 @@ allowed-tools: bash read_file write_file edit_file open
 Turns a musical brief into playable songs via a **two-role pipeline**:
 
 ```
-ARCHITECT → backbone.json (structure: sections, bars, drums, timeSig)
+ARCHITECT → backbone.json (structure: parts, bars, drums, timeSig)
 COMPOSER  → parts-<slug>.json (notes: lead, bass, pad, layer, drumKit)
 COMPILER  → engine grid (internal, automatic)
 JUKEBOX   → plays it (server-based, one code path)
 ```
 
-No legacy format. No rendered HTML. No fixed phrase count. Structure is as
-free as the music demands: 3-section banger or 12-section epic, any time
+No legacy format. No rendered HTML. No fixed bar count. Structure is as
+free as the music demands: 3-part banger or 12-part epic, any time
 signature, unlimited drum patterns.
 
 **The CLI (`scripts/compose.py`) is the only way to create or modify files.**
@@ -47,29 +47,29 @@ One-liner brief? Infer sensible defaults. Don't over-ask.
 
 ### 2. Architect: design the backbone
 
-Design the structure in your head first (section names, bar counts, drum
+Design the structure in your head first (part names, bar counts, drum
 levels, time sig), then create it with ONE `arch` call:
 
 ```bash
 python3 <skill-folder>/scripts/compose.py arch --game GAME \
   --name "SONG NAME" --bpm 140 --time-sig "4/4" \
-  --section intro,4,none \
-  --section hook,8,light \
-  --section build,8,medium \
-  --section peak,8,full \
-  --section tag,4,light
+  --part intro,4,none \
+  --part hook,8,light \
+  --part build,8,medium \
+  --part peak,8,full \
+  --part tag,4,light
 ```
 
-`--section name,bars,drum` is repeatable; order = song order. Drum values are
-keys you will define later in the parts' `drumKit`.
+`--part name,measures,drum` is repeatable; order = song order. Drum values are
+keys you will define later in the parts' `drumKit`. (The flag is `--part`.)
 
 **The architect decides:**
-- Section names and order. **Names are free-form** — real musical terms that
+- Part names and order. **Names are free-form** — real musical terms that
   fit the genre/vibe (pop: `verse`/`chorus`; EDM: `build`/`drop`; jazz:
   `head-in`/`solo`/`head-out`; boss: `phase1`/`rage`). No fixed enum.
-- How many bars per section (**minimum 2** — the compiler rejects 1-bar
-  sections).
-- Drum pattern assignment per section.
+- How many bars per part (**minimum 2** — the compiler rejects 1-bar
+  parts).
+- Drum pattern assignment per part.
 - Time signature — any valid `"beats/note"` string: `4/4`, `3/4`, `6/8`,
   `7/8`, `5/4`, `4/7`… no default assumption; pick what the music needs.
 - Overall duration (target 0:40–3:00 for game music; verify with
@@ -81,8 +81,8 @@ keys you will define later in the parts' `drumKit`.
 
 | Genre | Typical arc | Notes |
 |---|---|---|
-| Speed metal | intro→hook→build→peak→bridge→tag | Short sections (2–4 bars), fast escalation, double-time feel |
-| Synthwave | intro→verse→chorus→verse→chorus→outro | Longer sections (4–8 bars), steady pulse, sidechain pump |
+| Speed metal | intro→hook→build→peak→bridge→tag | Short parts (2–4 bars), fast escalation, double-time feel |
+| Synthwave | intro→verse→chorus→verse→chorus→outro | Longer parts (4–8 bars), steady pulse, sidechain pump |
 | Punk | hook→hook→build→peak→tag | Minimal intro, immediate energy, short total length |
 | Jazz/funk | head→solo A→solo B→head-out | Rubbery timing, sparse drums, comping pads |
 | Boss fight | phase1→phase2→phase3→rage | Intensity never drops, each phase adds layers |
@@ -91,10 +91,10 @@ keys you will define later in the parts' `drumKit`.
 
 The architect is FREE to deviate. These are starting points, not cages.
 
-**Craft laws:** after designing the skeleton, verify it against the "Laws of
-good music" section in [song-structure.md](references/song-structure.md) —
-especially Law 4 (every 4 bars adds something) and Law 2 (drums evolve
-additively). A backbone where two adjacent sections share the same drum level
+**Craft instructions:** after designing the skeleton, verify it against
+[craft-instructions.md](references/craft-instructions.md) — especially M3
+(progression: every part gets new material, no clones) and D3 (drums evolve
+additively). A backbone where two adjacent parts share the same drum level
 and bar count is a red flag: the song will stall there.
 
 After creating, check the result:
@@ -103,8 +103,8 @@ After creating, check the result:
 python3 <skill-folder>/scripts/compose.py show-arch --game GAME --name "SONG NAME"
 ```
 
-It prints the section map, total bars, estimated duration, and the distinct
-section names you'll fill in parts.
+It prints the part map, total bars, estimated duration, and the distinct
+part names you'll fill in parts.
 
 ### 3. Composer: write the parts
 
@@ -117,7 +117,8 @@ python3 <skill-folder>/scripts/compose.py parts --game GAME \
   --lead intro="E4 _ G4 _ | A4 _ G4 E4" \
   --lead hook="C5 D5 E5 F5 | G5 F5 E5 D5" \
   --layer peak="B4 A4 G4 A4 | B4 A4 G4 A4" \
-  --bass "E2 E3 x8" \
+  --bass intro="E2 _ E3 _ | E2 _ E3 _" \
+  --bass hook="A2 _ A3 _ | G2 _ G3 _" \
   --pad hook="Em x4 C x2" \
   --drum none='{}' \
   --drum light='snare:"2 4" hat:eighths' \
@@ -153,29 +154,37 @@ Pasting one genre's beat onto another is how "punk" ends up sounding like disco:
 - `_` = rest for one default slot.
 - `~` suffix = hold 2 beats; `.` suffix = dotted (1.5×).
 - Note names: sharps only (`C#5`, `F#4`), octaves 1–5.
-- `xN` repeats the preceding pattern N times.
+- **No repeat shorthand.** Write every bar explicitly. Do NOT use `xN` —
+  repetition is how songs get boring; M3 (progression) requires each part
+  to bring new material. If you want a repeated groove, write the bars out and
+  vary at least one of them (different ending, passing note, or top note).
 - Bar width is derived from the backbone's `timeSig` automatically — you
   always write **bars**, never raw cells. For 4/4 that's 8 eighths/bar; for
   4/7 it's 16 eighths/bar; for 6/8 it's 12 eighths/bar.
 
 **Drum kit notation** (for `--drum name='...'`):
 - `inst:"beat beat ..."` — beat numbers within the current bar, space-separated.
-  Beat N maps to 16th-step N×4. Works correctly when the bar is 32 steps wide
-  (4/4, 4/7, 8/8…). Fractional beats allowed (`3.5`).
+  **Beats are 1-indexed:** beat 1 = first beat of the bar. To hit the DOWNBEAT
+  (the very first instant, step 0), use an explicit `0`. Example:
+  `kick:"0 1 2.5 3"` puts kicks on the downbeat + beats 1, 2.5, 3.
+  Fractional beats allowed (`3.5`). D4 requires a kick at step 0 in any kit
+  that has kicks — so always include `0` for the downbeat.
 - Named patterns: `quarters`, `eighths`, `sixteenths` (repeat across the
   32-step grid).
 - `{}` = silence.
 - Unlimited named patterns per song; the backbone references them by name.
 
-**Pads** (for `--pad section="..."`): chord names with `xN` holds, placed at
-bar starts within the section (`"Em x4 C x2"` = Em for 4 bars, then C for 2).
+**Pads** (for `--pad part="..."`): chord names with `xN` holds, placed at
+bar starts within the part (`"Em x4 C x2"` = Em for 4 bars, then C for 2).
+(Here `xN` means "hold this chord for N bars" — that's harmony sustain, not
+melodic repetition, so it's fine.)
 
 **The composer decides:**
 - Actual note content (melodies, bass lines, chord voicings)
-- Which sections get layers (typically peak/climax only)
+- Which parts get layers (typically peak/climax only)
 - Whether bass is shared (`--bass-single` with a single `--bass` pattern) or
-  per-section (`--bass section="..."`). **Default to per-section**: a shared
-  bass is a root pedal waiting to happen. Per-section specs also clear the
+  per-part (`--bass part="..."`). **Default to per-part**: a shared
+  bass is a root pedal waiting to happen. Per-part specs also clear the
   stale `_bass_single` flag automatically.
 - Pad chord placement
 - Voice timbres (waveform type, filter cutoff, duration, vibrato)
@@ -188,28 +197,21 @@ vibe" comes from voice params, not notes: short decay (0.14–0.22), high cutoff
 voice recipes" — do NOT improvise soft triangle/sine defaults for energetic
 genres. Triangle is reserved for pads in jazz/ambient only.
 
-**Melodic variation — write pressurized progressions.** Use the moves from
-"Pressurized melodic variation" in song-structure.md: sequence-up builds,
-answer-and-climb exchanges, rhythmic compression into the peak, and the
-top-note rule (glimpse in build → ownership at peak → single statement in tag).
-Repeated sections must change ≥ 2 dimensions (ending/layer/top note/density).
+**Melodic variation — write pressurized progressions.** Follow M3 (progression)
+and M5 (drunkard's walk) in [craft-instructions.md](references/craft-instructions.md):
+each body part brings ≥3 new pitch classes, no two parts clone each other,
+and melodies move by small steps with purposeful leaps. Repeated parts must
+change ≥ 2 dimensions (ending/layer/top note/density).
 
-**Intensity ladder (Law 9) — the quantified escalation rule.** Every X bars the
-song must measurably get bigger: tally a per-bar intensity score (note count,
-rhythmic rate, register, drum density, layers — each 0–3) and require +1 point
-every 2 bars on average through the body. Raise ONE dimension per step (more
-notes, faster subdivision, higher top note, denser drums, or an added layer) —
-not all at once. After writing each section, write the score line per bar; any
-4-bar run without an increase gets rewritten. See "Law 9" in song-structure.md
-for the full table and worked example.
+**Register arc (M4).** Top-note trajectory must climb: intro ≤ hook < build ≤
+peak, then tag descends stepwise to tonic stating peak's top note once. If the
+hook already hits the peak's ceiling, the peak has nowhere to go.
 
-**Before writing notes, internalize the "Laws of good music"** in
-[song-structure.md](references/song-structure.md). The three that catch most
-drafts: Law 1 (bass must move — no root pedals), Law 3 (lead hangs on the
-bass), Law 5 (one rhythmic template; intensity from drums/register, not note
-stuffing). **Law 4 is per-BAR, not just per-section**: no two consecutive bars
-may be identical — run the per-bar progression test while writing each section
-(name what changed in each bar). Run the anti-dull checklist before declaring done.
+**Before writing notes, internalize the craft instructions** in
+[craft-instructions.md](references/craft-instructions.md). The three that catch
+most drafts: B1 (bass must move — no root pedals longer than 2 bars), M3
+(progression — every part gets new material), and D1/D4 (backbeat on 2+4,
+downbeat kick at step 0). Run `audit` before declaring done.
 
 Check the result:
 
@@ -228,10 +230,10 @@ All songs compile automatically at load. No render step. No HTML generation.
 
 ### 5. Iterate / Overwrite
 
-**`parts` is modular.** Pass only what you want to change. Existing sections,
+**`parts` is modular.** Pass only what you want to change. Existing parts,
 drums, voices, pads are preserved. Revision bumps automatically. **But merges
-leave stale data**: if the backbone's section set changed (rename/remove), old
-section entries survive in parts. `audit` flags them — delete or repurpose.
+leave stale data**: if the backbone's part set changed (rename/remove), old
+part entries survive in parts. `audit` flags them — delete or repurpose.
 
 ```bash
 # Fix just the hook-b melody (everything else stays):
@@ -251,7 +253,7 @@ python3 compose.py parts --game petal-panic \
 ```
 
 **`arch` is a full rewrite** (no merge). If you change the backbone, re-pass
-parts for any new/renamed sections.
+parts for any new/renamed parts.
 
 - Re-open jukebox. Changes are live (no cache).
 
@@ -259,14 +261,15 @@ parts for any new/renamed sections.
 
 - One format: backbone + parts. No legacy grids. No dual paths.
 - All file creation/modification goes through the CLI. Never edit JSON by hand.
-- Section names in `form` must have matching entries in parts (lead at minimum).
-- `drums` values in form must be keys in the parts' `drumKit`.
-- Sections need ≥ 2 bars.
+- Part names in the backbone must have matching entries in parts (lead at minimum).
+- `drum` values in the backbone must be keys in the parts' `drumKit`.
+- Parts need ≥ 2 bars.
 - `createdAt` sets playlist order; the CLI manages it — don't touch it.
 - Validate before declaring done: `compose.py validate --game GAME`.
 - **Audit before declaring done: `compose.py audit --game GAME --name NAME`** —
-  it mechanically checks the notes against the architect's progression
-  (consistency, Laws 1/2/4/6/9). Fix every FAIL; WARNs are judgment calls.
+  it mechanically checks the notes against the craft instructions (M/B/H/D:
+  scale lock, progression, ceiling climb, bass motion, drum ladder). Fix every
+  FAIL; WARNs are judgment calls.
 - Test in browser before declaring done.
 
 ## Output Format
@@ -278,7 +281,7 @@ Songs dir: <songs-dir>
 Jukebox:   http://localhost:<port>/...?game=<GAME>
 
 Tracks:
-1. <NAME> — <genre>, <bpm> BPM, <timeSig>, <n> sections, ~<duration>
+1. <NAME> — <genre>, <bpm> BPM, <timeSig>, <n> parts, ~<duration>
 2. ...
 
 Tested in browser: yes/no
@@ -291,26 +294,25 @@ Tested in browser: yes/no
 ```bash
 # Create backbone (architect) — full rewrite, no merge
 python3 compose.py arch --game GAME --name NAME --bpm N --time-sig "SIG" \
-  --section name,bars,drum [repeatable]
+  --part name,measures,drum [repeatable]
 
-# Show backbone structure (section map, duration, distinct sections)
+# Show backbone structure (part map, duration, distinct parts)
 python3 compose.py show-arch --game GAME --name NAME
 
 # Create/update parts (composer) — merges; only passed fields change
 python3 compose.py parts --game GAME --name NAME --genre G --vibe V \
-  --lead section="notes | notes | ..." [repeatable] \
-  --layer section="notes | ..." [repeatable] \
-  --bass "pattern xN" [--bass-single] | --bass section="pattern" [repeatable] \
-  --pad section="Chord xN Chord xN" [repeatable] \
-  --drum name='snare:"2 4" kick:"1 2 3 4" hat:eighths' [repeatable] \
+  --lead part="notes | notes | ..." [repeatable] \
+  --layer part="notes | ..." [repeatable] \
+  --bass part="notes | ..." [repeatable] [--bass-single] \
+  --pad part="Chord xN Chord xN" [repeatable] \
+  --drum name='snare:"2 4" kick:"0 1 2.5 3" hat:eighths' [repeatable] \
   --voice key=value [repeatable]
 
-# Craft-law audit of one song: consistency vs backbone, Law 1 (bass moves),
-# Law 2 (drums additive), Law 4 (no identical consecutive bars),
-# Law 9 (intensity ladder), Law 6 (peak register). Exit 1 on FAIL.
+# Craft-instruction audit of one song: consistency vs backbone, M1 (scale),
+# M3 (progression), M4 (ceiling), B1 (bass moves), D1-D5 (drums). Exit 1 on FAIL.
 python3 compose.py audit --game GAME --name NAME
 
-# Show parts summary (sections, drum patterns, voices)
+# Show parts summary (parts, drum patterns, voices)
 python3 compose.py show-parts --game GAME --name NAME
 
 # Validate all songs in a game
@@ -332,6 +334,7 @@ python3 compose.py set-vibe --game GAME --name NAME --vibe "..."
 - [compiler.js](server/js/compiler.js) — backbone+parts → engine grid (browser-side)
 
 ### References
-- [song-anatomy.md](references/song-anatomy.md) — the unit ladder (song/part/measure/beat/step), worked example, anti-boring rules, who-decides-what contract
-- [song-structure.md](references/song-structure.md) — format spec + structural guidelines + laws of good music
+- [craft-instructions.md](references/craft-instructions.md) — **the active rulebook** (M/B/H/D instructions, all mechanically enforced by `audit`). Follow this.
+- [song-anatomy.md](references/song-anatomy.md) — the unit ladder (song/part/measure/beat/step), worked example, who-decides-what contract
+- [song-structure.md](references/song-structure.md) — file format spec + chiptune voice recipes only. (Its "Laws of good music" part is unused; the active rules are in craft-instructions.md.)
 - [behavior-spec.md](references/behavior-spec.md) — jukebox transport/UI behavior
