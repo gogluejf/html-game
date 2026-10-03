@@ -107,22 +107,32 @@ part names you'll fill in parts.
 
 ### 3. Composer: write the parts
 
-Fill notes with ONE `parts` call (or several — `parts` merges; see step 5):
+Fill notes with ONE `parts` call (or several — `parts` merges; see step 5).
+This example is a real, complete E-minor arcade-punk song — study its shape:
+full bars (no half-bar holes), durations that create rhythm (`~`, `.`), every
+bar different from the last, register climbing riff → hook → peak, and a tag
+that walks home to the tonic:
 
 ```bash
 python3 <skill-folder>/scripts/compose.py parts --game GAME \
-  --name "SONG NAME" --genre "Acid Jazz" \
+  --name "SONG NAME" --genre "Arcade Punk" \
   --vibe "one-line description of the sound" \
-  --lead intro="E4 _ G4 _ | A4 _ G4 E4" \
-  --lead hook="C5 D5 E5 F5 | G5 F5 E5 D5" \
-  --layer peak="B4 A4 G4 A4 | B4 A4 G4 A4" \
-  --bass intro="E2 _ E3 _ | E2 _ E3 _" \
-  --bass hook="A2 _ A3 _ | G2 _ G3 _" \
-  --pad hook="Em x4 C x2" \
+  --lead riff="E4~ _ B4 C5 | D5 E4 B4 A4" \
+  --lead hook="B4. D5 E5 F#5 | G5~ F#5 E5 D5" \
+  --lead peak="F#5 G5 A5~ _ | A5 G5 F#5 E5 D5 C5 B4" \
+  --lead tag="A5~ G5 F#5 E5 | E4~ _ _ _" \
+  --layer peak="A4~ C5 D5 E5 | E5 D5 C5 B4" \
+  --bass riff="E2~ E3 _ E2 | E2~ G2 _ E3" \
+  --bass hook="A2~ A3 _ A2 | G2~ G3 _ A2" \
+  --bass peak="F#2~ A2 _ F#2 | E2~ G2 _ B2" \
+  --bass tag="E2~ E3 _ E2 | E2~ _ _ _" \
+  --pad riff="Em x2" \
+  --pad hook="Am x2" \
+  --pad peak="F#m x1 E x1" \
   --drum none='{}' \
   --drum light='snare:"2 4" hat:eighths' \
-  --drum medium='snare:"2 4" kick:"1 3" hat:eighths' \
-  --drum full='snare:"2 4 3.5" kick:"1 2.5 3" hat:sixteenths' \
+  --drum medium='kick:"0 2" snare:"2 4" hat:eighths' \
+  --drum full='kick:"0 1 2 3" snare:"2 4" hat:eighths' \
   --voice bassType=sawtooth --voice bassCut=900 --voice bassDur=0.14 \
   --voice padType=sawtooth --voice padCut=1400 --voice padDur=0.4 \
   --voice leadType=square --voice leadCut=3800 --voice leadDur=0.16 --voice vib=14 \
@@ -130,22 +140,35 @@ python3 <skill-folder>/scripts/compose.py parts --game GAME \
   --voice kickTop=150 --voice kickBot=42
 ```
 
-**Drum levels must be strictly additive** (each level adds an instrument or
-density, never removes): light = snare + hats; medium adds the kick pattern;
-full/heavy add ghost notes, offbeat kicks, and sixteenth hats. Muffled
-triangle/sine defaults make everything sound dull — use the punchy sawtooth/
-square voices above for any energetic genre.
+What makes this example work (copy these habits, not the notes):
+- **Rhythm, not just pitch.** `E4~` (held) vs `B4 C5` (quick pair) vs `_`
+  (placed rest) — the contrast IS the groove. Even eighths all the way is
+  what makes melodies sound robotic.
+- **Every bar differs.** No bar is copied verbatim; even repeated grooves get
+  a changed ending note or passing tone.
+- **The arc is audible.** Riff lives in E4–D5, hook climbs to G5, peak hits
+  A5 (the song's ceiling), tag descends stepwise and lands on E4 (tonic).
+- **Bass moves.** Roots change with the harmony (E→A→G→F#→E) and octave
+  jumps (E2↔E3) keep it alive — never one root held for 3+ bars.
 
-**Genre drum grammar — map the genre to its actual vocabulary, don't improvise.**
-Pasting one genre's beat onto another is how "punk" ends up sounding like disco:
+**Drums — compose them, don't template them.** This is where tracks live or die.
+A good drum pattern has *rhythm*: grouped hits, placed ghosts, a syncopated or
+driving kick, and breathing room. A flat wall of even hits sounds like a
+metronome. Study what great tracks actually did:
 
-| Genre | Kick | Snare | Hats |
-|---|---|---|---|
-| Punk/hardcore | driving 1+3, offbeat push (2.5, 3.75) at peak | backbeat 2+4, ghosts at peak | eighths → sixteenths at peak |
-| Speed metal | double-time 8th-note kick | backbeat + fills | constant sixteenths |
-| Synthwave | four-on-floor (this is where it belongs) | rim/ghost on 2+4 | eighths, open on offbeats |
-| Acid jazz/funk | syncopated, sparse | rim clicks, comping | soft eighths |
-| Boss fight | relentless quarters + accents | heavy backbeat, layered ghosts | dense, always moving |
+- **Punk/arcade:** kick+snare lock driving the beat (kick on 1+3 or every beat
+  at peak, snare backbeat 2+4), hats keeping time underneath — eighths for a
+  steady pulse, or grouped sixteenths with gaps for drive. Never a silent,
+  unbroken sixteenth wall at full volume; that masks the backbeat.
+- **Breakbeat/electro:** syncopated kick that moves bar to bar, ghost snares
+  and double-hits, hats in rhythmic groups (threes, gaps) — see Sawdust Breaks.
+- **Folk/reel/jig:** sparse kick on the beat, light hat figure, let the lead
+  carry — see Pirate Ship Reel.
+
+Pick the pattern that serves the genre and the moment. Levels should generally
+build in energy as the song climbs, but a deliberate drop-out after a loud part
+is a valid choice too — use judgment. For energetic genres use the punchy
+sawtooth/square voices above; muffled triangle/sine defaults sound dull.
 
 **Note notation** (for `--lead`, `--layer`, `--bass`):
 - `|` separates bars. Within a bar, tokens are placed on an eighth-note grid
@@ -196,28 +219,23 @@ vibe" comes from voice params, not notes: short decay (0.14–0.22), high cutoff
 voice recipes" — do NOT improvise soft triangle/sine defaults for energetic
 genres. Triangle is reserved for pads in jazz/ambient only.
 
-**Write a melody that moves and builds.** This is what makes a track good —
-aim for all of these in every song:
+**Write a melody and bass that serve the song.** These are goals, not laws —
+`audit` only *warns* on them now, so use your ear:
 
-- **Every bar is different from the one before.** No bar copied verbatim from
-  an earlier bar. If you want a groove to repeat, change at least one thing
-  (the ending note, a passing tone, or the top note) so it feels like progress,
-  not a loop.
-- **Build momentum across the song.** Start lower and tighter; end higher and
-  bigger. The peak part should reach the highest notes of the whole song — if
-  the hook already hit the top, the peak has nowhere to go.
-- **Vary the rhythm.** Mix short staccato notes with some held notes and a
-  couple of fast runs. Don't play even eighths the entire way — rhythm variety
-  is half the identity of a chiptune melody.
-- **Walk, don't teleport.** Melodies mostly move by small steps (2nds/3rds);
-  use a leap on purpose (to climb into a new register, to enter a new part, or
-  to resolve down at the end), not randomly.
-- **Land the ending.** The tag descends stepwise back to the tonic and states
-  the peak's top note once as a farewell.
+- **Rhythm is half the identity.** Mix held notes (`~`), dotted (`.`), quick
+  pairs, and placed rests. Even eighths all the way sounds robotic. Dense,
+  moving lines (like Pirate Ship Reel's 16-note jig bars) usually hit harder
+  than sparse ones for energetic genres.
+- **Build an arc.** Start lower/tighter, end higher/bigger; the peak is
+  usually the song's highest moment, and the tag walks home to the tonic.
+- **Walk with purpose.** Melodies mostly move by steps; leap on purpose (to
+  climb registers, enter a part, or resolve at the end).
+- **Bass should have a job.** It can pedal hard on the root when that's the
+  groove (very punk), or walk with the harmony — either is fine. Keep it in a
+  low register where it has weight.
 
-These are goals, not rigid rules — `audit` checks the mechanical ones
-(progression, ceiling, bass motion, drums) so you can focus on making it sound
-good. Run `audit` before declaring done.
+Run `audit` before declaring done — but treat its output as things to *consider*,
+not commands. Only off-scale notes and structural errors are hard FAILs now.
 
 Check the result:
 
@@ -273,8 +291,10 @@ parts for any new/renamed parts.
 - `createdAt` sets playlist order; the CLI manages it — don't touch it.
 - Validate before declaring done: `compose.py validate --game GAME`.
 - **Audit before declaring done: `compose.py audit --game GAME --name NAME`** —
-  it mechanically checks progression, register arc, bass motion, and drums.
-  Fix every FAIL; WARNs are judgment calls.
+  it only hard-FAILs on real bugs (missing/stale parts, undefined drum refs,
+  off-scale notes, kick-wall noise floor). Everything musical (progression,
+  ceiling, bass motion, drum patterns) is a WARN to consider with your ear, not
+  a command. Fix FAILs; judge WARNs.
 - Test in browser before declaring done.
 
 ## Output Format
@@ -313,8 +333,8 @@ python3 compose.py parts --game GAME --name NAME --genre G --vibe V \
   --drum name='snare:"2 4" kick:"0 1 2.5 3" hat:eighths' [repeatable] \
   --voice key=value [repeatable]
 
-# Craft-instruction audit of one song: consistency vs backbone, M1 (scale),
-# M3 (progression), M4 (ceiling), B1 (bass moves), D1-D5 (drums). Exit 1 on FAIL.
+# Craft audit of one song: hard-FAILs only on real bugs (structure, off-scale,
+# kick-wall). Musical/taste checks are WARNs to consider. Exit 1 on FAIL.
 python3 compose.py audit --game GAME --name NAME
 
 # Show parts summary (parts, drum patterns, voices)
@@ -339,7 +359,7 @@ python3 compose.py set-vibe --game GAME --name NAME --vibe "..."
 - [compiler.js](server/js/compiler.js) — backbone+parts → engine grid (browser-side)
 
 ### References
-- [craft-instructions.md](references/craft-instructions.md) — **the active rulebook** (M/B/H/D instructions, all mechanically enforced by `audit`). Follow this.
+- [craft-instructions.md](references/craft-instructions.md) — musical goals and the scale/voice vocabulary. Most of it is now advisory (audit only WARNs); read it for guidance, not as a rulebook to obey.
 - [song-anatomy.md](references/song-anatomy.md) — the unit ladder (song/part/measure/beat/step), worked example, who-decides-what contract
 - [song-structure.md](references/song-structure.md) — file format spec + chiptune voice recipes only. (Its "Laws of good music" part is unused; the active rules are in craft-instructions.md.)
 - [behavior-spec.md](references/behavior-spec.md) — jukebox transport/UI behavior

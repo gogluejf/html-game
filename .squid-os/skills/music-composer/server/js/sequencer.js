@@ -239,6 +239,40 @@ class MusicSequencer {
     return this.measureCount % total;
   }
 
+  /** Grid-aware sustain: how long (seconds) a note at `step` should ring.
+   *  Look ahead to the next non-null cell in this voice's bar; sustain to ~85%
+   *  of that gap so held notes hold and quick notes stay staccato. Clamped so a
+   *  lone note in an empty bar doesn't drone and a 1-step note stays audible. */
+  _sustainSteps(voiceBar, step) {
+    const n = voiceBar.length;
+    let gap = n - step;                 // default: rest of the bar
+    for (let s = step + 1; s < n; s++) {
+      if (voiceBar[s]) { gap = s - step; break; }
+    }
+    return gap;
+  }
+
+  _sustainSec(trk, step, voiceBar) {
+    const spb = 60.0 / trk.bpm;
+    const secPerStep = spb / 4;         // one 16th note
+    const gap = this._sustainSteps(voiceBar, step);
+    // Density-aware fill: tight gaps (dense/packed passages) stay short so
+    // back-to-back notes keep their percussive separation; wide gaps get a
+    // modest tail — enough to feel held, NOT enough to drone. A note before a
+    // long empty space should breathe, not ring out for half a bar.
+    // gap==1 is a note immediately followed by another (zero space) -> the
+    // shortest, hardest stab so fast sixteenth runs stay articulate.
+    let fill;
+    if (gap === 1)     fill = 0.40;     // back-to-back 16ths -> hard staccato
+    else if (gap <= 2) fill = 0.55;     // quick run / 32nd-ish -> staccato
+    else if (gap <= 4) fill = 0.65;     // eighths -> light tail
+    else               fill = 0.55;     // wide space -> gentle hold, no drone
+    let dur = gap * secPerStep * fill;
+    const minDur = secPerStep * 0.7;    // never shorter than ~half a 16th
+    const maxDur = spb * 1.25;          // never longer than ~1.25 beats (no organ-hold)
+    return Math.max(minDur, Math.min(maxDur, dur));
+  }
+
   _playStep(trk, step, t) {
     const mi = this._measureIndex(trk);
     const leadMeasure = trk.leads[mi];
@@ -250,13 +284,14 @@ class MusicSequencer {
     const d = drumSet[step];
     if (d.k) this._kick(t, trk, d.v);
     if (d.s) this._snare(t, trk, d.v);
-    if (d.h) this._hat(t, trk, d.oh === true, d.v);
+    if (d.h) this._hat(t, trk, d.oh === true, d.v, step);
     if (d.c) this._crash(t, trk, d.v);
     const b = (Array.isArray(trk.bass) && trk.bass[mi] != null) ? trk.bass[mi][step] : trk.bass[step];
-    if (b) this._bass(t, b.hz, trk, b.mul);
+    const bassBar = (Array.isArray(trk.bass) && trk.bass[mi] != null) ? trk.bass[mi] : trk.bass;
+    if (b) this._bass(t, b.hz, trk, b.mul, this._sustainSec(trk, step, bassBar));
     if (padMeasure && padMeasure[step]) this._pad(t, padMeasure[step], trk);
     const l = leadMeasure[step];
-    if (l) this._lead(t, l.hz, trk, l.mul);
+    if (l) this._lead(t, l.hz, trk, l.mul, this._sustainSec(trk, step, leadMeasure));
     // Extra lead layer: per-measure (null = no layer for that measure).
     if (trk.leadLayers && trk.leadLayers[mi]) {
       const xl = trk.leadLayers[mi][step];
@@ -320,9 +355,18 @@ class MusicSequencer {
     this._track(src2, t + 0.12);
   }
 
-  /** Hi-hat: closed (short tick) or open (long wash) via `open`. */
-  _hat(t, trk, open, v) {
-    const vel = (v != null) ? Math.max(0.1, Math.min(1, v)) : 1;
+  /** Hi-hat: closed (short tick) or open (long wash) via `open`.
+   *  Auto-duck: when no explicit velocity is given, offbeat hats (the "and"
+   *  between beats) play quieter than on-beat hats. This makes fast 8th/16th
+   *  hat patterns breathe like a real drummer's ride instead of buzzing as a
+   *  wall of equal clicks. `step` is the 0-based 16th-note position in the bar. */
+  _hat(t, trk, open, v, step) {
+    let vel = (v != null) ? Math.max(0.1, Math.min(1, v)) : null;
+    if (vel == null) {
+      // On the beat (every 4th 16th) = full; the "and" offbeats = ducked.
+      const onBeat = (step % 4 === 0);
+      vel = onBeat ? 1.0 : 0.55;
+    }
     const src = this.ctx.createBufferSource();
     src.buffer = this.noiseBuffer;
     const hp = this.ctx.createBiquadFilter();
@@ -356,7 +400,7 @@ class MusicSequencer {
     this._track(src, t + dur + 0.1);
   }
 
-  _bass(t, freq, trk, mul) {
+  _bass(t, freq, trk, mul, durOverride) {
     const osc = this.ctx.createOscillator();
     osc.type = trk.bassType || "sawtooth";
     osc.frequency.setValueAtTime(freq, t);
@@ -365,7 +409,7 @@ class MusicSequencer {
     lp.frequency.setValueAtTime(trk.bassCut || 900, t);
     lp.Q.value = 1.2;
     const g = this.ctx.createGain();
-    const dur = (trk.bassDur || 0.18) * (mul || 1);
+    const dur = durOverride != null ? durOverride : (trk.bassDur || 0.18) * (mul || 1);
     g.gain.setValueAtTime(0.0001, t);
     g.gain.linearRampToValueAtTime(0.4, t + 0.006);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
@@ -395,7 +439,7 @@ class MusicSequencer {
     }
   }
 
-  _lead(t, freq, trk, mul) {
+  _lead(t, freq, trk, mul, durOverride) {
     const osc = this.ctx.createOscillator();
     osc.type = trk.leadType || "square";
     osc.frequency.setValueAtTime(freq, t);
@@ -407,7 +451,7 @@ class MusicSequencer {
     const lp = this.ctx.createBiquadFilter();
     lp.type = "lowpass"; lp.frequency.value = trk.leadCut || 4000;
     const g = this.ctx.createGain();
-    const dur = (trk.leadDur || 0.2) * (mul || 1);
+    const dur = durOverride != null ? durOverride : (trk.leadDur || 0.2) * (mul || 1);
     g.gain.setValueAtTime(0.0001, t);
     g.gain.linearRampToValueAtTime(0.24, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);

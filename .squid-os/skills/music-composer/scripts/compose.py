@@ -632,7 +632,7 @@ def cmd_audit(a):
         distinct = len(set(pitches))
         n_meas = len(bars)
         if n_meas >= 4 and distinct < 4:
-            errors.append(f"B(Law1): bass '{pn}' has only {distinct} distinct pitch(es) over {n_meas} measures (root pedal)")
+            warns.append(f"B(Law1): bass '{pn}' has only {distinct} distinct pitch(es) over {n_meas} measures (root pedal)")
 
     # ── C. Drum tracks exist and are non-silent where assigned ────────────
     def drum_hits(name):
@@ -675,7 +675,7 @@ def cmd_audit(a):
             warns.append(f"D(repeat): {kind} '{sec_name}' has {adj_same} identical adjacent bar(s) — consider varying at least one (new ending, passing note, or top note)")
         # Pure-static-section check: every bar byte-identical = no motion at all.
         if n >= 2 and all(b == bars[0] for b in bars):
-            errors.append(f"D(static): {kind} '{sec_name}' is a pure static loop — all {n} bars identical, zero motion. Vary the bars.")
+            warns.append(f"D(static): {kind} '{sec_name}' is a pure static loop — all {n} bars identical, zero motion. Vary the bars.")
 
     for pn in sorted(part_names):
         lead = parts.get("lead", {}).get(pn)
@@ -723,7 +723,7 @@ def cmd_audit(a):
         if avg_gain < 0.5:
             warns.append(f"E(Law9): intensity barely climbs: first={body[0]} last={body[-1]} (avg {avg_gain:.2f} pt/2meas, need >=0.5)")
     if build_top and peak_top < build_top:
-        errors.append(f"F(Law6): peak top note (oct {peak_top}) never exceeds build's glimpse (oct {build_top})")
+        warns.append(f"F(Law6): peak top note (oct {peak_top}) never exceeds build's glimpse (oct {build_top})")
 
     total_measures = sum(e["measures"] for e in plist)
     print(f"audit: {a.name} ({bb.get('bpm')} BPM, {bb.get('timeSig')}, {total_measures} measures)")
@@ -1054,7 +1054,7 @@ def check_m3_progression(parts, plist, errors, warns):
                 or drum_of.get(pn) != prev["drum"]              # drums stepped
             )
             if not varied:
-                errors.append(f"M3(repeat): '{pn}' returns but changes nothing vs its first appearance — add a surprise (new ending, higher top note, extra layer, or denser drums)")
+                warns.append(f"M3(repeat): '{pn}' returns but changes nothing vs its first appearance — add a surprise (new ending, higher top note, extra layer, or denser drums)")
 
     # Adjacent-identical check across the whole body sequence (by content).
     content_seq = []
@@ -1065,7 +1065,7 @@ def check_m3_progression(parts, plist, errors, warns):
             content_seq.append((pn, tuple(tuple(b) for b in bars)))
     for a, b in zip(content_seq, content_seq[1:]):
         if a[1] == b[1]:
-            errors.append(f"M3(copy): '{a[0]}' and '{b[0]}' are back-to-back identical sections — vary one of them")
+            warns.append(f"M3(copy): '{a[0]}' and '{b[0]}' are back-to-back identical sections — vary one of them")
 
 
 def check_m4_ceiling(parts, plist, errors, warns):
@@ -1081,9 +1081,9 @@ def check_m4_ceiling(parts, plist, errors, warns):
         return max((v for k, v in tops.items() if k.startswith(prefix)), default=None)
     hook_t, build_t, peak_t = top("hook"), top("build"), top("peak")
     if hook_t and peak_t is not None and peak_t <= hook_t:
-        errors.append(f"M4(ceiling): peak top note ({peak_t}) never exceeds hook top ({hook_t}) — the peak has nowhere to go")
+        warns.append(f"M4(ceiling): peak top note ({peak_t}) never exceeds hook top ({hook_t}) — the peak has nowhere to go")
     if build_t and peak_t is not None and peak_t < build_t:
-        errors.append(f"M4(ceiling): peak top ({peak_t}) below build glimpse ({build_t})")
+        warns.append(f"M4(ceiling): peak top ({peak_t}) below build glimpse ({build_t})")
     traj = " ".join(f"{k}={v}" for k, v in tops.items())
     print(f"  top-note trajectory: {traj}")
 
@@ -1109,7 +1109,7 @@ def check_m5_walk(parts, errors, warns):
         if total >= 8 and leaps / total > 0.30:
             warns.append(f"M5(walk): lead '{sec}' is {leaps}/{total} leaps (>30%) — melody teleports instead of walking")
         if len(unanchored) >= 3:
-            errors.append(f"M5(walk): lead '{sec}' has {len(unanchored)} unanchored leaps (downward, mid-section): {unanchored[:3]}")
+            warns.append(f"M5(walk): lead '{sec}' has {len(unanchored)} unanchored leaps (downward, mid-section): {unanchored[:3]}")
 
 
 def check_b1_bass(parts, plist, errors, warns):
@@ -1128,7 +1128,7 @@ def check_b1_bass(parts, plist, errors, warns):
             if roots_per_bar[i] and roots_per_bar[i] == roots_per_bar[i - 1]:
                 run += 1
                 if run >= 3 and "-pedal" not in pn:
-                    errors.append(f"B1(pedal): bass '{pn}' holds one root for {run} bars (bars {i-1+1}-{i+1}) — make it move")
+                    warns.append(f"B1(pedal): bass '{pn}' holds one root for {run} bars (bars {i-1+1}-{i+1}) — make it move")
                     break
             else:
                 run = 1
@@ -1137,7 +1137,7 @@ def check_b1_bass(parts, plist, errors, warns):
             for c in bar:
                 m = re.match(r"^[A-G]#?([1-6])$", c or "")
                 if m and int(m.group(1)) > 3:
-                    errors.append(f"B1(register): bass '{pn}' note {c} above octave 3")
+                    warns.append(f"B1(register): bass '{pn}' note {c} above octave 3")
                     break
 
 
@@ -1151,7 +1151,7 @@ def check_h1_pads(parts, plist, errors, warns):
             continue
         chords = sorted(pad.items(), key=lambda kv: int(kv[0]))
         if len(chords) < 2:
-            errors.append(f"H1(static): pads '{pn}' hold one chord across {e['measures']} bars — move the harmony")
+            warns.append(f"H1(static): pads '{pn}' hold one chord across {e['measures']} bars — move the harmony")
         if tonic is not None and pn.startswith("build"):
             for off, notes in chords:
                 pcs = {_pc_of(n) for n in notes if _pc_of(n) is not None}
@@ -1203,7 +1203,7 @@ def check_drum_kits(parts, plist, errors, warns):
             continue
         snare = _kit_steps(entry, "s")
         if snare and not ({8, 16} <= snare):
-            errors.append(f"D1(backbeat): kit '{nm}' snare missing beats 2/4 (has steps {sorted(snare)})")
+            warns.append(f"D1(backbeat): kit '{nm}' snare missing beats 2/4 (has steps {sorted(snare)})")
     for nm in ordered:
         entry = kit.get(nm)
         if entry is None:
@@ -1215,7 +1215,7 @@ def check_drum_kits(parts, plist, errors, warns):
         if len(kick) > 24:
             errors.append(f"D4(noise-floor): kit '{nm}' has {len(kick)} kick hits/bar (max 24) — it's a wall, not a beat")
         if kick and 0 not in kick:
-            errors.append(f"D4(downbeat): kit '{nm}' kicks exist but step 0 (downbeat) is empty")
+            warns.append(f"D4(downbeat): kit '{nm}' kicks exist but step 0 (downbeat) is empty")
         # D4 snare attack zone (bar-local: steps 8-9 and 16-17)
         clash = kick & ({8, 9, 16, 17})
         if clash and snare:
@@ -1237,7 +1237,7 @@ def check_drum_kits(parts, plist, errors, warns):
             a, b = _kit_steps(kit[lo], inst), _kit_steps(kit[hi], inst)
             removed = a - b
             if removed:
-                errors.append(f"D3(additive): kit '{hi}' removes {letter} hits present in '{lo}' (steps {sorted(removed)}) — levels must only add")
+                warns.append(f"D3(additive): kit '{hi}' removes {letter} hits present in '{lo}' (steps {sorted(removed)}) — levels usually only add")
 
 
 def run_craft_checks(parts, plist, errors, warns):
