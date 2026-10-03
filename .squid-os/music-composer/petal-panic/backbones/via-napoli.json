@@ -1,0 +1,32 @@
+{
+  "name": "VIA NAPOLI",
+  "bpm": 152,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "head",
+      "measures": 4,
+      "drum": "brushed"
+    },
+    {
+      "part": "riff",
+      "measures": 4,
+      "drum": "swing"
+    },
+    {
+      "part": "riff-b",
+      "measures": 4,
+      "drum": "swing"
+    },
+    {
+      "part": "solo",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "brushed"
+    }
+  ]
+}
