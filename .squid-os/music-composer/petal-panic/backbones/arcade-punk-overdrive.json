@@ -1,0 +1,27 @@
+{
+  "name": "ARCADE PUNK OVERDRIVE",
+  "bpm": 200,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "riff",
+      "measures": 8,
+      "drum": "light"
+    },
+    {
+      "part": "hook",
+      "measures": 8,
+      "drum": "medium"
+    },
+    {
+      "part": "rage",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "light"
+    }
+  ]
+}

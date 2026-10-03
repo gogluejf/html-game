@@ -1,0 +1,47 @@
+{
+  "name": "LONG SKY",
+  "bpm": 176,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "riff",
+      "measures": 4,
+      "drum": "none"
+    },
+    {
+      "part": "riff-b",
+      "measures": 4,
+      "drum": "none"
+    },
+    {
+      "part": "run",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "run-b",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "peak",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "drop",
+      "measures": 2,
+      "drum": "full-crash"
+    },
+    {
+      "part": "climax",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "medium"
+    }
+  ]
+}

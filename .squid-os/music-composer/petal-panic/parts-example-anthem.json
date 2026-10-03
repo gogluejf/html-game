@@ -1,0 +1,866 @@
+{
+ "name": "EXAMPLE ANTHEM",
+ "uuid": "5ed8cbea-9902-4096-86ce-890418a5996e",
+ "genre": "Arcade Punk",
+ "vibe": "canonical SKILL.md example",
+ "createdAt": "2026-10-03T02:26:14.538679",
+ "revision": 2,
+ "drumKit": {
+  "light": [
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": true,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": true,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   }
+  ],
+  "medium": [
+   {
+    "k": true,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": true,
+    "s": true,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": true,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   }
+  ],
+  "full": [
+   {
+    "k": true,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": true,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": true,
+    "s": true,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": true,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": true,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": true
+   },
+   {
+    "k": false,
+    "s": false,
+    "h": false
+   }
+  ]
+ },
+ "lead": {
+  "riff": [
+   [
+    "E4",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "B4",
+    null,
+    "C5",
+    null,
+    null,
+    null
+   ],
+   [
+    "D5",
+    null,
+    "E4",
+    null,
+    "B4",
+    null,
+    "A4",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  ],
+  "hook": [
+   [
+    "B4",
+    null,
+    null,
+    null,
+    null,
+    null,
+    "D5",
+    null,
+    "E5",
+    null,
+    "F#5",
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   [
+    "G5",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "F#5",
+    null,
+    "E5",
+    null,
+    "D5",
+    null,
+    null,
+    null
+   ]
+  ],
+  "peak": [
+   [
+    "F#5",
+    null,
+    "G5",
+    null,
+    "A5",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   [
+    "A5",
+    null,
+    "G5",
+    null,
+    "F#5",
+    null,
+    "E5",
+    null,
+    "D5",
+    null,
+    "C5",
+    null,
+    "B4",
+    null,
+    null,
+    null
+   ]
+  ],
+  "tag": [
+   [
+    "A5",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "G5",
+    null,
+    "F#5",
+    null,
+    "E5",
+    null,
+    null,
+    null
+   ],
+   [
+    "E4",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  ]
+ },
+ "layer": {
+  "peak": [
+   [
+    "A4",
+    null,
+    null,
+    null
+   ],
+   [
+    "E5",
+    null,
+    "D5",
+    null
+   ]
+  ]
+ },
+ "bass": {
+  "riff": [
+   [
+    "E2",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "E3",
+    null,
+    null,
+    null,
+    "E2",
+    null,
+    null,
+    null
+   ],
+   [
+    "E2",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "G2",
+    null,
+    null,
+    null,
+    "E3",
+    null,
+    null,
+    null
+   ]
+  ],
+  "hook": [
+   [
+    "A2",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "A3",
+    null,
+    null,
+    null,
+    "A2",
+    null,
+    null,
+    null
+   ],
+   [
+    "G2",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "G3",
+    null,
+    null,
+    null,
+    "A2",
+    null,
+    null,
+    null
+   ]
+  ],
+  "peak": [
+   [
+    "F#2",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "A2",
+    null,
+    null,
+    null,
+    "F#2",
+    null,
+    null,
+    null
+   ],
+   [
+    "E2",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "G2",
+    null,
+    null,
+    null,
+    "B2",
+    null,
+    null,
+    null
+   ]
+  ],
+  "tag": [
+   [
+    "E2",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    "E3",
+    null,
+    null,
+    null,
+    "E2",
+    null,
+    null,
+    null
+   ],
+   [
+    "E2",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  ]
+ },
+ "pad": {
+  "riff": {
+   "0": [
+    "E3",
+    "G3",
+    "B3"
+   ]
+  },
+  "hook": {
+   "0": [
+    "A3",
+    "C4",
+    "E4"
+   ]
+  },
+  "peak": {
+   "0": [
+    "F#3",
+    "A3",
+    "C#4"
+   ],
+   "16": [
+    "E3",
+    "G#3",
+    "B3"
+   ]
+  }
+ },
+ "_bass_single": false,
+ "voices": {
+  "bassType": "sawtooth",
+  "bassCut": 900,
+  "bassDur": 0.14,
+  "padType": "sawtooth",
+  "padCut": 1400,
+  "padDur": 0.4,
+  "leadType": "square",
+  "leadCut": 3800,
+  "leadDur": 0.16,
+  "vib": 14,
+  "layerType": "triangle",
+  "layerCut": 3000,
+  "layerDur": 0.18,
+  "kickTop": 150,
+  "kickBot": 42
+ }
+}

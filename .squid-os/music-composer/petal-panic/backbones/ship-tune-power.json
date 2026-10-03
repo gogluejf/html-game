@@ -1,0 +1,47 @@
+{
+  "name": "SHIP TUNE POWER",
+  "bpm": 150,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "intro",
+      "measures": 2,
+      "drum": "lvl0"
+    },
+    {
+      "part": "riff",
+      "measures": 4,
+      "drum": "lvl1"
+    },
+    {
+      "part": "verse",
+      "measures": 4,
+      "drum": "lvl2"
+    },
+    {
+      "part": "build",
+      "measures": 4,
+      "drum": "lvl2"
+    },
+    {
+      "part": "peak",
+      "measures": 4,
+      "drum": "lvl3"
+    },
+    {
+      "part": "solo",
+      "measures": 4,
+      "drum": "lvl3"
+    },
+    {
+      "part": "peak-b",
+      "measures": 4,
+      "drum": "lvl3"
+    },
+    {
+      "part": "outro",
+      "measures": 2,
+      "drum": "lvl1"
+    }
+  ]
+}

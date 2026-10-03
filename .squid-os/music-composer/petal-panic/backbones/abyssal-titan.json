@@ -1,0 +1,42 @@
+{
+  "name": "ABYSSAL TITAN",
+  "bpm": 172,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "intro",
+      "measures": 4,
+      "drum": "none"
+    },
+    {
+      "part": "phase1",
+      "measures": 8,
+      "drum": "light"
+    },
+    {
+      "part": "hook",
+      "measures": 8,
+      "drum": "medium"
+    },
+    {
+      "part": "phase2",
+      "measures": 8,
+      "drum": "medium-b"
+    },
+    {
+      "part": "build",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "peak",
+      "measures": 8,
+      "drum": "blast"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "light"
+    }
+  ]
+}

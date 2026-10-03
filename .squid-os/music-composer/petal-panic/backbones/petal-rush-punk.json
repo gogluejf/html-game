@@ -1,0 +1,42 @@
+{
+  "name": "PETAL RUSH PUNK",
+  "bpm": 168,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "riff",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "hook",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "build",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "peak",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "drop",
+      "measures": 4,
+      "drum": "none"
+    },
+    {
+      "part": "peak-b",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "light"
+    }
+  ]
+}

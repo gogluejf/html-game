@@ -1,0 +1,27 @@
+{
+  "name": "EXAMPLE ANTHEM",
+  "bpm": 150,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "riff",
+      "measures": 2,
+      "drum": "light"
+    },
+    {
+      "part": "hook",
+      "measures": 2,
+      "drum": "medium"
+    },
+    {
+      "part": "peak",
+      "measures": 2,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 2,
+      "drum": "light"
+    }
+  ]
+}
