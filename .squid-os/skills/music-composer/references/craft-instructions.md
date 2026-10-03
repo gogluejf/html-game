@@ -30,6 +30,13 @@ Why: ~95% of our 61 songs already live inside one minor scale with exactly
 this seasoning. This just makes explicit what was working and blocks the
 day I reach for a note because it "fits the vibe".
 
+**Pentatonic = the safe default.** When you want zero-clash safety —
+ambient, lo-fi, menu music, or any track where melodic risk must be near
+zero — pick `pentatonic-minor` or `pentatonic-major`. A pentatonic melody
+cannot produce a semitone clash by construction, so every note choice is
+legal. Reach for full minor/major when you want tension (7ths, leading-tone
+pulls); reach for pentatonic when you want calm certainty.
+
 ## M2 — Density floor (no ghost melodies)
 
 Per bar, count filled lead cells / total cells:

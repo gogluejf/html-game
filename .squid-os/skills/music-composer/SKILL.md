@@ -91,11 +91,10 @@ keys you will define later in the parts' `drumKit`. (The flag is `--part`.)
 
 The architect is FREE to deviate. These are starting points, not cages.
 
-**Craft instructions:** after designing the skeleton, verify it against
-[craft-instructions.md](references/craft-instructions.md) — especially M3
-(progression: every part gets new material, no clones) and D3 (drums evolve
-additively). A backbone where two adjacent parts share the same drum level
-and bar count is a red flag: the song will stall there.
+**Sanity-check the skeleton:** each part should have a clear job and the drums
+should get busier as the song builds. A backbone where two adjacent parts share
+the same drum level AND the same bar count is a red flag — the song will stall
+there. Full craft details are in [craft-instructions.md](references/craft-instructions.md).
 
 After creating, check the result:
 
@@ -153,11 +152,11 @@ Pasting one genre's beat onto another is how "punk" ends up sounding like disco:
   by default (token N lands at position N×(step_width/8)).
 - `_` = rest for one default slot.
 - `~` suffix = hold 2 beats; `.` suffix = dotted (1.5×).
-- Note names: sharps only (`C#5`, `F#4`), octaves 1–5.
-- **No repeat shorthand.** Write every bar explicitly. Do NOT use `xN` —
-  repetition is how songs get boring; M3 (progression) requires each part
-  to bring new material. If you want a repeated groove, write the bars out and
-  vary at least one of them (different ending, passing note, or top note).
+- Note names: sharps only (`C#5`, `F#4`), octaves 1–6.
+- `xN` repeat shorthand is supported: a group of tokens followed by `xN` is
+  repeated N times (e.g. `C4 D4 x4`). Prefer writing bars out and varying them
+  — verbatim repetition is what makes songs boring — but use `xN` when you
+  genuinely want an exact groove to repeat; it parses cleanly.
 - Bar width is derived from the backbone's `timeSig` automatically — you
   always write **bars**, never raw cells. For 4/4 that's 8 eighths/bar; for
   4/7 it's 16 eighths/bar; for 6/8 it's 12 eighths/bar.
@@ -197,21 +196,28 @@ vibe" comes from voice params, not notes: short decay (0.14–0.22), high cutoff
 voice recipes" — do NOT improvise soft triangle/sine defaults for energetic
 genres. Triangle is reserved for pads in jazz/ambient only.
 
-**Melodic variation — write pressurized progressions.** Follow M3 (progression)
-and M5 (drunkard's walk) in [craft-instructions.md](references/craft-instructions.md):
-each body part brings ≥3 new pitch classes, no two parts clone each other,
-and melodies move by small steps with purposeful leaps. Repeated parts must
-change ≥ 2 dimensions (ending/layer/top note/density).
+**Write a melody that moves and builds.** This is what makes a track good —
+aim for all of these in every song:
 
-**Register arc (M4).** Top-note trajectory must climb: intro ≤ hook < build ≤
-peak, then tag descends stepwise to tonic stating peak's top note once. If the
-hook already hits the peak's ceiling, the peak has nowhere to go.
+- **Every bar is different from the one before.** No bar copied verbatim from
+  an earlier bar. If you want a groove to repeat, change at least one thing
+  (the ending note, a passing tone, or the top note) so it feels like progress,
+  not a loop.
+- **Build momentum across the song.** Start lower and tighter; end higher and
+  bigger. The peak part should reach the highest notes of the whole song — if
+  the hook already hit the top, the peak has nowhere to go.
+- **Vary the rhythm.** Mix short staccato notes with some held notes and a
+  couple of fast runs. Don't play even eighths the entire way — rhythm variety
+  is half the identity of a chiptune melody.
+- **Walk, don't teleport.** Melodies mostly move by small steps (2nds/3rds);
+  use a leap on purpose (to climb into a new register, to enter a new part, or
+  to resolve down at the end), not randomly.
+- **Land the ending.** The tag descends stepwise back to the tonic and states
+  the peak's top note once as a farewell.
 
-**Before writing notes, internalize the craft instructions** in
-[craft-instructions.md](references/craft-instructions.md). The three that catch
-most drafts: B1 (bass must move — no root pedals longer than 2 bars), M3
-(progression — every part gets new material), and D1/D4 (backbeat on 2+4,
-downbeat kick at step 0). Run `audit` before declaring done.
+These are goals, not rigid rules — `audit` checks the mechanical ones
+(progression, ceiling, bass motion, drums) so you can focus on making it sound
+good. Run `audit` before declaring done.
 
 Check the result:
 
@@ -267,9 +273,8 @@ parts for any new/renamed parts.
 - `createdAt` sets playlist order; the CLI manages it — don't touch it.
 - Validate before declaring done: `compose.py validate --game GAME`.
 - **Audit before declaring done: `compose.py audit --game GAME --name NAME`** —
-  it mechanically checks the notes against the craft instructions (M/B/H/D:
-  scale lock, progression, ceiling climb, bass motion, drum ladder). Fix every
-  FAIL; WARNs are judgment calls.
+  it mechanically checks progression, register arc, bass motion, and drums.
+  Fix every FAIL; WARNs are judgment calls.
 - Test in browser before declaring done.
 
 ## Output Format

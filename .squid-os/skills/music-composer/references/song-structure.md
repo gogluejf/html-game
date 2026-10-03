@@ -295,8 +295,12 @@ kickTop=110        kickBot=44
 ```
 
 ### Register rules (8-bit authenticity)
-- Lead lives in octaves 4–5 (C4–B5). Never below C4, never above B5 (engine limit).
-- Bass lives in octaves 1–3. One octave jump per part max.
+- Lead sounds best in octaves 4–5 for an authentic 8-bit lead. Going higher
+  (up to B6) is allowed and great for climactic peaks — it just gets thinner/
+  brighter, so use the top of the range sparingly and intentionally. There is
+  NO hard engine ceiling; the engine plays C1–B6.
+- Bass lives in octaves 1–3 (a bass note up in octave 4+ sounds wrong). One
+  octave jump per part max.
 - Pads sit between: octaves 2–4, 2–3 note voicings (root+third+fifth), not full chords.
 - Octave doubling (lead + same note an octave up in layer) is THE power move at peaks.
 
