@@ -24,6 +24,41 @@
       "drum": "full"
     },
     {
+      "part": "riff-hi",
+      "measures": 2,
+      "drum": "drive"
+    },
+    {
+      "part": "riff-hi-b",
+      "measures": 2,
+      "drum": "push"
+    },
+    {
+      "part": "run-hi",
+      "measures": 2,
+      "drum": "full"
+    },
+    {
+      "part": "peak-hi",
+      "measures": 2,
+      "drum": "blast"
+    },
+    {
+      "part": "bridge",
+      "measures": 2,
+      "drum": "blast"
+    },
+    {
+      "part": "final-run",
+      "measures": 2,
+      "drum": "full"
+    },
+    {
+      "part": "final-peak",
+      "measures": 2,
+      "drum": "blast"
+    },
+    {
       "part": "tag",
       "measures": 2,
       "drum": "drive"

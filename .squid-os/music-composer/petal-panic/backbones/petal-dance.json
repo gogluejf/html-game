@@ -1,0 +1,42 @@
+{
+  "name": "Petal Dance",
+  "bpm": 185,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "intro",
+      "measures": 2,
+      "drum": "none"
+    },
+    {
+      "part": "groove",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "groove-b",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "build",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "break",
+      "measures": 2,
+      "drum": "none"
+    },
+    {
+      "part": "drop",
+      "measures": 4,
+      "drum": "blast"
+    },
+    {
+      "part": "tag",
+      "measures": 2,
+      "drum": "light"
+    }
+  ]
+}
