@@ -4,7 +4,7 @@
   "genre": "sludge metal x lullaby",
   "vibe": "music-box carousel tune dragged down by half-time doom; beautiful and wrong; the moon is too big",
   "createdAt": "2026-10-04T02:09:23.533552",
-  "revision": 6,
+  "revision": 7,
   "drumKit": {
     "doom": [
       {
@@ -30,67 +30,67 @@
       {
         "k": false,
         "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
         "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": true,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": true,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
       },
       {
         "k": false,
@@ -182,7 +182,27 @@
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
       },
       {
         "k": false,
@@ -193,6 +213,36 @@
         "k": false,
         "s": false,
         "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
       },
       {
         "k": false,
@@ -211,88 +261,38 @@
       },
       {
         "k": false,
-        "s": true,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
         "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
       },
       {
         "k": false,
@@ -344,7 +344,27 @@
       {
         "k": false,
         "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
         "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
       },
       {
         "k": false,
@@ -362,6 +382,36 @@
         "h": false
       },
       {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
         "k": true,
         "s": false,
         "h": true
@@ -373,19 +423,8 @@
       },
       {
         "k": false,
-        "s": true,
-        "h": true
-      },
-      {
-        "k": false,
         "s": false,
         "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true,
-        "oh": true
       },
       {
         "k": false,
@@ -405,7 +444,27 @@
       {
         "k": false,
         "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
         "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
       },
       {
         "k": false,
@@ -425,67 +484,7 @@
       {
         "k": false,
         "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
         "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
       },
       {
         "k": false,
@@ -502,17 +501,17 @@
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": false
       },
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": false
       },
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": false
       },
       {
         "k": true,
@@ -522,7 +521,17 @@
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
       },
       {
         "k": true,
@@ -532,135 +541,134 @@
       {
         "k": false,
         "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": true,
-        "h": true
+        "h": false
       },
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
       },
       {
         "k": true,
         "s": false,
-        "h": true,
-        "oh": true
+        "h": true
       },
       {
         "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
         "s": false,
         "h": true
       },
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": false
       },
       {
         "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
         "s": false,
         "h": true
       },
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": false
       },
       {
         "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
         "s": false,
         "h": true
       },
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": false
       },
       {
         "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
         "s": false,
         "h": true
       },
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": false
       },
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": false
       },
       {
         "k": false,
         "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
+        "h": false
       }
     ],
     "faint": [
       {
         "k": true,
         "s": false,
-        "h": true
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
       },
       {
         "k": false,
@@ -680,11 +688,6 @@
       {
         "k": false,
         "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
         "h": false
       },
       {
@@ -695,11 +698,6 @@
       {
         "k": false,
         "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": true,
         "h": false
       },
       {
