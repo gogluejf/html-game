@@ -1,0 +1,37 @@
+{
+  "name": "Storm of the Sea Serpent",
+  "bpm": 155,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "pub",
+      "measures": 4,
+      "drum": "drum-pub"
+    },
+    {
+      "part": "jig-b",
+      "measures": 4,
+      "drum": "drum-pub"
+    },
+    {
+      "part": "build",
+      "measures": 4,
+      "drum": "drum-build"
+    },
+    {
+      "part": "storm",
+      "measures": 8,
+      "drum": "drum-storm"
+    },
+    {
+      "part": "peak",
+      "measures": 4,
+      "drum": "drum-peak"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "drum-tag"
+    }
+  ]
+}

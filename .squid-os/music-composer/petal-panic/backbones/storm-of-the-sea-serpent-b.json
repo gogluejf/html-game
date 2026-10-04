@@ -1,0 +1,32 @@
+{
+  "name": "Storm of the Sea Serpent B",
+  "bpm": 160,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "pub",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "rowdy",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "storm",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "peak",
+      "measures": 4,
+      "drum": "blast"
+    },
+    {
+      "part": "tag",
+      "measures": 2,
+      "drum": "medium"
+    }
+  ]
+}

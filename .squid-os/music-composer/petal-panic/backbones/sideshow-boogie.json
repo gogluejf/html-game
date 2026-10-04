@@ -1,13 +1,8 @@
 {
-  "name": "Zoo Break Trap B",
-  "bpm": 145,
+  "name": "Sideshow Boogie",
+  "bpm": 130,
   "timeSig": "4/4",
   "parts": [
-    {
-      "part": "intro",
-      "measures": 4,
-      "drum": "none"
-    },
     {
       "part": "groove",
       "measures": 4,
@@ -24,6 +19,11 @@
       "drum": "medium"
     },
     {
+      "part": "build-b",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
       "part": "peak",
       "measures": 4,
       "drum": "full"
@@ -31,7 +31,7 @@
     {
       "part": "climax",
       "measures": 4,
-      "drum": "full2"
+      "drum": "full"
     },
     {
       "part": "tag",
