@@ -516,7 +516,8 @@
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": true,
+        "oh": true
       },
       {
         "k": false,
@@ -556,7 +557,8 @@
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": true,
+        "oh": true
       },
       {
         "k": false,
@@ -596,7 +598,8 @@
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": true,
+        "oh": true
       },
       {
         "k": false,
@@ -636,7 +639,8 @@
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": true,
+        "oh": true
       },
       {
         "k": false,
@@ -678,7 +682,8 @@
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": true,
+        "oh": true
       },
       {
         "k": false,
@@ -718,7 +723,8 @@
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": true,
+        "oh": true
       },
       {
         "k": false,
@@ -758,7 +764,8 @@
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": true,
+        "oh": true
       },
       {
         "k": false,
@@ -798,7 +805,8 @@
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": true,
+        "oh": true
       },
       {
         "k": false,
@@ -1229,7 +1237,82 @@
       ]
     ]
   },
-  "layer": {},
+  "layer": {
+    "drop": [
+      [
+        "E5",
+        null,
+        null,
+        null,
+        null,
+        "G5",
+        null,
+        null,
+        null,
+        null,
+        "A5",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "C6",
+        null,
+        null,
+        null,
+        null,
+        null,
+        "A5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "G5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        "E5",
+        null,
+        null,
+        null,
+        null,
+        "C6",
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "A5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        "G5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        "E5",
+        null
+      ]
+    ]
+  },
   "bass": {
     "intro": [
       [
@@ -1656,7 +1739,10 @@
     "padCut": 1400,
     "padDur": 0.4,
     "kickTop": 150,
-    "kickBot": 44
+    "kickBot": 44,
+    "layerType": "sine",
+    "layerCut": 2800,
+    "layerDur": 0.35
   },
   "scale": "A-minor"
 }
