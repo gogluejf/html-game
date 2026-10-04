@@ -1,0 +1,42 @@
+{
+  "name": "VIA NAPOLI TURBO 3",
+  "bpm": 189,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "street-in",
+      "measures": 4,
+      "drum": "no-drums"
+    },
+    {
+      "part": "charge",
+      "measures": 4,
+      "drum": "half-time"
+    },
+    {
+      "part": "fake-out",
+      "measures": 2,
+      "drum": "kick-entry"
+    },
+    {
+      "part": "riot",
+      "measures": 4,
+      "drum": "hat-entry"
+    },
+    {
+      "part": "solo",
+      "measures": 8,
+      "drum": "syncopated-drive"
+    },
+    {
+      "part": "last-push",
+      "measures": 4,
+      "drum": "double-punk"
+    },
+    {
+      "part": "knockout",
+      "measures": 2,
+      "drum": "final-stops"
+    }
+  ]
+}

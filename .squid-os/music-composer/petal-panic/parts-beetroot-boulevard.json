@@ -1,0 +1,1956 @@
+{
+  "name": "Beetroot Boulevard",
+  "uuid": "40f68c7e-8812-4967-b263-0e4fda6c6895",
+  "genre": "Big-band funk / acid jazz",
+  "vibe": "Veggie City at 165 BPM \u2014 glitzy market-stall brass riff with diva 'ahhh' stabs, groove darkens and rigidifies as Colonel Carrot's palace looms; glamour rotting into power. F-major throughout.",
+  "createdAt": "2026-10-03T15:34:51.926764",
+  "revision": 5,
+  "drumKit": {
+    "light": [
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      }
+    ],
+    "medium": [
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      }
+    ],
+    "rigid": [
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      }
+    ],
+    "full": [
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      }
+    ]
+  },
+  "lead": {
+    "market": [
+      [
+        "C4",
+        null,
+        null,
+        null,
+        "E4",
+        null,
+        "D4",
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "A3",
+        null,
+        "G3",
+        null
+      ],
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        null,
+        null,
+        "E4",
+        null,
+        null,
+        null
+      ],
+      [
+        "C4",
+        null,
+        null,
+        null,
+        "E4",
+        null,
+        "D4",
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "A3",
+        null,
+        "G3",
+        null
+      ],
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null
+      ]
+    ],
+    "market-b": [
+      [
+        "C4",
+        null,
+        null,
+        null,
+        "E4",
+        null,
+        "D4",
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "A3",
+        null,
+        "G3",
+        null
+      ],
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        null,
+        null,
+        "E4",
+        null,
+        null,
+        null
+      ],
+      [
+        "C4",
+        null,
+        null,
+        null,
+        "E4",
+        null,
+        "D4",
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "A3",
+        null,
+        "G3",
+        null
+      ],
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        null,
+        null,
+        "C5",
+        null,
+        null,
+        null
+      ]
+    ],
+    "grandeur": [
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        "D4",
+        null
+      ],
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        "C4",
+        null
+      ],
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        "D4",
+        null
+      ],
+      [
+        "A4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        null,
+        null,
+        "D4",
+        null,
+        null,
+        null
+      ]
+    ],
+    "grandeur-b": [
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        "D4",
+        null
+      ],
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        "C4",
+        null
+      ],
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null
+      ],
+      [
+        "A4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        null,
+        null,
+        "D4",
+        null,
+        null,
+        null
+      ]
+    ],
+    "palace": [
+      [
+        "C4",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null
+      ],
+      [
+        "C4",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null
+      ],
+      [
+        "C4",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null
+      ],
+      [
+        "C4",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null
+      ]
+    ],
+    "peak": [
+      [
+        "A4",
+        null,
+        null,
+        null,
+        "C5",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        null,
+        null,
+        "A4",
+        null,
+        null,
+        null
+      ],
+      [
+        "F4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        "C5",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        null,
+        null
+      ],
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        "C5",
+        null,
+        null,
+        null
+      ],
+      [
+        "C5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "C5",
+        null
+      ]
+    ],
+    "tag": [
+      [
+        "C5",
+        null,
+        null,
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        null,
+        null,
+        "E4",
+        null,
+        null,
+        null
+      ],
+      [
+        "D4",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "A3",
+        null,
+        null,
+        null,
+        "G3",
+        null,
+        null,
+        null
+      ],
+      [
+        "C4",
+        null,
+        null,
+        null,
+        "A3",
+        null,
+        null,
+        null,
+        "C4",
+        null,
+        null,
+        null,
+        "E4",
+        null,
+        null,
+        null
+      ],
+      [
+        "F3",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ]
+  },
+  "layer": {
+    "palace": [
+      [
+        "G4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null
+      ],
+      [
+        "G4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null
+      ],
+      [
+        "G4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null
+      ],
+      [
+        "G4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null,
+        "G4",
+        null,
+        null,
+        null
+      ]
+    ],
+    "peak": [
+      [
+        "F4",
+        null,
+        null,
+        null,
+        "A4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        null,
+        null,
+        "F4",
+        null,
+        null,
+        null
+      ],
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        "D4",
+        null,
+        "C4",
+        null,
+        null,
+        null
+      ],
+      [
+        "G3",
+        null,
+        "A3",
+        null,
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        null,
+        null
+      ],
+      [
+        "F4",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ]
+  },
+  "bass": {
+    "market": [
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ],
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ],
+      [
+        "D2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null
+      ],
+      [
+        "A2",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ]
+    ],
+    "market-b": [
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ],
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ],
+      [
+        "D2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null
+      ],
+      [
+        "C3",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null
+      ]
+    ],
+    "grandeur": [
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ],
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ],
+      [
+        "G2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        null,
+        null,
+        "G2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        null,
+        null
+      ],
+      [
+        "C3",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "G2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        null,
+        null
+      ]
+    ],
+    "grandeur-b": [
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ],
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ],
+      [
+        "G2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        null,
+        null,
+        "G2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        null,
+        null
+      ],
+      [
+        "C3",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "G2",
+        null,
+        null,
+        null,
+        "D3",
+        null,
+        null,
+        null
+      ]
+    ],
+    "palace": [
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null
+      ],
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null
+      ],
+      [
+        "G2",
+        null,
+        null,
+        null,
+        "G2",
+        null,
+        null,
+        null,
+        "G2",
+        null,
+        null,
+        null,
+        "G2",
+        null,
+        null,
+        null
+      ],
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null
+      ]
+    ],
+    "peak": [
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null
+      ],
+      [
+        "C3",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null
+      ],
+      [
+        "D2",
+        null,
+        null,
+        null,
+        "D2",
+        null,
+        null,
+        null,
+        "D2",
+        null,
+        null,
+        null,
+        "D2",
+        null,
+        null,
+        null
+      ],
+      [
+        "C3",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null
+      ]
+    ],
+    "tag": [
+      [
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ],
+      [
+        "D2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null
+      ],
+      [
+        "C3",
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null
+      ],
+      [
+        "F2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ]
+  },
+  "pad": {
+    "market": {
+      "0": [
+        "F3",
+        "A3",
+        "C4"
+      ],
+      "32": [
+        "C3",
+        "E3",
+        "G3"
+      ]
+    },
+    "market-b": {
+      "0": [
+        "F3",
+        "A3",
+        "C4"
+      ],
+      "32": [
+        "C3",
+        "E3",
+        "G3"
+      ]
+    },
+    "grandeur": {
+      "0": [
+        "F3",
+        "A3",
+        "C4"
+      ],
+      "32": [
+        "G3",
+        "B3",
+        "D4",
+        "F4"
+      ]
+    },
+    "grandeur-b": {
+      "0": [
+        "F3",
+        "A3",
+        "C4"
+      ],
+      "32": [
+        "G3",
+        "B3",
+        "D4",
+        "F4"
+      ]
+    },
+    "palace": {
+      "0": [
+        "F3",
+        "A3",
+        "C4"
+      ],
+      "32": [
+        "G3",
+        "B3",
+        "D4",
+        "F4"
+      ]
+    },
+    "peak": {
+      "0": [
+        "F3",
+        "A3",
+        "C4"
+      ],
+      "32": [
+        "C3",
+        "E3",
+        "G3"
+      ]
+    },
+    "tag": {
+      "0": [
+        "F3",
+        "A3",
+        "C4"
+      ],
+      "32": [
+        "C3",
+        "E3",
+        "G3"
+      ]
+    }
+  },
+  "_bass_single": false,
+  "voices": {
+    "bassType": "sawtooth",
+    "bassCut": 900,
+    "bassDur": 0.18,
+    "padType": "sawtooth",
+    "padCut": 1400,
+    "padDur": 0.5,
+    "leadType": "square",
+    "leadCut": 4000,
+    "leadDur": 0.16,
+    "vib": 14,
+    "layerType": "sawtooth",
+    "layerCut": 2600,
+    "layerDur": 0.18,
+    "kickTop": 140,
+    "kickBot": 44
+  },
+  "scale": "F-major"
+}

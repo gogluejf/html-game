@@ -327,7 +327,21 @@ def _bb_parts(b):
              "measures": e.get("measures", e["bars"]),
              "drum": e.get("drum") or e["drums"]} for e in b.get("form", [])]
 
-def state_dir(game, working_dir="."):
+def _find_project_root():
+    """Walk up from CWD to find the project root (nearest dir with .squid-os/)."""
+    d = os.path.abspath(os.getcwd())
+    while True:
+        if os.path.isdir(os.path.join(d, ".squid-os")):
+            return d
+        parent = os.path.dirname(d)
+        if parent == d:
+            return os.path.abspath(os.getcwd())  # fallback: stay here
+        d = parent
+
+
+def state_dir(game, working_dir=None):
+    if working_dir is None or working_dir == ".":
+        working_dir = _find_project_root()
     return os.path.join(working_dir, ".squid-os", "music-composer", game)
 
 
@@ -1280,7 +1294,7 @@ def main():
     ar.add_argument("--time-sig", default="4/4")
     ar.add_argument("--part", action="append", required=True,
                     help="name,measures,drum (repeatable). e.g. hook,4,light")
-    ar.add_argument("--working-dir", default=".")
+    ar.add_argument("--working-dir", default=None)
 
     # parts
     pa = sub.add_parser("parts", help="create parts from musical args")
@@ -1303,48 +1317,48 @@ def main():
                     help='name=spec (repeatable). e.g. full=\'snare:"2 4" kick:"1 2 3 4" hat:eighths\'')
     pa.add_argument("--voice", action="append",
                     help="key=value (repeatable). e.g. leadType=square vib=4")
-    pa.add_argument("--working-dir", default=".")
+    pa.add_argument("--working-dir", default=None)
 
     # audit
     au = sub.add_parser("audit", help="craft-instruction audit of one song (M/B/H/D + consistency)")
     au.add_argument("--game", required=True)
     au.add_argument("--name", required=True)
-    au.add_argument("--working-dir", default=".")
+    au.add_argument("--working-dir", default=None)
 
     # validate
     va = sub.add_parser("validate", help="validate all songs in a game")
     va.add_argument("--game", required=True)
-    va.add_argument("--working-dir", default=".")
+    va.add_argument("--working-dir", default=None)
 
     # list
     ls = sub.add_parser("list", help="list songs")
     ls.add_argument("--game", required=True)
-    ls.add_argument("--working-dir", default=".")
+    ls.add_argument("--working-dir", default=None)
 
     # show-arch
     sa = sub.add_parser("show-arch", help="show a song's backbone structure")
     sa.add_argument("--game", required=True)
     sa.add_argument("--name", required=True)
-    sa.add_argument("--working-dir", default=".")
+    sa.add_argument("--working-dir", default=None)
 
     # show-parts
     sp = sub.add_parser("show-parts", help="show a song's parts summary")
     sp.add_argument("--game", required=True)
     sp.add_argument("--name", required=True)
-    sp.add_argument("--working-dir", default=".")
+    sp.add_argument("--working-dir", default=None)
 
     # remove
     rm = sub.add_parser("remove", help="remove a song")
     rm.add_argument("--game", required=True)
     rm.add_argument("--name", required=True)
-    rm.add_argument("--working-dir", default=".")
+    rm.add_argument("--working-dir", default=None)
 
     # set-vibe
     sv = sub.add_parser("set-vibe", help="set vibe description")
     sv.add_argument("--game", required=True)
     sv.add_argument("--name", required=True)
     sv.add_argument("--vibe", required=True)
-    sv.add_argument("--working-dir", default=".")
+    sv.add_argument("--working-dir", default=None)
 
     a = ap.parse_args()
     {"arch": cmd_arch, "parts": cmd_parts, "validate": cmd_validate,

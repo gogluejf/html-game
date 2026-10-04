@@ -1,0 +1,37 @@
+{
+  "name": "Ferris Wheel Acid",
+  "bpm": 160,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "intro",
+      "measures": 2,
+      "drum": "none"
+    },
+    {
+      "part": "head",
+      "measures": 8,
+      "drum": "light"
+    },
+    {
+      "part": "solo-a",
+      "measures": 8,
+      "drum": "medium"
+    },
+    {
+      "part": "acid-crawl",
+      "measures": 8,
+      "drum": "medium"
+    },
+    {
+      "part": "peak",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "light"
+    }
+  ]
+}

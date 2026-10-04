@@ -1,0 +1,32 @@
+{
+  "name": "Ironhoof Express",
+  "bpm": 200,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "riff",
+      "measures": 4,
+      "drum": "drive"
+    },
+    {
+      "part": "riff-b",
+      "measures": 4,
+      "drum": "drive"
+    },
+    {
+      "part": "run",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "peak",
+      "measures": 4,
+      "drum": "blast"
+    },
+    {
+      "part": "tag",
+      "measures": 2,
+      "drum": "full"
+    }
+  ]
+}

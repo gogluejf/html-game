@@ -1,0 +1,32 @@
+{
+  "name": "Midnight Carousel Doom",
+  "bpm": 70,
+  "timeSig": "3/4",
+  "parts": [
+    {
+      "part": "lullaby",
+      "measures": 4,
+      "drum": "none"
+    },
+    {
+      "part": "weight",
+      "measures": 4,
+      "drum": "doom"
+    },
+    {
+      "part": "dread",
+      "measures": 4,
+      "drum": "doomhats"
+    },
+    {
+      "part": "crush",
+      "measures": 4,
+      "drum": "heavy"
+    },
+    {
+      "part": "fade",
+      "measures": 4,
+      "drum": "none"
+    }
+  ]
+}

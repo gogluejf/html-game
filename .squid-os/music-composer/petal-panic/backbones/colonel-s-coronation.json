@@ -1,0 +1,42 @@
+{
+  "name": "Colonel's Coronation",
+  "bpm": 175,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "entrance",
+      "measures": 8,
+      "drum": "light"
+    },
+    {
+      "part": "storm",
+      "measures": 8,
+      "drum": "eight"
+    },
+    {
+      "part": "stomp",
+      "measures": 8,
+      "drum": "medium"
+    },
+    {
+      "part": "funk",
+      "measures": 8,
+      "drum": "medium2"
+    },
+    {
+      "part": "peak",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "climax",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 6,
+      "drum": "none"
+    }
+  ]
+}

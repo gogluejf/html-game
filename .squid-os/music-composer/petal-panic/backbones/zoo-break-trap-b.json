@@ -1,0 +1,32 @@
+{
+  "name": "Zoo Break Trap B",
+  "bpm": 145,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "intro",
+      "measures": 2,
+      "drum": "dark"
+    },
+    {
+      "part": "groove",
+      "measures": 8,
+      "drum": "bounce"
+    },
+    {
+      "part": "build",
+      "measures": 8,
+      "drum": "rattle"
+    },
+    {
+      "part": "peak",
+      "measures": 8,
+      "drum": "feral"
+    },
+    {
+      "part": "tag",
+      "measures": 2,
+      "drum": "feral"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "name": "Cage Break Stomp",
+  "bpm": 175,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "intro",
+      "measures": 4,
+      "drum": "none"
+    },
+    {
+      "part": "hook",
+      "measures": 8,
+      "drum": "light"
+    },
+    {
+      "part": "hook-b",
+      "measures": 8,
+      "drum": "medium"
+    },
+    {
+      "part": "build",
+      "measures": 8,
+      "drum": "heavy"
+    },
+    {
+      "part": "peak",
+      "measures": 8,
+      "drum": "feral"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "none"
+    }
+  ]
+}

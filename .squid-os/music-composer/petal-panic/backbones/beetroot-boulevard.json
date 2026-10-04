@@ -1,0 +1,42 @@
+{
+  "name": "Beetroot Boulevard",
+  "bpm": 165,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "market",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "market-b",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "grandeur",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "grandeur-b",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "palace",
+      "measures": 4,
+      "drum": "rigid"
+    },
+    {
+      "part": "peak",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "rigid"
+    }
+  ]
+}

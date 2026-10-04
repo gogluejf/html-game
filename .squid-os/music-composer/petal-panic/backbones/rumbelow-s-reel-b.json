@@ -1,0 +1,32 @@
+{
+  "name": "Rumbelow's Reel B",
+  "bpm": 170,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "reel",
+      "measures": 8,
+      "drum": "sparse"
+    },
+    {
+      "part": "swell",
+      "measures": 8,
+      "drum": "medium"
+    },
+    {
+      "part": "storm",
+      "measures": 8,
+      "drum": "storm"
+    },
+    {
+      "part": "peak",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "sparse"
+    }
+  ]
+}

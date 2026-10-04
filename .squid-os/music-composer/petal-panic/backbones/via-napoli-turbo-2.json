@@ -1,0 +1,42 @@
+{
+  "name": "VIA NAPOLI TURBO 2",
+  "bpm": 189,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "street-in",
+      "measures": 4,
+      "drum": "street"
+    },
+    {
+      "part": "charge",
+      "measures": 4,
+      "drum": "charge"
+    },
+    {
+      "part": "fake-out",
+      "measures": 2,
+      "drum": "half-time"
+    },
+    {
+      "part": "riot",
+      "measures": 4,
+      "drum": "riot"
+    },
+    {
+      "part": "solo",
+      "measures": 8,
+      "drum": "breakneck"
+    },
+    {
+      "part": "last-push",
+      "measures": 4,
+      "drum": "barrage"
+    },
+    {
+      "part": "knockout",
+      "measures": 2,
+      "drum": "knockout"
+    }
+  ]
+}

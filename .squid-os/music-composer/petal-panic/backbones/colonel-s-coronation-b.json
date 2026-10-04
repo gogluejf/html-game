@@ -1,0 +1,52 @@
+{
+  "name": "Colonel's Coronation B",
+  "bpm": 180,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "entrance",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "waltz",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "storm",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "stomp",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "funk",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "peak",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "climax",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "quiet",
+      "measures": 2,
+      "drum": "none"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "none"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "name": "Rumbelow's Reel",
+  "bpm": 165,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "swell",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "verse",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "bridge",
+      "measures": 4,
+      "drum": "medium2"
+    },
+    {
+      "part": "storm",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "peak",
+      "measures": 4,
+      "drum": "crash"
+    },
+    {
+      "part": "storm-b",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "calm",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "none"
+    }
+  ]
+}

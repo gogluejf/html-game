@@ -1,0 +1,42 @@
+{
+  "name": "Cage Break Stomp B",
+  "bpm": 180,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "intro",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "groove",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "run",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "peak",
+      "measures": 8,
+      "drum": "feral"
+    },
+    {
+      "part": "break",
+      "measures": 2,
+      "drum": "none"
+    },
+    {
+      "part": "triumph",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "medium"
+    }
+  ]
+}

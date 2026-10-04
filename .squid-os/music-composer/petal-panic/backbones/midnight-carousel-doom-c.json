@@ -1,0 +1,42 @@
+{
+  "name": "Midnight Carousel Doom C",
+  "bpm": 180,
+  "timeSig": "3/4",
+  "parts": [
+    {
+      "part": "box-intro",
+      "measures": 4,
+      "drum": "faint"
+    },
+    {
+      "part": "doom-drop",
+      "measures": 4,
+      "drum": "doom"
+    },
+    {
+      "part": "dread-a",
+      "measures": 8,
+      "drum": "dread"
+    },
+    {
+      "part": "carousel-spin",
+      "measures": 8,
+      "drum": "spin"
+    },
+    {
+      "part": "crushing-peak",
+      "measures": 8,
+      "drum": "crush"
+    },
+    {
+      "part": "moon-rise",
+      "measures": 4,
+      "drum": "crush"
+    },
+    {
+      "part": "quiet-fade",
+      "measures": 4,
+      "drum": "faint"
+    }
+  ]
+}

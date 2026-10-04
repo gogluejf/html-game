@@ -1,0 +1,32 @@
+{
+  "name": "Beetroot Boulevard B",
+  "bpm": 170,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "market",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "diva",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "boulevard-b",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "palace",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 2,
+      "drum": "medium"
+    }
+  ]
+}

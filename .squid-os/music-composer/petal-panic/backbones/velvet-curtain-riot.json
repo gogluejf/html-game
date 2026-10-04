@@ -1,0 +1,37 @@
+{
+  "name": "Velvet Curtain Riot",
+  "bpm": 170,
+  "timeSig": "3/4",
+  "parts": [
+    {
+      "part": "waltz",
+      "measures": 8,
+      "drum": "waltz"
+    },
+    {
+      "part": "waltz-b",
+      "measures": 8,
+      "drum": "waltz2"
+    },
+    {
+      "part": "tension",
+      "measures": 8,
+      "drum": "tension"
+    },
+    {
+      "part": "glitch",
+      "measures": 6,
+      "drum": "glitch"
+    },
+    {
+      "part": "riot",
+      "measures": 8,
+      "drum": "riot"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "tag"
+    }
+  ]
+}

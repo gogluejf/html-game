@@ -1,0 +1,2381 @@
+{
+  "name": "Rumbelow's Reel B",
+  "uuid": "8242e32e-056c-4e93-a0ac-b85b57ba984a",
+  "genre": "",
+  "vibe": "",
+  "createdAt": "2026-10-03T15:31:29.274223",
+  "revision": 2,
+  "drumKit": {
+    "sparse": [
+      {
+        "k": true,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      }
+    ],
+    "medium": [
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      }
+    ],
+    "storm": [
+      {
+        "k": true,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": true,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      }
+    ],
+    "full": [
+      {
+        "k": true,
+        "s": false,
+        "h": true,
+        "c": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": true,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": true,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": true
+      }
+    ]
+  },
+  "lead": {
+    "reel": [
+      [
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null
+      ],
+      [
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        "D4",
+        null
+      ],
+      [
+        "C4",
+        null,
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        "C4",
+        null
+      ],
+      [
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        "Bb4",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null
+      ],
+      [
+        "A4",
+        null,
+        "Bb4",
+        null,
+        "C5",
+        null,
+        "D5",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null
+      ],
+      [
+        "F4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        "Bb4",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null
+      ],
+      [
+        "A4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        "D4",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "swell": [
+      [
+        "A4",
+        null,
+        "Bb4",
+        null,
+        "C5",
+        null,
+        "D5",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null
+      ],
+      [
+        "A4",
+        null,
+        "Bb4",
+        null,
+        "C5",
+        null,
+        "D5",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null,
+        "A4",
+        null,
+        "F4",
+        null
+      ],
+      [
+        "F4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        "Bb4",
+        null,
+        "C5",
+        null,
+        "D5",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null
+      ],
+      [
+        "A4",
+        null,
+        "Bb4",
+        null,
+        "C5",
+        null,
+        "D5",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null
+      ],
+      [
+        "D5",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        "Bb4",
+        null,
+        "C5",
+        null
+      ],
+      [
+        "D5",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        "Bb4",
+        null,
+        "C5",
+        null
+      ],
+      [
+        "F5",
+        null,
+        "E5",
+        null,
+        "D5",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null,
+        "C5",
+        null,
+        "D5",
+        null,
+        "E5",
+        null
+      ],
+      [
+        "D5",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        "D4",
+        null
+      ]
+    ],
+    "storm": [
+      [
+        "D5",
+        null,
+        "D5",
+        null,
+        "E5",
+        null,
+        "F5",
+        null,
+        "D5",
+        null,
+        "D5",
+        null,
+        "C5",
+        null,
+        "D5",
+        null
+      ],
+      [
+        "E5",
+        null,
+        "E5",
+        null,
+        "F5",
+        null,
+        "G5",
+        null,
+        "E5",
+        null,
+        "E5",
+        null,
+        "D5",
+        null,
+        "E5",
+        null
+      ],
+      [
+        "F5",
+        null,
+        "F5",
+        null,
+        "G5",
+        null,
+        "A5",
+        null,
+        "F5",
+        null,
+        "F5",
+        null,
+        "E5",
+        null,
+        "F5",
+        null
+      ],
+      [
+        "G5",
+        null,
+        "G5",
+        null,
+        "A5",
+        null,
+        "Bb5",
+        null,
+        "G5",
+        null,
+        "G5",
+        null,
+        "F5",
+        null,
+        "G5",
+        null
+      ],
+      [
+        "D5",
+        null,
+        "D5",
+        null,
+        "E5",
+        null,
+        "F5",
+        null,
+        "D5",
+        null,
+        "D5",
+        null,
+        "C5",
+        null,
+        "D5",
+        null
+      ],
+      [
+        "E5",
+        null,
+        "E5",
+        null,
+        "F5",
+        null,
+        "G5",
+        null,
+        "E5",
+        null,
+        "E5",
+        null,
+        "D5",
+        null,
+        "E5",
+        null
+      ],
+      [
+        "F5",
+        null,
+        "F5",
+        null,
+        "G5",
+        null,
+        "A5",
+        null,
+        "Bb5",
+        null,
+        "A5",
+        null,
+        "G5",
+        null,
+        "F5",
+        null
+      ],
+      [
+        "G5",
+        null,
+        "G5",
+        null,
+        "A5",
+        null,
+        "Bb5",
+        null,
+        "C6",
+        null,
+        "Bb5",
+        null,
+        "A5",
+        null,
+        "G5",
+        null
+      ]
+    ],
+    "peak": [
+      [
+        "C6",
+        null,
+        "Bb5",
+        null,
+        "A5",
+        null,
+        "Bb5",
+        null,
+        "C6",
+        null,
+        "Bb5",
+        null,
+        "A5",
+        null,
+        "G5",
+        null
+      ],
+      [
+        "A5",
+        null,
+        "Bb5",
+        null,
+        "C6",
+        null,
+        "D6",
+        null,
+        "C6",
+        null,
+        "Bb5",
+        null,
+        "A5",
+        null,
+        "G5",
+        null
+      ],
+      [
+        "F5",
+        null,
+        "G5",
+        null,
+        "A5",
+        null,
+        "Bb5",
+        null,
+        "C6",
+        null,
+        "Bb5",
+        null,
+        "A5",
+        null,
+        "G5",
+        null
+      ],
+      [
+        "A5",
+        null,
+        "Bb5",
+        null,
+        "C6",
+        null,
+        "D6",
+        null,
+        "C6",
+        null,
+        "Bb5",
+        null,
+        "A5",
+        null,
+        "G5",
+        null
+      ],
+      [
+        "D6",
+        null,
+        "C6",
+        null,
+        "Bb5",
+        null,
+        "C6",
+        null,
+        "D6",
+        null,
+        "C6",
+        null,
+        "Bb5",
+        null,
+        "A5",
+        null
+      ],
+      [
+        "Bb5",
+        null,
+        "C6",
+        null,
+        "D6",
+        null,
+        "E6",
+        null,
+        "D6",
+        null,
+        "C6",
+        null,
+        "Bb5",
+        null,
+        "A5",
+        null
+      ],
+      [
+        "F6",
+        null,
+        "E6",
+        null,
+        "D6",
+        null,
+        "C6",
+        null,
+        "Bb5",
+        null,
+        "C6",
+        null,
+        "D6",
+        null,
+        "E6",
+        null
+      ],
+      [
+        "D6",
+        null,
+        "C6",
+        null,
+        "Bb5",
+        null,
+        "A5",
+        null,
+        "G5",
+        null,
+        "F5",
+        null,
+        "E5",
+        null,
+        "D5",
+        null
+      ]
+    ],
+    "tag": [
+      [
+        "D5",
+        null,
+        "C5",
+        null,
+        "Bb4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null,
+        "D4",
+        null
+      ],
+      [
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null
+      ],
+      [
+        "D4",
+        null,
+        "E4",
+        null,
+        "F4",
+        null,
+        "G4",
+        null,
+        "A4",
+        null,
+        "G4",
+        null,
+        "F4",
+        null,
+        "E4",
+        null
+      ],
+      [
+        "D4",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "D4",
+        null,
+        null,
+        null
+      ]
+    ]
+  },
+  "layer": {
+    "storm": [
+      [
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null
+      ],
+      [
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null
+      ],
+      [
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null
+      ],
+      [
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null
+      ],
+      [
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null
+      ],
+      [
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null,
+        "Bb4",
+        null
+      ],
+      [
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null
+      ],
+      [
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null
+      ]
+    ],
+    "peak": [
+      [
+        "F4",
+        null,
+        "F4",
+        null,
+        "F4",
+        null,
+        "F4",
+        null,
+        "F4",
+        null,
+        "F4",
+        null,
+        "F4",
+        null,
+        "F4",
+        null
+      ],
+      [
+        "F4",
+        null,
+        "F4",
+        null,
+        "F4",
+        null,
+        "F4",
+        null,
+        "F4",
+        null,
+        "F4",
+        null,
+        "F4",
+        null,
+        "F4",
+        null
+      ],
+      [
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null
+      ],
+      [
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null
+      ],
+      [
+        "D4",
+        null,
+        "D4",
+        null,
+        "D4",
+        null,
+        "D4",
+        null,
+        "D4",
+        null,
+        "D4",
+        null,
+        "D4",
+        null,
+        "D4",
+        null
+      ],
+      [
+        "D4",
+        null,
+        "D4",
+        null,
+        "D4",
+        null,
+        "D4",
+        null,
+        "D4",
+        null,
+        "D4",
+        null,
+        "D4",
+        null,
+        "D4",
+        null
+      ],
+      [
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null
+      ],
+      [
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null,
+        "G4",
+        null
+      ]
+    ]
+  },
+  "bass": {
+    "reel": [
+      [
+        "D2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ],
+      [
+        "D2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "G2",
+        null,
+        null,
+        null
+      ],
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null
+      ],
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "C3",
+        null,
+        null,
+        null
+      ],
+      [
+        "D2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ],
+      [
+        "Bb2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "G2",
+        null,
+        null,
+        null
+      ],
+      [
+        "G2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null
+      ],
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ]
+    ],
+    "swell": [
+      [
+        "A2",
+        null,
+        "A2",
+        null,
+        "A3",
+        null,
+        "A2",
+        null,
+        "C3",
+        null,
+        "A3",
+        null,
+        "A2",
+        null,
+        "A2",
+        null
+      ],
+      [
+        "A2",
+        null,
+        "A2",
+        null,
+        "A3",
+        null,
+        "A2",
+        null,
+        "C3",
+        null,
+        "A3",
+        null,
+        "A2",
+        null,
+        "A2",
+        null
+      ],
+      [
+        "F2",
+        null,
+        "F2",
+        null,
+        "F3",
+        null,
+        "F2",
+        null,
+        "A2",
+        null,
+        "F3",
+        null,
+        "F2",
+        null,
+        "F2",
+        null
+      ],
+      [
+        "F2",
+        null,
+        "F2",
+        null,
+        "F3",
+        null,
+        "F2",
+        null,
+        "A2",
+        null,
+        "F3",
+        null,
+        "F2",
+        null,
+        "F2",
+        null
+      ],
+      [
+        "D2",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "F2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D2",
+        null
+      ],
+      [
+        "D2",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "F2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D2",
+        null
+      ],
+      [
+        "G2",
+        null,
+        "G2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "Bb2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "G2",
+        null
+      ],
+      [
+        "A2",
+        null,
+        "A2",
+        null,
+        "A3",
+        null,
+        "A2",
+        null,
+        "C3",
+        null,
+        "A3",
+        null,
+        "A2",
+        null,
+        "A2",
+        null
+      ]
+    ],
+    "storm": [
+      [
+        "D2",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D2",
+        null
+      ],
+      [
+        "D2",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "E2",
+        null,
+        "E3",
+        null,
+        "E2",
+        null,
+        "E2",
+        null
+      ],
+      [
+        "F2",
+        null,
+        "F2",
+        null,
+        "F3",
+        null,
+        "F2",
+        null,
+        "F2",
+        null,
+        "F3",
+        null,
+        "F2",
+        null,
+        "F2",
+        null
+      ],
+      [
+        "G2",
+        null,
+        "G2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "G2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "G2",
+        null
+      ],
+      [
+        "D2",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D2",
+        null
+      ],
+      [
+        "D2",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "E2",
+        null,
+        "E3",
+        null,
+        "E2",
+        null,
+        "E2",
+        null
+      ],
+      [
+        "F2",
+        null,
+        "F2",
+        null,
+        "F3",
+        null,
+        "F2",
+        null,
+        "G2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "G2",
+        null
+      ],
+      [
+        "A2",
+        null,
+        "A2",
+        null,
+        "A3",
+        null,
+        "A2",
+        null,
+        "A2",
+        null,
+        "A3",
+        null,
+        "A2",
+        null,
+        "A2",
+        null
+      ]
+    ],
+    "peak": [
+      [
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D3",
+        null
+      ],
+      [
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D3",
+        null
+      ],
+      [
+        "G2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "G3",
+        null
+      ],
+      [
+        "G2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "G3",
+        null
+      ],
+      [
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D3",
+        null
+      ],
+      [
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D3",
+        null,
+        "D2",
+        null,
+        "D3",
+        null
+      ],
+      [
+        "G2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "G3",
+        null,
+        "G2",
+        null,
+        "G3",
+        null
+      ],
+      [
+        "A2",
+        null,
+        "A3",
+        null,
+        "A2",
+        null,
+        "A3",
+        null,
+        "A2",
+        null,
+        "A3",
+        null,
+        "A2",
+        null,
+        "A2",
+        null
+      ]
+    ],
+    "tag": [
+      [
+        "D2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ],
+      [
+        "G2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "F2",
+        null,
+        null,
+        null
+      ],
+      [
+        "A2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "A2",
+        null,
+        null,
+        null
+      ],
+      [
+        "D2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "D2",
+        null,
+        null,
+        null
+      ]
+    ]
+  },
+  "pad": {
+    "reel": {
+      "0": [
+        "D3",
+        "F3",
+        "A3"
+      ],
+      "32": [
+        "C2"
+      ],
+      "64": [
+        "G3",
+        "A#3",
+        "D4"
+      ],
+      "96": [
+        "A3",
+        "C#4",
+        "E4"
+      ]
+    },
+    "swell": {
+      "0": [
+        "C2"
+      ],
+      "32": [
+        "G3",
+        "A#3",
+        "D4"
+      ],
+      "64": [
+        "D3",
+        "F3",
+        "A3"
+      ],
+      "96": [
+        "G3",
+        "A#3",
+        "D4"
+      ],
+      "112": [
+        "A3",
+        "C#4",
+        "E4"
+      ]
+    },
+    "storm": {
+      "0": [
+        "D3",
+        "F3",
+        "A3"
+      ],
+      "64": [
+        "C2"
+      ]
+    },
+    "peak": {
+      "0": [
+        "D3",
+        "F3",
+        "A3"
+      ],
+      "32": [
+        "C2"
+      ],
+      "64": [
+        "G3",
+        "A#3",
+        "D4"
+      ],
+      "96": [
+        "A3",
+        "C#4",
+        "E4"
+      ]
+    },
+    "tag": {
+      "0": [
+        "G3",
+        "A#3",
+        "D4"
+      ],
+      "32": [
+        "D3",
+        "F3",
+        "A3"
+      ]
+    }
+  },
+  "_bass_single": false,
+  "voices": {
+    "leadType": "square",
+    "leadCut": 4000,
+    "leadDur": 0.18,
+    "vib": 10,
+    "bassType": "sawtooth",
+    "bassCut": 1000,
+    "bassDur": 0.16,
+    "padType": "sawtooth",
+    "padCut": 1500,
+    "padDur": 0.45,
+    "kickTop": 140,
+    "kickBot": 44,
+    "layerType": "sawtooth",
+    "layerCut": 2800,
+    "layerDur": 0.2
+  },
+  "scale": "D-minor"
+}

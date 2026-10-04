@@ -1,0 +1,37 @@
+{
+  "name": "Pizza Cat Sideshow B",
+  "bpm": 180,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "call",
+      "measures": 2,
+      "drum": "silence"
+    },
+    {
+      "part": "chant",
+      "measures": 4,
+      "drum": "light"
+    },
+    {
+      "part": "creep",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "stinger",
+      "measures": 2,
+      "drum": "silence"
+    },
+    {
+      "part": "peak",
+      "measures": 4,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 2,
+      "drum": "light"
+    }
+  ]
+}

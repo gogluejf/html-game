@@ -1,0 +1,32 @@
+{
+  "name": "Ringmaster's Rave",
+  "bpm": 160,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "calliope",
+      "measures": 4,
+      "drum": "warm"
+    },
+    {
+      "part": "drop",
+      "measures": 8,
+      "drum": "four"
+    },
+    {
+      "part": "build",
+      "measures": 8,
+      "drum": "pump"
+    },
+    {
+      "part": "peak",
+      "measures": 8,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 4,
+      "drum": "warm"
+    }
+  ]
+}
