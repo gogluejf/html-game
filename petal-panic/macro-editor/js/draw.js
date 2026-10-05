@@ -34,6 +34,7 @@ export function draw(){
   if (app.cur && app.cur.st){
     if (app.show.zone) drawZoneBox(app.cur.st);   // area bounding box + entry/exit (behind units)
     drawMacro(app.cur.st);
+    drawEditorOverlay(app.cur.st);
     drawTitle(app.cur.st);                        // fixed top-center name label (viewer-style)
   } else {
     ctx.fillStyle = 'rgba(255,255,255,.3)';
@@ -41,6 +42,106 @@ export function draw(){
     ctx.textAlign = 'center';
     ctx.fillText('select a macro', cssW/2, cssH/2);
   }
+  syncValidationHint();
+}
+
+function bodyOffset(macro){
+  return macro.orientation === 'vertical' ? _consts.vEntryClear : _consts.hEntryClear;
+}
+
+function descriptorScreenRect(item, macro){
+  const ux=_consts.unitPxX, uy=_consts.unitPxY, off=bodyOffset(macro);
+  const h=item.kind === 'block' ? item.height : 1;
+  const [left,top]=W((item.x+off)*ux,(item.y+h)*uy);
+  const [right,bottom]=W((item.x+item.width+off)*ux,item.y*uy);
+  return {left,top,right,bottom,width:right-left,height:bottom-top};
+}
+
+function targetItem(target, macro){
+  if (!target) return null;
+  return target.kind === 'unit' ? macro.units?.[target.index] : macro.placements?.[target.index];
+}
+
+function drawTarget(target, macro, selected=false){
+  const item=targetItem(target,macro);
+  if (!item) return;
+  ctx.save();
+  ctx.strokeStyle=selected?'#ffffff':'#3ef0ff';
+  ctx.lineWidth=selected?3:2;
+  ctx.shadowColor='#3ef0ff'; ctx.shadowBlur=selected?10:4;
+  if (target.kind === 'slot'){
+    const ux=_consts.unitPxX,uy=_consts.unitPxY,off=bodyOffset(macro);
+    const [x,y]=W((item.x+off+.5)*ux,(item.y+.5)*uy);
+    ctx.beginPath(); ctx.arc(x,y,Math.max(8,10*app.zoom),0,Math.PI*2); ctx.stroke();
+  } else {
+    const r=descriptorScreenRect(item,macro);
+    ctx.strokeRect(r.left,r.top,r.width,r.height);
+    if (selected) drawHandles(item,macro);
+  }
+  ctx.restore();
+}
+
+function drawHandles(item,macro){
+  const r=descriptorScreenRect(item,macro), size=9;
+  const pts=item.kind==='platform'
+    ? [[r.left,r.top],[r.right,r.top]]
+    : [[r.left,r.bottom],[r.left+r.width/2,r.bottom],[r.right,r.bottom],
+       [r.left,r.top+r.height/2],[r.right,r.top+r.height/2],
+       [r.left,r.top],[r.left+r.width/2,r.top],[r.right,r.top]];
+  ctx.shadowBlur=0;
+  for (const [x,y] of pts){
+    ctx.fillStyle='#07101a';ctx.strokeStyle='#fff';ctx.lineWidth=2;
+    ctx.fillRect(x-size/2,y-size/2,size,size);ctx.strokeRect(x-size/2,y-size/2,size,size);
+  }
+}
+
+function rollbackCandidate(interaction){
+  if (interaction.mode!=='rollback'||!interaction.original) return interaction.candidate;
+  const t=Math.min(1,(performance.now()-interaction.rollbackStarted)/interaction.rollbackDuration);
+  const k=1-Math.pow(1-t,3), a=interaction.candidate, b=interaction.original;
+  const out={...a};
+  for (const key of ['x','y','width','height']) if (a[key]!=null&&b[key]!=null) out[key]=a[key]+(b[key]-a[key])*k;
+  return out;
+}
+
+function drawCandidate(interaction,macro){
+  if (!interaction?.candidate) return;
+  const item=rollbackCandidate(interaction);
+  const valid=interaction.valid && interaction.mode!=='rollback';
+  const color=valid ? (item.kind==='block'?COL_BLOCK:item.kind==='platform'?COL_PLATFORM:(SLOT_COLORS[item.type]||'#fff')) : '#ff4545';
+  ctx.save();
+  ctx.fillStyle=valid?'rgba(62,240,255,.34)':'rgba(255,69,69,.34)';
+  ctx.strokeStyle=color;ctx.lineWidth=3;
+  if (item.kind==='block'||item.kind==='platform'){
+    const r=descriptorScreenRect(item,macro);
+    ctx.fillRect(r.left,r.top,r.width,r.height);ctx.strokeRect(r.left,r.top,r.width,r.height);
+    const label=item.kind==='block'?`x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}, h ${Math.round(item.height)}`:`x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}`;
+    ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(label,r.left+4,r.top-5);
+    if (!valid){
+      ctx.beginPath();ctx.moveTo(r.left,r.top);ctx.lineTo(r.right,r.bottom);ctx.moveTo(r.right,r.top);ctx.lineTo(r.left,r.bottom);ctx.stroke();
+    }
+  } else {
+    const ux=_consts.unitPxX,uy=_consts.unitPxY,off=bodyOffset(macro);
+    const [x,y]=W((item.x+off+.5)*ux,(item.y+.5)*uy);
+    ctx.beginPath();ctx.arc(x,y,Math.max(7,9*app.zoom),0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='left';ctx.fillText(`${item.type} (${item.x}, ${item.y})`,x+12,y-10);
+    if (!valid){ctx.beginPath();ctx.moveTo(x-10,y-10);ctx.lineTo(x+10,y+10);ctx.moveTo(x+10,y-10);ctx.lineTo(x-10,y+10);ctx.stroke();}
+  }
+  ctx.restore();
+}
+
+function drawEditorOverlay(macro){
+  drawTarget(app.editor.hover,macro,false);
+  drawTarget(app.editor.selection,macro,true);
+  drawCandidate(app.editor.interaction,macro);
+}
+
+function syncValidationHint(){
+  const el=document.getElementById('validationHint');
+  if (!el) return;
+  const i=app.editor.interaction;
+  const reason=i&&!i.valid?i.reason:'';
+  el.textContent=reason;el.classList.toggle('on',!!reason);
 }
 
 // ---------- macro name label — fixed at top-center of canvas (viewer-style) ----------

@@ -19,12 +19,22 @@
   <div id="side">
     <h1>Macro Editor</h1>
     <div class="sub" id="projectLabel"></div>
-    <button class="tbtn" id="newBtn" title="create a new macro (Pass 1: not wired)">
+    <button class="tbtn" id="newBtn" title="create a new macro (not available yet)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>NEW MACRO</button>
     <div id="tree"></div>
   </div>
   <div id="mid">
     <div id="toolbar" class="booting">
+      <div class="tgroup edit-tools">
+        <span class="gtitle">Tools</span>
+        <button class="tbtn" id="toolNone" title="select, move, and resize existing geometry (V)">SELECT</button>
+        <button class="tbtn" id="toolBlock" title="drag a block rectangle (B)">BLOCK</button>
+        <button class="tbtn" id="toolPlatform" title="drag a horizontal platform (P)">PLATFORM</button>
+        <button class="tbtn slot-enemy" id="toolSlotEnemy" title="place enemy slot (1)">ENEMY</button>
+        <button class="tbtn slot-barrel" id="toolSlotBarrel" title="place barrel slot (2)">BARREL</button>
+        <button class="tbtn slot-powerup" id="toolSlotPowerup" title="place power-up slot (3)">POWER-UP</button>
+        <button class="tbtn" id="toolErase" title="erase an object or slot (E)">ERASE</button>
+      </div>
       <div class="tgroup">
         <span class="gtitle">Display</span>
         <button class="tbtn tog on" id="tglGrid" title="show/hide unit grid (G)">
@@ -35,11 +45,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h10M4 17h13"/></svg>LABELS</button>
         <button class="tbtn tog on" id="tglZone" title="show/hide the area bounding box + entry/exit (Z)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="1" stroke-dasharray="3 2"/><path d="M8 9l4 4M12 9l-4 4"/><path d="M16 9v6M16 9h3l-1.5 1.5L19 12h-3"/></svg>ZONE</button>
-      </div>
-      <div class="tgroup">
-        <span class="gtitle">Test</span>
-        <button class="tbtn" id="dumpBtn" title="cheat: add/remove a test block to exercise draft→dirty→save">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V4M4 20h16"/><rect x="8" y="12" width="4" height="4"/></svg>DUMP BLOCK</button>
       </div>
       <div style="position:relative;display:inline-flex;">
         <button class="tbtn" id="resetBtn" title="reset options">
@@ -56,6 +61,7 @@
     </div>
     <div id="stage">
       <canvas id="cv"></canvas>
+      <div id="validationHint"></div>
     </div>
     <div id="transport">
       <div id="zoombox" title="zoom: mouse wheel / ctrl+- / ctrl++">
@@ -94,7 +100,7 @@
     <button class="cd-btn danger" id="cdYes">Confirm</button>
   </div>
 </dialog>
-<script type="module" src="js/main.js?v=7"></script>
+<script type="module" src="js/main.js?v=8"></script>
 <div id="toast" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 20px;font-size:13px;color:var(--txt);opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;"></div>
 </body>
 </html>

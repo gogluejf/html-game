@@ -56,6 +56,12 @@ export function selectMacro(id){
     app.drafts.set(id, st);
   }
   app.cur = { id, macro, st };
+  // Pointer targets are indices into the current macro and cannot survive a
+  // macro switch.
+  app.editor.hover = null;
+  app.editor.selection = null;
+  app.editor.interaction = null;
+  app.editor.pan = null;
 
   saveActive(id);   // remember this macro so a refresh lands back on it
   syncPanel();

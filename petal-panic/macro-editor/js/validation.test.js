@@ -1,0 +1,61 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { app } from './state.js';
+import { validateMacroCandidate, validateDeletion } from './validation.js';
+
+app.consts = {
+  unitPxX:72, unitPxY:48, platformDrawH:6,
+  hEntryClear:3, hExitClear:3, vEntryClear:0, vExitClear:3,
+  hBudgetUnits:56, vBudgetUnits:56, hZoneHeightUnits:11.25,
+  vZoneWidthUnits:13, topClearanceUnits:2, hMaxSurfaceUnits:8,
+};
+
+function macro(overrides={}){
+  return {
+    id:'editorTest', name:'Editor Test', orientation:'horizontal', difficulty:1,
+    units:[{kind:'block',x:5,y:0,width:2,height:1}], placements:[],
+    variations:[], follows:[], followedBy:[], ...overrides,
+  };
+}
+
+test('validates arbitrary positive block rectangles', () => {
+  const result=validateMacroCandidate(macro(),{kind:'block',x:12,y:0,width:5,height:1});
+  assert.equal(result.valid,true,result.reason);
+  assert.deepEqual(result.macro.units.at(-1),{kind:'block',x:12,y:0,width:5,height:1});
+});
+
+test('rejects platform row zero with a useful reason', () => {
+  const result=validateMacroCandidate(macro(),{kind:'platform',x:12,y:0,width:4});
+  assert.equal(result.valid,false);
+  assert.match(result.reason,/row 0/i);
+});
+
+test('rejects overlapping block candidates without mutating source', () => {
+  const source=macro();
+  const before=JSON.stringify(source);
+  const result=validateMacroCandidate(source,{kind:'block',x:6,y:0,width:2,height:1});
+  assert.equal(result.valid,false);
+  assert.match(result.reason,/overlap/i);
+  assert.equal(JSON.stringify(source),before);
+});
+
+test('enemy slots require support and deterministic descriptors remain schema-valid', () => {
+  const floating=validateMacroCandidate(macro(),{slot:'enemy-1',type:'enemy',x:12,y:2});
+  assert.equal(floating.valid,false);
+  assert.match(floating.reason,/supporting surface/i);
+  const supported=validateMacroCandidate(macro(),{slot:'enemy-1',type:'enemy',x:5,y:1});
+  assert.equal(supported.valid,true,supported.reason);
+});
+
+test('power-up slots require support for newly authored opportunities', () => {
+  const floating=validateMacroCandidate(macro(),{slot:'powerup-1',type:'powerup',x:12,y:4});
+  assert.equal(floating.valid,false);
+  const supported=validateMacroCandidate(macro(),{slot:'powerup-1',type:'powerup',x:6,y:1});
+  assert.equal(supported.valid,true,supported.reason);
+});
+
+test('deletion is rejected when it would leave an invalid empty macro', () => {
+  const result=validateDeletion(macro(),'unit',0);
+  assert.equal(result.valid,false);
+  assert.match(result.reason,/non-empty array/i);
+});

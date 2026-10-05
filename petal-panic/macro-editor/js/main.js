@@ -1,7 +1,6 @@
 // ---------- main (macro editor) ----------
-// Boot: load game constants + macros → build sidebar → wire view/zoom/save/dump.
-// Pass 1: display only. The DUMP BLOCK button is the cheat that mutates state
-// to exercise draft → dirty dot → save without real editing tools.
+// Boot: load game constants + macros → build sidebar → wire editing/view/save.
+// Pass 2: drag creation, selection/move/resize, explicit slots, and erase.
 
 import { app } from './state.js';
 import { $, cv, resizeCanvas, setZoom, evPos } from './viewport.js';
@@ -10,7 +9,9 @@ import { buildSidebar, selectMacro } from './sidebar.js';
 import { draw, setConstants } from './draw.js';
 import { initConfirmDialog } from './dialog.js';
 import { showToast } from './toast.js';
-import { markChanged, saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft, readActive } from './save.js';
+import { saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft, readActive } from './save.js';
+import { initTools, setTool } from './tools.js';
+import { initPointer, deleteSelection } from './pointer.js';
 
 // ---------- toolbar toggles ----------
 function syncToggles(){
@@ -24,7 +25,7 @@ function initToolbar(){
   $('tglSlots').addEventListener('click', ()=>{ app.show.slots=!app.show.slots; syncToggles(); draw(); });
   $('tglLabels').addEventListener('click', ()=>{ app.show.labels=!app.show.labels; syncToggles(); draw(); });
   $('tglZone').addEventListener('click', ()=>{ app.show.zone=!app.show.zone; syncToggles(); draw(); });
-  $('newBtn').addEventListener('click', ()=>showToast('New macro: not wired in Pass 1', 'info'));
+  $('newBtn').addEventListener('click', ()=>showToast('New macro: not available yet', 'info'));
 }
 
 // ---------- zoom / pan ----------
@@ -37,53 +38,9 @@ function initView(){
     const [cx, cy] = evPos(e);
     setZoom(app.zoom * (e.deltaY < 0 ? 1.1 : 1/1.1), cx, cy);
   }, { passive:false });
-  // pan by dragging empty canvas
-  let panning = null;
-  cv.addEventListener('pointerdown', e=>{
-    if (e.button !== 0) return;
-    panning = { x:e.clientX, y:e.clientY, panX:app.panX, panY:app.panY };
-    cv.setPointerCapture(e.pointerId);
-  });
-  cv.addEventListener('pointermove', e=>{
-    if (!panning) return;
-    // Grab-and-drag: the grabbed world point stays under the cursor.
-    //   screen-x = cssW/2 + (wx - panX)*zoom  →  panX -= dx/zoom
-    //   screen-y = cssH/2 + (panY - wy)*zoom  →  panY += dy/zoom
-    // (opposite signs because world-y is flipped: row 0 at bottom, up = +y)
-    app.panX = panning.panX - (e.clientX - panning.x)/app.zoom;
-    app.panY = panning.panY + (e.clientY - panning.y)/app.zoom;
-    draw();
-  });
-  const endPan = ()=>{ panning = null; };
-  cv.addEventListener('pointerup', endPan);
-  cv.addEventListener('pointercancel', endPan);
+  // Editing/panning pointer behavior is owned by pointer.js so one explicit
+  // state machine controls capture, candidates, and atomic commits.
   new ResizeObserver(()=>{ if (app.cssW !== Math.round(cv.getBoundingClientRect().width) || app.cssH !== Math.round(cv.getBoundingClientRect().height)){ resizeCanvas(); draw(); } }).observe(cv);
-}
-
-// ---------- the cheat: dump a test block ----------
-// Toggles a marker block at col 0, row 0. This is the ONLY mutation in Pass 1;
-// it exists to prove the draft → dirty dot → save pipeline end to end.
-let _dumped = false;
-function dumpBlock(){
-  if (!app.cur){ showToast('Select a macro first', 'info'); return; }
-  const st = app.cur.st;
-  st.units = st.units || [];
-  // Pass-1 test mutation stays schema-valid: toggle a unique width-1 block
-  // at the first unused ground column. No editor-only marker is persisted.
-  const testX = 0;
-  const existing = st.units.findIndex(u => u.kind === 'block' && u.x === testX
-    && u.y === 0 && u.width === 1 && u.height === 1);
-  if (existing >= 0){
-    st.units.splice(existing, 1);
-    _dumped = false;
-    showToast(`Removed test block from ${app.cur.id}`, 'info');
-  } else {
-    st.units.push({ kind:'block', x:testX, y:0, width:1, height:1 });
-    _dumped = true;
-    showToast(`Added test block (x ${testX}, y 0) to ${app.cur.id}`, 'success');
-  }
-  markChanged();   // → writes draft, lights dirty dot, enables SAVE
-  draw();
 }
 
 // ---------- keyboard ----------
@@ -98,6 +55,15 @@ function initKeyboard(){
       if (e.code==='KeyS'){ e.preventDefault(); $('tglSlots').click(); return; }
       if (e.code==='KeyL'){ e.preventDefault(); $('tglLabels').click(); return; }
       if (e.code==='KeyZ'){ e.preventDefault(); $('tglZone').click(); return; }
+      if (e.code==='KeyV'){ e.preventDefault(); setTool('none'); return; }
+      if (e.code==='KeyB'){ e.preventDefault(); setTool('block'); return; }
+      if (e.code==='KeyP'){ e.preventDefault(); setTool('platform'); return; }
+      if (e.code==='KeyE'){ e.preventDefault(); setTool('erase'); return; }
+      if (e.code==='Digit1'){ e.preventDefault(); setTool('slot-enemy'); return; }
+      if (e.code==='Digit2'){ e.preventDefault(); setTool('slot-barrel'); return; }
+      if (e.code==='Digit3'){ e.preventDefault(); setTool('slot-powerup'); return; }
+      if (e.code==='Delete'||e.code==='Backspace'){ if (deleteSelection()) e.preventDefault(); return; }
+      if (e.code==='Escape'){ e.preventDefault(); app.editor.interaction=null; app.editor.selection=null; draw(); return; }
       if (e.code==='ArrowUp' && app.flatIdx>0){ e.preventDefault(); selectMacro(app.flatList[app.flatIdx-1].id); return; }
       if (e.code==='ArrowDown' && app.flatIdx<app.flatList.length-1){ e.preventDefault(); selectMacro(app.flatList[app.flatIdx+1].id); return; }
     }
@@ -105,7 +71,7 @@ function initKeyboard(){
 }
 
 // ---------- boot ----------
-const APP_VERSION = 'v5-macro-schema';   // bump to bust module cache; shown in console + title
+const APP_VERSION = 'v6-drag-editing';   // bump to bust module cache; shown in console + title
 async function boot(){
   document.title = `MACRO EDITOR — petal-panic [${APP_VERSION}]`;
   $('projectLabel').textContent = 'petal-panic · macros/levels';
@@ -128,7 +94,9 @@ async function boot(){
   buildSidebar(app.macros);
   initConfirmDialog();
   initToolbar();
+  initTools();
   initView();
+  initPointer();
   initKeyboard();
   syncToggles();
   resizeCanvas();
@@ -145,7 +113,6 @@ async function boot(){
   }
 
   $('saveBtn').addEventListener('click', saveToDisk);
-  $('dumpBtn').addEventListener('click', dumpBlock);
 
   // RESET menu: Discard Draft (flush local draft, reload from file)
   const resetBtn = $('resetBtn'), resetMenu = $('resetMenu');

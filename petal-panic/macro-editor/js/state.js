@@ -31,6 +31,16 @@ const drafts = new Map();
 
 const show = { grid:true, slots:true, labels:true, zone:true };
 
+// Pass 2 interaction state. Temporary candidates never enter `cur.st` until a
+// valid pointer release commits them atomically.
+const editor = {
+  tool:'none',
+  hover:null,
+  selection:null,
+  interaction:null,
+  pan:null,
+};
+
 let _loadingState = false;
 
 export const app = {
@@ -45,5 +55,6 @@ export const app = {
   get cur(){ return cur; }, set cur(v){ cur = v; },
   drafts,
   show,
+  editor,
   get _loadingState(){ return _loadingState; }, set _loadingState(v){ _loadingState = v; },
 };

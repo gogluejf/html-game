@@ -1,0 +1,247 @@
+// ---------- pointer editing controller ----------
+// All pointer movement edits app.editor.interaction.candidate only. The macro
+// draft changes once, on a valid release, through markChanged().
+
+import { app } from './state.js';
+import { cv, c2s, evPos } from './viewport.js';
+import { draw } from './draw.js';
+import { markChanged } from './save.js';
+import { validateMacroCandidate, validateDeletion } from './validation.js';
+import { showToast } from './toast.js';
+
+const clone = value => JSON.parse(JSON.stringify(value));
+const HANDLE_PX = 9;
+
+function bodyOffset(){
+  if (!app.cur) return 0;
+  return app.cur.st.orientation === 'vertical' ? app.consts.vEntryClear : app.consts.hEntryClear;
+}
+
+export function eventCell(e){
+  const [sx, sy] = evPos(e);
+  const [wx, wy] = c2s(sx, sy);
+  return {
+    x: Math.floor(wx / app.consts.unitPxX) - bodyOffset(),
+    y: Math.floor(wy / app.consts.unitPxY),
+    sx, sy,
+  };
+}
+
+function unitRect(u){ return { x:u.x, y:u.y, width:u.width, height:u.kind === 'block' ? u.height : 1 }; }
+function contains(rect, cell){
+  return cell.x >= rect.x && cell.x < rect.x + rect.width && cell.y >= rect.y && cell.y < rect.y + rect.height;
+}
+
+export function hitTest(cell){
+  if (!app.cur) return null;
+  const placements = app.cur.st.placements || [];
+  for (let i = placements.length - 1; i >= 0; i--){
+    if (placements[i].x === cell.x && placements[i].y === cell.y) return { kind:'slot', index:i };
+  }
+  const units = app.cur.st.units || [];
+  for (let i = units.length - 1; i >= 0; i--){
+    if (contains(unitRect(units[i]), cell)) return { kind:'unit', index:i };
+  }
+  return null;
+}
+
+function handlePoints(u){
+  const r = unitRect(u), x0=r.x, x1=r.x+r.width, y0=r.y, y1=r.y+r.height;
+  if (u.kind === 'platform') return [{name:'w',x:x0,y:y1},{name:'e',x:x1,y:y1}];
+  return [
+    {name:'sw',x:x0,y:y0},{name:'s',x:(x0+x1)/2,y:y0},{name:'se',x:x1,y:y0},
+    {name:'w',x:x0,y:(y0+y1)/2},{name:'e',x:x1,y:(y0+y1)/2},
+    {name:'nw',x:x0,y:y1},{name:'n',x:(x0+x1)/2,y:y1},{name:'ne',x:x1,y:y1},
+  ];
+}
+
+export function hitHandle(screenX, screenY){
+  const selection = app.editor.selection;
+  if (!selection || selection.kind !== 'unit' || !app.cur) return null;
+  const u = app.cur.st.units?.[selection.index];
+  if (!u) return null;
+  const ux=app.consts.unitPxX, uy=app.consts.unitPxY, off=bodyOffset();
+  for (const h of handlePoints(u)){
+    const wx=(h.x+off)*ux, wy=h.y*uy;
+    const cx=app.cssW/2+(wx-app.panX)*app.zoom;
+    const cy=app.cssH/2+(app.panY-wy)*app.zoom;
+    if (Math.hypot(screenX-cx, screenY-cy) <= HANDLE_PX+3) return h.name;
+  }
+  return null;
+}
+
+function uniqueSlotName(type, placements, preserve=''){
+  if (preserve && !placements.some(p => p.slot === preserve)) return preserve;
+  const used = new Set(placements.map(p=>p.slot));
+  let n=1;
+  while (used.has(`${type}-${n}`)) n++;
+  return `${type}-${n}`;
+}
+
+function candidateForCreate(mode, anchor, current){
+  if (mode === 'creating-block'){
+    const x=Math.min(anchor.x,current.x), y=Math.min(anchor.y,current.y);
+    return { kind:'block', x, y, width:Math.abs(current.x-anchor.x)+1, height:Math.abs(current.y-anchor.y)+1 };
+  }
+  const x=Math.min(anchor.x,current.x);
+  return { kind:'platform', x, y:anchor.y, width:Math.abs(current.x-anchor.x)+1 };
+}
+
+function resizedCandidate(original, handle, cell){
+  if (original.kind === 'platform'){
+    const right=original.x+original.width;
+    if (handle === 'w') return { ...original, x:Math.min(cell.x,right-1), width:Math.max(1,right-cell.x) };
+    return { ...original, width:Math.max(1,cell.x-original.x) };
+  }
+  let left=original.x, right=original.x+original.width;
+  let bottom=original.y, top=original.y+original.height;
+  if (handle.includes('w')) left=Math.min(cell.x,right-1);
+  if (handle.includes('e')) right=Math.max(cell.x,left+1);
+  if (handle.includes('s')) bottom=Math.min(cell.y,top-1);
+  if (handle.includes('n')) top=Math.max(cell.y,bottom+1);
+  return { ...original, x:left, y:bottom, width:right-left, height:top-bottom };
+}
+
+function movedCandidate(original, anchor, current, seed=original){
+  return { ...seed, x:original.x+current.x-anchor.x, y:original.y+current.y-anchor.y };
+}
+
+function validateInteraction(interaction){
+  const edit = interaction.targetKind
+    ? { targetKind:interaction.targetKind, targetIndex:interaction.targetIndex }
+    : {};
+  const result = validateMacroCandidate(app.cur.st, interaction.candidate, edit);
+  interaction.valid=result.valid;
+  interaction.reason=result.reason;
+  interaction.nextMacro=result.macro;
+}
+
+function startRollback(interaction){
+  interaction.mode='rollback';
+  interaction.rollbackStarted=performance.now();
+  interaction.rollbackDuration=160;
+  app.editor.interaction=interaction;
+  const tick=()=>{
+    if (app.editor.interaction !== interaction) return;
+    if (performance.now()-interaction.rollbackStarted >= interaction.rollbackDuration){
+      app.editor.interaction=null; draw(); return;
+    }
+    draw(); requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function commit(interaction){
+  const next=interaction.nextMacro;
+  if (!next) return;
+  const unchanged=JSON.stringify(interaction.original)===JSON.stringify(interaction.candidate);
+  if (interaction.targetKind && unchanged){
+    app.editor.selection={kind:interaction.targetKind,index:interaction.targetIndex};
+    return;
+  }
+  app.cur.st.units=next.units;
+  app.cur.st.placements=next.placements;
+  markChanged();
+  if (interaction.targetKind) app.editor.selection={kind:interaction.targetKind,index:interaction.targetIndex};
+  else if (interaction.candidate.kind) app.editor.selection={kind:'unit',index:next.units.length-1};
+  else app.editor.selection={kind:'slot',index:next.placements.length-1};
+}
+
+export function deleteSelection(){
+  const s=app.editor.selection;
+  if (!s || !app.cur) return false;
+  const list=s.kind==='unit' ? app.cur.st.units : app.cur.st.placements;
+  if (!list?.[s.index]) return false;
+  const result=validateDeletion(app.cur.st,s.kind,s.index);
+  if (!result.valid){ showToast(result.reason,'error'); return false; }
+  app.cur.st.units=result.macro.units;
+  app.cur.st.placements=result.macro.placements;
+  app.editor.selection=null;
+  app.editor.hover=null;
+  markChanged(); draw();
+  return true;
+}
+
+function eraseAt(hit){
+  if (!hit) return;
+  app.editor.selection=hit;
+  deleteSelection();
+}
+
+function onPointerDown(e){
+  if (e.button !== 0 || !app.cur) return;
+  const cell=eventCell(e), tool=app.editor.tool;
+  const handle=hitHandle(cell.sx,cell.sy);
+  const hit=hitTest(cell);
+  if (tool === 'erase'){ eraseAt(hit); return; }
+  if (handle){
+    const original=clone(app.cur.st.units[app.editor.selection.index]);
+    const interaction={ mode:original.kind==='block'?'resizing-block':'resizing-platform', targetKind:'unit', targetIndex:app.editor.selection.index, handle, anchorCell:cell, currentCell:cell, original, candidate:clone(original), valid:true, reason:'' };
+    validateInteraction(interaction); app.editor.interaction=interaction;
+  } else if (tool === 'block' || tool === 'platform'){
+    const mode=tool==='block'?'creating-block':'creating-platform';
+    const interaction={ mode, targetKind:null, targetIndex:-1, handle:null, anchorCell:cell, currentCell:cell, original:null, candidate:candidateForCreate(mode,cell,cell), valid:false, reason:'' };
+    validateInteraction(interaction); app.editor.interaction=interaction;
+  } else if (tool.startsWith('slot-')){
+    const type=tool.slice(5);
+    if (hit?.kind === 'slot'){
+      const original=clone(app.cur.st.placements[hit.index]);
+      const candidate={...original,type};
+      const interaction={mode:'moving-slot',targetKind:'slot',targetIndex:hit.index,anchorCell:cell,currentCell:cell,original,candidate,valid:false,reason:''};
+      validateInteraction(interaction);app.editor.interaction=interaction;
+    } else {
+      const candidate={ slot:uniqueSlotName(type,app.cur.st.placements||[]), type, x:cell.x, y:cell.y };
+      const interaction={mode:'moving-slot',targetKind:null,targetIndex:-1,anchorCell:cell,currentCell:cell,original:null,candidate,valid:false,reason:''};
+      validateInteraction(interaction); app.editor.interaction=interaction;
+    }
+  } else if (hit){
+    app.editor.selection=hit;
+    const original=clone(hit.kind==='unit' ? app.cur.st.units[hit.index] : app.cur.st.placements[hit.index]);
+    const interaction={mode:hit.kind==='slot'?'moving-slot':'moving-object',targetKind:hit.kind,targetIndex:hit.index,anchorCell:cell,currentCell:cell,original,candidate:clone(original),valid:true,reason:''};
+    validateInteraction(interaction); app.editor.interaction=interaction;
+  } else {
+    app.editor.selection=null;
+    app.editor.pan={x:e.clientX,y:e.clientY,panX:app.panX,panY:app.panY};
+  }
+  cv.setPointerCapture(e.pointerId);
+  draw();
+}
+
+function onPointerMove(e){
+  if (!app.cur) return;
+  const cell=eventCell(e);
+  if (app.editor.pan){
+    const p=app.editor.pan;
+    app.panX=p.panX-(e.clientX-p.x)/app.zoom;
+    app.panY=p.panY+(e.clientY-p.y)/app.zoom;
+    draw(); return;
+  }
+  const i=app.editor.interaction;
+  if (!i){ app.editor.hover=hitTest(cell); draw(); return; }
+  if (i.mode === 'rollback') return;
+  i.currentCell=cell;
+  if (i.mode.startsWith('creating-')) i.candidate=candidateForCreate(i.mode,i.anchorCell,cell);
+  else if (i.mode.startsWith('resizing-')) i.candidate=resizedCandidate(i.original,i.handle,cell);
+  else i.candidate=movedCandidate(i.original,i.anchorCell,cell,i.candidate);
+  validateInteraction(i); draw();
+}
+
+function finishPointer(e, cancelled=false){
+  app.editor.pan=null;
+  const i=app.editor.interaction;
+  if (!i || i.mode==='rollback') return;
+  if (!cancelled && i.valid){ commit(i); app.editor.interaction=null; draw(); }
+  else {
+    if (i.reason) showToast(i.reason,'error');
+    startRollback(i);
+  }
+  try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+}
+
+export function initPointer(){
+  cv.addEventListener('pointerdown',onPointerDown);
+  cv.addEventListener('pointermove',onPointerMove);
+  cv.addEventListener('pointerup',e=>finishPointer(e,false));
+  cv.addEventListener('pointercancel',e=>finishPointer(e,true));
+  cv.addEventListener('pointerleave',()=>{ if (!app.editor.interaction){ app.editor.hover=null; draw(); } });
+}
