@@ -1,0 +1,42 @@
+{
+  "name": "Cathedral Crash",
+  "bpm": 120,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "riff",
+      "measures": 2,
+      "drum": "none"
+    },
+    {
+      "part": "riff-b",
+      "measures": 2,
+      "drum": "none"
+    },
+    {
+      "part": "run",
+      "measures": 2,
+      "drum": "light"
+    },
+    {
+      "part": "run-b",
+      "measures": 2,
+      "drum": "light"
+    },
+    {
+      "part": "peak",
+      "measures": 2,
+      "drum": "medium"
+    },
+    {
+      "part": "climax",
+      "measures": 2,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 2,
+      "drum": "medium"
+    }
+  ]
+}

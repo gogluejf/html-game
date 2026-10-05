@@ -1,0 +1,47 @@
+{
+  "name": "Acid Punk",
+  "bpm": 190,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "riff",
+      "measures": 2,
+      "drum": "light"
+    },
+    {
+      "part": "riff-b",
+      "measures": 2,
+      "drum": "light"
+    },
+    {
+      "part": "run",
+      "measures": 2,
+      "drum": "medium"
+    },
+    {
+      "part": "run-b",
+      "measures": 2,
+      "drum": "medium"
+    },
+    {
+      "part": "build",
+      "measures": 4,
+      "drum": "medium"
+    },
+    {
+      "part": "peak",
+      "measures": 2,
+      "drum": "full"
+    },
+    {
+      "part": "climax",
+      "measures": 2,
+      "drum": "full"
+    },
+    {
+      "part": "tag",
+      "measures": 2,
+      "drum": "medium"
+    }
+  ]
+}

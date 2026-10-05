@@ -256,20 +256,20 @@ class MusicSequencer {
     const spb = 60.0 / trk.bpm;
     const secPerStep = spb / 4;         // one 16th note
     const gap = this._sustainSteps(voiceBar, step);
-    // Density-aware fill: tight gaps (dense/packed passages) stay short so
-    // back-to-back notes keep their percussive separation; wide gaps get a
-    // modest tail — enough to feel held, NOT enough to drone. A note before a
-    // long empty space should breathe, not ring out for half a bar.
-    // gap==1 is a note immediately followed by another (zero space) -> the
-    // shortest, hardest stab so fast sixteenth runs stay articulate.
+    // Subtle density-aware fill: the note's natural duration gets a SMALL
+    // breath of extra space — never a big tail. The goal is articulation,
+    // not reverb: back-to-back notes stay crisp, held notes get just enough
+    // air to feel intentional. Keep these values low on purpose.
+    // gap==1 is a note immediately followed by another (zero space) ->
+    // the shortest stab so fast sixteenth runs stay articulate.
     let fill;
-    if (gap === 1)     fill = 0.40;     // back-to-back 16ths -> hard staccato
-    else if (gap <= 2) fill = 0.55;     // quick run / 32nd-ish -> staccato
-    else if (gap <= 4) fill = 0.65;     // eighths -> light tail
-    else               fill = 0.55;     // wide space -> gentle hold, no drone
+    if (gap === 1)     fill = 0.35;     // back-to-back 16ths -> crisp stab
+    else if (gap <= 2) fill = 0.45;     // quick run -> staccato with a hint
+    else if (gap <= 4) fill = 0.55;     // eighths -> small natural tail
+    else               fill = 0.50;     // wide space -> gentle breath, no drone
     let dur = gap * secPerStep * fill;
-    const minDur = secPerStep * 0.7;    // never shorter than ~half a 16th
-    const maxDur = spb * 1.25;          // never longer than ~1.25 beats (no organ-hold)
+    const minDur = secPerStep * 0.5;    // never shorter than ~half a 16th
+    const maxDur = spb * 0.75;          // never longer than ~3/4 of a beat
     return Math.max(minDur, Math.min(maxDur, dur));
   }
 
@@ -288,10 +288,10 @@ class MusicSequencer {
     if (d.c) this._crash(t, trk, d.v);
     const b = (Array.isArray(trk.bass) && trk.bass[mi] != null) ? trk.bass[mi][step] : trk.bass[step];
     const bassBar = (Array.isArray(trk.bass) && trk.bass[mi] != null) ? trk.bass[mi] : trk.bass;
-    if (b) this._bass(t, b.hz, trk, b.mul, this._sustainSec(trk, step, bassBar));
+    if (b) this._bass(t, b.hz, trk, b.mul); // dynamic sustain temporarily disabled
     if (padMeasure && padMeasure[step]) this._pad(t, padMeasure[step], trk);
     const l = leadMeasure[step];
-    if (l) this._lead(t, l.hz, trk, l.mul, this._sustainSec(trk, step, leadMeasure));
+    if (l) this._lead(t, l.hz, trk, l.mul); // dynamic sustain temporarily disabled
     // Extra lead layer: per-measure (null = no layer for that measure).
     if (trk.leadLayers && trk.leadLayers[mi]) {
       const xl = trk.leadLayers[mi][step];

@@ -1,9 +1,9 @@
 {
-  "name": "Petal Dance",
-  "uuid": "ddfe5bc1-9def-48aa-b0f2-9a6ea671052b",
-  "genre": "8-bit power dance",
-  "vibe": "bridge motif from Petal Rush evolving over building power-dance beat",
-  "createdAt": "2026-10-04T02:57:21.437463",
+  "name": "Cathedral Crash",
+  "uuid": "ebb07d80-70d8-427d-bfea-4da2f5d92bfb",
+  "genre": "epic doom metal",
+  "vibe": "huge slow crushing riffs \u2014 cathedral collapsing, massive space between hits",
+  "createdAt": "2026-10-04T12:52:09.791922",
   "revision": 0,
   "drumKit": {
     "none": [
@@ -170,11 +170,6 @@
     ],
     "light": [
       {
-        "k": true,
-        "s": false,
-        "h": true
-      },
-      {
         "k": false,
         "s": false,
         "h": false
@@ -216,7 +211,7 @@
       },
       {
         "k": false,
-        "s": false,
+        "s": true,
         "h": false
       },
       {
@@ -252,7 +247,12 @@
       {
         "k": false,
         "s": false,
-        "h": true
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
       },
       {
         "k": false,
@@ -373,6 +373,46 @@
       },
       {
         "k": false,
+        "s": true,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": false,
+        "s": false,
+        "h": false
+      },
+      {
+        "k": true,
         "s": false,
         "h": true
       },
@@ -414,47 +454,7 @@
       {
         "k": false,
         "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
         "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true
       },
       {
         "k": false,
@@ -516,8 +516,7 @@
       {
         "k": false,
         "s": false,
-        "h": true,
-        "oh": true
+        "h": true
       },
       {
         "k": false,
@@ -535,8 +534,8 @@
         "h": false
       },
       {
-        "k": false,
-        "s": false,
+        "k": true,
+        "s": true,
         "h": true
       },
       {
@@ -557,8 +556,7 @@
       {
         "k": false,
         "s": false,
-        "h": true,
-        "oh": true
+        "h": true
       },
       {
         "k": false,
@@ -598,92 +596,7 @@
       {
         "k": false,
         "s": false,
-        "h": true,
-        "oh": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
         "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true,
-        "oh": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      }
-    ],
-    "blast": [
-      {
-        "k": true,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true,
-        "oh": true
       },
       {
         "k": false,
@@ -702,7 +615,7 @@
       },
       {
         "k": true,
-        "s": false,
+        "s": true,
         "h": true
       },
       {
@@ -723,90 +636,7 @@
       {
         "k": false,
         "s": false,
-        "h": true,
-        "oh": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": true,
-        "s": false,
         "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true,
-        "oh": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": true,
-        "s": false,
-        "h": true
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": false
-      },
-      {
-        "k": false,
-        "s": false,
-        "h": true,
-        "oh": true
       },
       {
         "k": false,
@@ -826,401 +656,257 @@
     ]
   },
   "lead": {
-    "intro": [
+    "riff": [
       [
-        null,
-        null,
-        "A5",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "C6",
+        "D4",
         null,
         null,
         null,
         null,
         null,
-        "E6",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "F4",
         null
       ],
       [
-        "B5",
+        "D4",
         null,
         null,
         null,
         null,
         null,
-        "A5",
         null,
         null,
         null,
         null,
         null,
-        "G5",
         null,
         null,
+        null,
+        "A3",
         null
       ]
     ],
-    "groove": [
+    "riff-b": [
       [
-        null,
-        null,
-        "A5",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "C6",
+        "D4",
         null,
         null,
         null,
         null,
         null,
-        "E6",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "F4",
         null
       ],
       [
-        "B5",
+        "D4",
         null,
         null,
         null,
         null,
         null,
-        "A5",
         null,
         null,
         null,
         null,
         null,
-        "G5",
-        null,
-        null,
-        null
-      ],
-      [
-        null,
-        null,
-        "A5",
         null,
         null,
         null,
-        null,
-        null,
-        "C6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E6",
-        null
-      ],
-      [
-        null,
-        null,
-        "B5",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "C6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "A5",
+        "G3",
         null
       ]
     ],
-    "groove-b": [
+    "run": [
       [
-        null,
-        null,
-        "A5",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "C6",
+        "A3",
         null,
         null,
         null,
         null,
         null,
-        "E6",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "C4",
         null
       ],
       [
-        "B5",
+        "A3",
         null,
         null,
         null,
         null,
         null,
-        "A5",
         null,
         null,
         null,
         null,
         null,
-        "G5",
-        null,
-        null,
-        null
-      ],
-      [
-        null,
-        null,
-        "C6",
         null,
         null,
         null,
-        null,
-        null,
-        "E6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "G6",
-        null
-      ],
-      [
-        null,
-        null,
-        "G6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "F6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E6",
+        "E4",
         null
       ]
     ],
-    "build": [
+    "run-b": [
       [
-        null,
-        null,
-        "C6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E6",
+        "A3",
         null,
         null,
         null,
         null,
         null,
-        "G6",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "C4",
         null
       ],
       [
-        null,
-        null,
-        "G6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "F6",
+        "A3",
         null,
         null,
         null,
         null,
         null,
-        "E6",
-        null
-      ],
-      [
-        null,
-        null,
-        "A5",
         null,
         null,
         null,
         null,
         null,
-        "C6",
         null,
         null,
         null,
-        null,
-        null,
-        "E6",
-        null
-      ],
-      [
-        null,
-        null,
-        "G6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "F6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E6",
+        "F4",
         null
       ]
     ],
-    "break": [
+    "peak": [
       [
+        "F4",
         null,
         null,
-        "E5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "D4",
+        null
+      ],
+      [
+        "A3",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "F3",
+        null
+      ]
+    ],
+    "climax": [
+      [
+        "D5",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null,
         null,
         null,
         "C5",
-        null,
-        null,
-        null,
-        null,
-        null,
+        null
+      ],
+      [
         "A4",
-        null
-      ],
-      [
-        null,
-        null,
-        "E5",
         null,
         null,
         null,
         null,
         null,
-        "C5",
         null,
         null,
         null,
         null,
         null,
-        "A4",
-        null
-      ]
-    ],
-    "drop": [
-      [
-        null,
-        null,
-        "A6",
         null,
         null,
         null,
-        null,
-        null,
-        "G6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E6",
-        null
-      ],
-      [
-        null,
-        null,
-        "F6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "D6",
-        null
-      ],
-      [
-        null,
-        null,
-        "D6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "F6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "A6",
-        null
-      ],
-      [
-        null,
-        null,
-        "E6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "D6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "C6",
+        "F4",
         null
       ]
     ],
     "tag": [
       [
-        null,
-        null,
-        "E5",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "C5",
+        "E4",
         null,
         null,
         null,
         null,
         null,
-        "A4",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "D4",
         null
       ],
       [
+        "D4",
         null,
         null,
-        "A4",
         null,
         null,
         null,
@@ -1238,34 +924,33 @@
     ]
   },
   "layer": {
-    "drop": [
+    "climax": [
       [
-        "E5",
+        "D4",
         null,
         null,
         null,
         null,
-        "G5",
         null,
         null,
         null,
         null,
-        "A5",
         null,
         null,
         null,
         null,
+        null,
+        "C4",
         null
       ],
       [
+        "A3",
         null,
-        "C6",
         null,
         null,
         null,
         null,
         null,
-        "A5",
         null,
         null,
         null,
@@ -1273,197 +958,15 @@
         null,
         null,
         null,
-        null
-      ],
-      [
-        "G5",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E5",
-        null,
-        null,
-        null,
-        null,
-        "C6",
-        null,
-        null,
-        null,
-        null
-      ],
-      [
-        null,
-        null,
-        "A5",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "G5",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E5",
-        null
-      ]
-    ],
-    "groove-b": [
-      [
-        null,
-        null,
-        null,
-        null,
-        null,
-        "A5",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "C6",
-        null,
-        null,
-        null,
-        null
-      ],
-      [
-        null,
-        null,
-        null,
-        "G5",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E5",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "D5"
-      ],
-      [
-        null,
-        null,
-        null,
-        null,
-        null,
-        "C6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E6",
-        null,
-        null,
-        null,
-        null
-      ],
-      [
-        null,
-        null,
-        null,
-        null,
-        null,
-        "G6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "F6",
-        null,
-        null,
-        null,
-        null
-      ]
-    ],
-    "build": [
-      [
-        null,
-        null,
-        null,
-        null,
-        null,
-        "A6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null
-      ],
-      [
-        null,
-        null,
-        null,
-        null,
-        null,
-        "G6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E6",
-        null,
-        null,
-        null,
-        null
-      ],
-      [
-        null,
-        null,
-        null,
-        null,
-        null,
-        "G6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "A6",
-        null,
-        null,
-        null,
-        null
-      ],
-      [
-        null,
-        null,
-        null,
-        null,
-        null,
-        "F6",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "D6",
-        null,
-        null,
-        null,
+        "F3",
         null
       ]
     ]
   },
   "bass": {
-    "intro": [
+    "riff": [
       [
+        "D2",
         null,
         null,
         null,
@@ -1476,193 +979,6 @@
         null,
         null,
         null,
-        null,
-        null,
-        null,
-        null
-      ],
-      [
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null
-      ]
-    ],
-    "groove": [
-      [
-        "A2",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E3",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "A2",
-        null,
-        null,
-        null
-      ],
-      [
-        "A2",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E3",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "A2",
-        null,
-        null,
-        null
-      ],
-      [
-        "A2",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E3",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "A2",
-        null,
-        null,
-        null
-      ],
-      [
-        "E2",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "B2",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E2",
-        null,
-        null,
-        null
-      ]
-    ],
-    "groove-b": [
-      [
-        "A2",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E3",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "A2",
-        null,
-        null,
-        null
-      ],
-      [
-        "A2",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E3",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "A2",
-        null,
-        null,
-        null
-      ],
-      [
-        "E2",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "B2",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "E2",
-        null,
-        null,
-        null
-      ],
-      [
-        "F2",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "C3",
-        null,
-        null,
-        null,
-        null,
-        null,
-        "F2",
-        null,
-        null,
-        null
-      ]
-    ],
-    "build": [
-      [
-        "E2",
-        null,
-        null,
-        null,
-        "B2",
-        null,
-        null,
-        null,
-        "E2",
-        null,
-        null,
-        null,
-        "B2",
         null,
         null,
         null
@@ -1672,62 +988,26 @@
         null,
         null,
         null,
-        "A2",
         null,
         null,
         null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "riff-b": [
+      [
         "D2",
         null,
         null,
         null,
-        "A2",
-        null,
-        null,
-        null
-      ],
-      [
-        "E2",
-        null,
-        null,
-        null,
-        "B2",
-        null,
-        null,
-        null,
-        "E2",
-        null,
-        null,
-        null,
-        "B2",
-        null,
-        null,
-        null
-      ],
-      [
-        "F2",
-        null,
-        null,
-        null,
-        "C3",
-        null,
-        null,
-        null,
-        "F2",
-        null,
-        null,
-        null,
-        "C3",
-        null,
-        null,
-        null
-      ]
-    ],
-    "break": [
-      [
-        null,
-        null,
-        null,
-        null,
         null,
         null,
         null,
@@ -1742,7 +1022,7 @@
         null
       ],
       [
-        null,
+        "D2",
         null,
         null,
         null,
@@ -1760,75 +1040,153 @@
         null
       ]
     ],
-    "drop": [
+    "run": [
       [
-        "A2",
+        "A1",
         null,
         null,
         null,
-        "E3",
         null,
         null,
         null,
-        "A2",
         null,
         null,
         null,
-        "E3",
+        null,
+        null,
+        null,
         null,
         null,
         null
       ],
       [
-        "G2",
+        "A1",
         null,
         null,
         null,
-        "D3",
         null,
         null,
         null,
-        "G2",
         null,
         null,
         null,
-        "D3",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "run-b": [
+      [
+        "A1",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null
       ],
       [
-        "A2",
+        "A1",
         null,
         null,
         null,
-        "E3",
         null,
         null,
         null,
-        "A2",
         null,
         null,
         null,
-        "E3",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "peak": [
+      [
+        "F2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null
       ],
       [
-        "E2",
+        "A1",
         null,
         null,
         null,
-        "B2",
         null,
         null,
         null,
-        "E2",
         null,
         null,
         null,
-        "B2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "climax": [
+      [
+        "D2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "D2",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null
@@ -1836,25 +1194,25 @@
     ],
     "tag": [
       [
-        "A2",
+        "D2",
         null,
         null,
         null,
         null,
         null,
-        "E3",
         null,
         null,
         null,
         null,
         null,
-        "A2",
+        null,
+        null,
         null,
         null,
         null
       ],
       [
-        "E2",
+        "D2",
         null,
         null,
         null,
@@ -1873,24 +1231,81 @@
       ]
     ]
   },
-  "pad": {},
+  "pad": {
+    "riff": {
+      "0": [
+        "C2"
+      ],
+      "16": [
+        "C2"
+      ]
+    },
+    "riff-b": {
+      "0": [
+        "C2"
+      ],
+      "16": [
+        "C2"
+      ]
+    },
+    "run": {
+      "0": [
+        "C2"
+      ],
+      "16": [
+        "C2"
+      ]
+    },
+    "run-b": {
+      "0": [
+        "C2"
+      ],
+      "16": [
+        "C2"
+      ]
+    },
+    "peak": {
+      "0": [
+        "C2"
+      ],
+      "16": [
+        "C2"
+      ]
+    },
+    "climax": {
+      "0": [
+        "C2"
+      ],
+      "16": [
+        "C2"
+      ]
+    },
+    "tag": {
+      "0": [
+        "C2"
+      ],
+      "16": [
+        "C2"
+      ]
+    }
+  },
   "_bass_single": false,
   "voices": {
     "leadType": "square",
-    "leadCut": 4000,
-    "leadDur": 0.13,
-    "vib": 6,
+    "leadCut": 3000,
+    "leadDur": 0.4,
+    "vib": 4,
     "bassType": "sawtooth",
-    "bassCut": 900,
-    "bassDur": 0.14,
+    "bassCut": 600,
+    "bassDur": 0.5,
     "padType": "sawtooth",
-    "padCut": 1400,
-    "padDur": 0.4,
-    "kickTop": 150,
-    "kickBot": 44,
-    "layerType": "sine",
-    "layerCut": 2800,
-    "layerDur": 0.35
+    "padCut": 800,
+    "padDur": 0.8,
+    "layerType": "sawtooth",
+    "layerCut": 2000,
+    "layerDur": 0.3,
+    "kickTop": 100,
+    "kickBot": 35
   },
-  "scale": "A-minor"
+  "scale": "D-minor"
 }

@@ -50,11 +50,11 @@ One-liner brief? Infer sensible defaults. Don't over-ask.
 Pick a **construction** first — these are proven part-arc templates with
 drum ladders and variation rules (see `references/constructions/`):
 
-- **DREAM** (`dream.md`) — the classic 8-part loop: paired sections
-  (`riff → riff-b → run → run-b → peak → drop → climax → tag`), each pair
-  brings new melodic material, b-phrases vary only the ending, sparse drop
-  before the climax, drum ladder `[0,0,1,1,2,3,3,2]`. Call-and-answer
-  two-melody songs use the same skeleton (make riff/run a true A/B pair).
+- **DREAM** (`dream.md`) — the classic 7-part loop: paired sections
+  (`riff → riff-b → run → run-b → peak → climax → tag`), each pair
+  brings new melodic material, b-phrases vary only the ending, drum ladder
+  `[0,0,1,1,2,3,2]`. Call-and-answer two-melody songs use the same skeleton
+  (make riff/run a true A/B pair).
 
 Each file has the exact `arch` command, the per-part rules, voice guidance,
 and variants. When the user's brief implies a known shape (boss loop,
@@ -339,7 +339,7 @@ python3 compose.py set-vibe --game GAME --name NAME --vibe "..."
 - [compiler.js](server/js/compiler.js) — backbone+parts → engine grid (browser-side)
 
 ### References
-- [constructions/dream.md](references/constructions/dream.md) — DREAM construction: the classic 8-part loop (riff/riff-b/run/run-b/peak/drop/climax/tag), paired variation, sparse drop, drum ladder
+- [constructions/dream.md](references/constructions/dream.md) — DREAM construction: the classic 7-part loop (riff/riff-b/run/run-b/peak/climax/tag), paired variation, drum ladder
 - [craft-instructions.md](references/craft-instructions.md) — musical goals and the scale/voice vocabulary. Most of it is now advisory (audit only WARNs); read it for guidance, not as a rulebook to obey.
 - [song-anatomy.md](references/song-anatomy.md) — the unit ladder (song/part/measure/beat/step), worked example, who-decides-what contract
 - [song-structure.md](references/song-structure.md) — file format spec + chiptune voice recipes only. (Its "Laws of good music" part is unused; the active rules are in craft-instructions.md.)

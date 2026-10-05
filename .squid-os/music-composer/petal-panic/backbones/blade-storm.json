@@ -1,0 +1,42 @@
+{
+  "name": "Blade Storm",
+  "bpm": 200,
+  "timeSig": "4/4",
+  "parts": [
+    {
+      "part": "riff",
+      "measures": 4,
+      "drum": "g16"
+    },
+    {
+      "part": "riff-b",
+      "measures": 4,
+      "drum": "g16"
+    },
+    {
+      "part": "build",
+      "measures": 4,
+      "drum": "d16"
+    },
+    {
+      "part": "peak",
+      "measures": 4,
+      "drum": "blast"
+    },
+    {
+      "part": "climax",
+      "measures": 4,
+      "drum": "blast"
+    },
+    {
+      "part": "sprint",
+      "measures": 2,
+      "drum": "blast"
+    },
+    {
+      "part": "tag",
+      "measures": 2,
+      "drum": "qtr"
+    }
+  ]
+}
