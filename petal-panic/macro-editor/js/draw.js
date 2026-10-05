@@ -33,6 +33,7 @@ export function draw(){
   if (app.show.grid) drawGrid();
   if (app.cur && app.cur.st){
     if (app.show.zone) drawZoneBox(app.cur.st);   // area bounding box + entry/exit (behind units)
+    drawTopClearance(app.cur.st);
     drawMacro(app.cur.st);
     drawEditorOverlay(app.cur.st);
     drawTitle(app.cur.st);                        // fixed top-center name label (viewer-style)
@@ -43,6 +44,26 @@ export function draw(){
     ctx.fillText('select a macro', cssW/2, cssH/2);
   }
   syncValidationHint();
+}
+
+function drawTopClearance(macro){
+  if (macro.orientation!=='horizontal') return;
+  const c=_consts, ux=c.unitPxX, uy=c.unitPxY;
+  const maxSurface=c.hMaxSurfaceUnits;
+  const playTop=maxSurface+c.topClearanceUnits;
+  const [left,top]=W(0,playTop*uy);
+  const [right,bottom]=W(c.hBudgetUnits*ux,maxSurface*uy);
+  ctx.save();
+  ctx.fillStyle='rgba(255,157,46,.09)';
+  ctx.fillRect(left,top,right-left,bottom-top);
+  ctx.setLineDash([6,5]);
+  ctx.strokeStyle='rgba(255,157,46,.65)';
+  ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(left,bottom);ctx.lineTo(right,bottom);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,180,80,.85)';ctx.font='11px monospace';ctx.textAlign='left';ctx.textBaseline='bottom';
+  ctx.fillText(`${c.topClearanceUnits} RESERVED TOP ROWS · surfaces ≤ ${maxSurface}`,left+6,bottom-4);
+  ctx.restore();
 }
 
 function bodyOffset(macro){
@@ -107,10 +128,12 @@ function rollbackCandidate(interaction){
 function drawCandidate(interaction,macro){
   if (!interaction?.candidate) return;
   const item=rollbackCandidate(interaction);
+  const severity=interaction.severity || (interaction.valid?'valid':'error');
   const valid=interaction.valid && interaction.mode!=='rollback';
-  const color=valid ? (item.kind==='block'?COL_BLOCK:item.kind==='platform'?COL_PLATFORM:(SLOT_COLORS[item.type]||'#fff')) : '#ff4545';
+  const warning=valid && severity==='warning';
+  const color=!valid ? '#ff4545' : warning ? '#ffb73e' : (item.kind==='block'?COL_BLOCK:item.kind==='platform'?COL_PLATFORM:(SLOT_COLORS[item.type]||'#fff'));
   ctx.save();
-  ctx.fillStyle=valid?'rgba(62,240,255,.34)':'rgba(255,69,69,.34)';
+  ctx.fillStyle=!valid?'rgba(255,69,69,.34)':warning?'rgba(255,183,62,.34)':'rgba(62,240,255,.34)';
   ctx.strokeStyle=color;ctx.lineWidth=3;
   if (item.kind==='block'||item.kind==='platform'){
     const r=descriptorScreenRect(item,macro);
@@ -131,8 +154,10 @@ function drawCandidate(interaction,macro){
 }
 
 function drawEditorOverlay(macro){
-  drawTarget(app.editor.hover,macro,false);
-  drawTarget(app.editor.selection,macro,true);
+  const active=app.editor.interaction;
+  const sameTarget=(target)=>target&&active&&active.targetKind===target.kind&&active.targetIndex===target.index;
+  if (!sameTarget(app.editor.hover)) drawTarget(app.editor.hover,macro,false);
+  if (!sameTarget(app.editor.selection)) drawTarget(app.editor.selection,macro,true);
   drawCandidate(app.editor.interaction,macro);
 }
 
@@ -140,8 +165,10 @@ function syncValidationHint(){
   const el=document.getElementById('validationHint');
   if (!el) return;
   const i=app.editor.interaction;
-  const reason=i&&!i.valid?i.reason:'';
-  el.textContent=reason;el.classList.toggle('on',!!reason);
+  const reason=i&&(i.severity==='warning'||!i.valid)?i.reason:'';
+  el.textContent=reason;
+  el.classList.toggle('on',!!reason);
+  el.classList.toggle('warning',i?.severity==='warning');
 }
 
 // ---------- macro name label — fixed at top-center of canvas (viewer-style) ----------
@@ -246,6 +273,12 @@ function drawGrid(){
   }
 }
 
+function isActiveOriginal(kind, index){
+  const i=app.editor.interaction;
+  return !!i && i.targetKind===kind && i.targetIndex===index
+    && ['moving-object','resizing-block','resizing-platform','moving-slot','rollback'].includes(i.mode);
+}
+
 function drawMacro(macro){
   const ux = _consts.unitPxX, uy = _consts.unitPxY, ph = _consts.platformDrawH;
   const units = macro.units || [];
@@ -261,27 +294,35 @@ function drawMacro(macro){
   const bodyOffset = areaEc;
 
   // blocks (offset by the area entry clear only)
-  for (const u of units){
+  for (let unitIndex=0; unitIndex<units.length; unitIndex++){
+    const u=units[unitIndex];
     if (u.kind !== 'block') continue;
+    ctx.save();
+    if (isActiveOriginal('unit',unitIndex)) ctx.globalAlpha=.28;
     const x = (u.x ?? 0) + bodyOffset;
     const y = u.y ?? 0;
     const w = u.width ?? 1, h = u.height ?? 1;
     const x0 = x * ux, y0 = y * uy, x1 = (x+w)*ux, y1 = (y+h)*uy;
     const [sx0, syTop] = W(x0, y1);
     const [sx1, syBot] = W(x1, y0);
-    ctx.fillStyle = 'rgba(90,255,138,.28)';
+    const warned=app.editor.warningUnitIndices.includes(unitIndex);
+    ctx.fillStyle = warned ? 'rgba(255,183,62,.34)' : 'rgba(90,255,138,.28)';
     ctx.fillRect(sx0, syTop, sx1-sx0, syBot-syTop);
-    ctx.strokeStyle = COL_BLOCK;
+    ctx.strokeStyle = warned ? '#ffb73e' : COL_BLOCK;
     ctx.lineWidth = 2;
     ctx.strokeRect(sx0, syTop, sx1-sx0, syBot-syTop);
     if (app.show.labels){
       labelAt((sx0+sx1)/2, (syTop+syBot)/2, `B${w}×${h}`);
     }
+    ctx.restore();
   }
 
   // platforms (offset by the area entry clear only)
-  for (const u of units){
+  for (let unitIndex=0; unitIndex<units.length; unitIndex++){
+    const u=units[unitIndex];
     if (u.kind !== 'platform') continue;
+    ctx.save();
+    if (isActiveOriginal('unit',unitIndex)) ctx.globalAlpha=.28;
     const x = (u.x ?? 0) + bodyOffset;
     const y = u.y ?? 0;
     const w = u.width ?? 1;
@@ -289,19 +330,24 @@ function drawMacro(macro){
     const x0 = x * ux, x1 = (x+w)*ux;
     const [sx0, syFace] = W(x0, faceY);
     const [sx1] = W(x1, faceY);
-    ctx.fillStyle = 'rgba(62,240,255,.35)';
+    const warned=app.editor.warningUnitIndices.includes(unitIndex);
+    ctx.fillStyle = warned ? 'rgba(255,183,62,.42)' : 'rgba(62,240,255,.35)';
     ctx.fillRect(sx0, syFace - ph/2, sx1-sx0, ph);
-    ctx.strokeStyle = COL_PLATFORM;
+    ctx.strokeStyle = warned ? '#ffb73e' : COL_PLATFORM;
     ctx.lineWidth = 2;
     ctx.strokeRect(sx0, syFace - ph/2, sx1-sx0, ph);
     if (app.show.labels){
       labelAt((sx0+sx1)/2, syFace - ph - 6, `P${w}`);
     }
+    ctx.restore();
   }
 
   // slots (offset by the area entry clear only)
   if (app.show.slots){
-    for (const p of placements){
+    for (let placementIndex=0; placementIndex<placements.length; placementIndex++){
+      const p=placements[placementIndex];
+      ctx.save();
+      if (isActiveOriginal('slot',placementIndex)) ctx.globalAlpha=.28;
       const col = (p.x ?? 0) + bodyOffset;
       const row = p.y ?? 0;
       const cx = (col + 0.5) * ux;
@@ -315,6 +361,7 @@ function drawMacro(macro){
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 1.5;
       ctx.stroke();
+      ctx.restore();
     }
   }
 }
@@ -356,18 +403,15 @@ export function zoneExtents(macro){
     // bands sit at the two ends of this full-length box.
     ax0 = 0;
     ax1 = c.hBudgetUnits ?? 56;
-    ay1 = c.hZoneHeightUnits ?? Math.max(maxY + 4, 11);
+    ay1 = c.hPlayHeightUnits ?? Math.max(maxY + 4, 10);
   }
   return { ax0, ax1, ay0: 0, ay1 };
 }
 
-// Content extents for FIT-TO-VIEW only: the actual terrain plus the area
-// entry/exit clear bands, but NOT the full zone height. A horizontal area is
-// one screen tall (11.25u) yet its terrain sits in the bottom few rows —
-// fitting to the full box would center ~8u of empty air and make the zone look
-// oversized. Fitting to the content keeps the ground line near the canvas
-// center so the zone box reads correctly. The zone OVERLAY itself still draws
-// at full height.
+// Content extents for FIT-TO-VIEW only: actual terrain and horizontal width.
+// The 11.25u canvas height includes 1.25u of floor below the ground origin;
+// authored playable space is the 10 rows above ground. The zone overlay uses
+// hPlayHeightUnits, while FIT keeps low terrain comfortably framed.
 export function contentExtents(macro){
   const c = _consts;
   const ec = c.hEntryClear ?? 3, xc = c.hExitClear ?? 3;

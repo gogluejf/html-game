@@ -8,6 +8,7 @@ import { draw } from './draw.js';
 import { markChanged } from './save.js';
 import { validateMacroCandidate, validateDeletion } from './validation.js';
 import { showToast } from './toast.js';
+import { pushUndo } from './undo.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const HANDLE_PX = 9;
@@ -112,7 +113,10 @@ function validateInteraction(interaction){
     : {};
   const result = validateMacroCandidate(app.cur.st, interaction.candidate, edit);
   interaction.valid=result.valid;
+  interaction.severity=result.severity || (result.valid?'valid':'error');
   interaction.reason=result.reason;
+  interaction.warnings=result.warnings||[];
+  interaction.warningUnitIndices=result.warningUnitIndices||[];
   interaction.nextMacro=result.macro;
 }
 
@@ -139,8 +143,10 @@ function commit(interaction){
     app.editor.selection={kind:interaction.targetKind,index:interaction.targetIndex};
     return;
   }
+  pushUndo();
   app.cur.st.units=next.units;
   app.cur.st.placements=next.placements;
+  app.editor.warningUnitIndices=interaction.warningUnitIndices||[];
   markChanged();
   if (interaction.targetKind) app.editor.selection={kind:interaction.targetKind,index:interaction.targetIndex};
   else if (interaction.candidate.kind) app.editor.selection={kind:'unit',index:next.units.length-1};
@@ -154,8 +160,10 @@ export function deleteSelection(){
   if (!list?.[s.index]) return false;
   const result=validateDeletion(app.cur.st,s.kind,s.index);
   if (!result.valid){ showToast(result.reason,'error'); return false; }
+  pushUndo();
   app.cur.st.units=result.macro.units;
   app.cur.st.placements=result.macro.placements;
+  app.editor.warningUnitIndices=result.warningUnitIndices||[];
   app.editor.selection=null;
   app.editor.hover=null;
   markChanged(); draw();

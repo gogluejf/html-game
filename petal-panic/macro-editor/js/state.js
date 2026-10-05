@@ -29,6 +29,11 @@ let cur = null;        // {id, macro, st} | null
 // per-macro draft (in-memory working copy): id -> macro object
 const drafts = new Map();
 
+// undo / redo history is global, matching Sprite Editor: edits may cross
+// macros and restore the exact macro that was active for the operation.
+const undoStack = [];
+const redoStack = [];
+
 const show = { grid:true, slots:true, labels:true, zone:true };
 
 // Pass 2 interaction state. Temporary candidates never enter `cur.st` until a
@@ -39,6 +44,7 @@ const editor = {
   selection:null,
   interaction:null,
   pan:null,
+  warningUnitIndices:[],
 };
 
 let _loadingState = false;
@@ -54,6 +60,8 @@ export const app = {
   get flatIdx(){ return flatIdx; }, set flatIdx(v){ flatIdx = v; },
   get cur(){ return cur; }, set cur(v){ cur = v; },
   drafts,
+  undoStack,
+  redoStack,
   show,
   editor,
   get _loadingState(){ return _loadingState; }, set _loadingState(v){ _loadingState = v; },

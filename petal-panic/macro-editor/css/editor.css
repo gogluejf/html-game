@@ -58,6 +58,7 @@
   #stage canvas{touch-action:none;cursor:crosshair;}
   #validationHint{position:absolute;left:14px;bottom:12px;max-width:min(520px,80%);padding:7px 10px;border-radius:6px;background:rgba(7,9,18,.88);border:1px solid #ff5a5a;color:#ff8b8b;font-size:12px;pointer-events:none;opacity:0;transition:opacity .08s;}
   #validationHint.on{opacity:1;}
+  #validationHint.warning{border-color:#ffb73e;color:#ffd27a;}
   /* ---------- frame filmstrip (bottom-right drawer, slides left/right) ---------- */
   #filmDrawer{position:absolute;right:0;bottom:10px;z-index:20;height:116px;width:34px;background:var(--film-bg,#000);border:2px solid #fff;border-right:none;border-radius:10px 0 0 10px;box-shadow:-6px 0 22px rgba(0,0,0,.5);overflow:hidden;transition:width .18s ease-out;}
   #filmScroll{position:absolute;top:0;left:0;height:100%;display:flex;align-items:stretch;padding:8px;pointer-events:none;white-space:nowrap;}

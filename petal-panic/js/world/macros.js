@@ -1670,7 +1670,15 @@ function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, isVerti
  * @param {object} layout the layout from composeArea
  * @throws {Error} if validation fails
  */
-export function validateLayout(layout) {
+export function validateLayout(layout, { traversal = 'error' } = {}) {
+  const traversalWarnings = [];
+  const warnTraversal = (message, unitIndices = []) => {
+    if (traversal === 'warn') {
+      traversalWarnings.push({ message, unitIndices:[...new Set(unitIndices.filter(Number.isInteger))] });
+      return;
+    }
+    throw new Error(message);
+  };
   const { units, gaps, entryClear, exitClear, totalWidth } = layout;
   const isVertical = layout.orientation === 'vertical';
 
@@ -2012,7 +2020,7 @@ export function validateLayout(layout) {
       // after they are merged into one rectangle.
       for (let x = u.x; x < u.x + u.width; x++) {
         if (!byCol.has(x) || elev > byCol.get(x).elevation) {
-          byCol.set(x, { label: `${u.kind} at x=${x}`, elevation: elev, x });
+          byCol.set(x, { label: `${u.kind} at x=${x}`, elevation: elev, x, unitIndex:u._editorIndex });
         }
       }
     }
@@ -2035,10 +2043,11 @@ export function validateLayout(layout) {
       if (dx > MAX_CLEARABLE_GAP + 1) continue;
       const step = curr.elevation - prev.elevation; // positive = upward
       if (step > MAX_ELEVATION_STEP) {
-        throw new Error(
+        warnTraversal(
           `validateLayout: elevation step of ${step} tiers UP between ${prev.label} ` +
             `(elevation ${prev.elevation}) and ${curr.label} (elevation ${curr.elevation}) ` +
             `exceeds max upward step ${MAX_ELEVATION_STEP}`,
+          [prev.unitIndex, curr.unitIndex],
         );
       }
     }
@@ -2103,10 +2112,11 @@ export function validateLayout(layout) {
       if (prev.placementId === curr.placementId) {
         // Within the same macro: upward step must be ≤ MAX_ELEVATION_STEP.
         if (step > MAX_ELEVATION_STEP) {
-          throw new Error(
+          warnTraversal(
             `validateLayout: elevation step of ${step} tiers UP between platforms at ` +
               `y=${platformY(prev)} and y=${platformY(curr)} (same macro) ` +
               `exceeds max ${MAX_ELEVATION_STEP}`,
+            [prev._editorIndex, curr._editorIndex],
           );
         }
       } else {
@@ -2122,11 +2132,12 @@ export function validateLayout(layout) {
         );
         const interMacroStep = platformY(curr) - prevMacroPeakY;
         if (interMacroStep > MAX_ELEVATION_STEP) {
-          throw new Error(
+          warnTraversal(
             `validateLayout: inter-macro elevation step of ${interMacroStep} tiers UP ` +
               `between macro ${prev.placementId}'s peak (y=${prevMacroPeakY}) and ` +
               `macro ${curr.placementId}'s first platform (y=${platformY(curr)}) ` +
               `exceeds max ${MAX_ELEVATION_STEP} — unreachable join`,
+            [prev._editorIndex, curr._editorIndex],
           );
         }
       }
@@ -2142,10 +2153,11 @@ export function validateLayout(layout) {
       const first = platforms[0];
       const step = platformY(first) - 1;
       if (step > MAX_ELEVATION_STEP) {
-        throw new Error(
+        warnTraversal(
           `validateLayout: elevation step of ${step} tiers UP between the start ` +
             `platform (elevation 1) and first platform face at y=${platformY(first)} ` +
             `exceeds max upward step ${MAX_ELEVATION_STEP}`,
+          [first._editorIndex],
         );
       }
     }
@@ -2158,14 +2170,16 @@ export function validateLayout(layout) {
       const lastPlatformY = platformY(platforms[platforms.length - 1]);
       const exitStep = layout.totalHeight - lastPlatformY;
       if (exitStep > MAX_ELEVATION_STEP) {
-        throw new Error(
+        warnTraversal(
           `validateLayout: elevation step of ${exitStep} tiers UP between last ` +
             `platform (y=${lastPlatformY}) and exit flag (y=${layout.totalHeight}) ` +
             `exceeds max upward step ${MAX_ELEVATION_STEP} — exit unreachable`,
+          [platforms[platforms.length - 1]._editorIndex],
         );
       }
     }
   }
+  return { warnings:traversalWarnings };
 }
 
 // ---------------------------------------------------------------------------

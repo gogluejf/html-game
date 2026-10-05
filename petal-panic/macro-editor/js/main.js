@@ -12,6 +12,7 @@ import { showToast } from './toast.js';
 import { saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft, readActive } from './save.js';
 import { initTools, setTool } from './tools.js';
 import { initPointer, deleteSelection } from './pointer.js';
+import { doUndo, doRedo, syncUndoButtons } from './undo.js';
 
 // ---------- toolbar toggles ----------
 function syncToggles(){
@@ -47,6 +48,12 @@ function initView(){
 function initKeyboard(){
   window.addEventListener('keydown', e=>{
     const tag = (e.target.tagName||'').toLowerCase();
+    if ((e.ctrlKey||e.metaKey) && e.code==='KeyZ'){
+      e.preventDefault();
+      if (e.shiftKey) doRedo(); else doUndo();
+      return;
+    }
+    if ((e.ctrlKey||e.metaKey) && e.code==='KeyY'){ e.preventDefault(); doRedo(); return; }
     if ((e.ctrlKey||e.metaKey) && e.code==='KeyS'){ e.preventDefault(); saveToDisk(); return; }
     if ((e.ctrlKey||e.metaKey) && (e.code==='Digit0'||e.code==='Numpad0')){ e.preventDefault(); if (app.cur) selectMacro(app.cur.id); return; }
     if (tag==='input'||tag==='textarea') return;
@@ -71,7 +78,7 @@ function initKeyboard(){
 }
 
 // ---------- boot ----------
-const APP_VERSION = 'v6-drag-editing';   // bump to bust module cache; shown in console + title
+const APP_VERSION = 'v8-validation-severity';   // bump to bust module cache; shown in console + title
 async function boot(){
   document.title = `MACRO EDITOR — petal-panic [${APP_VERSION}]`;
   $('projectLabel').textContent = 'petal-panic · macros/levels';
@@ -99,6 +106,7 @@ async function boot(){
   initPointer();
   initKeyboard();
   syncToggles();
+  syncUndoButtons();
   resizeCanvas();
   updateDirtyDots();
 
@@ -112,6 +120,8 @@ async function boot(){
     const tb = $('toolbar'); if (tb) tb.classList.remove('booting');
   }
 
+  $('undoBtn').addEventListener('click', doUndo);
+  $('redoBtn').addEventListener('click', doRedo);
   $('saveBtn').addEventListener('click', saveToDisk);
 
   // RESET menu: Discard Draft (flush local draft, reload from file)

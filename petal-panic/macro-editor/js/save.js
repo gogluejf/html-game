@@ -37,7 +37,13 @@ export function readActive(){ try { return localStorage.getItem(LS_ACTIVE); } ca
 // and refreshes the dot + save button. This is the ONLY thing that marks dirty.
 export function markChanged(){
   if (!app.cur) return;
-  storeDraft(app.cur.id, app.cur.st);
+  // Undoing back to the canonical value makes the macro clean again. Strip
+  // sidebar-only metadata before comparing with the working copy.
+  const { _el, ...canonical } = app.macros[app.cur.id] || {};
+  const clean = JSON.stringify(app.cur.st) === JSON.stringify(canonical);
+  if (clean) clearDraft(app.cur.id);
+  else storeDraft(app.cur.id, app.cur.st);
+  app.drafts.set(app.cur.id, app.cur.st);
   updateSaveButton();
   updateDirtyDots();
   const el = $('saveIndicator');

@@ -97,6 +97,18 @@ export function reasonFromError(error){
   return msg.replace(/^validateLayout:\s*/, '').split('\n')[0];
 }
 
+export function analyzeMacroWarnings(macro){
+  try {
+    const { warnings=[] }=validateLayout(previewLayout(macro),{traversal:'warn'});
+    return {
+      warnings,
+      warningUnitIndices:[...new Set(warnings.flatMap(w=>w.unitIndices||[]))],
+    };
+  } catch (_){
+    return {warnings:[],warningUnitIndices:[]};
+  }
+}
+
 export function validateMacroCandidate(macro, candidate, edit = {}){
   try {
     const next = macroWithCandidate(macro, candidate, edit);
@@ -104,10 +116,18 @@ export function validateMacroCandidate(macro, candidate, edit = {}){
     if (schemaErrors.length) throw new Error(schemaErrors[0]);
     const support = slotSupportError(next, macro);
     if (support) return { valid:false, reason:support, macro:next };
-    validateLayout(previewLayout(next));
-    return { valid:true, reason:'', macro:next };
+    const { warnings=[] }=validateLayout(previewLayout(next),{traversal:'warn'});
+    const warningUnitIndices=[...new Set(warnings.flatMap(w=>w.unitIndices||[]))];
+    return {
+      valid:true,
+      severity:warnings.length ? 'warning' : 'valid',
+      reason:warnings.length ? 'Warning: optional geometry is not reachable from the main route' : '',
+      warnings,
+      warningUnitIndices,
+      macro:next,
+    };
   } catch (error){
-    return { valid:false, reason:reasonFromError(error) };
+    return { valid:false, severity:'error', reason:reasonFromError(error) };
   }
 }
 
@@ -120,8 +140,13 @@ export function validateDeletion(macro, targetKind, targetIndex){
     if (errors.length) throw new Error(errors[0]);
     const support = slotSupportError(next, macro);
     if (support) throw new Error(support);
-    validateLayout(previewLayout(next));
-    return { valid:true, macro:next };
+    const {warnings=[]}=validateLayout(previewLayout(next),{traversal:'warn'});
+    return {
+      valid:true,
+      macro:next,
+      warnings,
+      warningUnitIndices:[...new Set(warnings.flatMap(w=>w.unitIndices||[]))],
+    };
   } catch (error){
     return { valid:false, reason:reasonFromError(error) };
   }

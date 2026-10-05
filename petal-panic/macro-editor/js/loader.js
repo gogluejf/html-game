@@ -14,7 +14,8 @@ export async function loadGameConstants(){
   const fallback = {
     unitPxX:CONSTS.UNIT_PX_X, unitPxY:CONSTS.UNIT_PX_Y, platformDrawH:CONSTS.PLATFORM_DRAW_H,
     entryClear:3, exitClear:3,
-    hBudgetUnits:56, vBudgetUnits:56, vZoneWidthUnits:13, hZoneHeightUnits:11,
+    hBudgetUnits:56, vBudgetUnits:56, vZoneWidthUnits:13,
+    hPlayHeightUnits:10, hZoneHeightUnits:11.25,
     topClearanceUnits:2, hMaxSurfaceUnits:8,
   };
   try{
@@ -32,6 +33,7 @@ export async function loadGameConstants(){
       // constants; pixel dimensions are derived only for rendering.
       hBudgetUnits: mod.HORIZONTAL_ZONE_LENGTH_UNITS ?? fallback.hBudgetUnits,
       vBudgetUnits: mod.VERTICAL_ZONE_HEIGHT_UNITS ?? fallback.vBudgetUnits,
+      hPlayHeightUnits: mod.HORIZONTAL_PLAY_HEIGHT_UNITS ?? fallback.hPlayHeightUnits,
       hZoneHeightUnits: mod.HORIZONTAL_ZONE_HEIGHT_UNITS ?? fallback.hZoneHeightUnits,
       vZoneWidthUnits: mod.VERTICAL_ZONE_WIDTH_UNITS ?? fallback.vZoneWidthUnits,
       topClearanceUnits: mod.TOP_CLEARANCE_UNITS ?? fallback.topClearanceUnits,

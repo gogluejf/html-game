@@ -6,7 +6,7 @@ import { validateMacroCandidate, validateDeletion } from './validation.js';
 app.consts = {
   unitPxX:72, unitPxY:48, platformDrawH:6,
   hEntryClear:3, hExitClear:3, vEntryClear:0, vExitClear:3,
-  hBudgetUnits:56, vBudgetUnits:56, hZoneHeightUnits:11.25,
+  hBudgetUnits:56, vBudgetUnits:56, hPlayHeightUnits:10, hZoneHeightUnits:11.25,
   vZoneWidthUnits:13, topClearanceUnits:2, hMaxSurfaceUnits:8,
 };
 
@@ -52,6 +52,29 @@ test('power-up slots require support for newly authored opportunities', () => {
   assert.equal(floating.valid,false);
   const supported=validateMacroCandidate(macro(),{slot:'powerup-1',type:'powerup',x:6,y:1});
   assert.equal(supported.valid,true,supported.reason);
+});
+
+test('nearby ground blocks are accepted without an elevation warning', () => {
+  const source=macro({units:[{kind:'block',x:5,y:0,width:1,height:1}]});
+  const result=validateMacroCandidate(source,{kind:'block',x:7,y:0,width:1,height:1});
+  assert.equal(result.valid,true,result.reason);
+  assert.equal(result.severity,'valid');
+});
+
+test('unreachable elevated geometry is accepted as a warning', () => {
+  const source=macro({units:[{kind:'block',x:5,y:0,width:1,height:1}]});
+  const result=validateMacroCandidate(source,{kind:'block',x:7,y:0,width:1,height:4});
+  assert.equal(result.valid,true,result.reason);
+  assert.equal(result.severity,'warning');
+  assert.ok(result.warningUnitIndices.includes(1));
+});
+
+test('exactly two top-clearance rows are legal; one is rejected', () => {
+  const legal=validateMacroCandidate(macro(),{kind:'block',x:12,y:0,width:1,height:8});
+  assert.equal(legal.valid,true,legal.reason);
+  const illegal=validateMacroCandidate(macro(),{kind:'block',x:14,y:0,width:1,height:9});
+  assert.equal(illegal.valid,false);
+  assert.match(illegal.reason,/2 rows of top clearance/i);
 });
 
 test('deletion is rejected when it would leave an invalid empty macro', () => {

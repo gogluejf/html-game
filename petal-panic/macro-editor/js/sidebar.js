@@ -7,6 +7,7 @@ import { $, tree } from './viewport.js';
 import { draw, zoneExtents, contentExtents } from './draw.js';
 import { setZoom } from './viewport.js';
 import { updateDirtyDots, updateSaveButton, saveActive } from './save.js';
+import { analyzeMacroWarnings } from './validation.js';
 
 export function buildSidebar(macros){
   tree.innerHTML = '';
@@ -62,6 +63,7 @@ export function selectMacro(id){
   app.editor.selection = null;
   app.editor.interaction = null;
   app.editor.pan = null;
+  app.editor.warningUnitIndices = analyzeMacroWarnings(st).warningUnitIndices;
 
   saveActive(id);   // remember this macro so a refresh lands back on it
   syncPanel();
@@ -95,7 +97,7 @@ function fitView(st){
   $('zoomval').textContent = Math.round(app.zoom*100)+'%';
 }
 
-function syncPanel(){
+export function syncPanel(){
   const st = app.cur.st;
   $('p_stitle').textContent = app.cur.id;
   $('p_orient').textContent = st.orientation;
