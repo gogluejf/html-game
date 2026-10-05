@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://petal-panic.local/macros/macro.schema.json",
+  "title": "Petal Panic Level Macro",
+  "description": "Contract for one macros/levels/<id>.json file. Geometry uses positive whole-unit dimensions; placement-specific area bounds and playability are enforced by validateLayout().",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "orientation",
+    "difficulty",
+    "units",
+    "placements",
+    "variations",
+    "follows",
+    "followedBy"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_]+$",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "orientation": {
+      "type": "string",
+      "enum": ["horizontal", "vertical"]
+    },
+    "difficulty": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3
+    },
+    "units": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/block" },
+          { "$ref": "#/$defs/platform" }
+        ]
+      }
+    },
+    "placements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/placement" }
+    },
+    "variations": {
+      "type": "array",
+      "description": "Reserved for generated/authored variants. Empty in v1; object entries remain forward-compatible.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "follows": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/macroId" }
+    },
+    "followedBy": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/macroId" }
+    }
+  },
+  "$defs": {
+    "macroId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_]+$",
+      "minLength": 1
+    },
+    "gridCoordinate": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "positiveUnits": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "x", "y", "width", "height"],
+      "properties": {
+        "kind": { "const": "block" },
+        "x": { "$ref": "#/$defs/gridCoordinate" },
+        "y": { "$ref": "#/$defs/gridCoordinate" },
+        "width": { "$ref": "#/$defs/positiveUnits" },
+        "height": { "$ref": "#/$defs/positiveUnits" }
+      }
+    },
+    "platform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "x", "y", "width"],
+      "properties": {
+        "kind": { "const": "platform" },
+        "x": { "$ref": "#/$defs/gridCoordinate" },
+        "y": { "$ref": "#/$defs/positiveUnits" },
+        "width": { "$ref": "#/$defs/positiveUnits" }
+      }
+    },
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slot", "type", "x", "y"],
+      "properties": {
+        "slot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "enum": ["enemy", "barrel", "powerup"]
+        },
+        "x": { "$ref": "#/$defs/gridCoordinate" },
+        "y": { "$ref": "#/$defs/gridCoordinate" }
+      }
+    }
+  }
+}

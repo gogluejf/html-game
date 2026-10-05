@@ -49,7 +49,10 @@ export function selectMacro(id){
   if (app.drafts.has(id)){
     st = app.drafts.get(id);
   } else {
-    st = JSON.parse(JSON.stringify(macro));
+    // Clone canonical data only. `_el` is sidebar UI metadata attached to the
+    // in-memory list item and must never enter drafts or saved macro JSON.
+    const { _el, ...canonicalData } = macro;
+    st = JSON.parse(JSON.stringify(canonicalData));
     app.drafts.set(id, st);
   }
   app.cur = { id, macro, st };

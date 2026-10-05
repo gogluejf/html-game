@@ -4,6 +4,7 @@
 
 import { app } from './state.js';
 import * as CONSTS from './state.js';
+import { assertMacroSchema } from '../../js/world/macroSchema.js';
 
 const MACRO_DIR = '../macros/levels/';   // relative to /petal-panic/macro-editor/
 
@@ -56,7 +57,9 @@ export async function loadMacros(){
     const r = await fetch(`${MACRO_DIR}${file}`);
     if (!r.ok) throw new Error(`failed to fetch ${file} (HTTP ${r.status})`);
     const macro = await r.json();
-    return [file.replace(/\.json$/, ''), macro];
+    const id = file.replace(/\.json$/, '');
+    assertMacroSchema(macro, { expectedId: id });
+    return [id, macro];
   }));
 
   const macros = {};

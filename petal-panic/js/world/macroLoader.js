@@ -11,6 +11,8 @@
 //
 // The game must be served over HTTP (./server.sh go) for fetch() to work.
 
+import { assertMacroSchema } from './macroSchema.js';
+
 const MACRO_DIR = 'macros/levels/';
 
 /**
@@ -40,7 +42,9 @@ export async function loadMacros() {
         throw new Error(`loadMacros: failed to fetch ${file} (HTTP ${r.status})`);
       }
       const macro = await r.json();
-      return [file.replace(/\.json$/, ''), macro];
+      const id = file.replace(/\.json$/, '');
+      assertMacroSchema(macro, { expectedId: id });
+      return [id, macro];
     })
   );
 

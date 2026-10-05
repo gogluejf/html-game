@@ -68,16 +68,19 @@ function dumpBlock(){
   if (!app.cur){ showToast('Select a macro first', 'info'); return; }
   const st = app.cur.st;
   st.units = st.units || [];
-  const tag = '__dump_test__';
-  const existing = st.units.findIndex(u => u._tag === tag);
+  // Pass-1 test mutation stays schema-valid: toggle a unique width-1 block
+  // at the first unused ground column. No editor-only marker is persisted.
+  const testX = 0;
+  const existing = st.units.findIndex(u => u.kind === 'block' && u.x === testX
+    && u.y === 0 && u.width === 1 && u.height === 1);
   if (existing >= 0){
     st.units.splice(existing, 1);
     _dumped = false;
     showToast(`Removed test block from ${app.cur.id}`, 'info');
   } else {
-    st.units.push({ kind:'block', height:1, y:0, x:0, _tag:tag });
+    st.units.push({ kind:'block', x:testX, y:0, width:1, height:1 });
     _dumped = true;
-    showToast(`Added test block (x 0, y 0) to ${app.cur.id}`, 'success');
+    showToast(`Added test block (x ${testX}, y 0) to ${app.cur.id}`, 'success');
   }
   markChanged();   // → writes draft, lights dirty dot, enables SAVE
   draw();
@@ -102,7 +105,7 @@ function initKeyboard(){
 }
 
 // ---------- boot ----------
-const APP_VERSION = 'v3-zone-fit';   // bump to bust module cache; shown in console + title
+const APP_VERSION = 'v5-macro-schema';   // bump to bust module cache; shown in console + title
 async function boot(){
   document.title = `MACRO EDITOR — petal-panic [${APP_VERSION}]`;
   $('projectLabel').textContent = 'petal-panic · macros/levels';

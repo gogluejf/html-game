@@ -11,7 +11,7 @@
 | §5–§8 Rules (clearance, platform ground restriction, slot support, mixed validation) exist in game code (`js/world/macros.js`) for the editor to call | ✅ done |
 | §10 Location decided: inside petal-panic, next to `macros/` | ✅ done |
 | §16 Save model decided: sprite-editor draft/dirty-dot rule | ✅ done |
-| §3 JSON Schema as formal contract + validation on load/save | 🔲 todo |
+| §3 JSON Schema as formal contract + validation on game/editor load + editor/server save | ✅ done |
 | §10–§15 Editor app itself (UI, grid, tools, zoom, panels) | 🔲 todo |
 | §17–§20 Procedural generator | 🔲 todo |
 | §21–§24 Test mode (manual + ghost runner) | 🔲 todo |
@@ -90,14 +90,18 @@ A macro should contain at minimum:
 - Slots.
 - Bounding dimensions if useful, or derive them from content.
 
-Use a JSON Schema as the formal contract.
+Use `petal-panic/macros/macro.schema.json` (JSON Schema Draft 2020-12) as the formal contract. ✅
+
+The dependency-free browser validator is `js/world/macroSchema.js`; the local
+server validates the same schema with Python `jsonschema`.
 
 Validate macro JSON:
 
-- When loaded by the editor.
-- Before saving.
-- When loaded by the game.
-- When generated procedurally.
+- When loaded by the editor. ✅
+- Before saving in the editor and again at the server PUT boundary. ✅
+- When loaded by the game. ✅
+- In the Node test loader and formal-schema contract tests. ✅
+- When generated procedurally. 🔲 (generator not built yet)
 
 Invalid data should fail with useful validation errors rather than silently entering the game.
 
@@ -330,89 +334,130 @@ Functions:
 - Optionally display difficulty/tags.
 - Search/filter later if the collection becomes large.
 
-Changing macros while unsaved canonical changes exist must trigger:
-
-- Save.
-- Discard.
-- Cancel.
-
----
-
-## 13. Editing Tools
-
-Initial toolbar:
-
-- Select.
-- Block.
-- Platform.
-- Slot.
-- Delete/erase.
-- Test.
-- Generate.
-
-### Block interaction
-
-Click/place a block on the grid.
-
-Repeated interaction can cycle legal heights:
-
-`1 → 2 → 3 → 1`
-
-If a size is invalid in the current location, skip it.
-
-Example:
-
-If height 3 violates clearance:
-
-`1 → 2 → 1`
-
-Do not temporarily create an invalid state.
-
-### Platform interaction
-
-Repeated interaction cycles widths:
-
-`1 → 2 → 3 → 1`
-
-Skip variants that cannot legally fit.
-
-### Slot interaction
-
-Cycle slot type:
-
-`Power-up → Enemy → Barrel → Power-up`
-
-Use clear visual differentiation, for example:
-
-- Power-up: blue.
-- Enemy: red.
-- Barrel: orange.
-
-Exact colors are UI details, not persisted gameplay semantics.
+Switching macros requires no confirmation: every mutation is already stored in
+a per-macro localStorage draft. Switching away and back restores that working
+copy; the yellow dot continues to show draft ≠ canonical. Save and Discard are
+explicit actions, not navigation guards.
 
 ---
 
-## 14. Placement Validation UX
+## 13. Editing Tools — Pass 2 Interaction Contract
 
-Validation occurs before committing placement.
+Implementation handoff: [`03-pass2-drag-editing.md`](03-pass2-drag-editing.md).
 
-When hovering/dragging:
+Pass 2 replaces the obsolete click-to-cycle design. Width and height are no
+longer limited to 1–3, so geometry is created and resized by dragging.
 
-- Valid placement: show normal translucent preview.
-- Invalid placement: show invalid overlay/transparent red X.
-- Clicking an invalid position does nothing.
-- Cycling dimensions automatically skips illegal variants.
+### Active creation tools
 
-The editor should explain invalid placements when useful, for example:
+The toolbar exposes mutually exclusive creation tools:
 
-- `Requires 2 units of block clearance`
-- `Platform cannot be placed at ground level`
-- `Slot requires a supporting surface`
-- `Outside playable bounds`
+- **Block** — click-drag-release a rectangular `{x,y,width,height}` block.
+- **Platform** — click-drag-release a horizontal `{x,y,width}` platform.
+- **Slot** — click to place a one-cell spawn opportunity.
+- **Erase** — click an existing object/slot to remove it.
 
-Validation must call shared rules, not editor-specific approximations.
+Only one creation/erase tool is active at a time. A separate Select button is
+not required for basic editing: when the pointer is over existing geometry,
+that object becomes the hover/selection target and exposes resize handles.
+Clicking empty space with no creation tool active clears selection.
+
+### Block creation
+
+1. Pointer-down snaps the anchor to a grid intersection/cell.
+2. Drag defines width and height in whole units in any direction.
+3. A translucent rectangle previews the normalized `{x,y,width,height}`.
+4. Pointer-up commits only if the complete candidate layout is valid.
+5. A click without meaningful drag creates a `1×1` block.
+
+### Platform creation
+
+1. Pointer-down snaps to a grid cell/row.
+2. Horizontal drag defines positive whole-unit width.
+3. Vertical pointer movement does not add thickness; a platform remains one
+   logical row with the shared thin visual/collision face.
+4. Pointer-up commits only if valid.
+5. A click without meaningful drag creates a width-1 platform.
+
+### Slot creation and type
+
+Slots are points, not resizable rectangles. The Slot tool has three explicit
+kinds rather than geometry cycling:
+
+- Enemy (red)
+- Barrel (orange)
+- Power-up (blue)
+
+Implementation may use three small Slot sub-buttons or one Slot button with a
+three-option segmented control. Do not use round-robin clicking on the canvas.
+Only slot type has a small rotate/cycle affordance if desired; block/platform
+sizes never cycle.
+
+### Existing-object selection and resize
+
+- Hovering an existing block/platform highlights it and shows edge/corner
+  handles appropriate to its shape.
+- Blocks resize from edges/corners in whole grid units.
+- Platforms resize only from left/right handles; their row remains fixed.
+- The original object remains the authoritative state throughout the drag.
+  Dragging creates a temporary candidate only.
+- Pointer-up commits one atomic draft mutation when valid.
+- Slots may be selected, moved to another cell, or have their type changed;
+  they do not expose size handles.
+
+### Erase/delete
+
+- Erase tool click deletes the hovered object or slot.
+- Delete/Backspace deletes the current selection.
+- Deletion is one atomic draft mutation.
+
+Every committed create/resize/move/delete calls the existing `markChanged()`
+path, so localStorage draft, dirty dot, Save, and macro switching continue to
+work unchanged.
 
 ---
+
+## 14. Placement and Resize Validation UX
+
+Validation runs continuously against the temporary candidate, but never mutates
+the real draft until pointer-up succeeds.
+
+### Valid candidate
+
+- Normal tool color with translucent fill.
+- Grid-snapped dimensions/coordinates visible near the pointer.
+- Pointer-up commits the candidate as one operation.
+
+### Invalid candidate
+
+- Candidate turns translucent red with a clear invalid outline/red-X cue.
+- Show the most useful shared-rule reason, such as:
+  - `Outside playable bounds`
+  - `Intrudes into entry/exit clearance`
+  - `Requires 2 empty rows of block clearance`
+  - `Platform cannot be placed at row 0`
+  - `Platform requires an empty row below`
+  - `Overlaps another block/platform`
+  - `Slot requires a supporting surface`
+  - `Surface must preserve 2 rows of top clearance`
+- Pointer-up does not change the draft.
+
+### Invalid resize rollback animation
+
+For resize/move of an existing object:
+
+1. Keep the original geometry unchanged in state during the drag.
+2. Render only a temporary candidate over it.
+3. If released invalid, animate/visually snap the candidate back to the
+   original rectangle/position, then clear the candidate.
+4. Do not call `markChanged()` and do not create a dirty state.
+
+This makes failure explicit: the red shape was rejected and the original object
+was preserved, rather than silently clipping or accepting partial geometry.
+
+Validation must use the shared schema/model and layout rules. Editor code may
+adapt data into a candidate layout for `validateLayout()` but must not duplicate
+clearance/bounds formulas.
 
 ## 15. Zoom and Navigation
 

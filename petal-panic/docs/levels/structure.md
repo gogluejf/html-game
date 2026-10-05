@@ -100,6 +100,15 @@ purely vertical; x remains constrained to columns `0..13`.
 Viewport dimensions (`960×540`) and sprite/collision-box dimensions remain
 pixel-based because they are render/entity measurements, not authored terrain.
 
+## Macro JSON contract
+
+`macros/macro.schema.json` is the formal Draft 2020-12 contract for every
+`macros/levels/<id>.json` file. `js/world/macroSchema.js` enforces that contract
+in the game and Macro Editor without a browser dependency; the editor server
+validates PUT writes against the same schema before touching disk. Placement-
+specific geometry/playability rules remain in `validateLayout()` because they
+depend on the final composed area.
+
 ## 5. Terrain vocabulary
 
 **Blocks are solid landscape. Platforms are one-way landing surfaces.** They

@@ -11,11 +11,10 @@ import { $ } from './viewport.js';
 import { confirmDialog } from './dialog.js';
 import { showToast } from './toast.js';
 import { selectMacro } from './sidebar.js';
+import { assertMacroSchema } from '../../js/world/macroSchema.js';
 
-// v3 invalidates drafts from the old one-column block / width≤3 platform schema.
-// Canonical macros now require explicit block width and allow placement-bounded
-// positive dimensions; an older draft would silently restore invalid geometry.
-const LS_PREFIX = 'macro-editor-draft-v3-';
+// v4 invalidates drafts created before formal schema enforcement.
+const LS_PREFIX = 'macro-editor-draft-v4-';
 export const draftKey = id => LS_PREFIX + id;
 // Config key: remembers the last-selected macro so a refresh lands back on it
 // (mirrors the sprite editor's `active`). Separate from the per-macro drafts.
@@ -98,6 +97,13 @@ export async function saveToDisk(){
   }
 
   const data = app.drafts.get(id);
+  try {
+    assertMacroSchema(data, { expectedId: id });
+  } catch (e) {
+    confirmDialog('Save blocked — macro JSON is invalid:\n' + e.message, null);
+    showToast('Save blocked: invalid macro JSON', 'error');
+    return;
+  }
   let putRes;
   try{
     putRes = await fetch('/petal-panic/macro-editor/', {

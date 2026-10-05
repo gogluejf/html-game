@@ -12,6 +12,7 @@ import json
 import os
 import sys
 from http.server import HTTPServer, SimpleHTTPRequestHandler
+from jsonschema import Draft202012Validator
 
 # Repo root is 2 levels up from this script:
 # petal-panic/macro-editor/server.py → repo root (~/src/html-game)
@@ -19,6 +20,9 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Only allow PUT writes under this path (relative to repo root).
 ALLOWED_PREFIX = "petal-panic/macros/levels/"
+SCHEMA_PATH = os.path.join(REPO_ROOT, "petal-panic", "macros", "macro.schema.json")
+with open(SCHEMA_PATH, "r", encoding="utf-8") as schema_file:
+    MACRO_VALIDATOR = Draft202012Validator(json.load(schema_file))
 
 
 class MacroEditorHandler(SimpleHTTPRequestHandler):
@@ -48,6 +52,18 @@ class MacroEditorHandler(SimpleHTTPRequestHandler):
         # The macro id must match the filename and be a safe identifier.
         if not name.replace("_", "").isalnum():
             self._respond(400, {"ok": False, "error": "invalid macro id"})
+            return
+        if data.get("id") != name:
+            self._respond(400, {"ok": False, "error": f'macro id must match filename: expected "{name}"'})
+            return
+
+        schema_errors = sorted(MACRO_VALIDATOR.iter_errors(data), key=lambda e: list(e.absolute_path))
+        if schema_errors:
+            details = []
+            for error in schema_errors[:20]:
+                path = "$" + "".join(f"[{part}]" if isinstance(part, int) else f".{part}" for part in error.absolute_path)
+                details.append(f"{path}: {error.message}")
+            self._respond(400, {"ok": False, "error": "macro JSON schema validation failed", "details": details})
             return
 
         target = os.path.realpath(os.path.join(REPO_ROOT, ALLOWED_PREFIX, f"{name}.json"))

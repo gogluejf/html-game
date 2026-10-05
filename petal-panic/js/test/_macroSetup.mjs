@@ -5,6 +5,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setMacros } from '../../js/world/macros.js';
+import { assertMacroSchema } from '../../js/world/macroSchema.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const macroDir = join(here, '..', '..', 'macros', 'levels');
@@ -15,9 +16,7 @@ export function loadTestMacros() {
   for (const file of files) {
     const id = file.replace(/\.json$/, '');
     const data = JSON.parse(readFileSync(join(macroDir, file), 'utf-8'));
-    if (data.id !== id) {
-      throw new Error(`loadTestMacros: ${file} declares id "${data.id}" but lives in "${id}.json"`);
-    }
+    assertMacroSchema(data, { expectedId: id });
     macros[id] = data;
   }
   setMacros(macros);
