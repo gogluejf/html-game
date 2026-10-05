@@ -12,7 +12,7 @@
     },
     {
       "kind": "platform",
-      "width": 2,
+      "width": 4,
       "y": 2,
       "x": 7
     },
@@ -21,12 +21,6 @@
       "width": 2,
       "y": 3,
       "x": 5
-    },
-    {
-      "kind": "platform",
-      "width": 2,
-      "y": 2,
-      "x": 9
     },
     {
       "kind": "platform",

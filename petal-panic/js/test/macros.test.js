@@ -885,6 +885,18 @@ test('canonical contiguous equal-height block runs are merged', () => {
   }
 });
 
+test('canonical contiguous same-row platform runs are merged', () => {
+  for (const macro of Object.values(MACROS)) {
+    const platforms = macro.units.filter((u) => u.kind === 'platform');
+    for (let i=0;i<platforms.length;i++) for (let j=i+1;j<platforms.length;j++) {
+      const a=platforms[i], b=platforms[j];
+      if (a.y !== b.y) continue;
+      assert.notEqual(a.x + a.width, b.x, `${macro.id}: adjacent same-row platforms should be merged`);
+      assert.notEqual(b.x + b.width, a.x, `${macro.id}: adjacent same-row platforms should be merged`);
+    }
+  }
+});
+
 test('validateLayout: wide block/platform use remaining horizontal body up to exit clearance', () => {
   const totalWidth = 56, exitStart = totalWidth - H_EXIT_CLEAR, x = 20;
   const remaining = exitStart - x;

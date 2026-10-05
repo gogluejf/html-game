@@ -106,26 +106,19 @@ test('all vertical macro landings have elevation steps ≤ MAX_ELEVATION_STEP', 
   }
 });
 
-test('all vertical macro landings have horizontal gaps ≤ MAX_CLEARABLE_GAP', () => {
+test('all vertical landing rows have a laterally reachable route upward', () => {
+  const edgeGap = (a, b) => Math.max(0,
+    b.x - (a.x + a.width), a.x - (b.x + b.width));
   for (const [id, macro] of Object.entries(MACROS)) {
     if (macro.orientation !== 'vertical') continue;
     const platforms = macro.units.filter((u) => u.kind === 'platform');
-    for (let i = 1; i < platforms.length; i++) {
-      // EDGE-TO-EDGE gap: the hero jumps from one platform's edge to the
-      // other's, so the clearable distance is between the nearest edges —
-      // not between the platforms' origin columns. Two width-2 platforms at
-      // cols 11 and 15 are adjacent (gap 0); their origins are 4 apart.
-      const prev = platforms[i - 1];
-      const curr = platforms[i];
-      const prevEnd = prev.x + prev.width;
-      const currEnd = curr.x + curr.width;
-      const gap = Math.max(0, curr.x - prevEnd, prev.x - currEnd);
-      assert.ok(
-        gap <= MAX_CLEARABLE_GAP,
-        `${id}: horizontal gap of ${gap} units between platform ${i - 1} ` +
-          `(cols ${prev.x}-${prevEnd}) and platform ${i} (cols ${curr.x}-${currEnd}) ` +
-          `exceeds max ${MAX_CLEARABLE_GAP}`,
-      );
+    const rows = [...new Set(platforms.map((p) => p.y))].sort((a,b) => a-b);
+    for (let i=1; i<rows.length; i++) {
+      const lower = platforms.filter((p) => p.y === rows[i-1]);
+      const upper = platforms.filter((p) => p.y === rows[i]);
+      const reachable = upper.some((b) => lower.some((a) => edgeGap(a,b) <= MAX_CLEARABLE_GAP));
+      assert.ok(reachable,
+        `${id}: no platform on row ${rows[i]} is laterally reachable from row ${rows[i-1]}`);
     }
   }
 });

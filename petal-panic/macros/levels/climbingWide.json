@@ -6,27 +6,15 @@
   "units": [
     {
       "kind": "platform",
-      "width": 2,
+      "width": 4,
       "y": 1,
       "x": 4
     },
     {
       "kind": "platform",
-      "width": 2,
+      "width": 4,
       "y": 2,
       "x": 7
-    },
-    {
-      "kind": "platform",
-      "width": 2,
-      "y": 1,
-      "x": 6
-    },
-    {
-      "kind": "platform",
-      "width": 2,
-      "y": 2,
-      "x": 9
     }
   ],
   "placements": [
