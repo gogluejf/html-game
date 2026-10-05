@@ -122,16 +122,23 @@ The game and Macro Editor consume those same constants.
 
 ### Blocks
 
-- Always one width unit per block.
-- Height is one, two, or three height units.
-- Rise from the ground and block passage from every direction.
-- Cannot be jumped through from below or dropped through from above.
-- Adjacent blocks can form a wider structure; that does not change their unit width.
+- Rectangular descriptor: `{ x, y, width, height }`.
+- Width and height are positive whole units; there is no fixed 1–3 size cap.
+- The maximum legal width is placement-specific:
+  - horizontal: from the block's final `x` to the area exit-clear boundary;
+    it may not enter either area entry or exit clearance,
+  - vertical: from its `x` to the fixed 13-column right boundary.
+- The maximum horizontal height is `8 - y`, preserving two empty top rows.
+- Vertical height is bounded by the vertical area's climb/exit rules.
+- Blocks are solid from every direction and cannot be jumped/dropped through.
+- Contiguous blocks with the same `y` and `height` are one wider rectangle.
 
 ### Platforms
 
-- One platform thickness; widths are one, two, or three units.
-- Occupies one elevation tier (1, 2, or 3); the hero stands on its top face.
+- Descriptor: `{ x, y, width }`; logical thickness remains one row.
+- Width is any positive whole number, with the same placement-specific horizontal
+  or vertical boundary as blocks. There is no fixed width-3 cap.
+- `y` is any legal positive row; the hero stands on the top face.
 - Support the normal jump-through and Down + Jump drop-through rules from
   [hero mechanics](../architecture/hero-mechanics.md).
 

@@ -110,11 +110,10 @@ export function createRng(seed) {
 // Terrain unit model
 // ---------------------------------------------------------------------------
 // The two units are NOT interchangeable (structure.md §5):
-//   - BLOCK: solid landscape, one width unit, heights 1/2/3, rises from the
-//     ground and blocks passage from every direction. Cannot be jumped through
-//     or dropped through.
-//   - PLATFORM: one-way landing surface, one thickness, widths 1/2/3, at
-//     elevation tier 1/2/3. Pass-through from below; Down+Jump drop-through.
+//   - BLOCK: solid rectangular landscape with positive whole-unit width and
+//     height. Bounds are enforced by the composed area's remaining space.
+//   - PLATFORM: one-way landing surface, one logical row thick, with any
+//     positive whole-unit width. Pass-through from below; Down+Jump drops through.
 //
 // Dimensions are expressed in "units" (width/height units and elevation tiers),
 // not pixels. The macro composer (task 3.2) maps units → pixels using the
@@ -123,8 +122,6 @@ export function createRng(seed) {
 /** Block unit grammar (structure.md §5 "Blocks"). */
 export const BLOCK = Object.freeze({
   kind: 'block',
-  widths: Object.freeze([1]),       // always one width unit
-  heights: Object.freeze([1, 2, 3]), // one, two, or three height units
   solid: true,                      // solid AABB from every side
   risesFromGround: true,            // base sits on the ground; top = ground + h
   oneWay: false,                    // never one-way; cannot jump/drop through
@@ -133,8 +130,6 @@ export const BLOCK = Object.freeze({
 /** Platform unit grammar (structure.md §5 "Platforms"). */
 export const PLATFORM = Object.freeze({
   kind: 'platform',
-  widths: Object.freeze([1, 2, 3]), // one, two, or three width units
-  tiers: Object.freeze([1, 2, 3]),  // elevation tier 1, 2, or 3
   thickness: 1,                     // one platform thickness
   oneWay: true,                     // pass up through; Down+Jump drops through
   solid: false,
@@ -235,8 +230,8 @@ export function maxClearableStep() {
  * @returns {number} vertical offset above the ground in px (positive = higher)
  */
 export function tierToOffset(tier) {
-  if (!Number.isInteger(tier) || tier < 0 || tier > 3) {
-    throw new Error(`tierToOffset: tier must be an integer 0..3, got ${tier}`);
+  if (!Number.isInteger(tier) || tier < 0) {
+    throw new Error(`tierToOffset: tier must be a non-negative integer, got ${tier}`);
   }
   return tier * maxClearableStep();
 }
@@ -250,72 +245,42 @@ export function tierToOffset(tier) {
 // single, validated way to emit a unit and so the grammar is enforceable.
 
 /**
- * Build a block unit of a given height.
- *
- * A block is a solid AABB that rises from the ground: its base sits on the
- * ground and its top is `height` units above the ground. It blocks passage from
- * every direction and cannot be jumped through.
- *
- * The returned `aabb` is the block's placement box in unit space, with the
- * ground at y=0 and +y pointing up (so "rises from ground" is encoded directly:
- * the base sits at y=0 and the top is at y=height). A concrete horizontal x
- * is assigned later by the macro composer; here x=0 is the unit's local origin.
- *
- * @param {1|2|3} height height in units (1, 2, or 3)
- * @returns {{kind:'block', width:number, height:number, solid:boolean, oneWay:boolean, risesFromGround:boolean, aabb:{x:number,y:number,w:number,h:number}}}
+ * Build a rectangular solid block in unit space.
+ * Width and height are positive integers; area/ceiling bounds belong to the
+ * composer/validator because legality depends on the final x/y placement.
  */
-export function makeBlock(height) {
-  if (!BLOCK.heights.includes(height)) {
-    throw new Error(`makeBlock: height must be one of ${BLOCK.heights.join('/')} units, got ${height}`);
+export function makeBlock(width, height) {
+  if (!Number.isInteger(width) || width < 1) {
+    throw new Error(`makeBlock: width must be a positive integer, got ${width}`);
   }
-  const width = BLOCK.widths[0]; // always one width unit
+  if (!Number.isInteger(height) || height < 1) {
+    throw new Error(`makeBlock: height must be a positive integer, got ${height}`);
+  }
   return {
-    kind: 'block',
-    width,
-    height,
+    kind: 'block', width, height,
     solid: BLOCK.solid,
     oneWay: BLOCK.oneWay,
     risesFromGround: BLOCK.risesFromGround,
-    // Base on the ground (y=0), top at y=height — the block rises from ground.
     aabb: { x: 0, y: 0, w: width, h: height },
   };
 }
 
 /**
- * Build a platform unit of a given width and elevation tier.
- *
- * A platform is a one-way landing surface: the hero passes up through it and
- * can drop through with Down+Jump. It occupies a single thickness and sits at
- * elevation tier 1/2/3 (see `tierToOffset` for the world Y).
- *
- * The returned `aabb` is the platform's placement box in unit space. It is
- * anchored to its top surface (the landing face) at the tier's elevation:
- * `y` is the tier offset (px above ground) and the box extends `thickness`
- * downward, so the top edge sits exactly at the tier height. A concrete
- * horizontal x is assigned later by the macro composer; here x=0 is the
- * unit's local origin.
- *
- * @param {1|2|3} width width in units (1, 2, or 3)
- * @param {1|2|3} tier elevation tier (1, 2, or 3)
- * @returns {{kind:'platform', width:number, tier:number, thickness:number, oneWay:boolean, solid:boolean, aabb:{x:number,y:number,w:number,h:number}}}
+ * Build a one-way platform in unit space.
+ * Width and tier are positive integers; final area bounds are placement rules.
  */
 export function makePlatform(width, tier) {
-  if (!PLATFORM.widths.includes(width)) {
-    throw new Error(`makePlatform: width must be one of ${PLATFORM.widths.join('/')} units, got ${width}`);
+  if (!Number.isInteger(width) || width < 1) {
+    throw new Error(`makePlatform: width must be a positive integer, got ${width}`);
   }
-  if (!PLATFORM.tiers.includes(tier)) {
-    throw new Error(`makePlatform: tier must be one of ${PLATFORM.tiers.join('/')} units, got ${tier}`);
+  if (!Number.isInteger(tier) || tier < 1) {
+    throw new Error(`makePlatform: tier must be a positive integer, got ${tier}`);
   }
   const thickness = PLATFORM.thickness;
-  const y = tierToOffset(tier); // top surface at the tier's elevation above ground
+  const y = tierToOffset(tier);
   return {
-    kind: 'platform',
-    width,
-    tier,
-    thickness,
-    oneWay: PLATFORM.oneWay,
-    solid: PLATFORM.solid,
-    // Top edge at the tier offset; the box extends `thickness` below it.
+    kind: 'platform', width, tier, thickness,
+    oneWay: PLATFORM.oneWay, solid: PLATFORM.solid,
     aabb: { x: 0, y, w: width, h: thickness },
   };
 }

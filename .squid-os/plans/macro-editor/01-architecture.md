@@ -141,16 +141,17 @@ cell. Never assume square cells.
 
 Blocks are solid objects and occupy the complete width/height of their cells.
 
-Legal block sizes:
+Block descriptor:
 
-- Width: always 1 unit.
-- Height: 1, 2, or 3 units.
+`{ kind: "block", x, y, width, height }`
 
-Examples:
-
-- `(x=0, y=0, height=1)`
-- `(x=1, y=0, height=2)`
-- `(x=2, y=0, height=3)`
+- `width` and `height` are positive whole units with no fixed 1–3 cap.
+- Horizontal maximum width is `areaExitStart - finalX`; blocks may not enter
+  area entry/exit clearance.
+- Vertical maximum width is `13 - x`.
+- Horizontal maximum height is `8 - y` (two-row top clearance).
+- Contiguous blocks with identical `y` and `height` should be stored as one
+  wider block rectangle.
 
 Blocks may begin directly on the floor.
 
@@ -179,10 +180,14 @@ Reason: solid blocks consume their entire grid cells, so a one-unit air gap is t
 
 Platforms are thin one-way surfaces.
 
-Legal sizes:
+Platform descriptor:
 
-- Height: logically 1 grid unit for placement.
-- Width: 1, 2, or 3 units.
+`{ kind: "platform", x, y, width }`
+
+- `width` is any positive whole unit count; there is no width-3 cap.
+- Horizontal maximum width is `areaExitStart - finalX`.
+- Vertical maximum width is `13 - x`.
+- Logical thickness remains one grid row; rendering/collision use the thin face.
 
 Visually/collision-wise, the platform only occupies the thin surface near the top/end of its logical cell — currently approximately 6 pixels rather than a full 48-pixel solid cell (`PLATFORM_DRAW_H` in `js/world/macros.js`). Collision keeps using the full unit box (oneWay logic) — only the draw is thin.
 

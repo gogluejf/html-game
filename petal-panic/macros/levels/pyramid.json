@@ -8,31 +8,36 @@
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 5
+      "x": 5,
+      "width": 1
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 6
+      "x": 6,
+      "width": 1
     },
     {
       "kind": "block",
       "height": 3,
       "y": 0,
-      "x": 7
+      "x": 7,
+      "width": 1
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 8
+      "x": 8,
+      "width": 1
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 9
+      "x": 9,
+      "width": 1
     }
   ],
   "placements": [

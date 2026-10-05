@@ -221,8 +221,8 @@ export function macroElevationGain(macro) {
 //   - followedBy: list of macro ids that can follow this one (empty = any)
 //
 // Unit descriptor shape (REVISION 2D-grid-macro):
-//   { kind: 'block', height: 1|2|3, row, col }      // row = BASE row (rises up by height)
-//   { kind: 'platform', width: 1|2|3, row, col }    // row = landing-face elevation (was `tier`)
+//   { kind: 'block', width, height, y, x }    // positive whole-unit rectangle
+//   { kind: 'platform', width, y, x }         // positive width, one-way surface
 //
 // The 2D grid model: every unit is placed at an explicit (row, col) cell.
 //   - row = units UP from the ground (0 = on the ground), counted the SAME way
@@ -231,25 +231,21 @@ export function macroElevationGain(macro) {
 // Empty cells are gaps — there is no G() unit anymore; a "hole" is just an
 // unoccupied cell. Omitting row/col is an authoring error (throws below).
 
-/**
- * Build a unit descriptor for a solid block.
- *
- * @param {1|2|3} height block height in units (it rises UP by this many rows)
- * @param {number} row base row — the row the block sits ON (0 = on the ground);
- *   its top surface is at row + height
- * @param {number} col column from the left edge of the macro's footprint
- */
-export function B(height, row, col) {
+/** Build a rectangular solid block descriptor: B(width, height, y, x). */
+export function B(width, height, row, col) {
   if (row == null || col == null) {
-    throw new Error(`B(${height}, y, x): explicit y and x are required (no auto-assign)`);
+    throw new Error(`B(${width}, ${height}, y, x): explicit y and x are required`);
   }
-  return Object.freeze({ kind: 'block', height, y: row, x: col });
+  if (!Number.isInteger(width) || width < 1 || !Number.isInteger(height) || height < 1) {
+    throw new Error('B: width and height must be positive integers');
+  }
+  return Object.freeze({ kind: 'block', width, height, y: row, x: col });
 }
 
 /**
  * Build a unit descriptor for a one-way platform.
  *
- * @param {1|2|3} width platform width in units
+ * @param {number} width positive whole-unit platform width
  * @param {number} row landing-face elevation (units up from the ground; was `tier`)
  * @param {number} col column from the left edge of the macro's footprint
  */
@@ -257,6 +253,7 @@ export function P(width, row, col) {
   if (row == null || col == null) {
     throw new Error(`P(${width}, y, x): explicit y and x are required (no auto-assign)`);
   }
+  if (!Number.isInteger(width) || width < 1) throw new Error('P: width must be a positive integer');
   return Object.freeze({ kind: 'platform', width, y: row, x: col });
 }
 
@@ -476,7 +473,7 @@ export function macroWidth(macro) {
   // spacing between set-pieces is baked into the authored coordinates.
   let width = 0;
   for (const u of macro.units) {
-    const span = u.x + (u.kind === 'block' ? 1 : u.width);
+    const span = u.x + u.width;
     if (span > width) width = span;
   }
   return width;
@@ -796,14 +793,13 @@ export function slotIsOnValidSurface(slot, units) {
   for (const u of units) {
     if (u.kind !== 'block') continue; // platforms are one-way, not solids
     const uStart = u.x;
-    const uEnd = u.x + u.aabb.w;
+    const uEnd = u.x + u.width;
+    const uBase = u.y ?? 0;
+    const uTop = uBase + u.height;
     if (slot.x >= uStart && slot.x < uEnd) {
-      // Slot is in the same column as a block. If its y is below the block's
-      // top, it's INSIDE the solid. Items spawn at y and gravity handles the
-      // rest — we only care about not spawning IN rock.
-      if (surfaceY < u.height) {
-        return false;
-      }
+      // Inside this rectangular block only when the slot elevation lies
+      // between its base and top. A slot at/above the top is legal.
+      if (surfaceY >= uBase && surfaceY < uTop) return false;
     }
   }
   return true;
@@ -1454,7 +1450,7 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
     // unit lands inside the screen.
     if (isVertical) {
       const vMinX = Math.min(...macro.units.map((u) => u.x));
-      const vMaxX = Math.max(...macro.units.map((u) => u.x + (u.kind === 'block' ? 1 : u.width)));
+      const vMaxX = Math.max(...macro.units.map((u) => u.x + u.width));
       if (vMinX + placementXShift < 0) placementXShift -= vMinX + placementXShift;
       if (vMaxX + placementXShift > ZONE_WIDTH_UNITS) {
         placementXShift -= vMaxX + placementXShift - ZONE_WIDTH_UNITS;
@@ -1598,7 +1594,7 @@ function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, isVerti
       throw new Error(`placeMacro: unit missing explicit x/y in macro "${macro.id}"`);
     }
     if (u.kind === 'block') {
-      const block = makeBlock(u.height);
+      const block = makeBlock(u.width, u.height);
       const px = originX + u.x + xShift;
       // Horizontal: y is the base row (0 for ground blocks). Vertical: y is
       // the absolute climb row (axisPos + local row).
@@ -1609,7 +1605,7 @@ function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, isVerti
         placementId: instanceId,
         x: px,
         y: py,
-        aabb: { x: px, y: py, w: 1, h: u.height },
+        aabb: { x: px, y: py, w: u.width, h: u.height },
       });
     } else if (u.kind === 'platform') {
       const px = originX + u.x + xShift;
@@ -1677,6 +1673,22 @@ function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, isVerti
 export function validateLayout(layout) {
   const { units, gaps, entryClear, exitClear, totalWidth } = layout;
   const isVertical = layout.orientation === 'vertical';
+
+  // Shape contract: dimensions are positive whole units with no arbitrary
+  // 1..3 cap. Final area bounds determine the placement-specific maximum.
+  for (const u of units) {
+    if (!Number.isInteger(u.x) || !Number.isInteger(u.y) ||
+        !Number.isInteger(u.width) || u.width < 1) {
+      throw new Error(`validateLayout: ${u.kind} requires integer x/y and positive integer width`);
+    }
+    if (u.kind === 'block' && (!Number.isInteger(u.height) || u.height < 1)) {
+      throw new Error('validateLayout: block height must be a positive integer');
+    }
+    const expectedH = u.kind === 'block' ? u.height : PLATFORM_UNIT_H;
+    if (!u.aabb || u.aabb.w !== u.width || u.aabb.h !== expectedH) {
+      throw new Error(`validateLayout: ${u.kind} AABB must match its declared dimensions`);
+    }
+  }
 
   // 1. No impossible gaps.
   //    HORIZONTAL: a gap is a horizontal air distance — it must be clearable
@@ -1789,7 +1801,27 @@ export function validateLayout(layout) {
     seenSlotDupName.set(key, s.slot);
   }
 
-  // 3d. NO TRUE-INTERSECTION RULE (within a macro): two PLATFORMS on the SAME
+  // 3d. Solid block rectangles may touch at edges (including intentional
+  // stacks) but may never overlap in area. Wide blocks make this explicit:
+  // two descriptors cannot own the same grid cell.
+  const blocks = units.filter((u) => u.kind === 'block');
+  for (let i = 0; i < blocks.length; i++) {
+    for (let j = i + 1; j < blocks.length; j++) {
+      const a = blocks[i], b = blocks[j];
+      if (a.placementId !== undefined && b.placementId !== undefined
+          && a.placementId !== b.placementId) continue;
+      const overlapX = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+      const overlapY = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
+      if (overlapX > 0 && overlapY > 0) {
+        throw new Error(
+          `validateLayout: block rectangles at (${a.x},${a.y}) and (${b.x},${b.y}) ` +
+          `overlap by ${overlapX}×${overlapY} unit(s)`,
+        );
+      }
+    }
+  }
+
+  // 3e. NO TRUE-INTERSECTION RULE (within a macro): two PLATFORMS on the SAME
   //     row whose x-ranges actually intersect (overlap > 0) are drawn
   //     overlapping and are never legal. Adjacent (touching, gap = 0) is legal
   //     — that is just two landings edge-to-edge. Scoped to WITHIN one macro
@@ -1975,8 +2007,13 @@ export function validateLayout(layout) {
     const byCol = new Map();
     for (const u of route) {
       const elev = landingElevation(u);
-      if (!byCol.has(u.x) || elev > byCol.get(u.x).elevation) {
-        byCol.set(u.x, { label: `${u.kind} at x=${u.x}`, elevation: elev, x: u.x });
+      // A wide block/platform supplies a landing at every covered column.
+      // This preserves the exact route semantics of adjacent width-1 units
+      // after they are merged into one rectangle.
+      for (let x = u.x; x < u.x + u.width; x++) {
+        if (!byCol.has(x) || elev > byCol.get(x).elevation) {
+          byCol.set(x, { label: `${u.kind} at x=${x}`, elevation: elev, x });
+        }
       }
     }
     const landings = [

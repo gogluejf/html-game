@@ -8,8 +8,11 @@ an entry, and an exit. The generator combines macros into an area.
 
 Use the block and platform units defined in [structure](structure.md):
 
-- Blocks: one width unit, heights 1, 2, or 3; solid from every side.
-- Platforms: widths 1, 2, or 3, placed at elevation tier 1, 2, or 3; one-way.
+- Blocks: positive whole-unit width and height; solid from every side.
+- Platforms: positive whole-unit width, one logical row thick; one-way.
+- Final placement determines maximum width: horizontal terrain stops before the
+  area exit-clear band; vertical terrain stops at column 13. Horizontal surfaces
+  also preserve the shared two-row top clearance.
 - Successive elevation steps are reachable using the hero's double jump.
 
 The artwork provides themed appearances, not permission to break these rules.

@@ -8,19 +8,22 @@
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 2
+      "x": 2,
+      "width": 1
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 3
+      "x": 3,
+      "width": 1
     },
     {
       "kind": "block",
       "height": 3,
       "y": 0,
-      "x": 4
+      "x": 4,
+      "width": 1
     },
     {
       "kind": "platform",
@@ -32,19 +35,22 @@
       "kind": "block",
       "height": 3,
       "y": 0,
-      "x": 10
+      "x": 10,
+      "width": 1
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 11
+      "x": 11,
+      "width": 1
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 12
+      "x": 12,
+      "width": 1
     }
   ],
   "placements": [

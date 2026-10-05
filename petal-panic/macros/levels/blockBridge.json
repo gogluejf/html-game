@@ -8,13 +8,8 @@
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 3
-    },
-    {
-      "kind": "block",
-      "height": 2,
-      "y": 0,
-      "x": 4
+      "x": 3,
+      "width": 2
     },
     {
       "kind": "platform",
@@ -26,7 +21,8 @@
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 6
+      "x": 6,
+      "width": 1
     }
   ],
   "placements": [

@@ -8,91 +8,22 @@
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 2
-    },
-    {
-      "kind": "block",
-      "height": 1,
-      "y": 0,
-      "x": 3
-    },
-    {
-      "kind": "block",
-      "height": 1,
-      "y": 0,
-      "x": 4
-    },
-    {
-      "kind": "block",
-      "height": 1,
-      "y": 0,
-      "x": 5
-    },
-    {
-      "kind": "block",
-      "height": 1,
-      "y": 0,
-      "x": 6
+      "x": 2,
+      "width": 5
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 7
-    },
-    {
-      "kind": "block",
-      "height": 2,
-      "y": 0,
-      "x": 8
-    },
-    {
-      "kind": "block",
-      "height": 2,
-      "y": 0,
-      "x": 9
-    },
-    {
-      "kind": "block",
-      "height": 2,
-      "y": 0,
-      "x": 10
-    },
-    {
-      "kind": "block",
-      "height": 2,
-      "y": 0,
-      "x": 11
+      "x": 7,
+      "width": 5
     },
     {
       "kind": "block",
       "height": 3,
       "y": 0,
-      "x": 12
-    },
-    {
-      "kind": "block",
-      "height": 3,
-      "y": 0,
-      "x": 13
-    },
-    {
-      "kind": "block",
-      "height": 3,
-      "y": 0,
-      "x": 14
-    },
-    {
-      "kind": "block",
-      "height": 3,
-      "y": 0,
-      "x": 15
-    },
-    {
-      "kind": "block",
-      "height": 3,
-      "y": 0,
-      "x": 16
+      "x": 12,
+      "width": 5
     }
   ],
   "placements": [

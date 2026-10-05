@@ -126,89 +126,45 @@ ok('a different seed yields a different choice sequence', () => {
   assert.notDeepEqual(rollChoices(1), rollChoices(2), 'different seeds → different world');
 });
 
-console.log('Block grammar (structure.md §5)');
-ok('BLOCK grammar: 1 width unit, heights 1/2/3, solid, not one-way', () => {
-  assert.deepEqual(BLOCK.widths, [1]);
-  assert.deepEqual(BLOCK.heights, [1, 2, 3]);
+console.log('Block/platform grammar (structure.md §5)');
+ok('BLOCK grammar is solid and dimensions are placement-driven positive integers', () => {
   assert.equal(BLOCK.solid, true);
   assert.equal(BLOCK.oneWay, false);
   assert.equal(BLOCK.risesFromGround, true);
 });
 
-ok('makeBlock() builds a solid, ground-rising unit for each height', () => {
-  for (const h of [1, 2, 3]) {
-    const b = makeBlock(h);
-    assert.equal(b.kind, 'block');
-    assert.equal(b.width, 1, 'always one width unit');
-    assert.equal(b.height, h);
-    assert.equal(b.solid, true, 'solid from every side');
-    assert.equal(b.oneWay, false, 'a block is never one-way');
+ok('makeBlock(width,height) supports arbitrary positive whole-unit rectangles', () => {
+  for (const [w,h] of [[1,1],[5,2],[20,8]]) {
+    const b = makeBlock(w,h);
+    assert.equal(b.width,w); assert.equal(b.height,h);
+    assert.deepEqual(b.aabb,{x:0,y:0,w,h});
+    assert.equal(b.solid,true); assert.equal(b.oneWay,false);
   }
 });
 
-ok('makeBlock() encodes a solid AABB rising from the ground', () => {
-  for (const h of [1, 2, 3]) {
-    const b = makeBlock(h);
-    assert.equal(b.risesFromGround, true, 'flagged as rising from ground');
-    assert.ok(b.aabb, 'must expose a placement AABB');
-    assert.equal(b.aabb.x, 0, 'local origin x=0 (composer assigns world x)');
-    assert.equal(b.aabb.y, 0, 'base sits on the ground (y=0)');
-    assert.equal(b.aabb.w, 1, 'one width unit');
-    assert.equal(b.aabb.h, h, 'height matches the requested units');
-    // Top edge = y + h rises above the ground.
-    assert.equal(b.aabb.y + b.aabb.h, h, 'top surface is `height` above ground');
+ok('makeBlock rejects non-positive or fractional dimensions', () => {
+  for (const args of [[0,1],[1,0],[1.5,1],[1,2.5]])
+    assert.throws(() => makeBlock(...args), /width|height/);
+});
+
+ok('PLATFORM grammar is one-way and one logical row thick', () => {
+  assert.equal(PLATFORM.oneWay,true);
+  assert.equal(PLATFORM.thickness,1);
+  assert.equal(PLATFORM.solid,false);
+});
+
+ok('makePlatform supports arbitrary positive whole-unit widths and tiers', () => {
+  for (const [w,t] of [[1,1],[8,2],[40,9]]) {
+    const p = makePlatform(w,t);
+    assert.equal(p.width,w); assert.equal(p.tier,t);
+    assert.equal(p.aabb.w,w); assert.equal(p.aabb.h,1);
+    assert.equal(p.aabb.y,tierToOffset(t));
   }
 });
 
-ok('makeBlock() rejects invalid heights', () => {
-  assert.throws(() => makeBlock(0), /height/);
-  assert.throws(() => makeBlock(4), /height/);
-  assert.throws(() => makeBlock(1.5), /height/);
-});
-
-console.log('Platform grammar (structure.md §5)');
-ok('PLATFORM grammar: widths 1/2/3, tiers 1/2/3, one-way, one thickness, not solid', () => {
-  assert.deepEqual(PLATFORM.widths, [1, 2, 3]);
-  assert.deepEqual(PLATFORM.tiers, [1, 2, 3]);
-  assert.equal(PLATFORM.oneWay, true);
-  assert.equal(PLATFORM.thickness, 1);
-  assert.equal(PLATFORM.solid, false);
-});
-
-ok('makePlatform() builds a one-way unit for every width/tier combo', () => {
-  for (const w of [1, 2, 3]) {
-    for (const t of [1, 2, 3]) {
-      const p = makePlatform(w, t);
-      assert.equal(p.kind, 'platform');
-      assert.equal(p.width, w);
-      assert.equal(p.tier, t);
-      assert.equal(p.thickness, 1, 'one platform thickness');
-      assert.equal(p.oneWay, true, 'one-way landing surface');
-      assert.equal(p.solid, false, 'not a solid block');
-    }
-  }
-});
-
-ok('makePlatform() encodes a one-way AABB at the tier elevation', () => {
-  for (const w of [1, 2, 3]) {
-    for (const t of [1, 2, 3]) {
-      const p = makePlatform(w, t);
-      assert.ok(p.aabb, 'must expose a placement AABB');
-      assert.equal(p.aabb.x, 0, 'local origin x=0 (composer assigns world x)');
-      assert.equal(p.aabb.w, w, 'width matches the requested units');
-      assert.equal(p.aabb.h, 1, 'one platform thickness');
-      // Top edge (the landing face) sits exactly at the tier's elevation.
-      assert.equal(p.aabb.y, tierToOffset(t), 'top surface at the tier offset');
-      assert.ok(p.aabb.y > 0, 'a platform floats above the ground');
-    }
-  }
-});
-
-ok('makePlatform() rejects invalid widths and tiers', () => {
-  assert.throws(() => makePlatform(0, 1), /width/);
-  assert.throws(() => makePlatform(4, 1), /width/);
-  assert.throws(() => makePlatform(1, 0), /tier/);
-  assert.throws(() => makePlatform(1, 4), /tier/);
+ok('makePlatform rejects non-positive or fractional width/tier', () => {
+  for (const args of [[0,1],[1,0],[1.5,1],[1,2.5]])
+    assert.throws(() => makePlatform(...args), /width|tier/);
 });
 
 console.log('Double-jump reach + tier spacing (generation.md §6, structure.md §5)');
@@ -258,10 +214,10 @@ ok('tierToOffset yields monotonically increasing, equal-spaced elevations', () =
   }
 });
 
-ok('tierToOffset rejects out-of-range tiers', () => {
-  assert.throws(() => tierToOffset(0.5), /tier/);
-  assert.throws(() => tierToOffset(-1), /tier/);
-  assert.throws(() => tierToOffset(4), /tier/);
+ok('tierToOffset accepts any non-negative whole tier and rejects invalid values', () => {
+  assert.equal(tierToOffset(8), 8 * maxClearableStep());
+  assert.throws(() => tierToOffset(0.5), /non-negative integer/);
+  assert.throws(() => tierToOffset(-1), /non-negative integer/);
 });
 
 console.log(`\n${passed} passed`);

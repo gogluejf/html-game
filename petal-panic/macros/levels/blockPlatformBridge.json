@@ -8,13 +8,15 @@
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 2
+      "x": 2,
+      "width": 1
     },
     {
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 3
+      "x": 3,
+      "width": 1
     },
     {
       "kind": "platform",
@@ -26,20 +28,22 @@
       "kind": "block",
       "height": 2,
       "y": 0,
-      "x": 11
+      "x": 11,
+      "width": 1
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
-      "x": 12
+      "x": 12,
+      "width": 1
     },
     {
       "kind": "block",
       "height": 1,
       "y": 0,
       "x": 0,
-      "_tag": "__dump_test__"
+      "width": 1
     }
   ],
   "placements": [
@@ -69,19 +73,18 @@
     },
     {
       "slot": "on-far-h2",
-      "x": 12,
+      "x": 11,
       "type": "barrel",
-      "y": 1
+      "y": 2
     },
     {
       "slot": "on-far-h1",
-      "x": 13,
+      "x": 12,
       "type": "barrel",
-      "y": 0
+      "y": 1
     }
   ],
   "variations": [],
   "follows": [],
-  "followedBy": [],
-  "_el": {}
+  "followedBy": []
 }

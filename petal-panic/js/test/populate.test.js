@@ -349,7 +349,7 @@ test('populateArea: a real level-1 area populates with the level spawn budgets',
 
 test('slotIsOnValidSurface: a slot on top of a block is valid; a slot inside a block is not', () => {
   // A block of height 2 at x=10 occupies [10, 11). A slot at x=10 is above it.
-  const block = { kind: 'block', x: 10, aabb: { x: 10, y: 0, w: 1, h: 2 }, height: 2 };
+  const block = { kind: 'block', x: 10, y: 0, width: 1, aabb: { x: 10, y: 0, w: 1, h: 2 }, height: 2 };
   // Slot at y=2 (on top of the block) → valid.
   assert.ok(slotIsOnValidSurface({ x: 10, y: 2 }, [block]), 'slot on top of block (y=2) is valid');
   // Slot at y=0 (ground level, inside the block) → invalid.
@@ -389,7 +389,7 @@ test('populateArea: throws if a slot is inside a solid block (defense-in-depth)'
   // A synthetic layout with a slot INSIDE a block. The resolver must throw
   // (not silently place an item in a solid).
   const layout = {
-    units: [{ kind: 'block', x: 5, aabb: { x: 5, y: 0, w: 1, h: 2 }, height: 2 }],
+    units: [{ kind: 'block', x: 5, y: 0, width: 1, aabb: { x: 5, y: 0, w: 1, h: 2 }, height: 2 }],
     placements: [
       { type: 'enemy', x: 5, y: 0, slot: 'bad' }, // y=0 is INSIDE the block (height 2)
     ],

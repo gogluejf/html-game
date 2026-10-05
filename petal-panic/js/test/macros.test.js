@@ -33,6 +33,8 @@ import {
   STAGE_WEIGHTS,
   ENTRY_CLEAR,
   EXIT_CLEAR,
+  H_ENTRY_CLEAR,
+  H_EXIT_CLEAR,
   MAX_CLEARABLE_GAP,
   HORIZONTAL_MAX_SURFACE_UNITS,
   TOP_CLEARANCE_UNITS,
@@ -89,12 +91,10 @@ test('macro vocabulary: pyramid has heights 1,2,3,2,1 (generation.md §2)', () =
   assert.equal(pyramid.difficulty, 1);
 });
 
-test('macro vocabulary: lowRepeated has five height-1 blocks (generation.md §2)', () => {
+test('macro vocabulary: lowRepeated is one width-5 height-1 block', () => {
   const lr = MACROS.lowRepeated;
-  const blockHeights = lr.units
-    .filter((u) => u.kind === 'block')
-    .map((u) => u.height);
-  assert.deepEqual(blockHeights, [1, 1, 1, 1, 1], 'lowRepeated: five height-1 blocks');
+  const blocks = lr.units.filter((u) => u.kind === 'block');
+  assert.deepEqual(blocks.map(({width,height}) => [width,height]), [[5,1]]);
   assert.equal(lr.orientation, 'horizontal');
   assert.equal(lr.difficulty, 1);
 });
@@ -102,13 +102,11 @@ test('macro vocabulary: lowRepeated has five height-1 blocks (generation.md §2)
 test('macro vocabulary: stretchedPyramid has 5×h1, 5×h2, 5×h3, then descent (generation.md §2)', () => {
   const sp = MACROS.stretchedPyramid;
   const blocks = sp.units.filter((u) => u.kind === 'block');
-  assert.equal(blocks.length, 15, 'stretchedPyramid: 15 blocks total');
-  assert.equal(blocks.slice(0, 5).every((b) => b.height === 1), true, 'first 5 are height 1');
-  assert.equal(blocks.slice(5, 10).every((b) => b.height === 2), true, 'next 5 are height 2');
-  assert.equal(blocks.slice(10, 15).every((b) => b.height === 3), true, 'last 5 are height 3');
+  assert.deepEqual(blocks.map(({width,height}) => [width,height]), [[5,1],[5,2],[5,3]],
+    'three contiguous five-wide height bands');
   // 2D grid model: the old trailing G(2) drop is now just unoccupied cells
   // after the last block's column (the footprint extends past col 14).
-  const maxCol = Math.max(...sp.units.map((u) => u.x + (u.kind === 'block' ? 1 : u.width)));
+  const maxCol = Math.max(...sp.units.map((u) => u.x + u.width));
   assert.ok(maxCol >= 15, 'stretchedPyramid: footprint extends past the h3 band (descent cells)');
   assert.equal(sp.orientation, 'horizontal');
   assert.equal(sp.difficulty, 2);
@@ -149,10 +147,9 @@ test('macro vocabulary: gapLanding is a movement challenge (generation.md §2)',
   // 2D grid model: the leading gap is unoccupied cells before the first unit.
   const firstCol = Math.min(...gd.units.map((u) => u.x));
   assert.ok(firstCol >= 2, 'gapLanding: starts with empty cells (the gap) before the landing run');
-  // The landing run is five height-1 blocks — one under every slot.
+  // The landing run is one merged width-5, height-1 rectangle.
   const blocks = gd.units.filter((u) => u.kind === 'block');
-  assert.equal(blocks.length, 5, 'gapLanding: five landing blocks');
-  assert.ok(blocks.every((b) => b.height === 1), 'gapLanding: all landing blocks are height 1');
+  assert.deepEqual(blocks.map(({width,height}) => [width,height]), [[5,1]]);
   assert.equal(gd.difficulty, 2);
 });
 
@@ -166,7 +163,7 @@ test('macroWidth: computes the bounding-box footprint (R1.3, no macro clears)', 
     // And it must equal the bounding-box extent exactly (no clears added).
     let expect = 0;
     for (const u of macro.units) {
-      const span = u.x + (u.kind === 'block' ? 1 : u.width);
+      const span = u.x + u.width;
       if (span > expect) expect = span;
     }
     assert.equal(w, expect, `${id}: width matches the bounding box`);
@@ -703,7 +700,7 @@ test('validateLayout: throws on unit in entry zone', () => {
     entryClear: ENTRY_CLEAR,
     exitClear: EXIT_CLEAR,
     macros: [],
-    units: [{ kind: 'block', x: 1, width: 1, height: 1, tier: 0, solid: true, oneWay: false, aabb: { x: 1, y: 0, w: 1, h: 1 } }],
+    units: [{ kind: 'block', x: 1, y: 0, width: 1, height: 1, tier: 0, solid: true, oneWay: false, aabb: { x: 1, y: 0, w: 1, h: 1 } }],
     gaps: [],
     totalWidth: 20,
     placements: [],
@@ -719,7 +716,7 @@ test('validateLayout: throws on unit in exit zone', () => {
     entryClear: ENTRY_CLEAR,
     exitClear: EXIT_CLEAR,
     macros: [],
-    units: [{ kind: 'block', x: 17, width: 1, height: 1, tier: 0, solid: true, oneWay: false, aabb: { x: 17, y: 0, w: 1, h: 1 } }],
+    units: [{ kind: 'block', x: 17, y: 0, width: 1, height: 1, tier: 0, solid: true, oneWay: false, aabb: { x: 17, y: 0, w: 1, h: 1 } }],
     gaps: [],
     totalWidth: 20,
     placements: [],
@@ -737,9 +734,9 @@ test('validateLayout: throws on buried platform', () => {
     macros: [],
     units: [
       // Block at x=5, height 2
-      { kind: 'block', x: 5, width: 1, height: 2, tier: 0, solid: true, oneWay: false, aabb: { x: 5, y: 0, w: 1, h: 2 } },
+      { kind: 'block', x: 5, y: 0, width: 1, height: 2, tier: 0, solid: true, oneWay: false, aabb: { x: 5, y: 0, w: 1, h: 2 } },
       // Platform at x=5, tier 1 (buried by the height-2 block)
-      { kind: 'platform', x: 5, width: 1, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 1, h: 1 } },
+      { kind: 'platform', x: 5, y: 1, width: 1, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 1, h: 1 } },
     ],
     gaps: [],
     totalWidth: 20,
@@ -757,8 +754,8 @@ test('validateLayout: throws on elevation step > 1 tier', () => {
     exitClear: EXIT_CLEAR,
     macros: [],
     units: [
-      { kind: 'platform', x: 5, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 2, h: 1 }, placementId: 1 },
-      { kind: 'platform', x: 8, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 8, y: 3, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, y: 1, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 8, y: 3, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 8, y: 3, w: 2, h: 1 }, placementId: 1 },
     ],
     gaps: [],
     totalWidth: 20,
@@ -780,13 +777,13 @@ test('validateLayout: throws on unreachable inter-macro join (R2 #2)', () => {
     macros: ['climbing', 'climbing'],
     units: [
       // Macro 0 (placementId 0): platforms at y=1, y=2, y=3 (peak at y=3).
-      { kind: 'platform', x: 5, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 2, h: 1 }, placementId: 0 },
-      { kind: 'platform', x: 5, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 2, w: 2, h: 1 }, placementId: 0 },
-      { kind: 'platform', x: 5, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 3, w: 2, h: 1 }, placementId: 0 },
+      { kind: 'platform', x: 5, y: 1, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 2, h: 1 }, placementId: 0 },
+      { kind: 'platform', x: 5, y: 2, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 2, w: 2, h: 1 }, placementId: 0 },
+      { kind: 'platform', x: 5, y: 3, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 3, w: 2, h: 1 }, placementId: 0 },
       // Macro 1 (placementId 1): platforms at y=7, y=8, y=9 (first at y=7).
-      { kind: 'platform', x: 5, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 7, w: 2, h: 1 }, placementId: 1 },
-      { kind: 'platform', x: 5, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 8, w: 2, h: 1 }, placementId: 1 },
-      { kind: 'platform', x: 5, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 9, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, y: 7, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 7, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, y: 8, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 8, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, y: 9, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 9, w: 2, h: 1 }, placementId: 1 },
     ],
     gaps: [],
     totalWidth: 20,
@@ -812,13 +809,13 @@ test('validateLayout: passes on a reachable inter-macro join (R2 #2)', () => {
     macros: ['climbing', 'climbing'],
     units: [
       // Macro 0 (placementId 0): platforms at y=1, y=2, y=3 (peak at y=3).
-      { kind: 'platform', x: 5, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 2, h: 1 }, placementId: 0 },
-      { kind: 'platform', x: 5, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 2, w: 2, h: 1 }, placementId: 0 },
-      { kind: 'platform', x: 5, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 3, w: 2, h: 1 }, placementId: 0 },
+      { kind: 'platform', x: 5, y: 1, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 2, h: 1 }, placementId: 0 },
+      { kind: 'platform', x: 5, y: 2, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 2, w: 2, h: 1 }, placementId: 0 },
+      { kind: 'platform', x: 5, y: 3, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 3, w: 2, h: 1 }, placementId: 0 },
       // Macro 1 (placementId 1): platforms at y=4, y=5, y=6 (first at y=4).
-      { kind: 'platform', x: 5, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 4, w: 2, h: 1 }, placementId: 1 },
-      { kind: 'platform', x: 5, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 5, w: 2, h: 1 }, placementId: 1 },
-      { kind: 'platform', x: 5, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 6, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, y: 4, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 4, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, y: 5, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 5, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, y: 6, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 6, w: 2, h: 1 }, placementId: 1 },
     ],
     gaps: [],
     totalWidth: 20,
@@ -834,12 +831,12 @@ test('validateLayout: horizontal block/platform surfaces preserve top clearance'
     gaps: [], totalWidth: 20, placements: [],
   };
   const legalStairs = Array.from({ length: HORIZONTAL_MAX_SURFACE_UNITS }, (_, i) => ({
-    kind: 'block', x: i + 1, y: 0, height: i + 1,
+    kind: 'block', x: i + 1, y: 0, width: 1, height: i + 1,
     aabb: { x: i + 1, y: 0, w: 1, h: i + 1 }, placementId: 0,
   }));
   validateLayout({ ...base, units: legalStairs });
 
-  const tallBlock = { kind: 'block', x: HORIZONTAL_MAX_SURFACE_UNITS + 1, y: 0,
+  const tallBlock = { kind: 'block', x: HORIZONTAL_MAX_SURFACE_UNITS + 1, y: 0, width: 1,
     height: HORIZONTAL_MAX_SURFACE_UNITS + 1,
     aabb: { x: HORIZONTAL_MAX_SURFACE_UNITS + 1, y: 0, w: 1, h: HORIZONTAL_MAX_SURFACE_UNITS + 1 },
     placementId: 0 };
@@ -857,11 +854,62 @@ test('vertical macro source data fits the canonical 13-column width', () => {
   assert.equal(VERTICAL_ZONE_WIDTH_UNITS, 13);
   for (const macro of Object.values(MACROS).filter((m) => m.orientation === 'vertical')) {
     for (const u of macro.units) {
-      const end = u.x + (u.kind === 'block' ? 1 : u.width);
+      const end = u.x + u.width;
       assert.ok(u.x >= 0 && end <= VERTICAL_ZONE_WIDTH_UNITS,
         `${macro.id}: ${u.kind} x=${u.x}..${end} fits 0..${VERTICAL_ZONE_WIDTH_UNITS}`);
     }
   }
+});
+
+test('validateLayout: wide block rectangles may touch but never overlap', () => {
+  const base = { orientation:'horizontal', stage:1, entryClear:0, exitClear:0,
+    gaps:[], totalWidth:20, placements:[], macros:[] };
+  const a = { kind:'block', x:1, y:0, width:4, height:1,
+    solid:true, oneWay:false, aabb:{x:1,y:0,w:4,h:1}, placementId:0 };
+  const touching = { kind:'block', x:5, y:0, width:3, height:1,
+    solid:true, oneWay:false, aabb:{x:5,y:0,w:3,h:1}, placementId:0 };
+  validateLayout({ ...base, units:[a,touching] });
+  const overlapping = { ...touching, x:4, aabb:{...touching.aabb,x:4} };
+  assert.throws(() => validateLayout({ ...base, units:[a,overlapping] }), /block rectangles.*overlap/);
+});
+
+test('canonical contiguous equal-height block runs are merged', () => {
+  for (const macro of Object.values(MACROS)) {
+    const blocks = macro.units.filter((u) => u.kind === 'block');
+    for (let i=0;i<blocks.length;i++) for (let j=i+1;j<blocks.length;j++) {
+      const a=blocks[i], b=blocks[j];
+      if (a.y !== b.y || a.height !== b.height) continue;
+      assert.notEqual(a.x + a.width, b.x, `${macro.id}: adjacent equal rectangles should be merged`);
+      assert.notEqual(b.x + b.width, a.x, `${macro.id}: adjacent equal rectangles should be merged`);
+    }
+  }
+});
+
+test('validateLayout: wide block/platform use remaining horizontal body up to exit clearance', () => {
+  const totalWidth = 56, exitStart = totalWidth - H_EXIT_CLEAR, x = 20;
+  const remaining = exitStart - x;
+  const base = { orientation:'horizontal', stage:1, entryClear:H_ENTRY_CLEAR,
+    exitClear:H_EXIT_CLEAR, gaps:[], totalWidth, placements:[], macros:[] };
+  const block = { kind:'block', x, y:0, width:remaining, height:1,
+    solid:true, oneWay:false, aabb:{x,y:0,w:remaining,h:1} };
+  validateLayout({ ...base, units:[block] });
+  const tooWideBlock = { ...block, width:remaining+1, aabb:{...block.aabb,w:remaining+1} };
+  assert.throws(() => validateLayout({ ...base, units:[tooWideBlock] }), /exit zone/);
+  const platform = { kind:'platform', x, y:1, width:remaining, tier:1,
+    solid:false, oneWay:true, aabb:{x,y:1,w:remaining,h:1} };
+  validateLayout({ ...base, units:[platform] });
+  const tooWidePlatform = { ...platform, width:remaining+1, aabb:{...platform.aabb,w:remaining+1} };
+  assert.throws(() => validateLayout({ ...base, units:[tooWidePlatform] }), /exit zone/);
+});
+
+test('validateLayout: vertical width is placement-bound to the 13-column screen', () => {
+  const base = { orientation:'vertical', stage:2, entryClear:0, exitClear:3,
+    gaps:[], totalWidth:VERTICAL_ZONE_WIDTH_UNITS, totalHeight:2, placements:[], macros:[] };
+  const legal = { kind:'platform', x:4, y:1, width:9, tier:1,
+    solid:false, oneWay:true, aabb:{x:4,y:1,w:9,h:1}, placementId:0 };
+  validateLayout({ ...base, units:[legal] });
+  const tooWide = { ...legal, width:10, aabb:{...legal.aabb,w:10} };
+  assert.throws(() => validateLayout({ ...base, units:[tooWide] }), /fixed zone width/);
 });
 
 // ---------------------------------------------------------------------------

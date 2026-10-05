@@ -164,8 +164,8 @@ function drawMacro(macro){
     if (u.kind !== 'block') continue;
     const x = (u.x ?? 0) + bodyOffset;
     const y = u.y ?? 0;
-    const h = u.height ?? 1;
-    const x0 = x * ux, y0 = y * uy, x1 = (x+1)*ux, y1 = (y+h)*uy;
+    const w = u.width ?? 1, h = u.height ?? 1;
+    const x0 = x * ux, y0 = y * uy, x1 = (x+w)*ux, y1 = (y+h)*uy;
     const [sx0, syTop] = W(x0, y1);
     const [sx1, syBot] = W(x1, y0);
     ctx.fillStyle = 'rgba(90,255,138,.28)';
@@ -174,7 +174,7 @@ function drawMacro(macro){
     ctx.lineWidth = 2;
     ctx.strokeRect(sx0, syTop, sx1-sx0, syBot-syTop);
     if (app.show.labels){
-      labelAt((sx0+sx1)/2, (syTop+syBot)/2, `B${h}`);
+      labelAt((sx0+sx1)/2, (syTop+syBot)/2, `B${w}×${h}`);
     }
   }
 
@@ -236,7 +236,7 @@ export function zoneExtents(macro){
   let minX = Infinity, maxX = -Infinity, maxY = 0;
   for (const u of units){
     const x0 = u.x ?? 0;
-    const x1 = x0 + (u.kind === 'block' ? 1 : (u.width ?? 1));
+    const x1 = x0 + (u.width ?? 1);
     const yTop = (u.y ?? 0) + (u.kind === 'block' ? (u.height ?? 1) : 1);
     if (x0 < minX) minX = x0;
     if (x1 > maxX) maxX = x1;
@@ -275,7 +275,7 @@ export function contentExtents(macro){
   let minX = Infinity, maxX = -Infinity, maxY = 0;
   for (const u of units){
     const x0 = u.x ?? 0;
-    const x1 = x0 + (u.kind === 'block' ? 1 : (u.width ?? 1));
+    const x1 = x0 + (u.width ?? 1);
     const yTop = (u.y ?? 0) + (u.kind === 'block' ? (u.height ?? 1) : 1);
     if (x0 < minX) minX = x0;
     if (x1 > maxX) maxX = x1;
