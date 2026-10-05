@@ -9,6 +9,7 @@ import { markChanged } from './save.js';
 import { validateMacroCandidate, validateDeletion } from './validation.js';
 import { showToast } from './toast.js';
 import { pushUndo } from './undo.js';
+import { syncToolButtons } from './tools.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const HANDLE_PX = 9;
@@ -128,7 +129,7 @@ function startRollback(interaction){
   const tick=()=>{
     if (app.editor.interaction !== interaction) return;
     if (performance.now()-interaction.rollbackStarted >= interaction.rollbackDuration){
-      app.editor.interaction=null; draw(); return;
+      app.editor.interaction=null; endTransientSelect(); draw(); return;
     }
     draw(); requestAnimationFrame(tick);
   };
@@ -176,6 +177,18 @@ function eraseAt(hit){
   deleteSelection();
 }
 
+function beginTransientSelect(){
+  if (app.editor.tool==='none'||app.editor.tool==='erase') return;
+  app.editor.transientTool='none';
+  syncToolButtons();
+}
+
+function endTransientSelect(){
+  if (app.editor.transientTool===null) return;
+  app.editor.transientTool=null;
+  syncToolButtons();
+}
+
 function onPointerDown(e){
   if (e.button !== 0 || !app.cur) return;
   const cell=eventCell(e), tool=app.editor.tool;
@@ -183,29 +196,29 @@ function onPointerDown(e){
   const hit=hitTest(cell);
   if (tool === 'erase'){ eraseAt(hit); return; }
   if (handle){
+    beginTransientSelect();
     const original=clone(app.cur.st.units[app.editor.selection.index]);
     const interaction={ mode:original.kind==='block'?'resizing-block':'resizing-platform', targetKind:'unit', targetIndex:app.editor.selection.index, handle, anchorCell:cell, currentCell:cell, original, candidate:clone(original), valid:true, reason:'' };
     validateInteraction(interaction); app.editor.interaction=interaction;
+  } else if (hit){
+    beginTransientSelect();
+    app.editor.selection=hit;
+    const original=clone(hit.kind==='unit' ? app.cur.st.units[hit.index] : app.cur.st.placements[hit.index]);
+    // A slot subtype tool may change an existing slot's type while still using
+    // the normal temporary Select/move interaction.
+    const candidate=hit.kind==='slot'&&tool.startsWith('slot-')
+      ? {...original,type:tool.slice(5)}
+      : clone(original);
+    const interaction={mode:hit.kind==='slot'?'moving-slot':'moving-object',targetKind:hit.kind,targetIndex:hit.index,anchorCell:cell,currentCell:cell,original,candidate,valid:true,reason:''};
+    validateInteraction(interaction);app.editor.interaction=interaction;
   } else if (tool === 'block' || tool === 'platform'){
     const mode=tool==='block'?'creating-block':'creating-platform';
     const interaction={ mode, targetKind:null, targetIndex:-1, handle:null, anchorCell:cell, currentCell:cell, original:null, candidate:candidateForCreate(mode,cell,cell), valid:false, reason:'' };
     validateInteraction(interaction); app.editor.interaction=interaction;
   } else if (tool.startsWith('slot-')){
     const type=tool.slice(5);
-    if (hit?.kind === 'slot'){
-      const original=clone(app.cur.st.placements[hit.index]);
-      const candidate={...original,type};
-      const interaction={mode:'moving-slot',targetKind:'slot',targetIndex:hit.index,anchorCell:cell,currentCell:cell,original,candidate,valid:false,reason:''};
-      validateInteraction(interaction);app.editor.interaction=interaction;
-    } else {
-      const candidate={ slot:uniqueSlotName(type,app.cur.st.placements||[]), type, x:cell.x, y:cell.y };
-      const interaction={mode:'moving-slot',targetKind:null,targetIndex:-1,anchorCell:cell,currentCell:cell,original:null,candidate,valid:false,reason:''};
-      validateInteraction(interaction); app.editor.interaction=interaction;
-    }
-  } else if (hit){
-    app.editor.selection=hit;
-    const original=clone(hit.kind==='unit' ? app.cur.st.units[hit.index] : app.cur.st.placements[hit.index]);
-    const interaction={mode:hit.kind==='slot'?'moving-slot':'moving-object',targetKind:hit.kind,targetIndex:hit.index,anchorCell:cell,currentCell:cell,original,candidate:clone(original),valid:true,reason:''};
+    const candidate={ slot:uniqueSlotName(type,app.cur.st.placements||[]), type, x:cell.x, y:cell.y };
+    const interaction={mode:'moving-slot',targetKind:null,targetIndex:-1,anchorCell:cell,currentCell:cell,original:null,candidate,valid:false,reason:''};
     validateInteraction(interaction); app.editor.interaction=interaction;
   } else {
     app.editor.selection=null;
@@ -238,7 +251,7 @@ function finishPointer(e, cancelled=false){
   app.editor.pan=null;
   const i=app.editor.interaction;
   if (!i || i.mode==='rollback') return;
-  if (!cancelled && i.valid){ commit(i); app.editor.interaction=null; draw(); }
+  if (!cancelled && i.valid){ commit(i); app.editor.interaction=null; endTransientSelect(); draw(); }
   else {
     if (i.reason) showToast(i.reason,'error');
     startRollback(i);

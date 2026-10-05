@@ -10,7 +10,7 @@ import { draw, setConstants } from './draw.js';
 import { initConfirmDialog } from './dialog.js';
 import { showToast } from './toast.js';
 import { saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft, readActive } from './save.js';
-import { initTools, setTool } from './tools.js';
+import { initTools, setTool, syncToolButtons } from './tools.js';
 import { initPointer, deleteSelection } from './pointer.js';
 import { doUndo, doRedo, syncUndoButtons } from './undo.js';
 
@@ -70,7 +70,7 @@ function initKeyboard(){
       if (e.code==='Digit2'){ e.preventDefault(); setTool('slot-barrel'); return; }
       if (e.code==='Digit3'){ e.preventDefault(); setTool('slot-powerup'); return; }
       if (e.code==='Delete'||e.code==='Backspace'){ if (deleteSelection()) e.preventDefault(); return; }
-      if (e.code==='Escape'){ e.preventDefault(); app.editor.interaction=null; app.editor.selection=null; draw(); return; }
+      if (e.code==='Escape'){ e.preventDefault(); app.editor.interaction=null; app.editor.selection=null; app.editor.transientTool=null; syncToolButtons(); draw(); return; }
       if (e.code==='ArrowUp' && app.flatIdx>0){ e.preventDefault(); selectMacro(app.flatList[app.flatIdx-1].id); return; }
       if (e.code==='ArrowDown' && app.flatIdx<app.flatList.length-1){ e.preventDefault(); selectMacro(app.flatList[app.flatIdx+1].id); return; }
     }
@@ -78,7 +78,7 @@ function initKeyboard(){
 }
 
 // ---------- boot ----------
-const APP_VERSION = 'v8-validation-severity';   // bump to bust module cache; shown in console + title
+const APP_VERSION = 'v9-physics-reach';   // bump to bust module cache; shown in console + title
 async function boot(){
   document.title = `MACRO EDITOR — petal-panic [${APP_VERSION}]`;
   $('projectLabel').textContent = 'petal-panic · macros/levels';

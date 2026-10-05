@@ -161,6 +161,8 @@ the editor.
 - Hover: cyan/white outline.
 - Selected: stronger outline + resize handles.
 - Valid candidate: tool color, 30–40% fill.
+- Warning candidate: amber fill/outline; commit is allowed. Warnings are
+  physics-derived traversal guidance, not structural rejection.
 - Invalid candidate: red fill/outline + red X.
 - Show `x, y, w, h` or `x, y, w` while dragging.
 - Invalid existing-object resize: 120–180ms ease-out snap-back to original.

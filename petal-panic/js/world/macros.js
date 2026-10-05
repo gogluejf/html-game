@@ -173,6 +173,30 @@ export function minHeroGapClearPx() {
 export const MAX_CLEARABLE_GAP = Math.max(1, Math.floor(minHeroGapClearPx() / UNIT_PX_X));
 
 /**
+ * Horizontal distance the weakest hero can cover while landing `risePx`
+ * above the launch surface with a full-speed double jump.
+ *
+ * The model matches runtime impulses: ground jump, second jump at the first
+ * apex, then landing on the descending branch. A negative rise is a drop.
+ * Returns -1 when any hero cannot physically attain the requested height.
+ */
+export function minHeroDoubleJumpHorizontalReachPx(risePx) {
+  let min = Infinity;
+  for (const hero of Object.values(HEROES)) {
+    const { speed, jump } = hero.stats;
+    const secondJump = DOUBLE_JUMP_FACTOR * jump;
+    const firstApex = (jump * jump) / (2 * GRAVITY);
+    const totalApex = firstApex + (secondJump * secondJump) / (2 * GRAVITY);
+    if (risePx > totalApex) return -1;
+    const toFirstApex = jump / GRAVITY;
+    const secondAscent = secondJump / GRAVITY;
+    const descent = Math.sqrt((2 * Math.max(0, totalApex - risePx)) / GRAVITY);
+    min = Math.min(min, speed * (toFirstApex + secondAscent + descent));
+  }
+  return min;
+}
+
+/**
  * Fixed width of a vertical zone in whole grid columns.
  *
  * The logical view is 960px wide and one x-unit is 72px, so exactly 13 full
@@ -2024,32 +2048,77 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
         }
       }
     }
-    const landings = [
-      { label: 'ground', elevation: 0, x: 0 },
-      ...[...byCol.values()].sort((a, b) => a.x - b.x),
-      { label: 'exit', elevation: 0, x: totalWidth },
-    ];
-
-    for (let i = 1; i < landings.length; i++) {
-      const prev = landings[i - 1];
-      const curr = landings[i];
-      // Only SUCCESSIVE landings are constrained: the hero can always walk
-      // along the ground between distant features, so an upward step is only
-      // "impossible" when the next landing is within one jump's horizontal
-      // reach AND more than MAX_ELEVATION_STEP above. Distant landings are
-      // reachable by walking to them first (at ground level or via whatever
-      // steps exist in between).
-      const dx = curr.x - prev.x;
-      if (dx > MAX_CLEARABLE_GAP + 1) continue;
-      const step = curr.elevation - prev.elevation; // positive = upward
-      if (step > MAX_ELEVATION_STEP) {
-        warnTraversal(
-          `validateLayout: elevation step of ${step} tiers UP between ${prev.label} ` +
-            `(elevation ${prev.elevation}) and ${curr.label} (elevation ${curr.elevation}) ` +
-            `exceeds max upward step ${MAX_ELEVATION_STEP}`,
-          [prev.unitIndex, curr.unitIndex],
-        );
+    if (traversal !== 'warn') {
+      // Preserve the established game/composer contract. Editor warning mode
+      // below uses the richer physics graph without changing generation.
+      const routeLandings = [
+        {label:'ground',elevation:0,x:0},
+        ...[...byCol.values()].sort((a,b)=>a.x-b.x),
+        {label:'exit',elevation:0,x:totalWidth},
+      ];
+      for (let i=1;i<routeLandings.length;i++) {
+        const prev=routeLandings[i-1],curr=routeLandings[i];
+        if (curr.x-prev.x>MAX_CLEARABLE_GAP+1) continue;
+        const step=curr.elevation-prev.elevation;
+        if (step>MAX_ELEVATION_STEP) {
+          warnTraversal(
+            `validateLayout: elevation step of ${step} tiers UP between ${prev.label} `+
+              `(elevation ${prev.elevation}) and ${curr.label} (elevation ${curr.elevation}) `+
+              `exceeds max upward step ${MAX_ELEVATION_STEP}`,
+            [prev.unitIndex,curr.unitIndex],
+          );
+        }
       }
+    } else {
+    const landings = [...byCol.values()].sort((a, b) => a.x - b.x);
+    // Collapse adjacent columns owned by the same surface into landing spans.
+    // Reach is measured edge-to-edge, not from arbitrary descriptor starts.
+    const spans = [];
+    for (const landing of landings) {
+      const last = spans[spans.length - 1];
+      if (last && last.unitIndex === landing.unitIndex && last.elevation === landing.elevation
+          && last.x1 === landing.x) {
+        last.x1 = landing.x + 1;
+      } else {
+        spans.push({ ...landing, x0:landing.x, x1:landing.x + 1 });
+      }
+    }
+
+    // Reachability graph. Ground is continuous, so every landing can be
+    // approached at its nearest edge with zero horizontal gap; only its rise
+    // from ground matters. Reachable elevated surfaces then unlock further
+    // landings using the full rise+distance double-jump envelope.
+    const reachable = new Set();
+    for (let i = 0; i < spans.length; i++) {
+      if (minHeroDoubleJumpHorizontalReachPx(spans[i].elevation * UNIT_PX_Y) >= 0) reachable.add(i);
+    }
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const fromIndex of [...reachable]) {
+        const from = spans[fromIndex];
+        for (let toIndex = 0; toIndex < spans.length; toIndex++) {
+          if (reachable.has(toIndex)) continue;
+          const to = spans[toIndex];
+          const gapUnits = Math.max(0, to.x0 - from.x1, from.x0 - to.x1);
+          const gapPx = gapUnits * UNIT_PX_X;
+          const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
+          const reachPx = minHeroDoubleJumpHorizontalReachPx(risePx);
+          if (reachPx >= 0 && gapPx <= reachPx) {
+            reachable.add(toIndex);
+            changed = true;
+          }
+        }
+      }
+    }
+    for (let i = 0; i < spans.length; i++) {
+      if (reachable.has(i)) continue;
+      const target = spans[i];
+      warnTraversal(
+        `validateLayout: ${target.label} is outside the weakest hero's double-jump reachability graph`,
+        [target.unitIndex],
+      );
+    }
     }
   } else {
     // Vertical: the route climbs along y. The hero starts on GROUND at the

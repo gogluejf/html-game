@@ -21,13 +21,15 @@ const BUTTONS = Object.freeze({
 export function setTool(tool){
   if (!TOOLS.includes(tool)) throw new Error(`unknown macro editor tool: ${tool}`);
   app.editor.tool = tool;
+  app.editor.transientTool = null;
   syncToolButtons();
   draw();
 }
 
 export function syncToolButtons(){
+  const displayedTool=app.editor.transientTool ?? app.editor.tool;
   for (const [tool, id] of Object.entries(BUTTONS)){
-    document.getElementById(id)?.classList.toggle('armed', app.editor.tool === tool);
+    document.getElementById(id)?.classList.toggle('armed', displayedTool === tool);
   }
 }
 

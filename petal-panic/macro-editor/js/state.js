@@ -40,6 +40,7 @@ const show = { grid:true, slots:true, labels:true, zone:true };
 // valid pointer release commits them atomically.
 const editor = {
   tool:'none',
+  transientTool:null,
   hover:null,
   selection:null,
   interaction:null,

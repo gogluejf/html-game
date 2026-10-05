@@ -61,6 +61,31 @@ test('nearby ground blocks are accepted without an elevation warning', () => {
   assert.equal(result.severity,'valid');
 });
 
+test('same-height blocks never warn based only on x distance', () => {
+  const source=macro({units:[{kind:'block',x:5,y:0,width:1,height:1}]});
+  for (const x of [7,8,20]) {
+    const result=validateMacroCandidate(source,{kind:'block',x,y:0,width:1,height:1});
+    assert.equal(result.valid,true,result.reason);
+    assert.equal(result.severity,'valid',`same-height block at x=${x}`);
+  }
+});
+
+test('physics reach permits maximum-height double-jump landings', () => {
+  const source=macro({units:[{kind:'block',x:5,y:0,width:1,height:1}]});
+  const result=validateMacroCandidate(source,{kind:'block',x:7,y:0,width:1,height:2});
+  assert.equal(result.valid,true,result.reason);
+  assert.equal(result.severity,'valid');
+});
+
+test('height and lateral gap are combined for chained elevated landings', () => {
+  const source=macro({units:[{kind:'block',x:5,y:0,width:1,height:2}]});
+  const near=validateMacroCandidate(source,{kind:'block',x:7,y:0,width:1,height:3});
+  assert.equal(near.severity,'valid',near.reason);
+  const far=validateMacroCandidate(source,{kind:'block',x:12,y:0,width:1,height:3});
+  assert.equal(far.valid,true,far.reason);
+  assert.equal(far.severity,'warning');
+});
+
 test('unreachable elevated geometry is accepted as a warning', () => {
   const source=macro({units:[{kind:'block',x:5,y:0,width:1,height:1}]});
   const result=validateMacroCandidate(source,{kind:'block',x:7,y:0,width:1,height:4});

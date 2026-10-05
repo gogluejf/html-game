@@ -422,6 +422,37 @@ work unchanged.
 Validation runs continuously against the temporary candidate, but never mutates
 the real draft until pointer-up succeeds.
 
+### Validation severity
+
+Candidate validation has three states:
+
+- **Valid** — structurally legal and connected to the reachable landing graph;
+  render in the normal tool color and allow commit.
+- **Warning** — structurally legal but not reachable through normal traversal;
+  render amber and allow commit.
+- **Error** — structurally illegal; render red and reject on release.
+
+Reachability warnings use a physics-derived landing graph rather than a fixed
+X-distance or tier heuristic:
+
+1. Every block top and platform face is a landing node.
+2. Ground is continuous, so the hero may approach a landing's nearest edge.
+3. Reachable nodes propagate reachability to other nodes.
+4. Each jump combines edge-to-edge horizontal gap with vertical rise.
+5. The calculation imports shared run speed, jump impulse, gravity,
+   double-jump factor, and anisotropic unit dimensions.
+6. Both heroes are evaluated; the weaker result governs.
+7. Same-height geometry never warns merely because of its X distance.
+
+Warnings never mutate persisted macro JSON and never prevent commit. They are
+derived again after edits, deletion, macro switching, undo, and redo. This
+allows intentionally inaccessible projectile-enemy perches, scenery, and
+other optional geometry while keeping the author informed.
+
+Structural rules remain blocking errors: schema violations, bounds,
+entry/exit intrusion, overlap, clearance, platform row zero, duplicate slots,
+and unsupported slots.
+
 ### Valid candidate
 
 - Normal tool color with translucent fill.

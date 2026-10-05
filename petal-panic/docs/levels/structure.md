@@ -160,6 +160,33 @@ horizontal distance a hero can cover during a full-speed double-jump airtime
 (speed × total airtime). This is computed from the hero's run speed and jump
 impulse (both heroes, take the minimum), not a hand-tuned constant.
 
+### Traversal reachability warnings
+
+The Macro Editor derives a landing graph from every block top and platform
+face. Ground is continuous, so the hero may walk to the nearest edge before
+jumping. A landing is reachable when either:
+
+- its height can be reached directly from ground, or
+- it can be reached from another reachable landing.
+
+Each graph edge uses the real shared physics values: hero run speed, jump
+impulse, gravity, double-jump factor, `UNIT_PX_X`, and `UNIT_PX_Y`. Horizontal
+distance is measured edge-to-edge. Vertical rise and horizontal gap are
+calculated together: a higher destination leaves less airborne time for
+horizontal travel. Both heroes are evaluated and the weaker result governs.
+Same-height surfaces never become unreachable merely because they are near or
+far from another surface.
+
+This graph is authoring guidance, not structural legality. A disconnected
+surface is allowed because it may hold a static projectile enemy, decoration,
+or another intentionally inaccessible feature. The editor renders it amber
+and reports a warning; it does not reject or alter the geometry. Structural
+errors such as overlap, bounds, clearance, and unsupported slots remain
+blocking errors.
+
+Vertical composer route validation remains strict and separate from these
+horizontal editor warnings.
+
 Vertical areas repeat reachable climbing patterns upward; three tiers must not
 accidentally become a three-platform cap on the entire ascent. Exact vertical
 pattern dimensions remain tuning work.
