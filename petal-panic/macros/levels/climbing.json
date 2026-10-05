@@ -8,37 +8,37 @@
       "kind": "platform",
       "width": 2,
       "y": 1,
-      "x": 12
+      "x": 6
     },
     {
       "kind": "platform",
       "width": 2,
       "y": 2,
-      "x": 14
+      "x": 8
     },
     {
       "kind": "platform",
       "width": 2,
       "y": 3,
-      "x": 12
+      "x": 6
     }
   ],
   "placements": [
     {
       "slot": "tier1",
-      "x": 12,
+      "x": 6,
       "type": "enemy",
       "y": 4
     },
     {
       "slot": "tier2",
-      "x": 14,
+      "x": 8,
       "type": "enemy",
       "y": 3
     },
     {
       "slot": "tier3b",
-      "x": 13,
+      "x": 7,
       "type": "powerup",
       "y": 4
     }

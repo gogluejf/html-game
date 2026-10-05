@@ -20,7 +20,20 @@ loadTestMacros();
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
-import { LEVELS, buildLevelZones, BOSS_CHECKPOINT, ZONE_H_HORIZONTAL, ZONE_H_VERTICAL, ZONE_WIDTH_HORIZONTAL, ZONE_WIDTH_VERTICAL } from '../world/level.js';
+import {
+  LEVELS, buildLevelZones, BOSS_CHECKPOINT,
+  ZONE_H_HORIZONTAL, ZONE_H_VERTICAL,
+  ZONE_WIDTH_HORIZONTAL, ZONE_WIDTH_VERTICAL, ZONE_WIDTH_BOSS,
+  ZONE_ENTRY_X, ZONE_EXIT_PAD, BOSS_TRIGGER_X,
+  VERTICAL_TOP_PLATFORM_OFFSET,
+} from '../world/level.js';
+import {
+  UNIT_PX_X, UNIT_PX_Y,
+  HORIZONTAL_ZONE_LENGTH_UNITS, VERTICAL_ZONE_HEIGHT_UNITS,
+  VERTICAL_ZONE_WIDTH_UNITS, BOSS_ZONE_LENGTH_UNITS, BOSS_TRIGGER_UNITS,
+  ZONE_ENTRY_PAD_UNITS, ZONE_EXIT_PAD_UNITS,
+  VERTICAL_TOP_PLATFORM_OFFSET_UNITS,
+} from '../world/macros.js';
 import { VIEW_H } from '../core/view.js';
 
 const def = LEVELS[0];
@@ -56,8 +69,8 @@ test('areas 2..4 have an entry flag at their start (checkpoints.md §1)', () => 
     assert.ok(z.entryFlag, `${idx} has an entry flag`);
     assert.equal(
       z.entryFlag.x,
-      z.bounds.x + 120,
-      `${idx} entry flag sits at the start of the zone`,
+      z.bounds.x + ZONE_ENTRY_X,
+      `${idx} entry flag sits at the unit-derived start of the zone`,
     );
   }
 });
@@ -192,23 +205,26 @@ test('vertical-area slot is explicit config, not an undocumented default', () =>
   assert.equal(vz.areaIdx, def.verticalArea, 'the configured area is the vertical one');
 });
 
-test('horizontal zones are ~2x the prototype segment wide; vertical/boss are one screen (structure.md §4/§6)', () => {
-  // A horizontal zone's width IS the area's playable length (structure.md §6:
-  // the zone is the world; the terrain fills it). The target is ~2x the
-  // ~2000px prototype segment = 4000px.
-  // A vertical zone is one screen wide (structure.md §4: the climb is
-  // constrained to a single-screen-wide corridor), so it stays at the
-  // original 1600px width.
-  // The boss zone is a fixed-size arena, not a doubled corridor, so it also
-  // stays at 1600px.
+test('authored zone geometry is derived from canonical unit constants', () => {
+  assert.equal(ZONE_WIDTH_HORIZONTAL, HORIZONTAL_ZONE_LENGTH_UNITS * UNIT_PX_X);
+  assert.equal(ZONE_WIDTH_VERTICAL, VERTICAL_ZONE_WIDTH_UNITS * UNIT_PX_X);
+  assert.equal(ZONE_H_VERTICAL, VERTICAL_ZONE_HEIGHT_UNITS * UNIT_PX_Y);
+  assert.equal(ZONE_WIDTH_BOSS, BOSS_ZONE_LENGTH_UNITS * UNIT_PX_X);
+  assert.equal(BOSS_TRIGGER_X, BOSS_TRIGGER_UNITS * UNIT_PX_X);
+  assert.equal(ZONE_ENTRY_X, ZONE_ENTRY_PAD_UNITS * UNIT_PX_X);
+  assert.equal(ZONE_EXIT_PAD, ZONE_EXIT_PAD_UNITS * UNIT_PX_X);
+  assert.equal(VERTICAL_TOP_PLATFORM_OFFSET, VERTICAL_TOP_PLATFORM_OFFSET_UNITS * UNIT_PX_Y);
+});
+
+test('horizontal zones are unit-budgeted; vertical and boss use their own unit widths', () => {
   const horizontalZones = zones.filter((z) => z.kind === 'area' && z.orientation === 'horizontal');
   const verticalZone = zones.find((z) => z.kind === 'area' && z.orientation === 'vertical');
   const bossZone = zones.find((z) => z.kind === 'boss');
   for (const z of horizontalZones) {
     assert.equal(z.bounds.w, ZONE_WIDTH_HORIZONTAL, `${z.idx} horizontal zone is the doubled width`);
   }
-  assert.equal(verticalZone.bounds.w, ZONE_WIDTH_VERTICAL, 'vertical zone is one screen wide');
-  assert.equal(bossZone.bounds.w, ZONE_WIDTH_VERTICAL, 'boss zone is a fixed-size arena');
+  assert.equal(verticalZone.bounds.w, ZONE_WIDTH_VERTICAL, 'vertical zone uses the 13-column macro grid');
+  assert.equal(bossZone.bounds.w, ZONE_WIDTH_BOSS, 'boss zone preserves its independent arena width');
   // The horizontal width is ~2x the vertical (one-screen) width.
   assert.ok(
     ZONE_WIDTH_HORIZONTAL > ZONE_WIDTH_VERTICAL,

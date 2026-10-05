@@ -33,6 +33,7 @@ const { Hero } = await import('../hero/hero.js');
 const { HEROES } = await import('../hero/heroDefs.js');
 const SC = await import('../ui/screens.js');
 const U = await import('../systems/update.js');
+const { ZONE_ENTRY_X } = await import('../world/level.js');
 
 // --- Helpers -----------------------------------------------------------------
 
@@ -198,7 +199,7 @@ test('death in 1-3 re-enters 1-3 beside its entry flag (same area, same arrangem
 
   // Simulate: the player is in area 1-3 (zone model: areaIdx 3) and dies.
   // The zone model's entry flag for area -3 is at x=ZONE_ENTRY_X (zone-local).
-  const entryX = 120; // ZONE_ENTRY_X
+  const entryX = ZONE_ENTRY_X;
   setState(S.PLAY);
   hero.dying = false;
   hero.deathTimer = 0;

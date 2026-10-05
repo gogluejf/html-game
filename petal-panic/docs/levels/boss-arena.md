@@ -16,6 +16,13 @@ A little before the far right end of the zone there is an invisible trigger
 line. The moment the player crosses it, the screen goes black instantly and
 the boss card plays on the black. No delay, no teleport.
 
+**Canonical geometry:** the boss approach is **22 horizontal units** long
+(`22 × 72 = 1584px`). Its invisible card trigger is at **unit 15**
+(`15 × 72 = 1080px`). Entry is inset by the shared **2 horizontal units**
+(`144px`). These constants are owned by `js/world/macros.js`; the level builder
+derives pixel bounds and trigger positions from them. The approach is not a
+macro and does not use the vertical area's 13-column width.
+
 **Direction detail:** the player enters from the left and walks right (like a
 regular area). The boss's own entrance is from the right, independently
 confirmed.

@@ -12,7 +12,10 @@ import { confirmDialog } from './dialog.js';
 import { showToast } from './toast.js';
 import { selectMacro } from './sidebar.js';
 
-const LS_PREFIX = 'macro-editor-draft-v1-';
+// v2 invalidates drafts created against the retired 22-column vertical grid.
+// Canonical vertical macros were migrated to the shared 13-column grid; loading
+// a v1 draft would silently restore old x=12..18 coordinates outside the zone.
+const LS_PREFIX = 'macro-editor-draft-v2-';
 export const draftKey = id => LS_PREFIX + id;
 // Config key: remembers the last-selected macro so a refresh lands back on it
 // (mirrors the sprite editor's `active`). Separate from the per-macro drafts.

@@ -31,6 +31,7 @@ import { GRAVITY, DOUBLE_JUMP_FACTOR } from '../consts.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { BARREL_DEF } from '../objects/object.js';
 import { TUNING_BARREL, TUNING_MACRO } from '../tuning.js';
+import { VIEW_W, VIEW_H } from '../core/view.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -111,6 +112,41 @@ export const UNIT_PX_Y = 48; // vertical cell height (px)
 /** @deprecated use UNIT_PX_X or UNIT_PX_Y — kept only as an elevation-step alias. */
 export const UNIT_PX = UNIT_PX_Y;
 
+// ---------------------------------------------------------------------------
+// Canonical zone dimensions (UNIT SPACE)
+// ---------------------------------------------------------------------------
+// Geometry is authored and composed in whole units. Pixel dimensions are
+// derived from these constants by level.js; the game and macro editor consume
+// the same values, so neither independently rounds a pixel size.
+
+/** Horizontal area length (composition axis). 56 × 72 = 4032 px. */
+export const HORIZONTAL_ZONE_LENGTH_UNITS = 56;
+/** Vertical area climb height. 56 × 48 = 2688 px. */
+export const VERTICAL_ZONE_HEIGHT_UNITS = 56;
+/** One-screen vertical-area width: floor(960 / 72) = 13 whole columns. */
+export const VERTICAL_ZONE_WIDTH_UNITS = Math.floor(VIEW_W / UNIT_PX_X);
+/** Boss-zone approach length: 22 whole columns (22 × 72 = 1584px). */
+export const BOSS_ZONE_LENGTH_UNITS = 22;
+/** Boss-card trigger position inside the approach: column 15 (1080px). */
+export const BOSS_TRIGGER_UNITS = 15;
+/** Entry/checkpoint inset from a zone edge: 2 columns (144px). */
+export const ZONE_ENTRY_PAD_UNITS = 2;
+/** Exit/checkpoint inset from a zone edge: 2 columns (144px). */
+export const ZONE_EXIT_PAD_UNITS = 2;
+/** Vertical exit platform top offset: 1 vertical row (48px). */
+export const VERTICAL_TOP_PLATFORM_OFFSET_UNITS = 1;
+/** Vertical exit platform width: 2 horizontal columns (144px). */
+export const VERTICAL_TOP_PLATFORM_WIDTH_UNITS = 2;
+/** One-screen horizontal play-space height above the ground line. */
+export const HORIZONTAL_PLAY_HEIGHT_UNITS = 10;
+/** Horizontal-area world/canvas height in unit space (540 / 48 = 11.25). */
+export const HORIZONTAL_ZONE_HEIGHT_UNITS = VIEW_H / UNIT_PX_Y;
+/** Empty headroom required above every horizontal standable surface. */
+export const TOP_CLEARANCE_UNITS = 2;
+/** Highest legal horizontal standing-surface line, measured up from ground. */
+export const HORIZONTAL_MAX_SURFACE_UNITS = HORIZONTAL_PLAY_HEIGHT_UNITS - TOP_CLEARANCE_UNITS;
+
+
 /**
  * Minimum horizontal clear distance (px) across ALL heroes for a full-speed
  * double jump. Computed from heroDefs.js + consts.js so it tracks the real
@@ -137,13 +173,13 @@ export function minHeroGapClearPx() {
 export const MAX_CLEARABLE_GAP = Math.max(1, Math.floor(minHeroGapClearPx() / UNIT_PX_X));
 
 /**
- * Fixed width of a vertical zone (one screen wide = 1600px) in width-units.
+ * Fixed width of a vertical zone in whole grid columns.
  *
- * Vertical areas are one screen wide (structure.md §4). The zone's width is
- * fixed and NOT derived from the placed platforms — platforms are constrained
- * to fit within this width. This is the canonical width for vertical layouts.
+ * The logical view is 960px wide and one x-unit is 72px, so exactly 13 full
+ * columns fit (936px). The remaining 24px is non-authorable screen margin.
+ * This is shared by composition, validation, level bounds, and the editor.
  */
-export const ZONE_WIDTH_UNITS = Math.floor(1600 / UNIT_PX_X);
+export const ZONE_WIDTH_UNITS = VERTICAL_ZONE_WIDTH_UNITS;
 
 /**
  * Maximum elevation step (tiers) between successive landings. A hero can
@@ -1079,7 +1115,7 @@ function assignBarrelTypes(barrelSlots, counts, rng) {
  *   - HORIZONTAL areas compose along X. The budget is a WIDTH budget; macros
  *     are placed left to right, each one extending the route's x position.
  *   - VERTICAL areas compose along Y. The budget is a HEIGHT budget (the
- *     zone is VIEW_H·5 = 2700 px tall, one screen wide). Macros are stacked
+ *     zone is 56 rows = 2688px tall, 13 columns wide). Macros are stacked
  *     upward: each macro's entry sits at the current climb elevation and its
  *     exit raises the hero's position. The zone's width is fixed (one screen
  *     wide), so horizontal positioning is constrained — the layout records
@@ -1414,7 +1450,7 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
 
     // R6 FIT (vertical): clamp the macro's whole x-span into the fixed zone
     // width [0, ZONE_WIDTH_UNITS] — always, because authored cols can already
-    // exceed the 72px zone width (22 units). Done before placement so every
+    // exceed the canonical 13-column zone width. Done before placement so every
     // unit lands inside the screen.
     if (isVertical) {
       const vMinX = Math.min(...macro.units.map((u) => u.x));
@@ -1633,6 +1669,7 @@ function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, isVerti
  *      ground → first unit, unit → next unit, last unit → exit. Not just
  *      platform → platform (R2 #4).
  *   5. Start/exit never require a random powerup (entry/exit zones clear)
+ *   6. Horizontal standable surfaces preserve TOP_CLEARANCE_UNITS of headroom
  *
  * @param {object} layout the layout from composeArea
  * @throws {Error} if validation fails
@@ -1691,8 +1728,29 @@ export function validateLayout(layout) {
     }
   }
 
-  // 3b. MAJOR 2 FIX: For vertical zones, validate that ALL units' x-positions
-  // are within the fixed screen width [0, ZONE_WIDTH_UNITS]. The zone is one
+  // 3b. Horizontal ceiling/headroom rule. Every authored standing surface —
+  // block top or platform face — must leave TOP_CLEARANCE_UNITS empty rows
+  // before the top of the playable screen. Horizontal play space is
+  // HORIZONTAL_PLAY_HEIGHT_UNITS rows above ground, so the highest legal
+  // surface is HORIZONTAL_MAX_SURFACE_UNITS. Vertical areas deliberately do
+  // not use this rule: their Y axis is the climb axis and their top exit clear
+  // is governed by V_EXIT_CLEAR + route validation instead.
+  if (!isVertical) {
+    for (const u of units) {
+      const surface = u.kind === 'block'
+        ? (u.y ?? 0) + u.height
+        : (u.y ?? u.tier ?? 0) + 1;
+      if (surface > HORIZONTAL_MAX_SURFACE_UNITS) {
+        throw new Error(
+          `validateLayout: ${u.kind} at x=${u.x} has standing surface row ${surface}; ` +
+            `horizontal surfaces may be at most row ${HORIZONTAL_MAX_SURFACE_UNITS} ` +
+            `(play height ${HORIZONTAL_PLAY_HEIGHT_UNITS} − top clearance ${TOP_CLEARANCE_UNITS})`,
+        );
+      }
+    }
+  }
+
+  // 3c. For vertical zones, validate that ALL units' x-positions
   // screen wide; no unit may extend beyond its boundaries.
   if (isVertical) {
     for (const u of units) {

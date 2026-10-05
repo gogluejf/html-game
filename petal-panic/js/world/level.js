@@ -16,8 +16,23 @@
 //   - Enemy death drops (Enemy.coinDrop config, rolled in updateRealEnemy)
 // This module is pure (no DOM, no canvas) so it's unit-testable in node.
 
-import { VIEW_H } from '../core/view.js';
-import { composeArea, UNIT_PX_X, UNIT_PX_Y, PLATFORM_DRAW_H } from './macros.js';
+import {
+  composeArea,
+  UNIT_PX_X,
+  UNIT_PX_Y,
+  PLATFORM_DRAW_H,
+  HORIZONTAL_ZONE_LENGTH_UNITS,
+  VERTICAL_ZONE_HEIGHT_UNITS,
+  VERTICAL_ZONE_WIDTH_UNITS,
+  BOSS_ZONE_LENGTH_UNITS,
+  BOSS_TRIGGER_UNITS,
+  ZONE_ENTRY_PAD_UNITS,
+  ZONE_EXIT_PAD_UNITS,
+  VERTICAL_TOP_PLATFORM_OFFSET_UNITS,
+  VERTICAL_TOP_PLATFORM_WIDTH_UNITS,
+  HORIZONTAL_PLAY_HEIGHT_UNITS,
+  HORIZONTAL_ZONE_HEIGHT_UNITS,
+} from './macros.js';
 import { createRng } from './terrain.js';
 
 // ---------------------------------------------------------------------------
@@ -88,23 +103,15 @@ export const LEVELS = [
  * Width of a sealed zone's playable world (px).
  *
  * The zone IS the world (structure.md §2 — independent sealed zones). A
- * horizontal area's target length is ~2x the ~2000px prototype segment
- * (structure.md §6, generation.md §7) = 4000px; the zone is that wide.
- *
- * Vertical areas are one screen wide (fixed by structure.md §4 — the climb
- * is constrained to a single-screen-wide corridor), so their width is the
- * original 1600px, not the doubled horizontal width.
- *
- * The boss zone is a self-contained arena (its own approach + arena, not a
- * doubled corridor), so it also uses the original 1600px width.
- *
- * These two values are kept separate so a horizontal zone's width matches
- * its terrain budget (task 3.3): the terrain fills the zone, and the zone
- * is the terrain's container.
+ * Zone dimensions are authored in whole grid units in macros.js. Horizontal
+ * areas are 56 columns (4032px); vertical zones are 13 columns (936px);
+ * boss approaches are 22 columns (1584px).
  */
-export const ZONE_WIDTH_HORIZONTAL = 4000;
-/** Original (pre-doubling) zone width, used by vertical + boss zones. */
-export const ZONE_WIDTH_VERTICAL = 1600;
+export const ZONE_WIDTH_HORIZONTAL = HORIZONTAL_ZONE_LENGTH_UNITS * UNIT_PX_X;
+/** Vertical macro zones occupy the 13-column one-screen grid. */
+export const ZONE_WIDTH_VERTICAL = VERTICAL_ZONE_WIDTH_UNITS * UNIT_PX_X;
+/** Boss approach length derived from its canonical 22-column budget. */
+export const ZONE_WIDTH_BOSS = BOSS_ZONE_LENGTH_UNITS * UNIT_PX_X;
 /**
  * Backward-compat alias for the pre-doubling zone width. New code should use
  * ZONE_WIDTH_HORIZONTAL or ZONE_WIDTH_VERTICAL explicitly.
@@ -119,21 +126,19 @@ export const ZONE_WIDTH = ZONE_WIDTH_VERTICAL;
  * drift between authored macros and the rendered floor. GROUND_UNITS is chosen
  * so the floor stays near the bottom of the VIEW_H-tall zone.
  */
-export const GROUND_UNITS = 10;                 // ground surface elevation in units
+export const GROUND_UNITS = HORIZONTAL_PLAY_HEIGHT_UNITS;
 export const ZONE_GROUND_Y = GROUND_UNITS * UNIT_PX_Y;   // 10 × 48 = 480
 /** Floor thickness — exactly ONE unit tall (grid-aligned). */
 export const ZONE_FLOOR_H = UNIT_PX_Y;          // 48
-/** Where the hero / entry flag start inside a zone, from its left edge (px). */
-export const ZONE_ENTRY_X = 120;
+/** Hero/entry-flag inset: shared 2-column unit padding. */
+export const ZONE_ENTRY_X = ZONE_ENTRY_PAD_UNITS * UNIT_PX_X;
 /**
  * Where the exit flag sits inside a zone, from its left edge (px).
  *
  * The exit flag is at the FAR END of the zone's playable width, so it scales
- * with the zone's width. A horizontal zone (4000px wide) puts its exit at
- * 4000 − 120 = 3880px from the left edge; a vertical/boss zone (1600px wide)
- * puts it at 1600 − 120 = 1480px (the pre-doubling value).
+ * with the zone's derived grid width.
  */
-export const ZONE_EXIT_PAD = 120;
+export const ZONE_EXIT_PAD = ZONE_EXIT_PAD_UNITS * UNIT_PX_X;
 /** Backward-compat alias for the pre-doubling exit x (vertical/boss zones). */
 export const ZONE_EXIT_X = ZONE_WIDTH_VERTICAL - ZONE_EXIT_PAD;
 /**
@@ -142,27 +147,27 @@ export const ZONE_EXIT_X = ZONE_WIDTH_VERTICAL - ZONE_EXIT_PAD;
  * invisible line to start the battle room (update.js: hero.x >= triggerX).
  * It is a TRIGGER, not a flag — nothing is drawn there.
  */
-export const BOSS_TRIGGER_X = 1080; // ~1.1 screens in: card fires before the scroll end
-/** Checkpoint flag height (matches CHECKPOINT_DEF in object.js). */
-export const ZONE_FLAG_H = 48;
+export const BOSS_TRIGGER_X = BOSS_TRIGGER_UNITS * UNIT_PX_X; // column 15 = 1080px
+/** Checkpoint flag height: exactly one vertical unit. */
+export const ZONE_FLAG_H = UNIT_PX_Y;
 /**
  * World height of a horizontal zone (px). A horizontal area is a single-screen
  * walk, so its world is exactly one view tall (VIEW_H).
  */
-export const ZONE_H_HORIZONTAL = VIEW_H;
+export const ZONE_H_HORIZONTAL = HORIZONTAL_ZONE_HEIGHT_UNITS * UNIT_PX_Y;
 /**
  * World height of a vertical zone (px). A vertical area is an upward climb
  * (structure.md §4) that spans several screens, so its world is taller than a
  * single view. The climb is authored per-zone by later tasks; this fixed height
  * is the structural bound every vertical zone must have.
  */
-export const ZONE_H_VERTICAL = VIEW_H * 5;
+export const ZONE_H_VERTICAL = VERTICAL_ZONE_HEIGHT_UNITS * UNIT_PX_Y;
 /**
  * Y offset (from the top of the zone's bounds) where the top platform sits in
  * a vertical zone. The exit flag rests on this platform. In screen coordinates
  * y=0 is the top, so a small offset means "near the top of the climb".
  */
-export const VERTICAL_TOP_PLATFORM_OFFSET = 56;
+export const VERTICAL_TOP_PLATFORM_OFFSET = VERTICAL_TOP_PLATFORM_OFFSET_UNITS * UNIT_PX_Y;
 
 /**
  * The boss checkpoint is the visual marker that "leads to the boss zone".
@@ -198,9 +203,11 @@ function zonePlatforms(zone) {
     const bottomY = b.y + b.h;
     // Top platform (where the exit flag sits). Offset from the top of the world.
     const topY = VERTICAL_TOP_PLATFORM_OFFSET;
+    const topPlatformW = VERTICAL_TOP_PLATFORM_WIDTH_UNITS * UNIT_PX_X;
+    const topPlatformX = b.x + Math.floor((VERTICAL_ZONE_WIDTH_UNITS - VERTICAL_TOP_PLATFORM_WIDTH_UNITS) / 2) * UNIT_PX_X;
     return [
       { x: b.x, y: bottomY, w: b.w, h: ZONE_FLOOR_H },
-      { x: b.x + ZONE_EXIT_X - 60, y: topY, w: 120, h: Math.min(16, PLATFORM_DRAW_H), oneWay: true },
+      { x: topPlatformX, y: topY, w: topPlatformW, h: PLATFORM_DRAW_H, oneWay: true },
     ];
   }
   // Horizontal / boss: floor at the standard ground level.
@@ -277,8 +284,7 @@ function zoneExitFlag(zone) {
   if (zone.kind === 'boss') return null;
   const isBossCheckpoint = zone.areaIdx === 4;
   // The exit flag sits at the far end of the zone's playable width, so it
-  // scales with the zone's width (horizontal zones are 4000px wide, vertical
-  // and boss zones are 1600px wide).
+  // scales with the zone's unit-derived width.
   const exitX = zone.bounds.x + zone.bounds.w - ZONE_EXIT_PAD;
   return {
     id: isBossCheckpoint ? `${zone.level}-4-exit` : `${zone.level}-${zone.areaIdx}-exit`,
@@ -345,11 +351,9 @@ export function buildLevelZones(levelDef) {
     return zone;
   });
 
-  // The boss zone is a separate, self-contained zone: its own approach + arena.
-  // It is a horizontal-style arena (own bounds, own floor, own boss checkpoint).
-  // The boss arena is NOT a doubled corridor — it is a fixed-size arena, so it
-  // uses the original 1600px width.
-  const bossBounds = { x: 0, y: 0, w: ZONE_WIDTH_VERTICAL, h: ZONE_H_HORIZONTAL };
+  // The boss zone is not macro-authored terrain and keeps its independent
+  // approach/arena width so BOSS_TRIGGER_X remains inside the room.
+  const bossBounds = { x: 0, y: 0, w: ZONE_WIDTH_BOSS, h: ZONE_H_HORIZONTAL };
   const bossZone = {
     idx: 'boss',
     level,
@@ -388,14 +392,11 @@ export function buildLevelZones(levelDef) {
 // Target: roughly TWICE the measured prototype baseline (structure.md §6,
 // generation.md §7). The measured prototype baseline (recorded in the plan's
 // baseline.txt): a single 8000px corridor with checkpoint segments of
-// ~2000px each. So a horizontal area targets ~4000px — about 2x one prototype
-// segment.
+// ~2000px each. The nearest canonical whole-unit target is 56 columns
+// (4032px), approximately 2x one prototype segment.
 //
-//   - HORIZONTAL areas: budget is a WIDTH budget (px → width-units via
-//     UNIT_PX_X from macros.js). ~4000px / UNIT_PX_X(72) ≈ 55 units.
-//   - VERTICAL areas: budget is a HEIGHT budget (structure.md §4 — the zone is
-//     VIEW_H × 5 = 2700px tall). We pass that height in units (y-units are
-//     48px, so the height in units ≈ the height in px / UNIT_PX_Y).
+//   - HORIZONTAL areas: 56 width-units × 72px = 4032px.
+//   - VERTICAL areas: 56 height-units × 48px = 2688px.
 //     Vertical length is tuned separately, NOT blindly doubled (structure.md
 //     §6), so it stays at the one-screen-wide climb height, not 2x.
 //
@@ -403,11 +404,10 @@ export function buildLevelZones(levelDef) {
 // fixed per area (not rolled per game), which keeps the "length doubling"
 // deterministic and testable.
 
-/** Target length of a horizontal area (px): ~2x the ~2000px prototype segment. */
-export const HORIZONTAL_AREA_LENGTH_PX = 4000;
+/** Target length of a horizontal area, derived from its canonical unit budget. */
+export const HORIZONTAL_AREA_LENGTH_PX = ZONE_WIDTH_HORIZONTAL;
 /**
- * Target height of a vertical area (px): the zone is ~3 screens tall
- * (VIEW_H × 5 = 2700). Tuned separately, not doubled (structure.md §6).
+ * Target height of a vertical area: 56 canonical height units (2688px).
  */
 export const VERTICAL_AREA_LENGTH_PX = ZONE_H_VERTICAL;
 
@@ -427,13 +427,10 @@ export const VERTICAL_AREA_LENGTH_PX = ZONE_H_VERTICAL;
  * @returns {number} the area's length budget in width-units
  */
 export function areaLengthBudget(orientation) {
-  const px = orientation === 'vertical'
-    ? VERTICAL_AREA_LENGTH_PX
-    : HORIZONTAL_AREA_LENGTH_PX;
-  // Anisotropic units (R6): horizontal budgets divide by UNIT_PX_X, vertical
-  // (climb height) budgets by UNIT_PX_Y.
-  const unitPx = orientation === 'vertical' ? UNIT_PX_Y : UNIT_PX_X;
-  return Math.max(ENTRY_MIN_BUDGET, Math.round(px / unitPx));
+  const units = orientation === 'vertical'
+    ? VERTICAL_ZONE_HEIGHT_UNITS
+    : HORIZONTAL_ZONE_LENGTH_UNITS;
+  return Math.max(ENTRY_MIN_BUDGET, units);
 }
 
 /**

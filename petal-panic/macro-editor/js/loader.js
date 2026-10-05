@@ -13,11 +13,11 @@ export async function loadGameConstants(){
   const fallback = {
     unitPxX:CONSTS.UNIT_PX_X, unitPxY:CONSTS.UNIT_PX_Y, platformDrawH:CONSTS.PLATFORM_DRAW_H,
     entryClear:3, exitClear:3,
-    hBudgetUnits:56, vBudgetUnits:56, vZoneWidthUnits:22, hZoneHeightUnits:11.25,
+    hBudgetUnits:56, vBudgetUnits:56, vZoneWidthUnits:13, hZoneHeightUnits:11,
+    topClearanceUnits:2, hMaxSurfaceUnits:8,
   };
   try{
     const mod = await import('../../js/world/macros.js');
-    const lvl = await import('../../js/world/level.js');
     return {
       unitPxX: mod.UNIT_PX_X ?? fallback.unitPxX,
       unitPxY: mod.UNIT_PX_Y ?? fallback.unitPxY,
@@ -27,15 +27,14 @@ export async function loadGameConstants(){
       hExitClear: mod.H_EXIT_CLEAR ?? 3,
       vEntryClear: mod.V_ENTRY_CLEAR ?? 0,
       vExitClear: mod.V_EXIT_CLEAR ?? 3,
-      // Area length budget in UNITS (what the composer fills), per orientation.
-      hBudgetUnits: Math.round(lvl.HORIZONTAL_AREA_LENGTH_PX / (mod.UNIT_PX_X || fallback.unitPxX)),
-      vBudgetUnits: Math.round(lvl.VERTICAL_AREA_LENGTH_PX / (mod.UNIT_PX_Y || fallback.unitPxY)),
-      // Zone HEIGHTS in units: horizontal area is one screen tall (VIEW_H);
-      // vertical is the climb budget (already vBudgetUnits). A horizontal level
-      // is NOT "as tall as its terrain" — it's a full-screen-tall world.
-      hZoneHeightUnits: lvl.ZONE_H_HORIZONTAL / (mod.UNIT_PX_Y || fallback.unitPxY),
-      // Vertical zone is one screen wide — the lateral bound for vertical macros.
-      vZoneWidthUnits: Math.floor(lvl.ZONE_WIDTH_VERTICAL / (mod.UNIT_PX_X || fallback.unitPxX)),
+      // Canonical grid dimensions: game + editor consume the same unit-space
+      // constants; pixel dimensions are derived only for rendering.
+      hBudgetUnits: mod.HORIZONTAL_ZONE_LENGTH_UNITS ?? fallback.hBudgetUnits,
+      vBudgetUnits: mod.VERTICAL_ZONE_HEIGHT_UNITS ?? fallback.vBudgetUnits,
+      hZoneHeightUnits: mod.HORIZONTAL_ZONE_HEIGHT_UNITS ?? fallback.hZoneHeightUnits,
+      vZoneWidthUnits: mod.VERTICAL_ZONE_WIDTH_UNITS ?? fallback.vZoneWidthUnits,
+      topClearanceUnits: mod.TOP_CLEARANCE_UNITS ?? fallback.topClearanceUnits,
+      hMaxSurfaceUnits: mod.HORIZONTAL_MAX_SURFACE_UNITS ?? fallback.hMaxSurfaceUnits,
     };
   }catch(e){
     console.warn('[macro-editor] using fallback constants:', e.message);

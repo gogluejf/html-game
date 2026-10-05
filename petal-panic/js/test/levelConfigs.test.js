@@ -281,10 +281,10 @@ test('each level: length budgets reference the level.js zone constants (no re-de
   }
 });
 
-test('each level: horizontal length is ~4000px (2x prototype segment)', () => {
+test('each level: horizontal length is the canonical 56-column budget', () => {
   for (const cfg of LEVEL_CONFIGS) {
-    assert.equal(cfg.lengths.horizontal, 4000,
-      `level ${cfg.index}: horizontal is the documented 4000px target`);
+    assert.equal(cfg.lengths.horizontal, ZONE_WIDTH_HORIZONTAL,
+      `level ${cfg.index}: horizontal length uses the shared unit-derived target`);
   }
 });
 

@@ -246,7 +246,7 @@ export function zoneExtents(macro){
   let ax0, ax1, ay1;
   if (vertical){
     ax0 = 0;
-    ax1 = c.vZoneWidthUnits ?? Math.max(maxX, 22);
+    ax1 = c.vZoneWidthUnits ?? Math.max(maxX, 13);
     ay1 = c.vBudgetUnits ?? Math.max(maxY + ec + xc, 56);
   } else {
     // The box is the FULL AREA length (the level's horizontal budget), NOT the
@@ -286,7 +286,7 @@ export function contentExtents(macro){
   if (vertical){
     // Full one-screen width; height = terrain top + area exit clear band.
     cx0 = 0;
-    cx1 = c.vZoneWidthUnits ?? Math.max(maxX, 22);
+    cx1 = c.vZoneWidthUnits ?? Math.max(maxX, 13);
     cy1 = maxY + xc;
   } else {
     // Fit to the FULL AREA length (same as the zone box), so the whole 56-unit

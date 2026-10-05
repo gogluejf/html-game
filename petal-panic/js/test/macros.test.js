@@ -34,6 +34,9 @@ import {
   ENTRY_CLEAR,
   EXIT_CLEAR,
   MAX_CLEARABLE_GAP,
+  HORIZONTAL_MAX_SURFACE_UNITS,
+  TOP_CLEARANCE_UNITS,
+  VERTICAL_ZONE_WIDTH_UNITS,
 } from '../world/macros.js';
 import { createRng } from '../world/terrain.js';
 import {
@@ -511,16 +514,10 @@ test('progression: all four stages produce completable routes (generation.md §5
 // Length doubling (structure.md §6, generation.md §7)
 // ---------------------------------------------------------------------------
 
-test('length: horizontal area budget is ~2x the prototype segment (structure.md §6)', () => {
-  // The measured prototype baseline was ~2000px per checkpoint segment
-  // (8000px corridor / 4 segments). The target is ~2x that = ~4000px.
-  const PROTOTYPE_SEGMENT_PX = 2000;
-  assert.equal(
-    HORIZONTAL_AREA_LENGTH_PX,
-    2 * PROTOTYPE_SEGMENT_PX,
-    'horizontal area length is exactly 2x the prototype segment',
-  );
-  // In unit space the budget is the px target scaled by UNIT_PX_X (R6: anisotropic).
+test('length: horizontal area budget is 56 whole grid units (~2x prototype)', () => {
+  assert.equal(HORIZONTAL_AREA_LENGTH_PX, 56 * UNIT_PX_X,
+    'horizontal pixel length is derived from the 56-unit budget');
+  // In unit space the budget is canonical; pixels never get rounded back into units.
   assert.equal(
     areaLengthBudget('horizontal'),
     Math.round(HORIZONTAL_AREA_LENGTH_PX / UNIT_PX_X),
@@ -829,6 +826,42 @@ test('validateLayout: passes on a reachable inter-macro join (R2 #2)', () => {
   };
   // Should NOT throw.
   validateLayout(layout);
+});
+
+test('validateLayout: horizontal block/platform surfaces preserve top clearance', () => {
+  const base = {
+    orientation: 'horizontal', stage: 1, entryClear: 0, exitClear: 0,
+    gaps: [], totalWidth: 20, placements: [],
+  };
+  const legalStairs = Array.from({ length: HORIZONTAL_MAX_SURFACE_UNITS }, (_, i) => ({
+    kind: 'block', x: i + 1, y: 0, height: i + 1,
+    aabb: { x: i + 1, y: 0, w: 1, h: i + 1 }, placementId: 0,
+  }));
+  validateLayout({ ...base, units: legalStairs });
+
+  const tallBlock = { kind: 'block', x: HORIZONTAL_MAX_SURFACE_UNITS + 1, y: 0,
+    height: HORIZONTAL_MAX_SURFACE_UNITS + 1,
+    aabb: { x: HORIZONTAL_MAX_SURFACE_UNITS + 1, y: 0, w: 1, h: HORIZONTAL_MAX_SURFACE_UNITS + 1 },
+    placementId: 0 };
+  assert.throws(() => validateLayout({ ...base, units: [...legalStairs, tallBlock] }), /top clearance/);
+
+  const highPlatform = { kind: 'platform', x: HORIZONTAL_MAX_SURFACE_UNITS + 1,
+    y: HORIZONTAL_MAX_SURFACE_UNITS, width: 1,
+    aabb: { x: HORIZONTAL_MAX_SURFACE_UNITS + 1, y: HORIZONTAL_MAX_SURFACE_UNITS, w: 1, h: 1 },
+    placementId: 0 };
+  assert.throws(() => validateLayout({ ...base, units: [...legalStairs, highPlatform] }), /top clearance/);
+  assert.equal(TOP_CLEARANCE_UNITS, 2);
+});
+
+test('vertical macro source data fits the canonical 13-column width', () => {
+  assert.equal(VERTICAL_ZONE_WIDTH_UNITS, 13);
+  for (const macro of Object.values(MACROS).filter((m) => m.orientation === 'vertical')) {
+    for (const u of macro.units) {
+      const end = u.x + (u.kind === 'block' ? 1 : u.width);
+      assert.ok(u.x >= 0 && end <= VERTICAL_ZONE_WIDTH_UNITS,
+        `${macro.id}: ${u.kind} x=${u.x}..${end} fits 0..${VERTICAL_ZONE_WIDTH_UNITS}`);
+    }
+  }
 });
 
 // ---------------------------------------------------------------------------

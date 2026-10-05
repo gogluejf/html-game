@@ -120,6 +120,17 @@ Rendering converts units to pixels using the shared game configuration.
 
 This allows editor zoom to change without changing macro data.
 
+Canonical area dimensions are also owned in unit space by `js/world/macros.js`:
+
+- Horizontal length: **56 units** (`4032px`).
+- Horizontal play height: **10 units above ground**; canvas/world height remains `540px`.
+- Vertical climb height: **56 units** (`2688px`).
+- Vertical width: **13 units** (`floor(960/72)`; 936 authored pixels in the 960px view).
+- Horizontal top clearance: **2 empty units**, so block/platform surfaces may not exceed row **8**.
+
+The game level builder and editor import these constants; neither derives its
+own unit dimensions from unrelated pixel literals.
+
 Editor implication: the grid draws RECTANGULAR cells (72×48), and zoom/pan
 math uses separate x/y scales — or a uniform zoom applied to the rectangular
 cell. Never assume square cells.
@@ -142,6 +153,11 @@ Examples:
 - `(x=2, y=0, height=3)`
 
 Blocks may begin directly on the floor.
+
+For horizontal macros, a block's top surface may not exceed row **8**. This
+preserves the shared **2-unit top clearance** inside the 10-unit play height.
+Therefore a block beginning at row `y` has maximum legal height `8 - y`.
+Vertical macros use the climb-height/exit-clear rules instead.
 
 ### Vertical block clearance
 
@@ -171,6 +187,9 @@ Legal sizes:
 Visually/collision-wise, the platform only occupies the thin surface near the top/end of its logical cell — currently approximately 6 pixels rather than a full 48-pixel solid cell (`PLATFORM_DRAW_H` in `js/world/macros.js`). Collision keeps using the full unit box (oneWay logic) — only the draw is thin.
 
 Platforms may be placed at different heights.
+
+For horizontal macros, a platform's landing face may not exceed row **8**, so
+it preserves the same shared **2-unit top clearance** as a block top.
 
 ### Ground restriction
 

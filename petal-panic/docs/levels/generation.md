@@ -57,13 +57,12 @@ neighboring patterns into a playable route.
 5. Check the complete route, including the joins and population obstacles.
 6. Keep the resulting arrangement for every attempt in this game.
 
-**Composition axis.** Horizontal areas compose along X: the budget is a width
-budget, and macros are placed left to right. Vertical areas compose along Y:
-the budget is a HEIGHT budget (the zone is roughly three screens tall), and
-macros are stacked upward — each macro's entry sits at the current climb
-elevation, and its exit raises the hero's position. The zone's width is fixed
-(one screen wide), so horizontal positioning is constrained; composition
-itself is purely vertical.
+**Composition axis.** Horizontal areas compose along X using a canonical
+**56-unit width** (`56 × 72 = 4032px`). Vertical areas compose along Y using a
+canonical **56-unit height** (`56 × 48 = 2688px`). Vertical macros are stacked
+upward — each macro's entry sits at the current climb elevation, and its exit
+raises the hero's position. Their width is the canonical one-screen grid:
+**13 columns** (`floor(960 / 72)`), shared by the game and Macro Editor.
 
 **Follow conditions.** A macro can declare which macros can precede it
 (`follows`) and which can follow it (`followedBy`). The composer enforces BOTH

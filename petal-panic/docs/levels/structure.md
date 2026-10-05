@@ -71,13 +71,12 @@ The initial supporting platform must allow a safe start; the lethal bottom rule
 must not kill a hero standing normally at the entry.
 
 **Composition.** Vertical areas are composed along the Y axis (height), not
-the X axis (width). The budget is a HEIGHT budget — the zone is roughly three
-screens tall (VIEW_H × 3 ≈ 1620 px). Macros are stacked upward: each macro's
-entry sits at the current climb elevation, and its exit raises the hero's
-position. The zone's width is fixed (one screen wide), so horizontal
-positioning is constrained; composition itself is purely vertical. The
-climb must be sustained: each successive macro continues upward, and the
-final platform reaches the top of the zone (where the exit flag sits).
+the X axis (width). Geometry uses canonical whole-unit bounds shared by the
+game and Macro Editor: **56 height units** (`56 × 48 = 2688px`) and **13 width
+units** (`floor(960 / 72) = 13`, or 936 authored pixels inside the 960px view).
+Macros are stacked upward: each macro's entry sits at the current climb
+elevation, and its exit raises the hero's position. Composition itself is
+purely vertical; x remains constrained to columns `0..13`.
 
 **Coordinate summary (screen coordinates, y=0 is top):**
 
@@ -88,10 +87,38 @@ final platform reaches the top of the zone (where the exit flag sits).
 | Top platform top | `bounds.y + topOffset` (small y, near top) |
 | Exit flag (top) | `bounds.y + topOffset - flagHeight` (smallest y) |
 
+**Shared unit geometry.** Authored level geometry is defined in unit space in
+`js/world/macros.js`; `level.js` derives pixels from it:
+
+- Horizontal area: **56 columns** (`4032px`).
+- Vertical climb: **56 rows** (`2688px`) × **13 columns** (`936px`).
+- Horizontal play height: **10 rows** above ground.
+- Entry and exit inset: **2 columns** (`144px`).
+- Vertical top exit platform: **1 row** below the world top, **2 columns** wide.
+- Boss approach: **22 columns** (`1584px`), card trigger at column **15** (`1080px`).
+
+Viewport dimensions (`960×540`) and sprite/collision-box dimensions remain
+pixel-based because they are render/entity measurements, not authored terrain.
+
 ## 5. Terrain vocabulary
 
 **Blocks are solid landscape. Platforms are one-way landing surfaces.** They
 are not interchangeable, even when their top surfaces share a height.
+
+### Horizontal top clearance
+
+Horizontal areas provide **10 whole play rows above ground**. Every standable
+terrain surface must preserve **2 empty rows below the top of that play space**:
+
+- Maximum block-top row: `8`.
+- Maximum platform-face row: `8`.
+- A block at base row `y` may therefore have at most height `8 - y`.
+- This ceiling rule does not apply to vertical macros; their Y axis is the
+  climb axis and their top exit is governed by vertical exit clearance.
+
+The constants (`HORIZONTAL_PLAY_HEIGHT_UNITS`, `TOP_CLEARANCE_UNITS`, and
+`HORIZONTAL_MAX_SURFACE_UNITS`) and enforcement live in `js/world/macros.js`.
+The game and Macro Editor consume those same constants.
 
 ### Blocks
 
