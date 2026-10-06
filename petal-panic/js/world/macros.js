@@ -1954,8 +1954,8 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
       if (upper.placementId !== undefined && lower.placementId !== undefined
           && upper.placementId !== lower.placementId) continue;
       // Only units whose surface lies at or below the upper unit's cell
-      // floor are "below" it. Higher units are side-by-side
-      // landings (governed by the elevation-step rule), not stacking.
+      // floor are "below" it. Higher units are side-by-side landings
+      // (governed by the elevation-step rule), not stacking.
       if (surfaceLine(lower) > uRow) continue;
 
       const lStart = lower.x;
@@ -1966,10 +1966,13 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
         // Column overlap: count the empty rows between the surfaces.
         const clearance = uRow - surfaceLine(lower);
         if (upper.kind === 'platform') {
-          if (clearance < 1) {
+          // A platform needs ≥ 1 air row above a SOLID surface (block) —
+          // it cannot rest on a block's top face. Platform-on-platform at
+          // 0 gap is a valid staircase (hero jumps up through the lower one).
+          if (lower.kind === 'block' && clearance < 1) {
             throw new Error(
               `validateLayout: platform at x=${upper.x} (face row ${uRow + 1}) ` +
-                `rests on ${lower.kind} at x=${lower.x} (surface row ${surfaceLine(lower)}) ` +
+                `rests on block at x=${lower.x} (surface row ${surfaceLine(lower)}) ` +
                 `— platforms need ≥ 1 empty row below their face`,
             );
           }
