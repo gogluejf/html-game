@@ -440,10 +440,8 @@ function onPointerDown(e){
       // Clicked non-selected item with ctrl not held: clear multi, select this
       app.editor.multiSelect = [];
     }
-    // Seed multiSelect with this item for future Ctrl+Click additions
-    if (app.editor.multiSelect.length === 0) {
-      app.editor.multiSelect = [{ kind: hit.kind, index: hit.index }];
-    }
+    // Regular click: always reset multiSelect to just this item
+    app.editor.multiSelect = [{ kind: hit.kind, index: hit.index }];
     app.editor.selection=hit;
     const original=clone(hit.kind==='unit' ? app.cur.st.units[hit.index] : app.cur.st.placements[hit.index]);
     // A slot subtype tool may change an existing slot's type while still using
