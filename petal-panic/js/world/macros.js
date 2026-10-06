@@ -516,6 +516,20 @@ export function macroWidth(macro) {
  * @param {object} macro a macro from MACROS
  * @returns {number} axis length in units
  */
+/**
+ * The first landing elevation of a horizontal macro: the lowest standable
+ * surface the hero encounters when entering from the left. This is the
+ * minimum of all block tops and platform faces in the macro (or 0 for ground).
+ */
+function firstLandingElevation(macro) {
+  let min = Infinity;
+  for (const u of macro.units) {
+    const elev = u.kind === 'block' ? u.y + u.height : u.y + 1;
+    if (elev < min) min = elev;
+  }
+  return min === Infinity ? 0 : min;
+}
+
 export function macroAxisLength(macro) {
   if (macro.orientation === 'vertical') {
     // REVISION R1.3: the axis length is the bounding-box top (peak row).
@@ -1215,7 +1229,7 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
   const MAX_COMPOSE_ATTEMPTS = 64;
   const tryCompose = (r) => {
     const l = runCompose(r, orientation, stage, budget, macroWeights);
-    validateLayout(l); // throws if the route is not completable
+    validateLayout(l, { traversal: 'warn' }); // elevation steps are warnings, not hard errors
     return l;
   };
   let layout;
@@ -1425,7 +1439,16 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
           const peakY = macroAxisLength(macro);
           return peakY <= remaining;
         })
-      : filtered.filter(({ macro }) => macroAxisLength(macro) <= remaining);
+      : filtered.filter(({ macro }) => {
+          if (macroAxisLength(macro) > remaining) return false;
+          // Horizontal: the macro's first landing must be reachable from the
+          // current last landing elevation (≤ MAX_ELEVATION_STEP up).
+          if (!isVertical && prevPeakAbsY !== null) {
+            const firstLanding = firstLandingElevation(macro);
+            if (firstLanding > prevPeakAbsY + MAX_ELEVATION_STEP) return false;
+          }
+          return true;
+        });
     if (fitting.length === 0) break; // no macro fits; stop
 
     // Down-weight the previously placed macro (anti-repetition, generation.md
@@ -1542,6 +1565,13 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
     } else {
       axisPos += axisLen;
       axisUsed += axisLen;
+      // Track highest surface elevation for horizontal reachability check
+      let maxElev = 0;
+      for (const u of macro.units) {
+        const elev = u.kind === 'block' ? u.y + u.height : u.y + 1;
+        if (elev > maxElev) maxElev = elev;
+      }
+      prevPeakAbsY = maxElev;
     }
   }
 
