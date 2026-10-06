@@ -383,6 +383,10 @@ function isActiveOriginal(kind, index){
   const i=app.editor.interaction;
   if (!i) return false;
   if (kind==='slot'&&i.attachedPlacements?.some(p=>p.index===index)) return true;
+  // Multi-drag/resize: dim all selected units
+  if ((i.mode==='moving-multi'||i.mode==='resizing-multi') && i.multiOriginals) {
+    return i.multiOriginals.some(item => item.kind===kind && item.index===index);
+  }
   return i.targetKind===kind && i.targetIndex===index
     && ['moving-object','resizing-block','resizing-platform','moving-slot','rollback'].includes(i.mode);
 }
