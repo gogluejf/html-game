@@ -2012,12 +2012,12 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
             );
           }
         } else {
-          if (clearance === 1) {
+          if (clearance < 2) {
             throw new Error(
-              `validateLayout: block at x=${upper.x} (base row ${uRow}) floats ` +
-                `exactly 1 row above ${lower.kind} at x=${lower.x} ` +
-                `(surface row ${surfaceLine(lower)}) — a gap must be 0 (stack) ` +
-                `or ≥ 2 rows (clearable)`,
+              `validateLayout: block at x=${upper.x} (base row ${uRow}) has ` +
+                `${clearance} row(s) of clearance above ${lower.kind} at x=${lower.x} ` +
+                `(surface row ${surfaceLine(lower)}) — blocks need ≥ 2 empty rows ` +
+                `or must sit on the ground`,
             );
           }
         }

@@ -94,7 +94,7 @@ export function reasonFromError(error){
   if (/may not sit at row 0|platform row must be integer >= 1/.test(msg)) return 'Platform cannot be placed at row 0';
   if (/platforms need/.test(msg)) return 'Platform requires an empty row below';
   if (/overlap|intersect|buried/.test(msg)) return 'Overlaps another block/platform';
-  if (/floats exactly 1 row/.test(msg)) return 'Requires 2 empty rows of block clearance';
+  if (/blocks need ≥ 2 empty rows/.test(msg)) return 'Blocks need ≥ 2 empty rows above another unit';
   if (/duplicate slot position/.test(msg)) return 'A slot already occupies this cell';
   if (/elevation step/.test(msg)) return 'Creates an unreachable elevation step';
   return msg.replace(/^validateLayout:\s*/, '').split('\n')[0];
