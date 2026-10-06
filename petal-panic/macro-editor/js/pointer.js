@@ -185,6 +185,51 @@ function validateInteraction(interaction){
   interaction.nextMacro=result.macro;
 }
 
+function validateMultiResize(interaction){
+  // Compute resize on the primary (selected) item, then apply same delta to all
+  const primary = interaction.multiOriginals.find(item =>
+    app.editor.selection && item.index === app.editor.selection.index
+  ) || interaction.multiOriginals[0];
+  if (!primary) { interaction.valid = false; interaction.reason = 'No items'; return; }
+
+  const resized = resizedCandidate(primary.original, interaction.handle, interaction.currentCell);
+  const dx = resized.x - primary.original.x;
+  const dy = resized.y - primary.original.y;
+  const dw = (resized.width ?? 1) - (primary.original.width ?? 1);
+  const dh = (resized.height ?? 1) - (primary.original.height ?? 1);
+
+  const next = clone(app.cur.st);
+  for (const item of interaction.multiOriginals) {
+    const newX = item.original.x + dx;
+    const newY = item.original.y + dy;
+    const newW = Math.max(1, (item.original.width ?? 1) + dw);
+    const newH = item.original.kind === 'block' ? Math.max(1, (item.original.height ?? 1) + dh) : undefined;
+    const unit = { ...clone(item.original), x: newX, y: newY, width: newW };
+    if (newH !== undefined) unit.height = newH;
+    next.units[item.index] = unit;
+  }
+  // Move attached placements
+  if (interaction.attachedPlacements?.length) {
+    for (const ap of interaction.attachedPlacements) {
+      next.placements[ap.index] = { ...clone(ap.original), x: ap.original.x + dx, y: ap.original.y + dy };
+    }
+  }
+  try {
+    const schemaErrors = macroSchemaErrors(next, { expectedId: next.id });
+    if (schemaErrors.length) throw new Error(schemaErrors[0]);
+    const { warnings=[] } = validateLayout(previewLayout(next), { traversal: 'warn' });
+    interaction.valid = true;
+    interaction.severity = warnings.length ? 'warning' : 'valid';
+    interaction.reason = '';
+    interaction.nextMacro = next;
+  } catch (err) {
+    interaction.valid = false;
+    interaction.severity = 'error';
+    interaction.reason = reasonFromError(err);
+    interaction.nextMacro = next;
+  }
+}
+
 function validateMultiInteraction(interaction){
   // Build a macro with ALL multi-selected items at their new positions
   const next = clone(app.cur.st);
@@ -299,6 +344,40 @@ function onPointerDown(e){
   if (tool === 'erase'){ eraseAt(hit); return; }
   if (handle){
     beginTransientSelect();
+    // Multi-resize: apply same delta to all selected units of same kind
+    if (app.editor.multiSelect.length > 1) {
+      const selUnit = app.cur.st.units[app.editor.selection.index];
+      const originals = app.editor.multiSelect
+        .filter(s => s.kind === 'unit')
+        .map(s => ({ ...s, original: clone(app.cur.st.units[s.index]) }))
+        .filter(item => item.original.kind === selUnit.kind);
+      const attachedSet = new Map();
+      for (const item of originals) {
+        for (const ap of attachedPlacements(item.original)) {
+          if (!attachedSet.has(ap.index)) attachedSet.set(ap.index, ap);
+        }
+      }
+      const interaction = {
+        mode: 'resizing-multi',
+        targetKind: null,
+        targetIndex: -1,
+        handle,
+        anchorCell: cell,
+        currentCell: cell,
+        original: null,
+        candidate: null,
+        multiOriginals: originals,
+        attachedPlacements: [...attachedSet.values()],
+        valid: true,
+        reason: '',
+      };
+      validateMultiResize(interaction);
+      app.editor.interaction = interaction;
+      cv.setPointerCapture(e.pointerId);
+      updateCursor();
+      draw();
+      return;
+    }
     const original=clone(app.cur.st.units[app.editor.selection.index]);
     const interaction={ mode:original.kind==='block'?'resizing-block':'resizing-platform', targetKind:'unit', targetIndex:app.editor.selection.index, handle, anchorCell:cell, currentCell:cell, original, candidate:clone(original), attachedPlacements:attachedPlacements(original), valid:true, reason:'' };
     validateInteraction(interaction); app.editor.interaction=interaction;
@@ -415,6 +494,9 @@ function onPointerMove(e){
   if (i.mode === 'moving-multi') {
     validateMultiInteraction(i); draw(); return;
   }
+  if (i.mode === 'resizing-multi') {
+    validateMultiResize(i); draw(); return;
+  }
   if (i.mode.startsWith('creating-')) i.candidate=candidateForCreate(i.mode,i.anchorCell,cell);
   else if (i.mode.startsWith('resizing-')) i.candidate=resizedCandidate(i.original,i.handle,cell);
   else i.candidate=movedCandidate(i.original,i.anchorCell,cell,i.candidate);
@@ -427,7 +509,7 @@ function finishPointer(e, cancelled=false){
   const i=app.editor.interaction;
   if (!i || i.mode==='rollback') return;
   if (!cancelled && i.valid){
-    if (i.mode === 'moving-multi') {
+    if (i.mode === 'moving-multi' || i.mode === 'resizing-multi') {
       // Multi-drag commit: apply all moves from nextMacro
       pushUndo();
       app.cur.st.units = i.nextMacro.units;
