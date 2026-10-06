@@ -202,6 +202,36 @@ function drawEditorOverlay(macro){
   const sameTarget=(target)=>target&&active&&active.targetKind===target.kind&&active.targetIndex===target.index;
   if (!sameTarget(app.editor.hover)) drawTarget(app.editor.hover,macro,false);
   if (!sameTarget(app.editor.selection)) drawTarget(app.editor.selection,macro,true);
+  // Multi-select highlights
+  for (const sel of app.editor.multiSelect) {
+    if (sel.kind !== 'unit') continue;
+    const item = macro.units?.[sel.index];
+    if (!item) continue;
+    ctx.save();
+    ctx.strokeStyle='#ff9f43';ctx.lineWidth=2;
+    ctx.shadowColor='#ff9f43';ctx.shadowBlur=6;
+    const r=descriptorScreenRect(item,macro);
+    ctx.strokeRect(r.left,r.top,r.width,r.height);
+    ctx.restore();
+  }
+  // Multi-drag ghosts
+  if (active?.mode === 'moving-multi' && active.multiOriginals) {
+    const dx = active.currentCell.x - active.anchorCell.x;
+    const dy = active.currentCell.y - active.anchorCell.y;
+    const color = active.valid ? '#5aff8a' : '#ff4545';
+    for (const item of active.multiOriginals) {
+      if (item.kind !== 'unit') continue;
+      const ghost = { ...item.original, x: item.original.x + dx, y: item.original.y + dy };
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = active.valid ? 'rgba(90,255,138,.3)' : 'rgba(255,69,69,.3)';
+      ctx.strokeStyle = color; ctx.lineWidth = 2;
+      const r = descriptorScreenRect(ghost, macro);
+      ctx.fillRect(r.left, r.top, r.width, r.height);
+      ctx.strokeRect(r.left, r.top, r.width, r.height);
+      ctx.restore();
+    }
+  }
   drawCandidate(app.editor.preview,macro);
   drawCandidate(app.editor.interaction,macro);
 }

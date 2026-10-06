@@ -43,6 +43,7 @@ const editor = {
   transientTool:null,
   hover:null,
   selection:null,
+  multiSelect:[],
   interaction:null,
   preview:null,
   pan:null,

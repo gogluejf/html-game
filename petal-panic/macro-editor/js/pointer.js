@@ -6,7 +6,9 @@ import { app } from './state.js';
 import { cv, c2s, evPos } from './viewport.js';
 import { draw, zoneExtents } from './draw.js';
 import { markChanged } from './save.js';
-import { validateMacroCandidate, validateDeletion } from './validation.js';
+import { validateMacroCandidate, validateDeletion, previewLayout, reasonFromError } from './validation.js';
+import { macroSchemaErrors } from '../../js/world/macroSchema.js';
+import { validateLayout } from '../../js/world/macros.js';
 import { showToast } from './toast.js';
 import { pushUndo } from './undo.js';
 import { syncToolButtons } from './tools.js';
@@ -183,6 +185,36 @@ function validateInteraction(interaction){
   interaction.nextMacro=result.macro;
 }
 
+function validateMultiInteraction(interaction){
+  // Build a macro with ALL multi-selected items at their new positions
+  const next = clone(app.cur.st);
+  for (const item of interaction.multiOriginals) {
+    const dx = interaction.currentCell.x - interaction.anchorCell.x;
+    const dy = interaction.currentCell.y - interaction.anchorCell.y;
+    const newX = item.original.x + dx;
+    const newY = item.original.y + dy;
+    if (item.kind === 'unit') {
+      next.units[item.index] = { ...clone(item.original), x: newX, y: newY };
+    } else {
+      next.placements[item.index] = { ...clone(item.original), x: newX, y: newY };
+    }
+  }
+  try {
+    const schemaErrors = macroSchemaErrors(next, { expectedId: next.id });
+    if (schemaErrors.length) throw new Error(schemaErrors[0]);
+    const { warnings=[] } = validateLayout(previewLayout(next), { traversal: 'warn' });
+    interaction.valid = true;
+    interaction.severity = warnings.length ? 'warning' : 'valid';
+    interaction.reason = '';
+    interaction.nextMacro = next;
+  } catch (err) {
+    interaction.valid = false;
+    interaction.severity = 'error';
+    interaction.reason = reasonFromError(err);
+    interaction.nextMacro = next;
+  }
+}
+
 function startRollback(interaction){
   interaction.mode='rollback';
   interaction.rollbackStarted=performance.now();
@@ -266,6 +298,45 @@ function onPointerDown(e){
     validateInteraction(interaction); app.editor.interaction=interaction;
   } else if (hit){
     beginTransientSelect();
+    // Ctrl+Click: toggle multi-select
+    if (e.ctrlKey || e.metaKey) {
+      const key = hit.kind + ':' + hit.index;
+      const idx = app.editor.multiSelect.findIndex(s => s.kind === hit.kind && s.index === hit.index);
+      if (idx >= 0) app.editor.multiSelect.splice(idx, 1);
+      else app.editor.multiSelect.push({ kind: hit.kind, index: hit.index });
+      app.editor.selection = hit;
+      draw(); return;
+    }
+    // If multi-select is active and we click a selected item, drag all
+    if (app.editor.multiSelect.length > 1) {
+      const isSelected = app.editor.multiSelect.some(s => s.kind === hit.kind && s.index === hit.index);
+      if (isSelected) {
+        const originals = app.editor.multiSelect.map(s => ({
+          ...s,
+          original: clone(s.kind === 'unit' ? app.cur.st.units[s.index] : app.cur.st.placements[s.index]),
+        }));
+        const interaction = {
+          mode: 'moving-multi',
+          targetKind: null,
+          targetIndex: -1,
+          anchorCell: cell,
+          currentCell: cell,
+          original: null,
+          candidate: null,
+          multiOriginals: originals,
+          valid: true,
+          reason: '',
+        };
+        validateMultiInteraction(interaction);
+        app.editor.interaction = interaction;
+        cv.setPointerCapture(e.pointerId);
+        updateCursor();
+        draw();
+        return;
+      }
+      // Clicked non-selected item with ctrl not held: clear multi, select this
+      app.editor.multiSelect = [];
+    }
     app.editor.selection=hit;
     const original=clone(hit.kind==='unit' ? app.cur.st.units[hit.index] : app.cur.st.placements[hit.index]);
     // A slot subtype tool may change an existing slot's type while still using
@@ -277,6 +348,7 @@ function onPointerDown(e){
     validateInteraction(interaction);app.editor.interaction=interaction;
   } else if (!cellInZone(cell)){
     app.editor.selection=null;
+    app.editor.multiSelect=[];
     app.editor.pan={x:e.clientX,y:e.clientY,panX:app.panX,panY:app.panY};
   } else if (tool === 'block' || tool === 'platform'){
     const mode=tool==='block'?'creating-block':'creating-platform';
@@ -289,6 +361,7 @@ function onPointerDown(e){
     validateInteraction(interaction); app.editor.interaction=interaction;
   } else {
     app.editor.selection=null;
+    app.editor.multiSelect=[];
     app.editor.pan={x:e.clientX,y:e.clientY,panX:app.panX,panY:app.panY};
   }
   cv.setPointerCapture(e.pointerId);
@@ -317,6 +390,9 @@ function onPointerMove(e){
   }
   if (i.mode === 'rollback') return;
   i.currentCell=cell;
+  if (i.mode === 'moving-multi') {
+    validateMultiInteraction(i); draw(); return;
+  }
   if (i.mode.startsWith('creating-')) i.candidate=candidateForCreate(i.mode,i.anchorCell,cell);
   else if (i.mode.startsWith('resizing-')) i.candidate=resizedCandidate(i.original,i.handle,cell);
   else i.candidate=movedCandidate(i.original,i.anchorCell,cell,i.candidate);
@@ -328,7 +404,20 @@ function finishPointer(e, cancelled=false){
   app.editor.pan=null;
   const i=app.editor.interaction;
   if (!i || i.mode==='rollback') return;
-  if (!cancelled && i.valid){ commit(i); app.editor.interaction=null; endTransientSelect(); updateCursor(); draw(); }
+  if (!cancelled && i.valid){
+    if (i.mode === 'moving-multi') {
+      // Multi-drag commit: apply all moves from nextMacro
+      pushUndo();
+      app.cur.st.units = i.nextMacro.units;
+      app.cur.st.placements = i.nextMacro.placements;
+      markChanged();
+      app.editor.interaction=null;
+      endTransientSelect();
+      updateCursor(); draw();
+    } else {
+      commit(i); app.editor.interaction=null; endTransientSelect(); updateCursor(); draw();
+    }
+  }
   else {
     if (i.reason) showToast(i.reason,'error');
     startRollback(i);
