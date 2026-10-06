@@ -7,7 +7,7 @@
 // offset-box model end-to-end (the debug overlay shows the box get shorter).
 
 import { Entity } from '../core/entity.js';
-import { GRAVITY, MAX_FALL_SPEED, LAYER, DOUBLE_JUMP_FACTOR } from '../consts.js';
+import { GRAVITY, MAX_FALL_SPEED, LAYER, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL } from '../consts.js';
 import { aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } from '../objects/projectile.js';
 import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from './heroDefs.js';
 
@@ -219,10 +219,6 @@ export class Hero extends Entity {
     this.supermovePhase = null;      // 'burst' | 'decel' | null (not dashing)
     this.supermoveTimer = 0;         // seconds remaining in the CURRENT phase
     this._supermoveElapsed = 0;      // total seconds since trigger (never resets mid-dash)
-    this.SUPERMOVE_DUR = 0.6;        // total dash duration
-    this.SUPERMOVE_BURST_FRAC = 0.6; // fraction of the dash that is the committed burst
-    this.SUPERMOVE_SPEED = 900;      // px/s at dash start (decays linearly to 0)
-    this.SUPERMOVE_RESIDUAL = 80;    // px/s small forward nudge kept when the dash ends
     // §30: supermove hitbox geometry is DATA in the hero's attacks table
     // (heroDefs.js); bh 'body' resolves to the full body height here so the
     // box tracks each hero's own h. Same shape as meleeHitbox for consumers.
@@ -1191,8 +1187,8 @@ export class Hero extends Entity {
       // gravity and jump-cancel eligibility — it must NOT create a velocity
       // discontinuity at the handoff (supermoveTimer resets between phases).
       this._supermoveElapsed += dt;
-      const f = Math.min(1, this._supermoveElapsed / this.SUPERMOVE_DUR); // 0→1 across the whole dash
-      this.vx = dir * (this.SUPERMOVE_SPEED + (this.SUPERMOVE_RESIDUAL - this.SUPERMOVE_SPEED) * f);
+      const f = Math.min(1, this._supermoveElapsed / SUPERMOVE_DUR); // 0→1 across the whole dash
+      this.vx = dir * (SUPERMOVE_SPEED + (SUPERMOVE_RESIDUAL - SUPERMOVE_SPEED) * f);
       if (this.supermovePhase === 'burst') {
         // Committed: no gravity (handled by the gate in update()).
         this.vy = 0;
@@ -1218,9 +1214,9 @@ export class Hero extends Entity {
     this.supermoveMeter = 0;
     this.supermoveActive = true;
     // Split the total duration into the committed burst and the recovery tail.
-    this.burstDur = this.SUPERMOVE_DUR * this.SUPERMOVE_BURST_FRAC;
-    this.decelDur = this.SUPERMOVE_DUR - this.burstDur;
-    this.decelFrac = this.decelDur / this.SUPERMOVE_DUR; // speed scale at handoff
+    this.burstDur = SUPERMOVE_DUR * SUPERMOVE_BURST_FRAC;
+    this.decelDur = SUPERMOVE_DUR - this.burstDur;
+    this.decelFrac = this.decelDur / SUPERMOVE_DUR; // speed scale at handoff
     this.supermovePhase = 'burst';
     this.supermoveTimer = this.burstDur;
     this._supermoveElapsed = 0; // total elapsed since trigger (drives the velocity ramp)
@@ -1231,7 +1227,7 @@ export class Hero extends Entity {
     // restore it when a jump-cancel ends the dash early.
     this._preSupermoveIntangible = this.timers.get('intangible');
     this.intangible = true;
-    this.timers.set('intangible', Math.max(this._preSupermoveIntangible, this.SUPERMOVE_DUR));
+    this.timers.set('intangible', Math.max(this._preSupermoveIntangible, SUPERMOVE_DUR));
     // Swap to the supermove animation.
     if (this.anims.supermove) {
       this._prevAnim = this.anim;
@@ -1250,7 +1246,7 @@ export class Hero extends Entity {
     this.supermoveActive = false;
     this.supermovePhase = null;
     this.supermoveTimer = 0;
-    this.vx = this.facing * this.SUPERMOVE_RESIDUAL;
+    this.vx = this.facing * SUPERMOVE_RESIDUAL;
     // The supermove-granted immunity ends with the dash. Restore whatever
     // intangibility existed BEFORE the dash (i-frames/powerup, or none) so a
     // jump-cancel never leaves the hero invulnerable past the visible dash.
@@ -1267,7 +1263,7 @@ export class Hero extends Entity {
     // (e.g. a powerup pickup), that excess belongs to the other source and must
     // survive. We only remove the supermove-granted portion.
     const current = this.timers.get('intangible');
-    const otherExcess = Math.max(0, current - this.SUPERMOVE_DUR);
+    const otherExcess = Math.max(0, current - SUPERMOVE_DUR);
     const restored = Math.max(preRemaining, otherExcess);
     if (restored > 0) {
       this.timers.set('intangible', restored);

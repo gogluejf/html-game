@@ -27,7 +27,7 @@
 // Pixel scaling is a later task (3.3 / 7.2).
 
 import {createRng, makeBlock} from './terrain.js';
-import { GRAVITY, DOUBLE_JUMP_FACTOR } from '../consts.js';
+import { GRAVITY, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL } from '../consts.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { BARREL_DEF } from '../objects/object.js';
 import { TUNING_BARREL, TUNING_MACRO } from '../tuning.js';
@@ -191,13 +191,6 @@ export function minHeroDoubleJumpHorizontalReachPx(risePx) {
   }
   return min;
 }
-
-// Supermove constants (mirrors hero.js — kept here so validation is
-// self-contained and adjusts automatically if tuning changes).
-const SUPERMOVE_DUR = 0.6;
-const SUPERMOVE_BURST_FRAC = 0.6;
-const SUPERMOVE_SPEED = 900;
-const SUPERMOVE_RESIDUAL = 80;
 
 /**
  * Maximum horizontal clearance (px) the weakest hero can achieve when

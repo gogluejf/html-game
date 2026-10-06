@@ -97,7 +97,7 @@ test('macro vocabulary: lowRepeated is a width-5 height-1 run plus a tall wall',
   // The original single low block was kept, and the former floating jump
   // target was reworked into a platform over a tall wall block once the
   // "no low floating blocks" clearance rule landed.
-  assert.deepEqual(blocks.map(({width,height}) => [width,height]), [[5,1],[3,7]]);
+  assert.deepEqual(blocks.map(({width,height}) => [width,height]), [[5,1],[3,8]]);
   assert.equal(lr.orientation, 'horizontal');
   assert.equal(lr.difficulty, 1);
 });

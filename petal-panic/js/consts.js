@@ -45,3 +45,10 @@ export const LAYER = {
   HAZARD:     0b1000000000,   // spikes, shockwaves, explosion AoE
   PLATFORM:   0b10000000000,  // one-way landing faces (thin; pass-through from below/sides)
 };
+
+
+// Supermove tuning (shared by hero runtime + validation)
+export const SUPERMOVE_DUR = 0.6;
+export const SUPERMOVE_BURST_FRAC = 0.6;
+export const SUPERMOVE_SPEED = 920;
+export const SUPERMOVE_RESIDUAL = 80;
