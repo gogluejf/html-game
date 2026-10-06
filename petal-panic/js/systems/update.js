@@ -84,9 +84,13 @@ export const AREA_BOSS = 5;
  * 2 → zone[1], 3 → zone[2], 4 → zone[3], AREA_BOSS (5) → zone[4].
  */
 export function getActiveZone(hero) {
-  const idx = hero.currentArea >= 1 && hero.currentArea <= 4
-    ? hero.currentArea - 1
-    : levelZones.length - 1; // AREA_BOSS (or any out-of-range value) → boss zone
+  // Guard: a missing/invalid currentArea (e.g. a freshly-built hero that lost
+  // its progress identity) must NOT fall through to the boss zone — that would
+  // make the boss-card trigger fire in an ordinary area. Default to area 1.
+  const area = Number.isInteger(hero.currentArea) ? hero.currentArea : 1;
+  const idx = area >= 1 && area <= 4
+    ? area - 1
+    : levelZones.length - 1; // AREA_BOSS (5) → boss zone
   return levelZones[idx];
 }
 
@@ -205,6 +209,11 @@ export let boss = makeElephant(-9999, ZONE_GROUND_Y); // parked off-world until 
 // boss's damage gate. It is started by enterBossRoom() (the trigger line at
 // BOSS_TRIGGER_X) and re-started after a death via the same path.
 const bossZoneDef = levelZones[4];
+// Edge-trigger latch for the boss-card trigger line (see update()): remembers
+// whether the hero was left of BOSS_TRIGGER_X on the previous frame so the
+// battle room starts only on a genuine left→right crossing, not whenever the
+// hero happens to stand past the line while the machine is dormant.
+let _prevXLeftOfBossTrigger = true;
 export const bossZone = makeBossZone(bossZoneDef, boss, {
   onSweepDone: () => {
     // The card (full-screen sweep) has disappeared — settle into the battle
@@ -720,13 +729,24 @@ export function update(dt) {
   // 1-B (machine dormant), crossing the invisible line at BOSS_TRIGGER_X
   // starts the battle room — the card plays, the flag stays (it is purely
   // visual), the camera freezes on the fixed-width room, and the boss slides
-  // in from the right. Edge-triggered by the position check: once the room is
-  // up the machine is active and this branch never runs again.
-  if (!bossZone.active && !hero.dying && getActiveZone(hero)?.kind === 'boss'
-      && hero.x >= BOSS_TRIGGER_X) {
-    console.log(`[bossZone] trigger line crossed @${Math.round(hero.x)} — entering battle room`);
-    enterBossRoom();
-    return;
+  // in from the right. This is an EDGE trigger: it fires only when the hero
+  // moves FROM left of the line TO at/past it this step. A bare `hero.x >=
+  // BOSS_TRIGGER_X` would fire instantly whenever the hero happens to stand at
+  // x >= 1080 while the machine is dormant (e.g. the frame after a debug
+  // hero-swap that preserves position), so we latch the previous-frame side.
+  const bzInRunPhase = !bossZone.active && !hero.dying && getActiveZone(hero)?.kind === 'boss';
+  if (bzInRunPhase) {
+    const nowLeft = hero.x < BOSS_TRIGGER_X;
+    if (_prevXLeftOfBossTrigger && !nowLeft) {
+      console.log(`[bossZone] trigger line crossed @${Math.round(hero.x)} — entering battle room`);
+      enterBossRoom();
+      return;
+    }
+    _prevXLeftOfBossTrigger = nowLeft;
+  } else {
+    // Outside the boss run phase: assume the hero starts left of the line so
+    // the first entry into 1-B arms the edge correctly.
+    _prevXLeftOfBossTrigger = true;
   }
 
   // 1. input → intents (movement/jump/crouch logic lives in Hero.update).

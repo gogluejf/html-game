@@ -316,6 +316,20 @@ function swapHero() {
     _levelStartTotal: hero._levelStartTotal,
     _lifeBucketArmed: hero._lifeBucketArmed,
     intangible: hero.intangible, rapidTimer: hero.rapidTimer,
+    // CRITICAL: progress identity. A fresh Hero() does NOT set these, so
+    // without them the swapped hero has currentArea === undefined and
+    // getActiveZone() falls through to the boss zone — which instantly fires
+    // the boss-card trigger whenever x >= BOSS_TRIGGER_X. Preserve them so the
+    // swap keeps the hero in the area they were actually playing.
+    currentLevel: hero.currentLevel,
+    currentArea: hero.currentArea,
+    zones: hero.zones,
+    levelConfig: hero.levelConfig,
+    // Death state: a fresh Hero() hard-sets dying=false. If the old hero was
+    // mid-death, preserving it keeps the death/respawn pipeline intact instead
+    // of silently resurrecting the hero.
+    dying: hero.dying,
+    deathTimer: hero.deathTimer,
   };
 
   const nh = new Hero(def, saved.x, saved.y);
