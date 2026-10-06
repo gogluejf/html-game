@@ -141,8 +141,9 @@ function initKeyboard(){
     }
     if ((e.ctrlKey||e.metaKey) && e.code==='KeyY'){ e.preventDefault(); doRedo(); return; }
     if ((e.ctrlKey||e.metaKey) && e.code==='KeyS'){ e.preventDefault(); saveToDisk(); return; }
-    if ((e.ctrlKey||e.metaKey) && (e.code==='KeyC'||e.code==='KeyX')){ e.preventDefault(); copySelection(); return; }
-    if ((e.ctrlKey||e.metaKey) && e.code==='KeyV'){ e.preventDefault(); pasteAtCursor(); return; }
+    if ((e.ctrlKey||e.metaKey) && (e.code==='KeyC'||e.key==='c')){ e.preventDefault(); copySelection(); return; }
+    if ((e.ctrlKey||e.metaKey) && (e.code==='KeyX'||e.key==='x')){ e.preventDefault(); copySelection(); return; }
+    if ((e.ctrlKey||e.metaKey) && (e.code==='KeyV'||e.key==='v')){ e.preventDefault(); pasteAtCursor(); return; }
     if ((e.ctrlKey||e.metaKey) && (e.code==='Digit0'||e.code==='Numpad0')){ e.preventDefault(); if (app.cur) selectMacro(app.cur.id); return; }
     if (tag==='input'||tag==='textarea') return;
     if (!e.ctrlKey && !e.metaKey && !e.altKey){
