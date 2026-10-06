@@ -231,6 +231,21 @@ function drawEditorOverlay(macro){
       ctx.strokeRect(r.left, r.top, r.width, r.height);
       ctx.restore();
     }
+    // Attached placement ghosts
+    if (active.attachedPlacements?.length) {
+      for (const ap of active.attachedPlacements) {
+        const gx = ap.original.x + dx;
+        const gy = ap.original.y + dy;
+        const ux=_consts.unitPxX, uy=_consts.unitPxY, off=bodyOffset(macro);
+        const [sx,sy]=W((gx+off+.5)*ux,(gy+.5)*uy);
+        const slotColor=SLOT_COLORS[ap.original.type]||'#fff';
+        ctx.save();
+        ctx.globalAlpha=0.6;
+        ctx.fillStyle=slotColor;ctx.strokeStyle=color;ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(sx,sy,Math.max(6,8*app.zoom),0,Math.PI*2);ctx.fill();ctx.stroke();
+        ctx.restore();
+      }
+    }
   }
   drawCandidate(app.editor.preview,macro);
   drawCandidate(app.editor.interaction,macro);

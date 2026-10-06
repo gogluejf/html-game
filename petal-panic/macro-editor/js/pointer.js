@@ -188,15 +188,21 @@ function validateInteraction(interaction){
 function validateMultiInteraction(interaction){
   // Build a macro with ALL multi-selected items at their new positions
   const next = clone(app.cur.st);
+  const dx = interaction.currentCell.x - interaction.anchorCell.x;
+  const dy = interaction.currentCell.y - interaction.anchorCell.y;
   for (const item of interaction.multiOriginals) {
-    const dx = interaction.currentCell.x - interaction.anchorCell.x;
-    const dy = interaction.currentCell.y - interaction.anchorCell.y;
     const newX = item.original.x + dx;
     const newY = item.original.y + dy;
     if (item.kind === 'unit') {
       next.units[item.index] = { ...clone(item.original), x: newX, y: newY };
     } else {
       next.placements[item.index] = { ...clone(item.original), x: newX, y: newY };
+    }
+  }
+  // Move attached placements (slots on top of moved units)
+  if (interaction.attachedPlacements?.length) {
+    for (const ap of interaction.attachedPlacements) {
+      next.placements[ap.index] = { ...clone(ap.original), x: ap.original.x + dx, y: ap.original.y + dy };
     }
   }
   try {
@@ -318,6 +324,14 @@ function onPointerDown(e){
           ...s,
           original: clone(s.kind === 'unit' ? app.cur.st.units[s.index] : app.cur.st.placements[s.index]),
         }));
+        // Collect attached placements for all moved units
+        const attachedSet = new Map();
+        for (const item of originals) {
+          if (item.kind !== 'unit') continue;
+          for (const ap of attachedPlacements(item.original)) {
+            if (!attachedSet.has(ap.index)) attachedSet.set(ap.index, ap);
+          }
+        }
         const interaction = {
           mode: 'moving-multi',
           targetKind: null,
@@ -327,6 +341,7 @@ function onPointerDown(e){
           original: null,
           candidate: null,
           multiOriginals: originals,
+          attachedPlacements: [...attachedSet.values()],
           valid: true,
           reason: '',
         };
