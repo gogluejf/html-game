@@ -2249,7 +2249,7 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
       .sort((a, b) => (platformY(a) - platformY(b)) || (a.placementId - b.placementId));
 
     // Each platform occupies one row; collapse adjacent rows of the same
-    // placement into a span (mirrors the horizontal column-collapse).
+    // unit into a span. Track x-center for horizontal gap calculation.
     const spans = [];
     for (const p of platforms) {
       const cellY = (p.y ?? p.aabb?.y ?? 0);
@@ -2265,12 +2265,44 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
           pos0: cellY,
           pos1: cellY + 1,
           unitIndex: p._editorIndex,
+          // x-extent for horizontal gap calc
+          x0: p.x,
+          x1: p.x + p.width,
         });
       }
     }
 
-    const unreachable = computeUnreachable(spans, UNIT_PX_Y);
-    for (const i of unreachable) {
+    // Vertical reachability: rise is along y, but the hero also needs to
+    // cover horizontal (x) distance between platforms. Use the same
+    // super-assist envelope with the x-gap as the "gap" dimension.
+    const reachable = new Set();
+    for (let i = 0; i < spans.length; i++) {
+      if (minHeroSuperAssistReachPx(spans[i].elevation * UNIT_PX_Y) >= 0) {
+        reachable.add(i);
+      }
+    }
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const fromIdx of [...reachable]) {
+        const from = spans[fromIdx];
+        for (let toIdx = 0; toIdx < spans.length; toIdx++) {
+          if (reachable.has(toIdx)) continue;
+          const to = spans[toIdx];
+          // Horizontal (x) gap between the two platforms' extents:
+          const xGapUnits = Math.max(0, to.x0 - from.x1, from.x0 - to.x1);
+          const xGapPx = xGapUnits * UNIT_PX_X;
+          const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
+          const reachPx = minHeroSuperAssistReachPx(risePx);
+          if (reachPx >= 0 && xGapPx <= reachPx) {
+            reachable.add(toIdx);
+            changed = true;
+          }
+        }
+      }
+    }
+    for (let i = 0; i < spans.length; i++) {
+      if (reachable.has(i)) continue;
       const target = spans[i];
       warnTraversal(
         `validateLayout: ${target.label} is outside the weakest hero's double-jump reachability graph`,
