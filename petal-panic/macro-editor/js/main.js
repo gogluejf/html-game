@@ -53,10 +53,10 @@ function initView(){
 const clone = v => JSON.parse(JSON.stringify(v));
 let clipboard = null; // { units: [...], placements: [...] }
 
-function copySelection(){
+function copySelection(cut=false){
   if (!app.cur) return;
   const items = app.editor.multiSelect.length > 0 ? app.editor.multiSelect : (app.editor.selection ? [{kind:app.editor.selection.kind,index:app.editor.selection.index}] : []);
-  if (items.length === 0) { showToast('Nothing selected to copy','error'); return; }
+  if (items.length === 0) { showToast('Nothing selected','error'); return; }
   const units = [];
   const placements = [];
   for (const item of items) {
@@ -64,7 +64,21 @@ function copySelection(){
     else placements.push(clone(app.cur.st.placements[item.index]));
   }
   clipboard = { units, placements };
-  showToast(`Copied ${units.length} unit(s), ${placements.length} slot(s)`,'success');
+  if (cut) {
+    // Remove from macro (highest index first to avoid shifting)
+    const sortedUnits = [...items].filter(i=>i.kind==='unit').sort((a,b)=>b.index-a.index);
+    const sortedPlats = [...items].filter(i=>i.kind==='slot').sort((a,b)=>b.index-a.index);
+    pushUndo();
+    for (const i of sortedUnits) app.cur.st.units.splice(i.index, 1);
+    for (const i of sortedPlats) app.cur.st.placements.splice(i.index, 1);
+    app.editor.selection = null;
+    app.editor.multiSelect = [];
+    markChanged();
+    draw();
+    showToast(`Cut ${units.length} unit(s), ${placements.length} slot(s)`,'success');
+  } else {
+    showToast(`Copied ${units.length} unit(s), ${placements.length} slot(s)`,'success');
+  }
 }
 
 function pasteAtCursor(){
@@ -142,8 +156,8 @@ function initKeyboard(){
     }
     if ((e.ctrlKey||e.metaKey) && e.code==='KeyY'){ e.preventDefault(); doRedo(); return; }
     if ((e.ctrlKey||e.metaKey) && e.code==='KeyS'){ e.preventDefault(); saveToDisk(); return; }
-    if ((e.ctrlKey||e.metaKey) && (e.code==='KeyC'||e.key==='c')){ e.preventDefault(); copySelection(); return; }
-    if ((e.ctrlKey||e.metaKey) && (e.code==='KeyX'||e.key==='x')){ e.preventDefault(); copySelection(); return; }
+    if ((e.ctrlKey||e.metaKey) && (e.code==='KeyC'||e.key==='c')){ e.preventDefault(); copySelection(false); return; }
+    if ((e.ctrlKey||e.metaKey) && (e.code==='KeyX'||e.key==='x')){ e.preventDefault(); copySelection(true); return; }
     if ((e.ctrlKey||e.metaKey) && (e.code==='KeyV'||e.key==='v')){ e.preventDefault(); pasteAtCursor(); return; }
     if ((e.ctrlKey||e.metaKey) && (e.code==='Digit0'||e.code==='Numpad0')){ e.preventDefault(); if (app.cur) selectMacro(app.cur.id); return; }
     if (tag==='input'||tag==='textarea') return;
