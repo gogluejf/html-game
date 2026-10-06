@@ -168,14 +168,38 @@ when it clears both the surface beneath it *and* the ceiling above it.
 - Support the normal jump-through and Down + Jump drop-through rules from
   [hero mechanics](../architecture/hero-mechanics.md).
 
-Successive top-surface elevations are spaced so double jumping can reach the
-next tier: ground to tier 1, then tier 1 to tier 2, then tier 2 to tier 3.
-Spacing must work for both heroes with a usable margin, not only a perfect jump.
+Successive top-surface elevations are spaced so the hero's movement budget can
+reach the next tier (see Traversal reachability above). Spacing must work for
+both heroes with a usable margin, not only a perfect jump. The maximum
+clearable horizontal gap is derived from hero physics — run speed, jump
+impulse, and the supermove profile — never a hand-tuned constant.
 
-The maximum clearable horizontal gap is derived from hero physics: the minimum
-horizontal distance a hero can cover during a full-speed double-jump airtime
-(speed × total airtime). This is computed from the hero's run speed and jump
-impulse (both heroes, take the minimum), not a hand-tuned constant.
+### Traversal reachability — the movement budget
+
+All reachability checks share one conceptual model: **how far can the weakest
+hero travel between two landings?** The answer is not a fixed distance; it is
+derived from the hero's actual abilities, so any tuning change (jump height,
+run speed, supermove profile) shifts the answer automatically. Nothing here is
+hand-tuned.
+
+The hero's full traversal budget, best spent, is:
+
+1. **Run up to full speed** on the launch surface.
+2. **Double jump**: ground jump, second jump at the first apex. This sets the
+   maximum climb height — roughly *two* rows for the weakest hero, nearly
+   three for the strongest. A rise above the double-jump apex is impossible,
+   even with everything else.
+3. **Supermove at the second-jump apex**: a horizontal burst with no gravity,
+   then a decaying tail where gravity resumes. This is what turns a jump into
+   a long-range crossing.
+4. **Post-super fall**: after the super ends the hero keeps running at full
+   speed while falling back down to the landing surface. Falling *down* buys
+   extra horizontal distance.
+
+One combined check answers both questions at once: *given this rise (or drop)
+and this gap, can the weakest hero make it?* Higher destinations leave less
+airtime for horizontal travel, so rise and gap are never evaluated separately.
+Both heroes are always evaluated and the weaker result governs.
 
 ### Traversal reachability warnings
 
@@ -186,11 +210,11 @@ jumping. A landing is reachable when either:
 - its height can be reached directly from ground, or
 - it can be reached from another reachable landing.
 
-Each graph edge uses the real shared physics values: hero run speed, jump
-impulse, gravity, double-jump factor, `UNIT_PX_X`, and `UNIT_PX_Y`. Horizontal
-distance is measured edge-to-edge. Vertical rise and horizontal gap are
-calculated together: a higher destination leaves less airborne time for
-horizontal travel. Both heroes are evaluated and the weaker result governs.
+Every graph edge is tested with the single shared movement-budget check above
+(same algorithm for horizontal and vertical areas). Horizontal distance is
+measured edge-to-edge along the traversal axis. In vertical areas the same
+check applies to the sideways distance between platforms while climbing.
+
 Same-height surfaces never become unreachable merely because they are near or
 far from another surface.
 
@@ -201,12 +225,10 @@ and reports a warning; it does not reject or alter the geometry. Structural
 errors such as overlap, bounds, clearance, and unsupported slots remain
 blocking errors.
 
-Vertical composer route validation remains strict and separate from these
-horizontal editor warnings.
-
-Vertical areas repeat reachable climbing patterns upward; three tiers must not
-accidentally become a three-platform cap on the entire ascent. Exact vertical
-pattern dimensions remain tuning work.
+Vertical areas repeat reachable climbing patterns upward; the climb must stay
+within the movement budget at every step, and three tiers must not accidentally
+become a three-platform cap on the entire ascent. Exact vertical pattern
+dimensions remain tuning work.
 
 ## 6. Art and length
 

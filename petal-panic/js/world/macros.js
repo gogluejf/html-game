@@ -277,11 +277,24 @@ export const MAX_CLEARABLE_GAP = Math.max(1, Math.floor(minHeroSuperAssistReachP
 export const ZONE_WIDTH_UNITS = VERTICAL_ZONE_WIDTH_UNITS;
 
 /**
- * Maximum elevation step (tiers) between successive landings. A hero can
- * reach at most 1 tier higher per jump (double jump reaches tier 1 from
- * ground, tier 2 from tier 1, etc.). A step of more than 1 tier is impossible.
+ * Maximum elevation step (whole rows) between successive landings, derived
+ * from real jump physics: the weakest hero's full double-jump apex, in rows.
+ * A double jump clears ~2 rows for the weakest hero and ~3 for the strongest;
+ * this floor is what composition uses to keep every inter-macro join within
+ * the movement budget without spending a supermove on the climb itself.
  */
-export const MAX_ELEVATION_STEP = 1;
+const _doubleJumpApexPx = (() => {
+  let min = Infinity;
+  for (const hero of Object.values(HEROES)) {
+    const { jump } = hero.stats;
+    const firstApex = (jump * jump) / (2 * GRAVITY);
+    const secondJump = DOUBLE_JUMP_FACTOR * jump;
+    const totalApex = firstApex + (secondJump * secondJump) / (2 * GRAVITY);
+    min = Math.min(min, totalApex);
+  }
+  return min;
+})();
+export const MAX_ELEVATION_STEP = Math.max(1, Math.floor(_doubleJumpApexPx / UNIT_PX_Y));
 
 /**
  * Elevation gain (tiers) a macro contributes to a vertical climb.
