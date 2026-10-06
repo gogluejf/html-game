@@ -585,10 +585,11 @@ export function contentExtents(macro){
   if (!isFinite(minX)){ minX = 0; maxX = 0; }   // empty macro
   let cx0, cx1, cy1;
   if (vertical){
-    // Full one-screen width; height = terrain top + area exit clear band.
+    // Fit the FULL vertical zone (one screen wide × full climb height) so the
+    // entire grid is visible, same as horizontal fits the full 56-unit length.
     cx0 = 0;
     cx1 = c.vZoneWidthUnits ?? Math.max(maxX, 13);
-    cy1 = maxY + xc;
+    cy1 = c.vBudgetUnits ?? 56;
   } else {
     // Fit to the FULL AREA length (same as the zone box), so the whole 56-unit
     // level — including both area entry/exit clear bands at its ends — stays
