@@ -28,7 +28,7 @@
       "slot": "tier2-right",
       "x": 7,
       "type": "enemy",
-      "y": 3
+      "y": 2
     },
     {
       "slot": "tier1-rest",
@@ -40,7 +40,7 @@
       "slot": "tier2-peak",
       "x": 9,
       "type": "powerup",
-      "y": 3
+      "y": 4
     }
   ],
   "variations": [],

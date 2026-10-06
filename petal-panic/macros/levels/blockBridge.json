@@ -48,19 +48,19 @@
       "slot": "on-wall",
       "x": 3,
       "type": "enemy",
-      "y": 5
+      "y": 4
     },
     {
       "slot": "on-bridge",
       "x": 4,
       "type": "powerup",
-      "y": 5
+      "y": 6
     },
     {
       "slot": "on-bridge2",
       "x": 5,
       "type": "barrel",
-      "y": 5
+      "y": 6
     }
   ],
   "variations": [],
