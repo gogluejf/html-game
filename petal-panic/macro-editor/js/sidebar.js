@@ -34,7 +34,7 @@ export function buildSidebar(macros){
       row.addEventListener('click', () => selectMacro(id));
       // Rename: double-click the label, or right-click the row.
       row.querySelector('.ent-label').addEventListener('dblclick', (e) => { e.stopPropagation(); if (app.cur?.id === id) renameCurrentMacro(); else { selectMacro(id); setTimeout(renameCurrentMacro, 0); } });
-      row.addEventListener('contextmenu', (e) => { e.preventDefault(); if (app.cur?.id !== id) selectMacro(id); renameCurrentMacro(); });
+      row.addEventListener('contextmenu', (e) => { e.preventDefault(); if (app.cur?.id !== id) selectMacro(id); showCtxMenu(e.clientX, e.clientY, id); });
       // Delete button (small ✕ on the right).
       const del = document.createElement('button');
       del.className = 'ent-del';
@@ -124,4 +124,39 @@ export function syncPanel(){
   $('p_cellh').textContent = app.consts.unitPxY + ' px';
   $('p_plath').textContent = app.consts.platformDrawH + ' px';
   $('finfo').textContent = `${app.cur.id} · ${st.orientation} · diff ${st.difficulty}`;
+}
+
+// ---------- context menu (right-click sidebar row) ----------
+let _ctxEl = null;
+
+function showCtxMenu(x, y, macroId){
+  hideCtxMenu();
+  _ctxEl = document.createElement('div');
+  _ctxEl.className = 'ctx-menu';
+  _ctxEl.innerHTML = `
+    <button data-action="rename">Rename</button>
+    <button data-action="delete" class="danger">Delete</button>`;
+  document.body.appendChild(_ctxEl);
+  // Position: clamp to viewport
+  const rect = _ctxEl.getBoundingClientRect();
+  _ctxEl.style.left = Math.min(x, window.innerWidth - rect.width - 8) + 'px';
+  _ctxEl.style.top = Math.min(y, window.innerHeight - rect.height - 8) + 'px';
+  _ctxEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    hideCtxMenu();
+    if (btn.dataset.action === 'rename') renameCurrentMacro();
+    else if (btn.dataset.action === 'delete') deleteCurrentMacro();
+  });
+  // Dismiss on outside click or Escape
+  setTimeout(() => {
+    document.addEventListener('click', hideCtxMenu, { once: true });
+    document.addEventListener('keydown', escHandler, { once: true });
+  }, 0);
+}
+
+function escHandler(e){ if (e.key === 'Escape') hideCtxMenu(); }
+
+function hideCtxMenu(){
+  if (_ctxEl){ _ctxEl.remove(); _ctxEl = null; }
 }

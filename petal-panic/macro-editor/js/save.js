@@ -224,15 +224,24 @@ function blankMacro(id){
 }
 
 /**
- * Create a NEW macro in draft mode. It appears immediately in the sidebar and
- * lives in localStorage until explicitly saved to disk. The id is `newMacro`,
- * or `newMacro_2`, `newMacro_3`, ... if that already exists.
+ * Create a NEW macro in draft mode. Prompts for a name (defaults to
+ * newMacro, newMacro_2, ...). It appears immediately in the sidebar and
+ * lives in localStorage until explicitly saved to disk.
  */
 export async function createNewMacro(){
-  const id = nextFreeId('newMacro');
+  const defaultId = nextFreeId('newMacro');
+  const value = await promptDialog('New Macro', 'Name your macro. Use letters, numbers, underscores.', defaultId, { okLabel:'Create' });
+  if (value === null) return;                 // cancelled
+  const id = value;
+  if (!ID_RE.test(id)){
+    confirmDialog('Invalid id — use only letters, numbers, and underscores.', null, { title:'Invalid Name' });
+    return;
+  }
+  if (allKnownIds().has(id)){
+    confirmDialog(`A macro named "${id}" already exists. Pick a different name.`, null, { title:'Name Conflict' });
+    return;
+  }
   const data = blankMacro(id);
-  // Draft-only: store locally, register in memory, rebuild the sidebar so the
-  // new row shows up, then open it. No file is written until Save.
   storeDraft(id, data);
   app.macros[id] = JSON.parse(JSON.stringify(data));
   app.drafts.set(id, app.macros[id]);

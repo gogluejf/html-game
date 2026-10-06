@@ -224,3 +224,10 @@
   .helpFoot{padding:14px 28px;background:#0d1320;color:#91a3c1;font-size:12px;text-align:center;border-top:1px solid #28344b;}
   #helpDialog :focus-visible,#helpBtn:focus-visible{outline:2px solid #3ef0ff;outline-offset:3px;}
   @media(max-width:650px){.helpGrid{grid-template-columns:1fr;padding:0 16px 16px;}.helpHead{padding:20px 16px;}.helpHead h2{font-size:22px;}}
+
+  /* Context menu (right-click sidebar) */
+  .ctx-menu{position:fixed;z-index:9999;min-width:120px;padding:4px 0;background:#101625;border:1px solid #354361;border-radius:10px;box-shadow:0 8px 30px #000a;font-family:'Courier New',monospace;}
+  .ctx-menu button{display:block;width:100%;padding:8px 16px;font-family:inherit;font-size:13px;color:var(--txt,#e4eaf8);background:none;border:none;cursor:pointer;text-align:left;border-radius:6px;margin:2px 6px;}
+  .ctx-menu button:hover{background:rgba(255,255,255,.08);}
+  .ctx-menu button.danger{color:var(--org,#ff9d2e);}
+  .ctx-menu button.danger:hover{background:rgba(255,157,46,.12);}

@@ -46,7 +46,9 @@ export async function loadGameConstants(){
 }
 
 /**
- * Fetch every macro JSON in the directory. Returns a map id -> macro object.
+ * Fetch every macro JSON in the directory, then merge in any localStorage
+ * drafts (draft-only macros that were never saved to disk). Returns a map
+ * id -> macro object.
  */
 export async function loadMacros(){
   const res = await fetch(MACRO_DIR);
@@ -66,5 +68,26 @@ export async function loadMacros(){
 
   const macros = {};
   for (const [id, macro] of entries) macros[id] = macro;
+
+  // Merge localStorage drafts: any draft whose id has no disk file is a
+  // draft-only macro. If the id DOES have a disk file, the draft takes
+  // precedence (unsaved edits override the saved version).
+  const LS_PREFIX = 'macro-editor-draft-v4-';
+  try{
+    for (let i = 0; i < localStorage.length; i++){
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith(LS_PREFIX)) continue;
+      const draftId = key.slice(LS_PREFIX.length);
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      try{
+        const draft = JSON.parse(raw);
+        if (draft && draft.id){
+          macros[draftId] = draft;
+        }
+      }catch(_){ /* corrupt draft, skip */ }
+    }
+  }catch(e){ /* localStorage unavailable */ }
+
   return macros;
 }
