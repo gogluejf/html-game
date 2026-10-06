@@ -208,8 +208,8 @@ function drawEditorOverlay(macro){
     const item = macro.units?.[sel.index];
     if (!item) continue;
     ctx.save();
-    ctx.strokeStyle='#ff9f43';ctx.lineWidth=2;
-    ctx.shadowColor='#ff9f43';ctx.shadowBlur=6;
+    ctx.strokeStyle='#ffffff';ctx.lineWidth=2;
+    ctx.shadowColor='#ffffff';ctx.shadowBlur=6;
     const r=descriptorScreenRect(item,macro);
     ctx.strokeRect(r.left,r.top,r.width,r.height);
     ctx.restore();
