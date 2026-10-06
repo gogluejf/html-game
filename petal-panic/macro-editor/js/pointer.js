@@ -344,13 +344,11 @@ function onPointerDown(e){
   if (tool === 'erase'){ eraseAt(hit); return; }
   if (handle){
     beginTransientSelect();
-    // Multi-resize: apply same delta to all selected units of same kind
+    // Multi-resize: apply same delta to all selected units
     if (app.editor.multiSelect.length > 1) {
-      const selUnit = app.cur.st.units[app.editor.selection.index];
       const originals = app.editor.multiSelect
         .filter(s => s.kind === 'unit')
-        .map(s => ({ ...s, original: clone(app.cur.st.units[s.index]) }))
-        .filter(item => item.original.kind === selUnit.kind);
+        .map(s => ({ ...s, original: clone(app.cur.st.units[s.index]) }));
       const attachedSet = new Map();
       for (const item of originals) {
         for (const ap of attachedPlacements(item.original)) {
