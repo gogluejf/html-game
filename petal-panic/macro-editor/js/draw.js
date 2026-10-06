@@ -385,10 +385,10 @@ function drawGrid(){
 
   // ---------- axis labels (row/col numbers in the margin) ----------
   // Draw along the zone box edges, not the viewport edges.
-  const c = _consts;
-  const vertical = app.cur?.st?.orientation === 'vertical';
-  const zoneW = vertical ? (c.vZoneWidthUnits ?? 13) : (c.hBudgetUnits ?? 56);
-  const zoneH = vertical ? (c.vBudgetUnits ?? 56) : (c.hPlayHeightUnits ?? 10);
+  const lc = _consts;
+  const lVertical = app.cur?.st?.orientation === 'vertical';
+  const zoneW = lVertical ? (lc.vZoneWidthUnits ?? 13) : (lc.hBudgetUnits ?? 56);
+  const zoneH = lVertical ? (lc.vBudgetUnits ?? 56) : (lc.hPlayHeightUnits ?? 10);
   ctx.font = `${Math.max(9, Math.round(11 * app.zoom))}px Courier New`;
   ctx.fillStyle = 'rgba(120,140,170,.7)';
   ctx.textAlign = 'center';
