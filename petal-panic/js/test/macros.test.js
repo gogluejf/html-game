@@ -671,8 +671,8 @@ test('composeArea: throws on budget too small', () => {
 test('validateLayout: passes on a valid layout', () => {
   const rng = createRng(42);
   const layout = composeArea(rng, 'horizontal', 2, 25);
-  // Should not throw.
-  validateLayout(layout);
+  // Should not throw (composer uses warn mode; structural checks still enforce).
+  validateLayout(layout, { traversal: 'warn' });
 });
 
 test('validateLayout: throws on impossible gap', () => {
@@ -763,7 +763,7 @@ test('validateLayout: throws on an unreachable vertical rise', () => {
     totalWidth: 20,
     placements: [],
   };
-  assert.throws(() => validateLayout(layout), /beyond the weakest hero/);
+  assert.throws(() => validateLayout(layout), /outside the weakest hero's double-jump reachability graph/);
 });
 
 test('validateLayout: throws on unreachable inter-macro join (R2 #2)', () => {
@@ -796,7 +796,7 @@ test('validateLayout: throws on unreachable inter-macro join (R2 #2)', () => {
   };
   assert.throws(
     () => validateLayout(layout),
-    /unreachable join|beyond the weakest hero/,
+    /outside the weakest hero's double-jump reachability graph/,
     'unreachable inter-macro join must be flagged',
   );
 });

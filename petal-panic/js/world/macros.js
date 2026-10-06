@@ -1752,14 +1752,16 @@ function placeMacro(macro, axisPos, placedUnits, placedGaps, placements, isVerti
  *   1. No impossible gaps (gap width ≤ MAX_CLEARABLE_GAP)
  *   2. No trapped starts (entry zone is clear)
  *   3. No buried landings (platforms not under blocks)
- *   4. Elevation steps ≤ MAX_ELEVATION_STEP across the FULL route:
- *      ground → first unit, unit → next unit, last unit → exit. Not just
- *      platform → platform (R2 #4).
+ *   4. Reachability: every landing surface must be in the BFS reachability
+ *      graph seeded from ground, using the weakest hero's double-jump
+ *      rise+gap envelope. Unified for horizontal and vertical.
  *   5. Start/exit never require a random powerup (entry/exit zones clear)
  *   6. Horizontal standable surfaces preserve TOP_CLEARANCE_UNITS of headroom
  *
  * @param {object} layout the layout from composeArea
- * @throws {Error} if validation fails
+ * @param {object} [opts]
+ * @param {'error'|'warn'} [opts.traversal='error'] throw or collect on unreachable
+ * @throws {Error} if validation fails (structural errors always throw)
  */
 export function validateLayout(layout, { traversal = 'error' } = {}) {
   const traversalWarnings = [];
@@ -2067,50 +2069,63 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
   }
 
   // 5. Elevation steps (R2 #4): check the FULL route, not just platforms.
-  //
-  // HORIZONTAL: the route is a sequence of landings along x:
-  //   ground (tier 0) → first unit → next unit → … → last unit → exit (tier 0)
-  // Each unit's landing elevation is:
-  //   - block: its height (the hero stands on top of the block)
-  //   - platform: its tier
-  // Successive landings must differ by at most MAX_ELEVATION_STEP tiers.
-  // This catches block→platform, platform→block, block→block, and
-  // ground→first / last→exit transitions — not just platform→platform.
-  //
-  // VERTICAL: the route climbs along y. Each macro is stacked at a higher
-  // elevation; within a macro, successive platforms differ by at most
-  // MAX_ELEVATION_STEP tiers. Between macros, the entry surface of the next
-  // macro sits at a higher y than the peak of the previous, so the
-  // transition is a climb (not a step-down). We check:
-  //   - within each macro: successive platforms differ by ≤ 1 tier
-  //   - between macros: the next macro's first platform tier must be
-  //     reachable from the previous macro's peak (the climb continues)
-  // Each unit's landing elevation is where the hero STANDS on it — the TOP of
-  // the cell it occupies (the same line the pixel render draws):
-  //   - block: row + height (a ground block → its height)
-  //   - platform: tier + 1 (the face sits at the ceiling of the occupied row;
-  //     P@row 1 faces one full cell above a B(h1)@0 top)
+    // Landing elevation = where the hero STANDS on a unit (top of its cell):
+  //   - block: row + height
+  //   - platform: tier + 1 (face sits at ceiling of occupied row)
   const landingElevation = (u) => (u.kind === 'block' ? (u.y ?? 0) + u.height : (u.tier ?? u.y ?? 0) + 1);
 
+  // ------------------------------------------------------------------
+  // Unified reachability graph — single source of truth for both H and V.
+  //
+  // Takes a list of "spans" (contiguous landing surfaces) sorted along the
+  // traversal axis. Seeds ground-reachable spans (rise-only check), then
+  // BFS-propagates using the full rise+gap double-jump envelope.
+  // Returns the set of unreachable span indices.
+  //
+  // @param {Array<{label:string, elevation:number, pos0:number, pos1:number, unitIndex:number}>} spans
+  //   pos0/pos1 are the start/end along the traversal axis (in units).
+  //   For horizontal: x-coordinates. For vertical: y-coordinates.
+  // @param {number} axisUnitPx pixel size of one unit along the traversal axis
+  // @returns {Set<number>} indices of spans NOT reachable
+  // ------------------------------------------------------------------
+  const computeUnreachable = (spans, axisUnitPx) => {
+    const reachable = new Set();
+    // Seed: a span is ground-reachable if its rise from 0 is within the
+    // jump envelope. Ground is continuous, so no gap constraint applies.
+    for (let i = 0; i < spans.length; i++) {
+      if (minHeroDoubleJumpHorizontalReachPx(spans[i].elevation * UNIT_PX_Y) >= 0) {
+        reachable.add(i);
+      }
+    }
+    // BFS: propagate reachability through the rise+gap envelope.
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const fromIdx of [...reachable]) {
+        const from = spans[fromIdx];
+        for (let toIdx = 0; toIdx < spans.length; toIdx++) {
+          if (reachable.has(toIdx)) continue;
+          const to = spans[toIdx];
+          const gapUnits = Math.max(0, to.pos0 - from.pos1, from.pos0 - to.pos1);
+          const gapPx = gapUnits * axisUnitPx;
+          const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
+          const reachPx = minHeroDoubleJumpHorizontalReachPx(risePx);
+          if (reachPx >= 0 && gapPx <= reachPx) {
+            reachable.add(toIdx);
+            changed = true;
+          }
+        }
+      }
+    }
+    const unreachable = new Set();
+    for (let i = 0; i < spans.length; i++) {
+      if (!reachable.has(i)) unreachable.add(i);
+    }
+    return unreachable;
+  };
+
   if (!isVertical) {
-    // Horizontal: full route in x order.
-    //
-    // The route is: ground (tier 0) → first unit → next unit → … → last unit
-    // → exit (tier 0). Each unit's landing elevation is:
-    //   - block: its height (the hero stands on top of the block)
-    //   - platform: its tier
-    //
-    // Only UPWARD steps are constrained: a hero can reach at most
-    // MAX_ELEVATION_STEP tiers higher per jump. DOWNWARD steps are always
-    // possible (falling), so they are not validated. This matches the
-    // physical reality: you can always fall, but you can't jump up more
-    // than one tier.
-    // The route is the sequence of DISTINCT landing columns along x. At each
-    // column the hero stands on the HIGHEST surface there (that is what they
-    // actually reach); lower surfaces in the same column are under their feet
-    // and are not separate landings. This is what makes stacked set pieces
-    // (a platform over a block wall) legal: the column's landing elevation is
-    // the platform's face, reached via whatever step-up exists nearby.
+    // Horizontal: build landing spans in x order.
     const route = units
       .slice()
       .sort((a, b) => (a.x !== b.x ? a.x - b.x : (a.y ?? 0) - (b.y ?? 0)));
@@ -2118,218 +2133,71 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
     const byCol = new Map();
     for (const u of route) {
       const elev = landingElevation(u);
-      // A wide block/platform supplies a landing at every covered column.
-      // This preserves the exact route semantics of adjacent width-1 units
-      // after they are merged into one rectangle.
       for (let x = u.x; x < u.x + u.width; x++) {
         if (!byCol.has(x) || elev > byCol.get(x).elevation) {
-          byCol.set(x, { label: `${u.kind} at x=${x}`, elevation: elev, x, unitIndex:u._editorIndex });
+          byCol.set(x, { label: `${u.kind} at x=${x}`, elevation: elev, x, unitIndex: u._editorIndex });
         }
       }
     }
-    if (traversal !== 'warn') {
-      // Preserve the established game/composer contract. Editor warning mode
-      // below uses the richer physics graph without changing generation.
-      const routeLandings = [
-        {label:'ground',elevation:0,x:0},
-        ...[...byCol.values()].sort((a,b)=>a.x-b.x),
-        {label:'exit',elevation:0,x:totalWidth},
-      ];
-      for (let i=1;i<routeLandings.length;i++) {
-        const prev=routeLandings[i-1],curr=routeLandings[i];
-        if (curr.x-prev.x>MAX_CLEARABLE_GAP+1) continue;
-        const step=curr.elevation-prev.elevation;
-        if (step>MAX_ELEVATION_STEP) {
-          warnTraversal(
-            `validateLayout: elevation step of ${step} tiers UP between ${prev.label} `+
-              `(elevation ${prev.elevation}) and ${curr.label} (elevation ${curr.elevation}) `+
-              `exceeds max upward step ${MAX_ELEVATION_STEP}`,
-            [prev.unitIndex,curr.unitIndex],
-          );
-        }
-      }
-    } else {
-    const landings = [...byCol.values()].sort((a, b) => a.x - b.x);
+
     // Collapse adjacent columns owned by the same surface into landing spans.
-    // Reach is measured edge-to-edge, not from arbitrary descriptor starts.
+    const landings = [...byCol.values()].sort((a, b) => a.x - b.x);
     const spans = [];
     for (const landing of landings) {
       const last = spans[spans.length - 1];
       if (last && last.unitIndex === landing.unitIndex && last.elevation === landing.elevation
-          && last.x1 === landing.x) {
-        last.x1 = landing.x + 1;
+          && last.pos1 === landing.x) {
+        last.pos1 = landing.x + 1;
       } else {
-        spans.push({ ...landing, x0:landing.x, x1:landing.x + 1 });
+        spans.push({ ...landing, pos0: landing.x, pos1: landing.x + 1 });
       }
     }
 
-    // Reachability graph. Ground is continuous, so every landing can be
-    // approached at its nearest edge with zero horizontal gap; only its rise
-    // from ground matters. Reachable elevated surfaces then unlock further
-    // landings using the full rise+distance double-jump envelope.
-    const reachable = new Set();
-    for (let i = 0; i < spans.length; i++) {
-      if (minHeroDoubleJumpHorizontalReachPx(spans[i].elevation * UNIT_PX_Y) >= 0) reachable.add(i);
-    }
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const fromIndex of [...reachable]) {
-        const from = spans[fromIndex];
-        for (let toIndex = 0; toIndex < spans.length; toIndex++) {
-          if (reachable.has(toIndex)) continue;
-          const to = spans[toIndex];
-          const gapUnits = Math.max(0, to.x0 - from.x1, from.x0 - to.x1);
-          const gapPx = gapUnits * UNIT_PX_X;
-          const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
-          const reachPx = minHeroDoubleJumpHorizontalReachPx(risePx);
-          if (reachPx >= 0 && gapPx <= reachPx) {
-            reachable.add(toIndex);
-            changed = true;
-          }
-        }
-      }
-    }
-    for (let i = 0; i < spans.length; i++) {
-      if (reachable.has(i)) continue;
+    const unreachable = computeUnreachable(spans, UNIT_PX_X);
+    for (const i of unreachable) {
       const target = spans[i];
       warnTraversal(
         `validateLayout: ${target.label} is outside the weakest hero's double-jump reachability graph`,
         [target.unitIndex],
       );
     }
-    }
   } else {
-    // Vertical: the route climbs along y. The hero starts on GROUND at the
-    // bottom of the zone (absolute elevation 0) and finishes at the EXIT
-    // flag at the top (absolute elevation = totalHeight). Like the horizontal
-    // case, we validate the FULL route — not just platform→platform within a
-    // macro:
-    //   ground (elev 0)
-    //     → first macro's first platform     (upward step must be reachable)
-    //     → … successive landings …
-    //     → last macro's last platform
-    //     → exit (elev totalHeight)          (upward step must be reachable)
-    //
-    // Each macro is stacked at climb elevation `axisPos` (the macro's start
-    // y). A platform inside that macro with LOCAL tier T sits at absolute
-    // elevation `axisPos + T`. The composer places the macros in `layout.macros`
-    // order, accumulating each macro's axis length, so we can recover each
-    // platform's absolute elevation from its `placementId` (the macro's
-    // sequence index + 1).
-    //
-    // Only UPWARD steps are constrained: the hero can reach at most
-    // MAX_ELEVATION_STEP tiers higher per jump. Downward steps are always
-    // possible (falling), so they are not validated.
-    //
-    // Since all vertical units share the same x, we sort by y (climb order);
-    // ties are broken by placementId so the authoring order within a macro
-    // is preserved.
-    // A vertical platform's absolute climb elevation is the TOP of its cell:
-    // its y (cell floor) + 1 — the face line where the hero stands.
+    // Vertical: build landing spans in y (climb) order.
+    // A vertical platform's standing surface is the TOP of its cell: y + 1.
     const platformY = (p) => ((p.y ?? p.aabb?.y ?? 0) + 1);
 
     const platforms = units
       .filter((u) => u.kind === 'platform')
       .sort((a, b) => (platformY(a) - platformY(b)) || (a.placementId - b.placementId));
 
-    // The exit flag sits at the top of the climb. The composer records the
-    // total climb height as `totalHeight`; for synthetic layouts (no macros)
-    // fall back to the highest platform's y.
-    const exitElevation = layout.totalHeight
-      ?? (platforms.length > 0 ? Math.max(...platforms.map(platformY)) : 0);
-
-    // In a vertical area, the hero climbs from one macro to the next. The
-    // transition between macros is a JUMP (the hero jumps from the previous
-    // macro's peak to the next macro's first platform), not a walk. So we
-    // MUST check that the next macro's first platform is reachable from the
-    // previous macro's peak (≤ MAX_ELEVATION_STEP tiers up).
-    //
-    // We check:
-    //   - within each macro: successive platforms differ by ≤ 1 tier
-    //   - between macros: the next macro's first platform must be within
-    //     MAX_ELEVATION_STEP tiers UP of the previous macro's peak
-    //   - ground → first macro's first platform (upward step must be reachable)
-    //
-    // (We do NOT check last platform → exit, because the exit is at the top
-    // of the zone and is reached by climbing, not by jumping.)
-    // Reachability is judged by the REAL double-jump physics (same model as the
-    // horizontal path), not a flat "1 tier" cap. A rise of `risePx` between two
-    // standing surfaces is reachable when the weakest hero's double jump covers
-    // it. In a vertical climb the platforms are stacked nearly directly above
-    // one another, so the horizontal gap is ~0 and the question reduces to: can
-    // the hero rise that far? minHeroDoubleJumpHorizontalReachPx(risePx) returns
-    // the horizontal distance coverable at that rise (>= 0 iff the rise itself
-    // is within the jump envelope). We only flag the DESTINATION platform (the
-    // one that cannot be reached) — never the source you jump from — so raising
-    // one platform does not smear amber onto the one beneath it.
-    const riseReachable = (riseTiers) =>
-      minHeroDoubleJumpHorizontalReachPx(riseTiers * UNIT_PX_Y) >= 0;
-
-    for (let i = 1; i < platforms.length; i++) {
-      const prev = platforms[i - 1];
-      const curr = platforms[i];
-      if (prev.placementId === curr.placementId) {
-        // Within the same macro: the hero climbs successive landings. Flag only
-        // the upper (destination) platform if the rise exceeds the jump envelope.
-        const step = platformY(curr) - platformY(prev);
-        if (step > 0 && !riseReachable(step)) {
-          warnTraversal(
-            `validateLayout: platform at y=${platformY(curr)} is ${step} tiers above ` +
-              `the landing at y=${platformY(prev)} — beyond the weakest hero's ` +
-              `double-jump reach`,
-            [curr._editorIndex],
-          );
-        }
+    // Each platform occupies one row; collapse adjacent rows of the same
+    // placement into a span (mirrors the horizontal column-collapse).
+    const spans = [];
+    for (const p of platforms) {
+      const cellY = (p.y ?? p.aabb?.y ?? 0);
+      const y = cellY + 1;
+      const last = spans[spans.length - 1];
+      if (last && last.unitIndex === p._editorIndex && last.elevation === y
+          && last.pos1 === cellY) {
+        last.pos1 = cellY + 1;
       } else {
-        // Between macros: the next macro's first platform must be reachable from
-        // the previous macro's peak (the highest platform in that macro).
-        const prevMacroPeakY = Math.max(
-          ...platforms
-            .filter((p) => p.placementId === prev.placementId)
-            .map(platformY),
-        );
-        const interMacroStep = platformY(curr) - prevMacroPeakY;
-        if (interMacroStep > 0 && !riseReachable(interMacroStep)) {
-          warnTraversal(
-            `validateLayout: platform at y=${platformY(curr)} is ${interMacroStep} tiers ` +
-              `above macro ${prev.placementId}'s peak (y=${prevMacroPeakY}) — beyond ` +
-              `the weakest hero's double-jump reach (unreachable join)`,
-            [curr._editorIndex],
-          );
-        }
+        spans.push({
+          label: `platform at y=${y}`,
+          elevation: y,
+          pos0: cellY,
+          pos1: cellY + 1,
+          unitIndex: p._editorIndex,
+        });
       }
     }
 
-    // Ground → first platform. The hero starts on the ground (elevation 0) and
-    // must reach the first landing. Measured from the face (standing surface).
-    if (platforms.length > 0) {
-      const first = platforms[0];
-      const step = platformY(first); // rise from ground (elev 0) to the face
-      if (step > 0 && !riseReachable(step)) {
-        warnTraversal(
-          `validateLayout: first platform at y=${platformY(first)} is ${step} tiers ` +
-            `above the ground — beyond the weakest hero's double-jump reach`,
-          [first._editorIndex],
-        );
-      }
-    }
-
-    // Last platform → exit flag. The exit sits at the top of the zone
-    // (y = totalHeight). The hero must be able to jump from the highest
-    // platform to it. Flag only the last platform (the source) since the exit
-    // flag is not an editable unit.
-    if (platforms.length > 0 && layout.totalHeight !== undefined) {
-      const lastPlatformY = platformY(platforms[platforms.length - 1]);
-      const exitStep = layout.totalHeight - lastPlatformY;
-      if (exitStep > 0 && !riseReachable(exitStep)) {
-        warnTraversal(
-          `validateLayout: exit flag (y=${layout.totalHeight}) is ${exitStep} tiers above ` +
-            `the last platform (y=${lastPlatformY}) — beyond the weakest hero's ` +
-            `double-jump reach (exit unreachable)`,
-          [platforms[platforms.length - 1]._editorIndex],
-        );
-      }
+    const unreachable = computeUnreachable(spans, UNIT_PX_Y);
+    for (const i of unreachable) {
+      const target = spans[i];
+      warnTraversal(
+        `validateLayout: ${target.label} is outside the weakest hero's double-jump reachability graph`,
+        [target.unitIndex],
+      );
     }
   }
   return { warnings:traversalWarnings };
