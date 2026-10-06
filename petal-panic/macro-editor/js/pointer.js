@@ -280,6 +280,7 @@ function onPointerDown(e){
     app.editor.pan={x:e.clientX,y:e.clientY,panX:app.panX,panY:app.panY};
   }
   cv.setPointerCapture(e.pointerId);
+  updateCursor();
   draw();
 }
 
@@ -291,12 +292,14 @@ function onPointerMove(e){
     const p=app.editor.pan;
     app.panX=p.panX-(e.clientX-p.x)/app.zoom;
     app.panY=p.panY+(e.clientY-p.y)/app.zoom;
+    updateCursor();
     draw(); return;
   }
   const i=app.editor.interaction;
   if (!i){
     app.editor.hover=hitTest(cell);
     updateHoverPreview(cell,app.editor.hover);
+    updateCursor();
     draw();return;
   }
   if (i.mode === 'rollback') return;
@@ -312,12 +315,26 @@ function finishPointer(e, cancelled=false){
   app.editor.pan=null;
   const i=app.editor.interaction;
   if (!i || i.mode==='rollback') return;
-  if (!cancelled && i.valid){ commit(i); app.editor.interaction=null; endTransientSelect(); draw(); }
+  if (!cancelled && i.valid){ commit(i); app.editor.interaction=null; endTransientSelect(); updateCursor(); draw(); }
   else {
     if (i.reason) showToast(i.reason,'error');
     startRollback(i);
   }
   try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+}
+
+// ---------- cursor management ----------
+export function updateCursor(){
+  const tool = app.editor.transientTool ?? app.editor.tool;
+  if (app.editor.pan || app.editor.interaction){
+    cv.style.cursor = 'grabbing';
+    return;
+  }
+  if (tool === 'none'){
+    cv.style.cursor = app.editor.hover ? 'pointer' : 'grab';
+  } else {
+    cv.style.cursor = 'crosshair';
+  }
 }
 
 export function initPointer(){

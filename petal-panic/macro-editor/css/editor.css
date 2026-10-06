@@ -55,7 +55,7 @@
   .reset-opt.disabled:hover{background:none;color:inherit;}
   /* ---------- stage ---------- */
   #stage{flex:1;position:relative;overflow:hidden;background:#0a0c14;}
-  #stage canvas{touch-action:none;cursor:crosshair;}
+  #stage canvas{touch-action:none;cursor:grab;}
   #validationHint{position:absolute;left:14px;bottom:12px;max-width:min(520px,80%);padding:7px 10px;border-radius:6px;background:rgba(7,9,18,.88);border:1px solid #ff5a5a;color:#ff8b8b;font-size:12px;pointer-events:none;opacity:0;transition:opacity .08s;}
   #validationHint.on{opacity:1;}
   #validationHint.warning{border-color:#ffb73e;color:#ffd27a;}

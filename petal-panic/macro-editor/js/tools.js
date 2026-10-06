@@ -3,6 +3,7 @@
 
 import { app } from './state.js';
 import { draw } from './draw.js';
+import { cv } from './viewport.js';
 
 export const TOOLS = Object.freeze([
   'none', 'block', 'platform', 'slot-enemy', 'slot-barrel', 'slot-powerup', 'erase',
@@ -24,6 +25,7 @@ export function setTool(tool){
   app.editor.transientTool = null;
   app.editor.preview = null;
   syncToolButtons();
+  cv.style.cursor = tool === 'none' ? (app.editor.hover ? 'pointer' : 'grab') : 'crosshair';
   draw();
 }
 
