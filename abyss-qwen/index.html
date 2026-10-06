@@ -1134,8 +1134,11 @@ const MobileControls = {
 
   apply(player) {
     if (!this.active || !player) return;
+    // Keep the ship one rendered sprite-height above the fingertip so it stays visible.
+    const touchOffsetY = 56;
+    const mobileMinY = Math.max(0, player.minY - touchOffsetY);
     player.x = Math.max(0, Math.min(W - player.w, this.x - player.w / 2));
-    player.y = Math.max(player.minY, Math.min(player.maxY, this.y - player.h / 2));
+    player.y = Math.max(mobileMinY, Math.min(player.maxY, this.y - player.h / 2 - touchOffsetY));
   },
 };
 
@@ -1147,7 +1150,8 @@ const MobileDisplay = {
 
     const render = () => {
       document.body.classList.toggle("stretch-mode", stretch);
-      button.textContent = stretch ? "Stretch" : "Fit";
+      // Label describes the action: the mode clicking the button will switch to.
+      button.textContent = stretch ? "Fit" : "Stretch";
       button.setAttribute("aria-pressed", String(stretch));
     };
     button.addEventListener("click", (e) => {
