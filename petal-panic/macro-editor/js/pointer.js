@@ -388,9 +388,17 @@ function onPointerDown(e){
         app.editor.multiSelect.push({ kind: app.editor.selection.kind, index: app.editor.selection.index });
       }
       const idx = app.editor.multiSelect.findIndex(s => s.kind === hit.kind && s.index === hit.index);
-      if (idx >= 0) app.editor.multiSelect.splice(idx, 1);
-      else app.editor.multiSelect.push({ kind: hit.kind, index: hit.index });
-      app.editor.selection = hit;
+      if (idx >= 0) {
+        app.editor.multiSelect.splice(idx, 1);
+        // Deselected: clear selection if it was this item
+        if (app.editor.selection?.kind === hit.kind && app.editor.selection?.index === hit.index) {
+          app.editor.selection = null;
+        }
+        if (app.editor.multiSelect.length === 0) app.editor.selection = null;
+      } else {
+        app.editor.multiSelect.push({ kind: hit.kind, index: hit.index });
+        app.editor.selection = hit;
+      }
       draw(); return;
     }
     // If multi-select is active and we click a selected item, drag all
