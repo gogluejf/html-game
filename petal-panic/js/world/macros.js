@@ -1239,6 +1239,40 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
  * The core composition loop (no final validation) — split out so composeArea
  * can retry with a fresh rng stream when a composed route fails validation.
  */
+/**
+ * Post-placement fixup: shift any platform that has < 1 row of clearance
+ * above a unit below it (in overlapping x columns) up by 1 row. This handles
+ * the case where two adjacent macro instances produce platforms at consecutive
+ * tiers in overlapping x ranges.
+ */
+function fixPlatformClearance(units) {
+  const surfaceLine = (u) => (u.kind === 'block' ? (u.y ?? 0) + u.height : (u.y ?? 0) + 1);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const upper of units) {
+      if (upper.kind !== 'platform') continue;
+      const uRow = upper.y ?? 0;
+      for (const lower of units) {
+        if (lower === upper) continue;
+        if (surfaceLine(lower) > uRow) continue;
+        const lEnd = lower.x + lower.aabb.w;
+        const uEnd = upper.x + upper.aabb.w;
+        if (upper.x < lEnd && uEnd > lower.x) {
+          const clearance = uRow - surfaceLine(lower);
+          if (clearance < 1) {
+            upper.y += 1;
+            upper.tier = upper.y;
+            upper.aabb.y = upper.y;
+            changed = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+}
+
 function runCompose(rng, orientation, stage, budget, macroWeights) {
   // Step 1: Reserve safe AREA entry and exit (generation.md §4 step 1).
   // Area-level clearance only — macros carry no clears of their own.
@@ -1568,6 +1602,10 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
       finalTotalHeight = exitPlatY + MAX_ELEVATION_STEP;
     }
   }
+
+  // Post-placement fixup: ensure no platform rests on another unit's surface
+  // with 0 clearance. Shift violating platforms up by 1 row (and update aabb).
+  fixPlatformClearance(placedUnits);
 
   const layout = {
     orientation,
@@ -1966,13 +2004,10 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
         // Column overlap: count the empty rows between the surfaces.
         const clearance = uRow - surfaceLine(lower);
         if (upper.kind === 'platform') {
-          // A platform needs ≥ 1 air row above a SOLID surface (block) —
-          // it cannot rest on a block's top face. Platform-on-platform at
-          // 0 gap is a valid staircase (hero jumps up through the lower one).
-          if (lower.kind === 'block' && clearance < 1) {
+          if (clearance < 1) {
             throw new Error(
               `validateLayout: platform at x=${upper.x} (face row ${uRow + 1}) ` +
-                `rests on block at x=${lower.x} (surface row ${surfaceLine(lower)}) ` +
+                `rests on ${lower.kind} at x=${lower.x} (surface row ${surfaceLine(lower)}) ` +
                 `— platforms need ≥ 1 empty row below their face`,
             );
           }

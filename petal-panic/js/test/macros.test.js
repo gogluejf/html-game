@@ -776,14 +776,14 @@ test('validateLayout: throws on unreachable inter-macro join (R2 #2)', () => {
     exitClear: EXIT_CLEAR,
     macros: ['climbing', 'climbing'],
     units: [
-      // Macro 0 (placementId 0): platforms at y=1, y=2, y=3 (peak at y=3).
+      // Macro 0 (placementId 0): platforms at y=1, y=3, y=5 (peak at y=5).
       { kind: 'platform', x: 5, y: 1, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 2, h: 1 }, placementId: 0 },
-      { kind: 'platform', x: 5, y: 2, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 2, w: 2, h: 1 }, placementId: 0 },
       { kind: 'platform', x: 5, y: 3, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 3, w: 2, h: 1 }, placementId: 0 },
-      // Macro 1 (placementId 1): platforms at y=7, y=8, y=9 (first at y=7).
-      { kind: 'platform', x: 5, y: 7, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 7, w: 2, h: 1 }, placementId: 1 },
-      { kind: 'platform', x: 5, y: 8, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 8, w: 2, h: 1 }, placementId: 1 },
-      { kind: 'platform', x: 5, y: 9, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 9, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, y: 5, width: 2, tier: 5, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 5, w: 2, h: 1 }, placementId: 0 },
+      // Macro 1 (placementId 1): platforms at y=9, y=11, y=13 (first at y=9).
+      { kind: 'platform', x: 5, y: 9, width: 2, tier: 9, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 9, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, y: 11, width: 2, tier: 11, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 11, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, y: 13, width: 2, tier: 13, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 13, w: 2, h: 1 }, placementId: 1 },
     ],
     gaps: [],
     totalWidth: 20,
@@ -808,14 +808,14 @@ test('validateLayout: passes on a reachable inter-macro join (R2 #2)', () => {
     exitClear: EXIT_CLEAR,
     macros: ['climbing', 'climbing'],
     units: [
-      // Macro 0 (placementId 0): platforms at y=1, y=2, y=3 (peak at y=3).
+      // Macro 0 (placementId 0): platforms at y=1, y=3, y=5 (peak at y=5).
       { kind: 'platform', x: 5, y: 1, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 2, h: 1 }, placementId: 0 },
-      { kind: 'platform', x: 5, y: 2, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 2, w: 2, h: 1 }, placementId: 0 },
       { kind: 'platform', x: 5, y: 3, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 3, w: 2, h: 1 }, placementId: 0 },
-      // Macro 1 (placementId 1): platforms at y=4, y=5, y=6 (first at y=4).
-      { kind: 'platform', x: 5, y: 4, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 4, w: 2, h: 1 }, placementId: 1 },
-      { kind: 'platform', x: 5, y: 5, width: 2, tier: 2, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 5, w: 2, h: 1 }, placementId: 1 },
-      { kind: 'platform', x: 5, y: 6, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 6, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, y: 5, width: 2, tier: 5, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 5, w: 2, h: 1 }, placementId: 0 },
+      // Macro 1 (placementId 1): platforms at y=7, y=9, y=11 (first at y=7).
+      { kind: 'platform', x: 5, y: 7, width: 2, tier: 7, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 7, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, y: 9, width: 2, tier: 9, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 9, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 5, y: 11, width: 2, tier: 11, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 11, w: 2, h: 1 }, placementId: 1 },
     ],
     gaps: [],
     totalWidth: 20,
