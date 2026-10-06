@@ -166,11 +166,7 @@ export function minHeroGapClearPx() {
   return min;
 }
 
-/**
- * Maximum clearable horizontal gap (whole width-units) for a double jump at
- * full run speed, derived from hero physics (see minHeroGapClearPx).
- */
-export const MAX_CLEARABLE_GAP = Math.max(1, Math.floor(minHeroGapClearPx() / UNIT_PX_X));
+// MAX_CLEARABLE_GAP defined below minHeroSuperAssistReachPx (needs it).
 
 /**
  * Horizontal distance the weakest hero can cover while landing `risePx`
@@ -274,6 +270,12 @@ export function minHeroSuperAssistReachPx(risePx) {
   }
   return min;
 }
+
+/**
+ * Maximum clearable horizontal gap (whole width-units) using double jump +
+ * supermove at full run speed. Derived from hero physics + supermove tuning.
+ */
+export const MAX_CLEARABLE_GAP = Math.max(1, Math.floor(minHeroSuperAssistReachPx(0) / UNIT_PX_X));
 
 /**
  * Fixed width of a vertical zone in whole grid columns.
@@ -2170,9 +2172,9 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
   const computeUnreachable = (spans, axisUnitPx) => {
     const reachable = new Set();
     // Seed: a span is ground-reachable if its rise from 0 is within the
-    // jump envelope. Ground is continuous, so no gap constraint applies.
+    // super-assist envelope. Ground is continuous, so no gap constraint applies.
     for (let i = 0; i < spans.length; i++) {
-      if (minHeroDoubleJumpHorizontalReachPx(spans[i].elevation * UNIT_PX_Y) >= 0) {
+      if (minHeroSuperAssistReachPx(spans[i].elevation * UNIT_PX_Y) >= 0) {
         reachable.add(i);
       }
     }
@@ -2188,7 +2190,7 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
           const gapUnits = Math.max(0, to.pos0 - from.pos1, from.pos0 - to.pos1);
           const gapPx = gapUnits * axisUnitPx;
           const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
-          const reachPx = minHeroDoubleJumpHorizontalReachPx(risePx);
+          const reachPx = minHeroSuperAssistReachPx(risePx);
           if (reachPx >= 0 && gapPx <= reachPx) {
             reachable.add(toIdx);
             changed = true;
