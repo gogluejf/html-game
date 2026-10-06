@@ -1949,7 +1949,8 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
       if (pStart < bEnd && pEnd > bStart) {
         const blockTop = (block.y ?? 0) + block.height;
         const platFace = platform.y ?? platform.tier ?? 0;
-        if (blockTop >= platFace) {
+        // Only check blocks that are BELOW or AT the platform (not above it)
+        if ((block.y ?? 0) <= platFace && blockTop >= platFace) {
           throw new Error(
             `validateLayout: platform at x=${platform.x} (tier ${platFace}) ` +
               `is buried by block at x=${block.x} (height ${block.height})`,
