@@ -12,6 +12,11 @@
   .ent .orient.v{color:var(--pur);}
   #macroMeta{font-size:12px;color:var(--dim);line-height:1.7;margin-top:4px;}
   #macroMeta b{color:var(--txt);}
+  .ent-label{display:inline-flex;align-items:center;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  .ent-del{margin-left:6px;flex:none;width:20px;height:20px;padding:0;border:none;background:transparent;color:var(--faint);cursor:pointer;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;opacity:0;transition:opacity .12s,color .12s,background .12s;}
+  .ent-del svg{width:13px;height:13px;}
+  .ent:hover .ent-del,.ent.on .ent-del{opacity:1;}
+  .ent-del:hover{color:#ff5a5a;background:rgba(255,90,90,.14);}
 </style>
 </head>
 <body>
@@ -104,7 +109,7 @@
     <button class="cd-btn danger" id="cdYes">Confirm</button>
   </div>
 </dialog>
-<script type="module" src="js/main.js?v=13"></script>
+<script type="module" src="js/main.js?v=18"></script>
 <div id="toast" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 20px;font-size:13px;color:var(--txt);opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;"></div>
 </body>
 </html>

@@ -8,9 +8,10 @@
 
 import { app } from './state.js';
 import { $ } from './viewport.js';
-import { confirmDialog } from './dialog.js';
+import { confirmDialog, promptDialog } from './dialog.js';
 import { showToast } from './toast.js';
-import { selectMacro } from './sidebar.js';
+import { selectMacro, buildSidebar } from './sidebar.js';
+import { draw } from './draw.js';
 import { assertMacroSchema } from '../../js/world/macroSchema.js';
 
 // v4 invalidates drafts created before formal schema enforcement.
@@ -183,4 +184,187 @@ export function restoreDrafts(){
       if (raw) app.drafts.set(id, JSON.parse(raw));
     }catch(e){}
   }
+}
+
+// ===========================================================================
+// New / Rename / Delete macros
+// ===========================================================================
+
+const ID_RE = /^[A-Za-z0-9_]+$/;
+
+/** All known ids: canonical files + any unsaved (draft-only) new macros. */
+function allKnownIds(){
+  const set = new Set(Object.keys(app.macros || {}));
+  for (const id of app.drafts.keys()) set.add(id);
+  return set;
+}
+
+/** Next free id for a base name: base, base_2, base_3, ... */
+function nextFreeId(base){
+  const known = allKnownIds();
+  if (!known.has(base)) return base;
+  let n = 2;
+  while (known.has(`${base}_${n}`)) n++;
+  return `${base}_${n}`;
+}
+
+/** A minimal valid macro object (schema requires >=1 unit). */
+function blankMacro(id){
+  return {
+    id,
+    name: id,
+    orientation: 'horizontal',
+    difficulty: 1,
+    units: [ { kind:'block', x:4, y:0, width:5, height:1 } ],
+    placements: [],
+    variations: [],
+    follows: [],
+    followedBy: [],
+  };
+}
+
+/**
+ * Create a NEW macro in draft mode. It appears immediately in the sidebar and
+ * lives in localStorage until explicitly saved to disk. The id is `newMacro`,
+ * or `newMacro_2`, `newMacro_3`, ... if that already exists.
+ */
+export async function createNewMacro(){
+  const id = nextFreeId('newMacro');
+  const data = blankMacro(id);
+  // Draft-only: store locally, register in memory, rebuild the sidebar so the
+  // new row shows up, then open it. No file is written until Save.
+  storeDraft(id, data);
+  app.macros[id] = JSON.parse(JSON.stringify(data));
+  app.drafts.set(id, app.macros[id]);
+  buildSidebar(app.macros);
+  updateDirtyDots();
+  selectMacro(id);
+  saveActive(id);
+  showToast(`New macro "${id}" created (draft — not saved to disk yet)`, 'success');
+}
+
+/**
+ * Rename the current macro. Renames the in-memory id, the localStorage draft
+ * key (so nothing is lost), and — on success — the file on disk. Blocks if the
+ * new id collides with an existing macro.
+ */
+export async function renameCurrentMacro(){
+  if (!app.cur) return;
+  const oldId = app.cur.id;
+  const value = await promptDialog('Rename Macro', `Rename "${oldId}". Use letters, numbers, underscores.`, oldId, { okLabel:'Rename' });
+  if (value === null) return;                 // cancelled
+  const newId = value;
+  if (!ID_RE.test(newId)){
+    confirmDialog('Invalid id — use only letters, numbers, and underscores.', null, { title:'Invalid Name' });
+    return;
+  }
+  if (newId === oldId) return;                // no-op
+  if (allKnownIds().has(newId)){
+    confirmDialog(`A macro named "${newId}" already exists. Pick a different name.`, null, { title:'Name Conflict' });
+    return;
+  }
+
+  // 1. Move the in-memory working copy + canonical entry under the new id.
+  const st = app.cur.st;
+  st.id = newId;
+  st.name = newId;
+  const prevEl = app.macros[oldId]._el;
+  delete app.macros[oldId];
+  app.macros[newId] = JSON.parse(JSON.stringify(st));
+  if (prevEl) app.macros[newId]._el = prevEl;
+
+  // 2. Move the localStorage draft (if any) so unsaved work is preserved.
+  const hadDraft = hasDraft(oldId);
+  if (hadDraft){
+    try{
+      const raw = localStorage.getItem(draftKey(oldId));
+      localStorage.removeItem(draftKey(oldId));
+      if (raw) localStorage.setItem(draftKey(newId), raw);
+    }catch(e){}
+    app.drafts.delete(oldId);
+    if (hadDraft) app.drafts.set(newId, st);
+  }
+
+  // 3. Update the fingerprint baseline under the new id.
+  baseFingerprint[newId] = baseFingerprint[oldId];
+  delete baseFingerprint[oldId];
+
+  // 4. Rebuild the sidebar (row now shows the new id) and re-select.
+  buildSidebar(app.macros);
+  updateDirtyDots();
+  selectMacro(newId);
+  saveActive(newId);
+
+  // 5. If the old macro existed on disk, rename the file too.
+  const wasOnDisk = baseFingerprint[newId] !== undefined;
+  if (wasOnDisk){
+    let res;
+    try{
+      res = await fetch('/petal-panic/macro-editor/', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ old: oldId, new: newId }),
+      });
+    }catch(e){
+      confirmDialog('Rename on disk failed: ' + e.message + '\n(The in-editor name changed; the file keeps its old name until you Save.)', null, { title:'⚠ Partial Rename' });
+      showToast('Disk rename failed', 'error');
+      return;
+    }
+    if (!res.ok){
+      let msg = res.status + ' ' + res.statusText;
+      try{ const b = await res.json(); if (b.error) msg = b.error; }catch(_){}
+      confirmDialog('Rename on disk failed: ' + msg, null, { title:'⚠ Rename Failed' });
+      showToast('Disk rename failed', 'error');
+      return;
+    }
+    // Refresh the fingerprint to the server's write format.
+    baseFingerprint[newId] = JSON.stringify({ ...st }, null, 2) + '\n';
+    showToast(`Renamed ${oldId} → ${newId} (file renamed on disk)`, 'success');
+  } else {
+    showToast(`Renamed ${oldId} → ${newId}`, 'success');
+  }
+}
+
+/**
+ * Delete the current macro: remove its localStorage draft AND its file on disk
+ * (after confirmation). Then select a remaining macro.
+ */
+export async function deleteCurrentMacro(){
+  if (!app.cur) return;
+  const id = app.cur.id;
+  const ok = await confirmDialog(
+    `Delete macro "${id}"? This removes its unsaved draft and its file on disk. This cannot be undone.`,
+    null, { title:'🗑 Delete Macro', yesLabel:'Delete' });
+  if (!ok) return;
+
+  // Remove local draft + in-memory entries.
+  clearDraft(id);
+  app.drafts.delete(id);
+  delete app.macros[id];
+  delete baseFingerprint[id];
+
+  // Remove the file on disk (no-op client-side if it was never saved).
+  let res;
+  try{
+    res = await fetch('/petal-panic/macro-editor/', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: id }),
+    });
+  }catch(e){
+    // Network error: still drop it from the editor session.
+  }
+  if (res && !res.ok && res.status !== 404){
+    let msg = res.status + ' ' + res.statusText;
+    try{ const b = await res.json(); if (b.error) msg = b.error; }catch(_){}
+    confirmDialog(`Removed "${id}" from the editor, but deleting the file on disk failed: ${msg}`, null, { title:'⚠ Partial Delete' });
+  }
+
+  buildSidebar(app.macros);
+  updateDirtyDots();
+  // Select a remaining macro (first available) so the canvas isn't empty.
+  const nextId = app.flatList.length ? app.flatList[0].id : null;
+  if (nextId) selectMacro(nextId);
+  else { app.cur = null; draw(); }
+  showToast(`Deleted ${id}`, 'success');
 }

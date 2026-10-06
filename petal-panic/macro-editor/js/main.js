@@ -9,7 +9,7 @@ import { buildSidebar, selectMacro } from './sidebar.js';
 import { draw, setConstants } from './draw.js';
 import { initConfirmDialog } from './dialog.js';
 import { showToast } from './toast.js';
-import { saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft, readActive } from './save.js';
+import { saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft, readActive, createNewMacro } from './save.js';
 import { initTools, setTool, syncToolButtons } from './tools.js';
 import { initPointer, deleteSelection, lastCell, uniqueSlotName } from './pointer.js';
 import { doUndo, doRedo, syncUndoButtons } from './undo.js';
@@ -31,7 +31,7 @@ function initToolbar(){
   $('tglSlots').addEventListener('click', ()=>{ app.show.slots=!app.show.slots; syncToggles(); draw(); });
   $('tglLabels').addEventListener('click', ()=>{ app.show.labels=!app.show.labels; syncToggles(); draw(); });
   $('tglZone').addEventListener('click', ()=>{ app.show.zone=!app.show.zone; syncToggles(); draw(); });
-  $('newBtn').addEventListener('click', ()=>showToast('New macro: not available yet', 'info'));
+  $('newBtn').addEventListener('click', ()=>createNewMacro());
 }
 
 // ---------- zoom / pan ----------
@@ -161,6 +161,9 @@ function initKeyboard(){
     if ((e.ctrlKey||e.metaKey) && (e.code==='KeyV'||e.key==='v')){ e.preventDefault(); pasteAtCursor(); return; }
     if ((e.ctrlKey||e.metaKey) && (e.code==='Digit0'||e.code==='Numpad0')){ e.preventDefault(); if (app.cur) selectMacro(app.cur.id); return; }
     if (tag==='input'||tag==='textarea') return;
+    // If a <dialog> is open (confirm / prompt), let it own the keyboard —
+    // especially Escape, which the dialog uses to cancel. Do NOT intercept.
+    if (document.querySelector('dialog[open]')) return;
     if (!e.ctrlKey && !e.metaKey && !e.altKey){
       if (e.code==='KeyG'){ e.preventDefault(); $('tglGrid').click(); return; }
       if (e.code==='KeyS'){ e.preventDefault(); $('tglSlots').click(); return; }

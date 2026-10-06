@@ -7,6 +7,7 @@ import { $, tree } from './viewport.js';
 import { draw, zoneExtents, contentExtents } from './draw.js';
 import { setZoom } from './viewport.js';
 import { updateDirtyDots, updateSaveButton, saveActive } from './save.js';
+import { renameCurrentMacro, deleteCurrentMacro } from './save.js';
 import { analyzeMacroWarnings } from './validation.js';
 
 export function buildSidebar(macros){
@@ -29,8 +30,18 @@ export function buildSidebar(macros){
       const row = document.createElement('div');
       row.className = 'ent solo';
       const orient = m.orientation === 'vertical' ? '<span class="orient v">V</span>' : '<span class="orient">H</span>';
-      row.innerHTML = `<span>${id}${orient}</span><span class="cnt">${(m.units||[]).length}u</span>`;
+      row.innerHTML = `<span class="ent-label">${id}${orient}</span><span class="cnt">${(m.units||[]).length}u</span>`;
       row.addEventListener('click', () => selectMacro(id));
+      // Rename: double-click the label, or right-click the row.
+      row.querySelector('.ent-label').addEventListener('dblclick', (e) => { e.stopPropagation(); if (app.cur?.id === id) renameCurrentMacro(); else { selectMacro(id); setTimeout(renameCurrentMacro, 0); } });
+      row.addEventListener('contextmenu', (e) => { e.preventDefault(); if (app.cur?.id !== id) selectMacro(id); renameCurrentMacro(); });
+      // Delete button (small ✕ on the right).
+      const del = document.createElement('button');
+      del.className = 'ent-del';
+      del.title = `Delete ${id}`;
+      del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+      del.addEventListener('click', (e) => { e.stopPropagation(); if (app.cur?.id !== id) selectMacro(id); deleteCurrentMacro(); });
+      row.appendChild(del);
       m._el = row;
       tree.appendChild(row);
       app.flatList.push({ id });

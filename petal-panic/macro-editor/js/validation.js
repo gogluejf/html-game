@@ -151,8 +151,21 @@ export function validateMacroCandidate(macro, candidate, edit = {}){
 
 export function validateDeletion(macro, targetKind, targetIndex){
   const next = clone(macro);
-  if (targetKind === 'unit') next.units.splice(targetIndex, 1);
-  else next.placements.splice(targetIndex, 1);
+  if (targetKind === 'unit'){
+    // Removing a unit also removes any placement (slot) resting on its top
+    // surface — otherwise those slots lose their supporting surface and
+    // validation fails. Deleting the block/platform takes its riders with it.
+    const unit = next.units[targetIndex];
+    next.units.splice(targetIndex, 1);
+    if (unit){
+      // Block top = base + height; platform face = row + 1 (matches attachedPlacements).
+      const top = unit.kind === 'platform' ? (unit.y ?? 0) + 1 : (unit.y ?? 0) + (unit.height ?? 0);
+      next.placements = next.placements.filter(p =>
+        !(p.y === top && p.x >= unit.x && p.x < unit.x + unit.width));
+    }
+  } else {
+    next.placements.splice(targetIndex, 1);
+  }
   try {
     const errors = macroSchemaErrors(next, { expectedId:next.id });
     if (errors.length) throw new Error(errors[0]);

@@ -87,6 +87,84 @@ class MacroEditorHandler(SimpleHTTPRequestHandler):
 
         self._respond(200, {"ok": True, "path": f"{ALLOWED_PREFIX}{name}.json"})
 
+    def do_DELETE(self):
+        """Delete a macro file: petal-panic/macros/levels/<name>.json."""
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            raw = self.rfile.read(length) if length else b""
+            body = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception as e:
+            self._respond(400, {"ok": False, "error": f"invalid JSON body: {e}"})
+            return
+        name = body.get("name", "")
+        if not name or not name.replace("_", "").isalnum():
+            self._respond(400, {"ok": False, "error": "invalid macro id"})
+            return
+        target = os.path.realpath(os.path.join(REPO_ROOT, ALLOWED_PREFIX, f"{name}.json"))
+        allowed_dir = os.path.realpath(os.path.join(REPO_ROOT, ALLOWED_PREFIX))
+        if not (target == allowed_dir or target.startswith(allowed_dir + os.sep)):
+            self._respond(403, {"ok": False, "error": "path not allowed"})
+            return
+        if not os.path.isfile(target):
+            self._respond(404, {"ok": False, "error": f"no such macro: {name}"})
+            return
+        try:
+            os.remove(target)
+        except Exception as e:
+            self._respond(500, {"ok": False, "error": str(e)})
+            return
+        self._respond(200, {"ok": True, "deleted": f"{ALLOWED_PREFIX}{name}.json"})
+
+    def do_PATCH(self):
+        """Rename a macro: move <old>.json to <new>.json and rewrite its `id`.
+
+        Body: { old, new }. The destination must not already exist (the client
+        guarantees uniqueness). The macro's internal `id` field is updated to
+        match the new filename so the schema invariant (id == filename) holds.
+        """
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            raw = self.rfile.read(length) if length else b""
+            body = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception as e:
+            self._respond(400, {"ok": False, "error": f"invalid JSON body: {e}"})
+            return
+        old = body.get("old", "")
+        new = body.get("new", "")
+        for label, val in (("old", old), ("new", new)):
+            if not val or not val.replace("_", "").isalnum():
+                self._respond(400, {"ok": False, "error": f"invalid macro id for '{label}'"})
+                return
+        src = os.path.realpath(os.path.join(REPO_ROOT, ALLOWED_PREFIX, f"{old}.json"))
+        dst = os.path.realpath(os.path.join(REPO_ROOT, ALLOWED_PREFIX, f"{new}.json"))
+        allowed_dir = os.path.realpath(os.path.join(REPO_ROOT, ALLOWED_PREFIX))
+        for p in (src, dst):
+            if not (p == allowed_dir or p.startswith(allowed_dir + os.sep)):
+                self._respond(403, {"ok": False, "error": "path not allowed"})
+                return
+        if not os.path.isfile(src):
+            self._respond(404, {"ok": False, "error": f"no such macro: {old}"})
+            return
+        if os.path.exists(dst):
+            self._respond(409, {"ok": False, "error": f"macro already exists: {new}"})
+            return
+        try:
+            with open(src, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            data["id"] = new
+            tmp = dst + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+                f.write("\n")
+            os.replace(tmp, dst)
+            os.remove(src)
+        except Exception as e:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+            self._respond(500, {"ok": False, "error": str(e)})
+            return
+        self._respond(200, {"ok": True, "path": f"{ALLOWED_PREFIX}{new}.json"})
+
     def _respond(self, code, payload):
         data = json.dumps(payload).encode("utf-8")
         self.send_response(code)
