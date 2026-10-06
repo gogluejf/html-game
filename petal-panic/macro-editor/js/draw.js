@@ -383,6 +383,32 @@ function drawGrid(){
   const [gx1] = W(maxX, 0);
   ctx.beginPath(); ctx.moveTo(gx0, gy0); ctx.lineTo(gx1, gy0); ctx.stroke();
 
+  // ---------- axis labels (row/col numbers in the margin) ----------
+  ctx.font = `${Math.max(9, 11 * app.zoom)}px Courier New`;
+  ctx.fillStyle = 'rgba(120,140,170,.6)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  // Column numbers along the bottom edge
+  const colStart = Math.max(0, Math.ceil(minX / ux));
+  const colEnd = Math.floor(maxX / ux);
+  for (let c = colStart; c <= colEnd; c++){
+    const wx = c * ux + ux / 2;
+    const wy = minY - uy * 0.5;
+    const [sx, sy] = W(wx, wy);
+    if (sy < 0 || sy > app.cssH) continue;
+    ctx.fillText(String(c), sx, sy);
+  }
+  // Row numbers along the left edge
+  const rowStart = Math.max(0, Math.ceil(minY / uy));
+  const rowEnd = Math.floor(maxY / uy);
+  for (let r = rowStart; r <= rowEnd; r++){
+    const wx = minX - ux * 0.5;
+    const wy = r * uy + uy / 2;
+    const [sx, sy] = W(wx, wy);
+    if (sx < 0 || sx > app.cssW) continue;
+    ctx.fillText(String(r), sx, sy);
+  }
+
   // ---------- origin axes (like the sprite editor) ----------
   // Draw X and Y axes at the BODY origin: after the AREA entry clear only.
   // Horizontal: x-axis = ground line (y=0), y-axis = after the area-in band.
