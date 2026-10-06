@@ -125,6 +125,14 @@ function rollbackCandidate(interaction){
   return out;
 }
 
+function drawSlotCandidate(item,macro,color,valid=true){
+  const ux=_consts.unitPxX,uy=_consts.unitPxY,off=bodyOffset(macro);
+  const [x,y]=W((item.x+off+.5)*ux,(item.y+.5)*uy);
+  ctx.beginPath();ctx.arc(x,y,Math.max(7,9*app.zoom),0,Math.PI*2);ctx.fill();ctx.stroke();
+  if (!valid){ctx.beginPath();ctx.moveTo(x-10,y-10);ctx.lineTo(x+10,y+10);ctx.moveTo(x+10,y-10);ctx.lineTo(x-10,y+10);ctx.stroke();}
+  return [x,y];
+}
+
 function drawCandidate(interaction,macro){
   if (!interaction?.candidate) return;
   const item=rollbackCandidate(interaction);
@@ -144,11 +152,16 @@ function drawCandidate(interaction,macro){
       ctx.beginPath();ctx.moveTo(r.left,r.top);ctx.lineTo(r.right,r.bottom);ctx.moveTo(r.right,r.top);ctx.lineTo(r.left,r.bottom);ctx.stroke();
     }
   } else {
-    const ux=_consts.unitPxX,uy=_consts.unitPxY,off=bodyOffset(macro);
-    const [x,y]=W((item.x+off+.5)*ux,(item.y+.5)*uy);
-    ctx.beginPath();ctx.arc(x,y,Math.max(7,9*app.zoom),0,Math.PI*2);ctx.fill();ctx.stroke();
+    const [x,y]=drawSlotCandidate(item,macro,color,valid);
     ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='left';ctx.fillText(`${item.type} (${item.x}, ${item.y})`,x+12,y-10);
-    if (!valid){ctx.beginPath();ctx.moveTo(x-10,y-10);ctx.lineTo(x+10,y+10);ctx.moveTo(x+10,y-10);ctx.lineTo(x-10,y+10);ctx.stroke();}
+  }
+  if (interaction.attachedPlacements?.length){
+    for (const attached of interaction.attachedPlacements){
+      const slot=attached.candidate;
+      const slotColor=SLOT_COLORS[slot.type]||'#fff';
+      ctx.fillStyle=slotColor;ctx.strokeStyle=valid?slotColor:'#ff4545';ctx.lineWidth=2;
+      drawSlotCandidate(slot,macro,slotColor,valid);
+    }
   }
   ctx.restore();
 }
@@ -275,7 +288,9 @@ function drawGrid(){
 
 function isActiveOriginal(kind, index){
   const i=app.editor.interaction;
-  return !!i && i.targetKind===kind && i.targetIndex===index
+  if (!i) return false;
+  if (kind==='slot'&&i.attachedPlacements?.some(p=>p.index===index)) return true;
+  return i.targetKind===kind && i.targetIndex===index
     && ['moving-object','resizing-block','resizing-platform','moving-slot','rollback'].includes(i.mode);
 }
 

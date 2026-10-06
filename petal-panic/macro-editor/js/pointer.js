@@ -80,6 +80,28 @@ function uniqueSlotName(type, placements, preserve=''){
   return `${type}-${n}`;
 }
 
+function surfaceY(unit){ return unit.kind==='block' ? unit.y+unit.height : unit.y+1; }
+
+function attachedPlacements(unit){
+  if (!app.cur || !unit) return [];
+  const top=surfaceY(unit);
+  return (app.cur.st.placements||[])
+    .map((placement,index)=>({placement,index}))
+    .filter(({placement})=>placement.y===top&&placement.x>=unit.x&&placement.x<unit.x+unit.width)
+    .map(({placement,index})=>({index,original:clone(placement),candidate:clone(placement)}));
+}
+
+function moveAttachedPlacements(interaction){
+  if (!interaction.attachedPlacements?.length) return;
+  const moving=interaction.mode==='moving-object';
+  const dx=moving ? interaction.candidate.x-interaction.original.x : 0;
+  const dy=surfaceY(interaction.candidate)-surfaceY(interaction.original);
+  interaction.attachedPlacements=interaction.attachedPlacements.map(item=>({
+    ...item,
+    candidate:{...item.original,x:item.original.x+dx,y:item.original.y+dy},
+  }));
+}
+
 function candidateForCreate(mode, anchor, current){
   if (mode === 'creating-block'){
     const x=Math.min(anchor.x,current.x), y=Math.min(anchor.y,current.y);
@@ -110,7 +132,11 @@ function movedCandidate(original, anchor, current, seed=original){
 
 function validateInteraction(interaction){
   const edit = interaction.targetKind
-    ? { targetKind:interaction.targetKind, targetIndex:interaction.targetIndex }
+    ? {
+        targetKind:interaction.targetKind,
+        targetIndex:interaction.targetIndex,
+        placementCandidates:(interaction.attachedPlacements||[]).map(({index,candidate})=>({index,candidate})),
+      }
     : {};
   const result = validateMacroCandidate(app.cur.st, interaction.candidate, edit);
   interaction.valid=result.valid;
@@ -198,7 +224,7 @@ function onPointerDown(e){
   if (handle){
     beginTransientSelect();
     const original=clone(app.cur.st.units[app.editor.selection.index]);
-    const interaction={ mode:original.kind==='block'?'resizing-block':'resizing-platform', targetKind:'unit', targetIndex:app.editor.selection.index, handle, anchorCell:cell, currentCell:cell, original, candidate:clone(original), valid:true, reason:'' };
+    const interaction={ mode:original.kind==='block'?'resizing-block':'resizing-platform', targetKind:'unit', targetIndex:app.editor.selection.index, handle, anchorCell:cell, currentCell:cell, original, candidate:clone(original), attachedPlacements:attachedPlacements(original), valid:true, reason:'' };
     validateInteraction(interaction); app.editor.interaction=interaction;
   } else if (hit){
     beginTransientSelect();
@@ -209,7 +235,7 @@ function onPointerDown(e){
     const candidate=hit.kind==='slot'&&tool.startsWith('slot-')
       ? {...original,type:tool.slice(5)}
       : clone(original);
-    const interaction={mode:hit.kind==='slot'?'moving-slot':'moving-object',targetKind:hit.kind,targetIndex:hit.index,anchorCell:cell,currentCell:cell,original,candidate,valid:true,reason:''};
+    const interaction={mode:hit.kind==='slot'?'moving-slot':'moving-object',targetKind:hit.kind,targetIndex:hit.index,anchorCell:cell,currentCell:cell,original,candidate,attachedPlacements:hit.kind==='unit'?attachedPlacements(original):[],valid:true,reason:''};
     validateInteraction(interaction);app.editor.interaction=interaction;
   } else if (tool === 'block' || tool === 'platform'){
     const mode=tool==='block'?'creating-block':'creating-platform';
@@ -244,6 +270,7 @@ function onPointerMove(e){
   if (i.mode.startsWith('creating-')) i.candidate=candidateForCreate(i.mode,i.anchorCell,cell);
   else if (i.mode.startsWith('resizing-')) i.candidate=resizedCandidate(i.original,i.handle,cell);
   else i.candidate=movedCandidate(i.original,i.anchorCell,cell,i.candidate);
+  if (i.targetKind==='unit') moveAttachedPlacements(i);
   validateInteraction(i); draw();
 }
 

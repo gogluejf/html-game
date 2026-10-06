@@ -12,11 +12,14 @@ export function macroWithCandidate(macro, candidate, edit = {}){
   const next = clone(macro);
   next.units ||= [];
   next.placements ||= [];
-  const { targetKind = null, targetIndex = -1 } = edit;
+  const { targetKind = null, targetIndex = -1, placementCandidates = [] } = edit;
   if (targetKind === 'unit') next.units[targetIndex] = clone(candidate);
   else if (targetKind === 'slot') next.placements[targetIndex] = clone(candidate);
   else if (candidate.kind === 'block' || candidate.kind === 'platform') next.units.push(clone(candidate));
   else next.placements.push(clone(candidate));
+  for (const { index, candidate:placement } of placementCandidates) {
+    if (next.placements[index]) next.placements[index] = clone(placement);
+  }
   return next;
 }
 

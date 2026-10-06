@@ -102,6 +102,41 @@ test('exactly two top-clearance rows are legal; one is rejected', () => {
   assert.match(illegal.reason,/2 rows of top clearance/i);
 });
 
+test('unit candidate may atomically carry its supported placement slots', () => {
+  const source=macro({
+    units:[{kind:'block',x:5,y:0,width:2,height:1}],
+    placements:[{slot:'enemy-1',type:'enemy',x:6,y:1}],
+  });
+  const result=validateMacroCandidate(
+    source,
+    {kind:'block',x:10,y:2,width:2,height:1},
+    {
+      targetKind:'unit',targetIndex:0,
+      placementCandidates:[{index:0,candidate:{slot:'enemy-1',type:'enemy',x:11,y:3}}],
+    },
+  );
+  assert.equal(result.valid,true,result.reason);
+  assert.deepEqual(result.macro.placements[0],{slot:'enemy-1',type:'enemy',x:11,y:3});
+  assert.deepEqual(source.placements[0],{slot:'enemy-1',type:'enemy',x:6,y:1});
+});
+
+test('platform placement follows the platform surface elevation', () => {
+  const source=macro({
+    units:[{kind:'platform',x:5,y:1,width:2}],
+    placements:[{slot:'barrel-1',type:'barrel',x:5,y:2}],
+  });
+  const result=validateMacroCandidate(
+    source,
+    {kind:'platform',x:8,y:3,width:2},
+    {
+      targetKind:'unit',targetIndex:0,
+      placementCandidates:[{index:0,candidate:{slot:'barrel-1',type:'barrel',x:8,y:4}}],
+    },
+  );
+  assert.equal(result.valid,true,result.reason);
+  assert.deepEqual(result.macro.placements[0],{slot:'barrel-1',type:'barrel',x:8,y:4});
+});
+
 test('deletion is rejected when it would leave an invalid empty macro', () => {
   const result=validateDeletion(macro(),'unit',0);
   assert.equal(result.valid,false);
