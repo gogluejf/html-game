@@ -50,10 +50,7 @@ export function ensureInputDialog(){
     <div class="cd-body">
       <div class="cd-title" id="inTitle">Rename</div>
       <div class="cd-msg" id="inMsg"></div>
-      <input id="inField" type="text" spellcheck="false" autocomplete="off"
-             style="width:100%;margin-top:10px;padding:8px 10px;font-size:14px;box-sizing:border-box;
-                    background:var(--bg,#0b1220);color:var(--txt,#fff);border:1px solid var(--line,#334);
-                    border-radius:8px;outline:none;font-family:inherit;">
+      <input id="inField" type="text" spellcheck="false" autocomplete="off">
     </div>
     <div class="cd-actions">
       <button class="cd-btn" id="inCancel">Cancel</button>

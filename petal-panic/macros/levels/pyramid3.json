@@ -1,6 +1,6 @@
 {
-  "id": "pyramid",
-  "name": "Pyramid",
+  "id": "pyramid3",
+  "name": "pyramid3",
   "orientation": "horizontal",
   "difficulty": 1,
   "units": [
@@ -74,6 +74,18 @@
       "x": 13,
       "y": 2,
       "width": 4
+    },
+    {
+      "kind": "platform",
+      "x": 31,
+      "y": 3,
+      "width": 2
+    },
+    {
+      "kind": "platform",
+      "x": 36,
+      "y": 5,
+      "width": 5
     }
   ],
   "placements": [

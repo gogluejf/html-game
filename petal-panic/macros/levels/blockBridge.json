@@ -29,6 +29,18 @@
       "x": 1,
       "y": 3,
       "width": 3
+    },
+    {
+      "kind": "platform",
+      "x": 12,
+      "y": 1,
+      "width": 2
+    },
+    {
+      "kind": "platform",
+      "x": 14,
+      "y": 3,
+      "width": 2
     }
   ],
   "placements": [
