@@ -234,38 +234,36 @@ export function minHeroSuperAssistReachPx(risePx) {
     const firstApex = (jump * jump) / (2 * GRAVITY);
     const totalApex = firstApex + (secondJump * secondJump) / (2 * GRAVITY);
 
-    // The super extends effective airtime: after the second apex, instead of
-    // immediately descending under gravity, the burst holds altitude for
-    // burstDur, then decel allows decelDrop of fall. So the effective
-    // "total apex" becomes totalApex + decelDrop (you can be higher at the
-    // moment gravity starts pulling you down again).
-    const effectiveApex = totalApex + decelDrop;
-    if (risePx > effectiveApex) return -1;
+    // Altitude at super end: burst holds at totalApex, decel drops decelDrop.
+    const altitudeAtSuperEnd = totalApex - decelDrop;
 
-    // Time to reach second apex (same as before):
+    // If target is above totalApex, impossible even with super.
+    if (risePx > totalApex) return -1;
+
+    // Phase 1: run + double jump to second apex.
     const toSecondApex = jump / GRAVITY + secondJump / GRAVITY;
-    // Horizontal distance covered by running speed up to second apex:
     const preSuperDist = speed * toSecondApex;
 
-    // After super ends, if the target is still above current altitude,
-    // we need additional descent time. Current altitude at super end =
-    // totalApex (burst held it) then dropped decelDrop → net = totalApex.
-    // Wait: burst holds at totalApex, decel drops decelDrop.
-    // So at super end, altitude = totalApex - decelDrop relative to launch... 
-    // No: altitude at second apex = totalApex. Burst keeps vy=0 so altitude
-    // stays at totalApex. Decel: gravity pulls down, drop = decelDrop.
-    // Altitude at super end = totalApex - decelDrop.
-    // If risePx < (totalApex - decelDrop): target is below super-end altitude,
-    //   hero lands during or right after decel — no extra time needed.
-    // If risePx >= (totalApex - decelDrop): target is above super-end altitude,
-    //   hero must land DURING the decel phase (or at its end).
-    //   Extra ascent needed from super-end point: risePx - (totalApex - decelDrop)
-    //   But during decel gravity is already pulling down, so this case means
-    //   the target is reachable only if risePx <= totalApex (land mid-decel).
-    
-    // Simplified: total horizontal = preSuper + burst + decel
-    // The rise constraint is handled by effectiveApex check above.
-    const totalDist = preSuperDist + burstDist + decelDist;
+    // Phase 2+3: super burst + decel (fixed distances, already computed).
+    const superDist = burstDist + decelDist;
+
+    // Phase 4: post-super fall. After the super ends, the hero is at
+    // altitudeAtSuperEnd with vy=0 (decel ended), moving forward at
+    // SUPERMOVE_RESIDUAL px/s. Gravity pulls them down to the target.
+    // If target is BELOW altitudeAtSuperEnd: they fall the remaining distance.
+    //   fallDistance = altitudeAtSuperEnd - risePx
+    //   fallTime = sqrt(2 * fallDistance / GRAVITY)
+    //   postSuperDist = SUPERMOVE_RESIDUAL * fallTime
+    // If target is AT or ABOVE altitudeAtSuperEnd: no post-super fall needed
+    //   (they land during or at the end of the super itself).
+    let postSuperDist = 0;
+    const fallDistance = altitudeAtSuperEnd - risePx;
+    if (fallDistance > 0) {
+      const fallTime = Math.sqrt((2 * fallDistance) / GRAVITY);
+      postSuperDist = SUPERMOVE_RESIDUAL * fallTime;
+    }
+
+    const totalDist = preSuperDist + superDist + postSuperDist;
     min = Math.min(min, totalDist);
   }
   return min;
