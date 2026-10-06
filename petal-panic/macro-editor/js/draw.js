@@ -145,15 +145,40 @@ function drawCandidate(interaction,macro){
   ctx.save();
   ctx.fillStyle=!valid?'rgba(255,69,69,.34)':warning?'rgba(255,183,62,.34)':hoverPreview?'rgba(90,255,138,.30)':'rgba(62,240,255,.34)';
   ctx.strokeStyle=color;ctx.lineWidth=3;
-  if (item.kind==='block'||item.kind==='platform'){
+  if (item.kind==='block'){
     const r=descriptorScreenRect(item,macro);
     ctx.fillRect(r.left,r.top,r.width,r.height);ctx.strokeRect(r.left,r.top,r.width,r.height);
     if (!hoverPreview){
-      const label=item.kind==='block'?`x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}, h ${Math.round(item.height)}`:`x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}`;
+      const label=`x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}, h ${Math.round(item.height)}`;
       ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(label,r.left+4,r.top-5);
     }
     if (!valid){
       ctx.beginPath();ctx.moveTo(r.left,r.top);ctx.lineTo(r.right,r.bottom);ctx.moveTo(r.right,r.top);ctx.lineTo(r.left,r.bottom);ctx.stroke();
+    }
+  } else if (item.kind==='platform'){
+    // Draw as thin horizontal strip matching real platform rendering
+    const ux=_consts.unitPxX, uy=_consts.unitPxY, ph=_consts.platformDrawH, off=bodyOffset(macro);
+    const faceY=(item.y+1)*uy;
+    const [sx0,syFace]=W((item.x+off)*ux,faceY);
+    const [sx1]=W((item.x+(item.width??1)+off)*ux,faceY);
+    const stripH=ph*app.zoom;
+    // Cell contour highlight (like selected/hover target)
+    {
+      const r=descriptorScreenRect(item,macro);
+      ctx.save();
+      ctx.strokeStyle='#3ef0ff';ctx.lineWidth=2;
+      ctx.shadowColor='#3ef0ff';ctx.shadowBlur=4;
+      ctx.strokeRect(r.left,r.top,r.width,r.height);
+      ctx.restore();
+    }
+    ctx.fillRect(sx0,syFace-stripH/2,sx1-sx0,stripH);
+    ctx.strokeRect(sx0,syFace-stripH/2,sx1-sx0,stripH);
+    if (!hoverPreview){
+      const label=`x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}`;
+      ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(label,sx0+4,syFace-stripH/2-5);
+    }
+    if (!valid){
+      ctx.beginPath();ctx.moveTo(sx0,syFace-stripH/2);ctx.lineTo(sx1,syFace+stripH/2);ctx.moveTo(sx1,syFace-stripH/2);ctx.lineTo(sx0,syFace+stripH/2);ctx.stroke();
     }
   } else {
     const [x,y]=drawSlotCandidate(item,macro,color,valid);
