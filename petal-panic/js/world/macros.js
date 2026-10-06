@@ -248,19 +248,18 @@ export function minHeroSuperAssistReachPx(risePx) {
     const superDist = burstDist + decelDist;
 
     // Phase 4: post-super fall. After the super ends, the hero is at
-    // altitudeAtSuperEnd with vy=0 (decel ended), moving forward at
-    // SUPERMOVE_RESIDUAL px/s. Gravity pulls them down to the target.
+    // altitudeAtSuperEnd with vy≈0, and normal running resumes immediately
+    // (player is holding forward). Gravity pulls them down to the target.
     // If target is BELOW altitudeAtSuperEnd: they fall the remaining distance.
     //   fallDistance = altitudeAtSuperEnd - risePx
     //   fallTime = sqrt(2 * fallDistance / GRAVITY)
-    //   postSuperDist = SUPERMOVE_RESIDUAL * fallTime
-    // If target is AT or ABOVE altitudeAtSuperEnd: no post-super fall needed
-    //   (they land during or at the end of the super itself).
+    //   postSuperDist = speed * fallTime  (run speed, not residual)
+    // If target is AT or ABOVE altitudeAtSuperEnd: no post-super fall needed.
     let postSuperDist = 0;
     const fallDistance = altitudeAtSuperEnd - risePx;
     if (fallDistance > 0) {
       const fallTime = Math.sqrt((2 * fallDistance) / GRAVITY);
-      postSuperDist = SUPERMOVE_RESIDUAL * fallTime;
+      postSuperDist = speed * fallTime;
     }
 
     const totalDist = preSuperDist + superDist + postSuperDist;
