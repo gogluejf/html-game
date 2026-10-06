@@ -11,7 +11,7 @@ import { macroSchemaErrors } from '../../js/world/macroSchema.js';
 import { validateLayout } from '../../js/world/macros.js';
 import { showToast } from './toast.js';
 import { pushUndo } from './undo.js';
-import { syncToolButtons } from './tools.js';
+import { syncToolButtons, cursorForTool } from './tools.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const HANDLE_PX = 9;
@@ -603,11 +603,7 @@ export function updateCursor(){
     cv.style.cursor = 'pointer';
     return;
   }
-  if (tool === 'none'){
-    cv.style.cursor = 'grab';
-  } else {
-    cv.style.cursor = 'crosshair';
-  }
+  cv.style.cursor = cursorForTool(tool);
 }
 
 export function initPointer(){

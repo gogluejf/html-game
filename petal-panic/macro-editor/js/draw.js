@@ -83,10 +83,31 @@ function targetItem(target, macro){
   return target.kind === 'unit' ? macro.units?.[target.index] : macro.placements?.[target.index];
 }
 
-function drawTarget(target, macro, selected=false){
+function drawTarget(target, macro, selected=false, erase=false){
   const item=targetItem(target,macro);
   if (!item) return;
   ctx.save();
+  if (erase){
+    // Erase rollover: red dashed outline + translucent red fill signals "this
+    // will be deleted" before the click commits it.
+    ctx.strokeStyle='#ff4545';
+    ctx.lineWidth=2;
+    ctx.setLineDash([6,4]);
+    ctx.shadowColor='#ff4545'; ctx.shadowBlur=8;
+    if (target.kind === 'slot'){
+      const ux=_consts.unitPxX,uy=_consts.unitPxY,off=bodyOffset(macro);
+      const [x,y]=W((item.x+off+.5)*ux,(item.y+.5)*uy);
+      ctx.beginPath(); ctx.arc(x,y,Math.max(8,10*app.zoom),0,Math.PI*2);
+      ctx.fillStyle='rgba(255,69,69,.30)'; ctx.fill(); ctx.stroke();
+    } else {
+      const r=descriptorScreenRect(item,macro);
+      ctx.fillStyle='rgba(255,69,69,.30)';
+      ctx.fillRect(r.left,r.top,r.width,r.height);
+      ctx.strokeRect(r.left,r.top,r.width,r.height);
+    }
+    ctx.restore();
+    return;
+  }
   ctx.strokeStyle=selected?'#ffffff':'#3ef0ff';
   ctx.lineWidth=selected?3:2;
   ctx.shadowColor='#3ef0ff'; ctx.shadowBlur=selected?10:4;
@@ -200,7 +221,8 @@ function drawCandidate(interaction,macro){
 function drawEditorOverlay(macro){
   const active=app.editor.interaction;
   const sameTarget=(target)=>target&&active&&active.targetKind===target.kind&&active.targetIndex===target.index;
-  if (!sameTarget(app.editor.hover)) drawTarget(app.editor.hover,macro,false);
+  const eraseTool = (app.editor.transientTool ?? app.editor.tool) === 'erase';
+  if (!sameTarget(app.editor.hover)) drawTarget(app.editor.hover,macro,false,eraseTool);
   if (!sameTarget(app.editor.selection)) drawTarget(app.editor.selection,macro,true);
   // Multi-select highlights
   for (const sel of app.editor.multiSelect) {
