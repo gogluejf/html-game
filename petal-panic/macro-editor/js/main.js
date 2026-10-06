@@ -56,7 +56,7 @@ let clipboard = null; // { units: [...], placements: [...] }
 function copySelection(){
   if (!app.cur) return;
   const items = app.editor.multiSelect.length > 0 ? app.editor.multiSelect : (app.editor.selection ? [{kind:app.editor.selection.kind,index:app.editor.selection.index}] : []);
-  if (items.length === 0) return;
+  if (items.length === 0) { showToast('Nothing selected to copy','error'); return; }
   const units = [];
   const placements = [];
   for (const item of items) {
@@ -64,6 +64,7 @@ function copySelection(){
     else placements.push(clone(app.cur.st.placements[item.index]));
   }
   clipboard = { units, placements };
+  showToast(`Copied ${units.length} unit(s), ${placements.length} slot(s)`,'success');
 }
 
 function pasteAtCursor(){
