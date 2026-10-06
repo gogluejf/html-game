@@ -384,29 +384,30 @@ function drawGrid(){
   ctx.beginPath(); ctx.moveTo(gx0, gy0); ctx.lineTo(gx1, gy0); ctx.stroke();
 
   // ---------- axis labels (row/col numbers in the margin) ----------
-  ctx.font = `${Math.max(9, 11 * app.zoom)}px Courier New`;
-  ctx.fillStyle = 'rgba(120,140,170,.6)';
+  // Draw along the zone box edges, not the viewport edges.
+  const c = _consts;
+  const vertical = app.cur?.st?.orientation === 'vertical';
+  const zoneW = vertical ? (c.vZoneWidthUnits ?? 13) : (c.hBudgetUnits ?? 56);
+  const zoneH = vertical ? (c.vBudgetUnits ?? 56) : (c.hPlayHeightUnits ?? 10);
+  ctx.font = `${Math.max(9, Math.round(11 * app.zoom))}px Courier New`;
+  ctx.fillStyle = 'rgba(120,140,170,.7)';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  // Column numbers along the bottom edge
-  const colStart = Math.max(0, Math.ceil(minX / ux));
-  const colEnd = Math.floor(maxX / ux);
-  for (let c = colStart; c <= colEnd; c++){
-    const wx = c * ux + ux / 2;
-    const wy = minY - uy * 0.5;
+  // Column numbers: centered below each column, just under the zone bottom edge
+  for (let col = 0; col < zoneW; col++){
+    const wx = col * ux + ux / 2;
+    const wy = -uy * 0.5; // half a cell below ground
     const [sx, sy] = W(wx, wy);
-    if (sy < 0 || sy > app.cssH) continue;
-    ctx.fillText(String(c), sx, sy);
+    if (sx < -20 || sx > app.cssW + 20 || sy < -20 || sy > app.cssH + 20) continue;
+    ctx.fillText(String(col), sx, sy);
   }
-  // Row numbers along the left edge
-  const rowStart = Math.max(0, Math.ceil(minY / uy));
-  const rowEnd = Math.floor(maxY / uy);
-  for (let r = rowStart; r <= rowEnd; r++){
-    const wx = minX - ux * 0.5;
-    const wy = r * uy + uy / 2;
+  // Row numbers: centered left of each row, just left of the zone left edge
+  for (let row = 0; row < zoneH; row++){
+    const wx = -ux * 0.5; // half a cell left of the zone
+    const wy = row * uy + uy / 2;
     const [sx, sy] = W(wx, wy);
-    if (sx < 0 || sx > app.cssW) continue;
-    ctx.fillText(String(r), sx, sy);
+    if (sx < -20 || sx > app.cssW + 20 || sy < -20 || sy > app.cssH + 20) continue;
+    ctx.fillText(String(row), sx, sy);
   }
 
   // ---------- origin axes (like the sprite editor) ----------
