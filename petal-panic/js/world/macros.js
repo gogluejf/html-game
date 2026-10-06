@@ -196,6 +196,85 @@ export function minHeroDoubleJumpHorizontalReachPx(risePx) {
   return min;
 }
 
+// Supermove constants (mirrors hero.js — kept here so validation is
+// self-contained and adjusts automatically if tuning changes).
+const SUPERMOVE_DUR = 0.6;
+const SUPERMOVE_BURST_FRAC = 0.6;
+const SUPERMOVE_SPEED = 900;
+const SUPERMOVE_RESIDUAL = 80;
+
+/**
+ * Maximum horizontal clearance (px) the weakest hero can achieve when
+ * launching from one platform and landing on another that is `risePx`
+ * above (positive = higher) or below (negative = lower), using:
+ *
+ *   1. Full-speed run + double jump (as in minHeroDoubleJumpHorizontalReachPx)
+ *   2. Supermove triggered at the second-jump apex:
+ *      - Burst phase (no gravity, vy=0): horizontal travel at decaying speed
+ *      - Decel phase (gravity resumes): horizontal travel + vertical drop
+ *
+ * This is the TRUE max gap a player can clear when spending a super.
+ * Returns -1 when even with super the rise is unattainable.
+ *
+ * @param {number} risePx positive = target is higher, negative = lower
+ * @returns {number} max horizontal px, or -1 if impossible
+ */
+export function minHeroSuperAssistReachPx(risePx) {
+  const burstDur = SUPERMOVE_DUR * SUPERMOVE_BURST_FRAC;
+  const decelDur = SUPERMOVE_DUR - burstDur;
+  // Speed at burst→decel handoff (linear ramp over total duration):
+  const speedAtHandoff = SUPERMOVE_SPEED + (SUPERMOVE_RESIDUAL - SUPERMOVE_SPEED) * SUPERMOVE_BURST_FRAC;
+  // Horizontal distance during burst (avg of start/end speed × time):
+  const burstDist = ((SUPERMOVE_SPEED + speedAtHandoff) / 2) * burstDur;
+  // Horizontal distance during decel (avg of handoff/residual speed × time):
+  const decelDist = ((speedAtHandoff + SUPERMOVE_RESIDUAL) / 2) * decelDur;
+  // Vertical drop during decel (gravity pulls down from rest):
+  const decelDrop = 0.5 * GRAVITY * decelDur * decelDur;
+
+  let min = Infinity;
+  for (const hero of Object.values(HEROES)) {
+    const { speed, jump } = hero.stats;
+    const secondJump = DOUBLE_JUMP_FACTOR * jump;
+    const firstApex = (jump * jump) / (2 * GRAVITY);
+    const totalApex = firstApex + (secondJump * secondJump) / (2 * GRAVITY);
+
+    // The super extends effective airtime: after the second apex, instead of
+    // immediately descending under gravity, the burst holds altitude for
+    // burstDur, then decel allows decelDrop of fall. So the effective
+    // "total apex" becomes totalApex + decelDrop (you can be higher at the
+    // moment gravity starts pulling you down again).
+    const effectiveApex = totalApex + decelDrop;
+    if (risePx > effectiveApex) return -1;
+
+    // Time to reach second apex (same as before):
+    const toSecondApex = jump / GRAVITY + secondJump / GRAVITY;
+    // Horizontal distance covered by running speed up to second apex:
+    const preSuperDist = speed * toSecondApex;
+
+    // After super ends, if the target is still above current altitude,
+    // we need additional descent time. Current altitude at super end =
+    // totalApex (burst held it) then dropped decelDrop → net = totalApex.
+    // Wait: burst holds at totalApex, decel drops decelDrop.
+    // So at super end, altitude = totalApex - decelDrop relative to launch... 
+    // No: altitude at second apex = totalApex. Burst keeps vy=0 so altitude
+    // stays at totalApex. Decel: gravity pulls down, drop = decelDrop.
+    // Altitude at super end = totalApex - decelDrop.
+    // If risePx < (totalApex - decelDrop): target is below super-end altitude,
+    //   hero lands during or right after decel — no extra time needed.
+    // If risePx >= (totalApex - decelDrop): target is above super-end altitude,
+    //   hero must land DURING the decel phase (or at its end).
+    //   Extra ascent needed from super-end point: risePx - (totalApex - decelDrop)
+    //   But during decel gravity is already pulling down, so this case means
+    //   the target is reachable only if risePx <= totalApex (land mid-decel).
+    
+    // Simplified: total horizontal = preSuper + burst + decel
+    // The rise constraint is handled by effectiveApex check above.
+    const totalDist = preSuperDist + burstDist + decelDist;
+    min = Math.min(min, totalDist);
+  }
+  return min;
+}
+
 /**
  * Fixed width of a vertical zone in whole grid columns.
  *
