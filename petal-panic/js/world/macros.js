@@ -2203,33 +2203,18 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
   };
 
   if (!isVertical) {
-    // Horizontal: build landing spans in x order.
-    const route = units
-      .slice()
-      .sort((a, b) => (a.x !== b.x ? a.x - b.x : (a.y ?? 0) - (b.y ?? 0)));
-
-    const byCol = new Map();
-    for (const u of route) {
-      const elev = landingElevation(u);
-      for (let x = u.x; x < u.x + u.width; x++) {
-        if (!byCol.has(x) || elev > byCol.get(x).elevation) {
-          byCol.set(x, { label: `${u.kind} at x=${x}`, elevation: elev, x, unitIndex: u._editorIndex });
-        }
-      }
-    }
-
-    // Collapse adjacent columns owned by the same surface into landing spans.
-    const landings = [...byCol.values()].sort((a, b) => a.x - b.x);
-    const spans = [];
-    for (const landing of landings) {
-      const last = spans[spans.length - 1];
-      if (last && last.unitIndex === landing.unitIndex && last.elevation === landing.elevation
-          && last.pos1 === landing.x) {
-        last.pos1 = landing.x + 1;
-      } else {
-        spans.push({ ...landing, pos0: landing.x, pos1: landing.x + 1 });
-      }
-    }
+    // Horizontal: each unit is its own landing span with full x-extent.
+    // The BFS checks reachability between all pairs using x-gap + rise.
+    const spans = units
+      .filter((u) => u.kind === 'platform' || u.kind === 'block')
+      .map((u) => ({
+        label: `${u.kind} at x=${u.x}`,
+        elevation: landingElevation(u),
+        pos0: u.x,
+        pos1: u.x + u.width,
+        unitIndex: u._editorIndex,
+      }))
+      .sort((a, b) => a.pos0 - b.pos0);
 
     const unreachable = computeUnreachable(spans, UNIT_PX_X);
     for (const i of unreachable) {
