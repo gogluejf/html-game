@@ -25,7 +25,7 @@ export function setTool(tool){
   app.editor.transientTool = null;
   app.editor.preview = null;
   syncToolButtons();
-  cv.style.cursor = tool === 'none' ? (app.editor.hover ? 'pointer' : 'grab') : 'crosshair';
+  cv.style.cursor = app.editor.hover ? 'pointer' : (tool === 'none' ? 'grab' : 'crosshair');
   draw();
 }
 

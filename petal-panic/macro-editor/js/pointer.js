@@ -330,8 +330,13 @@ export function updateCursor(){
     cv.style.cursor = 'grabbing';
     return;
   }
+  // Hovering an element always shows pointer (clicking selects/moves it)
+  if (app.editor.hover){
+    cv.style.cursor = 'pointer';
+    return;
+  }
   if (tool === 'none'){
-    cv.style.cursor = app.editor.hover ? 'pointer' : 'grab';
+    cv.style.cursor = 'grab';
   } else {
     cv.style.cursor = 'crosshair';
   }
