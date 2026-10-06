@@ -15,7 +15,7 @@ import { syncToolButtons } from './tools.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const HANDLE_PX = 9;
-let lastCell = null;
+export let lastCell = null;
 
 function bodyOffset(){
   if (!app.cur) return 0;

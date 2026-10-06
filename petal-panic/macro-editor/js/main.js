@@ -11,8 +11,13 @@ import { initConfirmDialog } from './dialog.js';
 import { showToast } from './toast.js';
 import { saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft, readActive } from './save.js';
 import { initTools, setTool, syncToolButtons } from './tools.js';
-import { initPointer, deleteSelection } from './pointer.js';
+import { initPointer, deleteSelection, lastCell, uniqueSlotName } from './pointer.js';
 import { doUndo, doRedo, syncUndoButtons } from './undo.js';
+import { pushUndo } from './undo.js';
+import { markChanged } from './save.js';
+import { previewLayout, reasonFromError } from './validation.js';
+import { macroSchemaErrors } from '../../js/world/macroSchema.js';
+import { validateLayout } from '../../js/world/macros.js';
 
 // ---------- toolbar toggles ----------
 function syncToggles(){
@@ -45,6 +50,77 @@ function initView(){
 }
 
 // ---------- keyboard ----------
+const clone = v => JSON.parse(JSON.stringify(v));
+let clipboard = null; // { units: [...], placements: [...] }
+
+function copySelection(){
+  if (!app.cur) return;
+  const items = app.editor.multiSelect.length > 0 ? app.editor.multiSelect : (app.editor.selection ? [{kind:app.editor.selection.kind,index:app.editor.selection.index}] : []);
+  if (items.length === 0) return;
+  const units = [];
+  const placements = [];
+  for (const item of items) {
+    if (item.kind === 'unit') units.push(clone(app.cur.st.units[item.index]));
+    else placements.push(clone(app.cur.st.placements[item.index]));
+  }
+  clipboard = { units, placements };
+}
+
+function pasteAtCursor(){
+  if (!clipboard || !app.cur) return;
+  // Find cursor cell from last known pointer position
+  if (!lastCell) return;
+  const dx = lastCell.x - (clipboard.units[0]?.x ?? clipboard.placements[0]?.x ?? 0);
+  const dy = lastCell.y - (clipboard.units[0]?.y ?? clipboard.placements[0]?.y ?? 0);
+
+  // Build next macro with pasted items
+  const next = clone(app.cur.st);
+  let maxUnitIdx = next.units.length;
+  let maxPlatIdx = next.placements.length;
+  for (const u of clipboard.units) {
+    next.units.push({ ...clone(u), x: u.x + dx, y: u.y + dy });
+    maxUnitIdx++;
+  }
+  for (const p of clipboard.placements) {
+    next.placements.push({ ...clone(p), slot: uniqueSlotName(p.type, next.placements), x: p.x + dx, y: p.y + dy });
+    maxPlatIdx++;
+  }
+
+  // Validate
+  let valid = true, reason = '';
+  try {
+    const schemaErrors = macroSchemaErrors(next, { expectedId: next.id });
+    if (schemaErrors.length) throw new Error(schemaErrors[0]);
+    validateLayout(previewLayout(next), { traversal: 'warn' });
+  } catch (err) {
+    valid = false;
+    reason = reasonFromError(err);
+  }
+
+  // Show ghost preview
+  app.editor.preview = {
+    mode: 'paste-preview',
+    candidate: null,
+    valid,
+    severity: valid ? 'valid' : 'error',
+    reason,
+    pasteUnits: clipboard.units.map(u => ({...u, x: u.x+dx, y: u.y+dy})),
+    pastePlacements: clipboard.placements.map(p => ({...p, x: p.x+dx, y: p.y+dy})),
+  };
+
+  if (valid) {
+    pushUndo();
+    app.cur.st = next;
+    markChanged();
+    app.editor.preview = null;
+    draw();
+  } else {
+    showToast(reason, 'error');
+    app.editor.preview = null;
+    draw();
+  }
+}
+
 function initKeyboard(){
   window.addEventListener('keydown', e=>{
     const tag = (e.target.tagName||'').toLowerCase();
@@ -55,6 +131,8 @@ function initKeyboard(){
     }
     if ((e.ctrlKey||e.metaKey) && e.code==='KeyY'){ e.preventDefault(); doRedo(); return; }
     if ((e.ctrlKey||e.metaKey) && e.code==='KeyS'){ e.preventDefault(); saveToDisk(); return; }
+    if ((e.ctrlKey||e.metaKey) && (e.code==='KeyC'||e.code==='KeyX')){ e.preventDefault(); copySelection(); return; }
+    if ((e.ctrlKey||e.metaKey) && e.code==='KeyV'){ e.preventDefault(); pasteAtCursor(); return; }
     if ((e.ctrlKey||e.metaKey) && (e.code==='Digit0'||e.code==='Numpad0')){ e.preventDefault(); if (app.cur) selectMacro(app.cur.id); return; }
     if (tag==='input'||tag==='textarea') return;
     if (!e.ctrlKey && !e.metaKey && !e.altKey){

@@ -263,6 +263,28 @@ function drawEditorOverlay(macro){
       ctx.restore();
     }
   }
+  // Paste preview ghosts
+  if (app.editor.preview?.mode === 'paste-preview') {
+    const pv = app.editor.preview;
+    const color = pv.valid ? '#5aff8a' : '#ff4545';
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = pv.valid ? 'rgba(90,255,138,.3)' : 'rgba(255,69,69,.3)';
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    for (const u of (pv.pasteUnits||[])) {
+      const r = descriptorScreenRect(u, macro);
+      ctx.fillRect(r.left, r.top, r.width, r.height);
+      ctx.strokeRect(r.left, r.top, r.width, r.height);
+    }
+    for (const p of (pv.pastePlacements||[])) {
+      const ux=_consts.unitPxX, uy=_consts.unitPxY, off=bodyOffset(macro);
+      const [sx,sy]=W((p.x+off+.5)*ux,(p.y+.5)*uy);
+      const slotColor=SLOT_COLORS[p.type]||'#fff';
+      ctx.fillStyle=slotColor;ctx.strokeStyle=color;
+      ctx.beginPath();ctx.arc(sx,sy,Math.max(6,8*app.zoom),0,Math.PI*2);ctx.fill();ctx.stroke();
+    }
+    ctx.restore();
+  }
   drawCandidate(app.editor.preview,macro);
   drawCandidate(app.editor.interaction,macro);
 }
