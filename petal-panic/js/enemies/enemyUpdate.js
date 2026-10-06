@@ -67,7 +67,7 @@ function updateRealEnemy(e, dt) {
     e._explodeHandled = true;
     const cx = e.x + e.w / 2;
     const cy = e.y + e.h / 2;
-    const targets = [ctx.hero, ...ctx.enemies, ...ctx.realEnemies];
+    const targets = [ctx.hero, ...ctx.realEnemies];
     const result = resolveExplosion({
       ...e.explosion,
       cx, cy,

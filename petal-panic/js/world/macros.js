@@ -1603,9 +1603,8 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
     }
   }
 
-  // Post-placement fixup: ensure no platform rests on another unit's surface
-  // with 0 clearance. Shift violating platforms up by 1 row (and update aabb).
-  fixPlatformClearance(placedUnits);
+  // Post-placement fixup removed: authored macros no longer have 0-gap
+  // platform pairs, and the retry loop handles inter-macro conflicts.
 
   const layout = {
     orientation,
