@@ -12,11 +12,10 @@
       "width": 5
     },
     {
-      "kind": "block",
+      "kind": "platform",
       "x": 10,
       "y": 2,
-      "width": 4,
-      "height": 1
+      "width": 4
     },
     {
       "kind": "block",
