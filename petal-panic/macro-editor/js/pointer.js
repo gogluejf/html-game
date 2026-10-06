@@ -230,6 +230,30 @@ function validateMultiResize(interaction){
   }
 }
 
+function validateCopyInteraction(interaction){
+  // Originals stay in place; copies are added as new units at the offset position
+  const next = clone(app.cur.st);
+  const dx = interaction.currentCell.x - interaction.anchorCell.x;
+  const dy = interaction.currentCell.y - interaction.anchorCell.y;
+  for (const item of interaction.multiOriginals) {
+    next.units.push({ ...clone(item.original), x: item.original.x + dx, y: item.original.y + dy });
+  }
+  try {
+    const schemaErrors = macroSchemaErrors(next, { expectedId: next.id });
+    if (schemaErrors.length) throw new Error(schemaErrors[0]);
+    const { warnings=[] } = validateLayout(previewLayout(next), { traversal: 'warn' });
+    interaction.valid = true;
+    interaction.severity = warnings.length ? 'warning' : 'valid';
+    interaction.reason = '';
+    interaction.nextMacro = next;
+  } catch (err) {
+    interaction.valid = false;
+    interaction.severity = 'error';
+    interaction.reason = reasonFromError(err);
+    interaction.nextMacro = next;
+  }
+}
+
 function validateMultiInteraction(interaction){
   // Build a macro with ALL multi-selected items at their new positions
   const next = clone(app.cur.st);
@@ -381,6 +405,32 @@ function onPointerDown(e){
     validateInteraction(interaction); app.editor.interaction=interaction;
   } else if (hit){
     beginTransientSelect();
+    // Ctrl+Alt+Click: copy-drag (originals stay, ghost is a new copy)
+    if ((e.ctrlKey || e.metaKey) && e.altKey) {
+      const items = app.editor.multiSelect.length > 0 ? app.editor.multiSelect : [{ kind: hit.kind, index: hit.index }];
+      const originals = items
+        .filter(s => s.kind === 'unit')
+        .map(s => ({ ...s, original: clone(app.cur.st.units[s.index]) }));
+      const interaction = {
+        mode: 'copying-multi',
+        targetKind: null,
+        targetIndex: -1,
+        anchorCell: cell,
+        currentCell: cell,
+        original: null,
+        candidate: null,
+        multiOriginals: originals,
+        attachedPlacements: [],
+        valid: true,
+        reason: '',
+      };
+      validateCopyInteraction(interaction);
+      app.editor.interaction = interaction;
+      cv.setPointerCapture(e.pointerId);
+      updateCursor();
+      draw();
+      return;
+    }
     // Ctrl+Click: toggle multi-select
     if (e.ctrlKey || e.metaKey) {
       // If multiSelect is empty, seed it with the current selection first
@@ -498,6 +548,9 @@ function onPointerMove(e){
   if (i.mode === 'moving-multi') {
     validateMultiInteraction(i); draw(); return;
   }
+  if (i.mode === 'copying-multi') {
+    validateCopyInteraction(i); draw(); return;
+  }
   if (i.mode === 'resizing-multi') {
     validateMultiResize(i); draw(); return;
   }
@@ -513,7 +566,7 @@ function finishPointer(e, cancelled=false){
   const i=app.editor.interaction;
   if (!i || i.mode==='rollback') return;
   if (!cancelled && i.valid){
-    if (i.mode === 'moving-multi' || i.mode === 'resizing-multi') {
+    if (i.mode === 'moving-multi' || i.mode === 'resizing-multi' || i.mode === 'copying-multi') {
       // Multi-drag commit: apply all moves from nextMacro
       pushUndo();
       app.cur.st.units = i.nextMacro.units;

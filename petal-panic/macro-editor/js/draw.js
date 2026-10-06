@@ -214,8 +214,8 @@ function drawEditorOverlay(macro){
     ctx.strokeRect(r.left,r.top,r.width,r.height);
     ctx.restore();
   }
-  // Multi-drag/resize ghosts
-  if (active?.mode === 'moving-multi' && active.multiOriginals) {
+  // Multi-drag/resize/copy ghosts
+  if ((active?.mode === 'moving-multi' || active?.mode === 'copying-multi') && active.multiOriginals) {
     const dx = active.currentCell.x - active.anchorCell.x;
     const dy = active.currentCell.y - active.anchorCell.y;
     const color = active.valid ? '#5aff8a' : '#ff4545';
@@ -405,7 +405,7 @@ function isActiveOriginal(kind, index){
   const i=app.editor.interaction;
   if (!i) return false;
   if (kind==='slot'&&i.attachedPlacements?.some(p=>p.index===index)) return true;
-  // Multi-drag/resize: dim all selected units
+  // Multi-drag/resize: dim all selected units (but NOT for copy — originals stay)
   if ((i.mode==='moving-multi'||i.mode==='resizing-multi') && i.multiOriginals) {
     return i.multiOriginals.some(item => item.kind===kind && item.index===index);
   }
