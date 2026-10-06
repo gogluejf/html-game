@@ -2253,75 +2253,80 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
     //
     // (We do NOT check last platform → exit, because the exit is at the top
     // of the zone and is reached by climbing, not by jumping.)
+    // Reachability is judged by the REAL double-jump physics (same model as the
+    // horizontal path), not a flat "1 tier" cap. A rise of `risePx` between two
+    // standing surfaces is reachable when the weakest hero's double jump covers
+    // it. In a vertical climb the platforms are stacked nearly directly above
+    // one another, so the horizontal gap is ~0 and the question reduces to: can
+    // the hero rise that far? minHeroDoubleJumpHorizontalReachPx(risePx) returns
+    // the horizontal distance coverable at that rise (>= 0 iff the rise itself
+    // is within the jump envelope). We only flag the DESTINATION platform (the
+    // one that cannot be reached) — never the source you jump from — so raising
+    // one platform does not smear amber onto the one beneath it.
+    const riseReachable = (riseTiers) =>
+      minHeroDoubleJumpHorizontalReachPx(riseTiers * UNIT_PX_Y) >= 0;
+
     for (let i = 1; i < platforms.length; i++) {
       const prev = platforms[i - 1];
       const curr = platforms[i];
-      const step = platformY(curr) - platformY(prev); // positive = upward
       if (prev.placementId === curr.placementId) {
-        // Within the same macro: upward step must be ≤ MAX_ELEVATION_STEP.
-        if (step > MAX_ELEVATION_STEP) {
+        // Within the same macro: the hero climbs successive landings. Flag only
+        // the upper (destination) platform if the rise exceeds the jump envelope.
+        const step = platformY(curr) - platformY(prev);
+        if (step > 0 && !riseReachable(step)) {
           warnTraversal(
-            `validateLayout: elevation step of ${step} tiers UP between platforms at ` +
-              `y=${platformY(prev)} and y=${platformY(curr)} (same macro) ` +
-              `exceeds max ${MAX_ELEVATION_STEP}`,
-            [prev._editorIndex, curr._editorIndex],
+            `validateLayout: platform at y=${platformY(curr)} is ${step} tiers above ` +
+              `the landing at y=${platformY(prev)} — beyond the weakest hero's ` +
+              `double-jump reach`,
+            [curr._editorIndex],
           );
         }
       } else {
-        // Between macros: the next macro's first platform must be reachable
-        // from the previous macro's peak. The previous macro's peak is the
-        // HIGHEST platform in that macro (the one the hero stands on before
-        // jumping to the next macro). We find it by scanning all platforms
-        // with the same placementId as `prev` and taking the max y.
+        // Between macros: the next macro's first platform must be reachable from
+        // the previous macro's peak (the highest platform in that macro).
         const prevMacroPeakY = Math.max(
           ...platforms
             .filter((p) => p.placementId === prev.placementId)
             .map(platformY),
         );
         const interMacroStep = platformY(curr) - prevMacroPeakY;
-        if (interMacroStep > MAX_ELEVATION_STEP) {
+        if (interMacroStep > 0 && !riseReachable(interMacroStep)) {
           warnTraversal(
-            `validateLayout: inter-macro elevation step of ${interMacroStep} tiers UP ` +
-              `between macro ${prev.placementId}'s peak (y=${prevMacroPeakY}) and ` +
-              `macro ${curr.placementId}'s first platform (y=${platformY(curr)}) ` +
-              `exceeds max ${MAX_ELEVATION_STEP} — unreachable join`,
-            [prev._editorIndex, curr._editorIndex],
+            `validateLayout: platform at y=${platformY(curr)} is ${interMacroStep} tiers ` +
+              `above macro ${prev.placementId}'s peak (y=${prevMacroPeakY}) — beyond ` +
+              `the weakest hero's double-jump reach (unreachable join)`,
+            [curr._editorIndex],
           );
         }
       }
     }
 
-    // Check ground → first platform. The hero starts on the bottom support
-    // platform (elevation 0) and must reach the first landing with a jump.
-    // A macro's first platform occupies cell row 1, so its FACE (standing
-    // surface) is at elevation 2 — exactly one double-jump step above the
-    // start platform. Measuring from the face keeps this check consistent
-    // with every other step measured between standing surfaces.
+    // Ground → first platform. The hero starts on the ground (elevation 0) and
+    // must reach the first landing. Measured from the face (standing surface).
     if (platforms.length > 0) {
       const first = platforms[0];
-      const step = platformY(first) - 1;
-      if (step > MAX_ELEVATION_STEP) {
+      const step = platformY(first); // rise from ground (elev 0) to the face
+      if (step > 0 && !riseReachable(step)) {
         warnTraversal(
-          `validateLayout: elevation step of ${step} tiers UP between the start ` +
-            `platform (elevation 1) and first platform face at y=${platformY(first)} ` +
-            `exceeds max upward step ${MAX_ELEVATION_STEP}`,
+          `validateLayout: first platform at y=${platformY(first)} is ${step} tiers ` +
+            `above the ground — beyond the weakest hero's double-jump reach`,
           [first._editorIndex],
         );
       }
     }
 
-    // BLOCKER 2 FIX: Check last platform → exit flag. The exit flag sits at
-    // the top of the zone (y = totalHeight). The hero must be able to jump
-    // from the last (highest) platform to the exit. The upward step from the
-    // highest platform to the exit must be ≤ MAX_ELEVATION_STEP.
+    // Last platform → exit flag. The exit sits at the top of the zone
+    // (y = totalHeight). The hero must be able to jump from the highest
+    // platform to it. Flag only the last platform (the source) since the exit
+    // flag is not an editable unit.
     if (platforms.length > 0 && layout.totalHeight !== undefined) {
       const lastPlatformY = platformY(platforms[platforms.length - 1]);
       const exitStep = layout.totalHeight - lastPlatformY;
-      if (exitStep > MAX_ELEVATION_STEP) {
+      if (exitStep > 0 && !riseReachable(exitStep)) {
         warnTraversal(
-          `validateLayout: elevation step of ${exitStep} tiers UP between last ` +
-            `platform (y=${lastPlatformY}) and exit flag (y=${layout.totalHeight}) ` +
-            `exceeds max upward step ${MAX_ELEVATION_STEP} — exit unreachable`,
+          `validateLayout: exit flag (y=${layout.totalHeight}) is ${exitStep} tiers above ` +
+            `the last platform (y=${lastPlatformY}) — beyond the weakest hero's ` +
+            `double-jump reach (exit unreachable)`,
           [platforms[platforms.length - 1]._editorIndex],
         );
       }

@@ -744,7 +744,10 @@ test('validateLayout: throws on buried platform', () => {
   assert.throws(() => validateLayout(layout), /buried/);
 });
 
-test('validateLayout: throws on elevation step > 1 tier', () => {
+test('validateLayout: throws on an unreachable vertical rise', () => {
+  // A 4-tier rise between two landings is beyond the weakest hero's double
+  // jump (real physics), so it must be flagged. (A 2-tier rise is reachable —
+  // see the climbing macros — so it no longer errors.)
   const layout = {
     orientation: 'vertical',
     stage: 2,
@@ -754,13 +757,13 @@ test('validateLayout: throws on elevation step > 1 tier', () => {
     macros: [],
     units: [
       { kind: 'platform', x: 5, y: 1, width: 2, tier: 1, thickness: 1, oneWay: true, solid: false, aabb: { x: 5, y: 1, w: 2, h: 1 }, placementId: 1 },
-      { kind: 'platform', x: 8, y: 3, width: 2, tier: 3, thickness: 1, oneWay: true, solid: false, aabb: { x: 8, y: 3, w: 2, h: 1 }, placementId: 1 },
+      { kind: 'platform', x: 8, y: 5, width: 2, tier: 5, thickness: 1, oneWay: true, solid: false, aabb: { x: 8, y: 5, w: 2, h: 1 }, placementId: 1 },
     ],
     gaps: [],
     totalWidth: 20,
     placements: [],
   };
-  assert.throws(() => validateLayout(layout), /elevation step/);
+  assert.throws(() => validateLayout(layout), /beyond the weakest hero/);
 });
 
 test('validateLayout: throws on unreachable inter-macro join (R2 #2)', () => {
@@ -793,7 +796,7 @@ test('validateLayout: throws on unreachable inter-macro join (R2 #2)', () => {
   };
   assert.throws(
     () => validateLayout(layout),
-    /inter-macro.*unreachable|unreachable join/,
+    /unreachable join|beyond the weakest hero/,
     'unreachable inter-macro join must be flagged',
   );
 });
