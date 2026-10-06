@@ -44,6 +44,36 @@
       "x": 5,
       "y": 5,
       "width": 6
+    },
+    {
+      "kind": "platform",
+      "x": 14,
+      "y": 5,
+      "width": 6
+    },
+    {
+      "kind": "platform",
+      "x": 13,
+      "y": 3,
+      "width": 7
+    },
+    {
+      "kind": "platform",
+      "x": 22,
+      "y": 4,
+      "width": 2
+    },
+    {
+      "kind": "platform",
+      "x": 23,
+      "y": 1,
+      "width": 5
+    },
+    {
+      "kind": "platform",
+      "x": 13,
+      "y": 2,
+      "width": 4
     }
   ],
   "placements": [

@@ -1953,10 +1953,10 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
       // the climb landings — governed by the elevation-step rule instead.
       if (upper.placementId !== undefined && lower.placementId !== undefined
           && upper.placementId !== lower.placementId) continue;
-      // Only units whose surface lies strictly BELOW the upper unit's cell
-      // floor are "below" it. Same-cell or higher units are side-by-side
+      // Only units whose surface lies at or below the upper unit's cell
+      // floor are "below" it. Higher units are side-by-side
       // landings (governed by the elevation-step rule), not stacking.
-      if (surfaceLine(lower) >= uRow) continue;
+      if (surfaceLine(lower) > uRow) continue;
 
       const lStart = lower.x;
       const lEnd = lower.x + lower.aabb.w;
