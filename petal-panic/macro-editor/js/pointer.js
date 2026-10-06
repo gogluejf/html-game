@@ -4,7 +4,7 @@
 
 import { app } from './state.js';
 import { cv, c2s, evPos } from './viewport.js';
-import { draw } from './draw.js';
+import { draw, zoneExtents } from './draw.js';
 import { markChanged } from './save.js';
 import { validateMacroCandidate, validateDeletion } from './validation.js';
 import { showToast } from './toast.js';
@@ -13,6 +13,7 @@ import { syncToolButtons } from './tools.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const HANDLE_PX = 9;
+let lastCell = null;
 
 function bodyOffset(){
   if (!app.cur) return 0;
@@ -144,9 +145,16 @@ function hoverCandidate(cell){
   return hoverCandidateForTool(app.editor.tool,cell,app.cur.st.placements||[]);
 }
 
+function cellInZone(cell){
+  if (!app.cur) return false;
+  const z = zoneExtents(app.cur.st);
+  return cell.x >= z.ax0 && cell.x < z.ax1 && cell.y >= z.ay0 && cell.y < z.ay1;
+}
+
 function updateHoverPreview(cell,hit){
   app.editor.preview=null;
   if (!app.cur||hit||app.editor.interaction||app.editor.pan) return;
+  if (!cellInZone(cell)) return;
   const candidate=hoverCandidate(cell);
   if (!candidate) return;
   const result=validateMacroCandidate(app.cur.st,candidate);
@@ -246,6 +254,7 @@ function endTransientSelect(){
 function onPointerDown(e){
   if (e.button !== 0 || !app.cur) return;
   const cell=eventCell(e), tool=app.editor.tool;
+  lastCell=cell;
   const handle=hitHandle(cell.sx,cell.sy);
   const hit=hitTest(cell);
   app.editor.preview=null;
@@ -287,6 +296,7 @@ function onPointerDown(e){
 function onPointerMove(e){
   if (!app.cur) return;
   const cell=eventCell(e);
+  lastCell=cell;
   if (app.editor.pan){
     app.editor.preview=null;
     const p=app.editor.pan;
@@ -330,6 +340,11 @@ export function updateCursor(){
     cv.style.cursor = 'grabbing';
     return;
   }
+  // Outside the level zone: always pan mode
+  if (!cellInZone(lastCell)){
+    cv.style.cursor = 'grab';
+    return;
+  }
   // Hovering an element always shows pointer (clicking selects/moves it)
   if (app.editor.hover){
     cv.style.cursor = 'pointer';
@@ -347,5 +362,5 @@ export function initPointer(){
   cv.addEventListener('pointermove',onPointerMove);
   cv.addEventListener('pointerup',e=>finishPointer(e,false));
   cv.addEventListener('pointercancel',e=>finishPointer(e,true));
-  cv.addEventListener('pointerleave',()=>{ if (!app.editor.interaction){ app.editor.hover=null; app.editor.preview=null; draw(); } });
+  cv.addEventListener('pointerleave',()=>{ if (!app.editor.interaction){ app.editor.hover=null; app.editor.preview=null; lastCell=null; draw(); } });
 }
