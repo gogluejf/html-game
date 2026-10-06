@@ -70,8 +70,18 @@ function pasteAtCursor(){
   if (!clipboard || !app.cur) return;
   // Find cursor cell from last known pointer position
   if (!lastCell) return;
-  const dx = lastCell.x - (clipboard.units[0]?.x ?? clipboard.placements[0]?.x ?? 0);
-  const dy = lastCell.y - (clipboard.units[0]?.y ?? clipboard.placements[0]?.y ?? 0);
+  // Find the bottom-left anchor of the copied group
+  let minOrigX = Infinity, minOrigY = Infinity;
+  for (const u of clipboard.units) {
+    if (u.x < minOrigX) minOrigX = u.x;
+    if (u.y < minOrigY) minOrigY = u.y;
+  }
+  for (const p of clipboard.placements) {
+    if (p.x < minOrigX) minOrigX = p.x;
+    if (p.y < minOrigY) minOrigY = p.y;
+  }
+  const dx = lastCell.x - minOrigX;
+  const dy = lastCell.y - minOrigY;
 
   // Build next macro with pasted items
   const next = clone(app.cur.st);
