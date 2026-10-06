@@ -129,6 +129,23 @@ The constants (`HORIZONTAL_PLAY_HEIGHT_UNITS`, `TOP_CLEARANCE_UNITS`, and
 `HORIZONTAL_MAX_SURFACE_UNITS`) and enforcement live in `js/world/macros.js`.
 The game and Macro Editor consume those same constants.
 
+### Clearance between units
+
+How much empty space a unit needs above whatever is directly below it (in the
+same column). The ground counts as a surface, so this also covers a unit that
+is floating with nothing under it:
+
+- **Block:** needs **2 empty rows** of clearance above the surface below it —
+  or above the ground if nothing is there. A block sitting on the ground is
+  always fine. This means blocks cannot stack on each other and cannot float
+  too low.
+- **Platform:** needs **1 empty row** of clearance above the surface below it
+  (a block or another platform). A platform can never sit on the ground.
+
+On top of that, every standable surface must respect the ceiling rule above
+(leave 2 empty rows before the top of the play space). So a unit is legal only
+when it clears both the surface beneath it *and* the ceiling above it.
+
 ### Blocks
 
 - Rectangular descriptor: `{ x, y, width, height }`.
