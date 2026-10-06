@@ -275,6 +275,9 @@ function onPointerDown(e){
       : clone(original);
     const interaction={mode:hit.kind==='slot'?'moving-slot':'moving-object',targetKind:hit.kind,targetIndex:hit.index,anchorCell:cell,currentCell:cell,original,candidate,attachedPlacements:hit.kind==='unit'?attachedPlacements(original):[],valid:true,reason:''};
     validateInteraction(interaction);app.editor.interaction=interaction;
+  } else if (!cellInZone(cell)){
+    app.editor.selection=null;
+    app.editor.pan={x:e.clientX,y:e.clientY,panX:app.panX,panY:app.panY};
   } else if (tool === 'block' || tool === 'platform'){
     const mode=tool==='block'?'creating-block':'creating-platform';
     const interaction={ mode, targetKind:null, targetIndex:-1, handle:null, anchorCell:cell, currentCell:cell, original:null, candidate:candidateForCreate(mode,cell,cell), valid:false, reason:'' };
