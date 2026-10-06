@@ -1984,7 +1984,6 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
       );
     }
     if (uRow <= 0) continue; // block resting on the floor — no clearance needed
-    let hasSupport = false;
     for (const lower of units) {
       if (lower === upper) continue;
       // The rule applies WITHIN a single macro instance (true 2D stacking,
@@ -2002,7 +2001,6 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
       const uStart = upper.x;
       const uEnd = upper.x + upper.aabb.w;
       if (uStart < lEnd && uEnd > lStart) {
-        hasSupport = true;
         // Column overlap: count the empty rows between the surfaces.
         const clearance = uRow - surfaceLine(lower);
         if (upper.kind === 'platform') {
@@ -2024,13 +2022,6 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
           }
         }
       }
-    }
-    // A block or platform above row 0 with no supporting unit below it is floating.
-    if (!hasSupport && upper.kind === 'block') {
-      throw new Error(
-        `validateLayout: block at x=${upper.x} (base row ${uRow}) has no supporting ` +
-          `surface below it — blocks must rest on the ground or be ≥ 2 rows above a surface`,
-      );
     }
   }
 
