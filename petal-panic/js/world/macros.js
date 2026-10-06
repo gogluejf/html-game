@@ -313,8 +313,8 @@ export const PLATFORM_DRAW_H = Math.max(2, Math.round(UNIT_PX_Y / 8)); // 6px at
  *     a platform's row is its LANDING FACE elevation.
  *   - col = units FROM THE LEFT of the macro's footprint (0 = left edge).
  *   - Empty cells are gaps. No G() unit exists anymore.
- *   - Clearance rule: any unit whose base/face is above row 0 must be ≥ 2 rows
- *     above the top of whatever is directly below it in its column span.
+ *   - Clearance rule: blocks need ≥ 2 rows above any unit below (or from the
+ *     ground if nothing is below). Platforms need ≥ 1 row above any unit below.
  */
 export let MACROS = Object.freeze({});
 
@@ -1967,12 +1967,12 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
   //     and the lower unit's surface line. The upper unit's own cell is NOT
   //     clearance — it is occupied. Rules:
   //       - block on the floor (row 0): always legal (may touch the ground)
-  //       - block with clearance 0 (touching stack): legal
+  //       - block with clearance < 2 above a unit below: ILLEGAL (no stacking,
+  //         no 1-row gap)
   //       - block with clearance >= 2: legal (hero fits/jumps underneath)
-  //       - block with clearance exactly 1: ILLEGAL (not a stack, not clearable)
-  //       - platform: clearance must be >= 1 (thin one-way landing needs one
-  //         air row; it can never rest ON a surface), and a platform may never
-  //         be declared at row 0.
+  //       - block floating with nothing below: needs >= 2 rows from ground
+  //       - platform: clearance must be >= 1 above any unit below (block or
+  //         platform), and a platform may never be declared at row 0.
   const cellFloor = (u) => (u.y ?? u.tier ?? 0);
   const surfaceLine = (u) => (u.kind === 'block' ? (u.y ?? 0) + u.height : (u.y ?? u.tier ?? 0) + 1);
   for (const upper of units) {

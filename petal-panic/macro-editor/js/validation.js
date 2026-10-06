@@ -95,6 +95,7 @@ export function reasonFromError(error){
   if (/platforms need/.test(msg)) return 'Platform requires an empty row below';
   if (/overlap|intersect|buried/.test(msg)) return 'Overlaps another block/platform';
   if (/blocks need ≥ 2 empty rows/.test(msg)) return 'Blocks need ≥ 2 empty rows above another unit';
+  if (/clearance from the ground/.test(msg)) return 'Too close to the ground — blocks need ≥ 2 rows';
   if (/duplicate slot position/.test(msg)) return 'A slot already occupies this cell';
   if (/elevation step/.test(msg)) return 'Creates an unreachable elevation step';
   return msg.replace(/^validateLayout:\s*/, '').split('\n')[0];
