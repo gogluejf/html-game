@@ -300,7 +300,10 @@ function onPointerDown(e){
     beginTransientSelect();
     // Ctrl+Click: toggle multi-select
     if (e.ctrlKey || e.metaKey) {
-      const key = hit.kind + ':' + hit.index;
+      // If multiSelect is empty, seed it with the current selection first
+      if (app.editor.multiSelect.length === 0 && app.editor.selection) {
+        app.editor.multiSelect.push({ kind: app.editor.selection.kind, index: app.editor.selection.index });
+      }
       const idx = app.editor.multiSelect.findIndex(s => s.kind === hit.kind && s.index === hit.index);
       if (idx >= 0) app.editor.multiSelect.splice(idx, 1);
       else app.editor.multiSelect.push({ kind: hit.kind, index: hit.index });
@@ -336,6 +339,10 @@ function onPointerDown(e){
       }
       // Clicked non-selected item with ctrl not held: clear multi, select this
       app.editor.multiSelect = [];
+    }
+    // Seed multiSelect with this item for future Ctrl+Click additions
+    if (app.editor.multiSelect.length === 0) {
+      app.editor.multiSelect = [{ kind: hit.kind, index: hit.index }];
     }
     app.editor.selection=hit;
     const original=clone(hit.kind==='unit' ? app.cur.st.units[hit.index] : app.cur.st.placements[hit.index]);
