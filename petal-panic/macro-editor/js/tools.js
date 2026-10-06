@@ -19,6 +19,8 @@ const BUTTONS = Object.freeze({
   erase: 'toolErase',
 });
 
+const LS_TOOL = 'macro-editor-tool-v1-';
+
 export function setTool(tool){
   if (!TOOLS.includes(tool)) throw new Error(`unknown macro editor tool: ${tool}`);
   app.editor.tool = tool;
@@ -26,6 +28,7 @@ export function setTool(tool){
   app.editor.preview = null;
   syncToolButtons();
   cv.style.cursor = app.editor.hover ? 'pointer' : (tool === 'none' ? 'grab' : 'crosshair');
+  try { localStorage.setItem(LS_TOOL, tool); } catch(e){}
   draw();
 }
 
@@ -40,5 +43,9 @@ export function initTools(){
   for (const [tool, id] of Object.entries(BUTTONS)){
     document.getElementById(id)?.addEventListener('click', () => setTool(tool));
   }
-  syncToolButtons();
+  // Restore last-used tool
+  let saved = null;
+  try { saved = localStorage.getItem(LS_TOOL); } catch(e){}
+  if (saved && TOOLS.includes(saved)) setTool(saved);
+  else syncToolButtons();
 }
