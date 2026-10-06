@@ -1099,9 +1099,13 @@ const MobileControls = {
   pointerId: null,
   x: 240,
   y: 586,
+  anchorFingerX: 240,
+  anchorShipCenterX: 240,
+  targetCenterX: 240,
+  steeringGain: 2,
 
   init(canvas) {
-    const updateTarget = (e) => {
+    const updatePointer = (e) => {
       const rect = canvas.getBoundingClientRect();
       this.x = (e.clientX - rect.left) * W / rect.width;
       this.y = (e.clientY - rect.top) * H / rect.height;
@@ -1114,13 +1118,21 @@ const MobileControls = {
       if (Game.state === "title" || Game.state === "gameOver") Game.startGame();
       this.active = true;
       this.pointerId = e.pointerId;
-      updateTarget(e);
+      updatePointer(e);
+      // Anchor steering where the thumb lands. Dragging across the middle 50%
+      // can then cover the ship's full width without teleporting on first touch.
+      this.anchorFingerX = this.x;
+      this.anchorShipCenterX = Game.player ? Game.player.cx : W / 2;
+      this.targetCenterX = this.anchorShipCenterX;
       try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
     });
     canvas.addEventListener("pointermove", (e) => {
       if (!this.active || e.pointerId !== this.pointerId) return;
       e.preventDefault();
-      updateTarget(e);
+      updatePointer(e);
+      const halfShip = Game.player ? Game.player.w / 2 : 20;
+      const steered = this.anchorShipCenterX + (this.x - this.anchorFingerX) * this.steeringGain;
+      this.targetCenterX = Math.max(halfShip, Math.min(W - halfShip, steered));
     });
     const release = (e) => {
       if (e.pointerId !== this.pointerId) return;
@@ -1132,12 +1144,18 @@ const MobileControls = {
     canvas.addEventListener("lostpointercapture", release);
   },
 
-  apply(player) {
+  apply(player, dt) {
     if (!this.active || !player) return;
+    // Smooth the amplified target enough to suppress thumb jitter while keeping
+    // arcade movement responsive and frame-rate independent.
+    const smoothing = 1 - Math.exp(-18 * dt);
+    const targetX = this.targetCenterX - player.w / 2;
+    player.x += (targetX - player.x) * smoothing;
+    player.x = Math.max(0, Math.min(W - player.w, player.x));
+
     // Keep the ship one rendered sprite-height above the fingertip so it stays visible.
     const touchOffsetY = 56;
     const mobileMinY = Math.max(0, player.minY - touchOffsetY);
-    player.x = Math.max(0, Math.min(W - player.w, this.x - player.w / 2));
     player.y = Math.max(mobileMinY, Math.min(player.maxY, this.y - player.h / 2 - touchOffsetY));
   },
 };
@@ -3379,7 +3397,7 @@ const Game = {
     // Player ship movement + shooting.
     this.player.time = this.time;
     this.player.update(dt, Input);
-    MobileControls.apply(this.player);
+    MobileControls.apply(this.player, dt);
     if (Input.down("Space") || MobileControls.active) {
       const fired = this.player.shoot();
       for (const b of fired) this.bullets.push(b);
