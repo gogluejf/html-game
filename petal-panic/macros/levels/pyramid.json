@@ -38,6 +38,12 @@
       "y": 0,
       "x": 9,
       "width": 1
+    },
+    {
+      "kind": "platform",
+      "x": 5,
+      "y": 5,
+      "width": 6
     }
   ],
   "placements": [

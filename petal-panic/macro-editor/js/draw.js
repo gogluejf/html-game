@@ -139,21 +139,27 @@ function drawCandidate(interaction,macro){
   const severity=interaction.severity || (interaction.valid?'valid':'error');
   const valid=interaction.valid && interaction.mode!=='rollback';
   const warning=valid && severity==='warning';
-  const color=!valid ? '#ff4545' : warning ? '#ffb73e' : (item.kind==='block'?COL_BLOCK:item.kind==='platform'?COL_PLATFORM:(SLOT_COLORS[item.type]||'#fff'));
+  const hoverPreview=interaction.mode==='hover-preview';
+  const normalColor=item.kind==='block'?COL_BLOCK:item.kind==='platform'?COL_PLATFORM:(SLOT_COLORS[item.type]||'#fff');
+  const color=!valid ? '#ff4545' : warning ? '#ffb73e' : hoverPreview ? '#5aff8a' : normalColor;
   ctx.save();
-  ctx.fillStyle=!valid?'rgba(255,69,69,.34)':warning?'rgba(255,183,62,.34)':'rgba(62,240,255,.34)';
+  ctx.fillStyle=!valid?'rgba(255,69,69,.34)':warning?'rgba(255,183,62,.34)':hoverPreview?'rgba(90,255,138,.30)':'rgba(62,240,255,.34)';
   ctx.strokeStyle=color;ctx.lineWidth=3;
   if (item.kind==='block'||item.kind==='platform'){
     const r=descriptorScreenRect(item,macro);
     ctx.fillRect(r.left,r.top,r.width,r.height);ctx.strokeRect(r.left,r.top,r.width,r.height);
-    const label=item.kind==='block'?`x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}, h ${Math.round(item.height)}`:`x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}`;
-    ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(label,r.left+4,r.top-5);
+    if (!hoverPreview){
+      const label=item.kind==='block'?`x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}, h ${Math.round(item.height)}`:`x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}`;
+      ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(label,r.left+4,r.top-5);
+    }
     if (!valid){
       ctx.beginPath();ctx.moveTo(r.left,r.top);ctx.lineTo(r.right,r.bottom);ctx.moveTo(r.right,r.top);ctx.lineTo(r.left,r.bottom);ctx.stroke();
     }
   } else {
     const [x,y]=drawSlotCandidate(item,macro,color,valid);
-    ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='left';ctx.fillText(`${item.type} (${item.x}, ${item.y})`,x+12,y-10);
+    if (!hoverPreview){
+      ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='left';ctx.fillText(`${item.type} (${item.x}, ${item.y})`,x+12,y-10);
+    }
   }
   if (interaction.attachedPlacements?.length){
     for (const attached of interaction.attachedPlacements){
@@ -171,13 +177,14 @@ function drawEditorOverlay(macro){
   const sameTarget=(target)=>target&&active&&active.targetKind===target.kind&&active.targetIndex===target.index;
   if (!sameTarget(app.editor.hover)) drawTarget(app.editor.hover,macro,false);
   if (!sameTarget(app.editor.selection)) drawTarget(app.editor.selection,macro,true);
+  drawCandidate(app.editor.preview,macro);
   drawCandidate(app.editor.interaction,macro);
 }
 
 function syncValidationHint(){
   const el=document.getElementById('validationHint');
   if (!el) return;
-  const i=app.editor.interaction;
+  const i=app.editor.interaction||app.editor.preview;
   const reason=i&&(i.severity==='warning'||!i.valid)?i.reason:'';
   el.textContent=reason;
   el.classList.toggle('on',!!reason);

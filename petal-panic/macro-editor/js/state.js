@@ -44,6 +44,7 @@ const editor = {
   hover:null,
   selection:null,
   interaction:null,
+  preview:null,
   pan:null,
   warningUnitIndices:[],
 };

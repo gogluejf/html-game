@@ -62,6 +62,7 @@ export function selectMacro(id){
   app.editor.hover = null;
   app.editor.selection = null;
   app.editor.interaction = null;
+  app.editor.preview = null;
   app.editor.pan = null;
   app.editor.transientTool = null;
   app.editor.warningUnitIndices = analyzeMacroWarnings(st).warningUnitIndices;

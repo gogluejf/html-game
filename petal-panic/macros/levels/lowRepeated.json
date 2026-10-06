@@ -10,6 +10,20 @@
       "y": 0,
       "x": 5,
       "width": 5
+    },
+    {
+      "kind": "block",
+      "x": 11,
+      "y": 2,
+      "width": 3,
+      "height": 1
+    },
+    {
+      "kind": "block",
+      "x": 14,
+      "y": 0,
+      "width": 3,
+      "height": 5
     }
   ],
   "placements": [

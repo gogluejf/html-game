@@ -112,6 +112,19 @@ export function analyzeMacroWarnings(macro){
   }
 }
 
+function candidateWarningState(next,candidate,edit,warningUnitIndices){
+  if (candidate.kind==='block'||candidate.kind==='platform') {
+    const index=edit.targetKind==='unit' ? edit.targetIndex : next.units.length-1;
+    return warningUnitIndices.includes(index);
+  }
+  const supportIndex=next.units.findIndex(unit=>{
+    if (candidate.x<unit.x||candidate.x>=unit.x+unit.width) return false;
+    const top=unit.kind==='block'?unit.y+unit.height:unit.y+1;
+    return candidate.y===top;
+  });
+  return supportIndex>=0&&warningUnitIndices.includes(supportIndex);
+}
+
 export function validateMacroCandidate(macro, candidate, edit = {}){
   try {
     const next = macroWithCandidate(macro, candidate, edit);
@@ -121,10 +134,11 @@ export function validateMacroCandidate(macro, candidate, edit = {}){
     if (support) return { valid:false, reason:support, macro:next };
     const { warnings=[] }=validateLayout(previewLayout(next),{traversal:'warn'});
     const warningUnitIndices=[...new Set(warnings.flatMap(w=>w.unitIndices||[]))];
+    const candidateWarning=candidateWarningState(next,candidate,edit,warningUnitIndices);
     return {
       valid:true,
-      severity:warnings.length ? 'warning' : 'valid',
-      reason:warnings.length ? 'Warning: optional geometry is not reachable from the main route' : '',
+      severity:candidateWarning ? 'warning' : 'valid',
+      reason:candidateWarning ? 'Warning: optional geometry is not reachable from the main route' : '',
       warnings,
       warningUnitIndices,
       macro:next,

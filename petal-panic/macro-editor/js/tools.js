@@ -22,6 +22,7 @@ export function setTool(tool){
   if (!TOOLS.includes(tool)) throw new Error(`unknown macro editor tool: ${tool}`);
   app.editor.tool = tool;
   app.editor.transientTool = null;
+  app.editor.preview = null;
   syncToolButtons();
   draw();
 }

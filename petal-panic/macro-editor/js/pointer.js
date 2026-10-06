@@ -72,7 +72,7 @@ export function hitHandle(screenX, screenY){
   return null;
 }
 
-function uniqueSlotName(type, placements, preserve=''){
+export function uniqueSlotName(type, placements, preserve=''){
   if (preserve && !placements.some(p => p.slot === preserve)) return preserve;
   const used = new Set(placements.map(p=>p.slot));
   let n=1;
@@ -128,6 +128,34 @@ function resizedCandidate(original, handle, cell){
 
 function movedCandidate(original, anchor, current, seed=original){
   return { ...seed, x:original.x+current.x-anchor.x, y:original.y+current.y-anchor.y };
+}
+
+export function hoverCandidateForTool(tool,cell,placements=[]){
+  if (tool==='block') return {kind:'block',x:cell.x,y:cell.y,width:1,height:1};
+  if (tool==='platform') return {kind:'platform',x:cell.x,y:cell.y,width:1};
+  if (tool.startsWith('slot-')) {
+    const type=tool.slice(5);
+    return {slot:uniqueSlotName(type,placements),type,x:cell.x,y:cell.y};
+  }
+  return null;
+}
+
+function hoverCandidate(cell){
+  return hoverCandidateForTool(app.editor.tool,cell,app.cur.st.placements||[]);
+}
+
+function updateHoverPreview(cell,hit){
+  app.editor.preview=null;
+  if (!app.cur||hit||app.editor.interaction||app.editor.pan) return;
+  const candidate=hoverCandidate(cell);
+  if (!candidate) return;
+  const result=validateMacroCandidate(app.cur.st,candidate);
+  app.editor.preview={
+    mode:'hover-preview',candidate,
+    valid:result.valid,
+    severity:result.severity||(result.valid?'valid':'error'),
+    reason:result.reason||'',
+  };
 }
 
 function validateInteraction(interaction){
@@ -220,6 +248,7 @@ function onPointerDown(e){
   const cell=eventCell(e), tool=app.editor.tool;
   const handle=hitHandle(cell.sx,cell.sy);
   const hit=hitTest(cell);
+  app.editor.preview=null;
   if (tool === 'erase'){ eraseAt(hit); return; }
   if (handle){
     beginTransientSelect();
@@ -258,13 +287,18 @@ function onPointerMove(e){
   if (!app.cur) return;
   const cell=eventCell(e);
   if (app.editor.pan){
+    app.editor.preview=null;
     const p=app.editor.pan;
     app.panX=p.panX-(e.clientX-p.x)/app.zoom;
     app.panY=p.panY+(e.clientY-p.y)/app.zoom;
     draw(); return;
   }
   const i=app.editor.interaction;
-  if (!i){ app.editor.hover=hitTest(cell); draw(); return; }
+  if (!i){
+    app.editor.hover=hitTest(cell);
+    updateHoverPreview(cell,app.editor.hover);
+    draw();return;
+  }
   if (i.mode === 'rollback') return;
   i.currentCell=cell;
   if (i.mode.startsWith('creating-')) i.candidate=candidateForCreate(i.mode,i.anchorCell,cell);
@@ -291,5 +325,5 @@ export function initPointer(){
   cv.addEventListener('pointermove',onPointerMove);
   cv.addEventListener('pointerup',e=>finishPointer(e,false));
   cv.addEventListener('pointercancel',e=>finishPointer(e,true));
-  cv.addEventListener('pointerleave',()=>{ if (!app.editor.interaction){ app.editor.hover=null; draw(); } });
+  cv.addEventListener('pointerleave',()=>{ if (!app.editor.interaction){ app.editor.hover=null; app.editor.preview=null; draw(); } });
 }
