@@ -16,6 +16,7 @@ import { syncToolButtons, cursorForTool } from './tools.js';
 const clone = value => JSON.parse(JSON.stringify(value));
 const HANDLE_PX = 9;
 export let lastCell = null;
+let spaceHeld = false;
 
 function bodyOffset(){
   if (!app.cur) return 0;
@@ -378,6 +379,16 @@ function onPointerDown(e){
     return;
   }
   if (tool === 'erase'){ eraseAt(hit); return; }
+  // Space held: pan even inside the zone (hand cursor)
+  if (spaceHeld){
+    app.editor.selection=null;
+    app.editor.multiSelect=[];
+    app.editor.pan={x:e.clientX,y:e.clientY,panX:app.panX,panY:app.panY};
+    cv.setPointerCapture(e.pointerId);
+    updateCursor();
+    draw();
+    return;
+  }
   if (handle){
     beginTransientSelect();
     // Multi-resize: apply same delta to all selected units
@@ -522,6 +533,10 @@ function onPointerDown(e){
     const candidate={ slot:uniqueSlotName(type,app.cur.st.placements||[]), type, x:cell.x, y:cell.y };
     const interaction={mode:'moving-slot',targetKind:null,targetIndex:-1,anchorCell:cell,currentCell:cell,original:null,candidate,valid:false,reason:''};
     validateInteraction(interaction); app.editor.interaction=interaction;
+  } else if (tool === 'none'){
+    // Marquee select: drag an empty area to box-select everything it touches
+    const interaction={ mode:'marquee', targetKind:null, targetIndex:-1, handle:null, anchorCell:cell, currentCell:cell, original:null, candidate:null, valid:true, reason:'' };
+    app.editor.interaction=interaction;
   } else {
     app.editor.selection=null;
     app.editor.multiSelect=[];
@@ -553,6 +568,7 @@ function onPointerMove(e){
   }
   if (i.mode === 'rollback') return;
   i.currentCell=cell;
+  if (i.mode === 'marquee'){ draw(); return; }
   if (i.mode === 'moving-multi') {
     validateMultiInteraction(i); draw(); return;
   }
@@ -573,6 +589,13 @@ function finishPointer(e, cancelled=false){
   app.editor.pan=null;
   const i=app.editor.interaction;
   if (!i || i.mode==='rollback') return;
+  if (i.mode === 'marquee'){
+    commitMarquee(i);
+    app.editor.interaction=null;
+    updateCursor(); draw();
+    try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+    return;
+  }
   if (!cancelled && i.valid){
     if (i.mode === 'moving-multi' || i.mode === 'resizing-multi' || i.mode === 'copying-multi') {
       // Multi-drag commit: apply all moves from nextMacro
@@ -594,6 +617,26 @@ function finishPointer(e, cancelled=false){
   try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
 }
 
+function commitMarquee(interaction){
+  const a=interaction.anchorCell, b=interaction.currentCell;
+  const x0=Math.min(a.x,b.x), x1=Math.max(a.x,b.x);
+  const y0=Math.min(a.y,b.y), y1=Math.max(a.y,b.y);
+  const hits=[];
+  const placements=app.cur.st.placements||[];
+  for (let i=placements.length-1;i>=0;i--){
+    const p=placements[i];
+    if (p.x>=x0 && p.x<=x1 && p.y>=y0 && p.y<=y1) hits.push({kind:'slot',index:i});
+  }
+  const units=app.cur.st.units||[];
+  for (let i=units.length-1;i>=0;i--){
+    const u=units[i], r=unitRect(u);
+    // Touching = rects intersect (marquee rect is inclusive on both ends)
+    if (r.x<=x1 && r.x+r.width>=x0 && r.y<=y1 && r.y+r.height>=y0) hits.push({kind:'unit',index:i});
+  }
+  app.editor.multiSelect=hits;
+  app.editor.selection=hits.length ? hits[0] : null;
+}
+
 // ---------- cursor management ----------
 export function updateCursor(){
   const tool = app.editor.transientTool ?? app.editor.tool;
@@ -601,14 +644,19 @@ export function updateCursor(){
     cv.style.cursor = 'grabbing';
     return;
   }
+  // Space held: hand everywhere (pan ready)
+  if (spaceHeld){
+    cv.style.cursor = 'grab';
+    return;
+  }
   // Outside the level zone: always pan mode
   if (!cellInZone(lastCell)){
     cv.style.cursor = 'grab';
     return;
   }
-  // Hovering an element always shows pointer (clicking selects/moves it)
+  // Hovering an element: plain arrow (click selects/moves it)
   if (app.editor.hover){
-    cv.style.cursor = 'pointer';
+    cv.style.cursor = 'default';
     return;
   }
   cv.style.cursor = cursorForTool(tool);
@@ -620,4 +668,14 @@ export function initPointer(){
   cv.addEventListener('pointerup',e=>finishPointer(e,false));
   cv.addEventListener('pointercancel',e=>finishPointer(e,true));
   cv.addEventListener('pointerleave',()=>{ if (!app.editor.interaction){ app.editor.hover=null; app.editor.preview=null; lastCell=null; draw(); } });
+  window.addEventListener('keydown',e=>{
+    if (e.code!=='Space') return;
+    const tag=(e.target.tagName||'').toLowerCase();
+    if (tag==='input'||tag==='textarea'||document.querySelector('dialog[open]')) return;
+    if (!spaceHeld){ spaceHeld=true; e.preventDefault(); updateCursor(); }
+  });
+  window.addEventListener('keyup',e=>{
+    if (e.code!=='Space') return;
+    if (spaceHeld){ spaceHeld=false; updateCursor(); }
+  });
 }

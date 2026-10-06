@@ -224,6 +224,23 @@ function drawEditorOverlay(macro){
   const eraseTool = (app.editor.transientTool ?? app.editor.tool) === 'erase';
   if (!sameTarget(app.editor.hover)) drawTarget(app.editor.hover,macro,false,eraseTool);
   if (!sameTarget(app.editor.selection)) drawTarget(app.editor.selection,macro,true);
+  // Marquee selection rectangle
+  if (active?.mode === 'marquee') {
+    const a = active.anchorCell, b = active.currentCell;
+    const off = bodyOffset(macro);
+    const x0 = Math.min(a.x, b.x) + off, x1 = Math.max(a.x, b.x) + off + 1;
+    const yTop = Math.max(a.y, b.y) + 1, yBot = Math.min(a.y, b.y);
+    const [left, top] = W(x0 * _consts.unitPxX, yTop * _consts.unitPxY);
+    const [right, bottom] = W(x1 * _consts.unitPxX, yBot * _consts.unitPxY);
+    ctx.save();
+    ctx.fillStyle = 'rgba(62,240,255,.12)';
+    ctx.strokeStyle = '#3ef0ff';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.fillRect(left, top, right - left, bottom - top);
+    ctx.strokeRect(left, top, right - left, bottom - top);
+    ctx.restore();
+  }
   // Multi-select highlights
   for (const sel of app.editor.multiSelect) {
     if (sel.kind !== 'unit') continue;

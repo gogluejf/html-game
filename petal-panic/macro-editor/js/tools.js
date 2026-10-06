@@ -36,7 +36,7 @@ export function setTool(tool){
   app.editor.transientTool = null;
   app.editor.preview = null;
   syncToolButtons();
-  cv.style.cursor = app.editor.hover ? 'pointer' : cursorForTool(tool);
+  cv.style.cursor = app.editor.hover ? 'default' : cursorForTool(tool);
   try { localStorage.setItem(LS_TOOL, tool); } catch(e){}
   draw();
 }
