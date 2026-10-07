@@ -12,7 +12,7 @@ import { validateLayout } from '../../js/world/macros.js';
 import { showToast } from './toast.js';
 import { pushUndo } from './undo.js';
 import { syncToolButtons, cursorForTool } from './tools.js';
-import { killRideIfActive } from './ghost.js';
+import { killRideIfActive, ride } from './ghost.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const HANDLE_PX = 9;
@@ -382,8 +382,11 @@ function onPointerDown(e){
     return;
   }
   if (tool === 'erase'){ eraseAt(hit); return; }
-  // Space held: pan even inside the zone (hand cursor)
+  // Space held: pan even inside the zone (hand cursor). While a test ride is
+  // active, starting any drag cancels it on release — so kill the ride here
+  // and continue panning normally.
   if (spaceHeld){
+    killRideIfActive();
     app.editor.selection=null;
     app.editor.multiSelect=[];
     app.editor.pan={x:e.clientX,y:e.clientY,panX:app.panX,panY:app.panY};
@@ -647,8 +650,9 @@ export function updateCursor(){
     cv.style.cursor = 'grabbing';
     return;
   }
-  // Space held: hand everywhere (pan ready)
-  if (spaceHeld){
+  // Space held: hand everywhere (pan ready) — but while a ride is active,
+  // space is the pause trigger, so keep the normal tool cursor.
+  if (spaceHeld && !ride.active){
     cv.style.cursor = 'grab';
     return;
   }
@@ -675,6 +679,9 @@ export function initPointer(){
     if (e.code!=='Space') return;
     const tag=(e.target.tagName||'').toLowerCase();
     if (tag==='input'||tag==='textarea'||document.querySelector('dialog[open]')) return;
+    // While a test ride is active, space is the pause trigger — handled by
+    // main.js on keydown. Do NOT start a pan drag in that case.
+    if (ride.active) return;
     if (!spaceHeld){ spaceHeld=true; e.preventDefault(); updateCursor(); }
   });
   window.addEventListener('keyup',e=>{

@@ -185,7 +185,8 @@ function initKeyboard(){
       if (e.code==='KeyB'){ e.preventDefault(); setTool('block'); return; }
       if (e.code==='KeyP'){ e.preventDefault(); setTool('platform'); return; }
       if (e.code==='KeyE'){ e.preventDefault(); setTool('erase'); return; }
-      if (e.code==='KeyT'){ e.preventDefault(); toggleRide(); return; }
+      if (e.code==='Space' && !e.repeat){ e.preventDefault(); toggleRide(); return; }
+    if (e.code==='KeyT'){ e.preventDefault(); toggleRide(); return; }
       if (e.code==='Digit1'){ e.preventDefault(); setTool('slot-enemy'); return; }
       if (e.code==='Digit2'){ e.preventDefault(); setTool('slot-barrel'); return; }
       if (e.code==='Digit3'){ e.preventDefault(); setTool('slot-powerup'); return; }
