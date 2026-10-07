@@ -46,6 +46,15 @@ function initToolbar(){
   $('testRideBtn')?.addEventListener('click', toggleRide);
 }
 
+// ---------- help dialog (same pattern as sprite editor) ----------
+const helpDialog = $('helpDialog');
+function initHelpDialog(){
+  if (!helpDialog || !$('helpBtn')) return;
+  $('helpBtn').addEventListener('click', ()=>helpDialog.showModal());
+  helpDialog.addEventListener('click', ()=>helpDialog.close());
+  helpDialog.addEventListener('close', ()=>$('helpBtn').focus());
+}
+
 // ---------- zoom / pan ----------
 function initView(){
   $('zoomIn').addEventListener('click', ()=>setZoom(app.zoom*1.25));
@@ -226,6 +235,7 @@ async function boot(){
   initView();
   initPointer();
   initKeyboard();
+  initHelpDialog();
   syncToggles();
   syncUndoButtons();
   resizeCanvas();
