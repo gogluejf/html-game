@@ -12,7 +12,7 @@ import { validateLayout } from '../../js/world/macros.js';
 import { showToast } from './toast.js';
 import { pushUndo } from './undo.js';
 import { syncToolButtons, cursorForTool } from './tools.js';
-import { ride, setSpaceArmHook } from './ghost.js';
+import { ride, cancelSpaceToggle, fireSpaceToggle } from './ghost.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const HANDLE_PX = 9;
@@ -385,7 +385,7 @@ function onPointerDown(e){
   // if NO drag happened. Starting a real edit-drag here cancels that pending
   // trigger (which stops an active ride); panning outside the zone never does.
   if (spaceHeld){
-    setSpaceArmHook(null);   // cancel any pending space toggle; kills active ride
+    cancelSpaceToggle();   // a real drag cancels the pending space toggle (stops active ride)
     app.editor.selection=null;
     app.editor.multiSelect=[];
     app.editor.pan={x:e.clientX,y:e.clientY,panX:app.panX,panY:app.panY};
@@ -678,7 +678,7 @@ export function initPointer(){
     if (e.code!=='Space') return;
     const tag=(e.target.tagName||'').toLowerCase();
     if (tag==='input'||tag==='textarea'||document.querySelector('dialog[open]')) return;
-    // Space press arms the test-ride trigger (setSpaceArmHook in ghost.js);
+    // Space press arms the test-ride trigger (armSpaceToggle in ghost.js);
     // release fires start/stop only if no drag happened. While a ride is
     // active, space must NOT arm a pan drag — otherwise pointerdown would
     // cancel the pending toggle before keyup can fire it.
@@ -687,6 +687,10 @@ export function initPointer(){
   });
   window.addEventListener('keyup',e=>{
     if (e.code!=='Space') return;
+    const tag=(e.target.tagName||'').toLowerCase();
+    if (tag==='input'||tag==='textarea'||document.querySelector('dialog[open]')) return;
+    // Release fires the start/stop toggle only if no drag cancelled it.
+    fireSpaceToggle();
     if (spaceHeld){ spaceHeld=false; updateCursor(); }
   });
 }
