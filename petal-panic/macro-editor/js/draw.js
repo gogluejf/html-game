@@ -15,6 +15,7 @@
 import { app, SLOT_COLORS, COL_BLOCK, COL_PLATFORM, COL_GRID, COL_GRID_MAJOR } from './state.js';
 import { cv, ctx, s2c, setDrawHook } from './viewport.js';
 import { drawRide, setRedrawHook } from './ghost.js';
+import { macroEndpoint } from './clearance.js';
 
 let _consts = { unitPxX:72, unitPxY:48, platformDrawH:6 };
 export function setConstants(c){ 
@@ -34,6 +35,7 @@ export function draw(){
   if (app.show.grid) drawGrid();
   if (app.cur && app.cur.st){
     if (app.show.zone) drawZoneBox(app.cur.st);   // area bounding box + entry/exit (behind units)
+    drawMacroEndpoint(app.cur.st);                // permanent macro completion line
     drawTopClearance(app.cur.st);
     drawMacro(app.cur.st);
     drawEditorOverlay(app.cur.st);
@@ -649,6 +651,31 @@ export function contentExtents(macro){
     cy1 = Math.max(maxY + 1, 3);
   }
   return { ax0: cx0, ax1: cx1, ay0: 0, ay1: cy1 };
+}
+
+function drawMacroEndpoint(macro){
+  const ep = macroEndpoint(macro);
+  const ux = _consts.unitPxX, uy = _consts.unitPxY;
+  const off = bodyOffset(macro);
+  const z = zoneExtents(macro);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(185,195,210,.72)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([3, 5]);
+  ctx.shadowColor = 'rgba(185,195,210,.28)';
+  ctx.shadowBlur = 5;
+  ctx.beginPath();
+  if (ep.orientation === 'vertical'){
+    const [x0,y] = W((z.ax0+off)*ux, ep.value*uy);
+    const [x1] = W((z.ax1+off)*ux, ep.value*uy);
+    ctx.moveTo(x0,y); ctx.lineTo(x1,y);
+  } else {
+    const [x,y0] = W((ep.value+off)*ux, z.ay0*uy);
+    const [,y1] = W((ep.value+off)*ux, z.ay1*uy);
+    ctx.moveTo(x,y0); ctx.lineTo(x,y1);
+  }
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawZoneBox(macro){

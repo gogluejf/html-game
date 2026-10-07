@@ -13,6 +13,7 @@ import { showToast } from './toast.js';
 import { selectMacro, buildSidebar } from './sidebar.js';
 import { draw } from './draw.js';
 import { assertMacroSchema } from '../../js/world/macroSchema.js';
+import { invalidateStaleClearance, hasValidClearance } from './clearance.js';
 
 // v4 invalidates drafts created before formal schema enforcement.
 const LS_PREFIX = 'macro-editor-draft-v4-';
@@ -38,6 +39,10 @@ export function readActive(){ try { return localStorage.getItem(LS_ACTIVE); } ca
 // and refreshes the dot + save button. This is the ONLY thing that marks dirty.
 export function markChanged(){
   if (!app.cur) return;
+  // Any geometry/content mutation invalidates the clearance proof. Undo/redo
+  // snapshots include the proof, so restoring the exact cleared state restores
+  // the flag automatically; a changed signature strips it.
+  invalidateStaleClearance(app.cur.st);
   // Undoing back to the canonical value makes the macro clean again. Strip
   // sidebar-only metadata before comparing with the working copy.
   const { _el, ...canonical } = app.macros[app.cur.id] || {};
@@ -65,17 +70,40 @@ export function updateDirtyDots(){
     const el = m && m._el;
     if (!el || typeof el.querySelector !== 'function') continue;
     let dot = el.querySelector('.dirty-dot');
+    let grp = el.querySelector('.cntgrp');
     if (hasDraft(f.id)){
       if (!dot){
         const cnt = el.querySelector('.cnt');
-        const grp = document.createElement('span');
-        grp.className = 'cntgrp';
+        if (!grp){
+          grp = document.createElement('span');
+          grp.className = 'cntgrp';
+          cnt.parentNode.insertBefore(grp, cnt);
+          grp.appendChild(cnt);
+        }
         dot = document.createElement('span'); dot.className='dirty-dot'; dot.textContent='●';
-        cnt.parentNode.insertBefore(grp, cnt);
-        grp.appendChild(dot);
-        grp.appendChild(cnt);
+        grp.insertBefore(dot, grp.firstChild);
       }
     } else if (dot){ dot.remove(); }
+
+    let clear = el.querySelector('.clearance-flag');
+    const working = app.drafts.get(f.id) || m;
+    if (hasValidClearance(working)){
+      if (!grp){
+        const cnt = el.querySelector('.cnt');
+        grp = document.createElement('span');
+        grp.className = 'cntgrp';
+        cnt.parentNode.insertBefore(grp, cnt);
+        grp.appendChild(cnt);
+      }
+      if (!clear){
+        clear = document.createElement('span');
+        clear.className = 'clearance-flag';
+        clear.textContent = '⚑';
+        clear.title = 'Ghost test cleared this exact macro structure';
+      }
+      const cnt = grp.querySelector('.cnt');
+      grp.insertBefore(clear, cnt); // after dirty dot, before unit count
+    } else if (clear){ clear.remove(); }
   }
 }
 
@@ -83,6 +111,13 @@ export function updateDirtyDots(){
 export async function saveToDisk(){
   if (!app.cur) return;
   const id = app.cur.id;
+  // Defense in depth: never persist a proof whose signature no longer matches,
+  // even if a nonstandard mutation path forgot to call markChanged().
+  if (invalidateStaleClearance(app.cur.st)) {
+    storeDraft(id, app.cur.st);
+    app.drafts.set(id, app.cur.st);
+    updateDirtyDots();
+  }
   if (!hasDraft(id)){ showToast('Nothing to save', 'info'); return; }
 
   // External-change guard: did the file on disk change since we loaded it?
@@ -277,6 +312,7 @@ export async function renameCurrentMacro(){
   const st = app.cur.st;
   st.id = newId;
   st.name = newId;
+  invalidateStaleClearance(st);
   const prevEl = app.macros[oldId]._el;
   delete app.macros[oldId];
   app.macros[newId] = JSON.parse(JSON.stringify(st));

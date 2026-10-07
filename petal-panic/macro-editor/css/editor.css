@@ -19,6 +19,7 @@
   .ent.on .cnt{color:var(--yel);}
   /* unsaved-changes indicator (toggled by save.js updateDirtyDots) */
   .dirty-dot{color:#ff9f43;font-size:0.7em;line-height:1;}
+  .clearance-flag{color:var(--grn);font-size:14px;line-height:1;text-shadow:0 0 7px rgba(90,255,138,.75);}
   /* character sub-group header */
   .char{font-size:13px;color:var(--acc);margin:8px 0 2px;padding-left:4px;letter-spacing:.5px;}
   /* animation row (indented under character) */

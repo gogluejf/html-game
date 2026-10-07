@@ -66,6 +66,19 @@
       "type": "array",
       "uniqueItems": true,
       "items": { "$ref": "#/$defs/macroId" }
+    },
+    "clearance": {
+      "type": "object",
+      "description": "Editor ghost-test proof for the exact macro content signature. Removed automatically when content changes.",
+      "additionalProperties": false,
+      "required": ["status", "contentSignature"],
+      "properties": {
+        "status": { "const": "cleared" },
+        "contentSignature": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}$"
+        }
+      }
     }
   },
   "$defs": {

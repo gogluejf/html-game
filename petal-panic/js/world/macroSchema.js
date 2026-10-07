@@ -23,9 +23,10 @@ export function macroSchemaErrors(macro, { expectedId } = {}) {
   const err = (path, message) => errors.push(`${path}: ${message}`);
   if (!object(macro)) return ['$: must be an object'];
 
-  const topAllowed = new Set(['id','name','orientation','difficulty','units','placements','variations','follows','followedBy']);
+  const required = new Set(['id','name','orientation','difficulty','units','placements','variations','follows','followedBy']);
+  const topAllowed = new Set([...required, 'clearance']);
   for (const key of extraKeys(macro, topAllowed)) err(`$.${key}`, 'unknown property');
-  for (const key of topAllowed) if (!OWN(macro, key)) err('$', `missing required property "${key}"`);
+  for (const key of required) if (!OWN(macro, key)) err('$', `missing required property "${key}"`);
 
   if (typeof macro.id !== 'string' || !ID_RE.test(macro.id)) err('$.id', 'must be a non-empty safe identifier');
   if (expectedId !== undefined && macro.id !== expectedId) err('$.id', `must match filename "${expectedId}.json"`);
@@ -51,6 +52,20 @@ export function macroSchemaErrors(macro, { expectedId } = {}) {
       if (seen.has(id)) err(`$.${key}[${i}]`, 'must be unique');
       seen.add(id);
     });
+  }
+
+  if (OWN(macro, 'clearance')) {
+    const proof = macro.clearance;
+    if (!object(proof)) err('$.clearance', 'must be an object');
+    else {
+      const allowed = new Set(['status','contentSignature']);
+      for (const key of extraKeys(proof, allowed)) err(`$.clearance.${key}`, 'unknown property');
+      for (const key of allowed) if (!OWN(proof, key)) err('$.clearance', `missing required property "${key}"`);
+      if (proof.status !== 'cleared') err('$.clearance.status', 'must be cleared');
+      if (typeof proof.contentSignature !== 'string' || !/^[0-9a-f]{8}$/.test(proof.contentSignature)) {
+        err('$.clearance.contentSignature', 'must be an 8-character lowercase hex signature');
+      }
+    }
   }
   return errors;
 }

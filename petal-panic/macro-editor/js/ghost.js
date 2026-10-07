@@ -9,11 +9,14 @@ import { showToast } from './toast.js';
 import { buildRideWorld } from '../../js/world/ghostRider.js';
 import { createHeadlessHero, stepHeadless } from '../../js/hero/headless.js';
 import { HEROES } from '../../js/hero/heroDefs.js';
+import { macroEndpoint } from './clearance.js';
 
 // Redraw hook: draw.js registers its draw() here so ghost.js never imports
 // draw.js directly (that would be a circular dependency: draw.js → ghost.js).
 let _redraw = () => {};
+let _commitClearance = () => {};
 export function setRedrawHook(fn){ _redraw = fn; }
+export function setClearanceCommitHook(fn){ _commitClearance = fn; }
 const requestDraw = () => requestAnimationFrame(() => _redraw());
 
 const DT = 1 / 60;
@@ -51,6 +54,8 @@ export function startRide(){
   const world = buildRideWorld(st, {
     unitPxX: c.unitPxX, unitPxY: c.unitPxY, platformDrawH: c.platformDrawH,
   });
+  const endpoint = macroEndpoint(st);
+  world.macroEndPx = endpoint.value * (endpoint.orientation === 'vertical' ? c.unitPxY : c.unitPxX);
   const hero = createHeadlessHero('balthazar', { x: world.entry.x - 8, y: world.entry.y - 40 });
   Object.assign(ride, {
     active: true,
@@ -147,13 +152,14 @@ function stepOnce(dt){
     }
   }
 
-  // Exit reached → cleared: pause briefly, then loop.
-  const atExit = world.vertical ? fy <= world.UY * 1.5 : cx >= world.W - 4;
+  // Reaching the authored macro endpoint concludes test mode immediately.
+  const atExit = world.vertical
+    ? (world.H - fy) >= world.macroEndPx
+    : cx >= world.macroEndPx;
   if (atExit) {
-    ride.status = 'cleared';
-    ride._clearPause = 0.35;
-    showToast(`CLEARED ✓  (lap ${ride.lap}, visited ${ride.visited}/${ride.totalLandings})`, 'success');
-    updateRideHint();
+    _commitClearance();
+    showToast('CLEARED ✓ — proof saved to draft', 'success');
+    stopRide();
     return;
   }
 

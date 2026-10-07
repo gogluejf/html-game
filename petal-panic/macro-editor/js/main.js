@@ -12,13 +12,14 @@ import { showToast } from './toast.js';
 import { saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft, readActive, createNewMacro } from './save.js';
 import { initTools, setTool, syncToolButtons } from './tools.js';
 import { initPointer, deleteSelection, lastCell, uniqueSlotName } from './pointer.js';
-import { toggleRide, killRideIfActive } from './ghost.js';
+import { toggleRide, killRideIfActive, setClearanceCommitHook } from './ghost.js';
 import { doUndo, doRedo, syncUndoButtons } from './undo.js';
 import { pushUndo } from './undo.js';
 import { markChanged } from './save.js';
 import { previewLayout, reasonFromError } from './validation.js';
 import { macroSchemaErrors } from '../../js/world/macroSchema.js';
 import { validateLayout } from '../../js/world/macros.js';
+import { stampClearance } from './clearance.js';
 
 // ---------- toolbar toggles ----------
 function syncToggles(){
@@ -28,6 +29,15 @@ function syncToggles(){
   $('tglZone').classList.toggle('on', app.show.zone);
 }
 function initToolbar(){
+  // A successful ride is a normal undoable draft mutation: snapshot the
+  // pre-clear state, stamp the proof, persist the draft, refresh sidebar/UI.
+  setClearanceCommitHook(()=>{
+    if (!app.cur) return;
+    pushUndo();
+    stampClearance(app.cur.st);
+    markChanged();
+    draw();
+  });
   $('tglGrid').addEventListener('click', ()=>{ app.show.grid=!app.show.grid; syncToggles(); draw(); });
   $('tglSlots').addEventListener('click', ()=>{ app.show.slots=!app.show.slots; syncToggles(); draw(); });
   $('tglLabels').addEventListener('click', ()=>{ app.show.labels=!app.show.labels; syncToggles(); draw(); });
