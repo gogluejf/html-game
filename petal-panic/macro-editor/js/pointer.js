@@ -12,7 +12,7 @@ import { validateLayout } from '../../js/world/macros.js';
 import { showToast } from './toast.js';
 import { pushUndo } from './undo.js';
 import { syncToolButtons, cursorForTool } from './tools.js';
-import { killRideIfActive, ride } from './ghost.js';
+import { ride, setSpaceArmHook } from './ghost.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const HANDLE_PX = 9;
@@ -362,8 +362,6 @@ function endTransientSelect(){
 
 function onPointerDown(e){
   if (e.button !== 0 || !app.cur) return;
-  // Any pointer interaction kills an active test ride (draft is untouched).
-  killRideIfActive();
   const cell=eventCell(e), tool=app.editor.tool;
   lastCell=cell;
   const handle=hitHandle(cell.sx,cell.sy);
@@ -383,10 +381,11 @@ function onPointerDown(e){
   }
   if (tool === 'erase'){ eraseAt(hit); return; }
   // Space held: pan even inside the zone (hand cursor). While a test ride is
-  // active, starting any drag cancels it on release — so kill the ride here
-  // and continue panning normally.
+  // active, space press arms the start/stop trigger — it only fires on release
+  // if NO drag happened. Starting a real edit-drag here cancels that pending
+  // trigger (which stops an active ride); panning outside the zone never does.
   if (spaceHeld){
-    killRideIfActive();
+    setSpaceArmHook(null);   // cancel any pending space toggle; kills active ride
     app.editor.selection=null;
     app.editor.multiSelect=[];
     app.editor.pan={x:e.clientX,y:e.clientY,panX:app.panX,panY:app.panY};
@@ -679,8 +678,10 @@ export function initPointer(){
     if (e.code!=='Space') return;
     const tag=(e.target.tagName||'').toLowerCase();
     if (tag==='input'||tag==='textarea'||document.querySelector('dialog[open]')) return;
-    // While a test ride is active, space is the pause trigger — handled by
-    // main.js on keydown. Do NOT start a pan drag in that case.
+    // Space press arms the test-ride trigger (setSpaceArmHook in ghost.js);
+    // release fires start/stop only if no drag happened. While a ride is
+    // active, space must NOT arm a pan drag — otherwise pointerdown would
+    // cancel the pending toggle before keyup can fire it.
     if (ride.active) return;
     if (!spaceHeld){ spaceHeld=true; e.preventDefault(); updateCursor(); }
   });

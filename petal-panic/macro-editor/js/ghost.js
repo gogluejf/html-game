@@ -17,6 +17,17 @@ let _redraw = () => {};
 let _commitClearance = () => {};
 export function setRedrawHook(fn){ _redraw = fn; }
 export function setClearanceCommitHook(fn){ _commitClearance = fn; }
+
+// Space-trigger arming: main.js registers a keydown armer here. Pressing space
+// arms the start/stop toggle; releasing it with NO drag having happened fires
+// the toggle. A real edit-drag (inside the zone) calls setSpaceArmHook(null),
+// which cancels the pending toggle — and stops an active ride, since that is
+// what "cancel" means for the user. Panning outside the zone never touches it.
+let _spaceArm = null;
+export function setSpaceArmHook(fn){
+  if (_spaceArm) _spaceArm();          // fire any pending toggle (start/stop)
+  _spaceArm = fn || null;             // re-arm, or cancel (fn=null)
+}
 const requestDraw = () => requestAnimationFrame(() => _redraw());
 
 const DT = 1 / 60;
