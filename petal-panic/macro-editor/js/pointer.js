@@ -681,11 +681,9 @@ export function initPointer(){
     if (e.code!=='Space') return;
     const tag=(e.target.tagName||'').toLowerCase();
     if (tag==='input'||tag==='textarea'||document.querySelector('dialog[open]')) return;
-    // Space press arms the test-ride trigger (armSpaceToggle in ghost.js);
-    // release fires start/stop only if no drag happened. While a ride is
-    // active, space must NOT arm a pan drag — otherwise pointerdown would
-    // cancel the pending toggle before keyup can fire it.
-    if (ride.active) return;
+    // Space press = arm the test trigger + enter drag/pan mode. Always,
+    // whether or not a ride is running. Release with no drag fires the
+    // toggle (start if idle, stop if running). A real drag cancels it.
     if (!spaceHeld){ spaceHeld=true; e.preventDefault(); updateCursor(); }
   });
   window.addEventListener('keyup',e=>{
