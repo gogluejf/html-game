@@ -14,7 +14,7 @@
 
 import { app, SLOT_COLORS, COL_BLOCK, COL_PLATFORM, COL_GRID, COL_GRID_MAJOR } from './state.js';
 import { cv, ctx, s2c, setDrawHook } from './viewport.js';
-import { drawRide } from './ghost.js';
+import { drawRide, setRedrawHook } from './ghost.js';
 
 let _consts = { unitPxX:72, unitPxY:48, platformDrawH:6 };
 export function setConstants(c){ 
@@ -47,6 +47,10 @@ export function draw(){
   }
   syncValidationHint();
 }
+
+// Register the redraw hook so ghost.js can trigger a frame without importing
+// draw.js directly (avoids the circular dependency).
+setRedrawHook(draw);
 
 function drawTopClearance(macro){
   if (macro.orientation!=='horizontal') return;

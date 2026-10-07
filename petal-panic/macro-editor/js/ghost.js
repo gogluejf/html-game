@@ -10,8 +10,19 @@ import { buildRideWorld } from '../../js/world/ghostRider.js';
 import { createHeadlessHero, stepHeadless } from '../../js/hero/headless.js';
 import { HEROES } from '../../js/hero/heroDefs.js';
 
+// Redraw hook: draw.js registers its draw() here so ghost.js never imports
+// draw.js directly (that would be a circular dependency: draw.js → ghost.js).
+let _redraw = () => {};
+export function setRedrawHook(fn){ _redraw = fn; }
+const requestDraw = () => requestAnimationFrame(() => _redraw());
+
 const DT = 1 / 60;
 const TRAIL_MAX = 900; // ~15 s of trail points at 30 Hz
+
+// Edge-triggered jump state: the engine only fires a jump on a FRESH press
+// (input.jump && !prevJumpHeld). We must release between jumps or the second
+// press is ignored — this is what caused the "holds jump in place" bug.
+let _jumpWasDown = false;
 
 // Ride state (editor-local; never touches app.cur.st).
 export const ride = {
@@ -56,6 +67,7 @@ export function startRide(){
     _acc: 0,
     _clearPause: 0,
   });
+  _jumpWasDown = false;
   $('testRideBtn')?.classList.add('armed');
   updateRideHint();
   ride._raf = requestAnimationFrame(tick);
@@ -73,7 +85,7 @@ export function stopRide(redraw = true){
   ride.failPoint = null;
   $('testRideBtn')?.classList.remove('armed');
   updateRideHint();
-  if (redraw) requestAnimationFrame(() => draw()); // defer: draw.js may not be evaluated yet at import time
+  if (redraw) requestDraw();
 }
 
 /** Toggle from the TEST button. */
@@ -100,7 +112,7 @@ function tick(now){
   if (ride._clearPause > 0) {
     ride._clearPause -= frame;
     if (ride._clearPause <= 0) restartLap();
-    draw();
+    requestDraw();
     return;
   }
 
@@ -111,7 +123,7 @@ function tick(now){
     ride._acc -= DT;
     guard++;
   }
-  draw();
+  requestDraw();
 }
 
 function stepOnce(dt){
@@ -121,8 +133,9 @@ function stepOnce(dt){
   ride._onOneWay = res.onOneWay;
 
   const cx = hero.worldBox().x + hero.worldBox().w / 2;
-  const fy = hero.worldBox().y + hero.worldBox().h;
-  ride.path.push({ x: cx, y: fy });
+  const fy = hero.worldBox().y + hero.worldBox().h; // feet (for physics checks)
+  const cy = hero.worldBox().y + hero.worldBox().h * 0.5; // center (for trail)
+  ride.path.push({ x: cx, y: cy });
   if (ride.path.length > TRAIL_MAX) ride.path.shift();
 
   // Visit tracking.
@@ -144,20 +157,48 @@ function stepOnce(dt){
     return;
   }
 
-  // Fell out → smart retry (respawn at entry for v1; rider core keeps its own
-  // checkpoint logic for the headless batch runs).
+  // Genuine dead-end: no vaultable wall and no approach surface. Fail cleanly
+  // with a clear reason instead of looping or spamming jumps.
+  if (ride._deadEnd) {
+    ride.attempts++;
+    if (ride.attempts > 2) {
+      ride.status = 'failed';
+      ride.failPoint = { x: ride._deadEnd.x, y: ride._deadEnd.y, reason: 'unclimbable wall' };
+      showToast('ride failed — unclimbable wall ahead', 'error');
+      updateRideHint();
+      parkHeroAt(world, hero, ride._deadEnd.x);
+      return;
+    }
+  } else {
+    ride._deadEnd = null;
+  }
+
+  // Fell out → smart retry (respawn at entry for v1).
   if (fy > world.H + world.UY * 2 || cx < -world.UX * 2 || cx > world.W + world.UX * 2) {
     ride.attempts++;
     if (ride.attempts > 8) {
       ride.status = 'failed';
-      ride.failPoint = { x: cx, y: world.groundY, reason: 'fell' };
+      ride.failPoint = { x: Math.min(Math.max(cx, 0), world.W), y: world.groundY, reason: 'fell' };
       showToast(`ride failed after ${ride.attempts - 1} attempts — fell`, 'error');
       updateRideHint();
-      return; // keep the fail marker visible; user edits or presses TEST
+      // Park the hero on the floor so it stays visible at the fail point
+      // instead of freezing mid-air / drifting off-screen.
+      parkHeroAt(world, hero, ride.failPoint.x);
+      return;
     }
     respawn();
     updateRideHint();
   }
+}
+
+/** Freeze the hero standing on the floor at a given x (fail marker pose). */
+function parkHeroAt(world, hero, x){
+  hero.x = x - hero.worldBox().w / 2;
+  hero.y = world.groundY - hero.worldBox().h;
+  hero.vx = 0; hero.vy = 0;
+  hero.grounded = true;
+  hero.jumpsUsed = 0;
+  hero.supermoveActive = false;
 }
 
 function rideInput(){
@@ -166,6 +207,7 @@ function rideInput(){
   const cx = hero.worldBox().x + hero.worldBox().w / 2;
   const fy = hero.worldBox().y + hero.worldBox().h;
   const inp = { left: false, right: false, jump: false, down: false, super: false, onOneWay: !!ride._onOneWay };
+  let wantJump = false;
 
   if (world.vertical) {
     const targetX = world.W / 2;
@@ -182,7 +224,7 @@ function rideInput(){
       if (nextAbove) {
         const rise = fy - nextAbove.y;
         const djApex = doubleJumpApex(stats);
-        if (rise <= djApex * 0.9) inp.jump = true;
+        if (rise <= djApex * 0.9) wantJump = true;
         else if (!ride._superUsed && rise <= djApex * 1.3) { inp.super = true; ride._superUsed = true; }
       }
     }
@@ -194,9 +236,29 @@ function rideInput(){
       if (wall) {
         const climb = fy - wall.y;
         const djApex = doubleJumpApex(stats);
-        if (climb > 0 && climb <= djApex * 0.95) inp.jump = true;
-        else if (climb > 0 && climb <= djApex * 1.5 && !ride._superUsed) { inp.super = true; ride._superUsed = true; }
-        else inp.jump = true; // vault attempt
+        if (climb > 0 && climb <= djApex * 0.95) {
+          // Low enough to clear with a jump: hop over it.
+          wantJump = true;
+        } else if (climb > 0 && climb <= djApex * 1.5 && !ride._superUsed) {
+          // Needs the supermove burst to vault.
+          inp.super = true;
+          ride._superUsed = true;
+        } else {
+          // Too tall to vault head-on. Do NOT spam jumps (that's the "stupid
+          // jump in place" bug). Look for a legitimate approach: a platform or
+          // lower block top we can stand on just before the wall. If none is
+          // reachable, we're at a genuine dead-end — stop and report it.
+          const approach = findApproachSurface(world, cx, fy, wall);
+          if (approach) {
+            // Move toward/onto the approach surface, then jump from there.
+            const distToApproach = approach.x0 - cx;
+            if (distToApproach < world.UX * 1.2) wantJump = true;
+          } else {
+            ride._deadEnd = { x: cx, y: fy };
+            // Hold position (no input) so the hero waits at the dead-end.
+            inp.right = false;
+          }
+        }
       } else {
         // Seek a higher landing ahead.
         let target = null;
@@ -210,17 +272,31 @@ function rideInput(){
         }
         if (target) {
           const dist = target.x0 - cx;
-          if (dist <= world.UX * 1.0) inp.jump = true;
+          if (dist <= world.UX * 1.0) wantJump = true;
         }
       }
     }
     // Double jump when rising slows.
-    if (!hero.grounded && hero.jumpsUsed === 1 && hero.vy > -stats.jump * 0.85 * 0.3) inp.jump = true;
+    if (!hero.grounded && hero.jumpsUsed === 1 && hero.vy > -stats.jump * 0.85 * 0.3) wantJump = true;
     // Drop-through.
     if (hero.grounded && ride._onOneWay) {
       const below = world.landings.find(l => l.kind === 'platform' && l.x0 <= cx && l.x1 >= cx && l.y > fy + world.UY * 0.8);
-      if (below) { inp.down = true; inp.jump = true; }
+      if (below) { inp.down = true; wantJump = true; }
     }
+  }
+
+  // Convert "want to jump" into a proper jump sequence: PRESS on the trigger
+  // frame, then HOLD while ascending (vy < 0) so variable-jump-height doesn't
+  // cut the arc to 45%. Release once we start falling (vy >= 0) or land.
+  if (wantJump && !_jumpWasDown) {
+    inp.jump = true;
+    _jumpWasDown = true;
+  } else if (_jumpWasDown && hero.vy < 0) {
+    // Still ascending: keep holding for full height.
+    inp.jump = true;
+  } else {
+    inp.jump = false;
+    _jumpWasDown = false;
   }
   return inp;
 }
@@ -235,6 +311,19 @@ function findWall(world, cx, fy){
         if (!best || s.x < best.x) best = s;
       }
     }
+  }
+  return best;
+}
+
+/** Find a standable surface just before a wall that we could use to approach it. */
+function findApproachSurface(world, cx, fy, wall){
+  // Look for a landing whose top is higher than current feet and whose right
+  // edge is near the wall's left face (so we can jump from it over the wall).
+  let best = null;
+  for (const l of world.landings) {
+    if (l.x1 > wall.x - 4 || l.x1 < wall.x - world.UX * 3) continue; // must end near wall
+    if (l.y >= fy - 4) continue; // must be higher than where we stand
+    if (!best || l.x1 > best.x1) best = l;
   }
   return best;
 }
@@ -258,6 +347,8 @@ function respawn(){
   ride.path = [];
   ride._superUsed = false;
   ride._onOneWay = false;
+  ride._deadEnd = null;
+  _jumpWasDown = false;
 }
 
 function restartLap(){
@@ -304,14 +395,29 @@ export function drawRide(ctx, macro){
     return s2cLocal(wx * ux, wy * uy);
   };
 
-  // Trail: pale gray dots.
+  // Trail: pale gray dots at hero-center height, drawn as a connected path
+  // so it's visible even when running flat (not just during jumps).
   ctx.save();
-  ctx.fillStyle = 'rgba(170,180,200,.28)';
-  for (let i = 0; i < ride.path.length; i += 3) {
+  if (ride.path.length > 1) {
+    ctx.strokeStyle = 'rgba(180,190,210,.35)';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    const [sx0, sy0] = toScreen(ride.path[0].x, ride.path[0].y);
+    ctx.moveTo(sx0, sy0);
+    for (let i = 1; i < ride.path.length; i += 2) {
+      const [sx, sy] = toScreen(ride.path[i].x, ride.path[i].y);
+      ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+  }
+  // Dots every few points for texture.
+  ctx.fillStyle = 'rgba(200,210,230,.4)';
+  for (let i = 0; i < ride.path.length; i += 6) {
     const p = ride.path[i];
     const [sx, sy] = toScreen(p.x, p.y);
     ctx.beginPath();
-    ctx.arc(sx, sy, 1.6, 0, Math.PI * 2);
+    ctx.arc(sx, sy, 2, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
