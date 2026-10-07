@@ -652,9 +652,9 @@ export function updateCursor(){
     cv.style.cursor = 'grabbing';
     return;
   }
-  // Space held: hand everywhere (pan ready) — but while a ride is active,
-  // space is the pause trigger, so keep the normal tool cursor.
-  if (spaceHeld && !ride.active){
+  // Space held: hand everywhere (pan ready) — same whether or not a ride is
+  // active; space press always arms drag mode.
+  if (spaceHeld){
     cv.style.cursor = 'grab';
     return;
   }
