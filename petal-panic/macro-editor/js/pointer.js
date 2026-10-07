@@ -12,6 +12,7 @@ import { validateLayout } from '../../js/world/macros.js';
 import { showToast } from './toast.js';
 import { pushUndo } from './undo.js';
 import { syncToolButtons, cursorForTool } from './tools.js';
+import { killRideIfActive } from './ghost.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const HANDLE_PX = 9;
@@ -361,6 +362,8 @@ function endTransientSelect(){
 
 function onPointerDown(e){
   if (e.button !== 0 || !app.cur) return;
+  // Any pointer interaction kills an active test ride (draft is untouched).
+  killRideIfActive();
   const cell=eventCell(e), tool=app.editor.tool;
   lastCell=cell;
   const handle=hitHandle(cell.sx,cell.sy);

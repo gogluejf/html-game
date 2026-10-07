@@ -12,6 +12,7 @@ import { showToast } from './toast.js';
 import { saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft, readActive, createNewMacro } from './save.js';
 import { initTools, setTool, syncToolButtons } from './tools.js';
 import { initPointer, deleteSelection, lastCell, uniqueSlotName } from './pointer.js';
+import { toggleRide, killRideIfActive } from './ghost.js';
 import { doUndo, doRedo, syncUndoButtons } from './undo.js';
 import { pushUndo } from './undo.js';
 import { markChanged } from './save.js';
@@ -32,6 +33,7 @@ function initToolbar(){
   $('tglLabels').addEventListener('click', ()=>{ app.show.labels=!app.show.labels; syncToggles(); draw(); });
   $('tglZone').addEventListener('click', ()=>{ app.show.zone=!app.show.zone; syncToggles(); draw(); });
   $('newBtn').addEventListener('click', ()=>createNewMacro());
+  $('testRideBtn')?.addEventListener('click', toggleRide);
 }
 
 // ---------- zoom / pan ----------
@@ -173,6 +175,7 @@ function initKeyboard(){
       if (e.code==='KeyB'){ e.preventDefault(); setTool('block'); return; }
       if (e.code==='KeyP'){ e.preventDefault(); setTool('platform'); return; }
       if (e.code==='KeyE'){ e.preventDefault(); setTool('erase'); return; }
+      if (e.code==='KeyT'){ e.preventDefault(); toggleRide(); return; }
       if (e.code==='Digit1'){ e.preventDefault(); setTool('slot-enemy'); return; }
       if (e.code==='Digit2'){ e.preventDefault(); setTool('slot-barrel'); return; }
       if (e.code==='Digit3'){ e.preventDefault(); setTool('slot-powerup'); return; }

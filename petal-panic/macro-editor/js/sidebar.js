@@ -9,6 +9,7 @@ import { setZoom } from './viewport.js';
 import { updateDirtyDots, updateSaveButton, saveActive } from './save.js';
 import { renameCurrentMacro, deleteCurrentMacro } from './save.js';
 import { analyzeMacroWarnings } from './validation.js';
+import { killRideIfActive } from './ghost.js';
 
 export function buildSidebar(macros){
   tree.innerHTML = '';
@@ -69,7 +70,8 @@ export function selectMacro(id){
   }
   app.cur = { id, macro, st };
   // Pointer targets are indices into the current macro and cannot survive a
-  // macro switch.
+  // macro switch. Any active test ride is killed too.
+  killRideIfActive();
   app.editor.hover = null;
   app.editor.selection = null;
   app.editor.interaction = null;

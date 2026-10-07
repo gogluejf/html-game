@@ -14,6 +14,7 @@
 
 import { app, SLOT_COLORS, COL_BLOCK, COL_PLATFORM, COL_GRID, COL_GRID_MAJOR } from './state.js';
 import { cv, ctx, s2c, setDrawHook } from './viewport.js';
+import { drawRide } from './ghost.js';
 
 let _consts = { unitPxX:72, unitPxY:48, platformDrawH:6 };
 export function setConstants(c){ 
@@ -36,6 +37,7 @@ export function draw(){
     drawTopClearance(app.cur.st);
     drawMacro(app.cur.st);
     drawEditorOverlay(app.cur.st);
+    drawRide(ctx, app.cur.st);                       // ghost test ride (hero + trail)
     drawTitle(app.cur.st);                        // fixed top-center name label (viewer-style)
   } else {
     ctx.fillStyle = 'rgba(255,255,255,.3)';
