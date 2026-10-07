@@ -12,7 +12,7 @@ import { validateLayout } from '../../js/world/macros.js';
 import { showToast } from './toast.js';
 import { pushUndo } from './undo.js';
 import { syncToolButtons, cursorForTool } from './tools.js';
-import { ride, cancelSpaceToggle, fireSpaceToggle } from './ghost.js';
+import { ride, cancelSpaceToggle, fireSpaceToggle, rebuildRideWorld } from './ghost.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const HANDLE_PX = 9;
@@ -614,6 +614,9 @@ function finishPointer(e, cancelled=false){
     } else {
       commit(i); app.editor.interaction=null; endTransientSelect(); updateCursor(); draw();
     }
+    // If a test ride is running, rebuild its world from the new draft so the
+    // ghost rides the geometry we just edited (it was built at startRide).
+    if (ride.active) rebuildRideWorld();
   }
   else {
     if (i.reason) showToast(i.reason,'error');

@@ -92,6 +92,26 @@ export function startRide(){
   ride._raf = requestAnimationFrame(tick);
 }
 
+/** Rebuild the ride world from the CURRENT draft while a ride is running.
+ *  Called after an edit commits mid-test so the ghost rides the new geometry
+ *  instead of the stale snapshot it was built with. Hero keeps its position. */
+export function rebuildRideWorld(){
+  if (!ride.active || !app.cur || !app.cur.st) return;
+  const c = app.consts;
+  const world = buildRideWorld(app.cur.st, {
+    unitPxX: c.unitPxX, unitPxY: c.unitPxY, platformDrawH: c.platformDrawH,
+  });
+  const endpoint = macroEndpoint(app.cur.st);
+  world.macroEndPx = endpoint.value * (endpoint.orientation === 'vertical' ? c.unitPxY : c.unitPxX);
+  ride.world = world;
+  ride.totalLandings = world.landings.length;
+  ride._visitedSet = null;
+  ride.visited = 0;
+  ride._onOneWay = false;
+  ride._deadEnd = null;
+  ride.path = [];
+}
+
 /** Kill the ride, clear the trail, unlock editing. */
 export function stopRide(redraw = true){
   ride.active = false;
