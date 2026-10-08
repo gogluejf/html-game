@@ -145,9 +145,14 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
   const secondJump = (params.doubleJumpFactor ?? 0.85) * params.jump;
   const totalApex = (params.jump * params.jump) / (2 * GRAVITY) +
                     (secondJump * secondJump) / (2 * GRAVITY);
-  // Only spend super when the rise is genuinely beyond the double-jump apex.
-  // (A rise within the apex is a normal double-jump clear — no super needed.)
-  const needsSuper = params.canSuper && rise > totalApex + world.UY * 0.5;
+
+  // Super is a HORIZONTAL dash, not a height machine. It is armed ONLY when
+  // the gap from the takeoff edge to the goal span is too wide for a double-
+  // jump arc to carry — and only then. A goal that is mostly ABOVE us (big
+  // rise, small gap) is a DJ-stack problem; arming super there just dashes
+  // the hero into the wall/floor at 920 px/s and kills the climb. The old
+  // rule (rise > totalApex ⇒ super) fired exactly in that wrong case.
+  const djCarryPx = params.speed * ((params.jump + secondJump) / GRAVITY);
 
   // --- Grounded decisions -------------------------------------------------
   if (hero.grounded) {
@@ -167,7 +172,15 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
     if (movingTowardGoal && nearEdge) {
       inp.jump = true;
       mem.wantJump = true;
-      if (needsSuper) mem.armSuper = true;
+      // Super is the GAP tool: armed when the goal's near edge sits farther
+      // out than a double-jump arc can carry. Rise does NOT matter here —
+      // the dash is horizontal, and a far platform at any reachable height
+      // is exactly what super exists for. (The old rise-based rule fired
+      // super for vertical climbs and killed them.)
+      const gapToSpan = dx > 0 ? Math.max(0, goal.x0 - f.x) : Math.max(0, f.x - goal.x1);
+      if (params.canSuper && gapToSpan > djCarryPx) {
+        mem.armSuper = true;
+      }
       return inp;
     }
 
@@ -177,7 +190,11 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
     // goal center and the hero shuffles L/R forever without ever jumping.
     // Gate on horizontal clearance: if the goal's near edge is close ahead we
     // must take off EARLY enough that the arc lands ON the surface, not past it.
-    const overhead = rise > UY * 0.5 &&
+    // ALSO gate on rise: a climb beyond the total DJ apex can't land from here —
+    // committing would bounce in place forever (blockPlatformBridge #1: 144px
+    // rise under the span). Back off to the edge instead and let the edge
+    // takeoff + super handle it.
+    const overhead = rise > UY * 0.5 && rise <= totalApex + world.UY * 0.5 &&
       f.x >= goal.x0 - world.UX * 0.75 && f.x <= goal.x1 + world.UX * 0.75;
     if (overhead) {
       // Distance to the goal's near edge along the approach direction.
@@ -186,7 +203,8 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
       if (toNearEdge >= -world.UX * 0.25 && toNearEdge <= needClearance) {
         inp.jump = true;
         mem.wantJump = true;
-        if (needsSuper) mem.armSuper = true;
+        // Overhead hop: the goal is ABOVE us — DJ-stack territory, never a
+        // super dash (a horizontal burst gains no height here).
         return inp;
       }
     }
@@ -199,12 +217,15 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
     // around the goal center and no grounded branch ever commits a jump →
     // the classic L/R shuffle stall (easyPlatformHop / gapLanding /
     // platformHops / lowRepeated / newMacro / pyramid3).
-    const underSpan = rise > UY * 0.5 &&
+    // Rise-gated like overhead: beyond total DJ apex this spot is a dead end —
+    // walking toward the goal edge (the default fall-through below) is the
+    // only way out, and the edge takeoff + super takes over from there.
+    const underSpan = rise > UY * 0.5 && rise <= totalApex + world.UY * 0.5 &&
       f.x >= goal.x0 - world.UX && f.x <= goal.x1 + world.UX;
     if (underSpan) {
       inp.jump = true;
       mem.wantJump = true;
-      if (needsSuper) mem.armSuper = true;
+      // Under-span: goal is above — DJ-stack, never super.
       return inp;
     }
 
