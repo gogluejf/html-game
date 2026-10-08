@@ -176,18 +176,34 @@ export function minHeroGapClearPx() {
  * apex, then landing on the descending branch. A negative rise is a drop.
  * Returns -1 when any hero cannot physically attain the requested height.
  */
+
+/**
+ * Parametrized double-jump horizontal reach for ONE set of movement stats.
+ * This is the single source of truth for the arc math; the weakest-hero
+ * wrapper below takes the min over all heroes, and the smart mover calls this
+ * directly with injected params (so enemies with different jump/speed work).
+ * @param {{speed:number, jump:number}} stats
+ * @param {number} risePx positive = target higher, negative = lower
+ * @returns {number} max horizontal px, or -1 if the rise is unattainable
+ */
+export function doubleJumpReachForStats(stats, risePx) {
+  const { speed, jump } = stats;
+  const secondJump = DOUBLE_JUMP_FACTOR * jump;
+  const firstApex = (jump * jump) / (2 * GRAVITY);
+  const totalApex = firstApex + (secondJump * secondJump) / (2 * GRAVITY);
+  if (risePx > totalApex) return -1;
+  const toFirstApex = jump / GRAVITY;
+  const secondAscent = secondJump / GRAVITY;
+  const descent = Math.sqrt((2 * Math.max(0, totalApex - risePx)) / GRAVITY);
+  return speed * (toFirstApex + secondAscent + descent);
+}
+
 export function minHeroDoubleJumpHorizontalReachPx(risePx) {
   let min = Infinity;
   for (const hero of Object.values(HEROES)) {
-    const { speed, jump } = hero.stats;
-    const secondJump = DOUBLE_JUMP_FACTOR * jump;
-    const firstApex = (jump * jump) / (2 * GRAVITY);
-    const totalApex = firstApex + (secondJump * secondJump) / (2 * GRAVITY);
-    if (risePx > totalApex) return -1;
-    const toFirstApex = jump / GRAVITY;
-    const secondAscent = secondJump / GRAVITY;
-    const descent = Math.sqrt((2 * Math.max(0, totalApex - risePx)) / GRAVITY);
-    min = Math.min(min, speed * (toFirstApex + secondAscent + descent));
+    const r = doubleJumpReachForStats(hero.stats, risePx);
+    if (r < 0) return -1;
+    min = Math.min(min, r);
   }
   return min;
 }
@@ -208,55 +224,58 @@ export function minHeroDoubleJumpHorizontalReachPx(risePx) {
  * @param {number} risePx positive = target is higher, negative = lower
  * @returns {number} max horizontal px, or -1 if impossible
  */
-export function minHeroSuperAssistReachPx(risePx) {
+/**
+ * Parametrized super-assisted horizontal reach for ONE set of movement stats.
+ * Single source of truth for the run→double-jump→super-at-apex→post-super-fall
+ * arc. The weakest-hero wrapper below takes the min over all heroes; the smart
+ * mover calls this directly with injected params.
+ * @param {{speed:number, jump:number}} stats
+ * @param {number} risePx positive = target higher, negative = lower
+ * @returns {number} max horizontal px, or -1 if impossible even with super
+ */
+export function superAssistReachForStats(stats, risePx) {
   const burstDur = SUPERMOVE_DUR * SUPERMOVE_BURST_FRAC;
   const decelDur = SUPERMOVE_DUR - burstDur;
-  // Speed at burst→decel handoff (linear ramp over total duration):
   const speedAtHandoff = SUPERMOVE_SPEED + (SUPERMOVE_RESIDUAL - SUPERMOVE_SPEED) * SUPERMOVE_BURST_FRAC;
-  // Horizontal distance during burst (avg of start/end speed × time):
   const burstDist = ((SUPERMOVE_SPEED + speedAtHandoff) / 2) * burstDur;
-  // Horizontal distance during decel (avg of handoff/residual speed × time):
   const decelDist = ((speedAtHandoff + SUPERMOVE_RESIDUAL) / 2) * decelDur;
-  // Vertical drop during decel (gravity pulls down from rest):
   const decelDrop = 0.5 * GRAVITY * decelDur * decelDur;
 
+  const { speed, jump } = stats;
+  const secondJump = DOUBLE_JUMP_FACTOR * jump;
+  const firstApex = (jump * jump) / (2 * GRAVITY);
+  const totalApex = firstApex + (secondJump * secondJump) / (2 * GRAVITY);
+
+  // Altitude at super end: burst holds at totalApex, decel drops decelDrop.
+  const altitudeAtSuperEnd = totalApex - decelDrop;
+
+  // If target is above totalApex, impossible even with super.
+  if (risePx > totalApex) return -1;
+
+  // Phase 1: run + double jump to second apex.
+  const toSecondApex = jump / GRAVITY + secondJump / GRAVITY;
+  const preSuperDist = speed * toSecondApex;
+
+  // Phase 2+3: super burst + decel (fixed distances).
+  const superDist = burstDist + decelDist;
+
+  // Phase 4: post-super fall back down to the target height at run speed.
+  let postSuperDist = 0;
+  const fallDistance = altitudeAtSuperEnd - risePx;
+  if (fallDistance > 0) {
+    const fallTime = Math.sqrt((2 * fallDistance) / GRAVITY);
+    postSuperDist = speed * fallTime;
+  }
+
+  return preSuperDist + superDist + postSuperDist;
+}
+
+export function minHeroSuperAssistReachPx(risePx) {
   let min = Infinity;
   for (const hero of Object.values(HEROES)) {
-    const { speed, jump } = hero.stats;
-    const secondJump = DOUBLE_JUMP_FACTOR * jump;
-    const firstApex = (jump * jump) / (2 * GRAVITY);
-    const totalApex = firstApex + (secondJump * secondJump) / (2 * GRAVITY);
-
-    // Altitude at super end: burst holds at totalApex, decel drops decelDrop.
-    const altitudeAtSuperEnd = totalApex - decelDrop;
-
-    // If target is above totalApex, impossible even with super.
-    if (risePx > totalApex) return -1;
-
-    // Phase 1: run + double jump to second apex.
-    const toSecondApex = jump / GRAVITY + secondJump / GRAVITY;
-    const preSuperDist = speed * toSecondApex;
-
-    // Phase 2+3: super burst + decel (fixed distances, already computed).
-    const superDist = burstDist + decelDist;
-
-    // Phase 4: post-super fall. After the super ends, the hero is at
-    // altitudeAtSuperEnd with vy≈0, and normal running resumes immediately
-    // (player is holding forward). Gravity pulls them down to the target.
-    // If target is BELOW altitudeAtSuperEnd: they fall the remaining distance.
-    //   fallDistance = altitudeAtSuperEnd - risePx
-    //   fallTime = sqrt(2 * fallDistance / GRAVITY)
-    //   postSuperDist = speed * fallTime  (run speed, not residual)
-    // If target is AT or ABOVE altitudeAtSuperEnd: no post-super fall needed.
-    let postSuperDist = 0;
-    const fallDistance = altitudeAtSuperEnd - risePx;
-    if (fallDistance > 0) {
-      const fallTime = Math.sqrt((2 * fallDistance) / GRAVITY);
-      postSuperDist = speed * fallTime;
-    }
-
-    const totalDist = preSuperDist + superDist + postSuperDist;
-    min = Math.min(min, totalDist);
+    const r = superAssistReachForStats(hero.stats, risePx);
+    if (r < 0) return -1;
+    min = Math.min(min, r);
   }
   return min;
 }

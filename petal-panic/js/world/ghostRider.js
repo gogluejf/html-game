@@ -8,6 +8,7 @@
 import { createHeadlessHero, stepHeadless } from '../hero/headless.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { GRAVITY, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL } from '../consts.js';
+import { doubleJumpReachForStats, superAssistReachForStats } from './macros.js';
 
 const DT = 1 / 60;
 const MAX_ATTEMPTS = 8;
@@ -328,36 +329,10 @@ export function rideOnce(world, attempt) {
 }
 
 // ---------------------------------------------------------------------------
-// Reach envelopes — mirror the validator's math (macros.js).
+// Reach envelopes — single source of truth lives in macros.js. These aliases
+// keep the local call sites readable while guaranteeing the ghost and the
+// validator can never disagree about reach math.
 // ---------------------------------------------------------------------------
 
-function minDoubleJumpReach(stats, risePx) {
-  const secondJump = DOUBLE_JUMP_FACTOR * stats.jump;
-  const firstApex = (stats.jump * stats.jump) / (2 * GRAVITY);
-  const totalApex = firstApex + (secondJump * secondJump) / (2 * GRAVITY);
-  if (risePx > totalApex) return -1;
-  const toFirstApex = stats.jump / GRAVITY;
-  const secondAscent = secondJump / GRAVITY;
-  const descent = Math.sqrt((2 * Math.max(0, totalApex - risePx)) / GRAVITY);
-  return stats.speed * (toFirstApex + secondAscent + descent);
-}
-
-function minFullReach(stats, risePx) {
-  const burstDur = SUPERMOVE_DUR * SUPERMOVE_BURST_FRAC;
-  const decelDur = SUPERMOVE_DUR - burstDur;
-  const speedAtHandoff = SUPERMOVE_SPEED + (SUPERMOVE_RESIDUAL - SUPERMOVE_SPEED) * SUPERMOVE_BURST_FRAC;
-  const burstDist = ((SUPERMOVE_SPEED + speedAtHandoff) / 2) * burstDur;
-  const decelDist = ((speedAtHandoff + SUPERMOVE_RESIDUAL) / 2) * decelDur;
-  const decelDrop = 0.5 * GRAVITY * decelDur * decelDur;
-  const secondJump = DOUBLE_JUMP_FACTOR * stats.jump;
-  const firstApex = (stats.jump * stats.jump) / (2 * GRAVITY);
-  const totalApex = firstApex + (secondJump * secondJump) / (2 * GRAVITY);
-  if (risePx > totalApex) return -1;
-  const toSecondApex = stats.jump / GRAVITY + secondJump / GRAVITY;
-  const preSuperDist = stats.speed * toSecondApex;
-  const altitudeAtSuperEnd = totalApex - decelDrop;
-  let postSuperDist = 0;
-  const fallDistance = altitudeAtSuperEnd - risePx;
-  if (fallDistance > 0) postSuperDist = stats.speed * Math.sqrt((2 * fallDistance) / GRAVITY);
-  return preSuperDist + burstDist + decelDist + postSuperDist;
-}
+const minDoubleJumpReach = doubleJumpReachForStats;
+const minFullReach = superAssistReachForStats;
