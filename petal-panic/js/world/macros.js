@@ -2409,29 +2409,44 @@ export function traversalRoute(macro){
   const axisUnitPx = isVertical ? UNIT_PX_Y : UNIT_PX_X;
 
   // Seed: ground-reachable (rise-only; ground is continuous).
+  // DFS from each seed (seeds in position order): fully explore a branch
+  // before moving to the next seed, so the ride reads as committed paths
+  // instead of interleaved BFS layers (BFS gave 0→2→1 on newMacro because
+  // #2 was seeded ahead of #1's discovery via #0).
   const order = [];
   const seen = new Set();
-  const queue = [];
+  const seeds = [];
   for (let i = 0; i < spans.length; i++){
     if (minHeroSuperAssistReachPx(spans[i].elevation * UNIT_PX_Y) >= 0){
-      queue.push(i); seen.add(i);
+      seeds.push(i); seen.add(i);
     }
   }
-  // BFS: discover reachable surfaces in propagation order.
-  while (queue.length){
-    const fromIdx = queue.shift();
-    order.push(spans[fromIdx].unitIndex);
-    const from = spans[fromIdx];
-    for (let toIdx = 0; toIdx < spans.length; toIdx++){
-      if (seen.has(toIdx)) continue;
-      const to = spans[toIdx];
-      const gapUnits = Math.max(0, to.pos0 - from.pos1, from.pos0 - to.pos1);
-      const gapPx = gapUnits * axisUnitPx;
-      const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
-      if (minHeroSuperAssistReachPx(risePx) >= 0 && gapPx <= minHeroSuperAssistReachPx(risePx)){
-        seen.add(toIdx);
-        queue.push(toIdx);
+  seeds.sort((a, b) => spans[a].pos0 - spans[b].pos0);
+  const canReach = (from, to) => {
+    const gapUnits = Math.max(0, to.pos0 - from.pos1, from.pos0 - to.pos1);
+    const gapPx = gapUnits * axisUnitPx;
+    const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
+    return minHeroSuperAssistReachPx(risePx) >= 0 && gapPx <= minHeroSuperAssistReachPx(risePx);
+  };
+  // DFS: discover reachable surfaces in depth-first propagation order.
+  for (const seedIdx of seeds){
+    const stack = [seedIdx];
+    while (stack.length){
+      const fromIdx = stack.pop();
+      order.push(spans[fromIdx].unitIndex);
+      const from = spans[fromIdx];
+      // Push in reverse position order so the NEAREST surface pops first
+      // (stack is LIFO) — the ride walks toward the goal, not away from it.
+      const found = [];
+      for (let toIdx = 0; toIdx < spans.length; toIdx++){
+        if (seen.has(toIdx)) continue;
+        if (canReach(from, spans[toIdx])){
+          seen.add(toIdx);
+          found.push(toIdx);
+        }
       }
+      found.sort((a, b) => spans[b].pos0 - spans[a].pos0);
+      for (const toIdx of found) stack.push(toIdx);
     }
   }
   const unreachable = [];
