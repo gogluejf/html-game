@@ -73,8 +73,14 @@ export function predictFrame(hero, goal, world, params, mem){
 
   // If we just landed (grounded) but are still holding jump from the previous
   // goal, release for one frame to create a fresh press edge for the next jump.
+  // ALSO reset djDone: a double jump spent on a FAILED hop must not poison the
+  // next attempt — otherwise needsDj goes false forever and every retry is a
+  // single jump that can't reach the goal (the classic L/R-flicker-under-goal
+  // stall seen in easyPlatformHop / platformHops / gapLanding / pyramid3).
   if (hero.grounded && mem.wantJump) {
     mem.wantJump = false;
+    mem.djDone = false;      // fresh DJ budget for the next hop
+    mem._releasedAtApex = false;
     mem.vaultRise = null;   // clear any captured obstacle rise from the last vault
     return inp;
   }
@@ -185,6 +191,23 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
       }
     }
 
+    // Under-span hop: the hero has OVERRSHOT or landed short on the floor
+    // directly beneath the goal span (common after a failed hop). The overhead
+    // gate above excludes positions beyond ±0.75 UX from the edges, but a hero
+    // standing anywhere under the span (or within one cell outside it) can
+    // still reach the goal with a straight-up climb. Without this, dx flickers
+    // around the goal center and no grounded branch ever commits a jump →
+    // the classic L/R shuffle stall (easyPlatformHop / gapLanding /
+    // platformHops / lowRepeated / newMacro / pyramid3).
+    const underSpan = rise > UY * 0.5 &&
+      f.x >= goal.x0 - world.UX && f.x <= goal.x1 + world.UX;
+    if (underSpan) {
+      inp.jump = true;
+      mem.wantJump = true;
+      if (needsSuper) mem.armSuper = true;
+      return inp;
+    }
+
     // Wall vault: a solid block face is directly ahead in our travel direction.
     // This is GOAL-INDEPENDENT — we vault it even if it isn't the current goal
     // (e.g. crossing over an earlier block to reach a goal further along).
@@ -231,14 +254,18 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
     if (needsDj && !mem.djDone && hero.jumpsUsed === 1) {
       // Hard climb — we will double jump. Sequence that preserves BOTH full
       // first-jump height AND a fresh edge for the second press:
-      //   • while ascending (vy < 0): HOLD jump → no variable-height cut
-      //   • near the apex (vy >= -20): RELEASE one frame → no cut (still
-      //     ascending but tiny), and it clears _prevJumpHeld so the next
-      //     press is a fresh edge
-      //   • the frame after: PRESS → double jump fires ~1 frame before the
+      //   • while ascending (vy < -40): HOLD jump → no variable-height cut
+      //   • near the apex (vy >= -40): RELEASE one frame → no cut (still
+      //     ascending), and it clears _prevJumpHeld so the next press is a
+      //     fresh edge
+      //   • the frame after: PRESS → double jump fires ~2 frames before the
       //     true apex, gaining the extra px needed for tight climbs (e.g. a
       //     2-row rise: DJ from y=425 reaches 386 < goal top 384+tol).
-      const ascending = hero.vy < -20;
+      // The old threshold (-20) released AFTER the apex had already passed
+      // (discrete vy steps are 25 px/frame: ...-45 → -20 → +16...), so the
+      // DJ impulse landed 1–3 px too low on tight climbs and the hero bounced
+      // in place forever (mixedCrossing / blockBridge / easyPlatformHop #1).
+      const ascending = hero.vy < -40;
       if (ascending) {
         inp.jump = true;                 // hold for full first-jump height
         mem._releasedAtApex = false;
@@ -345,7 +372,11 @@ function predictVertical(hero, goal, world, params, mem, inp, f, rise, dx){
   const needsDj = (mem.wantJump && params.hasDoubleJump) ||
                   (params.hasDoubleJump && rise > singleApex);
   if (needsDj && !mem.djDone && hero.jumpsUsed === 1) {
-    const ascending = hero.vy < -20;
+    // Same early-release threshold as the horizontal branch: vy < -40 keeps
+    // the DJ press ~2 frames before the true apex. The old -20 threshold
+    // released after the apex on discrete 25 px/frame vy steps, costing the
+    // 1–3 px that tight climbs need.
+    const ascending = hero.vy < -40;
     if (ascending) {
       inp.jump = true;
       mem._releasedAtApex = false;
