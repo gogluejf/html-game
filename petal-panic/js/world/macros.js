@@ -249,7 +249,11 @@ export function superAssistReachForStats(stats, risePx) {
   // Altitude at super end: burst holds at totalApex, decel drops decelDrop.
   const altitudeAtSuperEnd = totalApex - decelDrop;
 
-  // If target is above totalApex, impossible even with super.
+  // A 3-row (144px) rise is NOT physically clearable with this hero kit:
+  // the full double-jump apex is ~101px and the super burst holds at that
+  // same apex (it does not add height). Keep the hard cut so the envelope
+  // never lies about altitude (BUG-2 note: such surfaces must be flagged
+  // unreachable by layer 1, not "cleared" by the mover).
   if (risePx > totalApex) return -1;
 
   // Phase 1: run + double jump to second apex.
@@ -2191,41 +2195,7 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
   // @param {number} axisUnitPx pixel size of one unit along the traversal axis
   // @returns {Set<number>} indices of spans NOT reachable
   // ------------------------------------------------------------------
-  const computeUnreachable = (spans, axisUnitPx) => {
-    const reachable = new Set();
-    // Seed: a span is ground-reachable if its rise from 0 is within the
-    // super-assist envelope. Ground is continuous, so no gap constraint applies.
-    for (let i = 0; i < spans.length; i++) {
-      if (minHeroSuperAssistReachPx(spans[i].elevation * UNIT_PX_Y) >= 0) {
-        reachable.add(i);
-      }
-    }
-    // BFS: propagate reachability through the rise+gap envelope.
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const fromIdx of [...reachable]) {
-        const from = spans[fromIdx];
-        for (let toIdx = 0; toIdx < spans.length; toIdx++) {
-          if (reachable.has(toIdx)) continue;
-          const to = spans[toIdx];
-          const gapUnits = Math.max(0, to.pos0 - from.pos1, from.pos0 - to.pos1);
-          const gapPx = gapUnits * axisUnitPx;
-          const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
-          const reachPx = minHeroSuperAssistReachPx(risePx);
-          if (reachPx >= 0 && gapPx <= reachPx) {
-            reachable.add(toIdx);
-            changed = true;
-          }
-        }
-      }
-    }
-    const unreachable = new Set();
-    for (let i = 0; i < spans.length; i++) {
-      if (!reachable.has(i)) unreachable.add(i);
-    }
-    return unreachable;
-  };
+    const computeUnreachable = (spans, axisUnitPx) => bfsReachableSpans(spans, axisUnitPx).unreachable;
 
   if (!isVertical) {
     // Horizontal: each unit is its own landing span with full x-extent.
@@ -2343,6 +2313,74 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
 export function composeAreaSeeded(seed, orientation, stage, budget) {
   const rng = createRng(seed);
   return composeArea(rng, orientation, stage, budget);
+}
+
+/**
+ * Shared BFS over landing spans using the rise+gap super-assist envelope
+ * (single source of truth for both the validator's unreachable set and the
+ * smart mover's goal order — plan 05 task 4/5).
+ *
+ * A span is { elevation, pos0, pos1, unitIndex }. Seeding: ground-reachable
+ * when its rise from 0 fits the envelope (ground is continuous → no gap
+ * constraint). Propagation: rise+gap must fit the envelope.
+ *
+ * KNOWN LIMITATION (BUG-1): the envelope has no occlusion concept — a tall
+ * block touching a lower surface can seed a phantom chain. The physical
+ * layer (mover) is the safety net.
+ *
+ * @returns {{order:number[], unreachable:Set<number>, parent:Map<number,number>}}
+ *   order: unit indices in BFS discovery order (reachable only)
+ *   unreachable: span indices never reached
+ *   parent: span index → span index it was discovered from (-1 = ground seed)
+ */
+export function bfsReachableSpans(spans, axisUnitPx){
+  const reachable = new Set();
+  const parent = new Map();
+  // Seed: a span is ground-reachable if its rise from 0 is within the
+  // super-assist envelope. Ground is continuous, so no gap constraint applies.
+  for (let i = 0; i < spans.length; i++) {
+    if (minHeroSuperAssistReachPx(spans[i].elevation * UNIT_PX_Y) >= 0) {
+      reachable.add(i);
+      parent.set(i, -1);
+    }
+  }
+  // BFS: propagate reachability through the rise+gap envelope.
+  const queue = [...reachable];
+  while (queue.length) {
+    const fromIdx = queue.shift();
+    const from = spans[fromIdx];
+    for (let toIdx = 0; toIdx < spans.length; toIdx++) {
+      if (reachable.has(toIdx)) continue;
+      const to = spans[toIdx];
+      const gapUnits = Math.max(0, to.pos0 - from.pos1, from.pos0 - to.pos1);
+      const gapPx = gapUnits * axisUnitPx;
+      const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
+      const reachPx = minHeroSuperAssistReachPx(risePx);
+      if (reachPx >= 0 && gapPx <= reachPx) {
+        reachable.add(toIdx);
+        parent.set(toIdx, fromIdx);
+        queue.push(toIdx);
+      }
+    }
+  }
+  // Discovery order: replay the BFS queue (true discovery order — a node's
+  // parent is always discovered before it, so riding this order never asks
+  // the hero to reach a surface from anywhere but an already-landed one).
+  const order = [];
+  const q3 = [...parent.keys()].filter((i) => parent.get(i) === -1);
+  const seen3 = new Set(q3);
+  while (q3.length) {
+    const i = q3.shift();
+    order.push(spans[i].unitIndex);
+    for (let j = 0; j < spans.length; j++) {
+      if (parent.get(j) === i && !seen3.has(j)) { seen3.add(j); q3.push(j); }
+    }
+  }
+  const unreachable = new Set();
+  for (let i = 0; i < spans.length; i++) {
+    if (!reachable.has(i)) unreachable.add(i);
+  }
+  return { order, unreachable, parent };
 }
 
 /**
