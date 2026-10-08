@@ -6,7 +6,7 @@
   "units": [
     {
       "kind": "block",
-      "height": 1,
+      "height": 2,
       "y": 0,
       "x": 5,
       "width": 5
@@ -48,31 +48,31 @@
       "slot": "e1",
       "x": 5,
       "type": "enemy",
-      "y": 1
+      "y": 2
     },
     {
       "slot": "e2",
       "x": 6,
       "type": "enemy",
-      "y": 1
+      "y": 2
     },
     {
       "slot": "e3",
       "x": 7,
       "type": "enemy",
-      "y": 1
+      "y": 2
     },
     {
       "slot": "b1",
       "x": 8,
       "type": "barrel",
-      "y": 1
+      "y": 2
     },
     {
       "slot": "p1",
       "x": 9,
       "type": "powerup",
-      "y": 1
+      "y": 2
     }
   ],
   "variations": [],

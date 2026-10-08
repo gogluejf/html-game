@@ -9,7 +9,7 @@
       "x": 4,
       "y": 0,
       "width": 5,
-      "height": 1
+      "height": 2
     },
     {
       "kind": "platform",
@@ -18,7 +18,20 @@
       "width": 3
     }
   ],
-  "placements": [],
+  "placements": [
+    {
+      "slot": "powerup-1",
+      "type": "powerup",
+      "x": 5,
+      "y": 2
+    },
+    {
+      "slot": "powerup-2",
+      "type": "powerup",
+      "x": 8,
+      "y": 2
+    }
+  ],
   "variations": [],
   "follows": [],
   "followedBy": []

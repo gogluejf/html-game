@@ -1,0 +1,19 @@
+{
+  "id": "newMacro",
+  "name": "newMacro",
+  "orientation": "horizontal",
+  "difficulty": 1,
+  "units": [
+    {
+      "kind": "block",
+      "x": 4,
+      "y": 0,
+      "width": 5,
+      "height": 2
+    }
+  ],
+  "placements": [],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}
