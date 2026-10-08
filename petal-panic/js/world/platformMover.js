@@ -158,22 +158,33 @@ function djCarryPxFor(params, rise){
   const v1 = params.jump;
   const v2 = (params.doubleJumpFactor ?? 0.85) * params.jump;
   const apex1 = (v1 * v1) / (2 * G);
-  if (rise <= 0) {
-    // Level or downward: full up + full down of a single jump.
-    return params.speed * (2 * v1 / G);
-  }
-  if (rise <= apex1) {
-    // Single jump reaches it; carry = time up to `rise` + time falling back
-    // from `rise` to the goal top (0) — but we measure to LANDING on the goal,
-    // so descent height = rise.
+  // The mover ALWAYS double-jumps in the airborne branch when wantJump is set
+  // (mem.wantJump is armed at every committed takeoff). Sizing the carry with
+  // a SINGLE-jump arc understates it badly for small rises (rise=48 → 88px
+  // instead of ~330px), which makes the super gate fire on hops a plain DJ
+  // arc clears easily — and the dash (intangible, vy=0 flat) then phases
+  // THROUGH the platform top and the hero falls past it (newMacro #3).
+  if (!params.hasDoubleJump && rise <= apex1) {
+    // No DJ available: single-jump carry only.
+    if (rise <= 0) return params.speed * (2 * v1 / G);
     const tUp = (v1 - Math.sqrt(Math.max(0, v1 * v1 - 2 * G * rise))) / G;
     const tDown = Math.sqrt((2 * rise) / G);
     return params.speed * (tUp + tDown);
   }
-  // Rise beyond single apex: first jump ascends until vy = -45 (DJ fire),
-  // then the DJ (impulse v2) carries the remaining height, then fall to top.
+  // Full DJ arc: first jump ascends until vy = -45 (DJ fire), the DJ (impulse
+  // v2) carries the remaining height, then fall to the goal top. For rises
+  // below the single apex this still models the real sequence (jump held,
+  // released near apex, fresh press → DJ) and yields the true ~330px carry.
+  if (rise <= 0) {
+    // Level or downward: up to DJ fire + DJ ascent + full fall to goal top.
+    const tToFire = (v1 - 45) / G;
+    const hFire = v1 * tToFire - 0.5 * G * tToFire * tToFire;
+    const apexTotal = hFire + (v2 * v2) / (2 * G);
+    const tDj = (v2 - Math.sqrt(Math.max(0, v2 * v2 - 2 * G * Math.max(0, -rise)))) / G;
+    const tFall = Math.sqrt((2 * (apexTotal - rise)) / G);
+    return params.speed * (tToFire + tDj + tFall);
+  }
   const tToFire = (v1 - 45) / G;
-  const hAtFire = v1 * 45 / G - (G * 45 * 45) / (2 * G * G) * 0; // v²/2g form below
   // Height at fire: h = v1*t - 0.5*G*t²
   const hFire = v1 * tToFire - 0.5 * G * tToFire * tToFire;
   const rem = rise - hFire;
@@ -508,8 +519,12 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
   // starts the dash first, and the engine blocks jump input during an active
   // supermove, so the DJ gets eaten and the arc loses its second impulse
   // (newMacro #3: j stayed 1, dash ran out 100px short).
+  // Fire at the APEX of jump 2 (vy crossing from rising to falling), NOT the
+  // frame after the DJ commit — that's still ~15 frames into j2's ascent
+  // (vy≈-300), and a dash there flies flat high above low targets. At j2's
+  // apex the hero is at maximum height; the dash carries level from there.
   if (mem.armSuper && params.canSuper && !hero.supermoveActive && !mem.superFired &&
-      !hero.grounded && mem.djDone && hero.jumpsUsed === 2) {
+      !hero.grounded && mem.djDone && hero.jumpsUsed === 2 && hero.vy >= 0) {
     inp.super = true;
     mem.superFired = true;
     mem.armSuper = false;
