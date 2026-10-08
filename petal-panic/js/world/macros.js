@@ -256,12 +256,36 @@ export function superAssistReachForStats(stats, risePx) {
   // unreachable by layer 1, not "cleared" by the mover).
   if (risePx > totalApex) return -1;
 
-  // Phase 1: run + double jump to second apex.
-  const toSecondApex = jump / GRAVITY + secondJump / GRAVITY;
-  const preSuperDist = speed * toSecondApex;
-
   // Phase 2+3: super burst + decel (fixed distances).
   const superDist = burstDist + decelDist;
+
+  // BUG-3: for DOWNWARD hops (target below the source top) the old model
+  // still paid the full "run + double jump to second apex" cost and then
+  // dropped from totalApex — a fantasy dash fired 203px up in the air that
+  // the mover never does. Real behavior: jump off the edge, fire the dash
+  // near the arc's peak while FALLING toward the target, carry level from
+  // there. Model it as: single-jump ascent time to the takeoff arc peak
+  // (the dash fires around j1/j2 apex of an actual hop), burst + decel at
+  // that altitude, then fall the remaining distance to the target top.
+  if (risePx <= 0) {
+    // Arc peak available before the dash must clear the target: use the
+    // higher of (a) just above the target (minimal climb) — but the hero
+    // commits a real jump, so the dash fires near the FULL single-jump
+    // apex of the takeoff hop. That is the honest ceiling for a downward
+    // dash: you cannot choose to dash at an arbitrary lower height on the
+    // way down because the mover fires it at the apex (see platformMover:
+    // super fires when vy >= 0 after djDone).
+    const dashAltitude = firstApex; // apex of the committed jump arc
+    const preSuperDistDown = speed * (jump / GRAVITY); // run to that apex
+    const fallDistanceDown = dashAltitude - risePx; // drop from apex to target top
+    const fallTimeDown = Math.sqrt((2 * Math.max(0, fallDistanceDown)) / GRAVITY);
+    const postSuperDistDown = speed * fallTimeDown;
+    return preSuperDistDown + superDist + postSuperDistDown;
+  }
+
+  // Phase 1: run + double jump to second apex (upward hops only).
+  const toSecondApex = jump / GRAVITY + secondJump / GRAVITY;
+  const preSuperDist = speed * toSecondApex;
 
   // Phase 4: post-super fall back down to the target height at run speed.
   let postSuperDist = 0;
