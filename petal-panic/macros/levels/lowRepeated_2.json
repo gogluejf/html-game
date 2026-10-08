@@ -1,0 +1,111 @@
+{
+  "id": "lowRepeated_2",
+  "name": "lowRepeated_2",
+  "orientation": "horizontal",
+  "difficulty": 1,
+  "units": [
+    {
+      "kind": "platform",
+      "x": 9,
+      "y": 4,
+      "width": 1
+    },
+    {
+      "kind": "platform",
+      "x": 29,
+      "y": 1,
+      "width": 1
+    },
+    {
+      "kind": "platform",
+      "x": 31,
+      "y": 2,
+      "width": 1
+    },
+    {
+      "kind": "platform",
+      "x": 29,
+      "y": 5,
+      "width": 1
+    },
+    {
+      "kind": "platform",
+      "x": 27,
+      "y": 4,
+      "width": 1
+    },
+    {
+      "kind": "platform",
+      "x": 23,
+      "y": 3,
+      "width": 4
+    },
+    {
+      "kind": "platform",
+      "x": 13,
+      "y": 3,
+      "width": 1
+    },
+    {
+      "kind": "platform",
+      "x": 13,
+      "y": 5,
+      "width": 1
+    },
+    {
+      "kind": "block",
+      "x": 14,
+      "y": 0,
+      "width": 3,
+      "height": 8
+    },
+    {
+      "kind": "platform",
+      "x": 11,
+      "y": 1,
+      "width": 3
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "y": 0,
+      "x": 5,
+      "width": 5
+    }
+  ],
+  "placements": [
+    {
+      "slot": "powerup-1",
+      "x": 9,
+      "type": "powerup",
+      "y": 1
+    },
+    {
+      "slot": "barrel-1",
+      "x": 8,
+      "type": "barrel",
+      "y": 1
+    },
+    {
+      "slot": "enemy-1",
+      "x": 7,
+      "type": "enemy",
+      "y": 1
+    },
+    {
+      "slot": "enemy-2",
+      "x": 6,
+      "type": "enemy",
+      "y": 1
+    },
+    {
+      "slot": "enemy-3",
+      "x": 5,
+      "type": "enemy",
+      "y": 1
+    }
+  ],
+  "variations": [],
+  "follows": [],
+  "followedBy": []
+}
