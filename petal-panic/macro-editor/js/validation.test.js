@@ -137,8 +137,8 @@ test('platform placement follows the platform surface elevation', () => {
   assert.deepEqual(result.macro.placements[0],{slot:'barrel-1',type:'barrel',x:8,y:4});
 });
 
-test('deletion is rejected when it would leave an invalid empty macro', () => {
+test('deleting the last unit leaves a valid empty macro', () => {
   const result=validateDeletion(macro(),'unit',0);
-  assert.equal(result.valid,false);
-  assert.match(result.reason,/non-empty array/i);
+  assert.equal(result.valid,true,result.reason);
+  assert.deepEqual(result.macro.units,[]);
 });

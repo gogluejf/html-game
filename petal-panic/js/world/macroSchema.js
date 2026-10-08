@@ -34,7 +34,7 @@ export function macroSchemaErrors(macro, { expectedId } = {}) {
   if (macro.orientation !== 'horizontal' && macro.orientation !== 'vertical') err('$.orientation', 'must be horizontal or vertical');
   if (!Number.isInteger(macro.difficulty) || macro.difficulty < 1 || macro.difficulty > 3) err('$.difficulty', 'must be integer 1..3');
 
-  if (!Array.isArray(macro.units) || macro.units.length < 1) err('$.units', 'must be a non-empty array');
+  if (!Array.isArray(macro.units)) err('$.units', 'must be an array');
   else macro.units.forEach((unit, i) => validateUnit(unit, `$.units[${i}]`, err));
 
   if (!Array.isArray(macro.placements)) err('$.placements', 'must be an array');

@@ -371,6 +371,53 @@ export async function renameCurrentMacro(){
 }
 
 /**
+ * Duplicate the current macro: clone its working copy under a new id
+ * (base_2, base_3, ...), keep both on disk if the original was saved.
+ * Selects the copy so the user can immediately rename/edit it.
+ */
+export async function duplicateCurrentMacro(){
+  if (!app.cur) return;
+  const src = app.cur;
+  const newId = nextFreeId(src.id);
+  const st = JSON.parse(JSON.stringify(src.st));
+  st.id = newId;
+  st.name = newId;
+  invalidateStaleClearance(st);
+
+  // In-memory canonical entry + draft (so unsaved edits of the source carry over).
+  app.macros[newId] = JSON.parse(JSON.stringify(st));
+  app.drafts.set(newId, st);
+  baseFingerprint[newId] = baseFingerprint[src.id]; // same baseline → not dirty
+
+  buildSidebar(app.macros);
+  updateDirtyDots();
+  selectMacro(newId);
+
+  // If the source is on disk, write the copy there too (same PUT contract as saveToDisk).
+  if (baseFingerprint[src.id] !== undefined){
+    try{
+      const res = await fetch('/petal-panic/macro-editor/', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newId, data: st }),
+      });
+      if (!res.ok){
+        let msg = res.status + ' ' + res.statusText;
+        try{ const b = await res.json(); if (b.error) msg = b.error; }catch(_){}
+        showToast(`Duplicated in editor; disk save failed (${msg}) — press Ctrl+S`, 'error');
+        return;
+      }
+      baseFingerprint[newId] = JSON.stringify({ ...st }, null, 2) + '\n';
+      showToast(`Duplicated ${src.id} → ${newId}`, 'success');
+    }catch(e){
+      showToast(`Duplicated in editor; disk save failed — press Ctrl+S`, 'error');
+    }
+  } else {
+    showToast(`Duplicated ${src.id} → ${newId} (unsaved — Ctrl+S to write)`, 'success');
+  }
+}
+
+/**
  * Delete the current macro: remove its localStorage draft AND its file on disk
  * (after confirmation). Then select a remaining macro.
  */

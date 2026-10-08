@@ -149,7 +149,7 @@ function hoverCandidate(cell){
   return hoverCandidateForTool(app.editor.tool,cell,app.cur.st.placements||[]);
 }
 
-function cellInZone(cell){
+export function cellInZone(cell){
   if (!app.cur) return false;
   const z = zoneExtents(app.cur.st);
   return cell.x >= z.ax0 && cell.x < z.ax1 && cell.y >= z.ay0 && cell.y < z.ay1;
@@ -326,18 +326,25 @@ function commit(interaction){
 }
 
 export function deleteSelection(){
-  const s=app.editor.selection;
-  if (!s || !app.cur) return false;
-  const list=s.kind==='unit' ? app.cur.st.units : app.cur.st.placements;
-  if (!list?.[s.index]) return false;
-  const result=validateDeletion(app.cur.st,s.kind,s.index);
-  if (!result.valid){ showToast(result.reason,'error'); return false; }
+  // Multi-select takes priority (same rule as copySelection) — the old code
+  // only ever deleted app.editor.selection, so Delete on a multi-selection
+  // silently did nothing while Ctrl+X worked.
+  const items = app.editor.multiSelect?.length > 0
+    ? app.editor.multiSelect
+    : (app.editor.selection ? [app.editor.selection] : []);
+  if (!items.length || !app.cur) return false;
+  let macro = app.cur.st;
+  for (const item of [...items].sort((a,b)=>b.index-a.index)) {
+    const result = validateDeletion(macro, item.kind, item.index);
+    if (!result.valid){ showToast(result.reason,'error'); return false; }
+    macro = result.macro;
+  }
   pushUndo();
-  app.cur.st.units=result.macro.units;
-  app.cur.st.placements=result.macro.placements;
-  app.editor.warningUnitIndices=result.warningUnitIndices||[];
-  app.editor.selection=null;
-  app.editor.hover=null;
+  app.cur.st = macro;
+  app.editor.warningUnitIndices = [];
+  app.editor.selection = null;
+  app.editor.multiSelect = [];
+  app.editor.hover = null;
   markChanged(); draw();
   return true;
 }

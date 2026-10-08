@@ -11,7 +11,7 @@ import { initConfirmDialog } from './dialog.js';
 import { showToast } from './toast.js';
 import { saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft, readActive, createNewMacro } from './save.js';
 import { initTools, setTool, syncToolButtons } from './tools.js';
-import { initPointer, deleteSelection, lastCell, uniqueSlotName } from './pointer.js';
+import { initPointer, deleteSelection, lastCell, uniqueSlotName, cellInZone } from './pointer.js';
 import { toggleRide, killRideIfActive, setClearanceCommitHook, armSpaceToggle, toggleTrace } from './ghost.js';
 import { doUndo, doRedo, syncUndoButtons } from './undo.js';
 import { pushUndo } from './undo.js';
@@ -73,7 +73,25 @@ function initView(){
 
 // ---------- keyboard ----------
 const clone = v => JSON.parse(JSON.stringify(v));
+// Clipboard lives in localStorage, NOT in the undo stack: cut+paste must be
+// a memory operation that undo/redo never touches. Undo restores macro state
+// only; the buffer persists across undo, macro switches, and page reloads.
+const CLIP_KEY = 'pp_macro_clipboard';
 let clipboard = null; // { units: [...], placements: [...] }
+
+function loadClipboard(){
+  try{
+    const raw = localStorage.getItem(CLIP_KEY);
+    if (raw) clipboard = JSON.parse(raw);
+  }catch(e){}
+}
+function storeClipboard(){
+  try{
+    if (clipboard) localStorage.setItem(CLIP_KEY, JSON.stringify(clipboard));
+    else localStorage.removeItem(CLIP_KEY);
+  }catch(e){}
+}
+loadClipboard();
 
 function copySelection(cut=false){
   if (!app.cur) return;
@@ -86,6 +104,7 @@ function copySelection(cut=false){
     else placements.push(clone(app.cur.st.placements[item.index]));
   }
   clipboard = { units, placements };
+  storeClipboard();
   if (cut) {
     // Remove from macro (highest index first to avoid shifting)
     const sortedUnits = [...items].filter(i=>i.kind==='unit').sort((a,b)=>b.index-a.index);
@@ -105,8 +124,26 @@ function copySelection(cut=false){
 
 function pasteAtCursor(){
   if (!clipboard || !app.cur) return;
-  // Find cursor cell from last known pointer position
-  if (!lastCell) return;
+  // Find cursor cell from last known pointer position. If the cursor is OUT
+  // of the zone (stale hover, mouse over the sidebar, cross-macro switch),
+  // fall back to the FIRST selected item's position — "paste over what I
+  // have selected". Last resort: zone origin.
+  let anchor;
+  if (lastCell && cellInZone(lastCell)) {
+    anchor = lastCell;
+  } else {
+    const selItems0 = app.editor.multiSelect?.length > 0
+      ? app.editor.multiSelect
+      : (app.editor.selection ? [app.editor.selection] : []);
+    anchor = null;
+    for (const item of selItems0) {
+      const obj = item.kind === 'unit'
+        ? app.cur.st.units[item.index]
+        : app.cur.st.placements[item.index];
+      if (obj) { anchor = { x: obj.x, y: obj.y }; break; }
+    }
+    if (!anchor) anchor = { x: 0, y: 0 };
+  }
   // Find the bottom-left anchor of the copied group
   let minOrigX = Infinity, minOrigY = Infinity;
   for (const u of clipboard.units) {
@@ -117,11 +154,46 @@ function pasteAtCursor(){
     if (p.x < minOrigX) minOrigX = p.x;
     if (p.y < minOrigY) minOrigY = p.y;
   }
-  const dx = lastCell.x - minOrigX;
-  const dy = lastCell.y - minOrigY;
+  const dx = anchor.x - minOrigX;
+  const dy = anchor.y - minOrigY;
 
-  // Build next macro with pasted items
+  // Pasting over the CURRENT selection REPLACES it: selected units/placements
+  // whose cells fall inside the pasted group's footprint are removed (the
+  // paste wins). Nothing else is touched — unselected items still collide as
+  // before.
+  const selItems = app.editor.multiSelect?.length > 0
+    ? app.editor.multiSelect
+    : (app.editor.selection ? [app.editor.selection] : []);
+  // Footprint of the pasted group (unit space, after offset).
+  let px0 = Infinity, py0 = Infinity, px1 = -Infinity, py1 = -Infinity;
+  for (const u of clipboard.units) {
+    px0 = Math.min(px0, u.x + dx); py0 = Math.min(py0, u.y + dy);
+    px1 = Math.max(px1, u.x + dx + u.width); py1 = Math.max(py1, u.y + dy + (u.height ?? 1));
+  }
+  for (const p of clipboard.placements) {
+    px0 = Math.min(px0, p.x + dx); py0 = Math.min(py0, p.y + dy);
+    px1 = Math.max(px1, p.x + dx + 1); py1 = Math.max(py1, p.y + dy + 1);
+  }
+  const removeUnitIdx = new Set(), removePlatIdx = new Set();
+  if (selItems.length && px0 !== Infinity){
+    for (const item of selItems) {
+      if (item.kind === 'unit') {
+        const u = app.cur.st.units[item.index];
+        if (!u) continue;
+        const ux1 = u.x + u.width, uy1 = u.y + (u.height ?? 1);
+        if (u.x < px1 && ux1 > px0 && u.y < py1 && uy1 > py0) removeUnitIdx.add(item.index);
+      } else {
+        const p = app.cur.st.placements[item.index];
+        if (!p) continue;
+        if (p.x < px1 && p.x + 1 > px0 && p.y < py1 && p.y + 1 > py0) removePlatIdx.add(item.index);
+      }
+    }
+  }
+
+  // Build next macro with pasted items (minus replaced selections)
   const next = clone(app.cur.st);
+  if (removeUnitIdx.size) next.units = next.units.filter((_, i) => !removeUnitIdx.has(i));
+  if (removePlatIdx.size) next.placements = next.placements.filter((_, i) => !removePlatIdx.has(i));
   let maxUnitIdx = next.units.length;
   let maxPlatIdx = next.placements.length;
   for (const u of clipboard.units) {
@@ -181,6 +253,18 @@ function initKeyboard(){
     if ((e.ctrlKey||e.metaKey) && (e.code==='KeyC'||e.key==='c')){ e.preventDefault(); copySelection(false); return; }
     if ((e.ctrlKey||e.metaKey) && (e.code==='KeyX'||e.key==='x')){ e.preventDefault(); copySelection(true); return; }
     if ((e.ctrlKey||e.metaKey) && (e.code==='KeyV'||e.key==='v')){ e.preventDefault(); pasteAtCursor(); return; }
+    // Ctrl+A: select ALL units + placements in the current macro.
+    if ((e.ctrlKey||e.metaKey) && (e.code==='KeyA'||e.key==='a')){
+      e.preventDefault();
+      if (!app.cur) return;
+      app.editor.multiSelect = [
+        ...app.cur.st.units.map((_, i) => ({ kind:'unit', index:i })),
+        ...app.cur.st.placements.map((_, i) => ({ kind:'slot', index:i })),
+      ];
+      app.editor.selection = null;
+      draw();
+      return;
+    }
     if ((e.ctrlKey||e.metaKey) && (e.code==='Digit0'||e.code==='Numpad0')){ e.preventDefault(); if (app.cur) selectMacro(app.cur.id); return; }
     if (tag==='input'||tag==='textarea') return;
     // If a <dialog> is open (confirm / prompt), let it own the keyboard —

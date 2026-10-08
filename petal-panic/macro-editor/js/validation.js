@@ -97,6 +97,7 @@ export function reasonFromError(error){
   if (/blocks need ≥ 2 empty rows/.test(msg)) return 'Blocks need ≥ 2 empty rows above another unit';
   if (/clearance from the ground/.test(msg)) return 'Too close to the ground — blocks need ≥ 2 rows';
   if (/duplicate slot position/.test(msg)) return 'A slot already occupies this cell';
+  if (/non-empty array/.test(msg)) return 'A macro needs at least one unit — draw a block or platform first';
   if (/elevation step/.test(msg)) return 'Creates an unreachable elevation step';
   return msg.replace(/^validateLayout:\s*/, '').split('\n')[0];
 }

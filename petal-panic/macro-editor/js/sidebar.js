@@ -7,7 +7,7 @@ import { $, tree } from './viewport.js';
 import { draw, zoneExtents, contentExtents } from './draw.js';
 import { setZoom } from './viewport.js';
 import { updateDirtyDots, updateSaveButton, saveActive } from './save.js';
-import { renameCurrentMacro, deleteCurrentMacro } from './save.js';
+import { renameCurrentMacro, deleteCurrentMacro, duplicateCurrentMacro } from './save.js';
 import { analyzeMacroWarnings } from './validation.js';
 import { killRideIfActive } from './ghost.js';
 
@@ -136,6 +136,7 @@ function showCtxMenu(x, y, macroId){
   _ctxEl = document.createElement('div');
   _ctxEl.className = 'ctx-menu';
   _ctxEl.innerHTML = `
+    <button data-action="duplicate">Duplicate</button>
     <button data-action="rename">Rename</button>
     <button data-action="delete" class="danger">Delete</button>`;
   document.body.appendChild(_ctxEl);
@@ -148,6 +149,7 @@ function showCtxMenu(x, y, macroId){
     if (!btn) return;
     hideCtxMenu();
     if (btn.dataset.action === 'rename') renameCurrentMacro();
+    else if (btn.dataset.action === 'duplicate') duplicateCurrentMacro();
     else if (btn.dataset.action === 'delete') deleteCurrentMacro();
   });
   // Dismiss on outside click or Escape
