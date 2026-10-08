@@ -75,6 +75,7 @@ export function predictFrame(hero, goal, world, params, mem){
   // goal, release for one frame to create a fresh press edge for the next jump.
   if (hero.grounded && mem.wantJump) {
     mem.wantJump = false;
+    mem.vaultRise = null;   // clear any captured obstacle rise from the last vault
     return inp;
   }
 
@@ -103,19 +104,24 @@ function singleApexPx(params){
 
 /** Solid wall face directly in front of the hero at body height? Returns the
  *  wall's top y (to compute the climb rise) or null. Ignores one-way platforms
- *  (you walk onto those, not over them). */
-function wallInFront(hero, world){
+ *  (you walk onto those, not over them). `dir` is the travel direction
+ *  (+1 right, -1 left); a wall is only "in front" if it's on that side.
+ *  Detection window is generous (~64px ≈ 20 frames at run speed) so the vault
+ *  can be committed EARLY enough for the arc to clear the wall with room. */
+function wallInFront(hero, world, dir){
   const f = feetPos(hero);
-  const noseX = f.x + 14; // just ahead of the box center
   let best = null;
   for (const s of world.solids) {
     if (s.oneWay) continue;
-    if (s.x < noseX - 4 || s.x > noseX + 28) continue;
+    // Wall's near face must be ahead of us along `dir`, within the window.
+    const face = dir > 0 ? s.x : (s.x + s.w);
+    const dist = dir > 0 ? (face - f.x) : (f.x - face);
+    if (dist < 2 || dist > 120) continue;
     // Wall must overlap the hero's vertical body span (feet up to ~box height).
     const wallTop = s.y, wallBot = s.y + s.h;
     if (wallBot <= f.y - 4) continue;        // entirely above our head
     if (wallTop >= f.y) continue;           // floor / below us
-    if (!best || s.x < best.x) best = { x: s.x, top: s.y };
+    if (!best || dist < Math.abs(best.x - f.x)) best = { x: face, top: s.y, dist };
   }
   return best;
 }
@@ -179,17 +185,27 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
       }
     }
 
-    // Wall climb: a solid block face is directly ahead (we're pinned against it).
-    // Jump to vault over it. The airborne branch sequences the double jump /
-    // super from the live rise, so we only commit here.
-    const wall = wallInFront(hero, world);
-    if (wall && movingTowardGoal) {
-      const climbRise = f.y - wall.top; // how high the wall top sits above our feet
-      if (climbRise > UY * 0.3) {       // worth climbing (not a 1px lip)
-        inp.jump = true;
-        mem.wantJump = true;
-        if (needsSuper) mem.armSuper = true;
-        return inp;
+    // Wall vault: a solid block face is directly ahead in our travel direction.
+    // This is GOAL-INDEPENDENT — we vault it even if it isn't the current goal
+    // (e.g. crossing over an earlier block to reach a goal further along).
+    const travelDir = inp.right ? 1 : inp.left ? -1 : 0;
+    if (travelDir !== 0) {
+      const wall = wallInFront(hero, world, travelDir);
+      if (wall) {
+        const climbRise = f.y - wall.top; // how high the wall top sits above our feet
+        if (climbRise > UY * 0.3) {       // worth climbing (not a 1px lip)
+          inp.jump = true;
+          mem.wantJump = true;
+          // Capture the OBSTACLE's required rise at takeoff. The airborne DJ
+          // decision must use THIS (the wall height), not the live rise to the
+          // goal — otherwise a higher goal keeps the live rise large and the
+          // DJ re-press mis-times (fires after the apex → wasted impulse).
+          mem.vaultRise = climbRise;
+          // NEVER arm super for a vault: the wall height decides the jump, not
+          // the goal. A super dash into the wall face pins the hero (vx huge,
+          // blockedX) and kills the climb. DJ alone clears any wall ≤ ~101px.
+          return inp;
+        }
       }
     }
 
@@ -204,13 +220,13 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
 
   if (!hero.grounded) {
     const singleApex = (params.jump * params.jump) / (2 * GRAVITY);
-    // needsDj is computed from the LIVE rise, which shrinks as the hero
-    // climbs (and hits zero-ish when pinned against the obstacle face).
-    // Once we've committed to a climb jump (wantJump set on the ground),
-    // keep the DJ sequence armed for the whole hop — otherwise the branch
-    // flips off mid-air and the double jump never fires.
+    // For a wall vault, the DJ decision must key off the OBSTACLE's height
+    // (captured at takeoff in mem.vaultRise), NOT the live rise to the goal —
+    // a higher goal would keep the live rise large and mis-time the re-press.
+    // For non-vault climbs, fall back to the live rise.
+    const effectiveRise = mem.vaultRise != null ? mem.vaultRise : rise;
     const djArmed = mem.wantJump && params.hasDoubleJump;
-    const needsDj = djArmed || (params.hasDoubleJump && rise > singleApex);
+    const needsDj = djArmed || (params.hasDoubleJump && effectiveRise > singleApex);
 
     if (needsDj && !mem.djDone && hero.jumpsUsed === 1) {
       // Hard climb — we will double jump. Sequence that preserves BOTH full

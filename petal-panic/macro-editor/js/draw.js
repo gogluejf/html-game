@@ -178,7 +178,7 @@ function drawCandidate(interaction,macro){
     const r=descriptorScreenRect(item,macro);
     ctx.fillRect(r.left,r.top,r.width,r.height);ctx.strokeRect(r.left,r.top,r.width,r.height);
     if (!hoverPreview){
-      const label=`x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}, h ${Math.round(item.height)}`;
+      const label=`#${interaction.targetIndex} · x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}, h ${Math.round(item.height)}`;
       ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(label,r.left+4,r.top-5);
     }
     if (!valid){
@@ -203,7 +203,7 @@ function drawCandidate(interaction,macro){
     ctx.fillRect(sx0,syFace-stripH/2,sx1-sx0,stripH);
     ctx.strokeRect(sx0,syFace-stripH/2,sx1-sx0,stripH);
     if (!hoverPreview){
-      const label=`x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}`;
+      const label=`#${interaction.targetIndex} · x ${Math.round(item.x)}, y ${Math.round(item.y)}, w ${Math.round(item.width)}`;
       ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(label,sx0+4,syFace-stripH/2-5);
     }
     if (!valid){
@@ -520,7 +520,7 @@ function drawMacro(macro){
     ctx.lineWidth = 2;
     ctx.strokeRect(sx0, syTop, sx1-sx0, syBot-syTop);
     if (app.show.labels){
-      labelAt((sx0+sx1)/2, (syTop+syBot)/2, `B${w}×${h}`);
+      labelAt((sx0+sx1)/2, (syTop+syBot)/2, `#${unitIndex} B${w}×${h}`);
     }
     ctx.restore();
   }
@@ -545,7 +545,7 @@ function drawMacro(macro){
     ctx.lineWidth = 2;
     ctx.strokeRect(sx0, syFace - ph/2, sx1-sx0, ph);
     if (app.show.labels){
-      labelAt((sx0+sx1)/2, syFace - ph - 6, `P${w}`);
+      labelAt((sx0+sx1)/2, syFace - ph - 6, `#${unitIndex} P${w}`);
     }
     ctx.restore();
   }
