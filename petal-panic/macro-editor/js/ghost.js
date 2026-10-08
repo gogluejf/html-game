@@ -92,15 +92,16 @@ function buildGoalList(world, st){
     else ls.sort((a, b) => (a.x0 - b.x0) || (a.y - b.y));
     return ls;
   }
-  // Map BFS unit-index order onto landing objects.
+  // Map BFS unit-index order onto landing objects. Surfaces the BFS flagged
+  // unreachable are NOT goals — they get the amber X (failedSet) and the ride
+  // skips them. (The old catch-all "append anything missing" re-queued them
+  // as final goals, forcing the mover to attempt physically impossible hops.)
   const byIdx = new Map(ls.map(l => [l.index, l]));
   const ordered = [];
   for (const ui of routeOrder){
     const l = byIdx.get(ui);
     if (l) ordered.push(l);
   }
-  // Any landing not in the route (shouldn't happen) appends at the end.
-  for (const l of ls) if (!ordered.includes(l)) ordered.push(l);
   return ordered;
 }
 
@@ -138,6 +139,12 @@ export function startRide(){
   // Smart mover setup (task 4): Balthazar params injected, goals in order.
   const stats = HEROES.balthazar.stats;
   const params = { ...stats, hasDoubleJump: true, canSuper: true };
+  // buildGoalList marks BFS-unreachable surfaces into ride.failedSet — it
+  // must exist BEFORE the call (module default is null; the Object.assign
+  // below used to create it too late → "can't access property 'add',
+  // ride.failedSet is null" on the first startRide).
+  ride.failedSet = new Set();
+  ride.landedSet = new Set();
   const goals = buildGoalList(world, st);
   Object.assign(ride, {
     active: true,
