@@ -386,22 +386,35 @@ function rideInput(){
 
     if (pickStale){
       // Grounded: fresh sim-based pick from wherever the hero stands.
-      // SETTLE FIRST: if the hero just landed (vy != 0 or feet above surface),
-      // zero the velocity and mark grounded so the sim starts from a resting state.
-      // Without this the clone inherits a falling vy and its arc diverges from the real
-      // hero's next-frame behavior (lowRepeated #5→#2 stall).
+      // SETTLE FIRST: always zero velocity and clear ALL stale state before picking.
+      // The sim clone starts from a resting state (vx=0, vy=0, grounded=true),
+      // so the real hero must match that or the arc diverges. Zeroing vx is
+      // critical: landing momentum (e.g. vx=180 from a previous hop) shifts
+      // the takeoff point and breaks the jump timing.
       const { world: w2, hero: h2 } = ride;
       const fSettle = feetPosLocal(h2);
       const surfUnder = w2.landings.find(l =>
         fSettle.x >= l.x0 - 8 && fSettle.x <= l.x1 + 8 && Math.abs(l.y - fSettle.y) <= 8);
-      if (surfUnder && (h2.vy !== 0 || fSettle.y < surfUnder.y)){
+      if (surfUnder){
         h2.vy = 0;
-        h2.y = surfUnder.y - h2.worldBox().h;
-        h2.grounded = true; // ← CRITICAL: engine needs to know we're resting
-        h2._jumpBuffer = 0; // clear stale jump inputs
+        h2.vx = 0; // ← CRITICAL: zero horizontal inertia so the sim matches reality
+        if (fSettle.y < surfUnder.y) h2.y = surfUnder.y - h2.worldBox().h;
+        h2.grounded = true;
+        // Clear ALL jump/super/crouch state to prevent stale inputs from breaking the sequence
+        h2._jumpBuffer = 0;
         h2._prevJumpHeld = false;
         h2._coyote = 0;
         h2.jumpsUsed = 0;
+        h2.supermoveActive = false;
+        h2.supermovePhase = null;
+        // Ghost ride tests GEOMETRY clearability, not meter pacing (see
+        // headless.js "Infinite supers during test rides"). Refill the meter
+        // each hop or a drained meter makes the sim reject valid DJ+super
+        // candidates (lowRepeated #2→#0 picked SINGLE@480 instead of
+        // DOUBLE_S@0 once the meter hit ~10/100).
+        h2.supermoveMeter = h2.SUPERMOVE_MAX;
+        h2.crouching = false;
+        if (h2._dropTimer > 0) h2._dropTimer = 0; // droppingThrough is a getter over _dropTimer
       }
       const { pickTakeoff, buildCandidates } = pickerRef;
       ride._pick = pickTakeoff(hero, ride.goal, world, ride.params, {}, standingOn);

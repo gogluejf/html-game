@@ -157,8 +157,12 @@ function baseWalk(h, goal, st){
   return { left: d < 0, right: d > 0, up: false, down: false, jump: false, super: false };
 }
 
-/** WALK_OFF: walk toward the goal; never jump. For drop hops. */
-function scriptWalkOff(h, goal){ return baseWalk(h, goal, {}); }
+/** WALK_OFF: walk toward the goal; never jump. For drop hops.
+ *  Returns a script closure matching the (i, h) calling convention used by
+ *  simulateCandidate/executePick (first arg = frame index, second = hero). */
+function makeWalkOff(goal){
+  return (i, h) => baseWalk(h, goal, {});
+}
 
 /** Distance (px) from the hero's feet to the nearest WALL face ahead in
  *  direction `dir` (+1 right, -1 left). A wall = a non-oneWay solid whose
@@ -182,77 +186,76 @@ function nearestWallFacePx(h, world, dir){
   return best;
 }
 
-/** Walk toward the goal; jump once within `triggerPx` of the approach edge.
- *  Then hold through ascent (full height), release at apex. `k` is an optional
- *  min-frame delay before arming (covers "wait a bit before committing"). */
+/** Walk toward the goal; jump at the platform edge (coyote time).
+ *  Keep pressing direction through the entire arc. DJ at max height,
+ *  super at apex if needed. `k` is an optional min-frame delay before arming. */
 function makeJumpScript(goal, k, useDj, useSuper, paramsRef, st, surfRef, world){
   const goalRef = goal;
   return (i, h) => {
-    const inp = baseWalk(h, goalRef, st);
     const f = feetPos(h);
-    // Direction toward the goal center.
+    // Direction toward the goal center — KEEP PRESSING THROUGH THE ARC.
     const dx = (goalRef.x0 + goalRef.x1) / 2 - f.x;
-    const dir = dx > 0 ? 1 : -1;
+    const dir = dx > 4 ? 1 : dx < -4 ? -1 : 0;
+    
+    const inp = { left: dir < 0, right: dir > 0, up: false, down: false, jump: false, super: false };
+    
     // Trigger measures distance to the CURRENT SURFACE's edge in the travel
     // direction — the point where the hero would walk off and fall. Jumping
-    // here (not at the goal's edge, which may be hundreds of px away) is what
-    // makes the arc launch from the right spot.
+    // here (not at the goal's edge) makes the arc launch from the right spot.
     let toEdge;
-    const goalCenterX = (goalRef.x0 + goalRef.x1) / 2;
     const risePx = f.y - goalRef.y; // >0 = goal higher
-    // Vertical climb: goal is above AND we're already under its span (within
-    // half a unit of center). Jump in place now — there's no edge to approach.
-    // If we're NOT aligned yet, baseWalk steers us under the goal first and
-    // the normal edge-trigger logic applies once we're in position.
+    
+    // Vertical climb: goal is above AND we're under its span → jump in place.
     const goalAboveOverlap = risePx > world.UY * 0.5 &&
-      Math.abs(f.x - goalCenterX) <= world.UX * 0.6;
+      Math.abs(f.x - (goalRef.x0 + goalRef.x1) / 2) <= world.UX * 0.6;
+    
     if (goalAboveOverlap){
       toEdge = 0;
     } else if (surfRef){
       toEdge = dir > 0 ? Math.max(0, surfRef.x1 - f.x) : Math.max(0, f.x - surfRef.x0);
     } else if (world){
-      // No from-surface (hero on the ground floor): the takeoff edge is the
-      // nearest WALL face ahead in the travel direction — the solid that will
-      // stop the walk. Without this the fallback measured distance to the
-      // GOAL edge (hundreds of px away) and the hero walked into the wall
-      // before the jump ever armed (lowRepeated #6 stall).
       toEdge = nearestWallFacePx(h, world, dir);
     } else {
       toEdge = dir > 0 ? Math.max(0, goalRef.x0 - f.x) : Math.max(0, f.x - goalRef.x1);
     }
+    
     const triggerPx = 30 + k * 10; // k=0→30px, k=4→70px, k=8→110px
+    
+    // GROUNDED: arm the jump when close to the edge.
     if (h.grounded && !st._armed && (toEdge <= triggerPx || toEdge === 0)){
       inp.jump = true;
       st._armed = true;
-      st._holdFrames = 2; // hold jump for 2 frames to ensure it fires (engine timing)
-    } else if (st._holdFrames > 0){
-      // Hold jump through the first airborne frame(s) so the engine's jump
-      // logic sees a fresh press on the grounded frame and doesn't drop it.
+      st._holdFrames = 2; // hold for 2 frames to ensure it fires
+    }
+    
+    // AIRBORNE: manage the jump sequence.
+    if (st._holdFrames > 0){
       inp.jump = true;
       st._holdFrames--;
     } else if (!h.grounded && st._armed){
       if (useDj && h.jumpsUsed === 1){
-        // Proper DJ sequence: hold through ascent, RELEASE one frame near the
-        // apex (vy >= -40), then RE-PRESS on a fresh edge → second jump fires.
-        // Holding continuously never creates the fresh edge (the engine gates
-        // air jumps on jumpPressed, not held state).
+        // DJ sequence: hold through ascent, release near apex, re-press for DJ.
         if (h.vy < -40) inp.jump = true;           // hold for full j1 height
         else if (!st._rel){ inp.jump = false; st._rel = true; }  // release at apex
         else { inp.jump = true; st._djDone = true; }              // fresh press → DJ
       } else if (useDj && st._djDone && h.jumpsUsed === 2 && h.vy < 0){
-        // Hold through the SECOND arc's ascent too — releasing cuts it short
-        // (predictFrame does this; without it the DJ peaks ~67px instead of
-        // the full ~95-101px). No fresh edge is created (already pressed).
+        // Hold through the SECOND arc's ascent too.
         inp.jump = true;
       } else if (!useDj && h.jumpsUsed === 1 && h.vy < 0){
         inp.jump = true;                            // hold single for full height
       }
     }
+    
+    // Super: fire at apex if needed.
     if (useSuper && !h.grounded && !st._superFired){
       const atApex = useDj ? (st._djDone && h.jumpsUsed === 2 && h.vy >= 0)
                            : (h.jumpsUsed === 1 && h.vy >= 0);
-      if (atApex && !h.supermoveActive){ inp.super = true; st._superFired = true; }
+      if (atApex && !h.supermoveActive){ 
+        inp.super = true; 
+        st._superFired = true; 
+      }
     }
+    
     return inp;
   };
 }
@@ -281,7 +284,7 @@ export function buildCandidates(hero, goal, world, params, fromSurface){
   const K = [0, 4, 8]; // trigger distances (px): 8 / 16 / 32 from the edge
 
   // Drop hop: goal well below → walking off the edge is the natural move.
-  if (rise < -world.UY * 1.5) cands.push({ id: 'WALK_OFF', pref: PREF.WALK_OFF, script: scriptWalkOff });
+  if (rise < -world.UY * 1.5) cands.push({ id: 'WALK_OFF', pref: PREF.WALK_OFF, script: makeWalkOff(goal) });
 
   for (const k of K){
     cands.push({ id: `SINGLE@${k}`, pref: PREF.SINGLE, script: makeJumpScript(goal, k, false, false, params, {}, fromSurface, world), state: {} });
