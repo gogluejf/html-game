@@ -71,6 +71,13 @@ export function predictFrame(hero, goal, world, params, mem){
   const goalCenterX = (goal.x0 + goal.x1) / 2;
   const dx = goalCenterX - f.x;              // >0 goal is to the right
 
+  // If we just landed (grounded) but are still holding jump from the previous
+  // goal, release for one frame to create a fresh press edge for the next jump.
+  if (hero.grounded && mem.wantJump) {
+    mem.wantJump = false;
+    return inp;
+  }
+
   if (world.vertical) return predictVertical(hero, goal, world, params, mem, inp, f, rise, dx);
   return predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, dx);
 }
