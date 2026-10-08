@@ -9,6 +9,7 @@ import { showToast } from './toast.js';
 import { buildRideWorld } from '../../js/world/ghostRider.js';
 import { createHeadlessHero, stepHeadless } from '../../js/hero/headless.js';
 import { HEROES } from '../../js/hero/heroDefs.js';
+import { predictFrame, feetPos } from '../../js/world/platformMover.js';
 import { macroEndpoint } from './clearance.js';
 
 // Redraw hook: draw.js registers its draw() here so ghost.js never imports
@@ -36,12 +37,9 @@ const requestDraw = () => requestAnimationFrame(() => _redraw());
 const DT = 1 / 60;
 const TRAIL_MAX = 900; // ~15 s of trail points at 30 Hz
 
-// Edge-triggered jump state: the engine only fires a jump on a FRESH press
-// (input.jump && !prevJumpHeld). We must release between jumps or the second
-// press is ignored — this is what caused the "holds jump in place" bug.
-let _jumpWasDown = false;
-
-// Ride state (editor-local; never touches app.cur.st).
+// ---------------------------------------------------------------------------
+// Fixed-timestep driver (real game speed, independent of display rate).
+// ---------------------------------------------------------------------------
 export const ride = {
   active: false,
   world: null,
@@ -58,7 +56,39 @@ export const ride = {
   _acc: 0,
   _clearPause: 0,
   trace: null,       // frame trace buffer while Ctrl is held (null when off)
+  // --- smart mover state (task 4) -----------------------------------------
+  goal: null,        // current target landing surface {x0,x1,y,index,kind}
+  goals: [],         // BFS-ordered list of reachable surfaces to land on
+  goalIdx: 0,        // index into goals currently being pursued
+  mem: null,         // per-hop mover memory (predictFrame scratch)
+  params: null,      // injected movement stats (Balthazar for the ghost)
+  landedSet: null,   // Set of landed surface indices (green flashes)
+  failedSet: null,   // Set of surfaces reported unreachable (amber X)
+  _landFlash: 0,     // frames remaining of the green land flash
 };
+
+/** Build the ordered goal list for a ride world: every landing surface in
+ *  traversal order. Horizontal: left→right (then lower-first on ties).
+ *  Vertical: ground→top, i.e. largest y (lowest surface) first. The mover
+ *  rides them in order; the exit check still happens separately. */
+function buildGoalList(world){
+  const ls = [...world.landings];
+  if (world.vertical) ls.sort((a, b) => (b.y - a.y) || (a.x0 - b.x0)); // climb: low (big y) → high (small y)
+  else ls.sort((a, b) => (a.x0 - b.x0) || (a.y - b.y));
+  return ls;
+}
+
+/** Advance to the next unlanded goal after the current one is done. */
+function advanceGoal(){
+  ride.goalIdx++;
+  if (ride.goalIdx >= ride.goals.length) {
+    ride.goal = null; // all surfaces done — keep running to the exit
+    return;
+  }
+  ride.goal = ride.goals[ride.goalIdx];
+  // Fresh per-hop memory for each new goal.
+  ride.mem = { wantJump: false, djDone: false, armSuper: false, superFired: false, _releasedAtApex: false };
+}
 
 /** Start (or restart) the test ride for the current macro draft. */
 export function startRide(){
@@ -72,6 +102,10 @@ export function startRide(){
   const endpoint = macroEndpoint(st);
   world.macroEndPx = endpoint.value * (endpoint.orientation === 'vertical' ? c.unitPxY : c.unitPxX);
   const hero = createHeadlessHero('balthazar', { x: world.entry.x - 8, y: world.entry.y - 40 });
+  // Smart mover setup (task 4): Balthazar params injected, goals in order.
+  const stats = HEROES.balthazar.stats;
+  const params = { ...stats, hasDoubleJump: true, canSuper: true };
+  const goals = buildGoalList(world);
   Object.assign(ride, {
     active: true,
     world,
@@ -86,8 +120,15 @@ export function startRide(){
     _last: performance.now(),
     _acc: 0,
     _clearPause: 0,
+    params,
+    goals,
+    goalIdx: 0,
+    goal: goals[0] ?? null,
+    mem: { wantJump: false, djDone: false, armSuper: false, superFired: false, _releasedAtApex: false },
+    landedSet: new Set(),
+    failedSet: new Set(),
+    _landFlash: 0,
   });
-  _jumpWasDown = false;
   ride.trace = null;
   $('testRideBtn')?.classList.add('armed');
   updateRideHint();
@@ -110,6 +151,23 @@ export function rebuildRideWorld(){
   ride._visitedSet = null;
   ride.visited = 0;
   ride._onOneWay = false;
+
+  // Rebuild the goal list + mover state for the new geometry. The hero keeps
+  // its position; the mover re-plans from wherever it is.
+  const goals = buildGoalList(world);
+  ride.goals = goals;
+  // Resume at the first goal not yet landed (or the first one ahead of hero).
+  const cx = hero.worldBox().x + hero.worldBox().w / 2;
+  let resumeIdx = 0;
+  for (let i = 0; i < goals.length; i++){
+    if (ride.landedSet?.has(goals[i].index)) continue;
+    if (!world.vertical && goals[i].x0 < cx - world.UX) continue; // already behind
+    resumeIdx = i;
+    break;
+  }
+  ride.goalIdx = resumeIdx;
+  ride.goal = goals[resumeIdx] ?? null;
+  ride.mem = { wantJump: false, djDone: false, armSuper: false, superFired: false, _releasedAtApex: false };
 
   ride.path = [];
 }
@@ -184,7 +242,7 @@ function stepOnce(dt){
 
   recordTraceFrame(inp, res, cx, fy);
 
-  // Visit tracking.
+  // Visit tracking (any surface touched counts for the visited readout).
   for (const l of world.landings) {
     if (cx >= l.x0 && cx <= l.x1 && Math.abs(l.y - fy) <= 4) {
       if (!ride._visitedSet) ride._visitedSet = new Set();
@@ -192,6 +250,19 @@ function stepOnce(dt){
       ride.visited = ride._visitedSet.size;
     }
   }
+
+  // Goal-landing tracking (smart mover): when the hero is grounded ON the
+  // current goal surface, mark it landed, flash green, and advance.
+  if (ride.goal && hero.grounded) {
+    const g = ride.goal;
+    if (cx >= g.x0 - 6 && cx <= g.x1 + 6 && Math.abs(g.y - fy) <= 6) {
+      ride.landedSet.add(g.index);
+      ride._lastLandedIdx = g.index;
+      ride._landFlash = 30; // ~0.5 s green flash
+      advanceGoal();
+    }
+  }
+  if (ride._landFlash > 0) ride._landFlash--;
 
   // Reaching the authored macro endpoint concludes test mode immediately.
   const atExit = world.vertical
@@ -213,120 +284,29 @@ function stepOnce(dt){
   }
 }
 
+/** Smart-mover input driver (task 4): asks predictFrame for the buttons to
+ *  press THIS frame to reach the current goal. When all goals are landed
+ *  (ride.goal === null), just run toward the exit. */
 function rideInput(){
   const { world, hero } = ride;
-  const stats = HEROES.balthazar.stats;
-  const cx = hero.worldBox().x + hero.worldBox().w / 2;
-  const fy = hero.worldBox().y + hero.worldBox().h;
-  const inp = { left: false, right: false, jump: false, down: false, super: false, onOneWay: !!ride._onOneWay };
-  let wantJump = false;
+  const inp = { left: false, right: false, up: false, down: false, jump: false, super: false };
 
-  if (world.vertical) {
-    const targetX = world.W / 2;
-    if (cx < targetX - 6) inp.right = true;
-    else if (cx > targetX + 6) inp.left = true;
-    if (hero.grounded) {
-      // Nearest platform above with overlapping x-range.
-      let nextAbove = null;
-      for (const l of world.landings) {
-        if (l.y >= fy - 4) continue;
-        if (l.x1 < cx - world.UX * 1.5 || l.x0 > cx + world.UX * 1.5) continue;
-        if (!nextAbove || l.y > nextAbove.y) nextAbove = l;
-      }
-      if (nextAbove) {
-        const rise = fy - nextAbove.y;
-        const djApex = doubleJumpApex(stats);
-        if (rise <= djApex * 0.9) wantJump = true;
-        else if (!ride._superUsed && rise <= djApex * 1.3) { inp.super = true; ride._superUsed = true; }
-      }
-    }
+  if (ride.goal && ride.mem && ride.params) {
+    const p = predictFrame(hero, ride.goal, world, ride.params, ride.mem);
+    inp.left = p.left; inp.right = p.right; inp.up = p.up;
+    inp.down = p.down; inp.jump = p.jump; inp.super = p.super;
   } else {
-    inp.right = true;
-    if (hero.grounded) {
-      // Wall directly ahead?
-      const wall = findWall(world, cx, fy);
-      if (wall) {
-        const climb = fy - wall.y;
-        const djApex = doubleJumpApex(stats);
-        if (climb > 0 && climb <= djApex * 0.95) {
-          // Low enough to clear with a jump: hop over it.
-          wantJump = true;
-        } else if (climb > 0 && climb <= djApex * 1.5 && (!ride._superUsed || ride._preferSuper)) {
-          // Needs the supermove burst to vault (or this retry prefers it).
-          inp.super = true;
-          ride._superUsed = true;
-        } else {
-          // Too tall to vault head-on in one clean arc. Don't give up and don't
-          // stop — keep trying: jump (double jump) AND fire the supermove burst
-          // to push through. A human would mash jump + super here; we do the
-          // same, every frame, until it gets over or the user kills the ride.
-          wantJump = true;
-          if (!ride._superUsed || ride._preferSuper) {
-            inp.super = true;
-            ride._superUsed = true;
-          }
-        }
-      } else {
-        // Seek a higher landing ahead.
-        let target = null;
-        for (const l of world.landings) {
-          if (l.x0 < cx - world.UX * 0.5) continue;
-          if (l.x0 > cx + 14 * world.UX) continue;
-          const rise = fy - l.y;
-          if (rise < world.UY * 0.3) continue;
-          if (rise > doubleJumpApex(stats) * 0.92) continue;
-          if (!target || l.x0 < target.x0) target = l;
-        }
-        if (target) {
-          const dist = target.x0 - cx;
-          if (dist <= world.UX * 1.0) wantJump = true;
-        }
-      }
-    }
-    // Double jump when rising slows.
-    if (!hero.grounded && hero.jumpsUsed === 1 && hero.vy > -stats.jump * 0.85 * 0.3) wantJump = true;
-    // Drop-through.
-    if (hero.grounded && ride._onOneWay) {
-      const below = world.landings.find(l => l.kind === 'platform' && l.x0 <= cx && l.x1 >= cx && l.y > fy + world.UY * 0.8);
-      if (below) { inp.down = true; wantJump = true; }
+    // No goal left (all landed or no surfaces): run to the exit.
+    if (world.vertical) {
+      const cx = hero.worldBox().x + hero.worldBox().w / 2;
+      if (cx < world.W / 2 - 6) inp.right = true;
+      else if (cx > world.W / 2 + 6) inp.left = true;
+    } else {
+      inp.right = true;
     }
   }
-
-  // Convert "want to jump" into a proper jump sequence: PRESS on the trigger
-  // frame, then HOLD while ascending (vy < 0) so variable-jump-height doesn't
-  // cut the arc to 45%. Release once we start falling (vy >= 0) or land.
-  if (wantJump && !_jumpWasDown) {
-    inp.jump = true;
-    _jumpWasDown = true;
-  } else if (_jumpWasDown && hero.vy < 0) {
-    // Still ascending: keep holding for full height.
-    inp.jump = true;
-  } else {
-    inp.jump = false;
-    _jumpWasDown = false;
-  }
+  inp.onOneWay = !!ride._onOneWay;
   return inp;
-}
-
-function findWall(world, cx, fy){
-  const noseX = cx + 18;
-  let best = null;
-  for (const s of world.solids) {
-    if (s.oneWay) continue;
-    if (s.x > noseX - 4 && s.x < noseX + 24) {
-      if (s.y + s.h > fy - 4 && s.y < fy + world.UY * 0.5) {
-        if (!best || s.x < best.x) best = s;
-      }
-    }
-  }
-  return best;
-}
-
-function doubleJumpApex(stats){
-  const G = 1500; // GRAVITY from consts (avoid extra import churn)
-  const first = (stats.jump * stats.jump) / (2 * G);
-  const second = 0.85 * stats.jump;
-  return first + (second * second) / (2 * G);
 }
 
 function respawn(){
@@ -345,7 +325,14 @@ function respawn(){
   // Vary the approach each retry so it isn't the identical jump forever:
   // even attempts prefer the supermove burst at the wall.
   ride._preferSuper = (ride.attempts % 2 === 0);
-  _jumpWasDown = false;
+  // Reset per-hop mover memory; keep landedSet (surfaces already proven).
+  if (ride.mem) {
+    ride.mem.wantJump = false;
+    ride.mem.djDone = false;
+    ride.mem.armSuper = false;
+    ride.mem.superFired = false;
+    ride.mem._releasedAtApex = false;
+  }
 }
 
 function restartLap(){
@@ -474,7 +461,12 @@ export function stopTraceAndDump(){
 function updateRideHint(){
   const el = document.getElementById('validationHint');
   if (!el || !ride.active) return;
-  if (ride.status === 'running') el.textContent = `ride: running · try ${ride.attempts} · visited ${ride.visited}/${ride.totalLandings}${ride.trace ? ` · REC ${ride.trace.frames.length}` : ''}`;
+  if (ride.status === 'running') {
+    const goalTxt = ride.goal
+      ? `aiming ${ride.goal.kind}#${ride.goal.index}`
+      : 'all landed → exit';
+    el.textContent = `ride: ${goalTxt} · landed ${ride.landedSet?.size ?? 0}/${ride.totalLandings} · try ${ride.attempts}${ride.trace ? ` · REC ${ride.trace.frames.length}` : ''}`;
+  }
   else if (ride.status === 'cleared') el.textContent = `ride: CLEARED · lap ${ride.lap}`;
   el.classList.toggle('on', !!el.textContent);
   el.classList.toggle('warning', false);
@@ -540,6 +532,67 @@ export function drawRide(ctx, macro){
   ctx.fillRect(hx - wpx / 2, hy, wpx, hpx);
   ctx.strokeRect(hx - wpx / 2, hy, wpx, hpx);
   ctx.restore();
+
+  // --- Smart-mover overlays (task 4) --------------------------------------
+  // Current goal: cyan line across the target surface.
+  if (ride.goal) {
+    const g = ride.goal;
+    const [gx0, gy0] = toScreen(g.x0, g.y);
+    const [gx1, gy1] = toScreen(g.x1, g.y);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0,229,255,.85)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(gx0, gy0);
+    ctx.lineTo(gx1, gy1);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Cyan dot at the goal center.
+    ctx.fillStyle = 'rgba(0,229,255,.9)';
+    ctx.beginPath();
+    ctx.arc((gx0 + gx1) / 2, gy0, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  // Landed surfaces: green flash (brief) then a faint green tick.
+  if (ride.landedSet) {
+    for (const idx of ride.landedSet) {
+      const l = world.landings.find(x => x.index === idx);
+      if (!l) continue;
+      const [lx0, ly0] = toScreen(l.x0, l.y);
+      const [lx1, ly1] = toScreen(l.x1, l.y);
+      ctx.save();
+      if (idx === ride._lastLandedIdx && ride._landFlash > 0) {
+        ctx.strokeStyle = `rgba(90,255,138,${(ride._landFlash / 30).toFixed(2)})`;
+        ctx.lineWidth = 4;
+      } else {
+        ctx.strokeStyle = 'rgba(90,255,138,.35)';
+        ctx.lineWidth = 2;
+      }
+      ctx.beginPath();
+      ctx.moveTo(lx0, ly0);
+      ctx.lineTo(lx1, ly1);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  // Failed/unreachable surfaces: amber X.
+  if (ride.failedSet) {
+    for (const idx of ride.failedSet) {
+      const l = world.landings.find(x => x.index === idx);
+      if (!l) continue;
+      const [ax, ay] = toScreen((l.x0 + l.x1) / 2, l.y);
+      ctx.save();
+      ctx.strokeStyle = '#ffbf00';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(ax - 8, ay - 8); ctx.lineTo(ax + 8, ay + 8);
+      ctx.moveTo(ax + 8, ay - 8); ctx.lineTo(ax - 8, ay + 8);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
 
   // Fail marker.
   if (ride.failPoint) {

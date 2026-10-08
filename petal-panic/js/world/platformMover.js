@@ -247,17 +247,36 @@ function predictVertical(hero, goal, world, params, mem, inp, f, rise, dx){
     }
     return inp;
   }
-  // Airborne: keep the double jump available for the climb, steer x to align.
-  if (params.hasDoubleJump && hero.jumpsUsed === 1 && !mem.djDone && hero.vy > -params.jump * 0.85 * 0.3) {
-    inp.jump = true;
-    mem.djDone = true;
+  // Airborne: same hold/release/fresh-press sequence as horizontal. Holding
+  // the first jump keeps its full height; releasing one frame near the apex
+  // creates the fresh edge the engine requires for the double jump. (The old
+  // code pressed jump every airborne frame, which never released → the DJ
+  // edge never existed → the hero bounced in place forever.)
+  const singleApex = (params.jump * params.jump) / (2 * GRAVITY);
+  const needsDj = (mem.wantJump && params.hasDoubleJump) ||
+                  (params.hasDoubleJump && rise > singleApex);
+  if (needsDj && !mem.djDone && hero.jumpsUsed === 1) {
+    const ascending = hero.vy < -20;
+    if (ascending) {
+      inp.jump = true;
+      mem._releasedAtApex = false;
+    } else if (!mem._releasedAtApex) {
+      inp.jump = false;
+      mem._releasedAtApex = true;
+    } else {
+      inp.jump = true;
+      mem.djDone = true;
+    }
+  } else if (mem.wantJump && hero.vy < 0) {
+    inp.jump = true; // easy hop: hold through ascent for full height
+  } else {
+    inp.jump = false;
   }
   if (mem.armSuper && params.canSuper && !hero.supermoveActive && hero.vy > -params.jump * 0.85 * 0.25) {
     inp.super = true;
     mem.superFired = true;
     mem.armSuper = false;
   }
-  if (mem.wantJump && hero.vy < 0) inp.jump = true;
   return inp;
 }
 
