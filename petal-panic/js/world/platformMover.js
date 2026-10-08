@@ -469,24 +469,27 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
       } else {
         inp.jump = true;                 // fresh press → double jump
         mem.djDone = true;
-        // ESCALATION, same frame: the DJ impulse is being committed NOW. If
-        // the goal span still starts more than half a cell ahead, the arc
-        // won't connect — dash on THIS frame so the burst (which owns vy, no
-        // gravity) preserves the DJ's remaining ascent AND starts the ~370px
-        // carry immediately. Waiting for vy≈0 costs 4+ frames of horizontal
-        // travel and the dash runs out short (newMacro #3: 360px gap).
+        // ESCALATION: the DJ impulse is being committed NOW. Do NOT fire the
+        // super on this same frame — the engine processes super first and
+        // blocks jump input during an active supermove, so the DJ press gets
+        // eaten (trace: J stayed 1, dash ran flat). Instead ARM it; the
+        // armSuper block below fires it next frame once jumpsUsed === 2
+        // confirms the DJ actually landed.
         if (params.canSuper && !hero.supermoveActive && !mem.superFired) {
           const shortNow = dx > 0 ? (goal.x0 - f.x) : (f.x - goal.x1);
-          // Only dash into a REAL hole: no ground under the way AND no wall
-          // face between us and the span. Raw distance alone is wrong — it
-          // dashes flat into #1's face on newMacro #0 (pinned at x270) and
-          // across block #2 on #3 where a plain DJ arc lands fine.
-          if (shortNow > world.UX * 0.5
+          // Only dash when the DJ arc ALONE provably lands short of the span:
+          // djCarryPxFor is the horizontal distance a jump+DJ arc covers from
+          // takeoff to landing on the goal top. If shortNow <= that carry, a
+          // plain DJ connects — and a super here is actively harmful (the dash
+          // is intangible + vy=0 flat, so it phases THROUGH the platform top
+          // and the hero falls past it: easyPlatformHop #1, newMacro #3).
+          // Also require a real hole: no ground under the way AND no wall face
+          // between us and the span (raw distance alone dashes into #1's face
+          // on newMacro #0, pinned at x270).
+          if (shortNow > djCarryPxFor(params, rise) + world.UX * 0.25
               && !groundBetween(hero, world, goal, dx)
               && !wallInFront(hero, world, dx > 0 ? 1 : -1)) {
-            inp.super = true;
-            mem.superFired = true;
-            mem.armSuper = false;
+            mem.armSuper = true;
           }
         }
       }
