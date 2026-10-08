@@ -127,7 +127,14 @@ export function startRide(){
   });
   const endpoint = macroEndpoint(st);
   world.macroEndPx = endpoint.value * (endpoint.orientation === 'vertical' ? c.unitPxY : c.unitPxX);
-  const hero = createHeadlessHero('balthazar', { x: world.entry.x - 8, y: world.entry.y - 40 });
+  // Spawn with FEET on the entry surface: anchor by the real box height so
+  // the rect isn't sunk into the ground (Balthazar h=52, not the old 40).
+  const _spawnHero = () => {
+    const h = createHeadlessHero('balthazar', { x: 0, y: 0 });
+    const bh = h.worldBox().h;
+    return createHeadlessHero('balthazar', { x: world.entry.x - 8, y: world.entry.y - bh });
+  };
+  const hero = _spawnHero();
   // Smart mover setup (task 4): Balthazar params injected, goals in order.
   const stats = HEROES.balthazar.stats;
   const params = { ...stats, hasDoubleJump: true, canSuper: true };
@@ -247,7 +254,16 @@ function tick(now){
   ride._acc += frame;
   let guard = 0;
   while (ride._acc >= DT && guard < 8) {
-    stepOnce(DT);
+    try {
+      stepOnce(DT);
+    } catch (err) {
+      // A single-frame throw must not silently kill the whole ride loop —
+      // surface it and stop cleanly so the user sees WHY it froze.
+      console.error('[ride] step error:', err);
+      showToast(`ride error: ${err.message}`, 'error');
+      stopRide();
+      return;
+    }
     ride._acc -= DT;
     guard++;
   }
@@ -286,15 +302,22 @@ function stepOnce(dt){
       ride._lastLandedIdx = g.index;
       ride._landFlash = 30; // ~0.5 s green flash
       advanceGoal();
-    } else if (fy > g.y + world.UY * 0.5 && cx < g.x0 - world.UX * 0.5) {
-      // Hero is grounded BELOW and BEHIND the goal — it walked off the edge
-      // and fell past the platform. The mover can't recover from here (the
-      // goal is now above-behind, beyond any single arc). Respawn to retry
-      // the approach cleanly instead of standing around forever.
-      ride.attempts++;
-      respawn();
-      updateRideHint();
-      return;
+    } else {
+      // "Fell past the goal" recovery — but ONLY after the hero actually got
+      // to the goal's near edge and then ended up below-behind it. While still
+      // APPROACHING from the left (spawn side), being below+left of the goal is
+      // normal, not a failure — respawning there caused an instant loop that
+      // froze the hero at spawn (blockBridge: attempts hit 98 in seconds).
+      const reachedApproach = world.vertical
+        ? fy < g.y + world.UX * 0.5          // climbed up to the goal's height band
+        : cx >= g.x0 - world.UX * 0.5;       // got to/past the goal's near edge
+      const fellPast = fy > g.y + world.UY * 0.5 && cx < g.x0 - world.UX * 0.5;
+      if (reachedApproach && fellPast) {
+        ride.attempts++;
+        respawn();
+        updateRideHint();
+        return;
+      }
     }
   }
   if (ride._landFlash > 0) ride._landFlash--;
@@ -346,8 +369,10 @@ function rideInput(){
 
 function respawn(){
   const { world, hero } = ride;
+  // Anchor feet on the entry surface using the real box height (not a magic 40).
+  const bh = hero.worldBox().h;
   hero.x = world.entry.x - 8;
-  hero.y = world.entry.y - 40;
+  hero.y = world.entry.y - bh;
   hero.vx = 0; hero.vy = 0;
   hero.grounded = false;
   hero.jumpsUsed = 0;

@@ -82,6 +82,44 @@ export function predictFrame(hero, goal, world, params, mem){
   return predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, dx);
 }
 
+/** Is there solid ground N px ahead at foot level? Only checks one-way platforms. */
+function hasGroundAhead(hero, world, distPx){
+  const f = feetPos(hero);
+  const probeX = f.x + distPx;
+  const probeY = f.y;
+  for (const s of world.solids) {
+    if (!s.oneWay) continue;
+    if (probeX >= s.x && probeX <= s.x + s.w && probeY >= s.y - 4 && probeY <= s.y + s.h + 4) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Single-jump apex height (px) for the given stats. */
+function singleApexPx(params){
+  return (params.jump * params.jump) / (2 * GRAVITY);
+}
+
+/** Solid wall face directly in front of the hero at body height? Returns the
+ *  wall's top y (to compute the climb rise) or null. Ignores one-way platforms
+ *  (you walk onto those, not over them). */
+function wallInFront(hero, world){
+  const f = feetPos(hero);
+  const noseX = f.x + 14; // just ahead of the box center
+  let best = null;
+  for (const s of world.solids) {
+    if (s.oneWay) continue;
+    if (s.x < noseX - 4 || s.x > noseX + 28) continue;
+    // Wall must overlap the hero's vertical body span (feet up to ~box height).
+    const wallTop = s.y, wallBot = s.y + s.h;
+    if (wallBot <= f.y - 4) continue;        // entirely above our head
+    if (wallTop >= f.y) continue;           // floor / below us
+    if (!best || s.x < best.x) best = { x: s.x, top: s.y };
+  }
+  return best;
+}
+
 function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, dx){
   // Already standing on the goal? Done (caller checks isOnGoal).
   // Face + move toward the goal center.
@@ -104,38 +142,58 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
     // Drop-through: goal is a lower surface directly below a one-way platform.
     if (rise < -UY * 0.5 && ride_onOneWay(hero, world)) {
       inp.down = true;
-      inp.jump = true; // down+jump drops through a one-way platform
+      inp.jump = true;
       return inp;
     }
 
-    // Climb onto a higher goal: JUMP at the exact takeoff distance computed
-    // from the obstacle's rise and the hero's real stats. This launches the
-    // arc early enough (with run-up) that the hero is still above the target
-    // height while crossing the obstacle — no fuzzy windows, no clipping.
-    if (rise > UY * 0.4) {
-      const takeoff = takeoffDistanceForRise(params, rise);
-      if (takeoff > 0 && gapX <= takeoff) {
+    // Simple logic: if moving toward the goal and approaching an edge, jump now.
+    // No complex takeoff math — just jump at the edge and use DJ/super in air.
+    const movingTowardGoal = (dx > 0 && inp.right) || (dx < 0 && inp.left);
+    const onOneWay = ride_onOneWay(hero, world);
+    const nearEdge = onOneWay && !hasGroundAhead(hero, world, 20);
+
+    if (movingTowardGoal && nearEdge) {
+      inp.jump = true;
+      mem.wantJump = true;
+      if (needsSuper) mem.armSuper = true;
+      return inp;
+    }
+
+    // Overhead hop: we're grounded BELOW the goal and horizontally under/near
+    // its span. The goal is above us — commit a vertical climb jump (the airborne
+    // branch sequences the double jump). Without this, dx flickers around the
+    // goal center and the hero shuffles L/R forever without ever jumping.
+    // Gate on horizontal clearance: if the goal's near edge is close ahead we
+    // must take off EARLY enough that the arc lands ON the surface, not past it.
+    const overhead = rise > UY * 0.5 &&
+      f.x >= goal.x0 - world.UX * 0.75 && f.x <= goal.x1 + world.UX * 0.75;
+    if (overhead) {
+      // Distance to the goal's near edge along the approach direction.
+      const toNearEdge = dx > 0 ? (goal.x0 - f.x) : (f.x - goal.x1);
+      const needClearance = rise > singleApexPx(params) ? world.UX * 0.5 : world.UX * 0.25;
+      if (toNearEdge >= -world.UX * 0.25 && toNearEdge <= needClearance) {
         inp.jump = true;
         mem.wantJump = true;
-        // Super only if the rise is beyond even the double-jump apex.
         if (needsSuper) mem.armSuper = true;
+        return inp;
       }
-      return inp;
     }
 
-    // Same-height (or slightly lower) goal across a gap → hop across. Use the
-    // FULL takeoff distance, not a tiny fixed window: at run speed the hero
-    // covers ~3px/frame, so a 27px window is crossed in <10 frames and the
-    // hero walks off the ledge before the jump ever triggers (observed: easy
-    // PlatformHop, f110→f140). The takeoff formula with rise≈0 gives the
-    // correct "jump this far before the edge" distance for a flat hop.
-    if (gapX > 0 && rise <= UY * 0.4) {
-      const hopDist = takeoffDistanceForRise(params, Math.max(0, rise));
-      if (hopDist > 0 && gapX <= hopDist) {
+    // Wall climb: a solid block face is directly ahead (we're pinned against it).
+    // Jump to vault over it. The airborne branch sequences the double jump /
+    // super from the live rise, so we only commit here.
+    const wall = wallInFront(hero, world);
+    if (wall && movingTowardGoal) {
+      const climbRise = f.y - wall.top; // how high the wall top sits above our feet
+      if (climbRise > UY * 0.3) {       // worth climbing (not a 1px lip)
         inp.jump = true;
         mem.wantJump = true;
+        if (needsSuper) mem.armSuper = true;
+        return inp;
       }
     }
+
+    // Otherwise, keep running toward the goal.
     return inp;
   }
 
