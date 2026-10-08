@@ -271,3 +271,68 @@ core free of any ghost/editor-specific assumptions.
 - One reach-envelope source of truth (no ghost/validator disagreement).
 - Mover core has zero ghost/editor assumptions — ready to drive enemy AI with a
   different `goal` + `params`.
+
+## Known bugs / open issues (found during implementation)
+
+### BUG-1: BFS validator marks touching block-tops as reachable (the "p6 lie")
+Found 2026-10-08 while testing `macros/levels/newMacro.json`.
+
+**Symptom:** in newMacro, the b1x3 at x24/y5 (top elevation 8) and the p1 at
+x25/y6 (elevation 7) are both flagged *reachable* by `computeUnreachable`
+(macros.js), but neither is physically landable. Remove the p1 → b1x3 gets
+correctly flagged. The p1 was a red herring — the anchor of the lie is the
+**p6 platform (x18 w6, elevation 5)**:
+
+1. p6 is reachable (fine).
+2. b1x3's left edge *touches* p6's right edge (both at x24) → gap = 0 units.
+3. BFS check "is b1x3 within reach of p6?": rise = +3 rows (144px), gap = 0 →
+   super-assist envelope says YES. But physically b1x3's top is a **wall face**
+   next to p6 — there is no horizontal room to launch a jump onto its top.
+4. p1 then touches b1x3 (gap 0, rise +1) → also marked reachable.
+
+Repro (all via `validateLayout(..., { traversal: 'warn' })`):
+- full newMacro            → NO warnings (the lie)
+- full minus p6            → all three flagged correctly
+- b1x3 alone               → flagged correctly
+- b1x3 + p1 (no p6)        → both flagged correctly
+
+**Root cause (precise):** b1x3 should NEVER have been flagged connectable —
+nothing can reach its top (it is a wall face; p6 touches its *side*, which is
+not a connection). The BFS instead built a phantom chain:
+p6 →(zero-gap side-touch, ignoring that the b1x3 mass blocks the space)→ b1x3
+→ p1. So p1 appears reachable *through* b1x3, when b1x3 is actually an
+impassable blocker sitting between them. The envelope math has no concept of
+occlusion: a zero-gap neighbor whose top is a vertical face must not become a
+BFS node at all. Fix = b1x3 must not be seeded/propagated as reachable from a
+side-touch; then p1 correctly falls out too (no other path exists).
+
+**Impact:** layer 1 (fast math) can stamp false confidence; editor shows no
+warning for genuinely unlandable surfaces. Layer 2 (mover) catches it — the
+mover physically reported `UNREACHABLE` for b1x3 in the same level — so
+two-layer CLEARED (task 5) is the real safety net. But layer 1 should be fixed
+too: a span whose only connection is a zero-gap side-touch against a lower
+surface must not seed reachability of its top.
+
+**Proposed fix direction (not yet implemented):** in `computeUnreachable`, a
+block top must not become a reachable BFS node via a zero-gap *side-touch*
+from a lower surface — only from a surface the hero can stand on and launch
+from (source top at/above target-top-minus-1-row, with real horizontal approach
+room). If b1x3 is never seeded, p1 falls out automatically (its only phantom
+path was through b1x3). Needs design care: same-height touching blocks are
+legal and common (blockBridge etc.) and must keep working; 17 canonical macros
++ generated areas must re-validate clean. Keep the single-source-of-truth
+envelope functions intact.
+
+**Regression test to add:** newMacro (or a minimal 3-unit version: reachable
+platform + touching tall block + platform touching the block) must produce a
+traversal warning for the block top AND the mover must report unreachable.
+
+### Open question (drop-through chains)
+If the player stands on a high platform (e.g. p6) above a wall block (b1x3)
+and needs to get to the block's *lower* top/side area: is the mover smart
+enough to drop off the platform edge, fall alongside the wall, and land on the
+lower surface, then continue? Drop-through (down+jump on one-way platforms) is
+implemented; dropping off a solid edge and landing on a lower solid is NOT
+explicitly tested yet. Add a test: platform above a shorter block → mover must
+reach the block top without jumping (walk off / controlled fall). Verify during
+task 4 (chained ride) since this is a routing decision, not a single-hop one.
