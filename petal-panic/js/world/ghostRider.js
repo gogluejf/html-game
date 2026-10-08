@@ -97,7 +97,7 @@ export function runGhostRide(macro, opts = {}) {
 // One lap: deterministic rule-driven driving until exit, fall, or timeout.
 // ---------------------------------------------------------------------------
 
-function rideOnce(world, attempt) {
+export function rideOnce(world, attempt) {
   const { vertical, W, H, groundY, UX, UY, solids, landings } = world;
   const heroKey = 'balthazar'; // weakest hero governs
   const stats = HEROES[heroKey].stats;
@@ -313,7 +313,7 @@ function rideOnce(world, attempt) {
     }
 
     if (feetY() > H + UY * 2 || centerX() < -UX * 2 || centerX() > W + UX * 2) {
-      return { cleared: false, path, reason: 'fell', failX: lastSafe.x, failY: lastSafe.y, safeX: lastSafe.x, safeY: lastSafe.y };
+      return { cleared: false, path, visited, reason: 'fell', failX: lastSafe.x, failY: lastSafe.y, safeX: lastSafe.x, safeY: lastSafe.y };
     }
   }
 
@@ -322,9 +322,9 @@ function rideOnce(world, attempt) {
     for (const l of landings) {
       if (centerX() >= l.x0 && centerX() <= l.x1 && Math.abs(l.y - feetY()) <= 4) visited.add(l.index);
     }
-    return { cleared: true, path, safeX: lastSafe.x, safeY: lastSafe.y };
+    return { cleared: true, path, visited, safeX: lastSafe.x, safeY: lastSafe.y };
   }
-  return { cleared: false, path, reason: 'timeout', failX: centerX(), failY: feetY(), safeX: lastSafe.x, safeY: lastSafe.y };
+  return { cleared: false, path, visited, reason: 'timeout', failX: centerX(), failY: feetY(), safeX: lastSafe.x, safeY: lastSafe.y };
 }
 
 // ---------------------------------------------------------------------------
