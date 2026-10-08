@@ -103,9 +103,162 @@ function hasGroundAhead(hero, world, distPx){
   return false;
 }
 
+/** Is there SOLID terrain (blocks/floor) supporting the hero N px ahead?
+ *  Used to detect the edge of a solid surface: if nothing solid sits under
+ *  the probe point at/below foot level, walking that direction means falling
+ *  off — time to jump. Ignores one-way platforms (those are handled by
+ *  hasGroundAhead) and anything far below (we only care about the surface
+ *  we're standing on ending). */
+function hasSolidAhead(hero, world, distPx){
+  const f = feetPos(hero);
+  const probeX = f.x + distPx;
+  for (const s of world.solids) {
+    if (s.oneWay) continue;
+    if (probeX < s.x || probeX > s.x + s.w) continue;
+    // Solid top must be near our foot level (within one cell below): this is
+    // the surface continuing ahead, not some deep floor far underneath.
+    if (s.y >= f.y - 4 && s.y <= f.y + world.UY) return true;
+  }
+  return false;
+}
+
 /** Single-jump apex height (px) for the given stats. */
 function singleApexPx(params){
   return (params.jump * params.jump) / (2 * GRAVITY);
+}
+
+// ---------------------------------------------------------------------------
+// UNIFIED TAKEOFF CLASSIFIER — one decision for every takeoff point (edge,
+// coyote, wall face, under-span). Given the rise to the goal and the
+// horizontal gap from the takeoff spot to the goal span, answer: what does
+// this hop need?
+//
+//   jump     — single jump clears it (easy hop / low lip)
+//   dj       — jump + double jump (rise above single apex, gap within carry)
+//   super    — jump + super dash (gap too wide for a DJ arc to carry; the
+//              dash is horizontal, so rise only needs to be survivable)
+//   retreat  — unreachable FROM HERE (rise beyond total DJ apex AND no
+//              useful gap dash): walk back toward the approach edge and let
+//              the next takeoff re-classify. NOT "unreachable period" — that
+//              verdict belongs to the BFS envelope (traversalRoute), not here.
+// ---------------------------------------------------------------------------
+
+/** Horizontal distance from x to the goal span's near edge along `dir`. */
+function gapToNearEdge(f, goal, dir){
+  return dir > 0 ? Math.max(0, goal.x0 - f.x) : Math.max(0, f.x - goal.x1);
+}
+
+/** How far a jump+DJ arc carries horizontally (ascent + descent to goal top).
+ *  The DJ fires when vy reaches -45 (the mover's release threshold), NOT from
+ *  rest at the first apex — using the rest assumption makes the discriminant
+ *  go negative for rises above the single apex and returns NaN (which then
+ *  poisons the super/jump classification). */
+function djCarryPxFor(params, rise){
+  const G = GRAVITY;
+  const v1 = params.jump;
+  const v2 = (params.doubleJumpFactor ?? 0.85) * params.jump;
+  const apex1 = (v1 * v1) / (2 * G);
+  if (rise <= 0) {
+    // Level or downward: full up + full down of a single jump.
+    return params.speed * (2 * v1 / G);
+  }
+  if (rise <= apex1) {
+    // Single jump reaches it; carry = time up to `rise` + time falling back
+    // from `rise` to the goal top (0) — but we measure to LANDING on the goal,
+    // so descent height = rise.
+    const tUp = (v1 - Math.sqrt(Math.max(0, v1 * v1 - 2 * G * rise))) / G;
+    const tDown = Math.sqrt((2 * rise) / G);
+    return params.speed * (tUp + tDown);
+  }
+  // Rise beyond single apex: first jump ascends until vy = -45 (DJ fire),
+  // then the DJ (impulse v2) carries the remaining height, then fall to top.
+  const tToFire = (v1 - 45) / G;
+  const hAtFire = v1 * 45 / G - (G * 45 * 45) / (2 * G * G) * 0; // v²/2g form below
+  // Height at fire: h = v1*t - 0.5*G*t²
+  const hFire = v1 * tToFire - 0.5 * G * tToFire * tToFire;
+  const rem = rise - hFire;
+  if (rem > (v2 * v2) / (2 * G)) return Infinity; // can't make it
+  const tDj = (v2 - Math.sqrt(Math.max(0, v2 * v2 - 2 * G * rem))) / G;
+  const apexTotal = hFire + (v2 * v2) / (2 * G);
+  const tFall = Math.sqrt((2 * (apexTotal - rise)) / G);
+  return params.speed * (tToFire + tDj + tFall);
+}
+
+/** Classify the hop needed from the current spot. See header comment. */
+export function classifyTakeoff(hero, goal, world, params){
+  const f = feetPos(hero);
+  const rise = riseTo(hero, goal);
+  const dx = (goal.x0 + goal.x1) / 2 - f.x;
+  const dir = dx >= 0 ? 1 : -1;
+  const secondJump = (params.doubleJumpFactor ?? 0.85) * params.jump;
+  const totalApex = singleApexPx(params) + (secondJump * secondJump) / (2 * GRAVITY);
+
+  // Beyond the total DJ apex → unreachable FROM HERE. Super does NOT help:
+  // it is a pure horizontal burst (verified headless: firing it keeps vy=0,
+  // it dashes along the current height and adds zero climb). Such goals need
+  // a routing fix — approach from an adjacent elevated surface first.
+  if (rise > totalApex + world.UY * 0.5) {
+    return { plan: 'retreat', rise, gap: gapToNearEdge(f, goal, dir), dir };
+  }
+
+  // Gap only matters when measured from the EDGE we'll actually take off at.
+  // Standing on continuous floor 240px before the span is NOT a gap problem —
+  // we just run to the edge (the old code called this 'super' from the spawn
+  // point, which made no sense). If solid/one-way ground continues under us
+  // toward the goal, the effective gap is whatever remains once we reach the
+  // takeoff edge ≈ the span's own overhang past that edge, i.e. small.
+  const groundAhead = (dir > 0 ? hasSolidAheadOrOneWay(hero, world, 24, 1)
+                               : hasSolidAheadOrOneWay(hero, world, 24, -1));
+  const gap = groundAhead ? Math.min(gapToNearEdge(f, goal, dir), world.UX * 0.5)
+                          : gapToNearEdge(f, goal, dir);
+
+  // NOTE: there is deliberately NO grounded 'super' plan. Super is an AIRBORNE
+  // tool — it is fired mid-arc (at the DJ frame or when still short of the
+  // span), never committed from the ground. A wide gap from the ground means
+  // "run to the edge, jump, and escalate in the air" — nothing else.
+  if (rise > singleApexPx(params) + 4) {
+    return { plan: 'dj', rise, gap, dir };
+  }
+  return { plan: 'jump', rise, gap, dir };
+}
+
+/** Solid OR one-way ground continuing `distPx` ahead in `dir` at foot level? */
+function hasSolidAheadOrOneWay(hero, world, distPx, dir){
+  const f = feetPos(hero);
+  const probeX = f.x + dir * distPx;
+  for (const s of world.solids) {
+    if (probeX < s.x || probeX > s.x + s.w) continue;
+    if (s.oneWay) {
+      if (Math.abs(s.y - f.y) <= 8) return true;
+    } else {
+      // Wide vertical window: the hero can spawn SUNK below the surface top
+      // (feet 12px under the floor line), so a tight `f.y - 4` lower bound
+      // misses the very floor we're standing on (newMacro goal #0 got labeled
+      // 'super' from the spawn because the floor probe failed).
+      if (s.y >= f.y - world.UY && s.y <= f.y + world.UY) return true;
+    }
+  }
+  return false;
+}
+
+/** Is there ANY ground (solid or one-way) under the space between the hero
+ *  and the goal span's near edge, at or below foot level? If yes, the "gap"
+ *  is approachable — run/walk across it, no super needed. Only a TRUE hole
+ *  (nothing under the whole interval) justifies arming the dash. */
+function groundBetween(hero, world, goal, dx){
+  const f = feetPos(hero);
+  const xNear = dx > 0 ? f.x : goal.x1;
+  const xFar  = dx > 0 ? goal.x0 : f.x;
+  // Sample every 24px across the interval.
+  for (let x = xNear; x <= xFar; x += 24) {
+    for (const s of world.solids) {
+      if (x < s.x || x > s.x + s.w) continue;
+      // Ground counts if its top is within one cell below our feet (the
+      // surface we'd be walking on) — deeper floors don't help the arc.
+      if (s.y >= f.y - world.UY && s.y <= f.y + world.UY * 0.5) return true;
+    }
+  }
+  return false;
 }
 
 /** Solid wall face directly in front of the hero at body height? Returns the
@@ -146,13 +299,10 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
   const totalApex = (params.jump * params.jump) / (2 * GRAVITY) +
                     (secondJump * secondJump) / (2 * GRAVITY);
 
-  // Super is a HORIZONTAL dash, not a height machine. It is armed ONLY when
-  // the gap from the takeoff edge to the goal span is too wide for a double-
-  // jump arc to carry — and only then. A goal that is mostly ABOVE us (big
-  // rise, small gap) is a DJ-stack problem; arming super there just dashes
-  // the hero into the wall/floor at 920 px/s and kills the climb. The old
-  // rule (rise > totalApex ⇒ super) fired exactly in that wrong case.
-  const djCarryPx = params.speed * ((params.jump + secondJump) / GRAVITY);
+  // Unified takeoff plan for this spot (edge, under-span, overhead alike):
+  // jump / dj / super / retreat. The old scattered rules each answered this
+  // with different math, which is why fixing one macro broke another.
+  const plan = classifyTakeoff(hero, goal, world, params);
 
   // --- Grounded decisions -------------------------------------------------
   if (hero.grounded) {
@@ -165,20 +315,28 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
 
     // Simple logic: if moving toward the goal and approaching an edge, jump now.
     // No complex takeoff math — just jump at the edge and use DJ/super in air.
+    // Works for BOTH one-way platforms AND solid blocks: "no ground ahead"
+    // means the surface we're standing on ends within 20px (falling off a
+    // block's side counts — newMacro #3: running off #1's solid edge into the
+    // gap below used to skip the jump entirely because nearEdge required
+    // onOneWay, so the hero fell to the floor and got stuck).
     const movingTowardGoal = (dx > 0 && inp.right) || (dx < 0 && inp.left);
     const onOneWay = ride_onOneWay(hero, world);
-    const nearEdge = onOneWay && !hasGroundAhead(hero, world, 20);
+    const nearEdge = onOneWay ? !hasGroundAhead(hero, world, 20)
+                              : !hasSolidAhead(hero, world, 20);
 
     if (movingTowardGoal && nearEdge) {
       inp.jump = true;
       mem.wantJump = true;
-      // Super is the GAP tool: armed when the goal's near edge sits farther
-      // out than a double-jump arc can carry. Rise does NOT matter here —
-      // the dash is horizontal, and a far platform at any reachable height
-      // is exactly what super exists for. (The old rise-based rule fired
-      // super for vertical climbs and killed them.)
+      // Arm super ONLY for a real hole: no ground between us and the goal
+      // span. Measuring raw distance-to-span from the edge is wrong when we
+      // approach along continuous floor (spawn → #0 in newMacro: 240px of
+      // flat ground ahead is NOT a gap — run to the block's face and DJ over
+      // it). A real gap means the surface we're on ends AND nothing solid or
+      // one-way sits under the space between the edge and the span.
       const gapToSpan = dx > 0 ? Math.max(0, goal.x0 - f.x) : Math.max(0, f.x - goal.x1);
-      if (params.canSuper && gapToSpan > djCarryPx) {
+      if (params.canSuper && gapToSpan > djCarryPxFor(params, rise) + world.UX * 0.25
+          && !groundBetween(hero, world, goal, dx)) {
         mem.armSuper = true;
       }
       return inp;
@@ -190,11 +348,10 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
     // goal center and the hero shuffles L/R forever without ever jumping.
     // Gate on horizontal clearance: if the goal's near edge is close ahead we
     // must take off EARLY enough that the arc lands ON the surface, not past it.
-    // ALSO gate on rise: a climb beyond the total DJ apex can't land from here —
-    // committing would bounce in place forever (blockPlatformBridge #1: 144px
-    // rise under the span). Back off to the edge instead and let the edge
-    // takeoff + super handle it.
-    const overhead = rise > UY * 0.5 && rise <= totalApex + world.UY * 0.5 &&
+    // The classifier decides whether this spot can actually make the climb:
+    // 'retreat' means rise beyond total DJ apex from here — walking toward
+    // the approach edge (fall-through below) is the only way out.
+    const overhead = plan.plan !== 'retreat' && rise > UY * 0.5 &&
       f.x >= goal.x0 - world.UX * 0.75 && f.x <= goal.x1 + world.UX * 0.75;
     if (overhead) {
       // Distance to the goal's near edge along the approach direction.
@@ -217,10 +374,10 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
     // around the goal center and no grounded branch ever commits a jump →
     // the classic L/R shuffle stall (easyPlatformHop / gapLanding /
     // platformHops / lowRepeated / newMacro / pyramid3).
-    // Rise-gated like overhead: beyond total DJ apex this spot is a dead end —
-    // walking toward the goal edge (the default fall-through below) is the
-    // only way out, and the edge takeoff + super takes over from there.
-    const underSpan = rise > UY * 0.5 && rise <= totalApex + world.UY * 0.5 &&
+    // 'retreat' from the classifier = dead end from here: fall through to the
+    // default "walk toward the goal" so the hero approaches the near edge and
+    // re-classifies from there (edge takeoff + DJ/super takes over).
+    const underSpan = plan.plan !== 'retreat' && rise > UY * 0.5 &&
       f.x >= goal.x0 - world.UX && f.x <= goal.x1 + world.UX;
     if (underSpan) {
       inp.jump = true;
@@ -251,6 +408,22 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
           return inp;
         }
       }
+    }
+
+    // Retreat: this spot can't make the climb (rise beyond total DJ apex, and
+    // super adds no height). Walk to the goal's NEAR EDGE and STOP there — do
+    // NOT jump from a dead-end spot (that's the clown bounce). From the edge
+    // the next frame re-classifies with the true gap; if it's still 'retreat'
+    // the goal needs a different approach surface and the ride should report
+    // it, not mash jumps into the floor.
+    if (plan.plan === 'retreat') {
+      const edgeX = dx > 0 ? goal.x0 : goal.x1;
+      const toEdge = edgeX - f.x;
+      inp.left = false; inp.right = false;
+      if (Math.abs(toEdge) > 4) {
+        if (toEdge > 0) inp.right = true; else inp.left = true;
+      }
+      return inp;
     }
 
     // Otherwise, keep running toward the goal.
@@ -296,6 +469,26 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
       } else {
         inp.jump = true;                 // fresh press → double jump
         mem.djDone = true;
+        // ESCALATION, same frame: the DJ impulse is being committed NOW. If
+        // the goal span still starts more than half a cell ahead, the arc
+        // won't connect — dash on THIS frame so the burst (which owns vy, no
+        // gravity) preserves the DJ's remaining ascent AND starts the ~370px
+        // carry immediately. Waiting for vy≈0 costs 4+ frames of horizontal
+        // travel and the dash runs out short (newMacro #3: 360px gap).
+        if (params.canSuper && !hero.supermoveActive && !mem.superFired) {
+          const shortNow = dx > 0 ? (goal.x0 - f.x) : (f.x - goal.x1);
+          // Only dash into a REAL hole: no ground under the way AND no wall
+          // face between us and the span. Raw distance alone is wrong — it
+          // dashes flat into #1's face on newMacro #0 (pinned at x270) and
+          // across block #2 on #3 where a plain DJ arc lands fine.
+          if (shortNow > world.UX * 0.5
+              && !groundBetween(hero, world, goal, dx)
+              && !wallInFront(hero, world, dx > 0 ? 1 : -1)) {
+            inp.super = true;
+            mem.superFired = true;
+            mem.armSuper = false;
+          }
+        }
       }
     } else if (mem.wantJump && hero.vy < 0) {
       // Easy hop (or no DJ available): HOLD the jump through the whole ascent
@@ -306,15 +499,17 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
     }
   }
 
-  // Super: armed by a grounded "needs super" decision, fire near the second
-  // apex (when rising has nearly stopped) to convert the arc into a burst.
-  if (mem.armSuper && params.canSuper && !hero.supermoveActive) {
-    const nearApex = hero.vy > -params.jump * 0.85 * 0.3;
-    if (nearApex) {
-      inp.super = true;
-      mem.superFired = true;
-      mem.armSuper = false;
-    }
+  // Super, armed at takeoff by the classifier (wide gap): fire ONLY after the
+  // double jump has actually committed (djDone && jumpsUsed === 2). Firing
+  // earlier — e.g. at vy≈0 while the DJ's fresh-press edge is still pending —
+  // starts the dash first, and the engine blocks jump input during an active
+  // supermove, so the DJ gets eaten and the arc loses its second impulse
+  // (newMacro #3: j stayed 1, dash ran out 100px short).
+  if (mem.armSuper && params.canSuper && !hero.supermoveActive && !mem.superFired &&
+      !hero.grounded && mem.djDone && hero.jumpsUsed === 2) {
+    inp.super = true;
+    mem.superFired = true;
+    mem.armSuper = false;
   }
 
   return inp;
