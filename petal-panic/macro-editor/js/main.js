@@ -12,7 +12,7 @@ import { showToast } from './toast.js';
 import { saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft, readActive, createNewMacro } from './save.js';
 import { initTools, setTool, syncToolButtons } from './tools.js';
 import { initPointer, deleteSelection, lastCell, uniqueSlotName } from './pointer.js';
-import { toggleRide, killRideIfActive, setClearanceCommitHook, armSpaceToggle } from './ghost.js';
+import { toggleRide, killRideIfActive, setClearanceCommitHook, armSpaceToggle, toggleTrace } from './ghost.js';
 import { doUndo, doRedo, syncUndoButtons } from './undo.js';
 import { pushUndo } from './undo.js';
 import { markChanged } from './save.js';
@@ -44,6 +44,7 @@ function initToolbar(){
   $('tglZone').addEventListener('click', ()=>{ app.show.zone=!app.show.zone; syncToggles(); draw(); });
   $('newBtn').addEventListener('click', ()=>createNewMacro());
   $('testRideBtn')?.addEventListener('click', toggleRide);
+  $('dumpTraceBtn')?.addEventListener('click', toggleTrace);
 }
 
 // ---------- help dialog (same pattern as sprite editor) ----------
@@ -185,6 +186,10 @@ function initKeyboard(){
     // If a <dialog> is open (confirm / prompt), let it own the keyboard —
     // especially Escape, which the dialog uses to cancel. Do NOT intercept.
     if (document.querySelector('dialog[open]')) return;
+    // Trace recording: T starts/stops the ride; use the TRACE button (or X)
+    // to record frames. Recording is explicit, not tied to Ctrl, so it can't
+    // be lost to key-repeat / focus quirks.
+    if (e.code==='KeyX' && !e.repeat){ e.preventDefault(); toggleTrace(); return; }
     if (!e.ctrlKey && !e.metaKey && !e.altKey){
       if (e.code==='KeyG'){ e.preventDefault(); $('tglGrid').click(); return; }
       if (e.code==='KeyS'){ e.preventDefault(); $('tglSlots').click(); return; }
@@ -204,6 +209,9 @@ function initKeyboard(){
       if (e.code==='ArrowUp' && app.flatIdx>0){ e.preventDefault(); selectMacro(app.flatList[app.flatIdx-1].id); return; }
       if (e.code==='ArrowDown' && app.flatIdx<app.flatList.length-1){ e.preventDefault(); selectMacro(app.flatList[app.flatIdx+1].id); return; }
     }
+  });
+  window.addEventListener('keyup', e=>{
+    // (Ctrl-release dump removed — recording is now explicit via X / TRACE button.)
   });
 }
 

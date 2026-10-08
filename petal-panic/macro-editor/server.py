@@ -173,18 +173,3 @@ class MacroEditorHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-
-def main():
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8767
-    server = HTTPServer(("0.0.0.0", port), MacroEditorHandler)
-    print(f"Serving {REPO_ROOT} on port {port}")
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        server.server_close()
-
-
-if __name__ == "__main__":
-    main()

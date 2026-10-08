@@ -47,7 +47,7 @@ export const ride = {
   world: null,
   hero: null,
   path: [],          // trail points in world px {x,y}
-  status: '',        // 'running' | 'cleared' | 'failed'
+  status: '',        // 'running' | 'cleared'
   failPoint: null,
   attempts: 0,
   visited: 0,
@@ -57,6 +57,7 @@ export const ride = {
   _last: 0,
   _acc: 0,
   _clearPause: 0,
+  trace: null,       // frame trace buffer while Ctrl is held (null when off)
 };
 
 /** Start (or restart) the test ride for the current macro draft. */
@@ -87,6 +88,7 @@ export function startRide(){
     _clearPause: 0,
   });
   _jumpWasDown = false;
+  ride.trace = null;
   $('testRideBtn')?.classList.add('armed');
   updateRideHint();
   ride._raf = requestAnimationFrame(tick);
@@ -108,20 +110,23 @@ export function rebuildRideWorld(){
   ride._visitedSet = null;
   ride.visited = 0;
   ride._onOneWay = false;
-  ride._deadEnd = null;
+
   ride.path = [];
 }
 
-/** Kill the ride, clear the trail, unlock editing. */
+/** Kill the ride, clear the trail, unlock editing. Dumps any active trace. */
 export function stopRide(redraw = true){
   ride.active = false;
   if (ride._raf) cancelAnimationFrame(ride._raf);
   ride._raf = 0;
+  // If a recording is live, end it + dump so nothing is lost on stop.
+  if (ride.trace) dumpTrace('stopped');
   ride.hero = null;
   ride.world = null;
   ride.path = [];
   ride.status = '';
   ride.failPoint = null;
+  ride.trace = null;
   $('testRideBtn')?.classList.remove('armed');
   updateRideHint();
   if (redraw) requestDraw();
@@ -177,6 +182,8 @@ function stepOnce(dt){
   ride.path.push({ x: cx, y: cy });
   if (ride.path.length > TRAIL_MAX) ride.path.shift();
 
+  recordTraceFrame(inp, res, cx, fy);
+
   // Visit tracking.
   for (const l of world.landings) {
     if (cx >= l.x0 && cx <= l.x1 && Math.abs(l.y - fy) <= 4) {
@@ -193,52 +200,17 @@ function stepOnce(dt){
   if (atExit) {
     _commitClearance();
     showToast('CLEARED ✓ — proof saved to draft', 'success');
+    if (ride.trace) dumpTrace('cleared');
     stopRide();
     return;
   }
 
-  // Genuine dead-end: no vaultable wall and no approach surface. Fail cleanly
-  // with a clear reason instead of looping or spamming jumps.
-  if (ride._deadEnd) {
-    ride.attempts++;
-    if (ride.attempts > 2) {
-      ride.status = 'failed';
-      ride.failPoint = { x: ride._deadEnd.x, y: ride._deadEnd.y, reason: 'unclimbable wall' };
-      showToast('ride failed — unclimbable wall ahead', 'error');
-      updateRideHint();
-      parkHeroAt(world, hero, ride._deadEnd.x);
-      return;
-    }
-  } else {
-    ride._deadEnd = null;
-  }
-
-  // Fell out → smart retry (respawn at entry for v1).
+  // Fell out → retry forever (respawn at entry). Vary super by attempt parity.
   if (fy > world.H + world.UY * 2 || cx < -world.UX * 2 || cx > world.W + world.UX * 2) {
     ride.attempts++;
-    if (ride.attempts > 8) {
-      ride.status = 'failed';
-      ride.failPoint = { x: Math.min(Math.max(cx, 0), world.W), y: world.groundY, reason: 'fell' };
-      showToast(`ride failed after ${ride.attempts - 1} attempts — fell`, 'error');
-      updateRideHint();
-      // Park the hero on the floor so it stays visible at the fail point
-      // instead of freezing mid-air / drifting off-screen.
-      parkHeroAt(world, hero, ride.failPoint.x);
-      return;
-    }
     respawn();
     updateRideHint();
   }
-}
-
-/** Freeze the hero standing on the floor at a given x (fail marker pose). */
-function parkHeroAt(world, hero, x){
-  hero.x = x - hero.worldBox().w / 2;
-  hero.y = world.groundY - hero.worldBox().h;
-  hero.vx = 0; hero.vy = 0;
-  hero.grounded = true;
-  hero.jumpsUsed = 0;
-  hero.supermoveActive = false;
 }
 
 function rideInput(){
@@ -279,24 +251,19 @@ function rideInput(){
         if (climb > 0 && climb <= djApex * 0.95) {
           // Low enough to clear with a jump: hop over it.
           wantJump = true;
-        } else if (climb > 0 && climb <= djApex * 1.5 && !ride._superUsed) {
-          // Needs the supermove burst to vault.
+        } else if (climb > 0 && climb <= djApex * 1.5 && (!ride._superUsed || ride._preferSuper)) {
+          // Needs the supermove burst to vault (or this retry prefers it).
           inp.super = true;
           ride._superUsed = true;
         } else {
-          // Too tall to vault head-on. Do NOT spam jumps (that's the "stupid
-          // jump in place" bug). Look for a legitimate approach: a platform or
-          // lower block top we can stand on just before the wall. If none is
-          // reachable, we're at a genuine dead-end — stop and report it.
-          const approach = findApproachSurface(world, cx, fy, wall);
-          if (approach) {
-            // Move toward/onto the approach surface, then jump from there.
-            const distToApproach = approach.x0 - cx;
-            if (distToApproach < world.UX * 1.2) wantJump = true;
-          } else {
-            ride._deadEnd = { x: cx, y: fy };
-            // Hold position (no input) so the hero waits at the dead-end.
-            inp.right = false;
+          // Too tall to vault head-on in one clean arc. Don't give up and don't
+          // stop — keep trying: jump (double jump) AND fire the supermove burst
+          // to push through. A human would mash jump + super here; we do the
+          // same, every frame, until it gets over or the user kills the ride.
+          wantJump = true;
+          if (!ride._superUsed || ride._preferSuper) {
+            inp.super = true;
+            ride._superUsed = true;
           }
         }
       } else {
@@ -355,19 +322,6 @@ function findWall(world, cx, fy){
   return best;
 }
 
-/** Find a standable surface just before a wall that we could use to approach it. */
-function findApproachSurface(world, cx, fy, wall){
-  // Look for a landing whose top is higher than current feet and whose right
-  // edge is near the wall's left face (so we can jump from it over the wall).
-  let best = null;
-  for (const l of world.landings) {
-    if (l.x1 > wall.x - 4 || l.x1 < wall.x - world.UX * 3) continue; // must end near wall
-    if (l.y >= fy - 4) continue; // must be higher than where we stand
-    if (!best || l.x1 > best.x1) best = l;
-  }
-  return best;
-}
-
 function doubleJumpApex(stats){
   const G = 1500; // GRAVITY from consts (avoid extra import churn)
   const first = (stats.jump * stats.jump) / (2 * G);
@@ -387,7 +341,10 @@ function respawn(){
   ride.path = [];
   ride._superUsed = false;
   ride._onOneWay = false;
-  ride._deadEnd = null;
+
+  // Vary the approach each retry so it isn't the identical jump forever:
+  // even attempts prefer the supermove burst at the wall.
+  ride._preferSuper = (ride.attempts % 2 === 0);
   _jumpWasDown = false;
 }
 
@@ -400,17 +357,127 @@ function restartLap(){
 }
 
 // ---------------------------------------------------------------------------
+// Frame trace — hold Ctrl during a ride to record every physics frame.
+// On release (or when the ride ends) the full trace is dumped to disk via
+// PUT /petal-panic/macro-editor/trace → petal-panic/macro-editor/traces/.
+// Each frame: hero state, input, driver decisions, collision result.
+// Metadata: macro draft + ride world config so the dump is self-contained.
+// ---------------------------------------------------------------------------
+
+const TRACE_MAX_FRAMES = 60 * 60; // hard cap: 1 minute of frames
+
+function recordTraceFrame(inp, res, cx, fy){
+  if (!ride.trace) return;
+  const { world, hero } = ride;
+  ride.trace.frames.push({
+    f: ride.trace.frames.length,
+    x: +cx.toFixed(2),
+    y: +fy.toFixed(2),
+    vx: +hero.vx.toFixed(2),
+    vy: +hero.vy.toFixed(2),
+    grounded: hero.grounded,
+    in: { left: inp.left, right: inp.right, up: false, down: inp.down, jump: inp.jump, supermove: inp.super },
+    hit: res.hit ? { axis: res.hit.axis, dir: res.hit.dir } : null,
+    blockedX: !!hero._blockedX,
+
+  });
+  if (ride.trace.frames.length >= TRACE_MAX_FRAMES) {
+    showToast(`trace capped at ${TRACE_MAX_FRAMES} frames — releasing`, 'warn');
+    dumpTrace('capped');
+  }
+}
+
+/** Begin recording (called on Ctrl keydown while a ride is active). */
+export function startTrace(){
+  if (!ride.active || ride.trace) return;
+  const st = app.cur?.st;
+  const c = app.consts;
+  ride.trace = {
+    startedAt: new Date().toISOString(),
+    macroId: st?.id ?? null,
+    macro: st,                       // full draft = zone configuration
+    world: {
+      orientation: ride.world.vertical ? 'vertical' : 'horizontal',
+      W: ride.world.W, H: ride.world.H, groundY: ride.world.groundY,
+      UX: ride.world.UX, UY: ride.world.UY,
+      unitPxX: c?.unitPxX, unitPxY: c?.unitPxY, platformDrawH: c?.platformDrawH,
+      entry: ride.world.entry, exit: ride.world.exit,
+      macroEndPx: ride.world.macroEndPx,
+      solids: ride.world.solids.map(s => ({ ...s })),
+      landings: ride.world.landings.map(l => ({ ...l })),
+    },
+    hero: 'balthazar',
+    dt: DT,
+    frames: [],
+  };
+  showToast('trace REC — press X or click TRACE again to stop + save', 'info');
+  const btn = document.getElementById('dumpTraceBtn');
+  if (btn) btn.classList.add('recording');
+  updateRideHint();
+}
+
+/** Manual dump trigger (button). */
+export function dumpTraceNow(){
+  if (!ride.trace){ showToast('nothing to dump — press X (or TRACE) during a ride first', 'warn'); return; }
+  console.log('[trace] manual dump →', ride.trace.frames.length, 'frames');
+  dumpTrace('manual-button');
+}
+
+/** Toggle recording. Off→start; on→stop + dump to disk. Bound to X and the TRACE button. */
+export function toggleTrace(){
+  if (!ride.active || ride.status !== 'running'){ showToast('start a ride first (Space / T)', 'warn'); return; }
+  if (ride.trace){
+    console.log('[trace] toggle stop → dumping', ride.trace.frames.length, 'frames');
+    dumpTrace('toggled-off');
+  } else {
+    startTrace();
+  }
+}
+
+/** Stop recording and POST the trace to disk. Returns the saved path or null. */
+export function dumpTrace(reason = 'manual'){
+  const t = ride.trace;
+  ride.trace = null;
+  if (!t) return null;
+  const btn = document.getElementById('dumpTraceBtn');
+  if (btn) btn.classList.remove('recording');
+  console.log('[trace] dumping', t.frames.length, 'frames, reason:', reason);
+  t.endedAt = new Date().toISOString();
+  t.reason = reason;
+  t.result = { status: ride.status, attempts: ride.attempts, failPoint: ride.failPoint, visited: ride.visited, totalLandings: ride.totalLandings };
+  // Save via browser download → lands in ~/Downloads (same as the game's dumps).
+  // No server round-trip: nothing to hang, works even if the editor server is down.
+  const name = `petal-panic-macrotrace-${Date.now()}.json`;
+  const blob = new Blob([JSON.stringify(t, null, 1)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  showToast(`trace saved → Downloads/${name} (${t.frames.length} frames)`, 'success');
+  return name;
+}
+
+/** Called from main.js on Ctrl keyup: stop + dump if recording. */
+export function stopTraceAndDump(){
+  if (!ride.trace) return;
+  dumpTrace('released');
+}
+
+// ---------------------------------------------------------------------------
 // Status hint (shared element with validation messages).
 // ---------------------------------------------------------------------------
 
 function updateRideHint(){
   const el = document.getElementById('validationHint');
   if (!el || !ride.active) return;
-  if (ride.status === 'running') el.textContent = `ride: running · lap ${ride.lap} · visited ${ride.visited}/${ride.totalLandings}`;
+  if (ride.status === 'running') el.textContent = `ride: running · try ${ride.attempts} · visited ${ride.visited}/${ride.totalLandings}${ride.trace ? ` · REC ${ride.trace.frames.length}` : ''}`;
   else if (ride.status === 'cleared') el.textContent = `ride: CLEARED · lap ${ride.lap}`;
-  else if (ride.status === 'failed') el.textContent = `ride: FAILED — ${ride.failPoint?.reason ?? 'stuck'} (press TEST to retry)`;
   el.classList.toggle('on', !!el.textContent);
-  el.classList.toggle('warning', ride.status === 'failed');
+  el.classList.toggle('warning', false);
 }
 
 // ---------------------------------------------------------------------------

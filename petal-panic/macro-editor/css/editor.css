@@ -38,6 +38,8 @@
   .tbtn{font-family:inherit;font-size:13px;padding:8px 12px;border-radius:8px;border:2px solid var(--line);background:var(--panel);color:var(--dim);cursor:pointer;letter-spacing:.5px;transition:all .1s;display:inline-flex;align-items:center;gap:7px;}
   .tbtn svg{width:16px;height:16px;flex:none;}
   .tbtn:hover{border-color:var(--acc);color:var(--txt);}
+  .tbtn.recording{border-color:#ff4545;color:#ff4545;background:rgba(255,69,69,.16);animation:tracePulse 1s infinite;}
+  @keyframes tracePulse{0%,100%{box-shadow:0 0 0 0 rgba(255,69,69,.4);}50%{box-shadow:0 0 0 5px rgba(255,69,69,0);}}
   .tbtn.armed{border-color:var(--acc);color:var(--acc);background:rgba(62,240,255,.12);}
   .tbtn.slot-enemy.armed{border-color:#ff5a5a;color:#ff5a5a;background:rgba(255,90,90,.12);}
   .tbtn.slot-barrel.armed{border-color:#ff9d2e;color:#ff9d2e;background:rgba(255,157,46,.12);}
