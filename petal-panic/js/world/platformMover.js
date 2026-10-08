@@ -116,10 +116,18 @@ function predictHorizontal(hero, goal, world, params, mem, inp, f, rise, gapX, d
       return inp;
     }
 
-    // Same-height gap within jump reach → hop across (also early).
-    if (gapX > 0 && gapX <= Math.max(1, params.speed * 0.15) && rise <= UY * 0.4) {
-      inp.jump = true;
-      mem.wantJump = true;
+    // Same-height (or slightly lower) goal across a gap → hop across. Use the
+    // FULL takeoff distance, not a tiny fixed window: at run speed the hero
+    // covers ~3px/frame, so a 27px window is crossed in <10 frames and the
+    // hero walks off the ledge before the jump ever triggers (observed: easy
+    // PlatformHop, f110→f140). The takeoff formula with rise≈0 gives the
+    // correct "jump this far before the edge" distance for a flat hop.
+    if (gapX > 0 && rise <= UY * 0.4) {
+      const hopDist = takeoffDistanceForRise(params, Math.max(0, rise));
+      if (hopDist > 0 && gapX <= hopDist) {
+        inp.jump = true;
+        mem.wantJump = true;
+      }
     }
     return inp;
   }

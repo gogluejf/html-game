@@ -10,6 +10,46 @@
       "y": 0,
       "width": 5,
       "height": 2
+    },
+    {
+      "kind": "block",
+      "x": 9,
+      "y": 0,
+      "width": 4,
+      "height": 4
+    },
+    {
+      "kind": "block",
+      "x": 13,
+      "y": 0,
+      "width": 2,
+      "height": 2
+    },
+    {
+      "kind": "platform",
+      "x": 18,
+      "y": 4,
+      "width": 6
+    },
+    {
+      "kind": "block",
+      "x": 23,
+      "y": 0,
+      "width": 1,
+      "height": 3
+    },
+    {
+      "kind": "block",
+      "x": 24,
+      "y": 5,
+      "width": 1,
+      "height": 3
+    },
+    {
+      "kind": "platform",
+      "x": 25,
+      "y": 6,
+      "width": 1
     }
   ],
   "placements": [],

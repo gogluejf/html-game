@@ -10,6 +10,7 @@ import { buildRideWorld } from '../../js/world/ghostRider.js';
 import { createHeadlessHero, stepHeadless } from '../../js/hero/headless.js';
 import { HEROES } from '../../js/hero/heroDefs.js';
 import { predictFrame, feetPos } from '../../js/world/platformMover.js';
+import { traversalRoute } from '../../js/world/macros.js';
 import { macroEndpoint } from './clearance.js';
 
 // Redraw hook: draw.js registers its draw() here so ghost.js never imports
@@ -67,15 +68,40 @@ export const ride = {
   _landFlash: 0,     // frames remaining of the green land flash
 };
 
-/** Build the ordered goal list for a ride world: every landing surface in
- *  traversal order. Horizontal: left→right (then lower-first on ties).
- *  Vertical: ground→top, i.e. largest y (lowest surface) first. The mover
- *  rides them in order; the exit check still happens separately. */
-function buildGoalList(world){
+/** Build the ordered goal list for a ride world: BFS traversal order from
+ *  the validator's own reachability math (traversalRoute). Surfaces the BFS
+ *  can't reach are marked in failedSet (amber X) and excluded from the route.
+ *  Fallback: left→right sort if the draft has no units yet. */
+function buildGoalList(world, st){
   const ls = [...world.landings];
-  if (world.vertical) ls.sort((a, b) => (b.y - a.y) || (a.x0 - b.x0)); // climb: low (big y) → high (small y)
-  else ls.sort((a, b) => (a.x0 - b.x0) || (a.y - b.y));
-  return ls;
+  let routeOrder = null;
+  if (st && st.units?.length){
+    // traversalRoute expects _editorIndex on units; landings carry index into
+    // the units array already (buildRideWorld maps units → landings 1:1 by
+    // unitIndex). Tag units with their index so the route maps back.
+    const tagged = st.units.map((u, i) => ({ ...u, _editorIndex: u._editorIndex ?? i }));
+    const { order, unreachable } = traversalRoute({ orientation: st.orientation, units: tagged });
+    routeOrder = order;
+    for (const ui of unreachable){
+      const l = ls.find(x => x.index === ui);
+      if (l) ride.failedSet.add(l.index);
+    }
+  }
+  if (!routeOrder || !routeOrder.length){
+    if (world.vertical) ls.sort((a, b) => (b.y - a.y) || (a.x0 - b.x0));
+    else ls.sort((a, b) => (a.x0 - b.x0) || (a.y - b.y));
+    return ls;
+  }
+  // Map BFS unit-index order onto landing objects.
+  const byIdx = new Map(ls.map(l => [l.index, l]));
+  const ordered = [];
+  for (const ui of routeOrder){
+    const l = byIdx.get(ui);
+    if (l) ordered.push(l);
+  }
+  // Any landing not in the route (shouldn't happen) appends at the end.
+  for (const l of ls) if (!ordered.includes(l)) ordered.push(l);
+  return ordered;
 }
 
 /** Advance to the next unlanded goal after the current one is done. */
@@ -105,7 +131,7 @@ export function startRide(){
   // Smart mover setup (task 4): Balthazar params injected, goals in order.
   const stats = HEROES.balthazar.stats;
   const params = { ...stats, hasDoubleJump: true, canSuper: true };
-  const goals = buildGoalList(world);
+  const goals = buildGoalList(world, st);
   Object.assign(ride, {
     active: true,
     world,
@@ -154,7 +180,7 @@ export function rebuildRideWorld(){
 
   // Rebuild the goal list + mover state for the new geometry. The hero keeps
   // its position; the mover re-plans from wherever it is.
-  const goals = buildGoalList(world);
+  const goals = buildGoalList(world, app.cur.st);
   ride.goals = goals;
   // Resume at the first goal not yet landed (or the first one ahead of hero).
   const cx = hero.worldBox().x + hero.worldBox().w / 2;
@@ -260,6 +286,15 @@ function stepOnce(dt){
       ride._lastLandedIdx = g.index;
       ride._landFlash = 30; // ~0.5 s green flash
       advanceGoal();
+    } else if (fy > g.y + world.UY * 0.5 && cx < g.x0 - world.UX * 0.5) {
+      // Hero is grounded BELOW and BEHIND the goal — it walked off the edge
+      // and fell past the platform. The mover can't recover from here (the
+      // goal is now above-behind, beyond any single arc). Respawn to retry
+      // the approach cleanly instead of standing around forever.
+      ride.attempts++;
+      respawn();
+      updateRideHint();
+      return;
     }
   }
   if (ride._landFlash > 0) ride._landFlash--;

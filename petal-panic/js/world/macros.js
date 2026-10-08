@@ -2344,3 +2344,61 @@ export function composeAreaSeeded(seed, orientation, stage, budget) {
   const rng = createRng(seed);
   return composeArea(rng, orientation, stage, budget);
 }
+
+/**
+ * BFS-ordered traversal route for a macro draft — the order in which a hero
+ * should visit each landable surface to prove clearability (smart mover,
+ * plan 05 task 4). Uses the SAME rise+gap super-assist envelope as the
+ * validator's computeUnreachable, so the ghost rides the validator's own
+ * proof: ground → surfaces in BFS discovery order.
+ *
+ * @param {{orientation:string, units:Array}} macro unit-space draft
+ * @returns {{order:number[], unreachable:number[]}}
+ *   order: unit indices in visit order (reachable only)
+ *   unreachable: unit indices no arc can reach (amber X candidates)
+ */
+export function traversalRoute(macro){
+  const isVertical = macro.orientation === 'vertical';
+  const landingElevation = (u) => (u.kind === 'block' ? (u.y ?? 0) + u.height : (u.tier ?? u.y ?? 0) + 1);
+  const spans = (macro.units || [])
+    .filter((u) => u.kind === 'platform' || u.kind === 'block')
+    .map((u, i) => ({
+      elevation: landingElevation(u),
+      pos0: isVertical ? landingElevation(u) : (u.x ?? 0),
+      pos1: isVertical ? landingElevation(u) : (u.x ?? 0) + (u.width ?? 1),
+      unitIndex: u._editorIndex ?? i,
+    }));
+  const axisUnitPx = isVertical ? UNIT_PX_Y : UNIT_PX_X;
+
+  // Seed: ground-reachable (rise-only; ground is continuous).
+  const order = [];
+  const seen = new Set();
+  const queue = [];
+  for (let i = 0; i < spans.length; i++){
+    if (minHeroSuperAssistReachPx(spans[i].elevation * UNIT_PX_Y) >= 0){
+      queue.push(i); seen.add(i);
+    }
+  }
+  // BFS: discover reachable surfaces in propagation order.
+  while (queue.length){
+    const fromIdx = queue.shift();
+    order.push(spans[fromIdx].unitIndex);
+    const from = spans[fromIdx];
+    for (let toIdx = 0; toIdx < spans.length; toIdx++){
+      if (seen.has(toIdx)) continue;
+      const to = spans[toIdx];
+      const gapUnits = Math.max(0, to.pos0 - from.pos1, from.pos0 - to.pos1);
+      const gapPx = gapUnits * axisUnitPx;
+      const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
+      if (minHeroSuperAssistReachPx(risePx) >= 0 && gapPx <= minHeroSuperAssistReachPx(risePx)){
+        seen.add(toIdx);
+        queue.push(toIdx);
+      }
+    }
+  }
+  const unreachable = [];
+  for (let i = 0; i < spans.length; i++){
+    if (!seen.has(i)) unreachable.push(spans[i].unitIndex);
+  }
+  return { order, unreachable };
+}
