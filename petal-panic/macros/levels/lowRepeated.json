@@ -5,17 +5,28 @@
   "difficulty": 1,
   "units": [
     {
-      "kind": "block",
-      "height": 1,
-      "y": 0,
-      "x": 5,
-      "width": 5
+      "kind": "platform",
+      "x": 8,
+      "y": 5,
+      "width": 1
     },
     {
       "kind": "platform",
-      "x": 11,
-      "y": 1,
-      "width": 3
+      "x": 23,
+      "y": 3,
+      "width": 11
+    },
+    {
+      "kind": "platform",
+      "x": 13,
+      "y": 3,
+      "width": 1
+    },
+    {
+      "kind": "platform",
+      "x": 13,
+      "y": 5,
+      "width": 1
     },
     {
       "kind": "block",
@@ -26,52 +37,59 @@
     },
     {
       "kind": "platform",
-      "x": 13,
+      "x": 11,
+      "y": 1,
+      "width": 3
+    },
+    {
+      "kind": "block",
+      "height": 1,
+      "y": 0,
+      "x": 5,
+      "width": 5
+    },
+    {
+      "kind": "platform",
+      "x": 28,
       "y": 5,
       "width": 1
     },
     {
       "kind": "platform",
-      "x": 13,
-      "y": 3,
-      "width": 1
-    },
-    {
-      "kind": "platform",
-      "x": 24,
-      "y": 2,
+      "x": 31,
+      "y": 6,
       "width": 1
     }
   ],
   "placements": [
     {
-      "slot": "e1",
-      "x": 5,
-      "type": "enemy",
+      "slot": "powerup-1",
+      "x": 9,
+      "type": "powerup",
       "y": 1
     },
     {
-      "slot": "e2",
-      "x": 6,
-      "type": "enemy",
-      "y": 1
-    },
-    {
-      "slot": "e3",
-      "x": 7,
-      "type": "enemy",
-      "y": 1
-    },
-    {
-      "slot": "b1",
+      "slot": "barrel-1",
       "x": 8,
       "type": "barrel",
       "y": 1
     },
     {
-      "slot": "p1",
-      "x": 9,
-      "type": "powerup",
+      "slot": "enemy-1",
+      "x": 7,
+      "type": "enemy",
+      "y": 1
+    },
+    {
+      "slot": "enemy-2",
+      "x": 6,
+      "type": "enemy",
+      "y": 1
+    },
+    {
+      "slot": "enemy-3",
+      "x": 5,
+      "type": "enemy",
       "y": 1
     }
   ],
