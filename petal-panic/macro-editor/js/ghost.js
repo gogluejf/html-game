@@ -12,6 +12,12 @@ import { HEROES } from '../../js/hero/heroDefs.js';
 import { predictFrame, feetPos } from '../../js/world/platformMover.js';
 import { traversalRoute } from '../../js/world/macros.js';
 import { macroEndpoint } from './clearance.js';
+import * as pickerRef from '../../js/world/takeoffPicker.js';
+
+// Local alias so rideInput can call feetPos without shadowing.
+const feetPosLocal = feetPos;
+// Candidate list is rebuilt per pick; cache the last one for execute replay.
+let candsRef = [];
 
 // Redraw hook: draw.js registers its draw() here so ghost.js never imports
 // draw.js directly (that would be a circular dependency: draw.js → ghost.js).
@@ -115,6 +121,10 @@ function advanceGoal(){
   ride.goal = ride.goals[ride.goalIdx];
   // Fresh per-hop memory for each new goal.
   ride.mem = { wantJump: false, djDone: false, armSuper: false, superFired: false, _releasedAtApex: false };
+  // Invalidate the picker cache so the next grounded frame re-sims for this goal.
+  ride._pick = null;
+  ride._pickGoalIdx = null;
+  ride._pickFromKey = null;
 }
 
 /** Start (or restart) the test ride for the current macro draft. */
@@ -351,15 +361,73 @@ function stepOnce(dt){
 
 /** Smart-mover input driver (task 4): asks predictFrame for the buttons to
  *  press THIS frame to reach the current goal. When all goals are landed
- *  (ride.goal === null), just run toward the exit. */
+ *  (ride.goal === null), just run toward the exit.
+ *
+ * Plan 06: when the hero is GROUNDED, delegate the takeoff decision to the
+ * sim-based picker (pickTakeoff + cached winning script). Airborne frames
+ * still use predictFrame for in-air steering/DJ/super sequencing. */
 function rideInput(){
   const { world, hero } = ride;
   const inp = { left: false, right: false, up: false, down: false, jump: false, super: false };
 
   if (ride.goal && ride.mem && ride.params) {
-    const p = predictFrame(hero, ride.goal, world, ride.params, ride.mem);
-    inp.left = p.left; inp.right = p.right; inp.up = p.up;
-    inp.down = p.down; inp.jump = p.jump; inp.super = p.super;
+    // Plan 06: once grounded, delegate to the sim-based picker and REPLAY its
+    // winning script for every subsequent frame — grounded OR airborne — until
+    // the goal is landed or the hero comes to rest somewhere else. (Using
+    // predictFrame for airborne frames cut the jump short: the script's
+    // "hold jump through ascent" input got replaced mid-arc → tiny hop.)
+    const f = feetPosLocal(hero);
+    const standingOn = world.landings.find(l =>
+      f.x >= l.x0 - 8 && f.x <= l.x1 + 8 && Math.abs(l.y - f.y) <= 8) ?? null;
+
+    const pickStale = !ride._pick
+      || ride._pickGoalIdx !== ride.goal.index
+      || (hero.grounded && ride._pickFromKey !== (standingOn?.index ?? 'FLOOR'));
+
+    if (pickStale){
+      // Grounded: fresh sim-based pick from wherever the hero stands.
+      // SETTLE FIRST: if the hero just landed (vy != 0 or feet above surface),
+      // zero the velocity and mark grounded so the sim starts from a resting state.
+      // Without this the clone inherits a falling vy and its arc diverges from the real
+      // hero's next-frame behavior (lowRepeated #5→#2 stall).
+      const { world: w2, hero: h2 } = ride;
+      const fSettle = feetPosLocal(h2);
+      const surfUnder = w2.landings.find(l =>
+        fSettle.x >= l.x0 - 8 && fSettle.x <= l.x1 + 8 && Math.abs(l.y - fSettle.y) <= 8);
+      if (surfUnder && (h2.vy !== 0 || fSettle.y < surfUnder.y)){
+        h2.vy = 0;
+        h2.y = surfUnder.y - h2.worldBox().h;
+        h2.grounded = true; // ← CRITICAL: engine needs to know we're resting
+        h2._jumpBuffer = 0; // clear stale jump inputs
+        h2._prevJumpHeld = false;
+        h2._coyote = 0;
+        h2.jumpsUsed = 0;
+      }
+      const { pickTakeoff, buildCandidates } = pickerRef;
+      ride._pick = pickTakeoff(hero, ride.goal, world, ride.params, {}, standingOn);
+      candsRef = buildCandidates(hero, ride.goal, world, ride.params, standingOn);
+      ride._pickGoalIdx = ride.goal.index;
+      ride._pickFromKey = standingOn?.index ?? 'FLOOR';
+      ride._pickFrame = 0;
+      // Expose the scorecard for debugging (trace dump / console).
+      ride._scorecard = ride._pick.scorecard;
+      if (ride._pick.best == null){
+        console.info('[picker] no candidate lands on goal', ride.goal.index, ride._pick.scorecard);
+      }
+      console.info(`[picker] goal #${ride.goal.index} fromSurf=${standingOn?.index ?? 'FLOOR'} → ${ride._pick.best?.id} (${Math.round(ride._pick.best?.score ?? -1)}) hero=(${Math.round(f.x)},${Math.round(f.y)})`);
+    }
+    ride._pickFrame++;
+    // Replay the winning script frame-by-frame (grounded AND airborne).
+    const cand = candsRef.find(c => c.id === ride._pick.best?.id);
+    if (cand){
+      const p = cand.script(ride._pickFrame, hero);
+      inp.left = p.left; inp.right = p.right; inp.up = p.up;
+      inp.down = p.down; inp.jump = p.jump; inp.super = p.super;
+    } else {
+      // Fallback: plain walk toward the goal.
+      const dx = (ride.goal.x0 + ride.goal.x1) / 2 - f.x;
+      if (dx > 4) inp.right = true; else if (dx < -4) inp.left = true;
+    }
   } else {
     // No goal left (all landed or no surfaces): run to the exit.
     if (world.vertical) {
@@ -450,6 +518,12 @@ export function startTrace(){
     startedAt: new Date().toISOString(),
     macroId: st?.id ?? null,
     macro: st,                       // full draft = zone configuration
+    picker: {                        // debug: what the sim-picker decided per goal
+      lastGoal: ride.goal?.index ?? null,
+      best: ride._pick?.best?.id ?? null,
+      score: ride._pick?.best ? Math.round(ride._pick.best.score) : null,
+      scorecard: ride._scorecard ?? null,
+    },
     world: {
       orientation: ride.world.vertical ? 'vertical' : 'horizontal',
       W: ride.world.W, H: ride.world.H, groundY: ride.world.groundY,

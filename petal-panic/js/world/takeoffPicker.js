@@ -32,7 +32,12 @@ import { minHeroSuperAssistReachPx } from './macros.js';
 const DT = 1 / 60;
 const MAX_SIM_FRAMES = 240;      // ~1.5 s per candidate — enough for any arc
 const LANDING_TOL = 8;          // px, matches editor goal-landing tolerance
-const PREF = { WALK_OFF: 0, SINGLE: 1, SINGLE_S: 2, DOUBLE: 3, DOUBLE_S: 4, SUPER_ONLY: 5 };
+// Tie-break preference when multiple candidates land (score 0): lower wins.
+// Order: walk-off < single < DOUBLE < SINGLE_S < DOUBLE_S < super-only.
+// Rationale: prefer the simplest tool that works; when a plain double jump
+// clears the same gap as single+super, DJ wins (no meter spend, reads as a
+// committed path). Single+super is the fallback for gaps a DJ can't reach.
+const PREF = { WALK_OFF: 0, SINGLE: 1, DOUBLE: 2, SINGLE_S: 3, DOUBLE_S: 4, SUPER_ONLY: 5 };
 
 /** Which landing surface (if any) are feet resting on? */
 function surfaceUnder(hero, world){
@@ -129,58 +134,124 @@ import * as headlessRef from '../hero/headless.js';
 // Input scripts — each returns {left,right,up,down,jump,super} for frame i.
 // ---------------------------------------------------------------------------
 
-/** Direction toward the goal center from the hero. */
-function dirTo(h, goal){
+/** Direction toward the goal center from the hero. Hysteresis: once moving
+ *  in a direction, keep it until the hero crosses the goal center by >4px.
+ *  Without this, a hero arriving near center oscillates L/R every frame and
+ *  the jump trigger never stably arms (lowRepeated #5→#2 stall). */
+function dirTo(h, goal, st){
   const f = feetPos(h);
   const dx = (goal.x0 + goal.x1) / 2 - f.x;
-  return dx > 0 ? 1 : dx < 0 ? -1 : 0;
+  if (st && st._dir){
+    // Keep current direction unless we've crossed center by the margin.
+    if (st._dir > 0 && dx < -4) return -1;
+    if (st._dir < 0 && dx > 4) return 1;
+    return st._dir;
+  }
+  const d = dx > 4 ? 1 : dx < -4 ? -1 : 0;
+  if (st) st._dir = d;
+  return d;
 }
 
-function baseWalk(h, goal){
-  const d = dirTo(h, goal);
+function baseWalk(h, goal, st){
+  const d = dirTo(h, goal, st);
   return { left: d < 0, right: d > 0, up: false, down: false, jump: false, super: false };
 }
 
 /** WALK_OFF: walk toward the goal; never jump. For drop hops. */
-function scriptWalkOff(h, goal){ return baseWalk(h, goal); }
+function scriptWalkOff(h, goal){ return baseWalk(h, goal, {}); }
+
+/** Distance (px) from the hero's feet to the nearest WALL face ahead in
+ *  direction `dir` (+1 right, -1 left). A wall = a non-oneWay solid whose
+ *  vertical span overlaps the hero's body AND whose top is above the feet
+ *  (i.e. it can actually block horizontal movement, not the floor we stand
+ *  on). Returns Infinity when nothing blocks — the hero walks off into air. */
+function nearestWallFacePx(h, world, dir){
+  const wb = h.worldBox();
+  const f = feetPos(h);
+  let best = Infinity;
+  for (const s of world.solids){
+    if (s.oneWay) continue;
+    // Skip the floor under our feet: its top == feet y, it doesn't block X.
+    if (s.y >= f.y - 2) continue;
+    // Vertical overlap with the hero body required to be a real blocker.
+    if (s.y + s.h <= wb.y || s.y >= wb.y + wb.h) continue;
+    const face = dir > 0 ? s.x : s.x + s.w;
+    const d = dir > 0 ? face - f.x : f.x - face;
+    if (d > 0 && d < best) best = d;
+  }
+  return best;
+}
 
 /** Walk toward the goal; jump once within `triggerPx` of the approach edge.
  *  Then hold through ascent (full height), release at apex. `k` is an optional
  *  min-frame delay before arming (covers "wait a bit before committing"). */
-function makeJumpScript(goal, k, useDj, useSuper, paramsRef){
+function makeJumpScript(goal, k, useDj, useSuper, paramsRef, st, surfRef, world){
   const goalRef = goal;
   return (i, h) => {
-    const inp = baseWalk(h, goalRef);
+    const inp = baseWalk(h, goalRef, st);
     const f = feetPos(h);
-    // Distance from feet to the goal's near edge along the travel direction.
+    // Direction toward the goal center.
     const dx = (goalRef.x0 + goalRef.x1) / 2 - f.x;
     const dir = dx > 0 ? 1 : -1;
-    const toEdge = dir > 0 ? Math.max(0, goalRef.x0 - f.x) : Math.max(0, f.x - goalRef.x1);
-    // Trigger distance: how many px BEFORE the goal's near edge to commit the
-    // jump. Small values (8-32px) work because the hero walks right up to the
-    // edge and leaps — the arc carries over the gap. Large triggers make the
-    // hero jump from too far away and land short (the classic stall).
+    // Trigger measures distance to the CURRENT SURFACE's edge in the travel
+    // direction — the point where the hero would walk off and fall. Jumping
+    // here (not at the goal's edge, which may be hundreds of px away) is what
+    // makes the arc launch from the right spot.
+    let toEdge;
+    const goalCenterX = (goalRef.x0 + goalRef.x1) / 2;
+    const risePx = f.y - goalRef.y; // >0 = goal higher
+    // Vertical climb: goal is above AND we're already under its span (within
+    // half a unit of center). Jump in place now — there's no edge to approach.
+    // If we're NOT aligned yet, baseWalk steers us under the goal first and
+    // the normal edge-trigger logic applies once we're in position.
+    const goalAboveOverlap = risePx > world.UY * 0.5 &&
+      Math.abs(f.x - goalCenterX) <= world.UX * 0.6;
+    if (goalAboveOverlap){
+      toEdge = 0;
+    } else if (surfRef){
+      toEdge = dir > 0 ? Math.max(0, surfRef.x1 - f.x) : Math.max(0, f.x - surfRef.x0);
+    } else if (world){
+      // No from-surface (hero on the ground floor): the takeoff edge is the
+      // nearest WALL face ahead in the travel direction — the solid that will
+      // stop the walk. Without this the fallback measured distance to the
+      // GOAL edge (hundreds of px away) and the hero walked into the wall
+      // before the jump ever armed (lowRepeated #6 stall).
+      toEdge = nearestWallFacePx(h, world, dir);
+    } else {
+      toEdge = dir > 0 ? Math.max(0, goalRef.x0 - f.x) : Math.max(0, f.x - goalRef.x1);
+    }
     const triggerPx = 30 + k * 10; // k=0→30px, k=4→70px, k=8→110px
-    if (h.grounded && !inp._armed && (toEdge <= triggerPx || toEdge === 0)){
+    if (h.grounded && !st._armed && (toEdge <= triggerPx || toEdge === 0)){
       inp.jump = true;
-      inp._armed = true;
-    } else if (!h.grounded && inp._armed){
+      st._armed = true;
+      st._holdFrames = 2; // hold jump for 2 frames to ensure it fires (engine timing)
+    } else if (st._holdFrames > 0){
+      // Hold jump through the first airborne frame(s) so the engine's jump
+      // logic sees a fresh press on the grounded frame and doesn't drop it.
+      inp.jump = true;
+      st._holdFrames--;
+    } else if (!h.grounded && st._armed){
       if (useDj && h.jumpsUsed === 1){
         // Proper DJ sequence: hold through ascent, RELEASE one frame near the
         // apex (vy >= -40), then RE-PRESS on a fresh edge → second jump fires.
         // Holding continuously never creates the fresh edge (the engine gates
         // air jumps on jumpPressed, not held state).
         if (h.vy < -40) inp.jump = true;           // hold for full j1 height
-        else if (!inp._rel){ inp.jump = false; inp._rel = true; }  // release at apex
-        else { inp.jump = true; inp._djDone = true; }              // fresh press → DJ
+        else if (!st._rel){ inp.jump = false; st._rel = true; }  // release at apex
+        else { inp.jump = true; st._djDone = true; }              // fresh press → DJ
+      } else if (useDj && st._djDone && h.jumpsUsed === 2 && h.vy < 0){
+        // Hold through the SECOND arc's ascent too — releasing cuts it short
+        // (predictFrame does this; without it the DJ peaks ~67px instead of
+        // the full ~95-101px). No fresh edge is created (already pressed).
+        inp.jump = true;
       } else if (!useDj && h.jumpsUsed === 1 && h.vy < 0){
         inp.jump = true;                            // hold single for full height
       }
     }
-    if (useSuper && !h.grounded && !inp._superFired){
-      const atApex = useDj ? (inp._djDone && h.jumpsUsed === 2 && h.vy >= 0)
+    if (useSuper && !h.grounded && !st._superFired){
+      const atApex = useDj ? (st._djDone && h.jumpsUsed === 2 && h.vy >= 0)
                            : (h.jumpsUsed === 1 && h.vy >= 0);
-      if (atApex && !h.supermoveActive){ inp.super = true; inp._superFired = true; }
+      if (atApex && !h.supermoveActive){ inp.super = true; st._superFired = true; }
     }
     return inp;
   };
@@ -189,7 +260,7 @@ function makeJumpScript(goal, k, useDj, useSuper, paramsRef){
 /** SUPER_ONLY: walk + fire super immediately (level/low wide gaps). */
 function makeSuperOnly(goal){
   return (i, h) => {
-    const inp = baseWalk(h, goal);
+    const inp = baseWalk(h, goal, {});
     if (i === 2 && h.grounded && !h.supermoveActive) inp.super = true;
     return inp;
   };
@@ -203,7 +274,7 @@ function makeSuperOnly(goal){
  * Build the candidate list for a grounded takeoff toward `goal`.
  * @returns {Array<{id:string, pref:number, script:Function}>}
  */
-export function buildCandidates(hero, goal, world, params){
+export function buildCandidates(hero, goal, world, params, fromSurface){
   const f = feetPos(hero);
   const rise = f.y - goal.y; // >0 goal higher
   const cands = [];
@@ -213,10 +284,10 @@ export function buildCandidates(hero, goal, world, params){
   if (rise < -world.UY * 1.5) cands.push({ id: 'WALK_OFF', pref: PREF.WALK_OFF, script: scriptWalkOff });
 
   for (const k of K){
-    cands.push({ id: `SINGLE@${k}`, pref: PREF.SINGLE, script: makeJumpScript(goal, k, false, false, params) });
-    if (params.canSuper) cands.push({ id: `SINGLE_S@${k}`, pref: PREF.SINGLE_S, script: makeJumpScript(goal, k, false, true, params) });
-    if (params.hasDoubleJump) cands.push({ id: `DOUBLE@${k}`, pref: PREF.DOUBLE, script: makeJumpScript(goal, k, true, false, params) });
-    if (params.hasDoubleJump && params.canSuper) cands.push({ id: `DOUBLE_S@${k}`, pref: PREF.DOUBLE_S, script: makeJumpScript(goal, k, true, true, params) });
+    cands.push({ id: `SINGLE@${k}`, pref: PREF.SINGLE, script: makeJumpScript(goal, k, false, false, params, {}, fromSurface, world), state: {} });
+    if (params.canSuper) cands.push({ id: `SINGLE_S@${k}`, pref: PREF.SINGLE_S, script: makeJumpScript(goal, k, false, true, params, {}, fromSurface, world), state: {} });
+    if (params.hasDoubleJump) cands.push({ id: `DOUBLE@${k}`, pref: PREF.DOUBLE, script: makeJumpScript(goal, k, true, false, params, {}, fromSurface, world), state: {} });
+    if (params.hasDoubleJump && params.canSuper) cands.push({ id: `DOUBLE_S@${k}`, pref: PREF.DOUBLE_S, script: makeJumpScript(goal, k, true, true, params, {}, fromSurface, world), state: {} });
   }
   if (params.canSuper && rise < world.UY * 0.5) cands.push({ id: 'SUPER_ONLY', pref: PREF.SUPER_ONLY, script: makeSuperOnly(goal) });
   return cands;
@@ -228,7 +299,7 @@ export function buildCandidates(hero, goal, world, params){
  *   best=null means every candidate hard-missed (caller should report the
  *   scorecard — that's the "genuinely unclearable from here" signal).
  */
-export function pickTakeoff(hero, goal, world, params, opts = {}){
+export function pickTakeoff(hero, goal, world, params, opts = {}, fromSurface){
   // Envelope pre-filter: if even the super-assisted rise is impossible, skip
   // the sim entirely (cheap, and matches the validator's unreachable verdict).
   const f = feetPos(hero);
@@ -237,14 +308,16 @@ export function pickTakeoff(hero, goal, world, params, opts = {}){
     return { best: null, scorecard: [{ id: 'ENVELOPE', score: Infinity, detail: `rise ${Math.round(rise)}px beyond super apex` }], pruned: true };
   }
 
-  const cands = buildCandidates(hero, goal, world, params);
+  const cands = buildCandidates(hero, goal, world, params, fromSurface);
   const scorecard = [];
   let best = null;
 
   for (const c of cands){
     const r = simulateCandidate(hero, goal, world, params, c.script);
     scorecard.push({ id: c.id, score: r.score, detail: r.detail });
-    if (r.score === 0){ best = { id: c.id, score: 0, detail: r.detail }; break; } // perfect — stop
+    // NOTE: do NOT break on the first score-0. Several candidates often land
+    // (e.g. SINGLE_S and DOUBLE both clear the same gap) — run them all so
+    // the PREF tie-break can choose the preferred tool (DJ over single+super).
     if (!best || r.score < best.score || (r.score === best.score && c.pref < best.pref)){
       best = { id: c.id, score: r.score, detail: r.detail };
     }
@@ -258,9 +331,9 @@ export function pickTakeoff(hero, goal, world, params, opts = {}){
  * rests, or times out. Returns the same shape as stepAndCorrect so callers
  * can swap it in directly.
  */
-export function executePick(hero, goal, world, params, pick, opts = {}){
+export function executePick(hero, goal, world, params, pick, opts = {}, fromSurface){
   const maxFrames = opts.maxFrames ?? MAX_SIM_FRAMES + 30;
-  const cand = buildCandidates(hero, goal, world, params).find(c => c.id === pick.best.id);
+  const cand = buildCandidates(hero, goal, world, params, fromSurface).find(c => c.id === pick.best.id);
   if (!cand) return { landed: false, reason: 'no-candidate', frames: 0 };
   const path = [];
   for (let i = 0; i < maxFrames; i++){
