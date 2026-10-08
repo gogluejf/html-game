@@ -2442,7 +2442,7 @@ export function traversalRoute(macro){
   const seeds = [];
   for (let i = 0; i < spans.length; i++){
     if (minHeroSuperAssistReachPx(spans[i].elevation * UNIT_PX_Y) >= 0){
-      seeds.push(i); seen.add(i);
+      seeds.push(i);
     }
   }
   seeds.sort((a, b) => spans[a].pos0 - spans[b].pos0);
@@ -2453,10 +2453,17 @@ export function traversalRoute(macro){
     return minHeroSuperAssistReachPx(risePx) >= 0 && gapPx <= minHeroSuperAssistReachPx(risePx);
   };
   // DFS: discover reachable surfaces in depth-first propagation order.
+  // Seeds are NOT pre-marked as seen — they're discovered like any other
+  // surface so the DFS naturally groups connected surfaces together
+  // (a seed at x29 should be visited when the right-side cluster is
+  // explored, not before the left-side chain).
   for (const seedIdx of seeds){
+    if (seen.has(seedIdx)) continue; // already discovered via another path
     const stack = [seedIdx];
     while (stack.length){
       const fromIdx = stack.pop();
+      if (seen.has(fromIdx)) continue;
+      seen.add(fromIdx);
       order.push(spans[fromIdx].unitIndex);
       const from = spans[fromIdx];
       // Push in reverse position order so the NEAREST surface pops first
@@ -2465,7 +2472,6 @@ export function traversalRoute(macro){
       for (let toIdx = 0; toIdx < spans.length; toIdx++){
         if (seen.has(toIdx)) continue;
         if (canReach(from, spans[toIdx])){
-          seen.add(toIdx);
           found.push(toIdx);
         }
       }
