@@ -283,8 +283,11 @@ export function buildCandidates(hero, goal, world, params, fromSurface){
   const cands = [];
   const K = [0, 4, 8]; // trigger distances (px): 8 / 16 / 32 from the edge
 
-  // Drop hop: goal well below → walking off the edge is the natural move.
-  if (rise < -world.UY * 1.5) cands.push({ id: 'WALK_OFF', pref: PREF.WALK_OFF, script: makeWalkOff(goal) });
+  // Drop hop: goal at or below our level → walking off the edge is the natural
+  // move. No rise threshold: a 1-row pyramid step (rise=-48) must walk off,
+  // not hop — with no WALK_OFF candidate the cheapest option was a SINGLE
+  // jump, so the ride "jumped" down stairs it could simply drop (pyramid3).
+  if (rise <= 0) cands.push({ id: 'WALK_OFF', pref: PREF.WALK_OFF, script: makeWalkOff(goal) });
 
   for (const k of K){
     cands.push({ id: `SINGLE@${k}`, pref: PREF.SINGLE, script: makeJumpScript(goal, k, false, false, params, {}, fromSurface, world), state: {} });
