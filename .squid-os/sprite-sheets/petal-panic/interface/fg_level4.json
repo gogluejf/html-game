@@ -1,20 +1,20 @@
 {
-  "label": "interface",
   "file": "petal-panic/assets/fg_level4.png",
-  "cropped_path": "petal-panic/assets/interface",
+  "size": "2172x724",
   "rows": 1,
   "cols": 1,
-  "size": "2172x724",
-  "description": "Foreground strip level 4",
+  "description": "Foreground strip level 4 (Pirate Show)",
   "entities": [{
     "name": "fg_level4",
     "anim": "idle",
     "frames": [
-      {"file": "fg_level4_f1.png", "row": 0, "col": 0, "bbox": [0, 59, 2172, 641]}
+      {"file": "fg_level4_f1.png", "row": 0, "col": 0, "bbox": [0, 156, 2172, 503]}
     ]
   }],
+  "cropped_path": "petal-panic/assets/interface",
   "crop": {
     "frames_dir": "petal-panic/assets/interface",
-    "pass": "/tmp/redo-single-fg-level4"
-  }
+    "pass": "/tmp/reproc-fg_level4-v1"
+  },
+  "updated": "2026-10-09T03:31:40"
 }

@@ -1,0 +1,20 @@
+{
+  "file": "petal-panic/assets/vertical_level8.png",
+  "size": "820x1918",
+  "rows": 1,
+  "cols": 1,
+  "description": "Vertical scroll level 8 (Carrot Palace)",
+  "entities": [{
+    "name": "vertical_level8",
+    "anim": "idle",
+    "frames": [
+      {"file": "vertical_level8_f1.png", "row": 0, "col": 0, "bbox": [0, 44, 820, 1874]}
+    ]
+  }],
+  "cropped_path": "petal-panic/assets/interface",
+  "crop": {
+    "frames_dir": "petal-panic/assets/interface",
+    "pass": "/tmp/reg3-vertical_level8-v1"
+  },
+  "updated": "2026-10-09T03:30:47"
+}

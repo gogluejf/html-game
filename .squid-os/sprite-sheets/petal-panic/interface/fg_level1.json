@@ -1,20 +1,20 @@
 {
-  "label": "interface",
   "file": "petal-panic/assets/fg_level1.png",
-  "cropped_path": "petal-panic/assets/interface",
+  "size": "2171x724",
   "rows": 1,
   "cols": 1,
-  "size": "2172x724",
-  "description": "Foreground strip level 1",
+  "description": "Foreground strip level 1 (Big Top)",
   "entities": [{
     "name": "fg_level1",
     "anim": "idle",
     "frames": [
-      {"file": "fg_level1_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 2172, 724]}
+      {"file": "fg_level1_f1.png", "row": 0, "col": 0, "bbox": [0, 382, 2171, 287]}
     ]
   }],
+  "cropped_path": "petal-panic/assets/interface",
   "crop": {
     "frames_dir": "petal-panic/assets/interface",
-    "pass": "pre-existing"
-  }
+    "pass": "/tmp/reproc-fg_level1-v1"
+  },
+  "updated": "2026-10-09T03:31:38"
 }

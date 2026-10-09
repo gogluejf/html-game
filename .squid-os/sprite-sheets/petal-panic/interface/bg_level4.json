@@ -4,8 +4,8 @@
   "cropped_path": "petal-panic/assets/interface",
   "rows": 1,
   "cols": 1,
-  "size": "2172x724",
-  "description": "Background level 4",
+  "size": "2170x725",
+  "description": "Background level 3",
   "entities": [{
     "name": "bg_level4",
     "anim": "idle",

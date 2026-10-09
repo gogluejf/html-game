@@ -1,0 +1,20 @@
+{
+  "file": "petal-panic/assets/vertical_level1.png",
+  "size": "820x1918",
+  "rows": 1,
+  "cols": 1,
+  "description": "Vertical scroll level 1 (Big Top)",
+  "entities": [{
+    "name": "vertical_level1",
+    "anim": "idle",
+    "frames": [
+      {"file": "vertical_level1_f1.png", "row": 0, "col": 0, "bbox": [0, 43, 820, 1875]}
+    ]
+  }],
+  "cropped_path": "petal-panic/assets/interface",
+  "crop": {
+    "frames_dir": "petal-panic/assets/interface",
+    "pass": "/tmp/reg3-vertical_level1-v1"
+  },
+  "updated": "2026-10-09T03:30:38"
+}
