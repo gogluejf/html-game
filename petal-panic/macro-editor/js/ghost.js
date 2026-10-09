@@ -181,6 +181,16 @@ export function startRide(){
     _landFlash: 0,
   });
   ride.trace = null;
+  // Clear ALL picker cache from any previous ride: startRide must not inherit
+  // a stale _pick/_pickFrame/candsRef (the "retest after clear" stall — the
+  // new ride replayed the old ride's exhausted script because pickStale was
+  // false for the same goal+fromKey).
+  ride._pick = null;
+  ride._pickGoalIdx = null;
+  ride._pickFromKey = null;
+  ride._pickFrame = 0;
+  ride._scorecard = null;
+  candsRef = [];
   $('testRideBtn')?.classList.add('armed');
   updateRideHint();
   ride._raf = requestAnimationFrame(tick);
@@ -236,6 +246,14 @@ export function stopRide(redraw = true){
   ride.status = '';
   ride.failPoint = null;
   ride.trace = null;
+  // Kill the picker cache too — a stopped ride must not leak _pick/candsRef
+  // into the next startRide (same stale-script stall as the clear→retest bug).
+  ride._pick = null;
+  ride._pickGoalIdx = null;
+  ride._pickFromKey = null;
+  ride._pickFrame = 0;
+  ride._scorecard = null;
+  candsRef = [];
   $('testRideBtn')?.classList.remove('armed');
   updateRideHint();
   if (redraw) requestDraw();
@@ -457,6 +475,15 @@ function respawn(){
     ride.mem.superFired = false;
     ride.mem._releasedAtApex = false;
   }
+  // Invalidate the cached picker pick: replaying a stale script from an old
+  // _pickFrame counter made the hero walk into block #1 without jumping on
+  // every retest after a clear (pickStale stayed false because respawn lands
+  // on the same surface as the first pick's fromKey).
+  ride._pick = null;
+  ride._pickGoalIdx = null;
+  ride._pickFromKey = null;
+  ride._pickFrame = 0;
+  candsRef = [];
 }
 
 function restartLap(){
