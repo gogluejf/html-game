@@ -64,11 +64,18 @@ function simulateCandidate(hero, goal, world, params, script){
   const spawn = { x: hero.x, y: hero.y };
   const h = makeClone(hero, spawn);
   let bestRest = null; // best (closest-to-goal) grounded rest seen so far
+  let wasAirborne = false; // a "rest" only counts AFTER the hero leaves the ground —
+                           // otherwise the takeoff frame (still on the source
+                           // surface) gets scored as a rest and a bad candidate
+                           // (e.g. DOUBLE_S that dashes off-world) wins on a
+                           // phantom low score instead of hard-missing.
 
   for (let i = 0; i < MAX_SIM_FRAMES; i++){
     const inp = script(i, h);
     stepHeadless(h, DT, inp, world.solids);
     const f = feetPos(h);
+
+    if (!h.grounded) wasAirborne = true;
 
     // Out of world → hard miss.
     if (f.y > world.H + world.UY * 2 || f.x < -world.UX * 2 || f.x > world.W + world.UX * 2){
@@ -96,7 +103,9 @@ function simulateCandidate(hero, goal, world, params, script){
         return { score: 0, detail: `landed-on-goal@f${i}` };
       }
       // Landed somewhere else: record as a rest point (the arc is over).
-      if (surf){
+      // Only count it if the hero actually left the ground first — a grounded
+      // frame at the takeoff spot is NOT a landing.
+      if (surf && wasAirborne){
         const cx = (goal.x0 + goal.x1) / 2;
         const off = Math.abs(f.x - cx);
         if (!bestRest || off < bestRest.off) bestRest = { off, x: f.x, y: f.y, surf: surf.index, frame: i };
@@ -193,22 +202,35 @@ function makeJumpScript(goal, k, useDj, useSuper, paramsRef, st, surfRef, world)
   const goalRef = goal;
   return (i, h) => {
     const f = feetPos(h);
-    // Direction toward the goal center — KEEP PRESSING THROUGH THE ARC.
-    const dx = (goalRef.x0 + goalRef.x1) / 2 - f.x;
-    const dir = dx > 4 ? 1 : dx < -4 ? -1 : 0;
-    
+    // Vertical climb check FIRST: goal is above AND we're under its span →
+    // jump IN PLACE. No horizontal steering at all — steering here made the
+    // hero flip-flop L/R once it crossed the goal center mid-air (vx ±180
+    // oscillation). The baseline "accidentally" worked because the flips
+    // cancelled out; the correct behavior is simply not pressing either key.
+    const risePx = f.y - goalRef.y; // >0 = goal higher
+    const goalAboveOverlap = risePx > world.UY * 0.5 &&
+      Math.abs(f.x - (goalRef.x0 + goalRef.x1) / 2) <= world.UX * 0.6;
+
+    // Direction toward the goal center — only used for EDGE-LAUNCH jumps
+    // (goal not directly above). Recomputed per frame while grounded so the
+    // hero walks to the right edge; once airborne on an edge launch we keep
+    // the travel direction (no flip-flop, no drift off the arc).
+    let dir = 0;
+    if (!goalAboveOverlap){
+      const dx = (goalRef.x0 + goalRef.x1) / 2 - f.x;
+      if (st._latchedDir != null){
+        dir = st._latchedDir;
+      } else {
+        dir = dx > 4 ? 1 : dx < -4 ? -1 : 0;
+      }
+    }
+
     const inp = { left: dir < 0, right: dir > 0, up: false, down: false, jump: false, super: false };
-    
+
     // Trigger measures distance to the CURRENT SURFACE's edge in the travel
     // direction — the point where the hero would walk off and fall. Jumping
     // here (not at the goal's edge) makes the arc launch from the right spot.
     let toEdge;
-    const risePx = f.y - goalRef.y; // >0 = goal higher
-    
-    // Vertical climb: goal is above AND we're under its span → jump in place.
-    const goalAboveOverlap = risePx > world.UY * 0.5 &&
-      Math.abs(f.x - (goalRef.x0 + goalRef.x1) / 2) <= world.UX * 0.6;
-    
     if (goalAboveOverlap){
       toEdge = 0;
     } else if (surfRef){
@@ -218,13 +240,16 @@ function makeJumpScript(goal, k, useDj, useSuper, paramsRef, st, surfRef, world)
     } else {
       toEdge = dir > 0 ? Math.max(0, goalRef.x0 - f.x) : Math.max(0, f.x - goalRef.x1);
     }
-    
+
     const triggerPx = 30 + k * 10; // k=0→30px, k=4→70px, k=8→110px
-    
-    // GROUNDED: arm the jump when close to the edge.
+
+    // GROUNDED: arm the jump when close to the edge (or immediately for a
+    // vertical climb). Latch the direction for edge launches so the arc
+    // doesn't flip-flop; in-place climbs stay un-steered.
     if (h.grounded && !st._armed && (toEdge <= triggerPx || toEdge === 0)){
       inp.jump = true;
       st._armed = true;
+      if (!goalAboveOverlap) st._latchedDir = dir;
       st._holdFrames = 2; // hold for 2 frames to ensure it fires
     }
     
