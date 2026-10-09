@@ -12,7 +12,7 @@ import { showToast } from './toast.js';
 import { saveToDisk, restoreDrafts, captureBaselines, updateDirtyDots, updateSaveButton, discardDraft, hasDraft, readActive, createNewMacro } from './save.js';
 import { initTools, setTool, syncToolButtons } from './tools.js';
 import { initPointer, deleteSelection, lastCell, uniqueSlotName, cellInZone } from './pointer.js';
-import { toggleRide, killRideIfActive, setClearanceCommitHook, armSpaceToggle, toggleTrace } from './ghost.js';
+import { toggleRide, killRideIfActive, setClearanceCommitHook, armSpaceToggle, toggleTrace, toggleManualPlay, ride } from './ghost.js';
 import { doUndo, doRedo, syncUndoButtons } from './undo.js';
 import { pushUndo } from './undo.js';
 import { markChanged } from './save.js';
@@ -49,6 +49,9 @@ function initToolbar(){
     traceBtn.disabled = true;
     traceBtn.addEventListener('click', toggleTrace);
   }
+  // Plan 07: PLAY button — manual play mode (player controls the ghost).
+  const playBtn = $('playBtn');
+  if (playBtn) playBtn.addEventListener('click', toggleManualPlay);
 }
 
 // ---------- help dialog (same pattern as sprite editor) ----------
@@ -274,6 +277,12 @@ function initKeyboard(){
     // If a <dialog> is open (confirm / prompt), let it own the keyboard —
     // especially Escape, which the dialog uses to cancel. Do NOT intercept.
     if (document.querySelector('dialog[open]')) return;
+    // Plan 07: manual play owns the game keys — ESC stops, everything else
+    // below (editor shortcuts) is skipped so Z/X/arrows reach the hero.
+    if (ride.active && ride.manual){
+      if (e.code === 'Escape'){ e.preventDefault(); toggleManualPlay(); }
+      return;
+    }
     // Trace recording: T starts/stops the ride; use the TRACE button (or X)
     // to record frames. Recording is explicit, not tied to Ctrl, so it can't
     // be lost to key-repeat / focus quirks.

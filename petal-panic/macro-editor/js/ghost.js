@@ -15,6 +15,14 @@ import { macroEndpoint } from './clearance.js';
 import * as pickerRef from '../../js/world/takeoffPicker.js';
 import { settleHero } from '../../js/world/pickerRide.js';
 
+// Manual-play input (plan 07): the SAME engine as the real game — the `input`
+// singleton from js/core/input.js. It owns keyboard listeners AND gamepad
+// polling (navigator.getGamepads) with the user's saved mapping/layout
+// (localStorage 'petal_panic_mapping'). No duplicated key handling here: we
+// only poll() each ride tick and read the normalized state. Keyboard works
+// through the same engine, so both sources merge automatically.
+import { input } from '../../js/core/input.js';
+
 // Local alias so rideInput can call feetPos without shadowing.
 const feetPosLocal = feetPos;
 // Candidate list is rebuilt per pick; cache the last one for execute replay.
@@ -40,6 +48,12 @@ export function fireSpaceToggle(){
   if (fn) { fn(); return true; }
   return false;
 }
+// Manual-play input (plan 07): the SAME engine as the real game — the `input`
+// singleton from js/core/input.js. It owns keyboard listeners AND gamepad
+// polling (navigator.getGamepads) with the user's saved mapping/layout
+// (localStorage 'petal_panic_mapping'). No duplicated key handling here: we
+// only poll() each ride tick and read the normalized state. Keyboard works
+// through the same engine, so both sources merge automatically.
 const requestDraw = () => requestAnimationFrame(() => _redraw());
 
 const DT = 1 / 60;
@@ -73,6 +87,7 @@ export const ride = {
   landedSet: null,   // Set of landed surface indices (green flashes)
   failedSet: null,   // Set of surfaces reported unreachable (amber X)
   _landFlash: 0,     // frames remaining of the green land flash
+  manual: false,     // plan 07: true = player-controlled (keyboard), false = AI
 };
 
 /** Build the ordered goal list for a ride world: BFS traversal order from
@@ -140,15 +155,20 @@ export function startRide(){
   const endpoint = macroEndpoint(st);
   world.macroEndPx = endpoint.value * (endpoint.orientation === 'vertical' ? c.unitPxY : c.unitPxX);
   // Spawn with FEET on the entry surface: anchor by the real box height so
-  // the rect isn't sunk into the ground (Balthazar h=52, not the old 40).
+  // the rect isn't sunk into the ground (box h comes from the hero def).
+  // Manual play (plan 07) uses the player's actual game hero (same selection
+  // as the game: window.__selectedHero, default scarlet); AI test rides keep
+  // balthazar — it's a geometry probe, and the picker/tuning is calibrated to
+  // those stats.
+  const heroKey = ride.manual ? (window.__selectedHero || 'scarlet') : 'balthazar';
   const _spawnHero = () => {
-    const h = createHeadlessHero('balthazar', { x: 0, y: 0 });
+    const h = createHeadlessHero(heroKey, { x: 0, y: 0 });
     const bh = h.worldBox().h;
-    return createHeadlessHero('balthazar', { x: world.entry.x - 8, y: world.entry.y - bh });
+    return createHeadlessHero(heroKey, { x: world.entry.x - 8, y: world.entry.y - bh });
   };
   const hero = _spawnHero();
-  // Smart mover setup (task 4): Balthazar params injected, goals in order.
-  const stats = HEROES.balthazar.stats;
+  // Smart mover setup (task 4): injected params match the spawned hero.
+  const stats = HEROES[heroKey].stats;
   const params = { ...stats, hasDoubleJump: true, canSuper: true };
   // buildGoalList marks BFS-unreachable surfaces into ride.failedSet — it
   // must exist BEFORE the call (module default is null; the Object.assign
@@ -242,6 +262,10 @@ export function stopRide(redraw = true){
   if (ride.trace) dumpTrace('stopped');
   // Reset trace button state even if no trace was active.
   document.getElementById('dumpTraceBtn')?.classList.remove('recording');
+  // Plan 07: reset manual-play state. Input is owned by the shared engine —
+  // nothing to unbind here; stop polling on next tick (ride.active = false).
+  ride.manual = false;
+  $('playBtn')?.classList.remove('armed');
   ride.hero = null;
   ride.world = null;
   ride.path = [];
@@ -261,10 +285,88 @@ export function stopRide(redraw = true){
   if (redraw) requestDraw();
 }
 
-/** Toggle from the TEST button. */
+/** Toggle from the TEST button.
+ *  - No ride running → start a fresh AI test ride.
+ *  - Manual play running → STOP manual and RESUME the AI from wherever the
+ *    hero currently is (fresh pick for the goal ahead; hero keeps position). */
 export function toggleRide(){
-  if (ride.active) stopRide();
-  else startRide();
+  if (!ride.active){
+    startRide();
+    return;
+  }
+  if (ride.manual){
+    // Hand control back to the AI mid-ride. The hero stays where it is; the
+    // picker re-plans from the current surface toward the next unlanded goal.
+    ride.manual = false;
+    input.barrier();
+    $('playBtn')?.classList.remove('armed');
+    const h = ride.hero;
+    if (h){ h._prevJumpHeld = false; h._prevMeleeJumpHeld = false; h._jumpBuffer = 0; }
+    // Resume at the first goal not yet landed (same logic as rebuildRideWorld).
+    const world = ride.world;
+    const cx = h.worldBox().x + h.worldBox().w / 2;
+    let resumeIdx = 0;
+    for (let i = 0; i < ride.goals.length; i++){
+      if (ride.landedSet?.has(ride.goals[i].index)) continue;
+      if (!world.vertical && ride.goals[i].x0 < cx - world.UX) continue; // already behind
+      resumeIdx = i;
+      break;
+    }
+    ride.goalIdx = resumeIdx;
+    ride.goal = ride.goals[resumeIdx] ?? null;
+    ride.mem = { wantJump: false, djDone: false, armSuper: false, superFired: false, _releasedAtApex: false };
+    // Invalidate picker cache so the AI re-sims from the current spot.
+    ride._pick = null;
+    ride._pickGoalIdx = null;
+    ride._pickFromKey = null;
+    ride._pickFrame = 0;
+    candsRef = [];
+    updateRideHint();
+    requestDraw();
+    return;
+  }
+  stopRide(); // AI test running → stop it
+}
+
+// ---------------------------------------------------------------------------
+// Plan 07 — Manual play mode: player controls the ghost with keyboard input.
+// Reuses the ride infrastructure (world, hero, fixed-timestep loop, trail).
+// No goals, no landing detection, no clearance commit. ESC stops it.
+// ---------------------------------------------------------------------------
+
+/** Toggle manual play from the PLAY button.
+ *  - No ride running → spawn a fresh manual ride at entry.
+ *  - AI test ride running → TAKE OVER in place: same hero position, same
+ *    world snapshot, trail kept. Goals/picker state is inert while manual
+ *    (stepOnce skips goal logic), and stopping manual play just stops the
+ *    ride — no attempt to resume the AI mid-hop (that would replay stale
+ *    picker scripts). */
+export function toggleManualPlay(){
+  if (!app.cur || !app.cur.st){ showToast('load a macro first', 'warn'); return; }
+  if (ride.active && ride.manual){
+    stopRide(); // stop manual play
+  } else if (ride.active) {
+    // Take over the running AI ride wherever it currently is.
+    ride.manual = true;
+    input.barrier(); // drop stale held state from editing before the first poll
+    // The AI script may have left jump/super HELD on its last frame — the
+    // hero's edge detectors (_prevJumpHeld/_prevMeleeJumpHeld) would swallow
+    // the player's first press ("already held" → no new edge → no jump).
+    // Reset them so the first manual press always fires.
+    const h = ride.hero;
+    if (h){ h._prevJumpHeld = false; h._prevMeleeJumpHeld = false; h._jumpBuffer = 0; }
+    $('playBtn')?.classList.add('armed');
+    updateRideHint();
+    requestDraw();
+  } else {
+    stopRide(false); // kill any leftover state (no redraw yet — we start immediately)
+    startRide();     // reuse existing spawn/world setup
+    ride.manual = true;
+    input.barrier();
+    $('playBtn')?.classList.add('armed');
+    updateRideHint();
+    requestDraw();
+  }
 }
 
 /** Called by pointer/tools when the user does ANY other editor action. */
@@ -333,6 +435,10 @@ function stepOnce(dt){
 
   // Goal-landing tracking (smart mover): when the hero is grounded ON the
   // current goal surface, mark it landed, flash green, and advance.
+  // Manual play (plan 07): no goals, no landing detection — just physics +
+  // trail. The exit check below still applies to BOTH modes: reaching the
+  // authored endpoint clears the macro (proof saved) and ends the ride.
+  if (!ride.manual) {
   if (ride.goal && hero.grounded) {
     const g = ride.goal;
     if (cx >= g.x0 - 6 && cx <= g.x1 + 6 && Math.abs(g.y - fy) <= 6) {
@@ -359,8 +465,10 @@ function stepOnce(dt){
     }
   }
   if (ride._landFlash > 0) ride._landFlash--;
+  } // end !ride.manual
 
-  // Reaching the authored macro endpoint concludes test mode immediately.
+  // Reaching the authored macro endpoint concludes the ride in EITHER mode:
+  // commit the clearance proof (sidebar flag) and stop.
   const atExit = world.vertical
     ? (world.H - fy) >= world.macroEndPx
     : cx >= world.macroEndPx;
@@ -390,6 +498,20 @@ function stepOnce(dt){
 function rideInput(){
   const { world, hero } = ride;
   const inp = { left: false, right: false, up: false, down: false, jump: false, super: false };
+
+  // Plan 07: manual play — the game's own input engine (keyboard + DS5/etc.
+  // gamepad via navigator.getGamepads, user's saved mapping). Same source of
+  // truth as the real game; no duplicated key handling in the editor.
+  if (ride.manual){
+    const s = input.poll({ facing: ride.hero.facing || 1 });
+    inp.left = s.moveX < -0.2;
+    inp.right = s.moveX > 0.2;
+    inp.down = !!s.crouch;          // pure Down / D-pad down / L-stick down
+    inp.jump = !!s.jump;            // Space / ✕ (edge-triggered by hero)
+    inp.super = !!s.supermove;      // K / △ (edge-triggered by meter+press)
+    inp.onOneWay = !!ride._onOneWay;
+    return inp;
+  }
 
   if (ride.goal && ride.mem && ride.params) {
     // Plan 06: once grounded, delegate to the sim-based picker and REPLAY its
@@ -611,7 +733,7 @@ export function startTrace(){
       solids: ride.world.solids.map(s => ({ ...s })),
       landings: ride.world.landings.map(l => ({ ...l })),
     },
-    hero: 'balthazar',
+    hero: ride.hero?.heroDef?.id ?? 'balthazar',
     dt: DT,
     frames: [],
   };
@@ -685,8 +807,18 @@ function updateRideHint(){
     traceBtn.disabled = !ride.active;
     traceBtn.classList.toggle('recording', !!ride.trace);
   }
+  // Plan 07: TEST and PLAY are mutually exclusive modes of ONE ride toggle —
+  // exactly one shows armed while a ride runs (the active mode); neither when
+  // idle. TRACE is independent (recording class).
+  $('testRideBtn')?.classList.toggle('armed', ride.active && !ride.manual);
+  $('playBtn')?.classList.toggle('armed', ride.active && ride.manual);
   if (!el || !ride.active) return;
-  if (ride.status === 'running') {
+  if (ride.status === 'running' && ride.manual) {
+    const cx = Math.round(ride.hero.worldBox().x + ride.hero.worldBox().w / 2);
+    const cy = Math.round(ride.hero.worldBox().y + ride.hero.worldBox().h);
+    el.textContent = `manual play · x=${cx} y=${cy}${ride.trace ? ` · REC ${ride.trace.frames.length}` : ''} · ESC to stop`;
+  }
+  else if (ride.status === 'running') {
     const goalTxt = ride.goal
       ? `aiming ${ride.goal.kind}#${ride.goal.index}`
       : 'all landed → exit';
