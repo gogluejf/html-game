@@ -279,7 +279,7 @@ export async function createNewMacro(){
   const data = blankMacro(id);
   storeDraft(id, data);
   app.macros[id] = JSON.parse(JSON.stringify(data));
-  app.drafts.set(id, app.macros[id]);
+  app.drafts.set(id, JSON.parse(JSON.stringify(data)));
   buildSidebar(app.macros);
   updateDirtyDots();
   selectMacro(id);
