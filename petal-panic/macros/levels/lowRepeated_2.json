@@ -107,5 +107,9 @@
   ],
   "variations": [],
   "follows": [],
-  "followedBy": []
+  "followedBy": [],
+  "clearance": {
+    "status": "cleared",
+    "contentSignature": "e34f42eb"
+  }
 }

@@ -150,7 +150,7 @@ function hoverCandidate(cell){
 }
 
 export function cellInZone(cell){
-  if (!app.cur) return false;
+  if (!cell || !app.cur) return false;
   const z = zoneExtents(app.cur.st);
   return cell.x >= z.ax0 && cell.x < z.ax1 && cell.y >= z.ay0 && cell.y < z.ay1;
 }

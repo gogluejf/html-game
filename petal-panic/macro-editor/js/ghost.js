@@ -646,7 +646,8 @@ export function dumpTrace(reason = 'manual'){
   t.result = { status: ride.status, attempts: ride.attempts, failPoint: ride.failPoint, visited: ride.visited, totalLandings: ride.totalLandings };
   // Save via browser download → lands in ~/Downloads (same as the game's dumps).
   // No server round-trip: nothing to hang, works even if the editor server is down.
-  const name = `petal-panic-macrotrace-${Date.now()}.json`;
+  const macroName = t.macroId ?? 'unknown';
+  const name = `petal-panic-macrotrace-${macroName}-${Date.now()}.json`;
   const blob = new Blob([JSON.stringify(t, null, 1)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
