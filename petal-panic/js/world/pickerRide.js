@@ -79,6 +79,45 @@ export function settleHero(hero, world){
 }
 
 /**
+ * Walk the hero to the edge of its current platform that is NEAREST the goal,
+ * so the takeoff point is deterministic (edge-based) instead of wherever the
+ * hero happened to land. Without this, identical gap shapes get different
+ * tools because the pick depends on the arbitrary arrival position (mid vs
+ * edge). Only walks when the goal is BESIDE the surface (a lateral hop), not
+ * directly above (a vertical climb — that jumps in place).
+ * Returns true if it walked, false if nothing to do.
+ */
+export function walkToNearestEdge(hero, world, goal, standingOn){
+  if (!standingOn || !goal) return false;
+  const f = feetPos(hero);
+  // Vertical climb? Goal is above AND under our span → jump in place, don't walk.
+  const risePx = f.y - goal.y;
+  const goalAbove = risePx > world.UY * 0.5 &&
+    f.x >= goal.x0 - world.UX * 0.6 && f.x <= goal.x1 + world.UX * 0.6;
+  if (goalAbove) return false;
+  // Which edge is nearer the goal center?
+  const gcx = (goal.x0 + goal.x1) / 2;
+  const targetX = gcx >= f.x ? standingOn.x1 : standingOn.x0;
+  // Already at (or past) the target edge → nothing to do.
+  if (Math.abs(f.x - targetX) < 4) return false;
+  const dir = targetX > f.x ? 1 : -1;
+  // Walk up to ~60 frames (enough for any platform width) until we reach the
+  // edge or can't move further (wall). Keep it grounded the whole way.
+  for (let i = 0; i < 60; i++){
+    const inp = { left: dir < 0, right: dir > 0, up: false, down: false, jump: false, super: false };
+    const prevX = feetPos(hero).x;
+    stepHeadless(hero, DT, inp, world.solids);
+    const nowX = feetPos(hero).x;
+    // Reached the edge (within tolerance) or stopped moving (wall/edge).
+    if (Math.abs(nowX - targetX) < 4 || Math.abs(nowX - prevX) < 0.5) break;
+    if (!hero.grounded) break; // walked off — stop, the pick will handle it
+  }
+  // Re-settle so the pick starts from a clean resting state at the new spot.
+  settleHero(hero, world);
+  return true;
+}
+
+/**
  * Run a full picker-driven ride over a macro draft.
  * @returns {{cleared:boolean, landed:number[], goals:number[],
  *            failPoint:{goal:number, reason:string}|null, frames:number}}
@@ -109,6 +148,9 @@ export function runPickerRide(macro, opts = {}){
     let inp = { left: false, right: false, up: false, down: false, jump: false, super: false };
     if (stale){
       settleHero(hero, world);
+      // Deterministic takeoff: walk to the edge nearest the goal so identical
+      // gap shapes launch from the same spot (not wherever we landed).
+      walkToNearestEdge(hero, world, g, standingOn);
       pick = pickerRef.pickTakeoff(hero, g, world, RIDE_PARAMS, {}, standingOn);
       cands = pickerRef.buildCandidates(hero, g, world, RIDE_PARAMS, standingOn);
       pickGoalIdx = g.index;
