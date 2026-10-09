@@ -10,10 +10,9 @@ import { buildRideWorld } from '../../js/world/ghostRider.js';
 import { createHeadlessHero, stepHeadless } from '../../js/hero/headless.js';
 import { HEROES } from '../../js/hero/heroDefs.js';
 import { predictFrame, feetPos } from '../../js/world/platformMover.js';
-import { traversalRoute, findPathBetween } from '../../js/world/macros.js';
+import { traversalRoute } from '../../js/world/macros.js';
 import { macroEndpoint } from './clearance.js';
-import * as pickerRef from '../../js/world/takeoffPicker.js';
-import { settleHero } from '../../js/world/pickerRide.js';
+import { settleHero, createRideBrain, decideInput, isLandedOn } from '../../js/world/rideBrain.js';
 
 // Manual-play input (plan 07): the SAME engine as the real game — the `input`
 // singleton from js/core/input.js. It owns keyboard listeners AND gamepad
@@ -88,6 +87,7 @@ export const ride = {
   failedSet: null,   // Set of surfaces reported unreachable (amber X)
   _landFlash: 0,     // frames remaining of the green land flash
   manual: false,     // plan 07: true = player-controlled (keyboard), false = AI
+  brain: null,       // shared rideBrain state (THE per-hop AI, shared with node tests)
 };
 
 /** Build the ordered goal list for a ride world: BFS traversal order from
@@ -129,6 +129,24 @@ function buildGoalList(world, st){
 
 /** Advance to the next unlanded goal after the current one is done. */
 function advanceGoal(){
+  // Advance THE shared brain (single source of truth for goal progression).
+  if (ride.brain) {
+    const brainAdvance = () => {
+      ride.brain.goalIdx++;
+      ride.brain.goal = ride.brain.goals[ride.brain.goalIdx] ?? null;
+      ride.brain.mem = { wantJump: false, djDone: false, armSuper: false, superFired: false, _releasedAtApex: false };
+      ride.brain._pick = null;
+      ride.brain._pickGoalIdx = null;
+      ride.brain._pickFromKey = null;
+      ride.brain._pickFrame = 0;
+      ride.brain._fallbackDir = null;
+    };
+    brainAdvance();
+    ride.goal = ride.brain.goal;
+    ride.goalIdx = ride.brain.goalIdx;
+    ride.mem = ride.brain.mem;
+    return;
+  }
   ride.goalIdx++;
   if (ride.goalIdx >= ride.goals.length) {
     ride.goal = null; // all surfaces done — keep running to the exit
@@ -177,6 +195,15 @@ export function startRide(){
   ride.failedSet = new Set();
   ride.landedSet = new Set();
   const goals = buildGoalList(world, st);
+  // THE shared per-hop AI brain — same module the node tests drive. Browser and
+  // node can't drift because there is one decideInput() implementation.
+  ride.brain = createRideBrain(goals, {
+    stepFn: stepHeadless,
+    dt: DT,
+    units: st.units,
+    orientation: st.orientation,
+    params,
+  });
   Object.assign(ride, {
     active: true,
     world,
@@ -249,6 +276,18 @@ export function rebuildRideWorld(){
   ride.goalIdx = resumeIdx;
   ride.goal = goals[resumeIdx] ?? null;
   ride.mem = { wantJump: false, djDone: false, armSuper: false, superFired: false, _releasedAtApex: false };
+  // Rebuild the shared brain for the new geometry, resuming at the same goal.
+  if (ride.brain){
+    ride.brain.goals = goals;
+    ride.brain.goalIdx = resumeIdx;
+    ride.brain.goal = goals[resumeIdx] ?? null;
+    ride.brain.mem = { wantJump: false, djDone: false, armSuper: false, superFired: false, _releasedAtApex: false };
+    ride.brain._pick = null;
+    ride.brain._pickGoalIdx = null;
+    ride.brain._pickFromKey = null;
+    ride.brain._pickFrame = 0;
+    ride.brain._fallbackDir = null;
+  }
 
   ride.path = [];
 }
@@ -321,6 +360,16 @@ export function toggleRide(){
     ride._pickFromKey = null;
     ride._pickFrame = 0;
     candsRef = [];
+    if (ride.brain){
+      ride.brain.goalIdx = resumeIdx;
+      ride.brain.goal = ride.goals[resumeIdx] ?? null;
+      ride.brain.mem = { wantJump: false, djDone: false, armSuper: false, superFired: false, _releasedAtApex: false };
+      ride.brain._pick = null;
+      ride.brain._pickGoalIdx = null;
+      ride.brain._pickFromKey = null;
+      ride.brain._pickFrame = 0;
+      ride.brain._fallbackDir = null;
+    }
     updateRideHint();
     requestDraw();
     return;
@@ -441,7 +490,8 @@ function stepOnce(dt){
   if (!ride.manual) {
   if (ride.goal && hero.grounded) {
     const g = ride.goal;
-    if (cx >= g.x0 - 6 && cx <= g.x1 + 6 && Math.abs(g.y - fy) <= 6) {
+    // Shared landing test — identical tolerance to the node ride.
+    if (isLandedOn(hero, world, g)) {
       ride.landedSet.add(g.index);
       ride._lastLandedIdx = g.index;
       ride._landFlash = 30; // ~0.5 s green flash
@@ -514,110 +564,25 @@ function rideInput(){
   }
 
   if (ride.goal && ride.mem && ride.params) {
-    // Plan 06: once grounded, delegate to the sim-based picker and REPLAY its
-    // winning script for every subsequent frame — grounded OR airborne — until
-    // the goal is landed or the hero comes to rest somewhere else. (Using
-    // predictFrame for airborne frames cut the jump short: the script's
-    // "hold jump through ascent" input got replaced mid-arc → tiny hop.)
-    const f = feetPosLocal(hero);
-    const standingOn = world.landings.find(l =>
-      f.x >= l.x0 - 8 && f.x <= l.x1 + 8 && Math.abs(l.y - f.y) <= 8) ?? null;
-
-    const pickStale = !ride._pick
-      || ride._pickGoalIdx !== ride.goal.index
-      || (hero.grounded && ride._pickFromKey !== (standingOn?.index ?? 'FLOOR'));
-
-    // WALK-TO-EDGE PHASE: before picking, walk the hero to the edge nearest
-    // the goal so identical gap shapes launch from the same spot. This must
-    // happen ACROSS FRAMES (not instantly) or the trail shows a teleport.
-    // We track it in ride.mem._walkEdge = { targetX, dir } until reached.
-    if (hero.grounded && standingOn && !ride._pick){
-      const gcx = (ride.goal.x0 + ride.goal.x1) / 2;
-      const risePx = f.y - ride.goal.y;
-      const goalAbove = risePx > world.UY * 0.5 &&
-        f.x >= ride.goal.x0 - world.UX * 0.6 && f.x <= ride.goal.x1 + world.UX * 0.6;
-      // Goal directly below (drop case): skip walk-to-edge, let the picker
-      // handle it (DROP_THRU / DROP_L / DROP_R).
-      const goalBelowOverlap = risePx < -world.UY * 0.5 &&
-        ride.goal.x1 > standingOn.x0 && ride.goal.x0 < standingOn.x1;
-      if (!goalAbove && !goalBelowOverlap){
-        const targetX = gcx >= f.x ? standingOn.x1 : standingOn.x0;
-        if (!ride.mem._walkEdge || Math.abs(f.x - ride.mem._walkEdge.targetX) > 4){
-          ride.mem._walkEdge = { targetX, dir: targetX > f.x ? 1 : -1 };
-        }
-        // Still walking? Return walk input, don't pick yet.
-        if (Math.abs(f.x - ride.mem._walkEdge.targetX) > 4){
-          inp.left = ride.mem._walkEdge.dir < 0;
-          inp.right = ride.mem._walkEdge.dir > 0;
-          inp.onOneWay = !!ride._onOneWay;
-          return inp;
-        }
-        // Reached the edge — clear the walk state and fall through to pick.
-        ride.mem._walkEdge = null;
-        settleHero(hero, world);
-      }
+    // THE shared per-hop AI (js/world/rideBrain.js) — identical to the node
+    // test ride. settle → walk-to-edge → pickTakeoff → backtrack → replay all
+    // live there; no duplicated choreography in the browser.
+    const inp2 = decideInput(ride.brain, hero, world);
+    inp.left = inp2.left; inp.right = inp2.right; inp.up = inp2.up;
+    inp.down = inp2.down; inp.jump = inp2.jump; inp.super = inp2.super;
+    // Keep the legacy debug fields in sync (trace dump / console read these).
+    ride._pick = ride.brain._pick;
+    ride._scorecard = ride.brain.scorecard ?? null;
+    // If the brain backtracked to an intermediate surface, follow it so the
+    // goal overlay + landing tracking target the same surface the brain does.
+    if (ride.brain.goal !== ride.goal){
+      ride.goal = ride.brain.goal;
+      // Advance ride.goalIdx to match the brain's retargeted goal (if it's one
+      // of our goals); otherwise leave goalIdx (brain will re-pick next frame).
+      const gi = ride.goals.findIndex(g => g.index === ride.goal?.index);
+      if (gi >= 0) ride.goalIdx = gi;
     }
-
-    if (pickStale){
-      // Grounded: fresh sim-based pick from wherever the hero stands.
-      // SETTLE FIRST via the shared settleHero (js/world/pickerRide.js) — the
-      // SAME function the headless tests use, so browser and tests can't drift.
-      // It zeroes vx/vy, sets grounded=true, clears stale jump/super/crouch/
-      // drop state, and refills the super meter (geometry test, not pacing).
-      settleHero(hero, world);
-      const { pickTakeoff, buildCandidates } = pickerRef;
-      ride._pick = pickTakeoff(hero, ride.goal, world, ride.params, {}, standingOn);
-      candsRef = buildCandidates(hero, ride.goal, world, ride.params, standingOn);
-      ride._pickGoalIdx = ride.goal.index;
-      ride._pickFromKey = standingOn?.index ?? 'FLOOR';
-      ride._pickFrame = 0;
-      ride.mem._fallbackDir = null; // reset latched fallback direction for new goal
-      // Expose the scorecard for debugging (trace dump / console).
-      ride._scorecard = ride._pick.scorecard;
-      if (ride._pick.best == null){
-        // Can't reach the current goal directly. Use findPathBetween to find
-        // a walkable route and backtrack to the next intermediate surface.
-        const fromUnit = standingOn?.index ?? -1;
-        if (fromUnit >= 0 && app.cur?.st?.units?.length){
-          const tagged = app.cur.st.units.map((u, i) => ({ ...u, _editorIndex: u._editorIndex ?? i }));
-          const path = findPathBetween({ orientation: app.cur.st.orientation, units: tagged }, fromUnit, ride.goal.index);
-          if (path && path.length > 2){
-            const nextUnit = path[1];
-            const nextLanding = world.landings.find(l => l.index === nextUnit);
-            if (nextLanding){
-              console.info(`[picker] #${fromUnit}→#${ride.goal.index} unreachable; backtracking via #${nextUnit}`);
-              ride.goal = nextLanding;
-              ride._pick = null;
-              ride._pickGoalIdx = null;
-              ride._pickFromKey = null;
-              ride._pickFrame = 0;
-              candsRef = [];
-              inp.onOneWay = !!ride._onOneWay;
-              return inp;
-            }
-          }
-        }
-        console.info('[picker] no candidate lands on goal', ride.goal.index, ride._pick.scorecard);
-      }
-      console.info(`[picker] goal #${ride.goal.index} fromSurf=${standingOn?.index ?? 'FLOOR'} → ${ride._pick.best?.id} (${Math.round(ride._pick.best?.score ?? -1)}) hero=(${Math.round(f.x)},${Math.round(f.y)})`);
-    }
-    ride._pickFrame++;
-    // Replay the winning script frame-by-frame (grounded AND airborne).
-    const cand = candsRef.find(c => c.id === ride._pick.best?.id);
-    if (cand){
-      const p = cand.script(ride._pickFrame, hero);
-      inp.left = p.left; inp.right = p.right; inp.up = p.up;
-      inp.down = p.down; inp.jump = p.jump; inp.super = p.super;
-    } else {
-      // Fallback: plain walk toward the goal. Latch the direction so the hero
-      // doesn't flip-flop L/R when it crosses the goal center (oscillation).
-      if (ride.mem._fallbackDir == null){
-        const dx = (ride.goal.x0 + ride.goal.x1) / 2 - f.x;
-        ride.mem._fallbackDir = dx > 4 ? 1 : dx < -4 ? -1 : 0;
-      }
-      inp.left = ride.mem._fallbackDir < 0;
-      inp.right = ride.mem._fallbackDir > 0;
-    }
+    ride._pickFrame = ride.brain._pickFrame;
   } else {
     // No goal left (all landed or no surfaces): run to the exit.
     if (world.vertical) {
@@ -667,6 +632,14 @@ function respawn(){
   ride._pickFromKey = null;
   ride._pickFrame = 0;
   candsRef = [];
+  if (ride.brain){
+    ride.brain.mem = { wantJump: false, djDone: false, armSuper: false, superFired: false, _releasedAtApex: false };
+    ride.brain._pick = null;
+    ride.brain._pickGoalIdx = null;
+    ride.brain._pickFromKey = null;
+    ride.brain._pickFrame = 0;
+    ride.brain._fallbackDir = null;
+  }
 }
 
 function restartLap(){

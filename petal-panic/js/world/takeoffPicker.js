@@ -416,6 +416,13 @@ export function pickTakeoff(hero, goal, world, params, opts = {}, fromSurface){
       best = { id: c.id, score: r.score, detail: r.detail };
     }
   }
+  // CONTRACT: a valid takeoff must actually LAND on the goal (score 0). If the
+  // best candidate still misses (score > 0), returning it would make the rider
+  // replay a known-short jump and fall out. Report no-candidate instead so the
+  // caller backtracks / falls back. (Scorecard is kept for debugging.)
+  if (best && best.score > 0){
+    return { best: null, scorecard, pruned: false };
+  }
   return { best, scorecard, pruned: false };
 }
 
