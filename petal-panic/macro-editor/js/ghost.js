@@ -13,7 +13,7 @@ import { predictFrame, feetPos } from '../../js/world/platformMover.js';
 import { traversalRoute } from '../../js/world/macros.js';
 import { macroEndpoint } from './clearance.js';
 import * as pickerRef from '../../js/world/takeoffPicker.js';
-import { settleHero, walkToNearestEdge } from '../../js/world/pickerRide.js';
+import { settleHero } from '../../js/world/pickerRide.js';
 
 // Local alias so rideInput can call feetPos without shadowing.
 const feetPosLocal = feetPos;
@@ -403,6 +403,33 @@ function rideInput(){
       || ride._pickGoalIdx !== ride.goal.index
       || (hero.grounded && ride._pickFromKey !== (standingOn?.index ?? 'FLOOR'));
 
+    // WALK-TO-EDGE PHASE: before picking, walk the hero to the edge nearest
+    // the goal so identical gap shapes launch from the same spot. This must
+    // happen ACROSS FRAMES (not instantly) or the trail shows a teleport.
+    // We track it in ride.mem._walkEdge = { targetX, dir } until reached.
+    if (hero.grounded && standingOn && !ride._pick){
+      const gcx = (ride.goal.x0 + ride.goal.x1) / 2;
+      const risePx = f.y - ride.goal.y;
+      const goalAbove = risePx > world.UY * 0.5 &&
+        f.x >= ride.goal.x0 - world.UX * 0.6 && f.x <= ride.goal.x1 + world.UX * 0.6;
+      if (!goalAbove){
+        const targetX = gcx >= f.x ? standingOn.x1 : standingOn.x0;
+        if (!ride.mem._walkEdge || Math.abs(f.x - ride.mem._walkEdge.targetX) > 4){
+          ride.mem._walkEdge = { targetX, dir: targetX > f.x ? 1 : -1 };
+        }
+        // Still walking? Return walk input, don't pick yet.
+        if (Math.abs(f.x - ride.mem._walkEdge.targetX) > 4){
+          inp.left = ride.mem._walkEdge.dir < 0;
+          inp.right = ride.mem._walkEdge.dir > 0;
+          inp.onOneWay = !!ride._onOneWay;
+          return inp;
+        }
+        // Reached the edge — clear the walk state and fall through to pick.
+        ride.mem._walkEdge = null;
+        settleHero(hero, world);
+      }
+    }
+
     if (pickStale){
       // Grounded: fresh sim-based pick from wherever the hero stands.
       // SETTLE FIRST via the shared settleHero (js/world/pickerRide.js) — the
@@ -410,10 +437,6 @@ function rideInput(){
       // It zeroes vx/vy, sets grounded=true, clears stale jump/super/crouch/
       // drop state, and refills the super meter (geometry test, not pacing).
       settleHero(hero, world);
-      // Deterministic takeoff: walk to the edge nearest the goal so identical
-      // gap shapes launch from the same spot (not wherever we landed). Must
-      // match pickerRide.runPickerRide or browser/tests drift.
-      walkToNearestEdge(hero, world, ride.goal, standingOn);
       const { pickTakeoff, buildCandidates } = pickerRef;
       ride._pick = pickTakeoff(hero, ride.goal, world, ride.params, {}, standingOn);
       candsRef = buildCandidates(hero, ride.goal, world, ride.params, standingOn);
