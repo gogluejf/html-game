@@ -44,7 +44,11 @@ function initToolbar(){
   $('tglZone').addEventListener('click', ()=>{ app.show.zone=!app.show.zone; syncToggles(); draw(); });
   $('newBtn').addEventListener('click', ()=>createNewMacro());
   $('testRideBtn')?.addEventListener('click', toggleRide);
-  $('dumpTraceBtn')?.addEventListener('click', toggleTrace);
+  const traceBtn = $('dumpTraceBtn');
+  if (traceBtn){
+    traceBtn.disabled = true;
+    traceBtn.addEventListener('click', toggleTrace);
+  }
 }
 
 // ---------- help dialog (same pattern as sprite editor) ----------

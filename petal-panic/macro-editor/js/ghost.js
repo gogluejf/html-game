@@ -240,6 +240,8 @@ export function stopRide(redraw = true){
   ride._raf = 0;
   // If a recording is live, end it + dump so nothing is lost on stop.
   if (ride.trace) dumpTrace('stopped');
+  // Reset trace button state even if no trace was active.
+  document.getElementById('dumpTraceBtn')?.classList.remove('recording');
   ride.hero = null;
   ride.world = null;
   ride.path = [];
@@ -677,6 +679,12 @@ export function stopTraceAndDump(){
 
 function updateRideHint(){
   const el = document.getElementById('validationHint');
+  const traceBtn = document.getElementById('dumpTraceBtn');
+  // Sync trace button: disabled when no ride, recording class only when tracing.
+  if (traceBtn){
+    traceBtn.disabled = !ride.active;
+    traceBtn.classList.toggle('recording', !!ride.trace);
+  }
   if (!el || !ride.active) return;
   if (ride.status === 'running') {
     const goalTxt = ride.goal
