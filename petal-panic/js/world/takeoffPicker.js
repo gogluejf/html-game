@@ -70,9 +70,23 @@ function simulateCandidate(hero, goal, world, params, script){
                            // (e.g. DOUBLE_S that dashes off-world) wins on a
                            // phantom low score instead of hard-missing.
 
+  // Initialize onOneWay from hero's current position (is it standing on a one-way?)
+  let _onOneWay = false;
+  if (hero.grounded){
+    const wb = hero.worldBox();
+    for (const s of world.solids){
+      if (!s.oneWay) continue;
+      if (wb.x + wb.w <= s.x || wb.x >= s.x + s.w) continue;
+      if (Math.abs((wb.y + wb.h) - s.y) > 4) continue;
+      _onOneWay = true;
+      break;
+    }
+  }
   for (let i = 0; i < MAX_SIM_FRAMES; i++){
     const inp = script(i, h);
-    stepHeadless(h, DT, inp, world.solids);
+    inp.onOneWay = _onOneWay;
+    const res = stepHeadless(h, DT, inp, world.solids);
+    _onOneWay = !!res.onOneWay;
     const f = feetPos(h);
 
     if (!h.grounded) wasAirborne = true;
@@ -171,6 +185,30 @@ function baseWalk(h, goal, st){
  *  simulateCandidate/executePick (first arg = frame index, second = hero). */
 function makeWalkOff(goal){
   return (i, h) => baseWalk(h, goal, {});
+}
+
+/** DROP_OFF: walk in a FIXED direction (left or right) to step off an edge
+ *  and fall onto a goal that is below and roughly under the current surface.
+ *  Unlike WALK_OFF which steers toward the goal center (gives dir=0 when
+ *  dx≈0), this commits to one direction so the hero actually walks off.
+ *  If `dropThrough` is true, presses down+jump to drop through a one-way
+ *  platform instead of walking off an edge.
+ *  If `goalX` is provided, walks toward that x position first, then drops. */
+function makeDropOff(dir, dropThrough, goalX){
+  return (i, h) => {
+    const f = feetPos(h);
+    // If we have a target x and haven't reached it yet, keep walking.
+    if (goalX != null && Math.abs(f.x - goalX) > 8){
+      return { left: dir < 0, right: dir > 0, up: false, down: false, jump: false, super: false };
+    }
+    // At the target (or no target): drop.
+    if (h.grounded){
+      // Press down+jump to drop through one-way platforms.
+      return { left: false, right: false, up: false, down: true, jump: true, super: false };
+    }
+    // Airborne: keep direction for horizontal drift.
+    return { left: dir < 0, right: dir > 0, up: false, down: false, jump: false, super: false };
+  };
 }
 
 /** Distance (px) from the hero's feet to the nearest WALL face ahead in
@@ -313,6 +351,31 @@ export function buildCandidates(hero, goal, world, params, fromSurface){
   // not hop — with no WALK_OFF candidate the cheapest option was a SINGLE
   // jump, so the ride "jumped" down stairs it could simply drop (pyramid3).
   if (rise <= 0) cands.push({ id: 'WALK_OFF', pref: PREF.WALK_OFF, script: makeWalkOff(goal) });
+
+  // DROP_OFF: goal is below and its x-range overlaps our surface. WALK_OFF
+  // gives dir=0 when dx≈0 (hero stands still). DROP_OFF commits to walking
+  // left OR right off an edge so the hero actually falls onto the goal.
+  // If the goal is DIRECTLY below (same x-range) and we're on a one-way
+  // platform, use down+jump to drop through instead.
+  if (rise <= 0 && fromSurface){
+    const gcx = (goal.x0 + goal.x1) / 2;
+    const overlap = goal.x1 > fromSurface.x0 && goal.x0 < fromSurface.x1;
+    if (overlap){
+      // Same x-range? Drop through the one-way platform.
+      // Only if the hero is actually ABOVE the goal's x-range.
+      const sameSpan = goal.x0 >= fromSurface.x0 - world.UX * 0.5 &&
+                       goal.x1 <= fromSurface.x1 + world.UX * 0.5;
+      const heroAboveGoal = f.x >= goal.x0 - world.UX * 0.5 && f.x <= goal.x1 + world.UX * 0.5;
+      if (sameSpan && heroAboveGoal){
+        cands.push({ id: 'DROP_THRU', pref: PREF.WALK_OFF, script: makeDropOff(0, true) });
+      } else {
+        // Walk toward the goal's x-center, then drop off.
+        const gcx = (goal.x0 + goal.x1) / 2;
+        const dirToGoal = gcx >= f.x ? 1 : -1;
+        cands.push({ id: `DROP_WALK`, pref: PREF.WALK_OFF, script: makeDropOff(dirToGoal, false, gcx) });
+      }
+    }
+  }
 
   for (const k of K){
     cands.push({ id: `SINGLE@${k}`, pref: PREF.SINGLE, script: makeJumpScript(goal, k, false, false, params, {}, fromSurface, world), state: {} });

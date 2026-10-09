@@ -412,7 +412,11 @@ function rideInput(){
       const risePx = f.y - ride.goal.y;
       const goalAbove = risePx > world.UY * 0.5 &&
         f.x >= ride.goal.x0 - world.UX * 0.6 && f.x <= ride.goal.x1 + world.UX * 0.6;
-      if (!goalAbove){
+      // Goal directly below (drop case): skip walk-to-edge, let the picker
+      // handle it (DROP_THRU / DROP_L / DROP_R).
+      const goalBelowOverlap = risePx < -world.UY * 0.5 &&
+        ride.goal.x1 > standingOn.x0 && ride.goal.x0 < standingOn.x1;
+      if (!goalAbove && !goalBelowOverlap){
         const targetX = gcx >= f.x ? standingOn.x1 : standingOn.x0;
         if (!ride.mem._walkEdge || Math.abs(f.x - ride.mem._walkEdge.targetX) > 4){
           ride.mem._walkEdge = { targetX, dir: targetX > f.x ? 1 : -1 };
