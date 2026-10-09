@@ -10,7 +10,7 @@ import { buildRideWorld } from '../../js/world/ghostRider.js';
 import { createHeadlessHero, stepHeadless } from '../../js/hero/headless.js';
 import { HEROES } from '../../js/hero/heroDefs.js';
 import { predictFrame, feetPos } from '../../js/world/platformMover.js';
-import { traversalRoute } from '../../js/world/macros.js';
+import { traversalRoute, findPathBetween } from '../../js/world/macros.js';
 import { macroEndpoint } from './clearance.js';
 import * as pickerRef from '../../js/world/takeoffPicker.js';
 import { settleHero } from '../../js/world/pickerRide.js';
@@ -443,9 +443,32 @@ function rideInput(){
       ride._pickGoalIdx = ride.goal.index;
       ride._pickFromKey = standingOn?.index ?? 'FLOOR';
       ride._pickFrame = 0;
+      ride.mem._fallbackDir = null; // reset latched fallback direction for new goal
       // Expose the scorecard for debugging (trace dump / console).
       ride._scorecard = ride._pick.scorecard;
       if (ride._pick.best == null){
+        // Can't reach the current goal directly. Use findPathBetween to find
+        // a walkable route and backtrack to the next intermediate surface.
+        const fromUnit = standingOn?.index ?? -1;
+        if (fromUnit >= 0 && app.cur?.st?.units?.length){
+          const tagged = app.cur.st.units.map((u, i) => ({ ...u, _editorIndex: u._editorIndex ?? i }));
+          const path = findPathBetween({ orientation: app.cur.st.orientation, units: tagged }, fromUnit, ride.goal.index);
+          if (path && path.length > 2){
+            const nextUnit = path[1];
+            const nextLanding = world.landings.find(l => l.index === nextUnit);
+            if (nextLanding){
+              console.info(`[picker] #${fromUnit}→#${ride.goal.index} unreachable; backtracking via #${nextUnit}`);
+              ride.goal = nextLanding;
+              ride._pick = null;
+              ride._pickGoalIdx = null;
+              ride._pickFromKey = null;
+              ride._pickFrame = 0;
+              candsRef = [];
+              inp.onOneWay = !!ride._onOneWay;
+              return inp;
+            }
+          }
+        }
         console.info('[picker] no candidate lands on goal', ride.goal.index, ride._pick.scorecard);
       }
       console.info(`[picker] goal #${ride.goal.index} fromSurf=${standingOn?.index ?? 'FLOOR'} → ${ride._pick.best?.id} (${Math.round(ride._pick.best?.score ?? -1)}) hero=(${Math.round(f.x)},${Math.round(f.y)})`);
@@ -458,9 +481,14 @@ function rideInput(){
       inp.left = p.left; inp.right = p.right; inp.up = p.up;
       inp.down = p.down; inp.jump = p.jump; inp.super = p.super;
     } else {
-      // Fallback: plain walk toward the goal.
-      const dx = (ride.goal.x0 + ride.goal.x1) / 2 - f.x;
-      if (dx > 4) inp.right = true; else if (dx < -4) inp.left = true;
+      // Fallback: plain walk toward the goal. Latch the direction so the hero
+      // doesn't flip-flop L/R when it crosses the goal center (oscillation).
+      if (ride.mem._fallbackDir == null){
+        const dx = (ride.goal.x0 + ride.goal.x1) / 2 - f.x;
+        ride.mem._fallbackDir = dx > 4 ? 1 : dx < -4 ? -1 : 0;
+      }
+      inp.left = ride.mem._fallbackDir < 0;
+      inp.right = ride.mem._fallbackDir > 0;
     }
   } else {
     // No goal left (all landed or no surfaces): run to the exit.

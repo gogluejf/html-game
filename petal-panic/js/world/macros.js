@@ -2485,3 +2485,79 @@ export function traversalRoute(macro){
   }
   return { order, unreachable };
 }
+
+/**
+ * Find a walkable path from one surface to another using the rise+gap
+ * super-assist envelope (same math as traversalRoute / bfsReachableSpans).
+ *
+ * This is the DYNAMIC pathfinding primitive: given "I'm on surface A, I want
+ * to reach surface B", it returns the actual step list [A, ..., B] or null if
+ * B is unreachable from A. Enemies call this live to plan their approach;
+ * the ride can use it to re-plan when stuck.
+ *
+ * The graph is implicit — every surface connects to every other surface that
+ * passes the envelope check. No stored edges; computed on demand. O(n²) per
+ * BFS step, fine for macro-scale surfaces (<50).
+ *
+ * @param {{orientation:string, units:Array}} macro unit-space draft
+ * @param {number} fromUnit unit index the agent is currently ON
+ * @param {number} toUnit unit index the agent wants to reach
+ * @returns {number[]|null} path as unit indices [fromUnit, ..., toUnit],
+ *   or null if unreachable. Returns [fromUnit] if from===to.
+ */
+export function findPathBetween(macro, fromUnit, toUnit){
+  const isVertical = macro.orientation === 'vertical';
+  const landingElevation = (u) => (u.kind === 'block' ? (u.y ?? 0) + u.height : (u.tier ?? u.y ?? 0) + 1);
+  const spans = (macro.units || [])
+    .filter((u) => u.kind === 'platform' || u.kind === 'block')
+    .map((u, i) => ({
+      elevation: landingElevation(u),
+      pos0: isVertical ? landingElevation(u) : (u.x ?? 0),
+      pos1: isVertical ? landingElevation(u) : (u.x ?? 0) + (u.width ?? 1),
+      unitIndex: u._editorIndex ?? i,
+    }));
+  const axisUnitPx = isVertical ? UNIT_PX_Y : UNIT_PX_X;
+
+  // Map unitIndex → span index (spans may exclude non-platform/block units).
+  const spanByUnit = new Map();
+  for (let i = 0; i < spans.length; i++) spanByUnit.set(spans[i].unitIndex, i);
+  const fromSpan = spanByUnit.get(fromUnit);
+  const toSpan = spanByUnit.get(toUnit);
+  if (fromSpan == null || toSpan == null) return null;
+  if (fromUnit === toUnit) return [fromUnit];
+
+  const canReach = (a, b) => {
+    const gapUnits = Math.max(0, b.pos0 - a.pos1, a.pos0 - b.pos1);
+    const gapPx = gapUnits * axisUnitPx;
+    const risePx = (b.elevation - a.elevation) * UNIT_PX_Y;
+    return minHeroSuperAssistReachPx(risePx) >= 0 && gapPx <= minHeroSuperAssistReachPx(risePx);
+  };
+  // BFS from fromSpan to toSpan.
+  const prev = new Map(); // spanIdx → spanIdx we came from
+  const visited = new Set([fromSpan]);
+  const queue = [fromSpan];
+  while (queue.length){
+    const cur = queue.shift();
+    if (cur === toSpan) break;
+    for (let next = 0; next < spans.length; next++){
+      if (visited.has(next)) continue;
+      if (canReach(spans[cur], spans[next])){
+        visited.add(next);
+        prev.set(next, cur);
+        queue.push(next);
+        if (next === toSpan) break;
+      }
+    }
+  }
+  if (!visited.has(toSpan)) return null;
+  // Reconstruct path.
+  const path = [];
+  let cur = toSpan;
+  while (cur !== fromSpan){
+    path.push(spans[cur].unitIndex);
+    cur = prev.get(cur);
+  }
+  path.push(fromUnit);
+  path.reverse();
+  return path;
+}
