@@ -54,7 +54,7 @@ export const HEROES = {
       attack: 10,
       defense: 2,
       stamina: 100,
-      jump: 500,
+      jump: 511,
       projectile_freq: 8,   // shots per second
       special_freq: 2,      // saw cooldown (seconds)
       special: 'saw',
@@ -87,7 +87,7 @@ export const HEROES = {
       attack: 20,
       defense: 5,
       stamina: 70,
-      jump: 420,
+      jump: 456,
       projectile_freq: 10,
       special_freq: 3,
       special: 'bomb',
