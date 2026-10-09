@@ -1,0 +1,35 @@
+{
+  "file": "petal-panic/assets/blocks_level6_sheet.png",
+  "size": "1086x1448",
+  "rows": 2,
+  "cols": 3,
+  "description": "Level 6 block tiles: row 1 decorated, row 2 plain; cols single/double/triple",
+  "entities": [{
+    "name": "blocks_level6",
+    "anim": "single",
+    "frames": [
+      {"file": "blocks_level6_single_f1.png", "row": 0, "col": 0, "bbox": [20, 505, 348, 272]},
+      {"file": "blocks_level6_single_f2.png", "row": 1, "col": 0, "bbox": [19, 1191, 341, 183]}
+    ]
+  }, {
+    "name": "blocks_level6",
+    "anim": "double",
+    "frames": [
+      {"file": "blocks_level6_double_f1.png", "row": 0, "col": 1, "bbox": [376, 324, 333, 450]},
+      {"file": "blocks_level6_double_f2.png", "row": 1, "col": 1, "bbox": [371, 1022, 338, 348]}
+    ]
+  }, {
+    "name": "blocks_level6",
+    "anim": "triple",
+    "frames": [
+      {"file": "blocks_level6_triple_f1.png", "row": 0, "col": 2, "bbox": [726, 53, 344, 722]},
+      {"file": "blocks_level6_triple_f2.png", "row": 1, "col": 2, "bbox": [725, 836, 342, 535]}
+    ]
+  }],
+  "cropped_path": "petal-panic/assets/objects",
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects",
+    "pass": "/tmp/blocks-l6-v1"
+  },
+  "updated": "2026-10-09T03:44:33"
+}

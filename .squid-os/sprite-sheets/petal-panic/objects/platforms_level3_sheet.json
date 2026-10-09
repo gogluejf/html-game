@@ -1,0 +1,41 @@
+{
+  "file": "petal-panic/assets/platforms_level3_sheet.png",
+  "size": "1394x1128",
+  "rows": 4,
+  "cols": 3,
+  "description": "Level 3 platform tiles: 4 style variants x cols single/double/triple (jungle ledges w/ crystals, vines, props)",
+  "entities": [{
+    "name": "platforms_level3",
+    "anim": "single",
+    "frames": [
+      {"file": "platforms_level3_single_f1.png", "row": 0, "col": 0, "bbox": [42, 164, 280, 213]},
+      {"file": "platforms_level3_single_f2.png", "row": 1, "col": 0, "bbox": [40, 424, 288, 196]},
+      {"file": "platforms_level3_single_f3.png", "row": 2, "col": 0, "bbox": [36, 650, 298, 273]},
+      {"file": "platforms_level3_single_f4.png", "row": 3, "col": 0, "bbox": [42, 949, 282, 139]}
+    ]
+  }, {
+    "name": "platforms_level3",
+    "anim": "double",
+    "frames": [
+      {"file": "platforms_level3_double_f1.png", "row": 0, "col": 1, "bbox": [381, 117, 408, 255]},
+      {"file": "platforms_level3_double_f2.png", "row": 1, "col": 1, "bbox": [399, 448, 367, 187]},
+      {"file": "platforms_level3_double_f3.png", "row": 2, "col": 1, "bbox": [397, 682, 406, 239]},
+      {"file": "platforms_level3_double_f4.png", "row": 3, "col": 1, "bbox": [376, 946, 434, 152]}
+    ]
+  }, {
+    "name": "platforms_level3",
+    "anim": "triple",
+    "frames": [
+      {"file": "platforms_level3_triple_f1.png", "row": 0, "col": 2, "bbox": [839, 159, 513, 211]},
+      {"file": "platforms_level3_triple_f2.png", "row": 1, "col": 2, "bbox": [831, 430, 537, 215]},
+      {"file": "platforms_level3_triple_f3.png", "row": 2, "col": 2, "bbox": [860, 735, 495, 194]},
+      {"file": "platforms_level3_triple_f4.png", "row": 3, "col": 2, "bbox": [836, 948, 517, 138]}
+    ]
+  }],
+  "cropped_path": "petal-panic/assets/objects",
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects",
+    "pass": "/tmp/platforms-l3-v1"
+  },
+  "updated": "2026-10-09T03:37:47"
+}

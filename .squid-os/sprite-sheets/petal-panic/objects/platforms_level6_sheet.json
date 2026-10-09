@@ -1,0 +1,41 @@
+{
+  "file": "petal-panic/assets/platforms_level6_sheet.png",
+  "size": "1536x1024",
+  "rows": 4,
+  "cols": 3,
+  "description": "Level 6 platform tiles: 4 style variants x cols single/double/triple",
+  "entities": [{
+    "name": "platforms_level6",
+    "anim": "single",
+    "frames": [
+      {"file": "platforms_level6_single_f1.png", "row": 0, "col": 0, "bbox": [30, 39, 313, 262]},
+      {"file": "platforms_level6_single_f2.png", "row": 1, "col": 0, "bbox": [31, 313, 322, 256]},
+      {"file": "platforms_level6_single_f3.png", "row": 2, "col": 0, "bbox": [39, 619, 302, 203]},
+      {"file": "platforms_level6_single_f4.png", "row": 3, "col": 0, "bbox": [29, 847, 312, 130]}
+    ]
+  }, {
+    "name": "platforms_level6",
+    "anim": "double",
+    "frames": [
+      {"file": "platforms_level6_double_f1.png", "row": 0, "col": 1, "bbox": [414, 105, 485, 213]},
+      {"file": "platforms_level6_double_f2.png", "row": 1, "col": 1, "bbox": [436, 352, 439, 212]},
+      {"file": "platforms_level6_double_f3.png", "row": 2, "col": 1, "bbox": [428, 635, 425, 187]},
+      {"file": "platforms_level6_double_f4.png", "row": 3, "col": 1, "bbox": [380, 848, 508, 125]}
+    ]
+  }, {
+    "name": "platforms_level6",
+    "anim": "triple",
+    "frames": [
+      {"file": "platforms_level6_triple_f1.png", "row": 0, "col": 2, "bbox": [949, 85, 566, 227]},
+      {"file": "platforms_level6_triple_f2.png", "row": 1, "col": 2, "bbox": [951, 384, 556, 229]},
+      {"file": "platforms_level6_triple_f3.png", "row": 2, "col": 2, "bbox": [963, 574, 516, 251]},
+      {"file": "platforms_level6_triple_f4.png", "row": 3, "col": 2, "bbox": [922, 846, 586, 148]}
+    ]
+  }],
+  "cropped_path": "petal-panic/assets/objects",
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects",
+    "pass": "/tmp/platforms-l6-v3"
+  },
+  "updated": "2026-10-09T03:53:22"
+}

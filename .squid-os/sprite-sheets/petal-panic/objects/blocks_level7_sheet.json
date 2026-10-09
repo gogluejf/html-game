@@ -1,0 +1,35 @@
+{
+  "file": "petal-panic/assets/blocks_level7_sheet.png",
+  "size": "1086x1448",
+  "rows": 2,
+  "cols": 3,
+  "description": "Level 7 block tiles: row 1 decorated, row 2 plain; cols single/double/triple",
+  "entities": [{
+    "name": "blocks_level7",
+    "anim": "single",
+    "frames": [
+      {"file": "blocks_level7_single_f1.png", "row": 0, "col": 0, "bbox": [21, 479, 353, 335]},
+      {"file": "blocks_level7_single_f2.png", "row": 1, "col": 0, "bbox": [22, 1180, 351, 203]}
+    ]
+  }, {
+    "name": "blocks_level7",
+    "anim": "double",
+    "frames": [
+      {"file": "blocks_level7_double_f1.png", "row": 0, "col": 1, "bbox": [393, 256, 326, 546]},
+      {"file": "blocks_level7_double_f2.png", "row": 1, "col": 1, "bbox": [393, 1052, 326, 313]}
+    ]
+  }, {
+    "name": "blocks_level7",
+    "anim": "triple",
+    "frames": [
+      {"file": "blocks_level7_triple_f1.png", "row": 0, "col": 2, "bbox": [726, 0, 359, 799]},
+      {"file": "blocks_level7_triple_f2.png", "row": 1, "col": 2, "bbox": [730, 851, 343, 521]}
+    ]
+  }],
+  "cropped_path": "petal-panic/assets/objects",
+  "crop": {
+    "frames_dir": "petal-panic/assets/objects",
+    "pass": "/tmp/blocks-l7-v1"
+  },
+  "updated": "2026-10-09T03:44:33"
+}
