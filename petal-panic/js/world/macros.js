@@ -2122,18 +2122,18 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
     }
   }
 
-  // 4b. The CLEARANCE RULE (REVISION R2.2, restated): units occupy grid CELLS;
+  // 4b. The CLEARANCE RULE (REVISION R2.3): units occupy grid CELLS;
   //     a unit's standing surface is the TOP of its cell (blocks: row + height;
   //     platforms: row + 1 — the face sits at the ceiling of the occupied row,
   //     matching the pixel render where P@row N faces at (N+1) × UNIT_PX_Y).
   //     Clearance = empty cells between the upper unit's cell FLOOR (its row)
   //     and the lower unit's surface line. The upper unit's own cell is NOT
   //     clearance — it is occupied. Rules:
-  //       - block on the floor (row 0): always legal (may touch the ground)
-  //       - block with clearance < 2 above a unit below: ILLEGAL (no stacking,
-  //         no 1-row gap)
+  //       - block touching any surface below (clearance = 0): always legal
+  //         (stacking on ground, blocks, or platforms is allowed)
+  //       - block with clearance 1 above a surface below: ILLEGAL (no 1-row
+  //         floating gaps — either touch or leave ≥ 2)
   //       - block with clearance >= 2: legal (hero fits/jumps underneath)
-  //       - block floating with nothing below: needs >= 2 rows from ground
   //       - platform: clearance must be >= 1 above any unit below (block or
   //         platform), and a platform may never be declared at row 0.
   const cellFloor = (u) => (u.y ?? u.tier ?? 0);
@@ -2177,12 +2177,12 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
             );
           }
         } else {
-          if (clearance < 2) {
+          if (clearance === 1) {
             throw new Error(
               `validateLayout: block at x=${upper.x} (base row ${uRow}) has ` +
                 `${clearance} row(s) of clearance above ${lower.kind} at x=${lower.x} ` +
-                `(surface row ${surfaceLine(lower)}) — blocks need ≥ 2 empty rows ` +
-                `or must sit on the ground`,
+                `(surface row ${surfaceLine(lower)}) — blocks must touch (0) or ` +
+                `leave ≥ 2 empty rows`,
             );
           }
         }

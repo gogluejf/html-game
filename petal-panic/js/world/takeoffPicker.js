@@ -246,9 +246,12 @@ function makeJumpScript(goal, k, useDj, useSuper, paramsRef, st, surfRef, world,
     // hero flip-flop L/R once it crossed the goal center mid-air (vx ±180
     // oscillation). The baseline "accidentally" worked because the flips
     // cancelled out; the correct behavior is simply not pressing either key.
+    // Threshold: UX * 1.0 (one full unit ≈ 72px) — wide enough to cover the
+    // case where the hero is standing on a platform and the goal is a block
+    // stacked on that same platform (hero may be 1+ units from goal center).
     const risePx = f.y - goalRef.y; // >0 = goal higher
     const goalAboveOverlap = risePx > world.UY * 0.5 &&
-      Math.abs(f.x - (goalRef.x0 + goalRef.x1) / 2) <= world.UX * 0.6;
+      Math.abs(f.x - (goalRef.x0 + goalRef.x1) / 2) <= world.UX * 1.0;
 
     // Direction toward the goal center — only used for EDGE-LAUNCH jumps
     // (goal not directly above). Recomputed per frame while grounded so the
