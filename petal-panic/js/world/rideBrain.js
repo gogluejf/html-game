@@ -206,9 +206,10 @@ export function decideInput(b, hero, world){
     b._pickFrame = 0;
     b.mem._fallbackDir = null;
     b.scorecard = b._pick.scorecard; // exposed for debug/trace
-    if (b._pick.best == null){
-      // Can't reach the current goal directly: backtrack to the next
-      // intermediate surface on a walkable route.
+    if (b._pick.best == null || b._pick.best.score > 150){
+      // Can't reach the current goal cleanly: hard miss (null) OR a poor
+      // near-miss (score > 150 = lands far off). Find the real path via
+      // findPathBetween and retarget to the next step on that path.
       const fromUnit = standingOn?.index ?? -1;
       if (fromUnit >= 0 && b._units?.length){
         const tagged = b._units.map((u, i) => ({ ...u, _editorIndex: u._editorIndex ?? i }));

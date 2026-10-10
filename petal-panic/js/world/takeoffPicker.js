@@ -351,7 +351,10 @@ export function buildCandidates(hero, goal, world, params, fromSurface){
   const f = feetPos(hero);
   const rise = f.y - goal.y; // >0 goal higher
   const cands = [];
-  const K = [0, 4, 8]; // trigger distances (px): 8 / 16 / 32 from the edge
+  // k=-2 → triggerPx = 30 + (-2*10) = 10px from edge (near-coyote). Covers the
+  // case where the hero lands right at the lip and the 30/70/110px triggers are
+  // all already behind it. k=0/4/8 → 30/70/110px as before.
+  const K = [-2, 0, 4, 8]; // trigger distances (px): 10 / 30 / 70 / 110 from the edge
 
   // Drop hop: goal at or below our level → walking off the edge is the natural
   // move. No rise threshold: a 1-row pyramid step (rise=-48) must walk off,
