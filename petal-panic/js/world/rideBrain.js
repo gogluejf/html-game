@@ -114,10 +114,19 @@ function freshMem(){
 }
 
 /** Advance to the next goal after the current one landed. Resets per-hop mem
- *  and invalidates the pick cache. */
+ *  and invalidates the pick cache. If a backtrack target is pending (set when
+ *  the brain re-routed through an intermediate surface), restore THAT goal
+ *  instead of advancing forward in the route array. */
 export function advanceGoal(b){
-  b.goalIdx++;
-  b.goal = b.goals[b.goalIdx] ?? null;
+  // If we backtracked through an intermediate, the real target is stored in
+  // _backtrackTarget. Restore it now that the intermediate has been landed.
+  if (b._backtrackTarget){
+    b.goal = b._backtrackTarget;
+    b._backtrackTarget = null;
+  } else {
+    b.goalIdx++;
+    b.goal = b.goals[b.goalIdx] ?? null;
+  }
   b.mem = freshMem();
   b._pick = null;
   b._pickGoalIdx = null;
@@ -217,6 +226,10 @@ export function decideInput(b, hero, world){
         if (path && path.length > 2){
           const nextLanding = world.landings.find(l => l.index === path[1]);
           if (nextLanding){
+            // Remember the ORIGINAL goal so we can restore it after landing
+            // the intermediate surface. Without this, advanceGoal() after
+            // landing the intermediate skips past the real target.
+            b._backtrackTarget = g;
             b.goal = nextLanding;
             b._pick = null;
             b._pickGoalIdx = null;
