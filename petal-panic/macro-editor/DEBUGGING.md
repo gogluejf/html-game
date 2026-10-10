@@ -190,6 +190,25 @@ node js/test/run-all.mjs                    # every *.test.js in js/test/ (83 fi
 DEBUG=1 node js/test/run-all.mjs            # same, but print failing stderr
 ```
 
+### 📊 The one-command status table (use this first)
+
+For "how are we doing right now?" don't grep the test dump — run the report
+script. It drives the SAME shared driver as the browser TEST ride over every
+shipped macro and prints the canonical table (Macro · Result · Goal order ·
+Missed · Died at):
+
+```bash
+cd ~/src/html-game/petal-panic
+node tools/ride-report.mjs            # full table, all macros
+node tools/ride-report.mjs --fail     # only failing macros
+node tools/ride-report.mjs newMacro   # filter by id substring
+node tools/ride-report.mjs --json     # machine-readable (one JSON per line)
+```
+
+Exit code is `0` when everything passes, `1` when any macro fails — so it drops
+straight into CI / a pre-commit hook. This is the report to paste into chat or a
+PR; no more hand-typed `grep`/`awk` pipelines.
+
 ### ⚠️ Which code path do the "clears" tests actually exercise?
 
 - `ghostRider.test.js` → `runGhostRide`/`rideOnce` = the **OLD rule-driven brain**
@@ -256,12 +275,11 @@ failure classes the report distinguishes:
 
 `pickerRide.test.js` encodes both. A red result there is a real bug, not noise.
 
-**Known open gap (as of this writing):** BFS judges a hop reachable if it's
-clearable from *somewhere* on the source surface, but the brain always walks to
-the *edge* before launching. Some hops (e.g. `pyramid3` #9→#11) are clearable
-from mid-surface but NOT from the edge → the ride stalls even though BFS says
-blue. Current real failures: `lowRepeated` #0 · `lowRepeated_2` #0,#1,#2 ·
-`newMacro` #4,#6,#5 · `newMacro_2` #1 · `newMacro_3` #4,#3,#5 · `pyramid3` #11,#12.
+**Current real failures (run `node tools/ride-report.mjs` for live status):**
+`lowRepeated` #0 · `lowRepeated_2` #0,#1,#2 · `newMacro` #3,#4,#6,#5 ·
+`newMacro_2` #1 (fell-out) · `newMacro_3` #4,#3,#5 · `pyramid3` #11,#12 (fell-out).
+Two classes: **stalled** (brain gives up mid-route — backtrack regression) and
+**fell-out** (a sim-"proven" jump still missed — sim/replay divergence).
 
 ### Ad-hoc probes (for narrowing a specific N→M failure)
 
