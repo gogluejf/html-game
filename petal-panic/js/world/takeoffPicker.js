@@ -416,11 +416,12 @@ export function pickTakeoff(hero, goal, world, params, opts = {}, fromSurface){
       best = { id: c.id, score: r.score, detail: r.detail };
     }
   }
-  // CONTRACT: a valid takeoff must actually LAND on the goal (score 0). If the
-  // best candidate still misses (score > 0), returning it would make the rider
-  // replay a known-short jump and fall out. Report no-candidate instead so the
-  // caller backtracks / falls back. (Scorecard is kept for debugging.)
-  if (best && best.score > 0){
+  // IMPERFECT-OK: a candidate whose sim lands slightly off (score > 0) is still
+  // the best script we have — the real engine with full meter often clears it
+  // even when the sim clone undershoots. Only report no-candidate when EVERY
+  // candidate hard-missed (fell out / wall-pin / envelope). Returning the
+  // near-miss lets the rider replay it instead of walking off the block.
+  if (best && best.score === Infinity){
     return { best: null, scorecard, pruned: false };
   }
   return { best, scorecard, pruned: false };
