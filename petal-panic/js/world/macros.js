@@ -2253,7 +2253,7 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
       .sort((a, b) => (platformY(a) - platformY(b)) || (a.placementId - b.placementId));
 
     // Each platform occupies one row; collapse adjacent rows of the same
-    // unit into a span. Track x-center for horizontal gap calculation.
+    // unit into a span. Track x-extent for the lateral hop check.
     const spans = [];
     for (const p of platforms) {
       const cellY = (p.y ?? p.aabb?.y ?? 0);
@@ -2269,46 +2269,17 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
           pos0: cellY,
           pos1: cellY + 1,
           unitIndex: p._editorIndex,
-          // x-extent for horizontal gap calc
+          // Lateral extent for the shared obstacle check.
           x0: p.x,
           x1: p.x + p.width,
         });
       }
     }
 
-    // Vertical reachability: rise is along y, but the hero also needs to
-    // cover horizontal (x) distance between platforms. Use the same
-    // super-assist envelope with the x-gap as the "gap" dimension.
-    const reachable = new Set();
-    for (let i = 0; i < spans.length; i++) {
-      if (minHeroSuperAssistReachPx(spans[i].elevation * UNIT_PX_Y) >= 0) {
-        reachable.add(i);
-      }
-    }
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const fromIdx of [...reachable]) {
-        const from = spans[fromIdx];
-        for (let toIdx = 0; toIdx < spans.length; toIdx++) {
-          if (reachable.has(toIdx)) continue;
-          const to = spans[toIdx];
-          // Horizontal (x) gap between the two platforms' extents:
-          const xGapUnits = Math.max(0, to.x0 - from.x1, from.x0 - to.x1);
-          const xGapPx = xGapUnits * UNIT_PX_X;
-          const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
-          const reachPx = minHeroSuperAssistReachPx(risePx);
-          if (reachPx >= 0 && xGapPx <= reachPx) {
-            // Obstacle check: a solid block filling the lateral gap blocks the hop.
-            if (!arcBlockedBySolids(from, to, units, true)) continue;
-            reachable.add(toIdx);
-            changed = true;
-          }
-        }
-      }
-    }
-    for (let i = 0; i < spans.length; i++) {
-      if (reachable.has(i)) continue;
+    // Same shared BFS as horizontal — the rise+gap envelope handles the
+    // climb axis, and arcBlockedBySolids adds the lateral test internally.
+    const unreachable = computeUnreachable(spans, UNIT_PX_Y);
+    for (const i of unreachable) {
       const target = spans[i];
       warnTraversal(
         `validateLayout: ${target.label} is outside the weakest hero's double-jump reachability graph`,
@@ -2346,41 +2317,46 @@ export function composeAreaSeeded(seed, orientation, stage, budget) {
  * span `from` to span `to`. One-way platforms do NOT block (you jump through
  * them from below); solid blocks DO.
  *
- * A solid block blocks the hop when its x-range overlaps the gap between the
- * two surfaces AND its top surface is above the jump arc at the block's
- * position. The arc is modeled as a parabola from the takeoff edge of `from`
- * to the landing edge of `to`, peaking slightly above the higher surface.
+ * SINGLE ALGORITHM FOR BOTH ORIENTATIONS — no per-orientation branches.
+ * The hop is modeled as a parabola from the takeoff edge of `from` to the
+ * landing edge of `to`, peaking slightly above the higher surface. A solid
+ * blocks the hop when its body crosses the arc within the gap between the
+ * two surfaces.
+ *
+ * Span contract (both orientations):
+ *   - pos0/pos1: extent along the TRAVERSAL axis (x for horizontal,
+ *     elevation for vertical)
+ *   - elevation: standing-surface height (rows)
+ *   - x0/x1: lateral extent (required for vertical hops; ignored for
+ *     horizontal where the traversal axis IS x)
  *
  * This correctly handles:
  *   - Ground → elevated: the arc rises from 0, so a short block near takeoff
- *     is cleared (its top < arc height at that x).
+ *     is cleared (its top < arc height at that position).
  *   - Elevated → elevated across a gap: a tall block filling the gap at or
  *     above both surfaces blocks the hop.
+ *   - Stacking (clearance 0): the supporting block's top IS the takeoff
+ *     surface, so the arc starts at/above it — it never blocks itself.
  *   - Adjacent/touching surfaces: no gap → nothing to block.
  *
- * @param {object} from span {elevation, pos0, pos1}
- * @param {object} to   span {elevation, pos0, pos1}
+ * @param {object} from span {elevation, pos0, pos1, x0?, x1?}
+ * @param {object} to   span {elevation, pos0, pos1, x0?, x1?}
  * @param {Array}  units raw macro units (kind, x, y, width, height)
- * @param {boolean} isVertical orientation flag
+ * @param {boolean} isVertical orientation flag (vertical adds a lateral test)
  * @returns {boolean} true if a solid block blocks the jump
  */
 function arcBlockedBySolids(from, to, units, isVertical){
   const solids = units.filter(u => u.kind === 'block');
   if (solids.length === 0) return false;
 
-  // Determine the gap range along the traversal axis.
+  // Gap range along the traversal axis.
   let gapStart, gapEnd;
-  if (isVertical) {
-    gapStart = Math.min(from.pos1, to.pos0);
-    gapEnd = Math.max(from.pos1, to.pos0);
+  if (to.pos0 >= from.pos1) {
+    gapStart = from.pos1;
+    gapEnd = to.pos0;
   } else {
-    if (to.pos0 >= from.pos1) {
-      gapStart = from.pos1;
-      gapEnd = to.pos0;
-    } else {
-      gapStart = from.pos0;
-      gapEnd = to.pos1;
-    }
+    gapStart = from.pos0;
+    gapEnd = to.pos1;
   }
 
   // No gap (touching or overlapping) → nothing to block.
@@ -2392,27 +2368,49 @@ function arcBlockedBySolids(from, to, units, isVertical){
   const midY = (from.elevation + to.elevation) / 2;
   const totalSpan = gapEnd - gapStart;
 
-  // Arc height at a given x within the gap.
-  const arcHeightAt = (x) => {
-    const t = (x - gapStart) / totalSpan;
+  // Arc height at a given position within the gap.
+  const arcHeightAt = (p) => {
+    const t = (p - gapStart) / totalSpan;
     const linearY = (1 - t) * from.elevation + t * to.elevation;
     const bump = 4 * t * (1 - t) * (peakY - midY);
     return linearY + bump;
   };
 
+  // Vertical hops add a LATERAL constraint: the block must also sit within
+  // the x-range swept by the hop (between the two platforms' extents).
+  // Horizontal hops have no separate lateral dimension (the traversal axis
+  // is x), so this is skipped.
+  let latMin = null, latMax = null;
+  if (isVertical && from.x0 != null && to.x0 != null) {
+    latMin = Math.min(from.x0, to.x0);
+    latMax = Math.max(from.x1 ?? from.x0, to.x1 ?? to.x0);
+  }
+
   for (const u of solids) {
     const bx0 = u.x;
     const bx1 = u.x + u.width;
-    const byTop = (u.y ?? 0) + (u.height ?? 1);
+    const byBase = u.y ?? 0;
+    const byTop = byBase + (u.height ?? 1);
 
-    // Does the block's x-range overlap the gap?
-    const ox0 = Math.max(bx0, gapStart);
-    const ox1 = Math.min(bx1, gapEnd);
+    // Does the block's traversal-axis range overlap the gap?
+    // Vertical: the block's y-range vs the climb gap.
+    // Horizontal: the block's x-range vs the horizontal gap.
+    const bAxis0 = isVertical ? byBase : bx0;
+    const bAxis1 = isVertical ? byTop : bx1;
+    const ox0 = Math.max(bAxis0, gapStart);
+    const ox1 = Math.min(bAxis1, gapEnd);
     if (ox1 <= ox0) continue;
 
+    // Vertical only: does the block's x-range overlap the lateral sweep?
+    if (latMin != null) {
+      const lx0 = Math.max(bx0, latMin);
+      const lx1 = Math.min(bx1, latMax);
+      if (lx1 <= lx0) continue;
+    }
+
     // Sample the arc at the block's center (within the gap).
-    const sampleX = (ox0 + ox1) / 2;
-    const arcY = arcHeightAt(sampleX);
+    const sampleP = (ox0 + ox1) / 2;
+    const arcY = arcHeightAt(sampleP);
 
     // The block blocks the hop if its top is above the arc at that point.
     // Use a small tolerance (0.2 units) so near-misses don't false-positive.
@@ -2442,6 +2440,7 @@ function arcBlockedBySolids(from, to, units, isVertical){
  *   parent: span index → span index it was discovered from (-1 = ground seed)
  */
 export function bfsReachableSpans(spans, axisUnitPx, units = null){
+  const isVertical = axisUnitPx === UNIT_PX_Y;
   const reachable = new Set();
   const parent = new Map();
   // Seed: a span is ground-reachable if its rise from 0 is within the
@@ -2453,6 +2452,9 @@ export function bfsReachableSpans(spans, axisUnitPx, units = null){
     }
   }
   // BFS: propagate reachability through the rise+gap envelope.
+  // Horizontal: the gap is along X (the traversal axis).
+  // Vertical:   the gap is LATERAL (x-extent between platforms); the climb
+  //             axis gap is handled by the rise term below.
   const queue = [...reachable];
   while (queue.length) {
     const fromIdx = queue.shift();
@@ -2460,13 +2462,21 @@ export function bfsReachableSpans(spans, axisUnitPx, units = null){
     for (let toIdx = 0; toIdx < spans.length; toIdx++) {
       if (reachable.has(toIdx)) continue;
       const to = spans[toIdx];
-      const gapUnits = Math.max(0, to.pos0 - from.pos1, from.pos0 - to.pos1);
-      const gapPx = gapUnits * axisUnitPx;
+      let gapPx;
+      if (isVertical && from.x0 != null && to.x0 != null) {
+        // Lateral x-gap between the two platforms' extents.
+        const latGapUnits = Math.max(0, to.x0 - from.x1, from.x0 - to.x1);
+        gapPx = latGapUnits * UNIT_PX_X;
+      } else {
+        // Traversal-axis gap (horizontal, or vertical without lateral data).
+        const gapUnits = Math.max(0, to.pos0 - from.pos1, from.pos0 - to.pos1);
+        gapPx = gapUnits * axisUnitPx;
+      }
       const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
       const reachPx = minHeroSuperAssistReachPx(risePx);
       if (reachPx >= 0 && gapPx <= reachPx) {
         // Obstacle check: a solid block filling the gap blocks the jump.
-        if (units && arcBlockedBySolids(from, to, units, axisUnitPx === UNIT_PX_Y)) continue;
+        if (units && arcBlockedBySolids(from, to, units, isVertical)) continue;
         reachable.add(toIdx);
         parent.set(toIdx, fromIdx);
         queue.push(toIdx);
@@ -2515,6 +2525,9 @@ export function traversalRoute(macro){
       pos0: isVertical ? landingElevation(u) : (u.x ?? 0),
       pos1: isVertical ? landingElevation(u) : (u.x ?? 0) + (u.width ?? 1),
       unitIndex: u._editorIndex ?? i,
+      // Lateral extent for vertical hops (ignored for horizontal).
+      x0: u.x ?? 0,
+      x1: (u.x ?? 0) + (u.width ?? 1),
     }));
   const axisUnitPx = isVertical ? UNIT_PX_Y : UNIT_PX_X;
 
@@ -2533,8 +2546,15 @@ export function traversalRoute(macro){
   }
   seeds.sort((a, b) => spans[a].pos0 - spans[b].pos0);
   const canReach = (from, to) => {
-    const gapUnits = Math.max(0, to.pos0 - from.pos1, from.pos0 - to.pos1);
-    const gapPx = gapUnits * axisUnitPx;
+    let gapPx;
+    if (isVertical && from.x0 != null && to.x0 != null) {
+      // Lateral x-gap between the two surfaces' extents.
+      const latGapUnits = Math.max(0, to.x0 - from.x1, from.x0 - to.x1);
+      gapPx = latGapUnits * UNIT_PX_X;
+    } else {
+      const gapUnits = Math.max(0, to.pos0 - from.pos1, from.pos0 - to.pos1);
+      gapPx = gapUnits * axisUnitPx;
+    }
     const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
     if (minHeroSuperAssistReachPx(risePx) < 0 || gapPx > minHeroSuperAssistReachPx(risePx)) return false;
     // Obstacle check: a solid block filling the gap blocks the jump arc.
@@ -2604,6 +2624,9 @@ export function findPathBetween(macro, fromUnit, toUnit){
       pos0: isVertical ? landingElevation(u) : (u.x ?? 0),
       pos1: isVertical ? landingElevation(u) : (u.x ?? 0) + (u.width ?? 1),
       unitIndex: u._editorIndex ?? i,
+      // Lateral extent for vertical hops (ignored for horizontal).
+      x0: u.x ?? 0,
+      x1: (u.x ?? 0) + (u.width ?? 1),
     }));
   const axisUnitPx = isVertical ? UNIT_PX_Y : UNIT_PX_X;
 
@@ -2616,8 +2639,15 @@ export function findPathBetween(macro, fromUnit, toUnit){
   if (fromUnit === toUnit) return [fromUnit];
 
   const canReach = (a, b) => {
-    const gapUnits = Math.max(0, b.pos0 - a.pos1, a.pos0 - b.pos1);
-    const gapPx = gapUnits * axisUnitPx;
+    let gapPx;
+    if (isVertical && a.x0 != null && b.x0 != null) {
+      // Lateral x-gap between the two surfaces' extents.
+      const latGapUnits = Math.max(0, b.x0 - a.x1, a.x0 - b.x1);
+      gapPx = latGapUnits * UNIT_PX_X;
+    } else {
+      const gapUnits = Math.max(0, b.pos0 - a.pos1, a.pos0 - b.pos1);
+      gapPx = gapUnits * axisUnitPx;
+    }
     const risePx = (b.elevation - a.elevation) * UNIT_PX_Y;
     if (minHeroSuperAssistReachPx(risePx) < 0 || gapPx > minHeroSuperAssistReachPx(risePx)) return false;
     // Obstacle check: a solid block filling the gap blocks the jump arc.
