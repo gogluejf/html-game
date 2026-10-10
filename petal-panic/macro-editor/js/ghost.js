@@ -447,11 +447,18 @@ function tick(now){
     }
     ride._acc -= DT;
     guard++;
+    // stepOnce may have ended the ride (cleared → stopRide nulls hero/world).
+    // Stop stepping this batch rather than running again on a dead ride.
+    if (!ride.active) break;
   }
   requestDraw();
 }
 
 function stepOnce(dt){
+  // The ride may have just stopped (cleared / killed) on a prior step in this
+  // same tick batch — stopRide() nulls hero/world and flips active. Bail out
+  // before touching them so a multi-step frame never crashes on a dead ride.
+  if (!ride.active || !ride.hero || !ride.world) return;
   const { world, hero } = ride;
   // THE shared per-frame step (js/world/rideDriver.js) — identical to the node
   // test ride. decideInput → exit-run → stepHeadless → landing credit →
