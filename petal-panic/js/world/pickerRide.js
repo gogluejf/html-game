@@ -1,27 +1,20 @@
 // pickerRide — a headless, plan-06 PICKER-DRIVEN ghost ride.
 //
-// This is the Node-testable twin of macro-editor/js/ghost.js `rideInput`.
-// The existing runGhostRide/rideOnce in ghostRider.js uses the OLD rule-driven
-// brain (seekLanding / nextAhead / doubleJumpApexPx) and does NOT exercise the
-// sim-based takeoffPicker. Tests that assert "the picker clears the macro" must
-// use THIS module, or they're testing the wrong code path.
-//
-// Per-hop AI decisions come from js/world/rideBrain.js — THE shared brain used
-// by BOTH this module and the browser editor (macro-editor/js/ghost.js). There
-// is no duplicated choreography here: settle → walk-to-edge → pick → backtrack
-// → replay all live in rideBrain.decideInput. This file only drives the fixed-DT
-// loop, detects landings, and reports the result.
+// Node-testable twin of macro-editor/js/ghost.js. The per-frame logic is NOT
+// duplicated here: this module only sets up the world/hero/brain and calls THE
+// shared driver (js/world/rideDriver.js stepRide) in a fixed-DT loop. The
+// browser editor calls the SAME stepRide from its rAF accumulator, so browser
+// and node are pixel-identical by construction — one decideInput, one landing
+// credit; no respawn/retry.
 //
 // Pure logic: no DOM, no requestAnimationFrame. Run with node:test.
 
 import { buildRideWorld } from './ghostRider.js';
 import { createHeadlessHero, stepHeadless } from '../hero/headless.js';
 import { HEROES } from '../hero/heroDefs.js';
-import { feetPos } from './platformMover.js';
 import { traversalRoute } from './macros.js';
-import {
-  createRideBrain, advanceGoal, decideInput, isLandedOn,
-} from './rideBrain.js';
+import { createRideBrain } from './rideBrain.js';
+import { createRideState, stepRide } from './rideDriver.js';
 
 const DT = 1 / 60;
 const DEFAULT_MAX_FRAMES = 60 * 90; // ~90 s per lap cap
@@ -75,40 +68,30 @@ export function runPickerRide(macro, opts = {}){
     orientation: macro.orientation,
     params: RIDE_PARAMS,
   });
-  // Attach the stepper the brain's internal walks need.
-  world._stepFn = stepHeadless;
 
-  const landedSet = new Set();
+  const state = createRideState();
+  state.world = world;
+  state.hero = hero;
+  state.brain = brain;
+  state.goals = goals;
+  state.failedSet = unreachable;
+  state.path = null; // node doesn't render a trail
 
-  for (let frame = 0; frame < maxFrames; frame++){
-    const inp = decideInput(brain, hero, world);
-    // No goal left: run to the exit (horizontal: right; vertical: toward center).
-    if (!brain.goal){
-      const cx = hero.worldBox().x + hero.worldBox().w / 2;
-      if (world.vertical){
-        if (cx < world.W / 2 - 6) inp.right = true;
-        else if (cx > world.W / 2 + 6) inp.left = true;
-      } else {
-        inp.right = true;
-      }
-    }
-    stepHeadless(hero, DT, inp, world.solids);
-    const box = hero.worldBox();
-    const cx = box.x + box.w / 2;
-    const fy = box.y + box.h;
-
-    if (isLandedOn(hero, world, brain.goal)){
-      landedSet.add(brain.goal.index);
-      advanceGoal(brain);
-      if (!brain.goal) break;
-    }
-    if (fy > world.H + world.UY * 2 || cx < -world.UX * 2 || cx > world.W + world.UX * 2){
-      return { cleared: false, landed: [...landedSet], goals: goalIndices,
-               failPoint: { goal: brain.goal?.index ?? -1, reason: 'fell-out' }, frames: frame,
-               unreachable: [...unreachable] };
-    }
+  let frames = 0;
+  let fellOut = false;
+  for (frames = 0; frames < maxFrames; frames++){
+    const ev = stepRide(state, DT);
+    if (ev.cleared) break;
+    if (ev.outOfWorld){ fellOut = true; break; } // proven jump missed → report, don't retry
   }
 
   const cleared = !brain.goal; // advanced past the last goal
-  return { cleared, landed: [...landedSet], goals: goalIndices, failPoint: null, frames: maxFrames, unreachable: [...unreachable] };
+  return {
+    cleared,
+    landed: [...state.landedSet],
+    goals: goalIndices,
+    failPoint: cleared ? null : { goal: brain.goal?.index ?? -1, reason: fellOut ? 'fell-out' : 'stalled' },
+    frames,
+    unreachable: [...unreachable],
+  };
 }

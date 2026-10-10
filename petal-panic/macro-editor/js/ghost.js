@@ -12,7 +12,8 @@ import { HEROES } from '../../js/hero/heroDefs.js';
 import { predictFrame, feetPos } from '../../js/world/platformMover.js';
 import { traversalRoute } from '../../js/world/macros.js';
 import { macroEndpoint } from './clearance.js';
-import { settleHero, createRideBrain, decideInput, isLandedOn } from '../../js/world/rideBrain.js';
+import { settleHero, createRideBrain } from '../../js/world/rideBrain.js';
+import { stepRide } from '../../js/world/rideDriver.js';
 
 // Manual-play input (plan 07): the SAME engine as the real game — the `input`
 // singleton from js/core/input.js. It owns keyboard listeners AND gamepad
@@ -56,7 +57,7 @@ export function fireSpaceToggle(){
 const requestDraw = () => requestAnimationFrame(() => _redraw());
 
 const DT = 1 / 60;
-const TRAIL_MAX = 900; // ~15 s of trail points at 30 Hz
+const TRAIL_MAX = 900; // ~15 s of trail points at 30 Hz (matches rideDriver)
 
 // ---------------------------------------------------------------------------
 // Fixed-timestep driver (real game speed, independent of display rate).
@@ -68,14 +69,11 @@ export const ride = {
   path: [],          // trail points in world px {x,y}
   status: '',        // 'running' | 'cleared'
   failPoint: null,
-  attempts: 0,
   visited: 0,
   totalLandings: 0,
-  lap: 0,
   _raf: 0,
   _last: 0,
   _acc: 0,
-  _clearPause: 0,
   trace: null,       // frame trace buffer while Ctrl is held (null when off)
   // --- smart mover state (task 4) -----------------------------------------
   goal: null,        // current target landing surface {x0,x1,y,index,kind}
@@ -211,13 +209,10 @@ export function startRide(){
     path: [],
     status: 'running',
     failPoint: null,
-    attempts: 1,
     visited: 0,
     totalLandings: world.landings.length,
-    lap: 1,
     _last: performance.now(),
     _acc: 0,
-    _clearPause: 0,
     params,
     goals,
     goalIdx: 0,
@@ -228,6 +223,10 @@ export function startRide(){
     _landFlash: 0,
   });
   ride.trace = null;
+  // Wire the shared driver (js/world/rideDriver.js) to this browser ride:
+  // manualInput feeds plan-07 play. AI rides never call _manualInputFn
+  // (stepRide checks state.manual first).
+  ride._manualInputFn = manualInput;
   // Clear ALL picker cache from any previous ride: startRide must not inherit
   // a stale _pick/_pickFrame/candsRef (the "retest after clear" stall — the
   // new ride replayed the old ride's exhausted script because pickStale was
@@ -433,13 +432,6 @@ function tick(now){
   const frame = Math.min(0.1, (now - ride._last) / 1000);
   ride._last = now;
 
-  if (ride._clearPause > 0) {
-    ride._clearPause -= frame;
-    if (ride._clearPause <= 0) restartLap();
-    requestDraw();
-    return;
-  }
-
   ride._acc += frame;
   let guard = 0;
   while (ride._acc >= DT && guard < 8) {
@@ -461,17 +453,15 @@ function tick(now){
 
 function stepOnce(dt){
   const { world, hero } = ride;
-  const inp = rideInput();
-  const res = stepHeadless(hero, dt, inp, world.solids);
-  ride._onOneWay = res.onOneWay;
+  // THE shared per-frame step (js/world/rideDriver.js) — identical to the node
+  // test ride. decideInput → exit-run → stepHeadless → landing credit →
+  // fell-past / fell-out recovery all live there; no duplicated choreography.
+  const ev = stepRide(ride, dt);
 
   const cx = hero.worldBox().x + hero.worldBox().w / 2;
   const fy = hero.worldBox().y + hero.worldBox().h; // feet (for physics checks)
-  const cy = hero.worldBox().y + hero.worldBox().h * 0.5; // center (for trail)
-  ride.path.push({ x: cx, y: cy });
-  if (ride.path.length > TRAIL_MAX) ride.path.shift();
 
-  recordTraceFrame(inp, res, cx, fy);
+  recordTraceFrame(ride._lastIn ?? {}, ride._lastRes ?? {}, cx, fy);
 
   // Visit tracking (any surface touched counts for the visited readout).
   for (const l of world.landings) {
@@ -482,172 +472,44 @@ function stepOnce(dt){
     }
   }
 
-  // Goal-landing tracking (smart mover): when the hero is grounded ON the
-  // current goal surface, mark it landed, flash green, and advance.
-  // Manual play (plan 07): no goals, no landing detection — just physics +
-  // trail. The exit check below still applies to BOTH modes: reaching the
-  // authored endpoint clears the macro (proof saved) and ends the ride.
-  if (!ride.manual) {
-  if (ride.goal && hero.grounded) {
-    const g = ride.goal;
-    // Shared landing test — identical tolerance to the node ride.
-    if (isLandedOn(hero, world, g)) {
-      ride.landedSet.add(g.index);
-      ride._lastLandedIdx = g.index;
-      ride._landFlash = 30; // ~0.5 s green flash
-      advanceGoal();
-    } else {
-      // "Fell past the goal" recovery — but ONLY after the hero actually got
-      // to the goal's near edge and then ended up below-behind it. While still
-      // APPROACHING from the left (spawn side), being below+left of the goal is
-      // normal, not a failure — respawning there caused an instant loop that
-      // froze the hero at spawn (blockBridge: attempts hit 98 in seconds).
-      const reachedApproach = world.vertical
-        ? fy < g.y + world.UX * 0.5          // climbed up to the goal's height band
-        : cx >= g.x0 - world.UX * 0.5;       // got to/past the goal's near edge
-      const fellPast = fy > g.y + world.UY * 0.5 && cx < g.x0 - world.UX * 0.5;
-      if (reachedApproach && fellPast) {
-        ride.attempts++;
-        respawn();
-        updateRideHint();
-        return;
-      }
-    }
+  // Keep the legacy debug fields in sync (trace dump / console / goal overlay
+  // read ride.goal + ride.mem from the brain after each step).
+  if (ride.brain){
+    ride.goal = ride.brain.goal;
+    const gi = ride.goals.findIndex(g => g.index === ride.goal?.index);
+    if (gi >= 0) ride.goalIdx = gi;
+    ride.mem = ride.brain.mem;
+    ride._pick = ride.brain._pick;
+    ride._scorecard = ride.brain.scorecard ?? null;
+    ride._pickFrame = ride.brain._pickFrame;
   }
-  if (ride._landFlash > 0) ride._landFlash--;
-  } // end !ride.manual
 
   // Reaching the authored macro endpoint concludes the ride in EITHER mode:
   // commit the clearance proof (sidebar flag) and stop.
-  const atExit = world.vertical
-    ? (world.H - fy) >= world.macroEndPx
-    : cx >= world.macroEndPx;
-  if (atExit) {
+  if (ev.cleared) {
     _commitClearance();
     showToast('CLEARED ✓ — proof saved to draft', 'success');
     if (ride.trace) dumpTrace('cleared');
     stopRide();
     return;
   }
-
-  // Fell out → retry forever (respawn at entry). Vary super by attempt parity.
-  if (fy > world.H + world.UY * 2 || cx < -world.UX * 2 || cx > world.W + world.UX * 2) {
-    ride.attempts++;
-    respawn();
-    updateRideHint();
-  }
 }
 
-/** Smart-mover input driver (task 4): asks predictFrame for the buttons to
- *  press THIS frame to reach the current goal. When all goals are landed
- *  (ride.goal === null), just run toward the exit.
- *
- * Plan 06: when the hero is GROUNDED, delegate the takeoff decision to the
- * sim-based picker (pickTakeoff + cached winning script). Airborne frames
- * still use predictFrame for in-air steering/DJ/super sequencing. */
-function rideInput(){
-  const { world, hero } = ride;
-  const inp = { left: false, right: false, up: false, down: false, jump: false, super: false };
-
-  // Plan 07: manual play — the game's own input engine (keyboard + DS5/etc.
-  // gamepad via navigator.getGamepads, user's saved mapping). Same source of
-  // truth as the real game; no duplicated key handling in the editor.
-  if (ride.manual){
-    const s = input.poll({ facing: ride.hero.facing || 1 });
-    inp.left = s.moveX < -0.2;
-    inp.right = s.moveX > 0.2;
-    inp.down = !!s.crouch;          // pure Down / D-pad down / L-stick down
-    inp.jump = !!s.jump;            // Space / ✕ (edge-triggered by hero)
-    inp.super = !!s.supermove;      // K / △ (edge-triggered by meter+press)
-    inp.onOneWay = !!ride._onOneWay;
-    return inp;
-  }
-
-  if (ride.goal && ride.mem && ride.params) {
-    // THE shared per-hop AI (js/world/rideBrain.js) — identical to the node
-    // test ride. settle → walk-to-edge → pickTakeoff → backtrack → replay all
-    // live there; no duplicated choreography in the browser.
-    const inp2 = decideInput(ride.brain, hero, world);
-    inp.left = inp2.left; inp.right = inp2.right; inp.up = inp2.up;
-    inp.down = inp2.down; inp.jump = inp2.jump; inp.super = inp2.super;
-    // Keep the legacy debug fields in sync (trace dump / console read these).
-    ride._pick = ride.brain._pick;
-    ride._scorecard = ride.brain.scorecard ?? null;
-    // If the brain backtracked to an intermediate surface, follow it so the
-    // goal overlay + landing tracking target the same surface the brain does.
-    if (ride.brain.goal !== ride.goal){
-      ride.goal = ride.brain.goal;
-      // Advance ride.goalIdx to match the brain's retargeted goal (if it's one
-      // of our goals); otherwise leave goalIdx (brain will re-pick next frame).
-      const gi = ride.goals.findIndex(g => g.index === ride.goal?.index);
-      if (gi >= 0) ride.goalIdx = gi;
-    }
-    ride._pickFrame = ride.brain._pickFrame;
-  } else {
-    // No goal left (all landed or no surfaces): run to the exit.
-    if (world.vertical) {
-      const cx = hero.worldBox().x + hero.worldBox().w / 2;
-      if (cx < world.W / 2 - 6) inp.right = true;
-      else if (cx > world.W / 2 + 6) inp.left = true;
-    } else {
-      inp.right = true;
-    }
-  }
-  inp.onOneWay = !!ride._onOneWay;
-  return inp;
-}
-
-function respawn(){
-  const { world, hero } = ride;
-  // Anchor feet on the entry surface using the real box height (not a magic 40).
-  const bh = hero.worldBox().h;
-  hero.x = world.entry.x - 8;
-  hero.y = world.entry.y - bh;
-  hero.vx = 0; hero.vy = 0;
-  hero.grounded = false;
-  hero.jumpsUsed = 0;
-  hero.supermoveActive = false;
-  hero.supermoveMeter = hero.SUPERMOVE_MAX;
-  ride.path = [];
-  ride._superUsed = false;
-  ride._onOneWay = false;
-
-  // Vary the approach each retry so it isn't the identical jump forever:
-  // even attempts prefer the supermove burst at the wall.
-  ride._preferSuper = (ride.attempts % 2 === 0);
-  // Reset per-hop mover memory; keep landedSet (surfaces already proven).
-  if (ride.mem) {
-    ride.mem.wantJump = false;
-    ride.mem.djDone = false;
-    ride.mem.armSuper = false;
-    ride.mem.superFired = false;
-    ride.mem._releasedAtApex = false;
-  }
-  // Invalidate the cached picker pick: replaying a stale script from an old
-  // _pickFrame counter made the hero walk into block #1 without jumping on
-  // every retest after a clear (pickStale stayed false because respawn lands
-  // on the same surface as the first pick's fromKey).
-  ride._pick = null;
-  ride._pickGoalIdx = null;
-  ride._pickFromKey = null;
-  ride._pickFrame = 0;
-  candsRef = [];
-  if (ride.brain){
-    ride.brain.mem = { wantJump: false, djDone: false, armSuper: false, superFired: false, _releasedAtApex: false };
-    ride.brain._pick = null;
-    ride.brain._pickGoalIdx = null;
-    ride.brain._pickFromKey = null;
-    ride.brain._pickFrame = 0;
-    ride.brain._fallbackDir = null;
-  }
-}
-
-function restartLap(){
-  ride.lap++;
-  ride._clearPause = 0;
-  ride.status = 'running';
-  respawn();
-  updateRideHint();
+/** Manual-play input provider (plan 07): the game's own input engine
+ *  (keyboard + DS5/etc. gamepad via navigator.getGamepads, user's saved
+ *  mapping). Wired into the shared driver as state._manualInputFn — the ONLY
+ *  browser-specific input path. AI rides get their input from decideInput
+ *  inside stepRide; this function is never called for them. */
+function manualInput(){
+  const s = input.poll({ facing: ride.hero.facing || 1 });
+  return {
+    left: s.moveX < -0.2,
+    right: s.moveX > 0.2,
+    down: !!s.crouch,          // pure Down / D-pad down / L-stick down
+    jump: !!s.jump,            // Space / ✕ (edge-triggered by hero)
+    super: !!s.supermove,      // K / △ (edge-triggered by meter+press)
+    onOneWay: !!ride._onOneWay,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -744,7 +606,7 @@ export function dumpTrace(reason = 'manual'){
   console.log('[trace] dumping', t.frames.length, 'frames, reason:', reason);
   t.endedAt = new Date().toISOString();
   t.reason = reason;
-  t.result = { status: ride.status, attempts: ride.attempts, failPoint: ride.failPoint, visited: ride.visited, totalLandings: ride.totalLandings };
+  t.result = { status: ride.status, failPoint: ride.failPoint, visited: ride.visited, totalLandings: ride.totalLandings };
   // Save via browser download → lands in ~/Downloads (same as the game's dumps).
   // No server round-trip: nothing to hang, works even if the editor server is down.
   const macroName = t.macroId ?? 'unknown';
@@ -795,9 +657,9 @@ function updateRideHint(){
     const goalTxt = ride.goal
       ? `aiming ${ride.goal.kind}#${ride.goal.index}`
       : 'all landed → exit';
-    el.textContent = `ride: ${goalTxt} · landed ${ride.landedSet?.size ?? 0}/${ride.totalLandings} · try ${ride.attempts}${ride.trace ? ` · REC ${ride.trace.frames.length}` : ''}`;
+    el.textContent = `ride: ${goalTxt} · landed ${ride.landedSet?.size ?? 0}/${ride.totalLandings}${ride.trace ? ` · REC ${ride.trace.frames.length}` : ''}`;
   }
-  else if (ride.status === 'cleared') el.textContent = `ride: CLEARED · lap ${ride.lap}`;
+  else if (ride.status === 'cleared') el.textContent = `ride: CLEARED`;
   el.classList.toggle('on', !!el.textContent);
   el.classList.toggle('warning', false);
 }
