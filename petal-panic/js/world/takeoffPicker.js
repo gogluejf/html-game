@@ -235,8 +235,9 @@ function nearestWallFacePx(h, world, dir){
 
 /** Walk toward the goal; jump at the platform edge (coyote time).
  *  Keep pressing direction through the entire arc. DJ at max height,
- *  super at apex if needed. `k` is an optional min-frame delay before arming. */
-function makeJumpScript(goal, k, useDj, useSuper, paramsRef, st, surfRef, world){
+ *  super after `superDelay` frames post-DJ (searched per-gap). `k` is an
+ *  optional min-frame delay before arming the jump. */
+function makeJumpScript(goal, k, useDj, useSuper, paramsRef, st, surfRef, world, superDelay = 21){
   const goalRef = goal;
   return (i, h) => {
     const f = feetPos(h);
@@ -309,13 +310,19 @@ function makeJumpScript(goal, k, useDj, useSuper, paramsRef, st, surfRef, world)
       }
     }
     
-    // Super: fire at apex if needed.
+    // Super: fire `superDelay` frames after the DJ (or first-jump) completes.
+    // The delay is a searched parameter — the picker tries several values and
+    // keeps whichever actually lands on the goal, so each gap gets its own
+    // optimal timing instead of one global constant. Firing too early ends the
+    // flat-burst short of the goal; too late overshoots past it.
     if (useSuper && !h.grounded && !st._superFired){
-      const atApex = useDj ? (st._djDone && h.jumpsUsed === 2 && h.vy >= 0)
-                           : (h.jumpsUsed === 1 && h.vy >= 0);
-      if (atApex && !h.supermoveActive){ 
-        inp.super = true; 
-        st._superFired = true; 
+      const djDone = useDj ? (st._djDone && h.jumpsUsed === 2) : (h.jumpsUsed === 1);
+      if (djDone){
+        st._superDelay = (st._superDelay ?? 0) + 1;
+        if (st._superDelay >= superDelay && !h.supermoveActive){
+          inp.super = true;
+          st._superFired = true;
+        }
       }
     }
     
@@ -377,11 +384,25 @@ export function buildCandidates(hero, goal, world, params, fromSurface){
     }
   }
 
+  // Super-fire delay (frames after DJ/first-jump) is SEARCHED per gap, like k
+  // is searched for the jump trigger. Too early → burst ends short of the goal;
+  // too late → overshoots past it. The sim scores each and keeps the one that
+  // lands, so every gap gets its own optimal timing (no global constant).
+  const SUPER_DELAYS = [12, 18, 24, 30];
+
   for (const k of K){
     cands.push({ id: `SINGLE@${k}`, pref: PREF.SINGLE, script: makeJumpScript(goal, k, false, false, params, {}, fromSurface, world), state: {} });
-    if (params.canSuper) cands.push({ id: `SINGLE_S@${k}`, pref: PREF.SINGLE_S, script: makeJumpScript(goal, k, false, true, params, {}, fromSurface, world), state: {} });
+    if (params.canSuper){
+      for (const sd of SUPER_DELAYS){
+        cands.push({ id: `SINGLE_S@${k}/d${sd}`, pref: PREF.SINGLE_S, script: makeJumpScript(goal, k, false, true, params, {}, fromSurface, world, sd), state: {} });
+      }
+    }
     if (params.hasDoubleJump) cands.push({ id: `DOUBLE@${k}`, pref: PREF.DOUBLE, script: makeJumpScript(goal, k, true, false, params, {}, fromSurface, world), state: {} });
-    if (params.hasDoubleJump && params.canSuper) cands.push({ id: `DOUBLE_S@${k}`, pref: PREF.DOUBLE_S, script: makeJumpScript(goal, k, true, true, params, {}, fromSurface, world), state: {} });
+    if (params.hasDoubleJump && params.canSuper){
+      for (const sd of SUPER_DELAYS){
+        cands.push({ id: `DOUBLE_S@${k}/d${sd}`, pref: PREF.DOUBLE_S, script: makeJumpScript(goal, k, true, true, params, {}, fromSurface, world, sd), state: {} });
+      }
+    }
   }
   if (params.canSuper && rise < world.UY * 0.5) cands.push({ id: 'SUPER_ONLY', pref: PREF.SUPER_ONLY, script: makeSuperOnly(goal) });
   return cands;
