@@ -6,7 +6,7 @@ import { app } from './state.js';
 import { cv, c2s, evPos } from './viewport.js';
 import { draw, zoneExtents } from './draw.js';
 import { markChanged } from './save.js';
-import { validateMacroCandidate, validateDeletion, previewLayout, reasonFromError } from './validation.js';
+import { validateMacroCandidate, validateDeletion, previewLayout, reasonFromError, analyzeMacroWarnings } from './validation.js';
 import { macroSchemaErrors } from '../../js/world/macroSchema.js';
 import { validateLayout } from '../../js/world/macros.js';
 import { showToast } from './toast.js';
@@ -341,7 +341,7 @@ export function deleteSelection(){
   }
   pushUndo();
   app.cur.st = macro;
-  app.editor.warningUnitIndices = [];
+  app.editor.warningUnitIndices = analyzeMacroWarnings(macro).warningUnitIndices;
   app.editor.selection = null;
   app.editor.multiSelect = [];
   app.editor.hover = null;
