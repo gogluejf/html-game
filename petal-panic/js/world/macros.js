@@ -2219,7 +2219,7 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
   // @param {number} axisUnitPx pixel size of one unit along the traversal axis
   // @returns {Set<number>} indices of spans NOT reachable
   // ------------------------------------------------------------------
-    const computeUnreachable = (spans, axisUnitPx) => bfsReachableSpans(spans, axisUnitPx).unreachable;
+    const computeUnreachable = (spans, axisUnitPx) => bfsReachableSpans(spans, axisUnitPx, units).unreachable;
 
   if (!isVertical) {
     // Horizontal: each unit is its own landing span with full x-extent.
@@ -2299,6 +2299,8 @@ export function validateLayout(layout, { traversal = 'error' } = {}) {
           const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
           const reachPx = minHeroSuperAssistReachPx(risePx);
           if (reachPx >= 0 && xGapPx <= reachPx) {
+            // Obstacle check: a solid block filling the lateral gap blocks the hop.
+            if (!arcBlockedBySolids(from, to, units, true)) continue;
             reachable.add(toIdx);
             changed = true;
           }
@@ -2340,6 +2342,88 @@ export function composeAreaSeeded(seed, orientation, stage, budget) {
 }
 
 /**
+ * Check whether a SOLID (non-oneWay) block physically blocks the jump from
+ * span `from` to span `to`. One-way platforms do NOT block (you jump through
+ * them from below); solid blocks DO.
+ *
+ * A solid block blocks the hop when its x-range overlaps the gap between the
+ * two surfaces AND its top surface is above the jump arc at the block's
+ * position. The arc is modeled as a parabola from the takeoff edge of `from`
+ * to the landing edge of `to`, peaking slightly above the higher surface.
+ *
+ * This correctly handles:
+ *   - Ground → elevated: the arc rises from 0, so a short block near takeoff
+ *     is cleared (its top < arc height at that x).
+ *   - Elevated → elevated across a gap: a tall block filling the gap at or
+ *     above both surfaces blocks the hop.
+ *   - Adjacent/touching surfaces: no gap → nothing to block.
+ *
+ * @param {object} from span {elevation, pos0, pos1}
+ * @param {object} to   span {elevation, pos0, pos1}
+ * @param {Array}  units raw macro units (kind, x, y, width, height)
+ * @param {boolean} isVertical orientation flag
+ * @returns {boolean} true if a solid block blocks the jump
+ */
+function arcBlockedBySolids(from, to, units, isVertical){
+  const solids = units.filter(u => u.kind === 'block');
+  if (solids.length === 0) return false;
+
+  // Determine the gap range along the traversal axis.
+  let gapStart, gapEnd;
+  if (isVertical) {
+    gapStart = Math.min(from.pos1, to.pos0);
+    gapEnd = Math.max(from.pos1, to.pos0);
+  } else {
+    if (to.pos0 >= from.pos1) {
+      gapStart = from.pos1;
+      gapEnd = to.pos0;
+    } else {
+      gapStart = from.pos0;
+      gapEnd = to.pos1;
+    }
+  }
+
+  // No gap (touching or overlapping) → nothing to block.
+  if (gapEnd - gapStart < 0.1) return false;
+
+  // Arc model: parabola from (gapStart, from.elevation) to (gapEnd, to.elevation).
+  // Peak: max of the two elevations + 0.5 (small margin for the parabolic shape).
+  const peakY = Math.max(from.elevation, to.elevation) + 0.5;
+  const midY = (from.elevation + to.elevation) / 2;
+  const totalSpan = gapEnd - gapStart;
+
+  // Arc height at a given x within the gap.
+  const arcHeightAt = (x) => {
+    const t = (x - gapStart) / totalSpan;
+    const linearY = (1 - t) * from.elevation + t * to.elevation;
+    const bump = 4 * t * (1 - t) * (peakY - midY);
+    return linearY + bump;
+  };
+
+  for (const u of solids) {
+    const bx0 = u.x;
+    const bx1 = u.x + u.width;
+    const byTop = (u.y ?? 0) + (u.height ?? 1);
+
+    // Does the block's x-range overlap the gap?
+    const ox0 = Math.max(bx0, gapStart);
+    const ox1 = Math.min(bx1, gapEnd);
+    if (ox1 <= ox0) continue;
+
+    // Sample the arc at the block's center (within the gap).
+    const sampleX = (ox0 + ox1) / 2;
+    const arcY = arcHeightAt(sampleX);
+
+    // The block blocks the hop if its top is above the arc at that point.
+    // Use a small tolerance (0.2 units) so near-misses don't false-positive.
+    if (byTop > arcY + 0.2) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Shared BFS over landing spans using the rise+gap super-assist envelope
  * (single source of truth for both the validator's unreachable set and the
  * smart mover's goal order — plan 05 task 4/5).
@@ -2357,7 +2441,7 @@ export function composeAreaSeeded(seed, orientation, stage, budget) {
  *   unreachable: span indices never reached
  *   parent: span index → span index it was discovered from (-1 = ground seed)
  */
-export function bfsReachableSpans(spans, axisUnitPx){
+export function bfsReachableSpans(spans, axisUnitPx, units = null){
   const reachable = new Set();
   const parent = new Map();
   // Seed: a span is ground-reachable if its rise from 0 is within the
@@ -2381,6 +2465,8 @@ export function bfsReachableSpans(spans, axisUnitPx){
       const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
       const reachPx = minHeroSuperAssistReachPx(risePx);
       if (reachPx >= 0 && gapPx <= reachPx) {
+        // Obstacle check: a solid block filling the gap blocks the jump.
+        if (units && arcBlockedBySolids(from, to, units, axisUnitPx === UNIT_PX_Y)) continue;
         reachable.add(toIdx);
         parent.set(toIdx, fromIdx);
         queue.push(toIdx);
@@ -2450,7 +2536,10 @@ export function traversalRoute(macro){
     const gapUnits = Math.max(0, to.pos0 - from.pos1, from.pos0 - to.pos1);
     const gapPx = gapUnits * axisUnitPx;
     const risePx = (to.elevation - from.elevation) * UNIT_PX_Y;
-    return minHeroSuperAssistReachPx(risePx) >= 0 && gapPx <= minHeroSuperAssistReachPx(risePx);
+    if (minHeroSuperAssistReachPx(risePx) < 0 || gapPx > minHeroSuperAssistReachPx(risePx)) return false;
+    // Obstacle check: a solid block filling the gap blocks the jump arc.
+    if (arcBlockedBySolids(from, to, macro.units, isVertical)) return false;
+    return true;
   };
   // DFS: discover reachable surfaces in depth-first propagation order.
   // Seeds are NOT pre-marked as seen — they're discovered like any other
@@ -2530,7 +2619,10 @@ export function findPathBetween(macro, fromUnit, toUnit){
     const gapUnits = Math.max(0, b.pos0 - a.pos1, a.pos0 - b.pos1);
     const gapPx = gapUnits * axisUnitPx;
     const risePx = (b.elevation - a.elevation) * UNIT_PX_Y;
-    return minHeroSuperAssistReachPx(risePx) >= 0 && gapPx <= minHeroSuperAssistReachPx(risePx);
+    if (minHeroSuperAssistReachPx(risePx) < 0 || gapPx > minHeroSuperAssistReachPx(risePx)) return false;
+    // Obstacle check: a solid block filling the gap blocks the jump arc.
+    if (arcBlockedBySolids(a, b, macro.units, isVertical)) return false;
+    return true;
   };
   // BFS from fromSpan to toSpan.
   const prev = new Map(); // spanIdx → spanIdx we came from
