@@ -87,6 +87,11 @@ export function stepRide(state, dt){
     inp = brain ? decideInput(brain, hero, world) : exitRunInput(state);
     if (!brain?.goal) Object.assign(inp, exitRunInput(state));
   }
+  // Thread the one-way flag INTO the input so down+jump triggers a drop-through
+  // (hero.update gates startDropThrough on input.onOneWay). Without this the
+  // DROP_THRU script's down+jump degrades to a normal upward jump — the
+  // browser/node merge dropped the onOneWay feed-back that ghost.js used to do.
+  inp.onOneWay = !!state._onOneWay;
   state._lastIn = inp;
 
   const res = (brain?._stepFn ?? stepFnRef)(hero, dt, inp, world.solids);
