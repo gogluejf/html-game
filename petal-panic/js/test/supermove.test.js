@@ -9,6 +9,7 @@ loadTestMacros();
 import { strict as assert } from 'node:assert';
 import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
+import { SUPERMOVE_DUR, SUPERMOVE_SPEED } from '../consts.js';
 
 // --- Minimal DOM stub (render.js → update.js builds placeholder frames at
 // import time). Same pattern as heroAnim.test.js.
@@ -58,15 +59,15 @@ await ok('dash starts in the committed burst phase', () => {
 await ok('phase durations are a 60/40 split of the total', () => {
   const h = makeHero();
   startDash(h);
-  assert.ok(Math.abs(h.burstDur - h.SUPERMOVE_DUR * 0.6) < 1e-9, `burst=${h.burstDur}`);
-  assert.ok(Math.abs(h.decelDur - h.SUPERMOVE_DUR * 0.4) < 1e-9, `decel=${h.decelDur}`);
+  assert.ok(Math.abs(h.burstDur - SUPERMOVE_DUR * 0.6) < 1e-9, `burst=${h.burstDur}`);
+  assert.ok(Math.abs(h.decelDur - SUPERMOVE_DUR * 0.4) < 1e-9, `decel=${h.decelDur}`);
 });
 
 await ok('full uncancelled dash runs exactly the total duration', () => {
   const h = makeHero();
   startDash(h);
   const endFrame = runUntilEnd(h);
-  const expected = Math.round(h.SUPERMOVE_DUR / DT); // 0.6s → 36 frames
+  const expected = Math.round(SUPERMOVE_DUR / DT); // 0.6s → 36 frames
   assert.equal(endFrame, expected, `ended on frame ${endFrame}, expected ${expected}`);
 });
 
@@ -123,7 +124,7 @@ await ok('jump pressed during the last 40% ends the dash early with residual for
   assert.equal(h.supermoveActive, false, 'decel jump must end the dash');
   assert.equal(h.supermovePhase, null);
   assert.ok(h.vx > 0, `residual forward nudge expected, got vx=${h.vx}`);
-  assert.ok(h.vx < h.SUPERMOVE_SPEED, 'residual must be small, not full burst speed');
+  assert.ok(h.vx < SUPERMOVE_SPEED, 'residual must be small, not full burst speed');
 });
 
 await ok('a held jump that started in the burst does NOT cancel once in decel (fresh press only)', () => {
@@ -148,7 +149,7 @@ await ok('supermove uses the shared intangible timer, not a separate bookkeeping
   const h = makeHero();
   startDash(h);
   assert.equal(h.intangible, true);
-  assert.ok(Math.abs(h.timers.get('intangible') - h.SUPERMOVE_DUR) < 1e-9,
+  assert.ok(Math.abs(h.timers.get('intangible') - SUPERMOVE_DUR) < 1e-9,
     `intangible timer should equal the dash duration, got ${h.timers.get('intangible')}`);
 });
 
@@ -187,17 +188,18 @@ await ok('jump-cancel restores a pre-existing longer intangibility grant', () =>
   startDash(h);
   // Supermove must not truncate the existing longer grant: it stays at the
   // pre-dash value (the trigger frame's own tick has already advanced it).
-  assert.ok(h.timers.get('intangible') > h.SUPERMOVE_DUR,
+  assert.ok(h.timers.get('intangible') > SUPERMOVE_DUR,
     `existing 2s grant must survive trigger, got ${h.timers.get('intangible')}`);
   // Cancel mid-dash.
   for (let i = 0; i < 23 && h.supermoveActive; i++) h.update(DT, noInput());
   let inp = noInput(); inp.jump = true;
   h.update(DT, inp);
   assert.equal(h.supermoveActive, false);
-  // Restored to the pre-dash remaining (the trigger re-set it to the full
-  // pre-dash duration), minus the total time elapsed since the dash began.
+  // Restored to the pre-dash remaining: the trigger re-set the timer to the
+  // full pre-dash duration (2.0s), then 25 frames have ticked by cancel time
+  // (1 on the trigger frame + 24 more).
   assert.equal(h.intangible, true, 'pre-existing intangibility must be restored');
-  const expected = Math.max(0, 2.0 - (24 * DT));
+  const expected = Math.max(0, 2.0 - (25 * DT));
   assert.ok(Math.abs(h.timers.get('intangible') - expected) < 2 * DT + 1e-6,
     `restored timer ≈ pre-dash remaining, got ${h.timers.get('intangible')} want ${expected}`);
 });

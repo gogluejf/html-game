@@ -57,7 +57,7 @@ import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 // ---------------------------------------------------------------------------
 
 test('macro vocabulary: all six required macros are present', () => {
-  const required = ['pyramid', 'lowRepeated', 'stretchedPyramid', 'mixedCrossing', 'climbing', 'gapLanding'];
+  const required = ['pyramid3', 'lowRepeated', 'stretchedPyramid', 'mixedCrossing', 'climbing', 'gapLanding'];
   for (const id of required) {
     assert.ok(MACROS[id], `macro "${id}" must exist`);
   }
@@ -81,8 +81,8 @@ test('macro vocabulary: each macro declares orientation, difficulty, units, entr
   }
 });
 
-test('macro vocabulary: pyramid has heights 1,2,3,2,1 (generation.md §2)', () => {
-  const pyramid = MACROS.pyramid;
+test('macro vocabulary: pyramid3 has heights 1,2,3,2,1 (generation.md §2)', () => {
+  const pyramid = MACROS.pyramid3;
   const blockHeights = pyramid.units
     .filter((u) => u.kind === 'block')
     .map((u) => u.height);
@@ -94,10 +94,12 @@ test('macro vocabulary: pyramid has heights 1,2,3,2,1 (generation.md §2)', () =
 test('macro vocabulary: lowRepeated is a width-5 height-1 run plus a tall wall', () => {
   const lr = MACROS.lowRepeated;
   const blocks = lr.units.filter((u) => u.kind === 'block');
-  // The original single low block was kept, and the former floating jump
-  // target was reworked into a platform over a tall wall block once the
-  // "no low floating blocks" clearance rule landed.
-  assert.deepEqual(blocks.map(({width,height}) => [width,height]), [[5,1],[3,8]]);
+  // Core shape (generation.md §2): the original width-5 low block and the
+  // tall wall that replaced the old floating jump target once the "no low
+  // floating blocks" clearance rule landed. Extra units were added later via
+  // the macro editor (right-side cluster), so match on the core pair.
+  assert.ok(blocks.some(({width,height}) => width === 5 && height === 1), 'lowRepeated: has the 5×1 low block');
+  assert.ok(blocks.some(({width,height}) => width === 3 && height === 8), 'lowRepeated: has the 3×8 tall wall');
   assert.equal(lr.orientation, 'horizontal');
   assert.equal(lr.difficulty, 1);
 });
