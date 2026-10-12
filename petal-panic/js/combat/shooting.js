@@ -4,7 +4,7 @@
 // index holding 'bomb' | 'saw'. N never fires — it only rotates the selection
 // (hero.rotateWeapon, called by the update step).
 
-import { projectilePool, specialPool } from '../objects/projectile.js';
+import { projectilePool, specialPool, SPECIAL_WEAPON_DEFS } from '../objects/projectile.js';
 import { dirAngle } from '../core/vec.js';
 import { damage } from './damage.js';
 import { record } from '../stats.js';
@@ -73,7 +73,7 @@ function fireSpecial(h, input) {
 
   record(h, { kind: 'projectile', subtype: 'special' });
   record(h, { kind: 'superMove' });
-  h.timers.set('special', h.stats.special_freq);
+  h.timers.set('special', SPECIAL_WEAPON_DEFS[type].fireCooldown); // cooldown owned by the WEAPON
 
   if (Debug.enabled) Debug.logEvent(`special ${type} fired`);
 }

@@ -13,7 +13,7 @@
 import { strict as assert } from 'node:assert';
 import { Hero, WEAPON_THORN, SPECIAL_SLOT_COUNT } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
-import { projectilePool, specialPool } from '../objects/projectile.js';
+import { projectilePool, specialPool, SPECIAL_WEAPON_DEFS } from '../objects/projectile.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -36,7 +36,7 @@ function fireSelected(h, input = noInput()) {
     const { x: cx, y: cy } = h.bodyCenter();
     const s = specialPool.spawn(cx - 10, cy - 10, dir, type);
     if (!s) return false;
-    h.timers.set('special', h.stats.special_freq);
+    h.timers.set('special', SPECIAL_WEAPON_DEFS[type].fireCooldown);
     return true;
   }
   const dir = h.resolveAim(inp);

@@ -137,13 +137,16 @@ export const projectilePool = new Pool(Projectile, MAX_PROJECTILES);
 
 // --- Special projectiles (design §4, §10) ------------------------------------
 // Hero-specific weapon: bigger box, more damage, longer cooldown.
-//   - Scarlet "saw": fast, no gravity, short range, high DPS
-//   - Balthazar "bomb": has gravity, TTL fuse, explodes with AoE on expiry
+// Weapon identity lives HERE, not on the heroes (special-weapons.md): both
+// heroes can hold both weapons, so every property — including the FIRE
+// COOLDOWN — belongs to the weapon definition. fireCooldown is the hero-side
+// gate between shots of THIS weapon (seconds).
 
 const SAW_SPEED = 800;
 const SAW_DAMAGE = 25;
 const SAW_LIFETIME = 0.6;       // short range
 const SAW_SIZE = 20;
+const SAW_FIRE_COOLDOWN = 1 / 6; // 6 shots/s
 
 const BOMB_SPEED = 550;
 const BOMB_DAMAGE = 40;         // contact damage
@@ -151,6 +154,13 @@ const BOMB_FUSE = 1.5;          // seconds before explosion
 const BOMB_EXPLODE_RADIUS = 100;
 const BOMB_SIZE = 18;
 const BOMB_GRAVITY = 800;       // px/s² (heavier than coins)
+const BOMB_FIRE_COOLDOWN = 1;     // 1 shot/s (lobbed AoE — deliberate, not spray)
+
+/** Per-weapon tuning — the single owner of special-weapon properties. */
+export const SPECIAL_WEAPON_DEFS = {
+  saw:  { speed: SAW_SPEED,  damage: SAW_DAMAGE,  lifetime: SAW_LIFETIME, size: SAW_SIZE,  fireCooldown: SAW_FIRE_COOLDOWN },
+  bomb: { speed: BOMB_SPEED, damage: BOMB_DAMAGE, fuse: BOMB_FUSE, explodeRadius: BOMB_EXPLODE_RADIUS, size: BOMB_SIZE, gravity: BOMB_GRAVITY, fireCooldown: BOMB_FIRE_COOLDOWN },
+};
 
 export class Special extends Entity {
   /**

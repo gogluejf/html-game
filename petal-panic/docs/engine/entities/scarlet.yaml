@@ -12,5 +12,4 @@ scarlet:
     stamina: 100       # = maxEnergy
     jump: 500          # px/s impulse
     projectile_freq: 8  # shots per second
-    special_freq: 2     # saw cooldown (seconds)
     special: saw

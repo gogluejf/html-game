@@ -12,11 +12,12 @@ special:
   exploded: false       # latched after bomb detonation
   ttlExpired: false     # set when TTL kills it (triggers explodeSpecial)
 
-  # --- saw constants ---
+  # --- saw constants (weapon-owned — heroes carry no weapon tuning) ---
   saw_speed: 800
   saw_damage: 25
   saw_lifetime: 0.6
   saw_size: 20
+  saw_fire_cooldown: 0.1667   # seconds between shots (6 shots/s)
 
   # --- bomb constants ---
   bomb_speed: 550
@@ -25,5 +26,6 @@ special:
   bomb_explode_radius: 100
   bomb_size: 18
   bomb_gravity: 800     # px/s²
+  bomb_fire_cooldown: 1         # seconds between shots (1 shot/s — deliberate lob)
 
   MAX_SPECIALS: 16      # pool cap

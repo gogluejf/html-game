@@ -11,7 +11,6 @@ hero:
     stamina: 100    # = maxEnergy
     jump: 500       # px/s impulse
     projectile_freq: 8   # shots/sec
-    special_freq: 2      # seconds (special-weapon fire cooldown)
 
   # --- resources / combat ---
   energy: 100       # current HP (drained by damage())

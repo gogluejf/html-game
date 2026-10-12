@@ -1,7 +1,7 @@
 // Petal Panic — hero stat definitions (design §5).
 // Two selectable heroes; same base struct, different stats + special.
 // `stats` feed physics/feel: speed (px/s), jump (impulse px/s), stamina (energy),
-// projectile_freq / special_freq (cooldowns in seconds), attack/defense/weight.
+// projectile_freq (default-weapon fire rate), attack/defense/weight.
 //
 // `attacks` is the declarative per-frame attack-hitbox table (design §30):
 // geometry varies by hero, attack, animation frame and facing. It is DATA only
@@ -55,8 +55,7 @@ export const HEROES = {
       defense: 2,
       stamina: 100,
       jump: 511,
-      projectile_freq: 8,   // shots per second
-      special_freq: 2,      // special-weapon cooldown (seconds)
+      projectile_freq: 8,   // shots per second (default weapon only)
     },
     // §15 Special melee (Down+Melee): retreating cartwheel — travels AWAY from
     // facing while the sprite keeps its original orientation. Tuning lives here.
@@ -87,8 +86,7 @@ export const HEROES = {
       defense: 5,
       stamina: 70,
       jump: 456,
-      projectile_freq: 10,
-      special_freq: 3,
+      projectile_freq: 10,   // shots per second (default weapon only)
     },
     // §15 Special melee (Down+Melee): advancing sweep — travels TOWARD facing.
     specialMelee: {

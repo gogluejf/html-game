@@ -12,5 +12,4 @@ balthazar:
     stamina: 70        # = maxEnergy
     jump: 420          # px/s impulse
     projectile_freq: 10
-    special_freq: 3    # bomb cooldown (seconds)
     special: bomb
