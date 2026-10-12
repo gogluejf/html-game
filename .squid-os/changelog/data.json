@@ -348,13 +348,249 @@
       "commit_count": 15,
       "repo_name": "html-game",
       "created_at": "2026-09-21T23:48:22.559793"
+    },
+    {
+      "id": "2026-09-22_-level-engine-v1",
+      "title": "\ud83d\uddfa\ufe0f LEVEL ENGINE v1",
+      "dates": [
+        "2026-09-22",
+        "2026-09-23"
+      ],
+      "summary": "Full level system: zones, macros, boss approach, rewards",
+      "bullets": [
+        "Zone model replaces single corridor",
+        "areas 1-4 + boss area",
+        "Terrain grammar + seeded RNG, macro library + composer",
+        "Vertical zone orientation + climbing macros",
+        "Boss approach, arena lock, intro sequence",
+        "Level reward screen with continue crediting",
+        "8 level configs + full-flow integration tests green"
+      ],
+      "value": 9,
+      "tags": [
+        "levels",
+        "zones",
+        "macros",
+        "boss"
+      ],
+      "commit_count": 114,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-10-12T15:03:29.058552"
+    },
+    {
+      "id": "2026-09-23_-boss-room-model",
+      "title": "\ud83d\udcfc BOSS ROOM MODEL",
+      "dates": [
+        "2026-09-23"
+      ],
+      "summary": "Boss fight becomes a fixed 960px room at the origin",
+      "bullets": [
+        "Boss modeled as fixed room \u2014 no second zone",
+        "Invisible trigger line fires the room, cam freezes at 0",
+        "Boss card plays in place at trigger line",
+        "Menu-free boss-beaten and end-of-game cards",
+        "Shooting allowed during boss approach"
+      ],
+      "value": 8,
+      "tags": [
+        "boss",
+        "room",
+        "trigger"
+      ],
+      "commit_count": 52,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-10-12T15:03:29.091335"
+    },
+    {
+      "id": "2026-09-23_-controls---remap",
+      "title": "\ud83c\udfae CONTROLS / REMAP",
+      "dates": [
+        "2026-09-23"
+      ],
+      "summary": "Remappable gamepad confirm/back + per-binding instruction bar",
+      "bullets": [
+        "Gamepad confirm/back remappable in Controls screen",
+        "Per-binding instruction bar highlighting",
+        "select_layout mode + Switch layout added",
+        "Auto gamepad detection removed (unreliable)",
+        "Cancel reverts to entry snapshot"
+      ],
+      "value": 7,
+      "tags": [
+        "input",
+        "remap",
+        "controls"
+      ],
+      "commit_count": 52,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-10-12T15:03:29.122056"
+    },
+    {
+      "id": "2026-09-24_-2d-grid-macro-model",
+      "title": "\ud83d\udcd0 2D GRID MACRO MODEL",
+      "dates": [
+        "2026-09-24"
+      ],
+      "summary": "Explicit row/col placement, anisotropic unit pixels, clearance rules",
+      "bullets": [
+        "2D grid macro model with explicit row/col placement",
+        "Anisotropic unit pixels UNIT_PX_X=72 / UNIT_PX_Y=48",
+        "Physical-grid clearance rules, no-overlap slots",
+        "Visible flag \u2014 invisible entities skip draw AND collision",
+        "Level overview PNG renderer + platformDrawH dump",
+        "One-way platform physics fixes (enemies/barrels falling through)"
+      ],
+      "value": 8,
+      "tags": [
+        "grid",
+        "macros",
+        "physics",
+        "png"
+      ],
+      "commit_count": 11,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-10-12T15:03:29.150999"
+    },
+    {
+      "id": "2026-09-25_-js-purity-refactor",
+      "title": "\ud83e\uddf9 JS PURITY REFACTOR",
+      "dates": [
+        "2026-09-25"
+      ],
+      "summary": "Responsibility-based folder structure, update.js split into modules",
+      "bullets": [
+        "Files moved into responsibility-based folders",
+        "update.js split: hitboxes, bossFlow, enemyUpdate, shooting, floatText",
+        "world/accessors.js + objects/barrelSync.js extracted",
+        "combat/collisionHandlers.js extracted from update.js",
+        "16 unused imports removed across 11 files",
+        "Sprite sheets reorganized: one JSON per sheet"
+      ],
+      "value": 5,
+      "tags": [
+        "refactor",
+        "structure",
+        "cleanup"
+      ],
+      "commit_count": 3,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-10-12T15:03:29.177239"
+    },
+    {
+      "id": "2026-10-05_-macro-editor-core",
+      "title": "\ud83e\udde9 MACRO EDITOR CORE",
+      "dates": [
+        "2026-10-05",
+        "2026-10-06"
+      ],
+      "summary": "Drag tools, multi-select, copy/paste, reachability validation",
+      "bullets": [
+        "Drag editing tools + history + validation warnings",
+        "Multi-select (Ctrl+Click), multi-drag, multi-resize",
+        "Copy/paste (Ctrl+C/X/V) + localStorage clipboard",
+        "Unified BFS reachability graph for H and V levels",
+        "Super-assist reach: double jump + supermove distance",
+        "Toolbar icons, per-tool cursors, hover preview ghosts",
+        "Marquee select, space+drag pan, axis labels on grid"
+      ],
+      "value": 8,
+      "tags": [
+        "macro-editor",
+        "ui",
+        "validation"
+      ],
+      "commit_count": 76,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-10-12T15:03:29.208900"
+    },
+    {
+      "id": "2026-10-06_-ghost-test-ride",
+      "title": "\ud83d\udc7b GHOST TEST RIDE",
+      "dates": [
+        "2026-10-06",
+        "2026-10-07"
+      ],
+      "summary": "Headless rider drives macros in the editor for instant feedback",
+      "bullets": [
+        "Ghost test ride: headless core + rider + editor UI",
+        "Space toggles test ride (start/pause on release)",
+        "Mid-test edits hot-swap ride world to new geometry",
+        "Frame trace recording + ghost retries forever",
+        "Clearance proof: gray endpoint flag persists in macro JSON",
+        "Help & shortcuts dialog matching sprite editor style"
+      ],
+      "value": 8,
+      "tags": [
+        "ghost",
+        "ride",
+        "test",
+        "editor"
+      ],
+      "commit_count": 57,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-10-12T15:03:29.240399"
+    },
+    {
+      "id": "2026-10-08_-smart-mover--takeoff-picker",
+      "title": "\ud83e\udde0 SMART MOVER + TAKEOFF PICKER",
+      "dates": [
+        "2026-10-08",
+        "2026-10-10"
+      ],
+      "summary": "Sim-based candidate scoring replaces rule ladder; DFS traversal",
+      "bullets": [
+        "takeoffPicker: sim-based candidate scoring (Phase 1)",
+        "traversalRoute BFS \u2192 DFS \u2014 ride reads as committed paths",
+        "platformMover core + Node tests",
+        "Super = gap tool, climb gates rise-gated",
+        "DROP_THRU/DROP_WALK for one-way drop-through",
+        "Block stacking allowed (clearance 0 or \u22652)",
+        "Single shared ride brain (browser + node)",
+        "Hero tuning: DJ ceilings raised for 2u walls"
+      ],
+      "value": 9,
+      "tags": [
+        "mover",
+        "picker",
+        "sim",
+        "macro-editor"
+      ],
+      "commit_count": 39,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-10-12T15:03:29.274019"
+    },
+    {
+      "id": "2026-10-09_-asset-pipeline--mobile",
+      "title": "\ud83c\udccf ASSET PIPELINE + MOBILE",
+      "dates": [
+        "2026-10-09",
+        "2026-10-10"
+      ],
+      "summary": "Boss intro cards, block sheets, level renumber, abyss-qwen mobile controls",
+      "bullets": [
+        "8 per-boss intro card frames installed via sprite-gen/crop CLIs",
+        "Block/platform sheets L3/5/6/7 cropped + vignette cleaned",
+        "Levels renumbered + bg/fg/vertical sheets registered",
+        "abyss-qwen: mobile touch controls + display modes",
+        "abyss-qwen: amplified mobile steering"
+      ],
+      "value": 6,
+      "tags": [
+        "assets",
+        "boss-cards",
+        "mobile",
+        "abyss-qwen"
+      ],
+      "commit_count": 16,
+      "repo_name": "/home/goglue/src/html-game",
+      "created_at": "2026-10-12T15:03:29.303144"
     }
   ],
   "index": {
-    "total_entries": 13,
-    "total_commits": 383,
+    "total_entries": 22,
+    "total_commits": 803,
     "avg_value": 7.5,
     "date_start": "2026-09-12",
-    "date_end": "2026-09-21"
+    "date_end": "2026-10-10"
   }
 }

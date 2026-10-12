@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>html-game — Changelog</title>
+<title>Changelog — Changelog</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -384,7 +384,7 @@ body {
 <header class="site-header">
   <div class="wrap">
     <div class="brand">
-      <h1>🦑 html-game</h1>
+      <h1>🦑 Changelog</h1>
       <span class="sub">changelog</span>
     </div>
     <div class="filters">
@@ -400,11 +400,11 @@ body {
 <main class="wrap">
   <div class="stats-bar">
     <div class="stat">
-      <div class="num">13</div>
+      <div class="num">22</div>
       <div class="label">Entries</div>
     </div>
     <div class="stat">
-      <div class="num">383</div>
+      <div class="num">803</div>
       <div class="label">Commits</div>
     </div>
     <div class="stat">
@@ -412,13 +412,229 @@ body {
       <div class="label">Avg Impact</div>
     </div>
     <div class="stat">
-      <div class="num" style="font-size:1rem">This week<br><span style='font-size:0.7rem;color:var(--text-dim)'>12–21 Sep</span></div>
+      <div class="num" style="font-size:1rem">Last week<br><span style='font-size:0.7rem;color:var(--text-dim)'>12 Sep – 10 Oct</span></div>
       <div class="label">Coverage</div>
     </div>
   </div>
 
   <div class="entries">
     
+        <div class="entry-row fx" data-dates="2026-10-09,2026-10-10" data-value="6">
+          <div class="date-stamp">
+            <span class="stamp-day">9-10</span>
+            <span class="stamp-month">OCT</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🃏 ASSET PIPELINE + MOBILE</h3>
+              <div class="entry-meta">
+                <span class="badge">16 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Boss intro cards, block sheets, level renumber, abyss-qwen mobile controls</p>
+            <ul class="entry-bullets"><li>8 per-boss intro card frames installed via sprite-gen/crop CLIs</li><li>Block/platform sheets L3/5/6/7 cropped + vignette cleaned</li><li>Levels renumbered + bg/fg/vertical sheets registered</li><li>abyss-qwen: mobile touch controls + display modes</li><li>abyss-qwen: amplified mobile steering</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:60%;background:hsl(66, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(66, 75%, 45%)">6/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">assets</span><span class="tag">boss-cards</span><span class="tag">mobile</span><span class="tag">abyss-qwen</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-10-08,2026-10-10" data-value="9">
+          <div class="date-stamp">
+            <span class="stamp-day">8-10</span>
+            <span class="stamp-month">OCT</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🧠 SMART MOVER + TAKEOFF PICKER</h3>
+              <div class="entry-meta">
+                <span class="badge">39 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Sim-based candidate scoring replaces rule ladder; DFS traversal</p>
+            <ul class="entry-bullets"><li>takeoffPicker: sim-based candidate scoring (Phase 1)</li><li>traversalRoute BFS → DFS — ride reads as committed paths</li><li>platformMover core + Node tests</li><li>Super = gap tool, climb gates rise-gated</li><li>DROP_THRU/DROP_WALK for one-way drop-through</li><li>Block stacking allowed (clearance 0 or ≥2)</li><li>Single shared ride brain (browser + node)</li><li>Hero tuning: DJ ceilings raised for 2u walls</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:90%;background:hsl(106, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(106, 75%, 45%)">9/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">mover</span><span class="tag">picker</span><span class="tag">sim</span><span class="tag">macro-editor</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-10-06,2026-10-07" data-value="8">
+          <div class="date-stamp">
+            <span class="stamp-day">6-7</span>
+            <span class="stamp-month">OCT</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>👻 GHOST TEST RIDE</h3>
+              <div class="entry-meta">
+                <span class="badge">57 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Headless rider drives macros in the editor for instant feedback</p>
+            <ul class="entry-bullets"><li>Ghost test ride: headless core + rider + editor UI</li><li>Space toggles test ride (start/pause on release)</li><li>Mid-test edits hot-swap ride world to new geometry</li><li>Frame trace recording + ghost retries forever</li><li>Clearance proof: gray endpoint flag persists in macro JSON</li><li>Help & shortcuts dialog matching sprite editor style</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:80%;background:hsl(93, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(93, 75%, 45%)">8/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">ghost</span><span class="tag">ride</span><span class="tag">test</span><span class="tag">editor</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-10-05,2026-10-06" data-value="8">
+          <div class="date-stamp">
+            <span class="stamp-day">5-6</span>
+            <span class="stamp-month">OCT</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🧩 MACRO EDITOR CORE</h3>
+              <div class="entry-meta">
+                <span class="badge">76 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Drag tools, multi-select, copy/paste, reachability validation</p>
+            <ul class="entry-bullets"><li>Drag editing tools + history + validation warnings</li><li>Multi-select (Ctrl+Click), multi-drag, multi-resize</li><li>Copy/paste (Ctrl+C/X/V) + localStorage clipboard</li><li>Unified BFS reachability graph for H and V levels</li><li>Super-assist reach: double jump + supermove distance</li><li>Toolbar icons, per-tool cursors, hover preview ghosts</li><li>Marquee select, space+drag pan, axis labels on grid</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:80%;background:hsl(93, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(93, 75%, 45%)">8/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">macro-editor</span><span class="tag">ui</span><span class="tag">validation</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-25" data-value="5">
+          <div class="date-stamp">
+            <span class="stamp-day">25</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🧹 JS PURITY REFACTOR</h3>
+              <div class="entry-meta">
+                <span class="badge">3 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Responsibility-based folder structure, update.js split into modules</p>
+            <ul class="entry-bullets"><li>Files moved into responsibility-based folders</li><li>update.js split: hitboxes, bossFlow, enemyUpdate, shooting, floatText</li><li>world/accessors.js + objects/barrelSync.js extracted</li><li>combat/collisionHandlers.js extracted from update.js</li><li>16 unused imports removed across 11 files</li><li>Sprite sheets reorganized: one JSON per sheet</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:50%;background:hsl(53, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(53, 75%, 45%)">5/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">refactor</span><span class="tag">structure</span><span class="tag">cleanup</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-24" data-value="8">
+          <div class="date-stamp">
+            <span class="stamp-day">24</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>📐 2D GRID MACRO MODEL</h3>
+              <div class="entry-meta">
+                <span class="badge">11 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Explicit row/col placement, anisotropic unit pixels, clearance rules</p>
+            <ul class="entry-bullets"><li>2D grid macro model with explicit row/col placement</li><li>Anisotropic unit pixels UNIT_PX_X=72 / UNIT_PX_Y=48</li><li>Physical-grid clearance rules, no-overlap slots</li><li>Visible flag — invisible entities skip draw AND collision</li><li>Level overview PNG renderer + platformDrawH dump</li><li>One-way platform physics fixes (enemies/barrels falling through)</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:80%;background:hsl(93, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(93, 75%, 45%)">8/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">grid</span><span class="tag">macros</span><span class="tag">physics</span><span class="tag">png</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-23" data-value="8">
+          <div class="date-stamp">
+            <span class="stamp-day">23</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>📼 BOSS ROOM MODEL</h3>
+              <div class="entry-meta">
+                <span class="badge">52 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Boss fight becomes a fixed 960px room at the origin</p>
+            <ul class="entry-bullets"><li>Boss modeled as fixed room — no second zone</li><li>Invisible trigger line fires the room, cam freezes at 0</li><li>Boss card plays in place at trigger line</li><li>Menu-free boss-beaten and end-of-game cards</li><li>Shooting allowed during boss approach</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:80%;background:hsl(93, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(93, 75%, 45%)">8/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">boss</span><span class="tag">room</span><span class="tag">trigger</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-23" data-value="7">
+          <div class="date-stamp">
+            <span class="stamp-day">23</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🎮 CONTROLS / REMAP</h3>
+              <div class="entry-meta">
+                <span class="badge">52 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Remappable gamepad confirm/back + per-binding instruction bar</p>
+            <ul class="entry-bullets"><li>Gamepad confirm/back remappable in Controls screen</li><li>Per-binding instruction bar highlighting</li><li>select_layout mode + Switch layout added</li><li>Auto gamepad detection removed (unreliable)</li><li>Cancel reverts to entry snapshot</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:70%;background:hsl(80, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(80, 75%, 45%)">7/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">input</span><span class="tag">remap</span><span class="tag">controls</span></div>
+          </div>
+        </div>
+        <div class="entry-row fx" data-dates="2026-09-22,2026-09-23" data-value="9">
+          <div class="date-stamp">
+            <span class="stamp-day">22-23</span>
+            <span class="stamp-month">SEP</span>
+          </div>
+          <div class="entry-card">
+            <div class="entry-header">
+              <h3>🗺️ LEVEL ENGINE v1</h3>
+              <div class="entry-meta">
+                <span class="badge">114 commits</span>
+              </div>
+            </div>
+            <p class="entry-summary">Full level system: zones, macros, boss approach, rewards</p>
+            <ul class="entry-bullets"><li>Zone model replaces single corridor</li><li>areas 1-4 + boss area</li><li>Terrain grammar + seeded RNG, macro library + composer</li><li>Vertical zone orientation + climbing macros</li><li>Boss approach, arena lock, intro sequence</li><li>Level reward screen with continue crediting</li><li>8 level configs + full-flow integration tests green</li></ul>
+            <div class="value-gauge">
+              <div class="gauge-label">Impact</div>
+              <div class="gauge-track">
+                <div class="gauge-fill" style="width:90%;background:hsl(106, 75%, 45%)"></div>
+              </div>
+              <div class="gauge-num" style="color:hsl(106, 75%, 45%)">9/10</div>
+            </div>
+            <div class="entry-tags"><span class="tag">levels</span><span class="tag">zones</span><span class="tag">macros</span><span class="tag">boss</span></div>
+          </div>
+        </div>
         <div class="entry-row fx" data-dates="2026-09-21" data-value="7">
           <div class="date-stamp">
             <span class="stamp-day">21</span>
@@ -736,7 +952,7 @@ body {
 
 <footer class="site-footer">
   <div class="wrap">
-    <p>Generated by Squid-OS changelog skill · 2026-09-21 23:48</p>
+    <p>Generated by Squid-OS changelog skill · 2026-10-12 15:03</p>
   </div>
 </footer>
 
