@@ -36,7 +36,7 @@ export function makeContext(attacker, extra = {}) {
     attacker,
     target: extra.target ?? null,
     world: extra.world ?? null,
-    markers: extra.markers ?? attacker.markers ?? null,
+    markers: extra.markers ?? attacker?.markers ?? null,
     effects: extra.effects ?? null,
     collisionWorld: extra.collisionWorld ?? null,
     ...extra,
