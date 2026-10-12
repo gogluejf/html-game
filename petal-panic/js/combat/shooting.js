@@ -67,6 +67,7 @@ function fireSpecial(h, input) {
   const dir = h.resolveAim(input);
   const { x: cx, y: cy } = h.bodyCenter();
   const baseAngle = dirAngle(dir);
+  const halfSize = meta.size / 2;
   const ox = Math.cos(baseAngle) * 20;
   const oy = Math.sin(baseAngle) * 20;
 
@@ -78,13 +79,13 @@ function fireSpecial(h, input) {
       const offset = (i - (count - 1) / 2) * step;
       const a = baseAngle + offset;
       // Spawn with dir 0 (placeholder), then override velocity with the fan angle.
-      const s = specialPool.spawn(cx - 10 + Math.cos(a) * 20, cy - 10 + Math.sin(a) * 20, 0, type);
+      const s = specialPool.spawn(cx - halfSize + Math.cos(a) * 20, cy - halfSize + Math.sin(a) * 20, 0, type);
       if (!s) break; // pool exhausted — stop spawning remaining shots
       s.vx = Math.cos(a) * s.speed;
       s.vy = Math.sin(a) * s.speed;
     }
   } else {
-    const s = specialPool.spawn(cx - 10 + ox, cy - 10 + oy, dir, type);
+    const s = specialPool.spawn(cx - halfSize + ox, cy - halfSize + oy, dir, type);
     if (!s) return;
   }
 
