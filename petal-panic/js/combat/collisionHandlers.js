@@ -13,6 +13,7 @@ import { LAYER } from '../consts.js';
 import { damage } from './damage.js';
 import { applyKnockback } from './knockback.js';
 import { explodeSpecial } from './shooting.js';
+import { isSpecialType } from '../objects/specialWeapons.js';
 import { Effects } from '../effects.js';
 import { Debug } from '../debug/debug.js';
 import { record } from '../stats.js';
@@ -89,7 +90,7 @@ export function registerCollisionHandlers(collisionWorld) {
           allyProj.reflectVelocity(target.worldBox());
         } else if (allyProj.solidBehavior === 'absorb') {
           allyProj.alive = false;
-          if (allyProj.type === 'saw' || allyProj.type === 'bomb') explodeSpecial(allyProj);
+          if (isSpecialType(allyProj.type)) explodeSpecial(allyProj);
         }
         return;
       }
@@ -106,7 +107,7 @@ export function registerCollisionHandlers(collisionWorld) {
           allyProj.alive = false; // hit an already-destroyed solid — still consumed
         }
         // Specials explode/fizzle on barrel contact too.
-        if (allyProj.type === 'saw' || allyProj.type === 'bomb') {
+        if (isSpecialType(allyProj.type)) {
           explodeSpecial(allyProj);
         }
         return;
@@ -149,12 +150,12 @@ export function registerCollisionHandlers(collisionWorld) {
         // (design §12 "Projectile hit on enemy" / "Enemy damaged").
         Effects.spawnHitSparkles(allyProj.x + allyProj.w / 2, allyProj.y + allyProj.h / 2);
         Effects.beginEnemyShake(target);
-        const srcName = allyProj.type === 'saw' || allyProj.type === 'bomb' ? allyProj.type : 'thorn';
+        const srcName = isSpecialType(allyProj.type) ? allyProj.type : 'thorn';
         if (Debug.enabled) Debug.logEvent(`${srcName} → ${target.type ?? '?'} dmg ${dealt}`);
       }
       allyProj.alive = false;               // projectile is consumed on impact
       // Specials explode/fizzle on contact via the single explodeSpecial().
-      if (allyProj.type === 'saw' || allyProj.type === 'bomb') {
+      if (isSpecialType(allyProj.type)) {
         explodeSpecial(allyProj);
       }
       // Placeholders have no death anim: remove immediately when they die. Real

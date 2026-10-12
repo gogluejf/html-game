@@ -15,6 +15,7 @@
 import { Entity } from '../core/entity.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
 import { LAYER } from '../consts.js';
+import { SPECIAL_TYPES, specialById } from './specialWeapons.js';
 import { record } from '../stats.js';
 
 // --- Effect definitions ------------------------------------------------------
@@ -34,7 +35,7 @@ export const POWERUP_DEFS = {
                    apply: (hero, _ctx, p) => {
                      // Use the instance's pre-rolled weapon (p.specialRoll) so
                      // the placeholder icon matches what actually lands in the slot.
-                     hero.acquireSpecial(p?.specialRoll ?? (Math.random() < 0.5 ? 'bomb' : 'saw'));
+                     hero.acquireSpecial(p?.specialRoll ?? SPECIAL_TYPES[Math.floor(Math.random() * SPECIAL_TYPES.length)]);
                    } },
   rapid:         { label: 'Rapid Fire!',  color: '#3498db', duration: 6,
                    apply: (hero) => { hero.rapidTimer = Math.max(hero.rapidTimer ?? 0, 6); } },
@@ -77,7 +78,7 @@ const PLACEHOLDER_STYLE = {
   energy:        { color: '#2ecc71', glyph: '♥' },
   oneUp:         { color: '#e74c3c', glyph: '1UP' },
 };
-const SPECIAL_GLYPHS = { bomb: '💣', saw: '⚙' };
+// Special glyphs are read from the registry (specialWeapons.js).
 
 /** Build a single-frame placeholder canvas: colored body + centered glyph. */
 function placeholderFrame(w, h, color, glyph) {
@@ -122,8 +123,8 @@ export class Powerup extends Entity {
     const st = PLACEHOLDER_STYLE[type] ?? { color: def.color, glyph: '?' };
     let glyph = st.glyph;
     if (type === 'specialDrop') {
-      this.specialRoll = Math.random() < 0.5 ? 'bomb' : 'saw';
-      glyph = SPECIAL_GLYPHS[this.specialRoll];
+      this.specialRoll = SPECIAL_TYPES[Math.floor(Math.random() * SPECIAL_TYPES.length)];
+      glyph = specialById[this.specialRoll]?.icon ?? '?';
     }
     this.debugColor = st.color;
     this.anim = new Anim(placeholderFrame(this.w, this.h, st.color, glyph), {

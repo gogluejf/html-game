@@ -9,6 +9,7 @@
 import { Entity } from '../core/entity.js';
 import { GRAVITY, MAX_FALL_SPEED, LAYER, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL } from '../consts.js';
 import { aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } from '../objects/projectile.js';
+import { SPECIAL_TYPES } from '../objects/specialWeapons.js';
 import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from './heroDefs.js';
 
 // Feel knobs (tune freely; these are not per-hero stats).
@@ -118,7 +119,7 @@ export class Hero extends Entity {
     this.shield = 0;
     // Weapon selection (special-weapons.md): 'thorn' (default weapon) or a
     // numeric slot index into specialSlots. Specials are weapons, not ammo —
-    // each slot holds null | 'bomb' | 'saw'.
+    // each slot holds null | a SPECIAL_TYPES id.
     this.selectedWeapon = WEAPON_THORN;
     this.specialSlots = new Array(SPECIAL_SLOT_COUNT).fill(null);
     this.lives = 3;
@@ -624,7 +625,7 @@ export class Hero extends Entity {
    *   3. else (default weapon selected, all slots full) slot 0 is replaced.
    * The newly placed weapon is ALWAYS auto-selected. Picking up a special you
    * already hold simply replaces per these rules — no stacking, no counts.
-   * @param {'bomb'|'saw'} type
+   * @param {string} type a SPECIAL_TYPES id ('bomb' | 'saw' | 'spread' | ...)
    */
   acquireSpecial(type) {
     let idx = this.specialSlots.indexOf(null);

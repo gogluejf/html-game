@@ -8,6 +8,7 @@ import { ZONE_GROUND_Y } from '../world/level.js';
 import { Effects } from '../effects.js';
 import { particles, coins } from '../effects/particles.js';
 import { resolveExplosion } from '../combat/explosion.js';
+import { isSpecialType } from '../objects/specialWeapons.js';
 import { record } from '../stats.js';
 import { Debug } from '../debug/debug.js';
 
@@ -119,7 +120,7 @@ export function syncProjectilesToWorld() {
 export function syncSpecialsToWorld() {
   const live = ctx.specialPool.activeItems;
   for (const e of ctx.collisionWorld.entities) {
-    if (e.type === 'saw' || e.type === 'bomb') {
+    if (isSpecialType(e.type)) {
       if (!live.includes(e)) ctx.collisionWorld.remove(e);
     }
   }

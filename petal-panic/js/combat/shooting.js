@@ -1,10 +1,11 @@
 // Shooting (special-weapons.md) — ONE shared shoot path: J fires whatever
 // weapon is currently SELECTED on the hero. The default weapon ('thorn') is
 // built-in and infinite; a numeric selectedWeapon is a special-weapon slot
-// index holding 'bomb' | 'saw'. N never fires — it only rotates the selection
-// (hero.rotateWeapon, called by the update step).
+// index holding any id from SPECIAL_TYPES. N never fires — it only rotates the
+// selection (hero.rotateWeapon, called by the update step).
 
 import { projectilePool, specialPool, SPECIAL_WEAPON_DEFS } from '../objects/projectile.js';
+import { specialById, isSpecialType } from '../objects/specialWeapons.js';
 import { dirAngle } from '../core/vec.js';
 import { damage } from './damage.js';
 import { record } from '../stats.js';
@@ -53,42 +54,59 @@ function fireThorn(h, input, dt) {
 
 /**
  * Fire the hero's selected special weapon (special-weapons.md). The selected
- * slot must hold a weapon ('bomb' | 'saw') — firing is gated by the 'special'
- * labeled cooldown timer on the hero. Holding a special costs nothing: slots
- * are weapons, not ammo, so firing never mutates the slot.
+ * slot must hold a weapon id from SPECIAL_TYPES — firing is gated by the
+ * 'special' labeled cooldown timer on the hero. Holding a special costs
+ * nothing: slots are weapons, not ammo, so firing never mutates the slot.
  */
 function fireSpecial(h, input) {
   if (h.timers.get('special') > 0) return;
   const type = h.specialSlots?.[h.selectedWeapon];
-  if (!type) return; // empty/absent slot — fall through safely, spawn nothing
+  if (!type || !isSpecialType(type)) return; // empty/absent slot — fall through safely
 
+  const meta = specialById[type];
   const dir = h.resolveAim(input);
   const { x: cx, y: cy } = h.bodyCenter();
-  const angle = dirAngle(dir);
-  const ox = Math.cos(angle) * 20;
-  const oy = Math.sin(angle) * 20;
+  const baseAngle = dirAngle(dir);
+  const ox = Math.cos(baseAngle) * 20;
+  const oy = Math.sin(baseAngle) * 20;
 
-  const s = specialPool.spawn(cx - 10 + ox, cy - 10 + oy, dir, type);
-  if (!s) return;
+  // Spread weapon: fan out multiple projectiles symmetrically around the aim.
+  if (meta.spread) {
+    const { count, angle } = meta.spread;
+    const step = count > 1 ? angle / (count - 1) : 0;
+    for (let i = 0; i < count; i++) {
+      const offset = (i - (count - 1) / 2) * step;
+      const a = baseAngle + offset;
+      // Spawn with dir 0 (placeholder), then override velocity with the fan angle.
+      const s = specialPool.spawn(cx - 10 + Math.cos(a) * 20, cy - 10 + Math.sin(a) * 20, 0, type);
+      if (!s) break; // pool exhausted — stop spawning remaining shots
+      s.vx = Math.cos(a) * s.speed;
+      s.vy = Math.sin(a) * s.speed;
+    }
+  } else {
+    const s = specialPool.spawn(cx - 10 + ox, cy - 10 + oy, dir, type);
+    if (!s) return;
+  }
 
   record(h, { kind: 'projectile', subtype: 'special' });
   record(h, { kind: 'superMove' });
-  h.timers.set('special', SPECIAL_WEAPON_DEFS[type].fireCooldown); // cooldown owned by the WEAPON
+  h.timers.set('special', meta.fireCooldown); // cooldown owned by the WEAPON
 
   if (Debug.enabled) Debug.logEvent(`special ${type} fired`);
 }
 
 /**
- * Explode a special projectile (bomb AoE or saw fizzle). Called from ANY death
+ * Explode a special projectile (AoE detonation or fizzle). Called from ANY death
  * path: TTL expiry, enemy contact, barrel contact, off-screen cull. Single
  * source of truth so VFX + damage are identical regardless of trigger.
  */
 export function explodeSpecial(s) {
   if (s.exploded) return;
   s.exploded = true;
+  const meta = specialById[s.type];
   const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
 
-  if (s.type === 'bomb' && s.radius > 0) {
+  if (meta?.explode && s.radius > 0) {
     for (const t of ctx.realEnemies) {
       if (!t.alive) continue;
       const dx = (t.x + t.w / 2) - cx;

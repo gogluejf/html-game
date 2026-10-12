@@ -11,6 +11,7 @@
 
 import { Entity } from '../core/entity.js';
 import { LAYER } from '../consts.js';
+import { specialById, isSpecialType } from './specialWeapons.js';
 
 // --- Tunables ----------------------------------------------------------------
 export const MAX_PROJECTILES = 64;        // hard cap on live projectiles (perf param, §17)
@@ -140,71 +141,64 @@ export class Pool {
 export const projectilePool = new Pool(Projectile, MAX_PROJECTILES);
 
 // --- Special projectiles (design §4, §10) ------------------------------------
-// Hero-specific weapon: bigger box, more damage, longer cooldown.
-// Weapon identity lives HERE, not on the heroes (special-weapons.md): both
-// heroes can hold both weapons, so every property — including the FIRE
+// Hero-specific weapons: bigger box, more damage, longer cooldown.
+// Weapon identity lives in the SPECIAL_WEAPONS registry (specialWeapons.js):
+// both heroes can hold any weapon, so every property — including the FIRE
 // COOLDOWN — belongs to the weapon definition. fireCooldown is the hero-side
 // gate between shots of THIS weapon (seconds).
 
-const SAW_SPEED = 800;
-const SAW_DAMAGE = 25;
-const SAW_LIFETIME = 0.6;       // short range
-const SAW_SIZE = 20;
-const SAW_FIRE_COOLDOWN = 1 / 6; // 6 shots/s
-
-const BOMB_SPEED = 550;
-const BOMB_DAMAGE = 40;         // contact damage
-const BOMB_FUSE = 1.5;          // seconds before explosion
-const BOMB_EXPLODE_RADIUS = 100;
-const BOMB_SIZE = 18;
-const BOMB_GRAVITY = 800;       // px/s² (heavier than coins)
-const BOMB_FIRE_COOLDOWN = 1;     // 1 shot/s (lobbed AoE — deliberate, not spray)
-
-/** Per-weapon tuning — the single owner of special-weapon properties. */
-export const SPECIAL_WEAPON_DEFS = {
-  saw:  { speed: SAW_SPEED,  damage: SAW_DAMAGE,  lifetime: SAW_LIFETIME, size: SAW_SIZE,  fireCooldown: SAW_FIRE_COOLDOWN },
-  bomb: { speed: BOMB_SPEED, damage: BOMB_DAMAGE, fuse: BOMB_FUSE, explodeRadius: BOMB_EXPLODE_RADIUS, size: BOMB_SIZE, gravity: BOMB_GRAVITY, fireCooldown: BOMB_FIRE_COOLDOWN },
-};
+/** Per-weapon tuning — re-exported for backward compat with existing imports. */
+export const SPECIAL_WEAPON_DEFS = Object.fromEntries(
+  Object.values(specialById).map(w => [w.id, {
+    speed: w.speed, damage: w.damage, lifetime: w.lifetime, size: w.size,
+    fireCooldown: w.fireCooldown,
+    ...(w.gravity ? { gravity: w.gravity } : {}),
+    ...(w.explode ? { fuse: w.lifetime, explodeRadius: w.radius } : {}),
+  }]),
+);
 
 export class Special extends Entity {
   /**
    * @param {number} x spawn x
    * @param {number} y spawn y
    * @param {number} dir 0..7 aim index
-   * @param {'saw'|'bomb'} type hero's special type
+   * @param {string} type special weapon id (see SPECIAL_WEAPONS registry)
    */
   constructor(x, y, dir, type) {
-    const isSaw = type === 'saw';
+    // Parked pool slots are built with no type; they stay inert until spawn()
+    // copies a fully-built instance over them via Object.assign.
+    const meta = type != null ? specialById[type] : null;
+    if (type != null && !meta) throw new Error(`Unknown special weapon: ${type}`);
     super({
       x, y,
-      w: isSaw ? SAW_SIZE : BOMB_SIZE,
-      h: isSaw ? SAW_SIZE : BOMB_SIZE,
+      w: meta?.size ?? 16, h: meta?.size ?? 16,
       layer: LAYER.PROJ_ALLY,
-      debugColor: isSaw ? '#ff6ec7' : '#f39c12',
-      gravity: isSaw ? 0 : 1,
+      debugColor: meta?.color ?? '#888',
+      gravity: (meta?.gravity ?? 0) > 0 ? 1 : 0,
     });
 
     this.type = type;
     this.friendly = true;
     // Solid-collision behavior per WEAPON (special-weapons.md): bombs BOUNCE
-    // off terrain (reflect + keep flying, fuse still runs); saws ABSORB (the
-    // short-range blade dies on impact). Policy is consumed by the collision
+    // off terrain (reflect + keep flying, fuse still runs); saws/spread ABSORB
+    // (the short-range blade dies on impact). Policy is consumed by the collision
     // handler via this flag — the physics primitive is reflectVelocity().
-    this.solidBehavior = isSaw ? 'absorb' : 'bounce';
-    this.speed = isSaw ? SAW_SPEED : BOMB_SPEED;
-    this.damage = isSaw ? SAW_DAMAGE : BOMB_DAMAGE;
-    this.life = isSaw ? SAW_LIFETIME : BOMB_FUSE;
+    this.solidBehavior = meta?.solidBehavior ?? 'absorb';
+    this.speed = meta?.speed ?? 0;
+    this.damage = meta?.damage ?? 0;
+    this.life = meta?.lifetime ?? 0;
+    this.gravityValue = meta?.gravity ?? 0; // actual px/s² for ballistic weapons
     // Register the countdown under a descriptive label so the debug stack reads
-    // 'fuse' for bombs (AoE detonation) and 'life' for saws (range limit). Both
-    // are driven by the same tickTtl()/ttlExpired expiry path.
-    this._ttlLabel = isSaw ? 'life' : 'fuse';
+    // 'fuse' for AoE weapons and 'life' for range-limited ones. Both are driven
+    // by the same tickTtl()/ttlExpired expiry path.
+    this._ttlLabel = meta?.explode ? 'fuse' : 'life';
     this.setLife(this.life);
-    if (!isSaw) {
+    if (meta?.explode) {
       // Relabel the life timer as 'fuse' for display; tickTtl() honors _ttlLabel.
       this.timers.clear('life');
       this.timers.set('fuse', this.life);
     }
-    this.radius = isSaw ? 0 : BOMB_EXPLODE_RADIUS; // bomb has AoE radius
+    this.radius = meta?.explode ? meta.radius : 0;
     this.exploded = false;
 
     const angle = dirAngle(dir);
@@ -213,9 +207,9 @@ export class Special extends Entity {
   }
 
   update(dt) {
-    // Gravity for bombs.
-    if (this.gravity !== 0) {
-      this.vy += BOMB_GRAVITY * dt;
+    // Gravity for ballistic weapons (bombs).
+    if (this.gravityValue > 0) {
+      this.vy += this.gravityValue * dt;
     }
     this.x += this.vx * dt;
     this.y += this.vy * dt;
@@ -231,26 +225,13 @@ export class Special extends Entity {
 
   draw(ctx) {
     if (!this.alive) return;
+    const meta = specialById[this.type];
     const cx = this.x + this.w / 2;
     const cy = this.y + this.h / 2;
     ctx.save();
-    if (this.type === 'saw') {
-      // Spinning saw blade (pink/magenta).
-      ctx.translate(cx, cy);
-      ctx.rotate(performance.now() * 0.01);
-      ctx.fillStyle = '#ff6ec7';
-      ctx.beginPath();
-      ctx.arc(0, 0, this.w / 2, 0, Math.PI * 2);
-      ctx.fill();
-      // Teeth.
-      ctx.fillStyle = '#fff';
-      for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2;
-        ctx.fillRect(Math.cos(a) * this.w * 0.4 - 2, Math.sin(a) * this.w * 0.4 - 2, 4, 4);
-      }
-    } else {
+    if (meta.explode) {
       // Bomb (orange circle with fuse spark).
-      ctx.fillStyle = '#f39c12';
+      ctx.fillStyle = meta.color;
       ctx.beginPath();
       ctx.arc(cx, cy, this.w / 2, 0, Math.PI * 2);
       ctx.fill();
@@ -261,6 +242,20 @@ export class Special extends Entity {
         ctx.beginPath();
         ctx.arc(cx, cy - this.h / 2 - 3, 3, 0, Math.PI * 2);
         ctx.fill();
+      }
+    } else {
+      // Spinning saw blade / spread pellet (colored disc + teeth).
+      ctx.translate(cx, cy);
+      ctx.rotate(performance.now() * 0.01);
+      ctx.fillStyle = meta.color;
+      ctx.beginPath();
+      ctx.arc(0, 0, this.w / 2, 0, Math.PI * 2);
+      ctx.fill();
+      // Teeth.
+      ctx.fillStyle = '#fff';
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        ctx.fillRect(Math.cos(a) * this.w * 0.4 - 2, Math.sin(a) * this.w * 0.4 - 2, 4, 4);
       }
     }
     ctx.restore();

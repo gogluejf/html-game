@@ -80,8 +80,8 @@ ok('third pickup while a slot is selected replaces THAT slot', () => {
   const h = makeHero();
   h.acquireSpecial('bomb'); // sel 0
   h.acquireSpecial('saw');  // sel 1
-  h.acquireSpecial('bomb'); // both full, slot 1 selected → replace slot 1
-  assert.deepEqual(h.specialSlots, ['bomb', 'bomb']);
+  h.acquireSpecial('spread'); // both full, slot 1 selected → replace slot 1
+  assert.deepEqual(h.specialSlots, ['bomb', 'spread']);
   assert.equal(h.selectedWeapon, 1);
 });
 ok('third pickup while default is selected replaces slot 0', () => {
@@ -89,14 +89,14 @@ ok('third pickup while default is selected replaces slot 0', () => {
   h.acquireSpecial('bomb'); // sel 0
   h.acquireSpecial('saw');  // sel 1
   h.selectedWeapon = WEAPON_THORN;
-  h.acquireSpecial('saw');  // both full, default selected → replace slot 0
-  assert.deepEqual(h.specialSlots, ['saw', 'saw']);
+  h.acquireSpecial('spread');  // both full, default selected → replace slot 0
+  assert.deepEqual(h.specialSlots, ['spread', 'saw']);
   assert.equal(h.selectedWeapon, 0);
 });
 ok('same-special pickup replaces per placement rules (no stacking)', () => {
   const h = makeHero();
   h.acquireSpecial('bomb'); // sel 0
-  h.acquireSpecial('bomb'); // both... slot 0 full, slot 1 empty → first EMPTY wins: slot 1
+  h.acquireSpecial('bomb'); // slot 0 full, slot 1 empty → first EMPTY wins: slot 1
   assert.deepEqual(h.specialSlots, ['bomb', 'bomb']);
   assert.equal(h.selectedWeapon, 1);
 });

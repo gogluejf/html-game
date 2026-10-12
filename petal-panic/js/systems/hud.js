@@ -10,6 +10,7 @@
 
 import { VIEW_W } from '../core/view.js';
 import { FONT_UI, GOLD } from '../ui/fonts.js';
+import { specialById } from '../objects/specialWeapons.js';
 
 const PAD = 12;
 
@@ -100,7 +101,7 @@ function drawSuperMeter(ctx, hero) {
 // slot shows its held weapon icon, or a dimmed empty box. The currently
 // SELECTED option gets a '>' marker so the player always knows what J fires.
 
-const SPECIAL_SLOT_ICONS = { bomb: '💣', saw: '⚙️' };
+// Icons are read from the SPECIAL_WEAPONS registry (specialWeapons.js).
 
 function drawAmmo(ctx, hero) {
   const y = PAD + 16 + 19; // just below the energy bar (no label anymore)
@@ -115,7 +116,7 @@ function drawAmmo(ctx, hero) {
     const type = hero.specialSlots[i];
     const sel = hero.selectedWeapon === i;
     const mark = sel ? '> ' : '  ';
-    const icon = type ? SPECIAL_SLOT_ICONS[type] ?? '❓' : '▫️';
+    const icon = type ? (specialById[type]?.icon ?? '❓') : '▫️';
     ctx.fillStyle = sel ? '#9b59b6' : (type ? 'rgba(155, 89, 182, 0.75)' : 'rgba(155, 89, 182, 0.30)');
     ctx.fillText(`${mark}${icon}`, x, y);
     x += 56;
