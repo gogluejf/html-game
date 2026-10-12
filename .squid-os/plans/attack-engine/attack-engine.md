@@ -74,6 +74,14 @@ completion events (hit, expire, detonate).
 - Spawns into the existing `projectilePool` or a new attack-projectile pool
 - Emits `hit` on contact, `expire` on TTL/off-screen
 - Reuses existing `damage()` routing
+- **Transport rules (consume, don't duplicate):**
+  - `solidBehavior` maps directly onto the existing entity flag consumed by
+    `collisionHandlers.js` (`pass`/`absorb`/`bounce`). The primitive sets DATA;
+    it never implements wall physics itself.
+  - `gravity` reuses the `Special`-class ballistic path (`gravityValue` +
+    vy integration in `update()`), not a new integrator.
+  - Origin resolution: named marker via `resolveMarker(ctx, label)` (sprite-crop
+    schema) falling back to attacker center; explicit `{x,y}` also accepted.
 
 ### Task 1.3 — Spread primitive
 - Direction-generation only: given count + angle + center direction, returns an
