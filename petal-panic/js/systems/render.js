@@ -385,7 +385,7 @@ export function render(ctx) {
   // translate is restored so they cover the whole logical frame.
   Effects.drawOverlay(ctx, VIEW_W, VIEW_H);
 
-  // Play HUD (design §20): energy bar + shield, ammo/special,
+  // Play HUD: energy bar + shield, weapon slots,
   // coins, lives, hero portrait. Viewport-space,
   // drawn after the camera restore; only during PLAY (PAUSE/OVER/WIN keep the
   // frozen world visible and their screen overlay is drawn below).

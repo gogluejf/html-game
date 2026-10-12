@@ -1,9 +1,9 @@
-// Shooting (+ design §21) — ONE shared shoot path: J fires whatever weapon is
-// currently SELECTED on the hero ('thorn' | 'special'). N never fires — it only
-// toggles the selection (hero.toggleWeapon, called by the update step). Each
-// weapon keeps its own ammo pool and its own cooldown timer.
+// Shooting (special-weapons.md) — ONE shared shoot path: J fires whatever
+// weapon is currently SELECTED on the hero. The default weapon ('thorn') is
+// built-in and infinite; a numeric selectedWeapon is a special-weapon slot
+// index holding 'bomb' | 'saw'. N never fires — it only rotates the selection
+// (hero.rotateWeapon, called by the update step).
 
-import { WEAPON_SPECIAL } from '../hero/hero.js';
 import { projectilePool, specialPool } from '../objects/projectile.js';
 import { dirAngle } from '../core/vec.js';
 import { damage } from './damage.js';
@@ -23,18 +23,18 @@ import { ctx } from '../world/context.js';
  */
 export function tryFire(h, input, dt) {
   if (!input.shoot) return;
-  if (h.selectedWeapon === WEAPON_SPECIAL) {
+  if (Number.isInteger(h.selectedWeapon)) {
     fireSpecial(h, input);
   } else {
-    // Default workhorse: fast, straight thorns (§21).
+    // Default workhorse: fast, straight thorns — built-in, no pool.
     fireThorn(h, input, dt);
   }
 }
 
-/** Fire one Thorn (default weapon): projectilePool + 'ammo' + fireCooldown. */
+/** Fire one Thorn (default weapon): projectilePool + fireCooldown. The
+ * default weapon is built-in and infinite (special-weapons.md) — no pool. */
 function fireThorn(h, input, dt) {
   if (h.fireCooldown > 0) return;
-  if (h.ammo <= 0) return;
 
   const dir = h.resolveAim(input);
 
@@ -45,7 +45,6 @@ function fireThorn(h, input, dt) {
   const p = projectilePool.spawn(cx - size / 2 + ox, cy - size / 2 + oy, dir, true);
   if (!p) return;
 
-  h.ammo -= 1;
   record(h, { kind: 'projectile', subtype: 'thorn' });
 
   const base = 1 / h.stats.projectile_freq;
@@ -53,14 +52,16 @@ function fireThorn(h, input, dt) {
 }
 
 /**
- * Fire the hero's Special weapon (design §21). Consumes specialAmmo, gated by
- * special_freq. The cooldown is a labeled timer on the HERO ('special').
+ * Fire the hero's selected special weapon (special-weapons.md). The selected
+ * slot must hold a weapon ('bomb' | 'saw') — firing is gated by the 'special'
+ * labeled cooldown timer on the hero. Holding a special costs nothing: slots
+ * are weapons, not ammo, so firing never mutates the slot.
  */
 function fireSpecial(h, input) {
   if (h.timers.get('special') > 0) return;
-  if (h.specialAmmo <= 0) return;
+  const type = h.specialSlots?.[h.selectedWeapon];
+  if (!type) return; // empty/absent slot — fall through safely, spawn nothing
 
-  const type = h.stats.special;
   const dir = h.resolveAim(input);
   const { x: cx, y: cy } = h.bodyCenter();
   const angle = dirAngle(dir);
@@ -70,7 +71,6 @@ function fireSpecial(h, input) {
   const s = specialPool.spawn(cx - 10 + ox, cy - 10 + oy, dir, type);
   if (!s) return;
 
-  h.specialAmmo -= 1;
   record(h, { kind: 'projectile', subtype: 'special' });
   record(h, { kind: 'superMove' });
   h.timers.set('special', h.stats.special_freq);

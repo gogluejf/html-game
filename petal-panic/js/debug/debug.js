@@ -12,7 +12,7 @@
 //
 // Features (v1 = keybinds + console, no UI):
 //   - Free-spawn any entity in a chosen AI state        (keys 1-9 while debug)
-//   - God mode (invincible + infinite ammo)             (G while debug)
+//   - God mode (invincible)                             (G while debug)
 //   - Slow-mo / freeze cycle                            (T while debug)
 //   - Hero swap Scarlet <-> Balthazhar                  (Y while debug)
 //   - Force an enemy's AI state on demand               (click enemy while debug)
@@ -26,7 +26,7 @@ export const Debug = {
   enabled: false,
 
   // --- God mode -------------------------------------------------------------
-  // Hero invincible + infinite ammo. Applied each frame by the update system
+  // Hero invincible. Applied each frame by the update system
   // while enabled; cleared by reset().
   god: false,
 

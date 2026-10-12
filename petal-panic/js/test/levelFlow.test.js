@@ -72,7 +72,7 @@ function makeTestHero() {
   h.currentArea = 1;
   h.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - h.h };
   // Fresh level-start baseline (zero) so the reward delta = wallet.current.
-  h._levelStartWallet = { coins: 0, kills: 0, ammo: 200, specialAmmo: 0, energy: h.wallet.current.energy };
+  h._levelStartWallet = { coins: 0, kills: 0, energy: h.wallet.current.energy };
   h.traceStats = createTrace();
   return h;
 }

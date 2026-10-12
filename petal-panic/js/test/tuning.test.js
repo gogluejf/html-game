@@ -307,10 +307,10 @@ test('coin carryover policy is concrete and wired to GAME_RULES (game-rules.md �
 });
 
 test('inventory persistence policy is concrete and wired to GAME_RULES (game-rules.md §5)', () => {
-  // game-rules.md §5: ammo/weapon/energy/temporary powerups/super meter
-  // persistence across death, continue, and area advance. The concrete policy:
-  // temporary state resets; energy is restored to full.
-  assert.equal(GAME_RULES.inventory.ammo, 'reset');
+  // game-rules.md §5: special slots/weapon/energy/temporary powerups/super
+  // meter persistence across death, continue, and area advance. The concrete
+  // policy: temporary state resets; energy is restored to full.
+  assert.equal(GAME_RULES.inventory.specialSlots, 'reset');
   assert.equal(GAME_RULES.inventory.weapon, 'reset');
   assert.equal(GAME_RULES.inventory.energy, 'restore');
   assert.equal(GAME_RULES.inventory.powerups, 'reset', 'temporary powerups do NOT persist across death');
@@ -345,9 +345,8 @@ test('resetHeroInventory clears temporary powerups + super meter, restores energ
     maxEnergy: 100, energy: 40,   // drained energy → restored to full
     shield: 5,                     // active temporary powerup → cleared
     supermoveMeter: 100,           // charged super → reset to 0
-    ammo: 12,                      // drained ammo → reset to baseline (200)
-    specialAmmo: 7,                // granted special ammo → reset to 0
-    selectedWeapon: 'special',     // toggled weapon → reset to default (thorn)
+    specialSlots: ['bomb', 'saw'], // held specials → cleared on fresh attempt
+    selectedWeapon: 1,             // rotated weapon → reset to default (thorn)
     timers: new Timers(), // active rapid-fire → cleared
   };
   h.timers.set('rapid', 2.5); // simulate an active rapid-fire window
@@ -355,8 +354,7 @@ test('resetHeroInventory clears temporary powerups + super meter, restores energ
   assert.equal(h.energy, 100, 'energy is restored to full');
   assert.equal(h.shield, 0, 'temporary powerup (shield) is cleared');
   assert.equal(h.supermoveMeter, 0, 'super meter is reset');
-  assert.equal(h.ammo, 200, 'ammo is reset to the baseline (200)');
-  assert.equal(h.specialAmmo, 0, 'special ammo is reset to 0');
+  assert.ok(h.specialSlots.every((t) => t == null), 'special slots are cleared');
   assert.equal(h.selectedWeapon, 'thorn', 'selected weapon is reset to the default (thorn)');
   assert.equal(h.timers.get('rapid'), 0, 'temporary rapid-fire state is cleared');
 });

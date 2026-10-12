@@ -829,13 +829,12 @@ Fire rate derives from hero/weapon stats.
 
 ---
 
-## Ammo
+## Weapons
 
-Each successful shot consumes the appropriate ammo.
-
-No ammo:
-
-* no projectile is created.
+The default weapon (Thorn) is built-in and infinite — it is never collected,
+counted, or lost. Special weapons (bomb / petal saw) are held in slots, not
+counted as ammo: see [special weapons](special-weapons.md) for the full model
+(slots, rotation, pickup, loss on damaging hits).
 
 ---
 
@@ -847,40 +846,38 @@ Friendly-fire prevention should exist by construction in the damage/team system.
 
 ---
 
-# 21. Weapon Switching
+# 21. Weapon Rotation
 
 Default: **N**
 
-Switch Weapon toggles Shoot between:
+N rotates the selection through: **default (Thorn) → special slot 1 → special
+slot 2 → …**, skipping empty slots and wrapping around. The selection persists
+until rotated again. Full slot model (placement, replacement, loss on damage)
+lives in [special weapons](special-weapons.md).
 
-1. Thorn
-2. Special
+Each option has:
 
-The selected weapon persists until toggled again.
-
-Each weapon has:
-
-* its own ammo pool;
 * its own cooldown;
 * its own projectile behavior.
+
+Specials cost nothing to fire — holding a slot is the only requirement.
 
 ---
 
 ## Thorn
 
-Default workhorse weapon.
+Default workhorse weapon — built-in, infinite.
 
 Characteristics:
 
 * fast;
-* straight;
-* inexpensive/common ammunition.
+* straight.
 
 ---
 
-## Scarlet Special
+## Petal Saw
 
-Scarlet throws a fast saw blade.
+Fast straight special. Shared by both heroes (random drop).
 
 Characteristics:
 
@@ -890,9 +887,9 @@ Characteristics:
 
 ---
 
-## Balthazar Special
+## Bomb
 
-Balthazar throws/lobs a bomb.
+Lobbed special with area explosion. Shared by both heroes (random drop).
 
 Characteristics:
 
@@ -900,7 +897,8 @@ Characteristics:
 * fuse;
 * area-of-effect explosion.
 
-The Special weapon must route through the same weapon-selection system rather than existing as an unrelated hidden firing path.
+Specials route through the same weapon-selection system — there is no separate
+hidden firing path.
 
 ---
 

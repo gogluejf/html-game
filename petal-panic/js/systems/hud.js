@@ -3,7 +3,7 @@
 // never scrolls with the world. Pure canvas rects + text (functional-first;
 // visual polish later). Reads only live player state:
 //   - energy bar (red fill) with cyan shield overlay on top
-//   - thorn ammo + special ammo counts (hero-specific special icon)
+//   - weapon readout: default marker + special slot icons
 //   - coins + lives (top-right)
 //   - selected-hero portrait (32×32, top-right corner)
 // ES module, no frameworks. No DOM access beyond the passed ctx.
@@ -16,8 +16,8 @@ const PAD = 12;
 /**
  * Draw the full play HUD in viewport space.
  * @param {CanvasRenderingContext2D} ctx
- * @param {object} hero live Hero instance (energy, maxEnergy, shield, ammo,
- *        specialAmmo, coins, lives, x, w, heroDef, currentArea)
+ * @param {object} hero live Hero instance (energy, maxEnergy, shield,
+ *        specialSlots, selectedWeapon, coins, lives, x, w, heroDef, currentArea)
  * @param {object} _camera unused for now (kept in signature per design §20;
  *        the HUD is viewport-space and needs no camera math)
  * @param {object} levelDef level definition (LEVELS entry; provides index)
@@ -95,22 +95,31 @@ function drawSuperMeter(ctx, hero) {
   ctx.strokeRect(barX + 0.5, barY + 0.5, barW, barH);
 }
 
-// --- Ammo (below energy): thorn count + special count ------------------------
-// §21: the currently SELECTED weapon is indicated with a '>' marker so the
-// player always knows which weapon J will fire. N toggles the selection.
+// --- Weapons (below energy): default marker + special slots ------------------
+// special-weapons.md: the default weapon is built-in (no count). Each special
+// slot shows its held weapon icon, or a dimmed empty box. The currently
+// SELECTED option gets a '>' marker so the player always knows what J fires.
+
+const SPECIAL_SLOT_ICONS = { bomb: '💣', saw: '⚙️' };
 
 function drawAmmo(ctx, hero) {
   const y = PAD + 16 + 19; // just below the energy bar (no label anymore)
   ctx.font = `15px ${FONT_UI}`;
   ctx.textAlign = 'left';
-  const thornSelected = hero.selectedWeapon !== 'special';
-  const thornMark = thornSelected ? '> ' : '  ';
-  ctx.fillStyle = thornSelected ? '#2ecc71' : 'rgba(46, 204, 113, 0.45)';
-  ctx.fillText(`${thornMark}🌿 ${hero.ammo ?? 0}`, PAD, y);
-  const specialIcon = hero.heroDef?.special === 'saw' ? '⚙️' : '💣';
-  const specialMark = thornSelected ? '  ' : '> ';
-  ctx.fillStyle = thornSelected ? 'rgba(155, 89, 182, 0.45)' : '#9b59b6';
-  ctx.fillText(`${specialMark}${specialIcon} ${hero.specialAmmo ?? 0}`, PAD + 80, y);
+  const defaultSelected = !Number.isInteger(hero.selectedWeapon);
+  const defMark = defaultSelected ? '> ' : '  ';
+  ctx.fillStyle = defaultSelected ? '#2ecc71' : 'rgba(46, 204, 113, 0.45)';
+  ctx.fillText(`${defMark}🌿`, PAD, y);
+  let x = PAD + 56;
+  for (let i = 0; i < (hero.specialSlots?.length ?? 0); i++) {
+    const type = hero.specialSlots[i];
+    const sel = hero.selectedWeapon === i;
+    const mark = sel ? '> ' : '  ';
+    const icon = type ? SPECIAL_SLOT_ICONS[type] ?? '❓' : '▫️';
+    ctx.fillStyle = sel ? '#9b59b6' : (type ? 'rgba(155, 89, 182, 0.75)' : 'rgba(155, 89, 182, 0.30)');
+    ctx.fillText(`${mark}${icon}`, x, y);
+    x += 56;
+  }
 }
 
 // --- Coins + lives (top-right) -----------------------------------------------

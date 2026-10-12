@@ -2,23 +2,23 @@
 powerup:
   # --- inherited from Entity ---
 
-  powerType: "ammo"     # one of POWERUP_TYPES
+  powerType: "specialDrop"  # one of POWERUP_TYPES
   def: {}               # { label, color, duration?, apply() }
   collected: false      # latched on collect (prevents double-apply)
   bobOffset: 0          # radians; visual bob phase (random init)
 
   # --- effect definitions ---
   defs:
-    ammo:
-      label: "+100 Ammo"
-      effect: hero.ammo += 100
     invincibility:
       label: "Invincible!"
       duration: 5       # seconds
       effect: hero.invincibleTimer = max(current, 5)
-    special:
-      label: "+50 Special"
-      effect: hero.specialAmmo += 50
+    # Special drop (special-weapons.md): grants a RANDOM special weapon
+    # (bomb / petal saw), shared by both heroes. Placement + auto-select are
+    # owned by the hero's slot model (acquireSpecial).
+    specialDrop:
+      label: "Special!"
+      effect: hero.acquireSpecial(random('bomb', 'saw'))
     rapid:
       label: "Rapid Fire!"
       duration: 6       # seconds

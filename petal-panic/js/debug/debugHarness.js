@@ -20,6 +20,8 @@ import { Powerup, POWERUP_TYPES } from '../objects/powerup.js';
 import { ZONE_GROUND_Y } from '../world/level.js';
 import { Effects } from '../effects.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from './debug.js';
+// TEMP (special-weapons testing): flood special drops for slot-model QA.
+import { makePowerup } from '../objects/powerup.js';
 import { Theater } from './theater.js';
 import { dumpTrace } from '../stats.js';
 import { debugWrapToNextArea } from '../world/zoneLifecycle.js';
@@ -153,6 +155,29 @@ function debugSpawn(type, x, y, state) {
 }
 
 /**
+ * TEMP (special-weapons testing): spawn a ring of 10 specialDrop powerups
+ * around the hero and register them with the live zone + collision world so
+ * they bob, render, and collect normally. Each drop pre-rolls bomb/saw and its
+ * placeholder icon shows WHICH weapon it will grant. Re-press G to flood more
+ * (slots cap at SPECIAL_SLOT_COUNT — excess exercises the replace rules).
+ */
+function debugInjectSpecialDrops() {
+  const h = ctx.hero;
+  if (!h) return;
+  const cx = h.x + h.w / 2, cy = h.y + h.h / 2;
+  const R = 140;
+  let n = 0;
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2;
+    const p = makePowerup('specialDrop', cx + Math.cos(a) * R - 14, cy + Math.sin(a) * R - 14);
+    ctx.powerups.push(p);
+    ctx.collisionWorld?.add(p);
+    n++;
+  }
+  Debug.logEvent(`TEMP: injected ${n} special drops (bomb/saw random)`);
+}
+
+/**
  * Handle debug keypresses. Called from the global keydown listener while
  * Debug.enabled is true. All actions are edge-triggered (one press = one action).
  * @param {KeyboardEvent} e
@@ -202,6 +227,9 @@ function handleDebugKeys(e) {
       // entry screen. Works from PLAY and from the AREA_ENTRY view (pressing W
       // again during the entry screen immediately advances to the next area).
       debugWrapToNextArea();
+      break;
+    case 'KeyG': // TEMP: inject a ring of 10 special drops around the hero
+      debugInjectSpecialDrops();
       break;
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown':
       // Theater stepping is handled by updateTheaterGamepad (reads input.state.moveX).
@@ -305,7 +333,7 @@ function swapHero() {
   const saved = {
     x: hero.x, y: hero.y, vx: hero.vx, vy: hero.vy,
     energy: hero.energy, lives: hero.lives, coins: hero.coins,
-    ammo: hero.ammo, specialAmmo: hero.specialAmmo,
+    specialSlots: [...(hero.specialSlots ?? [])],
     selectedWeapon: hero.selectedWeapon,
     checkpoint: hero.checkpoint, continuesUsed: hero.continuesUsed,
     stats: hero.stats,
@@ -430,12 +458,10 @@ function pickEnemyAt(lx, ly) {
   return null;
 }
 
-/** Per-frame god-mode enforcement: intangible + infinite ammo. */
+/** Per-frame god-mode enforcement: intangible (weapons are unlimited by design). */
 export function applyGodMode(dt) {
   if (!Debug.god) return;
   ctx.hero.intangible = true;
-  ctx.hero.ammo = Infinity;
-  ctx.hero.specialAmmo = Infinity;
 }
 
 // Debug is intentionally outside normal navigation/gameplay bindings.

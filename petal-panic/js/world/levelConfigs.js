@@ -113,10 +113,9 @@ const ENEMY_TYPES = {
 // level strictly decreases from index 1 → 8 — generation.md §5b "Resource
 // scarcity: powerup availability trends down as levels progress").
 const POWERUP_TYPES = {
-  ammo: 1,
+  specialDrop: 1,
   rapid: 0,
   shield: 0,
-  special: 0,
   energy: 0,
   invincibility: 0,
   clear: 0,
@@ -299,10 +298,9 @@ export const LEVEL_CONFIGS = [
     // { type: number } map (NOT nested { type: {weight} }).
     // -----------------------------------------------------------------------
     powerupWeights: {
-      ammo:          5,
+      specialDrop:   4,
       rapid:         3,
       shield:        3,
-      special:       2,
       energy:        2,
       invincibility: 1,
       clear:         1,
@@ -325,25 +323,25 @@ export const LEVEL_CONFIGS = [
         // Intro: sparse, forgiving. Mostly Jesters, few barrels.
         enemies: { jester: 3, jackolantern: 0, vine_hound: 1, boris_loon_baby: 0 },
         barrels: { explosive: 2, wood: 1, coin: 1 },
-        powerups: { ammo: 1, rapid: 1, shield: 0, special: 0, energy: 0, invincibility: 0, clear: 0, oneUp: 0 },
+        powerups: { specialDrop: 1, rapid: 1, shield: 0, energy: 0, invincibility: 0, clear: 0, oneUp: 0 },
       },
       '2': {
         // Building: introduce Jack-O-Lantern and Boris babies.
         enemies: { jester: 3, jackolantern: 2, vine_hound: 2, boris_loon_baby: 1 },
         barrels: { explosive: 3, wood: 2, coin: 2 },
-        powerups: { ammo: 1, rapid: 1, shield: 1, special: 0, energy: 0, invincibility: 0, clear: 0, oneUp: 0 },
+        powerups: { specialDrop: 1, rapid: 1, shield: 1, energy: 0, invincibility: 0, clear: 0, oneUp: 0 },
       },
       '3': {
         // Vertical climb: moderate density, the "unsettling" shift.
         enemies: { jester: 2, jackolantern: 2, vine_hound: 2, boris_loon_baby: 3 },
         barrels: { explosive: 3, wood: 2, coin: 2 },
-        powerups: { ammo: 1, rapid: 1, shield: 1, special: 1, energy: 0, invincibility: 0, clear: 0, oneUp: 0 },
+        powerups: { specialDrop: 2, rapid: 1, shield: 1, energy: 0, invincibility: 0, clear: 0, oneUp: 0 },
       },
       '4': {
         // Pre-boss: dense, all enemy types present.
         enemies: { jester: 3, jackolantern: 3, vine_hound: 3, boris_loon_baby: 4 },
         barrels: { explosive: 4, wood: 2, coin: 3 },
-        powerups: { ammo: 1, rapid: 1, shield: 1, special: 1, energy: 1, invincibility: 0, clear: 1, oneUp: 0 },
+        powerups: { specialDrop: 2, rapid: 1, shield: 1, energy: 1, invincibility: 0, clear: 1, oneUp: 0 },
       },
     },
 
@@ -394,10 +392,8 @@ export const LEVEL_CONFIGS = [
       boris_loon_baby: 5,
     },
     powerupWeights: {
-      ammo:          4,
       rapid:         3,
       shield:        2,
-      special:       2,
       energy:        1,
       invincibility: 1,
       clear:         1,
@@ -429,10 +425,8 @@ export const LEVEL_CONFIGS = [
       violetta_marionetta: 3,
     },
     powerupWeights: {
-      ammo:          4,
       rapid:         3,
       shield:        2,
-      special:       2,
       energy:        1,
       invincibility: 1,
       clear:         0.5,
@@ -464,10 +458,8 @@ export const LEVEL_CONFIGS = [
       violetta_marionetta: 4,
     },
     powerupWeights: {
-      ammo:          3,
       rapid:         3,
       shield:        2,
-      special:       2,
       energy:        1,
       invincibility: 1,
       clear:         0.5,
@@ -499,10 +491,8 @@ export const LEVEL_CONFIGS = [
       violetta_marionetta: 5,
     },
     powerupWeights: {
-      ammo:          3,
       rapid:         2,
       shield:        2,
-      special:       2,
       energy:        1,
       invincibility: 1,
       clear:         0.5,
@@ -534,10 +524,8 @@ export const LEVEL_CONFIGS = [
       violetta_marionetta: 5,
     },
     powerupWeights: {
-      ammo:          3,
       rapid:         2,
       shield:        2,
-      special:       2,
       energy:        1,
       invincibility: 1,
       clear:         0.5,
@@ -569,10 +557,8 @@ export const LEVEL_CONFIGS = [
       violetta_marionetta: 6,
     },
     powerupWeights: {
-      ammo:          3,
       rapid:         2,
       shield:        2,
-      special:       2,
       energy:        1,
       invincibility: 1,
       clear:         0.5,
@@ -605,10 +591,8 @@ export const LEVEL_CONFIGS = [
       violetta_marionetta: 6,
     },
     powerupWeights: {
-      ammo:          2,
       rapid:         2,
       shield:        2,
-      special:       2,
       energy:        1,
       invincibility: 1,
       clear:         0.5,

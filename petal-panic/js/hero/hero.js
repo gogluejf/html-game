@@ -59,12 +59,17 @@ export const KNOCKBACK_PROFILES = {
 /** Fallback profile for unknown sources (keeps takeHit total; no magic numbers). */
 const DEFAULT_KNOCKBACK_SOURCE = 'contact';
 
-// --- Weapon selection (design §21) -------------------------------------------
-// N toggles the selected weapon between Thorn and Special; J always fires the
-// SELECTED weapon through one shared shoot path. Each weapon keeps its own
-// ammo pool and cooldown timer. The selection persists until toggled again.
+// --- Weapon selection (special-weapons.md) ------------------------------------
+// The hero always carries the DEFAULT weapon (thorn) — built-in, infinite,
+// never stored in a slot. Specials (bomb / petal saw) are WEAPONS held in a
+// generic slot array of length SPECIAL_SLOT_COUNT; nothing below hardcodes
+// "two slots" — changing the constant scales placement/rotation/loss rules.
+// N rotates the selection: default → slot 0 → slot 1 → … skipping empty
+// slots. J fires whatever is selected through one shared shoot path.
 export const WEAPON_THORN = 'thorn';
 export const WEAPON_SPECIAL = 'special';
+/** Number of special-weapon slots the hero carries (special-weapons.md). */
+export const SPECIAL_SLOT_COUNT = 2;
 
 /** Hero knockback resistance modifier (§25): scales every profile's strength. */
 const HERO_KNOCKBACK_RESISTANCE = 1;
@@ -101,24 +106,21 @@ export class Hero extends Entity {
     this.wallet = {
       current: {
         coins: 0,
-        ammo: 200,
-        specialAmmo: 0,
         energy: heroDef.stats.stamina,
         kills: 0,
       },
       snapshot: {
         coins: 0,
-        ammo: 200,
-        specialAmmo: 0,
         energy: heroDef.stats.stamina,
         kills: 0,
       },
     };
     this.shield = 0;
-    // §21 Weapon Switching: N toggles the SELECTED weapon ('thorn' | 'special');
-    // J always fires whatever is selected through one shared shoot path. The
-    // selection persists until toggled again.
+    // Weapon selection (special-weapons.md): 'thorn' (default weapon) or a
+    // numeric slot index into specialSlots. Specials are weapons, not ammo —
+    // each slot holds null | 'bomb' | 'saw'.
     this.selectedWeapon = WEAPON_THORN;
+    this.specialSlots = new Array(SPECIAL_SLOT_COUNT).fill(null);
     this.lives = 3;
     // Invincibility + rapid-fire are now unified labeled timers (see timers.js),
     // exposed via the getters/setters below so legacy call sites
@@ -278,20 +280,14 @@ export class Hero extends Entity {
   get hitStunned() { return this.timers.get('rec') > 0; }
 
   // --- Wallet field bridges -------------------------------------------------
-  // Legacy call sites read/write hero.coins / hero.ammo / hero.specialAmmo /
-  // hero.energy as if they were plain fields. These accessors route them to
-  // the authoritative wallet.current so there is a single source of truth and
-  // the death-reset (current = snapshot) applies uniformly. maxEnergy stays a
-  // plain field (it is a fixed baseline, not a held resource).
+  // Legacy call sites read/write hero.coins / hero.energy as if they were
+  // plain fields. These accessors route them to the authoritative
+  // wallet.current so there is a single source of truth and the death-reset
+  // (current = snapshot) applies uniformly. maxEnergy stays a plain field
+  // (it is a fixed baseline, not a held resource).
 
   get coins() { return this.wallet.current.coins; }
   set coins(v) { this.wallet.current.coins = v; }
-
-  get ammo() { return this.wallet.current.ammo; }
-  set ammo(v) { this.wallet.current.ammo = v; }
-
-  get specialAmmo() { return this.wallet.current.specialAmmo; }
-  set specialAmmo(v) { this.wallet.current.specialAmmo = v; }
 
   get energy() { return this.wallet.current.energy; }
   set energy(v) { this.wallet.current.energy = v; }
@@ -622,14 +618,64 @@ export class Hero extends Entity {
   }
 
   /**
-   * Toggle the selected weapon between Thorn and Special (design §21).
-   * Edge-triggered by the update system on an N press — this ONLY changes the
-   * selection; it never fires anything. J always fires whatever is currently
-   * selected through the single shared shoot path. Each weapon keeps its own
-   * ammo pool and cooldown, so toggling mid-cooldown is harmless.
+   * Acquire a special weapon (special-weapons.md). Placement rules, in order:
+   *   1. first empty slot takes it;
+   *   2. else if a SLOT is currently selected, that slot is replaced;
+   *   3. else (default weapon selected, all slots full) slot 0 is replaced.
+   * The newly placed weapon is ALWAYS auto-selected. Picking up a special you
+   * already hold simply replaces per these rules — no stacking, no counts.
+   * @param {'bomb'|'saw'} type
    */
-  toggleWeapon() {
-    this.selectedWeapon = this.selectedWeapon === WEAPON_THORN ? WEAPON_SPECIAL : WEAPON_THORN;
+  acquireSpecial(type) {
+    let idx = this.specialSlots.indexOf(null);
+    if (idx === -1) {
+      idx = (Number.isInteger(this.selectedWeapon)) ? this.selectedWeapon : 0;
+    }
+    this.specialSlots[idx] = type;
+    this.selectedWeapon = idx;
+  }
+
+  /**
+   * Lose the currently selected special (special-weapons.md): called when a
+   * hit actually costs damage on the hero. No-op when the default weapon or an
+   * empty slot is selected. After clearing, compact left so we never leave a
+   * layout of "empty slot before a filled one". Selection fallback: if OTHER
+   * specials remain, the selection index persists (rotation skips empties);
+   * if NOTHING remains, selection falls back to the default weapon — otherwise
+   * the player would be stuck aiming at an empty slot with thorn unreachable.
+   */
+  loseSelectedSpecial() {
+    if (!Number.isInteger(this.selectedWeapon)) return;
+    const sel = this.selectedWeapon;
+    if (sel < 0 || sel >= this.specialSlots.length || !this.specialSlots[sel]) return;
+    this.specialSlots[sel] = null;
+    // Compact left: shift each filled slot into the earliest available gap.
+    let gap = 0;
+    for (let i = 0; i < this.specialSlots.length; i++) {
+      if (this.specialSlots[i] == null) { gap = i; continue; }
+      if (i > gap) {
+        this.specialSlots[gap] = this.specialSlots[i];
+        this.specialSlots[i] = null;
+      }
+    }
+    // Last special gone → back to the default weapon (no empty-slot trap).
+    if (this.specialSlots.every((t) => t == null)) this.selectedWeapon = WEAPON_THORN;
+  }
+
+  /**
+   * Rotate the selected weapon (replaces the old toggleWeapon): cycles
+   * default → slot 0 → slot 1 → … → default, skipping empty slots. Edge-
+   * triggered by the update system on an N press — this ONLY changes the
+   * selection; it never fires anything.
+   */
+  rotateWeapon() {
+    const options = [WEAPON_THORN];
+    for (let i = 0; i < this.specialSlots.length; i++) {
+      if (this.specialSlots[i] != null) options.push(i);
+    }
+    if (options.length <= 1) return;
+    const cur = options.indexOf(this.selectedWeapon);
+    this.selectedWeapon = options[(cur + 1) % options.length];
   }
 
   /**
@@ -1122,7 +1168,7 @@ export class Hero extends Entity {
 
   /**
    * Respawn at the last checkpoint with full energy and brief i-frames (Task
-   * 5.2). Clears the death flag, restores energy/ammo-independent resources,
+   * 5.2). Clears the death flag, restores energy and other non-wallet resources,
    * and grants RESPAWN_IFRAMES of invincibility so the player isn't instantly
    * killed again at the spawn point.
    */

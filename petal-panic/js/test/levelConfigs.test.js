@@ -152,7 +152,7 @@ test('Level 1: enemyWeights are a flat { type: number } map with positive weight
 
 test('Level 1: powerupWeights are a flat { type: number } map with positive weights', () => {
   const l1 = getLevelConfig(1);
-  const VALID_POWERUPS = new Set(['ammo', 'invincibility', 'special', 'rapid', 'shield', 'clear', 'energy', 'oneUp']);
+  const VALID_POWERUPS = new Set(['specialDrop', 'invincibility', 'rapid', 'shield', 'clear', 'energy', 'oneUp']);
   assert.ok(l1.powerupWeights && typeof l1.powerupWeights === 'object', 'powerupWeights is present');
   for (const [type, weight] of Object.entries(l1.powerupWeights)) {
     // Flat schema: the value IS the weight (a number), not a nested { weight }.

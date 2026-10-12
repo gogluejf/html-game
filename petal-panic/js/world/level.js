@@ -71,9 +71,8 @@ export const LEVELS = [
       woodBarrels: 4,
       coinBarrels: 4,
       powerups: {
-        ammo: 3,
+        specialDrop: 3,
         invincibility: 1,
-        special: 2,
         rapid: 2,
         shield: 1,
         clear: 1,

@@ -7,12 +7,13 @@
 //
 // Collection contract (driven by the update system's 'pickup' collision rule):
 //   - collect() latches `collected` + kills the entity so it can't double-apply
-//   - def.apply(hero, context) mutates hero state (ammo/energy/timers/lives...)
+//   - def.apply(hero, context) mutates hero state (slots/energy/timers/lives...)
 //   - traceStats.powerupsCollected[type] is bumped for telemetry (design §4)
 //   - VFX (sparkle pop + floating label text) are spawned by the caller so this
 //     module has no particle dependency and stays unit-testable.
 
 import { Entity } from '../core/entity.js';
+import { Anim, makeTestFrame } from '../core/anim.js';
 import { LAYER } from '../consts.js';
 import { record } from '../stats.js';
 
@@ -21,15 +22,20 @@ import { record } from '../stats.js';
 // `context` carries live game state the effect needs beyond the hero itself
 // (e.g. the enemy list for 'clear'). All effects clamp sensibly.
 export const POWERUP_DEFS = {
-  ammo:          { label: '+100 Ammo',    color: '#3498db',
-                   apply: (hero) => { hero.ammo += 100; } },
   invincibility: { label: 'Invincible!',  color: '#3498db', duration: 5,
                    apply: (hero) => {
                      hero.intangible = true;
                      hero.timers.set('intangible', Math.max(hero.timers.get('intangible'), 5));
                    } },
-  special:       { label: '+50 Special',  color: '#3498db',
-                   apply: (hero) => { hero.specialAmmo += 50; } },
+  // Special drop (special-weapons.md): grants a RANDOM special weapon — bomb or
+  // petal saw — identical for both heroes. The hero's slot model owns placement
+  // + auto-select; this def only picks the type.
+  specialDrop:   { label: 'Special!',     color: '#9b59b6',
+                   apply: (hero, _ctx, p) => {
+                     // Use the instance's pre-rolled weapon (p.specialRoll) so
+                     // the placeholder icon matches what actually lands in the slot.
+                     hero.acquireSpecial(p?.specialRoll ?? (Math.random() < 0.5 ? 'bomb' : 'saw'));
+                   } },
   rapid:         { label: 'Rapid Fire!',  color: '#3498db', duration: 6,
                    apply: (hero) => { hero.rapidTimer = Math.max(hero.rapidTimer ?? 0, 6); } },
   shield:        { label: '+50 Shield',   color: '#3498db',
@@ -58,6 +64,33 @@ export const POWERUP_DEFS = {
 /** All powerup type keys (level spawn budgets iterate these). */
 export const POWERUP_TYPES = Object.keys(POWERUP_DEFS);
 
+// --- Placeholder visuals (TEMP — until real powerup sprites are wired) -------
+// Each type gets a distinct color + a big glyph so drops are identifiable at a
+// glance during testing. specialDrop rolls bomb/saw per instance (matching the
+// effect), so you can SEE which special is about to drop.
+const PLACEHOLDER_STYLE = {
+  invincibility: { color: '#f1c40f', glyph: '★' },
+  specialDrop:   { color: '#9b59b6', glyph: null }, // resolved per instance
+  rapid:         { color: '#e67e22', glyph: '»' },
+  shield:        { color: '#3498db', glyph: '⛨' },
+  clear:         { color: '#e74c3c', glyph: '✸' },
+  energy:        { color: '#2ecc71', glyph: '♥' },
+  oneUp:         { color: '#e74c3c', glyph: '1UP' },
+};
+const SPECIAL_GLYPHS = { bomb: '💣', saw: '⚙' };
+
+/** Build a single-frame placeholder canvas: colored body + centered glyph. */
+function placeholderFrame(w, h, color, glyph) {
+  const c = makeTestFrame(w, h, color);
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff';
+  g.font = `bold ${Math.floor(h * 0.55)}px sans-serif`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(glyph, w / 2, h / 2 + 1);
+  return [c];
+}
+
 // ---------------------------------------------------------------------------
 // Powerup entity
 // ---------------------------------------------------------------------------
@@ -83,6 +116,19 @@ export class Powerup extends Entity {
     this.def = def;
     this.collected = false;
     this.bobOffset = Math.random() * Math.PI * 2; // visual bob phase
+
+    // Placeholder sprite (TEMP): distinct per type; specialDrop shows the
+    // actual rolled weapon so the drop is visually unambiguous.
+    const st = PLACEHOLDER_STYLE[type] ?? { color: def.color, glyph: '?' };
+    let glyph = st.glyph;
+    if (type === 'specialDrop') {
+      this.specialRoll = Math.random() < 0.5 ? 'bomb' : 'saw';
+      glyph = SPECIAL_GLYPHS[this.specialRoll];
+    }
+    this.debugColor = st.color;
+    this.anim = new Anim(placeholderFrame(this.w, this.h, st.color, glyph), {
+      speed: 100, loop: true,
+    });
   }
 
   /** Per-frame step: advance the gentle bob animation only. */
@@ -106,7 +152,7 @@ export class Powerup extends Entity {
     this.alive = false;
 
     // Apply the documented effect.
-    this.def.apply(hero, context?.enemies ?? []);
+    this.def.apply(hero, context?.enemies ?? [], this);
 
     // Telemetry (design §4: powerupsCollected per type) — into the trace.
     if (hero.traceStats) {

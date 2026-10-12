@@ -2,7 +2,7 @@
 //
 // TWO SEPARATE OBJECTS ON THE HERO (they never touch each other):
 //   - hero.currentStats : "what do I have RIGHT NOW" (wallet: coins, lives,
-//     ammo). Has { snapshot, current }. Rollback reverts current -> snapshot.
+//     coins/kills). Has { snapshot, current }. Rollback reverts current -> snapshot.
 //   - hero.traceStats   : "everything that EVER happened". Only goes UP.
 //     Death / rollback NEVER touches it. This file owns traceStats.
 //
@@ -73,7 +73,7 @@ const ENEMY_KEYS = ['jester', 'jackolantern', 'vine_hound', 'boris_loon', 'boris
 const BOSS_KEYS = ['tusko_wobble'];
 
 /** Powerup type keys (must match POWERUP_DEFS keys in powerup.js). */
-const POWERUP_KEYS = ['ammo', 'invincibility', 'special', 'rapid', 'shield', 'clear', 'energy', 'oneUp'];
+const POWERUP_KEYS = ['specialDrop', 'invincibility', 'rapid', 'shield', 'clear', 'energy', 'oneUp'];
 
 /** Barrel type keys. */
 const BARREL_KEYS = ['woodBarrel', 'explosiveBarrel', 'coinBarrel'];

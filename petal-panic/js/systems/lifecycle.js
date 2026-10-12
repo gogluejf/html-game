@@ -26,7 +26,7 @@
 import { GAME_RULES, createContinuePool, canSpend, spend, credit, resetLevelCoinTally, resetHeroInventory } from './gameRules.js';
 import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../world/level.js';
 import { getLevelConfig } from '../world/levelConfigs.js';
-import { Hero } from '../hero/hero.js';
+import { Hero, WEAPON_THORN } from '../hero/hero.js';
 import {createTrace, record, beginLife, beginContinue, calculateScore} from '../stats.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
 import { tryTransition, getState, setState, S } from '../core/state.js';
@@ -76,7 +76,7 @@ export function recordAreaEntrySnapshot(h) {
  * Restore the hero's wallet to the recorded area-entry snapshot (if any).
  * A no-op when there is no snapshot or the snapshot was taken for a DIFFERENT
  * area (a genuine advance re-snapshots; only a same-area death-restart
- * restores). This is the anti-farming reset: a failed attempt's coins/ammo/
+ * restores). This is the anti-farming reset: a failed attempt's coins/
  * energy/kills do not carry into the fresh attempt (game-rules.md §4).
  * The append-only trace is intentionally untouched.
  * @param {Hero} h
@@ -353,6 +353,11 @@ export function startGame(ctx, heroDef) {
 export function startArea(h, level, areaIdx) {
   h.currentLevel = level;
   h.currentArea = areaIdx;
+  // Special slots do NOT persist across area advance (game-rules.md §5,
+  // TUNING_INVENTORY.specialSlots = 'reset') — clear held specials + selection
+  // on every genuine area entry.
+  if (Array.isArray(h.specialSlots)) h.specialSlots.fill(null);
+  if (h.selectedWeapon !== undefined) h.selectedWeapon = WEAPON_THORN;
   // Accounting snapshot (game-rules.md §4): record the entry totals for this
   // genuine area entry so a later death restart of the same area can roll the
   // run stats back to them (the 'rollback' policy).

@@ -172,6 +172,10 @@ export function resolveExplosion(explosion, targets) {
 
     hit.push(t);
 
+    // Special loss (special-weapons.md): blast damage on the hero drops the
+    // selected special (takeHit below handles knockback/i-frames only).
+    if (t === hero) hero.loseSelectedSpecial();
+
     // Radial knockback away from the blast center.
     if (t === hero) {
       // Preserve the hero's exact pre-refactor behavior: takeHit('explosion') sets

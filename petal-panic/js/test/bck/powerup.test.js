@@ -27,7 +27,9 @@ function fakeHero(overrides = {}) {
   return {
     x: 80, y: 400, w: 32, h: 48, alive: true,
     energy: 50, maxEnergy: 100,
-    shield: 0, ammo: 200, specialAmmo: 0, coins: 0, lives: 3,
+    shield: 0, coins: 0, lives: 3,
+    specialSlots: [null, null],
+    acquireSpecial(type) { this.specialSlots[0] = type; this.selectedWeapon = 0; },
     invincibleTimer: 0, rapidTimer: 0,
     checkpoint: { x: 80, y: 400 },
     combatStats: { powerupsCollected: {} },
@@ -53,7 +55,7 @@ function fakeTakeDamageEnemy(hp = 20) {
 
 console.log('Definitions');
 ok('POWERUP_DEFS has all 8 documented types', () => {
-  const expected = ['ammo','invincibility','special','rapid','shield','clear','energy','oneUp'];
+  const expected = ['invincibility','specialDrop','rapid','shield','clear','energy','oneUp'];
   for (const t of expected) assert.ok(POWERUP_DEFS[t], `missing ${t}`);
   assert.equal(POWERUP_TYPES.length, 8);
 });
@@ -61,18 +63,20 @@ ok('invincibility duration is ~5s', () => approx(POWERUP_DEFS.invincibility.dura
 ok('rapid duration is ~6s', () => approx(POWERUP_DEFS.rapid.duration, 6));
 
 console.log('Powerup entity');
+
+ok('unknown type throws', () => {
+  assert.throws(() => new Powerup('bogus', 0, 0), /Unknown powerup type/);
+});
 ok('constructor sets PICKUP layer + def + not collected', () => {
-  const p = new Powerup('ammo', 100, 200);
+  const p = new Powerup('rapid', 100, 200);
   assert.equal(p.layer, LAYER.PICKUP);
-  assert.equal(p.powerType, 'ammo');
-  assert.equal(p.def.label, '+100 Ammo');
+  assert.equal(p.powerType, 'rapid');
+  assert.equal(p.def.label, 'Rapid Fire!');
   assert.equal(p.collected, false);
   assert.equal(p.alive, true);
   assert.equal(p.w, 28); assert.equal(p.h, 28);
 });
-ok('unknown type throws', () => {
-  assert.throws(() => new Powerup('bogus', 0, 0), /Unknown powerup type/);
-});
+
 ok('makePowerup factory returns a Powerup', () => {
   const p = makePowerup('rapid', 50, 60);
   assert.ok(p instanceof Powerup);
@@ -80,11 +84,6 @@ ok('makePowerup factory returns a Powerup', () => {
 });
 
 console.log('Effects (acceptance #1: each applies its documented effect)');
-ok('ammo: +100 ammo', () => {
-  const h = fakeHero({ ammo: 200 });
-  new Powerup('ammo', 0, 0).collect(h, {});
-  assert.equal(h.ammo, 300);
-});
 ok('invincibility: sets invincibleTimer to 5 (acceptance #2)', () => {
   const h = fakeHero();
   new Powerup('invincibility', 0, 0).collect(h, {});
@@ -95,10 +94,12 @@ ok('invincibility: extends existing timer (max, not reset-lower)', () => {
   new Powerup('invincibility', 0, 0).collect(h, {});
   assert.equal(h.invincibleTimer, 7); // keeps the longer remaining time
 });
-ok('special: +50 special ammo', () => {
-  const h = fakeHero({ specialAmmo: 0 });
-  new Powerup('special', 0, 0).collect(h, {});
-  assert.equal(h.specialAmmo, 50);
+ok('specialDrop: grants a random special via acquireSpecial', () => {
+  const h = fakeHero();
+  let got = null;
+  h.acquireSpecial = (type) => { got = type; };
+  new Powerup('specialDrop', 0, 0).collect(h, {});
+  assert.ok(got === 'bomb' || got === 'saw', `random special granted (got ${got})`);
 });
 ok('rapid: sets rapidTimer to 6', () => {
   const h = fakeHero();
@@ -148,11 +149,15 @@ ok('oneUp: +1 life', () => {
 
 console.log('Collection contract (acceptance #4: latch + telemetry)');
 ok('collect() latches: second call does NOT re-apply', () => {
-  const h = fakeHero({ ammo: 200 });
-  const p = new Powerup('ammo', 0, 0);
+  const h = fakeHero();
+  let applies = 0;
+  h.rapidTimer = 0;
+  const p = new Powerup('rapid', 0, 0);
+  const origApply = p.def.apply;
+  p.def = { ...p.def, apply: (hero) => { applies++; origApply(hero); } };
   assert.equal(p.collect(h, {}), true);
   assert.equal(p.collect(h, {}), false); // latched
-  assert.equal(h.ammo, 300);             // applied exactly once
+  assert.equal(applies, 1);              // applied exactly once
   assert.equal(p.alive, false);
   assert.equal(p.collected, true);
 });
@@ -164,7 +169,7 @@ ok('collect() bumps combatStats.powerupsCollected[type]', () => {
 });
 ok('collect() works without combatStats (no crash)', () => {
   const h = fakeHero(); delete h.combatStats;
-  assert.doesNotThrow(() => new Powerup('ammo', 0, 0).collect(h, {}));
+  assert.doesNotThrow(() => new Powerup('rapid', 0, 0).collect(h, {}));
 });
 
 console.log('Checkpoint (acceptance #3: stores restart position)');

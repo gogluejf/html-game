@@ -240,9 +240,9 @@ export const TUNING_COINS = Object.freeze({
 // hero's baseline (full energy, no temporary powerups) per the existing
 // respawn behavior.
 export const TUNING_INVENTORY = Object.freeze({
-  // Ammo (the hero's held weapon/ammo state) resets to baseline on a new
-  // area, and on death/continue the hero is restored to its baseline.
-  ammo: 'reset',
+  // Special slots (held special weapons) clear on a new area and on
+  // death/continue (special-weapons.md — a fresh attempt starts empty).
+  specialSlots: 'reset',
   // Selected weapon resets to the hero's default on a new area and on
   // death/continue.
   weapon: 'reset',

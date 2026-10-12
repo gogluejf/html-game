@@ -438,7 +438,7 @@ export const Select = {
       });
 
       // Special ability plaque.
-      const specialLabel = hero.stats.special === 'saw' ? 'Petal Saw' : 'Bomb Burst';
+      const specialLabel = 'Specials: Petal Saw / Bomb Burst';
       const plqY = cy + 34;
       ctx.save();
       ctx.fillStyle = 'rgba(255,110,199,0.12)';

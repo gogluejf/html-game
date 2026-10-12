@@ -790,7 +790,7 @@ export function update(dt) {
   //     Boss zone flow (boss-arena.md §2): shooting is disabled during the
   //     intro (states 1–5) — the presentation must not imply the boss is
   //     attackable before combat starts.
-  if (input.switchWeapon) hero.toggleWeapon(); // edge-triggered, no fire
+  if (input.switchWeapon) hero.rotateWeapon(); // edge-triggered, no fire
   // Thorn cooldown ticks EVERY frame regardless of input/selection — a stale
   // cooldown must never freeze while J is released or Special is selected.
   if (hero.fireCooldown > 0) hero.fireCooldown -= dt;

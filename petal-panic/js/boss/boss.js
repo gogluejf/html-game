@@ -234,6 +234,7 @@ export class Elephant extends Enemy {
     if (hero.grounded) {
       const dealt = damage(this, hero, this.stats.attack, 'melee');
       if (dealt > 0) {
+        hero.loseSelectedSpecial(); // special-weapons.md: damaging hit drops it
         hero.intangible = true;
         hero.timers.set('intangible', Math.max(hero.timers.get('intangible'), 0.3));
         return true;

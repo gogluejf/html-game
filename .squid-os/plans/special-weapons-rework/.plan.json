@@ -1,0 +1,133 @@
+{
+  "plan_name": "special-weapons-rework",
+  "title": "Special Weapons Rework — specials become weapons in slots, ammo counting dies",
+  "why": "Specials are currently resources (specialAmmo counter, +50 Special powerups) and regular shots drain an ammo pool collected via powerups. This makes pickups feel like inventory management instead of gear. We make specials WEAPONS held in a generic slot array: both heroes share one pool (bomb / petal saw, random drop), rotation cycles default → slots skipping empties, and taking a damaging hit drops the selected special. No hardcoded slot count anywhere — SLOT_COUNT drives everything so 3+ slots later is a constant change.",
+  "outcomes": "Hero carries specialSlots (array of length SLOT_COUNT) + selectedWeapon ('default' or slot index); pickup auto-selects and places by first-empty-then-replace-selected rule; same-special pickup replaces; damaging hits (damage() > 0 on hero) clear the selected slot with compact-left invariant (no gap before a filled slot); rotation skips empty slots; ammo/specialAmmo counters, their powerup defs, HUD counts, and reset logic are gone; both heroes can hold both specials; docs (powerup.yaml, hero.yaml, hero-mechanics.md, game-rules.md) describe the new system only. design.md is a frozen v1 snapshot in plans/ — never touched. Source of truth: petal-panic/docs/architecture/special-weapons.md.",
+  "milestones": [
+    {
+      "number": 1,
+      "name": "Slot Model + Rotation + Firing",
+      "pattern": ["Generic slot array driven by SLOT_COUNT const", "Single placement/loss/rotation helpers on Hero"],
+      "objective": "The hero's weapon state is a slot array with pure helper methods; rotation and firing work off it; no behavior depends on there being exactly two slots.",
+      "success": "Unit tests prove: placement order (first empty → replace selected → slot 0 when default selected), same-special replace, rotation cycle skipping empties, compact-left after loss, auto-select on pickup — all expressed against SLOT_COUNT, not literal indices beyond 0/1 where avoidable.",
+      "tasks": [
+        {
+          "number": "1.1",
+          "name": "Slot model on Hero (SLOT_COUNT-driven)",
+          "type": "feature",
+          "what": "In petal-panic/js/hero/hero.js add export const SPECIAL_SLOT_COUNT = 2 and give the hero: this.specialSlots = new Array(SPECIAL_SLOT_COUNT).fill(null) (entries null | 'bomb' | 'saw'), this.selectedWeapon starts as WEAPON_THORN (rename semantics: 'default'). Add pure helper methods: acquireSpecial(type) implementing placement rules (first empty slot → else if selectedWeapon is a slot index replace that slot → else replace slot 0; ALWAYS set selectedWeapon to the placed slot), loseSelectedSpecial() (clear selected slot if it is a slot index, then compact left: any filled slot after an empty one shifts into the earliest empty; selection falls back to lowest filled slot else WEAPON_THORN), and rotateWeapon() (cycle default → 0 → 1 → … → n-1 skipping empty slots; wrap around; stay put if nothing else exists). Keep WEAPON_THORN exported (consumers import it) but treat it as the default weapon token. Do NOT remove ammo fields yet (milestone 2).",
+          "why": "One owner for slot semantics; every rule from special-weapons.md lives in three small testable methods instead of scattering across pickup/fire/hit code paths.",
+          "files": ["~ petal-panic/js/hero/hero.js"],
+          "acceptance": [
+            "acquireSpecial into empty hero places at slot 0 and selects it",
+            "second acquireSpecial places at next empty and selects it",
+            "third acquireSpecial while a slot is selected replaces THAT slot",
+            "third acquireSpecial while default is selected replaces slot 0",
+            "acquireSpecial of a type already held replaces it per placement rules and selects the new copy",
+            "loseSelectedSpecial on empty-slot selection is a no-op",
+            "loseSelectedSpecial on slot 1 with slot 0 empty moves the weapon to slot 0 and selects it",
+            "rotateWeapon cycles default→0→1→default skipping empty slots and wraps",
+            "all logic indexes via loops over SPECIAL_SLOT_COUNT — changing the const to 3 keeps every test passing"
+          ],
+          "verify": ["node petal-panic/js/test/specialSlots.test.js"]
+        },
+        {
+          "number": "1.2",
+          "name": "Wire rotation input + fireSpecial off slots",
+          "type": "refactor",
+          "what": "In petal-panic/js/systems/update.js replace the hero.toggleWeapon() call site with hero.rotateWeapon(). In petal-panic/js/combat/shooting.js rewrite fireSpecial(h, input): read the selected slot (h.selectedWeapon must be a numeric slot index holding a non-null type, else return — no more h.stats.special lookup, no more h.specialAmmo check/consume); spawn the special of the slot's type via specialPool.spawn as before; keep the 'special' labeled cooldown timer + trace records. Remove the old toggleWeapon() method from hero.js once update.js no longer calls it (check debugHarness.js line ~309 which reads selectedWeapon for display — keep working, it just reads the field). Update js/test/weaponToggle.test.js to assert the new rotation cycle (rename file to specialRotation.test.js).",
+          "why": "Firing must consume the slot model end-to-end; leaving toggleWeapon behind creates two sources of weapon-selection truth.",
+          "files": ["~ petal-panic/js/systems/update.js", "~ petal-panic/js/combat/shooting.js", "~ petal-panic/js/hero/hero.js", "~ petal-panic/js/test/weaponToggle.test.js"],
+          "acceptance": [
+            "switch input rotates through occupied options only",
+            "firing with default selected spawns thorn as before",
+            "firing with a filled slot selected spawns that slot's special type and does NOT mutate the slot (no decrement)",
+            "firing with an empty/absent slot selected falls back safely (no throw, no spawn)",
+            "cooldown timer still gates rapid re-fire"
+          ],
+          "verify": ["node petal-panic/js/test/specialRotation.test.js", "node petal-panic/js/test/projectile.test.js"]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "name": "Drops, Loss Wiring, Dead Code Sweep",
+      "pattern": ["Powerup def table is the single drop source", "damage() > 0 on hero is the single loss hook"],
+      "objective": "Pickups grant shared random specials, damaging hits drop the selected special, and no ammo-counter code remains anywhere in js/.",
+      "success": "Grep for specialAmmo and wallet ammo returns zero live references in js/ (test files updated); a bomb/saw powerup touch grants a random shared special; a damaging contact removes the selected special with the compact invariant; full test suite green.",
+      "tasks": [
+        {
+          "number": "2.1",
+          "name": "Powerup drops: shared random special, kill ammo/special defs",
+          "type": "refactor",
+          "what": "In petal-panic/js/objects/powerup.js: delete the ammo def (+100 Ammo) and the special def (+50 Special); add ONE def specialDrop (label e.g. 'Special!', color kept) whose apply(hero) calls hero.acquireSpecial(Math.random() < 0.5 ? 'bomb' : 'saw') — identical for both heroes. Update POWERUP_TYPES accordingly. In petal-panic/js/world/levelConfigs.js update every powerups table entry: remove ammo keys, rename special keys to specialDrop keeping existing counts (lines ~305, 328-346, 400, 435, 470, 505 and the defaults block ~119). Check populate.js / any spawner that maps powerup type strings and update. Remove stats.special ('saw'/'bomb') from heroDefs.js since the hero no longer has an innate special type (grep for other readers first).",
+          "why": "The def table + level configs are the only places drop identity is declared; making them agree with the shared-pool rule in one pass prevents half-migrated drops.",
+          "files": ["~ petal-panic/js/objects/powerup.js", "~ petal-panic/js/world/levelConfigs.js", "~ petal-panic/js/hero/heroDefs.js"],
+          "acceptance": [
+            "POWERUP_TYPES contains no 'ammo' and no old 'special' key",
+            "collecting the special powerup calls acquireSpecial with 'bomb' or 'saw' (both heroes, no per-hero branch)",
+            "level config powerups tables validate against the new type list (populate tests pass)",
+            "no reader of stats.special remains"
+          ],
+          "verify": ["node petal-panic/js/test/populate.test.js", "node petal-panic/js/test/levelConfigs.test.js"]
+        },
+        {
+          "number": "2.2",
+          "name": "Special loss on damaging hit",
+          "type": "feature",
+          "what": "Hook special loss where the hero actually pays damage. The central damage() in petal-panic/js/combat/damage.js drains target.energy for heroes; the cleanest single hook is at the hero-facing call sites in petal-panic/js/combat/collisionHandlers.js (contact handler ~line 217 and the ally/foe projectile path ~line 126) plus explosion.js hero routing (~line 179): whenever damage(source, heroEnt, ...) returns > 0 AND the hero is not dying, call heroEnt.loseSelectedSpecial(). Prefer adding the call inside a tiny helper (e.g. dealDamageToHero(source, hero, amt, method)) if the three sites share shape, so the rule stays in one place. i-frame/connect-protected paths already return dealt==0 or early-return, so they must NOT trigger loss — verify with a test.",
+          "why": "special-weapons.md defines loss as 'a hit that costs damage'; damage() > 0 is exactly that predicate and every damaging hero hit already funnels through these call sites.",
+          "files": ["~ petal-panic/js/combat/collisionHandlers.js", "~ petal-panic/js/combat/explosion.js", "+ petal-panic/js/test/specialLoss.test.js"],
+          "acceptance": [
+            "enemy contact dealing damage clears the selected special slot",
+            "projectile hit dealing damage clears it too",
+            "explosion hit dealing damage clears it too",
+            "hit absorbed by intangible/i-frames does NOT clear it",
+            "connectProtected hit does NOT clear it",
+            "after loss the compact-left invariant holds (slot0 empty + slot1 filled is impossible)"
+          ],
+          "verify": ["node petal-panic/js/test/specialLoss.test.js", "node petal-panic/js/test/heroHit.test.js"]
+        },
+        {
+          "number": "2.3",
+          "name": "Dead ammo code sweep + HUD + reset",
+          "type": "refactor",
+          "what": "Remove the ammo quantity system end-to-end: (1) hero.js — delete wallet.ammo / wallet.specialAmmo from the baseline snapshot (~lines 104-112), the legacy get/set bridges for ammo + specialAmmo (~290-294), and the §21 comment block describing the old toggle; (2) systems/gameRules.js — delete the ammo reset lines (~113-124) and the TUNING_INVENTORY.ammo reference (~49); on death-reset clear specialSlots + selectedWeapon instead (fresh attempt starts empty, per mechanic doc); (3) systems/hud.js — replace the two ammo count lines (~106-113) with a slot display: default marker + up to SPECIAL_SLOT_COUNT slot icons showing held special or dimmed empty; (4) grep -rn 'specialAmmo\\|\\.ammo\\b' petal-panic/js/ and fix every remaining live reference (debugHarness.js snapshot ~309 should report specialSlots instead); (5) update tests referencing counters: hud83.test.js, tuning.test.js, reward.test.js, levelFlow.test.js, contextualAim.test.js as needed.",
+          "why": "Half-removed counters are the classic source of phantom bugs (death checks, persistence, debug views); one sweep with a grep gate makes 'gone' verifiable.",
+          "files": ["~ petal-panic/js/hero/hero.js", "~ petal-panic/js/systems/gameRules.js", "~ petal-panic/js/systems/hud.js", "~ petal-panic/js/debug/debugHarness.js", "~ petal-panic/js/test/hud83.test.js"],
+          "acceptance": [
+            "grep -rn 'specialAmmo' petal-panic/js/ returns zero matches",
+            "grep -rn '\\.ammo' petal-panic/js/ returns zero live matches (comments explaining history allowed)",
+            "HUD renders slots, not counts",
+            "death/reset leaves specialSlots empty and selectedWeapon at default",
+            "full suite: node petal-panic/js/test/run-all.mjs green"
+          ],
+          "verify": ["node petal-panic/js/test/run-all.mjs"]
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "name": "Doc Sync",
+      "pattern": ["architecture/special-weapons.md is the law; yaml/engine docs mirror code"],
+      "objective": "Every living doc describes the slot system; no stale ammo mechanics remain outside the frozen v1 snapshot.",
+      "success": "grep -rniE 'ammo' petal-panic/docs/ matches only special-weapons.md (which legitimately mentions what died) and contains no instruction to collect/count ammo elsewhere.",
+      "tasks": [
+        {
+          "number": "3.1",
+          "name": "Update engine yamls + architecture + levels docs",
+          "type": "docs",
+          "what": "(1) docs/engine/base/powerup.yaml — remove ammo + special defs, add specialDrop def (random bomb/saw, shared by both heroes, applies acquireSpecial); (2) docs/engine/base/hero.yaml — remove ammo: 200 / specialAmmo: 0, add specialSlots (array, length SPECIAL_SLOT_COUNT=2, entries null|bomb|saw) + selectedWeapon ('default'|index) with one-line rule pointers to architecture/special-weapons.md; (3) docs/architecture/hero-mechanics.md — replace the Ammo section (~line 832+) with a short section pointing at special-weapons.md and noting default weapon is infinite/built-in; (4) docs/levels/game-rules.md line ~89 — drop 'Ammo,' from the persistence list, add 'special slots'. Do NOT touch .squid-os/plans/petal-panic-v1/design.md (frozen snapshot).",
+          "why": "These four files are what future sessions and the plan-runner read as ground truth; stale ammo text there would re-introduce the old system in the next feature.",
+          "files": ["~ petal-panic/docs/engine/base/powerup.yaml", "~ petal-panic/docs/engine/base/hero.yaml", "~ petal-panic/docs/architecture/hero-mechanics.md", "~ petal-panic/docs/levels/game-rules.md"],
+          "acceptance": [
+            "grep -rniE 'ammo' petal-panic/docs/ shows no collectible/counted ammo outside special-weapons.md",
+            "hero.yaml fields match the actual hero.js state",
+            "powerup.yaml defs match POWERUP_DEFS in powerup.js"
+          ],
+          "verify": ["grep -rniE 'ammo' petal-panic/docs/"]
+        }
+      ]
+    }
+  ]
+}

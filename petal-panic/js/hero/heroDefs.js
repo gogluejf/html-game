@@ -56,8 +56,7 @@ export const HEROES = {
       stamina: 100,
       jump: 511,
       projectile_freq: 8,   // shots per second
-      special_freq: 2,      // saw cooldown (seconds)
-      special: 'saw',
+      special_freq: 2,      // special-weapon cooldown (seconds)
     },
     // §15 Special melee (Down+Melee): retreating cartwheel — travels AWAY from
     // facing while the sprite keeps its original orientation. Tuning lives here.
@@ -90,7 +89,6 @@ export const HEROES = {
       jump: 456,
       projectile_freq: 10,
       special_freq: 3,
-      special: 'bomb',
     },
     // §15 Special melee (Down+Melee): advancing sweep — travels TOWARD facing.
     specialMelee: {

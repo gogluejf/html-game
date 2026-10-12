@@ -42,11 +42,11 @@ export const GAME_RULES = Object.freeze({
   }),
 
   // --- Inventory persistence (game-rules.md §5) ----------------------------
-  // How ammo / weapon / energy / temporary powerups / super meter behave across
-  // death, continue, and area advance. 'reset' = cleared to baseline;
-  // 'restore' = restored to the hero's full baseline (energy).
+  // How special slots / weapon / energy / temporary powerups / super meter
+  // behave across death, continue, and area advance. 'reset' = cleared to
+  // baseline; 'restore' = restored to the hero's full baseline (energy).
   inventory: Object.freeze({
-    ammo: TUNING_INVENTORY.ammo,
+    specialSlots: TUNING_INVENTORY.specialSlots,
     weapon: TUNING_INVENTORY.weapon,
     energy: TUNING_INVENTORY.energy,
     powerups: TUNING_INVENTORY.powerups,
@@ -110,14 +110,9 @@ export function resetHeroInventory(h) {
   if (h.shield !== undefined) h.shield = 0;
   // Super meter: reset to 0 (a fresh attempt starts with no charged super).
   if (h.supermoveMeter !== undefined) h.supermoveMeter = 0;
-  // Ammo: reset to the hero's baseline (game-rules.md §5 — ammo does not
-  // persist into the fresh attempt). The baseline is the constructor value
-  // (hero.js: this.ammo = 200); a fresh attempt starts with the full baseline
-  // rather than whatever the failed attempt drained or a powerup granted.
-  if (h.ammo !== undefined) h.ammo = 200;
-  // Special ammo: reset to 0 (hero.js baseline — a fresh run starts with no
-  // special ammo; the powerup system grants it during a run).
-  if (h.specialAmmo !== undefined) h.specialAmmo = 0;
+  // Special slots: cleared (special-weapons.md — a fresh attempt AND a fresh
+  // area start with no held specials; the powerup system grants them in-run).
+  if (Array.isArray(h.specialSlots)) h.specialSlots.fill(null);
   // Selected weapon: reset to the hero's default (hero.js baseline:
   // WEAPON_THORN). A fresh attempt does not carry the previous attempt's
   // weapon selection (game-rules.md §5 — selected weapon resets).

@@ -105,17 +105,20 @@ ok('shield: cyan overlay drawn only when shield > 0', () => {
   hero.shield = 0; // restore
 });
 
-ok('ammo readout shows thorn + special counts live', () => {
+ok('weapon readout shows default marker + special slots live', () => {
   const ctx = makeFakeCtx();
-  hero.ammo = 123;
-  hero.specialAmmo = 7;
+  hero.specialSlots = ['bomb', null];
+  hero.selectedWeapon = 0;
   drawHUD(ctx, hero, cam, levelDef);
   const joined = ctx.texts.map(t => t.t).join(' | ');
-  assert.ok(joined.includes('123'), `thorn count visible (${joined})`);
-  assert.ok(joined.includes('7'), 'special count visible');
-  assert.ok(joined.includes('🌿'), 'thorn icon present');
-  const specialIcon = hero.heroDef?.special === 'saw' ? '⚙️' : '💣';
-  assert.ok(joined.includes(specialIcon), `hero-specific special icon (${specialIcon}) present`);
+  assert.ok(joined.includes('> 💣'), `selected slot gets the '>' marker (${joined})`);
+  assert.ok(joined.includes('💣'), 'held bomb icon present');
+  assert.ok(joined.includes('▫️'), 'empty slot shown dimmed');
+  hero.selectedWeapon = 'thorn';
+  const ctx2 = makeFakeCtx();
+  drawHUD(ctx2, hero, cam, levelDef);
+  const joined2 = ctx2.texts.map(t => t.t).join(' | ');
+  assert.ok(joined2.includes('> 🌿'), `default marker '>' follows selection (${joined2})`);
 });
 
 ok('coins + lives display live', () => {

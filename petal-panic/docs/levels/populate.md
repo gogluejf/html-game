@@ -36,8 +36,33 @@ The configuration matrix needs to express:
 - Suitable macro positions and the chance of selecting them.
 - Progression restrictions and hero-specific eligibility where relevant.
 
-The precise matrix values and guarantee/weight interpretation are tuning work.
-They must eventually resolve to one clear budget rather than conflicting totals.
+The concrete selection weights (v1, owned by `levelConfigs.js`
+`powerupWeights`) — relative odds when a powerup slot is filled:
+
+| Type | Weight | Share |
+|---|---|---|
+| specialDrop | 4 | ~36% |
+| rapid | 3 | ~27% |
+| shield | 3 | ~27% |
+| energy | 2 | ~18% |
+| invincibility | 1 | ~9% |
+| clear | 1 | ~9% |
+| oneUp | 0.5 | ~4.5% |
+
+(Shares are approximate — actual per-level counts are also capped by the
+per-stage quantity budgets below, so rarer types may not appear every level.)
+
+`specialDrop` is one powerup type with **two possible outcomes**, rolled 50/50
+per instance (special-weapons.md — shared pool, both heroes):
+
+| Outcome | Chance | Grants |
+|---|---|---|
+| 💣 Bomb | 50% | bomb special into a slot |
+| ⚙ Petal Saw | 50% | saw special into a slot |
+
+Per-stage quantity budgets (how many of each type per area) live in
+`levelConfigs.js` stage tables and trend downward across levels
+(generation.md §5b "resource scarcity").
 
 A powerup can reward reaching an elevated or less convenient position, but it
 must remain reachable by the selected hero. Its placement must make sense in

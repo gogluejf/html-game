@@ -1,0 +1,46 @@
+{
+  "tasks": {
+    "1.1": {
+      "number": "1.1",
+      "status": "not_started",
+      "name": "Slot model on Hero (SLOT_COUNT-driven)",
+      "milestone": "Slot Model + Rotation + Firing",
+      "milestone_number": 1
+    },
+    "1.2": {
+      "number": "1.2",
+      "status": "not_started",
+      "name": "Wire rotation input + fireSpecial off slots",
+      "milestone": "Slot Model + Rotation + Firing",
+      "milestone_number": 1
+    },
+    "2.1": {
+      "number": "2.1",
+      "status": "not_started",
+      "name": "Powerup drops: shared random special, kill ammo/special defs",
+      "milestone": "Drops, Loss Wiring, Dead Code Sweep",
+      "milestone_number": 2
+    },
+    "2.2": {
+      "number": "2.2",
+      "status": "not_started",
+      "name": "Special loss on damaging hit",
+      "milestone": "Drops, Loss Wiring, Dead Code Sweep",
+      "milestone_number": 2
+    },
+    "2.3": {
+      "number": "2.3",
+      "status": "not_started",
+      "name": "Dead ammo code sweep + HUD + reset",
+      "milestone": "Drops, Loss Wiring, Dead Code Sweep",
+      "milestone_number": 2
+    },
+    "3.1": {
+      "number": "3.1",
+      "status": "not_started",
+      "name": "Update engine yamls + architecture + levels docs",
+      "milestone": "Doc Sync",
+      "milestone_number": 3
+    }
+  }
+}

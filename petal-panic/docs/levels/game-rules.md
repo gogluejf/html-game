@@ -86,8 +86,10 @@ behavior. The design plan must choose the accounting policy explicitly.
 ## 5. Other persistence decisions
 
 Full-world restoration does not automatically specify the hero's inventory.
-Ammo, selected weapon, energy, temporary powerups, and super meter persistence
-across death, continue, and area advance are design-plan decisions. Respawn
+Special slots, selected weapon, energy, temporary powerups, and super meter
+persistence across death, continue, and area advance are design-plan decisions
+(see [special weapons](../architecture/special-weapons.md) — slots clear on
+death AND area advance). Respawn
 protection must remain consistent with [hero mechanics](../architecture/hero-mechanics.md).
 
 See [lifecycle](lifecycle.md) for the four distinct start events and the lifetime

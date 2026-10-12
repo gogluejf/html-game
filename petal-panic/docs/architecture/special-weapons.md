@@ -75,8 +75,11 @@ After losing:
 - If the lost special was in **slot 2** and **slot 1 is empty**, the weapon
   in slot 2 **moves into slot 1**. We never leave a layout of "nothing in 1,
   something in 2" — it is confusing and useless.
-- Selection falls back sensibly: if the selected slot just emptied, select
-  whatever remains (slot 1 after the move above, otherwise default ammo).
+- Selection fallback: if OTHER specials remain, the selection index is left
+  as-is (an empty selected slot is safe — firing falls through, rotation skips
+  empties, and the next pickup auto-selects itself). If the lost special was
+  the LAST one held, selection falls back to the **default weapon** — the
+  player must never be stuck aiming at an empty slot with thorn unreachable.
 
 ## What dies with this design
 

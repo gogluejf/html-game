@@ -165,6 +165,9 @@ export function registerCollisionHandlers(collisionWorld) {
       if (victim.intangible) { foeProj.alive = false; return; } // intangible absorbs it
       const dealt = damage(foeProj, victim, foeProj.damage, 'projectile');
       if (dealt > 0) {
+        // Special loss (special-weapons.md): a hit that costs damage drops the
+        // selected special. i-frame/protected paths early-return above (dealt==0).
+        victim.loseSelectedSpecial();
         // Knockback along the projectile's travel direction + hit-stun + i-frames.
         // Contextual profile by source (design §25): ordinary foe shot.
         victim.takeHit({
@@ -219,6 +222,9 @@ export function registerCollisionHandlers(collisionWorld) {
     // enemy. Idle enemies shove less than charging ones (motion term); bosses
     // read harder through their larger base + speed, not a separate category.
     if (dealt > 0) {
+      // Special loss (special-weapons.md): a hit that costs damage drops the
+      // selected special. i-frame/connect-protected paths early-return above.
+      heroEnt.loseSelectedSpecial();
       const hcx = heroEnt.x + heroEnt.w / 2, scx = source.x + source.w / 2;
       const dirX = Math.sign(hcx - scx) || (heroEnt.facing * -1);
       // Build the push normal (horizontal away from attacker + small upward pop).

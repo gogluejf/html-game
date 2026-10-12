@@ -11,15 +11,17 @@ hero:
     stamina: 100    # = maxEnergy
     jump: 500       # px/s impulse
     projectile_freq: 8   # shots/sec
-    special_freq: 2      # seconds
-    special: saw    # 'saw' | 'bomb'
+    special_freq: 2      # seconds (special-weapon fire cooldown)
 
   # --- resources / combat ---
   energy: 100       # current HP (drained by damage())
   maxEnergy: 100
   shield: 0         # absorbs damage before energy
-  ammo: 200         # thorn bullets
-  specialAmmo: 0    # saw/bomb ammo
+  # Special weapons (special-weapons.md): held weapons, NOT ammo counters.
+  # selectedWeapon: 'thorn' (default weapon, built-in/infinite) or a numeric
+  # slot index into specialSlots. Slots clear on death + area advance.
+  selectedWeapon: thorn
+  specialSlots: [null, null]   # length SPECIAL_SLOT_COUNT; entries null|'bomb'|'saw'
   coins: 0
   lives: 3
   checkpoint: { x: 0, y: 0 }

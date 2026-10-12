@@ -73,7 +73,7 @@ function makeTestHero() {
   h.currentArea = 1;
   h.checkpoint = { x: 100, y: 400 };
   // Fresh level-start baseline (zero), so the reward delta = wallet.current.
-  h._levelStartWallet = { coins: 0, kills: 0, ammo: 200, specialAmmo: 0, energy: h.wallet.current.energy };
+  h._levelStartWallet = { coins: 0, kills: 0, energy: h.wallet.current.energy };
   h.traceStats = createTrace();
   h.traceStats.total.bossKilled.tusko_wobble = 1; // reward is shown post-boss
   return h;
