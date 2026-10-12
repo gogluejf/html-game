@@ -23,6 +23,7 @@ import { Debug, initSpawnTable, SPAWN_KEYS } from './debug.js';
 // TEMP (special-weapons testing): flood special drops for slot-model QA.
 import { makePowerup } from '../objects/powerup.js';
 import { Theater } from './theater.js';
+import { AttackTheater, TWEAKABLE } from './attack-theater.js';
 import { dumpTrace } from '../stats.js';
 import { debugWrapToNextArea } from '../world/zoneLifecycle.js';
 import { ctx } from '../world/context.js';
@@ -183,6 +184,11 @@ function debugInjectSpecialDrops() {
  * @param {KeyboardEvent} e
  */
 function handleDebugKeys(e) {
+  // Attack Theater owns the arrow/enter/escape keys while open (F4).
+  if (AttackTheater.active) {
+    handleAttackTheaterKeys(e);
+    return;
+  }
   // F3 auto-enables debug if off, then cycles view on next press.
   if (e.code === 'F3' && !Debug.enabled) {
     handleDebugToggle(e, 'debug');
@@ -256,6 +262,55 @@ function handleDebugKeys(e) {
       Debug.logEvent(`view: ${modeNames[Debug.viewMode]}`);
       break;
   }
+}
+
+/**
+ * Attack Theater (F4) keyboard routing. Called from handleDebugKeys while the
+ * theater is open. Arrows select entries/params; Shift+arrows adjust values;
+ * Enter/Space replays; Escape closes.
+ */
+function handleAttackTheaterKeys(e) {
+  switch (e.code) {
+    case 'ArrowLeft':
+      if (e.shiftKey) AttackTheater.adjustParam(-paramStep());
+      else AttackTheater.step(-1);
+      e.preventDefault();
+      break;
+    case 'ArrowRight':
+      if (e.shiftKey) AttackTheater.adjustParam(paramStep());
+      else AttackTheater.step(1);
+      e.preventDefault();
+      break;
+    case 'ArrowUp':
+      AttackTheater.stepParam(-1);
+      e.preventDefault();
+      break;
+    case 'ArrowDown':
+      AttackTheater.stepParam(1);
+      e.preventDefault();
+      break;
+    case 'Enter':
+    case 'Space':
+      AttackTheater.replay();
+      Debug.logEvent(`attack-theater REPLAY → ${AttackTheater.currentId()}`);
+      e.preventDefault();
+      break;
+    case 'Escape':
+      AttackTheater.close();
+      Debug.logEvent('attack-theater CLOSE (Esc)');
+      break;
+  }
+}
+
+/** Step size for param adjustment: coarse for big values, fine for small. */
+function paramStep() {
+  const id = AttackTheater.currentId();
+  const keys = TWEAKABLE[id] ?? [];
+  const key = keys[AttackTheater.paramIndex];
+  const val = Math.abs(AttackTheater._params?.[key] ?? 0);
+  if (val >= 100) return 10;
+  if (val >= 10) return 1;
+  return 0.1;
 }
 
 /**
@@ -467,7 +522,7 @@ export function applyGodMode(dt) {
 // Debug is intentionally outside normal navigation/gameplay bindings.
 window.addEventListener('keydown', (e) => {
   if (input.capturing) return;
-  if (['F1', 'F2', 'F3'].includes(e.code)) e.preventDefault();
+  if (['F1', 'F2', 'F3', 'F4'].includes(e.code)) e.preventDefault();
   // Shift+E: collision-world JSON dump. Handled BEFORE the F1/F2/debug gates so
   // it works whether or not debug mode is on (it IS the debug tool). Plain E
   // (stats dump) stays inside handleDebugKeys; KeyP/KeyD are unavailable —
@@ -489,6 +544,19 @@ window.addEventListener('keydown', (e) => {
     } else {
       Theater.open();
       Debug.logEvent('theater OPEN (F2)');
+    }
+    return;
+  }
+  // F4: toggle Attack Theater. Works from anywhere, like F2. Only one
+  // theater is active at a time — opening one closes the other.
+  if (e.code === 'F4') {
+    if (AttackTheater.active) {
+      AttackTheater.close();
+      Debug.logEvent('attack-theater CLOSE (F4)');
+    } else {
+      if (Theater.active) { Theater.close(); Debug.logEvent('theater CLOSE (pre-F4)'); }
+      AttackTheater.open();
+      Debug.logEvent('attack-theater OPEN (F4)');
     }
     return;
   }

@@ -32,6 +32,7 @@ import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, BOSS_TRIGGER_X } 
 import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry } from '../systems/lifecycle.js';
 import { getLevelConfig } from '../world/levelConfigs.js';
 import { Theater } from '../debug/theater.js';
+import { AttackTheater } from '../debug/attack-theater.js';
 import { record } from '../stats.js';
 import { isGrounded, standingOnOneWay } from '../hero/physics.js';
 import { isBelowVerticalBottom, getDeathFadeAlpha, finishHeroDeath, DEATH_FADE_DURATION } from '../hero/death.js';
@@ -656,6 +657,12 @@ export function update(dt) {
   // the hero doesn't walk and gamepad actions don't fire under the overlay.
   if (Theater.active) {
     Theater.update(dt);
+    return;
+  }
+  // Attack Theater (debug-only): advance its live sandbox while open. Like the
+  // Effect Theater it freezes gameplay behind the overlay.
+  if (AttackTheater.active) {
+    AttackTheater.update(dt);
     return;
   }
   // Physics only runs during PLAY; other states are screen-driven ().

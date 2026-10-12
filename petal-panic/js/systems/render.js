@@ -11,6 +11,7 @@ import { drawEffects } from '../effects/index.js';
 import { getState, S } from '../core/state.js';
 import { Debug } from '../debug/debug.js';
 import { Theater } from '../debug/theater.js';
+import { AttackTheater } from '../debug/attack-theater.js';
 import { input, formatBinding } from '../core/input.js';
 import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../core/timers.js';
 import { drawScreen, screenUpdate } from '../ui/screens.js';
@@ -459,6 +460,8 @@ export function render(ctx) {
   // Effect Theater: debug-only black-screen overlay drawn LAST so it
   // covers everything (game world + HUD + state overlays). No-op when inactive.
   if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
+  // Attack Theater: same pattern — opaque overlay drawn last.
+  if (AttackTheater.active) AttackTheater.draw(ctx, VIEW_W, VIEW_H);
 }
 
 /**
