@@ -2,57 +2,71 @@
   "label": "projectiles",
   "file": "petal-panic/assets/projectile_sheet.png",
   "cropped_path": "petal-panic/assets/projectiles",
-  "rows": 3,
+  "rows": 5,
   "cols": 8,
-  "size": "2172x724",
-  "description": "Projectiles: thorn missile w/ petal trail (row1), bomb fuse + explosion burst (row2), spinning petal saw (row3); 3 rows x 8 frames",
+  "size": "2172x1218",
+  "description": "Projectiles: thorn missile w/ petal trail (row1), bomb fuse (row2), spinning petal saw (row3), spread pinwheel (row4), explosion burst boom (row5)",
   "entities": [{
     "name": "thorn",
-    "anim": "projectile",
+    "anim": "shoot",
     "frames": [
-      {"file": "thorn_shoot_f1.png", "row": 0, "col": 0, "bbox": [16, 70, 248, 105]},
-      {"file": "thorn_shoot_f2.png", "row": 0, "col": 1, "bbox": [283, 70, 253, 100]},
-      {"file": "thorn_shoot_f3.png", "row": 0, "col": 2, "bbox": [553, 70, 254, 106]},
-      {"file": "thorn_shoot_f4.png", "row": 0, "col": 3, "bbox": [826, 73, 251, 95]},
-      {"file": "thorn_shoot_f5.png", "row": 0, "col": 4, "bbox": [1096, 73, 250, 98]},
-      {"file": "thorn_shoot_f6.png", "row": 0, "col": 5, "bbox": [1365, 71, 251, 104]},
-      {"file": "thorn_shoot_f7.png", "row": 0, "col": 6, "bbox": [1634, 68, 254, 103]},
-      {"file": "thorn_shoot_f8.png", "row": 0, "col": 7, "bbox": [1908, 74, 252, 97]}
+      {"file": "thorn_shoot_f1.png", "row": 0, "col": 0, "bbox": [18, 72, 244, 101]},
+      {"file": "thorn_shoot_f2.png", "row": 0, "col": 1, "bbox": [285, 72, 249, 96]},
+      {"file": "thorn_shoot_f3.png", "row": 0, "col": 2, "bbox": [555, 72, 250, 102]},
+      {"file": "thorn_shoot_f4.png", "row": 0, "col": 3, "bbox": [828, 75, 247, 91]},
+      {"file": "thorn_shoot_f5.png", "row": 0, "col": 4, "bbox": [1098, 75, 246, 94]},
+      {"file": "thorn_shoot_f6.png", "row": 0, "col": 5, "bbox": [1367, 73, 247, 100]},
+      {"file": "thorn_shoot_f7.png", "row": 0, "col": 6, "bbox": [1636, 70, 250, 99]},
+      {"file": "thorn_shoot_f8.png", "row": 0, "col": 7, "bbox": [1910, 76, 248, 93]}
     ]
   }, {
     "name": "bomb",
     "anim": "special",
     "frames": [
-      {"file": "bomb_shoot_f1.png", "row": 1, "col": 0, "bbox": [19, 245, 243, 161]},
-      {"file": "bomb_shoot_f2.png", "row": 1, "col": 1, "bbox": [285, 244, 244, 162]},
-      {"file": "bomb_shoot_f3.png", "row": 1, "col": 2, "bbox": [556, 240, 240, 166]},
-      {"file": "bomb_shoot_f4.png", "row": 1, "col": 3, "bbox": [825, 243, 231, 163]}
-    ]
-  }, {
-    "name": "boom",
-    "anim": "special",
-    "frames": [
-      {"file": "boom_explose_f1.png", "row": 1, "col": 4, "bbox": [1095, 220, 241, 216]},
-      {"file": "boom_explose_f2.png", "row": 1, "col": 5, "bbox": [1361, 230, 244, 197]},
-      {"file": "boom_explose_f3.png", "row": 1, "col": 6, "bbox": [1634, 232, 247, 186]},
-      {"file": "boom_explose_f4.png", "row": 1, "col": 7, "bbox": [1910, 258, 244, 142]}
+      {"file": "bomb_special_f1.png", "row": 1, "col": 0, "bbox": [21, 247, 239, 157]},
+      {"file": "bomb_special_f2.png", "row": 1, "col": 1, "bbox": [287, 246, 240, 158]},
+      {"file": "bomb_special_f3.png", "row": 1, "col": 2, "bbox": [558, 242, 236, 162]},
+      {"file": "bomb_special_f4.png", "row": 1, "col": 3, "bbox": [827, 245, 227, 159]}
     ]
   }, {
     "name": "saw",
     "anim": "special",
     "frames": [
-      {"file": "saw_shoot_f1.png", "row": 2, "col": 0, "bbox": [22, 451, 237, 197]},
-      {"file": "saw_shoot_f2.png", "row": 2, "col": 1, "bbox": [285, 451, 240, 203]},
-      {"file": "saw_shoot_f3.png", "row": 2, "col": 2, "bbox": [556, 451, 236, 198]},
-      {"file": "saw_shoot_f4.png", "row": 2, "col": 3, "bbox": [823, 450, 240, 203]},
-      {"file": "saw_shoot_f5.png", "row": 2, "col": 4, "bbox": [1092, 450, 241, 203]},
-      {"file": "saw_shoot_f6.png", "row": 2, "col": 5, "bbox": [1362, 452, 241, 201]},
-      {"file": "saw_shoot_f7.png", "row": 2, "col": 6, "bbox": [1631, 451, 243, 203]},
-      {"file": "saw_shoot_f8.png", "row": 2, "col": 7, "bbox": [1902, 450, 245, 204]}
+      {"file": "saw_special_f1.png", "row": 2, "col": 0, "bbox": [24, 453, 233, 193]},
+      {"file": "saw_special_f2.png", "row": 2, "col": 1, "bbox": [287, 453, 236, 199]},
+      {"file": "saw_special_f3.png", "row": 2, "col": 2, "bbox": [558, 453, 232, 194]},
+      {"file": "saw_special_f4.png", "row": 2, "col": 3, "bbox": [825, 452, 236, 199]},
+      {"file": "saw_special_f5.png", "row": 2, "col": 4, "bbox": [1094, 452, 237, 199]},
+      {"file": "saw_special_f6.png", "row": 2, "col": 5, "bbox": [1364, 454, 237, 197]},
+      {"file": "saw_special_f7.png", "row": 2, "col": 6, "bbox": [1633, 453, 239, 199]},
+      {"file": "saw_special_f8.png", "row": 2, "col": 7, "bbox": [1904, 452, 241, 200]}
+    ]
+  }, {
+    "name": "spread",
+    "anim": "shoot",
+    "frames": [
+      {"file": "spread_shoot_f1.png", "row": 3, "col": 0, "bbox": [7, 678, 286, 217]},
+      {"file": "spread_shoot_f2.png", "row": 3, "col": 1, "bbox": [278, 678, 277, 217]},
+      {"file": "spread_shoot_f3.png", "row": 3, "col": 2, "bbox": [550, 679, 274, 218]},
+      {"file": "spread_shoot_f4.png", "row": 3, "col": 3, "bbox": [816, 678, 275, 218]},
+      {"file": "spread_shoot_f5.png", "row": 3, "col": 4, "bbox": [1084, 677, 266, 222]},
+      {"file": "spread_shoot_f6.png", "row": 3, "col": 5, "bbox": [1354, 678, 268, 220]},
+      {"file": "spread_shoot_f7.png", "row": 3, "col": 6, "bbox": [1613, 677, 280, 221]},
+      {"file": "spread_shoot_f8.png", "row": 3, "col": 7, "bbox": [1883, 677, 281, 221]}
+    ]
+  }, {
+    "name": "boom",
+    "anim": "special",
+    "frames": [
+      {"file": "boom_special_f1.png", "row": 4, "col": 0, "bbox": [7, 1000, 237, 212]},
+      {"file": "boom_special_f2.png", "row": 4, "col": 1, "bbox": [273, 1010, 240, 193]},
+      {"file": "boom_special_f3.png", "row": 4, "col": 2, "bbox": [546, 1012, 243, 182]},
+      {"file": "boom_special_f4.png", "row": 4, "col": 3, "bbox": [822, 1038, 240, 138]}
     ]
   }],
   "crop": {
     "frames_dir": "petal-panic/assets/projectiles",
-    "pass": "/home/goglue/tmp/projectiles-v1"
-  }
+    "pass": "/tmp/pp-projectiles-v8"
+  },
+  "updated": "2026-10-12T18:34:23"
 }

@@ -8,10 +8,10 @@
     "name": "spread",
     "anim": "idle",
     "frames": [
-      {"file": "spread_idle_f1.png", "row": 0, "col": 0, "bbox": [84, 14, 327, 161]},
-      {"file": "spread_idle_f2.png", "row": 0, "col": 1, "bbox": [560, 12, 365, 165]},
-      {"file": "spread_idle_f3.png", "row": 0, "col": 2, "bbox": [1026, 11, 423, 168]},
-      {"file": "spread_idle_f4.png", "row": 0, "col": 3, "bbox": [1567, 13, 330, 164]}
+      {"file": "spread_idle_f1.png", "row": 0, "col": 0, "bbox": [101, 10, 292, 151]},
+      {"file": "spread_idle_f2.png", "row": 0, "col": 1, "bbox": [596, 12, 291, 146]},
+      {"file": "spread_idle_f3.png", "row": 0, "col": 2, "bbox": [1092, 16, 291, 142]},
+      {"file": "spread_idle_f4.png", "row": 0, "col": 3, "bbox": [1586, 10, 292, 151]}
     ]
   }, {
     "name": "bomb",
@@ -36,7 +36,7 @@
   "cropped_path": "petal-panic/assets/powerups_weapon",
   "crop": {
     "frames_dir": "petal-panic/assets/powerups_weapon",
-    "pass": "/tmp/pp-powerups-weapon-crop-v1"
+    "pass": "/tmp/pp-powerups-weapon-v3"
   },
-  "updated": "2026-10-12T17:10:49"
+  "updated": "2026-10-12T18:34:25"
 }
