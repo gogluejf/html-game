@@ -1,59 +1,78 @@
 {
-  "label": "powerups",
   "file": "petal-panic/assets/powerups_sheet.png",
-  "cropped_path": "petal-panic/assets/powerups",
-  "rows": 5,
+  "size": "1983x1150",
+  "rows": 7,
   "cols": 4,
-  "size": "1983x793",
-  "description": "Wooden signboard powerup sprites, 5 types x 4 frames (NORMAL/INFLATE/PEAK/DEFLATE)",
+  "description": "Wooden signboard powerup sprites, 7 types x 4 frames (NORMAL/INFLATE/PEAK/DEFLATE)",
   "entities": [{
     "name": "scarlet_1up",
     "anim": "idle",
     "frames": [
-      {"file": "scarlet_1up_f1.png", "row": 0, "col": 0, "bbox": [175, 22, 308, 159]},
-      {"file": "scarlet_1up_f2.png", "row": 0, "col": 1, "bbox": [596, 20, 367, 162]},
-      {"file": "scarlet_1up_f3.png", "row": 0, "col": 2, "bbox": [1051, 10, 415, 175]},
-      {"file": "scarlet_1up_f4.png", "row": 0, "col": 3, "bbox": [1550, 21, 309, 160]}
+      {"file": "scarlet_1up_idle_f1.png", "row": 0, "col": 0, "bbox": [95, 17, 304, 155]},
+      {"file": "scarlet_1up_idle_f2.png", "row": 0, "col": 1, "bbox": [561, 17, 363, 156]},
+      {"file": "scarlet_1up_idle_f3.png", "row": 0, "col": 2, "bbox": [1032, 9, 411, 171]},
+      {"file": "scarlet_1up_idle_f4.png", "row": 0, "col": 3, "bbox": [1580, 17, 305, 155]}
     ]
   }, {
     "name": "balthazar_1up",
     "anim": "idle",
     "frames": [
-      {"file": "balthazar_1up_f1.png", "row": 1, "col": 0, "bbox": [173, 171, 312, 163]},
-      {"file": "balthazar_1up_f2.png", "row": 1, "col": 1, "bbox": [606, 170, 361, 166]},
-      {"file": "balthazar_1up_f3.png", "row": 1, "col": 2, "bbox": [1059, 177, 400, 147]},
-      {"file": "balthazar_1up_f4.png", "row": 1, "col": 3, "bbox": [1552, 171, 318, 164]}
+      {"file": "balthazar_1up_idle_f1.png", "row": 1, "col": 0, "bbox": [93, 176, 308, 158]},
+      {"file": "balthazar_1up_idle_f2.png", "row": 1, "col": 1, "bbox": [564, 174, 356, 161]},
+      {"file": "balthazar_1up_idle_f3.png", "row": 1, "col": 2, "bbox": [1031, 175, 412, 160]},
+      {"file": "balthazar_1up_idle_f4.png", "row": 1, "col": 3, "bbox": [1576, 176, 313, 158]}
+    ]
+  }, {
+    "name": "energy",
+    "anim": "idle",
+    "frames": [
+      {"file": "energy_idle_f1.png", "row": 2, "col": 0, "bbox": [130, 341, 235, 148]},
+      {"file": "energy_idle_f2.png", "row": 2, "col": 1, "bbox": [611, 339, 262, 152]},
+      {"file": "energy_idle_f3.png", "row": 2, "col": 2, "bbox": [1064, 337, 347, 156]},
+      {"file": "energy_idle_f4.png", "row": 2, "col": 3, "bbox": [1612, 341, 241, 147]}
+    ]
+  }, {
+    "name": "shield",
+    "anim": "idle",
+    "frames": [
+      {"file": "shield_idle_f1.png", "row": 3, "col": 0, "bbox": [112, 491, 270, 168]},
+      {"file": "shield_idle_f2.png", "row": 3, "col": 1, "bbox": [601, 491, 282, 168]},
+      {"file": "shield_idle_f3.png", "row": 3, "col": 2, "bbox": [1065, 489, 344, 171]},
+      {"file": "shield_idle_f4.png", "row": 3, "col": 3, "bbox": [1599, 491, 267, 168]}
     ]
   }, {
     "name": "rapid_fire",
     "anim": "idle",
     "frames": [
-      {"file": "rapid_fire_f1.png", "row": 2, "col": 0, "bbox": [171, 317, 319, 153]},
-      {"file": "rapid_fire_f2.png", "row": 2, "col": 1, "bbox": [598, 316, 373, 154]},
-      {"file": "rapid_fire_f3.png", "row": 2, "col": 2, "bbox": [1057, 324, 402, 140]},
-      {"file": "rapid_fire_f4.png", "row": 2, "col": 3, "bbox": [1547, 317, 326, 153]}
+      {"file": "rapid_fire_idle_f1.png", "row": 4, "col": 0, "bbox": [115, 659, 265, 152]},
+      {"file": "rapid_fire_idle_f2.png", "row": 4, "col": 1, "bbox": [603, 660, 278, 150]},
+      {"file": "rapid_fire_idle_f3.png", "row": 4, "col": 2, "bbox": [1061, 659, 352, 152]},
+      {"file": "rapid_fire_idle_f4.png", "row": 4, "col": 3, "bbox": [1600, 659, 264, 151]}
     ]
   }, {
     "name": "invincibility",
     "anim": "idle",
     "frames": [
-      {"file": "invincibility_f1.png", "row": 3, "col": 0, "bbox": [165, 461, 326, 155]},
-      {"file": "invincibility_f2.png", "row": 3, "col": 1, "bbox": [605, 460, 359, 155]},
-      {"file": "invincibility_f3.png", "row": 3, "col": 2, "bbox": [1050, 455, 418, 162]},
-      {"file": "invincibility_f4.png", "row": 3, "col": 3, "bbox": [1541, 461, 333, 155]}
+      {"file": "invincibility_idle_f1.png", "row": 5, "col": 0, "bbox": [87, 819, 321, 151]},
+      {"file": "invincibility_idle_f2.png", "row": 5, "col": 1, "bbox": [565, 819, 354, 151]},
+      {"file": "invincibility_idle_f3.png", "row": 5, "col": 2, "bbox": [1030, 818, 414, 154]},
+      {"file": "invincibility_idle_f4.png", "row": 5, "col": 3, "bbox": [1568, 819, 328, 151]}
     ]
   }, {
     "name": "panic_clear",
     "anim": "idle",
     "frames": [
-      {"file": "panic_clear_f1.png", "row": 4, "col": 0, "bbox": [166, 607, 332, 166]},
-      {"file": "panic_clear_f2.png", "row": 4, "col": 1, "bbox": [598, 607, 369, 169]},
-      {"file": "panic_clear_f3.png", "row": 4, "col": 2, "bbox": [1049, 605, 427, 172]},
-      {"file": "panic_clear_f4.png", "row": 4, "col": 3, "bbox": [1541, 608, 335, 168]}
+      {"file": "panic_clear_idle_f1.png", "row": 6, "col": 0, "bbox": [90, 980, 315, 149]},
+      {"file": "panic_clear_idle_f2.png", "row": 6, "col": 1, "bbox": [558, 980, 369, 149]},
+      {"file": "panic_clear_idle_f3.png", "row": 6, "col": 2, "bbox": [1030, 979, 415, 151]},
+      {"file": "panic_clear_idle_f4.png", "row": 6, "col": 3, "bbox": [1572, 980, 321, 149]}
     ]
   }],
+  "original_prompt": "{\n \"sheet1\": {\n  \"scarlet_1up\": [\n   [\n    183,\n    30,\n    292,\n    143\n   ],\n   [\n    604,\n    29,\n    351,\n    144\n   ],\n   [\n    1059,\n    18,\n    399,\n    159\n   ],\n   [\n    1558,\n    29,\n    293,\n    143\n   ]\n  ],\n  \"balthazar_1up\": [\n   [\n    181,\n    179,\n    296,\n    146\n   ],\n   [\n    615,\n    178,\n    344,\n    149\n   ],\n   [\n    1059,\n    179,\n    400,\n    148\n   ],\n   [\n    1560,\n    180,\n    301,\n    146\n   ]\n  ],\n  \"rapid_fire\": [\n   [\n    179,\n    325,\n    303,\n    137\n   ],\n   [\n    606,\n    324,\n    357,\n    137\n   ],\n   [\n    1057,\n    323,\n    403,\n    139\n   ],\n   [\n    1556,\n    325,\n    309,\n    137\n   ]\n  ],\n  \"invincibility\": [\n   [\n    174,\n    469,\n    309,\n    139\n   ],\n   [\n    614,\n    468,\n    342,\n    139\n   ],\n   [\n    1058,\n    466,\n    402,\n    142\n   ],\n   [\n    1549,\n    469,\n    316,\n    139\n   ]\n  ],\n  \"panic_clear\": [\n   [\n    174,\n    616,\n    315,\n    149\n   ],\n   [\n    606,\n    615,\n    353,\n    153\n   ],\n   [\n    1057,\n    613,\n    411,\n    156\n   ],\n   [\n    1549,\n    616,\n    318,\n    152\n   ]\n  ]\n },\n \"sheet2\": {\n  \"energy\": [\n   [\n    395,\n    16,\n    223,\n    136\n   ],\n   [\n    733,\n    12,\n    250,\n    140\n   ],\n   [\n    1051,\n    9,\n    335,\n    144\n   ],\n   [\n    1450,\n    17,\n    229,\n    135\n   ]\n  ],\n  \"bomb\": [\n   [\n    387,\n    163,\n    241,\n    140\n   ],\n   [\n    729,\n    163,\n    261,\n    142\n   ],\n   [\n    1053,\n    162,\n    333,\n    143\n   ],\n   [\n    1445,\n    163,\n    243,\n    140\n   ]\n  ],\n  \"petal_saw\": [\n   [\n    373,\n    313,\n    262,\n    146\n   ],\n   [\n    720,\n    314,\n    272,\n    144\n   ],\n   [\n    1047,\n    311,\n    340,\n    160\n   ],\n   [\n    1435,\n    314,\n    260,\n    142\n   ]\n  ],\n  \"thorn_missile\": [\n   [\n    383,\n    463,\n    253,\n    140\n   ],\n   [\n    729,\n    464,\n    266,\n    138\n   ],\n   [\n    1047,\n    462,\n    340,\n    140\n   ],\n   [\n    1446,\n    463,\n    252,\n    139\n   ]\n  ],\n  \"shield\": [\n   [\n    378,\n    615,\n    258,\n    156\n   ],\n   [\n    724,\n    615,\n    270,\n    156\n   ],\n   [\n    1050,\n    615,\n    332,\n    159\n   ],\n   [\n    1442,\n    615,\n    255,\n    156\n   ]\n  ]\n }\n}",
+  "cropped_path": "petal-panic/assets/powerups",
   "crop": {
     "frames_dir": "petal-panic/assets/powerups",
-    "pass": "/tmp/redo-pp1-v1"
-  }
+    "pass": "/tmp/pp-powerups-crop-v1"
+  },
+  "updated": "2026-10-12T17:10:49"
 }
