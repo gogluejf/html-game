@@ -114,7 +114,7 @@ test('picker: overshoot trap — DOUBLE lands past span, cheaper option lands ON
   const r = pickTakeoff(hero, goal, world, BALT);
   assert.ok(r.best, 'expected a best candidate');
   assert.equal(r.best.score, 0, `expected landed-on-goal, got ${r.best.detail}`);
-  assert.notMatch(r.best.id, /DOUBLE_S/, `cheaper option should win, got ${r.best.id}`);
+  assert.ok(!/DOUBLE_S/.test(r.best.id), `cheaper option should win, got ${r.best.id}`);
 });
 
 test('executePick: replays the winning script and actually lands', () => {
