@@ -217,4 +217,28 @@ export class Entity {
     }
     ctx.restore();
   }
+
+  /**
+   * Reflect velocity off a solid AABB — the shared physics primitive behind
+   * the 'bounce' solidBehavior (projectiles). Minimum-penetration axis is
+   * flipped with a small energy loss and the entity is nudged out of the
+   * surface so it doesn't re-collide next frame. BEHAVIOR POLICY (who bounces
+   * vs absorbs vs passes) is DATA on the entity (`solidBehavior`), consumed by
+   * the collision handler — this method is pure geometry.
+   * @param {{x:number,y:number,w:number,h:number}} box world-space solid AABB
+   */
+  reflectVelocity(box) {
+    const cx = this.x + this.w / 2, cy = this.y + this.h / 2;
+    const bx = box.x + box.w / 2, by = box.y + box.h / 2;
+    const ox = (this.w / 2 + box.w / 2) - Math.abs(cx - bx);
+    const oy = (this.h / 2 + box.h / 2) - Math.abs(cy - by);
+    if (ox <= 0 || oy <= 0) return;
+    if (ox < oy) {
+      this.vx = -this.vx * 0.8;
+      this.x += (cx < bx ? -ox : ox);
+    } else {
+      this.vy = -this.vy * 0.8;
+      this.y += (cy < by ? -oy : oy);
+    }
+  }
 }

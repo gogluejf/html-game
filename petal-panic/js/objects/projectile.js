@@ -62,6 +62,9 @@ export class Projectile extends Entity {
     this.damage = PROJECTILE_DAMAGE;
     this.life = PROJECTILE_LIFETIME;
     this.dir = dir;
+    // Solid-collision behavior (data, not class): 'pass' — thorns fly through
+    // terrain; only barrels (GameObj) stop them.
+    this.solidBehavior = 'pass';
 
     const angle = dirAngle(dir);
     this.vx = Math.cos(angle) * this.speed;
@@ -74,6 +77,7 @@ export class Projectile extends Entity {
     this.life -= dt;
     if (this.life <= 0) this.alive = false;
   }
+
 }
 
 /**
@@ -182,6 +186,11 @@ export class Special extends Entity {
 
     this.type = type;
     this.friendly = true;
+    // Solid-collision behavior per WEAPON (special-weapons.md): bombs BOUNCE
+    // off terrain (reflect + keep flying, fuse still runs); saws ABSORB (the
+    // short-range blade dies on impact). Policy is consumed by the collision
+    // handler via this flag — the physics primitive is reflectVelocity().
+    this.solidBehavior = isSaw ? 'absorb' : 'bounce';
     this.speed = isSaw ? SAW_SPEED : BOMB_SPEED;
     this.damage = isSaw ? SAW_DAMAGE : BOMB_DAMAGE;
     this.life = isSaw ? SAW_LIFETIME : BOMB_FUSE;

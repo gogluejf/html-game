@@ -17,6 +17,7 @@ import { Effects } from '../effects.js';
 import { Debug } from '../debug/debug.js';
 import { record } from '../stats.js';
 import { GameObj, Checkpoint } from '../objects/object.js';
+import { SolidBox } from '../core/solidBox.js';
 import { Powerup } from '../objects/powerup.js';
 import { COIN_TYPES } from '../objects/coin.js';
 import { spawnFloatText } from '../hero/floatText.js';
@@ -76,6 +77,22 @@ export function registerCollisionHandlers(collisionWorld) {
     const allyProj = a.layer === LAYER.PROJ_ALLY ? a : (b.layer === LAYER.PROJ_ALLY ? b : null);
     if (allyProj && allyProj.friendly) {
       const target = allyProj === a ? b : a;
+
+      // Friendly shot vs TERRAIN (SolidBox). Policy is DATA on the projectile
+      // (solidBehavior), not a type check here:
+      //   • 'pass'   — thorns: no effect, they fly through terrain
+      //   • 'absorb' — saws: the blade dies on impact (+ fizzle effect)
+      //   • 'bounce' — bombs: reflect off the surface, keep flying; the fuse
+      //                keeps running so they still detonate on timer/barrel
+      if (target instanceof SolidBox) {
+        if (allyProj.solidBehavior === 'bounce') {
+          allyProj.reflectVelocity(target.worldBox());
+        } else if (allyProj.solidBehavior === 'absorb') {
+          allyProj.alive = false;
+          if (allyProj.type === 'saw' || allyProj.type === 'bomb') explodeSpecial(allyProj);
+        }
+        return;
+      }
 
       // friendly thorn hits a barrel (SOLID with an HP pool). Chip its
       // HP; on destruction the barrel explodes (AoE + VFX) and is removed from the
