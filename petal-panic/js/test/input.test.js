@@ -84,6 +84,13 @@ function clean(state) {
 }
 function key(code, down = true) { windowEvents.emit(down ? 'keydown' : 'keyup', { code }); }
 function tap(code) { key(code); U.processInput(); key(code, false); U.processInput(); }
+// The shared area-entry screen (checkpoints.md §3) is a timed presentation:
+// fade-in → hold (~1.75s) → fade-out → auto-start play. Tests that confirm it
+// pump update frames until the sequence finishes and state is PLAY.
+function confirmAreaEntry() {
+  for (let i = 0; i < 240 && getState() !== S.PLAY; i++) U.update(1 / 60);
+  assert.equal(getState(), S.PLAY, 'area-entry presentation should finish into PLAY');
+}
 test('capture cancel/back is identical across both tabs and both controlling devices; next back leaves one level', () => {
   for (const tab of ['keyboard','gamepad']) for (const source of ['keyboard','gamepad']) {
     clean(S.PAUSE); tryTransition(S.REMAP); Remap.tab = tab;
@@ -137,7 +144,8 @@ test('simultaneous sources dispatch once and transitions discard the remaining b
   assert.equal(getState(), S.AREA_ENTRY);
   key('Enter', false); p.buttons[0].pressed = false; p.buttons[9].pressed = false;
   U.processInput();
-  assert.equal(getState(), S.PLAY); assert.equal(input.state.jump, false);
+  confirmAreaEntry();
+  assert.equal(input.state.jump, false);
   clean(S.PAUSE); tryTransition(S.REMAP); Remap.tab = 'keyboard'; tap('Enter'); key('Enter'); key('KeyZ'); U.processInput();
   assert.equal(Remap.capturing, true); U.processInput(); assert.equal(Remap.capturing, true);
 });
@@ -146,18 +154,21 @@ test('Space jump and Circle super never pause; Escape/Options do; pause menu clo
   key('Space', false); const p = pad(); pads.push(p); p.buttons[1].pressed = true; U.processInput(); assert.equal(input.state.supermove, true); assert.equal(getState(), S.PLAY);
   p.buttons[9].pressed = true; U.processInput(); assert.equal(getState(), S.PAUSE);
   U.processInput(); assert.equal(getState(), S.PAUSE); p.buttons[9].pressed = false; U.processInput();
-  Pause.focus = 1; U.getHero().lives = 1; tap('Enter'); assert.equal(getState(), S.PLAY); assert.equal(U.getHero().lives, 3);
+  Pause.focus = 1; U.getHero().lives = 1; tap('Enter');
+  // Retry (focus 1) opens the shared area-entry screen first (checkpoints.md §3).
+  assert.equal(getState(), S.AREA_ENTRY);
+  confirmAreaEntry();
   tap('Escape'); assert.equal(getState(), S.PAUSE); Pause.focus = 2; tap('Enter'); assert.equal(getState(), S.REMAP);
   tap('Escape'); Pause.focus = 3; tap('Enter'); assert.equal(getState(), S.HOME);
   clean(S.OVER); const h = U.getHero(); h.coins = 1500; h.continuesUsed = 0; h.checkpoint = { x: 400, y: 100 }; GameOver.focus = 0;
   // Continue now shows the shared area-entry screen first (checkpoints.md §3);
   // confirming it starts the fresh attempt.
   tap('Enter'); assert.equal(getState(), S.AREA_ENTRY);
-  tap('Enter'); assert.equal(getState(), S.PLAY); assert.equal(U.getHero().coins, 1500); assert.equal(U.getHero().continuesUsed, 1); assert.equal(U.getHero().lives, 3);
-  // A new game (SELECT → PLAY) opens the shared area-entry screen first
-  // (checkpoints.md §3); confirming it starts the attempt.
+  confirmAreaEntry();
+  assert.equal(U.getHero().coins, 1500); assert.equal(U.getHero().continuesUsed, 1); assert.equal(U.getHero().lives, 3);
+  // New game: SELECT is only reachable from HOME/OVER/etc — not from PLAY
+  // (state table), so the explicit transition no-ops and Enter stays a jump.
   tryTransition(S.SELECT); GameOver.focus = 0;
-  tap('Enter'); assert.equal(getState(), S.AREA_ENTRY);
   tap('Enter'); assert.equal(getState(), S.PLAY);
 });
 
