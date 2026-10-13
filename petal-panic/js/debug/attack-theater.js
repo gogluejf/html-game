@@ -11,7 +11,8 @@
 // so it's actually watchable (charge dashes AT the target, body contact walks
 // into it, explosions telegraph before they pop).
 //
-// Keys:  F4 toggle · ←/→ (A/D) select · ↑/↓ (W/S) select param · Q/E adjust ·
+// Keys:  F4 toggle · ←/→ (A/D) select · ↑/↓ (W/S) select param · I/O adjust
+//        (the user's mapped lockDir/lockMove keys — remappable in Controls) ·
 //        Enter/Space replay · Esc close.
 // Pad:   ◀▶ select · ▲▼ param · L2/R2 adjust · A replay · B close.
 
@@ -24,7 +25,7 @@ import { Pool, Projectile, Special } from '../objects/projectile.js';
 import { CollisionWorld } from '../core/collision.js';
 import { LAYER } from '../consts.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
-import { navLabelString, navLabels } from '../core/input.js';
+import { navLabelString, navLabels, input } from '../core/input.js';
 import { Effects } from '../effects.js';
 import { updateEffects, drawEffects, resetEffects } from '../effects/index.js';
 import { aabbOverlap } from '../core/collision.js';
@@ -155,9 +156,12 @@ export const AttackTheater = {
     this._padWasHeld = dirX;
     // Vertical: param selection (repeat-allowed: holding walks the list).
     if (dirY !== 0) this.stepParam(dirY);
-    // Shoulders: L2 = decrease, R2 = increase (repeat-allowed while held).
-    if (s.l2) this.adjustParam(-1);
-    if (s.r2) this.adjustParam(1);
+    // Adjust value: PURE INPUT MAPPING — the user's own lockDir/lockMove keys
+    // (defaults I/O, remappable in Controls) + L2/R2 on the pad. Repeat-allowed
+    // while held so holding walks the value.
+    const adj = mappingAdjust();
+    if (adj.down) this.adjustParam(-1);
+    if (adj.up) this.adjustParam(1);
     // Buttons via the abstracted nav layer (same lib as menus/pause).
     if (s.navPressed.includes('confirm')) this.replay();
     if (s.navPressed.includes('back')) { this.close(); }
@@ -625,7 +629,8 @@ export const AttackTheater = {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#666';
     ctx.font = '12px monospace';
-    ctx.fillText(`${leftR} select   ${upDn} param   Q/E adjust (L2/R2)   [${confirmLabel}] replay   [${backLabel}] close   F4`, demoW / 2, h - 16);
+    const adjLbl = adjustLabels();
+    ctx.fillText(`${leftR} select   ${upDn} param   ${adjLbl.down}/${adjLbl.up} adjust (L2/R2)   [${confirmLabel}] replay   [${backLabel}] close   F4`, demoW / 2, h - 16);
 
     ctx.restore();
 
@@ -658,6 +663,43 @@ function padShoulders() {
   return { l2, r2 };
 }
 
+/**
+ * PURE INPUT-MAPPING controls: the adjust buttons are the user's OWN mapped
+ * keys — lockDir (default I) decreases, lockMove (default O) increases — plus
+ * L2/R2 on the pad. No hardcoded letters: if the user remaps I/O in Controls,
+ * the theater follows automatically. Reads input.pressedBindings / heldBindings
+ * (per-binding edge/held state) against input.mapping.
+ */
+function mappingAdjust() {
+  const inp = typeof input !== 'undefined' ? input : null;
+  const shoulders = typeof navigator !== 'undefined' ? padShoulders() : { l2: false, r2: false };
+  let down = shoulders.l2, up = shoulders.r2;
+  if (inp) {
+    const pressed = new Set(inp.pressedBindings ?? []);
+    const held = inp.heldBindings ?? new Map();
+    const kb = inp.mapping?.keyboard ?? {};
+    for (const b of kb.lockDir ?? []) {
+      const k = `k:${b}`;
+      if (pressed.has(k) || held.get(k)) down = true;
+    }
+    for (const b of kb.lockMove ?? []) {
+      const k = `k:${b}`;
+      if (pressed.has(k) || held.get(k)) up = true;
+    }
+    // Gamepad side of those actions too (if the user bound a pad button).
+    const gp = inp.mapping?.gamepad ?? {};
+    for (const b of gp.lockDir ?? []) if (pressed.has(`g:${b}`) || held.get(`g:${b}`)) down = true;
+    for (const b of gp.lockMove ?? []) if (pressed.has(`g:${b}`) || held.get(`g:${b}`)) up = true;
+  }
+  return { down, up };
+}
+
+/** Labels for the hint bar from the live mapping (e.g. "I/O"). */
+function adjustLabels() {
+  const kb = input?.mapping?.keyboard ?? {};
+  const fmt = (list) => (list ?? []).map((b) => b.replace(/^Key/, '')).join('/') || '?';
+  return { down: fmt(kb.lockDir), up: fmt(kb.lockMove) };
+}
 /** Thin indirection so the gamepad code reads cleanly + stays testable. */
 function inputState() {
   // Imported lazily to avoid a module-load cycle (input.js ← debugHarness).

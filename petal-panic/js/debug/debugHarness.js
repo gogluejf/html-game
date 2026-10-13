@@ -263,11 +263,11 @@ function handleDebugKeys(e) {
 
 /**
  * Attack Theater (F4) keyboard routing. Called from handleDebugKeys while the
-  * theater is open. PURE-KEY mapping, no modifier keys (Shift/Ctrl combos are
- * unreliable — input.js blocks Ctrl game-wide, and Shift+arrow leaked into the
- * anim scrubber). Uniform keyboard/pad parity:
- *   ←/→ (A/D) select entry · ↑/↓ (W/S) select param · Q/L2 decrease ·
- *   E/R2 increase · Enter/A replay · Esc/B close.
+  * theater is open. PURE INPUT-MAPPING controls, no hardcoded letters:
+ *   ←/→ (A/D) select entry · ↑/↓ (W/S) select param · Enter/A replay · Esc/B close.
+ * Adjust value uses the user's OWN mapped keys — lockDir (default I) decreases,
+ * lockMove (default O) increases — plus L2/R2 on the pad. If the user remaps
+ * I/O in Controls, the theater follows (see mappingAdjust() in attack-theater).
  */
 function handleAttackTheaterKeys(e) {
   switch (e.code) {
@@ -289,14 +289,6 @@ function handleAttackTheaterKeys(e) {
     case 'ArrowDown':
     case 'KeyS':
       AttackTheater.stepParam(1);
-      e.preventDefault();
-      break;
-    case 'KeyQ': // adjust DOWN (pad: L2)
-      AttackTheater.adjustParam(-1);
-      e.preventDefault();
-      break;
-    case 'KeyE': // adjust UP (pad: R2)
-      AttackTheater.adjustParam(1);
       e.preventDefault();
       break;
     case 'Enter':
