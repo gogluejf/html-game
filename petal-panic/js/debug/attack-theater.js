@@ -240,8 +240,10 @@ export const AttackTheater = {
       this._params.duration = 99; // stop only on completion below
       this._choreo = { kind: 'chargeToTarget' };
     } else if (id === 'bodyContact') {
-      // Body contact WALKS into the target (that IS the attack).
-      this._choreo = { kind: 'walkToTarget', speed: 260 };
+      // Body contact: the VICTIM walks into the attacker (like an enemy
+      // shoving you) — opposite of charge, where the attacker moves. The
+      // attacker's body is the weapon; the dummy closes the distance.
+      this._choreo = { kind: 'victimWalksIn', speed: 260 };
     } else if (id === 'meleeHitbox') {
       // Melee: hop next to the target first so the swing connects.
       this._choreo = { kind: 'stepBeside', dist: 52, done: false };
@@ -308,10 +310,10 @@ export const AttackTheater = {
     const c = this._choreo;
     if (c) {
       const gap = (this._target.x + this._target.w / 2) - (this._attacker.x + this._attacker.w / 2);
-      if (c.kind === 'walkToTarget') {
-        if (Math.abs(gap) > this._attacker.w / 2 + 2) {
-          this._attacker.x += Math.sign(gap) * c.speed * DT;
-          this._attacker.facing = Math.sign(gap) || 1;
+      if (c.kind === 'victimWalksIn') {
+        // The dummy target walks toward the stationary attacker.
+        if (Math.abs(gap) > this._target.w / 2 + 2) {
+          this._target.x -= Math.sign(gap) * c.speed * DT;
         }
       } else if (c.kind === 'stepBeside') {
         if (!c.done) {
@@ -412,10 +414,10 @@ export const AttackTheater = {
       }
     }
 
-    // Body-contact choreography: while the walk-in is live, body overlap IS
-    // the attack — route contact damage through the target's pipeline with a
-    // per-hit cooldown (mirrors the gameplay CONTACT_COOLDOWN rule).
-    if (c?.kind === 'walkToTarget') {
+    // Body-contact choreography: the victim walked into the attacker's body —
+    // overlap IS the attack. Route contact damage through the target's pipeline
+    // with a per-hit cooldown (mirrors the gameplay CONTACT_COOLDOWN rule).
+    if (c?.kind === 'victimWalksIn') {
       c.cd = Math.max(0, (c.cd ?? 0) - DT);
       const overlapping = this._attacker.x + this._attacker.w > this._target.x &&
         this._attacker.x < this._target.x + this._target.w &&
