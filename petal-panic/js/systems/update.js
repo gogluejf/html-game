@@ -660,14 +660,20 @@ export function update(dt) {
   // is a debug overlay independent of gameplay state). While the black-screen
   // theater is up we FREEZE the game behind it: skip all gameplay physics so
   // the hero doesn't walk and gamepad actions don't fire under the overlay.
+  // EXCEPTION: the area-entry presentation must keep advancing even with a
+  // theater open — otherwise its timed auto-advance freezes and the player is
+  // stranded on the entry screen forever. F2/F4 are gated to in-area PLAY, so
+  // this path only matters for stale/theater-open edge cases; still safe.
   if (Theater.active) {
     Theater.update(dt);
+    if (getState() === S.AREA_ENTRY) stepAreaEntrySequence(dt);
     return;
   }
   // Attack Theater (debug-only): advance its live sandbox while open. Like the
   // Effect Theater it freezes gameplay behind the overlay.
   if (AttackTheater.active) {
     AttackTheater.update(dt);
+    if (getState() === S.AREA_ENTRY) stepAreaEntrySequence(dt);
     return;
   }
   // Physics only runs during PLAY; other states are screen-driven ().

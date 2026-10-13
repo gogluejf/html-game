@@ -18,6 +18,7 @@ import { BorisLoon, BORIS_DEF, makeBorisBaby } from '../enemies/boris_loon.js';
 import { makeBarrel, makeCoinBarrel, GameObj } from '../objects/object.js';
 import { Powerup, POWERUP_TYPES, POWERUP_ROLL_TYPES } from '../objects/powerup.js';
 import { ZONE_GROUND_Y } from '../world/level.js';
+import { clearSeq } from '../world/zoneLifecycle.js';
 import { Effects } from '../effects.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from './debug.js';
 // TEMP (special-weapons testing): flood special drops for slot-model QA.
@@ -474,9 +475,14 @@ window.addEventListener('keydown', (e) => {
   // F1: toggle debug mode. Opening debug from gameplay enters PLAY + harness.
   // Closing debug returns to normal gameplay (and closes theater if open).
   if (e.code === 'F1') { handleDebugToggle(e, 'debug'); return; }
-  // F2: toggle Effect Theater. Works from anywhere (gameplay or debug).
-  // Does NOT require debug to be on — it's a standalone overlay.
-  if (e.code === 'F2') {
+  // Theaters are IN-AREA tools: they may only be triggered while actively
+  // playing a zone (S.PLAY) and NOT during transitions — the area-entry
+  // presentation is timed and non-interactive, and opening a theater there
+  // froze its auto-advance (update() early-returns behind the overlay),
+  // stranding the player on the entry screen forever.
+  const inArea = getState() === S.PLAY && clearSeq.state === 'idle';
+  // F2: toggle Effect Theater. Only from inside an area (see gate above).
+  if (e.code === 'F2' && inArea) {
     if (Theater.active) {
       Theater.close();
       Debug.logEvent('theater CLOSE (F2)');
@@ -486,9 +492,9 @@ window.addEventListener('keydown', (e) => {
     }
     return;
   }
-  // F4: toggle Attack Theater. Works from anywhere, like F2. Only one
+  // F4: toggle Attack Theater. Only from inside an area, like F2. Only one
   // theater is active at a time — opening one closes the other.
-  if (e.code === 'F4') {
+  if (e.code === 'F4' && inArea) {
     if (AttackTheater.active) {
       AttackTheater.close();
       Debug.logEvent('attack-theater CLOSE (F4)');
