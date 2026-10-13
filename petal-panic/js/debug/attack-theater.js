@@ -372,7 +372,10 @@ export const AttackTheater = {
     // cadence is even — calling it here, not in update(), keeps it locked to
     // the simulation clock instead of the variable rAF delta.
     this.updateGamepad();
-    updateEffects(DT); // advance real effect instances (explosions, sparkles)
+    updateEffects(DT);   // advance effect instances (beams, flashes...)
+    particles.updateAll(DT); // advance hit-sparkles / explosion debris —
+                             // WITHOUT this they spawn frozen at full alpha
+                             // and never fly/fade (main loop does this in barrelSync)
 
     // --- Choreography (moves the attacker to stage the attack) ----------------
     const c = this._choreo;
