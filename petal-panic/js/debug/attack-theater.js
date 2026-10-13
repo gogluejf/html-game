@@ -96,7 +96,7 @@ const SANDBOX_PRESETS = {
   reticleShot: { duration: 1.3, lockTime: 1.1, color: '#ff5555', radius: 30, tracking: true, speed: 500, ttl: 2, damage: 10 },
   homing: { target: null, turnRate: 3, speed: null, initialDirection: -0.3, ttl: 2 },
   predictive: { speed: 300 },
-  beam: { direction: 0, length: 320, width: 24, duration: 0.6, damage: 15, tickRate: 8, team: 'ally' },
+  beam: { direction: 0, length: 450, width: 24, duration: 0.6, damage: 15, tickRate: 8, team: 'ally' },
   fireArea: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, length: 96, height: 48, duration: 2, tickRate: 5, damage: 8, team: 'ally' },
   spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 16, size: 32, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
   orbit: { count: 3, minRadius: 40, maxRadius: 90, pulseSpeed: 1.5, speed: 1.5, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
