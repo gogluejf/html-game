@@ -1,15 +1,19 @@
 // Petal Panic — Attack Theater (Wave 1 cut; full spec lands in Wave 5).
 // A DEBUG-ONLY sandbox that lists every registered attack primitive, lets you
-// pick one (arrows), and fires it at a dummy target with live-tweakable params.
-// Same UX pattern as the Effect Theater (F2): black overlay, demo arena left,
-// info/params panel right, arrows navigate, confirm replays, back closes.
+// pick one (arrows / d-pad), and fires it at a dummy target with live-tweakable
+// params. Same UX pattern as the Effect Theater (F2): black overlay, demo arena
+// left, info/params panel right, arrows navigate, confirm replays, back closes.
 //
 // Unlike the Effect Theater this runs a LIVE mini-simulation: real pools,
-// real collision world, real damage routing. The attacker is a placeholder
-// box on the left; the dummy target stands on the right and flashes + loses HP.
+// real collision world, real damage routing, REAL effect engine VFX. The
+// attacker is a placeholder box on the left; the dummy target stands on the
+// right and flashes + loses HP. Per-primitive choreography stages each attack
+// so it's actually watchable (charge dashes AT the target, body contact walks
+// into it, explosions telegraph before they pop).
 //
-// Keys: F4 toggle · ←/→ select · ↑/↓ select param · Shift+←/→ adjust value ·
-//       Enter/Space replay · Esc close.
+// Keys:  F4 toggle · ←/→ select · ↑/↓ select param · Shift+←/→ adjust ·
+//        Enter/Space replay · Esc close.
+// Pad:   ◀▶ select · ▲▼ param · L2/R2 adjust · A replay · B close.
 
 import { listPrimitives, getPrimitive } from '../combat/attack/registry.js';
 import { invoke } from '../combat/attack/engine.js';
@@ -21,30 +25,11 @@ import { CollisionWorld } from '../core/collision.js';
 import { LAYER } from '../consts.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { navLabelString, navLabels } from '../core/input.js';
+import { Effects } from '../effects.js';
+import { updateEffects, drawEffects, resetEffects } from '../effects/index.js';
+import { aabbOverlap } from '../core/collision.js';
 
-// --- Sandbox constants --------------------------------------------------------
-const GROUND_Y = 420;
-const ATTACKER_POS = { x: 160, y: GROUND_Y - 48, w: 32, h: 48 };
-const TARGET_POS = { x: 700, y: GROUND_Y - 48, w: 32, h: 48 };
-const DT = 1 / 60;
-
-// Per-primitive default param presets for the sandbox (override registry
-// defaults where they'd be boring or point the wrong way).
-const SANDBOX_PRESETS = {
-  projectile: { direction: 0, speed: 600, ttl: 2, damage: 10, solidBehavior: 'pass', gravity: 0 },
-  spread: { count: 3, direction: 0, angle: Math.PI / 3 },
-  bomb: { direction: -Math.PI / 4, speed: 300, arc: 800, bounce: true, ttl: 4, damage: 40, radius: 60 },
-  explosion: { x: 700, y: GROUND_Y - 24, radius: 60, damage: 40, alignment: 'neutral' },
-  meleeHitbox: { activeFrames: 8, w: 48, h: 40, offset: { x: 40, y: 0 }, damage: 12 },
-  charge: { direction: 0, speed: 600, duration: 0.5, distance: null, acceleration: 0 },
-  bodyContact: { damage: 20, enabled: true, temporaryOverride: true },
-};
-
-/**
- * Import every Wave-1 primitive module for its registration side effect.
- * The game's normal boot path imports these via gameplay code; the theater
- * does it explicitly so F4 works even before any attack has fired in-game.
- */
+// Import every Wave-1 primitive module for its registration side effect.
 import '../combat/attack/primitives/projectile.js';
 import '../combat/attack/primitives/spread.js';
 import '../combat/attack/primitives/bomb.js';
@@ -53,15 +38,41 @@ import '../combat/attack/primitives/meleeHitbox.js';
 import '../combat/attack/primitives/movement.js';
 import '../combat/attack/primitives/bodyContact.js';
 
-/** Numeric params the sandbox exposes for tweaking (in display order). */
+// --- Sandbox constants --------------------------------------------------------
+const GROUND_Y = 400;
+const ATTACKER_HOME = { x: 140, y: GROUND_Y - 48, w: 32, h: 48 };
+const TARGET_POS = { x: 560, y: GROUND_Y - 48, w: 32, h: 48 }; // clear of the side panel
+const DT = 1 / 60;
+const DEG = Math.PI / 180;
+
+/** Angle display helper: radians → "−45° ↗" style string. */
+function angleLabel(rad) {
+  const deg = Math.round(rad / DEG);
+  const oct = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
+  const idx = ((Math.round(-rad / (Math.PI / 4)) % 8) + 8) % 8;
+  return `${deg}° ${oct[idx]}`;
+}
+
+// Per-primitive default param presets for the sandbox.
+const SANDBOX_PRESETS = {
+  projectile: { direction: 0, speed: 600, ttl: 2, damage: 10, solidBehavior: 'pass', gravity: 0 },
+  spread: { count: 3, direction: 0, angle: 60 * DEG },
+  bomb: { direction: -0.5, speed: 600, arc: 800, bounce: true, explodeOnContact: true, ttl: 4, damage: 40, radius: 70 },
+  explosion: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, radius: 70, damage: 40, alignment: 'neutral' },
+  meleeHitbox: { activeFrames: 10, w: 48, h: 44, offset: { x: 44, y: 0 }, damage: 12 },
+  charge: { direction: 0, speed: 700, duration: 0.6, distance: null, acceleration: 0 },
+  bodyContact: { damage: 20, enabled: true, temporaryOverride: true },
+};
+
+/** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
 export const TWEAKABLE = {
-  projectile: ['speed', 'ttl', 'damage'],
-  spread: ['count', 'angle'],
-  bomb: ['speed', 'arc', 'ttl', 'damage', 'radius'],
-  explosion: ['x', 'y', 'radius', 'damage'],
-  meleeHitbox: ['activeFrames', 'w', 'h', 'damage'],
-  charge: ['speed', 'duration'],
-  bodyContact: ['damage'],
+  projectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.25], ['damage', 'num', 2]],
+  spread: [['count', 'int', 1], ['angle', 'angle', 15 * DEG]],
+  bomb: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
+  explosion: [['x', 'num', 20], ['y', 'num', 20], ['radius', 'num', 10], ['damage', 'num', 5]],
+  meleeHitbox: [['activeFrames', 'int', 2], ['w', 'num', 8], ['h', 'num', 8], ['damage', 'num', 2]],
+  charge: [['speed', 'num', 100], ['duration', 'num', 0.1]],
+  bodyContact: [['damage', 'num', 5]],
 };
 
 export const AttackTheater = {
@@ -73,19 +84,17 @@ export const AttackTheater = {
   _world: null,
   _attacker: null,
   _target: null,
-  _handles: [],   // active attack handles this run
-  _params: {},    // current tweak values per selected entry
-  _flash: 0,      // target hit-flash timer
-  _log: [],       // event log lines (hit/detonate/expire)
+  _handles: [],
+  _params: {},
+  _flash: 0,
+  _log: [],
+  _choreo: null,      // per-run choreography state
+  _padWasHeld: 0,     // gamepad edge-trigger memory
 
   get entries() { return listPrimitives(); },
-
   currentId() { return this.entries[this.index] ?? null; },
 
-  /** Current tweakable key names for the selected entry. */
-  _tweakKeys() {
-    return TWEAKABLE[this.currentId()] ?? [];
-  },
+  _tweakList() { return TWEAKABLE[this.currentId()] ?? []; },
 
   open() {
     this.active = true;
@@ -97,6 +106,7 @@ export const AttackTheater = {
   close() {
     this.active = false;
     this._teardown();
+    resetEffects(); // don't leak demo VFX into gameplay
   },
 
   step(dir) {
@@ -108,24 +118,49 @@ export const AttackTheater = {
     this._replay();
   },
 
-  /** Select previous/next tweakable param. */
   stepParam(dir) {
-    const keys = this._tweakKeys();
+    const keys = this._tweakList();
     if (!keys.length) return;
     this.paramIndex = (this.paramIndex + dir + keys.length) % keys.length;
   },
 
-  /** Adjust the selected param by `delta` (already scaled by caller). */
-  adjustParam(delta) {
-    const keys = this._tweakKeys();
-    if (!keys.length) return;
-    const key = keys[this.paramIndex];
-    this._params[key] = round2((this._params[key] ?? 0) + delta);
+  adjustParam(deltaSign) {
+    const list = this._tweakList();
+    if (!list.length) return;
+    const [key, , stepSize] = list[this.paramIndex];
+    this._params[key] = round2((this._params[key] ?? 0) + deltaSign * stepSize);
   },
 
   replay() {
     if (!this.active) return;
     this._replay();
+  },
+
+  // --- Gamepad (called from update loop while active) --------------------------
+
+  /**
+   * Edge-triggered gamepad routing, same convention as the Effect Theater:
+   * d-pad/stick X = select entry, Y = select param, L2/R2 = adjust value,
+   * A (confirm) = replay, B (back) = close.
+   */
+  updateGamepad() {
+    if (!this.active) return;
+    const s = inputState();
+    const dirX = s.moveX < -0.2 ? -1 : s.moveX > 0.2 ? 1 : 0;
+    const dirY = s.moveY < -0.2 ? -1 : s.moveY > 0.2 ? 1 : 0;
+    // Horizontal: entry selection (edge-triggered like the Effect Theater).
+    if (dirX !== 0 && dirX !== this._padWasHeld) {
+      this.step(dirX);
+    }
+    this._padWasHeld = dirX;
+    // Vertical: param selection (repeat-allowed: holding walks the list).
+    if (dirY !== 0) this.stepParam(dirY);
+    // Shoulders: L2 = decrease, R2 = increase (repeat-allowed while held).
+    if (s.l2) this.adjustParam(-1);
+    if (s.r2) this.adjustParam(1);
+    // Buttons via the abstracted nav layer (same lib as menus/pause).
+    if (s.navPressed.includes('confirm')) this.replay();
+    if (s.navPressed.includes('back')) { this.close(); }
   },
 
   // --- Sandbox lifecycle ------------------------------------------------------
@@ -134,13 +169,15 @@ export const AttackTheater = {
     this._teardown();
     this._pools = { projectilePool: new Pool(Projectile, 64), specialPool: new Pool(Special, 16) };
     this._world = new CollisionWorld({ cellSize: 64 });
-    this._attacker = { ...ATTACKER_POS, alive: true, layer: LAYER.HERO, facing: 1 };
-    this._target = { ...TARGET_POS, alive: true, hp: 999, layer: LAYER.ENEMY, hitFlash: 0 };
+    this._attacker = { ...ATTACKER_HOME, alive: true, layer: LAYER.HERO, facing: 1, bodyKnockback: null };
+    this._target = { ...TARGET_POS, alive: true, hp: 999, layer: LAYER.ENEMY, hitFlash: 0,
+      takeDamage(amt) { if (!this.alive) return 0; this.hp -= amt; if (this.hp <= 0) this.alive = false; return amt; } };
     this._world.add(this._attacker);
     this._world.add(this._target);
     this._handles = [];
     this._flash = 0;
     this._log = [];
+    this._choreo = null;
     this._loadParams();
   },
 
@@ -157,6 +194,7 @@ export const AttackTheater = {
     this._world = null;
     this._attacker = null;
     this._target = null;
+    this._choreo = null;
   },
 
   _loadParams() {
@@ -171,12 +209,11 @@ export const AttackTheater = {
       world: { targets: [this._target], hero: null },
       pools: this._pools,
       collisionWorld: this._world,
-      effects: null, // no VFX in v0 (Effect Engine wiring lands with Wave 5)
+      effects: Effects, // REAL VFX: explosions flash, sparkles spawn, shake kicks
     });
   },
 
   _replay() {
-    // Clear any live shots from the previous run.
     for (const p of this._pools?.projectilePool.activeItems ?? []) p.alive = false;
     for (const s of this._pools?.specialPool.activeItems ?? []) s.alive = false;
     if (this._pools) {
@@ -187,13 +224,42 @@ export const AttackTheater = {
     this._handles = [];
     this._target.hp = 999;
     this._target.alive = true;
+    this._attacker.x = ATTACKER_HOME.x;
+    this._attacker.y = ATTACKER_HOME.y;
     this._log = [];
+    this._choreo = null;
 
     const id = this.currentId();
     if (!id) return;
+
+    // --- Choreography: stage the scene so the attack is watchable -------------
+    const tCx = this._target.x + this._target.w / 2;
+    if (id === 'charge') {
+      // Charge DASHES AT the target: face it, run until body contact ends it.
+      this._params.direction = this._attacker.x < tCx ? 0 : Math.PI;
+      this._params.duration = 99; // stop only on completion below
+      this._choreo = { kind: 'chargeToTarget' };
+    } else if (id === 'bodyContact') {
+      // Body contact WALKS into the target (that IS the attack).
+      this._choreo = { kind: 'walkToTarget', speed: 260 };
+    } else if (id === 'meleeHitbox') {
+      // Melee: hop next to the target first so the swing connects.
+      this._choreo = { kind: 'stepBeside', dist: 52, done: false };
+    } else if (id === 'explosion') {
+      // Explosion: brief telegraph, then pop at the blast point.
+      this._choreo = { kind: 'telegraph', delay: 0.6, fired: false };
+    }
+
     let h;
     try {
-      h = invoke(id, { ...this._params }, this._ctx());
+      // Choreographed attacks delay or gate the actual invoke:
+      //  - telegraph (explosion): fires after the warning window
+      //  - stepBeside (melee): fires only once the attacker arrives
+      const delayed = this._choreo?.kind === 'telegraph';
+      const gated = this._choreo?.kind === 'stepBeside';
+      if (!delayed && !gated) {
+        h = invoke(id, { ...this._params }, this._ctx());
+      }
     } catch (err) {
       this._log.push(`ERROR: ${err.message}`);
       return;
@@ -207,15 +273,13 @@ export const AttackTheater = {
     h.on('expire', () => this._log.unshift('EXPIRE'));
     h.on('complete', () => this._log.unshift('COMPLETE'));
     this._handles.push(h);
-    // Synchronous primitives (spread/bodyContact) finish during invoke().
     if (h.entity == null && !h.step && h.state == null) {
       this._log.unshift(`${id} finished (synchronous)`);
     }
-    // Composable direction-generator: fan its angles out as projectiles so
-    // the sandbox shows something real (macros do this composition natively).
+    // Composable direction-generator: fan its angles out as projectiles.
     if (id === 'spread' && Array.isArray(h.angles)) {
       for (const ang of h.angles) {
-        const shot = invoke('projectile', { ...this._params, direction: ang, count: undefined }, this._ctx());
+        const shot = invoke('projectile', { ...this._params, direction: ang }, this._ctx());
         if (shot?.entity) this._handles.push(shot);
       }
       this._log.unshift(`spread → ${h.angles.length} shots`);
@@ -225,7 +289,7 @@ export const AttackTheater = {
   /** Advance the sandbox one fixed step. Called from update() while active. */
   update(dt) {
     if (!this.active || !this._pools) return;
-    // Fixed-step accumulation so behavior matches gameplay determinism.
+    this.updateGamepad();
     this._acc = (this._acc ?? 0) + dt;
     let steps = 0;
     while (this._acc >= DT && steps < 4) {
@@ -238,12 +302,77 @@ export const AttackTheater = {
 
   _stepOnce() {
     const { projectilePool, specialPool } = this._pools;
+    updateEffects(DT); // advance real effect instances (explosions, sparkles)
+
+    // --- Choreography (moves the attacker to stage the attack) ----------------
+    const c = this._choreo;
+    if (c) {
+      const gap = (this._target.x + this._target.w / 2) - (this._attacker.x + this._attacker.w / 2);
+      if (c.kind === 'walkToTarget') {
+        if (Math.abs(gap) > this._attacker.w / 2 + 2) {
+          this._attacker.x += Math.sign(gap) * c.speed * DT;
+          this._attacker.facing = Math.sign(gap) || 1;
+        }
+      } else if (c.kind === 'stepBeside') {
+        if (!c.done) {
+          if (Math.abs(gap) > c.dist) {
+            this._attacker.x += Math.sign(gap) * 420 * DT;
+            this._attacker.facing = Math.sign(gap) || 1;
+          } else {
+            // Arrived: fire the swing now.
+            c.done = true;
+            const mh = invoke('meleeHitbox', { ...this._params }, this._ctx());
+            mh.on('hit', (i) => { this._flash = 0.15; this._log.unshift(`HIT ${i.dealt ?? ''} dmg`.trim()); });
+            mh.on('complete', () => this._log.unshift('COMPLETE'));
+            this._handles.push(mh);
+          }
+        }
+      } else if (c.kind === 'telegraph') {
+        c.t = (c.t ?? 0) + DT;
+        if (!c.fired && c.t >= c.delay) {
+          c.fired = true;
+          const e = this._params;
+          const eh = invoke('explosion', { ...e }, this._ctx());
+          eh.on('hit', (i) => { this._flash = 0.2; this._log.unshift(`HIT ${i.dealt ?? ''} dmg`.trim()); });
+          eh.on('complete', () => this._log.unshift('COMPLETE'));
+          this._handles.push(eh);
+        }
+      }
+    }
+
     projectilePool.updateAll(DT);
     specialPool.updateAll(DT);
     // Off-screen cull (sandbox bounds instead of level zone).
     for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
-      if (p.x + p.w < -40 || p.x > VIEW_W + 40 || p.y + p.h < -40 || p.y > VIEW_H + 40) {
-        p.alive = false;
+      if (p.x + p.w < -40 || p.x > VIEW_W + 40 || p.y + p.h < -40 || p.y > VIEW_H + 40) p.alive = false;
+    }
+
+    // --- Sandbox hit detection -------------------------------------------------
+    // The real game routes PROJ×ENEMY through registerCollisionHandlers()
+    // (gameplay-only: it needs the live hero, boss zone, barrels...). The
+    // sandbox keeps its CollisionWorld for future terrain/solid work but does
+    // its own minimal projectile→target check here — same aabbOverlap, same
+    // damage routing, plus the _attackHit flag the lifecycle bridging reads.
+    for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
+      if (!p.alive || !this._target?.alive) continue;
+      if (!aabbOverlap(p, this._target)) continue;
+      const dealt = this._target.takeDamage(p.damage ?? 10);
+      if (dealt > 0) {
+        p._attackHit = true;
+        this._flash = 0.15;
+        Effects.spawnHitSparkles(p.x + p.w / 2, p.y + p.h / 2, 6);
+        this._log.unshift(`HIT ${dealt} dmg`);
+      }
+      p.alive = false; // consumed on impact (matches gameplay behavior)
+    }
+
+    // Bomb in flight: detonate when it reaches ground level (the sandbox has
+    // no terrain to bounce off — landing IS the impact).
+    for (const s of specialPool.activeItems) {
+      if (!s.alive || s._attackId !== 'bomb' || s._attackDone) continue;
+      if (s.y + s.h >= GROUND_Y) {
+        s._attackHit = true;
+        s.alive = false;
       }
     }
     this._world.update();
@@ -253,16 +382,56 @@ export const AttackTheater = {
       const h = this._handles[i];
       let finished = false;
       if (h.id === 'meleeHitbox' && typeof h.step === 'function') {
-        finished = h.step([this._target]); // melee needs the target list
+        finished = h.step([this._target]);
       } else if (h.entity) {
         if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
         else if (h.id === 'bomb') finished = stepBomb(h.entity, this._params, this._ctx(), h);
         else if (typeof h.step === 'function') finished = h.step(DT);
+      } else if (typeof h.step === 'function') {
+        // State-based primitives (charge): no entity, just a motion profile.
+        finished = h.step(DT);
       }
       if (finished) this._handles.splice(i, 1);
     }
 
-    // Target bookkeeping: flash decay + death → respawn next replay.
+    // Charge choreography: end the dash when the bodies meet.
+    if (c?.kind === 'chargeToTarget') {
+      const touching = this._attacker.x + this._attacker.w > this._target.x &&
+        this._attacker.x < this._target.x + this._target.w &&
+        this._attacker.y + this._attacker.h > this._target.y;
+      if (touching) {
+        const dealt = this._target.takeDamage(this._params.damage ?? 20);
+        if (dealt > 0) {
+          this._flash = 0.2;
+          Effects.spawnHitSparkles(this._target.x + 16, this._target.y + 24, 8);
+          this._log.unshift(`CHARGE HIT ${dealt} dmg`);
+        }
+        for (const h of this._handles) { if (h.id === 'charge') h._complete({ traveled: h.state?.traveled, blocked: false }); }
+        this._handles = this._handles.filter((h) => h.id !== 'charge');
+        this._choreo = null;
+      }
+    }
+
+    // Body-contact choreography: while the walk-in is live, body overlap IS
+    // the attack — route contact damage through the target's pipeline with a
+    // per-hit cooldown (mirrors the gameplay CONTACT_COOLDOWN rule).
+    if (c?.kind === 'walkToTarget') {
+      c.cd = Math.max(0, (c.cd ?? 0) - DT);
+      const overlapping = this._attacker.x + this._attacker.w > this._target.x &&
+        this._attacker.x < this._target.x + this._target.w &&
+        this._attacker.y + this._attacker.h > this._target.y;
+      if (overlapping && c.cd <= 0 && this._target.alive) {
+        c.cd = 0.5;
+        const dealt = this._target.takeDamage(this._params.damage ?? 20);
+        if (dealt > 0) {
+          this._flash = 0.2;
+          Effects.spawnHitSparkles(this._target.x + 16, this._target.y + 24, 6);
+          this._log.unshift(`CONTACT ${dealt} dmg`);
+        }
+      }
+    }
+
+    // Target bookkeeping.
     if (this._target.hitFlash > 0) this._target.hitFlash -= DT;
     if (this._target.hp <= 0) {
       this._target.alive = false;
@@ -278,7 +447,7 @@ export const AttackTheater = {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, w, h);
 
-    const panelW = 260;
+    const panelW = 280;
     const panelX = w - panelW;
     const demoW = panelX - 20;
 
@@ -295,7 +464,6 @@ export const AttackTheater = {
     ctx.fillText(meta?.name ?? id ?? '(none)', demoW / 2, 92);
 
     // --- Arena ------------------------------------------------------------------
-    // Ground line.
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -303,27 +471,42 @@ export const AttackTheater = {
     ctx.lineTo(demoW - 40, GROUND_Y);
     ctx.stroke();
 
-    // Attacker (placeholder box, pink).
+    // Telegraph ring for pending explosions.
+    const c = this._choreo;
+    if (c?.kind === 'telegraph' && !c.fired) {
+      const r = (this._params.radius ?? 60) * Math.min(1, (c.t ?? 0) / c.delay);
+      ctx.strokeStyle = `rgba(255,120,60,${0.4 + 0.5 * Math.sin((c.t ?? 0) * 20)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(this._params.x, this._params.y, Math.max(4, r), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Attacker.
     if (this._attacker) {
       ctx.fillStyle = '#ff6ec7';
       ctx.fillRect(this._attacker.x, this._attacker.y, this._attacker.w, this._attacker.h);
+      // Facing wedge.
       ctx.fillStyle = '#fff';
+      const fx = this._attacker.facing >= 0 ? this._attacker.x + this._attacker.w : this._attacker.x - 8;
+      ctx.fillRect(fx, this._attacker.y + this._attacker.h / 2 - 3, 8, 6);
       ctx.font = '10px monospace';
       ctx.textAlign = 'center';
       ctx.fillText('ATTACKER', this._attacker.x + this._attacker.w / 2, this._attacker.y - 8);
     }
 
-    // Dummy target (green, flashes white when hit).
+    // Dummy target.
     if (this._target) {
       ctx.fillStyle = this._flash > 0 ? '#fff' : (this._target.alive ? '#6d6' : '#444');
       ctx.fillRect(this._target.x, this._target.y, this._target.w, this._target.h);
       ctx.fillStyle = '#fff';
       ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
       ctx.fillText(this._target.alive ? `HP ${Math.max(0, Math.round(this._target.hp))}` : 'DOWN',
         this._target.x + this._target.w / 2, this._target.y - 8);
     }
 
-    // Live projectiles/specials (debug rects — sprites land with Wave 5).
+    // Live projectiles/specials.
     if (this._pools) {
       for (const p of this._pools.projectilePool.activeItems) {
         ctx.fillStyle = '#ff6ec7';
@@ -335,7 +518,7 @@ export const AttackTheater = {
       }
     }
 
-    // Event log (last 5 lines, bottom-left of arena).
+    // Event log.
     ctx.textAlign = 'left';
     ctx.font = '11px monospace';
     this._log.slice(0, 5).forEach((line, i) => {
@@ -359,13 +542,12 @@ export const AttackTheater = {
     let py = 84;
     ctx.textAlign = 'left';
 
-    // Description (wrapped).
     if (meta?.desc) {
       ctx.font = '12px monospace';
       ctx.fillStyle = '#aaa';
       let line = '';
       for (const word of meta.desc.split(' ')) {
-        if ((line + word).length > 34) {
+        if ((line + word).length > 36) {
           ctx.fillText(line, panelX + 12, py); py += 15; line = word + ' ';
         } else line += word + ' ';
       }
@@ -373,42 +555,80 @@ export const AttackTheater = {
     }
     py += 10;
 
-    // Param list (tweakable ones highlighted + selectable).
     ctx.font = 'bold 11px monospace';
     ctx.fillStyle = '#f7d';
-    ctx.fillText('PARAMS (↑/↓ select · Shift+←/→ adjust)', panelX + 12, py);
+    ctx.fillText('PARAMS (▲▼ select · L2/R2 adjust)', panelX + 12, py);
     py += 18;
     ctx.font = '11px monospace';
-    const keys = this._tweakKeys();
+    const tweakList = this._tweakList();
     const allKeys = Object.keys(this._params ?? {});
     for (const key of allKeys) {
       if (py > h - 70) break;
-      const tweakIdx = keys.indexOf(key);
-      const selected = tweakIdx === this.paramIndex && keys.length > 0;
-      ctx.fillStyle = selected ? '#fd6' : (tweakIdx >= 0 ? '#ccc' : '#666');
+      const tIdx = tweakList.findIndex(([k]) => k === key);
+      const selected = tIdx === this.paramIndex && tweakList.length > 0;
+      ctx.fillStyle = selected ? '#fd6' : (tIdx >= 0 ? '#ccc' : '#666');
       const val = this._params[key];
-      const valStr = typeof val === 'number' ? round2(val).toString()
+      const valStr = typeof val === 'number'
+        ? (key === 'direction' || key === 'angle' ? angleLabel(val) : String(round2(val)))
         : (val && typeof val === 'object' ? JSON.stringify(val) : String(val));
       ctx.fillText(`${selected ? '▶' : '·'} ${key} = ${valStr}`, panelX + 12, py);
       py += 15;
     }
 
-    // Hint bar.
-    const stepIcons = [...navLabels('left', { simple: true }), ...navLabels('right', { simple: true })].join('/');
+    // Hint bar — same nav-label lib as the menus (keyboard + pad glyphs).
+    const leftR = [...navLabels('left', { simple: true }), ...navLabels('right', { simple: true })].join('/');
+    const upDn = [...navLabels('up', { simple: true }), ...navLabels('down', { simple: true })].join('/');
     const confirmLabel = navLabelString('confirm');
     const backLabel = navLabelString('back');
     ctx.textAlign = 'center';
     ctx.fillStyle = '#666';
     ctx.font = '12px monospace';
-    ctx.fillText(
-      `${stepIcons} select   ↑↓ param   Shift+${stepIcons} adjust   [${confirmLabel}] replay   [${backLabel}] close   F4 toggle`,
-      demoW / 2, h - 16
-    );
+    ctx.fillText(`${leftR} select   ${upDn} param   L2/R2 adjust   [${confirmLabel}] replay   [${backLabel}] close   F4`, demoW / 2, h - 16);
 
     ctx.restore();
+
+    // Real effect-engine pass: world-space VFX (explosions, sparkles) then
+    // screen-space overlays (flash/vignette/shake) — same two-pass model as
+    // the main render loop.
+    drawEffects(ctx, undefined, { space: 'world' });
+    Effects.drawOverlay(ctx, VIEW_W, VIEW_H);
   },
 };
 
 function round2(n) {
   return Math.round(n * 100) / 100;
+}
+
+/**
+ * Read raw gamepad state for theater controls (L2/R2 have no nav mapping, so
+ * we read the standard button indices directly — 6 = L2/LT/ZL, 7 = R2/RT/ZR
+ * across PS/Xbox/Switch layouts). Returns zeros when no pad is connected.
+ */
+function padShoulders() {
+  let l2 = false, r2 = false;
+  try {
+    for (const pad of navigator.getGamepads?.() ?? []) {
+      if (!pad) continue;
+      if (pad.buttons[6]?.pressed || (pad.buttons[6]?.value ?? 0) > 0.5) l2 = true;
+      if (pad.buttons[7]?.pressed || (pad.buttons[7]?.value ?? 0) > 0.5) r2 = true;
+    }
+  } catch { /* no gamepad API (node tests) */ }
+  return { l2, r2 };
+}
+
+/** Thin indirection so the gamepad code reads cleanly + stays testable. */
+function inputState() {
+  // Imported lazily to avoid a module-load cycle (input.js ← debugHarness).
+  if (!inputState._ref) {
+    import('../core/input.js').then((m) => { inputState._ref = m.input; });
+  }
+  const inp = inputState._ref;
+  const shoulders = typeof navigator !== 'undefined' ? padShoulders() : { l2: false, r2: false };
+  if (!inp) return { moveX: 0, moveY: 0, ...shoulders, navPressed: [] };
+  return {
+    moveX: inp.state.moveX ?? 0,
+    moveY: inp.state.moveY ?? 0,
+    ...shoulders,
+    navPressed: inp.nav.pressed ?? [],
+  };
 }
