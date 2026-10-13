@@ -73,7 +73,7 @@ const ENEMY_KEYS = ['jester', 'jackolantern', 'vine_hound', 'boris_loon', 'boris
 const BOSS_KEYS = ['tusko_wobble'];
 
 /** Powerup type keys (must match POWERUP_DEFS keys in powerup.js). */
-const POWERUP_KEYS = ['specialDrop', 'invincibility', 'rapid', 'shield', 'clear', 'energy', 'oneUp'];
+const POWERUP_KEYS = ['specialDrop', 'specialSaw', 'specialBomb', 'specialSpread', 'invincibility', 'rapid', 'shield', 'clear', 'energy', 'oneUp'];
 
 /** Barrel type keys. */
 const BARREL_KEYS = ['woodBarrel', 'explosiveBarrel', 'coinBarrel'];

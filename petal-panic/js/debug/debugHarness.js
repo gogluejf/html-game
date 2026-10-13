@@ -16,7 +16,7 @@ import { Violetta } from '../enemies/violetta.js';
 import { JackOLantern } from '../enemies/jackolantern.js';
 import { BorisLoon, BORIS_DEF, makeBorisBaby } from '../enemies/boris_loon.js';
 import { makeBarrel, makeCoinBarrel, GameObj } from '../objects/object.js';
-import { Powerup, POWERUP_TYPES } from '../objects/powerup.js';
+import { Powerup, POWERUP_TYPES, POWERUP_ROLL_TYPES } from '../objects/powerup.js';
 import { ZONE_GROUND_Y } from '../world/level.js';
 import { Effects } from '../effects.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from './debug.js';
@@ -177,7 +177,7 @@ function debugInjectPowerups() {
   _debugPowerups.length = 0;
 
   const cx = h.x + h.w / 2, cy = h.y + h.h / 2;
-  const types = POWERUP_TYPES;
+  const types = POWERUP_ROLL_TYPES; // flat: every effect + every special, equal weight
   const R = 140;
   const COUNT = 10;
   let n = 0;

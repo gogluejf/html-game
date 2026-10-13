@@ -37,6 +37,14 @@ export const POWERUP_DEFS = {
                      // the placeholder icon matches what actually lands in the slot.
                      hero.acquireSpecial(p?.specialRoll ?? SPECIAL_TYPES[Math.floor(Math.random() * SPECIAL_TYPES.length)]);
                    } },
+  // Per-weapon drops: each special gets its OWN flat-chance powerup type so no
+  // weapon is a subset of another roll (see POWERUP_ROLL_TYPES).
+  specialSaw:    { label: 'Petal Saw!',   color: '#9b59b6',
+                   apply: (hero) => { hero.acquireSpecial('saw'); } },
+  specialBomb:   { label: 'Bomb!',        color: '#9b59b6',
+                   apply: (hero) => { hero.acquireSpecial('bomb'); } },
+  specialSpread: { label: 'Spread Shot!', color: '#9b59b6',
+                   apply: (hero) => { hero.acquireSpecial('spread'); } },
   rapid:         { label: 'Rapid Fire!',  color: '#3498db', duration: 6,
                    apply: (hero) => { hero.rapidTimer = Math.max(hero.rapidTimer ?? 0, 6); } },
   shield:        { label: '+Shield',      color: '#3498db',
@@ -68,6 +76,13 @@ export const POWERUP_DEFS = {
 /** All powerup type keys (level spawn budgets iterate these). */
 export const POWERUP_TYPES = Object.keys(POWERUP_DEFS);
 
+/**
+ * Flat random-roll pool: every effect AND every special weapon is its own
+ * entry with equal weight. `specialDrop` (the legacy "random special" bucket)
+ * is excluded so no weapon is a subset of another roll — 1/N per outcome.
+ */
+export const POWERUP_ROLL_TYPES = POWERUP_TYPES.filter(t => t !== 'specialDrop');
+
 // --- Placeholder visuals (TEMP — until real powerup sprites are wired) -------
 // Each type gets a distinct color + a big glyph so drops are identifiable at a
 // glance during testing. specialDrop rolls bomb/saw per instance (matching the
@@ -81,7 +96,13 @@ const PLACEHOLDER_STYLE = {
   energy:        { color: '#2ecc71', glyph: '♥' },
   oneUp:         { color: '#e74c3c', glyph: '1UP' },
 };
-// Special glyphs are read from the registry (specialWeapons.js).
+// Per-weapon drop glyphs come from the registry (specialWeapons.js icons).
+for (const id of SPECIAL_TYPES) {
+  PLACEHOLDER_STYLE[`special${id[0].toUpperCase()}${id.slice(1)}`] = {
+    color: specialById[id]?.color ?? '#9b59b6',
+    glyph: specialById[id]?.icon ?? '?',
+  };
+}
 
 /** Build a single-frame placeholder canvas: colored body + centered glyph. */
 function placeholderFrame(w, h, color, glyph) {
