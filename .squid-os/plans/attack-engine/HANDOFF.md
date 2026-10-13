@@ -1,95 +1,116 @@
 # Attack Engine — Handoff
 
-**Last updated:** 2026-10-13 (end of Wave 1)
+**Last updated:** 2026-10-13 (end of Wave 2)
 **Plan:** `.squid-os/plans/attack-engine/attack-engine.md`
 **Architecture docs:**
 - `petal-panic/docs/architecture/attack-primitives.md`
 - `petal-panic/docs/architecture/attack-macros.md`
 
-## Current state — WAVE 1 COMPLETE ✅
+## Current state — WAVES 1 + 2 COMPLETE ✅
 
-All 7 core primitives implemented + unit tested, committed individually:
+All **17 primitives** implemented + unit tested. Attack Theater (F4) lists and
+plays all 17 with live param tweaking.
 
-| Commit | Task | Primitive |
-|--------|------|-----------|
-| `1a71a3a` | 1.1 | Core infra (context.js, registry.js, engine.js + AttackHandle) |
-| `96bd228` | 1.2 | Projectile (pool transport; solidBehavior = data flag, no physics rewrite) |
-| `cb5735f` | 1.3 | Spread (direction generation, synchronous) |
-| `55eb7bb` | 1.4 | Bomb / Ballistic Arc (Special-class physics reuse, payload routing) |
-| `172493a` | 1.5 | Explosion (thin wrapper over resolveExplosion) |
-| `f8a45d6` | 1.6 | Melee Hitbox (unified hitbox system reuse) |
-| `171e0f1` | 1.7 | Movement / Charge (motion profile only) |
-| `03c15f9` | 1.8 | Body Contact Damage (data override + restore) |
-| `77d54be` | — | **Attack Theater v0 (F4)** — live sandbox, all 7 playable |
+### Wave 1 (committed individually, see git log)
+Core infra + projectile, spread, bomb, explosion, meleeHitbox, charge
+(movement.js), bodyContact + Attack Theater v0.
 
-**Attack Theater v0 is live:** F4 opens it from any screen. Arrows select
-primitives, ↑/↓ selects a param, Shift+arrows adjusts it, Enter replays,
-Esc closes. Real pools + real CollisionWorld + real damage routing; dummy
-target flashes and loses HP; event log at bottom-left of arena.
+### Wave 2 (this session — NOT yet committed; working tree has all of it)
+| Task | Primitive | File | Tests |
+|------|-----------|------|-------|
+| 1.10 | Reticle / Telegraph | `primitives/reticle.js` | 9 |
+| 1.11 | Homing / Steering | `primitives/homing.js` | 8 |
+| 1.12 | Predictive Targeting | `primitives/predictive.js` | 6 |
+| 1.9 | Beam | `primitives/beam.js` | 9 |
+| 1.13 | Fire / Persistent Area | `primitives/fireArea.js` | 6 |
+| 1.14 | Spike / Static Hazard | `primitives/spike.js` | 7 |
+| 1.15 | Orbit (+ eject) | `primitives/orbit.js` | 8 |
+| 1.16 | Boomerang | `primitives/boomerang.js` | 7 |
+| 1.17 | Spawn / Split | `primitives/spawnSplit.js` | 7 |
+| 1.18 | Self-Destruct | `primitives/selfDestruct.js` | 7 |
+| 1.19 | Integration (all 17 + compositions) | `test/attack/integration.test.js` | 8 |
 
-Test suites: `petal-panic/js/test/attack/*.test.js` — 63 assertions across
-8 files, all green. Full suite unchanged vs baseline (402 pass / 2 known
-flaky picker failures).
+Attack Theater wiring (`js/debug/attack-theater.js`): all 17 imported,
+SANDBOX_PRESETS + TWEAKABLE entries for the 10 new ones, replay logic
+(homing binds a spawned projectile; predictive fires along its aim point;
+spawnSplit fans children as projectiles; selfDestruct runs a kamikaze dummy
+with an explosion payload aimed at the target), step-loop handling
+(beam/fireArea/spike tick damage vs the dummy; orbit + boomerang do contact
+checks), and draw pass (orbit ring + diamonds, boomerang spinner with phase
+label, fire/spike tinted boxes by phase, reticle closing ring, aim crosshair,
+kamikaze dummy).
+
+Test suites: `petal-panic/js/test/attack/*.test.js` — 19 files, 152
+assertions, all green. Full suite: 402 pass / 2 known flakes (takeoffPicker +
+pickerRide baseline).
 
 ## What to do in this session
 
-Start **Wave 2** (Tasks 1.9–1.19): the remaining 10 primitives.
+Start **Wave 3** (Tasks 2.1–2.3, 2.5–2.9): macro framework + 21 of 26 macros.
 
-Order suggestion (by dependency):
-1. **1.10 Reticle / Telegraph** — pure visual + timing, simple
-2. **1.11 Homing / Steering** — modifier on a Projectile instance
-3. **1.12 Predictive Targeting** — aim-point math, feeds Projectile
-4. **1.9 Beam** — continuous damaging line (Effect Engine renders)
-5. **1.13 Fire / Persistent Area** — ground-anchored ticking damage
-6. **1.14 Spike / Static Hazard** — visible/hidden cycle
-7. **1.15 Orbit** — rotating entities around owner (+ eject behavior)
-8. **1.16 Boomerang** — outbound → turnaround → return
-9. **1.17 Spawn / Split** — N children from parent event
-10. **1.18 Self-Destruct** — kill attacker, optional payload first
-11. **1.19 Integration tests** — verify all 17 together
+Order suggestion:
+1. **2.1 Macro framework** — `macros/index.js` registry usage, shared
+   MacroHandle semantics (reuse AttackHandle), phase reporting
+   (telegraph → active → recovery), default params table per macro.
+2. **2.2 Simple shot macros** — Projectile_Shot, Predictive_Shot, Burst_Shot,
+   Spread_Shot, Radial_Shot
+3. **2.3 Advanced projectile macros** — Homing_Missile, Boomerang,
+   Orbiting_Projectiles, Orbit_Eject
+4. **2.5 Bomb macros** — Bomb_Throw, Bomb_Spread, Cluster_Bomb, Molotov,
+   Explosive_Bomb
+5. **2.6 Beam macros** — Horizontal_Beam, Targeted_Beam, Sweeping_Beam
+6. **2.7 Melee / movement macros** — Melee, Charge_Dash
+7. **2.8 Stomp / wave / area macros** — Stomp, Stomp_Wave, Dust_Cloud, Spikes
+8. **2.9 Kamikaze / lane macros** — Body_Explosion, Dash_Lane_Sequence
 
-Each new primitive: one file in `js/combat/attack/primitives/`, registers
-itself, gets a test in `js/test/attack/`, and **automatically appears in the
-Attack Theater** (add its preset + tweakable keys to `SANDBOX_PRESETS` /
-`TWEAKABLE` in `js/debug/attack-theater.js`).
+Each macro: one file in `js/combat/attack/macros/`, registers via
+`registerMacro()`, gets a test in `js/test/attack/`. Macros compose
+primitives via `attackEngine.invoke()` — they never touch pools/collision
+directly. Add each to the Attack Theater list once done (theater currently
+lists primitives only; macros need a second section or a combined list).
 
-Commit after each task is verified green. Stop at the Wave 2 exit criteria
-(all 17 primitives + full suite green).
+Commit after each task is verified green. Stop at the Wave 3 exit criteria
+(25 of 26 macros + full suite green). Missile Rain (2.4) is Wave 4.
 
 ## Key rules for the executor
 
-1. **Consume, don't duplicate.** Primitives wrap/call existing systems
-   (collision, damage, knockback, explosion, effects, pools). Never reimplement.
-2. **Markers already exist** (sprite-crop schema). Read via
-   `attacker.markers.find(m => m.label === origin)` or `resolveMarker()`.
-3. **No DOM in unit tests.** Pure logic; `node js/test/attack/<name>.test.js`.
-4. **Projectiles spawn into existing pools** (`projectilePool` 64 /
-   `specialPool` 16). No new allocation during gameplay.
-5. **Handles follow the uniform contract:** `.on('hit'|'expire'|'detonate'|
+1. **Consume, don't duplicate.** Primitives wrap existing systems; macros
+   wrap primitives. Never reimplement collision/damage/pooling.
+2. **Handles follow the uniform contract:** `.on('hit'|'expire'|'detonate'|
    'complete')` + `.cancel()`. Terminal events fire exactly once; late
-   subscriptions never replay them. Synchronous primitives complete during
-   `invoke()` — that's fine, assert on data not events for those.
-6. **stepX() pattern:** long-lived primitives (projectile, bomb, meleeHitbox,
-   charge) expose `stepX(entity/state, params, ctx, handle)` called by the
-   host loop until it returns true. The Attack Theater's `_stepOnce()` shows
-   the canonical host-loop shape — copy it if you build other harnesses.
+   subscriptions never replay them. Synchronous primitives/macros complete
+   during `invoke()` — assert on data/state, not events, for those.
+3. **stepX() pattern:** long-lived primitives expose `step(...)` called by the
+   host loop until true. The Attack Theater's `_stepOnce()` is the canonical
+   host shape.
+4. **No DOM in unit tests.** Pure logic; `node js/test/attack/<name>.test.js`.
+5. **Anti-spin debugging rules** (user-enforced, in global memory): one debug
+   run per hypothesis, max 3 iterations per bug, never repeat a tool call with
+   identical args, state the hypothesis first.
 
-## Known gotchas learned in Wave 1
+## Known gotchas learned in Waves 1–2
 
-- **`damage(source, ...)` with `source = null` throws** in this Node version
-  (v24.12.0 — property access on null throws even inside `&&` guards; plain
-  objects work normally). The Explosion primitive passes an inert stand-in
-  `{ traceStats: undefined }` when there's no detonator. Do the same if you
-  route damage with a null source.
+- **`damage(source, ...)` with `source = null` throws** in Node v24.12.0.
+  Pass an inert stand-in `{ traceStats: undefined }` when there's no source.
 - **Pool slots recycle via Object.assign** — always set fields explicitly
-  after spawn (the Projectile primitive sets `solidBehavior ?? 'pass'`
-  because a recycled slot could carry a stale value).
-- **Test dummies need:** `takeDamage()` method (enemies), `traceStats:
-  createTrace()` (hero, from `stats.js`), `loseSelectedSpecial()`/`takeHit()`
-  stubs (hero, for explosion routing), correct `layer` bitmask (team routing).
-- **The Effect Theater freezes gameplay** while open (`update()` early-returns).
-  The Attack Theater does the same — sandbox steps at fixed 60Hz via
-  accumulator.
+  after spawn.
+- **Frame quantization:** tick-rate accumulators (beam/fireArea/spike) can be
+  ±1 tick off from naive `duration × rate` math at 60Hz. Assert ranges, not
+  exact counts, near boundaries.
+- **Spike `repeatCount` = TOTAL cycles** (not repeats-after-first). With
+  repeatCount N you get N−1 full damaging windows before teardown... actually
+  N windows minus the final hidden tail — test with `repeatCount: 3` if you
+  want ≥2 visible windows.
+- **Homing is a modifier**: `invoke('homing',...).bind(projectileEntity)` then
+  `step(dt)`. It steers velocity; it does not move the entity (the pool's
+  updateAll does that).
+- **Orbit/boomerang are motion profiles**: they own positions/vectors, the
+  host renders + does contact checks (see theater `_stepOnce`).
+- **SelfDestruct with async payload** sets `h.step(dt)`; synchronous payloads
+  (explosion) complete immediately inside invoke().
+- **The screen-y-down convention bites:** target at y=200 vs attacker y=116
+  is DOWN-right, so steering produces vy > 0. Check signs against screen
+  coords, not "up is negative" intuition.
 
 ## Verify commands
 
@@ -106,12 +127,8 @@ node --test petal-panic/js/test/*.test.js
 
 ## Known baseline flakes (ignore these)
 
-- `picker: wide low gap needing super` (takeoffPicker) — flips between runs
+- `picker: wide low gap needing super` (takeoffPicker)
 - `ride: full end-to-end ride classifies every platform` (pickerRide)
-- Space-jump pause interaction
-- `effectTheater c2d.ellipse` (canvas API in node)
-- Input tabs test
-- `bck/` test directory (broken `../consts.js` import path — pre-existing)
 
 Compare failure sets before/after. Never chase baseline flakes.
 
@@ -123,30 +140,25 @@ Compare failure sets before/after. Never chase baseline flakes.
 | Primitives doc | `petal-panic/docs/architecture/attack-primitives.md` |
 | Macros doc | `petal-panic/docs/architecture/attack-macros.md` |
 | Attack engine core | `petal-panic/js/combat/attack/{engine,registry,context}.js` |
-| Primitives (7 so far) | `petal-panic/js/combat/attack/primitives/` |
-| Attack Theater v0 | `petal-panic/js/debug/attack-theater.js` (F4) |
-| Theater key wiring | `petal-panic/js/debug/debugHarness.js` (handleAttackTheaterKeys) |
-| Theater loop wiring | `petal-panic/js/systems/update.js` + `render.js` |
+| Primitives (17) | `petal-panic/js/combat/attack/primitives/` |
+| Macros (0 so far) | `petal-panic/js/combat/attack/macros/` (create in Wave 3) |
+| Attack Theater (F4) | `petal-panic/js/debug/attack-theater.js` |
 | Special weapons registry | `petal-panic/js/objects/specialWeapons.js` |
 | Projectile pool + classes | `petal-panic/js/objects/projectile.js` |
-| Shooting (hero fire path) | `petal-panic/js/combat/shooting.js` |
 | Central damage | `petal-panic/js/combat/damage.js` |
 | Explosion resolver | `petal-panic/js/combat/explosion.js` |
-| Knockback | `petal-panic/js/combat/knockback.js` |
-| Unified hitboxes | `petal-panic/js/combat/hitbox.js` + `hitboxes.js` |
-| Collision world | `petal-panic/js/core/collision.js` |
-| Effects facade | `petal-panic/js/effects.js` |
-| Effect Theater (pattern ref) | `petal-panic/js/debug/theater.js` |
-| Hero weapon slot model | `petal-panic/js/hero/hero.js` (search `specialSlots`) |
+| Unified hitboxes | `petal-panic/js/combat/hitbox.js` |
+| Effects facade | `petal-panic/js/effects.js` + `js/effects/index.js` |
 
 ## Session prompt (copy-paste)
 
 ```
 Read .squid-os/plans/attack-engine/attack-engine.md and the handoff at
-.squid-os/plans/attack-engine/HANDOFF.md. Wave 1 is complete (7 primitives +
-Attack Theater v0 on F4). Start Wave 2 (Tasks 1.9–1.19): the remaining 10
-primitives + integration tests. Work through them in the suggested order,
-committing after each task is verified green. Each new primitive must also get
-a SANDBOX_PRESETS + TWEAKABLE entry in js/debug/attack-theater.js so it shows
-up in the F4 theater. Stop at the Wave 2 exit criteria.
+.squid-os/plans/attack-engine/HANDOFF.md. Waves 1+2 are complete (all 17
+primitives + Attack Theater on F4 playing all of them). Commit the Wave 2
+working tree first (primitives + tests + theater wiring), then start Wave 3
+(Tasks 2.1–2.3, 2.5–2.9): macro framework + 21 macros. Work through them in
+the suggested order, committing after each task is verified green. Each macro
+composes primitives via attackEngine.invoke() and gets a test in
+js/test/attack/. Stop at the Wave 3 exit criteria (25 of 26 macros).
 ```

@@ -259,27 +259,34 @@ timed spike traps.
 
 ## 12. Orbit
 
-Keeps one or more attack entities rotating around an owner like electrons around
-a nucleus. Entities on the back portion of the orbit can be visually hidden behind
-the owner sprite to preserve depth.
+Keeps one or more attack entities orbiting an owner on an ELLIPSE, like
+electrons around a nucleus seen at an angle: each satellite passes IN FRONT of
+the nucleus axis, then BEHIND it, as it rotates. Depth is derived from the orbit
+angle (`depth = sin(angle)`: +1 fully in front, −1 fully behind) and the host
+renders satellites with scale/alpha/layering from that value — no separate
+"hide behind" flag exists; depth IS the data. Satellites are always evenly
+distributed around the ellipse (count 3 → 120° apart).
 
 ### Main parameters
 
-- **count** — number of orbiting entities.
-- **radius** — distance from owner.
-- **angularSpeed** — orbit speed.
+- **count** — number of orbiting entities (evenly distributed).
+- **radius** — horizontal semi-axis of the ellipse (distance from owner).
+- **depth** — vertical squash factor 0..1 (0 = flat line, 1 = full circle).
+- **angularSpeed** — orbit speed (rad/s).
 - **direction** — clockwise or counter-clockwise.
-- **startAngle** — optional initial arrangement.
+- **startAngle** — phase offset of the whole formation.
 - **ttl** — optional orbit lifetime.
-- **hideBehindOwner** — whether the rear arc renders behind/hidden by the sprite.
 - **damage** — contact damage if orbiting entities are dangerous.
+- **ejectable** — whether the orbit can be released (see eject behavior).
+- **ejectTtl** — lifetime of projectiles created by an eject.
 
 ### Eject behavior
 
-Orbit supports release/ejection. When ejected, each entity leaves the orbit using
-its current tangential direction/velocity and continues as a normal linear
-projectile. This naturally creates a spread-like release in multiple directions
-based on where each object was in its orbit.
+Orbit supports release/ejection, gated by `ejectable`. When ejected, each entity
+leaves the orbit along its current tangential direction (the ellipse tangent at
+its angle, oriented with the rotation direction) and continues as a normal
+linear projectile carrying `ejectTtl`. This naturally creates a spread-like
+release in multiple directions based on where each object was in its orbit.
 
 ---
 
@@ -309,7 +316,10 @@ Creates additional attack entities from an existing attack event.
 
 ### Main parameters
 
-- **spawnType** — what is created.
+- **spawnType** — what the children become: `projectile` (straight shots),
+  `bomb` (ballistic arc, bounce, detonate on impact), or `enemy` (a live enemy
+  entity that continues acting toward the attacker). The host feeds each child
+  descriptor into the matching primitive or enemy factory.
 - **count** — number created.
 - **direction / centerDirection** — central launch direction.
 - **angle / spread** — distribution angle.

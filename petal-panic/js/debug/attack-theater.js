@@ -31,8 +31,20 @@ import { Effects } from '../effects.js';
 import { updateEffects, drawEffects, resetEffects } from '../effects/index.js';
 import { particles } from '../effects/particles.js';
 import { aabbOverlap } from '../core/collision.js';
+// Enemy factories for spawnSplit spawnType='enemy' (theater spawns REAL enemies).
+import { Jester } from '../enemies/jester.js';
+import { VineHound } from '../enemies/vine_hound.js';
+import { Violetta } from '../enemies/violetta.js';
+import { JackOLantern } from '../enemies/jackolantern.js';
 
-// Import every Wave-1 primitive module for its registration side effect.
+const ENEMY_FACTORIES = {
+  jester: (x, y) => new Jester(x, y),
+  vine_hound: (x, y) => new VineHound(x, y),
+  violetta_marionetta: (x, y) => new Violetta(x, y),
+  jackolantern: (x, y) => new JackOLantern(x, y),
+};
+
+// Import every primitive module for its registration side effect.
 import '../combat/attack/primitives/projectile.js';
 import '../combat/attack/primitives/spread.js';
 import '../combat/attack/primitives/bomb.js';
@@ -40,6 +52,16 @@ import '../combat/attack/primitives/explosion.js';
 import '../combat/attack/primitives/meleeHitbox.js';
 import '../combat/attack/primitives/movement.js';
 import '../combat/attack/primitives/bodyContact.js';
+import '../combat/attack/primitives/reticle.js';
+import '../combat/attack/primitives/homing.js';
+import '../combat/attack/primitives/predictive.js';
+import '../combat/attack/primitives/beam.js';
+import '../combat/attack/primitives/fireArea.js';
+import '../combat/attack/primitives/spike.js';
+import '../combat/attack/primitives/orbit.js';
+import '../combat/attack/primitives/boomerang.js';
+import '../combat/attack/primitives/spawnSplit.js';
+import '../combat/attack/primitives/selfDestruct.js';
 
 // --- Sandbox constants --------------------------------------------------------
 const GROUND_Y = 400;
@@ -69,6 +91,17 @@ const SANDBOX_PRESETS = {
   meleeHitbox: { activeFrames: 10, w: 48, h: 44, offset: { x: 44, y: 0 }, damage: 12 },
   charge: { direction: 0, speed: 700, duration: 0.6, distance: null, acceleration: 0 },
   bodyContact: { damage: 20, enabled: true, temporaryOverride: true },
+  // --- Wave 2 -----------------------------------------------------------------
+  reticle: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, duration: 0.8, style: 'circle', color: '#ff5555', radius: 30, tracking: false, lockTime: null },
+  homing: { target: null, turnRate: 3, speed: null, initialDirection: -0.3, ttl: 2 },
+  predictive: { predictionTime: 0.4, maxPrediction: null },
+  beam: { direction: 0, length: 320, width: 24, duration: 0.6, damage: 15, tickRate: 8, team: 'ally' },
+  fireArea: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, length: 96, height: 48, duration: 2, tickRate: 5, damage: 8, team: 'ally' },
+  spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 16, size: 32, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
+  orbit: { count: 3, radius: 70, depth: 0.45, angularSpeed: 1.5, direction: 1, startAngle: 0, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
+  boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 1, burstInterval: 0 },
+  spawnSplit: { x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'jester' },
+  selfDestruct: { timing: 'immediate', deathBehavior: 'kill', triggerPayloadFirst: true, payload: { id: 'explosion', params: { x: ATTACKER_HOME.x + 16, y: ATTACKER_HOME.y + 24, radius: 70, damage: 40, alignment: 'neutral' } }, payloadDelay: 0.1 },
 };
 
 /** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
@@ -80,6 +113,17 @@ export const TWEAKABLE = {
   meleeHitbox: [['activeFrames', 'int', 2], ['w', 'num', 8], ['h', 'num', 8], ['damage', 'num', 2]],
   charge: [['speed', 'num', 100], ['duration', 'num', 0.1]],
   bodyContact: [['damage', 'num', 5]],
+  // --- Wave 2 -----------------------------------------------------------------
+  reticle: [['duration', 'num', 0.1], ['radius', 'num', 5], ['lockTime', 'num', 0.1]],
+  homing: [['turnRate', 'num', 0.5], ['initialDirection', 'angle', 15 * DEG], ['ttl', 'num', 0.25]],
+  predictive: [['predictionTime', 'num', 0.05]],
+  beam: [['direction', 'angle', 15 * DEG], ['length', 'num', 20], ['width', 'num', 4], ['duration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
+  fireArea: [['x', 'num', 20], ['length', 'num', 16], ['height', 'num', 8], ['duration', 'num', 0.25], ['damage', 'num', 2], ['tickRate', 'int', 1]],
+  spike: [['x', 'num', 16], ['size', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],
+  orbit: [['count', 'int', 1], ['radius', 'num', 10], ['depth', 'num', 0.05], ['angularSpeed', 'num', 0.25]],
+  boomerang: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['returnSpeed', 'num', 50], ['outboundDuration', 'num', 0.1], ['count', 'int', 1], ['burstInterval', 'num', 0.1]],
+  spawnSplit: [['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['spawnType', 'enum', ['projectile', 'bomb', 'enemy']], ['enemyType', 'enum', ['jester', 'vine_hound', 'violetta_marionetta', 'jackolantern']]],
+  selfDestruct: [['payloadDelay', 'num', 0.05]],
 };
 
 export const AttackTheater = {
@@ -141,13 +185,42 @@ export const AttackTheater = {
   adjustParam(deltaSign) {
     const list = this._tweakList();
     if (!list.length) return;
-    const [key, , stepSize] = list[this.paramIndex];
+    const [key, kind, stepSize] = list[this.paramIndex];
+    // Enum params: cycle through the allowed values instead of numeric stepping.
+    if (kind === 'enum' && Array.isArray(stepSize)) {
+      const cur = this._params[key];
+      const idx = stepSize.indexOf(cur);
+      this._params[key] = stepSize[(idx + deltaSign + stepSize.length) % stepSize.length];
+      return;
+    }
     this._params[key] = round2((this._params[key] ?? 0) + deltaSign * stepSize);
   },
 
   replay() {
     if (!this.active) return;
     this._replay();
+  },
+
+  /**
+   * Orbit eject (Space): if a live orbit handle exists and is ejectable,
+   * release its satellites as real projectiles along their tangents.
+   * Returns true when an eject happened (caller skips the replay action).
+   */
+  tryEjectOrbit() {
+    if (!this.active || this.currentId() !== 'orbit') return false;
+    const h = this._handles.find((x) => x.id === 'orbit' && typeof x.eject === 'function');
+    if (!h || h.state?.ejected) return false;
+    const launches = h.eject(420);
+    if (!launches.length) return false;
+    for (const l of launches) {
+      const shot = invoke('projectile', {
+        origin: { x: l.x, y: l.y }, direction: l.angle,
+        speed: Math.hypot(l.vx, l.vy), ttl: l.ttl ?? 2, damage: this._params.damage ?? 10,
+      }, this._ctx());
+      if (shot?.entity) this._handles.push(shot);
+    }
+    this._log.unshift(`EJECT → ${launches.length} shots`);
+    return true;
   },
 
   // --- Gamepad (called from update loop while active) --------------------------
@@ -234,6 +307,14 @@ export const AttackTheater = {
     this._flash = 0;
     this._log = [];
     this._choreo = null;
+    this._aimPoint = null;
+    this._kamikaze = null;
+    this._attackerVisible = true;
+    this._pendingPredictive = false;
+    // Spawned enemies (spawnSplit spawnType='enemy'): removed from the world
+    // on replay/teardown so they don't leak into the next run.
+    for (const e of this._spawnedEnemies ?? []) { try { this._world?.remove(e); } catch { /* noop */ } }
+    this._spawnedEnemies = [];
     this._loadParams();
   },
 
@@ -270,27 +351,33 @@ export const AttackTheater = {
   },
 
   _replay() {
-    for (const p of this._pools?.projectilePool.activeItems ?? []) p.alive = false;
-    for (const s of this._pools?.specialPool.activeItems ?? []) s.alive = false;
-    if (this._pools) {
-      this._pools.projectilePool.active.length = 0;
-      this._pools.specialPool.active.length = 0;
+    // ADDITIVE primitives: pressing replay again THROWS ANOTHER one instead of
+    // resetting the in-flight instance (boomerang = throw another boomerang,
+    // orbit = spawn another ring). Everything else gets a full reset.
+    const additive = this.currentId() === 'boomerang' || this.currentId() === 'orbit';
+    if (!additive) {
+      for (const p of this._pools?.projectilePool.activeItems ?? []) p.alive = false;
+      for (const s of this._pools?.specialPool.activeItems ?? []) s.alive = false;
+      if (this._pools) {
+        this._pools.projectilePool.active.length = 0;
+        this._pools.specialPool.active.length = 0;
+      }
+      // Fresh VFX slate: drop the previous run's leftover sparkles/particles so
+      // replays don't stack. (resetEffects only clears effect instances, not the
+      // particle system — same distinction as close().)
+      resetEffects();
+      particles.reset();
+      for (const h of this._handles) { try { h.cancel?.(); } catch { /* noop */ } }
+      this._handles = [];
+      this._target.hp = 999;
+      this._target.alive = true;
+      // BOTH opponents reset home each replay — otherwise the target stays
+      // stuck at wherever the last movement demo left it.
+      this._target.x = TARGET_POS.x;
+      this._target.y = TARGET_POS.y;
+      this._attacker.x = ATTACKER_HOME.x;
+      this._attacker.y = ATTACKER_HOME.y;
     }
-    // Fresh VFX slate: drop the previous run's leftover sparkles/particles so
-    // replays don't stack. (resetEffects only clears effect instances, not the
-    // particle system — same distinction as close().)
-    resetEffects();
-    particles.reset();
-    for (const h of this._handles) { try { h.cancel?.(); } catch { /* noop */ } }
-    this._handles = [];
-    this._target.hp = 999;
-    this._target.alive = true;
-    // BOTH opponents reset home each replay — otherwise the target stays
-    // stuck at wherever the last movement demo left it.
-    this._target.x = TARGET_POS.x;
-    this._target.y = TARGET_POS.y;
-    this._attacker.x = ATTACKER_HOME.x;
-    this._attacker.y = ATTACKER_HOME.y;
     this._log = [];
     this._choreo = null;
 
@@ -313,18 +400,97 @@ export const AttackTheater = {
       // Melee: start side by side, then throw a VISIBLE punch — the swing arc
       // sweeps out in sync with the live hitbox frames.
       this._choreo = { kind: 'punch', dist: 56, done: false, swingFrame: 0 };
+    } else if (id === 'homing') {
+      // Homing demo: the target WEAVES (slow drift + jump bursts) trying to
+      // dodge; the missile must visibly curve after it. Fires immediately.
+      this._choreo = { kind: 'dodgeWeave', t: 0, jumping: false, jumpT: 0, nextJump: 0.8 };
+    } else if (id === 'predictive') {
+      // Predictive demo: target strays left/right at slow speed; one shot is
+      // fired along the LEAD point and sticks there as a ghost marker so you
+      // can see where the aim landed vs where the target actually is.
+      this._choreo = { kind: 'strafe', t: 0, fired: false, baseX: TARGET_POS.x };
+    } else if (id === 'orbit') {
+      // Orbit demo: the ATTACKER walks up to the target so the satellites
+      // sweep through its body. Space toggles eject (when ejectable).
+      this._choreo = { kind: 'walkToTarget', speed: 120, ejected: false };
+      this._params.ejectable = true; // sandbox always allows the eject demo
+    } else if (id === 'selfDestruct') {
+      // Kamikaze demo: the attacker WALKS to the target, then vanishes and
+      // explodes ON IT. No standing-around payload pre-fire.
+      this._choreo = { kind: 'kamikaze', speed: 200, exploded: false };
+    } else if (id === 'spawnSplit') {
+      // Split demo: the attacker disappears and splits into ballistic bombs
+      // that arc down, bounce off the ground, and detonate.
+      this._params.spawnType = 'bomb';
+      this._params.bomb = { arc: 700, bounce: true, ttl: 4, damage: 25, radius: 60, explodeOnContact: true };
+      this._params.centerDirection = -Math.PI / 2; // launch upward
+      this._params.angle = 100 * DEG;
+      this._params.x = this._attacker.x + this._attacker.w / 2;
+      this._params.y = this._attacker.y + 10;
+      this._choreo = { kind: 'vanishOnReplay' };
     }
     // (explosion needs no choreography — it fires at its configured x/y and the
     // real Effect-Engine burst is the visual. The old hand-drawn telegraph ring
-    // was a placeholder; a proper Reticle/Telegraph primitive lands in Wave 2.)
+    // was a placeholder; the Reticle primitive below IS that proper warning.)
 
     let h;
     try {
       // Choreographed attacks gate the actual invoke:
       //  - punch (melee): starts once the attacker is beside the target
-      const gated = this._choreo?.kind === 'punch';
+      const gated = this._choreo?.kind === 'punch' || this._choreo?.kind === 'kamikaze';
       if (!gated) {
-        h = invoke(id, { ...this._params }, this._ctx());
+        // Homing has no projectile of its own — spawn one, then bind the
+        // steering modifier to it (the canonical composition).
+        if (id === 'homing') {
+          const shot = invoke('projectile', { direction: this._params.initialDirection ?? 0, speed: 400, ttl: this._params.ttl ?? 2, damage: 10 }, this._ctx());
+          if (shot?.entity) this._handles.push(shot);
+          h = invoke(id, { ...this._params, target: this._target }, this._ctx());
+          h.bind?.(shot?.entity);
+        } else if (id === 'predictive') {
+          // Aim generator: defer the single shot until the strafe choreo says
+          // "now" (see _stepOnce) so the lead is computed mid-movement.
+          this._pendingPredictive = true;
+          h = null; // nothing live yet; the shot + marker appear on fire
+        } else if (id === 'spawnSplit') {
+          // Split generator: fan the children out as real projectiles.
+          const split = invoke(id, { ...this._params }, this._ctx());
+          for (const c of split.children ?? []) {
+            let child;
+            if (c.spawnType === 'enemy') {
+              // Real enemy spawns at the child position and walks toward the
+              // attacker (tracked in this._spawnedEnemies, stepped each frame).
+              const factory = ENEMY_FACTORIES[c.enemyType ?? 'jester'];
+              if (factory) {
+                const e = factory(c.x - 16, c.y - 24);
+                this._spawnedEnemies.push(e);
+                this._world.add(e);
+              }
+            } else if (c.spawnType === 'bomb') {
+              child = invoke('bomb', {
+                origin: { x: c.x, y: c.y }, direction: c.angle,
+                speed: Math.hypot(c.vx, c.vy), arc: c.bomb?.arc ?? 700,
+                bounce: c.bomb?.bounce ?? true, ttl: c.bomb?.ttl ?? 4,
+                damage: c.bomb?.damage ?? 25, radius: c.bomb?.radius ?? 60,
+                explodeOnContact: c.bomb?.explodeOnContact ?? true,
+              }, this._ctx());
+            } else {
+              child = invoke('projectile', { origin: { x: c.x, y: c.y }, direction: c.angle, speed: Math.hypot(c.vx, c.vy), ttl: 2, damage: 8 }, this._ctx());
+            }
+            if (child?.entity) this._handles.push(child);
+          }
+          this._log.unshift(`split → ${split.children?.length ?? 0} ${this._params.spawnType === 'bomb' ? 'bombs' : 'shots'}`);
+          h = split;
+        } else if (id === 'selfDestruct') {
+          // Kamikaze: the ATTACKER itself walks over (choreo below), then dies
+          // here with an explosion payload centered ON the target.
+          const victim = { ...this._attacker, alive: true, hp: 999, layer: LAYER.ENEMY, takeDamage(a) { this.hp -= a; if (this.hp <= 0) this.alive = false; return a; } };
+          this._kamikaze = victim;
+          const payload = this._params.payload;
+          if (payload?.params) { payload.params.x = this._target.x + 16; payload.params.y = GROUND_Y - 24; payload.params.targets = [this._target]; }
+          h = invoke(id, { ...this._params, triggerPayloadFirst: true }, makeContext(victim, { world: { targets: [this._target] }, pools: this._pools, collisionWorld: this._world, effects: Effects }));
+        } else {
+          h = invoke(id, { ...this._params }, this._ctx());
+        }
       }
     } catch (err) {
       this._log.push(`ERROR: ${err.message}`);
@@ -405,11 +571,85 @@ export const AttackTheater = {
         } else if (c.swingFrame < c.swingTotal) {
           c.swingFrame++;
         }
+      } else if (c.kind === 'dodgeWeave') {
+        // Homing demo: target drifts slowly left/right and periodically JUMPS
+        // (vertical burst + pause) to try to shake the missile. The missile's
+        // visible re-curve after each jump is the whole point of the demo.
+        c.t += DT;
+        const base = TARGET_POS.x;
+        this._target.x = base + Math.sin(c.t * 1.2) * 90;
+        if (!c.jumping && c.t >= c.nextJump) {
+          c.jumping = true; c.jumpT = 0;
+        }
+        if (c.jumping) {
+          c.jumpT += DT;
+          // Jump arc: up then down over ~0.7s (parabola), then a brief pause.
+          const jt = c.jumpT / 0.7;
+          if (jt < 1) this._target.y = TARGET_POS.y - Math.sin(jt * Math.PI) * 70;
+          else if (jt < 1.4) this._target.y = TARGET_POS.y; // hang at apex end
+          else { c.jumping = false; c.nextJump = c.t + 1.6; this._target.y = TARGET_POS.y; }
+        }
+      } else if (c.kind === 'strafe') {
+        // Predictive demo: target strays left/right at slow speed with real
+        // velocity so the lead math has something to predict.
+        c.t += DT;
+        this._target.x = c.baseX + Math.sin(c.t * 0.9) * 120;
+        this._target.vx = Math.cos(c.t * 0.9) * 120 * 0.9; // d/dt for the aim math
+        this._target.vy = 0;
+        // Fire the single aimed shot once, mid-strafe, when it has velocity.
+        if (!c.fired && c.t > 0.5) {
+          c.fired = true;
+          const aim = invoke('predictive', { ...this._params, target: this._target }, this._ctx());
+          this._aimPoint = aim.point;
+          const shot = invoke('projectile', { direction: aim.direction, speed: 600, ttl: 2, damage: 10 }, this._ctx());
+          if (shot?.entity) this._handles.push(shot);
+          this._log.unshift(`lead ${Math.round(this._params.predictionTime * 1000)}ms → fired`);
+        }
+      } else if (c.kind === 'walkToTarget') {
+        // Orbit demo: attacker walks toward the target so satellites sweep
+        // through its body. Space toggles eject (handled in key routing).
+        if (Math.abs(gap) > 26) {
+          this._attacker.x += Math.sign(gap) * c.speed * DT;
+          this._attacker.facing = Math.sign(gap) || 1;
+        }
+      } else if (c.kind === 'kamikaze') {
+        // Self-destruct demo: attacker walks to the target, then VANISHES and
+        // explodes on it. The explosion payload was pre-aimed at the target.
+        if (!c.exploded) {
+          if (Math.abs(gap) > 20) {
+            this._attacker.x += Math.sign(gap) * c.speed * DT;
+            this._attacker.facing = Math.sign(gap) || 1;
+          } else {
+            // Contact: trigger the self-destruct NOW (payload blast centered
+            // on the target), and hide the attacker body — it IS the bomb.
+            c.exploded = true;
+            this._attackerVisible = false;
+            const victim = { ...this._attacker, alive: true, hp: 999, layer: LAYER.ENEMY, takeDamage(a) { this.hp -= a; if (this.hp <= 0) this.alive = false; return a; } };
+            const payload = this._params.payload;
+            if (payload?.params) { payload.params.x = this._target.x + 16; payload.params.y = GROUND_Y - 24; payload.params.targets = [this._target]; }
+            const kh = invoke('selfDestruct', { ...this._params, triggerPayloadFirst: true }, makeContext(victim, { world: { targets: [this._target] }, pools: this._pools, collisionWorld: this._world, effects: Effects }));
+            kh.on('detonate', () => this._log.unshift('KAMIKAZE BOOM'));
+            kh.on('complete', () => this._log.unshift('COMPLETE'));
+            this._handles.push(kh);
+          }
+        }
+      } else if (c.kind === 'vanishOnReplay') {
+        // Spawn/split demo: the attacker disappears the instant the split
+        // happens (it BECOMES the bombs).
+        this._attackerVisible = false;
       }
     }
 
     projectilePool.updateAll(DT);
     specialPool.updateAll(DT);
+
+    // Spawned enemies (spawnSplit spawnType='enemy'): run their real AI each
+    // frame, aimed at the sandbox attacker. They walk/chase like in gameplay.
+    for (const e of this._spawnedEnemies ?? []) {
+      if (!e.alive) continue;
+      e.ai?.(DT, this._attacker, this._world);
+      e.update?.(DT, this._attacker, this._world);
+    }
     // Off-screen cull (sandbox bounds instead of level zone).
     for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
       if (p.x + p.w < -40 || p.x > VIEW_W + 40 || p.y + p.h < -40 || p.y > VIEW_H + 40) p.alive = false;
@@ -435,12 +675,23 @@ export const AttackTheater = {
     }
 
     // Bomb in flight: detonate when it reaches ground level (the sandbox has
-    // no terrain to bounce off — landing IS the impact).
+    // no terrain to bounce off — landing IS the impact). Bouncing bombs
+    // (solidBehavior 'reflect') instead reflect off the ground line and keep
+    // rolling until they touch the target or their fuse runs out.
     for (const s of specialPool.activeItems) {
       if (!s.alive || s._attackId !== 'bomb' || s._attackDone) continue;
       if (s.y + s.h >= GROUND_Y) {
-        s._attackHit = true;
-        s.alive = false;
+        if (s.solidBehavior === 'reflect' && Math.abs(s.vy) > 40) {
+          // Bounce: reflect vertical velocity with energy loss, settle on the
+          // ground line. (Same rule as Special.reflectVelocity.)
+          s.y = GROUND_Y - s.h;
+          s.vy = -Math.abs(s.vy) * 0.55;
+          s.vx *= 0.8;
+          if (Math.abs(s.vy) < 40) s.vy = 0; // too slow to bother bouncing again
+        } else {
+          s._attackHit = true;
+          s.alive = false;
+        }
       }
     }
     this._world.update();
@@ -456,8 +707,47 @@ export const AttackTheater = {
         else if (h.id === 'bomb') finished = stepBomb(h.entity, this._params, this._ctx(), h);
         else if (typeof h.step === 'function') finished = h.step(DT);
       } else if (typeof h.step === 'function') {
-        // State-based primitives (charge): no entity, just a motion profile.
-        finished = h.step(DT);
+        // State-based primitives: charge (motion profile), reticle (timing),
+        // beam/fireArea/spike (tick damage vs the dummy target), orbit
+        // (position update), boomerang (outbound/return profile).
+        if (h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike') {
+          finished = h.step(DT, [this._target]);
+        } else if (h.id === 'boomerang') {
+          finished = h.step(DT);
+          // Contact check: every live boomerang body vs the dummy target.
+          for (const s of h.states ?? []) {
+            if (!s || s.done || !this._target?.alive) continue;
+            if (s.x + 8 > this._target.x && s.x - 8 < this._target.x + this._target.w &&
+                s.y + 8 > this._target.y && s.y - 8 < this._target.y + this._target.h) {
+              const dealt = this._target.takeDamage(this._params.damage ?? 12);
+              if (dealt > 0) {
+                this._flash = 0.15;
+                Effects.spawnHitSparkles(s.x, s.y, 6);
+                this._log.unshift(`BOOMERANG HIT ${dealt} dmg`);
+              }
+            }
+          }
+        } else if (h.id === 'orbit') {
+          finished = h.step(DT);
+          // Contact check: each orbiting entity vs the dummy target.
+          const st = h.state;
+          if (!st?.done && this._target?.alive) {
+            for (const e of st.entities ?? []) {
+              if (e.x + 6 > this._target.x && e.x - 6 < this._target.x + this._target.w &&
+                  e.y + 6 > this._target.y && e.y - 6 < this._target.y + this._target.h) {
+                const dealt = this._target.takeDamage(this._params.damage ?? 10);
+                if (dealt > 0) {
+                  this._flash = 0.15;
+                  Effects.spawnHitSparkles(e.x, e.y, 4);
+                  this._log.unshift(`ORBIT HIT ${dealt} dmg`);
+                }
+                break; // one hit per frame is enough for the sandbox
+              }
+            }
+          }
+        } else {
+          finished = h.step(DT);
+        }
       }
       if (finished) this._handles.splice(i, 1);
     }
@@ -570,8 +860,8 @@ export const AttackTheater = {
       ctx.fillRect(ax + dir * len - 5, ay - 8, 10, 16);
     }
 
-    // Attacker.
-    if (this._attacker) {
+    // Attacker (hidden during vanish/kamikaze demos — the body IS the attack).
+    if (this._attacker && this._attackerVisible !== false) {
       ctx.fillStyle = '#ff6ec7';
       ctx.fillRect(this._attacker.x, this._attacker.y, this._attacker.w, this._attacker.h);
       // Facing wedge.
@@ -581,6 +871,22 @@ export const AttackTheater = {
       ctx.font = '10px monospace';
       ctx.textAlign = 'center';
       ctx.fillText('ATTACKER', this._attacker.x + this._attacker.w / 2, this._attacker.y - 8);
+    }
+
+    // Orbit satellites on the FRONT half of the ellipse (depth > 0) — drawn
+    // AFTER the attacker box so they correctly pass in front of it.
+    for (const h of this._handles) {
+      if (h.id !== 'orbit' || h.state?.done) continue;
+      for (const e of h.state.entities ?? []) {
+        if (e.depth <= 0) continue;
+        const sc = 1 + 0.3 * e.depth; // in front → larger
+        ctx.fillStyle = '#9feaff';
+        ctx.save();
+        ctx.translate(e.x, e.y);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillRect(-5 * sc, -5 * sc, 10 * sc, 10 * sc);
+        ctx.restore();
+      }
     }
 
     // Dummy target.
@@ -604,6 +910,108 @@ export const AttackTheater = {
         ctx.fillStyle = '#fa4';
         ctx.fillRect(s.x, s.y, s.w, s.h);
       }
+    }
+
+    // Spawned enemies (spawnSplit spawnType='enemy').
+    for (const e of this._spawnedEnemies ?? []) {
+      if (!e.alive) continue;
+      ctx.fillStyle = e.hitFlash > 0 ? '#fff' : '#e74c3c';
+      ctx.fillRect(e.x, e.y, e.w, e.h);
+      ctx.fillStyle = '#fff';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${Math.max(0, Math.round(e.hp))}`, e.x + e.w / 2, e.y - 6);
+    }
+
+    // --- Wave-2 state visuals ---------------------------------------------------
+    for (const h of this._handles) {
+      const st = h.state;
+      if (!st) continue;
+      if (h.id === 'orbit' && !st.done) {
+        // Elliptical orbit: satellites pass IN FRONT of / BEHIND the owner.
+        // Behind (depth < 0): dimmer + smaller, drawn BEFORE the attacker box.
+        // In front (depth > 0): brighter + larger, drawn AFTER it (second pass).
+        const ocx = this._attacker.x + this._attacker.w / 2, ocy = this._attacker.y + this._attacker.h / 2;
+        ctx.strokeStyle = 'rgba(120,220,255,0.18)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(ocx, ocy, this._params.radius ?? 70, (this._params.radius ?? 70) * (this._params.depth ?? 0.45), 0, 0, Math.PI * 2);
+        ctx.stroke();
+        for (const e of st.entities ?? []) {
+          if (e.depth >= 0) continue; // front half drawn after the attacker
+          const sc = 1 + 0.3 * e.depth; // behind → smaller
+          ctx.fillStyle = `rgba(120,220,255,${0.35 + 0.2 * e.depth})`;
+          ctx.save();
+          ctx.translate(e.x, e.y);
+          ctx.rotate(Math.PI / 4);
+          ctx.fillRect(-5 * sc, -5 * sc, 10 * sc, 10 * sc);
+          ctx.restore();
+        }
+      } else if (h.id === 'boomerang' && !(h.states?.every((s) => s.done))) {
+        // Boomerang bodies: one spinning square per live throw, phase-colored.
+        for (const st of h.states ?? [h.state]) {
+          if (st?.done) continue;
+          ctx.fillStyle = st.phase === 'outbound' ? '#7fd' : '#fd7';
+          ctx.save();
+          ctx.translate(st.x, st.y);
+          ctx.rotate(st.t * 10);
+          ctx.fillRect(-7, -7, 14, 14);
+          ctx.restore();
+          ctx.fillStyle = '#fff';
+          ctx.font = '9px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(st.phase, st.x, st.y - 12);
+        }
+      } else if ((h.id === 'fireArea' || h.id === 'spike') && !st.done) {
+        // Persistent area / spike hazard: tinted box by phase.
+        let box = null;
+        if (h.id === 'fireArea') box = { x: this._params.x - this._params.length / 2, y: this._params.y - this._params.height / 2, w: this._params.length, h: this._params.height };
+        else if (st.phase === 'visible') box = { x: this._params.x - this._params.size / 2, y: this._params.y - this._params.size / 2, w: this._params.size, h: this._params.size };
+        if (box) {
+          const active = h.id === 'fireArea' || st.phase === 'visible';
+          ctx.fillStyle = h.id === 'fireArea'
+            ? `rgba(255,${active ? 120 : 60},30,${active ? 0.4 : 0.15})`
+            : (st.phase === 'warning' ? `rgba(255,80,80,${0.3 + 0.3 * Math.sin(st.t * 20)})` : (active ? 'rgba(255,220,80,0.7)' : 'rgba(255,255,255,0.06)'));
+          ctx.fillRect(box.x, box.y, box.w, box.h);
+          ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+          ctx.strokeRect(box.x, box.y, box.w, box.h);
+        }
+      } else if (h.id === 'reticle' && !st.done) {
+        // Telegraph ring closing in on the anchor point.
+        const pt = st.locked ?? st.pt;
+        const r = (this._params.radius ?? 28) * (1 - 0.4 * (st.t / Math.max(0.01, this._params.duration)));
+        ctx.strokeStyle = this._params.color ?? '#ff5555';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, Math.max(4, r), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(pt.x - 6, pt.y); ctx.lineTo(pt.x + 6, pt.y);
+        ctx.moveTo(pt.x, pt.y - 6); ctx.lineTo(pt.x, pt.y + 6);
+        ctx.stroke();
+      }
+    }
+    // Predictive aim point (set during replay).
+    if (this._aimPoint) {
+      ctx.strokeStyle = '#7f7';
+      ctx.lineWidth = 1.5;
+      const ap = this._aimPoint;
+      ctx.beginPath();
+      ctx.arc(ap.x, ap.y, 10, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(ap.x - 14, ap.y); ctx.lineTo(ap.x + 14, ap.y);
+      ctx.moveTo(ap.x, ap.y - 14); ctx.lineTo(ap.x, ap.y + 14);
+      ctx.stroke();
+    }
+    // Kamikaze dummy (selfDestruct demo victim at home position).
+    if (this._kamikaze && this._kamikaze.alive !== false) {
+      ctx.fillStyle = this._kamikaze?.alive ? '#c96' : '#444';
+      ctx.fillRect(this._kamikaze.x, this._kamikaze.y, this._kamikaze.w, this._kamikaze.h);
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('KAMIKAZE', this._kamikaze.x + this._kamikaze.w / 2, this._kamikaze.y - 8);
     }
 
     // Event log.

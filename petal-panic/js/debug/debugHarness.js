@@ -291,9 +291,19 @@ function handleAttackTheaterKeys(e) {
       e.preventDefault();
       break;
     case 'Enter':
-    case 'Space':
       AttackTheater.replay();
       Debug.logEvent(`attack-theater REPLAY → ${AttackTheater.currentId()}`);
+      e.preventDefault();
+      break;
+    case 'Space':
+      // Orbit: Space = EJECT (when an orbit handle is live + ejectable).
+      // Otherwise Space = replay (same as Enter).
+      if (AttackTheater.tryEjectOrbit()) {
+        Debug.logEvent('attack-theater ORBIT EJECT');
+      } else {
+        AttackTheater.replay();
+        Debug.logEvent(`attack-theater REPLAY → ${AttackTheater.currentId()}`);
+      }
       e.preventDefault();
       break;
     case 'Escape':

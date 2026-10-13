@@ -25,11 +25,13 @@ const DEFAULTS = Object.freeze({
   ttl: 2,                // seconds before auto-cull
   damage: 10,
   origin: null,          // marker label (string) | {x,y} | null → attacker center
-  solidBehavior: 'phase', // pass | absorb | bounce (existing entity-flag contract)
+  solidBehavior: 'phase', // phase | stop | reflect (existing entity-flag contract)
   gravity: 0,            // px/s²; >0 routes to the ballistic (Special) pool
   friendly: true,        // true = hero-side (PROJ_ALLY), false = foe (PROJ_FOE)
   size: 12,              // box size (thorn = 12, specials ~16)
   type: null,            // special weapon type id when spawning a Special
+  count: 1,              // shots launched as part of this action
+  burstInterval: 0,      // seconds between repeated launches (0 = all at once)
 });
 
 /**
@@ -148,20 +150,56 @@ registerPrimitive('projectile', {
       { key: 'ttl', desc: 'seconds before auto-cull' },
       { key: 'damage', desc: 'damage on valid contact' },
       { key: 'origin', desc: "marker label | {x,y} | null → attacker center" },
-      { key: 'solidBehavior', desc: 'pass | absorb | bounce (existing flag)' },
+      { key: 'solidBehavior', desc: 'phase | stop | reflect (existing flag)' },
       { key: 'gravity', desc: 'px/s² (>0 = ballistic arc)' },
       { key: 'friendly', desc: 'true = PROJ_ALLY, false = PROJ_FOE' },
+      { key: 'count', desc: 'shots launched by this action' },
+      { key: 'burstInterval', desc: 's between shots (0 = simultaneous)' },
     ],
   },
   impl(params, ctx) {
     const h = new AttackHandle('projectile');
-    const ent = spawnProjectile(params, ctx, h);
-    if (!ent) {
-      h._emit('expire');
-      h._complete();
+    const count = Math.max(1, Math.floor(params.count ?? 1));
+    const interval = Math.max(0, params.burstInterval ?? 0);
+    if (count === 1 || interval <= 0) {
+      // Single shot or simultaneous burst: spawn all now. The handle tracks
+      // every entity; it completes when the LAST one finishes (host steps via
+      // stepProjectile on each — see theater/step loop for multi-entity).
+      const ents = [];
+      for (let i = 0; i < count; i++) {
+        const ent = spawnProjectile(params, ctx, h);
+        if (ent) ents.push(ent);
+      }
+      if (!ents.length) {
+        h._emit('expire');
+        h._complete();
+        return h;
+      }
+      h.entity = ents[0];
+      h.entities = ents;
       return h;
     }
-    h.entity = ent;
+    // Timed burst: spawn one per interval until count is reached, then stay
+    // live until all spawned entities have finished. Host calls h.step(dt).
+    h.state = { spawned: 0, t: 0, done: false, ents: [] };
+    h.entities = h.state.ents;
+    h.step = (dt) => {
+      const s = h.state;
+      if (s.done) return true;
+      s.t += dt;
+      while (s.spawned < count && s.t >= s.spawned * interval) {
+        const ent = spawnProjectile(params, ctx, h);
+        if (ent) s.ents.push(ent);
+        s.spawned++;
+      }
+      // All spawned AND all dead → complete.
+      if (s.spawned >= count && s.ents.every((e) => !e.alive)) {
+        s.done = true;
+        h._complete({ shots: s.ents.length });
+        return true;
+      }
+      return false;
+    };
     return h;
   },
 });
