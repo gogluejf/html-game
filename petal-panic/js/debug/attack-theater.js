@@ -45,6 +45,10 @@ const ATTACKER_HOME = { x: 140, y: GROUND_Y - 48, w: 32, h: 48 };
 const TARGET_POS = { x: 560, y: GROUND_Y - 48, w: 32, h: 48 }; // clear of the side panel
 const DT = 1 / 60;
 const DEG = Math.PI / 180;
+// Held-control repeat cadence (ms): first press fires immediately, then a
+// short delay, then a steady tick — standard menu feel, no 60fps racing.
+const REPEAT_DELAY_MS = 220;
+const REPEAT_MS = 70;
 
 /** Angle display helper: radians → "−45° ↗" style string. */
 function angleLabel(rad) {
@@ -90,7 +94,9 @@ export const AttackTheater = {
   _flash: 0,
   _log: [],
   _choreo: null,      // per-run choreography state
-  _padWasHeld: 0,     // gamepad edge-trigger memory
+  _padWasHeld: 0,     // gamepad edge-trigger memory (entry selection)
+  _rep: {},           // held-control repeater state per channel
+  _repeatDir: {},     // current direction per repeat channel
 
   get entries() { return listPrimitives(); },
   currentId() { return this.entries[this.index] ?? null; },
@@ -101,6 +107,9 @@ export const AttackTheater = {
     this.active = true;
     this.index = 0;
     this.paramIndex = 0;
+    this._padWasHeld = 0;
+    this._rep = {};
+    this._repeatDir = {};
     this._resetSandbox();
   },
 
@@ -147,24 +156,63 @@ export const AttackTheater = {
   updateGamepad() {
     if (!this.active) return;
     const s = inputState();
+    // Merge pad + keyboard direction so BOTH devices feed the same repeat
+    // system (keyboard edges from keydown are ignored — heldKeys polling is
+    // the single source of truth, which is what makes debouncing work).
+    const kb = keyboardDir();
     const dirX = s.moveX < -0.2 ? -1 : s.moveX > 0.2 ? 1 : 0;
     const dirY = s.moveY < -0.2 ? -1 : s.moveY > 0.2 ? 1 : 0;
-    // Horizontal: entry selection (edge-triggered like the Effect Theater).
-    if (dirX !== 0 && dirX !== this._padWasHeld) {
-      this.step(dirX);
+    const x = dirX !== 0 ? dirX : kb.x;
+    const y = dirY !== 0 ? dirY : kb.y;
+    // --- Entry selection (←/→): edge-triggered, one step per press ----------
+    if (x !== 0 && x !== this._padWasHeld) {
+      this.step(x);
     }
-    this._padWasHeld = dirX;
-    // Vertical: param selection (repeat-allowed: holding walks the list).
-    if (dirY !== 0) this.stepParam(dirY);
-    // Adjust value: PURE INPUT MAPPING — the user's own lockDir/lockMove keys
-    // (defaults I/O, remappable in Controls) + L2/R2 on the pad. Repeat-allowed
-    // while held so holding walks the value.
+    this._padWasHeld = x;
+    // --- Param selection (↑/↓): repeat with a fixed interval -----------------
+    this._repeat('param', y, () => {
+      if (this._repeatDir.param !== 0) this.stepParam(this._repeatDir.param);
+    });
+    // --- Value adjust (I/O + L2/R2): same repeat cadence --------------------
     const adj = mappingAdjust();
-    if (adj.down) this.adjustParam(-1);
-    if (adj.up) this.adjustParam(1);
+    const adjDir = adj.down && !adj.up ? -1 : adj.up && !adj.down ? 1 : 0;
+    this._repeat('adjust', adjDir, () => {
+      if (this._repeatDir.adjust !== 0) this.adjustParam(this._repeatDir.adjust);
+    });
     // Buttons via the abstracted nav layer (same lib as menus/pause).
     if (s.navPressed.includes('confirm')) this.replay();
     if (s.navPressed.includes('back')) { this.close(); }
+  },
+
+  /**
+   * Fixed-interval repeater for held controls. First press fires immediately
+   * (edge), then holding re-fires every REPEAT_MS after REPEAT_DELAY_MS.
+   * Releasing and re-pressing restarts the cycle. Two independent channels
+   * ('param', 'adjust') so ↑+I held together both work.
+   */
+  _repeat(channel, dirNow, fire) {
+    const now = performance.now?.() ?? Date.now();
+    const st = this._rep[channel] ?? (this._rep[channel] = { dir: 0, t: 0, fired: false });
+    if (dirNow === 0) {
+      st.dir = 0; st.t = 0; st.fired = false;
+      return;
+    }
+    if (st.dir !== dirNow) {
+      // Fresh press or direction flip: fire once immediately.
+      st.dir = dirNow; st.t = now; st.fired = true;
+      this._repeatDir[channel] = dirNow;
+      fire();
+      return;
+    }
+    // Still held: repeat on cadence.
+    st.t += DT * 1000;
+    if (!st.fired) {
+      if (st.t >= REPEAT_DELAY_MS) { st.fired = true; this._repeatDir[channel] = dirNow; fire(); }
+    } else if (st.t >= REPEAT_DELAY_MS + REPEAT_MS) {
+      st.t = REPEAT_DELAY_MS; // carry the remainder for even cadence
+      this._repeatDir[channel] = dirNow;
+      fire();
+    }
   },
 
   // --- Sandbox lifecycle ------------------------------------------------------
@@ -692,6 +740,26 @@ function mappingAdjust() {
     for (const b of gp.lockMove ?? []) if (pressed.has(`g:${b}`) || held.get(`g:${b}`)) up = true;
   }
   return { down, up };
+}
+
+/**
+ * Keyboard arrow state for the theater's repeat system. The keydown handler
+ * (debugHarness) only reports EDGES (press/release); this polls input.heldKeys
+ * each frame so held arrows feed the same _repeat() cadence as the pad — no
+ * browser auto-repeat racing through the list.
+ */
+function keyboardDir() {
+  const inp = typeof input !== 'undefined' ? input : null;
+  if (!inp) return { x: 0, y: 0 };
+  const held = new Set(inp.heldKeys ?? []);
+  const left = held.has('ArrowLeft') || held.has('KeyA');
+  const right = held.has('ArrowRight') || held.has('KeyD');
+  const up = held.has('ArrowUp') || held.has('KeyW');
+  const down = held.has('ArrowDown') || held.has('KeyS');
+  return {
+    x: left && !right ? -1 : right && !left ? 1 : 0,
+    y: up && !down ? -1 : down && !up ? 1 : 0,
+  };
 }
 
 /** Labels for the hint bar from the live mapping (e.g. "I/O"). */

@@ -270,25 +270,15 @@ function handleDebugKeys(e) {
  * I/O in Controls, the theater follows (see mappingAdjust() in attack-theater).
  */
 function handleAttackTheaterKeys(e) {
+  // Directional keys (arrows/WASD) and I/O adjust are handled by the PER-FRAME
+  // poll in AttackTheater.updateGamepad() — it reads held state (input.heldKeys
+  // + mapping) and runs the debounce/repeat cadence. Handling them here too
+  // would double-fire on every keydown (incl. browser auto-repeat). This
+  // listener only owns the discrete actions: replay + close. We still
+  // preventDefault on arrows so the page doesn't scroll underneath.
   switch (e.code) {
-    case 'ArrowLeft':
-    case 'KeyA':
-      AttackTheater.step(-1);
-      e.preventDefault();
-      break;
-    case 'ArrowRight':
-    case 'KeyD':
-      AttackTheater.step(1);
-      e.preventDefault();
-      break;
-    case 'ArrowUp':
-    case 'KeyW':
-      AttackTheater.stepParam(-1);
-      e.preventDefault();
-      break;
-    case 'ArrowDown':
-    case 'KeyS':
-      AttackTheater.stepParam(1);
+    case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown':
+    case 'KeyA': case 'KeyD': case 'KeyW': case 'KeyS':
       e.preventDefault();
       break;
     case 'Enter':
