@@ -4,7 +4,7 @@
 
 import { strict as assert } from 'node:assert';
 import { Effects } from '../effects.js';
-import { particles } from '../effects/particles.js';
+import { particles, MAX_PARTICLES } from '../effects/particles.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -79,8 +79,8 @@ ok('spawnExplosion spawns >=12 and scales with radius', () => {
 });
 ok('spawners cap at the pool size (no allocation)', () => {
   drainPool();
-  const cap = 50; // MAX_PARTICLES
-  const n = Effects.spawnExplosion(0, 0, 100000); // would want way more than 50
+  const cap = MAX_PARTICLES;
+  const n = Effects.spawnExplosion(0, 0, 100000); // would want way more than the cap
   assert.ok(n <= cap, `got ${n}`);
 });
 

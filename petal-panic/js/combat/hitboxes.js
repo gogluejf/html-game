@@ -145,13 +145,14 @@ export function processAllHitboxes() {
     if (hb.method === 'specialMelee' && hb.owner === h) {
       h.markSpecialConnect();
     }
-    // VFX / juice on hit.
+    // VFX / juice on hit. Generic juice (blood sparkles, enemy shake, white
+    // flash) lives in processHitboxes() itself — the engine owns it so every
+    // caller (gameplay + attack primitives) gets identical reactions. Here we
+    // only keep the GAMEPLAY-SPECIFIC routing: hero-damage vignette and
+    // knockback application.
     if (target.layer === LAYER.HERO) {
       Effects.heroDamaged();
     } else {
-      Effects.beginEnemyShake(target);
-      if (target.hitFlash !== undefined) target.hitFlash = 0.1;
-
       // Hero→enemy knockback: if the attack hitbox carries a `knockback`
       // setting, apply the physical reaction to the enemy. No per-attack-type
       // branching — presence of the data is the only gate. The setting lives on

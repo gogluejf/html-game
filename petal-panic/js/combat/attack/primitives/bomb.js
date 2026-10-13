@@ -27,6 +27,9 @@ const DEFAULTS = Object.freeze({
   payload: null,        // { id, params } attack to run on detonation; null = fizzle
 });
 
+/** Rebound below this (px/s) settles the bomb instead of bouncing again. */
+export const BOMB_SETTLE_VY = 40;
+
 /**
  * Spawn the bomb entity into the special pool (ballistic carrier).
  * @returns {object|null} the Special entity, or null if the pool is exhausted
@@ -47,7 +50,12 @@ export function spawnBomb(p, ctx) {
   ent.vy = Math.sin(p.direction) * p.speed;
   ent.gravityValue = p.arc;
   ent.damage = p.damage;
-  ent.setLife?.(p.ttl);
+  // Fuse: the bomb's TTL label is 'fuse' (Special relabels it), so setLife()
+  // — which writes the 'life' timer — would be ignored by tickTtl(). Write
+  // the labeled timer directly so the declared ttl actually governs expiry.
+  const label = ent._ttlLabel ?? 'life';
+  ent.setLife(p.ttl);
+  ent.timers.set(label, p.ttl);
   ent.solidBehavior = p.bounce ? 'reflect' : 'stop';
   ent._attackId = 'bomb';
   ent._attackDone = false;
@@ -56,12 +64,63 @@ export function spawnBomb(p, ctx) {
 }
 
 /**
+ * Terrain stepping for a live bomb entity (host calls once per frame).
+ * Single source of truth for bomb-vs-terrain behavior — gameplay (level
+ * floor + platform tops) and the sandbox (flat ground line) both call this,
+ * so bounce numbers can never drift between the two hosts.
+ *
+ * Rules (match Special physics):
+ *  - falling onto a surface with solidBehavior 'reflect' → bounce
+ *    (restitution 0.5, friction 0.7); when the rebound is too weak to matter
+ *    (< BOMB_SETTLE_VY), the bomb SETTLES: it is killed with _attackHit set,
+ *    which makes stepBomb() detonate it on the host's next step.
+ *  - solidBehavior 'stop' → immediate settle (impact = detonation).
+ *
+ * @param {object} ent          the Special entity (must be alive)
+ * @param {number} dt           seconds
+ * @param {number} groundY      floor top y (world)
+ * @param {Array}  [platforms]  optional extra surfaces [{x, y, w}] (tops only)
+ * @returns {boolean} true when the bomb settled this call (detonation pending)
+ */
+export function stepBombTerrain(ent, dt, groundY, platforms = []) {
+  if (!ent?.alive || ent._attackDone) return false;
+  const bottom = ent.y + ent.h;
+  // Floor first (the common case), then platform tops.
+  let surface = null;
+  if (bottom >= groundY && ent.vy > 0) surface = groundY;
+  else {
+    for (const p of platforms) {
+      const prevBottom = bottom - ent.vy * dt;
+      if (prevBottom <= p.y + 2 && bottom >= p.y && ent.vy > 0 &&
+          ent.x + ent.w > p.x && ent.x < p.x + p.w) { surface = p.y; break; }
+    }
+  }
+  if (surface == null) return false;
+
+  ent.y = surface - ent.h;
+  if (ent.solidBehavior === 'reflect') {
+    ent.vy = -Math.abs(ent.vy) * 0.5; // restitution
+    ent.vx *= 0.7;                    // friction
+    if (Math.abs(ent.vy) < BOMB_SETTLE_VY) {
+      ent._attackHit = true;
+      ent.alive = false;
+      return true;
+    }
+    return false;
+  }
+  // 'stop' (or anything non-reflect): impact ends the flight.
+  ent._attackHit = true;
+  ent.alive = false;
+  return true;
+}
+
+/**
  * Per-frame step. Returns true when the bomb finished (detonated or expired).
  * The host loop calls this until it returns true.
  *
  * Detonation triggers:
- *  - contact: the collision handler kills the entity against an enemy/barrel
- *    (sets _attackHit) OR against terrain with solidBehavior 'stop'.
+ *  - contact: stepBombTerrain() settles the entity against terrain
+ *    (sets _attackHit), or a collision handler kills it against an enemy.
  *  - fuse: ttlExpired flag set by Special.update() when the life timer ends.
  *  - off-screen: caller sets ent.alive=false via cullOffScreen().
  *

@@ -13,7 +13,7 @@ import { Entity } from '../core/entity.js';
 import { coins, CoinPool } from '../objects/coin.js'; // re-exported below for backward compat
 
 // --- Tunables ----------------------------------------------------------------
-export const MAX_PARTICLES = 50;       // hard cap on live sparkles (§17 perf param)
+export const MAX_PARTICLES = 150;      // hard cap on live sparkles (§17 perf param)
 const SPARKLE_LIFETIME = 0.5;          // seconds a sparkle lives
 const SPARKLE_SIZE = 4;                // px per sparkle square
 const SPARKLE_SPEED_RANGE = [80, 240]; // px/s random initial speed

@@ -15,6 +15,10 @@
 // team + box + damage + method and routes accordingly.
 
 import { LAYER } from '../consts.js';
+import { Effects } from '../effects.js';
+
+/** Methods whose connect deals blood (melee-family strikes). */
+const BLOOD_METHODS = new Set(['melee', 'specialMelee', 'super']);
 
 /** Target layer masks per team. */
 const TEAM_TARGETS = {
@@ -98,6 +102,18 @@ export function processHitboxes(hitboxes, targets, onHit) {
 
       if (dealt > 0) {
         hb.hitSet.add(t);
+        // Hit juice lives in the ENGINE, not in host callbacks: every caller
+        // of processHitboxes (gameplay hitbox registry AND attack primitives
+        // like meleeHitbox/beam/spike) gets the same reaction. Blood sparkles
+        // on melee-family connects; shake + flash on everything else.
+        if (t.layer !== LAYER.HERO) {
+          if (BLOOD_METHODS.has(hb.method)) {
+            const tb = t.worldBox ? t.worldBox() : t;
+            Effects.spawnHitSparkles(tb.x + tb.w / 2, tb.y + tb.h / 2);
+          }
+          Effects.beginEnemyShake(t);
+          if (t.hitFlash !== undefined) t.hitFlash = 0.1;
+        }
         if (onHit) onHit(hb, t, dealt);
       }
     }

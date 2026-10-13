@@ -17,7 +17,7 @@
 
 import { strict as assert } from 'node:assert';
 import { Effects } from '../effects.js';
-import { particles } from '../effects/particles.js';
+import { particles, MAX_PARTICLES } from '../effects/particles.js';
 import { BLOOD_COLORS, FIRE_COLORS } from '../effects/palettes.js';
 
 const DT = 1 / 60;
@@ -183,7 +183,7 @@ ok('count = min(24, 12 + round(radius*0.15)): r20→15, r200→24, r100000→24'
 ok('caps at the pool size (no allocation beyond MAX_PARTICLES)', () => {
   drainPool();
   const n = Effects.spawnExplosion(0, 0, 100000);
-  assert.ok(n <= 50, `got ${n}`);
+  assert.ok(n <= MAX_PARTICLES, `got ${n}`);
 });
 ok('legacy bomb/enemy-death/barrel roll is preserved via the count override (rand=0 → 12, rand=0.999 → 15)', () => {
   // The pre-migration spawnExplosionVFX rolled 12 + floor(rand*4) (12–15) at

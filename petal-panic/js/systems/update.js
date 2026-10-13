@@ -17,6 +17,7 @@ import { Anim, makeTestFrame } from '../core/anim.js';
 import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { projectilePool, specialPool } from '../objects/projectile.js';
+import { stepBombTerrain } from '../combat/attack/primitives/bomb.js';
 import { S, getState, tryTransition, onTransition } from '../core/state.js';
 import { dispatchScreenInput } from '../ui/screens.js';
 import { makeElephant } from '../boss/boss.js';
@@ -886,28 +887,12 @@ export function update(dt) {
 
   // Special projectiles: update + handle bomb explosions.
   specialPool.updateAll(dt);
-  // Bomb bounce: bombs arc and bounce off floor/platform tops (like coins).
+  // Bomb terrain: the engine owns bounce/settle (stepBombTerrain) — same rules
+  // for gameplay and the sandbox. Settled bombs (_attackHit, alive=false) are
+  // detonated by the TTL pass below via explodeSpecial().
   for (const s of specialPool.activeItems) {
     if (!s.alive || s.type !== 'bomb') continue;
-    const bottom = s.y + s.h;
-    // Floor bounce.
-    if (bottom >= ZONE_GROUND_Y && s.vy > 0) {
-      s.y = ZONE_GROUND_Y - s.h;
-      s.vy *= -0.5; // restitution
-      s.vx *= 0.7;  // friction
-    }
-    // Platform-top bounces.
-    for (const p of SOLIDS.slice(1)) {
-      const prevBottom = bottom - s.vy * dt;
-      if (prevBottom <= p.y + 2 && bottom >= p.y && s.vy > 0) {
-        if (s.x + s.w > p.x && s.x < p.x + p.w) {
-          s.y = p.y - s.h;
-          s.vy *= -0.5;
-          s.vx *= 0.7;
-          break;
-        }
-      }
-    }
+    stepBombTerrain(s, dt, ZONE_GROUND_Y, SOLIDS.slice(1));
   }
   syncSpecialsToWorld();
   // TTL expiry: check the FULL pool (not just activeItems, which already
