@@ -21,7 +21,7 @@ import { listPrimitives, getPrimitive } from '../combat/attack/registry.js';
 import { invoke } from '../combat/attack/engine.js';
 import { makeContext } from '../combat/attack/context.js';
 import { stepProjectile } from '../combat/attack/primitives/projectile.js';
-import { stepBomb } from '../combat/attack/primitives/bomb.js';
+import { stepBomb, stepBombTerrain } from '../combat/attack/primitives/bomb.js';
 import { Pool, Projectile, Special } from '../objects/projectile.js';
 import { CollisionWorld } from '../core/collision.js';
 import { LAYER } from '../consts.js';
@@ -31,6 +31,7 @@ import { Effects } from '../effects.js';
 import { updateEffects, drawEffects, resetEffects } from '../effects/index.js';
 import { particles } from '../effects/particles.js';
 import { aabbOverlap } from '../core/collision.js';
+import { damage } from '../combat/damage.js';
 // Enemy factories for spawnSplit spawnType='enemy' (theater spawns REAL enemies).
 import { Jester } from '../enemies/jester.js';
 import { VineHound } from '../enemies/vine_hound.js';
@@ -99,7 +100,7 @@ const SANDBOX_PRESETS = {
   fireArea: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, length: 96, height: 48, duration: 2, tickRate: 5, damage: 8, team: 'ally' },
   spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 16, size: 32, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
   orbit: { count: 3, radius: 70, depth: 0.45, angularSpeed: 1.5, direction: 1, startAngle: 0, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
-  boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 1, burstInterval: 0 },
+  boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 1 },
   spawnSplit: { x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'jester' },
   selfDestruct: { timing: 'immediate', deathBehavior: 'kill', triggerPayloadFirst: true, payload: { id: 'explosion', params: { x: ATTACKER_HOME.x + 16, y: ATTACKER_HOME.y + 24, radius: 70, damage: 40, alignment: 'neutral' } }, payloadDelay: 0.1 },
 };
@@ -121,7 +122,7 @@ export const TWEAKABLE = {
   fireArea: [['x', 'num', 20], ['length', 'num', 16], ['height', 'num', 8], ['duration', 'num', 0.25], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   spike: [['x', 'num', 16], ['size', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],
   orbit: [['count', 'int', 1], ['radius', 'num', 10], ['depth', 'num', 0.05], ['angularSpeed', 'num', 0.25]],
-  boomerang: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['returnSpeed', 'num', 50], ['outboundDuration', 'num', 0.1], ['count', 'int', 1], ['burstInterval', 'num', 0.1]],
+  boomerang: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['returnSpeed', 'num', 50], ['outboundDuration', 'num', 0.1], ['count', 'int', 1]],
   spawnSplit: [['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['spawnType', 'enum', ['projectile', 'bomb', 'enemy']], ['enemyType', 'enum', ['jester', 'vine_hound', 'violetta_marionetta', 'jackolantern']]],
   selfDestruct: [['payloadDelay', 'num', 0.05]],
 };
@@ -299,8 +300,16 @@ export const AttackTheater = {
     this._pools = { projectilePool: new Pool(Projectile, 64), specialPool: new Pool(Special, 16) };
     this._world = new CollisionWorld({ cellSize: 64 });
     this._attacker = { ...ATTACKER_HOME, alive: true, layer: LAYER.HERO, facing: 1, bodyKnockback: null };
-    this._target = { ...TARGET_POS, alive: true, hp: 999, layer: LAYER.ENEMY, hitFlash: 0,
-      takeDamage(amt) { if (!this.alive) return 0; this.hp -= amt; if (this.hp <= 0) this.alive = false; return amt; } };
+    this._target = { ...TARGET_POS, alive: true, hp: 999, layer: LAYER.ENEMY, hitFlash: 0 };
+    // REAL damage pipeline (same as Enemy.takeDamage): central damage() +
+    // white hit-flash. Blood sparkles are NOT spawned here — they belong to
+    // the attack side (hitbox onHit / collision handlers), so the theater sees
+    // them via the real path, not a theater-local hack.
+    this._target.takeDamage = (amt, source, method = 'melee') => {
+      const dealt = damage(source ?? this._attacker, this._target, amt, method);
+      if (dealt > 0) this._target.hitFlash = 0.1;
+      return dealt;
+    };
     this._world.add(this._attacker);
     this._world.add(this._target);
     this._handles = [];
@@ -351,10 +360,15 @@ export const AttackTheater = {
   },
 
   _replay() {
-    // ADDITIVE primitives: pressing replay again THROWS ANOTHER one instead of
-    // resetting the in-flight instance (boomerang = throw another boomerang,
-    // orbit = spawn another ring). Everything else gets a full reset.
-    const additive = this.currentId() === 'boomerang' || this.currentId() === 'orbit';
+    // ADDITIVE primitives: replaying the SAME primitive with a live handle
+    // THROWS ANOTHER one instead of resetting (boomerang = throw another,
+    // orbit = spawn another ring). Switching FROM another primitive always
+    // gets a full reset — so the check is "is there a live handle of THIS id",
+    // never "which id is selected" (the index already moved by the time we're
+    // here, which used to skip the reset when switching INTO orbit/boomerang).
+    const id0 = this.currentId();
+    const additive = (id0 === 'boomerang' || id0 === 'orbit') &&
+      this._handles.some((h) => h.id === id0);
     if (!additive) {
       for (const p of this._pools?.projectilePool.activeItems ?? []) p.alive = false;
       for (const s of this._pools?.specialPool.activeItems ?? []) s.alive = false;
@@ -377,6 +391,15 @@ export const AttackTheater = {
       this._target.y = TARGET_POS.y;
       this._attacker.x = ATTACKER_HOME.x;
       this._attacker.y = ATTACKER_HOME.y;
+      // Face the target again (charge/punch/kamikaze choreos flip facing).
+      this._attacker.facing = 1;
+      // Respawn the attacker body: vanish (spawnSplit) and kamikaze (selfDestruct)
+      // demos hide it for the whole run — every new run starts visible again.
+      this._attackerVisible = true;
+      this._kamikaze = null;
+      // Drop enemies spawned by the previous spawnSplit run (real world entities).
+      for (const e of this._spawnedEnemies ?? []) { try { this._world?.remove(e); } catch { /* noop */ } }
+      this._spawnedEnemies = [];
     }
     this._log = [];
     this._choreo = null;
@@ -432,6 +455,16 @@ export const AttackTheater = {
     // (explosion needs no choreography — it fires at its configured x/y and the
     // real Effect-Engine burst is the visual. The old hand-drawn telegraph ring
     // was a placeholder; the Reticle primitive below IS that proper warning.)
+
+    // Boomerang: replay is ADDITIVE — throw another via the live handle's
+    // h.throw() (capped by `count`), skipping the full invoke below.
+    if (id === 'boomerang' && this._handles.some((x) => x.id === 'boomerang')) {
+      const prev = this._handles.find((x) => x.id === 'boomerang');
+      const s = prev.throw?.();
+      if (!s) this._log.unshift(`BOOMERANG AT CAP (${this._params.count})`);
+      else this._log.unshift(`BOOMERANG THROW ${prev.states.length} / ${this._params.count}`);
+      return;
+    }
 
     let h;
     try {
@@ -575,27 +608,43 @@ export const AttackTheater = {
         // Homing demo: target drifts slowly left/right and periodically JUMPS
         // (vertical burst + pause) to try to shake the missile. The missile's
         // visible re-curve after each jump is the whole point of the demo.
+        // FINITE run: parks back home after ~4s so the next demo is clean.
         c.t += DT;
         const base = TARGET_POS.x;
-        this._target.x = base + Math.sin(c.t * 1.2) * 90;
-        if (!c.jumping && c.t >= c.nextJump) {
-          c.jumping = true; c.jumpT = 0;
-        }
-        if (c.jumping) {
-          c.jumpT += DT;
-          // Jump arc: up then down over ~0.7s (parabola), then a brief pause.
-          const jt = c.jumpT / 0.7;
-          if (jt < 1) this._target.y = TARGET_POS.y - Math.sin(jt * Math.PI) * 70;
-          else if (jt < 1.4) this._target.y = TARGET_POS.y; // hang at apex end
-          else { c.jumping = false; c.nextJump = c.t + 1.6; this._target.y = TARGET_POS.y; }
+        if (c.t < 4) {
+          this._target.x = base + Math.sin(c.t * 1.2) * 90;
+          if (!c.jumping && c.t >= c.nextJump) {
+            c.jumping = true; c.jumpT = 0;
+          }
+          if (c.jumping) {
+            c.jumpT += DT;
+            // Jump arc: up then down over ~0.7s (parabola), then a brief pause.
+            const jt = c.jumpT / 0.7;
+            if (jt < 1) this._target.y = TARGET_POS.y - Math.sin(jt * Math.PI) * 70;
+            else if (jt < 1.4) this._target.y = TARGET_POS.y; // hang at apex end
+            else { c.jumping = false; c.nextJump = c.t + 1.6; this._target.y = TARGET_POS.y; }
+          }
+        } else if (!c.parked) {
+          c.parked = true;
+          this._target.x = TARGET_POS.x;
+          this._target.y = TARGET_POS.y;
         }
       } else if (c.kind === 'strafe') {
         // Predictive demo: target strays left/right at slow speed with real
-        // velocity so the lead math has something to predict.
+        // velocity so the lead math has something to predict. FINITE run:
+        // after the shot has flown (~3s) the target parks back home so the
+        // next demo starts from a clean scene.
         c.t += DT;
-        this._target.x = c.baseX + Math.sin(c.t * 0.9) * 120;
-        this._target.vx = Math.cos(c.t * 0.9) * 120 * 0.9; // d/dt for the aim math
-        this._target.vy = 0;
+        if (c.t < 3) {
+          this._target.x = c.baseX + Math.sin(c.t * 0.9) * 120;
+          this._target.vx = Math.cos(c.t * 0.9) * 120 * 0.9; // d/dt for the aim math
+          this._target.vy = 0;
+        } else if (!c.parked) {
+          c.parked = true;
+          this._target.x = TARGET_POS.x;
+          this._target.vx = 0;
+          this._target.vy = 0;
+        }
         // Fire the single aimed shot once, mid-strafe, when it has velocity.
         if (!c.fired && c.t > 0.5) {
           c.fired = true;
@@ -608,7 +657,21 @@ export const AttackTheater = {
       } else if (c.kind === 'walkToTarget') {
         // Orbit demo: attacker walks toward the target so satellites sweep
         // through its body. Space toggles eject (handled in key routing).
-        if (Math.abs(gap) > 26) {
+        // When every live orbit ring is gone (ejected / ttl), WALK BACK home —
+        // additive replay never resets position, so without this the attacker
+        // stays parked at the target for all following demos.
+        const orbitsLive = this._handles.some((h) => h.id === 'orbit');
+        if (!orbitsLive) {
+          if (Math.abs(gap) > 4) {
+            this._attacker.x -= Math.sign(gap) * c.speed * DT;
+            this._attacker.facing = -Math.sign(gap) || -1;
+          } else {
+            this._attacker.x = ATTACKER_HOME.x;
+            this._attacker.y = ATTACKER_HOME.y;
+            this._attacker.facing = 1;
+            this._choreo = null;
+          }
+        } else if (Math.abs(gap) > 26) {
           this._attacker.x += Math.sign(gap) * c.speed * DT;
           this._attacker.facing = Math.sign(gap) || 1;
         }
@@ -674,25 +737,12 @@ export const AttackTheater = {
       p.alive = false; // consumed on impact (matches gameplay behavior)
     }
 
-    // Bomb in flight: detonate when it reaches ground level (the sandbox has
-    // no terrain to bounce off — landing IS the impact). Bouncing bombs
-    // (solidBehavior 'reflect') instead reflect off the ground line and keep
-    // rolling until they touch the target or their fuse runs out.
+    // Bomb terrain: the ENGINE owns bounce/settle/detonate (stepBombTerrain) —
+    // same rules + numbers as gameplay. The sandbox just supplies the flat
+    // ground line; stepBomb() detonates settled bombs on the handle pass below.
     for (const s of specialPool.activeItems) {
       if (!s.alive || s._attackId !== 'bomb' || s._attackDone) continue;
-      if (s.y + s.h >= GROUND_Y) {
-        if (s.solidBehavior === 'reflect' && Math.abs(s.vy) > 40) {
-          // Bounce: reflect vertical velocity with energy loss, settle on the
-          // ground line. (Same rule as Special.reflectVelocity.)
-          s.y = GROUND_Y - s.h;
-          s.vy = -Math.abs(s.vy) * 0.55;
-          s.vx *= 0.8;
-          if (Math.abs(s.vy) < 40) s.vy = 0; // too slow to bother bouncing again
-        } else {
-          s._attackHit = true;
-          s.alive = false;
-        }
-      }
+      stepBombTerrain(s, DT, GROUND_Y);
     }
     this._world.update();
 
