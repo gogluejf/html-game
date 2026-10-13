@@ -101,7 +101,41 @@ otherwise.
 
 ---
 
-## 3. Burst Shot
+## 3. Reticle Shot
+
+A telegraphed lock-on shot: a reticle TRACKS the target, LOCKS its position at
+`lockTime`, and when the warning window ends ONE projectile fires from the
+attacker's center at the LOCKED point — not where the target happens to be at
+that moment. The canonical "telegraph then fire" composition.
+
+### Sequence
+
+Reticle/Telegraph (track → lock) → Projectile at locked point.
+
+### Main parameters
+
+- **target** — entity to track (default ctx.target).
+- **duration** — total warning window in seconds (track → lock → fire).
+- **lockTime** — seconds after start when the aim freezes.
+- **style** — telegraph visual (`reticle` | `circle` | `marker`).
+- **color / radius** — VFX color and size.
+- **tracking** — follow the target until lockTime.
+- **speed** — projectile speed px/s.
+- **ttl** — projectile lifetime (s).
+- **damage** — projectile damage.
+
+### Rules
+
+- Exactly ONE shot, fired at the end of the warning window.
+- The shot aims at the LOCKED point; a target that keeps moving after the lock
+  can dodge it.
+- The telegraph effect outlives the warning window on purpose: it stays up
+  while the bullet is in flight and dismisses with the shot's terminal event
+  (hit or expire). Hosts need no distance math or manual dismissal.
+
+---
+
+## 4. Burst Shot
 
 Fires the same projectile repeatedly with controlled spacing.
 
@@ -120,7 +154,7 @@ Projectile → interval → Projectile → repeat.
 
 ---
 
-## 4. Spread Shot
+## 5. Spread Shot
 
 Fires multiple projectiles simultaneously across an angle centered on a direction.
 
@@ -139,7 +173,7 @@ Spread → multiple Projectiles.
 
 ---
 
-## 5. 360° Spread
+## 6. 360° Spread
 
 A radial form of Spread Shot that distributes projectiles around the attacker.
 
@@ -155,7 +189,7 @@ The canonical spread angle is 360 degrees.
 
 ---
 
-## 6. Homing Missile
+## 7. Homing Missile
 
 Launches a projectile that continuously steers toward the hero.
 
@@ -177,7 +211,7 @@ a much more agile threat.
 
 ---
 
-## 7. Boomerang
+## 8. Boomerang
 
 Launches one or more projectiles outward before they return.
 
@@ -198,7 +232,7 @@ Boomerang outward → turnaround → return.
 
 ---
 
-## 8. Orbiting Projectiles
+## 9. Orbiting Projectiles
 
 Creates projectiles or damaging objects that rotate around the attacker. They
 behave visually as electrons around an owner.
@@ -219,7 +253,7 @@ Spawn orbiting entities → Orbit → expire/remove.
 
 ---
 
-## 9. Orbit → Eject
+## 10. Orbit → Eject
 
 Starts as Orbiting Projectiles, then releases all orbiting objects. On release,
 each object keeps its current tangential direction/velocity and becomes a linear
@@ -236,7 +270,7 @@ Includes Orbiting Projectiles parameters plus:
 
 ---
 
-## 10. Missile Rain
+## 11. Missile Rain
 
 Launches multiple projectiles vertically upward from the attacker, sends them
 outside the visible play area, announces their future landing positions with ground
@@ -296,7 +330,7 @@ area rather than using a fixed pixel/unit separation.
 
 ---
 
-## 11. Bomb Throw
+## 12. Bomb Throw
 
 Throws one ballistic bomb.
 
@@ -316,7 +350,7 @@ Bomb launch → ballistic arc → optional bounce/contact → payload/detonation
 
 ---
 
-## 12. Bomb Spread
+## 13. Bomb Spread
 
 Throws multiple bombs around a central throw angle. Like Spread Shot, the requested
 total angle is divided across the bombs. A useful variation is a very high vertical
@@ -337,7 +371,7 @@ air simultaneously.
 
 ---
 
-## 13. Cluster Bomb
+## 14. Cluster Bomb
 
 Throws a bomb that spawns multiple smaller bombs when its payload triggers. The
 child bombs are real Bomb primitives: they pop outward in curved trajectories and
@@ -359,7 +393,7 @@ Parent Bomb → trigger → Spawn/Split → child Bombs → child payloads.
 
 ---
 
-## 14. Molotov
+## 15. Molotov
 
 Throws a bomb-like object that creates persistent horizontal fire when triggered.
 
@@ -378,7 +412,7 @@ Bomb → impact/timer → Fire/Persistent Area.
 
 ---
 
-## 15. Explosive Bomb
+## 16. Explosive Bomb
 
 Throws a bomb whose payload is the game's standard radial explosion.
 
@@ -396,7 +430,7 @@ Bomb → trigger → Explosion.
 
 ---
 
-## 16. Horizontal Beam
+## 17. Horizontal Beam
 
 Telegraphs and then fires a beam horizontally across the play area.
 
@@ -418,7 +452,7 @@ Full-screen horizontal reach is the normal default.
 
 ---
 
-## 17. Targeted Beam
+## 18. Targeted Beam
 
 Uses a reticle to establish a target/direction, locks that target, then fires a
 beam from the attacker/beam marker through the locked position.
@@ -441,7 +475,7 @@ The beam direction is determined by the locked reticle placement.
 
 ---
 
-## 18. Sweeping Beam
+## 19. Sweeping Beam
 
 Locks or establishes a starting beam direction, then rotates the beam through an
 angle.
@@ -463,7 +497,7 @@ Reticle/telegraph → Beam starts → angular sweep → end.
 
 ---
 
-## 19. Melee
+## 20. Melee
 
 A standardized close-range attack synchronized with animation. Melee does not
 require a separate hitbox when the normal enemy body already represents the
@@ -490,7 +524,7 @@ animation-driven attacks without inventing separate collision systems.
 
 ---
 
-## 20. Charge / Dash
+## 21. Charge / Dash
 
 Moves the attacker aggressively in a direction as an attack. For enemies, the
 normal damaging body is usually sufficient. An extra melee hitbox is only added if
@@ -514,7 +548,7 @@ stop/recovery.
 
 ---
 
-## 21. Stomp
+## 22. Stomp
 
 A surface-aware stomp attack with one telegraph for the full sequence, followed by
 a short signal before each individual stomp.
@@ -549,7 +583,7 @@ Telegraph once → signal → stomp → interval → signal → stomp → repeat
 
 ---
 
-## 22. Stomp Wave
+## 23. Stomp Wave
 
 A stomp creates a damaging wave traveling along the supporting surface. On a block
 or platform, the wave ends when that surface ends. On the ground, it travels until
@@ -571,7 +605,7 @@ Telegraph → stomp impact → surface wave → wave terminates.
 
 ---
 
-## 23. Dust Cloud / Radius Attack
+## 24. Dust Cloud / Radius Attack
 
 Creates a damaging dust/effect cloud around the attacker for a duration. The
 mushroom enemy is the conceptual reference.
@@ -590,7 +624,7 @@ Dust effect appears → radial area active → duration ends.
 
 ---
 
-## 24. Spikes
+## 25. Spikes
 
 Creates one or more static spike hazards that alternate between active/visible and
 hidden states.
@@ -613,7 +647,7 @@ optional hidden TTL → optional repeat.
 
 ---
 
-## 25. Body Explosion / Kamikaze
+## 26. Body Explosion / Kamikaze
 
 An enemy deliberately detonates itself and dies. The Jack-o'-lantern enemy is a
 direct example.
@@ -636,7 +670,7 @@ standardized detonation behavior.
 
 ---
 
-## 26. Dash Lane Sequence
+## 27. Dash Lane Sequence
 
 A telegraphed sequence where the attacker enters from offscreen and dashes
 completely across the screen through each configured Y lane exactly once.

@@ -54,7 +54,6 @@ import '../combat/attack/primitives/meleeHitbox.js';
 import '../combat/attack/primitives/movement.js';
 import '../combat/attack/primitives/bodyContact.js';
 import '../combat/attack/primitives/reticle.js';
-import { fireTelegraphEffect } from '../combat/attack/primitives/reticle.js';
 import '../combat/attack/macros/reticleShot.js';
 import '../combat/attack/primitives/homing.js';
 import '../combat/attack/primitives/predictive.js';
@@ -95,7 +94,6 @@ const SANDBOX_PRESETS = {
   charge: { direction: 0, speed: 700, duration: 0.6, distance: null, acceleration: 0 },
   bodyContact: { damage: 20, enabled: true, temporaryOverride: true },
   // --- Wave 2 -----------------------------------------------------------------
-  reticle: { duration: 1.6, style: 'circle', color: '#ff5555', radius: 30, tracking: true, lockTime: 0.5 },
   reticleShot: { duration: 1.6, lockTime: 1.1, style: 'reticle', color: '#ff5555', radius: 30, tracking: true, speed: 500, ttl: 2, damage: 10 },
   homing: { target: null, turnRate: 3, speed: null, initialDirection: -0.3, ttl: 2 },
   predictive: { speed: 300 },
@@ -118,7 +116,6 @@ export const TWEAKABLE = {
   charge: [['speed', 'num', 100], ['duration', 'num', 0.1]],
   bodyContact: [['damage', 'num', 5]],
   // --- Wave 2 -----------------------------------------------------------------
-  reticle: [['duration', 'num', 0.1], ['radius', 'num', 5], ['lockTime', 'num', 0.1]],
   reticleShot: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['speed', 'num', 50]],
   homing: [['turnRate', 'num', 0.5], ['initialDirection', 'angle', 15 * DEG], ['ttl', 'num', 0.25]],
   predictive: [['speed', 'num', 50]],
@@ -150,7 +147,13 @@ export const AttackTheater = {
   _rep: {},           // held-control repeater state per channel
   _repeatDir: {},     // current direction per repeat channel
 
-  get entries() { return [...listPrimitives(), ...listMacros()]; },
+  get entries() {
+    // The reticle primitive is a BUILDING BLOCK (attack-primitives.md §15) —
+    // it composes into macros like reticleShot, so the sandbox lists it only
+    // through those compositions, not as a standalone entry.
+    const prims = listPrimitives().filter((id) => id !== 'reticle');
+    return [...prims, ...listMacros()];
+  },
   currentId() { return this.entries[this.index] ?? null; },
 
   _tweakList() { return TWEAKABLE[this.currentId()] ?? []; },
@@ -1095,18 +1098,6 @@ export const AttackTheater = {
           ctx.strokeStyle = 'rgba(255,255,255,0.4)';
           ctx.strokeRect(box.x, box.y, box.w, box.h);
         }
-      } else if (h.id === 'reticle' && !st.done && !st._fx) {
-        // Fallback telegraph ring: only for contexts where the effect engine
-        // is absent (pure-logic tests). When the REAL target-reticle effect is
-        // live (st._fx set), it renders via drawEffects() below — drawing this
-        // second ring on top would ghost a duplicate circle at the same point.
-        const pt = st.locked ?? st.pt;
-        const r = (this._params.radius ?? 28);
-        ctx.strokeStyle = this._params.color ?? '#ff5555';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, Math.max(4, r), 0, Math.PI * 2);
-        ctx.stroke();
       }
     }
     // (No aim-point marker for predictive: the demo is pure "shoot where it

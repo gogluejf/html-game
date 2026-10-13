@@ -348,7 +348,9 @@ including their own curved trajectories and payloads.
 
 Provides advance information that an attack is about to happen. It normally
 belongs to the Effect Engine visually, while the attack primitive/macro controls
-timing and placement.
+timing and placement. This is a BUILDING BLOCK: on its own it only shows a
+warning at a point; attacks that fire after the warning compose it into a macro
+(see attack-macros.md §3 Reticle Shot: track → lock → fire).
 
 ### Main parameters
 
