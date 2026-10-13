@@ -100,7 +100,7 @@ registerMacro('reticleShot', {
     let fired = false;
     h.step = (dt) => {
       const s = h.state;
-      if (s.done) return true;
+      if (s.done && !h.shot?.entity?.alive) return true; // shot finished, macro done
       s.t += dt;
 
       // Track the target until lockTime, then freeze the aim point.
@@ -113,31 +113,38 @@ registerMacro('reticleShot', {
       // Move the live effect with the aim (no re-fire).
       if (s._fx?.body) s._fx.body.origin = { x: s.pt.x, y: s.pt.y };
 
-      if (s.t >= params.duration) {
-        s.done = true;
-        if (!fired) {
-          fired = true; // exactly ONE shot, at the end of the warning window
-          const pt = s.locked ?? s.pt;
-          const o = targetCenter(ctx.attacker) ?? { x: 0, y: 0 };
-          const dir = Math.atan2(pt.y - o.y, pt.x - o.x);
-          const shot = invoke('projectile', {
-            origin: { x: o.x, y: o.y },
-            direction: dir,
-            speed: params.speed,
-            ttl: params.ttl,
-            damage: params.damage,
-          }, ctx);
-          if (shot?.entity) {
-            h.shot = shot;
-            // The telegraph outlives the warning window on purpose: it stays
-            // up while the bullet flies and dismisses with the shot's
-            // terminal event. Hosts need no distance math or manual dismissal.
-            shot.on('hit', (info) => h._emit('hit', info));
-            shot.on('expire', () => h._emit('expire'));
-          }
+      // Reticle disappears when the projectile passes over it (the locked
+      // point). The macro owns both — no host involvement.
+      const ent = h.shot?.entity;
+      if (ent?.alive && s._fx?.body && s.locked) {
+        const r = s._fx.body.radius ?? 0;
+        const dx = ent.x + (ent.w ?? 12) / 2 - s.locked.x;
+        const dy = ent.y + (ent.h ?? 12) / 2 - s.locked.y;
+        if (dx * dx + dy * dy <= (r + 8) * (r + 8)) {
+          try { s._fx.complete?.(); } catch { /* noop */ }
+          s._fx = null;
+        }
+      }
+
+      if (s.t < params.duration) return false;
+      if (!fired) {
+        fired = true; // exactly ONE shot, at the end of the warning window
+        const pt = s.locked ?? s.pt;
+        const o = targetCenter(ctx.attacker) ?? { x: 0, y: 0 };
+        const dir = Math.atan2(pt.y - o.y, pt.x - o.x);
+        const shot = invoke('projectile', {
+          origin: { x: o.x, y: o.y },
+          direction: dir,
+          speed: params.speed,
+          ttl: params.ttl,
+          damage: params.damage,
+        }, ctx);
+        if (shot?.entity) {
+          h.shot = shot;
+          shot.on('hit', (info) => h._emit('hit', info));
+          shot.on('expire', () => h._emit('expire'));
         }
         h._complete({ point: s.locked ?? s.pt });
-        return true;
       }
       return false;
     };

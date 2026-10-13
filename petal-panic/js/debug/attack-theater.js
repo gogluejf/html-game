@@ -93,7 +93,7 @@ const SANDBOX_PRESETS = {
   charge: { direction: 0, speed: 700, duration: 0.6, distance: null, acceleration: 0 },
   bodyContact: { damage: 20, enabled: true, temporaryOverride: true },
   // --- Wave 2 -----------------------------------------------------------------
-  reticleShot: { duration: 1.6, lockTime: 1.1, style: 'reticle', color: '#ff5555', radius: 30, tracking: true, speed: 500, ttl: 2, damage: 10 },
+  reticleShot: { duration: 1.3, lockTime: 1.1, color: '#ff5555', radius: 30, tracking: true, speed: 500, ttl: 2, damage: 10 },
   homing: { target: null, turnRate: 3, speed: null, initialDirection: -0.3, ttl: 2 },
   predictive: { speed: 300 },
   beam: { direction: 0, length: 320, width: 24, duration: 0.6, damage: 15, tickRate: 8, team: 'ally' },
@@ -656,7 +656,9 @@ export const AttackTheater = {
       } else if (c.kind === 'walkLeft') {
         // ReticleShot demo staging: target WALKS LEFT at constant speed. The
         // macro owns track → lock → fire; this only moves the dummy. FINITE
-        // run: parks after ~3s so the next demo starts clean.
+        // run: parks after ~3s so the next demo starts clean. The dummy also
+        // HITS when the bullet overlaps it — its body vanishes on impact and
+        // respawns home when the run ends (the "target disappears" read).
         c.t += DT;
         if (c.t < 3) {
           this._target.x = c.baseX - c.t * 160;
@@ -667,6 +669,10 @@ export const AttackTheater = {
           this._target.x = TARGET_POS.x;
           this._target.vx = 0;
           this._target.vy = 0;
+          // Respawn the dummy (it may have been killed by the bullet): full HP,
+          // visible again at home.
+          this._target.hp = 999;
+          this._target.alive = true;
         }
       } else if (c.kind === 'strafe') {
         // Predictive demo: target WALKS LEFT at constant speed (real velocity,
@@ -1003,15 +1009,26 @@ export const AttackTheater = {
       }
     }
 
-    // Dummy target.
+    // Dummy target. A dead dummy (walkLeft one-shot hit) shows only a small
+    // impact X where it died — the body is GONE until the run respawns it.
     if (this._target) {
-      ctx.fillStyle = this._flash > 0 ? '#fff' : (this._target.alive ? '#6d6' : '#444');
-      ctx.fillRect(this._target.x, this._target.y, this._target.w, this._target.h);
-      ctx.fillStyle = '#fff';
-      ctx.font = '10px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(this._target.alive ? `HP ${Math.max(0, Math.round(this._target.hp))}` : 'DOWN',
-        this._target.x + this._target.w / 2, this._target.y - 8);
+      if (this._target.alive) {
+        ctx.fillStyle = this._flash > 0 ? '#fff' : '#6d6';
+        ctx.fillRect(this._target.x, this._target.y, this._target.w, this._target.h);
+        ctx.fillStyle = '#fff';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`HP ${Math.max(0, Math.round(this._target.hp))}`,
+          this._target.x + this._target.w / 2, this._target.y - 8);
+      } else {
+        const dx = this._target.x + this._target.w / 2, dy = this._target.y + this._target.h / 2;
+        ctx.strokeStyle = 'rgba(255,90,90,0.7)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(dx - 8, dy - 8); ctx.lineTo(dx + 8, dy + 8);
+        ctx.moveTo(dx + 8, dy - 8); ctx.lineTo(dx - 8, dy + 8);
+        ctx.stroke();
+      }
     }
 
     // Live projectiles/specials.
