@@ -363,6 +363,7 @@ export const CATALOG = [
   { type: 'screen-overlay',        name: 'Screen Overlay',          section: 23, params: { color: '#ff5a5a', opacity: 0.5, duration: 1.0, fadeIn: 0.2, fadeOut: 0.2 } },
   { type: 'composite-explosion',   name: 'Composite Explosion Burst', section: 24, params: { x: STAGE_X, y: STAGE_Y, radius: 60, explosionCount: 6, duration: 1.0 } },
   { type: 'beam',                  name: 'Beam',                    section: 26, params: { x: STAGE_X, y: STAGE_Y, length: 120, width: 18, gradientRadius: 14, color: '#7df', flashInTime: 0.05, fadeOutTime: 0.15 } },
+  { type: 'shield-pulse',          name: 'Shield Pulse',            section: 27, params: { x: STAGE_X, y: STAGE_Y, maxRadius: 40, minRadius: 28, pulseSpeed: 1.5, duration: 3.0 } },
 ];
 
 // Effects whose visual lives in the SHARED particle pool (one-shot bursts):

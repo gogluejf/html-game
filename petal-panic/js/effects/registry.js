@@ -82,3 +82,7 @@ registerEffect('aura-glow', auraGlow);
 
 // --- M6 beam effect -------------------------------------------------------------
 registerEffect('beam', beam);
+
+// --- Shield / barrier effects ---------------------------------------------------
+import { shieldPulse } from './shieldPulse.js';
+registerEffect('shield-pulse', shieldPulse);
