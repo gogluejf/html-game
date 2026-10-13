@@ -234,8 +234,9 @@ function handleDebugKeys(e) {
       break;
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown':
       // Theater stepping is handled by updateTheaterGamepad (reads input.state.moveX).
-      // Don't double-step here. Only drive the anim scrubber when theater is closed.
-      if (!Theater.active) {
+      // Don't double-step here. Only drive the anim scrubber when NO theater is
+      // open (Effect OR Attack) — otherwise arrows leak into the scrubber.
+      if (!Theater.active && !AttackTheater.active) {
         scrubSelectedAnim(e.code);
       }
       break;
@@ -261,18 +262,19 @@ function handleDebugKeys(e) {
 
 /**
  * Attack Theater (F4) keyboard routing. Called from handleDebugKeys while the
- * theater is open. Arrows select entries/params; Shift+arrows adjust values;
- * Enter/Space replays; Escape closes.
+ * theater is open. Arrows select entries/params; Ctrl+arrows adjust values
+* (Shift is taken by the anim scrubber conventions — Ctrl is unbound in-game);
+* Enter/Space replays; Escape closes.
  */
 function handleAttackTheaterKeys(e) {
   switch (e.code) {
     case 'ArrowLeft':
-      if (e.shiftKey) AttackTheater.adjustParam(-paramStep());
+      if (e.ctrlKey) AttackTheater.adjustParam(-1);
       else AttackTheater.step(-1);
       e.preventDefault();
       break;
     case 'ArrowRight':
-      if (e.shiftKey) AttackTheater.adjustParam(paramStep());
+      if (e.ctrlKey) AttackTheater.adjustParam(1);
       else AttackTheater.step(1);
       e.preventDefault();
       break;
@@ -295,17 +297,6 @@ function handleAttackTheaterKeys(e) {
       Debug.logEvent('attack-theater CLOSE (Esc)');
       break;
   }
-}
-
-/** Step size for param adjustment: coarse for big values, fine for small. */
-function paramStep() {
-  const id = AttackTheater.currentId();
-  const keys = TWEAKABLE[id] ?? [];
-  const key = keys[AttackTheater.paramIndex];
-  const val = Math.abs(AttackTheater._params?.[key] ?? 0);
-  if (val >= 100) return 10;
-  if (val >= 10) return 1;
-  return 0.1;
 }
 
 /**

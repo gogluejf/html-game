@@ -11,7 +11,7 @@
 // so it's actually watchable (charge dashes AT the target, body contact walks
 // into it, explosions telegraph before they pop).
 //
-// Keys:  F4 toggle · ←/→ select · ↑/↓ select param · Shift+←/→ adjust ·
+// Keys:  F4 toggle · ←/→ select · ↑/↓ select param · Ctrl+←/→ adjust ·
 //        Enter/Space replay · Esc close.
 // Pad:   ◀▶ select · ▲▼ param · L2/R2 adjust · A replay · B close.
 
@@ -224,6 +224,10 @@ export const AttackTheater = {
     this._handles = [];
     this._target.hp = 999;
     this._target.alive = true;
+    // BOTH opponents reset home each replay — otherwise the target stays
+    // stuck at wherever the last movement demo left it.
+    this._target.x = TARGET_POS.x;
+    this._target.y = TARGET_POS.y;
     this._attacker.x = ATTACKER_HOME.x;
     this._attacker.y = ATTACKER_HOME.y;
     this._log = [];
@@ -621,7 +625,7 @@ export const AttackTheater = {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#666';
     ctx.font = '12px monospace';
-    ctx.fillText(`${leftR} select   ${upDn} param   L2/R2 adjust   [${confirmLabel}] replay   [${backLabel}] close   F4`, demoW / 2, h - 16);
+    ctx.fillText(`${leftR} select   ${upDn} param   Ctrl+${leftR} adjust   [${confirmLabel}] replay   [${backLabel}] close   F4`, demoW / 2, h - 16);
 
     ctx.restore();
 
