@@ -26,8 +26,8 @@ const DEFAULTS = Object.freeze({
   style: 'reticle',    // effect type: 'target-reticle' | 'telegraph-circle' | 'ground-target-marker'
   color: '#ff5555',
   radius: 28,          // visual size hint for the effect
-  tracking: false,     // follow the target while active
-  lockTime: null,      // seconds after start when the position freezes (tracking only)
+  tracking: true,      // follow the target while active
+  lockTime: 0.5,       // seconds after start when the position freezes (tracking only)
 });
 
 /** Map our style ids onto registered Effect Engine types. */
@@ -56,36 +56,60 @@ export function telegraphPoint(params, ctx, locked = null) {
 /**
  * Fire the warning VFX via the Effect Engine (no-op when effects is absent,
  * e.g. pure-logic tests). Returns the effect instance or null.
+ *
+ * Fires a SINGLE long-lived fixed-mode instance. The caller is responsible for
+ * updating the instance's origin each frame (via state._fx.body.origin = pt)
+ * so it tracks the target without stacking multiple instances.
  */
 export function fireTelegraphEffect(params, pt, ctx) {
   const fx = ctx.effects;
   if (!fx || typeof fx.fireManual !== 'function') return null;
   const type = STYLE_EFFECT[params.style] ?? STYLE_EFFECT.reticle;
   try {
-    return fx.fireManual({ type, params: { ...params, x: pt.x, y: pt.y, color: params.color, radius: params.radius } });
+    // Slow pulse (1 Hz) for a calm lock-on feel. Duration covers warning +
+    // bullet flight so the same instance survives the shot. lockAt tells the
+    // effect WHEN to smoothly zoom to its locked size (no external mutation).
+    const totalDuration = (params.duration ?? 1.6) + (params.ttl ?? 2);
+    return fx.fireManual({
+      type,
+      params: {
+        ...params, x: pt.x, y: pt.y, color: params.color, size: params.radius,
+        duration: totalDuration, pulseRate: 1,
+        lockAt: params.lockTime ?? null,
+      },
+    });
   } catch {
     return null; // unknown style in a minimal test context — timing still works
   }
 }
 
 /**
- * Per-frame step. Advances the clock, re-fires tracking VFX while unlocked,
- * and completes at the end of the warning window.
+ * Per-frame step. Advances the clock, locks at lockTime, and completes at the
+ * end of the warning window. VFX lifecycle: ONE instance fired at start; its
+ * origin is mutated each frame so it tracks the target (no stacking). At lock
+ * the origin freezes. The host re-fires after shot if needed.
  * @returns {boolean} true when the telegraph finished (attack may activate)
  */
 export function stepReticle(state, params, ctx, dt, h) {
   if (state.done) return true;
   state.t += dt;
 
-  // Lock the position once past lockTime (default: immediately, i.e. static).
-  if (!state.locked && (params.lockTime == null || state.t >= params.lockTime)) {
+  // Lock the position once past lockTime. A non-tracking reticle has no
+  // "follow" phase, so it locks on the first step; a tracking reticle holds
+  // the lock until lockTime elapses (default 0.5s).
+  if (!state.locked && (!params.tracking || params.lockTime == null || state.t >= params.lockTime)) {
     state.locked = telegraphPoint(params, ctx);
+    state.pt = state.locked;
+  } else if (params.tracking && !state.locked) {
+    state.pt = telegraphPoint(params, ctx);
   }
 
-  // Tracking phase: refresh the visual each frame so it rides the target.
-  if (params.tracking && !state.locked) {
-    state.pt = telegraphPoint(params, ctx);
-    fireTelegraphEffect(params, state.pt, ctx);
+  // Fire the effect ONCE (on first frame), then just move its origin.
+  if (!state._fx) {
+    state._fx = fireTelegraphEffect(params, state.pt, ctx);
+  } else if (state._fx?.body) {
+    // Mutate the live instance's origin so it tracks without stacking.
+    state._fx.body.origin = { x: state.pt.x, y: state.pt.y };
   }
 
   if (state.t >= params.duration) {
@@ -117,8 +141,21 @@ registerPrimitive('reticle', {
     const h = new AttackHandle('reticle');
     const pt = telegraphPoint(params, ctx);
     h.state = { t: 0, done: false, pt, locked: null };
-    fireTelegraphEffect(params, pt, ctx);
+    // Fire the effect ONCE here; stepReticle will mutate its origin each frame.
+    // The instance is fired with a NULL carrier so it runs in fixed mode —
+    // the primitive OWNS the tracking (it mutates body.origin every step),
+    // which keeps the attack code modular on the target object and lets pure-
+    // logic tests run without an effect engine at all.
+    h.state._fx = fireTelegraphEffect(params, pt, ctx);
     h.step = (dt) => stepReticle(h.state, params, ctx, dt, h);
+    // Tear down the telegraph effect instance on cancel so a cancelled attack
+    // never leaves a ghost reticle in the engine's active set.
+    const baseCancel = h.cancel.bind(h);
+    h.cancel = () => {
+      try { h.state._fx?.complete?.(); } catch { /* noop */ }
+      h.state._fx = null;
+      baseCancel();
+    };
     return h;
   },
 });

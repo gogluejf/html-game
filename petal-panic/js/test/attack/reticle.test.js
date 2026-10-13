@@ -72,10 +72,10 @@ ok('tracking: follows the target each frame until lockTime', () => {
   assert.equal(h.state.pt.x, frozen.x, 'no longer follows after lock');
 });
 
-ok('static (no tracking): locks immediately on first step', () => {
+ok('static (tracking off): locks immediately on first step', () => {
   const t = target();
   const ctx = makeContext(attacker(), { target: t });
-  const h = invoke('reticle', { duration: 1 }, ctx);
+  const h = invoke('reticle', { duration: 1, tracking: false }, ctx);
   h.step(1 / 60);
   assert.ok(h.state.locked, 'locks on frame 1');
   t.x += 999;
