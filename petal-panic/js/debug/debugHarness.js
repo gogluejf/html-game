@@ -1,4 +1,4 @@
-// Debug harness — keydown/mouse handlers, god mode, entity select/force-state,
+// Debug harness — keydown handlers, god mode, time scale, spawn hotkeys, theaters.
 // debug spawning, JSON dumps, hero swap, and the Effect Theater gamepad step.
 // All shared mutable state is read/written through ctx (world/context.js) to
 // avoid a circular import back into systems/update.js.
@@ -162,20 +162,35 @@ function debugSpawn(type, x, y, state) {
  * placeholder icon shows WHICH weapon it will grant. Re-press G to flood more
  * (slots cap at SPECIAL_SLOT_COUNT — excess exercises the replace rules).
  */
-function debugInjectSpecialDrops() {
+let _debugPowerups = []; // tracked entities from the last G press
+
+function debugInjectPowerups() {
   const h = ctx.hero;
   if (!h) return;
+
+  // Remove any remaining drops from the previous G press.
+  for (const p of _debugPowerups) {
+    const idx = ctx.powerups.indexOf(p);
+    if (idx !== -1) ctx.powerups.splice(idx, 1);
+    ctx.collisionWorld?.remove(p);
+  }
+  _debugPowerups.length = 0;
+
   const cx = h.x + h.w / 2, cy = h.y + h.h / 2;
+  const types = POWERUP_TYPES;
   const R = 140;
+  const COUNT = 10;
   let n = 0;
-  for (let i = 0; i < 10; i++) {
-    const a = (i / 10) * Math.PI * 2;
-    const p = makePowerup('specialDrop', cx + Math.cos(a) * R - 14, cy + Math.sin(a) * R - 14);
+  for (let i = 0; i < COUNT; i++) {
+    const a = (i / COUNT) * Math.PI * 2;
+    const type = types[Math.floor(Math.random() * types.length)];
+    const p = makePowerup(type, cx + Math.cos(a) * R - 14, cy + Math.sin(a) * R - 14);
     ctx.powerups.push(p);
     ctx.collisionWorld?.add(p);
+    _debugPowerups.push(p);
     n++;
   }
-  Debug.logEvent(`TEMP: injected ${n} special drops (bomb/saw random)`);
+  Debug.logEvent(`DEBUG: injected ${n} random powerups`);
 }
 
 /**
@@ -230,19 +245,13 @@ function handleDebugKeys(e) {
       debugWrapToNextArea();
       break;
     case 'KeyG': // TEMP: inject a ring of 10 special drops around the hero
-      debugInjectSpecialDrops();
+      debugInjectPowerups();
       break;
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown':
       // Theater stepping is handled by updateTheaterGamepad (reads input.state.moveX).
       // Don't double-step here. Only drive the anim scrubber when NO theater is
       // open (Effect OR Attack) — otherwise arrows leak into the scrubber and
       // fight the theater for the same keys.
-      if (!Theater.active && !AttackTheater.active) {
-        scrubSelectedAnim(e.code);
-      }
-      break;
-    case 'KeyX': // Deselect current entity
-      if (Debug.selected) { Debug.selected = null; Debug.logEvent('deselect'); }
       break;
     case 'KeyE': // Dump JSON to disk. Plain E = stats; Shift+E = collision world.
       if (e.shiftKey) {
@@ -433,67 +442,6 @@ function swapHero() {
   Debug.logEvent(`hero → ${def.name}`);
 }
 
-/** Step the selected entity's animation forward/back one frame. */
-function scrubSelectedAnim(code) {
-  const sel = Debug.selected;
-  if (!sel) return;
-  const anim = sel.anim ?? sel.anims?.attack;
-  if (!anim || !anim.frames.length) { Debug.logEvent('no anim on selection'); return; }
-  const n = anim.frames.length;
-  let i = anim.frameIndex;
-  if (code === 'ArrowRight') i = (i + 1) % n;
-  else if (code === 'ArrowLeft') i = (i - 1 + n) % n;
-  else if (code === 'ArrowUp') i = 0;
-  else if (code === 'ArrowDown') i = n - 1;
-  anim.pickFrame(i);
-  Debug.logEvent(`scrub ${sel.type ?? sel.heroDef?.id ?? '?'} frame ${i}/${n - 1}`);
-}
-
-/** Select the topmost enemy/boss/powerup under a logical-space point. */
-export function selectEntityAt(lx, ly) {
-  // Prefer enemies + boss (the interesting ones), then powerups/barrels.
-  const candidates = [...ctx.realEnemies, ...ctx.enemies, ctx.boss].filter(e => e && e.alive !== false);
-  for (const p of ctx.powerups) if (p.alive && !p.collected) candidates.push(p);
-  for (const b of [...ctx.barrels, ...ctx.woodBarrels, ...ctx.coinBarrels]) if (b.alive) candidates.push(b);
-  const hero = ctx.hero;
-  if (hero && !hero.dying) candidates.push(hero);
-  for (const c of candidates) {
-    const b = c.worldBox();
-    if (lx >= b.x && lx <= b.x + b.w && ly >= b.y && ly <= b.y + b.h) {
-      Debug.selected = c;
-      // Selecting an entity promotes detail to inspect level so its numeric
-      // panel shows immediately (mirror icons stay on at every level).
-      if (Debug.detailLevel < 2) {
-        Debug.detailLevel = 2;
-        Debug.logEvent('detail: inspect');
-      }
-      Debug.logEvent(`select ${c.type ?? c.powerType ?? '?'} @(${Math.round(lx)},${Math.round(ly)})`);
-      return c;
-    }
-  }
-  Debug.selected = null;
-  return null;
-}
-
-/** Force-cycle the AI state of the entity under a logical-space point. */
-export function forceStateAt(lx, ly) {
-  const hit = pickEnemyAt(lx, ly);
-  if (!hit) return null;
-  const s = Debug.nextState(hit);
-  Debug.logEvent(`force ${hit.type}: ${s ?? '(none)'}`);
-  return s;
-}
-
-/** Find an enemy/boss whose box contains the point (for click-to-force-state). */
-function pickEnemyAt(lx, ly) {
-  const candidates = [...ctx.realEnemies, ctx.boss].filter(e => e && e.alive !== false);
-  for (const c of candidates) {
-    const b = c.worldBox();
-    if (lx >= b.x && lx <= b.x + b.w && ly >= b.y && ly <= b.y + b.h) return c;
-  }
-  return null;
-}
-
 /** Per-frame god-mode enforcement: intangible (weapons are unlimited by design). */
 export function applyGodMode(dt) {
   if (!Debug.god) return;
@@ -551,23 +499,4 @@ window.addEventListener('keydown', (e) => {
   handleDebugKeys(e);
 });
 
-// --- Debug harness mouse input: click to select / force an enemy's state -----
-// Converts a screen-space click into logical 960x540 coords (inverse of the
-// main.js transform), then selects or cycles the entity under it. Only active
-// while the harness is on; zero cost otherwise (early return).
-window.addEventListener('mousedown', (e) => {
-  if (!Debug.enabled) return;
-  const canvas = document.getElementById('game');
-  if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
-  // Screen → logical: account for letterbox centering + dpr scaling.
-  const sx = (e.clientX - rect.left) / rect.width * VIEW_W;
-  const sy = (e.clientY - rect.top) / rect.height * VIEW_H;
-  const cam = ctx.camera;
-  const lx = sx + cam.x;
-  const ly = sy + cam.y;
-  // Left click = force-cycle AI state; right click = select for inspection.
-  if (e.button === 2) { e.preventDefault(); selectEntityAt(lx, ly); }
-  else forceStateAt(lx, ly);
-});
-window.addEventListener('contextmenu', (e) => { if (Debug.enabled) e.preventDefault(); });
+// --- Debug harness mouse input removed (was LMB force-state / RMB select) -----

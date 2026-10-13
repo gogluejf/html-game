@@ -330,9 +330,8 @@ export function render(ctx) {
 
   // --- Unified debug overlays -------------------------------------------------
   // Generic transform viz (sprite-orientation arrow + velocity vector) drawn for
-  // EVERY live entity, plus the anim-scrubber collision-box overlay on the
-  // selected entity. Gated entirely behind Debug.enabled so normal play pays
-  // nothing. Detail level (C key) controls how much text/inspection is shown.
+  // EVERY live entity. Gated entirely behind Debug.enabled so normal play pays
+  // nothing. Detail level (C key) controls how much text is shown.
   if (Debug.enabled && Debug.viewMode !== 2) {
     const allEnts = [
       ...getRealEnemies().filter(e => e.alive),
@@ -350,7 +349,7 @@ export function render(ctx) {
     const boss = getBoss();
     if (boss && boss.alive && bossZone.bossVisible()) allEnts.push(boss);
     for (const ent of allEnts) drawEntityTransformDebug(ctx, ent);
-    if (Debug.selected) drawSelectionOverlay(ctx, Debug.selected);
+
   }
 
   // Two-pass effects model (effects.md §Lifecycle): world-space effects
@@ -953,69 +952,6 @@ function drawEntityTransformDebug(ctx, ent) {
     ctx.fillText('\u2195', ix + 12, iy);
     ctx.restore();
   }
-
-  // 5) Numeric inspection panel (level 2, selected entity only).
-  if (Debug.detailLevel >= 2 && Debug.selected === ent) {
-    const deg = r => ((r * 180 / Math.PI) % 360).toFixed(0);
-    const anim = ent.anim;
-    const frame = anim && anim.frames.length
-      ? `${anim.frameIndex}/${anim.frames.length - 1}` : '—';
-    const lines = [
-      `vx ${Math.round(ent.vx)}  vy ${Math.round(ent.vy)}`,
-      `spd ${Math.round(ent.velocitySpeed())}  rot ${deg(ent.rotation)}°  orient ${deg(ent.spriteOrientation())}°`,
-      `mx ${ent.mirrorX ? 1 : 0}  my ${ent.mirrorY ? 1 : 0}  scale ${ent.scale.toFixed(2)}`,
-      `anim f${frame}${ent.hp != null ? `  hp ${Math.round(ent.hp)}/${Math.round(ent.maxHp ?? '?')}` : ''}`,
-    ];
-    ctx.save();
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'left';
-    const lh = 12;
-    const pw = Math.max(...lines.map(l => ctx.measureText(l).width)) + 12;
-    const px = b.x, py = b.y + b.h + 4;
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
-    ctx.fillRect(px, py, pw, lines.length * lh + 6);
-    lines.forEach((l, i) => {
-      ctx.fillStyle = i === 0 ? '#00e5ff' : '#ffffff';
-      ctx.fillText(l, px + 6, py + 6 + lh * (i + 0.5));
-    });
-    ctx.restore();
-  }
-}
-
-/**
- * Selection overlay for the anim scrubber: a bright outline around the selected
- * entity's collision box + a small info tag (type, anim name, frame index).
- * This is the "overlay its collision box on the sprite per frame" requirement.
- * @param {CanvasRenderingContext2D} ctx
- * @param {Entity} sel
- */
-function drawSelectionOverlay(ctx, sel) {
-  if (!sel) return;
-  const b = sel.worldBox();
-
-  // Collision-box outline (bright cyan so it stands out over any sprite).
-  ctx.save();
-  ctx.strokeStyle = '#00e5ff';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(b.x, b.y, b.w, b.h);
-  ctx.globalAlpha = 0.15;
-  ctx.fillStyle = '#00e5ff';
-  ctx.fillRect(b.x, b.y, b.w, b.h);
-  ctx.restore();
-
-  // Info tag: type + anim frame index.
-  const anim = sel.anim ?? sel.anims?.attack;
-  const frame = anim && anim.frames.length ? `${anim.frameIndex}/${anim.frames.length - 1}` : '—';
-  const label = `${sel.type ?? sel.heroDef?.id ?? '?'}  f${frame}`;
-  ctx.save();
-  ctx.font = 'bold 11px monospace';
-  ctx.textAlign = 'left';
-  const tw = ctx.measureText(label).width;
-  ctx.fillStyle = 'rgba(0,0,0,0.7)';
-  ctx.fillRect(b.x - 2, b.y - 18, tw + 8, 14);
-  ctx.fillStyle = '#00e5ff';
-  ctx.fillText(label, b.x + 2, b.y - 7);
-  ctx.restore();
 }
 
 /**
@@ -1225,7 +1161,7 @@ function drawEventLog(ctx) {
  */
 function drawHarnessHint(ctx) {
   const line1 = 'DEBUG | 1-9 spawn | F god | Z spd | T tele | U input | Y hero | L log | E trace | ⇧E collision';
-  const line2 = 'RMB sel | LMB force | arrows scrub | X desel | F2 theater | F3 view | W wrap area | F1 exit';
+  const line2 = 'F2 effect theater | F4 attack theater | F3 view | G drops | W wrap area | F1 exit';
   ctx.save();
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';

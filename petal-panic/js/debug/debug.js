@@ -37,9 +37,6 @@ export const Debug = {
   // Ordered cycle for the T key (index advances modulo length).
   TIME_STEPS: [1.0, 0.5, 0.25, 0],
 
-  // --- Selected entity (for inspection / anim scrubbing) --------------------
-  selected: null,
-
   // --- Spawn table ----------------------------------------------------------
   // Populated at init() with factory functions keyed by spawn id. Each entry:
   //   { name, states: [...], make(x, y, state) -> Entity }
@@ -94,64 +91,12 @@ export const Debug = {
   },
 
   /**
-   * Force an entity into a given AI state. Handles both regular enemies
-   * (`aiState`) and the boss (which drives its phase machine via `phase`).
-   * Returns true if the state was applied.
-   *
-   * @param {object} ent an Enemy / Elephant instance
-   * @param {string} state target state name
-   */
-  forceState(ent, state) {
-    if (!ent) return false;
-    // Boss uses a separate `phase` field; map 'dead' onto aiState too.
-    if (ent.isBoss && typeof ent.startPhase === 'function') {
-      if (state === 'dead') { ent.aiState = 'dead'; ent.die?.(); return true; }
-      ent.startPhase(state);
-      return true;
-    }
-    ent.aiState = state;
-    // Clear transient timers so the forced state actually takes hold rather
-    // than being immediately overwritten by a stale cooldown this frame.
-    if (state === 'attack' || state === 'lunge' || state === 'melee') {
-      if (typeof ent.whipTimer !== 'undefined') ent.whipTimer = Math.max(ent.whipTimer ?? 0, 0.05);
-    }
-    return true;
-  },
-
-  /**
-   * Advance to the next valid AI state for an entity (the "force-state" click
-   * cycles through them). Falls back to a generic list when the entity's type
-   * isn't in the spawn table.
-   * @param {object} ent
-   * @returns {string|null} the newly-forced state, or null if none available
-   */
-  nextState(ent) {
-    const states = this.statesFor(ent);
-    if (!states.length) return null;
-    const cur = ent.isBoss ? ent.phase : ent.aiState;
-    const i = states.indexOf(cur);
-    const next = states[(i + 1) % states.length];
-    this.forceState(ent, next);
-    return next;
-  },
-
-  /** Valid AI states for an entity, looked up from the spawn table by type. */
-  statesFor(ent) {
-    if (!ent) return [];
-    const key = ent.type ?? ent.id;
-    const entry = this.spawnTable[key];
-    if (entry && Array.isArray(entry.states)) return entry.states;
-    // Generic fallback for unknown types.
-    return ['idle', 'chase', 'attack'];
-  },
-
-  /**
    * Reset all debug flags to defaults (called when debug turns off and on re-enable).
    */
   reset() {
     this.god = false;
     this.timeScale = 1.0;
-    this.selected = null;
+
     this.showLog = false;
     this.showStats = false;
     this.showInput = false;
@@ -186,7 +131,7 @@ export function initSpawnTable(deps) {
     name, states,
     make: (x, y, state) => {
       const e = ctor(x, y);
-      if (state) Debug.forceState(e, state);
+      if (state) e.aiState = state;
       return e;
     },
   });

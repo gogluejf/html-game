@@ -51,13 +51,13 @@ ok('toggle flips enabled on/off', () => {
 ok('reset clears all flags to defaults', () => {
   Debug.god = true;
   Debug.timeScale = 0.25;
-  Debug.selected = { fake: true };
+
   Debug.showLog = true;
   Debug.log = [{ t: 0, msg: 'x' }];
   Debug.reset();
   assert.equal(Debug.god, false);
   assert.equal(Debug.timeScale, 1.0);
-  assert.equal(Debug.selected, null);
+
   assert.equal(Debug.showLog, false);
   assert.deepEqual(Debug.log, []);
 });
@@ -110,48 +110,6 @@ ok('spawn table make() honors a forced AI state', () => {
   assert.equal(j.aiState, 'attack');
   const noState = Debug.spawnTable.jester.make(0, 0);
   assert.equal(noState.aiState, 'idle');
-});
-
-ok('forceState sets aiState on a regular enemy', () => {
-  const e = { type: 'jester', aiState: 'idle' };
-  assert.equal(Debug.forceState(e, 'attack'), true);
-  assert.equal(e.aiState, 'attack');
-});
-
-ok('forceState routes boss phases through startPhase', () => {
-  let called = null;
-  const boss = {
-    isBoss: true, aiState: 'idle', phase: 'idle',
-    startPhase(p) { this.phase = p; called = p; },
-  };
-  assert.equal(Debug.forceState(boss, 'stomp'), true);
-  assert.equal(called, 'stomp');
-  assert.equal(boss.phase, 'stomp');
-  // 'dead' goes onto aiState instead.
-  Debug.forceState(boss, 'dead');
-  assert.equal(boss.aiState, 'dead');
-});
-
-ok('nextState cycles through the type\'s valid states', () => {
-  initSpawnTable(makeFakeDeps());
-  const e = { type: 'jester', aiState: 'idle' };
-  assert.equal(Debug.nextState(e), 'chase');
-  assert.equal(e.aiState, 'chase');
-  assert.equal(Debug.nextState(e), 'attack');
-  assert.equal(e.aiState, 'attack');
-  assert.equal(Debug.nextState(e), 'idle'); // wraps
-  assert.equal(e.aiState, 'idle');
-});
-
-ok('nextState falls back to generic list for unknown types', () => {
-  const e = { type: 'mystery', aiState: 'idle' };
-  assert.equal(Debug.nextState(e), 'chase');
-  assert.equal(Debug.nextState(e), 'attack');
-  assert.equal(Debug.nextState(e), 'idle');
-});
-
-ok('statesFor returns [] for a null entity', () => {
-  assert.deepEqual(Debug.statesFor(null), []);
 });
 
 // --- Transform-debug detail level --------------------------------------------
