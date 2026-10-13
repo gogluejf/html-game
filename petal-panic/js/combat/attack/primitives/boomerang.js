@@ -33,7 +33,7 @@ const DEFAULTS = Object.freeze({
   outboundDistance: null,// px cap; null = duration wins
   ttl: 4,                // hard cap on total flight per boomerang (s)
   damage: 12,            // carried for the host's contact checks
-  count: 1,              // max simultaneously alive boomerangs (cap)
+  count: 3,              // max simultaneously alive boomerangs (cap)
 });
 
 /** Build one boomerang's initial state at the attacker center. */
@@ -122,6 +122,20 @@ registerPrimitive('boomerang', {
     };
 
     h.throw(); // first throw immediately (back-compat: invoke = one throw)
+
+    /**
+     * Re-arm: trigger another throw while this action is still live.
+     * Engine-level contract for additive attacks — hosts (gameplay input,
+     * theater replay) call rearm() instead of re-invoking; the primitive
+     * owns the cap semantics. Returns { spawned, alive, cap } or null when
+     * the action already completed.
+     */
+    h.rearm = () => {
+      if (h._completed || h._cancelled) return null;
+      const before = states.filter((s) => !s.done).length;
+      const s = h.throw();
+      return { spawned: !!s, alive: states.filter((x) => !x.done).length, cap, wasAlive: before };
+    };
 
     h.step = (dt) => {
       let allDone = states.length > 0;

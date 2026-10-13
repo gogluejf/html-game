@@ -90,18 +90,38 @@ registerPrimitive('orbit', {
     h.state = { t: 0, done: false, ejected: false, entities: [] };
     h.state.entities = orbitPositions(params, center(), 0);
 
-    /** Per-frame step. Returns true when the orbit ended. */
+    /**
+     * Re-arm: spawn ANOTHER ring while this action is live (additive attack).
+     * Engine-level contract — hosts call rearm() instead of re-invoking.
+     * The new ring steps independently; the handle completes when ALL rings
+     * are done. Returns { spawned, rings } or null when already completed.
+     */
+    h.rearm = () => {
+      if (h._completed || h._cancelled) return null;
+      const rings = h._rings ?? (h._rings = [h.state]);
+      const ns = { t: 0, done: false, ejected: false, entities: [] };
+      ns.entities = orbitPositions(params, center(), 0);
+      rings.push(ns);
+      h.state = ns; // primary state tracks the newest ring
+      return { spawned: true, rings: rings.length };
+    };
+
+    /** Per-frame step. Returns true when ALL rings ended. */
     h.step = (dt) => {
-      const s = h.state;
-      if (s.done) return true;
-      s.t += dt;
-      if (params.ttl != null && s.t >= params.ttl) {
-        s.done = true;
-        h._complete({ ejected: s.ejected });
-        return true;
+      const rings = h._rings ?? [h.state];
+      let allDone = true;
+      for (const s of rings) {
+        if (s.done) continue;
+        s.t += dt;
+        if (params.ttl != null && s.t >= params.ttl) {
+          s.done = true;
+        } else {
+          s.entities = orbitPositions(params, center(), s.t);
+          allDone = false;
+        }
       }
-      s.entities = orbitPositions(params, center(), s.t);
-      return false;
+      if (allDone) h._complete({ ejected: rings.every((s) => s.ejected) });
+      return allDone;
     };
 
     /**
@@ -111,9 +131,10 @@ registerPrimitive('orbit', {
      * Ends the handle. Returns launch vectors (or [] if not ejectable).
      */
     h.eject = (speed = 400) => {
-      const s = h.state;
-      if (s.done || s.ejected) return [];
-      if (!params.ejectable) return [];
+      // Eject the NEWEST live ring (the one the user is looking at).
+      const rings = h._rings ?? [h.state];
+      const s = [...rings].reverse().find((r) => !r.done && !r.ejected);
+      if (!s || !params.ejectable) return [];
       s.ejected = true;
       s.done = true;
       const rx = params.radius ?? 60;

@@ -100,7 +100,7 @@ const SANDBOX_PRESETS = {
   fireArea: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, length: 96, height: 48, duration: 2, tickRate: 5, damage: 8, team: 'ally' },
   spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 16, size: 32, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
   orbit: { count: 3, radius: 70, depth: 0.45, angularSpeed: 1.5, direction: 1, startAngle: 0, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
-  boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 1 },
+  boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 3 },
   spawnSplit: { x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'jester' },
   selfDestruct: { timing: 'immediate', deathBehavior: 'kill', triggerPayloadFirst: true, payload: { id: 'explosion', params: { x: ATTACKER_HOME.x + 16, y: ATTACKER_HOME.y + 24, radius: 70, damage: 40, alignment: 'neutral' } }, payloadDelay: 0.1 },
 };
@@ -142,6 +142,7 @@ export const AttackTheater = {
   _log: [],
   _choreo: null,      // per-run choreography state
   _padWasHeld: 0,     // gamepad edge-trigger memory (entry selection)
+  _padConfirmHeld: false, // gamepad A edge-trigger memory (replay)
   _rep: {},           // held-control repeater state per channel
   _repeatDir: {},     // current direction per repeat channel
 
@@ -257,8 +258,12 @@ export const AttackTheater = {
     this._repeat('adjust', adjDir, () => {
       if (this._repeatDir.adjust !== 0) this.adjustParam(this._repeatDir.adjust);
     });
-    // Buttons via the abstracted nav layer (same lib as menus/pause).
-    if (s.navPressed.includes('confirm')) this.replay();
+    // Keyboard confirm comes from the RAW DOM keydown listener in debugHarness
+    // (one event per physical press — never merged), so fast taps can't be
+    // collapsed by the per-frame poll. Only the GAMEPAD side is polled here,
+    // edge-triggered (a held A button replays once, not every frame).
+    if (s.padConfirm && !this._padConfirmHeld) this.replay();
+    this._padConfirmHeld = s.padConfirm;
     if (s.navPressed.includes('back')) { this.close(); }
   },
 
@@ -360,15 +365,14 @@ export const AttackTheater = {
   },
 
   _replay() {
-    // ADDITIVE primitives: replaying the SAME primitive with a live handle
-    // THROWS ANOTHER one instead of resetting (boomerang = throw another,
-    // orbit = spawn another ring). Switching FROM another primitive always
-    // gets a full reset — so the check is "is there a live handle of THIS id",
-    // never "which id is selected" (the index already moved by the time we're
-    // here, which used to skip the reset when switching INTO orbit/boomerang).
+    // Additive attacks declare themselves via h.rearm (boomerang, orbit):
+    // replaying with a live rearm-capable handle skips the full reset so the
+    // new throw/ring joins the live one. Switching FROM another primitive
+    // always gets a full reset — the check is "live handle of THIS id with
+    // rearm()", never "which id is selected" (the index already moved by the
+    // time we're here).
     const id0 = this.currentId();
-    const additive = (id0 === 'boomerang' || id0 === 'orbit') &&
-      this._handles.some((h) => h.id === id0);
+    const additive = this._handles.some((h) => h.id === id0 && typeof h.rearm === 'function');
     if (!additive) {
       for (const p of this._pools?.projectilePool.activeItems ?? []) p.alive = false;
       for (const s of this._pools?.specialPool.activeItems ?? []) s.alive = false;
@@ -456,13 +460,14 @@ export const AttackTheater = {
     // real Effect-Engine burst is the visual. The old hand-drawn telegraph ring
     // was a placeholder; the Reticle primitive below IS that proper warning.)
 
-    // Boomerang: replay is ADDITIVE — throw another via the live handle's
-    // h.throw() (capped by `count`), skipping the full invoke below.
-    if (id === 'boomerang' && this._handles.some((x) => x.id === 'boomerang')) {
-      const prev = this._handles.find((x) => x.id === 'boomerang');
-      const s = prev.throw?.();
-      if (!s) this._log.unshift(`BOOMERANG AT CAP (${this._params.count})`);
-      else this._log.unshift(`BOOMERANG THROW ${prev.states.length} / ${this._params.count}`);
+    // Additive attacks (boomerang, orbit): if a live handle of THIS primitive
+    // exists and supports rearm(), replay RE-ARMS it instead of re-invoking.
+    // The primitive owns the semantics (cap, extra ring) — the host just asks.
+    const live = this._handles.find((x) => x.id === id && typeof x.rearm === 'function');
+    if (live) {
+      const r = live.rearm();
+      if (r?.spawned) this._log.unshift(`${id.toUpperCase()} +1 (alive ${r.alive ?? r.rings})`);
+      else this._log.unshift(`${id.toUpperCase()} AT CAP`);
       return;
     }
 
@@ -779,9 +784,9 @@ export const AttackTheater = {
           }
         } else if (h.id === 'orbit') {
           finished = h.step(DT);
-          // Contact check: each orbiting entity vs the dummy target.
-          const st = h.state;
-          if (!st?.done && this._target?.alive) {
+          // Contact check: every live ring's entities vs the dummy target.
+          for (const st of h._rings ?? [h.state]) {
+            if (st.done || !this._target?.alive) continue;
             for (const e of st.entities ?? []) {
               if (e.x + 6 > this._target.x && e.x - 6 < this._target.x + this._target.w &&
                   e.y + 6 > this._target.y && e.y - 6 < this._target.y + this._target.h) {
@@ -791,7 +796,7 @@ export const AttackTheater = {
                   Effects.spawnHitSparkles(e.x, e.y, 4);
                   this._log.unshift(`ORBIT HIT ${dealt} dmg`);
                 }
-                break; // one hit per frame is enough for the sandbox
+                break; // one hit per ring per frame is enough for the sandbox
               }
             }
           }
@@ -926,16 +931,19 @@ export const AttackTheater = {
     // Orbit satellites on the FRONT half of the ellipse (depth > 0) — drawn
     // AFTER the attacker box so they correctly pass in front of it.
     for (const h of this._handles) {
-      if (h.id !== 'orbit' || h.state?.done) continue;
-      for (const e of h.state.entities ?? []) {
-        if (e.depth <= 0) continue;
-        const sc = 1 + 0.3 * e.depth; // in front → larger
-        ctx.fillStyle = '#9feaff';
-        ctx.save();
-        ctx.translate(e.x, e.y);
-        ctx.rotate(Math.PI / 4);
-        ctx.fillRect(-5 * sc, -5 * sc, 10 * sc, 10 * sc);
-        ctx.restore();
+      if (h.id !== 'orbit') continue;
+      for (const st of h._rings ?? [h.state]) {
+        if (st.done) continue;
+        for (const e of st.entities ?? []) {
+          if (e.depth <= 0) continue;
+          const sc = 1 + 0.3 * e.depth; // in front → larger
+          ctx.fillStyle = '#9feaff';
+          ctx.save();
+          ctx.translate(e.x, e.y);
+          ctx.rotate(Math.PI / 4);
+          ctx.fillRect(-5 * sc, -5 * sc, 10 * sc, 10 * sc);
+          ctx.restore();
+        }
       }
     }
 
@@ -977,7 +985,7 @@ export const AttackTheater = {
     for (const h of this._handles) {
       const st = h.state;
       if (!st) continue;
-      if (h.id === 'orbit' && !st.done) {
+      if (h.id === 'orbit' && (h._rings ?? [st]).some((r) => !r.done)) {
         // Elliptical orbit: satellites pass IN FRONT of / BEHIND the owner.
         // Behind (depth < 0): dimmer + smaller, drawn BEFORE the attacker box.
         // In front (depth > 0): brighter + larger, drawn AFTER it (second pass).
@@ -987,15 +995,18 @@ export const AttackTheater = {
         ctx.beginPath();
         ctx.ellipse(ocx, ocy, this._params.radius ?? 70, (this._params.radius ?? 70) * (this._params.depth ?? 0.45), 0, 0, Math.PI * 2);
         ctx.stroke();
-        for (const e of st.entities ?? []) {
-          if (e.depth >= 0) continue; // front half drawn after the attacker
-          const sc = 1 + 0.3 * e.depth; // behind → smaller
-          ctx.fillStyle = `rgba(120,220,255,${0.35 + 0.2 * e.depth})`;
-          ctx.save();
-          ctx.translate(e.x, e.y);
-          ctx.rotate(Math.PI / 4);
-          ctx.fillRect(-5 * sc, -5 * sc, 10 * sc, 10 * sc);
-          ctx.restore();
+        for (const ring of h._rings ?? [st]) {
+          if (ring.done) continue;
+          for (const e of ring.entities ?? []) {
+            if (e.depth >= 0) continue; // front half drawn after the attacker
+            const sc = 1 + 0.3 * e.depth; // behind → smaller
+            ctx.fillStyle = `rgba(120,220,255,${0.35 + 0.2 * e.depth})`;
+            ctx.save();
+            ctx.translate(e.x, e.y);
+            ctx.rotate(Math.PI / 4);
+            ctx.fillRect(-5 * sc, -5 * sc, 10 * sc, 10 * sc);
+            ctx.restore();
+          }
         }
       } else if (h.id === 'boomerang' && !(h.states?.every((s) => s.done))) {
         // Boomerang bodies: one spinning square per live throw, phase-colored.
@@ -1229,6 +1240,17 @@ function adjustLabels() {
   const fmt = (list) => (list ?? []).map((b) => b.replace(/^Key/, '')).join('/') || '?';
   return { down: fmt(kb.lockDir), up: fmt(kb.lockMove) };
 }
+/** Raw gamepad confirm (btn 0) — polled per frame for the REPLAY action. */
+function padConfirm() {
+  try {
+    for (const pad of navigator.getGamepads?.() ?? []) {
+      if (!pad) continue;
+      if (pad.buttons[0]?.pressed || (pad.buttons[0]?.value ?? 0) > 0.5) return true;
+    }
+  } catch { /* no gamepad API (node tests) */ }
+  return false;
+}
+
 /** Thin indirection so the gamepad code reads cleanly + stays testable. */
 function inputState() {
   // Imported lazily to avoid a module-load cycle (input.js ← debugHarness).
@@ -1237,11 +1259,12 @@ function inputState() {
   }
   const inp = inputState._ref;
   const shoulders = typeof navigator !== 'undefined' ? padShoulders() : { l2: false, r2: false };
-  if (!inp) return { moveX: 0, moveY: 0, ...shoulders, navPressed: [] };
+  if (!inp) return { moveX: 0, moveY: 0, ...shoulders, navPressed: [], padConfirm: false };
   return {
     moveX: inp.state.moveX ?? 0,
     moveY: inp.state.moveY ?? 0,
     ...shoulders,
     navPressed: inp.nav.pressed ?? [],
+    padConfirm: padConfirm(),
   };
 }

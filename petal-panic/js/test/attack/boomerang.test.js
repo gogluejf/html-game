@@ -103,17 +103,15 @@ ok('count: h.throw() spawns up to the max-alive cap', () => {
 
 ok('count: cap frees up as boomerangs return home', () => {
   const ctx = makeContext(attacker(), {});
-  // Two throws with DIFFERENT outbound durations (theater re-throws use the
-  // current params, so a second throw can legitimately fly a different path).
-  // First: long flight. Second: short flight → comes home first and frees its
-  // slot while the first is still outbound.
+  // Cap of 2. Throw #1 flies a LONG path, throw #2 (retuned to a SHORT path,
+  // like adjusting the param in the theater) comes home first and frees its
+  // slot while #1 is still outbound.
   const h = invoke('boomerang', { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 1.2, ttl: 4, count: 2 }, ctx);
+  h.params.outboundDuration = 0.3; // next throw flies short
   assert.ok(h.throw() != null, 'second throw fills the cap');
   assert.equal(h.throw(), null, 'cap full → no-op');
-  // Retune for the next throw (like adjusting the param in the theater), then
-  // throw again once the SHORT second boomerang has come home (~1.06s ≈ frame 64).
-  h.params.outboundDuration = 0.3;
-  for (let i = 0; i < 64; i++) h.step(DT);
+  // Short one lands at ~0.55s (frame 33); long one is still outbound until 1.2s.
+  for (let i = 0; i < 40; i++) h.step(DT);
   const alive = h.states.filter((s) => !s.done).length;
   assert.equal(alive, 1, `short one came home, slot freed (alive=${alive})`);
   assert.ok(h.throw() != null, 'throw allowed again after a slot freed');
