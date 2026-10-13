@@ -415,6 +415,10 @@ import { floatTexts } from '../hero/floatText.js';
 // --- Input -------------------------------------------------------------------
 export function processInput() {
   input.poll({ facing: hero.facing });
+  // Attack Theater: EXCLUSIVE overlay — swallow all gameplay input while open
+  // so arrow presses can't move the hero or trigger actions underneath. The
+  // theater's own keys are handled in the debugHarness keydown listener.
+  if (AttackTheater.active) return;
   // Effect Theater: while open, route gamepad d-pad / left-stick horizontal
   // move to step the current effect. Back (Esc / ○) closes the theater.
   // F2 also toggles it (handled in keydown above). Edge-triggered so holding

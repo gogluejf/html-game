@@ -235,7 +235,8 @@ function handleDebugKeys(e) {
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown':
       // Theater stepping is handled by updateTheaterGamepad (reads input.state.moveX).
       // Don't double-step here. Only drive the anim scrubber when NO theater is
-      // open (Effect OR Attack) — otherwise arrows leak into the scrubber.
+      // open (Effect OR Attack) — otherwise arrows leak into the scrubber and
+      // fight the theater for the same keys.
       if (!Theater.active && !AttackTheater.active) {
         scrubSelectedAnim(e.code);
       }
@@ -262,19 +263,22 @@ function handleDebugKeys(e) {
 
 /**
  * Attack Theater (F4) keyboard routing. Called from handleDebugKeys while the
- * theater is open. Arrows select entries/params; Ctrl+arrows adjust values
-* (Shift is taken by the anim scrubber conventions — Ctrl is unbound in-game);
-* Enter/Space replays; Escape closes.
+  * theater is open. Arrows select entries/params; Shift+arrows adjust values
+ * (the ONLY working modifier for arrows — input.js blocks all Ctrl combos
+ * game-wide to protect OS shortcuts); Enter/Space replays; Escape closes.
+ * While the theater is open it EXCLUSIVELY owns the arrow keys: the anim
+ * scrubber and gameplay input are suppressed (see keydown routing + the
+ * processInput gate), so every press does exactly one thing.
  */
 function handleAttackTheaterKeys(e) {
   switch (e.code) {
     case 'ArrowLeft':
-      if (e.ctrlKey) AttackTheater.adjustParam(-1);
+      if (e.shiftKey) AttackTheater.adjustParam(-1);
       else AttackTheater.step(-1);
       e.preventDefault();
       break;
     case 'ArrowRight':
-      if (e.ctrlKey) AttackTheater.adjustParam(1);
+      if (e.shiftKey) AttackTheater.adjustParam(1);
       else AttackTheater.step(1);
       e.preventDefault();
       break;
