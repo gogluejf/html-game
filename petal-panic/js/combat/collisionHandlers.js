@@ -81,14 +81,14 @@ export function registerCollisionHandlers(collisionWorld) {
 
       // Friendly shot vs TERRAIN (SolidBox). Policy is DATA on the projectile
       // (solidBehavior), not a type check here:
-      //   • 'pass'   — thorns: no effect, they fly through terrain
-      //   • 'absorb' — saws: the blade dies on impact (+ fizzle effect)
-      //   • 'bounce' — bombs: reflect off the surface, keep flying; the fuse
+      //   • 'phase'   — thorns/spread: no effect, they fly through terrain
+      //   • 'stop'    — saws: the blade dies on impact (+ fizzle effect)
+      //   • 'reflect' — bombs: bounce off the surface, keep flying; the fuse
       //                keeps running so they still detonate on timer/barrel
       if (target instanceof SolidBox) {
-        if (allyProj.solidBehavior === 'bounce') {
+        if (allyProj.solidBehavior === 'reflect') {
           allyProj.reflectVelocity(target.worldBox());
-        } else if (allyProj.solidBehavior === 'absorb') {
+        } else if (allyProj.solidBehavior === 'stop') {
           allyProj.alive = false;
           if (isSpecialType(allyProj.type)) explodeSpecial(allyProj);
         }

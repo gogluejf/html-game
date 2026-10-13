@@ -63,9 +63,9 @@ export class Projectile extends Entity {
     this.damage = PROJECTILE_DAMAGE;
     this.life = PROJECTILE_LIFETIME;
     this.dir = dir;
-    // Solid-collision behavior (data, not class): 'pass' — thorns fly through
+    // Solid-collision behavior (data, not class): 'phase' — thorns fly through
     // terrain; only barrels (GameObj) stop them.
-    this.solidBehavior = 'pass';
+    this.solidBehavior = 'phase';
 
     const angle = dirAngle(dir);
     this.vx = Math.cos(angle) * this.speed;
@@ -183,7 +183,7 @@ export class Special extends Entity {
     // off terrain (reflect + keep flying, fuse still runs); saws/spread ABSORB
     // (the short-range blade dies on impact). Policy is consumed by the collision
     // handler via this flag — the physics primitive is reflectVelocity().
-    this.solidBehavior = meta?.solidBehavior ?? 'absorb';
+    this.solidBehavior = meta?.solidBehavior ?? 'stop';
     this.speed = meta?.speed ?? 0;
     this.damage = meta?.damage ?? 0;
     this.life = meta?.lifetime ?? 0;

@@ -62,7 +62,7 @@ function angleLabel(rad) {
 
 // Per-primitive default param presets for the sandbox.
 const SANDBOX_PRESETS = {
-  projectile: { direction: 0, speed: 600, ttl: 2, damage: 10, solidBehavior: 'pass', gravity: 0 },
+  projectile: { direction: 0, speed: 600, ttl: 2, damage: 10, solidBehavior: 'phase', gravity: 0 },
   spread: { count: 3, direction: 0, angle: 60 * DEG },
   bomb: { direction: -0.5, speed: 600, arc: 800, bounce: true, explodeOnContact: true, ttl: 4, damage: 40, radius: 70 },
   explosion: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, radius: 70, damage: 40, alignment: 'neutral' },

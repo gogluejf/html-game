@@ -220,7 +220,7 @@ export class Entity {
 
   /**
    * Reflect velocity off a solid AABB — the shared physics primitive behind
-   * the 'bounce' solidBehavior (projectiles). Minimum-penetration axis is
+   * the 'reflect' solidBehavior (projectiles). Minimum-penetration axis is
    * flipped with a small energy loss and the entity is nudged out of the
    * surface so it doesn't re-collide next frame. BEHAVIOR POLICY (who bounces
    * vs absorbs vs passes) is DATA on the entity (`solidBehavior`), consumed by

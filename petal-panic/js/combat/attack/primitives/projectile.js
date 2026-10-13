@@ -3,7 +3,7 @@
 // Straight-line projectile: spawn into the EXISTING pools, set data, let the
 // existing systems do the work. This primitive NEVER implements wall physics,
 // damage math, or pooling itself:
-//   - solidBehavior ('pass'|'absorb'|'bounce') is mapped onto the entity flag
+//   - solidBehavior ('phase'|'stop'|'reflect') is mapped onto the entity flag
 //     that collisionHandlers.js already consumes. Data, not code.
 //   - gravity reuses the Special-class ballistic path (gravityValue + vy
 //     integration in its update()).
@@ -25,7 +25,7 @@ const DEFAULTS = Object.freeze({
   ttl: 2,                // seconds before auto-cull
   damage: 10,
   origin: null,          // marker label (string) | {x,y} | null → attacker center
-  solidBehavior: 'pass', // pass | absorb | bounce (existing entity-flag contract)
+  solidBehavior: 'phase', // pass | absorb | bounce (existing entity-flag contract)
   gravity: 0,            // px/s²; >0 routes to the ballistic (Special) pool
   friendly: true,        // true = hero-side (PROJ_ALLY), false = foe (PROJ_FOE)
   size: 12,              // box size (thorn = 12, specials ~16)
@@ -98,8 +98,8 @@ export function spawnProjectile(p, ctx, h) {
   // Data-only transport: the existing collision handler reads this flag.
   // Always set explicitly — pool slots are recycled via Object.assign from a
   // fresh instance, but a caller that omits solidBehavior must still get the
-  // documented default ('pass') rather than inheriting a stale slot value.
-  ent.solidBehavior = p.solidBehavior ?? 'pass';
+  // documented default ('phase') rather than inheriting a stale slot value.
+  ent.solidBehavior = p.solidBehavior ?? 'phase';
   // Tag so the theater/debug can find primitives' shots among pool items.
   ent._attackId = 'projectile';
 

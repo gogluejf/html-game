@@ -18,7 +18,7 @@ const DEFAULTS = Object.freeze({
   speed: 300,           // launch force (px/s)
   direction: -Math.PI / 4, // up-right throw
   arc: 800,             // gravity px/s² (throw height control)
-  bounce: true,         // → solidBehavior 'bounce' (existing flag)
+  bounce: true,         // → solidBehavior 'reflect' (existing flag)
   explodeOnContact: true,
   ttl: 4,               // fuse seconds (runs while airborne AND bouncing)
   damage: 40,           // direct-contact damage (also used by default explosion)
@@ -48,7 +48,7 @@ export function spawnBomb(p, ctx) {
   ent.gravityValue = p.arc;
   ent.damage = p.damage;
   ent.setLife?.(p.ttl);
-  ent.solidBehavior = p.bounce ? 'bounce' : 'absorb';
+  ent.solidBehavior = p.bounce ? 'reflect' : 'stop';
   ent._attackId = 'bomb';
   ent._attackDone = false;
   ctx.collisionWorld?.add(ent);
@@ -61,7 +61,7 @@ export function spawnBomb(p, ctx) {
  *
  * Detonation triggers:
  *  - contact: the collision handler kills the entity against an enemy/barrel
- *    (sets _attackHit) OR against terrain with solidBehavior 'absorb'.
+ *    (sets _attackHit) OR against terrain with solidBehavior 'stop'.
  *  - fuse: ttlExpired flag set by Special.update() when the life timer ends.
  *  - off-screen: caller sets ent.alive=false via cullOffScreen().
  *
@@ -106,7 +106,7 @@ registerPrimitive('bomb', {
       { key: 'speed', desc: 'launch force (px/s)' },
       { key: 'direction', desc: 'throw direction (radians)' },
       { key: 'arc', desc: 'gravity px/s² (throw height)' },
-      { key: 'bounce', desc: 'bounce off surfaces (solidBehavior)' },
+      { key: 'bounce', desc: 'reflect off surfaces (solidBehavior)' },
       { key: 'explodeOnContact', desc: 'trigger payload on contact' },
       { key: 'ttl', desc: 'fuse seconds' },
       { key: 'damage', desc: 'blast/contact damage' },

@@ -16,7 +16,7 @@
 //   size          – collision box w/h (square)
 //   fireCooldown  – seconds between shots of THIS weapon (hero-side gate)
 //   gravity       – 0 = straight line, >0 = ballistic arc
-//   solidBehavior – 'pass' | 'absorb' | 'bounce' (terrain interaction policy)
+//   solidBehavior – 'phase' | 'stop' | 'reflect' (terrain interaction policy)
 //   explode       – true if detonation triggers AoE (bomb); false otherwise
 //   radius        – AoE blast radius (only meaningful when explode=true)
 //   spread        – null | { count, angle } for multi-shot fan (spread weapon)
@@ -34,7 +34,7 @@ export const SPECIAL_WEAPONS = [
     size: 40,
     fireCooldown: 1 / 3,
     gravity: 0,
-    solidBehavior: 'absorb',
+    solidBehavior: 'stop',
     explode: false,
     radius: 0,
     spread: null,
@@ -50,7 +50,7 @@ export const SPECIAL_WEAPONS = [
     size: 18,
     fireCooldown: 1,
     gravity: 800,
-    solidBehavior: 'bounce',
+    solidBehavior: 'reflect',
     explode: true,
     radius: 100,
     spread: null,
@@ -66,7 +66,7 @@ export const SPECIAL_WEAPONS = [
     size: 14,
     fireCooldown: 1 / 4,
     gravity: 0,
-    solidBehavior: 'pass',
+    solidBehavior: 'phase',
     explode: false,
     radius: 0,
     spread: { count: 3, angle: Math.PI / 3 }, // 3 shots, ±30° fan
