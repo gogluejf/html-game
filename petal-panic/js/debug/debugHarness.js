@@ -263,31 +263,40 @@ function handleDebugKeys(e) {
 
 /**
  * Attack Theater (F4) keyboard routing. Called from handleDebugKeys while the
-  * theater is open. Arrows select entries/params; Shift+arrows adjust values
- * (the ONLY working modifier for arrows — input.js blocks all Ctrl combos
- * game-wide to protect OS shortcuts); Enter/Space replays; Escape closes.
- * While the theater is open it EXCLUSIVELY owns the arrow keys: the anim
- * scrubber and gameplay input are suppressed (see keydown routing + the
- * processInput gate), so every press does exactly one thing.
+  * theater is open. PURE-KEY mapping, no modifier keys (Shift/Ctrl combos are
+ * unreliable — input.js blocks Ctrl game-wide, and Shift+arrow leaked into the
+ * anim scrubber). Uniform keyboard/pad parity:
+ *   ←/→ (A/D) select entry · ↑/↓ (W/S) select param · Q/L2 decrease ·
+ *   E/R2 increase · Enter/A replay · Esc/B close.
  */
 function handleAttackTheaterKeys(e) {
   switch (e.code) {
     case 'ArrowLeft':
-      if (e.shiftKey) AttackTheater.adjustParam(-1);
-      else AttackTheater.step(-1);
+    case 'KeyA':
+      AttackTheater.step(-1);
       e.preventDefault();
       break;
     case 'ArrowRight':
-      if (e.shiftKey) AttackTheater.adjustParam(1);
-      else AttackTheater.step(1);
+    case 'KeyD':
+      AttackTheater.step(1);
       e.preventDefault();
       break;
     case 'ArrowUp':
+    case 'KeyW':
       AttackTheater.stepParam(-1);
       e.preventDefault();
       break;
     case 'ArrowDown':
+    case 'KeyS':
       AttackTheater.stepParam(1);
+      e.preventDefault();
+      break;
+    case 'KeyQ': // adjust DOWN (pad: L2)
+      AttackTheater.adjustParam(-1);
+      e.preventDefault();
+      break;
+    case 'KeyE': // adjust UP (pad: R2)
+      AttackTheater.adjustParam(1);
       e.preventDefault();
       break;
     case 'Enter':

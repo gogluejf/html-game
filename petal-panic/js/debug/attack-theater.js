@@ -11,7 +11,7 @@
 // so it's actually watchable (charge dashes AT the target, body contact walks
 // into it, explosions telegraph before they pop).
 //
-// Keys:  F4 toggle · ←/→ select · ↑/↓ select param · Shift+←/→ adjust ·
+// Keys:  F4 toggle · ←/→ (A/D) select · ↑/↓ (W/S) select param · Q/E adjust ·
 //        Enter/Space replay · Esc close.
 // Pad:   ◀▶ select · ▲▼ param · L2/R2 adjust · A replay · B close.
 
@@ -625,7 +625,7 @@ export const AttackTheater = {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#666';
     ctx.font = '12px monospace';
-    ctx.fillText(`${leftR} select   ${upDn} param   Shift+${leftR} adjust   [${confirmLabel}] replay   [${backLabel}] close   F4`, demoW / 2, h - 16);
+    ctx.fillText(`${leftR} select   ${upDn} param   Q/E adjust (L2/R2)   [${confirmLabel}] replay   [${backLabel}] close   F4`, demoW / 2, h - 16);
 
     ctx.restore();
 
