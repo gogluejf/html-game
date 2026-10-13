@@ -42,7 +42,7 @@ ok('returns home and completes with returned=true', () => {
   let finished = false;
   for (let i = 0; i < 300 && !finished; i++) finished = h.step(DT);
   assert.ok(finished, 'came home within ttl');
-  assert.deepEqual(done, { returned: true });
+  assert.deepEqual(done, { returned: true, throws: 1 });
   // Ended near the origin.
   assert.ok(Math.hypot(h.state.x - 116, h.state.y - 116) < 12, 'back at origin');
 });
@@ -63,7 +63,7 @@ ok('ttl cap: expires without returning if too short', () => {
   h.on('complete', (i) => { done = i; });
   for (let i = 0; i < 20; i++) h.step(DT);
   assert.equal(h.step(DT), true);
-  assert.deepEqual(done, { returned: false });
+  assert.deepEqual(done, { returned: false, throws: 1 });
 });
 
 ok('step is idempotent after completion', () => {
@@ -84,10 +84,16 @@ ok('cancel tears down mid-flight', () => {
   assert.equal(expired, true);
 });
 
-ok('count: simultaneous burst throws N boomerangs at once', () => {
+ok('count: h.throw() spawns up to the max-alive cap', () => {
   const ctx = makeContext(attacker(), {});
   const h = invoke('boomerang', { ...P, count: 3 }, ctx);
+  assert.equal(h.states.length, 1, 'first throw on invoke');
+  // Two more throws fit under the cap of 3.
+  assert.ok(h.throw() != null, 'second throw allowed');
+  assert.ok(h.throw() != null, 'third throw allowed');
   assert.equal(h.states.length, 3, 'three live states');
+  // At the cap (all three still outbound), further throws no-op.
+  assert.equal(h.throw(), null, 'fourth throw blocked at cap');
   // All three move independently; handle completes when ALL are home.
   let finished = false;
   for (let i = 0; i < 400 && !finished; i++) finished = h.step(DT);
@@ -95,15 +101,22 @@ ok('count: simultaneous burst throws N boomerangs at once', () => {
   for (const s of h.states) assert.equal(s.done, true, 'all came home');
 });
 
-ok('count + burstInterval: throws are spaced in time', () => {
+ok('count: cap frees up as boomerangs return home', () => {
   const ctx = makeContext(attacker(), {});
-  const h = invoke('boomerang', { ...P, count: 3, burstInterval: 0.5 }, ctx);
-  assert.equal(h.states.length, 1, 'first throw immediately');
-  // After ~0.5s (30 frames) the second throw exists; after ~1s the third.
-  for (let i = 0; i < 31; i++) h.step(DT);
-  assert.equal(h.states.length, 2, `second thrown (got ${h.states.length})`);
-  for (let i = 0; i < 31; i++) h.step(DT);
-  assert.equal(h.states.length, 3, `third thrown (got ${h.states.length})`);
+  // Two throws with DIFFERENT outbound durations (theater re-throws use the
+  // current params, so a second throw can legitimately fly a different path).
+  // First: long flight. Second: short flight → comes home first and frees its
+  // slot while the first is still outbound.
+  const h = invoke('boomerang', { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 1.2, ttl: 4, count: 2 }, ctx);
+  assert.ok(h.throw() != null, 'second throw fills the cap');
+  assert.equal(h.throw(), null, 'cap full → no-op');
+  // Retune for the next throw (like adjusting the param in the theater), then
+  // throw again once the SHORT second boomerang has come home (~1.06s ≈ frame 64).
+  h.params.outboundDuration = 0.3;
+  for (let i = 0; i < 64; i++) h.step(DT);
+  const alive = h.states.filter((s) => !s.done).length;
+  assert.equal(alive, 1, `short one came home, slot freed (alive=${alive})`);
+  assert.ok(h.throw() != null, 'throw allowed again after a slot freed');
   let finished = false;
   for (let i = 0; i < 400 && !finished; i++) finished = h.step(DT);
   assert.ok(finished, 'all threw and returned');
