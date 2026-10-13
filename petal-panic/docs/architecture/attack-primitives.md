@@ -63,15 +63,17 @@ than the projectile defining the barrel's response.
 
 ## 2. Predictive Targeting
 
-Calculates an aim point based on where the hero is expected to be if the hero
-continues moving at the current velocity. This is targeting logic used by another
-primitive, usually Projectile.
+Aims at where a moving target will be when the bullet arrives, assuming the
+target keeps its current velocity. Pure aiming math used by another primitive,
+usually Projectile.
 
 ### Main parameters
 
 - **target** — normally the hero.
-- **predictionTime / predictionStrength** — how far ahead to predict.
-- **maxPrediction** — optional limit on prediction distance.
+- **speed** — bullet speed (same param as projectile).
+
+The result is an aim direction or target point. It does not create a projectile
+by itself.
 
 The result is an aim direction or target point. It does not create a projectile
 by itself.
@@ -259,31 +261,40 @@ timed spike traps.
 
 ## 12. Orbit
 
-Keeps one or more attack entities orbiting an owner on an ELLIPSE, like
-electrons around a nucleus seen at an angle: each satellite passes IN FRONT of
-the nucleus axis, then BEHIND it, as it rotates. Depth is derived from the orbit
-angle (`depth = sin(angle)`: +1 fully in front, −1 fully behind) and the host
-renders satellites with scale/alpha/layering from that value — no separate
-"hide behind" flag exists; depth IS the data. Satellites are always evenly
-distributed around the ellipse (count 3 → 120° apart).
+Keeps one or more attack entities on a 2D PULSING RING around the owner. The
+ring breathes between `minRadius` and `maxRadius` in a smooth cosine cycle
+(same pulse model as the shield-pulse effect §27): at t=0 the ring is at
+MAXIMUM radius, contracts toward minRadius at half-period, then expands back.
+
+Pulse model:
+    r(t) = midR + ampR · cos(2π · pulseSpeed · t)
+where midR = (maxRadius + minRadius) / 2 and ampR = (maxRadius - minRadius) / 2.
+
+Satellites are always evenly distributed around the circle (count 3 → 120°
+apart) and rotate together at `speed`. Pure 2D — no ellipse squash, no
+depth/layering.
 
 ### Main parameters
 
 - **count** — number of orbiting entities (evenly distributed).
-- **radius** — horizontal semi-axis of the ellipse (distance from owner).
-- **depth** — vertical squash factor 0..1 (0 = flat line, 1 = full circle).
-- **angularSpeed** — orbit speed (rad/s).
-- **direction** — clockwise or counter-clockwise.
-- **startAngle** — phase offset of the whole formation.
+- **minRadius** — inner bound of the pulse (px).
+- **maxRadius** — outer bound of the pulse (px).
+- **pulseSpeed** — pulse frequency in Hz (cycles per second; 0 = static at max).
+- **speed** — rotation speed (rad/s).
 - **ttl** — optional orbit lifetime.
 - **damage** — contact damage if orbiting entities are dangerous.
 - **ejectable** — whether the orbit can be released (see eject behavior).
 - **ejectTtl** — lifetime of projectiles created by an eject.
 
+### Re-arm
+
+`h.rearm()` spawns ANOTHER independent ring while this action is live
+(additive attack); the handle completes when ALL rings are done.
+
 ### Eject behavior
 
 Orbit supports release/ejection, gated by `ejectable`. When ejected, each entity
-leaves the orbit along its current tangential direction (the ellipse tangent at
+leaves the ring along its current tangential direction (the circle tangent at
 its angle, oriented with the rotation direction) and continues as a normal
 linear projectile carrying `ejectTtl`. This naturally creates a spread-like
 release in multiple directions based on where each object was in its orbit.

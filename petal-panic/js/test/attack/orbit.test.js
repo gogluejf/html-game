@@ -1,9 +1,10 @@
-// Task 1.15 — Orbit primitive tests (pure logic, no DOM). Wave-2 revision:
-// elliptical orbit with depth (front/behind), even distribution, ejectable flag.
+// Task 1.15 — Orbit primitive tests (pure logic, no DOM). Wave-2 revision 2:
+// 2D pulsing ring (radius breathes min→max, cosine), even distribution,
+// rotation, ejectable flag, rearm.
 // Run: node js/test/attack/orbit.test.js
 
 import { strict as assert } from 'node:assert';
-import { orbitPositions } from '../../combat/attack/primitives/orbit.js';
+import { orbitPositions, orbitRadius } from '../../combat/attack/primitives/orbit.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 
@@ -15,7 +16,7 @@ function ok(name, fn) {
 
 const DT = 1 / 60;
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 }); // center (116,116)
-const P = { count: 3, radius: 80, depth: 0.45, angularSpeed: Math.PI, direction: 1, startAngle: 0, ttl: null };
+const P = { count: 3, minRadius: 40, maxRadius: 90, pulseSpeed: 1, speed: Math.PI, ttl: null };
 
 ok('positions: N satellites evenly distributed (120° apart for 3)', () => {
   const pts = orbitPositions(P, { x: 0, y: 0 }, 0);
@@ -25,48 +26,38 @@ ok('positions: N satellites evenly distributed (120° apart for 3)', () => {
   assert.ok(Math.abs(angles[2] - angles[1] - (2 * Math.PI) / 3) < 1e-9, 'spacing 120°');
 });
 
-ok('ellipse: x on full radius, y squashed by depth factor', () => {
-  // Use a single satellite at known angles (full P defaults + overrides).
-  const one = orbitPositions({ ...P, count: 1 }, { x: 0, y: 0 }, 0);
-  assert.ok(Math.abs(one[0].x - 80) < 1e-9, `x=${one[0].x}`);
-  assert.ok(Math.abs(one[0].y) < 1e-9, `y=${one[0].y}`);
-  const top = orbitPositions({ ...P, count: 1, startAngle: Math.PI / 2 }, { x: 0, y: 0 }, 0);
-  assert.ok(Math.abs(top[0].x) < 1e-9, `x=${top[0].x}`);
-  assert.ok(Math.abs(top[0].y - 80 * 0.45) < 1e-9, `y=${top[0].y}`);
+ok('pulse: radius at MAXIMUM at t=0 (cosine starts at +1)', () => {
+  assert.ok(Math.abs(orbitRadius(P, 0) - 90) < 1e-9, `r=${orbitRadius(P, 0)}`);
 });
 
-ok('depth: sin(angle) — front (+) when below axis, behind (−) above', () => {
-  // One satellite stepped through the cycle must hit both extremes.
-  const p = { ...P, count: 1, angularSpeed: Math.PI / 2 };
-  let front = null, back = null;
-  for (let i = 0; i < 8; i++) {
-    const e = orbitPositions(p, { x: 0, y: 0 }, i * 0.5)[0]; // every quarter turn
-    if (e.depth > 0.9) front = e;
-    if (e.depth < -0.9) back = e;
-  }
-  assert.ok(front, 'reaches in-front');
-  assert.ok(back, 'reaches behind');
-  assert.ok(front.y > 0, 'front = below axis');
-  assert.ok(back.y < 0, 'behind = above axis');
+ok('pulse: radius at MINIMUM at half period', () => {
+  // pulseSpeed 1 Hz → half period = 0.5s
+  assert.ok(Math.abs(orbitRadius(P, 0.5) - 40) < 1e-9, `r=${orbitRadius(P, 0.5)}`);
 });
 
-ok('rotation: formation advances by angularSpeed × t', () => {
+ok('pulse: full cycle returns to max after one period', () => {
+  assert.ok(Math.abs(orbitRadius(P, 1.0) - 90) < 1e-9, `r=${orbitRadius(P, 1.0)}`);
+});
+
+ok('pulse: pulseSpeed 0 = static at max radius', () => {
+  const p = { ...P, pulseSpeed: 0 };
+  assert.ok(Math.abs(orbitRadius(p, 0) - 90) < 1e-9);
+  assert.ok(Math.abs(orbitRadius(p, 5) - 90) < 1e-9, 'never moves');
+});
+
+ok('rotation: formation advances by speed × t', () => {
   const pts = orbitPositions(P, { x: 0, y: 0 }, 1); // 1s at π rad/s
   assert.ok(Math.abs(pts[0].angle - Math.PI) < 1e-9, `angle=${pts[0].angle}`);
 });
 
-ok('direction -1 rotates counter-clockwise', () => {
-  const pts = orbitPositions({ ...P, direction: -1 }, { x: 0, y: 0 }, 1);
-  assert.ok(Math.abs(pts[0].angle + Math.PI) < 1e-9, `angle=${pts[0].angle}`);
-});
-
-ok('step updates positions and keeps the ellipse shape', () => {
+ok('step updates positions on the current pulse circle', () => {
   const ctx = makeContext(attacker(), {});
   const h = invoke('orbit', P, ctx);
-  for (let i = 0; i < 60; i++) h.step(DT); // 1s
+  for (let i = 0; i < 30; i++) h.step(DT); // 0.5s → minimum radius
+  const r = orbitRadius(P, 0.5);
   for (const e of h.state.entities) {
-    const dx = (e.x - 116) / 80, dy = (e.y - 116) / (80 * 0.45);
-    assert.ok(Math.abs(Math.hypot(dx, dy) - 1) < 1e-6, `on ellipse (${dx.toFixed(2)},${dy.toFixed(2)})`);
+    const d = Math.hypot(e.x - 116, e.y - 116);
+    assert.ok(Math.abs(d - r) < 1e-6, `on circle d=${d.toFixed(2)} r=${r.toFixed(2)}`);
   }
 });
 
