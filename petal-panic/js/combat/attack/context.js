@@ -44,6 +44,18 @@ export function makeContext(attacker, extra = {}) {
 }
 
 /**
+ * Center point of an entity box. The shared "where is the target" helper for
+ * aimed attacks and telegraphing effects (which track a live entity by moving
+ * the effect instance's origin each frame).
+ * @param {object|null} e entity with x/y/w/h
+ * @returns {{x:number,y:number}|null} center, or null when no entity
+ */
+export function targetCenter(e) {
+  if (!e) return null;
+  return { x: e.x + e.w / 2, y: e.y + e.h / 2 };
+}
+
+/**
  * Resolve a named marker to a world-space point.
  * Markers come from the sprite-crop editor schema:
  *   st.markers = [{ label, x, y, radiusOn, radius }] per animation.

@@ -103,22 +103,25 @@ otherwise.
 
 ## 3. Reticle Shot
 
-A telegraphed lock-on shot: a reticle TRACKS the target, LOCKS its position at
-`lockTime`, and when the warning window ends ONE projectile fires from the
-attacker's center at the LOCKED point — not where the target happens to be at
-that moment. The canonical "telegraph then fire" composition.
+A telegraphed lock-on shot: a target-reticle EFFECT tracks the target, LOCKS
+its position at `lockTime`, and when the warning window ends ONE projectile
+fires from the attacker's center at the LOCKED point — not where the target
+happens to be at that moment. The canonical "telegraph then fire" attack.
+
+There is no telegraph primitive (attack-primitives.md §15): this macro owns
+the effect lifecycle directly — fire the `target-reticle` effect once, move its
+origin with the target while tracking, freeze it at lock.
 
 ### Sequence
 
-Reticle/Telegraph (track → lock) → Projectile at locked point.
+target-reticle effect (track → lock) → Projectile at locked point.
 
 ### Main parameters
 
 - **target** — entity to track (default ctx.target).
 - **duration** — total warning window in seconds (track → lock → fire).
 - **lockTime** — seconds after start when the aim freezes.
-- **style** — telegraph visual (`reticle` | `circle` | `marker`).
-- **color / radius** — VFX color and size.
+- **color / radius** — reticle VFX color and size.
 - **tracking** — follow the target until lockTime.
 - **speed** — projectile speed px/s.
 - **ttl** — projectile lifetime (s).
@@ -132,6 +135,7 @@ Reticle/Telegraph (track → lock) → Projectile at locked point.
 - The telegraph effect outlives the warning window on purpose: it stays up
   while the bullet is in flight and dismisses with the shot's terminal event
   (hit or expire). Hosts need no distance math or manual dismissal.
+- Cancel tears down the effect instance (no ghost reticle).
 
 ---
 

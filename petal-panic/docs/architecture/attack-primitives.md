@@ -344,23 +344,25 @@ including their own curved trajectories and payloads.
 
 ---
 
-## 15. Reticle / Telegraph
+## 15. Telegraphs are Effects
 
-Provides advance information that an attack is about to happen. It normally
-belongs to the Effect Engine visually, while the attack primitive/macro controls
-timing and placement. This is a BUILDING BLOCK: on its own it only shows a
-warning at a point; attacks that fire after the warning compose it into a macro
-(see attack-macros.md §3 Reticle Shot: track → lock → fire).
+There is NO telegraph primitive. A telegraph (warning) is simply an Effect
+Engine effect fired early by whichever attack needs it — the visual lives in
+the effect, and the attack owns the timing + placement directly:
 
-### Main parameters
+- **target-reticle** — tracking brackets for lock-on shots (Reticle Shot macro:
+  fire once, move the instance's origin with the target, freeze at lockTime —
+  see attack-macros.md §3).
+- **telegraph-circle** — static closing ring for area warnings (spikes, beams).
+- **ground-target-marker** — painted marker at a fixed spot (boss slams).
 
-- **position / target** — telegraph location.
-- **duration / warningTime** — time before the attack becomes active.
-- **style** — reticle, flash, ground marker, beam warning, etc.
-- **tracking** — whether it follows a target before locking.
-- **lockTime** — optional moment at which position is fixed.
+The shared helper is `targetCenter(entity)` in `combat/attack/context.js`
+("where is the target"). Attacks that track a moving target move the LIVE
+effect instance's origin each frame instead of re-firing (no stacking), and
+freeze it when the aim locks.
 
-Telegraphs should be reusable and consistent so dangerous attacks remain readable.
+Telegraphs stay reusable and consistent because they ARE the shared effect
+catalog — not a per-attack copy.
 
 ---
 
@@ -405,7 +407,7 @@ Primitives are intentionally small and composable. Examples:
 - **Extended horn charge** = Movement + Body Contact Damage + Melee Hitbox.
 - **Molotov** = Bomb → Fire.
 - **Cluster Bomb** = Bomb → Spawn/Split → child Bombs.
-- **Kamikaze** = Telegraph → Explosion → Self-Destruct.
+- **Kamikaze** = telegraph effect → Explosion → Self-Destruct.
 - **Orbit Eject** = Orbit → eject into Projectile movement.
 
 Finished, recognizable patterns belong in **Attack Macros** (`attack-macros.md`),

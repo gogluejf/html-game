@@ -1,11 +1,12 @@
-// Reticle Shot macro tests (Reticle → Projectile composition).
+// Reticle Shot macro tests (target-reticle effect → Projectile composition).
 // Run: node js/test/attack/reticleShot.test.js
 
 import { strict as assert } from 'node:assert';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { Pool, Projectile } from '../../objects/projectile.js';
-import '../../combat/attack/primitives/reticle.js';
+import { fireManual, resetEffects, activeInstances } from '../../effects/index.js';
+import '../../effects/registry.js'; // side effect: registers target-reticle
 import '../../combat/attack/primitives/projectile.js';
 import '../../combat/attack/macros/reticleShot.js';
 
@@ -63,6 +64,45 @@ ok('shot entity carries the configured damage (host routes contact)', () => {
   // The macro's job ends at spawning a correctly-armed bullet; contact routing
   // (overlap → takeDamage) belongs to the host, as with every projectile.
   assert.equal(h.shot.entity.damage, 7, 'damage passed through to the entity');
+});
+
+// --- Effect lifecycle (the macro owns the telegraph directly) -----------------
+
+ok('fires ONE target-reticle effect instance and tracks it by moving origin', () => {
+  resetEffects();
+  const t = target();
+  const ctx = makeContext(attacker(), { pools: pools(), target: t, effects: { fireManual } });
+  const h = invoke('reticleShot', { duration: 1.0, lockTime: 0.5, speed: 500, ttl: 2, damage: 10 }, ctx);
+  assert.ok(h.state._fx, 'effect instance fired at start');
+  const before = activeInstances().length;
+  // Step through the tracking phase: the SAME instance moves, no stacking.
+  for (let i = 0; i < 30; i++) { t.x += -160 / 60; h.step(1 / 60); }
+  assert.equal(activeInstances().length, before, 'no new instances while tracking');
+  assert.ok(Math.abs(h.state._fx.body.origin.x - (t.x + 16)) < 0.01, 'origin follows the target');
+  h.cancel(); resetEffects();
+});
+
+ok('lock freezes the effect origin even as the target keeps moving', () => {
+  resetEffects();
+  const t = target();
+  const ctx = makeContext(attacker(), { pools: pools(), target: t, effects: { fireManual } });
+  const h = invoke('reticleShot', { duration: 1.0, lockTime: 0.4, speed: 500, ttl: 2, damage: 10 }, ctx);
+  for (let i = 0; i < 30; i++) { t.x += -160 / 60; h.step(1 / 60); } // past lockTime 0.4
+  const frozenX = h.state._fx.body.origin.x;
+  for (let i = 0; i < 30; i++) { t.x += -160 / 60; h.step(1 / 60); }
+  assert.equal(h.state._fx.body.origin.x, frozenX, 'origin frozen after lock');
+  h.cancel(); resetEffects();
+});
+
+ok('cancel tears down the effect instance (no ghost reticle)', () => {
+  resetEffects();
+  const t = target();
+  const ctx = makeContext(attacker(), { pools: pools(), target: t, effects: { fireManual } });
+  const h = invoke('reticleShot', { duration: 2.0, lockTime: 1.0, speed: 500, ttl: 2, damage: 10 }, ctx);
+  assert.ok(h.state._fx, 'instance live');
+  h.cancel();
+  assert.equal(activeInstances().length, 0, 'instance removed from the engine');
+  resetEffects();
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

@@ -53,7 +53,6 @@ import '../combat/attack/primitives/explosion.js';
 import '../combat/attack/primitives/meleeHitbox.js';
 import '../combat/attack/primitives/movement.js';
 import '../combat/attack/primitives/bodyContact.js';
-import '../combat/attack/primitives/reticle.js';
 import '../combat/attack/macros/reticleShot.js';
 import '../combat/attack/primitives/homing.js';
 import '../combat/attack/primitives/predictive.js';
@@ -147,13 +146,7 @@ export const AttackTheater = {
   _rep: {},           // held-control repeater state per channel
   _repeatDir: {},     // current direction per repeat channel
 
-  get entries() {
-    // The reticle primitive is a BUILDING BLOCK (attack-primitives.md §15) —
-    // it composes into macros like reticleShot, so the sandbox lists it only
-    // through those compositions, not as a standalone entry.
-    const prims = listPrimitives().filter((id) => id !== 'reticle');
-    return [...prims, ...listMacros()];
-  },
+  get entries() { return [...listPrimitives(), ...listMacros()]; },
   currentId() { return this.entries[this.index] ?? null; },
 
   _tweakList() { return TWEAKABLE[this.currentId()] ?? []; },

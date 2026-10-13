@@ -1,4 +1,4 @@
-// Task 1.19 — Primitive integration test: all 17 registered + composable.
+// Task 1.19 — Primitive integration test: all 16 registered + composable.
 // Run: node js/test/attack/integration.test.js
 //
 // Verifies the Wave 1 + Wave 2 surface together:
@@ -21,7 +21,6 @@ import '../../combat/attack/primitives/explosion.js';
 import '../../combat/attack/primitives/meleeHitbox.js';
 import '../../combat/attack/primitives/movement.js'; // registers 'charge'
 import '../../combat/attack/primitives/bodyContact.js';
-import '../../combat/attack/primitives/reticle.js';
 import '../../combat/attack/primitives/homing.js';
 import '../../combat/attack/primitives/predictive.js';
 import '../../combat/attack/primitives/beam.js';
@@ -38,9 +37,9 @@ function ok(name, fn) {
   catch (e) { console.error(`  ✗ ${name}\n    ${e.message}`); process.exitCode = 1; }
 }
 
-const ALL_17 = [
+const ALL_16 = [
   'projectile', 'spread', 'bomb', 'explosion', 'meleeHitbox', 'charge', 'bodyContact',
-  'reticle', 'homing', 'predictive', 'beam', 'fireArea', 'spike', 'orbit', 'boomerang',
+  'homing', 'predictive', 'beam', 'fireArea', 'spike', 'orbit', 'boomerang',
   'spawnSplit', 'selfDestruct',
 ];
 
@@ -62,14 +61,14 @@ function pools() {
   return { projectilePool: mk(64), specialPool: mk(16) };
 }
 
-ok('all 17 primitives are registered', () => {
+ok('all 16 primitives are registered', () => {
   const ids = listPrimitives();
-  for (const id of ALL_17) assert.ok(ids.includes(id), `missing '${id}'`);
-  assert.equal(ids.length, 17, `expected exactly 17, got ${ids.length}: ${ids.join(',')}`);
+  for (const id of ALL_16) assert.ok(ids.includes(id), `missing '${id}'`);
+  assert.equal(ids.length, 16, `expected exactly 16, got ${ids.length}: ${ids.join(',')}`);
 });
 
 ok('every registration carries meta + default params', () => {
-  for (const id of ALL_17) {
+  for (const id of ALL_16) {
     const def = getPrimitive(id);
     assert.ok(def?.meta?.name, `${id} has meta.name`);
     assert.ok(Array.isArray(def?.meta?.params), `${id} has meta.params list`);
@@ -79,7 +78,7 @@ ok('every registration carries meta + default params', () => {
 
 ok('every primitive invokes without throwing in a minimal context', () => {
   const ctx = makeContext(attacker(), { pools: pools(), target: { x: 400, y: 200, w: 32, h: 32, alive: true, vx: 0, vy: 0 } });
-  for (const id of ALL_17) {
+  for (const id of ALL_16) {
     let h;
     try {
       h = invoke(id, {}, ctx);
