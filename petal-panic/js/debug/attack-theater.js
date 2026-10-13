@@ -45,10 +45,10 @@ const ATTACKER_HOME = { x: 140, y: GROUND_Y - 48, w: 32, h: 48 };
 const TARGET_POS = { x: 560, y: GROUND_Y - 48, w: 32, h: 48 }; // clear of the side panel
 const DT = 1 / 60;
 const DEG = Math.PI / 180;
-// Held-control repeat cadence (ms): first press fires immediately, then a
-// short delay, then a steady tick — standard menu feel, no 60fps racing.
-const REPEAT_DELAY_MS = 220;
-const REPEAT_MS = 70;
+// Held-control repeat cadence, in FIXED STEPS (60Hz): first press fires
+// immediately, then a short pause, then a steady tick — standard menu feel.
+const REPEAT_DELAY_FRAMES = 13; // ~217ms before the first auto-repeat
+const REPEAT_FRAMES = 5;        // ~83ms between repeats while held
 
 /** Angle display helper: radians → "−45° ↗" style string. */
 function angleLabel(rad) {
@@ -185,31 +185,31 @@ export const AttackTheater = {
   },
 
   /**
-   * Fixed-interval repeater for held controls. First press fires immediately
-   * (edge), then holding re-fires every REPEAT_MS after REPEAT_DELAY_MS.
-   * Releasing and re-pressing restarts the cycle. Two independent channels
-   * ('param', 'adjust') so ↑+I held together both work.
+   * Fixed-interval repeater for held controls, driven by the sandbox's FIXED
+   * step (called once per _stepOnce, i.e. exactly 60Hz). First press fires
+   * immediately (edge); holding then re-fires every REPEAT_FRAMES after an
+   * initial REPEAT_DELAY_FRAMES pause. Frame-counting (not timestamps) keeps
+   * the cadence perfectly even under the fixed-step accumulator — no jitter.
+   * Two independent channels ('param', 'adjust') so ↑+I held both work.
    */
   _repeat(channel, dirNow, fire) {
-    const now = performance.now?.() ?? Date.now();
-    const st = this._rep[channel] ?? (this._rep[channel] = { dir: 0, t: 0, fired: false });
+    const st = this._rep[channel] ?? (this._rep[channel] = { dir: 0, count: 0 });
     if (dirNow === 0) {
-      st.dir = 0; st.t = 0; st.fired = false;
+      st.dir = 0; st.count = 0;
       return;
     }
     if (st.dir !== dirNow) {
-      // Fresh press or direction flip: fire once immediately.
-      st.dir = dirNow; st.t = now; st.fired = true;
+      // Fresh press or direction flip: fire once immediately, arm the delay.
+      st.dir = dirNow;
+      st.count = REPEAT_DELAY_FRAMES;
       this._repeatDir[channel] = dirNow;
       fire();
       return;
     }
-    // Still held: repeat on cadence.
-    st.t += DT * 1000;
-    if (!st.fired) {
-      if (st.t >= REPEAT_DELAY_MS) { st.fired = true; this._repeatDir[channel] = dirNow; fire(); }
-    } else if (st.t >= REPEAT_DELAY_MS + REPEAT_MS) {
-      st.t = REPEAT_DELAY_MS; // carry the remainder for even cadence
+    // Still held: count down, then tick on a steady cadence.
+    st.count--;
+    if (st.count <= 0) {
+      st.count = REPEAT_FRAMES;
       this._repeatDir[channel] = dirNow;
       fire();
     }
@@ -348,7 +348,6 @@ export const AttackTheater = {
   /** Advance the sandbox one fixed step. Called from update() while active. */
   update(dt) {
     if (!this.active || !this._pools) return;
-    this.updateGamepad();
     this._acc = (this._acc ?? 0) + dt;
     let steps = 0;
     while (this._acc >= DT && steps < 4) {
@@ -361,6 +360,10 @@ export const AttackTheater = {
 
   _stepOnce() {
     const { projectilePool, specialPool } = this._pools;
+    // Input repeat ticks at FIXED-step rate (exactly 60Hz) so the debounce
+    // cadence is even — calling it here, not in update(), keeps it locked to
+    // the simulation clock instead of the variable rAF delta.
+    this.updateGamepad();
     updateEffects(DT); // advance real effect instances (explosions, sparkles)
 
     // --- Choreography (moves the attacker to stage the attack) ----------------
