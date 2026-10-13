@@ -101,11 +101,11 @@ ok('composition: spread angles feed projectile shots', () => {
 ok('composition: predictive aim drives a projectile direction', () => {
   const t = { x: 400, y: 200, w: 32, h: 32, alive: true, vx: 200, vy: 0 };
   const ctx = makeContext(attacker(), { pools: pools(), target: t });
-  const aim = invoke('predictive', { predictionTime: 0.3 }, ctx);
+  const aim = invoke('predictive', { speed: 600 }, ctx);
   const shot = invoke('projectile', { direction: aim.direction, speed: 600, ttl: 1, damage: 5 }, ctx);
   assert.ok(shot.entity, 'shot spawned');
-  // Aimed ahead of the target's current center.
-  assert.ok(aim.point.x > 416, `led point x=${aim.point.x}`);
+  // Aimed at the intercept point: ahead of the target's current center.
+  assert.ok(aim.point.x > 416, `intercept point x=${aim.point.x}`);
 });
 
 ok('composition: homing modifier steers a spawned projectile', () => {

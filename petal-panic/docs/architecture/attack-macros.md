@@ -90,13 +90,14 @@ Predictive Targeting → Projectile.
 
 ### Main parameters
 
-- **predictionTime / strength** — how far ahead to lead the target.
-- **speed** — projectile speed.
+- **speed** — projectile speed (the aim is solved from this: where bullet and
+  target meet if the target keeps its current velocity).
 - **ttl** — optional lifetime.
 - **damage** — damage.
 - **origin / marker** — launch position.
 
-The prediction is calculated at firing time unless explicitly configured otherwise.
+The intercept point is calculated at firing time unless explicitly configured
+otherwise.
 
 ---
 
@@ -209,11 +210,11 @@ Spawn orbiting entities → Orbit → expire/remove.
 ### Main parameters
 
 - **count** — orbiting objects.
-- **radius** — orbit distance.
-- **angularSpeed** — rotation speed.
-- **direction** — clockwise or counter-clockwise.
+- **minRadius** — inner bound of the radius pulse (px).
+- **maxRadius** — outer bound of the radius pulse (px).
+- **pulseSpeed** — pulse frequency in Hz (0 = static at max).
+- **speed** — rotation speed (rad/s).
 - **ttl** — duration.
-- **hideBehindOwner** — normally enabled so objects pass visually behind the sprite.
 - **damage** — contact damage.
 
 ---
