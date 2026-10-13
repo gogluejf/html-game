@@ -44,10 +44,17 @@ export function damage(source, target, amt, method = 'projectile') {
   const def = target.defense != null ? target.defense : (target.stats?.defense ?? 0);
   const real = Math.max(1, amt - def);
 
-  // Drain the right resource: heroes use energy, enemies use hp. Fall back
-  // sensibly if neither field exists yet (early placeholders).
+  // Drain the right resource: heroes use energy (shield first), enemies use hp.
+  // Shield absorbs damage before energy; energy only drains once shield is 0.
   if (target.energy != null) {
-    target.energy -= real;
+    if (target.shield > 0) {
+      const absorbed = Math.min(target.shield, real);
+      target.shield -= absorbed;
+      const remaining = real - absorbed;
+      if (remaining > 0) target.energy -= remaining;
+    } else {
+      target.energy -= real;
+    }
   } else if (target.hp != null) {
     target.hp -= real;
   } else {

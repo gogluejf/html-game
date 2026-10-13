@@ -187,6 +187,46 @@ export function render(ctx) {
         ctx.fillStyle = h.debugColor;
         const hb = h.worldBox();
         ctx.fillRect(hb.x, hb.y, hb.w, hb.h);
+        // Shield pulse: breathing disc around the hero. Base radius scales
+        // with current shield (0 → invisible, full → maxR). A sine pulse
+        // (1.5 Hz) adds ±12% radius oscillation for a living feel. Flash
+        // spike at 0.5 Hz for periodic brightness blips.
+        if (h.shield > 0) {
+          const cx = hb.x + hb.w / 2, cy = hb.y + hb.h / 2;
+          const maxR = 44;
+          const shieldFrac = Math.min(1, h.shield / (h.maxEnergy * 0.25));
+          // Base radius: 0 at no shield, maxR at full shield.
+          const baseR = maxR * shieldFrac;
+          if (baseR > 1) {
+            // Pulse: ±12% breathing at 1.5 Hz.
+            const t = performance.now() * 0.001;
+            const pulse = 1 + 0.06 * Math.cos(2 * Math.PI * 1.5 * t);
+            const r = baseR * pulse;
+            // Gradient fill: colorIn (center) → colorOut (edge), soft falloff.
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+            grad.addColorStop(0, 'rgba(68, 136, 255, 0.55)');
+            grad.addColorStop(0.7, 'rgba(0, 229, 255, 0.3)');
+            grad.addColorStop(1, 'rgba(0, 229, 255, 0.05)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fill();
+            // Rim.
+            ctx.strokeStyle = 'rgba(0, 229, 255, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // Flash spike: sharp brightness blip at 0.5 Hz.
+            const sinVal = Math.sin(2 * Math.PI * 0.5 * t);
+            const flashAlpha = 0.5 * Math.pow(Math.max(0, sinVal), 4);
+            if (flashAlpha > 0.01) {
+              ctx.strokeStyle = `rgba(255, 255, 255, ${flashAlpha})`;
+              ctx.lineWidth = 3;
+              ctx.beginPath();
+              ctx.arc(cx, cy, r, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          }
+        }
         ctx.restore();
       }
     }

@@ -39,8 +39,11 @@ export const POWERUP_DEFS = {
                    } },
   rapid:         { label: 'Rapid Fire!',  color: '#3498db', duration: 6,
                    apply: (hero) => { hero.rapidTimer = Math.max(hero.rapidTimer ?? 0, 6); } },
-  shield:        { label: '+50 Shield',   color: '#3498db',
-                   apply: (hero) => { hero.shield += 50; } },
+  shield:        { label: '+Shield',      color: '#3498db',
+                   apply: (hero) => {
+                     const cap = hero.maxEnergy * 0.25;
+                     hero.shield = Math.min(cap, (hero.shield ?? 0) + hero.maxEnergy * 0.15);
+                   } },
   clear:         { label: 'PANIC CLEAR!', color: '#3498db',
                    apply: (hero, enemies) => {
                      for (const e of (enemies ?? [])) {

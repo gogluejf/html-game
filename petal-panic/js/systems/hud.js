@@ -42,29 +42,38 @@ export function drawHUD(ctx, hero, _camera, levelDef) {
 function drawEnergyBar(ctx, hero) {
   const barX = PAD, barY = PAD, barW = 200, barH = 16;
 
-  // Background.
-  ctx.fillStyle = '#333';
-  ctx.fillRect(barX, barY, barW, barH);
-
-  // Energy fill (red), clamped to [0,1].
+  // Energy fraction (0..1).
   const energyFrac = Math.max(0, Math.min(1, hero.energy / hero.maxEnergy));
+  // Shield fraction: same scale as energy.
+  const shieldFrac = Math.max(0, hero.shield / hero.maxEnergy);
+
+  // Bar container: ALWAYS at least full width (barW). Extends beyond 100%
+  // only when energy + shield exceeds max. Never shrinks below the full bar.
+  const totalFrac = Math.max(1, energyFrac + shieldFrac);
+  const extW = barW * totalFrac;
+
+  // Background (full bar, possibly extended).
+  ctx.fillStyle = '#333';
+  ctx.fillRect(barX, barY, extW, barH);
+
+  // Energy fill (red) — shows current energy as a fraction of the FULL bar.
   ctx.fillStyle = '#e74c3c';
   ctx.fillRect(barX, barY, barW * energyFrac, barH);
 
-  // Shield overlay (cyan) stacked after the energy fill, scaled down so a
-  // full shield reads as half the bar width.
-  if (hero.shield > 0) {
-    const shieldFrac = Math.min(1, hero.shield / hero.maxEnergy);
-    const start = barX + barW * energyFrac;
-    const w = Math.min(barW * shieldFrac * 0.5, barW - barW * energyFrac);
-    ctx.fillStyle = 'rgba(0, 200, 255, 0.7)';
-    ctx.fillRect(start, barY, w, barH);
+  // Shield (cyan) — stacked after the red. When energy < 100%, the blue
+  // fills the gap inside the bar. When energy + shield > 100%, it extends
+  // beyond the normal bar edge.
+  if (shieldFrac > 0) {
+    const shieldStart = barX + barW * energyFrac;
+    const shieldW = barW * shieldFrac;
+    ctx.fillStyle = 'rgba(0, 200, 255, 0.8)';
+    ctx.fillRect(shieldStart, barY, shieldW, barH);
   }
 
-  // Border.
+  // Border tracks the container width.
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 1;
-  ctx.strokeRect(barX + 0.5, barY + 0.5, barW, barH);
+  ctx.strokeRect(barX + 0.5, barY + 0.5, extW, barH);
 }
 
 // --- Super meter (below energy): purple fill, blinks when full ---------------

@@ -1180,6 +1180,7 @@ export class Hero extends Entity {
     this.vx = 0;
     this.vy = 0;
     this.energy = this.maxEnergy;
+    this.shield = 0;
     this.alive = true;
     this.dying = false;
     this.deathTimer = 0;
