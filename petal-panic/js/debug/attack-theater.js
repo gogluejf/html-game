@@ -700,9 +700,11 @@ export const AttackTheater = {
 
     ctx.restore();
 
-    // Real effect-engine pass: world-space VFX (explosions, sparkles) then
-    // screen-space overlays (flash/vignette/shake) — same two-pass model as
-    // the main render loop.
+    // Real effect-engine pass, mirroring the main render loop's three draws:
+    // 1. particles (hit-sparkles, explosion debris) — world space
+    // 2. effect instances (beams, flashes) — world space
+    // 3. screen-space overlays (flash/vignette/shake)
+    for (const p of particles.activeItems) p.draw(ctx);
     drawEffects(ctx, undefined, { space: 'world' });
     Effects.drawOverlay(ctx, VIEW_W, VIEW_H);
   },
