@@ -28,6 +28,7 @@ import { VIEW_W, VIEW_H } from '../core/view.js';
 import { navLabelString, navLabels, input } from '../core/input.js';
 import { Effects } from '../effects.js';
 import { updateEffects, drawEffects, resetEffects } from '../effects/index.js';
+import { particles } from '../effects/particles.js';
 import { aabbOverlap } from '../core/collision.js';
 
 // Import every Wave-1 primitive module for its registration side effect.
@@ -116,7 +117,9 @@ export const AttackTheater = {
   close() {
     this.active = false;
     this._teardown();
-    resetEffects(); // don't leak demo VFX into gameplay
+    resetEffects(); // drop in-flight effect instances (beams, flashes...)
+    particles.reset(); // clear demo sparkles/explosion particles so they don't
+                       // leak into gameplay — same guard the Effect Theater uses
   },
 
   step(dir) {
@@ -272,6 +275,11 @@ export const AttackTheater = {
       this._pools.projectilePool.active.length = 0;
       this._pools.specialPool.active.length = 0;
     }
+    // Fresh VFX slate: drop the previous run's leftover sparkles/particles so
+    // replays don't stack. (resetEffects only clears effect instances, not the
+    // particle system — same distinction as close().)
+    resetEffects();
+    particles.reset();
     for (const h of this._handles) { try { h.cancel?.(); } catch { /* noop */ } }
     this._handles = [];
     this._target.hp = 999;
