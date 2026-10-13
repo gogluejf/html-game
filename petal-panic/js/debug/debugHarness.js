@@ -184,11 +184,6 @@ function debugInjectSpecialDrops() {
  * @param {KeyboardEvent} e
  */
 function handleDebugKeys(e) {
-  // Attack Theater owns the arrow/enter/escape keys while open (F4).
-  if (AttackTheater.active) {
-    handleAttackTheaterKeys(e);
-    return;
-  }
   // F3 auto-enables debug if off, then cycles view on next press.
   if (e.code === 'F3' && !Debug.enabled) {
     handleDebugToggle(e, 'debug');
@@ -558,6 +553,13 @@ window.addEventListener('keydown', (e) => {
       AttackTheater.open();
       Debug.logEvent('attack-theater OPEN (F4)');
     }
+    return;
+  }
+  // Attack Theater keyboard controls work WITHOUT debug mode (like F2/F4
+  // themselves): route before the `if (!Debug.enabled) return` gate inside
+  // handleDebugKeys would swallow them.
+  if (AttackTheater.active) {
+    handleAttackTheaterKeys(e);
     return;
   }
   handleDebugKeys(e);
