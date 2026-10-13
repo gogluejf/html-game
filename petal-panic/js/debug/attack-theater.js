@@ -9,7 +9,8 @@
 // attacker is a placeholder box on the left; the dummy target stands on the
 // right and flashes + loses HP. Per-primitive choreography stages each attack
 // so it's actually watchable (charge dashes AT the target, body contact walks
-// into it, explosions telegraph before they pop).
+// into it, melee throws a visible punch). Explosions fire directly — the real
+// Effect-Engine burst is the visual (a proper telegraph primitive lands in Wave 2).
 //
 // Keys:  F4 toggle · ←/→ (A/D) select · ↑/↓ (W/S) select param · I/O adjust
 //        (the user's mapped lockDir/lockMove keys — remappable in Controls) ·
@@ -312,19 +313,17 @@ export const AttackTheater = {
       // Melee: start side by side, then throw a VISIBLE punch — the swing arc
       // sweeps out in sync with the live hitbox frames.
       this._choreo = { kind: 'punch', dist: 56, done: false, swingFrame: 0 };
-    } else if (id === 'explosion') {
-      // Explosion: brief telegraph, then pop at the blast point.
-      this._choreo = { kind: 'telegraph', delay: 0.6, fired: false };
     }
+    // (explosion needs no choreography — it fires at its configured x/y and the
+    // real Effect-Engine burst is the visual. The old hand-drawn telegraph ring
+    // was a placeholder; a proper Reticle/Telegraph primitive lands in Wave 2.)
 
     let h;
     try {
-      // Choreographed attacks delay or gate the actual invoke:
-      //  - telegraph (explosion): fires after the warning window
+      // Choreographed attacks gate the actual invoke:
       //  - punch (melee): starts once the attacker is beside the target
-      const delayed = this._choreo?.kind === 'telegraph';
       const gated = this._choreo?.kind === 'punch';
-      if (!delayed && !gated) {
+      if (!gated) {
         h = invoke(id, { ...this._params }, this._ctx());
       }
     } catch (err) {
@@ -405,16 +404,6 @@ export const AttackTheater = {
           }
         } else if (c.swingFrame < c.swingTotal) {
           c.swingFrame++;
-        }
-      } else if (c.kind === 'telegraph') {
-        c.t = (c.t ?? 0) + DT;
-        if (!c.fired && c.t >= c.delay) {
-          c.fired = true;
-          const e = this._params;
-          const eh = invoke('explosion', { ...e }, this._ctx());
-          eh.on('hit', (i) => { this._flash = 0.2; this._log.unshift(`HIT ${i.dealt ?? ''} dmg`.trim()); });
-          eh.on('complete', () => this._log.unshift('COMPLETE'));
-          this._handles.push(eh);
         }
       }
     }
@@ -550,16 +539,7 @@ export const AttackTheater = {
     ctx.lineTo(demoW - 40, GROUND_Y);
     ctx.stroke();
 
-    // Telegraph ring for pending explosions.
-    const c = this._choreo;
-    if (c?.kind === 'telegraph' && !c.fired) {
-      const r = (this._params.radius ?? 60) * Math.min(1, (c.t ?? 0) / c.delay);
-      ctx.strokeStyle = `rgba(255,120,60,${0.4 + 0.5 * Math.sin((c.t ?? 0) * 20)})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(this._params.x, this._params.y, Math.max(4, r), 0, Math.PI * 2);
-      ctx.stroke();
-    }
+        const c = this._choreo;
 
     // Melee punch: a visible swing bar that sweeps out from the fist in sync
     // with the live hitbox frames (ease-out extension, quick retract). This is
