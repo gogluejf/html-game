@@ -146,11 +146,20 @@ const RETICLE_STROKE_WIDTH = 4;      // px — outer ring stroke width
 const TICK_LENGTH = 10;              // px — radial bracket tick length
 const TICK_GAP = 4;                  // px — gap between outer ring and tick start
 const EPS = 1e-9;                    // fixed-dt epsilon convention
+const LOCK_TRANSITION = 0.25;        // s — how long the zoom-to-lock takes
+const BRACKET_CONVERGE = 0.15;      // s — how long brackets slide inward on lock
+const AIM_BLINK_START_HZ = 1.5;     // Hz — blink cadence at aim start (slow, readable)
+const AIM_BLINK_END_HZ = 9;         // Hz — blink cadence at lock time (fast, strobe-like)
 
 /**
  * @param {{size?:number, rotationSpeed?:number, pulseRate?:number,
  *          offset?:number, opacity?:number, duration?:number,
- *          followMode?:boolean, color?:string, x?:number, y?:number}} params
+ *          followMode?:boolean, color?:string, x?:number, y?:number,
+ *          lockAt?:number, lockScale?:number, lockSpinBoost?:number}} params
+ *   lockAt         — seconds after start when the reticle "locks": it smoothly
+ *                    zooms to size·lockScale and spins faster. null/0 = no lock.
+ *   lockScale      — target radius as a fraction of `size` at full lock (default 0.65).
+ *   lockSpinBoost  — extra rad/s added to rotation once locked (default π*1.5).
  * @param {object} [carrier]
  * @returns {{update:Function, render:Function, complete:Function,
  *            done:boolean, space:string, elapsed:number, radius:number,
@@ -165,6 +174,10 @@ export function targetReticle(params = {}, carrier = null) {
   const duration = params.duration > 0 ? params.duration : DEFAULT_DURATION;
   const followMode = !!params.followMode;
   const color = params.color ?? DEFAULT_COLOR;
+  // Lock-on behavior.
+  const lockAt = (params.lockAt != null && params.lockAt > 0) ? params.lockAt : null;
+  const lockScale = params.lockScale > 0 ? params.lockScale : 0.65;
+  const lockSpinBoost = params.lockSpinBoost != null ? params.lockSpinBoost : Math.PI * 1.5;
   const fallback = { x: params.x ?? 0, y: params.y ?? 0 };
   // In fixed mode the offset direction is FROZEN at fire time so a carrier
   // that rotates after fire cannot drag the reticle around the captured
@@ -180,6 +193,10 @@ export function targetReticle(params = {}, carrier = null) {
     radius: size,
     /** Current tick angle in radians (recomputed each update; 0 at t=0). */
     angle: 0,
+    /** Current bracket gap (animated: wide during aim → normal on lock). */
+    tickGap: TICK_GAP,
+    /** Current alpha (animated: dim during aim → full on lock). */
+    alpha: opacity,
     /** Resolved origin (carrier origin() wins over params.x/y at fire time). */
     origin: resolveOrigin(carrier, fallback),
 
@@ -193,8 +210,52 @@ export function targetReticle(params = {}, carrier = null) {
     update(dt) {
       if (this.done) return;
       this.elapsed += dt;
-      this.radius = size * (1 + PULSE_AMPLITUDE * Math.sin(2 * Math.PI * pulseRate * this.elapsed));
-      this.angle = rotationSpeed * this.elapsed;
+      // Base pulsing radius.
+      const pulseR = size * (1 + PULSE_AMPLITUDE * Math.sin(2 * Math.PI * pulseRate * this.elapsed));
+      // Lock-on: smoothly zoom from the pulsing size to size·lockScale over
+      // LOCK_TRANSITION seconds, using ease-out (fast start, gentle settle).
+      // Brackets converge (wide → normal gap) and alpha ramps up over
+      // BRACKET_CONVERGE for a "cage closes" read.
+      if (lockAt != null && this.elapsed >= lockAt) {
+        const t = Math.min(1, (this.elapsed - lockAt) / LOCK_TRANSITION);
+        const ease = 1 - (1 - t) * (1 - t); // easeOutQuad
+        const lockedR = size * lockScale;
+        this.radius = pulseR + (lockedR - pulseR) * ease;
+        // Extra spin accumulates only after lock begins.
+        this.angle = rotationSpeed * this.elapsed + lockSpinBoost * Math.max(0, this.elapsed - lockAt);
+        // Bracket convergence: wide (2× gap) → normal over BRACKET_CONVERGE.
+        const bt = Math.min(1, (this.elapsed - lockAt) / BRACKET_CONVERGE);
+        const bEase = 1 - (1 - bt) * (1 - bt);
+        this.tickGap = TICK_GAP * (2 - bEase); // 2×gap → 1×gap
+        // Locked state: the aiming strobe has finished accelerating INTO the
+        // lock — the reticle snaps to full brightness and stays SOLID from
+        // here on. The shot always leaves from a steady, bright sight.
+        this.alpha = opacity * (0.5 + 0.5 * bEase);
+      } else {
+        this.radius = pulseR;
+        this.angle = rotationSpeed * this.elapsed;
+        // Aiming state: brackets wide, dim base alpha, and a BLINK that
+        // accelerates as the lock approaches — slow readable pulses at aim
+        // start ramping up to a fast strobe right before lock. Phase-
+        // continuous cadence: the cumulative phase integrates the INSTANTANEOUS
+        // frequency f(t) = lerp(AIM_BLINK_START_HZ, AIM_BLINK_END_HZ, p), so
+        // the blink never jumps between frames. Square wave: ON for the first
+        // half of each cycle, OFF (dimmed) for the second. At p → 1 the
+        // strobe is mid-cycle when the lock branch takes over at full alpha —
+        // the "click" into solid IS the lock confirmation.
+        this.tickGap = lockAt != null ? TICK_GAP * 2 : TICK_GAP;
+        let blinkMod = 1;
+        if (lockAt != null) {
+          const p = Math.min(1, this.elapsed / lockAt); // 0..1 across the aim window
+          const hz = AIM_BLINK_START_HZ + (AIM_BLINK_END_HZ - AIM_BLINK_START_HZ) * p;
+          // ∫₀ᵗ lerp(start,end,p(s))·ds with s normalized by lockAt:
+          // start·t + (end−start)·t²/(2·lockAt)
+          const phase = (AIM_BLINK_START_HZ * this.elapsed
+            + (AIM_BLINK_END_HZ - AIM_BLINK_START_HZ) * this.elapsed * this.elapsed / (2 * lockAt)) % 1;
+          blinkMod = phase < 0.5 ? 1 : 0.15;
+        }
+        this.alpha = lockAt != null ? opacity * 0.5 * blinkMod : opacity;
+      }
       if (followMode) this.origin = resolveOrigin(carrier, fallback);
       if (this.elapsed >= duration - EPS) this.done = true;
     },
@@ -225,7 +286,7 @@ export function targetReticle(params = {}, carrier = null) {
       const rOuter = Math.max(0, this.radius);
       const rInner = rOuter * INNER_RING_FRACTION;
       c2d.save();
-      c2d.globalAlpha = opacity;
+      c2d.globalAlpha = this.alpha;
       c2d.strokeStyle = color;
       // Outer ring.
       c2d.lineWidth = RETICLE_STROKE_WIDTH;
@@ -237,14 +298,14 @@ export function targetReticle(params = {}, carrier = null) {
       c2d.beginPath();
       c2d.arc(cx, cy, rInner, 0, Math.PI * 2);
       c2d.stroke();
-      // Four cardinal bracket ticks, rotating at angle(t).
+      // Four cardinal bracket ticks, rotating at angle(t), gap animated.
       c2d.lineWidth = RETICLE_STROKE_WIDTH / 2;
       for (let k = 0; k < 4; k++) {
         const a = this.angle + (k * Math.PI) / 2;
         const cos = Math.cos(a), sin = Math.sin(a);
         c2d.beginPath();
-        c2d.moveTo(cx + cos * (rOuter + TICK_GAP), cy + sin * (rOuter + TICK_GAP));
-        c2d.lineTo(cx + cos * (rOuter + TICK_GAP + TICK_LENGTH), cy + sin * (rOuter + TICK_GAP + TICK_LENGTH));
+        c2d.moveTo(cx + cos * (rOuter + this.tickGap), cy + sin * (rOuter + this.tickGap));
+        c2d.lineTo(cx + cos * (rOuter + this.tickGap + TICK_LENGTH), cy + sin * (rOuter + this.tickGap + TICK_LENGTH));
         c2d.stroke();
       }
       c2d.restore();
