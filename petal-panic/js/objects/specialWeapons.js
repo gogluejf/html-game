@@ -66,7 +66,7 @@ export const SPECIAL_WEAPONS = [
     size: 14,
     fireCooldown: 1 / 4,
     gravity: 0,
-    solidBehavior: 'absorb',
+    solidBehavior: 'pass',
     explode: false,
     radius: 0,
     spread: { count: 3, angle: Math.PI / 3 }, // 3 shots, ±30° fan
