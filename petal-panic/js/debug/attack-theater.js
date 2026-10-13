@@ -658,17 +658,24 @@ export const AttackTheater = {
     py += 18;
     ctx.font = '11px monospace';
     const tweakList = this._tweakList();
-    const allKeys = Object.keys(this._params ?? {});
-    for (const key of allKeys) {
+    // Render in NAVIGATION order (the TWEAKABLE array) so ↑/↓ matches what you
+    // see. Non-tweakable params follow below, dimmed + read-only.
+    const shown = new Set();
+    const rows = [];
+    for (const [key] of tweakList) { rows.push({ key, tweak: true }); shown.add(key); }
+    for (const key of Object.keys(this._params ?? {})) {
+      if (!shown.has(key)) rows.push({ key, tweak: false });
+    }
+    for (const { key, tweak } of rows) {
       if (py > h - 70) break;
-      const tIdx = tweakList.findIndex(([k]) => k === key);
+      const tIdx = tweak ? tweakList.findIndex(([k]) => k === key) : -1;
       const selected = tIdx === this.paramIndex && tweakList.length > 0;
-      ctx.fillStyle = selected ? '#fd6' : (tIdx >= 0 ? '#ccc' : '#666');
+      ctx.fillStyle = selected ? '#fd6' : (tweak ? '#ccc' : '#666');
       const val = this._params[key];
       const valStr = typeof val === 'number'
         ? (key === 'direction' || key === 'angle' ? angleLabel(val) : String(round2(val)))
         : (val && typeof val === 'object' ? JSON.stringify(val) : String(val));
-      ctx.fillText(`${selected ? '▶' : '·'} ${key} = ${valStr}`, panelX + 12, py);
+      ctx.fillText(`${selected ? '▶' : '·'} ${key} = ${valStr}${tweak ? '' : '  (fixed)'}`, panelX + 12, py);
       py += 15;
     }
 
