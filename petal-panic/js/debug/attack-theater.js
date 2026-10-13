@@ -245,8 +245,9 @@ export const AttackTheater = {
       // attacker's body is the weapon; the dummy closes the distance.
       this._choreo = { kind: 'victimWalksIn', speed: 260 };
     } else if (id === 'meleeHitbox') {
-      // Melee: hop next to the target first so the swing connects.
-      this._choreo = { kind: 'stepBeside', dist: 52, done: false };
+      // Melee: start side by side, then throw a VISIBLE punch — the swing arc
+      // sweeps out in sync with the live hitbox frames.
+      this._choreo = { kind: 'punch', dist: 56, done: false, swingFrame: 0 };
     } else if (id === 'explosion') {
       // Explosion: brief telegraph, then pop at the blast point.
       this._choreo = { kind: 'telegraph', delay: 0.6, fired: false };
@@ -256,9 +257,9 @@ export const AttackTheater = {
     try {
       // Choreographed attacks delay or gate the actual invoke:
       //  - telegraph (explosion): fires after the warning window
-      //  - stepBeside (melee): fires only once the attacker arrives
+      //  - punch (melee): starts once the attacker is beside the target
       const delayed = this._choreo?.kind === 'telegraph';
-      const gated = this._choreo?.kind === 'stepBeside';
+      const gated = this._choreo?.kind === 'punch';
       if (!delayed && !gated) {
         h = invoke(id, { ...this._params }, this._ctx());
       }
@@ -315,19 +316,25 @@ export const AttackTheater = {
         if (Math.abs(gap) > this._target.w / 2 + 2) {
           this._target.x -= Math.sign(gap) * c.speed * DT;
         }
-      } else if (c.kind === 'stepBeside') {
+      } else if (c.kind === 'punch') {
         if (!c.done) {
           if (Math.abs(gap) > c.dist) {
+            // Walk beside the target first.
             this._attacker.x += Math.sign(gap) * 420 * DT;
             this._attacker.facing = Math.sign(gap) || 1;
           } else {
-            // Arrived: fire the swing now.
+            // Beside: throw the punch. The swing visual (drawn in draw()) is
+            // driven by c.swingFrame, which advances here IN SYNC with the
+            // live hitbox frames from the meleeHitbox handle.
             c.done = true;
             const mh = invoke('meleeHitbox', { ...this._params }, this._ctx());
             mh.on('hit', (i) => { this._flash = 0.15; this._log.unshift(`HIT ${i.dealt ?? ''} dmg`.trim()); });
             mh.on('complete', () => this._log.unshift('COMPLETE'));
             this._handles.push(mh);
+            c.swingTotal = this._params.activeFrames ?? 10;
           }
+        } else if (c.swingFrame < c.swingTotal) {
+          c.swingFrame++;
         }
       } else if (c.kind === 'telegraph') {
         c.t = (c.t ?? 0) + DT;
@@ -482,6 +489,35 @@ export const AttackTheater = {
       ctx.beginPath();
       ctx.arc(this._params.x, this._params.y, Math.max(4, r), 0, Math.PI * 2);
       ctx.stroke();
+    }
+
+    // Melee punch: a visible swing bar that sweeps out from the fist in sync
+    // with the live hitbox frames (ease-out extension, quick retract). This is
+    // what makes the invisible hitbox readable — imagine a fist extending.
+    if (c?.kind === 'punch' && c.done && c.swingFrame < c.swingTotal) {
+      const total = c.swingTotal || 10;
+      const t = c.swingFrame / total;            // 0 → 1 across the swing
+      const ext = t < 0.7 ? (t / 0.7) : (1 - (t - 0.7) / 0.3); // out then back
+      const eased = 1 - Math.pow(1 - ext, 3);    // easeOutCubic
+      const dir = this._attacker.facing >= 0 ? 1 : -1;
+      const ax = this._attacker.x + this._attacker.w / 2;
+      const ay = this._attacker.y + this._attacker.h * 0.45;
+      const len = (this._params.w ?? 48) * eased;
+      const thick = 10;
+      // Swing trail (faded wedge behind the bar).
+      ctx.fillStyle = `rgba(255,220,120,${0.18 * ext})`;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(ax + dir * len, ay - 14);
+      ctx.lineTo(ax + dir * len, ay + 14);
+      ctx.closePath();
+      ctx.fill();
+      // The "fist" bar itself.
+      ctx.fillStyle = `rgba(255,240,180,${0.5 + 0.5 * ext})`;
+      ctx.fillRect(dir > 0 ? ax : ax - len, ay - thick / 2, len, thick);
+      // Fist cap.
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(ax + dir * len - 5, ay - 8, 10, 16);
     }
 
     // Attacker.
