@@ -102,8 +102,8 @@ const DEFAULT_PARAMS = {
 console.log('catalog shape');
 const list = theaterList();
 ok('returns an array', () => assert.ok(Array.isArray(list), 'theaterList() returns an array'));
-ok('has exactly 25 entries (all catalog effects, Heat Distortion excluded)', () => {
-  assert.equal(list.length, 25, `expected 25 entries, got ${list.length}`);
+ok('has exactly 26 entries (all catalog effects, Heat Distortion excluded)', () => {
+  assert.equal(list.length, 26, `expected 26 entries, got ${list.length}`);
 });
 ok('every entry has { type, name, demo } with demo a function', () => {
   for (const e of list) {
@@ -130,7 +130,7 @@ ok('full type sequence matches the documented catalog order', () => {
     'target-reticle', 'vignette', 'sprite-flash', 'camera-shake',
     'screen-flash', 'sprite-shake', 'impact-star', 'fade-out', 'scale-pulse',
     'squash-stretch', 'dust-cloud', 'slash', 'aura-glow', 'screen-overlay',
-    'composite-explosion', 'beam',
+    'composite-explosion', 'beam', 'shield-pulse',
   ];
   assert.deepEqual(list.map(e => e.type), expected, 'full catalog order matches §1→§24 then Beam');
 });

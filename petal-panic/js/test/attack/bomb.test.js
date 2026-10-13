@@ -31,12 +31,12 @@ ok('spawns into specialPool with ballistic velocity + gravity', () => {
   assert.equal(ent.gravityValue, 800);
 });
 
-ok('bounce=true → solidBehavior bounce; bounce=false → absorb', () => {
+ok('bounce=true → solidBehavior reflect; bounce=false → stop', () => {
   const ctx = makeCtx();
   const e1 = spawnBomb({ ...P, bounce: true }, ctx);
   const e2 = spawnBomb({ ...P, bounce: false }, ctx);
-  assert.equal(e1.solidBehavior, 'bounce');
-  assert.equal(e2.solidBehavior, 'absorb');
+  assert.equal(e1.solidBehavior, 'reflect');
+  assert.equal(e2.solidBehavior, 'stop');
 });
 
 ok('ttl becomes the fuse on the entity', () => {

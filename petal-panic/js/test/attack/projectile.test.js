@@ -63,13 +63,13 @@ ok('solidBehavior is transported as DATA onto the entity', () => {
   const pools = makePools();
   const ctx = makeContext(attacker(), { pools });
   const h = new AttackHandle('projectile');
-  const e1 = spawnProjectile({ speed: 100, direction: 0, ttl: 1, damage: 1, solidBehavior: 'bounce' }, ctx, h);
-  const e2 = spawnProjectile({ speed: 100, direction: 0, ttl: 1, damage: 1, solidBehavior: 'absorb' }, ctx, h);
-  assert.equal(e1.solidBehavior, 'bounce');
-  assert.equal(e2.solidBehavior, 'absorb');
-  // Default is pass.
+  const e1 = spawnProjectile({ speed: 100, direction: 0, ttl: 1, damage: 1, solidBehavior: 'reflect' }, ctx, h);
+  const e2 = spawnProjectile({ speed: 100, direction: 0, ttl: 1, damage: 1, solidBehavior: 'stop' }, ctx, h);
+  assert.equal(e1.solidBehavior, 'reflect');
+  assert.equal(e2.solidBehavior, 'stop');
+  // Default is phase.
   const e3 = spawnProjectile({ speed: 100, direction: 0, ttl: 1, damage: 1 }, ctx, h);
-  assert.equal(e3.solidBehavior, 'pass');
+  assert.equal(e3.solidBehavior, 'phase');
 });
 
 ok('origin: explicit {x,y} centers the box on that point', () => {

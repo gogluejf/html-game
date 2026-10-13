@@ -137,16 +137,16 @@ ok('shared projectilePool is pre-allocated once', () => {
 // --- Bomb bounce off solids (special-weapons.md: bombs reflect, saws fizzle) ---
 ok('bomb bounce reflects horizontal velocity with energy loss', () => {
   const b = new Special(0, 0, 0, 'bomb');
-  assert.equal(b.solidBehavior, 'bounce', 'bomb data declares bounce');
+  assert.equal(b.solidBehavior, 'reflect', 'bomb data declares reflect');
   b.x = 60; b.y = 50; b.vx = 300; b.vy = -100;
   const box = { x: 50, y: 0, w: 20, h: 100 }; // right edge at x=70 = bomb center
   b.reflectVelocity(box);
   assert.ok(b.vx < 0, `vx flipped (${b.vx.toFixed(1)})`);
   assert.ok(Math.abs(b.vx) < 300, 'energy lost on bounce');
 });
-ok('saw data declares absorb; bomb vertical reflection works', () => {
+ok('saw data declares stop; bomb vertical reflection works', () => {
   const sw = new Special(0, 0, 0, 'saw');
-  assert.equal(sw.solidBehavior, 'absorb', 'saw data declares absorb');
+  assert.equal(sw.solidBehavior, 'stop', 'saw data declares stop');
   const b = new Special(0, 0, 0, 'bomb');
   b.x = 0; b.y = 90; b.vx = 100; b.vy = 300;
   const box = { x: -50, y: 80, w: 200, h: 40 };

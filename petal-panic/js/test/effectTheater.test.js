@@ -81,8 +81,8 @@ const anyDraw = (ctx) => ['fill', 'stroke', 'rect', 'fillRect', 'arc', 'gradL', 
 console.log('theaterList shape');
 const list = theaterList();
 ok('returns an array', () => assert.ok(Array.isArray(list), 'theaterList() returns an array'));
-ok('has exactly 25 entries (all catalog effects, Heat Distortion excluded)', () => {
-  assert.equal(list.length, 25, `expected 25 entries, got ${list.length}`);
+ok('has exactly 26 entries (all catalog effects, Heat Distortion excluded)', () => {
+  assert.equal(list.length, 26, `expected 26 entries, got ${list.length}`);
 });
 ok('every entry has { type, name, demo } with demo a function', () => {
   for (const e of list) {
@@ -101,8 +101,8 @@ console.log('catalog ordering');
 ok('first three are particle-burst, explosion, debris (§1,§2,§3)', () => {
   assert.deepEqual(list.slice(0, 3).map(e => e.type), ['particle-burst', 'explosion', 'debris']);
 });
-ok('last entry is beam (§26)', () => {
-  assert.equal(list.at(-1).type, 'beam', `last is beam (got ${list.at(-1).type})`);
+ok('last entry is shield-pulse (§27)', () => {
+  assert.equal(list.at(-1).type, 'shield-pulse', `last is shield-pulse (got ${list.at(-1).type})`);
 });
 ok('sections are strictly increasing (catalog order preserved)', () => {
   // Re-derive section numbers from the registry-independent catalog by index:
@@ -114,7 +114,7 @@ ok('sections are strictly increasing (catalog order preserved)', () => {
     'target-reticle', 'vignette', 'sprite-flash', 'camera-shake',
     'screen-flash', 'sprite-shake', 'impact-star', 'fade-out', 'scale-pulse',
     'squash-stretch', 'dust-cloud', 'slash', 'aura-glow', 'screen-overlay',
-    'composite-explosion', 'beam',
+    'composite-explosion', 'beam', 'shield-pulse',
   ];
   assert.deepEqual(list.map(e => e.type), expected, 'full catalog order matches §1→§24 then Beam');
 });
