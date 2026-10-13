@@ -2,7 +2,7 @@
 //
 // A 2D PULSING RING of N satellites around the owner. The ring breathes
 // between `minRadius` and `maxRadius` in a smooth cosine cycle (same pulse
-// model as the shield-pulse effect §27): at t=0 the ring is at MAXIMUM
+// model as the pulse-bubble effect §27): at t=0 the ring is at MAXIMUM
 // radius and contracts toward minRadius at half-period, then expands back.
 // Satellites are evenly distributed around the circle and rotate together at
 // `speed` rad/s. Pure 2D — no ellipse squash, no depth/layering.

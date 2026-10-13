@@ -542,11 +542,11 @@ Parameters may include:
 
 ---
 
-## 27. Shield Pulse
+## 27. Pulse Bubble
 
-A circular energy shield that breathes between a minimum and maximum radius in a smooth cosine cycle, with a two-tone radial gradient stroke (outer color → inner color) and an optional flash overlay at pulse peaks. Designed for hero/boss protective barriers — a visible, pulsing ring that conveys active defense without dealing damage itself.
+A circular energy ring that breathes between a minimum and maximum radius in a smooth cosine cycle, with a two-tone radial gradient fill (inner color → outer color) and an optional flash overlay at pulse peaks. Generic reusable pulse visual — any entity can carry it (shields, barriers, auras, status effects). It deals no damage itself; it is pure presentation.
 
-The shield is fired when its carrier enters a protected state (e.g. a boss gains a barrier phase, or the hero activates a shield power-up). It pulses continuously for its duration, tracking the carrier's position each frame. At t=0 the circle is at maximum radius and contracts toward minimum at half-period, then expands back — a natural breathing rhythm.
+The bubble is fired by whichever system needs a breathing ring around a carrier (a shield power-up, a boss barrier phase, a channel aura). It pulses continuously for its duration, tracking the carrier's position each frame. At t=0 the circle is at maximum radius and contracts toward minimum at half-period, then expands back — a natural breathing rhythm.
 
 Parameters may include:
 - Max radius (outer bound of the pulse)
@@ -604,7 +604,7 @@ This section records exactly what shipped with the Effects Engine epic so the ne
 ## What Shipped
 
 - **The generic registry-driven Effect Engine.** Every effect is a plain data object — a type plus its parameters — attached declaratively to any carrier and fired on a trigger. The engine knows nothing about specific effects; it only knows how to look a type up and drive its lifecycle.
-- **Twenty-six catalog effects implemented** (§1–§24 above, plus §26 Beam and §27 Shield Pulse). Heat Distortion (§25) remains experimental and is not implemented.
+- **Twenty-six catalog effects implemented** (§1–§24 above, plus §26 Beam and §27 Pulse Bubble). Heat Distortion (§25) remains experimental and is not implemented.
 - **Legacy effects migrated behavior-preservingly.** Existing one-off visual code was folded into the engine without changing how it looks or feels in-game.
 - **A debug-mode Effect Theater.** In debug mode, a step-through viewer walks every catalog effect in turn, showing each one's name and id alongside a live demo of that effect. It is driven by keyboard and gamepad input.
 - **The carrier interface.** A carrier exposes origin, facing, and size as needed, plus a list of the effects it carries and their triggers. The engine drives any such carrier unchanged — plain-object carriers shaped like a projectile, hit area, collision event, marker, or area-of-effect region all fire effects through the same path today. No per-entity-class code is required; the interface is generic by design.

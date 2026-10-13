@@ -263,7 +263,7 @@ timed spike traps.
 
 Keeps one or more attack entities on a 2D PULSING RING around the owner. The
 ring breathes between `minRadius` and `maxRadius` in a smooth cosine cycle
-(same pulse model as the shield-pulse effect §27): at t=0 the ring is at
+(same pulse model as the pulse-bubble effect §27): at t=0 the ring is at
 MAXIMUM radius, contracts toward minRadius at half-period, then expands back.
 
 Pulse model:

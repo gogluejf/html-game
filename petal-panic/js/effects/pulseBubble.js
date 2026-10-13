@@ -1,10 +1,10 @@
-// Petal Panic — shield pulse effect (effects.md §27, catalog #27). A circular
-// energy shield that breathes between a minimum and maximum radius in a
-// smooth cosine cycle. Rendered as a FILLED DISC with a radial gradient from
-// `colorIn` at the center to `colorOut` at the edge (soft alpha falloff),
-// plus a thin bright rim for definition. An optional flash overlay adds a
-// brightness spike at pulse peaks. Designed for hero/boss shields: a visible
-// protective barrier that pulses to convey active defense.
+// Petal Panic — pulse bubble effect (effects.md §27, catalog #27). A circular
+// energy ring that breathes between a minimum and maximum radius in a smooth
+// cosine cycle. Rendered as a FILLED DISC with a radial gradient from `colorIn`
+// at the center to `colorOut` at the edge (soft alpha falloff), plus a thin
+// bright rim for definition. An optional flash overlay adds a brightness spike
+// at pulse peaks. Generic reusable pulse visual — used by shields, barriers,
+// auras, and any entity that needs a breathing ring around itself.
 //
 // STATE/DRAW effect: this instance stays active over its whole lifetime and
 // owns its own timer. Each update() advances the clock; each render() draws
@@ -19,9 +19,9 @@
 //   r(t) = midR + ampR · cos(2π · pulseSpeed · t)
 // where midR = (maxRadius + minRadius) / 2 and ampR = (maxRadius - minRadius) / 2.
 // At t=0 the circle is at MAXIMUM radius (cos(0)=1) and contracts toward
-// minRadius at half-period, then expands back — a natural "shield breathing"
-// rhythm. `pulseSpeed` is in Hz (cycles per second); at 0 the radius holds
-// at maxRadius (static shield ring).
+// minRadius at half-period, then expands back — a natural breathing rhythm.
+// `pulseSpeed` is in Hz (cycles per second); at 0 the radius holds at
+// maxRadius (static ring).
 //
 // Flash model: when `flashSpeed > 0`, a white-ish overlay ring flashes at a
 // rate of `flashSpeed` Hz. The flash alpha follows:
@@ -30,49 +30,34 @@
 // fade. At flashSpeed 0 or flashIntensity 0 the flash is disabled.
 //
 // Lifetime: `duration` is the whole-instance lifetime in seconds. The
-// instance completes when `elapsed >= duration - EPS`. For indefinite shields
+// instance completes when `elapsed >= duration - EPS`. For indefinite use
 // (e.g. a boss phase that lasts many seconds), pass a large duration; the
 // engine prunes at completion.
 //
 // Origin & offset: if the carrier exposes origin(), its position wins over
 // params.x/y (same block pattern as auraGlow/beam/trail/etc.); params.x/y are
 // the standalone/theater fallback. The origin is re-resolved live each update
-// so the shield tracks a moving carrier.
+// so the bubble tracks a moving carrier.
 //
 // params: { maxRadius?, minRadius?, pulseSpeed?, colorOut?, colorIn?,
 //           flashSpeed?, flashIntensity?, opacity?, lineWidth?, duration?,
 //           offset?, x?, y? }
-//   maxRadius    — maximum shield radius in px (default 40). Must be > 0.
+//   maxRadius    — maximum bubble radius in px (default 40). Must be > 0.
 //                  Negative/non-positive values fall back to the default.
-//   minRadius    — minimum shield radius in px (default 28). Clamped to
+//   minRadius    — minimum bubble radius in px (default 28). Clamped to
 //                  [0, maxRadius]. If >= maxRadius, the radius holds at
 //                  maxRadius (no visible pulse — a static ring).
 //   pulseSpeed   — pulse frequency in Hz (default 1.5): how fast the circle
 //                  cycles max→min→max. Any value >= 0 works verbatim;
 //                  negative values fall back to the default. At 0 the radius
-//                  holds at maxRadius (static shield).
+//                  holds at maxRadius (static ring).
 //   colorOut     — CSS color for the OUTER edge of the gradient (default
 //                  '#00e5ff', bright cyan). This is the rim/membrane color.
 //                  Callers may pass any CSS color.
 //   colorIn      — CSS color for the CENTER of the gradient (default
 //                  '#4488ff', deep blue). The gradient interpolates from
 //                  this color at the center outward to colorOut at the edge,
-//                  creating the blue-cyan shield look by default.
-//   flashSpeed   — flash frequency in Hz (default 0 = disabled): how often
-//                  the brightness spike fires. Any value >= 0; negative
-//                  falls back to 0 (disabled).
-//   flashIntensity — peak alpha of the flash overlay 0..1 (default 0.6).
-//                  Clamped to [0, 1]. Only visible when flashSpeed > 0.
-//   opacity      — base alpha of the main stroke 0..1 (default 0.85).
-//                  Clamped to [0, 1].
-//   lineWidth    — stroke width in px (default 3). Non-negative; negative
-//                  clamps to 0 (invisible but timer still runs).
-//   duration     — whole-instance lifetime in seconds (default 3.0).
-//                  Must be > 0; non-positive falls back to the default.
-//   offset       — { x, y } px shift applied to the resolved origin
-//                  (default { 0, 0 }).
-//   x, y         — standalone origin fallback when no carrier exists
-//                  (default { 0, 0 }).
+//                  creating the blue-cyan look by default.
 
 import { colorWithAlpha } from './colorUtil.js';
 
@@ -99,7 +84,7 @@ const EPS = 1e-9;
  *            done:boolean, space:string, elapsed:number, radius:number,
  *            origin:{x:number,y:number}}}
  */
-export function shieldPulse(params = {}, carrier = null) {
+export function pulseBubble(params = {}, carrier = null) {
   const maxRadius = params.maxRadius > 0 ? params.maxRadius : DEFAULT_MAX_RADIUS;
   const minRadius = Math.min(Math.max(0, params.minRadius ?? DEFAULT_MIN_RADIUS), maxRadius);
   const pulseSpeed = params.pulseSpeed >= 0 ? params.pulseSpeed : DEFAULT_PULSE_SPEED;
@@ -123,10 +108,10 @@ export function shieldPulse(params = {}, carrier = null) {
     space: 'world',
     done: false,
     elapsed: 0,
-    /** Current (pulsing) shield radius (recomputed each update). */
+    /** Current (pulsing) bubble radius (recomputed each update). */
     radius: maxRadius,
     /** Resolved origin (carrier origin() wins over params.x/y; re-resolved
-     *  live each update so the shield follows a moving carrier). */
+     *  live each update so the bubble follows a moving carrier). */
     origin: resolveOrigin(carrier, fallback),
     /** Center offset applied on top of the origin (params.offset). */
     offset,
@@ -154,7 +139,7 @@ export function shieldPulse(params = {}, carrier = null) {
     },
 
     /**
-     * Draw the shield: one filled circle with a radial gradient from
+     * Draw the bubble: one filled circle with a radial gradient from
      * colorIn (center) → colorOut (edge). The pulse animates the radius.
      * Optional flash overlay adds a brighter ring at flash peaks. No-op once
      * done or when maxRadius is 0.
@@ -171,7 +156,7 @@ export function shieldPulse(params = {}, carrier = null) {
 
       // Filled disc: radial gradient from colorIn at center to colorOut at
       // the outer edge. Alpha fades toward the edge so the boundary is soft
-      // (a shield membrane, not a hard-edged blob).
+      // (a bubble membrane, not a hard-edged blob).
       const grad = c2d.createRadialGradient(cx, cy, 0, cx, cy, r);
       grad.addColorStop(0, colorWithAlpha(colorIn, opacity));
       grad.addColorStop(0.7, colorWithAlpha(colorOut, opacity * 0.6));
@@ -212,7 +197,7 @@ export function shieldPulse(params = {}, carrier = null) {
 }
 
 /**
- * Resolve the shield's base center point at fire time. Carrier origin() wins
+ * Resolve the bubble's base center point at fire time. Carrier origin() wins
  * (live entity / marker / box carrier); params.x/y are the standalone/theater
  * fallback for null-carrier fires. This value is the INITIAL origin only —
  * with a live carrier, update() re-resolves it each frame.

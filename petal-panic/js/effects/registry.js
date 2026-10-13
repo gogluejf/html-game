@@ -84,5 +84,5 @@ registerEffect('aura-glow', auraGlow);
 registerEffect('beam', beam);
 
 // --- Shield / barrier effects ---------------------------------------------------
-import { shieldPulse } from './shieldPulse.js';
-registerEffect('shield-pulse', shieldPulse);
+import { pulseBubble } from './pulseBubble.js';
+registerEffect('pulse-bubble', pulseBubble);

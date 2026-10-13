@@ -101,8 +101,8 @@ console.log('catalog ordering');
 ok('first three are particle-burst, explosion, debris (§1,§2,§3)', () => {
   assert.deepEqual(list.slice(0, 3).map(e => e.type), ['particle-burst', 'explosion', 'debris']);
 });
-ok('last entry is shield-pulse (§27)', () => {
-  assert.equal(list.at(-1).type, 'shield-pulse', `last is shield-pulse (got ${list.at(-1).type})`);
+ok('last entry is pulse-bubble (§27)', () => {
+  assert.equal(list.at(-1).type, 'pulse-bubble', `last is pulse-bubble (got ${list.at(-1).type})`);
 });
 ok('sections are strictly increasing (catalog order preserved)', () => {
   // Re-derive section numbers from the registry-independent catalog by index:
@@ -114,7 +114,7 @@ ok('sections are strictly increasing (catalog order preserved)', () => {
     'target-reticle', 'vignette', 'sprite-flash', 'camera-shake',
     'screen-flash', 'sprite-shake', 'impact-star', 'fade-out', 'scale-pulse',
     'squash-stretch', 'dust-cloud', 'slash', 'aura-glow', 'screen-overlay',
-    'composite-explosion', 'beam', 'shield-pulse',
+    'composite-explosion', 'beam', 'pulse-bubble',
   ];
   assert.deepEqual(list.map(e => e.type), expected, 'full catalog order matches §1→§24 then Beam');
 });
