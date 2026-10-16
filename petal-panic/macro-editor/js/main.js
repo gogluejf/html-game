@@ -279,7 +279,9 @@ function initKeyboard(){
     if (document.querySelector('dialog[open]')) return;
     // Plan 07: manual play owns the game keys — ESC stops, everything else
     // below (editor shortcuts) is skipped so Z/X/arrows reach the hero.
-    if (ride.active && ride.manual){
+    // A parked ride (status 'cleared') has NO input anymore: parkRide()
+    // released every button, so editor shortcuts work as normal again.
+    if (ride.active && ride.manual && ride.status !== 'cleared'){
       if (e.code === 'Escape'){ e.preventDefault(); toggleManualPlay(); }
       return;
     }

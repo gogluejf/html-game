@@ -122,11 +122,17 @@ export function stepRide(state, dt){
   }
   if (state._landFlash > 0) state._landFlash--;
 
-  // Reaching the authored macro endpoint concludes the ride in EITHER mode.
+  // Reaching the authored macro endpoint concludes the ride in EITHER mode —
+  // but ONLY after every goal surface has been landed. "Completely crossed"
+  // means the hero's TRAILING edge is past the line: horizontal = left edge
+  // past macroEndPx; vertical = feet at/above the end height (whole body
+  // across, not just the top corner touching).
+  const allLanded = state.goals.length === 0 || state.landedSet.size >= state.goals.length;
+  const boxW = box.w / 2;
   const atExit = world.vertical
     ? (world.H - fy) >= world.macroEndPx
-    : cx >= world.macroEndPx;
-  if (atExit){
+    : (cx - boxW) >= world.macroEndPx;
+  if (atExit && allLanded){
     ev.cleared = true;
     return ev;
   }

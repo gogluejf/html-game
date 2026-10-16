@@ -102,10 +102,16 @@ function buildGoalList(world, st){
     const tagged = st.units.map((u, i) => ({ ...u, _editorIndex: u._editorIndex ?? i }));
     const { order, unreachable } = traversalRoute({ orientation: st.orientation, units: tagged });
     routeOrder = order;
+    // Compute the unreachable set LOCALLY first, then assign. Mutating
+    // ride.failedSet in place used to lose marks when startRide's
+    // Object.assign replaced it with a fresh Set afterwards (the amber X
+    // only reappeared after the next rebuild re-added entries).
+    const failSet = new Set();
     for (const ui of unreachable){
       const l = ls.find(x => x.index === ui);
-      if (l) ride.failedSet.add(l.index);
+      if (l) failSet.add(l.index);
     }
+    ride.failedSet = failSet;
   }
   if (!routeOrder || !routeOrder.length){
     if (world.vertical) ls.sort((a, b) => (b.y - a.y) || (a.x0 - b.x0));
@@ -192,8 +198,7 @@ export function startRide(){
   // ride.failedSet is null" on the first startRide).
   ride.failedSet = new Set();
   ride.landedSet = new Set();
-  const goals = buildGoalList(world, st);
-  // THE shared per-hop AI brain — same module the node tests drive. Browser and
+  const goals = buildGoalList(world, st);  // THE shared per-hop AI brain — same module the node tests drive. Browser and
   // node can't drift because there is one decideInput() implementation.
   ride.brain = createRideBrain(goals, {
     stepFn: stepHeadless,
@@ -219,7 +224,6 @@ export function startRide(){
     goal: goals[0] ?? null,
     mem: { wantJump: false, djDone: false, armSuper: false, superFired: false, _releasedAtApex: false },
     landedSet: new Set(),
-    failedSet: new Set(),
     _landFlash: 0,
   });
   ride.trace = null;
@@ -492,14 +496,29 @@ function stepOnce(dt){
   }
 
   // Reaching the authored macro endpoint concludes the ride in EITHER mode:
-  // commit the clearance proof (sidebar flag) and stop.
+  // commit the clearance proof (sidebar flag) and PARK. The ride stops
+  // stepping but the world/hero/trail stay alive so the gray trail + goal
+  // icons remain visible FOREVER — until a new test starts or any other
+  // editor action kills the ride (killRideIfActive → stopRide).
   if (ev.cleared) {
     _commitClearance();
     showToast('CLEARED ✓ — proof saved to draft', 'success');
     if (ride.trace) dumpTrace('cleared');
-    stopRide();
+    parkRide();
     return;
   }
+}
+/** Park after a clear: stop stepping, keep rendering indefinitely.
+ *  The trail + goal icons stay on screen until a new test or any other
+ *  editor action kills the ride. Held input state is dropped so nothing
+ *  leaks into the next ride. */
+function parkRide(){
+  const h = ride.hero;
+  if (h){ h._prevJumpHeld = false; h._prevMeleeJumpHeld = false; h._jumpBuffer = 0; }
+  input.barrier();
+  ride.status = 'cleared';
+  updateRideHint();
+  requestDraw();
 }
 
 /** Manual-play input provider (plan 07): the game's own input engine
@@ -666,7 +685,7 @@ function updateRideHint(){
       : 'all landed → exit';
     el.textContent = `ride: ${goalTxt} · landed ${ride.landedSet?.size ?? 0}/${ride.totalLandings}${ride.trace ? ` · REC ${ride.trace.frames.length}` : ''}`;
   }
-  else if (ride.status === 'cleared') el.textContent = `ride: CLEARED`;
+  else if (ride.status === 'cleared') el.textContent = `ride: CLEARED ✓ — trail on screen until next action`;
   el.classList.toggle('on', !!el.textContent);
   el.classList.toggle('warning', false);
 }
@@ -733,28 +752,38 @@ export function drawRide(ctx, macro){
   ctx.restore();
 
   // --- Smart-mover overlays (task 4) --------------------------------------
-  // Current goal: cyan line across the target surface.
+  // Current goal: TARGET icon at the surface center (same visual weight as
+  // the amber X), plus a faint dashed line across the whole surface.
   if (ride.goal) {
     const g = ride.goal;
     const [gx0, gy0] = toScreen(g.x0, g.y);
     const [gx1, gy1] = toScreen(g.x1, g.y);
     ctx.save();
-    ctx.strokeStyle = 'rgba(0,229,255,.85)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0,229,255,.35)';
+    ctx.lineWidth = 1.5;
     ctx.setLineDash([6, 4]);
     ctx.beginPath();
     ctx.moveTo(gx0, gy0);
     ctx.lineTo(gx1, gy1);
     ctx.stroke();
     ctx.setLineDash([]);
-    // Cyan dot at the goal center.
-    ctx.fillStyle = 'rgba(0,229,255,.9)';
+    // Target icon: concentric circles + crosshair at the goal center.
+    const tcx = (gx0 + gx1) / 2, tcy = gy0;
+    ctx.strokeStyle = 'rgba(0,229,255,.95)';
+    ctx.fillStyle = 'rgba(0,229,255,.95)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(tcx, tcy, 9, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(tcx, tcy, 3.5, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath();
-    ctx.arc((gx0 + gx1) / 2, gy0, 4, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(tcx - 14, tcy); ctx.lineTo(tcx - 5, tcy);
+    ctx.moveTo(tcx + 5, tcy); ctx.lineTo(tcx + 14, tcy);
+    ctx.moveTo(tcx, tcy - 14); ctx.lineTo(tcx, tcy - 5);
+    ctx.moveTo(tcx, tcy + 5); ctx.lineTo(tcx, tcy + 14);
+    ctx.stroke();
     ctx.restore();
   }
-  // Landed surfaces: green flash (brief) then a faint green tick.
+  // Landed surfaces: green flash (brief) + persistent GREEN CHECKMARK at the
+  // surface center (mirror of the amber X on unreachable).
   if (ride.landedSet) {
     for (const idx of ride.landedSet) {
       const l = world.landings.find(x => x.index === idx);
@@ -772,6 +801,16 @@ export function drawRide(ctx, macro){
       ctx.beginPath();
       ctx.moveTo(lx0, ly0);
       ctx.lineTo(lx1, ly1);
+      ctx.stroke();
+      // Persistent checkmark at the surface center.
+      const ccx = (lx0 + lx1) / 2, ccy = ly0;
+      ctx.strokeStyle = '#5aff8a';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(ccx - 7, ccy);
+      ctx.lineTo(ccx - 2, ccy + 6);
+      ctx.lineTo(ccx + 8, ccy - 6);
       ctx.stroke();
       ctx.restore();
     }
