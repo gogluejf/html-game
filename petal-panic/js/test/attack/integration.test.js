@@ -28,7 +28,7 @@ import '../../combat/attack/primitives/fireArea.js';
 import '../../combat/attack/primitives/spike.js';
 import '../../combat/attack/primitives/orbit.js';
 import '../../combat/attack/primitives/boomerang.js';
-import '../../combat/attack/primitives/spawnSplit.js';
+import '../../combat/attack/macros/spawnSplit.js'; // registers the 'spawnSplit' macro
 import '../../combat/attack/primitives/selfDestruct.js';
 
 let passed = 0;
@@ -40,7 +40,7 @@ function ok(name, fn) {
 const ALL_16 = [
   'projectile', 'spread', 'bomb', 'explosion', 'meleeHitbox', 'charge', 'bodyContact',
   'homing', 'predictive', 'beam', 'fireArea', 'spike', 'orbit', 'boomerang',
-  'spawnSplit', 'selfDestruct',
+  'selfDestruct',
 ];
 
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 });
@@ -61,10 +61,10 @@ function pools() {
   return { projectilePool: mk(64), specialPool: mk(16) };
 }
 
-ok('all 16 primitives are registered', () => {
+ok('all 15 primitives are registered', () => {
   const ids = listPrimitives();
   for (const id of ALL_16) assert.ok(ids.includes(id), `missing '${id}'`);
-  assert.equal(ids.length, 16, `expected exactly 16, got ${ids.length}: ${ids.join(',')}`);
+  assert.equal(ids.length, 15, `expected exactly 15, got ${ids.length}: ${ids.join(',')}`);
 });
 
 ok('every registration carries meta + default params', () => {
@@ -119,15 +119,13 @@ ok('composition: homing modifier steers a spawned projectile', () => {
   assert.ok(shot.entity.vy > 0, `steered downward (vy=${shot.entity.vy})`);
 });
 
-ok('composition: explosion detonation triggers spawnSplit children', () => {
+ok('composition: spawnSplit macro materializes child projectiles', () => {
   const ctx = makeContext(attacker(), { pools: pools(), world: { targets: [] } });
-  const boom = invoke('explosion', { x: 300, y: 300, radius: 50, damage: 10 }, ctx);
-  assert.equal(boom._completed, true, 'explosion is synchronous');
-  const split = invoke('spawnSplit', { x: 300, y: 300, count: 4, centerDirection: -Math.PI / 2, angle: 2 * Math.PI, force: 250 }, ctx);
-  const kids = split.children.map((c) => invoke('projectile', {
-    origin: { x: c.x, y: c.y }, direction: c.angle, speed: Math.hypot(c.vx, c.vy), ttl: 1, damage: 5,
-  }, ctx));
-  for (const k of kids) assert.ok(k.entity, 'child projectile spawned');
+  // The macro owns materialization: one invoke → live projectile handles.
+  const fan = invoke('spawnSplit', { x: 300, y: 300, count: 4, centerDirection: -Math.PI / 2, angle: 2 * Math.PI, force: 250, spawnType: 'projectile' }, ctx);
+  assert.equal(fan.children.length, 4, 'raw vectors exposed');
+  assert.equal(fan.handles.length, 4, 'each child → a live projectile handle');
+  for (const k of fan.handles) assert.ok(k.entity, 'child projectile spawned');
 });
 
 ok('composition: selfDestruct fires an explosion payload then dies', () => {

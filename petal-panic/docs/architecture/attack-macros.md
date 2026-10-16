@@ -720,6 +720,52 @@ Examples:
 
 ---
 
+## 28. Spawn / Split
+
+Fans out N child entities from a single point and materializes each into a live
+attack or enemy. The caller invokes one id and gets live results back — it never
+loops children or handles launch physics. This is the shared mechanism behind
+Cluster Bomb and any "burst outward" attack.
+
+### Canonical sequence
+
+Generate fan vectors → materialize each child (projectile / bomb / enemy) →
+children run their own normal rules.
+
+### Main parameters
+
+- **spawnType** — what the children become: `projectile` (straight shots),
+  `bomb` (ballistic arc, bounce, detonate on impact), or `enemy` (a live enemy
+  entity that continues acting toward the attacker).
+- **count** — number created.
+- **centerDirection** — central launch direction.
+- **angle** — distribution width (2π = radial).
+- **force** — launch speed.
+- **inheritVelocity** — optional fraction of parent velocity added to each child.
+- **enemyType** — enemy id when `spawnType` is `enemy`.
+- **bomb** — bomb params override when `spawnType` is `bomb`.
+
+### Rules
+
+- One invoke returns live handles (projectiles/bombs) and/or enemy entities; the
+  caller registers enemies with its world and steps their AI (per-frame enemy AI
+  is the game loop's job, never the engine's).
+- Enemy children are launched with the fan velocity + a knockback-style hit-stun
+  so gravity integrates the full arc before their AI resumes.
+- Child bombs/projectiles follow their own normal primitive rules once launched.
+- Can be triggered on detonation, hit, expiration, or an explicit call.
+
+### Composition
+
+**Fan vector generation → Projectile / Bomb / enemy factory per child**
+
+Examples:
+- `spawnType: bomb, count: 4` → Cluster Bomb payload pop
+- `spawnType: projectile, angle: 2π` → radial burst
+- `spawnType: enemy, count: 3` → spawn a small pack that fans out and chases
+
+---
+
 ## AI usage examples
 
 Attack Macros do not contain enemy decision-making.

@@ -321,30 +321,7 @@ generic homing unless a macro explicitly combines the two.
 
 ---
 
-## 14. Spawn / Split
-
-Creates additional attack entities from an existing attack event.
-
-### Main parameters
-
-- **spawnType** — what the children become: `projectile` (straight shots),
-  `bomb` (ballistic arc, bounce, detonate on impact), or `enemy` (a live enemy
-  entity that continues acting toward the attacker). The host feeds each child
-  descriptor into the matching primitive or enemy factory.
-- **count** — number created.
-- **direction / centerDirection** — central launch direction.
-- **angle / spread** — distribution angle.
-- **force / speed** — launch force.
-- **inheritVelocity** — optional inheritance from parent.
-- **delay** — optional delay before spawning.
-
-Spawn/Split can occur on detonation, hit, expiration, or another explicit trigger.
-For bombs, spawned child bombs use normal Bomb rules after being launched,
-including their own curved trajectories and payloads.
-
----
-
-## 15. Telegraphs are Effects
+## 14. Telegraphs are Effects
 
 There is NO telegraph primitive. A telegraph (warning) is simply an Effect
 Engine effect fired early by whichever attack needs it — the visual lives in
@@ -366,7 +343,7 @@ catalog — not a per-attack copy.
 
 ---
 
-## 16. Body Contact Damage
+## 15. Body Contact Damage
 
 Uses an entity's existing body/collision area as a damaging area. This is
 especially important for enemies, whose bodies may already hurt the hero by
@@ -383,7 +360,7 @@ This avoids creating redundant melee hitboxes for attacks such as a simple charg
 
 ---
 
-## 17. Self-Destruct / Kill Self
+## 16. Self-Destruct / Kill Self
 
 Removes or kills the attacker as part of an attack sequence.
 

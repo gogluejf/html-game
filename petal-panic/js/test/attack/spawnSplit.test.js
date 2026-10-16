@@ -2,7 +2,8 @@
 // Run: node js/test/attack/spawnSplit.test.js
 
 import { strict as assert } from 'node:assert';
-import { splitChildren } from '../../combat/attack/primitives/spawnSplit.js';
+import { splitChildren } from '../../combat/attack/macros/spawnSplit.js'; // also registers the macro
+import '../../combat/attack/primitives/projectile.js'; // for macro materialization
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 
@@ -55,17 +56,22 @@ ok('2π distribution produces a radial pattern', () => {
   assert.ok(Math.abs(angles[3] - Math.PI) < 1e-9, `a3=${angles[3]}`);
 });
 
-ok('handle exposes children and completes immediately', () => {
-  const ctx = makeContext(attacker(), {});
-  const h = invoke('spawnSplit', P, ctx);
-  assert.equal(h.children.length, 3);
-  assert.equal(h._completed, true, 'synchronous completion');
+ok('macro materializes projectile children into live handles', () => {
+  const mk = () => { const items=[]; return { activeItems:items, spawn(...a){const e={alive:true,x:a[0],y:a[1],w:12,h:12,vx:0,vy:0,setLife(){},timers:new Map()};items.push(e);return e;}, updateAll(){} }; };
+  const ctx = makeContext(attacker(), { pools: { projectilePool: mk(), specialPool: mk() } });
+  const h = invoke('spawnSplit', P, ctx); // default spawnType = projectile
+  assert.equal(h.children.length, 3, 'raw vectors exposed');
+  assert.equal(h.handles.length, 3, 'each child → a live projectile handle');
 });
 
-ok('delay is carried for the host to honor', () => {
+ok('macro materializes enemy children with launch velocity + hitstun', () => {
   const ctx = makeContext(attacker(), {});
-  const h = invoke('spawnSplit', { ...P, delay: 0.25 }, ctx);
-  assert.equal(h.delay, 0.25);
+  const h = invoke('spawnSplit', { ...P, spawnType: 'enemy' }, ctx);
+  assert.equal(h.enemies.length, 3, 'each child → a live enemy entity');
+  for (const e of h.enemies) {
+    assert.ok(Math.abs(e.vx) > 0 || Math.abs(e.vy) > 0, 'enemy carries fan velocity');
+    assert.ok(e.hitstunTimer > 0, 'enemy is hit-stunned during its arc');
+  }
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

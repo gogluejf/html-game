@@ -91,6 +91,24 @@ const BARREL_FACTORIES = {
 };
 
 /**
+ * Central enemy factory — the ONE place "type id → live Enemy" is answered.
+ * Level building and attack macros (spawnSplit) both use this so enemy spawning
+ * stays declarative with no duplicated factory map. Returns null for unknown
+ * types so callers can guard.
+ * @param {string} type enemy id (ENEMY_FACTORIES key)
+ * @param {number} x spawn x (top-left of box)
+ * @param {number} y spawn y
+ * @returns {import('../enemies/enemy.js').Enemy|null}
+ */
+export function makeEnemy(type, x, y) {
+  const f = ENEMY_FACTORIES[type];
+  return f ? f(x, y) : null;
+}
+
+/** All spawnable enemy type ids (ENEMY_FACTORIES keys), stable order. */
+export const ENEMY_TYPES = Object.keys(ENEMY_FACTORIES);
+
+/**
  * Instantiate one zone's playable world from its composed terrain + population
  * (generation.md §4, populate.md §1–§5). Pure over the inputs — the same zone
  * + population always yields the same world (deterministic per game).

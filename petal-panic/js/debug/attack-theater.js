@@ -23,8 +23,9 @@ import { makeContext } from '../combat/attack/context.js';
 import { stepProjectile } from '../combat/attack/primitives/projectile.js';
 import { stepBomb, stepBombTerrain } from '../combat/attack/primitives/bomb.js';
 import { Pool, Projectile, Special } from '../objects/projectile.js';
-import { CollisionWorld } from '../core/collision.js';
+import { CollisionWorld, resolve } from '../core/collision.js';
 import { LAYER } from '../consts.js';
+import { ENEMY_TYPES } from '../world/build.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { navLabelString, navLabels, input } from '../core/input.js';
 import { Effects } from '../effects.js';
@@ -32,18 +33,6 @@ import { updateEffects, drawEffects, resetEffects, fireManual } from '../effects
 import { particles } from '../effects/particles.js';
 import { aabbOverlap } from '../core/collision.js';
 import { damage } from '../combat/damage.js';
-// Enemy factories for spawnSplit spawnType='enemy' (theater spawns REAL enemies).
-import { Jester } from '../enemies/jester.js';
-import { VineHound } from '../enemies/vine_hound.js';
-import { Violetta } from '../enemies/violetta.js';
-import { JackOLantern } from '../enemies/jackolantern.js';
-
-const ENEMY_FACTORIES = {
-  jester: (x, y) => new Jester(x, y),
-  vine_hound: (x, y) => new VineHound(x, y),
-  violetta_marionetta: (x, y) => new Violetta(x, y),
-  jackolantern: (x, y) => new JackOLantern(x, y),
-};
 
 // Import every primitive module for its registration side effect.
 import '../combat/attack/primitives/projectile.js';
@@ -54,6 +43,7 @@ import '../combat/attack/primitives/meleeHitbox.js';
 import '../combat/attack/primitives/movement.js';
 import '../combat/attack/primitives/bodyContact.js';
 import '../combat/attack/macros/reticleShot.js';
+import '../combat/attack/macros/spawnSplit.js';
 import '../combat/attack/primitives/homing.js';
 import '../combat/attack/primitives/predictive.js';
 import '../combat/attack/primitives/beam.js';
@@ -61,7 +51,6 @@ import '../combat/attack/primitives/fireArea.js';
 import '../combat/attack/primitives/spike.js';
 import '../combat/attack/primitives/orbit.js';
 import '../combat/attack/primitives/boomerang.js';
-import '../combat/attack/primitives/spawnSplit.js';
 import '../combat/attack/primitives/selfDestruct.js';
 
 // --- Sandbox constants --------------------------------------------------------
@@ -123,7 +112,7 @@ export const TWEAKABLE = {
   spike: [['x', 'num', 16], ['size', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],
   orbit: [['count', 'int', 1], ['minRadius', 'num', 10], ['maxRadius', 'num', 10], ['pulseSpeed', 'num', 0.25], ['speed', 'num', 0.25]],
   boomerang: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['returnSpeed', 'num', 50], ['outboundDuration', 'num', 0.1], ['count', 'int', 1]],
-  spawnSplit: [['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['spawnType', 'enum', ['projectile', 'bomb', 'enemy']], ['enemyType', 'enum', ['jester', 'vine_hound', 'violetta_marionetta', 'jackolantern']]],
+  spawnSplit: [['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['spawnType', 'enum', ['projectile', 'bomb', 'enemy']], ['enemyType', 'enum', ENEMY_TYPES]],
   selfDestruct: [['payloadDelay', 'num', 0.05]],
 };
 
@@ -312,6 +301,10 @@ export const AttackTheater = {
     this._teardown();
     this._pools = { projectilePool: new Pool(Projectile, 64), specialPool: new Pool(Special, 16) };
     this._world = new CollisionWorld({ cellSize: 64 });
+    // Flat floor solid so spawned enemies land and stick (resolve() against it),
+    // mirroring the real engine's ctx.solids. Bombs use stepBombTerrain(GROUND_Y);
+    // enemies use resolve() against this box — same shared collision path.
+    this._floorSolid = { x: -200, y: GROUND_Y, w: VIEW_W + 400, h: 400 };
     this._attacker = { ...ATTACKER_HOME, alive: true, layer: LAYER.HERO, facing: 1, bodyKnockback: null };
     this._target = { ...TARGET_POS, alive: true, hp: 999, layer: LAYER.ENEMY, hitFlash: 0 };
     // REAL damage pipeline (same as Enemy.takeDamage): central damage() +
@@ -523,34 +516,20 @@ export const AttackTheater = {
           this._pendingPredictive = true;
           h = null; // nothing live yet; the shot + marker appear on fire
         } else if (id === 'spawnSplit') {
-          // Split generator: fan the children out as real projectiles.
-          const split = invoke(id, { ...this._params }, this._ctx());
-          for (const c of split.children ?? []) {
-            let child;
-            if (c.spawnType === 'enemy') {
-              // Real enemy spawns at the child position and walks toward the
-              // attacker (tracked in this._spawnedEnemies, stepped each frame).
-              const factory = ENEMY_FACTORIES[c.enemyType ?? 'jester'];
-              if (factory) {
-                const e = factory(c.x - 16, c.y - 24);
-                this._spawnedEnemies.push(e);
-                this._world.add(e);
-              }
-            } else if (c.spawnType === 'bomb') {
-              child = invoke('bomb', {
-                origin: { x: c.x, y: c.y }, direction: c.angle,
-                speed: Math.hypot(c.vx, c.vy), arc: c.bomb?.arc ?? 700,
-                bounce: c.bomb?.bounce ?? true, ttl: c.bomb?.ttl ?? 4,
-                damage: c.bomb?.damage ?? 25, radius: c.bomb?.radius ?? 60,
-                explodeOnContact: c.bomb?.explodeOnContact ?? true,
-              }, this._ctx());
-            } else {
-              child = invoke('projectile', { origin: { x: c.x, y: c.y }, direction: c.angle, speed: Math.hypot(c.vx, c.vy), ttl: 2, damage: 8 }, this._ctx());
-            }
-            if (child?.entity) this._handles.push(child);
+          // Dumb host: the spawnSplit MACRO owns all materialization (fan → live
+          // projectiles/bombs/enemies + launch velocity + hitstun). The theater
+          // only registers the returned enemy entities with its sandbox world and
+          // steps their AI each frame — that per-frame enemy AI is the game loop's
+          // job, never the engine's. No child loops, no physics here.
+          const fan = invoke(id, { ...this._params }, this._ctx());
+          for (const e of fan.enemies ?? []) {
+            this._spawnedEnemies.push(e);
+            this._world.add(e);
           }
-          this._log.unshift(`split → ${split.children?.length ?? 0} ${this._params.spawnType === 'bomb' ? 'bombs' : 'shots'}`);
-          h = split;
+          for (const ch of fan.handles ?? []) this._handles.push(ch);
+          const st = this._params.spawnType;
+          this._log.unshift(`split → ${fan.children?.length ?? 0} ${st === 'bomb' ? 'bombs' : st === 'enemy' ? 'enemies' : 'shots'}`);
+          h = fan;
         } else if (id === 'selfDestruct') {
           // Kamikaze: the ATTACKER itself walks over (choreo below), then dies
           // here with an explosion payload centered ON the target.
@@ -767,12 +746,21 @@ export const AttackTheater = {
     projectilePool.updateAll(DT);
     specialPool.updateAll(DT);
 
-    // Spawned enemies (spawnSplit spawnType='enemy'): run their real AI each
-    // frame, aimed at the sandbox attacker. They walk/chase like in gameplay.
+    // Spawned enemies (spawnSplit spawnType='enemy'): run their real update each
+    // frame. Enemy.update() drives ai() + gravity + integration internally and
+    // honors hit-stun (skips ai() while stunned), so a launched enemy's fan
+    // velocity integrates freely during its arc — same as knockback in gameplay.
+    // Do NOT call e.ai() separately: it bypasses the stun guard and stomps vx.
     for (const e of this._spawnedEnemies ?? []) {
       if (!e.alive) continue;
-      e.ai?.(DT, this._attacker, this._world);
-      e.update?.(DT, this._attacker, this._world);
+      // The attacker fires the split, so its spawned minions hunt the TARGET
+      // (the opposing side), not the attacker. Enemy AI takes the hero/chase
+      // reference as a param — the caller (us) decides who they chase.
+      e.update?.(DT, this._target, this._world);
+      // Ground resolution: same shared resolve() the real engine uses. Gravity
+      // is integrated inside e.update(); this snaps the body onto the floor so
+      // it lands and sticks instead of falling off-screen. Flyers skip.
+      if (e.gravity > 0) resolve(e, [this._floorSolid]);
     }
     // Off-screen cull (sandbox bounds instead of level zone).
     for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
