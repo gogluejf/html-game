@@ -122,6 +122,9 @@ registerPrimitive('beam', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Beam',
+    effects: [
+      { type: 'beam', desc: 'the beam body itself (Effect Engine renders it)' },
+    ],
     desc: 'Continuous damaging line for a duration. Effect Engine renders; primitive owns the AABB + tick-rate damage.',
     params: [
       { key: 'origin', desc: "marker label | {x,y} | null → attacker center" },

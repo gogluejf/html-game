@@ -96,6 +96,9 @@ registerPrimitive('spike', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Spike / Static Hazard',
+    effects: [
+      { type: 'hit-sparkle', desc: 'blood sparkles while damaging (melee hit juice)' },
+    ],
     desc: 'Stationary hazard with warning → visible(damaging) → hidden cycle. repeatCount -1 = infinite.',
     params: [
       { key: 'x', desc: 'center x (world)' },

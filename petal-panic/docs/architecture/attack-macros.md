@@ -58,7 +58,7 @@ No caller assembles primitives directly. Even a single-shot attack goes through
 the `Projectile_Shot` macro — the macro can be trivially simple, but the call site
 is always a macro invocation.
 
-## Macro contract: `meta.invokes`
+## Macro contract: `meta.invokes` + `meta.effects`
 
 Every macro registration declares its composition in metadata:
 
@@ -68,7 +68,10 @@ registerMacro('homingMissile', {
   meta: {
     name: 'Homing Missile',
     desc: '...',
-    invokes: ['projectile'],   // ← what this macro composes (registry ids)
+    invokes: ['projectile'],   // ← what this attack composes (registry ids)
+    effects: [                 // ← VFX it fires (Effect Engine type names)
+      { type: 'hit-sparkle', desc: 'blood sparkles if the missile connects' },
+    ],
     params: [ ... ],
   },
   impl(params, ctx) { ... },
@@ -77,18 +80,26 @@ registerMacro('homingMissile', {
 
 - **`meta.invokes`** is the list of registry ids the macro's `impl()` invokes
   (primitives or other macros). It is the machine-readable form of each doc
-  section's **Invokes:** line.
-- The Attack Theater renders an **INVOKES** panel section from this metadata —
-  hosts never hardcode "what a macro is made of." If a macro changes its
-  composition, only its own file changes.
-- A primitive must NOT declare `invokes` and must not call `invoke()` — that is
-  the enforceable primitive/macro boundary (see Design contract below).
+  section's **Invokes:** line. Macros only.
+- **`meta.effects`** is the list of Effect Engine types the attack fires —
+  declared by BOTH primitives and macros (a primitive like `bomb` owns its
+  detonation burst; a macro like `reticleShot` owns its telegraph). Each entry
+  is `{ type, desc }` where `type` matches an Effect Engine catalog type.
+  Machine-readable form of each doc section's **Effects:** line.
+- The Attack Theater renders **INVOKES** and **EFFECTS** panel sections from
+  this metadata — hosts never hardcode "what a macro is made of" or "what it
+  looks like." If an attack changes its composition or VFX, only its own file
+  changes.
+- A primitive must NOT declare `invokes` and must not call `invoke()` — that
+  is the enforceable primitive/macro boundary (see Design contract below).
 
 ---
 
 ## 1. Projectile Shot
 
 **Invokes:** Projectile
+
+**Effects:** Hit Sparkle (hit juice)
 
 A standard shot fired from the attacker toward a direction or target.
 
@@ -110,6 +121,8 @@ Projectile → travel → collision/expiration.
 ## 2. Predictive Shot
 
 **Invokes:** Projectile
+
+**Effects:** Hit Sparkle (hit juice)
 
 Fires toward where the hero is expected to be if current movement continues.
 Useful for enemies that punish mindless running.
@@ -134,6 +147,8 @@ otherwise.
 ## 3. Reticle Shot
 
 **Invokes:** Projectile
+
+**Effects:** Target Reticle (telegraph)
 
 A telegraphed lock-on shot: a target-reticle EFFECT tracks the target, LOCKS
 its position at `lockTime`, and when the warning window ends ONE projectile
@@ -175,6 +190,8 @@ target-reticle effect (track → lock) → Projectile at locked point.
 
 **Invokes:** Projectile
 
+**Effects:** Hit Sparkle (hit juice)
+
 Fires the same projectile repeatedly with controlled spacing.
 
 ### Sequence
@@ -195,6 +212,8 @@ Projectile → interval → Projectile → repeat.
 ## 5. Spread Shot
 
 **Invokes:** Projectile
+
+**Effects:** Hit Sparkle (hit juice)
 
 Fires multiple projectiles simultaneously across an angle centered on a direction.
 
@@ -217,6 +236,8 @@ Spread → multiple Projectiles.
 
 **Invokes:** Projectile
 
+**Effects:** Hit Sparkle (hit juice)
+
 A radial form of Spread Shot that distributes projectiles around the attacker.
 
 ### Main parameters
@@ -234,6 +255,8 @@ The canonical spread angle is 360 degrees.
 ## 7. Homing Missile
 
 **Invokes:** Projectile
+
+**Effects:** Hit Sparkle (hit juice)
 
 Launches a projectile that continuously steers toward the hero.
 
@@ -259,6 +282,8 @@ a much more agile threat.
 
 **Invokes:** Boomerang
 
+**Effects:** —
+
 Launches one or more projectiles outward before they return.
 
 ### Sequence
@@ -281,6 +306,8 @@ Boomerang outward → turnaround → return.
 ## 9. Orbiting Projectiles
 
 **Invokes:** Orbit
+
+**Effects:** —
 
 Creates projectiles or damaging objects that rotate around the attacker. They
 behave visually as electrons around an owner.
@@ -305,6 +332,8 @@ Spawn orbiting entities → Orbit → expire/remove.
 
 **Invokes:** Orbit → Projectile
 
+**Effects:** Projectile trail (when ejected shots fly)
+
 Starts as Orbiting Projectiles, then releases all orbiting objects. On release,
 each object keeps its current tangential direction/velocity and becomes a linear
 projectile. The result resembles a naturally distributed multi-direction spread
@@ -323,6 +352,8 @@ Includes Orbiting Projectiles parameters plus:
 ## 11. Missile Rain
 
 **Invokes:** Projectile + Telegraph effect
+
+**Effects:** Telegraph effect (landing markers)
 
 Launches multiple projectiles vertically upward from the attacker, sends them
 outside the visible play area, announces their future landing positions with ground
@@ -386,6 +417,8 @@ area rather than using a fixed pixel/unit separation.
 
 **Invokes:** Bomb
 
+**Effects:** Explosion + Screen Flash + Camera Shake (detonation)
+
 Throws one ballistic bomb.
 
 ### Sequence
@@ -407,6 +440,8 @@ Bomb launch → ballistic arc → optional bounce/contact → payload/detonation
 ## 13. Bomb Spread
 
 **Invokes:** Bomb
+
+**Effects:** Explosion + Screen Flash + Camera Shake (per bomb)
 
 Throws multiple bombs around a central throw angle. Like Spread Shot, the requested
 total angle is divided across the bombs. A useful variation is a very high vertical
@@ -430,6 +465,8 @@ air simultaneously.
 ## 14. Cluster Bomb
 
 **Invokes:** Bomb → Spawn/Split
+
+**Effects:** Explosion + Screen Flash + Camera Shake (via Spawn/Split children)
 
 Throws a bomb that spawns multiple smaller bombs when its payload triggers. The
 child bombs are real Bomb primitives: they pop outward in curved trajectories and
@@ -455,6 +492,8 @@ Parent Bomb → trigger → Spawn/Split → child Bombs → child payloads.
 
 **Invokes:** Bomb → Fire Area
 
+**Effects:** Fire Area glow (persistent area render)
+
 Throws a bomb-like object that creates persistent horizontal fire when triggered.
 
 ### Sequence
@@ -476,6 +515,8 @@ Bomb → impact/timer → Fire/Persistent Area.
 
 **Invokes:** Bomb → Explosion
 
+**Effects:** Explosion + Screen Flash + Camera Shake (detonation)
+
 Throws a bomb whose payload is the game's standard radial explosion.
 
 ### Sequence
@@ -495,6 +536,8 @@ Bomb → trigger → Explosion.
 ## 17. Horizontal Beam
 
 **Invokes:** Beam
+
+**Effects:** Beam (the beam body itself)
 
 Telegraphs and then fires a beam horizontally across the play area.
 
@@ -519,6 +562,8 @@ Full-screen horizontal reach is the normal default.
 ## 18. Targeted Beam
 
 **Invokes:** Beam
+
+**Effects:** Beam (the beam body itself)
 
 Uses a reticle to establish a target/direction, locks that target, then fires a
 beam from the attacker/beam marker through the locked position.
@@ -545,6 +590,8 @@ The beam direction is determined by the locked reticle placement.
 
 **Invokes:** Beam
 
+**Effects:** Beam (the beam body itself)
+
 Locks or establishes a starting beam direction, then rotates the beam through an
 angle.
 
@@ -568,6 +615,8 @@ Reticle/telegraph → Beam starts → angular sweep → end.
 ## 20. Melee
 
 **Invokes:** Melee Hitbox
+
+**Effects:** Hit Sparkle (hit juice)
 
 A standardized close-range attack synchronized with animation. Melee does not
 require a separate hitbox when the normal enemy body already represents the
@@ -598,6 +647,8 @@ animation-driven attacks without inventing separate collision systems.
 
 **Invokes:** Movement + Body Contact
 
+**Effects:** —
+
 Moves the attacker aggressively in a direction as an attack. For enemies, the
 normal damaging body is usually sufficient. An extra melee hitbox is only added if
 the animation extends beyond the body.
@@ -623,6 +674,8 @@ stop/recovery.
 ## 22. Stomp
 
 **Invokes:** Telegraph effect + Melee Hitbox
+
+**Effects:** Telegraph effect (warning marker)
 
 A surface-aware stomp attack with one telegraph for the full sequence, followed by
 a short signal before each individual stomp.
@@ -661,6 +714,8 @@ Telegraph once → signal → stomp → interval → signal → stomp → repeat
 
 **Invokes:** Spike / Static Hazard
 
+**Effects:** —
+
 A stomp creates a damaging wave traveling along the supporting surface. On a block
 or platform, the wave ends when that surface ends. On the ground, it travels until
 its configured end or until blocked by solid geometry. The wave can hit barrels it
@@ -685,6 +740,8 @@ Telegraph → stomp impact → surface wave → wave terminates.
 
 **Invokes:** Explosion
 
+**Effects:** Explosion (blast burst)
+
 Creates a damaging dust/effect cloud around the attacker for a duration. The
 mushroom enemy is the conceptual reference.
 
@@ -705,6 +762,8 @@ Dust effect appears → radial area active → duration ends.
 ## 25. Spikes
 
 **Invokes:** Spike / Static Hazard
+
+**Effects:** —
 
 Creates one or more static spike hazards that alternate between active/visible and
 hidden states.
@@ -731,6 +790,8 @@ optional hidden TTL → optional repeat.
 
 **Invokes:** Explosion (payload)
 
+**Effects:** Explosion + Camera Shake (default payload blast)
+
 An enemy deliberately detonates itself and dies. The Jack-o'-lantern enemy is a
 direct example.
 
@@ -755,6 +816,8 @@ standardized detonation behavior.
 ## 27. Dash Lane Sequence
 
 **Invokes:** Movement + Telegraph effect
+
+**Effects:** Telegraph effect (lane warning)
 
 A telegraphed sequence where the attacker enters from offscreen and dashes
 completely across the screen through each configured Y lane exactly once.
@@ -803,6 +866,8 @@ Examples:
 ## 28. Spawn / Split
 
 **Invokes:** Projectile / Bomb / enemy factory
+
+**Effects:** Explosion (bomb children) / Hit Sparkle (projectile children)
 
 Fans out N child entities from a single point and materializes each into a live
 attack or enemy. The caller invokes one id and gets live results back — it never

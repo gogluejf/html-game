@@ -143,6 +143,9 @@ registerPrimitive('projectile', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Projectile',
+    effects: [
+      { type: 'hit-sparkle', desc: 'blood sparkles on enemy impact (hit juice)' },
+    ],
     desc: 'Straight-line shot into the existing projectile/special pools. solidBehavior maps to the existing entity flag; gravity routes to the ballistic pool.',
     params: [
       { key: 'speed', desc: 'px/s travel speed' },

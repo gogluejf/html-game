@@ -47,6 +47,9 @@ registerMacro('homingMissile', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Homing Missile',
+    effects: [
+      { type: 'hit-sparkle', desc: 'blood sparkles if the missile connects (hit juice)' },
+    ],
     desc: 'A projectile that steers toward a target each frame. Spawns + steers in one handle.',
     invokes: ['projectile'],
     params: [

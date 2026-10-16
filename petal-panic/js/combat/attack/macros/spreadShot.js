@@ -47,6 +47,9 @@ registerMacro('spreadShot', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Spread Shot',
+    effects: [
+      { type: 'hit-sparkle', desc: 'blood sparkles per connecting shot (hit juice)' },
+    ],
     desc: 'N projectiles fired simultaneously across an angle. 2π angle = radial burst.',
     invokes: ['projectile'],
     params: [

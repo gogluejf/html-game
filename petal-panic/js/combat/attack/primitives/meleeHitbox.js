@@ -87,6 +87,9 @@ registerPrimitive('meleeHitbox', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Melee Hitbox',
+    effects: [
+      { type: 'hit-sparkle', desc: 'blood sparkles on connect (melee hit juice)' },
+    ],
     desc: 'Temporary damaging AABB via the unified hitbox system. Frame-synced; hitLimit per target per swing.',
     params: [
       { key: 'activeFrames', desc: 'ticks the box stays live' },

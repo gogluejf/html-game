@@ -59,6 +59,10 @@ registerPrimitive('explosion', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Explosion',
+    effects: [
+      { type: 'explosion', desc: 'blast particle burst at the center' },
+      { type: 'camera-shake', desc: 'shake on detonation' },
+    ],
     desc: 'Radial damage event via the single resolveExplosion() path. Alignment decides who it hurts; knockback shoves radially.',
     params: [
       { key: 'x', desc: 'blast center x' },

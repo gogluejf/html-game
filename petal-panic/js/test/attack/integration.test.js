@@ -89,6 +89,21 @@ ok('every macro is registered with an invokes list (composition metadata)', () =
     assert.ok(def?.meta?.name, `${id} has meta.name`);
     assert.ok(Array.isArray(def?.meta?.invokes) && def.meta.invokes.length > 0,
       `${id} declares meta.invokes (what it composes)`);
+    assert.ok(Array.isArray(def?.meta?.effects),
+      `${id} declares meta.effects (VFX it fires, possibly empty)`);
+  }
+});
+
+ok('primitives that fire VFX declare meta.effects', () => {
+  // The five primitives that own their own effect firing must declare it;
+  // the rest may omit the field entirely (no VFX owned).
+  for (const id of ['projectile', 'bomb', 'explosion', 'beam', 'meleeHitbox', 'spike']) {
+    const def = getPrimitive(id);
+    assert.ok(Array.isArray(def?.meta?.effects) && def.meta.effects.length > 0,
+      `${id} declares meta.effects`);
+    for (const fx of def.meta.effects) {
+      assert.ok(typeof fx.type === 'string' && fx.type.length > 0, `${id} effect has a type`);
+    }
   }
 });
 

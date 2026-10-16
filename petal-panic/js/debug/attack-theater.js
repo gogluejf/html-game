@@ -29,7 +29,7 @@ import { ENEMY_TYPES } from '../world/build.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { navLabelString, navLabels, input } from '../core/input.js';
 import { Effects } from '../effects.js';
-import { updateEffects, drawEffects, resetEffects, fireManual } from '../effects/index.js';
+import { updateEffects, drawEffects, resetEffects, fireManual, CATALOG } from '../effects/index.js';
 import { particles } from '../effects/particles.js';
 import { aabbOverlap } from '../core/collision.js';
 import { damage } from '../combat/damage.js';
@@ -1104,15 +1104,16 @@ export const AttackTheater = {
     ctx.font = '14px monospace';
     ctx.fillText(`${this.index + 1} / ${this.entries.length}`, demoW / 2, h - 40);
 
-    // --- Right panel --------------------------------------------------------------
+    // --- Right panel (full height) --------------------------------------------------
     ctx.fillStyle = 'rgba(255,255,255,0.04)';
-    ctx.fillRect(panelX, 60, panelW - 10, h - 100);
+    ctx.fillRect(panelX, 8, panelW - 10, h - 16);
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
-    ctx.strokeRect(panelX, 60, panelW - 10, h - 100);
+    ctx.strokeRect(panelX, 8, panelW - 10, h - 16);
 
-    let py = 84;
+    let py = 30;
     ctx.textAlign = 'left';
+    const bottomLimit = () => h - 36; // hint bar lives at h-16
 
     if (meta?.desc) {
       ctx.font = '12px monospace';
@@ -1142,7 +1143,7 @@ export const AttackTheater = {
       if (!shown.has(key)) rows.push({ key, tweak: false });
     }
     for (const { key, tweak } of rows) {
-      if (py > h - 70) break;
+      if (py > bottomLimit()) break;
       const tIdx = tweak ? tweakList.findIndex(([k]) => k === key) : -1;
       const selected = tIdx === this.paramIndex && tweakList.length > 0;
       ctx.fillStyle = selected ? '#fd6' : (tweak ? '#ccc' : '#666');
@@ -1159,18 +1160,53 @@ export const AttackTheater = {
     const invokes = meta?.invokes;
     if (Array.isArray(invokes) && invokes.length > 0) {
       py += 8;
-      if (py <= h - 70) {
+      if (py <= bottomLimit()) {
         ctx.font = 'bold 11px monospace';
         ctx.fillStyle = '#f7d';
         ctx.fillText('INVOKES', panelX + 12, py);
         py += 15;
         ctx.font = '11px monospace';
         for (const invId of invokes) {
-          if (py > h - 70) break;
+          if (py > bottomLimit()) break;
           const invName = getPrimitive(invId)?.meta?.name ?? getMacro(invId)?.meta?.name ?? invId;
           ctx.fillStyle = '#9feaff';
           ctx.fillText(`→ ${invName}`, panelX + 12, py);
           py += 14;
+        }
+      }
+    }
+
+    // Effects section: VFX this attack fires, straight from its registration
+    // meta (primitives AND macros declare meta.effects the same way). The
+    // effect name resolves through the Effect Engine catalog when available.
+    const effectsMeta = meta?.effects;
+    if (Array.isArray(effectsMeta) && effectsMeta.length > 0) {
+      py += 8;
+      if (py <= bottomLimit()) {
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#f7d';
+        ctx.fillText('EFFECTS', panelX + 12, py);
+        py += 15;
+        ctx.font = '11px monospace';
+        for (const fx of effectsMeta) {
+          if (py > bottomLimit()) break;
+          const catName = CATALOG.find((c) => c.type === fx.type)?.name ?? fx.type;
+          ctx.fillStyle = '#b9f6ca';
+          ctx.fillText(`✦ ${catName}`, panelX + 12, py);
+          py += 13;
+          // Dimmed description on the next line (wrapped at ~34 chars).
+          if (fx.desc) {
+            ctx.fillStyle = '#777';
+            let line = '';
+            for (const word of fx.desc.split(' ')) {
+              if ((line + word).length > 34) {
+                if (py > bottomLimit()) break;
+                ctx.fillText(line.trim(), panelX + 20, py); py += 12; line = word + ' ';
+              } else line += word + ' ';
+            }
+            if (line && py <= bottomLimit()) { ctx.fillText(line.trim(), panelX + 20, py); py += 12; }
+          }
+          py += 3;
         }
       }
     }

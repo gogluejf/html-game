@@ -169,6 +169,11 @@ registerPrimitive('bomb', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Bomb / Ballistic Arc',
+    effects: [
+      { type: 'explosion', desc: 'blast burst at detonation point' },
+      { type: 'screen-flash', desc: 'white flash on detonation' },
+      { type: 'camera-shake', desc: 'shake on detonation' },
+    ],
     desc: 'Thrown object with gravity arc + bounce (reuses Special physics). Detonates a payload on contact/fuse/off-screen.',
     params: [
       { key: 'speed', desc: 'launch force (px/s)' },

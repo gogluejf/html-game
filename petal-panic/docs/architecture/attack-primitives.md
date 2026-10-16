@@ -36,6 +36,8 @@ owns the compositions.
 
 ## 1. Projectile
 
+**Effects:** Hit Sparkle (blood on enemy impact — hit juice)
+
 Creates a projectile from an origin, normally the attacker or one of its markers.
 
 ### Main parameters
@@ -63,6 +65,8 @@ than the projectile defining the barrel's response.
 
 ## 2. Bomb / Ballistic Arc
 
+**Effects:** Explosion + Screen Flash + Camera Shake (detonation)
+
 Creates a thrown object that follows a curved ballistic trajectory. The existing
 Balthazar bomb behavior is the conceptual reference.
 
@@ -89,6 +93,8 @@ A bomb can trigger another primitive or macro payload when it detonates:
 
 ## 3. Beam
 
+**Effects:** Beam (the beam body itself — Effect Engine renders it)
+
 Creates a continuous damaging line or ray. Beam placement and motion are
 controlled by the Attack Macro using it.
 
@@ -108,6 +114,8 @@ Those are macro-level patterns.
 ---
 
 ## 4. Melee Hitbox
+
+**Effects:** Hit Sparkle (blood on connect — hit juice)
 
 Creates a temporary damaging hitbox, usually synchronized with active animation
 frames.
@@ -130,6 +138,8 @@ collision body.
 
 ## 5. Movement / Charge
 
+**Effects:** —
+
 Applies intentional attack movement to the attacker.
 
 ### Main parameters
@@ -148,6 +158,8 @@ extends beyond the normal body.
 ---
 
 ## 6. Explosion
+
+**Effects:** Explosion (blast burst) + Camera Shake
 
 Creates a short-lived radial damage event. Resolved by the single explosion
 system described in `explosion.md`.
@@ -168,6 +180,8 @@ or other attacks.
 
 ## 7. Fire / Persistent Area
 
+**Effects:** — (area render is host/debug; damage ticks via hitbox path)
+
 Creates a damaging area that remains active for a duration. For Petal Panic, the
 common fire form is a horizontal ground area, such as the result of a Molotov.
 
@@ -186,6 +200,8 @@ the core lifetime/collision concept.
 ---
 
 ## 8. Spike / Static Hazard
+
+**Effects:** Hit Sparkle (while damaging — melee hit juice)
 
 Creates a stationary damaging hazard that can appear and disappear.
 
@@ -206,6 +222,8 @@ timed spike traps.
 ---
 
 ## 9. Orbit
+
+**Effects:** —
 
 Keeps one or more attack entities on a 2D PULSING RING around the owner. The
 ring breathes between `minRadius` and `maxRadius` in a smooth cosine cycle
@@ -249,6 +267,8 @@ release in multiple directions based on where each object was in its orbit.
 
 ## 10. Boomerang
 
+**Effects:** —
+
 Creates a projectile that travels outward and then returns.
 
 ### Main parameters
@@ -268,6 +288,8 @@ generic homing unless a macro explicitly combines the two.
 ---
 
 ## 11. Telegraphs are Effects
+
+**Effects:** (this section documents the telegraph EFFECTS themselves)
 
 There is NO telegraph primitive. A telegraph (warning) is simply an Effect
 Engine effect fired early by whichever attack needs it — the visual lives in
@@ -290,6 +312,8 @@ catalog — not a per-attack copy.
 ---
 
 ## 12. Body Contact Damage
+
+**Effects:** — (contact rule; hit juice comes from the attack that triggers it)
 
 Uses an entity's existing body/collision area as a damaging area. This is
 especially important for enemies, whose bodies may already hurt the hero by

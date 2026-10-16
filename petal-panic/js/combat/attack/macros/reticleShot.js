@@ -56,6 +56,9 @@ registerMacro('reticleShot', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Reticle Shot',
+    effects: [
+      { type: 'target-reticle', desc: 'telegraph reticle that tracks then locks' },
+    ],
     desc: 'Target-reticle effect tracks the target, locks at lockTime, then fires one projectile at the locked point when duration ends.',
     invokes: ['projectile'],
     params: [
