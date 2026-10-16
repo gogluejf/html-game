@@ -51,7 +51,7 @@ function pools() {
     return {
       activeItems: items,
       spawn(...args) {
-        const e = { alive: true, x: args[0], y: args[1], w: 12, h: 12, vx: 0, vy: 0, layer: LAYER.PROJ_ALLY };
+        const e = { alive: true, x: args[0], y: args[1], w: 12, h: 12, vx: 0, vy: 0, layer: LAYER.PROJ_ALLY, setLife() {}, timers: new Map() };
         items.push(e);
         return e;
       },

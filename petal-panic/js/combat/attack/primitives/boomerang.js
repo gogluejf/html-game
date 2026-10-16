@@ -39,6 +39,17 @@ const DEFAULTS = Object.freeze({
 /** Build one boomerang's initial state at the attacker center. */
 function makeState(params, ox, oy) {
   const cos = Math.cos(params.direction), sin = Math.sin(params.direction);
+  // Freeze the motion profile for THIS throw. The handle's live bag may be
+  // retuned by the host between throws (theater tweaks), but an in-flight
+  // boomerang keeps the trajectory it was launched with. Cap (`count`) stays
+  // live on the handle; these values do not.
+  const p = {
+    outboundDuration: params.outboundDuration,
+    outboundDistance: params.outboundDistance,
+    returnSpeed: params.returnSpeed,
+    ttl: params.ttl,
+    returnRadius: params.returnRadius,
+  };
   return {
     phase: 'outbound',
     t: 0,
@@ -46,12 +57,14 @@ function makeState(params, ox, oy) {
     vx: cos * params.speed, vy: sin * params.speed,
     ox, oy,
     done: false,
+    p,
   };
 }
 
 /** Advance one boomerang state by dt seconds (exported for tests/hosts). */
-export function stepBoomerangState(s, params, dt) {
+export function stepBoomerangState(s, dt) {
   if (s.done) return true;
+  const params = s.p; // this throw's frozen motion profile
   s.t += dt;
   if (s.t >= params.ttl) {
     s.done = true;
@@ -106,7 +119,9 @@ registerPrimitive('boomerang', {
     const cap = Math.max(1, Math.floor(params.count ?? 1));
     // Live param bag: h.throw() reads CURRENT values (theater re-throws use the
     // adjusted params — a second throw can fly a different direction/duration).
-    h.params = { ...params };
+    // Kept as a live reference so host tweaks flow into the NEXT throw; in-flight
+    // boomerangs are unaffected (makeState snapshots at throw time).
+    h.params = params;
     const states = [];
     h.states = states;
 
@@ -139,7 +154,7 @@ registerPrimitive('boomerang', {
 
     h.step = (dt) => {
       let allDone = states.length > 0;
-      for (const s of states) if (!stepBoomerangState(s, h.params, dt)) allDone = false;
+      for (const s of states) if (!stepBoomerangState(s, dt)) allDone = false;
       if (allDone) h._complete({ returned: states.every((s) => s.phase === 'return'), throws: states.length });
       return allDone;
     };

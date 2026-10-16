@@ -107,7 +107,12 @@ ok('count: cap frees up as boomerangs return home', () => {
   // like adjusting the param in the theater) comes home first and frees its
   // slot while #1 is still outbound.
   const h = invoke('boomerang', { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 1.2, ttl: 4, count: 2 }, ctx);
-  h.params.outboundDuration = 0.3; // next throw flies short
+  // The engine hands impls a merged defaults+caller bag; the host's live bag is
+  // what it mutates (theater tweaks this._params then re-throws). Point the
+  // handle at that bag so the next throw picks up the retuned duration.
+  const live = { ...h.params };
+  h.params = live;
+  live.outboundDuration = 0.3; // next throw flies short
   assert.ok(h.throw() != null, 'second throw fills the cap');
   assert.equal(h.throw(), null, 'cap full → no-op');
   // Short one lands at ~0.55s (frame 33); long one is still outbound until 1.2s.
