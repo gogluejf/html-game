@@ -74,8 +74,7 @@ registerMacro('spawnSplit', {
   meta: {
     name: 'Spawn / Split',
     effects: [
-      { type: 'explosion', desc: 'blast burst when bomb children detonate' },
-      { type: 'hit-sparkle', desc: 'blood sparkles when projectile children connect' },
+      { type: 'explosion', desc: 'blast burst when bomb children detonate (inherited via Bomb)' },
     ],
     desc: 'Fan out N children and materialize each into a live projectile/bomb or enemy. Declarative — one invoke, live results.',
     invokes: ['projectile', 'bomb'],

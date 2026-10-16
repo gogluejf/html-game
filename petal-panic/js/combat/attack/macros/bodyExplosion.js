@@ -45,8 +45,7 @@ registerMacro('bodyExplosion', {
   meta: {
     name: 'Body Explosion / Kamikaze',
     effects: [
-      { type: 'explosion', desc: 'blast burst from the default payload' },
-      { type: 'camera-shake', desc: 'shake from the default payload' },
+      { type: 'explosion', desc: 'blast burst from the default payload (inherited via Explosion)' },
     ],
     desc: 'Fire a payload blast (default: explosion on the target), then die. Kamikaze pattern.',
     invokes: ['explosion'],

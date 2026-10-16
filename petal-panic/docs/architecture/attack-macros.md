@@ -85,11 +85,17 @@ registerMacro('homingMissile', {
   declared by BOTH primitives and macros (a primitive like `bomb` owns its
   detonation burst; a macro like `reticleShot` owns its telegraph). Each entry
   is `{ type, desc }` where `type` matches an Effect Engine catalog type.
-  Machine-readable form of each doc section's **Effects:** line.
+  An attack declares only its OWN native effects here — a macro does NOT copy
+  its invoked attacks' effects into this field.
+- **Inheritance is resolved, not copied.** `resolveEffects(id)` in
+  `combat/attack/effectsMeta.js` returns an attack's effective effect rows:
+  its own `meta.effects` plus, for macros, the effects of every id in
+  `meta.invokes` (deduped by type; inherited rows labeled with their source).
+  Change a primitive's VFX and every macro that invokes it updates for free —
+  no duplication, no drift.
 - The Attack Theater renders **INVOKES** and **EFFECTS** panel sections from
-  this metadata — hosts never hardcode "what a macro is made of" or "what it
-  looks like." If an attack changes its composition or VFX, only its own file
-  changes.
+  this metadata (EFFECTS via `resolveEffects()`) — hosts never hardcode "what
+  a macro is made of" or "what it looks like."
 - A primitive must NOT declare `invokes` and must not call `invoke()` — that
   is the enforceable primitive/macro boundary (see Design contract below).
 

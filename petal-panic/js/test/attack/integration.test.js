@@ -12,6 +12,7 @@ import { listPrimitives, getPrimitive, listMacros, getMacro } from '../../combat
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { LAYER } from '../../consts.js';
+import { resolveEffects } from '../../combat/attack/effectsMeta.js';
 
 // Import every primitive for its registration side effect.
 import '../../combat/attack/primitives/projectile.js';
@@ -89,9 +90,22 @@ ok('every macro is registered with an invokes list (composition metadata)', () =
     assert.ok(def?.meta?.name, `${id} has meta.name`);
     assert.ok(Array.isArray(def?.meta?.invokes) && def.meta.invokes.length > 0,
       `${id} declares meta.invokes (what it composes)`);
-    assert.ok(Array.isArray(def?.meta?.effects),
-      `${id} declares meta.effects (VFX it fires, possibly empty)`);
   }
+});
+
+ok("resolveEffects: macros inherit invoked primitives' effects dynamically", () => {
+  // homingMissile declares no native effects — its row must come from invoking projectile.
+  const hm = resolveEffects('homingMissile').map((r) => r.type);
+  assert.ok(hm.includes('hit-sparkle'), `homingMissile inherits hit-sparkle (got ${hm})`);
+  // spawnSplit: native explosion + inherited projectile/bomb effects, deduped by type.
+  const ss = resolveEffects('spawnSplit');
+  const types = ss.map((r) => r.type);
+  for (const t of ['explosion', 'hit-sparkle', 'screen-flash', 'camera-shake']) {
+    assert.ok(types.includes(t), `spawnSplit resolves ${t}`);
+  }
+  assert.equal(new Set(types).size, types.length, 'no duplicate types');
+  // Inherited rows carry a via-label naming the source attack.
+  assert.ok(ss.some((r) => r.via), 'inherited rows are labeled with their source');
 });
 
 ok('primitives that fire VFX declare meta.effects', () => {

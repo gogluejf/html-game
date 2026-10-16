@@ -20,6 +20,7 @@
 import { listPrimitives, listMacros, getPrimitive, getMacro } from '../combat/attack/registry.js';
 import { invoke } from '../combat/attack/engine.js';
 import { makeContext } from '../combat/attack/context.js';
+import { resolveEffects } from '../combat/attack/effectsMeta.js';
 import { stepProjectile } from '../combat/attack/primitives/projectile.js';
 import { stepBomb, stepBombTerrain } from '../combat/attack/primitives/bomb.js';
 import { Pool, Projectile, Special } from '../objects/projectile.js';
@@ -880,6 +881,11 @@ export const AttackTheater = {
   draw(ctx, w, h) {
     if (!this.active) return;
     ctx.save();
+    // Camera shake: gameplay applies getShakeOffset() to the camera translate
+    // (render.js). The theater's arena is static, so apply it here as a canvas
+    // offset around the whole demo pass — same engine read, no duplicate math.
+    const sh = Effects.getShakeOffset();
+    if (sh.x !== 0 || sh.y !== 0) ctx.translate(sh.x, sh.y);
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, w, h);
 
@@ -1176,11 +1182,12 @@ export const AttackTheater = {
       }
     }
 
-    // Effects section: VFX this attack fires, straight from its registration
-    // meta (primitives AND macros declare meta.effects the same way). The
-    // effect name resolves through the Effect Engine catalog when available.
-    const effectsMeta = meta?.effects;
-    if (Array.isArray(effectsMeta) && effectsMeta.length > 0) {
+    // Effects section: VFX this attack fires, resolved from registration meta
+    // via resolveEffects() — macros list their native effects PLUS everything
+    // their invoked attacks declare (dynamic composition, no duplication).
+    // Effect display names resolve through the Effect Engine catalog.
+    const effectRows = resolveEffects(id);
+    if (effectRows.length > 0) {
       py += 8;
       if (py <= bottomLimit()) {
         ctx.font = 'bold 11px monospace';
@@ -1188,11 +1195,11 @@ export const AttackTheater = {
         ctx.fillText('EFFECTS', panelX + 12, py);
         py += 15;
         ctx.font = '11px monospace';
-        for (const fx of effectsMeta) {
+        for (const fx of effectRows) {
           if (py > bottomLimit()) break;
           const catName = CATALOG.find((c) => c.type === fx.type)?.name ?? fx.type;
           ctx.fillStyle = '#b9f6ca';
-          ctx.fillText(`✦ ${catName}`, panelX + 12, py);
+          ctx.fillText(`✦ ${catName}${fx.via ? ` (${fx.via})` : ''}`, panelX + 12, py);
           py += 13;
           // Dimmed description on the next line (wrapped at ~34 chars).
           if (fx.desc) {

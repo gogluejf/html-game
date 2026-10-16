@@ -76,9 +76,6 @@ registerMacro('predictiveShot', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Predictive Shot',
-    effects: [
-      { type: 'hit-sparkle', desc: 'blood sparkles if the shot connects (hit juice)' },
-    ],
     desc: 'One projectile fired at the intercept point — where a bullet (at speed) and a moving target meet.',
     invokes: ['projectile'],
     params: [
