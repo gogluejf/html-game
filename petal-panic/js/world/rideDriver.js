@@ -44,6 +44,12 @@ export function createRideState(){
     _onOneWay: false,
     _manualInputFn: null,// injected: () => input object (plan-07 manual play)
     _events: null,      // filled by stepRide each call
+    _locked: false,     // clear lockout: once set, EVERY frame gets dead input.
+                       // The AI brain's picker script and exitRunInput() would
+                       // otherwise keep commanding direction on later frames —
+                       // zeroing the input once is not enough, the command is
+                       // re-derived every frame. This is the ride equivalent of
+                       // input.barrier() in manual play.
   };
 }
 
@@ -79,9 +85,13 @@ export function stepRide(state, dt){
   const { world, hero, brain } = state;
   if (!state.active || !world || !hero) return ev;
 
-  // Input: manual play (browser plan-07) overrides the AI brain entirely.
+  // Input: clear lockout wins over EVERYTHING — brain, exit-run, manual.
+  // After the endpoint is crossed the hero must coast to a stall; re-deriving
+  // input from the picker script or polling the keyboard would push him on.
   let inp;
-  if (state.manual && state._manualInputFn){
+  if (state._locked){
+    inp = { left: false, right: false, up: false, down: false, jump: false, super: false };
+  } else if (state.manual && state._manualInputFn){
     inp = state._manualInputFn();
   } else {
     inp = brain ? decideInput(brain, hero, world) : exitRunInput(state);
@@ -122,11 +132,13 @@ export function stepRide(state, dt){
   }
   if (state._landFlash > 0) state._landFlash--;
 
-  // Reaching the authored macro endpoint concludes the ride in EITHER mode —
+  // Reaching the authored macro ENDPOINT concludes the ride in EITHER mode —
   // but ONLY after every goal surface has been landed. "Completely crossed"
   // means the hero's TRAILING edge is past the line: horizontal = left edge
   // past macroEndPx; vertical = feet at/above the end height (whole body
-  // across, not just the top corner touching).
+  // across, not just the top corner touching). The endpoint is the last
+  // AUTHORED unit, NOT the level/zone edge — the zone extends beyond it so
+  // the hero can coast to a stop on the ground there.
   const allLanded = state.goals.length === 0 || state.landedSet.size >= state.goals.length;
   const boxW = box.w / 2;
   const atExit = world.vertical
@@ -134,6 +146,11 @@ export function stepRide(state, dt){
     : (cx - boxW) >= world.macroEndPx;
   if (atExit && allLanded){
     ev.cleared = true;
+    // Latch the lockout: from THIS frame on, every step gets dead input.
+    // The hero coasts out on residual velocity and friction stalls him —
+    // same guarantee as input.barrier() when manual play stops.
+    state._locked = true;
+    Object.assign(inp, { left: false, right: false, down: false, jump: false, super: false });
     return ev;
   }
 
