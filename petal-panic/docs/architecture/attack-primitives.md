@@ -36,7 +36,8 @@ owns the compositions.
 
 ## 1. Projectile
 
-**Effects:** Hit Sparkle (blood on enemy impact — hit juice)
+**Effects:** Hit Sparkle (blood on enemy impact — hit juice), Debris (dusty grain
+puff when a `stop` shot dies on terrain)
 
 Creates a projectile from an origin, normally the attacker or one of its markers.
 
@@ -50,8 +51,10 @@ Creates a projectile from an origin, normally the attacker or one of its markers
 - **damage** — damage caused on valid contact.
 - **origin / marker** — where the projectile starts (a named marker on the
   attacker's animation, or an explicit position).
-- **solidBehavior** — how the projectile interacts with terrain: `pass`,
-  `absorb`, or `bounce`.
+- **solidBehavior** — how the projectile interacts with terrain:
+  - `phase` — passes through terrain (default; thorns/spread).
+  - `stop` — dies on impact (saws); fires the debris puff at the death point.
+  - `reflect` — bounces off the surface and keeps flying (bombs).
 - **gravity** — optional vertical acceleration (ballistic arc).
 
 ### Effects / hooks

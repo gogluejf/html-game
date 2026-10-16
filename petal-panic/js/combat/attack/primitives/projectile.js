@@ -17,6 +17,7 @@ import { registerPrimitive } from '../registry.js';
 import { resolveMarker } from '../context.js';
 import { AttackHandle } from '../engine.js';
 import { dirAngle } from '../../../core/vec.js';
+import { fireManual } from '../../../effects/index.js';
 
 /** Default params (canonical values; callers override per shot). */
 const DEFAULTS = Object.freeze({
@@ -131,6 +132,14 @@ export function stepProjectile(ent, h) {
   if (ent._attackDone) return true;
   if (!ent.alive) {
     ent._attackDone = true;
+    // Solid-impact debris: a shot that DIED against terrain (not an enemy hit,
+    // not a fuse expiry) puffs dusty grain at its death point — the projectile
+    // owns this juice so every host gets it for free (same pattern as bomb's
+    // detonation VFX). 'phase' shots never die on terrain; specials handle
+    // their own fizzle/detonation effects.
+    if (!ent._attackHit && !ent.ttlExpired && ent.solidBehavior === 'stop') {
+      fireManual({ type: 'debris', params: { x: ent.x + ent.w / 2, y: ent.y + ent.h / 2 } });
+    }
     if (ent._attackHit) h._emit('hit', { dealt: ent.damage });
     else h._emit('expire');
     h._complete();
@@ -145,6 +154,7 @@ registerPrimitive('projectile', {
     name: 'Projectile',
     effects: [
       { type: 'hit-sparkle', desc: 'blood sparkles on enemy impact (hit juice)' },
+      { type: 'debris', desc: 'dusty grain puff when a solid-behavior shot dies on terrain' },
     ],
     desc: 'Straight-line shot into the existing projectile/special pools. solidBehavior maps to the existing entity flag; gravity routes to the ballistic pool.',
     params: [
