@@ -87,6 +87,7 @@ const SANDBOX_PRESETS = {
   boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 3 },
   spawnSplit: { x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'jester' },
   spreadShot: { count: 3, direction: 0, angle: 60 * DEG, speed: 500, ttl: 2, damage: 10 },
+  projectileShot: { direction: 0.5, speed: 600, ttl: 2, damage: 10 },
   bodyExplosion: { deathBehavior: 'kill', triggerPayloadFirst: true, payloadDelay: 0.1 },
 };
 
@@ -94,6 +95,7 @@ const SANDBOX_PRESETS = {
 export const TWEAKABLE = {
   projectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.25], ['damage', 'num', 2]],
   spreadShot: [['count', 'int', 1], ['angle', 'angle', 15 * DEG]],
+  projectileShot: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50]],
   bomb: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
   explosion: [['x', 'num', 20], ['y', 'num', 20], ['radius', 'num', 10], ['damage', 'num', 5]],
   meleeHitbox: [['activeFrames', 'int', 2], ['w', 'num', 8], ['h', 'num', 8], ['damage', 'num', 2]],
@@ -453,6 +455,17 @@ export const AttackTheater = {
       // math has something to lead against (the choreo keeps moving it).
       this._target.vx = -160;
       this._target.vy = 0;
+    } else if (id === 'projectileShot') {
+      // Projectile Shot demo: the ATTACKER hovers on a platform high to the
+      // left; the target WALKS LEFT along the ground. The shot fires at a
+      // DIAGONAL angle (down-right) — not flat, not "aim at target" — so the
+      // demo proves the direction param does real aim math: you watch the
+      // bullet leave at the tuned angle and see where it lands relative to
+      // the walker. Same staging family as reticleShot/predictiveShot.
+      this._choreo = { kind: 'strafe', t: 0, baseX: TARGET_POS.x };
+      this._attacker.x = 140;
+      this._attacker.y = 150; // up on the platform
+      this._attacker.facing = 1;
     } else if (id === 'orbit') {
       // Orbit demo: the ATTACKER walks up to the target so the satellites
       // sweep through its body. Space toggles eject (when ejectable).
@@ -777,7 +790,7 @@ export const AttackTheater = {
           finished = stepProjectile(h.shot.entity, h.shot) || finished;
         }
       } else if (h.entity) {
-        if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
+        if (h.id === 'projectile' || h.id === 'projectileShot') finished = stepProjectile(h.entity, h);
         else if (h.id === 'bomb') finished = stepBomb(h.entity, this._params, this._ctx(), h);
         else if (typeof h.step === 'function') finished = h.step(DT); // homingMissile / predictiveShot / ...
       } else if (typeof h.step === 'function') {

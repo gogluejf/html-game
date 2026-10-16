@@ -6,6 +6,7 @@
 // files. Adding a new macro = one new file + one line here.
 
 import './reticleShot.js';
+import './projectileShot.js';
 import './spawnSplit.js';
 import './homingMissile.js';
 import './predictiveShot.js';
