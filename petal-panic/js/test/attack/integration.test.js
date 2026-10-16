@@ -1,35 +1,37 @@
-// Task 1.19 — Primitive integration test: all 16 registered + composable.
+// Task 1.19 — Attack integration test: all 12 primitives + composable macros.
 // Run: node js/test/attack/integration.test.js
 //
 // Verifies the Wave 1 + Wave 2 surface together:
 //   - every primitive id is registered with meta + defaults
 //   - the engine can invoke each one in a minimal context without throwing
-//   - composition chains work (spread→projectile, predictive→projectile,
-//     projectile+homing, explosion→spawnSplit→projectiles, selfDestruct payload)
+//   - composition chains work (spreadShot fan, predictiveShot aim→fire,
+//     homingMissile steer, explosion→spawnSplit→projectiles, bodyExplosion payload)
 
 import { strict as assert } from 'node:assert';
-import { listPrimitives, getPrimitive } from '../../combat/attack/registry.js';
+import { listPrimitives, getPrimitive, listMacros, getMacro } from '../../combat/attack/registry.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { LAYER } from '../../consts.js';
 
 // Import every primitive for its registration side effect.
 import '../../combat/attack/primitives/projectile.js';
-import '../../combat/attack/primitives/spread.js';
 import '../../combat/attack/primitives/bomb.js';
 import '../../combat/attack/primitives/explosion.js';
 import '../../combat/attack/primitives/meleeHitbox.js';
 import '../../combat/attack/primitives/movement.js'; // registers 'charge'
 import '../../combat/attack/primitives/bodyContact.js';
-import '../../combat/attack/primitives/homing.js';
-import '../../combat/attack/primitives/predictive.js';
 import '../../combat/attack/primitives/beam.js';
 import '../../combat/attack/primitives/fireArea.js';
 import '../../combat/attack/primitives/spike.js';
 import '../../combat/attack/primitives/orbit.js';
 import '../../combat/attack/primitives/boomerang.js';
-import '../../combat/attack/macros/spawnSplit.js'; // registers the 'spawnSplit' macro
-import '../../combat/attack/primitives/selfDestruct.js';
+// Macros (composition layer; each declares meta.invokes).
+import '../../combat/attack/macros/reticleShot.js';
+import '../../combat/attack/macros/spawnSplit.js';
+import '../../combat/attack/macros/homingMissile.js';
+import '../../combat/attack/macros/predictiveShot.js';
+import '../../combat/attack/macros/spreadShot.js';
+import '../../combat/attack/macros/bodyExplosion.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -37,10 +39,13 @@ function ok(name, fn) {
   catch (e) { console.error(`  ✗ ${name}\n    ${e.message}`); process.exitCode = 1; }
 }
 
-const ALL_16 = [
-  'projectile', 'spread', 'bomb', 'explosion', 'meleeHitbox', 'charge', 'bodyContact',
-  'homing', 'predictive', 'beam', 'fireArea', 'spike', 'orbit', 'boomerang',
-  'selfDestruct',
+const ALL_PRIMITIVES = [
+  'projectile', 'bomb', 'explosion', 'meleeHitbox', 'charge', 'bodyContact',
+  'beam', 'fireArea', 'spike', 'orbit', 'boomerang',
+];
+
+const ALL_MACROS = [
+  'reticleShot', 'spawnSplit', 'homingMissile', 'predictiveShot', 'spreadShot', 'bodyExplosion',
 ];
 
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 });
@@ -61,14 +66,14 @@ function pools() {
   return { projectilePool: mk(64), specialPool: mk(16) };
 }
 
-ok('all 15 primitives are registered', () => {
+ok('all 11 primitives are registered', () => {
   const ids = listPrimitives();
-  for (const id of ALL_16) assert.ok(ids.includes(id), `missing '${id}'`);
-  assert.equal(ids.length, 15, `expected exactly 15, got ${ids.length}: ${ids.join(',')}`);
+  for (const id of ALL_PRIMITIVES) assert.ok(ids.includes(id), `missing '${id}'`);
+  assert.equal(ids.length, 11, `expected exactly 11, got ${ids.length}: ${ids.join(',')}`);
 });
 
 ok('every registration carries meta + default params', () => {
-  for (const id of ALL_16) {
+  for (const id of ALL_PRIMITIVES) {
     const def = getPrimitive(id);
     assert.ok(def?.meta?.name, `${id} has meta.name`);
     assert.ok(Array.isArray(def?.meta?.params), `${id} has meta.params list`);
@@ -76,9 +81,20 @@ ok('every registration carries meta + default params', () => {
   }
 });
 
+ok('every macro is registered with an invokes list (composition metadata)', () => {
+  const ids = listMacros();
+  for (const id of ALL_MACROS) assert.ok(ids.includes(id), `missing macro '${id}'`);
+  for (const id of ALL_MACROS) {
+    const def = getMacro(id);
+    assert.ok(def?.meta?.name, `${id} has meta.name`);
+    assert.ok(Array.isArray(def?.meta?.invokes) && def.meta.invokes.length > 0,
+      `${id} declares meta.invokes (what it composes)`);
+  }
+});
+
 ok('every primitive invokes without throwing in a minimal context', () => {
   const ctx = makeContext(attacker(), { pools: pools(), target: { x: 400, y: 200, w: 32, h: 32, alive: true, vx: 0, vy: 0 } });
-  for (const id of ALL_16) {
+  for (const id of ALL_PRIMITIVES) {
     let h;
     try {
       h = invoke(id, {}, ctx);
@@ -89,34 +105,36 @@ ok('every primitive invokes without throwing in a minimal context', () => {
   }
 });
 
-ok('composition: spread angles feed projectile shots', () => {
+ok('composition: spreadShot macro fans out live projectiles', () => {
   const ctx = makeContext(attacker(), { pools: pools() });
-  const fan = invoke('spread', { count: 3, direction: 0, angle: Math.PI / 3 }, ctx);
+  const fan = invoke('spreadShot', { count: 3, direction: 0, angle: Math.PI / 3 }, ctx);
   assert.equal(fan.angles.length, 3);
-  const handles = fan.angles.map((a) => invoke('projectile', { direction: a, speed: 500, ttl: 1, damage: 5 }, ctx));
-  for (const h of handles) assert.ok(h.entity, 'each shot spawned an entity');
+  assert.equal(fan.handles.length, 3);
+  for (const h of fan.handles) assert.ok(h.entity, 'each shot spawned an entity');
 });
 
-ok('composition: predictive aim drives a projectile direction', () => {
+ok('composition: predictiveShot macro aims ahead and fires one projectile', () => {
   const t = { x: 400, y: 200, w: 32, h: 32, alive: true, vx: 200, vy: 0 };
   const ctx = makeContext(attacker(), { pools: pools(), target: t });
-  const aim = invoke('predictive', { speed: 600 }, ctx);
-  const shot = invoke('projectile', { direction: aim.direction, speed: 600, ttl: 1, damage: 5 }, ctx);
-  assert.ok(shot.entity, 'shot spawned');
+  const h = invoke('predictiveShot', { speed: 600 }, ctx);
+  assert.ok(h.entity, 'shot spawned');
   // Aimed at the intercept point: ahead of the target's current center.
-  assert.ok(aim.point.x > 416, `intercept point x=${aim.point.x}`);
+  assert.ok(h.point.x > 416, `intercept point x=${h.point.x}`);
 });
 
-ok('composition: homing modifier steers a spawned projectile', () => {
+ok('composition: homingMissile macro steers its own projectile', () => {
   // Target BELOW-RIGHT of the attacker (screen y grows downward) → steering
   // must turn the velocity downward (vy > 0).
   const t = { x: 400, y: 300, w: 32, h: 32, alive: true, vx: 0, vy: 0 };
   const ctx = makeContext(attacker(), { pools: pools(), target: t });
-  const shot = invoke('projectile', { direction: 0, speed: 400, ttl: 3, damage: 5 }, ctx);
-  const homing = invoke('homing', { target: t, turnRate: 4, ttl: 2 }, ctx);
-  homing.bind(shot.entity);
-  for (let i = 0; i < 60; i++) homing.step(1 / 60);
-  assert.ok(shot.entity.vy > 0, `steered downward (vy=${shot.entity.vy})`);
+  const h = invoke('homingMissile', { target: t, turnRate: 4, ttl: 2 }, ctx);
+  assert.ok(h.entity, 'missile spawned');
+  for (let i = 0; i < 60; i++) {
+    if (h.step(1 / 60)) break;
+    h.entity.x += h.entity.vx / 60;
+    h.entity.y += h.entity.vy / 60;
+  }
+  assert.ok(h.entity.vy > 0, `steered downward (vy=${h.entity.vy})`);
 });
 
 ok('composition: spawnSplit macro materializes child projectiles', () => {
@@ -128,11 +146,11 @@ ok('composition: spawnSplit macro materializes child projectiles', () => {
   for (const k of fan.handles) assert.ok(k.entity, 'child projectile spawned');
 });
 
-ok('composition: selfDestruct fires an explosion payload then dies', () => {
+ok('composition: bodyExplosion fires an explosion payload then dies', () => {
   const e = { x: 300, y: 300, w: 32, h: 32, alive: true, hp: 20, takeDamage(a) { this.hp -= a; if (this.hp <= 0) this.alive = false; return a; } };
   const victim = { x: 310, y: 310, w: 24, h: 24, alive: true, hp: 100, layer: LAYER.ENEMY, takeDamage(a) { this.hp -= a; return a; } };
-  const ctx = makeContext(e, { world: { targets: [victim] } });
-  const h = invoke('selfDestruct', {
+  const ctx = makeContext(e, { world: { targets: [victim] }, target: victim });
+  const h = invoke('bodyExplosion', {
     triggerPayloadFirst: true,
     payload: { id: 'explosion', params: { x: 316, y: 316, radius: 40, damage: 30, targets: [victim] } },
   }, ctx);

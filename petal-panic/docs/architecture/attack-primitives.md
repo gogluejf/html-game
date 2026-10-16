@@ -61,61 +61,7 @@ than the projectile defining the barrel's response.
 
 ---
 
-## 2. Predictive Targeting
-
-Aims at where a moving target will be when the bullet arrives, assuming the
-target keeps its current velocity. Pure aiming math used by another primitive,
-usually Projectile.
-
-### Main parameters
-
-- **target** — normally the hero.
-- **speed** — bullet speed (same param as projectile).
-
-The result is an aim direction or target point. It does not create a projectile
-by itself.
-
-The result is an aim direction or target point. It does not create a projectile
-by itself.
-
----
-
-## 3. Homing / Steering
-
-Continuously adjusts the movement direction of a projectile toward a target.
-
-### Main parameters
-
-- **speed** — forward travel speed.
-- **steerVelocity / turnRate** — how quickly it can correct toward the target.
-  Low values create wide, difficult turns; high values create agile missiles.
-- **target** — entity being followed.
-- **initialDirection** — starting direction.
-- **ttl** — optional lifetime.
-
-Homing should not imply perfect tracking. Steering strength determines how
-recoverable the trajectory is after missing or overshooting.
-
----
-
-## 4. Spread
-
-Calculates multiple simultaneous directions around a central direction.
-
-### Main parameters
-
-- **count** — number of simultaneous outputs.
-- **direction** — center direction of the spread.
-- **angle** — total spread angle (radians). Outputs are distributed evenly
-  across this angle. A 360° angle creates a radial attack.
-- **ttl** — optional projectile lifetime when used with projectiles.
-
-Spread is direction-generation logic and can be combined with projectiles, bombs,
-or other compatible primitives.
-
----
-
-## 5. Bomb / Ballistic Arc
+## 2. Bomb / Ballistic Arc
 
 Creates a thrown object that follows a curved ballistic trajectory. The existing
 Balthazar bomb behavior is the conceptual reference.
@@ -141,7 +87,7 @@ A bomb can trigger another primitive or macro payload when it detonates:
 
 ---
 
-## 6. Beam
+## 3. Beam
 
 Creates a continuous damaging line or ray. Beam placement and motion are
 controlled by the Attack Macro using it.
@@ -161,7 +107,7 @@ Those are macro-level patterns.
 
 ---
 
-## 7. Melee Hitbox
+## 4. Melee Hitbox
 
 Creates a temporary damaging hitbox, usually synchronized with active animation
 frames.
@@ -182,7 +128,7 @@ collision body.
 
 ---
 
-## 8. Movement / Charge
+## 5. Movement / Charge
 
 Applies intentional attack movement to the attacker.
 
@@ -201,7 +147,7 @@ extends beyond the normal body.
 
 ---
 
-## 9. Explosion
+## 6. Explosion
 
 Creates a short-lived radial damage event. Resolved by the single explosion
 system described in `explosion.md`.
@@ -220,7 +166,7 @@ or other attacks.
 
 ---
 
-## 10. Fire / Persistent Area
+## 7. Fire / Persistent Area
 
 Creates a damaging area that remains active for a duration. For Petal Panic, the
 common fire form is a horizontal ground area, such as the result of a Molotov.
@@ -239,7 +185,7 @@ the core lifetime/collision concept.
 
 ---
 
-## 11. Spike / Static Hazard
+## 8. Spike / Static Hazard
 
 Creates a stationary damaging hazard that can appear and disappear.
 
@@ -259,7 +205,7 @@ timed spike traps.
 
 ---
 
-## 12. Orbit
+## 9. Orbit
 
 Keeps one or more attack entities on a 2D PULSING RING around the owner. The
 ring breathes between `minRadius` and `maxRadius` in a smooth cosine cycle
@@ -301,7 +247,7 @@ release in multiple directions based on where each object was in its orbit.
 
 ---
 
-## 13. Boomerang
+## 10. Boomerang
 
 Creates a projectile that travels outward and then returns.
 
@@ -321,7 +267,7 @@ generic homing unless a macro explicitly combines the two.
 
 ---
 
-## 14. Telegraphs are Effects
+## 11. Telegraphs are Effects
 
 There is NO telegraph primitive. A telegraph (warning) is simply an Effect
 Engine effect fired early by whichever attack needs it — the visual lives in
@@ -343,7 +289,7 @@ catalog — not a per-attack copy.
 
 ---
 
-## 15. Body Contact Damage
+## 12. Body Contact Damage
 
 Uses an entity's existing body/collision area as a damaging area. This is
 especially important for enemies, whose bodies may already hurt the hero by
@@ -360,22 +306,6 @@ This avoids creating redundant melee hitboxes for attacks such as a simple charg
 
 ---
 
-## 16. Self-Destruct / Kill Self
-
-Removes or kills the attacker as part of an attack sequence.
-
-### Main parameters
-
-- **timing** — when death/removal occurs.
-- **deathBehavior** — normal death, immediate removal, or attack-specific death state.
-- **triggerPayloadFirst** — whether an explosion/spawn/etc. is triggered before death.
-
-This is primarily useful for kamikaze-style attacks. The actual damage normally
-comes from another primitive such as Explosion; Self-Destruct controls the
-attacker lifecycle.
-
----
-
 ## Composition principle
 
 Primitives are intentionally small and composable. Examples:
@@ -384,7 +314,7 @@ Primitives are intentionally small and composable. Examples:
 - **Extended horn charge** = Movement + Body Contact Damage + Melee Hitbox.
 - **Molotov** = Bomb → Fire.
 - **Cluster Bomb** = Bomb → Spawn/Split → child Bombs.
-- **Kamikaze** = telegraph effect → Explosion → Self-Destruct.
+- **Kamikaze** = Body Explosion macro (payload blast → death).
 - **Orbit Eject** = Orbit → eject into Projectile movement.
 
 Finished, recognizable patterns belong in **Attack Macros** (`attack-macros.md`),

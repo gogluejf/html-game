@@ -36,7 +36,6 @@ import { damage } from '../combat/damage.js';
 
 // Import every primitive module for its registration side effect.
 import '../combat/attack/primitives/projectile.js';
-import '../combat/attack/primitives/spread.js';
 import '../combat/attack/primitives/bomb.js';
 import '../combat/attack/primitives/explosion.js';
 import '../combat/attack/primitives/meleeHitbox.js';
@@ -44,14 +43,15 @@ import '../combat/attack/primitives/movement.js';
 import '../combat/attack/primitives/bodyContact.js';
 import '../combat/attack/macros/reticleShot.js';
 import '../combat/attack/macros/spawnSplit.js';
-import '../combat/attack/primitives/homing.js';
-import '../combat/attack/primitives/predictive.js';
+import '../combat/attack/macros/homingMissile.js';
+import '../combat/attack/macros/predictiveShot.js';
+import '../combat/attack/macros/spreadShot.js';
+import '../combat/attack/macros/bodyExplosion.js';
 import '../combat/attack/primitives/beam.js';
 import '../combat/attack/primitives/fireArea.js';
 import '../combat/attack/primitives/spike.js';
 import '../combat/attack/primitives/orbit.js';
 import '../combat/attack/primitives/boomerang.js';
-import '../combat/attack/primitives/selfDestruct.js';
 
 // --- Sandbox constants --------------------------------------------------------
 const GROUND_Y = 400;
@@ -75,7 +75,6 @@ function angleLabel(rad) {
 // Per-primitive default param presets for the sandbox.
 const SANDBOX_PRESETS = {
   projectile: { direction: 0, speed: 600, ttl: 2, damage: 10, solidBehavior: 'phase', gravity: 0 },
-  spread: { count: 3, direction: 0, angle: 60 * DEG },
   bomb: { direction: -0.5, speed: 600, arc: 800, bounce: true, explodeOnContact: true, ttl: 4, damage: 40, radius: 70 },
   explosion: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, radius: 70, damage: 40, alignment: 'neutral' },
   meleeHitbox: { activeFrames: 10, w: 48, h: 44, offset: { x: 44, y: 0 }, damage: 12 },
@@ -83,21 +82,22 @@ const SANDBOX_PRESETS = {
   bodyContact: { damage: 20, enabled: true, temporaryOverride: true },
   // --- Wave 2 -----------------------------------------------------------------
   reticleShot: { duration: 1.3, lockTime: 1.1, color: '#ff5555', radius: 30, tracking: true, speed: 500, ttl: 2, damage: 10 },
-  homing: { target: null, turnRate: 3, speed: null, initialDirection: -0.3, ttl: 2 },
-  predictive: { speed: 300 },
+  homingMissile: { direction: -0.3, turnRate: 3, speed: 400, ttl: 2, damage: 10 },
+  predictiveShot: { speed: 300, ttl: 3, damage: 10 },
   beam: { direction: 0, length: 450, width: 24, duration: 0.6, damage: 15, tickRate: 8, team: 'ally' },
   fireArea: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, length: 96, height: 48, duration: 2, tickRate: 5, damage: 8, team: 'ally' },
   spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 16, size: 32, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
   orbit: { count: 3, minRadius: 40, maxRadius: 90, pulseSpeed: 1.5, speed: 1.5, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
   boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 3 },
   spawnSplit: { x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'jester' },
-  selfDestruct: { timing: 'immediate', deathBehavior: 'kill', triggerPayloadFirst: true, payload: { id: 'explosion', params: { x: ATTACKER_HOME.x + 16, y: ATTACKER_HOME.y + 24, radius: 70, damage: 40, alignment: 'neutral' } }, payloadDelay: 0.1 },
+  spreadShot: { count: 3, direction: 0, angle: 60 * DEG, speed: 500, ttl: 2, damage: 10 },
+  bodyExplosion: { deathBehavior: 'kill', triggerPayloadFirst: true, payloadDelay: 0.1 },
 };
 
 /** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
 export const TWEAKABLE = {
   projectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.25], ['damage', 'num', 2]],
-  spread: [['count', 'int', 1], ['angle', 'angle', 15 * DEG]],
+  spreadShot: [['count', 'int', 1], ['angle', 'angle', 15 * DEG]],
   bomb: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
   explosion: [['x', 'num', 20], ['y', 'num', 20], ['radius', 'num', 10], ['damage', 'num', 5]],
   meleeHitbox: [['activeFrames', 'int', 2], ['w', 'num', 8], ['h', 'num', 8], ['damage', 'num', 2]],
@@ -105,15 +105,15 @@ export const TWEAKABLE = {
   bodyContact: [['damage', 'num', 5]],
   // --- Wave 2 -----------------------------------------------------------------
   reticleShot: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['speed', 'num', 50]],
-  homing: [['turnRate', 'num', 0.5], ['initialDirection', 'angle', 15 * DEG], ['ttl', 'num', 0.25]],
-  predictive: [['speed', 'num', 50]],
+  homingMissile: [['turnRate', 'num', 0.5], ['direction', 'angle', 15 * DEG], ['ttl', 'num', 0.25]],
+  predictiveShot: [['speed', 'num', 50]],
   beam: [['direction', 'angle', 15 * DEG], ['length', 'num', 20], ['width', 'num', 4], ['duration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   fireArea: [['x', 'num', 20], ['length', 'num', 16], ['height', 'num', 8], ['duration', 'num', 0.25], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   spike: [['x', 'num', 16], ['size', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],
   orbit: [['count', 'int', 1], ['minRadius', 'num', 10], ['maxRadius', 'num', 10], ['pulseSpeed', 'num', 0.25], ['speed', 'num', 0.25]],
   boomerang: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['returnSpeed', 'num', 50], ['outboundDuration', 'num', 0.1], ['count', 'int', 1]],
   spawnSplit: [['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['spawnType', 'enum', ['projectile', 'bomb', 'enemy']], ['enemyType', 'enum', ENEMY_TYPES]],
-  selfDestruct: [['payloadDelay', 'num', 0.05]],
+  bodyExplosion: [['payloadDelay', 'num', 0.05]],
 };
 
 export const AttackTheater = {
@@ -325,7 +325,6 @@ export const AttackTheater = {
     this._aimPoint = null;
     this._kamikaze = null;
     this._attackerVisible = true;
-    this._pendingPredictive = false;
     // Spawned enemies (spawnSplit spawnType='enemy'): removed from the world
     // on replay/teardown so they don't leak into the next run.
     for (const e of this._spawnedEnemies ?? []) { try { this._world?.remove(e); } catch { /* noop */ } }
@@ -400,7 +399,7 @@ export const AttackTheater = {
       this._attacker.y = ATTACKER_HOME.y;
       // Face the target again (charge/punch/kamikaze choreos flip facing).
       this._attacker.facing = 1;
-      // Respawn the attacker body: vanish (spawnSplit) and kamikaze (selfDestruct)
+      // Respawn the attacker body: vanish (spawnSplit) and kamikaze (bodyExplosion)
       // demos hide it for the whole run — every new run starts visible again.
       this._attackerVisible = true;
       this._kamikaze = null;
@@ -430,7 +429,7 @@ export const AttackTheater = {
       // Melee: start side by side, then throw a VISIBLE punch — the swing arc
       // sweeps out in sync with the live hitbox frames.
       this._choreo = { kind: 'punch', dist: 56, done: false, swingFrame: 0 };
-    } else if (id === 'homing') {
+    } else if (id === 'homingMissile') {
       // Homing demo: the target WEAVES (slow drift + jump bursts) trying to
       // dodge; the missile must visibly curve after it. Fires immediately.
       this._choreo = { kind: 'dodgeWeave', t: 0, jumping: false, jumpT: 0, nextJump: 0.8 };
@@ -443,22 +442,27 @@ export const AttackTheater = {
       this._attacker.x = 140;
       this._attacker.y = 150; // up on the platform
       this._attacker.facing = 1;
-    } else if (id === 'predictive') {
+    } else if (id === 'predictiveShot') {
       // Predictive demo: the ATTACKER hovers on a platform high to the left;
       // the target WALKS LEFT along the ground. One shot is fired at the
       // PREDICTED position (intercept point from bullet speed) — no reticle,
       // no aim marker: you judge success by watching the bullet arrive where
-      // the walker is ABOUT to be.
-      this._choreo = { kind: 'strafe', t: 0, fired: false, baseX: TARGET_POS.x };
+      // the walker is ABOUT to be. The macro fires the shot itself at invoke;
+      // the strafe velocity just needs to exist when that happens.
+      this._choreo = { kind: 'strafe', t: 0, baseX: TARGET_POS.x };
       this._attacker.x = 140;
       this._attacker.y = 150; // up on the platform
       this._attacker.facing = 1;
+      // Give the walker its real velocity BEFORE the invoke so the intercept
+      // math has something to lead against (the choreo keeps moving it).
+      this._target.vx = -160;
+      this._target.vy = 0;
     } else if (id === 'orbit') {
       // Orbit demo: the ATTACKER walks up to the target so the satellites
       // sweep through its body. Space toggles eject (when ejectable).
       this._choreo = { kind: 'walkToTarget', speed: 120, ejected: false };
       this._params.ejectable = true; // sandbox always allows the eject demo
-    } else if (id === 'selfDestruct') {
+    } else if (id === 'bodyExplosion') {
       // Kamikaze demo: the attacker WALKS to the target, then vanishes and
       // explodes ON IT. No standing-around payload pre-fire.
       this._choreo = { kind: 'kamikaze', speed: 200, exploded: false };
@@ -498,48 +502,26 @@ export const AttackTheater = {
       //  - punch (melee): starts once the attacker is beside the target
       const gated = this._choreo?.kind === 'punch' || this._choreo?.kind === 'kamikaze';
       if (!gated) {
-        // Homing has no projectile of its own — spawn one, then bind the
-        // steering modifier to it (the canonical composition).
-        if (id === 'homing') {
-          const shot = invoke('projectile', { direction: this._params.initialDirection ?? 0, speed: 400, ttl: this._params.ttl ?? 2, damage: 10 }, this._ctx());
-          if (shot?.entity) this._handles.push(shot);
-          h = invoke(id, { ...this._params, target: this._target }, this._ctx());
-          h.bind?.(shot?.entity);
-        } else if (id === 'reticleShot') {
-          // Macro: reticle tracks → locks → fires at the locked point. The
-          // composition lives in combat/attack/macros/reticleShot.js; the
-          // sandbox only stages the scene (attacker on platform, target walks).
-          h = invoke(id, { ...this._params, target: this._target }, this._ctx());
-        } else if (id === 'predictive') {
-          // Aim generator: defer the single shot until the strafe choreo says
-          // "now" (see _stepOnce) so the lead is computed mid-movement.
-          this._pendingPredictive = true;
-          h = null; // nothing live yet; the shot + marker appear on fire
-        } else if (id === 'spawnSplit') {
-          // Dumb host: the spawnSplit MACRO owns all materialization (fan → live
-          // projectiles/bombs/enemies + launch velocity + hitstun). The theater
-          // only registers the returned enemy entities with its sandbox world and
-          // steps their AI each frame — that per-frame enemy AI is the game loop's
-          // job, never the engine's. No child loops, no physics here.
-          const fan = invoke(id, { ...this._params }, this._ctx());
-          for (const e of fan.enemies ?? []) {
+        // Every attack is a single invoke. Macros own their composition
+        // (homingMissile = projectile + steering, predictiveShot = aim math +
+        // projectile, spreadShot = fan + projectiles, bodyExplosion = payload
+        // + death) — the theater only stages the scene and passes params.
+        h = invoke(id, { ...this._params, target: this._target }, this._ctx());
+        if (id === 'spawnSplit') {
+          // Dumb host follow-up: the spawnSplit MACRO owns all materialization
+          // (fan → live projectiles/bombs/enemies + launch velocity + hitstun).
+          // The theater only registers the returned enemy entities with its
+          // sandbox world and steps their AI each frame — that per-frame enemy
+          // AI is the game loop's job, never the engine's.
+          for (const e of h.enemies ?? []) {
             this._spawnedEnemies.push(e);
             this._world.add(e);
           }
-          for (const ch of fan.handles ?? []) this._handles.push(ch);
+          for (const ch of h.handles ?? []) this._handles.push(ch);
           const st = this._params.spawnType;
-          this._log.unshift(`split → ${fan.children?.length ?? 0} ${st === 'bomb' ? 'bombs' : st === 'enemy' ? 'enemies' : 'shots'}`);
-          h = fan;
-        } else if (id === 'selfDestruct') {
-          // Kamikaze: the ATTACKER itself walks over (choreo below), then dies
-          // here with an explosion payload centered ON the target.
-          const victim = { ...this._attacker, alive: true, hp: 999, layer: LAYER.ENEMY, takeDamage(a) { this.hp -= a; if (this.hp <= 0) this.alive = false; return a; } };
-          this._kamikaze = victim;
-          const payload = this._params.payload;
-          if (payload?.params) { payload.params.x = this._target.x + 16; payload.params.y = GROUND_Y - 24; payload.params.targets = [this._target]; }
-          h = invoke(id, { ...this._params, triggerPayloadFirst: true }, makeContext(victim, { world: { targets: [this._target] }, pools: this._pools, collisionWorld: this._world, effects: Effects }));
-        } else {
-          h = invoke(id, { ...this._params }, this._ctx());
+          this._log.unshift(`split → ${h.children?.length ?? 0} ${st === 'bomb' ? 'bombs' : st === 'enemy' ? 'enemies' : 'shots'}`);
+        } else if (id === 'predictiveShot') {
+          this._log.unshift(`intercept → flight ${h.flightTime != null ? Math.round(h.flightTime * 1000) + 'ms' : '∅'}`);
         }
       }
     } catch (err) {
@@ -557,14 +539,6 @@ export const AttackTheater = {
     this._handles.push(h);
     if (h.entity == null && !h.step && h.state == null) {
       this._log.unshift(`${id} finished (synchronous)`);
-    }
-    // Composable direction-generator: fan its angles out as projectiles.
-    if (id === 'spread' && Array.isArray(h.angles)) {
-      for (const ang of h.angles) {
-        const shot = invoke('projectile', { ...this._params, direction: ang }, this._ctx());
-        if (shot?.entity) this._handles.push(shot);
-      }
-      this._log.unshift(`spread → ${h.angles.length} shots`);
     }
   },
 
@@ -682,18 +656,6 @@ export const AttackTheater = {
           this._target.vx = 0;
           this._target.vy = 0;
         }
-        // Fire the single aimed shot once, mid-walk, when it has velocity.
-        // The aim is solved from the BULLET SPEED — "where will bullet and
-        // walker meet if he keeps walking?" `speed` is a regular projectile
-        // param (tweakable in the panel) and is passed to BOTH the aim solver
-        // and the shot, so they always agree. No reticle.
-        if (!c.fired && c.t > 0.5) {
-          c.fired = true;
-          const aim = invoke('predictive', { ...this._params, target: this._target }, this._ctx());
-          const shot = invoke('projectile', { direction: aim.direction, speed: this._params.speed ?? 300, ttl: 3, damage: 10 }, this._ctx());
-          if (shot?.entity) this._handles.push(shot);
-          this._log.unshift(`intercept → flight ${aim.flightTime != null ? Math.round(aim.flightTime * 1000) + 'ms' : '∅'}`);
-        }
       } else if (c.kind === 'walkToTarget') {
         // Orbit demo: attacker walks toward the target so satellites sweep
         // through its body. Space toggles eject (handled in key routing).
@@ -723,14 +685,12 @@ export const AttackTheater = {
             this._attacker.x += Math.sign(gap) * c.speed * DT;
             this._attacker.facing = Math.sign(gap) || 1;
           } else {
-            // Contact: trigger the self-destruct NOW (payload blast centered
+            // Contact: trigger the body explosion NOW (payload blast centered
             // on the target), and hide the attacker body — it IS the bomb.
             c.exploded = true;
             this._attackerVisible = false;
             const victim = { ...this._attacker, alive: true, hp: 999, layer: LAYER.ENEMY, takeDamage(a) { this.hp -= a; if (this.hp <= 0) this.alive = false; return a; } };
-            const payload = this._params.payload;
-            if (payload?.params) { payload.params.x = this._target.x + 16; payload.params.y = GROUND_Y - 24; payload.params.targets = [this._target]; }
-            const kh = invoke('selfDestruct', { ...this._params, triggerPayloadFirst: true }, makeContext(victim, { world: { targets: [this._target] }, pools: this._pools, collisionWorld: this._world, effects: Effects }));
+            const kh = invoke('bodyExplosion', { ...this._params }, makeContext(victim, { world: { targets: [this._target] }, pools: this._pools, collisionWorld: this._world, effects: Effects }));
             kh.on('detonate', () => this._log.unshift('KAMIKAZE BOOM'));
             kh.on('complete', () => this._log.unshift('COMPLETE'));
             this._handles.push(kh);
@@ -817,7 +777,7 @@ export const AttackTheater = {
       } else if (h.entity) {
         if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
         else if (h.id === 'bomb') finished = stepBomb(h.entity, this._params, this._ctx(), h);
-        else if (typeof h.step === 'function') finished = h.step(DT);
+        else if (typeof h.step === 'function') finished = h.step(DT); // homingMissile / predictiveShot / ...
       } else if (typeof h.step === 'function') {
         // State-based primitives: charge (motion profile), reticle (timing),
         // beam/fireArea/spike (tick damage vs the dummy target), orbit
@@ -972,7 +932,7 @@ export const AttackTheater = {
       ctx.fillRect(ax + dir * len - 5, ay - 8, 10, 16);
     }
 
-    // Elevated-shooter demos (reticleShot, predictive): the attacker hovers on
+    // Elevated-shooter demos (reticleShot, predictiveShot): the attacker hovers on
     // a small platform — draw it so the staging reads as intentional.
     if ((c?.kind === 'strafe' || c?.kind === 'walkLeft') && this._attacker) {
       ctx.fillStyle = '#445';
@@ -1112,9 +1072,9 @@ export const AttackTheater = {
         }
       }
     }
-    // (No aim-point marker for predictive: the demo is pure "shoot where it
+    // (No aim-point marker for predictiveShot: the demo is pure "shoot where it
     // will be" — a crosshair would turn it into a reticle demo.)
-    // Kamikaze dummy (selfDestruct demo victim at home position).
+    // Kamikaze dummy (bodyExplosion demo victim at home position).
     if (this._kamikaze && this._kamikaze.alive !== false) {
       ctx.fillStyle = this._kamikaze?.alive ? '#c96' : '#444';
       ctx.fillRect(this._kamikaze.x, this._kamikaze.y, this._kamikaze.w, this._kamikaze.h);
@@ -1186,6 +1146,27 @@ export const AttackTheater = {
         : (val && typeof val === 'object' ? JSON.stringify(val) : String(val));
       ctx.fillText(`${selected ? '▶' : '·'} ${key} = ${valStr}${tweak ? '' : '  (fixed)'}`, panelX + 12, py);
       py += 15;
+    }
+
+    // Invokes section (macros only): what this macro composes, straight from
+    // its registration meta — no theater-side knowledge of compositions.
+    const invokes = meta?.invokes;
+    if (Array.isArray(invokes) && invokes.length > 0) {
+      py += 8;
+      if (py <= h - 70) {
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#f7d';
+        ctx.fillText('INVOKES', panelX + 12, py);
+        py += 15;
+        ctx.font = '11px monospace';
+        for (const invId of invokes) {
+          if (py > h - 70) break;
+          const invName = getPrimitive(invId)?.meta?.name ?? getMacro(invId)?.meta?.name ?? invId;
+          ctx.fillStyle = '#9feaff';
+          ctx.fillText(`→ ${invName}`, panelX + 12, py);
+          py += 14;
+        }
+      }
     }
 
     // Hint bar — same nav-label lib as the menus (keyboard + pad glyphs).

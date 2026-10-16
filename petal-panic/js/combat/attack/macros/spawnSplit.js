@@ -23,7 +23,7 @@
 
 import { registerMacro } from '../registry.js';
 import { invoke, AttackHandle } from '../engine.js';
-import { spreadAngles } from '../primitives/spread.js';
+import { spreadAngles } from './spreadShot.js';
 import { makeEnemy } from '../../../world/build.js';
 import { GRAVITY } from '../../../consts.js';
 
@@ -74,6 +74,7 @@ registerMacro('spawnSplit', {
   meta: {
     name: 'Spawn / Split',
     desc: 'Fan out N children and materialize each into a live projectile/bomb or enemy. Declarative — one invoke, live results.',
+    invokes: ['projectile', 'bomb'],
     params: [
       { key: 'count', desc: 'children created' },
       { key: 'centerDirection', desc: 'central direction (radians)' },

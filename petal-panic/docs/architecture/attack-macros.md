@@ -58,9 +58,37 @@ No caller assembles primitives directly. Even a single-shot attack goes through
 the `Projectile_Shot` macro — the macro can be trivially simple, but the call site
 is always a macro invocation.
 
+## Macro contract: `meta.invokes`
+
+Every macro registration declares its composition in metadata:
+
+```js
+registerMacro('homingMissile', {
+  params: { ...DEFAULTS },
+  meta: {
+    name: 'Homing Missile',
+    desc: '...',
+    invokes: ['projectile'],   // ← what this macro composes (registry ids)
+    params: [ ... ],
+  },
+  impl(params, ctx) { ... },
+});
+```
+
+- **`meta.invokes`** is the list of registry ids the macro's `impl()` invokes
+  (primitives or other macros). It is the machine-readable form of each doc
+  section's **Invokes:** line.
+- The Attack Theater renders an **INVOKES** panel section from this metadata —
+  hosts never hardcode "what a macro is made of." If a macro changes its
+  composition, only its own file changes.
+- A primitive must NOT declare `invokes` and must not call `invoke()` — that is
+  the enforceable primitive/macro boundary (see Design contract below).
+
 ---
 
 ## 1. Projectile Shot
+
+**Invokes:** Projectile
 
 A standard shot fired from the attacker toward a direction or target.
 
@@ -80,6 +108,8 @@ Projectile → travel → collision/expiration.
 ---
 
 ## 2. Predictive Shot
+
+**Invokes:** Projectile
 
 Fires toward where the hero is expected to be if current movement continues.
 Useful for enemies that punish mindless running.
@@ -102,6 +132,8 @@ otherwise.
 ---
 
 ## 3. Reticle Shot
+
+**Invokes:** Projectile
 
 A telegraphed lock-on shot: a target-reticle EFFECT tracks the target, LOCKS
 its position at `lockTime`, and when the warning window ends ONE projectile
@@ -141,6 +173,8 @@ target-reticle effect (track → lock) → Projectile at locked point.
 
 ## 4. Burst Shot
 
+**Invokes:** Projectile
+
 Fires the same projectile repeatedly with controlled spacing.
 
 ### Sequence
@@ -159,6 +193,8 @@ Projectile → interval → Projectile → repeat.
 ---
 
 ## 5. Spread Shot
+
+**Invokes:** Projectile
 
 Fires multiple projectiles simultaneously across an angle centered on a direction.
 
@@ -179,6 +215,8 @@ Spread → multiple Projectiles.
 
 ## 6. 360° Spread
 
+**Invokes:** Projectile
+
 A radial form of Spread Shot that distributes projectiles around the attacker.
 
 ### Main parameters
@@ -194,6 +232,8 @@ The canonical spread angle is 360 degrees.
 ---
 
 ## 7. Homing Missile
+
+**Invokes:** Projectile
 
 Launches a projectile that continuously steers toward the hero.
 
@@ -217,6 +257,8 @@ a much more agile threat.
 
 ## 8. Boomerang
 
+**Invokes:** Boomerang
+
 Launches one or more projectiles outward before they return.
 
 ### Sequence
@@ -237,6 +279,8 @@ Boomerang outward → turnaround → return.
 ---
 
 ## 9. Orbiting Projectiles
+
+**Invokes:** Orbit
 
 Creates projectiles or damaging objects that rotate around the attacker. They
 behave visually as electrons around an owner.
@@ -259,6 +303,8 @@ Spawn orbiting entities → Orbit → expire/remove.
 
 ## 10. Orbit → Eject
 
+**Invokes:** Orbit → Projectile
+
 Starts as Orbiting Projectiles, then releases all orbiting objects. On release,
 each object keeps its current tangential direction/velocity and becomes a linear
 projectile. The result resembles a naturally distributed multi-direction spread
@@ -275,6 +321,8 @@ Includes Orbiting Projectiles parameters plus:
 ---
 
 ## 11. Missile Rain
+
+**Invokes:** Projectile + Telegraph effect
 
 Launches multiple projectiles vertically upward from the attacker, sends them
 outside the visible play area, announces their future landing positions with ground
@@ -336,6 +384,8 @@ area rather than using a fixed pixel/unit separation.
 
 ## 12. Bomb Throw
 
+**Invokes:** Bomb
+
 Throws one ballistic bomb.
 
 ### Sequence
@@ -355,6 +405,8 @@ Bomb launch → ballistic arc → optional bounce/contact → payload/detonation
 ---
 
 ## 13. Bomb Spread
+
+**Invokes:** Bomb
 
 Throws multiple bombs around a central throw angle. Like Spread Shot, the requested
 total angle is divided across the bombs. A useful variation is a very high vertical
@@ -376,6 +428,8 @@ air simultaneously.
 ---
 
 ## 14. Cluster Bomb
+
+**Invokes:** Bomb → Spawn/Split
 
 Throws a bomb that spawns multiple smaller bombs when its payload triggers. The
 child bombs are real Bomb primitives: they pop outward in curved trajectories and
@@ -399,6 +453,8 @@ Parent Bomb → trigger → Spawn/Split → child Bombs → child payloads.
 
 ## 15. Molotov
 
+**Invokes:** Bomb → Fire Area
+
 Throws a bomb-like object that creates persistent horizontal fire when triggered.
 
 ### Sequence
@@ -418,6 +474,8 @@ Bomb → impact/timer → Fire/Persistent Area.
 
 ## 16. Explosive Bomb
 
+**Invokes:** Bomb → Explosion
+
 Throws a bomb whose payload is the game's standard radial explosion.
 
 ### Sequence
@@ -435,6 +493,8 @@ Bomb → trigger → Explosion.
 ---
 
 ## 17. Horizontal Beam
+
+**Invokes:** Beam
 
 Telegraphs and then fires a beam horizontally across the play area.
 
@@ -457,6 +517,8 @@ Full-screen horizontal reach is the normal default.
 ---
 
 ## 18. Targeted Beam
+
+**Invokes:** Beam
 
 Uses a reticle to establish a target/direction, locks that target, then fires a
 beam from the attacker/beam marker through the locked position.
@@ -481,6 +543,8 @@ The beam direction is determined by the locked reticle placement.
 
 ## 19. Sweeping Beam
 
+**Invokes:** Beam
+
 Locks or establishes a starting beam direction, then rotates the beam through an
 angle.
 
@@ -502,6 +566,8 @@ Reticle/telegraph → Beam starts → angular sweep → end.
 ---
 
 ## 20. Melee
+
+**Invokes:** Melee Hitbox
 
 A standardized close-range attack synchronized with animation. Melee does not
 require a separate hitbox when the normal enemy body already represents the
@@ -530,6 +596,8 @@ animation-driven attacks without inventing separate collision systems.
 
 ## 21. Charge / Dash
 
+**Invokes:** Movement + Body Contact
+
 Moves the attacker aggressively in a direction as an attack. For enemies, the
 normal damaging body is usually sufficient. An extra melee hitbox is only added if
 the animation extends beyond the body.
@@ -553,6 +621,8 @@ stop/recovery.
 ---
 
 ## 22. Stomp
+
+**Invokes:** Telegraph effect + Melee Hitbox
 
 A surface-aware stomp attack with one telegraph for the full sequence, followed by
 a short signal before each individual stomp.
@@ -589,6 +659,8 @@ Telegraph once → signal → stomp → interval → signal → stomp → repeat
 
 ## 23. Stomp Wave
 
+**Invokes:** Spike / Static Hazard
+
 A stomp creates a damaging wave traveling along the supporting surface. On a block
 or platform, the wave ends when that surface ends. On the ground, it travels until
 its configured end or until blocked by solid geometry. The wave can hit barrels it
@@ -611,6 +683,8 @@ Telegraph → stomp impact → surface wave → wave terminates.
 
 ## 24. Dust Cloud / Radius Attack
 
+**Invokes:** Explosion
+
 Creates a damaging dust/effect cloud around the attacker for a duration. The
 mushroom enemy is the conceptual reference.
 
@@ -629,6 +703,8 @@ Dust effect appears → radial area active → duration ends.
 ---
 
 ## 25. Spikes
+
+**Invokes:** Spike / Static Hazard
 
 Creates one or more static spike hazards that alternate between active/visible and
 hidden states.
@@ -653,6 +729,8 @@ optional hidden TTL → optional repeat.
 
 ## 26. Body Explosion / Kamikaze
 
+**Invokes:** Explosion (payload)
+
 An enemy deliberately detonates itself and dies. The Jack-o'-lantern enemy is a
 direct example.
 
@@ -675,6 +753,8 @@ standardized detonation behavior.
 ---
 
 ## 27. Dash Lane Sequence
+
+**Invokes:** Movement + Telegraph effect
 
 A telegraphed sequence where the attacker enters from offscreen and dashes
 completely across the screen through each configured Y lane exactly once.
@@ -721,6 +801,8 @@ Examples:
 ---
 
 ## 28. Spawn / Split
+
+**Invokes:** Projectile / Bomb / enemy factory
 
 Fans out N child entities from a single point and materializes each into a live
 attack or enemy. The caller invokes one id and gets live results back — it never
@@ -800,6 +882,9 @@ When adding an attack:
 5. Keep AI sequencing outside the Attack Macro.
 6. Preserve the recognizable behavior of a macro even when its exposed parameters
    are overridden.
+7. A macro's `impl()` MAY call `invoke()`; a primitive's MUST NOT. Every macro
+   declares what it composes via `meta.invokes` (rendered by the Theater's
+   INVOKES panel and documented as each section's **Invokes:** line).
 
 The goal is a small mechanical vocabulary that can produce many attacks without
 creating dozens of almost-identical custom implementations.

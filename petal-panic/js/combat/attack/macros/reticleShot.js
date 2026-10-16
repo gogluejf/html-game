@@ -57,6 +57,7 @@ registerMacro('reticleShot', {
   meta: {
     name: 'Reticle Shot',
     desc: 'Target-reticle effect tracks the target, locks at lockTime, then fires one projectile at the locked point when duration ends.',
+    invokes: ['projectile'],
     params: [
       { key: 'target', desc: 'entity to track (default ctx.target)' },
       { key: 'duration', desc: 'warning window (s)' },
