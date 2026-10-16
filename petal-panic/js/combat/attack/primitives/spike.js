@@ -31,7 +31,7 @@ const DEFAULTS = Object.freeze({
   tickRate: 10,       // damage ticks per second while visible
   ttl: null,          // optional hard cap on total lifetime (s); null = unlimited
   team: 'ally',
-  method: 'spike',
+  method: 'melee',    // telemetry label; melee-family → blood sparkles on hit
 });
 
 /** World-space AABB for the hazard. */

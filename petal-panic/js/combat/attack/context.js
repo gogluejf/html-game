@@ -9,6 +9,8 @@
 // `level`, `camera`) without changing the interface. The fields below are the
 // guaranteed minimum every primitive can rely on.
 
+import { Effects } from '../../effects.js';
+
 /**
  * @typedef {object} AttackContext
  * @property {object} attacker        entity that owns this attack (hero/enemy/boss).
@@ -19,6 +21,7 @@
  *                                    animation (`attacker.markers`). Primitives resolve
  *                                    origins via `markers.find(m => m.label === origin)`.
  * @property {object} effects         Effect Engine facade (fire/fireManual/hasEffect...).
+ *                                    Defaults to the real Effects facade in makeContext.
  * @property {import('../../core/collision.js').CollisionWorld|null} [collisionWorld]
  *                                    live collision registry; null in pure-logic tests.
  */
@@ -37,7 +40,10 @@ export function makeContext(attacker, extra = {}) {
     target: extra.target ?? null,
     world: extra.world ?? null,
     markers: extra.markers ?? attacker?.markers ?? null,
-    effects: extra.effects ?? null,
+    // Default to the real Effect Engine facade so VFX (explosion bursts,
+    // shake) fire without every caller passing effects explicitly. Callers
+    // may still override (tests pass minimal stubs).
+    effects: extra.effects ?? Effects,
     collisionWorld: extra.collisionWorld ?? null,
     ...extra,
   };
