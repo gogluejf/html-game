@@ -17,7 +17,7 @@ import { Anim, makeTestFrame } from '../core/anim.js';
 import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { projectilePool, specialPool } from '../objects/projectile.js';
-import { stepBombTerrain } from '../combat/attack/primitives/bomb.js';
+import { stepBombTerrain, stepBomb } from '../combat/attack/primitives/bomb.js';
 import { S, getState, tryTransition, onTransition } from '../core/state.js';
 import { dispatchScreenInput } from '../ui/screens.js';
 import { makeElephant } from '../boss/boss.js';
@@ -901,6 +901,16 @@ export function update(dt) {
     stepBombTerrain(s, dt, ZONE_GROUND_Y, SOLIDS.slice(1));
   }
   syncSpecialsToWorld();
+  // Attack-engine bombs (explosiveBomb macro): the engine owns their flight +
+  // detonation. stepBomb() emits 'detonate' at the death point, which fires
+  // the explosion payload — contact with a real enemy sets _attackHit via the
+  // collision handler above, so these bombs explode ON CONTACT or on fuse.
+  for (const s of specialPool.activeItems) {
+    if (!s.alive || s._attackId !== 'bomb' || s._attackDone) continue;
+    const h = s._attackHandle;
+    if (!h) continue;
+    stepBomb(s, h._params ?? {}, ctx, h);
+  }
   // TTL expiry: check the FULL pool (not just activeItems, which already
   // spliced dead items) for specials that just died from TTL this frame.
   for (const s of specialPool.items) {

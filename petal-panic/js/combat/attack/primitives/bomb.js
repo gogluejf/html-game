@@ -1,31 +1,33 @@
 // Attack Engine — Bomb / Ballistic Arc primitive (Task 1.4).
 //
-// A thrown object with a gravity arc that detonates a payload on contact,
-// TTL, or off-screen. Reuses the EXISTING Special-class physics (gravityValue
-// integration + solidBehavior bounce via collisionHandlers.js) — this file
-// only owns: spawn translation, per-frame stepping, and detonation routing.
+// A dumb ballistic carrier: a thrown object with a gravity arc that bounces
+// or stops on impact, deals its contact damage like any projectile, and dies
+// on impact/fuse/off-screen. It NEVER composes other attacks and NEVER fires
+// blast VFX — "what happens when it goes off" is a MACRO concern
+// (explosiveBomb owns the explosion; cluster bombs own the split, etc.).
 //
-// Payload contract: params.payload is { id, params } — another registered
-// attack (e.g. the Explosion primitive) invoked at the blast point when the
-// bomb detonates. If omitted, the bomb fizzles (no damage) but still emits
-// 'detonate' so macros can chain.
+// Reuses the EXISTING Special-class physics (gravityValue integration +
+// solidBehavior bounce via collisionHandlers.js) — this file only owns:
+// spawn translation, per-frame stepping, and lifecycle bridging.
+//
+// Terminal event: 'detonate' { x, y, contact } — emitted at the death point
+// whenever the bomb ends (impact, fuse expiry, or off-screen cull). Macros
+// subscribe to this to fire their payload effect at exactly that point.
 
 import { registerPrimitive } from '../registry.js';
-import { AttackHandle, invoke } from '../engine.js';
-import { makeContext } from '../context.js';
-import { Effects } from '../../../effects.js';
+import { AttackHandle } from '../engine.js';
+import { fireManual } from '../../../effects/index.js';
 
 const DEFAULTS = Object.freeze({
-  speed: 300,           // launch force (px/s)
+  speed: 500,           // launch force (px/s)
   direction: -Math.PI / 4, // up-right throw
   arc: 800,             // gravity px/s² (throw height control)
   bounce: true,         // → solidBehavior 'reflect' (existing flag)
   explodeOnContact: true,
   ttl: 4,               // fuse seconds (runs while airborne AND bouncing)
-  damage: 40,           // direct-contact damage (also used by default explosion)
-  radius: 60,           // blast radius for the default explosion payload
+  damage: 40,           // direct-contact damage
+  radius: 60,           // reference size for host-side effects (macro-owned)
   origin: null,         // marker label | {x,y} | null → attacker center
-  payload: null,        // { id, params } attack to run on detonation; null = fizzle
 });
 
 /** Rebound below this (px/s) settles the bomb instead of bouncing again. */
@@ -35,7 +37,7 @@ export const BOMB_SETTLE_VY = 40;
  * Spawn the bomb entity into the special pool (ballistic carrier).
  * @returns {object|null} the Special entity, or null if the pool is exhausted
  */
-export function spawnBomb(p, ctx) {
+export function spawnBomb(p, ctx, h = null) {
   const a = ctx.attacker;
   let ox, oy;
   if (p.origin && typeof p.origin === 'object') { ox = p.origin.x; oy = p.origin.y; }
@@ -61,6 +63,10 @@ export function spawnBomb(p, ctx) {
   ent._attackId = 'bomb';
   ent._attackDone = false;
   ctx.collisionWorld?.add(ent);
+  // Gameplay host bridge: the world update loop (systems/update.js) steps
+  // engine-spawned bombs via stepBomb() — it finds them by this tag. The
+  // theater sandbox drives its own handles directly and never sets this.
+  if (h) ent._attackHandle = h;
   return ent;
 }
 
@@ -74,14 +80,14 @@ export function spawnBomb(p, ctx) {
  *  - falling onto a surface with solidBehavior 'reflect' → bounce
  *    (restitution 0.5, friction 0.7); when the rebound is too weak to matter
  *    (< BOMB_SETTLE_VY), the bomb SETTLES: it is killed with _attackHit set,
- *    which makes stepBomb() detonate it on the host's next step.
- *  - solidBehavior 'stop' → immediate settle (impact = detonation).
+ *    which makes stepBomb() end it on the host's next step.
+ *  - solidBehavior 'stop' → immediate settle (impact = end).
  *
  * @param {object} ent          the Special entity (must be alive)
  * @param {number} dt           seconds
  * @param {number} groundY      floor top y (world)
  * @param {Array}  [platforms]  optional extra surfaces [{x, y, w}] (tops only)
- * @returns {boolean} true when the bomb settled this call (detonation pending)
+ * @returns {boolean} true when the bomb settled this call (end pending)
  */
 export function stepBombTerrain(ent, dt, groundY, platforms = []) {
   if (!ent?.alive || ent._attackDone) return false;
@@ -116,14 +122,18 @@ export function stepBombTerrain(ent, dt, groundY, platforms = []) {
 }
 
 /**
- * Per-frame step. Returns true when the bomb finished (detonated or expired).
+ * Per-frame step. Returns true when the bomb finished (ended or expired).
  * The host loop calls this until it returns true.
  *
- * Detonation triggers:
+ * End triggers:
  *  - contact: stepBombTerrain() settles the entity against terrain
  *    (sets _attackHit), or a collision handler kills it against an enemy.
  *  - fuse: ttlExpired flag set by Special.update() when the life timer ends.
  *  - off-screen: caller sets ent.alive=false via cullOffScreen().
+ *
+ * On end the handle emits 'detonate' { x, y, contact } at the death point —
+ * ALWAYS (even a fizzle), so composed macros know exactly where the carrier
+ * died. No VFX here: the carrier is dumb; macros own the aftermath.
  *
  * @param {object} ent   the spawned Special
  * @param {object} p     merged params
@@ -137,30 +147,19 @@ export function stepBomb(ent, p, ctx, h) {
   ent._attackDone = true;
   const cx = ent.x + ent.w / 2, cy = ent.y + ent.h / 2;
 
-  // Fuse expiry without contact = timed detonation (still a detonation, not
-  // a silent expire): bombs are designed to go off wherever they land.
+  // Fuse expiry without contact = timed end (still an end, not a silent
+  // expire): bombs are designed to go off wherever they land.
   const contact = !!ent._attackHit;
   h._emit('detonate', { x: cx, y: cy, contact });
 
-  // Detonation VFX — same juice as gameplay's explodeSpecial(): blast burst +
-  // screen flash + shake. The bomb primitive is the single source of truth for
-  // "a bomb went off", so the visual lives here and every host (gameplay,
-  // theater, macros) gets it for free.
-  Effects.spawnExplosion(cx, cy, p.radius ?? 100);
-  Effects.bigExplosion();
-  Effects.triggerShake(6);
-
-  // Run the payload (default: an Explosion at the blast point).
-  const payload = p.payload ?? (contact ? { id: 'explosion', params: { x: cx, y: cy, radius: p.radius, damage: p.damage } } : null);
-  if (payload?.id) {
-    try {
-      const sub = invoke(payload.id, { ...(payload.params ?? {}), self: ctx.attacker }, ctx);
-      h.setInner(sub);
-    } catch (err) {
-      // Unknown payload id in a test harness — surface loudly in dev.
-      console.error(`attack/bomb: unknown payload '${payload.id}'`, err.message);
-    }
+  // Basic carrier juice only (same tier as projectile's hit-sparkle/debris):
+  // a landing puff when the bomb dies against terrain. Blast bursts, screen
+  // flash, camera shake belong to whatever macro COMPOSES this carrier —
+  // the primitive never double-dips.
+  if (contact && !ent.ttlExpired) {
+    fireManual({ type: 'debris', params: { x: cx, y: cy } });
   }
+
   h._complete();
   return true;
 }
@@ -168,28 +167,26 @@ export function stepBomb(ent, p, ctx, h) {
 registerPrimitive('bomb', {
   params: { ...DEFAULTS },
   meta: {
-    name: 'Bomb / Ballistic Arc',
+    name: 'Ballistic Arc',
     effects: [
-      { type: 'explosion', desc: 'blast burst at detonation point' },
-      { type: 'screen-flash', desc: 'white flash on detonation' },
-      { type: 'camera-shake', desc: 'shake on detonation' },
+      { type: 'debris', desc: 'landing puff when the carrier dies on terrain' },
     ],
-    desc: 'Thrown object with gravity arc + bounce (reuses Special physics). Detonates a payload on contact/fuse/off-screen.',
+    desc: 'Dumb ballistic carrier: gravity arc + bounce, contact damage, dies on impact/fuse/off-screen emitting detonate{x,y}. No blast VFX, no composition — explosiveBomb (macro) owns the explosion.',
     params: [
       { key: 'speed', desc: 'launch force (px/s)' },
       { key: 'direction', desc: 'throw direction (radians)' },
       { key: 'arc', desc: 'gravity px/s² (throw height)' },
       { key: 'bounce', desc: 'reflect off surfaces (solidBehavior)' },
-      { key: 'explodeOnContact', desc: 'trigger payload on contact' },
+      { key: 'explodeOnContact', desc: 'legacy flag (kept for param parity)' },
       { key: 'ttl', desc: 'fuse seconds' },
-      { key: 'damage', desc: 'blast/contact damage' },
-      { key: 'radius', desc: 'default explosion radius' },
-      { key: 'payload', desc: '{id, params} attack run on detonation' },
+      { key: 'damage', desc: 'contact damage' },
+      { key: 'radius', desc: 'reference size for composed effects' },
+      { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' },
     ],
   },
   impl(params, ctx) {
     const h = new AttackHandle('bomb');
-    const ent = spawnBomb(params, ctx);
+    const ent = spawnBomb(params, ctx, h);
     if (!ent) { h._emit('expire'); h._complete(); return h; }
     h.entity = ent;
     return h;

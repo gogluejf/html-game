@@ -7,6 +7,11 @@
 //
 // Synchronous: a blast resolves in one call. The handle completes immediately
 // with the hit summary; 'detonate' fires first so bomb payloads can chain.
+//
+// VFX are PARAMETERIZED: burst / screenFlash / shake each default to true but
+// can be suppressed per call. Callers that compose an explosion inside a
+// bigger set piece (e.g. the explosiveBomb macro) pass explicit flags so the
+// combined effect reads as ONE event instead of double-flashing.
 
 import { registerPrimitive } from '../registry.js';
 import { AttackHandle } from '../engine.js';
@@ -23,6 +28,10 @@ const DEFAULTS = Object.freeze({
   self: null,           // detonator entity (excluded from its own blast)
   targets: null,        // candidate entities; default = ctx.world.targets ?? []
   style: null,          // Effect Engine style override (rendered by caller)
+  // --- VFX switches (all on by default; composed callers tune these) -------
+  burst: true,          // particle blast burst at the center
+  screenFlash: true,    // white screen flash (bigExplosion)
+  shake: true,          // camera shake on detonation
 });
 
 /**
@@ -61,9 +70,10 @@ registerPrimitive('explosion', {
     name: 'Explosion',
     effects: [
       { type: 'explosion', desc: 'blast particle burst at the center' },
+      { type: 'screen-flash', desc: 'white flash on detonation' },
       { type: 'camera-shake', desc: 'shake on detonation' },
     ],
-    desc: 'Radial damage event via the single resolveExplosion() path. Alignment decides who it hurts; knockback shoves radially.',
+    desc: 'Radial damage event via the single resolveExplosion() path. Alignment decides who it hurts; knockback shoves radially. burst/screenFlash/shake are switchable per call.',
     params: [
       { key: 'x', desc: 'blast center x' },
       { key: 'y', desc: 'blast center y' },
@@ -72,17 +82,26 @@ registerPrimitive('explosion', {
       { key: 'alignment', desc: 'foe | ally | neutral' },
       { key: 'knockback', desc: 'KnockbackSetting (default: barrel character)' },
       { key: 'style', desc: 'Effect Engine style override' },
+      { key: 'burst', desc: 'particle burst (true)' },
+      { key: 'screenFlash', desc: 'white screen flash (true)' },
+      { key: 'shake', desc: 'camera shake (true)' },
     ],
   },
   impl(params, ctx) {
     const h = new AttackHandle('explosion');
     const result = fireBlast(params, ctx);
 
-    // VFX owned by the primitive (same as bomb's detonation juice): blast
-    // burst + shake. resolveExplosion is deliberately VFX-free; the explosion
-    // primitive IS "a blast happened", so every host gets the visual for free.
-    Effects.spawnExplosion(params.x, params.y, params.radius);
-    Effects.triggerShake(4);
+    // VFX owned by the primitive, gated by the per-call switches.
+    // resolveExplosion is deliberately VFX-free; the explosion primitive IS
+    // "a blast happened", so every host gets the visual for free unless it
+    // explicitly suppresses a channel (composed set pieces do this so the
+    // parent's juice isn't doubled).
+    // Route through ctx.effects when provided (theater passes its own facade)
+    // — same pattern as beam.js; falls back to the real Effects singleton.
+    const fx = ctx.effects ?? Effects;
+    if (params.burst !== false) fx.spawnExplosion(params.x, params.y, params.radius);
+    if (params.screenFlash !== false) fx.bigExplosion();
+    if (params.shake !== false) fx.triggerShake(4);
 
     h._emit('detonate', { x: params.x, y: params.y, hit: result.hit.length });
     h._complete(result);

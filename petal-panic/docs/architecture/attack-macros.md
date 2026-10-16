@@ -82,8 +82,9 @@ registerMacro('homingMissile', {
   (primitives or other macros). It is the machine-readable form of each doc
   section's **Invokes:** line. Macros only.
 - **`meta.effects`** is the list of Effect Engine types the attack fires —
-  declared by BOTH primitives and macros (a primitive like `bomb` owns its
-  detonation burst; a macro like `reticleShot` owns its telegraph). Each entry
+  declared by BOTH primitives and macros (a primitive like `bomb` owns only its
+  landing puff; a macro like `explosiveBomb` declares none — its blast rows are
+  inherited from the Explosion primitive it invokes). Each entry
   is `{ type, desc }` where `type` matches an Effect Engine catalog type.
   An attack declares only its OWN native effects here — a macro does NOT copy
   its invoked attacks' effects into this field.
@@ -344,14 +345,15 @@ area rather than using a fixed pixel/unit separation.
 
 ## 8. Bomb Spread
 
-**Invokes:** Bomb
+**Invokes:** Explosive Bomb (per bomb)
 
-**Effects:** Explosion + Screen Flash + Camera Shake (per bomb)
+**Effects:** Debris + Explosion + Screen Flash + Camera Shake (per bomb, via the explosiveBomb macro)
 
 Throws multiple bombs around a central throw angle. Like Spread Shot, the requested
 total angle is divided across the bombs. A useful variation is a very high vertical
 force with low horizontal force, allowing several bombs to be thrown high into the
-air simultaneously.
+air simultaneously. Each child is an explosiveBomb macro — the classic exploding
+bomb composition.
 
 ### Main parameters
 
@@ -363,23 +365,23 @@ air simultaneously.
 - **bounce** — optional bounce.
 - **explodeOnContact** — optional contact trigger.
 - **ttl** — optional timed detonation.
-- **payload** — bomb payload.
 
 ---
 
 ## 9. Cluster Bomb
 
-**Invokes:** Bomb → Spawn/Split
+**Invokes:** Explosive Bomb → Spawn/Split (on the parent's terminal `detonate`)
 
-**Effects:** Explosion + Screen Flash + Camera Shake (via Spawn/Split children)
+**Effects:** Debris + Explosion + Screen Flash + Camera Shake (via the child explosiveBombs)
 
-Throws a bomb that spawns multiple smaller bombs when its payload triggers. The
-child bombs are real Bomb primitives: they pop outward in curved trajectories and
-then follow normal bomb rules.
+Throws a bomb that spawns multiple smaller bombs when it detonates. The parent is
+an explosiveBomb; on its terminal event this macro fans out child explosiveBombs
+via Spawn/Split. The children are real compositions: they pop outward in curved
+trajectories and then follow normal bomb rules.
 
 ### Sequence
 
-Parent Bomb → trigger → Spawn/Split → child Bombs → child payloads.
+Parent explosiveBomb → terminal detonate → Spawn/Split → child explosiveBombs.
 
 ### Main parameters
 
@@ -389,17 +391,18 @@ Parent Bomb → trigger → Spawn/Split → child Bombs → child payloads.
 - **childAngle / spread** — distribution of child bombs.
 - **childArc** — vertical component of child trajectories.
 - **childTTL** — optional child detonation timing.
-- **childPayload** — payload used by child bombs.
 
 ---
 
 ## 10. Molotov
 
-**Invokes:** Bomb → Fire Area
+**Invokes:** Bomb (carrier) → Fire Area (aftermath, fired on the carrier's terminal `detonate` event)
 
-**Effects:** Fire Area glow (persistent area render)
+**Effects:** Debris (landing puff, via Bomb) + Fire Area glow (persistent area render)
 
 Throws a bomb-like object that creates persistent horizontal fire when triggered.
+Same composition pattern as Explosive Bomb: the dumb carrier owns flight; this
+macro owns the aftermath at the death point.
 
 ### Sequence
 
@@ -418,15 +421,27 @@ Bomb → impact/timer → Fire/Persistent Area.
 
 ## 11. Explosive Bomb
 
-**Invokes:** Bomb → Explosion
+**Invokes:** Bomb (carrier) → Explosion (aftermath, fired on the carrier's terminal `detonate` event)
 
-**Effects:** Explosion + Screen Flash + Camera Shake (detonation)
+**Effects:** Debris (landing puff, via Bomb) + Explosion + Screen Flash + Camera Shake (inherited from the Explosion primitive — the macro declares no native effects)
 
-Throws a bomb whose payload is the game's standard radial explosion.
+Throws a bomb that detonates into the game's standard radial explosion at its
+death point. The Bomb primitive is a dumb flight carrier (arc, bounce, fuse,
+contact damage); THIS macro owns the aftermath — it subscribes to the carrier's
+terminal `detonate { x, y }` event and invokes the Explosion primitive there.
+One owner per effect: the carrier fires no blast VFX, so the blast's burst,
+flash, and shake come from exactly one place — the Explosion primitive itself
+(default switches, all on). The macro declares NO native effects; resolveEffects()
+inherits the rows via meta.invokes (same pattern as bodyExplosion).
+
+The hitbox works for real: the carrier is consumed on contact with a target
+(`_attackHit` set by the collision handler / sandbox check), which ends the
+flight and fires the blast AT THE IMPACT POINT. No phase-through exclusion —
+a bomb that touches something goes off there.
 
 ### Sequence
 
-Bomb → trigger → Explosion.
+Bomb (flight) → terminal detonate{x,y} → Explosion at that point.
 
 ### Main parameters
 
@@ -438,7 +453,31 @@ Bomb → trigger → Explosion.
 
 ---
 
-## 12. Horizontal Beam
+## 12. Explosive Projectile
+
+**Invokes:** Projectile (carrier) → Explosion (aftermath, fired on the carrier's terminal hit/expire events)
+
+**Effects:** Hit-Sparkle / Debris (via Projectile) + Explosion + Screen Flash + Camera Shake (inherited from the Explosion primitive — the macro declares no native effects)
+
+The straight-line twin of Explosive Bomb: a shot that detonates into a radial
+explosion at its death point — impact or fuse expiry. Same composition pattern:
+the Projectile primitive owns flight only; this macro owns the blast.
+
+### Sequence
+
+Projectile (flight) → hit or expire → Explosion at the death point.
+
+### Main parameters
+
+- **projectile parameters** — speed/direction/ttl/solidBehavior/gravity.
+- **explosionRadius** — blast radius.
+- **explosionDamage** — blast damage.
+- **alignment** — foe / ally / neutral.
+- **explosionStyle** — Effect Engine override.
+
+---
+
+## 13. Horizontal Beam
 
 **Invokes:** Beam
 
@@ -464,7 +503,7 @@ Full-screen horizontal reach is the normal default.
 
 ---
 
-## 13. Targeted Beam
+## 14. Targeted Beam
 
 **Invokes:** Beam
 
@@ -491,7 +530,7 @@ The beam direction is determined by the locked reticle placement.
 
 ---
 
-## 14. Sweeping Beam
+## 15. Sweeping Beam
 
 **Invokes:** Beam
 
@@ -517,7 +556,7 @@ Reticle/telegraph → Beam starts → angular sweep → end.
 
 ---
 
-## 15. Melee
+## 16. Melee
 
 **Invokes:** Melee Hitbox
 
@@ -548,7 +587,7 @@ animation-driven attacks without inventing separate collision systems.
 
 ---
 
-## 16. Charge / Dash
+## 17. Charge / Dash
 
 **Invokes:** Movement + Body Contact
 
@@ -576,7 +615,7 @@ stop/recovery.
 
 ---
 
-## 17. Stomp
+## 18. Stomp
 
 **Invokes:** Telegraph effect + Melee Hitbox
 
@@ -615,7 +654,7 @@ Telegraph once → signal → stomp → interval → signal → stomp → repeat
 
 ---
 
-## 18. Stomp Wave
+## 19. Stomp Wave
 
 **Invokes:** Spike / Static Hazard
 
@@ -641,7 +680,7 @@ Telegraph → stomp impact → surface wave → wave terminates.
 
 ---
 
-## 19. Dust Cloud / Radius Attack
+## 20. Dust Cloud / Radius Attack
 
 **Invokes:** Explosion
 
@@ -664,7 +703,7 @@ Dust effect appears → radial area active → duration ends.
 
 ---
 
-## 20. Spikes
+## 21. Spikes
 
 **Invokes:** Spike / Static Hazard
 
@@ -691,7 +730,7 @@ optional hidden TTL → optional repeat.
 
 ---
 
-## 21. Body Explosion / Kamikaze
+## 22. Body Explosion / Kamikaze
 
 **Invokes:** Explosion (payload)
 
@@ -718,7 +757,7 @@ standardized detonation behavior.
 
 ---
 
-## 22. Dash Lane Sequence
+## 23. Dash Lane Sequence
 
 **Invokes:** Movement + Telegraph effect
 
@@ -768,11 +807,11 @@ Examples:
 
 ---
 
-## 23. Spawn / Split
+## 24. Spawn / Split
 
-**Invokes:** Projectile / Bomb / enemy factory
+**Invokes:** Projectile / Explosive Bomb / enemy factory
 
-**Effects:** Explosion (bomb children) / Hit Sparkle (projectile children)
+**Effects:** Debris + Explosion (bomb children, via explosiveBomb) / Hit Sparkle (projectile children)
 
 Fans out N child entities from a single point and materializes each into a live
 attack or enemy. The caller invokes one id and gets live results back — it never
@@ -787,8 +826,9 @@ children run their own normal rules.
 ### Main parameters
 
 - **spawnType** — what the children become: `projectile` (straight shots),
-  `bomb` (ballistic arc, bounce, detonate on impact), or `enemy` (a live enemy
-  entity that continues acting toward the attacker).
+  `bomb` (ballistic arc, bounce, detonate on impact — materialized as an
+  explosiveBomb macro), or `enemy` (a live enemy entity that continues acting
+  toward the attacker).
 - **count** — number created.
 - **centerDirection** — central launch direction.
 - **angle** — distribution width (2π = radial).

@@ -71,7 +71,9 @@ function angleLabel(rad) {
 // Per-primitive default param presets for the sandbox.
 const SANDBOX_PRESETS = {
   projectile: { direction: 0, speed: 600, ttl: 2, damage: 10, solidBehavior: 'phase', gravity: 0 },
-  bomb: { direction: -0.5, speed: 600, arc: 800, bounce: true, explodeOnContact: true, ttl: 4, damage: 40, radius: 70 },
+  bomb: { direction: -0.5, arc: 800, bounce: true, explodeOnContact: true, ttl: 4, damage: 40, radius: 70 }, // speed from registry default (500)
+  explosiveBomb: { direction: -0.5, arc: 800, bounce: true, explodeOnContact: true, ttl: 4, damage: 40, radius: 70 }, // speed from registry default (500)
+  explosiveProjectile: { direction: 0, speed: 700, ttl: 2, damage: 15, radius: 70, gravity: 0 },
   explosion: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, radius: 70, damage: 40, alignment: 'neutral' },
   meleeHitbox: { activeFrames: 10, w: 48, h: 44, offset: { x: 44, y: 0 }, damage: 12 },
   charge: { direction: 0, speed: 700, duration: 0.6, distance: null, acceleration: 0 },
@@ -99,6 +101,8 @@ export const TWEAKABLE = {
   radialShot: [['count', 'int', 1], ['startAngle', 'angle', 15 * DEG], ['speed', 'num', 50], ['sequenceInterval', 'num', 0.05]],
   burstShot: [['count', 'int', 1], ['interval', 'num', 0.02], ['direction', 'angle', 15 * DEG], ['speed', 'num', 50]],
   bomb: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
+  explosiveBomb: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
+  explosiveProjectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.2], ['damage', 'num', 5], ['radius', 'num', 10]],
   explosion: [['x', 'num', 20], ['y', 'num', 20], ['radius', 'num', 10], ['damage', 'num', 5]],
   meleeHitbox: [['activeFrames', 'int', 2], ['w', 'num', 8], ['h', 'num', 8], ['damage', 'num', 2]],
   charge: [['speed', 'num', 100], ['duration', 'num', 0.1]],
@@ -306,6 +310,9 @@ export const AttackTheater = {
     // enemies use resolve() against this box — same shared collision path.
     this._floorSolid = { x: -200, y: GROUND_Y, w: VIEW_W + 400, h: 400 };
     this._attacker = { ...ATTACKER_HOME, alive: true, layer: LAYER.HERO, facing: 1, bodyKnockback: null };
+    // The dummy is an ENEMY-side target (isEnemy() recognizes it via takeDamage)
+    // but must NOT be the hero reference — otherwise foe-aligned blasts resolve
+    // "target === hero" and skip it entirely. ctxHero() reads world.hero.
     this._target = { ...TARGET_POS, alive: true, hp: 999, layer: LAYER.ENEMY, hitFlash: 0 };
     // REAL damage pipeline (same as Enemy.takeDamage): central damage() +
     // white hit-flash. Blood sparkles are NOT spawned here — they belong to
@@ -763,6 +770,11 @@ export const AttackTheater = {
     // routed through the target's OWN takeDamage() (real Enemy pipeline or the
     // placeholder shim below), plus the _attackHit flag the lifecycle bridging
     // reads. No theater-local damage math.
+    //
+    // Explosive carriers are NOT excluded from this check: they detonate ON
+    // CONTACT with the target (real hitbox behavior). The _attackHit flag makes
+    // stepBomb/stepProjectile emit their terminal event, which fires the blast
+    // at the impact point via the explosion primitive — same as gameplay.
     for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
       if (!p.alive || !this._target?.alive) continue;
       if (!aabbOverlap(p, this._target)) continue;
@@ -804,7 +816,17 @@ export const AttackTheater = {
         }
       } else if (h.entity) {
         if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
-        else if (h.id === 'bomb') finished = stepBomb(h.entity, this._params, this._ctx(), h);
+        else if (h.id === 'bomb' || h.id === 'explosiveBomb' || h.id === 'explosiveProjectile') {
+          // All three are carrier-based: the primitive owns flight/terrain;
+          // the explosive* macros proxy a carrier handle (setInner) whose
+          // terminal events fire the blast. Route by the CARRIER ENTITY's
+          // _attackId — the macro handle's id is the macro's, not the
+          // carrier's. Step with the macro's merged params (ch._params).
+          const ch = h.inner ?? h;
+          const cp = ch._params ?? this._params;
+          if (ch.entity?._attackId === 'bomb') finished = stepBomb(ch.entity, cp, this._ctx(), ch);
+          else finished = stepProjectile(ch.entity, ch) || finished;
+        }
         else if (typeof h.step === 'function') finished = h.step(DT); // homingMissile / predictiveShot / ...
       } else if (typeof h.step === 'function') {
         // Multi-shot macros (spreadShot/radialShot/burstShot): the macro's

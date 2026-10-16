@@ -74,12 +74,13 @@ registerMacro('spawnSplit', {
   meta: {
     name: 'Spawn / Split',
     // No native effects: VFX come from the children it materializes —
-    // bomb children bring explosion/screen-flash/camera-shake (via the Bomb
-    // primitive), projectile children bring hit-sparkle/debris. resolveEffects()
-    // surfaces them as inherited rows; declaring them here would duplicate.
+    // bomb children bring explosion/camera-shake (via the explosiveBomb
+    // macro → Bomb primitive), projectile children bring hit-sparkle/debris.
+    // resolveEffects() surfaces them as inherited rows; declaring them here
+    // would duplicate.
     effects: [],
     desc: 'Fan out N children and materialize each into a live projectile/bomb or enemy. Declarative — one invoke, live results.',
-    invokes: ['projectile', 'bomb'],
+    invokes: ['projectile', 'explosiveBomb'],
     params: [
       { key: 'count', desc: 'children created' },
       { key: 'centerDirection', desc: 'central direction (radians)' },
@@ -111,7 +112,10 @@ registerMacro('spawnSplit', {
         enemies.push(e);
       } else if (c.spawnType === 'bomb') {
         const b = p.bomb ?? {};
-        const child = invoke('bomb', {
+        // Classic exploding bomb → the explosiveBomb macro (composition:
+        // bomb flight + explosion payload). Primitives don't compose, so the
+        // "it explodes" behavior is a macro concern.
+        const child = invoke('explosiveBomb', {
           origin: { x: c.x, y: c.y }, direction: c.angle, speed,
           arc: b.arc ?? 700, bounce: b.bounce ?? true, ttl: b.ttl ?? 4,
           damage: b.damage ?? 25, radius: b.radius ?? 60,

@@ -42,7 +42,7 @@ const ALL_PRIMITIVES = [
 ];
 
 const ALL_MACROS = [
-  'reticleShot', 'spawnSplit', 'homingMissile', 'predictiveShot', 'spreadShot', 'bodyExplosion',
+  'reticleShot', 'spawnSplit', 'homingMissile', 'predictiveShot', 'spreadShot', 'bodyExplosion', 'explosiveBomb', 'explosiveProjectile',
 ];
 
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 });
@@ -93,15 +93,42 @@ ok("resolveEffects: macros inherit invoked primitives' effects dynamically", () 
   // homingMissile declares no native effects — its row must come from invoking projectile.
   const hm = resolveEffects('homingMissile').map((r) => r.type);
   assert.ok(hm.includes('hit-sparkle'), `homingMissile inherits hit-sparkle (got ${hm})`);
-  // spawnSplit: native explosion + inherited projectile/bomb effects, deduped by type.
+  // spawnSplit: inherited projectile + explosiveBomb effects, deduped by type.
+  // (explosiveBomb → bomb primitive: landing burst + camera shake; the
+  // explosion payload's VFX are suppressed in the composition, so no
+  // screen-flash row.)
   const ss = resolveEffects('spawnSplit');
   const types = ss.map((r) => r.type);
-  for (const t of ['explosion', 'hit-sparkle', 'screen-flash', 'camera-shake']) {
+  for (const t of ['explosion', 'hit-sparkle', 'camera-shake']) {
     assert.ok(types.includes(t), `spawnSplit resolves ${t}`);
   }
   assert.equal(new Set(types).size, types.length, 'no duplicate types');
   // Inherited rows carry a via-label naming the source attack.
   assert.ok(ss.some((r) => r.via), 'inherited rows are labeled with their source');
+});
+
+ok('explosiveBomb: macro composes bomb → explosion and inherits honest effects', () => {
+  const def = getMacro('explosiveBomb');
+  assert.ok(def?.meta?.name, 'registered with meta.name');
+  assert.deepEqual([...def.meta.invokes].sort(), ['bomb', 'explosion'], 'declares both invokes');
+  // The macro declares NO native effects — every row is inherited from the
+  // invoked attacks (same pattern as bodyExplosion/spawnSplit).
+  assert.deepEqual(def.meta.effects ?? [], [], 'macro owns no effects of its own');
+  const rows = resolveEffects('explosiveBomb').map((r) => r.type);
+  assert.ok(rows.includes('explosion'), 'blast burst inherited from explosion primitive');
+  assert.ok(rows.includes('screen-flash'), 'flash inherited from explosion primitive');
+  assert.ok(rows.includes('camera-shake'), 'shake inherited from explosion primitive');
+  assert.ok(rows.includes('debris'), 'carrier landing puff inherited from bomb');
+});
+
+ok('explosiveProjectile: macro composes projectile → explosion', () => {
+  const def = getMacro('explosiveProjectile');
+  assert.ok(def?.meta?.name, 'registered with meta.name');
+  assert.deepEqual([...def.meta.invokes].sort(), ['explosion', 'projectile'], 'declares both invokes');
+  assert.deepEqual(def.meta.effects ?? [], [], 'macro owns no effects of its own');
+  const rows = resolveEffects('explosiveProjectile').map((r) => r.type);
+  assert.ok(rows.includes('explosion'), 'blast burst inherited from explosion primitive');
+  assert.ok(rows.includes('hit-sparkle'), 'carrier hit juice inherited from projectile');
 });
 
 ok('primitives that fire VFX declare meta.effects', () => {

@@ -66,10 +66,14 @@ than the projectile defining the barrel's response.
 
 ## 2. Bomb / Ballistic Arc
 
-**Effects:** Explosion + Screen Flash + Camera Shake (detonation)
+**Effects:** Debris (landing puff when the carrier dies on terrain) — a dumb ballistic carrier with NO blast VFX and NO composition. The classic exploding bomb is the **Explosive Bomb macro** (§11), which owns the blast.
 
-Creates a thrown object that follows a curved ballistic trajectory. The existing
-Balthazar bomb behavior is the conceptual reference.
+Creates a thrown object that follows a curved ballistic trajectory. It is a
+pure flight carrier: gravity arc, bounce or stop on impact, contact damage,
+fuse TTL. When it ends (impact, fuse expiry, or off-screen cull) it emits a
+terminal `detonate { x, y, contact }` event at the death point and does
+nothing else. Macros subscribe to that event to fire their aftermath
+(explosion, split, fire area...) at exactly that point.
 
 ### Main parameters
 
@@ -77,18 +81,20 @@ Balthazar bomb behavior is the conceptual reference.
 - **direction** — initial throw direction.
 - **arc / verticalForce** — controls the height of the throw (gravity value).
 - **bounce** — whether it can bounce on ground, blocks, or platform surfaces.
-- **explodeOnContact** — whether contact with an enemy or obstacle triggers its
-  payload.
-- **ttl** — optional time before triggering its payload, including while airborne.
-- **damage** — optional direct-contact damage.
+- **explodeOnContact** — legacy flag (kept for param parity; the terminal
+  event fires on any end regardless).
+- **ttl** — fuse time before the bomb ends, including while airborne.
+- **damage** — direct-contact damage.
+- **radius** — reference size for composed effects (macros read it).
 
 ### Completion / payload
 
-A bomb can trigger another primitive or macro payload when it detonates:
+The primitive carries NO payload. "What happens when it goes off" is always a
+macro concern:
 
-- Explosion.
-- Fire / Persistent Area.
-- Spawn / Split into smaller bombs.
+- Explosion → **Explosive Bomb** macro.
+- Fire / Persistent Area → future molotov-style macro.
+- Spawn / Split into smaller bombs → future cluster-bomb macro.
 
 ---
 
@@ -160,7 +166,7 @@ extends beyond the normal body.
 
 ## 6. Explosion
 
-**Effects:** Explosion (blast burst) + Camera Shake
+**Effects:** Explosion (blast burst) + Screen Flash + Camera Shake
 
 Creates a short-lived radial damage event. Resolved by the single explosion
 system described in `explosion.md`.
@@ -173,6 +179,8 @@ system described in `explosion.md`.
 - **alignment** — foe / ally / neutral (who it hurts).
 - **duration** — short active duration if needed.
 - **style** — explosion Effect Engine style override.
+- **burst / screenFlash / shake** — VFX switches (all default true). Composed
+  callers can suppress a channel so a bigger set piece doesn't double-dip.
 
 Explosion can be triggered by bombs, projectiles, enemies, environmental objects,
 or other attacks.

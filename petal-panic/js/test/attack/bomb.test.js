@@ -3,7 +3,6 @@
 
 import { strict as assert } from 'node:assert';
 import { spawnBomb, stepBomb } from '../../combat/attack/primitives/bomb.js';
-import { registerPrimitive, resetRegistries } from '../../combat/attack/registry.js';
 import { invoke, AttackHandle } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { Pool, Special } from '../../objects/projectile.js';
@@ -94,27 +93,32 @@ ok('stepBomb is idempotent after detonation', () => {
   assert.equal(n, 0);
 });
 
-ok('payload: custom payload attack is invoked at the blast point', () => {
-  // Register a fake 'explosion' (the real one lands in Task 1.5) so we can
-  // verify routing without it. bomb.js is already imported above, so the
-  // registry still holds 'bomb'.
-  const blasts = [];
-  registerPrimitive('explosion', {
-    impl(params) {
-      blasts.push(params);
-      const h = new AttackHandle('explosion');
-      h._complete();
-      return h;
-    },
-  });
+ok('carrier contract: terminal detonate carries the death point (macros compose)', () => {
+  // The carrier no longer takes payloads (primitive boundary) — composed
+  // macros (explosiveBomb) subscribe to 'detonate' and fire the blast at the
+  // carried death point.
   const ctx = makeCtx();
-  const h = invoke('bomb', { ...P, payload: { id: 'explosion', params: { radius: 99 } } }, ctx);
+  const h = invoke('bomb', P, ctx);
   const ent = h.entity;
   ent._attackHit = true;
   ent.alive = false;
-  stepBomb(ent, { ...P, payload: { id: 'explosion', params: { radius: 99 } } }, ctx, h);
-  assert.equal(blasts.length, 1, 'payload ran exactly once');
-  assert.equal(blasts[0].radius, 99);
+  let point = null;
+  h.on('detonate', (info) => { point = info; });
+  stepBomb(ent, P, ctx, h);
+  assert.ok(point, 'detonate emitted');
+  assert.ok(Number.isFinite(point.x) && Number.isFinite(point.y), 'death point carried');
+});
+
+ok('no payload → fizzle: detonate emits, no crash', () => {
+  const ctx = makeCtx();
+  const h = invoke('bomb', P, ctx);
+  const ent = h.entity;
+  ent._attackHit = true;
+  ent.alive = false;
+  let detonated = false;
+  h.on('detonate', () => { detonated = true; });
+  assert.equal(stepBomb(ent, P, ctx, h), true);
+  assert.ok(detonated, 'detonate emitted on fizzle');
 });
 
 ok('pool exhaustion: spawn returns null, handle expires', () => {

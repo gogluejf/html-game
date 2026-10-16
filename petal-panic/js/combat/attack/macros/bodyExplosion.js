@@ -44,9 +44,10 @@ registerMacro('bodyExplosion', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Body Explosion / Kamikaze',
-    effects: [
-      { type: 'explosion', desc: 'blast burst from the default payload (inherited via Explosion)' },
-    ],
+    // No native effects: the blast burst is inherited from the Explosion
+    // payload via resolveEffects() (meta.invokes) — declaring it here would
+    // shadow the primitive's own row in the dedup.
+    effects: [],
     desc: 'Fire a payload blast (default: explosion on the target), then die. Kamikaze pattern.',
     invokes: ['explosion'],
     params: [

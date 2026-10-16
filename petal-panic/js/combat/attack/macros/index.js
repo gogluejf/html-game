@@ -13,3 +13,5 @@ import './spreadShot.js';
 import './burstShot.js';
 import './radialShot.js';
 import './bodyExplosion.js';
+import './explosiveBomb.js';
+import './explosiveProjectile.js';

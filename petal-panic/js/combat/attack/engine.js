@@ -109,7 +109,13 @@ export function invoke(id, params = {}, ctx) {
   const inner = def.impl(merged, ctx);
   if (inner instanceof AttackHandle) {
     inner.id = id;
-    return inner.setInner(null); // it IS the handle; drop self-proxying
+    // It IS the handle: drop self-proxying WITHOUT cancelling — at this point
+    // _inner may be the handle itself (self-proxy from construction), and
+    // setInner(null) would cancel it, blocking every later _emit (detonate,
+    // hit, expire). Deferred-composition macros (explosiveBomb & co.) depend
+    // on those events firing after invoke returns.
+    inner._inner = null;
+    return inner;
   }
   handle.setInner(inner);
   return handle;
