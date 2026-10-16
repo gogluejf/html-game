@@ -101,7 +101,7 @@ const SANDBOX_PRESETS = {
   spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 16, size: 32, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
   orbit: { count: 3, minRadius: 40, maxRadius: 90, pulseSpeed: 1.5, speed: 1.5, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
   boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 3 },
-  spawnSplit: { x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'jester' },
+  spawnSplit: { x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'jester' },
   selfDestruct: { timing: 'immediate', deathBehavior: 'kill', triggerPayloadFirst: true, payload: { id: 'explosion', params: { x: ATTACKER_HOME.x + 16, y: ATTACKER_HOME.y + 24, radius: 70, damage: 40, alignment: 'neutral' } }, payloadDelay: 0.1 },
 };
 
@@ -145,6 +145,7 @@ export const AttackTheater = {
   _padConfirmHeld: false, // gamepad A edge-trigger memory (replay)
   _rep: {},           // held-control repeater state per channel
   _repeatDir: {},     // current direction per repeat channel
+  _tweaks: {},        // per-id user param tweaks (survive per-replay reload)
 
   get entries() { return [...listPrimitives(), ...listMacros()]; },
   currentId() { return this.entries[this.index] ?? null; },
@@ -188,14 +189,21 @@ export const AttackTheater = {
     const list = this._tweakList();
     if (!list.length) return;
     const [key, kind, stepSize] = list[this.paramIndex];
+    // Record the tweak per-id so it survives the per-replay param rebuild.
+    const id = this.currentId();
+    if (!this._tweaks[id]) this._tweaks[id] = {};
     // Enum params: cycle through the allowed values instead of numeric stepping.
     if (kind === 'enum' && Array.isArray(stepSize)) {
       const cur = this._params[key];
       const idx = stepSize.indexOf(cur);
-      this._params[key] = stepSize[(idx + deltaSign + stepSize.length) % stepSize.length];
+      const next = stepSize[(idx + deltaSign + stepSize.length) % stepSize.length];
+      this._params[key] = next;
+      this._tweaks[id][key] = next;
       return;
     }
-    this._params[key] = round2((this._params[key] ?? 0) + deltaSign * stepSize);
+    const nextNum = round2((this._params[key] ?? 0) + deltaSign * stepSize);
+    this._params[key] = nextNum;
+    this._tweaks[id][key] = nextNum;
   },
 
   replay() {
@@ -352,7 +360,9 @@ export const AttackTheater = {
     const id = this.currentId();
     const def = getPrimitive(id)?.params ?? getMacro(id)?.params ?? {};
     const preset = SANDBOX_PRESETS[id] ?? {};
-    this._params = { ...def, ...preset };
+    // User tweaks (adjustParam) are stored per-id in _tweaks and merged on top,
+    // so they survive the per-replay rebuild without leaking demo mutations.
+    this._params = { ...def, ...preset, ...(this._tweaks?.[id] ?? {}) };
   },
 
   _ctx() {
@@ -460,12 +470,16 @@ export const AttackTheater = {
       // explodes ON IT. No standing-around payload pre-fire.
       this._choreo = { kind: 'kamikaze', speed: 200, exploded: false };
     } else if (id === 'spawnSplit') {
-      // Split demo: the attacker disappears and splits into ballistic bombs
-      // that arc down, bounce off the ground, and detonate.
-      this._params.spawnType = 'bomb';
-      this._params.bomb = { arc: 700, bounce: true, ttl: 4, damage: 25, radius: 60, explodeOnContact: true };
-      this._params.centerDirection = -Math.PI / 2; // launch upward
-      this._params.angle = 100 * DEG;
+      // Split demo: default to ballistic bombs that arc down, bounce off the
+      // ground, and detonate. But if the user explicitly retuned spawnType
+      // (projectile/enemy) via the param list, honor that — don't clobber it.
+      const chosen = this._params.spawnType;
+      if (chosen !== 'enemy' && chosen !== 'projectile') {
+        this._params.spawnType = 'bomb';
+        this._params.bomb = { arc: 700, bounce: true, ttl: 4, damage: 25, radius: 60, explodeOnContact: true };
+      }
+      // centerDirection + angle come from SANDBOX_PRESETS (the demo fan) and are
+      // user-tweakable — do NOT reset them here or every replay clobbers the choice.
       this._params.x = this._attacker.x + this._attacker.w / 2;
       this._params.y = this._attacker.y + 10;
       this._choreo = { kind: 'vanishOnReplay' };
