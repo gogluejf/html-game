@@ -10,11 +10,12 @@
 // other attacks. "Bomb → Explosion" is composition, so it lives here, as
 // documented in docs/architecture/attack-macros.md §11.
 //
-// VFX contract: this macro fires NO effects of its own. The blast burst,
-// screen flash, and camera shake come from the Explosion primitive it invokes
-// (default switches, all on) — same pattern as bodyExplosion. One owner per
-// effect: the carrier fires no blast VFX either, so nothing double-dips.
-// resolveEffects() inherits the rows dynamically via meta.invokes.
+// VFX contract: this macro fires NO effects of its own. The blast burst and
+// camera shake come from the Explosion primitive it invokes; the white screen
+// flash is SUPPRESSED (screenFlash: false) — the bomb's read is burst + shake,
+// not a full-screen flash. One owner per effect: the carrier fires no blast
+// VFX either, so nothing double-dips. resolveEffects() inherits the rows
+// dynamically via meta.invokes.
 //
 // Handle shape: proxies the inner carrier handle (entity, detonate, complete);
 // h.inner is the carrier handle for hosts that need it directly.
@@ -39,9 +40,11 @@ registerMacro('explosiveBomb', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Explosive Bomb',
-    // No native effects: the blast burst + screen flash + camera shake are
-    // inherited from the Explosion payload via resolveEffects() (meta.invokes)
-    // — declaring them here would shadow the primitive's own rows in the dedup.
+    // No native effects: the blast burst + camera shake are inherited from the
+    // Explosion payload via resolveEffects() (meta.invokes) — declaring them
+    // here would shadow the primitive's own rows in the dedup. The screen flash
+    // is suppressed per call (screenFlash: false), so it does not appear in the
+    // macro's effective VFX even though the primitive supports it.
     effects: [],
     desc: 'Ballistic bomb that detonates into a radial explosion at its death point. Carrier owns flight; this macro owns the blast.',
     invokes: ['bomb', 'explosion'],
@@ -113,7 +116,8 @@ registerMacro('explosiveBomb', {
           team: p.blastTeam,
           self: ctx.attacker,
           targets: blastTargets(),
-          shake: true, // screen shake inherited from the explosion primitive
+          shake: true,        // screen shake inherited from the explosion primitive
+          screenFlash: false, // no white flash — the bomb's read is burst + shake
         }, ctx);
         blast.on('hit', (...args) => h._emit('hit', ...args));
       } catch (err) {

@@ -347,7 +347,7 @@ area rather than using a fixed pixel/unit separation.
 
 **Invokes:** Explosive Bomb (per bomb)
 
-**Effects:** Debris + Explosion + Screen Flash + Camera Shake (per bomb, via the explosiveBomb macro)
+**Effects:** Debris + Explosion + Camera Shake (per bomb, via the explosiveBomb macro — screen flash suppressed)
 
 Throws multiple bombs around a central throw angle. Like Spread Shot, the requested
 total angle is divided across the bombs. A useful variation is a very high vertical
@@ -372,7 +372,7 @@ bomb composition.
 
 **Invokes:** Explosive Bomb → Spawn/Split (on the parent's terminal `detonate`)
 
-**Effects:** Debris + Explosion + Screen Flash + Camera Shake (via the child explosiveBombs)
+**Effects:** Debris + Explosion + Camera Shake (via the child explosiveBombs — screen flash suppressed)
 
 Throws a bomb that spawns multiple smaller bombs when it detonates. The parent is
 an explosiveBomb; on its terminal event this macro fans out child explosiveBombs
@@ -423,7 +423,7 @@ Bomb → impact/timer → Fire/Persistent Area.
 
 **Invokes:** Bomb (carrier) → Explosion (aftermath, fired on the carrier's terminal `detonate` event)
 
-**Effects:** Debris (landing puff, via Bomb) + Explosion + Screen Flash + Camera Shake (inherited from the Explosion primitive — the macro declares no native effects)
+**Effects:** Debris (landing puff, via Bomb) + Explosion + Camera Shake (inherited from the Explosion primitive; screen flash suppressed per call — the macro declares no native effects)
 
 Throws a bomb that detonates into the game's standard radial explosion at its
 death point. The Bomb primitive is a dumb flight carrier (arc, bounce, fuse,
@@ -461,7 +461,7 @@ Bomb (flight) → terminal detonate{x,y} → Explosion at that point.
 
 **Invokes:** Projectile (carrier) → Explosion (aftermath, fired on the carrier's terminal hit/expire events)
 
-**Effects:** Hit-Sparkle / Debris (via Projectile) + Explosion + Screen Flash + Camera Shake (inherited from the Explosion primitive — the macro declares no native effects)
+**Effects:** Hit-Sparkle / Debris (via Projectile) + Explosion + Camera Shake (inherited from the Explosion primitive; screen flash suppressed per call — the macro declares no native effects)
 
 The straight-line twin of Explosive Bomb: a shot that detonates into a radial
 explosion at its death point — impact or fuse expiry. Same composition pattern:
@@ -820,7 +820,7 @@ Examples:
 
 **Invokes:** Projectile / Explosive Bomb / enemy factory
 
-**Effects:** Hit Sparkle + Debris (projectile children, via Projectile) / Debris + Explosion + Screen Flash + Camera Shake (bomb children, via Explosive Bomb → Explosion)
+**Effects:** Hit Sparkle + Debris (projectile children, via Projectile) / Debris + Explosion + Camera Shake (bomb children, via Explosive Bomb → Explosion; screen flash suppressed)
 
 Fans out N child entities from a single point and materializes each into a live
 attack or enemy. The caller invokes one id and gets live results back — it never

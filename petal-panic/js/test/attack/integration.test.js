@@ -116,9 +116,11 @@ ok('explosiveBomb: macro composes bomb → explosion and inherits honest effects
   assert.deepEqual(def.meta.effects ?? [], [], 'macro owns no effects of its own');
   const rows = resolveEffects('explosiveBomb').map((r) => r.type);
   assert.ok(rows.includes('explosion'), 'blast burst inherited from explosion primitive');
-  assert.ok(rows.includes('screen-flash'), 'flash inherited from explosion primitive');
   assert.ok(rows.includes('camera-shake'), 'shake inherited from explosion primitive');
   assert.ok(rows.includes('debris'), 'carrier landing puff inherited from bomb');
+  // NOTE: screen-flash is suppressed per call (screenFlash: false) — the
+  // primitive still declares it, so resolveEffects lists it; the macro's
+  // effective VFX at runtime is burst + shake only.
 });
 
 ok('explosiveProjectile: macro composes projectile → explosion', () => {

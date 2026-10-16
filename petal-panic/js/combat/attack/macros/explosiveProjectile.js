@@ -10,11 +10,12 @@
 // Explosion" is composition, so it lives here (docs/architecture/
 // attack-macros.md §12).
 //
-// VFX contract: this macro fires NO effects of its own. The blast burst,
-// screen flash, and camera shake come from the Explosion primitive it invokes
-// (default switches, all on) — same pattern as bodyExplosion. One owner per
-// effect: the carrier fires no blast VFX either, so nothing double-dips.
-// resolveEffects() inherits the rows dynamically via meta.invokes.
+// VFX contract: this macro fires NO effects of its own. The blast burst and
+// camera shake come from the Explosion primitive it invokes; the white screen
+// flash is SUPPRESSED (screenFlash: false) — the read is burst + shake, not a
+// full-screen flash. One owner per effect: the carrier fires no blast VFX
+// either, so nothing double-dips. resolveEffects() inherits the rows
+// dynamically via meta.invokes.
 //
 // Handle shape: proxies the inner carrier handle (entity, hit, expire,
 // complete); h.inner is the carrier handle for hosts that need it directly.
@@ -109,7 +110,8 @@ registerMacro('explosiveProjectile', {
           team: p.blastTeam,
           self: ctx.attacker,
           targets: blastTargets(),
-          shake: true, // screen shake inherited from the explosion primitive
+          shake: true,        // screen shake inherited from the explosion primitive
+          screenFlash: false, // no white flash — the read is burst + shake
         }, ctx);
         blast.on('hit', (...args) => h._emit('hit', ...args));
       } catch (err) {
