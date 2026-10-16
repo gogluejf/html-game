@@ -87,6 +87,7 @@ const SANDBOX_PRESETS = {
   boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 3 },
   spawnSplit: { x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'jester' },
   spreadShot: { count: 3, direction: 0, angle: 60 * DEG, speed: 500, ttl: 2, damage: 10 },
+  radialShot: { count: 8, startAngle: -Math.PI / 2, speed: 400, ttl: 2.5, damage: 10, sequenceInterval: null },
   projectileShot: { direction: 0.5, speed: 600, ttl: 2, damage: 10 },
   bodyExplosion: { deathBehavior: 'kill', triggerPayloadFirst: true, payloadDelay: 0.1 },
 };
@@ -94,7 +95,8 @@ const SANDBOX_PRESETS = {
 /** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
 export const TWEAKABLE = {
   projectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.25], ['damage', 'num', 2]],
-  spreadShot: [['count', 'int', 1], ['angle', 'angle', 15 * DEG]],
+  spreadShot: [['count', 'int', 1], ['angle', 'angle', 15 * DEG], ['sequenceInterval', 'num', 0.05]],
+  radialShot: [['count', 'int', 1], ['startAngle', 'angle', 15 * DEG], ['speed', 'num', 50], ['sequenceInterval', 'num', 0.05]],
   projectileShot: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50]],
   bomb: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
   explosion: [['x', 'num', 20], ['y', 'num', 20], ['radius', 'num', 10], ['damage', 'num', 5]],
@@ -466,6 +468,17 @@ export const AttackTheater = {
       this._attacker.x = 140;
       this._attacker.y = 150; // up on the platform
       this._attacker.facing = 1;
+    } else if (id === 'radialShot') {
+      // Radial Shot demo: the ATTACKER hovers on a platform high to the left;
+      // the target WALKS LEFT along the ground. The ring fires around the
+      // attacker's body — you watch bolts leave in every direction and see
+      // which ones catch the walker. Bump sequenceInterval in the param list
+      // to sweep the ring bolt-by-bolt (the boss pattern). Same staging
+      // family as reticleShot/predictiveShot/projectileShot.
+      this._choreo = { kind: 'strafe', t: 0, baseX: TARGET_POS.x };
+      this._attacker.x = 140;
+      this._attacker.y = 150; // up on the platform
+      this._attacker.facing = 1;
     } else if (id === 'orbit') {
       // Orbit demo: the ATTACKER walks up to the target so the satellites
       // sweep through its body. Space toggles eject (when ejectable).
@@ -794,10 +807,15 @@ export const AttackTheater = {
         else if (h.id === 'bomb') finished = stepBomb(h.entity, this._params, this._ctx(), h);
         else if (typeof h.step === 'function') finished = h.step(DT); // homingMissile / predictiveShot / ...
       } else if (typeof h.step === 'function') {
-        // State-based primitives: charge (motion profile), reticle (timing),
-        // beam/fireArea/spike (tick damage vs the dummy target), orbit
-        // (position update), boomerang (outbound/return profile).
-        if (h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike') {
+        // Multi-shot macros (spreadShot/radialShot): the macro's step() drives
+        // its launch cadence; each child shot's flight is stepped individually
+        // so TTL/hit death resolves like a solo projectile.
+        if (h.id === 'spreadShot' || h.id === 'radialShot') {
+          finished = h.step(DT);
+          for (const ch of h.handles ?? []) {
+            if (ch.entity) finished = stepProjectile(ch.entity, ch) || finished;
+          }
+        } else if (h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike') {
           finished = h.step(DT, [this._target]);
         } else if (h.id === 'boomerang') {
           finished = h.step(DT);

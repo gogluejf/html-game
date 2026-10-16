@@ -9,9 +9,17 @@
 // the only attack that uses it as a standalone step (spawnSplit inlines its own
 // vector generation). 2π angle = radial burst (the "360° Spread" pattern).
 //
+// `sequenceInterval` upgrades the simultaneous fan to a SEQUENCED one: when
+// > 0, shots launch one at a time, each `sequenceInterval` seconds after the
+// previous (like a boss sweeping a ring of bolts around itself). null/0 keeps
+// the classic all-at-once behavior. The handle then exposes h.step(dt) — the
+// host calls it each frame until true (same contract as timed bursts); the
+// terminal events still fire exactly once, after the LAST shot has ended.
+//
 // Handle shape:
 //   h.handles  — live projectile handles (one per angle), all sharing params
 //   h.angles   — the generated angles (for inspection/debug)
+//   h.step     — present ONLY when sequenceInterval > 0
 //   complete   — fires once every shot has ended (hit/expire)
 //   hit        — forwarded from any child shot
 
@@ -25,6 +33,7 @@ const DEFAULTS = Object.freeze({
   speed: 500,            // projectile speed px/s
   ttl: 2,                // projectile lifetime (s)
   damage: 10,            // projectile damage
+  sequenceInterval: null, // s between launches; null/0 = all simultaneous
 });
 
 /**
@@ -47,7 +56,7 @@ registerMacro('spreadShot', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Spread Shot',
-    desc: 'N projectiles fired simultaneously across an angle. 2π angle = radial burst.',
+    desc: 'N projectiles fanned across an angle. Simultaneous by default; sequenceInterval > 0 launches them one at a time (boss ring sweeps). 2π angle = radial burst.',
     invokes: ['projectile'],
     params: [
       { key: 'count', desc: 'number of shots' },
@@ -56,6 +65,7 @@ registerMacro('spreadShot', {
       { key: 'speed', desc: 'projectile speed px/s' },
       { key: 'ttl', desc: 'projectile lifetime (s)' },
       { key: 'damage', desc: 'projectile damage' },
+      { key: 'sequenceInterval', desc: 's between launches (null/0 = simultaneous)' },
     ],
   },
   impl(params, ctx) {
@@ -64,34 +74,70 @@ registerMacro('spreadShot', {
     const angles = spreadAngles(p.count, p.direction, p.angle);
     h.angles = angles;
 
-    const handles = [];
-    for (const a of angles) {
+    const spawnOne = (a) => {
       const shot = invoke('projectile', {
         direction: a, speed: p.speed, ttl: p.ttl, damage: p.damage,
       }, ctx);
       if (shot?.entity) {
-        handles.push(shot);
+        h.handles.push(shot);
         shot.on('hit', (...x) => h._emit('hit', ...x));
       }
-    }
-    h.handles = handles;
+    };
 
-    if (handles.length === 0) {
-      h._complete({ count: angles.length });
-    } else {
-      let remaining = handles.length;
-      const done = () => {
-        remaining -= 1;
-        if (remaining <= 0) h._complete({ count: angles.length });
-      };
-      for (const ch of handles) {
-        ch.on('complete', done);
-        ch.on('expire', done);
-      }
-      for (const ch of handles) {
-        if (ch._completed || ch._cancelled) done();
-      }
+    const interval = Number.isFinite(p.sequenceInterval) ? p.sequenceInterval : 0;
+
+    if (interval <= 0) {
+      // --- Simultaneous fan (classic behavior) --------------------------------
+      h.handles = [];
+      for (const a of angles) spawnOne(a);
+      _wireCompletion(h, angles.length);
+      return h;
     }
+
+    // --- Sequenced fan: one shot per interval, host steps h.step(dt) ---------
+    h.handles = [];
+    h.state = { spawned: 0, t: 0, done: false };
+    h.step = (dt) => {
+      const s = h.state;
+      if (s.done) return true;
+      s.t += dt;
+      while (s.spawned < angles.length && s.t >= s.spawned * interval) {
+        spawnOne(angles[s.spawned]);
+        s.spawned++;
+      }
+      // All launched AND all dead → complete. (Pool exhaustion: fewer live
+    // handles than angles — the every() on what exists is still correct.)
+      if (s.spawned >= angles.length && h.handles.every((e) => !e.entity.alive)) {
+        s.done = true;
+        h._complete({ count: angles.length });
+        return true;
+      }
+      return false;
+    };
     return h;
   },
 });
+
+/**
+ * Wire the "complete when every child has ended" bookkeeping for the
+ * simultaneous path. Terminal events fire exactly once; already-finished
+ * children (synchronous primitives in test harnesses) are counted up front.
+ */
+function _wireCompletion(h, total) {
+  if (h.handles.length === 0) {
+    h._complete({ count: total });
+    return;
+  }
+  let remaining = h.handles.length;
+  const done = () => {
+    remaining -= 1;
+    if (remaining <= 0) h._complete({ count: total });
+  };
+  for (const ch of h.handles) {
+    ch.on('complete', done);
+    ch.on('expire', done);
+  }
+  for (const ch of h.handles) {
+    if (ch._completed || ch._cancelled) done();
+  }
+}

@@ -11,4 +11,5 @@ import './spawnSplit.js';
 import './homingMissile.js';
 import './predictiveShot.js';
 import './spreadShot.js';
+import './radialShot.js';
 import './bodyExplosion.js';

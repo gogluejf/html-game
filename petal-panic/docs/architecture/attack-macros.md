@@ -221,30 +221,37 @@ Projectile → interval → Projectile → repeat.
 
 **Effects:** Hit Sparkle (hit juice)
 
-Fires multiple projectiles simultaneously across an angle centered on a direction.
+Fires multiple projectiles across an angle centered on a direction.
+Simultaneous by default; `sequenceInterval > 0` launches them one at a time,
+each that many seconds after the previous (boss ring sweeps).
 
 ### Sequence
 
-Spread → multiple Projectiles.
+Spread → multiple Projectiles (simultaneous or sequenced).
 
 ### Main parameters
 
-- **count** — simultaneous projectiles.
+- **count** — projectiles in the fan.
 - **direction** — center direction.
 - **angle** — total spread angle.
 - **speed** — projectile speed.
 - **ttl** — optional lifetime.
 - **damage** — damage.
+- **sequenceInterval** — seconds between launches (null/0 = simultaneous).
 
 ---
 
-## 6. 360° Spread
+## 6. 360° Spread (Radial Shot)
 
-**Invokes:** Projectile
+**Invokes:** Spread Shot (with computed ring geometry)
 
 **Effects:** Hit Sparkle (hit juice)
 
-A radial form of Spread Shot that distributes projectiles around the attacker.
+A radial form of Spread Shot that distributes projectiles evenly in a full
+ring around the attacker. The macro computes the spread width from `count`
+so neighbor gaps are exactly 360°/count — callers pass only `count`, never
+`angle`. `sequenceInterval` (inherited from Spread Shot) sweeps the ring one
+bolt at a time instead of firing it all at once — the classic boss ring.
 
 ### Main parameters
 
@@ -253,6 +260,7 @@ A radial form of Spread Shot that distributes projectiles around the attacker.
 - **speed** — projectile speed.
 - **ttl** — optional lifetime.
 - **damage** — damage.
+- **sequenceInterval** — seconds between launches (null = simultaneous).
 
 The canonical spread angle is 360 degrees.
 
