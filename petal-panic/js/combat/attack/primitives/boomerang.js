@@ -12,8 +12,9 @@
 //             completes when it reaches within `returnRadius` of the origin.
 //
 // Concurrency: `count` = MAXIMUM SIMULTANEOUSLY ALIVE boomerangs (cap).
-// This is NOT burst-shot semantics (that belongs to Projectile's
-// count/burstInterval). Each call to h.throw() spawns one more boomerang as
+// This is a concurrency model, NOT repeated-fire pattern semantics (bursts
+// and fire-groups are macro/attack-plan sequencing — see spreadShot's
+// sequenceInterval). Each call to h.throw() spawns one more boomerang as
 // long as fewer than `count` are alive; at the cap, throw() is a no-op.
 // The handle stays open while any boomerang is alive and completes when the
 // last one comes home. h.states[i] holds each boomerang's state

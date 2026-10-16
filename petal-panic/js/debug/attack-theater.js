@@ -808,12 +808,14 @@ export const AttackTheater = {
         else if (typeof h.step === 'function') finished = h.step(DT); // homingMissile / predictiveShot / ...
       } else if (typeof h.step === 'function') {
         // Multi-shot macros (spreadShot/radialShot): the macro's step() drives
-        // its launch cadence; each child shot's flight is stepped individually
-        // so TTL/hit death resolves like a solo projectile.
+        // its launch cadence AND owns completion (true only when all shots are
+        // launched AND dead). Child flights are stepped for TTL/cull/hit
+        // resolution, but their return value is IGNORED here — a dying bullet
+        // while later shots are still pending must not end the macro.
         if (h.id === 'spreadShot' || h.id === 'radialShot') {
           finished = h.step(DT);
           for (const ch of h.handles ?? []) {
-            if (ch.entity) finished = stepProjectile(ch.entity, ch) || finished;
+            if (ch.entity) stepProjectile(ch.entity, ch);
           }
         } else if (h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike') {
           finished = h.step(DT, [this._target]);

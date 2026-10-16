@@ -54,8 +54,9 @@ Order suggestion:
    (telegraph → active → recovery), default params table per macro.
 2. **2.2 Simple shot macros** — Projectile_Shot, Predictive_Shot, Burst_Shot,
    Spread_Shot, Radial_Shot
-3. **2.3 Advanced projectile macros** — Homing_Missile, Boomerang,
-   Orbiting_Projectiles, Orbit_Eject
+3. **2.3 Advanced projectile macros** — Homing_Missile (boomerang, orbit, and
+   orbit-eject stay primitives: the orbit primitive already owns eject();
+   Design contract: a macro must compose)
 4. **2.5 Bomb macros** — Bomb_Throw, Bomb_Spread, Cluster_Bomb, Molotov,
    Explosive_Bomb
 5. **2.6 Beam macros** — Horizontal_Beam, Targeted_Beam, Sweeping_Beam

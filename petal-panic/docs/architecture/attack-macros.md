@@ -198,20 +198,25 @@ target-reticle effect (track → lock) → Projectile at locked point.
 
 **Effects:** Hit Sparkle (hit juice)
 
-Fires the same projectile repeatedly with controlled spacing.
+Fires the same shot repeatedly along one direction with a fixed interval
+between shots — the M16-style fire group. The interval is the cool-down
+INSIDE the attack; the handle completes when the last shot of the burst dies.
 
 ### Sequence
 
-Projectile → interval → Projectile → repeat.
+Projectile → interval → Projectile → repeat × count.
 
 ### Main parameters
 
 - **count** — shots in the burst.
-- **interval** — time between shots.
-- **speed** — projectile speed.
+- **interval** — seconds between shots (the intra-burst cool-down).
 - **direction / target** — firing direction.
+- **speed** — projectile speed.
 - **ttl** — optional projectile lifetime.
 - **damage** — damage.
+
+Pacing BETWEEN separate attacks (wait, then next attack) is AI/attack-plan
+sequencing, not part of the burst.
 
 ---
 
@@ -292,78 +297,7 @@ a much more agile threat.
 
 ---
 
-## 8. Boomerang
-
-**Invokes:** Boomerang
-
-**Effects:** —
-
-Launches one or more projectiles outward before they return.
-
-### Sequence
-
-Boomerang outward → turnaround → return.
-
-### Main parameters
-
-- **force / speed** — outward speed.
-- **direction** — launch direction.
-- **count / burst** — number launched.
-- **burstInterval** — spacing between repeated launches when applicable.
-- **outboundDuration / distance** — turnaround point.
-- **returnForce / speed** — return speed.
-- **ttl** — optional total lifetime.
-- **damage** — contact damage.
-
----
-
-## 9. Orbiting Projectiles
-
-**Invokes:** Orbit
-
-**Effects:** —
-
-Creates projectiles or damaging objects that rotate around the attacker. They
-behave visually as electrons around an owner.
-
-### Sequence
-
-Spawn orbiting entities → Orbit → expire/remove.
-
-### Main parameters
-
-- **count** — orbiting objects.
-- **minRadius** — inner bound of the radius pulse (px).
-- **maxRadius** — outer bound of the radius pulse (px).
-- **pulseSpeed** — pulse frequency in Hz (0 = static at max).
-- **speed** — rotation speed (rad/s).
-- **ttl** — duration.
-- **damage** — contact damage.
-
----
-
-## 10. Orbit → Eject
-
-**Invokes:** Orbit → Projectile
-
-**Effects:** Projectile trail (when ejected shots fly)
-
-Starts as Orbiting Projectiles, then releases all orbiting objects. On release,
-each object keeps its current tangential direction/velocity and becomes a linear
-projectile. The result resembles a naturally distributed multi-direction spread
-without recalculating an artificial spread pattern.
-
-### Main parameters
-
-Includes Orbiting Projectiles parameters plus:
-
-- **ejectTime / trigger** — when release happens.
-- **ejectSpeedMultiplier** — optional change to release speed.
-- **projectileTTL** — lifetime after release.
-
----
-
-## 11. Missile Rain
+## 8. Missile Rain
 
 **Invokes:** Projectile + Telegraph effect
 
@@ -427,7 +361,7 @@ area rather than using a fixed pixel/unit separation.
 
 ---
 
-## 12. Bomb Throw
+## 9. Bomb Throw
 
 **Invokes:** Bomb
 
@@ -451,7 +385,7 @@ Bomb launch → ballistic arc → optional bounce/contact → payload/detonation
 
 ---
 
-## 13. Bomb Spread
+## 10. Bomb Spread
 
 **Invokes:** Bomb
 
@@ -476,7 +410,7 @@ air simultaneously.
 
 ---
 
-## 14. Cluster Bomb
+## 11. Cluster Bomb
 
 **Invokes:** Bomb → Spawn/Split
 
@@ -502,7 +436,7 @@ Parent Bomb → trigger → Spawn/Split → child Bombs → child payloads.
 
 ---
 
-## 15. Molotov
+## 12. Molotov
 
 **Invokes:** Bomb → Fire Area
 
@@ -525,7 +459,7 @@ Bomb → impact/timer → Fire/Persistent Area.
 
 ---
 
-## 16. Explosive Bomb
+## 13. Explosive Bomb
 
 **Invokes:** Bomb → Explosion
 
@@ -547,7 +481,7 @@ Bomb → trigger → Explosion.
 
 ---
 
-## 17. Horizontal Beam
+## 14. Horizontal Beam
 
 **Invokes:** Beam
 
@@ -573,7 +507,7 @@ Full-screen horizontal reach is the normal default.
 
 ---
 
-## 18. Targeted Beam
+## 15. Targeted Beam
 
 **Invokes:** Beam
 
@@ -600,7 +534,7 @@ The beam direction is determined by the locked reticle placement.
 
 ---
 
-## 19. Sweeping Beam
+## 16. Sweeping Beam
 
 **Invokes:** Beam
 
@@ -626,7 +560,7 @@ Reticle/telegraph → Beam starts → angular sweep → end.
 
 ---
 
-## 20. Melee
+## 17. Melee
 
 **Invokes:** Melee Hitbox
 
@@ -657,7 +591,7 @@ animation-driven attacks without inventing separate collision systems.
 
 ---
 
-## 21. Charge / Dash
+## 18. Charge / Dash
 
 **Invokes:** Movement + Body Contact
 
@@ -685,7 +619,7 @@ stop/recovery.
 
 ---
 
-## 22. Stomp
+## 19. Stomp
 
 **Invokes:** Telegraph effect + Melee Hitbox
 
@@ -724,7 +658,7 @@ Telegraph once → signal → stomp → interval → signal → stomp → repeat
 
 ---
 
-## 23. Stomp Wave
+## 20. Stomp Wave
 
 **Invokes:** Spike / Static Hazard
 
@@ -750,7 +684,7 @@ Telegraph → stomp impact → surface wave → wave terminates.
 
 ---
 
-## 24. Dust Cloud / Radius Attack
+## 21. Dust Cloud / Radius Attack
 
 **Invokes:** Explosion
 
@@ -773,7 +707,7 @@ Dust effect appears → radial area active → duration ends.
 
 ---
 
-## 25. Spikes
+## 22. Spikes
 
 **Invokes:** Spike / Static Hazard
 
@@ -800,7 +734,7 @@ optional hidden TTL → optional repeat.
 
 ---
 
-## 26. Body Explosion / Kamikaze
+## 23. Body Explosion / Kamikaze
 
 **Invokes:** Explosion (payload)
 
@@ -827,7 +761,7 @@ standardized detonation behavior.
 
 ---
 
-## 27. Dash Lane Sequence
+## 24. Dash Lane Sequence
 
 **Invokes:** Movement + Telegraph effect
 
@@ -877,7 +811,7 @@ Examples:
 
 ---
 
-## 28. Spawn / Split
+## 25. Spawn / Split
 
 **Invokes:** Projectile / Bomb / enemy factory
 
@@ -964,6 +898,13 @@ When adding an attack:
 7. A macro's `impl()` MAY call `invoke()`; a primitive's MUST NOT. Every macro
    declares what it composes via `meta.invokes` (rendered by the Theater's
    INVOKES panel and documented as each section's **Invokes:** line).
+8. **A macro must compose.** It either invokes ≥2 primitives/macros, or owns
+   timing/looping no single primitive provides (aim resolution, telegraph
+   sequencing, computed geometry). If an attack is a 1:1 mirror of one
+   primitive, there is NO macro — callers invoke the primitive directly.
+   Repeated-fire patterns (bursts, fire-groups) are expressed by sequencing
+   macro invocations in an attack plan, not by adding burst params to
+   primitives.
 
 The goal is a small mechanical vocabulary that can produce many attacks without
 creating dozens of almost-identical custom implementations.

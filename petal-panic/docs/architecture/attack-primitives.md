@@ -45,8 +45,6 @@ Creates a projectile from an origin, normally the attacker or one of its markers
 
 - **speed** — travel speed.
 - **direction** — initial travel direction (angle or 8-way index).
-- **count / burst** — number launched as part of the action.
-- **burstInterval** — delay between repeated launches.
 - **ttl** — optional lifetime before disappearing.
 - **damage** — damage caused on valid contact.
 - **origin / marker** — where the projectile starts (a named marker on the
@@ -278,8 +276,9 @@ Creates a projectile that travels outward and then returns.
 
 - **force / speed** — outward travel speed.
 - **direction** — initial travel direction.
-- **count / burst** — number launched.
-- **burstInterval** — spacing between repeated launches.
+- **count** — max simultaneously alive boomerangs (cap); `h.throw()` launches
+  one more up to the cap. This is a concurrency model, NOT burst-shot
+  semantics (repeated-fire patterns belong to macros/attack plans).
 - **outboundDuration / distance** — when the return begins.
 - **returnForce / speed** — return speed.
 - **ttl** — optional total lifetime.

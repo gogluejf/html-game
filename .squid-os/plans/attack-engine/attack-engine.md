@@ -183,15 +183,17 @@ primitive sequence, and reports progress/completion to the caller.
 ### Task 2.2 — Simple shot macros (1–5)
 - `Projectile_Shot`
 - `Predictive_Shot`
-- `Burst_Shot`
+- `Burst_Shot` (N shots, fixed intra-burst interval; timing lives here, not in
+  the projectile primitive)
 - `Spread_Shot`
 - `Radial_Shot` (360° spread)
 
 ### Task 2.3 — Advanced projectile macros (6–9)
 - `Homing_Missile`
-- `Boomerang`
-- `Orbiting_Projectiles`
-- `Orbit_Eject`
+
+(Boomerang, orbiting projectiles, and orbit-eject are used directly as
+primitives — the orbit primitive already owns eject() — per the Design
+contract "a macro must compose".)
 
 ### Task 2.4 — Missile Rain (10)
 - Full canonical sequence: launch up → oscillate → leave screen → calculate
@@ -373,12 +375,12 @@ Beam, Orbit, and Spawn/Split are prerequisites for their respective macros.
 
 ### Wave 3 — Simple + medium macros (Session 3)
 
-**Scope:** Tasks 2.1 – 2.3, 2.5 – 2.9 (framework + 21 of 26 macros)
+**Scope:** Tasks 2.1 – 2.3, 2.5 – 2.9 (framework + macros)
 - 2.1 Macro framework (registry, handle, phases)
 - 2.2 Simple shot macros (Projectile_Shot, Predictive_Shot, Burst_Shot,
   Spread_Shot, Radial_Shot)
-- 2.3 Advanced projectile macros (Homing_Missile, Boomerang,
-  Orbiting_Projectiles, Orbit_Eject)
+- 2.3 Advanced projectile macros (Homing_Missile; boomerang/orbit/orbit-eject
+  stay primitives — Design contract: a macro must compose)
 - 2.5 Bomb macros (Bomb_Throw, Bomb_Spread, Cluster_Bomb, Molotov,
   Explosive_Bomb)
 - 2.6 Beam macros (Horizontal_Beam, Targeted_Beam, Sweeping_Beam)
