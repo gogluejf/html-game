@@ -20,7 +20,7 @@
 import { listPrimitives, listMacros, getPrimitive, getMacro } from '../combat/attack/registry.js';
 import { invoke } from '../combat/attack/engine.js';
 import { makeContext } from '../combat/attack/context.js';
-import { resolveEffects } from '../combat/attack/effectsMeta.js';
+import { resolveEffects, resolveInvokes } from '../combat/attack/effectsMeta.js';
 import { stepProjectile } from '../combat/attack/primitives/projectile.js';
 import { stepBomb, stepBombTerrain } from '../combat/attack/primitives/bomb.js';
 import { Pool, Projectile, Special } from '../objects/projectile.js';
@@ -87,7 +87,8 @@ const SANDBOX_PRESETS = {
   boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 3 },
   spawnSplit: { x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'jester' },
   spreadShot: { count: 3, direction: 0, angle: 60 * DEG, speed: 500, ttl: 2, damage: 10 },
-  radialShot: { count: 8, startAngle: -Math.PI / 2, speed: 400, ttl: 2.5, damage: 10, sequenceInterval: null },
+  radialShot: { count: 24, startAngle: -Math.PI / 2, speed: 400, ttl: 2.5, damage: 10, sequenceInterval: 0.15 },
+  burstShot: { count: 3, interval: 0.12, direction: 0.5, speed: 600, ttl: 2, damage: 10 },
   projectileShot: { direction: 0.5, speed: 600, ttl: 2, damage: 10 },
   bodyExplosion: { deathBehavior: 'kill', triggerPayloadFirst: true, payloadDelay: 0.1 },
 };
@@ -97,6 +98,7 @@ export const TWEAKABLE = {
   projectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.25], ['damage', 'num', 2]],
   spreadShot: [['count', 'int', 1], ['angle', 'angle', 15 * DEG], ['sequenceInterval', 'num', 0.05]],
   radialShot: [['count', 'int', 1], ['startAngle', 'angle', 15 * DEG], ['speed', 'num', 50], ['sequenceInterval', 'num', 0.05]],
+  burstShot: [['count', 'int', 1], ['interval', 'num', 0.02], ['direction', 'angle', 15 * DEG], ['speed', 'num', 50]],
   projectileShot: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50]],
   bomb: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
   explosion: [['x', 'num', 20], ['y', 'num', 20], ['radius', 'num', 10], ['damage', 'num', 5]],
@@ -479,6 +481,17 @@ export const AttackTheater = {
       this._attacker.x = 140;
       this._attacker.y = 150; // up on the platform
       this._attacker.facing = 1;
+    } else if (id === 'burstShot') {
+      // Burst Shot demo: the ATTACKER hovers on a platform high to the left;
+      // the target WALKS LEFT along the ground. The burst fires its group at
+      // a DIAGONAL angle — you watch 3+ volleys leave one after another and
+      // judge the intra-burst interval by eye. Bump count/interval in the
+      // param list for M16-style fire groups. Same staging family as the
+      // other elevated shooters.
+      this._choreo = { kind: 'strafe', t: 0, baseX: TARGET_POS.x };
+      this._attacker.x = 140;
+      this._attacker.y = 150; // up on the platform
+      this._attacker.facing = 1;
     } else if (id === 'orbit') {
       // Orbit demo: the ATTACKER walks up to the target so the satellites
       // sweep through its body. Space toggles eject (when ejectable).
@@ -807,12 +820,12 @@ export const AttackTheater = {
         else if (h.id === 'bomb') finished = stepBomb(h.entity, this._params, this._ctx(), h);
         else if (typeof h.step === 'function') finished = h.step(DT); // homingMissile / predictiveShot / ...
       } else if (typeof h.step === 'function') {
-        // Multi-shot macros (spreadShot/radialShot): the macro's step() drives
-        // its launch cadence AND owns completion (true only when all shots are
-        // launched AND dead). Child flights are stepped for TTL/cull/hit
-        // resolution, but their return value is IGNORED here — a dying bullet
-        // while later shots are still pending must not end the macro.
-        if (h.id === 'spreadShot' || h.id === 'radialShot') {
+        // Multi-shot macros (spreadShot/radialShot/burstShot): the macro's
+        // step() drives its launch cadence AND owns completion (true only
+        // when all shots are launched AND dead). Child flights are stepped
+        // for TTL/cull/hit resolution, but their return value is IGNORED —
+        // a dying bullet while later shots are pending must not end the macro.
+        if (h.id === 'spreadShot' || h.id === 'radialShot' || h.id === 'burstShot') {
           finished = h.step(DT);
           for (const ch of h.handles ?? []) {
             if (ch.entity) stepProjectile(ch.entity, ch);
@@ -1191,8 +1204,11 @@ export const AttackTheater = {
 
     // Invokes section (macros only): what this macro composes, straight from
     // its registration meta — no theater-side knowledge of compositions.
-    const invokes = meta?.invokes;
-    if (Array.isArray(invokes) && invokes.length > 0) {
+    // Invokes section (macros only): what this macro composes, resolved via
+    // resolveInvokes() — the single source of truth; the theater renders
+    // rows and knows nothing about registry internals.
+    const invokes = resolveInvokes(id);
+    if (invokes.length > 0) {
       py += 8;
       if (py <= bottomLimit()) {
         ctx.font = 'bold 11px monospace';
@@ -1200,11 +1216,10 @@ export const AttackTheater = {
         ctx.fillText('INVOKES', panelX + 12, py);
         py += 15;
         ctx.font = '11px monospace';
-        for (const invId of invokes) {
+        for (const inv of invokes) {
           if (py > bottomLimit()) break;
-          const invName = getPrimitive(invId)?.meta?.name ?? getMacro(invId)?.meta?.name ?? invId;
           ctx.fillStyle = '#9feaff';
-          ctx.fillText(`→ ${invName}`, panelX + 12, py);
+          ctx.fillText(`→ ${inv.name}${inv.via ? ` (${inv.via})` : ''}`, panelX + 12, py);
           py += 14;
         }
       }

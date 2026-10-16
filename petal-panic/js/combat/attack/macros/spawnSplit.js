@@ -73,9 +73,11 @@ registerMacro('spawnSplit', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Spawn / Split',
-    effects: [
-      { type: 'explosion', desc: 'blast burst when bomb children detonate (inherited via Bomb)' },
-    ],
+    // No native effects: VFX come from the children it materializes —
+    // bomb children bring explosion/screen-flash/camera-shake (via the Bomb
+    // primitive), projectile children bring hit-sparkle/debris. resolveEffects()
+    // surfaces them as inherited rows; declaring them here would duplicate.
+    effects: [],
     desc: 'Fan out N children and materialize each into a live projectile/bomb or enemy. Declarative — one invoke, live results.',
     invokes: ['projectile', 'bomb'],
     params: [

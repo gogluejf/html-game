@@ -107,7 +107,13 @@ registerMacro('homingMissile', {
 
 **Effects:** Hit Sparkle (hit juice)
 
-A standard shot fired from the attacker toward a direction or target.
+A standard shot fired from the attacker at a target, or along a caller-supplied
+direction when there is no target.
+
+**Aim contract:** `target` (live entity) is PRIMARY — the shot flies at the
+target's current center. `direction` (radians) is the FALLBACK used only when
+`target` is null: the caller's own aim (hero D-pad/reticle input, pattern
+shots). Both given → target wins.
 
 ### Sequence
 
@@ -115,7 +121,8 @@ Projectile → travel → collision/expiration.
 
 ### Main parameters
 
-- **direction / target** — firing direction.
+- **target** — primary aim: live entity, shot flies at its current center.
+- **direction** — fallback aim (only when target is null), radians.
 - **speed** — projectile speed.
 - **ttl** — optional lifetime.
 - **damage** — damage.
@@ -198,9 +205,14 @@ target-reticle effect (track → lock) → Projectile at locked point.
 
 **Effects:** Hit Sparkle (hit juice)
 
-Fires the same shot repeatedly along one direction with a fixed interval
-between shots — the M16-style fire group. The interval is the cool-down
-INSIDE the attack; the handle completes when the last shot of the burst dies.
+Fires the same shot repeatedly with a fixed interval between shots — the
+M16-style fire group. The interval is the cool-down INSIDE the attack; the
+handle completes when the last shot of the burst dies.
+
+**Aim contract** (same as Projectile Shot): `target` is PRIMARY — and because
+every shot re-solves its angle at its OWN fire time, a target burst TRACKS a
+moving target shot-by-shot. `direction` is the FALLBACK for no-target callers
+(hero aim / patterns); all shots in the group share it.
 
 ### Sequence
 
@@ -210,7 +222,8 @@ Projectile → interval → Projectile → repeat × count.
 
 - **count** — shots in the burst.
 - **interval** — seconds between shots (the intra-burst cool-down).
-- **direction / target** — firing direction.
+- **target** — primary aim: live entity, re-aimed per shot (tracks movement).
+- **direction** — fallback aim (only when target is null), radians.
 - **speed** — projectile speed.
 - **ttl** — optional projectile lifetime.
 - **damage** — damage.

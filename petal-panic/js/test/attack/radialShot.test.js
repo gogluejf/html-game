@@ -35,7 +35,7 @@ ok('radialAngle: single shot collapses to zero width', () => {
 
 ok('simultaneous ring: all shots live at once, evenly spaced', () => {
   const ctx = makeContext(attacker(), { pools: pools() });
-  const h = invoke('radialShot', { count: 8, speed: 300, ttl: 5, damage: 5 }, ctx);
+  const h = invoke('radialShot', { count: 8, sequenceInterval: null, speed: 300, ttl: 5, damage: 5 }, ctx);
   assert.equal(h.handles.length, 8, 'all 8 spawned immediately');
   // Neighbor gap must be exactly 45° (2π/8) — the whole point of the
   // computed ring width.
@@ -47,8 +47,8 @@ ok('simultaneous ring: all shots live at once, evenly spaced', () => {
 
 ok('startAngle rotates the whole ring', () => {
   const ctx = makeContext(attacker(), { pools: pools() });
-  const base = invoke('radialShot', { count: 4, speed: 300, ttl: 5 }, ctx);
-  const rotated = invoke('radialShot', { count: 4, startAngle: Math.PI / 2, speed: 300, ttl: 5 }, ctx);
+  const base = invoke('radialShot', { count: 4, sequenceInterval: null, speed: 300, ttl: 5 }, ctx);
+  const rotated = invoke('radialShot', { count: 4, startAngle: Math.PI / 2, sequenceInterval: null, speed: 300, ttl: 5 }, ctx);
   // Every rotated angle must equal a base angle + startAngle (the pattern is
   // rigidly rotated, not reshaped).
   for (const r of rotated.angles) {
@@ -71,7 +71,7 @@ ok('sequenced ring: one bolt per interval, step-driven', () => {
 
 ok('forwards hit + complete from the inner spread', () => {
   const ctx = makeContext(attacker(), { pools: pools() });
-  const h = invoke('radialShot', { count: 2, speed: 300, ttl: 5, damage: 7 }, ctx);
+  const h = invoke('radialShot', { count: 2, sequenceInterval: null, speed: 300, ttl: 5, damage: 7 }, ctx);
   const seen = [];
   h.on('hit', (i) => seen.push(['hit', i.dealt]));
   h.on('complete', () => seen.push('done'));

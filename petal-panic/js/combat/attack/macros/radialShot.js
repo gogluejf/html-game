@@ -22,12 +22,12 @@ import { registerMacro } from '../registry.js';
 import { invoke, AttackHandle } from '../engine.js';
 
 const DEFAULTS = Object.freeze({
-  count: 8,              // projectiles around the circle
+  count: 24,             // projectiles around the circle
   startAngle: 0,         // rotation of the pattern (radians)
-  speed: 500,            // projectile speed px/s
-  ttl: 2,                // projectile lifetime (s)
+  speed: 400,            // projectile speed px/s
+  ttl: 2.5,              // projectile lifetime (s)
   damage: 10,            // projectile damage
-  sequenceInterval: null, // s between launches; null/0 = all simultaneous
+  sequenceInterval: 0.15, // s between launches; null/0 = all simultaneous
 });
 
 /**
@@ -46,9 +46,9 @@ registerMacro('radialShot', {
     name: 'Radial Shot (360° Spread)',
     desc: 'N projectiles evenly distributed in a full ring around the attacker. Wraps spreadShot with computed ring geometry; sequenceInterval sweeps the ring one bolt at a time.',
     invokes: ['spreadShot'],
-    effects: [
-      { type: 'hit-sparkle', desc: 'blood sparkles on enemy impact (inherited from projectile)' },
-    ],
+    // No native effects: inherits hit-sparkle/debris via spreadShot →
+    // projectile. resolveEffects() surfaces them as inherited rows.
+    effects: [],
     params: [
       { key: 'count', desc: 'projectiles around the circle' },
       { key: 'startAngle', desc: 'rotation of the pattern (radians)' },
@@ -70,8 +70,13 @@ registerMacro('radialShot', {
     }, ctx);
     // Mirror the inner handle's data + lifecycle onto this wrapper handle so
     // hosts treat both uniformly (theater steps h.step when present).
+    // `handles` is a LIVE view of the inner array: the sequenced path pushes
+    // children over time, and the theater iterates h.handles each frame.
     h.handles = inner.handles;
-    h.angles = inner.angles;
+    Object.defineProperty(h, 'angles', {
+      get: () => inner.angles,
+      enumerable: true,
+    });
     if (typeof inner.step === 'function') h.step = inner.step;
     inner.on('hit', (...x) => h._emit('hit', ...x));
     inner.on('expire', () => h._emit('expire'));

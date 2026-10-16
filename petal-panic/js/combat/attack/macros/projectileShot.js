@@ -1,9 +1,17 @@
 // Attack Engine — Projectile Shot (macro, doc §1). ONE object, one id.
 //
 // The canonical "fire one shot" entry point: a single Projectile primitive
-// with aim resolution on top. Callers may pass `direction` (radians) OR a
-// live `target` entity — the macro computes the angle at fire time so enemy
-// AI never does trig or touches pools ("shoot at hero" is one line).
+// with aim resolution on top.
+//
+// AIM CONTRACT (two inputs, one winner):
+//   • `target` (live entity)  → PRIMARY. The macro aims at the target's
+//     current center at fire time. Enemy/boss AI passes this and never
+//     thinks about angles ("shoot at hero" is one line, no trig).
+//   • `direction` (radians)   → FALLBACK ONLY. Used when `target` is null:
+//     the caller's own aim. This is how the HERO fires (D-pad/reticle aim
+//     IS an angle, there is no target entity) and how pattern shots work
+//     (boss fires straight up, decorative volleys...).
+//   • Both given → `target` wins, `direction` is ignored.
 //
 // Deliberately thin: no phases, no timing, no second primitive. Its value is
 // being the NAMED SEAM — hero weapons (Milestone 4) and every enemy/boss
@@ -49,12 +57,13 @@ registerMacro('projectileShot', {
     name: 'Projectile Shot',
     desc: 'One straight shot; aims at `target` center when given, else uses `direction`. The canonical named seam for hero/enemy basic shots.',
     invokes: ['projectile'],
-    effects: [
-      { type: 'hit-sparkle', desc: 'blood sparkles on enemy impact (inherited from projectile)' },
-    ],
+    // No native effects: every VFX this attack produces comes from the
+    // projectile it invokes (hit-sparkle / debris) — resolveEffects() lists
+    // them as inherited. Declaring them here would duplicate the primitive.
+    effects: [],
     params: [
-      { key: 'direction', desc: 'firing direction (radians); ignored when target is set' },
-      { key: 'target', desc: 'live entity to aim at (current position)' },
+      { key: 'target', desc: 'PRIMARY aim: live entity, shot flies at its current center' },
+      { key: 'direction', desc: 'FALLBACK aim (only when target is null): radians, caller\'s own aim (hero input / patterns)' },
       { key: 'speed', desc: 'projectile speed px/s' },
       { key: 'ttl', desc: 'projectile lifetime (s)' },
       { key: 'damage', desc: 'projectile damage' },
