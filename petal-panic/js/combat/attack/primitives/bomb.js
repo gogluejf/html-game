@@ -13,6 +13,7 @@
 import { registerPrimitive } from '../registry.js';
 import { AttackHandle, invoke } from '../engine.js';
 import { makeContext } from '../context.js';
+import { Effects } from '../../../effects.js';
 
 const DEFAULTS = Object.freeze({
   speed: 300,           // launch force (px/s)
@@ -140,6 +141,14 @@ export function stepBomb(ent, p, ctx, h) {
   // a silent expire): bombs are designed to go off wherever they land.
   const contact = !!ent._attackHit;
   h._emit('detonate', { x: cx, y: cy, contact });
+
+  // Detonation VFX — same juice as gameplay's explodeSpecial(): blast burst +
+  // screen flash + shake. The bomb primitive is the single source of truth for
+  // "a bomb went off", so the visual lives here and every host (gameplay,
+  // theater, macros) gets it for free.
+  Effects.spawnExplosion(cx, cy, p.radius ?? 100);
+  Effects.bigExplosion();
+  Effects.triggerShake(6);
 
   // Run the payload (default: an Explosion at the blast point).
   const payload = p.payload ?? (contact ? { id: 'explosion', params: { x: cx, y: cy, radius: p.radius, damage: p.damage } } : null);
