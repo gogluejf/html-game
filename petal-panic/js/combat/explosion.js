@@ -2,11 +2,11 @@
 //
 // An explosion is ONE generic structure resolved by ONE path, regardless of what
 // detonated it. A blast describes five independent knobs: where (center), how far
-// (radius), how much it hurts (damage), which side it hurts (alignment), and how
+// (radius), how much it hurts (damage), which side it hurts (team), and how
 // hard it shoves (a knockback setting from knockback.md §7). No source type is
 // special-cased at the moment of detonation — a barrel, a rolling enemy that blows
 // up, and a hero-thrown bomb are all the same resolveExplosion() call with a
-// different alignment + knockback character.
+// different team + knockback character.
 //
 // This module owns WHAT an explosion is and WHO it affects. The shove/stun math
 // belongs to applyKnockback() (knockback.js); damage mitigation/death belongs to
@@ -21,11 +21,9 @@ import { applyKnockback } from './knockback.js';
 // --- Alignment (explosion.md §2) --------------------------------------------
 // Which side does the blast hurt? This is the single field that decides target
 // eligibility before anything else is applied.
-export const ALIGNMENT = Object.freeze({
-  FOE: 'foe',       // enemy-side blast: hurts the hero (+ hero-owned objects), spares other enemies
-  ALLY: 'ally',     // hero-side blast: hurts enemies, spares the hero
-  NEUTRAL: 'neutral',// no side: hurts everything in range except the detonator itself
-});
+// `team` is the engine-wide side vocabulary (same values as the hitbox
+// system's TEAM_TARGETS routing): 'ally' | 'foe' | 'neutral'.
+export const TEAMS = Object.freeze(['ally', 'foe', 'neutral']);
 
 // --- Knockback characters (explosion.md §4; each lives on the blast, never inline) ---
 // A barrel is a neutral hazard: it shoves everyone radially. base 380 matches the
@@ -72,7 +70,7 @@ function withinRadius(aCx, aCy, bCx, bCy, radius) {
 }
 
 /**
- * Is `target` a valid target for this explosion? Encodes the alignment filter
+ * Is `target` a valid target for this explosion? Encodes the team filter
  * (explosion.md §2) plus self-exclusion, dead-skip, and i-frame absorption.
  * Radius is checked separately by the caller (it needs the computed centers).
  *
@@ -80,10 +78,10 @@ function withinRadius(aCx, aCy, bCx, bCy, radius) {
  * - ALLY   → only enemies are valid; the hero never is.
  * - NEUTRAL→ everyone is valid except the detonator itself.
  *
- * Self-damage is excluded by construction across all alignments: the thing that
+ * Self-damage is excluded by construction across all teams: the thing that
  * detonated is never a target for its own blast.
  *
- * @param {object} explosion { cx, cy, radius, damage, alignment, knockback }
+ * @param {object} explosion { cx, cy, radius, damage, team, knockback }
  * @param {object} target candidate entity
  * @param {object} source the detonating entity (self-exclusion reference)
  * @returns {boolean}
@@ -94,14 +92,16 @@ export function isValidTarget(explosion, target, source) {
   if (target.intangible) return false;               // i-frames absorb the blast
 
   const hero = ctxHero(explosion);
-  switch (explosion.alignment) {
-    case ALIGNMENT.FOE:
+  // `team` is the engine-wide side vocabulary (same key as the hitbox
+  // system's TEAM_TARGETS routing): ally | foe | neutral.
+  switch (explosion.team) {
+    case 'foe':
       // Enemy-side: only the hero is a valid target.
       return target === hero;
-    case ALIGNMENT.ALLY:
+    case 'ally':
       // Hero-side: only enemies are valid; the hero is spared.
       return target !== hero && isEnemy(target);
-    case ALIGNMENT.NEUTRAL:
+    case 'neutral':
     default:
       // No side: everyone in range except self (already excluded above).
       return true;
@@ -123,7 +123,7 @@ function isEnemy(target) {
 /**
  * Resolve a single explosion against a set of candidate targets.
  *
- * For each valid target within the radius (per alignment + self/dead/intangible
+ * For each valid target within the radius (per team + self/dead/intangible
  * filters):
  *   1. Apply damage through the central damage system — real enemies route via
  *      their own takeDamage() (which runs their internal death pipeline); every
@@ -141,18 +141,18 @@ function isEnemy(target) {
  * the caller.
  *
  * @param {object} explosion
- *   { cx, cy, radius, damage, alignment, knockback, [ctx] }
+ *   { cx, cy, radius, damage, team, knockback, [ctx] }
  *   - cx/cy   : blast center (world coords)
  *   - radius  : blast reach (px)
  *   - damage  : raw damage dealt to each valid target
- *   - alignment: one of ALIGNMENT.{FOE,ALLY,NEUTRAL}
+ *   - team: 'ally' | 'foe' | 'neutral' (engine-wide side vocabulary)
  *   - knockback: a KnockbackSetting (knockback.md §7) with dirMode 'radial'
  *   - ctx     : { hero } — the live hero, used for hero-target detection + routing
  * @param {Array<object>} targets candidate entities (hero, enemies, ...)
  * @returns {{center:{cx,cy}, radius:number, hit:object[]}} explosion summary
  */
 export function resolveExplosion(explosion, targets) {
-  const { cx, cy, radius, damage: dmg, alignment, knockback } = explosion;
+  const { cx, cy, radius, damage: dmg, team, knockback } = explosion;
   const hero = ctxHero(explosion);
   const hit = [];
 

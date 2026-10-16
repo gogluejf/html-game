@@ -31,9 +31,9 @@ const DEFAULTS = Object.freeze({
   origin: null,         // marker label | {x,y} | null → attacker center
   solidBehavior: 'phase', // phase | stop | reflect
   gravity: 0,           // px/s²; >0 routes to the ballistic (Special) pool
-  friendly: true,       // true = hero-side (PROJ_ALLY), false = foe
+  team: 'ally',        // ally | foe — who the carrier shot hurts
   size: 12,             // box size
-  alignment: 'neutral', // blast alignment: foe | ally | neutral
+  blastTeam: 'neutral', // blast team: foe | ally | neutral
 });
 
 registerMacro('explosiveProjectile', {
@@ -55,9 +55,9 @@ registerMacro('explosiveProjectile', {
       { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' },
       { key: 'solidBehavior', desc: 'phase | stop | reflect' },
       { key: 'gravity', desc: 'px/s² (>0 = ballistic arc)' },
-      { key: 'friendly', desc: 'true = PROJ_ALLY, false = PROJ_FOE' },
+      { key: 'team', desc: 'ally | foe — who the carrier shot hurts' },
       { key: 'size', desc: 'box size (px)' },
-      { key: 'alignment', desc: 'foe | ally | neutral' },
+      { key: 'blastTeam', desc: 'foe | ally | neutral — who the blast hurts' },
     ],
   },
   impl(params, ctx) {
@@ -75,7 +75,7 @@ registerMacro('explosiveProjectile', {
       origin: p.origin,
       solidBehavior: p.solidBehavior,
       gravity: p.gravity,
-      friendly: p.friendly,
+      team: p.team,
       size: p.size,
     }, ctx);
 
@@ -106,7 +106,7 @@ registerMacro('explosiveProjectile', {
           x, y,
           radius: p.radius,
           damage: p.damage,
-          alignment: p.alignment,
+          team: p.blastTeam,
           self: ctx.attacker,
           targets: blastTargets(),
           shake: true, // screen shake inherited from the explosion primitive

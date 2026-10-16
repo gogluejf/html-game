@@ -5,7 +5,7 @@ import { strict as assert } from 'node:assert';
 import { fireBlast } from '../../combat/attack/primitives/explosion.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
-import { ALIGNMENT } from '../../combat/explosion.js';
+import {  } from '../../combat/explosion.js';
 import { createTrace } from '../../stats.js';
 
 let passed = 0;
@@ -35,7 +35,7 @@ ok('neutral blast damages enemies in radius, spares those outside', () => {
   const near = dummyEnemy(100, 100);
   const far = dummyEnemy(400, 100);
   const ctx = makeContext(null, { world: { targets: [near, far] } });
-  const r = fireBlast({ x: 100, y: 100, radius: 60, damage: 10, alignment: ALIGNMENT.NEUTRAL }, ctx);
+  const r = fireBlast({ x: 100, y: 100, radius: 60, damage: 10, team: 'neutral' }, ctx);
   assert.deepEqual(r.hit, [near], 'only the near enemy was hit');
   assert.equal(near.hp, 20);
   assert.equal(far.hp, 30, 'far enemy untouched');
@@ -47,9 +47,9 @@ ok('ally blast hurts enemies but spares the hero', () => {
   // Put the hero INSIDE the blast.
   hero.x = 90; hero.y = 90;
   const ctx = makeContext(null, { world: { targets: [hero, enemy], hero } });
-  const r = fireBlast({ x: 100, y: 100, radius: 60, damage: 10, alignment: ALIGNMENT.ALLY }, ctx);
+  const r = fireBlast({ x: 100, y: 100, radius: 60, damage: 10, team: 'ally' }, ctx);
   assert.deepEqual(r.hit, [enemy]);
-  assert.equal(hero.energy, 100, 'hero spared by ally alignment');
+  assert.equal(hero.energy, 100, 'hero spared by ally team');
 });
 
 ok('foe blast hurts only the hero', () => {
@@ -57,17 +57,17 @@ ok('foe blast hurts only the hero', () => {
   const enemy = dummyEnemy(100, 100, 50);
   hero.x = 100; hero.y = 100; // inside blast
   const ctx = makeContext(null, { world: { targets: [hero, enemy], hero } });
-  const r = fireBlast({ x: 100, y: 100, radius: 60, damage: 7, alignment: ALIGNMENT.FOE }, ctx);
+  const r = fireBlast({ x: 100, y: 100, radius: 60, damage: 7, team: 'foe' }, ctx);
   assert.deepEqual(r.hit, [hero]);
   assert.equal(hero.energy, 93);
-  assert.equal(enemy.hp, 50, 'enemy spared by foe alignment');
+  assert.equal(enemy.hp, 50, 'enemy spared by foe team');
 });
 
 ok('self (detonator) is never hit by its own blast', () => {
   const self = dummyEnemy(100, 100, 50);
   const other = dummyEnemy(110, 100, 50);
   const ctx = makeContext(self, { world: { targets: [self, other] } });
-  const r = fireBlast({ x: 100, y: 100, radius: 60, damage: 10, alignment: ALIGNMENT.NEUTRAL, self }, ctx);
+  const r = fireBlast({ x: 100, y: 100, radius: 60, damage: 10, team: 'neutral', self }, ctx);
   assert.deepEqual(r.hit, [other]);
   assert.equal(self.hp, 50);
 });
@@ -77,14 +77,14 @@ ok('dead and intangible targets are skipped', () => {
   const ghost = dummyEnemy(110, 100); ghost.intangible = true;
   const solid = dummyEnemy(120, 100);
   const ctx = makeContext(null, { world: { targets: [dead, ghost, solid] } });
-  const r = fireBlast({ x: 100, y: 100, radius: 60, damage: 5, alignment: ALIGNMENT.NEUTRAL }, ctx);
+  const r = fireBlast({ x: 100, y: 100, radius: 60, damage: 5, team: 'neutral' }, ctx);
   assert.deepEqual(r.hit, [solid]);
 });
 
 ok('lethal blast kills (alive=false via takeDamage pipeline)', () => {
   const e = dummyEnemy(100, 100, 10);
   const ctx = makeContext(null, { world: { targets: [e] } });
-  fireBlast({ x: 100, y: 100, radius: 60, damage: 99, alignment: ALIGNMENT.NEUTRAL }, ctx);
+  fireBlast({ x: 100, y: 100, radius: 60, damage: 99, team: 'neutral' }, ctx);
   assert.equal(e.alive, false);
 });
 

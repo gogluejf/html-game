@@ -4,7 +4,7 @@
 // resolveExplosion() is the single blast resolver shared by every detonating
 // source. These tests drive it directly with plain stand-in entities + a real
 // Hero, using fixed inputs and exact values (within epsilon), to pin down:
-//   * alignment filtering (foe / ally / neutral)
+//   * team filtering (foe / ally / neutral)
 //   * self-exclusion
 //   * i-frame absorption
 //   * radial knockback direction for enemies
@@ -14,7 +14,7 @@ import { strict as assert } from 'node:assert';
 import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
 import {
-  resolveExplosion, isValidTarget, ALIGNMENT,
+  resolveExplosion, isValidTarget,
 } from '../combat/explosion.js';
 
 let passed = 0;
@@ -65,7 +65,7 @@ ok('neutral explosion damages BOTH hero and enemy, shoves both radially', () => 
   const hero = mkHero();            // center (16, 24)
   const enemy = mkEnemy(100, 0);    // center (120, 20)
   // Blast centered at (60, 20), radius 200 → both in range.
-  const exp = { cx: 60, cy: 20, radius: 200, damage: 25, alignment: ALIGNMENT.NEUTRAL, knockback: KB, self: DETONATOR, ctx: { hero } };
+  const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: { hero } };
   const beforeHero = hero.energy;
   const beforeEnemy = enemy.hp;
   const result = resolveExplosion(exp, [hero, enemy]);
@@ -81,7 +81,7 @@ ok('neutral explosion damages BOTH hero and enemy, shoves both radially', () => 
 ok('neutral explosion: hero damage respects hero defense, enemy takes raw', () => {
   const hero = mkHero();
   const enemy = mkEnemy(100, 0);
-  const exp = { cx: 60, cy: 20, radius: 200, damage: 25, alignment: ALIGNMENT.NEUTRAL, knockback: KB, self: DETONATOR, ctx: { hero } };
+  const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: { hero } };
   const heroDef = hero.stats?.defense ?? 0;
   const beforeHero = hero.energy;
   const beforeEnemy = enemy.hp;
@@ -92,7 +92,7 @@ ok('neutral explosion: hero damage respects hero defense, enemy takes raw', () =
 
 ok('neutral explosion shoves the enemy radially away from center', () => {
   const enemy = mkEnemy(160, 0);   // center (180, 20)
-  const exp = { cx: 60, cy: 20, radius: 200, damage: 25, alignment: ALIGNMENT.NEUTRAL, knockback: KB, self: DETONATOR, ctx: {} };
+  const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [enemy]);
   // Normal from center (60,20) to enemy center (180,20) = (1, 0).
   // mag = base/resist = 380/1 = 380 along +x; pop adds -60 to vy.
@@ -107,7 +107,7 @@ ok('neutral explosion shoves the enemy radially away from center', () => {
 ok('foe explosion damages the hero but spares another enemy', () => {
   const hero = mkHero();           // center (16, 24)
   const otherEnemy = mkEnemy(40, 0); // center (60, 20) — an enemy, must be spared
-  const exp = { cx: 30, cy: 20, radius: 200, damage: 22, alignment: ALIGNMENT.FOE, knockback: KB, self: DETONATOR, ctx: { hero } };
+  const exp = { cx: 30, cy: 20, radius: 200, damage: 22, team: 'foe', knockback: KB, self: DETONATOR, ctx: { hero } };
   const beforeHero = hero.energy;
   const beforeOther = otherEnemy.hp;
   const result = resolveExplosion(exp, [hero, otherEnemy]);
@@ -125,7 +125,7 @@ ok('foe explosion damages the hero but spares another enemy', () => {
 ok('ally explosion damages the enemy but spares the hero', () => {
   const hero = mkHero();
   const enemy = mkEnemy(40, 0);    // center (60, 20)
-  const exp = { cx: 30, cy: 20, radius: 200, damage: 20, alignment: ALIGNMENT.ALLY, knockback: KB, self: DETONATOR, ctx: { hero } };
+  const exp = { cx: 30, cy: 20, radius: 200, damage: 20, team: 'ally', knockback: KB, self: DETONATOR, ctx: { hero } };
   const beforeHero = hero.energy;
   const beforeEnemy = enemy.hp;
   const result = resolveExplosion(exp, [hero, enemy]);
@@ -138,13 +138,13 @@ ok('ally explosion damages the enemy but spares the hero', () => {
 });
 
 // ============================================================================
-// Self is never hit (any alignment).
+// Self is never hit (any team).
 // ============================================================================
 ok('self (detonator) is never hit even when listed as a target', () => {
   // The detonator is an enemy stand-in placed at the blast center.
   const self = mkEnemy(0, 0);      // center (20, 20)
   const hero = mkHero();
-  const exp = { cx: 20, cy: 20, radius: 200, damage: 25, alignment: ALIGNMENT.NEUTRAL, knockback: KB, self, ctx: { hero } };
+  const exp = { cx: 20, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self, ctx: { hero } };
   const beforeSelf = self.hp;
   const result = resolveExplosion(exp, [self, hero]);
   assert.ok(!result.hit.includes(self), 'self excluded from hits');
@@ -152,10 +152,10 @@ ok('self (detonator) is never hit even when listed as a target', () => {
   assert.ok(result.hit.includes(hero), 'hero still hit');
 });
 
-ok('isValidTarget excludes self across all alignments', () => {
+ok('isValidTarget excludes self across all teams', () => {
   const self = mkEnemy(0, 0);
-  for (const al of [ALIGNMENT.FOE, ALIGNMENT.ALLY, ALIGNMENT.NEUTRAL]) {
-    const exp = { cx: 0, cy: 0, radius: 200, damage: 1, alignment: al, self, ctx: {} };
+  for (const al of ['foe', 'ally', 'neutral']) {
+    const exp = { cx: 0, cy: 0, radius: 200, damage: 1, team: al, self, ctx: {} };
     assert.equal(isValidTarget(exp, self, self), false, `${al}: self never valid`);
   }
 });
@@ -166,7 +166,7 @@ ok('isValidTarget excludes self across all alignments', () => {
 ok('intangible target absorbs the blast (no damage, no shove)', () => {
   const enemy = mkEnemy(40, 0);
   enemy.intangible = true;         // i-frames up
-  const exp = { cx: 30, cy: 20, radius: 200, damage: 25, alignment: ALIGNMENT.NEUTRAL, knockback: KB, self: DETONATOR, ctx: {} };
+  const exp = { cx: 30, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   const beforeHp = enemy.hp;
   const result = resolveExplosion(exp, [enemy]);
   assert.equal(result.hit.length, 0, 'no hits recorded');
@@ -178,7 +178,7 @@ ok('intangible target absorbs the blast (no damage, no shove)', () => {
 ok('intangible HERO absorbs the blast (takeHit guard, no double-fling)', () => {
   const hero = mkHero();
   hero.intangible = true;
-  const exp = { cx: 60, cy: 20, radius: 200, damage: 25, alignment: ALIGNMENT.NEUTRAL, knockback: KB, self: DETONATOR, ctx: { hero } };
+  const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: { hero } };
   const beforeEnergy = hero.energy;
   const result = resolveExplosion(exp, [hero]);
   assert.equal(result.hit.length, 0, 'hero absorbed');
@@ -192,7 +192,7 @@ ok('intangible HERO absorbs the blast (takeHit guard, no double-fling)', () => {
 ok('enemy knockback points radially away from the blast center (diagonal)', () => {
   // Enemy center at (160, 120); blast center at (60, 20). Offset (100, 100).
   const enemy = mkEnemy(140, 100); // center (160, 120)
-  const exp = { cx: 60, cy: 20, radius: 300, damage: 25, alignment: ALIGNMENT.NEUTRAL, knockback: KB, self: DETONATOR, ctx: {} };
+  const exp = { cx: 60, cy: 20, radius: 300, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [enemy]);
   const n = 1 / Math.SQRT2;        // normalized (1,1)/√2
   const mag = 380;                  // base / resist 1
@@ -203,7 +203,7 @@ ok('enemy knockback points radially away from the blast center (diagonal)', () =
 
 ok('enemy on the far side of the center is shoved the opposite way', () => {
   const enemy = mkEnemy(-60, 0);   // center (-40, 20); offset from (60,20) = (-100,0) → normal (-1,0)
-  const exp = { cx: 60, cy: 20, radius: 200, damage: 25, alignment: ALIGNMENT.NEUTRAL, knockback: KB, self: DETONATOR, ctx: {} };
+  const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   resolveExplosion(exp, [enemy]);
   assert.ok(close(enemy.vx, -380), `vx=${enemy.vx}, expected -380`);
   assert.ok(close(enemy.vy, -60), `vy=${enemy.vy}, expected -60 (pop only)`);
@@ -214,7 +214,7 @@ ok('enemy on the far side of the center is shoved the opposite way', () => {
 // ============================================================================
 ok('target outside the radius is untouched', () => {
   const enemy = mkEnemy(500, 0);   // center (520, 20); dist from (60,20) = 460 > 200
-  const exp = { cx: 60, cy: 20, radius: 200, damage: 25, alignment: ALIGNMENT.NEUTRAL, knockback: KB, self: DETONATOR, ctx: {} };
+  const exp = { cx: 60, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   const before = enemy.hp;
   const result = resolveExplosion(exp, [enemy]);
   assert.equal(result.hit.length, 0, 'nothing hit');
@@ -229,7 +229,7 @@ ok('hero knocked back via takeHit("explosion") profile (strength 380, rec 0.30, 
   const hero = mkHero();
   // Hero center (16,24); blast center (116, 24) → dirX=-100, dirY=0 → normal (-1,0).
   // The blast is to the RIGHT of the hero, so it shoves the hero LEFT.
-  const exp = { cx: 116, cy: 24, radius: 200, damage: 25, alignment: ALIGNMENT.NEUTRAL, knockback: KB, self: DETONATOR, ctx: { hero } };
+  const exp = { cx: 116, cy: 24, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: { hero } };
   resolveExplosion(exp, [hero]);
   assert.ok(close(hero.vx, -380), `vx=${hero.vx}, expected -380`);
   assert.ok(close(hero.vy, 0), `vy=${hero.vy}, expected 0`);
@@ -242,7 +242,7 @@ ok('hero knocked back via takeHit("explosion") profile (strength 380, rec 0.30, 
 ok('dead target is skipped', () => {
   const enemy = mkEnemy(40, 0);
   enemy.alive = false;
-  const exp = { cx: 30, cy: 20, radius: 200, damage: 25, alignment: ALIGNMENT.NEUTRAL, knockback: KB, self: DETONATOR, ctx: {} };
+  const exp = { cx: 30, cy: 20, radius: 200, damage: 25, team: 'neutral', knockback: KB, self: DETONATOR, ctx: {} };
   const result = resolveExplosion(exp, [enemy]);
   assert.equal(result.hit.length, 0, 'dead target not hit');
 });

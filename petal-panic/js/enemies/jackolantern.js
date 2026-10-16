@@ -10,12 +10,12 @@
 // destructible by shot/melee before detonation (HP = stamina, drained via the
 // base takeDamage()). On detonation it deals AoE damage to the hero within
 // JACKO_EXPLODE_RADIUS — resolved by the generic explosion system (explosion.js)
-// with a FOE alignment so its own kind is spared. The update system drives that
+// with a foe team so its own kind is spared. The update system drives that
 // resolver; this class only latches the blast and fires onExplode().
 
 import { Enemy } from './enemy.js';
 
-import { JACKO_EXPLOSION_KNOCKBACK, ALIGNMENT } from '../combat/explosion.js';
+import { JACKO_EXPLOSION_KNOCKBACK } from '../combat/explosion.js';
 
 export const JACKO_DEF = {
   id: 'jackolantern',
@@ -34,7 +34,7 @@ export const JACKO_DEF = {
   explosion: {
     radius: 80,
     damage: 22,                 // matches stats.attack
-    alignment: ALIGNMENT.FOE,
+    team: 'foe',
     knockback: JACKO_EXPLOSION_KNOCKBACK,
   },
 };
@@ -124,7 +124,7 @@ export class JackOLantern extends Enemy {
 
   /**
    * Fire the explosion hook. The actual AoE damage is driven by the game loop
-   * calling resolveExplosion() (explosion.js) with a FOE alignment, mirroring how
+   * calling resolveExplosion() (explosion.js) with a foe team, mirroring how
    * a barrel detonates through the same shared resolver. This latch guarantees the
    * blast happens exactly once even if ai() runs again on the same frame.
    */
@@ -176,7 +176,7 @@ export class JackOLantern extends Enemy {
 
 // --- Explosion AoE -----------------------------------------------------------
 // The Jack-O-Lantern's blast is resolved by the generic explosion system
-// (explosion.js resolveExplosion) with a FOE alignment + JACKO_EXPLOSION_KNOCKBACK,
+// (explosion.js resolveExplosion) with a foe team + JACKO_EXPLOSION_KNOCKBACK,
 // driven by the game loop in update.js. There is no per-source detonation routine here
 // — the lantern only latches exploded once and fires onExplode(); the actual AoE math
 // lives in the single shared resolver (see docs/architecture/explosion.md §5).

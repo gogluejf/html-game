@@ -14,7 +14,7 @@
 
 import { Entity } from '../core/entity.js';
 import { LAYER } from '../consts.js';
-import { BARREL_EXPLOSION_KNOCKBACK, ALIGNMENT } from '../combat/explosion.js';
+import { BARREL_EXPLOSION_KNOCKBACK } from '../combat/explosion.js';
 
 // --- Tunables ----------------------------------------------------------------
 export const BARREL_DAMAGE = 25;        // AoE damage dealt by a barrel explosion
@@ -38,7 +38,7 @@ export const BARREL_DEF = {
   explosion: {
     radius: 120,
     damage: BARREL_DAMAGE,
-    alignment: ALIGNMENT.NEUTRAL,
+    team: 'neutral',
     knockback: BARREL_EXPLOSION_KNOCKBACK,
   },
   coinDrop: null,
@@ -137,7 +137,7 @@ export class GameObj extends Entity {
 
   /**
    * Fire the explosion hook. The actual AoE damage + VFX are driven by the
-   * game loop calling resolveExplosion() (explosion.js) with a NEUTRAL alignment
+   * game loop calling resolveExplosion() (explosion.js) with a neutral team
    * over the live entity set so the math stays testable. This hook exists so
    * subclasses or future objects can react locally if needed.
    */

@@ -74,7 +74,7 @@ const SANDBOX_PRESETS = {
   bomb: { direction: -0.5, arc: 800, bounce: true, explodeOnContact: true, ttl: 4, damage: 40, radius: 70 }, // speed from registry default (500)
   explosiveBomb: { direction: -0.5, arc: 800, bounce: true, explodeOnContact: true, ttl: 4, damage: 40, radius: 70 }, // speed from registry default (500)
   explosiveProjectile: { direction: 0, speed: 700, ttl: 2, damage: 15, radius: 70, gravity: 0 },
-  explosion: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, radius: 70, damage: 40, alignment: 'neutral' },
+  explosion: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, radius: 70, damage: 40, team: 'neutral' },
   meleeHitbox: { activeFrames: 10, w: 48, h: 44, offset: { x: 44, y: 0 }, damage: 12 },
   charge: { direction: 0, speed: 700, duration: 0.6, distance: null, acceleration: 0 },
   bodyContact: { damage: 20, enabled: true, temporaryOverride: true },

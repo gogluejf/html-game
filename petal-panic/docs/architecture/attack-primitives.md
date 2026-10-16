@@ -53,7 +53,10 @@ Creates a projectile from an origin, normally the attacker or one of its markers
   - `phase` — passes through terrain (default; thorns/spread).
   - `stop` — dies on impact (saws); fires the debris puff at the death point.
   - `reflect` — bounces off the surface and keeps flying (bombs).
-- **gravity** — optional vertical acceleration (ballistic arc).
+- **gravity** — optional vertical acceleration (ballistic arc; >0 routes to
+  the Special pool).
+- **team** — ally | foe: who this shot hurts (maps to the PROJ_ALLY /
+  PROJ_FOE layer). Engine-wide side vocabulary, same as hitbox/explosion.
 
 ### Effects / hooks
 
@@ -86,6 +89,7 @@ nothing else. Macros subscribe to that event to fire their aftermath
 - **ttl** — fuse time before the bomb ends, including while airborne.
 - **damage** — direct-contact damage.
 - **radius** — reference size for composed effects (macros read it).
+- **origin** — marker label | {x,y} | null → attacker center.
 
 ### Completion / payload
 
@@ -113,7 +117,8 @@ controlled by the Attack Macro using it.
 - **width** — damaging beam thickness.
 - **duration** — how long it remains active.
 - **damage** — damage/contact behavior.
-- **style** — Effect Engine beam style override.
+- **tickRate** — damage ticks per second while the beam is active.
+- **team** — ally | foe (who it hurts).
 
 Beam does not inherently decide whether it is horizontal, targeted, or sweeping.
 Those are macro-level patterns.
@@ -129,12 +134,13 @@ frames.
 
 ### Main parameters
 
-- **activeFrames / timing** — when the hitbox exists.
-- **shape / size** — hitbox dimensions.
-- **offset / marker** — placement relative to the attacker.
+- **activeFrames** — ticks the box stays live.
+- **w / h** — box size (px).
+- **offset** — {x,y} from attacker center, or marker label.
 - **damage** — damage.
 - **knockback** — force/direction applied on hit.
-- **hitLimit** — optional number of times a target can be hit during the action.
+- **hitLimit** — max hits per target per swing.
+- **team** — ally | foe.
 
 Melee hitboxes are optional when the attack can use the attacker's normal
 damaging body collision. Use them for attacks such as a punch, horn extension,
@@ -173,14 +179,16 @@ system described in `explosion.md`.
 
 ### Main parameters
 
+- **x / y** — blast center (world coords).
 - **radius** — damaging radius.
 - **damage** — damage.
 - **knockback** — radial knockback strength.
-- **alignment** — foe / ally / neutral (who it hurts).
-- **duration** — short active duration if needed.
+- **team** — ally / foe / neutral (who it hurts).
 - **style** — explosion Effect Engine style override.
 - **burst / screenFlash / shake** — VFX switches (all default true). Composed
   callers can suppress a channel so a bigger set piece doesn't double-dip.
+
+Synchronous: the blast resolves in one call — there is no active duration.
 
 Explosion can be triggered by bombs, projectiles, enemies, environmental objects,
 or other attacks.
@@ -196,12 +204,13 @@ common fire form is a horizontal ground area, such as the result of a Molotov.
 
 ### Main parameters
 
+- **x / y** — area origin (world coords).
 - **length / width** — horizontal coverage.
 - **height** — damaging height if required.
-- **duration / ttl** — how long the area remains active.
+- **duration** — how long the area remains active.
 - **tickRate** — how frequently continuous damage may be applied.
 - **damage** — damage per valid contact/tick.
-- **style** — persistent effect style.
+- **team** — ally | foe.
 
 The primitive should support other persistent-area visuals later without changing
 the core lifetime/collision concept.
@@ -216,14 +225,15 @@ Creates a stationary damaging hazard that can appear and disappear.
 
 ### Main parameters
 
-- **position / marker** — location.
+- **x / y** — spike position (world coords).
 - **size** — collision dimensions.
 - **visibleTTL** — how long the spike is active/visible.
 - **hiddenTTL** — optional time hidden before repeating.
-- **repeatCount / repeat** — optional cycle behavior.
+- **repeatCount** — cycle behavior (-1 = infinite).
 - **damage** — contact damage.
 - **warningTime** — optional pre-appearance warning.
-- **warningEffect** — optional flash/ease/telegraph before appearing.
+- **tickRate** — damage ticks per second while visible.
+- **ttl** — optional total lifetime.
 
 The visible/hidden cycle makes the same primitive usable for static spikes and
 timed spike traps.
@@ -288,7 +298,7 @@ Creates a projectile that travels outward and then returns.
   one more up to the cap. This is a concurrency model, NOT burst-shot
   semantics (repeated-fire patterns belong to macros/attack plans).
 - **outboundDuration / distance** — when the return begins.
-- **returnForce / speed** — return speed.
+- **returnSpeed** — return speed.
 - **ttl** — optional total lifetime.
 - **damage** — contact damage.
 

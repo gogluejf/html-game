@@ -79,7 +79,7 @@ registerMacro('bodyExplosion', {
       if (tc) {
         payload = {
           id: 'explosion',
-          params: { x: tc.x, y: tc.y, radius: 70, damage: 40, alignment: 'neutral' },
+          params: { x: tc.x, y: tc.y, radius: 70, damage: 40, team: 'neutral' },
         };
       }
     }

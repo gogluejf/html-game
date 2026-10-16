@@ -25,7 +25,7 @@ A blast expresses five things:
 - **Where** it happens (its center).
 - **How far** it reaches (its radius).
 - **How much** it hurts (its damage).
-- **Which side** it hurts (its alignment: foe, ally, or neutral).
+- **Which side** it hurts (its team: foe, ally, or neutral).
 - **How hard** it shoves (its knockback character, described by `knockback.md`).
 
 These are independent knobs. A blast can be wide but weak, small but lethal, hurt only
@@ -35,7 +35,7 @@ enemies or only the hero, shove with no damage, or deal damage with barely any s
 
 ## 2. Alignment: which side does it hurt
 
-Every explosion declares an alignment. This decides who is a valid target.
+Every explosion declares a team. This decides who is a valid target.
 
 - **Foe** — the blast belongs to the enemy side. It hurts the hero (and hero-owned
   objects). It does **not** hurt other enemies. An enemy that explodes does not take down
@@ -47,7 +47,7 @@ Every explosion declares an alignment. This decides who is a valid target.
   you whether you're the hero or an enemy.
 
 Alignment is part of the blast's character, so each explosion declares how it should treat
-the entities around it. The engine filters targets by alignment before applying anything —
+the entities around it. The engine filters targets by team before applying anything —
 a foe blast simply never considers another enemy a target.
 
 Self-damage is excluded by construction: the thing that detonated is never a target for
@@ -100,7 +100,7 @@ blast is a matter of describing its character — not writing a new detonation r
 | Rolling enemy that detonates (e.g. Jack-O-Lantern) | Foe | Hurts the hero, spares its own kind. |
 | Hero-thrown bomb | Ally | Hurts enemies, spares the thrower. |
 
-Each of these is the *same* blast resolved with a different alignment and a different
+Each of these is the *same* blast resolved with a different team and a different
 knockback character. There is no separate "barrel explosion code" versus "enemy explosion
 code" — there is one explosion, and these are three instances of it.
 
@@ -127,5 +127,5 @@ has a cost, and the cost scales with how violent the blast is and which side it 
 A neutral hazard punishes everyone equally. A foe's self-destruction threatens the player
 without thinning the enemy ranks. An ally's bomb clears a pocket of enemies without
 endangering the thrower. The contrast between these three is the whole design point —
-and it falls out of a single alignment field plus a single knockback setting, with no
+and it falls out of a single team field plus a single knockback setting, with no
 per-source branching at the point of impact.

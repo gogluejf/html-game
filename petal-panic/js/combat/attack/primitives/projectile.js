@@ -28,7 +28,9 @@ const DEFAULTS = Object.freeze({
   origin: null,          // marker label (string) | {x,y} | null → attacker center
   solidBehavior: 'phase', // phase | stop | reflect (existing entity-flag contract)
   gravity: 0,            // px/s²; >0 routes to the ballistic (Special) pool
-  friendly: true,        // true = hero-side (PROJ_ALLY), false = foe (PROJ_FOE)
+  team: 'ally',          // ally | foe — who this shot hurts (engine-wide side
+                         // vocabulary, same as hitbox/explosion). Maps to the
+                         // legacy friendly flag / PROJ_ALLY|PROJ_FOE layer.
   size: 12,              // box size (thorn = 12, specials ~16)
   type: null,            // special weapon type id when spawning a Special
 });
@@ -86,7 +88,7 @@ export function spawnProjectile(p, ctx, h) {
   } else {
     // Straight-line path: plain Projectile. The constructor takes an 8-way
     // index; we spawn with dir 0 and overwrite velocity for exact angles.
-    ent = ctx.pools.projectilePool?.spawn(pt.x, pt.y, 0, p.friendly);
+    ent = ctx.pools.projectilePool?.spawn(pt.x, pt.y, 0, p.team !== 'foe');
     if (ent) {
       ent.vx = cos * p.speed;
       ent.vy = sin * p.speed;
@@ -163,7 +165,7 @@ registerPrimitive('projectile', {
       { key: 'origin', desc: "marker label | {x,y} | null → attacker center" },
       { key: 'solidBehavior', desc: 'phase | stop | reflect (existing flag)' },
       { key: 'gravity', desc: 'px/s² (>0 = ballistic arc)' },
-      { key: 'friendly', desc: 'true = PROJ_ALLY, false = PROJ_FOE' },
+      { key: 'team', desc: "ally | foe — who this shot hurts (maps to PROJ_ALLY/PROJ_FOE layer)" },
     ],
   },
   impl(params, ctx) {

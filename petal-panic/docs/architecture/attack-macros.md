@@ -445,11 +445,15 @@ Bomb (flight) → terminal detonate{x,y} → Explosion at that point.
 
 ### Main parameters
 
-- **bomb parameters** — trajectory/contact/timer.
-- **explosionRadius** — blast radius.
-- **explosionDamage** — blast damage.
-- **knockback** — blast knockback.
-- **explosionStyle** — Effect Engine override.
+- **speed** — launch force (px/s).
+- **direction** — throw direction (radians).
+- **arc** — gravity px/s² (throw height).
+- **bounce** — reflect off surfaces.
+- **ttl** — fuse seconds.
+- **damage** — carrier contact damage AND blast damage (one value).
+- **radius** — blast radius (px).
+- **origin** — marker label | {x,y} | null → attacker center.
+- **blastTeam** — foe | ally | neutral: who the blast hurts.
 
 ---
 
@@ -469,11 +473,18 @@ Projectile (flight) → hit or expire → Explosion at the death point.
 
 ### Main parameters
 
-- **projectile parameters** — speed/direction/ttl/solidBehavior/gravity.
-- **explosionRadius** — blast radius.
-- **explosionDamage** — blast damage.
-- **alignment** — foe / ally / neutral.
-- **explosionStyle** — Effect Engine override.
+- **speed** — px/s travel speed.
+- **direction** — radians (0 = right).
+- **ttl** — seconds before auto-cull.
+- **damage** — carrier contact damage AND blast damage (one value).
+- **radius** — blast radius (px).
+- **origin** — marker label | {x,y} | null → attacker center.
+- **solidBehavior** — phase | stop | reflect.
+- **gravity** — px/s² (>0 routes to the ballistic pool).
+- **team** — ally | foe: who the carrier shot hurts.
+- **blastTeam** — foe | ally | neutral: who the blast hurts.
+- **size** — box size (px).
+- **blastTeam** — foe | ally | neutral: who the blast hurts.
 
 ---
 
@@ -734,7 +745,7 @@ optional hidden TTL → optional repeat.
 
 **Invokes:** Explosion (payload)
 
-**Effects:** Explosion + Camera Shake (default payload blast)
+**Effects:** Explosion + Screen Flash + Camera Shake (inherited from the Explosion payload)
 
 An enemy deliberately detonates itself and dies. The Jack-o'-lantern enemy is a
 direct example.
@@ -745,12 +756,10 @@ Telegraph → approach/trigger as defined by AI → Explosion → Self-Destruct.
 
 ### Main parameters
 
-- **telegraphTime** — warning before detonation.
-- **explosionRadius** — blast radius.
-- **explosionDamage** — blast damage.
-- **knockback** — explosion knockback.
-- **explosionStyle** — Effect Engine override.
-- **deathTiming** — normally immediately with/after the explosion.
+- **deathBehavior** — `kill` (death pipeline) | `remove` (instant).
+- **triggerPayloadFirst** — fire the payload before dying.
+- **payload** — `{ id, params }` attack to fire first (default: explosion on the target).
+- **payloadDelay** — max seconds to wait for an async payload.
 
 The AI controls how the enemy gets into position. The macro controls the
 standardized detonation behavior.
@@ -811,7 +820,7 @@ Examples:
 
 **Invokes:** Projectile / Explosive Bomb / enemy factory
 
-**Effects:** Debris + Explosion (bomb children, via explosiveBomb) / Hit Sparkle (projectile children)
+**Effects:** Hit Sparkle + Debris (projectile children, via Projectile) / Debris + Explosion + Screen Flash + Camera Shake (bomb children, via Explosive Bomb → Explosion)
 
 Fans out N child entities from a single point and materializes each into a live
 attack or enemy. The caller invokes one id and gets live results back — it never

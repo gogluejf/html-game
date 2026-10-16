@@ -15,7 +15,7 @@
 
 import { registerPrimitive } from '../registry.js';
 import { AttackHandle } from '../engine.js';
-import { resolveExplosion, ALIGNMENT, BARREL_EXPLOSION_KNOCKBACK } from '../../explosion.js';
+import { resolveExplosion, BARREL_EXPLOSION_KNOCKBACK } from '../../explosion.js';
 import { Effects } from '../../../effects.js';
 
 const DEFAULTS = Object.freeze({
@@ -23,7 +23,7 @@ const DEFAULTS = Object.freeze({
   y: 0,
   radius: 60,
   damage: 40,
-  alignment: ALIGNMENT.NEUTRAL, // foe | ally | neutral
+  team: 'neutral',         // ally | foe | neutral (engine-wide side vocabulary)
   knockback: null,      // KnockbackSetting; default = barrel character
   self: null,           // detonator entity (excluded from its own blast)
   targets: null,        // candidate entities; default = ctx.world.targets ?? []
@@ -55,7 +55,7 @@ export function fireBlast(p, ctx) {
       cx: p.x, cy: p.y,
       radius: p.radius,
       damage: p.damage,
-      alignment: p.alignment,
+      team: p.team,
       knockback: p.knockback ?? BARREL_EXPLOSION_KNOCKBACK,
       self: telemetrySource,
       ctx: { hero: ctx.world?.hero ?? null },
@@ -79,7 +79,7 @@ registerPrimitive('explosion', {
       { key: 'y', desc: 'blast center y' },
       { key: 'radius', desc: 'damaging radius (px)' },
       { key: 'damage', desc: 'raw damage per valid target' },
-      { key: 'alignment', desc: 'foe | ally | neutral' },
+      { key: 'team', desc: "ally | foe | neutral — who the blast hurts" },
       { key: 'knockback', desc: 'KnockbackSetting (default: barrel character)' },
       { key: 'style', desc: 'Effect Engine style override' },
       { key: 'burst', desc: 'particle burst (true)' },

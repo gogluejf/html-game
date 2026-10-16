@@ -32,7 +32,7 @@ const DEFAULTS = Object.freeze({
   damage: 40,           // carrier contact damage AND blast damage
   radius: 60,           // blast radius (px)
   origin: null,         // marker label | {x,y} | null → attacker center
-  alignment: 'neutral', // blast alignment: foe | ally | neutral
+  blastTeam: 'neutral', // blast team: foe | ally | neutral
 });
 
 registerMacro('explosiveBomb', {
@@ -55,7 +55,7 @@ registerMacro('explosiveBomb', {
       { key: 'damage', desc: 'contact + blast damage' },
       { key: 'radius', desc: 'blast radius (px)' },
       { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' },
-      { key: 'alignment', desc: 'foe | ally | neutral' },
+      { key: 'blastTeam', desc: 'foe | ally | neutral — who the blast hurts' },
     ],
   },
   impl(params, ctx) {
@@ -110,7 +110,7 @@ registerMacro('explosiveBomb', {
           x, y,
           radius: p.radius,
           damage: p.damage,
-          alignment: p.alignment,
+          team: p.blastTeam,
           self: ctx.attacker,
           targets: blastTargets(),
           shake: true, // screen shake inherited from the explosion primitive
