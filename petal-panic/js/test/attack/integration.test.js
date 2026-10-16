@@ -27,12 +27,8 @@ import '../../combat/attack/primitives/spike.js';
 import '../../combat/attack/primitives/orbit.js';
 import '../../combat/attack/primitives/boomerang.js';
 // Macros (composition layer; each declares meta.invokes).
-import '../../combat/attack/macros/reticleShot.js';
-import '../../combat/attack/macros/spawnSplit.js';
-import '../../combat/attack/macros/homingMissile.js';
-import '../../combat/attack/macros/predictiveShot.js';
-import '../../combat/attack/macros/spreadShot.js';
-import '../../combat/attack/macros/bodyExplosion.js';
+// Macro barrel (composition layer; each macro declares meta.invokes).
+import '../../combat/attack/macros/index.js';
 
 let passed = 0;
 function ok(name, fn) {

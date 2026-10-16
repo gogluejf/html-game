@@ -42,12 +42,7 @@ import '../combat/attack/primitives/explosion.js';
 import '../combat/attack/primitives/meleeHitbox.js';
 import '../combat/attack/primitives/movement.js';
 import '../combat/attack/primitives/bodyContact.js';
-import '../combat/attack/macros/reticleShot.js';
-import '../combat/attack/macros/spawnSplit.js';
-import '../combat/attack/macros/homingMissile.js';
-import '../combat/attack/macros/predictiveShot.js';
-import '../combat/attack/macros/spreadShot.js';
-import '../combat/attack/macros/bodyExplosion.js';
+import '../combat/attack/macros/index.js'; // macro barrel — all macros register here
 import '../combat/attack/primitives/beam.js';
 import '../combat/attack/primitives/fireArea.js';
 import '../combat/attack/primitives/spike.js';
