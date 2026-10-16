@@ -690,7 +690,7 @@ export const AttackTheater = {
             c.exploded = true;
             this._attackerVisible = false;
             const victim = { ...this._attacker, alive: true, hp: 999, layer: LAYER.ENEMY, takeDamage(a) { this.hp -= a; if (this.hp <= 0) this.alive = false; return a; } };
-            const kh = invoke('bodyExplosion', { ...this._params }, makeContext(victim, { world: { targets: [this._target] }, pools: this._pools, collisionWorld: this._world, effects: Effects }));
+            const kh = invoke('bodyExplosion', { ...this._params }, makeContext(victim, { world: { targets: [this._target] }, target: this._target, pools: this._pools, collisionWorld: this._world, effects: Effects }));
             kh.on('detonate', () => this._log.unshift('KAMIKAZE BOOM'));
             kh.on('complete', () => this._log.unshift('COMPLETE'));
             this._handles.push(kh);
