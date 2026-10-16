@@ -466,6 +466,13 @@ export const AttackTheater = {
       // Kamikaze demo: the attacker WALKS to the target, then vanishes and
       // explodes ON IT. No standing-around payload pre-fire.
       this._choreo = { kind: 'kamikaze', speed: 200, exploded: false };
+    } else if (id === 'explosion') {
+      // Explosion demo: the ATTACKER detonates on itself — the blast is
+      // centered on the attacker's body and it vanishes (same read as
+      // spawnSplit: the body IS the attack). The target takes the blast.
+      this._params.x = this._attacker.x + this._attacker.w / 2;
+      this._params.y = this._attacker.y + this._attacker.h / 2;
+      this._choreo = { kind: 'vanishOnReplay' };
     } else if (id === 'spawnSplit') {
       // Split demo: default to ballistic bombs that arc down, bounce off the
       // ground, and detonate. But if the user explicitly retuned spawnType
@@ -481,9 +488,8 @@ export const AttackTheater = {
       this._params.y = this._attacker.y + 10;
       this._choreo = { kind: 'vanishOnReplay' };
     }
-    // (explosion needs no choreography — it fires at its configured x/y and the
-    // real Effect-Engine burst is the visual. The old hand-drawn telegraph ring
-    // was a placeholder; the Reticle primitive below IS that proper warning.)
+    // (explosion + spawnSplit stage the origin at the attacker and hide its
+    // body via vanishOnReplay — the body IS the attack in both demos.)
 
     // Additive attacks (boomerang, orbit): if a live handle of THIS primitive
     // exists and supports rearm(), replay RE-ARMS it instead of re-invoking.
