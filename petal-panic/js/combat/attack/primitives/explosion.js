@@ -11,6 +11,7 @@
 import { registerPrimitive } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { resolveExplosion, ALIGNMENT, BARREL_EXPLOSION_KNOCKBACK } from '../../explosion.js';
+import { Effects } from '../../../effects.js';
 
 const DEFAULTS = Object.freeze({
   x: 0,               // blast center (world coords)
@@ -73,10 +74,11 @@ registerPrimitive('explosion', {
     const h = new AttackHandle('explosion');
     const result = fireBlast(params, ctx);
 
-    // VFX through the Effect Engine facade when available (gameplay/theater).
-    // resolveExplosion is deliberately VFX-free; the caller renders.
-    ctx.effects?.spawnExplosion?.(params.x, params.y, params.radius);
-    ctx.effects?.triggerShake?.(4);
+    // VFX owned by the primitive (same as bomb's detonation juice): blast
+    // burst + shake. resolveExplosion is deliberately VFX-free; the explosion
+    // primitive IS "a blast happened", so every host gets the visual for free.
+    Effects.spawnExplosion(params.x, params.y, params.radius);
+    Effects.triggerShake(4);
 
     h._emit('detonate', { x: params.x, y: params.y, hit: result.hit.length });
     h._complete(result);
