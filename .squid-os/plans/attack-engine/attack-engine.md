@@ -180,13 +180,14 @@ primitive sequence, and reports progress/completion to the caller.
   recovery) so AI/theater can react
 - Default params table per macro (the "canonical" values from the doc)
 
-### Task 2.2 — Simple shot macros (1–5)
-- `Projectile_Shot`
-- `Predictive_Shot`
+### Task 2.2 — Simple shot macros
+- `Predictive_Shot` (intercept math is a pattern, not targeting)
 - `Burst_Shot` (N shots, fixed intra-burst interval; timing lives here, not in
   the projectile primitive)
 - `Spread_Shot`
 - `Radial_Shot` (360° spread)
+(No Projectile_Shot / Bomb_Throw: single-shot and single-bomb are primitives
+called directly with a caller-computed direction — Design contract rules 8+9.)
 
 ### Task 2.3 — Advanced projectile macros (6–9)
 - `Homing_Missile`
@@ -279,16 +280,19 @@ Refactor the hero's firing path so that all weapons (thorn + specials) go
 through the Attack Engine as macro invocations.
 
 ### Task 4.1 — Registry update
-- Add `macro` field to each entry in `SPECIAL_WEAPONS` registry:
-  - thorn → `projectile_shot`
-  - saw → `projectile_shot` (different params: short ttl, high dmg, absorb)
-  - bomb → `bomb_throw` (payload: `explosion`)
-  - spread → `spread_shot` (count: 3, angle: 60°)
+- Add an `attack` field (registry id + params) to each entry in
+  `SPECIAL_WEAPONS`:
+  - thorn → `projectile` primitive (hero direction from input)
+  - saw → `projectile` (different params: short ttl, high dmg, stop)
+  - bomb → `bomb` primitive (payload: explosion)
+  - spread → `spreadShot` macro (count: 3, angle: 60°)
+- Targeting rule: hero aim (direction) comes from input code; enemy aim comes
+  from AI. The engine never takes a target entity.
 
 ### Task 4.2 — Refactor `fireThorn`
 - Replace inline `projectilePool.spawn` + cooldown logic with:
-  `attackEngine.invoke('projectile_shot', { ...params }, heroContext)`
-- Cooldown still managed by the hero (fireCooldown timer), but the actual
+  `attackEngine.invoke('projectile', { direction: <from input>, ...params }, heroContext)`
+- Cooldown still managed by the hero (fireCooldown timer); the actual
   projectile creation goes through the primitive
 
 ### Task 4.3 — Refactor `fireSpecial`

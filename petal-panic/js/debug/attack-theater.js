@@ -89,7 +89,6 @@ const SANDBOX_PRESETS = {
   spreadShot: { count: 3, direction: 0, angle: 60 * DEG, speed: 500, ttl: 2, damage: 10 },
   radialShot: { count: 24, startAngle: -Math.PI / 2, speed: 400, ttl: 2.5, damage: 10, sequenceInterval: 0.15 },
   burstShot: { count: 3, interval: 0.12, direction: 0.5, speed: 600, ttl: 2, damage: 10 },
-  projectileShot: { direction: 0.5, speed: 600, ttl: 2, damage: 10 },
   bodyExplosion: { deathBehavior: 'kill', triggerPayloadFirst: true, payloadDelay: 0.1 },
 };
 
@@ -99,7 +98,6 @@ export const TWEAKABLE = {
   spreadShot: [['count', 'int', 1], ['angle', 'angle', 15 * DEG], ['sequenceInterval', 'num', 0.05]],
   radialShot: [['count', 'int', 1], ['startAngle', 'angle', 15 * DEG], ['speed', 'num', 50], ['sequenceInterval', 'num', 0.05]],
   burstShot: [['count', 'int', 1], ['interval', 'num', 0.02], ['direction', 'angle', 15 * DEG], ['speed', 'num', 50]],
-  projectileShot: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50]],
   bomb: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
   explosion: [['x', 'num', 20], ['y', 'num', 20], ['radius', 'num', 10], ['damage', 'num', 5]],
   meleeHitbox: [['activeFrames', 'int', 2], ['w', 'num', 8], ['h', 'num', 8], ['damage', 'num', 2]],
@@ -459,24 +457,13 @@ export const AttackTheater = {
       // math has something to lead against (the choreo keeps moving it).
       this._target.vx = -160;
       this._target.vy = 0;
-    } else if (id === 'projectileShot') {
-      // Projectile Shot demo: the ATTACKER hovers on a platform high to the
-      // left; the target WALKS LEFT along the ground. The shot fires at a
-      // DIAGONAL angle (down-right) — not flat, not "aim at target" — so the
-      // demo proves the direction param does real aim math: you watch the
-      // bullet leave at the tuned angle and see where it lands relative to
-      // the walker. Same staging family as reticleShot/predictiveShot.
-      this._choreo = { kind: 'strafe', t: 0, baseX: TARGET_POS.x };
-      this._attacker.x = 140;
-      this._attacker.y = 150; // up on the platform
-      this._attacker.facing = 1;
     } else if (id === 'radialShot') {
       // Radial Shot demo: the ATTACKER hovers on a platform high to the left;
       // the target WALKS LEFT along the ground. The ring fires around the
       // attacker's body — you watch bolts leave in every direction and see
       // which ones catch the walker. Bump sequenceInterval in the param list
       // to sweep the ring bolt-by-bolt (the boss pattern). Same staging
-      // family as reticleShot/predictiveShot/projectileShot.
+      // family as reticleShot/predictiveShot.
       this._choreo = { kind: 'strafe', t: 0, baseX: TARGET_POS.x };
       this._attacker.x = 140;
       this._attacker.y = 150; // up on the platform
@@ -816,7 +803,7 @@ export const AttackTheater = {
           finished = stepProjectile(h.shot.entity, h.shot) || finished;
         }
       } else if (h.entity) {
-        if (h.id === 'projectile' || h.id === 'projectileShot') finished = stepProjectile(h.entity, h);
+        if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
         else if (h.id === 'bomb') finished = stepBomb(h.entity, this._params, this._ctx(), h);
         else if (typeof h.step === 'function') finished = h.step(DT); // homingMissile / predictiveShot / ...
       } else if (typeof h.step === 'function') {

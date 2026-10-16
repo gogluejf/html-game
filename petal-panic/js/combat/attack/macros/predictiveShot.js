@@ -6,9 +6,9 @@
 // get back the live shot handle — no caller solves the quadratic or fires the
 // bullet by hand.
 //
-// The intercept math (interceptPoint) lives here: it's small, and this is the
-// only attack that uses it. No solution (target outrunning the bullet) falls
-// back to aiming at the target's CURRENT position — the shot still fires.
+// The intercept math lives in js/combat/targeting.js (`leadAt`) — the shared
+// targeting toolbox AI also uses. No solution (target outrunning the bullet)
+// falls back to aiming at the target's CURRENT position — the shot still fires.
 //
 // Handle shape:
 //   h.entity     — the spawned projectile entity
@@ -21,6 +21,7 @@ import { registerMacro } from '../registry.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { stepProjectile } from '../primitives/projectile.js';
 import { targetCenter } from '../context.js';
+import { leadAt } from '../../targeting.js';
 
 const DEFAULTS = Object.freeze({
   target: null,          // entity being predicted (default ctx.target)
@@ -30,47 +31,10 @@ const DEFAULTS = Object.freeze({
 });
 
 /**
- * Solve the INTERCEPT point: where the target will be if it keeps its current
- * velocity, AND a bullet fired from origin at `speed` arrives at the same
- * instant. "Where will we meet?" — bullet speed determines the answer.
- *
- * Model: target moves linearly (p + v·t), bullet travels at constant speed.
- * We solve |p + v·t − o| = speed · t for t ≥ 0 (quadratic in t), then return
- * the meeting point p + v·t.
- *
- * @param {object} target entity with x,y,w,h,vx,vy
- * @param {{x:number,y:number}} origin aim origin
- * @param {number} speed px/s (must be > 0)
- * @returns {{x:number,y:number,t:number}|null} meeting point + flight time, or
- *          null if no forward solution exists (target moving away faster than
- *          the bullet).
+ * @deprecated Use `leadAt` from js/combat/targeting.js — same math, single
+ * home. Kept as a thin alias so existing imports/tests don't break.
  */
-export function interceptPoint(target, origin, speed) {
-  const cx = target.x + target.w / 2;
-  const cy = target.y + target.h / 2;
-  const vx = target.vx ?? 0, vy = target.vy ?? 0;
-  // Relative position of target w.r.t. origin.
-  const px = cx - origin.x, py = cy - origin.y;
-  const v2 = vx * vx + vy * vy;
-  const s2 = speed * speed;
-  if (v2 >= s2) return null; // target outruns the bullet — no catch-up
-  // Quadratic from |p + v·t|² = s²·t²:
-  //   (v² − s²)·t² + 2(p·v)·t + |p|² = 0
-  const a = v2 - s2;                       // negative (see guard above)
-  const b = 2 * (px * vx + py * vy);
-  const c = px * px + py * py;
-  const disc = b * b - 4 * a * c;
-  if (disc < 0) return null;               // bullet too slow to ever meet
-  const sq = Math.sqrt(disc);
-  // Two roots: nearest future meeting (smaller positive t).
-  const t1 = (-b - sq) / (2 * a);
-  const t2 = (-b + sq) / (2 * a);
-  let t = Infinity;
-  if (t1 > 0) t = Math.min(t, t1);
-  if (t2 > 0) t = Math.min(t, t2);
-  if (!isFinite(t)) return null;
-  return { x: cx + vx * t, y: cy + vy * t, t };
-}
+export const interceptPoint = leadAt;
 
 registerMacro('predictiveShot', {
   params: { ...DEFAULTS },
@@ -93,7 +57,7 @@ registerMacro('predictiveShot', {
     // Solve the intercept at firing time. No solution → aim at current pos.
     let pt = null;
     if (t && t.alive !== false) {
-      pt = interceptPoint(t, o, p.speed);
+      pt = leadAt(t, o, p.speed);
       if (!pt) pt = { x: t.x + t.w / 2, y: t.y + t.h / 2, t: null };
     } else {
       pt = { x: o.x + 1, y: o.y, t: null }; // no target: straight ahead

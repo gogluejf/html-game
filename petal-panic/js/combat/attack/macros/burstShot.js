@@ -5,17 +5,16 @@
 // cool-down INSIDE the attack; pacing BETWEEN separate attacks is AI/attack-
 // plan sequencing and never lives here.
 //
-// Each shot consumes the projectileShot MACRO (not the raw primitive): the
-// burst inherits its AIM CONTRACT for free:
-//   • `target` → PRIMARY. Every shot re-solves the angle at ITS OWN fire
-//     time, so a target burst visibly TRACKS a moving target shot-by-shot
-//     instead of firing N bullets at where it used to be.
-//   • `direction` → FALLBACK ONLY when target is null (hero aim / patterns);
-//     all shots in the group fly the same angle.
-//   • Both given → target wins per shot, direction ignored.
+// TARGETING RULE: this macro owns PATTERNS only, never targeting. The caller
+// (AI or hero input code) computes the direction — it knows where the target
+// is — and passes it. All shots in the group fly the same direction; a burst
+// that must track a moving target is AI sequencing (re-invoke with a fresh
+// direction), not a macro feature.
+//
+// Each shot invokes the native PROJECTILE PRIMITIVE directly.
 //
 // Handle shape:
-//   h.handles  — live projectileShot handles (one per shot)
+//   h.handles  — live projectile handles (one per shot)
 //   h.step(dt) — host calls each frame; spawns one shot per `interval` and
 //                returns true only when all shots are launched AND dead
 //   hit / expire / complete — forwarded/emitted once (terminal, no replay)
@@ -26,8 +25,7 @@ import { invoke, AttackHandle } from '../engine.js';
 const DEFAULTS = Object.freeze({
   count: 3,              // shots in the burst
   interval: 0.12,        // s between shots (intra-burst cool-down)
-  direction: 0,          // radians; ignored when `target` is given
-  target: null,          // live entity — re-aimed at each shot's fire time
+  direction: 0,          // radians — caller-computed (AI/input owns targeting)
   speed: 600,            // projectile speed px/s
   ttl: 2,                // projectile lifetime (s)
   damage: 10,            // projectile damage
@@ -37,16 +35,15 @@ registerMacro('burstShot', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Burst Shot',
-    desc: 'N shots along one direction, one per interval (fire group). Consumes projectileShot per shot, so a target burst tracks the target shot-by-shot.',
-    invokes: ['projectileShot'],
-    // No native effects: inherits hit-sparkle/debris via projectileShot →
-    // projectile. resolveEffects() surfaces them as inherited rows.
+    desc: 'N shots along one direction, one per interval (fire group). Pattern-only: the caller computes the direction.',
+    invokes: ['projectile'],
+    // No native effects: inherits hit-sparkle/debris from the projectile
+    // primitive it invokes. resolveEffects() surfaces them as inherited rows.
     effects: [],
     params: [
       { key: 'count', desc: 'shots in the burst' },
       { key: 'interval', desc: 's between shots (intra-burst cool-down)' },
-      { key: 'target', desc: 'PRIMARY aim: live entity, re-aimed at each shot\'s fire time (tracks movement)' },
-      { key: 'direction', desc: 'FALLBACK aim (only when target is null): radians, all shots share it' },
+      { key: 'direction', desc: 'radians — caller-computed aim, all shots share it' },
       { key: 'speed', desc: 'projectile speed px/s' },
       { key: 'ttl', desc: 'projectile lifetime (s)' },
       { key: 'damage', desc: 'projectile damage' },
@@ -59,10 +56,9 @@ registerMacro('burstShot', {
     const interval = Math.max(0, Number.isFinite(p.interval) ? p.interval : 0);
 
     const spawnOne = () => {
-      // Fresh invoke per shot: projectileShot re-resolves aim NOW, so a
-      // moving target gets tracked shot-by-shot.
-      const shot = invoke('projectileShot', {
-        direction: p.direction, target: p.target,
+      // Native primitive per shot — the burst owns only the timing pattern.
+      const shot = invoke('projectile', {
+        direction: p.direction,
         speed: p.speed, ttl: p.ttl, damage: p.damage,
       }, ctx);
       if (shot?.entity) {

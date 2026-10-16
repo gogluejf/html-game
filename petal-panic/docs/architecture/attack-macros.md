@@ -101,37 +101,7 @@ registerMacro('homingMissile', {
 
 ---
 
-## 1. Projectile Shot
-
-**Invokes:** Projectile
-
-**Effects:** Hit Sparkle (hit juice)
-
-A standard shot fired from the attacker at a target, or along a caller-supplied
-direction when there is no target.
-
-**Aim contract:** `target` (live entity) is PRIMARY — the shot flies at the
-target's current center. `direction` (radians) is the FALLBACK used only when
-`target` is null: the caller's own aim (hero D-pad/reticle input, pattern
-shots). Both given → target wins.
-
-### Sequence
-
-Projectile → travel → collision/expiration.
-
-### Main parameters
-
-- **target** — primary aim: live entity, shot flies at its current center.
-- **direction** — fallback aim (only when target is null), radians.
-- **speed** — projectile speed.
-- **ttl** — optional lifetime.
-- **damage** — damage.
-- **origin / marker** — launch position.
-- **projectileStyle** — optional visual override.
-
----
-
-## 2. Predictive Shot
+## 1. Predictive Shot
 
 **Invokes:** Projectile
 
@@ -157,7 +127,7 @@ otherwise.
 
 ---
 
-## 3. Reticle Shot
+## 2. Reticle Shot
 
 **Invokes:** Projectile
 
@@ -199,7 +169,7 @@ target-reticle effect (track → lock) → Projectile at locked point.
 
 ---
 
-## 4. Burst Shot
+## 3. Burst Shot
 
 **Invokes:** Projectile
 
@@ -209,10 +179,9 @@ Fires the same shot repeatedly with a fixed interval between shots — the
 M16-style fire group. The interval is the cool-down INSIDE the attack; the
 handle completes when the last shot of the burst dies.
 
-**Aim contract** (same as Projectile Shot): `target` is PRIMARY — and because
-every shot re-solves its angle at its OWN fire time, a target burst TRACKS a
-moving target shot-by-shot. `direction` is the FALLBACK for no-target callers
-(hero aim / patterns); all shots in the group share it.
+**Targeting rule:** the caller computes the direction (AI/input owns targeting);
+all shots in the group share it. A burst that must track a moving target is AI
+sequencing — re-invoke with a fresh direction — not a macro feature.
 
 ### Sequence
 
@@ -222,8 +191,7 @@ Projectile → interval → Projectile → repeat × count.
 
 - **count** — shots in the burst.
 - **interval** — seconds between shots (the intra-burst cool-down).
-- **target** — primary aim: live entity, re-aimed per shot (tracks movement).
-- **direction** — fallback aim (only when target is null), radians.
+- **direction** — radians, caller-computed aim; all shots share it.
 - **speed** — projectile speed.
 - **ttl** — optional projectile lifetime.
 - **damage** — damage.
@@ -233,7 +201,7 @@ sequencing, not part of the burst.
 
 ---
 
-## 5. Spread Shot
+## 4. Spread Shot
 
 **Invokes:** Projectile
 
@@ -259,7 +227,7 @@ Spread → multiple Projectiles (simultaneous or sequenced).
 
 ---
 
-## 6. 360° Spread (Radial Shot)
+## 5. 360° Spread (Radial Shot)
 
 **Invokes:** Spread Shot (with computed ring geometry)
 
@@ -284,7 +252,7 @@ The canonical spread angle is 360 degrees.
 
 ---
 
-## 7. Homing Missile
+## 6. Homing Missile
 
 **Invokes:** Projectile
 
@@ -310,7 +278,7 @@ a much more agile threat.
 
 ---
 
-## 8. Missile Rain
+## 7. Missile Rain
 
 **Invokes:** Projectile + Telegraph effect
 
@@ -374,31 +342,7 @@ area rather than using a fixed pixel/unit separation.
 
 ---
 
-## 9. Bomb Throw
-
-**Invokes:** Bomb
-
-**Effects:** Explosion + Screen Flash + Camera Shake (detonation)
-
-Throws one ballistic bomb.
-
-### Sequence
-
-Bomb launch → ballistic arc → optional bounce/contact → payload/detonation.
-
-### Main parameters
-
-- **speed / force** — throw force.
-- **direction** — throw direction.
-- **arc / verticalForce** — trajectory height.
-- **bounce** — whether it bounces on valid surfaces.
-- **explodeOnContact** — optional contact trigger.
-- **ttl** — optional timed detonation.
-- **payload** — normally Explosion, Fire, or another standardized payload.
-
----
-
-## 10. Bomb Spread
+## 8. Bomb Spread
 
 **Invokes:** Bomb
 
@@ -423,7 +367,7 @@ air simultaneously.
 
 ---
 
-## 11. Cluster Bomb
+## 9. Cluster Bomb
 
 **Invokes:** Bomb → Spawn/Split
 
@@ -449,7 +393,7 @@ Parent Bomb → trigger → Spawn/Split → child Bombs → child payloads.
 
 ---
 
-## 12. Molotov
+## 10. Molotov
 
 **Invokes:** Bomb → Fire Area
 
@@ -472,7 +416,7 @@ Bomb → impact/timer → Fire/Persistent Area.
 
 ---
 
-## 13. Explosive Bomb
+## 11. Explosive Bomb
 
 **Invokes:** Bomb → Explosion
 
@@ -494,7 +438,7 @@ Bomb → trigger → Explosion.
 
 ---
 
-## 14. Horizontal Beam
+## 12. Horizontal Beam
 
 **Invokes:** Beam
 
@@ -520,7 +464,7 @@ Full-screen horizontal reach is the normal default.
 
 ---
 
-## 15. Targeted Beam
+## 13. Targeted Beam
 
 **Invokes:** Beam
 
@@ -547,7 +491,7 @@ The beam direction is determined by the locked reticle placement.
 
 ---
 
-## 16. Sweeping Beam
+## 14. Sweeping Beam
 
 **Invokes:** Beam
 
@@ -573,7 +517,7 @@ Reticle/telegraph → Beam starts → angular sweep → end.
 
 ---
 
-## 17. Melee
+## 15. Melee
 
 **Invokes:** Melee Hitbox
 
@@ -604,7 +548,7 @@ animation-driven attacks without inventing separate collision systems.
 
 ---
 
-## 18. Charge / Dash
+## 16. Charge / Dash
 
 **Invokes:** Movement + Body Contact
 
@@ -632,7 +576,7 @@ stop/recovery.
 
 ---
 
-## 19. Stomp
+## 17. Stomp
 
 **Invokes:** Telegraph effect + Melee Hitbox
 
@@ -671,7 +615,7 @@ Telegraph once → signal → stomp → interval → signal → stomp → repeat
 
 ---
 
-## 20. Stomp Wave
+## 18. Stomp Wave
 
 **Invokes:** Spike / Static Hazard
 
@@ -697,7 +641,7 @@ Telegraph → stomp impact → surface wave → wave terminates.
 
 ---
 
-## 21. Dust Cloud / Radius Attack
+## 19. Dust Cloud / Radius Attack
 
 **Invokes:** Explosion
 
@@ -720,7 +664,7 @@ Dust effect appears → radial area active → duration ends.
 
 ---
 
-## 22. Spikes
+## 20. Spikes
 
 **Invokes:** Spike / Static Hazard
 
@@ -747,7 +691,7 @@ optional hidden TTL → optional repeat.
 
 ---
 
-## 23. Body Explosion / Kamikaze
+## 21. Body Explosion / Kamikaze
 
 **Invokes:** Explosion (payload)
 
@@ -774,7 +718,7 @@ standardized detonation behavior.
 
 ---
 
-## 24. Dash Lane Sequence
+## 22. Dash Lane Sequence
 
 **Invokes:** Movement + Telegraph effect
 
@@ -824,7 +768,7 @@ Examples:
 
 ---
 
-## 25. Spawn / Split
+## 23. Spawn / Split
 
 **Invokes:** Projectile / Bomb / enemy factory
 
@@ -880,11 +824,11 @@ Attack Macros do not contain enemy decision-making.
 
 **Simple enemy**
 
-`Projectile Shot → wait → Projectile Shot → wait`
+`Projectile (primitive, aimed at hero) → wait → repeat`
 
 **More advanced enemy**
 
-`Burst Shot → reposition → Bomb Throw → repeat`
+`Burst Shot → reposition → Bomb (primitive) → repeat`
 
 **Boss**
 
@@ -912,12 +856,16 @@ When adding an attack:
    declares what it composes via `meta.invokes` (rendered by the Theater's
    INVOKES panel and documented as each section's **Invokes:** line).
 8. **A macro must compose.** It either invokes ≥2 primitives/macros, or owns
-   timing/looping no single primitive provides (aim resolution, telegraph
-   sequencing, computed geometry). If an attack is a 1:1 mirror of one
-   primitive, there is NO macro — callers invoke the primitive directly.
-   Repeated-fire patterns (bursts, fire-groups) are expressed by sequencing
-   macro invocations in an attack plan, not by adding burst params to
-   primitives.
+   timing/looping no single primitive provides (telegraph sequencing, computed
+   fan/ring geometry). If an attack is a 1:1 mirror of one primitive, there is
+   NO macro — callers invoke the primitive directly. Repeated-fire patterns
+   (fire-groups beyond a burst) are expressed by sequencing macro invocations
+   in an attack plan, not by adding burst params to primitives.
+9. **Macros never target.** Targeting is the caller's job: AI and hero input
+   code compute the direction (they know where the target is) and pass it.
+   Macros own PATTERNS — timing, fans, rings, telegraphs — and take a
+   `direction`, never a `target`. This keeps intent readable in AI code and
+   keeps the attack library free of who-is-aimed-at logic.
 
 The goal is a small mechanical vocabulary that can produce many attacks without
 creating dozens of almost-identical custom implementations.

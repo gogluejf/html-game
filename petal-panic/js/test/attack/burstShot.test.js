@@ -5,8 +5,7 @@ import { strict as assert } from 'node:assert';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { Pool, Projectile, Special } from '../../objects/projectile.js';
-import { stepProjectile } from '../../combat/attack/primitives/projectile.js';
-import '../../combat/attack/macros/projectileShot.js'; // burst consumes it
+import { stepProjectile } from '../../combat/attack/primitives/projectile.js'; // burst invokes it natively
 import '../../combat/attack/macros/burstShot.js';       // registers the macro
 
 let passed = 0;
@@ -66,19 +65,18 @@ ok('completion is owned by the macro: early child death does NOT end the burst',
   assert.ok(completedAt > 5.2, `completed too early: ${completedAt}s`);
 });
 
-ok('target burst re-aims at each shot\'s fire time (tracks movement)', () => {
+ok('all shots fly the caller-computed direction (pattern-only, no targeting)', () => {
   const ctx = makeContext(attacker(), { pools: pools() });
-  const target = { x: 200, y: 100, w: 32, h: 32 }; // right of attacker → angle 0
-  const h = invoke('burstShot', { count: 3, interval: 0.2, target, speed: 300, ttl: 5 }, ctx);
-  h.step(1 / 60); // spawn shot #1 aimed at current target pos
-  const v1 = { vx: h.handles[0].entity.vx, vy: h.handles[0].entity.vy };
-  assert.ok(close(v1.vx, 300) && close(v1.vy, 0), `shot1 v=(${v1.vx},${v1.vy})`);
-  // Target moves BELOW its old position before shot #2 fires.
-  target.y = 200;
-  for (let f = 0; f < 15; f++) h.step(1 / 60);
-  assert.equal(h.handles.length, 2, 'shot #2 spawned');
-  const v2 = { vx: h.handles[1].entity.vx, vy: h.handles[1].entity.vy };
-  assert.ok(v2.vy > 0, `shot2 should aim down-right, got v=(${v2.vx?.toFixed(0)},${v2.vy?.toFixed(0)})`);
+  const h = invoke('burstShot', { count: 3, interval: 0.2, direction: Math.PI / 4, speed: 300, ttl: 5 }, ctx);
+  const DT = 1 / 60;
+  for (let f = 0; f < 30 && h.handles.length < 3; f++) h.step(DT);
+  assert.equal(h.handles.length, 3, 'all 3 spawned');
+  for (const ch of h.handles) {
+    const e = ch.entity;
+    // Every shot shares the exact caller direction (45° down-right).
+    assert.ok(Math.abs(e.vx - 300 * Math.cos(Math.PI / 4)) < 1e-6, `vx=${e.vx}`);
+    assert.ok(Math.abs(e.vy - 300 * Math.sin(Math.PI / 4)) < 1e-6, `vy=${e.vy}`);
+  }
 });
 
 ok('forwards hit with dealt damage', () => {

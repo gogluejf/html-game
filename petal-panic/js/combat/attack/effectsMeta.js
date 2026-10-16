@@ -17,7 +17,7 @@
 //
 // Inheritance is TRANSITIVE: a macro's invokes may name other macros, and
 // each of THOSE is resolved recursively (cycle-safe via a visited set), so
-// burstShot → projectileShot → projectile surfaces the projectile's effects
+// burstShot → projectile surfaces the primitive's effects
 // without any macro re-declaring them. `via` names the DIRECT source the row
 // came through.
 
@@ -66,7 +66,7 @@ export function resolveEffects(id) {
  * source it came through in `via` — so a macro that invokes a macro shows
  * both its own calls and the child's calls, clearly labeled:
  *
- *   burstShot → [ Projectile Shot (own), Projectile (via Projectile Shot) ]
+ *   radialShot → [ Spread Shot (own), Projectile (via Spread Shot) ]
  *
  * Primitives always return [] (they must not invoke — the enforceable
  * primitive/macro boundary). Single source of truth for the Theater's
