@@ -62,10 +62,9 @@ const REPEAT_FRAMES = 5;        // ~83ms between repeats while held
 
 /** Angle display helper: radians → "−45° ↗" style string. */
 function angleLabel(rad) {
-  const deg = Math.round(rad / DEG);
   const oct = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
   const idx = ((Math.round(-rad / (Math.PI / 4)) % 8) + 8) % 8;
-  return `${deg}° ${oct[idx]}`;
+  return `${round2(rad)} ${oct[idx]}`;
 }
 
 // Per-primitive default param presets for the sandbox.
@@ -94,7 +93,7 @@ const SANDBOX_PRESETS = {
   bodyExplosion: { deathBehavior: 'kill', triggerPayloadFirst: true, payloadDelay: 0.1 },
   bombSpread: { count: 3, direction: -75 * DEG, angle: 15 * DEG, speed: 700, arc: 800, bounce: true, ttl: 2, damage: 40, radius: 60 },
   molotov: { direction: -0.5, arc: 800, bounce: false, ttl: 2, damage: 12, fireWidth: 96, fireDuration: 3, fireTickRate: 5, fireDamage: 8 },
-  clusterBomb: { direction: -0.5, arc: 800, bounce: false, ttl: 3, damage: 20, radius: 40, count: 4, childAngle: Math.PI, childDirection: -Math.PI / 2, childForce: 300, childTtl: 2, childDamage: 15, childRadius: 30 },
+  clusterBomb: { direction: -0.5, arc: 800, bounce: false, ttl: 3, damage: 20, radius: 40, count: 4, childAngle: 120 * DEG, childDirection: -Math.PI / 2, childForce: 300, childArc: 700, childTtl: 2, childDamage: 15, childRadius: 30 },
 };
 
 /** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
@@ -123,7 +122,7 @@ export const TWEAKABLE = {
   bodyExplosion: [['payloadDelay', 'num', 0.05]],
   bombSpread: [['count', 'int', 1], ['direction', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
   molotov: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['fireWidth', 'num', 16], ['fireDuration', 'num', 0.5], ['fireDamage', 'num', 2]],
-  clusterBomb: [['count', 'int', 1], ['childForce', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
+  clusterBomb: [['count', 'int', 1], ['childAngle', 'angle', 15 * DEG], ['childDirection', 'angle', 15 * DEG], ['childForce', 'num', 50], ['childArc', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
 };
 
 export const AttackTheater = {
@@ -1215,7 +1214,7 @@ export const AttackTheater = {
       ctx.fillStyle = selected ? '#fd6' : (tweak ? '#ccc' : '#666');
       const val = this._params[key];
       const valStr = typeof val === 'number'
-        ? (key === 'direction' || key === 'angle' ? angleLabel(val) : String(round2(val)))
+        ? ((key.includes('direction') || key.includes('angle')) ? angleLabel(val) : String(round2(val)))
         : (val && typeof val === 'object' ? JSON.stringify(val) : String(val));
       ctx.fillText(`${selected ? '▶' : '·'} ${key} = ${valStr}${tweak ? '' : '  (fixed)'}`, panelX + 12, py);
       py += 15;

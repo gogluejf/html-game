@@ -20,9 +20,10 @@ const DEFAULTS = Object.freeze({
   blastTeam: 'neutral',
   // Children
   count: 4,
-  childAngle: Math.PI,
+  childAngle: 120 * Math.PI / 180,
   childDirection: -Math.PI / 2,
   childForce: 300,
+  childArc: 700,
   childTtl: 2,
   childDamage: 15,
   childRadius: 30,
@@ -52,6 +53,7 @@ defineMacro('clusterBomb', {
       { key: 'childAngle', desc: 'child spread width (radians)' },
       { key: 'childDirection', desc: 'child center direction (radians)' },
       { key: 'childForce', desc: 'child launch force (px/s)' },
+      { key: 'childArc', desc: 'child gravity (px/s²)' },
       { key: 'childTtl', desc: 'child fuse seconds' },
       { key: 'childDamage', desc: 'child blast damage' },
       { key: 'childRadius', desc: 'child blast radius (px)' },
@@ -73,7 +75,7 @@ defineMacro('clusterBomb', {
             bomb: {
               speed: p.childForce,
               direction: p.childDirection,
-              arc: p.arc,
+              arc: p.childArc,
               bounce: false,
               ttl: p.childTtl,
               damage: p.childDamage,
@@ -85,6 +87,7 @@ defineMacro('clusterBomb', {
             for (const ch of split.handles) {
               macroH.handles.push(ch);
               ch.on('hit', (...args) => macroH._emit('hit', ...args));
+
             }
           }
         } catch (err) {
