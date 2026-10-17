@@ -105,9 +105,10 @@ export function resolveInvokes(id) {
     if (visited.has(attackId)) return;
     visited.add(attackId);
     const d = getPrimitive(attackId) ?? getMacro(attackId);
+    const thisName = d?.meta?.name ?? attackId;
     for (const nextId of d?.meta?.invokes ?? []) {
-      push(nextId, via);
-      visit(nextId, via);
+      push(nextId, thisName); // direct child of THIS node
+      visit(nextId, thisName);
     }
   };
   for (const invId of def.meta.invokes) {

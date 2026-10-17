@@ -123,7 +123,7 @@ defineMacro('spawnSplit', {
         // "it explodes" behavior is a macro concern.
         const child = invoke('explosiveBomb', {
           origin: { x: c.x, y: c.y }, direction: c.angle, speed,
-          arc: b.arc ?? 700, bounce: b.bounce ?? true, ttl: b.ttl ?? 4,
+          arc: b.arc ?? 700, bounce: b.bounce ?? true, ttl: b.ttl ?? 1.5,
           damage: b.damage ?? 25, radius: b.radius ?? 60,
           explodeOnContact: b.explodeOnContact ?? true,
         }, ctx);
