@@ -1,0 +1,224 @@
+/* Petal Panic — mobile touch overlay: virtual gamepad (bottom) + debug bar (top).
+   Fixed positioning; container passes touches through, controls capture them. */
+
+.pp-touch {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none; /* canvas gets all other touches */
+  font-family: system-ui, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pp-touch.hidden { display: none; }
+
+.pp-touch .pp-ctl { pointer-events: auto; touch-action: none; }
+
+/* --- Top debug bar ---------------------------------------------------------- */
+.pp-debugbar {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: repeat(10, minmax(40px, auto));
+  gap: 5px;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 10px;
+  max-width: 98vw;
+}
+
+.pp-debugbar button {
+  min-height: 34px;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #cfe8ff;
+  background: rgba(60, 90, 130, 0.55);
+  border: 1px solid rgba(140, 180, 220, 0.4);
+  border-radius: 7px;
+}
+
+.pp-debugbar button:active, .pp-debugbar button.pp-pressed {
+  background: rgba(140, 190, 250, 0.85);
+  color: #fff;
+  transform: scale(0.93);
+}
+
+/* --- Bottom gamepad zone ----------------------------------------------------- */
+.pp-pad {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 8px 32px; /* bottom room for the centered Start button */
+}
+
+/* Left cluster: stick + d-pad */
+.pp-left { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+
+.pp-stick {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: rgba(20, 24, 32, 0.4);
+  border: 2px solid rgba(150, 170, 200, 0.35);
+  position: relative;
+}
+
+.pp-stick-knob {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(200, 215, 235, 0.75), rgba(90, 110, 140, 0.6));
+  border: 1px solid rgba(220, 235, 255, 0.5);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.pp-dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 40px);
+  grid-template-rows: repeat(3, 36px);
+  gap: 3px;
+}
+
+.pp-dpad button {
+  font-size: 13px;
+  color: #dfe9f5;
+  background: rgba(40, 48, 64, 0.5);
+  border: 1px solid rgba(150, 170, 200, 0.35);
+  border-radius: 8px;
+}
+
+.pp-dpad button:active, .pp-dpad button.pp-pressed {
+  background: rgba(140, 190, 250, 0.85);
+  color: #fff;
+  transform: scale(0.93);
+}
+.pp-dpad .up    { grid-column: 2; grid-row: 1; }
+.pp-dpad .left  { grid-column: 1; grid-row: 2; }
+.pp-dpad .right { grid-column: 3; grid-row: 2; }
+.pp-dpad .down  { grid-column: 2; grid-row: 3; }
+
+/* Right cluster: triggers row + face buttons */
+.pp-right { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+
+/* Lift triggers away from the diamond: extra space between triggers and face */
+.pp-triggers { margin-bottom: 16px; }
+
+.pp-triggers, .pp-smallrow { display: flex; gap: 5px; }
+
+.pp-triggers button, .pp-smallrow button {
+  min-width: 40px;
+  min-height: 26px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffe9c8;
+  background: rgba(120, 90, 40, 0.45);
+  border: 1px solid rgba(220, 180, 110, 0.45);
+  border-radius: 7px;
+}
+
+/* Triggers (L1/R1/L2/R2): double height for easy thumb hits */
+.pp-triggers button {
+  min-height: 52px;
+}
+
+.pp-triggers button:active, .pp-smallrow button:active,
+.pp-triggers button.pp-pressed, .pp-smallrow button.pp-pressed {
+  background: rgba(240, 190, 90, 0.85);
+  color: #fff;
+  transform: scale(0.93);
+}
+
+.pp-face {
+  display: grid;
+  grid-template-columns: 46px 46px 46px;
+  grid-template-rows: 46px 46px 46px;
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.pp-face button {
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  transition: transform 0.05s;
+}
+
+.pp-face button:active, .pp-face button.pp-pressed {
+  transform: scale(0.88);
+  filter: brightness(1.5);
+}
+/* PS5 diamond: △ top-center · □ mid-left · ○ mid-right · ✕ bottom-center */
+.pp-face .y { grid-column: 2; grid-row: 1; background: rgba(200, 160, 40, 0.6); }
+.pp-face .x { grid-column: 1; grid-row: 2; background: rgba(60, 110, 200, 0.6); }
+.pp-face .b { grid-column: 3; grid-row: 2; background: rgba(200, 60, 60, 0.6); }
+.pp-face .a { grid-column: 2; grid-row: 3; background: rgba(60, 160, 80, 0.6); }
+
+.pp-start {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 72px;
+  min-height: 26px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #dfe9f5;
+  background: rgba(40, 48, 64, 0.5);
+  border: 1px solid rgba(150, 170, 200, 0.35);
+  border-radius: 13px;
+}
+
+.pp-start:active, .pp-start.pp-pressed {
+  background: rgba(140, 190, 250, 0.85);
+  color: #fff;
+  transform: translateX(-50%) scale(0.93);
+}
+
+/* Hide/show toggle */
+.pp-toggle {
+  position: absolute;
+  top: 48px;
+  right: 8px;
+  min-width: 44px;
+  min-height: 36px;
+  font-size: 16px;
+  color: #cfe8ff;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(140, 180, 220, 0.4);
+  border-radius: 8px;
+}
+
+/* Live press readout (debug) */
+.pp-readout {
+  position: absolute;
+  top: 48px;
+  left: 8px;
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: monospace;
+  color: #9fff9f;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(120, 255, 120, 0.4);
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+
+.pp-readout.pp-show { opacity: 1; }

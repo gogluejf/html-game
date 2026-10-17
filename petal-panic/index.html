@@ -9,6 +9,25 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Lilita+One&family=Pirata+One&display=swap" rel="stylesheet">
+  <link href="js/ui/touchControls.css" rel="stylesheet">
+  <!-- Install the virtual gamepad BEFORE any module loads: input.js captures
+       navigator.getGamepads at module scope, so the patch must be in place first. -->
+  <script>
+    (() => {
+      const N = 17;
+      window.__vpadState = {
+        axes: [0, 0, 0, 0],
+        buttons: Array.from({ length: N }, () => ({ pressed: false, touched: false, value: 0 })),
+      };
+      const nativeGet = navigator.getGamepads?.bind(navigator);
+      navigator.getGamepads = () => [...(nativeGet?.() ?? []), {
+        index: 99, id: 'squid-virtual-pad', connected: true,
+        timestamp: performance.now(), vibrationActuator: null,
+        axes: window.__vpadState.axes.slice(),
+        buttons: window.__vpadState.buttons.map((b) => ({ ...b })),
+      }];
+    })();
+  </script>
   <style>
     /* Full-viewport black background; canvas centered (letterbox bars are just
        the page background showing around the 16:9 canvas). */

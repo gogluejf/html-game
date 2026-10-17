@@ -8,6 +8,10 @@ import { waitForFonts } from './ui/fonts.js';
 import * as CONSTS from './consts.js';
 import { loadMacros } from './world/macroLoader.js';
 import { setMacros } from './world/macros.js';
+import { initTouchControls } from './ui/touchControls.js';
+
+// Mobile touch overlay (virtual gamepad + debug bar). No-op on desktop.
+initTouchControls();
 
 // Load screen assets (Home/Select) immediately on page load.
 loadImages();
