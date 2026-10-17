@@ -1260,20 +1260,7 @@ export const AttackTheater = {
           const catName = CATALOG.find((c) => c.type === fx.type)?.name ?? fx.type;
           ctx.fillStyle = '#b9f6ca';
           ctx.fillText(`✦ ${catName}${fx.via ? ` (${fx.via})` : ''}`, panelX + 12, py);
-          py += 13;
-          // Dimmed description on the next line (wrapped at ~34 chars).
-          if (fx.desc) {
-            ctx.fillStyle = '#777';
-            let line = '';
-            for (const word of fx.desc.split(' ')) {
-              if ((line + word).length > 34) {
-                if (py > bottomLimit()) break;
-                ctx.fillText(line.trim(), panelX + 20, py); py += 12; line = word + ' ';
-              } else line += word + ' ';
-            }
-            if (line && py <= bottomLimit()) { ctx.fillText(line.trim(), panelX + 20, py); py += 12; }
-          }
-          py += 3;
+          py += 14;
         }
       }
     }
