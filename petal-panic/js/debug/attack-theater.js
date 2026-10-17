@@ -805,7 +805,7 @@ export const AttackTheater = {
       if (!s.alive || s._attackId !== 'bomb' || s._attackDone) continue;
       stepBombTerrain(s, DT, GROUND_Y);
     }
-    this._world.update();
+    this._world?.update();
 
     // Step each live handle's entity.
     for (let i = this._handles.length - 1; i >= 0; i--) {
