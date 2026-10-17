@@ -894,11 +894,15 @@ export function update(dt) {
   // Special projectiles: update + handle bomb explosions.
   specialPool.updateAll(dt);
   // Bomb terrain: the engine owns bounce/settle (stepBombTerrain) — same rules
-  // for gameplay and the sandbox. Settled bombs (_attackHit, alive=false) are
-  // detonated by the TTL pass below via explodeSpecial().
+  // for gameplay and the sandbox. When a bomb settles (rebound too weak), it is
+  // killed with _attackHit=true but ttlExpired is NOT set — so the TTL pass
+  // below would never fire. We must call explodeSpecial() here for settled bombs.
   for (const s of specialPool.activeItems) {
     if (!s.alive || s.type !== 'bomb') continue;
-    stepBombTerrain(s, dt, ZONE_GROUND_Y, SOLIDS.slice(1));
+    const settled = stepBombTerrain(s, dt, ZONE_GROUND_Y, SOLIDS.slice(1));
+    if (settled && !s.exploded) {
+      explodeSpecial(s);
+    }
   }
   syncSpecialsToWorld();
   // Attack-engine bombs (explosiveBomb macro): the engine owns their flight +

@@ -5,6 +5,7 @@
 // No-op on desktop (no touch support).
 
 import { press, release, setStick } from './virtualPad.js';
+import { Debug } from '../debug/debug.js';
 
 const isTouchDevice = () =>
   ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
@@ -39,6 +40,7 @@ let readoutTimer = null;
 
 function showReadout(text) {
   if (!readoutEl) return;
+  if (!Debug.enabled) return; // only surface press readout while debug is on
   readoutEl.textContent = text;
   readoutEl.classList.add('pp-show');
   clearTimeout(readoutTimer);
@@ -98,21 +100,21 @@ function buildOverlay() {
           <button class="down" data-btn="13">▼</button>
         </div>
       </div>
-      <div class="pp-right">
-        <div class="pp-triggers pp-ctl">
-          <button data-btn="6">L1</button>
-          <button data-btn="7">R1</button>
-          <button data-btn="8">L2</button>
-          <button data-btn="9">R2</button>
-        </div>
-        <div class="pp-face pp-ctl">
+      <div class="pp-right pp-ctl">
+        <div class="pp-face">
           <button class="x" data-btn="2">□</button>
           <button class="y" data-btn="3">△</button>
           <button class="a" data-btn="0">✕</button>
           <button class="b" data-btn="1">○</button>
         </div>
       </div>
-      <button class="pp-start pp-ctl" data-btn="16">≡ OPTIONS</button>
+      <div class="pp-triggers pp-ctl">
+        <button data-btn="4">L1</button>
+        <button data-btn="6">L2</button>
+        <button class="pp-gap" data-btn="5">R1</button>
+        <button data-btn="7">R2</button>
+      </div>
+      <button class="pp-start pp-ctl" data-btn="9">≡ PAUSE</button>
     </div>`;
   document.body.appendChild(root);
 
@@ -131,7 +133,7 @@ function wireAllButtons(els) {
 function wireStick() {
   const zone = root.querySelector('#pp-stick');
   const knob = root.querySelector('#pp-knob');
-  const RADIUS = 40; // max knob travel from center (px)
+  const RADIUS = 38; // max knob travel from center (px)
   let touchId = null;
 
   const updateFrom = (cx, cy) => {
