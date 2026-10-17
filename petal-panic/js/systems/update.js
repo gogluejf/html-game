@@ -665,6 +665,7 @@ export function update(dt) {
   // stranded on the entry screen forever. F2/F4 are gated to in-area PLAY, so
   // this path only matters for stale/theater-open edge cases; still safe.
   if (Theater.active) {
+    input.poll({ facing: 1 }); // keep gamepad state fresh for theater nav
     Theater.update(dt);
     if (getState() === S.AREA_ENTRY) stepAreaEntrySequence(dt);
     return;
