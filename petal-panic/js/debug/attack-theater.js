@@ -605,6 +605,7 @@ export const AttackTheater = {
     // cadence is even — calling it here, not in update(), keeps it locked to
     // the simulation clock instead of the variable rAF delta.
     this.updateGamepad();
+    if (!this._target) return; // close() was called — stop stepping
     updateEffects(DT);   // advance effect instances (beams, flashes...)
     particles.updateAll(DT); // advance hit-sparkles / explosion debris —
                              // WITHOUT this they spawn frozen at full alpha
