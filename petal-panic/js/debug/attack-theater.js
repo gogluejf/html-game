@@ -517,7 +517,7 @@ export const AttackTheater = {
       const chosen = this._params.spawnType;
       if (chosen !== 'enemy' && chosen !== 'projectile') {
         this._params.spawnType = 'bomb';
-        this._params.bomb = { arc: 700, bounce: true, ttl: 4, damage: 25, radius: 60, explodeOnContact: true };
+        this._params.bomb = { arc: 700, bounce: true, ttl: 1.5, damage: 25, radius: 60, explodeOnContact: true };
       }
       // centerDirection + angle come from SANDBOX_PRESETS (the demo fan) and are
       // user-tweakable — do NOT reset them here or every replay clobbers the choice.
