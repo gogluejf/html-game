@@ -87,7 +87,6 @@ function buildOverlay() {
   root.className = 'pp-touch';
   root.innerHTML = `
     <div class="pp-debugbar pp-ctl" id="pp-debugbar"></div>
-    <button class="pp-toggle pp-ctl" id="pp-toggle">✕</button>
     <div class="pp-readout" id="pp-readout">—</div>
     <div class="pp-pad">
       <div class="pp-left">
@@ -121,7 +120,6 @@ function buildOverlay() {
   buildDebugBar();
   wireStick();
   wireAllButtons(root.querySelectorAll('[data-btn]'));
-  wireToggle();
 }
 
 // Every [data-btn] element → its gamepad button index.
@@ -211,13 +209,4 @@ function buildDebugBar() {
     bindTouch(btn, k.tap);
     bar.appendChild(btn);
   }
-}
-
-// Hide/show toggle (clean screenshots / theater views).
-function wireToggle() {
-  const btn = root.querySelector('#pp-toggle');
-  bindTouch(btn, () => {
-    root.classList.toggle('hidden');
-    btn.textContent = root.classList.contains('hidden') ? '☰' : '✕';
-  });
 }

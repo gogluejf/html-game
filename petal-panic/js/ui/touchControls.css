@@ -189,20 +189,6 @@
   transform: translateX(-50%) scale(0.93);
 }
 
-/* Hide/show toggle */
-.pp-toggle {
-  position: absolute;
-  top: 48px;
-  right: 8px;
-  min-width: 44px;
-  min-height: 36px;
-  font-size: 16px;
-  color: #cfe8ff;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(140, 180, 220, 0.4);
-  border-radius: 8px;
-}
-
 /* Live press readout (debug) */
 .pp-readout {
   position: absolute;
