@@ -10,12 +10,19 @@
 projectile, bomb, explosion, meleeHitbox, charge (movement), bodyContact,
 beam, fireArea, spike, orbit, boomerang
 
+### Documented but NOT implemented
+- **surfaceWave** — new primitive (attack-primitives.md §9): one wave, one
+  direction, travels along the supporting surface; dies on ttl / end of
+  surface / solid geometry. Stomp Wave (§17) invokes it once per side.
+
 ### NOT implemented (the bomb family is next)
 - **bombSpread** (§8) ← easiest win
 - **molotov** (§10)
 - **clusterBomb** (§9)
 - (remaining non-bomb: missileRain, targetedBeam, sweepingBeam,
-  stomp, stompWave, dustCloud, dashLaneSequence)
+  stomp — radius blast + dust + camera shake on impact, tiny hop before land;
+  see attack-macros.md §16 for the canonical sequence,
+  stompWave, dustCloud, dashLaneSequence)
 
 ## The bomb building blocks (all done, tested)
 

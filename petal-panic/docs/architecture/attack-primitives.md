@@ -58,6 +58,11 @@ Creates a projectile from an origin, normally the attacker or one of its markers
 - **team** — ally | foe: who this shot hurts (maps to the PROJ_ALLY /
   PROJ_FOE layer). Engine-wide side vocabulary, same as hitbox/explosion.
 
+One invoke fires exactly ONE shot. Repeated-fire patterns (bursts, fans, full
+360° rings) are macro/attack-plan sequencing over this primitive — see Spread
+Shot and Radial Shot in `attack-macros.md`. The radial ring itself is not a
+primitive: it is N single-shot invokes with computed angles.
+
 ### Effects / hooks
 
 May use projectile visuals, trails, launch effects, impact particles, and
@@ -240,7 +245,37 @@ timed spike traps.
 
 ---
 
-## 9. Orbit
+## 9. Surface Wave
+
+**Effects:** Hit Sparkle (hit juice on every enemy struck)
+
+A damaging wave that travels **along a supporting surface** from an origin
+point, hitting everything in its path. One invoke = one wave going one
+direction. A two-sided stomp is two invokes (`left` + `right`).
+
+### Main parameters
+
+- **x / y** — origin position (world coords), usually the stomp impact point.
+- **direction** — `left` | `right`.
+- **speed** — travel speed along the surface (px/s).
+- **height** — dangerous area height above the surface.
+- **damage** — contact damage (each enemy hit once per wave).
+- **ttl** — optional lifetime; the wave dies when it expires even mid-travel.
+
+### Termination rules
+
+The wave dies on the FIRST of:
+
+1. **ttl** elapses.
+2. **End of surface** — the supporting platform/block ends (wave falls off the
+   edge).
+3. **Solid geometry** — a block or wall on its path stops it.
+
+On death it simply stops; no explosion or secondary effect.
+
+---
+
+## 10. Orbit
 
 **Effects:** —
 
@@ -284,7 +319,7 @@ release in multiple directions based on where each object was in its orbit.
 
 ---
 
-## 10. Boomerang
+## 11. Boomerang
 
 **Effects:** —
 
@@ -307,7 +342,7 @@ generic homing unless a macro explicitly combines the two.
 
 ---
 
-## 11. Telegraphs are Effects
+## 12. Telegraphs are Effects
 
 **Effects:** (this section documents the telegraph EFFECTS themselves)
 
@@ -331,7 +366,7 @@ catalog — not a per-attack copy.
 
 ---
 
-## 12. Body Contact Damage
+## 13. Body Contact Damage
 
 **Effects:** — (contact rule; hit juice comes from the attack that triggers it)
 
@@ -360,6 +395,8 @@ Primitives are intentionally small and composable. Examples:
 - **Cluster Bomb** = Bomb → Spawn/Split → child Bombs.
 - **Kamikaze** = Body Explosion macro (payload blast → death).
 - **Orbit Eject** = Orbit → eject into Projectile movement.
+- **Radial Shot (360° ring)** = N × Projectile at computed angles — the ring
+  geometry lives in the macro, not in a primitive.
 
 Finished, recognizable patterns belong in **Attack Macros** (`attack-macros.md`),
 not as new one-off primitives. A new primitive is added only when the engine truly

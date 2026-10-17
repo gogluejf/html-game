@@ -571,17 +571,21 @@ Reticle/telegraph → Beam starts → angular sweep → end.
 
 ## 16. Stomp
 
-**Invokes:** Telegraph effect + Melee Hitbox
+**Invokes:** Telegraph effect + Movement (tiny hop) + Explosion (radius blast)
 
-**Effects:** Telegraph effect (warning marker)
+**Effects:** Telegraph effect (warning marker), Dust Cloud (ground impact),
+Camera Shake (impact)
 
 A surface-aware stomp attack with one telegraph for the full sequence, followed by
-a short signal before each individual stomp.
+a short signal before each individual stomp. On impact the attacker performs a
+very small hop — just enough to read that it moved — then lands and the blast
+lands: a damaging **radius** around the impact point, dust puff on the ground,
+and a camera shake. Every enemy inside the radius takes damage and knockback.
 
 ### Canonical sequence
 
-Telegraph once → signal → stomp → interval → signal → stomp → repeat until
-`count` is reached.
+Telegraph once → [signal → tiny hop → land: radius blast + dust + screen shake]
+→ interval → repeat until `count` is reached.
 
 ### Parameters
 
@@ -592,45 +596,71 @@ Telegraph once → signal → stomp → interval → signal → stomp → repeat
 - **interval** — pause between stomps.
 - **attackSignalEffect** — short cue before each individual stomp.
 - **signalDelay** — time after the signal before stomp damage lands.
-- **damage** — stomp damage.
-- **knockback** — stomp knockback.
+- **hopHeight** — tiny vertical offset of the pre-impact hop (visual only).
+- **radius** — blast radius around the impact point.
+- **damage** — stomp damage (applied to everyone in the radius).
+- **knockback** — radial stomp knockback.
+- **dustStyle** — ground dust effect override.
+- **shakeStrength** — camera shake intensity on impact.
 
 ### Rules
 
 - The full telegraph plays only once at the beginning.
 - Every individual stomp gets its own short attack signal.
 - Do not replay the full telegraph between repeated stomps.
+- Damage is a circular radius around the impact point — not a box, not
+  screen-wide. Enemies outside the radius are untouched.
+- Dust and camera shake fire on every impact, even if nothing is hit.
 - `count: 1` behaves as a normal single stomp.
 
 ### Composition
 
-**Reticle/Telegraph once → repeat [attack signal → delay → Stomp → interval]**
+**Reticle/Telegraph once → repeat [attack signal → delay → tiny hop →
+land: Explosion(radius) + Dust Cloud + Camera Shake → interval]**
 
 ---
 
 ## 17. Stomp Wave
 
-**Invokes:** Spike / Static Hazard
+**Invokes:** Telegraph effect + Movement (tiny hop) + Surface Wave (one invoke
+per side; the macro decides how many sides)
 
-**Effects:** —
+**Effects:** Telegraph effect (warning marker), Dust Cloud (impact point),
+Camera Shake (impact)
 
-A stomp creates a damaging wave traveling along the supporting surface. On a block
-or platform, the wave ends when that surface ends. On the ground, it travels until
-its configured end or until blocked by solid geometry. The wave can hit barrels it
+A stomp that sends a damaging wave traveling along the supporting surface. The
+attacker does a tiny hop, lands, and on impact: dust puff at the impact spot,
+camera shake, then one Surface Wave per side rolls out from there. On a block
+or platform, the wave ends when that surface ends. On the ground, it travels
+until its ttl or until blocked by solid geometry. The wave can hit barrels it
 passes through.
 
 ### Sequence
 
-Telegraph → stomp impact → surface wave → wave terminates.
+Telegraph → tiny hop → land: dust + screen shake → surface wave(s) roll out →
+wave(s) terminate.
 
 ### Main parameters
 
-- **waveDirection** — `to_left`, `to_right`, or `both`.
-- **waveSpeed** — travel speed.
+- **telegraphDuration / telegraphStyle** — warning before the stomp.
+- **hopHeight** — tiny vertical offset of the pre-impact hop (visual only).
+- **sides** — which waves fire: `left`, `right`, or both.
+- **waveSpeed** — travel speed (maps to the primitive's `speed`).
 - **damage** — wave damage.
-- **waveWidth / size** — dangerous wave area.
-- **maxDistance / ttl** — optional travel limit.
-- **waveStyle** — effect override.
+- **waveHeight** — dangerous area height above the surface (primitive `height`).
+- **ttl / maxDistance** — optional travel limit; the wave dies when it expires.
+- **dustStyle** — ground dust effect override.
+- **shakeStrength** — camera shake intensity on impact.
+- **waveStyle** — wave effect override.
+
+The macro owns the pattern, not the geometry: it invokes the Surface Wave
+primitive once per side it wants. The direction parameter lives on the
+primitive only.
+
+Dust and camera shake fire on the impact itself, even if no wave hits anything.
+
+Termination is owned by the Surface Wave primitive: ttl, end of supporting
+surface (platform edge), or solid geometry in its path — whichever comes first.
 
 ---
 
