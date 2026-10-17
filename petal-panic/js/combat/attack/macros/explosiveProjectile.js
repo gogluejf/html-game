@@ -1,27 +1,11 @@
 // Attack Engine — Explosive Projectile (macro). ONE object, one id.
 //
-// The straight-line twin of explosiveBomb: composes the dumb projectile
-// CARRIER (primitive) with the Explosion primitive. The carrier owns flight
-// only (straight/ballistic path, contact damage, TTL); THIS macro owns the
-// aftermath — it subscribes to the carrier's terminal event and fires a radial
-// explosion at the death point (impact or fuse expiry).
-//
-// Why a macro: primitives never invoke other attacks; "Projectile →
-// Explosion" is composition, so it lives here (docs/architecture/
-// attack-macros.md §12).
-//
-// VFX contract: this macro fires NO effects of its own. The blast burst and
-// camera shake come from the Explosion primitive it invokes; the white screen
-// flash is SUPPRESSED (screenFlash: false) — the read is burst + shake, not a
-// full-screen flash. One owner per effect: the carrier fires no blast VFX
-// either, so nothing double-dips. resolveEffects() inherits the rows
-// dynamically via meta.invokes.
-//
-// Handle shape: proxies the inner carrier handle (entity, hit, expire,
-// complete); h.inner is the carrier handle for hosts that need it directly.
+// Straight-line twin of explosiveBomb: projectile CARRIER → Explosion at
+// death point (impact or TTL). Uses CarrierMacro base for unified stepping.
 
 import { registerMacro } from '../registry.js';
-import { invoke, AttackHandle } from '../engine.js';
+import { invoke } from '../engine.js';
+import { createCarrierHandle } from '../carrierMacro.js';
 
 const DEFAULTS = Object.freeze({
   speed: 600,           // px/s
@@ -41,11 +25,8 @@ registerMacro('explosiveProjectile', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Explosive Projectile',
-    // No native effects: the blast burst + screen flash + camera shake are
-    // inherited from the Explosion payload via resolveEffects() (meta.invokes)
-    // — declaring them here would shadow the primitive's own rows in the dedup.
     effects: [],
-    desc: 'Straight-line shot that detonates into a radial explosion at its death point (impact or TTL). Carrier owns flight; this macro owns the blast.',
+    desc: 'Straight-line shot that detonates into a radial explosion at its death point (impact or TTL).',
     invokes: ['projectile', 'explosion'],
     params: [
       { key: 'speed', desc: 'px/s travel speed' },
@@ -63,11 +44,31 @@ registerMacro('explosiveProjectile', {
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
-    const h = new AttackHandle('explosiveProjectile');
 
-    // The carrier: pure flight. Its terminal events ('hit' on contact,
-    // 'expire' on TTL/off-screen) carry enough to aim the blast at the
-    // entity's final position.
+    const h = createCarrierHandle('explosiveProjectile', p, ctx, {
+      onDetonate({ x, y }, macroH) {
+        try {
+          const targets = new Set();
+          for (const t of ctx.world?.targets ?? []) if (t) targets.add(t);
+          const aimed = p.target ?? ctx.target;
+          if (aimed) targets.add(aimed);
+          const blast = invoke('explosion', {
+            x, y,
+            radius: p.radius,
+            damage: p.damage,
+            team: p.blastTeam,
+            self: ctx.attacker,
+            targets: [...targets],
+            shake: true,
+            screenFlash: false,
+          }, ctx);
+          blast.on('hit', (...args) => macroH._emit('hit', ...args));
+        } catch (err) {
+          console.error(`attack/explosiveProjectile: blast failed`, err.message);
+        }
+      },
+    });
+
     const carrier = invoke('projectile', {
       speed: p.speed,
       direction: p.direction,
@@ -86,55 +87,28 @@ registerMacro('explosiveProjectile', {
       return h;
     }
 
-    // Hosts step the INNER carrier handle with the params they passed to us.
     carrier._params = p;
-
-    // GOOD CONTEXT for the deferred blast: built from the LIVE context at
-    // detonation time (world.targets + the aimed target), so the blast always
-    // has real candidates even if the captured ctx's world went empty.
-    const blastTargets = () => {
-      const set = new Set();
-      for (const t of ctx.world?.targets ?? []) if (t) set.add(t);
-      const aimed = p.target ?? ctx.target;
-      if (aimed) set.add(aimed);
-      return [...set];
-    };
-
-    const fireBlastAt = (ent) => {
-      const x = ent.x + ent.w / 2, y = ent.y + ent.h / 2;
-      try {
-        const blast = invoke('explosion', {
-          x, y,
-          radius: p.radius,
-          damage: p.damage,
-          team: p.blastTeam,
-          self: ctx.attacker,
-          targets: blastTargets(),
-          shake: true,        // screen shake inherited from the explosion primitive
-          screenFlash: false, // no white flash — the read is burst + shake
-        }, ctx);
-        blast.on('hit', (...args) => h._emit('hit', ...args));
-      } catch (err) {
-        console.error(`attack/explosiveProjectile: blast failed`, err.message);
-      }
-    };
-
-    // Impact: the carrier reports the hit; we add the blast at the impact
-    // point, then forward the original hit event.
-    carrier.on('hit', (info) => {
-      fireBlastAt(carrier.entity);
-      h._emit('hit', info);
-    });
-    // Fuse expiry / off-screen: still a detonation — bombs and explosive
-    // shots go off wherever they end.
-    carrier.on('expire', () => {
-      fireBlastAt(carrier.entity);
-      h._emit('expire');
-    });
-
     h.setInner(carrier);
     h.entity = carrier.entity;
     h.inner = carrier;
+
+    // Projectile carriers emit 'hit'/'expire' (not 'detonate'). Bridge them
+    // to the carrier handle's detonate so the base's onDetonate fires.
+    const fireBlastAt = () => {
+      const ent = carrier.entity;
+      const x = ent.x + ent.w / 2, y = ent.y + ent.h / 2;
+      carrier._emit('detonate', { x, y, contact: true });
+    };
+    carrier.on('hit', (info) => {
+      fireBlastAt();
+      h._emit('hit', info);
+    });
+    carrier.on('expire', () => {
+      fireBlastAt();
+      h._emit('expire');
+    });
+
+    h._wireCarrier(carrier);
     return h;
   },
 });
