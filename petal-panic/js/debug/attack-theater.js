@@ -81,7 +81,7 @@ const SANDBOX_PRESETS = {
   reticleShot: { duration: 1.3, lockTime: 1.1, color: '#ff5555', radius: 30, tracking: true, speed: 500, ttl: 2, damage: 10 },
   homingMissile: { direction: -0.3, turnRate: 3, speed: 400, ttl: 2, damage: 10 },
   predictiveShot: { speed: 300, ttl: 3, damage: 10 },
-  beam: { direction: 0, length: 450, width: 24, duration: 0.6, damage: 15, tickRate: 8, team: 'ally' },
+  beam: { direction: 0, length: 1000, width: 24, duration: 0.6, damage: 15, tickRate: 8, team: 'ally' },
   fireArea: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, width: 96, duration: 2, tickRate: 5, damage: 8, team: 'ally' },
   spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 8, width: 144, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
   orbit: { count: 3, minRadius: 40, maxRadius: 90, pulseSpeed: 1.5, speed: 1.5, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
@@ -94,6 +94,8 @@ const SANDBOX_PRESETS = {
   bombSpread: { count: 3, direction: -75 * DEG, angle: 15 * DEG, speed: 700, arc: 800, bounce: true, ttl: 2, damage: 40, radius: 60 },
   molotov: { direction: -0.5, arc: 800, bounce: false, ttl: 2, damage: 12, fireWidth: 96, fireDuration: 3, fireTickRate: 5, fireDamage: 8 },
   clusterBomb: { direction: -0.5, arc: 800, bounce: false, ttl: 3, damage: 20, radius: 40, count: 4, childAngle: 120 * DEG, childDirection: -Math.PI / 2, childForce: 300, childArc: 700, childTtl: 2, childDamage: 15, childRadius: 30 },
+  targetedBeam: { duration: 1.2, lockTime: 0.5, color: '#ff5555', radius: 30, tracking: true, beamDuration: 1.0, beamWidth: 24, beamLength: 1000, damage: 15, tickRate: 8, team: 'ally' },
+  sweepingBeam: { direction: 0, sweepAngle: 67.5 * DEG, length: 1000, width: 24, speed: 0, holdDuration: 0.4, sweepDuration: 1.0, endHoldDuration: 0.3, fadeOut: 0.5, damage: 20, tickRate: 8, team: 'ally', shimmerLow: 0.1, shimmerHigh: 0.35 },
 };
 
 /** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
@@ -123,6 +125,8 @@ export const TWEAKABLE = {
   bombSpread: [['count', 'int', 1], ['direction', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
   molotov: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['fireWidth', 'num', 16], ['fireDuration', 'num', 0.5], ['fireDamage', 'num', 2]],
   clusterBomb: [['count', 'int', 1], ['childAngle', 'angle', 15 * DEG], ['childDirection', 'angle', 15 * DEG], ['childForce', 'num', 50], ['childArc', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
+  targetedBeam: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['beamDuration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
+  sweepingBeam: [['direction', 'angle', 15 * DEG], ['sweepAngle', 'angle', 10 * DEG], ['speed', 'num', 20], ['holdDuration', 'num', 0.1], ['sweepDuration', 'num', 0.1], ['endHoldDuration', 'num', 0.05], ['fadeOut', 'num', 0.05], ['damage', 'num', 2]],
 };
 
 export const AttackTheater = {
@@ -455,6 +459,21 @@ export const AttackTheater = {
       this._choreo = { kind: 'walkLeft', t: 0, baseX: TARGET_POS.x };
       this._attacker.x = 140;
       this._attacker.y = 150; // up on the platform
+      this._attacker.facing = 1;
+    } else if (id === 'targetedBeam') {
+      // Targeted Beam macro demo: same elevated-shooter staging as reticleShot.
+      // The attacker hovers on a platform; the target walks left. The macro
+      // tracks → locks → fires a sustained beam through the locked point.
+      this._choreo = { kind: 'walkLeft', t: 0, baseX: TARGET_POS.x };
+      this._attacker.x = 140;
+      this._attacker.y = 150;
+      this._attacker.facing = 1;
+    } else if (id === 'sweepingBeam') {
+      // Sweeping Beam macro demo: the attacker is on the platform; the target
+      // strafes so the sweep visibly catches (or misses) it during the move.
+      this._choreo = { kind: 'strafe', t: 0, baseX: TARGET_POS.x };
+      this._attacker.x = 140;
+      this._attacker.y = 150;
       this._attacker.facing = 1;
     } else if (id === 'predictiveShot') {
       // Predictive demo: the ATTACKER hovers on a platform high to the left;
@@ -823,6 +842,9 @@ export const AttackTheater = {
         if (h.shot?.entity) {
           finished = stepProjectile(h.shot.entity, h.shot) || finished;
         }
+      } else if (h.id === 'targetedBeam' || h.id === 'sweepingBeam') {
+        // Beam macros: step the macro which internally steps its beam phase(s).
+        finished = h.step(DT, [this._target]);
       } else if (h.entity) {
         if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
         else if (typeof h.step === 'function') {

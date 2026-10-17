@@ -1,15 +1,18 @@
 // Petal Panic — beam (effects.md §26, catalog #26). A directional rectangular
 // beam with an alpha-gradient halo (lightsaber-style) that appears like a
-// camera flash then fades out; its origin and orientation are read from the
-// attached hitbox (carrier.origin()/facing()). Presentation only: the beam
-// itself does NOT hit the player or execute anything (per the core rule in
-// effects.md); an Attack Pattern pairs it with the actual collision volume.
+// camera flash, holds at full power with a fast laser-shimmer oscillation,
+// then fades out; its origin and orientation are read from the attached
+// hitbox (carrier.origin()/facing()). Presentation only: the beam itself does
+// NOT hit the player or execute anything (per the core rule in effects.md);
+// an Attack Pattern pairs it with the actual collision volume.
 //
-// One-shot burst effect (like explosion): it fires, plays its flash-in →
-// fade-out animation over its lifetime, then completes. It does NOT persist
-// indefinitely. Lifetime = flashInTime + fadeOutTime (the total duration),
-// so `duration` is derived, not declared — the instance completes when
-// `elapsed >= (flashInTime + fadeOutTime) - EPS` (fixed-dt epsilon convention).
+// One-shot burst effect (like explosion): it fires, plays its
+// flash-in → hold(shimmer) → fade-out animation over its lifetime, then
+// completes. It does NOT persist indefinitely. Lifetime = flashInTime +
+// holdTime + fadeOutTime (the total duration), so `duration` is derived, not
+// declared — the instance completes when
+// `elapsed >= (flashInTime + holdTime + fadeOutTime) - EPS` (fixed-dt
+// epsilon convention).
 //
 // STATE/DRAW effect: this instance stays active over its whole lifetime and
 // owns its own timer. Each update() advances the clock; each render() draws
@@ -20,9 +23,13 @@
 //     expands rapidly (a camera-flash "pop"). Alpha ramps up quickly from 0
 //     to the peak via easeOutCubic (fast attack, slow settle), and the halo
 //     radius grows from ~0 to `gradientRadius`.
-//   - Phase 2 (fade-out, flashInTime..lifetime): the beam fades out. Alpha
-//     decays linearly from the peak to 0, and the halo contracts back toward
-//     the hard edge.
+//   - Phase 2 (hold, flashInTime..flashInTime+holdTime): the beam holds at
+//     full brightness with a fast subtle oscillation (laser shimmer). Alpha
+//     oscillates between `opacity * (1 - shimmerDepth)` and `opacity` at
+//     `shimmerFreq` Hz, giving the impression of a living energy blade.
+//     The halo stays fully expanded.
+//   - Phase 3 (fade-out, ..lifetime): the beam fades out. Alpha decays linearly
+//     from the peak to 0, and the halo contracts back toward the hard edge.
 // Everything is a pure function of elapsed time — no randomness — so the
 // geometry and alpha are fully deterministic and identical every run.
 //
@@ -39,7 +46,8 @@
 // direction, not a continuously re-aimed ribbon).
 //
 // params: { length?, width?, gradientRadius?, color?, flashInTime?,
-//           fadeOutTime?, opacity?, orientation?, x?, y? }
+//           holdTime?, fadeOutTime?, opacity?, shimmerFreq?, shimmerDepth?,
+//           coreAlpha?, orientation?, x?, y? }
 //   length       — beam length in px along the facing axis (default 120).
 //                  Non-negative; negative values clamp to 0 (degenerate:
 //                  nothing visible, timer still runs).
@@ -48,19 +56,28 @@
 //                  (degenerate: nothing visible, timer still runs).
 //   gradientRadius — how far the soft glow extends beyond the hard edge, in
 //                  px (default 14). Non-negative; negative values clamp to 0
-//                  (no halo — a hard-edged beam). The halo is widest at the
-//                  flash-in peak and contracts to 0 by completion.
+//                  (no halo — a hard-edged beam). The halo is widest during
+//                  the hold phase and contracts to 0 by completion.
 //   color        — the beam's base color (hex string, default '#7df', a cool
 //                  cyan-white energy tint that reads as a lightsaber blade
 //                  against dark backgrounds). Callers may pass any CSS color;
 //                  the core/halo are painted with this color at varying alphas.
 //   flashInTime  — duration of the flash-in phase in seconds (default 0.05).
 //                  Must be > 0; non-positive values fall back to the default.
+//   holdTime     — duration of the hold (full-power shimmer) phase in seconds
+//                  (default 0.3). May be 0 (skips the hold entirely).
+//                  Negative values clamp to 0.
 //   fadeOutTime  — duration of the fade-out phase in seconds (default 0.15).
 //                  Must be > 0; non-positive values fall back to the default.
-//                  Total lifetime == flashInTime + fadeOutTime EXACTLY.
+//                  Total lifetime == flashInTime + holdTime + fadeOutTime.
 //   opacity      — peak alpha 0..1, clamped (default 0.95): the brightest the
-//                  core gets at the flash-in peak.
+//                  core gets at the flash-in peak / hold phase.
+//   shimmerFreq  — frequency of the laser-shimmer oscillation in Hz
+//                  (default 24). Higher = faster flicker. Must be > 0;
+//                  non-positive falls back to default.
+//   shimmerDepth — depth of the shimmer oscillation as a fraction of peak
+//                  alpha (default 0.08). 0 = no shimmer (flat hold).
+//                  Clamped to [0, 1].
 //   coreAlpha    — optional override of the CORE line's alpha (default =
 //                  `opacity`). Lets a config make the hard-edged core brighter
 //                  than the surrounding halo without changing the peak envelope.
@@ -102,20 +119,26 @@ const DEFAULT_WIDTH = 18;            // px — beam width perpendicular to the a
 const DEFAULT_GRADIENT_RADIUS = 14;  // px — halo extent beyond the hard edge
 const DEFAULT_COLOR = '#7df';        // cool cyan-white energy tint
 const DEFAULT_FLASH_IN_TIME = 0.05;  // s  — flash-in phase (camera-flash pop)
+const DEFAULT_HOLD_TIME = 0.3;       // s  — hold phase (full power + shimmer)
 const DEFAULT_FADE_OUT_TIME = 0.15;  // s  — fade-out phase
 const DEFAULT_OPACITY = 0.95;        // peak alpha at the flash-in peak
+const DEFAULT_SHIMMER_FREQ = 24;     // Hz — laser shimmer oscillation frequency
+const DEFAULT_SHIMMER_DEPTH = 0.25;  // fraction of peak alpha for shimmer
 const DEFAULT_ORIENTATION = 0;       // rad — beam axis (+x) when no carrier facing()
 const EPS = 1e-9;                    // fixed-dt epsilon convention
 
 /**
  * @param {{length?:number, width?:number, gradientRadius?:number,
- *          color?:string, flashInTime?:number, fadeOutTime?:number,
- *          opacity?:number, orientation?:number, x?:number, y?:number}} params
+ *          color?:string, flashInTime?:number, holdTime?:number,
+ *          fadeOutTime?:number, opacity?:number, shimmerFreq?:number,
+ *          shimmerDepth?:number, coreAlpha?:number,
+ *          orientation?:number, x?:number, y?:number}} params
  * @param {object} [carrier]
  * @returns {{update:Function, render:Function, complete:Function,
  *            done:boolean, space:string, elapsed:number,
  *            origin:{x:number,y:number}, angle:number,
- *            flashInTime:number, fadeOutTime:number, duration:number}}
+ *            flashInTime:number, holdTime:number, fadeOutTime:number,
+ *            duration:number}}
  */
 export function beam(params = {}, carrier = null) {
   const length = Math.max(0, params.length ?? DEFAULT_LENGTH);
@@ -123,8 +146,12 @@ export function beam(params = {}, carrier = null) {
   const gradientRadius = Math.max(0, params.gradientRadius ?? DEFAULT_GRADIENT_RADIUS);
   const color = params.color ?? DEFAULT_COLOR;
   const flashInTime = params.flashInTime > 0 ? params.flashInTime : DEFAULT_FLASH_IN_TIME;
+  const holdTime = Math.max(0, params.holdTime ?? DEFAULT_HOLD_TIME);
   const fadeOutTime = params.fadeOutTime > 0 ? params.fadeOutTime : DEFAULT_FADE_OUT_TIME;
   const opacity = Math.min(1, Math.max(0, params.opacity ?? DEFAULT_OPACITY));
+  const shimmerFreq = params.shimmerFreq > 0 ? params.shimmerFreq : DEFAULT_SHIMMER_FREQ;
+  const shimmerDepth = Number.isFinite(params.shimmerDepth)
+    ? Math.min(1, Math.max(0, params.shimmerDepth)) : DEFAULT_SHIMMER_DEPTH;
   // Core-line alpha: defaults to the peak `opacity` but may be overridden so a
   // config can make the hard-edged core brighter than the surrounding halo.
   const coreAlpha = Number.isFinite(params.coreAlpha)
@@ -132,9 +159,9 @@ export function beam(params = {}, carrier = null) {
   const fallbackOrientation = Number.isFinite(params.orientation)
     ? params.orientation : DEFAULT_ORIENTATION;
   const fallback = { x: params.x ?? 0, y: params.y ?? 0 };
-  // Total lifetime is DERIVED from the two phases (documented contract:
-  // lifetime == flashInTime + fadeOutTime exactly).
-  const duration = flashInTime + fadeOutTime;
+  // Total lifetime is DERIVED from the three phases (documented contract:
+  // lifetime == flashInTime + holdTime + fadeOutTime exactly).
+  const duration = flashInTime + holdTime + fadeOutTime;
   // Fire-time capture: origin + facing are frozen so a carrier that moves or
   // rotates after fire cannot drag the committed strike around.
   const origin = resolveOrigin(carrier, fallback);
@@ -150,10 +177,14 @@ export function beam(params = {}, carrier = null) {
     angle,
     /** Flash-in phase length (s). */
     flashInTime,
+    /** Hold phase length (s) — full power with shimmer. */
+    holdTime,
     /** Fade-out phase length (s). */
     fadeOutTime,
-    /** Total lifetime (s) == flashInTime + fadeOutTime. */
+    /** Total lifetime (s) == flashInTime + holdTime + fadeOutTime. */
     duration,
+    /** Live shimmer depth (0..1). Mutable so a host can ramp intensity per frame. */
+    shimmerDepth,
 
     /**
      * Advance the clock. The alpha and halo are derived from elapsed time (not
@@ -180,13 +211,20 @@ export function beam(params = {}, carrier = null) {
      */
     render(c2d, renderCtx = {}) {
       if (this.done || length <= EPS || width <= EPS) return;
-      const { alpha, haloScale } = envelope(this.elapsed, flashInTime, fadeOutTime);
+      const { alpha, haloScale } = envelope(
+        this.elapsed, flashInTime, holdTime, fadeOutTime, shimmerFreq, this.shimmerDepth
+      );
       if (alpha <= EPS) return;
       const haloR = gradientRadius * haloScale; // halo extent past the hard edge
       const halfW = width / 2;
+      // Read the LIVE origin/angle so a host (e.g. the sweepingBeam macro) can
+      // rotate/translate the beam in place by mutating body.origin/body.angle
+      // each frame — one persistent effect, no re-fire, pivot at the origin.
+      const o = this.origin;
+      const ang = this.angle;
       c2d.save();
-      c2d.translate(origin.x, origin.y);
-      c2d.rotate(angle);
+      c2d.translate(o.x, o.y);
+      c2d.rotate(ang);
       // Halo: a SYMMETRIC linear alpha gradient across the local Y axis
       // (perpendicular to the beam) from −(halfW + haloR) to +(halfW + haloR).
       // Four stops produce a flat bright core flanked by soft halo falloff:
@@ -207,11 +245,30 @@ export function beam(params = {}, carrier = null) {
       grad.addColorStop(1, colorWithAlpha(color, 0));
       c2d.fillStyle = grad;
       c2d.beginPath();
-      // The beam extends FROM the origin forward along the facing axis (near
-      // edge at local x=0, projecting `length` px), and the filled rect covers
-      // the FULL gradient span (width + 2·haloR tall) so the soft halo glow is
-      // visible past each hard edge.
-      c2d.rect(0, -(halfW + haloR), length, width + 2 * haloR);
+      // Beam shape: tapered pyramid tip at the origin (shooter side),
+      // widening to full width partway along, then straight to a flat far edge.
+      const yTop = -(halfW + haloR);
+      const yBot = halfW + haloR;
+      const tipLen = Math.min(length * 0.15, 20); // length of the taper section
+      if (tipLen < EPS || length <= EPS) {
+        // Degenerate: just draw a rect
+        c2d.rect(0, yTop, length, yBot - yTop);
+      } else {
+        // Tapered tip at origin (shooter side) with a slight round via quad curve
+        const roundR = Math.min(tipLen * 0.3, 4); // small rounding at the very tip
+        c2d.moveTo(roundR, 0);
+        // Top slope: from near-tip to full width
+        c2d.quadraticCurveTo(0, 0, roundR, yTop * 0.3);
+        c2d.lineTo(tipLen, yTop);
+        // Far edge top → bottom (flat)
+        c2d.lineTo(length, yTop);
+        c2d.lineTo(length, yBot);
+        // Bottom slope: back to near-tip
+        c2d.lineTo(tipLen, yBot);
+        c2d.lineTo(roundR, yBot * 0.3);
+        c2d.quadraticCurveTo(0, 0, roundR, 0);
+        c2d.closePath();
+      }
       c2d.fill();
       c2d.restore();
     },
@@ -223,23 +280,38 @@ export function beam(params = {}, carrier = null) {
 }
 
 /**
- * Two-phase alpha + halo envelope, a pure function of elapsed time.
+ * Three-phase alpha + halo envelope, a pure function of elapsed time.
  *   Phase 1 (flash-in, 0..flashInTime): alpha ramps 0→peak via easeOutCubic
  *   (fast attack, slow settle — the camera-flash "pop"); the halo expands
  *   0→1 (widest at the peak).
- *   Phase 2 (fade-out, flashInTime..lifetime): alpha decays linearly peak→0;
+ *   Phase 2 (hold, flashInTime..flashInTime+holdTime): alpha oscillates
+ *   around 1.0 with a fast sine shimmer (laser effect); the halo stays at 1.
+ *   Phase 3 (fade-out, ..lifetime): alpha decays linearly peak→0;
  *   the halo contracts 1→0 (back to the hard edge).
  * @returns {{alpha:number, haloScale:number}} alpha in [0,1], haloScale in [0,1]
  */
-function envelope(t, flashInTime, fadeOutTime) {
-  const duration = flashInTime + fadeOutTime;
+function envelope(t, flashInTime, holdTime, fadeOutTime, shimmerFreq, shimmerDepth) {
+  const holdEnd = flashInTime + holdTime;
+  const duration = holdEnd + fadeOutTime;
   if (t <= EPS) return { alpha: 0, haloScale: 0 };
+
+  // Phase 1: flash-in
   if (t < flashInTime) {
     const p = Math.min(1, t / flashInTime);
     const ease = 1 - Math.pow(1 - p, 3); // easeOutCubic
     return { alpha: ease, haloScale: p };
   }
-  const q = Math.min(1, (t - flashInTime) / fadeOutTime);
+
+  // Phase 2: hold with laser shimmer
+  if (t < holdEnd) {
+    const holdElapsed = t - flashInTime;
+    // Sine oscillation: 1.0 ± shimmerDepth (normalized to [0,1] range)
+    const shimmer = 1.0 - shimmerDepth * (1 - Math.sin(holdElapsed * shimmerFreq * 2 * Math.PI)) * 0.5;
+    return { alpha: shimmer, haloScale: 1 };
+  }
+
+  // Phase 3: fade-out
+  const q = Math.min(1, (t - holdEnd) / fadeOutTime);
   return { alpha: 1 - q, haloScale: 1 - q };
 }
 
@@ -272,4 +344,3 @@ function facingAngleOf(carrier, fallbackOrientation) {
   }
   return fallbackOrientation;
 }
-

@@ -18,3 +18,5 @@ import './explosiveProjectile.js';
 import './bombSpread.js';
 import './molotov.js';
 import './clusterBomb.js';
+import './targetedBeam.js';
+import './sweepingBeam.js';

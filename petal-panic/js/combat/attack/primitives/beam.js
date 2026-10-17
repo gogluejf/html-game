@@ -17,11 +17,11 @@ import { resolveMarker } from '../context.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../../hitbox.js';
 
 const DEFAULTS = Object.freeze({
-  origin: null,        // marker label | {x,y} | null → attacker center
+  origin: null,        // marker label | {x,y} | null → attacker facing edge
   direction: 0,        // radians; beam axis
   length: 240,         // reach along the axis (px)
   width: 24,           // damaging thickness (px)
-  duration: 0.5,       // seconds active
+  duration: 1,         // seconds active
   damage: 20,          // per tick
   tickRate: 8,         // damage ticks per second while overlapping
   team: 'ally',        // ally | foe | neutral (existing team routing)
@@ -31,17 +31,27 @@ const DEFAULTS = Object.freeze({
 
 /**
  * Compute the beam's world-space AABB for the current aim.
+ * @param {object} p params
+ * @param {object} ctx AttackContext
  * @returns {{x:number,y:number,w:number,h:number}}
  */
 export function beamBox(p, ctx) {
   const a = ctx.attacker;
-  let cx = (a?.x ?? 0) + (a?.w ?? 0) / 2;
-  let cy = (a?.y ?? 0) + (a?.h ?? 0) / 2;
+  let cx, cy;
   if (p.origin && typeof p.origin === 'object' && 'x' in p.origin) {
     cx = p.origin.x; cy = p.origin.y;
   } else if (typeof p.origin === 'string') {
     const m = resolveMarker(ctx, p.origin);
     if (m) { cx = (a?.x ?? 0) + m.x; cy = (a?.y ?? 0) + m.y; }
+    else { cx = (a?.x ?? 0) + (a?.w ?? 0) / 2; cy = (a?.y ?? 0) + (a?.h ?? 0) / 2; }
+  } else {
+    // Default: offset to the facing edge (gun tip), not body center.
+    const ang = p.direction;
+    const cos0 = Math.cos(ang), sin0 = Math.sin(ang);
+    const hw = (a?.w ?? 0) / 2, hh = (a?.h ?? 0) / 2;
+    const dx = Math.abs(cos0) * hw + Math.abs(sin0) * hh;
+    cx = (a?.x ?? 0) + hw + cos0 * dx;
+    cy = (a?.y ?? 0) + hh + sin0 * dx;
   }
   const ang = p.direction;
   const cos = Math.cos(ang), sin = Math.sin(ang);
@@ -55,24 +65,45 @@ export function beamBox(p, ctx) {
 
 /**
  * Fire the beam VFX via the Effect Engine (no-op when effects absent).
- * The effect's lifetime is DERIVED from flashInTime + fadeOutTime, so we pass
- * those (not duration) and anchor it at the beam origin with an explicit
- * orientation — fireManual takes no carrier, so params carry everything.
+ * The effect's lifetime is DERIVED from flashInTime + holdTime + fadeOutTime.
+ * By default we map the primitive's `duration` to the effect's `holdTime`
+ * (the full-power shimmer phase) and use fixed tuned values for flash-in and
+ * fade-out so the visual always looks good regardless of duration. A caller may
+ * override ANY of the three phase times via `style` (e.g. the sweepingBeam
+ * macro aligns them to its own choreography); style values win over the
+ * derived defaults.
  */
 export function fireBeamEffect(p, ctx) {
   const fx = ctx.effects;
   if (!fx || typeof fx.fireManual !== 'function') return null;
   const a = ctx.attacker;
-  const ox = p.origin && typeof p.origin === 'object' ? p.origin.x : (a?.x ?? 0) + (a?.w ?? 0) / 2;
-  const oy = p.origin && typeof p.origin === 'object' ? p.origin.y : (a?.y ?? 0) + (a?.h ?? 0) / 2;
+  let ox, oy;
+  if (p.origin && typeof p.origin === 'object' && 'x' in p.origin) {
+    ox = p.origin.x; oy = p.origin.y;
+  } else if (typeof p.origin === 'string') {
+    const m = resolveMarker(ctx, p.origin);
+    ox = (a?.x ?? 0) + (m ? m.x : 0);
+    oy = (a?.y ?? 0) + (m ? m.y : 0);
+  } else {
+    // Default: offset to the facing edge (gun tip), not body center.
+    const ang = p.direction;
+    const cos = Math.cos(ang), sin = Math.sin(ang);
+    const hw = (a?.w ?? 0) / 2, hh = (a?.h ?? 0) / 2;
+    const dx = Math.abs(cos) * hw + Math.abs(sin) * hh;
+    ox = (a?.x ?? 0) + hw + cos * dx;
+    oy = (a?.y ?? 0) + hh + sin * dx;
+  }
+  const style = p.style ?? {};
   try {
     return fx.fireManual({ type: 'beam', params: {
-      ...(p.style ?? {}),
       x: ox, y: oy,
       orientation: p.direction,
       length: p.length, width: p.width,
-      flashInTime: Math.min(0.05, p.duration / 4),
-      fadeOutTime: Math.max(0.1, p.duration - 0.05),
+      // Derived defaults first, then spread style so explicit overrides win.
+      flashInTime: 0.04,
+      holdTime: Math.max(0, p.duration - 0.6),
+      fadeOutTime: 0.6,
+      ...style,
     } });
   } catch {
     return null;
@@ -99,7 +130,10 @@ export function stepBeam(state, p, ctx, dt, targets, h) {
   let hitsThisTick = 0;
   while (state.tickAcc >= tickInterval) {
     state.tickAcc -= tickInterval;
-    state.hb.box = beamBox(p, ctx);
+    // A host (e.g. the sweepingBeam macro) may overwrite the box each frame
+    // to move the beam. When `_swept` is set, trust the existing box instead
+    // of recomputing the static one.
+    if (!state._swept) state.hb.box = beamBox(p, ctx);
     state.hb.damage = p.damage;
     resetHitbox(state.hb); // fresh tick → same target can be hit again next tick
     const hits = [];
@@ -127,7 +161,7 @@ registerPrimitive('beam', {
     ],
     desc: 'Continuous damaging line for a duration. Effect Engine renders; primitive owns the AABB + tick-rate damage.',
     params: [
-      { key: 'origin', desc: "marker label | {x,y} | null → attacker center" },
+      { key: 'origin', desc: "marker label | {x,y} | null → attacker facing edge" },
       { key: 'direction', desc: 'radians (beam axis)' },
       { key: 'length', desc: 'reach (px)' },
       { key: 'width', desc: 'damaging thickness (px)' },
@@ -142,7 +176,7 @@ registerPrimitive('beam', {
     const hb = makeHitbox({ owner: ctx.attacker, team: params.team, box: null, damage: params.damage, method: params.method });
     resetHitbox(hb);
     h.state = { t: 0, tickAcc: 0, done: false, hb };
-    fireBeamEffect(params, ctx);
+    h.state._fx = fireBeamEffect(params, ctx);
     h.step = (dt, targets) => stepBeam(h.state, params, ctx, dt, targets ?? [], h);
     return h;
   },

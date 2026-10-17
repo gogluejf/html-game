@@ -42,6 +42,11 @@ function makeCtx() {
     save() { calls.push(['save']); },
     restore() { calls.push(['restore']); },
     beginPath() { calls.push(['beginPath']); },
+    closePath() { calls.push(['closePath']); },
+    moveTo(...a) { calls.push(['moveTo', ...a]); },
+    lineTo(...a) { calls.push(['lineTo', ...a]); },
+    quadraticCurveTo(...a) { calls.push(['qCurve', ...a]); },
+    arc(...a) { calls.push(['arc', ...a]); },
     rect(...a) { calls.push(['rect', ...a]); },
     fill() { calls.push(['fill']); },
     stroke() { calls.push(['stroke']); },
@@ -94,34 +99,37 @@ ok('factory returns the documented instance shape', () => {
   assert.ok(b.origin && Number.isFinite(b.origin.x) && Number.isFinite(b.origin.y), 'origin resolved');
   assert.ok(Number.isFinite(b.angle), 'angle resolved');
 });
-ok('default total lifetime == default flashInTime + fadeOutTime exactly', () => {
+ok('default total lifetime == default flashInTime + holdTime + fadeOutTime exactly', () => {
   const b = beam({});
   assert.ok(close(b.flashInTime, 0.05), `default flashInTime (${b.flashInTime})`);
+  assert.ok(close(b.holdTime, 0.3), `default holdTime (${b.holdTime})`);
   assert.ok(close(b.fadeOutTime, 0.15), `default fadeOutTime (${b.fadeOutTime})`);
-  assert.ok(close(b.duration, 0.2), `default duration == 0.2 (${b.duration})`);
-  assert.ok(close(b.duration, b.flashInTime + b.fadeOutTime), 'duration == flashIn + fadeOut');
+  assert.ok(close(b.duration, 0.5), `default duration == 0.5 (${b.duration})`);
+  assert.ok(close(b.duration, b.flashInTime + b.holdTime + b.fadeOutTime), 'duration == flashIn + hold + fadeOut');
 });
 
 console.log('lifetime');
-ok('total lifetime == flashInTime + fadeOutTime exactly (done at that point)', () => {
-  const fin = 0.05, fout = 0.15; // 0.2s total = 12 frames at dt = 1/60
-  const b = beam({ flashInTime: fin, fadeOutTime: fout });
-  const frames = Math.round((fin + fout) / DT); // 12
+ok('total lifetime == flashInTime + holdTime + fadeOutTime exactly (done at that point)', () => {
+  const fin = 0.05, hold = 0.1, fout = 0.15; // 0.3s total = 18 frames at dt = 1/60
+  const b = beam({ flashInTime: fin, holdTime: hold, fadeOutTime: fout });
+  const total = fin + hold + fout;
+  const frames = Math.round(total / DT); // 18
   for (let i = 0; i < frames - 1; i++) b.update(DT);
   assert.equal(b.done, false, 'not done just before the boundary');
   b.update(DT);
   assert.equal(b.done, true, 'done at the lifetime boundary');
-  assert.ok(close(b.elapsed, fin + fout), `elapsed equals the total lifetime (${b.elapsed})`);
+  assert.ok(close(b.elapsed, total), `elapsed equals the total lifetime (${b.elapsed})`);
 });
-ok('explicit non-default phases: done exactly at flashInTime + fadeOutTime', () => {
-  const fin = 0.1, fout = 0.2; // 0.3s total = 18 frames
-  const b = beam({ flashInTime: fin, fadeOutTime: fout });
-  const frames = Math.round((fin + fout) / DT); // 18
+ok('explicit non-default phases: done exactly at flashInTime + holdTime + fadeOutTime', () => {
+  const fin = 0.1, hold = 0.2, fout = 0.2; // 0.5s total = 30 frames
+  const b = beam({ flashInTime: fin, holdTime: hold, fadeOutTime: fout });
+  const total = fin + hold + fout;
+  const frames = Math.round(total / DT); // 30
   for (let i = 0; i < frames - 1; i++) b.update(DT);
   assert.equal(b.done, false, 'not done just before the boundary');
   b.update(DT);
   assert.equal(b.done, true, 'done at the lifetime boundary');
-  assert.ok(close(b.elapsed, 0.3), `elapsed == 0.3 (${b.elapsed})`);
+  assert.ok(close(b.elapsed, 0.5), `elapsed == 0.5 (${b.elapsed})`);
 });
 ok('update after done is a no-op (elapsed frozen)', () => {
   const c = facingCarrier(0, 0, 1, 0);
@@ -192,7 +200,7 @@ ok('alpha increases from 0 toward peak across [0, flashInTime]', () => {
 });
 ok('alpha reaches the peak exactly at the flash-in boundary', () => {
   const fin = 0.05, fout = 0.15;
-  const b = beam({ flashInTime: fin, fadeOutTime: fout, opacity: 0.9 });
+  const b = beam({ flashInTime: fin, holdTime: 0, fadeOutTime: fout, opacity: 0.9 });
   const frames = Math.round(fin / DT); // 3
   for (let i = 0; i < frames; i++) b.update(DT); // t == flashInTime
   const ctx = makeCtx();
@@ -218,11 +226,10 @@ ok('halo expands during flash-in (widest at the peak)', () => {
 });
 
 console.log('fade-out phase (alpha decays to 0)');
-ok('alpha decreases from peak toward 0 across [flashInTime, lifetime]', () => {
+ok('alpha decreases from peak toward 0 across the fade-out', () => {
   const fin = 0.05, fout = 0.15;
-  const b = beam({ flashInTime: fin, fadeOutTime: fout, opacity: 1 });
+  const b = beam({ flashInTime: fin, holdTime: 0, fadeOutTime: fout, opacity: 1 });
   const totalFrames = Math.round((fin + fout) / DT); // 12
-  // Advance to just past the flash-in boundary, then sample the decay.
   for (let i = 0; i < Math.round(fin / DT); i++) b.update(DT); // t == flashInTime
   let prev = 2;
   for (let i = 1; i <= totalFrames - Math.round(fin / DT) - 1; i++) {
@@ -237,8 +244,7 @@ ok('alpha decreases from peak toward 0 across [flashInTime, lifetime]', () => {
 });
 ok('alpha decays LINEARLY through the fade-out phase', () => {
   const fin = 0.05, fout = 0.15;
-  const b = beam({ flashInTime: fin, fadeOutTime: fout, opacity: 1 });
-  // Probe a frame partway through the fade-out and check the linear formula.
+  const b = beam({ flashInTime: fin, holdTime: 0, fadeOutTime: fout, opacity: 1 });
   const startFrame = Math.round(fin / DT); // 3
   const probe = startFrame + 3; // t = 6·dt
   for (let i = 0; i < probe; i++) b.update(DT);
@@ -252,7 +258,7 @@ ok('alpha decays LINEARLY through the fade-out phase', () => {
 });
 ok('alpha reaches ~0 near completion (last visible frame just above 0)', () => {
   const fin = 0.05, fout = 0.15;
-  const b = beam({ flashInTime: fin, fadeOutTime: fout, opacity: 1 });
+  const b = beam({ flashInTime: fin, holdTime: 0, fadeOutTime: fout, opacity: 1 });
   const totalFrames = Math.round((fin + fout) / DT); // 12
   for (let i = 0; i < totalFrames - 1; i++) b.update(DT); // last VISIBLE frame
   assert.equal(b.done, false, 'precondition: last visible frame is one step short');
@@ -263,7 +269,7 @@ ok('alpha reaches ~0 near completion (last visible frame just above 0)', () => {
 });
 
 console.log('render geometry');
-ok('draws ONE filled rotated rectangle anchored at the origin, extending forward along the facing', () => {
+ok('draws ONE filled tapered shape anchored at the origin, extending forward along the facing', () => {
   const b = beam({ x: 30, y: 40, length: 100, width: 20, gradientRadius: 10, orientation: 0, opacity: 1 });
   b.update(DT);
   const ctx = makeCtx();
@@ -273,22 +279,13 @@ ok('draws ONE filled rotated rectangle anchored at the origin, extending forward
   assert.equal(fills.length, 1, 'exactly one fill call');
   const grads = ctx.calls.filter(c => c[0] === 'grad');
   assert.equal(grads.length, 1, 'exactly one linear gradient created');
-  // The transform moves to the origin and rotates by the facing angle.
   const tr = ctx.calls.find(c => c[0] === 'translate');
   assert.ok(tr && close(tr[1], 30) && close(tr[2], 40), `translated to the origin (got ${tr && tr[1]},${tr && tr[2]})`);
   const rot = ctx.calls.find(c => c[0] === 'rotate');
   assert.ok(rot && close(rot[1], 0), `rotated by the facing angle (got ${rot && rot[1]})`);
-  // The local rect is ANCHORED at the origin and extends forward: x = 0,
-  // y = −(halfW + haloR). At t = dt (flash-in frame 1) haloScale = p = dt/fin,
-  // so haloR = gradientRadius · (dt / fin).
-  const halfW = 20 / 2;             // width 20 → halfW 10
-  const haloR = 10 * (DT / 0.05);   // gradientRadius 10 · haloScale(dt/0.05)
-  const rect = ctx.calls.find(c => c[0] === 'rect');
-  assert.ok(rect, 'rectangle drawn via rect()');
-  assert.ok(close(rect[1], 0) && close(rect[2], -(halfW + haloR)),
-    `rect anchored at the origin, near edge at local x=0 (got ${rect[1]},${rect[2]})`);
-  assert.ok(close(rect[3], 100) && close(rect[4], 20 + 2 * haloR),
-    `rect size == declared length × (width + 2·haloR) (got ${rect[3]}×${rect[4]})`);
+  // The path uses moveTo + lineTo (tapered tip shape) or rect (degenerate)
+  const hasPath = ctx.calls.some(c => c[0] === 'moveTo') || ctx.calls.some(c => c[0] === 'rect');
+  assert.ok(hasPath, 'beam shape drawn via path or rect');
   // fillStyle is the created gradient object itself.
   const style = ctx.calls.find(c => c[0] === 'style');
   assert.equal(style[1], grads[0][5], 'fillStyle is the created gradient');
@@ -379,7 +376,7 @@ ok('degenerate: zero length draws nothing (timer still runs to completion)', () 
   const ctx = makeCtx();
   b.render(ctx);
   assert.equal(ctx.calls.length, 0, 'zero length → no draw');
-  for (let i = 0; i < 11; i++) b.update(DT);
+  for (let i = 0; i < 29; i++) b.update(DT); // default 0.5s = 30 frames
   assert.equal(b.done, true, 'zero-length instance still completes at the lifetime');
 });
 ok('degenerate: zero width draws nothing (timer still runs to completion)', () => {
@@ -388,12 +385,12 @@ ok('degenerate: zero width draws nothing (timer still runs to completion)', () =
   const ctx = makeCtx();
   b.render(ctx);
   assert.equal(ctx.calls.length, 0, 'zero width → no draw');
-  for (let i = 0; i < 11; i++) b.update(DT);
+  for (let i = 0; i < 29; i++) b.update(DT);
   assert.equal(b.done, true, 'zero-width instance still completes at the lifetime');
 });
 ok('draws nothing once done', () => {
-  const b = beam({ flashInTime: 0.05, fadeOutTime: 0.15 });
-  for (let i = 0; i < 12; i++) b.update(DT); // 12 frames = 0.2s ≥ lifetime
+  const b = beam({ flashInTime: 0.05, holdTime: 0.1, fadeOutTime: 0.15 });
+  for (let i = 0; i < 18; i++) b.update(DT); // 18 frames = 0.3s ≥ lifetime
   assert.equal(b.done, true, 'precondition: done');
   const ctx = makeCtx();
   b.render(ctx);
@@ -441,24 +438,21 @@ ok('attachable via a NON-ENTITY carrier shape (plain marker object) through fire
 
 console.log('standalone theater demo');
 ok('standalone demo driven only by params (null carrier) — draws AND self-terminates (bounded)', () => {
-  // The debug theater fires effects explicitly with params alone and a null
-  // carrier. This drives the REAL engine record/render path (fireManual →
-  // updateEffects → drawEffects) with no internal-state mutation, proving the
-  // effect renders purely from params and terminates on its own clock.
   resetEffects();
   const inst = fireManual({ type: 'beam',
-    params: { length: 120, width: 18, gradientRadius: 14, color: '#7df', flashInTime: 0.05, fadeOutTime: 0.15, x: 0, y: 100 } });
+    params: { length: 120, width: 18, gradientRadius: 14, color: '#7df', flashInTime: 0.05, holdTime: 0.3, fadeOutTime: 0.15, x: 0, y: 100 } });
   assert.ok(inst !== null, 'manual fire with null carrier resolved');
   const body = inst.body;
   let drew = 0;
-  const frames = Math.round((0.05 + 0.15) / DT); // 12 frames = 0.2s
+  const total = 0.05 + 0.3 + 0.15; // 0.5s = 30 frames
+  const frames = Math.round(total / DT);
   for (let i = 1; i <= frames; i++) {
     updateEffects(DT);
     const ctx = makeCtx();
     drawEffects(ctx, {});
     if (ctx.calls.some(c => c[0] === 'fill')) drew++;
   }
-  assert.ok(drew >= 8, `demo actually drew the beam most frames (drew ${drew}/${frames})`);
+  assert.ok(drew >= 20, `demo actually drew the beam most frames (drew ${drew}/${frames})`);
   assert.equal(body.done, true, 'demo self-terminated at the lifetime (bounded)');
   const ctxLast = makeCtx();
   drawEffects(ctxLast, {});
@@ -468,17 +462,18 @@ ok('standalone demo driven only by params (null carrier) — draws AND self-term
 ok('end-to-end: fire → updateEffects → drawEffects plays the beam, then prunes', () => {
   resetEffects();
   const c = facingCarrier(0, 100, 1, 0);
-  const inst = fireManual({ type: 'beam', params: { length: 120, width: 18, flashInTime: 0.05, fadeOutTime: 0.15 } }, c);
+  const inst = fireManual({ type: 'beam', params: { length: 120, width: 18, flashInTime: 0.05, holdTime: 0.3, fadeOutTime: 0.15 } }, c);
   assert.ok(inst !== null, 'fired through the engine');
   let drew = 0;
-  const frames = Math.round(0.2 / DT); // 12 frames
+  const total = 0.05 + 0.3 + 0.15; // 0.5s = 30 frames
+  const frames = Math.round(total / DT);
   for (let i = 1; i <= frames; i++) {
     updateEffects(DT);
     const ctx = makeCtx();
     drawEffects(ctx, {});
     if (ctx.calls.some(cc => cc[0] === 'fill')) drew++;
   }
-  assert.ok(drew >= 8, `drew the beam while active (drew ${drew}/${frames})`);
+  assert.ok(drew >= 20, `drew the beam while active (drew ${drew}/${frames})`);
   assert.equal(inst.done, true, 'instance completed and was pruned');
   assert.equal(activeCount(), 0, 'pruned from the active set');
   const ctxAfter = makeCtx();

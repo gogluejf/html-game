@@ -24,11 +24,12 @@ function dummyEnemy(x, y, hp = 100) {
   };
 }
 
-ok('box: horizontal beam extends right from attacker center', () => {
+ok('box: horizontal beam extends right from attacker facing edge', () => {
   const ctx = makeContext(attacker(), {});
   const box = beamBox(P, ctx);
-  // Center (116,116), length 200 → spans x 104..316 (+width), y 104..128.
-  assert.ok(Math.abs(box.x - 104) < 1e-9, `x=${box.x}`);
+  // Attacker 32×32 at (100,100), center (116,116), dir=0 → gun tip at x=132.
+  // AABB: x = 132 - width/2 = 120, w = length + width = 224, y = 116 - 12 = 104.
+  assert.ok(Math.abs(box.x - 120) < 1e-9, `x=${box.x}`);
   assert.ok(Math.abs(box.w - 224) < 1e-9, `w=${box.w}`);
   assert.ok(Math.abs(box.y - 104) < 1e-9, `y=${box.y}`);
   assert.ok(Math.abs(box.h - 24) < 1e-9, `h=${box.h}`);

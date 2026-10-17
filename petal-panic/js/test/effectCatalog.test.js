@@ -44,6 +44,7 @@ function makeCtx() {
     stroke() { calls.push(['stroke']); },
     moveTo(...a) { calls.push(['moveTo', ...a]); },
     lineTo(...a) { calls.push(['lineTo', ...a]); },
+    quadraticCurveTo(...a) { calls.push(['qCurve', ...a]); },
     arc(...a) { calls.push(['arc', ...a]); },
     ellipse(...a) { calls.push(['ellipse', ...a]); },
     translate(...a) { calls.push(['translate', ...a]); },
@@ -96,7 +97,7 @@ const DEFAULT_PARAMS = {
   'aura-glow':            { x: 160, y: 90, duration: 1.0 },
   'screen-overlay':       { color: '#ff5a5a', opacity: 0.5, duration: 1.0, fadeIn: 0.2, fadeOut: 0.2 },
   'composite-explosion':  { x: 160, y: 90, radius: 60, explosionCount: 6, duration: 1.0 },
-  'beam':                 { x: 160, y: 90, length: 120, width: 18, gradientRadius: 14, color: '#7df', flashInTime: 0.05, fadeOutTime: 0.15 },
+  'beam':                 { x: 160, y: 90, length: 120, width: 18, gradientRadius: 14, color: '#7df', flashInTime: 0.04, holdTime: 0.4, fadeOutTime: 0.15 },
 };
 
 console.log('catalog shape');
@@ -194,13 +195,13 @@ ok('explosion fills particles over its life', () => {
   assert.ok(has(ctx, 'fillRect') || has(ctx, 'fill'), 'explosion painted particles');
   resetEffects();
 });
-ok('beam draws a filled rectangle with a linear halo gradient', () => {
+ok('beam draws a filled tapered shape with a linear halo gradient', () => {
   resetEffects();
   fireManual({ type: 'beam', params: { ...DEFAULT_PARAMS['beam'] } });
   const ctx = makeCtx();
   updateEffects(DT * 5); // just past flash-in peak
   drawEffects(ctx, { view: { w: 320, h: 180 } });
-  assert.ok(has(ctx, 'rect'), 'beam drew a rect');
+  assert.ok(has(ctx, 'moveTo') || has(ctx, 'rect'), 'beam drew a path');
   assert.ok(has(ctx, 'fill'), 'beam filled');
   assert.ok(has(ctx, 'gradL'), 'beam built a linear gradient');
   resetEffects();
