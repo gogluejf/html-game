@@ -23,7 +23,7 @@
 //   complete   — fires once every shot has ended (hit/expire)
 //   hit        — forwarded from any child shot
 
-import { registerMacro } from '../registry.js';
+import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 
 const DEFAULTS = Object.freeze({
@@ -52,12 +52,12 @@ export function spreadAngles(count, direction, angle) {
   return out;
 }
 
-registerMacro('spreadShot', {
+defineMacro('spreadShot', {
+  attacks: [{ id: 'projectile', role: 'child' }],
   params: { ...DEFAULTS },
   meta: {
     name: 'Spread Shot',
     desc: 'N projectiles fanned across an angle. Simultaneous by default; sequenceInterval > 0 launches them one at a time (boss ring sweeps). 2π angle = radial burst.',
-    invokes: ['projectile'],
     params: [
       { key: 'count', desc: 'number of shots' },
       { key: 'direction', desc: 'center direction (radians)' },

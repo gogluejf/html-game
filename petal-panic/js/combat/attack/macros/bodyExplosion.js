@@ -17,7 +17,7 @@
 //   complete    — { killed } once the attacker is dead
 //   hit         — forwarded from the payload (so hosts log the blast damage)
 
-import { registerMacro } from '../registry.js';
+import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { targetCenter } from '../context.js';
 
@@ -40,7 +40,8 @@ export function killAttacker(entity, behavior) {
   return !entity.alive;
 }
 
-registerMacro('bodyExplosion', {
+defineMacro('bodyExplosion', {
+  attacks: [{ id: 'explosion', role: 'payload' }],
   params: { ...DEFAULTS },
   meta: {
     name: 'Body Explosion / Kamikaze',
@@ -49,7 +50,6 @@ registerMacro('bodyExplosion', {
     // shadow the primitive's own row in the dedup.
     effects: [],
     desc: 'Fire a payload blast (default: explosion on the target), then die. Kamikaze pattern.',
-    invokes: ['explosion'],
     params: [
       { key: 'deathBehavior', desc: "kill (death pipeline) | remove (instant)" },
       { key: 'triggerPayloadFirst', desc: 'fire payload before dying' },

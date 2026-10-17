@@ -23,7 +23,7 @@
 // with the bullet's terminal event. handle.state carries the timing + the
 // live effect instance (state._fx) for renderers/debug.
 
-import { registerMacro } from '../registry.js';
+import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { targetCenter } from '../context.js';
 
@@ -52,7 +52,8 @@ function aimPoint(params, ctx) {
   return { x: (a?.x ?? 0) + (a?.w ?? 0) / 2, y: (a?.y ?? 0) + (a?.h ?? 0) / 2 };
 }
 
-registerMacro('reticleShot', {
+defineMacro('reticleShot', {
+  attacks: [{ id: 'projectile', role: 'payload' }],
   params: { ...DEFAULTS },
   meta: {
     name: 'Reticle Shot',
@@ -60,7 +61,6 @@ registerMacro('reticleShot', {
       { type: 'target-reticle', desc: 'telegraph reticle that tracks then locks' },
     ],
     desc: 'Target-reticle effect tracks the target, locks at lockTime, then fires one projectile at the locked point when duration ends.',
-    invokes: ['projectile'],
     params: [
       { key: 'target', desc: 'entity to track (default ctx.target)' },
       { key: 'duration', desc: 'warning window (s)' },

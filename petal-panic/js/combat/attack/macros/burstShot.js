@@ -19,7 +19,7 @@
 //                returns true only when all shots are launched AND dead
 //   hit / expire / complete — forwarded/emitted once (terminal, no replay)
 
-import { registerMacro } from '../registry.js';
+import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 
 const DEFAULTS = Object.freeze({
@@ -31,12 +31,12 @@ const DEFAULTS = Object.freeze({
   damage: 10,            // projectile damage
 });
 
-registerMacro('burstShot', {
+defineMacro('burstShot', {
+  attacks: [{ id: 'projectile', role: 'child' }],
   params: { ...DEFAULTS },
   meta: {
     name: 'Burst Shot',
     desc: 'N shots along one direction, one per interval (fire group). Pattern-only: the caller computes the direction.',
-    invokes: ['projectile'],
     // No native effects: inherits hit-sparkle/debris from the projectile
     // primitive it invokes. resolveEffects() surfaces them as inherited rows.
     effects: [],

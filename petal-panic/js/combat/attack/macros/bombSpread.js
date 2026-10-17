@@ -12,7 +12,7 @@
 //   complete   — fires once ALL children have completed
 //   hit        — forwarded from any child
 
-import { registerMacro } from '../registry.js';
+import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { spreadAngles } from './spreadShot.js';
 import { resolveCarrier } from '../carrierMacro.js';
@@ -33,13 +33,13 @@ const DEFAULTS = Object.freeze({
   sequenceInterval: null, // s between launches; null/0 = all simultaneous
 });
 
-registerMacro('bombSpread', {
+defineMacro('bombSpread', {
+  attacks: [{ id: 'explosiveBomb', role: 'child' }],
   params: { ...DEFAULTS },
   meta: {
     name: 'Bomb Spread',
     effects: [],
     desc: 'N explosive bombs fanned across an angle. High-lobe default (steep, strong). Children are explosiveBomb handles.',
-    invokes: ['explosiveBomb'],
     params: [
       { key: 'count', desc: 'number of bombs' },
       { key: 'direction', desc: 'center direction (radians)' },

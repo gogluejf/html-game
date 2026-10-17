@@ -17,7 +17,7 @@
 //   h.step(dt)   — advance the shot; returns true when done
 //   hit/expire   — forwarded from the underlying projectile
 
-import { registerMacro } from '../registry.js';
+import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { stepProjectile } from '../primitives/projectile.js';
 import { targetCenter } from '../context.js';
@@ -36,12 +36,12 @@ const DEFAULTS = Object.freeze({
  */
 export const interceptPoint = leadAt;
 
-registerMacro('predictiveShot', {
+defineMacro('predictiveShot', {
+  attacks: [{ id: 'projectile', role: 'payload' }],
   params: { ...DEFAULTS },
   meta: {
     name: 'Predictive Shot',
     desc: 'One projectile fired at the intercept point — where a bullet (at speed) and a moving target meet.',
-    invokes: ['projectile'],
     params: [
       { key: 'speed', desc: 'bullet speed px/s (the aim is solved from this)' },
       { key: 'ttl', desc: 'projectile lifetime (s)' },

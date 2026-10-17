@@ -18,7 +18,7 @@
 // Handle shape: identical to spreadShot's (h.handles, h.angles, optional
 // h.step when sequenced; hit/complete forwarded).
 
-import { registerMacro } from '../registry.js';
+import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 
 const DEFAULTS = Object.freeze({
@@ -40,12 +40,12 @@ export function radialAngle(count) {
   return (Math.PI * 2 * (n - 1)) / n;
 }
 
-registerMacro('radialShot', {
+defineMacro('radialShot', {
+  attacks: [{ id: 'spreadShot', role: 'inner' }],
   params: { ...DEFAULTS },
   meta: {
     name: 'Radial Shot (360° Spread)',
     desc: 'N projectiles evenly distributed in a full ring around the attacker. Wraps spreadShot with computed ring geometry; sequenceInterval sweeps the ring one bolt at a time.',
-    invokes: ['spreadShot'],
     // No native effects: inherits hit-sparkle/debris via spreadShot →
     // projectile. resolveEffects() surfaces them as inherited rows.
     effects: [],

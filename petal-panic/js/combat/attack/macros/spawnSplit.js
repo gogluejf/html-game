@@ -21,7 +21,7 @@
 // gravity integrates the full X+Y arc before AI resumes (same as shoving an
 // enemy in gameplay). Grounding is the caller's job (it owns the floor/world).
 
-import { registerMacro } from '../registry.js';
+import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { spreadAngles } from './spreadShot.js';
 import { makeEnemy } from '../../../world/build.js';
@@ -72,7 +72,11 @@ function flightStun(vy) {
   return Math.max(0.3, rise * 2 + 0.2);
 }
 
-registerMacro('spawnSplit', {
+defineMacro('spawnSplit', {
+  attacks: [
+    { id: 'projectile', role: 'child' },
+    { id: 'explosiveBomb', role: 'child' },
+  ],
   params: { ...DEFAULTS },
   meta: {
     name: 'Spawn / Split',
@@ -83,7 +87,6 @@ registerMacro('spawnSplit', {
     // would duplicate.
     effects: [],
     desc: 'Fan out N children and materialize each into a live projectile/bomb or enemy. Declarative — one invoke, live results.',
-    invokes: ['projectile', 'explosiveBomb'],
     params: [
       { key: 'count', desc: 'children created' },
       { key: 'centerDirection', desc: 'central direction (radians)' },

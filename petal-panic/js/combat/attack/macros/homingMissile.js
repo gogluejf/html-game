@@ -17,7 +17,7 @@
 //   complete  — fires when ttl elapses or the target dies
 //   hit/expire— forwarded from the underlying projectile
 
-import { registerMacro } from '../registry.js';
+import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { stepProjectile } from '../primitives/projectile.js';
 
@@ -43,12 +43,12 @@ export function steerVelocity(vx, vy, desiredAngle, maxTurn) {
   return { vx: Math.cos(next) * speed, vy: Math.sin(next) * speed };
 }
 
-registerMacro('homingMissile', {
+defineMacro('homingMissile', {
+  attacks: [{ id: 'projectile', role: 'carrier' }],
   params: { ...DEFAULTS },
   meta: {
     name: 'Homing Missile',
     desc: 'A projectile that steers toward a target each frame. Spawns + steers in one handle.',
-    invokes: ['projectile'],
     params: [
       { key: 'direction', desc: 'initial launch direction (radians)' },
       { key: 'speed', desc: 'bullet speed px/s' },
