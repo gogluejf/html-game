@@ -71,8 +71,8 @@ function angleLabel(rad) {
 // Per-primitive default param presets for the sandbox.
 const SANDBOX_PRESETS = {
   projectile: { direction: 0, speed: 600, ttl: 2, damage: 10, solidBehavior: 'phase', gravity: 0 },
-  bomb: { direction: -0.5, arc: 800, bounce: true, explodeOnContact: true, ttl: 4, damage: 40, radius: 70 }, // speed from registry default (500)
-  explosiveBomb: { direction: -0.5, arc: 800, bounce: true, explodeOnContact: true, ttl: 4, damage: 40, radius: 70 }, // speed from registry default (500)
+  bomb: { direction: -0.5, arc: 800, bounce: true, explodeOnContact: true, ttl: 2, damage: 40, radius: 70 }, // speed from registry default (500)
+  explosiveBomb: { direction: -0.5, arc: 800, bounce: true, explodeOnContact: true, ttl: 2, damage: 40, radius: 70 }, // speed from registry default (500)
   explosiveProjectile: { direction: 0, speed: 700, ttl: 2, damage: 15, radius: 70, gravity: 0 },
   explosion: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, radius: 70, damage: 40, team: 'neutral' },
   meleeHitbox: { activeFrames: 10, w: 48, h: 44, offset: { x: 44, y: 0 }, damage: 12 },
@@ -92,8 +92,8 @@ const SANDBOX_PRESETS = {
   radialShot: { count: 24, startAngle: -Math.PI / 2, speed: 400, ttl: 2.5, damage: 10, sequenceInterval: 0.15 },
   burstShot: { count: 3, interval: 0.12, direction: 0.5, speed: 600, ttl: 2, damage: 10 },
   bodyExplosion: { deathBehavior: 'kill', triggerPayloadFirst: true, payloadDelay: 0.1 },
-  bombSpread: { count: 3, direction: -75 * DEG, angle: 15 * DEG, speed: 700, arc: 800, bounce: true, ttl: 4, damage: 40, radius: 60 },
-  molotov: { direction: -0.5, arc: 800, bounce: false, ttl: 4, damage: 12, fireWidth: 96, fireDuration: 3, fireTickRate: 5, fireDamage: 8 },
+  bombSpread: { count: 3, direction: -75 * DEG, angle: 15 * DEG, speed: 700, arc: 800, bounce: true, ttl: 2, damage: 40, radius: 60 },
+  molotov: { direction: -0.5, arc: 800, bounce: false, ttl: 2, damage: 12, fireWidth: 96, fireDuration: 3, fireTickRate: 5, fireDamage: 8 },
   clusterBomb: { direction: -0.5, arc: 800, bounce: false, ttl: 3, damage: 20, radius: 40, count: 4, childAngle: Math.PI, childDirection: -Math.PI / 2, childForce: 300, childTtl: 2, childDamage: 15, childRadius: 30 },
 };
 

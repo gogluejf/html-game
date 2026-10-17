@@ -24,7 +24,7 @@ const DEFAULTS = Object.freeze({
   arc: 800,             // gravity px/s² (throw height control)
   bounce: true,         // → solidBehavior 'reflect' (existing flag)
   explodeOnContact: true,
-  ttl: 4,               // fuse seconds (runs while airborne AND bouncing)
+  ttl: 1.5,             // fuse seconds (runs while airborne AND resting)
   damage: 40,           // direct-contact damage
   radius: 60,           // reference size for host-side effects (macro-owned)
   origin: null,         // marker label | {x,y} | null → attacker center

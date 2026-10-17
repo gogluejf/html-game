@@ -13,7 +13,7 @@ const DEFAULTS = Object.freeze({
   direction: -Math.PI / 4,
   arc: 800,             // gravity px/s²
   bounce: false,        // molotovs shatter on first impact
-  ttl: 4,               // fuse seconds
+  ttl: 2,               // fuse seconds
   damage: 12,           // carrier contact damage
   fireWidth: 96,        // burn area width (px); height fixed at FIRE_HEIGHT
   fireDuration: 3,      // how long the area burns (s)

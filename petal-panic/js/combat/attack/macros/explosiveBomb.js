@@ -17,7 +17,7 @@ const DEFAULTS = Object.freeze({
   arc: 800,             // gravity px/s² (throw height control)
   bounce: true,         // reflect off surfaces
   explodeOnContact: true,
-  ttl: 4,               // fuse seconds
+  ttl: 1.5,             // fuse seconds
   damage: 40,           // carrier contact damage AND blast damage
   radius: 60,           // blast radius (px)
   origin: null,         // marker label | {x,y} | null → attacker center
