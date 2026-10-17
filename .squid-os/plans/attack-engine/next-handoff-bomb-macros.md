@@ -14,8 +14,8 @@ beam, fireArea, spike, orbit, boomerang
 - **bombSpread** (§8) ← easiest win
 - **molotov** (§10)
 - **clusterBomb** (§9)
-- (remaining non-bomb: missileRain, horizontalBeam, targetedBeam, sweepingBeam,
-  melee, stomp, stompWave, dustCloud, spikes-macro, dashLaneSequence)
+- (remaining non-bomb: missileRain, targetedBeam, sweepingBeam,
+  stomp, stompWave, dustCloud, dashLaneSequence)
 
 ## The bomb building blocks (all done, tested)
 

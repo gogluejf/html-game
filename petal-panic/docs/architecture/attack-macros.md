@@ -488,29 +488,31 @@ Projectile (flight) → hit or expire → Explosion at the death point.
 
 ---
 
-## 13. Horizontal Beam
+## 13. Charge / Dash
 
-**Invokes:** Beam
+**Invokes:** Movement + Body Contact
 
-**Effects:** Beam (the beam body itself)
+**Effects:** —
 
-Telegraphs and then fires a beam horizontally across the play area.
+Moves the attacker aggressively in a direction as an attack. For enemies, the
+normal damaging body is usually sufficient. An extra melee hitbox is only added if
+the animation extends beyond the body.
 
 ### Sequence
 
-Telegraph → delay/lock → horizontal Beam → end.
+Optional telegraph → Movement/Charge → body contact and/or extended hitbox →
+stop/recovery.
 
 ### Main parameters
 
-- **telegraphTime** — warning duration.
-- **beamHeight / width** — dangerous thickness.
-- **duration** — active beam duration.
-- **direction** — left or right when relevant.
-- **damage** — beam damage.
-- **beamStyle** — visual override.
-- **telegraphStyle** — warning effect override.
-
-Full-screen horizontal reach is the normal default.
+- **direction / targetDirection** — charge direction.
+- **speed** — charge speed.
+- **duration / distance** — travel limit.
+- **acceleration / easing** — movement profile.
+- **stopOnObstacle** — terrain behavior.
+- **bodyDamageOverride** — optional charge-specific contact damage.
+- **extendedHitbox** — optional temporary attack hitbox.
+- **chargeEffect** — optional dust/trail effect.
 
 ---
 
@@ -567,66 +569,7 @@ Reticle/telegraph → Beam starts → angular sweep → end.
 
 ---
 
-## 16. Melee
-
-**Invokes:** Melee Hitbox
-
-**Effects:** Hit Sparkle (hit juice)
-
-A standardized close-range attack synchronized with animation. Melee does not
-require a separate hitbox when the normal enemy body already represents the
-dangerous area. A temporary Melee Hitbox is used when the animation extends the
-attack beyond the body. Melee can also include movement.
-
-### Sequence
-
-Windup/telegraph → optional movement → active contact/hitbox frames → recovery.
-
-### Main parameters
-
-- **windup** — delay before active frames.
-- **activeTiming / frames** — damaging period.
-- **recovery** — end lag.
-- **useBodyContact** — use normal body collision for damage.
-- **hitbox** — optional extended Melee Hitbox.
-- **damage** — damage.
-- **knockback** — hit knockback.
-- **movement** — optional movement during the move.
-
-This supports punches, sweeps, horn attacks, lunges, cartwheels, and similar
-animation-driven attacks without inventing separate collision systems.
-
----
-
-## 17. Charge / Dash
-
-**Invokes:** Movement + Body Contact
-
-**Effects:** —
-
-Moves the attacker aggressively in a direction as an attack. For enemies, the
-normal damaging body is usually sufficient. An extra melee hitbox is only added if
-the animation extends beyond the body.
-
-### Sequence
-
-Optional telegraph → Movement/Charge → body contact and/or extended hitbox →
-stop/recovery.
-
-### Main parameters
-
-- **direction / targetDirection** — charge direction.
-- **speed** — charge speed.
-- **duration / distance** — travel limit.
-- **acceleration / easing** — movement profile.
-- **stopOnObstacle** — terrain behavior.
-- **bodyDamageOverride** — optional charge-specific contact damage.
-- **extendedHitbox** — optional temporary attack hitbox.
-- **chargeEffect** — optional dust/trail effect.
-
----
-
-## 18. Stomp
+## 16. Stomp
 
 **Invokes:** Telegraph effect + Melee Hitbox
 
@@ -665,7 +608,7 @@ Telegraph once → signal → stomp → interval → signal → stomp → repeat
 
 ---
 
-## 19. Stomp Wave
+## 17. Stomp Wave
 
 **Invokes:** Spike / Static Hazard
 
@@ -691,7 +634,7 @@ Telegraph → stomp impact → surface wave → wave terminates.
 
 ---
 
-## 20. Dust Cloud / Radius Attack
+## 18. Dust Cloud / Radius Attack
 
 **Invokes:** Explosion
 
@@ -714,34 +657,7 @@ Dust effect appears → radial area active → duration ends.
 
 ---
 
-## 21. Spikes
-
-**Invokes:** Spike / Static Hazard
-
-**Effects:** —
-
-Creates one or more static spike hazards that alternate between active/visible and
-hidden states.
-
-### Sequence
-
-Optional warning → spikes appear and become dangerous → visible TTL → hide →
-optional hidden TTL → optional repeat.
-
-### Main parameters
-
-- **positions / pattern** — spike placement.
-- **visibleTTL** — active duration.
-- **hiddenTTL** — hidden duration.
-- **repeat / repeatCount** — cycling.
-- **warningTime** — advance warning.
-- **warningEffect** — quick flash/ease/telegraph.
-- **damage** — spike damage.
-- **spikeStyle** — effect override.
-
----
-
-## 22. Body Explosion / Kamikaze
+## 19. Body Explosion / Kamikaze
 
 **Invokes:** Explosion (payload)
 
@@ -766,7 +682,7 @@ standardized detonation behavior.
 
 ---
 
-## 23. Dash Lane Sequence
+## 20. Dash Lane Sequence
 
 **Invokes:** Movement + Telegraph effect
 
@@ -816,7 +732,7 @@ Examples:
 
 ---
 
-## 24. Spawn / Split
+## 21. Spawn / Split
 
 **Invokes:** Projectile / Explosive Bomb / enemy factory
 

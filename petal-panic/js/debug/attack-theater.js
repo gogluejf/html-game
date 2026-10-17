@@ -84,7 +84,7 @@ const SANDBOX_PRESETS = {
   predictiveShot: { speed: 300, ttl: 3, damage: 10 },
   beam: { direction: 0, length: 450, width: 24, duration: 0.6, damage: 15, tickRate: 8, team: 'ally' },
   fireArea: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, length: 96, height: 48, duration: 2, tickRate: 5, damage: 8, team: 'ally' },
-  spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 16, size: 32, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
+  spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 8, width: 144, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
   orbit: { count: 3, minRadius: 40, maxRadius: 90, pulseSpeed: 1.5, speed: 1.5, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
   boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 3 },
   spawnSplit: { x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'jester' },
@@ -113,7 +113,7 @@ export const TWEAKABLE = {
   predictiveShot: [['speed', 'num', 50]],
   beam: [['direction', 'angle', 15 * DEG], ['length', 'num', 20], ['width', 'num', 4], ['duration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   fireArea: [['x', 'num', 20], ['length', 'num', 16], ['height', 'num', 8], ['duration', 'num', 0.25], ['damage', 'num', 2], ['tickRate', 'int', 1]],
-  spike: [['x', 'num', 16], ['size', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],
+  spike: [['x', 'num', 16], ['width', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],
   orbit: [['count', 'int', 1], ['minRadius', 'num', 10], ['maxRadius', 'num', 10], ['pulseSpeed', 'num', 0.25], ['speed', 'num', 0.25]],
   boomerang: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['returnSpeed', 'num', 50], ['outboundDuration', 'num', 0.1], ['count', 'int', 1]],
   spawnSplit: [['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['spawnType', 'enum', ['projectile', 'bomb', 'enemy']], ['enemyType', 'enum', ENEMY_TYPES]],
@@ -1122,7 +1122,7 @@ export const AttackTheater = {
         // Persistent area / spike hazard: tinted box by phase.
         let box = null;
         if (h.id === 'fireArea') box = { x: this._params.x - this._params.length / 2, y: this._params.y - this._params.height / 2, w: this._params.length, h: this._params.height };
-        else if (st.phase === 'visible') box = { x: this._params.x - this._params.size / 2, y: this._params.y - this._params.size / 2, w: this._params.size, h: this._params.size };
+        else if (st.phase === 'visible') { const sw = this._params.width; box = { x: this._params.x - sw / 2, y: this._params.y - 8, w: sw, h: 16 }; }
         if (box) {
           const active = h.id === 'fireArea' || st.phase === 'visible';
           ctx.fillStyle = h.id === 'fireArea'

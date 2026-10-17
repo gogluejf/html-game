@@ -22,7 +22,7 @@ import { makeHitbox, resetHitbox, processHitboxes } from '../../hitbox.js';
 const DEFAULTS = Object.freeze({
   x: 0,               // center x (world)
   y: 0,               // center y
-  size: 32,           // square collision size (px)
+  width: 144,          // collision width (px); height is fixed at SPIKE_HEIGHT
   warningTime: 0.4,   // pre-appearance warning (s); 0 = none
   visibleTTL: 0.8,    // how long the spike stays active (s)
   hiddenTTL: 0.6,     // how long it stays hidden before repeating (s)
@@ -34,9 +34,12 @@ const DEFAULTS = Object.freeze({
   method: 'melee',    // telemetry label; melee-family → blood sparkles on hit
 });
 
+/** Fixed vertical extent of a spike hazard (px). */
+export const SPIKE_HEIGHT = 16;
+
 /** World-space AABB for the hazard. */
 export function spikeBox(p) {
-  return { x: p.x - p.size / 2, y: p.y - p.size / 2, w: p.size, h: p.size };
+  return { x: p.x - p.width / 2, y: p.y - SPIKE_HEIGHT / 2, w: p.width, h: SPIKE_HEIGHT };
 }
 
 /**
@@ -103,7 +106,7 @@ registerPrimitive('spike', {
     params: [
       { key: 'x', desc: 'center x (world)' },
       { key: 'y', desc: 'center y (world)' },
-      { key: 'size', desc: 'square size (px)' },
+      { key: 'width', desc: 'collision width (px); height fixed at 16' },
       { key: 'warningTime', desc: 'pre-appear warning (s)' },
       { key: 'visibleTTL', desc: 'active window (s)' },
       { key: 'hiddenTTL', desc: 'dormant window (s)' },
