@@ -599,6 +599,7 @@ export const AttackTheater = {
   },
 
   _stepOnce() {
+    if (!this._target || !this._world) return; // closing/closed
     const { projectilePool, specialPool } = this._pools;
     // Input repeat ticks at FIXED-step rate (exactly 60Hz) so the debounce
     // cadence is even — calling it here, not in update(), keeps it locked to
