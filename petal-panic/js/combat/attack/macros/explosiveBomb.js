@@ -1,52 +1,48 @@
 // Attack Engine — Explosive Bomb (macro). ONE object, one id.
 //
-// The classic "bomb that explodes": composes the dumb bomb CARRIER (primitive)
-// with the Explosion primitive via the CarrierMacro base. The carrier owns
-// flight only; THIS macro owns the aftermath — explosion at the death point.
-//
-// VFX contract: no native effects. Blast burst + shake come from the Explosion
-// primitive; screen flash is SUPPRESSED. resolveEffects() inherits via meta.invokes.
+// bomb CARRIER → Explosion at death point. Uses CarrierMacro base +
+// defineMacro unified contract.
 
-import { registerMacro } from '../registry.js';
 import { invoke } from '../engine.js';
+import { defineMacro } from '../defineMacro.js';
 import { createCarrierHandle } from '../carrierMacro.js';
 
 const DEFAULTS = Object.freeze({
-  speed: 500,           // launch force (px/s)
-  direction: -Math.PI / 4, // up-right throw
-  arc: 800,             // gravity px/s² (throw height control)
-  bounce: true,         // reflect off surfaces
+  speed: 500,
+  direction: -Math.PI / 4,
+  arc: 800,
+  bounce: true,
   explodeOnContact: true,
-  ttl: 1.5,             // fuse seconds
-  damage: 40,           // carrier contact damage AND blast damage
-  radius: 60,           // blast radius (px)
-  origin: null,         // marker label | {x,y} | null → attacker center
-  blastTeam: 'neutral', // blast team: foe | ally | neutral
+  ttl: 1.5,
+  damage: 40,
+  radius: 60,
+  origin: null,
+  blastTeam: 'neutral',
 });
 
-registerMacro('explosiveBomb', {
+defineMacro('explosiveBomb', {
+  attacks: [
+    { id: 'bomb', role: 'carrier' },
+    { id: 'explosion', role: 'payload' },
+  ],
   params: { ...DEFAULTS },
   meta: {
     name: 'Explosive Bomb',
-    effects: [],
     desc: 'Ballistic bomb that detonates into a radial explosion at its death point.',
-    invokes: ['bomb', 'explosion'],
+    effects: [],
     params: [
       { key: 'speed', desc: 'launch force (px/s)' },
       { key: 'direction', desc: 'throw direction (radians)' },
       { key: 'arc', desc: 'gravity px/s² (throw height)' },
       { key: 'bounce', desc: 'reflect off surfaces' },
-      { key: 'explodeOnContact', desc: 'legacy flag (kept for param parity)' },
       { key: 'ttl', desc: 'fuse seconds' },
       { key: 'damage', desc: 'contact + blast damage' },
       { key: 'radius', desc: 'blast radius (px)' },
       { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' },
-      { key: 'blastTeam', desc: 'foe | ally | neutral — who the blast hurts' },
+      { key: 'blastTeam', desc: 'foe | ally | neutral' },
     ],
   },
-  impl(params, ctx) {
-    const p = { ...DEFAULTS, ...params };
-
+  impl(p, ctx) {
     const h = createCarrierHandle('explosiveBomb', p, ctx, {
       onDetonate({ x, y }, macroH) {
         try {

@@ -4,7 +4,7 @@
 // burning area (fireArea) at the death point. Uses CarrierMacro base for
 // unified stepping + deferred child management.
 
-import { registerMacro } from '../registry.js';
+import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
 
@@ -23,13 +23,16 @@ const DEFAULTS = Object.freeze({
   team: 'neutral',      // who the fire hurts
 });
 
-registerMacro('molotov', {
+defineMacro('molotov', {
+  attacks: [
+    { id: 'bomb', role: 'carrier' },
+    { id: 'fireArea', role: 'payload' },
+  ],
   params: { ...DEFAULTS },
   meta: {
     name: 'Molotov',
     effects: [],
     desc: 'Thrown bottle → shatters on impact/fuse → persistent burning area at death point.',
-    invokes: ['bomb', 'fireArea'],
     params: [
       { key: 'speed', desc: 'launch force (px/s)' },
       { key: 'direction', desc: 'throw direction (radians)' },

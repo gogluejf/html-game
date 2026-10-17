@@ -3,7 +3,7 @@
 // A parent bomb that, on detonation, splits into N smaller explosive bombs
 // via spawnSplit. Uses CarrierMacro base for unified stepping.
 
-import { registerMacro } from '../registry.js';
+import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
 
@@ -28,13 +28,16 @@ const DEFAULTS = Object.freeze({
   childRadius: 30,
 });
 
-registerMacro('clusterBomb', {
+defineMacro('clusterBomb', {
+  attacks: [
+    { id: 'bomb', role: 'carrier' },
+    { id: 'spawnSplit', role: 'payload' },
+  ],
   params: { ...DEFAULTS },
   meta: {
     name: 'Cluster Bomb',
     effects: [],
     desc: 'Parent bomb detonates → spawns N smaller bombs in a fan. Each child explodes on its own impact/fuse.',
-    invokes: ['explosiveBomb', 'spawnSplit'],
     params: [
       { key: 'speed', desc: 'parent launch force (px/s)' },
       { key: 'direction', desc: 'parent throw direction (radians)' },

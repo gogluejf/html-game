@@ -3,7 +3,7 @@
 // Straight-line twin of explosiveBomb: projectile CARRIER → Explosion at
 // death point (impact or TTL). Uses CarrierMacro base for unified stepping.
 
-import { registerMacro } from '../registry.js';
+import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
 
@@ -21,13 +21,16 @@ const DEFAULTS = Object.freeze({
   blastTeam: 'neutral', // blast team: foe | ally | neutral
 });
 
-registerMacro('explosiveProjectile', {
+defineMacro('explosiveProjectile', {
+  attacks: [
+    { id: 'projectile', role: 'carrier' },
+    { id: 'explosion', role: 'payload' },
+  ],
   params: { ...DEFAULTS },
   meta: {
     name: 'Explosive Projectile',
     effects: [],
     desc: 'Straight-line shot that detonates into a radial explosion at its death point (impact or TTL).',
-    invokes: ['projectile', 'explosion'],
     params: [
       { key: 'speed', desc: 'px/s travel speed' },
       { key: 'direction', desc: 'radians (0 = right)' },
