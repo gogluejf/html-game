@@ -83,7 +83,7 @@ const SANDBOX_PRESETS = {
   homingMissile: { direction: -0.3, turnRate: 3, speed: 400, ttl: 2, damage: 10 },
   predictiveShot: { speed: 300, ttl: 3, damage: 10 },
   beam: { direction: 0, length: 450, width: 24, duration: 0.6, damage: 15, tickRate: 8, team: 'ally' },
-  fireArea: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, length: 96, height: 48, duration: 2, tickRate: 5, damage: 8, team: 'ally' },
+  fireArea: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, width: 96, duration: 2, tickRate: 5, damage: 8, team: 'ally' },
   spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 8, width: 144, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
   orbit: { count: 3, minRadius: 40, maxRadius: 90, pulseSpeed: 1.5, speed: 1.5, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
   boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 3 },
@@ -92,6 +92,9 @@ const SANDBOX_PRESETS = {
   radialShot: { count: 24, startAngle: -Math.PI / 2, speed: 400, ttl: 2.5, damage: 10, sequenceInterval: 0.15 },
   burstShot: { count: 3, interval: 0.12, direction: 0.5, speed: 600, ttl: 2, damage: 10 },
   bodyExplosion: { deathBehavior: 'kill', triggerPayloadFirst: true, payloadDelay: 0.1 },
+  bombSpread: { count: 3, direction: -75 * DEG, angle: 15 * DEG, speed: 700, arc: 800, bounce: true, ttl: 4, damage: 40, radius: 60 },
+  molotov: { direction: -0.5, arc: 800, bounce: false, ttl: 4, damage: 12, fireWidth: 96, fireDuration: 3, fireTickRate: 5, fireDamage: 8 },
+  clusterBomb: { direction: -0.5, arc: 800, bounce: false, ttl: 3, damage: 20, radius: 40, count: 4, childAngle: Math.PI, childDirection: -Math.PI / 2, childForce: 300, childTtl: 2, childDamage: 15, childRadius: 30 },
 };
 
 /** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
@@ -112,12 +115,15 @@ export const TWEAKABLE = {
   homingMissile: [['turnRate', 'num', 0.5], ['direction', 'angle', 15 * DEG], ['ttl', 'num', 0.25]],
   predictiveShot: [['speed', 'num', 50]],
   beam: [['direction', 'angle', 15 * DEG], ['length', 'num', 20], ['width', 'num', 4], ['duration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
-  fireArea: [['x', 'num', 20], ['length', 'num', 16], ['height', 'num', 8], ['duration', 'num', 0.25], ['damage', 'num', 2], ['tickRate', 'int', 1]],
+  fireArea: [['x', 'num', 20], ['width', 'num', 16], ['duration', 'num', 0.25], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   spike: [['x', 'num', 16], ['width', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],
   orbit: [['count', 'int', 1], ['minRadius', 'num', 10], ['maxRadius', 'num', 10], ['pulseSpeed', 'num', 0.25], ['speed', 'num', 0.25]],
   boomerang: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['returnSpeed', 'num', 50], ['outboundDuration', 'num', 0.1], ['count', 'int', 1]],
   spawnSplit: [['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['spawnType', 'enum', ['projectile', 'bomb', 'enemy']], ['enemyType', 'enum', ENEMY_TYPES]],
   bodyExplosion: [['payloadDelay', 'num', 0.05]],
+  bombSpread: [['count', 'int', 1], ['direction', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
+  molotov: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['fireWidth', 'num', 16], ['fireDuration', 'num', 0.5], ['fireDamage', 'num', 2]],
+  clusterBomb: [['count', 'int', 1], ['childForce', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
 };
 
 export const AttackTheater = {
@@ -816,16 +822,27 @@ export const AttackTheater = {
         }
       } else if (h.entity) {
         if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
-        else if (h.id === 'bomb' || h.id === 'explosiveBomb' || h.id === 'explosiveProjectile') {
-          // All three are carrier-based: the primitive owns flight/terrain;
-          // the explosive* macros proxy a carrier handle (setInner) whose
-          // terminal events fire the blast. Route by the CARRIER ENTITY's
-          // _attackId — the macro handle's id is the macro's, not the
-          // carrier's. Step with the macro's merged params (ch._params).
-          const ch = h.inner ?? h;
+        else if (h.id === 'bomb' || h.id === 'explosiveBomb' || h.id === 'explosiveProjectile' || h.id === 'molotov' || h.id === 'clusterBomb') {
+          // Resolve the innermost carrier handle (the one with _attackId on entity).
+          let ch = h;
+          while (ch.inner?.entity) ch = ch.inner;
           const cp = ch._params ?? this._params;
           if (ch.entity?._attackId === 'bomb') finished = stepBomb(ch.entity, cp, this._ctx(), ch);
           else finished = stepProjectile(ch.entity, ch) || finished;
+          // Deferred children: molotov fireArea, clusterBomb split bombs.
+          for (const child of h.handles ?? []) {
+            if (typeof child.step === 'function') child.step(DT, [this._target]);
+          }
+          if (h.children?.handles) {
+            for (const cb of h.children.handles) {
+              let inner = cb;
+              while (inner.inner?.entity) inner = inner.inner;
+              if (inner.entity?._attackId === 'bomb') {
+                stepBombTerrain(inner.entity, DT, GROUND_Y);
+                stepBomb(inner.entity, inner._params ?? this._params, this._ctx(), inner);
+              }
+            }
+          }
         }
         else if (typeof h.step === 'function') finished = h.step(DT); // homingMissile / predictiveShot / ...
       } else if (typeof h.step === 'function') {
@@ -838,6 +855,22 @@ export const AttackTheater = {
           finished = h.step(DT);
           for (const ch of h.handles ?? []) {
             if (ch.entity) stepProjectile(ch.entity, ch);
+          }
+        } else if (h.id === 'bombSpread') {
+          // Multi-bomb / deferred-child macros: step each child handle.
+          for (const ch of h.handles ?? []) {
+            if (ch.entity?._attackId === 'bomb') {
+              stepBombTerrain(ch.entity, DT, GROUND_Y);
+              stepBomb(ch.entity, ch._params ?? this._params, this._ctx(), ch);
+            } else if (typeof ch.step === 'function') {
+              ch.step(DT, [this._target]); // fireArea, etc.
+            }
+          }
+          // clusterBomb also has a parent carrier
+          if (h.id === 'clusterBomb' && h.inner?.entity?._attackId === 'bomb') {
+            const cp = h.inner._params ?? this._params;
+            stepBombTerrain(h.inner.entity, DT, GROUND_Y);
+            stepBomb(h.inner.entity, cp, this._ctx(), h.inner);
           }
         } else if (h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike') {
           finished = h.step(DT, [this._target]);
@@ -1121,7 +1154,7 @@ export const AttackTheater = {
       } else if ((h.id === 'fireArea' || h.id === 'spike') && !st.done) {
         // Persistent area / spike hazard: tinted box by phase.
         let box = null;
-        if (h.id === 'fireArea') box = { x: this._params.x - this._params.length / 2, y: this._params.y - this._params.height / 2, w: this._params.length, h: this._params.height };
+        if (h.id === 'fireArea') { const fw = this._params.width; box = { x: this._params.x - fw / 2, y: this._params.y - 24, w: fw, h: 48 }; }
         else if (st.phase === 'visible') { const sw = this._params.width; box = { x: this._params.x - sw / 2, y: this._params.y - 8, w: sw, h: 16 }; }
         if (box) {
           const active = h.id === 'fireArea' || st.phase === 'visible';
@@ -1131,6 +1164,20 @@ export const AttackTheater = {
           ctx.fillRect(box.x, box.y, box.w, box.h);
           ctx.strokeStyle = 'rgba(255,255,255,0.4)';
           ctx.strokeRect(box.x, box.y, box.w, box.h);
+        }
+      }
+      // Deferred children (e.g. molotov fireArea): render any step-based child
+      // that has a _params box (fireArea pattern).
+      for (const child of h.handles ?? []) {
+        if (child.id === 'fireArea' && !child.state?.done) {
+          const fp = child._params;
+          const fw = fp.width;
+          const fx = fp.x - fw / 2, fy = fp.y - 24;
+          const flicker = 100 + Math.floor(60 * Math.sin((child.state?.t ?? 0) * 8));
+          ctx.fillStyle = `rgba(255,${flicker},30,0.5)`;
+          ctx.fillRect(fx, fy, fw, 48);
+          ctx.strokeStyle = 'rgba(255,200,80,0.6)';
+          ctx.strokeRect(fx, fy, fw, 48);
         }
       }
     }

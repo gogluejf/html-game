@@ -16,8 +16,7 @@ import { makeHitbox, resetHitbox, processHitboxes } from '../../hitbox.js';
 const DEFAULTS = Object.freeze({
   x: 0,               // center x of the area (world coords)
   y: 0,               // center y
-  length: 96,         // horizontal coverage (px)
-  height: 48,         // vertical coverage (px)
+  width: 96,           // horizontal coverage (px)
   duration: 3,        // seconds the area stays active
   tickRate: 5,        // damage ticks per second
   damage: 8,          // damage per tick
@@ -26,9 +25,12 @@ const DEFAULTS = Object.freeze({
   style: null,        // Effect Engine style override
 });
 
+/** Fixed vertical extent of a fire area (px). */
+export const FIRE_HEIGHT = 48;
+
 /** World-space AABB for the area. */
 export function fireAreaBox(p) {
-  return { x: p.x - p.length / 2, y: p.y - p.height / 2, w: p.length, h: p.height };
+  return { x: p.x - p.width / 2, y: p.y - FIRE_HEIGHT / 2, w: p.width, h: FIRE_HEIGHT };
 }
 
 /**
@@ -68,8 +70,7 @@ registerPrimitive('fireArea', {
     params: [
       { key: 'x', desc: 'center x (world)' },
       { key: 'y', desc: 'center y (world)' },
-      { key: 'length', desc: 'horizontal coverage (px)' },
-      { key: 'height', desc: 'vertical coverage (px)' },
+      { key: 'width', desc: 'horizontal coverage (px); height fixed at 48' },
       { key: 'duration', desc: 'seconds active' },
       { key: 'tickRate', desc: 'damage ticks per second' },
       { key: 'damage', desc: 'damage per tick' },
@@ -81,6 +82,7 @@ registerPrimitive('fireArea', {
     const hb = makeHitbox({ owner: ctx.attacker, team: params.team, box: null, damage: params.damage, method: params.method });
     resetHitbox(hb);
     h.state = { t: 0, tickAcc: 0, done: false, hb };
+    h._params = params;
     h.step = (dt, targets) => stepFireArea(h.state, params, dt, targets ?? [], h);
     return h;
   },

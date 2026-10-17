@@ -15,7 +15,7 @@ function ok(name, fn) {
 
 const DT = 1 / 60;
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 });
-const P = { x: 400, y: 380, length: 96, height: 48, duration: 1, tickRate: 5, damage: 6, team: 'ally' };
+const P = { x: 400, y: 380, width: 96, duration: 1, tickRate: 5, damage: 6, team: 'ally' };
 
 function dummyEnemy(x, y, hp = 100) {
   return {

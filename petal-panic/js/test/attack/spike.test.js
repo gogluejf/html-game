@@ -15,7 +15,7 @@ function ok(name, fn) {
 
 const DT = 1 / 60;
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 });
-const P = { x: 400, y: 380, size: 32, warningTime: 0.5, visibleTTL: 0.5, hiddenTTL: 0.5, repeatCount: 1, damage: 10, tickRate: 10, team: 'ally' };
+const P = { x: 400, y: 380, width: 32, warningTime: 0.5, visibleTTL: 0.5, hiddenTTL: 0.5, repeatCount: 1, damage: 10, tickRate: 10, team: 'ally' };
 
 function dummyEnemy(x, y, hp = 100) {
   return {
@@ -26,7 +26,7 @@ function dummyEnemy(x, y, hp = 100) {
 
 ok('box is centered on the given point', () => {
   const box = spikeBox(P);
-  assert.deepEqual(box, { x: 384, y: 364, w: 32, h: 32 });
+  assert.deepEqual(box, { x: 384, y: 372, w: 32, h: 16 });
 });
 
 ok('phase machine: warning → visible → done (single cycle)', () => {
