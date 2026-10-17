@@ -831,7 +831,10 @@ export const AttackTheater = {
           else finished = stepProjectile(ch.entity, ch) || finished;
           // Deferred children: molotov fireArea, clusterBomb split bombs.
           for (const child of h.handles ?? []) {
-            if (typeof child.step === 'function') child.step(DT, [this._target]);
+            if (typeof child.step === 'function') {
+              const done = child.step(DT, [this._target]);
+              if (!done && !this._handles.includes(child)) this._handles.push(child);
+            }
           }
           if (h.children?.handles) {
             for (const cb of h.children.handles) {
@@ -1154,7 +1157,7 @@ export const AttackTheater = {
       } else if ((h.id === 'fireArea' || h.id === 'spike') && !st.done) {
         // Persistent area / spike hazard: tinted box by phase.
         let box = null;
-        if (h.id === 'fireArea') { const fw = this._params.width; box = { x: this._params.x - fw / 2, y: this._params.y - 24, w: fw, h: 48 }; }
+        if (h.id === 'fireArea') { const fp = h._params ?? this._params; const fw = fp.width; box = { x: fp.x - fw / 2, y: GROUND_Y - 48, w: fw, h: 48 }; }
         else if (st.phase === 'visible') { const sw = this._params.width; box = { x: this._params.x - sw / 2, y: this._params.y - 8, w: sw, h: 16 }; }
         if (box) {
           const active = h.id === 'fireArea' || st.phase === 'visible';
@@ -1164,20 +1167,6 @@ export const AttackTheater = {
           ctx.fillRect(box.x, box.y, box.w, box.h);
           ctx.strokeStyle = 'rgba(255,255,255,0.4)';
           ctx.strokeRect(box.x, box.y, box.w, box.h);
-        }
-      }
-      // Deferred children (e.g. molotov fireArea): render any step-based child
-      // that has a _params box (fireArea pattern).
-      for (const child of h.handles ?? []) {
-        if (child.id === 'fireArea' && !child.state?.done) {
-          const fp = child._params;
-          const fw = fp.width;
-          const fx = fp.x - fw / 2, fy = fp.y - 24;
-          const flicker = 100 + Math.floor(60 * Math.sin((child.state?.t ?? 0) * 8));
-          ctx.fillStyle = `rgba(255,${flicker},30,0.5)`;
-          ctx.fillRect(fx, fy, fw, 48);
-          ctx.strokeStyle = 'rgba(255,200,80,0.6)';
-          ctx.strokeRect(fx, fy, fw, 48);
         }
       }
     }

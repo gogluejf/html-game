@@ -15,7 +15,7 @@ import { registerMacro } from '../registry.js';
 import { invoke, AttackHandle } from '../engine.js';
 
 const DEFAULTS = Object.freeze({
-  speed: 500,           // launch force (px/s)
+  speed: 600,           // launch force (px/s)
   direction: -Math.PI / 4, // up-right throw
   arc: 800,             // gravity px/s²
   bounce: false,        // molotovs don't bounce — they shatter on first impact
