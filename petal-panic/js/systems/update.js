@@ -769,13 +769,16 @@ export function update(dt) {
   }
 
   // 1. input → intents (movement/jump/crouch logic lives in Hero.update).
-  const input = readInput();
+  // NOTE: named `intent` (not `input`) — a local `const input` here would shadow
+  // the imported input engine for the whole function body and throw "Cannot
+  // access 'input' before initialization" on the earlier input.poll() calls.
+  const intent = readInput();
   // One-way platform context (design §13): Down+Jump while standing on a
   // one-way platform becomes a drop-through, not a jump. The probe uses the
   // PREVIOUS frame's grounded state — setGrounded() runs after hero.update(),
   // so this is exactly "standing on a one-way platform right now".
-  input.onOneWay = standingOnOneWay();
-  hero.update(dt, input);
+  intent.onOneWay = standingOnOneWay();
+  hero.update(dt, intent);
 
   // 1a. energy / death / respawn / gameover flow.
   //     Trigger: if energy hit 0 (and no death already running) start the
@@ -809,7 +812,7 @@ export function update(dt) {
   //     Boss zone flow (boss-arena.md §2): shooting is disabled during the
   //     intro (states 1–5) — the presentation must not imply the boss is
   //     attackable before combat starts.
-  if (input.switchWeapon) hero.rotateWeapon(); // edge-triggered, no fire
+  if (intent.switchWeapon) hero.rotateWeapon(); // edge-triggered, no fire
   // Thorn cooldown ticks EVERY frame regardless of input/selection — a stale
   // cooldown must never freeze while J is released or Special is selected.
   if (hero.fireCooldown > 0) hero.fireCooldown -= dt;
@@ -820,7 +823,7 @@ export function update(dt) {
     (bossZone.state === BZ_LOCKED || bossZone.state === BZ_INTRO_SWEEP ||
      bossZone.state === BZ_BAR_FILL || bossZone.state === BZ_BOSS_ENTER));
   if (shootingAllowed) {
-    tryFire(hero, input, dt);                    // dispatches on hero.selectedWeapon
+    tryFire(hero, intent, dt);                  // dispatches on hero.selectedWeapon
   }
 
   // 1c. melee swing (+ §17-§19): H starts a swing; during its single
@@ -836,9 +839,9 @@ export function update(dt) {
   //     cancel BEFORE any buffer execution this frame (cancel beats buffer);
   //     this block then handles the NEW melee press for THIS frame — either
   //     starting a fresh swing or buffering into the still-active one.
-  if (input.melee && !hero.hitStunned && shootingAllowed) {
+  if (intent.melee && !hero.hitStunned && shootingAllowed) {
     const wasActive = hero.meleeActive || hero.specialMeleeActive;
-    hero.requestMelee(input.down ? 'special' : 'normal');
+    hero.requestMelee(intent.down ? 'special' : 'normal');
     if (!wasActive && (hero.meleeActive || hero.specialMeleeActive)) {
       record(hero, { kind: 'meleeSwing' }); // count the swing start
     }
