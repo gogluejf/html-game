@@ -44,6 +44,8 @@ export function resolveEffects(id) {
   // Macros inherit the effects of everything they invoke — dynamically and
   // transitively (a macro invoking a macro sees the whole chain), never
   // copied. Cycle-safe: visiting is tracked per resolution pass.
+  // Per-invoke overrides (from the attacks array) can suppress or modify
+  // inherited effect rows.
   const visit = (attackId, via, visited) => {
     if (visited.has(attackId)) return;
     visited.add(attackId);
@@ -56,6 +58,19 @@ export function resolveEffects(id) {
   for (const invId of def.meta.invokes ?? []) {
     const invDef = getPrimitive(invId) ?? getMacro(invId);
     visit(invId, invDef?.meta?.name ?? invId, visited);
+  }
+  // Apply per-invoke overrides from the attacks array: remove suppressed types.
+  if (def.attacks) {
+    for (const atk of def.attacks) {
+      if (!atk.overrides) continue;
+      for (const [key, val] of Object.entries(atk.overrides)) {
+        if (val === false) {
+          // Find and remove the matching effect row (by type or key match).
+          const idx = rows.findIndex((r) => r.type === key || r.type.includes(key));
+          if (idx !== -1) rows.splice(idx, 1);
+        }
+      }
+    }
   }
   return rows;
 }

@@ -24,7 +24,7 @@ const DEFAULTS = Object.freeze({
 defineMacro('explosiveProjectile', {
   attacks: [
     { id: 'projectile', role: 'carrier' },
-    { id: 'explosion', role: 'payload' },
+    { id: 'explosion', role: 'payload', overrides: { 'screen-flash': false } },
   ],
   params: { ...DEFAULTS },
   meta: {

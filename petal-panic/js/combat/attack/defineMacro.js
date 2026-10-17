@@ -37,6 +37,7 @@ export function defineMacro(id, def) {
 
   registerMacro(id, {
     params: { ...params },
+    attacks, // stored for resolveEffects overrides
     meta: {
       name: meta.name ?? id,
       desc: meta.desc ?? '',
