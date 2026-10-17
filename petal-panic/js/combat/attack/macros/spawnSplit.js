@@ -26,6 +26,9 @@ import { invoke, AttackHandle } from '../engine.js';
 import { spreadAngles } from './spreadShot.js';
 import { makeEnemy } from '../../../world/build.js';
 import { GRAVITY } from '../../../consts.js';
+import { resolveCarrier } from '../carrierMacro.js';
+import { stepBomb, stepBombTerrain } from '../primitives/bomb.js';
+import { stepProjectile } from '../primitives/projectile.js';
 
 const DEFAULTS = Object.freeze({
   x: 0,
@@ -134,6 +137,23 @@ registerMacro('spawnSplit', {
 
     h.handles = handles;
     h.enemies = enemies;
+
+    // Unified stepping: host calls h.step(dt, targets) each frame.
+    h.step = (dt, targets = []) => {
+      for (const child of handles) {
+        if (child._completed || child._cancelled) continue;
+        const inner = resolveCarrier(child);
+        if (inner.entity?._attackId === 'bomb') {
+          const groundY = p.groundY ?? ctx.groundY;
+          const platforms = p.platforms ?? ctx.platforms ?? [];
+          if (groundY != null) stepBombTerrain(inner.entity, dt, groundY, platforms);
+          stepBomb(inner.entity, inner._params ?? p, ctx, inner);
+        } else if (inner.entity?._attackId === 'projectile') {
+          stepProjectile(inner.entity, inner);
+        }
+      }
+      return h._completed;
+    };
 
     if (handles.length === 0) {
       h._complete({ count: children.length, enemies: enemies.length });
