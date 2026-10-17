@@ -110,9 +110,11 @@ export class Pool {
   spawn(...args) {
     for (const item of this.items) {
       if (!item.alive) {
+        // A collision can kill a slot AFTER updateAll's cleanup. Reusing it
+        // must not append the same object a second time (double physics).
         Object.assign(item, new this.ClassRef(...args));
         item.alive = true;
-        this.active.push(item);
+        if (!this.active.includes(item)) this.active.push(item);
         return item;
       }
     }

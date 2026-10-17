@@ -67,7 +67,7 @@ export function createCarrierHandle(id, params, ctx, { onDetonate }) {
   h.step = (dt, targets = []) => {
     // Step the innermost carrier.
     const ch = resolveCarrier(h);
-    if (ch.entity) {
+    if (!parentDone && ch.entity) {
       if (ch.entity._attackId === 'bomb') {
         // Terrain: host supplies groundY via params or ctx.
         const groundY = params.groundY ?? ctx.groundY;
@@ -81,8 +81,10 @@ export function createCarrierHandle(id, params, ctx, { onDetonate }) {
 
     // Step deferred children (fireArea, child bombs, etc.).
     for (const child of h.handles) {
-      if (child.state?.done) continue;
-      if (child.entity?._attackId === 'bomb') {
+      if (child._completed || child._cancelled) continue;
+      if (typeof child.step === 'function') {
+        child.step(dt, targets);
+      } else if (child.entity?._attackId === 'bomb') {
         // Child bomb carriers (clusterBomb splits).
         let inner = child;
         while (inner.inner?.entity) inner = inner.inner;
@@ -90,8 +92,6 @@ export function createCarrierHandle(id, params, ctx, { onDetonate }) {
         const platforms = params.platforms ?? ctx.platforms ?? [];
         if (groundY != null) stepBombTerrain(inner.entity, dt, groundY, platforms);
         stepBomb(inner.entity, inner._params ?? params, ctx, inner);
-      } else if (typeof child.step === 'function') {
-        child.step(dt, targets);
       }
     }
 
@@ -115,7 +115,11 @@ export function createCarrierHandle(id, params, ctx, { onDetonate }) {
   // Wire the detonate subscription.
   const wireDetonate = (carrier) => {
     carrier.on('detonate', ({ x, y }) => {
+      // The payload can immediately recycle the dead carrier's pool slot.
+      // From here on its entity belongs to another attack, not this parent.
+      parentDone = true;
       onDetonate?.({ x, y }, h);
+      childrenDone = h.handles.every((child) => child._completed || child._cancelled);
     });
     carrier.on('hit', (...args) => h._emit('hit', ...args));
     carrier.on('complete', () => {
