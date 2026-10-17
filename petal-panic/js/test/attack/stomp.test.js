@@ -3,7 +3,7 @@
 
 import { strict as assert } from 'node:assert';
 import '../../combat/attack/primitives/explosion.js'; // register the payload primitive
-import { stompImpactPoint } from '../../combat/attack/macros/stomp.js';
+import { stompImpactPoint, resolveStompBlast } from '../../combat/attack/macros/stomp.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { LAYER } from '../../consts.js';

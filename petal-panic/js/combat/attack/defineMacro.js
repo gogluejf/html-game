@@ -28,7 +28,7 @@ import { registerMacro } from './registry.js';
 export function defineMacro(id, def) {
   const { attacks, params, meta = {}, impl } = def;
 
-  if (!Array.isArray(attacks) || attacks.length === 0) {
+  if (!Array.isArray(attacks)) {
     throw new Error(`attack/${id}: 'attacks' array is required`);
   }
 

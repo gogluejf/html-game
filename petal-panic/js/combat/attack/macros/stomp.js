@@ -3,29 +3,30 @@
 // Telegraph once → [tiny hop → land: radius blast + dust + screen shake] × count.
 //
 // The stomp is a SURFACE-AWARE AREA ATTACK: on impact a circular radius around
-// the impact point damages everyone inside it (enemies on the ground AND on
-// platforms — if they're in the circle they get hit; above the radius they
-// don't). The attacker does a very small hop before landing — just enough to
-// read that it moved. Dust puff + camera shake fire on EVERY impact, even when
-// nothing is hit.
+// the impact point damages everyone inside it — enemies on the ground AND
+// floating in the air, as long as they're inside the circle (above the radius
+// they don't). The attacker does a very small hop before landing — just enough
+// to read that it moved. Dust puff + camera shake fire on EVERY impact, even
+// when nothing is hit.
 //
-// Composition (per the doc):
-//   telegraph (once) → repeat count times: [hop → land: explosion(radius) +
+// The stomp owns its OWN radius damage: a single-frame circular check against
+// the host's targets, routed through each target's real takeDamage() (the
+// engine's damage pipeline). It does NOT invoke the explosion primitive and
+// fires no explosion VFX — a stomp reads as ground impact (dust + shake), not
+// a bomb going off.
+//
+// Composition:
+//   telegraph (once) → repeat count times: [hop → land: radius damage +
 //   dust-cloud + camera-shake → interval]
-//
-// The damage itself is the Explosion primitive (single resolveExplosion path,
-// radial knockback included). Hop/dust/shake are presentation owned by this
-// macro — the host renders h.state.phase ('telegraph' | 'hop' | 'impact' |
-// 'interval') and reads h.state.impact {x,y} for placement.
 //
 // Handle shape:
 //   h.step(dt, targets) — advance the sequence; true when all stomps done
 //   state.phase         — current phase (for VFX/theater rendering)
 //   state.impact        — { x, y } of the last impact (dust/shake placement)
-//   hit / complete      — hits forwarded from the blast; complete { stomps }
+//   hit / complete      — hit per damaged target; complete { stomps }
 
 import { defineMacro } from '../defineMacro.js';
-import { invoke, AttackHandle } from '../engine.js';
+import { AttackHandle } from '../engine.js';
 import { Effects } from '../../../effects.js';
 
 const DEFAULTS = Object.freeze({
@@ -40,9 +41,10 @@ const DEFAULTS = Object.freeze({
   interval: 0.5,          // pause between stomps (s)
   hopHeight: 10,          // tiny visual hop offset (px)
   hopTime: 0.12,          // hop duration (s) — up then down
-  radius: 70,             // blast radius around the impact point (px)
+  radius: 90,             // blast radius around the impact point (px)
   damage: 30,             // stomp damage (everyone in the radius)
   team: 'neutral',        // who the stomp hurts (area hazard default)
+  method: 'stomp',        // damage() telemetry label
   dustStyle: null,        // dust-cloud effect override
   shakeStrength: 5,       // camera shake intensity on impact
 });
@@ -60,13 +62,45 @@ export function stompImpactPoint(attacker) {
   };
 }
 
+/**
+ * Resolve the stomp's own radius blast. Single-frame circular check: every
+ * live target whose CENTER is within `radius` of the impact point takes
+ * damage through its real takeDamage() (engine pipeline). No explosion
+ * primitive, no blast VFX — the stomp IS the attack.
+ *
+ * @param {object} p     merged params (radius, damage, team, method)
+ * @param {object} ctx   AttackContext (attacker for self-exclusion/telemetry)
+ * @param {Array<object>} targets candidate entities (host-provided)
+ * @returns {Array<{target:object, dealt:number}>} hits landed
+ */
+export function resolveStompBlast(p, ctx, targets) {
+  const pt = stompImpactPoint(ctx.attacker);
+  const cx = pt.x, cy = pt.y - 8; // slightly above the feet so standing bodies register
+  const hits = [];
+  for (const t of targets ?? []) {
+    if (!t || !t.alive || t === ctx.attacker) continue;
+    const dx = (t.x + t.w / 2) - cx;
+    const dy = (t.y + t.h / 2) - cy;
+    if (Math.hypot(dx, dy) > p.radius) continue;
+    const dealt = typeof t.takeDamage === 'function'
+      ? t.takeDamage(p.damage, ctx.attacker, p.method ?? 'stomp')
+      : 0;
+    if (dealt > 0) hits.push({ target: t, dealt });
+  }
+  return hits;
+}
+
 defineMacro('stomp', {
-  attacks: [{ id: 'explosion', role: 'payload' }],
+  attacks: [], // self-contained: owns its radius damage, invokes nothing
   params: { ...DEFAULTS },
   meta: {
     name: 'Stomp',
-    desc: 'Telegraph → tiny hop → land: circular radius blast + dust + screen shake. Repeats `count` times with an interval.',
-    effects: [], // blast burst/shake inherited from Explosion via resolveEffects()
+    desc: 'Telegraph → tiny hop → land: own circular radius blast + dust + screen shake. Repeats `count` times with an interval.',
+    effects: [
+      { type: 'dust-cloud', desc: 'ground dust puff at the impact point (every impact)' },
+      { type: 'camera-shake', desc: 'shake on impact' },
+      { type: 'hit-sparkle', desc: 'blood-like sparkle on each target the radius catches' },
+    ],
     params: [
       { key: 'surface', desc: "'current' | 'all'" },
       { key: 'buildTime', desc: 'telegraph grow (s)' },
@@ -88,6 +122,9 @@ defineMacro('stomp', {
     const fx = ctx.effects ?? Effects;
     const n = Math.max(1, Math.floor(p.count));
     const teleTotal = telegraphTotal(p); // grow + silence + warning
+    // Pending targets: the host passes them on every step(); the impact frame
+    // consumes the latest set (a stomp lands mid-sequence, not at invoke).
+    let pendingTargets = [];
 
     h.state = {
       phase: teleTotal > 0 ? 'telegraph' : 'hop',
@@ -105,25 +142,13 @@ defineMacro('stomp', {
       h.state.phase = 'impact';
       h.state.t = 0;
 
-      // Damage: circular radius via the single explosion path. Suppress the
-      // explosion's own flash (a stomp is not a bomb going off) but keep its
-      // burst; the stomp adds its OWN dust + stronger shake at the feet.
-      // The blast resolves against world targets (gameplay passes them in
-      // ctx.world.targets); `targets` here are for the host's step loop.
-      const blast = invoke('explosion', {
-        x: pt.x, y: pt.y - 8,
-        radius: p.radius,
-        damage: p.damage,
-        team: p.team,
-        self: ctx.attacker,
-        screenFlash: false,
-        shake: false, // the macro owns the shake (tuned strength)
-      }, ctx);
-      blast.on('hit', (...x) => h._emit('hit', ...x));
-      // Surface the blast summary as hit events so hosts that subscribe
-      // BEFORE stepping still see who was hit (the blast is synchronous).
-      if (blast._lastResult?.hit?.length) {
-        for (const t of blast._lastResult.hit) h._emit('hit', { target: t, dealt: p.damage });
+      // The stomp's OWN radius blast — no explosion invoke, no blast VFX.
+      const hits = resolveStompBlast(p, ctx, pendingTargets);
+      for (const hit of hits) {
+        h._emit('hit', hit);
+        // Blood-like hit sparkle on the struck target (design §12): the impact
+        // reads as a physical hit, not just numbers going down.
+        fx.spawnHitSparkles?.(hit.target.x + hit.target.w / 2, hit.target.y + hit.target.h / 2, 6);
       }
 
       // Impact juice via the REAL Effect Engine (effects.md #20 dust-cloud,
@@ -135,6 +160,7 @@ defineMacro('stomp', {
     h.step = (dt, targets) => {
       const s = h.state;
       if (s.done) return true;
+      if (targets) pendingTargets = targets;
       s.t += dt;
 
       switch (s.phase) {
@@ -182,8 +208,6 @@ defineMacro('stomp', {
       return false;
     };
 
-    // Zero-telegraph + synchronous hosts may want the first impact immediately;
-    // the step-based contract still applies (host calls h.step each frame).
     return h;
   },
 });

@@ -354,7 +354,7 @@ export const AttackTheater = {
     this._spawnedEnemies = [];
     for (const v of this._stompVics ?? []) { try { this._world?.remove(v); } catch { /* noop */ } }
     this._stompVics = null;
-    this._stompPlatform = null;
+    this._stompPlatforms = [];
     this._loadParams();
   },
 
@@ -372,7 +372,7 @@ export const AttackTheater = {
     this._attacker = null;
     this._target = null;
     this._stompVics = null;
-    this._stompPlatform = null;
+    this._stompPlatforms = [];
     this._choreo = null;
   },
 
@@ -392,7 +392,7 @@ export const AttackTheater = {
       collisionWorld: this._world,
       effects: { ...Effects, fireManual }, // REAL VFX + fireManual for telegraphs
       groundY: GROUND_Y,
-      platforms: this._stompPlatform ? [this._stompPlatform] : [],
+      platforms: this._stompPlatforms ?? [],
       solids: [this._floorSolid],
     });
   },
@@ -437,7 +437,7 @@ export const AttackTheater = {
       // Drop stomp-demo victims + platform from the previous run.
       for (const v of this._stompVics ?? []) { try { this._world?.remove(v); } catch { /* noop */ } }
       this._stompVics = null;
-      this._stompPlatform = null;
+      this._stompPlatforms = [];
       // Drop enemies spawned by the previous spawnSplit run (real world entities).
       for (const e of this._spawnedEnemies ?? []) { try { this._world?.remove(e); } catch { /* noop */ } }
       this._spawnedEnemies = [];
@@ -561,29 +561,46 @@ export const AttackTheater = {
       this._choreo = { kind: 'vanishOnReplay' };
     } else if (id === 'stomp' || id === 'stompWave') {
       // Stomp demos stage the victims per attack:
-      //   stomp — THREE victims prove the circular radius: one on the ground
-      //     INSIDE the radius (hit), one on a low platform INSIDE the radius
-      //     (hit), one on a high platform ABOVE the radius (untouched).
+      //   stomp — FOUR victims, each on its own surface (no empty-sky floats):
+      //     one on the ground INSIDE the radius (hit), TWO on a mid-air platform
+      //     INSIDE the radius (both hit — airborne but in the circle), one on a
+      //     HIGH platform ABOVE the radius (untouched). Proves the blast is
+      //     positional, not surface-bound.
       //   stompWave — exactly TWO victims, both on the ground, ONE PER SIDE
       //     of the centered attacker. No air victims: waves ride surfaces,
       //     so each wave visibly catches its own side victim.
-      const blastR = this._params.radius ?? 90;
       if (id === 'stompWave') {
         const cx = (this._attacker.x = 400) + this._attacker.w / 2; // center stage
         this._stompVics = [
           { x: cx - 130, y: GROUND_Y - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },
           { x: cx + 102, y: GROUND_Y - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },
         ];
-        this._stompPlatform = null;
+        this._stompPlatforms = [];
       } else {
         const cx = this._attacker.x + this._attacker.w / 2;
-        this._stompVics = [
-          { x: cx + 70, y: GROUND_Y - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },
-          { x: cx - blastR * 0.55, y: 330 - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },
-          { x: cx + 40, y: 210 - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },
+        // Stomp demo: FOUR victims, EVERY ONE standing on a surface (no enemy
+        // floats in empty sky). Proves the circular radius is POSITIONAL, not
+        // surface-bound: ground victim INSIDE the radius (hit), TWO on a mid-air
+        // platform INSIDE the radius (both hit — airborne but in the circle),
+        // one on a HIGH platform ABOVE the radius (untouched). Each victim sits
+        // on its own visible platform so the staging reads as intentional.
+        const midTop = GROUND_Y - 60;   // mid-air platform → victims ~66px above impact center (inside r90)
+        const highTop = GROUND_Y - 250; // high platform → victim far above the blast circle
+        // Mid platform hugs BOTH mid-air victims: span from the left edge of #1
+        // to the right edge of #2, with a small pad on each side — no ugly long
+        // tail. High platform does the same for its single safe victim.
+        const midL = cx - 50, midR = cx + 30 + 28;          // victim extents
+        const hiX = cx + 40, hiW = 28;
+        this._stompPlatforms = [
+          { x: midL - 12, y: midTop, w: (midR - midL) + 24 },
+          { x: hiX - 12, y: highTop, w: hiW + 24 },
         ];
-        // The low platform the second victim stands on.
-        this._stompPlatform = { x: cx - blastR - 60, y: 330, w: blastR + 90 };
+        this._stompVics = [
+          { x: cx + 70, y: GROUND_Y - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY }, // ground (floor)
+          { x: cx - 50, y: midTop - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },   // mid #1 (on platform)
+          { x: cx + 30, y: midTop - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },   // mid #2 (on platform)
+          { x: cx + 40, y: highTop - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },  // high (on platform, safe)
+        ];
       }
       for (const v of this._stompVics) {
         v.takeDamage = (amt) => { if (!v.alive) return 0; v.hp -= amt; if (v.hp <= 0) v.alive = false; return amt; };
@@ -1113,12 +1130,13 @@ export const AttackTheater = {
       ctx.fillText('ATTACKER', this._attacker.x + this._attacker.w / 2, ay - 8);
     }
 
-    // Stomp demo staging: the low platform + three labeled victims.
-    if (this._stompPlatform) {
+    // Stomp demo staging: every victim's platform (mid-air + high), drawn so
+    // the staging reads as intentional — no enemy floats in empty sky.
+    for (const plat of this._stompPlatforms ?? []) {
       ctx.fillStyle = '#445';
-      ctx.fillRect(this._stompPlatform.x, this._stompPlatform.y, this._stompPlatform.w, 8);
+      ctx.fillRect(plat.x, plat.y, plat.w, 8);
       ctx.fillStyle = '#667';
-      ctx.fillRect(this._stompPlatform.x, this._stompPlatform.y, this._stompPlatform.w, 3);
+      ctx.fillRect(plat.x, plat.y, plat.w, 3);
     }
     for (const v of this._stompVics ?? []) {
       if (!v.alive) continue;
