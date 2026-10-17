@@ -48,6 +48,7 @@ import '../combat/attack/primitives/fireArea.js';
 import '../combat/attack/primitives/spike.js';
 import '../combat/attack/primitives/orbit.js';
 import '../combat/attack/primitives/boomerang.js';
+import '../combat/attack/primitives/surfaceWave.js';
 
 // --- Sandbox constants --------------------------------------------------------
 const GROUND_Y = 400;
@@ -96,6 +97,9 @@ const SANDBOX_PRESETS = {
   clusterBomb: { direction: -0.5, arc: 800, bounce: false, ttl: 3, damage: 20, radius: 40, count: 4, childAngle: 120 * DEG, childDirection: -Math.PI / 2, childForce: 300, childArc: 700, childTtl: 2, childDamage: 15, childRadius: 30 },
   targetedBeam: { duration: 1.2, lockTime: 0.5, color: '#ff5555', radius: 30, tracking: true, beamDuration: 1.0, beamWidth: 24, beamLength: 1000, damage: 15, tickRate: 8, team: 'ally' },
   sweepingBeam: { direction: 0, sweepAngle: 67.5 * DEG, length: 1000, width: 24, speed: 0, holdDuration: 0.4, sweepDuration: 1.0, endHoldDuration: 0.3, fadeOut: 0.5, damage: 20, tickRate: 8, team: 'ally', shimmerLow: 0.1, shimmerHigh: 0.35 },
+  surfaceWave: { x: ATTACKER_HOME.x + 16, y: GROUND_Y, direction: 'right', speed: 300, height: 24, width: 28, damage: 15, ttl: null, team: 'foe' },
+  stomp: { buildTime: 0.6, gapTime: 0.4, blinkTime: 0.3, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, radius: 90, damage: 30, team: 'foe', shakeStrength: 5 },
+  stompWave: { buildTime: 0.6, gapTime: 0.4, blinkTime: 0.3, impactDelay: 0.1, sides: 'both', hopHeight: 10, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 5 },
 };
 
 /** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
@@ -127,6 +131,9 @@ export const TWEAKABLE = {
   clusterBomb: [['count', 'int', 1], ['childAngle', 'angle', 15 * DEG], ['childDirection', 'angle', 15 * DEG], ['childForce', 'num', 50], ['childArc', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
   targetedBeam: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['beamDuration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   sweepingBeam: [['direction', 'angle', 15 * DEG], ['sweepAngle', 'angle', 10 * DEG], ['speed', 'num', 20], ['holdDuration', 'num', 0.1], ['sweepDuration', 'num', 0.1], ['endHoldDuration', 'num', 0.05], ['fadeOut', 'num', 0.05], ['damage', 'num', 2]],
+  surfaceWave: [['speed', 'num', 50], ['height', 'num', 4], ['width', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5]],
+  stomp: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['count', 'int', 1], ['interval', 'num', 0.1], ['radius', 'num', 10], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
+  stompWave: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['waveSpeed', 'num', 50], ['waveHeight', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
 };
 
 export const AttackTheater = {
@@ -345,6 +352,9 @@ export const AttackTheater = {
     // on replay/teardown so they don't leak into the next run.
     for (const e of this._spawnedEnemies ?? []) { try { this._world?.remove(e); } catch { /* noop */ } }
     this._spawnedEnemies = [];
+    for (const v of this._stompVics ?? []) { try { this._world?.remove(v); } catch { /* noop */ } }
+    this._stompVics = null;
+    this._stompPlatform = null;
     this._loadParams();
   },
 
@@ -361,6 +371,8 @@ export const AttackTheater = {
     this._world = null;
     this._attacker = null;
     this._target = null;
+    this._stompVics = null;
+    this._stompPlatform = null;
     this._choreo = null;
   },
 
@@ -375,12 +387,13 @@ export const AttackTheater = {
 
   _ctx() {
     return makeContext(this._attacker, {
-      world: { targets: [this._target], hero: null },
+      world: { targets: [this._target, ...(this._stompVics ?? [])], hero: null },
       pools: this._pools,
       collisionWorld: this._world,
       effects: { ...Effects, fireManual }, // REAL VFX + fireManual for telegraphs
       groundY: GROUND_Y,
-      platforms: [],
+      platforms: this._stompPlatform ? [this._stompPlatform] : [],
+      solids: [this._floorSolid],
     });
   },
 
@@ -421,6 +434,10 @@ export const AttackTheater = {
       // demos hide it for the whole run — every new run starts visible again.
       this._attackerVisible = true;
       this._kamikaze = null;
+      // Drop stomp-demo victims + platform from the previous run.
+      for (const v of this._stompVics ?? []) { try { this._world?.remove(v); } catch { /* noop */ } }
+      this._stompVics = null;
+      this._stompPlatform = null;
       // Drop enemies spawned by the previous spawnSplit run (real world entities).
       for (const e of this._spawnedEnemies ?? []) { try { this._world?.remove(e); } catch { /* noop */ } }
       this._spawnedEnemies = [];
@@ -542,6 +559,37 @@ export const AttackTheater = {
       this._params.x = this._attacker.x + this._attacker.w / 2;
       this._params.y = this._attacker.y + 10;
       this._choreo = { kind: 'vanishOnReplay' };
+    } else if (id === 'stomp' || id === 'stompWave') {
+      // Stomp demos stage the victims per attack:
+      //   stomp — THREE victims prove the circular radius: one on the ground
+      //     INSIDE the radius (hit), one on a low platform INSIDE the radius
+      //     (hit), one on a high platform ABOVE the radius (untouched).
+      //   stompWave — exactly TWO victims, both on the ground, ONE PER SIDE
+      //     of the centered attacker. No air victims: waves ride surfaces,
+      //     so each wave visibly catches its own side victim.
+      const blastR = this._params.radius ?? 90;
+      if (id === 'stompWave') {
+        const cx = (this._attacker.x = 400) + this._attacker.w / 2; // center stage
+        this._stompVics = [
+          { x: cx - 130, y: GROUND_Y - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },
+          { x: cx + 102, y: GROUND_Y - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },
+        ];
+        this._stompPlatform = null;
+      } else {
+        const cx = this._attacker.x + this._attacker.w / 2;
+        this._stompVics = [
+          { x: cx + 70, y: GROUND_Y - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },
+          { x: cx - blastR * 0.55, y: 330 - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },
+          { x: cx + 40, y: 210 - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },
+        ];
+        // The low platform the second victim stands on.
+        this._stompPlatform = { x: cx - blastR - 60, y: 330, w: blastR + 90 };
+      }
+      for (const v of this._stompVics) {
+        v.takeDamage = (amt) => { if (!v.alive) return 0; v.hp -= amt; if (v.hp <= 0) v.alive = false; return amt; };
+        this._world.add(v);
+      }
+      this._choreo = { kind: 'stompStage' };
     }
     // (explosion + spawnSplit stage the origin at the attacker and hide its
     // body via vanishOnReplay — the body IS the attack in both demos.)
@@ -763,6 +811,9 @@ export const AttackTheater = {
         // Spawn/split demo: the attacker disappears the instant the split
         // happens (it BECOMES the bombs).
         this._attackerVisible = false;
+      } else if (c.kind === 'stompStage') {
+        // Stomp demos: static staging — the macro owns the whole sequence
+        // (telegraph → hop → impact/waves). Nothing to move here.
       }
     }
 
@@ -872,6 +923,11 @@ export const AttackTheater = {
           }
         } else if (h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike') {
           finished = h.step(DT, [this._target]);
+        } else if (h.id === 'stomp' || h.id === 'stompWave' || h.id === 'surfaceWave') {
+          // Stomp family: the macro/primitive owns its sequence; pass every
+          // live victim (main dummy + staged stomp victims) as candidates.
+          const vics = [this._target, ...(this._stompVics ?? [])].filter((v) => v?.alive);
+          finished = h.step(DT, vics);
         } else if (h.id === 'boomerang') {
           finished = h.step(DT);
           // Contact check: every live boomerang body vs the dummy target.
@@ -951,6 +1007,10 @@ export const AttackTheater = {
 
     // Target bookkeeping.
     if (this._target.hitFlash > 0) this._target.hitFlash -= DT;
+    for (const v of this._stompVics ?? []) {
+      if (v.hitFlash > 0) v.hitFlash -= DT;
+      if (v.hp <= 0 && v.alive) { v.alive = false; this._log.unshift('VICTIM DOWN'); }
+    }
     if (this._target.hp <= 0) {
       this._target.alive = false;
       this._log.unshift('TARGET DOWN');
@@ -1035,16 +1095,39 @@ export const AttackTheater = {
     }
 
     // Attacker (hidden during vanish/kamikaze demos — the body IS the attack).
+    // Stomp-family handles lift the sprite by their visual hop offset.
     if (this._attacker && this._attackerVisible !== false) {
+      let hopOff = 0;
+      for (const h of this._handles) {
+        if ((h.id === 'stomp' || h.id === 'stompWave') && h.state?.hopOffset > 0) hopOff = Math.max(hopOff, h.state.hopOffset);
+      }
+      const ay = this._attacker.y - hopOff;
       ctx.fillStyle = '#ff6ec7';
-      ctx.fillRect(this._attacker.x, this._attacker.y, this._attacker.w, this._attacker.h);
+      ctx.fillRect(this._attacker.x, ay, this._attacker.w, this._attacker.h);
       // Facing wedge.
       ctx.fillStyle = '#fff';
       const fx = this._attacker.facing >= 0 ? this._attacker.x + this._attacker.w : this._attacker.x - 8;
-      ctx.fillRect(fx, this._attacker.y + this._attacker.h / 2 - 3, 8, 6);
+      ctx.fillRect(fx, ay + this._attacker.h / 2 - 3, 8, 6);
       ctx.font = '10px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('ATTACKER', this._attacker.x + this._attacker.w / 2, this._attacker.y - 8);
+      ctx.fillText('ATTACKER', this._attacker.x + this._attacker.w / 2, ay - 8);
+    }
+
+    // Stomp demo staging: the low platform + three labeled victims.
+    if (this._stompPlatform) {
+      ctx.fillStyle = '#445';
+      ctx.fillRect(this._stompPlatform.x, this._stompPlatform.y, this._stompPlatform.w, 8);
+      ctx.fillStyle = '#667';
+      ctx.fillRect(this._stompPlatform.x, this._stompPlatform.y, this._stompPlatform.w, 3);
+    }
+    for (const v of this._stompVics ?? []) {
+      if (!v.alive) continue;
+      ctx.fillStyle = v.hitFlash > 0 ? '#fff' : (v.hp < 999 ? '#9f9' : '#6d6');
+      ctx.fillRect(v.x, v.y, v.w, v.h);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`HP ${Math.max(0, Math.round(v.hp))}`, v.x + v.w / 2, v.y - 6);
     }
 
     // Orbit satellites (2D pulsing ring) — drawn after the attacker box.
@@ -1149,8 +1232,13 @@ export const AttackTheater = {
           ctx.textAlign = 'center';
           ctx.fillText(st.phase, st.x, st.y - 12);
         }
+      } else if (h.id === 'stomp' && !st.done) {
+        // Stomp: telegraph + impact juice are REAL effects fired by the macro.
+        // Nothing to draw here — no theater-side circles or boxes.
+      } else if ((h.id === 'stompWave' || h.id === 'surfaceWave') && !st.done) {
+        // Surface wave: crest is the primitive's ground-wave effect. Nothing
+        // to draw here either.
       } else if ((h.id === 'fireArea' || h.id === 'spike') && !st.done) {
-        // Persistent area / spike hazard: tinted box by phase.
         let box = null;
         if (h.id === 'fireArea') { const fp = h._params ?? this._params; const fw = fp.width; box = { x: fp.x - fw / 2, y: GROUND_Y - 48, w: fw, h: 48 }; }
         else if (st.phase === 'visible') { const sw = this._params.width; box = { x: this._params.x - sw / 2, y: this._params.y - 8, w: sw, h: 16 }; }

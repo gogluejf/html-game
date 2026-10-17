@@ -215,9 +215,15 @@ Parameters may include:
 - Pulse rate (build phase)
 - Opacity
 - Thickness
-- Duration (scales all phases)
+- Duration (scales all phases — legacy mode)
+- **buildTime / gapTime / blinkTime** (absolute seconds per phase; when any
+  is provided, the total duration is derived as their sum and `duration` is
+  ignored). Naming matches the macro-side telegraph params 1:1.
 - Position
 - Follow target / fixed position
+
+Note: post-warning delays (e.g. a beat between the last blink and the impact)
+are MACRO timing, not effect params — the effect finishes exactly at blink end.
 
 ---
 

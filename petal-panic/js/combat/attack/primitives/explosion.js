@@ -104,6 +104,7 @@ registerPrimitive('explosion', {
     if (params.shake !== false) fx.triggerShake(4);
 
     h._emit('detonate', { x: params.x, y: params.y, hit: result.hit.length });
+    h._lastResult = result; // synchronous blast summary (macros surface it as hits)
     h._complete(result);
     return h;
   },

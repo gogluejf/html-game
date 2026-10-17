@@ -247,11 +247,14 @@ timed spike traps.
 
 ## 9. Surface Wave
 
-**Effects:** Hit Sparkle (hit juice on every enemy struck)
+**Effects:** Ground Wave (crest visual riding alongside the collision volume),
+Hit Sparkle (hit juice on every enemy struck)
 
 A damaging wave that travels **along a supporting surface** from an origin
 point, hitting everything in its path. One invoke = one wave going one
-direction. A two-sided stomp is two invokes (`left` + `right`).
+direction. A two-sided stomp is two invokes (`left` + `right`). The primitive
+owns BOTH the damage volume and its crest visual — callers never render waves
+themselves.
 
 ### Main parameters
 

@@ -95,6 +95,7 @@ const BLINK_CYCLES = 3;    // 3 on/off cycles
 /**
  * @param {{radius?:number, minRadius?:number, expand?:boolean, pulseRate?:number,
  *          thickness?:number, opacity?:number, duration?:number,
+ *          buildTime?:number, gapTime?:number, blinkTime?:number,
  *          followTarget?:boolean, color?:string, x?:number, y?:number}} params
  * @param {object} [carrier]
  * @returns {{update:Function, render:Function, complete:Function,
@@ -108,14 +109,33 @@ export function telegraphCircle(params = {}, carrier = null) {
   const pulseRate = params.pulseRate >= 0 ? params.pulseRate : DEFAULT_PULSE_RATE;
   const thickness = Math.max(0, params.thickness ?? DEFAULT_THICKNESS);
   const opacity = Math.min(1, Math.max(0, params.opacity ?? DEFAULT_OPACITY));
-  const duration = params.duration > 0 ? params.duration : DEFAULT_DURATION;
   const followTarget = !!params.followTarget;
   const color = params.color ?? DEFAULT_COLOR;
   const fallback = { x: params.x ?? 0, y: params.y ?? 0 };
 
-  // Pre-compute phase boundaries in seconds:
-  const buildEnd = duration * BUILD_FRAC;
-  const gapEnd = duration * (BUILD_FRAC + GAP_FRAC);
+  // Phase timings in ABSOLUTE SECONDS — buildTime (grow), gapTime (silence),
+  // blinkTime (final warning). When any is provided, duration is DERIVED as
+  // their sum (the effect lives exactly as long as its phases); when none
+  // are, the legacy `duration` + default fraction split applies. Callers
+  // tuning a specific attack feel pass the three times and never think about
+  // fractions or totals.
+  const hasPhaseTimes = [params.buildTime, params.gapTime, params.blinkTime].some((v) => v > 0);
+  let buildEnd, gapEnd, duration;
+  if (hasPhaseTimes) {
+    // Any omitted phase falls back to its default SHARE of the legacy total,
+    // so partial overrides still produce a sane sequence.
+    const base = params.duration > 0 ? params.duration : DEFAULT_DURATION;
+    const build = params.buildTime > 0 ? params.buildTime : base * BUILD_FRAC;
+    const gap = params.gapTime > 0 ? params.gapTime : base * GAP_FRAC;
+    const blink = params.blinkTime > 0 ? params.blinkTime : base * (1 - BUILD_FRAC - GAP_FRAC);
+    buildEnd = build;
+    gapEnd = build + gap;
+    duration = build + gap + blink;
+  } else {
+    duration = params.duration > 0 ? params.duration : DEFAULT_DURATION;
+    buildEnd = duration * BUILD_FRAC;
+    gapEnd = duration * (BUILD_FRAC + GAP_FRAC);
+  }
   // Each blink half-cycle (ON or OFF) duration:
   const blinkHalfCycle = (duration - gapEnd) / (BLINK_CYCLES * 2);
 

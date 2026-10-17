@@ -20,3 +20,5 @@ import './molotov.js';
 import './clusterBomb.js';
 import './targetedBeam.js';
 import './sweepingBeam.js';
+import './stomp.js';
+import './stompWave.js';

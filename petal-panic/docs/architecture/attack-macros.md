@@ -590,12 +590,13 @@ Telegraph once → [signal → tiny hop → land: radius blast + dust + screen s
 ### Parameters
 
 - **surface** — `current` / `all`.
-- **telegraphDuration** — full-sequence warning.
-- **telegraphStyle** — visual for the full telegraph.
+- **buildTime** — telegraph grow phase (s).
+- **gapTime** — telegraph silence phase (s).
+- **blinkTime** — telegraph final-warning phase (s).
+- **impactDelay** — beat after the warning ends, before the hop/slam (s).
+  Macro timing only — the telegraph effect finishes at blink end.
 - **count** — number of stomps, default `1`.
 - **interval** — pause between stomps.
-- **attackSignalEffect** — short cue before each individual stomp.
-- **signalDelay** — time after the signal before stomp damage lands.
 - **hopHeight** — tiny vertical offset of the pre-impact hop (visual only).
 - **radius** — blast radius around the impact point.
 - **damage** — stomp damage (applied to everyone in the radius).
@@ -642,7 +643,10 @@ wave(s) terminate.
 
 ### Main parameters
 
-- **telegraphDuration / telegraphStyle** — warning before the stomp.
+- **buildTime / gapTime / blinkTime** — telegraph phase times (s); the effect
+  derives its total from them.
+- **impactDelay** — beat after the warning ends, before the hop/waves (s).
+  Macro timing only.
 - **hopHeight** — tiny vertical offset of the pre-impact hop (visual only).
 - **sides** — which waves fire: `left`, `right`, or both.
 - **waveSpeed** — travel speed (maps to the primitive's `speed`).
