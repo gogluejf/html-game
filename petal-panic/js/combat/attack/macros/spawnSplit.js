@@ -122,7 +122,7 @@ defineMacro('spawnSplit', {
         // bomb flight + explosion payload). Primitives don't compose, so the
         // "it explodes" behavior is a macro concern.
         const child = invoke('explosiveBomb', {
-          origin: { x: c.x, y: c.y }, direction: c.angle, speed,
+          origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
           arc: b.arc ?? 700, bounce: b.bounce ?? true, ttl: b.ttl ?? 1.5,
           damage: b.damage ?? 25, radius: b.radius ?? 60,
           explodeOnContact: b.explodeOnContact ?? true,
@@ -131,7 +131,7 @@ defineMacro('spawnSplit', {
       } else {
         const pr = p.projectile ?? {};
         const child = invoke('projectile', {
-          origin: { x: c.x, y: c.y }, direction: c.angle, speed,
+          origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
           ttl: pr.ttl ?? 2, damage: pr.damage ?? 8,
         }, ctx);
         if (child?.entity) handles.push(child);
