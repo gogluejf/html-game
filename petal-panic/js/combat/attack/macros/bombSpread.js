@@ -15,6 +15,8 @@
 import { registerMacro } from '../registry.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { spreadAngles } from './spreadShot.js';
+import { resolveCarrier } from '../carrierMacro.js';
+import { stepBomb, stepBombTerrain } from '../primitives/bomb.js';
 
 const DEFAULTS = Object.freeze({
   count: 3,              // number of bombs
@@ -88,6 +90,21 @@ registerMacro('bombSpread', {
       h._emit('expire');
       h._complete();
     }
+
+    // Unified stepping: host calls h.step(dt, targets) each frame.
+    h.step = (dt, targets = []) => {
+      for (const child of h.handles) {
+        if (child._completed || child._cancelled) continue;
+        const inner = resolveCarrier(child);
+        if (inner.entity?._attackId === 'bomb') {
+          const groundY = p.groundY ?? ctx.groundY;
+          const platforms = p.platforms ?? ctx.platforms ?? [];
+          if (groundY != null) stepBombTerrain(inner.entity, dt, groundY, platforms);
+          stepBomb(inner.entity, inner._params ?? p, ctx, inner);
+        }
+      }
+      return h._completed;
+    };
 
     return h;
   },

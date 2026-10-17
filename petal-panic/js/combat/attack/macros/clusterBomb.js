@@ -1,38 +1,31 @@
 // Attack Engine — Cluster Bomb (macro). ONE object, one id.
 //
-// A parent explosiveBomb that, on detonation, splits into N smaller bombs
-// via spawnSplit (spawnType 'bomb'). Macro→macro composition: the parent's
-// terminal 'detonate' triggers a child fan-out at the death point.
-//
-// VFX contract: no native effects. The parent's blast comes from its inner
-// explosiveBomb (explosion primitive); the children each bring their own
-// explosion when they land. resolveEffects() inherits via meta.invokes.
-//
-// Handle shape: proxies the parent carrier; h.children is the spawnSplit
-// handle (when it fires). Complete fires when ALL children complete.
+// A parent bomb that, on detonation, splits into N smaller explosive bombs
+// via spawnSplit. Uses CarrierMacro base for unified stepping.
 
 import { registerMacro } from '../registry.js';
-import { invoke, AttackHandle } from '../engine.js';
+import { invoke } from '../engine.js';
+import { createCarrierHandle } from '../carrierMacro.js';
 
 const DEFAULTS = Object.freeze({
   // Parent bomb
-  speed: 500,           // launch force (px/s)
+  speed: 500,
   direction: -Math.PI / 4,
-  arc: 800,             // gravity px/s²
-  bounce: false,        // shatters on first impact
-  ttl: 3,               // fuse seconds
-  damage: 20,           // parent blast damage
-  radius: 40,           // parent blast radius (smaller than standalone bomb)
-  origin: null,         // marker label | {x,y} | null → attacker center
+  arc: 800,
+  bounce: false,
+  ttl: 3,
+  damage: 20,
+  radius: 40,
+  origin: null,
   blastTeam: 'neutral',
-  // Children (spawnSplit params)
-  count: 4,             // number of child bombs
-  childAngle: Math.PI,  // spread width (π = full upward hemisphere)
-  childDirection: -Math.PI / 2, // center direction (up)
-  childForce: 300,      // child launch force (px/s)
-  childTtl: 2,          // child fuse seconds
-  childDamage: 15,      // child blast damage
-  childRadius: 30,      // child blast radius (px)
+  // Children
+  count: 4,
+  childAngle: Math.PI,
+  childDirection: -Math.PI / 2,
+  childForce: 300,
+  childTtl: 2,
+  childDamage: 15,
+  childRadius: 30,
 });
 
 registerMacro('clusterBomb', {
@@ -63,82 +56,63 @@ registerMacro('clusterBomb', {
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
-    const h = new AttackHandle('clusterBomb');
 
-    const parent = invoke('explosiveBomb', {
+    const h = createCarrierHandle('clusterBomb', p, ctx, {
+      onDetonate({ x, y }, macroH) {
+        try {
+          const split = invoke('spawnSplit', {
+            x, y,
+            count: p.count,
+            centerDirection: p.childDirection,
+            angle: p.childAngle,
+            force: p.childForce,
+            spawnType: 'bomb',
+            bomb: {
+              speed: p.childForce,
+              direction: p.childDirection,
+              arc: p.arc,
+              bounce: false,
+              ttl: p.childTtl,
+              damage: p.childDamage,
+              radius: p.childRadius,
+              blastTeam: p.blastTeam,
+            },
+          }, ctx);
+          if (split?.handles?.length > 0) {
+            for (const ch of split.handles) {
+              macroH.handles.push(ch);
+              ch.on('hit', (...args) => macroH._emit('hit', ...args));
+            }
+          }
+        } catch (err) {
+          console.error(`attack/clusterBomb: split failed`, err.message);
+        }
+      },
+    });
+
+    const carrier = invoke('bomb', {
       speed: p.speed,
       direction: p.direction,
       arc: p.arc,
       bounce: p.bounce,
+      explodeOnContact: true,
       ttl: p.ttl,
       damage: p.damage,
       radius: p.radius,
       origin: p.origin,
-      blastTeam: p.blastTeam,
     }, ctx);
 
-    if (!parent?.entity) {
+    if (!carrier?.entity) {
       h._emit('expire');
       h._complete();
       return h;
     }
 
-    parent._params = p;
-    parent.on('hit', (...args) => h._emit('hit', ...args));
-
-    // Track completion: parent must finish AND all children must finish.
-    let parentDone = false;
-    let childrenDone = true; // no children yet = trivially done
-    const checkComplete = () => {
-      if (parentDone && childrenDone) h._complete();
-    };
-
-    parent.on('complete', () => {
-      parentDone = true;
-      checkComplete();
-    });
-
-    // On the carrier's detonate event, fire the split.
-    const carrier = parent.inner ?? parent;
-    carrier.on('detonate', ({ x, y }) => {
-      try {
-        const split = invoke('spawnSplit', {
-          x, y,
-          count: p.count,
-          centerDirection: p.childDirection,
-          angle: p.childAngle,
-          force: p.childForce,
-          spawnType: 'bomb',
-          bomb: {
-            speed: p.childForce,
-            direction: p.childDirection,
-            arc: p.arc,
-            bounce: false,
-            ttl: p.childTtl,
-            damage: p.childDamage,
-            radius: p.childRadius,
-            blastTeam: p.blastTeam,
-          },
-        }, ctx);
-        h.children = split;
-        if (split?.handles?.length > 0) {
-          childrenDone = false;
-          for (const ch of split.handles) {
-            ch.on('hit', (...args) => h._emit('hit', ...args));
-          }
-          split.on('complete', () => {
-            childrenDone = true;
-            checkComplete();
-          });
-        }
-      } catch (err) {
-        console.error(`attack/clusterBomb: split failed`, err.message);
-      }
-    });
-
-    h.setInner(parent);
-    h.entity = parent.entity;
-    h.inner = parent;
+    carrier._params = p;
+    h.setInner(carrier);
+    h.entity = carrier.entity;
+    h.inner = carrier;
+    h._wireCarrier(carrier);
     return h;
   },
 });

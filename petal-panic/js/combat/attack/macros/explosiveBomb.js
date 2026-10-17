@@ -1,27 +1,15 @@
 // Attack Engine — Explosive Bomb (macro). ONE object, one id.
 //
 // The classic "bomb that explodes": composes the dumb bomb CARRIER (primitive)
-// with the Explosion primitive. The carrier owns flight only (arc, bounce,
-// fuse, contact damage, landing puff); THIS macro owns the aftermath — it
-// subscribes to the carrier's 'detonate' event and fires a radial explosion
-// at exactly the death point.
+// with the Explosion primitive via the CarrierMacro base. The carrier owns
+// flight only; THIS macro owns the aftermath — explosion at the death point.
 //
-// Why a macro: the primitive/macro boundary forbids primitives from invoking
-// other attacks. "Bomb → Explosion" is composition, so it lives here, as
-// documented in docs/architecture/attack-macros.md §11.
-//
-// VFX contract: this macro fires NO effects of its own. The blast burst and
-// camera shake come from the Explosion primitive it invokes; the white screen
-// flash is SUPPRESSED (screenFlash: false) — the bomb's read is burst + shake,
-// not a full-screen flash. One owner per effect: the carrier fires no blast
-// VFX either, so nothing double-dips. resolveEffects() inherits the rows
-// dynamically via meta.invokes.
-//
-// Handle shape: proxies the inner carrier handle (entity, detonate, complete);
-// h.inner is the carrier handle for hosts that need it directly.
+// VFX contract: no native effects. Blast burst + shake come from the Explosion
+// primitive; screen flash is SUPPRESSED. resolveEffects() inherits via meta.invokes.
 
 import { registerMacro } from '../registry.js';
-import { invoke, AttackHandle } from '../engine.js';
+import { invoke } from '../engine.js';
+import { createCarrierHandle } from '../carrierMacro.js';
 
 const DEFAULTS = Object.freeze({
   speed: 500,           // launch force (px/s)
@@ -40,13 +28,8 @@ registerMacro('explosiveBomb', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Explosive Bomb',
-    // No native effects: the blast burst + camera shake are inherited from the
-    // Explosion payload via resolveEffects() (meta.invokes) — declaring them
-    // here would shadow the primitive's own rows in the dedup. The screen flash
-    // is suppressed per call (screenFlash: false), so it does not appear in the
-    // macro's effective VFX even though the primitive supports it.
     effects: [],
-    desc: 'Ballistic bomb that detonates into a radial explosion at its death point. Carrier owns flight; this macro owns the blast.',
+    desc: 'Ballistic bomb that detonates into a radial explosion at its death point.',
     invokes: ['bomb', 'explosion'],
     params: [
       { key: 'speed', desc: 'launch force (px/s)' },
@@ -63,10 +46,31 @@ registerMacro('explosiveBomb', {
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
-    const h = new AttackHandle('explosiveBomb');
 
-    // The carrier: pure flight. Its terminal 'detonate' carries the death
-    // point — we fire the blast there.
+    const h = createCarrierHandle('explosiveBomb', p, ctx, {
+      onDetonate({ x, y }, macroH) {
+        try {
+          const targets = new Set();
+          for (const t of ctx.world?.targets ?? []) if (t) targets.add(t);
+          const aimed = p.target ?? ctx.target;
+          if (aimed) targets.add(aimed);
+          const blast = invoke('explosion', {
+            x, y,
+            radius: p.radius,
+            damage: p.damage,
+            team: p.blastTeam,
+            self: ctx.attacker,
+            targets: [...targets],
+            shake: true,
+            screenFlash: false,
+          }, ctx);
+          blast.on('hit', (...args) => macroH._emit('hit', ...args));
+        } catch (err) {
+          console.error(`attack/explosiveBomb: blast failed`, err.message);
+        }
+      },
+    });
+
     const carrier = invoke('bomb', {
       speed: p.speed,
       direction: p.direction,
@@ -85,49 +89,11 @@ registerMacro('explosiveBomb', {
       return h;
     }
 
-    // Hosts (theater, gameplay) step the INNER carrier handle with the params
-    // they passed to us — store them so stepBomb() gets the merged values.
     carrier._params = p;
-
-    // The aftermath: when the carrier dies (impact/fuse/off-screen), fire the
-    // Explosion primitive at the exact death point. Synchronous invoke — the
-    // blast resolves in the same frame as the detonate event. All VFX (burst,
-    // flash, shake) come from the explosion primitive's default switches;
-    // this macro adds none of its own.
-    //
-    // GOOD CONTEXT for the deferred call: the blast is fired LATER than the
-    // macro's invoke, so it must not rely on a stale or host-local ctx. We
-    // pass an explicit `targets` list built from the LIVE context at
-    // detonation time (world.targets + the aimed target), so the blast always
-    // has real candidates even if the captured ctx's world went empty.
-    const blastTargets = () => {
-      const set = new Set();
-      for (const t of ctx.world?.targets ?? []) if (t) set.add(t);
-      const aimed = p.target ?? ctx.target;
-      if (aimed) set.add(aimed);
-      return [...set];
-    };
-    carrier.on('detonate', ({ x, y }) => {
-      try {
-        const blast = invoke('explosion', {
-          x, y,
-          radius: p.radius,
-          damage: p.damage,
-          team: p.blastTeam,
-          self: ctx.attacker,
-          targets: blastTargets(),
-          shake: true,        // screen shake inherited from the explosion primitive
-          screenFlash: false, // no white flash — the bomb's read is burst + shake
-        }, ctx);
-        blast.on('hit', (...args) => h._emit('hit', ...args));
-      } catch (err) {
-        console.error(`attack/explosiveBomb: blast failed`, err.message);
-      }
-    });
-
     h.setInner(carrier);
     h.entity = carrier.entity;
     h.inner = carrier;
+    h._wireCarrier(carrier);
     return h;
   },
 });

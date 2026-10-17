@@ -376,6 +376,8 @@ export const AttackTheater = {
       pools: this._pools,
       collisionWorld: this._world,
       effects: { ...Effects, fireManual }, // REAL VFX + fireManual for telegraphs
+      groundY: GROUND_Y,
+      platforms: [],
     });
   },
 
@@ -822,40 +824,16 @@ export const AttackTheater = {
         }
       } else if (h.entity) {
         if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
-        else if (h.id === 'bomb' || h.id === 'explosiveBomb' || h.id === 'explosiveProjectile' || h.id === 'molotov' || h.id === 'clusterBomb') {
-          // Resolve the innermost carrier handle (the one with _attackId on entity).
-          let ch = h;
-          while (ch.inner?.entity) ch = ch.inner;
-          const cp = ch._params ?? this._params;
-          if (ch.entity?._attackId === 'bomb') finished = stepBomb(ch.entity, cp, this._ctx(), ch);
-          else finished = stepProjectile(ch.entity, ch) || finished;
-          // Deferred children: molotov fireArea, clusterBomb split bombs.
+        else if (typeof h.step === 'function') {
+          // Carrier macros (explosiveBomb, molotov, clusterBomb) + step-based
+          // primitives (homingMissile, beam, fireArea, spike, etc.) all expose
+          // a unified .step(dt, targets). Carrier macros resolve their own
+          // innermost carrier + terrain + deferred children internally.
+          finished = h.step(DT, [this._target]);
+          // Promote any deferred children (fireArea, split bombs) to top-level
+          // so they survive parent completion and get rendered independently.
           for (const child of h.handles ?? []) {
-            if (typeof child.step === 'function') {
-              const done = child.step(DT, [this._target]);
-              if (!done && !this._handles.includes(child)) this._handles.push(child);
-            }
-          }
-          if (h.children?.handles) {
-            for (const cb of h.children.handles) {
-              let inner = cb;
-              while (inner.inner?.entity) inner = inner.inner;
-              if (inner.entity?._attackId === 'bomb') {
-                stepBombTerrain(inner.entity, DT, GROUND_Y);
-                stepBomb(inner.entity, inner._params ?? this._params, this._ctx(), inner);
-              }
-            }
-          }
-        }
-        else if (typeof h.step === 'function') finished = h.step(DT); // homingMissile / predictiveShot / ...
-      } else if (h.id === 'bombSpread') {
-        // Multi-bomb macro (no entity, no step): step each child carrier.
-        for (const ch of h.handles ?? []) {
-          let inner = ch;
-          while (inner.inner?.entity) inner = inner.inner;
-          if (inner.entity?._attackId === 'bomb') {
-            stepBombTerrain(inner.entity, DT, GROUND_Y);
-            stepBomb(inner.entity, inner._params ?? this._params, this._ctx(), inner);
+            if (!child.state?.done && !this._handles.includes(child)) this._handles.push(child);
           }
         }
       } else if (typeof h.step === 'function') {
