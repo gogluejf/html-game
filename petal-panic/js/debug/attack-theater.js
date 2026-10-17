@@ -848,6 +848,16 @@ export const AttackTheater = {
           }
         }
         else if (typeof h.step === 'function') finished = h.step(DT); // homingMissile / predictiveShot / ...
+      } else if (h.id === 'bombSpread') {
+        // Multi-bomb macro (no entity, no step): step each child carrier.
+        for (const ch of h.handles ?? []) {
+          let inner = ch;
+          while (inner.inner?.entity) inner = inner.inner;
+          if (inner.entity?._attackId === 'bomb') {
+            stepBombTerrain(inner.entity, DT, GROUND_Y);
+            stepBomb(inner.entity, inner._params ?? this._params, this._ctx(), inner);
+          }
+        }
       } else if (typeof h.step === 'function') {
         // Multi-shot macros (spreadShot/radialShot/burstShot): the macro's
         // step() drives its launch cadence AND owns completion (true only
@@ -858,22 +868,6 @@ export const AttackTheater = {
           finished = h.step(DT);
           for (const ch of h.handles ?? []) {
             if (ch.entity) stepProjectile(ch.entity, ch);
-          }
-        } else if (h.id === 'bombSpread') {
-          // Multi-bomb / deferred-child macros: step each child handle.
-          for (const ch of h.handles ?? []) {
-            if (ch.entity?._attackId === 'bomb') {
-              stepBombTerrain(ch.entity, DT, GROUND_Y);
-              stepBomb(ch.entity, ch._params ?? this._params, this._ctx(), ch);
-            } else if (typeof ch.step === 'function') {
-              ch.step(DT, [this._target]); // fireArea, etc.
-            }
-          }
-          // clusterBomb also has a parent carrier
-          if (h.id === 'clusterBomb' && h.inner?.entity?._attackId === 'bomb') {
-            const cp = h.inner._params ?? this._params;
-            stepBombTerrain(h.inner.entity, DT, GROUND_Y);
-            stepBomb(h.inner.entity, cp, this._ctx(), h.inner);
           }
         } else if (h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike') {
           finished = h.step(DT, [this._target]);
