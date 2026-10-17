@@ -22,8 +22,8 @@
   left: 50%;
   transform: translateX(-50%);
   display: grid;
-  grid-template-columns: repeat(10, minmax(40px, auto));
-  gap: 5px;
+  grid-template-columns: repeat(10, minmax(34px, auto));
+  gap: 4px;
   padding: 5px;
   background: rgba(0, 0, 0, 0.35);
   border-radius: 10px;
@@ -31,9 +31,9 @@
 }
 
 .pp-debugbar button {
-  min-height: 34px;
-  padding: 0 6px;
-  font-size: 12px;
+  min-height: 32px;
+  padding: 0 5px;
+  font-size: 11px;
   font-weight: 700;
   color: #cfe8ff;
   background: rgba(60, 90, 130, 0.55);
@@ -47,24 +47,37 @@
   transform: scale(0.93);
 }
 
-/* --- Bottom gamepad zone ----------------------------------------------------- */
+/* --- Bottom gamepad zone -----------------------------------------------------
+   Clean approach: .pp-pad is a positioning context; every control is placed
+   explicitly so nothing re-centers or shifts when a sibling changes. */
 .pp-pad {
   position: absolute;
-  bottom: 4px;
+  bottom: 0;
   left: 0;
   right: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding: 0 8px 32px; /* bottom room for the centered Start button */
+  height: 220px; /* fixed stage for absolute children */
 }
 
-/* Left cluster: stick + d-pad */
-.pp-left { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+/* Shared: bottom baseline for d-pad + face (symmetric) = 12px from pad bottom */
 
+/* Left cluster: stick + d-pad, anchored to the LEFT edge */
+.pp-left {
+  position: absolute;
+  left: 8px;
+  bottom: 12px;
+  width: 130px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* Stick sits above the d-pad, centered on the left cluster */
 .pp-stick {
-  width: 92px;
-  height: 92px;
+  width: 86px;
+  height: 86px;
   border-radius: 50%;
   background: rgba(20, 24, 32, 0.4);
   border: 2px solid rgba(150, 170, 200, 0.35);
@@ -72,8 +85,8 @@
 }
 
 .pp-stick-knob {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, rgba(200, 215, 235, 0.75), rgba(90, 110, 140, 0.6));
   border: 1px solid rgba(220, 235, 255, 0.5);
@@ -84,19 +97,20 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
+/* D-pad: 3x3 of 42px = 130px wide, mirrors the face exactly */
 .pp-dpad {
   display: grid;
-  grid-template-columns: repeat(3, 40px);
-  grid-template-rows: repeat(3, 36px);
-  gap: 3px;
+  grid-template-columns: repeat(3, 42px);
+  grid-template-rows: repeat(3, 42px);
+  gap: 2px;
 }
 
 .pp-dpad button {
-  font-size: 13px;
+  font-size: 14px;
   color: #dfe9f5;
   background: rgba(40, 48, 64, 0.5);
   border: 1px solid rgba(150, 170, 200, 0.35);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .pp-dpad button:active, .pp-dpad button.pp-pressed {
@@ -109,48 +123,31 @@
 .pp-dpad .right { grid-column: 3; grid-row: 2; }
 .pp-dpad .down  { grid-column: 2; grid-row: 3; }
 
-/* Right cluster: triggers row + face buttons */
-.pp-right { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-
-/* Lift triggers away from the diamond: extra space between triggers and face */
-.pp-triggers { margin-bottom: 16px; }
-
-.pp-triggers, .pp-smallrow { display: flex; gap: 5px; }
-
-.pp-triggers button, .pp-smallrow button {
-  min-width: 40px;
-  min-height: 26px;
-  font-size: 10px;
-  font-weight: 700;
-  color: #ffe9c8;
-  background: rgba(120, 90, 40, 0.45);
-  border: 1px solid rgba(220, 180, 110, 0.45);
-  border-radius: 7px;
+/* Right cluster: face diamond anchored to the RIGHT edge (mirrors d-pad).
+   Triggers are positioned SEPARATELY (see .pp-triggers) so they never move
+   when the face does. */
+.pp-right {
+  position: absolute;
+  right: 8px;
+  bottom: 12px;
+  width: 130px;
+  display: flex;
+  justify-content: center;
+  pointer-events: auto;
+  touch-action: none;
 }
 
-/* Triggers (L1/R1/L2/R2): double height for easy thumb hits */
-.pp-triggers button {
-  min-height: 52px;
-}
-
-.pp-triggers button:active, .pp-smallrow button:active,
-.pp-triggers button.pp-pressed, .pp-smallrow button.pp-pressed {
-  background: rgba(240, 190, 90, 0.85);
-  color: #fff;
-  transform: scale(0.93);
-}
-
+/* Face diamond: 130px wide, same footprint as d-pad → perfect mirror */
 .pp-face {
   display: grid;
-  grid-template-columns: 46px 46px 46px;
-  grid-template-rows: 46px 46px 46px;
+  grid-template-columns: repeat(3, 42px);
+  grid-template-rows: repeat(3, 42px);
   gap: 2px;
-  margin-bottom: 2px;
 }
 
 .pp-face button {
   border-radius: 50%;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   color: #fff;
   border: 2px solid rgba(255, 255, 255, 0.45);
@@ -167,13 +164,47 @@
 .pp-face .b { grid-column: 3; grid-row: 2; background: rgba(200, 60, 60, 0.6); }
 .pp-face .a { grid-column: 2; grid-row: 3; background: rgba(60, 160, 80, 0.6); }
 
+/* Triggers: independent row, centered over the face, vertically aligned to the
+   stick's center. Sized to content (not constrained) so buttons don't overflow. */
+.pp-triggers {
+  position: absolute;
+  right: 8px;
+  bottom: 170px; /* vertical center ≈ stick center (193px) */
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.pp-triggers button {
+  min-height: 46px;
+  min-width: 50px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #ffe9c8;
+  background: rgba(120, 90, 40, 0.45);
+  border: 1px solid rgba(220, 180, 110, 0.45);
+  border-radius: 7px;
+  padding: 0 4px;
+}
+
+/* Extra gap between the left pair (L1/L2) and right pair (R1/R2) */
+.pp-triggers .pp-gap { margin-left: 14px; }
+
+.pp-triggers button:active, .pp-triggers button.pp-pressed {
+  background: rgba(240, 190, 90, 0.85);
+  color: #fff;
+  transform: scale(0.93);
+}
+
 .pp-start {
   position: absolute;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   min-width: 72px;
-  min-height: 26px;
+  min-height: 24px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -189,10 +220,10 @@
   transform: translateX(-50%) scale(0.93);
 }
 
-/* Live press readout (debug) */
+/* Live press readout (debug) — sits BELOW the 2-row debug bar */
 .pp-readout {
   position: absolute;
-  top: 48px;
+  top: 92px; /* clear the two debug-bar rows */
   left: 8px;
   padding: 6px 10px;
   font-size: 14px;
