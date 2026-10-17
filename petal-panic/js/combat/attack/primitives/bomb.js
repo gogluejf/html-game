@@ -109,9 +109,11 @@ export function stepBombTerrain(ent, dt, groundY, platforms = []) {
     ent.vy = -Math.abs(ent.vy) * 0.5; // restitution
     ent.vx *= 0.7;                    // friction
     if (Math.abs(ent.vy) < BOMB_SETTLE_VY) {
-      ent._attackHit = true;
-      ent.alive = false;
-      return true;
+      // Rest on the surface — do NOT kill. The fuse keeps running;
+      // stepBomb() fires when TTL expires or contact occurs.
+      ent.vy = 0;
+      ent.vx = 0;
+      return false;
     }
     return false;
   }
