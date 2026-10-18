@@ -29,6 +29,17 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { targetCenter } from '../context.js';
+import { fireDeclared } from '../../../effects/index.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
+import { getPrimitive, getMacro } from '../registry.js';
 
 const DEFAULTS = Object.freeze({
   // Telegraph stage.
@@ -105,7 +116,7 @@ defineMacro('targetedBeam', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('targetedBeam');
+    const h = new AttackHandle('targetedBeam', null, declaredEffectsOf('targetedBeam'));
     const pt0 = aimPoint(params, ctx);
     h.state = { t: 0, done: false, pt: pt0, locked: null, _fx: null };
 
@@ -114,20 +125,17 @@ defineMacro('targetedBeam', {
     // Duration covers warning + beam lifetime so the same instance
     // survives the beam. lockAt drives the effect's own zoom/blink
     // lock-on visual.
-    const fx = ctx.effects;
-    if (fx && typeof fx.fireManual === 'function') {
-      try {
-        h.state._fx = fx.fireManual({
-          type: 'target-reticle',
-          params: {
-            x: pt0.x, y: pt0.y, color: params.color, size: params.radius,
-            duration: params.duration + params.beamDuration, pulseRate: 1,
-            lockAt: params.lockTime > 0 ? params.lockTime : null,
-          },
-        });
-      } catch {
-        h.state._fx = null; // unknown type in a minimal context — timing only
-      }
+    try {
+      h.state._fx = fireDeclared({
+        type: 'target-reticle',
+        params: {
+          x: pt0.x, y: pt0.y, color: params.color, size: params.radius,
+          duration: params.duration + params.beamDuration, pulseRate: 1,
+          lockAt: params.lockTime > 0 ? params.lockTime : null,
+        },
+      });
+    } catch {
+      h.state._fx = null; // unknown type in a minimal context — timing only
     }
 
     let fired = false;

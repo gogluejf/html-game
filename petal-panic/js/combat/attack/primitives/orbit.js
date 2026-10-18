@@ -26,8 +26,17 @@
 //           scaled by e.radius vs maxRadius (near = larger reads well).
 //   to release: h.eject() → [{x, y, vx, vy, angle, ttl}] per entity.
 
-import { registerPrimitive } from '../registry.js';
+import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
 
 const DEFAULTS = Object.freeze({
   count: 3,            // number of orbiting entities (evenly distributed)
@@ -90,7 +99,7 @@ registerPrimitive('orbit', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('orbit');
+    const h = new AttackHandle('orbit', null, declaredEffectsOf('orbit'));
     const a = ctx.attacker;
     const center = () => ({
       x: (a?.x ?? 0) + (a?.w ?? 0) / 2,

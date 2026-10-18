@@ -30,6 +30,7 @@ import { ENEMY_TYPES } from '../world/build.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { navLabelString, navLabels, input } from '../core/input.js';
 import { Effects } from '../effects.js';
+import { Debug } from '../debug/debug.js';
 import { updateEffects, drawEffects, resetEffects, fireManual, CATALOG } from '../effects/index.js';
 import { particles } from '../effects/particles.js';
 import { aabbOverlap } from '../core/collision.js';
@@ -163,6 +164,11 @@ export const AttackTheater = {
 
   open() {
     this.active = true;
+    // The declaration guard throws on undeclared effect fires while debug is
+    // enabled — and the attack theater IS a debug tool. Enable it here so
+    // declaration bugs surface as loud errors (the whole point of the guard)
+    // instead of silent warn+skip, which reads as "effects not rendering".
+    if (!Debug.enabled) Debug.toggle();
     this.index = 0;
     this.paramIndex = 0;
     this._padWasHeld = 0;

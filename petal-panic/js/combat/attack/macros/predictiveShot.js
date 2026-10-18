@@ -23,6 +23,16 @@ import { stepProjectile } from '../primitives/projectile.js';
 import { targetCenter } from '../context.js';
 import { leadAt } from '../../targeting.js';
 
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read at construction so synchronous fires inside impl()
+// see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
+import { getPrimitive, getMacro } from '../registry.js';
+
 const DEFAULTS = Object.freeze({
   target: null,          // entity being predicted (default ctx.target)
   speed: 600,            // bullet speed px/s (the aim is solved from this)
@@ -50,7 +60,7 @@ defineMacro('predictiveShot', {
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
-    const h = new AttackHandle('predictiveShot');
+    const h = new AttackHandle('predictiveShot', null, declaredEffectsOf('predictiveShot'));
     const t = p.target ?? ctx.target;
     const o = targetCenter(ctx.attacker) ?? { x: 0, y: 0 };
 

@@ -492,7 +492,10 @@ ok('standalone theater demo driven only by params (null carrier, manual fire)', 
   assert.equal(inst.done, false, 'still active just before 2s');
   updateEffects(DT); // frame 120 = 2.0s
   assert.equal(inst.done, true, 'self-terminates exactly at duration');
-  assert.equal(activeCount(), 0, 'pruned from the active set');
+  // The parent prunes itself; its explosion children (real engine citizens
+  // since the burst-migration) stay active over their own short lifetimes.
+  for (let i = 0; i < 45; i++) updateEffects(DT); // 0.75s > child lifetime
+  assert.equal(activeCount(), 0, 'children pruned after their lifetimes');
   // B-8: the DECLARED number of children emitted (default density 1 → 1
   // particle each; childSizeRange [6,14] does NOT scale the count).
   assert.equal(particles.count, 6, `declared 6 children emitted (got ${particles.count})`);

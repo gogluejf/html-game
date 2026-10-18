@@ -40,7 +40,7 @@ console.log('spawning');
 ok('spawns the declared fragmentCount fragments into the shared pool', () => {
   drainPool();
   const body = debris({ x: 100, y: 100, fragmentCount: 5 });
-  assert.equal(body.done, true, 'one-shot: done at fire time');
+  assert.equal(body.done, false, 'real citizen: active until the fragments fade');
   assert.equal(particles.count, 5, `expected 5 live fragments, got ${particles.count}`);
 });
 ok('default fragmentCount is 8', () => {
@@ -254,7 +254,8 @@ ok('"debris" is registered and resolves through the real fire() path', () => {
   assert.ok(inst !== null, 'fireManual resolved the type');
   assert.equal(inst.type, 'debris');
   assert.equal(inst.trigger, 'manual');
-  assert.equal(activeCount(), 0, 'one-shot: instance completes immediately, never enters the active set');
+  // Real engine citizen: the instance stays active over its declared lifetime.
+  assert.ok(activeCount() >= 1, 'instance entered the active set');
   resetEffects();
 });
 for (const trigger of ['death', 'explosion', 'collision']) {
@@ -309,7 +310,7 @@ ok('standalone theater demo driven only by params (null carrier, manual fire)', 
     params: { x: 160, y: 120, fragmentCount: 10, velocity: 220, direction: -Math.PI / 2,
               spread: Math.PI / 3, gravity: 500, rotation: 8, lifetime: 0.5, size: 6 } });
   assert.ok(inst !== null, 'manual fire with null carrier resolved');
-  assert.equal(inst.done, true, 'one-shot completes at fire time');
+  assert.equal(inst.done, false, 'real citizen: active until the burst fades');
   assert.equal(particles.count, 10, 'all 10 fragments spawned');
   // Every fragment obeys the declared envelope: speed ≤ velocity, size 6.
   for (const it of particles.activeItems) {

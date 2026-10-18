@@ -11,8 +11,17 @@
 // bodyDamageOverride is a DATA flag the host applies to the attacker's
 // contact rule while the charge is live (see Body Contact Damage, Task 1.8).
 
-import { registerPrimitive } from '../registry.js';
+import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
 
 const DEFAULTS = Object.freeze({
   direction: 0,          // radians
@@ -109,7 +118,7 @@ registerPrimitive('charge', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('charge');
+    const h = new AttackHandle('charge', null, declaredEffectsOf('charge'));
     h.state = makeChargeState(params, ctx);
     h.step = (dt, input) => {
       const finished = stepCharge(h.state, params, ctx, dt, input);

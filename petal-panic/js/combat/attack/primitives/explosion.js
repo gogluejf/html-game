@@ -13,10 +13,20 @@
 // bigger set piece (e.g. the explosiveBomb macro) pass explicit flags so the
 // combined effect reads as ONE event instead of double-flashing.
 
-import { registerPrimitive } from '../registry.js';
+import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { resolveExplosion, BARREL_EXPLOSION_KNOCKBACK } from '../../explosion.js';
-import { Effects } from '../../../effects.js';
+import { fireDeclared } from '../../../effects/index.js';
+import { VIEW_W, VIEW_H } from '../../../core/view.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
 
 const DEFAULTS = Object.freeze({
   x: 0,               // blast center (world coords)
@@ -88,20 +98,18 @@ registerPrimitive('explosion', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('explosion');
+    const h = new AttackHandle('explosion', null, declaredEffectsOf('explosion'));
     const result = fireBlast(params, ctx);
 
     // VFX owned by the primitive, gated by the per-call switches.
     // resolveExplosion is deliberately VFX-free; the explosion primitive IS
     // "a blast happened", so every host gets the visual for free unless it
     // explicitly suppresses a channel (composed set pieces do this so the
-    // parent's juice isn't doubled).
-    // Route through ctx.effects when provided (theater passes its own facade)
-    // — same pattern as beam.js; falls back to the real Effects singleton.
-    const fx = ctx.effects ?? Effects;
-    if (params.burst !== false) fx.spawnExplosion(params.x, params.y, params.radius);
-    if (params.screenFlash !== false) fx.bigExplosion();
-    if (params.shake !== false) fx.triggerShake(4);
+    // parent's juice isn't doubled). All three route through the guarded
+    // declared-fire path — each type is declared in meta.effects above.
+    if (params.burst !== false) fireDeclared({ type: 'explosion', params: { x: params.x, y: params.y, radius: params.radius } }, h.declaredEffectTypes());
+    if (params.screenFlash !== false) fireDeclared({ type: 'screen-flash', params: { strength: 1, viewW: VIEW_W, viewH: VIEW_H } }, h.declaredEffectTypes());
+    if (params.shake !== false) fireDeclared({ type: 'camera-shake', params: { intensity: 4 } }, h.declaredEffectTypes());
 
     h._emit('detonate', { x: params.x, y: params.y, hit: result.hit.length });
     h._lastResult = result; // synchronous blast summary (macros surface it as hits)

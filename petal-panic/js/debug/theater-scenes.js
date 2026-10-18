@@ -10,7 +10,7 @@ const BOX = { x: STAGE_X - 20, y: STAGE_Y - 25, w: 40, h: 50 };
 const DEMO_DT = 1 / 60;
 
 // Effects whose visual lives in the SHARED particle pool (one-shot bursts).
-const POOL_DRIVEN = new Set(['particle-burst', 'explosion', 'debris', 'dust-cloud', 'composite-explosion']);
+const POOL_DRIVEN = new Set(['particle-burst', 'explosion', 'debris', 'dust-cloud', 'composite-explosion', 'hit-sparkle', 'death-sparkle', 'pickup-pop']);
 // State effects with no canvas render (render() is a no-op).
 const SHAKE_PROXY = new Set(['camera-shake']);
 
@@ -406,7 +406,7 @@ const SCENES = {
     },
     update(c, dt) { c._timer += dt; },
     shouldFire(c) { return c._timer >= 0.5; },
-    fire(c, entry) { return fireManual({ type: entry.type, params: { ...entry.params } }, c.boss); },
+    fire(c, entry) { const o = c.boss.origin(); return fireManual({ type: entry.type, params: { ...entry.params, x: o.x, y: o.y } }, c.boss); },
     draw(ctx, c) { c.boss.draw(ctx); },
   },
 };

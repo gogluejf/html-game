@@ -21,5 +21,13 @@ export function deathSparkle(params = {}) {
   const { x, y, size = 32 } = params;
   const count = Math.max(4, Math.round(DEATH_SPARKLE_BASE + size * 0.25));
   particles.spawnBurst(x, y, count);
-  return { update() {}, render() {}, done: true };
+  // Real engine citizen: self-terminates over the burst's visual life instead
+  // of reporting done immediately (pool owns the actual particle draw).
+  let t = 0;
+  return {
+    update(dt) { t += dt; if (t >= 0.5) this.complete(); },
+    render() {},
+    done: false,
+    complete() { this.done = true; },
+  };
 }

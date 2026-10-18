@@ -23,8 +23,17 @@
 // This primitive owns the MOTION PROFILE only (like charge). The host renders
 // each state and does contact checks; nothing here touches pools or DOM.
 
-import { registerPrimitive } from '../registry.js';
+import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
 
 const DEFAULTS = Object.freeze({
   direction: 0,          // radians (outbound heading)
@@ -112,7 +121,7 @@ registerPrimitive('boomerang', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('boomerang');
+    const h = new AttackHandle('boomerang', null, declaredEffectsOf('boomerang'));
     const a = ctx.attacker;
     const ox = (a?.x ?? 0) + (a?.w ?? 0) / 2;
     const oy = (a?.y ?? 0) + (a?.h ?? 0) / 2;

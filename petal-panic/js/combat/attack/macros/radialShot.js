@@ -21,6 +21,16 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
+import { getPrimitive, getMacro } from '../registry.js';
+
 const DEFAULTS = Object.freeze({
   count: 24,             // projectiles around the circle
   startAngle: 0,         // rotation of the pattern (radians)
@@ -60,7 +70,7 @@ defineMacro('radialShot', {
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
-    const h = new AttackHandle('radialShot');
+    const h = new AttackHandle('radialShot', null, declaredEffectsOf('radialShot'));
     const inner = invoke('spreadShot', {
       count: p.count,
       direction: p.startAngle,

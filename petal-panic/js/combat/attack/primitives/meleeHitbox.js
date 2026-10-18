@@ -11,10 +11,19 @@
 //   each frame while h is live: stepMelee(h.entity, p, ctx, targets, h)
 // The handle completes when activeFrames elapse or cancel() is called.
 
-import { registerPrimitive } from '../registry.js';
+import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../../hitbox.js';
 import { resolveMarker } from '../context.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
 
 const DEFAULTS = Object.freeze({
   activeFrames: 8,     // how many update ticks the box stays live
@@ -103,7 +112,7 @@ registerPrimitive('meleeHitbox', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('meleeHitbox');
+    const h = new AttackHandle('meleeHitbox', null, declaredEffectsOf('meleeHitbox'));
     const hb = makeHitbox({ owner: ctx.attacker, team: params.team, box: null, damage: params.damage, method: params.method });
     resetHitbox(hb);
     h.state = { hb, frame: 0, done: false };

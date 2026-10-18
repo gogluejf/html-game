@@ -22,6 +22,16 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
+import { getPrimitive, getMacro } from '../registry.js';
+
 const DEFAULTS = Object.freeze({
   count: 3,              // shots in the burst
   interval: 0.12,        // s between shots (intra-burst cool-down)
@@ -51,7 +61,7 @@ defineMacro('burstShot', {
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
-    const h = new AttackHandle('burstShot');
+    const h = new AttackHandle('burstShot', null, declaredEffectsOf('burstShot'));
     const count = Math.max(1, Math.floor(p.count));
     const interval = Math.max(0, Number.isFinite(p.interval) ? p.interval : 0);
 

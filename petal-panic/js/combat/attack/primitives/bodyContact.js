@@ -13,8 +13,17 @@
 // Wave 6 alongside the hero refactor; until then the override rides on
 // stats.attack directly via applyOverride()).
 
-import { registerPrimitive } from '../registry.js';
+import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
 
 const DEFAULTS = Object.freeze({
   damage: null,        // explicit contact damage; null = use attacker.stats.attack
@@ -63,7 +72,7 @@ registerPrimitive('bodyContact', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('bodyContact');
+    const h = new AttackHandle('bodyContact', null, declaredEffectsOf('bodyContact'));
     const a = ctx.attacker;
     h.restore = applyBodyContact(params, a);
     // Completes when the host calls h.finish() (end of the owning attack) or

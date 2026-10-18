@@ -21,6 +21,16 @@ import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { targetCenter } from '../context.js';
 
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read at construction so synchronous fires inside impl()
+// see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
+import { getPrimitive, getMacro } from '../registry.js';
+
 const DEFAULTS = Object.freeze({
   deathBehavior: 'kill',   // 'kill' (death pipeline) | 'remove' (instant)
   triggerPayloadFirst: true,
@@ -59,7 +69,7 @@ defineMacro('bodyExplosion', {
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
-    const h = new AttackHandle('bodyExplosion');
+    const h = new AttackHandle('bodyExplosion', null, declaredEffectsOf('bodyExplosion'));
     const victim = ctx.attacker;
     h.state = { done: false, payloadT: 0, payloadHandle: null };
 

@@ -36,5 +36,13 @@ export function explosion(params = {}) {
     const color = FIRE_COLORS[i % FIRE_COLORS.length];
     particles.spawnOne(x, y, color, speed, angle);
   }
-  return { update() {}, render() {}, done: true };
+  // Real engine citizen: self-terminates over the blast's visual life (pool
+  // owns the particle draw).
+  let t = 0;
+  return {
+    update(dt) { t += dt; if (t >= 0.6) this.complete(); },
+    render() {},
+    done: false,
+    complete() { this.done = true; },
+  };
 }

@@ -33,7 +33,7 @@ console.log('hitSparkle');
 ok('spawns 3-5 by default (old HIT_SPARKLE_COUNT roll)', () => {
   drainPool();
   const body = hitSparkle({ x: 100, y: 100 });
-  assert.equal(body.done, true, 'one-shot: done at fire time');
+  assert.equal(body.done, false, 'real citizen: active until the burst fades');
   assert.ok(particles.count >= 3 && particles.count <= 5, `got ${particles.count}`);
 });
 ok('respects explicit count', () => {
@@ -71,7 +71,7 @@ console.log('pickupPop');
 ok('spawns exactly 8 in an even ring with the given color', () => {
   drainPool();
   const body = pickupPop({ x: 50, y: 50, color: '#ff00ff' });
-  assert.equal(body.done, true);
+  assert.equal(body.done, false, 'real citizen: active until the burst fades');
   assert.equal(particles.count, 8);
   const items = particles.activeItems;
   for (let i = 0; i < items.length; i++) {
@@ -107,7 +107,7 @@ ok('count = min(24, 12 + round(radius*0.15))', () => {
 ok('defaults to radius 60 (count 21), cycles FIRE_COLORS, speeds 120..210', () => {
   drainPool();
   const body = explosion({ x: 0, y: 0 });
-  assert.equal(body.done, true);
+  assert.equal(body.done, false, 'real citizen: active until the burst fades');
   assert.equal(particles.count, 21);
   const FIRE = ['#e74c3c', '#f39c12', '#ff6ec7', '#ffffff'];
   const items = particles.activeItems;
@@ -125,10 +125,10 @@ ok('caps at the pool size (no allocation)', () => {
 });
 
 console.log('particleBurst');
-ok('spawns the declared count via spawnBurst and reports done', () => {
+ok('spawns the declared count via spawnBurst and stays active over its life', () => {
   drainPool();
   const body = particleBurst({ x: 0, y: 0, count: 12 });
-  assert.equal(body.done, true);
+  assert.equal(body.done, false, 'real citizen: active until the burst fades');
   assert.equal(particles.count, 12);
 });
 ok('defaults count to 6 (pool default)', () => {

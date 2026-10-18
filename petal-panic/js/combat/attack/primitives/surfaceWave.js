@@ -25,9 +25,19 @@
 //   const h = attackEngine.invoke('surfaceWave', { x, y, direction: 'right' }, ctx);
 //   each frame: h.step(dt, targets) → true when the wave died.
 
-import { registerPrimitive } from '../registry.js';
+import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
+import { fireDeclared } from '../../../effects/index.js';
 import { Effects } from '../../../effects.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
 
 const DEFAULTS = Object.freeze({
   x: 0,               // origin x (world) — usually the stomp impact point
@@ -166,8 +176,7 @@ export function stepSurfaceWave(state, p, ctx, targets, h) {
       ? t.takeDamage(p.damage, ctx.attacker, 'stompWave')
       : p.damage;
     // Hit juice owned by the primitive (same pattern as projectile debris).
-    const fx = ctx.effects ?? Effects;
-    fx.spawnHitSparkles?.(t.x + t.w / 2, t.y + t.h / 2, 5);
+    fireDeclared({ type: 'hit-sparkle', params: { x: t.x + t.w / 2, y: t.y + t.h / 2, count: 5 } }, h.declaredEffectTypes());
     h._emit('hit', { target: t, dealt });
   }
 
@@ -196,7 +205,7 @@ registerPrimitive('surfaceWave', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('surfaceWave');
+    const h = new AttackHandle('surfaceWave', null, declaredEffectsOf('surfaceWave'));
     const surf = resolveSurface(params, ctx);
     if (!surf) {
       // No surface under the origin — nothing to ride on.
@@ -222,7 +231,6 @@ registerPrimitive('surfaceWave', {
     // geometry values come from the RESOLVED SURFACE EXTENT — never from a
     // time window — so the crest travels exactly as far as the wave can and
     // fades exactly when the wave dies (ttl cut short OR surface end).
-    const fx = ctx.effects ?? Effects;
     // Travel to the surface edge on this side, cut short by ttl when set.
     // Both values are FINITE by construction (floor bounds are finite).
     const edgeX = params.direction === 'left' ? surf.min : surf.max;
@@ -230,7 +238,7 @@ registerPrimitive('surfaceWave', {
     const travelTime = fullTravel / Math.max(1, params.speed);
     const life = params.ttl != null ? Math.min(params.ttl, travelTime) : travelTime;
     const travel = life * params.speed; // crest distance == wave distance
-    fx.fireManual?.({ type: 'ground-wave', params: {
+    fireDeclared({ type: 'ground-wave', params: {
       x: params.x, y: surf.y,
       direction: waveSign(params.direction),
       speed: params.speed,
@@ -238,7 +246,7 @@ registerPrimitive('surfaceWave', {
       height: params.height,
       width: params.width,
       duration: Math.max(0.1, life + 0.05),
-    } });
+    } }, h.declaredEffectTypes());
     h.step = (dt, targets) => {
       h.state._dt = dt;
       return stepSurfaceWave(h.state, params, ctx, targets ?? [], h);

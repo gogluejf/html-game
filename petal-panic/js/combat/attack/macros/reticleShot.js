@@ -26,6 +26,17 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { targetCenter } from '../context.js';
+import { fireDeclared } from '../../../effects/index.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
+import { getPrimitive, getMacro } from '../registry.js';
 
 const DEFAULTS = Object.freeze({
   // Telegraph stage.
@@ -74,7 +85,7 @@ defineMacro('reticleShot', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('reticleShot');
+    const h = new AttackHandle('reticleShot', null, declaredEffectsOf('reticleShot'));
     const pt0 = aimPoint(params, ctx);
     h.state = { t: 0, done: false, pt: pt0, locked: null, _fx: null };
 
@@ -85,20 +96,17 @@ defineMacro('reticleShot', {
     // effect's own zoom/blink lock-on visual (no external mutation).
     // No-op (state._fx stays null) when the context has no effect engine,
     // e.g. pure-logic tests — timing still works.
-    const fx = ctx.effects;
-    if (fx && typeof fx.fireManual === 'function') {
-      try {
-        h.state._fx = fx.fireManual({
-          type: 'target-reticle',
-          params: {
-            x: pt0.x, y: pt0.y, color: params.color, size: params.radius,
-            duration: params.duration + params.ttl, pulseRate: 1,
-            lockAt: params.lockTime > 0 ? params.lockTime : null,
-          },
-        });
-      } catch {
-        h.state._fx = null; // unknown type in a minimal context — timing only
-      }
+    try {
+      h.state._fx = fireDeclared({
+        type: 'target-reticle',
+        params: {
+          x: pt0.x, y: pt0.y, color: params.color, size: params.radius,
+          duration: params.duration + params.ttl, pulseRate: 1,
+          lockAt: params.lockTime > 0 ? params.lockTime : null,
+        },
+      });
+    } catch {
+      h.state._fx = null; // unknown type in a minimal context — timing only
     }
 
     let fired = false;

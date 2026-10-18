@@ -45,6 +45,16 @@ import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { targetCenter } from '../context.js';
 
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read at construction so synchronous fires inside impl()
+// see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
+import { getPrimitive, getMacro } from '../registry.js';
+
 const DEFAULTS = Object.freeze({
   // Geometry / direction.
   direction: 0,              // radians — initial beam axis
@@ -112,7 +122,7 @@ defineMacro('sweepingBeam', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('sweepingBeam');
+    const h = new AttackHandle('sweepingBeam', null, declaredEffectsOf('sweepingBeam'));
     // Motion ends here; the fade-out window comes AFTER.
     const motionEnd = params.holdDuration + params.sweepDuration + params.endHoldDuration;
     const totalDuration = motionEnd + params.fadeOut;

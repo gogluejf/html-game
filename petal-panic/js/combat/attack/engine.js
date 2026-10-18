@@ -13,6 +13,12 @@
 
 import { getPrimitive, getMacro } from './registry.js';
 import { ATTACK_EVENTS } from './context.js';
+import { installEffectGuard } from './effectGuard.js';
+
+// Enforce declaration-before-fire for the whole attack engine (single source
+// of truth: an attack may only fire effects it listed in meta.effects). Runs
+// once at module load; no-op-safe if called again.
+installEffectGuard();
 
 /**
  * Uniform handle over an active attack.
@@ -24,17 +30,32 @@ export class AttackHandle {
    * @param {object|null} inner  optional inner handle returned by the impl
    *                              (e.g. a sub-primitive handle) whose events we proxy
    */
-  constructor(id, inner = null) {
+  constructor(id, inner = null, declaredEffects = null) {
     this.id = id;
     this._inner = inner;
     this._listeners = new Map(); // event → Set<fn>
     this._cancelled = false;
     this._completed = false;
+    // Effect types this attack declared (meta.effects). Passed in by invoke()
+    // so the set is ALREADY POPULATED when impl runs — impls may fire effects
+    // synchronously during construction (surfaceWave's ground-wave crest), and
+    // the guard must see the real declaration at that moment, not an empty set.
+    this._declaredEffects = declaredEffects ?? [];
     if (inner && typeof inner.on === 'function') {
       for (const ev of ATTACK_EVENTS) {
         inner.on(ev, (...args) => this._emit(ev, ...args));
       }
     }
+  }
+
+  /**
+   * The effect types this attack DECLARED (from its registration meta.effects).
+   * Primitives/macros pass this to fireDeclared() so the guard can reject any
+   * undeclared fire. Empty array = nothing declared (e.g. a pure-damage carrier).
+   * @returns {Array<string>}
+   */
+  declaredEffectTypes() {
+    return this._declaredEffects;
   }
 
   /** Re-point at a different inner handle (impls may return a wrapper). */
@@ -104,11 +125,19 @@ export function invoke(id, params = {}, ctx) {
   const def = getPrimitive(id) ?? getMacro(id);
   if (!def) throw new Error(`attack: unknown attack '${id}'`);
   const merged = { ...(def.params ?? {}), ...params };
-  const handle = new AttackHandle(id);
+  // Resolve the declared effect types ONCE. Every handle created for this
+  // invoke (the outer one AND any impl-returned handle that gets adopted)
+  // shares this SAME array — single source of truth, zero drift possible.
+  const declaredEffects = (def.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+  const handle = new AttackHandle(id, null, declaredEffects);
   // Wire the inner handle AFTER construction so its id is authoritative.
   const inner = def.impl(merged, ctx);
   if (inner instanceof AttackHandle) {
     inner.id = id;
+    // The impl's own handle was constructed with an EMPTY set (it can't know
+    // its registration before invoke runs). Point it at the SAME shared array
+    // so fires during AND after construction see the real declaration.
+    inner._declaredEffects = declaredEffects;
     // It IS the handle: drop self-proxying WITHOUT cancelling — at this point
     // _inner may be the handle itself (self-proxy from construction), and
     // setInner(null) would cancel it, blocking every later _emit (detonate,

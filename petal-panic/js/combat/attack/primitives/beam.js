@@ -11,10 +11,20 @@
 // Damage ticks at `tickRate` Hz per target (a target standing in the beam
 // takes damage every tick, not every frame).
 
-import { registerPrimitive } from '../registry.js';
+import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { resolveMarker } from '../context.js';
+import { fireDeclared } from '../../../effects/index.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../../hitbox.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
 
 const DEFAULTS = Object.freeze({
   origin: null,        // marker label | {x,y} | null → attacker facing edge
@@ -74,8 +84,6 @@ export function beamBox(p, ctx) {
  * derived defaults.
  */
 export function fireBeamEffect(p, ctx) {
-  const fx = ctx.effects;
-  if (!fx || typeof fx.fireManual !== 'function') return null;
   const a = ctx.attacker;
   let ox, oy;
   if (p.origin && typeof p.origin === 'object' && 'x' in p.origin) {
@@ -95,7 +103,8 @@ export function fireBeamEffect(p, ctx) {
   }
   const style = p.style ?? {};
   try {
-    return fx.fireManual({ type: 'beam', params: {
+    // 'beam' is declared in this primitive's meta.effects; the guard accepts it.
+    return fireDeclared({ type: 'beam', params: {
       x: ox, y: oy,
       orientation: p.direction,
       length: p.length, width: p.width,
@@ -104,7 +113,7 @@ export function fireBeamEffect(p, ctx) {
       holdTime: Math.max(0, p.duration - 0.6),
       fadeOutTime: 0.6,
       ...style,
-    } });
+    } }, ['beam']); // standalone helper: no handle in scope; 'beam' is this primitive's declared type
   } catch {
     return null;
   }
@@ -172,7 +181,7 @@ registerPrimitive('beam', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('beam');
+    const h = new AttackHandle('beam', null, declaredEffectsOf('beam'));
     const hb = makeHitbox({ owner: ctx.attacker, team: params.team, box: null, damage: params.damage, method: params.method });
     resetHitbox(hb);
     h.state = { t: 0, tickAcc: 0, done: false, hb };

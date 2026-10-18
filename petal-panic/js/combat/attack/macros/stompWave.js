@@ -19,7 +19,17 @@
 
 import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
-import { Effects } from '../../../effects.js';
+import { fireDeclared } from '../../../effects/index.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read at construction so synchronous fires inside impl()
+// see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
+import { getPrimitive, getMacro } from '../registry.js';
 
 const DEFAULTS = Object.freeze({
   // --- Telegraph timing (absolute seconds; the effect derives its total) ---
@@ -55,7 +65,13 @@ defineMacro('stompWave', {
   meta: {
     name: 'Stomp Wave',
     desc: 'Telegraph → tiny hop → land: dust + screen shake, then a surface wave rolls out per side. Waves die on ttl / surface end / block.',
-    effects: [], // hit-sparkle inherited from surfaceWave via resolveEffects()
+    effects: [
+      // Own VFX (fired directly by this macro). hit-sparkle is inherited from
+      // surfaceWave via resolveEffects() for the panel; it is NOT fired here.
+      { type: 'dust-cloud', desc: 'ground dust puff at the impact point' },
+      { type: 'camera-shake', desc: 'shake on impact' },
+      { type: 'telegraph-circle', desc: 'warning circle that grows/blinks before the slam' },
+    ],
     params: [
       { key: 'buildTime', desc: 'telegraph grow (s)' },
       { key: 'gapTime', desc: 'telegraph silence (s)' },
@@ -72,8 +88,7 @@ defineMacro('stompWave', {
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
-    const h = new AttackHandle('stompWave');
-    const fx = ctx.effects ?? Effects;
+    const h = new AttackHandle('stompWave', null, declaredEffectsOf('stompWave'));
 
     const sidesList = p.sides === 'both' ? ['left', 'right'] : [p.sides];
     const teleTotal = (p.buildTime ?? 0) + (p.gapTime ?? 0) + (p.blinkTime ?? 0);
@@ -112,8 +127,8 @@ defineMacro('stompWave', {
       // Impact juice via the REAL Effect Engine: dust at the feet + camera
       // shake — fires even if no wave hits anything. (The waves' own crest
       // visuals are owned by the surfaceWave primitive.)
-      fx.fireManual?.({ type: 'dust-cloud', params: { x: pt.x, y: pt.y, particleCount: 16, lifetime: 0.5, ...(p.dustStyle ?? {}) } });
-      fx.triggerShake?.(p.shakeStrength);
+      fireDeclared({ type: 'dust-cloud', params: { x: pt.x, y: pt.y, particleCount: 16, lifetime: 0.5, ...(p.dustStyle ?? {}) } }, h.declaredEffectTypes());
+      fireDeclared({ type: 'camera-shake', params: { intensity: p.shakeStrength } }, h.declaredEffectTypes());
     };
 
     h.step = (dt, targets) => {
@@ -128,7 +143,7 @@ defineMacro('stompWave', {
         if (s.t <= dt && !s.telegraphFired) {
           s.telegraphFired = true;
           const pt = stompWaveImpactPoint(ctx.attacker);
-          fx.fireManual?.({ type: 'telegraph-circle', params: { x: pt.x, y: pt.y - 8, radius: 140, expand: true, buildTime: p.buildTime, gapTime: p.gapTime, blinkTime: p.blinkTime } });
+          fireDeclared({ type: 'telegraph-circle', params: { x: pt.x, y: pt.y - 8, radius: 140, expand: true, buildTime: p.buildTime, gapTime: p.gapTime, blinkTime: p.blinkTime } }, h.declaredEffectTypes());
         }
         if (s.t >= teleTotal + p.impactDelay) { s.phase = 'hop'; s.t = 0; }
         return false;

@@ -14,10 +14,15 @@ import { BLOOD_COLORS } from './palettes.js';
 
 const HIT_SPARKLE_COUNT = [3, 5];   // design §12: 3–5 red sparkles per hit
 const HIT_SPARKLE_SPEED = [60, 140];
+// How long the engine keeps this instance alive so it participates in the
+// uniform update/render lifecycle. The pooled sparkles own their own visual
+// lifetime (SPARKLE_LIFETIME); this just bounds the wrapper's active window to
+// roughly the same span so the engine prunes it when the burst has faded.
+const INSTANCE_LIFE = 0.5;
 
 /**
  * @param {{x:number, y:number, count?:number}} params
- * @returns {{update:Function, render:Function, done:boolean}}
+ * @returns {{update:Function, render:Function, done:boolean, complete:Function}}
  */
 export function hitSparkle(params = {}) {
   const { x, y, count } = params;
@@ -28,5 +33,14 @@ export function hitSparkle(params = {}) {
     const color = BLOOD_COLORS[i % BLOOD_COLORS.length];
     particles.spawnOne(x, y, color, speed, angle);
   }
-  return { update() {}, render() {}, done: true };
+  // Real engine citizen: self-terminates over the burst's visual life instead
+  // of reporting done immediately. The particles themselves are drawn by the
+  // shared pool pass; this instance exists so the effect is tracked uniformly.
+  let t = 0;
+  return {
+    update(dt) { t += dt; if (t >= INSTANCE_LIFE) this.complete(); },
+    render() {}, // pool owns the draw
+    done: false,
+    complete() { this.done = true; },
+  };
 }

@@ -25,6 +25,7 @@
 import { AttackHandle } from './engine.js';
 import { stepBomb, stepBombTerrain } from './primitives/bomb.js';
 import { stepProjectile } from './primitives/projectile.js';
+import { getPrimitive, getMacro } from './registry.js';
 
 /**
  * Resolve the innermost carrier handle (the one whose entity has _attackId).
@@ -47,7 +48,12 @@ export function resolveCarrier(h) {
  * @returns {AttackHandle}      the macro handle (with .step set)
  */
 export function createCarrierHandle(id, params, ctx, { onDetonate }) {
-  const h = new AttackHandle(id);
+  // Same declared set the guard checks / theater renders (meta.effects of THIS
+  // registration) — populated at construction so synchronous fires inside the
+  // carrier's setup see the real declaration.
+  const def = getPrimitive(id) ?? getMacro(id);
+  const declaredEffects = (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+  const h = new AttackHandle(id, null, declaredEffects);
   h._params = params;
   h.handles = []; // deferred children (fireArea, split bombs, etc.)
 

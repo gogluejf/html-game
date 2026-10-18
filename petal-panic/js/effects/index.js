@@ -181,6 +181,40 @@ export function fireManual({ type, params = {} }, carrier = null, ctx = {}) {
   return spawnFromConfig({ on: 'manual', type, params }, carrier, 'manual', ctx);
 }
 
+// --- Declaration guard (single-source-of-truth enforcement) -------------------
+// The whole point: an attack may only fire effects it DECLARED in meta.effects.
+// Without this, a macro can call fireManual('hit-sparkle') while its
+// meta.effects list omits it — behavior and the panel drift apart (the exact
+// bug class this exists to kill). The guard checks the declared set against the
+// type being fired and fails LOUDLY in debug, softly in prod.
+//
+// Wiring is optional + lazy so this module stays free of an import cycle with
+// the attack engine / debug flag: the attack engine calls wireEffectGuard()
+// once at load to install the checker. When no checker is installed (pure
+// effect-engine use, gameplay one-shots, tests), fireDeclared is a passthrough.
+
+let _guard = null;
+/** Install the declaration checker. Pass null to clear (tests). */
+export function wireEffectGuard(checker) { _guard = checker ?? null; }
+/** The installed checker (for tests / introspection). */
+export function getEffectGuard() { return _guard; }
+
+/**
+ * Guarded manual fire for the ATTACK ENGINE. Same lifecycle as fireManual, but
+ * first asks the installed guard whether `type` is allowed for `declared` (the
+ * attack's declared effect-type set). Undeclared → throw in debug / warn+skip
+ * in prod. Gameplay keeps using plain fireManual (it has no declaration set).
+ * @param {{type:string, params?:object}} cfg
+ * @param {Array<string>|null} [declared] declared effect types for the caller
+ * @param {object} [carrier]
+ * @param {object} [ctx]
+ * @returns {EffectInstance|null}
+ */
+export function fireDeclared({ type, params = {} }, declared = null, carrier = null, ctx = {}) {
+  if (_guard && !_guard(type, declared)) return null;
+  return spawnFromConfig({ on: 'manual', type, params }, carrier, 'manual', ctx);
+}
+
 // --- Continuous activation --------------------------------------------------------
 // carriers with a continuous declaration get one instance kept alive while
 // the carrier satisfies the condition. Keyed by carrier identity + the

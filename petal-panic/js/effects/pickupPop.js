@@ -26,5 +26,13 @@ export function pickupPop(params = {}) {
     const speed = PICKUP_POP_SPEED[0] + Math.random() * (PICKUP_POP_SPEED[1] - PICKUP_POP_SPEED[0]);
     particles.spawnOne(x, y, color, speed, angle);
   }
-  return { update() {}, render() {}, done: true };
+  // Real engine citizen: self-terminates over the pop's visual life (pool owns
+  // the particle draw).
+  let t = 0;
+  return {
+    update(dt) { t += dt; if (t >= 0.5) this.complete(); },
+    render() {},
+    done: false,
+    complete() { this.done = true; },
+  };
 }

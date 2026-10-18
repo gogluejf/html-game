@@ -88,5 +88,13 @@ export function dustCloud(params = {}, carrier = null) {
     puff.dustAlpha = opacity;
   }
 
-  return { update() {}, render() {}, done: true, complete() {} };
+  // Real engine citizen: self-terminates over the puffs' declared lifetime
+  // (pool owns the actual particle draw + per-puff physics).
+  let t = 0;
+  return {
+    update(dt) { t += dt; if (t >= lifetime) this.complete(); },
+    render() {},
+    done: false,
+    complete() { this.done = true; },
+  };
 }

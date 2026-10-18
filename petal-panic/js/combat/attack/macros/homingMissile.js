@@ -21,6 +21,16 @@ import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { stepProjectile } from '../primitives/projectile.js';
 
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
+import { getPrimitive, getMacro } from '../registry.js';
+
 const DEFAULTS = Object.freeze({
   direction: 0,          // initial launch direction (radians)
   speed: 400,            // bullet speed px/s
@@ -68,13 +78,13 @@ defineMacro('homingMissile', {
     const ent = shot?.entity;
     if (!ent) {
       // No pool slot: return a completed no-op handle (caller guards on entity).
-      const dead = new AttackHandle('homingMissile');
+      const dead = new AttackHandle('homingMissile', null, declaredEffectsOf('homingMissile'));
       dead._complete({ tracked: false });
       return dead;
     }
 
     // 2. Wrap it: our handle steps BOTH the projectile flight and the steering.
-    const h = new AttackHandle('homingMissile');
+    const h = new AttackHandle('homingMissile', null, declaredEffectsOf('homingMissile'));
     h.entity = ent;
     h.state = { t: 0, done: false };
     // Forward the projectile's terminal events so hosts see hit/expire once.

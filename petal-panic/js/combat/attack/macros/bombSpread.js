@@ -18,6 +18,16 @@ import { spreadAngles } from './spreadShot.js';
 import { resolveCarrier } from '../carrierMacro.js';
 import { stepBomb, stepBombTerrain } from '../primitives/bomb.js';
 
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read at construction so synchronous fires inside impl()
+// see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
+import { getPrimitive, getMacro } from '../registry.js';
+
 const DEFAULTS = Object.freeze({
   count: 3,              // number of bombs
   direction: -75 * Math.PI / 180, // steep lobe (radians)
@@ -57,7 +67,7 @@ defineMacro('bombSpread', {
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
-    const h = new AttackHandle('bombSpread');
+    const h = new AttackHandle('bombSpread', null, declaredEffectsOf('bombSpread'));
     const angles = spreadAngles(p.count, p.direction, p.angle);
     h.angles = angles;
     h.handles = [];

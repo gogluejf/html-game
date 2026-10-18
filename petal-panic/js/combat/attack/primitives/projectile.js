@@ -13,11 +13,20 @@
 // (marker or explicit point), and lifecycle bridging (entity death → handle
 // events hit/expire/complete).
 
-import { registerPrimitive } from '../registry.js';
+import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { resolveMarker } from '../context.js';
 import { AttackHandle } from '../engine.js';
 import { dirAngle } from '../../../core/vec.js';
-import { fireManual } from '../../../effects/index.js';
+import { fireDeclared } from '../../../effects/index.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
 
 /** Default params (canonical values; callers override per shot). */
 const DEFAULTS = Object.freeze({
@@ -138,7 +147,7 @@ export function stepProjectile(ent, h) {
     // detonation VFX). 'phase' shots never die on terrain; specials handle
     // their own fizzle/detonation effects.
     if (!ent._attackHit && !ent.ttlExpired && ent.solidBehavior === 'stop') {
-      fireManual({ type: 'debris', params: { x: ent.x + ent.w / 2, y: ent.y + ent.h / 2 } });
+      fireDeclared({ type: 'debris', params: { x: ent.x + ent.w / 2, y: ent.y + ent.h / 2 } }, h.declaredEffectTypes());
     }
     if (ent._attackHit) h._emit('hit', { dealt: ent.damage });
     else h._emit('expire');
@@ -169,7 +178,7 @@ registerPrimitive('projectile', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('projectile');
+    const h = new AttackHandle('projectile', null, declaredEffectsOf('projectile'));
     // ONE shot per invoke — the primitive is a single mechanical verb.
     // Repeated-fire patterns (bursts, fire-groups) are macro/attack-plan
     // sequencing: spreadShot with angle 0 + sequenceInterval, or plans that

@@ -9,9 +9,18 @@
 // The Effect Engine renders the persistent visual; this primitive owns the
 // hitbox + lifetime.
 
-import { registerPrimitive } from '../registry.js';
+import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../../hitbox.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
 
 const DEFAULTS = Object.freeze({
   x: 0,               // center x of the area (world coords)
@@ -78,7 +87,7 @@ registerPrimitive('fireArea', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('fireArea');
+    const h = new AttackHandle('fireArea', null, declaredEffectsOf('fireArea'));
     const hb = makeHitbox({ owner: ctx.attacker, team: params.team, box: null, damage: params.damage, method: params.method });
     resetHitbox(hb);
     h.state = { t: 0, tickAcc: 0, done: false, hb };

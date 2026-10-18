@@ -86,5 +86,13 @@ export function debris(params = {}, carrier = null) {
     frag.rot = 0;
   }
 
-  return { update() {}, render() {}, done: true, complete() {} };
+  // Real engine citizen: self-terminates over the fragments' declared lifetime
+  // (pool owns the actual particle draw + per-fragment physics).
+  let t = 0;
+  return {
+    update(dt) { t += dt; if (t >= lifetime) this.complete(); },
+    render() {},
+    done: false,
+    complete() { this.done = true; },
+  };
 }

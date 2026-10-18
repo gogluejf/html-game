@@ -14,9 +14,18 @@
 // whenever the bomb ends (impact, fuse expiry, or off-screen cull). Macros
 // subscribe to this to fire their payload effect at exactly that point.
 
-import { registerPrimitive } from '../registry.js';
+import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
-import { fireManual } from '../../../effects/index.js';
+import { fireDeclared } from '../../../effects/index.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read lazily at construction so synchronous fires inside
+// impl() see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
 
 const DEFAULTS = Object.freeze({
   speed: 500,           // launch force (px/s)
@@ -159,7 +168,7 @@ export function stepBomb(ent, p, ctx, h) {
   // flash, camera shake belong to whatever macro COMPOSES this carrier —
   // the primitive never double-dips.
   if (contact && !ent.ttlExpired) {
-    fireManual({ type: 'debris', params: { x: cx, y: cy } });
+    fireDeclared({ type: 'debris', params: { x: cx, y: cy } }, h.declaredEffectTypes());
   }
 
   h._complete();
@@ -187,7 +196,7 @@ registerPrimitive('bomb', {
     ],
   },
   impl(params, ctx) {
-    const h = new AttackHandle('bomb');
+    const h = new AttackHandle('bomb', null, declaredEffectsOf('bomb'));
     const ent = spawnBomb(params, ctx, h);
     if (!ent) { h._emit('expire'); h._complete(); return h; }
     h.entity = ent;

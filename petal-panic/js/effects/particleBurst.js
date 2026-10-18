@@ -19,5 +19,13 @@ import { particles } from './particles.js';
 export function particleBurst(params = {}) {
   const { x, y, count = 6 } = params;
   particles.spawnBurst(x, y, count);
-  return { update() {}, render() {}, done: true };
+  // Real engine citizen: self-terminates over the burst's visual life (pool
+  // owns the particle draw).
+  let t = 0;
+  return {
+    update(dt) { t += dt; if (t >= 0.5) this.complete(); },
+    render() {},
+    done: false,
+    complete() { this.done = true; },
+  };
 }

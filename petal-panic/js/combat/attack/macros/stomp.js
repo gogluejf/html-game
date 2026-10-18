@@ -27,7 +27,17 @@
 
 import { defineMacro } from '../defineMacro.js';
 import { AttackHandle } from '../engine.js';
-import { Effects } from '../../../effects.js';
+import { fireDeclared } from '../../../effects/index.js';
+
+// Declared effect types for THIS registration (single source of truth:
+// the same meta.effects array the guard checks and the theater panel
+// renders). Read at construction so synchronous fires inside impl()
+// see the real declaration — no timing race with invoke().
+function declaredEffectsOf(id) {
+  const def = getPrimitive(id) ?? getMacro(id);
+  return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
+}
+import { getPrimitive, getMacro } from '../registry.js';
 
 const DEFAULTS = Object.freeze({
   surface: 'current',    // 'current' | 'all' (documented; blast is positional)
@@ -100,6 +110,7 @@ defineMacro('stomp', {
       { type: 'dust-cloud', desc: 'ground dust puff at the impact point (every impact)' },
       { type: 'camera-shake', desc: 'shake on impact' },
       { type: 'hit-sparkle', desc: 'blood-like sparkle on each target the radius catches' },
+      { type: 'telegraph-circle', desc: 'warning circle that grows/blinks before the slam' },
     ],
     params: [
       { key: 'surface', desc: "'current' | 'all'" },
@@ -118,8 +129,7 @@ defineMacro('stomp', {
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
-    const h = new AttackHandle('stomp');
-    const fx = ctx.effects ?? Effects;
+    const h = new AttackHandle('stomp', null, declaredEffectsOf('stomp'));
     const n = Math.max(1, Math.floor(p.count));
     const teleTotal = telegraphTotal(p); // grow + silence + warning
     // Pending targets: the host passes them on every step(); the impact frame
@@ -148,13 +158,13 @@ defineMacro('stomp', {
         h._emit('hit', hit);
         // Blood-like hit sparkle on the struck target (design §12): the impact
         // reads as a physical hit, not just numbers going down.
-        fx.spawnHitSparkles?.(hit.target.x + hit.target.w / 2, hit.target.y + hit.target.h / 2, 6);
+        fireDeclared({ type: 'hit-sparkle', params: { x: hit.target.x + hit.target.w / 2, y: hit.target.y + hit.target.h / 2, count: 6 } }, h.declaredEffectTypes());
       }
 
       // Impact juice via the REAL Effect Engine (effects.md #20 dust-cloud,
       // #13 camera-shake): fires on every impact, even when nothing is hit.
-      fx.fireManual?.({ type: 'dust-cloud', params: { x: pt.x, y: pt.y, particleCount: 16, lifetime: 0.5, ...(p.dustStyle ?? {}) } });
-      fx.triggerShake?.(p.shakeStrength);
+      fireDeclared({ type: 'dust-cloud', params: { x: pt.x, y: pt.y, particleCount: 16, lifetime: 0.5, ...(p.dustStyle ?? {}) } }, h.declaredEffectTypes());
+      fireDeclared({ type: 'camera-shake', params: { intensity: p.shakeStrength } }, h.declaredEffectTypes());
     };
 
     h.step = (dt, targets) => {
@@ -172,7 +182,7 @@ defineMacro('stomp', {
           if (s.t <= dt && !s.telegraphFired) {
             s.telegraphFired = true;
             const pt = stompImpactPoint(ctx.attacker);
-            fx.fireManual?.({ type: 'telegraph-circle', params: { x: pt.x, y: pt.y - 8, radius: p.radius, expand: true, buildTime: p.buildTime, gapTime: p.gapTime, blinkTime: p.blinkTime } });
+            fireDeclared({ type: 'telegraph-circle', params: { x: pt.x, y: pt.y - 8, radius: p.radius, expand: true, buildTime: p.buildTime, gapTime: p.gapTime, blinkTime: p.blinkTime } }, h.declaredEffectTypes());
           }
           if (s.t >= teleTotal + p.impactDelay) { s.phase = 'hop'; s.t = 0; }
           break;

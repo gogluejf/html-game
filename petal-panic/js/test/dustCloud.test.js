@@ -48,7 +48,7 @@ console.log('spawning');
 ok('spawns the declared particleCount puffs into the shared pool', () => {
   drainPool();
   const body = dustCloud({ x: 100, y: 100, particleCount: 5 });
-  assert.equal(body.done, true, 'one-shot: done at fire time');
+  assert.equal(body.done, false, 'real citizen: active until the puffs fade');
   assert.equal(particles.count, 5, `expected 5 live puffs, got ${particles.count}`);
 });
 ok('default particleCount is 6', () => {
@@ -281,7 +281,8 @@ ok('"dust-cloud" is registered and resolves through the real fire() path', () =>
   assert.ok(inst !== null, 'fireManual resolved the type');
   assert.equal(inst.type, 'dust-cloud');
   assert.equal(inst.trigger, 'manual');
-  assert.equal(activeCount(), 0, 'one-shot: instance completes immediately, never enters the active set');
+  // Real engine citizen: the instance stays active over its declared lifetime.
+  assert.ok(activeCount() >= 1, 'instance entered the active set');
   resetEffects();
 });
 for (const trigger of ['stateChange', 'collision']) {
@@ -336,7 +337,7 @@ ok('standalone theater demo driven only by params (null carrier, manual fire)', 
     params: { x: 160, y: 120, particleCount: 10, spread: 14, size: 6, velocity: 40,
               lifetime: 0.5, opacity: 0.7, gravity: 100 } });
   assert.ok(inst !== null, 'manual fire with null carrier resolved');
-  assert.equal(inst.done, true, 'one-shot completes at fire time');
+  assert.equal(inst.done, false, 'real citizen: active until the burst fades');
   assert.equal(particles.count, 10, 'all 10 puffs spawned');
   // Every puff obeys the declared envelope: speed ≤ velocity, size 6,
   // clustered within ±spread of the contact x.

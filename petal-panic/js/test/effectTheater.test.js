@@ -152,10 +152,12 @@ ok('explosion produces fill/rect particle draws over its life', () => {
   byType['explosion'].demo(ctx, 0.1); // particles mid-flight
   assert.ok(has(ctx, 'fillRect') || has(ctx, 'fill'), 'explosion painted particles');
 });
-ok('beam produces a filled rotated rectangle (rect + fill + linear gradient)', () => {
+ok('beam produces a filled rotated shape with a linear halo gradient', () => {
   const ctx = makeCtx();
   byType['beam'].demo(ctx, 0.6); // past the 500ms boss-appear delay
-  assert.ok(has(ctx, 'rect'), 'beam drew a rect');
+  // The beam body is a tapered path (moveTo/quadraticCurveTo/lineTo), not a
+  // bare rect() call — accept either; the essentials are the fill + halo grad.
+  assert.ok(has(ctx, 'rect') || has(ctx, 'moveTo'), 'beam drew its body');
   assert.ok(has(ctx, 'fill'), 'beam filled');
   assert.ok(has(ctx, 'gradL'), 'beam built a linear halo gradient');
 });
