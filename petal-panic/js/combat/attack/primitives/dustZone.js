@@ -2,19 +2,12 @@
 //
 // A persistent damaging area rendered as a continuous toxic dust cloud.
 // Enemies inside the zone take ticking damage for the cloud's duration.
-// The visual is NOT one burst — it re-spawns small dust puffs across the
-// full w×h rectangle every few frames so the zone stays visually "alive"
-// and fully covered for its whole lifetime.
-//
-// Same shape as fireArea (static AABB + tick clock) but:
-//   - Height is a param (fireArea is fixed 48px)
-//   - Visual = repeated dust-cloud spawns (palette: hazard by default)
-//   - Reads as "toxic gas / poison fog" rather than fire strip
+// Delegates zone lifecycle to a HazardZone object; adds continuous visual
+// puff spawns across the full w×h rectangle.
 
-import { registerPrimitive } from '../registry.js';
-import { getPrimitive } from '../registry.js';
+import { registerPrimitive, getPrimitive } from '../registry.js';
 import { AttackHandle } from '../engine.js';
-import { makeHitbox, resetHitbox, processHitboxes } from '../../hitbox.js';
+import { HazardZone } from '../../../objects/hazardZone.js';
 import { fireManual } from '../../../effects/index.js';
 
 function declaredEffectsOf(id) {
@@ -33,68 +26,13 @@ const DEFAULTS = Object.freeze({
   team: 'ally',       // ally | foe | neutral
   method: 'poison',   // telemetry label
   palette: 'hazard',  // dust-cloud palette name
-  puffInterval: 0.12, // s between visual puff spawns (coverage cadence)
+  puffInterval: 0.12, // s between visual puff spawns
   puffsPerSpawn: 4,   // particles per puff spawn
 });
 
-/** World-space AABB for the zone. */
+/** World-space AABB for the zone (center-based → top-left). */
 export function dustZoneBox(p) {
   return { x: p.x - p.width / 2, y: p.y - p.height / 2, w: p.width, h: p.height };
-}
-
-/**
- * Per-frame step: advance clock, run hitbox at tick rate, spawn visual puffs.
- * @returns {boolean} true when the cloud dissipated
- */
-export function stepDustZone(state, p, dt, targets, h) {
-  if (state.done) return true;
-  state.t += dt;
-  state.tickAcc += dt;
-  state.puffAcc += dt;
-
-  // Damage ticks.
-  const tickInterval = 1 / Math.max(1, p.tickRate);
-  while (state.tickAcc >= tickInterval) {
-    state.tickAcc -= tickInterval;
-    state.hb.box = dustZoneBox(p);
-    state.hb.damage = p.damage;
-    resetHitbox(state.hb);
-    const hits = [];
-    processHitboxes([state.hb], targets, (hb, t, dealt) => hits.push({ target: t, dealt }));
-    for (const hit of hits) h._emit('hit', { target: hit.target, dealt: hit.dealt });
-  }
-
-  // Visual: spawn small dust puffs at random points within the zone so the
-  // cloud looks continuously filled, not a single burst.
-  const puffInterval = Math.max(0.02, p.puffInterval);
-  while (state.puffAcc >= puffInterval) {
-    state.puffAcc -= puffInterval;
-    const box = dustZoneBox(p);
-    const px = box.x + Math.random() * box.w;
-    const py = box.y + Math.random() * box.h;
-    fireManual({
-      type: 'dust-cloud',
-      params: {
-        x: px, y: py,
-        particleCount: p.puffsPerSpawn,
-        spread: box.w * 0.15,
-        height: box.h * 0.15,
-        size: 6,
-        velocity: 20,
-        lifetime: 0.7,
-        opacity: 0.6,
-        palette: p.palette,
-      },
-    });
-  }
-
-  if (state.t >= p.duration) {
-    state.done = true;
-    state.hb.active = false;
-    h._complete({ ticks: Math.round(state.t * p.tickRate) });
-    return true;
-  }
-  return false;
 }
 
 registerPrimitive('dustZone', {
@@ -120,11 +58,53 @@ registerPrimitive('dustZone', {
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
     const h = new AttackHandle('dustZone', null, declaredEffectsOf('dustZone'));
-    const hb = makeHitbox({ owner: ctx.attacker, team: p.team, box: null, damage: p.damage, method: p.method });
-    resetHitbox(hb);
-    h.state = { t: 0, tickAcc: 0, puffAcc: 0, done: false, hb };
+    const box = dustZoneBox(p);
+    const zone = new HazardZone({
+      x: box.x, y: box.y, w: box.w, h: box.h,
+      duration: p.duration, tickRate: p.tickRate, damage: p.damage,
+      team: p.team, color: 'rgba(57,255,20,0.15)', label: 'dust',
+    });
+    zone.setOwner(ctx.attacker);
+    h.zone = zone;
+    h.state = { done: false, t: 0, puffAcc: 0 };
     h._params = p;
-    h.step = (dt, targets) => stepDustZone(h.state, p, dt, targets ?? [], h);
+
+    h.step = (dt, targets) => {
+      if (h.state.done) return true;
+      const hits = zone.update(dt, targets ?? []);
+      for (const hit of hits) h._emit('hit', { target: hit.target, dealt: hit.dealt });
+
+      // Visual: spawn small dust puffs at random points within the zone.
+      h.state.puffAcc += dt;
+      const puffInterval = Math.max(0.02, p.puffInterval);
+      while (h.state.puffAcc >= puffInterval && zone.alive) {
+        h.state.puffAcc -= puffInterval;
+        const px = zone.x + Math.random() * zone.w;
+        const py = zone.y + Math.random() * zone.h;
+        fireManual({
+          type: 'dust-cloud',
+          params: {
+            x: px, y: py,
+            particleCount: p.puffsPerSpawn,
+            spread: zone.w * 0.15,
+            height: zone.h * 0.15,
+            size: 6,
+            velocity: 20,
+            lifetime: 0.7,
+            opacity: 0.6,
+            palette: p.palette,
+          },
+        });
+      }
+
+      if (!zone.alive) {
+        h.state.done = true;
+        h._complete({ ticks: Math.round(zone.t * p.tickRate) });
+        return true;
+      }
+      h.state.t = zone.t;
+      return false;
+    };
     return h;
   },
 });

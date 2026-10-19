@@ -1408,19 +1408,14 @@ export const AttackTheater = {
         ctx.textAlign = 'center';
         ctx.fillText(`seg${st.segmentIndex + 1} · ${st.frame ?? ''}`, box.x + box.w / 2, box.y - 6);
       } else if ((h.id === 'fireArea' || h.id === 'spike' || h.id === 'dustZone') && !st.done) {
-        let box = null;
-        if (h.id === 'fireArea') { const fp = h._params ?? this._params; const fw = fp.width; box = { x: fp.x - fw / 2, y: GROUND_Y - 48, w: fw, h: 48 }; }
-        else if (h.id === 'dustZone') { const dp = h._params ?? this._params; box = { x: dp.x - dp.width / 2, y: dp.y - dp.height / 2, w: dp.width, h: dp.height }; }
-        else if (st.phase === 'visible') { const sw = this._params.width; box = { x: this._params.x - sw / 2, y: this._params.y - 8, w: sw, h: 16 }; }
-        if (box) {
-          const active = h.id === 'fireArea' || h.id === 'dustZone' || st.phase === 'visible';
-          ctx.fillStyle = h.id === 'fireArea'
-            ? `rgba(255,${active ? 120 : 60},30,${active ? 0.4 : 0.15})`
-            : h.id === 'dustZone'
-              ? `rgba(57,255,20,${active ? 0.15 : 0.05})`
-              : (st.phase === 'warning' ? `rgba(255,80,80,${0.3 + 0.3 * Math.sin(st.t * 20)})` : (active ? 'rgba(255,220,80,0.7)' : 'rgba(255,255,255,0.06)'));
+        // HazardZone-backed primitives: delegate to the zone's own draw().
+        if (h.zone) { h.zone.draw(ctx); }
+        else if (h.id === 'spike' && st.phase === 'visible') {
+          const sw = this._params.width;
+          const box = { x: this._params.x - sw / 2, y: this._params.y - 8, w: sw, h: 16 };
+          ctx.fillStyle = 'rgba(255,220,80,0.7)';
           ctx.fillRect(box.x, box.y, box.w, box.h);
-          ctx.strokeStyle = h.id === 'dustZone' ? 'rgba(57,255,20,0.4)' : 'rgba(255,255,255,0.4)';
+          ctx.strokeStyle = 'rgba(255,255,255,0.4)';
           ctx.strokeRect(box.x, box.y, box.w, box.h);
         }
       }
