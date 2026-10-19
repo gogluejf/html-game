@@ -24,7 +24,7 @@ knockback launch; all earlier freezes are `knockback: null`.
 
 ### Registration
 
-- id: `dashCombo` (doc §13 "Charge / Dash (Dash Combo)"). Deliberately NOT
+- id: `dashCombo` (doc §13 "Dash Combo"). Deliberately NOT
   `charge` — the theater's existing `charge` preset demos the Movement
   primitive; this macro is the frame-scripted combo.
 - file: `petal-panic/js/combat/attack/macros/dashCombo.js`

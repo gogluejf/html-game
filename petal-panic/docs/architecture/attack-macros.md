@@ -504,108 +504,146 @@ Projectile (flight) → hit or expire → Explosion at the death point.
 
 ---
 
-## 13. Charge / Dash (Dash Combo)
+## 13. Dash Combo (macro id: `dashCombo`)
 
 **Invokes:** Movement + Melee Hitbox (per segment) + Body Contact
 
-**Effects:** Afterimage (per slide segment), Sprite Shake (on the victim, per
-connected hit), Hit Sparkle (hit juice)
+**Effects:** Afterimage (per segment, during its movement phase), Sprite Shake
+(on the victim, per connected hit), Hit Sparkle (hit juice)
 
 A frame-scripted multi-hit dash: the attacker commits to a short timeline of
-segments — each one a sprite frame (kick → slide → freeze) with its own
-movement and hitbox. The readable "get in close and commit" melee verb: fast,
-aggressive, and beatable by design.
+segments. Each segment holds ONE sprite frame for its whole movement, then
+FREEZES on that frame — and the hit lands during the freeze. N segments = N
+hits. The readable "get in close and commit" melee verb: fast, aggressive, and
+beatable by design.
 
 ### Segment model
 
-The attack is a list of segments; each segment declares its own frame,
-movement, and hitbox. The macro steps them in order — no segment starts before
-the previous one's active window closes.
+Each segment is two phases back-to-back:
 
 ```
-[ kick ] → [ slide ] → [ freeze ] → recovery
-   fast      trail       finisher     vulnerable
+[ MOVE ] → [ FREEZE ]   ← one segment (one sprite frame held throughout)
+   ↑            ↑
+ travels at    attacker STOPS; hitbox is LIVE here — this is the hit
+ speed for
+ duration,
+ afterimage trails
 ```
 
-- **kick** — quick lunge, small hitbox in front. Damage only, NO knockback:
-  the victim stays in range and keeps control (the counter window must be real).
-- **slide** — longer movement along the ground, afterimage trail behind the
-  attacker, hitbox active for the whole slide. Damage only, NO knockback.
-- **freeze** — the finisher: attacker plants (near-zero movement), bigger
-  hitbox, damage + REAL knockback (`base` push + short `hitstun`, optional
-  `pop`) launches the victim out. This is the "CRACK" — the only segment that
-  ejects.
+- **MOVE phase** — the sprite shows the segment's frame (held static for the
+  whole travel; a running cycle can replace it later). The attacker travels at
+  `speed` for `duration` (or until `distance`). An afterimage instance trails
+  the motion. NO hitbox during travel.
+- **FREEZE phase** — the attacker stops on the SAME frame for `freezeFrames`.
+  The segment's Melee Hitbox is active during this window. This is where the
+  segment connects.
+
+Segments run back-to-back with NO gap between them — one continuous committed
+motion. The last segment's freeze carries the knockback launch.
+
+```
+seg1 move → seg1 FREEZE(hit) → seg2 move → seg2 FREEZE(hit) → segN move → segN FREEZE(hit + launch) → RECOVERY
+```
 
 ### Canonical sequence
 
-Optional telegraph → kick (active) → slide (active + afterimage) → freeze
-(finisher + knockback) → recovery (attacker committed, punishable).
+Optional telegraph → per segment: [move (afterimage) → freeze (hitbox live)] →
+recovery (attacker committed, punishable).
 
 ### Main parameters
 
 - **segments** — the timeline: an array of segment objects (see below).
 - **direction / targetDirection** — dash direction (radians); all segments
-  share it. Caller-computed (AI/input owns targeting).
-- **startup** — seconds before the first segment's hitbox goes live (the
+  share it. Caller-computed (AI/input owns targeting). Horizontal only
+  (left/right) — a ground dash has no vertical variant.
+- **startup** — seconds before the first segment starts moving (the
   commitment tell; tunable per enemy for risk level).
-- **recovery** — seconds after the last segment where the attacker is
-  committed and punishable (the counter/punish window).
-- **afterimage** — effect override for the slide trail (count, fadeRate,
-  color...).
+- **recovery** — ONE window at the very END (not between segments): seconds
+  after the last freeze where the attacker is committed and punishable.
+- **afterimage** — effect override for the per-segment trail (count,
+  fadeRate, lifetime, color...).
 - **shakeStyle** — sprite-shake override applied to the VICTIM on connected
   hits (amount scales with segment index — early hits shake less than the
   finisher).
 
 #### Per-segment fields
 
-- **frame** — sprite animation frame/label this segment plays (the visual
-  telegraph; markers on the frame can offset the hitbox).
-- **speed** — segment movement speed (px/s) (Movement primitive `speed`).
-- **duration** — segment length in seconds (Movement `duration`).
+- **frame** — the sprite frame/label held for this segment's move AND freeze
+  (the visual identity of the beat; markers on the frame can offset the
+  hitbox).
+- **speed** — movement-phase speed (px/s) (Movement primitive `speed`).
+- **duration** — movement-phase length (s) (Movement `duration`).
 - **distance** — optional travel cap instead of/in addition to duration
   (Movement `distance`).
+- **shove** — move-phase push on an overlapping victim as a fraction of the
+  segment speed (default 0.6; 0 = no shove). Physics only, never damage.
+- **freezeFrames** — how long the stop lasts (s or frames); the hitbox is live
+  for this window.
 - **hitbox** — `{ w, h, offset, activeFrames }` for this segment's Melee
-  Hitbox (`null` = segment deals no direct hit, e.g. pure repositioning).
-- **damage** — hitbox damage for this segment (escalating: kick < slide <
-  freeze).
-- **knockback** — KnockbackSetting or `null`. Kick/slide MUST be `null` (or
-  zero-strength) so the victim keeps control; ONLY the finisher carries a real
-  setting `{ base, scaleBySpeed, hitstun, pop?, dirMode }` — `base` is the
-  inherent push (px/s), `scaleBySpeed` multiplies head-on velocity, `pop` adds
-  a fixed upward launch, `hitstun` is the stun seconds.
+  Hitbox, active during the freeze (`null` = pure-reposition segment that
+  deals no hit — available, but the canonical combo hits on every segment).
+- **damage** — this segment's hit damage (escalating: early < finisher).
+- **knockback** — KnockbackSetting or `null`. Every segment EXCEPT the last
+  MUST be `null` (or zero-strength) so the victim keeps control; ONLY the last
+  segment carries a real setting `{ base, scaleBySpeed, hitstun, pop?, dirMode }`
+  — `base` is the inherent push (px/s), `scaleBySpeed` multiplies head-on
+  velocity, `pop` adds a fixed upward launch, `hitstun` is the stun seconds.
 
 ### Rules
 
+- **Hits land on the freeze, not during travel.** The move phase is
+  repositioning (afterimage only); the freeze is the attack frame. This makes
+  each beat readable: motion = coming, stop = hit.
+- **The move phase SHOVS, it does not damage.** While the move-phase body
+  overlaps the victim, the victim is pushed along at a fraction of the segment
+  speed (default ~60%; per-segment `shove` override) — a shoulder-check, no
+  hitstun, no launch, victim keeps full control. This is what keeps a standing
+  victim IN the combo path: without it, the attacker would pass through and
+  every later freeze would land behind a stationary victim (one-hit "combos"
+  by geometry). Stand still = eat the full combo; run away = outrun the shove
+  and later freezes miss; counter = still possible after any freeze. It is NOT
+  knockback (no hitstun/launch data) — a per-frame AABB overlap → add to the
+  victim's vx, same overlap test the hitboxes use. Body-overlap during the move
+  deals NO damage; only the freeze hitboxes hurt.
+- **Afterimages fade naturally at each freeze.** The per-segment afterimage
+  instance is fed the attacker position while moving; when the freeze stops
+  the motion, no new ghosts record and the existing ones fade out over their
+  `lifetime` (built-in B2 recency rule — no manual clear). The next segment's
+  move starts a fresh trail. The fade-between-beats sells the distinct hits
+  for free.
 - **Knockback lives on the hitbox data, not in takeDamage.** A segment with
   `knockback: null` deals damage with zero physical reaction — presence of the
-  data is the only gate. This is what keeps early hits "in place".
-- **Hitstun is the counter-window killer.** Early segments use `hitstun: 0`
-  (or none) so the victim can act; the finisher's short hitstun ends the combo
-  by launching the victim out. Stun never stacks longer than the max already
-  applied (engine rule), so segment order can't extend lockout accidentally.
-- **Combo lock limit:** at most 2 segments connect on one victim before the
-  finisher (kick + slide). All three landing is the attacker's full-commit
-  reward; a victim who reacts to hit #1 still gets the counter.
-- **Counter window = freeze + recovery.** The freeze frame is the visible tell
-  ("it's over, strike now"): melee during it cancels the combo and staggers
-  the attacker; recovery extends the punish. Jumping the slide or a
-  projectile interrupt (damage cancels any macro) are the ranged alternatives.
+  data is the only gate. Early freezes hurt without pushing: the victim stays
+  in range and keeps control (the counter window must be real). Only the final
+  freeze launches (short `hitstun` ends the exchange).
+- **Combo lock limit:** at most N−1 segments connect on one victim before the
+  finisher. All segments landing is the attacker's full-commit reward; a
+  victim who reacts to an early hit still gets the counter.
+- **Breaker = MELEE contact while the timeline is still running** (any move or
+  freeze phase): the rest of the sequence DROPS immediately, the attacker takes
+  the hit normally (no extra stun/stagger — just a normal hit on a committed
+  body), and all pending state is cleaned (no ghost hitboxes; trails fade via
+  their own rule). Hitting a planted freeze is the easiest frame to land it.
+- **Projectiles do NOT break the combo** — ranged contact is damage only, the
+  timeline continues. The counter-verb is the melee-verb: breaking requires
+  being point-blank, which is the commitment the design wants.
+- **Recovery = punish, not breaker.** By then the timeline is finished; any
+  hit (melee or projectile) is a free punish on a committed attacker.
 - **Camera shake is NOT used** — this is a melee exchange, not an event.
   Camera shake stays reserved for explosions/stomps so it keeps its meaning.
-- **Afterimages fire per slide segment only** (continuous while that segment
-  moves), not on kick/freeze.
-- Cancel/damage on the attacker aborts the timeline mid-segment (standard
-  macro interrupt); no ghost hitboxes or trails remain.
+- Cancel/damage rules above leave no orphan state: aborted timelines emit
+  complete, pending hitboxes are dropped, afterimage instances terminate on
+  their own clock.
 
 ### Composition
 
-**Telegraph (optional) → per segment: [sprite frame + Movement + Melee
-Hitbox (+ Afterimage on slides)] → on connect: Sprite Shake(victim) + Hit
-Sparkle → finisher adds Knockback → Recovery**
+**Telegraph (optional) → per segment: [hold frame + Movement (+ Afterimage
+while moving) → freeze: Melee Hitbox live] → on connect: Sprite Shake(victim)
++ Hit Sparkle → last freeze adds Knockback → Recovery**
 
 Examples:
-- 2-segment jab-dash (kick → freeze) → light enemy poke, low startup
-- 3-segment full combo (kick → slide → freeze) → boss/strong enemy commitment
+- 2-segment poke-dash → light enemy pressure, low startup
+- 3-segment full commitment → boss/strong enemy; big finisher launch
 - `startup: 0.4, recovery: 0.5` → flashy but heavily punishable (risky tool)
 
 ---
