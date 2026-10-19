@@ -102,6 +102,7 @@ const SANDBOX_PRESETS = {
   stomp: { buildTime: 0.6, gapTime: 0.4, blinkTime: 0.3, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, radius: 90, damage: 30, team: 'foe', shakeStrength: 5 },
   stompWave: { buildTime: 0.6, gapTime: 0.4, blinkTime: 0.3, impactDelay: 0.1, sides: 'both', hopHeight: 10, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 5 },
   skyMissile: { x: TARGET_POS.x + 16, timeToTarget: 1.0, dropHeight: 260, fallSpeed: 500, damage: 30, radius: 60, team: 'foe', blastTeam: 'neutral' },
+  missileRain: { count: 5, distanceType: 'fixed', distance: 90, pattern: 'simultaneous', interval: 0.35, coordination: 'from_left', launchInterval: 0.12, ascentOscillation: 6, fallDelay: 0, timeToTarget: 0.9, descentSpeed: 500, damage: 30, radius: 60, team: 'foe', blastTeam: 'neutral' },
 };
 
 /** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
@@ -137,6 +138,7 @@ export const TWEAKABLE = {
   stomp: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['count', 'int', 1], ['interval', 'num', 0.1], ['radius', 'num', 10], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
   stompWave: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['waveSpeed', 'num', 50], ['waveHeight', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
   skyMissile: [['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['dropHeight', 'num', 20], ['fallSpeed', 'num', 50], ['damage', 'num', 5], ['radius', 'num', 10]],
+  missileRain: [['count', 'int', 1], ['distanceType', 'enum', ['fixed', 'relative']], ['distance', 'num', 20], ['pattern', 'enum', ['simultaneous', 'sequential']], ['interval', 'num', 0.05], ['coordination', 'enum', ['from_left', 'from_right', 'random']], ['launchInterval', 'num', 0.02], ['timeToTarget', 'num', 0.1], ['descentSpeed', 'num', 50], ['damage', 'num', 5], ['radius', 'num', 10]],
 };
 
 export const AttackTheater = {
@@ -625,6 +627,13 @@ export const AttackTheater = {
       const platTop = GROUND_Y - 70;
       this._stompPlatforms = [{ x: platX, y: platTop, w: 110 }];
       this._choreo = { kind: 'stompStage' };
+    } else if (id === 'missileRain') {
+      // Missile Rain demo: the rain centers on the view middle and spreads
+      // across the ground — the target stands under part of the pattern. No
+      // platform staging: every drop column resolves to the floor here, which
+      // is the readable default case (skyMissile's own demo covers platforms).
+      this._params.xCoordinate = VIEW_W / 2;
+      this._choreo = { kind: 'stompStage' };
     }
 
     // (explosion + spawnSplit stage the origin at the attacker and hide its
@@ -969,6 +978,10 @@ export const AttackTheater = {
           // explosiveProjectile handle is stepped internally and resolves the
           // blast through ctx.world.targets (the main dummy).
           finished = h.step(DT, [this._target]);
+        } else if (h.id === 'missileRain') {
+          // Missile Rain: the macro owns launch burst → per-missile activation;
+          // each child skyMissile is stepped internally.
+          finished = h.step(DT, [this._target]);
         } else if (h.id === 'boomerang') {
           finished = h.step(DT);
           // Contact check: every live boomerang body vs the dummy target.
@@ -1297,6 +1310,19 @@ export const AttackTheater = {
     }
     // (No aim-point marker for predictiveShot: the demo is pure "shoot where it
     // will be" — a crosshair would turn it into a reticle demo.)
+    // Missile Rain launch burst: draw the rising rocket bodies (the macro's
+    // trails are real effect instances; the rockets themselves are macro state).
+    for (const h of this._handles) {
+      if (h.id !== 'missileRain' || h.state?.done) continue;
+      for (const r of h.state.rockets ?? []) {
+        if (r.done) continue;
+        ctx.fillStyle = '#fa4';
+        ctx.fillRect(r.x - 3, r.y - 10, 6, 12);
+        ctx.fillStyle = '#ff8';
+        ctx.fillRect(r.x - 2, r.y + 2, 4, 5);
+      }
+    }
+
     // Kamikaze dummy (bodyExplosion demo victim at home position).
     if (this._kamikaze && this._kamikaze.alive !== false) {
       ctx.fillStyle = this._kamikaze?.alive ? '#c96' : '#444';

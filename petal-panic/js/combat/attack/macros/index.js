@@ -23,3 +23,4 @@ import './sweepingBeam.js';
 import './stomp.js';
 import './stompWave.js';
 import './skyMissile.js';
+import './missileRain.js';
