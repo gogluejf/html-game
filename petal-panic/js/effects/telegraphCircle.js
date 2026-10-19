@@ -56,7 +56,7 @@
 //   thickness    — stroke width of the circle outline in px (default 5).
 //                  Used during the BUILD phase. The DOT BLINK uses fill.
 //   opacity      — peak alpha 0..1, clamped (default 0.85).
-//   duration     — whole-instance lifetime in seconds (default 0.4).
+//   duration     — whole-instance lifetime in seconds (default 0.6).
 //                    build:  0% → 60%
 //                    gap:    60% → 80%
 //                    blink:  80% → 100%  (3 on/off cycles)
@@ -81,7 +81,7 @@ const DEFAULT_EXPAND = false;    // false = shrink, true = expand
 const DEFAULT_PULSE_RATE = 4;    // Hz — warning pulse frequency (build phase)
 const DEFAULT_THICKNESS = 5;     // px — circle stroke width (build phase)
 const DEFAULT_OPACITY = 0.85;    // peak alpha
-const DEFAULT_DURATION = 0.4;    // s  — whole-instance lifetime
+const DEFAULT_DURATION = 0.6;    // s  — whole-instance lifetime
 const DEFAULT_FOLLOW_TARGET = false;
 const DEFAULT_COLOR = '#ff5a5a'; // red warning tint
 const EPS = 1e-9;                // fixed-dt epsilon convention
@@ -137,7 +137,14 @@ export function telegraphCircle(params = {}, carrier = null) {
     gapEnd = duration * (BUILD_FRAC + GAP_FRAC);
   }
   // Each blink half-cycle (ON or OFF) duration:
-  const blinkHalfCycle = (duration - gapEnd) / (BLINK_CYCLES * 2);
+  let blinkHalfCycle = (duration - gapEnd) / (BLINK_CYCLES * 2);
+  // Sub-frame blinks get skipped by the renderer (a phase shorter than one
+  // frame may never be sampled). Clamp to ≥ 1 frame so every ON phase is
+  // actually visible; if the window can't fit 3 full blinks at that size,
+  // the later ones simply don't start — a short flicker-free warning beats
+  // random sub-frame noise.
+  const MIN_HALF_CYCLE = 1 / 60; // one frame @60fps
+  if (blinkHalfCycle < MIN_HALF_CYCLE) blinkHalfCycle = MIN_HALF_CYCLE;
 
   // Starting radius depends on direction:
   const startRadius = expand ? minRadius : radius;

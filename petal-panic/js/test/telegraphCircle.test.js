@@ -59,8 +59,8 @@ function movingCarrier(x = 0, y = 0) {
   };
 }
 
-// Phase boundaries for default duration (0.4s):
-const DUR = 0.4;
+// Phase boundaries for default duration (0.6s):
+const DUR = 0.6;
 const BUILD_END = DUR * 0.60;   // 0.24s
 const GAP_END = DUR * 0.80;     // 0.32s
 
@@ -198,17 +198,34 @@ ok('blink alternates on/off (3 full cycles)', () => {
   assert.deepEqual(states, [true, false, true, false, true, false], `pattern: ${states}`);
 });
 ok('blink alpha is full opacity when ON', () => {
-  const b = telegraphCircle({ radius: 48, minRadius: 12, duration: 0.4, opacity: 0.85 });
-  const blinkStart = GAP_END;
-  const blinkDur = DUR - GAP_END;
-  const halfCycle = blinkDur / 6;
-  const t = blinkStart + 0.5 * halfCycle;
+  // duration 1.0 → blink window 200ms → half-cycle 33ms (no clamp needed),
+  // sample at the middle of the first ON phase.
+  const dur = 1.0;
+  const gapEnd = dur * 0.8;
+  const t = gapEnd + 0.5 * (dur - gapEnd) / 6;
+  const b = telegraphCircle({ radius: 48, minRadius: 12, duration: dur, opacity: 0.85 });
   const frames = Math.round(t / DT);
   for (let i = 0; i < frames; i++) b.update(DT);
   const ctx = makeCtx();
   b.render(ctx);
   const alpha = ctx.calls.find(c => c[0] === 'alpha')?.[1];
   assert.ok(close(alpha, 0.85, 1e-6), `blink ON alpha == peak (${alpha})`);
+});
+ok('sub-frame blinks are clamped to ≥ 1 frame (visible, not skipped)', () => {
+  // duration 0.2 → blink window 40ms → raw half-cycle 6.7ms (< 1 frame).
+  // With the clamp each half-phase is 16.7ms, so at t = gapEnd + 8ms the
+  // dot MUST be drawn (without the clamp that instant falls in OFF phase 2…
+  // actually phase boundary: 8ms < 16.7ms → still first ON phase).
+  const dur = 0.2;
+  const gapEnd = dur * 0.8;               // 0.16s
+  const t = gapEnd + 0.008;               // 8ms into blink window
+  const b = telegraphCircle({ radius: 48, minRadius: 12, duration: dur });
+  const frames = Math.round(t / DT);
+  for (let i = 0; i < frames; i++) b.update(DT);
+  const ctx = makeCtx();
+  b.render(ctx);
+  assert.ok(ctx.calls.some(c => c[0] === 'fill'),
+    'dot visible 8ms into a 40ms blink window (clamped half-cycle covers it)');
 });
 
 console.log('origin resolution');
