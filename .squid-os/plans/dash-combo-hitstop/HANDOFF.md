@@ -7,7 +7,7 @@ Boxes-first (placeholder rectangles) — sprites are NOT in the engine yet; the
 
 ---
 
-## Part A — Dash Combo macro (`charge`)
+## Part A — Dash Combo macro (`dashCombo`)
 
 **Spec of record:** `petal-panic/docs/architecture/attack-macros.md` §13
 (commit a757615 + follow-ups). Do NOT re-litigate design; implement the spec.
@@ -24,9 +24,10 @@ knockback launch; all earlier freezes are `knockback: null`.
 
 ### Registration
 
-- id: `charge` (doc name "Charge / Dash"; registry id stays `charge` so the
-  existing theater preset/sandbox entry keeps working)
-- file: `petal-panic/js/combat/attack/macros/charge.js`
+- id: `dashCombo` (doc §13 "Charge / Dash (Dash Combo)"). Deliberately NOT
+  `charge` — the theater's existing `charge` preset demos the Movement
+  primitive; this macro is the frame-scripted combo.
+- file: `petal-panic/js/combat/attack/macros/dashCombo.js`
 - barrel: add to `macros/index.js`
 - `meta.invokes`: `['movement', 'meleeHitbox']`
 - `meta.effects` (native, fired by this macro):
@@ -106,7 +107,7 @@ Per-segment fields:
   hitbox outline during freeze (debug aid), shove indicated by target sliding
 - step routing: `h.step(DT, [target, ...vics])` like stomp family
 
-### Tests (`js/test/attack/charge.test.js`, pure node)
+### Tests (`js/test/attack/dashCombo.test.js`, pure node)
 
 - segment sequencing: phases visit startup→(move→freeze)×N→recovery→done,
   correct durations
@@ -180,7 +181,7 @@ wanted, cap at 2–3 frames and finisher-only-by-default.
 
 ### Playtest gate
 
-After wiring: F4/theater or a quick enemy using `charge` — verify the finisher
+After wiring: F4/theater or a quick enemy using `dashCombo` — verify the finisher
 freeze reads as weight, not stutter. If it reads as lag: drop to 4 frames or
 gate behind Debug. Record the verdict in this file's Notes.
 
@@ -189,11 +190,11 @@ gate behind Debug. Record the verdict in this file's Notes.
 ## Build order
 
 1. `core/hitstop.js` + loop integration + unit tests (small, unblocks B)
-2. `charge.js` macro: sequencing + hitboxes + damage (no effects yet)
-3. charge: shove + afterimage + victim shake/sparkle
-4. charge: breaker rules + cancel safety
-5. Wire hitstop into special melee connect + charge finisher connect
-6. Theater preset/staging/tweakables for charge
+2. `dashCombo.js` macro: sequencing + hitboxes + damage (no effects yet)
+3. dashCombo: shove + afterimage + victim shake/sparkle
+4. dashCombo: breaker rules + cancel safety
+5. Wire hitstop into special melee connect + dashCombo finisher connect
+6. Theater preset/staging/tweakables for dashCombo
 7. Full test suite green + playtest note
 
 ## Open questions (decide at build time, don't block on)
