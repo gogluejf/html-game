@@ -10,9 +10,9 @@
 // projectile. The beam direction is computed from the attacker's gun tip
 // toward the locked reticle point.
 //
-// There is NO telegraph primitive: the telegraph IS the effect
-// (effects.md §10, 'target-reticle'). This macro owns the effect lifecycle
-// directly — fire it once, move its origin while tracking, freeze it at lock.
+// The telegraph is the `target-reticle` effect (effects.md §10). This macro
+// owns its lifecycle directly — fire it once, move its origin while tracking,
+// freeze it at lock.
 //
 // Owning this here (not in a debug demo) means heroes/enemies get identical
 // behavior. See attack-macros.md §14.

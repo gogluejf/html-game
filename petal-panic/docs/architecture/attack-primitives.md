@@ -345,31 +345,7 @@ generic homing unless a macro explicitly combines the two.
 
 ---
 
-## 12. Telegraphs are Effects
-
-**Effects:** (this section documents the telegraph EFFECTS themselves)
-
-There is NO telegraph primitive. A telegraph (warning) is simply an Effect
-Engine effect fired early by whichever attack needs it — the visual lives in
-the effect, and the attack owns the timing + placement directly:
-
-- **target-reticle** — tracking brackets for lock-on shots (Reticle Shot macro:
-  fire once, move the instance's origin with the target, freeze at lockTime —
-  see attack-macros.md §3).
-- **telegraph-circle** — static closing ring for area warnings (spikes, beams).
-- **ground-target-marker** — painted marker at a fixed spot (boss slams).
-
-The shared helper is `targetCenter(entity)` in `combat/attack/context.js`
-("where is the target"). Attacks that track a moving target move the LIVE
-effect instance's origin each frame instead of re-firing (no stacking), and
-freeze it when the aim locks.
-
-Telegraphs stay reusable and consistent because they ARE the shared effect
-catalog — not a per-attack copy.
-
----
-
-## 13. Body Contact Damage
+## 12. Body Contact Damage
 
 **Effects:** — (contact rule; hit juice comes from the attack that triggers it)
 

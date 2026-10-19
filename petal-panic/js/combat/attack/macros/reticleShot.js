@@ -5,11 +5,11 @@
 // (duration) ONE projectile is fired from the attacker's center at the LOCKED
 // point — not where the target happens to be at that moment.
 //
-// There is NO telegraph primitive: the telegraph IS the effect (effects.md
-// §10, 'target-reticle'). This macro owns the effect lifecycle directly —
-// fire it once, move its origin while tracking, freeze it at lock. Other
-// attacks that want a warning fire whichever effect they need the same way
-// (spike → telegraph-circle, boss slam → ground-target-marker...).
+// The telegraph is the `target-reticle` effect (effects.md §10). This macro
+// owns its lifecycle directly — fire it once, move its origin while tracking,
+// freeze it at lock. Other attacks that want a warning fire whichever effect
+// they need the same way (spike → telegraph-circle, boss slam →
+// ground-target-marker...).
 //
 // Owning this here (not in a debug demo) means heroes/enemies get identical
 // behavior. See attack-macros.md §3.

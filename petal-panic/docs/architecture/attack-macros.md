@@ -132,16 +132,15 @@ otherwise.
 
 **Invokes:** Projectile
 
-**Effects:** Target Reticle (telegraph)
+**Effects:** Target Reticle (telegraph — `target-reticle` effect, fired and moved by this macro)
 
 A telegraphed lock-on shot: a target-reticle EFFECT tracks the target, LOCKS
 its position at `lockTime`, and when the warning window ends ONE projectile
 fires from the attacker's center at the LOCKED point — not where the target
 happens to be at that moment. The canonical "telegraph then fire" attack.
 
-There is no telegraph primitive (attack-primitives.md §15): this macro owns
-the effect lifecycle directly — fire the `target-reticle` effect once, move its
-origin with the target while tracking, freeze it at lock.
+The macro owns the effect lifecycle directly: fire the `target-reticle` effect
+once, move its origin with the target while tracking, freeze it at lock.
 
 ### Sequence
 
