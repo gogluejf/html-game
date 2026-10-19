@@ -101,6 +101,7 @@ const SANDBOX_PRESETS = {
   surfaceWave: { x: ATTACKER_HOME.x + 16, y: GROUND_Y, direction: 'right', speed: 300, height: 24, width: 28, damage: 15, ttl: null, team: 'foe' },
   stomp: { buildTime: 0.6, gapTime: 0.4, blinkTime: 0.3, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, radius: 90, damage: 30, team: 'foe', shakeStrength: 5 },
   stompWave: { buildTime: 0.6, gapTime: 0.4, blinkTime: 0.3, impactDelay: 0.1, sides: 'both', hopHeight: 10, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 5 },
+  skyMissile: { x: TARGET_POS.x + 16, timeToTarget: 1.0, dropHeight: 260, fallSpeed: 500, damage: 30, radius: 60, team: 'foe', blastTeam: 'neutral' },
 };
 
 /** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
@@ -135,6 +136,7 @@ export const TWEAKABLE = {
   surfaceWave: [['speed', 'num', 50], ['height', 'num', 4], ['width', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5]],
   stomp: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['count', 'int', 1], ['interval', 'num', 0.1], ['radius', 'num', 10], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
   stompWave: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['waveSpeed', 'num', 50], ['waveHeight', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
+  skyMissile: [['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['dropHeight', 'num', 20], ['fallSpeed', 'num', 50], ['damage', 'num', 5], ['radius', 'num', 10]],
 };
 
 export const AttackTheater = {
@@ -613,7 +615,18 @@ export const AttackTheater = {
         this._world.add(v);
       }
       this._choreo = { kind: 'stompStage' };
+    } else if (id === 'skyMissile') {
+      // Sky Missile demo: stage a SMALL platform under part of the drop column
+      // so the column-resolution behavior is visible — the marker lands on the
+      // platform top, not the floor below (doc §22 demo rule). The target
+      // stands on the ground at the default drop x; moving the x param onto
+      // the platform span shows the impact climbing up to it.
+      const platX = TARGET_POS.x - 40;
+      const platTop = GROUND_Y - 70;
+      this._stompPlatforms = [{ x: platX, y: platTop, w: 110 }];
+      this._choreo = { kind: 'stompStage' };
     }
+
     // (explosion + spawnSplit stage the origin at the attacker and hide its
     // body via vanishOnReplay — the body IS the attack in both demos.)
 
@@ -951,6 +964,11 @@ export const AttackTheater = {
           // live victim (main dummy + staged stomp victims) as candidates.
           const vics = [this._target, ...(this._stompVics ?? [])].filter((v) => v?.alive);
           finished = h.step(DT, vics);
+        } else if (h.id === 'skyMissile') {
+          // Sky Missile: the macro owns warning → drop; its child
+          // explosiveProjectile handle is stepped internally and resolves the
+          // blast through ctx.world.targets (the main dummy).
+          finished = h.step(DT, [this._target]);
         } else if (h.id === 'boomerang') {
           finished = h.step(DT);
           // Contact check: every live boomerang body vs the dummy target.
