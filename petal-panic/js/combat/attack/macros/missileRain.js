@@ -38,15 +38,15 @@ import { getPrimitive, getMacro } from '../registry.js';
 const DEFAULTS = Object.freeze({
   count: 5,               // missiles in the rain
   xCoordinate: null,      // center x for the pattern; null → view center
-  distanceType: 'fixed',  // 'fixed' | 'relative'
+  distanceType: 'relative', // 'fixed' | 'relative'
   distance: 90,           // fixed spacing around the center (px); 0 = all at center
   pattern: 'simultaneous',// 'simultaneous' | 'sequential'
-  interval: 0.35,         // sequential: s between missile activations
+  interval: 0.15,         // sequential: s between missile activations
   coordination: 'from_left', // sequential order: 'from_left' | 'from_right' | 'random'
   launchInterval: 0.12,   // s between rockets during the upward burst
   ascentSpeed: 900,       // px/s upward travel of the launch visual
   ascentOscillation: 6,   // sine drift amplitude while rising (px, visual only)
-  fallDelay: 0,           // extra s after ascent before the warning phase begins
+  fallDelay: 0.5,          // tension beat: silence between last rocket gone and first marker
   timeToTarget: 1.0,      // per-missile marker → impact window (s)
   descentSpeed: 500,      // per-missile fall speed (px/s)
   dropHeight: 260,        // per-missile spawn height above the impact (px)
@@ -148,16 +148,21 @@ defineMacro('missileRain', {
     const xs = resolvePositions(p);
     const order = p.pattern === 'sequential' ? resolveOrder(n, p.coordination) : xs.map((_, i) => i);
 
-    // Drop schedule: missile in activation slot k drops at k·interval after
-    // the ascent visual finished (+ fallDelay). NOTE: the per-position launch
-    // stagger (i·launchInterval) is ASCENT-visual timing only — mixing it into
-    // the drop schedule made sequential coordination uneven (from_right slot 0
-    // carries the last position's launch offset, shrinking the gap to slot 1
-    // until two drops collide). Drops depend on the SLOT, nothing else.
+    // Drop schedule: the FIRST missile activates only after the WHOLE launch
+    // burst is done — last rocket fired ((n-1)·launchInterval) AND off the top
+    // of the view (ascentDur). Markers appearing while rockets are still
+    // visibly rising reads as a glitch; the sequence is: all up → all gone →
+    // dots appear → drops. Sequential slots then step off by `interval`.
     const ascentDur = 0.45; // visual-only flight time off the top of the view
-    const base = ascentDur + p.fallDelay;
+    const base = (n - 1) * p.launchInterval + ascentDur + p.fallDelay;
     const activateAt = order.map((_, slot) =>
       base + (p.pattern === 'sequential' ? slot * p.interval : 0));
+
+    // All rockets launch from the ATTACKER's position (one launch point —
+    // "they went up THERE"), while the markers appear at the (different)
+    // landing spots ("but they land HERE"). That contrast is the telegraph.
+    const launchX = (ctx.attacker?.x ?? 0) + (ctx.attacker?.w ?? 0) / 2;
+    const launchY = ctx.attacker?.y ?? 0;
 
     h.state = {
       phase: 'launch',
@@ -165,7 +170,7 @@ defineMacro('missileRain', {
       positions: xs,
       missiles: [],          // live skyMissile handles
       activated: new Array(n).fill(false),
-      rockets: xs.map((x) => ({ x, y: (ctx.attacker?.y ?? 0), t: 0, done: false })),
+      rockets: xs.map(() => ({ x: launchX, y: launchY, t: 0, done: false })),
       trails: new Array(n).fill(null), // trail effect instances (ascent visuals)
       done: false,
     };

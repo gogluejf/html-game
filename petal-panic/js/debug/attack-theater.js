@@ -102,7 +102,7 @@ const SANDBOX_PRESETS = {
   stomp: { buildTime: 0.6, gapTime: 0.4, blinkTime: 0.3, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, radius: 90, damage: 30, team: 'foe', shakeStrength: 5 },
   stompWave: { buildTime: 0.6, gapTime: 0.4, blinkTime: 0.3, impactDelay: 0.1, sides: 'both', hopHeight: 10, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 5 },
   skyMissile: { x: TARGET_POS.x + 16, timeToTarget: 1.0, dropHeight: 260, fallSpeed: 500, damage: 30, radius: 60, team: 'foe', blastTeam: 'neutral' },
-  missileRain: { count: 5, distanceType: 'fixed', distance: 90, pattern: 'simultaneous', interval: 0.35, coordination: 'from_left', launchInterval: 0.12, ascentOscillation: 6, fallDelay: 0, timeToTarget: 0.9, descentSpeed: 500, damage: 30, radius: 60, team: 'foe', blastTeam: 'neutral' },
+  missileRain: { count: 5, distanceType: 'relative', distance: 90, pattern: 'simultaneous', interval: 0.15, coordination: 'from_left', launchInterval: 0.12, ascentOscillation: 6, fallDelay: 0.5, timeToTarget: 0.9, descentSpeed: 500, damage: 30, radius: 60, team: 'foe', blastTeam: 'neutral' },
 };
 
 /** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
@@ -138,7 +138,7 @@ export const TWEAKABLE = {
   stomp: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['count', 'int', 1], ['interval', 'num', 0.1], ['radius', 'num', 10], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
   stompWave: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['waveSpeed', 'num', 50], ['waveHeight', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
   skyMissile: [['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['dropHeight', 'num', 20], ['fallSpeed', 'num', 50], ['damage', 'num', 5], ['radius', 'num', 10]],
-  missileRain: [['count', 'int', 1], ['distanceType', 'enum', ['fixed', 'relative']], ['distance', 'num', 20], ['pattern', 'enum', ['simultaneous', 'sequential']], ['interval', 'num', 0.05], ['coordination', 'enum', ['from_left', 'from_right', 'random']], ['launchInterval', 'num', 0.02], ['timeToTarget', 'num', 0.1], ['descentSpeed', 'num', 50], ['damage', 'num', 5], ['radius', 'num', 10]],
+  missileRain: [['count', 'int', 1], ['distanceType', 'enum', ['fixed', 'relative']], ['distance', 'num', 20], ['pattern', 'enum', ['simultaneous', 'sequential']], ['interval', 'num', 0.05], ['coordination', 'enum', ['from_left', 'from_right', 'random']], ['launchInterval', 'num', 0.02], ['fallDelay', 'num', 0.05], ['timeToTarget', 'num', 0.1], ['descentSpeed', 'num', 50], ['damage', 'num', 5], ['radius', 'num', 10]],
 };
 
 export const AttackTheater = {
