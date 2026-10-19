@@ -556,6 +556,10 @@ recovery (attacker committed, punishable).
 - **direction / targetDirection** — dash direction (radians); all segments
   share it. Caller-computed (AI/input owns targeting). Horizontal only
   (left/right) — a ground dash has no vertical variant.
+- **defyGravity** — the dash holds its altitude for the whole timeline
+  (startup + all move/freeze phases): no arcing down mid-combo. When the last
+  freeze ends, the attacker keeps its momentum and falls under normal gravity.
+  A broken/cancelled dash releases the same way immediately.
 - **startup** — seconds before the first segment starts moving (the
   commitment tell; tunable per enemy for risk level).
 - **recovery** — ONE window at the very END (not between segments): seconds
@@ -624,6 +628,7 @@ recovery (attacker committed, punishable).
   the hit normally (no extra stun/stagger — just a normal hit on a committed
   body), and all pending state is cleaned (no ghost hitboxes; trails fade via
   their own rule). Hitting a planted freeze is the easiest frame to land it.
+  A broken dash releases the gravity hold immediately so the body doesn't hang in the air.
 - **Projectiles do NOT break the combo** — ranged contact is damage only, the
   timeline continues. The counter-verb is the melee-verb: breaking requires
   being point-blank, which is the commitment the design wants.

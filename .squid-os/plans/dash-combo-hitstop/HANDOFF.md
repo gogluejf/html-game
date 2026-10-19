@@ -201,6 +201,10 @@ gate behind Debug. Record the verdict in this file's Notes.
 
 - Shove application: velocity-set vs impulse-per-frame — start with
   velocity-set at `shove × speed`, tune by feel
+- **defyGravity** — the dash holds altitude for the whole timeline; on the
+  last freeze (or break/cancel) it releases and falls under normal gravity,
+  keeping its momentum. Implementation: pin `vy` to 0 while active, then seed
+  `vx/vy` from final-segment speed + direction before releasing.
 - Does the attacker's own body deal Body Contact damage during the dash?
   Spec says NO (hitboxes only) — confirm against hero.js melee exclusions
 - Sprite frame source later: which enemy/hero anim provides the segment

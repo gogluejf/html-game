@@ -35,6 +35,7 @@ import { updateEffects, drawEffects, resetEffects, fireManual, CATALOG } from '.
 import { particles } from '../effects/particles.js';
 import { aabbOverlap } from '../core/collision.js';
 import { damage } from '../combat/damage.js';
+import { applyKnockback } from '../combat/knockback.js';
 
 // Import every primitive module for its registration side effect.
 import '../combat/attack/primitives/projectile.js';
@@ -103,6 +104,17 @@ const SANDBOX_PRESETS = {
   stompWave: { buildTime: 0.6, gapTime: 0.4, blinkTime: 0.3, impactDelay: 0.1, sides: 'both', hopHeight: 10, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 5 },
   skyMissile: { x: TARGET_POS.x + 16, timeToTarget: 1.0, dropHeight: 260, fallSpeed: 500, damage: 30, radius: 60, team: 'foe', blastTeam: 'neutral' },
   missileRain: { count: 5, distanceType: 'relative', distance: 90, pattern: 'simultaneous', interval: 0.15, coordination: 'from_left', launchInterval: 0.12, ascentOscillation: 6, fallDelay: 0.5, timeToTarget: 0.9, descentSpeed: 500, damage: 30, radius: 60, team: 'foe', blastTeam: 'neutral' },
+  dashCombo: {
+    direction: 0,
+    startup: 0.2,
+    recovery: 0.4,
+    team: 'ally',
+    segments: [
+      { frame: 'a', speed: 380, duration: 0.18, freezeFrames: 0.12, hitbox: { w: 48, h: 40, offset: { x: 30, y: 0 } }, damage: 8, knockback: null, shove: 0.6 },
+      { frame: 'b', speed: 460, duration: 0.18, freezeFrames: 0.12, hitbox: { w: 52, h: 44, offset: { x: 34, y: 0 } }, damage: 10, knockback: null, shove: 0.6 },
+      { frame: 'c', speed: 520, duration: 0.16, freezeFrames: 0.14, hitbox: { w: 56, h: 48, offset: { x: 38, y: 0 } }, damage: 18, knockback: { scaleBySpeed: 0.25, hitstun: 0.3, dirMode: 'fromAttacker' }, shove: 0.6 },
+    ],
+  },
 };
 
 /** Tweakable params per primitive: [key, kind, step]. kind: num | angle | int. */
@@ -139,6 +151,7 @@ export const TWEAKABLE = {
   stompWave: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['waveSpeed', 'num', 50], ['waveHeight', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
   skyMissile: [['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['dropHeight', 'num', 20], ['fallSpeed', 'num', 50], ['damage', 'num', 5], ['radius', 'num', 10]],
   missileRain: [['count', 'int', 1], ['distanceType', 'enum', ['fixed', 'relative']], ['distance', 'num', 20], ['pattern', 'enum', ['simultaneous', 'sequential']], ['interval', 'num', 0.05], ['coordination', 'enum', ['from_left', 'from_right', 'random']], ['launchInterval', 'num', 0.02], ['fallDelay', 'num', 0.05], ['timeToTarget', 'num', 0.1], ['descentSpeed', 'num', 50], ['damage', 'num', 5], ['radius', 'num', 10]],
+  dashCombo: [['startup', 'num', 0.05], ['recovery', 'num', 0.05], ['seg0.speed', 'num', 20], ['seg1.speed', 'num', 20], ['seg2.speed', 'num', 20], ['seg0.damage', 'num', 2], ['seg1.damage', 'num', 2], ['seg2.damage', 'num', 2]],
 };
 
 export const AttackTheater = {
@@ -211,18 +224,29 @@ export const AttackTheater = {
     // Record the tweak per-id so it survives the per-replay param rebuild.
     const id = this.currentId();
     if (!this._tweaks[id]) this._tweaks[id] = {};
+    // Dotted keys (e.g. 'seg0.damage') target nested params: read/write through
+    // the path and store the tweak under the same dotted key.
+    const isDotted = key.includes('.');
+    const getVal = () => isDotted ? key.split('.').reduce((o, k) => o?.[k], this._params) : this._params[key];
+    const setVal = (v) => {
+      if (isDotted) {
+        const parts = key.split('.');
+        let obj = this._params;
+        for (let i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
+        obj[parts[parts.length - 1]] = v;
+      } else this._params[key] = v;
+      this._tweaks[id][key] = v;
+    };
     // Enum params: cycle through the allowed values instead of numeric stepping.
     if (kind === 'enum' && Array.isArray(stepSize)) {
-      const cur = this._params[key];
+      const cur = getVal();
       const idx = stepSize.indexOf(cur);
       const next = stepSize[(idx + deltaSign + stepSize.length) % stepSize.length];
-      this._params[key] = next;
-      this._tweaks[id][key] = next;
+      setVal(next);
       return;
     }
-    const nextNum = round2((this._params[key] ?? 0) + deltaSign * stepSize);
-    this._params[key] = nextNum;
-    this._tweaks[id][key] = nextNum;
+    const nextNum = round2((getVal() ?? 0) + deltaSign * stepSize);
+    setVal(nextNum);
   },
 
   replay() {
@@ -392,7 +416,19 @@ export const AttackTheater = {
     const preset = SANDBOX_PRESETS[id] ?? {};
     // User tweaks (adjustParam) are stored per-id in _tweaks and merged on top,
     // so they survive the per-replay rebuild without leaking demo mutations.
-    this._params = { ...def, ...preset, ...(this._tweaks?.[id] ?? {}) };
+    this._params = { ...def, ...preset };
+    // Dotted tweak keys (e.g. 'seg0.damage') apply to nested params; flat keys
+    // spread as before.
+    for (const [key, val] of Object.entries(this._tweaks?.[id] ?? {})) {
+      if (key.includes('.')) {
+        const parts = key.split('.');
+        let obj = this._params;
+        for (let i = 0; i < parts.length - 1; i++) obj = obj?.[parts[i]];
+        if (obj) obj[parts[parts.length - 1]] = val;
+      } else {
+        this._params[key] = val;
+      }
+    }
   },
 
   _ctx() {
@@ -436,8 +472,13 @@ export const AttackTheater = {
       // stuck at wherever the last movement demo left it.
       this._target.x = TARGET_POS.x;
       this._target.y = TARGET_POS.y;
-      this._attacker.x = ATTACKER_HOME.x;
-      this._attacker.y = ATTACKER_HOME.y;
+      // Dash Combo stages the attacker near the target (see _replay); every
+      // OTHER demo starts from home — restore it here so switching back from
+      // dashCombo doesn't leave the attacker parked mid-arena.
+      if (id0 !== 'dashCombo') {
+        this._attacker.x = ATTACKER_HOME.x;
+        this._attacker.y = ATTACKER_HOME.y;
+      }
       // Face the target again (charge/punch/kamikaze choreos flip facing).
       this._attacker.facing = 1;
       // Respawn the attacker body: vanish (spawnSplit) and kamikaze (bodyExplosion)
@@ -634,6 +675,16 @@ export const AttackTheater = {
       // is the readable default case (skyMissile's own demo covers platforms).
       this._params.xCoordinate = VIEW_W / 2;
       this._choreo = { kind: 'stompStage' };
+    } else if (id === 'dashCombo') {
+      // Dash Combo demo: attacker starts at HOME (left), dashes right AT the
+      // dummy. Target is staged close enough that the freeze hitboxes connect
+      // (the dash travels ~235px from home; hitbox reaches ~+38px past body).
+      this._attacker.x = ATTACKER_HOME.x;
+      this._attacker.y = ATTACKER_HOME.y;
+      this._attacker.facing = 1;
+      this._target.x = ATTACKER_HOME.x + 60; // right next to the attacker
+      this._target.y = TARGET_POS.y;
+      this._choreo = { kind: 'dashStage' };
     }
 
     // (explosion + spawnSplit stage the origin at the attacker and hide its
@@ -982,6 +1033,20 @@ export const AttackTheater = {
           // Missile Rain: the macro owns launch burst → per-missile activation;
           // each child skyMissile is stepped internally.
           finished = h.step(DT, [this._target]);
+        } else if (h.id === 'dashCombo') {
+          // Dash Combo: the macro owns the whole timeline (move/freeze per
+          // segment, shove, afterimage). Pass the dummy as the target set.
+          finished = h.step(DT, [this._target]);
+          // Apply knockback from the freeze hitbox (the macro carries the data;
+          // the gameplay registry normally applies it — we do it here for the demo).
+          const st = h.state;
+          if (st?.phase === 'freeze' && st.hb?.knockback && this._target.alive) {
+            // Use the DASH direction, not current positions (the attacker may
+            // have already passed the target by the finisher).
+            const dir = st.dir ?? 1;
+            applyKnockback(this._target, this._attacker, st.hb.knockback, { x: dir, y: 0 });
+            st.hb.knockback = null; // apply once per freeze
+          }
         } else if (h.id === 'boomerang') {
           finished = h.step(DT);
           // Contact check: every live boomerang body vs the dummy target.
@@ -1061,6 +1126,31 @@ export const AttackTheater = {
 
     // Target bookkeeping.
     if (this._target.hitFlash > 0) this._target.hitFlash -= DT;
+    // Dash Combo: the macro seeds/shoves the dummy's vx but the sandbox has no
+    // physics integrator — integrate it here so the shove + finisher launch
+    // are VISIBLE (the target slides during move phases, flies on the last
+    // freeze). Friction keeps it from drifting forever after the run.
+    let dashLive = null;
+    for (const h of this._handles) {
+      if (h.id === 'dashCombo') { dashLive = h; break; }
+    }
+    if (dashLive) {
+      // Integrate BOTH bodies while the combo runs AND briefly after (the
+      // finisher launch velocity is seeded on release — let it play out).
+      const t = this._target;
+      t.x += (t.vx ?? 0) * DT;
+      if ((t.vx ?? 0) !== 0) t.vx *= 0.9;
+      const a = this._attacker;
+      // Attacker: only integrate when NOT mid-move-phase (the macro owns a.x
+      // directly during move/freeze; integrating would double-step it).
+      if (dashLive.state?.done || dashLive.state?.phase === 'recovery') {
+        a.x += (a.vx ?? 0) * DT;
+        if ((a.vx ?? 0) !== 0) a.vx *= 0.85;
+      }
+      // Keep both bodies in view so the launch is watchable, not a fly-off.
+      t.x = Math.max(-40, Math.min(VIEW_W - t.w + 40, t.x));
+      a.x = Math.max(-40, Math.min(VIEW_W - a.w + 40, a.x));
+    }
     for (const v of this._stompVics ?? []) {
       if (v.hitFlash > 0) v.hitFlash -= DT;
       if (v.hp <= 0 && v.alive) { v.alive = false; this._log.unshift('VICTIM DOWN'); }
@@ -1293,6 +1383,19 @@ export const AttackTheater = {
       } else if ((h.id === 'stompWave' || h.id === 'surfaceWave') && !st.done) {
         // Surface wave: crest is the primitive's ground-wave effect. Nothing
         // to draw here either.
+      } else if (h.id === 'dashCombo' && !st.done && st.phase === 'freeze' && st.hb?.box) {
+        // Dash Combo debug aid: outline the CURRENT segment's hitbox during
+        // its freeze window — makes the invisible active frames readable.
+        const box = st.hb.box;
+        ctx.strokeStyle = 'rgba(255,110,199,0.9)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(box.x, box.y, box.w, box.h);
+        ctx.fillStyle = 'rgba(255,110,199,0.18)';
+        ctx.fillRect(box.x, box.y, box.w, box.h);
+        ctx.fillStyle = '#fff';
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`seg${st.segmentIndex + 1} · ${st.frame ?? ''}`, box.x + box.w / 2, box.y - 6);
       } else if ((h.id === 'fireArea' || h.id === 'spike') && !st.done) {
         let box = null;
         if (h.id === 'fireArea') { const fp = h._params ?? this._params; const fw = fp.width; box = { x: fp.x - fw / 2, y: GROUND_Y - 48, w: fw, h: 48 }; }
