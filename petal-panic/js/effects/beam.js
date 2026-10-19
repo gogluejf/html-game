@@ -35,7 +35,7 @@
 //
 // Origin & orientation: if the carrier exposes origin(), its fire-time
 // position wins over params.x/y (same block pattern as trail/afterimage/
-// groundWave/shockwave/telegraphCircle/groundMarker/targetReticle/attackArc);
+// groundWave/shockwave/telegraphCircle/surfaceMarker/targetReticle/attackArc);
 // params.x/y are the standalone/theater fallback used when the effect is fired
 // with a null carrier. Orientation: the beam axis angle is taken from the
 // carrier's facing() at fire time (angle = atan2(facing.y, facing.x)) when

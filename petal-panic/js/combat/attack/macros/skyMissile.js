@@ -1,7 +1,7 @@
 // Attack Engine — Sky Missile (macro, doc §22). ONE object, one id.
 //
 // A single missile arriving from above at a FIXED ground position:
-//   warning (Ground Target Marker at the impact point) → timeToTarget →
+//   warning (Surface Target Marker at the impact point) → timeToTarget →
 //   Explosive Projectile drops straight down and detonates on the marked spot.
 //
 // The vertical, telegraphed twin of explosiveProjectile — same blast, but the
@@ -48,7 +48,7 @@ const DEFAULTS = Object.freeze({
   team: 'foe',        // who the falling carrier hurts
   blastTeam: 'neutral', // who the blast hurts
   size: 14,           // carrier box size (px)
-  markerStyle: null,  // ground-target-marker effect override
+  markerStyle: null,  // surface-target-marker effect override
 });
 
 /**
@@ -83,7 +83,7 @@ defineMacro('skyMissile', {
     name: 'Sky Missile',
     desc: 'Ground marker warns a fixed spot → timeToTarget → vertical explosive projectile drops and detonates on the marked surface.',
     effects: [
-      { type: 'ground-target-marker', desc: 'landing warning fixed at the impact point for the whole warning window' },
+      { type: 'surface-target-marker', desc: 'landing warning fixed at the impact point for the whole warning window' },
     ],
     params: [
       { key: 'x', desc: 'impact x (world) — marker and drop share it' },
@@ -146,12 +146,12 @@ defineMacro('skyMissile', {
       s.t += dt;
 
       if (s.phase === 'warning') {
-        // The warning is the REAL Ground Target Marker effect (effects.md #9):
+        // The warning is the REAL Surface Target Marker effect (effects.md #9):
         // FIXED at the impact point for the whole window — the player reads
         // "leave this spot", never "track a moving thing".
         if (s.t <= dt && !s.markerFired) {
           s.markerFired = true;
-          fireDeclared({ type: 'ground-target-marker', params: { x: pt.x, y: pt.y, duration: Math.max(0.1, p.timeToTarget), ...(p.markerStyle ?? {}) } }, h.declaredEffectTypes());
+          fireDeclared({ type: 'surface-target-marker', params: { x: pt.x, y: pt.y, duration: Math.max(0.1, p.timeToTarget), ...(p.markerStyle ?? {}) } }, h.declaredEffectTypes());
         }
         if (s.t >= p.timeToTarget) { s.phase = 'drop'; s.t = 0; launchMissile(); }
       } else if (s.phase === 'drop') {

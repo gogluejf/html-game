@@ -101,8 +101,8 @@ export const EFFECT_META = {
       { key: 'color',        config: true, desc: 'Ring/dot tint' },
     ],
   },
-  'ground-target-marker': {
-    desc: 'Fixed target marker on the ground. Player can escape.',
+  'surface-target-marker': {
+    desc: 'Fixed target marker painted on a surface (floor or wall). Player can escape.',
     params: [
       { key: 'radius',    config: true, desc: 'Marker radius (px)' },
       { key: 'pulseRate', config: true, desc: 'Pulse frequency (Hz)' },
@@ -111,6 +111,7 @@ export const EFFECT_META = {
       { key: 'duration',  config: true, desc: 'Total lifetime (s)' },
       { key: 'animation', config: true, desc: 'Animation variant' },
       { key: 'color',     config: true, desc: 'Marker tint' },
+      { key: 'orientation', config: true, desc: 'Surface: horizontal (floor) | vertical (wall)' },
     ],
   },
   'target-reticle': {

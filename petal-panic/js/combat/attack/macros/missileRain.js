@@ -57,7 +57,7 @@ const DEFAULTS = Object.freeze({
   size: 14,               // carrier box size (px)
   margin: 40,             // keep landing positions this far inside the view
   seed: null,             // optional RNG seed for 'random' coordination (determinism)
-  markerStyle: null,      // ground-target-marker override (passed to each missile)
+  markerStyle: null,      // surface-target-marker override (passed to each missile)
   projectileStyle: null,  // ascent-visual effect override
 });
 

@@ -45,7 +45,7 @@
 //
 // Origin & offset: if the carrier exposes origin(), its position wins over
 // params.x/y (same block pattern as trail/afterimage/groundWave/shockwave/
-// telegraphCircle/groundMarker/targetReticle/attackArc); params.x/y are the
+// telegraphCircle/surfaceMarker/targetReticle/attackArc); params.x/y are the
 // standalone/theater fallback used when the effect is fired with a null
 // carrier. The glow center is the resolved origin SHIFTED by `offset`
 // ({ x, y } px, default { 0, 0 }) — a non-zero offset lets a config place the

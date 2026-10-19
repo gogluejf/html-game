@@ -33,7 +33,7 @@ import { afterimage } from './afterimage.js';
 import { groundWave } from './groundWave.js';
 import { shockwave } from './shockwave.js';
 import { telegraphCircle } from './telegraphCircle.js';
-import { groundMarker } from './groundMarker.js';
+import { surfaceMarker } from './surfaceMarker.js';
 import { targetReticle } from './targetReticle.js';
 import { slash } from './slash.js';
 import { fadeOut } from './fadeOut.js';
@@ -70,7 +70,10 @@ registerEffect('afterimage', afterimage);
 registerEffect('ground-wave', groundWave);
 registerEffect('shockwave', shockwave);
 registerEffect('telegraph-circle', telegraphCircle);
-registerEffect('ground-target-marker', groundMarker);
+registerEffect('surface-target-marker', surfaceMarker);
+// Back-compat alias: the marker was 'ground-target-marker' before gaining the
+// vertical orientation. Existing callers (and saved configs) keep working.
+registerEffect('ground-target-marker', surfaceMarker);
 registerEffect('target-reticle', targetReticle);
 registerEffect('slash', slash);
 

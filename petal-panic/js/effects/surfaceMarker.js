@@ -1,11 +1,18 @@
-// Petal Panic — ground target marker (effects.md §9, catalog #9). A fixed
-// target marker at a world GROUND position for missiles, falling objects,
-// bombs, and artillery arriving from above. The marker stays FIXED at its
+// Petal Panic — surface target marker (effects.md §9, catalog #9). A fixed
+// target marker painted ON A SURFACE at a world position for missiles,
+// falling objects, bombs, and artillery. The marker stays FIXED at its
 // resolved origin for the whole lifetime (no follow mode — that is the job of
 // the Target Reticle, effects.md §10), letting the player read the danger
 // area and escape before impact. Presentation only: the marker itself does
 // NOT hit the player or execute anything (per the core rule in effects.md);
 // an Attack Pattern pairs it with the actual collision volume.
+//
+// Orientation: the marker always sticks to a surface — there is no
+// free-floating mode. `orientation` picks which one:
+//   'horizontal' (default) — floor / platform top: rings squashed on Y
+//                            (the classic flat "painted on the ground" look)
+//   'vertical'             — wall: rings squashed on X (tall narrow ellipse,
+//                            reads as painted on a vertical surface)
 //
 // STATE/DRAW effect: this instance stays active over its whole lifetime and
 // owns its own timer. Each update() advances the clock; each render() draws
@@ -46,12 +53,16 @@
 // Target Reticle's contract (§10).
 //
 // params: { radius?, pulseRate?, rotation?, opacity?, duration?, animation?,
-//           color?, x?, y? }
+//           color?, orientation?, x?, y? }
 //   radius       — base (mid-pulse) marker radius in px (default 24). The
 //                  drawn outer ring oscillates between radius·(1−PULSE_
 //                  AMPLITUDE) and radius·(1+PULSE_AMPLITUDE) (i.e. 18–30 px
 //                  at the defaults). Non-negative; negative values clamp to 0
 //                  (degenerate: nothing visible, timer still runs).
+//   orientation  — which surface the marker is painted on (default
+//                  'horizontal'): 'horizontal' = floor/platform top (rings
+//                  squashed on Y), 'vertical' = wall (rings squashed on X).
+//                  Any other value falls back to 'horizontal'.
 //   pulseRate    — pulse frequency in Hz (default 2). The marker blinks ~2
 //                  times per second; sin starts at 0 with positive slope, so
 //                  the first beat grows outward from the base radius. Any
@@ -81,7 +92,7 @@
 //                  against dark backgrounds). Callers may pass any CSS
 //                  color. Alpha behavior is unaffected (per-frame globalAlpha).
 //   x, y         — standalone origin (fallback when no carrier origin()
-//                  exists): the point on the ground the marker is centered on
+//                  exists): the point on the surface the marker is centered on
 //                  (default { x: 0, y: 0 }).
 //
 // Geometry: at elapsed t the marker sits at the resolved origin with
@@ -113,25 +124,26 @@ const DEFAULT_OPACITY = 0.85;     // constant alpha (no fade)
 const DEFAULT_DURATION = 1.5;     // s  — whole-instance lifetime (== total lifetime)
 const DEFAULT_ANIMATION = 'pulse'; // cosmetic variant tag (see header)
 const DEFAULT_COLOR = '#7dff6a';  // bright green targeting tint
+const DEFAULT_ORIENTATION = 'horizontal'; // surface the marker is painted on
 const PULSE_AMPLITUDE = 0.25;     // ±25% radius swing around the base radius
 const INNER_RING_FRACTION = 0.5;  // inner ring radius as a fraction of outer
 const TICK_ROTATION_SPEED = Math.PI; // rad/s — slow deterministic tick spin
 const MARKER_STROKE_WIDTH = 4;    // px — outer ring stroke width
 const TICK_LENGTH = 8;            // px — radial tick mark length
 const TICK_GAP = 4;               // px — gap between outer ring and tick start
-const PERSPECTIVE_SQUASH = 0.3;   // y-axis squash for ground perspective (1 = flat circle)
+const PERSPECTIVE_SQUASH = 0.3;   // squash factor along the surface normal (1 = flat circle)
 const EPS = 1e-9;                 // fixed-dt epsilon convention
 
 /**
  * @param {{radius?:number, pulseRate?:number, rotation?:number,
  *          opacity?:number, duration?:number, animation?:string,
- *          color?:string, x?:number, y?:number}} params
+ *          color?:string, orientation?:string, x?:number, y?:number}} params
  * @param {object} [carrier]
  * @returns {{update:Function, render:Function, complete:Function,
  *            done:boolean, space:string, elapsed:number, radius:number,
  *            origin:{x:number,y:number}}}
  */
-export function groundMarker(params = {}, carrier = null) {
+export function surfaceMarker(params = {}, carrier = null) {
   const radius = Math.max(0, params.radius ?? DEFAULT_RADIUS);
   const pulseRate = params.pulseRate >= 0 ? params.pulseRate : DEFAULT_PULSE_RATE;
   const rotation = Number.isFinite(params.rotation) ? params.rotation : DEFAULT_ROTATION;
@@ -139,6 +151,12 @@ export function groundMarker(params = {}, carrier = null) {
   const duration = params.duration > 0 ? params.duration : DEFAULT_DURATION;
   const animation = params.animation ?? DEFAULT_ANIMATION;
   const color = params.color ?? DEFAULT_COLOR;
+  // Surface orientation: squash runs along the surface NORMAL. A horizontal
+  // surface (floor) has a vertical normal → squash Y. A vertical surface
+  // (wall) has a horizontal normal → squash X. Unknown values → horizontal.
+  const vertical = params.orientation === 'vertical';
+  const sqX = vertical ? PERSPECTIVE_SQUASH : 1;
+  const sqY = vertical ? 1 : PERSPECTIVE_SQUASH;
   const fallback = { x: params.x ?? 0, y: params.y ?? 0 };
 
   const api = {
@@ -184,21 +202,20 @@ export function groundMarker(params = {}, carrier = null) {
       const rOuter = Math.max(0, this.radius);
       const rInner = rOuter * INNER_RING_FRACTION;
       const angle = rotation + TICK_ROTATION_SPEED * this.elapsed;
-      const sq = PERSPECTIVE_SQUASH; // y-axis squash for ground perspective
       c2d.save();
       c2d.globalAlpha = opacity;
       c2d.strokeStyle = color;
-      // Outer ring (ellipse — squashed y for ground perspective).
+      // Outer ring (ellipse — squashed along the surface normal for perspective).
       c2d.lineWidth = MARKER_STROKE_WIDTH;
       c2d.beginPath();
-      c2d.ellipse(o.x, o.y, rOuter, rOuter * sq, 0, 0, Math.PI * 2);
+      c2d.ellipse(o.x, o.y, rOuter * sqX, rOuter * sqY, 0, 0, Math.PI * 2);
       c2d.stroke();
       // Inner ring.
       c2d.lineWidth = MARKER_STROKE_WIDTH / 2;
       c2d.beginPath();
-      c2d.ellipse(o.x, o.y, rInner, rInner * sq, 0, 0, Math.PI * 2);
+      c2d.ellipse(o.x, o.y, rInner * sqX, rInner * sqY, 0, 0, Math.PI * 2);
       c2d.stroke();
-      // Four cardinal tick marks, rotating slowly at angle(t), squashed on y.
+      // Four cardinal tick marks, rotating slowly at angle(t), squashed with the rings.
       c2d.lineWidth = MARKER_STROKE_WIDTH / 2;
       for (let k = 0; k < 4; k++) {
         const a = angle + (k * Math.PI) / 2;
@@ -206,8 +223,8 @@ export function groundMarker(params = {}, carrier = null) {
         const gapR = rOuter + TICK_GAP;
         const endR = gapR + TICK_LENGTH;
         c2d.beginPath();
-        c2d.moveTo(o.x + cos * gapR, o.y + sin * gapR * sq);
-        c2d.lineTo(o.x + cos * endR, o.y + sin * endR * sq);
+        c2d.moveTo(o.x + cos * gapR * sqX, o.y + sin * gapR * sqY);
+        c2d.lineTo(o.x + cos * endR * sqX, o.y + sin * endR * sqY);
         c2d.stroke();
       }
       c2d.restore();

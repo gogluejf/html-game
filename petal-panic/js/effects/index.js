@@ -380,7 +380,7 @@ export const CATALOG = [
   { type: 'trail',                 name: 'Trail',                   section: 6,  params: { lifetime: 0.6 } },
   { type: 'afterimage',            name: 'Afterimage / Ghost Frames', section: 7, params: { box: BOX, spawnInterval: 1 / 10, lifetime: 1.2, color: '#ff0000', opacity: 0.5 } },
   { type: 'telegraph-circle',      name: 'Telegraph Circle',        section: 8,  params: { x: STAGE_X, y: STAGE_Y, duration: 2.5, expand: true } },
-  { type: 'ground-target-marker',  name: 'Ground Target Marker',    section: 9,  params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
+  { type: 'surface-target-marker', name: 'Surface Target Marker',   section: 9,  params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
   { type: 'target-reticle',        name: 'Target Reticle',          section: 10, params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
   { type: 'vignette',              name: 'Damage Vignette',         section: 11, params: { strength: 1, viewW: DEMO_VIEW.w, viewH: DEMO_VIEW.h } },
   { type: 'sprite-flash',          name: 'Sprite Flash',            section: 12, params: { box: BOX, duration: 0.5 } },

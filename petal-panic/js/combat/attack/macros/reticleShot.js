@@ -9,7 +9,7 @@
 // owns its lifecycle directly — fire it once, move its origin while tracking,
 // freeze it at lock. Other attacks that want a warning fire whichever effect
 // they need the same way (spike → telegraph-circle, boss slam →
-// ground-target-marker...).
+// surface-target-marker...).
 //
 // Owning this here (not in a debug demo) means heroes/enemies get identical
 // behavior. See attack-macros.md §3.

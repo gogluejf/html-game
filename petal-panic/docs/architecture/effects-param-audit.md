@@ -141,7 +141,7 @@ for the same concept.
 
 ---
 
-## 9. Ground Target Marker (`groundMarker.js`)
+## 9. Surface Target Marker (`surfaceMarker.js`)
 
 | Param | Config? |
 |-------|---------|
@@ -152,6 +152,7 @@ for the same concept.
 | rotation | ✅ |
 | pulse rate | ✅ |
 | opacity | ✅ |
+| orientation | ✅ (`horizontal` floor / `vertical` wall) |
 
 > Fully parametric. Also accepts `color` (✅).
 

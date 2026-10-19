@@ -81,7 +81,7 @@ const DEFAULT_PARAMS = {
   'trail':                { lifetime: 0.6 },
   'afterimage':           { box: { x: 144, y: 74, w: 32, h: 32 }, spawnInterval: 1 / 30, lifetime: 0.6 },
   'telegraph-circle':     { x: 160, y: 90, duration: 1.0 },
-  'ground-target-marker': { x: 160, y: 90, duration: 1.0 },
+  'surface-target-marker': { x: 160, y: 90, duration: 1.0 },
   'target-reticle':       { x: 160, y: 90, duration: 1.0 },
   'vignette':             { strength: 1, viewW: 320, viewH: 180 },
   'sprite-flash':         { box: { x: 144, y: 74, w: 32, h: 32 }, duration: 0.5 },
@@ -127,7 +127,7 @@ console.log('catalog ordering (§1→§24 + §26 Beam)');
 ok('full type sequence matches the documented catalog order', () => {
   const expected = [
     'particle-burst', 'explosion', 'debris', 'ground-wave', 'shockwave',
-    'trail', 'afterimage', 'telegraph-circle', 'ground-target-marker',
+    'trail', 'afterimage', 'telegraph-circle', 'surface-target-marker',
     'target-reticle', 'vignette', 'sprite-flash', 'camera-shake',
     'screen-flash', 'sprite-shake', 'impact-star', 'fade-out', 'scale-pulse',
     'squash-stretch', 'dust-cloud', 'slash', 'aura-glow', 'screen-overlay',

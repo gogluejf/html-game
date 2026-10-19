@@ -42,7 +42,7 @@
 //
 // Origin: if the carrier exposes origin(), its position wins over params.x/y
 // (same block pattern as trail/afterimage/groundWave/shockwave/
-// telegraphCircle/groundMarker); params.x/y are the standalone/theater
+// telegraphCircle/surfaceMarker); params.x/y are the standalone/theater
 // fallback used when the effect is fired with a null carrier. With
 // `followMode` true the origin AND facing are RE-RESOLVED from the live
 // carrier every update() (and again at draw time), so a moving/rotating

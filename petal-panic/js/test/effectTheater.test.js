@@ -110,7 +110,7 @@ ok('sections are strictly increasing (catalog order preserved)', () => {
   // full expected sequence of types matches the documented §1→§24+§26 order.
   const expected = [
     'particle-burst', 'explosion', 'debris', 'ground-wave', 'shockwave',
-    'trail', 'afterimage', 'telegraph-circle', 'ground-target-marker',
+    'trail', 'afterimage', 'telegraph-circle', 'surface-target-marker',
     'target-reticle', 'vignette', 'sprite-flash', 'camera-shake',
     'screen-flash', 'sprite-shake', 'impact-star', 'fade-out', 'scale-pulse',
     'squash-stretch', 'dust-cloud', 'slash', 'aura-glow', 'screen-overlay',

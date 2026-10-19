@@ -1,6 +1,6 @@
 // Task 5.6 — node-based unit tests for the ground target marker effect
-// (js/effects/groundMarker.js, effects.md §9). Run:
-// node js/test/groundMarker.test.js
+// (js/effects/surfaceMarker.js, effects.md §9). Run:
+// node js/test/surfaceMarker.test.js
 // No DOM needed: the effect is a pure module; render() is exercised with a
 // recording stub context. Fixed dt = 1/60 per project convention.
 //
@@ -14,7 +14,7 @@
 // literals.
 
 import { strict as assert } from 'node:assert';
-import { groundMarker } from '../effects/groundMarker.js';
+import { surfaceMarker } from '../effects/surfaceMarker.js';
 import {
   hasEffect, fireManual, fire, resetEffects, activeCount,
   updateEffects, drawEffects,
@@ -69,7 +69,7 @@ function movingCarrier(x = 0, y = 0) {
 
 console.log('lifetime');
 ok('defaults: done exactly at the duration boundary, not before', () => {
-  const b = groundMarker({});
+  const b = surfaceMarker({});
   const frames = Math.round(1.5 / DT); // default duration 1.5s → 90 frames
   for (let i = 0; i < frames - 1; i++) b.update(DT);
   assert.equal(b.done, false, 'not done just before the boundary');
@@ -78,7 +78,7 @@ ok('defaults: done exactly at the duration boundary, not before', () => {
 });
 ok('explicit duration is honored exactly (total lifetime == duration)', () => {
   const dur = 0.3; // 18 frames at dt = 1/60
-  const b = groundMarker({ duration: dur });
+  const b = surfaceMarker({ duration: dur });
   for (let i = 0; i < Math.round(dur / DT) - 1; i++) b.update(DT);
   assert.equal(b.done, false, 'not done just before the boundary');
   b.update(DT);
@@ -87,7 +87,7 @@ ok('explicit duration is honored exactly (total lifetime == duration)', () => {
 });
 ok('update after done is a no-op (elapsed + radius frozen)', () => {
   const c = movingCarrier(0);
-  const b = groundMarker({ duration: 0.1 }, c);
+  const b = surfaceMarker({ duration: 0.1 }, c);
   b.complete();
   const e = b.elapsed, r = b.radius;
   c.x = 999;
@@ -99,7 +99,7 @@ ok('update after done is a no-op (elapsed + radius frozen)', () => {
 
 console.log('pulsing radius');
 ok('starts at the declared base radius (sin(0) = 0)', () => {
-  const b = groundMarker({ radius: 40, pulseRate: 2, duration: 2 });
+  const b = surfaceMarker({ radius: 40, pulseRate: 2, duration: 2 });
   assert.ok(close(b.radius, 40), `initial radius == declared base radius (${b.radius})`);
 });
 ok('radius oscillates deterministically between (1−A)·r and (1+A)·r', () => {
@@ -107,7 +107,7 @@ ok('radius oscillates deterministically between (1−A)·r and (1+A)·r', () => 
   // Probe every frame of one full pulse period and confirm the exposed radius
   // stays inside the documented bounds and touches both extremes on the grid.
   const r0 = 40, rate = 2; // period = 0.5s = 30 frames
-  const b = groundMarker({ radius: r0, pulseRate: rate, duration: 2 });
+  const b = surfaceMarker({ radius: r0, pulseRate: rate, duration: 2 });
   let minSeen = Infinity, maxSeen = -Infinity;
   for (let i = 1; i <= 30; i++) {
     b.update(DT);
@@ -128,7 +128,7 @@ ok('peak radius matches the documented formula at a quarter period (off-grid sca
   // fixed-dt grid — so sample the two bracketing frames and confirm the
   // documented sinusoid value at each integer frame is exact to epsilon.
   const r0 = 40, rate = 2;
-  const b = groundMarker({ radius: r0, pulseRate: rate, duration: 2 });
+  const b = surfaceMarker({ radius: r0, pulseRate: rate, duration: 2 });
   for (let i = 1; i <= 8; i++) {
     b.update(DT);
     const expected = r0 * (1 + 0.25 * Math.sin(2 * Math.PI * rate * (i * DT)));
@@ -137,7 +137,7 @@ ok('peak radius matches the documented formula at a quarter period (off-grid sca
   }
 });
 ok('pulseRate=0 disables the pulse (constant base radius)', () => {
-  const b = groundMarker({ radius: 30, pulseRate: 0, duration: 2 });
+  const b = surfaceMarker({ radius: 30, pulseRate: 0, duration: 2 });
   for (let i = 0; i < 30; i++) b.update(DT);
   assert.ok(close(b.radius, 30), `radius stays at the base radius (got ${b.radius})`);
 });
@@ -145,15 +145,15 @@ ok('pulseRate=0 disables the pulse (constant base radius)', () => {
 console.log('origin resolution');
 ok('carrier origin() wins over params.x/y', () => {
   const c = movingCarrier(500, 10);
-  const b = groundMarker({ x: 999, y: 999, duration: 1 }, c);
+  const b = surfaceMarker({ x: 999, y: 999, duration: 1 }, c);
   assert.ok(close(b.origin.x, 500) && close(b.origin.y, 10), 'carrier origin resolved');
 });
 ok('carrier without origin() falls back to params.x/y', () => {
-  const b = groundMarker({ x: 77, y: 5, duration: 1 }, { size: () => ({ w: 8, h: 8 }) });
+  const b = surfaceMarker({ x: 77, y: 5, duration: 1 }, { size: () => ({ w: 8, h: 8 }) });
   assert.ok(close(b.origin.x, 77) && close(b.origin.y, 5), 'params fallback used');
 });
 ok('null carrier uses params.x/y (standalone/theater origin)', () => {
-  const b = groundMarker({ x: 12, y: -3, duration: 1 });
+  const b = surfaceMarker({ x: 12, y: -3, duration: 1 });
   assert.ok(close(b.origin.x, 12) && close(b.origin.y, -3), 'params origin used');
 });
 ok('origin captured at fire time and HELD FIXED even if the carrier moves (fixed marker)', () => {
@@ -161,7 +161,7 @@ ok('origin captured at fire time and HELD FIXED even if the carrier moves (fixed
   // player to escape the danger area." Unlike telegraphCircle there is NO
   // follow mode — a moving carrier must NOT drag the marker along.
   const c = movingCarrier(10, 20);
-  const b = groundMarker({ duration: 1 }, c);
+  const b = surfaceMarker({ duration: 1 }, c);
   assert.ok(close(b.origin.x, 10) && close(b.origin.y, 20), 'fire-time origin captured');
   c.x = 500; c.y = 600;
   for (let i = 0; i < 10; i++) b.update(DT);
@@ -170,7 +170,7 @@ ok('origin captured at fire time and HELD FIXED even if the carrier moves (fixed
 
 console.log('render');
 ok('draws nothing once done', () => {
-  const b = groundMarker({ duration: 0.1 });
+  const b = surfaceMarker({ duration: 0.1 });
   for (let i = 0; i < 6; i++) b.update(DT); // 6 frames ≥ 0.1s
   assert.equal(b.done, true, 'precondition: done');
   const ctx = makeCtx();
@@ -178,7 +178,7 @@ ok('draws nothing once done', () => {
   assert.equal(ctx.calls.length, 0, 'no draw once done');
 });
 ok('draws rings + ticks while active (save/restore bracketed, constant alpha)', () => {
-  const b = groundMarker({ x: 30, y: 40, radius: 40, pulseRate: 0, rotation: 0, opacity: 0.7, duration: 2 });
+  const b = surfaceMarker({ x: 30, y: 40, radius: 40, pulseRate: 0, rotation: 0, opacity: 0.7, duration: 2 });
   b.update(DT);
   const ctx = makeCtx();
   b.render(ctx);
@@ -202,7 +202,7 @@ ok('draws rings + ticks while active (save/restore bracketed, constant alpha)', 
   // ring and ending further out (length > 0, pointing away from center).
   // With perspective squash, the Euclidean distance varies by angle, so we
   // check the unsquashed radial component instead.
-  const SQ = 0.3; // must match PERSPECTIVE_SQUASH in groundMarker.js
+  const SQ = 0.3; // must match PERSPECTIVE_SQUASH in surfaceMarker.js
   const moves = ctx.calls.filter(c => c[0] === 'moveTo');
   const lines = ctx.calls.filter(c => c[0] === 'lineTo');
   assert.equal(moves.length, 4, 'four tick start points');
@@ -225,7 +225,7 @@ ok('draws rings + ticks while active (save/restore bracketed, constant alpha)', 
 ok('ticks rotate deterministically over the lifetime (angle advances with time)', () => {
   // Documented contract: the ticks rotate at a constant angular velocity, so
   // the first tick's radial direction changes monotonically across updates.
-  const b = groundMarker({ x: 0, y: 0, radius: 40, pulseRate: 0, rotation: 0, duration: 2 });
+  const b = surfaceMarker({ x: 0, y: 0, radius: 40, pulseRate: 0, rotation: 0, duration: 2 });
   const SQ = 0.3;
   const firstTickAngle = (ctx) => {
     const m = ctx.calls.find(c => c[0] === 'moveTo');
@@ -240,7 +240,7 @@ ok('ticks rotate deterministically over the lifetime (angle advances with time)'
 ok('declared rotation sets the initial tick orientation', () => {
   // At t=0 the first tick points along `rotation` in unsquashed space.
   const rot = Math.PI / 3;
-  const b = groundMarker({ x: 0, y: 0, radius: 40, pulseRate: 0, rotation: rot, duration: 2 });
+  const b = surfaceMarker({ x: 0, y: 0, radius: 40, pulseRate: 0, rotation: rot, duration: 2 });
   const ctx = makeCtx();
   b.render(ctx);
   const m = ctx.calls.find(c => c[0] === 'moveTo');
@@ -249,8 +249,8 @@ ok('declared rotation sets the initial tick orientation', () => {
   assert.ok(close(dir, rot, 1e-6), `first tick points along the declared rotation (got ${dir}, want ${rot})`);
 });
 ok('degenerate geometry (radius 0 or opacity 0) draws nothing but still completes', () => {
-  const bR = groundMarker({ radius: 0, duration: 0.1 });
-  const bO = groundMarker({ opacity: 0, duration: 0.1 });
+  const bR = surfaceMarker({ radius: 0, duration: 0.1 });
+  const bO = surfaceMarker({ opacity: 0, duration: 0.1 });
   bR.update(DT); bO.update(DT);
   const ctxR = makeCtx(), ctxO = makeCtx();
   bR.render(ctxR); bO.render(ctxO);
@@ -261,13 +261,44 @@ ok('degenerate geometry (radius 0 or opacity 0) draws nothing but still complete
   assert.equal(bO.done, true, 'opacity-0 instance still completes at duration');
 });
 
+ok('orientation vertical: squash moves to the X axis (wall read)', () => {
+  // A vertical-surface marker squashes X (tall narrow ellipse) instead of Y.
+  const b = surfaceMarker({ x: 30, y: 40, radius: 40, pulseRate: 0, rotation: 0, opacity: 0.7, duration: 2, orientation: 'vertical' });
+  const ctx = makeCtx();
+  b.render(ctx);
+  const ellipses = ctx.calls.filter(c => c[0] === 'ellipse');
+  const outer = ellipses[0];
+  // ellipse args: [label, x, y, radiusX, radiusY, ...]
+  assert.ok(outer[3] < outer[4], `squashed on X (${outer[3]} < ${outer[4]})`);
+  const SQ = 0.3;
+  assert.ok(close(outer[3], 40 * SQ), `radiusX == radius·squash (${outer[3]})`);
+  assert.ok(close(outer[4], 40), `radiusY == radius (${outer[4]})`);
+});
+ok('orientation horizontal (default): squash stays on the Y axis (back-compat)', () => {
+  const b = surfaceMarker({ x: 30, y: 40, radius: 40, pulseRate: 0, rotation: 0, opacity: 0.7, duration: 2 });
+  const ctx = makeCtx();
+  b.render(ctx);
+  const outer = ctx.calls.filter(c => c[0] === 'ellipse')[0];
+  const SQ = 0.3;
+  assert.ok(close(outer[3], 40), `radiusX unsquashed (${outer[3]})`);
+  assert.ok(close(outer[4], 40 * SQ), `radiusY squashed (${outer[4]})`);
+});
+ok('unknown orientation falls back to horizontal', () => {
+  const b = surfaceMarker({ x: 30, y: 40, radius: 40, pulseRate: 0, rotation: 0, opacity: 0.7, duration: 2, orientation: 'diagonal' });
+  const ctx = makeCtx();
+  b.render(ctx);
+  const outer = ctx.calls.filter(c => c[0] === 'ellipse')[0];
+  const SQ = 0.3;
+  assert.ok(close(outer[4], 40 * SQ), `fallback squashes Y (${outer[4]})`);
+});
+
 console.log('registration');
-ok('"ground-target-marker" is registered and resolves through the real fire() path', () => {
-  assert.ok(hasEffect('ground-target-marker'), 'type registered');
+ok('"surface-target-marker" is registered and resolves through the real fire() path', () => {
+  assert.ok(hasEffect('surface-target-marker'), 'type registered');
   resetEffects();
-  const inst = fireManual({ type: 'ground-target-marker', params: { radius: 24, pulseRate: 2, rotation: 0, opacity: 0.85, duration: 1.5, animation: 'pulse', color: '#7dff6a', x: 0, y: 100 } });
+  const inst = fireManual({ type: 'surface-target-marker', params: { radius: 24, pulseRate: 2, rotation: 0, opacity: 0.85, duration: 1.5, animation: 'pulse', color: '#7dff6a', x: 0, y: 100 } });
   assert.ok(inst !== null, 'fireManual resolved the type');
-  assert.equal(inst.type, 'ground-target-marker');
+  assert.equal(inst.type, 'surface-target-marker');
   assert.equal(inst.trigger, 'manual');
   assert.equal(activeCount(), 1, 'instance entered the active set');
   resetEffects();
@@ -277,7 +308,7 @@ for (const trigger of ['spawn', 'stateChange']) {
     resetEffects();
     const carrier = {
       origin: () => ({ x: 10, y: 100 }),
-      effects: [{ on: trigger, type: 'ground-target-marker', params: { radius: 24, pulseRate: 2, duration: 1.5 } }],
+      effects: [{ on: trigger, type: 'surface-target-marker', params: { radius: 24, pulseRate: 2, duration: 1.5 } }],
     };
     const spawned = fire(trigger, carrier);
     assert.equal(spawned, 1, 'exactly one instance spawned from the carrier config');
@@ -292,7 +323,7 @@ ok('attachable via a NON-ENTITY carrier shape (plain marker object) through fire
   const marker = {
     kind: 'marker',
     origin: () => ({ x: 5, y: 100 }),
-    effects: [{ on: 'spawn', type: 'ground-target-marker', params: { radius: 24, pulseRate: 2, duration: 1.5 } }],
+    effects: [{ on: 'spawn', type: 'surface-target-marker', params: { radius: 24, pulseRate: 2, duration: 1.5 } }],
   };
   const spawned = fire('spawn', marker);
   assert.equal(spawned, 1, 'a plain-object carrier fired a ground marker');
@@ -307,7 +338,7 @@ ok('standalone demo driven only by params (null carrier) — draws AND self-term
   // updateEffects → drawEffects) with no internal-state mutation, proving the
   // effect renders purely from params and terminates on its own clock.
   resetEffects();
-  const inst = fireManual({ type: 'ground-target-marker',
+  const inst = fireManual({ type: 'surface-target-marker',
     params: { radius: 24, pulseRate: 2, rotation: 0, opacity: 0.85, duration: 1.5, animation: 'pulse', color: '#7dff6a', x: 0, y: 100 } });
   assert.ok(inst !== null, 'manual fire with null carrier resolved');
   const body = inst.body;
@@ -329,7 +360,7 @@ ok('standalone demo driven only by params (null carrier) — draws AND self-term
 ok('end-to-end: fire → updateEffects → drawEffects pulses the marker, then prunes', () => {
   resetEffects();
   const c = movingCarrier(0, 100);
-  const inst = fireManual({ type: 'ground-target-marker', params: { radius: 40, pulseRate: 2, duration: 0.5 } }, c);
+  const inst = fireManual({ type: 'surface-target-marker', params: { radius: 40, pulseRate: 2, duration: 0.5 } }, c);
   assert.ok(inst !== null, 'fired through the engine');
   let drew = 0;
   let sawGrowth = false, sawShrink = false;

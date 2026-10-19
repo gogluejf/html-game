@@ -282,7 +282,7 @@ a much more agile threat.
 
 **Invokes:** Sky Missile (per missile) + launch visual
 
-**Effects:** Ground Target Marker (landing warnings, via Sky Missile)
+**Effects:** Surface Target Marker (landing warnings, via Sky Missile)
 
 Launches multiple projectiles vertically upward from the attacker, sends them
 outside the visible play area, announces their future landing positions with
@@ -303,7 +303,7 @@ This is a canonical macro: callers configure it but should not rebuild its seque
    affects landing positions).
 3. Projectiles leave the visible play area.
 4. Determine landing positions.
-5. Show Ground Target Markers at each landing point.
+5. Show Surface Target Markers at each landing point.
 6. Wait the configured warning/time-to-target period.
 7. Projectiles fall vertically at their marked positions (Sky Missile, §22).
 8. Resolve impact/collision.
@@ -327,7 +327,7 @@ This is a canonical macro: callers configure it but should not rebuild its seque
 - **xCoordinate** — central X coordinate used to calculate the drop pattern.
 - **coordination** — for sequential patterns: `random`, `from_left`, or `from_right`.
 - **projectileDamage** — impact/contact damage.
-- **markerStyle** — optional Ground Target Marker effect override.
+- **markerStyle** — optional Surface Target Marker effect override.
 - **projectileStyle** — optional projectile visual override.
 
 ### Distance behavior
@@ -827,7 +827,7 @@ Examples:
 
 **Invokes:** Explosive Projectile (vertical fall)
 
-**Effects:** Ground Target Marker (landing warning at the impact point)
+**Effects:** Surface Target Marker (landing warning at the impact point)
 
 A single missile arriving from above at a FIXED ground position: the landing
 marker appears, the player gets a clear escape window, then the missile drops
@@ -840,7 +840,7 @@ with staggered positions/timing plus the launch-up visual. One missile, one id.
 
 ### Sequence
 
-Ground Target Marker at (x, groundY) → wait `timeToTarget` → Explosive
+Surface Target Marker at (x, groundY) → wait `timeToTarget` → Explosive
 Projectile spawns above the marker and falls vertically → detonate at the
 marked point.
 
@@ -857,7 +857,7 @@ marked point.
 - **damage** — blast damage (passed to Explosive Projectile).
 - **radius** — blast radius (passed to Explosive Projectile).
 - **team / blastTeam** — who the carrier/blast hurts.
-- **markerStyle** — optional Ground Target Marker effect override.
+- **markerStyle** — optional Surface Target Marker effect override.
 
 ### Rules
 
@@ -876,7 +876,7 @@ marked point.
 
 ### Composition
 
-**Ground Target Marker (effect) → delay → Explosive Projectile (vertical)**
+**Surface Target Marker (effect) → delay → Explosive Projectile (vertical)**
 
 Examples:
 - single use → boss "you're next" punishment shot

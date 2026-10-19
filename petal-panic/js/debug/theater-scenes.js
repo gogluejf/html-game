@@ -205,8 +205,8 @@ const SCENES = {
     fire(c, entry) { fireManual({ type: entry.type, params: { ...entry.params, x: c.enemy.origin().x, y: c.enemy.origin().y } }, c.enemy); },
     draw(ctx, c) { c.enemy.draw(ctx); },
   },
-  // 9. Ground Target Marker: on ground line
-  'ground-target-marker': {
+  // 9. Surface Target Marker: on ground line
+  'surface-target-marker': {
     setup() { return { carrier: pointCarrier(STAGE_X, STAGE_Y + 20) }; },
     fire(c, entry) { fireManual({ type: entry.type, params: { ...entry.params, x: c.carrier.origin().x, y: c.carrier.origin().y } }, c.carrier); },
     draw(ctx, c) {

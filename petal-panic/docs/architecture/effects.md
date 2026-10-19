@@ -60,7 +60,7 @@ Concept triggers (design intent) and current in-game usage (what actually fires 
 | 6 | Trail | ❌ | spawn, attack active; continuous (moving) | — |
 | 7 | Afterimage / Ghost Frames | ❌ | state change (dash/supermove); continuous (fast moving) | — |
 | 8 | Telegraph Circle | ✅ | state change (attack windup begins) | boss stomp (expand) |
-| 9 | Ground Target Marker | ❌ | spawn (projectile/missile created) | — |
+| 9 | Surface Target Marker | ❌ | spawn (projectile/missile created) | — |
 | 10 | Target Reticle | ❌ | spawn (lock-on acquired), state change | — |
 | 11 | Damage Vignette | ✅ | damage taken | • hero hit by projectile<br>• hero collision<br>• boss attack |
 | 12 | Sprite Flash | ❌ | hit landed, state change, damage taken | — *(uses legacy hitFlash timer)* |
@@ -227,11 +227,16 @@ are MACRO timing, not effect params — the effect finishes exactly at blink end
 
 ---
 
-## 9. Ground Target Marker
+## 9. Surface Target Marker
 
-Displays a target marker at a world position on the ground.
+Displays a target marker painted ON A SURFACE at a world position — a floor
+or a wall. The marker is always stuck to a surface (no free-floating mode);
+`orientation` picks which one: `horizontal` (default, floor/platform top —
+rings squashed on Y) or `vertical` (wall — rings squashed on X).
 
-Useful for missiles, falling objects, bombs, artillery, or attacks arriving from above. The marker can remain fixed, allowing the player to escape the danger area before impact.
+Useful for missiles, falling objects, bombs, artillery, or attacks arriving
+from above (horizontal), and wall-hugging hazards (vertical). The marker can
+remain fixed, allowing the player to escape the danger area before impact.
 
 Parameters may include:
 - Position
@@ -241,6 +246,7 @@ Parameters may include:
 - Rotation
 - Pulse rate
 - Opacity
+- Orientation (`horizontal` | `vertical`)
 
 ---
 
