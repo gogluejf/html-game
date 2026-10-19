@@ -280,26 +280,32 @@ a much more agile threat.
 
 ## 7. Missile Rain
 
-**Invokes:** Projectile + Telegraph effect
+**Invokes:** Sky Missile (per missile) + launch visual
 
-**Effects:** Telegraph effect (landing markers)
+**Effects:** Ground Target Marker (landing warnings, via Sky Missile)
 
 Launches multiple projectiles vertically upward from the attacker, sends them
-outside the visible play area, announces their future landing positions with ground
-reticles, then drops them back onto the play area. During ascent, projectiles may
-have a small oscillation so the launch feels alive rather than perfectly mechanical.
+outside the visible play area, announces their future landing positions with
+ground markers, then drops them back onto the play area. During ascent,
+projectiles may have a small sine oscillation so the launch feels alive rather
+than perfectly mechanical.
+
+The rain is N **Sky Missiles** (§22) with staggered positions/timing plus the
+launch-up visual — the macro owns the pattern; each missile owns its own
+marker → delay → drop sequence.
 
 This is a canonical macro: callers configure it but should not rebuild its sequence.
 
 ### Sequence
 
 1. Launch projectiles upward.
-2. Projectiles ascend with subtle oscillation.
+2. Projectiles ascend with a subtle sine oscillation (visual only — never
+   affects landing positions).
 3. Projectiles leave the visible play area.
 4. Determine landing positions.
-5. Show ground reticles.
+5. Show Ground Target Markers at each landing point.
 6. Wait the configured warning/time-to-target period.
-7. Projectiles fall at their calculated positions.
+7. Projectiles fall vertically at their marked positions (Sky Missile, §22).
 8. Resolve impact/collision.
 
 ### Main parameters
@@ -307,10 +313,11 @@ This is a canonical macro: callers configure it but should not rebuild its seque
 - **count** — number of projectiles in the rain.
 - **launchInterval** — spacing between projectiles during the upward launch burst.
 - **ascentSpeed** — upward travel speed.
-- **ascentOscillation** — subtle side-to-side motion while rising.
+- **ascentOscillation** — amplitude of the sine drift while rising (px; visual
+  only, does not affect landing positions).
 - **fallDelay** — delay after ascent before the falling phase begins.
 - **descentSpeed** — falling speed.
-- **timeToTarget** — delay between drawing a landing reticle and the corresponding
+- **timeToTarget** — delay between drawing a landing marker and the corresponding
   projectile dropping/arriving.
 - **pattern** — `simultaneous` or `sequential`.
 - **interval** — when sequential, time between falling projectiles.
@@ -320,7 +327,7 @@ This is a canonical macro: callers configure it but should not rebuild its seque
 - **xCoordinate** — central X coordinate used to calculate the drop pattern.
 - **coordination** — for sequential patterns: `random`, `from_left`, or `from_right`.
 - **projectileDamage** — impact/contact damage.
-- **reticleStyle** — optional Effect Engine override.
+- **markerStyle** — optional Ground Target Marker effect override.
 - **projectileStyle** — optional projectile visual override.
 
 ### Distance behavior
@@ -813,6 +820,67 @@ Examples:
 - `spawnType: bomb, count: 4` → Cluster Bomb payload pop
 - `spawnType: projectile, angle: 2π` → radial burst
 - `spawnType: enemy, count: 3` → spawn a small pack that fans out and chases
+
+---
+
+## 22. Sky Missile
+
+**Invokes:** Explosive Projectile (vertical fall)
+
+**Effects:** Ground Target Marker (landing warning at the impact point)
+
+A single missile arriving from above at a FIXED ground position: the landing
+marker appears, the player gets a clear escape window, then the missile drops
+straight down and detonates. The vertical, telegraphed twin of Explosive
+Projectile — same blast, but the approach vector is always straight down and
+the impact point is announced in advance.
+
+This is the building block for Missile Rain (§7): the rain is N sky missiles
+with staggered positions/timing plus the launch-up visual. One missile, one id.
+
+### Sequence
+
+Ground Target Marker at (x, groundY) → wait `timeToTarget` → Explosive
+Projectile spawns above the marker and falls vertically → detonate at the
+marked point.
+
+### Main parameters
+
+- **x** — impact x (world coords); the marker AND the drop share it.
+- **groundY** — ground line y for the marker placement (or resolved from the
+  surface under `x`).
+- **timeToTarget** — seconds between marker appearance and impact. This is the
+  player's survival window; the core game-feel knob.
+- **dropHeight** — how far above the marker the missile becomes visible before
+  falling (visual entry).
+- **fallSpeed** — descent speed (px/s).
+- **damage** — blast damage (passed to Explosive Projectile).
+- **radius** — blast radius (passed to Explosive Projectile).
+- **team / blastTeam** — who the carrier/blast hurts.
+- **markerStyle** — optional Ground Target Marker effect override.
+
+### Rules
+
+- The marker is FIXED at the impact point for the whole warning window — the
+  player reads "leave this spot", not "track a moving target" (that would be
+  Target Reticle, §10 effects; wrong tool here).
+- `groundY` is the TOP of the highest surface in the drop column (floor,
+  platform, or block) — the missile detonates on whatever is actually there,
+  not on an invisible floor below it.
+- The fall is strictly vertical: no homing, no drift. Fairness comes from the
+  warning, not from prediction.
+- Cancel during the warning removes the marker AND prevents the drop.
+- Demo/theater: stage a small platform under part of the drop zone so the
+  column-resolution behavior is visible (same staging as the other platform
+  demos).
+
+### Composition
+
+**Ground Target Marker (effect) → delay → Explosive Projectile (vertical)**
+
+Examples:
+- single use → boss "you're next" punishment shot
+- N × with stagger + ascent visual → Missile Rain (§7)
 
 ---
 

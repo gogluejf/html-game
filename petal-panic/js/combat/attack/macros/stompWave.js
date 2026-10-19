@@ -33,7 +33,7 @@ import { getPrimitive, getMacro } from '../registry.js';
 
 const DEFAULTS = Object.freeze({
   // --- Telegraph timing (absolute seconds; the effect derives its total) ---
-  buildTime: 0.6,         // circle grows (expand)
+  buildTime: 0.6,         // circle shrinks to the origin point
   gapTime: 0.4,           // silence hold ("be ready")
   blinkTime: 0.3,         // final warning blinks
   impactDelay: 0.1,       // beat AFTER the warning, BEFORE the hop/waves
@@ -70,7 +70,7 @@ defineMacro('stompWave', {
       // surfaceWave via resolveEffects() for the panel; it is NOT fired here.
       { type: 'dust-cloud', desc: 'ground dust puff at the impact point' },
       { type: 'camera-shake', desc: 'shake on impact' },
-      { type: 'telegraph-circle', desc: 'warning circle that grows/blinks before the slam' },
+      { type: 'telegraph-circle', desc: 'warning circle that shrinks to the wave origin, then blinks' },
     ],
     params: [
       { key: 'buildTime', desc: 'telegraph grow (s)' },
@@ -137,13 +137,16 @@ defineMacro('stompWave', {
       s.t += dt;
 
       if (s.phase === 'telegraph') {
-        // Real Telegraph Circle effect (effects.md #8), expand mode — the
-        // stomp warning: "GET OUT of this zone" across the impact surface.
+        // Real Telegraph Circle effect (effects.md #8), SHRINK mode — the wave
+        // telegraph: "the sweep originates EXACTLY at this point". The wave's
+        // real reach varies (platform edge, ttl, obstacles) so we do NOT try
+        // to predict it with a zone size; the shrinking dot marks the source
+        // and the player reads direction from the hop.
         // Phase times in absolute seconds; the effect derives its total.
         if (s.t <= dt && !s.telegraphFired) {
           s.telegraphFired = true;
           const pt = stompWaveImpactPoint(ctx.attacker);
-          fireDeclared({ type: 'telegraph-circle', params: { x: pt.x, y: pt.y - 8, radius: 140, expand: true, buildTime: p.buildTime, gapTime: p.gapTime, blinkTime: p.blinkTime } }, h.declaredEffectTypes());
+          fireDeclared({ type: 'telegraph-circle', params: { x: pt.x, y: pt.y - 8, expand: false, buildTime: p.buildTime, gapTime: p.gapTime, blinkTime: p.blinkTime } }, h.declaredEffectTypes());
         }
         if (s.t >= teleTotal + p.impactDelay) { s.phase = 'hop'; s.t = 0; }
         return false;
