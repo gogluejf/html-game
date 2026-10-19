@@ -14,3 +14,7 @@ export const FIRE_COLORS = ['#e74c3c', '#f39c12', '#ff6ec7', '#ffffff'];
 
 // Muted earthy palette for ground dust puffs (dustCloud, catalog #20).
 export const DUST_COLORS = ['#b8a88a', '#a09070', '#c8b89a'];
+
+// Fluorescent toxic/hazard palette for poison zones, chemical bursts,
+// biohazard impacts. High-saturation green-yellow — reads as "toxic" at a glance.
+export const HAZARD_COLORS = ['#39ff14', '#ccff00', '#7fff00', '#adff2f'];

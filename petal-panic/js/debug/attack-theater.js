@@ -47,6 +47,7 @@ import '../combat/attack/primitives/bodyContact.js';
 import '../combat/attack/macros/index.js'; // macro barrel — all macros register here
 import '../combat/attack/primitives/beam.js';
 import '../combat/attack/primitives/fireArea.js';
+import '../combat/attack/primitives/dustZone.js';
 import '../combat/attack/primitives/spike.js';
 import '../combat/attack/primitives/orbit.js';
 import '../combat/attack/primitives/boomerang.js';
@@ -86,6 +87,7 @@ const SANDBOX_PRESETS = {
   predictiveShot: { speed: 300, ttl: 3, damage: 10 },
   beam: { direction: 0, length: 1000, width: 24, duration: 0.6, damage: 15, tickRate: 8, team: 'ally' },
   fireArea: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, width: 96, duration: 2, tickRate: 5, damage: 8, team: 'ally' },
+  dustZone: { x: ATTACKER_HOME.x + 80, y: GROUND_Y - 32, width: 140, height: 64, duration: 3, tickRate: 5, damage: 6, team: 'ally', palette: 'hazard' },
   spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 8, width: 144, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
   orbit: { count: 3, minRadius: 40, maxRadius: 90, pulseSpeed: 1.5, speed: 1.5, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
   boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 3 },
@@ -136,6 +138,7 @@ export const TWEAKABLE = {
   predictiveShot: [['speed', 'num', 50]],
   beam: [['direction', 'angle', 15 * DEG], ['length', 'num', 20], ['width', 'num', 4], ['duration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   fireArea: [['x', 'num', 20], ['width', 'num', 16], ['duration', 'num', 0.25], ['damage', 'num', 2], ['tickRate', 'int', 1]],
+  dustZone: [['x', 'num', 20], ['width', 'num', 16], ['height', 'num', 8], ['duration', 'num', 0.25], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   spike: [['x', 'num', 16], ['width', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],
   orbit: [['count', 'int', 1], ['minRadius', 'num', 10], ['maxRadius', 'num', 10], ['pulseSpeed', 'num', 0.25], ['speed', 'num', 0.25]],
   boomerang: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['returnSpeed', 'num', 50], ['outboundDuration', 'num', 0.1], ['count', 'int', 1]],
@@ -685,6 +688,14 @@ export const AttackTheater = {
       this._target.x = ATTACKER_HOME.x + 60; // right next to the attacker
       this._target.y = TARGET_POS.y;
       this._choreo = { kind: 'dashStage' };
+    } else if (id === 'dustZone') {
+      // Dust Zone demo: attacker stands near the cloud, target is INSIDE it.
+      // The cloud is at x=ATTACKER_HOME.x+80, so put the target dead center.
+      this._attacker.x = ATTACKER_HOME.x - 40; // just left of the cloud
+      this._attacker.y = ATTACKER_HOME.y;
+      this._attacker.facing = 1;
+      this._target.x = this._params.x; // center of the zone
+      this._target.y = this._params.y - this._target.h / 2;
     }
 
     // (explosion + spawnSplit stage the origin at the attacker and hide its
@@ -1017,7 +1028,7 @@ export const AttackTheater = {
           for (const ch of h.handles ?? []) {
             if (ch.entity) stepProjectile(ch.entity, ch);
           }
-        } else if (h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike') {
+        } else if (h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike' || h.id === 'dustZone') {
           finished = h.step(DT, [this._target]);
         } else if (h.id === 'stomp' || h.id === 'stompWave' || h.id === 'surfaceWave') {
           // Stomp family: the macro/primitive owns its sequence; pass every
@@ -1396,17 +1407,20 @@ export const AttackTheater = {
         ctx.font = '9px monospace';
         ctx.textAlign = 'center';
         ctx.fillText(`seg${st.segmentIndex + 1} · ${st.frame ?? ''}`, box.x + box.w / 2, box.y - 6);
-      } else if ((h.id === 'fireArea' || h.id === 'spike') && !st.done) {
+      } else if ((h.id === 'fireArea' || h.id === 'spike' || h.id === 'dustZone') && !st.done) {
         let box = null;
         if (h.id === 'fireArea') { const fp = h._params ?? this._params; const fw = fp.width; box = { x: fp.x - fw / 2, y: GROUND_Y - 48, w: fw, h: 48 }; }
+        else if (h.id === 'dustZone') { const dp = h._params ?? this._params; box = { x: dp.x - dp.width / 2, y: dp.y - dp.height / 2, w: dp.width, h: dp.height }; }
         else if (st.phase === 'visible') { const sw = this._params.width; box = { x: this._params.x - sw / 2, y: this._params.y - 8, w: sw, h: 16 }; }
         if (box) {
-          const active = h.id === 'fireArea' || st.phase === 'visible';
+          const active = h.id === 'fireArea' || h.id === 'dustZone' || st.phase === 'visible';
           ctx.fillStyle = h.id === 'fireArea'
             ? `rgba(255,${active ? 120 : 60},30,${active ? 0.4 : 0.15})`
-            : (st.phase === 'warning' ? `rgba(255,80,80,${0.3 + 0.3 * Math.sin(st.t * 20)})` : (active ? 'rgba(255,220,80,0.7)' : 'rgba(255,255,255,0.06)'));
+            : h.id === 'dustZone'
+              ? `rgba(57,255,20,${active ? 0.15 : 0.05})`
+              : (st.phase === 'warning' ? `rgba(255,80,80,${0.3 + 0.3 * Math.sin(st.t * 20)})` : (active ? 'rgba(255,220,80,0.7)' : 'rgba(255,255,255,0.06)'));
           ctx.fillRect(box.x, box.y, box.w, box.h);
-          ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+          ctx.strokeStyle = h.id === 'dustZone' ? 'rgba(57,255,20,0.4)' : 'rgba(255,255,255,0.4)';
           ctx.strokeRect(box.x, box.y, box.w, box.h);
         }
       }

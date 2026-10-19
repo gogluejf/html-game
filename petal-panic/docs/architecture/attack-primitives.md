@@ -364,6 +364,36 @@ This avoids creating redundant melee hitboxes for attacks such as a simple charg
 
 ---
 
+## 13. Dust Zone (Toxic Cloud)
+
+**Effects:** Dust Cloud (repeated spawns across the zone for continuous visual coverage)
+
+A persistent rectangular damaging area rendered as a toxic dust cloud. Unlike
+fireArea (fixed 48px height, fire visual), dustZone has configurable width AND
+height and uses the dust-cloud particle effect with a selectable palette. The
+visual re-spawns small puffs at random points within the box every ~0.12s so
+the cloud stays filled for its whole lifetime — not one burst.
+
+### Main parameters
+
+- **x / y** — center of the zone (world coords).
+- **width** — horizontal extent (px). Default 120.
+- **height** — vertical extent (px). Default 64.
+- **duration** — seconds the cloud persists. Default 3.
+- **tickRate** — damage ticks per second while a target is inside. Default 5.
+- **damage** — damage per tick. Default 6.
+- **team** — ally | foe | neutral.
+- **palette** — `dust` (earthy tan) or `hazard` (fluorescent toxic green/yellow). Default `hazard`.
+
+### Rules
+
+- Static AABB — does not move once placed.
+- Ticking DoT: targets inside take damage every `1/tickRate` seconds; can be hit repeatedly over the cloud's life.
+- No knockback, no hitstun — pure damage-over-time zone.
+- Visual is continuous (repeated puff spawns), not a single one-shot burst.
+
+---
+
 ## Composition principle
 
 Primitives are intentionally small and composable. Examples:

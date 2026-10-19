@@ -33,7 +33,9 @@
 //                   the cloud settle back down, negative floats it upward
 
 import { particles } from './particles.js';
-import { DUST_COLORS } from './palettes.js';
+import { DUST_COLORS, HAZARD_COLORS } from './palettes.js';
+
+const PALETTES = { dust: DUST_COLORS, hazard: HAZARD_COLORS };
 
 const DEFAULT_COUNT = 6;
 const DEFAULT_SPREAD = 10; // px half-width of the contact cluster
@@ -54,11 +56,13 @@ const DEFAULT_GRAVITY = 0;     // px/s² (0 = drift, no settling)
 export function dustCloud(params = {}, carrier = null) {
   const count = Math.max(0, Math.floor(params.particleCount ?? DEFAULT_COUNT));
   const spread = Math.max(0, params.spread ?? DEFAULT_SPREAD);
+  const height = Math.max(0, params.height ?? 0); // vertical half-extent (0 = flat line, default)
   const size = Math.max(0, params.size ?? DEFAULT_SIZE);
   const velocity = Math.max(0, params.velocity ?? DEFAULT_VELOCITY);
   const lifetime = Math.max(0, params.lifetime ?? DEFAULT_LIFETIME);
   const opacity = Math.min(1, Math.max(0, params.opacity ?? DEFAULT_OPACITY));
   const gravity = params.gravity ?? DEFAULT_GRAVITY;
+  const palette = PALETTES[params.palette] ?? DUST_COLORS;
 
   // Contact point: prefer the live carrier anchor at fire time; params are
   // the standalone/fallback position (theater fires with a null carrier).
@@ -71,13 +75,14 @@ export function dustCloud(params = {}, carrier = null) {
 
   for (let i = 0; i < count; i++) {
     // Clustered at the contact point: horizontal jitter within ±spread,
-    // launched mostly upward with a wide cone so the puffs billow up and
-    // outward around the landing spot.
+    // vertical jitter within ±height (0 = flat line, default). Launched mostly
+    // upward with a wide cone so the puffs billow up and outward.
     const dx = (Math.random() * 2 - 1) * spread;
+    const dy = (Math.random() * 2 - 1) * height;
     const angle = -Math.PI / 2 + (Math.random() * 2 - 1) * (Math.PI / 2);
     const speed = velocity * (SPEED_SPREAD[0] + Math.random() * (SPEED_SPREAD[1] - SPEED_SPREAD[0]));
-    const color = DUST_COLORS[i % DUST_COLORS.length];
-    const puff = particles.spawnOne(x + dx, y, color, speed, angle);
+    const color = params.color ?? palette[i % palette.length];
+    const puff = particles.spawnOne(x + dx, y + dy, color, speed, angle);
     if (!puff) break; // pool exhausted (soft cap): stop spawning, no allocation
     // Per-puff overrides on top of the pool defaults:
     puff.life = lifetime;

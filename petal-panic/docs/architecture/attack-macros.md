@@ -589,9 +589,11 @@ recovery (attacker committed, punishable).
 - **damage** — this segment's hit damage (escalating: early < finisher).
 - **knockback** — KnockbackSetting or `null`. Every segment EXCEPT the last
   MUST be `null` (or zero-strength) so the victim keeps control; ONLY the last
-  segment carries a real setting `{ base, scaleBySpeed, hitstun, pop?, dirMode }`
-  — `base` is the inherent push (px/s), `scaleBySpeed` multiplies head-on
-  velocity, `pop` adds a fixed upward launch, `hitstun` is the stun seconds.
+  segment carries a real setting `{ base?, scaleBySpeed, hitstun, pop?, dirMode }`.
+  If `base` is omitted it is derived from the segment's own speed (`speed × 0.25`)
+  so faster dashes launch harder automatically. `scaleBySpeed` adds a bonus
+  proportional to the attacker's velocity at impact; `pop` adds a fixed upward
+  launch; `hitstun` is the stun seconds.
 
 ### Rules
 
@@ -805,26 +807,11 @@ surface (platform edge), or solid geometry in its path — whichever comes first
 
 ---
 
-## 18. Dust Cloud / Radius Attack
+## 18. Dust Zone (primitive — see attack-primitives.md §13)
 
-**Invokes:** Explosion
-
-**Effects:** Explosion (blast burst)
-
-Creates a damaging dust/effect cloud around the attacker for a duration. The
-mushroom enemy is the conceptual reference.
-
-### Sequence
-
-Dust effect appears → radial area active → duration ends.
-
-### Main parameters
-
-- **radius** — blast/cloud radius.
-- **duration** — how long it remains active.
-- **damage** — damage/contact behavior.
-- **tickRate** — optional repeated-damage timing.
-- **dustStyle** — effect override.
+A persistent rectangular toxic cloud that ticks damage on enemies inside it.
+Documented in the primitives reference; listed here for completeness since it
+appears in the Attack Theater alongside macros.
 
 ---
 
