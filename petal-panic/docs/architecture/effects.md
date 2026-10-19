@@ -54,13 +54,13 @@ Concept triggers (design intent) and current in-game usage (what actually fires 
 |---|--------|--------|-------------------|----------------------|
 | 1 | Particle Burst / Sparks | ✅ | spawn, death, collision, explosion, pickup, hit landed | • ally projectile hit<br>• enemy death<br>• barrel AoE<br>• bomb AoE<br>• boss stomp<br>• victory<br>• pickup |
 | 2 | Explosion | ✅ | explosion, death | • barrel AoE detonation<br>• bomb AoE detonation<br>• boss component death |
-| 3 | Debris | ❌ | death, explosion, collision | — |
-| 4 | Ground Wave | ❌ | attack active (moving collision volume) | — |
+| 3 | Debris | ✅ | death, explosion, collision | • projectile solid-impact puff<br>• bomb landing puff |
+| 4 | Ground Wave | ✅ | attack active (moving collision volume) | • surfaceWave crest visual |
 | 5 | Shockwave | ❌ | explosion, attack active | — |
-| 6 | Trail | ❌ | spawn, attack active; continuous (moving) | — |
+| 6 | Trail | ✅ | spawn, attack active; continuous (moving) | • missileRain rocket ascent |
 | 7 | Afterimage / Ghost Frames | ❌ | state change (dash/supermove); continuous (fast moving) | — |
 | 8 | Telegraph Circle | ✅ | state change (attack windup begins) | boss stomp (expand) |
-| 9 | Surface Target Marker | ❌ | spawn (projectile/missile created) | — |
+| 9 | Surface Target Marker | ✅ | spawn (projectile/missile created) | • skyMissile / missileRain landing warning |
 | 10 | Target Reticle | ❌ | spawn (lock-on acquired), state change | — |
 | 11 | Damage Vignette | ✅ | damage taken | • hero hit by projectile<br>• hero collision<br>• boss attack |
 | 12 | Sprite Flash | ❌ | hit landed, state change, damage taken | — *(uses legacy hitFlash timer)* |
@@ -71,7 +71,7 @@ Concept triggers (design intent) and current in-game usage (what actually fires 
 | 17 | Fade Out | ❌ | death, state change | — |
 | 18 | Scale / Pulse | ❌ | state change, spawn | — |
 | 19 | Squash & Stretch | ❌ | state change (jump/landing), hit landed | — |
-| 20 | Dust Cloud | ❌ | state change (landing/run start), collision | — |
+| 20 | Dust Cloud | ✅ | state change (landing/run start), collision | • stomp / stompWave impact puff |
 | 21 | Slash | ❌ | attack active | — |
 | 22 | Aura / Glow | ❌ | state change, spawn | — |
 | 23 | Screen Overlay | ❌ | state change (boss phase / danger state) | — |
@@ -79,7 +79,7 @@ Concept triggers (design intent) and current in-game usage (what actually fires 
 | 25 | Heat Distortion *(experimental)* | ❌ | explosion | — *(not implemented)* |
 | 26 | Beam | ❌ | attack active (oriented to hit area) | — |
 
-**Currently consumed: 9 of 25 effects.** The remaining 16 are registered, theater-testable, and ready to wire when their gameplay systems land.
+**Currently consumed: 13 of 26 effects.** The remaining are registered, theater-testable, and ready to wire when their gameplay systems land.
 
 ---
 
@@ -219,6 +219,7 @@ Parameters may include:
 - **buildTime / gapTime / blinkTime** (absolute seconds per phase; when any
   is provided, the total duration is derived as their sum and `duration` is
   ignored). Naming matches the macro-side telegraph params 1:1.
+- Color
 - Position
 - Follow target / fixed position
 

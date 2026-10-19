@@ -311,24 +311,34 @@ This is a canonical macro: callers configure it but should not rebuild its seque
 ### Main parameters
 
 - **count** — number of projectiles in the rain.
-- **launchInterval** — spacing between projectiles during the upward launch burst.
-- **ascentSpeed** — upward travel speed.
-- **ascentOscillation** — amplitude of the sine drift while rising (px; visual
-  only, does not affect landing positions).
-- **fallDelay** — delay after ascent before the falling phase begins.
-- **descentSpeed** — falling speed.
-- **timeToTarget** — delay between drawing a landing marker and the corresponding
-  projectile dropping/arriving.
+- **xCoordinate** — central X coordinate used to calculate the drop pattern
+  (null → view center).
+- **distanceType** — `fixed` or `relative`.
+- **distance** — spacing around the central drop point for fixed placement.
+  Ignored in relative mode. `0` is valid for sequential attacks, allowing
+  repeated drops at the same position.
 - **pattern** — `simultaneous` or `sequential`.
 - **interval** — when sequential, time between falling projectiles.
-- **distanceType** — `fixed` or `relative`.
-- **distance** — spacing around the central drop point for fixed placement. `0` is
-  valid for sequential attacks, allowing repeated drops at the same position.
-- **xCoordinate** — central X coordinate used to calculate the drop pattern.
-- **coordination** — for sequential patterns: `random`, `from_left`, or `from_right`.
-- **projectileDamage** — impact/contact damage.
+- **coordination** — for sequential patterns: `random`, `from_left`, or
+  `from_right`.
+- **launchInterval** — spacing between rockets during the upward launch burst.
+- **ascentSpeed** — upward travel speed of the launch visual.
+- **ascentOscillation** — amplitude of the sine drift while rising (px; visual
+  only, does not affect landing positions).
+- **fallDelay** — tension beat: silence between the last rocket leaving the
+  view and the first marker appearing (default 0.5s).
+- **timeToTarget** — per-missile delay between its marker appearing and impact
+  (the player's survival window).
+- **descentSpeed** — per-missile falling speed.
+- **dropHeight** — per-missile spawn height above the impact point (px).
+- **damage** — per-missile contact + blast damage.
+- **radius** — per-missile blast radius (px).
+- **team / blastTeam** — who the falling carriers / blasts hurt.
+- **size** — carrier box size (px).
+- **margin** — keep landing positions this far inside the view (px).
+- **seed** — optional RNG seed for `random` coordination (determinism).
 - **markerStyle** — optional Surface Target Marker effect override.
-- **projectileStyle** — optional projectile visual override.
+- **projectileStyle** — optional ascent-visual (trail) effect override.
 
 ### Distance behavior
 
@@ -494,31 +504,109 @@ Projectile (flight) → hit or expire → Explosion at the death point.
 
 ---
 
-## 13. Charge / Dash
+## 13. Charge / Dash (Dash Combo)
 
-**Invokes:** Movement + Body Contact
+**Invokes:** Movement + Melee Hitbox (per segment) + Body Contact
 
-**Effects:** —
+**Effects:** Afterimage (per slide segment), Sprite Shake (on the victim, per
+connected hit), Hit Sparkle (hit juice)
 
-Moves the attacker aggressively in a direction as an attack. For enemies, the
-normal damaging body is usually sufficient. An extra melee hitbox is only added if
-the animation extends beyond the body.
+A frame-scripted multi-hit dash: the attacker commits to a short timeline of
+segments — each one a sprite frame (kick → slide → freeze) with its own
+movement and hitbox. The readable "get in close and commit" melee verb: fast,
+aggressive, and beatable by design.
 
-### Sequence
+### Segment model
 
-Optional telegraph → Movement/Charge → body contact and/or extended hitbox →
-stop/recovery.
+The attack is a list of segments; each segment declares its own frame,
+movement, and hitbox. The macro steps them in order — no segment starts before
+the previous one's active window closes.
+
+```
+[ kick ] → [ slide ] → [ freeze ] → recovery
+   fast      trail       finisher     vulnerable
+```
+
+- **kick** — quick lunge, small hitbox in front. Damage only, NO knockback:
+  the victim stays in range and keeps control (the counter window must be real).
+- **slide** — longer movement along the ground, afterimage trail behind the
+  attacker, hitbox active for the whole slide. Damage only, NO knockback.
+- **freeze** — the finisher: attacker plants (near-zero movement), bigger
+  hitbox, damage + REAL knockback (`base` push + short `hitstun`, optional
+  `pop`) launches the victim out. This is the "CRACK" — the only segment that
+  ejects.
+
+### Canonical sequence
+
+Optional telegraph → kick (active) → slide (active + afterimage) → freeze
+(finisher + knockback) → recovery (attacker committed, punishable).
 
 ### Main parameters
 
-- **direction / targetDirection** — charge direction.
-- **speed** — charge speed.
-- **duration / distance** — travel limit.
-- **acceleration / easing** — movement profile.
-- **stopOnObstacle** — terrain behavior.
-- **bodyDamageOverride** — optional charge-specific contact damage.
-- **extendedHitbox** — optional temporary attack hitbox.
-- **chargeEffect** — optional dust/trail effect.
+- **segments** — the timeline: an array of segment objects (see below).
+- **direction / targetDirection** — dash direction (radians); all segments
+  share it. Caller-computed (AI/input owns targeting).
+- **startup** — seconds before the first segment's hitbox goes live (the
+  commitment tell; tunable per enemy for risk level).
+- **recovery** — seconds after the last segment where the attacker is
+  committed and punishable (the counter/punish window).
+- **afterimage** — effect override for the slide trail (count, fadeRate,
+  color...).
+- **shakeStyle** — sprite-shake override applied to the VICTIM on connected
+  hits (amount scales with segment index — early hits shake less than the
+  finisher).
+
+#### Per-segment fields
+
+- **frame** — sprite animation frame/label this segment plays (the visual
+  telegraph; markers on the frame can offset the hitbox).
+- **speed** — segment movement speed (px/s) (Movement primitive `speed`).
+- **duration** — segment length in seconds (Movement `duration`).
+- **distance** — optional travel cap instead of/in addition to duration
+  (Movement `distance`).
+- **hitbox** — `{ w, h, offset, activeFrames }` for this segment's Melee
+  Hitbox (`null` = segment deals no direct hit, e.g. pure repositioning).
+- **damage** — hitbox damage for this segment (escalating: kick < slide <
+  freeze).
+- **knockback** — KnockbackSetting or `null`. Kick/slide MUST be `null` (or
+  zero-strength) so the victim keeps control; ONLY the finisher carries a real
+  setting `{ base, scaleBySpeed, hitstun, pop?, dirMode }` — `base` is the
+  inherent push (px/s), `scaleBySpeed` multiplies head-on velocity, `pop` adds
+  a fixed upward launch, `hitstun` is the stun seconds.
+
+### Rules
+
+- **Knockback lives on the hitbox data, not in takeDamage.** A segment with
+  `knockback: null` deals damage with zero physical reaction — presence of the
+  data is the only gate. This is what keeps early hits "in place".
+- **Hitstun is the counter-window killer.** Early segments use `hitstun: 0`
+  (or none) so the victim can act; the finisher's short hitstun ends the combo
+  by launching the victim out. Stun never stacks longer than the max already
+  applied (engine rule), so segment order can't extend lockout accidentally.
+- **Combo lock limit:** at most 2 segments connect on one victim before the
+  finisher (kick + slide). All three landing is the attacker's full-commit
+  reward; a victim who reacts to hit #1 still gets the counter.
+- **Counter window = freeze + recovery.** The freeze frame is the visible tell
+  ("it's over, strike now"): melee during it cancels the combo and staggers
+  the attacker; recovery extends the punish. Jumping the slide or a
+  projectile interrupt (damage cancels any macro) are the ranged alternatives.
+- **Camera shake is NOT used** — this is a melee exchange, not an event.
+  Camera shake stays reserved for explosions/stomps so it keeps its meaning.
+- **Afterimages fire per slide segment only** (continuous while that segment
+  moves), not on kick/freeze.
+- Cancel/damage on the attacker aborts the timeline mid-segment (standard
+  macro interrupt); no ghost hitboxes or trails remain.
+
+### Composition
+
+**Telegraph (optional) → per segment: [sprite frame + Movement + Melee
+Hitbox (+ Afterimage on slides)] → on connect: Sprite Shake(victim) + Hit
+Sparkle → finisher adds Knockback → Recovery**
+
+Examples:
+- 2-segment jab-dash (kick → freeze) → light enemy poke, low startup
+- 3-segment full combo (kick → slide → freeze) → boss/strong enemy commitment
+- `startup: 0.4, recovery: 0.5` → flashy but heavily punishable (risky tool)
 
 ---
 
