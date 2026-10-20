@@ -69,7 +69,7 @@ U.getCollisionWorld().add(target);
 const h = U.spawnBombAttack('molotov', { origin: { x: 400, y: 210 }, speed: 0, arc: 0, ttl: 2 });
 U.update(dt);
 assert.equal(h.handles.length, 1, 'real collision detonates engine payload');
-assert.equal(h.handles[0].zone.y, 186, 'enemy contact remains midair');
+assert.equal(h.handles[0].zone.y + h.handles[0].zone.h, ZONE_GROUND_Y, 'enemy contact drops fire to floor');
 assert.equal(target.hp, 188, 'contact damage applied once');
 U.getCollisionWorld().remove(target);
 U.loadActiveZone(zone, { solids: zone.platforms, enemies: [], barrels: [], powerups: [], checkpoints: [] });

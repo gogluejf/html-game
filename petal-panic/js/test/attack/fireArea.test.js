@@ -96,10 +96,10 @@ ok('team routing: foe area skips enemies', () => {
 
 for (const scenario of [
   { name: 'floor impact', y: 391, surface: 400, impact: true },
-  { name: 'airborne fuse (no ground projection)', y: 200, surface: 224 },
+  { name: 'airborne fuse drops to floor', y: 200, surface: 400 },
   { name: 'platform impact', y: 291, surface: 300, impact: true, platforms: [{ x: 350, y: 300, w: 100 }] },
-  { name: 'platform above bottle ignored', y: 350, surface: 374, platforms: [{ x: 350, y: 300, w: 100 }] },
-  { name: 'platform outside column ignored', y: 200, surface: 224, platforms: [{ x: 500, y: 300, w: 100 }] },
+  { name: 'platform above bottle drops to floor', y: 350, surface: 400, platforms: [{ x: 350, y: 300, w: 100 }] },
+  { name: 'platform outside column drops to floor', y: 200, surface: 400, platforms: [{ x: 500, y: 300, w: 100 }] },
 ]) {
   ok(`Molotov ${scenario.name}: rendered fire and damage share the impact box`, () => {
     const ctx = {

@@ -59,10 +59,12 @@ defineMacro('molotov', {
           for (const t of ctx.world?.targets ?? []) if (t) targets.add(t);
           const aimed = p.target ?? ctx.target;
           if (aimed) targets.add(aimed);
-          // Only actual shared bomb terrain contact anchors fire to terrain.
-          // Midair expiry/contact burns at the death point, never teleports down.
+          // The bomb's terrain detection is the single source of truth for
+          // where the bottle landed. If it hit a surface, use that. If it
+          // broke midair (enemy contact / fuse expiry), drop to the floor so
+          // fire never renders below ground.
           const fire = invoke('fireArea', {
-            x, y: surfaceY == null ? y : surfaceY - FIRE_HEIGHT / 2,
+            x, y: (surfaceY ?? ctx.groundY) - FIRE_HEIGHT / 2,
             width: p.fireWidth,
             duration: p.fireDuration,
             tickRate: p.fireTickRate,
