@@ -9,13 +9,13 @@ import { createCarrierHandle } from '../carrierMacro.js';
 
 const DEFAULTS = Object.freeze({
   speed: 500,
-  direction: -Math.PI / 4,
+  direction: -0.5,
   arc: 800,
   bounce: true,
   explodeOnContact: true,
-  ttl: 1.5,
+  ttl: 2,
   damage: 40,
-  radius: 60,
+  radius: 70,
   origin: null,
   blastTeam: 'neutral',
 });

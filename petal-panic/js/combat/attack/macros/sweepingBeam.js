@@ -58,8 +58,8 @@ import { getPrimitive, getMacro } from '../registry.js';
 const DEFAULTS = Object.freeze({
   // Geometry / direction.
   direction: 0,              // radians — initial beam axis
-  sweepAngle: Math.PI / 4,   // total angle swept during the sweep phase
-  length: 300,               // beam reach (px)
+  sweepAngle: 67.5 * Math.PI / 180, // total angle swept during the sweep phase
+  length: 1000,              // beam reach (px)
   width: 24,                 // damaging thickness (px)
   speed: 0,                  // px/s — translation speed during sweep (0 = rotate in place)
   origin: null,              // marker label | {x,y} | null → attacker facing edge

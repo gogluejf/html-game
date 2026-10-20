@@ -35,7 +35,7 @@ import { getPrimitive, getMacro } from '../registry.js';
 
 const DEFAULTS = Object.freeze({
   target: null,          // entity being predicted (default ctx.target)
-  speed: 600,            // bullet speed px/s (the aim is solved from this)
+  speed: 300,            // bullet speed px/s (the aim is solved from this)
   ttl: 3,                // projectile lifetime (s)
   damage: 10,            // projectile damage
 });

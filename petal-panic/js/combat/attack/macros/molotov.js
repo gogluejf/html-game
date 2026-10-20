@@ -11,7 +11,7 @@ import { FIRE_HEIGHT } from '../primitives/fireArea.js';
 
 const DEFAULTS = Object.freeze({
   speed: 600,           // launch force (px/s)
-  direction: -Math.PI / 4,
+  direction: -0.5,
   arc: 800,             // gravity px/s²
   bounce: false,        // molotovs shatter on first impact
   ttl: 2,               // fuse seconds

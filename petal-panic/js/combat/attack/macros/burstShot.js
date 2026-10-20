@@ -35,7 +35,7 @@ import { getPrimitive, getMacro } from '../registry.js';
 const DEFAULTS = Object.freeze({
   count: 3,              // shots in the burst
   interval: 0.12,        // s between shots (intra-burst cool-down)
-  direction: 0,          // radians — caller-computed (AI/input owns targeting)
+  direction: 0.5,       // radians — caller-computed (AI/input owns targeting)
   speed: 600,            // projectile speed px/s
   ttl: 2,                // projectile lifetime (s)
   damage: 10,            // projectile damage

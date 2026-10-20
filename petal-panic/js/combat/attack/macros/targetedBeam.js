@@ -52,7 +52,7 @@ const DEFAULTS = Object.freeze({
   // Beam stage.
   beamDuration: 1.0,   // how long the beam stays active (s)
   beamWidth: 24,       // damaging thickness (px)
-  beamLength: 400,     // reach along the axis (px)
+  beamLength: 1000,    // reach along the axis (px)
   damage: 15,          // per tick
   tickRate: 8,         // damage ticks per second while overlapping
   team: 'ally',        // ally | foe | neutral

@@ -33,7 +33,7 @@ import { getPrimitive, getMacro } from '../registry.js';
 
 const DEFAULTS = Object.freeze({
   count: 24,             // projectiles around the circle
-  startAngle: 0,         // rotation of the pattern (radians)
+  startAngle: -Math.PI / 2, // rotation of the pattern (radians)
   speed: 400,            // projectile speed px/s
   ttl: 2.5,              // projectile lifetime (s)
   damage: 10,            // projectile damage

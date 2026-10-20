@@ -41,8 +41,8 @@ import { getPrimitive, getMacro } from '../registry.js';
 const DEFAULTS = Object.freeze({
   // Telegraph stage.
   target: null,        // entity to track (default ctx.target)
-  duration: 1.6,       // total warning window (s): track → lock → fire
-  lockTime: 0.5,       // seconds after start when the aim freezes
+  duration: 1.3,       // total warning window (s): track → lock → fire
+  lockTime: 1.1,       // seconds after start when the aim freezes
   color: '#ff5555',
   radius: 30,          // reticle size (px)
   tracking: true,      // follow the target until lockTime

@@ -30,14 +30,14 @@ function declaredEffectsOf(id) {
 
 const DEFAULTS = Object.freeze({
   speed: 500,           // launch force (px/s)
-  direction: -Math.PI / 4, // up-right throw
+  direction: -0.5,        // up-right throw (tuned via Attack Theater)
   arc: 800,             // gravity px/s² (throw height control)
   team: 'ally',
   bounce: true,         // → solidBehavior 'reflect' (existing flag)
   explodeOnContact: true,
-  ttl: 1.5,             // fuse seconds (runs while airborne AND resting)
+  ttl: 2,               // fuse seconds (runs while airborne AND resting)
   damage: 40,           // direct-contact damage
-  radius: 60,           // reference size for host-side effects (macro-owned)
+  radius: 70,           // reference size for host-side effects (macro-owned)
   origin: null,         // marker label | {x,y} | null → attacker center
 });
 

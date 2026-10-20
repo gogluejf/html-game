@@ -33,9 +33,9 @@ import { getPrimitive, getMacro } from '../registry.js';
 
 const DEFAULTS = Object.freeze({
   // --- Telegraph timing (absolute seconds; the effect derives its total) ---
-  buildTime: 0.6,         // circle shrinks to the origin point
+  buildTime: 1.2,         // circle shrinks to the origin point
   gapTime: 0.4,           // silence hold ("be ready")
-  blinkTime: 0.3,         // final warning blinks
+  blinkTime: 0.5,         // final warning blinks
   impactDelay: 0.1,       // beat AFTER the warning, BEFORE the hop/waves
                           // (macro-only — the effect finishes at blink end)
   sides: 'both',          // 'left' | 'right' | 'both'

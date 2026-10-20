@@ -47,7 +47,7 @@ const DEFAULTS = Object.freeze({
   ascentSpeed: 900,       // px/s upward travel of the launch visual
   ascentOscillation: 6,   // sine drift amplitude while rising (px, visual only)
   fallDelay: 0.5,          // tension beat: silence between last rocket gone and first marker
-  timeToTarget: 1.0,      // per-missile marker → impact window (s)
+  timeToTarget: 0.9,    // per-missile marker → impact window (s)
   descentSpeed: 500,      // per-missile fall speed (px/s)
   dropHeight: 260,        // per-missile spawn height above the impact (px)
   damage: 30,             // per-missile contact + blast damage

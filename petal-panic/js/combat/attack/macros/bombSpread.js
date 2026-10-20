@@ -35,7 +35,7 @@ const DEFAULTS = Object.freeze({
   speed: 700,            // launch force (px/s) — high for lobe arcs
   arc: 800,              // gravity px/s²
   bounce: true,          // reflect off surfaces
-  ttl: 2.5,               // fuse seconds (lobe needs more air time)
+  ttl: 2,               // fuse seconds (lobe needs more air time)
   damage: 40,            // contact + blast damage
   radius: 60,            // blast radius (px)
   origin: null,          // marker label | {x,y} | null → attacker center

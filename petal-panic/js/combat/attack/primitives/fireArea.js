@@ -22,7 +22,7 @@ const DEFAULTS = Object.freeze({
   x: 0,               // center x of the area (world coords)
   y: 0,               // center y
   width: 96,           // horizontal coverage (px)
-  duration: 3,        // seconds the area stays active
+  duration: 2,        // seconds the area stays active
   tickRate: 5,        // damage ticks per second
   damage: 8,          // damage per tick
   team: 'ally',       // ally | foe | neutral

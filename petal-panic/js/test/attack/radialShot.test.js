@@ -47,7 +47,8 @@ ok('simultaneous ring: all shots live at once, evenly spaced', () => {
 
 ok('startAngle rotates the whole ring', () => {
   const ctx = makeContext(attacker(), { pools: pools() });
-  const base = invoke('radialShot', { count: 4, sequenceInterval: null, speed: 300, ttl: 5 }, ctx);
+  // Explicit startAngle: 0 isolates the rotation (default is -PI/2).
+  const base = invoke('radialShot', { count: 4, startAngle: 0, sequenceInterval: null, speed: 300, ttl: 5 }, ctx);
   const rotated = invoke('radialShot', { count: 4, startAngle: Math.PI / 2, sequenceInterval: null, speed: 300, ttl: 5 }, ctx);
   // Every rotated angle must equal a base angle + startAngle (the pattern is
   // rigidly rotated, not reshaped).

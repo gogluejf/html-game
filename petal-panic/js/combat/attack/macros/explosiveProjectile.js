@@ -8,11 +8,11 @@ import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
 
 const DEFAULTS = Object.freeze({
-  speed: 600,           // px/s
+  speed: 700,           // px/s
   direction: 0,         // radians (NOT an 8-way index)
   ttl: 2,               // seconds before auto-cull
-  damage: 10,           // carrier contact damage AND blast damage
-  radius: 60,           // blast radius (px)
+  damage: 15,           // carrier contact damage AND blast damage
+  radius: 70,           // blast radius (px)
   origin: null,         // marker label | {x,y} | null → attacker center
   solidBehavior: 'phase', // phase | stop | reflect
   gravity: 0,           // px/s²; >0 routes to the ballistic (Special) pool

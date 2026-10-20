@@ -42,9 +42,9 @@ import { getPrimitive, getMacro } from '../registry.js';
 const DEFAULTS = Object.freeze({
   surface: 'current',    // 'current' | 'all' (documented; blast is positional)
   // --- Telegraph timing (absolute seconds; the effect derives its total) ---
-  buildTime: 0.6,         // circle grows (expand)
+  buildTime: 1.2,         // circle grows (expand)
   gapTime: 0.4,           // silence hold ("be ready")
-  blinkTime: 0.3,         // final warning blinks
+  blinkTime: 0.5,         // final warning blinks
   impactDelay: 0.1,       // beat AFTER the warning, BEFORE the hop/slam
                           // (macro-only — the effect finishes at blink end)
   count: 1,               // number of stomps

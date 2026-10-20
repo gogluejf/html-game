@@ -10,7 +10,7 @@ import { createCarrierHandle } from '../carrierMacro.js';
 const DEFAULTS = Object.freeze({
   // Parent bomb
   speed: 500,
-  direction: -Math.PI / 4,
+  direction: -0.5,
   arc: 800,
   bounce: false,
   ttl: 3,

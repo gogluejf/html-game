@@ -32,7 +32,7 @@ function declaredEffectsOf(id) {
 import { getPrimitive, getMacro } from '../registry.js';
 
 const DEFAULTS = Object.freeze({
-  direction: 0,          // initial launch direction (radians)
+  direction: -0.3,      // initial launch direction (radians)
   speed: 400,            // bullet speed px/s
   ttl: 2,                // seconds before steering gives up
   damage: 10,            // projectile damage
