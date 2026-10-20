@@ -1002,6 +1002,102 @@ Examples:
 
 ---
 
+---
+
+## 23. Shockwave (primitive)
+
+Expanding pressure ring that deals damage when its edge PASSES over a target
+(ring-pass model). The visual IS the mechanic: you see the ring grow, and if
+it crosses you, you take the hit + radial knockback. Eased growth (default t²)
+sells the building-pressure feel.
+
+### Sequence
+
+1. Ring launches at (x, y) with one camera shake.
+2. Ring expands over `duration` (eased: linear / easeIn / easeInCubic).
+3. Each frame: targets whose distance from center falls in [prevRadius, curRadius]
+   take `damage` + radial knockback (launched away from center).
+4. Ring completes at maxRadius or duration expiry.
+
+### Main parameters
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| x, y | 0, 0 | Ring center (world coords) |
+| radius | 150 | Max ring radius (px) — the damaging extent |
+| damage | 70 | Damage per target caught by the ring |
+| team | neutral | ally \| foe \| neutral |
+| duration | 1.2 | Expansion time (s) |
+| easing | easeIn | Growth curve: linear \| easeIn (t²) \| easeInCubic (t³) |
+| knockbackIntensity | 8 | Radial push strength |
+| shake | true | Camera shake on launch |
+| shakeIntensity | 5 | Shake magnitude |
+
+**Invokes:** (none — standalone primitive)
+
+---
+
+## 24. Shockwave Bomb (macro)
+
+Ballistic bomb that detonates into an expanding shockwave ring at its landing
+point. Telegraph blink warns before the ring launches.
+
+### Sequence
+
+1. Bomb arcs in (gravity, bounce).
+2. Lands → telegraph circle blink (0.15s shrink + 0.1s flash = 0.25s total).
+3. Shockwave primitive fires at impact point (ring expands, ring-pass damage).
+
+### Main parameters
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| direction | -0.5 | Throw direction (radians) |
+| speed | 500 | Launch force (px/s) |
+| arc | 800 | Gravity px/s² (throw height) |
+| bounce | true | Reflect off surfaces |
+| ttl | 2 | Fuse seconds |
+| radius | 150 | Shockwave max radius (px) |
+| damage | 70 | Ring-pass damage |
+| duration | 1.2 | Ring expansion time (s) |
+| easing | easeIn | Growth curve |
+| knockbackIntensity | 8 | Radial push strength |
+| blastTeam | neutral | foe \| ally \| neutral |
+
+**Invokes:** bomb (carrier) → shockwave (payload)
+
+---
+
+## 25. Shockwave Projectile (macro)
+
+Straight-line shot that detonates into an expanding shockwave ring at its
+impact point. Telegraph blink warns before the ring launches.
+
+### Sequence
+
+1. Projectile flies straight (or ballistic if gravity > 0).
+2. Hits wall/ground/target → telegraph circle blink at impact (0.25s).
+3. Shockwave primitive fires at impact point.
+
+### Main parameters
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| direction | 0 | Radians (0 = right) |
+| speed | 700 | px/s travel speed |
+| ttl | 2 | Seconds before auto-cull |
+| radius | 150 | Shockwave max radius (px) |
+| damage | 70 | Ring-pass damage |
+| duration | 1.2 | Ring expansion time (s) |
+| easing | easeIn | Growth curve |
+| solidBehavior | stop | phase \| stop \| reflect |
+| gravity | 0 | px/s² (>0 = ballistic arc) |
+| blastTeam | neutral | foe \| ally \| neutral |
+
+**Invokes:** projectile (carrier) → shockwave (payload)
+
+---
+
 ## AI usage examples
 
 Attack Macros do not contain enemy decision-making.

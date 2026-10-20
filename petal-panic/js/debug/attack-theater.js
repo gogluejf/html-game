@@ -55,6 +55,7 @@ import '../combat/attack/primitives/spike.js';
 import '../combat/attack/primitives/orbit.js';
 import '../combat/attack/primitives/boomerang.js';
 import '../combat/attack/primitives/surfaceWave.js';
+import '../combat/attack/primitives/shockwave.js';
 
 // --- Sandbox constants --------------------------------------------------------
 const GROUND_Y = 400;
@@ -71,7 +72,7 @@ const REPEAT_FRAMES = 5;        // ~83ms between repeats while held
 // gameplay) instead of raw invoke(): the host owns root lifecycle + child
 // payload promotion (carrier → fireArea / split bombs). Everything else stays
 // on the theater's direct handle path.
-const BOMB_FAMILY = new Set(['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit']);
+const BOMB_FAMILY = new Set(['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit', 'shockwaveBomb']);
 
 /** Angle display helper: radians → "−45° ↗" style string. */
 function angleLabel(rad) {
@@ -111,6 +112,9 @@ const SANDBOX_PRESETS = {
   targetedBeam: { duration: 1.2, lockTime: 0.5, color: '#ff5555', radius: 30, tracking: true, beamDuration: 1.0, beamWidth: 24, beamLength: 1000, damage: 15, tickRate: 8, team: 'ally' },
   sweepingBeam: { direction: 0, sweepAngle: 67.5 * DEG, length: 1000, width: 24, speed: 0, holdDuration: 0.4, sweepDuration: 1.0, endHoldDuration: 0.3, fadeOut: 0.5, damage: 20, tickRate: 8, team: 'ally', shimmerLow: 0.1, shimmerHigh: 0.35 },
   surfaceWave: { x: ATTACKER_HOME.x + 16, y: GROUND_Y, direction: 'right', speed: 300, height: 24, width: 28, damage: 15, ttl: null, team: 'foe' },
+  shockwave: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, radius: 150, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, shakeIntensity: 5, team: 'neutral' },
+  shockwaveBomb: { direction: -0.5, arc: 800, bounce: true, explodeOnContact: true, ttl: 2, radius: 150, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, blastTeam: 'neutral' },
+  shockwaveProjectile: { direction: 0, speed: 700, ttl: 2, radius: 150, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, solidBehavior: 'stop', blastTeam: 'neutral' },
   stomp: { buildTime: 1.2, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, radius: 90, damage: 30, team: 'foe', shakeStrength: 5 },
   stompWave: { buildTime: 1.2, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, sides: 'both', hopHeight: 10, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 5 },
   skyMissile: { x: TARGET_POS.x + 16, timeToTarget: 1.0, dropHeight: 260, fallSpeed: 500, damage: 30, radius: 60, team: 'foe', blastTeam: 'neutral' },
@@ -164,6 +168,9 @@ export const TWEAKABLE = {
   skyMissile: [['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['dropHeight', 'num', 20], ['fallSpeed', 'num', 50], ['damage', 'num', 5], ['radius', 'num', 10]],
   missileRain: [['count', 'int', 1], ['distanceType', 'enum', ['fixed', 'relative']], ['distance', 'num', 20], ['pattern', 'enum', ['simultaneous', 'sequential']], ['interval', 'num', 0.05], ['coordination', 'enum', ['from_left', 'from_right', 'random']], ['launchInterval', 'num', 0.02], ['fallDelay', 'num', 0.05], ['timeToTarget', 'num', 0.1], ['descentSpeed', 'num', 50], ['damage', 'num', 5], ['radius', 'num', 10]],
   dashCombo: [['startup', 'num', 0.05], ['recovery', 'num', 0.05], ['seg0.speed', 'num', 20], ['seg1.speed', 'num', 20], ['seg2.speed', 'num', 20], ['seg0.damage', 'num', 2], ['seg1.damage', 'num', 2], ['seg2.damage', 'num', 2]],
+  shockwave: [['radius', 'num', 10], ['damage', 'num', 5], ['duration', 'num', 0.1], ['easing', 'enum', ['linear', 'easeIn', 'easeInCubic']], ['knockbackIntensity', 'num', 1]],
+  shockwaveBomb: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 0.5], ['radius', 'num', 10], ['damage', 'num', 5], ['duration', 'num', 0.1]],
+  shockwaveProjectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.2], ['radius', 'num', 10], ['damage', 'num', 5], ['duration', 'num', 0.1]],
 };
 
 export const AttackTheater = {

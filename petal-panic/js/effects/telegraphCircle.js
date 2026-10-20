@@ -119,15 +119,14 @@ export function telegraphCircle(params = {}, carrier = null) {
   // are, the legacy `duration` + default fraction split applies. Callers
   // tuning a specific attack feel pass the three times and never think about
   // fractions or totals.
-  const hasPhaseTimes = [params.buildTime, params.gapTime, params.blinkTime].some((v) => v > 0);
+  const hasPhaseTimes = [params.buildTime, params.gapTime, params.blinkTime].some((v) => v !== undefined);
   let buildEnd, gapEnd, duration;
   if (hasPhaseTimes) {
-    // Any omitted phase falls back to its default SHARE of the legacy total,
-    // so partial overrides still produce a sane sequence.
+    // Explicit 0 = skip this phase. Undefined = fall back to default share.
     const base = params.duration > 0 ? params.duration : DEFAULT_DURATION;
-    const build = params.buildTime > 0 ? params.buildTime : base * BUILD_FRAC;
-    const gap = params.gapTime > 0 ? params.gapTime : base * GAP_FRAC;
-    const blink = params.blinkTime > 0 ? params.blinkTime : base * (1 - BUILD_FRAC - GAP_FRAC);
+    const build = params.buildTime !== undefined ? params.buildTime : base * BUILD_FRAC;
+    const gap = params.gapTime !== undefined ? params.gapTime : base * GAP_FRAC;
+    const blink = params.blinkTime !== undefined ? params.blinkTime : base * (1 - BUILD_FRAC - GAP_FRAC);
     buildEnd = build;
     gapEnd = build + gap;
     duration = build + gap + blink;
