@@ -33,6 +33,7 @@
 import { defineMacro } from '../defineMacro.js';
 import { AttackHandle } from '../engine.js';
 import { makeHitbox, resetHitbox, processHitboxes } from '../../hitbox.js';
+import { applyKnockback } from '../../knockback.js';
 import { aabbOverlap } from '../../../core/collision.js';
 import { fireDeclared } from '../../../effects/index.js';
 
@@ -263,15 +264,27 @@ defineMacro('dashCombo', {
       if (!s.hb) { nextAfterFreeze(s.segmentIndex); return; }
       s.hb.box = box;
       s.hb.damage = seg.damage;
-      // Knockback is set ONCE (first freeze frame) — the host applies it when
-      // the hit connects. Re-setting it every frame would let a host that
-      // applies-on-read double/triple-apply across the freeze window.
+      // Knockback is set ONCE (first freeze frame) and applied by the onHit
+      // callback below when the hit connects. Re-setting it every frame would
+      // let a host that applies-on-read double/triple-apply across the freeze
+      // window; the hitSet already dedupes per swing, so the callback fires
+      // once per victim per segment regardless.
       s.hb.active = true;
       s.hbFrame++;
 
       processHitboxes([s.hb], pendingTargets, (hb, target, dealt) => {
         connections++;
         h._emit('hit', { target, dealt, segmentIndex: s.segmentIndex });
+        // Knockback rides the hitbox and is applied HERE — the shared
+        // applyKnockback() path every host uses (gameplay's hitboxes.js does
+        // the same in its onHit callback). Direction = dash direction (the
+        // attacker may have already passed the target by the finisher), so
+        // the push always follows the committed dash, not current positions.
+        // Fires only when the box actually connected (onHit gate), so a whiff
+        // never shoves — same once-per-freeze guarantee as before.
+        if (hb.knockback && target.alive !== false) {
+          applyKnockback(target, ctx.attacker, hb.knockback, { x: sign, y: 0 });
+        }
         // Hit juice on the VICTIM: sparkle + shake scaling with segment index
         // (early hits shake less than the finisher).
         const tcx = target.x + target.w / 2, tcy = target.y + target.h / 2;

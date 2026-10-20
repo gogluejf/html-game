@@ -20,6 +20,7 @@
 import { listPrimitives, listMacros, getPrimitive, getMacro } from '../combat/attack/registry.js';
 import { invoke } from '../combat/attack/engine.js';
 import { makeContext } from '../combat/attack/context.js';
+import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
 import { resolveEffects, resolveInvokes } from '../combat/attack/effectsMeta.js';
 import { stepProjectile } from '../combat/attack/primitives/projectile.js';
 import { stepBomb, stepBombTerrain } from '../combat/attack/primitives/bomb.js';
@@ -33,9 +34,11 @@ import { Effects } from '../effects.js';
 import { Debug } from '../debug/debug.js';
 import { updateEffects, drawEffects, resetEffects, fireManual, CATALOG } from '../effects/index.js';
 import { particles } from '../effects/particles.js';
-import { aabbOverlap } from '../core/collision.js';
-import { damage } from '../combat/damage.js';
-import { applyKnockback } from '../combat/knockback.js';
+import { damage, flashTarget } from '../combat/damage.js';
+import { explodeSpecial } from '../combat/shooting.js';
+import { isSpecialType } from '../objects/specialWeapons.js';
+import { ctx as gameCtx } from '../world/context.js';
+import { STAGING } from './theater-staging.js';
 
 // Import every primitive module for its registration side effect.
 import '../combat/attack/primitives/projectile.js';
@@ -63,6 +66,12 @@ const DEG = Math.PI / 180;
 // immediately, then a short pause, then a steady tick — standard menu feel.
 const REPEAT_DELAY_FRAMES = 13; // ~217ms before the first auto-repeat
 const REPEAT_FRAMES = 5;        // ~83ms between repeats while held
+
+// Bomb-derived attacks route through the shared BombAttackHost (same as
+// gameplay) instead of raw invoke(): the host owns root lifecycle + child
+// payload promotion (carrier → fireArea / split bombs). Everything else stays
+// on the theater's direct handle path.
+const BOMB_FAMILY = new Set(['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit']);
 
 /** Angle display helper: radians → "−45° ↗" style string. */
 function angleLabel(rad) {
@@ -167,8 +176,8 @@ export const AttackTheater = {
   _attacker: null,
   _target: null,
   _handles: [],
+  _bombHost: null,   // BombAttackHost — owns bomb-family roots (same as gameplay)
   _params: {},
-  _flash: 0,
   _log: [],
   _choreo: null,      // per-run choreography state
   _padWasHeld: 0,     // gamepad edge-trigger memory (entry selection)
@@ -373,13 +382,45 @@ export const AttackTheater = {
     // them via the real path, not a theater-local hack.
     this._target.takeDamage = (amt, source, method = 'melee') => {
       const dealt = damage(source ?? this._attacker, this._target, amt, method);
-      if (dealt > 0) this._target.hitFlash = 0.1;
+      if (dealt > 0) flashTarget(this._target);
       return dealt;
     };
     this._world.add(this._attacker);
     this._world.add(this._target);
+    // Sandbox hit routing: the real game registers gameplay handlers on its
+    // CollisionWorld (combat/collisionHandlers.js) — but those need the live
+    // hero/boss/zone. The sandbox mirrors ONLY the PROJ_ALLY×ENEMY branch on
+    // its OWN world instance: damage via the target's takeDamage() (real Enemy
+    // pipeline or the placeholder shim above), _attackHit flag for lifecycle
+    // bridging, sparkles, consume + special detonation. Primitives register
+    // their shots with ctx.collisionWorld (this world) at spawn, so update()
+    // below dispatches every pair through this handler instead of a manual
+    // aabbOverlap loop.
+    this._world.on('hit', (a, b) => {
+      const proj = a.layer === LAYER.PROJ_ALLY ? a : (b.layer === LAYER.PROJ_ALLY ? b : null);
+      if (!proj || !proj.friendly || !proj.alive) return;
+      const target = proj === a ? b : a;
+      if (target.layer !== LAYER.ENEMY && target.layer !== LAYER.BOSS) return;
+      if (!target.alive || target.hp == null) return;
+      const dealt = typeof target.takeDamage === 'function'
+        ? target.takeDamage(proj.damage ?? 10, this._attacker, 'projectile')
+        : damage(this._attacker, target, proj.damage ?? 10, 'projectile');
+      if (dealt > 0) {
+        proj._attackHit = true; // stepBomb/stepProjectile read this to emit terminal events
+        Effects.spawnHitSparkles(proj.x + proj.w / 2, proj.y + proj.h / 2, 6);
+        this._log.unshift(`HIT ${dealt} dmg`);
+      }
+      proj.alive = false; // consumed on impact (matches gameplay behavior)
+      if (isSpecialType(proj.type)) explodeSpecial(proj);
+      if (typeof target.takeDamage !== 'function' && !target.alive) this._world.remove(target);
+    });
     this._handles = [];
-    this._flash = 0;
+    // Bomb-family attacks (bomb, explosiveBomb, molotov, clusterBomb,
+    // bombSpread, spawnSplit) run through the SAME host gameplay uses: it owns
+    // root lifecycle + child-payload promotion. The context fn returns the
+    // sandbox's LIVE context each frame (pools/targets change as staging runs),
+    // mirroring systems/update.js's bombAttacks wiring.
+    this._bombHost = new BombAttackHost(() => this._ctx());
     this._log = [];
     this._choreo = null;
     this._aimPoint = null;
@@ -398,6 +439,10 @@ export const AttackTheater = {
   _teardown() {
     for (const h of this._handles) { try { h.cancel?.(); } catch { /* already done */ } }
     this._handles = [];
+    // Bomb-family roots live in the host, not _handles — cancel them too so
+    // their carrier entities die with the sandbox.
+    if (this._bombHost) { try { this._bombHost.clear(); } catch { /* noop */ } }
+    this._bombHost = null;
     if (this._pools) {
       for (const p of this._pools.projectilePool.activeItems) p.alive = false;
       for (const s of this._pools.specialPool.activeItems) s.alive = false;
@@ -434,12 +479,21 @@ export const AttackTheater = {
     }
   },
 
+  // Sandbox context — same shape as gameplay's bombAttacks context
+  // (systems/update.js): pools, collisionWorld, bombTerrainStepped, groundY,
+  // platforms (tops only), world.targets. Differences are sandbox-specific:
+  //   • hero: null — no live hero in the sandbox; foe-aligned blasts must NOT
+  //     resolve "target === hero" against the dummy.
+  //   • solids — flat floor box for enemy resolve(); gameplay derives its
+  //     terrain from zone content instead of a single slab.
+  //   • effects — spread copy + fireManual so telegraph demos can fire manual
+  //     effect instances without touching the real facade's state.
   _ctx() {
     return makeContext(this._attacker, {
       world: { targets: [this._target, ...(this._stompVics ?? [])], hero: null },
       pools: this._pools,
       collisionWorld: this._world,
-      effects: { ...Effects, fireManual }, // REAL VFX + fireManual for telegraphs
+      effects: { ...Effects, fireManual },
       groundY: GROUND_Y,
       bombTerrainStepped: true,
       platforms: this._stompPlatforms ?? [],
@@ -500,209 +554,15 @@ export const AttackTheater = {
     this._log = [];
     this._choreo = null;
 
+    // --- Choreography: stage the scene so the attack is watchable -------------
+    // Per-attack STAGING lives declaratively in theater-staging.js (STAGING):
+    // each entry's setup() owns param overrides, entity positioning, and
+    // victim/platform staging, and returns the choreo state object (or null).
+    // All COMBAT behavior comes from the engine — the theater only stages.
     const id = this.currentId();
     if (!id) return;
-
-    // --- Choreography: stage the scene so the attack is watchable -------------
-    const tCx = this._target.x + this._target.w / 2;
-    if (id === 'charge') {
-      // Charge DASHES AT the target: face it, run until body contact ends it.
-      this._params.direction = this._attacker.x < tCx ? 0 : Math.PI;
-      this._params.duration = 99; // stop only on completion below
-      this._choreo = { kind: 'chargeToTarget' };
-    } else if (id === 'bodyContact') {
-      // Body contact: the VICTIM walks into the attacker (like an enemy
-      // shoving you) — opposite of charge, where the attacker moves. The
-      // attacker's body is the weapon; the dummy closes the distance.
-      this._choreo = { kind: 'victimWalksIn', speed: 260 };
-    } else if (id === 'meleeHitbox') {
-      // Melee: start side by side, then throw a VISIBLE punch — the swing arc
-      // sweeps out in sync with the live hitbox frames.
-      this._choreo = { kind: 'punch', dist: 56, done: false, swingFrame: 0 };
-    } else if (id === 'homingMissile') {
-      // Homing demo: the target WEAVES (slow drift + jump bursts) trying to
-      // dodge; the missile must visibly curve after it. Fires immediately.
-      this._choreo = { kind: 'dodgeWeave', t: 0, jumping: false, jumpT: 0, nextJump: 0.8 };
-    } else if (id === 'reticleShot') {
-      // Reticle Shot macro demo: the ATTACKER hovers on a platform high to the
-      // left; the target WALKS LEFT along the ground. The macro tracks → locks
-      // → fires ONE shot at the locked point when duration ends. Staging only —
-      // the composition itself lives in combat/attack/macros/reticleShot.js.
-      this._choreo = { kind: 'walkLeft', t: 0, baseX: TARGET_POS.x };
-      this._attacker.x = 140;
-      this._attacker.y = 150; // up on the platform
-      this._attacker.facing = 1;
-    } else if (id === 'targetedBeam') {
-      // Targeted Beam macro demo: same elevated-shooter staging as reticleShot.
-      // The attacker hovers on a platform; the target walks left. The macro
-      // tracks → locks → fires a sustained beam through the locked point.
-      this._choreo = { kind: 'walkLeft', t: 0, baseX: TARGET_POS.x };
-      this._attacker.x = 140;
-      this._attacker.y = 150;
-      this._attacker.facing = 1;
-    } else if (id === 'sweepingBeam') {
-      // Sweeping Beam macro demo: the attacker is on the platform; the target
-      // strafes so the sweep visibly catches (or misses) it during the move.
-      this._choreo = { kind: 'strafe', t: 0, baseX: TARGET_POS.x };
-      this._attacker.x = 140;
-      this._attacker.y = 150;
-      this._attacker.facing = 1;
-    } else if (id === 'predictiveShot') {
-      // Predictive demo: the ATTACKER hovers on a platform high to the left;
-      // the target WALKS LEFT along the ground. One shot is fired at the
-      // PREDICTED position (intercept point from bullet speed) — no reticle,
-      // no aim marker: you judge success by watching the bullet arrive where
-      // the walker is ABOUT to be. The macro fires the shot itself at invoke;
-      // the strafe velocity just needs to exist when that happens.
-      this._choreo = { kind: 'strafe', t: 0, baseX: TARGET_POS.x };
-      this._attacker.x = 140;
-      this._attacker.y = 150; // up on the platform
-      this._attacker.facing = 1;
-      // Give the walker its real velocity BEFORE the invoke so the intercept
-      // math has something to lead against (the choreo keeps moving it).
-      this._target.vx = -160;
-      this._target.vy = 0;
-    } else if (id === 'radialShot') {
-      // Radial Shot demo: the ATTACKER hovers on a platform high to the left;
-      // the target WALKS LEFT along the ground. The ring fires around the
-      // attacker's body — you watch bolts leave in every direction and see
-      // which ones catch the walker. Bump sequenceInterval in the param list
-      // to sweep the ring bolt-by-bolt (the boss pattern). Same staging
-      // family as reticleShot/predictiveShot.
-      this._choreo = { kind: 'strafe', t: 0, baseX: TARGET_POS.x };
-      this._attacker.x = 140;
-      this._attacker.y = 150; // up on the platform
-      this._attacker.facing = 1;
-    } else if (id === 'burstShot') {
-      // Burst Shot demo: the ATTACKER hovers on a platform high to the left;
-      // the target WALKS LEFT along the ground. The burst fires its group at
-      // a DIAGONAL angle — you watch 3+ volleys leave one after another and
-      // judge the intra-burst interval by eye. Bump count/interval in the
-      // param list for M16-style fire groups. Same staging family as the
-      // other elevated shooters.
-      this._choreo = { kind: 'strafe', t: 0, baseX: TARGET_POS.x };
-      this._attacker.x = 140;
-      this._attacker.y = 150; // up on the platform
-      this._attacker.facing = 1;
-    } else if (id === 'orbit') {
-      // Orbit demo: the ATTACKER walks up to the target so the satellites
-      // sweep through its body. Space toggles eject (when ejectable).
-      this._choreo = { kind: 'walkToTarget', speed: 120, ejected: false };
-      this._params.ejectable = true; // sandbox always allows the eject demo
-    } else if (id === 'bodyExplosion') {
-      // Kamikaze demo: the attacker WALKS to the target, then vanishes and
-      // explodes ON IT. No standing-around payload pre-fire.
-      this._choreo = { kind: 'kamikaze', speed: 200, exploded: false };
-    } else if (id === 'explosion') {
-      // Explosion demo: the ATTACKER detonates on itself — the blast is
-      // centered on the attacker's body and it vanishes (same read as
-      // spawnSplit: the body IS the attack). The target takes the blast.
-      this._params.x = this._attacker.x + this._attacker.w / 2;
-      this._params.y = this._attacker.y + this._attacker.h / 2;
-      this._choreo = { kind: 'vanishOnReplay' };
-    } else if (id === 'spawnSplit') {
-      // Split demo: default to ballistic bombs that arc down, bounce off the
-      // ground, and detonate. But if the user explicitly retuned spawnType
-      // (projectile/enemy) via the param list, honor that — don't clobber it.
-      const chosen = this._params.spawnType;
-      if (chosen !== 'enemy' && chosen !== 'projectile') {
-        this._params.spawnType = 'bomb';
-        this._params.bomb = { arc: 700, bounce: true, ttl: 1.5, damage: 25, radius: 60, explodeOnContact: true };
-      }
-      // centerDirection + angle come from SANDBOX_PRESETS (the demo fan) and are
-      // user-tweakable — do NOT reset them here or every replay clobbers the choice.
-      this._params.x = this._attacker.x + this._attacker.w / 2;
-      this._params.y = this._attacker.y + 10;
-      this._choreo = { kind: 'vanishOnReplay' };
-    } else if (id === 'stomp' || id === 'stompWave') {
-      // Stomp demos stage the victims per attack:
-      //   stomp — FOUR victims, each on its own surface (no empty-sky floats):
-      //     one on the ground INSIDE the radius (hit), TWO on a mid-air platform
-      //     INSIDE the radius (both hit — airborne but in the circle), one on a
-      //     HIGH platform ABOVE the radius (untouched). Proves the blast is
-      //     positional, not surface-bound.
-      //   stompWave — exactly TWO victims, both on the ground, ONE PER SIDE
-      //     of the centered attacker. No air victims: waves ride surfaces,
-      //     so each wave visibly catches its own side victim.
-      if (id === 'stompWave') {
-        const cx = (this._attacker.x = 400) + this._attacker.w / 2; // center stage
-        this._stompVics = [
-          { x: cx - 130, y: GROUND_Y - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },
-          { x: cx + 102, y: GROUND_Y - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },
-        ];
-        this._stompPlatforms = [];
-      } else {
-        const cx = this._attacker.x + this._attacker.w / 2;
-        // Stomp demo: FOUR victims, EVERY ONE standing on a surface (no enemy
-        // floats in empty sky). Proves the circular radius is POSITIONAL, not
-        // surface-bound: ground victim INSIDE the radius (hit), TWO on a mid-air
-        // platform INSIDE the radius (both hit — airborne but in the circle),
-        // one on a HIGH platform ABOVE the radius (untouched). Each victim sits
-        // on its own visible platform so the staging reads as intentional.
-        const midTop = GROUND_Y - 60;   // mid-air platform → victims ~66px above impact center (inside r90)
-        const highTop = GROUND_Y - 250; // high platform → victim far above the blast circle
-        // Mid platform hugs BOTH mid-air victims: span from the left edge of #1
-        // to the right edge of #2, with a small pad on each side — no ugly long
-        // tail. High platform does the same for its single safe victim.
-        const midL = cx - 50, midR = cx + 30 + 28;          // victim extents
-        const hiX = cx + 40, hiW = 28;
-        this._stompPlatforms = [
-          { x: midL - 12, y: midTop, w: (midR - midL) + 24 },
-          { x: hiX - 12, y: highTop, w: hiW + 24 },
-        ];
-        this._stompVics = [
-          { x: cx + 70, y: GROUND_Y - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY }, // ground (floor)
-          { x: cx - 50, y: midTop - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },   // mid #1 (on platform)
-          { x: cx + 30, y: midTop - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },   // mid #2 (on platform)
-          { x: cx + 40, y: highTop - 28, w: 28, h: 28, hp: 999, alive: true, layer: LAYER.ENEMY },  // high (on platform, safe)
-        ];
-      }
-      for (const v of this._stompVics) {
-        v.takeDamage = (amt) => { if (!v.alive) return 0; v.hp -= amt; if (v.hp <= 0) v.alive = false; return amt; };
-        this._world.add(v);
-      }
-      this._choreo = { kind: 'stompStage' };
-    } else if (id === 'skyMissile') {
-      // Sky Missile demo: stage a SMALL platform under part of the drop column
-      // so the column-resolution behavior is visible — the marker lands on the
-      // platform top, not the floor below (doc §22 demo rule). The target
-      // stands on the ground at the default drop x; moving the x param onto
-      // the platform span shows the impact climbing up to it.
-      const platX = TARGET_POS.x - 40;
-      const platTop = GROUND_Y - 70;
-      this._stompPlatforms = [{ x: platX, y: platTop, w: 110 }];
-      this._choreo = { kind: 'stompStage' };
-    } else if (id === 'missileRain') {
-      // Missile Rain demo: the rain centers on the view middle and spreads
-      // across the ground — the target stands under part of the pattern. No
-      // platform staging: every drop column resolves to the floor here, which
-      // is the readable default case (skyMissile's own demo covers platforms).
-      this._params.xCoordinate = VIEW_W / 2;
-      this._choreo = { kind: 'stompStage' };
-    } else if (id === 'dashCombo') {
-      // Dash Combo demo: attacker starts at HOME (left), dashes right AT the
-      // dummy. Target is staged close enough that the freeze hitboxes connect
-      // (the dash travels ~235px from home; hitbox reaches ~+38px past body).
-      this._attacker.x = ATTACKER_HOME.x;
-      this._attacker.y = ATTACKER_HOME.y;
-      this._attacker.facing = 1;
-      this._target.x = ATTACKER_HOME.x + 60; // right next to the attacker
-      this._target.y = TARGET_POS.y;
-      this._choreo = { kind: 'dashStage' };
-    } else if (id === 'dustZone') {
-      // Dust Zone demo: attacker stands near the cloud, target is INSIDE it.
-      // The cloud is at x=ATTACKER_HOME.x+80, so put the target dead center.
-      this._attacker.x = ATTACKER_HOME.x - 40; // just left of the cloud
-      this._attacker.y = ATTACKER_HOME.y;
-      this._attacker.facing = 1;
-      this._target.x = this._params.x; // center of the zone
-      this._target.y = this._params.y - this._target.h / 2;
-    }
-
-    // (explosion + spawnSplit stage the origin at the attacker and hide its
-    // body via vanishOnReplay — the body IS the attack in both demos.)
-
-    // Additive attacks (boomerang, orbit): if a live handle of THIS primitive
+    const stage = STAGING[id];
+    this._choreo = stage?.setup(this) ?? null;
     // exists and supports rearm(), replay RE-ARMS it instead of re-invoking.
     // The primitive owns the semantics (cap, extra ring) — the host just asks.
     const live = this._handles.find((x) => x.id === id && typeof x.rearm === 'function');
@@ -719,11 +579,15 @@ export const AttackTheater = {
       //  - punch (melee): starts once the attacker is beside the target
       const gated = this._choreo?.kind === 'punch' || this._choreo?.kind === 'kamikaze';
       if (!gated) {
-        // Every attack is a single invoke. Macros own their composition
+        // Bomb-family attacks spawn through the shared BombAttackHost (same as
+        // gameplay): it owns root lifecycle + child-payload promotion. Every
+        // OTHER attack is a single raw invoke — macros own their composition
         // (homingMissile = projectile + steering, predictiveShot = aim math +
         // projectile, spreadShot = fan + projectiles, bodyExplosion = payload
-        // + death) — the theater only stages the scene and passes params.
-        h = invoke(id, { ...this._params, target: this._target }, this._ctx());
+        // + death); the theater only stages the scene and passes params.
+        h = BOMB_FAMILY.has(id)
+          ? this._bombHost.spawn(id, { ...this._params, target: this._target }, this._attacker)
+          : invoke(id, { ...this._params, target: this._target }, this._ctx());
         if (id === 'spawnSplit') {
           // Dumb host follow-up: the spawnSplit MACRO owns all materialization
           // (fan → live projectiles/bombs/enemies + launch velocity + hitstun).
@@ -746,7 +610,6 @@ export const AttackTheater = {
     }
     if (!h) return;
     h.on('hit', (info) => {
-      this._flash = 0.15;
       this._log.unshift(`HIT ${info.dealt ?? ''} dmg`.trim());
     });
     h.on('detonate', () => this._log.unshift('DETONATE'));
@@ -768,11 +631,9 @@ export const AttackTheater = {
       steps++;
       this._stepOnce();
     }
-    if (this._flash > 0) this._flash -= dt;
   },
 
   _stepOnce() {
-    if (!this._target || !this._world) return; // closing/closed
     const { projectilePool, specialPool } = this._pools;
     // Input repeat ticks at FIXED-step rate (exactly 60Hz) so the debounce
     // cadence is even — calling it here, not in update(), keeps it locked to
@@ -785,144 +646,19 @@ export const AttackTheater = {
                              // and never fly/fade (main loop does this in barrelSync)
 
     // --- Choreography (moves the attacker to stage the attack) ----------------
+    // Per-attack movement demos + gated invokes live in theater-staging.js.
+    // The choreo state carries its own stage entry (c.stage), so dispatch is a
+    // single lookup — returning true completes the choreo and clears it.
     const c = this._choreo;
-    if (c) {
-      const gap = (this._target.x + this._target.w / 2) - (this._attacker.x + this._attacker.w / 2);
-      if (c.kind === 'victimWalksIn') {
-        // The dummy target walks toward the stationary attacker.
-        if (Math.abs(gap) > this._target.w / 2 + 2) {
-          this._target.x -= Math.sign(gap) * c.speed * DT;
-        }
-      } else if (c.kind === 'punch') {
-        if (!c.done) {
-          if (Math.abs(gap) > c.dist) {
-            // Walk beside the target first.
-            this._attacker.x += Math.sign(gap) * 420 * DT;
-            this._attacker.facing = Math.sign(gap) || 1;
-          } else {
-            // Beside: throw the punch. The swing visual (drawn in draw()) is
-            // driven by c.swingFrame, which advances here IN SYNC with the
-            // live hitbox frames from the meleeHitbox handle.
-            c.done = true;
-            const mh = invoke('meleeHitbox', { ...this._params }, this._ctx());
-            mh.on('hit', (i) => { this._flash = 0.15; this._log.unshift(`HIT ${i.dealt ?? ''} dmg`.trim()); });
-            mh.on('complete', () => this._log.unshift('COMPLETE'));
-            this._handles.push(mh);
-            c.swingTotal = this._params.activeFrames ?? 10;
-          }
-        } else if (c.swingFrame < c.swingTotal) {
-          c.swingFrame++;
-        }
-      } else if (c.kind === 'dodgeWeave') {
-        // Homing demo: target drifts slowly left/right and periodically JUMPS
-        // (vertical burst + pause) to try to shake the missile. The missile's
-        // visible re-curve after each jump is the whole point of the demo.
-        // FINITE run: parks back home after ~4s so the next demo is clean.
-        c.t += DT;
-        const base = TARGET_POS.x;
-        if (c.t < 4) {
-          this._target.x = base + Math.sin(c.t * 1.2) * 90;
-          if (!c.jumping && c.t >= c.nextJump) {
-            c.jumping = true; c.jumpT = 0;
-          }
-          if (c.jumping) {
-            c.jumpT += DT;
-            // Jump arc: up then down over ~0.7s (parabola), then a brief pause.
-            const jt = c.jumpT / 0.7;
-            if (jt < 1) this._target.y = TARGET_POS.y - Math.sin(jt * Math.PI) * 70;
-            else if (jt < 1.4) this._target.y = TARGET_POS.y; // hang at apex end
-            else { c.jumping = false; c.nextJump = c.t + 1.6; this._target.y = TARGET_POS.y; }
-          }
-        } else if (!c.parked) {
-          c.parked = true;
-          this._target.x = TARGET_POS.x;
-          this._target.y = TARGET_POS.y;
-        }
-      } else if (c.kind === 'walkLeft') {
-        // ReticleShot demo staging: target WALKS LEFT at constant speed. The
-        // macro owns track → lock → fire; this only moves the dummy. FINITE
-        // run: parks after ~3s so the next demo starts clean. The dummy also
-        // HITS when the bullet overlaps it — its body vanishes on impact and
-        // respawns home when the run ends (the "target disappears" read).
-        c.t += DT;
-        if (c.t < 3) {
-          this._target.x = c.baseX - c.t * 160;
-          this._target.vx = -160;
-          this._target.vy = 0;
-        } else if (!c.parked) {
-          c.parked = true;
-          this._target.x = TARGET_POS.x;
-          this._target.vx = 0;
-          this._target.vy = 0;
-          // Respawn the dummy (it may have been killed by the bullet): full HP,
-          // visible again at home.
-          this._target.hp = 999;
-          this._target.alive = true;
-        }
-      } else if (c.kind === 'strafe') {
-        // Predictive demo: target WALKS LEFT at constant speed (real velocity,
-        // so the lead math has something to predict). FINITE run: after ~3s it
-        // parks back home so the next demo starts from a clean scene.
-        c.t += DT;
-        if (c.t < 3) {
-          this._target.x = c.baseX - c.t * 160; // steady leftward walk
-          this._target.vx = -160;               // d/dt for the aim math
-          this._target.vy = 0;
-        } else if (!c.parked) {
-          c.parked = true;
-          this._target.x = TARGET_POS.x;
-          this._target.vx = 0;
-          this._target.vy = 0;
-        }
-      } else if (c.kind === 'walkToTarget') {
-        // Orbit demo: attacker walks toward the target so satellites sweep
-        // through its body. Space toggles eject (handled in key routing).
-        // When every live orbit ring is gone (ejected / ttl), WALK BACK home —
-        // additive replay never resets position, so without this the attacker
-        // stays parked at the target for all following demos.
-        const orbitsLive = this._handles.some((h) => h.id === 'orbit');
-        if (!orbitsLive) {
-          if (Math.abs(gap) > 4) {
-            this._attacker.x -= Math.sign(gap) * c.speed * DT;
-            this._attacker.facing = -Math.sign(gap) || -1;
-          } else {
-            this._attacker.x = ATTACKER_HOME.x;
-            this._attacker.y = ATTACKER_HOME.y;
-            this._attacker.facing = 1;
-            this._choreo = null;
-          }
-        } else if (Math.abs(gap) > 26) {
-          this._attacker.x += Math.sign(gap) * c.speed * DT;
-          this._attacker.facing = Math.sign(gap) || 1;
-        }
-      } else if (c.kind === 'kamikaze') {
-        // Self-destruct demo: attacker walks to the target, then VANISHES and
-        // explodes on it. The explosion payload was pre-aimed at the target.
-        if (!c.exploded) {
-          if (Math.abs(gap) > 20) {
-            this._attacker.x += Math.sign(gap) * c.speed * DT;
-            this._attacker.facing = Math.sign(gap) || 1;
-          } else {
-            // Contact: trigger the body explosion NOW (payload blast centered
-            // on the target), and hide the attacker body — it IS the bomb.
-            c.exploded = true;
-            this._attackerVisible = false;
-            const victim = { ...this._attacker, alive: true, hp: 999, layer: LAYER.ENEMY, takeDamage(a) { this.hp -= a; if (this.hp <= 0) this.alive = false; return a; } };
-            const kh = invoke('bodyExplosion', { ...this._params }, makeContext(victim, { world: { targets: [this._target] }, target: this._target, pools: this._pools, collisionWorld: this._world, effects: Effects }));
-            kh.on('detonate', () => this._log.unshift('KAMIKAZE BOOM'));
-            kh.on('complete', () => this._log.unshift('COMPLETE'));
-            this._handles.push(kh);
-          }
-        }
-      } else if (c.kind === 'vanishOnReplay') {
-        // Spawn/split demo: the attacker disappears the instant the split
-        // happens (it BECOMES the bombs).
-        this._attackerVisible = false;
-      } else if (c.kind === 'stompStage') {
-        // Stomp demos: static staging — the macro owns the whole sequence
-        // (telegraph → hop → impact/waves). Nothing to move here.
-      }
+    if (c?.stage?.update && c.stage.update(this, c, DT)) {
+      this._choreo = null;
     }
+
+    // Collision pass BEFORE pool cleanup: the 'hit' handler marks shots dead +
+    // _attackHit; updateAll() then drops them from active, and the handle step
+    // below reads _attackHit to emit terminal events. (Gameplay orders it the
+    // same way — integrate → world.update() → pool cleanup.)
+    this._world?.update();
 
     projectilePool.updateAll(DT);
     specialPool.updateAll(DT);
@@ -949,41 +685,33 @@ export const AttackTheater = {
     }
 
     // --- Sandbox hit detection -------------------------------------------------
-    // The real game routes PROJ×ENEMY through registerCollisionHandlers()
-    // (gameplay-only: it needs the live hero, boss zone, barrels...). The
-    // sandbox keeps its CollisionWorld for future terrain/solid work but does
-    // its own minimal projectile→target check here — same aabbOverlap, damage
-    // routed through the target's OWN takeDamage() (real Enemy pipeline or the
-    // placeholder shim below), plus the _attackHit flag the lifecycle bridging
-    // reads. No theater-local damage math.
+    // Routed through the CollisionWorld above: primitives register their shots
+    // with ctx.collisionWorld at spawn, and the 'hit' handler registered in
+    // _resetSandbox() mirrors the gameplay PROJ_ALLY×ENEMY branch (damage via
+    // the target's takeDamage(), _attackHit flag for lifecycle bridging,
+    // sparkles, consume + special detonation). update() below dispatches every
+    // pair — no theater-local aabbOverlap loop.
     //
     // Explosive carriers are NOT excluded from this check: they detonate ON
     // CONTACT with the target (real hitbox behavior). The _attackHit flag makes
     // stepBomb/stepProjectile emit their terminal event, which fires the blast
     // at the impact point via the explosion primitive — same as gameplay.
-    for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
-      if (!p.alive || !this._target?.alive) continue;
-      if (!aabbOverlap(p, this._target)) continue;
-      const dealt = typeof this._target.takeDamage === 'function'
-        ? this._target.takeDamage(p.damage ?? 10, this._attacker, 'projectile')
-        : damage(this._attacker, this._target, p.damage ?? 10, 'projectile');
-      if (dealt > 0) {
-        p._attackHit = true;
-        this._flash = 0.15;
-        Effects.spawnHitSparkles(p.x + p.w / 2, p.y + p.h / 2, 6);
-        this._log.unshift(`HIT ${dealt} dmg`);
-      }
-      p.alive = false; // consumed on impact (matches gameplay behavior)
-    }
 
     // Bomb terrain: the ENGINE owns bounce/settle/detonate (stepBombTerrain) —
     // same rules + numbers as gameplay. The sandbox just supplies the flat
-    // ground line; stepBomb() detonates settled bombs on the handle pass below.
+    // ground line; the host's step() below detonates settled bombs and promotes
+    // child payloads. This IS the gameplay external-stepping pattern
+    // (systems/update.js): pool.updateAll → stepBombTerrain per entity →
+    // bombAttacks.step(dt).
     for (const s of specialPool.items) {
       if (s._attackId !== 'bomb' || s._attackDone) continue;
       stepBombTerrain(s, DT, GROUND_Y);
     }
-    this._world?.update();
+
+    // Bomb-family roots: stepped through the shared host (same as gameplay).
+    // The host steps root lifecycle + deferred children (fireArea zones, split
+    // bombs) and drops completed roots from its own set — no theater branches.
+    this._bombHost?.step(DT);
 
     // Step each live handle's entity.
     for (let i = this._handles.length - 1; i >= 0; i--) {
@@ -1004,15 +732,11 @@ export const AttackTheater = {
         // Beam macros: step the macro which internally steps its beam phase(s).
         finished = h.step(DT, [this._target]);
       } else if (h.entity) {
-        if (h.id === 'bomb') finished = stepBomb(h.entity, this._params, this._ctx(), h);
-        else if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
+        if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
         else if (typeof h.step === 'function') {
-          // Carrier macros (explosiveBomb, molotov, clusterBomb) + step-based
-          // primitives (homingMissile, beam, fireArea, spike, etc.) all expose
-          // a unified .step(dt, targets). Carrier macros resolve their own
-          // innermost carrier + terrain + deferred children internally.
+          // Step-based primitives (homingMissile, beam, fireArea, spike, etc.)
+          // all expose a unified .step(dt, targets).
           finished = h.step(DT, [this._target]);
-
         }
       } else if (typeof h.step === 'function') {
         // Multi-shot macros (spreadShot/radialShot/burstShot): the macro's
@@ -1043,18 +767,10 @@ export const AttackTheater = {
           finished = h.step(DT, [this._target]);
         } else if (h.id === 'dashCombo') {
           // Dash Combo: the macro owns the whole timeline (move/freeze per
-          // segment, shove, afterimage). Pass the dummy as the target set.
+          // segment, shove, afterimage) AND applies its freeze-hitbox knockback
+          // through the shared applyKnockback() path inside its own processHitboxes
+          // onHit callback — same routing gameplay uses. Nothing to do here.
           finished = h.step(DT, [this._target]);
-          // Apply knockback from the freeze hitbox (the macro carries the data;
-          // the gameplay registry normally applies it — we do it here for the demo).
-          const st = h.state;
-          if (st?.phase === 'freeze' && st.hb?.knockback && this._target.alive) {
-            // Use the DASH direction, not current positions (the attacker may
-            // have already passed the target by the finisher).
-            const dir = st.dir ?? 1;
-            applyKnockback(this._target, this._attacker, st.hb.knockback, { x: dir, y: 0 });
-            st.hb.knockback = null; // apply once per freeze
-          }
         } else if (h.id === 'boomerang') {
           finished = h.step(DT);
           // Contact check: every live boomerang body vs the dummy target.
@@ -1064,7 +780,6 @@ export const AttackTheater = {
                 s.y + 8 > this._target.y && s.y - 8 < this._target.y + this._target.h) {
               const dealt = this._target.takeDamage(this._params.damage ?? 12, this._attacker, 'melee');
               if (dealt > 0) {
-                this._flash = 0.15;
                 Effects.spawnHitSparkles(s.x, s.y, 6);
                 this._log.unshift(`BOOMERANG HIT ${dealt} dmg`);
               }
@@ -1080,7 +795,6 @@ export const AttackTheater = {
                   e.y + 6 > this._target.y && e.y - 6 < this._target.y + this._target.h) {
                 const dealt = this._target.takeDamage(this._params.damage ?? 10, this._attacker, 'melee');
                 if (dealt > 0) {
-                  this._flash = 0.15;
                   Effects.spawnHitSparkles(e.x, e.y, 4);
                   this._log.unshift(`ORBIT HIT ${dealt} dmg`);
                 }
@@ -1093,43 +807,6 @@ export const AttackTheater = {
         }
       }
       if (finished) this._handles.splice(i, 1);
-    }
-
-    // Charge choreography: end the dash when the bodies meet.
-    if (c?.kind === 'chargeToTarget') {
-      const touching = this._attacker.x + this._attacker.w > this._target.x &&
-        this._attacker.x < this._target.x + this._target.w &&
-        this._attacker.y + this._attacker.h > this._target.y;
-      if (touching) {
-        const dealt = this._target.takeDamage(this._params.damage ?? 20, this._attacker, 'contact');
-        if (dealt > 0) {
-          this._flash = 0.2;
-          Effects.spawnHitSparkles(this._target.x + 16, this._target.y + 24, 8);
-          this._log.unshift(`CHARGE HIT ${dealt} dmg`);
-        }
-        for (const h of this._handles) { if (h.id === 'charge') h._complete({ traveled: h.state?.traveled, blocked: false }); }
-        this._handles = this._handles.filter((h) => h.id !== 'charge');
-        this._choreo = null;
-      }
-    }
-
-    // Body-contact choreography: the victim walked into the attacker's body —
-    // overlap IS the attack. Route contact damage through the target's pipeline
-    // with a per-hit cooldown (mirrors the gameplay CONTACT_COOLDOWN rule).
-    if (c?.kind === 'victimWalksIn') {
-      c.cd = Math.max(0, (c.cd ?? 0) - DT);
-      const overlapping = this._attacker.x + this._attacker.w > this._target.x &&
-        this._attacker.x < this._target.x + this._target.w &&
-        this._attacker.y + this._attacker.h > this._target.y;
-      if (overlapping && c.cd <= 0 && this._target.alive) {
-        c.cd = 0.5;
-        const dealt = this._target.takeDamage(this._params.damage ?? 20, this._attacker, 'contact');
-        if (dealt > 0) {
-          this._flash = 0.2;
-          Effects.spawnHitSparkles(this._target.x + 16, this._target.y + 24, 6);
-          this._log.unshift(`CONTACT ${dealt} dmg`);
-        }
-      }
     }
 
     // Target bookkeeping.
@@ -1160,8 +837,15 @@ export const AttackTheater = {
       a.x = Math.max(-40, Math.min(VIEW_W - a.w + 40, a.x));
     }
     for (const v of this._stompVics ?? []) {
-      if (v.hitFlash > 0) v.hitFlash -= DT;
-      if (v.hp <= 0 && v.alive) { v.alive = false; this._log.unshift('VICTIM DOWN'); }
+      // Real Enemy: update() owns hitFlash decay + the death pipeline
+      // (aiState='dead' → shrink/fade over 0.75s → alive=false). The base
+      // ai() is a no-op, so passing null as the chase reference is safe.
+      v.update(DT, null, this._world);
+      // Staged victims stand on their own surface (floor or platform) — snap
+      // them back after gravity integration, same resolve() pattern the
+      // spawned-enemy block uses. Without this they'd sink through the floor.
+      if (v.gravity > 0 && v.alive) resolve(v, [this._floorSolid]);
+      if (!v.alive && !v._downLogged) { v._downLogged = true; this._log.unshift('VICTIM DOWN'); }
     }
     if (this._target.hp <= 0) {
       this._target.alive = false;
@@ -1304,7 +988,7 @@ export const AttackTheater = {
     // impact X where it died — the body is GONE until the run respawns it.
     if (this._target) {
       if (this._target.alive) {
-        ctx.fillStyle = this._flash > 0 ? '#fff' : '#6d6';
+        ctx.fillStyle = this._target.hitFlash > 0 ? '#fff' : '#6d6';
         ctx.fillRect(this._target.x, this._target.y, this._target.w, this._target.h);
         ctx.fillStyle = '#fff';
         ctx.font = '10px monospace';
@@ -1354,6 +1038,8 @@ export const AttackTheater = {
       }
     };
     for (const h of this._handles) drawChildren(h);
+    // Bomb-family roots live in the shared host — draw their deferred zones too.
+    for (const h of this._bombHost?.roots ?? []) drawChildren(h);
 
     // --- Wave-2 state visuals ---------------------------------------------------
     for (const h of this._handles) {

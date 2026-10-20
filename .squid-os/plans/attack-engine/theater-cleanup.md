@@ -1,6 +1,6 @@
 # Attack Theater Cleanup Plan
 
-**Status:** TODO — audit & refactor  
+**Status:** DONE — executed 2026-10-20 (all 8 refactor steps + acceptance criteria; see git diff, uncommitted)  
 **Created:** 2026-10-19  
 **Scope:** `petal-panic/js/debug/attack-theater.js` + attack engine integration  
 **Goal:** Make the theater a pure **host/staging layer** that reuses real gameplay mechanics, instead of duplicating combat logic.
