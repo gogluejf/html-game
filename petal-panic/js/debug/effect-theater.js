@@ -57,7 +57,7 @@ export const Theater = createTheater({
     const entry = list[index];
     if (!entry) return;
     tweaks[entry.type] = { ...(tweaks[entry.type] ?? {}), [key]: value };
-    clock = -0.5; // replay so the change is visible immediately
+    // No auto-replay: the user triggers the demo explicitly via confirm/replay.
   },
 
   drawDemo(ctx, demoW, h, theater) {
@@ -80,11 +80,11 @@ export const Theater = createTheater({
   },
 
   onStep() {
-    clock = -0.5;
+    clock = -0.5; // pre-roll delay when switching effects
   },
 
   onReplay() {
-    clock = -0.5;
+    clock = 0; // instant restart — no delay when hitting replay
   },
 
   onTick(dt) {

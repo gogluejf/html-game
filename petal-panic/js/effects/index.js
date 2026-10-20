@@ -372,13 +372,13 @@ const BOX = { x: STAGE_X - 16, y: STAGE_Y - 16, w: 32, h: 32 }; // reference spr
  *                             (camera/sprite shake) with a visible proxy.
  */
 export const CATALOG = [
-  { type: 'particle-burst',        name: 'Particle Burst / Sparks', section: 1,  params: { x: STAGE_X, y: STAGE_Y, count: 16 } },
+  { type: 'particle-burst',        name: 'Particle Burst / Sparks', section: 1,  params: { x: STAGE_X, y: STAGE_Y, count: 16, speed: 200, direction: -Math.PI/2, lifetime: 0.5, gravity: 300, color: '#ffe9a8', spawnRadius: 4 } },
   { type: 'explosion',             name: 'Explosion',               section: 2,  params: { x: STAGE_X, y: STAGE_Y, radius: 60 } },
-  { type: 'debris',                name: 'Debris',                  section: 3,  params: { x: STAGE_X, y: STAGE_Y, fragmentCount: 14, velocity: 220, lifetime: 0.8 } },
+  { type: 'debris',                name: 'Debris',                  section: 3,  params: { x: STAGE_X, y: STAGE_Y, fragmentCount: 14, velocity: 220, direction: -Math.PI/2, spread: Math.PI/2, gravity: 400, rotation: 6, lifetime: 0.8, size: 4 } },
   { type: 'ground-wave',           name: 'Ground Wave',             section: 4,  params: { x: STAGE_X, y: STAGE_Y, duration: 0.8 } },
-  { type: 'shockwave',             name: 'Shockwave',               section: 5,  params: { x: STAGE_X, y: STAGE_Y, duration: 1.6, maxRadius: 90, expansionSpeed: 200, colorIn: '#4488ff' } },
-  { type: 'trail',                 name: 'Trail',                   section: 6,  params: { lifetime: 0.6 } },
-  { type: 'afterimage',            name: 'Afterimage / Ghost Frames', section: 7, params: { box: BOX, spawnInterval: 1 / 10, lifetime: 1.2, color: '#ff0000', opacity: 0.5 } },
+  { type: 'shockwave',             name: 'Shockwave',               section: 5,  params: { x: STAGE_X, y: STAGE_Y, startRadius: 4, maxRadius: 90, expansionSpeed: 200, thickness: 6, opacity: 0.9, duration: 1.6, color: '#ffe9a8', colorIn: '#4488ff' } },
+  { type: 'trail',                 name: 'Trail',                   section: 6,  params: { length: 40, width: 4, lifetime: 0.6, opacity: 0.9, density: 3, offset: 0 } },
+  { type: 'afterimage',            name: 'Afterimage / Ghost Frames', section: 7, params: { count: 4, spawnInterval: 1 / 10, lifetime: 1.2, opacity: 0.5, fadeRate: 1, offset: 0, color: '#ff0000' } },
   { type: 'telegraph-circle',      name: 'Telegraph Circle',        section: 8,  params: { x: STAGE_X, y: STAGE_Y, duration: 2.5, expand: true } },
   { type: 'surface-target-marker', name: 'Surface Target Marker',   section: 9,  params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
   { type: 'target-reticle',        name: 'Target Reticle',          section: 10, params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
@@ -392,11 +392,11 @@ export const CATALOG = [
   { type: 'scale-pulse',           name: 'Scale / Pulse',           section: 18, params: { box: BOX, duration: 0.8 } },
   { type: 'squash-stretch',        name: 'Squash & Stretch',        section: 19, params: { box: BOX, duration: 0.6 } },
   { type: 'dust-cloud',            name: 'Dust Cloud',              section: 20, params: { x: STAGE_X, y: STAGE_Y, particleCount: 18, lifetime: 0.8 } },
-  { type: 'slash',                 name: 'Slash',                   section: 21, params: { duration: 0.1, angle: -Math.PI / 4, length: 52, spacing: 9, traceCount: 3, forwardOffset: 38, color: '#fff' } },
+  { type: 'slash',                 name: 'Slash',                   section: 21, params: { thickness: 4, opacity: 0.95, followEntity: false, duration: 0.1, angle: -Math.PI / 4, length: 52, spacing: 9, traceCount: 3, forwardOffset: 38, color: '#fff' } },
   { type: 'aura-glow',             name: 'Aura / Glow',             section: 22, params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
   { type: 'screen-overlay',        name: 'Screen Overlay',          section: 23, params: { color: '#ff5a5a', opacity: 0.5, duration: 1.0, fadeIn: 0.2, fadeOut: 0.2 } },
   { type: 'composite-explosion',   name: 'Composite Explosion Burst', section: 24, params: { x: STAGE_X, y: STAGE_Y, radius: 60, explosionCount: 6, duration: 1.0 } },
-  { type: 'beam',                  name: 'Beam',                    section: 26, params: { x: STAGE_X, y: STAGE_Y, length: 120, width: 18, gradientRadius: 14, color: '#7df', flashInTime: 0.04, holdTime: 0.4, fadeOutTime: 0.15 } },
+  { type: 'beam',                  name: 'Beam',                    section: 26, params: { x: STAGE_X, y: STAGE_Y, length: 120, width: 18, gradientRadius: 14, color: '#7df', orientation: 0, opacity: 0.95, flashInTime: 0.04, holdTime: 0.4, fadeOutTime: 0.15 } },
   { type: 'pulse-bubble',          name: 'Pulse Bubble',            section: 27, params: { x: STAGE_X, y: STAGE_Y, maxRadius: 40, minRadius: 28, pulseSpeed: 1.5, duration: 3.0 } },
 ];
 

@@ -63,23 +63,79 @@ function mappingAdjust() {
 }
 
 /**
- * Create a wired theater from a content provider.
- * @param {object} provider
- * @param {string} provider.id - unique identifier ('effect' | 'attack')
- * @param {string} provider.title - display title ("EFFECT THEATER")
- * @param {Function} provider.entries - () => array of entry objects
- * @param {Function} provider.currentMeta - (index) => { name, desc, params: [{key, config, desc}] }
- * @param {Function} provider.liveParams - (index) => flat param object
- * @param {Function} provider.drawDemo - (ctx, w, h, t, index) => void
- * @param {Function} [provider.onOpen] - called after active=true
- * @param {Function} [provider.onClose] - called after active=false
- * @param {Function} [provider.onStep] - (newIndex) called after step
- * @param {Function} [provider.onReplay] - called on replay
- * @param {Function} [provider.adjustParam] - (dir, key, currentVal) => newVal; override default stepping
- * @param {number} [provider.panelW] - right panel width (default 260)
- * @param {string} [provider.toggleKey] - "F2" or "F4" for hint text
- * @param {string} [provider.stamp] - version stamp string
+ * Draw the right-side info panel (shared by both theaters).
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} panelX - x position of panel left edge
+ * @param {number} w - viewport width
+ * @param {number} h - viewport height
+ * @param {object} opts
+ * @param {number} opts.panelW
+ * @param {string|null} opts.desc - description text
+ * @param {Array<{key:string, config?:boolean}>} opts.params - all params (config=true = tweakable)
+ * @param {Function} opts.getValue - (key) => current value
+ * @param {number} opts.paramIndex - selected param index (into config params)
+ * @param {Array<string>} [opts.extraSections] - additional section headers to render below params
  */
+export function drawPanel(ctx, panelX, w, h, { panelW, desc, params, getValue, paramIndex }) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.fillRect(panelX, 60, panelW - 10, h - 100);
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(panelX, 60, panelW - 10, h - 100);
+
+  let py = 80;
+  ctx.textAlign = 'left';
+
+  // Description (word-wrap at ~36 chars).
+  if (desc) {
+    ctx.font = '12px monospace';
+    ctx.fillStyle = '#aaa';
+    const words = desc.split(' ');
+    let line = '';
+    for (const word of words) {
+      if ((line + word).length > 36) {
+        ctx.fillText(line, panelX + 12, py); py += 15; line = word + ' ';
+      } else line += word + ' ';
+    }
+    if (line) { ctx.fillText(line.trim(), panelX + 12, py); py += 15; }
+  }
+  py += 10;
+
+  // Params header (pink).
+  ctx.font = 'bold 11px monospace';
+  ctx.fillStyle = '#f7d';
+  const adjLabels = [...navLabels('lockDir', { simple: true }), ...navLabels('lockMove', { simple: true })].join('/');
+  ctx.fillText(`PARAMS (▲▼ select · ${adjLabels}/L2R2 adjust)`, panelX + 12, py);
+  py += 18;
+
+  // Param list: tweakable first (navigation order), then fixed params dimmed.
+  ctx.font = '11px monospace';
+  const cps = params.filter(p => p.config);
+  const shown = new Set();
+  const rows = [];
+  for (const p of cps) { rows.push({ ...p, tweak: true }); shown.add(p.key); }
+  for (const p of params) {
+    if (!shown.has(p.key)) rows.push({ ...p, tweak: false });
+  }
+  for (const p of rows) {
+    if (py > h - 60) break;
+    const val = getValue(p.key);
+    // Skip params with no value (internal defaults not exposed in catalog).
+    if (val === undefined) continue;
+    const tIdx = p.tweak ? cps.findIndex(cp => cp.key === p.key) : -1;
+    const selected = tIdx === paramIndex % Math.max(1, cps.length) && p.tweak;
+    ctx.fillStyle = selected ? '#fd6' : (p.tweak ? '#ccc' : '#666');
+    const valStr = typeof val === 'number'
+      ? String(Math.round(val * 1000) / 1000)
+      : String(val);
+    const marker = selected ? '▶' : '·';
+    const suffix = p.tweak ? '' : '  (fixed)';
+    ctx.fillText(`${marker} ${p.key} = ${valStr}${suffix}`, panelX + 12, py);
+    py += 15;
+  }
+  ctx.restore();
+}
 export function createTheater(provider) {
   const panelW = provider.panelW ?? 260;
   const _rep = {};
@@ -177,7 +233,10 @@ export function createTheater(provider) {
           return;
         }
         if (next !== undefined) {
-          provider.setParam?.(this.index, p.key, next);
+          // Only replay on the FIRST press (edge), not on auto-repeats.
+          // _rep.adjust.count === REPEAT_DELAY_FRAMES means we just fired the edge.
+          const isFirstPress = _rep['adjust']?.count === REPEAT_DELAY_FRAMES;
+          provider.setParam?.(this.index, p.key, next, { replay: isFirstPress });
         }
       });
     },
@@ -208,7 +267,7 @@ export function createTheater(provider) {
       // 3. Current entry name.
       const meta = provider.currentMeta(this.index);
       ctx.font = 'bold 20px monospace';
-      ctx.fillStyle = '#7df';
+      ctx.fillStyle = '#f7d';
       ctx.fillText(meta?.name ?? '(none)', demoW / 2, 92);
 
       // 4. Index indicator.
@@ -219,65 +278,16 @@ export function createTheater(provider) {
       // 5. Demo area (provider draws its own content).
       provider.drawDemo(ctx, demoW, h, this);
 
-      // 6. Right info panel.
+      // 6. Right info panel (shared drawPanel).
       if (meta) {
-        ctx.save();
-        ctx.fillStyle = 'rgba(255,255,255,0.04)';
-        ctx.fillRect(panelX, 60, panelW - 10, h - 100);
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(panelX, 60, panelW - 10, h - 100);
-
-        let py = 80;
-        ctx.textAlign = 'left';
-
-        // Description (word-wrap at ~32 chars).
-        ctx.font = '12px monospace';
-        ctx.fillStyle = '#aaa';
-        const words = (meta.desc ?? '').split(' ');
-        let line = '';
-        for (const word of words) {
-          if ((line + word).length > 32) {
-            ctx.fillText(line, panelX + 12, py);
-            py += 16;
-            line = word + ' ';
-          } else {
-            line += word + ' ';
-          }
-        }
-        if (line) { ctx.fillText(line.trim(), panelX + 12, py); py += 16; }
-        py += 12;
-
-        // Params header.
-        ctx.font = 'bold 11px monospace';
-        ctx.fillStyle = '#7df';
-        ctx.fillText('PARAMS', panelX + 12, py);
-        const adjLabels = [...navLabels('lockDir', { simple: true }), ...navLabels('lockMove', { simple: true })].join('/');
-        ctx.fillStyle = '#555';
-        ctx.font = '9px monospace';
-        ctx.fillText(`(▲▼ select · ${adjLabels}/L2R2 adjust)`, panelX + 60, py);
-        py += 18;
-
-        // Param list.
-        ctx.font = '11px monospace';
-        const cps = (meta.params ?? []).filter(p => p.config);
-        let cIdx = -1;
-        for (const p of meta.params ?? []) {
-          const isSel = p.config && cps[++cIdx] === p && this.paramIndex % Math.max(1, cps.length) === cIdx;
-          const icon = p.config ? (isSel ? '▶' : '✅') : '❌';
-          ctx.fillStyle = isSel ? '#ff0' : (p.config ? '#ccc' : '#666');
-          let line = `${icon} ${p.key}`;
-          if (p.config) {
-            const v = provider.liveParams(this.index)?.[p.key];
-            if (v !== undefined) line += ` = ${typeof v === 'number' ? (Math.round(v * 1000) / 1000) : String(v)}`;
-          }
-          ctx.fillText(line, panelX + 12, py);
-          ctx.fillStyle = '#666';
-          ctx.fillText(`   ${p.desc ?? ''}`, panelX + 12, py + 12);
-          py += 26;
-          if (py > h - 60) break;
-        }
-        ctx.restore();
+        const panelX = w - panelW;
+        drawPanel(ctx, panelX, w, h, {
+          panelW,
+          desc: meta.desc,
+          params: meta.params ?? [],
+          getValue: (key) => provider.liveParams(this.index)?.[key],
+          paramIndex: this.paramIndex,
+        });
       }
 
       // 7. Hint bar.
