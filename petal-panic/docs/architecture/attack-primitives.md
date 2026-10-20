@@ -394,6 +394,42 @@ the cloud stays filled for its whole lifetime — not one burst.
 
 ---
 
+## 14. Shockwave
+
+Expanding pressure ring that deals damage when its edge PASSES over a target
+(ring-pass model). The visual IS the mechanic: you see the ring grow, and if
+it crosses you, you take the hit + radial knockback. Eased growth (default t²)
+sells the building-pressure feel.
+
+### Sequence
+
+1. Ring launches at (x, y) with one camera shake.
+2. Ring expands over `duration` (eased: linear / easeIn / easeInCubic).
+3. Each frame: targets whose distance from center falls in [prevRadius, curRadius]
+   take `damage` + radial knockback (launched away from center).
+4. Ring completes at maxRadius or duration expiry.
+
+### Main parameters
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| x, y | 0, 0 | Ring center (world coords) |
+| radius | 150 | Max ring radius (px) — the damaging extent |
+| damage | 70 | Damage per target caught by the ring |
+| team | neutral | ally \| foe \| neutral |
+| duration | 1.2 | Expansion time (s) |
+| easing | easeIn | Growth curve: linear \| easeIn (t²) \| easeInCubic (t³) |
+| knockbackIntensity | 8 | Radial push strength |
+| shake | true | Camera shake on launch |
+| shakeIntensity | 5 | Shake magnitude |
+
+**Invokes:** (none — standalone primitive)
+
+Macros built on this primitive: **Shockwave Bomb** (attack-macros.md §24) and
+**Shockwave Projectile** (attack-macros.md §25).
+
+---
+
 ## Composition principle
 
 Primitives are intentionally small and composable. Examples:
