@@ -39,8 +39,8 @@ const DEFAULTS = Object.freeze({
   knockbackIntensity: 8,
   shakeIntensity: 5,
   // Telegraph timing: gap → blink (mode 'skip' = no build phase)
-  telegraphGap: 0.3,
-  telegraphBlink: 0.5,
+  telegraphGap: 0.1,
+  telegraphBlink: 0.75,
   // Pause between blink end and ring launch (the "move NOW" beat)
   impactDelay: 0.5,
   origin: null,
@@ -93,7 +93,7 @@ defineMacro('shockwaveProjectile', {
       if (h._shockwaveArmed) return;
       try {
         fireDeclared(
-          { type: 'telegraph-circle', params: { x, y, radius: Math.min(p.radius * 0.4, 60), mode: 'skip', gapTime: p.telegraphGap ?? 0.3, blinkTime: p.telegraphBlink ?? 0.5, color: '#ff5a5a' } },
+          { type: 'telegraph-circle', params: { x, y, radius: Math.min(p.radius * 0.4, 60), mode: 'skip', gapTime: p.telegraphGap ?? 0.1, blinkTime: p.telegraphBlink ?? 0.75, color: '#ff5a5a' } },
           ['telegraph-circle'],
         );
         h._shockwaveArmed = true;

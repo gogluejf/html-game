@@ -28,7 +28,7 @@ const DEFAULTS = Object.freeze({
   speed: 500,
   direction: -0.5,
   arc: 800,
-  bounce: true,
+  bounce: false,        // explode on contact (no bounce) — cluster-bomb style
   explodeOnContact: true,
   ttl: 2,
   // Shockwave params
@@ -39,8 +39,8 @@ const DEFAULTS = Object.freeze({
   knockbackIntensity: 8,
   shakeIntensity: 5,
   // Telegraph timing: gap → blink (mode 'skip' = no build phase)
-  telegraphGap: 0.3,
-  telegraphBlink: 0.5,
+  telegraphGap: 0.1,
+  telegraphBlink: 0.75,
   // Pause between blink end and ring launch (the "move NOW" beat)
   impactDelay: 0.5,
   origin: null,
@@ -65,7 +65,7 @@ defineMacro('shockwaveBomb', {
       { key: 'speed', desc: 'launch force (px/s)' },
       { key: 'direction', desc: 'throw direction (radians)' },
       { key: 'arc', desc: 'gravity px/s²' },
-      { key: 'bounce', desc: 'reflect off surfaces' },
+      { key: 'bounce', desc: 'reflect off surfaces (false = explode on contact)' },
       { key: 'ttl', desc: 'fuse seconds' },
       { key: 'radius', desc: 'shockwave max radius (px)' },
       { key: 'damage', desc: 'ring-pass damage' },
@@ -85,7 +85,7 @@ defineMacro('shockwaveBomb', {
       if (h._shockwaveArmed) return;
       try {
         fireDeclared(
-          { type: 'telegraph-circle', params: { x, y, radius: Math.min(p.radius * 0.4, 60), mode: 'skip', gapTime: p.telegraphGap ?? 0.3, blinkTime: p.telegraphBlink ?? 0.5, color: '#ff5a5a' } },
+          { type: 'telegraph-circle', params: { x, y, radius: Math.min(p.radius * 0.4, 60), mode: 'skip', gapTime: p.telegraphGap ?? 0.1, blinkTime: p.telegraphBlink ?? 0.75, color: '#ff5a5a' } },
           ['telegraph-circle'],
         );
         h._shockwaveArmed = true;

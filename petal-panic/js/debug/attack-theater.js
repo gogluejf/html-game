@@ -72,7 +72,7 @@ const REPEAT_FRAMES = 5;        // ~83ms between repeats while held
 // gameplay) instead of raw invoke(): the host owns root lifecycle + child
 // payload promotion (carrier → fireArea / split bombs). Everything else stays
 // on the theater's direct handle path.
-const BOMB_FAMILY = new Set(['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit', 'shockwaveBomb']);
+const BOMB_FAMILY = new Set(['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit']);
 
 /** Angle display helper: radians → "−45° ↗" style string. */
 function angleLabel(rad) {
@@ -113,7 +113,7 @@ const SANDBOX_PRESETS = {
   sweepingBeam: { direction: 0, sweepAngle: 67.5 * DEG, length: 1000, width: 24, speed: 0, holdDuration: 0.4, sweepDuration: 1.0, endHoldDuration: 0.3, fadeOut: 0.5, damage: 20, tickRate: 8, team: 'ally', shimmerLow: 0.1, shimmerHigh: 0.35 },
   surfaceWave: { x: ATTACKER_HOME.x + 16, y: GROUND_Y, direction: 'right', speed: 300, height: 24, width: 28, damage: 15, ttl: null, team: 'foe' },
   shockwave: { x: (ATTACKER_HOME.x + TARGET_POS.x) / 2 + 16, y: GROUND_Y - 24, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, shakeIntensity: 5, team: 'neutral' },
-  shockwaveBomb: { direction: -0.5, arc: 800, bounce: true, explodeOnContact: true, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, blastTeam: 'neutral' },
+  shockwaveBomb: { direction: -0.5, arc: 800, bounce: false, explodeOnContact: true, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, blastTeam: 'neutral' },
   shockwaveProjectile: { direction: 0, speed: 700, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, solidBehavior: 'stop', blastTeam: 'neutral' },
   stomp: { buildTime: 1.2, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, radius: 90, damage: 30, team: 'foe', shakeStrength: 5 },
   stompWave: { buildTime: 1.2, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, sides: 'both', hopHeight: 10, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 5 },
@@ -771,7 +771,7 @@ export const AttackTheater = {
           }
         } else if (h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike' || h.id === 'dustZone') {
           finished = h.step(DT, [this._target]);
-        } else if (h.id === 'stomp' || h.id === 'stompWave' || h.id === 'surfaceWave' || h.id === 'shockwaveProjectile') {
+        } else if (h.id === 'stomp' || h.id === 'stompWave' || h.id === 'surfaceWave' || h.id === 'shockwaveProjectile' || h.id === 'shockwaveBomb') {
           // Stomp family + shockwave projectile: the macro owns its sequence
           // (telegraph → beat → ring); pass every live victim as candidates.
           // The macro's _complete guard holds it open during the pending beat
