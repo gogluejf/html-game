@@ -418,29 +418,33 @@ import { floatTexts } from '../hero/floatText.js';
 // --- Input -------------------------------------------------------------------
 export function processInput() {
   input.poll({ facing: hero.facing });
-  // Attack Theater: EXCLUSIVE overlay — swallow all gameplay input while open
-  // so arrow presses can't move the hero or trigger actions underneath. The
-  // theater's own keys are handled in the debugHarness keydown listener.
-  if (AttackTheater.active) return;
-  // Effect Theater: while open, route gamepad d-pad / left-stick horizontal
-  // move to step the current effect. Back (Esc / ○) closes the theater.
-  // F2 also toggles it (handled in keydown above). Edge-triggered so holding
-  // a direction steps once per press, not every frame.
-  if (Theater.active) {
-    // Close on nav.back (Escape / gamepad ○) — uses the abstracted nav layer.
+  // Theater overlays (F2 Effect / F4 Attack): SHARED input contract. Both are
+  // exclusive debug overlays, so both consume their nav edges HERE — in the
+  // same tick as input.poll() — and swallow everything else before it can
+  // reach the screen dispatcher. KEY_NAV maps Escape to BOTH 'back' AND
+  // 'pause' in one poll; if either edge leaked, the leftover 'pause' would
+  // open the pause menu instead of just closing the theater. One code path,
+  // identical behavior: back → close, confirm → replay, nothing leaks.
+  const theater = AttackTheater.active ? AttackTheater : (Theater.active ? Theater : null);
+  input.overlayOpen = !!theater; // ghost-edge guard in input.js observe()
+  if (theater) {
+    // Close/replay from the nav edge, SAME TICK as input.poll() — the same
+    // contract the Effect Theater always had. Consuming the edge here (before
+    // the screen dispatcher can see it) is what keeps Escape from leaking a
+    // 'pause' action into gameplay. No barrier(): it quarantines EVERY held
+    // control (d-pad/stick included) and broke in-theater gamepad navigation.
     if (input.nav.pressed.includes('back')) {
-      Theater.close();
-      Debug.logEvent('theater CLOSE (back)');
-      return;
+      theater.close();
+      input.clearGameEdges(); // no ghost super/shoot from buttons held in-theater
+      Debug.logEvent(`theater CLOSE (back) → ${theater === AttackTheater ? 'attack' : 'effect'}`);
+    } else if (input.nav.pressed.includes('confirm')) {
+      theater.replay();
+      Debug.logEvent(`theater REPLAY → ${theater === AttackTheater ? AttackTheater.currentId() : Theater.current().type}`);
     }
-    // Replay current effect on nav.confirm (Enter/Space / gamepad A).
-    if (input.nav.pressed.includes('confirm')) {
-      Theater.clock = -0.5;
-      Debug.logEvent(`theater REPLAY → ${Theater.current().type}`);
-      return;
+    if (Theater.active) {
+      updateTheaterGamepad();
+      Theater.updateControls(); // param select + nudge (arrows/WASD held, I/O, L2/R2)
     }
-    updateTheaterGamepad();
-    // Suppress normal screen navigation while the theater is open.
     return;
   }
   dispatchScreenInput(input, hero, {
@@ -677,7 +681,6 @@ export function update(dt) {
   // stranded on the entry screen forever. F2/F4 are gated to in-area PLAY, so
   // this path only matters for stale/theater-open edge cases; still safe.
   if (Theater.active) {
-    input.poll({ facing: 1 }); // keep gamepad state fresh for theater nav
     Theater.update(dt);
     if (getState() === S.AREA_ENTRY) stepAreaEntrySequence(dt);
     return;

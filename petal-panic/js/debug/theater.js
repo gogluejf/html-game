@@ -13,14 +13,126 @@
 // restarts at 0 on open() and step(). Node-testable without a canvas (draw takes
 // a ctx stub).
 
-import { theaterList } from './theater-scenes.js';
+import { theaterList, makeDemo } from './theater-scenes.js';
 import { resetEffects, DEMO_VIEW } from '../effects/index.js';
 import { particles } from '../effects/particles.js';
-import { navLabelString, navLabels } from '../core/input.js';
+import { navLabelString, navLabels, input } from '../core/input.js';
 import { EFFECT_META } from './theater-meta.js';
 
 // Built once at import: the catalog is static for the life of the process.
 const list = theaterList();
+
+// --- Param tweaking (Attack-Theater-style controls) --------------------------
+// Held-control repeat cadence in FIXED STEPS (60Hz): first press fires
+// immediately, then a short pause, then a steady tick — same feel as the
+// Attack Theater's _repeat(). Frame-counting keeps the cadence even under
+// the fixed-step accumulator.
+const REPEAT_DELAY_FRAMES = 13; // ~217ms before the first auto-repeat
+const REPEAT_FRAMES = 5;        // ~83ms between repeats while held
+
+/** Per-param nudge step for numeric values (sensible defaults per key name). */
+const STEP_BY_KEY = {
+  duration: 0.1, buildTime: 0.1, gapTime: 0.1, blinkTime: 0.1, timeToTarget: 0.1,
+  radius: 4, minRadius: 4, maxRadius: 4, size: 2, width: 4, length: 20, height: 4,
+  x: 8, y: 8, offset: 4, count: 1, fragmentCount: 2, particleCount: 2, explosionCount: 1,
+  speed: 20, velocity: 20, expansionSpeed: 20, fallSpeed: 20, descentSpeed: 20,
+  intensity: 0.5, strength: 0.1, opacity: 0.05, amount: 0.5, scale: 0.05,
+  pulseRate: 0.5, rotationSpeed: 0.5, sweepSpeed: 0.5, spinSpeed: 0.5,
+  tickRate: 1, spawnInterval: 0.05, lifetime: 0.1, fadeIn: 0.05, fadeOut: 0.05,
+  holdTime: 0.05, flashInTime: 0.05, fadeOutTime: 0.05, angle: 5 * Math.PI / 180,
+};
+const DEFAULT_STEP = 0.1;
+
+/** Current config-params of the selected effect (EFFECT_META order). */
+function configParams() {
+  const meta = EFFECT_META[list[Theater.index]?.type];
+  return (meta?.params ?? []).filter((p) => p.config);
+}
+
+/** Live param object for the selected effect: CATALOG entry + saved tweaks. */
+function liveParams() {
+  const entry = list[Theater.index];
+  if (!entry) return null;
+  return { ...entry.params, ...(Theater.tweaks[entry.type] ?? {}) };
+}
+
+/** Nudge the selected param by dir (-1/1). Booleans toggle; numbers step. */
+function adjustParam(dir) {
+  const cps = configParams();
+  if (!cps.length) return;
+  const p = cps[Theater.paramIndex % cps.length];
+  const params = liveParams();
+  if (!params) return;
+  const cur = params[p.key];
+  let next;
+  if (typeof cur === 'boolean') {
+    next = !cur;
+  } else if (typeof cur === 'number') {
+    const step = (STEP_BY_KEY[p.key] ?? DEFAULT_STEP) * dir;
+    next = Math.round((cur + step) * 1000) / 1000;
+  } else {
+    return; // unsupported kind (string enums etc.) — leave alone
+  }
+  const type = list[Theater.index].type;
+  Theater.tweaks[type] = { ...(Theater.tweaks[type] ?? {}), [p.key]: next };
+  // Replay so the change is visible immediately (demos re-fire from params).
+  Theater.clock = -0.5;
+}
+
+/**
+ * PURE INPUT-MAPPING adjust buttons: the user's OWN mapped keys — lockDir
+ * (default I) decreases, lockMove (default O) increases — plus L2/R2 on the
+ * pad. No hardcoded letters: remapping I/O in Controls follows automatically
+ * (same pattern as mappingAdjust() in attack-theater.js).
+ */
+function mappingAdjust() {
+  let l2 = false, r2 = false;
+  try {
+    for (const pad of navigator.getGamepads?.() ?? []) {
+      if (!pad) continue;
+      if (pad.buttons[6]?.pressed || (pad.buttons[6]?.value ?? 0) > 0.5) l2 = true;
+      if (pad.buttons[7]?.pressed || (pad.buttons[7]?.value ?? 0) > 0.5) r2 = true;
+    }
+  } catch { /* no gamepad API (node tests) */ }
+  let down = l2, up = r2;
+  const inp = typeof input !== 'undefined' ? input : null;
+  if (inp) {
+    const pressed = new Set(inp.pressedBindings ?? []);
+    const held = inp.heldBindings ?? new Map();
+    const kb = inp.mapping?.keyboard ?? {};
+    for (const b of kb.lockDir ?? []) {
+      const k = `k:${b}`;
+      if (pressed.has(k) || held.get(k)) down = true;
+    }
+    for (const b of kb.lockMove ?? []) {
+      const k = `k:${b}`;
+      if (pressed.has(k) || held.get(k)) up = true;
+    }
+    const gp = inp.mapping?.gamepad ?? {};
+    for (const b of gp.lockDir ?? []) if (pressed.has(`g:${b}`) || held.get(`g:${b}`)) down = true;
+    for (const b of gp.lockMove ?? []) if (pressed.has(`g:${b}`) || held.get(`g:${b}`)) up = true;
+  }
+  return { down, up };
+}
+
+/** Keyboard arrow/WASD held state (per-frame poll; keydown edges are ignored).
+ *  `heldKeys` is a getter on the live engine, so it's read through an optional
+ *  call — tests stub it with `input.heldKeys = () => [...]`. */
+function keyboardDir() {
+  const inp = typeof input !== 'undefined' ? input : null;
+  if (!inp) return { x: 0, y: 0 };
+  let raw = inp.heldKeys;
+  if (typeof raw === 'function') { try { raw = raw.call(inp) ?? []; } catch { raw = []; } }
+  const held = new Set(raw ?? []);
+  const left = held.has('ArrowLeft') || held.has('KeyA');
+  const right = held.has('ArrowRight') || held.has('KeyD');
+  const up = held.has('ArrowUp') || held.has('KeyW');
+  const down = held.has('ArrowDown') || held.has('KeyS');
+  return {
+    x: left && !right ? -1 : right && !left ? 1 : 0,
+    y: up && !down ? -1 : down && !up ? 1 : 0,
+  };
+}
 
 export const Theater = {
   active: false,
@@ -29,6 +141,10 @@ export const Theater = {
   // re-fire fresh at t=0 and advance to `t`, so this is the only clock needed.
   // Negative = pre-roll delay before the demo starts (gives the eye a beat).
   clock: -0.5,
+  // Param tweaking state: per-effect saved overrides + selected param index.
+  tweaks: {},
+  paramIndex: 0,
+  _rep: {},           // held-control repeater state per channel
 
   /** Number of previewable effects (== theaterList().length). */
   get count() { return list.length; },
@@ -65,11 +181,56 @@ export const Theater = {
     if (!this.active) return;
     this.index = (this.index + dir + list.length) % list.length;
     this.clock = -0.5;
+    this.paramIndex = 0; // fresh param selection per effect
   },
 
   /** Advance the demo clock by dt seconds. No-op when inactive. */
   update(dt) {
     if (this.active) this.clock += dt;
+  },
+
+  /** Per-frame input poll (fixed-step driven, like AttackTheater.updateGamepad).
+   *  ←/→ select effect · ↑/↓ select param · I/O (mapped lockDir/lockMove) or
+   *  L2/R2 nudge the selected param. Held controls repeat on the standard
+   *  cadence. Call once per frame while active. */
+  updateControls() {
+    if (!this.active) return;
+    const kb = keyboardDir();
+    const padX = (() => { try { return input?.state?.moveX ?? 0; } catch { return 0; } })();
+    const selX = kb.x !== 0 ? kb.x : (padX < -0.2 ? -1 : padX > 0.2 ? 1 : 0);
+    const selY = kb.y;
+    this._repeat('select', selX, () => { this.step(selX); });
+    this._repeat('param', selY, () => {
+      const n = configParams().length;
+      if (n) this.paramIndex = (this.paramIndex + selY + n) % n;
+    });
+    const adj = mappingAdjust();
+    const adjDir = adj.down && !adj.up ? -1 : adj.up && !adj.down ? 1 : 0;
+    this._repeat('adjust', adjDir, () => adjustParam(adjDir));
+  },
+
+  /** Fixed-interval repeater for held controls (same contract as the Attack
+   *  Theater's _repeat): first press fires immediately; holding re-fires every
+   *  REPEAT_FRAMES after a REPEAT_DELAY_FRAMES pause. */
+  _repeat(channel, dirNow, fire) {
+    const st = this._rep[channel] ?? (this._rep[channel] = { dir: 0, count: 0 });
+    if (dirNow === 0) { st.dir = 0; st.count = 0; return; }
+    if (st.dir !== dirNow) {
+      st.dir = dirNow;
+      st.count = REPEAT_DELAY_FRAMES;
+      fire();
+      return;
+    }
+    st.count--;
+    if (st.count <= 0) {
+      st.count = REPEAT_FRAMES;
+      fire();
+    }
+  },
+
+  /** Replay the current demo from t=0 (Enter / gamepad A — existing behavior). */
+  replay() {
+    if (this.active) this.clock = -0.5;
   },
 
   /**
@@ -111,10 +272,12 @@ export const Theater = {
     ctx.fillStyle = '#888';
     ctx.fillText(`${this.index + 1} / ${list.length}`, demoW / 2, h - 40);
 
-    // 5. Run the current demo (centered in demo area).
+    // 5. Run the current demo (centered in demo area) with live params
+    //    (catalog defaults + saved tweaks). makeDemo re-wraps per call — cheap.
     ctx.save();
     ctx.translate((demoW - DEMO_VIEW.w) / 2, (h - DEMO_VIEW.h) / 2);
-    entry.demo(ctx, this.clock);
+    const live = { ...entry, params: liveParams() };
+    makeDemo(live)(ctx, this.clock);
     ctx.restore();
 
     // 6. Right info panel.
@@ -151,14 +314,26 @@ export const Theater = {
       ctx.font = 'bold 11px monospace';
       ctx.fillStyle = '#7df';
       ctx.fillText('PARAMS', panelX + 12, py);
+      const adjLabels = [...navLabels('lockDir', { simple: true }), ...navLabels('lockMove', { simple: true })].join('/');
+      ctx.fillStyle = '#555';
+      ctx.font = '9px monospace';
+      ctx.fillText(`(▲▼ select · ${adjLabels}/L2R2 adjust)`, panelX + 60, py);
       py += 18;
 
-      // Param list
+      // Param list (config params get a value + selection marker)
       ctx.font = '11px monospace';
+      const cps = configParams();
+      let cIdx = -1;
       for (const p of meta.params) {
-        const icon = p.config ? '✅' : '❌';
-        ctx.fillStyle = p.config ? '#ccc' : '#666';
-        ctx.fillText(`${icon} ${p.key}`, panelX + 12, py);
+        const isSel = p.config && cps[++cIdx] === p && Theater.paramIndex % Math.max(1, cps.length) === cIdx;
+        const icon = p.config ? (isSel ? '▶' : '✅') : '❌';
+        ctx.fillStyle = isSel ? '#ff0' : (p.config ? '#ccc' : '#666');
+        let line = `${icon} ${p.key}`;
+        if (p.config) {
+          const v = liveParams()?.[p.key];
+          if (v !== undefined) line += ` = ${typeof v === 'number' ? (Math.round(v * 1000) / 1000) : String(v)}`;
+        }
+        ctx.fillText(line, panelX + 12, py);
         ctx.fillStyle = '#666';
         ctx.fillText(`   ${p.desc}`, panelX + 12, py + 12);
         py += 26;
@@ -171,10 +346,11 @@ export const Theater = {
     const stepIcons = [...navLabels('left', { simple: true }), ...navLabels('right', { simple: true })].join('/');
     const confirmLabel = navLabelString('confirm');
     const backLabel = navLabelString('back');
+    const adjHint = [...navLabels('lockDir', { simple: true }), ...navLabels('lockMove', { simple: true })].join('/');
     ctx.textAlign = 'center';
     ctx.fillStyle = '#666';
     ctx.font = '12px monospace';
-    ctx.fillText(`${stepIcons} step   [${confirmLabel}] replay   [${backLabel}] close   F2 toggle`, demoW / 2, h - 16);
+    ctx.fillText(`${stepIcons} effect   ▲▼ param   [${adjHint}/L2R2] adjust   [${confirmLabel}] replay   [${backLabel}] close   F2 toggle`, demoW / 2, h - 16);
 
     ctx.restore();
   },

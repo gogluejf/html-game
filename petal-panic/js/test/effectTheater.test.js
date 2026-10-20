@@ -18,8 +18,10 @@
 // §15), matching the plan's "catalog order §1→§24 then Beam" acceptance.
 
 import { strict as assert } from 'node:assert';
-import { theaterList, fireManual, activeCount } from '../effects/index.js';
+import { theaterList, fireManual, activeCount, CATALOG } from '../effects/index.js';
 import { Theater } from '../debug/theater.js';
+import { EFFECT_META } from '../debug/theater-meta.js';
+import { input } from '../core/input.js';
 import '../effects/registry.js'; // side effect: registers all types
 
 const DT = 1 / 60;
@@ -306,3 +308,88 @@ ok('current() returns the selected entry with type/name/demo', () => {
 });
 
 console.log(`${passed} passed`);
+
+// --- Param tweaking (Attack-Theater-style controls) --------------------------
+
+// Catalog params for the current effect (theaterList entries carry no params).
+function catalogParams() {
+  return CATALOG.find((c) => c.type === Theater.current().type)?.params ?? {};
+}
+console.log('Param tweaking — pure logic, no DOM');
+ok('adjustParam nudges the selected numeric param and saves a tweak', () => {
+  Theater.close();
+  Theater.open();
+  // Find an effect whose first config param is numeric with a known value.
+  const entry = Theater.current();
+  const base = catalogParams();
+  const meta = EFFECT_META[entry.type];
+  const cps = meta.params.filter((p) => p.config);
+  assert.ok(cps.length > 0, 'current effect has config params');
+  const p0 = cps.find((p) => typeof base[p.key] === 'number');
+  assert.ok(p0, 'has a numeric config param');
+  Theater.paramIndex = cps.indexOf(p0);
+  const before = base[p0.key];
+  // Drive via the public surface: stub one held binding on the default
+  // lockMove key (KeyO) — input.mapping defaults exist in bare Node.
+  const savedHeld = input.heldBindings;
+  input.heldBindings = new Map([['k:KeyO', true]]);
+  try {
+    Theater.updateControls(); // edge press → immediate fire
+  } finally {
+    input.heldBindings = savedHeld;
+  }
+  const tweaked = Theater.tweaks[entry.type]?.[p0.key];
+  assert.ok(tweaked !== undefined, 'tweak saved');
+  assert.notEqual(tweaked, before, 'value changed from catalog default');
+});
+ok('repeated held adjust repeats on the fixed cadence', () => {
+  Theater.close();
+  Theater.open();
+  const entry = Theater.current();
+  const base = catalogParams();
+  const meta = EFFECT_META[entry.type];
+  const cps = meta.params.filter((p) => p.config);
+  const p0 = cps.find((p) => typeof base[p.key] === 'number');
+  Theater.paramIndex = cps.indexOf(p0);
+  const savedHeld = input.heldBindings;
+  input.heldBindings = new Map([['k:KeyO', true]]);
+  try {
+    const v0 = Theater.tweaks[entry.type]?.[p0.key] ?? base[p0.key];
+    Theater.updateControls(); // immediate
+    const v1 = Theater.tweaks[entry.type][p0.key];
+    for (let i = 0; i < 20; i++) Theater.updateControls(); // delay + repeats
+    const vN = Theater.tweaks[entry.type][p0.key];
+    assert.ok(v1 > v0, 'first press increased');
+    assert.ok(vN > v1, `holding repeated (${v1} → ${vN})`);
+  } finally {
+    input.heldBindings = savedHeld;
+  }
+});
+ok('param selection wraps around the config list', () => {
+  Theater.close();
+  Theater.open();
+  const meta = EFFECT_META[Theater.current().type];
+  const n = meta.params.filter((p) => p.config).length;
+  assert.ok(n > 1, 'needs >1 config param');
+  // keyboardDir reads input.heldKeys (a getter on the live engine) — stub it
+  // as a function since the property itself is read-only.
+  const savedHeldKeys = input.heldKeys;
+  try {
+    input.heldKeys = () => ['ArrowUp'];
+    Theater.updateControls(); // -1 → wraps to n-1
+    assert.equal(Theater.paramIndex % n, n - 1);
+    input.heldKeys = () => ['ArrowDown'];
+    Theater._rep.param.dir = 0; // fresh edge
+    Theater.updateControls(); // +1 → wraps to 0
+    assert.equal(Theater.paramIndex % n, 0);
+  } finally {
+    input.heldKeys = savedHeldKeys;
+  }
+});
+ok('step() resets param selection', () => {
+  Theater.close();
+  Theater.open();
+  Theater.paramIndex = 3;
+  Theater.step(1);
+  assert.equal(Theater.paramIndex, 0);
+});

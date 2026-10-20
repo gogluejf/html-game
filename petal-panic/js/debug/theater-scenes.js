@@ -416,7 +416,7 @@ const SCENES = {
  * Uses the scene system: real carriers, collision detection, effects fire
  * at the right moment through the normal engine path.
  */
-function makeDemo(entry) {
+export function makeDemo(entry) {
   const scene = SCENES[entry.type] || { setup: () => ({}), fire: (c, e) => fireManual({ type: e.type, params: { ...e.params } }, null), draw: () => {} };
 
   return function demo(ctx, t) {

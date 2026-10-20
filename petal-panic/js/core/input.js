@@ -499,6 +499,17 @@ export function createInput({ target = globalThis.window, document = globalThis.
       previousPhysical = new Map();
     },
     reset() { lastAim = null; this.barrier(); },
+    /** Set by the debug theaters while an overlay is open. While true,
+     *  game actions (super/shoot/melee/switch) record NO edges at all —
+     *  a button held under the overlay and released after close cannot
+     *  re-edge its game action in gameplay (the ghost-super bug). Nav
+     *  actions are unaffected, so in-theater navigation keeps working. */
+    overlayOpen: false,
+    /** Clear only the GAME-action previous-state (melee/super/switch/shoot).
+     *  Kept for explicit boundaries; the primary ghost-edge guard is now
+     *  `overlayOpen` filtering in observe(). Unlike barrier() this blocks
+     *  NOTHING and leaves nav state untouched. */
+    clearGameEdges() { previousGame.clear(); },
     /** Install the contextual aim resolver used when Lock Direction engages. */
     setResolveAim(fn) { resolveAim = fn ?? null; },
     beginCapture(source) { this.barrier(); capture = source; this.captureResult = null; },
@@ -538,6 +549,13 @@ export function createInput({ target = globalThis.window, document = globalThis.
         const n = navNow(), g = gameNow();
         for (const a of n) if (!previousNav.has(a)) pressed.add(a);
         for (const a of previousNav) if (!n.has(a)) released.add(a);
+        // Overlay guard: while a debug theater is open, game actions record
+        // NO edges and NO held-state — btn:1 maps to BOTH back and supermove,
+        // so without this a circle press under the overlay leaves a ghost
+        // 'supermove' edge for the first gameplay poll after close. Nav is
+        // untouched (theater navigation keeps working). previousGame is
+        // cleared so the release-after-close cannot re-edge anything either.
+        if (this.overlayOpen) { previousGame.clear(); previousNav = n; return; }
         for (const a of g) if (!previousGame.has(a)) gamePressed.add(a);
         previousNav = n; previousGame = g;
       };

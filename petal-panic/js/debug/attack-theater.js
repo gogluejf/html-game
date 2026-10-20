@@ -327,7 +327,10 @@ export const AttackTheater = {
     // edge-triggered (a held A button replays once, not every frame).
     if (s.padConfirm && !this._padConfirmHeld) this.replay();
     this._padConfirmHeld = s.padConfirm;
-    if (s.navPressed.includes('back')) { this.close(); }
+    // Gamepad B (back) close: keyboard Escape is consumed in processInput()
+    // (systems/update.js shared theater path); the pad edge is caught here on
+    // its own fixed-step poll so both sources close the same way.
+    if (s.navPressed.includes('back')) { this.close(); input.clearGameEdges(); }
   },
 
   /**

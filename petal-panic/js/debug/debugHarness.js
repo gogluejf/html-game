@@ -280,36 +280,25 @@ function handleDebugKeys(e) {
  * I/O in Controls, the theater follows (see mappingAdjust() in attack-theater).
  */
 function handleAttackTheaterKeys(e) {
-  // Directional keys (arrows/WASD) and I/O adjust are handled by the PER-FRAME
-  // poll in AttackTheater.updateGamepad() — it reads held state (input.heldKeys
-  // + mapping) and runs the debounce/repeat cadence. Handling them here too
-  // would double-fire on every keydown (incl. browser auto-repeat). This
-  // listener only owns the discrete actions: replay + close. We still
-  // preventDefault on arrows so the page doesn't scroll underneath.
+  // DIRECTIONAL KEYS ONLY. Escape / Enter / Space close+replay are handled in
+  // the SHARED processInput() theater path (systems/update.js) — exactly like
+  // the Effect Theater — so both overlays have ONE identical pipeline:
+  // keydown (toggles + this preventDefault) → poll → shared consume. A second
+  // Escape/Enter handler here was the divergence that made F4 close differently
+  // from F2 (double-close race + ghost edges leaking into gameplay). Do not
+  // re-add back/confirm cases to this switch.
   switch (e.code) {
     case 'ArrowLeft': case 'ArrowRight': case 'ArrowUp': case 'ArrowDown':
     case 'KeyA': case 'KeyD': case 'KeyW': case 'KeyS':
       e.preventDefault();
       break;
-    case 'Enter':
-      AttackTheater.replay();
-      Debug.logEvent(`attack-theater REPLAY → ${AttackTheater.currentId()}`);
-      e.preventDefault();
-      break;
     case 'Space':
-      // Orbit: Space = EJECT (when an orbit handle is live + ejectable).
-      // Otherwise Space = replay (same as Enter).
+      // Orbit-only discrete action (no nav equivalent): Space ejects a live
+      // ejectable orbit. Replay itself flows through the shared confirm edge.
       if (AttackTheater.tryEjectOrbit()) {
         Debug.logEvent('attack-theater ORBIT EJECT');
-      } else {
-        AttackTheater.replay();
-        Debug.logEvent(`attack-theater REPLAY → ${AttackTheater.currentId()}`);
+        e.preventDefault();
       }
-      e.preventDefault();
-      break;
-    case 'Escape':
-      AttackTheater.close();
-      Debug.logEvent('attack-theater CLOSE (Esc)');
       break;
   }
 }
