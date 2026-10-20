@@ -15,6 +15,7 @@
 import { Entity } from '../core/entity.js';
 import { LAYER } from '../consts.js';
 import { BARREL_EXPLOSION_KNOCKBACK } from '../combat/explosion.js';
+import { flashTarget } from '../combat/damage.js';
 
 // --- Tunables ----------------------------------------------------------------
 export const BARREL_DAMAGE = 25;        // AoE damage dealt by a barrel explosion
@@ -113,7 +114,7 @@ export class GameObj extends Entity {
     if (!this.alive || this.destroyed) return 0;
     const applied = Math.min(this.hp, dmg);
     this.hp -= dmg;
-    this.hitFlash = 0.1;
+    if (applied > 0) flashTarget(this);
     if (this.hp <= 0) {
       this.hp = 0;
       this.destroy();

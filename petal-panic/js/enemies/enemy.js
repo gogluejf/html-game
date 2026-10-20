@@ -19,7 +19,7 @@
 
 import { Entity } from '../core/entity.js';
 import { LAYER, GRAVITY, MAX_FALL_SPEED } from '../consts.js';
-import { damage } from '../combat/damage.js';
+import { damage, flashTarget } from '../combat/damage.js';
 
 export class Enemy extends Entity {
   /**
@@ -181,7 +181,7 @@ export class Enemy extends Entity {
   takeDamage(amt, source, method = 'melee') {
     const real = damage(source, this, amt, method);
     if (real > 0) {
-      this.hitFlash = 0.1;
+      flashTarget(this);
       if (this.hp <= 0) {
         this.die();
         // Restore alive=true so the death anim plays; update() will set it

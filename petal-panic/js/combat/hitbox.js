@@ -112,7 +112,6 @@ export function processHitboxes(hitboxes, targets, onHit) {
             Effects.spawnHitSparkles(tb.x + tb.w / 2, tb.y + tb.h / 2);
           }
           Effects.beginEnemyShake(t);
-          if (t.hitFlash !== undefined) t.hitFlash = 0.1;
         }
         if (onHit) onHit(hb, t, dealt);
       }

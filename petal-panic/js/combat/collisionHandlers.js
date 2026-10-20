@@ -10,7 +10,7 @@
 // update.js directly — that keeps the dependency graph acyclic.
 
 import { LAYER } from '../consts.js';
-import { damage } from './damage.js';
+import { damage, flashTarget } from './damage.js';
 import { applyKnockback } from './knockback.js';
 import { explodeSpecial } from './shooting.js';
 import { isSpecialType } from '../objects/specialWeapons.js';
@@ -141,7 +141,6 @@ export function registerCollisionHandlers(collisionWorld) {
         const py = allyProj.y + allyProj.h / 2;
         // takeDamage() owns the death transition internally (hp<=0 -> die()).
         const dealt = target.takeDamage(allyProj.damage, hero, 'projectile', { x: px, y: py });
-        if (dealt > 0) target.hitFlash = 0.1;
         allyProj.alive = false;
         return;
       }
@@ -154,7 +153,9 @@ export function registerCollisionHandlers(collisionWorld) {
         ? target.takeDamage(allyProj.damage, hero, 'projectile')
         : damage(hero, target, allyProj.damage, 'projectile');
       if (dealt > 0 && !isRealEnemy) {
-        target.hitFlash = 0.1; // brief white flash on impact
+        // Placeholder targets (plain Entity, no takeDamage pipeline): the
+        // central damage() call above did not own the flash for them.
+        flashTarget(target);
       }
       if (dealt > 0) {
         // red hit sparkles at the impact point + enemy shake

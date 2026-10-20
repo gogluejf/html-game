@@ -78,3 +78,18 @@ export function damage(source, target, amt, method = 'projectile') {
 
   return real;
 }
+
+/**
+ * Single owner of the white hit-flash: any target whose HP/energy actually
+ * decreases from an attack gets `hitFlash = 0.1` set exactly once, here.
+ * Callers (damage(), Enemy.takeDamage(), GameObj.hit()) invoke this instead of
+ * assigning the field themselves; render paths read it unchanged.
+ *
+ * No-op for null targets or targets without a `hitFlash` field (e.g. plain
+ * projectiles). Idempotent: setting the same value twice is harmless.
+ *
+ * @param {object} target entity carrying a `hitFlash` timer
+ */
+export function flashTarget(target) {
+  if (target != null && 'hitFlash' in target) target.hitFlash = 0.1;
+}
