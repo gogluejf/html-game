@@ -41,6 +41,10 @@ export const Theater = createTheater({
   toggleKey: 'F2',
   panelW: 240,
   stepByKey: STEP_BY_KEY,
+  enumValues: {
+    easing: ['linear', 'easeIn', 'easeInCubic'],
+    curve: ['linear', 'easeIn', 'easeOut'],
+  },
 
   entries: () => list,
 

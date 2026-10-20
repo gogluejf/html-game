@@ -88,18 +88,26 @@ import { colorWithAlpha } from './colorUtil.js';
 
 const DEFAULT_START_RADIUS = 4;    // px — initial ring radius
 const DEFAULT_MAX_RADIUS = 60;     // px — final ring radius
-const DEFAULT_EXPANSION_SPEED = 300; // px/s — ring growth rate
+const DEFAULT_EXPANSION_SPEED = 300; // px/s — ring growth rate (linear mode only)
 const DEFAULT_THICKNESS = 6;       // px — ring stroke width
 const DEFAULT_OPACITY = 0.9;       // peak alpha
 const DEFAULT_DURATION = 0.4;      // s  — whole-instance lifetime (== total lifetime)
 const DEFAULT_COLOR = '#ffe9a8';   // warm bright tint — reads as a blast front
 const DEFAULT_COLOR_IN = null;     // inner gradient center color; null = no fill (legacy look)
+const DEFAULT_EASING = 'easeIn';   // 'linear' | 'easeIn' (t²) | 'easeInCubic' (t³)
 const EPS = 1e-9;                  // fixed-dt epsilon convention
+
+/** Eased progress: maps linear t∈[0,1] to eased t∈[0,1]. */
+function ease(t, mode) {
+  if (mode === 'easeInCubic') return t * t * t;
+  if (mode === 'easeIn') return t * t;
+  return t; // linear
+}
 
 /**
  * @param {{startRadius?:number, maxRadius?:number, expansionSpeed?:number,
  *          thickness?:number, opacity?:number, duration?:number, color?:string,
- *          colorIn?:string, x?:number, y?:number}} params
+ *          colorIn?:string, easing?:string, x?:number, y?:number}} params
  * @param {object} [carrier]
  * @returns {{update:Function, render:Function, complete:Function,
  *            done:boolean, space:string, elapsed:number, radius:number,
@@ -117,6 +125,7 @@ export function shockwave(params = {}, carrier = null) {
   // colorIn at the center fading to transparent at the ring. null/undefined =
   // no fill, the legacy flat-ring look — existing gameplay fires are unchanged.
   const colorIn = typeof params.colorIn === 'string' ? params.colorIn : DEFAULT_COLOR_IN;
+  const easing = typeof params.easing === 'string' ? params.easing : DEFAULT_EASING;
   const fallback = { x: params.x ?? 0, y: params.y ?? 0 };
 
   const api = {
@@ -136,7 +145,12 @@ export function shockwave(params = {}, carrier = null) {
     update(dt) {
       if (this.done) return;
       this.elapsed += dt;
-      this.radius = Math.min(startRadius + expansionSpeed * this.elapsed, maxRadius);
+      // Eased expansion: t goes 0→1 over duration, radius interpolates
+      // startRadius→maxRadius through the easing curve. 'linear' preserves
+      // the legacy constant-speed behavior for backward compat.
+      const t = Math.min(1, this.elapsed / duration);
+      const eased = ease(t, easing);
+      this.radius = startRadius + (maxRadius - startRadius) * eased;
       if (this.elapsed >= duration - EPS) this.done = true;
     },
 

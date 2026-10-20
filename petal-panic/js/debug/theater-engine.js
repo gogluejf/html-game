@@ -229,6 +229,11 @@ export function createTheater(provider) {
         } else if (typeof cur === 'number') {
           const step = (provider.stepByKey?.[p.key] ?? 0.1) * adjDir;
           next = Math.round((cur + step) * 1000) / 1000;
+        } else if (typeof cur === 'string' && provider.enumValues?.[p.key]) {
+          // Enum cycling: cycle through allowed string values.
+          const vals = provider.enumValues[p.key];
+          const idx = vals.indexOf(cur);
+          next = vals[(idx + adjDir + vals.length) % vals.length];
         } else {
           return;
         }

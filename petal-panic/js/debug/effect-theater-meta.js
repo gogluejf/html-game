@@ -57,7 +57,7 @@ export const EFFECT_META = {
     params: [
       { key: 'startRadius',    config: true, desc: 'Initial radius (px)' },
       { key: 'maxRadius',      config: true, desc: 'Final radius (px)' },
-      { key: 'expansionSpeed', config: true, desc: 'Growth rate (px/s)' },
+      { key: 'easing',         config: true, desc: 'Growth curve (linear/easeIn/easeInCubic)' },
       { key: 'thickness',      config: true, desc: 'Ring width (px)' },
       { key: 'opacity',        config: true, desc: 'Peak alpha (0-1)' },
       { key: 'duration',       config: true, desc: 'Total lifetime (s)' },
