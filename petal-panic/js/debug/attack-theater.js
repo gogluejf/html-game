@@ -934,9 +934,11 @@ export const AttackTheater = {
       ctx.fillRect(ax + dir * len - 5, ay - 8, 10, 16);
     }
 
-    // Elevated-shooter demos (reticleShot, predictiveShot): the attacker hovers on
-    // a small platform — draw it so the staging reads as intentional.
-    if ((c?.kind === 'strafe' || c?.kind === 'walkLeft') && this._attacker) {
+    // Elevated-shooter demos (reticleShot, targetedBeam, sweepingBeam,
+    // predictiveShot, radialShot, burstShot): the attacker hovers on a small
+    // platform — draw it so the staging reads as intentional. The choreo state
+    // carries a FLAG (walkLeft/strafe) set by elevatedShooter(), not a kind.
+    if ((c?.walkLeft || c?.strafe) && this._attacker) {
       ctx.fillStyle = '#445';
       ctx.fillRect(this._attacker.x - 16, this._attacker.y + this._attacker.h, this._attacker.w + 32, 8);
       ctx.fillStyle = '#667';

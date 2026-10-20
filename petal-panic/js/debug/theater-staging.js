@@ -459,7 +459,10 @@ export const STAGING = {
       t._attacker.y = ATTACKER_HOME.y;
       t._attacker.facing = 1;
       t._target.x = t._params.x; // center of the zone
-      t._target.y = t._params.y - t._target.h / 2;
+      // Target rests ON the ground — the zone's y param is its CENTER, so
+      // bottom-align the target to GROUND_Y (not the zone center) or it
+      // floats a few pixels above the floor.
+      t._target.y = GROUND_Y - t._target.h;
       return null; // no choreo — static staging only
     },
   },
