@@ -62,6 +62,7 @@ export const EFFECT_META = {
       { key: 'opacity',        config: true, desc: 'Peak alpha (0-1)' },
       { key: 'duration',       config: true, desc: 'Total lifetime (s)' },
       { key: 'color',          config: true, desc: 'Ring tint' },
+      { key: 'colorIn',        config: false, desc: 'Inner gradient fill (empty = none)' },
     ],
   },
   trail: {

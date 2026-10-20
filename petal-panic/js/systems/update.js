@@ -33,7 +33,7 @@ export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlph
 import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, BOSS_TRIGGER_X } from '../world/level.js';
 import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry } from '../systems/lifecycle.js';
 import { getLevelConfig } from '../world/levelConfigs.js';
-import { Theater } from '../debug/theater.js';
+import { Theater } from '../debug/effect-theater.js';
 import { AttackTheater } from '../debug/attack-theater.js';
 import { record } from '../stats.js';
 import { isGrounded, standingOnOneWay } from '../hero/physics.js';
@@ -436,6 +436,10 @@ export function processInput() {
     if (input.nav.pressed.includes('back')) {
       theater.close();
       input.clearGameEdges(); // no ghost super/shoot from buttons held in-theater
+      // Clear the nav edge too: Escape maps to BOTH 'back' and 'pause'.
+      // Without this, the leftover 'pause' in nav.pressed could reach
+      // dispatchScreenInput on a race frame and open the pause menu.
+      input.nav.pressed.length = 0;
       Debug.logEvent(`theater CLOSE (back) → ${theater === AttackTheater ? 'attack' : 'effect'}`);
     } else if (input.nav.pressed.includes('confirm')) {
       theater.replay();
@@ -443,7 +447,7 @@ export function processInput() {
     }
     if (Theater.active) {
       updateTheaterGamepad();
-      Theater.updateControls(); // param select + nudge (arrows/WASD held, I/O, L2/R2)
+      Theater.updateControls?.(); // param select + nudge (arrows/WASD held, I/O, L2/R2)
     }
     return;
   }

@@ -38,7 +38,7 @@ import { damage, flashTarget } from '../combat/damage.js';
 import { explodeSpecial } from '../combat/shooting.js';
 import { isSpecialType } from '../objects/specialWeapons.js';
 import { ctx as gameCtx } from '../world/context.js';
-import { STAGING } from './theater-staging.js';
+import { STAGING } from './attack-theater-staging.js';
 
 // Import every primitive module for its registration side effect.
 import '../combat/attack/primitives/projectile.js';
@@ -327,10 +327,13 @@ export const AttackTheater = {
     // edge-triggered (a held A button replays once, not every frame).
     if (s.padConfirm && !this._padConfirmHeld) this.replay();
     this._padConfirmHeld = s.padConfirm;
-    // Gamepad B (back) close: keyboard Escape is consumed in processInput()
-    // (systems/update.js shared theater path); the pad edge is caught here on
-    // its own fixed-step poll so both sources close the same way.
-    if (s.navPressed.includes('back')) { this.close(); input.clearGameEdges(); }
+    // Gamepad B (back) close: keyboard Escape AND gamepad B are both consumed
+    // in processInput() (systems/update.js shared theater path) — the SAME code
+    // path as Effect Theater. No duplicate close here: the shared path sets
+    // active=false before _stepOnce runs, so this guard is just a safety net
+    // for the rare case where the pad edge arrives on a fixed-step tick between
+    // processInput polls.
+    if (s.navPressed.includes('back') && this.active) { this.close(); input.clearGameEdges(); }
   },
 
   /**

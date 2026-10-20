@@ -84,6 +84,8 @@
 // frame shows it one step short of maxRadius (at t = duration − dt). This is
 // intentional: the ring fades out exactly as it completes.
 
+import { colorWithAlpha } from './colorUtil.js';
+
 const DEFAULT_START_RADIUS = 4;    // px — initial ring radius
 const DEFAULT_MAX_RADIUS = 60;     // px — final ring radius
 const DEFAULT_EXPANSION_SPEED = 300; // px/s — ring growth rate
@@ -91,12 +93,13 @@ const DEFAULT_THICKNESS = 6;       // px — ring stroke width
 const DEFAULT_OPACITY = 0.9;       // peak alpha
 const DEFAULT_DURATION = 0.4;      // s  — whole-instance lifetime (== total lifetime)
 const DEFAULT_COLOR = '#ffe9a8';   // warm bright tint — reads as a blast front
+const DEFAULT_COLOR_IN = null;     // inner gradient center color; null = no fill (legacy look)
 const EPS = 1e-9;                  // fixed-dt epsilon convention
 
 /**
  * @param {{startRadius?:number, maxRadius?:number, expansionSpeed?:number,
  *          thickness?:number, opacity?:number, duration?:number, color?:string,
- *          x?:number, y?:number}} params
+ *          colorIn?:string, x?:number, y?:number}} params
  * @param {object} [carrier]
  * @returns {{update:Function, render:Function, complete:Function,
  *            done:boolean, space:string, elapsed:number, radius:number,
@@ -110,6 +113,10 @@ export function shockwave(params = {}, carrier = null) {
   const opacity = Math.min(1, Math.max(0, params.opacity ?? DEFAULT_OPACITY));
   const duration = params.duration > 0 ? params.duration : DEFAULT_DURATION;
   const color = params.color ?? DEFAULT_COLOR;
+  // Optional inner gradient fill (pulse-bubble style): a radial gradient from
+  // colorIn at the center fading to transparent at the ring. null/undefined =
+  // no fill, the legacy flat-ring look — existing gameplay fires are unchanged.
+  const colorIn = typeof params.colorIn === 'string' ? params.colorIn : DEFAULT_COLOR_IN;
   const fallback = { x: params.x ?? 0, y: params.y ?? 0 };
 
   const api = {
@@ -150,16 +157,32 @@ export function shockwave(params = {}, carrier = null) {
      * @param {object} [renderCtx] unused (world-space effect)
      */
     render(c2d, renderCtx = {}) {
-      if (this.done || thickness <= EPS || opacity <= EPS) return;
+      if (this.done || opacity <= EPS) return;
       const alpha = opacity * Math.min(1, Math.max(0, 1 - this.elapsed / duration));
       if (alpha <= EPS) return;
+      const cx = this.origin.x, cy = this.origin.y, r = this.radius;
       c2d.save();
       c2d.globalAlpha = alpha;
-      c2d.strokeStyle = color;
-      c2d.lineWidth = thickness;
-      c2d.beginPath();
-      c2d.arc(this.origin.x, this.origin.y, this.radius, 0, Math.PI * 2);
-      c2d.stroke();
+      // Inner gradient fill (optional): radial from colorIn at center fading
+      // to transparent at the ring — pulse-bubble style membrane inside the
+      // blast front. Skipped entirely when colorIn is not set (legacy look).
+      if (colorIn && r > EPS) {
+        const grad = c2d.createRadialGradient(cx, cy, 0, cx, cy, r);
+        grad.addColorStop(0, colorWithAlpha(colorIn, 0.8));
+        grad.addColorStop(0.6, colorWithAlpha(colorIn, 0.35));
+        grad.addColorStop(1, colorWithAlpha(colorIn, 0));
+        c2d.fillStyle = grad;
+        c2d.beginPath();
+        c2d.arc(cx, cy, r, 0, Math.PI * 2);
+        c2d.fill();
+      }
+      if (thickness > EPS) {
+        c2d.strokeStyle = color;
+        c2d.lineWidth = thickness;
+        c2d.beginPath();
+        c2d.arc(cx, cy, r, 0, Math.PI * 2);
+        c2d.stroke();
+      }
       c2d.restore();
     },
 

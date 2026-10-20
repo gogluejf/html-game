@@ -19,8 +19,8 @@
 
 import { strict as assert } from 'node:assert';
 import { theaterList, fireManual, activeCount, CATALOG } from '../effects/index.js';
-import { Theater } from '../debug/theater.js';
-import { EFFECT_META } from '../debug/theater-meta.js';
+import { Theater } from '../debug/effect-theater.js';
+import { EFFECT_META } from '../debug/effect-theater-meta.js';
 import { input } from '../core/input.js';
 import '../effects/registry.js'; // side effect: registers all types
 

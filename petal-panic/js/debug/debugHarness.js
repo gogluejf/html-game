@@ -23,7 +23,7 @@ import { Effects } from '../effects.js';
 import { Debug, initSpawnTable, SPAWN_KEYS } from './debug.js';
 // TEMP (special-weapons testing): flood special drops for slot-model QA.
 import { makePowerup } from '../objects/powerup.js';
-import { Theater } from './theater.js';
+import { Theater } from './effect-theater.js';
 import { AttackTheater, TWEAKABLE } from './attack-theater.js';
 import { dumpTrace } from '../stats.js';
 import { debugWrapToNextArea } from '../world/zoneLifecycle.js';

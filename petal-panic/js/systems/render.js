@@ -10,7 +10,7 @@ import { Effects } from '../effects.js';
 import { drawEffects } from '../effects/index.js';
 import { getState, S } from '../core/state.js';
 import { Debug } from '../debug/debug.js';
-import { Theater } from '../debug/theater.js';
+import { Theater } from '../debug/effect-theater.js';
 import { AttackTheater } from '../debug/attack-theater.js';
 import { input, formatBinding } from '../core/input.js';
 import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../core/timers.js';
