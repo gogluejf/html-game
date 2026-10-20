@@ -138,6 +138,10 @@ export function createCarrierHandle(id, params, ctx, { onDetonate }) {
   // Expose for the impl to call after invoking the carrier.
   h._wireCarrier = wireDetonate;
   // Carrier completion must not proxy completion before deferred payloads end.
+  // The standard setInner would install a carrier→h event proxy that re-emits
+  // the carrier's 'complete' onto the root, escaping as root completion while
+  // children are still live. Override to a plain reference assignment so the
+  // root only completes via checkComplete() (parentDone AND all children done).
   h.setInner = (carrier) => { h.inner = carrier; return h; };
   const cancel = h.cancel.bind(h);
   h.cancel = () => {

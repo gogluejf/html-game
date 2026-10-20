@@ -38,7 +38,7 @@ function ok(name, fn) {
 
 const ALL_PRIMITIVES = [
   'projectile', 'bomb', 'explosion', 'meleeHitbox', 'charge', 'bodyContact',
-  'beam', 'fireArea', 'spike', 'orbit', 'boomerang',
+  'beam', 'fireArea', 'spike', 'orbit', 'boomerang', 'shockwave',
 ];
 
 const ALL_MACROS = [
@@ -63,10 +63,10 @@ function pools() {
   return { projectilePool: mk(64), specialPool: mk(16) };
 }
 
-ok('all 11 primitives are registered', () => {
+ok('all 12 primitives are registered', () => {
   const ids = listPrimitives();
   for (const id of ALL_PRIMITIVES) assert.ok(ids.includes(id), `missing '${id}'`);
-  assert.equal(ids.length, 11, `expected exactly 11, got ${ids.length}: ${ids.join(',')}`);
+  assert.equal(ids.length, 12, `expected exactly 12, got ${ids.length}: ${ids.join(',')}`);
 });
 
 ok('every registration carries meta + default params', () => {

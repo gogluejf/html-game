@@ -121,14 +121,22 @@ export function drawPanel(ctx, panelX, w, h, { panelW, desc, params, getValue, p
   for (const p of rows) {
     if (py > h - 60) break;
     const val = getValue(p.key);
-    // Skip params with no value (internal defaults not exposed in catalog).
     if (val === undefined) continue;
     const tIdx = p.tweak ? cps.findIndex(cp => cp.key === p.key) : -1;
     const selected = tIdx === paramIndex % Math.max(1, cps.length) && p.tweak;
     ctx.fillStyle = selected ? '#fd6' : (p.tweak ? '#ccc' : '#666');
-    const valStr = typeof val === 'number'
-      ? String(Math.round(val * 1000) / 1000)
-      : String(val);
+    let valStr;
+    if (typeof val === 'number') {
+      if (p.kind === 'angle') {
+        valStr = `${Math.round(val * 180 / Math.PI)}°`;
+      } else if (p.kind === 'int') {
+        valStr = String(Math.round(val));
+      } else {
+        valStr = String(Math.round(val * 1000) / 1000);
+      }
+    } else {
+      valStr = String(val);
+    }
     const marker = selected ? '▶' : '·';
     const suffix = p.tweak ? '' : '  (fixed)';
     ctx.fillText(`${marker} ${p.key} = ${valStr}${suffix}`, panelX + 12, py);
@@ -221,16 +229,21 @@ export function createTheater(provider) {
         const params = provider.liveParams(this.index);
         if (!params) return;
         const cur = params[p.key];
+        const kind = p.kind ?? 'num';
         let next;
         if (provider.adjustParam) {
           next = provider.adjustParam(adjDir, p.key, cur);
-        } else if (typeof cur === 'boolean') {
+        } else if (kind === 'bool' || typeof cur === 'boolean') {
           next = !cur;
+        } else if (kind === 'int') {
+          next = Math.round(cur ?? 0) + adjDir;
+        } else if (kind === 'angle') {
+          const step = (Math.PI / 12) * adjDir; // 15°
+          next = Math.round((cur ?? 0 + step) * 1000) / 1000;
         } else if (typeof cur === 'number') {
           const step = (provider.stepByKey?.[p.key] ?? 0.1) * adjDir;
           next = Math.round((cur + step) * 1000) / 1000;
         } else if (typeof cur === 'string' && provider.enumValues?.[p.key]) {
-          // Enum cycling: cycle through allowed string values.
           const vals = provider.enumValues[p.key];
           const idx = vals.indexOf(cur);
           next = vals[(idx + adjDir + vals.length) % vals.length];

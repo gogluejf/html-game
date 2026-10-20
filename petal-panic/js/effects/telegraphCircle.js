@@ -5,9 +5,10 @@
 //   Phase 1 — BUILD: the circle animates its radius with an eased curve.
 //     - shrink mode (default): starts at `radius`, contracts to zero
 //       (cubic ease-in: slow start → fast vacuum suck)
-//     - expand mode (`expand: true`): starts at `minRadius`, grows to `radius`
+//     - grow mode (`mode: 'grow'`): starts at `minRadius`, grows to `radius`
 //       (cubic ease-out: fast pop → slow settle)
-//     Occupies the first 60% of duration.
+//     - skip mode (`mode: 'skip'`): no build phase at all — straight to gap+blink
+//     Occupies the first 60% of duration (or `buildTime` seconds when set).
 //
 //   Phase 2 — GAP: nothing is drawn. A silence that reads as "the moment
 //     before impact". Occupies the next 20% of duration.
@@ -23,7 +24,8 @@
 //
 // Use cases:
 //   shrink (default) — precision impact: "something lands EXACTLY here"
-//   expand           — AoE warning: "GET OUT of this growing zone"
+//   grow             — AoE warning: "GET OUT of this growing zone"
+//   skip             — tight beat: gap + blink only (used by shockwave macros)
 //
 // STATE/DRAW effect: this instance stays active over its whole lifetime and
 // owns its own timer. Each update() advances the clock; each render() draws
@@ -42,15 +44,15 @@
 // time; with `followTarget` false (default) the origin is captured once at
 // fire time and held fixed.
 //
-// params: { radius?, minRadius?, expand?, pulseRate?, thickness?, opacity?,
+// params: { radius?, minRadius?, mode?, pulseRate?, thickness?, opacity?,
 //           duration?, followTarget?, color?, x?, y? }
 //   radius       — the LARGE radius in px (default 48). In shrink mode this
-//                  is the starting size; in expand mode it's the ending size.
+//                  is the starting size; in grow mode it's the ending size.
 //   minRadius    — the SMALL radius in px (default 12). In shrink mode this
-//                  is the dot size during the blink phase; in expand mode it's
+//                  is the dot size during the blink phase; in grow mode it's
 //                  the starting size AND the dot size during blink.
-//   expand       — direction flag (default false). false = shrink (precision
-//                  impact), true = expand (AoE warning zone).
+//   mode         — 'shrink' | 'grow' | 'skip' (default 'shrink'). Legacy
+//                  `expand: true` still maps to 'grow'.
 //   pulseRate    — warning pulse frequency in Hz during the BUILD phase
 //                  (default 4). pulseRate 0 disables the pulse.
 //   thickness    — stroke width of the circle outline in px (default 5).
@@ -66,7 +68,7 @@
 //
 // Geometry by phase:
 //   BUILD (shrink):  p = clamp(t / buildEnd, 0, 1); r = radius · (1 − p³)
-//   BUILD (expand):  p = clamp(t / buildEnd, 0, 1); r = minR + (radius−minR)·p³
+//   BUILD (grow):    p = clamp(t / buildEnd, 0, 1); r = minR + (radius−minR)·p³
 //                    [both ease-in: slow start → fast end]
 //   GAP:             nothing drawn
 //   BLINK:           filled circle at minRadius; alpha = opacity when ON, 0 OFF.
@@ -77,7 +79,7 @@
 
 const DEFAULT_RADIUS = 48;       // px — large radius
 const DEFAULT_MIN_RADIUS = 12;   // px — small radius / dot size
-const DEFAULT_EXPAND = false;    // false = shrink, true = expand
+const DEFAULT_MODE = 'shrink';  // 'shrink' | 'grow' | 'skip'
 const DEFAULT_PULSE_RATE = 4;    // Hz — warning pulse frequency (build phase)
 const DEFAULT_THICKNESS = 5;     // px — circle stroke width (build phase)
 const DEFAULT_OPACITY = 0.85;    // peak alpha
@@ -87,13 +89,13 @@ const DEFAULT_COLOR = '#ff5a5a'; // red warning tint
 const EPS = 1e-9;                // fixed-dt epsilon convention
 
 // Phase proportions (fractions of duration):
-const BUILD_FRAC = 0.60;   // 0% → 60%: eased build (shrink or expand)
+const BUILD_FRAC = 0.60;   // 0% → 60%: eased build (shrink or grow)
 const GAP_FRAC = 0.20;     // 60% → 80%: "be ready" silence
 // Blink: 80% → 100% (remaining 20%)
 const BLINK_CYCLES = 3;    // 3 on/off cycles
 
 /**
- * @param {{radius?:number, minRadius?:number, expand?:boolean, pulseRate?:number,
+ * @param {{radius?:number, minRadius?:number, mode?:string, expand?:boolean, pulseRate?:number,
  *          thickness?:number, opacity?:number, duration?:number,
  *          buildTime?:number, gapTime?:number, blinkTime?:number,
  *          followTarget?:boolean, color?:string, x?:number, y?:number}} params
@@ -105,7 +107,11 @@ const BLINK_CYCLES = 3;    // 3 on/off cycles
 export function telegraphCircle(params = {}, carrier = null) {
   const radius = Math.max(0, params.radius ?? DEFAULT_RADIUS);
   const minRadius = Math.max(0, params.minRadius ?? DEFAULT_MIN_RADIUS);
-  const expand = !!params.expand;
+  // mode: 'shrink' (default) | 'grow' | 'skip'
+  //   shrink — starts large, contracts to minRadius (impact warning)
+  //   grow   — starts small, expands to radius (AoE warning)
+  //   skip   — no build phase, goes straight to gap+blink
+  const mode = typeof params.mode === 'string' ? params.mode : (params.expand ? 'grow' : 'shrink');
   const pulseRate = params.pulseRate >= 0 ? params.pulseRate : DEFAULT_PULSE_RATE;
   const thickness = Math.max(0, params.thickness ?? DEFAULT_THICKNESS);
   const opacity = Math.min(1, Math.max(0, params.opacity ?? DEFAULT_OPACITY));
@@ -124,7 +130,8 @@ export function telegraphCircle(params = {}, carrier = null) {
   if (hasPhaseTimes) {
     // Explicit 0 = skip this phase. Undefined = fall back to default share.
     const base = params.duration > 0 ? params.duration : DEFAULT_DURATION;
-    const build = params.buildTime !== undefined ? params.buildTime : base * BUILD_FRAC;
+    // mode 'skip' forces build to 0 regardless of buildTime param.
+    const build = mode === 'skip' ? 0 : (params.buildTime !== undefined ? params.buildTime : base * BUILD_FRAC);
     const gap = params.gapTime !== undefined ? params.gapTime : base * GAP_FRAC;
     const blink = params.blinkTime !== undefined ? params.blinkTime : base * (1 - BUILD_FRAC - GAP_FRAC);
     buildEnd = build;
@@ -145,8 +152,8 @@ export function telegraphCircle(params = {}, carrier = null) {
   const MIN_HALF_CYCLE = 1 / 60; // one frame @60fps
   if (blinkHalfCycle < MIN_HALF_CYCLE) blinkHalfCycle = MIN_HALF_CYCLE;
 
-  // Starting radius depends on direction:
-  const startRadius = expand ? minRadius : radius;
+  // Starting radius depends on mode:
+  const startRadius = mode === 'grow' ? minRadius : (mode === 'skip' ? 0 : radius);
 
   const api = {
     space: 'world',
@@ -160,10 +167,13 @@ export function telegraphCircle(params = {}, carrier = null) {
     update(dt) {
       if (this.done) return;
       this.elapsed += dt;
-      if (this.elapsed < buildEnd) {
+      if (mode === 'skip') {
+        // No build phase: radius stays 0 during build window, then gap+blink.
+        this.radius = 0;
+      } else if (this.elapsed < buildEnd) {
         const p = this.elapsed / buildEnd;
         const eased = p * p * p; // ease-in: slow start → fast end (both directions)
-        if (expand) {
+        if (mode === 'grow') {
           // r goes minRadius → radius, accelerating toward the end
           this.radius = minRadius + (radius - minRadius) * eased;
         } else {
@@ -171,7 +181,7 @@ export function telegraphCircle(params = {}, carrier = null) {
           this.radius = radius * (1 - eased);
         }
       } else {
-        this.radius = expand ? radius : 0;
+        this.radius = mode === 'grow' ? radius : 0;
       }
       if (followTarget) this.origin = resolveOrigin(carrier, fallback);
       if (this.elapsed >= duration - EPS) this.done = true;

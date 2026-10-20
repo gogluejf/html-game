@@ -105,16 +105,20 @@ function handleDebugToggle(e, source) {
 let theaterWasHeld = 0;
 
 /**
- * Step the Effect Theater from gamepad input. Called once per frame from
+ * Gamepad-only stepping for the Effect Theater. Called once per frame from
  * processInput() while Theater.active. Reads input.state.moveX (d-pad +
  * left-stick, already normalized by the existing input remap) for left/right.
- * Closing is handled in processInput via nav.back (Escape / gamepad ○).
+ * NOTE: keyboard arrows are handled by updateControls()'s select channel —
+ * this function ONLY handles gamepad d-pad/stick to avoid double-stepping.
  */
 export function updateTheaterGamepad() {
+  // Only step from GAMEPAD source (not keyboard). updateControls() already
+  // handles keyboard arrows via its 'select' repeat channel. If we stepped
+  // here too, a single arrow tap would fire TWO steps (one from each path).
   const s = input.state;
+  const isPad = s.source === 'gamepad';
+  if (!isPad) return;
   const dir = s.moveX < -0.2 ? -1 : s.moveX > 0.2 ? 1 : 0;
-  // Edge-trigger: fire a step only when the held direction changes away from 0
-  // into a new side (or flips side). Holding keeps the same dir → no re-step.
   if (dir !== 0 && dir !== theaterWasHeld) {
     Theater.step(dir);
     Debug.logEvent(`theater → ${Theater.current().type}`);

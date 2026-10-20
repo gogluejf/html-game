@@ -84,7 +84,9 @@ registerPrimitive('shockwave', {
     const hitSet = new Set();
     let done = false;
 
-    // Fire VFX immediately (ring visual + shake).
+    // Fire VFX immediately (ring visual + shake). Sequencing (telegraph →
+    // gap → blink → beat) is owned by the CALLING MACRO (stompWave pattern) —
+    // the primitive fires exactly when it is invoked.
     fireDeclared(
       { type: 'shockwave', params: { x: cx, y: cy, startRadius: 4, maxRadius: maxR, duration: dur, easing: easingMode, colorIn: '#4488ff', opacity: 0.9, thickness: 6, color: '#ffe9a8' } },
       h.declaredEffectTypes(),

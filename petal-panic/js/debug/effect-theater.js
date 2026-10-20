@@ -44,6 +44,7 @@ export const Theater = createTheater({
   enumValues: {
     easing: ['linear', 'easeIn', 'easeInCubic'],
     curve: ['linear', 'easeIn', 'easeOut'],
+    mode: ['shrink', 'grow', 'skip'],
   },
 
   entries: () => list,

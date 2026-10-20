@@ -172,7 +172,14 @@ export function shockwave(params = {}, carrier = null) {
      */
     render(c2d, renderCtx = {}) {
       if (this.done || opacity <= EPS) return;
-      const alpha = opacity * Math.min(1, Math.max(0, 1 - this.elapsed / duration));
+      // Hold full opacity until 70% of lifetime, then fade over the last 30%.
+      // This keeps the ring visible and solid while it's expanding (the damage
+      // front), and only fades as it reaches maxRadius — reads as "blast done".
+      const t = this.elapsed / duration;
+      const fadeStart = 0.7;
+      const alpha = t < fadeStart
+        ? opacity
+        : opacity * Math.max(0, 1 - (t - fadeStart) / (1 - fadeStart));
       if (alpha <= EPS) return;
       const cx = this.origin.x, cy = this.origin.y, r = this.radius;
       c2d.save();

@@ -379,7 +379,7 @@ export const CATALOG = [
   { type: 'shockwave',             name: 'Shockwave',               section: 5,  params: { x: STAGE_X, y: STAGE_Y, startRadius: 4, maxRadius: 90, thickness: 6, opacity: 0.9, duration: 1.6, color: '#ffe9a8', colorIn: '#4488ff', easing: 'easeIn' } },
   { type: 'trail',                 name: 'Trail',                   section: 6,  params: { length: 40, width: 4, lifetime: 0.6, opacity: 0.9, density: 3, offset: 0 } },
   { type: 'afterimage',            name: 'Afterimage / Ghost Frames', section: 7, params: { count: 4, spawnInterval: 1 / 10, lifetime: 1.2, opacity: 0.5, fadeRate: 1, offset: 0, color: '#ff0000' } },
-  { type: 'telegraph-circle',      name: 'Telegraph Circle',        section: 8,  params: { x: STAGE_X, y: STAGE_Y, duration: 2.5, expand: true } },
+  { type: 'telegraph-circle',      name: 'Telegraph Circle',        section: 8,  params: { x: STAGE_X, y: STAGE_Y, radius: 48, minRadius: 12, mode: 'shrink', buildTime: 0.6, gapTime: 0.3, blinkTime: 0.5, pulseRate: 4, thickness: 5, opacity: 0.85, followTarget: false, color: '#ff5a5a' } },
   { type: 'surface-target-marker', name: 'Surface Target Marker',   section: 9,  params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
   { type: 'target-reticle',        name: 'Target Reticle',          section: 10, params: { x: STAGE_X, y: STAGE_Y, duration: 1.0 } },
   { type: 'vignette',              name: 'Damage Vignette',         section: 11, params: { strength: 1, viewW: DEMO_VIEW.w, viewH: DEMO_VIEW.h } },
@@ -397,7 +397,7 @@ export const CATALOG = [
   { type: 'screen-overlay',        name: 'Screen Overlay',          section: 23, params: { color: '#ff5a5a', opacity: 0.5, duration: 1.0, fadeIn: 0.2, fadeOut: 0.2 } },
   { type: 'composite-explosion',   name: 'Composite Explosion Burst', section: 24, params: { x: STAGE_X, y: STAGE_Y, radius: 60, explosionCount: 6, duration: 1.0 } },
   { type: 'beam',                  name: 'Beam',                    section: 26, params: { x: STAGE_X, y: STAGE_Y, length: 120, width: 18, gradientRadius: 14, color: '#7df', orientation: 0, opacity: 0.95, flashInTime: 0.04, holdTime: 0.4, fadeOutTime: 0.15 } },
-  { type: 'pulse-bubble',          name: 'Pulse Bubble',            section: 27, params: { x: STAGE_X, y: STAGE_Y, maxRadius: 40, minRadius: 28, pulseSpeed: 1.5, duration: 3.0 } },
+  { type: 'pulse-bubble',          name: 'Pulse Bubble',            section: 27, params: { x: STAGE_X, y: STAGE_Y, maxRadius: 40, minRadius: 28, pulseSpeed: 1.5, colorOut: '#00e5ff', colorIn: '#4488ff', flashSpeed: 0, flashIntensity: 0.6, opacity: 0.85, lineWidth: 3, duration: 3.0 } },
 ];
 
 // Effects whose visual lives in the SHARED particle pool (one-shot bursts):
