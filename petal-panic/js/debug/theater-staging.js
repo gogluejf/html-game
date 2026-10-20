@@ -305,8 +305,13 @@ export const STAGING = {
       // the macro routes through it. Base-class Enemy → no-op ai().
       const victim = new Enemy(STOMP_VIC_DEF, t._attacker.x, t._attacker.y);
       const kh = invoke('bodyExplosion', { ...t._params }, makeContext(victim, { world: { targets: [t._target] }, target: t._target, pools: t._pools, collisionWorld: t._world, effects: Effects }));
+      kh.on('hit', (i) => t._log.unshift(`HIT ${i.dealt ?? ''} dmg`.trim()));
       kh.on('detonate', () => t._log.unshift('KAMIKAZE BOOM'));
       kh.on('complete', () => t._log.unshift('COMPLETE'));
+      // The default payload (explosion) resolves SYNCHRONOUSLY: finish() emits
+      // detonate/complete DURING invoke(), before the listeners above exist.
+      // Replay the terminal state so the demo log still reads correctly.
+      if (kh._completed) { t._log.unshift('KAMIKAZE BOOM'); t._log.unshift('COMPLETE'); }
       t._handles.push(kh);
       return false;
     },

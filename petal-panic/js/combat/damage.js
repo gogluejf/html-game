@@ -65,8 +65,9 @@ export function damage(source, target, amt, method = 'projectile') {
   // Hits-landed is recorded into the trace via record(). damageDealt is no
   // longer tracked in the stats model (dropped per design). Map the raw
   // method onto a known hit-landed bucket; unknown methods are ignored so a
-  // new attack type can't throw.
-  if (source.traceStats && HITS_LANDED_METHODS.has(method)) {
+  // new attack type can't throw. `source` may be null (e.g. killAttacker's
+  // self-destruct pass) — telemetry is optional, never fatal.
+  if (source?.traceStats && HITS_LANDED_METHODS.has(method)) {
     record(source, { kind: 'hitLanded', method });
   }
 

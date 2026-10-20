@@ -407,6 +407,7 @@ export const AttackTheater = {
         : damage(this._attacker, target, proj.damage ?? 10, 'projectile');
       if (dealt > 0) {
         proj._attackHit = true; // stepBomb/stepProjectile read this to emit terminal events
+        proj._dealt = dealt;    // transient bodies (boomerang/orbit) log it
         Effects.spawnHitSparkles(proj.x + proj.w / 2, proj.y + proj.h / 2, 6);
         this._log.unshift(`HIT ${dealt} dmg`);
       }
@@ -773,33 +774,36 @@ export const AttackTheater = {
           finished = h.step(DT, [this._target]);
         } else if (h.id === 'boomerang') {
           finished = h.step(DT);
-          // Contact check: every live boomerang body vs the dummy target.
+          // Contact via the sandbox CollisionWorld: each live boomerang body is
+          // a transient PROJ_ALLY entity, so the shared 'hit' handler (same as
+          // gameplay's PROJ_ALLY×ENEMY branch) resolves damage + flash. The
+          // handler kills the transient on impact; we clear it here and log the
+          // melee hit. No theater-local AABB math.
           for (const s of h.states ?? []) {
             if (!s || s.done || !this._target?.alive) continue;
-            if (s.x + 8 > this._target.x && s.x - 8 < this._target.x + this._target.w &&
-                s.y + 8 > this._target.y && s.y - 8 < this._target.y + this._target.h) {
-              const dealt = this._target.takeDamage(this._params.damage ?? 12, this._attacker, 'melee');
-              if (dealt > 0) {
-                Effects.spawnHitSparkles(s.x, s.y, 6);
-                this._log.unshift(`BOOMERANG HIT ${dealt} dmg`);
-              }
-            }
+            const body = { x: s.x - 8, y: s.y - 8, w: 16, h: 16, alive: true,
+              layer: LAYER.PROJ_ALLY, friendly: true, damage: this._params.damage ?? 12 };
+            this._world.add(body);
+            this._world.update();
+            this._world.remove(body);
+            if (body._attackHit) this._log.unshift(`BOOMERANG HIT ${body._dealt ?? ''} dmg`.trim());
           }
         } else if (h.id === 'orbit') {
           finished = h.step(DT);
-          // Contact check: every live ring's entities vs the dummy target.
+          // Contact via the sandbox CollisionWorld: each live satellite is a
+          // transient PROJ_ALLY entity resolved by the shared 'hit' handler.
+          // One hit per ring per frame is enough for the sandbox.
           for (const st of h._rings ?? [h.state]) {
             if (st.done || !this._target?.alive) continue;
+            let ringHit = false;
             for (const e of st.entities ?? []) {
-              if (e.x + 6 > this._target.x && e.x - 6 < this._target.x + this._target.w &&
-                  e.y + 6 > this._target.y && e.y - 6 < this._target.y + this._target.h) {
-                const dealt = this._target.takeDamage(this._params.damage ?? 10, this._attacker, 'melee');
-                if (dealt > 0) {
-                  Effects.spawnHitSparkles(e.x, e.y, 4);
-                  this._log.unshift(`ORBIT HIT ${dealt} dmg`);
-                }
-                break; // one hit per ring per frame is enough for the sandbox
-              }
+              if (ringHit) break;
+              const body = { x: e.x - 6, y: e.y - 6, w: 12, h: 12, alive: true,
+                layer: LAYER.PROJ_ALLY, friendly: true, damage: this._params.damage ?? 10 };
+              this._world.add(body);
+              this._world.update();
+              this._world.remove(body);
+              if (body._attackHit) { ringHit = true; this._log.unshift(`ORBIT HIT ${body._dealt ?? ''} dmg`.trim()); }
             }
           }
         } else {
@@ -844,7 +848,16 @@ export const AttackTheater = {
       // Staged victims stand on their own surface (floor or platform) — snap
       // them back after gravity integration, same resolve() pattern the
       // spawned-enemy block uses. Without this they'd sink through the floor.
-      if (v.gravity > 0 && v.alive) resolve(v, [this._floorSolid]);
+      // Platforms are one-way tops with a THICKNESS: resolve()'s spawn-inside
+      // rule (stuckInside) needs prevBottom within [top, top+h] to snap a
+      // victim that tunneled past the face in one frame. A zero-height box
+      // makes stuckInside impossible → fast falls tunnel through. h: 8 matches
+      // the drawn platform thickness.
+      if (v.gravity > 0 && v.alive) {
+        const solids = [this._floorSolid];
+        for (const p of this._stompPlatforms ?? []) solids.push({ ...p, h: 8, oneWay: true });
+        resolve(v, solids);
+      }
       if (!v.alive && !v._downLogged) { v._downLogged = true; this._log.unshift('VICTIM DOWN'); }
     }
     if (this._target.hp <= 0) {
@@ -984,6 +997,24 @@ export const AttackTheater = {
       }
     }
 
+    // Boomerang bodies (spinning squares, phase-colored).
+    for (const h of this._handles) {
+      if (h.id !== 'boomerang' || h.states?.every((s) => s.done)) continue;
+      for (const st of h.states ?? [h.state]) {
+        if (st?.done) continue;
+        ctx.fillStyle = st.phase === 'outbound' ? '#7fd' : '#fd7';
+        ctx.save();
+        ctx.translate(st.x, st.y);
+        ctx.rotate(st.t * 10);
+        ctx.fillRect(-7, -7, 14, 14);
+        ctx.restore();
+        ctx.fillStyle = '#fff';
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(st.phase, st.x, st.y - 12);
+      }
+    }
+
     // Dummy target. A dead dummy (walkLeft one-shot hit) shows only a small
     // impact X where it died — the body is GONE until the run respawns it.
     if (this._target) {
@@ -1067,20 +1098,7 @@ export const AttackTheater = {
           }
         }
       } else if (h.id === 'boomerang' && !(h.states?.every((s) => s.done))) {
-        // Boomerang bodies: one spinning square per live throw, phase-colored.
-        for (const st of h.states ?? [h.state]) {
-          if (st?.done) continue;
-          ctx.fillStyle = st.phase === 'outbound' ? '#7fd' : '#fd7';
-          ctx.save();
-          ctx.translate(st.x, st.y);
-          ctx.rotate(st.t * 10);
-          ctx.fillRect(-7, -7, 14, 14);
-          ctx.restore();
-          ctx.fillStyle = '#fff';
-          ctx.font = '9px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText(st.phase, st.x, st.y - 12);
-        }
+        // Boomerang bodies are drawn in the arena pass above (spinning squares).
       } else if (h.id === 'stomp' && !st.done) {
         // Stomp: telegraph + impact juice are REAL effects fired by the macro.
         // Nothing to draw here — no theater-side circles or boxes.
