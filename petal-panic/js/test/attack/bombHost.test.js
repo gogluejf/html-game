@@ -83,7 +83,7 @@ for (const id of ['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread
   const { host, frame } = setup();
   const h = host.spawn('molotov', { origin: { x: 400, y: 200 }, speed: 0, arc: 0, ttl: dt }, attacker);
   frame();
-  assert.equal(h.handles[0].zone.y, 176, 'midair fire stays centered at expiry');
+  assert.equal(h.handles[0].zone.y, 352, 'midair fire anchors to ground (400 - 48/2 center → 352 top)');
   host.clear();
   assert.equal(h._cancelled, true);
   assert.equal(h.handles[0]._cancelled, true);

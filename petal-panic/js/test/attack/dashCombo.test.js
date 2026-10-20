@@ -46,9 +46,9 @@ const SEGS = [
 
 ok('direction clamps to horizontal only', () => {
   assert.equal(clampDashDirection(0), 0);
-  assert.equal(clampDashDirection(Math.PI / 2), 0);   // up → right (cos > 0)
+  assert.equal(clampDashDirection(Math.PI / 2), 0);   // up → right (cos >= 0)
   assert.equal(clampDashDirection(Math.PI), Math.PI);
-  assert.equal(clampDashDirection(-Math.PI / 3), Math.PI); // left-ish → left
+  assert.equal(clampDashDirection(-Math.PI / 3), 0);  // up-right → right (cos > 0)
 });
 
 ok('segment normalization fills defaults', () => {
