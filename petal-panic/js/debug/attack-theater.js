@@ -512,6 +512,14 @@ export const AttackTheater = {
     const id0 = this.currentId();
     const additive = this._handles.some((h) => h.id === id0 && typeof h.rearm === 'function');
     if (!additive) {
+      // Cancel handles BEFORE killing pool entities: a cancelled handle skips
+      // stepping entirely, so a mid-flight carrier never gets the one extra
+      // step where stepBomb() would see its corpse and fire a stray 'detonate'
+      // (the "premature explosion on demo switch" wart — bombSpread's children
+      // used to boom at their death points while roots vanished cleanly).
+      for (const h of this._handles) { try { h.cancel?.(); } catch { /* already done */ } }
+      this._handles = [];
+      if (this._bombHost) { try { this._bombHost.clear(); } catch { /* noop */ } }
       for (const p of this._pools?.projectilePool.activeItems ?? []) p.alive = false;
       for (const s of this._pools?.specialPool.activeItems ?? []) s.alive = false;
       if (this._pools) {
@@ -523,8 +531,6 @@ export const AttackTheater = {
       // particle system — same distinction as close().)
       resetEffects();
       particles.reset();
-      for (const h of this._handles) { try { h.cancel?.(); } catch { /* noop */ } }
-      this._handles = [];
       this._target.hp = 999;
       this._target.alive = true;
       // BOTH opponents reset home each replay — otherwise the target stays
