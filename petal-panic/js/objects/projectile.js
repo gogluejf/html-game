@@ -109,9 +109,12 @@ export class Pool {
    */
   spawn(...args) {
     for (const item of this.items) {
-      if (!item.alive) {
+      if (!item.alive && !(item._attackId === 'bomb' && !item._attackDone &&
+          item._attackHandle && !item._attackHandle._cancelled && !item._attackHandle._completed)) {
         // A collision can kill a slot AFTER updateAll's cleanup. Reusing it
         // must not append the same object a second time (double physics).
+        // Remove extension fields from the previous attack generation.
+        for (const key of Object.keys(item)) delete item[key];
         Object.assign(item, new this.ClassRef(...args));
         item.alive = true;
         if (!this.active.includes(item)) this.active.push(item);
@@ -209,6 +212,7 @@ export class Special extends Entity {
   }
 
   update(dt) {
+    this._bombPrevBottom = this.y + this.h;
     // Gravity for ballistic weapons (bombs).
     if (this.gravityValue > 0) {
       this.vy += this.gravityValue * dt;

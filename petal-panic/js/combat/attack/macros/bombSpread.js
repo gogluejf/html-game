@@ -89,8 +89,9 @@ defineMacro('bombSpread', {
         radius: p.radius,
         origin: p.origin,
         blastTeam: p.blastTeam,
+        groundY: p.groundY, platforms: p.platforms,
       }, ctx);
-      if (!child?.entity) continue;
+      if (!child?.entity) { onChildDone(); continue; }
       h.handles.push(child);
       child.on('hit', (...args) => h._emit('hit', ...args));
       child.on('complete', onChildDone);
@@ -105,6 +106,7 @@ defineMacro('bombSpread', {
     h.step = (dt, targets = []) => {
       for (const child of h.handles) {
         if (child._completed || child._cancelled) continue;
+        if (child.step) { child.step(dt, targets); continue; }
         const inner = resolveCarrier(child);
         if (inner.entity?._attackId === 'bomb') {
           const groundY = p.groundY ?? ctx.groundY;

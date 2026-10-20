@@ -243,6 +243,7 @@ export const COLLISION_RULES = [
   { a: LAYER.PROJ_ALLY, b: LAYER.BOSS,        action: 'hit'        },
   { a: LAYER.PROJ_ALLY, b: LAYER.SOLID,       action: 'hit'        }, // thorns chip barrels ()
   { a: LAYER.PROJ_FOE,  b: LAYER.HERO,        action: 'hit'        },
+  { a: LAYER.PROJ_FOE,  b: LAYER.SOLID,       action: 'hit'        }, // engine bomb terrain only; handler filters
   { a: LAYER.HERO,      b: LAYER.PICKUP,      action: 'pickup'     },
   { a: LAYER.HERO,      b: LAYER.COIN,        action: 'collect'    },
   { a: LAYER.HERO,      b: LAYER.CHECKPOINT,  action: 'checkpoint' },

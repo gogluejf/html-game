@@ -66,7 +66,7 @@ defineMacro('clusterBomb', {
       onDetonate({ x, y }, macroH) {
         try {
           const split = invoke('spawnSplit', {
-            x, y,
+            x, y, groundY: p.groundY, platforms: p.platforms,
             count: p.count,
             centerDirection: p.childDirection,
             angle: p.childAngle,
@@ -97,6 +97,7 @@ defineMacro('clusterBomb', {
     });
 
     const carrier = invoke('bomb', {
+      team: p.team ?? p.blastTeam,
       speed: p.speed,
       direction: p.direction,
       arc: p.arc,

@@ -9,9 +9,9 @@
 //   - h.step(dt, targets)  — unified per-frame stepping. Resolves the
 //     innermost carrier, calls stepBomb/stepProjectile + terrain, steps
 //     any deferred children in h.handles. Returns true when done.
-//   - Auto-promotion: deferred children spawned on detonate are exposed in
-//     h.handles so hosts (theater, game loop) can promote them to their own
-//     handle list and keep stepping them after the parent completes.
+//   - Deferred children spawned on detonate are exposed in h.handles for
+//     rendering. The parent alone steps them; hosts must not promote them
+//     into a second update list.
 //   - Completion tracking: parent carrier done AND all children done.
 //
 // Subclasses (or inline impls) call createCarrierHandle() and get back a
@@ -71,6 +71,7 @@ export function createCarrierHandle(id, params, ctx, { onDetonate }) {
    * @returns {boolean} true when the macro is fully done
    */
   h.step = (dt, targets = []) => {
+    if (h._completed || h._cancelled) return true;
     // Step the innermost carrier.
     const ch = resolveCarrier(h);
     if (!parentDone && ch.entity) {
@@ -78,7 +79,7 @@ export function createCarrierHandle(id, params, ctx, { onDetonate }) {
         // Terrain: host supplies groundY via params or ctx.
         const groundY = params.groundY ?? ctx.groundY;
         const platforms = params.platforms ?? ctx.platforms ?? [];
-        if (groundY != null) stepBombTerrain(ch.entity, dt, groundY, platforms);
+        if (!ctx.bombTerrainStepped && groundY != null) stepBombTerrain(ch.entity, dt, groundY, platforms);
         stepBomb(ch.entity, ch._params ?? params, ctx, ch);
       } else if (ch.entity._attackId === 'projectile') {
         stepProjectile(ch.entity, ch);
@@ -96,7 +97,7 @@ export function createCarrierHandle(id, params, ctx, { onDetonate }) {
         while (inner.inner?.entity) inner = inner.inner;
         const groundY = params.groundY ?? ctx.groundY;
         const platforms = params.platforms ?? ctx.platforms ?? [];
-        if (groundY != null) stepBombTerrain(inner.entity, dt, groundY, platforms);
+        if (!ctx.bombTerrainStepped && groundY != null) stepBombTerrain(inner.entity, dt, groundY, platforms);
         stepBomb(inner.entity, inner._params ?? params, ctx, inner);
       }
     }
@@ -108,7 +109,7 @@ export function createCarrierHandle(id, params, ctx, { onDetonate }) {
         parentDone = true;
       }
       if (h.handles.length > 0) {
-        childrenDone = h.handles.every((c) => c.state?.done || c._completed || !c.entity?.alive);
+        childrenDone = h.handles.every((c) => c.state?.done || c._completed || c._cancelled);
       }
       if (parentDone && childrenDone) {
         h._complete();
@@ -120,11 +121,11 @@ export function createCarrierHandle(id, params, ctx, { onDetonate }) {
 
   // Wire the detonate subscription.
   const wireDetonate = (carrier) => {
-    carrier.on('detonate', ({ x, y }) => {
+    carrier.on('detonate', (impact) => {
       // The payload can immediately recycle the dead carrier's pool slot.
       // From here on its entity belongs to another attack, not this parent.
       parentDone = true;
-      onDetonate?.({ x, y }, h);
+      onDetonate?.(impact, h);
       childrenDone = h.handles.every((child) => child._completed || child._cancelled);
     });
     carrier.on('hit', (...args) => h._emit('hit', ...args));
@@ -136,6 +137,20 @@ export function createCarrierHandle(id, params, ctx, { onDetonate }) {
 
   // Expose for the impl to call after invoking the carrier.
   h._wireCarrier = wireDetonate;
+  // Carrier completion must not proxy completion before deferred payloads end.
+  h.setInner = (carrier) => { h.inner = carrier; return h; };
+  const cancel = h.cancel.bind(h);
+  h.cancel = () => {
+    if (h._completed || h._cancelled) return;
+    const carrier = resolveCarrier(h);
+    if (!parentDone && carrier.entity?._attackHandle === carrier) {
+      carrier.entity.alive = false;
+      carrier.entity._attackDone = true;
+      carrier.cancel();
+    }
+    for (const child of h.handles) child.cancel();
+    cancel();
+  };
 
   return h;
 }

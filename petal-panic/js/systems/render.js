@@ -17,6 +17,7 @@ import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../core/timers.js';
 import { drawScreen, screenUpdate } from '../ui/screens.js';
 import { drawHUD } from '../systems/hud.js';
 import { LEVELS, BOSS_TRIGGER_X, ZONE_GROUND_Y } from '../world/level.js';
+import { bombAttacks } from './update.js';
 import { PLATFORM_DRAW_H } from '../world/macros.js';
 
 // I-frame blink tuning (design §27): the flicker phase is derived from the
@@ -99,6 +100,7 @@ export function render(ctx) {
     ctx.restore();
   };
   if (showSprites) {
+    bombAttacks.draw(ctx);
     // destructible barrels (drawn via Entity.draw; white flash on hit).
     for (const b of getBarrels()) {
       if (!b.alive) continue;

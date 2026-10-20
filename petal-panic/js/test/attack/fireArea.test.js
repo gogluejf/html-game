@@ -2,7 +2,9 @@
 // Run: node js/test/attack/fireArea.test.js
 
 import { strict as assert } from 'node:assert';
-import { fireAreaBox, stepFireArea } from '../../combat/attack/primitives/fireArea.js';
+import { fireAreaBox } from '../../combat/attack/primitives/fireArea.js';
+import '../../combat/attack/macros/molotov.js';
+import { Pool, Special } from '../../objects/projectile.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { LAYER } from '../../consts.js';
@@ -91,5 +93,36 @@ ok('team routing: foe area skips enemies', () => {
   for (let i = 0; i < 30; i++) h.step(DT, [enemy]);
   assert.equal(n, 0);
 });
+
+for (const scenario of [
+  { name: 'floor impact', y: 391, surface: 400, impact: true },
+  { name: 'airborne fuse (no ground projection)', y: 200, surface: 224 },
+  { name: 'platform impact', y: 291, surface: 300, impact: true, platforms: [{ x: 350, y: 300, w: 100 }] },
+  { name: 'platform above bottle ignored', y: 350, surface: 374, platforms: [{ x: 350, y: 300, w: 100 }] },
+  { name: 'platform outside column ignored', y: 200, surface: 224, platforms: [{ x: 500, y: 300, w: 100 }] },
+]) {
+  ok(`Molotov ${scenario.name}: rendered fire and damage share the impact box`, () => {
+    const ctx = {
+      attacker: attacker(), groundY: 400, platforms: scenario.platforms ?? [],
+      pools: { specialPool: new Pool(Special, 4) }, world: { targets: [] },
+    };
+    const h = invoke('molotov', {
+      origin: { x: 400, y: scenario.y }, speed: 0, arc: 0, ttl: DT,
+    }, ctx);
+    if (scenario.impact) h.entity.vy = 10;
+    else ctx.pools.specialPool.updateAll(DT);
+    h.step(DT);
+    assert.equal(h.handles.length, 1);
+    const fire = h.handles[0];
+    assert.equal(fire.zone.y + fire.zone.h, scenario.surface);
+    const rects = [];
+    fire.zone.draw({ save() {}, restore() {}, strokeRect() {}, fillRect(...args) { rects.push(args); } });
+    assert.deepEqual(rects, [[352, scenario.surface - 48, 96, 48]]);
+    const enemy = dummyEnemy(390, scenario.surface - 24);
+    fire.step(0.2, [enemy]);
+    assert.equal(enemy.hp, 92);
+    assert.deepEqual(fire.zone._hb.box, { x: 352, y: scenario.surface - 48, w: 96, h: 48 });
+  });
+}
 
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

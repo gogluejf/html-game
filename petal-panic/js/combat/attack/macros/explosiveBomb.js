@@ -68,6 +68,7 @@ defineMacro('explosiveBomb', {
     });
 
     const carrier = invoke('bomb', {
+      team: p.team ?? p.blastTeam,
       speed: p.speed,
       direction: p.direction,
       arc: p.arc,

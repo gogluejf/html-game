@@ -17,6 +17,7 @@ import { Anim, makeTestFrame } from '../core/anim.js';
 import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { projectilePool, specialPool } from '../objects/projectile.js';
+import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
 import { stepBombTerrain, stepBomb } from '../combat/attack/primitives/bomb.js';
 import { S, getState, tryTransition, onTransition } from '../core/state.js';
 import { dispatchScreenInput } from '../ui/screens.js';
@@ -310,6 +311,7 @@ registerCollisionHandlers(collisionWorld);
  *   old content is cleared and the structural platforms are installed.
  */
 export function loadActiveZone(zone, content) {
+  ctx.bombAttacks?.clear();
   // Remove the previous zone's content from the collision world.
   const oldCounts = { solids: solidEntities.length, enemies: realEnemies.length, barrels: [...barrels,...woodBarrels,...coinBarrels].length, powerups: powerups.length, cps: checkpoints.length };
   const cwBefore = collisionWorld.entities.size;
@@ -633,6 +635,16 @@ ctx.handleBarrelDestroyed = handleBarrelDestroyed;
 ctx.coins = coins;
 ctx.projectilePool = projectilePool;
 ctx.specialPool = specialPool;
+export const bombAttacks = new BombAttackHost(() => ({
+  pools: { projectilePool, specialPool }, collisionWorld, bombTerrainStepped: true,
+  groundY: ZONE_GROUND_Y, platforms: [...SOLIDS.slice(1), ...barrelSolidBoxes],
+  world: { targets: [hero, ...realEnemies, ...(bossZone.bossCanTakeDamage() ? [boss] : [])] },
+}));
+ctx.bombAttacks = bombAttacks;
+// Gameplay callers use this entry point, not a discarded invoke() result.
+export function spawnBombAttack(id, params, attacker = hero) {
+  return bombAttacks.spawn(id, params, attacker);
+}
 ctx.bossZoneDef = bossZoneDef;
 ctx.clearSeq = clearSeq;
 ctx.CLEAR_SEQ = CLEAR_SEQ;
@@ -897,33 +909,22 @@ export function update(dt) {
 
   // Special projectiles: update + handle bomb explosions.
   specialPool.updateAll(dt);
-  // Bomb terrain: the engine owns bounce/settle (stepBombTerrain) — same rules
   // Bomb terrain: the engine owns bounce (stepBombTerrain) — same rules
   // for gameplay and the sandbox. Reflect bombs rest on the ground (vy=0)
   // but stay alive; the fuse keeps running until TTL → explodeSpecial().
   // 'stop' bombs die on impact → explode immediately.
   for (const s of specialPool.activeItems) {
-    if (!s.alive || s.type !== 'bomb') continue;
+    if (!s.alive || s.type !== 'bomb' || s._attackId === 'bomb') continue;
     const settled = stepBombTerrain(s, dt, ZONE_GROUND_Y, SOLIDS.slice(1));
     if (settled && !s.exploded) {
       explodeSpecial(s);
     }
   }
   syncSpecialsToWorld();
-  // Attack-engine bombs (explosiveBomb macro): the engine owns their flight +
-  // detonation. stepBomb() emits 'detonate' at the death point, which fires
-  // the explosion payload — contact with a real enemy sets _attackHit via the
-  // collision handler above, so these bombs explode ON CONTACT or on fuse.
-  for (const s of specialPool.activeItems) {
-    if (!s.alive || s._attackId !== 'bomb' || s._attackDone) continue;
-    const h = s._attackHandle;
-    if (!h) continue;
-    stepBomb(s, h._params ?? {}, ctx, h);
-  }
   // TTL expiry: check the FULL pool (not just activeItems, which already
   // spliced dead items) for specials that just died from TTL this frame.
   for (const s of specialPool.items) {
-    if (s.ttlExpired && !s.exploded) {
+    if (s._attackId !== 'bomb' && s.ttlExpired && !s.exploded) {
       explodeSpecial(s);
       s.ttlExpired = false;
     }
@@ -944,7 +945,20 @@ export function update(dt) {
     prevBottom: heroPrevBottom,
     ignoreOneWay: hero.droppingThrough,
   });
+  // Shared top-surface collision before broadphase; payloads after dispatch.
+  for (const s of specialPool.items) {
+    if (s._attackId === 'bomb' && !s._attackDone) {
+      stepBombTerrain(s, dt, ZONE_GROUND_Y, [...SOLIDS.slice(1), ...barrelSolidBoxes]);
+    }
+  }
   collisionWorld.update();
+  bombAttacks.step(dt);
+  // Compatibility for directly invoked primitives/macros without a host root.
+  for (const s of specialPool.items) {
+    if (s._attackId === 'bomb' && !s._attackDone && s._attackHandle) {
+      stepBomb(s, s._attackHandle._params ?? {}, ctx, s._attackHandle);
+    }
+  }
 
   // Grounded: derive from the last resolved axis + a surface-contact probe so
   // the hero can jump again immediately after landing. While dropping through

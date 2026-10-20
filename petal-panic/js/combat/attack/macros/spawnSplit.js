@@ -135,6 +135,7 @@ defineMacro('spawnSplit', {
           origin: { x: c.x, y: c.y - 9 }, direction: c.angle, speed,
           arc: b.arc ?? 700, bounce: b.bounce ?? true, ttl: b.ttl ?? 1.5,
           damage: b.damage ?? 25, radius: b.radius ?? 60,
+          blastTeam: b.blastTeam, groundY: p.groundY, platforms: p.platforms,
           explodeOnContact: b.explodeOnContact ?? true,
         }, ctx);
         if (child?.entity) handles.push(child);
@@ -155,6 +156,7 @@ defineMacro('spawnSplit', {
     h.step = (dt, targets = []) => {
       for (const child of handles) {
         if (child._completed || child._cancelled) continue;
+        if (child.step) { child.step(dt, targets); continue; }
         const inner = resolveCarrier(child);
         if (inner.entity?._attackId === 'bomb') {
           const groundY = p.groundY ?? ctx.groundY;

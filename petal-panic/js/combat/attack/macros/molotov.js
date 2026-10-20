@@ -7,6 +7,7 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
+import { FIRE_HEIGHT } from '../primitives/fireArea.js';
 
 const DEFAULTS = Object.freeze({
   speed: 600,           // launch force (px/s)
@@ -52,14 +53,16 @@ defineMacro('molotov', {
     const p = { ...DEFAULTS, ...params };
 
     const h = createCarrierHandle('molotov', p, ctx, {
-      onDetonate({ x, y }, macroH) {
+      onDetonate({ x, y, surfaceY }, macroH) {
         try {
           const targets = new Set();
           for (const t of ctx.world?.targets ?? []) if (t) targets.add(t);
           const aimed = p.target ?? ctx.target;
           if (aimed) targets.add(aimed);
+          // Only actual shared bomb terrain contact anchors fire to terrain.
+          // Midair expiry/contact burns at the death point, never teleports down.
           const fire = invoke('fireArea', {
-            x, y,
+            x, y: surfaceY == null ? y : surfaceY - FIRE_HEIGHT / 2,
             width: p.fireWidth,
             duration: p.fireDuration,
             tickRate: p.fireTickRate,
@@ -76,6 +79,7 @@ defineMacro('molotov', {
     });
 
     const carrier = invoke('bomb', {
+      team: p.team ?? p.blastTeam,
       speed: p.speed,
       direction: p.direction,
       arc: p.arc,

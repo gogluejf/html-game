@@ -19,6 +19,7 @@ import { Debug } from '../debug/debug.js';
 import { record } from '../stats.js';
 import { GameObj, Checkpoint } from '../objects/object.js';
 import { SolidBox } from '../core/solidBox.js';
+import { aabbOverlap } from '../core/collision.js';
 import { Powerup } from '../objects/powerup.js';
 import { COIN_TYPES } from '../objects/coin.js';
 import { spawnFloatText } from '../hero/floatText.js';
@@ -26,6 +27,20 @@ import { formatAreaId } from '../systems/lifecycle.js';
 import { onExitFlagReached } from '../world/zoneLifecycle.js';
 import { getLiveEnemies } from '../systems/update.js';
 import { ctx } from '../world/context.js';
+
+// Top contacts are resolved before CollisionWorld dispatch. Only reflect a
+// remaining overlap: never run minimum-penetration reflection on a resolved
+// top (especially at corners). PLATFORM-layer one-way tops never dispatch here.
+function hitSolidTerrain(projectile, target) {
+  const box = target.worldBox();
+  if (!aabbOverlap(projectile.worldBox(), box)) return;
+  if (projectile.solidBehavior === 'reflect') {
+    projectile.reflectVelocity(box);
+  } else if (projectile.solidBehavior === 'stop') {
+    projectile.alive = false;
+    if (isSpecialType(projectile.type)) explodeSpecial(projectile);
+  }
+}
 
 const CONTACT_COOLDOWN = 0.5; // seconds between contact hits from same enemy
 const ONEUP_THRESHOLD = 100;  // total coins collected per extra life (design §14)
@@ -77,6 +92,7 @@ export function registerCollisionHandlers(collisionWorld) {
     // --- Friendly thorns (hero → enemy/barrel) --------------------------------
     const allyProj = a.layer === LAYER.PROJ_ALLY ? a : (b.layer === LAYER.PROJ_ALLY ? b : null);
     if (allyProj && allyProj.friendly) {
+      if (!allyProj.alive) return;
       const target = allyProj === a ? b : a;
 
       // Friendly shot vs TERRAIN (SolidBox). Policy is DATA on the projectile
@@ -86,12 +102,7 @@ export function registerCollisionHandlers(collisionWorld) {
       //   • 'reflect' — bombs: bounce off the surface, keep flying; the fuse
       //                keeps running so they still detonate on timer/barrel
       if (target instanceof SolidBox) {
-        if (allyProj.solidBehavior === 'reflect') {
-          allyProj.reflectVelocity(target.worldBox());
-        } else if (allyProj.solidBehavior === 'stop') {
-          allyProj.alive = false;
-          if (isSpecialType(allyProj.type)) explodeSpecial(allyProj);
-        }
+        hitSolidTerrain(allyProj, target);
         return;
       }
 
@@ -173,7 +184,14 @@ export function registerCollisionHandlers(collisionWorld) {
     // shot on impact. Respects the hero's invincibility window.
     const foeProj = a.layer === LAYER.PROJ_FOE ? a : (b.layer === LAYER.PROJ_FOE ? b : null);
     if (foeProj && !foeProj.friendly) {
+      if (!foeProj.alive) return;
       const victim = foeProj === a ? b : a;
+      // Match ally bomb terrain without changing ordinary enemy shots or
+      // allowing foe projectiles to damage barrels.
+      if (victim instanceof SolidBox && foeProj._attackId === 'bomb') {
+        hitSolidTerrain(foeProj, victim);
+        return;
+      }
       if (victim.layer !== LAYER.HERO) return;
       // Boss zone flow (boss-arena.md §2): the boss is untouchable before
       // COMBAT, so it fires no attacks during the intro either.

@@ -441,6 +441,7 @@ export const AttackTheater = {
       collisionWorld: this._world,
       effects: { ...Effects, fireManual }, // REAL VFX + fireManual for telegraphs
       groundY: GROUND_Y,
+      bombTerrainStepped: true,
       platforms: this._stompPlatforms ?? [],
       solids: [this._floorSolid],
     });
@@ -733,7 +734,6 @@ export const AttackTheater = {
             this._spawnedEnemies.push(e);
             this._world.add(e);
           }
-          for (const ch of h.handles ?? []) this._handles.push(ch);
           const st = this._params.spawnType;
           this._log.unshift(`split → ${h.children?.length ?? 0} ${st === 'bomb' ? 'bombs' : st === 'enemy' ? 'enemies' : 'shots'}`);
         } else if (id === 'predictiveShot') {
@@ -979,8 +979,8 @@ export const AttackTheater = {
     // Bomb terrain: the ENGINE owns bounce/settle/detonate (stepBombTerrain) —
     // same rules + numbers as gameplay. The sandbox just supplies the flat
     // ground line; stepBomb() detonates settled bombs on the handle pass below.
-    for (const s of specialPool.activeItems) {
-      if (!s.alive || s._attackId !== 'bomb' || s._attackDone) continue;
+    for (const s of specialPool.items) {
+      if (s._attackId !== 'bomb' || s._attackDone) continue;
       stepBombTerrain(s, DT, GROUND_Y);
     }
     this._world?.update();
@@ -1004,18 +1004,15 @@ export const AttackTheater = {
         // Beam macros: step the macro which internally steps its beam phase(s).
         finished = h.step(DT, [this._target]);
       } else if (h.entity) {
-        if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
+        if (h.id === 'bomb') finished = stepBomb(h.entity, this._params, this._ctx(), h);
+        else if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
         else if (typeof h.step === 'function') {
           // Carrier macros (explosiveBomb, molotov, clusterBomb) + step-based
           // primitives (homingMissile, beam, fireArea, spike, etc.) all expose
           // a unified .step(dt, targets). Carrier macros resolve their own
           // innermost carrier + terrain + deferred children internally.
           finished = h.step(DT, [this._target]);
-          // Promote any deferred children (fireArea, split bombs) to top-level
-          // so they survive parent completion and get rendered independently.
-          for (const child of h.handles ?? []) {
-            if (!child.state?.done && !this._handles.includes(child)) this._handles.push(child);
-          }
+
         }
       } else if (typeof h.step === 'function') {
         // Multi-shot macros (spreadShot/radialShot/burstShot): the macro's
@@ -1347,6 +1344,16 @@ export const AttackTheater = {
       ctx.textAlign = 'center';
       ctx.fillText(`${Math.max(0, Math.round(e.hp))}`, e.x + e.w / 2, e.y - 6);
     }
+
+    // Deferred zones stay owned/stepped by their root macro, but draw here.
+    const drawChildren = (h) => {
+      for (const child of h.handles ?? []) {
+        if (child._completed || child._cancelled) continue;
+        child.zone?.draw(ctx);
+        drawChildren(child);
+      }
+    };
+    for (const h of this._handles) drawChildren(h);
 
     // --- Wave-2 state visuals ---------------------------------------------------
     for (const h of this._handles) {

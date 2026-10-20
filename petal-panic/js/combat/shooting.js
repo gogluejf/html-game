@@ -72,7 +72,14 @@ function fireSpecial(h, input) {
   const oy = Math.sin(baseAngle) * 20;
 
   // Spread weapon: fan out multiple projectiles symmetrically around the aim.
-  if (meta.spread) {
+  if (type === 'bomb' && ctx.bombAttacks) {
+    const attack = ctx.bombAttacks.spawn('explosiveBomb', {
+      origin: { x: cx + ox, y: cy + oy }, direction: baseAngle,
+      speed: meta.speed, arc: meta.gravity, ttl: meta.lifetime,
+      damage: meta.damage, radius: meta.radius, bounce: true, blastTeam: 'ally',
+    }, h);
+    if (!attack.entity) return;
+  } else if (meta.spread) {
     const { count, angle } = meta.spread;
     const step = count > 1 ? angle / (count - 1) : 0;
     for (let i = 0; i < count; i++) {
@@ -102,6 +109,12 @@ function fireSpecial(h, input) {
  * source of truth so VFX + damage are identical regardless of trigger.
  */
 export function explodeSpecial(s) {
+  // Engine payloads are owned by their macro and dispatched after collision.
+  if (s._attackId === 'bomb') {
+    s._attackHit = !s.ttlExpired;
+    s.alive = false;
+    return;
+  }
   if (s.exploded) return;
   s.exploded = true;
   const meta = specialById[s.type];

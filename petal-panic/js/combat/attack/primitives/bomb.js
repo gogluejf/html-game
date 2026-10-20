@@ -16,6 +16,7 @@
 
 import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
+import { LAYER } from '../../../consts.js';
 import { fireDeclared } from '../../../effects/index.js';
 
 // Declared effect types for THIS registration (single source of truth:
@@ -31,6 +32,7 @@ const DEFAULTS = Object.freeze({
   speed: 500,           // launch force (px/s)
   direction: -Math.PI / 4, // up-right throw
   arc: 800,             // gravity px/s² (throw height control)
+  team: 'ally',
   bounce: true,         // → solidBehavior 'reflect' (existing flag)
   explodeOnContact: true,
   ttl: 1.5,             // fuse seconds (runs while airborne AND resting)
@@ -62,6 +64,8 @@ export function spawnBomb(p, ctx, h = null) {
   ent.vy = Math.sin(p.direction) * p.speed;
   ent.gravityValue = p.arc;
   ent.damage = p.damage;
+  ent.friendly = p.team !== 'foe';
+  ent.layer = ent.friendly ? LAYER.PROJ_ALLY : LAYER.PROJ_FOE;
   // Fuse: the bomb's TTL label is 'fuse' (Special relabels it), so setLife()
   // — which writes the 'life' timer — would be ignored by tickTtl(). Write
   // the labeled timer directly so the declared ttl actually governs expiry.
@@ -71,6 +75,8 @@ export function spawnBomb(p, ctx, h = null) {
   ent.solidBehavior = p.bounce ? 'reflect' : 'stop';
   ent._attackId = 'bomb';
   ent._attackDone = false;
+  ent._attackHit = false;
+  ent._bombSurfaceY = null;
   ctx.collisionWorld?.add(ent);
   // Gameplay host bridge: the world update loop (systems/update.js) steps
   // engine-spawned bombs via stepBomb() — it finds them by this tag. The
@@ -88,8 +94,7 @@ export function spawnBomb(p, ctx, h = null) {
  * Rules (match Special physics):
  *  - falling onto a surface with solidBehavior 'reflect' → bounce
  *    (restitution 0.5, friction 0.7); when the rebound is too weak to matter
- *    (< BOMB_SETTLE_VY), the bomb SETTLES: it is killed with _attackHit set,
- *    which makes stepBomb() end it on the host's next step.
+ *    (< BOMB_SETTLE_VY), the bomb rests alive until its fuse expires.
  *  - solidBehavior 'stop' → immediate settle (impact = end).
  *
  * @param {object} ent          the Special entity (must be alive)
@@ -99,21 +104,25 @@ export function spawnBomb(p, ctx, h = null) {
  * @returns {boolean} true when the bomb settled this call (end pending)
  */
 export function stepBombTerrain(ent, dt, groundY, platforms = []) {
-  if (!ent?.alive || ent._attackDone) return false;
+  if (!ent || (!ent.alive && !ent.ttlExpired) || ent._attackDone) return false;
   const bottom = ent.y + ent.h;
-  // Floor first (the common case), then platform tops.
+  // Pick the first crossed top, independent of surface list ordering.
+  const prevBottom = ent._bombPrevBottom ?? bottom - ent.vy * dt;
   let surface = null;
-  if (bottom >= groundY && ent.vy > 0) surface = groundY;
-  else {
+  if (ent.vy > 0) {
+    if (Number.isFinite(groundY) && bottom >= groundY) surface = groundY;
     for (const p of platforms) {
-      const prevBottom = bottom - ent.vy * dt;
-      if (prevBottom <= p.y + 2 && bottom >= p.y && ent.vy > 0 &&
-          ent.x + ent.w > p.x && ent.x < p.x + p.w) { surface = p.y; break; }
+      if (prevBottom <= p.y + 2 && bottom >= p.y &&
+          ent.x + ent.w > p.x && ent.x < p.x + p.w &&
+          (surface == null || p.y < surface)) surface = p.y;
     }
   }
+  ent._bombSurfaceY = null;
   if (surface == null) return false;
 
   ent.y = surface - ent.h;
+  ent._bombSurfaceY = surface;
+  if (!ent.alive) return false; // fuse expired on this landing frame
   if (ent.solidBehavior === 'reflect') {
     ent.vy = -Math.abs(ent.vy) * 0.5; // restitution
     ent.vx *= 0.7;                    // friction
@@ -152,7 +161,7 @@ export function stepBombTerrain(ent, dt, groundY, platforms = []) {
  * @param {AttackHandle} h handle to emit on
  */
 export function stepBomb(ent, p, ctx, h) {
-  if (ent._attackDone) return true;
+  if (h._completed || h._cancelled || ent._attackDone) return true;
   if (ent.alive) return false;
 
   ent._attackDone = true;
@@ -161,7 +170,9 @@ export function stepBomb(ent, p, ctx, h) {
   // Fuse expiry without contact = timed end (still an end, not a silent
   // expire): bombs are designed to go off wherever they land.
   const contact = !!ent._attackHit;
-  h._emit('detonate', { x: cx, y: cy, contact });
+  const surfaceY = ent._bombSurfaceY != null && Math.abs(ent.y + ent.h - ent._bombSurfaceY) < 0.01
+    ? ent._bombSurfaceY : null;
+  h._emit('detonate', { x: cx, y: cy, contact, surfaceY });
 
   // Basic carrier juice only (same tier as projectile's hit-sparkle/debris):
   // a landing puff when the bomb dies against terrain. Blast bursts, screen
