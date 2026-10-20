@@ -225,6 +225,9 @@ export function startRide(){
     mem: { wantJump: false, djDone: false, armSuper: false, superFired: false, _releasedAtApex: false },
     landedSet: new Set(),
     _landFlash: 0,
+    _locked: false, // clear lockout from a PREVIOUS ride must not leak in —
+                    // the singleton `ride` object is reused across test runs,
+                    // and a stale true feeds dead input from frame one.
   });
   ride.trace = null;
   // Wire the shared driver (js/world/rideDriver.js) to this browser ride:
@@ -307,6 +310,7 @@ export function stopRide(redraw = true){
   // Plan 07: reset manual-play state. Input is owned by the shared engine —
   // nothing to unbind here; stop polling on next tick (ride.active = false).
   ride.manual = false;
+  ride._locked = false; // release the clear lockout so the next test can run
   $('playBtn')?.classList.remove('armed');
   ride.hero = null;
   ride.world = null;
