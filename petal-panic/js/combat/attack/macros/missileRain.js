@@ -51,7 +51,6 @@ const DEFAULTS = Object.freeze({
   descentSpeed: 500,      // per-missile fall speed (px/s)
   dropHeight: 260,        // per-missile spawn height above the impact (px)
   damage: 30,             // per-missile contact + blast damage
-  radius: 60,             // per-missile blast radius (px)
   team: 'foe',            // who the falling carriers hurt
   blastTeam: 'neutral',   // who the blasts hurt
   size: 14,               // carrier box size (px)
@@ -59,6 +58,12 @@ const DEFAULTS = Object.freeze({
   seed: null,             // optional RNG seed for 'random' coordination (determinism)
   markerStyle: null,      // surface-target-marker override (passed to each missile)
   projectileStyle: null,  // ascent-visual effect override
+  blastType: 'explosion', // explosion | shockwave | napalm — payload on impact (per missile)
+  blast: {                // per-payload size params (each payload reads its own key)
+    explosionRadius: 60,  // explosion blast circle (px)
+    shockRadius: 150,     // shockwave ring max radius (px)
+    fireWidth: 96,        // napalm burn zone width (px)
+  },
 });
 
 /**
@@ -138,7 +143,10 @@ defineMacro('missileRain', {
       { key: 'timeToTarget', desc: 'per-missile marker → impact window (s)' },
       { key: 'descentSpeed', desc: 'per-missile fall speed (px/s)' },
       { key: 'damage', desc: 'per-missile contact + blast damage' },
-      { key: 'radius', desc: 'per-missile blast radius (px)' },
+      { key: 'blastType', desc: "explosion | shockwave | napalm — payload on impact (per missile)" },
+      { key: 'blast.explosionRadius', desc: 'explosion blast circle (px)' },
+      { key: 'blast.shockRadius', desc: 'shockwave ring max radius (px)' },
+      { key: 'blast.fireWidth', desc: 'napalm burn zone width (px)' },
     ],
   },
   impl(params, ctx) {
@@ -182,13 +190,20 @@ defineMacro('missileRain', {
         dropHeight: p.dropHeight,
         fallSpeed: p.descentSpeed,
         damage: p.damage,
-        radius: p.radius,
         team: p.team,
         blastTeam: p.blastTeam,
         size: p.size,
         markerStyle: p.markerStyle,
+        blastType: p.blastType,
+        blast: p.blast,
       }, ctx);
       h.state.missiles.push(m);
+      // Promote each skyMissile into the rain root's deferred-children list so
+      // hosts step AND draw its nested payload zones (napalm fire) uniformly —
+      // the theater's zone walk starts at the root and recurses through
+      // h.handles; without this the per-missile payloads are unreachable.
+      if (!h.handles) h.handles = [];
+      h.handles.push(m);
       // NOTE: no on('complete') → _complete here. Completion is owned by the
       // step loop below (all n activated AND all done) — a callback would fire
       // when the FIRST missile ends and cut the sequential pattern short.

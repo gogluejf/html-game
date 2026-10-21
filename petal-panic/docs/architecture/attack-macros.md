@@ -349,13 +349,23 @@ This is a canonical macro: callers configure it but should not rebuild its seque
 - **descentSpeed** — per-missile falling speed.
 - **dropHeight** — per-missile spawn height above the impact point (px).
 - **damage** — per-missile contact + blast damage.
-- **radius** — per-missile blast radius (px).
 - **team / blastTeam** — who the falling carriers / blasts hurt.
 - **size** — carrier box size (px).
 - **margin** — keep landing positions this far inside the view (px).
 - **seed** — optional RNG seed for `random` coordination (determinism).
 - **markerStyle** — optional Surface Target Marker effect override.
 - **projectileStyle** — optional ascent-visual (trail) effect override.
+- **blastType** — `explosion` | `shockwave` | `napalm`. Payload on impact,
+  applied to EVERY missile in the rain (default `explosion`). Passed through
+  to each Sky Missile (§22).
+- **blast.explosionRadius** — explosion blast circle (px), used when
+  `blastType=explosion`.
+- **blast.shockRadius** — shockwave ring max radius (px), used when
+  `blastType=shockwave`.
+- **blast.fireWidth** — napalm burn zone width (px), used when
+  `blastType=napalm`.
+
+Each payload reads ONLY its own size key from `blast`; the others are ignored.
 
 ### Distance behavior
 
