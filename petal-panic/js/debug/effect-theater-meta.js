@@ -113,12 +113,14 @@ export const EFFECT_META = {
     params: [
       { key: 'radius',    config: true, kind: 'num',   desc: 'Marker radius (px)' },
       { key: 'pulseRate', config: true, kind: 'num',   desc: 'Pulse frequency (Hz)' },
-      { key: 'rotation',  config: true, kind: 'angle', desc: 'Spin speed (rad/s)' },
+      { key: 'rotation',  config: true, kind: 'angle', desc: 'Tick orientation (rad)' },
       { key: 'opacity',   config: true, kind: 'num',   desc: 'Peak alpha (0-1)' },
       { key: 'duration',  config: true, kind: 'num',   desc: 'Total lifetime (s)' },
       { key: 'animation', config: true, kind: 'str',   desc: 'Animation variant' },
       { key: 'color',     config: true, kind: 'str',   desc: 'Marker tint' },
-      { key: 'orientation', config: true, kind: 'str', desc: 'Surface: horizontal | vertical' },
+      { key: 'angle', config: true, kind: 'angle', desc: 'Surface direction (rad): 0=floor, π/2=wall' },
+      { key: 'spinRate', config: true, kind: 'num', desc: 'Tick spin (rad/s); 0 = locked' },
+      { key: 'orientation', config: true, kind: 'str', desc: 'DEPRECATED alias for angle: horizontal | vertical' },
     ],
   },
   'target-reticle': {

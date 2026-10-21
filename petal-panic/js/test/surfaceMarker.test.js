@@ -46,6 +46,8 @@ function makeCtx() {
     lineTo(...a) { calls.push(['lineTo', ...a]); },
     fill() { calls.push(['fill']); },
     stroke() { calls.push(['stroke']); },
+    translate(...a) { calls.push(['translate', ...a]); },
+    rotate(...a) { calls.push(['rotate', ...a]); },
     set globalAlpha(v) { calls.push(['alpha', v]); },
     get globalAlpha() { return this._ga ?? 1; },
     set strokeStyle(v) { calls.push(['strokeStyle', v]); },
@@ -70,7 +72,7 @@ function movingCarrier(x = 0, y = 0) {
 console.log('lifetime');
 ok('defaults: done exactly at the duration boundary, not before', () => {
   const b = surfaceMarker({});
-  const frames = Math.round(1.5 / DT); // default duration 1.5s → 90 frames
+  const frames = Math.round(1.0 / DT); // default duration 1.0s → 60 frames
   for (let i = 0; i < frames - 1; i++) b.update(DT);
   assert.equal(b.done, false, 'not done just before the boundary');
   b.update(DT);
@@ -190,12 +192,13 @@ ok('draws rings + ticks while active (save/restore bracketed, constant alpha)', 
   assert.ok(close(alphas[0][1], 0.7, 1e-6), `alpha == declared constant opacity (got ${alphas[0][1]})`);
   const strokes = ctx.calls.filter(c => c[0] === 'stroke');
   assert.equal(strokes.length, 6, 'outer ring + inner ring + 4 ticks = 6 strokes');
-  // Contract: both rings centered at the origin; outer ring radius matches
+  // Contract: both rings centered at the local origin (the context is
+  // translated to the marker origin first); outer ring radius matches
   // the current exposed radius; inner ring is a proper fraction of it.
   // ellipse args: [label, x, y, radiusX, radiusY, rotation, startAngle, endAngle]
   const [outer, inner] = ellipses;
-  assert.ok(close(outer[1], 30) && close(outer[2], 40), `outer ring centered at the origin (got ${outer[1]},${outer[2]})`);
-  assert.ok(close(inner[1], 30) && close(inner[2], 40), `inner ring centered at the origin (got ${inner[1]},${inner[2]})`);
+  assert.ok(close(outer[1], 0) && close(outer[2], 0), `outer ring centered at the local origin (got ${outer[1]},${outer[2]})`);
+  assert.ok(close(inner[1], 0) && close(inner[2], 0), `inner ring centered at the local origin (got ${inner[1]},${inner[2]})`);
   assert.ok(close(outer[3], b.radius), `outer ring radiusX matches the current radius (${outer[3]} vs ${b.radius})`);
   assert.ok(inner[3] > 0 && inner[3] < outer[3], `inner ring smaller than outer (${inner[3]} < ${outer[3]})`);
   // Contract: four radial tick segments, each starting outside the outer
@@ -211,13 +214,14 @@ ok('draws rings + ticks while active (save/restore bracketed, constant alpha)', 
     const [, mx, my] = moves[k];
     const [, lx, ly] = lines[k];
     // Unsquashed radial distance: undo the y-squash before measuring
-    const dStart = Math.hypot(mx - 30, (my - 40) / SQ);
-    const dEnd = Math.hypot(lx - 30, (ly - 40) / SQ);
+    // (points are local — the context was translated to the origin).
+    const dStart = Math.hypot(mx, my / SQ);
+    const dEnd = Math.hypot(lx, ly / SQ);
     assert.ok(dStart > outer[3], `tick ${k} starts outside the outer ring (${dStart.toFixed(1)} > ${outer[3]})`);
     assert.ok(dEnd > dStart + 1e-6, `tick ${k} extends outward (end ${dEnd.toFixed(1)} > start ${dStart.toFixed(1)})`);
     // Tick lies on a radial line through the origin (collinear in unsquashed space).
-    const ux = mx - 30, uy = (my - 40) / SQ;
-    const vx = lx - 30, vy = (ly - 40) / SQ;
+    const ux = mx, uy = my / SQ;
+    const vx = lx, vy = ly / SQ;
     const cross = ux * vy - uy * vx;
     assert.ok(Math.abs(cross) < 1e-4, `tick ${k} is radial (collinear with the origin)`);
   }
@@ -261,18 +265,19 @@ ok('degenerate geometry (radius 0 or opacity 0) draws nothing but still complete
   assert.equal(bO.done, true, 'opacity-0 instance still completes at duration');
 });
 
-ok('orientation vertical: squash moves to the X axis (wall read)', () => {
-  // A vertical-surface marker squashes X (tall narrow ellipse) instead of Y.
+ok('orientation vertical: context rotated π/2 (wall read), squash stays on local Y', () => {
+  // A vertical-surface marker is the SAME local geometry (squash on local Y)
+  // with the context rotated π/2 — in world space that reads as a tall narrow
+  // ellipse (the old "squashed on X" look).
   const b = surfaceMarker({ x: 30, y: 40, radius: 40, pulseRate: 0, rotation: 0, opacity: 0.7, duration: 2, orientation: 'vertical' });
   const ctx = makeCtx();
   b.render(ctx);
-  const ellipses = ctx.calls.filter(c => c[0] === 'ellipse');
-  const outer = ellipses[0];
-  // ellipse args: [label, x, y, radiusX, radiusY, ...]
-  assert.ok(outer[3] < outer[4], `squashed on X (${outer[3]} < ${outer[4]})`);
+  const outer = ctx.calls.filter(c => c[0] === 'ellipse')[0];
   const SQ = 0.3;
-  assert.ok(close(outer[3], 40 * SQ), `radiusX == radius·squash (${outer[3]})`);
-  assert.ok(close(outer[4], 40), `radiusY == radius (${outer[4]})`);
+  assert.ok(close(outer[3], 40), `radiusX unsquashed in local space (${outer[3]})`);
+  assert.ok(close(outer[4], 40 * SQ), `radiusY squashed in local space (${outer[4]})`);
+  const rot = ctx.calls.find(c => c[0] === 'rotate');
+  assert.ok(rot && close(rot[1], Math.PI / 2), `context rotated π/2 (${rot?.[1]})`);
 });
 ok('orientation horizontal (default): squash stays on the Y axis (back-compat)', () => {
   const b = surfaceMarker({ x: 30, y: 40, radius: 40, pulseRate: 0, rotation: 0, opacity: 0.7, duration: 2 });
@@ -292,7 +297,78 @@ ok('unknown orientation falls back to horizontal', () => {
   assert.ok(close(outer[4], 40 * SQ), `fallback squashes Y (${outer[4]})`);
 });
 
-console.log('registration');
+ok('angle π/2 (wall): squash on local Y, context rotated π/2', () => {
+  const b = surfaceMarker({ x: 30, y: 40, radius: 40, pulseRate: 0, rotation: 0, opacity: 0.7, duration: 2, angle: Math.PI / 2 });
+  const ctx = makeCtx();
+  b.render(ctx);
+  const outer = ctx.calls.filter(c => c[0] === 'ellipse')[0];
+  // ellipse args: [label, x, y, radiusX, radiusY, rotation, ...]
+  const SQ = 0.3;
+  assert.ok(close(outer[3], 40), `radiusX unsquashed in local space (${outer[3]})`);
+  assert.ok(close(outer[4], 40 * SQ), `radiusY squashed in local space (${outer[4]})`);
+  const rot = ctx.calls.find(c => c[0] === 'rotate');
+  assert.ok(rot && close(rot[1], Math.PI / 2), `context rotated to surface angle (${rot?.[1]})`);
+});
+
+ok('angle 0 (floor): squash on Y, no context rotation', () => {
+  const b = surfaceMarker({ x: 30, y: 40, radius: 40, pulseRate: 0, rotation: 0, opacity: 0.7, duration: 2, angle: 0 });
+  const ctx = makeCtx();
+  b.render(ctx);
+  const outer = ctx.calls.filter(c => c[0] === 'ellipse')[0];
+  const SQ = 0.3;
+  assert.ok(close(outer[3], 40), `radiusX unsquashed (${outer[3]})`);
+  assert.ok(close(outer[4], 40 * SQ), `radiusY squashed (${outer[4]})`);
+  const rot = ctx.calls.find(c => c[0] === 'rotate');
+  assert.ok(rot && close(rot[1], 0), `no context rotation (${rot?.[1]})`);
+});
+
+ok('angle wins over deprecated orientation when both given', () => {
+  const b = surfaceMarker({ x: 30, y: 40, radius: 40, pulseRate: 0, rotation: 0, opacity: 0.7, duration: 2, angle: 0, orientation: 'vertical' });
+  const ctx = makeCtx();
+  b.render(ctx);
+  const outer = ctx.calls.filter(c => c[0] === 'ellipse')[0];
+  const SQ = 0.3;
+  assert.ok(close(outer[4], 40 * SQ), `angle 0 squashes Y despite orientation vertical (${outer[4]})`);
+});
+
+ok('diagonal angle π/4: FULL squash on local Y (constant), context rotated π/4', () => {
+  const b = surfaceMarker({ x: 30, y: 40, radius: 40, pulseRate: 0, rotation: 0, opacity: 0.7, duration: 2, angle: Math.PI / 4 });
+  const ctx = makeCtx();
+  b.render(ctx);
+  const outer = ctx.calls.filter(c => c[0] === 'ellipse')[0];
+  const SQ = 0.3;
+  // The squash magnitude NEVER depends on the angle — full factor at every
+  // rotation. Only the context rotation changes.
+  assert.ok(close(outer[3], 40), `radiusX unsquashed (${outer[3]})`);
+  assert.ok(close(outer[4], 40 * SQ), `radiusY fully squashed regardless of angle (${outer[4]})`);
+  const rot = ctx.calls.find(c => c[0] === 'rotate');
+  assert.ok(rot && close(rot[1], Math.PI / 4), `context rotated π/4 (${rot?.[1]})`);
+});
+
+ok('spinRate 0 locks the ticks (no rotation over lifetime)', () => {
+  const b = surfaceMarker({ x: 30, y: 40, radius: 40, pulseRate: 0, rotation: 0.7, spinRate: 0, opacity: 0.7, duration: 2 });
+  const ctx1 = makeCtx(), ctx2 = makeCtx();
+  b.render(ctx1);
+  for (let i = 0; i < 60; i++) b.update(DT);
+  b.render(ctx2);
+  // Ticks are drawn via moveTo/lineTo at angle rotation + spinRate·t. With
+  // spinRate 0 both frames must place tick k=0 at exactly cos(0.7)/sin(0.7).
+  const t1 = ctx1.calls.filter(c => c[0] === 'moveTo');
+  const t2 = ctx2.calls.filter(c => c[0] === 'moveTo');
+  assert.ok(t1.length && t2.length, 'ticks drawn both frames');
+  assert.ok(close(t1[0][1], t2[0][1]) && close(t1[0][2], t2[0][2]), `tick moved (${t1[0][1]} → ${t2[0][1]})`);
+});
+
+ok('default spinRate still spins (back-compat)', () => {
+  const b = surfaceMarker({ x: 30, y: 40, radius: 40, pulseRate: 0, rotation: 0, opacity: 0.7, duration: 2 });
+  const ctx1 = makeCtx(), ctx2 = makeCtx();
+  b.render(ctx1);
+  for (let i = 0; i < 60; i++) b.update(DT);
+  b.render(ctx2);
+  const t1 = ctx1.calls.filter(c => c[0] === 'moveTo')[0];
+  const t2 = ctx2.calls.filter(c => c[0] === 'moveTo')[0];
+  assert.ok(!close(t1[1], t2[1]) || !close(t1[2], t2[2]), 'ticks rotated over 1s');
+});
 ok('"surface-target-marker" is registered and resolves through the real fire() path', () => {
   assert.ok(hasEffect('surface-target-marker'), 'type registered');
   resetEffects();

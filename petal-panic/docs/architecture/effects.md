@@ -230,14 +230,19 @@ are MACRO timing, not effect params — the effect finishes exactly at blink end
 
 ## 9. Surface Target Marker
 
-Displays a target marker painted ON A SURFACE at a world position — a floor
-or a wall. The marker is always stuck to a surface (no free-floating mode);
-`orientation` picks which one: `horizontal` (default, floor/platform top —
-rings squashed on Y) or `vertical` (wall — rings squashed on X).
+Displays a target marker painted ON A SURFACE at a world position — a floor,
+a wall, or any angled surface. The marker is always stuck to a surface (no
+free-floating mode); `angle` (radians) is the direction of the surface it is
+painted on. The perspective squash has a CONSTANT magnitude at every angle —
+it never fades toward a circle as the surface rotates; only its orientation
+changes with `angle`. `0` = horizontal (floor/platform top), `π/2` = vertical
+(wall). `orientation` (`horizontal` | `vertical`) remains as a deprecated
+alias for `angle`; when both are given, `angle` wins.
 
 Useful for missiles, falling objects, bombs, artillery, or attacks arriving
-from above (horizontal), and wall-hugging hazards (vertical). The marker can
-remain fixed, allowing the player to escape the danger area before impact.
+from above (horizontal), wall-hugging hazards (vertical), and beam/laser
+telegraphs painted along the beam line (any angle). The marker can remain
+fixed, allowing the player to escape the danger area before impact.
 
 Parameters may include:
 - Position
@@ -247,7 +252,10 @@ Parameters may include:
 - Rotation
 - Pulse rate
 - Opacity
-- Orientation (`horizontal` | `vertical`)
+- **Angle** (radians; surface direction — default 0 = horizontal floor)
+- Orientation (`horizontal` | `vertical`) — DEPRECATED alias for Angle
+- **Spin rate** (rad/s; tick rotation speed — default π. Set 0 to lock the
+  ticks to a fixed orientation, e.g. beam telegraphs painted along the line)
 
 ---
 
@@ -555,6 +563,31 @@ Parameters may include:
 
 ---
 
+## 28. Beam Announcement (primitive-side, not a catalog effect)
+
+The **beam primitive** (attack-primitives.md §3) can announce itself before
+ignition by firing a Surface Target Marker (§9) painted ON the beam line at
+its exit point — where the beam leaves the screen, or its tip if shorter than
+the screen. The marker sits a fixed fraction of the screen (~5%) inside that
+point so it is always visible and never clipped at the border. Its `angle`
+is set to the beam direction's NORMAL (direction + π/2) so the perspective
+squash runs ALONG the laser — a tall narrow ellipse stretched with the beam,
+not a flat puddle perpendicular to it — and its ticks are LOCKED
+(`spinRate: 0`) so the marker stays aligned with the beam line for the whole
+warning window.
+
+Sequence (all timing owned by the primitive, not the effect):
+1. Marker fires at invoke time and stays visible for `announceDelay`.
+2. Fixed silence gap (~0.12s, hardcoded — the "NOW" beat).
+3. Beam VFX ignites; damage becomes live. `duration` counts from ignition.
+
+Params: `announceMarker` (bool, **default true** — beams announce themselves
+unless a caller opts out), `announceDelay` (seconds the marker is visible,
+**default 1.0**). The gap and the in-from-edge offset are intentionally NOT
+params: one consistent feel across all beams.
+
+---
+
 ## 27. Pulse Bubble
 
 A circular energy ring that breathes between a minimum and maximum radius in a smooth cosine cycle, with a two-tone radial gradient fill (inner color → outer color) and an optional flash overlay at pulse peaks. Generic reusable pulse visual — any entity can carry it (shields, barriers, auras, status effects). It deals no damage itself; it is pure presentation.
@@ -621,6 +654,8 @@ This section records exactly what shipped with the Effects Engine epic so the ne
 - **Legacy effects migrated behavior-preservingly.** Existing one-off visual code was folded into the engine without changing how it looks or feels in-game.
 - **A debug-mode Effect Theater.** In debug mode, a step-through viewer walks every catalog effect in turn, showing each one's name and id alongside a live demo of that effect. It is driven by keyboard and gamepad input.
 - **The carrier interface.** A carrier exposes origin, facing, and size as needed, plus a list of the effects it carries and their triggers. The engine drives any such carrier unchanged — plain-object carriers shaped like a projectile, hit area, collision event, marker, or area-of-effect region all fire effects through the same path today. No per-entity-class code is required; the interface is generic by design.
+- **Surface Target Marker `angle` (§9).** The marker now takes an arbitrary surface angle in radians (squash rotates with the surface normal); `orientation` remains as a deprecated alias. This is what lets beam telegraphs paint along the laser line at any direction.
+- **Beam announcement (§28).** The beam primitive can fire its own exit-point Surface Target Marker before ignition (`announceMarker` + `announceDelay`), with a fixed silence gap between marker death and beam fire.
 
 ## Deferred / Out of Scope for v1 (handoff to the next epic)
 

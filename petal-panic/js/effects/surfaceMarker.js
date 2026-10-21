@@ -7,12 +7,18 @@
 // NOT hit the player or execute anything (per the core rule in effects.md);
 // an Attack Pattern pairs it with the actual collision volume.
 //
-// Orientation: the marker always sticks to a surface — there is no
-// free-floating mode. `orientation` picks which one:
-//   'horizontal' (default) — floor / platform top: rings squashed on Y
-//                            (the classic flat "painted on the ground" look)
-//   'vertical'             — wall: rings squashed on X (tall narrow ellipse,
-//                            reads as painted on a vertical surface)
+// Surface angle: the marker always sticks to a surface — there is no
+// free-floating mode. `angle` (radians) is the direction of the SURFACE the
+// marker is painted on; the perspective squash runs along the surface NORMAL
+// (perpendicular to it):
+//   angle 0    — horizontal surface (floor / platform top): squash Y
+//                (the classic flat "painted on the ground" look)
+//   angle π/2  — vertical surface (wall): squash X (tall narrow ellipse,
+//                reads as painted on a vertical surface)
+// Any other angle rotates the squash accordingly (diagonal surfaces work).
+// `orientation` is a DEPRECATED alias kept for back-compat: 'horizontal' →
+// 0, 'vertical' → π/2, anything else falls back to 0. When both are given,
+// `angle` wins.
 //
 // STATE/DRAW effect: this instance stays active over its whole lifetime and
 // owns its own timer. Each update() advances the clock; each render() draws
@@ -52,33 +58,42 @@
 // There is deliberately NO followTarget param here; following targets is the
 // Target Reticle's contract (§10).
 //
-// params: { radius?, pulseRate?, rotation?, opacity?, duration?, animation?,
-//           color?, orientation?, x?, y? }
+// params: { radius?, pulseRate?, rotation?, spinRate?, opacity?, duration?,
+//           animation?, color?, angle?, orientation? (deprecated), x?, y? }
 //   radius       — base (mid-pulse) marker radius in px (default 24). The
 //                  drawn outer ring oscillates between radius·(1−PULSE_
 //                  AMPLITUDE) and radius·(1+PULSE_AMPLITUDE) (i.e. 18–30 px
 //                  at the defaults). Non-negative; negative values clamp to 0
 //                  (degenerate: nothing visible, timer still runs).
-//   orientation  — which surface the marker is painted on (default
-//                  'horizontal'): 'horizontal' = floor/platform top (rings
-//                  squashed on Y), 'vertical' = wall (rings squashed on X).
-//                  Any other value falls back to 'horizontal'.
+//   angle        — direction of the SURFACE the marker is painted on, in
+//                  radians (default 0 = horizontal floor). The perspective
+//                  squash runs along the surface NORMAL: at angle 0 the rings
+//                  squash Y (flat ground read), at π/2 they squash X (wall
+//                  read); any other angle rotates the squash for diagonal
+//                  surfaces. Callers may pass any real number.
+//   orientation  — DEPRECATED alias for `angle`: 'horizontal' → 0,
+//                  'vertical' → π/2, anything else falls back to 0. Ignored
+//                  when `angle` is provided. Kept so existing configs/tests
+//                  keep working; new code should use `angle`.
 //   pulseRate    — pulse frequency in Hz (default 2). The marker blinks ~2
 //                  times per second; sin starts at 0 with positive slope, so
 //                  the first beat grows outward from the base radius. Any
 //                  value >= 0 works verbatim; negative values fall back to
 //                  the default. pulseRate 0 disables the pulse (constant
 //                  radius == `radius`).
-//   rotation     — initial orientation of the cross ticks in radians
-//                  (default 0, i.e. ticks point up/down/left/right). The
-//                  ticks ROTATE at TICK_ROTATION_SPEED rad/s over the
-//                  lifetime (rotation + TICK_ROTATION_SPEED·elapsed), giving
-//                  the marker a slow, readable spin without any per-frame
-//                  state. Callers may pass any real number.
+//   rotation     — orientation of the cross ticks in radians (default 0,
+//                  i.e. ticks point up/down/left/right). The ticks sit at
+//                  rotation + spinRate·elapsed. Callers may pass any real
+//                  number.
+//   spinRate     — tick rotation speed in rad/s (default π, the classic slow
+//                  "active targeting" spin). Set 0 to LOCK the ticks to a
+//                  fixed orientation — required for beam announcements, where
+//                  the marker must read as painted ALONG the beam line and a
+//                  wandering spin would break that read.
 //   opacity      — constant alpha 0..1, clamped (default 0.85). The marker
 //                  holds this alpha for its whole life (no fade): the warning
 //                  must stay legible right up to the moment of impact.
-//   duration     — whole-instance lifetime in seconds (default 1.5). The
+//   duration     — whole-instance lifetime in seconds (default 1.0). The
 //                  warning window the player gets to leave the danger zone.
 //                  Must be > 0; non-positive values fall back to the default.
 //   animation    — cosmetic variant tag (default 'pulse'). Reserved for
@@ -98,7 +113,7 @@
 // Geometry: at elapsed t the marker sits at the resolved origin with
 //   rOuter(t) = radius · (1 + PULSE_AMPLITUDE·sin(2π·pulseRate·t))
 //   rInner(t) = rOuter(t) · INNER_RING_FRACTION
-//   angle(t)  = rotation + TICK_ROTATION_SPEED·t
+//   angle(t)  = rotation + spinRate·t
 // The rOuter(t) formula is evaluated in update() and cached on `this.radius`;
 // render() reads that stored value (no recompute). At construction
 // `this.radius` equals the base radius, so a first draw before any update
@@ -121,13 +136,12 @@ const DEFAULT_RADIUS = 24;        // px — base (mid-pulse) marker radius
 const DEFAULT_PULSE_RATE = 2;     // Hz — pulse frequency
 const DEFAULT_ROTATION = 0;       // rad — initial tick orientation
 const DEFAULT_OPACITY = 0.85;     // constant alpha (no fade)
-const DEFAULT_DURATION = 1.5;     // s  — whole-instance lifetime (== total lifetime)
+const DEFAULT_DURATION = 1.0;     // s  — whole-instance lifetime (== total lifetime)
 const DEFAULT_ANIMATION = 'pulse'; // cosmetic variant tag (see header)
 const DEFAULT_COLOR = '#7dff6a';  // bright green targeting tint
-const DEFAULT_ORIENTATION = 'horizontal'; // surface the marker is painted on
 const PULSE_AMPLITUDE = 0.25;     // ±25% radius swing around the base radius
 const INNER_RING_FRACTION = 0.5;  // inner ring radius as a fraction of outer
-const TICK_ROTATION_SPEED = Math.PI; // rad/s — slow deterministic tick spin
+const DEFAULT_SPIN_RATE = Math.PI;   // rad/s — classic slow deterministic tick spin
 const MARKER_STROKE_WIDTH = 4;    // px — outer ring stroke width
 const TICK_LENGTH = 8;            // px — radial tick mark length
 const TICK_GAP = 4;               // px — gap between outer ring and tick start
@@ -135,9 +149,10 @@ const PERSPECTIVE_SQUASH = 0.3;   // squash factor along the surface normal (1 =
 const EPS = 1e-9;                 // fixed-dt epsilon convention
 
 /**
- * @param {{radius?:number, pulseRate?:number, rotation?:number,
+ * @param {{radius?:number, pulseRate?:number, rotation?:number, spinRate?:number,
  *          opacity?:number, duration?:number, animation?:string,
- *          color?:string, orientation?:string, x?:number, y?:number}} params
+ *          color?:string, angle?:number, orientation?:string,
+ *          x?:number, y?:number}} params
  * @param {object} [carrier]
  * @returns {{update:Function, render:Function, complete:Function,
  *            done:boolean, space:string, elapsed:number, radius:number,
@@ -147,16 +162,24 @@ export function surfaceMarker(params = {}, carrier = null) {
   const radius = Math.max(0, params.radius ?? DEFAULT_RADIUS);
   const pulseRate = params.pulseRate >= 0 ? params.pulseRate : DEFAULT_PULSE_RATE;
   const rotation = Number.isFinite(params.rotation) ? params.rotation : DEFAULT_ROTATION;
+  const spinRate = Number.isFinite(params.spinRate) ? params.spinRate : DEFAULT_SPIN_RATE;
   const opacity = Math.min(1, Math.max(0, params.opacity ?? DEFAULT_OPACITY));
   const duration = params.duration > 0 ? params.duration : DEFAULT_DURATION;
   const animation = params.animation ?? DEFAULT_ANIMATION;
   const color = params.color ?? DEFAULT_COLOR;
-  // Surface orientation: squash runs along the surface NORMAL. A horizontal
-  // surface (floor) has a vertical normal → squash Y. A vertical surface
-  // (wall) has a horizontal normal → squash X. Unknown values → horizontal.
-  const vertical = params.orientation === 'vertical';
-  const sqX = vertical ? PERSPECTIVE_SQUASH : 1;
-  const sqY = vertical ? 1 : PERSPECTIVE_SQUASH;
+  // Surface angle: the marker is drawn in LOCAL space with the squash ALWAYS
+  // on local Y (the surface normal), at the full PERSPECTIVE_SQUASH factor —
+  // constant for every angle, so the shape never fades toward a circle as the
+  // surface rotates. The render pass then rotates the context by `angle` so
+  // the surface direction sits on the world X axis. (An earlier version
+  // derived per-axis squash factors from the normal components; that made the
+  // squash magnitude depend on the angle — full at 90°, half at 45°, gone at
+  // 0° — which read as the marker "rounding off" as it rotated.)
+  const surfaceAngle = Number.isFinite(params.angle)
+    ? params.angle
+    : (params.orientation === 'vertical' ? Math.PI / 2 : 0);
+  const sqX = 1;
+  const sqY = PERSPECTIVE_SQUASH;
   const fallback = { x: params.x ?? 0, y: params.y ?? 0 };
 
   const api = {
@@ -201,19 +224,26 @@ export function surfaceMarker(params = {}, carrier = null) {
       const o = this.origin;
       const rOuter = Math.max(0, this.radius);
       const rInner = rOuter * INNER_RING_FRACTION;
-      const angle = rotation + TICK_ROTATION_SPEED * this.elapsed;
+      const angle = rotation + spinRate * this.elapsed;
       c2d.save();
       c2d.globalAlpha = opacity;
       c2d.strokeStyle = color;
+      // Surface orientation: rotate the CONTEXT so the surface direction sits
+      // on the local X axis. The ellipse is then drawn axis-aligned with the
+      // squash on local Y (the surface normal). Doing the squash in the radii
+      // AND rotating the ellipse would double-apply it — at 0°/90° the two
+      // cancel toward a half-squash and at diagonals it averages to a circle.
+      c2d.translate(o.x, o.y);
+      c2d.rotate(surfaceAngle);
       // Outer ring (ellipse — squashed along the surface normal for perspective).
       c2d.lineWidth = MARKER_STROKE_WIDTH;
       c2d.beginPath();
-      c2d.ellipse(o.x, o.y, rOuter * sqX, rOuter * sqY, 0, 0, Math.PI * 2);
+      c2d.ellipse(0, 0, rOuter * sqX, rOuter * sqY, 0, 0, Math.PI * 2);
       c2d.stroke();
       // Inner ring.
       c2d.lineWidth = MARKER_STROKE_WIDTH / 2;
       c2d.beginPath();
-      c2d.ellipse(o.x, o.y, rInner * sqX, rInner * sqY, 0, 0, Math.PI * 2);
+      c2d.ellipse(0, 0, rInner * sqX, rInner * sqY, 0, 0, Math.PI * 2);
       c2d.stroke();
       // Four cardinal tick marks, rotating slowly at angle(t), squashed with the rings.
       c2d.lineWidth = MARKER_STROKE_WIDTH / 2;
@@ -223,8 +253,8 @@ export function surfaceMarker(params = {}, carrier = null) {
         const gapR = rOuter + TICK_GAP;
         const endR = gapR + TICK_LENGTH;
         c2d.beginPath();
-        c2d.moveTo(o.x + cos * gapR * sqX, o.y + sin * gapR * sqY);
-        c2d.lineTo(o.x + cos * endR * sqX, o.y + sin * endR * sqY);
+        c2d.moveTo(cos * gapR * sqX, sin * gapR * sqY);
+        c2d.lineTo(cos * endR * sqX, sin * endR * sqY);
         c2d.stroke();
       }
       c2d.restore();

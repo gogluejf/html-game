@@ -150,7 +150,7 @@ export const TWEAKABLE = {
   reticleShot: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['speed', 'num', 50], ['blastType', 'enum', ['plain', 'explosion', 'shockwave', 'napalm']], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
   homingMissile: [['turnRate', 'num', 0.5], ['direction', 'angle', 15 * DEG], ['ttl', 'num', 0.25]],
   predictiveShot: [['speed', 'num', 50]],
-  beam: [['direction', 'angle', 15 * DEG], ['length', 'num', 20], ['width', 'num', 4], ['duration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
+  beam: [['direction', 'angle', 15 * DEG], ['length', 'num', 20], ['width', 'num', 4], ['duration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
   fireArea: [['x', 'num', 20], ['width', 'num', 16], ['duration', 'num', 0.25], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   dustZone: [['x', 'num', 20], ['width', 'num', 16], ['height', 'num', 8], ['duration', 'num', 0.25], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   spike: [['x', 'num', 16], ['width', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],

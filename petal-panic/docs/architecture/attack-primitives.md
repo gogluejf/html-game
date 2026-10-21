@@ -124,6 +124,14 @@ controlled by the Attack Macro using it.
 - **damage** — damage/contact behavior.
 - **tickRate** — damage ticks per second while the beam is active.
 - **team** — ally | foe (who it hurts).
+- **announceMarker** — bool (**default true**). A Surface Target Marker
+  telegraph fires at the beam's exit point before ignition (see effects.md
+  §28). The beam VFX and damage stay off until the announcement ends. Pass
+  `false` to opt out (e.g. fast melee-style strikes where a warning would be
+  absurd).
+- **announceDelay** — seconds the announcement marker stays visible
+  (**default 1.0**). A fixed short silence gap (~0.12s) follows the marker
+  before the beam ignites; `duration` counts from ignition.
 
 Beam does not inherently decide whether it is horizontal, targeted, or sweeping.
 Those are macro-level patterns.
