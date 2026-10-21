@@ -4,7 +4,7 @@
 // avoid a circular import back into systems/update.js.
 
 import { ctx } from './context.js';
-import { ZONE_ENTRY_X, ZONE_GROUND_Y } from './level.js';
+import { ZONE_ENTRY_X, ZONE_GROUND_Y, VERTICAL_GROUND_Y } from './level.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { TUNING } from '../tuning.js';
 import { S, getState, setState, tryTransition } from '../core/state.js';
@@ -285,8 +285,8 @@ export function beginClearFadeIn() {
   // hero should stand on the floor beside it, not drop onto it.
   const zone = ctx.getActiveZone(hero);
   if (zone.orientation === 'vertical') {
-    // Vertical: hero starts on the bottom platform.
-    const bottomY = zone.bounds.y + zone.bounds.h;
+    // Vertical: hero starts on the bottom platform (top = VERTICAL_GROUND_Y).
+    const bottomY = VERTICAL_GROUND_Y;
     hero.x = zone.bounds.x + ZONE_ENTRY_X;
     hero.y = bottomY - hero.h;
   } else {
@@ -403,7 +403,7 @@ function entryPosition(zone) {
     return { x: b.x + zone.entryFlag.x, y: b.y + zone.entryFlag.y };
   }
   // Area -1: start at the zone's start (beside where an entry flag would be).
-  const bottomY = zone.orientation === 'vertical' ? b.y + b.h : ZONE_GROUND_Y;
+  const bottomY = zone.orientation === 'vertical' ? VERTICAL_GROUND_Y : ZONE_GROUND_Y;
   return { x: b.x + ZONE_ENTRY_X, y: bottomY };
 }
 /** The hero's top-left position (top = surfaceY - hero.h) for the active zone. */

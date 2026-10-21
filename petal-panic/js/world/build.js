@@ -4,7 +4,7 @@
 // avoid a circular import back into systems/update.js.
 
 import { UNIT_PX_X, UNIT_PX_Y, PLATFORM_DRAW_H, populateArea, populationSnapshot } from './macros.js';
-import { ZONE_GROUND_Y, buildLevelZones, buildAllZoneTerrain } from './level.js';
+import { ZONE_GROUND_Y, VERTICAL_GROUND_Y, buildLevelZones, buildAllZoneTerrain } from './level.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { Jester } from '../enemies/jester.js';
 import { VineHound } from '../enemies/vine_hound.js';
@@ -41,21 +41,21 @@ function horizontalUnitBox(zone, u) {
 function verticalUnitBox(zone, u) {
   const b = zone.bounds;
   const px = b.x + u.aabb.x * UNIT_PX_X;
-  // BUGFIX: a vertical zone's ground is its BOTTOM platform (b.y + b.h), not
-  // ZONE_GROUND_Y (500 — the horizontal floor level). Anchoring to 500 placed
+  // BUGFIX: a vertical zone's ground is its BOTTOM platform (VERTICAL_GROUND_Y),
+  // not ZONE_GROUND_Y (500 — the horizontal floor level). Anchoring to 500 placed
   // every climb unit at y ≈ -24..-1700, i.e. far ABOVE the 2700px-tall zone:
   // only the bottom-most landings were visible and they rendered off-center
   // right. Elevation is counted UP from the bottom platform.
-  const py = (b.y + b.h) - (u.aabb.y + u.aabb.h) * UNIT_PX_Y;
+  const py = VERTICAL_GROUND_Y - (u.aabb.y + u.aabb.h) * UNIT_PX_Y;
   const h = u.oneWay ? Math.min(u.aabb.h * UNIT_PX_Y, PLATFORM_DRAW_H) : u.aabb.h * UNIT_PX_Y;
   return { x: px, y: py, w: u.aabb.w * UNIT_PX_X, h, oneWay: u.oneWay };
 }
 /** A slot's surface elevation (units) to the y of its top surface (world px). */
 function surfaceY(zone, elevationUnits) {
-  // Vertical zones: elevation counts up from the BOTTOM platform (b.y + b.h),
+  // Vertical zones: elevation counts up from the BOTTOM platform (VERTICAL_GROUND_Y),
   // not ZONE_GROUND_Y — same anchor as verticalUnitBox.
   if (zone.orientation === 'vertical') {
-    return zone.bounds.y + zone.bounds.h - elevationUnits * UNIT_PX_Y;
+    return VERTICAL_GROUND_Y - elevationUnits * UNIT_PX_Y;
   }
   return ZONE_GROUND_Y - elevationUnits * UNIT_PX_Y;
 }

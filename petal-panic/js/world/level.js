@@ -129,6 +129,17 @@ export const GROUND_UNITS = HORIZONTAL_PLAY_HEIGHT_UNITS;
 export const ZONE_GROUND_Y = GROUND_UNITS * UNIT_PX_Y;   // 10 × 48 = 480
 /** Floor thickness — exactly ONE unit tall (grid-aligned). */
 export const ZONE_FLOOR_H = UNIT_PX_Y;          // 48
+/**
+ * Y of the floor top for a VERTICAL zone (screen coords, y=0 at top).
+ *
+ * The climb height is defined as the space ABOVE the ground surface: the zone
+ * bounds end one floor-slab height below the walkable line, so the slab body
+ * sits inside the world and its top edge is visible at the bottom of the view
+ * — exactly like the horizontal floor (which shows a band below ZONE_GROUND_Y).
+ * Every vertical anchor (macro elevation in build.js, the lethal-bottom rule
+ * in death.js, entry placement) reads this same constant.
+ */
+export const VERTICAL_GROUND_Y = VERTICAL_ZONE_HEIGHT_UNITS * UNIT_PX_Y - ZONE_FLOOR_H;
 /** Hero/entry-flag inset: shared 2-column unit padding. */
 export const ZONE_ENTRY_X = ZONE_ENTRY_PAD_UNITS * UNIT_PX_X;
 /**
@@ -157,8 +168,9 @@ export const ZONE_H_HORIZONTAL = HORIZONTAL_ZONE_HEIGHT_UNITS * UNIT_PX_Y;
 /**
  * World height of a vertical zone (px). A vertical area is an upward climb
  * (structure.md §4) that spans several screens, so its world is taller than a
- * single view. The climb is authored per-zone by later tasks; this fixed height
- * is the structural bound every vertical zone must have.
+ * single view. The climb height is the space ABOVE the floor; the floor slab
+ * itself sits inside the world (its top edge = VERTICAL_GROUND_Y), so a
+ * visible ground band shows at the bottom of the view like horizontal zones.
  */
 export const ZONE_H_VERTICAL = VERTICAL_ZONE_HEIGHT_UNITS * UNIT_PX_Y;
 /**
@@ -198,8 +210,10 @@ export const BOSS_CHECKPOINT = { appearance: 'boss-checkpoint' };
 function zonePlatforms(zone) {
   const b = zone.bounds;
   if (zone.orientation === 'vertical') {
-    // Bottom supporting platform (where the hero starts the climb).
-    const bottomY = b.y + b.h;
+    // Bottom supporting platform (where the hero starts the climb). Its top
+    // surface is VERTICAL_GROUND_Y — one slab height above the world bottom,
+    // so a visible ground band shows at the bottom of the view like horizontal.
+    const bottomY = VERTICAL_GROUND_Y;
     // Top platform (where the exit flag sits). Offset from the top of the world.
     const topY = VERTICAL_TOP_PLATFORM_OFFSET;
     const topPlatformW = VERTICAL_TOP_PLATFORM_WIDTH_UNITS * UNIT_PX_X;
@@ -235,8 +249,8 @@ function flagY(zone, kind) {
     // which is at the BOTTOM of the zone → LARGEST y value.
     // Exit flag (top of climb): sits on the top platform near y=0 → SMALLEST y.
     if (kind === 'entry') {
-      // Bottom platform is at bounds.y + bounds.h; flag top = platform top - flag height.
-      return zone.bounds.y + zone.bounds.h - ZONE_FLAG_H;
+      // Bottom platform top is VERTICAL_GROUND_Y; flag top = surface - flag height.
+      return VERTICAL_GROUND_Y - ZONE_FLAG_H;
     }
     // Top platform is at VERTICAL_TOP_PLATFORM_OFFSET; flag sits on it.
     return VERTICAL_TOP_PLATFORM_OFFSET - ZONE_FLAG_H;

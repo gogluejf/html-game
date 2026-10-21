@@ -121,7 +121,7 @@ export const UNIT_PX = UNIT_PX_Y;
 
 /** Horizontal area length (composition axis). 56 × 72 = 4032 px. */
 export const HORIZONTAL_ZONE_LENGTH_UNITS = 56;
-/** Vertical area climb height. 56 × 48 = 2688 px. */
+/** Vertical area climb height. 56 × 48 = 2688 px (space ABOVE the floor). */
 export const VERTICAL_ZONE_HEIGHT_UNITS = 56;
 /** One-screen vertical-area width: floor(960 / 72) = 13 whole columns. */
 export const VERTICAL_ZONE_WIDTH_UNITS = Math.floor(VIEW_W / UNIT_PX_X);
@@ -1461,8 +1461,10 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
   // For vertical composition: track the absolute climb elevation of the
   // previous macro's peak (last platform) so the next macro's first platform
   // can be placed within a reachable step (≤ MAX_ELEVATION_STEP tiers up).
-  // `prevPeakAbsY` is null until the first macro is placed.
-  let prevPeakAbsY = null;
+  // Starts at 0 = the ground surface: the hero begins standing on the bottom
+  // platform, so the FIRST macro is validated against the floor exactly like
+  // every inter-macro join (structure.md §4 — safe start, no drop-in).
+  let prevPeakAbsY = isVertical ? 0 : null;
   // BLOCKER 1 FIX: track the previous macro's peak platform x-range so we can
   // validate lateral reachability of the next macro's first platform.
   // `prevPeakX` and `prevPeakW` are the x and width of the previous macro's
@@ -1602,6 +1604,13 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
     // platform), we anchor the next macro's first platform to a reachable
     // elevation. The macro's subsequent platforms (higher tiers) continue
     // the climb from there.
+    //
+    // FIRST MACRO: prevPeakAbsY === 0 (the ground surface). The same rule
+    // applies — the hero starts standing on the bottom platform, so the
+    // first macro's lowest landing must be within one jump step of the
+    // floor or it gets shifted down. Without this, every vertical area
+    // started with an unvalidated drop into empty space (no terrain under
+    // the spawn column).
     //
     // We only shift DOWN (never up) so we don't exceed the budget. If the
     // shift would push the macro below the previous macro's start (overlap),

@@ -53,9 +53,12 @@ not yet been specified.
 Vertical progression is an upward climb, Contra-style.
 
 - The starting (entry) flag sits on a supporting platform at the **bottom** of
-  the zone. In screen coordinates (y=0 is the top), the bottom platform is at
-  the largest y value in the zone's bounds, and the entry flag's top edge is at
-  `bounds.y + bounds.h - flagHeight`.
+  the zone. In screen coordinates (y=0 is the top), the bottom platform's top
+  surface is `VERTICAL_GROUND_Y` — one floor-slab height above the world
+  bottom (`bounds.y + bounds.h - floorH`, i.e. `2640` for the canonical 56-row
+  zone) — so a visible ground band shows at the bottom of the view, exactly
+  like the horizontal floor. The entry flag's top edge is at
+  `VERTICAL_GROUND_Y - flagHeight`.
 - There is **no horizontal camera scrolling**. The hero can still move sideways
   and jump between platforms inside the fixed width.
 - The camera follows upward progress only. Once raised, it never follows back down.
@@ -82,10 +85,16 @@ purely vertical; x remains constrained to columns `0..13`.
 
 | Element | Y position |
 |---------|-----------|
-| Entry flag (bottom) | `bounds.y + bounds.h - flagHeight` (largest y) |
-| Bottom platform top | `bounds.y + bounds.h` |
+| Entry flag (bottom) | `VERTICAL_GROUND_Y - flagHeight` (largest y) |
+| Bottom platform top | `VERTICAL_GROUND_Y` (= `bounds.y + bounds.h - floorH`) |
 | Top platform top | `bounds.y + topOffset` (small y, near top) |
 | Exit flag (top) | `bounds.y + topOffset - flagHeight` (smallest y) |
+
+The climb height is the space ABOVE the ground surface: macro elevations count
+up from `VERTICAL_GROUND_Y`, and the lethal-bottom rule kills a hero whose feet
+drop strictly below it. The first composed macro is validated against the
+ground exactly like every inter-macro join (its lowest landing must be within
+one jump step of the floor), so the entry is always a safe start.
 
 **Shared unit geometry.** Authored level geometry is defined in unit space in
 `js/world/macros.js`; `level.js` derives pixels from it:

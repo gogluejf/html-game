@@ -34,7 +34,8 @@ globalThis.window = { addEventListener: noop, __selectedHero: 'scarlet' };
 
 const L = await import('../systems/lifecycle.js');
 const { S, getState, setState, tryTransition } = await import('../core/state.js');
-const { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y } = await import('../world/level.js');
+const { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y, VERTICAL_GROUND_Y } = await import('../world/level.js');
+const { VIEW_H } = await import('../core/view.js');
 const { createRng } = await import('../world/terrain.js');
 const { populateArea, populationSnapshot, composeArea } = await import('../world/macros.js');
 const { getLevelConfig, getStageBudget } = await import('../world/levelConfigs.js');
@@ -433,20 +434,24 @@ test('vertical fall: a hero below the bottom platform is lethal; on the platform
   const zones = buildLevelZones(LEVEL_DEF);
   const vzone = zones.find((z) => z.kind === 'area' && z.orientation === 'vertical');
   assert.ok(vzone, 'Level 1 has a vertical zone');
-  const bottom = vzone.bounds.y + vzone.bounds.h; // bottom platform top surface
+  const cam = U.camera;
+  const b = vzone.bounds;
+  // Fresh climb: camera at its lowest position → kill line rests on the floor.
+  cam.setZoneBounds(vzone);
+  cam.y = cam.maxY;
+  const killLine = cam.y + VIEW_H;
 
   const h = makeTestHero();
-  // Hero standing ON the bottom platform: feet exactly AT the platform top.
+  // Hero standing ON the bottom platform: top edge well above the kill line.
   h.x = vzone.bounds.x + ZONE_ENTRY_X;
-  h.y = bottom - h.h;
+  h.y = VERTICAL_GROUND_Y - h.h;
   assert.equal(U.isBelowVerticalBottom(h, vzone), false,
     'a hero standing on the bottom platform is NOT below it (safe start)');
 
-  // Hero fallen into the emptiness: feet strictly below the platform top.
-  h.y = bottom + 5;
+  // Hero fallen out of the screen: TOP edge strictly below the kill line.
+  h.y = killLine + 5;
   assert.equal(U.isBelowVerticalBottom(h, vzone), true,
-    'a hero whose feet dropped below the bottom platform IS below it (lethal)');
-
+    'a hero whose top dropped below the last bottom pixel IS below it (lethal)');
   // Non-vertical zones are never lethal-bottom.
   const hz = zones.find((z) => z.kind === 'area' && z.orientation === 'horizontal');
   h.y = 99999;
@@ -457,7 +462,7 @@ test('vertical fall: a hero below the bottom platform is lethal; on the platform
 test('vertical fall: a restart places the hero back on the bottom platform', () => {
   const zones = buildLevelZones(LEVEL_DEF);
   const vzone = zones.find((z) => z.kind === 'area' && z.orientation === 'vertical');
-  const bottom = vzone.bounds.y + vzone.bounds.h;
+  const bottom = VERTICAL_GROUND_Y; // bottom platform top surface
 
   const h = makeTestHero();
   h.lives = 3;

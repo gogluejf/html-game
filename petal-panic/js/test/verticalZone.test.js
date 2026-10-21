@@ -27,7 +27,7 @@ import { test } from 'node:test';
 
 import { Camera } from '../core/camera.js';
 import { VIEW_H } from '../core/view.js';
-import { LEVELS, buildLevelZones } from '../world/level.js';
+import { LEVELS, buildLevelZones, VERTICAL_GROUND_Y } from '../world/level.js';
 
 // --- Minimal DOM stub so systems/update.js (a browser module) loads in node. --
 // Same pattern as camera.test.js / clearSequence.test.js.
@@ -96,26 +96,43 @@ test('vertical camera: sideways movement never scrolls horizontally', () => {
 // 2. Lethal bottom emptiness (structure.md §4).
 // ---------------------------------------------------------------------------
 test('lethal bottom: a standing hero on the bottom platform is safe', () => {
-  // The bottom platform's top surface is at bounds.y + bounds.h. A hero
-  // standing on it has feet exactly at that line (y + h === bottom).
-  const bottom = vzone.bounds.y + vzone.bounds.h;
-  const standingHero = { y: bottom - 40, h: 40 }; // feet at `bottom`
-  assert.equal(standingHero.y + standingHero.h, bottom, 'feet rest on the platform top');
+  // Kill line = bottom of the visible screen (camera.y + VIEW_H). A hero
+  // standing on the floor has their TOP edge well above it → safe.
+  const cam = U.camera;
+  const b = vzone.bounds;
+  cam.setZoneBounds(vzone);
+  cam.y = cam.maxY; // fresh climb: camera at its lowest position
+  const killLine = cam.y + VIEW_H; // bottom pixel of the screen
+
+  const standingHero = { y: VERTICAL_GROUND_Y - 40, h: 40 }; // feet on the floor
+  assert.ok(standingHero.y < killLine, 'hero top is above the kill line');
   assert.equal(
     U.isBelowVerticalBottom(standingHero, vzone),
     false,
     'a standing hero is NOT below the lethal bottom (safe start)',
   );
 });
+test('lethal bottom: hero top below the last bottom pixel of the screen kills', () => {
+  const cam = U.camera;
+  const b = vzone.bounds;
+  cam.setZoneBounds(vzone);
+  cam.y = cam.maxY; // camera at the bottom of the climb
+  const killLine = cam.y + VIEW_H;
 
-test('lethal bottom: falling below the bottom platform kills', () => {
-  const bottom = vzone.bounds.y + vzone.bounds.h;
-  // Feet strictly below the platform top → lethal.
-  const fallenHero = { y: bottom - 30, h: 40 }; // feet at bottom + 10
+  // Hero whose TOP edge dropped just past the screen bottom → dead.
+  const fallenHero = { y: killLine + 1, h: 40 };
   assert.ok(
     U.isBelowVerticalBottom(fallenHero, vzone),
-    'a hero whose feet drop below the platform is below the lethal bottom',
+    'a hero whose top is below the last bottom pixel of the screen IS lethal',
   );
+
+  // Ratchet raises the camera mid-climb: the kill line rises with it, so a
+  // hero who falls back into view-bottom later dies at the NEW (higher) line.
+  cam.y = b.y + 100; // raised partway up
+  const raisedKillLine = cam.y + VIEW_H;
+  assert.ok(raisedKillLine < killLine, 'kill line rose with the camera');
+  const fellBack = { y: raisedKillLine + 1, h: 40 };
+  assert.ok(U.isBelowVerticalBottom(fellBack, vzone), 'falling out of the raised view kills');
 });
 
 test('lethal bottom: does not apply to horizontal or boss zones', () => {
@@ -157,7 +174,7 @@ test('restart: AREA_ENTRY→PLAY re-clamps the camera, resetting the ratchet', (
 test('restart: hero respawns at the bottom-platform entry, not mid-climb', () => {
   const hero = U.getHero();
   const b = vzone.bounds;
-  const bottom = b.y + b.h;
+  const bottom = VERTICAL_GROUND_Y;
 
   // A vertical zone's entry flag sits on the bottom supporting platform
   // (structure.md §4): entryFlag.y = bottom - flagHeight. Placing the hero at
@@ -167,9 +184,15 @@ test('restart: hero respawns at the bottom-platform entry, not mid-climb', () =>
   assert.equal(entryFlag.y, bottom - 48, 'entry flag top sits on the bottom platform');
 
   // Respawn at the checkpoint (bottom entry) and confirm the hero is NOT below
-  // the lethal bottom — i.e. the restart is a safe start.
+  // the lethal bottom — i.e. the restart is a safe start. The kill line is the
+  // screen bottom; with the camera at its lowest position it rests on the floor,
+  // so the respawned hero's top edge sits well above it.
+  const cam = U.camera;
+  cam.setZoneBounds(vzone);
+  cam.y = cam.maxY; // fresh climb: camera at its lowest position
   const respawned = { y: entryFlag.y - hero.h + 48, h: hero.h }; // feet at bottom
   assert.equal(respawned.y + respawned.h, bottom, 'respawn feet rest on the bottom platform');
+  assert.ok(respawned.y < cam.y + VIEW_H, 'respawned hero top is above the kill line');
   assert.equal(
     U.isBelowVerticalBottom(respawned, vzone),
     false,

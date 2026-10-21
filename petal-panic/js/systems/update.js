@@ -588,16 +588,27 @@ onTransition((from, to) => {
     // restart, continue), so the camera is always bound to the active zone and
     // a fresh vertical climb resets its ascent high-water mark.
     camera.setZoneBounds(getActiveZone(hero));
-    // Snap the camera horizontally to the hero so they are on-screen from
-    // frame 1. Without this, the camera may still be showing the previous
-    // zone's x-position and the hero appears off-screen until the follow logic
-    // catches up. Vertical is NOT snapped — the upward-only ratchet owns y.
+    // Snap the camera to the hero so they are on-screen from frame 1.
+    // Without this, the camera may still be showing the previous zone's
+    // position and the hero appears off-screen until the follow logic catches
+    // up. For VERTICAL zones the y-snap is mandatory: the upward-only ratchet
+    // owns y during play, but at area entry the camera must start at the
+    // BOTTOM of the climb (where the hero spawns) — a stale y from the
+    // previous zone would reveal the top of the climb instead.
     {
       const h = hero;
       const cx = h.x + h.w / 2;
       const snappedX = Math.max(camera.minX, Math.min(camera.maxX, cx - camera.w / 2));
       if (Debug.enabled) console.log(`[cam-snap] hero.x=${h.x.toFixed(0)} cx=${cx.toFixed(0)} cam.x=${camera.x.toFixed(0)}→${snappedX.toFixed(0)} minX=${camera.minX} maxX=${camera.maxX}`);
       camera.x = snappedX;
+      const cy = h.y + h.h / 2;
+      const snappedY = Math.max(camera.minY, Math.min(camera.maxY, cy - camera.h / 2));
+      if (Debug.enabled) console.log(`[cam-snap] hero.y=${h.y.toFixed(0)} cy=${cy.toFixed(0)} cam.y=${camera.y.toFixed(0)}→${snappedY.toFixed(0)} minY=${camera.minY} maxY=${camera.maxY}`);
+      camera.y = snappedY;
+      // A fresh attempt starts its ascent from the spawn point — reset the
+      // high-water mark to the snapped position so the ratchet can only raise
+      // from here (never inherit a raised position from the previous zone).
+      camera.minYReached = camera.y;
     }
     // Boss zone (boss-arena.md §1): entering 1-B behaves like any other area —
     // RUN phase. The hero is placed at the left entry by startLife; the battle
