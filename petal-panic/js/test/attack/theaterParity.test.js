@@ -27,7 +27,10 @@ function ok(name, fn) {
 }
 
 const DT = 1 / 60;
-const GROUND_Y = 400;
+// Must track the theater's floor (level.js ZONE_GROUND_Y) — a local 400 guess
+// breaks parity checks now that the theater uses the real engine floor.
+import { ZONE_GROUND_Y } from '../../world/level.js';
+const GROUND_Y = ZONE_GROUND_Y;
 
 // --- Helpers -----------------------------------------------------------------
 

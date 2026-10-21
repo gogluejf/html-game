@@ -28,6 +28,7 @@ import { Pool, Projectile, Special } from '../objects/projectile.js';
 import { CollisionWorld, resolve } from '../core/collision.js';
 import { LAYER } from '../consts.js';
 import { ENEMY_TYPES } from '../world/build.js';
+import { ZONE_GROUND_Y } from '../world/level.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { navLabelString, navLabels, input } from '../core/input.js';
 import { Effects } from '../effects.js';
@@ -59,7 +60,10 @@ import '../combat/attack/primitives/surfaceWave.js';
 import '../combat/attack/primitives/shockwave.js';
 
 // --- Sandbox constants --------------------------------------------------------
-const GROUND_Y = 400;
+// Floor line = the REAL engine floor (level.js ZONE_GROUND_Y = 480), NOT a
+// theater-local guess. The old hardcoded 400 made floor-anchored attacks
+// (laneSequence) render 80px below the visible ground.
+const GROUND_Y = ZONE_GROUND_Y;
 const ATTACKER_HOME = { x: 140, y: GROUND_Y - 48, w: 32, h: 48 };
 const TARGET_POS = { x: 560, y: GROUND_Y - 48, w: 32, h: 48 }; // clear of the side panel
 const DT = 1 / 60;
@@ -112,7 +116,7 @@ const SANDBOX_PRESETS = {
   clusterBomb: { direction: -0.5, arc: 800, bounce: false, ttl: 3, damage: 20, radius: 40, count: 4, childAngle: 120 * DEG, childDirection: -Math.PI / 2, childForce: 300, childArc: 700, childTtl: 2, childDamage: 15, childRadius: 30 },
   targetedBeam: { duration: 1.2, lockTime: 0.5, color: '#ff5555', radius: 30, tracking: true, beamDuration: 1.0, beamWidth: 36, beamLength: 1000, damage: 15, tickRate: 8, team: 'ally' },
   sweepingBeam: { direction: 0, sweepAngle: 67.5 * DEG, length: 1000, width: 24, speed: 0, holdDuration: 0.4, sweepDuration: 1.0, endHoldDuration: 0.3, fadeOut: 0.5, damage: 20, tickRate: 8, team: 'ally', shimmerLow: 0.1, shimmerHigh: 0.35, announceMarker: true, announceDelay: 1.0 },
-  laneSequence: { mode: 'charge', laneCount: 3, laneSpacing: 120, lanes: null, laneOrder: 'bottom_to_top', sideMode: 'fixed_left', alternateStartSide: 'left', announceDelay: 0.5, dashSpeed: 1200, damage: 20, knockback: null, beamDuration: 0.8, beamWidth: 36, tickRate: 8, interval: 0.15, team: 'foe', style: null },
+  laneSequence: { mode: 'charge', laneCount: 3, laneSpacing: 120, laneOffset: 0, lanes: null, laneOrder: 'bottom_to_top', sideMode: 'fixed_left', alternateStartSide: 'left', announceDelay: 0.5, dashSpeed: 1200, damage: 20, knockback: null, beamDuration: 0.8, beamWidth: 36, tickRate: 8, interval: 0.15, team: 'foe', style: null },
   surfaceWave: { x: ATTACKER_HOME.x + 16, y: GROUND_Y, direction: 'right', speed: 300, height: 24, width: 28, damage: 15, ttl: null, team: 'foe' },
   shockwave: { x: (ATTACKER_HOME.x + TARGET_POS.x) / 2 + 16, y: GROUND_Y - 24, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, shakeIntensity: 5, team: 'neutral' },
   shockwaveBomb: { direction: -0.5, arc: 800, bounce: false, explodeOnContact: true, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, blastTeam: 'neutral' },
@@ -164,7 +168,7 @@ export const TWEAKABLE = {
   clusterBomb: [['count', 'int', 1], ['childAngle', 'angle', 15 * DEG], ['childDirection', 'angle', 15 * DEG], ['childForce', 'num', 50], ['childArc', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
   targetedBeam: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['beamDuration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   sweepingBeam: [['direction', 'angle', 15 * DEG], ['sweepAngle', 'angle', 10 * DEG], ['speed', 'num', 20], ['holdDuration', 'num', 0.1], ['sweepDuration', 'num', 0.1], ['endHoldDuration', 'num', 0.05], ['fadeOut', 'num', 0.05], ['damage', 'num', 2], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
-  laneSequence: [['mode', 'enum', ['charge', 'beam']], ['laneCount', 'int', 1], ['laneSpacing', 'num', 20], ['laneOrder', 'enum', ['bottom_to_top', 'top_to_bottom', 'random']], ['sideMode', 'enum', ['fixed_left', 'fixed_right', 'alternate', 'random']], ['announceDelay', 'num', 0.1], ['dashSpeed', 'num', 100], ['beamDuration', 'num', 0.1], ['damage', 'num', 5], ['tickRate', 'int', 1], ['interval', 'num', 0.05]],
+  laneSequence: [['mode', 'enum', ['charge', 'beam']], ['laneCount', 'int', 1], ['laneSpacing', 'num', 20], ['laneOffset', 'num', 10], ['laneOrder', 'enum', ['bottom_to_top', 'top_to_bottom', 'random']], ['sideMode', 'enum', ['fixed_left', 'fixed_right', 'alternate', 'random']], ['announceDelay', 'num', 0.1], ['dashSpeed', 'num', 100], ['beamDuration', 'num', 0.1], ['damage', 'num', 5], ['tickRate', 'int', 1], ['interval', 'num', 0.05]],
   surfaceWave: [['speed', 'num', 50], ['height', 'num', 4], ['width', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5]],
   stomp: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['count', 'int', 1], ['interval', 'num', 0.1], ['radius', 'num', 10], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
   stompWave: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['waveSpeed', 'num', 50], ['waveHeight', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],

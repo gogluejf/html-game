@@ -2,6 +2,7 @@
 // Extracted from systems/update.js so render/debug/lifecycle modules can read
 // world state without importing the orchestrator (which would be circular).
 import { ctx } from './context.js';
+import { roomFloorTop } from './level.js';
 import { projectilePool, specialPool } from '../objects/projectile.js';
 import { particles, coins } from '../effects/particles.js';
 import { Effects } from '../effects.js';
@@ -34,6 +35,15 @@ export function getBoss() { return ctx.boss; }
 /** The kind of the zone the hero is currently in ('area' | 'boss'). Used by
  *  render.js to gate boss-only visuals (debug box, HP bar) to the boss zone. */
 export function getActiveZoneKind() { return ctx.getActiveZone(ctx.hero).kind; }
+/** Top Y (screen px) of the ACTIVE room's floor — single source of truth for
+ *  floor-anchored placement (lane sequences, spawns, debug tools). Returns
+ *  null when no zone/hero context exists yet (e.g. attack theater pre-boot). */
+export function getActiveFloorY() {
+  const zone = ctx.getActiveZone?.(ctx.hero);
+  if (!zone?.rooms?.length) return null;
+  const room = zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0];
+  return roomFloorTop(room, zone.orientation);
+}
 export function getParticles() { return particles; }
 export function getCoins() { return coins; }
 // barrels (explosive + coin) + explosion screen shake for render.

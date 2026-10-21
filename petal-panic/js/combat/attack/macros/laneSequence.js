@@ -8,8 +8,10 @@
 // mode: 'charge'   → charge primitive (distanceType:infinit, announceMarker:true)
 // mode: 'beam'     → beam primitive (length:9999, announceMarker:true)
 //
-// Lanes are auto-calculated from laneCount + laneSpacing (centered vertically
-// in the view), or overridden with an explicit `lanes` array.
+// Lanes are auto-calculated from laneCount + laneSpacing, anchored to the
+// ACTIVE ROOM'S FLOOR (getActiveFloorY): lane 0 sits `laneOffset` px above the
+// floor and each next lane goes UP by laneSpacing. Override with an explicit
+// `lanes` array of absolute Y positions.
 //
 // The announcement is HARDCODED ON (not a param) — a lane sequence is by
 // definition a telegraphed attack. The announceDelay is passed to the
@@ -23,6 +25,11 @@ import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { getPrimitive, getMacro } from '../registry.js';
 import { VIEW_W, VIEW_H } from '../../../core/view.js';
+import { getActiveFloorY } from '../../../world/accessors.js';
+import { ZONE_GROUND_Y } from '../../../world/level.js';
+
+/** Fallback floor when no zone context exists (attack theater pre-boot). */
+const FALLBACK_FLOOR_Y = ZONE_GROUND_Y;
 
 function declaredEffectsOf(id) {
   const def = getPrimitive(id) ?? getMacro(id);
@@ -32,8 +39,9 @@ function declaredEffectsOf(id) {
 const DEFAULTS = Object.freeze({
   mode: 'charge',               // 'charge' | 'beam'
   laneCount: 3,                 // number of rows
-  laneSpacing: 120,             // px between rows (auto-centered vertically)
-  lanes: null,                  // explicit Y positions override (if set, laneCount/spacing ignored)
+  laneSpacing: 120,             // px between rows (measured UP from the floor)
+  laneOffset: 0,                // px above the floor where lane 0's BOTTOM sits
+  lanes: null,                  // explicit absolute Y positions override (if set, count/spacing/offset ignored)
   laneOrder: 'bottom_to_top',   // 'bottom_to_top' | 'top_to_bottom' | 'random'
   sideMode: 'fixed_left',       // 'fixed_left' | 'fixed_right' | 'alternate' | 'random'
   alternateStartSide: 'left',   // 'left' | 'right'
@@ -61,20 +69,31 @@ function shuffled(arr) {
   return a;
 }
 
-/** Calculate lane Y positions: centered vertically, spaced by laneSpacing. */
-function calcLanes(count, spacing) {
-  const totalHeight = (count - 1) * spacing;
-  const startY = (VIEW_H - totalHeight) / 2;
+/** Half-height of the attack body per mode — lane Y is the attack CENTER, so
+ *  anchoring "bottom on the floor" means center = floor − halfHeight. Reads
+ *  the LIVE attacker (charge) or the beam width param (beam). */
+function laneHalfHeight(params, ctx) {
+  if (params.mode === 'beam') return (params.beamWidth ?? 36) / 2;
+  const h = ctx?.attacker?.h;
+  return (typeof h === 'number' && h > 0) ? h / 2 : 24; // fallback: standard hero height
+}
+
+/** Calculate lane Y positions: anchored to the active room's floor.
+ *  Lane 0's BOTTOM sits `offset` px above the floor; each next lane goes UP
+ *  by spacing. Returns CENTER y (what beam/charge expect as their origin). */
+function calcLanes(count, spacing, offset, params, ctx) {
+  const floorY = getActiveFloorY() ?? FALLBACK_FLOOR_Y;
+  const hh = laneHalfHeight(params, ctx);
   const lanes = [];
   for (let i = 0; i < count; i++) {
-    lanes.push(startY + i * spacing);
+    lanes.push(floorY - hh - offset - i * spacing);
   }
   return lanes;
 }
 
-function resolveLanes(params) {
+function resolveLanes(params, ctx) {
   // Explicit lanes override auto-calculation.
-  const raw = params.lanes ?? calcLanes(params.laneCount, params.laneSpacing);
+  const raw = params.lanes ?? calcLanes(params.laneCount, params.laneSpacing, params.laneOffset, params, ctx);
   if (params.laneOrder === 'random') return shuffled(raw);
   if (params.laneOrder === 'top_to_bottom') return [...raw].sort((a, b) => a - b);
   return [...raw].sort((a, b) => b - a); // bottom_to_top (default)
@@ -101,12 +120,13 @@ defineMacro('laneSequence', {
       { type: 'surface-target-marker', desc: 'boundary telegraph per lane (via primitive announceMarker)' },
       { type: 'beam', desc: 'full-screen beam per lane (mode: beam)' },
     ],
-    desc: 'Telegraphed offscreen attack across each Y lane exactly once. mode: charge (offscreen dash) or beam (static full-screen line). Lanes auto-calculated from laneCount + laneSpacing.',
+    desc: 'Telegraphed offscreen attack across each Y lane exactly once. mode: charge (offscreen dash) or beam (static full-screen line). Lanes anchored to the active room floor: lane 0 BOTTOM at laneOffset above floor, stacked up by laneSpacing.',
     params: [
       { key: 'mode', desc: "'charge' | 'beam'" },
       { key: 'laneCount', desc: 'number of rows (default 3)' },
-      { key: 'laneSpacing', desc: 'px between rows (default 120, auto-centered)' },
-      { key: 'lanes', desc: 'explicit Y positions override (null = auto-calc)' },
+      { key: 'laneSpacing', desc: 'px between rows, measured up from the floor (default 120)' },
+      { key: 'laneOffset', desc: 'px above the floor where lane 0 BOTTOM sits (default 0 = bottom on the ground)' },
+      { key: 'lanes', desc: 'explicit absolute Y positions override (null = auto-calc from floor)' },
       { key: 'laneOrder', desc: "'bottom_to_top' | 'top_to_bottom' | 'random'" },
       { key: 'sideMode', desc: "'fixed_left' | 'fixed_right' | 'alternate' | 'random'" },
       { key: 'alternateStartSide', desc: "'left' | 'right'" },
@@ -124,7 +144,7 @@ defineMacro('laneSequence', {
   },
   impl(params, ctx) {
     const h = new AttackHandle('laneSequence', null, declaredEffectsOf('laneSequence'));
-    const laneSeq = resolveLanes(params);
+    const laneSeq = resolveLanes(params, ctx);
     const n = laneSeq.length;
 
     h.state = {

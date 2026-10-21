@@ -23,8 +23,10 @@ import { makeContext } from '../combat/attack/context.js';
 import { Enemy } from '../enemies/enemy.js';
 import { Effects } from '../effects.js';
 import { VIEW_W } from '../core/view.js';
+import { ZONE_GROUND_Y } from '../world/level.js';
 
-const GROUND_Y = 400;
+// Same floor as the theater + engine (level.js) — never a local guess.
+const GROUND_Y = ZONE_GROUND_Y;
 // Stomp-demo victim def: identical to the one the theater kept inline — a REAL
 // base-class Enemy whose no-op ai() keeps staged victims standing still.
 const STOMP_VIC_DEF = {

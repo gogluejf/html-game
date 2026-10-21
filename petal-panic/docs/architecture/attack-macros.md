@@ -899,6 +899,11 @@ Entry flash/warning → dash across screen → exit → next lane warning → ne
 
 ### Rules
 
+- Lanes are anchored to the ACTIVE ROOM'S FLOOR (`getActiveFloorY`): lane 0's
+  BOTTOM sits at `laneOffset` above the floor (the macro subtracts the attack
+  half-height so beam/charge centers land correctly), each next lane UP by
+  `laneSpacing`. No more sub-floor lanes. Falls back to ZONE_GROUND_Y (480)
+  when no zone context exists (theater).
 - One complete sequence uses every configured Y lane exactly once.
 - Fixed side means every dash enters from that same side, including with random
   lane order.
@@ -1247,7 +1252,10 @@ The interval starts ONLY after the current lane's attack fully completes
 ### Parameters
 
 - **mode** — `'charge'` | `'beam'`.
-- **lanes** — array of Y positions (world coords).
+- **laneCount** — number of rows (default 3).
+- **laneSpacing** — px between rows, measured UP from the floor (default 120).
+- **laneOffset** — px above the active room's floor where lane 0's BOTTOM sits (default 0 = bottom on the ground).
+- **lanes** — array of absolute Y positions; overrides laneCount/laneSpacing/laneOffset.
 - **laneOrder** — `bottom_to_top` | `top_to_bottom` | `random`.
 - **sideMode** — `fixed_left` | `fixed_right` | `alternate` | `random`.
 - **alternateStartSide** — `left` or `right`.
