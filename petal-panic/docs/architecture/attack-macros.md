@@ -1220,76 +1220,55 @@ creating dozens of almost-identical custom implementations.
 
 ---
 
-## 27. Dash Lane Sequence (implemented — `dashLane.js`)
+## 27. Lane Sequence (implemented — `laneSequence.js`)
 
-**Invokes:** Charge (per lane, `distanceType: 'infinit'`, `announceMarker: true`)
+**Invokes:** Charge (mode: dash) OR Beam (mode: laser), per lane
 
-**Effects:** Surface Target Marker (boundary telegraph per lane, via charge)
+**Effects:** Surface Target Marker (boundary telegraph per lane, via primitive announceMarker) + Beam (laser mode)
 
-A telegraphed sequence where the attacker enters from offscreen and dashes
+A telegraphed sequence where the attacker enters from offscreen and attacks
 completely across the screen through each configured Y lane exactly once.
+One macro, two modes via enum.
+
+### Modes
+
+- **`dash`** — charge primitive (`distanceType: 'infinit'`, `announceMarker: true`).
+  The attacker dashes across the screen at `dashSpeed`. Position-based dodge.
+- **`laser`** — beam primitive (`length: 9999`, `announceMarker: true`).
+  A static full-screen beam stays hot for `beamDuration`. Timing-based dodge.
 
 ### Canonical sequence per lane
 
-Boundary marker (entry side) → gap → dash across full screen → exit → interval → next lane.
+Boundary marker (entry side) → gap → attack fires → attack ends → interval → next lane.
+
+The interval starts ONLY after the current lane's attack fully completes
+(beam fade done / dash exited), so the next marker never overlaps the previous attack.
 
 ### Parameters
 
+- **mode** — `'dash'` | `'laser'`.
 - **lanes** — array of Y positions (world coords).
 - **laneOrder** — `bottom_to_top` | `top_to_bottom` | `random`.
 - **sideMode** — `fixed_left` | `fixed_right` | `alternate` | `random`.
 - **alternateStartSide** — `left` or `right`.
-- **announceDelay** — s the boundary marker stays visible per lane (default 1.0).
-- **dashSpeed** — px/s (default 700).
-- **damage** — contact damage during dash (default 20).
-- **knockback** — `{x,y}` or null.
-- **interval** — pause between lanes in seconds (default 0.4).
+- **announceDelay** — s the boundary marker stays visible per lane (default 0.5).
+  Hardcoded ON — a lane sequence is by definition telegraphed.
+- **dashSpeed** — px/s (dash mode, default 1200).
+- **damage** — contact damage (dash) / per tick (laser).
+- **knockback** — `{x,y}` or null (dash only).
+- **beamDuration** — s the beam stays hot (laser mode, default 0.8).
+- **beamWidth** — damaging thickness px (laser mode, default 24).
+- **tickRate** — damage ticks per second (laser mode, default 8).
+- **interval** — pause between lanes in seconds (default 0.15).
 - **team** — ally | foe.
+- **style** — beam effect style override (laser only).
 
 ### Rules
 
 - One complete sequence uses every configured Y lane exactly once.
-- Fixed side means every dash enters from that same side.
+- Fixed side means every attack enters from that same side.
 - Alternate side alternates left/right per lane; starting side configurable.
 - Random side independently chooses left/right for each lane.
 - Lane order and side selection are independent.
-- The attacker starts offscreen on the entry side and exits offscreen on the other.
-
----
-
-## 28. Laser Lane Sequence (implemented — `laserLane.js`)
-
-**Invokes:** Beam (per lane, `length: 9999`, `announceMarker: true`)
-
-**Effects:** Beam (full-screen line) + Surface Target Marker (boundary telegraph per lane)
-
-Same skeleton as Dash Lane (§27), but instead of a dashing body: a static
-full-screen beam per lane. The beam stays hot for `beamDuration` then fades;
-the player must not be in that row while it's active (timing-based dodge vs
-position-based dodge of the dash variant).
-
-### Canonical sequence per lane
-
-Boundary marker (entry side) → gap → beam ignites (full screen width) → hot for `beamDuration` → fade → interval → next lane.
-
-### Parameters
-
-- **lanes** — array of Y positions (world coords).
-- **laneOrder** — `bottom_to_top` | `top_to_bottom` | `random`.
-- **sideMode** — `fixed_left` | `fixed_right` | `alternate` | `random`.
-- **alternateStartSide** — `left` or `right`.
-- **announceDelay** — s the boundary marker stays visible per lane (default 1.0).
-- **beamDuration** — s the beam stays hot per lane (default 1.2).
-- **beamWidth** — damaging thickness px (default 24).
-- **damage** — damage per tick (default 20).
-- **tickRate** — damage ticks per second (default 8).
-- **interval** — pause between lanes in seconds (default 0.4).
-- **team** — ally | foe.
-- **style** — beam effect style override (color, etc.).
-
-### Rules
-
-- Same lane ordering / side selection rules as Dash Lane (§27).
-- The beam is STATIC (no sweep, no movement) — it appears at full length and
-  stays until its duration expires.
-- Damage ticks continuously while the beam is hot (same as the beam primitive).
+- The announcement is always on (not a param).
+- The interval starts after the attack fully ends (no overlap with next marker).

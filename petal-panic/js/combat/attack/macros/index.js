@@ -28,5 +28,4 @@ import './dashCombo.js';
 import './shockwaveBomb.js';
 import './shockwaveProjectile.js';
 import './napalm.js';
-import './dashLane.js';
-import './laserLane.js';
+import './laneSequence.js';

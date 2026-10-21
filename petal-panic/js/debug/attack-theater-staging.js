@@ -209,21 +209,12 @@ export const STAGING = {
     },
     update: strafeUpdate,
   },
-  dashLane: {
+  laneSequence: {
     setup(t) {
-      // Dash Lane: attacker starts offscreen (the macro positions it per lane).
-      // Target stands in the middle of the arena to get hit by passing dashes.
+      // Lane Sequence: target stands in the middle; attacks sweep across lanes.
       t._target.x = VIEW_W / 2 - 16;
       t._target.y = GROUND_Y - 48;
-      return tagged({ kind: 'dashLane' }, STAGING.dashLane);
-    },
-  },
-  laserLane: {
-    setup(t) {
-      // Laser Lane: target stands in the middle; beams sweep across lanes.
-      t._target.x = VIEW_W / 2 - 16;
-      t._target.y = GROUND_Y - 48;
-      return tagged({ kind: 'laserLane' }, STAGING.laserLane);
+      return tagged({ kind: 'laneSequence' }, STAGING.laneSequence);
     },
   },
 
