@@ -158,7 +158,7 @@ defineMacro('skyMissile', {
         team: p.team,
         blastTeam: p.blastTeam,
         size: p.size,
-        solidBehavior: 'phase',
+        solidBehavior: 'stop',
         ...payloadSize,
       }, ctx);
       h.state.missile = m;

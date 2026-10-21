@@ -708,6 +708,22 @@ export const AttackTheater = {
     for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
       if (p.x + p.w < -40 || p.x > VIEW_W + 40 || p.y + p.h < -40 || p.y > VIEW_H + 40) p.alive = false;
     }
+    // Projectile terrain stop: solidBehavior 'stop' shots die on floor/platform
+    // contact (same rule as collisionHandlers.js in gameplay). The sandbox has
+    // a flat floor + optional stomp platforms; check both.
+    const solids = [this._floorSolid, ...(this._stompPlatforms ?? [])];
+    for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
+      if (!p.alive || p.solidBehavior !== 'stop') continue;
+      for (const s of solids) {
+        if (p.x + p.w > s.x && p.x < s.x + s.w &&
+            p.y + p.h > s.y && p.y + p.h < s.y + 12) {
+          p._attackHit = true;
+          p._impactPoint = { x: p.x + p.w / 2, y: s.y };
+          p.alive = false;
+          break;
+        }
+      }
+    }
 
     // --- Sandbox hit detection -------------------------------------------------
     // Routed through the CollisionWorld above: primitives register their shots

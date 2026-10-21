@@ -176,6 +176,7 @@ defineMacro('reticleShot', {
             speed: params.speed,
             ttl: params.ttl,
             damage: params.damage,
+            solidBehavior: 'stop',
           }, ctx);
         } else {
           const payloadId = blastType === 'shockwave' ? 'shockwaveProjectile'
@@ -192,6 +193,7 @@ defineMacro('reticleShot', {
             speed: params.speed,
             ttl: params.ttl,
             damage: params.damage,
+            solidBehavior: 'stop',
             ...payloadSize,
           }, ctx);
         }
