@@ -1,14 +1,14 @@
 {
  "label": "interface",
- "file": "petal-panic/assets/interface/logo/logo_sheet.png",
+ "file": "petal-panic/assets/interface/home/logo_sheet.png",
  "rows": 1,
  "cols": 1,
  "size": "1536x1024",
  "description": "Game logo (single image)",
  "entities": [
   {
-   "name": "logo",
-   "anim": "idle",
+   "name": "home",
+   "anim": "logo",
    "frames": [
     {
      "file": "logo_f1.png",
@@ -22,7 +22,7 @@
      ]
     }
    ],
-   "frames_dir": "petal-panic/assets/interface/logo"
+   "frames_dir": "petal-panic/assets/interface/home"
   }
  ],
  "crop": {

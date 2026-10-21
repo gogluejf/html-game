@@ -132,6 +132,15 @@ The pivot remains consistent across every frame of the animation.
 
 Frame cropping or Sprite Box differences must not cause the character's world position to jump.
 
+### Repositioning (editor CENTER / LEFT-BOTTOM)
+
+Repositioning moves the whole per-animation geometry set coherently:
+
+- frame offsets + per-frame hit boxes → shifted per frame (each frame anchors to the chosen point)
+- markers, collision box, pivot → shifted by the current frame's anchor delta
+
+Collision and pivot are PER ANIMATION (single objects), so they reposition as one unit — there is no per-frame divergence, hence no jump. The "no jump" rule forbids *per-frame* drift of gameplay geometry; a deliberate, user-triggered reposition of the whole anim is expected behavior. The engine integrates the entity in world space from its collision box and draws the sprite relative to it, so after any reposition the sprite/collision/pivot relationship is exactly what was authored in the editor.
+
 ---
 
 ## 7. Rotation

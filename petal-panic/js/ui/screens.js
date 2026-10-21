@@ -34,7 +34,7 @@ export function loadImages() {
     homeStage: 'petal-panic/assets/interface/home/stage_f1.png',
     homePortrait: 'petal-panic/assets/interface/home/scarlet_portrait_f1.png',
     squidLogo: 'petal-panic/assets/interface/squid_os_logo/squid_os_logo_f1.png',
-    logo: 'petal-panic/assets/interface/logo/logo_f1.png',
+    logo: 'petal-panic/assets/interface/home/logo_f1.png',
     selectScarlet: 'petal-panic/assets/interface/select/scarlet_vale_f1.png',
     selectBalthazar: 'petal-panic/assets/interface/select/balthazar_f1.png',
     selectNone: 'petal-panic/assets/interface/select/none_f1.png',

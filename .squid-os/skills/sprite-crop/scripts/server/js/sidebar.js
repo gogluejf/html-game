@@ -78,9 +78,12 @@ export function defaultBoxes(w, h){
 //   mode 'center'     -> each frame's sprite-box CENTER lands on origin (0,0)
 //   mode 'leftbottom' -> each frame's sprite-box BOTTOM-LEFT corner lands on origin
 //                        (y-axis points DOWN here, so bottom = largest y)
-// Every frame is repositioned independently (frames have different sizes), and each
-// frame's melee boxes + markers follow THAT frame's shift. COLLISION and PIVOT are
-// left completely untouched — they are independent of sprite placement.
+// Every frame is repositioned independently (frames have different sizes); each
+// frame's hit boxes follow THAT frame's shift; markers follow the current frame's.
+// COLLISION and PIVOT are PER-ANIMATION: they are positioned DIRECTLY at the
+// target point (independent of any frame) — center→box center on origin,
+// leftbottom→box left/bottom edges on the axes — and the pivot re-centers on
+// the collision box. Idempotent: pressing twice yields zero delta.
 export function layoutAt(st, imgs, W, H, mode){
   let curDx = 0, curDy = 0;   // shift applied to the current frame (markers follow this)
   // current frame index — fall back to 0 when app.cur.st isn't set yet (e.g. during defaultState)
@@ -101,7 +104,25 @@ export function layoutAt(st, imgs, W, H, mode){
   }
   // markers (animation-level) follow the CURRENT frame's anchor shift
   for (const m of st.markers || []){ m.x += curDx; m.y += curDy; }
-  // NOTE: collision + pivot intentionally NOT moved
+  // collision + pivot are PER ANIMATION — position them DIRECTLY at the
+  // target point, independent of any frame (no "current frame" dependency):
+  //   center     -> collision box CENTER on origin (0,0)
+  //   leftbottom -> collision box LEFT edge on x=0, BOTTOM on y=0
+  if (st.collision){
+    const c = st.collision;
+    // box is stored TOP-LEFT based (see defaultBoxes): rect spans [x, x+w] x [y, y+h].
+    //   center     -> box CENTER to (0,0)      => top-left to (-w/2, -h/2)
+    //   leftbottom -> LEFT edge to x=0, BOTTOM to y=0 => top-left to (0, -h)
+    const tx = mode==='center' ? -c.w/2 : 0;
+    const ty = mode==='center' ? -c.h/2 : -c.h;
+    c.x += tx - c.x;
+    c.y += ty - c.y;
+  }
+  // pivot re-centers ON the (newly positioned) collision box
+  if (st.pivot && st.collision){
+    st.pivot.x = Math.round(st.collision.x + st.collision.w/2);
+    st.pivot.y = Math.round(st.collision.y + st.collision.h/2);
+  }
 }
 
 export function defaultState(name, imgs, paths, crops){
