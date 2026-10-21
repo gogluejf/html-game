@@ -784,9 +784,10 @@ export const AttackTheater = {
           const vics = [this._target, ...(this._stompVics ?? [])].filter((v) => v?.alive);
           finished = h.step(DT, vics);
         } else if (h.id === 'skyMissile') {
-          // Sky Missile: the macro owns warning → drop; its child
-          // explosiveProjectile handle is stepped internally and resolves the
-          // blast through ctx.world.targets (the main dummy).
+          // Sky Missile: the macro owns warning → drop; its payload macro
+          // (explosiveProjectile/napalm/shockwaveProjectile) is stepped
+          // INTERNALLY and also promoted into h.handles for zone drawing.
+          // Do NOT step h.handles here — that would double-step the carrier.
           finished = h.step(DT, [this._target]);
         } else if (h.id === 'missileRain') {
           // Missile Rain: the macro owns launch burst → per-missile activation;
@@ -1089,6 +1090,9 @@ export const AttackTheater = {
     }
 
     // Deferred zones stay owned/stepped by their root macro, but draw here.
+    // Bomb-family roots live in _bombHost; projectile-family carrier macros
+    // (explosiveProjectile, napalm, shockwaveProjectile...) live in _handles —
+    // both can own deferred zone children (napalm → fireArea).
     const drawChildren = (h) => {
       for (const child of h.handles ?? []) {
         if (child._completed || child._cancelled) continue;
@@ -1097,7 +1101,6 @@ export const AttackTheater = {
       }
     };
     for (const h of this._handles) drawChildren(h);
-    // Bomb-family roots live in the shared host — draw their deferred zones too.
     for (const h of this._bombHost?.roots ?? []) drawChildren(h);
 
     // --- Wave-2 state visuals ---------------------------------------------------

@@ -12,6 +12,7 @@ import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
 import { FIRE_HEIGHT } from '../primitives/fireArea.js';
+import { resolveImpactPoint } from './skyMissile.js';
 
 const DEFAULTS = Object.freeze({
   speed: 700,           // px/s
@@ -68,13 +69,14 @@ defineMacro('napalm', {
           for (const t of ctx.world?.targets ?? []) if (t) targets.add(t);
           const aimed = p.target ?? ctx.target;
           if (aimed) targets.add(aimed);
-          // Ground-anchor the fire like molotov does: the zone sits ON the
-          // surface at the impact point, not floating midair. If the shot
-          // died midair (enemy contact / fuse), drop to the floor so fire
-          // never renders below ground.
-          const groundY = ctx.groundY;
-          const zoneY = (groundY != null && y + FIRE_HEIGHT / 2 > groundY)
-            ? groundY - FIRE_HEIGHT / 2
+          // Ground-anchor the fire on the HIGHEST surface in the impact column
+          // (floor OR platform) — same "highest top" rule as skyMissile's
+          // resolveImpactPoint, so the zone sits ON whatever is actually there.
+          // Straight projectiles carry no terrain info (unlike bombs' surfaceY),
+          // so we resolve it here from ctx.
+          const pt = resolveImpactPoint({ x, groundY: null }, ctx);
+          const zoneY = (pt.y != null && y + FIRE_HEIGHT / 2 > pt.y)
+            ? pt.y - FIRE_HEIGHT / 2
             : y;
           const fire = invoke('fireArea', {
             x, y: zoneY,

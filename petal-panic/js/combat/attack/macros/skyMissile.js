@@ -149,6 +149,12 @@ defineMacro('skyMissile', {
         ...(p.blast ?? {}),
       }, ctx);
       h.state.missile = m;
+      // Promote the payload macro into the root's deferred-children list so
+      // hosts (theater/gameplay) step AND draw its zone children uniformly —
+      // the carrierMacro base walks h.handles for both. Without this the
+      // napalm fire zone is invisible: it lives only under state.missile.
+      if (m && !h.handles) h.handles = [];
+      if (m) h.handles.push(m);
       if (m) {
         m.on('hit', (...args) => h._emit('hit', ...args));
         m.on('complete', () => { h._complete(); });

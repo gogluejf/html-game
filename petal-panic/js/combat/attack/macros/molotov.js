@@ -8,6 +8,7 @@ import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
 import { FIRE_HEIGHT } from '../primitives/fireArea.js';
+import { resolveImpactPoint } from './skyMissile.js';
 
 const DEFAULTS = Object.freeze({
   speed: 600,           // launch force (px/s)
@@ -59,12 +60,20 @@ defineMacro('molotov', {
           for (const t of ctx.world?.targets ?? []) if (t) targets.add(t);
           const aimed = p.target ?? ctx.target;
           if (aimed) targets.add(aimed);
-          // The bomb's terrain detection is the single source of truth for
-          // where the bottle landed. If it hit a surface, use that. If it
-          // broke midair (enemy contact / fuse expiry), drop to the floor so
-          // fire never renders below ground.
+          // Ground-anchor the fire on the HIGHEST surface in the impact column
+          // (floor OR platform). The bomb's terrain detection already reports
+          // the exact top it landed on via surfaceY — prefer that. If the
+          // bottle broke midair (enemy contact / fuse expiry), resolve the
+          // column so fire never renders below ground or through a platform.
+          let anchor = null;
+          if (surfaceY != null) anchor = surfaceY;
+          else {
+            const pt = resolveImpactPoint({ x, groundY: null }, ctx);
+            if (pt.y != null && y + FIRE_HEIGHT / 2 > pt.y) anchor = pt.y;
+          }
+          const zoneY = anchor != null ? anchor - FIRE_HEIGHT / 2 : y;
           const fire = invoke('fireArea', {
-            x, y: (surfaceY ?? ctx.groundY) - FIRE_HEIGHT / 2,
+            x, y: zoneY,
             width: p.fireWidth,
             duration: p.fireDuration,
             tickRate: p.fireTickRate,
