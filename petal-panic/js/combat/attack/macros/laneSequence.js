@@ -2,11 +2,11 @@
 //
 // A telegraphed sequence where the attacker enters from offscreen and attacks
 // completely across the screen through each configured Y lane exactly once.
-// Per lane: boundary marker → gap → attack (dash or laser) → exit/end →
+// Per lane: boundary marker → gap → attack (dash or beam) → exit/end →
 // interval → next lane.
 //
 // mode: 'dash'   → charge primitive (distanceType:infinit, announceMarker:true)
-// mode: 'laser'  → beam primitive (length:9999, announceMarker:true)
+// mode: 'beam'  → beam primitive (length:9999, announceMarker:true)
 //
 // The announcement is HARDCODED ON (not a param) — a lane sequence is by
 // definition a telegraphed attack. The announceDelay is passed to the
@@ -27,7 +27,7 @@ function declaredEffectsOf(id) {
 }
 
 const DEFAULTS = Object.freeze({
-  mode: 'dash',               // 'dash' | 'laser'
+  mode: 'dash',               // 'dash' | 'beam'
   lanes: [150, 270, 390],     // Y positions (world coords)
   laneOrder: 'bottom_to_top', // 'bottom_to_top' | 'top_to_bottom' | 'random'
   sideMode: 'fixed_left',     // 'fixed_left' | 'fixed_right' | 'alternate' | 'random'
@@ -35,16 +35,16 @@ const DEFAULTS = Object.freeze({
   announceDelay: 0.5,         // s the boundary marker stays visible per lane (hardcoded ON)
   // Dash params:
   dashSpeed: 1200,            // px/s
-  damage: 20,                 // contact damage during dash / per tick for laser
+  damage: 20,                 // contact damage during dash / per tick for beam
   knockback: null,            // {x,y} or null (dash only)
   // Laser params:
   beamDuration: 0.8,          // s the beam stays hot per lane
   beamWidth: 24,              // damaging thickness px
-  tickRate: 8,                // damage ticks per second (laser only)
+  tickRate: 8,                // damage ticks per second (beam only)
   // Shared:
   interval: 0.15,             // pause between lanes (s) — starts after attack ends
   team: 'foe',                // ally | foe
-  style: null,                // beam effect style override (laser only)
+  style: null,                // beam effect style override (beam only)
 });
 
 function shuffled(arr) {
@@ -81,25 +81,25 @@ defineMacro('laneSequence', {
     name: 'Lane Sequence',
     effects: [
       { type: 'surface-target-marker', desc: 'boundary telegraph per lane (via primitive announceMarker)' },
-      { type: 'beam', desc: 'full-screen beam per lane (mode: laser)' },
+      { type: 'beam', desc: 'full-screen beam per lane (mode: beam)' },
     ],
-    desc: 'Telegraphed offscreen attack across each Y lane exactly once. mode: dash (charge infinit) or laser (static full-screen beam). Announcement hardcoded on.',
+    desc: 'Telegraphed offscreen attack across each Y lane exactly once. mode: dash (charge infinit) or beam (static full-screen line). Announcement hardcoded on.',
     params: [
-      { key: 'mode', desc: "'dash' | 'laser'" },
+      { key: 'mode', desc: "'dash' | 'beam'" },
       { key: 'lanes', desc: 'array of Y positions (world coords)' },
       { key: 'laneOrder', desc: "'bottom_to_top' | 'top_to_bottom' | 'random'" },
       { key: 'sideMode', desc: "'fixed_left' | 'fixed_right' | 'alternate' | 'random'" },
       { key: 'alternateStartSide', desc: "'left' | 'right'" },
       { key: 'announceDelay', desc: 's the boundary marker stays visible per lane (default 0.5)' },
       { key: 'dashSpeed', desc: 'px/s (dash mode, default 1200)' },
-      { key: 'damage', desc: 'contact damage (dash) / per tick (laser)' },
+      { key: 'damage', desc: 'contact damage (dash) / per tick (beam)' },
       { key: 'knockback', desc: '{x,y} or null (dash only)' },
-      { key: 'beamDuration', desc: 's the beam stays hot (laser mode, default 0.8)' },
-      { key: 'beamWidth', desc: 'damaging thickness px (laser mode, default 24)' },
-      { key: 'tickRate', desc: 'damage ticks per second (laser mode, default 8)' },
+      { key: 'beamDuration', desc: 's the beam stays hot (beam mode, default 0.8)' },
+      { key: 'beamWidth', desc: 'damaging thickness px (beam mode, default 24)' },
+      { key: 'tickRate', desc: 'damage ticks per second (beam mode, default 8)' },
       { key: 'interval', desc: 'pause between lanes in seconds (default 0.15)' },
       { key: 'team', desc: 'ally | foe' },
-      { key: 'style', desc: 'beam effect style override (laser only)' },
+      { key: 'style', desc: 'beam effect style override (beam only)' },
     ],
   },
   impl(params, ctx) {
@@ -132,7 +132,7 @@ defineMacro('laneSequence', {
       const direction = side === 'left' ? 0 : Math.PI;
 
       let handle;
-      if (params.mode === 'laser') {
+      if (params.mode === 'beam') {
         const originX = side === 'left' ? -10 : VIEW_W + 10;
         handle = invoke('beam', {
           origin: { x: originX, y },

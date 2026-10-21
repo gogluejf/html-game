@@ -1222,9 +1222,9 @@ creating dozens of almost-identical custom implementations.
 
 ## 27. Lane Sequence (implemented — `laneSequence.js`)
 
-**Invokes:** Charge (mode: dash) OR Beam (mode: laser), per lane
+**Invokes:** Charge (mode: dash) OR Beam (mode: beam), per lane
 
-**Effects:** Surface Target Marker (boundary telegraph per lane, via primitive announceMarker) + Beam (laser mode)
+**Effects:** Surface Target Marker (boundary telegraph per lane, via primitive announceMarker) + Beam (beam mode)
 
 A telegraphed sequence where the attacker enters from offscreen and attacks
 completely across the screen through each configured Y lane exactly once.
@@ -1234,7 +1234,7 @@ One macro, two modes via enum.
 
 - **`dash`** — charge primitive (`distanceType: 'infinit'`, `announceMarker: true`).
   The attacker dashes across the screen at `dashSpeed`. Position-based dodge.
-- **`laser`** — beam primitive (`length: 9999`, `announceMarker: true`).
+- **`beam`** — beam primitive (`length: 9999`, `announceMarker: true`).
   A static full-screen beam stays hot for `beamDuration`. Timing-based dodge.
 
 ### Canonical sequence per lane
@@ -1246,7 +1246,7 @@ The interval starts ONLY after the current lane's attack fully completes
 
 ### Parameters
 
-- **mode** — `'dash'` | `'laser'`.
+- **mode** — `'dash'` | `'beam'`.
 - **lanes** — array of Y positions (world coords).
 - **laneOrder** — `bottom_to_top` | `top_to_bottom` | `random`.
 - **sideMode** — `fixed_left` | `fixed_right` | `alternate` | `random`.
@@ -1254,14 +1254,14 @@ The interval starts ONLY after the current lane's attack fully completes
 - **announceDelay** — s the boundary marker stays visible per lane (default 0.5).
   Hardcoded ON — a lane sequence is by definition telegraphed.
 - **dashSpeed** — px/s (dash mode, default 1200).
-- **damage** — contact damage (dash) / per tick (laser).
+- **damage** — contact damage (dash) / per tick (beam).
 - **knockback** — `{x,y}` or null (dash only).
-- **beamDuration** — s the beam stays hot (laser mode, default 0.8).
-- **beamWidth** — damaging thickness px (laser mode, default 24).
-- **tickRate** — damage ticks per second (laser mode, default 8).
+- **beamDuration** — s the beam stays hot (beam mode, default 0.8).
+- **beamWidth** — damaging thickness px (beam mode, default 24).
+- **tickRate** — damage ticks per second (beam mode, default 8).
 - **interval** — pause between lanes in seconds (default 0.15).
 - **team** — ally | foe.
-- **style** — beam effect style override (laser only).
+- **style** — beam effect style override (beam only).
 
 ### Rules
 
