@@ -435,7 +435,7 @@ test('vertical fall: a hero below the bottom platform is lethal; on the platform
   const vzone = zones.find((z) => z.kind === 'area' && z.orientation === 'vertical');
   assert.ok(vzone, 'Level 1 has a vertical zone');
   const cam = U.camera;
-  const b = vzone.bounds;
+  const b = (vzone.rooms.find((r) => r.id === vzone.activeRoom) ?? vzone.rooms[0]);
   // Fresh climb: camera at its lowest position → kill line rests on the floor.
   cam.setZoneBounds(vzone);
   cam.y = cam.maxY;
@@ -443,7 +443,7 @@ test('vertical fall: a hero below the bottom platform is lethal; on the platform
 
   const h = makeTestHero();
   // Hero standing ON the bottom platform: top edge well above the kill line.
-  h.x = vzone.bounds.x + ZONE_ENTRY_X;
+  h.x = (vzone.rooms.find((r) => r.id === vzone.activeRoom) ?? vzone.rooms[0]).x + ZONE_ENTRY_X;
   h.y = roomFloorTop(vzone.rooms[0], vzone.orientation) - h.h;
   assert.equal(U.isLethalFall(h, vzone), false,
     'a hero standing on the bottom platform is NOT below it (safe start)');
@@ -472,7 +472,7 @@ test('vertical fall: a restart places the hero back on the bottom platform', () 
   // checkpoint position is the bottom platform top.
   h.currentArea = vzone.areaIdx;
   h.lives -= 1;
-  h.checkpoint = { x: vzone.bounds.x + ZONE_ENTRY_X, y: bottom - h.h };
+  h.checkpoint = { x: (vzone.rooms.find((r) => r.id === vzone.activeRoom) ?? vzone.rooms[0]).x + ZONE_ENTRY_X, y: bottom - h.h };
   h.y = bottom + 40; // fell into the emptiness
 
   setState(S.PLAY);

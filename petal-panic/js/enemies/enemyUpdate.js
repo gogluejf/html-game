@@ -47,7 +47,8 @@ function updateRealEnemy(e, dt) {
   // (observed: a Jack-O-Lantern fell to y≈24,000 while staying registered).
   // The normal death pipeline (sparkles + coins + world removal) still runs
   // via the !e.alive branch below; _deathHandled guards against double-credit.
-  const zw = ctx.getActiveZone(ctx.hero)?.bounds;
+  const _az = ctx.getActiveZone(ctx.hero);
+  const zw = _az ? (_az.rooms.find((r) => r.id === _az.activeRoom) ?? _az.rooms[0]) : null;
   if (zw && e.alive && e.y > zw.y + zw.h + 200) {
     e.alive = false;
   }

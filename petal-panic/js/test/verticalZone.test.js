@@ -60,7 +60,7 @@ function heroAt(x, y) {
 // ---------------------------------------------------------------------------
 test('vertical camera: follows upward but never scrolls back down', () => {
   const cam = new Camera();
-  const b = vzone.bounds;
+  const b = (vzone.rooms.find((r) => r.id === vzone.activeRoom) ?? vzone.rooms[0]);
   cam.setZoneBounds(vzone);
 
   // Start at the bottom of the climb (camera bottom = zone bottom).
@@ -82,7 +82,7 @@ test('vertical camera: follows upward but never scrolls back down', () => {
 
 test('vertical camera: sideways movement never scrolls horizontally', () => {
   const cam = new Camera();
-  const b = vzone.bounds;
+  const b = (vzone.rooms.find((r) => r.id === vzone.activeRoom) ?? vzone.rooms[0]);
   cam.setZoneBounds(vzone);
 
   cam.update(heroAt(b.x + 50, b.y + b.h - 60));
@@ -99,7 +99,7 @@ test('lethal bottom: a standing hero on the bottom platform is safe', () => {
   // Kill line = bottom of the visible screen (camera.y + VIEW_H). A hero
   // standing on the floor has their TOP edge well above it → safe.
   const cam = U.camera;
-  const b = vzone.bounds;
+  const b = (vzone.rooms.find((r) => r.id === vzone.activeRoom) ?? vzone.rooms[0]);
   cam.setZoneBounds(vzone);
   cam.y = cam.maxY; // fresh climb: camera at its lowest position
   const killLine = cam.y + VIEW_H; // bottom pixel of the screen
@@ -114,7 +114,7 @@ test('lethal bottom: a standing hero on the bottom platform is safe', () => {
 });
 test('lethal bottom: hero top below the last bottom pixel of the screen kills', () => {
   const cam = U.camera;
-  const b = vzone.bounds;
+  const b = (vzone.rooms.find((r) => r.id === vzone.activeRoom) ?? vzone.rooms[0]);
   cam.setZoneBounds(vzone);
   cam.y = cam.maxY; // camera at the bottom of the climb
   const killLine = cam.y + VIEW_H;
@@ -149,7 +149,7 @@ test('lethal bottom: does not apply to horizontal or boss zones', () => {
 test('restart: AREA_ENTRY→PLAY re-clamps the camera, resetting the ratchet', () => {
   const hero = U.getHero();
   const cam = U.camera;
-  const b = vzone.bounds;
+  const b = (vzone.rooms.find((r) => r.id === vzone.activeRoom) ?? vzone.rooms[0]);
 
   // Put the hero in the vertical area and simulate a camera that has already
   // risen partway up the climb (a mid-attempt state).
@@ -173,7 +173,7 @@ test('restart: AREA_ENTRY→PLAY re-clamps the camera, resetting the ratchet', (
 
 test('restart: hero respawns at the bottom-platform entry, not mid-climb', () => {
   const hero = U.getHero();
-  const b = vzone.bounds;
+  const b = (vzone.rooms.find((r) => r.id === vzone.activeRoom) ?? vzone.rooms[0]);
   const bottom = roomFloorTop(vzone.rooms[0], vzone.orientation);
 
   // A vertical zone's entry flag sits on the bottom supporting platform

@@ -27,7 +27,8 @@ export function isLethalFall(h, zone) {
   if (!zone || !zone.lethalBottom) return false;
   const cam = ctx.camera;
   // Bottom pixel row of the visible screen, in world coordinates.
-  const screenBottom = cam ? cam.y + cam.h : zone.bounds.y + zone.bounds.h - VIEW_H;
+  const zr = zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0];
+  const screenBottom = cam ? cam.y + cam.h : zr.y + zr.h - VIEW_H;
   // World-space collision box (consistent with the rest of the collision
   // code): the hero's TOP edge must stay above the screen bottom.
   const wb = h.worldBox ? h.worldBox() : { y: h.y, h: h.h };

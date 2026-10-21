@@ -216,7 +216,7 @@ export const BOSS_CHECKPOINT = { appearance: 'boss-checkpoint' };
  * @returns {object[]} the zone's platforms (plain AABBs, all solid)
  */
 function zonePlatforms(zone) {
-  const b = zone.bounds;
+  const b = zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0];
   if (zone.orientation === 'vertical') {
     // Bottom supporting platform (where the hero starts the climb). Its top
     // surface is the room floor (roomFloorTop — one slab height above the
@@ -286,7 +286,8 @@ function zoneEntryFlag(zone) {
   // genuine left→right walk across the whole area. Crossing it triggers the
   // battle room (update.js HERO×CHECKPOINT handler). Ordinary areas keep their
   // entry flag at the standard left-side entry position.
-  const x = zone.bounds.x + ZONE_ENTRY_X;
+  const zr = zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0];
+  const x = zr.x + ZONE_ENTRY_X;
   return {
     id: isBoss ? `${zone.level}-boss` : `${zone.level}-${zone.areaIdx}`,
     x,
@@ -309,7 +310,8 @@ function zoneExitFlag(zone) {
   const isBossCheckpoint = zone.areaIdx === 4;
   // The exit flag sits at the far end of the zone's playable width, so it
   // scales with the zone's unit-derived width.
-  const exitX = zone.bounds.x + zone.bounds.w - ZONE_EXIT_PAD;
+  const ze = zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0];
+  const exitX = ze.x + ze.w - ZONE_EXIT_PAD;
   return {
     id: isBossCheckpoint ? `${zone.level}-4-exit` : `${zone.level}-${zone.areaIdx}-exit`,
     x: exitX,
@@ -329,14 +331,11 @@ function zoneExitFlag(zone) {
  * @param {object} levelDef one entry from LEVELS
  * @returns {{idx:string|number, level:number, areaIdx:number|null, kind:string,
  *            name:string, orientation:'horizontal'|'vertical'|'boss',
- *            bounds:{x:number,y:number,w:number,h:number},
  *            rooms:Array<{id:string,x:number,y:number,w:number,h:number,platforms:?}>,
  *            activeRoom:string, spawn:{x:number,y:number},
  *            ratchet:boolean, lethalBottom:boolean,
  *            entryFlag:object|null, exitFlag:object|null, platforms:object[]}[]}
  *   the five zones, in play order: 1, 2, 3, 4, boss.
- *   `bounds` mirrors the active room's box (PR 1 compatibility; PRs 2–5
- *   migrate consumers to `rooms`/`activeRoom`).
  */
 export function buildLevelZones(levelDef) {
   const level = levelDef.index;
@@ -361,12 +360,10 @@ export function buildLevelZones(levelDef) {
     // Horizontal zones are ~2x the prototype segment wide (structure.md §6);
     // vertical zones are one screen wide (structure.md §4).
     const w = orientation === 'vertical' ? ZONE_WIDTH_VERTICAL : ZONE_WIDTH_HORIZONTAL;
-    const bounds = { x: 0, y: 0, w, h };
     // Zone vs room (REVISION-zones-as-data): the zone is gameplay identity
     // (spawn, flags, rules); the room is physical space (box + content).
-    // Ordinary areas have exactly one room; `bounds` mirrors the active room
-    // so existing consumers keep working until PRs 2–5 migrate them.
-    const room = { id: 'main', ...bounds, platforms: null };
+    // Ordinary areas have exactly one room.
+    const room = { id: 'main', x: 0, y: 0, w, h, platforms: null };
     const zone = {
       idx: a.areaIdx,
       level,
@@ -374,7 +371,6 @@ export function buildLevelZones(levelDef) {
       kind: 'area',
       name: a.name,
       orientation,
-      bounds,
       rooms: [room],
       activeRoom: 'main',
       // Zone rules as data (REVISION-zones-as-data): ratchet = camera never
@@ -392,7 +388,7 @@ export function buildLevelZones(levelDef) {
     zone.exitFlag = zoneExitFlag(zone);
     // Hero starts at the entry (feet position on the floor of the active room).
     const floorY = roomFloorTop(room, orientation);
-    zone.spawn = { x: bounds.x + ZONE_ENTRY_X, y: floorY };
+    zone.spawn = { x: room.x + ZONE_ENTRY_X, y: floorY };
     return zone;
   });
 
@@ -405,7 +401,6 @@ export function buildLevelZones(levelDef) {
   const ARENA_W = VIEW_W; // one screen wide (REVISION-zones-as-data §6)
   const hallRoom = { id: 'hall', x: 0, y: 0, w: ZONE_WIDTH_BOSS, h: ZONE_H_HORIZONTAL, platforms: null };
   const arenaRoom = { id: 'arena', x: 0, y: 0, w: ARENA_W, h: ZONE_H_HORIZONTAL, platforms: null };
-  const bossBounds = { ...hallRoom }; // mirrors the active room (hall at entry)
   const bossZone = {
     idx: 'boss',
     level,
@@ -413,7 +408,6 @@ export function buildLevelZones(levelDef) {
     kind: 'boss',
     name: `${level}-boss`,
     orientation: 'boss',
-    bounds: bossBounds,
     rooms: [hallRoom, arenaRoom],
     activeRoom: 'hall',
     ratchet: false,
@@ -426,7 +420,7 @@ export function buildLevelZones(levelDef) {
   bossZone.platforms = zonePlatforms(bossZone);
   bossZone.entryFlag = zoneEntryFlag(bossZone);
   bossZone.exitFlag = zoneExitFlag(bossZone);
-  bossZone.spawn = { x: bossBounds.x + ZONE_ENTRY_X, y: roomFloorTop(hallRoom, 'boss') };
+  bossZone.spawn = { x: hallRoom.x + ZONE_ENTRY_X, y: roomFloorTop(hallRoom, 'boss') };
   zones.push(bossZone);
 
   return zones;

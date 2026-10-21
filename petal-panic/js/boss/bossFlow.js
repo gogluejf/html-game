@@ -69,7 +69,6 @@ export function settleIntoBossRoom() {
   const zone = ctx.bossZoneDef;
   const arena = zone.rooms.find((r) => r.id === 'arena');
   zone.activeRoom = 'arena';
-  zone.bounds = { ...arena }; // keep the bounds mirror consistent
   const oldSolids = [...ctx.solidEntities];
   for (const e of oldSolids) ctx.collisionWorld.remove(e);
   ctx.solids.length = 0;
@@ -96,7 +95,6 @@ export function restoreBossRunFloor() {
   const zone = ctx.bossZoneDef;
   const hall = zone.rooms.find((r) => r.id === 'hall');
   zone.activeRoom = 'hall';
-  zone.bounds = { ...hall }; // keep the bounds mirror consistent
   const oldSolids = [...ctx.solidEntities];
   for (const e of oldSolids) ctx.collisionWorld.remove(e);
   ctx.solids.length = 0;

@@ -620,7 +620,7 @@ onTransition((from, to) => {
 // --- Camera --------------------------------------------------------------------
 // Hero-following cam clamped to the ACTIVE ZONE's world bounds (task 2.3).
 // The zone model (levelZones) is the authoritative level structure: the
-// camera's clamp range comes from getActiveZone(hero).bounds, NOT the legacy
+// camera's clamp range comes from the active room of getActiveZone(hero), NOT the legacy
 // corridor length, so it can never reveal the previous or next zone
 // (structure.md §2/§3, checkpoints.md §2). The legacy corridor is still the
 // active geometry until task 7.1; the camera bounds are already zone-driven.
@@ -1006,7 +1006,8 @@ export function update(dt) {
 
   // Keep the hero inside the LEVEL horizontally (test-rig convenience).
   const wb = hero.worldBox();
-  const zw = getActiveZone(hero).bounds;
+  const az0 = getActiveZone(hero);
+  const zw = az0.rooms.find((r) => r.id === az0.activeRoom) ?? az0.rooms[0];
   if (wb.x < zw.x) { hero.x = zw.x - hero.box.ox; hero.vx = 0; }
   else if (wb.x + wb.w > zw.x + zw.w) { hero.x = zw.x + zw.w - hero.box.ox - hero.box.bw; hero.vx = 0; }
 

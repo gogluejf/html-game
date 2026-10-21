@@ -282,7 +282,7 @@ export function beginClearFadeIn() {
   const zone = ctx.getActiveZone(hero);
   // REVISION-zones-as-data §4: spawn is zone data (feet on the floor of the
   // active room) — no per-orientation placement branches.
-  const sp = zone.spawn ?? { x: zone.bounds.x + ZONE_ENTRY_X, y: ZONE_GROUND_Y };
+  const sp = zone.spawn ?? { x: (zone.rooms?.[0]?.x ?? 0) + ZONE_ENTRY_X, y: ZONE_GROUND_Y };
   hero.x = sp.x;
   hero.y = sp.y - hero.h;
   hero.checkpoint = { x: hero.x, y: hero.y };
@@ -389,8 +389,8 @@ function entryPosition(zone) {
   // spawn is its LEFT entry — the far-right checkpoint is a trigger, not a
   // spawn point (run phase: hero walks right to the checkpoint).
   if (zone.spawn) return { x: zone.spawn.x, y: zone.spawn.y };
-  // Fallback for hand-built zones without spawn data.
-  const b = zone.bounds;
+  // Fallback for hand-built zones without spawn data: active room box.
+  const b = zone.rooms?.find((r) => r.id === zone.activeRoom) ?? zone.rooms?.[0] ?? { x: 0, y: 0, w: 0, h: 0 };
   return { x: b.x + ZONE_ENTRY_X, y: b.y + b.h - ZONE_FLOOR_H };
 }
 /** The hero's top-left position (top = surfaceY - hero.h) for the active zone. */

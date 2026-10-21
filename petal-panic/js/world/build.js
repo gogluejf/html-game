@@ -30,7 +30,7 @@ import { createRng } from './terrain.js';
 // ZONE_GROUND_Y (500) — NOT the zone bottom (b.y + b.h = 540). Anchoring to
 // the zone bottom sank every block 40px (ZONE_FLOOR_H) into the floor slab.
 function horizontalUnitBox(zone, u) {
-  const b = zone.bounds;
+  const b = zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0];
   const px = b.x + u.aabb.x * UNIT_PX_X;
   // REVISION-zones-as-data §1: anchor to the active room's floor (single
   // formula), not a per-orientation constant.
@@ -42,7 +42,7 @@ function horizontalUnitBox(zone, u) {
   return { x: px, y: py, w: u.aabb.w * UNIT_PX_X, h, oneWay: u.oneWay };
 }
 function verticalUnitBox(zone, u) {
-  const b = zone.bounds;
+  const b = zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0];
   const px = b.x + u.aabb.x * UNIT_PX_X;
   // Elevation counts UP from the bottom platform (the room floor — single
   // formula, REVISION-zones-as-data §1). Anchoring anywhere else places climb
@@ -60,7 +60,8 @@ function surfaceY(zone, elevationUnits) {
 }
 /** A slot's x position (units) to world px. */
 function slotX(zone, unitX) {
-  return zone.bounds.x + unitX * UNIT_PX_X;
+  const b = zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0];
+  return b.x + unitX * UNIT_PX_X;
 }
 
 /**
@@ -204,7 +205,8 @@ export function instantiateZone(zone, layout, population, allZones = null) {
       ? (allZones ?? buildLevelZones({ index: zone.level, verticalArea: 3 })).find((z) => z.kind === 'boss')
       : null;
     const respawnZone = isEntry ? zone : (nextZone ?? zone);
-    const c = makeCheckpoint(f.id, zone.bounds.x + f.x, f.y, {
+    const zr = zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0];
+    const c = makeCheckpoint(f.id, zr.x + f.x, f.y, {
       isEntry,
       appearance: f.appearance,
       spawnPos: respawnZone.spawn ? { x: respawnZone.spawn.x, y: respawnZone.spawn.y } : null,

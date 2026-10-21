@@ -52,9 +52,9 @@ test('a level yields exactly 5 sealed zones (areas 1..4 + boss)', () => {
 
 test('every zone owns its own world bounds', () => {
   for (const z of zones) {
-    assert.ok(z.bounds, `${z.idx} has bounds`);
-    assert.ok(z.bounds.w > 0 && z.bounds.h > 0, `${z.idx} bounds are positive`);
-    assert.ok(z.bounds.w > 0 && z.bounds.h > 0, `${z.idx} bounds have area`);
+    assert.ok((z.rooms.find((r) => r.id === z.activeRoom) ?? z.rooms[0]), `${z.idx} has bounds`);
+    assert.ok((z.rooms.find((r) => r.id === z.activeRoom) ?? z.rooms[0]).w > 0 && (z.rooms.find((r) => r.id === z.activeRoom) ?? z.rooms[0]).h > 0, `${z.idx} bounds are positive`);
+    assert.ok((z.rooms.find((r) => r.id === z.activeRoom) ?? z.rooms[0]).w > 0 && (z.rooms.find((r) => r.id === z.activeRoom) ?? z.rooms[0]).h > 0, `${z.idx} bounds have area`);
   }
 });
 
@@ -69,7 +69,7 @@ test('areas 2..4 have an entry flag at their start (checkpoints.md §1)', () => 
     assert.ok(z.entryFlag, `${idx} has an entry flag`);
     assert.equal(
       z.entryFlag.x,
-      z.bounds.x + ZONE_ENTRY_X,
+      (z.rooms.find((r) => r.id === z.activeRoom) ?? z.rooms[0]).x + ZONE_ENTRY_X,
       `${idx} entry flag sits at the unit-derived start of the zone`,
     );
   }
@@ -79,7 +79,7 @@ test('each ordinary area has an exit flag; the boss zone has none', () => {
   for (const idx of [1, 2, 3, 4]) {
     const z = zones.find((zz) => zz.idx === idx);
     assert.ok(z.exitFlag, `${idx} has an exit flag`);
-    assert.ok(z.exitFlag.x > z.bounds.x, `${idx} exit flag is inside the zone`);
+    assert.ok(z.exitFlag.x > (z.rooms.find((r) => r.id === z.activeRoom) ?? z.rooms[0]).x, `${idx} exit flag is inside the zone`);
   }
   const boss = zones.find((z) => z.idx === 'boss');
   assert.equal(boss.exitFlag, null, 'boss zone has no exit (final zone)');
@@ -131,8 +131,8 @@ test('zones share no geometry (structure.md §2 — independent sealed worlds)',
   // Every zone's floor spans its own bounds (per-zone construction).
   for (const z of zones) {
     const f = z.platforms[0];
-    assert.equal(f.x, z.bounds.x, `${z.idx} floor starts at its own bounds.x`);
-    assert.equal(f.w, z.bounds.w, `${z.idx} floor spans its own bounds.w`);
+    assert.equal(f.x, (z.rooms.find((r) => r.id === z.activeRoom) ?? z.rooms[0]).x, `${z.idx} floor starts at its own bounds.x`);
+    assert.equal(f.w, (z.rooms.find((r) => r.id === z.activeRoom) ?? z.rooms[0]).w, `${z.idx} floor spans its own bounds.w`);
   }
   // Flag objects are unique per zone (no shared references / ids).
   const flags = zones.flatMap((z) => [z.entryFlag, z.exitFlag].filter(Boolean));
@@ -157,9 +157,9 @@ test('vertical zones are a taller climb; horizontal zones are one view tall (str
 
   for (const z of zones) {
     if (z.orientation === 'vertical') {
-      assert.equal(z.bounds.h, ZONE_H_VERTICAL, `${z.idx} vertical zone uses the tall climb height`);
+      assert.equal((z.rooms.find((r) => r.id === z.activeRoom) ?? z.rooms[0]).h, ZONE_H_VERTICAL, `${z.idx} vertical zone uses the tall climb height`);
     } else {
-      assert.equal(z.bounds.h, ZONE_H_HORIZONTAL, `${z.idx} horizontal/boss zone is one view tall`);
+      assert.equal((z.rooms.find((r) => r.id === z.activeRoom) ?? z.rooms[0]).h, ZONE_H_HORIZONTAL, `${z.idx} horizontal/boss zone is one view tall`);
     }
   }
 });
@@ -187,8 +187,9 @@ test('vertical zone: entry flag at the bottom, exit flag at the top (structure.m
   // one slab height above the world bottom so a ground band is visible).
   assert.equal(vz.entryFlag.y, roomFloorTop(vz.rooms[0], vz.orientation) - 48, 'vertical entry flag sits on the bottom platform');
   // Exit flag rests near the top of the climb (within the world bounds).
-  assert.ok(vz.exitFlag.y >= vz.bounds.y, 'vertical exit flag is inside the world (top)');
-  assert.ok(vz.exitFlag.y + 48 <= vz.bounds.y + vz.bounds.h, 'vertical exit flag fits within the world');
+  const vroom = vz.rooms[0];
+  assert.ok(vz.exitFlag.y >= vroom.y, 'vertical exit flag is inside the world (top)');
+  assert.ok(vz.exitFlag.y + 48 <= vroom.y + vroom.h, 'vertical exit flag fits within the world');
   // Exit flag is well above the entry flag (the climb is substantial).
   assert.ok(
     vz.entryFlag.y - vz.exitFlag.y > 100,
@@ -221,10 +222,10 @@ test('horizontal zones are unit-budgeted; vertical and boss use their own unit w
   const verticalZone = zones.find((z) => z.kind === 'area' && z.orientation === 'vertical');
   const bossZone = zones.find((z) => z.kind === 'boss');
   for (const z of horizontalZones) {
-    assert.equal(z.bounds.w, ZONE_WIDTH_HORIZONTAL, `${z.idx} horizontal zone is the doubled width`);
+    assert.equal((z.rooms.find((r) => r.id === z.activeRoom) ?? z.rooms[0]).w, ZONE_WIDTH_HORIZONTAL, `${z.idx} horizontal zone is the doubled width`);
   }
-  assert.equal(verticalZone.bounds.w, ZONE_WIDTH_VERTICAL, 'vertical zone uses the 13-column macro grid');
-  assert.equal(bossZone.bounds.w, ZONE_WIDTH_BOSS, 'boss zone preserves its independent arena width');
+  assert.equal((verticalZone.rooms.find((r) => r.id === verticalZone.activeRoom) ?? verticalZone.rooms[0]).w, ZONE_WIDTH_VERTICAL, 'vertical zone uses the 13-column macro grid');
+  assert.equal(bossZone.rooms.find((r) => r.id === 'hall').w, ZONE_WIDTH_BOSS, 'boss zone hall room preserves its independent approach width');
   // The horizontal width is ~2x the vertical (one-screen) width.
   assert.ok(
     ZONE_WIDTH_HORIZONTAL > ZONE_WIDTH_VERTICAL,

@@ -315,7 +315,7 @@ test('checkpoint is set to the next zone entry flag (BLOCKER 3)', () => {
   // The checkpoint x should match the entry flag x (zone-local).
   assert.equal(
     hero.checkpoint.x,
-    zone2.bounds.x + zone2.entryFlag.x,
+    (zone2.rooms.find((r) => r.id === zone2.activeRoom) ?? zone2.rooms[0]).x + zone2.entryFlag.x,
     'checkpoint x matches entry flag x',
   );
 });

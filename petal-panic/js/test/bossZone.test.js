@@ -92,7 +92,7 @@ test('room is the leftmost VIEW_W of the zone, at the origin', () => {
   const m = makeBossZone(zone, boss);
   assert.equal(m.roomX, 0, 'the room starts at world x=0 (screen x = world x)');
   assert.equal(m.roomW, VIEW_W, 'the room is exactly one view wide');
-  assert.ok(m.roomX + m.roomW <= zone.bounds.w, 'the room fits inside the zone');
+  assert.ok(m.roomX + m.roomW <= (zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0]).w, 'the room fits inside the zone');
 });
 
 test('boss rests at ~75% across the room (right side, visible)', () => {
@@ -147,8 +147,8 @@ test('the boss-card trigger line sits in the run, before the scroll end', () => 
   // the very end of the scroll).
   assert.ok(BOSS_TRIGGER_X > ZONE_ENTRY_X + VIEW_W * 0.8,
     `trigger (${BOSS_TRIGGER_X}) is well into the run (past ${Math.round(ZONE_ENTRY_X + VIEW_W * 0.8)})`);
-  assert.ok(BOSS_TRIGGER_X < zone.bounds.w - 100,
-    `trigger (${BOSS_TRIGGER_X}) is before the zone's right edge (${zone.bounds.w})`);
+  assert.ok(BOSS_TRIGGER_X < (zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0]).w - 100,
+    `trigger (${BOSS_TRIGGER_X}) is before the zone's right edge (${(zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0]).w})`);
 });
 
 // ===========================================================================

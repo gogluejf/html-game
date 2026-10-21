@@ -4,7 +4,7 @@
 import { ctx } from '../world/context.js';
 import { LAYER } from '../consts.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
-import { ZONE_GROUND_Y } from '../world/level.js';
+import { roomFloorTop } from '../world/level.js';
 import { Effects } from '../effects.js';
 import { particles, coins } from '../effects/particles.js';
 import { resolveExplosion } from '../combat/explosion.js';
@@ -142,7 +142,9 @@ export function updateEffects(dt) {
   // Coins bounce off the floor AND any air platform top they land on. We pass
   // the SOLIDS list minus the floor itself (the floor is handled by floorTop).
   const platforms = ctx.solids.slice(1); // index 0 is the full-length floor
-  coins.updateAll(dt, ZONE_GROUND_Y, ctx.getActiveZone(ctx.hero).bounds.w, platforms);
+  const _cz = ctx.getActiveZone(ctx.hero);
+  const _cr = _cz.rooms.find((r) => r.id === _cz.activeRoom) ?? _cz.rooms[0];
+  coins.updateAll(dt, roomFloorTop(_cr, _cz.orientation), _cr.w, platforms);
   // Sync coins into the collision world so HERO×COIN collect works.
   syncCoinsToWorld();
 }

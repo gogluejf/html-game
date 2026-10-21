@@ -52,6 +52,7 @@
 // (tuning.js); this module consumes them so the cited value has one owner.
 
 import {VIEW_W} from '../core/view.js';
+import { roomFloorTop } from '../world/level.js';
 import { TUNING } from '../tuning.js';
 
 // --- State ids (documented order) -------------------------------------------
@@ -150,8 +151,7 @@ export class BossZone {
     // stands at the room's left entry; the boss enters from the right and
     // settles on the RIGHT portion of the room (~75% across) so both
     // combatants are on screen during the fight.
-    const arena = zone.rooms?.find((r) => r.id === 'arena') ?? zone.bounds;
-    const b = zone.bounds;
+    const arena = zone.rooms?.find((r) => r.id === 'arena') ?? zone.rooms?.[0];
     this.roomX = arena.x;
     this.roomW = arena.w;
 
@@ -159,7 +159,7 @@ export class BossZone {
     // Place it ~75% across the room width so it's clearly on the right side
     // but still fully visible when the camera is locked.
     this.bossRestX = Math.round(this.roomX + this.roomW * 0.75 - boss.w / 2);
-    this.bossRestY = Math.round(b.y + b.h - boss.h);
+    this.bossRestY = Math.round(roomFloorTop(arena, 'boss') - boss.h);
     // The boss enters from the right, off the room's right edge.
     this.bossEnterFromX = this.roomX + this.roomW + BOSS_ENTER_TRAVEL - boss.w;
 

@@ -45,7 +45,7 @@ const { S, getState, setState, tryTransition } = await import('../core/state.js'
 
 // Expected clamp range for a given zone, mirroring camera.js setZoneBounds().
 function expectedRange(zone) {
-  const b = zone.bounds;
+  const b = (zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0]);
   if (zone.orientation === 'vertical') return { minX: b.x, maxX: b.x };
   if (zone.orientation === 'boss') {
     const cx = b.x + b.w / 2 - VIEW_W / 2;
@@ -65,7 +65,7 @@ function heroAt(x, y) {
 
 test('horizontal zone: max scroll equals the zone length, cannot draw past it', () => {
   const cam = new Camera();
-  const b = zoneBy(1).bounds;
+  const b = (zoneBy(1).rooms[0]);
   cam.setZoneBounds(zoneBy(1));
 
   // minX is the zone's left edge; maxX keeps the right edge inside the zone.
@@ -86,7 +86,7 @@ test('horizontal zone: max scroll equals the zone length, cannot draw past it', 
 
 test('vertical zone: no horizontal camera movement (fixed width)', () => {
   const cam = new Camera();
-  const b = zoneBy(3).bounds;
+  const b = (zoneBy(3).rooms[0]);
   cam.setZoneBounds(zoneBy(3));
 
   assert.equal(cam.minX, b.x, 'vertical zone fixes x to the zone left');
@@ -135,7 +135,7 @@ test('entering a new zone re-clamps the camera to the new zone length', () => {
   // Enter area -2 (a fresh, independent zone). The camera must re-clamp into
   // the new zone's range and not reveal beyond its length.
   cam.setZoneBounds(zoneBy(2));
-  const b2 = zoneBy(2).bounds;
+  const b2 = (zoneBy(2).rooms[0]);
   assert.equal(cam.minX, b2.x, 'new zone left edge becomes minX');
   assert.equal(cam.maxX, b2.x + b2.w - VIEW_W, 'new zone right edge becomes maxX');
   assert.ok(cam.x >= cam.minX && cam.x <= cam.maxX, 're-clamped x is inside the new zone');
