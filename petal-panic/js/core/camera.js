@@ -36,10 +36,14 @@ export class Camera {
     this.minY = 0;
     this.maxY = 0;
 
-    // "Raised" high-water mark for vertical climbs: the smallest (highest on
-    // screen) camera.y reached. Once raised the camera never follows back
-    // down (structure.md §4).
+    // "Raised" high-water mark for ratchet zones (vertical climbs): the
+    // smallest (highest on screen) camera.y reached. Once raised the camera
+    // never follows back down (REVISION-zones-as-data §2; zone.ratchet).
     this.minYReached = 0;
+
+    // Ratchet flag for the active zone (set by setZoneBounds()). When true,
+    // vertical follow is upward-only — replaces the old orientation branch.
+    this.ratchet = false;
 
     // Boss-arena lock (task 2.3): when true the camera is frozen and ignores
     // hero-following entirely.
@@ -49,42 +53,36 @@ export class Camera {
   }
 
   /**
-   * Clamp the camera to a zone's world bounds (task 2.3).
+   * Clamp the camera to the active room of a zone (REVISION-zones-as-data §2).
    *
-   * The camera is positioned so it can never draw outside the zone:
-   *   - horizontal: minX = bounds.x, maxX = bounds.x + bounds.w - VIEW_W.
-   *   - vertical:   minX === maxX = bounds.x (no horizontal scroll);
-   *                 minY = bounds.y, maxY = bounds.y + bounds.h - VIEW_H.
-   *   - boss:       completely frozen at the arena center (min === max on both
-   *                 axes).
+   * The camera is positioned so it can never draw outside the ACTIVE ROOM:
+   *   minX = box.x, maxX = box.x + box.w − VIEW_W (same for y).
    *
-   * Re-binding a new zone re-clamps the camera into the new range and resets
-   * the vertical "raised" high-water mark so a fresh climb starts at its
-   * bottom.
+   * No orientation branches remain: a room whose width equals the viewport
+   * yields minX === maxX (no horizontal scroll) and a one-screen-tall room
+   * yields minY === maxY (no vertical scroll) — both fall out of the clamp
+   * math automatically. The boss RUN phase binds the hall room (scrolls
+   * across the full approach); enterBossRoom() re-binds the arena room
+   * (one screen → frozen on both axes), replacing the old lockTo() path in
+   * PR 5.
    *
-   * @param {object} zone a zone from buildLevelZones() exposing
-   *   `orientation` ('horizontal'|'vertical'|'boss') and
-   *   `bounds` ({x, y, w, h}).
+   * Re-binding a new zone/room re-clamps the camera into the new range and
+   * resets the ratchet high-water mark so a fresh climb starts at its bottom.
+   *
+   * @param {object} zone a zone from buildLevelZones() exposing `rooms`,
+   *   `activeRoom` and `ratchet`.
    */
   setZoneBounds(zone) {
-    const b = zone.bounds;
-    this.minX = b.x;
-    this.maxX = b.x + b.w - this.w;
-    this.minY = b.y;
-    this.maxY = b.y + b.h - this.h;
-
-    if (zone.orientation === 'vertical') {
-      // No horizontal scrolling (structure.md §4): fixed width.
-      this.minX = b.x;
-      this.maxX = b.x;
-    } else if (zone.orientation === 'boss') {
-      // Boss zone RUN phase: allow horizontal scrolling across the full zone
-      // width so the hero can walk from the left entry to the boss checkpoint
-      // at the far right. When the checkpoint is crossed, enterBossRoom()
-      // (update.js) freezes the camera on the battle room (minX === maxX = 0).
-      this.minX = b.x;
-      this.maxX = b.x + b.w - this.w;
-    }
+    const room = zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0];
+    this.minX = room.x;
+    this.maxX = room.x + room.w - this.w;
+    this.minY = room.y;
+    this.maxY = room.y + room.h - this.h;
+    // Vertical rooms are one screen wide by design (13 grid columns = 936px,
+    // a 24px non-authorable margin inside the 960px view — macros.js). Pin x
+    // to the room's left edge so the camera never drifts into that margin.
+    if (room.w <= this.w) this.maxX = this.minX;
+    this.ratchet = !!zone.ratchet;
 
     // Re-clamp into the new range; a boss lock takes precedence (frozen).
     if (this.locked) {
@@ -94,8 +92,8 @@ export class Camera {
     }
     this.x = clamp(this.x, this.minX, this.maxX);
     this.y = clamp(this.y, this.minY, this.maxY);
-    // Reset the vertical high-water mark to the current (bottom) position so a
-    // fresh climb does not inherit the previous zone's ascent.
+    // Reset the high-water mark to the current position so a fresh climb does
+    // not inherit the previous zone's ascent.
     this.minYReached = this.y;
   }
 
@@ -128,13 +126,15 @@ export class Camera {
       this.x = clamp(targetX, this.minX, this.maxX);
     }
 
-    // --- Vertical follow (upward only, never back down). --------------------
+    // --- Vertical follow (upward only on ratchet zones). --------------------
     if (this.maxY > this.minY) {
       const triggerBottom = this.y + this.h * 0.65; // hero above this → raise cam
       let targetY = this.y;
       if (heroCY < triggerBottom) targetY = heroCY - this.h * 0.65;
-      // Never follow back down: clamp the target to the high-water mark.
-      targetY = Math.min(targetY, this.minYReached);
+      if (this.ratchet) {
+        // Never follow back down: clamp the target to the high-water mark.
+        targetY = Math.min(targetY, this.minYReached);
+      }
       this.y = clamp(targetY, this.minY, this.maxY);
       // Track the highest (smallest-y) position reached.
       if (this.y < this.minYReached) this.minYReached = this.y;
