@@ -704,6 +704,11 @@ Reticle tracks/positions → lock → optional final telegraph → Beam → end.
 - **beamWidth** — dangerous thickness.
 - **damage** — beam damage.
 - **beamStyle / reticleStyle** — effect overrides.
+- **announceMarker** — bool (default true). A Surface Target Marker fires at
+  the beam's ENTRY point (the starting direction, same screen-edge rules as
+  the beam primitive) before the beam pops in. Only the entry is announced —
+  the sweep motion itself plays out un-telegraphed; that motion is its own read.
+- **announceDelay** — seconds the entry marker stays visible (default 1.0).
 
 The beam direction is determined by the locked reticle placement.
 

@@ -75,6 +75,9 @@ const DEFAULTS = Object.freeze({
   // Shimmer escalation.
   shimmerLow: 0.1,           // shimmer depth during the start hold (subtle)
   shimmerHigh: 0.35,         // shimmer depth during sweep + end hold (aggressive)
+  // Announcement (entry direction only — the sweep motion itself is un-telegraphed).
+  announceMarker: true,     // surface-target-marker at the entry point before pop-in
+  announceDelay: 1.0,       // s the entry marker stays visible
   // Style override passed to the beam.
   beamStyle: null,
 });
@@ -116,6 +119,8 @@ defineMacro('sweepingBeam', {
       { key: 'damage', desc: 'damage per tick' },
       { key: 'tickRate', desc: 'ticks per second' },
       { key: 'team', desc: 'ally | foe | neutral' },
+      { key: 'announceMarker', desc: 'bool (default true) — entry-point marker before the beam pops in (same screen-edge rules as the beam primitive)' },
+      { key: 'announceDelay', desc: 's the entry marker stays visible (default 1.0)' },
       { key: 'shimmerLow', desc: 'shimmer depth during the start hold (0..1)' },
       { key: 'shimmerHigh', desc: 'shimmer depth during sweep + end hold (0..1)' },
       { key: 'beamStyle', desc: 'Effect Engine beam params override' },
@@ -157,9 +162,12 @@ defineMacro('sweepingBeam', {
       damage: params.damage,
       tickRate: params.tickRate,
       team: params.team,
-      // The sweep IS its own telegraph (the macro choreographs the whole
-      // motion) — an exit-point marker would be wrong. Opt out of the default.
-      announceMarker: false,
+      // Entry-direction announcement: the sweep's START is a known direction,
+      // so a marker at that entry point (same screen-edge rules as any beam)
+      // warns where the laser begins before it pops in. The sweep motion
+      // itself then plays out un-telegraphed — that is its own read.
+      announceMarker: params.announceMarker,
+      announceDelay: params.announceDelay,
       style: {
         ...(params.beamStyle ?? {}),
         shimmerDepth: params.shimmerLow,
