@@ -220,7 +220,11 @@ defineMacro('missileRain', {
             }, h.declaredEffectTypes());
           }
           s.trails[i]?.addPoint?.(r.x + drift, r.y);
-          if (r.y < -40) r.done = true;
+          // Camera-relative cull: rocket is done once it exits the top of the
+          // visible view (works for any zone height / camera position).
+          const cam = ctx.camera;
+          const viewTop = cam ? cam.y : 0;
+          if (r.y < viewTop - 40) r.done = true;
         }
         if (s.rockets.every((r) => r.done)) s.phase = 'rain';
       }

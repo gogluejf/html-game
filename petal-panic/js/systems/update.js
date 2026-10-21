@@ -30,7 +30,7 @@ import { applyGodMode, updateTheaterGamepad, setHeroRefSetter } from '../debug/d
 import { buildWorld, captureAreaMap, newGameSeed } from '../world/build.js';
 import { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver } from '../world/zoneLifecycle.js';
 export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver };
-import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, BOSS_TRIGGER_X } from '../world/level.js';
+import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, VERTICAL_GROUND_Y, BOSS_TRIGGER_X } from '../world/level.js';
 import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry } from '../systems/lifecycle.js';
 import { getLevelConfig } from '../world/levelConfigs.js';
 import { Theater } from '../debug/effect-theater.js';
@@ -654,11 +654,16 @@ ctx.handleBarrelDestroyed = handleBarrelDestroyed;
 ctx.coins = coins;
 ctx.projectilePool = projectilePool;
 ctx.specialPool = specialPool;
-export const bombAttacks = new BombAttackHost(() => ({
-  pools: { projectilePool, specialPool }, collisionWorld, bombTerrainStepped: true,
-  groundY: ZONE_GROUND_Y, platforms: [...SOLIDS.slice(1), ...barrelSolidBoxes],
-  world: { targets: [hero, ...realEnemies, ...(bossZone.bossCanTakeDamage() ? [boss] : [])] },
-}));
+export const bombAttacks = new BombAttackHost(() => {
+  const az = getActiveZone(hero);
+  return {
+    pools: { projectilePool, specialPool }, collisionWorld, bombTerrainStepped: true,
+    groundY: az.orientation === 'vertical' ? VERTICAL_GROUND_Y : ZONE_GROUND_Y,
+    platforms: [...SOLIDS.slice(1), ...barrelSolidBoxes],
+    camera: ctx.camera,
+    world: { targets: [hero, ...realEnemies, ...(bossZone.bossCanTakeDamage() ? [boss] : [])] },
+  };
+});
 ctx.bombAttacks = bombAttacks;
 // Gameplay callers use this entry point, not a discarded invoke() result.
 export function spawnBombAttack(id, params, attacker = hero) {
@@ -931,9 +936,13 @@ export function update(dt) {
   // for gameplay and the sandbox. Reflect bombs rest on the ground (vy=0)
   // but stay alive; the fuse keeps running until TTL → explodeSpecial().
   // 'stop' bombs die on impact → explode immediately.
+  // Floor is orientation-aware: vertical zones have their floor at
+  // VERTICAL_GROUND_Y, not ZONE_GROUND_Y (the horizontal floor level).
+  const activeZone = getActiveZone(hero);
+  const bombGroundY = activeZone.orientation === 'vertical' ? VERTICAL_GROUND_Y : ZONE_GROUND_Y;
   for (const s of specialPool.activeItems) {
     if (!s.alive || s.type !== 'bomb' || s._attackId === 'bomb') continue;
-    const settled = stepBombTerrain(s, dt, ZONE_GROUND_Y, SOLIDS.slice(1));
+    const settled = stepBombTerrain(s, dt, bombGroundY, SOLIDS.slice(1));
     if (settled && !s.exploded) {
       explodeSpecial(s);
     }
@@ -966,7 +975,7 @@ export function update(dt) {
   // Shared top-surface collision before broadphase; payloads after dispatch.
   for (const s of specialPool.items) {
     if (s._attackId === 'bomb' && !s._attackDone) {
-      stepBombTerrain(s, dt, ZONE_GROUND_Y, [...SOLIDS.slice(1), ...barrelSolidBoxes]);
+      stepBombTerrain(s, dt, bombGroundY, [...SOLIDS.slice(1), ...barrelSolidBoxes]);
     }
   }
   collisionWorld.update();

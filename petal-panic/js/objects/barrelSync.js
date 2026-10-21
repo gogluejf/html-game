@@ -3,7 +3,7 @@
 // Extracted from systems/update.js; reads/writes shared state via ctx.
 import { ctx } from '../world/context.js';
 import { LAYER } from '../consts.js';
-import { VIEW_H } from '../core/view.js';
+import { VIEW_W, VIEW_H } from '../core/view.js';
 import { ZONE_GROUND_Y } from '../world/level.js';
 import { Effects } from '../effects.js';
 import { particles, coins } from '../effects/particles.js';
@@ -88,10 +88,16 @@ export function syncCoinsToWorld() {
   }
 }
 
-/** Cull thorns that have flown past the level bounds (lifetime cull is in update). */
+/** Cull thorns that have flown past the visible camera bounds (lifetime cull is in update). */
 export function cullOffScreen(items) {
+  const cam = ctx.camera;
+  // Camera-relative bounds: works for any zone height (horizontal, vertical, future).
+  const top = cam ? cam.y - 40 : -40;
+  const bottom = cam ? cam.y + cam.h + 40 : VIEW_H + 40;
+  const left = cam ? cam.x - 40 : -40;
+  const right = cam ? cam.x + cam.w + 40 : VIEW_W + 40;
   for (const p of items) {
-    const _zw = ctx.getActiveZone(ctx.hero).bounds; if (p.x + p.w < _zw.x || p.x > _zw.x + _zw.w || p.y + p.h < -40 || p.y > VIEW_H + 40) {
+    if (p.x + p.w < left || p.x > right || p.y + p.h < top || p.y > bottom) {
       p.alive = false;
     }
   }
