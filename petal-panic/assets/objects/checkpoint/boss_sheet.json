@@ -1,0 +1,31 @@
+{
+ "label": "objects",
+ "file": "petal-panic/assets/objects/checkpoint/boss_sheet.png",
+ "rows": 1,
+ "cols": 1,
+ "size": "413x440",
+ "description": "Checkpoint boss target drum (single image)",
+ "entities": [
+  {
+   "name": "checkpoint",
+   "anim": "boss",
+   "frames": [
+    {
+     "file": "boss_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      395,
+      427
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/objects/checkpoint"
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/redo-single"
+ }
+}

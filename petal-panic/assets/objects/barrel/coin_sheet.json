@@ -1,0 +1,31 @@
+{
+ "label": "objects",
+ "file": "petal-panic/assets/objects/barrel/coin_sheet.png",
+ "rows": 1,
+ "cols": 1,
+ "size": "356x385",
+ "description": "Flower barrel / coin barrel prop (single image)",
+ "entities": [
+  {
+   "name": "barrel",
+   "anim": "coin",
+   "frames": [
+    {
+     "file": "coin_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      356,
+      385
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/objects/barrel"
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/redo-single"
+ }
+}

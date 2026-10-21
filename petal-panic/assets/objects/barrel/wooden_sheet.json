@@ -1,0 +1,31 @@
+{
+ "label": "objects",
+ "file": "petal-panic/assets/objects/barrel/wooden_sheet.png",
+ "rows": 1,
+ "cols": 1,
+ "size": "305x386",
+ "description": "Circus barrel prop (single image)",
+ "entities": [
+  {
+   "name": "barrel",
+   "anim": "wooden",
+   "frames": [
+    {
+     "file": "wooden_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      305,
+      386
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/objects/barrel"
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/redo-single"
+ }
+}
