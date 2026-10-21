@@ -60,8 +60,8 @@ export const STAGING = {
       if (!t._tweaks['charge']?.direction) {
         t._params.direction = t._attacker.x < tCx ? 0 : Math.PI;
       }
-      if (!t._tweaks['charge']?.distance) {
-        t._params.distance = 'infinit'; // run until out of screen (or contact below)
+      if (!t._tweaks['charge']?.distanceType) {
+        t._params.distanceType = 'infinit'; // run until out of screen (or contact below)
       }
       return tagged({ kind: 'chargeToTarget' }, STAGING.charge);
     },

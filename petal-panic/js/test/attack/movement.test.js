@@ -14,7 +14,7 @@ function ok(name, fn) {
 const DT = 1 / 60;
 const EPS = 1e-6;
 
-const P = { direction: 0, speed: 600, duration: 0.5, distance: null, acceleration: 0 };
+const P = { direction: 0, speed: 600, duration: 0.5, distanceType: null, distance: null, acceleration: 0 };
 
 ok('instant charge moves at full speed along the direction', () => {
   const a = { x: 0, y: 0 };
@@ -48,7 +48,7 @@ ok('duration stop: finishes after ~duration seconds', () => {
 ok('distance stop: overrides duration when set', () => {
   const a = { x: 0, y: 0 };
   const ctx = makeContext(a, {});
-  const p = { ...P, distance: 300, duration: 99 };
+  const p = { ...P, distanceType: 'fixed', distance: 300, duration: 99 };
   const st = makeChargeState(p, ctx);
   let frames = 0;
   while (!stepCharge(st, p, ctx, DT) && frames < 1000) frames++;
@@ -93,7 +93,7 @@ ok('stopOnObstacle=false ignores blocked input', () => {
 ok('end-to-end: invoke("charge") handle completes with summary', () => {
   const a = { x: 0, y: 0 };
   const ctx = makeContext(a, {});
-  const h = invoke('charge', { ...P, distance: 120 }, ctx);
+  const h = invoke('charge', { ...P, distanceType: 'fixed', distance: 120 }, ctx);
   const seen = [];
   h.on('complete', (r) => seen.push(r));
   while (!h.step(DT)) {}

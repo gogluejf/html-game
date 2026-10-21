@@ -172,8 +172,9 @@ Applies intentional attack movement to the attacker.
 
 - **direction** — movement direction (radians, full 0–2π).
 - **speed / force** — movement speed.
-- **duration / distance** — how long or how far movement continues.
-  `distance` accepts a number (px) or `'infinit'` (run until out of screen).
+- **duration / distanceType / distance** — how long or how far movement
+  continues. `distanceType`: `'fixed'` (use `distance` in px) | `'infinit'`
+  (run until out of screen) | `null` (use `duration` in seconds).
 - **acceleration / easing** — optional movement profile. `easing`
   (`linear` | `easeIn` | `easeInCubic`) modulates speed over the charge when
   acceleration is 0; same curves as the shockwave primitive.

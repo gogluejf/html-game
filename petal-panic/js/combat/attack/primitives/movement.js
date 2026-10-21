@@ -29,8 +29,9 @@ function declaredEffectsOf(id) {
 const DEFAULTS = Object.freeze({
   direction: 0,          // radians
   speed: 500,            // target speed px/s
-  duration: 0.4,         // seconds (used when distance is null)
-  distance: null,        // px — overrides duration when set; 'infinit' = run until out of screen
+  duration: 0.4,         // seconds (used when distanceType is null)
+  distanceType: null,    // 'fixed' | 'infinit' | null — overrides duration when set
+  distance: null,        // px — the value when distanceType is 'fixed'
   acceleration: 2000,    // px/s² ramp-up (0 = instant, full speed on frame 1)
   stopOnObstacle: true,  // host stops the charge when the entity is blocked
   bodyDamageOverride: null, // e.g. { damage: 20 } applied while charging
@@ -80,7 +81,8 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
   // params; invoke() merges DEFAULTS, but stepCharge is exported standalone).
   const speed = p.speed ?? 500;
   const duration = p.duration ?? 0.4;
-  const distance = p.distance ?? null;
+  const distanceType = p.distanceType ?? null; // 'fixed' | 'infinit' | null
+  const distance = (distanceType === 'fixed') ? (p.distance ?? null) : null;
   const acceleration = p.acceleration ?? 2000;
   const stopOnObstacle = p.stopOnObstacle ?? true;
   const easing = p.easing ?? 'linear';
@@ -90,9 +92,9 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
   // not 'linear' (linear = constant speed, no modulation needed).
   let easedT = 1;
   if (acceleration <= 0 && easing !== 'linear') {
-    if (typeof distance === 'number') {
+    if (distance != null) {
       easedT = ease(Math.min(1, state.traveled / distance), easing);
-    } else if (distance !== 'infinit') {
+    } else if (distanceType !== 'infinit') {
       easedT = ease(Math.min(1, state.elapsed / duration), easing);
     }
     // 'infinit': no easing (constant speed until offscreen)
@@ -117,9 +119,9 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
 
   // Stop conditions.
   let hitDistance = false;
-  if (typeof distance === 'number') {
+  if (distance != null) {
     hitDistance = state.traveled >= distance;
-  } else if (distance === 'infinit') {
+  } else if (distanceType === 'infinit') {
     // Stop when the attacker leaves the visible screen.
     const cam = ctx.camera ?? null;
     const viewX = cam?.x ?? 0;
@@ -129,7 +131,7 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
     hitDistance = ax < viewX - margin || ax > viewX + VIEW_W + margin ||
                   ay < viewY - margin || ay > viewY + VIEW_H + margin;
   }
-  const hitDuration = distance == null && state.elapsed >= duration;
+  const hitDuration = distanceType == null && state.elapsed >= duration;
   const blocked = stopOnObstacle && !!input.blocked;
 
   if (hitDistance || hitDuration || blocked) {
@@ -153,8 +155,9 @@ registerPrimitive('charge', {
     params: [
       { key: 'direction', desc: 'movement direction (radians, full 0–2π)' },
       { key: 'speed', desc: 'target speed (px/s)' },
-      { key: 'duration', desc: 'seconds (when distance is null)' },
-      { key: 'distance', desc: "px | 'infinit' — overrides duration; infinit = run until out of screen" },
+      { key: 'duration', desc: 'seconds (when distanceType is null)' },
+      { key: 'distanceType', desc: "'fixed' | 'infinit' | null — overrides duration" },
+      { key: 'distance', desc: 'px (used when distanceType is "fixed")' },
       { key: 'acceleration', desc: 'px/s² ramp (0 = instant)' },
       { key: 'easing', desc: 'linear | easeIn | easeInCubic — speed profile over the charge' },
       { key: 'stopOnObstacle', desc: 'stop when blocked by terrain' },
