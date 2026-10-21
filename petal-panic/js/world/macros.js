@@ -1320,14 +1320,22 @@ function assignBarrelTypes(barrelSlots, counts, rng) {
  *   }
  *
  * @param {object} rng the per-game RNG
- * @param {string} orientation 'horizontal' | 'vertical'
+ * @param {string|{room:object, orientation:string}} orientation 'horizontal' |
+ *   'vertical', or a room descriptor (REVISION-zones-as-data §5): the target
+ *   ROOM (box + orientation) instead of a bare string. The stacking axis and
+ *   budget come from the room; macro selection keys off its orientation.
  * @param {number} stage progression stage (1 to 4)
  * @param {number} budget the area's length budget in width-units
  * @param {object} [macroWeights] optional per-level macro difficulty-tier
  *   weights ({ easy, medium, hard, brutal } from levelConfigs.js) that bias
  *   macro selection toward harder tiers for later levels (generation.md §5/§5b)
  */
-export function composeArea(rng, orientation, stage, budget, macroWeights = null) {
+export function composeArea(rng, orientationOrRoom, stage, budget, macroWeights = null) {
+  // Accept either a bare orientation string (legacy/tests) or a room
+  // descriptor { room, orientation }. The room box is carried on the layout
+  // so consumers can read geometry data instead of re-deriving it.
+  const room = typeof orientationOrRoom === 'object' && orientationOrRoom !== null ? orientationOrRoom.room : null;
+  const orientation = typeof orientationOrRoom === 'string' ? orientationOrRoom : orientationOrRoom.orientation;
   if (orientation !== 'horizontal' && orientation !== 'vertical') {
     throw new Error(`composeArea: orientation must be 'horizontal' or 'vertical', got ${orientation}`);
   }
@@ -1359,7 +1367,7 @@ export function composeArea(rng, orientation, stage, budget, macroWeights = null
   // bound keeps pathological seeds from spinning forever.
   const MAX_COMPOSE_ATTEMPTS = 64;
   const tryCompose = (r) => {
-    const l = runCompose(r, orientation, stage, budget, macroWeights);
+    const l = runCompose(r, orientation, stage, budget, macroWeights, room);
     validateLayout(l, { traversal: 'warn' }); // elevation steps are warnings, not hard errors
     return l;
   };
@@ -1418,7 +1426,7 @@ function fixPlatformClearance(units) {
   }
 }
 
-function runCompose(rng, orientation, stage, budget, macroWeights) {
+function runCompose(rng, orientation, stage, budget, macroWeights, room = null) {
   // Step 1: Reserve safe AREA entry and exit (generation.md §4 step 1).
   // Area-level clearance only — macros carry no clears of their own.
   const isVertical = orientation === 'vertical';
@@ -1778,6 +1786,7 @@ function runCompose(rng, orientation, stage, budget, macroWeights) {
 
   const layout = {
     orientation,
+    room, // target room box (REVISION-zones-as-data §5) or null for legacy callers
     stage,
     budget,
     entryClear,

@@ -534,10 +534,16 @@ export function buildZoneTerrain(zone, rng, levelConfig = null) {
   if (zone.kind !== 'area') {
     throw new Error(`buildZoneTerrain: zone kind must be 'area', got ${zone.kind}`);
   }
+  // REVISION-zones-as-data §5: the composer receives the target ROOM (box +
+  // orientation data), not a bare orientation string. The stacking axis and
+  // budget are read from the room; macro selection still keys off the room's
+  // orientation (macros are authored per orientation — that is data on the
+  // macro, not an engine branch).
+  const room = zone.rooms.find((r) => r.id === zone.activeRoom) ?? zone.rooms[0];
   const orientation = zone.orientation;
   const stage = zone.areaIdx; // 1 to 4
   const macroWeights = levelConfig?.macroWeights ?? null;
-  return composeArea(rng, orientation, stage, areaLengthBudget(orientation), macroWeights);
+  return composeArea(rng, { room, orientation }, stage, areaLengthBudget(orientation), macroWeights);
 }
 
 /**
