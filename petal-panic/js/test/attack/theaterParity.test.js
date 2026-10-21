@@ -118,6 +118,60 @@ ok('dashCombo shoves the target (macro-owned applyKnockback)', () => {
   t.close();
 });
 
+// Exercise real effect-before-attack ordering, including each segment boundary.
+for (const strikeCount of [3, 4]) {
+  ok(`dashCombo ${strikeCount} strikes: first ghosts start on attacker, never at origin`, () => {
+    const t = AttackTheater;
+    t.open();
+    try {
+      t.index = t.entries.indexOf('dashCombo');
+      t._loadParams();
+      if (strikeCount === 4) {
+        const segments = [...t._params.segments];
+        segments.splice(2, 0, { ...segments[1], frame: 'extra' });
+        t._tweaks.dashCombo = { segments };
+        t._loadParams();
+      }
+      t._replay();
+      const h = t._handles[0];
+      const trails = new Map();
+      const originGhosts = [];
+      for (let frame = 0; frame < 240 && !h.state.done; frame++) {
+        t.update(DT);
+        const inst = h._aiInst();
+        if (!inst || inst.done) continue;
+        if (!trails.has(inst)) {
+          trails.set(inst, { segment: h.state.segmentIndex,
+            expected: { x: t._attacker.x + t._attacker.w / 2,
+              y: t._attacker.y + t._attacker.h / 2 }, first: null, positions: new Set() });
+        }
+        const trace = trails.get(inst);
+        const ghosts = inst.body.ghosts;
+        if (!trace.first && ghosts.length) trace.first = { x: ghosts[0].x, y: ghosts[0].y };
+        for (const g of ghosts) {
+          trace.positions.add(g.x);
+          if (g.x === 0 && g.y === 0) originGhosts.push(trace.segment);
+        }
+        // Use the actual effect renderer, not a clipped/masked theater surrogate.
+        inst.render({ save() {}, restore() {}, fillRect(x, y, w, height) {
+          assert.ok(y > 0, `segment ${trace.segment}: rendered rectangle at y=${y}`);
+          assert.equal(w, t._attacker.w);
+          assert.equal(height, t._attacker.h);
+        } });
+      }
+      assert.equal(trails.size, strikeCount, 'every strike creates a trail');
+      assert.deepEqual(originGhosts, [], 'no origin snapshots anywhere in the combo');
+      for (const trace of trails.values()) {
+        assert.deepEqual(trace.first, trace.expected, `segment ${trace.segment}: first snapshot`);
+        assert.ok(trace.positions.size > 2, `segment ${trace.segment}: later movement trail preserved`);
+      }
+    } finally {
+      delete t._tweaks.dashCombo;
+      t.close();
+    }
+  });
+}
+
 // --- 6. Shared-seam parity: same molotov, gameplay-shaped vs theater ctx ------
 
 ok('molotov parity: identical zone placement across context shapes', () => {

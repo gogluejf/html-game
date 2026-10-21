@@ -192,6 +192,10 @@ defineMacro('dashCombo', {
           ...(p.afterimage ?? {}),
         },
       }, h.declaredEffectTypes());
+      // box supplies render size, not the standalone effect's held position.
+      // Seed before the next effects tick (which can precede stepMove), so
+      // its first automatic snapshot cannot use the default world origin.
+      aiInst?.body.addGhost(a.x + a.w / 2, a.y + a.h / 2);
     };
 
     /** After a freeze completes: next segment or recovery. */
