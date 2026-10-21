@@ -37,8 +37,8 @@ import { Theater } from '../debug/effect-theater.js';
 import { AttackTheater } from '../debug/attack-theater.js';
 import { record } from '../stats.js';
 import { isGrounded, standingOnOneWay } from '../hero/physics.js';
-import { isBelowVerticalBottom, getDeathFadeAlpha, finishHeroDeath, DEATH_FADE_DURATION } from '../hero/death.js';
-export { isBelowVerticalBottom, getDeathFadeAlpha, finishHeroDeath };
+import { isLethalFall, getDeathFadeAlpha, finishHeroDeath, DEATH_FADE_DURATION } from '../hero/death.js';
+export { isLethalFall, getDeathFadeAlpha, finishHeroDeath };
 import { ctx } from '../world/context.js';
 import { TUNING } from '../tuning.js';
 
@@ -1001,7 +1001,7 @@ export function update(dt) {
   //      platform top by gravity this frame has already been snapped back onto
   //      the platform (feet == bottom, not >), so only a genuinely fallen
   //      hero (no platform below to catch them) dies here.
-  if (!hero.dying && isBelowVerticalBottom(hero, getActiveZone(hero))) {
+  if (!hero.dying && isLethalFall(hero, getActiveZone(hero))) {
     hero.die();
   }
 

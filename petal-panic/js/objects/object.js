@@ -235,7 +235,9 @@ export class Checkpoint extends Entity {
   trigger(hero) {
     if (this.triggered) return false;
     this.triggered = true;
-    hero.checkpoint = { x: this.x, y: this.y };
+    // REVISION-zones-as-data §4: respawn position is zone data (feet on the
+    // floor), not the flag's sprite box. Fallback keeps legacy flags working.
+    hero.checkpoint = this.spawnPos ?? { x: this.x, y: this.y };
     this.flashTimer = 0.4;
     // SFX: checkpoint
     return true;
@@ -275,6 +277,10 @@ export function makeCheckpoint(id, x, y, extra = {}) {
   const c = new Checkpoint(id, x, y);
   c.isEntry = extra.isEntry ?? false;
   c.appearance = extra.appearance ?? 'entry';
+  // Restart position stored on hero.checkpoint when this flag triggers:
+  // feet-on-floor (y = floor top), so respawn() places the hero standing.
+  // Entry flags never trigger (naive sprites) — their spawnPos is unused.
+  c.spawnPos = extra.spawnPos ?? null;
   return c;
 }
 

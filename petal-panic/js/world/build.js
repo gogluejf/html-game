@@ -119,7 +119,7 @@ export const ENEMY_TYPES = Object.keys(ENEMY_FACTORIES);
  * @returns {{solids:object[], enemies:object[], barrels:object[],
  *            powerups:object[], checkpoints:object[]}}
  */
-export function instantiateZone(zone, layout, population) {
+export function instantiateZone(zone, layout, population, allZones = null) {
   const isVertical = zone.orientation === 'vertical';
   const boxOf = isVertical ? verticalUnitBox : horizontalUnitBox;
 
@@ -197,7 +197,19 @@ export function instantiateZone(zone, layout, population) {
   // flag (checkpoints.md §1). Flags are zone-local flag descriptors.
   const checkpoints = [];
   const mkFlag = (f, isEntry) => {
-    const c = makeCheckpoint(f.id, zone.bounds.x + f.x, f.y, { isEntry, appearance: f.appearance });
+    // Exit flags trigger: their respawn position is the NEXT zone's spawn
+    // (zone data — feet on the floor), not this flag's sprite box. Entry
+    // flags never trigger; boss checkpoint triggers respawn at the boss
+    // zone's own spawn (run phase restarts from the left entry).
+    const nextZone = !isEntry && zone.areaIdx === 4
+      ? (allZones ?? buildLevelZones({ index: zone.level, verticalArea: 3 })).find((z) => z.kind === 'boss')
+      : null;
+    const respawnZone = isEntry ? zone : (nextZone ?? zone);
+    const c = makeCheckpoint(f.id, zone.bounds.x + f.x, f.y, {
+      isEntry,
+      appearance: f.appearance,
+      spawnPos: respawnZone.spawn ? { x: respawnZone.spawn.x, y: respawnZone.spawn.y } : null,
+    });
     // A freshly instantiated flag must start un-triggered (checkpoints.md §2).
     // If it doesn't, something mutated a shared instance — log loudly so the
     // stale-state leak is visible instead of silently swallowing area-clears.
@@ -249,7 +261,7 @@ export function buildWorld(levelDef, config, seed) {
       barrels: stageBudget.barrels ?? {},
     });
     population.set(zone.areaIdx, populationSnapshot(pop));
-    world.set(zone.areaIdx, instantiateZone(zone, layout, pop));
+    world.set(zone.areaIdx, instantiateZone(zone, layout, pop, zones));
   }
   return { zones, terrain, population, world };
 }

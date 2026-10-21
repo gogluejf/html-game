@@ -4,7 +4,7 @@
 // avoid a circular import back into systems/update.js.
 
 import { ctx } from './context.js';
-import { ZONE_ENTRY_X, ZONE_GROUND_Y, VERTICAL_GROUND_Y } from './level.js';
+import { ZONE_ENTRY_X, ZONE_GROUND_Y } from './level.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { TUNING } from '../tuning.js';
 import { S, getState, setState, tryTransition } from '../core/state.js';
@@ -137,7 +137,8 @@ export function debugWrapToNextArea() {
     if (z1.kind === 'area' && ctx.world.world.has(z1.areaIdx)) {
       ctx.loadActiveZone(z1, ctx.world.world.get(z1.areaIdx));
     }
-    hero.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - hero.h };
+    const sp1 = z1.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
+    hero.checkpoint = { x: sp1.x, y: sp1.y - hero.h };
     recordAreaEntrySnapshot(hero);
     ctx.camera.setZoneBounds(z1);
     showAreaEntry(hero, ctx.areaContext);
@@ -156,7 +157,7 @@ export function debugWrapToNextArea() {
     ctx.loadActiveZone(nextZone, ctx.world.world.get(nextZone.areaIdx));
   } else if (nextZone.kind === 'boss') {
     const bossCp = nextZone.entryFlag
-      ? [makeCheckpoint(nextZone.entryFlag.id, nextZone.entryFlag.x, nextZone.entryFlag.y, { isEntry: true, appearance: nextZone.entryFlag.appearance })]
+      ? [makeCheckpoint(nextZone.entryFlag.id, nextZone.entryFlag.x, nextZone.entryFlag.y, { isEntry: true, appearance: nextZone.entryFlag.appearance, spawnPos: nextZone.spawn })]
       : [];
     ctx.loadActiveZone(nextZone, { solids: nextZone.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
   }
@@ -169,13 +170,14 @@ export function debugWrapToNextArea() {
       ctx.camera.unlock();
     }
     // Entering the boss zone starts the RUN phase: hero at the left entry,
-    // normal camera, machine dormant. The battle room begins only when the
-    // hero crosses the boss checkpoint at the far right (HERO×CHECKPOINT).
-    hero.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - hero.h };
-  } else if (nextZone.entryFlag) {
-    hero.checkpoint = { x: nextZone.bounds.x + nextZone.entryFlag.x, y: nextZone.entryFlag.y };
+    // normal camera, machine dormant. Spawn is zone data (§4).
+    const sp = nextZone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
+    hero.checkpoint = { x: sp.x, y: sp.y - hero.h };
   } else {
-    hero.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - hero.h };
+    // Respawn position is zone data: the NEXT zone's spawn (exit flags trigger
+    // into it). Fallback keeps hand-built zones working.
+    const sp = nextZone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
+    hero.checkpoint = { x: sp.x, y: sp.y - hero.h };
   }
   recordAreaEntrySnapshot(hero);
   ctx.camera.setZoneBounds(nextZone);
@@ -230,7 +232,7 @@ export function stepClearSequence(dt) {
         // entry flag (the boss checkpoint) so the hero can respawn beside it
         // after a death. Pass a minimal content object with just the checkpoint.
         const bossCp = nextZone.entryFlag
-          ? [makeCheckpoint(nextZone.entryFlag.id, nextZone.entryFlag.x, nextZone.entryFlag.y, { isEntry: true, appearance: nextZone.entryFlag.appearance })]
+          ? [makeCheckpoint(nextZone.entryFlag.id, nextZone.entryFlag.x, nextZone.entryFlag.y, { isEntry: true, appearance: nextZone.entryFlag.appearance, spawnPos: nextZone.spawn })]
           : [];
         ctx.loadActiveZone(nextZone, { solids: nextZone.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
         console.log(`[zone] loaded boss zone (empty arena + checkpoint)`);
@@ -242,17 +244,11 @@ export function stepClearSequence(dt) {
       // flag), use the zone's start position. For the BOSS zone, the hero
       // starts at the LEFT and walks right across the whole zone to the
       // boss checkpoint at the far right (run phase) — same as any area.
-      if (nextZone.kind === 'boss') {
-        hero.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - hero.h };
-      } else if (nextZone.entryFlag) {
-        hero.checkpoint = {
-          x: nextZone.bounds.x + nextZone.entryFlag.x,
-          y: nextZone.entryFlag.y,
-        };
-      } else {
-        // Area -1 has no entry flag; use the zone start position.
-        hero.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - hero.h };
-      }
+      // Respawn position is zone data (§4): the next zone's spawn (feet on
+      // the floor). Exit flags trigger into the next zone; area 1 has no
+      // entry flag and spawns at its own start.
+      const sp = nextZone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
+      hero.checkpoint = { x: sp.x, y: sp.y - hero.h };
       // Accounting snapshot (game-rules.md §4): record the entry totals for
       // this genuine area advance so a later death restart of the area can
       // roll the run stats back to them (the 'rollback' policy).
@@ -284,16 +280,11 @@ export function beginClearFadeIn() {
   // entry flag). The entry flag is a naive sprite with zero collision; the
   // hero should stand on the floor beside it, not drop onto it.
   const zone = ctx.getActiveZone(hero);
-  if (zone.orientation === 'vertical') {
-    // Vertical: hero starts on the bottom platform (top = VERTICAL_GROUND_Y).
-    const bottomY = VERTICAL_GROUND_Y;
-    hero.x = zone.bounds.x + ZONE_ENTRY_X;
-    hero.y = bottomY - hero.h;
-  } else {
-    // Horizontal / boss: hero starts on the floor.
-    hero.x = zone.bounds.x + ZONE_ENTRY_X;
-    hero.y = ZONE_GROUND_Y - hero.h;
-  }
+  // REVISION-zones-as-data §4: spawn is zone data (feet on the floor of the
+  // active room) — no per-orientation placement branches.
+  const sp = zone.spawn ?? { x: zone.bounds.x + ZONE_ENTRY_X, y: ZONE_GROUND_Y };
+  hero.x = sp.x;
+  hero.y = sp.y - hero.h;
   hero.checkpoint = { x: hero.x, y: hero.y };
   // Re-clamp the camera to the new zone's bounds (task 2.3) so it cannot reveal
   // the previous or next zone; a fresh vertical climb also resets its ascent.
@@ -387,24 +378,20 @@ export function stepAreaEntrySequence(dt) {
 }
 
 // --- Entry positions -----------------------------------------------------------
-// The hero's physical entry position for the active zone. Area -1 has no entry
-// flag (it starts at the zone's start); later areas start beside their entry
-// flag (checkpoints.md §1). startLife() owns placing the hero (lifecycle.md §3);
+// The hero's physical entry position for the active zone. REVISION-zones-as-data
+// §4: reads zone data, no orientation branches. Area 1 has no entry flag (it
+// starts at the zone's start); later areas start beside their entry flag
+// (checkpoints.md §1). startLife() owns placing the hero (lifecycle.md §3);
 // these helpers give the lifecycle ops + boot the correct entry position.
 function entryPosition(zone) {
+  // zone.spawn is the feet position on the floor of the first room
+  // (level.js builds it from the entry pad + roomFloorTop). The boss zone's
+  // spawn is its LEFT entry — the far-right checkpoint is a trigger, not a
+  // spawn point (run phase: hero walks right to the checkpoint).
+  if (zone.spawn) return { x: zone.spawn.x, y: zone.spawn.y };
+  // Fallback for hand-built zones without spawn data.
   const b = zone.bounds;
-  // The boss zone's entry flag is the boss checkpoint at the FAR RIGHT — it
-  // is a trigger, not a spawn point. The hero enters the boss zone at the
-  // LEFT like any other area and walks right to the checkpoint (run phase).
-  if (zone.kind === 'boss') {
-    return { x: b.x + ZONE_ENTRY_X, y: ZONE_GROUND_Y };
-  }
-  if (zone.entryFlag) {
-    return { x: b.x + zone.entryFlag.x, y: b.y + zone.entryFlag.y };
-  }
-  // Area -1: start at the zone's start (beside where an entry flag would be).
-  const bottomY = zone.orientation === 'vertical' ? VERTICAL_GROUND_Y : ZONE_GROUND_Y;
-  return { x: b.x + ZONE_ENTRY_X, y: bottomY };
+  return { x: b.x + ZONE_ENTRY_X, y: b.y + b.h - ZONE_FLOOR_H };
 }
 /** The hero's top-left position (top = surfaceY - hero.h) for the active zone. */
 export function heroEntryPosition(hero, zone) {
@@ -433,6 +420,7 @@ export function resetActiveZoneContent() {
       activeZone,
       ctx.world.terrain.get(activeZone.areaIdx),
       ctx.world.population.get(activeZone.areaIdx),
+      ctx.levelZones,
     );
     ctx.loadActiveZone(activeZone, fresh);
   } else if (activeZone.kind === 'boss') {
@@ -443,7 +431,7 @@ export function resetActiveZoneContent() {
     // (re-added by enterBossRoom on the next trigger). Death in the room
     // restarts the WHOLE area (boss-arena.md §3).
     const bossCp = activeZone.entryFlag
-      ? [makeCheckpoint(activeZone.entryFlag.id, activeZone.entryFlag.x, activeZone.entryFlag.y, { isEntry: true, appearance: activeZone.entryFlag.appearance })]
+      ? [makeCheckpoint(activeZone.entryFlag.id, activeZone.entryFlag.x, activeZone.entryFlag.y, { isEntry: true, appearance: activeZone.entryFlag.appearance, spawnPos: activeZone.spawn })]
       : [];
     ctx.loadActiveZone(activeZone, { solids: activeZone.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
     // If a battle room was up, its 960px floor replaced the run floor —
@@ -455,7 +443,8 @@ export function resetActiveZoneContent() {
     ctx.bossZone.reset();
     ctx.camera.unlock();
     ctx.camera.setZoneBounds(activeZone);
-    hero.checkpoint = { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y - hero.h };
+    const sp = activeZone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
+    hero.checkpoint = { x: sp.x, y: sp.y - hero.h };
   }
 }
 

@@ -107,7 +107,7 @@ test('lethal bottom: a standing hero on the bottom platform is safe', () => {
   const standingHero = { y: VERTICAL_GROUND_Y - 40, h: 40 }; // feet on the floor
   assert.ok(standingHero.y < killLine, 'hero top is above the kill line');
   assert.equal(
-    U.isBelowVerticalBottom(standingHero, vzone),
+    U.isLethalFall(standingHero, vzone),
     false,
     'a standing hero is NOT below the lethal bottom (safe start)',
   );
@@ -122,7 +122,7 @@ test('lethal bottom: hero top below the last bottom pixel of the screen kills', 
   // Hero whose TOP edge dropped just past the screen bottom → dead.
   const fallenHero = { y: killLine + 1, h: 40 };
   assert.ok(
-    U.isBelowVerticalBottom(fallenHero, vzone),
+    U.isLethalFall(fallenHero, vzone),
     'a hero whose top is below the last bottom pixel of the screen IS lethal',
   );
 
@@ -132,15 +132,15 @@ test('lethal bottom: hero top below the last bottom pixel of the screen kills', 
   const raisedKillLine = cam.y + VIEW_H;
   assert.ok(raisedKillLine < killLine, 'kill line rose with the camera');
   const fellBack = { y: raisedKillLine + 1, h: 40 };
-  assert.ok(U.isBelowVerticalBottom(fellBack, vzone), 'falling out of the raised view kills');
+  assert.ok(U.isLethalFall(fellBack, vzone), 'falling out of the raised view kills');
 });
 
 test('lethal bottom: does not apply to horizontal or boss zones', () => {
   const hzone = zones.find((z) => z.orientation === 'horizontal');
   const bzone = zones.find((z) => z.orientation === 'boss');
   const deepHero = { y: 99999, h: 40 };
-  assert.equal(U.isBelowVerticalBottom(deepHero, hzone), false, 'horizontal zone: no lethal bottom');
-  assert.equal(U.isBelowVerticalBottom(deepHero, bzone), false, 'boss zone: no lethal bottom');
+  assert.equal(U.isLethalFall(deepHero, hzone), false, 'horizontal zone: no lethal bottom');
+  assert.equal(U.isLethalFall(deepHero, bzone), false, 'boss zone: no lethal bottom');
 });
 
 // ---------------------------------------------------------------------------
@@ -194,7 +194,7 @@ test('restart: hero respawns at the bottom-platform entry, not mid-climb', () =>
   assert.equal(respawned.y + respawned.h, bottom, 'respawn feet rest on the bottom platform');
   assert.ok(respawned.y < cam.y + VIEW_H, 'respawned hero top is above the kill line');
   assert.equal(
-    U.isBelowVerticalBottom(respawned, vzone),
+    U.isLethalFall(respawned, vzone),
     false,
     'a death restart on the bottom platform is not lethal',
   );

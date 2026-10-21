@@ -445,17 +445,17 @@ test('vertical fall: a hero below the bottom platform is lethal; on the platform
   // Hero standing ON the bottom platform: top edge well above the kill line.
   h.x = vzone.bounds.x + ZONE_ENTRY_X;
   h.y = VERTICAL_GROUND_Y - h.h;
-  assert.equal(U.isBelowVerticalBottom(h, vzone), false,
+  assert.equal(U.isLethalFall(h, vzone), false,
     'a hero standing on the bottom platform is NOT below it (safe start)');
 
   // Hero fallen out of the screen: TOP edge strictly below the kill line.
   h.y = killLine + 5;
-  assert.equal(U.isBelowVerticalBottom(h, vzone), true,
+  assert.equal(U.isLethalFall(h, vzone), true,
     'a hero whose top dropped below the last bottom pixel IS below it (lethal)');
   // Non-vertical zones are never lethal-bottom.
   const hz = zones.find((z) => z.kind === 'area' && z.orientation === 'horizontal');
   h.y = 99999;
-  assert.equal(U.isBelowVerticalBottom(h, hz), false,
+  assert.equal(U.isLethalFall(h, hz), false,
     'the lethal-bottom rule never fires in a horizontal zone');
 });
 
@@ -483,7 +483,7 @@ test('vertical fall: a restart places the hero back on the bottom platform', () 
   // lethal emptiness.
   const feet = h.y + h.h;
   assert.equal(feet, bottom, 'the restarted hero\'s feet are back on the bottom platform top');
-  assert.equal(U.isBelowVerticalBottom(h, vzone), false,
+  assert.equal(U.isLethalFall(h, vzone), false,
     'the restarted hero is not in the lethal emptiness');
 });
 

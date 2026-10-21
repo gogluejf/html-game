@@ -10,25 +10,21 @@ import { resetActiveZoneContent } from '../world/zoneLifecycle.js';
 import { showAreaEntry } from '../systems/lifecycle.js';
 
 /**
- * structure.md §4: in a vertical zone the hero may fall within the visible
- * view, but falling out of the bottom of the screen kills them. The camera's
- * upward ratchet means the bottom edge of the view rises as the climb
- * progresses, so "bottom of the screen" is `camera.y + VIEW_H` — a line that
- * moves up with the ascent. A hero whose TOP edge drops below that line is
- * fully off-screen and dead.
- *
- * At the start of the climb the camera sits at its lowest position
- * (`bounds.y + bounds.h - VIEW_H`), so the kill line rests exactly on the
- * floor top (VERTICAL_GROUND_Y): a hero standing normally at the entry has
- * their top well above it and is safe (structure.md §4: "the initial
- * supporting platform must allow a safe start").
+ * REVISION-zones-as-data §3: one lethal-fall rule, camera-relative. The hero
+ * dies when their TOP edge drops below the bottom pixel of the camera —
+ * orientation-agnostic, no floor reference. Gated by zone.lethalBottom so
+ * horizontal zones (floor always on-screen) never trigger it in practice,
+ * while sharing the identical code path. In ratchet zones the camera won't
+ * follow back down, so a fall eventually pushes the hero out of view → dead.
+ * Floor holes work later with zero extra code: fall through a gap, drop out
+ * of camera-bottom, die.
  *
  * @param {Hero} h the hero
  * @param {object} zone the active zone from buildLevelZones()
  * @returns {boolean} true if the hero has fallen out of the bottom of the view
  */
-export function isBelowVerticalBottom(h, zone) {
-  if (!zone || zone.orientation !== 'vertical') return false;
+export function isLethalFall(h, zone) {
+  if (!zone || !zone.lethalBottom) return false;
   const cam = ctx.camera;
   // Bottom pixel row of the visible screen, in world coordinates.
   const screenBottom = cam ? cam.y + cam.h : zone.bounds.y + zone.bounds.h - VIEW_H;
@@ -37,6 +33,9 @@ export function isBelowVerticalBottom(h, zone) {
   const wb = h.worldBox ? h.worldBox() : { y: h.y, h: h.h };
   return wb.y > screenBottom;
 }
+
+/** Backward-compat alias until callers migrate to isLethalFall (PR 5). */
+export const isBelowVerticalBottom = isLethalFall;
 
 /** Length of the fade-to-black after the skull presentation (checkpoints.md §4:
  *  "After the death presentation and a short delay, fade to black"). Concrete
