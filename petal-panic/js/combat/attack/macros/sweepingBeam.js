@@ -44,6 +44,8 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { targetCenter } from '../context.js';
+import { announceMarkerPoint } from '../primitives/beam.js';
+import { fireDeclared } from '../../../effects/index.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -132,6 +134,12 @@ defineMacro('sweepingBeam', {
     // Motion ends here; the fade-out window comes AFTER.
     const motionEnd = params.holdDuration + params.sweepDuration + params.endHoldDuration;
     const totalDuration = motionEnd + params.fadeOut;
+
+    // Announcement window (macro-owned): marker at the boundary in the start
+    // direction → gap → beam invoke. The primitive's delayed-ignition model is
+    // incompatible with the sweep's single-persistent-beam design, so the
+    // macro sequences it explicitly.
+    const announceTotal = params.announceMarker ? Math.max(0, params.announceDelay) + 0.12 : 0;
     h.state = { t: 0, done: false, beam: null };
 
     // Resolve the base origin (gun tip / pivot) once.
@@ -148,44 +156,63 @@ defineMacro('sweepingBeam', {
       baseY = (a?.y ?? 0) + hh + sin * dx;
     }
 
-    // Fire ONE beam for the whole attack. Align the effect's three-phase
-    // envelope to the macro's phases so it stays at peak brightness through
-    // the entire sweep + end hold and only fades after the end angle:
-    //   flashInTime = holdDuration
-    //   holdTime    = sweepDuration + endHoldDuration
-    //   fadeOutTime = fadeOut
-    const beam = invoke('beam', {
-      origin: { x: baseX, y: baseY },
-      direction: params.direction,
-      length: params.length,
-      width: params.width,
-      duration: totalDuration,
-      damage: params.damage,
-      tickRate: params.tickRate,
-      team: params.team,
-      // Entry-direction announcement: the sweep's START is a known direction,
-      // so a marker at that entry point (same screen-edge rules as any beam)
-      // warns where the laser begins before it pops in. The sweep motion
-      // itself then plays out un-telegraphed — that is its own read.
-      announceMarker: params.announceMarker,
-      announceDelay: params.announceDelay,
-      style: {
-        ...(params.beamStyle ?? {}),
-        shimmerDepth: params.shimmerLow,
-        flashInTime: params.holdDuration,
-        holdTime: params.sweepDuration + params.endHoldDuration,
-        fadeOutTime: params.fadeOut,
-      },
-    }, ctx);
-    if (beam) beam.on('hit', (info) => h._emit('hit', info));
-    // Trust our per-frame box mutation instead of the static recompute.
-    if (beam?.state) beam.state._swept = true;
-    h.state.beam = beam;
+    // Fire the announcement marker NOW (visible for announceDelay).
+    if (params.announceMarker) {
+      const pt = announceMarkerPoint(
+        { origin: { x: baseX, y: baseY }, direction: params.direction, length: params.length },
+        ctx,
+      );
+      fireDeclared({ type: 'surface-target-marker', params: {
+        x: pt.x, y: pt.y,
+        angle: params.direction + Math.PI / 2,
+        spinRate: 0,
+        duration: Math.max(0, params.announceDelay),
+        color: params.beamStyle?.color,
+      } }, h.declaredEffectTypes());
+    }
+
+    /** Invoke the persistent beam (called once, after the announcement gap). */
+    function startBeam() {
+      const beam = invoke('beam', {
+        origin: { x: baseX, y: baseY },
+        direction: params.direction,
+        length: params.length,
+        width: params.width,
+        duration: totalDuration,
+        damage: params.damage,
+        tickRate: params.tickRate,
+        team: params.team,
+        announceMarker: false,
+        style: {
+          ...(params.beamStyle ?? {}),
+          shimmerDepth: params.shimmerLow,
+          flashInTime: params.holdDuration,
+          holdTime: params.sweepDuration + params.endHoldDuration,
+          fadeOutTime: params.fadeOut,
+        },
+      }, ctx);
+      if (beam) beam.on('hit', (info) => h._emit('hit', info));
+      if (beam?.state) beam.state._swept = true;
+      h.state.beam = beam;
+    }
+
+    // No announcement → start immediately.
+    if (!params.announceMarker) startBeam();
 
     h.step = (dt, targets) => {
       const s = h.state;
-      if (s.done || !beam) return true;
+      if (s.done) return true;
       s.t += dt;
+
+      // Announcement window: wait for the marker + gap before invoking the beam.
+      if (params.announceMarker && !s.beam) {
+        if (s.t < announceTotal) return false;
+        startBeam();
+        if (!s.beam) return true; // beam invoke failed → done
+        s.t = 0; // beam clock starts fresh at ignition
+      }
+      if (!s.beam) return true;
+      const beam = s.beam;
 
       // Determine current phase → angle, position, shimmer. Motion (angle +
       // translation) is fully resolved by `motionEnd`; the fade-out window
