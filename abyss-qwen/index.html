@@ -1302,7 +1302,7 @@ function drawSprite(ctx, name, frame, x, y, scale = 1) {
 /* ---------------------------------------------------------------------------
  * Background
  * -------------------------------------------------------------------------
- * A single wide underwater image (assets/hud/background/f1.png) drawn scaled to
+ * A single wide underwater image (assets/hud/background/background_f1.png) drawn scaled to
  * cover the canvas height, then panned horizontally. It drifts very slowly in
  * one direction and reverses at the image's edge (ping-pong), so the scene
  * gently sways side to side forever. Replaces the old procedural starfield as
@@ -1314,7 +1314,7 @@ class Background {
     this.h = height;
     this.img = new Image();
     const base = "";
-    this.img.src = `${base}assets/hud/background/f1.png`;
+    this.img.src = `${base}assets/hud/background/background_f1.png`;
     this.loaded = false;
     this.img.onload = () => { this.loaded = true; };
     // Pan state: offset in source-image pixels, moving left (negative dir).
@@ -2568,7 +2568,7 @@ const Game = {
     // Splash art for the title screen.
     this.splash = new Image();
     const base = "";
-    this.splash.src = `${base}assets/hud/splash/f1.png`;
+    this.splash.src = `${base}assets/hud/splash/splash_f1.png`;
     requestAnimationFrame((t) => this.loop(t));
   },
 

@@ -1,0 +1,31 @@
+{
+ "label": "interface",
+ "file": "petal-panic/assets/interface/home/stage_sheet.png",
+ "rows": 1,
+ "cols": 1,
+ "size": "1536x1024",
+ "description": "Circus stage with characters home/parallax scene (single image)",
+ "entities": [
+  {
+   "name": "home",
+   "anim": "stage",
+   "frames": [
+    {
+     "file": "stage_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      1536,
+      1024
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/interface/home"
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/redo-single"
+ }
+}
