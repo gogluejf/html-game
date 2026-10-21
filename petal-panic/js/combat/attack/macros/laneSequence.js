@@ -1,25 +1,28 @@
-// Petal Panic — Lane Sequence macro (attack-macros.md §27/§28 merged).
+// Petal Panic — Lane Sequence macro (attack-macros.md §27).
 //
 // A telegraphed sequence where the attacker enters from offscreen and attacks
 // completely across the screen through each configured Y lane exactly once.
-// Per lane: boundary marker → gap → attack (dash or beam) → exit/end →
+// Per lane: boundary marker → gap → attack (charge or beam) → exit/end →
 // interval → next lane.
 //
 // mode: 'charge'   → charge primitive (distanceType:infinit, announceMarker:true)
-// mode: 'beam'  → beam primitive (length:9999, announceMarker:true)
+// mode: 'beam'     → beam primitive (length:9999, announceMarker:true)
+//
+// Lanes are auto-calculated from laneCount + laneSpacing (centered vertically
+// in the view), or overridden with an explicit `lanes` array.
 //
 // The announcement is HARDCODED ON (not a param) — a lane sequence is by
 // definition a telegraphed attack. The announceDelay is passed to the
 // primitive's built-in announcement.
 //
 // The interval starts AFTER the current lane's attack fully ends (beam fade
-// complete / dash exited), so the next marker never overlaps the previous
+// complete / charge exited), so the next marker never overlaps the previous
 // attack.
 
 import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { getPrimitive, getMacro } from '../registry.js';
-import { VIEW_W } from '../../../core/view.js';
+import { VIEW_W, VIEW_H } from '../../../core/view.js';
 
 function declaredEffectsOf(id) {
   const def = getPrimitive(id) ?? getMacro(id);
@@ -28,23 +31,25 @@ function declaredEffectsOf(id) {
 
 const DEFAULTS = Object.freeze({
   mode: 'charge',               // 'charge' | 'beam'
-  lanes: [150, 270, 390],     // Y positions (world coords)
-  laneOrder: 'bottom_to_top', // 'bottom_to_top' | 'top_to_bottom' | 'random'
-  sideMode: 'fixed_left',     // 'fixed_left' | 'fixed_right' | 'alternate' | 'random'
-  alternateStartSide: 'left', // 'left' | 'right'
-  announceDelay: 0.5,         // s the boundary marker stays visible per lane (hardcoded ON)
-  // Dash params:
-  dashSpeed: 1200,            // px/s
-  damage: 20,                 // contact damage during dash / per tick for beam
-  knockback: null,            // {x,y} or null (dash only)
-  // Laser params:
-  beamDuration: 0.8,          // s the beam stays hot per lane
-  beamWidth: 24,              // damaging thickness px
-  tickRate: 8,                // damage ticks per second (beam only)
+  laneCount: 3,                 // number of rows
+  laneSpacing: 120,             // px between rows (auto-centered vertically)
+  lanes: null,                  // explicit Y positions override (if set, laneCount/spacing ignored)
+  laneOrder: 'bottom_to_top',   // 'bottom_to_top' | 'top_to_bottom' | 'random'
+  sideMode: 'fixed_left',       // 'fixed_left' | 'fixed_right' | 'alternate' | 'random'
+  alternateStartSide: 'left',   // 'left' | 'right'
+  announceDelay: 0.5,           // s the boundary marker stays visible per lane (hardcoded ON)
+  // Charge params:
+  dashSpeed: 1200,              // px/s
+  damage: 20,                   // contact damage during charge / per tick for beam
+  knockback: null,              // {x,y} or null (charge only)
+  // Beam params:
+  beamDuration: 0.8,            // s the beam stays hot per lane
+  beamWidth: 24,                // damaging thickness px
+  tickRate: 8,                  // damage ticks per second (beam only)
   // Shared:
-  interval: 0.15,             // pause between lanes (s) — starts after attack ends
-  team: 'foe',                // ally | foe
-  style: null,                // beam effect style override (beam only)
+  interval: 0.15,               // pause between lanes (s) — starts after attack ends
+  team: 'foe',                  // ally | foe
+  style: null,                  // beam effect style override (beam only)
 });
 
 function shuffled(arr) {
@@ -56,10 +61,23 @@ function shuffled(arr) {
   return a;
 }
 
-function resolveLanes(lanes, order) {
-  if (order === 'random') return shuffled(lanes);
-  if (order === 'top_to_bottom') return [...lanes].sort((a, b) => a - b);
-  return [...lanes].sort((a, b) => b - a);
+/** Calculate lane Y positions: centered vertically, spaced by laneSpacing. */
+function calcLanes(count, spacing) {
+  const totalHeight = (count - 1) * spacing;
+  const startY = (VIEW_H - totalHeight) / 2;
+  const lanes = [];
+  for (let i = 0; i < count; i++) {
+    lanes.push(startY + i * spacing);
+  }
+  return lanes;
+}
+
+function resolveLanes(params) {
+  // Explicit lanes override auto-calculation.
+  const raw = params.lanes ?? calcLanes(params.laneCount, params.laneSpacing);
+  if (params.laneOrder === 'random') return shuffled(raw);
+  if (params.laneOrder === 'top_to_bottom') return [...raw].sort((a, b) => a - b);
+  return [...raw].sort((a, b) => b - a); // bottom_to_top (default)
 }
 
 function resolveSide(sideMode, idx, altStart) {
@@ -83,17 +101,19 @@ defineMacro('laneSequence', {
       { type: 'surface-target-marker', desc: 'boundary telegraph per lane (via primitive announceMarker)' },
       { type: 'beam', desc: 'full-screen beam per lane (mode: beam)' },
     ],
-    desc: 'Telegraphed offscreen attack across each Y lane exactly once. mode: dash (charge infinit) or beam (static full-screen line). Announcement hardcoded on.',
+    desc: 'Telegraphed offscreen attack across each Y lane exactly once. mode: charge (offscreen dash) or beam (static full-screen line). Lanes auto-calculated from laneCount + laneSpacing.',
     params: [
       { key: 'mode', desc: "'charge' | 'beam'" },
-      { key: 'lanes', desc: 'array of Y positions (world coords)' },
+      { key: 'laneCount', desc: 'number of rows (default 3)' },
+      { key: 'laneSpacing', desc: 'px between rows (default 120, auto-centered)' },
+      { key: 'lanes', desc: 'explicit Y positions override (null = auto-calc)' },
       { key: 'laneOrder', desc: "'bottom_to_top' | 'top_to_bottom' | 'random'" },
       { key: 'sideMode', desc: "'fixed_left' | 'fixed_right' | 'alternate' | 'random'" },
       { key: 'alternateStartSide', desc: "'left' | 'right'" },
       { key: 'announceDelay', desc: 's the boundary marker stays visible per lane (default 0.5)' },
-      { key: 'dashSpeed', desc: 'px/s (dash mode, default 1200)' },
-      { key: 'damage', desc: 'contact damage (dash) / per tick (beam)' },
-      { key: 'knockback', desc: '{x,y} or null (dash only)' },
+      { key: 'dashSpeed', desc: 'px/s (charge mode, default 1200)' },
+      { key: 'damage', desc: 'contact damage (charge) / per tick (beam)' },
+      { key: 'knockback', desc: '{x,y} or null (charge only)' },
       { key: 'beamDuration', desc: 's the beam stays hot (beam mode, default 0.8)' },
       { key: 'beamWidth', desc: 'damaging thickness px (beam mode, default 24)' },
       { key: 'tickRate', desc: 'damage ticks per second (beam mode, default 8)' },
@@ -104,7 +124,7 @@ defineMacro('laneSequence', {
   },
   impl(params, ctx) {
     const h = new AttackHandle('laneSequence', null, declaredEffectsOf('laneSequence'));
-    const laneSeq = resolveLanes(params.lanes, params.laneOrder);
+    const laneSeq = resolveLanes(params);
     const n = laneSeq.length;
 
     h.state = {
@@ -115,7 +135,7 @@ defineMacro('laneSequence', {
       done: false,
     };
 
-    /** Position the attacker offscreen (dash mode only). */
+    /** Position the attacker offscreen (charge mode only). */
     function positionOffscreen(side, y) {
       const a = ctx.attacker;
       if (!a) return;
@@ -148,7 +168,7 @@ defineMacro('laneSequence', {
           announceDelay: params.announceDelay,
         }, ctx);
       } else {
-        // dash
+        // charge
         positionOffscreen(side, y);
         handle = invoke('charge', {
           direction,
