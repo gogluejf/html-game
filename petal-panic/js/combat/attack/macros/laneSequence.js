@@ -5,7 +5,7 @@
 // Per lane: boundary marker → gap → attack (dash or beam) → exit/end →
 // interval → next lane.
 //
-// mode: 'dash'   → charge primitive (distanceType:infinit, announceMarker:true)
+// mode: 'charge'   → charge primitive (distanceType:infinit, announceMarker:true)
 // mode: 'beam'  → beam primitive (length:9999, announceMarker:true)
 //
 // The announcement is HARDCODED ON (not a param) — a lane sequence is by
@@ -27,7 +27,7 @@ function declaredEffectsOf(id) {
 }
 
 const DEFAULTS = Object.freeze({
-  mode: 'dash',               // 'dash' | 'beam'
+  mode: 'charge',               // 'charge' | 'beam'
   lanes: [150, 270, 390],     // Y positions (world coords)
   laneOrder: 'bottom_to_top', // 'bottom_to_top' | 'top_to_bottom' | 'random'
   sideMode: 'fixed_left',     // 'fixed_left' | 'fixed_right' | 'alternate' | 'random'
@@ -85,7 +85,7 @@ defineMacro('laneSequence', {
     ],
     desc: 'Telegraphed offscreen attack across each Y lane exactly once. mode: dash (charge infinit) or beam (static full-screen line). Announcement hardcoded on.',
     params: [
-      { key: 'mode', desc: "'dash' | 'beam'" },
+      { key: 'mode', desc: "'charge' | 'beam'" },
       { key: 'lanes', desc: 'array of Y positions (world coords)' },
       { key: 'laneOrder', desc: "'bottom_to_top' | 'top_to_bottom' | 'random'" },
       { key: 'sideMode', desc: "'fixed_left' | 'fixed_right' | 'alternate' | 'random'" },

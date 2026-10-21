@@ -1246,7 +1246,7 @@ The interval starts ONLY after the current lane's attack fully completes
 
 ### Parameters
 
-- **mode** — `'dash'` | `'beam'`.
+- **mode** — `'charge'` | `'beam'`.
 - **lanes** — array of Y positions (world coords).
 - **laneOrder** — `bottom_to_top` | `top_to_bottom` | `random`.
 - **sideMode** — `fixed_left` | `fixed_right` | `alternate` | `random`.
