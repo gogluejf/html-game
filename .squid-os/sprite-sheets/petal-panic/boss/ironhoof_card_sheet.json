@@ -4,16 +4,28 @@
   "rows": 1,
   "cols": 1,
   "description": "ironhoof full-screen boss intro card (single image)",
-  "entities": [{
-    "name": "ironhoof",
-    "anim": "card",
-    "frames": [
-      {"file": "ironhoof_card_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 1536, 1024]}
-    ]
-  }],
-  "cropped_path": "petal-panic/assets/boss/ironhoof/card",
+  "entities": [
+    {
+      "name": "ironhoof",
+      "anim": "card",
+      "frames": [
+        {
+          "file": "ironhoof_card_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            1536,
+            1024
+          ]
+        }
+      ]
+    }
+  ],
+  "cropped_path": "petal-panic/assets/boss",
   "crop": {
-    "frames_dir": "petal-panic/assets/boss/ironhoof/card",
+    "frames_dir": "petal-panic/assets/boss",
     "pass": "opaque-copy"
   },
   "updated": "2026-10-09T09:35:09"

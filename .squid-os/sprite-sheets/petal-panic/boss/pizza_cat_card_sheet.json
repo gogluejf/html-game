@@ -4,16 +4,28 @@
   "rows": 1,
   "cols": 1,
   "description": "pizza_cat full-screen boss intro card (single image)",
-  "entities": [{
-    "name": "pizza_cat",
-    "anim": "card",
-    "frames": [
-      {"file": "pizza_cat_card_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 1536, 1024]}
-    ]
-  }],
-  "cropped_path": "petal-panic/assets/boss/pizza_cat/card",
+  "entities": [
+    {
+      "name": "pizza_cat",
+      "anim": "card",
+      "frames": [
+        {
+          "file": "pizza_cat_card_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            1536,
+            1024
+          ]
+        }
+      ]
+    }
+  ],
+  "cropped_path": "petal-panic/assets/boss",
   "crop": {
-    "frames_dir": "petal-panic/assets/boss/pizza_cat/card",
+    "frames_dir": "petal-panic/assets/boss",
     "pass": "opaque-copy"
   },
   "updated": "2026-10-09T09:35:09"
