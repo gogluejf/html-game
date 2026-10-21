@@ -27,6 +27,10 @@ import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { targetCenter } from '../context.js';
 import { fireDeclared } from '../../../effects/index.js';
+// Ensure payload macros are registered (otherwise only pulled in by the theater).
+import './explosiveProjectile.js';
+import './shockwaveProjectile.js';
+import './napalm.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -46,10 +50,12 @@ const DEFAULTS = Object.freeze({
   color: '#ff5555',
   radius: 30,          // reticle size (px)
   tracking: true,      // follow the target until lockTime
-  // Shot stage (plain projectile params).
+  // Shot stage.
+  blastType: 'plain',   // plain | explosion | shockwave | napalm — payload on impact
   speed: 500,          // projectile speed px/s
   ttl: 2,              // projectile lifetime (s)
-  damage: 10,          // projectile damage
+  damage: 10,          // projectile / contact damage
+  blast: null,         // extra params forwarded to the chosen payload macro
 });
 
 /**
@@ -64,7 +70,12 @@ function aimPoint(params, ctx) {
 }
 
 defineMacro('reticleShot', {
-  attacks: [{ id: 'projectile', role: 'payload' }],
+  attacks: [
+    { id: 'projectile', role: 'payload' },
+    { id: 'explosiveProjectile', role: 'payload' },
+    { id: 'shockwaveProjectile', role: 'payload' },
+    { id: 'napalm', role: 'payload' },
+  ],
   params: { ...DEFAULTS },
   meta: {
     name: 'Reticle Shot',
@@ -79,9 +90,11 @@ defineMacro('reticleShot', {
       { key: 'color', desc: 'VFX color' },
       { key: 'radius', desc: 'reticle size (px)' },
       { key: 'tracking', desc: 'follow the target until lockTime' },
+      { key: 'blastType', desc: "plain | explosion | shockwave | napalm — payload on impact" },
       { key: 'speed', desc: 'projectile speed px/s' },
       { key: 'ttl', desc: 'projectile lifetime (s)' },
-      { key: 'damage', desc: 'projectile damage' },
+      { key: 'damage', desc: 'projectile / contact damage' },
+      { key: 'blast', desc: 'extra params forwarded to the chosen payload macro' },
     ],
   },
   impl(params, ctx) {
@@ -144,13 +157,30 @@ defineMacro('reticleShot', {
         const pt = s.locked ?? s.pt;
         const o = targetCenter(ctx.attacker) ?? { x: 0, y: 0 };
         const dir = Math.atan2(pt.y - o.y, pt.x - o.x);
-        const shot = invoke('projectile', {
-          origin: { x: o.x, y: o.y },
-          direction: dir,
-          speed: params.speed,
-          ttl: params.ttl,
-          damage: params.damage,
-        }, ctx);
+        const blastType = params.blastType ?? 'plain';
+        // Plain: the primitive itself. Anything else: a payload macro that
+        // composes the projectile carrier with its detonation (explosion /
+        // shockwave ring / napalm fire zone). Carrier params are shared by
+        // all of them; blast-specific params pass through via `blast`.
+        let shot;
+        if (blastType === 'plain') {
+          shot = invoke('projectile', {
+            origin: { x: o.x, y: o.y },
+            direction: dir,
+            speed: params.speed,
+            ttl: params.ttl,
+            damage: params.damage,
+          }, ctx);
+        } else {
+          shot = invoke(blastType, {
+            origin: { x: o.x, y: o.y },
+            direction: dir,
+            speed: params.speed,
+            ttl: params.ttl,
+            damage: params.damage,
+            ...(params.blast ?? {}),
+          }, ctx);
+        }
         if (shot?.entity) {
           h.shot = shot;
           shot.on('hit', (info) => h._emit('hit', info));

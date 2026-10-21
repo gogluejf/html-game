@@ -26,6 +26,9 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { fireDeclared } from '../../../effects/index.js';
+// Ensure payload macros are registered (otherwise only pulled in by the theater).
+import './shockwaveProjectile.js';
+import './napalm.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -49,6 +52,8 @@ const DEFAULTS = Object.freeze({
   blastTeam: 'neutral', // who the blast hurts
   size: 14,           // carrier box size (px)
   markerStyle: null,  // surface-target-marker effect override
+  blastType: 'explosion', // explosion | shockwave | napalm — payload on impact
+  blast: null,        // extra params forwarded to the chosen payload macro
 });
 
 /**
@@ -77,7 +82,11 @@ export function resolveImpactPoint(p, ctx) {
 }
 
 defineMacro('skyMissile', {
-  attacks: [{ id: 'explosiveProjectile', role: 'payload' }],
+  attacks: [
+    { id: 'explosiveProjectile', role: 'payload' },
+    { id: 'shockwaveProjectile', role: 'payload' },
+    { id: 'napalm', role: 'payload' },
+  ],
   params: { ...DEFAULTS },
   meta: {
     name: 'Sky Missile',
@@ -96,6 +105,8 @@ defineMacro('skyMissile', {
       { key: 'team', desc: 'who the falling carrier hurts' },
       { key: 'blastTeam', desc: 'who the blast hurts' },
       { key: 'size', desc: 'carrier box size (px)' },
+      { key: 'blastType', desc: 'explosion | shockwave | napalm — payload on impact' },
+      { key: 'blast', desc: 'extra params forwarded to the chosen payload macro' },
     ],
   },
   impl(params, ctx) {
@@ -118,7 +129,13 @@ defineMacro('skyMissile', {
       // ttl covers the full fall from spawn to the impact line (+ small margin
       // so the surface contact resolves first, not the fuse).
       const fallTtl = (p.dropHeight / Math.max(1, p.fallSpeed)) + 0.25;
-      const m = invoke('explosiveProjectile', {
+      // Payload choice: explosion (default) | shockwave | napalm. All three
+      // share the same carrier surface (origin/direction/speed/ttl/team), so
+      // one call site works; blast-specific params pass through via `blast`.
+      const payloadId = p.blastType === 'shockwave' ? 'shockwaveProjectile'
+        : p.blastType === 'napalm' ? 'napalm'
+        : 'explosiveProjectile';
+      const m = invoke(payloadId, {
         origin: { x: pt.x - p.size / 2, y: spawnY },
         direction: Math.PI / 2,
         speed: p.fallSpeed,
@@ -129,6 +146,7 @@ defineMacro('skyMissile', {
         blastTeam: p.blastTeam,
         size: p.size,
         solidBehavior: 'phase',
+        ...(p.blast ?? {}),
       }, ctx);
       h.state.missile = m;
       if (m) {
