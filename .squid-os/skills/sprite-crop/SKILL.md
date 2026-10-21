@@ -90,10 +90,19 @@ per-sheet JSONs at runtime — no render step needed.
 
 ```bash
 bash <working-dir>/.squid-os/skills/sprite-crop/scripts/server/server.sh go
-# → http://localhost:8766
+# → prints the ready URL, e.g. http://localhost:8766
 ```
 
 Open: `http://localhost:8766/.squid-os/skills/sprite-crop/scripts/server/index.html?project=<name>`
+
+**If the editor 404s:** a stale server process is serving from the wrong directory (e.g. cwd = game subfolder instead of repo root). Fix:
+```bash
+bash <working-dir>/.squid-os/skills/sprite-crop/scripts/server/server.sh stop
+# kill any orphan on the port if stop says "not running":
+ss -tlnp | grep 8766   # → kill that PID, then:
+bash <working-dir>/.squid-os/skills/sprite-crop/scripts/server/server.sh go
+```
+Verify before opening: `curl -s -o /dev/null -w "%{http_code}" "<url>"` must return 200.
 
 Both projects load instantly by changing the `?project=` param. No re-render.
 
@@ -108,6 +117,7 @@ Both projects load instantly by changing the `?project=` param. No re-render.
 - **Filenames are ALWAYS `<entity>_<action>_f<N>.png`.** Entity prefix on every file, one action word per row, _fN sequential within that row. Game code loads by this pattern. EXCEPTION: with `--span`, _fN runs continuously across all rows (one animation), so a 2×5 special yields `f1..f10` in a single sequence.
 - **Only verified frames reach the project.** Nothing is copied into <assets-dir> until its pass passed inspection AND validation reported PASS (or issues were explicitly accepted by the user).
 - **State is written ONLY via CLI** (record-crop). NEVER hand-edit the sheet JSON.
+- **Verify the editor URL before opening it.** `curl` the index.html path; 404 means a stale/mis-rooted server process — stop, kill the orphan on the port, restart via server.sh go.
 - **Flat frame structure.** Frames go directly in assets/<label>/ — NO per-entity subfolders.
 - **Single-image sheets** (backgrounds, single props, no animation): skip extract entirely — the image is already one transparent PNG; just copy it into <assets-dir>/ and register it in state like before.
 - **Vision resolves ambiguity, code moves pixels.** Low-confidence ownership flags get a vision look; never silently guess satellite ownership, and never use vision to guess pixel coordinates.
