@@ -39,11 +39,11 @@ const DEFAULTS = Object.freeze({
   laneOrder: 'bottom_to_top', // 'bottom_to_top' | 'top_to_bottom' | 'random'
   sideMode: 'fixed_left',     // 'fixed_left' | 'fixed_right' | 'alternate' | 'random'
   alternateStartSide: 'left', // 'left' | 'right'
-  announceDelay: 1.0,         // s the boundary marker stays visible per lane
-  dashSpeed: 700,             // px/s
+  announceDelay: 0.5,         // s the boundary marker stays visible per lane
+  dashSpeed: 1200,            // px/s
   damage: 20,                 // contact damage during dash
   knockback: null,            // {x,y} or null
-  interval: 0.4,              // pause between lanes (s)
+  interval: 0.15,             // pause between lanes (s)
   team: 'foe',                // ally | foe
 });
 
