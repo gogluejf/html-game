@@ -413,7 +413,7 @@ bomb composition.
 
 ## 9. Cluster Bomb
 
-**Invokes:** Explosive Bomb → Spawn/Split (on the parent's terminal `detonate`)
+**Invokes:** Bomb (carrier) → Spawn/Split (payload, fired on the carrier's terminal `detonate`)
 
 **Effects:** Debris + Explosion + Camera Shake (via the child explosiveBombs — screen flash suppressed)
 
@@ -737,7 +737,7 @@ Reticle/telegraph → Beam starts → angular sweep → end.
 
 ## 16. Stomp
 
-**Invokes:** Telegraph effect + Movement (tiny hop) + Explosion (radius blast)
+**Invokes:** none (self-contained — owns its own radius blast via the damage pipeline; telegraph + dust + shake are effects, the hop is a visual sprite offset, no primitives invoked)
 
 **Effects:** Telegraph effect (warning marker), Dust Cloud (ground impact),
 Camera Shake (impact)
@@ -789,8 +789,7 @@ land: Explosion(radius) + Dust Cloud + Camera Shake → interval]**
 
 ## 17. Stomp Wave
 
-**Invokes:** Telegraph effect + Movement (tiny hop) + Surface Wave (one invoke
-per side; the macro decides how many sides)
+**Invokes:** Surface Wave (one invoke per side; the macro decides how many sides). Telegraph is an effect and the hop a visual sprite offset — neither is a primitive invoke.
 
 **Effects:** Telegraph effect (warning marker), Dust Cloud (impact point),
 Camera Shake (impact)
