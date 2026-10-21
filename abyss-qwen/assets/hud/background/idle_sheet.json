@@ -1,6 +1,6 @@
 {
  "label": "hud",
- "file": "abyss-qwen/assets/hud/background/background_sheet.png",
+ "file": "abyss-qwen/assets/hud/background/idle_sheet.png",
  "rows": 1,
  "cols": 1,
  "size": "1586x992",

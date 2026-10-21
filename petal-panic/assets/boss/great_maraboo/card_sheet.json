@@ -1,0 +1,31 @@
+{
+ "file": "petal-panic/assets/boss/great_maraboo/card_sheet.png",
+ "size": "1536x1024",
+ "rows": 1,
+ "cols": 1,
+ "description": "great_maraboo full-screen boss intro card (single image)",
+ "entities": [
+  {
+   "name": "great_maraboo",
+   "anim": "card",
+   "frames": [
+    {
+     "file": "card_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      1536,
+      1024
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/boss/great_maraboo"
+  }
+ ],
+ "crop": {
+  "pass": "opaque-copy"
+ },
+ "updated": "2026-10-09T09:35:09"
+}

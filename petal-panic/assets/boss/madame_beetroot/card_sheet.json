@@ -1,0 +1,31 @@
+{
+ "file": "petal-panic/assets/boss/madame_beetroot/card_sheet.png",
+ "size": "1536x1024",
+ "rows": 1,
+ "cols": 1,
+ "description": "madame_beetroot full-screen boss intro card (single image)",
+ "entities": [
+  {
+   "name": "madame_beetroot",
+   "anim": "card",
+   "frames": [
+    {
+     "file": "card_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      1536,
+      1024
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/boss/madame_beetroot"
+  }
+ ],
+ "crop": {
+  "pass": "opaque-copy"
+ },
+ "updated": "2026-10-09T09:35:09"
+}

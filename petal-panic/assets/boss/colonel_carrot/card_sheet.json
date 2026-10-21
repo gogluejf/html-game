@@ -1,0 +1,31 @@
+{
+ "file": "petal-panic/assets/boss/colonel_carrot/card_sheet.png",
+ "size": "1448x1086",
+ "rows": 1,
+ "cols": 1,
+ "description": "Colonel Carrot full-screen boss intro card (single image)",
+ "entities": [
+  {
+   "name": "colonel_carrot",
+   "anim": "card",
+   "frames": [
+    {
+     "file": "card_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      1448,
+      1086
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/boss/colonel_carrot"
+  }
+ ],
+ "crop": {
+  "pass": "opaque-copy"
+ },
+ "updated": "2026-10-09T09:35:06"
+}
