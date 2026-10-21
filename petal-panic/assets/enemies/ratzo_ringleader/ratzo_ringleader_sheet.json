@@ -1,0 +1,261 @@
+{
+  "label": "enemies",
+  "file": "petal-panic/assets/enemies/ratzo_ringleader/ratzo_ringleader_sheet.png",
+  "rows": 4,
+  "cols": 5,
+  "size": "1536x1024",
+  "description": "Clown rat ringleader enemy, 4 actions x 5 frames (run, attack/fish-throw, charge, death)",
+  "entities": [
+    {
+      "name": "ratzo_ringleader",
+      "anim": "run",
+      "frames": [
+        {
+          "file": "run_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            4,
+            45,
+            299,
+            169
+          ]
+        },
+        {
+          "file": "run_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            306,
+            33,
+            308,
+            185
+          ]
+        },
+        {
+          "file": "run_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            614,
+            36,
+            304,
+            186
+          ]
+        },
+        {
+          "file": "run_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            920,
+            40,
+            306,
+            185
+          ]
+        },
+        {
+          "file": "run_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1230,
+            42,
+            306,
+            178
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/enemies/ratzo_ringleader"
+    },
+    {
+      "name": "ratzo_ringleader",
+      "anim": "attack",
+      "frames": [
+        {
+          "file": "attack_f1.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            22,
+            266,
+            240,
+            232
+          ]
+        },
+        {
+          "file": "attack_f2.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            329,
+            266,
+            247,
+            229
+          ]
+        },
+        {
+          "file": "attack_f3.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            624,
+            271,
+            252,
+            225
+          ]
+        },
+        {
+          "file": "attack_f4.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            919,
+            288,
+            335,
+            204
+          ]
+        },
+        {
+          "file": "attack_f5.png",
+          "row": 1,
+          "col": 4,
+          "bbox": [
+            1254,
+            301,
+            238,
+            193
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/enemies/ratzo_ringleader"
+    },
+    {
+      "name": "ratzo_ringleader",
+      "anim": "charge",
+      "frames": [
+        {
+          "file": "charge_f1.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            11,
+            569,
+            280,
+            164
+          ]
+        },
+        {
+          "file": "charge_f2.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            303,
+            534,
+            312,
+            198
+          ]
+        },
+        {
+          "file": "charge_f3.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            613,
+            507,
+            305,
+            194
+          ]
+        },
+        {
+          "file": "charge_f4.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            920,
+            508,
+            310,
+            209
+          ]
+        },
+        {
+          "file": "charge_f5.png",
+          "row": 2,
+          "col": 4,
+          "bbox": [
+            1236,
+            558,
+            291,
+            170
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/enemies/ratzo_ringleader"
+    },
+    {
+      "name": "ratzo_ringleader",
+      "anim": "death",
+      "frames": [
+        {
+          "file": "death_f1.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            10,
+            745,
+            284,
+            256
+          ]
+        },
+        {
+          "file": "death_f2.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            343,
+            756,
+            265,
+            233
+          ]
+        },
+        {
+          "file": "death_f3.png",
+          "row": 3,
+          "col": 2,
+          "bbox": [
+            620,
+            774,
+            281,
+            211
+          ]
+        },
+        {
+          "file": "death_f4.png",
+          "row": 3,
+          "col": 3,
+          "bbox": [
+            921,
+            803,
+            309,
+            187
+          ]
+        },
+        {
+          "file": "death_f5.png",
+          "row": 3,
+          "col": 4,
+          "bbox": [
+            1231,
+            836,
+            305,
+            157
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/enemies/ratzo_ringleader"
+    }
+  ],
+  "crop": {
+    "pass": "/tmp/redo-ratzo-ringleader-v1"
+  }
+}

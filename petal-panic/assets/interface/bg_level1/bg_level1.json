@@ -1,0 +1,31 @@
+{
+  "label": "interface",
+  "file": "petal-panic/assets/interface/bg_level1/bg_level1.png",
+  "rows": 1,
+  "cols": 1,
+  "size": "2172x724",
+  "description": "Background level 1",
+  "entities": [
+    {
+      "name": "bg_level1",
+      "anim": "idle",
+      "frames": [
+        {
+          "file": "bg_level1_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            2172,
+            724
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/interface/bg_level1"
+    }
+  ],
+  "crop": {
+    "pass": "opaque-copy"
+  }
+}

@@ -1,0 +1,401 @@
+{
+  "label": "projectiles",
+  "file": "petal-panic/assets/projectiles/_sheets/projectile_sheet.png",
+  "rows": 5,
+  "cols": 8,
+  "size": "2172x1218",
+  "description": "Projectiles: thorn missile w/ petal trail (row1), bomb fuse (row2), spinning petal saw (row3), spread pinwheel (row4), explosion burst boom (row5)",
+  "entities": [
+    {
+      "name": "thorn",
+      "anim": "shoot",
+      "frames": [
+        {
+          "file": "shoot_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            18,
+            72,
+            244,
+            101
+          ]
+        },
+        {
+          "file": "shoot_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            285,
+            72,
+            249,
+            96
+          ]
+        },
+        {
+          "file": "shoot_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            555,
+            72,
+            250,
+            102
+          ]
+        },
+        {
+          "file": "shoot_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            828,
+            75,
+            247,
+            91
+          ]
+        },
+        {
+          "file": "shoot_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1098,
+            75,
+            246,
+            94
+          ]
+        },
+        {
+          "file": "shoot_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1367,
+            73,
+            247,
+            100
+          ]
+        },
+        {
+          "file": "shoot_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            1636,
+            70,
+            250,
+            99
+          ]
+        },
+        {
+          "file": "shoot_f8.png",
+          "row": 0,
+          "col": 7,
+          "bbox": [
+            1910,
+            76,
+            248,
+            93
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/projectiles/thorn"
+    },
+    {
+      "name": "bomb",
+      "anim": "special",
+      "frames": [
+        {
+          "file": "special_f1.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            21,
+            247,
+            239,
+            157
+          ]
+        },
+        {
+          "file": "special_f2.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            287,
+            246,
+            240,
+            158
+          ]
+        },
+        {
+          "file": "special_f3.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            558,
+            242,
+            236,
+            162
+          ]
+        },
+        {
+          "file": "special_f4.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            827,
+            245,
+            227,
+            159
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/projectiles/bomb"
+    },
+    {
+      "name": "saw",
+      "anim": "special",
+      "frames": [
+        {
+          "file": "special_f1.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            24,
+            453,
+            233,
+            193
+          ]
+        },
+        {
+          "file": "special_f2.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            287,
+            453,
+            236,
+            199
+          ]
+        },
+        {
+          "file": "special_f3.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            558,
+            453,
+            232,
+            194
+          ]
+        },
+        {
+          "file": "special_f4.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            825,
+            452,
+            236,
+            199
+          ]
+        },
+        {
+          "file": "special_f5.png",
+          "row": 2,
+          "col": 4,
+          "bbox": [
+            1094,
+            452,
+            237,
+            199
+          ]
+        },
+        {
+          "file": "special_f6.png",
+          "row": 2,
+          "col": 5,
+          "bbox": [
+            1364,
+            454,
+            237,
+            197
+          ]
+        },
+        {
+          "file": "special_f7.png",
+          "row": 2,
+          "col": 6,
+          "bbox": [
+            1633,
+            453,
+            239,
+            199
+          ]
+        },
+        {
+          "file": "special_f8.png",
+          "row": 2,
+          "col": 7,
+          "bbox": [
+            1904,
+            452,
+            241,
+            200
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/projectiles/saw"
+    },
+    {
+      "name": "spread",
+      "anim": "shoot",
+      "frames": [
+        {
+          "file": "shoot_f1.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            6,
+            663,
+            291,
+            215
+          ]
+        },
+        {
+          "file": "shoot_f2.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            298,
+            660,
+            266,
+            218
+          ]
+        },
+        {
+          "file": "shoot_f3.png",
+          "row": 3,
+          "col": 2,
+          "bbox": [
+            569,
+            661,
+            259,
+            218
+          ]
+        },
+        {
+          "file": "shoot_f4.png",
+          "row": 3,
+          "col": 3,
+          "bbox": [
+            828,
+            661,
+            262,
+            221
+          ]
+        },
+        {
+          "file": "shoot_f5.png",
+          "row": 3,
+          "col": 4,
+          "bbox": [
+            1091,
+            660,
+            272,
+            223
+          ]
+        },
+        {
+          "file": "shoot_f6.png",
+          "row": 3,
+          "col": 5,
+          "bbox": [
+            1366,
+            659,
+            266,
+            227
+          ]
+        },
+        {
+          "file": "shoot_f7.png",
+          "row": 3,
+          "col": 6,
+          "bbox": [
+            1633,
+            654,
+            271,
+            231
+          ]
+        },
+        {
+          "file": "shoot_f8.png",
+          "row": 3,
+          "col": 7,
+          "bbox": [
+            1901,
+            652,
+            265,
+            230
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/projectiles/spread"
+    },
+    {
+      "name": "boom",
+      "anim": "special",
+      "frames": [
+        {
+          "file": "special_f1.png",
+          "row": 4,
+          "col": 0,
+          "bbox": [
+            7,
+            1000,
+            237,
+            212
+          ]
+        },
+        {
+          "file": "special_f2.png",
+          "row": 4,
+          "col": 1,
+          "bbox": [
+            273,
+            1010,
+            240,
+            193
+          ]
+        },
+        {
+          "file": "special_f3.png",
+          "row": 4,
+          "col": 2,
+          "bbox": [
+            546,
+            1012,
+            243,
+            182
+          ]
+        },
+        {
+          "file": "special_f4.png",
+          "row": 4,
+          "col": 3,
+          "bbox": [
+            822,
+            1038,
+            240,
+            138
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/projectiles/boom"
+    }
+  ],
+  "crop": {
+    "pass": "/tmp/pp-projectiles-v9"
+  },
+  "updated": "2026-10-12T18:38:35"
+}

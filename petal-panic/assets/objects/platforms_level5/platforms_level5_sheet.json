@@ -1,0 +1,166 @@
+{
+  "file": "petal-panic/assets/objects/platforms_level5/platforms_level5_sheet.png",
+  "size": "1536x1024",
+  "rows": 4,
+  "cols": 3,
+  "description": "Level 5 platform tiles: 4 style variants x cols single/double/triple",
+  "entities": [
+    {
+      "name": "platforms_level5",
+      "anim": "single",
+      "frames": [
+        {
+          "file": "single_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            66,
+            61,
+            281,
+            237
+          ]
+        },
+        {
+          "file": "single_f2.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            61,
+            365,
+            286,
+            197
+          ]
+        },
+        {
+          "file": "single_f3.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            61,
+            620,
+            283,
+            198
+          ]
+        },
+        {
+          "file": "single_f4.png",
+          "row": 3,
+          "col": 0,
+          "bbox": [
+            59,
+            855,
+            286,
+            126
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/objects/platforms_level5"
+    },
+    {
+      "name": "platforms_level5",
+      "anim": "double",
+      "frames": [
+        {
+          "file": "double_f1.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            402,
+            115,
+            487,
+            200
+          ]
+        },
+        {
+          "file": "double_f2.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            451,
+            410,
+            441,
+            169
+          ]
+        },
+        {
+          "file": "double_f3.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            443,
+            578,
+            433,
+            247
+          ]
+        },
+        {
+          "file": "double_f4.png",
+          "row": 3,
+          "col": 1,
+          "bbox": [
+            404,
+            855,
+            485,
+            137
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/objects/platforms_level5"
+    },
+    {
+      "name": "platforms_level5",
+      "anim": "triple",
+      "frames": [
+        {
+          "file": "triple_f1.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            980,
+            131,
+            495,
+            181
+          ]
+        },
+        {
+          "file": "triple_f2.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            958,
+            338,
+            535,
+            259
+          ]
+        },
+        {
+          "file": "triple_f3.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            942,
+            628,
+            553,
+            195
+          ]
+        },
+        {
+          "file": "triple_f4.png",
+          "row": 3,
+          "col": 2,
+          "bbox": [
+            939,
+            856,
+            557,
+            146
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/objects/platforms_level5"
+    }
+  ],
+  "crop": {
+    "pass": "/tmp/platforms-l5-v3"
+  },
+  "updated": "2026-10-09T03:53:22"
+}

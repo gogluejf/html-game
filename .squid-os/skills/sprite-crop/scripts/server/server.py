@@ -23,7 +23,9 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", 
 RECORD_TUNING = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "record_tuning.py"))
 
 # Only allow PUT writes under this path (relative to repo root).
-ALLOWED_PREFIX = ".squid-os/sprite-sheets/"
+# PUT writes are allowed under .squid-os/sprite-sheets/ (legacy) OR inside a
+# game's assets tree where sheet JSONs now live next to their frames.
+ALLOWED_PREFIXES = (".squid-os/sprite-sheets/", "petal-panic/assets/", "abyss-qwen/assets/")
 
 
 class SpriteEditorHandler(SimpleHTTPRequestHandler):
@@ -55,14 +57,14 @@ class SpriteEditorHandler(SimpleHTTPRequestHandler):
         anim = body.get("anim", "")
         data = body.get("data")
 
-        # Security: only allow sheets under .squid-os/sprite-sheets/.
-        if not sheet.startswith(ALLOWED_PREFIX):
+        # Security: only allow sheets under the allowed prefixes.
+        if not sheet.startswith(ALLOWED_PREFIXES):
             self._respond(403, {"ok": False, "error": "path not allowed"})
             return
         # Defense in depth: resolve and confirm we're still under the allowed dir.
         target = os.path.realpath(os.path.join(REPO_ROOT, sheet))
-        allowed_dir = os.path.realpath(os.path.join(REPO_ROOT, ALLOWED_PREFIX))
-        if not (target == allowed_dir or target.startswith(allowed_dir + os.sep)):
+        allowed_dirs = [os.path.realpath(os.path.join(REPO_ROOT, pfx)) for pfx in ALLOWED_PREFIXES]
+        if not any(target == ad or target.startswith(ad + os.sep) for ad in allowed_dirs):
             self._respond(403, {"ok": False, "error": "path not allowed"})
             return
 

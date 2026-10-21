@@ -146,8 +146,8 @@ function drawCoinsAndLives(ctx, hero) {
 // --- Selected-hero portrait (32×32, top-right corner, above coins) -----------
 
 const PORTRAIT_PATHS = {
-  scarlet: 'assets/heroes/scarlet_vale_idle_f1.png',
-  balthazar: 'assets/heroes/balthazar_idle_f1.png',
+  scarlet: 'petal-panic/assets/heroes/scarlet_vale/idle_f1.png',
+  balthazar: 'petal-panic/assets/heroes/balthazar/idle_f1.png',
 };
 
 // Lazily-created Image cache (one per hero id). Missing images fall back to a

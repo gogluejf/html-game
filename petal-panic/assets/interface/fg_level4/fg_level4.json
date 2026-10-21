@@ -1,0 +1,31 @@
+{
+  "file": "petal-panic/assets/interface/fg_level4/fg_level4.png",
+  "size": "2172x724",
+  "rows": 1,
+  "cols": 1,
+  "description": "Foreground strip level 4 (Pirate Show)",
+  "entities": [
+    {
+      "name": "fg_level4",
+      "anim": "idle",
+      "frames": [
+        {
+          "file": "fg_level4_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            156,
+            2172,
+            503
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/interface/fg_level4"
+    }
+  ],
+  "crop": {
+    "pass": "/tmp/reproc-fg_level4-v1"
+  },
+  "updated": "2026-10-09T03:31:40"
+}

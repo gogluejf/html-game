@@ -1,0 +1,31 @@
+{
+  "label": "interface",
+  "file": "petal-panic/assets/interface/select_scarlet_vale/select_scarlet_vale.png",
+  "rows": 1,
+  "cols": 1,
+  "size": "1212x1297",
+  "description": "Scarlet Vale character-select HUD panel (single image)",
+  "entities": [
+    {
+      "name": "select_scarlet_vale",
+      "anim": "idle",
+      "frames": [
+        {
+          "file": "select_scarlet_vale_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            1212,
+            1297
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/interface/select_scarlet_vale"
+    }
+  ],
+  "crop": {
+    "pass": "opaque-copy"
+  }
+}

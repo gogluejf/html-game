@@ -29,15 +29,15 @@ let totalCount = 0;
  */
 export function loadImages() {
   const paths = {
-    homeBigtop: 'assets/home/home_bigtop_f1.png',
-    homeCrowd: 'assets/home/home_crowd_f1.png',
-    homeStage: 'assets/home/home_stage_f1.png',
-    homePortrait: 'assets/home/home_scarlet_portrait_f1.png',
-    squidLogo: 'assets/home/squid_os_logo_f1.png',
-    logo: 'assets/interface/logo_f1.png',
-    selectScarlet: 'assets/interface/select_scarlet_vale_f1.png',
-    selectBalthazar: 'assets/interface/select_balthazar_f1.png',
-    selectNone: 'assets/interface/select_none_f1.png',
+    homeBigtop: 'petal-panic/assets/home/home_bigtop/home_bigtop_f1.png',
+    homeCrowd: 'petal-panic/assets/home/home_crowd/home_crowd_f1.png',
+    homeStage: 'petal-panic/assets/home/home_stage/home_stage_f1.png',
+    homePortrait: 'petal-panic/assets/home/home_scarlet_portrait/home_scarlet_portrait_f1.png',
+    squidLogo: 'petal-panic/assets/home/squid_os_logo/squid_os_logo_f1.png',
+    logo: 'petal-panic/assets/interface/logo/logo_f1.png',
+    selectScarlet: 'petal-panic/assets/interface/select_scarlet_vale/select_scarlet_vale_f1.png',
+    selectBalthazar: 'petal-panic/assets/interface/select_balthazar/select_balthazar_f1.png',
+    selectNone: 'petal-panic/assets/interface/select_none/select_none_f1.png',
   };  totalCount = Object.keys(paths).length;
   for (const [key, path] of Object.entries(paths)) {
     const img = new Image();

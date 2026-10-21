@@ -9,7 +9,6 @@ import { markGameDataChanged } from './save.js';
 import { buildMeleeBoxList } from './meleeBoxes.js';
 import { buildMarkerList } from './markers.js';
 import { moveElement } from './rigidbody.js';
-import { LS_KEY } from './save.js';
 
 // ---------- box resize math ----------
 function resizeBox(box, anchorId, sx, sy, orig, keepRatio){
@@ -440,10 +439,12 @@ window.addEventListener('pointercancel', endDrag);
 cv.addEventListener('pointerleave', ()=>{ if (app.hover){ app.hover = null; draw(); cv.style.cursor='default'; } });
 window.addEventListener('blur', ()=>{ if (app.hover || app.drag){ app.hover = null; app.drag = null; draw(); cv.style.cursor='default'; } });
 
-// ---------- cross-tab sync: reload state when another tab saves ----------
+// ---------- cross-tab sync: reload ONLY when another tab SAVES GAME DATA ----------
+// (the per-entity draft key). Config/view writes (LS_KEY) and other projects'
+// keys must never trigger a reload — play/pause etc. are ephemeral.
 window.addEventListener('storage', e => {
-  if (e.key !== LS_KEY) return;
-  // another window wrote to our key — reload the page to pick up its state
+  const prefix = 'sprite-editor-game-v1-' + app.project + '-';
+  if (!e.key || !e.key.startsWith(prefix)) return;
   location.reload();
 });
 }

@@ -87,7 +87,8 @@ export function setPlaying(p){
   $('playIco').innerHTML = app.cur.st.playing ? '&#10074;&#10074;' : '&#9654;';
   syncPanelDisabled();   // lock/unlock side inputs with play state
   syncToggles();   // update MELEE ON disabled state immediately
-  saveState();
+  // NOTE: no saveState() here — play/pause is ephemeral view state. Persisting
+  // it made cross-tab storage sync reload sibling tabs on every press.
 }
 
 export function stepFrame(d){ if(!app.cur||!app.cur.st)return; const st=app.cur.st; st.frameIdx=(st.frameIdx+d+st.frames.length)%st.frames.length; app.acc=0; app._selectedBox=null; syncPanel(); draw(); }

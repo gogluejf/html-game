@@ -1,0 +1,199 @@
+{
+  "label": "boss",
+  "file": "petal-panic/assets/boss/colonel_carrot/colonel_carrot_sheet_4.png",
+  "rows": 3,
+  "cols": 5,
+  "size": "1536x1024",
+  "description": "Colonel Carrot final boss, sheet 4/4 \u2014 angry (row1), death (row2), scooter_ride (row3)",
+  "entities": [
+    {
+      "name": "colonel_carrot",
+      "anim": "angry",
+      "frames": [
+        {
+          "file": "angry_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            4,
+            19,
+            261,
+            320
+          ]
+        },
+        {
+          "file": "angry_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            310,
+            18,
+            279,
+            321
+          ]
+        },
+        {
+          "file": "angry_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            616,
+            17,
+            280,
+            323
+          ]
+        },
+        {
+          "file": "angry_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            925,
+            18,
+            300,
+            321
+          ]
+        },
+        {
+          "file": "angry_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1252,
+            12,
+            278,
+            328
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/boss/colonel_carrot"
+    },
+    {
+      "name": "colonel_carrot",
+      "anim": "death",
+      "frames": [
+        {
+          "file": "death_f1.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            4,
+            360,
+            255,
+            306
+          ]
+        },
+        {
+          "file": "death_f2.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            299,
+            363,
+            300,
+            304
+          ]
+        },
+        {
+          "file": "death_f3.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            623,
+            352,
+            294,
+            316
+          ]
+        },
+        {
+          "file": "death_f4.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            928,
+            365,
+            306,
+            301
+          ]
+        },
+        {
+          "file": "death_f5.png",
+          "row": 1,
+          "col": 4,
+          "bbox": [
+            1234,
+            438,
+            302,
+            224
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/boss/colonel_carrot"
+    },
+    {
+      "name": "colonel_carrot",
+      "anim": "scooter_ride",
+      "frames": [
+        {
+          "file": "scooter_ride_f1.png",
+          "row": 2,
+          "col": 0,
+          "bbox": [
+            3,
+            670,
+            265,
+            327
+          ]
+        },
+        {
+          "file": "scooter_ride_f2.png",
+          "row": 2,
+          "col": 1,
+          "bbox": [
+            313,
+            668,
+            279,
+            330
+          ]
+        },
+        {
+          "file": "scooter_ride_f3.png",
+          "row": 2,
+          "col": 2,
+          "bbox": [
+            630,
+            671,
+            281,
+            327
+          ]
+        },
+        {
+          "file": "scooter_ride_f4.png",
+          "row": 2,
+          "col": 3,
+          "bbox": [
+            930,
+            668,
+            276,
+            328
+          ]
+        },
+        {
+          "file": "scooter_ride_f5.png",
+          "row": 2,
+          "col": 4,
+          "bbox": [
+            1243,
+            694,
+            280,
+            302
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/boss/colonel_carrot"
+    }
+  ],
+  "crop": {
+    "pass": "/tmp/redo-colonel_carrot_4-v1"
+  }
+}

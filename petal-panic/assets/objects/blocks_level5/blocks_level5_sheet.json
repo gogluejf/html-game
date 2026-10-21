@@ -1,0 +1,100 @@
+{
+  "file": "petal-panic/assets/objects/blocks_level5/blocks_level5_sheet.png",
+  "size": "1086x1448",
+  "rows": 2,
+  "cols": 3,
+  "description": "Level 5 block tiles: row 1 decorated, row 2 plain; cols single/double/triple",
+  "entities": [
+    {
+      "name": "blocks_level5",
+      "anim": "single",
+      "frames": [
+        {
+          "file": "single_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            15,
+            464,
+            357,
+            272
+          ]
+        },
+        {
+          "file": "single_f2.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            18,
+            1125,
+            355,
+            205
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/objects/blocks_level5"
+    },
+    {
+      "name": "blocks_level5",
+      "anim": "double",
+      "frames": [
+        {
+          "file": "double_f1.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            381,
+            254,
+            343,
+            456
+          ]
+        },
+        {
+          "file": "double_f2.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            378,
+            964,
+            342,
+            357
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/objects/blocks_level5"
+    },
+    {
+      "name": "blocks_level5",
+      "anim": "triple",
+      "frames": [
+        {
+          "file": "triple_f1.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            725,
+            55,
+            349,
+            655
+          ]
+        },
+        {
+          "file": "triple_f2.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            725,
+            829,
+            346,
+            491
+          ]
+        }
+      ],
+      "frames_dir": "petal-panic/assets/objects/blocks_level5"
+    }
+  ],
+  "crop": {
+    "pass": "/tmp/blocks-l5-v1"
+  },
+  "updated": "2026-10-09T03:44:33"
+}
