@@ -1,0 +1,26 @@
+{
+ "label": "levels",
+ "file": "petal-panic/assets/levels/level4/vertical_level4_sheet.png",
+ "rows": 1,
+ "cols": 1,
+ "size": "820x1918",
+ "description": "Vertical scroll level 4 (Pirate Show)",
+ "entities": [
+  {
+   "name": "level4",
+   "anim": "vertical",
+   "frames": [
+    {
+     "file": "vertical_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": null
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level4"
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/reg3-vertical_level4-v1"
+ }
+}

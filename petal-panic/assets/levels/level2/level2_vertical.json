@@ -1,0 +1,26 @@
+{
+ "label": "levels",
+ "file": "petal-panic/assets/levels/level2/vertical_level2_sheet.png",
+ "rows": 1,
+ "cols": 1,
+ "size": "820x1918",
+ "description": "Vertical scroll level 2 (Carnival Night)",
+ "entities": [
+  {
+   "name": "level2",
+   "anim": "vertical",
+   "frames": [
+    {
+     "file": "vertical_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": null
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level2"
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/reg3-vertical_level2-v1"
+ }
+}

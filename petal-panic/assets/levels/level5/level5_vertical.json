@@ -1,0 +1,26 @@
+{
+ "label": "levels",
+ "file": "petal-panic/assets/levels/level5/vertical_level5_sheet.png",
+ "rows": 1,
+ "cols": 1,
+ "size": "821x1916",
+ "description": "Vertical scroll level 5 (Freakshow)",
+ "entities": [
+  {
+   "name": "level5",
+   "anim": "vertical",
+   "frames": [
+    {
+     "file": "vertical_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": null
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level5"
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/reg3-vertical_level5-v1"
+ }
+}

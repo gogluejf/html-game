@@ -1,0 +1,100 @@
+{
+ "label": "levels",
+ "file": "petal-panic/assets/levels/level2/blocks_level2_sheet.png",
+ "rows": 2,
+ "cols": 3,
+ "size": "1536x2048",
+ "description": "Level 2 block tiles combined: row 1 with props, row 2 naked (small/medium/large)",
+ "entities": [
+  {
+   "name": "level2",
+   "anim": "block_single",
+   "frames": [
+    {
+     "file": "block_single_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      34,
+      570,
+      452,
+      320
+     ]
+    },
+    {
+     "file": "block_single_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      35,
+      1625,
+      461,
+      267
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level2"
+  },
+  {
+   "name": "level2",
+   "anim": "block_double",
+   "frames": [
+    {
+     "file": "block_double_f1.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      501,
+      250,
+      479,
+      640
+     ]
+    },
+    {
+     "file": "block_double_f2.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      516,
+      1430,
+      468,
+      462
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level2"
+  },
+  {
+   "name": "level2",
+   "anim": "block_triple",
+   "frames": [
+    {
+     "file": "block_triple_f1.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      992,
+      15,
+      535,
+      876
+     ]
+    },
+    {
+     "file": "block_triple_f2.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      1004,
+      1255,
+      503,
+      637
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level2"
+  }
+ ],
+ "crop": {
+  "pass": "/home/goglue/tmp/blocks-regen/l2-v2"
+ }
+}

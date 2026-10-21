@@ -1,0 +1,26 @@
+{
+ "label": "levels",
+ "file": "petal-panic/assets/levels/level3/vertical_level3_sheet.png",
+ "rows": 1,
+ "cols": 1,
+ "size": "820x1918",
+ "description": "Vertical scroll level 3 (Wild Menagerie)",
+ "entities": [
+  {
+   "name": "level3",
+   "anim": "vertical",
+   "frames": [
+    {
+     "file": "vertical_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": null
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level3"
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/reg3-vertical_level3-v1"
+ }
+}

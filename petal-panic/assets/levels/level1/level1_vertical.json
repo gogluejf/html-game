@@ -1,0 +1,26 @@
+{
+ "label": "levels",
+ "file": "petal-panic/assets/levels/level1/vertical_level1_sheet.png",
+ "rows": 1,
+ "cols": 1,
+ "size": "820x1918",
+ "description": "Vertical scroll level 1 (Big Top)",
+ "entities": [
+  {
+   "name": "level1",
+   "anim": "vertical",
+   "frames": [
+    {
+     "file": "vertical_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": null
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level1"
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/reg3-vertical_level1-v1"
+ }
+}

@@ -1,0 +1,166 @@
+{
+ "label": "levels",
+ "file": "petal-panic/assets/levels/level6/platforms_level6_sheet.png",
+ "rows": 4,
+ "cols": 3,
+ "size": "1536x1024",
+ "description": "Level 6 platform tiles: 4 style variants x cols single/double/triple",
+ "entities": [
+  {
+   "name": "level6",
+   "anim": "platform_single",
+   "frames": [
+    {
+     "file": "platform_single_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      30,
+      39,
+      313,
+      262
+     ]
+    },
+    {
+     "file": "platform_single_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      31,
+      313,
+      322,
+      256
+     ]
+    },
+    {
+     "file": "platform_single_f3.png",
+     "row": 2,
+     "col": 0,
+     "bbox": [
+      39,
+      619,
+      302,
+      203
+     ]
+    },
+    {
+     "file": "platform_single_f4.png",
+     "row": 3,
+     "col": 0,
+     "bbox": [
+      29,
+      847,
+      312,
+      130
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level6"
+  },
+  {
+   "name": "level6",
+   "anim": "platform_double",
+   "frames": [
+    {
+     "file": "platform_double_f1.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      414,
+      105,
+      485,
+      213
+     ]
+    },
+    {
+     "file": "platform_double_f2.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      436,
+      352,
+      439,
+      212
+     ]
+    },
+    {
+     "file": "platform_double_f3.png",
+     "row": 2,
+     "col": 1,
+     "bbox": [
+      428,
+      635,
+      425,
+      187
+     ]
+    },
+    {
+     "file": "platform_double_f4.png",
+     "row": 3,
+     "col": 1,
+     "bbox": [
+      380,
+      848,
+      508,
+      125
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level6"
+  },
+  {
+   "name": "level6",
+   "anim": "platform_triple",
+   "frames": [
+    {
+     "file": "platform_triple_f1.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      949,
+      85,
+      566,
+      227
+     ]
+    },
+    {
+     "file": "platform_triple_f2.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      951,
+      384,
+      556,
+      229
+     ]
+    },
+    {
+     "file": "platform_triple_f3.png",
+     "row": 2,
+     "col": 2,
+     "bbox": [
+      963,
+      574,
+      516,
+      251
+     ]
+    },
+    {
+     "file": "platform_triple_f4.png",
+     "row": 3,
+     "col": 2,
+     "bbox": [
+      922,
+      846,
+      586,
+      148
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level6"
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/platforms-l6-v3"
+ }
+}
