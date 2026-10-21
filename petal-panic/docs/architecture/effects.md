@@ -565,11 +565,12 @@ Parameters may include:
 
 ## 28. Beam Announcement (primitive-side, not a catalog effect)
 
-The **beam primitive** (attack-primitives.md §3) can announce itself before
+The **beam primitive** (attack-primitives.md §3) announces itself before
 ignition by firing a Surface Target Marker (§9) painted ON the beam line at
-its exit point — where the beam leaves the screen, or its tip if shorter than
-the screen. The marker sits a fixed fraction of the screen (~5%) inside that
-point so it is always visible and never clipped at the border. Its `angle`
+the screen BOUNDARY the beam exits — always at the view edge (pulled back a
+fixed fraction of the screen, ~5%, so it is never clipped), regardless of
+where the beam originates or how long it is. The warning is about the LINE
+crossing the screen, not the beam's tip. Its `angle`
 is set to the beam direction's NORMAL (direction + π/2) so the perspective
 squash runs ALONG the laser — a tall narrow ellipse stretched with the beam,
 not a flat puddle perpendicular to it — and its ticks are LOCKED

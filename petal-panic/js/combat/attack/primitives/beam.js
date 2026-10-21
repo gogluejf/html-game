@@ -133,21 +133,31 @@ export function fireBeamEffect(p, ctx) {
  * @param {object} ctx AttackContext
  * @returns {{x:number, y:number}} world-space marker center
  */
+/**
+ * Compute where the announcement marker sits: ALWAYS at the screen BOUNDARY
+ * the beam line exits (pulled back a fixed fraction of the screen so it is
+ * never clipped at the border) — regardless of where the beam originates.
+ * A short beam that ends mid-screen still announces at the boundary: the
+ * warning is about the LINE crossing the screen, not the beam's tip.
+ * @param {object} p merged params
+ * @param {object} ctx AttackContext
+ * @returns {{x:number, y:number}} world-space marker center
+ */
 export function announceMarkerPoint(p, ctx) {
   const o = beamOrigin(p, ctx);
   const cam = ctx.camera ?? null;
   const viewX = cam?.x ?? 0;
   const viewY = cam?.y ?? 0;
   const cos = Math.cos(p.direction), sin = Math.sin(p.direction);
-  // Walk along the axis from the origin; stop at the first screen edge hit
-  // (or at the beam length, whichever comes first).
-  let t = p.length;
+  // Distance along the axis to the first screen edge hit (boundary only —
+  // the beam length does NOT cap this).
+  let t = Infinity;
   if (cos > EPS_T) t = Math.min(t, (viewX + VIEW_W - o.x) / cos);
   else if (cos < -EPS_T) t = Math.min(t, (viewX - o.x) / cos);
   if (sin > EPS_T) t = Math.min(t, (viewY + VIEW_H - o.y) / sin);
   else if (sin < -EPS_T) t = Math.min(t, (viewY - o.y) / sin);
-  t = Math.max(0, t);
-  // Pull back from the exit point toward the origin (fixed offset).
+  if (!Number.isFinite(t)) t = p.length; // degenerate: origin outside every edge half-plane
+  // Pull back from the boundary toward the origin (fixed offset).
   const pullback = ANNOUNCE_OFFSET_FRAC * (Math.abs(cos) >= Math.abs(sin) ? VIEW_W : VIEW_H);
   t = Math.max(0, t - pullback);
   return { x: o.x + cos * t, y: o.y + sin * t };

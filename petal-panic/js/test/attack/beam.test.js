@@ -156,11 +156,12 @@ ok('announceMarkerPoint: full-screen beam exits at right edge, pulled back 5%', 
   assert.ok(Math.abs(pt.y - 100) < 1e-6, `y=${pt.y}`);
 });
 
-ok('announceMarkerPoint: short beam stays at its tip (not screen edge)', () => {
-  const ctx = makeContext({ x: -50, y: 100, w: 32, h: 32 }, {});
-  const pt = announceMarkerPoint({ origin: { x: 0, y: 100 }, direction: 0, length: 200 }, ctx);
-  // Tip at x=200, pulled back 48 → x=152.
-  assert.ok(Math.abs(pt.x - 152) < 1e-6, `x=${pt.x}`);
+ok('announceMarkerPoint: marker ALWAYS at the screen boundary, even for short beams', () => {
+  // Short beam (length 200) from mid-screen origin: the marker still sits at
+  // the right edge (boundary), NOT at the beam tip.
+  const ctx = makeContext({ x: 400, y: 100, w: 32, h: 32 }, {});
+  const pt = announceMarkerPoint({ origin: { x: 400, y: 100 }, direction: 0, length: 200 }, ctx);
+  assert.ok(Math.abs(pt.x - (960 - 48)) < 1e-6, `x=${pt.x} (expected 912)`);
 });
 
 ok('announceMarkerPoint: camera offset shifts the visible exit edge', () => {
