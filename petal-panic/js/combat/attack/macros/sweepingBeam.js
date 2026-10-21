@@ -29,9 +29,9 @@
 // and only begins fading once the motion is complete. No per-frame re-fire, no
 // flicker, no ghost. Each frame the macro mutates the persistent instance:
 //   - body.angle / body.origin  → the visual rotates/translates around the pivot
-//   - state.hb.box              → the damage AABB follows the swept segment
+//   - state.geometry            → the damage rectangle follows the swept segment
 //   - body.shimmerDepth         → the intensity ramps low→high→high
-// The primitive trusts the externally-set box via the `_swept` flag.
+// The primitive owns broad and narrow collision phases for this geometry.
 //
 // See attack-macros.md §15.
 //
@@ -83,21 +83,6 @@ const DEFAULTS = Object.freeze({
   // Style override passed to the beam.
   beamStyle: null,
 });
-
-/**
- * Compute the world-space AABB of a beam segment from an origin, angle,
- * length and width (same conservative formula as the primitive's beamBox).
- */
-function segmentAABB(ox, oy, ang, length, width) {
-  const cos = Math.cos(ang), sin = Math.sin(ang);
-  const ex = ox + cos * length, ey = oy + sin * length;
-  return {
-    x: Math.min(ox, ex) - width / 2,
-    y: Math.min(oy, ey) - width / 2,
-    w: Math.abs(ex - ox) + width,
-    h: Math.abs(ey - oy) + width,
-  };
-}
 
 defineMacro('sweepingBeam', {
   attacks: [{ id: 'beam', role: 'body' }],
@@ -192,7 +177,6 @@ defineMacro('sweepingBeam', {
         },
       }, ctx);
       if (beam) beam.on('hit', (info) => h._emit('hit', info));
-      if (beam?.state) beam.state._swept = true;
       h.state.beam = beam;
     }
 
@@ -243,7 +227,8 @@ defineMacro('sweepingBeam', {
 
       // Mutate the persistent beam in place BEFORE stepping so this frame's
       // damage tick uses the current swept position.
-      beam.state.hb.box = segmentAABB(curX, curY, ang, params.length, params.width);
+      beam.state.geometry = { origin: { x: curX, y: curY }, direction: ang,
+        length: params.length, width: params.width };
       const fxBody = beam.state._fx?.body;
       if (fxBody) {
         fxBody.origin = { x: curX, y: curY };
@@ -251,7 +236,6 @@ defineMacro('sweepingBeam', {
         fxBody.shimmerDepth = shimmer;
       }
 
-      // Step for damage.
       beam.step(dt, targets ?? []);
 
       if (s.t >= totalDuration - 1e-9 || beam.done) {

@@ -1,7 +1,7 @@
 // Attack Engine — Beam primitive (Task 1.9).
 //
 // A continuous damaging line/ray for a duration. The Effect Engine renders the
-// visual (registered 'beam' effect); this primitive owns the damaging AABB and
+// visual (registered 'beam' effect); this primitive owns the oriented damage rectangle and
 // its lifetime. Placement/motion is macro-level (horizontal, targeted,
 // sweeping macros re-aim or move the beam by updating state each frame).
 //
@@ -76,6 +76,27 @@ export function beamOrigin(p, ctx) {
   };
 }
 
+/** Narrow phase for the beam's oriented damage rectangle against worldBox.
+ * The primitive still performs its AABB broad phase and normal team routing.
+ * SAT requires all four rectangle axes; projecting only the target center (or
+ * only onto the beam normal) misses edge overlaps or admits hits past the tip.
+ * Decorative halo and tapered muzzle are not additional damage volume.
+ */
+function overlapsSegment(target, ox, oy, angle, length, width) {
+  if (!target || length <= 0 || width <= 0) return false;
+  const box = target.worldBox ? target.worldBox() : target;
+  const c = Math.cos(angle), s = Math.sin(angle);
+  const hx = box.w / 2, hy = box.h / 2;
+  const dx = box.x + hx - (ox + c * length / 2);
+  const dy = box.y + hy - (oy + s * length / 2);
+  const halfL = length / 2, halfW = width / 2;
+  // Strict overlap matches processHitboxes: touching alone does not hit.
+  return Math.abs(dx) < hx + Math.abs(c) * halfL + Math.abs(s) * halfW &&
+    Math.abs(dy) < hy + Math.abs(s) * halfL + Math.abs(c) * halfW &&
+    Math.abs(dx * c + dy * s) < halfL + hx * Math.abs(c) + hy * Math.abs(s) &&
+    Math.abs(-dx * s + dy * c) < halfW + hx * Math.abs(s) + hy * Math.abs(c);
+}
+
 /**
  * Compute the beam's world-space AABB for the current aim.
  * @param {object} p params
@@ -110,14 +131,14 @@ export function fireBeamEffect(p, ctx) {
   try {
     // 'beam' is declared in this primitive's meta.effects; the guard accepts it.
     return fireDeclared({ type: 'beam', params: {
-      x: ox, y: oy,
-      orientation: p.direction,
-      length: p.length, width: p.width,
       // Derived defaults first, then spread style so explicit overrides win.
       flashInTime: 0.04,
       holdTime: Math.max(0, p.duration - 0.6),
       fadeOutTime: 0.6,
       ...style,
+      // Attack geometry is authoritative; style only controls presentation.
+      x: ox, y: oy, orientation: p.direction,
+      length: p.length, width: p.width,
     } }, ['beam']); // standalone helper: no handle in scope; 'beam' is this primitive's declared type
   } catch {
     return null;
@@ -206,6 +227,7 @@ export function fireAnnounceMarker(p, ctx, declared) {
  */
 export function stepBeam(state, p, ctx, dt, targets, h) {
   if (state.done) return true;
+  const previousT = state.t;
   state.t += dt;
 
   // Announcement window: the marker is already visible (fired at invoke time);
@@ -217,21 +239,25 @@ export function stepBeam(state, p, ctx, dt, targets, h) {
     if (state.t < preDelay) return false;
     state.active = true;
     state.hb.active = true;
-    state._fx = fireBeamEffect(p, ctx);
+    state.geometry = { ...p, origin: beamOrigin(p, ctx) };
+    state._fx = fireBeamEffect(state.geometry, ctx);
   } else if (!p.announceMarker) {
     state.active = true;
   }
 
-  state.tickAcc += dt;
+  // Only the part of this step inside the active window can accrue ticks.
+  state.tickAcc += Math.max(0, Math.min(state.t - preDelay, p.duration) -
+    Math.max(0, previousT - preDelay));
+  const geometry = state.geometry ?? p;
+  const origin = beamOrigin(geometry, ctx);
+  const overlapping = targets.filter(t => overlapsSegment(t, origin.x, origin.y,
+    geometry.direction, geometry.length, geometry.width));
 
   const tickInterval = 1 / Math.max(1, p.tickRate);
   let hitsThisTick = 0;
-  while (state.tickAcc >= tickInterval) {
+  while (state.tickAcc >= tickInterval - 1e-9) {
     state.tickAcc -= tickInterval;
-    // A host (e.g. the sweepingBeam macro) may overwrite the box each frame
-    // to move the beam. When `_swept` is set, trust the existing box instead
-    // of recomputing the static one.
-    if (!state._swept) state.hb.box = beamBox(p, ctx);
+    state.hb.box = beamBox(geometry, ctx);
     state.hb.damage = p.damage;
     // Fresh tick → same target can be hit again next tick. NOTE: resetHitbox
     // also re-asserts active=true, so for announced beams we restore the
@@ -240,12 +266,12 @@ export function stepBeam(state, p, ctx, dt, targets, h) {
     resetHitbox(state.hb);
     if (!state.active) state.hb.active = wasActive; // keep inert pre-ignition
     const hits = [];
-    processHitboxes([state.hb], targets, (hb, t, dealt) => hits.push({ target: t, dealt }));
+    processHitboxes([state.hb], overlapping, (hb, t, dealt) => hits.push({ target: t, dealt }));
     for (const hit of hits) h._emit('hit', { target: hit.target, dealt: hit.dealt });
     hitsThisTick = hits.length;
   }
 
-  if (state.t >= p.duration) {
+  if (state.t >= preDelay + p.duration) {
     state.done = true;
     state.hb.active = false;
     h._complete({ ticks: Math.round(Math.max(0, state.t - preDelay) * p.tickRate) });
@@ -263,7 +289,7 @@ registerPrimitive('beam', {
       { type: 'beam', desc: 'the beam body itself (Effect Engine renders it)' },
       { type: 'surface-target-marker', desc: 'optional pre-ignition telegraph at the beam exit point (announceMarker)' },
     ],
-    desc: 'Continuous damaging line for a duration. Announces itself via a surface-marker telegraph at the beam exit point before ignition (announceMarker, default on). Effect Engine renders; primitive owns the AABB + tick-rate damage.',
+    desc: 'Continuous damaging line for a duration. Announces itself via a surface-marker telegraph at the beam exit point before ignition (announceMarker, default on). Effect Engine renders; primitive owns oriented collision + tick-rate damage.',
     params: [
       { key: 'origin', desc: "marker label | {x,y} | null → attacker facing edge" },
       { key: 'direction', desc: 'radians (beam axis)' },
@@ -290,7 +316,8 @@ registerPrimitive('beam', {
     if (params.announceMarker) {
       h.state._fx = fireAnnounceMarker(params, ctx, h.declaredEffectTypes());
     } else {
-      h.state._fx = fireBeamEffect(params, ctx);
+      h.state.geometry = { ...params, origin: beamOrigin(params, ctx) };
+      h.state._fx = fireBeamEffect(h.state.geometry, ctx);
     }
     h.step = (dt, targets) => stepBeam(h.state, params, ctx, dt, targets ?? [], h);
     return h;

@@ -7,6 +7,8 @@ import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { activeInstances, resetEffects } from '../../effects/index.js';
 import '../../effects/registry.js'; // side effect: registers the types
+import '../../combat/attack/macros/sweepingBeam.js';
+import '../../combat/attack/macros/targetedBeam.js';
 import { LAYER } from '../../consts.js';
 
 let passed = 0;
@@ -183,11 +185,11 @@ ok('announced beam: no damage during announceDelay + gap, then ticks', () => {
   for (let i = 0; i < 25; i++) h.step(DT, [enemy]);
   assert.equal(hits.length, 0, `no damage pre-ignition (got ${hits.length})`);
   assert.equal(enemy.hp, 100);
-  // Run to completion: total 1.0s at 10Hz → ~5 ticks after ignition.
+  // Run to completion: a full 1.0 active seconds at 10Hz after ignition.
   let finished = false;
-  for (let i = 0; i < 40 && !finished; i++) finished = h.step(DT, [enemy]);
+  for (let i = 0; i < 70 && !finished; i++) finished = h.step(DT, [enemy]);
   assert.ok(finished);
-  assert.ok(hits.length >= 4 && hits.length <= 6, `got ${hits.length} ticks post-ignition`);
+  assert.equal(hits.length, 10, `got ${hits.length} ticks post-ignition`);
   assert.ok(enemy.hp < 100, 'damage landed after ignition');
 });
 
@@ -222,6 +224,137 @@ ok('announced beam: non-announced behavior unchanged (immediate ticks)', () => {
   assert.ok(hits.length === 0 || hits.length === 1, 'first frame tick boundary');
   for (let i = 0; i < 19; i++) h.step(DT, [enemy]);
   assert.equal(hits.length, 3, `got ${hits.length} ticks at 0.333s`);
+});
+
+// Moving targets use the same update-before-attack order as theater staging.
+for (const useWorldBox of [false, true]) {
+  ok(`sweep: moving off-axis target is safe, on-axis target hits (worldBox=${useWorldBox})`, () => {
+    resetEffects();
+    const h = invoke('sweepingBeam', {
+      origin: { x: 0, y: 0 }, direction: Math.PI / 6,
+      sweepAngle: Math.PI / 6, length: 300, width: 20,
+      holdDuration: 0.1, sweepDuration: 1, endHoldDuration: 0.2,
+      fadeOut: 0.2, announceMarker: false, tickRate: 60, damage: 1,
+      beamStyle: { gradientRadius: 0 },
+    }, makeContext(attacker(), {}));
+    const outside = dummyEnemy(0, 0, 1000);
+    const inside = dummyEnemy(0, 0, 1000);
+    for (const t of [outside, inside]) {
+      t.w = t.h = 4;
+      if (useWorldBox) t.worldBox = function () {
+        return { x: this.x + 500, y: this.y + 500, w: 4, h: 4 };
+      };
+    }
+    for (let frame = 1; frame <= 60; frame++) {
+      const time = frame * DT;
+      const angle = Math.PI / 6 + Math.PI / 6 * Math.max(0, time - 0.1);
+      const cos = Math.cos(angle), sin = Math.sin(angle);
+      // Entire outside box has perpendicular distance >= 40 - 2sqrt(2),
+      // well beyond the drawn half-width of 10, yet inside the broad AABB.
+      for (const [t, offset] of [[outside, 40], [inside, 0]]) {
+        t.x = cos * 150 - sin * offset - 2 - (useWorldBox ? 500 : 0);
+        t.y = sin * 150 + cos * offset - 2 - (useWorldBox ? 500 : 0);
+      }
+      h.state.beam.state._fx.body.update(DT);
+      h.step(DT, [outside, inside]);
+      const body = h.state.beam.state._fx.body;
+      let drawnAngle, drawnOrigin, filled = false;
+      body.render({
+        save() {}, restore() {}, beginPath() {}, closePath() {},
+        moveTo() {}, lineTo() {}, quadraticCurveTo() {},
+        translate(x, y) { drawnOrigin = { x, y }; },
+        rotate(a) { drawnAngle = a; }, fill() { filled = true; },
+        createLinearGradient() { return { addColorStop() {} }; },
+      });
+      assert.ok(filled, 'beam actually produces a draw path');
+      assert.deepEqual(drawnOrigin, { x: 0, y: 0 });
+      assert.ok(Math.abs(drawnAngle - angle) < 1e-9, 'same-frame render angle');
+      assert.equal(outside.hp, 1000, `outside drawn beam at frame ${frame}`);
+      assert.equal(inside.hp, 1000 - frame, `actual overlap at frame ${frame}`);
+    }
+    resetEffects();
+  });
+}
+
+ok('theater default beam: announcement does not consume active lifetime', () => {
+  resetEffects();
+  const enemy = dummyEnemy(200, 105, 1000);
+  const h = invoke('beam', { direction: 0, length: 1000, width: 24,
+    duration: 0.6, damage: 15, tickRate: 8, team: 'ally' }, makeContext(attacker()));
+  for (let i = 0; i < 67; i++) h.step(DT, [enemy]);
+  assert.equal(enemy.hp, 1000, 'announcement is inert');
+  let finished = false;
+  for (let i = 0; i < 50 && !finished; i++) finished = h.step(DT, [enemy]);
+  assert.ok(h.state._fx.body, 'actual beam effect ignited');
+  assert.ok(finished);
+  assert.equal(enemy.hp, 940, '0.6 active seconds at 8Hz = four ticks');
+  resetEffects();
+});
+
+for (const id of ['beam', 'targetedBeam']) {
+  ok(`${id}: diagonal empty AABB corner is safe; moving full worldBox overlaps hit`, () => {
+    resetEffects();
+    const aim = dummyEnemy(200, 200, 1000);
+    aim.w = aim.h = 0;
+    const h = invoke(id, id === 'beam' ? {
+      origin: { x: 0, y: 0 }, direction: Math.PI / 4, length: 300,
+      width: 20, duration: 1, damage: 1, tickRate: 60, announceMarker: false,
+      style: { gradientRadius: 0 },
+    } : {
+      target: aim, duration: 0, lockTime: 0, beamLength: 300,
+      beamWidth: 20, beamDuration: 1, damage: 1, tickRate: 60,
+      beamStyle: { gradientRadius: 0 },
+    }, makeContext({ x: 0, y: 0, w: 0, h: 0 }));
+    const outside = dummyEnemy(40, 140, 1000);
+    const inside = dummyEnemy(-400, -400, 1000);
+    inside.worldBox = function () { return { x: this.x + 500, y: this.y + 500, w: 24, h: 24 }; };
+    for (let frame = 1; frame <= 20; frame++) {
+      inside.x += 1; inside.y += 1;
+      h.step(DT, [outside, inside]);
+      const body = (h.beam ?? h).state._fx.body;
+      assert.deepEqual(body.origin, { x: 0, y: 0 });
+      assert.equal(body.angle, Math.PI / 4);
+      assert.equal(outside.hp, 1000, 'empty corner is not the beam');
+      assert.equal(inside.hp, 1000 - frame, 'live offset worldBox hits');
+    }
+    resetEffects();
+  });
+}
+
+ok('primitive: rendered geometry stays authoritative with style overrides and moving attacker', () => {
+  const a = attacker();
+  const h = invoke('beam', { ...P, origin: { x: 0, y: 0 }, length: 200, width: 20,
+    style: { x: 800, y: 900, orientation: 2, length: 5, width: 100, gradientRadius: 0 } }, makeContext(a));
+  const body = h.state._fx.body;
+  body.update(0.1);
+  const points = [];
+  body.render({ save() {}, restore() {}, beginPath() {}, closePath() {}, fill() {},
+    translate(x, y) { assert.deepEqual([x, y], [0, 0]); },
+    rotate(angle) { assert.equal(angle, 0); },
+    moveTo() {}, quadraticCurveTo() {}, lineTo(x, y) { points.push([x, y]); },
+    createLinearGradient() { return { addColorStop() {} }; },
+  });
+  assert.ok(points.some(([x, y]) => x === 200 && y === 10));
+  const edge = dummyEnemy(80, 9);
+  const behind = dummyEnemy(-25, -5); behind.w = 4;
+  const past = dummyEnemy(201, -5);
+  const touch = dummyEnemy(80, 10);
+  a.x += 500;
+  h.step(0.1, [edge, behind, past, touch]);
+  assert.equal(edge.hp, 90, 'bounds overlap even though center is outside');
+  for (const t of [behind, past, touch]) assert.equal(t.hp, 100);
+  resetEffects();
+});
+
+ok('primitive: implicit origin is captured with the visual, not dragged by attacker', () => {
+  const a = attacker();
+  const h = invoke('beam', P, makeContext(a));
+  const enemy = dummyEnemy(200, 105);
+  a.x += 500;
+  h.step(0.1, [enemy]);
+  assert.equal(enemy.hp, 90);
+  assert.equal(h.state._fx.body.origin.x, 132);
+  resetEffects();
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);
