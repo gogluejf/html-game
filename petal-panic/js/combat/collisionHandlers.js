@@ -34,16 +34,21 @@ import { ctx } from '../world/context.js';
 
 // Entry-edge impact point (tunneling correction) lives in the leaf module
 // combat/entryImpact.js so the Attack Theater sandbox can import it without
-// pulling in the gameplay chain. Re-exported here for existing consumers.
-export { entryImpactPoint } from './entryImpact.js';
+// pulling in the gameplay chain. Imported here for local use; re-exported for
+// existing consumers.
+import { entryImpactPoint, snapToImpact } from './entryImpact.js';
+export { entryImpactPoint, snapToImpact };
 
 function hitSolidTerrain(projectile, target) {
   const box = target.worldBox();
+  projectile._impactPoint = null;
   if (!aabbOverlap(projectile.worldBox(), box)) return;
   if (projectile.solidBehavior === 'reflect') {
     projectile.reflectVelocity(box);
   } else if (projectile.solidBehavior === 'stop') {
+    projectile._impactPoint = entryImpactPoint(projectile, box);
     projectile.alive = false;
+    if (projectile.type === 'bomb') snapToImpact(projectile, projectile._impactPoint);
     if (isSpecialType(projectile.type)) explodeSpecial(projectile);
   }
 }
@@ -108,12 +113,6 @@ export function registerCollisionHandlers(collisionWorld) {
       //   • 'reflect' — bombs: bounce off the surface, keep flying; the fuse
       //                keeps running so they still detonate on timer/barrel
       if (target instanceof SolidBox) {
-        // Record the entry-edge impact point BEFORE hitSolidTerrain() kills
-        // the shot — engine carriers (shockwaveProjectile et al.) read it for
-        // their telegraph/ring centering. 'reflect' shots keep flying; clear
-        // any stale value so a later death doesn't reuse an old contact.
-        const ip = entryImpactPoint(allyProj, target.worldBox());
-        allyProj._impactPoint = ip ?? null;
         hitSolidTerrain(allyProj, target);
         return;
       }
@@ -164,7 +163,8 @@ export function registerCollisionHandlers(collisionWorld) {
       // Entry-edge impact point for engine carriers (tunneling correction):
       // a fast shot is already inside the victim when this fires; rewind to
       // the contact edge so telegraphs/rings center where it actually hit.
-      allyProj._impactPoint = entryImpactPoint(allyProj, target.worldBox ? target.worldBox() : target);
+      const ip = entryImpactPoint(allyProj, target.worldBox ? target.worldBox() : target);
+      allyProj._impactPoint = ip ?? null;
       const dealt = isRealEnemy
         ? target.takeDamage(allyProj.damage, hero, 'projectile')
         : damage(hero, target, allyProj.damage, 'projectile');
@@ -182,6 +182,8 @@ export function registerCollisionHandlers(collisionWorld) {
         if (Debug.enabled) Debug.logEvent(`${srcName} → ${target.type ?? '?'} dmg ${dealt}`);
       }
       allyProj.alive = false;               // projectile is consumed on impact
+      // Bomb detonation reads position; other carriers use the payload snapshot.
+      if (allyProj.type === 'bomb') snapToImpact(allyProj, ip);
       // Specials explode/fizzle on contact via the single explodeSpecial().
       if (isSpecialType(allyProj.type)) {
         explodeSpecial(allyProj);

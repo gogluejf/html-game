@@ -36,7 +36,7 @@ import { Debug } from '../debug/debug.js';
 import { updateEffects, drawEffects, resetEffects, fireManual, CATALOG } from '../effects/index.js';
 import { particles } from '../effects/particles.js';
 import { damage, flashTarget } from '../combat/damage.js';
-import { entryImpactPoint } from '../combat/entryImpact.js';
+import { entryImpactPoint, snapToImpact } from '../combat/entryImpact.js';
 import { explodeSpecial } from '../combat/shooting.js';
 import { isSpecialType } from '../objects/specialWeapons.js';
 import { ctx as gameCtx } from '../world/context.js';
@@ -423,9 +423,10 @@ export const AttackTheater = {
       if (target.layer !== LAYER.ENEMY && target.layer !== LAYER.BOSS) return;
       if (!target.alive || target.hp == null) return;
       // Entry-edge impact point for engine carriers (tunneling correction):
-      // rewind the shot to where its leading face first touched the target,
-      // and snap its rendered position there so it dies TOUCHING the face.
-      proj._impactPoint = entryImpactPoint(proj, target.worldBox ? target.worldBox() : target);
+      // contact edge where the leading face first touched the target. Pure —
+      // no mutation; the snap below runs only after the shot is consumed.
+      const ip = entryImpactPoint(proj, target.worldBox ? target.worldBox() : target);
+      proj._impactPoint = ip ?? null;
       const dealt = typeof target.takeDamage === 'function'
         ? target.takeDamage(proj.damage ?? 10, this._attacker, 'projectile')
         : damage(this._attacker, target, proj.damage ?? 10, 'projectile');
@@ -436,6 +437,8 @@ export const AttackTheater = {
         this._log.unshift(`HIT ${dealt} dmg`);
       }
       proj.alive = false; // consumed on impact (matches gameplay behavior)
+      // Bomb detonation reads position; other carriers use the payload snapshot.
+      if (proj.type === 'bomb') snapToImpact(proj, ip);
       if (isSpecialType(proj.type)) explodeSpecial(proj);
       if (typeof target.takeDamage !== 'function' && !target.alive) this._world.remove(target);
     });
@@ -685,12 +688,6 @@ export const AttackTheater = {
       this._choreo = null;
     }
 
-    // Collision pass BEFORE pool cleanup: the 'hit' handler marks shots dead +
-    // _attackHit; updateAll() then drops them from active, and the handle step
-    // below reads _attackHit to emit terminal events. (Gameplay orders it the
-    // same way — integrate → world.update() → pool cleanup.)
-    this._world?.update();
-
     projectilePool.updateAll(DT);
     specialPool.updateAll(DT);
 
@@ -719,7 +716,7 @@ export const AttackTheater = {
     // a flat floor + optional stomp platforms; check both.
     const solids = [this._floorSolid, ...(this._stompPlatforms ?? [])];
     for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
-      if (!p.alive || p.solidBehavior !== 'stop') continue;
+      if (!p.alive || p.solidBehavior !== 'stop' || p._attackId === 'bomb') continue;
       for (const s of solids) {
         if (p.x + p.w > s.x && p.x < s.x + s.w &&
             p.y + p.h > s.y && p.y + p.h < s.y + 12) {
@@ -754,6 +751,10 @@ export const AttackTheater = {
       if (s._attackId !== 'bomb' || s._attackDone) continue;
       stepBombTerrain(s, DT, GROUND_Y);
     }
+
+    // Dispatch after integration and terrain correction, before death payloads.
+    // Never integrate a freshly consumed shot and overwrite its impact snapshot.
+    this._world?.update();
 
     // Bomb-family roots: stepped through the shared host (same as gameplay).
     // The host steps root lifecycle + deferred children (fireArea zones, split

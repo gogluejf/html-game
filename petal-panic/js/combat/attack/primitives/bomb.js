@@ -14,6 +14,7 @@
 // whenever the bomb ends (impact, fuse expiry, or off-screen cull). Macros
 // subscribe to this to fire their payload effect at exactly that point.
 
+import { invalidateImpactMotion } from '../../entryImpact.js';
 import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { LAYER } from '../../../consts.js';
@@ -121,6 +122,7 @@ export function stepBombTerrain(ent, dt, groundY, platforms = []) {
   if (surface == null) return false;
 
   ent.y = surface - ent.h;
+  invalidateImpactMotion(ent);
   ent._bombSurfaceY = surface;
   if (!ent.alive) return false; // fuse expired on this landing frame
   if (ent.solidBehavior === 'reflect') {

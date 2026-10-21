@@ -9,6 +9,7 @@
 // debug color. Friendly (hero) projectiles only ever hit ENEMY/BOSS per the
 // COLLISION_RULES masks — they can NEVER touch the hero (acceptance #3).
 
+import { invalidateImpactMotion } from '../combat/entryImpact.js';
 import { Entity } from '../core/entity.js';
 import { LAYER } from '../consts.js';
 import { specialById, isSpecialType } from './specialWeapons.js';
@@ -58,6 +59,7 @@ export class Projectile extends Entity {
       gravity: 0, // projectiles fly straight
     });
 
+    invalidateImpactMotion(this);
     this.friendly = friendly;
     this.speed = PROJECTILE_SPEED;
     this.damage = PROJECTILE_DAMAGE;
@@ -72,7 +74,15 @@ export class Projectile extends Entity {
     this.vy = Math.sin(angle) * this.speed;
   }
 
+  reflectVelocity(box) {
+    super.reflectVelocity(box);
+    invalidateImpactMotion(this);
+  }
+
   update(dt) {
+    this._impactPrevX = this.x;
+    this._impactPrevY = this.y;
+    this._impactPoint = null;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     this.life -= dt;
@@ -183,6 +193,7 @@ export class Special extends Entity {
     });
 
     this.type = type;
+    invalidateImpactMotion(this);
     this.friendly = true;
     // Solid-collision behavior per WEAPON (special-weapons.md): bombs BOUNCE
     // off terrain (reflect + keep flying, fuse still runs); saws/spread ABSORB
@@ -211,7 +222,15 @@ export class Special extends Entity {
     this.vy = Math.sin(angle) * this.speed;
   }
 
+  reflectVelocity(box) {
+    super.reflectVelocity(box);
+    invalidateImpactMotion(this);
+  }
+
   update(dt) {
+    this._impactPrevX = this.x;
+    this._impactPrevY = this.y;
+    this._impactPoint = null;
     this._bombPrevBottom = this.y + this.h;
     // Gravity for ballistic weapons (bombs).
     if (this.gravityValue > 0) {
