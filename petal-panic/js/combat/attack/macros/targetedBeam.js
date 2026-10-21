@@ -175,6 +175,9 @@ defineMacro('targetedBeam', {
           tickRate: params.tickRate,
           team: params.team,
           style: params.beamStyle,
+          // Player-aimed at a reticle — an exit-point telegraph would be
+          // noise (the reticle IS the warning). Opt out of the default.
+          announceMarker: false,
         }, ctx);
         if (beam) {
           h.beam = beam;

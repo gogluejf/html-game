@@ -157,6 +157,9 @@ defineMacro('sweepingBeam', {
       damage: params.damage,
       tickRate: params.tickRate,
       team: params.team,
+      // The sweep IS its own telegraph (the macro choreographs the whole
+      // motion) — an exit-point marker would be wrong. Opt out of the default.
+      announceMarker: false,
       style: {
         ...(params.beamStyle ?? {}),
         shimmerDepth: params.shimmerLow,
