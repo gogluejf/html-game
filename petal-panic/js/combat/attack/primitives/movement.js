@@ -1,7 +1,7 @@
 // Attack Engine — Movement / Charge primitive (Task 1.7).
 //
-// Applies intentional attack movement to the attacker: velocity is driven
-// toward a target speed with optional easing, for a fixed distance or until
+// Applies intentional attack movement to the attacker: velocity ramps up
+// via acceleration toward a target speed, for a fixed distance or until
 // out of screen. This file owns ONLY the motion profile. It never moves
 // entities itself in gameplay — the host integrator reads `state.vx/vy` each
 // frame (or calls stepCharge() which applies them). Obstacle stopping is the
@@ -31,12 +31,11 @@ const DEFAULTS = Object.freeze({
   speed: 500,            // target speed px/s
   distanceType: 'fixed', // 'fixed' | 'infinit'
   distance: 200,         // px — the value when distanceType is 'fixed'
-  acceleration: 2000,    // px/s² ramp-up (0 = instant, full speed on frame 1)
+  acceleration: 1000,    // px/s² ramp-up (0 = instant, full speed on frame 1)
   stopOnObstacle: true,  // host stops the charge when the entity is blocked
   bodyDamageOverride: null, // e.g. { damage: 20 } applied while charging
   announceMarker: false, // boundary telegraph before the charge starts
   announceDelay: 1.0,    // s the marker stays visible
-  easing: 'linear',      // linear | easeIn (t²) | easeInCubic (t³) — speed profile over the charge
 });
 
 /**
@@ -66,13 +65,6 @@ export function makeChargeState(p, ctx) {
  *                                     terrain this frame?
  * @returns {boolean} true when the charge finished
  */
-/** Eased progress: maps linear t∈[0,1] to eased t∈[0,1]. Same curves as shockwave. */
-function ease(t, mode) {
-  if (mode === 'easeInCubic') return t * t * t;
-  if (mode === 'easeIn') return t * t;
-  return t; // linear (default)
-}
-
 export function stepCharge(state, p, ctx, dt, input = {}) {
   if (state.done) return true;
 
@@ -81,37 +73,25 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
   const speed = p.speed ?? 500;
   const distanceType = p.distanceType ?? 'fixed'; // 'fixed' | 'infinit'
   const distance = (distanceType === 'fixed') ? (p.distance ?? 200) : null;
-  const acceleration = p.acceleration ?? 2000;
+  const acceleration = p.acceleration ?? 1000;
   const stopOnObstacle = p.stopOnObstacle ?? true;
-  const easing = p.easing ?? 'linear';
 
-  // Easing: modulates the effective speed over the charge lifetime.
-  // Only applies when acceleration is 0 (instant full speed) AND easing is
-  // not 'linear' (linear = constant speed, no modulation needed).
-  // Progress is TIME-based (not distance-based — that would deadlock at t=0):
-  //   totalTime ≈ distance / speed (for fixed) or unbounded (infinit → skip).
-  let easedT = 1;
-  if (acceleration <= 0 && easing !== 'linear' && distance != null) {
-    const totalTime = distance / speed;
-    const t = Math.min(1, state.elapsed / totalTime);
-    easedT = ease(t, easing);
-  }
-
-  // Ramp speed toward target (acceleration profile), then apply easing.
+  // Ramp speed toward target (acceleration profile).
   const maxStep = acceleration > 0 ? acceleration * dt : Infinity;
   state.currentSpeed = Math.min(speed, state.currentSpeed + maxStep);
-  const effSpeed = state.currentSpeed * easedT;
-  state.vx = Math.cos(p.direction) * effSpeed;
-  state.vy = Math.sin(p.direction) * effSpeed;
+  state.vx = Math.cos(p.direction) * state.currentSpeed;
+  state.vy = Math.sin(p.direction) * state.currentSpeed;
 
-  // Apply motion to the attacker (host integrator may skip this in tests by
-  // passing a plain object without x/y — we guard).
+  // Apply motion to the attacker. Also write vx/vy so the base class can
+  // pick up momentum after the charge ends (gravity arcs it back).
   const a = ctx.attacker;
   if (a && typeof a.x === 'number') {
+    a.vx = state.vx;
+    a.vy = state.vy;
     a.x += state.vx * dt;
     a.y += state.vy * dt;
   }
-  state.traveled += effSpeed * dt;
+  state.traveled += state.currentSpeed * dt;
   state.elapsed += dt;
 
   // Stop conditions.
@@ -133,8 +113,9 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
   if (hitDistance || blocked) {
     state.done = true;
     state.blocked = blocked;
-    state.vx = 0;
-    state.vy = 0;
+    // Do NOT zero vx/vy: the entity keeps its charge momentum and gravity
+    // arcs it back down naturally (the "swing back" feel). The host's base
+    // integration picks up from here with restored gravity.
     return true;
   }
   return false;
@@ -154,7 +135,6 @@ registerPrimitive('charge', {
       { key: 'distanceType', desc: "'fixed' | 'infinit'" },
       { key: 'distance', desc: 'px (used when distanceType is "fixed")' },
       { key: 'acceleration', desc: 'px/s² ramp (0 = instant)' },
-      { key: 'easing', desc: 'linear | easeIn | easeInCubic — speed profile over the charge' },
       { key: 'stopOnObstacle', desc: 'stop when blocked by terrain' },
       { key: 'bodyDamageOverride', desc: 'contact damage while charging' },
       { key: 'announceMarker', desc: 'bool (default false) — boundary marker before the charge starts' },
@@ -185,6 +165,11 @@ registerPrimitive('charge', {
     }
 
     h.state = state;
+    // Disable gravity while charging (straight-line motion).
+    const a = ctx.attacker;
+    const savedGravity = a?.gravity ?? 1;
+    if (a && typeof a.gravity === 'number') a.gravity = 0;
+
     h.step = (dt, input) => {
       if (state.done) return true;
       // Announcement gate: delay the charge start.
@@ -194,7 +179,11 @@ registerPrimitive('charge', {
         started = true;
       }
       const finished = stepCharge(state, params, ctx, dt, input);
-      if (finished) h._complete({ traveled: state.traveled, blocked: state.blocked });
+      if (finished) {
+        // Restore gravity — engine handles the rest (fall, floor, momentum).
+        if (a && typeof a.gravity === 'number') a.gravity = savedGravity;
+        h._complete({ traveled: state.traveled, blocked: state.blocked });
+      }
       return finished;
     };
     return h;

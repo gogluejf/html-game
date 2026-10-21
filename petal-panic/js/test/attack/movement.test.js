@@ -14,6 +14,17 @@ function ok(name, fn) {
 const DT = 1 / 60;
 const EPS = 1e-6;
 
+/** Test harness: step the charge AND integrate position (simulates base class). */
+function stepAndIntegrate(st, p, ctx, dt, input) {
+  const done = stepCharge(st, p, ctx, dt, input);
+  const a = ctx.attacker;
+  if (a && typeof a.x === 'number') {
+    a.x += (a.vx ?? 0) * dt;
+    a.y += (a.vy ?? 0) * dt;
+  }
+  return done;
+}
+
 const P = { direction: 0, speed: 600, distanceType: 'fixed', distance: 300, acceleration: 0 };
 
 ok('instant charge moves at full speed along the direction', () => {
@@ -90,7 +101,7 @@ ok('obstacle: blocked input stops the charge early and reports it', () => {
   const finished = stepCharge(st, p, ctx, DT, { blocked: true });
   assert.equal(finished, true, 'blocked → finished');
   assert.equal(st.blocked, true);
-  assert.ok(st.traveled < p.distance + 10, 'stopped well before the full distance');
+  assert.ok(st.traveled < 50, `stopped well before going far (traveled=${st.traveled})`);
 });
 
 ok('stopOnObstacle=false ignores blocked input', () => {

@@ -175,11 +175,13 @@ Applies intentional attack movement to the attacker.
 - **distanceType** — `'fixed'` | `'infinit'`. Fixed: stop after `distance` px.
   Infinit: run until out of screen.
 - **distance** — px (used when `distanceType` is `'fixed'`).
-- **acceleration / easing** — optional movement profile. `easing`
-  (`linear` | `easeIn` | `easeInCubic`) modulates speed over the charge when
-  acceleration is 0; same curves as the shockwave primitive.
+- **acceleration** — px/s² ramp-up (default 1000). 0 = instant full speed.
 - **stopOnObstacle** — whether terrain stops the motion.
 - **bodyDamageOverride** — optional contact-damage change while moving.
+- **Gravity** — automatically disabled while the charge is active (entity
+  defies gravity, moves in a straight line). On completion, gravity is
+  restored and the entity keeps its charge momentum — it arcs back down
+  naturally (the "swing back" feel). No params needed; it's automatic.
 - **announceMarker** — bool (default false). When true, a Surface Target
   Marker fires at the screen boundary in the charge direction before the
   movement starts (same rules as the beam announcement, effects.md §28).
