@@ -15,6 +15,7 @@ import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { fireDeclared } from '../../../effects/index.js';
 import { announceMarkerPoint } from './beam.js';
+import { VIEW_W, VIEW_H } from '../../../core/view.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -29,12 +30,13 @@ const DEFAULTS = Object.freeze({
   direction: 0,          // radians
   speed: 500,            // target speed px/s
   duration: 0.4,         // seconds (used when distance is null)
-  distance: null,        // px — overrides duration when set
+  distance: null,        // px — overrides duration when set; 'infinit' = run until out of screen
   acceleration: 2000,    // px/s² ramp-up (0 = instant, full speed on frame 1)
   stopOnObstacle: true,  // host stops the charge when the entity is blocked
   bodyDamageOverride: null, // e.g. { damage: 20 } applied while charging
   announceMarker: false, // boundary telegraph before the charge starts
   announceDelay: 1.0,    // s the marker stays visible
+  easing: 'linear',      // linear | easeIn (t²) | easeInCubic (t³) — speed profile over the charge
 });
 
 /**
@@ -64,6 +66,13 @@ export function makeChargeState(p, ctx) {
  *                                     terrain this frame?
  * @returns {boolean} true when the charge finished
  */
+/** Eased progress: maps linear t∈[0,1] to eased t∈[0,1]. Same curves as shockwave. */
+function ease(t, mode) {
+  if (mode === 'easeInCubic') return t * t * t;
+  if (mode === 'easeIn') return t * t;
+  return t; // linear (default)
+}
+
 export function stepCharge(state, p, ctx, dt, input = {}) {
   if (state.done) return true;
 
@@ -74,12 +83,27 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
   const distance = p.distance ?? null;
   const acceleration = p.acceleration ?? 2000;
   const stopOnObstacle = p.stopOnObstacle ?? true;
+  const easing = p.easing ?? 'linear';
 
-  // Ramp speed toward target (acceleration profile).
+  // Easing: modulates the effective speed over the charge lifetime.
+  // Only applies when acceleration is 0 (instant full speed) AND easing is
+  // not 'linear' (linear = constant speed, no modulation needed).
+  let easedT = 1;
+  if (acceleration <= 0 && easing !== 'linear') {
+    if (typeof distance === 'number') {
+      easedT = ease(Math.min(1, state.traveled / distance), easing);
+    } else if (distance !== 'infinit') {
+      easedT = ease(Math.min(1, state.elapsed / duration), easing);
+    }
+    // 'infinit': no easing (constant speed until offscreen)
+  }
+
+  // Ramp speed toward target (acceleration profile), then apply easing.
   const maxStep = acceleration > 0 ? acceleration * dt : Infinity;
   state.currentSpeed = Math.min(speed, state.currentSpeed + maxStep);
-  state.vx = Math.cos(p.direction) * state.currentSpeed;
-  state.vy = Math.sin(p.direction) * state.currentSpeed;
+  const effSpeed = state.currentSpeed * easedT;
+  state.vx = Math.cos(p.direction) * effSpeed;
+  state.vy = Math.sin(p.direction) * effSpeed;
 
   // Apply motion to the attacker (host integrator may skip this in tests by
   // passing a plain object without x/y — we guard).
@@ -88,11 +112,23 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
     a.x += state.vx * dt;
     a.y += state.vy * dt;
   }
-  state.traveled += state.currentSpeed * dt;
+  state.traveled += effSpeed * dt;
   state.elapsed += dt;
 
   // Stop conditions.
-  const hitDistance = distance != null && state.traveled >= distance;
+  let hitDistance = false;
+  if (typeof distance === 'number') {
+    hitDistance = state.traveled >= distance;
+  } else if (distance === 'infinit') {
+    // Stop when the attacker leaves the visible screen.
+    const cam = ctx.camera ?? null;
+    const viewX = cam?.x ?? 0;
+    const viewY = cam?.y ?? 0;
+    const margin = 60; // px grace past the edge
+    const ax = a?.x ?? 0, ay = a?.y ?? 0;
+    hitDistance = ax < viewX - margin || ax > viewX + VIEW_W + margin ||
+                  ay < viewY - margin || ay > viewY + VIEW_H + margin;
+  }
   const hitDuration = distance == null && state.elapsed >= duration;
   const blocked = stopOnObstacle && !!input.blocked;
 
@@ -118,8 +154,9 @@ registerPrimitive('charge', {
       { key: 'direction', desc: 'movement direction (radians, full 0–2π)' },
       { key: 'speed', desc: 'target speed (px/s)' },
       { key: 'duration', desc: 'seconds (when distance is null)' },
-      { key: 'distance', desc: 'px — overrides duration' },
+      { key: 'distance', desc: "px | 'infinit' — overrides duration; infinit = run until out of screen" },
       { key: 'acceleration', desc: 'px/s² ramp (0 = instant)' },
+      { key: 'easing', desc: 'linear | easeIn | easeInCubic — speed profile over the charge' },
       { key: 'stopOnObstacle', desc: 'stop when blocked by terrain' },
       { key: 'bodyDamageOverride', desc: 'contact damage while charging' },
       { key: 'announceMarker', desc: 'bool (default false) — boundary marker before the charge starts' },

@@ -173,7 +173,10 @@ Applies intentional attack movement to the attacker.
 - **direction** — movement direction (radians, full 0–2π).
 - **speed / force** — movement speed.
 - **duration / distance** — how long or how far movement continues.
-- **acceleration / easing** — optional movement profile.
+  `distance` accepts a number (px) or `'infinit'` (run until out of screen).
+- **acceleration / easing** — optional movement profile. `easing`
+  (`linear` | `easeIn` | `easeInCubic`) modulates speed over the charge when
+  acceleration is 0; same curves as the shockwave primitive.
 - **stopOnObstacle** — whether terrain stops the motion.
 - **bodyDamageOverride** — optional contact-damage change while moving.
 - **announceMarker** — bool (default false). When true, a Surface Target
