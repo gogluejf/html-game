@@ -1262,15 +1262,26 @@ export const AttackTheater = {
     const shown = new Set();
     const rows = [];
     for (const [key] of tweakList) { rows.push({ key, tweak: true }); shown.add(key); }
+    // Collect the top-level parents of any dotted tweak keys (e.g. 'blast'
+    // from 'blast.explosionRadius') so we don't ALSO render the whole object
+    // as a redundant read-only row.
+    const dottedParents = new Set(
+      tweakList.map(([k]) => k.split('.')[0]).filter((p) => p !== undefined),
+    );
     for (const key of Object.keys(this._params ?? {})) {
-      if (!shown.has(key)) rows.push({ key, tweak: false });
+      if (!shown.has(key) && !dottedParents.has(key)) rows.push({ key, tweak: false });
     }
     for (const { key, tweak } of rows) {
       if (py > bottomLimit()) break;
       const tIdx = tweak ? tweakList.findIndex(([k]) => k === key) : -1;
       const selected = tIdx === this.paramIndex && tweakList.length > 0;
       ctx.fillStyle = selected ? '#fd6' : (tweak ? '#ccc' : '#666');
-      const val = this._params[key];
+      // Dotted keys (e.g. 'blast.explosionRadius') resolve through the path —
+      // same read as adjustParam's getVal(). A flat this._params[key] would
+      // read undefined for nested params.
+      const val = key.includes('.')
+        ? key.split('.').reduce((o, k) => o?.[k], this._params)
+        : this._params[key];
       const valStr = typeof val === 'number'
         ? ((key.includes('direction') || key.includes('angle')) ? angleLabel(val) : String(round2(val)))
         : (val && typeof val === 'object' ? JSON.stringify(val) : String(val));
