@@ -11,7 +11,7 @@ Interacts with ChatGPT's image generation to produce pixel-art sprite sheets for
 - `<skill-folder>` — directory containing this SKILL.md
 - `<working-dir>` — the REPO ROOT (e.g. `~/src/html-game`). NOT the game subfolder. All paths in state are relative to this.
 - `<assets-dir>` — where generated sprite sheets are saved: `<working-dir>/<PROJECT>/assets/` (one folder per project/game, e.g. `petal-panic/assets/`). Persisted in the meta file as `assets_dir`.
-- `<sheets-root>` — <working-dir>/.squid-os/sprite-sheets/ — one dir per project (`<PROJECT>/`) holding `<label>/<sheet>.json` (ONE file per sheet) plus a sibling `<project>.meta.json`. The `state` subcommand's `--state` arg is the PROJECT DIR (e.g. `.squid-os/sprite-sheets/petal-panic/`).
+- `<sheets-root>` — <working-dir>/.squid-os/sprite-sheets/ — one dir per project (`<PROJECT>/`) holding ONLY `<project>.meta.json` (chat_url, style_name, palette, **assets_dir**). Sheet JSONs are NOT stored here — they live as **twins next to their PNGs** in the assets tree: `<assets_dir>/<category>/<entity>/<sheet>.json`. The `state` subcommand's `--state` arg is the PROJECT DIR (e.g. `.squid-os/sprite-sheets/petal-panic/`).
 - `<chat-url>` — the ChatGPT conversation URL to use for style consistency (created on first run, reused thereafter)
 
 ## Instructions
@@ -34,23 +34,23 @@ Requires: `pip install websocket-client` (one-time setup).
 
 ### 2. Prompt Construction
 
+**ONE ACTION PER SHEET.** Each generation call produces exactly ONE animation for ONE entity (e.g. "jester jump cycle"). Never ask for multiple actions/entities in one image — that creates mixed sheets the pipeline can't register cleanly. If an entity needs 5 actions, that's 5 separate generations (same conversation, for style consistency). A single action MAY span 2 grid rows if the animation is long (e.g. a 10-frame super move as 2x5) — still ONE action.
+
 Build a structured prompt with these sections (adapt to user's request):
 
 ```
-Generate a sprite sheet of [N] [entity type] sprites for [game description], continuing the exact same [style] as the [prior sheets] above.
+Generate a sprite sheet of ONE animation: [ACTION] for [ENTITY], [game description], continuing the exact same [style] as the [prior sheets] above.
 
-LAYOUT: [R] rows x [C] columns on a FULLY TRANSPARENT background (alpha channel, no color fill, no gradient, no vignette). Each row is one unique [entity]; the [C] columns are its [C] animation frames shown left-to-right. All cells exactly the same size ([CELL]x[CELL] px), evenly spaced. No text, no labels, no numbers, no grid lines, no borders between cells. Image [W] wide x [H] tall.
+LAYOUT: [R] rows x [C] columns on a FULLY TRANSPARENT background (alpha channel, no color fill, no gradient, no vignette). All cells show frames of THE SAME [action] animation, read left-to-right then top-to-bottom ([C] frames per row). All cells exactly the same size ([CELL]x[CELL] px), evenly spaced. No text, no labels, no numbers, no grid lines, no borders between cells. Image [W] wide x [H] tall.
 
-CONTAINMENT: each sprite fits COMPLETELY inside its own cell. Any extending element (projectile, extended arm/fist, weapon, cape, smoke, particles, effects, motion trails, hair) stays within that frame's OWN cell — if a pose would extend past the box, compress the reach so it fits. Nothing clipped at a cell edge; small even margin around each sprite. All sprites the same scale relative to their cells, vertically aligned (same ground/anchor line per row).
+CONTAINMENT: each sprite fits COMPLETELY inside its own cell. Any extending element (projectile, extended arm/fist, weapon, cape, smoke, particles, effects, motion trails, hair) stays within that frame's OWN cell — if a pose would extend past the box, compress the reach so it fits. Nothing clipped at a cell edge; small even margin around each sprite. Same scale relative to the cells, vertically aligned (same ground/anchor line).
 
 STYLE: [detailed style description - see Style Template below].
 
-ROWS (top to bottom), [C] distinct loopable frames each:
-1. [ENTITY NAME] - [description]. Frames: [frame 1 desc] -> [frame 2] -> [frame 3] -> [frame 4].
-2. ...
-...
+FRAMES ([TOTAL] distinct loopable frames of the [action]):
+[frame 1 desc] -> [frame 2 desc] -> ... -> [frame N desc].
 
-Frames within each row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable.
+Frames must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable.
 ```
 
 **Key prompt rules:**
@@ -173,13 +173,16 @@ This creates `<sheets-root>/<project>.meta.json` (chat_url, style_name, palette,
 ```bash
 python3 <skill-folder>/scripts/sprite_gen.py state \
   --state <working-dir>/.squid-os/sprite-sheets/<PROJECT>/ \
-  --add-sheet name=<label> label=<label> file=<relative/path.png> size="<W>x<H>" rows=<R> cols=<C> cell=<CELL> \
-  description="<what it is visually>" \
-  entities='[{"row":1,"name":"entity_name","anim":"frame cycle description"},...]' \
-  [--cropped-path "<PROJECT>/assets/<label>"] \
-  --prompt-file /tmp/<label>_prompt.txt
+  --add-sheet file=<PROJECT>/assets/<category>/<entity>/<action>_sheet.png \
+  rows=<R> cols=<C> description="<what it is visually>" \
+  entity=<entity_name> anim=<action> \
+  [--prompt-file /tmp/<entity>_<action>_prompt.txt]
 ```
-This writes exactly ONE file: `<sheets-root>/<PROJECT>/<label>/<sheetname>.json`. The `label` subfolder is both where the sheet lives and its editor group; `cropped_path` (defaults to `<PROJECT>/assets/<label>`) is where cropped frames land. Idempotent — re-adding the same sheet overwrites that one file. It never touches sibling sheets.
+This writes exactly ONE file: the **twin JSON next to the PNG** — `<PROJECT>/assets/<category>/<entity>/<action>_sheet.json`. The category/entity folders are derived from `file=`; there is no `label` or `cropped_path` param anymore. `size` is auto-read from the PNG (pass `size="WxH"` only if PIL is unavailable). Idempotent — re-adding the same sheet overwrites that one twin. It never touches sibling sheets.
+
+One action per sheet: `entity=` + `anim=` build the single `entities[]` entry. The action may span multiple grid rows (`rows=2` for a long anim laid out 2xN). Escape hatch for exotic cases: pass `entities='[{"name":...,"anim":...,"row":[1,2]}]'` instead of `entity`/`anim`.
+
+The CLI enforces: `file` must be repo-relative AND inside this project's meta `assets_dir/`, and must live in a `<category>/<entity>/` folder (depth ≥ 2 under assets). Files outside the repo (e.g. `~/Downloads/`) are rejected — move the PNG into the entity dir first (that move is where the `<action>_sheet.png` naming happens).
 
 The CLI enforces the schema. `entities` MUST be a JSON array where every object has `row` (int), `name` (string), `anim` (string). For single-image sheets (logo, cover, background): `rows=1 cols=1 cell=<width>`.
 
@@ -191,59 +194,51 @@ Use @tool:open on the saved PNG so the user can see it full-size.
 
 ### 9. Project State Files
 
-State is **one JSON file per sheet**, under `<working-dir>/.squid-os/sprite-sheets/`:
+State is **one meta file per project** under `<working-dir>/.squid-os/sprite-sheets/`. Sheet JSONs live in the assets tree as twins of their PNGs:
 
 ```
 .squid-os/sprite-sheets/
-  <PROJECT>/                    # project dir = --state arg (e.g. petal-panic/)
-    heroes/
-      scarlet_vale_sheet.json   # one file per sheet
-      balthazar_sheet.json
-    enemies/
-      jester_sheet.json
-    ...
+  <PROJECT>/                    # project dir = --state arg (e.g. petal-panic/) — empty, meta lives beside it
   <project>.meta.json           # chat_url, style_name, palette, assets_dir
+
+<PROJECT>/assets/<category>/<entity>/
+  <sheet>.png                   # raw sheet
+  <sheet>.json                  # twin (written by sprite-gen --add-sheet, updated by record_crop.py)
+  <action>_f1.png ...           # cropped frames
 ```
 
 `<PROJECT>` is the **game/project name** derived from the user's conversation context (e.g. "galaga", "tetris"). NOT the folder name — ask or infer from what the user is building. A single code repo can contain multiple games, each with its own project dir + meta file. On first run for a new project, determine the name from the user's request; if ambiguous, ask once.
 
-The `label` subfolder mirrors the assets tree (`assets/<label>/`) and doubles as the editor's group header. The label is derivable from the path, so it is NOT repeated inside the sheet json.
+The category/entity folders mirror the assets tree and double as the editor's group headers. They are derivable from the sheet path, so they are NOT repeated inside the sheet json.
 
 **Sheet file schema — pure visual asset data only (enforced by CLI):**
 
 ```json
 {
-  "file": "petal-panic/assets/scarlet_vale_sheet.png",
-  "size": "1619x971",
-  "rows": 3,
+  "file": "petal-panic/assets/heroes/scarlet_vale/run_sheet.png",
+  "size": "1619x324",
+  "rows": 1,
   "cols": 5,
-  "cell": 324,
-  "description": "Scarlet Vale heroine animations on tan parchment",
-  "cropped_path": "petal-panic/assets/heroes",
+  "description": "Scarlet Vale run cycle",
   "entities": [
-    {"row": 1, "name": "scarlet_vale", "anim": "run cycle: stride->contact->push->stride->contact"},
-    {"row": 2, "name": "scarlet_vale", "anim": "jump: takeoff->rise->apex->fall->land"},
-    {"row": 3, "name": "scarlet_vale", "anim": "attack: windup->swing->extend->impact->recover"}
+    {"name": "scarlet_vale", "anim": "run"}
   ],
   "original_prompt": "exact prompt sent to GPT or reverse-engineered",
   "crop": {
-    "frames_dir": "petal-panic/assets/heroes",
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
     "pass": "<tmp crop dir>"
   }
 }
 ```
 
 Field meanings:
-- `file` — sheet path relative to `<working-dir>`
+- `file` — sheet path relative to `<working-dir>` (twin JSON sits next to it)
 - `size` — actual image dimensions `WxH`
-- `rows` — number of entity rows (one per row)
-- `cols` — animation frames per row (left→right)
-- `cell` — px per cell; frame N of row R crops at `(N*cell, R*cell)` with size `cell x cell`
+- `rows` / `cols` — grid layout (one action per sheet → usually rows=1)
 - `description` — one-liner of what the sheet is visually
-- `cropped_path` — where cropped frames land (defaults to `<PROJECT>/assets/<label>`)
-- `entities[]` — per row: `row` (int), `name` (string, entity key), `anim` (frame cycle description). After cropping, each entity gains `frames:[{file,row,col,bbox}]`.
+- `entities[]` — `{name, anim}` (+ optional `row` provenance). After cropping, each entity gains `frames:[{file,row,col,bbox}]`.
 - `original_prompt` — exact prompt as sent to GPT, or reverse-engineered from image inspection
-- `crop` — written by `record_crop.py`, NOT hand-edited
+- `crop` — written by `record_crop.py`, NOT hand-edited (`frames_dir` = the entity folder)
 
 **Meta file schema** (`<sheets-root>/<project>.meta.json`):
 ```json
@@ -261,7 +256,7 @@ Field meanings:
 - `palette` — dominant color names
 - `assets_dir` — project asset folder relative to `<working-dir>`
 
-**Frame naming convention:** `<entity>_<action>_f<N>.png` (e.g. `scarlet_vale_run_f1.png`). For single-action entities (abyss style): `<entity>_f<N>.png`. Frames go FLAT in `assets/<label>/` — no per-entity subfolders.
+**Frame naming convention:** `<action>_f<N>.png` inside the entity folder (e.g. `assets/heroes/scarlet_vale/run_f1.png`). One sheet per entity+action: `<action>_sheet.png` + twin `<action>_sheet.json`.
 
 ### Techniques
 - [techniques/INDEX.md](techniques/INDEX.md) — Working recipes for fiddly browser/CDP operations (e.g. uploading a reference image into ChatGPT). Check here before improvising.
@@ -276,7 +271,7 @@ Field meanings:
 - **No hardcoded credentials:** Read CDP websocket URL from `~/.config/squid-os/browser-use.json` at runtime.
 - **Poll patiently:** Image generation takes 30-90s. Poll every 5s, max 24 iterations (2 min). Don't give up early.
 - **Download via page fetch:** Always use in-page `fetch()` with `credentials:'include'` to download images — direct curl won't have auth cookies.
-- **Save to assets dir:** All generated sheets go to `<assets-dir>` = `<working-dir>/<PROJECT>/assets/` (create it if missing, persist as `assets_dir` in state). Descriptive names: `enemies_sheet.png`, `bosses_sheet.png`, `powerups_sheet.png`, `player_sheet.png`, `background.png`. Cropped frames are saved by the sprite-crop skill under `<assets-dir>/<label>/`.
+- **Save to assets dir:** All generated sheets go to `<assets_dir>/<category>/<entity>/<action>_sheet.png` (one sheet per entity+action, create folders if missing; `assets_dir` is persisted in the project meta). Cropped frames land flat in the same entity folder as `<action>_f<N>.png`.
 - **Open for user:** After saving, always `open` the file so the user can see it full-size immediately.
 - **Style template for first prompt:** When starting a fresh project (no prior sprites), include a style block describing ONLY the art look — never the background (background is always requested as transparent separately). Generic base: "crisp high-detail hand-drawn sprite art, [theme] color palette ([list colors]). Sharp clean edges, consistent flat shading with one highlight + one shadow step, high contrast, symmetrical, front-facing, no perspective. Consistent style across every sprite. Glowing accent cores/eyes where fitting. 1px dark rim outline." Adapt the theme/palette to the project; keep the background instruction out of this block.
 - **Subsequent prompts:** Say "continuing the exact same [style] as the [prior entity] sheets above" — do NOT repeat the full style description. This keeps GPT anchored to the established look.

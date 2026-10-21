@@ -323,7 +323,7 @@ def crop_frames(im, comps, assignments, spans, rows, names, anims, out_dir, marg
             owned = [c for c in comps if assignments.get(c["id"]) == si and in_band(c)]
             if not owned:
                 warn_num = (global_frame + 1) if span else (si + 1)
-                trace(f"    WARN: frame {name}_{anim}_f{warn_num} has no owned components — skipped")
+                trace(f"    WARN: frame {anim}_f{warn_num} has no owned components — skipped")
                 continue
             fx0 = min(c["bbox"][0] for c in owned)
             fy0 = min(c["bbox"][1] for c in owned)
@@ -338,7 +338,7 @@ def crop_frames(im, comps, assignments, spans, rows, names, anims, out_dir, marg
                 frame_num = global_frame
             else:
                 frame_num = si + 1
-            fn = f"{name}_{anim}_f{frame_num}.png"
+            fn = f"{anim}_f{frame_num}.png"
             crop_arr = arr[fy0:fy1, fx0:fx1].copy()
             crop_labels = comp_labels[fy0:fy1, fx0:fx1]
             owned_ids = set(c["id"] for c in owned)

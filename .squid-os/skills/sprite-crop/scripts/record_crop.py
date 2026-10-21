@@ -123,15 +123,18 @@ def main():
         sys.exit(1)
 
     if fd and os.path.isdir(fd):
-        # Orphans = unreferenced PNGs whose name starts with one of THIS
-        # sheet's entity names (other sheets/entities share the same dir).
-        prefixes = tuple(e["name"] for e in new_entities)
+        # Orphans = unreferenced FRAME pngs of THIS sheet's anim(s) only.
+        # Frames are named {anim}_f{N}.png; other actions' frames belong to
+        # their own sheets, and sheets/raws are not frames by definition.
+        import re as _re
+        anims = tuple(e["anim"] for e in new_entities)
+        frame_res = [_re.compile(rf"^{_re.escape(a)}_f\d+\.png$") for a in anims]
         recorded = {f_["file"] for e in new_entities for f_ in e["frames"]}
         orphans = sorted(n for n in os.listdir(fd)
-                         if n.endswith(".png") and n.startswith(prefixes)
+                         if any(rx.match(n) for rx in frame_res)
                          and n not in recorded)
         if orphans:
-            print(f"  ORPHANS in {fd} (not referenced by this sheet): {orphans}")
+            print(f"  ORPHAN FRAMES in {fd} (this sheet's anims, not referenced): {orphans}")
 
     n_frames = sum(len(e["frames"]) for e in new_entities)
     ents = ", ".join(f"{e['name']}/{e['anim']}x{len(e['frames'])}" for e in new_entities)

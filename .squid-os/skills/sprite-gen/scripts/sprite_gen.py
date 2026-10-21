@@ -307,9 +307,12 @@ def _meta_path(state_dir):
 
 
 def cmd_state(args):
-    # --state is now a PROJECT DIR under .squid-os/sprite-sheets/, e.g.
+    # --state is the PROJECT DIR under .squid-os/sprite-sheets/, e.g.
     #   .squid-os/sprite-sheets/petal-panic/
-    # It holds <label>/<sheet>.json (one file per sheet) plus <project>.meta.json.
+    # It holds only <project>.meta.json (chat_url, style_name, palette,
+    # assets_dir). Sheet JSONs live as TWINS next to their PNGs in the
+    # assets tree (<assets_dir>/<category>/<entity>/<sheet>.json) — this
+    # command writes them there via --add-sheet, never into state_dir.
     state_dir = os.path.normpath(args.state)
     if not state_dir.endswith("/"):
         state_dir += "/"
@@ -349,23 +352,31 @@ def cmd_state(args):
                 meta_data[key] = val
         meta_data["updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
 
-    # --- add-sheet (strict schema) -> ONE file per sheet ---
+    # --- add-sheet (strict schema) -> TWIN JSON next to the sheet PNG ---
     if args.add_sheet:
         parts = dict(kv.split("=", 1) for kv in args.add_sheet)
-        name = parts.pop("name")
+
+        # Sheet must live under this project's assets_dir (from meta).
+        assets_dir = meta_data.get("assets_dir", "")
+        if not assets_dir:
+            print(f"ERROR: meta has no assets_dir. Run 'state --set assets_dir=<PROJECT>/assets' first.", file=sys.stderr)
+            sys.exit(1)
+        file_rel = parts.get("file", "")
+        if not file_rel.startswith(assets_dir.rstrip("/") + "/"):
+            print(f"ERROR: file '{file_rel}' is outside this project's assets_dir '{assets_dir}/'", file=sys.stderr)
+            sys.exit(1)
 
         # Required fields ('size' is auto-read from the PNG when possible).
-        required = ["file", "rows", "cols", "description", "entities"]
+        required = ["file", "rows", "cols", "description"]
         missing = [r for r in required if r not in parts]
         if missing:
             print(f"ERROR: missing required fields: {missing}", file=sys.stderr)
-            print(f"  Usage: --add-sheet name=X file=X rows=N cols=N description=\"...\" entities='[{{\"name\":\"X\",\"anim\":\"...\"}},...]'", file=sys.stderr)
-            print(f"  Note: 'row' (optional) may be an int (single row) or an array of ints (one animation spanning multiple grid rows, e.g. \"row\":[1,2]).", file=sys.stderr)
+            print(f"  Usage: --add-sheet file=X rows=N cols=N description=\"...\" entity=X anim=Y", file=sys.stderr)
+            print(f"  One action per sheet; the action may span multiple grid rows (--rows).", file=sys.stderr)
             sys.exit(1)
 
         # size: prefer auto-reading from the source PNG; fall back to --size arg.
         repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
-        file_rel = parts["file"]
         png_path = file_rel if os.path.isabs(file_rel) else os.path.join(repo_root, file_rel)
         size = _png_size(png_path)
         if size is None and "size" in parts:
@@ -382,54 +393,58 @@ def cmd_state(args):
         sheet["cols"] = int(parts["cols"])
         sheet["description"] = parts["description"]
 
-        # Parse entities JSON array
-        try:
-            entities = json.loads(parts["entities"])
-            if not isinstance(entities, list):
-                raise ValueError("entities must be a JSON array")
-            for i, e in enumerate(entities):
-                if not isinstance(e, dict) or "name" not in e or "anim" not in e:
-                    print(f"ERROR: entities[{i}] must have 'name' and 'anim' keys", file=sys.stderr)
-                    sys.exit(1)
-                # 'row' is OPTIONAL provenance. When present it may be a single
-                # int OR an array of ints (one animation spanning multiple grid
-                # rows, e.g. a long anim laid out 2xN).
-                r = e.get("row")
-                if r is not None and not (isinstance(r, int) or (isinstance(r, list) and all(isinstance(x, int) for x in r))):
-                    print(f"ERROR: entities[{i}].row must be an int or an array of ints", file=sys.stderr)
-                    sys.exit(1)
-            sheet["entities"] = entities
-        except json.JSONDecodeError as je:
-            print(f"ERROR: entities must be valid JSON array: {je}", file=sys.stderr)
-            sys.exit(1)
+        # ONE action per sheet: entity= + anim= build the single entities[] entry.
+        # Escape hatch: pass entities='[...]' directly for exotic cases
+        # (e.g. row-provenance arrays for a long anim laid out across rows).
+        if "entities" in parts:
+            try:
+                entities = json.loads(parts["entities"])
+                if not isinstance(entities, list):
+                    raise ValueError("entities must be a JSON array")
+                for i, e in enumerate(entities):
+                    if not isinstance(e, dict) or "name" not in e or "anim" not in e:
+                        print(f"ERROR: entities[{i}] must have 'name' and 'anim' keys", file=sys.stderr)
+                        sys.exit(1)
+                sheet["entities"] = entities
+            except json.JSONDecodeError as je:
+                print(f"ERROR: entities must be valid JSON array: {je}", file=sys.stderr)
+                sys.exit(1)
+        else:
+            ent = parts.pop("entity", None)
+            anim = parts.pop("anim", None)
+            if not ent or not anim:
+                print(f"ERROR: provide entity=X anim=Y (or entities='[...]' for exotic sheets)", file=sys.stderr)
+                sys.exit(1)
+            sheet["entities"] = [{"name": ent, "anim": anim}]
 
         # Optional: original_prompt from file
         if getattr(args, "prompt_file", None):
             with open(args.prompt_file) as pf:
                 sheet["original_prompt"] = pf.read().strip()
 
-        # Label = the subfolder this sheet lives in (also its editor group).
-        label = parts.pop("label", None)
-        if not label:
-            print(f"ERROR: --add-sheet requires 'label=<name>' so the sheet lands in "
-                  f"<project>/<label>/<sheet>.json (the structure render_editor.py reads).",
-                  file=sys.stderr)
+        # --- target: TWIN JSON next to the sheet PNG in the assets tree ---
+        # Convention: <assets_dir>/<category>/<entity>/<sheet>.png + <sheet>.json
+        # category/entity are derived from the sheet path — no free-form
+        # label/cropped_path params anymore.
+        file_rel = parts["file"]
+        if os.path.isabs(file_rel):
+            print(f"ERROR: file must be repo-relative, got {file_rel}", file=sys.stderr)
+            sys.exit(1)
+        sheet_parent = os.path.dirname(file_rel)          # .../assets/<category>/<entity>
+        if not sheet_parent or sheet_parent.count("/") < 1:
+            print(f"ERROR: file must live in <assets_dir>/<category>/<entity>/, got {file_rel}", file=sys.stderr)
             sys.exit(1)
 
-        # cropped_path: where cropped frames land (defaults to <proj>/assets/<label>).
-        cropped = parts.pop("cropped_path", None) or f"{proj}/assets/{label}"
-        sheet["cropped_path"] = cropped
-
-        # Reject unknown fields
+        # Reject unknown fields (label/cropped_path are gone by design)
         allowed_sheet_fields = {"file", "size", "rows", "cols", "description",
                                 "entities", "original_prompt", "crop"}
         extra = set(parts.keys()) - allowed_sheet_fields
         if extra:
             print(f"WARNING: ignoring unknown fields: {extra}", file=sys.stderr)
 
-        # One file per sheet, IDEMPOTENT: overwrite any existing file with the same name.
-        stem = os.path.splitext(os.path.basename(sheet["file"]))[0]
-        out = os.path.join(state_dir, label, stem + ".json")
+        # One file per sheet, IDEMPOTENT: overwrite any existing twin.
+        stem = os.path.splitext(os.path.basename(file_rel))[0]
+        out = os.path.join(sheet_parent, stem + ".json")
         os.makedirs(os.path.dirname(out), exist_ok=True)
         verb = "replaced" if os.path.exists(out) else "added"
         with open(out, "w") as f:
