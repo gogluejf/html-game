@@ -1,0 +1,100 @@
+{
+ "label": "levels",
+ "file": "petal-panic/assets/levels/level3/block_sheet.png",
+ "rows": 2,
+ "cols": 3,
+ "size": "1086x1448",
+ "description": "Level 3 block tiles: row 1 decorated (pillar+flowers), row 2 plain mossy; cols single/double/triple",
+ "entities": [
+  {
+   "name": "level3",
+   "anim": "block_single",
+   "frames": [
+    {
+     "file": "block_single_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      21,
+      503,
+      335,
+      326
+     ]
+    },
+    {
+     "file": "block_single_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      21,
+      1207,
+      337,
+      185
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level3"
+  },
+  {
+   "name": "level3",
+   "anim": "block_double",
+   "frames": [
+    {
+     "file": "block_double_f1.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      363,
+      362,
+      360,
+      463
+     ]
+    },
+    {
+     "file": "block_double_f2.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      373,
+      1044,
+      345,
+      348
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level3"
+  },
+  {
+   "name": "level3",
+   "anim": "block_triple",
+   "frames": [
+    {
+     "file": "block_triple_f1.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      726,
+      149,
+      347,
+      680
+     ]
+    },
+    {
+     "file": "block_triple_f2.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      730,
+      885,
+      344,
+      512
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level3"
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/blocks-l3-v1"
+ }
+}

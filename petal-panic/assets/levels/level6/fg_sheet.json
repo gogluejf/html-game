@@ -1,0 +1,26 @@
+{
+ "label": "levels",
+ "file": "petal-panic/assets/levels/level6/fg_sheet.png",
+ "rows": 1,
+ "cols": 1,
+ "size": "2172x724",
+ "description": "Foreground strip level 6 (Runaway Train)",
+ "entities": [
+  {
+   "name": "level6",
+   "anim": "fg",
+   "frames": [
+    {
+     "file": "fg_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": null
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level6"
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/reg3-fg_level6-v1"
+ }
+}

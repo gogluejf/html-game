@@ -1,0 +1,100 @@
+{
+ "label": "levels",
+ "file": "petal-panic/assets/levels/level1/block_sheet.png",
+ "rows": 2,
+ "cols": 3,
+ "size": "1536x2048",
+ "description": "Level 1 block tiles combined: row 1 with props, row 2 naked (small/medium/large)",
+ "entities": [
+  {
+   "name": "level1",
+   "anim": "block_single",
+   "frames": [
+    {
+     "file": "block_single_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      37,
+      574,
+      462,
+      326
+     ]
+    },
+    {
+     "file": "block_single_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      38,
+      1633,
+      463,
+      270
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level1"
+  },
+  {
+   "name": "level1",
+   "anim": "block_double",
+   "frames": [
+    {
+     "file": "block_double_f1.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      537,
+      371,
+      459,
+      508
+     ]
+    },
+    {
+     "file": "block_double_f2.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      532,
+      1446,
+      456,
+      443
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level1"
+  },
+  {
+   "name": "level1",
+   "anim": "block_triple",
+   "frames": [
+    {
+     "file": "block_triple_f1.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1025,
+      88,
+      479,
+      809
+     ]
+    },
+    {
+     "file": "block_triple_f2.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      1011,
+      1253,
+      483,
+      650
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level1"
+  }
+ ],
+ "crop": {
+  "pass": "/tmp/blocks-l1-v1"
+ }
+}
