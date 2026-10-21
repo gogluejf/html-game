@@ -130,7 +130,7 @@ otherwise.
 
 ## 2. Reticle Shot
 
-**Invokes:** Projectile
+**Invokes:** Projectile (plain) OR Explosive Projectile / Shockwave Projectile / Napalm (payload, chosen by `blastType`)
 
 **Effects:** Target Reticle (telegraph — `target-reticle` effect, fired and moved by this macro)
 
@@ -156,6 +156,21 @@ target-reticle effect (track → lock) → Projectile at locked point.
 - **speed** — projectile speed px/s.
 - **ttl** — projectile lifetime (s).
 - **damage** — projectile damage.
+- **blastType** — `plain` | `explosion` | `shockwave` | `napalm`. Chooses the
+  payload on impact. `plain` fires the bare Projectile primitive; the others
+  invoke the matching carrier macro (Explosive Projectile / Shockwave
+  Projectile / Napalm) so the shot detonates into that payload at its death
+  point. Default `plain`.
+- **blast.explosionRadius** — explosion blast circle (px), used when
+  `blastType=explosion`.
+- **blast.shockRadius** — shockwave ring max radius (px), used when
+  `blastType=shockwave`.
+- **blast.fireWidth** — napalm burn zone width (px), used when
+  `blastType=napalm`.
+
+Each payload reads ONLY its own size key from `blast`; the others are ignored.
+The carrier always uses `solidBehavior: 'stop'` so the shot detonates on
+surface contact, not through it.
 
 ### Rules
 
@@ -166,6 +181,8 @@ target-reticle effect (track → lock) → Projectile at locked point.
   while the bullet is in flight and dismisses with the shot's terminal event
   (hit or expire). Hosts need no distance math or manual dismissal.
 - Cancel tears down the effect instance (no ghost reticle).
+- The fired payload macro is promoted into the root handle's `handles` list so
+  hosts step AND draw its deferred zone children (napalm fire) uniformly.
 
 ---
 
@@ -943,7 +960,7 @@ Examples:
 
 ## 22. Sky Missile
 
-**Invokes:** Explosive Projectile (vertical fall)
+**Invokes:** Explosive Projectile / Shockwave Projectile / Napalm (vertical fall, chosen by `blastType`)
 
 **Effects:** Surface Target Marker (landing warning at the impact point)
 
@@ -958,9 +975,9 @@ with staggered positions/timing plus the launch-up visual. One missile, one id.
 
 ### Sequence
 
-Surface Target Marker at (x, groundY) → wait `timeToTarget` → Explosive
-Projectile spawns above the marker and falls vertically → detonate at the
-marked point.
+Surface Target Marker at (x, groundY) → wait `timeToTarget` → payload macro
+(explosion/shockwave/napalm) spawns above the marker and falls vertically →
+detonate at the marked point.
 
 ### Main parameters
 
@@ -972,10 +989,21 @@ marked point.
 - **dropHeight** — how far above the marker the missile becomes visible before
   falling (visual entry).
 - **fallSpeed** — descent speed (px/s).
-- **damage** — blast damage (passed to Explosive Projectile).
-- **radius** — blast radius (passed to Explosive Projectile).
+- **damage** — carrier contact + blast damage (passed to the payload macro).
 - **team / blastTeam** — who the carrier/blast hurts.
 - **markerStyle** — optional Surface Target Marker effect override.
+- **blastType** — `explosion` | `shockwave` | `napalm`. Chooses the payload on
+  impact. Default `explosion`. (No `plain`: a sky missile that is just a
+  falling bullet is not a distinct attack.)
+- **blast.explosionRadius** — explosion blast circle (px), used when
+  `blastType=explosion`.
+- **blast.shockRadius** — shockwave ring max radius (px), used when
+  `blastType=shockwave`.
+- **blast.fireWidth** — napalm burn zone width (px), used when
+  `blastType=napalm`.
+
+Each payload reads ONLY its own size key from `blast`; the others are ignored.
+The carrier uses `solidBehavior: 'stop'` so it detonates on surface contact.
 
 ### Rules
 
@@ -988,19 +1016,20 @@ marked point.
 - The fall is strictly vertical: no homing, no drift. Fairness comes from the
   warning, not from prediction.
 - Cancel during the warning removes the marker AND prevents the drop.
+- The fired payload macro is promoted into the root handle's `handles` list so
+  hosts step AND draw its deferred zone children (napalm fire) uniformly.
 - Demo/theater: stage a small platform under part of the drop zone so the
   column-resolution behavior is visible (same staging as the other platform
   demos).
 
 ### Composition
 
-**Surface Target Marker (effect) → delay → Explosive Projectile (vertical)**
+**Surface Target Marker (effect) → delay → payload macro (vertical)**
 
 Examples:
 - single use → boss "you're next" punishment shot
 - N × with stagger + ascent visual → Missile Rain (§7)
-
----
+- `blastType=napalm` → telegraphed burning-zone drop (area denial)
 
 ---
 
@@ -1070,6 +1099,56 @@ impact point. Telegraph blink warns before the ring launches.
 | blastTeam | neutral | foe \| ally \| neutral |
 
 **Invokes:** projectile (carrier) → shockwave (payload)
+
+---
+
+## 26. Napalm
+
+**Invokes:** Projectile (carrier) → Fire Area (payload, fired on the carrier's terminal hit/expire events)
+
+**Effects:** Debris (via Projectile carrier) + persistent Fire Area zone at the death point
+
+The straight-line, instant-detonation twin of Explosive Projectile (§12): a
+shot that leaves a persistent BURNING GROUND ZONE at its death point — impact
+or fuse expiry. Same composition shape as Explosive Projectile (no telegraph,
+no beat clock) — the payload is a `fireArea` primitive instead of a radial
+blast.
+
+The difference from Molotov (§10): Molotov LOBS (bomb carrier, arced throw);
+Napalm SHOTS (projectile carrier, straight line). Both leave the same
+`fireArea` payload.
+
+### Sequence
+
+Projectile (flight) → hit or expire → Fire Area anchored to the highest
+surface in the impact column (floor OR platform).
+
+### Main parameters
+
+- **speed** — px/s travel speed.
+- **direction** — radians (0 = right).
+- **ttl** — seconds before auto-cull.
+- **damage** — carrier contact damage.
+- **fireWidth** — burn area width (px); height fixed at 48.
+- **fireDuration** — how long the area burns (s).
+- **fireTickRate** — damage ticks per second in the area.
+- **fireDamage** — damage per tick in the area.
+- **origin** — marker label | {x,y} | null → attacker center.
+- **solidBehavior** — phase | stop | reflect (default stop: ignite on contact).
+- **gravity** — px/s² (>0 routes to the ballistic pool).
+- **team** — ally | foe: who the carrier shot hurts.
+- **size** — box size (px).
+- **blastTeam** — foe | ally | neutral: who the fire hurts.
+
+### Rules
+
+- Instant ignition — no telegraph, no blink, no beat clock (unlike Shockwave
+  Projectile, §25).
+- The fire zone anchors to the TOP of the highest surface in the impact column
+  (floor OR platform) via the shared `resolveImpactPoint` rule, so it never
+  renders through a platform or below the floor.
+- The fire zone is a deferred child exposed in `handles`; hosts step and draw
+  it like any other deferred payload.
 
 ---
 
