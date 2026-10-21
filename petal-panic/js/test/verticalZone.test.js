@@ -27,7 +27,7 @@ import { test } from 'node:test';
 
 import { Camera } from '../core/camera.js';
 import { VIEW_H } from '../core/view.js';
-import { LEVELS, buildLevelZones, VERTICAL_GROUND_Y } from '../world/level.js';
+import { LEVELS, buildLevelZones, roomFloorTop } from '../world/level.js';
 
 // --- Minimal DOM stub so systems/update.js (a browser module) loads in node. --
 // Same pattern as camera.test.js / clearSequence.test.js.
@@ -104,7 +104,7 @@ test('lethal bottom: a standing hero on the bottom platform is safe', () => {
   cam.y = cam.maxY; // fresh climb: camera at its lowest position
   const killLine = cam.y + VIEW_H; // bottom pixel of the screen
 
-  const standingHero = { y: VERTICAL_GROUND_Y - 40, h: 40 }; // feet on the floor
+  const standingHero = { y: roomFloorTop(vzone.rooms[0], vzone.orientation) - 40, h: 40 }; // feet on the floor
   assert.ok(standingHero.y < killLine, 'hero top is above the kill line');
   assert.equal(
     U.isLethalFall(standingHero, vzone),
@@ -174,7 +174,7 @@ test('restart: AREA_ENTRY→PLAY re-clamps the camera, resetting the ratchet', (
 test('restart: hero respawns at the bottom-platform entry, not mid-climb', () => {
   const hero = U.getHero();
   const b = vzone.bounds;
-  const bottom = VERTICAL_GROUND_Y;
+  const bottom = roomFloorTop(vzone.rooms[0], vzone.orientation);
 
   // A vertical zone's entry flag sits on the bottom supporting platform
   // (structure.md §4): entryFlag.y = bottom - flagHeight. Placing the hero at

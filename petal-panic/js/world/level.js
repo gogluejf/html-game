@@ -34,6 +34,7 @@ import {
   HORIZONTAL_ZONE_HEIGHT_UNITS,
 } from './macros.js';
 import { createRng } from './terrain.js';
+import { VIEW_W } from '../core/view.js';
 
 // ---------------------------------------------------------------------------
 // Level definitions (declarative — WHAT, not WHERE)
@@ -133,7 +134,7 @@ export const ZONE_FLOOR_H = UNIT_PX_Y;          // 48
  * Single floor formula (REVISION-zones-as-data §1): floor top of any room =
  * its grid-anchored ground line. Horizontal rooms anchor at GROUND_UNITS
  * (10 × 48 = 480 — the old ZONE_GROUND_Y); vertical rooms anchor at
- * VERTICAL_ZONE_HEIGHT_UNITS − 1 slab (the old VERTICAL_GROUND_Y).
+ * VERTICAL_ZONE_HEIGHT_UNITS − 1 slab.
  *
  * NOTE: the room box is NOT exactly floor + slab tall (horizontal rooms are
  * VIEW_H = 11.25 units), so "room.y + room.h − FLOOR_H" would drift 12px low.
@@ -147,17 +148,6 @@ export function roomFloorTop(room, orientation) {
     : GROUND_UNITS;
   return room.y + groundUnits * UNIT_PX_Y;
 }
-/**
- * Y of the floor top for a VERTICAL zone (screen coords, y=0 at top).
- *
- * The climb height is defined as the space ABOVE the ground surface: the zone
- * bounds end one floor-slab height below the walkable line, so the slab body
- * sits inside the world and its top edge is visible at the bottom of the view
- * — exactly like the horizontal floor (which shows a band below ZONE_GROUND_Y).
- * Every vertical anchor (macro elevation in build.js, the lethal-bottom rule
- * in death.js, entry placement) reads this same constant.
- */
-export const VERTICAL_GROUND_Y = VERTICAL_ZONE_HEIGHT_UNITS * UNIT_PX_Y - ZONE_FLOOR_H;
 /** Hero/entry-flag inset: shared 2-column unit padding. */
 export const ZONE_ENTRY_X = ZONE_ENTRY_PAD_UNITS * UNIT_PX_X;
 /**
@@ -187,7 +177,7 @@ export const ZONE_H_HORIZONTAL = HORIZONTAL_ZONE_HEIGHT_UNITS * UNIT_PX_Y;
  * World height of a vertical zone (px). A vertical area is an upward climb
  * (structure.md §4) that spans several screens, so its world is taller than a
  * single view. The climb height is the space ABOVE the floor; the floor slab
- * itself sits inside the world (its top edge = VERTICAL_GROUND_Y), so a
+ * itself sits inside the world (its top edge = roomFloorTop), so a
  * visible ground band shows at the bottom of the view like horizontal zones.
  */
 export const ZONE_H_VERTICAL = VERTICAL_ZONE_HEIGHT_UNITS * UNIT_PX_Y;
@@ -269,8 +259,9 @@ function flagY(zone, kind) {
     // which is at the BOTTOM of the zone → LARGEST y value.
     // Exit flag (top of climb): sits on the top platform near y=0 → SMALLEST y.
     if (kind === 'entry') {
-      // Bottom platform top is VERTICAL_GROUND_Y; flag top = surface - flag height.
-      return VERTICAL_GROUND_Y - ZONE_FLAG_H;
+      // Bottom platform top is the room floor (single formula); flag top =
+      // surface - flag height.
+      return roomFloorTop(zone.rooms[0], zone.orientation) - ZONE_FLAG_H;
     }
     // Top platform is at VERTICAL_TOP_PLATFORM_OFFSET; flag sits on it.
     return VERTICAL_TOP_PLATFORM_OFFSET - ZONE_FLAG_H;
@@ -411,7 +402,7 @@ export function buildLevelZones(levelDef) {
   // (the fight). The arena occupies the leftmost VIEW_W of the zone — exactly
   // where enterBossRoom() freezes the camera today; PR 5 switches
   // activeRoom instead of redrawing geometry over the hall.
-  const ARENA_W = ZONE_H_HORIZONTAL; // one screen wide, like today's fixed room
+  const ARENA_W = VIEW_W; // one screen wide (REVISION-zones-as-data §6)
   const hallRoom = { id: 'hall', x: 0, y: 0, w: ZONE_WIDTH_BOSS, h: ZONE_H_HORIZONTAL, platforms: null };
   const arenaRoom = { id: 'arena', x: 0, y: 0, w: ARENA_W, h: ZONE_H_HORIZONTAL, platforms: null };
   const bossBounds = { ...hallRoom }; // mirrors the active room (hall at entry)

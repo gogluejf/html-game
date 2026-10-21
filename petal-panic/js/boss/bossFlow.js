@@ -4,7 +4,7 @@
 // avoid a circular import back into systems/update.js.
 
 import { ctx } from '../world/context.js';
-import { ZONE_GROUND_Y, ZONE_ENTRY_X, ZONE_FLOOR_H } from '../world/level.js';
+import { ZONE_GROUND_Y, ZONE_ENTRY_X, ZONE_FLOOR_H, roomFloorTop } from '../world/level.js';
 import { VIEW_W } from '../core/view.js';
 import {BZ_COMBAT} from './bossZone.js';
 import { resolve } from '../core/collision.js';
@@ -60,38 +60,43 @@ export function enterBossRoom() {
  * and you are now in the arena" rather than a mid-walk teleport.
  */
 export function settleIntoBossRoom() {
-  // Swap the world to the battle room: a real 960px floor at [0, 960]. The
-  // run floor (0..1600) is replaced so the room's left edge IS screen pixel 0
-  // and its right edge IS screen pixel 960 — no offset math, no second
-  // coordinate frame. The boss enters from off-screen right of THIS floor.
+  // REVISION-zones-as-data §6: the arena is a first-class room built by
+  // level.js — nothing is redrawn. Switch the active room, re-bind the camera
+  // to the arena box (one screen → frozen on both axes), and place the hero
+  // at the arena's left entry. The arena floor already exists in
+  // zone.platforms; the solids swap below just swaps which room's floor is
+  // live in the collision world (hall floor out, arena floor in).
+  const zone = ctx.bossZoneDef;
+  const arena = zone.rooms.find((r) => r.id === 'arena');
+  zone.activeRoom = 'arena';
+  zone.bounds = { ...arena }; // keep the bounds mirror consistent
   const oldSolids = [...ctx.solidEntities];
   for (const e of oldSolids) ctx.collisionWorld.remove(e);
   ctx.solids.length = 0;
   ctx.solidEntities.length = 0;
-  const roomFloor = { x: 0, y: ZONE_GROUND_Y, w: VIEW_W, h: ZONE_FLOOR_H };
+  const roomFloor = { x: arena.x, y: roomFloorTop(arena, 'boss'), w: arena.w, h: ZONE_FLOOR_H };
   ctx.solids.push(roomFloor);
   const se = new SolidBox(roomFloor);
   ctx.solidEntities.push(se);
   ctx.collisionWorld.add(se);
-  // Freeze the camera on the room (screen x = world x).
-  ctx.camera.minX = ctx.camera.maxX = ctx.bossZone.roomX;
-  ctx.camera.minY = ctx.camera.maxY = 0;
-  ctx.camera.x = ctx.bossZone.roomX;
-  ctx.camera.y = 0;
-  // Hero at the room's left entry (same spot as any level start).
-  ctx.hero.x = ZONE_ENTRY_X;
-  ctx.hero.y = ZONE_GROUND_Y - ctx.hero.h;
+  // Re-bind the camera to the arena room (screen x = world x).
+  ctx.camera.setZoneBounds(zone);
+  ctx.hero.x = arena.x + ZONE_ENTRY_X;
+  ctx.hero.y = roomFloorTop(arena, 'boss') - ctx.hero.h;
   ctx.hero.vx = 0;
   ctx.hero.vy = 0;
   ctx.hero.checkpoint = { x: ctx.hero.x, y: ctx.hero.y };
   // Lift the black over the fade-in duration so the room reveals cleanly.
   ctx.clearSeq.timer = 0;
-  console.log(`[bossZone] settled into room — floor swapped to [0,${VIEW_W}], cam @${ctx.camera.x}, hero @${ctx.hero.x}`);
+  console.log(`[bossZone] settled into arena room — floor [${arena.x},${arena.x + arena.w}], cam @${ctx.camera.x}, hero @${ctx.hero.x}`);
 }
 
-/** Restore the run-phase floor (0..zone width) after a death / debug wrap. */
+/** Restore the run-phase (hall) room after a death / debug wrap. */
 export function restoreBossRunFloor() {
   const zone = ctx.bossZoneDef;
+  const hall = zone.rooms.find((r) => r.id === 'hall');
+  zone.activeRoom = 'hall';
+  zone.bounds = { ...hall }; // keep the bounds mirror consistent
   const oldSolids = [...ctx.solidEntities];
   for (const e of oldSolids) ctx.collisionWorld.remove(e);
   ctx.solids.length = 0;

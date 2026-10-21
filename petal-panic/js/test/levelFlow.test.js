@@ -34,7 +34,7 @@ globalThis.window = { addEventListener: noop, __selectedHero: 'scarlet' };
 
 const L = await import('../systems/lifecycle.js');
 const { S, getState, setState, tryTransition } = await import('../core/state.js');
-const { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y, VERTICAL_GROUND_Y } = await import('../world/level.js');
+const { LEVELS, buildLevelZones, buildAllZoneTerrain, ZONE_ENTRY_X, ZONE_GROUND_Y, roomFloorTop } = await import('../world/level.js');
 const { VIEW_H } = await import('../core/view.js');
 const { createRng } = await import('../world/terrain.js');
 const { populateArea, populationSnapshot, composeArea } = await import('../world/macros.js');
@@ -444,7 +444,7 @@ test('vertical fall: a hero below the bottom platform is lethal; on the platform
   const h = makeTestHero();
   // Hero standing ON the bottom platform: top edge well above the kill line.
   h.x = vzone.bounds.x + ZONE_ENTRY_X;
-  h.y = VERTICAL_GROUND_Y - h.h;
+  h.y = roomFloorTop(vzone.rooms[0], vzone.orientation) - h.h;
   assert.equal(U.isLethalFall(h, vzone), false,
     'a hero standing on the bottom platform is NOT below it (safe start)');
 
@@ -462,7 +462,7 @@ test('vertical fall: a hero below the bottom platform is lethal; on the platform
 test('vertical fall: a restart places the hero back on the bottom platform', () => {
   const zones = buildLevelZones(LEVEL_DEF);
   const vzone = zones.find((z) => z.kind === 'area' && z.orientation === 'vertical');
-  const bottom = VERTICAL_GROUND_Y; // bottom platform top surface
+  const bottom = roomFloorTop(vzone.rooms[0], vzone.orientation); // bottom platform top surface (shared formula)
 
   const h = makeTestHero();
   h.lives = 3;

@@ -25,7 +25,7 @@ import {
   ZONE_H_HORIZONTAL, ZONE_H_VERTICAL,
   ZONE_WIDTH_HORIZONTAL, ZONE_WIDTH_VERTICAL, ZONE_WIDTH_BOSS,
   ZONE_ENTRY_X, ZONE_EXIT_PAD, BOSS_TRIGGER_X,
-  VERTICAL_TOP_PLATFORM_OFFSET, VERTICAL_GROUND_Y,
+  VERTICAL_TOP_PLATFORM_OFFSET, roomFloorTop,
 } from '../world/level.js';
 import {
   UNIT_PX_X, UNIT_PX_Y,
@@ -183,9 +183,9 @@ test('vertical zone: entry flag at the bottom, exit flag at the top (structure.m
     'entry flag has a larger y (lower on screen) than the exit flag — ' +
       'entry is at the bottom of the climb, exit at the top',
   );
-  // Entry flag rests on the bottom supporting platform (top = VERTICAL_GROUND_Y,
+  // Entry flag rests on the bottom supporting platform (top = roomFloorTop,
   // one slab height above the world bottom so a ground band is visible).
-  assert.equal(vz.entryFlag.y, VERTICAL_GROUND_Y - 48, 'vertical entry flag sits on the bottom platform');
+  assert.equal(vz.entryFlag.y, roomFloorTop(vz.rooms[0], vz.orientation) - 48, 'vertical entry flag sits on the bottom platform');
   // Exit flag rests near the top of the climb (within the world bounds).
   assert.ok(vz.exitFlag.y >= vz.bounds.y, 'vertical exit flag is inside the world (top)');
   assert.ok(vz.exitFlag.y + 48 <= vz.bounds.y + vz.bounds.h, 'vertical exit flag fits within the world');

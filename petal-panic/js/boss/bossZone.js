@@ -143,15 +143,17 @@ export class BossZone {
     this.timer = 0;
 
     // --- Room geometry ------------------------------------------------------
-    // The battle room is the LEFTMOST VIEW_W of the zone, at the origin:
-    // x ∈ [0, VIEW_W]. The camera is frozen at x=0 by the trigger site
-    // (update.js), so screen x = world x — no translation, no computed
-    // center. The hero stands at the room's left entry; the boss enters from
-    // the right and settles on the RIGHT portion of the room (~75% across) so
-    // both combatants are on screen during the fight.
+    // REVISION-zones-as-data §6: the battle room is the zone's `arena` ROOM —
+    // a first-class box built by level.js, not a hardcoded VIEW_W slice. The
+    // camera re-binds to this room (setZoneBounds) when activeRoom switches,
+    // so screen x = world x with no translation or computed center. The hero
+    // stands at the room's left entry; the boss enters from the right and
+    // settles on the RIGHT portion of the room (~75% across) so both
+    // combatants are on screen during the fight.
+    const arena = zone.rooms?.find((r) => r.id === 'arena') ?? zone.bounds;
     const b = zone.bounds;
-    this.roomX = 0;
-    this.roomW = VIEW_W;
+    this.roomX = arena.x;
+    this.roomW = arena.w;
 
     // Boss rest position: RIGHT portion of the room (visible, not center).
     // Place it ~75% across the room width so it's clearly on the right side

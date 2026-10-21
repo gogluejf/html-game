@@ -30,7 +30,7 @@ import { applyGodMode, updateTheaterGamepad, setHeroRefSetter } from '../debug/d
 import { buildWorld, captureAreaMap, newGameSeed } from '../world/build.js';
 import { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver } from '../world/zoneLifecycle.js';
 export { CLEAR_SEQ, clearSeq, getClearSequence, getClearBanner, getClearFadeAlpha, onExitFlagReached, debugWrapToNextArea, stepClearSequence, beginClearFadeIn, beginAreaEntryPresentation, getAreaEntryFadeAlpha, stepAreaEntrySequence, heroEntryPosition, resetActiveZoneContent, retryFromGameOver, continueFromGameOver };
-import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, VERTICAL_GROUND_Y, BOSS_TRIGGER_X } from '../world/level.js';
+import { LEVELS, buildLevelZones, ZONE_ENTRY_X, ZONE_GROUND_Y, roomFloorTop, BOSS_TRIGGER_X } from '../world/level.js';
 import { startGame, bindAreaContext, rememberInitial, setRegenerateWorld, showAreaEntry } from '../systems/lifecycle.js';
 import { getLevelConfig } from '../world/levelConfigs.js';
 import { Theater } from '../debug/effect-theater.js';
@@ -658,7 +658,7 @@ export const bombAttacks = new BombAttackHost(() => {
   const az = getActiveZone(hero);
   return {
     pools: { projectilePool, specialPool }, collisionWorld, bombTerrainStepped: true,
-    groundY: az.orientation === 'vertical' ? VERTICAL_GROUND_Y : ZONE_GROUND_Y,
+    groundY: roomFloorTop(az.rooms[0], az.orientation),
     platforms: [...SOLIDS.slice(1), ...barrelSolidBoxes],
     camera: ctx.camera,
     world: { targets: [hero, ...realEnemies, ...(bossZone.bossCanTakeDamage() ? [boss] : [])] },
@@ -936,10 +936,9 @@ export function update(dt) {
   // for gameplay and the sandbox. Reflect bombs rest on the ground (vy=0)
   // but stay alive; the fuse keeps running until TTL → explodeSpecial().
   // 'stop' bombs die on impact → explode immediately.
-  // Floor is orientation-aware: vertical zones have their floor at
-  // VERTICAL_GROUND_Y, not ZONE_GROUND_Y (the horizontal floor level).
+  // Floor is the active room's floor (single formula — REVISION-zones-as-data §1).
   const activeZone = getActiveZone(hero);
-  const bombGroundY = activeZone.orientation === 'vertical' ? VERTICAL_GROUND_Y : ZONE_GROUND_Y;
+  const bombGroundY = roomFloorTop(activeZone.rooms[0], activeZone.orientation);
   for (const s of specialPool.activeItems) {
     if (!s.alive || s.type !== 'bomb' || s._attackId === 'bomb') continue;
     const settled = stepBombTerrain(s, dt, bombGroundY, SOLIDS.slice(1));
