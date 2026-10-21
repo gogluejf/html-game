@@ -164,18 +164,23 @@ collision body.
 
 ## 5. Movement / Charge
 
-**Effects:** —
+**Effects:** Surface Target Marker (optional boundary telegraph)
 
 Applies intentional attack movement to the attacker.
 
 ### Main parameters
 
-- **direction** — movement direction.
+- **direction** — movement direction (radians, full 0–2π).
 - **speed / force** — movement speed.
 - **duration / distance** — how long or how far movement continues.
 - **acceleration / easing** — optional movement profile.
 - **stopOnObstacle** — whether terrain stops the motion.
 - **bodyDamageOverride** — optional contact-damage change while moving.
+- **announceMarker** — bool (default false). When true, a Surface Target
+  Marker fires at the screen boundary in the charge direction before the
+  movement starts (same rules as the beam announcement, effects.md §28).
+- **announceDelay** — seconds the marker stays visible (default 1.0). A fixed
+  ~0.12s silence gap follows before the charge begins.
 
 A charge often needs no separate attack hitbox: the enemy's existing damaging
 body can be the attack. A Melee Hitbox can be combined when the animation

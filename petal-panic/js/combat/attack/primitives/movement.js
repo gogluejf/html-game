@@ -13,6 +13,8 @@
 
 import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
+import { fireDeclared } from '../../../effects/index.js';
+import { announceMarkerPoint } from './beam.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -31,6 +33,8 @@ const DEFAULTS = Object.freeze({
   acceleration: 2000,    // px/s² ramp-up (0 = instant, full speed on frame 1)
   stopOnObstacle: true,  // host stops the charge when the entity is blocked
   bodyDamageOverride: null, // e.g. { damage: 20 } applied while charging
+  announceMarker: false, // boundary telegraph before the charge starts
+  announceDelay: 1.0,    // s the marker stays visible
 });
 
 /**
@@ -106,23 +110,56 @@ registerPrimitive('charge', {
   params: { ...DEFAULTS },
   meta: {
     name: 'Movement / Charge',
-    desc: 'Drives the attacker along a direction with eased speed for a duration or distance. Host applies velocity + reports obstacles.',
+    effects: [
+      { type: 'surface-target-marker', desc: 'optional boundary telegraph before the charge starts (announceMarker)' },
+    ],
+    desc: 'Drives the attacker along a direction with eased speed for a duration or distance. Optional boundary announcement (announceMarker) telegraphs the entry side. Host applies velocity + reports obstacles.',
     params: [
-      { key: 'direction', desc: 'movement direction (radians)' },
+      { key: 'direction', desc: 'movement direction (radians, full 0–2π)' },
       { key: 'speed', desc: 'target speed (px/s)' },
       { key: 'duration', desc: 'seconds (when distance is null)' },
       { key: 'distance', desc: 'px — overrides duration' },
       { key: 'acceleration', desc: 'px/s² ramp (0 = instant)' },
       { key: 'stopOnObstacle', desc: 'stop when blocked by terrain' },
       { key: 'bodyDamageOverride', desc: 'contact damage while charging' },
+      { key: 'announceMarker', desc: 'bool (default false) — boundary marker before the charge starts' },
+      { key: 'announceDelay', desc: 's the marker stays visible (default 1.0)' },
     ],
   },
   impl(params, ctx) {
     const h = new AttackHandle('charge', null, declaredEffectsOf('charge'));
-    h.state = makeChargeState(params, ctx);
+    const state = makeChargeState(params, ctx);
+
+    // Announcement window: marker at the boundary → gap → charge begins.
+    const ANNOUNCE_GAP = 0.12;
+    const announceTotal = params.announceMarker ? Math.max(0, params.announceDelay) + ANNOUNCE_GAP : 0;
+    let announceElapsed = 0;
+    let started = !params.announceMarker;
+
+    if (params.announceMarker) {
+      const pt = announceMarkerPoint(
+        { origin: { x: ctx.attacker?.x ?? 0, y: ctx.attacker?.y ?? 0 }, direction: params.direction, length: params.distance ?? 9999 },
+        ctx,
+      );
+      fireDeclared({ type: 'surface-target-marker', params: {
+        x: pt.x, y: pt.y,
+        angle: params.direction + Math.PI / 2,
+        spinRate: 0,
+        duration: Math.max(0, params.announceDelay),
+      } }, h.declaredEffectTypes());
+    }
+
+    h.state = state;
     h.step = (dt, input) => {
-      const finished = stepCharge(h.state, params, ctx, dt, input);
-      if (finished) h._complete({ traveled: h.state.traveled, blocked: h.state.blocked });
+      if (state.done) return true;
+      // Announcement gate: delay the charge start.
+      if (!started) {
+        announceElapsed += dt;
+        if (announceElapsed < announceTotal) return false;
+        started = true;
+      }
+      const finished = stepCharge(state, params, ctx, dt, input);
+      if (finished) h._complete({ traveled: state.traveled, blocked: state.blocked });
       return finished;
     };
     return h;
