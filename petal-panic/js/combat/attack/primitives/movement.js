@@ -82,12 +82,9 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
   state.vx = Math.cos(p.direction) * state.currentSpeed;
   state.vy = Math.sin(p.direction) * state.currentSpeed;
 
-  // Apply motion to the attacker. Also write vx/vy so the base class can
-  // pick up momentum after the charge ends (gravity arcs it back).
+  // Apply motion to the attacker.
   const a = ctx.attacker;
   if (a && typeof a.x === 'number') {
-    a.vx = state.vx;
-    a.vy = state.vy;
     a.x += state.vx * dt;
     a.y += state.vy * dt;
   }
@@ -113,9 +110,8 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
   if (hitDistance || blocked) {
     state.done = true;
     state.blocked = blocked;
-    // Do NOT zero vx/vy: the entity keeps its charge momentum and gravity
-    // arcs it back down naturally (the "swing back" feel). The host's base
-    // integration picks up from here with restored gravity.
+    state.vx = 0;
+    state.vy = 0;
     return true;
   }
   return false;
