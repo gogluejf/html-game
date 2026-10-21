@@ -47,13 +47,16 @@ const DEFAULTS = Object.freeze({
   dropHeight: 260,    // px above the impact point where the missile becomes visible
   fallSpeed: 500,     // px/s descent speed
   damage: 30,         // carrier contact + blast damage (one value, like explosiveProjectile)
-  radius: 60,         // blast radius (px)
   team: 'foe',        // who the falling carrier hurts
   blastTeam: 'neutral', // who the blast hurts
   size: 14,           // carrier box size (px)
   markerStyle: null,  // surface-target-marker effect override
   blastType: 'explosion', // explosion | shockwave | napalm — payload on impact
-  blast: null,        // extra params forwarded to the chosen payload macro
+  blast: {               // per-payload size params (each payload reads its own key)
+    explosionRadius: 60, // explosion blast circle (px)
+    shockRadius: 150,    // shockwave ring max radius (px)
+    fireWidth: 96,       // napalm burn zone width (px)
+  },
 });
 
 /**
@@ -101,12 +104,13 @@ defineMacro('skyMissile', {
       { key: 'dropHeight', desc: 'px above the impact where the missile appears' },
       { key: 'fallSpeed', desc: 'descent speed (px/s)' },
       { key: 'damage', desc: 'contact + blast damage' },
-      { key: 'radius', desc: 'blast radius (px)' },
       { key: 'team', desc: 'who the falling carrier hurts' },
       { key: 'blastTeam', desc: 'who the blast hurts' },
       { key: 'size', desc: 'carrier box size (px)' },
       { key: 'blastType', desc: 'explosion | shockwave | napalm — payload on impact' },
-      { key: 'blast', desc: 'extra params forwarded to the chosen payload macro' },
+      { key: 'blast.explosionRadius', desc: 'explosion blast circle (px)' },
+      { key: 'blast.shockRadius', desc: 'shockwave ring max radius (px)' },
+      { key: 'blast.fireWidth', desc: 'napalm burn zone width (px)' },
     ],
   },
   impl(params, ctx) {
@@ -131,22 +135,31 @@ defineMacro('skyMissile', {
       const fallTtl = (p.dropHeight / Math.max(1, p.fallSpeed)) + 0.25;
       // Payload choice: explosion (default) | shockwave | napalm. All three
       // share the same carrier surface (origin/direction/speed/ttl/team), so
-      // one call site works; blast-specific params pass through via `blast`.
+      // one call site works. Each payload reads its OWN size key from `blast`.
+      const blast = p.blast ?? {};
       const payloadId = p.blastType === 'shockwave' ? 'shockwaveProjectile'
         : p.blastType === 'napalm' ? 'napalm'
         : 'explosiveProjectile';
+      // Map our named keys → the param each payload macro actually reads:
+      //   explosiveProjectile reads `radius`
+      //   shockwaveProjectile reads `radius`
+      //   napalm reads `fireWidth`
+      const payloadSize = {
+        explosionRadius: () => ({ radius: blast.explosionRadius }),
+        shockwave: () => ({ radius: blast.shockRadius }),
+        napalm: () => ({ fireWidth: blast.fireWidth }),
+      }[p.blastType === 'shockwave' ? 'shockwave' : p.blastType === 'napalm' ? 'napalm' : 'explosionRadius']();
       const m = invoke(payloadId, {
         origin: { x: pt.x - p.size / 2, y: spawnY },
         direction: Math.PI / 2,
         speed: p.fallSpeed,
         ttl: fallTtl,
         damage: p.damage,
-        radius: p.radius,
         team: p.team,
         blastTeam: p.blastTeam,
         size: p.size,
         solidBehavior: 'phase',
-        ...(p.blast ?? {}),
+        ...payloadSize,
       }, ctx);
       h.state.missile = m;
       // Promote the payload macro into the root's deferred-children list so

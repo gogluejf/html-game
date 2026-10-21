@@ -55,7 +55,11 @@ const DEFAULTS = Object.freeze({
   speed: 500,          // projectile speed px/s
   ttl: 2,              // projectile lifetime (s)
   damage: 10,          // projectile / contact damage
-  blast: null,         // extra params forwarded to the chosen payload macro
+  blast: {             // per-payload size params (each payload reads its own key)
+    explosionRadius: 70, // explosion blast circle (px)
+    shockRadius: 150,    // shockwave ring max radius (px)
+    fireWidth: 96,       // napalm burn zone width (px)
+  },
 });
 
 /**
@@ -94,7 +98,9 @@ defineMacro('reticleShot', {
       { key: 'speed', desc: 'projectile speed px/s' },
       { key: 'ttl', desc: 'projectile lifetime (s)' },
       { key: 'damage', desc: 'projectile / contact damage' },
-      { key: 'blast', desc: 'extra params forwarded to the chosen payload macro' },
+      { key: 'blast.explosionRadius', desc: 'explosion blast circle (px)' },
+      { key: 'blast.shockRadius', desc: 'shockwave ring max radius (px)' },
+      { key: 'blast.fireWidth', desc: 'napalm burn zone width (px)' },
     ],
   },
   impl(params, ctx) {
@@ -158,10 +164,10 @@ defineMacro('reticleShot', {
         const o = targetCenter(ctx.attacker) ?? { x: 0, y: 0 };
         const dir = Math.atan2(pt.y - o.y, pt.x - o.x);
         const blastType = params.blastType ?? 'plain';
+        const blast = params.blast ?? {};
         // Plain: the primitive itself. Anything else: a payload macro that
-        // composes the projectile carrier with its detonation (explosion /
-        // shockwave ring / napalm fire zone). Carrier params are shared by
-        // all of them; blast-specific params pass through via `blast`.
+        // composes the projectile carrier with its detonation. Each payload
+        // reads its OWN size key from `blast`.
         let shot;
         if (blastType === 'plain') {
           shot = invoke('projectile', {
@@ -172,13 +178,21 @@ defineMacro('reticleShot', {
             damage: params.damage,
           }, ctx);
         } else {
-          shot = invoke(blastType, {
+          const payloadId = blastType === 'shockwave' ? 'shockwaveProjectile'
+            : blastType === 'napalm' ? 'napalm'
+            : 'explosiveProjectile';
+          const payloadSize = blastType === 'shockwave'
+            ? { radius: blast.shockRadius }
+            : blastType === 'napalm'
+              ? { fireWidth: blast.fireWidth }
+              : { radius: blast.explosionRadius };
+          shot = invoke(payloadId, {
             origin: { x: o.x, y: o.y },
             direction: dir,
             speed: params.speed,
             ttl: params.ttl,
             damage: params.damage,
-            ...(params.blast ?? {}),
+            ...payloadSize,
           }, ctx);
         }
         if (shot?.entity) {
