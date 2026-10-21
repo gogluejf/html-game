@@ -116,7 +116,7 @@ const SANDBOX_PRESETS = {
   clusterBomb: { direction: -0.5, arc: 800, bounce: false, ttl: 3, damage: 20, radius: 40, count: 4, childAngle: 120 * DEG, childDirection: -Math.PI / 2, childForce: 300, childArc: 700, childTtl: 2, childDamage: 15, childRadius: 30 },
   targetedBeam: { duration: 1.2, lockTime: 0.5, color: '#ff5555', radius: 30, tracking: true, beamDuration: 1.0, beamWidth: 36, beamLength: 1000, damage: 15, tickRate: 8, team: 'ally' },
   sweepingBeam: { direction: 0, sweepAngle: 67.5 * DEG, length: 1000, width: 24, speed: 0, holdDuration: 0.4, sweepDuration: 1.0, endHoldDuration: 0.3, fadeOut: 0.5, damage: 20, tickRate: 8, team: 'ally', shimmerLow: 0.1, shimmerHigh: 0.35, announceMarker: true, announceDelay: 1.0 },
-  laneSequence: { mode: 'charge', laneCount: 3, laneSpacing: 120, laneOffset: 0, lanes: null, laneOrder: 'bottom_to_top', sideMode: 'fixed_left', alternateStartSide: 'left', announceDelay: 0.5, dashSpeed: 1200, damage: 20, knockback: null, beamDuration: 0.8, beamWidth: 36, tickRate: 8, interval: 0.15, team: 'foe', style: null },
+  laneSequence: { mode: 'charge', laneCount: 2, laneSpacing: 120, laneOffset: 0, lanes: null, laneOrder: 'bottom_to_top', sideMode: 'fixed_left', alternateStartSide: 'left', announceDelay: 0.5, dashSpeed: 1200, damage: 20, knockback: null, beamDuration: 0.8, beamWidth: 36, tickRate: 8, interval: 0.15, team: 'ally', style: null },
   surfaceWave: { x: ATTACKER_HOME.x + 16, y: GROUND_Y, direction: 'right', speed: 300, height: 24, width: 28, damage: 15, ttl: null, team: 'foe' },
   shockwave: { x: (ATTACKER_HOME.x + TARGET_POS.x) / 2 + 16, y: GROUND_Y - 24, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, shakeIntensity: 5, team: 'neutral' },
   shockwaveBomb: { direction: -0.5, arc: 800, bounce: false, explodeOnContact: true, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, blastTeam: 'neutral' },
@@ -809,7 +809,7 @@ export const AttackTheater = {
           }
         } else if (h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike' || h.id === 'dustZone') {
           finished = h.step(DT, [this._target]);
-        } else if (h.id === 'stomp' || h.id === 'stompWave' || h.id === 'surfaceWave' || h.id === 'shockwaveProjectile' || h.id === 'shockwaveBomb') {
+        } else if (h.id === 'laneSequence' || h.id === 'stomp' || h.id === 'stompWave' || h.id === 'surfaceWave' || h.id === 'shockwaveProjectile' || h.id === 'shockwaveBomb') {
           // Stomp family + shockwave projectile: the macro owns its sequence
           // (telegraph → beat → ring); pass every live victim as candidates.
           // The macro's _complete guard holds it open during the pending beat

@@ -196,9 +196,14 @@ export const STAGING = {
   targetedBeam: {
     setup(t) {
       // Targeted Beam macro demo: same elevated-shooter staging as reticleShot.
-      // The attacker hovers on a platform; the target walks left. The macro
+      // The attacker hovers on a platform; the target walks right. The macro
       // tracks → locks → fires a sustained beam through the locked point.
-      return tagged(elevatedShooter(t, 'walkLeft'), STAGING.targetedBeam);
+      const c = elevatedShooter(t, 'walkLeft');
+      c.baseX = 80;
+      c.velocity = 160;
+      t._target.x = c.baseX;
+      t._target.vx = c.velocity;
+      return tagged(c, STAGING.targetedBeam);
     },
     update: walkLeftUpdate,
   },
@@ -206,16 +211,26 @@ export const STAGING = {
   sweepingBeam: {
     setup(t) {
       // Sweeping Beam macro demo: the attacker is on the platform; the target
-      // strafes so the sweep visibly catches (or misses) it during the move.
-      return tagged(elevatedShooter(t, 'strafe'), STAGING.sweepingBeam);
+      // walks left-to-right so it crosses the sweep during the move.
+      const c = elevatedShooter(t, 'strafe');
+      c.baseX = 80;
+      c.velocity = 160;
+      t._target.x = c.baseX;
+      t._target.vx = c.velocity;
+      return tagged(c, STAGING.sweepingBeam);
     },
     update: strafeUpdate,
   },
   laneSequence: {
     setup(t) {
-      // Lane Sequence: target stands in the middle; attacks sweep across lanes.
-      t._target.x = VIEW_W / 2 - 16;
-      t._target.y = GROUND_Y - 48;
+      // Two occupied rows, using the same real Enemy/platform lifecycle as stomp.
+      t._target.x = VIEW_W / 2 - t._target.w / 2;
+      t._target.y = GROUND_Y - t._target.h;
+      const top = GROUND_Y - t._params.laneOffset - t._params.laneSpacing;
+      const x = VIEW_W / 2 - STOMP_VIC_DEF.w / 2;
+      t._stompPlatforms = [{ x: x - 12, y: top, w: STOMP_VIC_DEF.w + 24 }];
+      t._stompVics = [new Enemy(STOMP_VIC_DEF, x, top - STOMP_VIC_DEF.h)];
+      for (const v of t._stompVics) t._world.add(v);
       return tagged({ kind: 'laneSequence' }, STAGING.laneSequence);
     },
   },
@@ -231,7 +246,7 @@ export const STAGING = {
       const c = elevatedShooter(t, 'strafe');
       // Give the walker its real velocity BEFORE the invoke so the intercept
       // math has something to lead against (the choreo keeps moving it).
-      t._target.vx = -160;
+      t._target.vx = c.velocity ?? -160;
       t._target.vy = 0;
       return tagged(c, STAGING.predictiveShot);
     },
@@ -496,8 +511,8 @@ export const STAGING = {
 function walkLeftUpdate(t, c, dt) {
   c.t += dt;
   if (c.t < 3) {
-    t._target.x = c.baseX - c.t * 160;
-    t._target.vx = -160;
+    t._target.x = c.baseX + c.t * (c.velocity ?? -160);
+    t._target.vx = c.velocity ?? -160;
     t._target.vy = 0;
   } else if (!c.parked) {
     c.parked = true;
@@ -520,8 +535,8 @@ function walkLeftUpdate(t, c, dt) {
 function strafeUpdate(t, c, dt) {
   c.t += dt;
   if (c.t < 3) {
-    t._target.x = c.baseX - c.t * 160; // steady leftward walk
-    t._target.vx = -160;               // d/dt for the aim math
+    t._target.x = c.baseX + c.t * (c.velocity ?? -160); // configured walk direction
+    t._target.vx = c.velocity ?? -160;               // d/dt for the aim math
     t._target.vy = 0;
   } else if (!c.parked) {
     c.parked = true;

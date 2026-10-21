@@ -24,7 +24,8 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { getPrimitive, getMacro } from '../registry.js';
-import { VIEW_W, VIEW_H } from '../../../core/view.js';
+import { makeHitbox, resetHitbox, processHitboxes } from '../../hitbox.js';
+import { VIEW_W } from '../../../core/view.js';
 import { getActiveFloorY } from '../../../world/accessors.js';
 import { ZONE_GROUND_Y } from '../../../world/level.js';
 
@@ -146,6 +147,10 @@ defineMacro('laneSequence', {
     const h = new AttackHandle('laneSequence', null, declaredEffectsOf('laneSequence'));
     const laneSeq = resolveLanes(params, ctx);
     const n = laneSeq.length;
+    // Charge is motion-only. This macro owns contact, once per victim per lane,
+    // through the same physical hitbox/team routing used by beam.
+    const contact = makeHitbox({ owner: ctx.attacker, team: params.team,
+      box: null, damage: params.damage, method: 'contact' });
 
     h.state = {
       laneIdx: 0,
@@ -190,6 +195,7 @@ defineMacro('laneSequence', {
       } else {
         // charge
         positionOffscreen(side, y);
+        resetHitbox(contact);
         handle = invoke('charge', {
           direction,
           speed: params.dashSpeed,
@@ -225,7 +231,22 @@ defineMacro('laneSequence', {
           break;
 
         case 'attacking':
-          if (s.active) s.active.step(dt, targets ?? []);
+          if (s.active) {
+            if (params.mode === 'beam') {
+              s.active.step(dt, targets ?? []);
+            } else {
+              const before = s.active.state.traveled;
+              s.active.step(dt); // charge accepts obstacle input, NOT targets
+              // No contact during the announcement/gap or interval.
+              if (s.active.state.traveled > before && ctx.attacker) {
+                const a = ctx.attacker;
+                contact.box = a.worldBox ? a.worldBox() : { x: a.x, y: a.y, w: a.w, h: a.h };
+                processHitboxes([contact], targets ?? [], (_hb, target, dealt) => {
+                  h._emit('hit', { target, dealt });
+                });
+              }
+            }
+          }
           break;
 
         case 'interval':

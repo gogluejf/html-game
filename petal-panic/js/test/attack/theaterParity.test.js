@@ -11,6 +11,7 @@
 
 import { strict as assert } from 'node:assert';
 import { AttackTheater } from '../../debug/attack-theater.js';
+import { invoke } from '../../combat/attack/engine.js';
 import { Enemy } from '../../enemies/enemy.js';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
 import { stepBombTerrain } from '../../combat/attack/primitives/bomb.js';
@@ -151,5 +152,80 @@ ok('molotov parity: identical zone placement across context shapes', () => {
   assert.equal(Math.round(za[0].y), Math.round(zb[0].y), `same zone y: ${za[0].y} vs ${zb[0].y}`);
   assert.equal(Math.round(za[0].x), Math.round(zb[0].x), 'same zone x');
 });
+
+// Lane sequences use the ordinary host path, not direct child stepping.
+for (const mode of ['charge', 'beam']) {
+  for (const sideMode of ['fixed_left', 'fixed_right', 'alternate']) {
+    ok(`laneSequence ${mode}/${sideMode}: both rows hit, other rows safe`, () => {
+      const t = AttackTheater;
+      t.open();
+      try {
+        t.index = t.entries.indexOf('laneSequence');
+        t._tweaks.laneSequence = { mode, sideMode };
+        t._loadParams();
+        t._replay();
+        const h = t._handles[0];
+        const upper = t._stompVics[0];
+        const platform = t._stompPlatforms[0];
+        assert.ok(upper instanceof Enemy);
+        assert.equal(upper.y + upper.h, platform.y);
+        assert.equal(t._ctx().platforms[0], platform);
+        assert.ok(t._ctx().world.targets.includes(upper));
+        const safe = new Enemy({ id: 'safe', w: 28, h: 28,
+          stats: { stamina: 999, defense: 0, fly: false } },
+          upper.x + 80, GROUND_Y - 240 - 28);
+        t._stompVics.push(safe);
+        t._stompPlatforms.push({ x: safe.x - 12, y: safe.y + safe.h, w: safe.w + 24 });
+        t._world.add(safe);
+        const safeHP = safe.hp;
+        const hits = new Map();
+        h.on('hit', ({ target }) => hits.set(target, (hits.get(target) ?? 0) + 1));
+        for (let i = 0; i < 30; i++) t.update(DT);
+        assert.equal(t._target.hp, 999, 'announcement cannot damage');
+        assert.equal(upper.hp, 999);
+        const initialX = t._attacker.x;
+        for (let i = 0; i < 450; i++) t.update(DT);
+        assert.equal(h.state.done, true, 'all configured rows finish');
+        assert.equal(h.state.laneIdx, t._params.laneCount);
+        assert.equal(hits.get(t._target), mode === 'charge' ? 1 : 6);
+        assert.equal(hits.get(upper), mode === 'charge' ? 1 : 6);
+        assert.equal(safe.hp, safeHP, 'outside both attack volumes');
+        assert.equal(upper.y + upper.h, platform.y, 'real platform supports victim');
+        if (mode === 'beam') assert.equal(t._attacker.x, initialX, 'explicit beam origin does not move attacker');
+        else assert.notEqual(t._attacker.x, initialX, 'charge moves attacker');
+        t._replay();
+        assert.equal(t._stompVics.length, 1, 'replay rebuilds staging without duplicates');
+      } finally {
+        delete t._tweaks.laneSequence;
+        t.close();
+      }
+    });
+  }
+}
+
+for (const mode of ['charge', 'beam']) {
+  ok(`laneSequence ${mode}: three engine rows preserve foe routing and worldBox`, () => {
+    const attacker = { x: 140, y: GROUND_Y - 48, w: 32, h: 48, gravity: 1000 };
+    const victim = (y, layer = LAYER.HERO) => ({
+      x: 400, y, w: 28, h: 28, alive: true, layer, hp: 999,
+      takeDamage(n) { this.hp -= n; return n; },
+    });
+    const rows = [0, 120, 240].map(offset => victim(GROUND_Y - offset - 28));
+    const friendly = victim(GROUND_Y - 28, LAYER.ENEMY);
+    const outside = victim(GROUND_Y - 28);
+    outside.worldBox = () => ({ x: outside.x, y: GROUND_Y - 360, w: 28, h: 28 });
+    const h = invoke('laneSequence', { mode }, { attacker }); // gameplay default remains foe
+    const targets = [...rows, friendly, outside];
+    for (let i = 0; i < 600; i++) h.step(DT, targets);
+    assert.ok(h.state.done);
+    for (const target of rows) assert.equal(target.hp, mode === 'charge' ? 979 : 879);
+    assert.equal(friendly.hp, 999, 'same-team candidate remains safe');
+    assert.equal(outside.hp, 999, 'worldBox, not sprite bounds, determines overlap');
+    assert.equal(attacker.gravity, 1000, 'charge restores gravity');
+    const hp = rows.map(t => t.hp);
+    assert.equal(h.step(1, targets), true);
+    assert.deepEqual(rows.map(t => t.hp), hp, 'completed sequence cannot damage');
+  });
+}
 
 console.log(`\ntheaterParity: ${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);
