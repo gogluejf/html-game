@@ -53,10 +53,16 @@ function elevatedShooter(t, kind) {
 export const STAGING = {
   charge: {
     setup(t) {
-      // Charge DASHES AT the target: face it, run until body contact ends it.
+      // Charge DASHES AT the target by default: face it, run until body
+      // contact ends it. Respects user tweaks: if direction/duration were
+      // adjusted in the panel, use those instead of the auto-aim defaults.
       const tCx = t._target.x + t._target.w / 2;
-      t._params.direction = t._attacker.x < tCx ? 0 : Math.PI;
-      t._params.duration = 99; // stop only on completion below
+      if (!t._tweaks['charge']?.direction) {
+        t._params.direction = t._attacker.x < tCx ? 0 : Math.PI;
+      }
+      if (!t._tweaks['charge']?.duration) {
+        t._params.duration = 99; // stop only on completion below
+      }
       return tagged({ kind: 'chargeToTarget' }, STAGING.charge);
     },
     update(t, c) {
