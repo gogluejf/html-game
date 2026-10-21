@@ -146,11 +146,25 @@ export function stepProjectile(ent, h) {
     // owns this juice so every host gets it for free (same pattern as bomb's
     // detonation VFX). 'phase' shots never die on terrain; specials handle
     // their own fizzle/detonation effects.
+    // Terminal event carries the DEATH POINT. Pool slots are recycled after
+    // death, so listeners must never re-read ent.x/y — the coordinates are
+    // captured here, at the moment of death (same contract as bomb's
+    // 'detonate' {x,y}). Existing listeners ignore the payload; it is purely
+    // additive.
+    //
+    // TUNNELING: a fast shot can be deeply inside its victim/terrain by the
+    // time the per-frame AABB check fires (12px box at 700px/s = ~12px/frame).
+    // The raw center then reads as "victim middle". If the collision handler
+    // recorded the entry-edge impact point (ent._impactPoint), use THAT
+    // instead — it rewinds the shot to where it first crossed the target face.
+    const ip = ent._impactPoint;
+    const cx = ip ? ip.x : ent.x + ent.w / 2;
+    const cy = ip ? ip.y : ent.y + ent.h / 2;
     if (!ent._attackHit && !ent.ttlExpired && ent.solidBehavior === 'stop') {
-      fireDeclared({ type: 'debris', params: { x: ent.x + ent.w / 2, y: ent.y + ent.h / 2 } }, h.declaredEffectTypes());
+      fireDeclared({ type: 'debris', params: { x: cx, y: cy } }, h.declaredEffectTypes());
     }
-    if (ent._attackHit) h._emit('hit', { dealt: ent.damage });
-    else h._emit('expire');
+    if (ent._attackHit) h._emit('hit', { dealt: ent.damage, x: cx, y: cy });
+    else h._emit('expire', { x: cx, y: cy });
     h._complete();
     return true;
   }

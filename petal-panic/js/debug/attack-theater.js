@@ -35,6 +35,7 @@ import { Debug } from '../debug/debug.js';
 import { updateEffects, drawEffects, resetEffects, fireManual, CATALOG } from '../effects/index.js';
 import { particles } from '../effects/particles.js';
 import { damage, flashTarget } from '../combat/damage.js';
+import { entryImpactPoint } from '../combat/entryImpact.js';
 import { explodeSpecial } from '../combat/shooting.js';
 import { isSpecialType } from '../objects/specialWeapons.js';
 import { ctx as gameCtx } from '../world/context.js';
@@ -415,6 +416,10 @@ export const AttackTheater = {
       const target = proj === a ? b : a;
       if (target.layer !== LAYER.ENEMY && target.layer !== LAYER.BOSS) return;
       if (!target.alive || target.hp == null) return;
+      // Entry-edge impact point for engine carriers (tunneling correction):
+      // rewind the shot to where its leading face first touched the target,
+      // and snap its rendered position there so it dies TOUCHING the face.
+      proj._impactPoint = entryImpactPoint(proj, target.worldBox ? target.worldBox() : target);
       const dealt = typeof target.takeDamage === 'function'
         ? target.takeDamage(proj.damage ?? 10, this._attacker, 'projectile')
         : damage(this._attacker, target, proj.damage ?? 10, 'projectile');

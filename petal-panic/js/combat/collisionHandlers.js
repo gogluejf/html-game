@@ -31,6 +31,12 @@ import { ctx } from '../world/context.js';
 // Top contacts are resolved before CollisionWorld dispatch. Only reflect a
 // remaining overlap: never run minimum-penetration reflection on a resolved
 // top (especially at corners). PLATFORM-layer one-way tops never dispatch here.
+
+// Entry-edge impact point (tunneling correction) lives in the leaf module
+// combat/entryImpact.js so the Attack Theater sandbox can import it without
+// pulling in the gameplay chain. Re-exported here for existing consumers.
+export { entryImpactPoint } from './entryImpact.js';
+
 function hitSolidTerrain(projectile, target) {
   const box = target.worldBox();
   if (!aabbOverlap(projectile.worldBox(), box)) return;
@@ -102,6 +108,12 @@ export function registerCollisionHandlers(collisionWorld) {
       //   • 'reflect' — bombs: bounce off the surface, keep flying; the fuse
       //                keeps running so they still detonate on timer/barrel
       if (target instanceof SolidBox) {
+        // Record the entry-edge impact point BEFORE hitSolidTerrain() kills
+        // the shot — engine carriers (shockwaveProjectile et al.) read it for
+        // their telegraph/ring centering. 'reflect' shots keep flying; clear
+        // any stale value so a later death doesn't reuse an old contact.
+        const ip = entryImpactPoint(allyProj, target.worldBox());
+        allyProj._impactPoint = ip ?? null;
         hitSolidTerrain(allyProj, target);
         return;
       }
@@ -149,6 +161,10 @@ export function registerCollisionHandlers(collisionWorld) {
       // internally (hp<=0 -> die() -> death TTL). Placeholder targets (plain
       // Entity, no death pipeline) use raw damage() and are removed on death.
       const isRealEnemy = typeof target.takeDamage === 'function';
+      // Entry-edge impact point for engine carriers (tunneling correction):
+      // a fast shot is already inside the victim when this fires; rewind to
+      // the contact edge so telegraphs/rings center where it actually hit.
+      allyProj._impactPoint = entryImpactPoint(allyProj, target.worldBox ? target.worldBox() : target);
       const dealt = isRealEnemy
         ? target.takeDamage(allyProj.damage, hero, 'projectile')
         : damage(hero, target, allyProj.damage, 'projectile');

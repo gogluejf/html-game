@@ -14,7 +14,7 @@ const DEFAULTS = Object.freeze({
   damage: 15,           // carrier contact damage AND blast damage
   radius: 70,           // blast radius (px)
   origin: null,         // marker label | {x,y} | null → attacker center
-  solidBehavior: 'phase', // phase | stop | reflect
+  solidBehavior: 'stop', // phase | stop | reflect — stop: detonate on contact
   gravity: 0,           // px/s²; >0 routes to the ballistic (Special) pool
   team: 'ally',        // ally | foe — who the carrier shot hurts
   size: 12,             // box size
@@ -96,10 +96,15 @@ defineMacro('explosiveProjectile', {
     h.inner = carrier;
 
     // Projectile carriers emit 'hit'/'expire' (not 'detonate'). Bridge them
-    // to the carrier handle's detonate so the base's onDetonate fires.
-    const fireBlastAt = () => {
-      const ent = carrier.entity;
-      const x = ent.x + ent.w / 2, y = ent.y + ent.h / 2;
+    // to the carrier handle's detonate so the base's onDetonate fires. The
+    // event payload carries the DEATH POINT captured by stepProjectile() —
+    // pool slots are recycled after death, so re-reading ent.x/y would land
+    // the blast on the recycled slot's position, not the true impact.
+    const fireBlastAt = ({ x, y } = {}) => {
+      if (x == null || y == null) {
+        const ent = carrier.entity;
+        x = ent.x + ent.w / 2; y = ent.y + ent.h / 2;
+      }
       carrier._emit('detonate', { x, y, contact: true });
     };
     carrier.on('hit', (info) => {

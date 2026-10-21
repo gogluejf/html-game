@@ -167,11 +167,19 @@ defineMacro('shockwaveBomb', {
     h.entity = carrier.entity;
     h.inner = carrier;
 
-    // Bridge bomb death → doDetonate at the impact point. Listen on BOTH
-    // handles (hosts emit on whichever they step). doDetonate is guarded.
-    const fireAtImpact = () => {
-      const ent = carrier.entity;
-      doDetonate({ x: ent.x + ent.w / 2, y: ent.y + ent.h / 2 });
+    // Bridge bomb death → doDetonate at the impact point. The 'detonate' event
+    // payload carries the DEATH POINT captured by stepBomb() at the moment of
+    // death — pool slots are recycled after, so re-reading ent.x/y would land
+    // the telegraph + ring on the recycled slot's position, not the true
+    // impact. Listen on BOTH handles (hosts emit on whichever they step).
+    // doDetonate is guarded idempotent.
+    const fireAtImpact = ({ x, y } = {}) => {
+      if (x == null || y == null) {
+        const ent = carrier.entity;
+        doDetonate({ x: ent.x + ent.w / 2, y: ent.y + ent.h / 2 });
+        return;
+      }
+      doDetonate({ x, y });
     };
     h.on('detonate', fireAtImpact);
     h.on('expire', fireAtImpact);
