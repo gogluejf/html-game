@@ -44,7 +44,7 @@ const DEFAULTS = Object.freeze({
   knockback: null,              // {x,y} or null (charge only)
   // Beam params:
   beamDuration: 0.8,            // s the beam stays hot per lane
-  beamWidth: 24,                // damaging thickness px
+  beamWidth: 36,                // damaging thickness px
   tickRate: 8,                  // damage ticks per second (beam only)
   // Shared:
   interval: 0.15,               // pause between lanes (s) — starts after attack ends
