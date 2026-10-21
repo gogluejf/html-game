@@ -197,6 +197,12 @@ defineMacro('reticleShot', {
         }
         if (shot?.entity) {
           h.shot = shot;
+          // Promote the payload macro into the root's deferred-children list
+          // so hosts (theater/gameplay) step AND draw its zone children
+          // uniformly — same pattern as skyMissile. Without this the napalm
+          // fire zone / explosion is invisible: it lives only under h.shot.
+          if (!h.handles) h.handles = [];
+          h.handles.push(shot);
           shot.on('hit', (info) => h._emit('hit', info));
           shot.on('expire', () => h._emit('expire'));
         }

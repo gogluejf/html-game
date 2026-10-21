@@ -745,13 +745,23 @@ export const AttackTheater = {
       if (h.id === 'meleeHitbox' && typeof h.step === 'function') {
         finished = h.step([this._target]);
       } else if (h.id === 'reticleShot') {
-        // Dumb host: the macro owns track → lock → fire, and its shot handle
-        // owns flight. We just step both; when the bullet ends (hit/expire)
-        // the macro emits its terminal event and the reticle effect dismisses
-        // with it — no distance math or manual fx.complete() here.
+        // Dumb host: the macro owns track → lock → fire. The shot handle may
+        // be a plain projectile (blastType=plain) OR a carrier macro
+        // (explosiveProjectile/napalm/shockwaveProjectile). For carrier
+        // macros the entity lives at h.shot.inner.entity and the macro's
+        // .step() drives the carrier + payload. Step both correctly.
         finished = h.step(DT);
-        if (h.shot?.entity) {
-          finished = stepProjectile(h.shot.entity, h.shot) || finished;
+        const shot = h.shot;
+        if (shot) {
+          // Carrier macros (explosiveProjectile, napalm, shockwaveProjectile)
+          // own their sequence via .step() — this drives the carrier flight
+          // AND the detonation payload.
+          if (typeof shot.step === 'function' && shot.id !== 'projectile') {
+            finished = shot.step(DT, [this._target]) || finished;
+          } else if (shot.entity) {
+            // Plain projectile: step the entity directly.
+            finished = stepProjectile(shot.entity, shot) || finished;
+          }
         }
       } else if (h.id === 'targetedBeam' || h.id === 'sweepingBeam') {
         // Beam macros: step the macro which internally steps its beam phase(s).
