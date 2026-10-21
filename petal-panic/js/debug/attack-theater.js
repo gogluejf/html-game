@@ -90,7 +90,7 @@ const SANDBOX_PRESETS = {
   explosiveProjectile: { direction: 0, speed: 700, ttl: 2, damage: 15, radius: 70, gravity: 0 },
   explosion: { x: TARGET_POS.x + 16, y: GROUND_Y - 24, radius: 70, damage: 40, team: 'neutral' },
   meleeHitbox: { activeFrames: 10, w: 48, h: 44, offset: { x: 44, y: 0 }, damage: 12 },
-  charge: { direction: 0, speed: 700, duration: 0.6, distanceType: null, distance: null, acceleration: 0, easing: 'linear', announceMarker: false, announceDelay: 1.0 },
+  charge: { direction: 0, speed: 700, distanceType: 'fixed', distance: 300, acceleration: 0, easing: 'linear', announceMarker: false, announceDelay: 1.0 },
   bodyContact: { damage: 20, enabled: true, temporaryOverride: true },
   // --- Wave 2 -----------------------------------------------------------------
   reticleShot: { duration: 1.3, lockTime: 1.1, color: '#ff5555', radius: 30, tracking: true, speed: 500, ttl: 2, damage: 10, blastType: 'plain', blast: { explosionRadius: 70, shockRadius: 150, fireWidth: 96 } },
@@ -144,7 +144,7 @@ export const TWEAKABLE = {
   explosiveProjectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.2], ['damage', 'num', 5], ['radius', 'num', 10]],
   explosion: [['x', 'num', 20], ['y', 'num', 20], ['radius', 'num', 10], ['damage', 'num', 5]],
   meleeHitbox: [['activeFrames', 'int', 2], ['w', 'num', 8], ['h', 'num', 8], ['damage', 'num', 2]],
-  charge: [['speed', 'num', 100], ['duration', 'num', 0.1], ['distanceType', 'enum', [null, 'fixed', 'infinit']], ['distance', 'num', 50], ['direction', 'angle', 15 * DEG], ['easing', 'enum', ['linear', 'easeIn', 'easeInCubic']], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
+  charge: [['speed', 'num', 100], ['distanceType', 'enum', ['fixed', 'infinit']], ['distance', 'num', 50], ['direction', 'angle', 15 * DEG], ['easing', 'enum', ['linear', 'easeIn', 'easeInCubic']], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
   bodyContact: [['damage', 'num', 5]],
   // --- Wave 2 -----------------------------------------------------------------
   reticleShot: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['speed', 'num', 50], ['blastType', 'enum', ['plain', 'explosion', 'shockwave', 'napalm']], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],

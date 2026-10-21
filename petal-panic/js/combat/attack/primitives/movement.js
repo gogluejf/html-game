@@ -1,12 +1,12 @@
 // Attack Engine — Movement / Charge primitive (Task 1.7).
 //
 // Applies intentional attack movement to the attacker: velocity is driven
-// toward a target speed with optional easing, for a duration OR distance.
-// This file owns ONLY the motion profile. It never moves entities itself in
-// gameplay — the host integrator reads `state.vx/vy` each frame (or calls
-// stepCharge() which applies them). Obstacle stopping is the collision
-// system's job; this primitive reports when it was blocked so macros can
-// react (e.g. trigger an impact payload).
+// toward a target speed with optional easing, for a fixed distance or until
+// out of screen. This file owns ONLY the motion profile. It never moves
+// entities itself in gameplay — the host integrator reads `state.vx/vy` each
+// frame (or calls stepCharge() which applies them). Obstacle stopping is the
+// collision system's job; this primitive reports when it was blocked so
+// macros can react (e.g. trigger an impact payload).
 //
 // bodyDamageOverride is a DATA flag the host applies to the attacker's
 // contact rule while the charge is live (see Body Contact Damage, Task 1.8).
@@ -29,9 +29,8 @@ function declaredEffectsOf(id) {
 const DEFAULTS = Object.freeze({
   direction: 0,          // radians
   speed: 500,            // target speed px/s
-  duration: 0.4,         // seconds (used when distanceType is null)
-  distanceType: null,    // 'fixed' | 'infinit' | null — overrides duration when set
-  distance: null,        // px — the value when distanceType is 'fixed'
+  distanceType: 'fixed', // 'fixed' | 'infinit'
+  distance: 200,         // px — the value when distanceType is 'fixed'
   acceleration: 2000,    // px/s² ramp-up (0 = instant, full speed on frame 1)
   stopOnObstacle: true,  // host stops the charge when the entity is blocked
   bodyDamageOverride: null, // e.g. { damage: 20 } applied while charging
@@ -80,9 +79,8 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
   // Fill defaults for partial param objects (direct callers may pass bare
   // params; invoke() merges DEFAULTS, but stepCharge is exported standalone).
   const speed = p.speed ?? 500;
-  const duration = p.duration ?? 0.4;
-  const distanceType = p.distanceType ?? null; // 'fixed' | 'infinit' | null
-  const distance = (distanceType === 'fixed') ? (p.distance ?? null) : null;
+  const distanceType = p.distanceType ?? 'fixed'; // 'fixed' | 'infinit'
+  const distance = (distanceType === 'fixed') ? (p.distance ?? 200) : null;
   const acceleration = p.acceleration ?? 2000;
   const stopOnObstacle = p.stopOnObstacle ?? true;
   const easing = p.easing ?? 'linear';
@@ -94,8 +92,6 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
   if (acceleration <= 0 && easing !== 'linear') {
     if (distance != null) {
       easedT = ease(Math.min(1, state.traveled / distance), easing);
-    } else if (distanceType !== 'infinit') {
-      easedT = ease(Math.min(1, state.elapsed / duration), easing);
     }
     // 'infinit': no easing (constant speed until offscreen)
   }
@@ -131,10 +127,9 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
     hitDistance = ax < viewX - margin || ax > viewX + VIEW_W + margin ||
                   ay < viewY - margin || ay > viewY + VIEW_H + margin;
   }
-  const hitDuration = distanceType == null && state.elapsed >= duration;
   const blocked = stopOnObstacle && !!input.blocked;
 
-  if (hitDistance || hitDuration || blocked) {
+  if (hitDistance || blocked) {
     state.done = true;
     state.blocked = blocked;
     state.vx = 0;
@@ -151,12 +146,11 @@ registerPrimitive('charge', {
     effects: [
       { type: 'surface-target-marker', desc: 'optional boundary telegraph before the charge starts (announceMarker)' },
     ],
-    desc: 'Drives the attacker along a direction with eased speed for a duration or distance. Optional boundary announcement (announceMarker) telegraphs the entry side. Host applies velocity + reports obstacles.',
+    desc: 'Drives the attacker along a direction with eased speed for a fixed distance or until out of screen. Optional boundary announcement (announceMarker) telegraphs the entry side. Host applies velocity + reports obstacles.',
     params: [
       { key: 'direction', desc: 'movement direction (radians, full 0–2π)' },
       { key: 'speed', desc: 'target speed (px/s)' },
-      { key: 'duration', desc: 'seconds (when distanceType is null)' },
-      { key: 'distanceType', desc: "'fixed' | 'infinit' | null — overrides duration" },
+      { key: 'distanceType', desc: "'fixed' | 'infinit'" },
       { key: 'distance', desc: 'px (used when distanceType is "fixed")' },
       { key: 'acceleration', desc: 'px/s² ramp (0 = instant)' },
       { key: 'easing', desc: 'linear | easeIn | easeInCubic — speed profile over the charge' },

@@ -14,7 +14,7 @@ function ok(name, fn) {
 const DT = 1 / 60;
 const EPS = 1e-6;
 
-const P = { direction: 0, speed: 600, duration: 0.5, distanceType: null, distance: null, acceleration: 0 };
+const P = { direction: 0, speed: 600, distanceType: 'fixed', distance: 300, acceleration: 0 };
 
 ok('instant charge moves at full speed along the direction', () => {
   const a = { x: 0, y: 0 };
@@ -34,21 +34,33 @@ ok('upward direction produces negative-y motion', () => {
   assert.ok(Math.abs(a.y + 600 * DT) < EPS, `y=${a.y}`);
 });
 
-ok('duration stop: finishes after ~duration seconds', () => {
+ok('fixed distance stop: finishes after traveling the declared distance', () => {
   const a = { x: 0, y: 0 };
   const ctx = makeContext(a, {});
-  const st = makeChargeState(P, ctx);
+  const st = makeChargeState(P, ctx); // P has distanceType:'fixed', distance:300, speed:600
   let frames = 0;
   while (!stepCharge(st, P, ctx, DT) && frames < 1000) frames++;
-  // 0.5s at 60fps ≈ 30 frames (30th frame crosses the threshold)
+  // 300px at 600px/s = 0.5s ≈ 30 frames
   assert.ok(frames >= 29 && frames <= 31, `frames=${frames}`);
-  assert.ok(Math.abs(a.x - 600 * 0.5) < 600 * DT * 2, `x=${a.x}`);
+  assert.ok(Math.abs(a.x - 300) < 600 * DT * 2, `x=${a.x}`);
 });
 
-ok('distance stop: overrides duration when set', () => {
+ok('infinit distance: runs until out of screen', () => {
+  const a = { x: 0, y: 270 };
+  const ctx = makeContext(a, {});
+  const p = { ...P, distanceType: 'infinit', speed: 960 }; // 1 screen-width per second
+  const st = makeChargeState(p, ctx);
+  let frames = 0;
+  while (!stepCharge(st, p, ctx, DT) && frames < 200) frames++;
+  // Should stop when x > VIEW_W + 60 margin ≈ 1020. At 960px/s that's ~1.06s ≈ 64 frames.
+  assert.ok(frames >= 60 && frames <= 70, `frames=${frames} (x=${a.x})`);
+  assert.ok(a.x > 960, `exited screen (x=${a.x})`);
+});
+
+ok('distance stop: fixed distance ends the charge', () => {
   const a = { x: 0, y: 0 };
   const ctx = makeContext(a, {});
-  const p = { ...P, distanceType: 'fixed', distance: 300, duration: 99 };
+  const p = { ...P, distanceType: 'fixed', distance: 300 };
   const st = makeChargeState(p, ctx);
   let frames = 0;
   while (!stepCharge(st, p, ctx, DT) && frames < 1000) frames++;
@@ -60,7 +72,7 @@ ok('distance stop: overrides duration when set', () => {
 ok('acceleration ramps speed up gradually', () => {
   const a = { x: 0, y: 0 };
   const ctx = makeContext(a, {});
-  const p = { ...P, acceleration: 600, duration: 1 };
+  const p = { ...P, acceleration: 600, distance: 600 };
   const st = makeChargeState(p, ctx);
   stepCharge(st, p, ctx, DT);
   // After one frame at 600px/s² accel: speed = 600*(1/60) = 10 px/s
@@ -72,13 +84,13 @@ ok('acceleration ramps speed up gradually', () => {
 ok('obstacle: blocked input stops the charge early and reports it', () => {
   const a = { x: 0, y: 0 };
   const ctx = makeContext(a, {});
-  const p = { ...P, duration: 99 }; // long duration so only the block ends it
+  const p = { ...P, distanceType: 'infinit' }; // long range so only the block ends it
   const st = makeChargeState(p, ctx);
   stepCharge(st, p, ctx, DT);
   const finished = stepCharge(st, p, ctx, DT, { blocked: true });
   assert.equal(finished, true, 'blocked → finished');
   assert.equal(st.blocked, true);
-  assert.ok(st.elapsed < P.duration + 1, 'stopped well before a real duration stop');
+  assert.ok(st.traveled < p.distance + 10, 'stopped well before the full distance');
 });
 
 ok('stopOnObstacle=false ignores blocked input', () => {
