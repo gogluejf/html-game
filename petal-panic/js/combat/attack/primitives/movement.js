@@ -88,12 +88,13 @@ export function stepCharge(state, p, ctx, dt, input = {}) {
   // Easing: modulates the effective speed over the charge lifetime.
   // Only applies when acceleration is 0 (instant full speed) AND easing is
   // not 'linear' (linear = constant speed, no modulation needed).
+  // Progress is TIME-based (not distance-based — that would deadlock at t=0):
+  //   totalTime ≈ distance / speed (for fixed) or unbounded (infinit → skip).
   let easedT = 1;
-  if (acceleration <= 0 && easing !== 'linear') {
-    if (distance != null) {
-      easedT = ease(Math.min(1, state.traveled / distance), easing);
-    }
-    // 'infinit': no easing (constant speed until offscreen)
+  if (acceleration <= 0 && easing !== 'linear' && distance != null) {
+    const totalTime = distance / speed;
+    const t = Math.min(1, state.elapsed / totalTime);
+    easedT = ease(t, easing);
   }
 
   // Ramp speed toward target (acceleration profile), then apply easing.
