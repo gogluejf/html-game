@@ -27,3 +27,4 @@ import './missileRain.js';
 import './dashCombo.js';
 import './shockwaveBomb.js';
 import './shockwaveProjectile.js';
+import './napalm.js';
