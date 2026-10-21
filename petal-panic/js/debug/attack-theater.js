@@ -860,14 +860,7 @@ export const AttackTheater = {
             }
           }
         } else if (h.id === 'charge') {
-          // Charge writes attacker.vx/vy; the theater must integrate position
-          // (no base class loop here). Step the charge, then apply velocity.
           finished = h.step(DT);
-          const a = this._attacker;
-          if (a) {
-            a.x += (a.vx ?? 0) * DT;
-            a.y += (a.vy ?? 0) * DT;
-          }
         } else {
           finished = h.step(DT);
         }
