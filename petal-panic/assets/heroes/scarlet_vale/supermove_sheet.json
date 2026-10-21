@@ -1,0 +1,28 @@
+{
+  "file": "petal-panic/assets/heroes/scarlet_vale/supermove_sheet.png",
+  "size": "1774x887",
+  "rows": 2,
+  "cols": 5,
+  "description": "Scarlet Vale super move full cycle: windup -> spinning rose attacks -> vortex -> recovery",
+  "entities": [{
+    "name": "scarlet_vale",
+    "anim": "supermove",
+    "frames": [
+      {"file": "supermove_f1.png", "row": 0, "col": 0, "bbox": [9, 82, 292, 365]},
+      {"file": "supermove_f2.png", "row": 0, "col": 1, "bbox": [318, 86, 374, 361]},
+      {"file": "supermove_f3.png", "row": 0, "col": 2, "bbox": [678, 68, 363, 381]},
+      {"file": "supermove_f4.png", "row": 0, "col": 3, "bbox": [1032, 52, 381, 365]},
+      {"file": "supermove_f5.png", "row": 0, "col": 4, "bbox": [1384, 56, 390, 389]},
+      {"file": "supermove_f6.png", "row": 1, "col": 0, "bbox": [28, 449, 274, 426]},
+      {"file": "supermove_f7.png", "row": 1, "col": 1, "bbox": [322, 476, 375, 334]},
+      {"file": "supermove_f8.png", "row": 1, "col": 2, "bbox": [692, 455, 361, 366]},
+      {"file": "supermove_f9.png", "row": 1, "col": 3, "bbox": [1054, 479, 358, 320]},
+      {"file": "supermove_f10.png", "row": 1, "col": 4, "bbox": [1376, 541, 393, 304]}
+    ]
+  }],
+  "crop": {
+    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+    "pass": "petal-panic/assets/heroes/scarlet_vale"
+  },
+  "updated": "2026-10-21T19:22:38"
+}
