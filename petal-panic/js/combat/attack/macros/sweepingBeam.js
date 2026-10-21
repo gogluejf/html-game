@@ -104,6 +104,7 @@ defineMacro('sweepingBeam', {
     name: 'Sweeping Beam',
     effects: [
       { type: 'beam', desc: 'the beam body itself (Effect Engine renders it)' },
+      { type: 'surface-target-marker', desc: 'entry-point telegraph before the beam pops in (announceMarker)' },
     ],
     desc: 'One continuous beam: pop-in + start hold (low shimmer) → rotation sweep around the pivot (high shimmer) → end hold → fade-out after the end angle.',
     params: [
