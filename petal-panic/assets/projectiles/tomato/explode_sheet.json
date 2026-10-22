@@ -1,0 +1,40 @@
+{
+ "file": "petal-panic/assets/projectiles/tomato/explode_sheet.png",
+ "size": "416x287",
+ "rows": 1,
+ "cols": 2,
+ "kind": "animation",
+ "description": "tomato explode (2 frames)",
+ "entities": [
+  {
+   "name": "tomato",
+   "anim": "explode",
+   "frames_dir": "petal-panic/assets/projectiles/tomato",
+   "frames": [
+    {
+     "file": "explode_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      218,
+      287
+     ]
+    },
+    {
+     "file": "explode_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      218,
+      4,
+      198,
+      279
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-21"
+}

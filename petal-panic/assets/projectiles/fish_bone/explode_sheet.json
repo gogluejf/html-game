@@ -1,0 +1,40 @@
+{
+ "file": "petal-panic/assets/projectiles/fish_bone/explode_sheet.png",
+ "size": "397x245",
+ "rows": 1,
+ "cols": 2,
+ "kind": "animation",
+ "description": "fish_bone explode (2 frames)",
+ "entities": [
+  {
+   "name": "fish_bone",
+   "anim": "explode",
+   "frames_dir": "petal-panic/assets/projectiles/fish_bone",
+   "frames": [
+    {
+     "file": "explode_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      22,
+      201,
+      200
+     ]
+    },
+    {
+     "file": "explode_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      201,
+      0,
+      196,
+      245
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-21"
+}

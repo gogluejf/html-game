@@ -1,14 +1,15 @@
 {
  "file": "petal-panic/assets/projectiles/fish_bone/shoot_sheet.png",
- "size": "1563x245",
+ "size": "1166x200",
  "rows": 1,
- "cols": 8,
+ "cols": 6,
  "kind": "animation",
- "description": "fish_bone projectile (8 frames) \u2014 reassembled from frames",
+ "description": "fish_bone shoot (6 frames)",
  "entities": [
   {
    "name": "fish_bone",
    "anim": "shoot",
+   "frames_dir": "petal-panic/assets/projectiles/fish_bone",
    "frames": [
     {
      "file": "shoot_f1.png",
@@ -16,7 +17,7 @@
      "col": 0,
      "bbox": [
       0,
-      38,
+      15,
       191,
       169
      ]
@@ -27,7 +28,7 @@
      "col": 1,
      "bbox": [
       191,
-      29,
+      7,
       193,
       186
      ]
@@ -38,7 +39,7 @@
      "col": 2,
      "bbox": [
       384,
-      22,
+      0,
       187,
       200
      ]
@@ -49,7 +50,7 @@
      "col": 3,
      "bbox": [
       571,
-      26,
+      3,
       197,
       193
      ]
@@ -60,7 +61,7 @@
      "col": 4,
      "bbox": [
       768,
-      31,
+      9,
       200,
       182
      ]
@@ -71,35 +72,12 @@
      "col": 5,
      "bbox": [
       968,
-      45,
+      22,
       198,
       155
      ]
-    },
-    {
-     "file": "shoot_f7.png",
-     "row": 0,
-     "col": 6,
-     "bbox": [
-      1166,
-      22,
-      201,
-      200
-     ]
-    },
-    {
-     "file": "shoot_f8.png",
-     "row": 0,
-     "col": 7,
-     "bbox": [
-      1367,
-      0,
-      196,
-      245
-     ]
     }
-   ],
-   "frames_dir": "petal-panic/assets/projectiles/fish_bone"
+   ]
   }
  ],
  "updated": "2026-10-21"
