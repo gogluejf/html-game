@@ -1,15 +1,14 @@
 {
  "file": "petal-panic/assets/projectiles/pea/shoot_sheet.png",
- "size": "1132x193",
+ "size": "1514x193",
  "rows": 1,
- "cols": 6,
+ "cols": 8,
  "kind": "animation",
- "description": "pea shoot (6 frames) \u2014 carved",
+ "description": "pea projectile (8 frames) \u2014 reassembled from frames",
  "entities": [
   {
    "name": "pea",
    "anim": "shoot",
-   "frames_dir": "petal-panic/assets/projectiles/pea",
    "frames": [
     {
      "file": "shoot_f1.png",
@@ -61,9 +60,9 @@
      "col": 4,
      "bbox": [
       747,
-      0,
-      193,
-      193
+      4,
+      194,
+      184
      ]
     },
     {
@@ -71,13 +70,36 @@
      "row": 0,
      "col": 5,
      "bbox": [
-      940,
+      941,
+      5,
+      188,
+      183
+     ]
+    },
+    {
+     "file": "shoot_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1129,
+      0,
+      193,
+      193
+     ]
+    },
+    {
+     "file": "shoot_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      1322,
       11,
       192,
       170
      ]
     }
-   ]
+   ],
+   "frames_dir": "petal-panic/assets/projectiles/pea"
   }
  ],
  "updated": "2026-10-21"
