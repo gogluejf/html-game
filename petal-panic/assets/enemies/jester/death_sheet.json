@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/jester/death_sheet.png",
+ "size": "1489x317",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "jester death (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "jester",
+   "anim": "death",
+   "frames_dir": "petal-panic/assets/enemies/jester",
+   "frames": [
+    {
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      272,
+      317
+     ]
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      272,
+      4,
+      302,
+      308
+     ]
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      574,
+      6,
+      311,
+      304
+     ]
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      885,
+      6,
+      309,
+      305
+     ]
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1194,
+      11,
+      295,
+      294
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

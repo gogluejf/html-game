@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/colonel_carrot/shout_sheet.png",
+ "size": "1498x324",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "colonel_carrot shout (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "colonel_carrot",
+   "anim": "shout",
+   "frames_dir": "petal-panic/assets/boss/colonel_carrot",
+   "frames": [
+    {
+     "file": "shout_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      283,
+      321
+     ]
+    },
+    {
+     "file": "shout_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      283,
+      0,
+      292,
+      324
+     ]
+    },
+    {
+     "file": "shout_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      575,
+      4,
+      265,
+      315
+     ]
+    },
+    {
+     "file": "shout_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      840,
+      6,
+      353,
+      312
+     ]
+    },
+    {
+     "file": "shout_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1193,
+      11,
+      305,
+      301
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

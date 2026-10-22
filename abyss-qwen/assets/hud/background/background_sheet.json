@@ -1,6 +1,6 @@
 {
  "label": "hud",
- "file": "abyss-qwen/assets/hud/background/idle_sheet.png",
+ "file": "abyss-qwen/assets/hud/background/background_sheet.png",
  "rows": 1,
  "cols": 1,
  "size": "1586x992",
@@ -13,9 +13,14 @@
    "frames": [
     {
      "file": "background_f1.png",
-     "row": null,
-     "col": null,
-     "bbox": null
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      1586,
+      992
+     ]
     }
    ],
    "frames_dir": "abyss-qwen/assets/hud/background"

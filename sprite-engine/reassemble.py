@@ -12,7 +12,39 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from audit import find_sheet_jsons, frame_dir, ROOT
+import glob as _glob
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # repo root
+
+
+def frame_dir(jf, entity_name):
+    base = os.path.dirname(jf)
+    if os.path.basename(base) == "_sheets":
+        return os.path.join(os.path.dirname(base), entity_name)
+    return base
+
+
+def find_sheet_jsons(projects=None, include_single=True):
+    """Multi-entity sheet JSONs via os.walk (no glob patterns — see audit.py)."""
+    out = []
+    for root, dirs, files in os.walk(ROOT):
+        if "/.git" in root or os.path.basename(root) == ".git":
+            continue
+        for f in files:
+            if not f.endswith("_sheet.json"):
+                continue
+            p = os.path.join(root, f)
+            try:
+                d = json.load(open(p))
+            except Exception:
+                continue
+            if not include_single and len(d.get("entities", [])) <= 1:
+                continue
+            proj = os.path.relpath(p, ROOT).split(os.sep)[0]
+            if projects and proj not in projects:
+                continue
+            out.append(p)
+    return sorted(out)
 
 # kind overrides by path pattern (see PLAN.md)
 KIND_TILE = "tile_variant"

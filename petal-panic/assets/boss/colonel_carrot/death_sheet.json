@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/colonel_carrot/death_sheet.png",
+ "size": "1457x316",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "colonel_carrot death (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "colonel_carrot",
+   "anim": "death",
+   "frames_dir": "petal-panic/assets/boss/colonel_carrot",
+   "frames": [
+    {
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      5,
+      255,
+      306
+     ]
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      255,
+      6,
+      300,
+      304
+     ]
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      555,
+      0,
+      294,
+      316
+     ]
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      849,
+      7,
+      306,
+      301
+     ]
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1155,
+      46,
+      302,
+      224
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

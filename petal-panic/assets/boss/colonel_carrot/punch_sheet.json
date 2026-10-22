@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/colonel_carrot/punch_sheet.png",
+ "size": "1490x314",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "colonel_carrot punch (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "colonel_carrot",
+   "anim": "punch",
+   "frames_dir": "petal-panic/assets/boss/colonel_carrot",
+   "frames": [
+    {
+     "file": "punch_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      259,
+      314
+     ]
+    },
+    {
+     "file": "punch_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      259,
+      6,
+      250,
+      302
+     ]
+    },
+    {
+     "file": "punch_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      509,
+      5,
+      314,
+      303
+     ]
+    },
+    {
+     "file": "punch_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      823,
+      6,
+      368,
+      302
+     ]
+    },
+    {
+     "file": "punch_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1191,
+      12,
+      299,
+      289
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

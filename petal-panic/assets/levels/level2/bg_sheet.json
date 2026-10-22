@@ -3,7 +3,7 @@
  "file": "petal-panic/assets/levels/level2/bg_sheet.png",
  "rows": 1,
  "cols": 1,
- "size": "2169x725",
+ "size": "2172x724",
  "description": "Background level 2",
  "entities": [
   {
@@ -14,7 +14,12 @@
      "file": "bg_f1.png",
      "row": 0,
      "col": 0,
-     "bbox": null
+     "bbox": [
+      0,
+      0,
+      2172,
+      724
+     ]
     }
    ],
    "frames_dir": "petal-panic/assets/levels/level2"

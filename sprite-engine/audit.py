@@ -1,116 +1,111 @@
 #!/usr/bin/env python3
-"""audit.py — dry-run auditor for split-sheet-per-anim.
+"""audit.py — ground-truth sheet auditor for sprite-engine.
 
-Reads every sheet JSON, checks that referenced frames exist on disk,
-bbox sanity vs actual frame size, and target name collisions.
-Read-only. Exit 1 on hard errors.
+Walks the filesystem (os.walk — NO glob patterns; pattern-based scans are how
+the _2/_3/_4-suffixed sheets got missed in the original migration). Checks:
+
+  1. every *_sheet.json has `kind` and exactly one entity (per-anim convention)
+  2. gap check: every frame-anim on disk ({anim}_fN.png) has its {anim}_sheet.json
+  3. internal consistency: size decl == PNG size, bboxes in bounds, frames exist,
+     grid decl == actual max row/col
+  4. PIXEL ROUND-TRIP: crop each frame out of its sheet at its bbox and compare
+     to the frame file — must be identical
+
+Exit 0 = clean, 1 = problems found. Read-only.
 """
-import json, glob, os, sys
-from PIL import Image
+import json
+import os
+import re
+import sys
+from PIL import Image, ImageChops
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # html-game
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # repo root
 
 
-def find_sheet_jsons(projects=None, include_single=True):
-    pats = [
-        "*/assets/*/_sheets/*.json",          # holding pens
-        "*/assets/*/*/*_sheet.json",          # entity-dir sheets
-    ]
+def walk_sheets():
     out = []
-    for pat in pats:
-        for p in glob.glob(os.path.join(ROOT, pat)):
-            if os.path.basename(p).startswith("."):
-                continue
-            if not include_single:
-                try:
-                    d = json.load(open(p))
-                    if len(d.get("entities", [])) <= 1:
-                        continue
-                except Exception:
-                    pass
-            parts = p.split(os.sep)
-            proj = parts[-5] if "_sheets" in p else parts[-6]
-            if projects and proj not in projects:
-                continue
-            out.append(p)
-    return sorted(set(out))
-
-
-def frame_dir(jf, entity_name):
-    """Entity dir for a sheet json: pens live in {cat}/_sheets/, entity dir is sibling."""
-    base = os.path.dirname(jf)
-    if os.path.basename(base) == "_sheets":
-        return os.path.join(os.path.dirname(base), entity_name)
-    return base
-
-
-def audit_sheet(jf):
-    d = json.load(open(jf))
-    errs, warns, rows = [], [], []
-    for e in d.get("entities", []):
-        name, anim = e["name"], e.get("anim", "?")
-        fdir = frame_dir(jf, name)
-        n = len(e.get("frames", []))
-        missing, drift = [], []
-        for f in e.get("frames", []):
-            fp = os.path.join(fdir, f["file"])
-            if not os.path.exists(fp):
-                missing.append(f["file"])
-                continue
-            bbox = f.get("bbox")
-            if bbox:
-                with Image.open(fp) as im:
-                    w, h = im.size
-                bw, bh = bbox[2], bbox[3]
-                if abs(w - bw) > 2 or abs(h - bh) > 2:
-                    drift.append(f"{f['file']} disk={w}x{h} json={bw}x{bh}")
-        # target collision
-        tgt_png = os.path.join(fdir, f"{anim}_sheet.png")
-        tgt_json = os.path.join(fdir, f"{anim}_sheet.json")
-        collides = []
-        # only a collision if it's NOT the sheet being audited itself
-        if os.path.exists(tgt_png) and os.path.abspath(tgt_png) != os.path.abspath(d.get("file", "")):
-            collides.append("png")
-        if os.path.exists(tgt_json) and os.path.abspath(tgt_json) != os.path.abspath(jf):
-            collides.append("json")
-        flag = "OK"
-        if missing:
-            flag = "MISSING-FRAMES"; errs.append(f"{jf} {name}/{anim}: missing {missing}")
-        if collides:
-            flag = "TARGET-COLLIDES"; warns.append(f"{jf} {name}/{anim}: target exists ({','.join(collides)})")
-        if drift:
-            flag = (flag + "+DRIFT") if flag != "OK" else "DRIFT"
-            warns.append(f"{jf} {name}/{anim}: bbox drift: {drift[:3]}{'...' if len(drift)>3 else ''}")
-        rows.append((name, anim, n, flag))
-    return rows, errs, warns
+    for root, dirs, files in os.walk(ROOT):
+        if "/.git" in root or os.path.basename(root) == ".git":
+            continue
+        for f in files:
+            if f.endswith("_sheet.json"):
+                out.append(os.path.join(root, f))
+    return sorted(out)
 
 
 def main():
-    projects = None
-    args = sys.argv[1:]
-    if "--project" in args:
-        projects = set(args[args.index("--project") + 1].split(","))
-    total_sheets = total_anims = 0
-    all_errs, all_warns = [], []
-    for jf in find_sheet_jsons(projects):
+    only = sys.argv[1] if len(sys.argv) > 1 else None  # optional substring filter
+    sheets = [s for s in walk_sheets() if not only or only in s]
+    errs = rt_bad = 0
+
+    # 1+3+4 per sheet
+    for jf in sheets:
         rel = os.path.relpath(jf, ROOT)
-        rows, errs, warns = audit_sheet(jf)
-        total_sheets += 1
-        total_anims += len(rows)
-        all_errs += errs; all_warns += warns
-        print(f"\n== {rel}  ({len(rows)} anims)")
-        for name, anim, n, flag in rows:
-            mark = "  " if flag == "OK" else "!!"
-            print(f" {mark} {name}/{anim}  {n}f  {flag}")
-    print(f"\n--- SUMMARY: {total_sheets} sheets -> {total_anims} per-anim sheets")
-    if all_warns:
-        print(f"WARNINGS ({len(all_warns)}):")
-        for w in all_warns: print("  !", w)
-    if all_errs:
-        print(f"HARD ERRORS ({len(all_errs)}):")
-        for e in all_errs: print("  X", e)
-        sys.exit(1)
-    print("No hard errors.")
+        d = json.load(open(jf))
+        ents = d.get("entities", [])
+        if "kind" not in d:
+            print(f"X {rel}: missing kind"); errs += 1
+        if len(ents) != 1:
+            print(f"X {rel}: {len(ents)} entities (expected 1)"); errs += 1
+        fpath = d["file"]
+        if not os.path.isabs(fpath) and not os.path.exists(fpath):
+            fpath = os.path.join(os.path.dirname(jf), os.path.basename(fpath))
+        if not os.path.exists(fpath):
+            print(f"X {rel}: missing PNG {d['file']}"); errs += 1
+            continue
+        sheet = Image.open(fpath)
+        W, H = map(int, d["size"].split("x"))
+        if sheet.size != (W, H):
+            print(f"X {rel}: size decl {d['size']} != actual {sheet.size}"); errs += 1
+            continue
+        maxr = maxc = 0
+        for e in ents:
+            fdir = e.get("frames_dir") or os.path.dirname(jf)
+            if not os.path.isdir(fdir):
+                fdir = os.path.dirname(jf)
+            for f in e["frames"]:
+                bbox = f.get("bbox")
+                if bbox is None:
+                    print(f"X {rel} {f['file']}: no bbox"); errs += 1
+                    continue
+                x, y, w, h = bbox
+                if not (0 <= x and 0 <= y and x + w <= W and y + h <= H):
+                    print(f"X {rel} {f['file']}: bbox out of bounds"); errs += 1
+                    continue
+                fp = os.path.join(fdir, f["file"])
+                if not os.path.exists(fp):
+                    print(f"X {rel} {f['file']}: frame missing on disk"); errs += 1
+                    continue
+                region = sheet.crop((x, y, x + w, y + h)).convert("RGBA")
+                frame = Image.open(fp).convert("RGBA")
+                if ImageChops.difference(region, frame).getbbox() is not None:
+                    rt_bad += 1
+                    print(f"X {rel} {f['file']}: PIXEL MISMATCH (sheet out of sync)")
+                maxr = max(maxr, f["row"]); maxc = max(maxc, f["col"])
+        if maxr + 1 != d["rows"] or maxc + 1 != d["cols"]:
+            print(f"X {rel}: grid decl {d['rows']}x{d['cols']} != actual {maxr+1}x{maxc+1}")
+            errs += 1
+
+    # 2. gap check (frame anims without a sheet)
+    gaps = 0
+    for root, dirs, files in os.walk(ROOT):
+        if "/.git" in root or os.path.basename(root) == ".git":
+            continue
+        if only and only not in root:
+            continue
+        frames = [f for f in files if re.match(r"[a-z0-9_]+?_f\d+\.png$", f)]
+        if not frames:
+            continue
+        anims = set(re.match(r"([a-z0-9_]+?)_f\d+\.png$", f).group(1) for f in frames)
+        for anim in anims:
+            if not os.path.exists(os.path.join(root, f"{anim}_sheet.json")):
+                gaps += 1
+                print(f"X GAP: {os.path.relpath(root, ROOT)}/{anim} frames have no {anim}_sheet.json")
+                errs += 1
+
+    print(f"\nAUDIT: {len(sheets)} sheets | structural errors: {errs} | "
+          f"pixel mismatches: {rt_bad} | gaps: {gaps}")
+    sys.exit(1 if (errs or rt_bad) else 0)
 
 
 if __name__ == "__main__":

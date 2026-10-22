@@ -1,6 +1,6 @@
 {
  "label": "hud",
- "file": "abyss-qwen/assets/hud/splash/idle_sheet.png",
+ "file": "abyss-qwen/assets/hud/splash/splash_sheet.png",
  "rows": 1,
  "cols": 1,
  "size": "1024x1536",
@@ -13,9 +13,14 @@
    "frames": [
     {
      "file": "splash_f1.png",
-     "row": null,
-     "col": null,
-     "bbox": null
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      1024,
+      1536
+     ]
     }
    ],
    "frames_dir": "abyss-qwen/assets/hud/splash"

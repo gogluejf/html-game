@@ -3,7 +3,7 @@
  "file": "petal-panic/assets/boss/ratchet_rumbelow/roar_sheet.png",
  "rows": 2,
  "cols": 3,
- "size": "1536x1024",
+ "size": "1556x934",
  "description": "Ratchet Rumbelow boss, sheet 5/5 \u2014 6 frames (roar)",
  "entities": [
   {
@@ -15,8 +15,8 @@
      "row": 0,
      "col": 0,
      "bbox": [
-      0,
-      25,
+      1,
+      1,
       511,
       459
      ],
@@ -36,8 +36,8 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      505,
-      25,
+      516,
+      2,
       520,
       458
      ],
@@ -57,8 +57,8 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      1018,
-      21,
+      1038,
+      0,
       518,
       462
      ],
@@ -79,7 +79,7 @@
      "col": 0,
      "bbox": [
       0,
-      510,
+      463,
       514,
       470
      ],
@@ -99,8 +99,8 @@
      "row": 1,
      "col": 1,
      "bbox": [
-      505,
-      508,
+      514,
+      462,
       524,
       472
      ],
@@ -120,8 +120,8 @@
      "row": 1,
      "col": 2,
      "bbox": [
-      1018,
-      516,
+      1038,
+      466,
       518,
       463
      ],

@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/colonel_carrot/defeat_sheet.png",
+ "size": "1472x342",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "colonel_carrot defeat (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "colonel_carrot",
+   "anim": "defeat",
+   "frames_dir": "petal-panic/assets/boss/colonel_carrot",
+   "frames": [
+    {
+     "file": "defeat_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      10,
+      264,
+      322
+     ]
+    },
+    {
+     "file": "defeat_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      264,
+      11,
+      278,
+      319
+     ]
+    },
+    {
+     "file": "defeat_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      542,
+      3,
+      271,
+      335
+     ]
+    },
+    {
+     "file": "defeat_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      813,
+      0,
+      298,
+      342
+     ]
+    },
+    {
+     "file": "defeat_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1111,
+      39,
+      361,
+      263
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

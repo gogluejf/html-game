@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/jester/attack_sheet.png",
+ "size": "1539x293",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "jester attack (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "jester",
+   "anim": "attack",
+   "frames_dir": "petal-panic/assets/enemies/jester",
+   "frames": [
+    {
+     "file": "attack_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      276,
+      292
+     ]
+    },
+    {
+     "file": "attack_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      276,
+      11,
+      339,
+      271
+     ]
+    },
+    {
+     "file": "attack_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      615,
+      9,
+      335,
+      275
+     ]
+    },
+    {
+     "file": "attack_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      950,
+      3,
+      322,
+      287
+     ]
+    },
+    {
+     "file": "attack_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1272,
+      0,
+      267,
+      293
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

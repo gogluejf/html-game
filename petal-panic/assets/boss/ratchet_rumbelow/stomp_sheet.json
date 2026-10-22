@@ -3,7 +3,7 @@
  "file": "petal-panic/assets/boss/ratchet_rumbelow/stomp_sheet.png",
  "rows": 2,
  "cols": 3,
- "size": "1536x1024",
+ "size": "1531x954",
  "description": "Ratchet Rumbelow boss, sheet 3/5 \u2014 6 frames (stomp)",
  "entities": [
   {
@@ -15,8 +15,8 @@
      "row": 0,
      "col": 0,
      "bbox": [
-      4,
-      103,
+      0,
+      51,
       499,
       390
      ]
@@ -26,8 +26,8 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      507,
-      106,
+      500,
+      52,
       522,
       387
      ]
@@ -37,8 +37,8 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      1033,
-      7,
+      1044,
+      0,
       465,
       492
      ]
@@ -48,8 +48,8 @@
      "row": 1,
      "col": 0,
      "bbox": [
-      6,
-      519,
+      16,
+      492,
       467,
       462
      ]
@@ -59,8 +59,8 @@
      "row": 1,
      "col": 1,
      "bbox": [
-      504,
-      567,
+      499,
+      518,
       524,
       410
      ]
@@ -70,8 +70,8 @@
      "row": 1,
      "col": 2,
      "bbox": [
-      1026,
-      576,
+      1023,
+      518,
       508,
       410
      ]

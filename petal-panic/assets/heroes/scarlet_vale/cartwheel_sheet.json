@@ -3,7 +3,7 @@
  "file": "petal-panic/assets/heroes/scarlet_vale/cartwheel_sheet.png",
  "rows": 2,
  "cols": 5,
- "size": "1774x887",
+ "size": "1756x772",
  "description": "Scarlet Vale hero cartwheel/acrobatic flip, 10 frames (2x5 grid)",
  "original_prompt": "Cartwheel/acrobatic flip sheet \u2014 reverse-engineered; to be regenerated via transparent regen pass.",
  "entities": [
@@ -16,8 +16,8 @@
      "row": 0,
      "col": 0,
      "bbox": [
-      10,
-      83,
+      40,
+      30,
       289,
       359
      ]
@@ -27,8 +27,8 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      349,
-      148,
+      373,
+      61,
       348,
       296
      ]
@@ -38,8 +38,8 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      720,
-      39,
+      724,
+      6,
       329,
       407
      ]
@@ -49,8 +49,8 @@
      "row": 0,
      "col": 3,
      "bbox": [
-      1072,
-      27,
+      1054,
+      0,
       350,
       419
      ]
@@ -60,8 +60,8 @@
      "row": 0,
      "col": 4,
      "bbox": [
-      1414,
-      92,
+      1404,
+      33,
       352,
       352
      ]
@@ -71,8 +71,8 @@
      "row": 1,
      "col": 0,
      "bbox": [
-      4,
-      498,
+      0,
+      436,
       370,
       319
      ]
@@ -82,8 +82,8 @@
      "row": 1,
      "col": 1,
      "bbox": [
-      368,
-      501,
+      370,
+      437,
       354,
       317
      ]
@@ -93,8 +93,8 @@
      "row": 1,
      "col": 2,
      "bbox": [
-      731,
-      521,
+      724,
+      443,
       330,
       304
      ]
@@ -104,8 +104,8 @@
      "row": 1,
      "col": 3,
      "bbox": [
-      1075,
-      498,
+      1067,
+      425,
       323,
       340
      ]
@@ -115,8 +115,8 @@
      "row": 1,
      "col": 4,
      "bbox": [
-      1448,
-      485,
+      1434,
+      419,
       292,
       353
      ]

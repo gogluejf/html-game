@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/colonel_carrot/angry_sheet.png",
+ "size": "1398x328",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "colonel_carrot angry (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "colonel_carrot",
+   "anim": "angry",
+   "frames_dir": "petal-panic/assets/boss/colonel_carrot",
+   "frames": [
+    {
+     "file": "angry_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      4,
+      261,
+      320
+     ]
+    },
+    {
+     "file": "angry_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      261,
+      3,
+      279,
+      321
+     ]
+    },
+    {
+     "file": "angry_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      540,
+      2,
+      280,
+      323
+     ]
+    },
+    {
+     "file": "angry_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      820,
+      3,
+      300,
+      321
+     ]
+    },
+    {
+     "file": "angry_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1120,
+      0,
+      278,
+      328
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

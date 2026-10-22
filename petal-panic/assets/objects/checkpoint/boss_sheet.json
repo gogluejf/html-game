@@ -3,7 +3,7 @@
  "file": "petal-panic/assets/objects/checkpoint/boss_sheet.png",
  "rows": 1,
  "cols": 1,
- "size": "413x440",
+ "size": "395x427",
  "description": "Checkpoint boss target drum (single image)",
  "entities": [
   {

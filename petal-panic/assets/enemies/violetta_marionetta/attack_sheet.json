@@ -1,7 +1,7 @@
 {
  "file": "petal-panic/assets/enemies/violetta_marionetta/attack_sheet.png",
- "size": "1468x348",
- "rows": 1,
+ "size": "1225x696",
+ "rows": 2,
  "cols": 3,
  "kind": "animation",
  "description": "violetta_marionetta attack (4 frames) \u2014 reassembled from frames",
@@ -15,7 +15,7 @@
      "row": 0,
      "col": 0,
      "bbox": [
-      0,
+      313,
       1,
       284,
       346
@@ -26,7 +26,7 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      284,
+      911,
       0,
       273,
       348
@@ -37,19 +37,19 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      557,
-      0,
-      911,
-      348
+      1184,
+      133,
+      41,
+      81
      ]
     },
     {
      "file": "attack_f5.png",
-     "row": 0,
-     "col": 2,
+     "row": 1,
+     "col": 0,
      "bbox": [
-      557,
       0,
+      348,
       911,
       348
      ]

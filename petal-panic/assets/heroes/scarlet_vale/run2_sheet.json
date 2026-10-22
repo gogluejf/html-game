@@ -3,7 +3,7 @@
  "file": "petal-panic/assets/heroes/scarlet_vale/run2_sheet.png",
  "rows": 1,
  "cols": 8,
- "size": "2170x725",
+ "size": "2347x456",
  "description": "Scarlet Vale hero run cycle (run2), 8 frames",
  "original_prompt": "Generate a sprite sheet of 1 hero character \"Scarlet Vale\" for the hand-painted circus game Petal Panic, continuing the exact same hand-painted circus style as the prior Scarlet Vale sheets above.\n\nLAYOUT: 1 row x 8 columns on a solid uniform pink background (rgb 252,151,170). The single row is the Scarlet Vale heroine; the 8 columns are her 8 run animation frames shown left-to-right. All cells exactly the same size (~222x442 px), evenly spaced, separated by thin light-pink grid lines (rgb 255,210,220, 2px wide). No text, no labels, no dark borders between cells. Image 1774 wide x 442 tall.\n\nSTYLE: hand-painted circus / storybook illustration, soft painterly brushwork with visible texture, warm saturated palette (crimson red, deep black, cream skin tones, white feather accent). A glamorous burlesque/circus heroine: long flowing wavy black hair, a large crimson rose tucked into her hair, a black domino mask over her eyes, a white-and-grey plume/feather headdress arcing up behind her head. She wears a red bra-style top, a short red skirt, thigh-high black stockings, and red high-heeled shoes, with a flowing red cape/sash trailing behind. Full-body side profile facing right, dynamic and elegant. Consistent style across every frame.\n\nROW (left to right), 8 distinct loopable run-cycle frames:\n1. STRIDE - right leg extended forward, left leg pushing back, arms mid-swing, cape billowing.\n2. CONTACT - legs passing through neutral, body slightly compressed, weight transferring.\n3. PUSH - left leg driving forward, right leg trailing, torso leaning into the run.\n4. RECOVER - opposite stride mirroring frame 1, arms swinging the other way.\n5. STRIDE 2 - right leg forward again, hair and cape at peak flow.\n6. CONTACT 2 - legs crossing through neutral, cape settling.\n7. PUSH 2 - left leg driving, momentum building.\n8. RECOVER 2 - returning toward frame 1 pose so the loop closes smoothly.\n\nFrames within the row must be clearly distinct but smoothly sequential (loopable). Keep it clean and croppable.",
  "entities": [
@@ -13,51 +13,91 @@
    "frames": [
     {
      "file": "run2_f1.png",
-     "row": null,
-     "col": null,
-     "bbox": null
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      3,
+      276,
+      450
+     ]
     },
     {
      "file": "run2_f2.png",
-     "row": null,
-     "col": null,
-     "bbox": null
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      276,
+      0,
+      291,
+      456
+     ]
     },
     {
      "file": "run2_f3.png",
-     "row": null,
-     "col": null,
-     "bbox": null
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      567,
+      1,
+      285,
+      454
+     ]
     },
     {
      "file": "run2_f4.png",
-     "row": null,
-     "col": null,
-     "bbox": null
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      852,
+      1,
+      297,
+      454
+     ]
     },
     {
      "file": "run2_f5.png",
-     "row": null,
-     "col": null,
-     "bbox": null
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1149,
+      5,
+      318,
+      446
+     ]
     },
     {
      "file": "run2_f6.png",
-     "row": null,
-     "col": null,
-     "bbox": null
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1467,
+      0,
+      299,
+      455
+     ]
     },
     {
      "file": "run2_f7.png",
-     "row": null,
-     "col": null,
-     "bbox": null
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1766,
+      1,
+      293,
+      453
+     ]
     },
     {
      "file": "run2_f8.png",
-     "row": null,
-     "col": null,
-     "bbox": null
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      2059,
+      0,
+      288,
+      456
+     ]
     }
    ],
    "frames_dir": "petal-panic/assets/heroes/scarlet_vale"

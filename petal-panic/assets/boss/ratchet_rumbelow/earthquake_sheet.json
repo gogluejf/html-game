@@ -3,7 +3,7 @@
  "file": "petal-panic/assets/boss/ratchet_rumbelow/earthquake_sheet.png",
  "rows": 2,
  "cols": 3,
- "size": "1536x1024",
+ "size": "1591x986",
  "description": "Ratchet Rumbelow boss, sheet 1/5 \u2014 6 frames (earthquake x2 rows)",
  "entities": [
   {
@@ -16,7 +16,7 @@
      "col": 0,
      "bbox": [
       0,
-      102,
+      46,
       539,
       408
      ],
@@ -36,8 +36,8 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      514,
-      8,
+      539,
+      0,
       517,
       500
      ],
@@ -57,8 +57,8 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      1002,
-      83,
+      1057,
+      34,
       533,
       432
      ],
@@ -78,8 +78,8 @@
      "row": 1,
      "col": 0,
      "bbox": [
-      0,
-      509,
+      10,
+      500,
       519,
       486
      ],
@@ -99,8 +99,8 @@
      "row": 1,
      "col": 1,
      "bbox": [
-      510,
-      557,
+      546,
+      535,
       502,
       416
      ],
@@ -120,8 +120,8 @@
      "row": 1,
      "col": 2,
      "bbox": [
-      1001,
-      579,
+      1056,
+      541,
       535,
       403
      ],

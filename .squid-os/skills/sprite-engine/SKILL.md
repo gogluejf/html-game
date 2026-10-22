@@ -9,7 +9,9 @@ re-cropping), and a browsable gallery server.
 ```
 scripts/
   audit.py        dry-run auditor (frame counts, bbox drift, target collisions)
-  reassemble.py   additive per-anim sheet builder (kind-tagged twin JSONs)
+  reassemble.py   additive per-anim sheet builder (migration tool)
+  carve_anim.py   carve frame ranges out of a per-anim sheet into new anims
+  glue.py         shared glue primitive (frames -> fresh sheet + exact bboxes)
   server/
     gallery.py    sheet gallery HTTP server (thumbnails + game/category/kind filters)
     server.sh     start/stop/status/go wrapper (detached, pidfile-tracked)
@@ -42,5 +44,9 @@ what's on disk (no session state, no cache).
 
 - **Split a mixed sheet:** `python3 sprite-engine/audit.py` → review →
   `python3 sprite-engine/reassemble.py [--project X] [--dry-run]`
+  (migration tool — likely final run done; only needed if a hand-made mixed sheet appears)
+- **Carve anims out of one sheet** (AI sneaked a second action into the last
+  frames): `python3 sprite-engine/carve_anim.py --sheet <anim_sheet.json> --carve explode:7-8 [--carve special:3-5] [--dry-run]`
+  — re-glues everything, renumbers survivors, round-trip verifies
 - **Register a fresh AI sheet:** sprite-gen `--add-sheet cat=.. entity=.. anim=.. src=.. rows=.. cols=.. kind=.. description=".."`
 - **Browse/verify:** gallery above, or the sprite-crop editor for per-frame tuning

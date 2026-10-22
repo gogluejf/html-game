@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/colonel_carrot/stomp_sheet.png",
+ "size": "1391x321",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "colonel_carrot stomp (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "colonel_carrot",
+   "anim": "stomp",
+   "frames_dir": "petal-panic/assets/boss/colonel_carrot",
+   "frames": [
+    {
+     "file": "stomp_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      4,
+      248,
+      312
+     ]
+    },
+    {
+     "file": "stomp_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      248,
+      19,
+      280,
+      283
+     ]
+    },
+    {
+     "file": "stomp_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      528,
+      3,
+      278,
+      315
+     ]
+    },
+    {
+     "file": "stomp_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      806,
+      1,
+      298,
+      318
+     ]
+    },
+    {
+     "file": "stomp_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1104,
+      0,
+      287,
+      321
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

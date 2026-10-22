@@ -14,7 +14,12 @@
      "file": "bg_f1.png",
      "row": 0,
      "col": 0,
-     "bbox": null
+     "bbox": [
+      0,
+      0,
+      2172,
+      724
+     ]
     }
    ],
    "frames_dir": "petal-panic/assets/levels/level5"

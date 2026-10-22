@@ -3,7 +3,7 @@
  "file": "petal-panic/assets/levels/level6/vertical_sheet.png",
  "rows": 1,
  "cols": 1,
- "size": "821x1916",
+ "size": "821x1836",
  "description": "Vertical scroll level 6 (Runaway Train)",
  "entities": [
   {
@@ -14,7 +14,12 @@
      "file": "vertical_f1.png",
      "row": 0,
      "col": 0,
-     "bbox": null
+     "bbox": [
+      0,
+      0,
+      821,
+      1836
+     ]
     }
    ],
    "frames_dir": "petal-panic/assets/levels/level6"

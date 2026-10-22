@@ -3,7 +3,7 @@
  "file": "petal-panic/assets/boss/ratchet_rumbelow/ground_slam_sheet.png",
  "rows": 2,
  "cols": 3,
- "size": "1536x1024",
+ "size": "1539x868",
  "description": "Ratchet Rumbelow boss, sheet 2/5 \u2014 6 frames (ground_slam x2 rows)",
  "entities": [
   {
@@ -15,8 +15,8 @@
      "row": 0,
      "col": 0,
      "bbox": [
-      10,
-      104,
+      8,
+      35,
       493,
       391
      ],
@@ -36,8 +36,8 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      541,
-      41,
+      522,
+      0,
       485,
       461
      ],
@@ -57,8 +57,8 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      1049,
-      45,
+      1036,
+      1,
       487,
       459
      ],
@@ -78,8 +78,8 @@
      "row": 1,
      "col": 0,
      "bbox": [
-      2,
-      541,
+      0,
+      464,
       509,
       400
      ],
@@ -100,7 +100,7 @@
      "col": 1,
      "bbox": [
       509,
-      570,
+      461,
       512,
       407
      ],
@@ -120,8 +120,8 @@
      "row": 1,
      "col": 2,
      "bbox": [
-      1018,
-      590,
+      1021,
+      473,
       518,
       382
      ],

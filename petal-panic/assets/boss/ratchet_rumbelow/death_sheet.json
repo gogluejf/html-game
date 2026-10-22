@@ -3,7 +3,7 @@
  "file": "petal-panic/assets/boss/ratchet_rumbelow/death_sheet.png",
  "rows": 2,
  "cols": 3,
- "size": "1536x1024",
+ "size": "1555x921",
  "description": "Ratchet Rumbelow boss, sheet 4/5 \u2014 6 frames (death x2 rows)",
  "entities": [
   {
@@ -15,8 +15,8 @@
      "row": 0,
      "col": 0,
      "bbox": [
+      3,
       0,
-      23,
       510,
       471
      ]
@@ -26,8 +26,8 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      516,
-      11,
+      527,
+      0,
       504,
       470
      ]
@@ -37,8 +37,8 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      1021,
-      42,
+      1041,
+      8,
       514,
       454
      ]
@@ -49,7 +49,7 @@
      "col": 0,
      "bbox": [
       0,
-      534,
+      478,
       517,
       436
      ]
@@ -59,8 +59,8 @@
      "row": 1,
      "col": 1,
      "bbox": [
-      505,
-      523,
+      517,
+      471,
       524,
       450
      ]
@@ -70,8 +70,8 @@
      "row": 1,
      "col": 2,
      "bbox": [
-      1024,
-      603,
+      1042,
+      514,
       512,
       363
      ]

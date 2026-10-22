@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/jester/idle_sheet.png",
+ "size": "1306x327",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "jester idle (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "jester",
+   "anim": "idle",
+   "frames_dir": "petal-panic/assets/enemies/jester",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      264,
+      325
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      264,
+      0,
+      260,
+      327
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      524,
+      0,
+      260,
+      326
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      784,
+      1,
+      261,
+      325
+     ]
+    },
+    {
+     "file": "idle_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1045,
+      0,
+      261,
+      326
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}
