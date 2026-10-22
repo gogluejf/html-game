@@ -29,21 +29,21 @@ let totalCount = 0;
  */
 export function loadImages() {
   const paths = {
-    homeBigtop: 'petal-panic/assets/interface/home/bigtop_f1.png',
-    homeCrowd: 'petal-panic/assets/interface/home/crowd_f1.png',
-    homeStage: 'petal-panic/assets/interface/home/stage_f1.png',
-    homePortrait: 'petal-panic/assets/interface/home/scarlet_portrait_f1.png',
-    squidLogo: 'petal-panic/assets/interface/squid_os_logo/squid_os_logo_f1.png',
-    logo: 'petal-panic/assets/interface/home/logo_f1.png',
-    selectScarlet: 'petal-panic/assets/interface/select/scarlet_vale_f1.png',
-    selectBalthazar: 'petal-panic/assets/interface/select/balthazar_f1.png',
-    selectNone: 'petal-panic/assets/interface/select/none_f1.png',
+    homeBigtop: '../../assets/interface/home/bigtop_f1.png',
+    homeCrowd: '../../assets/interface/home/crowd_f1.png',
+    homeStage: '../../assets/interface/home/stage_f1.png',
+    homePortrait: '../../assets/interface/home/scarlet_portrait_f1.png',
+    squidLogo: '../../assets/interface/squid_os_logo/squid_os_logo_f1.png',
+    logo: '../../assets/interface/home/logo_f1.png',
+    selectScarlet: '../../assets/interface/select/scarlet_vale_f1.png',
+    selectBalthazar: '../../assets/interface/select/balthazar_f1.png',
+    selectNone: '../../assets/interface/select/none_f1.png',
   };  totalCount = Object.keys(paths).length;
   for (const [key, path] of Object.entries(paths)) {
     const img = new Image();
     img.onload = () => { loadedCount++; };
     img.onerror = () => { /* mark as failed; draw will show placeholder */ };
-    img.src = path;
+    img.src = new URL(path, import.meta.url).href;
     images[key] = img;
   }
 }
