@@ -1,17 +1,17 @@
 {
- "file": "petal-panic/assets/boss/colonel_carrot/attack_sheet.png",
+ "file": "petal-panic/assets/boss/colonel_carrot/spin_sheet.png",
  "size": "1352x324",
  "rows": 1,
  "cols": 5,
  "kind": "animation",
- "description": "colonel_carrot attack (5 frames) \u2014 reassembled from frames",
+ "description": "colonel_carrot spin (5 frames) \u2014 reassembled from frames",
  "entities": [
   {
    "name": "colonel_carrot",
-   "anim": "attack",
+   "anim": "spin",
    "frames": [
     {
-     "file": "attack_f1.png",
+     "file": "spin_f1.png",
      "row": 0,
      "col": 0,
      "bbox": [
@@ -32,7 +32,7 @@
      "durUnits": 1
     },
     {
-     "file": "attack_f2.png",
+     "file": "spin_f2.png",
      "row": 0,
      "col": 1,
      "bbox": [
@@ -53,7 +53,7 @@
      "durUnits": 1
     },
     {
-     "file": "attack_f3.png",
+     "file": "spin_f3.png",
      "row": 0,
      "col": 2,
      "bbox": [
@@ -74,7 +74,7 @@
      "durUnits": 1
     },
     {
-     "file": "attack_f4.png",
+     "file": "spin_f4.png",
      "row": 0,
      "col": 3,
      "bbox": [
@@ -95,7 +95,7 @@
      "durUnits": 1
     },
     {
-     "file": "attack_f5.png",
+     "file": "spin_f5.png",
      "row": 0,
      "col": 4,
      "bbox": [

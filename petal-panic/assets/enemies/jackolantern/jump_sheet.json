@@ -1,17 +1,17 @@
 {
- "file": "petal-panic/assets/enemies/jackolantern/launch_sheet.png",
+ "file": "petal-panic/assets/enemies/jackolantern/jump_sheet.png",
  "size": "1467x284",
  "rows": 1,
  "cols": 5,
  "kind": "animation",
- "description": "jackolantern launch (5 frames) \u2014 reassembled from frames",
+ "description": "jackolantern jump (5 frames) \u2014 reassembled from frames",
  "entities": [
   {
    "name": "jackolantern",
-   "anim": "launch",
+   "anim": "jump",
    "frames": [
     {
-     "file": "launch_f1.png",
+     "file": "jump_f1.png",
      "row": 0,
      "col": 0,
      "bbox": [
@@ -22,7 +22,7 @@
      ]
     },
     {
-     "file": "launch_f2.png",
+     "file": "jump_f2.png",
      "row": 0,
      "col": 1,
      "bbox": [
@@ -33,7 +33,7 @@
      ]
     },
     {
-     "file": "launch_f3.png",
+     "file": "jump_f3.png",
      "row": 0,
      "col": 2,
      "bbox": [
@@ -44,7 +44,7 @@
      ]
     },
     {
-     "file": "launch_f4.png",
+     "file": "jump_f4.png",
      "row": 0,
      "col": 3,
      "bbox": [
@@ -55,7 +55,7 @@
      ]
     },
     {
-     "file": "launch_f5.png",
+     "file": "jump_f5.png",
      "row": 0,
      "col": 4,
      "bbox": [
