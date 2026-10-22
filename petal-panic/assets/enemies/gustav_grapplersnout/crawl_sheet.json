@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/gustav_grapplersnout/crawl_sheet.png",
+ "size": "1523x226",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "gustav_grapplersnout crawl (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "gustav_grapplersnout",
+   "anim": "crawl",
+   "frames": [
+    {
+     "file": "crawl_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      2,
+      307,
+      222
+     ]
+    },
+    {
+     "file": "crawl_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      307,
+      4,
+      302,
+      218
+     ]
+    },
+    {
+     "file": "crawl_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      609,
+      0,
+      322,
+      226
+     ]
+    },
+    {
+     "file": "crawl_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      931,
+      4,
+      301,
+      218
+     ]
+    },
+    {
+     "file": "crawl_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1232,
+      3,
+      291,
+      220
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/gustav_grapplersnout"
+  }
+ ],
+ "updated": "2026-10-21"
+}

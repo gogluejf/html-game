@@ -363,14 +363,21 @@ def cmd_state(args):
             sys.exit(1)
 
         # Required: cat, entity, anim, src (source PNG, ANY path — repo-relative
-        # or absolute, e.g. a fresh download in ~/Downloads).
-        required = ["cat", "entity", "anim", "src", "rows", "cols", "description"]
+        # or absolute, e.g. a fresh download in ~/Downloads), kind (sheet
+        # semantics: animation | tile_variant | entity_variant).
+        required = ["cat", "entity", "anim", "src", "rows", "cols", "description", "kind"]
         missing = [r for r in required if r not in parts]
         if missing:
             print(f"ERROR: missing required fields: {missing}", file=sys.stderr)
-            print(f"  Usage: --add-sheet cat=X entity=X anim=Y src=/path/to/any.png rows=N cols=N description=\"...\"", file=sys.stderr)
+            print(f"  Usage: --add-sheet cat=X entity=X anim=Y src=/path/to/any.png rows=N cols=N kind=animation description=\"...\"", file=sys.stderr)
+            print(f"  kind: animation (temporal frames) | tile_variant (1x1 tiles/backdrops/cards) | entity_variant (same entity, visual variants)", file=sys.stderr)
             print(f"  One action per sheet; the action may span multiple grid rows (--rows).", file=sys.stderr)
             print(f"  The sheet is COPIED to <assets_dir>/<cat>/<entity>/<anim>_sheet.png (deterministic name).", file=sys.stderr)
+            sys.exit(1)
+
+        KINDS = {"animation", "tile_variant", "entity_variant"}
+        if parts["kind"] not in KINDS:
+            print(f"ERROR: kind must be one of {sorted(KINDS)}, got '{parts['kind']}'", file=sys.stderr)
             sys.exit(1)
 
         cat, ent, anim = parts["cat"], parts["entity"], parts["anim"]
@@ -406,6 +413,7 @@ def cmd_state(args):
         sheet["size"] = size
         sheet["rows"] = int(parts["rows"])
         sheet["cols"] = int(parts["cols"])
+        sheet["kind"] = parts["kind"]
         sheet["description"] = parts["description"]
 
         # ONE action per sheet: entity + anim build the single entities[] entry.
@@ -433,11 +441,16 @@ def cmd_state(args):
                 sheet["original_prompt"] = pf.read().strip()
 
         # Reject unknown fields (label/cropped_path/file are gone by design)
-        allowed_sheet_fields = {"file", "size", "rows", "cols", "description",
+        allowed_sheet_fields = {"file", "size", "rows", "cols", "kind", "description",
                                 "entities", "original_prompt", "crop"}
         extra = set(parts.keys()) - allowed_sheet_fields - {"cat","entity","anim","src"}
         if extra:
             print(f"WARNING: ignoring unknown fields: {extra}", file=sys.stderr)
+
+        # frames_dir + updated bookkeeping (editor loads frames from /{frames_dir}/{file})
+        sheet["updated"] = __import__("datetime").date.today().isoformat()
+        for e in sheet["entities"]:
+            e.setdefault("frames_dir", os.path.relpath(dest_dir, os.getcwd()))
 
         # Copy source into place (no-op when it already lives there).
         os.makedirs(dest_dir, exist_ok=True)

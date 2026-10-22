@@ -1,0 +1,106 @@
+{
+ "file": "petal-panic/assets/projectiles/saw/shoot_sheet.png",
+ "size": "1891x200",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "saw special (8 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "saw",
+   "anim": "shoot",
+   "frames": [
+    {
+     "file": "shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      3,
+      233,
+      193
+     ]
+    },
+    {
+     "file": "shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      233,
+      0,
+      236,
+      199
+     ]
+    },
+    {
+     "file": "shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      469,
+      3,
+      232,
+      194
+     ]
+    },
+    {
+     "file": "shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      701,
+      0,
+      236,
+      199
+     ]
+    },
+    {
+     "file": "shoot_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      937,
+      0,
+      237,
+      199
+     ]
+    },
+    {
+     "file": "shoot_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1174,
+      1,
+      237,
+      197
+     ]
+    },
+    {
+     "file": "shoot_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1411,
+      0,
+      239,
+      199
+     ]
+    },
+    {
+     "file": "shoot_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      1650,
+      0,
+      241,
+      200
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/projectiles/saw"
+  }
+ ],
+ "updated": "2026-10-21"
+}

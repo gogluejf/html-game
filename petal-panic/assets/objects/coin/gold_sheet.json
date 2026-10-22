@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/objects/coin/gold_sheet.png",
+ "size": "909x339",
+ "rows": 1,
+ "cols": 4,
+ "kind": "entity_variant",
+ "description": "coin gold (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "coin",
+   "anim": "gold",
+   "frames": [
+    {
+     "file": "gold_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      8,
+      322,
+      322
+     ]
+    },
+    {
+     "file": "gold_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      322,
+      0,
+      126,
+      339
+     ]
+    },
+    {
+     "file": "gold_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      448,
+      3,
+      332,
+      333
+     ]
+    },
+    {
+     "file": "gold_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      780,
+      0,
+      129,
+      338
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/objects/coin"
+  }
+ ],
+ "updated": "2026-10-21"
+}

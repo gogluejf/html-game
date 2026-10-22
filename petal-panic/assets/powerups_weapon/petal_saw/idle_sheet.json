@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/powerups_weapon/petal_saw/idle_sheet.png",
+ "size": "1182x172",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "petal_saw idle (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "petal_saw",
+   "anim": "idle",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      7,
+      274,
+      158
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      274,
+      8,
+      284,
+      156
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      558,
+      0,
+      352,
+      172
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      910,
+      9,
+      272,
+      154
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/powerups_weapon/petal_saw"
+  }
+ ],
+ "updated": "2026-10-21"
+}

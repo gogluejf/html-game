@@ -1,0 +1,136 @@
+{
+ "file": "petal-panic/assets/boss/tusko_wobble/charge_sheet.png",
+ "size": "1612x227",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "tusko_wobble charge (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "tusko_wobble",
+   "anim": "charge",
+   "frames": [
+    {
+     "file": "charge_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      317,
+      226
+     ],
+     "offset": {
+      "x": 93,
+      "y": 41
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "charge_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      317,
+      0,
+      318,
+      227
+     ],
+     "offset": {
+      "x": 159,
+      "y": -113.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "charge_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      635,
+      5,
+      331,
+      217
+     ],
+     "offset": {
+      "x": 165.5,
+      "y": -108.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "charge_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      966,
+      3,
+      327,
+      221
+     ],
+     "offset": {
+      "x": 163.5,
+      "y": -110.5
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "charge_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1293,
+      5,
+      319,
+      216
+     ],
+     "offset": {
+      "x": 159.5,
+      "y": -108
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "frames_dir": "petal-panic/assets/boss/tusko_wobble",
+   "speed": 8,
+   "playback": "loop",
+   "collision": {
+    "x": 4,
+    "y": -222,
+    "w": 309,
+    "h": 218
+   },
+   "pivot": {
+    "x": 159,
+    "y": -113
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-10-21"
+}

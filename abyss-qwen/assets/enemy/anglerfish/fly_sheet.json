@@ -1,0 +1,62 @@
+{
+ "file": "abyss-qwen/assets/enemy/anglerfish/fly_sheet.png",
+ "size": "908x222",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "anglerfish fly (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "anglerfish",
+   "anim": "fly",
+   "frames": [
+    {
+     "file": "fly_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      227,
+      222
+     ]
+    },
+    {
+     "file": "fly_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      227,
+      0,
+      227,
+      222
+     ]
+    },
+    {
+     "file": "fly_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      454,
+      0,
+      227,
+      222
+     ]
+    },
+    {
+     "file": "fly_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      681,
+      0,
+      227,
+      222
+     ]
+    }
+   ],
+   "frames_dir": "abyss-qwen/assets/enemy/anglerfish"
+  }
+ ],
+ "updated": "2026-10-21"
+}

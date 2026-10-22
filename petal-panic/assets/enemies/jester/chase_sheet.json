@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/jester/chase_sheet.png",
+ "size": "1666x378",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "jester chase (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "jester",
+   "anim": "chase",
+   "frames": [
+    {
+     "file": "chase_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      332,
+      376
+     ]
+    },
+    {
+     "file": "chase_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      332,
+      0,
+      334,
+      377
+     ]
+    },
+    {
+     "file": "chase_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      666,
+      0,
+      336,
+      378
+     ]
+    },
+    {
+     "file": "chase_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1002,
+      0,
+      327,
+      377
+     ]
+    },
+    {
+     "file": "chase_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1329,
+      1,
+      337,
+      376
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/jester"
+  }
+ ],
+ "updated": "2026-10-21"
+}

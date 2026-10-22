@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/powerups/panic_clear/idle_sheet.png",
+ "size": "1418x151",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "panic_clear idle (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "panic_clear",
+   "anim": "idle",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      2,
+      315,
+      147
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      315,
+      1,
+      368,
+      149
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      683,
+      0,
+      414,
+      151
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1097,
+      2,
+      321,
+      147
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/powerups/panic_clear"
+  }
+ ],
+ "updated": "2026-10-21"
+}

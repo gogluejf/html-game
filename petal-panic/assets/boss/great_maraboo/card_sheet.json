@@ -27,5 +27,6 @@
  "crop": {
   "pass": "opaque-copy"
  },
- "updated": "2026-10-09T09:35:09"
+ "updated": "2026-10-09T09:35:09",
+ "kind": "tile_variant"
 }

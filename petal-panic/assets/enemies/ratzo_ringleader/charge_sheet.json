@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/ratzo_ringleader/charge_sheet.png",
+ "size": "1498x209",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "ratzo_ringleader charge (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "ratzo_ringleader",
+   "anim": "charge",
+   "frames": [
+    {
+     "file": "charge_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      22,
+      280,
+      164
+     ]
+    },
+    {
+     "file": "charge_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      280,
+      5,
+      312,
+      198
+     ]
+    },
+    {
+     "file": "charge_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      592,
+      7,
+      305,
+      194
+     ]
+    },
+    {
+     "file": "charge_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      897,
+      0,
+      310,
+      209
+     ]
+    },
+    {
+     "file": "charge_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1207,
+      19,
+      291,
+      170
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/ratzo_ringleader"
+  }
+ ],
+ "updated": "2026-10-21"
+}

@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/objects/coin/silver_sheet.png",
+ "size": "759x279",
+ "rows": 1,
+ "cols": 4,
+ "kind": "entity_variant",
+ "description": "coin silver (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "coin",
+   "anim": "silver",
+   "frames": [
+    {
+     "file": "silver_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      10,
+      260,
+      258
+     ]
+    },
+    {
+     "file": "silver_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      260,
+      3,
+      106,
+      273
+     ]
+    },
+    {
+     "file": "silver_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      366,
+      0,
+      284,
+      279
+     ]
+    },
+    {
+     "file": "silver_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      650,
+      3,
+      109,
+      273
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/objects/coin"
+  }
+ ],
+ "updated": "2026-10-21"
+}

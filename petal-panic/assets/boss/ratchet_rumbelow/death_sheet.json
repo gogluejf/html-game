@@ -82,5 +82,6 @@
  ],
  "crop": {
   "pass": "/tmp/redo-ratchet_rumbelow-death-v1"
- }
+ },
+ "kind": "animation"
 }

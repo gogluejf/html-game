@@ -22,5 +22,6 @@
  ],
  "crop": {
   "pass": "/tmp/reg3-vertical_level6-v1"
- }
+ },
+ "kind": "tile_variant"
 }

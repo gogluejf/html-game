@@ -1,0 +1,62 @@
+{
+ "file": "abyss-qwen/assets/boss/shark/fly_sheet.png",
+ "size": "1424x377",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "shark fly (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "shark",
+   "anim": "fly",
+   "frames": [
+    {
+     "file": "fly_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      356,
+      377
+     ]
+    },
+    {
+     "file": "fly_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      356,
+      0,
+      356,
+      377
+     ]
+    },
+    {
+     "file": "fly_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      712,
+      0,
+      356,
+      377
+     ]
+    },
+    {
+     "file": "fly_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1068,
+      0,
+      356,
+      377
+     ]
+    }
+   ],
+   "frames_dir": "abyss-qwen/assets/boss/shark"
+  }
+ ],
+ "updated": "2026-10-21"
+}

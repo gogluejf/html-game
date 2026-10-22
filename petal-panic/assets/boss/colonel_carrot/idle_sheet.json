@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/colonel_carrot/idle_sheet.png",
+ "size": "1306x340",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "colonel_carrot idle (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "colonel_carrot",
+   "anim": "idle",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      258,
+      337
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      258,
+      21,
+      252,
+      298
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      510,
+      0,
+      264,
+      340
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      774,
+      15,
+      273,
+      309
+     ]
+    },
+    {
+     "file": "idle_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1047,
+      5,
+      259,
+      330
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/boss/colonel_carrot"
+  }
+ ],
+ "updated": "2026-10-21"
+}

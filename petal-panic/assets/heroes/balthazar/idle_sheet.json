@@ -104,5 +104,6 @@
  ],
  "crop": {
   "pass": "/tmp/redo-balthazar-sheet2-v1"
- }
+ },
+ "kind": "animation"
 }

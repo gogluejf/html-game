@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/boss/grim_vertigo/attack_sheet.png",
+ "size": "1220x248",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "grim_vertigo attack (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "grim_vertigo",
+   "anim": "attack",
+   "frames": [
+    {
+     "file": "attack_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      283,
+      247
+     ]
+    },
+    {
+     "file": "attack_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      283,
+      0,
+      277,
+      247
+     ]
+    },
+    {
+     "file": "attack_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      560,
+      0,
+      332,
+      247
+     ]
+    },
+    {
+     "file": "attack_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      892,
+      0,
+      328,
+      248
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/boss/grim_vertigo"
+  }
+ ],
+ "updated": "2026-10-21"
+}

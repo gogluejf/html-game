@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/ratzo_ringleader/death_sheet.png",
+ "size": "1444x256",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "ratzo_ringleader death (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "ratzo_ringleader",
+   "anim": "death",
+   "frames": [
+    {
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      284,
+      256
+     ]
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      284,
+      11,
+      265,
+      233
+     ]
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      549,
+      22,
+      281,
+      211
+     ]
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      830,
+      34,
+      309,
+      187
+     ]
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1139,
+      49,
+      305,
+      157
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/ratzo_ringleader"
+  }
+ ],
+ "updated": "2026-10-21"
+}

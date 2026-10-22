@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/jackolantern/launch_sheet.png",
+ "size": "1467x284",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "jackolantern launch (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "jackolantern",
+   "anim": "launch",
+   "frames": [
+    {
+     "file": "launch_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      27,
+      265,
+      230
+     ]
+    },
+    {
+     "file": "launch_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      265,
+      26,
+      230,
+      232
+     ]
+    },
+    {
+     "file": "launch_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      495,
+      0,
+      307,
+      284
+     ]
+    },
+    {
+     "file": "launch_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      802,
+      37,
+      345,
+      209
+     ]
+    },
+    {
+     "file": "launch_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1147,
+      0,
+      320,
+      284
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/jackolantern"
+  }
+ ],
+ "updated": "2026-10-21"
+}

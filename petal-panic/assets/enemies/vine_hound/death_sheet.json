@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/vine_hound/death_sheet.png",
+ "size": "1591x264",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "vine_hound death (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "vine_hound",
+   "anim": "death",
+   "frames": [
+    {
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      304,
+      264
+     ]
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      304,
+      7,
+      317,
+      249
+     ]
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      621,
+      5,
+      315,
+      254
+     ]
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      936,
+      0,
+      320,
+      264
+     ]
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1256,
+      34,
+      335,
+      196
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/vine_hound"
+  }
+ ],
+ "updated": "2026-10-21"
+}

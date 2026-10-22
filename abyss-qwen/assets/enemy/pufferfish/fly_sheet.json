@@ -1,0 +1,62 @@
+{
+ "file": "abyss-qwen/assets/enemy/pufferfish/fly_sheet.png",
+ "size": "856x233",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "pufferfish fly (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "pufferfish",
+   "anim": "fly",
+   "frames": [
+    {
+     "file": "fly_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      214,
+      233
+     ]
+    },
+    {
+     "file": "fly_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      214,
+      0,
+      214,
+      233
+     ]
+    },
+    {
+     "file": "fly_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      428,
+      0,
+      214,
+      233
+     ]
+    },
+    {
+     "file": "fly_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      642,
+      0,
+      214,
+      233
+     ]
+    }
+   ],
+   "frames_dir": "abyss-qwen/assets/enemy/pufferfish"
+  }
+ ],
+ "updated": "2026-10-21"
+}

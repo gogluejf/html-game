@@ -155,5 +155,6 @@
  ],
  "crop": {
   "pass": "/tmp/redo-ratchet_rumbelow-earthquake-v4"
- }
+ },
+ "kind": "animation"
 }

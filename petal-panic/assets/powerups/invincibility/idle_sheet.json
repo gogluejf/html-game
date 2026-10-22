@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/powerups/invincibility/idle_sheet.png",
+ "size": "1412x154",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "invincibility idle (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "invincibility",
+   "anim": "idle",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      320,
+      151
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      320,
+      1,
+      353,
+      151
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      673,
+      0,
+      412,
+      154
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1085,
+      1,
+      327,
+      151
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/powerups/invincibility"
+  }
+ ],
+ "updated": "2026-10-21"
+}

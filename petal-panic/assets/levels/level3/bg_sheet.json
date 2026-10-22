@@ -22,5 +22,6 @@
  ],
  "crop": {
   "pass": "/tmp/reg3-bg_level3-v1"
- }
+ },
+ "kind": "tile_variant"
 }

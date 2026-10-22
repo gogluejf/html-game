@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/gustav_grapplersnout/ground_punch_sheet.png",
+ "size": "1493x242",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "gustav_grapplersnout ground_punch (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "gustav_grapplersnout",
+   "anim": "ground_punch",
+   "frames": [
+    {
+     "file": "ground_punch_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      8,
+      270,
+      226
+     ]
+    },
+    {
+     "file": "ground_punch_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      270,
+      0,
+      274,
+      242
+     ]
+    },
+    {
+     "file": "ground_punch_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      544,
+      14,
+      339,
+      214
+     ]
+    },
+    {
+     "file": "ground_punch_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      883,
+      37,
+      318,
+      168
+     ]
+    },
+    {
+     "file": "ground_punch_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1201,
+      13,
+      292,
+      216
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/gustav_grapplersnout"
+  }
+ ],
+ "updated": "2026-10-21"
+}

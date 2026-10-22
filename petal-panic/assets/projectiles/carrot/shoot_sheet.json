@@ -1,0 +1,106 @@
+{
+ "file": "petal-panic/assets/projectiles/carrot/shoot_sheet.png",
+ "size": "1607x198",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "carrot projectile (8 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "carrot",
+   "anim": "shoot",
+   "frames": [
+    {
+     "file": "shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      24,
+      196,
+      149
+     ]
+    },
+    {
+     "file": "shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      196,
+      23,
+      201,
+      151
+     ]
+    },
+    {
+     "file": "shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      397,
+      7,
+      203,
+      183
+     ]
+    },
+    {
+     "file": "shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      600,
+      5,
+      206,
+      188
+     ]
+    },
+    {
+     "file": "shoot_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      806,
+      4,
+      199,
+      190
+     ]
+    },
+    {
+     "file": "shoot_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1005,
+      2,
+      207,
+      194
+     ]
+    },
+    {
+     "file": "shoot_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1212,
+      0,
+      204,
+      198
+     ]
+    },
+    {
+     "file": "shoot_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      1416,
+      1,
+      191,
+      195
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/projectiles/carrot"
+  }
+ ],
+ "updated": "2026-10-21"
+}

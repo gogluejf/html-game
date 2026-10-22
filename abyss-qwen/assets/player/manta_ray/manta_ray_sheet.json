@@ -61,5 +61,6 @@
  ],
  "crop": {
   "pass": "/home/goglue/tmp/abyss-final-player"
- }
+ },
+ "kind": "animation"
 }

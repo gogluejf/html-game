@@ -127,5 +127,6 @@
  ],
  "crop": {
   "pass": "/tmp/redo2-scarlet-v3+v4"
- }
+ },
+ "kind": "animation"
 }

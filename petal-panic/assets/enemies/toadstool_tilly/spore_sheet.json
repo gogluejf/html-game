@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/toadstool_tilly/spore_sheet.png",
+ "size": "1341x254",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "toadstool_tilly spore (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "toadstool_tilly",
+   "anim": "spore",
+   "frames": [
+    {
+     "file": "spore_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      6,
+      241,
+      242
+     ]
+    },
+    {
+     "file": "spore_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      241,
+      5,
+      258,
+      243
+     ]
+    },
+    {
+     "file": "spore_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      499,
+      0,
+      269,
+      254
+     ]
+    },
+    {
+     "file": "spore_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      768,
+      2,
+      294,
+      249
+     ]
+    },
+    {
+     "file": "spore_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1062,
+      2,
+      279,
+      250
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/toadstool_tilly"
+  }
+ ],
+ "updated": "2026-10-21"
+}

@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/projectiles/bomb/shoot_sheet.png",
+ "size": "942x162",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "bomb special (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "bomb",
+   "anim": "shoot",
+   "frames": [
+    {
+     "file": "shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      2,
+      239,
+      157
+     ]
+    },
+    {
+     "file": "shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      239,
+      2,
+      240,
+      158
+     ]
+    },
+    {
+     "file": "shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      479,
+      0,
+      236,
+      162
+     ]
+    },
+    {
+     "file": "shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      715,
+      1,
+      227,
+      159
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/projectiles/bomb"
+  }
+ ],
+ "updated": "2026-10-21"
+}

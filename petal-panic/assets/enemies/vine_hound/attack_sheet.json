@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/enemies/vine_hound/attack_sheet.png",
+ "size": "1514x266",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "vine_hound attack (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "vine_hound",
+   "anim": "attack",
+   "frames": [
+    {
+     "file": "attack_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      4,
+      278,
+      258
+     ]
+    },
+    {
+     "file": "attack_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      278,
+      3,
+      314,
+      260
+     ]
+    },
+    {
+     "file": "attack_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      592,
+      5,
+      623,
+      255
+     ]
+    },
+    {
+     "file": "attack_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1215,
+      0,
+      299,
+      266
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/vine_hound"
+  }
+ ],
+ "updated": "2026-10-21"
+}

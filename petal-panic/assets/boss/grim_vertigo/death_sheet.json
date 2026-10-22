@@ -1,0 +1,115 @@
+{
+ "file": "petal-panic/assets/boss/grim_vertigo/death_sheet.png",
+ "size": "1328x280",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "grim_vertigo death (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "grim_vertigo",
+   "anim": "death",
+   "frames": [
+    {
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      4,
+      252,
+      271
+     ],
+     "offset": {
+      "x": 126,
+      "y": -136
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      252,
+      6,
+      319,
+      268
+     ],
+     "offset": {
+      "x": 160,
+      "y": -134
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      571,
+      0,
+      363,
+      280
+     ],
+     "offset": {
+      "x": 182,
+      "y": -140
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      934,
+      8,
+      394,
+      263
+     ],
+     "offset": {
+      "x": 197,
+      "y": -132
+     },
+     "scale": {
+      "sx": 1,
+      "sy": 1
+     },
+     "boxes": [],
+     "durUnits": 1
+    }
+   ],
+   "frames_dir": "petal-panic/assets/boss/grim_vertigo",
+   "speed": 8,
+   "playback": "loop",
+   "collision": {
+    "x": 4,
+    "y": -267,
+    "w": 251,
+    "h": 268
+   },
+   "pivot": {
+    "x": 126,
+    "y": -135
+   },
+   "markers": []
+  }
+ ],
+ "updated": "2026-10-21"
+}

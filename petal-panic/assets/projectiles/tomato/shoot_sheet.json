@@ -1,0 +1,106 @@
+{
+ "file": "petal-panic/assets/projectiles/tomato/shoot_sheet.png",
+ "size": "1580x287",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "tomato projectile (8 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "tomato",
+   "anim": "shoot",
+   "frames": [
+    {
+     "file": "shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      56,
+      164,
+      174
+     ]
+    },
+    {
+     "file": "shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      164,
+      56,
+      189,
+      175
+     ]
+    },
+    {
+     "file": "shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      353,
+      57,
+      194,
+      172
+     ]
+    },
+    {
+     "file": "shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      547,
+      54,
+      216,
+      179
+     ]
+    },
+    {
+     "file": "shoot_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      763,
+      54,
+      195,
+      178
+     ]
+    },
+    {
+     "file": "shoot_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      958,
+      51,
+      206,
+      184
+     ]
+    },
+    {
+     "file": "shoot_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1164,
+      0,
+      218,
+      287
+     ]
+    },
+    {
+     "file": "shoot_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      1382,
+      4,
+      198,
+      279
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/projectiles/tomato"
+  }
+ ],
+ "updated": "2026-10-21"
+}

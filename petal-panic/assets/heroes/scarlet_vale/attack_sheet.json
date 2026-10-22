@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/heroes/scarlet_vale/attack_sheet.png",
+ "size": "1520x311",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "scarlet_vale attack (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "scarlet_vale",
+   "anim": "attack",
+   "frames": [
+    {
+     "file": "attack_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      312,
+      309
+     ]
+    },
+    {
+     "file": "attack_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      312,
+      0,
+      296,
+      311
+     ]
+    },
+    {
+     "file": "attack_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      608,
+      2,
+      310,
+      307
+     ]
+    },
+    {
+     "file": "attack_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      918,
+      3,
+      286,
+      304
+     ]
+    },
+    {
+     "file": "attack_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1204,
+      1,
+      316,
+      308
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/heroes/scarlet_vale"
+  }
+ ],
+ "updated": "2026-10-21"
+}

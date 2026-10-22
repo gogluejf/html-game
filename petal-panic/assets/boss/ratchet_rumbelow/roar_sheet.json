@@ -155,5 +155,6 @@
  ],
  "crop": {
   "pass": "/tmp/redo-ratchet_rumbelow-roar-v1"
- }
+ },
+ "kind": "animation"
 }

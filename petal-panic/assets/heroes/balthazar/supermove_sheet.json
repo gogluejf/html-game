@@ -240,5 +240,6 @@
  ],
  "crop": {
   "pass": "/tmp/balthazar_supermove-v9"
- }
+ },
+ "kind": "animation"
 }

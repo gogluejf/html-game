@@ -1,0 +1,106 @@
+{
+ "file": "petal-panic/assets/projectiles/thorn/shoot_sheet.png",
+ "size": "1981x102",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "thorn shoot (8 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "thorn",
+   "anim": "shoot",
+   "frames": [
+    {
+     "file": "shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      244,
+      101
+     ]
+    },
+    {
+     "file": "shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      244,
+      3,
+      249,
+      96
+     ]
+    },
+    {
+     "file": "shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      493,
+      0,
+      250,
+      102
+     ]
+    },
+    {
+     "file": "shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      743,
+      5,
+      247,
+      91
+     ]
+    },
+    {
+     "file": "shoot_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      990,
+      4,
+      246,
+      94
+     ]
+    },
+    {
+     "file": "shoot_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1236,
+      1,
+      247,
+      100
+     ]
+    },
+    {
+     "file": "shoot_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1483,
+      1,
+      250,
+      99
+     ]
+    },
+    {
+     "file": "shoot_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      1733,
+      4,
+      248,
+      93
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/projectiles/thorn"
+  }
+ ],
+ "updated": "2026-10-21"
+}

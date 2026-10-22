@@ -155,5 +155,6 @@
  ],
  "crop": {
   "pass": "/tmp/redo-ratchet_rumbelow-ground_slam-v1"
- }
+ },
+ "kind": "animation"
 }

@@ -104,5 +104,6 @@
  ],
  "crop": {
   "pass": "/tmp/redo-scarlet_vale-sheet2-v1"
- }
+ },
+ "kind": "animation"
 }

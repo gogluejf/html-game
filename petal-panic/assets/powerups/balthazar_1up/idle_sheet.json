@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/powerups/balthazar_1up/idle_sheet.png",
+ "size": "1387x160",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "balthazar_1up idle (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "balthazar_1up",
+   "anim": "idle",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      2,
+      307,
+      156
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      307,
+      0,
+      356,
+      160
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      663,
+      0,
+      412,
+      160
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1075,
+      1,
+      312,
+      157
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/powerups/balthazar_1up"
+  }
+ ],
+ "updated": "2026-10-21"
+}

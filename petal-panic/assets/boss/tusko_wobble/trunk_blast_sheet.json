@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/boss/tusko_wobble/trunk_blast_sheet.png",
+ "size": "1615x214",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "tusko_wobble trunk_blast (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "tusko_wobble",
+   "anim": "trunk_blast",
+   "frames": [
+    {
+     "file": "trunk_blast_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      2,
+      318,
+      209
+     ]
+    },
+    {
+     "file": "trunk_blast_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      318,
+      1,
+      643,
+      211
+     ]
+    },
+    {
+     "file": "trunk_blast_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      961,
+      0,
+      342,
+      214
+     ]
+    },
+    {
+     "file": "trunk_blast_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1303,
+      4,
+      312,
+      206
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/boss/tusko_wobble"
+  }
+ ],
+ "updated": "2026-10-21"
+}

@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/toadstool_tilly/eruption_sheet.png",
+ "size": "1345x241",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "toadstool_tilly eruption (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "toadstool_tilly",
+   "anim": "eruption",
+   "frames": [
+    {
+     "file": "eruption_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      238,
+      238
+     ]
+    },
+    {
+     "file": "eruption_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      238,
+      1,
+      255,
+      238
+     ]
+    },
+    {
+     "file": "eruption_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      493,
+      1,
+      272,
+      238
+     ]
+    },
+    {
+     "file": "eruption_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      765,
+      0,
+      290,
+      241
+     ]
+    },
+    {
+     "file": "eruption_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1055,
+      1,
+      290,
+      238
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/toadstool_tilly"
+  }
+ ],
+ "updated": "2026-10-21"
+}

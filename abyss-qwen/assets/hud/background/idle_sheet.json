@@ -21,5 +21,6 @@
    "frames_dir": "abyss-qwen/assets/hud/background"
   }
  ],
- "crop": {}
+ "crop": {},
+ "kind": "tile_variant"
 }

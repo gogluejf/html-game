@@ -1,0 +1,62 @@
+{
+ "file": "abyss-qwen/assets/enemy/mantis_crab/fly_sheet.png",
+ "size": "984x251",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "mantis_crab fly (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "mantis_crab",
+   "anim": "fly",
+   "frames": [
+    {
+     "file": "fly_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      246,
+      251
+     ]
+    },
+    {
+     "file": "fly_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      246,
+      0,
+      246,
+      251
+     ]
+    },
+    {
+     "file": "fly_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      492,
+      0,
+      246,
+      251
+     ]
+    },
+    {
+     "file": "fly_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      738,
+      0,
+      246,
+      251
+     ]
+    }
+   ],
+   "frames_dir": "abyss-qwen/assets/enemy/mantis_crab"
+  }
+ ],
+ "updated": "2026-10-21"
+}

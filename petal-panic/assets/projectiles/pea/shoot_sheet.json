@@ -1,0 +1,106 @@
+{
+ "file": "petal-panic/assets/projectiles/pea/shoot_sheet.png",
+ "size": "1514x193",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "pea projectile (8 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "pea",
+   "anim": "shoot",
+   "frames": [
+    {
+     "file": "shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      23,
+      174,
+      146
+     ]
+    },
+    {
+     "file": "shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      174,
+      20,
+      192,
+      152
+     ]
+    },
+    {
+     "file": "shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      366,
+      15,
+      186,
+      163
+     ]
+    },
+    {
+     "file": "shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      552,
+      7,
+      195,
+      178
+     ]
+    },
+    {
+     "file": "shoot_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      747,
+      4,
+      194,
+      184
+     ]
+    },
+    {
+     "file": "shoot_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      941,
+      5,
+      188,
+      183
+     ]
+    },
+    {
+     "file": "shoot_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1129,
+      0,
+      193,
+      193
+     ]
+    },
+    {
+     "file": "shoot_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      1322,
+      11,
+      192,
+      170
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/projectiles/pea"
+  }
+ ],
+ "updated": "2026-10-21"
+}

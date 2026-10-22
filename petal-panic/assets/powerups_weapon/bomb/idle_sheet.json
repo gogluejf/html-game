@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/powerups_weapon/bomb/idle_sheet.png",
+ "size": "1126x155",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "bomb idle (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "bomb",
+   "anim": "idle",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      253,
+      152
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      253,
+      0,
+      273,
+      154
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      526,
+      0,
+      345,
+      155
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      871,
+      1,
+      255,
+      152
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/powerups_weapon/bomb"
+  }
+ ],
+ "updated": "2026-10-21"
+}

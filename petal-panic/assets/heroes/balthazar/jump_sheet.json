@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/heroes/balthazar/jump_sheet.png",
+ "size": "1490x323",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "balthazar jump (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "balthazar",
+   "anim": "jump",
+   "frames": [
+    {
+     "file": "jump_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      294,
+      323
+     ]
+    },
+    {
+     "file": "jump_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      294,
+      13,
+      291,
+      297
+     ]
+    },
+    {
+     "file": "jump_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      585,
+      11,
+      313,
+      301
+     ]
+    },
+    {
+     "file": "jump_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      898,
+      4,
+      291,
+      314
+     ]
+    },
+    {
+     "file": "jump_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1189,
+      5,
+      301,
+      312
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/heroes/balthazar"
+  }
+ ],
+ "updated": "2026-10-21"
+}

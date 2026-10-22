@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/toadstool_tilly/death_sheet.png",
+ "size": "1325x252",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "toadstool_tilly death (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "toadstool_tilly",
+   "anim": "death",
+   "frames": [
+    {
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      4,
+      243,
+      243
+     ]
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      243,
+      4,
+      243,
+      243
+     ]
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      486,
+      0,
+      262,
+      252
+     ]
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      748,
+      19,
+      290,
+      213
+     ]
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1038,
+      24,
+      287,
+      203
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/toadstool_tilly"
+  }
+ ],
+ "updated": "2026-10-21"
+}

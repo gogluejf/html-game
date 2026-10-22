@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/ratzo_ringleader/run_sheet.png",
+ "size": "1523x186",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "ratzo_ringleader run (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "ratzo_ringleader",
+   "anim": "run",
+   "frames": [
+    {
+     "file": "run_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      8,
+      299,
+      169
+     ]
+    },
+    {
+     "file": "run_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      299,
+      0,
+      308,
+      185
+     ]
+    },
+    {
+     "file": "run_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      607,
+      0,
+      304,
+      186
+     ]
+    },
+    {
+     "file": "run_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      911,
+      0,
+      306,
+      185
+     ]
+    },
+    {
+     "file": "run_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1217,
+      4,
+      306,
+      178
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/ratzo_ringleader"
+  }
+ ],
+ "updated": "2026-10-21"
+}

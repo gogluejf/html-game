@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/powerups/rapid_fire/idle_sheet.png",
+ "size": "1247x172",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "rapid_fire idle (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "rapid_fire",
+   "anim": "idle",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      312,
+      172
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      312,
+      1,
+      311,
+      170
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      623,
+      10,
+      312,
+      152
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      935,
+      0,
+      312,
+      172
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/powerups/rapid_fire"
+  }
+ ],
+ "updated": "2026-10-21"
+}

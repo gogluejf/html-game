@@ -94,5 +94,6 @@
  ],
  "crop": {
   "pass": "/tmp/redo-scarlet-s5-v1"
- }
+ },
+ "kind": "animation"
 }

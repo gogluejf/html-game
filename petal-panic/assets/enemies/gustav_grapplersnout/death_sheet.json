@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/gustav_grapplersnout/death_sheet.png",
+ "size": "1481x233",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "gustav_grapplersnout death (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "gustav_grapplersnout",
+   "anim": "death",
+   "frames": [
+    {
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      271,
+      233
+     ]
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      271,
+      14,
+      292,
+      204
+     ]
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      563,
+      35,
+      301,
+      163
+     ]
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      864,
+      42,
+      328,
+      148
+     ]
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1192,
+      23,
+      289,
+      187
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/gustav_grapplersnout"
+  }
+ ],
+ "updated": "2026-10-21"
+}

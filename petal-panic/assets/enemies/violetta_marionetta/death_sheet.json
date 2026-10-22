@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/violetta_marionetta/death_sheet.png",
+ "size": "1424x339",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "violetta_marionetta death (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "violetta_marionetta",
+   "anim": "death",
+   "frames": [
+    {
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      258,
+      337
+     ]
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      258,
+      0,
+      256,
+      338
+     ]
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      514,
+      5,
+      291,
+      329
+     ]
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      805,
+      0,
+      315,
+      339
+     ]
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1120,
+      0,
+      304,
+      338
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/violetta_marionetta"
+  }
+ ],
+ "updated": "2026-10-21"
+}

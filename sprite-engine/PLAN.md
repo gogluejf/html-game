@@ -116,7 +116,37 @@ Exit non-zero if any hard error. Prints summary. No writes.
 - Future AI-generated sheets without pre-cropped frames still need real
   slicing (sprite-crop skill territory)
 
+## Status (2026-10-21)
+
+- [x] `audit.py` + `reassemble.py` written and tested
+- [x] Abyss-qwen practice batch: 3 pens → 13 sheets, round-trip exact
+- [x] Full batch: 40 multi-entity source sheets → **134 per-anim sheets built**
+- [x] Validation: 565/566 frames pixel-exact on round-trip; grid/bounds/paths consistent
+- [x] Schema fix pass 1: added missing `frames_dir` to all 134 new JSONs (editor
+      loads frames from `/${framesDir}/${file}` — without it every frame 404s)
+- [x] Schema fix pass 2: migrated editor tuning (speed/playback/collision/pivot/
+      markers + per-frame offset/scale/boxes/durUnits) from old sheets into the
+      5 new sheets that had tuned entities (colonel_carrot/attack,
+      grim_vertigo/death, tusko_wobble/charge+death, scarlet_vale/jump). The other
+      4 tuned anims (ratchet_rumbelow x3, balthazar/supermove) were already
+      single-anim sheets and kept their originals.
+- [ ] Known soft-mismatch: `violetta_marionetta/attack_f4.png` — pre-existing stale
+      frame (disk frame doesn't match old sheet crop either; 3321/317k px differ).
+      Needs re-crop from original or regeneration. Flagged for user.
+- [ ] Phase B (user-driven): delete old mixed sheets + JSONs (list below), fix
+      petal-panic home/select screen paths
+
+### Bug found & fixed during build
+Pillow `canvas.paste(im, pos, im)` (image as its own mask) alters semi-transparent
+pixels; plain `paste(im, pos)` is lossless. All sheets rebuilt with the fix.
+
+### Phase B deletion candidates (old mixed sheets, once validated by user)
+- abyss-qwen/assets/{boss,enemy,powerup}/_sheets/* (6 files)
+- petal-panic/assets/{objects,powerups,powerups_weapon,projectiles}/_sheets/* (12 files)
+- 19 entity-dir mixed sheets (colonel_carrot_sheet, grim_vertigo_sheet, ...)
+- 16 levels block/platform sheets
+
 ## Commits
 
-- This plan MD: committed immediately
+- This plan MD: committed immediately (status section updated in place, uncommitted)
 - All script + migration work: **NOT committed** until user says so

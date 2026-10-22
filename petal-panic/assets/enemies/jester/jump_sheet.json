@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/jester/jump_sheet.png",
+ "size": "1887x368",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "jester jump (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "jester",
+   "anim": "jump",
+   "frames": [
+    {
+     "file": "jump_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      340,
+      368
+     ]
+    },
+    {
+     "file": "jump_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      340,
+      21,
+      397,
+      326
+     ]
+    },
+    {
+     "file": "jump_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      737,
+      26,
+      394,
+      315
+     ]
+    },
+    {
+     "file": "jump_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1131,
+      18,
+      381,
+      331
+     ]
+    },
+    {
+     "file": "jump_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1512,
+      6,
+      375,
+      356
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/jester"
+  }
+ ],
+ "updated": "2026-10-21"
+}

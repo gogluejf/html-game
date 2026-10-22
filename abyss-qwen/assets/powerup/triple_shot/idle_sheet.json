@@ -1,0 +1,62 @@
+{
+ "file": "abyss-qwen/assets/powerup/triple_shot/idle_sheet.png",
+ "size": "1232x223",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "triple_shot idle (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "triple_shot",
+   "anim": "idle",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      308,
+      223
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      308,
+      0,
+      308,
+      223
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      616,
+      0,
+      308,
+      223
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      924,
+      0,
+      308,
+      223
+     ]
+    }
+   ],
+   "frames_dir": "abyss-qwen/assets/powerup/triple_shot"
+  }
+ ],
+ "updated": "2026-10-21"
+}

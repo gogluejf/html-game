@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/jackolantern/explode_sheet.png",
+ "size": "1506x314",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "jackolantern explode (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "jackolantern",
+   "anim": "explode",
+   "frames": [
+    {
+     "file": "explode_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      10,
+      300,
+      294
+     ]
+    },
+    {
+     "file": "explode_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      300,
+      4,
+      290,
+      305
+     ]
+    },
+    {
+     "file": "explode_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      590,
+      10,
+      305,
+      294
+     ]
+    },
+    {
+     "file": "explode_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      895,
+      0,
+      310,
+      314
+     ]
+    },
+    {
+     "file": "explode_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1205,
+      21,
+      301,
+      271
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/jackolantern"
+  }
+ ],
+ "updated": "2026-10-21"
+}

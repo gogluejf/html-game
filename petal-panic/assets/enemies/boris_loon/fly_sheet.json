@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/boris_loon/fly_sheet.png",
+ "size": "1586x296",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "boris_loon fly (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "boris_loon",
+   "anim": "fly",
+   "frames": [
+    {
+     "file": "fly_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      4,
+      327,
+      288
+     ]
+    },
+    {
+     "file": "fly_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      327,
+      0,
+      314,
+      296
+     ]
+    },
+    {
+     "file": "fly_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      641,
+      3,
+      303,
+      289
+     ]
+    },
+    {
+     "file": "fly_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      944,
+      0,
+      326,
+      295
+     ]
+    },
+    {
+     "file": "fly_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1270,
+      3,
+      316,
+      290
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/boris_loon"
+  }
+ ],
+ "updated": "2026-10-21"
+}

@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/powerups/energy/idle_sheet.png",
+ "size": "1084x156",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "energy idle (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "energy",
+   "anim": "idle",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      4,
+      235,
+      148
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      235,
+      3,
+      262,
+      150
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      497,
+      0,
+      347,
+      156
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      844,
+      5,
+      240,
+      146
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/powerups/energy"
+  }
+ ],
+ "updated": "2026-10-21"
+}

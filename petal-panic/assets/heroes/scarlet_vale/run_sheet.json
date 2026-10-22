@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/heroes/scarlet_vale/run_sheet.png",
+ "size": "1263x313",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "scarlet_vale run (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "scarlet_vale",
+   "anim": "run",
+   "frames": [
+    {
+     "file": "run_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      236,
+      313
+     ]
+    },
+    {
+     "file": "run_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      236,
+      0,
+      255,
+      313
+     ]
+    },
+    {
+     "file": "run_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      491,
+      0,
+      253,
+      313
+     ]
+    },
+    {
+     "file": "run_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      744,
+      0,
+      242,
+      313
+     ]
+    },
+    {
+     "file": "run_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      986,
+      0,
+      277,
+      313
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/heroes/scarlet_vale"
+  }
+ ],
+ "updated": "2026-10-21"
+}

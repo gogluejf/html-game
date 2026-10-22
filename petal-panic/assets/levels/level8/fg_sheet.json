@@ -22,5 +22,6 @@
  ],
  "crop": {
   "pass": "/tmp/redo-single-fg-level8"
- }
+ },
+ "kind": "tile_variant"
 }

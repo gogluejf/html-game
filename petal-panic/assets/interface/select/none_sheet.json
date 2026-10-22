@@ -27,5 +27,6 @@
  ],
  "crop": {
   "pass": "opaque-copy"
- }
+ },
+ "kind": "tile_variant"
 }

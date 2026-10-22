@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/heroes/balthazar/run_sheet.png",
+ "size": "1511x291",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "balthazar run (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "balthazar",
+   "anim": "run",
+   "frames": [
+    {
+     "file": "run_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      311,
+      291
+     ]
+    },
+    {
+     "file": "run_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      311,
+      1,
+      284,
+      288
+     ]
+    },
+    {
+     "file": "run_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      595,
+      1,
+      305,
+      289
+     ]
+    },
+    {
+     "file": "run_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      900,
+      0,
+      297,
+      290
+     ]
+    },
+    {
+     "file": "run_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1197,
+      0,
+      314,
+      291
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/heroes/balthazar"
+  }
+ ],
+ "updated": "2026-10-21"
+}

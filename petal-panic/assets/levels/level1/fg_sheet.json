@@ -22,5 +22,6 @@
  ],
  "crop": {
   "pass": "/tmp/reproc-fg_level1-v1"
- }
+ },
+ "kind": "tile_variant"
 }

@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/boris_loon/death_sheet.png",
+ "size": "1565x319",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "boris_loon death (5 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "boris_loon",
+   "anim": "death",
+   "frames": [
+    {
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      5,
+      315,
+      308
+     ]
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      315,
+      0,
+      306,
+      319
+     ]
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      621,
+      12,
+      310,
+      295
+     ]
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      931,
+      8,
+      312,
+      303
+     ]
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1243,
+      1,
+      322,
+      317
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/enemies/boris_loon"
+  }
+ ],
+ "updated": "2026-10-21"
+}

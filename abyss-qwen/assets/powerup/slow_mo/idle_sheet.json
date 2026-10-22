@@ -1,0 +1,62 @@
+{
+ "file": "abyss-qwen/assets/powerup/slow_mo/idle_sheet.png",
+ "size": "1240x308",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "slow_mo idle (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "slow_mo",
+   "anim": "idle",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      310,
+      308
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      310,
+      0,
+      310,
+      308
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      620,
+      0,
+      310,
+      308
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      930,
+      0,
+      310,
+      308
+     ]
+    }
+   ],
+   "frames_dir": "abyss-qwen/assets/powerup/slow_mo"
+  }
+ ],
+ "updated": "2026-10-21"
+}

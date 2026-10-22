@@ -1,0 +1,106 @@
+{
+ "file": "petal-panic/assets/projectiles/peas_tornado/shoot_sheet.png",
+ "size": "1388x260",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "peas_tornado projectile (8 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "peas_tornado",
+   "anim": "shoot",
+   "frames": [
+    {
+     "file": "shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      50,
+      160,
+      160
+     ]
+    },
+    {
+     "file": "shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      160,
+      31,
+      175,
+      198
+     ]
+    },
+    {
+     "file": "shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      335,
+      17,
+      168,
+      226
+     ]
+    },
+    {
+     "file": "shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      503,
+      0,
+      164,
+      260
+     ]
+    },
+    {
+     "file": "shoot_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      667,
+      10,
+      167,
+      239
+     ]
+    },
+    {
+     "file": "shoot_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      834,
+      43,
+      185,
+      173
+     ]
+    },
+    {
+     "file": "shoot_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1019,
+      23,
+      189,
+      214
+     ]
+    },
+    {
+     "file": "shoot_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      1208,
+      27,
+      180,
+      206
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/projectiles/peas_tornado"
+  }
+ ],
+ "updated": "2026-10-21"
+}

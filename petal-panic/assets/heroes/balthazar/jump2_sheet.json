@@ -105,5 +105,6 @@
  ],
  "crop": {
   "pass": "/tmp/redo-balthazar-s5-v1"
- }
+ },
+ "kind": "animation"
 }

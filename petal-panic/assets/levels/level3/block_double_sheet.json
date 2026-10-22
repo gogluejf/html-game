@@ -1,0 +1,40 @@
+{
+ "file": "petal-panic/assets/levels/level3/block_double_sheet.png",
+ "size": "360x811",
+ "rows": 2,
+ "cols": 1,
+ "kind": "tile_variant",
+ "description": "level3 block_double (2 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "level3",
+   "anim": "block_double",
+   "frames": [
+    {
+     "file": "block_double_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      360,
+      463
+     ]
+    },
+    {
+     "file": "block_double_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      7,
+      463,
+      345,
+      348
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level3"
+  }
+ ],
+ "updated": "2026-10-21"
+}

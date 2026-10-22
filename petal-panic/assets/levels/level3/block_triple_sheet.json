@@ -1,0 +1,40 @@
+{
+ "file": "petal-panic/assets/levels/level3/block_triple_sheet.png",
+ "size": "347x1192",
+ "rows": 2,
+ "cols": 1,
+ "kind": "tile_variant",
+ "description": "level3 block_triple (2 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "level3",
+   "anim": "block_triple",
+   "frames": [
+    {
+     "file": "block_triple_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      347,
+      680
+     ]
+    },
+    {
+     "file": "block_triple_f2.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      1,
+      680,
+      344,
+      512
+     ]
+    }
+   ],
+   "frames_dir": "petal-panic/assets/levels/level3"
+  }
+ ],
+ "updated": "2026-10-21"
+}

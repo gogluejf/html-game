@@ -27,5 +27,6 @@
  ],
  "crop": {
   "pass": "/tmp/redo-single"
- }
+ },
+ "kind": "entity_variant"
 }

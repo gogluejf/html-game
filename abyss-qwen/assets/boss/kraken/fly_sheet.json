@@ -1,0 +1,62 @@
+{
+ "file": "abyss-qwen/assets/boss/kraken/fly_sheet.png",
+ "size": "1420x394",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "kraken fly (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "kraken",
+   "anim": "fly",
+   "frames": [
+    {
+     "file": "fly_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      355,
+      394
+     ]
+    },
+    {
+     "file": "fly_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      355,
+      0,
+      355,
+      394
+     ]
+    },
+    {
+     "file": "fly_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      710,
+      0,
+      355,
+      394
+     ]
+    },
+    {
+     "file": "fly_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1065,
+      0,
+      355,
+      394
+     ]
+    }
+   ],
+   "frames_dir": "abyss-qwen/assets/boss/kraken"
+  }
+ ],
+ "updated": "2026-10-21"
+}

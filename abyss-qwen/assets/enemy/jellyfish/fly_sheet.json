@@ -1,0 +1,62 @@
+{
+ "file": "abyss-qwen/assets/enemy/jellyfish/fly_sheet.png",
+ "size": "752x265",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "jellyfish fly (4 frames) \u2014 reassembled from frames",
+ "entities": [
+  {
+   "name": "jellyfish",
+   "anim": "fly",
+   "frames": [
+    {
+     "file": "fly_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      188,
+      265
+     ]
+    },
+    {
+     "file": "fly_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      188,
+      0,
+      188,
+      265
+     ]
+    },
+    {
+     "file": "fly_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      376,
+      0,
+      188,
+      265
+     ]
+    },
+    {
+     "file": "fly_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      564,
+      0,
+      188,
+      265
+     ]
+    }
+   ],
+   "frames_dir": "abyss-qwen/assets/enemy/jellyfish"
+  }
+ ],
+ "updated": "2026-10-21"
+}

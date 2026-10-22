@@ -71,5 +71,6 @@
  ],
  "crop": {
   "pass": "/tmp/redo-doodle-dink-v1"
- }
+ },
+ "kind": "animation"
 }
