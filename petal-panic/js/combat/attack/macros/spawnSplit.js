@@ -21,6 +21,7 @@
 // gravity integrates the full X+Y arc before AI resumes (same as shoving an
 // enemy in gameplay). Grounding is the caller's job (it owns the floor/world).
 
+import './throwMine.js';
 import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { spreadAngles } from './spreadShot.js';
@@ -52,6 +53,8 @@ const DEFAULTS = Object.freeze({
   parentVy: 0,
   delay: 0,
   spawnType: 'projectile', // 'projectile' | 'bomb' | 'enemy'
+  mineType: 'explosion',
+  mine: { ttl: 4, blinkDuration: 2 },
   enemyType: 'jester',
   bomb: null,
   projectile: { ttl: 2, damage: 8 },
@@ -86,6 +89,7 @@ defineMacro('spawnSplit', {
   attacks: [
     { id: 'projectile', role: 'child' },
     { id: 'explosiveBomb', role: 'child' },
+    { id: 'throwMine', role: 'child' },
   ],
   params: { ...DEFAULTS },
   meta: {
@@ -102,7 +106,9 @@ defineMacro('spawnSplit', {
       { key: 'centerDirection', desc: 'central direction (radians)' },
       { key: 'angle', desc: 'distribution width (radians)' },
       { key: 'force', desc: 'launch speed (px/s)' },
-      { key: 'spawnType', desc: 'projectile | bomb | enemy' },
+      { key: 'spawnType', desc: 'projectile | bomb | mine | enemy' },
+      { key: 'mineType', desc: 'explosion | shockwave' },
+      { key: 'mine', desc: 'throwMine params; ttl null = contact only' },
       { key: 'enemyType', desc: 'enemy id when spawnType=enemy' },
       { key: 'bomb', desc: 'bomb params when spawnType=bomb' },
     ],
@@ -126,6 +132,13 @@ defineMacro('spawnSplit', {
         e.vy = c.vy;
         e.hitstunTimer = flightStun(c.vy);
         enemies.push(e);
+      } else if (c.spawnType === 'mine') {
+        const child = invoke('throwMine', {
+          ...p.mine, mineType: p.mineType,
+          origin: { x: c.x, y: c.y }, direction: Math.atan2(c.vy, c.vx), speed,
+          groundY: p.groundY, platforms: p.platforms,
+        }, ctx);
+        handles.push(child);
       } else if (c.spawnType === 'bomb') {
         const b = p.bomb ?? {};
         // Classic exploding bomb → the explosiveBomb macro (composition:
@@ -151,6 +164,8 @@ defineMacro('spawnSplit', {
 
     h.handles = handles;
     h.enemies = enemies;
+    const cancel = h.cancel.bind(h);
+    h.cancel = () => { for (const child of handles) child.cancel(); cancel(); };
 
     // Unified stepping: host calls h.step(dt, targets) each frame.
     h.step = (dt, targets = []) => {

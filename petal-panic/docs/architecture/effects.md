@@ -734,3 +734,14 @@ and `direction: 'reverse'`. Two sprites support either direction.
 duration, initial/final speed, acceleration and direction; toggle `singleFrame`
 to replace B with transparency, then replay. `singleFrame` is a demo-only control,
 not a runtime effect parameter. The settled color remains until replay/switch/reset.
+
+
+### Mine warning overlay
+
+Mine uses `blink-transition` as a separate overlay, not sprite replacement:
+`frameA:null`, `frameB:'rgba(255,0,0,0.65)'`, `direction:'forward'`.
+The rectangular mine base stays drawn throughout warning. Blink cadence inherits
+existing defaults `speed:2`, `endSpeed:30`, `acceleration:2`; `blinkDuration`
+configures duration. Since hold defaults true, detonation/cancellation explicitly
+calls the effect instance's `complete()`. The macro owns detonation timing;
+the normal effect engine owns visual updates, so hosts must step both normally.

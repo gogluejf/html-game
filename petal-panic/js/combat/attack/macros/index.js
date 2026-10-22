@@ -29,3 +29,6 @@ import './shockwaveBomb.js';
 import './shockwaveProjectile.js';
 import './napalm.js';
 import './laneSequence.js';
+
+import './mine.js';
+import './throwMine.js';

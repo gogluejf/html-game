@@ -53,6 +53,25 @@ function elevatedShooter(t, kind) {
 }
 
 export const STAGING = {
+  mine: {
+    setup(t) {
+      // Sandbox enemy stands in for the hero; no inventory or hero recoil system.
+      t._target.loseSelectedSpecial ??= () => {};
+      t._target.takeHit ??= () => {};
+      t._params.x = VIEW_W / 2;
+      t._params.groundY = GROUND_Y;
+      t._target.x = VIEW_W / 2 + 180;
+      t._target.y = GROUND_Y - t._target.h;
+      return tagged({ kind: 'mineContact' }, STAGING.mine);
+    },
+    update(t, c, dt) {
+      // The mine demo context identifies this target as hero for foe mines.
+      const walker = t._target;
+      const dx = VIEW_W / 2 - (walker.x + walker.w / 2);
+      walker.x += Math.sign(dx) * Math.min(Math.abs(dx), 90 * dt);
+      return false;
+    },
+  },
   charge: {
     setup(t) {
       // Charge DASHES AT the target by default: face it, run until body
@@ -371,7 +390,7 @@ export const STAGING = {
       // ground, and detonate. But if the user explicitly retuned spawnType
       // (projectile/enemy) via the param list, honor that — don't clobber it.
       const chosen = t._params.spawnType;
-      if (chosen !== 'enemy' && chosen !== 'projectile') {
+      if (chosen !== 'enemy' && chosen !== 'projectile' && chosen !== 'mine') {
         t._params.spawnType = 'bomb';
         t._params.bomb = { arc: 700, bounce: true, ttl: 1.5, damage: 25, radius: 60, explodeOnContact: true };
       }

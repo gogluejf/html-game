@@ -1280,3 +1280,43 @@ The interval starts ONLY after the current lane's attack fully completes
 - Lane order and side selection are independent.
 - The announcement is always on (not a param).
 - The interval starts after the attack fully ends (no overlap with next marker).
+
+
+## Mine and Throw Mine
+
+`invoke('mine', { x, groundY, ttl: 4, blinkDuration: 2,
+  mineType: 'explosion', team: 'neutral', damage: 40, radius: 70 }, ctx)`
+
+The persistent 24×8 rectangular base is drawn through the ordinary `zone.draw`
+host hook (layered casing, highlight and indicator), separately from its warning.
+Host-owned `step(dt, targets)` advances idle → warning → payload → complete.
+TTL starts while settled; `null` disables automatic triggering, not contact.
+Valid AABB contact immediately latches warning; repeated contacts never restart it.
+Zero blink duration detonates immediately. Cancellation explicitly clears the held overlay.
+
+Contact eligibility reuses `combat/explosion.js:isValidTarget`: ally hits enemies,
+foe hits `ctx.world.hero`, neutral hits either; owner, dead and intangible targets
+are excluded. Supply the real hero identity in context, not merely a team string.
+Explosion is the default primitive; shockwave invokes the primitive directly after
+warning, with **no** additional telegraph/build/gap/blink/impact-delay phases.
+
+`throwMine` adds `origin` (center point or marker), `speed:500`, `direction:-0.5`,
+`arc:800`, `bounce:true`. Its macro-owned body uses shared `stepBombTerrain`
+restitution/friction/settling rules and the same zone render hook; it is not a
+pooled damaging projectile. TTL does not run during flight or bounces. Contact
+in flight latches arming, but the mine continues falling/bouncing and only starts
+its blink once settled on a floor/platform. No contact damage is dealt.
+
+Payload propagation:
+- `skyMissile` / `missileRain`: `blastType:'mine'`, `mineType`, `mineTtl:4`
+  (nullable), `blinkDuration:2`; radius uses `blast.explosionRadius` or
+  `blast.shockRadius`. The falling mine stops on the resolved marked surface;
+  `blastTeam` becomes the mine team.
+- `spawnSplit`: `spawnType:'mine'`, `mineType`, `mine:{ttl,blinkDuration,team,
+  damage,radius,arc,bounce}`. Launch vectors include inherited velocity.
+- `clusterBomb`: `spawnType:'mine'` selects children (parent remains a bomb),
+  `mineType`, `mineTtl:4` (nullable), `blinkDuration:2`; child damage/radius/arc
+  and blastTeam propagate to bouncing thrown mines.
+
+Theater controls expose these selectors, nullable TTL and blink duration. The
+base mine demo centers its base and walks an appropriate target into contact.

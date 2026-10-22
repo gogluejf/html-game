@@ -58,7 +58,10 @@ const DEFAULTS = Object.freeze({
   seed: null,             // optional RNG seed for 'random' coordination (determinism)
   markerStyle: null,      // surface-target-marker override (passed to each missile)
   projectileStyle: null,  // ascent-visual effect override
-  blastType: 'explosion', // explosion | shockwave | napalm — payload on impact (per missile)
+  mineType: 'explosion',
+  mineTtl: 4,
+  blinkDuration: 2,
+  blastType: 'explosion', // explosion | shockwave | napalm | mine — payload on impact (per missile)
   blast: {                // per-payload size params (each payload reads its own key)
     explosionRadius: 60,  // explosion blast circle (px)
     shockRadius: 150,     // shockwave ring max radius (px)
@@ -143,7 +146,10 @@ defineMacro('missileRain', {
       { key: 'timeToTarget', desc: 'per-missile marker → impact window (s)' },
       { key: 'descentSpeed', desc: 'per-missile fall speed (px/s)' },
       { key: 'damage', desc: 'per-missile contact + blast damage' },
-      { key: 'blastType', desc: "explosion | shockwave | napalm — payload on impact (per missile)" },
+      { key: 'mineType', desc: 'explosion | shockwave (mine payload)' },
+      { key: 'mineTtl', desc: 'resting mine seconds; null = contact only' },
+      { key: 'blinkDuration', desc: 'mine warning seconds' },
+      { key: 'blastType', desc: "explosion | shockwave | napalm | mine — payload on impact (per missile)" },
       { key: 'blast.explosionRadius', desc: 'explosion blast circle (px)' },
       { key: 'blast.shockRadius', desc: 'shockwave ring max radius (px)' },
       { key: 'blast.fireWidth', desc: 'napalm burn zone width (px)' },
@@ -195,6 +201,7 @@ defineMacro('missileRain', {
         size: p.size,
         markerStyle: p.markerStyle,
         blastType: p.blastType,
+        mineType: p.mineType, mineTtl: p.mineTtl, blinkDuration: p.blinkDuration,
         blast: p.blast,
       }, ctx);
       h.state.missiles.push(m);
@@ -212,7 +219,7 @@ defineMacro('missileRain', {
 
     h.step = (dt, targets) => {
       const s = h.state;
-      if (s.done) return true;
+      if (s.done || h._completed || h._cancelled) return true;
       s.t += dt;
 
       // --- Launch burst: rockets rise, sine drift, ONE trail per rocket ----
@@ -266,6 +273,11 @@ defineMacro('missileRain', {
       return false;
     };
 
+    const cancel = h.cancel.bind(h);
+    h.cancel = () => {
+      for (const child of h.handles ?? []) child.cancel();
+      cancel();
+    };
     return h;
   },
 });

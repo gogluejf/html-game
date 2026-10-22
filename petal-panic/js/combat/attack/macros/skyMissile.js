@@ -29,6 +29,7 @@ import { fireDeclared } from '../../../effects/index.js';
 // Ensure payload macros are registered (otherwise only pulled in by the theater).
 import './shockwaveProjectile.js';
 import './napalm.js';
+import './throwMine.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -51,7 +52,10 @@ const DEFAULTS = Object.freeze({
   blastTeam: 'neutral', // who the blast hurts
   size: 14,           // carrier box size (px)
   markerStyle: null,  // surface-target-marker effect override
-  blastType: 'explosion', // explosion | shockwave | napalm — payload on impact
+  mineType: 'explosion',
+  mineTtl: 4,
+  blinkDuration: 2,
+  blastType: 'explosion', // explosion | shockwave | napalm | mine — payload on impact
   blast: {               // per-payload size params (each payload reads its own key)
     explosionRadius: 60, // explosion blast circle (px)
     shockRadius: 150,    // shockwave ring max radius (px)
@@ -89,6 +93,7 @@ defineMacro('skyMissile', {
     { id: 'explosiveProjectile', role: 'payload' },
     { id: 'shockwaveProjectile', role: 'payload' },
     { id: 'napalm', role: 'payload' },
+    { id: 'throwMine', role: 'payload' },
   ],
   params: { ...DEFAULTS },
   meta: {
@@ -107,7 +112,10 @@ defineMacro('skyMissile', {
       { key: 'team', desc: 'who the falling carrier hurts' },
       { key: 'blastTeam', desc: 'who the blast hurts' },
       { key: 'size', desc: 'carrier box size (px)' },
-      { key: 'blastType', desc: 'explosion | shockwave | napalm — payload on impact' },
+      { key: 'mineType', desc: 'explosion | shockwave (mine payload)' },
+      { key: 'mineTtl', desc: 'resting mine seconds; null = contact only' },
+      { key: 'blinkDuration', desc: 'mine warning seconds' },
+      { key: 'blastType', desc: 'explosion | shockwave | napalm | mine — payload on impact' },
       { key: 'blast.explosionRadius', desc: 'explosion blast circle (px)' },
       { key: 'blast.shockRadius', desc: 'shockwave ring max radius (px)' },
       { key: 'blast.fireWidth', desc: 'napalm burn zone width (px)' },
@@ -137,7 +145,7 @@ defineMacro('skyMissile', {
       // share the same carrier surface (origin/direction/speed/ttl/team), so
       // one call site works. Each payload reads its OWN size key from `blast`.
       const blast = p.blast ?? {};
-      const payloadId = p.blastType === 'shockwave' ? 'shockwaveProjectile'
+      const payloadId = p.blastType === 'mine' ? 'throwMine' : p.blastType === 'shockwave' ? 'shockwaveProjectile'
         : p.blastType === 'napalm' ? 'napalm'
         : 'explosiveProjectile';
       // Map our named keys → the param each payload macro actually reads:
@@ -160,6 +168,11 @@ defineMacro('skyMissile', {
         size: p.size,
         solidBehavior: 'stop',
         ...payloadSize,
+        ...(p.blastType === 'mine' ? {
+          origin: { x: pt.x, y: spawnY }, groundY: pt.y, arc: 0, bounce: false,
+          ttl: p.mineTtl, blinkDuration: p.blinkDuration, mineType: p.mineType,
+          team: p.blastTeam, radius: p.mineType === 'shockwave' ? blast.shockRadius : blast.explosionRadius,
+        } : {}),
       }, ctx);
       h.state.missile = m;
       // Promote the payload macro into the root's deferred-children list so
@@ -179,7 +192,7 @@ defineMacro('skyMissile', {
 
     h.step = (dt, _targets) => {
       const s = h.state;
-      if (s.done) return true;
+      if (s.done || h._completed || h._cancelled) return true;
       s.t += dt;
 
       if (s.phase === 'warning') {
@@ -217,6 +230,11 @@ defineMacro('skyMissile', {
       return false;
     };
 
+    const cancel = h.cancel.bind(h);
+    h.cancel = () => {
+      for (const child of h.handles ?? []) child.cancel();
+      cancel();
+    };
     return h;
   },
 });
