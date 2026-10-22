@@ -59,7 +59,7 @@ const DEFAULTS = Object.freeze({
   markerStyle: null,      // surface-target-marker override (passed to each missile)
   projectileStyle: null,  // ascent-visual effect override
   mineType: 'explosion',
-  mineTtl: 4,
+  mineTtl: 2,
   blinkDuration: 2,
   blastType: 'explosion', // explosion | shockwave | napalm | mine — payload on impact (per missile)
   blast: {                // per-payload size params (each payload reads its own key)

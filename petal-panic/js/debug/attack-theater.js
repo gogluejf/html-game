@@ -23,7 +23,7 @@ import { makeContext } from '../combat/attack/context.js';
 import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
 import { resolveEffects, resolveInvokes } from '../combat/attack/effectsMeta.js';
 import { stepProjectile } from '../combat/attack/primitives/projectile.js';
-import { stepBomb, stepBombTerrain } from '../combat/attack/primitives/bomb.js';
+import { stepBomb, stepBombTerrain, retainBombContact } from '../combat/attack/primitives/bomb.js';
 import { Pool, Projectile, Special } from '../objects/projectile.js';
 import { CollisionWorld, resolve } from '../core/collision.js';
 import { LAYER } from '../consts.js';
@@ -119,8 +119,8 @@ const SANDBOX_PRESETS = {
   laneSequence: { mode: 'charge', laneCount: 2, laneSpacing: 120, laneOffset: 0, lanes: null, laneOrder: 'bottom_to_top', sideMode: 'fixed_left', alternateStartSide: 'left', announceDelay: 0.5, dashSpeed: 1200, damage: 20, knockback: null, beamDuration: 0.8, beamWidth: 36, tickRate: 8, interval: 0.15, team: 'ally', style: null },
   surfaceWave: { x: ATTACKER_HOME.x + 16, y: GROUND_Y, direction: 'right', speed: 300, height: 24, width: 28, damage: 15, ttl: null, team: 'foe' },
   shockwave: { x: (ATTACKER_HOME.x + TARGET_POS.x) / 2 + 16, y: GROUND_Y - 24, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, shakeIntensity: 5, team: 'neutral' },
-  mine: { x: VIEW_W / 2, team: 'ally', ttl: 4, blinkDuration: 2, mineType: 'explosion' },
-  throwMine: { team: 'ally', ttl: 4, blinkDuration: 2, mineType: 'explosion' },
+  mine: { x: VIEW_W / 2, team: 'ally', ttl: 2, blinkDuration: 2, mineType: 'explosion' },
+  throwMine: { team: 'ally', ttl: 2, blinkDuration: 2, mineType: 'explosion' },
   shockwaveBomb: { direction: -0.5, arc: 800, bounce: false, explodeOnContact: true, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, blastTeam: 'neutral' },
   shockwaveProjectile: { direction: 0, speed: 700, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, solidBehavior: 'stop', blastTeam: 'neutral' },
   stomp: { buildTime: 1.2, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, radius: 90, damage: 30, team: 'foe', shakeStrength: 5 },
@@ -426,6 +426,7 @@ export const AttackTheater = {
       const target = proj === a ? b : a;
       if (target.layer !== LAYER.ENEMY && target.layer !== LAYER.BOSS) return;
       if (!target.alive || target.hp == null) return;
+      if (retainBombContact(proj, target)) return;
       // Entry-edge impact point for engine carriers (tunneling correction):
       // contact edge where the leading face first touched the target. Pure —
       // no mutation; the snap below runs only after the shot is consumed.
@@ -1114,6 +1115,7 @@ export const AttackTheater = {
         ctx.fillRect(p.x, p.y, p.w, p.h);
       }
       for (const s of this._pools.specialPool.activeItems) {
+        if (s._attackVisualOwned) continue;
         ctx.fillStyle = '#fa4';
         ctx.fillRect(s.x, s.y, s.w, s.h);
       }
@@ -1142,7 +1144,7 @@ export const AttackTheater = {
       }
     };
     for (const h of this._handles) drawChildren(h);
-    for (const h of this._bombHost?.roots ?? []) drawChildren(h);
+    this._bombHost?.draw(ctx);
 
     // --- Wave-2 state visuals ---------------------------------------------------
     for (const h of this._handles) {

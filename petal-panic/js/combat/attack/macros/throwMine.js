@@ -1,13 +1,12 @@
-// Macro-owned flight avoids pooled Special TTL/contact killing an armed mine.
-// Reuses bomb terrain restitution/friction/settle threshold, not a second physics rule.
+// Ballistic Arc carrier → persistent mine. Hosts own all flight integration/collision.
 import {defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { stepBombTerrain } from '../primitives/bomb.js';
 import { MINE_DEFAULTS, MINE_PARAMS } from './mine.js';
 
 defineMacro('throwMine', {
-  attacks: [{ id: 'mine', role: 'payload' }],
-  params: { ...MINE_DEFAULTS, speed: 500, direction: -0.5, arc: 800, bounce: true, origin: null },
+  attacks: [{ id: 'bomb', role: 'carrier' }, { id: 'mine', role: 'payload' }],
+  params: { ...MINE_DEFAULTS, speed: 500, direction: -0.5, arc: 1000, bounce: true, origin: null },
   meta: { name: 'Throw Mine', desc: 'Bouncing mine; fuse starts at rest. Airborne contact arms a warning that starts on landing.',
     effects: [{ type: 'blink-transition', desc: 'mine warning overlay' }],
     params: [...MINE_PARAMS,
@@ -16,35 +15,47 @@ defineMacro('throwMine', {
       { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' }],
   },
   impl(p, ctx) {
-    const a = ctx.attacker;
-    const origin = typeof p.origin === 'string'
-      ? (ctx.markers ?? a?.markers ?? []).find(m => m.label === p.origin)
-      : p.origin;
-    const x = origin?.x ?? (a.x + a.w / 2);
-    const y = origin?.y ?? (a.y + a.h / 2);
-    const h = invoke('mine', { ...p, x }, ctx);
-    const b = h.state.box;
-    Object.assign(b, { y: y - b.h / 2, vx: Math.cos(p.direction) * p.speed,
-      vy: Math.sin(p.direction) * p.speed, alive: true, solidBehavior: p.bounce ? 'reflect' : 'stop' });
+    const carrier = invoke('bomb', {
+      speed: p.speed, direction: p.direction, arc: p.arc, bounce: p.bounce,
+      origin: p.origin, team: p.team, damage: 0, ttl: null,
+      retainOnContact: true, retainOnSettle: true,
+    }, ctx);
+    const h = invoke('mine', p, ctx);
+    h.inner = carrier; // lifecycle owned here, never proxy carrier completion
+    const ent = carrier.entity;
+    if (!ent) { h._complete(); return h; }
+    h.entity = ent;
+    // Same rectangular body for collision and visual; Special remains the only integrator.
+    const cx = ent.x + ent.w / 2, cy = ent.y + ent.h / 2;
+    Object.assign(ent, { x: cx - 12, y: cy - 4, w: 24, h: 8, _attackVisualOwned: true });
+    Object.assign(ent.box, { ox: 0, oy: 0, bw: 24, bh: 8 });
+    const box = h.state.box;
+    const sync = () => { box.x = ent.x; box.y = ent.y; };
+    sync();
     h.state.settled = false;
+    carrier.on('contact', ({ target }) => { if (h.validTarget(target)) h.arm(); });
     const step = h.step;
     h.step = (dt, targets) => {
       if (h._completed || h._cancelled) return true;
       if (!h.state.settled) {
+        if (!ctx.bombTerrainStepped) {
+          stepBombTerrain(ent, dt, p.groundY ?? ctx.groundY, p.platforms ?? ctx.platforms ?? []);
+        }
+        sync();
         if (h.checkContact(targets)) h.arm();
-        b._bombPrevBottom = b.y + b.h;
-        b.vy += p.arc * dt;
-        b.x += b.vx * dt; b.y += b.vy * dt;
-        stepBombTerrain(b, dt, p.groundY ?? ctx.groundY, p.platforms ?? ctx.platforms ?? []);
-        if (b._bombSurfaceY != null && (!b.alive || b.vy === 0)) {
-          b.alive = true; b.vx = b.vy = 0;
+        if (!ent.alive) { carrier.cancel(); h.cancel(); return true; }
+        if (ent._bombSettled) {
+          // Snapshot the resting body and release the pooled flight carrier.
           h.state.settled = true;
-          // Landing frame belongs to flight, not to the resting TTL.
-          return step(0, targets);
+          carrier.cancel();
+          h.entity = null;
+          return step(0, targets); // landing time never consumes resting TTL
         }
       }
       return step(dt, targets);
     };
+    const cancel = h.cancel.bind(h);
+    h.cancel = () => { carrier.cancel(); cancel(); };
     return h;
   },
 });

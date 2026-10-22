@@ -7,7 +7,7 @@ import '../primitives/explosion.js';
 import '../primitives/shockwave.js';
 
 export const MINE_DEFAULTS = Object.freeze({
-  x: 0, groundY: null, ttl: 4, blinkDuration: 2,
+  x: 0, groundY: null, ttl: 2, blinkDuration: 2,
   mineType: 'explosion', team: 'neutral', damage: 40, radius: 70,
 });
 export const MINE_PARAMS = [

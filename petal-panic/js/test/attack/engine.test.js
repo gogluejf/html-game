@@ -144,7 +144,7 @@ ok('handle: unknown event name throws', () => {
 });
 
 ok('events contract: exactly hit/expire/detonate/complete', () => {
-  assert.deepEqual([...ATTACK_EVENTS].sort(), ['complete', 'detonate', 'expire', 'hit']);
+  assert.deepEqual([...ATTACK_EVENTS].sort(), ['complete', 'contact', 'detonate', 'expire', 'hit']);
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

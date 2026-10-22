@@ -84,9 +84,10 @@ export function resolveMarker(ctx, label) {
 
 /**
  * Attack lifecycle events. A handle emits these via `.on(event, cb)`.
+ * - contact:  non-consuming carrier contact (opt-in bomb lifecycle)
  * - hit:      a damaging interaction landed (may fire multiple times)
  * - expire:   the attack ran out of time/range without completing its purpose
  * - detonate: a bomb/explosion payload fired
  * - complete: the attack finished (always fires exactly once, last)
  */
-export const ATTACK_EVENTS = Object.freeze(['hit', 'expire', 'detonate', 'complete']);
+export const ATTACK_EVENTS = Object.freeze(['hit', 'contact', 'expire', 'detonate', 'complete']);

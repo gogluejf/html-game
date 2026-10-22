@@ -36,6 +36,8 @@ const DEFAULTS = Object.freeze({
   team: 'ally',
   bounce: true,         // → solidBehavior 'reflect' (existing flag)
   explodeOnContact: true,
+  retainOnContact: false, // emit contact without damage/consumption (composed payloads)
+  retainOnSettle: false,  // keep carrier alive and expose settled state
   ttl: 2,               // fuse seconds (runs while airborne AND resting)
   damage: 40,           // direct-contact damage
   radius: 70,           // reference size for host-side effects (macro-owned)
@@ -71,8 +73,12 @@ export function spawnBomb(p, ctx, h = null) {
   // — which writes the 'life' timer — would be ignored by tickTtl(). Write
   // the labeled timer directly so the declared ttl actually governs expiry.
   const label = ent._ttlLabel ?? 'life';
-  ent.setLife(p.ttl);
-  ent.timers.set(label, p.ttl);
+  ent.setLife(p.ttl ?? 0);
+  ent.timers.set(label, p.ttl ?? 0);
+  ent._bombFuseDisabled = p.ttl === null;
+  ent._bombRetainOnContact = p.retainOnContact;
+  ent._bombRetainOnSettle = p.retainOnSettle;
+  ent._bombSettled = false;
   ent.solidBehavior = p.bounce ? 'reflect' : 'stop';
   ent._attackId = 'bomb';
   ent._attackDone = false;
@@ -106,6 +112,7 @@ export function spawnBomb(p, ctx, h = null) {
  */
 export function stepBombTerrain(ent, dt, groundY, platforms = []) {
   if (!ent || (!ent.alive && !ent.ttlExpired) || ent._attackDone) return false;
+  if (ent._bombSettled) return false;
   const bottom = ent.y + ent.h;
   // Pick the first crossed top, independent of surface list ordering.
   const prevBottom = ent._bombPrevBottom ?? bottom - ent.vy * dt;
@@ -133,9 +140,15 @@ export function stepBombTerrain(ent, dt, groundY, platforms = []) {
       // stepBomb() fires when TTL expires or contact occurs.
       ent.vy = 0;
       ent.vx = 0;
+      if (ent._bombRetainOnSettle) ent._bombSettled = true;
       return false;
     }
     return false;
+  }
+  if (ent._bombRetainOnSettle) {
+    ent.vx = ent.vy = 0;
+    ent._bombSettled = true;
+    return true;
   }
   // 'stop' (or anything non-reflect): impact ends the flight.
   ent._attackHit = true;
@@ -188,6 +201,13 @@ export function stepBomb(ent, p, ctx, h) {
   return true;
 }
 
+// Collision hosts share this opt-in lifecycle hook; terrain still resolves normally.
+export function retainBombContact(ent, target) {
+  if (!ent._bombRetainOnContact) return false;
+  ent._attackHandle?._emit('contact', { target });
+  return true;
+}
+
 registerPrimitive('bomb', {
   params: { ...DEFAULTS },
   meta: {
@@ -213,6 +233,15 @@ registerPrimitive('bomb', {
     const ent = spawnBomb(params, ctx, h);
     if (!ent) { h._emit('expire'); h._complete(); return h; }
     h.entity = ent;
+    const cancel = h.cancel.bind(h);
+    h.cancel = () => {
+      if (ent._attackHandle === h && !h._completed) {
+        ent.alive = false;
+        ent._attackDone = true;
+        ctx.collisionWorld?.remove(ent);
+      }
+      cancel();
+    };
     return h;
   },
 });

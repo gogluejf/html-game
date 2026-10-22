@@ -1284,7 +1284,7 @@ The interval starts ONLY after the current lane's attack fully completes
 
 ## Mine and Throw Mine
 
-`invoke('mine', { x, groundY, ttl: 4, blinkDuration: 2,
+`invoke('mine', { x, groundY, ttl: 2, blinkDuration: 2,
   mineType: 'explosion', team: 'neutral', damage: 40, radius: 70 }, ctx)`
 
 The persistent 24×8 rectangular base is drawn through the ordinary `zone.draw`
@@ -1301,9 +1301,18 @@ Explosion is the default primitive; shockwave invokes the primitive directly aft
 warning, with **no** additional telegraph/build/gap/blink/impact-delay phases.
 
 `throwMine` adds `origin` (center point or marker), `speed:500`, `direction:-0.5`,
-`arc:800`, `bounce:true`. Its macro-owned body uses shared `stepBombTerrain`
-restitution/friction/settling rules and the same zone render hook; it is not a
-pooled damaging projectile. TTL does not run during flight or bounces. Contact
+`arc:800`, `bounce:true`. It composes the actual `bomb` (Ballistic Arc)
+primitive: a pooled Special integrated only by the host's pool update, then
+shared bomb terrain resolution and CollisionWorld wall/block-side reflection.
+The bomb opts into `retainOnContact` and `retainOnSettle`, with `ttl:null`
+disabling its flight fuse. Defaults for other bomb users remain unchanged.
+Non-consuming `contact` events arm eligible targets without contact damage.
+On settling, throwMine snapshots the rectangular base into the persistent mine
+and cancels/releases the flight carrier (including its collision registration).
+The mine owns only the resting TTL, warning, payload and zone rendering—not physics.
+Nested skyMissile/missileRain/spawnSplit/clusterBomb parents step children once;
+hosts integrate pooled carriers once and never promote children to another step list.
+Cancellation cascades to the carrier and warning; pool exhaustion completes cleanly. TTL does not run during flight or bounces. Contact
 in flight latches arming, but the mine continues falling/bouncing and only starts
 its blink once settled on a floor/platform. No contact damage is dealt.
 

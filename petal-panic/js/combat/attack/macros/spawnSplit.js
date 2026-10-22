@@ -54,7 +54,7 @@ const DEFAULTS = Object.freeze({
   delay: 0,
   spawnType: 'projectile', // 'projectile' | 'bomb' | 'enemy'
   mineType: 'explosion',
-  mine: { ttl: 4, blinkDuration: 2 },
+  mine: { ttl: 2, blinkDuration: 2 },
   enemyType: 'jester',
   bomb: null,
   projectile: { ttl: 2, damage: 8 },

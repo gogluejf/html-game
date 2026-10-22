@@ -11,6 +11,7 @@
 //   - All boxes are plain {x, y, w, h} world-space AABBs.
 
 import { LAYER } from '../consts.js';
+import { retainBombContact } from '../combat/attack/primitives/bomb.js';
 
 // ---------------------------------------------------------------------------
 // aabbOverlap
@@ -244,6 +245,7 @@ export const COLLISION_RULES = [
   { a: LAYER.PROJ_ALLY, b: LAYER.SOLID,       action: 'hit'        }, // thorns chip barrels ()
   { a: LAYER.PROJ_FOE,  b: LAYER.HERO,        action: 'hit'        },
   { a: LAYER.PROJ_FOE,  b: LAYER.SOLID,       action: 'hit'        }, // engine bomb terrain only; handler filters
+  { a: LAYER.PROJ_ALLY, b: LAYER.HERO,        action: 'hit'        }, // neutral mine contact (retainBombContact guards)
   { a: LAYER.HERO,      b: LAYER.PICKUP,      action: 'pickup'     },
   { a: LAYER.HERO,      b: LAYER.COIN,        action: 'collect'    },
   { a: LAYER.HERO,      b: LAYER.CHECKPOINT,  action: 'checkpoint' },
@@ -435,6 +437,10 @@ export class CollisionWorld {
       const key = Math.min(lo.layer, hi.layer) + ':' + Math.max(lo.layer, hi.layer);
       const actions = RULE_PAIRS.get(key);
       if (!actions) return;
+
+      // Composed ballistic payloads may opt into contact retention without damage/consumption.
+      if (retainBombContact(a, b)) return;
+      if (retainBombContact(b, a)) return;
       for (const action of actions) {
         this.events.push({ action, a, b });
         const fn = this.handlers.get(action);

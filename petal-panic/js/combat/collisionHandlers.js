@@ -9,6 +9,7 @@
 // through the single context object (world/context.js) rather than importing
 // update.js directly — that keeps the dependency graph acyclic.
 
+import { retainBombContact } from './attack/primitives/bomb.js';
 import { LAYER } from '../consts.js';
 import { damage, flashTarget } from './damage.js';
 import { applyKnockback } from './knockback.js';
@@ -117,6 +118,8 @@ export function registerCollisionHandlers(collisionWorld) {
         return;
       }
 
+      if (retainBombContact(allyProj, target)) return;
+
       // friendly thorn hits a barrel (SOLID with an HP pool). Chip its
       // HP; on destruction the barrel explodes (AoE + VFX) and is removed from the
       // world. Thorns are consumed on impact either way.
@@ -212,6 +215,7 @@ export function registerCollisionHandlers(collisionWorld) {
         return;
       }
       if (victim.layer !== LAYER.HERO) return;
+      if (retainBombContact(foeProj, victim)) return;
       // Boss zone flow (boss-arena.md §2): the boss is untouchable before
       // COMBAT, so it fires no attacks during the intro either.
       if (foeProj === boss && !bossZone.bossCanTakeDamage()) { foeProj.alive = false; return; }

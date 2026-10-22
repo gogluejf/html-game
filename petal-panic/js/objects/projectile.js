@@ -233,7 +233,7 @@ export class Special extends Entity {
     this._impactPoint = null;
     this._bombPrevBottom = this.y + this.h;
     // Gravity for ballistic weapons (bombs).
-    if (this.gravityValue > 0) {
+    if (this.gravityValue > 0 && !this._bombSettled) {
       this.vy += this.gravityValue * dt;
     }
     this.x += this.vx * dt;
@@ -241,7 +241,7 @@ export class Special extends Entity {
 
     // TTL countdown.
     const wasAlive = this.alive;
-    this.tickTtl(dt);
+    if (!this._bombFuseDisabled) this.tickTtl(dt);
     // If we just died from TTL, flag it so the update loop can call explodeSpecial().
     if (wasAlive && !this.alive) {
       this.ttlExpired = true;
@@ -249,7 +249,7 @@ export class Special extends Entity {
   }
 
   draw(ctx) {
-    if (!this.alive) return;
+    if (!this.alive || this._attackVisualOwned) return;
     const meta = specialById[this.type];
     const cx = this.x + this.w / 2;
     const cy = this.y + this.h / 2;

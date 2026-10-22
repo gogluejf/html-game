@@ -21,7 +21,7 @@ const DEFAULTS = Object.freeze({
   // Children
   spawnType: 'bomb',
   mineType: 'explosion',
-  mineTtl: 4,
+  mineTtl: 2,
   blinkDuration: 2,
   count: 4,
   childAngle: 120 * Math.PI / 180,
