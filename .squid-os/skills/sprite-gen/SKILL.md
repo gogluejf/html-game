@@ -173,16 +173,18 @@ This creates `<sheets-root>/<project>.meta.json` (chat_url, style_name, palette,
 ```bash
 python3 <skill-folder>/scripts/sprite_gen.py state \
   --state <working-dir>/.squid-os/sprite-sheets/<PROJECT>/ \
-  --add-sheet file=<PROJECT>/assets/<category>/<entity>/<action>_sheet.png \
+  --add-sheet cat=<category> entity=<entity_name> anim=<action> \
+  src=<ANY path to the PNG, e.g. ~/Downloads/gpt_output.png or repo-relative> \
   rows=<R> cols=<C> description="<what it is visually>" \
-  entity=<entity_name> anim=<action> \
   [--prompt-file /tmp/<entity>_<action>_prompt.txt]
 ```
-This writes exactly ONE file: the **twin JSON next to the PNG** — `<PROJECT>/assets/<category>/<entity>/<action>_sheet.json`. The category/entity folders are derived from `file=`; there is no `label` or `cropped_path` param anymore. `size` is auto-read from the PNG (pass `size="WxH"` only if PIL is unavailable). Idempotent — re-adding the same sheet overwrites that one twin. It never touches sibling sheets.
+**Fully deterministic.** You supply `cat` + `entity` + `anim` + a source PNG from ANY path; the tool does the rest:
+- copies the source to `<assets_dir>/<cat>/<entity>/<anim>_sheet.png` (creates folders if needed; source keeps its original name/location)
+- writes the twin `<anim>_sheet.json` next to it (exact base-name parity, guaranteed)
+- auto-reads `size` from the PNG (pass `size="WxH"` only if PIL is unavailable)
+- refuses to overwrite an existing sheet with the same target name
 
-One action per sheet: `entity=` + `anim=` build the single `entities[]` entry. The action may span multiple grid rows (`rows=2` for a long anim laid out 2xN). Escape hatch for exotic cases: pass `entities='[{"name":...,"anim":...,"row":[1,2]}]'` instead of `entity`/`anim`.
-
-The CLI enforces: `file` must be repo-relative AND inside this project's meta `assets_dir/`, and must live in a `<category>/<entity>/` folder (depth ≥ 2 under assets). Files outside the repo (e.g. `~/Downloads/`) are rejected — move the PNG into the entity dir first (that move is where the `<action>_sheet.png` naming happens).
+One action per sheet: `entity` + `anim` build the single `entities[]` entry. The action may span multiple grid rows (`rows=2` for a long anim laid out 2xN). Escape hatch for exotic cases: pass `entities='[{"name":...,"anim":...,"row":[1,2]}]'` instead of relying on `entity`/`anim`.
 
 The CLI enforces the schema. `entities` MUST be a JSON array where every object has `row` (int), `name` (string), `anim` (string). For single-image sheets (logo, cover, background): `rows=1 cols=1 cell=<width>`.
 

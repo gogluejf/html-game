@@ -13,7 +13,7 @@ Subcommands:
   screenshot --output /tmp/shot.png
   state      --state PATH [--set k=v ...] [--add-sheet k=v ...] [--prompt-file F]
 """
-import argparse, base64, json, os, socket, sys, time
+import argparse, base64, json, os, shutil, socket, sys, time
 
 # PIL is optional — used to auto-read sheet size from the source PNG.
 try:
@@ -361,39 +361,54 @@ def cmd_state(args):
         if not assets_dir:
             print(f"ERROR: meta has no assets_dir. Run 'state --set assets_dir=<PROJECT>/assets' first.", file=sys.stderr)
             sys.exit(1)
-        file_rel = parts.get("file", "")
-        if not file_rel.startswith(assets_dir.rstrip("/") + "/"):
-            print(f"ERROR: file '{file_rel}' is outside this project's assets_dir '{assets_dir}/'", file=sys.stderr)
-            sys.exit(1)
 
-        # Required fields ('size' is auto-read from the PNG when possible).
-        required = ["file", "rows", "cols", "description"]
+        # Required: cat, entity, anim, src (source PNG, ANY path — repo-relative
+        # or absolute, e.g. a fresh download in ~/Downloads).
+        required = ["cat", "entity", "anim", "src", "rows", "cols", "description"]
         missing = [r for r in required if r not in parts]
         if missing:
             print(f"ERROR: missing required fields: {missing}", file=sys.stderr)
-            print(f"  Usage: --add-sheet file=X rows=N cols=N description=\"...\" entity=X anim=Y", file=sys.stderr)
+            print(f"  Usage: --add-sheet cat=X entity=X anim=Y src=/path/to/any.png rows=N cols=N description=\"...\"", file=sys.stderr)
             print(f"  One action per sheet; the action may span multiple grid rows (--rows).", file=sys.stderr)
+            print(f"  The sheet is COPIED to <assets_dir>/<cat>/<entity>/<anim>_sheet.png (deterministic name).", file=sys.stderr)
+            sys.exit(1)
+
+        cat, ent, anim = parts["cat"], parts["entity"], parts["anim"]
+        src = parts["src"]
+
+        # Resolve source (absolute or repo-relative).
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+        src_path = src if os.path.isabs(src) else os.path.join(repo_root, src)
+        if not os.path.exists(src_path):
+            print(f"ERROR: source PNG not found: {src_path}", file=sys.stderr)
+            sys.exit(1)
+
+        # Deterministic destination: <assets_dir>/<cat>/<entity>/<anim>_sheet.png
+        dest_dir = os.path.join(assets_dir, cat, ent)
+        stem = f"{anim}_sheet"
+        dest_rel = os.path.join(dest_dir, stem + ".png")
+        dest_abs = os.path.join(repo_root, dest_rel)
+        if os.path.exists(dest_abs) and os.path.abspath(src_path) != os.path.abspath(dest_abs):
+            print(f"ERROR: {dest_rel} already exists; refusing to overwrite with {src}", file=sys.stderr)
             sys.exit(1)
 
         # size: prefer auto-reading from the source PNG; fall back to --size arg.
-        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
-        png_path = file_rel if os.path.isabs(file_rel) else os.path.join(repo_root, file_rel)
-        size = _png_size(png_path)
+        size = _png_size(src_path)
         if size is None and "size" in parts:
             size = parts["size"]
         if size is None:
-            print(f"ERROR: could not determine sheet size. Auto-read failed for '{file_rel}' "
+            print(f"ERROR: could not determine sheet size. Auto-read failed for '{src}' "
                   f"(PIL unavailable or PNG missing) and no --size was provided.", file=sys.stderr)
             sys.exit(1)
 
         sheet = {}
-        sheet["file"] = parts["file"]
+        sheet["file"] = dest_rel
         sheet["size"] = size
         sheet["rows"] = int(parts["rows"])
         sheet["cols"] = int(parts["cols"])
         sheet["description"] = parts["description"]
 
-        # ONE action per sheet: entity= + anim= build the single entities[] entry.
+        # ONE action per sheet: entity + anim build the single entities[] entry.
         # Escape hatch: pass entities='[...]' directly for exotic cases
         # (e.g. row-provenance arrays for a long anim laid out across rows).
         if "entities" in parts:
@@ -410,11 +425,6 @@ def cmd_state(args):
                 print(f"ERROR: entities must be valid JSON array: {je}", file=sys.stderr)
                 sys.exit(1)
         else:
-            ent = parts.pop("entity", None)
-            anim = parts.pop("anim", None)
-            if not ent or not anim:
-                print(f"ERROR: provide entity=X anim=Y (or entities='[...]' for exotic sheets)", file=sys.stderr)
-                sys.exit(1)
             sheet["entities"] = [{"name": ent, "anim": anim}]
 
         # Optional: original_prompt from file
@@ -422,30 +432,20 @@ def cmd_state(args):
             with open(args.prompt_file) as pf:
                 sheet["original_prompt"] = pf.read().strip()
 
-        # --- target: TWIN JSON next to the sheet PNG in the assets tree ---
-        # Convention: <assets_dir>/<category>/<entity>/<sheet>.png + <sheet>.json
-        # category/entity are derived from the sheet path — no free-form
-        # label/cropped_path params anymore.
-        file_rel = parts["file"]
-        if os.path.isabs(file_rel):
-            print(f"ERROR: file must be repo-relative, got {file_rel}", file=sys.stderr)
-            sys.exit(1)
-        sheet_parent = os.path.dirname(file_rel)          # .../assets/<category>/<entity>
-        if not sheet_parent or sheet_parent.count("/") < 1:
-            print(f"ERROR: file must live in <assets_dir>/<category>/<entity>/, got {file_rel}", file=sys.stderr)
-            sys.exit(1)
-
-        # Reject unknown fields (label/cropped_path are gone by design)
+        # Reject unknown fields (label/cropped_path/file are gone by design)
         allowed_sheet_fields = {"file", "size", "rows", "cols", "description",
                                 "entities", "original_prompt", "crop"}
-        extra = set(parts.keys()) - allowed_sheet_fields
+        extra = set(parts.keys()) - allowed_sheet_fields - {"cat","entity","anim","src"}
         if extra:
             print(f"WARNING: ignoring unknown fields: {extra}", file=sys.stderr)
 
-        # One file per sheet, IDEMPOTENT: overwrite any existing twin.
-        stem = os.path.splitext(os.path.basename(file_rel))[0]
-        out = os.path.join(sheet_parent, stem + ".json")
-        os.makedirs(os.path.dirname(out), exist_ok=True)
+        # Copy source into place (no-op when it already lives there).
+        os.makedirs(dest_dir, exist_ok=True)
+        if os.path.abspath(src_path) != os.path.abspath(dest_abs):
+            shutil.copy2(src_path, dest_abs)
+            print(f"  copied {os.path.basename(src)} -> {dest_rel}")
+
+        out = os.path.join(dest_dir, stem + ".json")
         verb = "replaced" if os.path.exists(out) else "added"
         with open(out, "w") as f:
             json.dump(sheet, f, indent=2)
