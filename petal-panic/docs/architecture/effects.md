@@ -672,3 +672,65 @@ Adding a new effect is: one file under the effects folder, one registration line
 ## Carrier Readiness
 
 The carrier interface accepts any duck-typed object — anything that exposes origin, facing, and size as an effect needs them, plus an effects configuration. Future marker, box, and radius entities can therefore attach effects with zero engine change; the interface is ready before the data arrives.
+
+
+## 28. Blink Transition (`blink-transition`)
+
+Self-contained cartoon sci-fi teleport/state-change visual. Hard-switches between
+exactly two frames: slow initially, then accelerating (ease-in) to a rapid blink,
+finally locking on the destination. No crossfade and no gameplay mutation.
+**Rapid flashing: use cautiously for photosensitive players.**
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `frameA` | `null` | CanvasImageSource (loaded image/canvas/bitmap), CSS color string, or transparent `null` |
+| `frameB` | `null` | Same; omit for single-sprite disappearance |
+| `direction` | `forward` | `forward`: A → B; `reverse`: B → A (single-sprite appearance) |
+| `duration` | `2` | Seconds until destination locks |
+| `speed` | `2` | Initial switches/second (not full blink cycles) |
+| `endSpeed` | `30` | Final switches/second; clamped to at least `speed` |
+| `acceleration` | `2` | Positive ease-in exponent |
+| `box` | none | Destination rectangle `{x,y,w,h}`; live carrier worldBox or origin/size takes precedence |
+| `hold` | `true` | Keep drawing the settled destination until instance.complete() or engine reset |
+| `onFinish` | none | Optional callback `(destinationFrame, destinationIndex)` once at natural settlement |
+
+Timing uses the integral of `speed + (endSpeed-speed) * progress^acceleration`,
+so timestep partitioning does not change the selected frame. Large updates land
+on the destination without replaying skipped flashes. Nonpositive/nonfinite timing
+parameters use defaults; invalid/nonpositive dt is ignored. Actual visible blink
+rate is limited by display refresh. Whole images are scaled into the box; crop
+atlas frames to a canvas/ImageBitmap before passing them.
+
+```js
+import './effects/registry.js';
+import { fireManual } from './effects/index.js';
+
+const transition = fireManual({ type: 'blink-transition', params: {
+  frameA: oldSpriteImage,
+  frameB: newSpriteImage,
+  box: { x: 100, y: 80, w: 40, h: 50 },
+  duration: 2, speed: 2, endSpeed: 30, direction: 'forward',
+} });
+// The effect owns sprite drawing, including the stable destination.
+// Later, when removing this visual or transferring ownership:
+transition.complete();
+```
+
+**Rendering ownership:** suppress the original sprite while this effect owns its
+visual, otherwise the transparent endpoint reveals that original underneath.
+This effect draws real supplied frames through the normal world render pass; it
+is not an overlay tint and does not automatically hide a carrier's normal sprite.
+Default `hold:true` intentionally retains an active instance after `body.settled`
+becomes true. Explicitly complete it when no longer needed. Alternatively use
+`hold:false` and `onFinish` to transfer the final sprite/visibility to your entity
+renderer in the same update before the engine removes the effect. Without that
+handoff, `hold:false` removes the visual at the end. Cancellation/reset does not
+call `onFinish`. `body.frame()` and `body.frameIndex()` expose the current endpoint.
+
+For disappearance pass just `frameA: sprite`; for appearance use that same frame
+and `direction: 'reverse'`. Two sprites support either direction.
+
+**F2 theater:** section 28, **Blink Transition** uses red A and blue B. Adjust
+duration, initial/final speed, acceleration and direction; toggle `singleFrame`
+to replace B with transparency, then replay. `singleFrame` is a demo-only control,
+not a runtime effect parameter. The settled color remains until replay/switch/reset.

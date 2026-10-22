@@ -83,8 +83,8 @@ const anyDraw = (ctx) => ['fill', 'stroke', 'rect', 'fillRect', 'arc', 'gradL', 
 console.log('theaterList shape');
 const list = theaterList();
 ok('returns an array', () => assert.ok(Array.isArray(list), 'theaterList() returns an array'));
-ok('has exactly 26 entries (all catalog effects, Heat Distortion excluded)', () => {
-  assert.equal(list.length, 26, `expected 26 entries, got ${list.length}`);
+ok('has exactly 27 entries (all catalog effects, Heat Distortion excluded)', () => {
+  assert.equal(list.length, 27, `expected 27 entries, got ${list.length}`);
 });
 ok('every entry has { type, name, demo } with demo a function', () => {
   for (const e of list) {
@@ -103,8 +103,8 @@ console.log('catalog ordering');
 ok('first three are particle-burst, explosion, debris (§1,§2,§3)', () => {
   assert.deepEqual(list.slice(0, 3).map(e => e.type), ['particle-burst', 'explosion', 'debris']);
 });
-ok('last entry is pulse-bubble (§27)', () => {
-  assert.equal(list.at(-1).type, 'pulse-bubble', `last is pulse-bubble (got ${list.at(-1).type})`);
+ok('last entry is blink-transition (§28)', () => {
+  assert.equal(list.at(-1).type, 'blink-transition', `last is blink-transition (got ${list.at(-1).type})`);
 });
 ok('sections are strictly increasing (catalog order preserved)', () => {
   // Re-derive section numbers from the registry-independent catalog by index:
@@ -116,7 +116,7 @@ ok('sections are strictly increasing (catalog order preserved)', () => {
     'target-reticle', 'vignette', 'sprite-flash', 'camera-shake',
     'screen-flash', 'sprite-shake', 'impact-star', 'fade-out', 'scale-pulse',
     'squash-stretch', 'dust-cloud', 'slash', 'aura-glow', 'screen-overlay',
-    'composite-explosion', 'beam', 'pulse-bubble',
+    'composite-explosion', 'beam', 'pulse-bubble', 'blink-transition',
   ];
   assert.deepEqual(list.map(e => e.type), expected, 'full catalog order matches §1→§24 then Beam');
 });
@@ -368,22 +368,23 @@ ok('repeated held adjust repeats on the fixed cadence', () => {
 ok('param selection wraps around the config list', () => {
   Theater.close();
   Theater.open();
+  // Select a multi-parameter effect; particle-burst only exposes count.
+  Theater.step(-1);
   const meta = EFFECT_META[Theater.current().type];
   const n = meta.params.filter((p) => p.config).length;
   assert.ok(n > 1, 'needs >1 config param');
-  // keyboardDir reads input.heldKeys (a getter on the live engine) — stub it
-  // as a function since the property itself is read-only.
-  const savedHeldKeys = input.heldKeys;
+  // Replace the configurable getter without assigning to a read-only property.
+  const savedHeldKeys = Object.getOwnPropertyDescriptor(input, 'heldKeys');
   try {
-    input.heldKeys = () => ['ArrowUp'];
+    Object.defineProperty(input, 'heldKeys', { configurable: true, get: () => ['ArrowUp'] });
     Theater.updateControls(); // -1 → wraps to n-1
     assert.equal(Theater.paramIndex % n, n - 1);
-    input.heldKeys = () => ['ArrowDown'];
+    Object.defineProperty(input, 'heldKeys', { configurable: true, get: () => ['ArrowDown'] });
     Theater._rep.param.dir = 0; // fresh edge
     Theater.updateControls(); // +1 → wraps to 0
     assert.equal(Theater.paramIndex % n, 0);
   } finally {
-    input.heldKeys = savedHeldKeys;
+    Object.defineProperty(input, 'heldKeys', savedHeldKeys);
   }
 });
 ok('step() resets param selection', () => {

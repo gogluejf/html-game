@@ -398,6 +398,7 @@ export const CATALOG = [
   { type: 'composite-explosion',   name: 'Composite Explosion Burst', section: 24, params: { x: STAGE_X, y: STAGE_Y, radius: 60, explosionCount: 6, duration: 1.0 } },
   { type: 'beam',                  name: 'Beam',                    section: 26, params: { x: STAGE_X, y: STAGE_Y, length: 120, width: 18, gradientRadius: 14, color: '#7df', orientation: 0, opacity: 0.95, flashInTime: 0.04, holdTime: 0.4, fadeOutTime: 0.15 } },
   { type: 'pulse-bubble',          name: 'Pulse Bubble',            section: 27, params: { x: STAGE_X, y: STAGE_Y, maxRadius: 40, minRadius: 28, pulseSpeed: 1.5, colorOut: '#00e5ff', colorIn: '#4488ff', flashSpeed: 0, flashIntensity: 0.6, opacity: 0.85, lineWidth: 3, duration: 3.0 } },
+  { type: 'blink-transition', name: 'Blink Transition', section: 28, params: { box: BOX, frameA: '#ff3344', frameB: '#3388ff', duration: 2, speed: 2, endSpeed: 30, acceleration: 2, direction: 'forward', hold: true, singleFrame: false } },
 ];
 
 // Effects whose visual lives in the SHARED particle pool (one-shot bursts):

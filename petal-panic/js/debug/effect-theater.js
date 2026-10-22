@@ -10,14 +10,15 @@ import { EFFECT_META } from './effect-theater-meta.js';
 import { createTheater } from './theater-engine.js';
 
 const list = theaterList();
-export const THEATER_V = 5;
+export const THEATER_V = 6;
 
 /** Per-param nudge step for numeric values. */
 const STEP_BY_KEY = {
+  endSpeed: 2, acceleration: 0.5,
   duration: 0.1, buildTime: 0.1, gapTime: 0.1, blinkTime: 0.1, timeToTarget: 0.1,
   radius: 4, minRadius: 4, maxRadius: 4, size: 2, width: 4, length: 20, height: 4,
   x: 8, y: 8, offset: 4, count: 1, fragmentCount: 2, particleCount: 2, explosionCount: 1,
-  speed: 20, velocity: 20, expansionSpeed: 20, fallSpeed: 20, descentSpeed: 20,
+  get speed() { return Theater.current()?.type === 'blink-transition' ? 1 : 20; }, velocity: 20, expansionSpeed: 20, fallSpeed: 20, descentSpeed: 20,
   intensity: 0.5, strength: 0.1, opacity: 0.05, amount: 0.5, scale: 0.05,
   pulseRate: 0.5, rotationSpeed: 0.5, sweepSpeed: 0.5, spinSpeed: 0.5,
   tickRate: 1, spawnInterval: 0.05, lifetime: 0.1, fadeIn: 0.05, fadeOut: 0.05,
@@ -42,6 +43,7 @@ export const Theater = createTheater({
   panelW: 240,
   stepByKey: STEP_BY_KEY,
   enumValues: {
+    direction: ['forward', 'reverse'],
     easing: ['linear', 'easeIn', 'easeInCubic'],
     curve: ['linear', 'easeIn', 'easeOut'],
     mode: ['shrink', 'grow', 'skip'],

@@ -89,3 +89,6 @@ registerEffect('beam', beam);
 // --- Shield / barrier effects ---------------------------------------------------
 import { pulseBubble } from './pulseBubble.js';
 registerEffect('pulse-bubble', pulseBubble);
+
+import { blinkTransition } from './blinkTransition.js';
+registerEffect('blink-transition', blinkTransition);

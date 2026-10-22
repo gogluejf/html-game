@@ -92,6 +92,15 @@ function heroEntity(startX, y, speed) {
 //   draw(ctx, t): draws context (boxes, labels) before/after the effect
 
 const SCENES = {
+  'blink-transition': {
+    setup() { return {}; },
+    fire(c, entry) {
+      return fireManual({ type: entry.type, params: {
+        ...entry.params, frameB: entry.params.singleFrame ? null : entry.params.frameB,
+      } });
+    },
+    draw() {},
+  },
   // 1. Particle Burst: projectile flies → collides with enemy → sparks at impact, enemy dies
   'particle-burst': {
     setup() { return { proj: projectileCarrier(STAGE_X - 100, STAGE_Y, 350), enemy: enemyBox(STAGE_X + 30, STAGE_Y - 20), _hit: false }; },

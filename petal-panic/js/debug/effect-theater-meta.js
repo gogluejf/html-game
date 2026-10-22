@@ -7,6 +7,20 @@
 //       'bool' = toggle, 'enum' = cycle through values (see enumValues).
 
 export const EFFECT_META = {
+  'blink-transition': {
+    desc: 'Slow-to-fast sci-fi blink, then locks on destination. Rapid flashing. Single frame toggles transparency.',
+    params: [
+      { key: 'duration', config: true, kind: 'num', desc: 'Transition time (s)' },
+      { key: 'speed', config: true, kind: 'num', desc: 'Initial switches/s' },
+      { key: 'endSpeed', config: true, kind: 'num', desc: 'Final switches/s' },
+      { key: 'acceleration', config: true, kind: 'num', desc: 'Ease-in exponent' },
+      { key: 'direction', config: true, kind: 'enum', desc: 'A to B or B to A' },
+      { key: 'singleFrame', config: true, kind: 'bool', desc: 'Demo: B is transparent' },
+      { key: 'frameA', config: true, kind: 'str', desc: 'Source color (runtime also accepts image)' },
+      { key: 'frameB', config: true, kind: 'str', desc: 'Destination color (runtime also accepts image)' },
+      { key: 'hold', config: true, kind: 'bool', desc: 'Keep destination until released' },
+    ],
+  },
   'particle-burst': {
     desc: 'Spawns small particles from a point. Used for impacts, hits, pickups.',
     params: [
