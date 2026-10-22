@@ -1,5 +1,5 @@
 {
- "file": "abyss-qwen/assets/enemy/jellyfish/fly_sheet.png",
+ "file": "abyss-qwen/assets/enemies/jellyfish/fly_sheet.png",
  "size": "752x265",
  "rows": 1,
  "cols": 4,
@@ -55,7 +55,7 @@
      ]
     }
    ],
-   "frames_dir": "abyss-qwen/assets/enemy/jellyfish"
+   "frames_dir": "abyss-qwen/assets/enemies/jellyfish"
   }
  ],
  "updated": "2026-10-21"

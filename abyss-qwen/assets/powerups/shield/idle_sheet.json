@@ -1,5 +1,5 @@
 {
- "file": "abyss-qwen/assets/powerup/shield/idle_sheet.png",
+ "file": "abyss-qwen/assets/powerups/shield/idle_sheet.png",
  "size": "1232x227",
  "rows": 1,
  "cols": 4,
@@ -55,7 +55,7 @@
      ]
     }
    ],
-   "frames_dir": "abyss-qwen/assets/powerup/shield"
+   "frames_dir": "abyss-qwen/assets/powerups/shield"
   }
  ],
  "updated": "2026-10-21"

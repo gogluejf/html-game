@@ -1,5 +1,5 @@
 {
- "file": "abyss-qwen/assets/enemy/mech_shark/fly_sheet.png",
+ "file": "abyss-qwen/assets/enemies/mech_shark/fly_sheet.png",
  "size": "952x223",
  "rows": 1,
  "cols": 4,
@@ -55,7 +55,7 @@
      ]
     }
    ],
-   "frames_dir": "abyss-qwen/assets/enemy/mech_shark"
+   "frames_dir": "abyss-qwen/assets/enemies/mech_shark"
   }
  ],
  "updated": "2026-10-21"

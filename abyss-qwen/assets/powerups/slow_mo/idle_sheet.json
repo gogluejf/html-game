@@ -1,5 +1,5 @@
 {
- "file": "abyss-qwen/assets/powerup/slow_mo/idle_sheet.png",
+ "file": "abyss-qwen/assets/powerups/slow_mo/idle_sheet.png",
  "size": "1240x308",
  "rows": 1,
  "cols": 4,
@@ -55,7 +55,7 @@
      ]
     }
    ],
-   "frames_dir": "abyss-qwen/assets/powerup/slow_mo"
+   "frames_dir": "abyss-qwen/assets/powerups/slow_mo"
   }
  ],
  "updated": "2026-10-21"

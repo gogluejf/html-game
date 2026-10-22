@@ -1239,7 +1239,7 @@ function loadPngSprite(name, dir, prefix, frameCount, scaleW) {
     };
     img.onerror = () => { pngLoadCount++; };
     const base = "";
-    const A_DIR = { player:'player', enemies:'enemy', powerups:'powerup', bosses:'boss', hud:'hud' };
+    const A_DIR = { player:'player', enemies:'enemies', powerups:'powerups', bosses:'boss', hud:'hud'};
     const A_ENT = { player_manta_ray:'manta_ray', enemy_jellyfish:'jellyfish', enemy_pufferfish:'pufferfish', enemy_sea_dragon:'sea_dragon', enemy_anglerfish:'anglerfish', enemy_mantis_crab:'mantis_crab', enemy_mech_shark:'mech_shark', powerup_shield:'shield', powerup_triple_shot:'triple_shot', powerup_slow_mo:'slow_mo', powerup_bomb:'bomb', boss_octopus:'octopus', boss_shark:'shark', boss_kraken:'kraken' };
     const A_ACT = { player:'fly', enemies:'fly', powerups:'idle', bosses:'fly', hud:'' };
     img.src = `${base}assets/${A_DIR[dir]}/${A_ENT[prefix]}/${A_ACT[dir]}_f${i}.png`;
