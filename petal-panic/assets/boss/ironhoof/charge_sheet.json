@@ -1,0 +1,128 @@
+{
+  "file": "petal-panic/assets/boss/ironhoof/charge_sheet.png",
+  "size": "3790x357",
+  "rows": 1,
+  "cols": 10,
+  "kind": "animation",
+  "description": "ironhoof charge",
+  "entities": [
+    {
+      "name": "ironhoof",
+      "anim": "charge",
+      "frames_dir": "petal-panic/assets/boss/ironhoof",
+      "frames": [
+        {
+          "file": "charge_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            11,
+            32,
+            357,
+            293
+          ]
+        },
+        {
+          "file": "charge_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            405,
+            6,
+            327,
+            345
+          ]
+        },
+        {
+          "file": "charge_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            772,
+            9,
+            350,
+            339
+          ]
+        },
+        {
+          "file": "charge_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1147,
+            1,
+            359,
+            355
+          ]
+        },
+        {
+          "file": "charge_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1530,
+            0,
+            351,
+            357
+          ]
+        },
+        {
+          "file": "charge_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1902,
+            73,
+            365,
+            211
+          ]
+        },
+        {
+          "file": "charge_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            2279,
+            67,
+            368,
+            222
+          ]
+        },
+        {
+          "file": "charge_f8.png",
+          "row": 0,
+          "col": 7,
+          "bbox": [
+            2669,
+            69,
+            347,
+            218
+          ]
+        },
+        {
+          "file": "charge_f9.png",
+          "row": 0,
+          "col": 8,
+          "bbox": [
+            3032,
+            63,
+            379,
+            230
+          ]
+        },
+        {
+          "file": "charge_f10.png",
+          "row": 0,
+          "col": 9,
+          "bbox": [
+            3423,
+            62,
+            354,
+            232
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}
