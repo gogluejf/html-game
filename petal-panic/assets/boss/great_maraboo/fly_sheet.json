@@ -1,0 +1,84 @@
+{
+  "file": "petal-panic/assets/boss/great_maraboo/fly_sheet.png",
+  "size": "3126x499",
+  "rows": 1,
+  "cols": 6,
+  "kind": "animation",
+  "description": "great_maraboo fly",
+  "entities": [
+    {
+      "name": "great_maraboo",
+      "anim": "fly",
+      "frames_dir": "petal-panic/assets/boss/great_maraboo",
+      "frames": [
+        {
+          "file": "fly_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            2,
+            127,
+            517,
+            244
+          ]
+        },
+        {
+          "file": "fly_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            549,
+            0,
+            464,
+            499
+          ]
+        },
+        {
+          "file": "fly_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1059,
+            43,
+            486,
+            412
+          ]
+        },
+        {
+          "file": "fly_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1585,
+            75,
+            477,
+            349
+          ]
+        },
+        {
+          "file": "fly_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            2084,
+            122,
+            521,
+            255
+          ]
+        },
+        {
+          "file": "fly_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            2632,
+            32,
+            467,
+            434
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}

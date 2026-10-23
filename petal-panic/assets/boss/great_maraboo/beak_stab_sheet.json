@@ -1,0 +1,62 @@
+{
+  "file": "petal-panic/assets/boss/great_maraboo/beak_stab_sheet.png",
+  "size": "3460x436",
+  "rows": 1,
+  "cols": 4,
+  "kind": "animation",
+  "description": "great_maraboo beak_stab",
+  "entities": [
+    {
+      "name": "great_maraboo",
+      "anim": "beak_stab",
+      "frames_dir": "petal-panic/assets/boss/great_maraboo",
+      "frames": [
+        {
+          "file": "beak_stab_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            157,
+            16,
+            551,
+            403
+          ]
+        },
+        {
+          "file": "beak_stab_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            895,
+            33,
+            805,
+            369
+          ]
+        },
+        {
+          "file": "beak_stab_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1773,
+            7,
+            778,
+            422
+          ]
+        },
+        {
+          "file": "beak_stab_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            2595,
+            0,
+            865,
+            436
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}

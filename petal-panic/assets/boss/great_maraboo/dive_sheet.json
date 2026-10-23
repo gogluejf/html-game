@@ -1,0 +1,106 @@
+{
+  "file": "petal-panic/assets/boss/great_maraboo/dive_sheet.png",
+  "size": "3416x540",
+  "rows": 1,
+  "cols": 8,
+  "kind": "animation",
+  "description": "great_maraboo dive",
+  "entities": [
+    {
+      "name": "great_maraboo",
+      "anim": "dive",
+      "frames_dir": "petal-panic/assets/boss/great_maraboo",
+      "frames": [
+        {
+          "file": "dive_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            7,
+            134,
+            413,
+            271
+          ]
+        },
+        {
+          "file": "dive_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            468,
+            49,
+            344,
+            441
+          ]
+        },
+        {
+          "file": "dive_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            922,
+            0,
+            290,
+            540
+          ]
+        },
+        {
+          "file": "dive_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1281,
+            9,
+            427,
+            522
+          ]
+        },
+        {
+          "file": "dive_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1746,
+            71,
+            350,
+            398
+          ]
+        },
+        {
+          "file": "dive_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            2186,
+            56,
+            324,
+            428
+          ]
+        },
+        {
+          "file": "dive_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            2571,
+            97,
+            408,
+            346
+          ]
+        },
+        {
+          "file": "dive_f8.png",
+          "row": 0,
+          "col": 7,
+          "bbox": [
+            3021,
+            125,
+            362,
+            289
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}
