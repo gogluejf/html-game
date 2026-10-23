@@ -1,0 +1,73 @@
+{
+  "file": "petal-panic/assets/boss/madame_beetroot/idle_sheet.png",
+  "size": "2485x696",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "madame_beetroot idle",
+  "entities": [
+    {
+      "name": "madame_beetroot",
+      "anim": "idle",
+      "frames_dir": "petal-panic/assets/boss/madame_beetroot",
+      "frames": [
+        {
+          "file": "idle_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            46,
+            0,
+            405,
+            696
+          ]
+        },
+        {
+          "file": "idle_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            542,
+            9,
+            407,
+            678
+          ]
+        },
+        {
+          "file": "idle_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            994,
+            26,
+            497,
+            643
+          ]
+        },
+        {
+          "file": "idle_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1525,
+            27,
+            428,
+            642
+          ]
+        },
+        {
+          "file": "idle_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            2045,
+            18,
+            382,
+            659
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}

@@ -1,0 +1,139 @@
+{
+  "file": "petal-panic/assets/boss/madame_beetroot/death_sheet.png",
+  "size": "4136x454",
+  "rows": 1,
+  "cols": 11,
+  "kind": "animation",
+  "description": "madame_beetroot death",
+  "entities": [
+    {
+      "name": "madame_beetroot",
+      "anim": "death",
+      "frames_dir": "petal-panic/assets/boss/madame_beetroot",
+      "frames": [
+        {
+          "file": "death_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            34,
+            0,
+            307,
+            454
+          ]
+        },
+        {
+          "file": "death_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            398,
+            4,
+            332,
+            446
+          ]
+        },
+        {
+          "file": "death_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            775,
+            19,
+            330,
+            416
+          ]
+        },
+        {
+          "file": "death_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1140,
+            24,
+            352,
+            405
+          ]
+        },
+        {
+          "file": "death_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1518,
+            32,
+            348,
+            389
+          ]
+        },
+        {
+          "file": "death_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1902,
+            63,
+            332,
+            328
+          ]
+        },
+        {
+          "file": "death_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            2274,
+            92,
+            340,
+            269
+          ]
+        },
+        {
+          "file": "death_f8.png",
+          "row": 0,
+          "col": 7,
+          "bbox": [
+            2655,
+            128,
+            329,
+            198
+          ]
+        },
+        {
+          "file": "death_f9.png",
+          "row": 0,
+          "col": 8,
+          "bbox": [
+            3024,
+            151,
+            344,
+            151
+          ]
+        },
+        {
+          "file": "death_f10.png",
+          "row": 0,
+          "col": 9,
+          "bbox": [
+            3401,
+            154,
+            341,
+            146
+          ]
+        },
+        {
+          "file": "death_f11.png",
+          "row": 0,
+          "col": 10,
+          "bbox": [
+            3760,
+            160,
+            376,
+            133
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}

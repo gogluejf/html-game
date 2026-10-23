@@ -1,0 +1,84 @@
+{
+  "file": "petal-panic/assets/boss/madame_beetroot/attack_sheet.png",
+  "size": "3624x511",
+  "rows": 1,
+  "cols": 6,
+  "kind": "animation",
+  "description": "madame_beetroot attack",
+  "entities": [
+    {
+      "name": "madame_beetroot",
+      "anim": "attack",
+      "frames_dir": "petal-panic/assets/boss/madame_beetroot",
+      "frames": [
+        {
+          "file": "attack_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            96,
+            0,
+            411,
+            511
+          ]
+        },
+        {
+          "file": "attack_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            671,
+            2,
+            469,
+            506
+          ]
+        },
+        {
+          "file": "attack_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1257,
+            2,
+            506,
+            506
+          ]
+        },
+        {
+          "file": "attack_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1812,
+            12,
+            604,
+            486
+          ]
+        },
+        {
+          "file": "attack_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            2442,
+            12,
+            551,
+            486
+          ]
+        },
+        {
+          "file": "attack_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            3138,
+            6,
+            367,
+            498
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}

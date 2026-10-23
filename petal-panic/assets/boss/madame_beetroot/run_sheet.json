@@ -1,0 +1,73 @@
+{
+  "file": "petal-panic/assets/boss/madame_beetroot/run_sheet.png",
+  "size": "2305x586",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "madame_beetroot run",
+  "entities": [
+    {
+      "name": "madame_beetroot",
+      "anim": "run",
+      "frames_dir": "petal-panic/assets/boss/madame_beetroot",
+      "frames": [
+        {
+          "file": "run_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            38,
+            0,
+            384,
+            586
+          ]
+        },
+        {
+          "file": "run_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            476,
+            14,
+            430,
+            558
+          ]
+        },
+        {
+          "file": "run_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            925,
+            20,
+            454,
+            545
+          ]
+        },
+        {
+          "file": "run_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1383,
+            32,
+            461,
+            521
+          ]
+        },
+        {
+          "file": "run_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1847,
+            0,
+            455,
+            586
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}

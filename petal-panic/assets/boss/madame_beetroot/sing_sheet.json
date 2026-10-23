@@ -1,0 +1,73 @@
+{
+  "file": "petal-panic/assets/boss/madame_beetroot/sing_sheet.png",
+  "size": "2495x659",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "madame_beetroot sing",
+  "entities": [
+    {
+      "name": "madame_beetroot",
+      "anim": "sing",
+      "frames_dir": "petal-panic/assets/boss/madame_beetroot",
+      "frames": [
+        {
+          "file": "sing_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            60,
+            7,
+            378,
+            645
+          ]
+        },
+        {
+          "file": "sing_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            536,
+            22,
+            424,
+            614
+          ]
+        },
+        {
+          "file": "sing_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1027,
+            7,
+            440,
+            645
+          ]
+        },
+        {
+          "file": "sing_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1510,
+            6,
+            472,
+            646
+          ]
+        },
+        {
+          "file": "sing_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1996,
+            0,
+            499,
+            659
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}
