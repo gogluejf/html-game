@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/drawny/idle_sheet.png",
+ "size": "1475x236",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "drawny idle (5 frames)",
+ "entities": [
+  {
+   "name": "drawny",
+   "anim": "idle",
+   "frames_dir": "petal-panic/assets/enemies/drawny",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      11,
+      8,
+      272,
+      220
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      307,
+      4,
+      271,
+      228
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      594,
+      4,
+      286,
+      228
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      917,
+      2,
+      230,
+      232
+     ]
+    },
+    {
+     "file": "idle_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1180,
+      0,
+      295,
+      236
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

@@ -1,0 +1,76 @@
+{
+  "file": "spit_sheet.png",
+  "size": [
+    1545,
+    200
+  ],
+  "rows": 1,
+  "cols": 5,
+  "kind": "anim",
+  "description": "drawny spit attack",
+  "entities": [
+    {
+      "name": "drawny",
+      "anim": "spit",
+      "frames_dir": ".",
+      "frames": [
+        {
+          "file": "spit_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            34,
+            2,
+            240,
+            195
+          ]
+        },
+        {
+          "file": "spit_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            337,
+            0,
+            253,
+            199
+          ]
+        },
+        {
+          "file": "spit_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            635,
+            0,
+            274,
+            200
+          ]
+        },
+        {
+          "file": "spit_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            944,
+            1,
+            275,
+            198
+          ]
+        },
+        {
+          "file": "spit_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1236,
+            2,
+            309,
+            196
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}

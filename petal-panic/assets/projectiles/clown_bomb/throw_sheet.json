@@ -1,0 +1,84 @@
+{
+ "file": "petal-panic/assets/projectiles/clown_bomb/throw_sheet.png",
+ "size": "1734x221",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "clown_bomb throw (6 frames)",
+ "entities": [
+  {
+   "name": "clown_bomb",
+   "anim": "throw",
+   "frames_dir": "petal-panic/assets/projectiles/clown_bomb",
+   "frames": [
+    {
+     "file": "throw_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      8,
+      1,
+      272,
+      219
+     ]
+    },
+    {
+     "file": "throw_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      301,
+      1,
+      265,
+      219
+     ]
+    },
+    {
+     "file": "throw_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      578,
+      4,
+      289,
+      213
+     ]
+    },
+    {
+     "file": "throw_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      879,
+      8,
+      265,
+      205
+     ]
+    },
+    {
+     "file": "throw_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1171,
+      0,
+      259,
+      221
+     ]
+    },
+    {
+     "file": "throw_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1457,
+      6,
+      265,
+      208
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

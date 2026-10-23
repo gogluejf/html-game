@@ -1,0 +1,84 @@
+{
+ "file": "petal-panic/assets/projectiles/clown_bomb/explode_sheet.png",
+ "size": "1806x258",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "clown_bomb explode (6 frames)",
+ "entities": [
+  {
+   "name": "clown_bomb",
+   "anim": "explode",
+   "frames_dir": "petal-panic/assets/projectiles/clown_bomb",
+   "frames": [
+    {
+     "file": "explode_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      15,
+      11,
+      270,
+      236
+     ]
+    },
+    {
+     "file": "explode_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      314,
+      2,
+      275,
+      254
+     ]
+    },
+    {
+     "file": "explode_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      602,
+      0,
+      301,
+      258
+     ]
+    },
+    {
+     "file": "explode_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      905,
+      6,
+      296,
+      245
+     ]
+    },
+    {
+     "file": "explode_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1223,
+      11,
+      263,
+      236
+     ]
+    },
+    {
+     "file": "explode_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1551,
+      36,
+      208,
+      185
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

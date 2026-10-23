@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/drawny/charge_sheet.png",
+ "size": "1625x187",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "drawny charge (5 frames)",
+ "entities": [
+  {
+   "name": "drawny",
+   "anim": "charge",
+   "frames_dir": "petal-panic/assets/enemies/drawny",
+   "frames": [
+    {
+     "file": "charge_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      325,
+      187
+     ]
+    },
+    {
+     "file": "charge_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      326,
+      6,
+      322,
+      175
+     ]
+    },
+    {
+     "file": "charge_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      660,
+      7,
+      305,
+      173
+     ]
+    },
+    {
+     "file": "charge_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      992,
+      8,
+      291,
+      170
+     ]
+    },
+    {
+     "file": "charge_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1322,
+      7,
+      281,
+      173
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}
