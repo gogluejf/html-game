@@ -2,10 +2,11 @@
 # server.sh — manage the sprite-engine sheet gallery without blocking the agent session.
 #
 # Usage:
-#   ./server.sh start [port]   Start the gallery in the background (idempotent).
-#   ./server.sh stop           Stop the tracked gallery cleanly.
-#   ./server.sh status         Report running/stopped (exit 0 if running).
-#   ./server.sh go [port]      Start if needed, then print the ready URL.
+#   ./server.sh start [port] [root]   Start the gallery in the background (idempotent).
+#   ./server.sh stop                  Stop the tracked gallery cleanly.
+#   ./server.sh status                Report running/stopped (exit 0 if running).
+#   ./server.sh go [port] [root]      Start if needed, then print the ready URL.
+# root defaults to the repo root inferred from this script's location.
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -13,12 +14,17 @@ DIR="$(cd "$SCRIPT_DIR/../../../../.." && pwd)"
 PIDFILE="/tmp/sprite-engine-gallery.pid"
 LOGFILE="/tmp/sprite-engine-gallery.log"
 
-# Port: first non-command arg (or 8799).
+# Port + root: non-command args (or 8799 / inferred root).
 CMD="${1:-go}"
 PORT=8799
+ROOT=""
 for a in "$@"; do
-  case "$a" in start|stop|status|go) ;; *) PORT="$a" ;; esac
+  case "$a" in start|stop|status|go) ;;
+    *[!0-9]*) ROOT="$a" ;;
+    *) [ "$PORT" = "8799" ] && PORT="$a" ;;
+  esac
 done
+[ -z "$ROOT" ] && ROOT="$DIR"
 
 is_running() {
   [ -f "$PIDFILE" ] || return 1
@@ -44,8 +50,8 @@ cmd_start() {
     fi
     rm -f "$PIDFILE"
   fi
-  cd "$DIR" || exit 1
-  nohup setsid python3 "$SCRIPT_DIR/gallery.py" "$PORT" > "$LOGFILE" 2>&1 &
+  cd "$ROOT" || exit 1
+  nohup setsid python3 "$SCRIPT_DIR/gallery.py" --root "$ROOT" "$PORT" > "$LOGFILE" 2>&1 &
   local pid=$!
   disown "$pid" 2>/dev/null || true
   echo "$pid" > "$PIDFILE"

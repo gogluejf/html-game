@@ -19,23 +19,33 @@ import re
 import sys
 from PIL import Image, ImageChops
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # repo root
+import argparse
+import json
+import os
+import re
+import sys
+from PIL import Image, ImageChops
 
 
-def walk_sheets():
+def walk_sheets(root):
     out = []
-    for root, dirs, files in os.walk(ROOT):
-        if "/.git" in root or os.path.basename(root) == ".git":
+    for dirpath, dirs, files in os.walk(root):
+        if "/.git" in dirpath or os.path.basename(dirpath) == ".git":
             continue
         for f in files:
             if f.endswith("_sheet.json"):
-                out.append(os.path.join(root, f))
+                out.append(os.path.join(dirpath, f))
     return sorted(out)
 
 
 def main():
-    only = sys.argv[1] if len(sys.argv) > 1 else None  # optional substring filter
-    sheets = [s for s in walk_sheets() if not only or only in s]
+    ap = argparse.ArgumentParser(description="ground-truth sheet auditor (read-only)")
+    ap.add_argument("--root", required=True, help="repo root to scan")
+    ap.add_argument("filter", nargs="?", default=None, help="optional substring filter on paths")
+    args = ap.parse_args()
+    ROOT = os.path.abspath(args.root)
+    only = args.filter
+    sheets = [s for s in walk_sheets(ROOT) if not only or only in s]
     errs = rt_bad = 0
 
     # 1+3+4 per sheet
@@ -88,19 +98,19 @@ def main():
 
     # 2. gap check (frame anims without a sheet)
     gaps = 0
-    for root, dirs, files in os.walk(ROOT):
-        if "/.git" in root or os.path.basename(root) == ".git":
+    for dirpath, dirs, files in os.walk(ROOT):
+        if "/.git" in dirpath or os.path.basename(dirpath) == ".git":
             continue
-        if only and only not in root:
+        if only and only not in dirpath:
             continue
         frames = [f for f in files if re.match(r"[a-z0-9_]+?_f\d+\.png$", f)]
         if not frames:
             continue
         anims = set(re.match(r"([a-z0-9_]+?)_f\d+\.png$", f).group(1) for f in frames)
         for anim in anims:
-            if not os.path.exists(os.path.join(root, f"{anim}_sheet.json")):
+            if not os.path.exists(os.path.join(dirpath, f"{anim}_sheet.json")):
                 gaps += 1
-                print(f"X GAP: {os.path.relpath(root, ROOT)}/{anim} frames have no {anim}_sheet.json")
+                print(f"X GAP: {os.path.relpath(dirpath, ROOT)}/{anim} frames have no {anim}_sheet.json")
                 errs += 1
 
     print(f"\nAUDIT: {len(sheets)} sheets | structural errors: {errs} | "

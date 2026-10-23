@@ -51,8 +51,10 @@ def main():
     ap.add_argument("--sheet", required=True, help="source per-anim sheet JSON")
     ap.add_argument("--carve", action="append", required=True,
                     help="NAME:FROM-TO (repeatable); 1-based inclusive over current frames")
+    ap.add_argument("--root", required=True, help="repo root (for code-reference safety check)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
+    ROOT = os.path.abspath(args.root)
 
     jf = os.path.abspath(args.sheet)
     d = json.load(open(jf))
@@ -90,7 +92,7 @@ def main():
     for p in moved:
         fn = os.path.basename(p)
         r = subprocess.run(["grep", "-rln", fn, "--include=*.js", "--include=*.html",
-                            os.path.join(os.path.dirname(HERE))],
+                            ROOT],
                            capture_output=True, text=True)
         hits = [h for h in r.stdout.splitlines() if "/assets/" not in h]
         if hits:
@@ -126,7 +128,7 @@ def main():
             os.replace(src_files[i], want)
     keep_files = [os.path.join(base, f"{src_anim}_f{i}.png") for i in range(1, len(keep_idx) + 1)]
 
-    frames_dir_rel = e.get("frames_dir") or os.path.relpath(base, os.path.dirname(HERE))
+    frames_dir_rel = e.get("frames_dir") or os.path.relpath(base, ROOT)
     # rebuild source sheet
     nf, r, c, W, H = glue_frames(keep_files, os.path.join(base, f"{src_anim}_sheet.png"))
     write_twin_json(os.path.join(base, f"{src_anim}_sheet.json"), frames_dir_rel,

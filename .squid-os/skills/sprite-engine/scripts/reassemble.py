@@ -7,14 +7,12 @@ into a fresh sheet that reproduces the old grid footprint, write
 
 Never deletes or overwrites. Run audit.py first; hard errors abort here too.
 """
+import argparse
 import json, glob, os, sys, datetime
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import glob as _glob
-
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # repo root
 
 
 def frame_dir(jf, entity_name):
@@ -24,23 +22,23 @@ def frame_dir(jf, entity_name):
     return base
 
 
-def find_sheet_jsons(projects=None, include_single=True):
+def find_sheet_jsons(root, projects=None, include_single=True):
     """Multi-entity sheet JSONs via os.walk (no glob patterns — see audit.py)."""
     out = []
-    for root, dirs, files in os.walk(ROOT):
-        if "/.git" in root or os.path.basename(root) == ".git":
+    for dirpath, dirs, files in os.walk(root):
+        if "/.git" in dirpath or os.path.basename(dirpath) == ".git":
             continue
         for f in files:
             if not f.endswith("_sheet.json"):
                 continue
-            p = os.path.join(root, f)
+            p = os.path.join(dirpath, f)
             try:
                 d = json.load(open(p))
             except Exception:
                 continue
             if not include_single and len(d.get("entities", [])) <= 1:
                 continue
-            proj = os.path.relpath(p, ROOT).split(os.sep)[0]
+            proj = os.path.relpath(p, root).split(os.sep)[0]
             if projects and proj not in projects:
                 continue
             out.append(p)
@@ -72,7 +70,7 @@ def audit_one(jf):
     return d, errs
 
 
-def build_anim_sheet(jf, e, dry_run=False):
+def build_anim_sheet(jf, e, root, dry_run=False):
     """Glue one (entity, anim) into its own sheet. Returns (out_png, out_json, info)."""
     name, anim = e["name"], e["anim"]
     fdir = frame_dir(jf, name)
@@ -123,7 +121,7 @@ def build_anim_sheet(jf, e, dry_run=False):
                 "bbox": [fx, fy, w, h],
             })
         canvas.save(out_png)
-        rel = os.path.relpath(out_png, ROOT)
+        rel = os.path.relpath(out_png, root)
         doc = {
             "file": rel,
             "size": f"{W}x{H}",
@@ -134,7 +132,7 @@ def build_anim_sheet(jf, e, dry_run=False):
             "entities": [{
                 "name": name,
                 "anim": anim,
-                "frames_dir": os.path.relpath(fdir, ROOT),
+                "frames_dir": os.path.relpath(fdir, root),
                 "frames": new_frames,
             }],
             "updated": datetime.date.today().isoformat(),
@@ -146,23 +144,25 @@ def build_anim_sheet(jf, e, dry_run=False):
 
 
 def main():
-    args = sys.argv[1:]
-    dry = "--dry-run" in args
-    project = None
-    if "--project" in args:
-        project = set(args[args.index("--project") + 1].split(","))
-    sheets = None
-    if "--sheet" in args:
-        sheets = [os.path.abspath(args[args.index("--sheet") + 1])]
+    ap = argparse.ArgumentParser(description="additive per-anim sheet builder (migration tool)")
+    ap.add_argument("--root", required=True, help="repo root to scan")
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--project", help="comma-separated project filter")
+    ap.add_argument("--sheet", help="specific sheet JSON to process")
+    args = ap.parse_args()
+    root = os.path.abspath(args.root)
+    dry = args.dry_run
+    project = set(args.project.split(",")) if args.project else None
+    sheets = [os.path.abspath(args.sheet)] if args.sheet else None
 
-    jfs = sheets or find_sheet_jsons(project, include_single=False)
+    jfs = sheets or find_sheet_jsons(root, project, include_single=False)
     built = skipped = 0
     for jf in jfs:
         d, errs = audit_one(jf)
         if errs:
             print(f"ABORT {jf}: {errs[:3]}")
             sys.exit(1)
-        rel = os.path.relpath(jf, ROOT)
+        rel = os.path.relpath(jf, root)
         print(f"\n== {rel}")
         for e in d.get("entities", []):
             fdir = frame_dir(jf, e["name"])
@@ -172,7 +172,7 @@ def main():
                 print(f"   - {e['name']}/{e['anim']} (already per-anim)")
                 skipped += 1
                 continue
-            png, js, info = build_anim_sheet(jf, e, dry_run=dry)
+            png, js, info = build_anim_sheet(jf, e, root, dry_run=dry)
             verb = "would write" if dry else "wrote"
             print(f"   {verb} {e['name']}/{e['anim']}  {info['frames']}f  grid {info['rows']}x{info['cols']}")
             built += 1

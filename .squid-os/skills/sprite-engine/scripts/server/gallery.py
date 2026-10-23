@@ -5,8 +5,9 @@ Serves a simple HTML gallery of every per-anim sheet PNG in the repo:
 thumbnail grid, path under each, click → full-size view.
 Filters: three dropdowns — game (project), category, kind.
 
-Usage: python3 gallery.py [port]   (default 8799)
+Usage: python3 gallery.py --root <repo-root> [port]   (default port 8799)
 """
+import argparse
 import glob
 import html
 import json
@@ -14,9 +15,19 @@ import os
 import sys
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
-# Repo root is 5 levels up from this script:
-# .squid-os/skills/sprite-engine/scripts/server/gallery.py -> repo root
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
+
+ROOT = None  # set in main() from --root
+
+
+def main():
+    ap = argparse.ArgumentParser(description="sheet gallery server")
+    ap.add_argument("--root", required=True, help="repo root containing the project asset trees")
+    ap.add_argument("port", nargs="?", default=8799, type=int)
+    args = ap.parse_args()
+    global ROOT
+    ROOT = os.path.abspath(args.root)
+    print(f"gallery: {len(collect_sheets())} sheets on http://localhost:{args.port}")
+    HTTPServer(("0.0.0.0", args.port), Handler).serve_forever()
 
 
 def collect_sheets():
@@ -145,6 +156,4 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8799
-    print(f"gallery: {len(collect_sheets())} sheets on http://localhost:{port}")
-    HTTPServer(("0.0.0.0", port), Handler).serve_forever()
+    main()
