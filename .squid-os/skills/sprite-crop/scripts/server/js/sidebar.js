@@ -206,6 +206,7 @@ export async function selectEntity(li, ei, opts){
   syncUndoButtons();   // reflect current undo/redo stack state
   updateSaveButton();  // per-entity: enable iff THIS entity has an unsaved draft
   updateDirtyDots();
+  saveState();         // persist active entity so reload restores it
   // refresh the filmstrip for this sprite (rebuild cells + refit drawer width)
   if (FILM.on){ drawFilm(); requestAnimationFrame(filmFitWidth); }
   // toolbar was hidden during boot; now that state is settled, reveal it
