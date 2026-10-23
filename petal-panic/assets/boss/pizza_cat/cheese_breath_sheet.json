@@ -1,15 +1,15 @@
 {
-  "file": "cheese_breath_sheet.png",
+  "file": "petal-panic/assets/boss/pizza_cat/cheese_breath_sheet.png",
   "size": "3120x483",
   "rows": 1,
   "cols": 6,
-  "kind": "anim",
+  "kind": "animation",
   "description": "pizza_cat cheese_breath",
   "entities": [
     {
       "name": "pizza_cat",
       "anim": "cheese_breath",
-      "frames_dir": ".",
+      "frames_dir": "petal-panic/assets/boss/pizza_cat",
       "frames": [
         {
           "file": "cheese_breath_f1.png",

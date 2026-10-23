@@ -1,15 +1,15 @@
 {
-  "file": "roll_sheet.png",
+  "file": "petal-panic/assets/boss/pizza_cat/roll_sheet.png",
   "size": "3114x491",
   "rows": 1,
   "cols": 6,
-  "kind": "anim",
+  "kind": "animation",
   "description": "pizza_cat roll",
   "entities": [
     {
       "name": "pizza_cat",
       "anim": "roll",
-      "frames_dir": ".",
+      "frames_dir": "petal-panic/assets/boss/pizza_cat",
       "frames": [
         {
           "file": "roll_f1.png",

@@ -1,15 +1,15 @@
 {
-  "file": "idle_sheet.png",
+  "file": "petal-panic/assets/boss/pizza_cat/idle_sheet.png",
   "size": "3312x438",
   "rows": 1,
   "cols": 8,
-  "kind": "anim",
+  "kind": "animation",
   "description": "pizza_cat idle",
   "entities": [
     {
       "name": "pizza_cat",
       "anim": "idle",
-      "frames_dir": ".",
+      "frames_dir": "petal-panic/assets/boss/pizza_cat",
       "frames": [
         {
           "file": "idle_f1.png",
