@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/projectiles/mine/idle_sheet.png",
+ "size": "2060x468",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "mine idle (5 frames)",
+ "entities": [
+  {
+   "name": "mine",
+   "anim": "idle",
+   "frames_dir": "petal-panic/assets/projectiles/mine",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      3,
+      0,
+      406,
+      468
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      417,
+      3,
+      402,
+      462
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      824,
+      21,
+      412,
+      425
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1243,
+      3,
+      398,
+      462
+     ]
+    },
+    {
+     "file": "idle_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1651,
+      15,
+      406,
+      437
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

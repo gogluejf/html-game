@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/projectiles/stink_mine/idle_sheet.png",
+ "size": "1870x512",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "stink_mine idle (5 frames)",
+ "entities": [
+  {
+   "name": "stink_mine",
+   "anim": "idle",
+   "frames_dir": "petal-panic/assets/projectiles/stink_mine",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      10,
+      0,
+      353,
+      512
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      376,
+      7,
+      369,
+      497
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      749,
+      12,
+      371,
+      488
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1122,
+      24,
+      374,
+      464
+     ]
+    },
+    {
+     "file": "idle_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1500,
+      1,
+      366,
+      509
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

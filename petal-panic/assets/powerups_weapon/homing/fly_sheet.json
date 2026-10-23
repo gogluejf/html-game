@@ -1,0 +1,106 @@
+{
+ "file": "petal-panic/assets/powerups_weapon/homing/fly_sheet.png",
+ "size": "2160x197",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "homing fly (8 frames)",
+ "entities": [
+  {
+   "name": "homing",
+   "anim": "fly",
+   "frames_dir": "petal-panic/assets/powerups_weapon/homing",
+   "frames": [
+    {
+     "file": "fly_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      9,
+      270,
+      179
+     ]
+    },
+    {
+     "file": "fly_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      278,
+      5,
+      253,
+      187
+     ]
+    },
+    {
+     "file": "fly_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      541,
+      12,
+      267,
+      172
+     ]
+    },
+    {
+     "file": "fly_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      820,
+      3,
+      250,
+      191
+     ]
+    },
+    {
+     "file": "fly_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1088,
+      0,
+      254,
+      197
+     ]
+    },
+    {
+     "file": "fly_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1356,
+      6,
+      257,
+      185
+     ]
+    },
+    {
+     "file": "fly_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1625,
+      0,
+      259,
+      196
+     ]
+    },
+    {
+     "file": "fly_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      1891,
+      5,
+      267,
+      187
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

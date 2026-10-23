@@ -1,0 +1,95 @@
+{
+ "file": "petal-panic/assets/powerups_weapon/explosive/fly_sheet.png",
+ "size": "2576x170",
+ "rows": 1,
+ "cols": 7,
+ "kind": "animation",
+ "description": "explosive fly (7 frames)",
+ "entities": [
+  {
+   "name": "explosive",
+   "anim": "fly",
+   "frames_dir": "petal-panic/assets/powerups_weapon/explosive",
+   "frames": [
+    {
+     "file": "fly_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      67,
+      35,
+      234,
+      100
+     ]
+    },
+    {
+     "file": "fly_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      428,
+      29,
+      247,
+      111
+     ]
+    },
+    {
+     "file": "fly_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      765,
+      10,
+      309,
+      150
+     ]
+    },
+    {
+     "file": "fly_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1105,
+      11,
+      366,
+      148
+     ]
+    },
+    {
+     "file": "fly_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1472,
+      0,
+      368,
+      170
+     ]
+    },
+    {
+     "file": "fly_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1843,
+      6,
+      361,
+      158
+     ]
+    },
+    {
+     "file": "fly_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      2227,
+      1,
+      329,
+      168
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

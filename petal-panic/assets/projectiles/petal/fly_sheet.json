@@ -1,0 +1,106 @@
+{
+ "file": "petal-panic/assets/projectiles/petal/fly_sheet.png",
+ "size": "2304x131",
+ "rows": 1,
+ "cols": 8,
+ "kind": "animation",
+ "description": "petal fly (8 frames)",
+ "entities": [
+  {
+   "name": "petal",
+   "anim": "fly",
+   "frames_dir": "petal-panic/assets/projectiles/petal",
+   "frames": [
+    {
+     "file": "fly_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      12,
+      5,
+      263,
+      120
+     ]
+    },
+    {
+     "file": "fly_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      288,
+      2,
+      288,
+      127
+     ]
+    },
+    {
+     "file": "fly_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      598,
+      1,
+      243,
+      128
+     ]
+    },
+    {
+     "file": "fly_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      886,
+      0,
+      244,
+      131
+     ]
+    },
+    {
+     "file": "fly_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1172,
+      1,
+      248,
+      129
+     ]
+    },
+    {
+     "file": "fly_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1459,
+      4,
+      249,
+      123
+     ]
+    },
+    {
+     "file": "fly_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1753,
+      2,
+      237,
+      126
+     ]
+    },
+    {
+     "file": "fly_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      2053,
+      3,
+      213,
+      124
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}
