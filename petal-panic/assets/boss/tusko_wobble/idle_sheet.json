@@ -1,0 +1,76 @@
+{
+  "file": "idle_sheet.png",
+  "size": [
+    2465,
+    350
+  ],
+  "rows": 1,
+  "cols": 5,
+  "kind": "anim",
+  "description": "tusko_wobble idle",
+  "entities": [
+    {
+      "name": "tusko_wobble",
+      "anim": "idle",
+      "frames_dir": ".",
+      "frames": [
+        {
+          "file": "idle_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            32,
+            1,
+            429,
+            347
+          ]
+        },
+        {
+          "file": "idle_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            493,
+            3,
+            493,
+            343
+          ]
+        },
+        {
+          "file": "idle_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            997,
+            0,
+            471,
+            350
+          ]
+        },
+        {
+          "file": "idle_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1504,
+            4,
+            442,
+            342
+          ]
+        },
+        {
+          "file": "idle_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            2009,
+            3,
+            418,
+            343
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}
