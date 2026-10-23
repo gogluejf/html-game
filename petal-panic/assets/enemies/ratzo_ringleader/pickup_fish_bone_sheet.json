@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/ratzo_ringleader/pickup_fish_bone_sheet.png",
+ "size": "2245x452",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "ratzo_ringleader pickup_fish_bone (5 frames)",
+ "entities": [
+  {
+   "name": "ratzo_ringleader",
+   "anim": "pickup_fish_bone",
+   "frames_dir": "petal-panic/assets/enemies/ratzo_ringleader",
+   "frames": [
+    {
+     "file": "pickup_fish_bone_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      13,
+      0,
+      423,
+      452
+     ]
+    },
+    {
+     "file": "pickup_fish_bone_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      455,
+      18,
+      437,
+      416
+     ]
+    },
+    {
+     "file": "pickup_fish_bone_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      898,
+      8,
+      449,
+      436
+     ]
+    },
+    {
+     "file": "pickup_fish_bone_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1347,
+      12,
+      448,
+      428
+     ]
+    },
+    {
+     "file": "pickup_fish_bone_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1823,
+      7,
+      395,
+      437
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

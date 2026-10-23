@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/ratzo_ringleader/idle_sheet.png",
+ "size": "2145x399",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "ratzo_ringleader idle (5 frames)",
+ "entities": [
+  {
+   "name": "ratzo_ringleader",
+   "anim": "idle",
+   "frames_dir": "petal-panic/assets/enemies/ratzo_ringleader",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      429,
+      399
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      447,
+      2,
+      392,
+      395
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      863,
+      0,
+      418,
+      398
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1301,
+      2,
+      400,
+      395
+     ]
+    },
+    {
+     "file": "idle_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1728,
+      2,
+      405,
+      395
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}
