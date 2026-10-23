@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/boss/grim_vertigo/dash_shark_sheet.png",
+ "size": "2204x258",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "grim_vertigo dash_shark (4 frames)",
+ "entities": [
+  {
+   "name": "grim_vertigo",
+   "anim": "dash_shark",
+   "frames_dir": "petal-panic/assets/boss/grim_vertigo",
+   "frames": [
+    {
+     "file": "dash_shark_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      16,
+      0,
+      518,
+      258
+     ]
+    },
+    {
+     "file": "dash_shark_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      569,
+      4,
+      514,
+      250
+     ]
+    },
+    {
+     "file": "dash_shark_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1110,
+      6,
+      535,
+      246
+     ]
+    },
+    {
+     "file": "dash_shark_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1653,
+      9,
+      551,
+      240
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}
