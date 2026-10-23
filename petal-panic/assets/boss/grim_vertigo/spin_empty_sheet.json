@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/grim_vertigo/spin_empty_sheet.png",
+ "size": "2255x503",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "grim_vertigo spin_empty (5 frames)",
+ "entities": [
+  {
+   "name": "grim_vertigo",
+   "anim": "spin_empty",
+   "frames_dir": "petal-panic/assets/boss/grim_vertigo",
+   "frames": [
+    {
+     "file": "spin_empty_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      3,
+      410,
+      497
+     ]
+    },
+    {
+     "file": "spin_empty_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      451,
+      1,
+      421,
+      501
+     ]
+    },
+    {
+     "file": "spin_empty_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      902,
+      0,
+      412,
+      502
+     ]
+    },
+    {
+     "file": "spin_empty_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1353,
+      1,
+      431,
+      500
+     ]
+    },
+    {
+     "file": "spin_empty_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1804,
+      0,
+      451,
+      503
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

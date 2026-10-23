@@ -631,6 +631,24 @@ def cmd_extract(args):
 
     issues = validate(results, expected, trace)
 
+    # BODY-COUNT GUARD: compare each row's expected frame count against the
+    # number of large body components actually detected in that row's band.
+    # A mismatch means the --rows assessment is likely wrong (e.g. asked for 5
+    # but the sheet has 6 poses, or 3). This does NOT stop the crop, but it
+    # flags it loudly so a bad count is caught before eyeballing 12 sheets.
+    big_area = max(4000, int(fg_px * 0.02))  # a "body" is a large component
+    for r, band in enumerate(axis_bands):
+        b0, b1 = band
+        if col_mode:
+            row_big = [c for c in comps if c["area"] >= big_area and b0 - 4 <= c["centroid"][0] < b1 + 4]
+        else:
+            row_big = [c for c in comps if c["area"] >= big_area and b0 - 4 <= c["centroid"][1] < b1 + 4]
+        if len(row_big) != expected[r]:
+            msg = (f"row {r}: expected {expected[r]} frames but found "
+                   f"{len(row_big)} large body component(s) — check your --rows assessment")
+            issues.append(msg)
+            trace(f"    WARN BODY-COUNT: {msg}")
+
     summary = {
         "sheet": args.sheet,
         "size": [W, H],

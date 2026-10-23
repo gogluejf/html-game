@@ -1,0 +1,51 @@
+{
+ "file": "petal-panic/assets/boss/grim_vertigo/stomp_elephant_sheet.png",
+ "size": "1402x724",
+ "rows": 1,
+ "cols": 3,
+ "kind": "animation",
+ "description": "grim_vertigo stomp_elephant (3 frames)",
+ "entities": [
+  {
+   "name": "grim_vertigo",
+   "anim": "stomp_elephant",
+   "frames_dir": "petal-panic/assets/boss/grim_vertigo",
+   "frames": [
+    {
+     "file": "stomp_elephant_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      34,
+      184,
+      455,
+      492
+     ]
+    },
+    {
+     "file": "stomp_elephant_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      521,
+      382,
+      444,
+      299
+     ]
+    },
+    {
+     "file": "stomp_elephant_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      997,
+      368,
+      387,
+      308
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

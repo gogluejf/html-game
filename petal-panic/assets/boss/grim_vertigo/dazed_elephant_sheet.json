@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/grim_vertigo/dazed_elephant_sheet.png",
+ "size": "2215x401",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "grim_vertigo dazed_elephant (5 frames)",
+ "entities": [
+  {
+   "name": "grim_vertigo",
+   "anim": "dazed_elephant",
+   "frames_dir": "petal-panic/assets/boss/grim_vertigo",
+   "frames": [
+    {
+     "file": "dazed_elephant_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      410,
+      401
+     ]
+    },
+    {
+     "file": "dazed_elephant_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      443,
+      11,
+      418,
+      379
+     ]
+    },
+    {
+     "file": "dazed_elephant_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      886,
+      5,
+      409,
+      391
+     ]
+    },
+    {
+     "file": "dazed_elephant_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1329,
+      14,
+      443,
+      372
+     ]
+    },
+    {
+     "file": "dazed_elephant_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1772,
+      22,
+      423,
+      356
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

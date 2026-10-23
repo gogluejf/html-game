@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/grim_vertigo/spin_elephant_sheet.png",
+ "size": "2195x570",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "grim_vertigo spin_elephant (5 frames)",
+ "entities": [
+  {
+   "name": "grim_vertigo",
+   "anim": "spin_elephant",
+   "frames_dir": "petal-panic/assets/boss/grim_vertigo",
+   "frames": [
+    {
+     "file": "spin_elephant_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      429,
+      567
+     ]
+    },
+    {
+     "file": "spin_elephant_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      439,
+      2,
+      428,
+      566
+     ]
+    },
+    {
+     "file": "spin_elephant_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      878,
+      1,
+      437,
+      568
+     ]
+    },
+    {
+     "file": "spin_elephant_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1317,
+      1,
+      429,
+      568
+     ]
+    },
+    {
+     "file": "spin_elephant_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1756,
+      0,
+      439,
+      570
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/grim_vertigo/buck_horse_sheet.png",
+ "size": "2305x570",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "grim_vertigo buck_horse (5 frames)",
+ "entities": [
+  {
+   "name": "grim_vertigo",
+   "anim": "buck_horse",
+   "frames_dir": "petal-panic/assets/boss/grim_vertigo",
+   "frames": [
+    {
+     "file": "buck_horse_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      121,
+      446,
+      328
+     ]
+    },
+    {
+     "file": "buck_horse_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      461,
+      42,
+      386,
+      486
+     ]
+    },
+    {
+     "file": "buck_horse_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      922,
+      0,
+      409,
+      570
+     ]
+    },
+    {
+     "file": "buck_horse_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1383,
+      70,
+      450,
+      429
+     ]
+    },
+    {
+     "file": "buck_horse_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1844,
+      101,
+      461,
+      368
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

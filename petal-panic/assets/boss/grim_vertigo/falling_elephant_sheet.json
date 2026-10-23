@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/grim_vertigo/falling_elephant_sheet.png",
+ "size": "2230x438",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "grim_vertigo falling_elephant (5 frames)",
+ "entities": [
+  {
+   "name": "grim_vertigo",
+   "anim": "falling_elephant",
+   "frames_dir": "petal-panic/assets/boss/grim_vertigo",
+   "frames": [
+    {
+     "file": "falling_elephant_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      356,
+      438
+     ]
+    },
+    {
+     "file": "falling_elephant_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      446,
+      9,
+      385,
+      420
+     ]
+    },
+    {
+     "file": "falling_elephant_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      892,
+      28,
+      418,
+      381
+     ]
+    },
+    {
+     "file": "falling_elephant_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1338,
+      25,
+      446,
+      388
+     ]
+    },
+    {
+     "file": "falling_elephant_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1784,
+      6,
+      347,
+      425
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

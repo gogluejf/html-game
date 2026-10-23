@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/grim_vertigo/rampage_sheet.png",
+ "size": "2165x486",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "grim_vertigo rampage (5 frames)",
+ "entities": [
+  {
+   "name": "grim_vertigo",
+   "anim": "rampage",
+   "frames_dir": "petal-panic/assets/boss/grim_vertigo",
+   "frames": [
+    {
+     "file": "rampage_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      7,
+      414,
+      472
+     ]
+    },
+    {
+     "file": "rampage_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      433,
+      0,
+      419,
+      486
+     ]
+    },
+    {
+     "file": "rampage_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      866,
+      7,
+      429,
+      471
+     ]
+    },
+    {
+     "file": "rampage_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1299,
+      10,
+      433,
+      465
+     ]
+    },
+    {
+     "file": "rampage_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1732,
+      10,
+      402,
+      466
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}
