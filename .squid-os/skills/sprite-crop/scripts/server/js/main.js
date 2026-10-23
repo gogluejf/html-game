@@ -28,7 +28,11 @@ import { buildMarkerList } from './markers.js';
 // ---------- play/pause toggle (wraps setPlaying with flip semantics) ----------
 function togglePlay(){
   if (!app.cur || !app.cur.st) return;
-  setPlaying(!app.cur.st.playing);
+  const st = app.cur.st;
+  if (!st.playing && st.playback === 'once' && st.frames.length > 0 && curFrameIdx() === st.frames.length - 1){
+    stepFrame(1); // wrap to frame 1 only when replaying Once from the end
+  }
+  setPlaying(!st.playing);
 }
 
 // ---------- rotation controls (hold-to-spin) ----------
