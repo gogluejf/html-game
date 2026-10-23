@@ -1,0 +1,142 @@
+{
+  "file": "death_sheet.png",
+  "size": [
+    5676,
+    370
+  ],
+  "rows": 1,
+  "cols": 11,
+  "kind": "anim",
+  "description": "pizza_cat death",
+  "entities": [
+    {
+      "name": "pizza_cat",
+      "anim": "death",
+      "frames_dir": ".",
+      "frames": [
+        {
+          "file": "death_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            63,
+            4,
+            390,
+            361
+          ]
+        },
+        {
+          "file": "death_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            610,
+            0,
+            327,
+            370
+          ]
+        },
+        {
+          "file": "death_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1113,
+            1,
+            354,
+            368
+          ]
+        },
+        {
+          "file": "death_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1597,
+            25,
+            417,
+            319
+          ]
+        },
+        {
+          "file": "death_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            2089,
+            31,
+            465,
+            307
+          ]
+        },
+        {
+          "file": "death_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            2596,
+            38,
+            483,
+            294
+          ]
+        },
+        {
+          "file": "death_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            3096,
+            72,
+            516,
+            225
+          ]
+        },
+        {
+          "file": "death_f8.png",
+          "row": 0,
+          "col": 7,
+          "bbox": [
+            3655,
+            54,
+            430,
+            262
+          ]
+        },
+        {
+          "file": "death_f9.png",
+          "row": 0,
+          "col": 8,
+          "bbox": [
+            4198,
+            86,
+            375,
+            198
+          ]
+        },
+        {
+          "file": "death_f10.png",
+          "row": 0,
+          "col": 9,
+          "bbox": [
+            4716,
+            87,
+            372,
+            196
+          ]
+        },
+        {
+          "file": "death_f11.png",
+          "row": 0,
+          "col": 10,
+          "bbox": [
+            5216,
+            93,
+            403,
+            184
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}

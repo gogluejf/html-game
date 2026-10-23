@@ -1,0 +1,109 @@
+{
+  "file": "idle_sheet.png",
+  "size": [
+    3312,
+    438
+  ],
+  "rows": 1,
+  "cols": 8,
+  "kind": "anim",
+  "description": "pizza_cat idle",
+  "entities": [
+    {
+      "name": "pizza_cat",
+      "anim": "idle",
+      "frames_dir": ".",
+      "frames": [
+        {
+          "file": "idle_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            14,
+            1,
+            386,
+            436
+          ]
+        },
+        {
+          "file": "idle_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            431,
+            5,
+            380,
+            427
+          ]
+        },
+        {
+          "file": "idle_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            856,
+            1,
+            357,
+            436
+          ]
+        },
+        {
+          "file": "idle_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1261,
+            0,
+            375,
+            438
+          ]
+        },
+        {
+          "file": "idle_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1656,
+            23,
+            414,
+            392
+          ]
+        },
+        {
+          "file": "idle_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            2084,
+            20,
+            385,
+            397
+          ]
+        },
+        {
+          "file": "idle_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            2506,
+            19,
+            369,
+            400
+          ]
+        },
+        {
+          "file": "idle_f8.png",
+          "row": 0,
+          "col": 7,
+          "bbox": [
+            2914,
+            20,
+            381,
+            398
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}

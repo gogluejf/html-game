@@ -301,7 +301,7 @@ def assign_components(comps, spans, y0, y1, sat_max_area, sat_radius, trace, row
     return assignments, flags
 
 
-def crop_frames(im, comps, assignments, spans, rows, names, anims, out_dir, margin, trace, span=False, col_mode=False):
+def crop_frames(im, comps, assignments, spans, rows, names, anims, out_dir, margin, trace, span=False, col_mode=False, alpha_threshold=16):
     """Build one bounding rect per frame from owned pixels; crop RGBA.
 
     Before saving, erases any foreground pixel whose component is NOT owned
@@ -319,7 +319,7 @@ def crop_frames(im, comps, assignments, spans, rows, names, anims, out_dir, marg
     from scipy import ndimage
     arr = np.array(im)
     alpha = arr[:, :, 3]
-    fg_mask = alpha > 16
+    fg_mask = alpha > alpha_threshold
     comp_labels, _ = ndimage.label(fg_mask)
     os.makedirs(out_dir, exist_ok=True)
     results = []
@@ -362,7 +362,7 @@ def crop_frames(im, comps, assignments, spans, rows, names, anims, out_dir, marg
             crop_arr = arr[fy0:fy1, fx0:fx1].copy()
             crop_labels = comp_labels[fy0:fy1, fx0:fx1]
             owned_ids = set(c["id"] for c in owned)
-            fg_in_crop = crop_arr[:, :, 3] > 16
+            fg_in_crop = crop_arr[:, :, 3] > alpha_threshold
             unowned = fg_in_crop & ~np.isin(crop_labels, list(owned_ids))
             erased = int(unowned.sum())
             crop_arr[unowned, 3] = 0
@@ -373,8 +373,8 @@ def crop_frames(im, comps, assignments, spans, rows, names, anims, out_dir, marg
             # other frames' components from this crop.
             # Recompute tight bbox after erasing (handles boundary-clip case)
             clean_alpha = crop_arr[:, :, 3]
-            rows_c = (clean_alpha > 16).any(axis=1)
-            cols_c = (clean_alpha > 16).any(axis=0)
+            rows_c = (clean_alpha > alpha_threshold).any(axis=1)
+            cols_c = (clean_alpha > alpha_threshold).any(axis=0)
             if rows_c.any() and cols_c.any():
                 r_min = int(np.argmax(rows_c))
                 r_max = int(len(rows_c) - np.argmax(rows_c[::-1]) - 1)
@@ -627,7 +627,8 @@ def cmd_extract(args):
     trace("[6] BOUNDING RECTS + CROPS")
     results = crop_frames(im, comps, all_assignments, all_spans,
                           axis_bands, names, anims,
-                          args.out, args.margin, trace, span=args.span, col_mode=col_mode)
+                          args.out, args.margin, trace, span=args.span, col_mode=col_mode,
+                          alpha_threshold=args.alpha_threshold)
 
     issues = validate(results, expected, trace)
 
