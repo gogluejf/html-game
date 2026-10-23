@@ -1,5 +1,5 @@
 {
-  "file": "petal-panic/assets/enemies/cannon_clown/shoot_sheet.png",
+  "file": "petal-panic/assets/projectiles/cannon_clown_head/shoot_sheet.png",
   "size": "2130x217",
   "rows": 1,
   "cols": 6,
@@ -7,9 +7,9 @@
   "description": "cannon_clown shoot",
   "entities": [
     {
-      "name": "cannon_clown",
+      "name": "cannon_clown_head",
       "anim": "shoot",
-      "frames_dir": "petal-panic/assets/enemies/cannon_clown",
+      "frames_dir": "petal-panic/assets/projectiles/cannon_clown_head",
       "frames": [
         {
           "file": "shoot_f1.png",

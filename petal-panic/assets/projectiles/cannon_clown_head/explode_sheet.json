@@ -1,5 +1,5 @@
 {
-  "file": "petal-panic/assets/enemies/cannon_clown/explode_sheet.png",
+  "file": "petal-panic/assets/projectiles/cannon_clown_head/explode_sheet.png",
   "size": "2282x233",
   "rows": 1,
   "cols": 7,
@@ -7,9 +7,9 @@
   "description": "cannon_clown explode",
   "entities": [
     {
-      "name": "cannon_clown",
+      "name": "cannon_clown_head",
       "anim": "explode",
-      "frames_dir": "petal-panic/assets/enemies/cannon_clown",
+      "frames_dir": "petal-panic/assets/projectiles/cannon_clown_head",
       "frames": [
         {
           "file": "explode_f1.png",
