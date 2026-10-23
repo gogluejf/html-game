@@ -1,0 +1,109 @@
+{
+  "file": "explode_sheet.png",
+  "size": [
+    2752,
+    432
+  ],
+  "rows": 1,
+  "cols": 8,
+  "kind": "anim",
+  "description": "explosive_monkey explode",
+  "entities": [
+    {
+      "name": "explosive_monkey",
+      "anim": "explode",
+      "frames_dir": ".",
+      "frames": [
+        {
+          "file": "explode_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            41,
+            59,
+            262,
+            314
+          ]
+        },
+        {
+          "file": "explode_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            387,
+            64,
+            258,
+            304
+          ]
+        },
+        {
+          "file": "explode_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            721,
+            51,
+            278,
+            329
+          ]
+        },
+        {
+          "file": "explode_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1061,
+            20,
+            285,
+            392
+          ]
+        },
+        {
+          "file": "explode_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1397,
+            0,
+            301,
+            432
+          ]
+        },
+        {
+          "file": "explode_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1757,
+            46,
+            270,
+            339
+          ]
+        },
+        {
+          "file": "explode_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            2064,
+            51,
+            344,
+            329
+          ]
+        },
+        {
+          "file": "explode_f8.png",
+          "row": 0,
+          "col": 7,
+          "bbox": [
+            2456,
+            42,
+            247,
+            347
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}

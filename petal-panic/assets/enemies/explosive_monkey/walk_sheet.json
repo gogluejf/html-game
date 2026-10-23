@@ -1,0 +1,109 @@
+{
+  "file": "walk_sheet.png",
+  "size": [
+    2472,
+    319
+  ],
+  "rows": 1,
+  "cols": 8,
+  "kind": "anim",
+  "description": "explosive_monkey walk",
+  "entities": [
+    {
+      "name": "explosive_monkey",
+      "anim": "walk",
+      "frames_dir": ".",
+      "frames": [
+        {
+          "file": "walk_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            12,
+            7,
+            284,
+            305
+          ]
+        },
+        {
+          "file": "walk_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            323,
+            7,
+            280,
+            305
+          ]
+        },
+        {
+          "file": "walk_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            618,
+            1,
+            309,
+            316
+          ]
+        },
+        {
+          "file": "walk_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            933,
+            0,
+            297,
+            319
+          ]
+        },
+        {
+          "file": "walk_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1247,
+            5,
+            286,
+            309
+          ]
+        },
+        {
+          "file": "walk_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1552,
+            4,
+            295,
+            310
+          ]
+        },
+        {
+          "file": "walk_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            1862,
+            5,
+            293,
+            308
+          ]
+        },
+        {
+          "file": "walk_f8.png",
+          "row": 0,
+          "col": 7,
+          "bbox": [
+            2180,
+            1,
+            274,
+            317
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}
