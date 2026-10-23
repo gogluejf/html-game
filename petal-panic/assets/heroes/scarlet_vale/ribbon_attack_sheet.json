@@ -1,0 +1,84 @@
+{
+ "file": "petal-panic/assets/heroes/scarlet_vale/ribbon_attack_sheet.png",
+ "size": "4662x328",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "scarlet_vale ribbon_attack (6 frames)",
+ "entities": [
+  {
+   "name": "scarlet_vale",
+   "anim": "ribbon_attack",
+   "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+   "frames": [
+    {
+     "file": "ribbon_attack_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      238,
+      0,
+      301,
+      328
+     ]
+    },
+    {
+     "file": "ribbon_attack_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      997,
+      0,
+      337,
+      328
+     ]
+    },
+    {
+     "file": "ribbon_attack_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1692,
+      16,
+      501,
+      296
+     ]
+    },
+    {
+     "file": "ribbon_attack_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      2361,
+      12,
+      716,
+      304
+     ]
+    },
+    {
+     "file": "ribbon_attack_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      3108,
+      9,
+      777,
+      309
+     ]
+    },
+    {
+     "file": "ribbon_attack_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      4056,
+      16,
+      435,
+      296
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}
