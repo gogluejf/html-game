@@ -1,9 +1,6 @@
 {
   "file": "explode_sheet.png",
-  "size": [
-    2752,
-    432
-  ],
+  "size": "2752x432",
   "rows": 1,
   "cols": 8,
   "kind": "anim",

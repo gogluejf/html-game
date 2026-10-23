@@ -1,9 +1,6 @@
 {
   "file": "attack_sheet.png",
-  "size": [
-    1656,
-    424
-  ],
+  "size": "1656x424",
   "rows": 1,
   "cols": 4,
   "kind": "anim",

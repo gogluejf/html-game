@@ -1,9 +1,6 @@
 {
   "file": "run_sheet.png",
-  "size": [
-    2400,
-    524
-  ],
+  "size": "2400x524",
   "rows": 1,
   "cols": 5,
   "kind": "anim",

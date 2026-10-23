@@ -1,9 +1,6 @@
 {
   "file": "walk_sheet.png",
-  "size": [
-    2472,
-    319
-  ],
+  "size": "2472x319",
   "rows": 1,
   "cols": 8,
   "kind": "anim",

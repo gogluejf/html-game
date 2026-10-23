@@ -1,9 +1,6 @@
 {
   "file": "idle_sheet.png",
-  "size": [
-    2465,
-    350
-  ],
+  "size": "2465x350",
   "rows": 1,
   "cols": 5,
   "kind": "anim",

@@ -1,9 +1,6 @@
 {
   "file": "fall_sheet.png",
-  "size": [
-    3636,
-    430
-  ],
+  "size": "3636x430",
   "rows": 1,
   "cols": 12,
   "kind": "anim",

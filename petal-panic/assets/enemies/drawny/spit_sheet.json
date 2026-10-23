@@ -1,9 +1,6 @@
 {
   "file": "spit_sheet.png",
-  "size": [
-    1545,
-    200
-  ],
+  "size": "1545x200",
   "rows": 1,
   "cols": 5,
   "kind": "anim",

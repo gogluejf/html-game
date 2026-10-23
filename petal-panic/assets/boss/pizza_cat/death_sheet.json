@@ -1,9 +1,6 @@
 {
   "file": "death_sheet.png",
-  "size": [
-    5676,
-    370
-  ],
+  "size": "5676x370",
   "rows": 1,
   "cols": 11,
   "kind": "anim",

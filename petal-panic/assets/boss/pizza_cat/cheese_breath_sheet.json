@@ -1,9 +1,6 @@
 {
   "file": "cheese_breath_sheet.png",
-  "size": [
-    3120,
-    483
-  ],
+  "size": "3120x483",
   "rows": 1,
   "cols": 6,
   "kind": "anim",

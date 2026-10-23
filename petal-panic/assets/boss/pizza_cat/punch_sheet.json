@@ -1,9 +1,6 @@
 {
   "file": "punch_sheet.png",
-  "size": [
-    3296,
-    455
-  ],
+  "size": "3296x455",
   "rows": 1,
   "cols": 8,
   "kind": "anim",
