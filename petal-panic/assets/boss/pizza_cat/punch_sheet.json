@@ -1,0 +1,109 @@
+{
+  "file": "punch_sheet.png",
+  "size": [
+    3296,
+    455
+  ],
+  "rows": 1,
+  "cols": 8,
+  "kind": "anim",
+  "description": "pizza_cat punch",
+  "entities": [
+    {
+      "name": "pizza_cat",
+      "anim": "punch",
+      "frames_dir": ".",
+      "frames": [
+        {
+          "file": "punch_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            43,
+            0,
+            325,
+            455
+          ]
+        },
+        {
+          "file": "punch_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            412,
+            17,
+            412,
+            420
+          ]
+        },
+        {
+          "file": "punch_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            874,
+            30,
+            312,
+            395
+          ]
+        },
+        {
+          "file": "punch_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1253,
+            8,
+            377,
+            438
+          ]
+        },
+        {
+          "file": "punch_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1680,
+            20,
+            348,
+            414
+          ]
+        },
+        {
+          "file": "punch_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            2072,
+            14,
+            387,
+            426
+          ]
+        },
+        {
+          "file": "punch_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            2499,
+            8,
+            357,
+            438
+          ]
+        },
+        {
+          "file": "punch_f8.png",
+          "row": 0,
+          "col": 7,
+          "bbox": [
+            2919,
+            18,
+            342,
+            419
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}

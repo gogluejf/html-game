@@ -1,0 +1,87 @@
+{
+  "file": "roll_sheet.png",
+  "size": [
+    3114,
+    491
+  ],
+  "rows": 1,
+  "cols": 6,
+  "kind": "anim",
+  "description": "pizza_cat roll",
+  "entities": [
+    {
+      "name": "pizza_cat",
+      "anim": "roll",
+      "frames_dir": ".",
+      "frames": [
+        {
+          "file": "roll_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            30,
+            0,
+            459,
+            491
+          ]
+        },
+        {
+          "file": "roll_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            547,
+            4,
+            462,
+            482
+          ]
+        },
+        {
+          "file": "roll_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1054,
+            25,
+            486,
+            440
+          ]
+        },
+        {
+          "file": "roll_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1580,
+            56,
+            473,
+            379
+          ]
+        },
+        {
+          "file": "roll_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            2076,
+            84,
+            519,
+            322
+          ]
+        },
+        {
+          "file": "roll_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            2617,
+            56,
+            474,
+            378
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}

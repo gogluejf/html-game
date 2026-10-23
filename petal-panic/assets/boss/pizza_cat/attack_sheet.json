@@ -1,0 +1,65 @@
+{
+  "file": "attack_sheet.png",
+  "size": [
+    1656,
+    424
+  ],
+  "rows": 1,
+  "cols": 4,
+  "kind": "anim",
+  "description": "pizza_cat attack",
+  "entities": [
+    {
+      "name": "pizza_cat",
+      "anim": "attack",
+      "frames_dir": ".",
+      "frames": [
+        {
+          "file": "attack_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            17,
+            33,
+            380,
+            357
+          ]
+        },
+        {
+          "file": "attack_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            448,
+            0,
+            345,
+            424
+          ]
+        },
+        {
+          "file": "attack_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            832,
+            25,
+            406,
+            373
+          ]
+        },
+        {
+          "file": "attack_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1242,
+            9,
+            414,
+            405
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}
