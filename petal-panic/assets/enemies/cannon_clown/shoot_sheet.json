@@ -1,0 +1,84 @@
+{
+  "file": "petal-panic/assets/enemies/cannon_clown/shoot_sheet.png",
+  "size": "2130x217",
+  "rows": 1,
+  "cols": 6,
+  "kind": "animation",
+  "description": "cannon_clown shoot",
+  "entities": [
+    {
+      "name": "cannon_clown",
+      "anim": "shoot",
+      "frames_dir": "petal-panic/assets/enemies/cannon_clown",
+      "frames": [
+        {
+          "file": "shoot_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            6,
+            0,
+            342,
+            217
+          ]
+        },
+        {
+          "file": "shoot_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            358,
+            2,
+            348,
+            212
+          ]
+        },
+        {
+          "file": "shoot_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            710,
+            1,
+            355,
+            214
+          ]
+        },
+        {
+          "file": "shoot_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1076,
+            8,
+            332,
+            200
+          ]
+        },
+        {
+          "file": "shoot_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1428,
+            9,
+            338,
+            199
+          ]
+        },
+        {
+          "file": "shoot_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1797,
+            8,
+            310,
+            200
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}
