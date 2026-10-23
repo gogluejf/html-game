@@ -396,8 +396,12 @@ export const STAGING = {
       }
       // Enemy children are THROWN (throwEnemy): ensure a nested config exists
       // so the theater's dotted tweaks (enemy.ttl / enemy.mineType) have a
-      // home, without clobbering user choices.
-      if (chosen === 'enemy' && !t._params.enemy) t._params.enemy = {};
+      // home, without clobbering user choices. Reset enemyType to the split
+      // default so it doesn't carry over from a throwEnemy session.
+      if (chosen === 'enemy') {
+        if (!t._params.enemy) t._params.enemy = {};
+        if (!t._tweaks.spawnSplit?.enemyType) t._params.enemyType = 'explosive_monkey';
+      }
       // centerDirection + angle come from SANDBOX_PRESETS (the demo fan) and are
       // user-tweakable — do NOT reset them here or every replay clobbers the choice.
       t._params.x = t._attacker.x + t._attacker.w / 2;

@@ -84,4 +84,24 @@ ok('macro materializes immediate enemy children when enemy.thrown=false', () => 
   }
 });
 
+ok('spawnSplit thrown monkey detonates on victim contact through host stepping', () => {
+  const mk = () => { const items=[]; return { activeItems:items, spawn(...a){const e={alive:true,x:a[0],y:a[1],w:18,h:18,vx:0,vy:0,gravityValue:0,setLife(){},timers:new Map()};items.push(e);return e;}, updateAll(dt){ for(const e of items){ if(!e.alive) continue; if(e.gravityValue>0) e.vy+=e.gravityValue*dt; e.x+=e.vx*dt; e.y+=e.vy*dt; } } }; };
+  const hero = { x: 260, y: 92, w: 24, h: 24, alive: true, hp: 100, team: 'hero', worldBox(){return this;}, loseSelectedSpecial(){}, takeHit(){} };
+  const ctx = makeContext(attacker(), { pools: { projectilePool: mk(), specialPool: mk() }, world: { targets: [hero], hero } });
+  const h = invoke('spawnSplit', { spawnType: 'enemy', enemyType: 'explosive_monkey', count: 1, centerDirection: 0, angle: 0, force: 80, groundY: 100, target: hero }, ctx);
+  for (let i = 0; i < 240 && !h._completed; i++) {
+    ctx.pools.specialPool.updateAll(1/60);
+    h.step(1/60, [hero]);
+    const e = h.enemies[0];
+    if (e?.alive) {
+      e.update?.(1/60, hero, {});
+      // Snap to floor like the theater host does.
+      if (e.vy > 0 && e.y + e.h >= 100) { e.y = 100 - e.h; e.vy = 0; }
+      e.hostStep?.(1/60, [hero]);
+    }
+  }
+  assert.ok(h.enemies[0]?._detonated || h.enemies[0]?.aiState === 'dead', 'monkey detonated');
+  assert.ok(hero.hp < 100, `hero took damage (${hero.hp})`);
+});
+
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

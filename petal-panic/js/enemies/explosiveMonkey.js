@@ -68,7 +68,7 @@ export class ExplosiveMonkey extends Enemy {
       settleDelay: cfg.settleDelay ?? 0,
       explodeOnContact: cfg.explodeOnContact ?? true,
       mineType: cfg.mineType ?? 'explosion',
-      team: cfg.team ?? 'foe',
+      team: cfg.team ?? 'neutral',
       damage: cfg.damage ?? 40,
       radius: cfg.radius ?? 70,
       target: cfg.target ?? null,
@@ -77,6 +77,8 @@ export class ExplosiveMonkey extends Enemy {
     this._settled = false;     // ground contact reached (TTL clock may start)
     this._fuseLeft = null;
     this._payloadHandle = null;
+    // Snappy death: a suicide unit shouldn't linger with a long shrink/fade.
+    this.deathDuration = 0.25;
   }
 
   /**
@@ -148,7 +150,10 @@ export class ExplosiveMonkey extends Enemy {
 
   /** Team-semantics gate for contact detonation (same source as mine.js). */
   validBlastTarget(t) {
-    return isValidTarget({ team: this.cfg.team, ctx: { hero: this._heroRef ?? null } }, t, this);
+    // The chase target is authoritative for team validation; _heroRef is only
+    // a fallback when no explicit target was supplied (standalone use).
+    const hero = this.cfg.target ?? this._heroRef ?? null;
+    return isValidTarget({ team: this.cfg.team, ctx: { hero } }, t, this);
   }
 
   /**
@@ -168,10 +173,14 @@ export class ExplosiveMonkey extends Enemy {
       radius: this.cfg.radius, damage: this.cfg.damage, team: this.cfg.team,
       self: this, targets: cands,
     }, this._attackCtx ?? makeDetonateContext());
+    // The body is gone the instant the blast starts; the short death duration
+    // only keeps the entity in the normal removal pipeline for one beat.
+    this._goneAtBlast = true;
     this.die();
   }
 
   draw(ctx) {
+    if (this._goneAtBlast) return;
     super.draw(ctx);
     if (!this.alive || this._detonated) return;
     // Fuse indicator: a small blinking dot above the head while armed.

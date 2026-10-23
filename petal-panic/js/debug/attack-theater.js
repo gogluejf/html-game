@@ -106,7 +106,7 @@ const SANDBOX_PRESETS = {
   spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 8, width: 144, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
   orbit: { count: 3, minRadius: 40, maxRadius: 90, pulseSpeed: 1.5, speed: 1.5, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
   boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 3 },
-  spawnSplit: { x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'jester' },
+  spawnSplit: { x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'explosive_monkey' },
   spreadShot: { count: 3, direction: 0, angle: 60 * DEG, speed: 500, ttl: 2, damage: 10 },
   radialShot: { count: 24, startAngle: -Math.PI / 2, speed: 400, ttl: 2.5, damage: 10, sequenceInterval: 0.15 },
   burstShot: { count: 3, interval: 0.12, direction: 0.5, speed: 600, ttl: 2, damage: 10 },
@@ -121,7 +121,7 @@ const SANDBOX_PRESETS = {
   shockwave: { x: (ATTACKER_HOME.x + TARGET_POS.x) / 2 + 16, y: GROUND_Y - 24, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, shakeIntensity: 5, team: 'neutral' },
   mine: { x: VIEW_W / 2, team: 'ally', ttl: 2, blinkDuration: 2, mineType: 'explosion' },
   throwMine: { team: 'ally', ttl: 2, blinkDuration: 2, mineType: 'explosion' },
-  throwEnemy: { speed: 420, direction: -0.35, arc: 1000, bounce: false, enemyType: 'explosive_monkey', ttl: null, settleDelay: 0.2, explodeOnContact: true, mineType: 'explosion', team: 'foe', damage: 40, radius: 70 },
+  throwEnemy: { speed: 420, direction: -0.35, arc: 1000, bounce: false, enemyType: 'explosive_monkey', ttl: null, settleDelay: 0.2, explodeOnContact: true, mineType: 'explosion', team: 'neutral', damage: 40, radius: 70 },
   shockwaveBomb: { direction: -0.5, arc: 800, bounce: false, explodeOnContact: true, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, blastTeam: 'neutral' },
   shockwaveProjectile: { direction: 0, speed: 700, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, solidBehavior: 'stop', blastTeam: 'neutral' },
   stomp: { buildTime: 1.2, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, radius: 90, damage: 30, team: 'foe', shakeStrength: 5 },
@@ -1186,7 +1186,7 @@ export const AttackTheater = {
       ctx.fillStyle = '#fff';
       ctx.font = '9px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('MONKEY', e.x + e.w / 2, e.y - 6);
+      ctx.fillText(e.type?.toUpperCase() ?? 'ENEMY', e.x + e.w / 2, e.y - 6);
     }
 
     // Deferred zones stay owned/stepped by their root macro, but draw here.

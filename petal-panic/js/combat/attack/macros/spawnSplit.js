@@ -55,7 +55,7 @@ const DEFAULTS = Object.freeze({
   spawnType: 'projectile', // 'projectile' | 'bomb' | 'enemy'
   mineType: 'explosion',
   mine: { ttl: 2, blinkDuration: 2 },
-  enemyType: 'jester',
+  enemyType: 'explosive_monkey',
   enemy: null,            // nested throwEnemy config when spawnType='enemy'
   bomb: null,
   projectile: { ttl: 2, damage: 8 },
@@ -75,7 +75,7 @@ export function splitChildren(p) {
     vy: Math.sin(a) * p.force + ivy,
     angle: a,
     spawnType: p.spawnType ?? 'projectile',
-    enemyType: p.spawnType === 'enemy' ? (p.enemyType ?? 'jester') : undefined,
+    enemyType: p.spawnType === 'enemy' ? (p.enemyType ?? 'explosive_monkey') : undefined,
     bomb: p.spawnType === 'bomb' ? (p.bomb ?? {}) : undefined,
   }));
 }
@@ -143,7 +143,7 @@ defineMacro('spawnSplit', {
         // `enemy.thrown: false` keeps the legacy immediate makeEnemy spawn
         // with fan velocity + hitstun for non-throwable types.
         if (ec.thrown === false) {
-          const e = makeEnemy(c.enemyType ?? p.enemyType, c.x - 16, c.y - 24);
+          const e = makeEnemy(c.enemyType ?? p.enemyType ?? 'explosive_monkey', c.x - 16, c.y - 24);
           if (!e) continue;
           e.vx = c.vx;
           e.vy = c.vy;

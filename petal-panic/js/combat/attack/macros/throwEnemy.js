@@ -36,7 +36,7 @@ export const THROW_ENEMY_DEFAULTS = Object.freeze({
   settleDelay: 0.2,      // landing beat before the TTL clock starts
   explodeOnContact: true,
   mineType: 'explosion', // explosion | shockwave
-  team: 'foe',           // ally | foe | neutral (who the blast hurts)
+  team: 'neutral',       // ally | foe | neutral (who the blast hurts)
   damage: 40,
   radius: 70,
 });
