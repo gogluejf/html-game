@@ -46,28 +46,22 @@ def collect_sheets():
             parts = rel.split(os.sep)
             game = parts[0]                          # abyss-qwen | petal-panic
             cat = parts[2] if len(parts) > 4 else ""  # boss, enemies, levels...
-            out.append((rel, kind, game, cat))
+            entity = parts[3] if len(parts) > 4 else ""  # grim_vertigo, jester...
+            out.append((rel, kind, game, cat, entity))
     return sorted(out)
 
 
 def build_html(sheets):
     cards = []
-    games = sorted({g for _, _, g, _ in sheets})
-    cats = sorted({c for _, _, _, c in sheets if c})
-    kinds = sorted({k for _, k, _, _ in sheets})
-    for i, (rel, kind, game, cat) in enumerate(sheets):
+    for i, (rel, kind, game, cat, entity) in enumerate(sheets):
         url = "/" + rel.replace(os.sep, "/")
         cards.append(f"""
-      <div class="card" data-kind="{html.escape(kind)}" data-game="{html.escape(game)}" data-cat="{html.escape(cat)}" onclick="view({i})">
+      <div class="card" data-kind="{html.escape(kind)}" data-game="{html.escape(game)}" data-cat="{html.escape(cat)}" data-entity="{html.escape(entity)}" onclick="view({i})">
         <img loading="lazy" src="{html.escape(url)}" alt="">
         <div class="kind k-{html.escape(kind)}">{html.escape(kind)}</div>
         <div class="path">{html.escape(rel)}</div>
       </div>""")
-    def opt_list(key_idx, values):
-        return "".join(
-            f'<option value="{html.escape(v)}">{html.escape(v)} ({sum(1 for s in sheets if s[key_idx] == v)})</option>'
-            for v in values)
-    js_data = json.dumps([s[0].replace(os.sep, "/") for s in sheets])
+    js_sheets = json.dumps([{"rel": s[0].replace(os.sep, "/"), "kind": s[1], "game": s[2], "cat": s[3], "entity": s[4]} for s in sheets])
     return f"""<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>sheet gallery</title>
 <style>
@@ -77,7 +71,7 @@ def build_html(sheets):
   .filters label {{ font-size:12px; color:#777; flex:1; min-width:130px; }}
   .filters select {{ background:#222; color:#ddd; border:1px solid #444; border-radius:6px;
     padding:8px 10px; font:14px monospace; width:100%; }}
-  @media (min-width:700px) {{ .filters label {{ flex:0 0 auto; min-width:0; }} .filters select {{ width:auto; }} }}
+  @media (min-width:900px) {{ .filters label {{ flex:0 0 auto; min-width:0; }} .filters select {{ width:auto; min-width:120px; }} }}
   .grid {{ display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:8px; }}
   @media (min-width:700px) {{ .grid {{ grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; }} }}
   .card {{ background:#1c1c1c; border:1px solid #333; border-radius:6px; padding:8px; cursor:pointer; }}
@@ -100,38 +94,69 @@ def build_html(sheets):
 </style></head><body>
 <h1>sheets — <span id="count"></span> (click to enlarge)</h1>
 <div class="filters">
-  <label>game <select id="fGame" onchange="apply()">
-    <option value="all">all</option>{opt_list(2, games)}</select></label>
-  <label>category <select id="fCat" onchange="apply()">
-    <option value="all">all</option>{opt_list(3, cats)}</select></label>
-  <label>kind <select id="fKind" onchange="apply()">
-    <option value="all">all</option>{opt_list(1, kinds)}</select></label>
+  <label>game <select id="fGame" onchange="cascade()"><option value="all">all</option></select></label>
+  <label>category <select id="fCat" onchange="cascade()"><option value="all">all</option></select></label>
+  <label>entity <select id="fEntity" onchange="cascade()"><option value="all">all</option></select></label>
+  <label>kind <select id="fKind" onchange="cascade()"><option value="all">all</option></select></label>
 </div>
 <div class="grid">{''.join(cards)}</div>
 <div id="overlay" onclick="this.style.display='none'">
   <img id="obig" src=""><div id="opath"></div>
 </div>
 <script>
-const SHEETS = {js_data};
-function apply(){{
+const SHEETS = {js_sheets};
+const FIELDS = ['game','cat','entity','kind'];
+
+function populate(selectId, values) {{
+  const sel = document.getElementById(selectId);
+  const cur = sel.value;
+  const counts = {{}};
+  values.forEach(v => {{ counts[v] = (counts[v]||0)+1; }});
+  const sorted = Object.keys(counts).sort();
+  sel.innerHTML = '<option value="all">all ('+values.length+')</option>' +
+    sorted.map(v => '<option value="'+v+'">'+v+' ('+counts[v]+')</option>').join('');
+  if (sorted.includes(cur)) sel.value = cur; else sel.value = 'all';
+}}
+
+function cascade() {{
   const G = document.getElementById('fGame').value,
         C = document.getElementById('fCat').value,
+        E = document.getElementById('fEntity').value,
         K = document.getElementById('fKind').value;
+
+  // Build constrained option lists (each filter narrows the others)
+  const gOpts = [...new Set(SHEETS.filter(s => (C==='all'||s.cat===C)&&(E==='all'||s.entity===E)&&(K==='all'||s.kind===K)).map(s=>s.game))];
+  const cOpts = [...new Set(SHEETS.filter(s => (G==='all'||s.game===G)&&(E==='all'||s.entity===E)&&(K==='all'||s.kind===K)).map(s=>s.cat))];
+  const eOpts = [...new Set(SHEETS.filter(s => (G==='all'||s.game===G)&&(C==='all'||s.cat===C)&&(K==='all'||s.kind===K)).map(s=>s.entity))];
+  const kOpts = [...new Set(SHEETS.filter(s => (G==='all'||s.game===G)&&(C==='all'||s.cat===C)&&(E==='all'||s.entity===E)).map(s=>s.kind))];
+
+  populate('fGame', gOpts);
+  populate('fCat', cOpts);
+  populate('fEntity', eOpts);
+  populate('fKind', kOpts);
+
+  // Apply visibility
+  const g2 = document.getElementById('fGame').value,
+        c2 = document.getElementById('fCat').value,
+        e2 = document.getElementById('fEntity').value,
+        k2 = document.getElementById('fKind').value;
   let n = 0;
   document.querySelectorAll('.card').forEach(c => {{
-    const ok = (G==='all'||c.dataset.game===G) && (C==='all'||c.dataset.cat===C) && (K==='all'||c.dataset.kind===K);
+    const ok = (g2==='all'||c.dataset.game===g2) && (c2==='all'||c.dataset.cat===c2) &&
+               (e2==='all'||c.dataset.entity===e2) && (k2==='all'||c.dataset.kind===k2);
     c.classList.toggle('hidden', !ok); if (ok) n++;
   }});
   document.getElementById('count').textContent = n + ' shown';
 }}
+
 function view(i){{
-  document.getElementById('obig').src = SHEETS[i];
-  document.getElementById('opath').textContent = SHEETS[i];
+  document.getElementById('obig').src = SHEETS[i].rel;
+  document.getElementById('opath').textContent = SHEETS[i].rel;
   document.getElementById('overlay').style.display = 'flex';
 }}
 document.addEventListener('keydown', e => {{ if (e.key === 'Escape')
   document.getElementById('overlay').style.display = 'none'; }});
-apply();
+cascade();
 </script></body></html>"""
 
 

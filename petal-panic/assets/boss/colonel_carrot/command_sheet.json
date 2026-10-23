@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/boss/colonel_carrot/command_sheet.png",
+ "size": "2595x572",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "colonel_carrot command (5 frames)",
+ "entities": [
+  {
+   "name": "colonel_carrot",
+   "anim": "command",
+   "frames_dir": "petal-panic/assets/boss/colonel_carrot",
+   "frames": [
+    {
+     "file": "command_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      75,
+      2,
+      369,
+      568
+     ]
+    },
+    {
+     "file": "command_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      597,
+      0,
+      362,
+      572
+     ]
+    },
+    {
+     "file": "command_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1048,
+      3,
+      498,
+      566
+     ]
+    },
+    {
+     "file": "command_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1557,
+      7,
+      519,
+      558
+     ]
+    },
+    {
+     "file": "command_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      2080,
+      10,
+      510,
+      551
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-22"
+}

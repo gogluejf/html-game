@@ -366,40 +366,11 @@ def crop_frames(im, comps, assignments, spans, rows, names, anims, out_dir, marg
             unowned = fg_in_crop & ~np.isin(crop_labels, list(owned_ids))
             erased = int(unowned.sum())
             crop_arr[unowned, 3] = 0
-            # Clip at span boundary: zero out foreground pixels outside this
-            # frame's span (handles overlapping components that straddle spans)
-            if not col_mode:
-                # span is x-range [cx0, cx1); crop starts at fx0
-                span_left = max(0, cx0 - fx0)
-                span_right = min(crop_arr.shape[1], cx1 - fx0)
-                if span_left > 0:
-                    clip_mask = np.zeros(crop_arr.shape[:2], dtype=bool)
-                    clip_mask[:, :span_left] = True
-                    clipped = clip_mask & (crop_arr[:, :, 3] > 16)
-                    erased += int(clipped.sum())
-                    crop_arr[clipped, 3] = 0
-                if span_right < crop_arr.shape[1]:
-                    clip_mask = np.zeros(crop_arr.shape[:2], dtype=bool)
-                    clip_mask[:, span_right:] = True
-                    clipped = clip_mask & (crop_arr[:, :, 3] > 16)
-                    erased += int(clipped.sum())
-                    crop_arr[clipped, 3] = 0
-            else:
-                # col-mode: span is y-range [cy0, cy1); crop starts at fy0
-                span_top = max(0, cy0 - fy0)
-                span_bottom = min(crop_arr.shape[0], cy1 - fy0)
-                if span_top > 0:
-                    clip_mask = np.zeros(crop_arr.shape[:2], dtype=bool)
-                    clip_mask[:span_top, :] = True
-                    clipped = clip_mask & (crop_arr[:, :, 3] > 16)
-                    erased += int(clipped.sum())
-                    crop_arr[clipped, 3] = 0
-                if span_bottom < crop_arr.shape[0]:
-                    clip_mask = np.zeros(crop_arr.shape[:2], dtype=bool)
-                    clip_mask[span_bottom:, :] = True
-                    clipped = clip_mask & (crop_arr[:, :, 3] > 16)
-                    erased += int(clipped.sum())
-                    crop_arr[clipped, 3] = 0
+            # No further clipping: owned component pixels are kept whole.
+            # Overlapping components (e.g. f3's hand and f4's cape sharing
+            # x-columns at different y-positions) stay intact in their
+            # respective frames. The unowned erase above already removes
+            # other frames' components from this crop.
             # Recompute tight bbox after erasing (handles boundary-clip case)
             clean_alpha = crop_arr[:, :, 3]
             rows_c = (clean_alpha > 16).any(axis=1)

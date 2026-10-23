@@ -1,10 +1,10 @@
 {
  "file": "petal-panic/assets/boss/colonel_carrot/launch_sheet.png",
- "size": "1444x324",
+ "size": "2235x690",
  "rows": 1,
  "cols": 5,
  "kind": "animation",
- "description": "colonel_carrot launch (5 frames) \u2014 reassembled from frames",
+ "description": "colonel_carrot launch (5 frames)",
  "entities": [
   {
    "name": "colonel_carrot",
@@ -16,10 +16,10 @@
      "row": 0,
      "col": 0,
      "bbox": [
-      0,
-      0,
-      237,
-      324
+      39,
+      109,
+      368,
+      472
      ]
     },
     {
@@ -27,10 +27,10 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      237,
-      2,
-      311,
-      319
+      453,
+      119,
+      435,
+      452
      ]
     },
     {
@@ -38,10 +38,10 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      548,
-      1,
-      268,
-      322
+      906,
+      114,
+      422,
+      462
      ]
     },
     {
@@ -49,10 +49,10 @@
      "row": 0,
      "col": 3,
      "bbox": [
-      816,
-      6,
-      338,
-      312
+      1341,
+      55,
+      447,
+      579
      ]
     },
     {
@@ -60,10 +60,10 @@
      "row": 0,
      "col": 4,
      "bbox": [
-      1154,
-      14,
-      290,
-      296
+      1802,
+      0,
+      418,
+      690
      ]
     }
    ]
