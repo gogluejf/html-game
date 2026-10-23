@@ -1,0 +1,109 @@
+{
+  "file": "explode_sheet.png",
+  "size": [
+    3648,
+    486
+  ],
+  "rows": 1,
+  "cols": 8,
+  "kind": "anim",
+  "description": "skyfry explode",
+  "entities": [
+    {
+      "name": "skyfry",
+      "anim": "explode",
+      "frames_dir": ".",
+      "frames": [
+        {
+          "file": "explode_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            71,
+            3,
+            313,
+            479
+          ]
+        },
+        {
+          "file": "explode_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            523,
+            0,
+            321,
+            486
+          ]
+        },
+        {
+          "file": "explode_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            912,
+            5,
+            456,
+            476
+          ]
+        },
+        {
+          "file": "explode_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1371,
+            6,
+            449,
+            474
+          ]
+        },
+        {
+          "file": "explode_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1909,
+            21,
+            285,
+            444
+          ]
+        },
+        {
+          "file": "explode_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            2345,
+            75,
+            326,
+            336
+          ]
+        },
+        {
+          "file": "explode_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            2795,
+            82,
+            337,
+            322
+          ]
+        },
+        {
+          "file": "explode_f8.png",
+          "row": 0,
+          "col": 7,
+          "bbox": [
+            3295,
+            62,
+            249,
+            361
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}

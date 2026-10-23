@@ -1,0 +1,153 @@
+{
+  "file": "fall_sheet.png",
+  "size": [
+    3636,
+    430
+  ],
+  "rows": 1,
+  "cols": 12,
+  "kind": "anim",
+  "description": "skyfry fall",
+  "entities": [
+    {
+      "name": "skyfry",
+      "anim": "fall",
+      "frames_dir": ".",
+      "frames": [
+        {
+          "file": "fall_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            5,
+            1,
+            293,
+            428
+          ]
+        },
+        {
+          "file": "fall_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            303,
+            0,
+            303,
+            430
+          ]
+        },
+        {
+          "file": "fall_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            617,
+            2,
+            281,
+            426
+          ]
+        },
+        {
+          "file": "fall_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            923,
+            3,
+            275,
+            423
+          ]
+        },
+        {
+          "file": "fall_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1229,
+            2,
+            268,
+            426
+          ]
+        },
+        {
+          "file": "fall_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1541,
+            4,
+            250,
+            421
+          ]
+        },
+        {
+          "file": "fall_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            1822,
+            1,
+            294,
+            428
+          ]
+        },
+        {
+          "file": "fall_f8.png",
+          "row": 0,
+          "col": 7,
+          "bbox": [
+            2126,
+            18,
+            292,
+            393
+          ]
+        },
+        {
+          "file": "fall_f9.png",
+          "row": 0,
+          "col": 8,
+          "bbox": [
+            2428,
+            4,
+            294,
+            421
+          ]
+        },
+        {
+          "file": "fall_f10.png",
+          "row": 0,
+          "col": 9,
+          "bbox": [
+            2740,
+            5,
+            276,
+            419
+          ]
+        },
+        {
+          "file": "fall_f11.png",
+          "row": 0,
+          "col": 10,
+          "bbox": [
+            3045,
+            2,
+            273,
+            425
+          ]
+        },
+        {
+          "file": "fall_f12.png",
+          "row": 0,
+          "col": 11,
+          "bbox": [
+            3361,
+            2,
+            247,
+            425
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-23"
+}
