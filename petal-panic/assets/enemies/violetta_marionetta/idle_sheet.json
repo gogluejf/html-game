@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/violetta_marionetta/idle_sheet.png",
+ "size": "1924x756",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "violetta_marionetta idle (5 frames)",
+ "entities": [
+  {
+   "name": "violetta_marionetta",
+   "anim": "idle",
+   "frames_dir": "petal-panic/assets/enemies/violetta_marionetta",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      378,
+      753
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      378,
+      5,
+      352,
+      745
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      730,
+      3,
+      456,
+      749
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1186,
+      5,
+      379,
+      746
+     ]
+    },
+    {
+     "file": "idle_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1565,
+      0,
+      359,
+      756
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-23"
+}

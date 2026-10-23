@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/violetta_marionetta/balerina_sheet.png",
+ "size": "1984x709",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "violetta_marionetta balerina (5 frames)",
+ "entities": [
+  {
+   "name": "violetta_marionetta",
+   "anim": "balerina",
+   "frames_dir": "petal-panic/assets/enemies/violetta_marionetta",
+   "frames": [
+    {
+     "file": "balerina_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      7,
+      397,
+      695
+     ]
+    },
+    {
+     "file": "balerina_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      397,
+      1,
+      405,
+      706
+     ]
+    },
+    {
+     "file": "balerina_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      802,
+      0,
+      401,
+      709
+     ]
+    },
+    {
+     "file": "balerina_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1203,
+      8,
+      433,
+      692
+     ]
+    },
+    {
+     "file": "balerina_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1636,
+      18,
+      348,
+      673
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-23"
+}

@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/violetta_marionetta/voodoo_dance_sheet.png",
+ "size": "2307x769",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "violetta_marionetta voodoo_dance (5 frames)",
+ "entities": [
+  {
+   "name": "violetta_marionetta",
+   "anim": "voodoo_dance",
+   "frames_dir": "petal-panic/assets/enemies/violetta_marionetta",
+   "frames": [
+    {
+     "file": "voodoo_dance_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      3,
+      469,
+      762
+     ]
+    },
+    {
+     "file": "voodoo_dance_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      469,
+      0,
+      555,
+      769
+     ]
+    },
+    {
+     "file": "voodoo_dance_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1024,
+      28,
+      454,
+      713
+     ]
+    },
+    {
+     "file": "voodoo_dance_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1478,
+      13,
+      470,
+      742
+     ]
+    },
+    {
+     "file": "voodoo_dance_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1948,
+      47,
+      359,
+      675
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-23"
+}

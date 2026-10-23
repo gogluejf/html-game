@@ -1,14 +1,15 @@
 {
  "file": "petal-panic/assets/enemies/violetta_marionetta/death_sheet.png",
- "size": "1424x339",
+ "size": "4135x470",
  "rows": 1,
- "cols": 5,
+ "cols": 9,
  "kind": "animation",
- "description": "violetta_marionetta death (5 frames) \u2014 reassembled from frames",
+ "description": "violetta_marionetta death (9 frames)",
  "entities": [
   {
    "name": "violetta_marionetta",
    "anim": "death",
+   "frames_dir": "petal-panic/assets/enemies/violetta_marionetta",
    "frames": [
     {
      "file": "death_f1.png",
@@ -16,9 +17,9 @@
      "col": 0,
      "bbox": [
       0,
-      1,
-      258,
-      337
+      0,
+      386,
+      469
      ]
     },
     {
@@ -26,10 +27,10 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      258,
+      386,
       0,
-      256,
-      338
+      390,
+      470
      ]
     },
     {
@@ -37,10 +38,10 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      514,
-      5,
-      291,
-      329
+      776,
+      29,
+      477,
+      411
      ]
     },
     {
@@ -48,10 +49,10 @@
      "row": 0,
      "col": 3,
      "bbox": [
-      805,
-      0,
-      315,
-      339
+      1253,
+      33,
+      491,
+      404
      ]
     },
     {
@@ -59,15 +60,58 @@
      "row": 0,
      "col": 4,
      "bbox": [
-      1120,
-      0,
-      304,
-      338
+      1744,
+      66,
+      345,
+      337
+     ]
+    },
+    {
+     "file": "death_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      2089,
+      102,
+      426,
+      266
+     ]
+    },
+    {
+     "file": "death_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      2515,
+      99,
+      495,
+      272
+     ]
+    },
+    {
+     "file": "death_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      3010,
+      124,
+      568,
+      222
+     ]
+    },
+    {
+     "file": "death_f9.png",
+     "row": 0,
+     "col": 8,
+     "bbox": [
+      3578,
+      103,
+      557,
+      264
      ]
     }
-   ],
-   "frames_dir": "petal-panic/assets/enemies/violetta_marionetta"
+   ]
   }
  ],
- "updated": "2026-10-21"
+ "updated": "2026-10-23"
 }
