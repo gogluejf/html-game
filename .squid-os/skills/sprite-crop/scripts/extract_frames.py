@@ -167,7 +167,7 @@ def cluster_col(col_mask, x0, x1, expected, trace, col_idx):
     return spans
 
 
-def cluster_row(row_mask, y0, y1, expected, trace, row_idx):
+def cluster_row(row_mask, y0, y1, expected, trace, row_idx, row_comps=None):
     """Cluster one row's foreground into `expected` frame groups.
 
     Strategy: x-density profile within the row band; find interior valleys
@@ -216,10 +216,30 @@ def cluster_row(row_mask, y0, y1, expected, trace, row_idx):
         bounds = [xs] + [(a + b) // 2 for a, b in seps] + [xe]
         spans = [[bounds[i], bounds[i + 1]] for i in range(expected)]
     else:
-        # not enough clean gaps (overlap / fragmentation): even division
-        method = "even-division"
-        w = (xe - xs) / expected
-        spans = [[int(xs + i * w), int(xs + (i + 1) * w)] for i in range(expected)]
+        # not enough clean gaps (overlap / fragmentation): use component
+        # centroids to place boundaries at midpoints between consecutive
+        # bodies, instead of blind equal-width division.
+        method = "centroid-split"
+        # Get the main (non-satellite) components sorted by centroid x
+        main_comps = [c for c in row_comps if c["area"] > 400]
+        main_comps.sort(key=lambda c: c["centroid"][0])
+        if len(main_comps) >= expected:
+            # Take the expected largest ones
+            main_comps.sort(key=lambda c: c["area"], reverse=True)
+            main_comps = main_comps[:expected]
+            main_comps.sort(key=lambda c: c["centroid"][0])
+            # Boundaries at midpoints between consecutive centroids
+            bounds = [xs]
+            for i in range(len(main_comps) - 1):
+                mid = (main_comps[i]["centroid"][0] + main_comps[i+1]["centroid"][0]) // 2
+                bounds.append(int(mid))
+            bounds.append(xe)
+            spans = [[bounds[i], bounds[i + 1]] for i in range(expected)]
+        else:
+            # Not enough components detected — fall back to even division
+            method = "even-division"
+            w = (xe - xs) / expected
+            spans = [[int(xs + i * w), int(xs + (i + 1) * w)] for i in range(expected)]
 
     trace(f"    row {row_idx}: {method} -> {len(spans)} span(s) (expected {expected})")
     for i, (a, b) in enumerate(spans):
@@ -346,9 +366,60 @@ def crop_frames(im, comps, assignments, spans, rows, names, anims, out_dir, marg
             unowned = fg_in_crop & ~np.isin(crop_labels, list(owned_ids))
             erased = int(unowned.sum())
             crop_arr[unowned, 3] = 0
+            # Clip at span boundary: zero out foreground pixels outside this
+            # frame's span (handles overlapping components that straddle spans)
+            if not col_mode:
+                # span is x-range [cx0, cx1); crop starts at fx0
+                span_left = max(0, cx0 - fx0)
+                span_right = min(crop_arr.shape[1], cx1 - fx0)
+                if span_left > 0:
+                    clip_mask = np.zeros(crop_arr.shape[:2], dtype=bool)
+                    clip_mask[:, :span_left] = True
+                    clipped = clip_mask & (crop_arr[:, :, 3] > 16)
+                    erased += int(clipped.sum())
+                    crop_arr[clipped, 3] = 0
+                if span_right < crop_arr.shape[1]:
+                    clip_mask = np.zeros(crop_arr.shape[:2], dtype=bool)
+                    clip_mask[:, span_right:] = True
+                    clipped = clip_mask & (crop_arr[:, :, 3] > 16)
+                    erased += int(clipped.sum())
+                    crop_arr[clipped, 3] = 0
+            else:
+                # col-mode: span is y-range [cy0, cy1); crop starts at fy0
+                span_top = max(0, cy0 - fy0)
+                span_bottom = min(crop_arr.shape[0], cy1 - fy0)
+                if span_top > 0:
+                    clip_mask = np.zeros(crop_arr.shape[:2], dtype=bool)
+                    clip_mask[:span_top, :] = True
+                    clipped = clip_mask & (crop_arr[:, :, 3] > 16)
+                    erased += int(clipped.sum())
+                    crop_arr[clipped, 3] = 0
+                if span_bottom < crop_arr.shape[0]:
+                    clip_mask = np.zeros(crop_arr.shape[:2], dtype=bool)
+                    clip_mask[span_bottom:, :] = True
+                    clipped = clip_mask & (crop_arr[:, :, 3] > 16)
+                    erased += int(clipped.sum())
+                    crop_arr[clipped, 3] = 0
+            # Recompute tight bbox after erasing (handles boundary-clip case)
+            clean_alpha = crop_arr[:, :, 3]
+            rows_c = (clean_alpha > 16).any(axis=1)
+            cols_c = (clean_alpha > 16).any(axis=0)
+            if rows_c.any() and cols_c.any():
+                r_min = int(np.argmax(rows_c))
+                r_max = int(len(rows_c) - np.argmax(rows_c[::-1]) - 1)
+                c_min = int(np.argmax(cols_c))
+                c_max = int(len(cols_c) - np.argmax(cols_c[::-1]) - 1)
+                # Re-crop to tight bounds
+                crop_arr = crop_arr[r_min:r_max+1, c_min:c_max+1]
+                fx0 += c_min
+                fy0 += r_min
+                fx1 = fx0 + crop_arr.shape[1]
+                fy1 = fy0 + crop_arr.shape[0]
+                clean_alpha = crop_arr[:, :, 3]
+            else:
+                clean_alpha = crop_arr[:, :, 3]
             from PIL import Image
             Image.fromarray(crop_arr).save(os.path.join(out_dir, fn))
-            clean_alpha = crop_arr[:, :, 3]
             edge_px = bool(clean_alpha[0].sum() > 0 or clean_alpha[-1].sum() > 0 or
                            clean_alpha[:, 0].sum() > 0 or clean_alpha[:, -1].sum() > 0)
             results.append({
@@ -556,7 +627,9 @@ def cmd_extract(args):
                 trace(f"    row {r}: manual-col-x -> {len(spans)} span(s) at x={splits}")
             else:
                 row_mask = fg[y0:y1, :]
-                spans = cluster_row(row_mask, y0, y1, expected[r], trace, r)
+                # Pass components in this row's band for centroid-based splitting
+                row_comps = [c for c in comps if y0 - 4 <= c["centroid"][1] < y1 + 4]
+                spans = cluster_row(row_mask, y0, y1, expected[r], trace, r, row_comps=row_comps)
                 if len(spans) != expected[r]:
                     trace(f"    WARN: row {r} produced {len(spans)} spans, expected {expected[r]}")
         all_spans.append(spans)
