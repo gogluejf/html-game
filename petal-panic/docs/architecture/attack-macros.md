@@ -1329,3 +1329,41 @@ Payload propagation:
 
 Theater controls expose these selectors, nullable TTL and blink duration. The
 base mine demo centers its base and walks an appropriate target into contact.
+
+
+## Throw Enemy and Explosive Monkey
+
+`invoke('throwEnemy', { enemyType: 'explosive_monkey', speed: 500, direction: -0.5,
+  arc: 1000, bounce: true, ttl: null, settleDelay: 0.2, explodeOnContact: true,
+  mineType: 'explosion', team: 'foe', damage: 40, radius: 70 }, ctx)`
+
+Two-phase composition on the shared Ballistic Arc (bomb) primitive:
+**Flying** — pooled Special carrier (projectile layer), full terrain collision
+(wall reflection, ground/platform bounce). **Landed** — real `Enemy` entity
+spawned via `makeEnemy()` at the rest point; the carrier is cancelled and its
+pool slot freed. The landed enemy enters the normal enemy pipeline (AI stepping,
+collision registration, death anim).
+
+### Explosive Monkey (`explosive_monkey`)
+
+A dummy walking monkey: walks toward its target (hero by default) at 90 px/s.
+Detonates exactly once on valid body contact or after an optional TTL fuse
+(`ttl: null` = contact only). Payload is the existing explosion or shockwave
+primitive with standard team semantics. No coin drops (suicide unit).
+
+| Param | Default | Meaning |
+|---|---|---|
+| `enemyType` | `'explosive_monkey'` | Any `ENEMY_FACTORIES` id |
+| `ttl` | `null` | Post-landing fuse seconds; `null` = contact only |
+| `settleDelay` | `0.2` | Landing beat before TTL clock starts |
+| `explodeOnContact` | `true` | Detonate on first valid body contact |
+| `mineType` | `'explosion'` | `'explosion'` or `'shockwave'` payload |
+| `team` | `'foe'` | Who the blast hurts (ally/foe/neutral) |
+| `damage` / `radius` | `40` / `70` | Payload tuning |
+
+### Spawn Split integration
+
+`spawnSplit` with `spawnType: 'enemy'` now throws children via `throwEnemy`
+by default (the fan velocity becomes the launch vector). Pass `enemy: { thrown: false }`
+to keep the legacy immediate-spawn path for non-throwable types. Nested config:
+`enemy: { ttl, mineType, team, damage, radius, ... }`.

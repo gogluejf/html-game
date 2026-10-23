@@ -32,3 +32,4 @@ import './laneSequence.js';
 
 import './mine.js';
 import './throwMine.js';
+import './throwEnemy.js';

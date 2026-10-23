@@ -394,6 +394,10 @@ export const STAGING = {
         t._params.spawnType = 'bomb';
         t._params.bomb = { arc: 700, bounce: true, ttl: 1.5, damage: 25, radius: 60, explodeOnContact: true };
       }
+      // Enemy children are THROWN (throwEnemy): ensure a nested config exists
+      // so the theater's dotted tweaks (enemy.ttl / enemy.mineType) have a
+      // home, without clobbering user choices.
+      if (chosen === 'enemy' && !t._params.enemy) t._params.enemy = {};
       // centerDirection + angle come from SANDBOX_PRESETS (the demo fan) and are
       // user-tweakable — do NOT reset them here or every replay clobbers the choice.
       t._params.x = t._attacker.x + t._attacker.w / 2;
@@ -404,6 +408,34 @@ export const STAGING = {
       // Spawn/split demo: the attacker disappears the instant the split
       // happens (it BECOMES the bombs).
       t._attackerVisible = false;
+      return false;
+    },
+  },
+
+  throwEnemy: {
+    setup(t) {
+      // Throw Enemy demo: the ATTACKER stands at home (left) and throws the
+      // monkey in a ballistic arc toward the TARGET (right). The carrier lands
+      // (bomb layer), becomes a real enemy, walks to the target, and detonates
+      // on contact. Foe team + hero staging: the sandbox target stands in for
+      // the hero so foe-aligned contact semantics resolve against it.
+      t._params.origin = { x: t._attacker.x + t._attacker.w / 2, y: t._attacker.y + 8 };
+      const dx = (t._target.x + t._target.w / 2) - (t._attacker.x + t._attacker.w / 2);
+      if (!t._tweaks.throwEnemy?.direction) t._params.direction = -0.35; // up-right lobe
+      if (!t._tweaks.throwEnemy?.speed) t._params.speed = Math.min(700, Math.max(380, dx * 0.9));
+      // Foe-aligned blasts only hit ctx.world.hero — stage the dummy AS the
+      // hero reference for this run (same pattern as the mine demo). The
+      // context is rebuilt every frame from entries[index], so this holds for
+      // the whole throwEnemy run.
+      if (t._params.team === 'foe') {
+        t._target.loseSelectedSpecial ??= () => {};
+        t._target.takeHit ??= () => {};
+        t._ctxHeroOverride = t._target;
+      }
+      return tagged({ kind: 'throwEnemy' }, STAGING.throwEnemy);
+    },
+    update(t) {
+      // Static staging — the macro owns flight → landing → walk → detonate.
       return false;
     },
   },

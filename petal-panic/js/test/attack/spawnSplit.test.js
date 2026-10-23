@@ -4,6 +4,8 @@
 import { strict as assert } from 'node:assert';
 import { splitChildren } from '../../combat/attack/macros/spawnSplit.js'; // also registers the macro
 import '../../combat/attack/primitives/projectile.js'; // for macro materialization
+import '../../combat/attack/primitives/bomb.js';       // throwEnemy carrier (enemy children)
+import '../../combat/attack/macros/throwEnemy.js';     // enemy children are thrown
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 
@@ -64,9 +66,17 @@ ok('macro materializes projectile children into live handles', () => {
   assert.equal(h.handles.length, 3, 'each child → a live projectile handle');
 });
 
-ok('macro materializes enemy children with launch velocity + hitstun', () => {
-  const ctx = makeContext(attacker(), {});
+ok('macro materializes enemy children as thrown carriers (throwEnemy)', () => {
+  const mk = () => { const items=[]; return { activeItems:items, spawn(...a){const e={alive:true,x:a[0],y:a[1],w:18,h:18,vx:0,vy:0,setLife(){},timers:new Map()};items.push(e);return e;}, updateAll(){} }; };
+  const ctx = makeContext(attacker(), { pools: { projectilePool: mk(), specialPool: mk() } });
   const h = invoke('spawnSplit', { ...P, spawnType: 'enemy' }, ctx);
+  assert.equal(h.handles.length, 3, 'each child → a live throwEnemy handle');
+  assert.ok(h.handles.every((ch) => ch.id === 'throwEnemy'));
+});
+
+ok('macro materializes immediate enemy children when enemy.thrown=false', () => {
+  const ctx = makeContext(attacker(), {});
+  const h = invoke('spawnSplit', { ...P, spawnType: 'enemy', enemy: { thrown: false } }, ctx);
   assert.equal(h.enemies.length, 3, 'each child → a live enemy entity');
   for (const e of h.enemies) {
     assert.ok(Math.abs(e.vx) > 0 || Math.abs(e.vy) > 0, 'enemy carries fan velocity');

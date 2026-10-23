@@ -7,6 +7,7 @@ import { UNIT_PX_X, UNIT_PX_Y, PLATFORM_DRAW_H, populateArea, populationSnapshot
 import { roomFloorTop, buildLevelZones, buildAllZoneTerrain } from './level.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { Jester } from '../enemies/jester.js';
+import { ExplosiveMonkey } from '../enemies/explosiveMonkey.js';
 import { VineHound } from '../enemies/vine_hound.js';
 import { Violetta } from '../enemies/violetta.js';
 import { JackOLantern } from '../enemies/jackolantern.js';
@@ -78,6 +79,7 @@ function slotCenterX(zone, unitX, itemW) {
 // --- Entity instantiation from population items (plain {x,y,type} slots) -----
 const ENEMY_FACTORIES = {
   jester: (x, y) => new Jester(x, y),
+  explosive_monkey: (x, y) => new ExplosiveMonkey(x, y),
   vine_hound: (x, y) => new VineHound(x, y),
   violetta_marionetta: (x, y) => new Violetta(x, y),
   jackolantern: (x, y) => new JackOLantern(x, y),

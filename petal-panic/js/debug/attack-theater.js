@@ -77,7 +77,7 @@ const REPEAT_FRAMES = 5;        // ~83ms between repeats while held
 // gameplay) instead of raw invoke(): the host owns root lifecycle + child
 // payload promotion (carrier → fireArea / split bombs). Everything else stays
 // on the theater's direct handle path.
-const BOMB_FAMILY = new Set(['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit']);
+const BOMB_FAMILY = new Set(['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit', 'throwMine', 'throwEnemy']);
 
 /** Angle display helper: radians → "−45° ↗" style string. */
 function angleLabel(rad) {
@@ -121,6 +121,7 @@ const SANDBOX_PRESETS = {
   shockwave: { x: (ATTACKER_HOME.x + TARGET_POS.x) / 2 + 16, y: GROUND_Y - 24, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, shakeIntensity: 5, team: 'neutral' },
   mine: { x: VIEW_W / 2, team: 'ally', ttl: 2, blinkDuration: 2, mineType: 'explosion' },
   throwMine: { team: 'ally', ttl: 2, blinkDuration: 2, mineType: 'explosion' },
+  throwEnemy: { speed: 420, direction: -0.35, arc: 1000, bounce: false, enemyType: 'explosive_monkey', ttl: null, settleDelay: 0.2, explodeOnContact: true, mineType: 'explosion', team: 'foe', damage: 40, radius: 70 },
   shockwaveBomb: { direction: -0.5, arc: 800, bounce: false, explodeOnContact: true, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, blastTeam: 'neutral' },
   shockwaveProjectile: { direction: 0, speed: 700, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, solidBehavior: 'stop', blastTeam: 'neutral' },
   stomp: { buildTime: 1.2, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, radius: 90, damage: 30, team: 'foe', shakeStrength: 5 },
@@ -163,7 +164,7 @@ export const TWEAKABLE = {
   spike: [['x', 'num', 16], ['width', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],
   orbit: [['count', 'int', 1], ['minRadius', 'num', 10], ['maxRadius', 'num', 10], ['pulseSpeed', 'num', 0.25], ['speed', 'num', 0.25]],
   boomerang: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['returnSpeed', 'num', 50], ['outboundDuration', 'num', 0.1], ['count', 'int', 1]],
-  spawnSplit: [['mineType', 'enum', ['explosion', 'shockwave']], ['mine.ttl', 'enum', [null, 1, 2, 4, 8]], ['mine.blinkDuration', 'num', 0.25], ['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['spawnType', 'enum', ['projectile', 'bomb', 'mine', 'enemy']], ['enemyType', 'enum', ENEMY_TYPES]],
+  spawnSplit: [['mineType', 'enum', ['explosion', 'shockwave']], ['mine.ttl', 'enum', [null, 1, 2, 4, 8]], ['mine.blinkDuration', 'num', 0.25], ['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['spawnType', 'enum', ['projectile', 'bomb', 'mine', 'enemy']], ['enemyType', 'enum', ENEMY_TYPES], ['enemy.mineType', 'enum', ['explosion', 'shockwave']], ['enemy.ttl', 'enum', [null, 1, 2, 4, 8]]],
   bodyExplosion: [['payloadDelay', 'num', 0.05]],
   bombSpread: [['count', 'int', 1], ['direction', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
   molotov: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['fireWidth', 'num', 16], ['fireDuration', 'num', 0.5], ['fireDamage', 'num', 2]],
@@ -180,6 +181,7 @@ export const TWEAKABLE = {
   shockwave: [['radius', 'num', 10], ['damage', 'num', 5], ['duration', 'num', 0.1], ['easing', 'enum', ['linear', 'easeIn', 'easeInCubic']], ['knockbackIntensity', 'num', 1]],
   mine: [['ttl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['mineType', 'enum', ['explosion', 'shockwave']], ['team', 'enum', ['ally', 'foe', 'neutral']], ['radius', 'num', 10], ['damage', 'num', 5]],
   throwMine: [['speed', 'num', 50], ['direction', 'angle', 15 * DEG], ['arc', 'num', 100], ['bounce', 'enum', [true, false]], ['ttl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['mineType', 'enum', ['explosion', 'shockwave']], ['team', 'enum', ['ally', 'foe', 'neutral']]],
+  throwEnemy: [['speed', 'num', 50], ['direction', 'angle', 15 * DEG], ['arc', 'num', 100], ['bounce', 'enum', [true, false]], ['enemyType', 'enum', ENEMY_TYPES], ['ttl', 'enum', [null, 1, 2, 4, 8]], ['settleDelay', 'num', 0.1], ['explodeOnContact', 'enum', [true, false]], ['mineType', 'enum', ['explosion', 'shockwave']], ['team', 'enum', ['ally', 'foe', 'neutral']], ['damage', 'num', 5], ['radius', 'num', 10]],
   shockwaveBomb: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['arc', 'num', 100], ['ttl', 'num', 0.5], ['radius', 'num', 10], ['damage', 'num', 5], ['duration', 'num', 0.1]],
   shockwaveProjectile: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.2], ['radius', 'num', 10], ['damage', 'num', 5], ['duration', 'num', 0.1]],
 };
@@ -449,10 +451,11 @@ export const AttackTheater = {
     });
     this._handles = [];
     // Bomb-family attacks (bomb, explosiveBomb, molotov, clusterBomb,
-    // bombSpread, spawnSplit) run through the SAME host gameplay uses: it owns
-    // root lifecycle + child-payload promotion. The context fn returns the
-    // sandbox's LIVE context each frame (pools/targets change as staging runs),
-    // mirroring systems/update.js's bombAttacks wiring.
+    // bombSpread, spawnSplit, throwMine, throwEnemy) run through the shared
+    // BombAttackHost (same as gameplay): it owns root lifecycle + child
+    // payload promotion. The context fn returns the sandbox's LIVE context
+    // each frame (pools/targets change as staging runs), mirroring
+    // systems/update.js's bombAttacks wiring.
     this._bombHost = new BombAttackHost(() => this._ctx());
     this._log = [];
     this._choreo = null;
@@ -476,6 +479,8 @@ export const AttackTheater = {
     // their carrier entities die with the sandbox.
     if (this._bombHost) { try { this._bombHost.clear(); } catch { /* noop */ } }
     this._bombHost = null;
+    for (const e of this._thrownEnemies ?? []) { try { this._world?.remove(e); } catch { /* noop */ } }
+    this._thrownEnemies = [];
     if (this._pools) {
       for (const p of this._pools.projectilePool.activeItems) p.alive = false;
       for (const s of this._pools.specialPool.activeItems) s.alive = false;
@@ -525,7 +530,9 @@ export const AttackTheater = {
     return makeContext(this._attacker, {
       world: { targets: [this._target, ...(this._stompVics ?? [])],
         // Mine demo stages a hero candidate for foe-side contact semantics.
-        hero: this.entries[this.index] === 'mine' && this._params.team === 'foe' ? this._target : null },
+        // throwEnemy does the same (its landed monkey detonates via team rules).
+        hero: this._ctxHeroOverride ??
+          (this.entries[this.index] === 'mine' && this._params.team === 'foe' ? this._target : null) },
       pools: this._pools,
       collisionWorld: this._world,
       effects: { ...Effects, fireManual },
@@ -588,12 +595,17 @@ export const AttackTheater = {
       for (const v of this._stompVics ?? []) { try { this._world?.remove(v); } catch { /* noop */ } }
       this._stompVics = null;
       this._stompPlatforms = [];
-      // Drop enemies spawned by the previous spawnSplit run (real world entities).
+      // Drop enemies spawned by the previous spawnSplit/throwEnemy runs
+      // (real world entities). Landed throwEnemy children are tracked in
+      // _thrownEnemies; cancel their roots so no handle outlives the run.
       for (const e of this._spawnedEnemies ?? []) { try { this._world?.remove(e); } catch { /* noop */ } }
       this._spawnedEnemies = [];
+      for (const e of this._thrownEnemies ?? []) { try { this._world?.remove(e); } catch { /* noop */ } }
+      this._thrownEnemies = [];
     }
     this._log = [];
     this._choreo = null;
+    this._ctxHeroOverride = null;
 
     // --- Choreography: stage the scene so the attack is watchable -------------
     // Per-attack STAGING lives declaratively in theater-staging.js (STAGING):
@@ -631,16 +643,39 @@ export const AttackTheater = {
           : invoke(id, { ...this._params, target: this._target }, this._ctx());
         if (id === 'spawnSplit') {
           // Dumb host follow-up: the spawnSplit MACRO owns all materialization
-          // (fan → live projectiles/bombs/enemies + launch velocity + hitstun).
-          // The theater only registers the returned enemy entities with its
-          // sandbox world and steps their AI each frame — that per-frame enemy
-          // AI is the game loop's job, never the engine's.
+          // (fan → live projectiles/bombs/thrown enemies). The theater only
+          // registers enemy entities with its sandbox world and steps their AI
+          // each frame — that per-frame enemy AI is the game loop's job, never
+          // the engine's. Immediate enemies appear in h.enemies now; thrown
+          // children append there on landing (hosted via _thrownEnemies).
           for (const e of h.enemies ?? []) {
             this._spawnedEnemies.push(e);
             this._world.add(e);
           }
           const st = this._params.spawnType;
           this._log.unshift(`split → ${h.children?.length ?? 0} ${st === 'bomb' ? 'bombs' : st === 'enemy' ? 'enemies' : 'shots'}`);
+          if (st === 'enemy') {
+            // Thrown children land asynchronously: register each as it does so
+            // the _stepOnce host loop runs its update/hostStep.
+            for (const ch of h.handles) {
+              if (ch.id !== 'throwEnemy') continue;
+              ch.on('land', ({ enemy }) => {
+                if (!enemy) return;
+                this._thrownEnemies.push(enemy);
+                this._world.add(enemy);
+              });
+            }
+          }
+        } else if (id === 'throwEnemy') {
+          // Landed enemy registration: the macro emits 'land' when the carrier
+          // settles and a real Enemy entity exists. Track it so _stepOnce runs
+          // its update/hostStep and teardown removes it from the world.
+          h.on('land', ({ enemy }) => {
+            if (!enemy) return;
+            this._thrownEnemies.push(enemy);
+            this._world.add(enemy);
+            this._log.unshift('LANDED');
+          });
         } else if (id === 'predictiveShot') {
           this._log.unshift(`intercept → flight ${h.flightTime != null ? Math.round(h.flightTime * 1000) + 'ms' : '∅'}`);
         }
@@ -698,11 +733,12 @@ export const AttackTheater = {
     projectilePool.updateAll(DT);
     specialPool.updateAll(DT);
 
-    // Spawned enemies (spawnSplit spawnType='enemy'): run their real update each
-    // frame. Enemy.update() drives ai() + gravity + integration internally and
-    // honors hit-stun (skips ai() while stunned), so a launched enemy's fan
-    // velocity integrates freely during its arc — same as knockback in gameplay.
-    // Do NOT call e.ai() separately: it bypasses the stun guard and stomps vx.
+    // Spawned enemies (spawnSplit spawnType='enemy' with enemy.thrown=false):
+    // run their real update each frame. Enemy.update() drives ai() + gravity
+    // + integration internally and honors hit-stun (skips ai() while stunned),
+    // so a launched enemy's fan velocity integrates freely during its arc —
+    // same as knockback in gameplay. Do NOT call e.ai() separately: it
+    // bypasses the stun guard and stomps vx.
     for (const e of this._spawnedEnemies ?? []) {
       if (!e.alive) continue;
       // The attacker fires the split, so its spawned minions hunt the TARGET
@@ -713,6 +749,16 @@ export const AttackTheater = {
       // is integrated inside e.update(); this snaps the body onto the floor so
       // it lands and sticks instead of falling off-screen. Flyers skip.
       if (e.gravity > 0) resolve(e, [this._floorSolid]);
+    }
+    // Landed throwEnemy children (real enemy entities): same host contract —
+    // real update() for AI/physics, resolve() onto the floor, then the
+    // entity's own hostStep() for detonation rules (contact/TTL). The bomb
+    // family root (BombAttackHost) tracks completion via h.step().
+    for (const e of this._thrownEnemies ?? []) {
+      if (!e.alive) continue;
+      e.update?.(DT, this._target, this._world);
+      if (e.gravity > 0) resolve(e, [this._floorSolid]);
+      if (typeof e.hostStep === 'function') e.hostStep(DT, [this._target]);
     }
     // Off-screen cull (sandbox bounds instead of level zone).
     for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
@@ -1130,6 +1176,17 @@ export const AttackTheater = {
       ctx.font = '9px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(`${Math.max(0, Math.round(e.hp))}`, e.x + e.w / 2, e.y - 6);
+    }
+
+    // Landed throwEnemy children (real enemy entities).
+    for (const e of this._thrownEnemies ?? []) {
+      if (!e.alive) continue;
+      ctx.fillStyle = e.hitFlash > 0 ? '#fff' : (e._detonated ? '#f80' : '#e67e22');
+      ctx.fillRect(e.x, e.y, e.w, e.h);
+      ctx.fillStyle = '#fff';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('MONKEY', e.x + e.w / 2, e.y - 6);
     }
 
     // Deferred zones stay owned/stepped by their root macro, but draw here.

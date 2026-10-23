@@ -56,6 +56,7 @@ const DEFAULTS = Object.freeze({
   mineType: 'explosion',
   mine: { ttl: 2, blinkDuration: 2 },
   enemyType: 'jester',
+  enemy: null,            // nested throwEnemy config when spawnType='enemy'
   bomb: null,
   projectile: { ttl: 2, damage: 8 },
 });
@@ -85,11 +86,18 @@ function flightStun(vy) {
   return Math.max(0.3, rise * 2 + 0.2);
 }
 
+// Enemy children no longer spawn as immediate entities: they are THROWN via
+// the throwEnemy macro (ballistic carrier → real enemy on landing), so the
+// fan velocity becomes a genuine arc instead of an instant shove. The legacy
+// makeEnemy path is kept only for non-throwable types when `enemy.thrown`
+// is explicitly false.
+
 defineMacro('spawnSplit', {
   attacks: [
     { id: 'projectile', role: 'child' },
     { id: 'explosiveBomb', role: 'child' },
     { id: 'throwMine', role: 'child' },
+    { id: 'throwEnemy', role: 'child' },
   ],
   params: { ...DEFAULTS },
   meta: {
@@ -110,6 +118,7 @@ defineMacro('spawnSplit', {
       { key: 'mineType', desc: 'explosion | shockwave' },
       { key: 'mine', desc: 'throwMine params; ttl null = contact only' },
       { key: 'enemyType', desc: 'enemy id when spawnType=enemy' },
+      { key: 'enemy', desc: 'nested throwEnemy config when spawnType=enemy (ttl, mineType, team, damage, radius, thrown…)' },
       { key: 'bomb', desc: 'bomb params when spawnType=bomb' },
     ],
   },
@@ -126,12 +135,36 @@ defineMacro('spawnSplit', {
     for (const c of children) {
       const speed = Math.hypot(c.vx, c.vy);
       if (c.spawnType === 'enemy') {
-        const e = makeEnemy(c.enemyType ?? p.enemyType, c.x - 16, c.y - 24);
-        if (!e) continue;
-        e.vx = c.vx;
-        e.vy = c.vy;
-        e.hitstunTimer = flightStun(c.vy);
-        enemies.push(e);
+        const ec = p.enemy ?? {};
+        // Default: the child is THROWN (ballistic arc → real enemy on
+        // landing) via throwEnemy — same bomb primitive + terrain path as
+        // throwMine, no duplicated physics. The fan velocity becomes the
+        // launch vector; inherited velocity already folded into c.vx/c.vy.
+        // `enemy.thrown: false` keeps the legacy immediate makeEnemy spawn
+        // with fan velocity + hitstun for non-throwable types.
+        if (ec.thrown === false) {
+          const e = makeEnemy(c.enemyType ?? p.enemyType, c.x - 16, c.y - 24);
+          if (!e) continue;
+          e.vx = c.vx;
+          e.vy = c.vy;
+          e.hitstunTimer = flightStun(c.vy);
+          enemies.push(e);
+        } else {
+          const child = invoke('throwEnemy', {
+            ...ec,
+            enemyType: c.enemyType ?? p.enemyType,
+            origin: { x: c.x, y: c.y }, direction: Math.atan2(c.vy, c.vx), speed,
+            groundY: p.groundY, platforms: p.platforms,
+            target: p.target ?? ctx.world?.hero ?? null,
+          }, ctx);
+          handles.push(child);
+          // Landed enemies surface in h.enemies as they materialize so hosts
+          // keep the same registration contract as before. The 'land' event is
+          // emitted SYNCHRONOUSLY inside this loop (the carrier can settle on
+          // its first step), so subscribe BEFORE stepping any child — a
+          // post-loop subscription would miss early landings.
+          child.on('land', ({ enemy }) => { if (enemy) enemies.push(enemy); });
+        }
       } else if (c.spawnType === 'mine') {
         const child = invoke('throwMine', {
           ...p.mine, mineType: p.mineType,
@@ -163,7 +196,7 @@ defineMacro('spawnSplit', {
     }
 
     h.handles = handles;
-    h.enemies = enemies;
+    h.enemies = enemies; // live list: thrown children append here on landing
     const cancel = h.cancel.bind(h);
     h.cancel = () => { for (const child of handles) child.cancel(); cancel(); };
 
@@ -194,12 +227,17 @@ defineMacro('spawnSplit', {
         if (remaining <= 0) h._complete({ count: children.length, enemies: enemies.length });
       };
       for (const ch of handles) {
-        ch.on('complete', done);
-        ch.on('expire', done);
+        // throwEnemy roots stay OPEN while the landed enemy lives — completion
+        // only fires when the enemy is fully gone. Hosts that step the root
+        // (BombAttackHost / theater) keep stepping until then.
+        if (ch.id !== 'throwEnemy') {
+          ch.on('complete', done);
+          ch.on('expire', done);
+          if (ch._completed || ch._cancelled) done();
+        }
       }
-      for (const ch of handles) {
-        if (ch._completed || ch._cancelled) done();
-      }
+      // No immediate-kill children → nothing to wait for beyond the handles
+      // above; a pure-throwEnemy split stays open by design (host-driven).
     }
     return h;
   },
