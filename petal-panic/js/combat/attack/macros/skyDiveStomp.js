@@ -1,7 +1,7 @@
 // Attack Engine — Sky Dive Stomp (macro). ONE object, one id.
 //
 // An enemy drops from the sky onto a FIXED ground spot and slams a stomp wave
-// on landing. The vertical twin of stompWave, with a telegraphed approach:
+// on landing. The vertical twin of the stomp macro's 'wave' impact mode, with a telegraphed approach:
 //   warning (Surface Target Marker at the impact point) → timeToTarget →
 //   the diver falls straight down → on impact the STOMP WAVE attack fires:
 //   dust + screen shake + one Surface Wave per side rolls out from there.
@@ -13,13 +13,13 @@
 // It composes the two existing building blocks instead of reinventing them:
 //   • the DROP is skyMissile's column resolution (resolveImpactPoint) + a
 //     strictly-vertical fall to the resolved surface line;
-//   • the IMPACT invokes the stompWave MACRO at the impact point — one stomp
+//   • the IMPACT invokes the STOMP macro (impact: 'wave') at the impact point — one stomp
 //     wave per side rolls out from there. We pass sides through so the diver
 //     slams exactly as many waves as configured ('both' = two, one per side).
 //
-// Because stompWave resolves its impact from ctx.attacker's FEET, we hand it a
+// Because stomp resolves its impact from ctx.attacker's FEET, we hand it a
 // child context whose attacker is a stand-in box placed AT the impact point.
-// That makes stompWave's own telegraph / hop / feet-center math land exactly
+// That makes stomp's own telegraph / hop / feet-center math land exactly
 // where the diver hit — marker, dust, shake, and waves all agree.
 //
 // Fairness comes from the WARNING, not from prediction: no homing, no drift,
@@ -29,9 +29,9 @@
 // Handle shape:
 //   h.step(dt, targets) — advance the sequence; true when the dive is done
 //                         (stomp settled + vanish finished, or vanished off)
-//   state.phase         — 'warning' | 'drop' | 'waves' | 'linger' | 'vanish'
+//   state.phase         — 'warning' | 'drop' | 'slam' | 'linger' | 'vanish'
 //   state.impact        — { x, y } of the resolved impact point
-//   h.stomp             — the live stompWave handle (theater can render it)
+//   h.stomp             — the live stomp handle (theater can render it)
 //   hit / complete      — hits forwarded from the stomp wave; complete { waves }
 //   land                — fired once at impact with { x, y } (host snaps the
 //                         real entity here + makes it visible)
@@ -44,7 +44,7 @@ import { makeContext } from '../context.js';
 import { resolveImpactPoint } from './skyMissile.js'; // shared column-resolution rule
 
 // Ensure the payload macro is registered (otherwise only pulled in by the theater).
-import './stompWave.js';
+import './stomp.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel renders).
@@ -64,14 +64,15 @@ const DEFAULTS = Object.freeze({
   dropHeight: 260,    // px above the impact point where the diver becomes visible
   fallSpeed: 500,     // px/s descent speed
   size: 14,           // carrier box size (px) — visual footprint while falling
-  // --- Impact: full stompWave configuration, passed through verbatim --------
-  // The stomp that fires on landing IS the stompWave macro. `stomp` is a
-  // stompWave params object: configure it EXACTLY as you would invoking
-  // stompWave directly (sides, telegraph timing, hop, wave geometry, damage,
-  // ttl, team, dust/shake). It is spread onto the invoke, so any stompWave key
-  // works. The ONLY thing this macro owns itself is the IMPACT POINT — stompWave
-  // always resolves its origin from ctx.attacker's feet, so we place a stand-in
-  // attacker at the landing spot; no stomp param can move it.
+  // --- Impact shape ----------------------------------------------------------
+  impact: 'wave',       // 'wave' | 'strike' — what slams on landing
+  // --- Impact: stomp payload configuration, passed through -------------------
+  // The stomp that fires on landing IS the stomp macro in the mode chosen by
+  // `impact`. `stomp` is a params object shared by both modes (damage, team,
+  // hop, dust/shake); wave-mode keys (sides, waveSpeed...) apply when
+  // impact='wave'. The ONLY thing this macro owns itself is the IMPACT POINT —
+  // stomp always resolves its origin from ctx.attacker's feet, so we place a
+  // stand-in attacker at the landing spot; no stomp param can move it.
   stomp: {
     sides: 'both',       // 'left' | 'right' | 'both'
     hopHeight: 0,        // tiny visual hop (px) — 0 = no hop, instant slam
@@ -92,7 +93,7 @@ const DEFAULTS = Object.freeze({
 });
 
 defineMacro('skyDiveStomp', {
-  attacks: [{ id: 'stompWave', role: 'payload' }],
+  attacks: [{ id: 'stomp', role: 'payload' }],
   params: { ...DEFAULTS },
   meta: {
     name: 'Sky Dive Stomp',
@@ -102,6 +103,7 @@ defineMacro('skyDiveStomp', {
       { type: 'blink-transition', desc: 'blink-out effect that plays while the enemy vanishes' },
     ],
     params: [
+      { key: 'impact', desc: "'wave' | 'strike' — landing payload" },
       { key: 'x', desc: 'impact x (world) — marker and drop share it' },
       { key: 'groundY', desc: 'fallback impact y; null → highest surface in the drop column' },
       { key: 'timeToTarget', desc: 'seconds between marker and the first visible fall (survival window)' },
@@ -138,7 +140,7 @@ defineMacro('skyDiveStomp', {
     h.stomp = null;
 
     const land = () => {
-      h.state.phase = 'waves';
+      h.state.phase = 'slam';
       h.state.t = 0;
 
       // Impact signal: the host snaps the real entity to this point and makes
@@ -146,11 +148,11 @@ defineMacro('skyDiveStomp', {
       // the stomp waves — mirrors throwEnemy's 'land' contract.
       h._emit('land', { x: pt.x, y: pt.y });
 
-      // Fire the REAL stompWave macro at the impact point. stompWave reads its
+      // Fire the REAL stomp macro (impact: 'wave') at the impact point. Stomp reads its
       // origin from ctx.attacker's feet, so give it a child context whose
       // attacker is a stand-in box sitting ON the impact line (bottom = pt.y).
       // Its own telegraph/hop/dust/shake/waves then all resolve to that spot.
-      // The whole `stomp` config is spread verbatim — configure stompWave here
+      // The whole `stomp` config maps onto stomp's wave-mode keys — configure it here
       // exactly as you would calling it directly.
       const standIn = { x: pt.x - 16, y: pt.y - 48, w: 32, h: 48 };
       const stompCtx = makeContext(standIn, {
@@ -163,7 +165,15 @@ defineMacro('skyDiveStomp', {
         platforms: ctx.platforms,
         solids: ctx.solids,
       });
-      const stomp = invoke('stompWave', { ...p.stomp, buildTime: 0, gapTime: 0, blinkTime: 0, impactDelay: 0 }, stompCtx);
+      const stomp = invoke('stomp', {
+        impact: p.impact === 'strike' ? 'strike' : 'wave',
+        damage: p.stomp.damage,
+        team: p.stomp.team,
+        wave: { sides: p.stomp.sides, speed: p.stomp.waveSpeed, height: p.stomp.waveHeight, width: p.stomp.waveWidth, ttl: p.stomp.ttl },
+        buildTime: 0, gapTime: 0, blinkTime: 0, impactDelay: 0,
+        count: 1, interval: 0, hopHeight: p.stomp.hopHeight ?? 0, hopTime: p.stomp.hopTime ?? 0.001,
+        shakeStrength: p.stomp.shakeStrength, dustStyle: p.stomp.dustStyle,
+      }, stompCtx);
       stomp.on('hit', (...args) => h._emit('hit', ...args));
       h.stomp = stomp;
     };
@@ -228,7 +238,7 @@ defineMacro('skyDiveStomp', {
         return false;
       }
 
-      // --- waves phase: step the stompWave macro ------------------------------
+      // --- slam phase: step the stomp child (wave or strike mode) --------------
       const finished = typeof h.stomp?.step === 'function' ? h.stomp.step(dt, _targets ?? []) : true;
       if (finished || h.stomp?._completed) {
         // Stomp settled. Either vanish (linger → blink-out) or finish now.

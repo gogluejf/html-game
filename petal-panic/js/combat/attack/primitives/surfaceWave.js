@@ -173,7 +173,7 @@ export function stepSurfaceWave(state, p, ctx, targets, h) {
         t.y + t.h <= box.y || t.y >= box.y + box.h) continue;
     state.hitSet.add(t);
     const dealt = typeof t.takeDamage === 'function'
-      ? t.takeDamage(p.damage, ctx.attacker, 'stompWave')
+      ? t.takeDamage(p.damage, ctx.attacker, 'stomp')
       : p.damage;
     // Hit juice owned by the primitive (same pattern as projectile debris).
     fireDeclared({ type: 'hit-sparkle', params: { x: t.x + t.w / 2, y: t.y + t.h / 2, count: 5 } }, h.declaredEffectTypes());

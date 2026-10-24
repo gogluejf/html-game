@@ -193,7 +193,7 @@ registerPrimitive('surfaceStrike', {
       } }, h.declaredEffectTypes());
     }
     // Impact juice: camera shake on the landing itself, even when nothing is
-    // hit (same rule as stomp/stompWave). Hit juice (blood sparkles + enemy
+    // hit (same rule as stomp). Hit juice (blood sparkles + enemy
     // shake) comes free from processHitboxes via method='melee'.
     if (p.shakeStrength > 0) {
       fireDeclared({ type: 'camera-shake', params: { intensity: p.shakeStrength } }, h.declaredEffectTypes());

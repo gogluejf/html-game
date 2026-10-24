@@ -21,7 +21,6 @@ import './clusterBomb.js';
 import './targetedBeam.js';
 import './sweepingBeam.js';
 import './stomp.js';
-import './stompWave.js';
 import './skyMissile.js';
 import './skyDiveStomp.js';
 import './missileRain.js';

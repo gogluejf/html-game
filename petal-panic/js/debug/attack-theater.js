@@ -127,9 +127,8 @@ const SANDBOX_PRESETS = {
   shockwaveBomb: { direction: -0.5, arc: 800, bounce: false, explodeOnContact: true, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, blastTeam: 'neutral' },
   shockwaveProjectile: { direction: 0, speed: 700, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, solidBehavior: 'stop', blastTeam: 'neutral' },
   stomp: { impact: 'strike', buildTime: 0.9, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, damage: 30, team: 'neutral', shakeStrength: 5, radius: 590, strike: { width: Infinity, height: 30, reach: Infinity, duration: 0.35 }, wave: { sides: 'both', speed: 300, height: 24, width: 28, ttl: null } },
-  stompWave: { buildTime: 1.2, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, sides: 'both', hopHeight: 10, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 5 },
   skyMissile: { mineType: 'explosion', x: TARGET_POS.x + 16, timeToTarget: 1.0, dropHeight: 260, fallSpeed: 500, damage: 30, team: 'foe', blastTeam: 'neutral', blastType: 'explosion', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
-  skyDiveStomp: { x: VIEW_W / 2, groundY: GROUND_Y, timeToTarget: 1.0, dropHeight: 480, fallSpeed: 500, size: 14, stomp: { sides: 'both', hopHeight: 0, hopTime: 0.001, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 6 }, vanish: true, lingerOnGround: 0.4, vanishTime: 2 },
+  skyDiveStomp: { x: VIEW_W / 2, groundY: GROUND_Y, timeToTarget: 1.0, dropHeight: 480, fallSpeed: 500, size: 14, impact: 'wave', stomp: { sides: 'both', hopHeight: 0, hopTime: 0.001, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'ally', shakeStrength: 6 }, vanish: true, lingerOnGround: 0.4, vanishTime: 2 },
   missileRain: { mineType: 'explosion', count: 5, distanceType: 'relative', distance: 90, pattern: 'simultaneous', interval: 0.15, coordination: 'from_left', launchInterval: 0.12, ascentOscillation: 6, fallDelay: 0.5, timeToTarget: 0.9, descentSpeed: 500, damage: 30, team: 'foe', blastTeam: 'neutral', blastType: 'explosion', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
   dashCombo: {
     direction: 0,
@@ -178,9 +177,8 @@ export const TWEAKABLE = {
   surfaceWave: [['speed', 'num', 50], ['height', 'num', 4], ['width', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5]],
   surfaceStrike: [['x', 'num', 20], ['width', 'num', 20], ['height', 'num', 4], ['reach', 'num', 20], ['duration', 'num', 0.1], ['damage', 'num', 5]],
   stomp: [['impact', 'enum', ['strike', 'radius', 'wave']], ['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['count', 'int', 1], ['interval', 'num', 0.1], ['damage', 'num', 5], ['shakeStrength', 'num', 1], ['radius', 'num', 10], ['strike.width', 'num', 20], ['strike.height', 'num', 4], ['strike.duration', 'num', 0.1], ['wave.sides', 'enum', ['left', 'right', 'both']], ['wave.speed', 'num', 50], ['wave.height', 'num', 4], ['wave.ttl', 'num', 0.25]],
-  stompWave: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['waveSpeed', 'num', 50], ['waveHeight', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
   skyMissile: [['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['dropHeight', 'num', 20], ['fallSpeed', 'num', 50], ['damage', 'num', 5], ['blastType', 'enum', ['explosion', 'shockwave', 'napalm', 'mine']], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
-  skyDiveStomp: [['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['dropHeight', 'num', 20], ['fallSpeed', 'num', 50], ['stomp.sides', 'enum', ['left', 'right', 'both']], ['stomp.hopHeight', 'num', 4], ['stomp.waveSpeed', 'num', 50], ['stomp.waveHeight', 'num', 4], ['stomp.ttl', 'num', 0.25], ['stomp.damage', 'num', 5], ['stomp.shakeStrength', 'num', 1], ['vanish', 'enum', [true, false]], ['lingerOnGround', 'num', 0.1], ['vanishTime', 'num', 0.05]],
+  skyDiveStomp: [['impact', 'enum', ['wave', 'strike']], ['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['dropHeight', 'num', 20], ['fallSpeed', 'num', 50], ['stomp.sides', 'enum', ['left', 'right', 'both']], ['stomp.hopHeight', 'num', 4], ['stomp.waveSpeed', 'num', 50], ['stomp.waveHeight', 'num', 4], ['stomp.ttl', 'num', 0.25], ['stomp.damage', 'num', 5], ['stomp.shakeStrength', 'num', 1], ['vanish', 'enum', [true, false]], ['lingerOnGround', 'num', 0.1], ['vanishTime', 'num', 0.05]],
   missileRain: [['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['distanceType', 'enum', ['fixed', 'relative']], ['distance', 'num', 20], ['pattern', 'enum', ['simultaneous', 'sequential']], ['interval', 'num', 0.05], ['coordination', 'enum', ['from_left', 'from_right', 'random']], ['launchInterval', 'num', 0.02], ['fallDelay', 'num', 0.05], ['timeToTarget', 'num', 0.1], ['descentSpeed', 'num', 50], ['damage', 'num', 5], ['blastType', 'enum', ['explosion', 'shockwave', 'napalm', 'mine']], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
   dashCombo: [['startup', 'num', 0.05], ['recovery', 'num', 0.05], ['seg0.speed', 'num', 20], ['seg1.speed', 'num', 20], ['seg2.speed', 'num', 20], ['seg0.damage', 'num', 2], ['seg1.damage', 'num', 2], ['seg2.damage', 'num', 2]],
   shockwave: [['radius', 'num', 10], ['damage', 'num', 5], ['duration', 'num', 0.1], ['easing', 'enum', ['linear', 'easeIn', 'easeInCubic']], ['knockbackIntensity', 'num', 1]],
@@ -887,7 +885,7 @@ export const AttackTheater = {
           }
         } else if (h.id === 'mine' || h.id === 'throwMine' || h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike' || h.id === 'dustZone') {
           finished = h.step(DT, [this._target]);
-        } else if (h.id === 'laneSequence' || h.id === 'stomp' || h.id === 'stompWave' || h.id === 'surfaceWave' || h.id === 'surfaceStrike' || h.id === 'shockwaveProjectile' || h.id === 'shockwaveBomb' || h.id === 'skyDiveStomp') {
+        } else if (h.id === 'laneSequence' || h.id === 'stomp' || h.id === 'surfaceWave' || h.id === 'surfaceStrike' || h.id === 'shockwaveProjectile' || h.id === 'shockwaveBomb' || h.id === 'skyDiveStomp') {
           // Stomp family + shockwave projectile: the macro owns its sequence
           // (telegraph → beat → ring); pass every live victim as candidates.
           // The macro's _complete guard holds it open during the pending beat
@@ -1090,7 +1088,7 @@ export const AttackTheater = {
     if (this._attacker && this._attackerVisible !== false) {
       let hopOff = 0;
       for (const h of this._handles) {
-        if ((h.id === 'stomp' || h.id === 'stompWave') && h.state?.hopOffset > 0) hopOff = Math.max(hopOff, h.state.hopOffset);
+        if (h.id === 'stomp' && h.state?.hopOffset > 0) hopOff = Math.max(hopOff, h.state.hopOffset);
       }
       const ay = this._attacker.y - hopOff;
       ctx.fillStyle = '#ff6ec7';
@@ -1258,7 +1256,7 @@ export const AttackTheater = {
       } else if (h.id === 'stomp' && !st.done) {
         // Stomp: telegraph + impact juice are REAL effects fired by the macro.
         // Nothing to draw here — no theater-side circles or boxes.
-      } else if ((h.id === 'stompWave' || h.id === 'surfaceWave') && !st.done) {
+      } else if (h.id === 'surfaceWave' && !st.done) {
         // Surface wave: crest is the primitive's ground-wave effect. Nothing
         // to draw here either.
       } else if (h.id === 'surfaceStrike' && !st.done) {
@@ -1318,7 +1316,7 @@ export const AttackTheater = {
     // Sky Dive Stomp: the attacker body IS the diver (driven by the staging
     // choreo from the macro's state.diverY). No separate box — one body walks
     // off-screen, drops in, lands, and blinks out. The impact waves are the
-    // stompWave's ground-wave effect.
+    // surfaceWave's ground-wave effect.
 
     // Event log.
     ctx.textAlign = 'left';

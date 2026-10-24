@@ -1285,12 +1285,12 @@ The interval starts ONLY after the current lane's attack fully completes
 
 ## 28. Sky Dive Stomp (implemented — `skyDiveStomp.js`)
 
-**Invokes:** Stomp Wave (§17) at impact; reuses skyMissile's column resolution (`resolveImpactPoint`).
+**Invokes:** Stomp (§17) at impact with the mode chosen by `impact`; reuses skyMissile's column resolution (`resolveImpactPoint`).
 
 **Effects:** Surface Target Marker (landing warning), Blink Transition (vanish-out)
 
-An enemy drops from the sky onto a FIXED ground spot and slams a stomp wave on
-landing, then blinks out of existence. The vertical twin of Stomp Wave: same
+An enemy drops from the sky onto a FIXED ground spot and slams a stomp on
+landing, then blinks out of existence. The vertical twin of Stomp: same
 impact payload, but the approach vector is telegraphed and strictly downward —
 the player reads "leave this spot" during the marker window, then the diver
 commits. No homing, no drift: fairness comes from the warning, not prediction.
@@ -1299,9 +1299,11 @@ commits. No homing, no drift: fairness comes from the warning, not prediction.
 
 Surface Target Marker at the resolved impact point → wait `timeToTarget` →
 diver falls straight down from `dropHeight` above → **land**: dust + camera
-shake + one Surface Wave per `stomp.sides` rolls out from the impact point →
-linger `lingerOnGround` s standing idle → blink-transition plays for
-`vanishTime` s → `vanish` event fires and the macro completes.
+shake + stomp payload fires in the mode chosen by `impact` (`'wave'` = one
+Surface Wave per side rolls out; `'strike'` = surfaceStrike burns every
+surface under the span) → linger `lingerOnGround` s standing idle →
+blink-transition plays for `vanishTime` s → `vanish` event fires and the macro
+completes.
 
 ### Main parameters
 
@@ -1314,10 +1316,14 @@ linger `lingerOnGround` s standing idle → blink-transition plays for
   (default 260; the theater preset uses 480 = full-screen drop).
 - **fallSpeed** — descent speed (px/s).
 - **size** — carrier box size (px) while falling (visual footprint only).
-- **stomp.** — full stompWave params object, spread verbatim onto the payload
-  invoke: `sides`, `hopHeight`, `waveSpeed`, `waveHeight`, `waveWidth`,
-  `damage`, `ttl`, `team`, `dustStyle`, `shakeStrength`. Configure it exactly
-  as you would invoking stompWave directly.
+- **impact** — `'wave' | 'strike'` (default `'wave'`): what slams on landing.
+  `'wave'` = old stompWave behavior (one Surface Wave per side); `'strike'` =
+  surfaceStrike primitive (stationary hot band across all surfaces under the
+  span, jump-to-dodge).
+- **stomp.** — params object passed through to the stomp payload: `sides`,
+  `hopHeight`, `hopTime`, `waveSpeed`, `waveHeight`, `waveWidth`, `damage`,
+  `ttl`, `team`, `dustStyle`, `shakeStrength`. Wave-mode keys apply when
+  `impact='wave'`; strike mode uses the stomp macro's own `strike.*` defaults.
 - **vanish** — master switch (default true); false = the enemy stays on the
   ground after the stomp settles.
 - **lingerOnGround** — s the enemy idles before the blink starts.
@@ -1325,14 +1331,15 @@ linger `lingerOnGround` s standing idle → blink-transition plays for
 
 ### Events
 
-- **land** `{ x, y }` — fired once at impact, BEFORE the stomp waves. The host
+- **land** `{ x, y }` — fired once at impact, BEFORE the stomp payload. The host
   snaps the real entity to this point and makes it visible here (it was hidden
   while "in the sky"). Mirrors throwEnemy's land contract.
-- **hit** — forwarded from the stomp wave.
+- **hit** — forwarded from the stomp payload (wave or strike).
 - **vanish** `{ x, y, linger }` — fired once when the blink finishes. The host
   hides the real entity (`visible = false`) and schedules its reappearance at
   that spot. The macro never touches the real entity itself.
-- **complete** `{ waves, vanished? }` — waves = number of sides fired.
+- **complete** `{ waves, vanished? }` — waves = number of sides fired (wave mode)
+  or 1 (strike mode).
 
 ### Rules
 
@@ -1340,26 +1347,27 @@ linger `lingerOnGround` s standing idle → blink-transition plays for
   host from `state.diverY`), not a pool entity. The landing test is owned by
   the macro so the slam lands EXACTLY on the marked surface — no tunneling
   through a platform top.
-- stompWave resolves its origin from `ctx.attacker`'s feet, so the macro hands
+- Stomp resolves its origin from `ctx.attacker`'s feet, so the macro hands
   it a child context whose attacker is a stand-in box placed AT the impact
   point. Its own telegraph/hop/dust/shake/waves all resolve to that spot; the
-  payload invoke zeroes stompWave's own telegraph timing
+  payload invoke zeroes stomp's own telegraph timing
   (`buildTime/gapTime/blinkTime/impactDelay: 0`) because the DROP IS the
   telegraph.
-- Phases: `warning → drop → waves → linger → vanish`. `h.stomp` exposes the
-  live stompWave handle so the theater can render it.
-- Cancel cascades to the stompWave child.
+- Phases: `warning → drop → slam → linger → vanish`. `h.stomp` exposes the
+  live stomp handle so the theater can render it.
+- Cancel cascades to the stomp child.
 - The blink box is sized to the ATTACKER's real body (feet on the impact line),
   not the tiny falling carrier — it reads as the enemy itself alternating
   visible/nothing, fast→slow, then gone.
 
 ### Composition
 
-**Marker (effect) → vertical drop (macro-owned) → stompWave (macro) → linger → blink (effect)**
+**Marker (effect) → vertical drop (macro-owned) → stomp (macro, impact mode) → linger → blink (effect)**
 
 Examples:
 - single use → boss entrance / phase transition (drop in, slam, teleport away)
 - repeated with new `x` → roaming dive-stomper pattern
+- `impact: 'strike'` → ground-slam variant: the floor is hot, jump over it
 - `vanish: false` → pure aerial entry that leaves the enemy grounded
 
 ---

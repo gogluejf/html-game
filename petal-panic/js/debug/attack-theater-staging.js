@@ -481,24 +481,6 @@ export const STAGING = {
     // impact/waves). Nothing to move.
   },
 
-  stompWave: {
-    setup(t) {
-      // Stomp Wave demo: exactly TWO victims, both on the ground, ONE PER SIDE
-      // of the centered attacker. No air victims: waves ride surfaces, so each
-      // wave visibly catches its own side victim.
-      const cx = (t._attacker.x = 400) + t._attacker.w / 2; // center stage
-      t._stompVics = [
-        new Enemy(STOMP_VIC_DEF, cx - 130, GROUND_Y - 28),
-        new Enemy(STOMP_VIC_DEF, cx + 102, GROUND_Y - 28),
-      ];
-      t._stompPlatforms = [];
-      for (const v of t._stompVics) t._world.add(v);
-      return tagged({ kind: 'stompStage' }, STAGING.stompWave);
-    },
-    // Static staging — the macro owns the whole sequence (telegraph → hop →
-    // waves). Nothing to move.
-  },
-
   surfaceStrike: {
     setup(t) {
       // Surface Strike demo: a WIDE platform spans the strike's default x, and
