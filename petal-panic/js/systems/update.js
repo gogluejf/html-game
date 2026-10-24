@@ -20,7 +20,7 @@ import { projectilePool, specialPool } from '../objects/projectile.js';
 import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
 import { stepBombTerrain, stepBomb } from '../combat/attack/primitives/bomb.js';
 import { S, getState, tryTransition, onTransition } from '../core/state.js';
-import { dispatchScreenInput } from '../ui/screens.js';
+import { dispatchScreenInput, setMenuHero } from '../ui/screens.js';
 import { makeElephant } from '../boss/boss.js';
 import { makeBossZone, BZ_LOCKED, BZ_INTRO_SWEEP, BZ_BAR_FILL, BZ_BOSS_ENTER } from '../boss/bossZone.js';
 import { particles, coins } from '../effects/particles.js';
@@ -39,6 +39,7 @@ import { record } from '../stats.js';
 import { isGrounded, standingOnOneWay } from '../hero/physics.js';
 import { isLethalFall, getDeathFadeAlpha, finishHeroDeath, DEATH_FADE_DURATION } from '../hero/death.js';
 export { isLethalFall, getDeathFadeAlpha, finishHeroDeath };
+import { makeCheckpoint } from '../objects/object.js';
 import { ctx } from '../world/context.js';
 import { TUNING } from '../tuning.js';
 
@@ -153,7 +154,7 @@ export function stepDynamicSolid(e, dt, statics, peers) {
 // js/hero.js. `let` because setHeroRef() reassigns it on new game / swap.
 let hero = new Hero(HEROES.scarlet, ZONE_ENTRY_X, ZONE_GROUND_Y - HEROES.scarlet.h);
 /** Rebind the module-level hero reference (used by debug hero-swap / new game). */
-function setHeroRef(h) { hero = h; ctx.hero = h; }
+function setHeroRef(h) { hero = h; ctx.hero = h; setMenuHero(h); }
 
 // thorn fire state. Cooldown is in seconds; rapid powerup halves it.
 hero.fireCooldown = 0;
@@ -557,6 +558,39 @@ onTransition((from, to) => {
     // clear it.
     showAreaEntry(nh, areaContext);
     console.log(`[lifecycle] new game: ${def.name} (${heroId})`);
+  }
+});
+
+// --- Menu Continue → AREA_ENTRY (menu-hub plan §2.3) --------------------------
+// When the menu hub's Continue option opens the shared area-entry screen for a
+// SAVED level/area, install that zone's world content + spawn checkpoint through
+// the SAME path a normal mid-run area entry uses (stepClearSequence's fadeOut /
+// debugWrapToNextArea): loadActiveZone swaps ALL world contents (structure.md
+// §2) and the hero's checkpoint is set to the zone's spawn so startLife places
+// them at the saved zone's entry — not wherever the previous run left them.
+// This runs on EVERY MENU→AREA_ENTRY transition; the only such source is the
+// Continue flow (new games route MENU→SELECT, never straight to AREA_ENTRY).
+onTransition((from, to) => {
+  if (to === S.AREA_ENTRY && from === S.MENU) {
+    const h = hero;
+    // Tear down any lingering boss battle room before swapping zones (a fresh
+    // resume must not inherit COMBAT state from a finished run).
+    if (bossZone.active) { bossZone.reset(); camera.unlock(); restoreBossRunFloor(); }
+    const zone = getActiveZone(h);
+    if (zone.kind === 'area' && world.world.has(zone.areaIdx)) {
+      loadActiveZone(zone, world.world.get(zone.areaIdx));
+    } else if (zone.kind === 'boss') {
+      const bossCp = zone.entryFlag
+        ? [makeCheckpoint(zone.entryFlag.id, zone.entryFlag.x, zone.entryFlag.y, { isEntry: true, appearance: zone.entryFlag.appearance, spawnPos: zone.spawn })]
+        : [];
+      loadActiveZone(zone, { solids: zone.platforms.map(p => ({...p})), enemies: [], barrels: [], powerups: [], checkpoints: bossCp });
+    }
+    // Spawn checkpoint is zone data (REVISION-zones-as-data §4): feet on the
+    // floor of the active room. startLife() reads this to place the hero.
+    const sp = zone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
+    h.checkpoint = { x: sp.x, y: sp.y - h.h };
+    camera.setZoneBounds(zone);
+    console.log(`[lifecycle] MENU continue: installed zone ${zone.areaIdx ?? 'boss'} (checkpoint @${sp.x},${sp.y})`);
   }
 });
 

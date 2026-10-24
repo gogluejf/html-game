@@ -25,12 +25,13 @@
 
 import { GAME_RULES, createContinuePool, canSpend, spend, credit, resetLevelCoinTally, resetHeroInventory } from './gameRules.js';
 import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../world/level.js';
-import { getLevelConfig } from '../world/levelConfigs.js';
+import { getLevelConfig, LEVEL_CONFIGS } from '../world/levelConfigs.js';
 import { Hero, WEAPON_THORN } from '../hero/hero.js';
 import {createTrace, record, beginLife, beginContinue, calculateScore} from '../stats.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
 import { tryTransition, getState, setState, S } from '../core/state.js';
 import { TUNING } from '../tuning.js';
+import { loadStore, saveStore, clearRunSave } from './progressStore.js';
 
 // --- Area-entry accounting snapshot (game-rules.md §2/§4) -------------------
 //
@@ -258,6 +259,25 @@ let regenerateWorld = null;
  */
 export function setRegenerateWorld(fn) { regenerateWorld = fn; }
 
+// --- Menu-hub hero registration (menu-hub plan §2.3) --------------------------
+// The menu hub's Continue flow resumes on the LIVE hero instance. screens.js
+// owns that reference (setMenuHero/getMenuHero); lifecycle.js owns startGame —
+// the only site that rebuilds the hero for a new run — so it must register the
+// fresh hero there. A direct import of screens.js would create a circular
+// module-evaluation TDZ error (screens.js calls setRewardDataCallback at eval
+// time, before _onRewardData is initialized), so we use the same callback-
+// registration pattern as setRegenerateWorld: screens.js registers its
+// setMenuHero here at module evaluation, and startGame invokes it.
+let _registerMenuHero = null;
+
+/**
+ * Register the callback that records the current hero for the menu hub's
+ * Continue flow. Called by screens.js at module evaluation time (avoids a
+ * circular import). startGame() invokes it with every freshly built hero.
+ * @param {(h: object) => void} fn
+ */
+export function setMenuHeroRegistrar(fn) { _registerMenuHero = fn; }
+
 /**
  * Clear every recorded arrangement position so the next world generation is
  * treated as a first arrival and records its own fresh positions. Called by
@@ -282,6 +302,12 @@ export function resetGeneration(ctx) {
  * generated one and its entities' arrangement positions are cleared so the new
  * world is recorded as a first arrival. Death / Continue never reach here, so
  * they never reroll generation.
+ *
+ * Hero registration (menu-hub plan §2.3): the fresh hero is registered as the
+ * menu hub's Continue target via setMenuHero() so a later Save & Quit → MENU →
+ * Continue resumes on THIS live instance. lifecycle.js owns startGame (the only
+ * site that rebuilds the hero for a new run), so the registration lives here —
+ * no separate update.js wiring is required.
  *
  * @param {object} ctx { world, oldHero, areaContext, effects }
  * @param {object} heroDef the selected hero definition (HEROES[...])
@@ -330,6 +356,12 @@ export function startGame(ctx, heroDef) {
   // Swap the hero in the collision world (only when a world is provided).
   if (ctx.world) { ctx.world.remove(ctx.oldHero); ctx.world.add(h); }
   ctx.effects?.reset?.();
+  // Register the fresh hero as the menu hub's Continue target (menu-hub plan
+  // §2.3). lifecycle.js owns startGame — the only site that rebuilds the hero
+  // for a new run — so the registration lives here, not in update.js. A later
+  // Save & Quit → MENU → Continue resumes on THIS live instance. The callback
+  // is registered by screens.js at module evaluation (avoids a circular import).
+  if (_registerMenuHero) _registerMenuHero(h);
   // checkpoints.md §3: the shared area-entry screen opens the first area of a
   // new game (level name, area id, lives — no score). startGame does NOT push
   // the screen itself — the caller (update.js) does so AFTER the
@@ -459,6 +491,111 @@ export function continueRun(h, ctx) {
   // when the player confirms, not on the Continue press itself.
   showAreaEntry(h, c);
   return true;
+}
+
+// --- Menu-hub run flows (menu-hub plan §2.3) ----------------------------------
+//
+// The main menu hub's New Game / Continue options and the pause menu's Save &
+// Quit all route through this module so the persistence rules have one owner:
+//   - newGameFromMenu(): drop the resumable run (saveMeta) while preserving
+//     meta unlocks (completed areas, defeated bosses, media), then open the
+//     hero-select screen for a fresh run.
+//   - continueFromMenu(): resume the saved run — restore the hero's level/area
+//     from saveMeta and open the shared area-entry screen (AREA_ENTRY).
+//   - saveCurrentRun(): write the resumable saveMeta ({level, area, score,
+//     timestamp}) before returning to the hub (Save & Quit, plan §4.2 calls
+//     this; the transition itself is owned by the caller).
+//
+// These are pure over progressStore + the hero passed in, so they are
+// unit-testable in node without a DOM or update.js.
+
+/**
+ * New Game from the menu hub (plan §2.3): clear the active run save but
+ * preserve meta unlocks (progress.completedAreas / defeatedBosses /
+ * mediaUnlocked and settings all survive — only saveMeta is dropped), then
+ * route to the hero-select screen.
+ * @returns {boolean} true when the SELECT transition was made
+ */
+export function newGameFromMenu() {
+  clearRunSave(); // drops saveMeta only; progress + settings persist
+  return tryTransition(S.SELECT);
+}
+
+/**
+ * Validate a saved run's level/area against the actual level config bounds.
+ * A saveMeta is resumable only when it names a REAL level (1..LEVEL_CONFIGS.length)
+ * and a REAL zone of that level (areas 1..4, or AREA_BOSS = 5 for the boss zone).
+ * Out-of-range or non-integer values mark the save corrupt → treat as NO SAVE
+ * (hasSave-style rejection): the Continue option stays disabled / falls back safely.
+ *
+ * progressStore.hasSave() only checks that saveMeta is a non-empty object; the
+ * range check belongs here because only this module knows the level/zone model.
+ * @param {{level?:number, area?:number}} sm the saved meta
+ * @returns {boolean} true when the save points at a valid, in-bounds level/area
+ */
+export function isValidSaveMeta(sm) {
+  if (!sm || typeof sm !== 'object') return false;
+  const { level, area } = sm;
+  if (!Number.isInteger(level) || !Number.isInteger(area)) return false;
+  if (level < 1 || level > LEVEL_CONFIGS.length) return false;
+  // Areas are 1..4 (ordinary) or 5 (the boss zone, AREA_BOSS). The boss zone is
+  // a property of every level (checkpoints.md §1), so any in-bounds level has it.
+  if (area < 1 || area > 5) return false;
+  return true;
+}
+
+/**
+ * Continue from the menu hub (plan §2.3): read the saved run (saveMeta), restore
+ * the hero to the saved level/area, and open the shared area-entry screen
+ * (AREA_ENTRY) through the SAME installation path a normal mid-run area entry
+ * uses.
+ *
+ * No-op (returns false) when no resumable save exists OR the save is corrupt
+ * (out-of-range level/area) — the menu keeps the option disabled in that case,
+ * so these guards are safety nets, not UX paths.
+ *
+ * The world content + spawn checkpoint are installed by the caller via the
+ * standard area-entry machinery (see update.js's MENU→AREA_ENTRY hook); this
+ * function owns the hero's run identity (currentLevel/currentArea) and the
+ * entry-screen presentation.
+ *
+ * @param {object} h the hero (owns currentLevel / currentArea / lives)
+ * @returns {boolean} true when the AREA_ENTRY transition was made
+ */
+export function continueFromMenu(h) {
+  const sm = loadStore().saveMeta;
+  if (!isValidSaveMeta(sm)) return false;
+  const level = sm.level;
+  const area = sm.area;
+  if (h) { h.currentLevel = level; h.currentArea = area; }
+  showAreaEntry(h ?? { currentLevel: level, currentArea: area, lives: GAME_RULES.startingLives });
+  console.log(`[lifecycle] MENU → AREA_ENTRY (continue ${level}-${area})`);
+  return getState() === S.AREA_ENTRY;
+}
+
+/**
+ * Write the resumable run save (saveMeta) for the given hero (plan §2.3 /
+ * §4.2 Save & Quit): { level, area, score, timestamp }. This is the WRITE
+ * side of Save & Quit — the caller (the pause menu) performs the PAUSE→MENU
+ * transition after this returns. Returns the written saveMeta (or null when
+ * the store could not be persisted).
+ *
+ * saveMeta lives at the TOP LEVEL of the store document (not under progress),
+ * so it is set directly on the loaded document and flushed with saveStore().
+ * @param {object} h the hero (currentLevel / currentArea / traceStats)
+ * @returns {{level:number, area:number, score:number, timestamp:number}|null}
+ */
+export function saveCurrentRun(h) {
+  const tTotal = h?.traceStats?.total ?? {};
+  const meta = {
+    level: h?.currentLevel ?? 1,
+    area: h?.currentArea ?? 1,
+    score: calculateScore(tTotal, h),
+    timestamp: Date.now(),
+  };
+  const store = loadStore();
+  store.saveMeta = meta;
+  return saveStore(store) ? meta : null;
 }
 
 // --- Shared area-entry screen (checkpoints.md §3) ----------------------------

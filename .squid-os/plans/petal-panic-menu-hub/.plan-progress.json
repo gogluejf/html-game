@@ -32,7 +32,7 @@
     },
     "2.2": {
       "number": "2.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Main menu screen",
       "milestone": "Main Menu Hub",
       "milestone_number": "2",
@@ -47,10 +47,18 @@
     },
     "2.3": {
       "number": "2.3",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "New Game and Continue flow",
       "milestone": "Main Menu Hub",
-      "milestone_number": "2"
+      "milestone_number": "2",
+      "summary": {
+        "lessons_learned": "headless-smoke.mjs fails on a clean tree too (composeArea: no compatible macros \u2014 macro loading in node env), pre-existing and unrelated. progressStore.saveMeta must be written at document top level, never inside updateProgress.",
+        "done": "Added three lifecycle ops in petal-panic/js/systems/lifecycle.js: newGameFromMenu() (clearRunSave + SELECT), continueFromMenu(hero) (restore currentLevel/currentArea from loadStore().saveMeta, open AREA_ENTRY via showAreaEntry), saveCurrentRun(hero) (writes top-level saveMeta {level, area, score via calculateScore(traceStats.total), timestamp} through loadStore/saveStore). Wired Menu hub in screens.js: New Game action now calls newGameFromMenu(); Continue option switched from go:S.AREA_ENTRY to action:'continue' calling continueFromMenu(_menuHero); added setMenuHero/getMenuHero registration. update.js registers the live hero via setHeroRef (boot + every hero swap). New test file js/test/menuRunFlow.test.js (8 tests) covers all four acceptance bullets incl. storage round-trip.",
+        "decisions": "Continue routing moved from option-level 'go' data to an action handler so the saveMeta restore happens before the transition; hero passed via setMenuHero registration (update.js owns the live hero ref) rather than window globals. Save & Quit write side exposed as saveCurrentRun() for task 4.2 to call; the PAUSE\u2192MENU transition stays with 4.2.",
+        "tradeoffs": "continueFromMenu tolerates a null hero (bare-test path) by presenting the entry screen with the saved level/area and starting lives; real gameplay always has the registered live hero. saveCurrentRun sets store.saveMeta directly on the loaded document + saveStore (not updateProgress) since saveMeta is top-level per task 1.1.",
+        "confidence": "high",
+        "failures": "None"
+      }
     },
     "3.1": {
       "number": "3.1",

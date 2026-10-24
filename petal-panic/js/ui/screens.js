@@ -6,6 +6,7 @@
 import {S, getState, tryTransition} from '../core/state.js';
 import { hasSave } from '../systems/progressStore.js';
 import { areaEntryOnAction, setAreaEntryDataCallback, getAreaEntryData as getAreaEntryDataFromLifecycle } from '../systems/lifecycle.js';
+import { newGameFromMenu, continueFromMenu, setMenuHeroRegistrar } from '../systems/lifecycle.js';
 import { showLevelReward, rewardOnAction, setRewardDataCallback, setEndOfGameScoreCallback } from '../systems/lifecycle.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
@@ -660,6 +661,24 @@ export function drawOptionList(ctx, {
   }
 }
 
+/** The hero the menu hub routes Continue to (set by update.js via setMenuHero). */
+let _menuHero = null;
+
+/** Register the current hero for the menu's Continue flow (update.js calls
+ *  this at boot and on every hero swap, so MENU → AREA_ENTRY always resumes
+ *  on the live hero instance). */
+export function setMenuHero(h) { _menuHero = h ?? null; }
+
+/** @returns {object|null} the hero registered for the menu's Continue flow. */
+export function getMenuHero() { return _menuHero; }
+
+// Register setMenuHero with lifecycle.js so startGame() can record every freshly
+// built hero as the Continue target (menu-hub plan §2.3). This runs at module
+// evaluation — before any game boots — so the very first startGame registers
+// the boot hero. The callback indirection (rather than a direct import) avoids
+// a circular module-evaluation TDZ error between screens.js and lifecycle.js.
+setMenuHeroRegistrar(setMenuHero);
+
 export const Menu = {
   focus: 0,
   creditsOpen: false,
@@ -672,7 +691,7 @@ export const Menu = {
     const saved = hasSave();
     return [
       { label: 'New Game',     enabled: true,  action: 'newGame' },
-      { label: saved ? 'Continue' : 'No Save', enabled: saved, go: S.AREA_ENTRY },
+      { label: saved ? 'Continue' : 'No Save', enabled: saved, action: 'continue' },
       { label: 'Level Select', enabled: true,  go: S.LEVEL_SELECT },
       { label: 'Boss Rush',    enabled: true,  go: S.BOSS_RUSH },
       { label: 'Media',        enabled: true,  go: S.MEDIA },
@@ -816,8 +835,16 @@ export const Menu = {
     }
     switch (opt.action) {
       case 'newGame':
+        // Plan §2.3: New Game drops the resumable run save (meta unlocks are
+        // preserved by clearRunSave) and opens the hero-select screen.
         window.__selectedHero = null; // force hero selection
-        if (tryTransition(S.SELECT)) console.log('[screens] MENU → SELECT (new game)');
+        if (newGameFromMenu()) console.log('[screens] MENU → SELECT (new game)');
+        break;
+      case 'continue':
+        // Plan §2.3: Continue restores the saved level/area on the hero and
+        // opens the shared area-entry screen (AREA_ENTRY). No-op when no save
+        // exists (the option is disabled in that case — safety net only).
+        continueFromMenu(_menuHero);
         break;
       case 'credits':
         this.creditsOpen = true;
