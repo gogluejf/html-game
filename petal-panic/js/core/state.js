@@ -14,6 +14,11 @@ export const S = {
   AREA_ENTRY: 7, // shared area-entry screen (checkpoints.md §3)
   REWARD: 8,  // level reward screen (boss-arena.md §4)
   END_OF_GAME: 9, // minimal end-of-game screen (lifecycle.md §5)
+  MENU: 10,       // main menu hub (menu-hub plan §2)
+  OPTIONS: 11,    // shared options screen (reached from MENU or PAUSE)
+  LEVEL_SELECT: 12, // level select screen
+  BOSS_RUSH: 13,    // boss rush select screen
+  MEDIA: 14,        // media / gallery screen
 };
 
 // Human-readable names for logging / overlays / future screen dispatch.
@@ -28,6 +33,11 @@ export const STATE_NAMES = {
   [S.AREA_ENTRY]: 'AREA_ENTRY',
   [S.REWARD]: 'REWARD',
   [S.END_OF_GAME]: 'END_OF_GAME',
+  [S.MENU]:       'MENU',
+  [S.OPTIONS]:    'OPTIONS',
+  [S.LEVEL_SELECT]: 'LEVEL_SELECT',
+  [S.BOSS_RUSH]:  'BOSS_RUSH',
+  [S.MEDIA]:      'MEDIA',
 };
 
 let cur = S.HOME;
@@ -40,16 +50,29 @@ export function setState(s) {
 
 // Transition map: which states can go where (design §1 graph).
 const TRANSITIONS = {
-  [S.HOME]:   [S.SELECT, S.PLAY, S.REMAP],
+  [S.HOME]:   [S.MENU, S.SELECT, S.PLAY, S.REMAP],
   [S.SELECT]: [S.PLAY, S.HOME],
   [S.PLAY]:   [S.PAUSE, S.OVER, S.WIN, S.AREA_ENTRY, S.REWARD],
-  [S.PAUSE]:  [S.PLAY, S.HOME, S.REMAP, S.AREA_ENTRY],
+  // PAUSE → MENU covers Save & Quit routing back to the hub.
+  [S.PAUSE]:  [S.PLAY, S.HOME, S.MENU, S.REMAP, S.OPTIONS, S.AREA_ENTRY],
   [S.OVER]:   [S.PLAY, S.HOME, S.AREA_ENTRY],   // retry/continue show the entry screen first
   [S.AREA_ENTRY]: [S.PLAY, S.PAUSE, S.OVER],    // confirm starts the attempt; back opens pause
   [S.REWARD]: [S.AREA_ENTRY, S.END_OF_GAME, S.HOME], // confirm → next level's entry / end-of-game; back → home
   [S.END_OF_GAME]: [S.HOME],                          // return home (lifecycle.md §5)
   [S.WIN]:    [S.SELECT, S.HOME, S.PLAY], // play again or quit; PLAY = debug shortcut
-  [S.REMAP]:  [S.PAUSE, S.HOME],      // return to wherever we came from
+  [S.REMAP]:  [S.PAUSE, S.HOME, S.MENU],  // return to wherever we came from
+  // Main menu hub (menu-hub plan §2): every top-level destination is reachable
+  // from MENU; submenus route back through MENU (OPTIONS also returns to
+  // PAUSE when opened from the pause menu).
+  //   - MENU → HOME serves the documented Back action (plan §2.2: "back from
+  //     MENU returns HOME").
+  //   - MENU → AREA_ENTRY serves the §2.3 Continue flow (resuming a saved run
+  //     routes through the shared area-entry screen before PLAY).
+  [S.MENU]:       [S.HOME, S.AREA_ENTRY, S.SELECT, S.PLAY, S.LEVEL_SELECT, S.BOSS_RUSH, S.MEDIA, S.REMAP, S.OPTIONS],
+  [S.OPTIONS]:    [S.MENU, S.PAUSE],
+  [S.LEVEL_SELECT]: [S.MENU, S.PLAY, S.AREA_ENTRY],
+  [S.BOSS_RUSH]:  [S.MENU, S.PLAY, S.AREA_ENTRY],
+  [S.MEDIA]:      [S.MENU],
 };
 
 export function canTransition(from, to) {

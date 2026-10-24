@@ -17,10 +17,18 @@
     },
     "2.1": {
       "number": "2.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Main menu state and routing",
       "milestone": "Main Menu Hub",
-      "milestone_number": "2"
+      "milestone_number": "2",
+      "summary": {
+        "tradeoffs": "None \u2014 state machine only, no screen wiring yet (later tasks). progressStore not needed at this layer since routing is pure state.",
+        "confidence": "high",
+        "done": "Added MENU(10), OPTIONS(11), LEVEL_SELECT(12), BOSS_RUSH(13), MEDIA(14) states to petal-panic/js/core/state.js (S + STATE_NAMES) and extended TRANSITIONS: HOME\u2192MENU; MENU\u2192SELECT/PLAY/LEVEL_SELECT/BOSS_RUSH/MEDIA/REMAP/OPTIONS; PAUSE gains MENU+OPTIONS; OPTIONS\u2192MENU|PAUSE; LEVEL_SELECT/BOSS_RUSH\u2192MENU|PLAY|AREA_ENTRY; MEDIA\u2192MENU; REMAP also returns to MENU. Added node:test suite petal-panic/js/test/stateMenu.test.js covering all acceptance criteria plus negative cases.",
+        "decisions": "Kept the single centralized TRANSITIONS map rather than per-state handlers; added S.MENU to REMAP's return set so Controls opened from the hub can go back there; OPTIONS returns to both MENU and PAUSE to serve as the shared options screen.",
+        "failures": "None",
+        "lessons_learned": "state.js is importable headless with plain node ESM \u2014 no DOM stubs needed for transition tests."
+      }
     },
     "2.2": {
       "number": "2.2",
