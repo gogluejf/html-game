@@ -495,6 +495,30 @@ export const STAGING = {
     // waves). Nothing to move.
   },
 
+  surfaceStrike: {
+    setup(t) {
+      // Surface Strike demo: a WIDE platform spans the strike's default x. The
+      // band clamps to the platform extent (surface resolution), so the hot
+      // strip sits ON the platform top — not the floor below. Two victims on
+      // the platform INSIDE the band (hit), one just outside the right edge
+      // (safe), one on the floor under the platform (safe — different surface).
+      const platTop = GROUND_Y - 70;
+      const platX = 330, platW = 340; // spans 330..670; default x=508 is inside
+      t._params.x = 508;
+      t._params.y = platTop;
+      t._stompPlatforms = [{ x: platX, y: platTop, w: platW }];
+      t._stompVics = [
+        new Enemy(STOMP_VIC_DEF, 420, platTop - 28),   // on platform, inside band
+        new Enemy(STOMP_VIC_DEF, 560, platTop - 28),   // on platform, inside band
+        new Enemy(STOMP_VIC_DEF, 640, platTop - 28),   // on platform, OUTSIDE right edge
+        new Enemy(STOMP_VIC_DEF, 480, GROUND_Y - 28),  // on the FLOOR under the platform
+      ];
+      for (const v of t._stompVics) t._world.add(v);
+      return tagged({ kind: 'stompStage' }, STAGING.surfaceStrike);
+    },
+    // Static staging — the primitive owns the hot window. Nothing to move.
+  },
+
   skyMissile: {
     setup(t) {
       // Sky Missile demo: stage a SMALL platform under part of the drop column

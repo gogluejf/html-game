@@ -57,6 +57,7 @@ import '../combat/attack/primitives/spike.js';
 import '../combat/attack/primitives/orbit.js';
 import '../combat/attack/primitives/boomerang.js';
 import '../combat/attack/primitives/surfaceWave.js';
+import '../combat/attack/primitives/surfaceStrike.js';
 import '../combat/attack/primitives/shockwave.js';
 
 // --- Sandbox constants --------------------------------------------------------
@@ -118,6 +119,7 @@ const SANDBOX_PRESETS = {
   sweepingBeam: { direction: 0, sweepAngle: 67.5 * DEG, length: 1000, width: 24, speed: 0, holdDuration: 0.4, sweepDuration: 1.0, endHoldDuration: 0.3, fadeOut: 0.5, damage: 20, tickRate: 8, team: 'ally', shimmerLow: 0.1, shimmerHigh: 0.35, announceMarker: true, announceDelay: 1.0 },
   laneSequence: { mode: 'charge', laneCount: 2, laneSpacing: 120, laneOffset: 0, lanes: null, laneOrder: 'bottom_to_top', sideMode: 'fixed_left', alternateStartSide: 'left', announceDelay: 0.5, dashSpeed: 1200, damage: 20, knockback: null, beamDuration: 0.8, beamWidth: 36, tickRate: 8, interval: 0.15, team: 'ally', style: null },
   surfaceWave: { x: ATTACKER_HOME.x + 16, y: GROUND_Y, direction: 'right', speed: 300, height: 24, width: 28, damage: 15, ttl: null, team: 'foe' },
+  surfaceStrike: { x: (ATTACKER_HOME.x + TARGET_POS.x) / 2 + 16, y: GROUND_Y, width: 240, height: 30, duration: 0.35, damage: 25, team: 'foe' },
   shockwave: { x: (ATTACKER_HOME.x + TARGET_POS.x) / 2 + 16, y: GROUND_Y - 24, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, shakeIntensity: 5, team: 'neutral' },
   mine: { x: VIEW_W / 2, team: 'ally', ttl: 2, blinkDuration: 2, mineType: 'explosion' },
   throwMine: { team: 'ally', ttl: 2, blinkDuration: 2, mineType: 'explosion' },
@@ -174,6 +176,7 @@ export const TWEAKABLE = {
   sweepingBeam: [['direction', 'angle', 15 * DEG], ['sweepAngle', 'angle', 10 * DEG], ['speed', 'num', 20], ['holdDuration', 'num', 0.1], ['sweepDuration', 'num', 0.1], ['endHoldDuration', 'num', 0.05], ['fadeOut', 'num', 0.05], ['damage', 'num', 2], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
   laneSequence: [['mode', 'enum', ['charge', 'beam']], ['laneCount', 'int', 1], ['laneSpacing', 'num', 20], ['laneOffset', 'num', 10], ['laneOrder', 'enum', ['bottom_to_top', 'top_to_bottom', 'random']], ['sideMode', 'enum', ['fixed_left', 'fixed_right', 'alternate', 'random']], ['announceDelay', 'num', 0.1], ['dashSpeed', 'num', 100], ['beamDuration', 'num', 0.1], ['damage', 'num', 5], ['tickRate', 'int', 1], ['interval', 'num', 0.05]],
   surfaceWave: [['speed', 'num', 50], ['height', 'num', 4], ['width', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5]],
+  surfaceStrike: [['x', 'num', 20], ['width', 'num', 20], ['height', 'num', 4], ['duration', 'num', 0.1], ['damage', 'num', 5]],
   stomp: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['count', 'int', 1], ['interval', 'num', 0.1], ['radius', 'num', 10], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
   stompWave: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['waveSpeed', 'num', 50], ['waveHeight', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
   skyMissile: [['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['dropHeight', 'num', 20], ['fallSpeed', 'num', 50], ['damage', 'num', 5], ['blastType', 'enum', ['explosion', 'shockwave', 'napalm', 'mine']], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
@@ -878,7 +881,7 @@ export const AttackTheater = {
           }
         } else if (h.id === 'mine' || h.id === 'throwMine' || h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike' || h.id === 'dustZone') {
           finished = h.step(DT, [this._target]);
-        } else if (h.id === 'laneSequence' || h.id === 'stomp' || h.id === 'stompWave' || h.id === 'surfaceWave' || h.id === 'shockwaveProjectile' || h.id === 'shockwaveBomb' || h.id === 'skyDiveStomp') {
+        } else if (h.id === 'laneSequence' || h.id === 'stomp' || h.id === 'stompWave' || h.id === 'surfaceWave' || h.id === 'surfaceStrike' || h.id === 'shockwaveProjectile' || h.id === 'shockwaveBomb' || h.id === 'skyDiveStomp') {
           // Stomp family + shockwave projectile: the macro owns its sequence
           // (telegraph → beat → ring); pass every live victim as candidates.
           // The macro's _complete guard holds it open during the pending beat
@@ -1252,6 +1255,9 @@ export const AttackTheater = {
       } else if ((h.id === 'stompWave' || h.id === 'surfaceWave') && !st.done) {
         // Surface wave: crest is the primitive's ground-wave effect. Nothing
         // to draw here either.
+      } else if (h.id === 'surfaceStrike' && !st.done) {
+        // Surface strike: the slam-in band IS the primitive's ground-strike
+        // effect. Nothing to draw here either.
       } else if (h.id === 'dashCombo' && !st.done && st.phase === 'freeze' && st.hb?.box) {
         // Dash Combo debug aid: outline the CURRENT segment's hitbox during
         // its freeze window — makes the invisible active frames readable.
