@@ -29,11 +29,28 @@ function dummyEnemy(x, y, hp = 100) {
   };
 }
 
-ok('floor-only scene → one full-width segment on the floor', () => {
-  const segs = resolveStrikeSegments(P, ctxWith());
-  assert.equal(segs.length, 1);
-  assert.equal(segs[0].y, GROUND_Y);
-  assert.equal(segs[0].w, 240); // floor is wide → full span
+ok('default (infinite span+reach) → EVERY surface burns at FULL extent', () => {
+  const platTop = GROUND_Y - 70;
+  const segs = resolveStrikeSegments({ ...P, width: Infinity, reach: Infinity }, ctxWith({ platforms: [{ x: 300, y: platTop, w: 200 }] }));
+  assert.equal(segs.length, 2, 'platform + floor');
+  const floorSeg = segs.find((s) => s.y === GROUND_Y);
+  const platSeg = segs.find((s) => s.y === platTop);
+  assert.equal(floorSeg.w, 4000, `floor spans the whole arena (got ${floorSeg.w})`);
+  assert.equal(platSeg.w, 200, `platform spans its full width (got ${platSeg.w})`);
+});
+
+ok('finite width clamps segments to the strike span', () => {
+  const segs = resolveStrikeSegments({ ...P, width: 100 }, ctxWith());
+  assert.equal(segs[0].w, 100, 'floor segment limited to the span');
+});
+
+ok('finite reach ignores surfaces outside the window', () => {
+  const highTop = GROUND_Y - 300; // far above a ±120 scan window
+  const segs = resolveStrikeSegments(
+    { ...P, width: Infinity, reach: 120, y: GROUND_Y - 100 },
+    ctxWith({ platforms: [{ x: 300, y: highTop, w: 200 }] }),
+  );
+  assert.ok(!segs.some((s) => s.y === highTop), 'high platform not scanned');
 });
 
 ok('ALL surfaces in the span burn: platform + floor = two segments', () => {

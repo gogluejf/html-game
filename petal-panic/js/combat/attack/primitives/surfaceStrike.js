@@ -44,9 +44,9 @@ function declaredEffectsOf(id) {
 const DEFAULTS = Object.freeze({
   x: 0,               // center x (world) — usually the stomp impact point
   y: 0,               // reference y (world) — the surface line the strike is aimed at
-  width: 240,         // horizontal extent of the strike span (px)
+  width: Infinity,    // horizontal extent of the strike span (px); Infinity = EVERY surface's full extent
   height: 30,         // dangerous area height above EACH surface top (px) — jump clearance
-  reach: 120,         // vertical scan window around the reference y (px)
+  reach: Infinity,    // vertical scan window around the reference y (px); Infinity = every surface in the scene
   duration: 0.35,     // s every band segment stays hot
   damage: 25,         // per target (each target hit ONCE during the window)
   team: 'foe',        // who the bands hurt (stomps are enemy attacks)
@@ -60,9 +60,9 @@ const DEFAULTS = Object.freeze({
  *          supports the span.
  */
 export function resolveStrikeSegments(p, ctx) {
-  const lo = p.x - p.width / 2;
+  const lo = p.x - p.width / 2;   // -Infinity when width is Infinity → full span
   const hi = p.x + p.width / 2;
-  const yLo = p.y - p.reach;
+  const yLo = p.y - p.reach;      // -Infinity when reach is Infinity → every surface
   const yHi = p.y + p.reach;
   const segs = [];
 
@@ -70,7 +70,7 @@ export function resolveStrikeSegments(p, ctx) {
     if (topY < yLo || topY > yHi) return;
     const a = Math.max(lo, surfLo);
     const b = Math.min(hi, surfHi);
-    if (b <= a) return;
+    if (!Number.isFinite(b) || !Number.isFinite(a) || b <= a) return;
     segs.push({ x: a, y: topY, w: b - a });
   };
 
@@ -85,9 +85,12 @@ export function resolveStrikeSegments(p, ctx) {
       const l = s.x, r = s.x + (s.w ?? 0);
       if (leftEdge == null || (r - l) > (rightEdge - leftEdge)) { leftEdge = l; rightEdge = r; }
     }
+    // Arena bounds are always FINITE (the floor has edges) — even with an
+    // infinite strike span the floor segment spans exactly the arena.
     add(leftEdge ?? -2000, rightEdge ?? 2000, groundY);
   }
-  // Platforms: explicit extra surfaces [{x, y, w}] (tops only).
+  // Platforms: explicit extra surfaces [{x, y, w}] (tops only). With the
+  // default infinite span each platform contributes its FULL extent.
   for (const pl of ctx?.platforms ?? []) {
     add(pl.x, pl.x + pl.w, pl.y);
   }
@@ -151,9 +154,9 @@ registerPrimitive('surfaceStrike', {
     params: [
       { key: 'x', desc: 'center x (world) — impact point' },
       { key: 'y', desc: 'reference y (world) — aim line for the surface scan' },
-      { key: 'width', desc: 'horizontal extent of the strike span (px)' },
+      { key: 'width', desc: 'horizontal extent of the strike span (px); Infinity = full surface extents' },
       { key: 'height', desc: 'dangerous area height above each surface (px)' },
-      { key: 'reach', desc: 'vertical scan window around the reference y (px)' },
+      { key: 'reach', desc: 'vertical scan window around the reference y (px); Infinity = every surface' },
       { key: 'duration', desc: 'hot window (s)' },
       { key: 'damage', desc: 'per target (hit once per window)' },
       { key: 'team', desc: "who the bands hurt" },
