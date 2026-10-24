@@ -113,4 +113,60 @@ ok('zero telegraph starts straight in the hop', () => {
   assert.equal(h.state.phase, 'hop');
 });
 
+// --- impact mode: 'strike' (default) -----------------------------------------
+
+ok('default impact is strike: burns every surface under the span', () => {
+  const platTop = GROUND_Y - 70;
+  const onPlat = dummyEnemy(316 - 40, platTop - 24);  // on a platform inside the span
+  const onFloor = dummyEnemy(316 + 40, GROUND_Y - 24); // on the floor
+  const c = ctx({ platforms: [{ x: 250, y: platTop, w: 150 }] });
+  const h = invoke('stomp', { buildTime: 0.05, gapTime: 0.05, blinkTime: 0.05, count: 1, damage: 30, team: 'neutral' }, c);
+  let finished = false;
+  for (let i = 0; i < 900 && !finished; i++) finished = h.step(DT, [onPlat, onFloor]);
+  assert.ok(finished);
+  assert.ok(onPlat.hp < 100, `platform victim hit (hp=${onPlat.hp})`);
+  assert.ok(onFloor.hp < 100, `floor victim hit (hp=${onFloor.hp})`);
+});
+
+ok('strike mode: airborne target above the band height is safe (jump dodge)', () => {
+  const e = dummyEnemy(316, GROUND_Y - 24 - 40); // 40px above the 30px band
+  const c = ctx();
+  const h = invoke('stomp', { buildTime: 0.05, gapTime: 0.05, blinkTime: 0.05, count: 1, damage: 30, team: 'neutral' }, c);
+  let n = 0;
+  h.on('hit', () => n++);
+  let finished = false;
+  for (let i = 0; i < 900 && !finished; i++) finished = h.step(DT, [e]);
+  assert.ok(finished);
+  assert.equal(n, 0, 'jumping clears the strike');
+  assert.equal(e.hp, 100);
+});
+
+// --- impact mode: 'wave' ------------------------------------------------------
+
+ok('wave mode: waves roll out per side and hit side victims', () => {
+  const left = dummyEnemy(316 - 120, GROUND_Y - 24);
+  const right = dummyEnemy(316 + 100, GROUND_Y - 24);
+  const c = ctx();
+  const h = invoke('stomp', {
+    buildTime: 0.05, gapTime: 0.05, blinkTime: 0.05, count: 1, damage: 20, team: 'neutral',
+    impact: 'wave', wave: { sides: 'both', speed: 300, height: 24, width: 28, ttl: null },
+  }, c);
+  let finished = false;
+  for (let i = 0; i < 1200 && !finished; i++) finished = h.step(DT, [left, right]);
+  assert.ok(finished);
+  assert.ok(left.hp < 100, `left wave caught its victim (hp=${left.hp})`);
+  assert.ok(right.hp < 100, `right wave caught its victim (hp=${right.hp})`);
+});
+
+ok('complete carries the impact mode', () => {
+  const c = ctx();
+  const h = invoke('stomp', { buildTime: 0.05, gapTime: 0.05, blinkTime: 0.05, count: 1, impact: 'wave' }, c);
+  let result = null;
+  h.on('complete', (r) => { result = r; });
+  let finished = false;
+  for (let i = 0; i < 1200 && !finished; i++) finished = h.step(DT, []);
+  assert.ok(finished);
+  assert.equal(result.impact, 'wave');
+});
+
 console.log(`\nstomp: ${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

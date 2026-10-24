@@ -447,14 +447,17 @@ export const STAGING = {
   stomp: {
     setup(t) {
       // Stomp demo: FOUR victims, EVERY ONE standing on a surface (no enemy
-      // floats in empty sky). Proves the circular radius is POSITIONAL, not
-      // surface-bound: ground victim INSIDE the radius (hit), TWO on a mid-air
-      // platform INSIDE the radius (both hit — airborne but in the circle),
-      // one on a HIGH platform ABOVE the radius (untouched). Each victim sits
-      // on its own visible platform so the staging reads as intentional.
+      // floats in empty sky). Proves the impact is POSITIONAL + SURFACE-AWARE:
+      // ground victim INSIDE the blast (hit), TWO on a mid-air platform INSIDE
+      // the radius (both hit — airborne but in the circle), one on a HIGH
+      // platform ABOVE the radius (untouched). Each victim sits on its own
+      // visible platform so the staging reads as intentional.
+      // The default 'strike' mode burns ALL surfaces in the span, so the
+      // high-platform victim also takes the strike — switch to 'radius' in
+      // the panel to see it go safe again.
       const cx = t._attacker.x + t._attacker.w / 2;
-      const midTop = GROUND_Y - 60;   // mid-air platform → victims ~66px above impact center (inside r90)
-      const highTop = GROUND_Y - 250; // high platform → victim far above the blast circle
+      const midTop = GROUND_Y - 60;   // mid-air platform → victims ~66px above impact center (inside r590)
+      const highTop = GROUND_Y - 250; // high platform → victim far above the old r90 circle
       // Mid platform hugs BOTH mid-air victims: span from the left edge of #1
       // to the right edge of #2, with a small pad on each side — no ugly long
       // tail. High platform does the same for its single safe victim.
@@ -465,10 +468,11 @@ export const STAGING = {
         { x: hiX - 12, y: highTop, w: hiW + 24 },
       ];
       t._stompVics = [
+        new Enemy(STOMP_VIC_DEF, cx - 130, GROUND_Y - 28), // LEFT of attacker on the floor (wave/strike coverage)
         new Enemy(STOMP_VIC_DEF, cx + 70, GROUND_Y - 28),   // ground (floor)
         new Enemy(STOMP_VIC_DEF, cx - 50, midTop - 28),      // mid #1 (on platform)
         new Enemy(STOMP_VIC_DEF, cx + 30, midTop - 28),      // mid #2 (on platform)
-        new Enemy(STOMP_VIC_DEF, cx + 40, highTop - 28),     // high (on platform, safe)
+        new Enemy(STOMP_VIC_DEF, cx + 40, highTop - 28),     // high (on platform, safe vs radius)
       ];
       for (const v of t._stompVics) t._world.add(v);
       return tagged({ kind: 'stompStage' }, STAGING.stomp);

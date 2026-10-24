@@ -1,38 +1,45 @@
 // Attack Engine — Stomp (macro, doc §16). ONE object, one id.
 //
-// Telegraph once → [tiny hop → land: radius blast + dust + screen shake] × count.
+// Telegraph once → [tiny hop → land: impact payload + dust + screen shake] × count.
 //
-// The stomp is a SURFACE-AWARE AREA ATTACK: on impact a circular radius around
-// the impact point damages everyone inside it — enemies on the ground AND
-// floating in the air, as long as they're inside the circle (above the radius
-// they don't). The attacker does a very small hop before landing — just enough
-// to read that it moved. Dust puff + camera shake fire on EVERY impact, even
-// when nothing is hit.
+// The stomp is a SURFACE-AWARE AREA ATTACK with THREE impact shapes, chosen by
+// the `impact` param (one macro, no forks):
+//   • 'strike' (DEFAULT) — the ground-slam: invokes the surfaceStrike primitive
+//     at the impact point. Every surface under the span (floor/platforms/blocks)
+//     gets a hot band; you JUMP to dodge. The modern default — "the floor just
+//     became deadly".
+//   • 'radius' — the classic circular blast around the impact point (own
+//     single-frame check, no primitive invoke): damages everyone inside the
+//     circle, ground AND airborne. You SIDESTEP or jump over it.
+//   • 'wave' — the old stompWave behavior: one Surface Wave per `sides` rolls
+//     out along the surface from the impact point. You move out of the path.
 //
-// The stomp owns its OWN radius damage: a single-frame circular check against
-// the host's targets, routed through each target's real takeDamage() (the
-// engine's damage pipeline). It does NOT invoke the explosion primitive and
-// fires no explosion VFX — a stomp reads as ground impact (dust + shake), not
-// a bomb going off.
+// All three share the SAME skeleton: telegraph (style adapts per mode) → tiny
+// hop → impact juice (dust + camera shake fire on EVERY impact, even when
+// nothing is hit). Only the damage shape differs.
 //
 // Composition:
-//   telegraph (once) → repeat count times: [hop → land: radius damage +
+//   telegraph (once) → repeat count times: [hop → land: impact payload +
 //   dust-cloud + camera-shake → interval]
 //
 // Handle shape:
 //   h.step(dt, targets) — advance the sequence; true when all stomps done
 //   state.phase         — current phase (for VFX/theater rendering)
 //   state.impact        — { x, y } of the last impact (dust/shake placement)
+//   h.strike / h.waves  — live child handles for the current impact (theater)
 //   hit / complete      — hit per damaged target; complete { stomps }
 
 import { defineMacro } from '../defineMacro.js';
-import { AttackHandle } from '../engine.js';
+import { AttackHandle, invoke } from '../engine.js';
 import { fireDeclared } from '../../../effects/index.js';
+import { makeContext } from '../context.js';
+
+// Ensure the payload primitives/macros are registered.
+import '../primitives/surfaceStrike.js';
+import '../primitives/surfaceWave.js';
 
 // Declared effect types for THIS registration (single source of truth:
-// the same meta.effects array the guard checks and the theater panel
-// renders). Read at construction so synchronous fires inside impl()
-// see the real declaration — no timing race with invoke().
+// the same meta.effects array the guard checks and the theater panel renders).
 function declaredEffectsOf(id) {
   const def = getPrimitive(id) ?? getMacro(id);
   return (def?.meta?.effects ?? []).map((e) => e.type).filter(Boolean);
@@ -40,23 +47,42 @@ function declaredEffectsOf(id) {
 import { getPrimitive, getMacro } from '../registry.js';
 
 const DEFAULTS = Object.freeze({
-  surface: 'current',    // 'current' | 'all' (documented; blast is positional)
+  // --- Impact shape ----------------------------------------------------------
+  impact: 'strike',       // 'strike' | 'radius' | 'wave'
   // --- Telegraph timing (absolute seconds; the effect derives its total) ---
-  buildTime: 1.2,         // circle grows (expand)
+  buildTime: 0.9,         // grow/expand phase (s)
   gapTime: 0.4,           // silence hold ("be ready")
-  blinkTime: 0.5,         // final warning blinks
+  blinkTime: 0.5,         // final warning blinks (s)
   impactDelay: 0.1,       // beat AFTER the warning, BEFORE the hop/slam
                           // (macro-only — the effect finishes at blink end)
+  // --- Pattern ----------------------------------------------------------------
   count: 1,               // number of stomps
   interval: 0.5,          // pause between stomps (s)
   hopHeight: 10,          // tiny visual hop offset (px)
   hopTime: 0.12,          // hop duration (s) — up then down
-  radius: 90,             // blast radius around the impact point (px)
-  damage: 30,             // stomp damage (everyone in the radius)
+  // --- Shared impact tuning ----------------------------------------------------
+  damage: 30,             // impact damage (all modes)
   team: 'neutral',        // who the stomp hurts (area hazard default)
-  method: 'stomp',        // damage() telemetry label
+  method: 'stomp',        // damage() telemetry label (radius mode)
   dustStyle: null,        // dust-cloud effect override
   shakeStrength: 5,       // camera shake intensity on impact
+  // --- 'radius' mode ------------------------------------------------------------
+  radius: 590,            // blast radius around the impact point (px)
+  // --- 'strike' mode (surfaceStrike passthrough) --------------------------------
+  strike: {
+    width: Infinity,      // horizontal span (Infinity = full surface extents)
+    height: 30,           // dangerous area height above each surface (px)
+    reach: Infinity,      // vertical scan window (Infinity = every surface)
+    duration: 0.35,       // s the bands stay hot
+  },
+  // --- 'wave' mode (old stompWave behavior) --------------------------------------
+  wave: {
+    sides: 'both',        // 'left' | 'right' | 'both'
+    speed: 300,           // px/s along the surface
+    height: 24,           // dangerous area height above the surface (px)
+    width: 28,            // leading-edge length (px)
+    ttl: null,            // wave lifetime cap (s); null = until surface ends
+  },
 });
 
 /** Total telegraph time (s): grow + silence + warning. */
@@ -73,12 +99,12 @@ export function stompImpactPoint(attacker) {
 }
 
 /**
- * Resolve the stomp's own radius blast. Single-frame circular check: every
- * live target whose CENTER is within `radius` of the impact point takes
- * damage through its real takeDamage() (engine pipeline). No explosion
+ * Resolve the stomp's own radius blast ('radius' mode). Single-frame circular
+ * check: every live target whose CENTER is within `radius` of the impact point
+ * takes damage through its real takeDamage() (engine pipeline). No explosion
  * primitive, no blast VFX — the stomp IS the attack.
  *
- * @param {object} p     merged params (radius, damage, team, method)
+ * @param {object} p     merged params (radius, damage, method)
  * @param {object} ctx   AttackContext (attacker for self-exclusion/telemetry)
  * @param {Array<object>} targets candidate entities (host-provided)
  * @returns {Array<{target:object, dealt:number}>} hits landed
@@ -101,19 +127,22 @@ export function resolveStompBlast(p, ctx, targets) {
 }
 
 defineMacro('stomp', {
-  attacks: [], // self-contained: owns its radius damage, invokes nothing
+  attacks: [
+    { id: 'surfaceStrike', role: 'payload' },  // impact: 'strike'
+    { id: 'surfaceWave', role: 'payload' },    // impact: 'wave' (one per side)
+  ],
   params: { ...DEFAULTS },
   meta: {
     name: 'Stomp',
-    desc: 'Telegraph → tiny hop → land: own circular radius blast + dust + screen shake. Repeats `count` times with an interval.',
+    desc: 'Telegraph → tiny hop → land: impact payload (strike/radius/wave) + dust + screen shake. Repeats `count` times with an interval.',
     effects: [
       { type: 'dust-cloud', desc: 'ground dust puff at the impact point (every impact)' },
       { type: 'camera-shake', desc: 'shake on impact' },
-      { type: 'hit-sparkle', desc: 'blood-like sparkle on each target the radius catches' },
-      { type: 'telegraph-circle', desc: 'warning circle that grows/blinks before the slam' },
+      { type: 'hit-sparkle', desc: 'blood-like sparkle on each target struck (radius mode)' },
+      { type: 'telegraph-circle', desc: 'warning marker sized/styled per impact mode' },
     ],
     params: [
-      { key: 'surface', desc: "'current' | 'all'" },
+      { key: 'impact', desc: "'strike' | 'radius' | 'wave'" },
       { key: 'buildTime', desc: 'telegraph grow (s)' },
       { key: 'gapTime', desc: 'telegraph silence (s)' },
       { key: 'blinkTime', desc: 'telegraph final warning (s)' },
@@ -121,14 +150,23 @@ defineMacro('stomp', {
       { key: 'count', desc: 'number of stomps' },
       { key: 'interval', desc: 'pause between stomps (s)' },
       { key: 'hopHeight', desc: 'tiny pre-impact hop (px, visual only)' },
-      { key: 'radius', desc: 'blast radius (px)' },
-      { key: 'damage', desc: 'damage to everyone in the radius' },
+      { key: 'damage', desc: 'impact damage (all modes)' },
       { key: 'team', desc: "who the stomp hurts" },
       { key: 'shakeStrength', desc: 'camera shake on impact' },
+      { key: 'radius', desc: "blast radius (px) — 'radius' mode" },
+      { key: 'strike.width', desc: "span width (px) — 'strike' mode" },
+      { key: 'strike.height', desc: "band height (px) — 'strike' mode" },
+      { key: 'strike.duration', desc: "hot window (s) — 'strike' mode" },
+      { key: 'wave.sides', desc: "'left' | 'right' | 'both' — 'wave' mode" },
+      { key: 'wave.speed', desc: 'travel speed (px/s) — \'wave\' mode' },
+      { key: 'wave.height', desc: 'dangerous height (px) — \'wave\' mode' },
+      { key: 'wave.ttl', desc: 'wave lifetime cap (s) — \'wave\' mode' },
     ],
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
+    p.strike = { ...DEFAULTS.strike, ...(params.strike ?? {}) };
+    p.wave = { ...DEFAULTS.wave, ...(params.wave ?? {}) };
     const h = new AttackHandle('stomp', null, declaredEffectsOf('stomp'));
     const n = Math.max(1, Math.floor(p.count));
     const teleTotal = telegraphTotal(p); // grow + silence + warning
@@ -145,6 +183,57 @@ defineMacro('stomp', {
       telegraphFired: false,
       done: false,
     };
+    h.strike = null;     // live surfaceStrike handle ('strike' mode)
+    h.waves = [];        // live surfaceWave handles ('wave' mode)
+
+    /** Fire the mode-specific payload at the impact point. Returns the child handle(s). */
+    const firePayload = (pt) => {
+      if (p.impact === 'strike') {
+        // Ground slam: every surface under the span burns. The primitive owns
+        // its own impact shake + melee hit juice; we still fire our shared
+        // dust below. Its internal shake would double ours, so pass 0.
+        const s = invoke('surfaceStrike', {
+          x: pt.x, y: pt.y,
+          width: p.strike.width,
+          height: p.strike.height,
+          reach: p.strike.reach,
+          duration: p.strike.duration,
+          damage: p.damage,
+          team: p.team,
+          shakeStrength: 0, // the macro owns the shared impact shake
+        }, ctx);
+        s.on('hit', (...args) => h._emit('hit', ...args));
+        h.strike = s;
+        return [s];
+      }
+      if (p.impact === 'wave') {
+        // Old stompWave behavior: one Surface Wave per side rolls out.
+        const sidesList = p.wave.sides === 'both' ? ['left', 'right'] : [p.wave.sides];
+        h.waves = [];
+        for (const dir of sidesList) {
+          const w = invoke('surfaceWave', {
+            x: pt.x, y: pt.y,
+            direction: dir,
+            speed: p.wave.speed,
+            height: p.wave.height,
+            width: p.wave.width,
+            damage: p.damage,
+            ttl: p.wave.ttl,
+            team: p.team,
+          }, ctx);
+          w.on('hit', (...args) => h._emit('hit', ...args));
+          h.waves.push(w);
+        }
+        return h.waves;
+      }
+      // 'radius' (and fallback): own single-frame circular check.
+      const hits = resolveStompBlast(p, ctx, pendingTargets);
+      for (const hit of hits) {
+        h._emit('hit', hit);
+        fireDeclared({ type: 'hit-sparkle', params: { x: hit.target.x + hit.target.w / 2, y: hit.target.y + hit.target.h / 2, count: 6 } }, h.declaredEffectTypes());
+      }
+      return [];
+    };
 
     const doImpact = () => {
       const pt = stompImpactPoint(ctx.attacker);
@@ -152,19 +241,19 @@ defineMacro('stomp', {
       h.state.phase = 'impact';
       h.state.t = 0;
 
-      // The stomp's OWN radius blast — no explosion invoke, no blast VFX.
-      const hits = resolveStompBlast(p, ctx, pendingTargets);
-      for (const hit of hits) {
-        h._emit('hit', hit);
-        // Blood-like hit sparkle on the struck target (design §12): the impact
-        // reads as a physical hit, not just numbers going down.
-        fireDeclared({ type: 'hit-sparkle', params: { x: hit.target.x + hit.target.w / 2, y: hit.target.y + hit.target.h / 2, count: 6 } }, h.declaredEffectTypes());
-      }
+      const children = firePayload(pt);
 
-      // Impact juice via the REAL Effect Engine (effects.md #20 dust-cloud,
-      // #13 camera-shake): fires on every impact, even when nothing is hit.
+      // Impact juice via the REAL Effect Engine: fires on every impact, even
+      // when nothing is hit. (Child payloads own their extra juice.)
       fireDeclared({ type: 'dust-cloud', params: { x: pt.x, y: pt.y, particleCount: 16, lifetime: 0.5, ...(p.dustStyle ?? {}) } }, h.declaredEffectTypes());
       fireDeclared({ type: 'camera-shake', params: { intensity: p.shakeStrength } }, h.declaredEffectTypes());
+
+      // Radius mode is instant (no children to settle) → skip straight to the
+      // impact hold. Strike/wave modes settle their children first.
+      if (children.length === 0) {
+        h.state.phase = 'settle';
+        h.state.t = 0;
+      }
     };
 
     h.step = (dt, targets) => {
@@ -174,18 +263,25 @@ defineMacro('stomp', {
       s.t += dt;
 
       switch (s.phase) {
-        case 'telegraph':
-          // The warning is the REAL Telegraph Circle effect (effects.md #8):
-          // expand mode — "GET OUT of this zone" — sized to the blast radius.
-          // Phase times are passed in absolute seconds; the effect derives
-          // its own total from them.
+        case 'telegraph': {
+          // The warning is ALWAYS the expanding circle sized to `radius` —
+          // the shared "GET OUT of this zone" read, regardless of impact mode.
+          // (Strike/wave damage shapes differ from the circle, but the radius
+          // param is the macro's single threat-size knob and the player reads
+          // it as "this big an area is about to slam".)
           if (s.t <= dt && !s.telegraphFired) {
             s.telegraphFired = true;
             const pt = stompImpactPoint(ctx.attacker);
-            fireDeclared({ type: 'telegraph-circle', params: { x: pt.x, y: pt.y - 8, radius: p.radius, expand: true, buildTime: p.buildTime, gapTime: p.gapTime, blinkTime: p.blinkTime } }, h.declaredEffectTypes());
+            fireDeclared({ type: 'telegraph-circle', params: {
+              x: pt.x, y: pt.y - 8,
+              radius: p.radius,
+              expand: true,
+              buildTime: p.buildTime, gapTime: p.gapTime, blinkTime: p.blinkTime,
+            } }, h.declaredEffectTypes());
           }
           if (s.t >= teleTotal + p.impactDelay) { s.phase = 'hop'; s.t = 0; }
           break;
+        }
 
         case 'hop': {
           // Tiny parabola: up then back down over hopTime. Visual only —
@@ -197,12 +293,30 @@ defineMacro('stomp', {
         }
 
         case 'impact': {
+          // Children are live (strike window open / waves traveling). Step
+          // them; once ALL settle, move to the impact hold.
+          let allDone = true;
+          if (h.strike) {
+            const fin = typeof h.strike.step === 'function' ? h.strike.step(dt, pendingTargets) : true;
+            if (fin || h.strike._completed) { h.strike = null; } else allDone = false;
+          }
+          for (let i = h.waves.length - 1; i >= 0; i--) {
+            const w = h.waves[i];
+            const finished = typeof w.step === 'function' ? w.step(dt, pendingTargets) : true;
+            if (finished) h.waves.splice(i, 1);
+            else allDone = false;
+          }
+          if (allDone) { s.phase = 'settle'; s.t = 0; }
+          break;
+        }
+
+        case 'settle': {
           // Brief hold so the dust/shake read, then interval or finish.
           if (s.t >= 0.12) {
             s.stompIndex++;
             if (s.stompIndex >= n) {
               s.done = true;
-              h._complete({ stomps: s.stompIndex });
+              h._complete({ stomps: s.stompIndex, impact: p.impact });
               return true;
             }
             s.phase = 'interval';
