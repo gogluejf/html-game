@@ -47,7 +47,7 @@
     },
     "2.3": {
       "number": "2.3",
-      "status": "in_progress",
+      "status": "done",
       "name": "New Game and Continue flow",
       "milestone": "Main Menu Hub",
       "milestone_number": "2",
@@ -62,10 +62,18 @@
     },
     "3.1": {
       "number": "3.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Level select model",
       "milestone": "Level Select and Boss Rush",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "confidence": "high",
+        "done": "Added petal-panic/js/ui/levelSelectModel.js (pure model over LEVEL_CONFIGS + progress): buildLevelMap(progress) \u2192 exactly 8 markers {level,name,status,selected} with no zone nodes; buildSubAreasForLevel(level,progress) \u2192 exactly 5 choices X-1..X-4/X-B with {level,zone,label,boss,status,tooltip,start:{level,area}}. Level status: completed when all 5 areas done, available when the immediately preceding level is fully completed (level 1 always), else locked. Sub-area unlock chain: prev sub-area completed (level 1 area 1 default-unlocked; other levels' first area gates on prev level's X-B); locked entries carry tooltip 'Pass <prev> to unlock'. Added js/test/levelSelectModel.test.js (13 tests). Plan verify command passes (buildLevelMap length 8).",
+        "decisions": "Model is pure: screen passes in the progress section; no localStorage/state imports so it stays node-testable headlessly. Area ids reuse formatAreaId's convention ('X-N', 'X-B') matching what lifecycle writes to completedAreas. AREA_BOSS=5 exported for screens/tests. Mistyped/null progress degrades to defaults (mirrors progressStore.normalize rules) rather than throwing.",
+        "failures": "None \u2014 13/13 new tests pass; plan verify command prints 8. Full suite 86/93 with my file included; the 7 failures (bombGameplay, dustCloud, input, lifecycle, pickerRide, shockwave, takeoffPicker) are pre-existing and reproduce identically with my changes stashed (85/92 baseline).",
+        "tradeoffs": "Chose strict sequential gating for level availability (a later level unlocks only when its immediate predecessor is fully completed incl. boss), matching the milestone's 'what must be passed before unlocking' framing; a permissive any-predecessor rule would have contradicted that.",
+        "lessons_learned": "First draft used 'any earlier level complete' for availability \u2014 wrong; availability must chain through the IMMEDIATE predecessor or every level unlocks at once. Verified pre-existing suite failures via git stash before attributing them."
+      }
     },
     "3.2": {
       "number": "3.2",
