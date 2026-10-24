@@ -17,7 +17,7 @@
     },
     "2.1": {
       "number": "2.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Main menu state and routing",
       "milestone": "Main Menu Hub",
       "milestone_number": "2",
@@ -32,10 +32,18 @@
     },
     "2.2": {
       "number": "2.2",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Main menu screen",
       "milestone": "Main Menu Hub",
-      "milestone_number": "2"
+      "milestone_number": "2",
+      "summary": {
+        "done": "Added canvas-drawn Menu hub screen to petal-panic/js/ui/screens.js: eight options (New Game, Continue/No Save, Level Select, Boss Rush, Media, Controls, Options, Credits) with the pause-style centered list, pink focus pill, and keycap nav bar; Continue label/enabled driven live by progressStore.hasSave(); up/down wrap and skip disabled entries; confirm routes New Game\u2192SELECT, Continue\u2192AREA_ENTRY (\u00a72.3 owns resume), Level Select/Boss Rush/Media/OPTIONS/Controls\u2192REMAP per the 2.1 transition map; back returns HOME. Wired MENU into drawScreen + screenOnAction dispatch, screenReset (Menu.reset), and render.js full-screen skip list. Fixed deferred 2.1 item: remapParent now resolves from {HOME, PAUSE, MENU} so REMAP opened from MENU returns to MENU. Added node:test suite js/test/menuScreen.test.js (9 tests).",
+        "confidence": "high",
+        "failures": "None",
+        "decisions": "Reused Pause's exact ergonomics pattern (roundRect focus pill, \u25b8 prefix, drawNavBar/navHintEntries select_layout chips) rather than a new style; Menu.options() is a single source of truth shared by draw/onAction/focus-skip so enabled state can never diverge; wrote test saves via loadStore().saveMeta + saveStore (documented API) because updateProgress mutates only the progress section and cannot set top-level saveMeta.",
+        "lessons_learned": "updateProgress's mutator receives store.progress, not the full document \u2014 setting store.saveMeta inside it silently lands under progress.saveMeta and hasSave() stays false (the store's own test suite uses loadStore().saveMeta = ... for this reason). Also note run-all baseline on clean tree: 5 pre-existing failures (bombGameplay/dustCloud/shockwave + pickerRide/takeoffPicker) identical before and after this change.",
+        "tradeoffs": "Continue confirms to AREA_ENTRY without saveMeta restore logic \u2014 that flow is owned by task 2.3; the transition edge already exists from 2.1. Credits confirm is a no-op until its presentation lands in a later task."
+      }
     },
     "2.3": {
       "number": "2.3",

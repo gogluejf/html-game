@@ -4,6 +4,7 @@
 // placeholder boxes.
 
 import {S, getState, tryTransition} from '../core/state.js';
+import { hasSave } from '../systems/progressStore.js';
 import { areaEntryOnAction, setAreaEntryDataCallback, getAreaEntryData as getAreaEntryDataFromLifecycle } from '../systems/lifecycle.js';
 import { showLevelReward, rewardOnAction, setRewardDataCallback, setEndOfGameScoreCallback } from '../systems/lifecycle.js';
 import { HEROES } from '../hero/heroDefs.js';
@@ -338,7 +339,7 @@ export const Home = {
     ctx.restore(); // end 4:3 clip
   },
 
-  /** Handle semantic input. During intro: skip to next card. After intro: go to SELECT. */
+  /** Handle semantic input. During intro: skip to next card. After intro: go to MENU. */
   onAction(action) {
     if (action !== 'confirm') return;
     const t = this.parallaxOffset;
@@ -354,8 +355,8 @@ export const Home = {
       this._promptShown = true;
       return;
     }
-    if (tryTransition(S.SELECT)) {
-      console.log('[screens] HOME → SELECT');
+    if (tryTransition(S.MENU)) {
+      console.log('[screens] HOME → MENU');
     }
   },
 };
@@ -568,6 +569,266 @@ export const Select = {
 };
 
 // =============================================================================
+// MAIN MENU HUB (menu-hub plan §2.2)
+// Full-screen entry point between Home and gameplay. Same ergonomics as the
+// Pause menu: centered option list, pink focus pill, keycap nav bar — both
+// rendered by the shared drawOptionList() below.
+// Continue is disabled when no resumable save exists (progressStore.hasSave).
+// Back from MENU returns HOME (plan §2.2 acceptance).
+// Credits opens a minimal canvas-drawn overlay presented by this screen; any
+// key dismisses it back to the hub.
+// =============================================================================
+
+// --- Shared option-list layout constants (Pause + Menu + GameOver) -----------
+// Hoisted from the inline literals each screen carried before the shared
+// renderer existed; values are identical to the previous per-screen output.
+const PILL_H = 32;          // focus-pill height
+const PILL_R = 6;           // focus-pill corner radius
+const PILL_Y_OFF = 16;      // pill top offset above the row baseline
+const PILL_ROW_GAP = 40;    // vertical gap between rows (pause/game-over lists)
+const TITLE_FONT = FONT_TITLE;
+const OPT_FONT_FOCUSED = 22;   // focused row font size (px)
+const OPT_FONT_NORMAL = 20;    // unfocused row font size (px)
+const COLOR_PILL_FILL = 'rgba(255,110,199,0.10)';
+const COLOR_PILL_STROKE = 'rgba(255,110,199,0.4)';
+const COLOR_OPT_FOCUSED = '#ff6ec7';
+const COLOR_OPT_NORMAL = '#d8cdb4';
+const COLOR_OPT_DISABLED = '#555555';
+
+// --- Menu-hub layout constants (task 2.2) ------------------------------------
+// The hub's own geometry, hoisted from the drawOptionList() call site so the
+// renderer never carries inline magic numbers. Values are identical to the
+// first implementation of this screen.
+const MENU_TITLE_Y = 74;        // "PETAL PANIC" marquee baseline
+const MENU_TITLE_SIZE = 52;     // title font size
+const MENU_LIST_START_Y = 150;  // first option row baseline
+const MENU_ROW_GAP = 38;        // gap between option rows
+const MENU_PILL_W = 260;        // focus-pill width (wider than pause's 240)
+const MENU_NAV_GAP = 20;        // space between last row and the nav bar
+
+/**
+ * Shared parameterized option-list renderer (F3): draws the pause-style
+ * centered list — title, rows with the pink focus pill, and the keycap nav
+ * bar. Used by Pause.draw, Menu.draw and GameOver.draw so the three screens
+ * cannot drift apart.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {object} o
+ * @param {string} [o.title]           marquee title text (omitted → no title)
+ * @param {number} [o.titleY]          title baseline Y
+ * @param {number} [o.titleSize]      title font size (default 56)
+ * @param {Array<{label:string, enabled?:boolean}>} o.items
+ * @param {number} [o.focus]            focused index (-1 = none)
+ * @param {number} o.startY           first row baseline Y
+ * @param {number} [o.gap]            row gap (default PILL_ROW_GAP)
+ * @param {number} [o.pillW]          focus-pill width (default 240)
+ * @param {Array} [o.navEntries]      navHintEntries() result for the bar
+ * @param {number} [o.navGap]         extra space between last row and bar (default 24)
+ */
+export function drawOptionList(ctx, {
+  title, titleY, titleSize = 56, items, focus, startY,
+  gap = PILL_ROW_GAP, pillW = 240, navEntries, navGap = 24,
+}) {
+  if (title) {
+    drawMarqueeTitle(ctx, title, VIEW_W / 2, titleY, titleSize, { color: CREAM });
+  }
+
+  for (let i = 0; i < items.length; i++) {
+    const y = startY + i * gap;
+    const focused = i === focus;
+    if (focused) {
+      ctx.save();
+      ctx.fillStyle = COLOR_PILL_FILL;
+      roundRect(ctx, VIEW_W / 2 - pillW / 2, y - PILL_Y_OFF, pillW, PILL_H, PILL_R);
+      ctx.fill();
+      ctx.strokeStyle = COLOR_PILL_STROKE;
+      ctx.lineWidth = 1;
+      roundRect(ctx, VIEW_W / 2 - pillW / 2, y - PILL_Y_OFF, pillW, PILL_H, PILL_R);
+      ctx.stroke();
+      ctx.restore();
+    }
+    drawPrompt(ctx, (focused ? '▸ ' : '  ') + items[i].label, VIEW_W / 2, y + 2,
+      focused ? OPT_FONT_FOCUSED : OPT_FONT_NORMAL, {
+        color: !items[i].enabled ? COLOR_OPT_DISABLED
+             : (focused ? COLOR_OPT_FOCUSED : COLOR_OPT_NORMAL),
+      });
+  }
+
+  if (navEntries) {
+    const hintY = startY + items.length * gap + navGap;
+    drawNavBar(ctx, VIEW_W / 2, hintY, navEntries);
+  }
+}
+
+export const Menu = {
+  focus: 0,
+  creditsOpen: false,
+
+  /** The top-level options with live enabled flags (draw + onAction share this).
+   * Each option carries its own routing data (F5): `go` transitions to the
+   * named state, or `action` names a special handler. execute() dispatches on
+   * this data — never on label strings. */
+  options() {
+    const saved = hasSave();
+    return [
+      { label: 'New Game',     enabled: true,  action: 'newGame' },
+      { label: saved ? 'Continue' : 'No Save', enabled: saved, go: S.AREA_ENTRY },
+      { label: 'Level Select', enabled: true,  go: S.LEVEL_SELECT },
+      { label: 'Boss Rush',    enabled: true,  go: S.BOSS_RUSH },
+      { label: 'Media',        enabled: true,  go: S.MEDIA },
+      { label: 'Controls',     enabled: true,  go: S.REMAP },
+      { label: 'Options',      enabled: true,  go: S.OPTIONS },
+      { label: 'Credits',      enabled: true,  action: 'credits' },
+    ];
+  },
+
+  /** @param {CanvasRenderingContext2D} ctx */
+  draw(ctx) {
+    // Full-opaque dark background — like SELECT, the world is hidden behind
+    // this full-screen hub.
+    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+    grad.addColorStop(0, '#0d0d1a');
+    grad.addColorStop(1, '#1a1a2e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    if (this.creditsOpen) {
+      this.drawCredits(ctx);
+      return;
+    }
+
+    drawOptionList(ctx, {
+      title: 'PETAL PANIC',
+      titleY: MENU_TITLE_Y,
+      titleSize: MENU_TITLE_SIZE,
+      items: this.options(),
+      focus: this.focus,
+      startY: MENU_LIST_START_Y,
+      gap: MENU_ROW_GAP,
+      pillW: MENU_PILL_W,
+      navGap: MENU_NAV_GAP,
+      navEntries: navHintEntries([
+        { actions: ['up', 'down'], label: 'Navigate', opts: { mode: 'select_layout' } },
+        { action: 'confirm', opts: { mode: 'select_layout' } },
+        { action: 'back', label: 'Home', opts: { mode: 'select_layout' } },
+      ]),
+    });
+  },
+
+  /** Minimal canvas-drawn credits overlay (F1): title + a few lines + a
+   * dismissal prompt. Any nav action dismisses it back to the hub. */
+  drawCredits(ctx) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    drawMarqueeTitle(ctx, 'CREDITS', VIEW_W / 2, 110, 44, { color: CREAM });
+
+    const lines = [
+      ['Design & Code', 'JF Rene'],
+      ['Art Direction', 'AI Qwen 3.8 7B'],
+      ['Built with', 'Squid-OS'],
+    ];
+    let y = 200;
+    for (const [role, name] of lines) {
+      ctx.font = `16px ${TITLE_FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#b9a98a';
+      ctx.fillText(role.toUpperCase(), VIEW_W / 2, y);
+      ctx.font = `24px ${FONT_UI}`;
+      ctx.fillStyle = CREAM;
+      ctx.fillText(name, VIEW_W / 2, y + 28);
+      y += 78;
+    }
+
+    // G3: the input system only forwards NAV actions (KEY_NAV/PAD_NAV) to
+    // screens — unmapped keys never reach onAction — so "PRESS ANY KEY" was
+    // inaccurate. We chose option (b): name the real dismiss keys instead of
+    // routing raw keydowns through a new path (which would bypass the shared
+    // action pipeline and its remap/flash semantics). Escape covers both
+    // 'back' and 'pause'; Enter/Space cover 'confirm'.
+    drawPrompt(ctx, 'PRESS ENTER OR ESC', VIEW_W / 2, VIEW_H - 40, 20, { blink: true });
+    ctx.restore();
+  },
+
+  /**
+   * Handle semantic input. While the credits overlay is open, ANY action
+   * closes it and CONSUMES THE ENTIRE INPUT GENERATION (G2): KEY_NAV maps a
+   * single physical key (Escape) to multiple actions in one poll ('back' AND
+   * 'pause'), and screenOnAction rewrites leftover 'pause' edges to 'confirm'.
+   * If dismissal only ate the first action, the second would immediately
+   * reopen the overlay (or fire the focused option). Returning true from
+   * screenOnAction makes dispatchScreenInput stop processing this generation;
+   * the engine's barrier() on any transition clears the rest of the batch.
+   * Otherwise up/down move focus (skipping disabled entries); confirm routes
+   * via the option's own routing data; back returns HOME.
+   * @returns {boolean} whether the action was handled
+   */
+  onAction(action) {
+    if (this.creditsOpen) {
+      this.creditsOpen = false;
+      // G2: consume the rest of THIS input generation — KEY_NAV maps one
+      // physical key (Escape) to multiple actions in one poll ('back' AND
+      // 'pause'), and screenOnAction rewrites leftover 'pause' edges to
+      // 'confirm'. Without this, the second action would immediately reopen
+      // the overlay. dispatchScreenInput reads the flag after each action
+      // and stops the batch; it is cleared at the top of every tick so a
+      // stale flag can never swallow the NEXT generation's actions.
+      consumedGeneration = true;
+      return true; // eat the whole generation — nothing else runs this frame
+    }
+    const n = this.options().length;
+    switch (action) {
+      case 'up':
+        this.moveFocus(-1, n);
+        return true;
+      case 'down':
+        this.moveFocus(1, n);
+        return true;
+      case 'back':
+        if (tryTransition(S.HOME)) console.log('[screens] MENU → HOME (back)');
+        return true;
+      case 'confirm':
+        this.execute();
+        return true;
+    }
+    return false;
+  },
+
+  /** Step focus by `dir`, skipping disabled entries (wrap-around). */
+  moveFocus(dir, n) {
+    let next = this.focus;
+    for (let step = 0; step < n; step++) {
+      next = (next + dir + n) % n;
+      if (this.options()[next].enabled) { this.focus = next; return; }
+    }
+  },
+
+  /** Route to the focused destination using the option's own routing data
+   * (F5): `go` → transition, `action` → special handler. No-op when disabled. */
+  execute() {
+    const opt = this.options()[this.focus];
+    if (!opt || !opt.enabled) return;
+    if (opt.go !== undefined) {
+      if (tryTransition(opt.go)) console.log(`[screens] MENU → ${S[opt.go]} (${opt.label})`);
+      return;
+    }
+    switch (opt.action) {
+      case 'newGame':
+        window.__selectedHero = null; // force hero selection
+        if (tryTransition(S.SELECT)) console.log('[screens] MENU → SELECT (new game)');
+        break;
+      case 'credits':
+        this.creditsOpen = true;
+        break;
+    }
+  },
+
+  reset() { this.focus = 0; this.creditsOpen = false; },
+};
+
+// =============================================================================
 // PAUSE SCREEN (design §20, )
 // Drawn as a semi-transparent overlay on top of the frozen Play frame — the
 // world is still rendered behind it by render.js; this screen only adds the
@@ -583,38 +844,21 @@ export const Pause = {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
-    drawMarqueeTitle(ctx, 'PAUSED', VIEW_W / 2, VIEW_H / 2 - 80, 56, { color: CREAM });
-
-    const options = ['Resume', 'Retry Level', 'Controls', 'Quit to Home'];
-    const startY = VIEW_H / 2 - 20;
-    const gap = 40;
-
-    for (let i = 0; i < options.length; i++) {
-      const y = startY + i * gap;
-      const focused = i === this.focus;
-      if (focused) {
-        ctx.save();
-        ctx.fillStyle = 'rgba(255,110,199,0.10)';
-        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,110,199,0.4)';
-        ctx.lineWidth = 1;
-        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
-        ctx.stroke();
-        ctx.restore();
-      }
-      drawPrompt(ctx, (focused ? '▸ ' : '  ') + options[i], VIEW_W / 2, y + 2, focused ? 22 : 20, {
-        color: focused ? '#ff6ec7' : '#d8cdb4',
-      });
-    }
-
-    // Dynamic button hints (keycap chip style, single line).
-    const hintY = startY + options.length * gap + 24;
-    drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
-      { actions: ['up', 'down'], label: 'Navigate', opts: { mode: 'select_layout' } },
-      { action: 'confirm', opts: { mode: 'select_layout' } },
-      { action: 'back', label: 'Close', opts: { mode: 'select_layout' } },
-    ]));
+    // Shared option-list renderer (same layout as before extraction).
+    const options = ['Resume', 'Retry Level', 'Controls', 'Quit to Home']
+      .map(label => ({ label, enabled: true }));
+    drawOptionList(ctx, {
+      title: 'PAUSED',
+      titleY: VIEW_H / 2 - 80,
+      items: options,
+      focus: this.focus,
+      startY: VIEW_H / 2 - 20,
+      navEntries: navHintEntries([
+        { actions: ['up', 'down'], label: 'Navigate', opts: { mode: 'select_layout' } },
+        { action: 'confirm', opts: { mode: 'select_layout' } },
+        { action: 'back', label: 'Close', opts: { mode: 'select_layout' } },
+      ]),
+    });
     ctx.restore();
   },
 
@@ -710,7 +954,7 @@ export const GameOver = {
     ctx.fillStyle = '#d8cdb4';
     ctx.fillText(`Enemies Killed: ${kills}   ·   Coins: ${coins}   ·   Distance: ${distance} px`, VIEW_W / 2, VIEW_H / 2 - 45);
 
-    // Options — same list style as the pause menu.
+    // Options — same shared list layout as the pause menu.
     const pool = hero.continues;
     const remaining = pool ? pool.remaining
       : (hero.maxContinues ?? 3) - (hero.continuesUsed ?? 0);
@@ -719,35 +963,16 @@ export const GameOver = {
       { label: `Continue (${remaining} left)`, enabled: okCont },
       { label: 'Quit to Home', enabled: true },
     ];
-    const startY = VIEW_H / 2 - 5;
-    const gap = 40;
-
-    for (let i = 0; i < options.length; i++) {
-      const y = startY + i * gap;
-      const focused = i === this.focus;
-      if (focused) {
-        ctx.save();
-        ctx.fillStyle = 'rgba(255,110,199,0.10)';
-        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,110,199,0.4)';
-        ctx.lineWidth = 1;
-        roundRect(ctx, VIEW_W / 2 - 120, y - 16, 240, 32, 6);
-        ctx.stroke();
-        ctx.restore();
-      }
-      drawPrompt(ctx, (focused ? '▸ ' : '  ') + options[i].label, VIEW_W / 2, y + 2, focused ? 22 : 20, {
-        color: !options[i].enabled ? '#555555' : (focused ? '#ff6ec7' : '#d8cdb4'),
-      });
-    }
-
-    // Dynamic button hints (keycap chip style, single line) — same as pause.
-    const hintY = startY + options.length * gap + 24;
-    drawNavBar(ctx, VIEW_W / 2, hintY, navHintEntries([
-      { actions: ['up', 'down'], label: 'Navigate', opts: { mode: 'select_layout' } },
-      { action: 'confirm', opts: { mode: 'select_layout' } },
-      { action: 'back', label: 'Quit', opts: { mode: 'select_layout' } },
-    ]));
+    drawOptionList(ctx, {
+      items: options,
+      focus: this.focus,
+      startY: VIEW_H / 2 - 5,
+      navEntries: navHintEntries([
+        { actions: ['up', 'down'], label: 'Navigate', opts: { mode: 'select_layout' } },
+        { action: 'confirm', opts: { mode: 'select_layout' } },
+        { action: 'back', label: 'Quit', opts: { mode: 'select_layout' } },
+      ]),
+    });
     ctx.restore();
   },
 
@@ -1097,6 +1322,10 @@ export function drawScreen(ctx, hero) {
     Home.draw(ctx);
     return true;
   }
+  if (s === S.MENU) {
+    Menu.draw(ctx);
+    return true;
+  }
   if (s === S.SELECT) {
     Select.draw(ctx);
     return true;
@@ -1141,6 +1370,14 @@ export function drawScreen(ctx, hero) {
  * @param {object} [actions] action bag (retry, cont, playAgain, quit)
  */
 let remapParent = S.PAUSE;
+// G2: one-shot flag set when a screen action CONSUMES the input generation
+// (the credits overlay dismissal). dispatchScreenInput reads it after each
+// action and stops processing the rest of that physical press's batch —
+// Escape emits BOTH 'back' and 'pause' in one poll, and screenOnAction
+// rewrites leftover 'pause' edges to 'confirm', which would immediately
+// reopen the overlay. Cleared at the top of every dispatch tick so a stale
+// flag can never swallow actions from the NEXT generation.
+let consumedGeneration = false;
 export function screenOnAction(action, hero, actions = {}) {
   const s = getState();
   if (s === S.PLAY) {
@@ -1148,7 +1385,12 @@ export function screenOnAction(action, hero, actions = {}) {
     return false;
   }
   if (action === 'pause' && s !== S.PAUSE) action = 'confirm';
+  // G2: the credits overlay dismissal consumes the whole input generation —
+  // no further actions from this physical press may run. Set by Menu.onAction
+  // when it closes the overlay; cleared at the top of each dispatch tick.
+  if (consumedGeneration) return true;
   if (s === S.HOME) { Home.onAction(action); return true; }
+  if (s === S.MENU) return Menu.onAction(action);
   if (s === S.SELECT) { Select.onAction(action); return true; }
   if (s === S.REMAP) {
     if (Remap.onAction(action) === 'exit') tryTransition(remapParent);
@@ -1171,17 +1413,24 @@ export function dispatchScreenInput(engine, hero, actions) {
   // transition, and keep directional chips lit while held.
   markNavPressed(engine.heldBindings, engine.pressedBindings);
   if (engine.captureResult) { Remap.onCapture(engine.captureResult); engine.captureResult = null; }
+  consumedGeneration = false; // G2: fresh tick — no stale generation-consumed flag
   for (const action of engine.nav.pressed) {
-    screenOnAction(action, hero, actions);
-    if (engine.generation !== generation) break;
+    const handled = screenOnAction(action, hero, actions);
+    // G2: a screen that consumed the input generation (e.g. the credits
+    // overlay dismissal) stops the batch here — remaining actions from the
+    // SAME physical press (Escape emits both 'back' and 'pause') must not run.
+    if (!handled || consumedGeneration || engine.generation !== generation) break;
   }
+  consumedGeneration = false; // G2: batch done — clear so stale flag never leaks into next tick
 }
 
 export function screenReset(s, from) {
   if (s === S.SELECT) Select.reset();
+  if (s === S.MENU) Menu.reset();
   if (s === S.PAUSE) Pause.reset();
   if (s === S.OVER) GameOver.focus = 0;
-  if (s === S.REMAP) { remapParent = from === S.HOME ? S.HOME : S.PAUSE; Remap.resetState(); }
+  // REMAP returns to wherever it was opened from: HOME, PAUSE, or MENU.
+  if (s === S.REMAP) { remapParent = [S.HOME, S.PAUSE, S.MENU].includes(from) ? from : S.PAUSE; Remap.resetState(); }
   // AREA_ENTRY: the screen data is pushed by lifecycle.js (showAreaEntry)
   // IMMEDIATELY before the transition into AREA_ENTRY; the transition listener
   // must NOT clear it here or the screen would render blank values.
