@@ -1,0 +1,84 @@
+{
+ "file": "petal-panic/assets/enemies/popper/idle_sheet.png",
+ "size": "1709x232",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "popper idle (6 frames)",
+ "entities": [
+  {
+   "name": "popper",
+   "anim": "idle",
+   "frames_dir": "petal-panic/assets/enemies/popper",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      12,
+      258,
+      208
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      258,
+      28,
+      274,
+      176
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      532,
+      18,
+      290,
+      195
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      822,
+      0,
+      334,
+      232
+     ]
+    },
+    {
+     "file": "idle_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1156,
+      17,
+      290,
+      197
+     ]
+    },
+    {
+     "file": "idle_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1446,
+      9,
+      263,
+      213
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-24"
+}

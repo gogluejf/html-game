@@ -1,0 +1,84 @@
+{
+ "file": "petal-panic/assets/enemies/popper/death_sheet.png",
+ "size": "1750x400",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "popper death (6 frames)",
+ "entities": [
+  {
+   "name": "popper",
+   "anim": "death",
+   "frames_dir": "petal-panic/assets/enemies/popper",
+   "frames": [
+    {
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      243,
+      400
+     ]
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      243,
+      6,
+      276,
+      387
+     ]
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      519,
+      22,
+      299,
+      356
+     ]
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      818,
+      55,
+      260,
+      289
+     ]
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1078,
+      44,
+      318,
+      312
+     ]
+    },
+    {
+     "file": "death_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1396,
+      89,
+      354,
+      221
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-24"
+}
