@@ -1,0 +1,40 @@
+{
+ "file": "petal-panic/assets/projectiles/blob/death_sheet.png",
+ "size": "672x217",
+ "rows": 1,
+ "cols": 2,
+ "kind": "animation",
+ "description": "blob death (2 frames)",
+ "entities": [
+  {
+   "name": "blob",
+   "anim": "death",
+   "frames_dir": "petal-panic/assets/projectiles/blob",
+   "frames": [
+    {
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      34,
+      409,
+      149
+     ]
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      409,
+      0,
+      263,
+      217
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-24"
+}
