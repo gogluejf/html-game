@@ -154,6 +154,14 @@ export async function selectEntity(li, ei, opts){
   const en = app.manifest.labels[li].entities[ei];
   document.querySelectorAll('.ent').forEach(e=>e.classList.remove('on'));
   en._el.classList.add('on');
+  // keep the selected row visible with ~2 rows of headroom above it.
+  // Rows are direct children of #side (the scroll container), so offsetTop
+  // is relative to it and scrollTo lands exactly.
+  const c = $('side') || en._el.parentElement;
+  if (c) {
+    const rowH = en._el.offsetHeight || 28;
+    c.scrollTo({ top: Math.max(0, en._el.offsetTop - rowH * 2), behavior: 'instant' });
+  }
   app.flatIdx = app.flatList.findIndex(f => f.li===li && f.ei===ei);
   const imgs = await loadFrames(frameUrls(en));
   app.cur = { name: en.name, paths: frameUrls(en), imgs: imgs.filter(Boolean), crops: (en.frames||[]).map(f => f.bbox) };
