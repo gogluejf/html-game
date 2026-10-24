@@ -1,10 +1,10 @@
 {
  "file": "petal-panic/assets/enemies/drawny/death_sheet.png",
- "size": "2410x270",
+ "size": "1511x270",
  "rows": 1,
- "cols": 5,
+ "cols": 6,
  "kind": "animation",
- "description": "drawny death (5 frames)",
+ "description": "drawny death (6 frames)",
  "entities": [
   {
    "name": "drawny",
@@ -16,7 +16,7 @@
      "row": 0,
      "col": 0,
      "bbox": [
-      114,
+      0,
       0,
       254,
       270
@@ -27,7 +27,7 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      598,
+      254,
       19,
       250,
       232
@@ -38,7 +38,7 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      1069,
+      504,
       6,
       272,
       258
@@ -49,7 +49,7 @@
      "row": 0,
      "col": 3,
      "bbox": [
-      1551,
+      776,
       12,
       272,
       245
@@ -60,14 +60,25 @@
      "row": 0,
      "col": 4,
      "bbox": [
-      1928,
+      1048,
       19,
-      482,
+      251,
       231
+     ]
+    },
+    {
+     "file": "death_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1299,
+      44,
+      212,
+      182
      ]
     }
    ]
   }
  ],
- "updated": "2026-10-22"
+ "updated": "2026-10-24"
 }

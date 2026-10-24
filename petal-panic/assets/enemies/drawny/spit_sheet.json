@@ -1,73 +1,73 @@
 {
-  "file": "petal-panic/assets/enemies/drawny/spit_sheet.png",
-  "size": "1545x200",
-  "rows": 1,
-  "cols": 5,
-  "kind": "animation",
-  "description": "drawny spit attack",
-  "entities": [
+ "file": "petal-panic/assets/enemies/drawny/spit_sheet.png",
+ "size": "1351x200",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "drawny spit (5 frames)",
+ "entities": [
+  {
+   "name": "drawny",
+   "anim": "spit",
+   "frames_dir": "petal-panic/assets/enemies/drawny",
+   "frames": [
     {
-      "name": "drawny",
-      "anim": "spit",
-      "frames_dir": "petal-panic/assets/enemies/drawny",
-      "frames": [
-        {
-          "file": "spit_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            34,
-            2,
-            240,
-            195
-          ]
-        },
-        {
-          "file": "spit_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            337,
-            0,
-            253,
-            199
-          ]
-        },
-        {
-          "file": "spit_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            635,
-            0,
-            274,
-            200
-          ]
-        },
-        {
-          "file": "spit_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            944,
-            1,
-            275,
-            198
-          ]
-        },
-        {
-          "file": "spit_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1236,
-            2,
-            309,
-            196
-          ]
-        }
-      ]
+     "file": "spit_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      2,
+      240,
+      195
+     ]
+    },
+    {
+     "file": "spit_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      240,
+      0,
+      253,
+      199
+     ]
+    },
+    {
+     "file": "spit_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      493,
+      0,
+      274,
+      200
+     ]
+    },
+    {
+     "file": "spit_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      767,
+      1,
+      275,
+      198
+     ]
+    },
+    {
+     "file": "spit_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1042,
+      2,
+      309,
+      196
+     ]
     }
-  ],
-  "updated": "2026-10-23"
+   ]
+  }
+ ],
+ "updated": "2026-10-24"
 }
