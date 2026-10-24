@@ -90,4 +90,4 @@ export function resolveMarker(ctx, label) {
  * - detonate: a bomb/explosion payload fired
  * - complete: the attack finished (always fires exactly once, last)
  */
-export const ATTACK_EVENTS = Object.freeze(['hit', 'contact', 'expire', 'detonate', 'land', 'complete']);
+export const ATTACK_EVENTS = Object.freeze(['hit', 'contact', 'expire', 'detonate', 'land', 'vanish', 'complete']);

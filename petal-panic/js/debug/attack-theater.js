@@ -106,14 +106,14 @@ const SANDBOX_PRESETS = {
   spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 8, width: 144, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
   orbit: { count: 3, minRadius: 40, maxRadius: 90, pulseSpeed: 1.5, speed: 1.5, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
   boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 3 },
-  spawnSplit: { x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'explosive_monkey' },
+  spawnSplit: { mineType: 'explosion', enemy: { mineType: 'explosion', ttl: null }, x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'explosive_monkey' },
   spreadShot: { count: 3, direction: 0, angle: 60 * DEG, speed: 500, ttl: 2, damage: 10 },
   radialShot: { count: 24, startAngle: -Math.PI / 2, speed: 400, ttl: 2.5, damage: 10, sequenceInterval: 0.15 },
   burstShot: { count: 3, interval: 0.12, direction: 0.5, speed: 600, ttl: 2, damage: 10 },
   bodyExplosion: { deathBehavior: 'kill', triggerPayloadFirst: true, payloadDelay: 0.1 },
   bombSpread: { count: 3, direction: -75 * DEG, angle: 15 * DEG, speed: 700, arc: 800, bounce: true, ttl: 2, damage: 40, radius: 60 },
   molotov: { direction: -0.5, arc: 800, bounce: false, ttl: 2, damage: 12, fireWidth: 96, fireDuration: 3, fireTickRate: 5, fireDamage: 8 },
-  clusterBomb: { direction: -0.5, arc: 800, bounce: false, ttl: 3, damage: 20, radius: 40, count: 4, childAngle: 120 * DEG, childDirection: -Math.PI / 2, childForce: 300, childArc: 700, childTtl: 2, childDamage: 15, childRadius: 30 },
+  clusterBomb: { mineType: 'explosion', direction: -0.5, arc: 800, bounce: false, ttl: 3, damage: 20, radius: 40, count: 4, childAngle: 120 * DEG, childDirection: -Math.PI / 2, childForce: 300, childArc: 700, childTtl: 2, childDamage: 15, childRadius: 30 },
   targetedBeam: { duration: 1.2, lockTime: 0.5, color: '#ff5555', radius: 30, tracking: true, beamDuration: 1.0, beamWidth: 36, beamLength: 1000, damage: 15, tickRate: 8, team: 'ally' },
   sweepingBeam: { direction: 0, sweepAngle: 67.5 * DEG, length: 1000, width: 24, speed: 0, holdDuration: 0.4, sweepDuration: 1.0, endHoldDuration: 0.3, fadeOut: 0.5, damage: 20, tickRate: 8, team: 'ally', shimmerLow: 0.1, shimmerHigh: 0.35, announceMarker: true, announceDelay: 1.0 },
   laneSequence: { mode: 'charge', laneCount: 2, laneSpacing: 120, laneOffset: 0, lanes: null, laneOrder: 'bottom_to_top', sideMode: 'fixed_left', alternateStartSide: 'left', announceDelay: 0.5, dashSpeed: 1200, damage: 20, knockback: null, beamDuration: 0.8, beamWidth: 36, tickRate: 8, interval: 0.15, team: 'ally', style: null },
@@ -126,8 +126,9 @@ const SANDBOX_PRESETS = {
   shockwaveProjectile: { direction: 0, speed: 700, ttl: 2, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, solidBehavior: 'stop', blastTeam: 'neutral' },
   stomp: { buildTime: 1.2, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, radius: 90, damage: 30, team: 'foe', shakeStrength: 5 },
   stompWave: { buildTime: 1.2, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, sides: 'both', hopHeight: 10, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 5 },
-  skyMissile: { x: TARGET_POS.x + 16, timeToTarget: 1.0, dropHeight: 260, fallSpeed: 500, damage: 30, team: 'foe', blastTeam: 'neutral', blastType: 'explosion', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
-  missileRain: { count: 5, distanceType: 'relative', distance: 90, pattern: 'simultaneous', interval: 0.15, coordination: 'from_left', launchInterval: 0.12, ascentOscillation: 6, fallDelay: 0.5, timeToTarget: 0.9, descentSpeed: 500, damage: 30, team: 'foe', blastTeam: 'neutral', blastType: 'explosion', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
+  skyMissile: { mineType: 'explosion', x: TARGET_POS.x + 16, timeToTarget: 1.0, dropHeight: 260, fallSpeed: 500, damage: 30, team: 'foe', blastTeam: 'neutral', blastType: 'explosion', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
+  skyDiveStomp: { x: VIEW_W / 2, groundY: GROUND_Y, timeToTarget: 1.0, dropHeight: 260, fallSpeed: 500, size: 14, stomp: { sides: 'both', hopHeight: 0, hopTime: 0.001, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 6 }, vanish: true, lingerOnGround: 0.4, vanishTime: 2 },
+  missileRain: { mineType: 'explosion', count: 5, distanceType: 'relative', distance: 90, pattern: 'simultaneous', interval: 0.15, coordination: 'from_left', launchInterval: 0.12, ascentOscillation: 6, fallDelay: 0.5, timeToTarget: 0.9, descentSpeed: 500, damage: 30, team: 'foe', blastTeam: 'neutral', blastType: 'explosion', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
   dashCombo: {
     direction: 0,
     startup: 0.2,
@@ -176,6 +177,7 @@ export const TWEAKABLE = {
   stomp: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['count', 'int', 1], ['interval', 'num', 0.1], ['radius', 'num', 10], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
   stompWave: [['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['waveSpeed', 'num', 50], ['waveHeight', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5], ['shakeStrength', 'num', 1]],
   skyMissile: [['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['dropHeight', 'num', 20], ['fallSpeed', 'num', 50], ['damage', 'num', 5], ['blastType', 'enum', ['explosion', 'shockwave', 'napalm', 'mine']], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
+  skyDiveStomp: [['x', 'num', 20], ['timeToTarget', 'num', 0.1], ['dropHeight', 'num', 20], ['fallSpeed', 'num', 50], ['stomp.sides', 'enum', ['left', 'right', 'both']], ['stomp.hopHeight', 'num', 4], ['stomp.waveSpeed', 'num', 50], ['stomp.waveHeight', 'num', 4], ['stomp.ttl', 'num', 0.25], ['stomp.damage', 'num', 5], ['stomp.shakeStrength', 'num', 1], ['vanish', 'enum', [true, false]], ['lingerOnGround', 'num', 0.1], ['vanishTime', 'num', 0.05]],
   missileRain: [['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['distanceType', 'enum', ['fixed', 'relative']], ['distance', 'num', 20], ['pattern', 'enum', ['simultaneous', 'sequential']], ['interval', 'num', 0.05], ['coordination', 'enum', ['from_left', 'from_right', 'random']], ['launchInterval', 'num', 0.02], ['fallDelay', 'num', 0.05], ['timeToTarget', 'num', 0.1], ['descentSpeed', 'num', 50], ['damage', 'num', 5], ['blastType', 'enum', ['explosion', 'shockwave', 'napalm', 'mine']], ['blast.explosionRadius', 'num', 10], ['blast.shockRadius', 'num', 10], ['blast.fireWidth', 'num', 8]],
   dashCombo: [['startup', 'num', 0.05], ['recovery', 'num', 0.05], ['seg0.speed', 'num', 20], ['seg1.speed', 'num', 20], ['seg2.speed', 'num', 20], ['seg0.damage', 'num', 2], ['seg1.damage', 'num', 2], ['seg2.damage', 'num', 2]],
   shockwave: [['radius', 'num', 10], ['damage', 'num', 5], ['duration', 'num', 0.1], ['easing', 'enum', ['linear', 'easeIn', 'easeInCubic']], ['knockbackIntensity', 'num', 1]],
@@ -264,7 +266,11 @@ export const AttackTheater = {
       if (isDotted) {
         const parts = key.split('.');
         let obj = this._params;
-        for (let i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
+        for (let i = 0; i < parts.length - 1; i++) {
+          const part = parts[i];
+          obj[part] = { ...obj[part] }; // materialize null overrides; don't mutate shared defaults
+          obj = obj[part];
+        }
         obj[parts[parts.length - 1]] = v;
       } else this._params[key] = v;
       this._tweaks[id][key] = v;
@@ -509,8 +515,12 @@ export const AttackTheater = {
       if (key.includes('.')) {
         const parts = key.split('.');
         let obj = this._params;
-        for (let i = 0; i < parts.length - 1; i++) obj = obj?.[parts[i]];
-        if (obj) obj[parts[parts.length - 1]] = val;
+        for (let i = 0; i < parts.length - 1; i++) {
+          const part = parts[i];
+          obj[part] = { ...obj[part] };
+          obj = obj[part];
+        }
+        obj[parts[parts.length - 1]] = val;
       } else {
         this._params[key] = val;
       }
@@ -690,6 +700,12 @@ export const AttackTheater = {
     });
     h.on('detonate', () => this._log.unshift('DETONATE'));
     h.on('expire', () => this._log.unshift('EXPIRE'));
+    h.on('vanish', ({ x, y }) => {
+      // The macro is host-agnostic — it tells us WHERE + WHEN to hide the
+      // entity; we own the actual visible=false. In the sandbox the "entity"
+      // is the drawn diver (macro state), so just log the vanish point.
+      this._log.unshift(`VANISH @ ${Math.round(x)},${Math.round(y)}`);
+    });
     h.on('complete', () => this._log.unshift('COMPLETE'));
     this._handles.push(h);
     if (h.entity == null && !h.step && h.state == null) {
@@ -862,7 +878,7 @@ export const AttackTheater = {
           }
         } else if (h.id === 'mine' || h.id === 'throwMine' || h.id === 'beam' || h.id === 'fireArea' || h.id === 'spike' || h.id === 'dustZone') {
           finished = h.step(DT, [this._target]);
-        } else if (h.id === 'laneSequence' || h.id === 'stomp' || h.id === 'stompWave' || h.id === 'surfaceWave' || h.id === 'shockwaveProjectile' || h.id === 'shockwaveBomb') {
+        } else if (h.id === 'laneSequence' || h.id === 'stomp' || h.id === 'stompWave' || h.id === 'surfaceWave' || h.id === 'shockwaveProjectile' || h.id === 'shockwaveBomb' || h.id === 'skyDiveStomp') {
           // Stomp family + shockwave projectile: the macro owns its sequence
           // (telegraph → beat → ring); pass every live victim as candidates.
           // The macro's _complete guard holds it open during the pending beat
@@ -1285,6 +1301,24 @@ export const AttackTheater = {
       ctx.font = '10px monospace';
       ctx.textAlign = 'center';
       ctx.fillText('KAMIKAZE', this._kamikaze.x + this._kamikaze.w / 2, this._kamikaze.y - 8);
+    }
+
+    // Sky Dive Stomp: the diver is macro-owned state (not a pool entity).
+    // Draw it from state.diverY while dropping; once landed (linger/vanish)
+    // it sits at the impact point until the blink-out hides it. The impact
+    // waves are the stompWave's ground-wave effect.
+    for (const h of this._handles) {
+      if (h.id !== 'skyDiveStomp' || h.state?.done) continue;
+      const s = h.state;
+      const size = this._params.size ?? 14;
+      const x = s.impact.x - size / 2;
+      const y = (s.phase === 'drop') ? s.diverY : (s.impact.y - size);
+      ctx.fillStyle = '#e67e22';
+      ctx.fillRect(x, y, size, size);
+      ctx.fillStyle = '#fff';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(s.phase === 'drop' ? 'DIVE' : (s.phase === 'vanish' ? 'BLINK' : 'IDLE'), s.impact.x, y - 6);
     }
 
     // Event log.

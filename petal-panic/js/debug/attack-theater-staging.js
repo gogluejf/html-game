@@ -510,6 +510,25 @@ export const STAGING = {
     // Static staging — the macro owns warning → drop.
   },
 
+  skyDiveStomp: {
+    setup(t) {
+      // Sky Dive Stomp demo: the diver drops ONTO the target's spot and slams
+      // a stomp wave per side. Stage TWO victims flanking the impact point so
+      // each wave visibly catches its own side victim (same read as stompWave).
+      // No platform: every drop column resolves to the floor here.
+      const cx = VIEW_W / 2;
+      t._params.x = cx;
+      t._params.groundY = GROUND_Y;
+      t._target.x = cx + 130;
+      t._target.y = GROUND_Y - t._target.h;
+      t._stompVics = [new Enemy(STOMP_VIC_DEF, cx - 130 - 28, GROUND_Y - 28)];
+      for (const v of t._stompVics) t._world.add(v);
+      t._stompPlatforms = [];
+      return tagged({ kind: 'stompStage' }, STAGING.skyDiveStomp);
+    },
+    // Static staging — the macro owns warning → drop → waves.
+  },
+
   missileRain: {
     setup(t) {
       // Missile Rain demo: the rain centers on the view middle and spreads

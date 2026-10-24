@@ -56,7 +56,7 @@ const DEFAULTS = Object.freeze({
   mineType: 'explosion',
   mine: { ttl: 2, blinkDuration: 2 },
   enemyType: 'explosive_monkey',
-  enemy: null,            // nested throwEnemy config when spawnType='enemy'
+  enemy: { mineType: 'explosion', ttl: null }, // nested throwEnemy config when spawnType='enemy'
   bomb: null,
   projectile: { ttl: 2, damage: 8 },
 });
