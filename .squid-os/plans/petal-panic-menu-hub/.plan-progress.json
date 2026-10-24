@@ -1,0 +1,96 @@
+{
+  "tasks": {
+    "1.1": {
+      "number": "1.1",
+      "status": "in_progress",
+      "name": "Persistent progress and settings store",
+      "milestone": "Progress and Settings Persistence",
+      "milestone_number": "1",
+      "summary": {
+        "decisions": "One stable key 'petal_panic_store' holding {progress, settings, saveMeta}; in-memory cache as source of truth with every mutation persisting the whole document atomically; normalize() tolerates missing/mistyped fields on load; storage injected lazily via globalThis.localStorage with setStorage hook for tests (mirrors input.js createInput pattern).",
+        "confidence": "high",
+        "failures": "None",
+        "tradeoffs": "updateProgress mutator receives the full store document (store.progress.completedAreas etc.) rather than the progress section directly \u2014 matches plan snippet style where saveMeta is set as store.saveMeta; callers must use store.progress.* for progress fields.",
+        "done": "Added petal-panic/js/systems/progressStore.js: single localStorage JSON document (key 'petal_panic_store') with progress/settings/saveMeta sections, safe defaults (DEFAULT_PROGRESS v1, DEFAULT_SETTINGS), and APIs loadStore/saveStore/updateProgress/updateSettings/markMediaUnlocked/hasSave/clearRunSave/resetStore plus setStorage/_resetCache test hooks. Added node:test suite js/test/progressStore.test.js (10 tests) covering empty/invalid storage, atomic mutate+persist, reload survival, hasSave semantics, storage-denied fallback.",
+        "lessons_learned": "Plan snippet's updateProgress example writes store.completedAreas directly but also store.saveMeta at top level \u2014 resolved by making the mutator receive the full document so both styles work consistently (saveMeta top-level, progress nested under store.progress)."
+      }
+    },
+    "2.1": {
+      "number": "2.1",
+      "status": "not_started",
+      "name": "Main menu state and routing",
+      "milestone": "Main Menu Hub",
+      "milestone_number": "2"
+    },
+    "2.2": {
+      "number": "2.2",
+      "status": "not_started",
+      "name": "Main menu screen",
+      "milestone": "Main Menu Hub",
+      "milestone_number": "2"
+    },
+    "2.3": {
+      "number": "2.3",
+      "status": "not_started",
+      "name": "New Game and Continue flow",
+      "milestone": "Main Menu Hub",
+      "milestone_number": "2"
+    },
+    "3.1": {
+      "number": "3.1",
+      "status": "not_started",
+      "name": "Level select model",
+      "milestone": "Level Select and Boss Rush",
+      "milestone_number": "3"
+    },
+    "3.2": {
+      "number": "3.2",
+      "status": "not_started",
+      "name": "Level select screen",
+      "milestone": "Level Select and Boss Rush",
+      "milestone_number": "3"
+    },
+    "3.3": {
+      "number": "3.3",
+      "status": "not_started",
+      "name": "Boss rush model and screen",
+      "milestone": "Level Select and Boss Rush",
+      "milestone_number": "3"
+    },
+    "4.1": {
+      "number": "4.1",
+      "status": "not_started",
+      "name": "Options screen and settings wiring",
+      "milestone": "Options, Controls, and Pause Integration",
+      "milestone_number": "4"
+    },
+    "4.2": {
+      "number": "4.2",
+      "status": "not_started",
+      "name": "Pause menu Save and Quit integration",
+      "milestone": "Options, Controls, and Pause Integration",
+      "milestone_number": "4"
+    },
+    "5.1": {
+      "number": "5.1",
+      "status": "not_started",
+      "name": "Media unlock model",
+      "milestone": "Media Menu and Unlock Rewards",
+      "milestone_number": "5"
+    },
+    "5.2": {
+      "number": "5.2",
+      "status": "not_started",
+      "name": "Media screen and playback overlay",
+      "milestone": "Media Menu and Unlock Rewards",
+      "milestone_number": "5"
+    },
+    "5.3": {
+      "number": "5.3",
+      "status": "not_started",
+      "name": "Progress unlock hooks",
+      "milestone": "Media Menu and Unlock Rewards",
+      "milestone_number": "5"
+    }
+  }
+}
