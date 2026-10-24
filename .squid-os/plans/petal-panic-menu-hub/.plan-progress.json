@@ -92,17 +92,25 @@
     },
     "3.3": {
       "number": "3.3",
-      "status": "in_progress",
+      "status": "done",
       "name": "Boss rush model and screen",
       "milestone": "Level Select and Boss Rush",
       "milestone_number": "3"
     },
     "4.1": {
       "number": "4.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Options screen and settings wiring",
       "milestone": "Options, Controls, and Pause Integration",
-      "milestone_number": "4"
+      "milestone_number": "4",
+      "summary": {
+        "tradeoffs": "Music/SFX toggles persist but consume nothing yet (no audio engine by design); acceptance says 'three toggle rows' but DEFAULT_SETTINGS has four keys \u2014 implemented all four per the snippet.",
+        "lessons_learned": "drawPrompt prefixes row labels with '\u25b8 '/two-spaces, so recording-ctx text assertions must strip that prefix before matching; effects module exposes Effects.update(dt) for advancing instance lifetimes in tests.",
+        "failures": "None",
+        "done": "Added Options screen (js/ui/screens.js): four toggle rows (Music/SFX/Screen Shake/Vibration) rendered via the shared drawOptionList pause-style renderer with ON/OFF state on the label; up/down focus (wrap), left/right/confirm toggles persisting immediately through progressStore.updateSettings; origin tracking (optionsOrigin, mirroring remapParent) so back returns MENU or PAUSE; wired into drawScreen, screenOnAction, and screenReset(to, from). Settings consumers wired where they exist: Effects.triggerShake() now suppresses camera shake when settings.screenShake is false (single funnel \u2014 render only reads getShakeOffset); touchControls buzz() skips navigator.vibrate when settings.vibration is false. Music/SFX are honest no-ops (no audio system exists; tuning.js marks audio deferred) \u2014 values persist for a future audio engine. New test file js/test/optionsScreen.test.js (9 tests, headless DOM-stub pattern incl. persistence round-trip via _resetCache).",
+        "decisions": "screenShake gate placed at Effects.triggerShake (the single kick funnel) rather than in render.js's getShakeOffset read, so declarative carrier-fired shakes are also suppressed consistently; vibration gate at buzz() (sole haptics funnel); optionsOrigin defaults to MENU and is captured in screenReset exactly like remapParent.",
+        "confidence": "high"
+      }
     },
     "4.2": {
       "number": "4.2",

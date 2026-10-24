@@ -36,6 +36,18 @@
 // with a positive frequency f it re-rolls every 1/f seconds and holds constant
 // between rolls, so `frequency` has an observable effect at any frame rate.
 // After `duration` elapses (or complete()) the offset is exactly {x:0,y:0}.
+//
+// SETTINGS GATE (Options screen, menu-hub §4.1): settings.screenShake is
+// consulted at THIS module's roll site — the single lowest funnel through
+// which EVERY camera-shake instance (legacy Effects.triggerShake AND any
+// declaratively fired 'camera-shake' instance via carrier config / fireManual
+// / fireDeclared) produces a nonzero offset. When the setting is off, update()
+// skips the random re-roll entirely, so getOffset() stays {0,0} for the whole
+// lifetime of every instance regardless of how it was fired. The effect still
+// runs its normal lifecycle (it completes after duration) so engine bookkeeping
+// is unaffected; only the visible shake is suppressed.
+
+import { loadStore } from '../systems/progressStore.js'; // settings.screenShake gate (menu-hub §4.1)
 
 const DEFAULT_INTENSITY = 6; // legacy triggerShake(6) for bombs / enemy deaths
 const DEFAULT_DURATION = 0.25; // legacy SHAKE_DURATION
@@ -87,6 +99,11 @@ export function cameraShake(params = {}) {
         return;
       }
       this.remaining = duration - this.elapsed;
+      // Options screen (menu-hub §4.1): the persisted Screen Shake setting
+      // gates the shake STATE here — the single funnel every camera-shake
+      // instance (legacy triggerShake + declared instances) rolls through.
+      // Off → skip the re-roll, offset stays {0,0} for the whole lifetime.
+      if (!loadStore().settings.screenShake) return;
       // Re-roll when the previous roll is older than one period. With
       // perFrame mode (rollPeriod 0) every update() re-rolls — legacy parity.
       // lastRoll starts at -Infinity so the FIRST update always rolls.

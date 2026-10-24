@@ -160,6 +160,10 @@ export const Effects = {
    * @param {number} mag shake magnitude in px
    */
   triggerShake(mag) {
+    // Options screen (menu-hub §4.1): the settings.screenShake gate lives at
+    // the shake-STATE funnel in effects/cameraShake.js (update() skips its
+    // re-roll when off), which covers BOTH this legacy path and every
+    // declaratively fired 'camera-shake' instance — no per-call-site gate here.
     shakeInstance = kickCameraShake(mag);
   },
 

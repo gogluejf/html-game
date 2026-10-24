@@ -6,6 +6,7 @@
 
 import { press, release, setStick } from './virtualPad.js';
 import { Debug } from '../debug/debug.js';
+import { loadStore } from '../systems/progressStore.js'; // Options screen (menu-hub §4.1): settings.vibration gates haptics
 
 const isTouchDevice = () =>
   ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
@@ -50,7 +51,9 @@ function showReadout(text) {
 // --- Generic button wiring -----------------------------------------------------
 
 // Haptic tick for virtual-pad presses (navigator.vibrate; no-op where unsupported).
-function buzz(ms = 15) { navigator.vibrate?.(ms); }
+// Options screen (menu-hub §4.1): the persisted Vibration setting gates haptics
+// at this single funnel — every touch-control buzz flows through here.
+function buzz(ms = 15) { if (!loadStore().settings.vibration) return; navigator.vibrate?.(ms); }
 
 function bindTouch(el, down, up) {
   el.addEventListener('touchstart', (e) => { e.preventDefault(); el.classList.add('pp-pressed'); down(e); }, { passive: false });

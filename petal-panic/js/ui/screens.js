@@ -857,7 +857,7 @@ export const Menu = {
 };
 
 import { buildLevelMap, buildSubAreasForLevel } from './levelSelectModel.js';
-import { loadStore } from '../systems/progressStore.js';
+import { loadStore, updateSettings } from '../systems/progressStore.js';
 import { buildBossRushCards } from './bossRushModel.js';
 
 // =============================================================================
@@ -1442,6 +1442,116 @@ export const BossRush = {
 };
 
 // =============================================================================
+// OPTIONS SCREEN (menu-hub plan §4.1)
+//
+// Shared settings screen reachable from BOTH the main menu hub and Pause:
+//   MENU  → OPTIONS → back returns MENU
+//   PAUSE → OPTIONS → back returns PAUSE
+// The origin is tracked exactly like remapParent: screenReset(to, from) runs
+// on every transition, so optionsOrigin is captured when entering OPTIONS and
+// the back action transitions to it.
+//
+// Four toggle rows (Music / SFX / Screen Shake / Vibration), rendered with the
+// same pause-style focus pill via drawOptionList(). Up/down move focus; left/
+// right OR confirm toggles the focused row and persists immediately through
+// progressStore.updateSettings() (atomic write — survives reloads).
+//
+// Setting consumers (wired where a consumer exists; honest no-ops otherwise):
+//   - screenShake → the gate lives at the shake-STATE funnel in
+//     effects/cameraShake.js: update() skips its random re-roll when off, so
+//     getShakeOffset() stays {0,0} for EVERY camera-shake instance — legacy
+//     Effects.triggerShake AND declaratively fired instances alike.
+//   - vibration   → buzz() in ui/touchControls.js skips navigator.vibrate
+//     when off (the single haptics funnel).
+//   - music / sfx → NO audio system exists yet (tuning.js §"deferred": audio
+//     is explicitly out of scope for the level engine v1). These rows persist
+//     their values honestly; there is nothing to consume them until an audio
+//     engine lands. Do NOT stub a fake player here.
+// =============================================================================
+
+const OPT_ROWS = [
+  { key: 'music',        label: 'Music' },
+  { key: 'sfx',          label: 'SFX' },
+  { key: 'screenShake',  label: 'Screen Shake' },
+  { key: 'vibration',    label: 'Vibration' },
+];
+
+export const Options = {
+  focus: 0,
+
+  /** Live toggle rows straight from the persisted store (draw + onAction share this). */
+  rows() {
+    const s = loadStore().settings;
+    return OPT_ROWS.map(r => ({ ...r, value: !!s[r.key] }));
+  },
+
+  /** @param {CanvasRenderingContext2D} ctx */
+  draw(ctx) {
+    // Full-opaque dark background — like the menu hub, the world is hidden
+    // behind this full-screen settings screen.
+    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+    grad.addColorStop(0, '#0d0d1a');
+    grad.addColorStop(1, '#1a1a2e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    // Toggle state rides on the row label ("MUSIC  ON") so the shared
+    // pause-style list renderer (focus pill, colors, nav bar) is reused as-is.
+    const items = this.rows().map(r => ({
+      label: `${r.label.toUpperCase()}  ${r.value ? 'ON' : 'OFF'}`,
+      enabled: true,
+    }));
+    drawOptionList(ctx, {
+      title: 'OPTIONS',
+      titleY: VIEW_H / 2 - 130,
+      items,
+      focus: this.focus,
+      startY: VIEW_H / 2 - 60,
+      navEntries: navHintEntries([
+        { actions: ['up', 'down'], label: 'Navigate', opts: { mode: 'select_layout' } },
+        { actions: ['left', 'right'], label: 'Toggle', opts: { mode: 'select_layout' } },
+        { action: 'back', label: 'Back', opts: { mode: 'select_layout' } },
+      ]),
+    });
+  },
+
+  /** Flip the focused row's setting and persist immediately (atomic write). */
+  _toggle() {
+    const row = OPT_ROWS[this.focus];
+    if (!row) return;
+    updateSettings((settings) => { settings[row.key] = !settings[row.key]; });
+  },
+
+  /**
+   * Handle semantic input. Up/down move focus (wrap-around); left/right or
+   * confirm toggle the focused row; back returns to the origin (MENU or
+   * PAUSE, tracked by screenReset like remapParent).
+   * @returns {boolean} whether the action was handled
+   */
+  onAction(action) {
+    switch (action) {
+      case 'up':
+        this.focus = (this.focus + OPT_ROWS.length - 1) % OPT_ROWS.length;
+        return true;
+      case 'down':
+        this.focus = (this.focus + 1) % OPT_ROWS.length;
+        return true;
+      case 'left':
+      case 'right':
+      case 'confirm':
+        this._toggle();
+        return true;
+      case 'back':
+        if (tryTransition(optionsOrigin)) console.log(`[screens] OPTIONS → ${S[optionsOrigin]} (back)`);
+        return true;
+    }
+    return false;
+  },
+
+  reset() { this.focus = 0; },
+};
+
+// =============================================================================
 // PAUSE SCREEN (design §20, )
 // Drawn as a semi-transparent overlay on top of the frozen Play frame — the
 // world is still rendered behind it by render.js; this screen only adds the
@@ -1943,6 +2053,10 @@ export function drawScreen(ctx, hero) {
     LevelSelect.draw(ctx);
     return true;
   }
+  if (s === S.OPTIONS) {
+    Options.draw(ctx);
+    return true;
+  }
   if (s === S.BOSS_RUSH) {
     BossRush.draw(ctx);
     return true;
@@ -1991,6 +2105,11 @@ export function drawScreen(ctx, hero) {
  * @param {object} [actions] action bag (retry, cont, playAgain, quit)
  */
 let remapParent = S.PAUSE;
+// OPTIONS returns to wherever it was opened from: MENU (the hub's Options
+// entry) or PAUSE (task 4.2 adds the pause entry). Same pattern as
+// remapParent — captured in screenReset(to, from), which runs on EVERY
+// transition, so the origin is always fresh when back is pressed.
+let optionsOrigin = S.MENU;
 // G2: one-shot flag set when a screen action CONSUMES the input generation
 // (the credits overlay dismissal). dispatchScreenInput reads it after each
 // action and stops processing the rest of that physical press's batch —
@@ -2013,6 +2132,7 @@ export function screenOnAction(action, hero, actions = {}) {
   if (s === S.HOME) { Home.onAction(action); return true; }
   if (s === S.MENU) return Menu.onAction(action);
   if (s === S.LEVEL_SELECT) return LevelSelect.onAction(action);
+  if (s === S.OPTIONS) return Options.onAction(action);
   if (s === S.BOSS_RUSH) return BossRush.onAction(action);
   if (s === S.SELECT) { Select.onAction(action); return true; }
   if (s === S.REMAP) {
@@ -2051,6 +2171,9 @@ export function screenReset(s, from) {
   if (s === S.SELECT) Select.reset();
   if (s === S.MENU) Menu.reset();
   if (s === S.LEVEL_SELECT) LevelSelect.reset();
+  // OPTIONS: capture the origin so back returns to MENU or PAUSE depending on
+  // where it was opened from (same pattern as remapParent below).
+  if (s === S.OPTIONS) { optionsOrigin = [S.MENU, S.PAUSE].includes(from) ? from : S.MENU; Options.reset(); }
   // BOSS_RUSH: reset() preserves focus when returning from REWARD (the
   // post-battle boss-rush return, plan §3.3 user decision); fresh entries
   // (from MENU) reset to card 0.
