@@ -57,7 +57,7 @@ const TRANSITIONS = {
   [S.PAUSE]:  [S.PLAY, S.HOME, S.MENU, S.REMAP, S.OPTIONS, S.AREA_ENTRY],
   [S.OVER]:   [S.PLAY, S.HOME, S.AREA_ENTRY],   // retry/continue show the entry screen first
   [S.AREA_ENTRY]: [S.PLAY, S.PAUSE, S.OVER],    // confirm starts the attempt; back opens pause
-  [S.REWARD]: [S.AREA_ENTRY, S.END_OF_GAME, S.HOME], // confirm → next level's entry / end-of-game; back → home
+  [S.REWARD]: [S.AREA_ENTRY, S.END_OF_GAME, S.HOME, S.BOSS_RUSH], // confirm → next level's entry / end-of-game; back → home; BOSS_RUSH = boss-rush return (plan §3.3)
   [S.END_OF_GAME]: [S.HOME],                          // return home (lifecycle.md §5)
   [S.WIN]:    [S.SELECT, S.HOME, S.PLAY], // play again or quit; PLAY = debug shortcut
   [S.REMAP]:  [S.PAUSE, S.HOME, S.MENU],  // return to wherever we came from

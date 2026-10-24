@@ -561,19 +561,21 @@ onTransition((from, to) => {
   }
 });
 
-// --- Menu Continue / Level Select → AREA_ENTRY (menu-hub plan §2.3 / §3.2) ---
-// When the menu hub's Continue option OR the level select screen opens the
-// shared area-entry screen for a SAVED or CHOSEN level/area, install that
-// zone's world content + spawn checkpoint through the SAME path a normal
-// mid-run area entry uses (stepClearSequence's fadeOut / debugWrapToNextArea):
-// loadActiveZone swaps ALL world contents (structure.md §2) and the hero's
-// checkpoint is set to the zone's spawn so startLife places them at the
-// chosen zone's entry — not wherever the previous run left them.
-// This runs on EVERY MENU→AREA_ENTRY and LEVEL_SELECT→AREA_ENTRY transition;
-// the only such sources are the Continue flow and the level select confirm
-// (new games route MENU→SELECT, never straight to AREA_ENTRY).
+// --- Menu Continue / Level Select / Boss Rush → AREA_ENTRY (menu-hub plan §2.3 / §3.2 / §3.3) ---
+// When the menu hub's Continue option OR the level select screen OR the boss
+// rush screen opens the shared area-entry screen for a SAVED or CHOSEN
+// level/area, install that zone's world content + spawn checkpoint through the
+// SAME path a normal mid-run area entry uses (stepClearSequence's fadeOut /
+// debugWrapToNextArea): loadActiveZone swaps ALL world contents
+// (structure.md §2) and the hero's checkpoint is set to the zone's spawn so
+// startLife places them at the chosen zone's entry — not wherever the previous
+// run left them.
+// This runs on EVERY MENU→AREA_ENTRY, LEVEL_SELECT→AREA_ENTRY and
+// BOSS_RUSH→AREA_ENTRY transition; the only such sources are the Continue flow
+// and the two select-screen confirms (new games route MENU→SELECT, never
+// straight to AREA_ENTRY).
 onTransition((from, to) => {
-  if (to === S.AREA_ENTRY && (from === S.MENU || from === S.LEVEL_SELECT)) {
+  if (to === S.AREA_ENTRY && (from === S.MENU || from === S.LEVEL_SELECT || from === S.BOSS_RUSH)) {
     const h = hero;
     // Tear down any lingering boss battle room before swapping zones (a fresh
     // resume must not inherit COMBAT state from a finished run).
@@ -592,7 +594,8 @@ onTransition((from, to) => {
     const sp = zone.spawn ?? { x: ZONE_ENTRY_X, y: ZONE_GROUND_Y };
     h.checkpoint = { x: sp.x, y: sp.y - h.h };
     camera.setZoneBounds(zone);
-    console.log(`[lifecycle] ${from === S.LEVEL_SELECT ? 'LEVEL_SELECT' : 'MENU'} continue: installed zone ${zone.areaIdx ?? 'boss'} (checkpoint @${sp.x},${sp.y})`);
+    const label = from === S.LEVEL_SELECT ? 'LEVEL_SELECT' : from === S.BOSS_RUSH ? 'BOSS_RUSH' : 'MENU';
+    console.log(`[lifecycle] ${label} continue: installed zone ${zone.areaIdx ?? 'boss'} (checkpoint @${sp.x},${sp.y})`);
   }
 });
 

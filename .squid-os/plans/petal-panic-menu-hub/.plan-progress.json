@@ -77,7 +77,7 @@
     },
     "3.2": {
       "number": "3.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Level select screen",
       "milestone": "Level Select and Boss Rush",
       "milestone_number": "3",
@@ -92,7 +92,7 @@
     },
     "3.3": {
       "number": "3.3",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Boss rush model and screen",
       "milestone": "Level Select and Boss Rush",
       "milestone_number": "3"

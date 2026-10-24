@@ -8,7 +8,7 @@ import { hasSave } from '../systems/progressStore.js';
 import { areaEntryOnAction, setAreaEntryDataCallback, getAreaEntryData as getAreaEntryDataFromLifecycle } from '../systems/lifecycle.js';
 import { newGameFromMenu, continueFromMenu, setMenuHeroRegistrar } from '../systems/lifecycle.js';
 import { startArea } from '../systems/lifecycle.js';
-import { showLevelReward, rewardOnAction, setRewardDataCallback, setEndOfGameScoreCallback } from '../systems/lifecycle.js';
+import { showLevelReward, rewardOnAction, setRewardDataCallback, setEndOfGameScoreCallback, setBossRushReturn } from '../systems/lifecycle.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { calculateScore } from '../stats.js';
@@ -858,6 +858,7 @@ export const Menu = {
 
 import { buildLevelMap, buildSubAreasForLevel } from './levelSelectModel.js';
 import { loadStore } from '../systems/progressStore.js';
+import { buildBossRushCards } from './bossRushModel.js';
 
 // =============================================================================
 // LEVEL SELECT SCREEN (menu-hub plan §3.2)
@@ -1181,6 +1182,263 @@ export const LevelSelect = {
   },
 
   reset() { this.focus = { levelIdx: 0, zoneIdx: 0 }; },
+};
+
+// =============================================================================
+// BOSS RUSH SCREEN (menu-hub plan §3.3)
+//
+// Canvas screen of boss cards — one per LEVEL_CONFIGS entry (8), laid out as a
+// grid in the left/center pane with a right-side detail card for the FOCUSED
+// boss (the hover-style tooltip pattern shared with Level Select):
+//   - locked   → silhouette disc + lock icon, NO name or image anywhere; the
+//                detail card shows 'Pass Level X to unlock this boss'
+//   - unlocked → boss card art (assets/boss/<id>/card_f1.png) + name
+//   - defeated → card art dimmed + gold star + name (defeated is revealed)
+// Navigation: left/right AND up/down step through the cards, skipping locked
+// ones (wrap-around) so focus can only rest on playable bosses. Confirm starts
+// the focused boss through AREA_ENTRY (startArea → showAreaEntry, the same
+// path Level Select uses); the zone install hook in update.js handles the
+// world swap. Back returns MENU.
+// Post-battle routing (user decision 2026-10-24): confirm arms
+// setBossRushReturn(true) in lifecycle.js; after the NORMAL victory reward
+// summary, rewardOnAction routes REWARD → BOSS_RUSH instead of advancing to
+// the next level (no auto-advance). The flag lives in lifecycle.js precisely
+// so it survives the PLAY/REWARD detour — screenReset(to) runs on every
+// transition and would clobber any screen-local copy. Focus preservation:
+// screenReset(BOSS_RUSH) keeps this.focus when the return comes from REWARD
+// (the post-battle route); a fresh entry from MENU resets it.
+// =============================================================================
+
+// --- Boss-rush layout constants ---------------------------------------------
+const BR_TITLE_Y = 60;                 // "BOSS RUSH" marquee baseline
+const BR_TITLE_SIZE = 44;
+const BR_CARD_W = 150;                 // card width
+const BR_CARD_H = 190;                 // card height
+const BR_GAP_X = 18;                   // horizontal gap between cards
+const BR_GAP_Y = 18;                   // vertical gap between rows
+const BR_COLS = 4;                     // 4 × 2 grid of 8 cards
+const BR_GRID_X = 50;                  // first card's left edge
+const BR_GRID_Y = 120;                 // first row's top edge
+const BR_CARD_ART_H = 110;             // art box height inside a card
+const BR_DETAIL_X = 700;               // right detail-card left edge
+const BR_DETAIL_Y = 120;               // right detail-card top edge
+const BR_DETAIL_W = 230;
+const BR_DETAIL_H = 300;
+const BR_NAV_Y = 480;                  // keycap nav bar Y
+
+/** Boss card art cache (loaded lazily; drawFitted guards .complete). */
+const bossCardImages = {};
+function bossCardImage(bossId) {
+  if (!bossCardImages[bossId]) {
+    const img = new Image();
+    img.src = new URL(`../../assets/boss/${bossId}/card_f1.png`, import.meta.url).href;
+    bossCardImages[bossId] = img;
+  }
+  return bossCardImages[bossId];
+}
+
+export const BossRush = {
+  /** Focus is an index into buildBossRushCards() (0..7). */
+  focus: 0,
+
+  /** Live model data (rebuilt every draw + onAction so progress changes show). */
+  _cards() { return buildBossRushCards(loadStore().progress); },
+
+  /** @param {CanvasRenderingContext2D} ctx */
+  draw(ctx) {
+    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+    grad.addColorStop(0, '#0d0d1a');
+    grad.addColorStop(1, '#1a1a2e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    drawMarqueeTitle(ctx, 'BOSS RUSH', VIEW_W / 2, BR_TITLE_Y, BR_TITLE_SIZE, { color: CREAM });
+
+    const cards = this._cards();
+    const focused = cards[this.focus];
+
+    // --- Card grid (4 × 2) ----------------------------------------------------
+    cards.forEach((card, i) => {
+      const col = i % BR_COLS, row = Math.floor(i / BR_COLS);
+      const x = BR_GRID_X + col * (BR_CARD_W + BR_GAP_X);
+      const y = BR_GRID_Y + row * (BR_CARD_H + BR_GAP_Y);
+      const isFocused = i === this.focus;
+      const locked = card.status === 'locked';
+      const defeated = card.status === 'defeated';
+      ctx.save();
+      // Card body.
+      ctx.fillStyle = isFocused ? COLOR_PILL_FILL : 'rgba(255,255,255,0.04)';
+      roundRect(ctx, x, y, BR_CARD_W, BR_CARD_H, 10);
+      ctx.fill();
+      ctx.strokeStyle = isFocused ? COLOR_PILL_STROKE : (locked ? 'rgba(138,138,154,0.35)' : '#8a7f68');
+      ctx.lineWidth = isFocused ? 2 : 1.5;
+      roundRect(ctx, x, y, BR_CARD_W, BR_CARD_H, 10);
+      ctx.stroke();
+
+      const cx = x + BR_CARD_W / 2;
+      const artY = y + 14;
+      if (locked) {
+        // Silhouette disc + lock icon — NO image, NO name (plan §3.3: hide
+        // locked bosses completely).
+        ctx.globalAlpha = 0.45;
+        ctx.fillStyle = '#2a2a3a';
+        ctx.beginPath();
+        ctx.arc(cx, artY + BR_CARD_ART_H / 2, BR_CARD_ART_H / 2 - 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        drawLockIcon(ctx, cx, artY + BR_CARD_ART_H / 2, 26, '#8a8a9a');
+        ctx.font = `13px ${FONT_UI}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#8a8a9a';
+        ctx.fillText(`LEVEL ${card.index}`, cx, y + BR_CARD_H - 22);
+      } else {
+        // Unlocked/defeated: boss card art + name.
+        const img = bossCardImage(card.bossId);
+        if (img?.complete && img.naturalWidth > 0) {
+          drawFitted(ctx, img, x + 10, artY, BR_CARD_W - 20, BR_CARD_ART_H);
+        } else {
+          drawPlaceholder(ctx, x + 10, artY, BR_CARD_W - 20, BR_CARD_ART_H, 'boss card');
+        }
+        if (defeated) {
+          ctx.globalAlpha = 0.75;
+          ctx.fillStyle = GOLD;
+          ctx.font = `bold 18px ${FONT_UI}`;
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'top';
+          ctx.fillText('★', x + BR_CARD_W - 12, y + 8);
+          ctx.globalAlpha = 1;
+        }
+        ctx.font = `bold 15px ${FONT_UI}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = isFocused ? COLOR_OPT_FOCUSED : CREAM;
+        ctx.fillText(card.name, cx, y + BR_CARD_H - 22);
+      }
+      ctx.restore();
+    });
+
+    // --- Right pane: detail card for the focused boss -------------------------
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    roundRect(ctx, BR_DETAIL_X, BR_DETAIL_Y, BR_DETAIL_W, BR_DETAIL_H, 12);
+    ctx.fill();
+    ctx.strokeStyle = focused.status === 'locked' ? 'rgba(138,138,154,0.5)' : COLOR_PILL_STROKE;
+    ctx.lineWidth = 2;
+    roundRect(ctx, BR_DETAIL_X, BR_DETAIL_Y, BR_DETAIL_W, BR_DETAIL_H, 12);
+    ctx.stroke();
+
+    const ccx = BR_DETAIL_X + BR_DETAIL_W / 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (focused.status === 'locked') {
+      // Locked: identity hidden — lock glyph + the model's tooltip text.
+      drawLockIcon(ctx, ccx, BR_DETAIL_Y + 80, 34, '#8a8a9a');
+      ctx.font = `17px ${FONT_UI}`;
+      ctx.fillStyle = '#ff9f9f';
+      ctx.fillText(focused.tooltip ?? '', ccx, BR_DETAIL_Y + 150);
+      ctx.font = `13px ${FONT_UI}`;
+      ctx.fillStyle = '#8a8a9a';
+      ctx.fillText('LOCKED', ccx, BR_DETAIL_Y + 185);
+    } else {
+      // Unlocked/defeated: boss name headline + card art + status line.
+      drawMarqueeTitle(ctx, focused.name.toUpperCase(), ccx, BR_DETAIL_Y + 45, 26, {
+        color: focused.status === 'defeated' ? GOLD : CREAM,
+      });
+      const img = bossCardImage(focused.bossId);
+      if (img?.complete && img.naturalWidth > 0) {
+        drawFitted(ctx, img, BR_DETAIL_X + 25, BR_DETAIL_Y + 75, BR_DETAIL_W - 50, 140);
+      } else {
+        drawPlaceholder(ctx, BR_DETAIL_X + 25, BR_DETAIL_Y + 75, BR_DETAIL_W - 50, 140, 'boss card');
+      }
+      ctx.font = `17px ${FONT_UI}`;
+      if (focused.status === 'defeated') {
+        ctx.fillStyle = GOLD;
+        ctx.fillText('DEFEATED ★', ccx, BR_DETAIL_Y + 245);
+        ctx.font = `14px ${FONT_UI}`;
+        ctx.fillStyle = '#b9a98a';
+        ctx.fillText('Press Confirm to fight again', ccx, BR_DETAIL_Y + 272);
+      } else {
+        ctx.fillStyle = COLOR_OPT_FOCUSED;
+        ctx.fillText('READY TO FIGHT', ccx, BR_DETAIL_Y + 245);
+        ctx.font = `14px ${FONT_UI}`;
+        ctx.fillStyle = '#b9a98a';
+        ctx.fillText('Press Confirm to start', ccx, BR_DETAIL_Y + 272);
+      }
+    }
+    ctx.restore();
+
+    // --- Keycap nav bar -------------------------------------------------------
+    drawNavBar(ctx, VIEW_W / 2, BR_NAV_Y, navHintEntries([
+      { actions: ['left', 'right'], label: 'Boss', opts: { mode: 'select_layout' } },
+      { action: 'confirm', label: 'Fight', opts: { mode: 'select_layout' } },
+      { action: 'back', label: 'Menu', opts: { mode: 'select_layout' } },
+    ]));
+  },
+
+  /** Step the focus by dir (±1), skipping locked cards (wrap-around). */
+  _move(dir) {
+    const cards = this._cards();
+    let next = this.focus;
+    for (let step = 0; step < cards.length; step++) {
+      next = (next + dir + cards.length) % cards.length;
+      if (cards[next].status !== 'locked') { this.focus = next; return; }
+    }
+  },
+
+  /**
+   * Handle semantic input. Left/right AND up/down step the boss focus (skipping
+   * locked cards), confirm starts the focused unlocked boss through
+   * AREA_ENTRY, back returns MENU.
+   * @returns {boolean} whether the action was handled
+   */
+  onAction(action) {
+    switch (action) {
+      case 'left':
+      case 'up':
+        this._move(-1);
+        return true;
+      case 'right':
+      case 'down':
+        this._move(1);
+        return true;
+      case 'back':
+        if (tryTransition(S.MENU)) console.log('[screens] BOSS_RUSH → MENU (back)');
+        return true;
+      case 'confirm': {
+        const focused = this._cards()[this.focus];
+        if (!focused || focused.status === 'locked') return true; // safety net
+        const h = getMenuHero();
+        // Same I2 guard as Level Select: no registered hero means there is no
+        // live instance for the install hook to resume on — do NOT fabricate.
+        if (!h) {
+          console.warn('[screens] BOSS_RUSH confirm blocked: no menu hero registered yet');
+          return true;
+        }
+        // Arm the post-victory return BEFORE starting: the battle then runs
+        // the normal AREA_ENTRY → boss fight → reward flow, and rewardOnAction
+        // routes REWARD → BOSS_RUSH (no auto-advance) when it sees the flag.
+        setBossRushReturn(true);
+        // startArea sets currentLevel/currentArea, opens the shared AREA_ENTRY
+        // screen; zone content + spawn checkpoint install via update.js's
+        // BOSS_RUSH→AREA_ENTRY hook (same path as MENU continue / Level Select).
+        startArea(h, focused.start.level, focused.start.area);
+        console.log(`[screens] BOSS_RUSH → AREA_ENTRY (${focused.name})`);
+        return true;
+      }
+    }
+    return false;
+  },
+
+  /**
+   * Reset focus — but PRESERVE it when returning from REWARD (the post-battle
+   * boss-rush return). screenReset(to, from) runs on EVERY transition, so a
+   * blanket reset here would clobber the focus the player had before the
+   * battle; the user decision requires landing back at the SAME card.
+   */
+  reset(from) {
+    if (from !== S.REWARD) this.focus = 0;
+  },
 };
 
 // =============================================================================
@@ -1685,6 +1943,10 @@ export function drawScreen(ctx, hero) {
     LevelSelect.draw(ctx);
     return true;
   }
+  if (s === S.BOSS_RUSH) {
+    BossRush.draw(ctx);
+    return true;
+  }
   if (s === S.SELECT) {
     Select.draw(ctx);
     return true;
@@ -1751,6 +2013,7 @@ export function screenOnAction(action, hero, actions = {}) {
   if (s === S.HOME) { Home.onAction(action); return true; }
   if (s === S.MENU) return Menu.onAction(action);
   if (s === S.LEVEL_SELECT) return LevelSelect.onAction(action);
+  if (s === S.BOSS_RUSH) return BossRush.onAction(action);
   if (s === S.SELECT) { Select.onAction(action); return true; }
   if (s === S.REMAP) {
     if (Remap.onAction(action) === 'exit') tryTransition(remapParent);
@@ -1788,6 +2051,10 @@ export function screenReset(s, from) {
   if (s === S.SELECT) Select.reset();
   if (s === S.MENU) Menu.reset();
   if (s === S.LEVEL_SELECT) LevelSelect.reset();
+  // BOSS_RUSH: reset() preserves focus when returning from REWARD (the
+  // post-battle boss-rush return, plan §3.3 user decision); fresh entries
+  // (from MENU) reset to card 0.
+  if (s === S.BOSS_RUSH) BossRush.reset(from);
   if (s === S.PAUSE) Pause.reset();
   if (s === S.OVER) GameOver.focus = 0;
   // REMAP returns to wherever it was opened from: HOME, PAUSE, or MENU.

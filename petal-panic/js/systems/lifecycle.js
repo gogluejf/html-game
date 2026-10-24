@@ -31,7 +31,7 @@ import {createTrace, record, beginLife, beginContinue, calculateScore} from '../
 import { Anim, makeTestFrame } from '../core/anim.js';
 import { tryTransition, getState, setState, S } from '../core/state.js';
 import { TUNING } from '../tuning.js';
-import { loadStore, saveStore, clearRunSave } from './progressStore.js';
+import { loadStore, saveStore, clearRunSave, updateProgress } from './progressStore.js';
 
 // --- Area-entry accounting snapshot (game-rules.md §2/§4) -------------------
 //
@@ -277,6 +277,22 @@ let _registerMenuHero = null;
  * @param {(h: object) => void} fn
  */
 export function setMenuHeroRegistrar(fn) { _registerMenuHero = fn; }
+
+// --- Boss Rush return routing (menu-hub plan §3.3, user decision 2026-10-24) --
+// A boss started from the BOSS_RUSH screen runs the NORMAL boss battle
+// (AREA_ENTRY → boss fight → victory reward summary). After the reward the
+// player returns to BOSS_RUSH — NOT to the next level — and NO auto-advance
+// happens. The flag below is set by screens.js when Boss Rush confirms a boss
+// and consumed by rewardOnAction(); it survives the PLAY/REWARD detour because
+// it lives here, not in any screen state that screenReset() touches.
+let _bossRushReturn = false;
+
+/** Arm the "return to BOSS_RUSH after the reward" routing (screens.js calls
+ *  this when Boss Rush confirm starts a boss). */
+export function setBossRushReturn(on) { _bossRushReturn = !!on; }
+
+/** Whether the post-reward flow should route back to BOSS_RUSH. */
+export function getBossRushReturn() { return _bossRushReturn; }
 
 /**
  * Clear every recorded arrangement position so the next world generation is
@@ -912,6 +928,23 @@ export function showLevelReward(h) {
   // (TUNING.rewardMinDwell) is enforced before the confirm/pause is honored.
   _rewardShownAt = Date.now();
   if (_onRewardData) _onRewardData(data);
+  // Boss Rush hook (menu-hub plan §3.3): a boss defeat records the boss id in
+  // progress.defeatedBosses through the store's single atomic API. This is the
+  // one and only recording site — the screen/model only READ defeatedBosses,
+  // so there is nothing to duplicate. (completedAreas milestones are task 5.3.)
+  // Resolve the config from the hero's current level instead of trusting
+  // h.levelConfig: a boss started via startArea (e.g. Boss Rush) never has
+  // levelConfig assigned — that field is only set on the REWARD→next-level
+  // path — so reading it directly silently no-ops in production. getLevelConfig
+  // returns undefined safely for out-of-range levels, which the guard below
+  // already handles.
+  const levelConfig = h.levelConfig ?? getLevelConfig(h.currentLevel);
+  const bossId = levelConfig?.boss;
+  if (bossId) {
+    updateProgress((p) => {
+      if (!p.defeatedBosses.includes(bossId)) p.defeatedBosses.push(bossId);
+    });
+  }
   if (tryTransition(S.REWARD)) {
     console.log(`[lifecycle] → REWARD (level ${h.currentLevel}, coins: ${coins}, +${earned} continue${earned === 1 ? '' : 's'})`);
   }
@@ -948,6 +981,23 @@ export function rewardOnAction(action, h) {
         // Dwell not yet elapsed: reject the confirmation.
         return false;
       }
+    }
+    if (_bossRushReturn) {
+      // Boss Rush return (menu-hub plan §3.3, user decision): a boss started
+      // from the BOSS_RUSH screen returns to that screen after its victory
+      // summary — NO auto-advance to the next level. This branch takes PRIORITY
+      // over the final-level END_OF_GAME route below: in a rush there is no
+      // "next level" concept — the player explicitly picked this boss, so they
+      // always come back here regardless of which level it belongs to. The flag
+      // is consumed here (the only exit point of the reward screen), so a stale
+      // arm can never hijack a later normal-flow reward.
+      _bossRushReturn = false;
+      _rewardData = null;
+      _creditedReward = null;
+      _rewardShownAt = null;
+      console.log(`[lifecycle] REWARD → BOSS_RUSH (boss rush return, level ${h.currentLevel})`);
+      if (tryTransition(S.BOSS_RUSH)) return true;
+      return true;
     }
     if (h.currentLevel >= LEVELS.length) {
       // Final level: end-of-game instead of a next level (lifecycle.md §5).
