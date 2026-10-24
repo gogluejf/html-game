@@ -1,0 +1,29 @@
+{
+ "file": "petal-panic/assets/interface/menu/world_map_sheet.png",
+ "size": "1536x1024",
+ "rows": 1,
+ "cols": 1,
+ "kind": "static",
+ "description": "World map background for the menu hub",
+ "entities": [
+  {
+   "name": "menu",
+   "anim": "world_map",
+   "frames_dir": "petal-panic/assets/interface/menu",
+   "frames": [
+    {
+     "file": "world_map_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      1536,
+      1024
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-24"
+}
