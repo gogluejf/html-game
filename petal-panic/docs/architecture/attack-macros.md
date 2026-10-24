@@ -1281,6 +1281,88 @@ The interval starts ONLY after the current lane's attack fully completes
 - The announcement is always on (not a param).
 - The interval starts after the attack fully ends (no overlap with next marker).
 
+---
+
+## 28. Sky Dive Stomp (implemented — `skyDiveStomp.js`)
+
+**Invokes:** Stomp Wave (§17) at impact; reuses skyMissile's column resolution (`resolveImpactPoint`).
+
+**Effects:** Surface Target Marker (landing warning), Blink Transition (vanish-out)
+
+An enemy drops from the sky onto a FIXED ground spot and slams a stomp wave on
+landing, then blinks out of existence. The vertical twin of Stomp Wave: same
+impact payload, but the approach vector is telegraphed and strictly downward —
+the player reads "leave this spot" during the marker window, then the diver
+commits. No homing, no drift: fairness comes from the warning, not prediction.
+
+### Sequence
+
+Surface Target Marker at the resolved impact point → wait `timeToTarget` →
+diver falls straight down from `dropHeight` above → **land**: dust + camera
+shake + one Surface Wave per `stomp.sides` rolls out from the impact point →
+linger `lingerOnGround` s standing idle → blink-transition plays for
+`vanishTime` s → `vanish` event fires and the macro completes.
+
+### Main parameters
+
+- **x / groundY** — impact position; `groundY: null` resolves to the top of
+  the highest surface in the drop column (floor, platform, or block) via the
+  shared skyMissile rule.
+- **timeToTarget** — seconds between marker appearance and the first visible
+  fall (survival window).
+- **dropHeight** — px above the impact point where the diver becomes visible
+  (default 260; the theater preset uses 480 = full-screen drop).
+- **fallSpeed** — descent speed (px/s).
+- **size** — carrier box size (px) while falling (visual footprint only).
+- **stomp.** — full stompWave params object, spread verbatim onto the payload
+  invoke: `sides`, `hopHeight`, `waveSpeed`, `waveHeight`, `waveWidth`,
+  `damage`, `ttl`, `team`, `dustStyle`, `shakeStrength`. Configure it exactly
+  as you would invoking stompWave directly.
+- **vanish** — master switch (default true); false = the enemy stays on the
+  ground after the stomp settles.
+- **lingerOnGround** — s the enemy idles before the blink starts.
+- **vanishTime** — s the blink-out effect plays before the `vanish` event.
+
+### Events
+
+- **land** `{ x, y }` — fired once at impact, BEFORE the stomp waves. The host
+  snaps the real entity to this point and makes it visible here (it was hidden
+  while "in the sky"). Mirrors throwEnemy's land contract.
+- **hit** — forwarded from the stomp wave.
+- **vanish** `{ x, y, linger }` — fired once when the blink finishes. The host
+  hides the real entity (`visible = false`) and schedules its reappearance at
+  that spot. The macro never touches the real entity itself.
+- **complete** `{ waves, vanished? }` — waves = number of sides fired.
+
+### Rules
+
+- ONE object, ONE id: the falling carrier is macro-owned state (drawn by the
+  host from `state.diverY`), not a pool entity. The landing test is owned by
+  the macro so the slam lands EXACTLY on the marked surface — no tunneling
+  through a platform top.
+- stompWave resolves its origin from `ctx.attacker`'s feet, so the macro hands
+  it a child context whose attacker is a stand-in box placed AT the impact
+  point. Its own telegraph/hop/dust/shake/waves all resolve to that spot; the
+  payload invoke zeroes stompWave's own telegraph timing
+  (`buildTime/gapTime/blinkTime/impactDelay: 0`) because the DROP IS the
+  telegraph.
+- Phases: `warning → drop → waves → linger → vanish`. `h.stomp` exposes the
+  live stompWave handle so the theater can render it.
+- Cancel cascades to the stompWave child.
+- The blink box is sized to the ATTACKER's real body (feet on the impact line),
+  not the tiny falling carrier — it reads as the enemy itself alternating
+  visible/nothing, fast→slow, then gone.
+
+### Composition
+
+**Marker (effect) → vertical drop (macro-owned) → stompWave (macro) → linger → blink (effect)**
+
+Examples:
+- single use → boss entrance / phase transition (drop in, slam, teleport away)
+- repeated with new `x` → roaming dive-stomper pattern
+- `vanish: false` → pure aerial entry that leaves the enemy grounded
+
+---
 
 ## Mine and Throw Mine
 
