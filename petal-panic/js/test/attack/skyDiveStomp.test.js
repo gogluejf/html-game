@@ -121,7 +121,7 @@ ok('sides: right → only a right-going wave exists (left-side enemy untouched)'
   // The left enemy sits BEHIND the impact point. A right-only wave travels
   // away from it, so it must stay safe. (An enemy IN the right wave's path
   // WOULD be hit — that's correct wave behavior.)
-  const rightE = dummyEnemy(500 + 90, GROUND_Y - 24);
+  const rightE = dummyEnemy(500 + 50, GROUND_Y - 24); // inside wave path (wave reaches ~90px)
   const leftE = dummyEnemy(500 - 90 - 24, GROUND_Y - 24);
   const c = ctx();
   const h = invoke('skyDiveStomp', { x: 500, timeToTarget: 0.1, dropHeight: 120, fallSpeed: 600, stomp: { sides: 'right', waveSpeed: 300, damage: 20, ttl: 0.3 } }, c);
@@ -137,7 +137,7 @@ ok('a target far beyond the wave ttl is untouched', () => {
   // x=900 (400px away) is never reached.
   const e = dummyEnemy(900, GROUND_Y - 24);
   const c = ctx();
-  const h = invoke('skyDiveStomp', { x: 500, timeToTarget: 0.1, dropHeight: 120, fallSpeed: 600, stomp: { sides: 'both', waveSpeed: 300, damage: 20, ttl: 0.2 } }, c);
+  const h = invoke('skyDiveStomp', { x: 500, timeToTarget: 0.1, dropHeight: 120, fallSpeed: 600, stomp: { sides: 'both', waveSpeed: 300, damage: 20, ttl: 0.2, team: 'neutral' } }, c);
   let finished = false;
   for (let i = 0; i < 900 && !finished; i++) finished = h.step(DT, [e]);
   assert.ok(finished, 'completes');
@@ -151,7 +151,7 @@ ok('impact: strike → burns every surface under the span on landing', () => {
   const onPlat = dummyEnemy(500 - 40, platTop - 24);  // on a platform in the column
   const onFloor = dummyEnemy(500 + 40, GROUND_Y - 24); // on the floor
   const c = ctx({ platforms: [{ x: 440, y: platTop, w: 120 }] });
-  const h = invoke('skyDiveStomp', { x: 500, timeToTarget: 0.1, dropHeight: 120, fallSpeed: 600, impact: 'strike', stomp: { damage: 20 } }, c);
+  const h = invoke('skyDiveStomp', { x: 500, timeToTarget: 0.1, dropHeight: 120, fallSpeed: 600, impact: 'strike', stomp: { damage: 20, team: 'neutral' } }, c);
   let finished = false;
   for (let i = 0; i < 900 && !finished; i++) finished = h.step(DT, [onPlat, onFloor]);
   assert.ok(finished, 'completes');

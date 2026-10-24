@@ -124,7 +124,7 @@ defineMacro('skyDiveStomp', {
     ],
   },
   impl(params, ctx) {
-    const p = { ...DEFAULTS, ...params };
+    const p = { ...DEFAULTS, ...params, stomp: { ...DEFAULTS.stomp, ...(params.stomp ?? {}) } };
     const h = new AttackHandle('skyDiveStomp', null, declaredEffectsOf('skyDiveStomp'));
     const pt = resolveImpactPoint(p, ctx);
     const spawnY = pt.y - p.dropHeight;
