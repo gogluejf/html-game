@@ -127,7 +127,7 @@ const SANDBOX_PRESETS = {
   stomp: { buildTime: 1.2, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, count: 1, interval: 0.5, hopHeight: 10, radius: 90, damage: 30, team: 'foe', shakeStrength: 5 },
   stompWave: { buildTime: 1.2, gapTime: 0.4, blinkTime: 0.5, impactDelay: 0.1, sides: 'both', hopHeight: 10, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 5 },
   skyMissile: { mineType: 'explosion', x: TARGET_POS.x + 16, timeToTarget: 1.0, dropHeight: 260, fallSpeed: 500, damage: 30, team: 'foe', blastTeam: 'neutral', blastType: 'explosion', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
-  skyDiveStomp: { x: VIEW_W / 2, groundY: GROUND_Y, timeToTarget: 1.0, dropHeight: 260, fallSpeed: 500, size: 14, stomp: { sides: 'both', hopHeight: 0, hopTime: 0.001, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 6 }, vanish: true, lingerOnGround: 0.4, vanishTime: 2 },
+  skyDiveStomp: { x: VIEW_W / 2, groundY: GROUND_Y, timeToTarget: 1.0, dropHeight: 480, fallSpeed: 500, size: 14, stomp: { sides: 'both', hopHeight: 0, hopTime: 0.001, waveSpeed: 300, waveHeight: 24, waveWidth: 28, damage: 20, ttl: null, team: 'foe', shakeStrength: 6 }, vanish: true, lingerOnGround: 0.4, vanishTime: 2 },
   missileRain: { mineType: 'explosion', count: 5, distanceType: 'relative', distance: 90, pattern: 'simultaneous', interval: 0.15, coordination: 'from_left', launchInterval: 0.12, ascentOscillation: 6, fallDelay: 0.5, timeToTarget: 0.9, descentSpeed: 500, damage: 30, team: 'foe', blastTeam: 'neutral', blastType: 'explosion', blast: { explosionRadius: 60, shockRadius: 150, fireWidth: 96 } },
   dashCombo: {
     direction: 0,
