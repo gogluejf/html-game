@@ -119,7 +119,7 @@ const SANDBOX_PRESETS = {
   sweepingBeam: { direction: 0, sweepAngle: 67.5 * DEG, length: 1000, width: 24, speed: 0, holdDuration: 0.4, sweepDuration: 1.0, endHoldDuration: 0.3, fadeOut: 0.5, damage: 20, tickRate: 8, team: 'ally', shimmerLow: 0.1, shimmerHigh: 0.35, announceMarker: true, announceDelay: 1.0 },
   laneSequence: { mode: 'charge', laneCount: 2, laneSpacing: 120, laneOffset: 0, lanes: null, laneOrder: 'bottom_to_top', sideMode: 'fixed_left', alternateStartSide: 'left', announceDelay: 0.5, dashSpeed: 1200, damage: 20, knockback: null, beamDuration: 0.8, beamWidth: 36, tickRate: 8, interval: 0.15, team: 'ally', style: null },
   surfaceWave: { x: ATTACKER_HOME.x + 16, y: GROUND_Y, direction: 'right', speed: 300, height: 24, width: 28, damage: 15, ttl: null, team: 'foe' },
-  surfaceStrike: { x: (ATTACKER_HOME.x + TARGET_POS.x) / 2 + 16, y: GROUND_Y, width: Infinity, height: 30, reach: Infinity, duration: 0.35, damage: 25, team: 'foe' },
+  surfaceStrike: { x: (ATTACKER_HOME.x + TARGET_POS.x) / 2 + 16, y: GROUND_Y, width: Infinity, height: 30, reach: Infinity, duration: 0.35, damage: 25, team: 'neutral' },
   shockwave: { x: (ATTACKER_HOME.x + TARGET_POS.x) / 2 + 16, y: GROUND_Y - 24, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, shakeIntensity: 5, team: 'neutral' },
   mine: { x: VIEW_W / 2, team: 'ally', ttl: 2, blinkDuration: 2, mineType: 'explosion' },
   throwMine: { team: 'ally', ttl: 2, blinkDuration: 2, mineType: 'explosion' },
@@ -861,6 +861,12 @@ export const AttackTheater = {
       } else if (h.id === 'targetedBeam' || h.id === 'sweepingBeam') {
         // Beam macros: step the macro which internally steps its beam phase(s).
         finished = h.step(DT, [this._target]);
+      } else if (h.id === 'surfaceStrike') {
+        // Surface Strike burns EVERY surface in the scene — staged victims sit
+        // on those surfaces, so pass ALL live victims as candidates (not just
+        // the dummy target). Same routing as the stomp family below.
+        const vics = [this._target, ...(this._stompVics ?? [])].filter((v) => v?.alive);
+        finished = h.step(DT, vics);
       } else if (h.entity) {
         if (h.id === 'projectile') finished = stepProjectile(h.entity, h);
         else if (typeof h.step === 'function') {

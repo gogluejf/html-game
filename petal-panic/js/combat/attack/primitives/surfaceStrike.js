@@ -50,7 +50,8 @@ const DEFAULTS = Object.freeze({
   duration: 0.35,     // s every band segment stays hot
   damage: 25,         // per target (each target hit ONCE during the window)
   team: 'foe',        // who the bands hurt (stomps are enemy attacks)
-  method: 'stomp',    // telemetry label
+  method: 'melee',    // telemetry label; melee-family → blood sparkles + enemy shake on hit
+  shakeStrength: 6,   // camera shake intensity fired at impact (0 = none)
 });
 
 /**
@@ -149,6 +150,7 @@ registerPrimitive('surfaceStrike', {
     name: 'Surface Strike',
     effects: [
       { type: 'ground-strike', desc: 'slam-in band visual per surface segment (presentation)' },
+      { type: 'camera-shake', desc: 'impact shake fired when the strike lands' },
     ],
     desc: 'Every surface (floor/platform/block) under the x-span gets a hot band at its own top, for `duration`, each target hit once. Jump to dodge. Caller owns the telegraph.',
     params: [
@@ -160,6 +162,7 @@ registerPrimitive('surfaceStrike', {
       { key: 'duration', desc: 'hot window (s)' },
       { key: 'damage', desc: 'per target (hit once per window)' },
       { key: 'team', desc: "who the bands hurt" },
+      { key: 'shakeStrength', desc: 'camera shake on impact (0 = none)' },
     ],
   },
   impl(params, ctx) {
@@ -188,6 +191,12 @@ registerPrimitive('surfaceStrike', {
         thickness: Math.min(14, p.height),
         duration: Math.max(0.1, p.duration),
       } }, h.declaredEffectTypes());
+    }
+    // Impact juice: camera shake on the landing itself, even when nothing is
+    // hit (same rule as stomp/stompWave). Hit juice (blood sparkles + enemy
+    // shake) comes free from processHitboxes via method='melee'.
+    if (p.shakeStrength > 0) {
+      fireDeclared({ type: 'camera-shake', params: { intensity: p.shakeStrength } }, h.declaredEffectTypes());
     }
 
     h.step = (dt, targets) => stepSurfaceStrike(h.state, p, dt, targets ?? [], h);
