@@ -99,7 +99,7 @@
     },
     "4.1": {
       "number": "4.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Options screen and settings wiring",
       "milestone": "Options, Controls, and Pause Integration",
       "milestone_number": "4",
@@ -114,10 +114,18 @@
     },
     "4.2": {
       "number": "4.2",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Pause menu Save and Quit integration",
       "milestone": "Options, Controls, and Pause Integration",
-      "milestone_number": "4"
+      "milestone_number": "4",
+      "summary": {
+        "confidence": "high",
+        "tradeoffs": "Dropped the old 'Quit to Home' option per plan spec (the five-option list replaces it); back/Esc still resumes so no quit path is lost.",
+        "done": "Pause screen now has five data-driven options (Resume, Retry Level, Save & Quit, Controls, Options) using Menu's {go/action} pattern; Save & Quit calls saveCurrentRun(hero) then transitions PAUSE\u2192MENU; Controls\u2192REMAP and Options\u2192OPTIONS capture origin PAUSE via existing screenReset logic; hero wired through screenOnAction with getMenuHero() fallback. Added js/test/pauseSaveQuit.test.js (8 tests, all pass).",
+        "lessons_learned": "screens.js does not re-export Remap \u2014 tests must import core/remap.js directly. The old 4th pause option was 'Quit to Home' (not 'Quit'); its actions.quit handler was preserved as a semantic-action path even though no menu row routes to it anymore.",
+        "failures": "None \u2014 pre-existing bck/screens82.test.js fails identically before this change (broken relative import paths in that legacy file, not caused by 4.2).",
+        "decisions": "Used Menu's F5 data-driven routing shape ({label, enabled, go|action}) for Pause.options() instead of hardcoded switch-on-index; kept onAction(action, actions, hero) signature matching GameOver's convention, with saveCurrentRun falling back to the registered menu hero when no hero is passed."
+      }
     },
     "5.1": {
       "number": "5.1",

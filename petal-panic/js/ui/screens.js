@@ -6,7 +6,7 @@
 import {S, getState, tryTransition} from '../core/state.js';
 import { hasSave } from '../systems/progressStore.js';
 import { areaEntryOnAction, setAreaEntryDataCallback, getAreaEntryData as getAreaEntryDataFromLifecycle } from '../systems/lifecycle.js';
-import { newGameFromMenu, continueFromMenu, setMenuHeroRegistrar } from '../systems/lifecycle.js';
+import { newGameFromMenu, continueFromMenu, setMenuHeroRegistrar, saveCurrentRun } from '../systems/lifecycle.js';
 import { startArea } from '../systems/lifecycle.js';
 import { showLevelReward, rewardOnAction, setRewardDataCallback, setEndOfGameScoreCallback, setBossRushReturn } from '../systems/lifecycle.js';
 import { HEROES } from '../hero/heroDefs.js';
@@ -1559,7 +1559,21 @@ export const Options = {
 // =============================================================================
 
 export const Pause = {
-  focus: 0, // 0=Resume, 1=Retry, 2=Quit
+  focus: 0, // index into options() — draw + onAction share it
+
+  /** The five pause options with live routing data (menu-hub plan §4.2), in
+   * the same data-driven shape as Menu.options(): `go` transitions to the
+   * named state; `action` names a special handler. execute() dispatches on
+   * this data — never on label strings or hardcoded indices. */
+  options() {
+    return [
+      { label: 'Resume',      enabled: true, action: 'resume' },
+      { label: 'Retry Level', enabled: true, action: 'retry' },
+      { label: 'Save & Quit', enabled: true, action: 'saveQuit' },
+      { label: 'Controls',    enabled: true, go: S.REMAP },
+      { label: 'Options',     enabled: true, go: S.OPTIONS },
+    ];
+  },
 
   /** @param {CanvasRenderingContext2D} ctx */
   draw(ctx) {
@@ -1568,12 +1582,10 @@ export const Pause = {
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
     // Shared option-list renderer (same layout as before extraction).
-    const options = ['Resume', 'Retry Level', 'Controls', 'Quit to Home']
-      .map(label => ({ label, enabled: true }));
     drawOptionList(ctx, {
       title: 'PAUSED',
       titleY: VIEW_H / 2 - 80,
-      items: options,
+      items: this.options(),
       focus: this.focus,
       startY: VIEW_H / 2 - 20,
       navEntries: navHintEntries([
@@ -1589,8 +1601,9 @@ export const Pause = {
    * Handle input. Uses action-based navigation.
    * @param {string} action semantic navigation action
    * @param {{ retry?: () => void, quit?: () => void }} [actions]
+   * @param {object} [hero] the live hero (Save & Quit persists its run)
    */
-  onAction(action, actions = {}) {
+  onAction(action, actions = {}, hero) {
     // Back (○/Escape) ALWAYS exits the menu, regardless of focus.
     if (action === 'back' || action === 'pause') {
       if (tryTransition(S.PLAY)) console.log('[screens] PAUSE → PLAY (back)');
@@ -1598,13 +1611,13 @@ export const Pause = {
     }
     switch (action) {
       case 'up':
-        this.focus = (this.focus + 3) % 4;
+        this.focus = (this.focus + 4) % 5;
         return true;
       case 'down':
-        this.focus = (this.focus + 1) % 4;
+        this.focus = (this.focus + 1) % 5;
         return true;
       case 'confirm':
-        this.execute(actions);
+        this.execute(actions, hero);
         return true;
       case 'retry':
         if (actions.retry) actions.retry(); else tryTransition(S.HOME);
@@ -1616,19 +1629,36 @@ export const Pause = {
     return false;
   },
 
-  execute(actions) {
-    switch (this.focus) {
-      case 0: // Resume
+  /** Route to the focused destination using the option's own routing data
+   * (same F5 pattern as Menu.execute): `go` → transition, `action` → special
+   * handler. No-op when disabled. */
+  execute(actions, hero) {
+    const opt = this.options()[this.focus];
+    if (!opt || !opt.enabled) return;
+    if (opt.go !== undefined) {
+      // Controls → REMAP and Options → OPTIONS both capture their origin in
+      // screenReset(to, from) — remapParent/optionsOrigin become PAUSE, so
+      // back from either returns here.
+      if (tryTransition(opt.go)) console.log(`[screens] PAUSE → ${S[opt.go]} (${opt.label})`);
+      return;
+    }
+    switch (opt.action) {
+      case 'resume':
         if (tryTransition(S.PLAY)) console.log('[screens] PAUSE → PLAY (resume)');
         break;
-      case 1: // Retry
+      case 'retry':
         if (actions.retry) actions.retry(); else tryTransition(S.HOME);
         break;
-      case 2: // Controls
-        if (tryTransition(S.REMAP)) console.log('[screens] PAUSE → REMAP');
-        break;
-      case 3: // Quit
-        if (actions.quit) actions.quit(); else tryTransition(S.HOME);
+      case 'saveQuit':
+        // Plan §4.2: persist the resumable run (saveMeta) via lifecycle.js,
+        // then return to the hub. The transition is owned by the caller side
+        // of saveCurrentRun (lifecycle docs §4.2).
+        // Contract: if saveCurrentRun returns null (persist failed), we stay
+        // in PAUSE so the player can retry — nothing is lost because no
+        // transition happened.
+        if (saveCurrentRun(hero ?? getMenuHero())) {
+          if (tryTransition(S.MENU)) console.log('[screens] PAUSE → MENU (save & quit)');
+        }
         break;
     }
   },
@@ -2139,7 +2169,8 @@ export function screenOnAction(action, hero, actions = {}) {
     if (Remap.onAction(action) === 'exit') tryTransition(remapParent);
     return true;
   }
-  if (s === S.PAUSE) return Pause.onAction(action, actions);
+  // PAUSE receives the live hero so Save & Quit can persist its run (plan §4.2).
+  if (s === S.PAUSE) return Pause.onAction(action, actions, hero);
   if (s === S.OVER) return GameOver.onAction(action, hero, actions);
   if (s === S.WIN) return Win.onAction(action, actions);
   if (s === S.AREA_ENTRY) return areaEntryOnAction(action, hero);
