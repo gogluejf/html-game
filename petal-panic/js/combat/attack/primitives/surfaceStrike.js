@@ -1,26 +1,29 @@
 // Attack Engine — Surface Strike primitive.
 //
-// A stationary damaging BAND along a supporting surface at the impact point:
+// A damaging STRIKE across ALL supporting surfaces under a horizontal span:
 // the ground-slam damage shape ("the floor is hot for a moment — JUMP"). One
-// invoke = one band, one surface, one hit window. It is the impact-event twin
-// of spike (same shape — a band hot for a window — but WITHOUT spike's
-// trap semantics: no warning/hidden/repeat cycle; the CALLER owns the
-// telegraph, e.g. stomp's hop or skyDiveStomp's marker).
+// invoke = one x-span; EVERY surface with a top inside that span (floor,
+// platforms, blocks) gets its own hot band segment at its own top line. The
+// dodge verb is the same everywhere: jump over it, or never be on those
+// surfaces during the window.
 //
-// The band sits on the HIGHEST surface under its x (floor, platform, or
-// block top) using the same column-resolution convention as surfaceWave and
-// skyMissile. It extends ±width/2 around the center x, clamped to the
-// supporting surface's extent — a strike centered near a platform edge only
-// burns the part of the band that has floor under it.
+// This is the impact-event twin of spike (same idea — bands hot for a window —
+// but WITHOUT spike's trap semantics: no warning/hidden/repeat cycle; the
+// CALLER owns the telegraph, e.g. stomp's hop or skyDiveStomp's marker).
 //
-// Damage: each live target overlapping the band takes `damage` ONCE during
-// the whole window (hitSet), routed through the unified hitbox system
-// (takeDamage pipeline + team routing). No ticks, no repeat — one slam, one
-// number. Dodge verb: jump over it (or never be on that surface).
+// Surface scan: the floor (ctx.groundY) plus every platform/solid whose top y
+// lies within [refY - reach, refY + reach] AND whose span overlaps the band
+// x-range. Each match contributes one segment clamped to the overlap of the
+// band span and the surface span. No surface under the span → no-surface
+// complete (nothing to burn).
 //
-// Presentation: the primitive fires the REAL 'ground-strike' effect (slam-in
-// band + fade) alongside the collision volume so every host gets the visual
-// for free — same pattern as surfaceWave firing 'ground-wave'.
+// Damage: each live target overlapping ANY segment takes `damage` ONCE during
+// the whole window (shared hitSet via the unified hitbox system — takeDamage
+// pipeline + team routing). No ticks, no repeat — one slam, one number.
+//
+// Presentation: the primitive fires ONE 'ground-strike' effect per segment so
+// every host sees the slam-in band exactly where the damage is (same pattern
+// as surfaceWave firing 'ground-wave').
 //
 // Usage pattern (host loop):
 //   const h = attackEngine.invoke('surfaceStrike', { x, y, width }, ctx);
@@ -40,30 +43,41 @@ function declaredEffectsOf(id) {
 
 const DEFAULTS = Object.freeze({
   x: 0,               // center x (world) — usually the stomp impact point
-  y: 0,               // reference y (world) — surface top under x (resolved if above floor)
-  width: 240,         // horizontal extent of the hot band (px)
-  height: 30,         // dangerous area height above the surface (px) — jump clearance
-  duration: 0.35,     // s the band stays hot
+  y: 0,               // reference y (world) — the surface line the strike is aimed at
+  width: 240,         // horizontal extent of the strike span (px)
+  height: 30,         // dangerous area height above EACH surface top (px) — jump clearance
+  reach: 120,         // vertical scan window around the reference y (px)
+  duration: 0.35,     // s every band segment stays hot
   damage: 25,         // per target (each target hit ONCE during the window)
-  team: 'foe',        // who the band hurts (stomps are enemy attacks)
+  team: 'foe',        // who the bands hurt (stomps are enemy attacks)
   method: 'stomp',    // telemetry label
 });
 
-/** Fixed vertical reach used for surface resolution (px above reference). */
-export const STRIKE_RESOLVE_REACH = 80;
-
 /**
- * Resolve the surface line the band sits on: the highest surface top at or
- * below the reference y whose span contains x (floor wins by default; a
- * platform/block directly under the point climbs up to it). Returns null when
- * nothing supports the point.
+ * Scan every supporting surface and build the hot segments.
+ * @returns {Array<{x:number, y:number, w:number}>} one AABB per surface
+ *          (band clamped to the surface's own extent), or [] when nothing
+ *          supports the span.
  */
-export function resolveStrikeSurface(p, ctx) {
+export function resolveStrikeSegments(p, ctx) {
+  const lo = p.x - p.width / 2;
+  const hi = p.x + p.width / 2;
+  const yLo = p.y - p.reach;
+  const yHi = p.y + p.reach;
+  const segs = [];
+
+  const add = (surfLo, surfHi, topY) => {
+    if (topY < yLo || topY > yHi) return;
+    const a = Math.max(lo, surfLo);
+    const b = Math.min(hi, surfHi);
+    if (b <= a) return;
+    segs.push({ x: a, y: topY, w: b - a });
+  };
+
+  // Floor: the widest floor-aligned solid defines the arena bounds (same rule
+  // as surfaceWave.resolveSurface); fall back to a wide default.
   const groundY = ctx?.groundY;
-  let best = null;
-  if (typeof groundY === 'number' && groundY >= p.y - 1) {
-    // Widest floor-aligned solid defines the arena bounds (same rule as
-    // surfaceWave.resolveSurface).
+  if (typeof groundY === 'number') {
     let leftEdge = null, rightEdge = null;
     for (const s of ctx?.solids ?? []) {
       if (!s || typeof s.x !== 'number') continue;
@@ -71,26 +85,25 @@ export function resolveStrikeSurface(p, ctx) {
       const l = s.x, r = s.x + (s.w ?? 0);
       if (leftEdge == null || (r - l) > (rightEdge - leftEdge)) { leftEdge = l; rightEdge = r; }
     }
-    best = { y: groundY, leftEdge: leftEdge ?? -2000, rightEdge: rightEdge ?? 2000 };
+    add(leftEdge ?? -2000, rightEdge ?? 2000, groundY);
   }
+  // Platforms: explicit extra surfaces [{x, y, w}] (tops only).
   for (const pl of ctx?.platforms ?? []) {
-    if (p.x < pl.x || p.x > pl.x + pl.w) continue;
-    if (pl.y >= p.y - 1 && (best == null || pl.y < best.y)) {
-      best = { y: pl.y, leftEdge: pl.x, rightEdge: pl.x + pl.w };
-    }
+    add(pl.x, pl.x + pl.w, pl.y);
   }
-  if (!best) return null;
-  // Clamp the band to the supporting surface's extent.
-  const half = p.width / 2;
-  const lo = Math.max(best.leftEdge, p.x - half);
-  const hi = Math.min(best.rightEdge, p.x + half);
-  if (hi <= lo) return null; // entirely off the surface — nothing to burn
-  return { y: best.y, x: (lo + hi) / 2, w: hi - lo };
+  // Solids (blocks): any solid whose TOP sits inside the scan window counts as
+  // a strikable surface — standing on a block means the block top is hot too.
+  for (const s of ctx?.solids ?? []) {
+    if (!s || typeof s.x !== 'number' || typeof s.y !== 'number') continue;
+    if (Math.abs(s.y - groundY) < 2) continue; // the floor itself, already added
+    add(s.x, s.x + (s.w ?? 0), s.y);
+  }
+  return segs;
 }
 
-/** World-space AABB of the hot band. */
-export function strikeBox(surf, p) {
-  return { x: surf.x - surf.w / 2, y: surf.y - p.height, w: surf.w, h: p.height };
+/** World-space AABB of one hot segment. */
+export function segmentBox(seg, p) {
+  return { x: seg.x, y: seg.y - p.height, w: seg.w, h: p.height };
 }
 
 /**
@@ -106,17 +119,19 @@ export function stepSurfaceStrike(state, p, dt, targets, h) {
   if (state.t >= p.duration) {
     state.done = true;
     state.hb.active = false;
-    h._complete({ reason: 'window-end', hits: state.hitCount });
+    h._complete({ reason: 'window-end', hits: state.hitCount, segments: state.segments.length });
     return true;
   }
 
-  // Hot for the WHOLE window; each target damaged at most once (hitSet lives
-  // on the hitbox and persists across frames of this single window).
+  // Hot for the WHOLE window; each target damaged at most once (the hitbox's
+  // hitSet persists across frames of this single window).
   state.hb.active = true;
-  state.hb.box = strikeBox(state.surf, p);
   state.hb.damage = p.damage;
   const hits = [];
-  processHitboxes([state.hb], targets, (hb, t, dealt) => hits.push({ target: t, dealt }));
+  for (const seg of state.segments) {
+    state.hb.box = segmentBox(seg, p);
+    processHitboxes([state.hb], targets, (hb, t, dealt) => hits.push({ target: t, dealt }));
+  }
   for (const hit of hits) {
     state.hitCount++;
     h._emit('hit', { target: hit.target, dealt: hit.dealt });
@@ -130,45 +145,47 @@ registerPrimitive('surfaceStrike', {
   meta: {
     name: 'Surface Strike',
     effects: [
-      { type: 'ground-strike', desc: 'slam-in band visual riding the collision volume (presentation)' },
+      { type: 'ground-strike', desc: 'slam-in band visual per surface segment (presentation)' },
     ],
-    desc: 'Stationary damaging band along the surface under x, hot for `duration`, each target hit once. Jump to dodge. Caller owns the telegraph.',
+    desc: 'Every surface (floor/platform/block) under the x-span gets a hot band at its own top, for `duration`, each target hit once. Jump to dodge. Caller owns the telegraph.',
     params: [
       { key: 'x', desc: 'center x (world) — impact point' },
-      { key: 'y', desc: 'reference y (world) — surface top under x' },
-      { key: 'width', desc: 'horizontal extent of the hot band (px)' },
-      { key: 'height', desc: 'dangerous area height above surface (px)' },
+      { key: 'y', desc: 'reference y (world) — aim line for the surface scan' },
+      { key: 'width', desc: 'horizontal extent of the strike span (px)' },
+      { key: 'height', desc: 'dangerous area height above each surface (px)' },
+      { key: 'reach', desc: 'vertical scan window around the reference y (px)' },
       { key: 'duration', desc: 'hot window (s)' },
       { key: 'damage', desc: 'per target (hit once per window)' },
-      { key: 'team', desc: "who the band hurts" },
+      { key: 'team', desc: "who the bands hurt" },
     ],
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
     const h = new AttackHandle('surfaceStrike', null, declaredEffectsOf('surfaceStrike'));
-    const surf = resolveStrikeSurface(p, ctx);
-    if (!surf) {
-      // No surface under the point — nothing to burn.
-      h.state = { done: true, surf: null, t: 0, hitCount: 0, hb: null };
+    const segments = resolveStrikeSegments(p, ctx);
+    if (segments.length === 0) {
+      // Nothing supports the span — nothing to burn.
+      h.state = { done: true, segments: [], t: 0, hitCount: 0, hb: null };
       h._emit('expire');
-      h._complete({ reason: 'no-surface' });
+      h._complete({ reason: 'no-surface', segments: 0 });
       return h;
     }
-    const hb = makeHitbox({ owner: ctx.attacker, team: p.team, box: strikeBox(surf, p), damage: p.damage, method: p.method });
+    const hb = makeHitbox({ owner: ctx.attacker, team: p.team, box: segmentBox(segments[0], p), damage: p.damage, method: p.method });
     resetHitbox(hb);
-    h.state = { done: false, surf, t: 0, hitCount: 0, hb };
+    h.state = { done: false, segments, t: 0, hitCount: 0, hb };
 
-    // Presentation twin owned by the PRIMITIVE (same pattern as surfaceWave's
-    // ground-wave crest): the real ground-strike effect rides alongside the
-    // collision volume so EVERY host gets the slam visual for free. Geometry
-    // comes from the RESOLVED SURFACE — the band slams in exactly where the
-    // damage is and fades exactly when the window closes.
-    fireDeclared({ type: 'ground-strike', params: {
-      x: surf.x, y: surf.y,
-      width: surf.w,
-      thickness: Math.min(14, p.height),
-      duration: Math.max(0.1, p.duration),
-    } }, h.declaredEffectTypes());
+    // Presentation twins owned by the PRIMITIVE (same pattern as surfaceWave's
+    // ground-wave crest): one real ground-strike effect PER SEGMENT, riding
+    // alongside that segment's collision volume so EVERY host sees the slam
+    // exactly where the damage is — floor strip, platform strip, block strip.
+    for (const seg of segments) {
+      fireDeclared({ type: 'ground-strike', params: {
+        x: seg.x + seg.w / 2, y: seg.y,
+        width: seg.w,
+        thickness: Math.min(14, p.height),
+        duration: Math.max(0.1, p.duration),
+      } }, h.declaredEffectTypes());
+    }
 
     h.step = (dt, targets) => stepSurfaceStrike(h.state, p, dt, targets ?? [], h);
     return h;

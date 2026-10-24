@@ -2,7 +2,7 @@
 // Run: node js/test/attack/surfaceStrike.test.js
 
 import { strict as assert } from 'node:assert';
-import { strikeBox, resolveStrikeSurface, stepSurfaceStrike } from '../../combat/attack/primitives/surfaceStrike.js';
+import { segmentBox, resolveStrikeSegments, stepSurfaceStrike } from '../../combat/attack/primitives/surfaceStrike.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { LAYER } from '../../consts.js';
@@ -16,7 +16,7 @@ function ok(name, fn) {
 const DT = 1 / 60;
 const GROUND_Y = 480;
 const attacker = () => ({ x: 100, y: 100, w: 32, h: 32 });
-const P = { x: 400, y: GROUND_Y, width: 240, height: 30, duration: 0.35, damage: 25, team: 'neutral' };
+const P = { x: 400, y: GROUND_Y, width: 240, height: 30, reach: 120, duration: 0.35, damage: 25, team: 'neutral' };
 
 function ctxWith({ platforms = [], solids = [] } = {}) {
   return makeContext(attacker(), { groundY: GROUND_Y, platforms, solids });
@@ -29,52 +29,65 @@ function dummyEnemy(x, y, hp = 100) {
   };
 }
 
-ok('surface resolves to the floor by default', () => {
-  const surf = resolveStrikeSurface(P, ctxWith());
-  assert.equal(surf.y, GROUND_Y);
-  assert.equal(surf.w, 240); // full width, floor is wide
+ok('floor-only scene → one full-width segment on the floor', () => {
+  const segs = resolveStrikeSegments(P, ctxWith());
+  assert.equal(segs.length, 1);
+  assert.equal(segs[0].y, GROUND_Y);
+  assert.equal(segs[0].w, 240); // floor is wide → full span
 });
 
-ok('band box sits ON the surface line (top = y - height)', () => {
-  const surf = resolveStrikeSurface(P, ctxWith());
-  const box = strikeBox(surf, P);
-  assert.deepEqual(box, { x: 280, y: GROUND_Y - 30, w: 240, h: 30 });
-});
-
-ok('a platform under the point climbs up to it', () => {
+ok('ALL surfaces in the span burn: platform + floor = two segments', () => {
   const platTop = GROUND_Y - 70;
-  const surf = resolveStrikeSurface({ ...P, y: platTop }, ctxWith({ platforms: [{ x: 300, y: platTop, w: 200 }] }));
-  assert.equal(surf.y, platTop, 'band rides the platform top');
+  const segs = resolveStrikeSegments({ ...P, y: platTop }, ctxWith({ platforms: [{ x: 300, y: platTop, w: 200 }] }));
+  const ys = segs.map((s) => s.y).sort((a, b) => a - b);
+  assert.deepEqual(ys, [platTop, GROUND_Y], `platform AND floor both hot (got ${ys})`);
 });
 
-ok('band clamps to the platform extent near an edge', () => {
+ok('segment clamps to the surface extent near an edge', () => {
   const platTop = GROUND_Y - 70;
-  // Platform spans 500..600; center x=590 with width 240 → clamped to 500..600.
-  const surf = resolveStrikeSurface({ ...P, x: 590, y: platTop }, ctxWith({ platforms: [{ x: 500, y: platTop, w: 100 }] }));
-  assert.equal(surf.w, 100, `clamped width (got ${surf.w})`);
-  assert.equal(surf.x, 550, 'clamped band centered on the remaining span');
+  // Platform spans 500..600; strike center x=590 width 240 → platform seg clamped to 500..600.
+  const segs = resolveStrikeSegments({ ...P, x: 590, y: platTop }, ctxWith({ platforms: [{ x: 500, y: platTop, w: 100 }] }));
+  const platSeg = segs.find((s) => s.y === platTop);
+  assert.equal(platSeg.w, 100, `clamped width (got ${platSeg?.w})`);
+  assert.equal(platSeg.x, 500);
 });
 
-ok('no surface under the point → no-surface complete', () => {
-  const h = invoke('surfaceStrike', { ...P, x: 400, y: 100 }, makeContext(attacker(), {}));
+ok('block solid tops count as strikable surfaces', () => {
+  const blockTop = GROUND_Y - 50;
+  const segs = resolveStrikeSegments({ ...P, y: blockTop }, ctxWith({ solids: [{ x: 350, y: blockTop, w: 100, h: 50 }] }));
+  const ys = segs.map((s) => s.y).sort((a, b) => a - b);
+  assert.deepEqual(ys, [blockTop, GROUND_Y], 'block top + floor');
+});
+
+ok('surface outside the vertical reach window is ignored', () => {
+  const highTop = GROUND_Y - 300; // far above the ±120 scan window
+  const segs = resolveStrikeSegments({ ...P, y: GROUND_Y - 100 }, ctxWith({ platforms: [{ x: 300, y: highTop, w: 200 }] }));
+  assert.ok(!segs.some((s) => s.y === highTop), 'high platform not scanned');
+});
+
+ok('no surface under the span → no-surface complete', () => {
+  const h = invoke('surfaceStrike', { ...P, x: 400, y: 100, reach: 50 }, makeContext(attacker(), {}));
   assert.equal(h._completed, true);
   assert.equal(h.state.done, true);
 });
 
-ok('damage lands once per target during the window', () => {
-  const enemy = dummyEnemy(390, GROUND_Y - 24); // standing in the band
-  const h = invoke('surfaceStrike', P, ctxWith());
+ok('damage lands once per target across ALL segments', () => {
+  const platTop = GROUND_Y - 70;
+  const onPlat = dummyEnemy(390, platTop - 24);   // standing on the platform
+  const onFloor = dummyEnemy(390, GROUND_Y - 24); // standing on the floor
+  const h = invoke('surfaceStrike', { ...P, y: platTop }, ctxWith({ platforms: [{ x: 300, y: platTop, w: 200 }] }));
   const hits = [];
   h.on('hit', (i) => hits.push(i.dealt));
   let finished = false;
-  for (let i = 0; i < 40 && !finished; i++) finished = h.step(DT, [enemy]);
+  for (let i = 0; i < 40 && !finished; i++) finished = h.step(DT, [onPlat, onFloor]);
   assert.ok(finished, 'window closed');
-  assert.equal(hits.length, 1, `one hit event (got ${hits.length})`);
-  assert.equal(enemy.hp, 75, `took exactly one ${P.damage} hit`);
+  assert.equal(onPlat.hp, 75, 'platform victim hit once');
+  assert.equal(onFloor.hp, 75, 'floor victim hit once');
+  assert.equal(hits.length, 2, `two hit events total (got ${hits.length})`);
 });
 
-ok('target outside the band takes nothing', () => {
-  const enemy = dummyEnemy(600, GROUND_Y - 24); // right of the 280..520 band
+ok('target outside the span takes nothing', () => {
+  const enemy = dummyEnemy(600, GROUND_Y - 24); // right of the 280..520 span
   const h = invoke('surfaceStrike', P, ctxWith());
   let n = 0;
   h.on('hit', () => n++);
@@ -85,18 +98,18 @@ ok('target outside the band takes nothing', () => {
   assert.equal(enemy.hp, 100);
 });
 
-ok('airborne target above the band height is safe (jump dodge)', () => {
-  const enemy = dummyEnemy(390, GROUND_Y - 24 - 40); // 40px above the 30px band
+ok('airborne target above every band height is safe (jump dodge)', () => {
+  const enemy = dummyEnemy(390, GROUND_Y - 24 - 40); // 40px above the 30px bands
   const h = invoke('surfaceStrike', P, ctxWith());
   let n = 0;
   h.on('hit', () => n++);
   let finished = false;
   for (let i = 0; i < 40 && !finished; i++) finished = h.step(DT, [enemy]);
   assert.ok(finished);
-  assert.equal(n, 0, 'jumping clears the band');
+  assert.equal(n, 0, 'jumping clears the bands');
 });
 
-ok('complete carries the hit count', () => {
+ok('complete carries hit count + segment count', () => {
   const a = dummyEnemy(300, GROUND_Y - 24);
   const b = dummyEnemy(450, GROUND_Y - 24);
   const h = invoke('surfaceStrike', P, ctxWith());
@@ -106,6 +119,7 @@ ok('complete carries the hit count', () => {
   for (let i = 0; i < 40 && !finished; i++) finished = h.step(DT, [a, b]);
   assert.ok(finished);
   assert.equal(result.hits, 2, `both victims counted (got ${result?.hits})`);
+  assert.equal(result.segments, 1, 'floor-only scene → 1 segment');
 });
 
 ok('cancel tears down the window', () => {
