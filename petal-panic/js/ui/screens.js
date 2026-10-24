@@ -7,6 +7,7 @@ import {S, getState, tryTransition} from '../core/state.js';
 import { hasSave } from '../systems/progressStore.js';
 import { areaEntryOnAction, setAreaEntryDataCallback, getAreaEntryData as getAreaEntryDataFromLifecycle } from '../systems/lifecycle.js';
 import { newGameFromMenu, continueFromMenu, setMenuHeroRegistrar } from '../systems/lifecycle.js';
+import { startArea } from '../systems/lifecycle.js';
 import { showLevelReward, rewardOnAction, setRewardDataCallback, setEndOfGameScoreCallback } from '../systems/lifecycle.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
@@ -855,6 +856,333 @@ export const Menu = {
   reset() { this.focus = 0; this.creditsOpen = false; },
 };
 
+import { buildLevelMap, buildSubAreasForLevel } from './levelSelectModel.js';
+import { loadStore } from '../systems/progressStore.js';
+
+// =============================================================================
+// LEVEL SELECT SCREEN (menu-hub plan §3.2)
+//
+// Two-pane canvas screen in the hub's card/focus style:
+//   left  — world map: 8 level markers in one row (available = circle,
+//           completed = gold star, locked = lock icon; selected = pin above)
+//           plus a row of 5 sub-area chips for the selected level (X-1..X-4, X-B)
+//   right — detail card for the FOCUSED sub-area: status line, and for locked
+//           cards the "Pass <previous stage> to unlock" hint (the model's
+//           tooltip); for unlocked/completed cards a play/replay hint.
+// Navigation: up/down change the level, left/right change the zone within the
+// selected level, confirm starts the focused UNLOCKED zone through AREA_ENTRY
+// (startArea → showAreaEntry), back returns MENU. Locked levels/zones are
+// skipped by navigation so focus can only rest on playable content.
+// The zone+checkpoint installation for the LEVEL_SELECT→AREA_ENTRY transition
+// is owned by update.js's area-entry install hook (generalized from MENU).
+// =============================================================================
+
+// --- Level-select layout constants ------------------------------------------
+const LS_TITLE_Y = 60;               // "LEVEL SELECT" marquee baseline
+const LS_TITLE_SIZE = 44;
+const LS_MAP_Y = 170;                // world-map marker centers
+const LS_MARKER_R = 16;              // marker circle radius
+const LS_MAP_X0 = 90;                // first marker center X
+const LS_MAP_DX = 100;               // horizontal spacing between markers
+const LS_CHIP_Y = 300;               // sub-area chip centers
+const LS_CHIP_W = 74;                // chip width
+const LS_CHIP_H = 44;                // chip height
+const LS_CHIP_X0 = 90;               // first chip center X
+const LS_CHIP_DX = 84;               // horizontal spacing between chips
+const LS_CARD_X = 560;               // right detail-card left edge
+const LS_CARD_Y = 120;               // right detail-card top edge
+const LS_CARD_W = 340;
+const LS_CARD_H = 240;
+const LS_NAV_Y = 480;                // keycap nav bar Y
+
+/** Draw a small padlock glyph centered at (x, y) with `size` px body height. */
+function drawLockIcon(ctx, x, y, size, color) {
+  const w = size * 0.8, h = size;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = Math.max(1.5, size / 8);
+  // shackle
+  ctx.beginPath();
+  ctx.arc(x, y - h * 0.25, w * 0.32, Math.PI, 0);
+  ctx.stroke();
+  // body
+  roundRect(ctx, x - w / 2, y - h * 0.25, w, h * 0.75, size / 10);
+  ctx.fill();
+  ctx.restore();
+}
+
+export const LevelSelect = {
+  /** Focus is an index into the model arrays: levelIdx (0..7), zoneIdx (0..4). */
+  focus: { levelIdx: 0, zoneIdx: 0 },
+
+  /** Live model data (rebuilt every draw + onAction so progress changes show). */
+  _map() { return buildLevelMap(loadStore().progress); },
+  _zones(levelIdx) { return buildSubAreasForLevel(this._map()[levelIdx].level, loadStore().progress); },
+
+  /** @param {CanvasRenderingContext2D} ctx */
+  draw(ctx) {
+    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+    grad.addColorStop(0, '#0d0d1a');
+    grad.addColorStop(1, '#1a1a2e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    drawMarqueeTitle(ctx, 'LEVEL SELECT', VIEW_W / 2, LS_TITLE_Y, LS_TITLE_SIZE, { color: CREAM });
+
+    const map = this._map();
+    const zones = this._zones(this.focus.levelIdx);
+    const selLevel = map[this.focus.levelIdx];
+    const focused = zones[this.focus.zoneIdx];
+
+    // --- Left pane: world map (8 level markers in one row) -------------------
+    map.forEach((m, i) => {
+      const x = LS_MAP_X0 + i * LS_MAP_DX;
+      const selected = i === this.focus.levelIdx;
+      if (selected) {
+        // Pin above the selected marker.
+        ctx.save();
+        ctx.fillStyle = PINK;
+        ctx.beginPath();
+        ctx.moveTo(x, LS_MAP_Y - LS_MARKER_R - 4);
+        ctx.lineTo(x - 8, LS_MAP_Y - LS_MARKER_R - 18);
+        ctx.lineTo(x + 8, LS_MAP_Y - LS_MARKER_R - 18);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = `bold 13px ${FONT_UI}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(m.name.toUpperCase(), x, LS_MAP_Y - LS_MARKER_R - 30);
+        ctx.restore();
+      }
+      ctx.save();
+      if (m.status === 'locked') {
+        // Dimmed disc + lock icon.
+        ctx.globalAlpha = 0.45;
+        ctx.fillStyle = '#2a2a3a';
+        ctx.beginPath();
+        ctx.arc(x, LS_MAP_Y, LS_MARKER_R, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        drawLockIcon(ctx, x, LS_MAP_Y, 14, '#8a8a9a');
+      } else if (m.status === 'completed') {
+        ctx.fillStyle = GOLD;
+        ctx.beginPath();
+        ctx.arc(x, LS_MAP_Y, LS_MARKER_R, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1a1a2e';
+        ctx.font = `bold 16px ${FONT_UI}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('★', x, LS_MAP_Y + 1);
+      } else {
+        ctx.fillStyle = selected ? PINK : '#cfc4a8';
+        ctx.beginPath();
+        ctx.arc(x, LS_MAP_Y, LS_MARKER_R, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Level number under every marker.
+      ctx.globalAlpha = m.status === 'locked' ? 0.45 : 1;
+      ctx.fillStyle = CREAM;
+      ctx.font = `12px ${FONT_UI}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(String(m.level), x, LS_MAP_Y + LS_MARKER_R + 4);
+      ctx.restore();
+    });
+
+    // --- Left pane: 5 sub-area chips for the selected level ------------------
+    ctx.save();
+    ctx.font = `14px ${FONT_UI}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#b9a98a';
+    ctx.fillText(`${selLevel.level} · ${selLevel.name.toUpperCase()} — AREAS`, LS_MAP_X0 - 40, LS_CHIP_Y - 38);
+    ctx.restore();
+
+    zones.forEach((z, i) => {
+      const x = LS_CHIP_X0 + i * LS_CHIP_DX;
+      const cx = x - LS_CHIP_W / 2;
+      const cy = LS_CHIP_Y - LS_CHIP_H / 2;
+      const focusedChip = i === this.focus.zoneIdx;
+      ctx.save();
+      // Chip background — dimmed when locked, pink pill when focused.
+      if (focusedChip) {
+        ctx.fillStyle = COLOR_PILL_FILL;
+        roundRect(ctx, cx, cy, LS_CHIP_W, LS_CHIP_H, 8);
+        ctx.fill();
+        ctx.strokeStyle = COLOR_PILL_STROKE;
+        ctx.lineWidth = 2;
+        roundRect(ctx, cx, cy, LS_CHIP_W, LS_CHIP_H, 8);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = z.status === 'locked' ? 0.45 : 1;
+      ctx.strokeStyle = z.boss ? GOLD : '#8a7f68';
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, cx, cy, LS_CHIP_W, LS_CHIP_H, 8);
+      ctx.stroke();
+      // Label + status glyph.
+      ctx.fillStyle = focusedChip ? COLOR_OPT_FOCUSED : CREAM;
+      ctx.font = `bold 17px ${FONT_UI}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      if (z.status === 'locked') {
+        drawLockIcon(ctx, x, LS_CHIP_Y - 8, 12, '#8a8a9a');
+        ctx.globalAlpha = 0.45;
+        ctx.font = `13px ${FONT_UI}`;
+        ctx.fillText(z.label, x, LS_CHIP_Y + 12);
+      } else if (z.status === 'completed') {
+        ctx.fillText(`${z.label} ★`, x, LS_CHIP_Y);
+      } else {
+        ctx.fillText(z.label, x, LS_CHIP_Y);
+      }
+      ctx.restore();
+    });
+
+    // --- Right pane: detail card for the focused sub-area --------------------
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    roundRect(ctx, LS_CARD_X, LS_CARD_Y, LS_CARD_W, LS_CARD_H, 12);
+    ctx.fill();
+    ctx.strokeStyle = focused.status === 'locked' ? 'rgba(138,138,154,0.5)' : COLOR_PILL_STROKE;
+    ctx.lineWidth = 2;
+    roundRect(ctx, LS_CARD_X, LS_CARD_Y, LS_CARD_W, LS_CARD_H, 12);
+    ctx.stroke();
+
+    const ccx = LS_CARD_X + LS_CARD_W / 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Card header: big area id.
+    ctx.globalAlpha = focused.status === 'locked' ? 0.5 : 1;
+    drawMarqueeTitle(ctx, focused.label, ccx, LS_CARD_Y + 55, 40, {
+      color: focused.status === 'completed' ? GOLD : CREAM,
+    });
+    ctx.font = `16px ${FONT_UI}`;
+    ctx.fillStyle = '#b9a98a';
+    ctx.fillText(focused.boss ? `${selLevel.name} — BOSS ZONE` : `${selLevel.name} — AREA ${focused.zone}`, ccx, LS_CARD_Y + 95);
+
+    // Status line + hint (the hover-style tooltip lives here, plan §3.2).
+    if (focused.status === 'locked') {
+      drawLockIcon(ctx, ccx, LS_CARD_Y + 140, 22, '#8a8a9a');
+      ctx.globalAlpha = 1;
+      ctx.font = `17px ${FONT_UI}`;
+      ctx.fillStyle = '#ff9f9f';
+      ctx.fillText(focused.tooltip ?? '', ccx, LS_CARD_Y + 175);
+      ctx.font = `13px ${FONT_UI}`;
+      ctx.fillStyle = '#8a8a9a';
+      ctx.fillText('LOCKED', ccx, LS_CARD_Y + 205);
+    } else if (focused.status === 'completed') {
+      ctx.font = `17px ${FONT_UI}`;
+      ctx.fillStyle = GOLD;
+      ctx.fillText('COMPLETED ★', ccx, LS_CARD_Y + 150);
+      ctx.font = `14px ${FONT_UI}`;
+      ctx.fillStyle = '#b9a98a';
+      ctx.fillText('Press Confirm to replay', ccx, LS_CARD_Y + 180);
+    } else {
+      ctx.font = `17px ${FONT_UI}`;
+      ctx.fillStyle = COLOR_OPT_FOCUSED;
+      ctx.fillText('READY TO PLAY', ccx, LS_CARD_Y + 150);
+      ctx.font = `14px ${FONT_UI}`;
+      ctx.fillStyle = '#b9a98a';
+      ctx.fillText('Press Confirm to start', ccx, LS_CARD_Y + 180);
+    }
+    ctx.restore();
+
+    // --- Keycap nav bar -------------------------------------------------------
+    drawNavBar(ctx, VIEW_W / 2, LS_NAV_Y, navHintEntries([
+      { actions: ['up', 'down'], label: 'Level', opts: { mode: 'select_layout' } },
+      { actions: ['left', 'right'], label: 'Area', opts: { mode: 'select_layout' } },
+      { action: 'confirm', label: 'Start', opts: { mode: 'select_layout' } },
+      { action: 'back', label: 'Menu', opts: { mode: 'select_layout' } },
+    ]));
+  },
+
+  /** Step the level focus by dir, skipping locked levels (wrap-around). */
+  _moveLevel(dir) {
+    const map = this._map();
+    let next = this.focus.levelIdx;
+    for (let step = 0; step < map.length; step++) {
+      next = (next + dir + map.length) % map.length;
+      if (map[next].status !== 'locked') {
+        this.focus.levelIdx = next;
+        this._clampZone();
+        return;
+      }
+    }
+  },
+
+  /** Step the zone focus by dir, skipping locked zones (wrap-around). */
+  _moveZone(dir) {
+    const zones = this._zones(this.focus.levelIdx);
+    let next = this.focus.zoneIdx;
+    for (let step = 0; step < zones.length; step++) {
+      next = (next + dir + zones.length) % zones.length;
+      if (zones[next].status !== 'locked') { this.focus.zoneIdx = next; return; }
+    }
+  },
+
+  /** Keep the zone focus on an unlocked entry after the level changes. */
+  _clampZone() {
+    const zones = this._zones(this.focus.levelIdx);
+    if (zones[this.focus.zoneIdx]?.status === 'locked') {
+      const open = zones.findIndex(z => z.status !== 'locked');
+      this.focus.zoneIdx = open >= 0 ? open : 0;
+    }
+  },
+
+  /**
+   * Handle semantic input. Up/down change the level, left/right the zone,
+   * confirm starts the focused unlocked zone through AREA_ENTRY, back
+   * returns MENU.
+   * @returns {boolean} whether the action was handled
+   */
+  onAction(action) {
+    switch (action) {
+      case 'up':
+        this._moveLevel(-1);
+        return true;
+      case 'down':
+        this._moveLevel(1);
+        return true;
+      case 'left':
+        this._moveZone(-1);
+        return true;
+      case 'right':
+        this._moveZone(1);
+        return true;
+      case 'back':
+        if (tryTransition(S.MENU)) console.log('[screens] LEVEL_SELECT → MENU (back)');
+        return true;
+      case 'confirm': {
+        const focused = this._zones(this.focus.levelIdx)[this.focus.zoneIdx];
+        if (!focused || focused.status === 'locked') return true; // safety net
+        const h = getMenuHero();
+        // I2 (review round 1): no registered hero (fresh boot → MENU → Level
+        // Select) means there is NO live hero instance for the install hook in
+        // update.js to resume on — fabricating a stub here would show the
+        // entry screen with stub lives while AREA_ENTRY→PLAY starts play on a
+        // different instance. Do NOT fabricate: warn and stay on LEVEL_SELECT.
+        // In real gameplay a hero always exists by the time this screen is
+        // reachable (startGame registers it via setMenuHero at boot).
+        if (!h) {
+          console.warn('[screens] LEVEL_SELECT confirm blocked: no menu hero registered yet');
+          return true;
+        }
+        // startArea sets currentLevel/currentArea, resets specials, records the
+        // entry snapshot and opens the shared AREA_ENTRY screen (showAreaEntry).
+        // Zone content + spawn checkpoint install via update.js's
+        // LEVEL_SELECT→AREA_ENTRY hook (same path as MENU continue).
+        startArea(h, focused.start.level, focused.start.area);
+        console.log(`[screens] LEVEL_SELECT → AREA_ENTRY (${focused.label})`);
+        return true;
+      }
+    }
+    return false;
+  },
+
+  reset() { this.focus = { levelIdx: 0, zoneIdx: 0 }; },
+};
+
 // =============================================================================
 // PAUSE SCREEN (design §20, )
 // Drawn as a semi-transparent overlay on top of the frozen Play frame — the
@@ -1353,6 +1681,10 @@ export function drawScreen(ctx, hero) {
     Menu.draw(ctx);
     return true;
   }
+  if (s === S.LEVEL_SELECT) {
+    LevelSelect.draw(ctx);
+    return true;
+  }
   if (s === S.SELECT) {
     Select.draw(ctx);
     return true;
@@ -1418,6 +1750,7 @@ export function screenOnAction(action, hero, actions = {}) {
   if (consumedGeneration) return true;
   if (s === S.HOME) { Home.onAction(action); return true; }
   if (s === S.MENU) return Menu.onAction(action);
+  if (s === S.LEVEL_SELECT) return LevelSelect.onAction(action);
   if (s === S.SELECT) { Select.onAction(action); return true; }
   if (s === S.REMAP) {
     if (Remap.onAction(action) === 'exit') tryTransition(remapParent);
@@ -1454,6 +1787,7 @@ export function dispatchScreenInput(engine, hero, actions) {
 export function screenReset(s, from) {
   if (s === S.SELECT) Select.reset();
   if (s === S.MENU) Menu.reset();
+  if (s === S.LEVEL_SELECT) LevelSelect.reset();
   if (s === S.PAUSE) Pause.reset();
   if (s === S.OVER) GameOver.focus = 0;
   // REMAP returns to wherever it was opened from: HOME, PAUSE, or MENU.

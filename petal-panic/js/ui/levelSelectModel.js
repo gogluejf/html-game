@@ -10,8 +10,26 @@
 // progress.completedAreas.
 
 import { LEVEL_CONFIGS } from '../world/levelConfigs.js';
+// I1 (review round 1): world-content availability gate. level.js's LEVELS is
+// the single source of truth for levels that actually HAVE playable world
+// content (buildLevelZones/buildAllZoneTerrain are handed a LEVELS entry).
+// Today only Level 1 ('Big Top') exists — levels 2..8 have LEVEL_CONFIGS
+// entries but no LEVELS definition, so their stages must NOT be startable:
+// update.js builds the world once from LEVELS[0] and never rebinds it to
+// hero.currentLevel, so confirming e.g. 2-1 would silently play Level 1
+// geometry. Full multi-level world rebinding is deferred work; this gate keeps
+// the screen honest in the meantime.
+import { LEVELS } from '../world/level.js';
 
 export const AREA_BOSS = 5; // matches lifecycle's zone-model boss index
+
+/** Levels with an actual LEVELS world-content definition (playable today). */
+const CONTENT_LEVELS = new Set(LEVELS.map((l) => l.index));
+
+/** True when the level has world content installed (a LEVELS entry). */
+export function hasLevelContent(level) {
+  return CONTENT_LEVELS.has(level);
+}
 
 const ORDINARY_AREAS = [1, 2, 3, 4];
 
@@ -40,6 +58,12 @@ function isCompleted(completedAreas, areaId) {
  *                     later level once its predecessor is completed);
  *   - 'locked'      — predecessor level not completed.
  *
+ * I1 (review round 1): a level whose world content does not exist yet (no
+ * LEVELS entry in level.js) is ALWAYS 'locked', even when its predecessor is
+ * completed — the model owns availability, so the screen never has to second-
+ * guess it. Deferred multi-level work adds LEVELS entries and this gate opens
+ * automatically.
+ *
  * @param {object} progress the store.progress section (or null).
  * @returns {Array<{level:number,name:string,status:'locked'|'available'|'completed',selected:boolean}>}
  */
@@ -51,7 +75,10 @@ export function buildLevelMap(progress) {
       a => isCompleted(completedAreas, `${level}-${a >= AREA_BOSS ? 'B' : a}`));
     let status;
     if (allDone) status = 'completed';
-    else if (i === 0 || LEVEL_CONFIGS[i - 1] && [...ORDINARY_AREAS, AREA_BOSS].every(
+    else if (!hasLevelContent(level)) {
+      // No world content yet — locked regardless of progress (I1).
+      status = 'locked';
+    } else if (i === 0 || LEVEL_CONFIGS[i - 1] && [...ORDINARY_AREAS, AREA_BOSS].every(
       a => isCompleted(completedAreas, `${LEVEL_CONFIGS[i - 1].index}-${a >= AREA_BOSS ? 'B' : a}`))) {
       status = 'available';
     } else status = 'locked';
@@ -81,7 +108,14 @@ export function buildSubAreasForLevel(level, progress) {
       ? `${level}-${zones[i - 1] >= AREA_BOSS ? 'B' : zones[i - 1]}`
       : (level > 1 ? `${level - 1}-B` : null);
     const completed = isCompleted(completedAreas, label);
-    const unlocked = prevLabel === null || isCompleted(completedAreas, prevLabel);
+    // I1 (review round 1): a sub-area is playable only when its level has
+    // world content (a LEVELS entry). Levels beyond the content frontier are
+    // shown but locked with an explicit 'no content yet' reason — confirming
+    // them would otherwise install Level 1's geometry (update.js builds the
+    // world once from LEVELS[0] and never rebinds to hero.currentLevel; full
+    // multi-level rebinding is deferred work).
+    const noContent = !hasLevelContent(level);
+    const unlocked = !noContent && (prevLabel === null || isCompleted(completedAreas, prevLabel));
     let status;
     if (completed) status = 'completed';
     else if (unlocked) status = 'unlocked';
@@ -92,7 +126,9 @@ export function buildSubAreasForLevel(level, progress) {
       label,
       boss: area === AREA_BOSS,
       status,
-      tooltip: status === 'locked' ? `Pass ${prevLabel} to unlock` : null,
+      tooltip: noContent
+        ? 'No content yet — coming soon'
+        : (status === 'locked' ? `Pass ${prevLabel} to unlock` : null),
       start: { level, area },
     };
   });

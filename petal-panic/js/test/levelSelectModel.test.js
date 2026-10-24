@@ -42,7 +42,10 @@ test('completing a level marks it completed and unlocks the next', () => {
   completeLevel(p, 1);
   const map = buildLevelMap(p);
   assert.equal(map[0].status, 'completed');
-  assert.equal(map[1].status, 'available');
+  // I1 (review round 1): level 2 has no LEVELS world-content entry yet, so it
+  // stays locked even with its predecessor completed (content gate). The
+  // progress chain itself is covered by the sub-area tests below.
+  assert.equal(map[1].status, 'locked');
   assert.equal(map[2].status, 'locked');
 });
 
@@ -57,7 +60,11 @@ test('level availability chains through the previous level: a later level stays 
   completeLevel(p, 1);
   for (const area of [1, 2, 3]) p.completedAreas[`2-${area}`] = true; // 2-B missing
   const map = buildLevelMap(p);
-  assert.equal(map[1].status, 'available');
+  // I1 (review round 1): levels 2-8 have no LEVELS world-content entry yet, so
+  // they are locked by the content gate regardless of progress — the progress
+  // chain assertion below holds trivially and remains valid once multi-level
+  // content lands.
+  assert.equal(map[1].status, 'locked');
   assert.equal(map[2].status, 'locked', 'level 3 locks until level 2 fully completes');
 });
 
@@ -101,18 +108,25 @@ test('completing areas unlocks the next sub-area and flags completion', () => {
 test('boss area completes the level chain: next level opens at its first sub-area', () => {
   const p = empty();
   completeLevel(p, 1);
+  // I1 (review round 1): levels beyond the LEVELS content frontier (level.js
+  // has only Level 1 today) are locked with a 'no content yet' reason even
+  // when their predecessor is completed — full multi-level world rebinding is
+  // deferred work. The progress-gate logic below still applies to the tooltip
+  // of the FIRST zone once content exists; here we assert the content gate.
   const next = buildSubAreasForLevel(2, p);
-  assert.equal(next[0].status, 'unlocked', '2-1 opens after 1-B');
-  assert.equal(next[1].status, 'locked');
-  assert.equal(next[1].tooltip, 'Pass 2-1 to unlock');
+  assert.equal(next[0].status, 'locked', '2-1 locked — no world content yet');
+  assert.ok(String(next[0].tooltip).toLowerCase().includes('content'),
+    `tooltip names missing content, got: ${next[0].tooltip}`);
 });
 
 test('first sub-area of a later level locks until the previous level boss is done', () => {
   const p = empty();
   p.completedAreas['1-4'] = true; // everything but 1-B
   const subs = buildSubAreasForLevel(2, p);
+  // Content gate wins over the progress gate (I1): level 2 has no LEVELS
+  // entry, so its tooltip reports the missing content, not the 1-B gate.
   assert.equal(subs[0].status, 'locked');
-  assert.equal(subs[0].tooltip, 'Pass 1-B to unlock');
+  assert.ok(String(subs[0].tooltip).toLowerCase().includes('content'));
 });
 
 test('null/mistyped progress degrades to defaults without throwing', () => {

@@ -62,7 +62,7 @@
     },
     "3.1": {
       "number": "3.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Level select model",
       "milestone": "Level Select and Boss Rush",
       "milestone_number": "3",
@@ -77,10 +77,18 @@
     },
     "3.2": {
       "number": "3.2",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Level select screen",
       "milestone": "Level Select and Boss Rush",
-      "milestone_number": "3"
+      "milestone_number": "3",
+      "summary": {
+        "lessons_learned": "The shared roundRect() helper draws via arcTo corners, not a native roundRect call \u2014 headless geometry assertions must key off arcTo corner coordinates (x+w, y) rather than method names. Proxy-based ctx stubs record property sets (globalAlpha etc.) separately from method calls.",
+        "tradeoffs": "Level names come from levelSelectModel (LEVEL_CONFIGS) while area-entry uses world/level.js LEVELS \u2014 only level 1 exists in LEVELS today, so starting levels 2+ shows 'Level N' fallback until multi-level world support lands (pre-existing gap, not introduced here). Confirm routes through startArea which resets specials and records an entry snapshot \u2014 same semantics as a normal mid-run area advance.",
+        "done": "Added LevelSelect screen in screens.js (two-pane: 8 level markers row + 5 sub-area chips for selected level on the left, right-side detail card with lock hint/play hint), wired into drawScreen/screenOnAction/screenReset and render.js full-screen skip list; generalized update.js AREA_ENTRY install hook from MENU to also cover LEVEL_SELECT; confirm starts the focused unlocked zone via lifecycle.startArea \u2192 showAreaEntry. New headless test js/test/levelSelectScreen.test.js (9 tests) covers all acceptance bullets.",
+        "confidence": "high",
+        "decisions": "Focus model is {levelIdx, zoneIdx} into the pure model arrays; navigation skips locked levels/zones (wrap-around) so focus can only rest on playable content; locked-focus confirm is a no-op safety net. Zone/checkpoint installation reuses the existing MENU\u2192AREA_ENTRY hook by generalizing its from-state check rather than duplicating it. Detail-card tooltip text comes straight from the model's tooltip field ('Pass X-Y to unlock').",
+        "failures": "None"
+      }
     },
     "3.3": {
       "number": "3.3",
