@@ -95,7 +95,7 @@ export function layoutAt(st, imgs, W, H, mode){
     // current sprite-box center (offset places the frame so its center sits there)
     const ccx = f.offset.x, ccy = f.offset.y;
     // target position of the anchor point
-    const tx = mode==='center' ? 0 : w/2;           // center→0 ; leftbottom→left edge at 0 (offset.x = w/2)
+    const tx = (mode==='center' || mode==='centerbottom') ? 0 : w/2;   // center-x for center/centerbottom ; left edge at 0 for leftbottom
     const ty = mode==='center' ? 0 : -h/2;          // center→0 ; leftbottom→bottom at 0 (offset.y = -h/2)
     const dx = tx - ccx, dy = ty - ccy;             // this frame's shift
     if (i === fi){ curDx = dx; curDy = dy; }        // remember the current frame's shift
@@ -113,7 +113,7 @@ export function layoutAt(st, imgs, W, H, mode){
     // box is stored TOP-LEFT based (see defaultBoxes): rect spans [x, x+w] x [y, y+h].
     //   center     -> box CENTER to (0,0)      => top-left to (-w/2, -h/2)
     //   leftbottom -> LEFT edge to x=0, BOTTOM to y=0 => top-left to (0, -h)
-    const tx = mode==='center' ? -c.w/2 : 0;
+    const tx = mode==='center' ? -c.w/2 : (mode==='centerbottom' ? -c.w/2 : 0);
     const ty = mode==='center' ? -c.h/2 : -c.h;
     c.x += tx - c.x;
     c.y += ty - c.y;
@@ -154,13 +154,15 @@ export async function selectEntity(li, ei, opts){
   const en = app.manifest.labels[li].entities[ei];
   document.querySelectorAll('.ent').forEach(e=>e.classList.remove('on'));
   en._el.classList.add('on');
-  // keep the selected row visible with ~2 rows of headroom above it.
-  // Rows are direct children of #side (the scroll container), so offsetTop
-  // is relative to it and scrollTo lands exactly.
-  const c = $('side') || en._el.parentElement;
-  if (c) {
-    const rowH = en._el.offsetHeight || 28;
-    c.scrollTo({ top: Math.max(0, en._el.offsetTop - rowH * 2), behavior: 'instant' });
+  // On page load (restored from localStorage) the sidebar may be scrolled to
+  // the top while the active row is far down — scroll it into view with ~2
+  // rows of headroom. Manual clicks do NOT re-scroll (would fight the user).
+  if (opts && opts.scroll){
+    const c = $('side') || en._el.parentElement;
+    if (c){
+      const rowH = en._el.offsetHeight || 28;
+      c.scrollTo({ top: Math.max(0, en._el.offsetTop - rowH * 2), behavior: 'instant' });
+    }
   }
   app.flatIdx = app.flatList.findIndex(f => f.li===li && f.ei===ei);
   const imgs = await loadFrames(frameUrls(en));

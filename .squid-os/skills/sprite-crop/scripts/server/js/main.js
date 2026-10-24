@@ -381,7 +381,7 @@ async function boot(){
     if (hit >= 0){ startLi = app.flatList[hit].li; startEi = app.flatList[hit].ei; }
   }
   if (app.manifest.labels.length){
-    selectEntity(startLi, startEi).then(()=>{ app._loadingState = false; applyFilmState(); });  // re-enable auto-save ONLY after async load done
+    selectEntity(startLi, startEi, { scroll:true }).then(()=>{ app._loadingState = false; applyFilmState(); });  // re-enable auto-save ONLY after async load done
   } else {
     app._loadingState = false;
   }

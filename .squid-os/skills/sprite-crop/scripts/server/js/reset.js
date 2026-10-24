@@ -44,12 +44,13 @@ function applyPosition(mode){
   const { W, H } = frame1Dims();
   // CENTER -> centered on origin; LEFT-BOTTOM -> each frame's left/bottom on axes
   commit(() => {
-    layoutAt(st, app.cur.imgs, W, H, mode==='origin' ? 'leftbottom' : 'center');
+    layoutAt(st, app.cur.imgs, W, H, mode==='origin' ? 'leftbottom' : (mode==='centerbottom' ? 'centerbottom' : 'center'));
   });
 }
 export function initPositionButtons(){
   $('posOriginBtn').addEventListener('click', ()=>applyPosition('origin'));
   $('posCenterBtn').addEventListener('click', ()=>applyPosition('center'));
+  $('posCenterBottomBtn').addEventListener('click', ()=>applyPosition('centerbottom'));
 }
 
 // ---------- RESET tool (frame / animation) ----------
