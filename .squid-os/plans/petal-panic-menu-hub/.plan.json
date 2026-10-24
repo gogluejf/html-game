@@ -1,336 +1,337 @@
 {
-  "plan_name": "petal-panic-menu-hub",
-  "title": "Petal Panic Menu Hub",
-  "why": "The current flow jumps from Home to Select and lacks real menu options, persistent progress, level selection, boss rush, media unlocks, and pause save/settings.",
-  "outcomes": "Add a main menu with New Game, Continue, Level Select, Boss Rush, Media, Controls, Options, Credits; add shared pause options and Save & Quit; persist progress/settings; reuse existing screen ergonomics for buttons, focus, and navigation.",
-  "milestones": [
+ "plan_name": "petal-panic-menu-hub",
+ "title": "Petal Panic Menu Hub",
+ "why": "The current flow jumps from Home to Select and lacks real menu options, persistent progress, level selection, boss rush, media unlocks, and pause save/settings.",
+ "outcomes": "Add a main menu with New Game, Continue, Level Select, Boss Rush, Media, Controls, Options, Credits; add shared pause options and Save & Quit; persist progress/settings; reuse existing screen ergonomics for buttons, focus, and navigation.",
+ "milestones": [
+  {
+   "number": "1",
+   "name": "Progress and Settings Persistence",
+   "pattern": [
+    "Repository + State Machine"
+   ],
+   "objective": "Create one persistent local storage layer for game progress, settings, media unlocks, and save metadata.",
+   "success": "The game can load/save a single JSON blob in localStorage with safe defaults and explicit APIs for progress and settings.",
+   "diagram": "graph TD\n  A[localStorage] --> B[progressStore]\n  B --> C[progress]\n  B --> D[settings]\n  B --> E[mediaUnlocks]\n  B --> F[saveMeta]\n  C --> G[Level Select]\n  C --> H[Boss Rush]\n  D --> I[Options]\n  E --> J[Media Menu]",
+   "tasks": [
     {
-      "number": "1",
-      "name": "Progress and Settings Persistence",
-      "pattern": [
-        "Repository + State Machine"
-      ],
-      "objective": "Create one persistent local storage layer for game progress, settings, media unlocks, and save metadata.",
-      "success": "The game can load/save a single JSON blob in localStorage with safe defaults and explicit APIs for progress and settings.",
-      "diagram": "graph TD\n  A[localStorage] --> B[progressStore]\n  B --> C[progress]\n  B --> D[settings]\n  B --> E[mediaUnlocks]\n  B --> F[saveMeta]\n  C --> G[Level Select]\n  C --> H[Boss Rush]\n  D --> I[Options]\n  E --> J[Media Menu]",
-      "tasks": [
-        {
-          "number": "1.1",
-          "name": "Persistent progress and settings store",
-          "type": "feature",
-          "what": "Add a localStorage-backed store for Petal Panic progress, settings, media unlocks, and save metadata.",
-          "why": "Menus need persistent Continue, Level Select, Boss Rush, Media, and Options state without scattering localStorage calls through screens.",
-          "files": [
-            "+ petal-panic/js/systems/progressStore.js"
-          ],
-          "snippet": [
-            "export const DEFAULT_PROGRESS = {\n  version: 1,\n  completedAreas: {},\n  defeatedBosses: [],\n  mediaUnlocked: [],\n};\n\nexport const DEFAULT_SETTINGS = {\n  music: false,\n  sfx: true,\n  screenShake: true,\n  vibration: true,\n};\n\nexport function loadStore() {}\nexport function saveStore(store) {}\nexport function updateProgress(mutator) {}\nexport function updateSettings(mutator) {}\nexport function hasSave() {}\nexport function clearRunSave() {}"
-          ],
-          "acceptance": [
-            "loadStore returns defaults when localStorage is empty or invalid",
-            "saveStore persists one JSON document under a stable key",
-            "updateProgress and updateSettings mutate and persist atomically",
-            "hasSave reflects whether a resumable run exists"
-          ],
-          "verify": [
-            "node --input-type=module -e \"import('./petal-panic/js/systems/progressStore.js').then(m => console.log(typeof m.loadStore))\""
-          ]
-        }
-      ]
-    },
-    {
-      "number": "2",
-      "name": "Main Menu Hub",
-      "pattern": [
-        "Screen State + Shared UI Ergonomics"
-      ],
-      "objective": "Replace the current Home-to-Select jump with a real main menu hub that routes into gameplay, selection, options, and meta screens.",
-      "success": "The player can choose New Game, Continue, Level Select, Boss Rush, Media, Controls, Options, and Credits using the same focus pill and keycap nav style as Pause.",
-      "diagram": "graph TD\n  A[HOME] --> B[Main Menu]\n  B --> C[New Game]\n  B --> D[Continue]\n  B --> E[Level Select]\n  B --> F[Boss Rush]\n  B --> G[Media]\n  B --> H[Controls]\n  B --> I[Options]\n  B --> J[Credits]\n  C --> K[SELECT]\n  D --> L[PLAY]\n  E --> M[Level Select Screen]\n  F --> N[Boss Rush Screen]\n  G --> O[Media Screen]\n  H --> P[REMAP]\n  I --> Q[Options Screen]",
-      "tasks": [
-        {
-          "number": "2.1",
-          "name": "Main menu state and routing",
-          "type": "feature",
-          "what": "Add MENU states for the main hub, options, level select, boss rush, and media screens, plus transition rules from HOME, PAUSE, and submenus.",
-          "why": "The existing state machine only supports HOME, SELECT, PLAY, PAUSE, OVER, WIN, REMAP, AREA_ENTRY, REWARD, and END_OF_GAME, so new menu destinations need explicit states.",
-          "files": [
-            "~ petal-panic/js/core/state.js"
-          ],
-          "snippet": [
-            "export const S = {\n  HOME: 0,\n  MENU: 10,\n  OPTIONS: 11,\n  LEVEL_SELECT: 12,\n  BOSS_RUSH: 13,\n  MEDIA: 14,\n};\n\nconst TRANSITIONS = {\n  [S.HOME]: [S.MENU, S.SELECT, S.PLAY, S.REMAP],\n  [S.MENU]: [S.SELECT, S.PLAY, S.LEVEL_SELECT, S.BOSS_RUSH, S.MEDIA, S.REMAP, S.OPTIONS],\n  [S.PAUSE]: [S.PLAY, S.HOME, S.MENU, S.REMAP, S.OPTIONS, S.AREA_ENTRY],\n  [S.OPTIONS]: [S.MENU, S.PAUSE],\n  [S.LEVEL_SELECT]: [S.MENU, S.PLAY, S.AREA_ENTRY],\n  [S.BOSS_RUSH]: [S.MENU, S.PLAY, S.AREA_ENTRY],\n  [S.MEDIA]: [S.MENU],\n};"
-          ],
-          "acceptance": [
-            "HOME can transition to MENU",
-            "MENU can transition to every top-level destination",
-            "PAUSE can open OPTIONS and return to MENU or PLAY",
-            "LEVEL_SELECT and BOSS_RUSH can start play through AREA_ENTRY"
-          ],
-          "verify": [
-            "node --input-type=module -e \"import('./petal-panic/js/core/state.js').then(m => console.log(Object.keys(m.S).length))\""
-          ]
-        },
-        {
-          "number": "2.2",
-          "name": "Main menu screen",
-          "type": "feature",
-          "what": "Add a canvas-drawn MENU screen with the same centered option list, focus pill, and nav bar style as Pause.",
-          "why": "The user wants a real entry point that feels like the existing menus instead of an extra HTML overlay.",
-          "files": [
-            "~ petal-panic/js/ui/screens.js"
-          ],
-          "snippet": [
-            "export const Menu = {\n  focus: 0,\n  options() {\n    return [\n      { label: 'New Game', enabled: true },\n      { label: hasSave() ? 'Continue' : 'No Save', enabled: hasSave() },\n      { label: 'Level Select', enabled: true },\n      { label: 'Boss Rush', enabled: true },\n      { label: 'Media', enabled: true },\n      { label: 'Controls', enabled: true },\n      { label: 'Options', enabled: true },\n      { label: 'Credits', enabled: true },\n    ];\n  },\n  draw(ctx) {},\n  onAction(action) {},\n  reset() {},\n};"
-          ],
-          "acceptance": [
-            "Menu draws all top-level options using the pause-style focus pill",
-            "Continue is disabled when no save exists",
-            "up/down moves focus and confirm routes to the selected destination",
-            "back from MENU returns HOME"
-          ],
-          "verify": [
-            "node --input-type=module -e \"import('./petal-panic/js/ui/screens.js').then(m => console.log(typeof m.Menu?.draw))\""
-          ]
-        },
-        {
-          "number": "2.3",
-          "name": "New Game and Continue flow",
-          "type": "feature",
-          "what": "Wire MENU New Game and Continue to the existing hero select/play lifecycle and persist a resumable save.",
-          "why": "The menu is only useful if it can start a fresh run or resume the last saved level/area safely.",
-          "files": [
-            "~ petal-panic/js/ui/screens.js",
-            "~ petal-panic/js/systems/lifecycle.js"
-          ],
-          "snippet": [
-            "// New Game:\n// clearRunSave()\n// tryTransition(S.SELECT)\n\n// Continue:\n// loadStore().saveMeta\n// set hero.currentLevel / currentArea from saveMeta\n// tryTransition(S.AREA_ENTRY)\n\n// Save & Quit:\n// updateProgress(() => {\n//   store.saveMeta = { level, area, score, timestamp };\n// });\n// tryTransition(S.MENU)"
-          ],
-          "acceptance": [
-            "New Game clears the active run save but preserves meta unlocks",
-            "Continue starts the saved level/area through AREA_ENTRY",
-            "Save & Quit writes saveMeta before returning to MENU",
-            "disabled Continue cannot be selected or confirmed"
-          ],
-          "verify": [
-            "node --input-type=module -e \"import('./petal-panic/js/systems/lifecycle.js').then(m => console.log(typeof m.startGame))\""
-          ]
-        }
-      ]
-    },
-    {
-      "number": "3",
-      "name": "Level Select and Boss Rush",
-      "pattern": [
-        "Data-Driven Grid + Locked Card UI"
-      ],
-      "objective": "Add Level Select and Boss Rush screens that show locked/unlocked content with hover-style tooltips on the right side.",
-      "success": "Level Select shows 8 zones \u00d7 5 stages, Boss Rush shows boss cards, and locked items explain what must be passed before unlocking.",
-      "diagram": "graph TD\n  A[LEVEL_SELECT] --> B[Zone Grid]\n  B --> C[Stage Cards]\n  C --> D[Locked Card]\n  C --> E[Unlocked Card]\n  C --> F[Completed Card]\n  G[BOSS_RUSH] --> H[Boss Cards]\n  H --> I[Locked Boss]\n  H --> J[Unlocked Boss]\n  D --> K[Right Side Tooltip]\n  I --> K\n  J --> L[Boss Name Tooltip]",
-      "tasks": [
-        {
-          "number": "3.1",
-          "name": "Level select model",
-          "type": "feature",
-          "what": "Add a pure model that turns LEVEL_CONFIGS and progress into 8 selectable levels plus 5 sub-area choices per selected level.",
-          "why": "Level Select needs stable data for the world map markers, sub-area chips under the selected level, locking, completion, and starting the correct level/zone.",
-          "files": [
-            "+ petal-panic/js/ui/levelSelectModel.js"
-          ],
-          "snippet": [
-            "export function buildLevelMap(progress) {\n  // returns 8 level markers:\n  // [\n  //   {\n  //     level: 1,\n  //     name: 'Big Top',\n  //     status: 'locked' | 'available' | 'completed',\n  //     selected: false,\n  //   }\n  // ]\n}\n\nexport function buildSubAreasForLevel(level, progress) {\n  // returns 5 sub-area choices for the selected level:\n  // [\n  //   {\n  //     level: 1,\n  //     zone: '1',\n  //     label: '1-1',\n  //     boss: false,\n  //     status: 'locked' | 'unlocked' | 'completed',\n  //     tooltip: 'Pass 1-4 to unlock',\n  //     start: { level: 1, area: 1 },\n  //   }\n  // ]\n}"
-          ],
-          "acceptance": [
-            "buildLevelMap returns exactly 8 level markers and never includes zone nodes in the map data",
-            "buildSubAreasForLevel returns exactly 5 sub-areas: X-1, X-2, X-3, X-4, X-B for the selected level",
-            "a sub-area is locked when its previous sub-area is not completed",
-            "the first sub-area of level 1 is unlocked by default"
-          ],
-          "verify": [
-            "node --input-type=module -e \"import('./petal-panic/js/ui/levelSelectModel.js').then(m => console.log(m.buildLevelSelectCards({ completedAreas: {} }).length))\""
-          ]
-        },
-        {
-          "number": "3.2",
-          "name": "Level select screen",
-          "type": "feature",
-          "what": "Add the LEVEL_SELECT canvas screen using the existing menu card/focus style and a right-side tooltip panel.",
-          "why": "The user specifically wants 8 columns, 5 rows, lock icons, and hover-style text explaining what unlocks each card.",
-          "files": [
-            "~ petal-panic/js/ui/screens.js"
-          ],
-          "snippet": [
-            "export const LevelSelect = {\n  focus: { level: 1, zone: '1' },\n  draw(ctx) {\n    // left: world map with 8 level markers only\n    // marker status: circle available, gold/star completed, lock locked\n    // selected level: pin above marker\n    // below map: 5 sub-area chips for selected level: X-1..X-4, X-B\n    // right: detail card for focused sub-area with lock hint / play hint\n  },\n  onAction(action) {\n    // up/down: change level\n    // left/right: change zone within selected level\n    // confirm: start focused unlocked zone through AREA_ENTRY\n  },\n  reset() {},\n};"
-          ],
-          "acceptance": [
-            "draws 8 columns and 5 rows without overflow at 960x540",
-            "locked cards show a lock icon and dimmed content",
-            "focused locked card shows 'Pass <previous stage> to unlock' on the right",
-            "confirm starts an unlocked stage through AREA_ENTRY"
-          ],
-          "verify": [
-            "node --input-type=module -e \"import('./petal-panic/js/ui/screens.js').then(m => console.log(typeof m.LevelSelect?.draw))\""
-          ]
-        },
-        {
-          "number": "3.3",
-          "name": "Boss rush model and screen",
-          "type": "feature",
-          "what": "Add Boss Rush data and a canvas screen showing boss cards with locked silhouettes and right-side unlock/name tooltips.",
-          "why": "Boss Rush should hide locked bosses completely while revealing the boss card image and name only after the required level is passed.",
-          "files": [
-            "+ petal-panic/js/ui/bossRushModel.js",
-            "~ petal-panic/js/ui/screens.js"
-          ],
-          "snippet": [
-            "export function buildBossRushCards(progress) {\n  // returns:\n  // [\n  //   {\n  //     index: 1,\n  //     bossId: 'tusko_wobble',\n  //     name: 'Tusko Wobble',\n  //     status: 'locked' | 'unlocked',\n  //     tooltip: 'Pass Level 1 to unlock this boss',\n  //     start: { level: 1, area: 5 },\n  //   }\n  // ]\n}\n\nexport const BossRush = {\n  focus: 0,\n  draw(ctx) {},\n  onAction(action) {},\n  reset() {},\n};"
-          ],
-          "acceptance": [
-            "returns one card per LEVEL_CONFIGS entry",
-            "locked boss cards show no boss image, only a lock icon",
-            "focused locked boss shows 'Pass Level X to unlock this boss' on the right",
-            "focused unlocked boss shows the boss name and boss card image",
-            "confirm starts an unlocked boss through AREA_ENTRY"
-          ],
-          "verify": [
-            "node --input-type=module -e \"import('./petal-panic/js/ui/bossRushModel.js').then(m => console.log(m.buildBossRushCards({ defeatedBosses: [] }).length))\""
-          ]
-        }
-      ]
-    },
-    {
-      "number": "4",
-      "name": "Options, Controls, and Pause Integration",
-      "pattern": [
-        "Shared Overlay + Persistent Settings"
-      ],
-      "objective": "Make Controls and Options reusable from both Main Menu and Pause, and add Save & Quit to Pause.",
-      "success": "Pause has Resume, Retry Level, Save & Quit, Controls, and Options; Options persists music/SFX/screen shake; Controls still opens the existing remap screen.",
-      "diagram": "graph TD\n  A[PAUSE] --> B[Resume]\n  A --> C[Retry Level]\n  A --> D[Save and Quit]\n  A --> E[Controls]\n  A --> F[Options]\n  G[MENU] --> E\n  G --> F\n  E --> H[REMAP]\n  F --> I[OPTIONS]\n  I --> J[progressStore.settings]",
-      "tasks": [
-        {
-          "number": "4.1",
-          "name": "Options screen and settings wiring",
-          "type": "feature",
-          "what": "Add an OPTIONS screen with Music, SFX, and Screen Shake toggles that persist through progressStore.",
-          "why": "The user wants Options in both menu and pause, and the game currently has no persistent options system.",
-          "files": [
-            "~ petal-panic/js/ui/screens.js"
-          ],
-          "snippet": [
-            "export const Options = {\n  focus: 0,\n  rows() {\n    const s = loadStore().settings;\n    return [\n      { label: 'Music', value: s.music },\n      { label: 'SFX', value: s.sfx },\n      { label: 'Screen Shake', value: s.screenShake },\n      { label: 'Vibration', value: s.vibration },\n    ];\n  },\n  draw(ctx) {},\n  onAction(action, origin) {},\n  reset() {},\n};"
-          ],
-          "acceptance": [
-            "OPTIONS draws three toggle rows using the same focus style as Pause",
-            "left/right toggles the focused option",
-            "changes persist immediately to localStorage",
-            "back returns to MENU or PAUSE based on origin"
-          ],
-          "verify": [
-            "node --input-type=module -e \"import('./petal-panic/js/ui/screens.js').then(m => console.log(typeof m.Options?.draw))\""
-          ]
-        },
-        {
-          "number": "4.2",
-          "name": "Pause menu Save and Quit integration",
-          "type": "feature",
-          "what": "Update Pause to include Save & Quit, Options, and Controls while preserving Resume and Retry behavior.",
-          "why": "The user explicitly wants pause to have save and quit plus options accessible during gameplay.",
-          "files": [
-            "~ petal-panic/js/ui/screens.js"
-          ],
-          "snippet": [
-            "const options = [\n  'Resume',\n  'Retry Level',\n  'Save & Quit',\n  'Controls',\n  'Options',\n];\n\n// execute:\n// case 2: saveCurrentRun(); tryTransition(S.MENU);\n// case 3: tryTransition(S.REMAP);\n// case 4: tryTransition(S.OPTIONS);"
-          ],
-          "acceptance": [
-            "Pause shows five options in the existing centered list style",
-            "Save & Quit writes progress/saveMeta and returns to MENU",
-            "Controls opens REMAP with parent PAUSE",
-            "Options opens OPTIONS with origin PAUSE"
-          ],
-          "verify": [
-            "node --input-type=module -e \"import('./petal-panic/js/ui/screens.js').then(m => console.log(typeof m.Pause?.draw))\""
-          ]
-        }
-      ]
-    },
-    {
-      "number": "5",
-      "name": "Media Menu and Unlock Rewards",
-      "pattern": [
-        "Collection Screen + Progress Gating"
-      ],
-      "objective": "Add a Media screen for intro, level clips, and ending content with locked/unlocked presentation.",
-      "success": "Media shows locked cards until the related intro/level/ending milestone is completed, then allows playback of sprite-loop or video placeholders.",
-      "diagram": "graph TD\n  A[MENU] --> B[MEDIA]\n  B --> C[Intro Card]\n  B --> D[Level Clip Cards]\n  B --> E[Ending Card]\n  F[progress.mediaUnlocked] --> C\n  F --> D\n  F --> E\n  C --> G[Locked or Playable]\n  D --> G\n  E --> G\n  G --> H[Playback Overlay]",
-      "tasks": [
-        {
-          "number": "5.1",
-          "name": "Media unlock model",
-          "type": "feature",
-          "what": "Add a media catalog and unlock rules for intro, per-level clips, and ending.",
-          "why": "The Media screen needs one source of truth for what exists, what is locked, and what unlocks it.",
-          "files": [
-            "+ petal-panic/js/ui/mediaModel.js"
-          ],
-          "snippet": [
-            "export function buildMediaCards(progress) {\n  // returns:\n  // [\n  //   {\n  //     id: 'intro',\n  //     title: 'Intro',\n  //     status: 'locked' | 'unlocked',\n  //     tooltip: 'Start a new game to unlock',\n  //     kind: 'sprite-loop' | 'video',\n  //     asset: null,\n  //   },\n  //   {\n  //     id: 'level-1',\n  //     title: 'Big Top Clip',\n  //     status: 'locked' | 'unlocked',\n  //     tooltip: 'Beat Boss 1 to unlock',\n  //   },\n  //   {\n  //     id: 'ending',\n  //     title: 'Ending',\n  //     status: 'locked' | 'unlocked',\n  //     tooltip: 'Beat the final boss to unlock',\n  //   }\n  // ]\n}\n\nexport function markMediaUnlocked(id) {}"
-          ],
-          "acceptance": [
-            "returns intro, eight level clips, and ending",
-            "intro unlocks after any New Game start",
-            "level clip unlocks after the matching boss is defeated",
-            "ending unlocks after the final boss is defeated"
-          ],
-          "verify": [
-            "node --input-type=module -e \"import('./petal-panic/js/ui/mediaModel.js').then(m => console.log(m.buildMediaCards({ mediaUnlocked: [] }).length))\""
-          ]
-        },
-        {
-          "number": "5.2",
-          "name": "Media screen and playback overlay",
-          "type": "feature",
-          "what": "Add the MEDIA canvas screen with locked cards, right-side tooltips, and a simple playback overlay for unlocked clips.",
-          "why": "The user wants media to be part of the menu and to remain locked until the intro/level/ending content is earned.",
-          "files": [
-            "~ petal-panic/js/ui/screens.js"
-          ],
-          "snippet": [
-            "export const Media = {\n  focus: 0,\n  playing: null,\n  draw(ctx) {\n    // grid of media cards\n    // locked card: dark + lock icon\n    // unlocked card: thumbnail or placeholder\n    // right side tooltip for focused card\n  },\n  onAction(action) {},\n  reset() {},\n};"
-          ],
-          "acceptance": [
-            "MEDIA draws all media cards using the same card/focus style as Level Select",
-            "locked media shows no preview image and an unlock requirement on the right",
-            "unlocked media can open a playback overlay",
-            "back closes playback first, then returns to MENU"
-          ],
-          "verify": [
-            "node --input-type=module -e \"import('./petal-panic/js/ui/screens.js').then(m => console.log(typeof m.Media?.draw))\""
-          ]
-        },
-        {
-          "number": "5.3",
-          "name": "Progress unlock hooks",
-          "type": "feature",
-          "what": "Hook gameplay milestones into progressStore so level completion, boss defeat, and ending completion unlock Level Select, Boss Rush, and Media.",
-          "why": "The menu screens need real unlock state instead of always showing everything as available.",
-          "files": [
-            "~ petal-panic/js/systems/lifecycle.js",
-            "~ petal-panic/js/boss/bossFlow.js"
-          ],
-          "snippet": [
-            "// On area completion:\n// updateProgress((store) => {\n//   store.completedAreas[areaId] = true;\n// });\n\n// On boss defeat:\n// updateProgress((store) => {\n//   if (!store.defeatedBosses.includes(bossId)) store.defeatedBosses.push(bossId);\n//   markMediaUnlocked(`level-${levelIndex}`);\n// });\n\n// On final boss defeat:\n// markMediaUnlocked('ending');"
-          ],
-          "acceptance": [
-            "completing a normal stage records completedAreas",
-            "defeating a boss records defeatedBosses",
-            "defeating a boss unlocks the matching media clip",
-            "defeating the final boss unlocks the ending media card"
-          ],
-          "verify": [
-            "node --input-type=module -e \"import('./petal-panic/js/systems/lifecycle.js').then(m => console.log(typeof m.showLevelReward))\""
-          ]
-        }
-      ]
+     "number": "1.1",
+     "name": "Persistent progress and settings store",
+     "type": "feature",
+     "what": "Add a localStorage-backed store for Petal Panic progress, settings, media unlocks, and save metadata.",
+     "why": "Menus need persistent Continue, Level Select, Boss Rush, Media, and Options state without scattering localStorage calls through screens.",
+     "files": [
+      "+ petal-panic/js/systems/progressStore.js"
+     ],
+     "snippet": [
+      "export const DEFAULT_PROGRESS = {\n  version: 1,\n  completedAreas: {},\n  defeatedBosses: [],\n  mediaUnlocked: [],\n};\n\nexport const DEFAULT_SETTINGS = {\n  music: false,\n  sfx: true,\n  screenShake: true,\n  vibration: true,\n};\n\nexport function loadStore() {}\nexport function saveStore(store) {}\nexport function updateProgress(mutator) {}\nexport function updateSettings(mutator) {}\nexport function hasSave() {}\nexport function clearRunSave() {}"
+     ],
+     "acceptance": [
+      "loadStore returns defaults when localStorage is empty or invalid",
+      "saveStore persists one JSON document under a stable key",
+      "updateProgress and updateSettings mutate and persist atomically",
+      "hasSave reflects whether a resumable run exists"
+     ],
+     "verify": [
+      "node --input-type=module -e \"import('./petal-panic/js/systems/progressStore.js').then(m => console.log(typeof m.loadStore))\""
+     ]
     }
-  ]
+   ]
+  },
+  {
+   "number": "2",
+   "name": "Main Menu Hub",
+   "pattern": [
+    "Screen State + Shared UI Ergonomics"
+   ],
+   "objective": "Replace the current Home-to-Select jump with a real main menu hub that routes into gameplay, selection, options, and meta screens.",
+   "success": "The player can choose New Game, Continue, Level Select, Boss Rush, Media, Controls, Options, and Credits using the same focus pill and keycap nav style as Pause.",
+   "diagram": "graph TD\n  A[HOME] --> B[Main Menu]\n  B --> C[New Game]\n  B --> D[Continue]\n  B --> E[Level Select]\n  B --> F[Boss Rush]\n  B --> G[Media]\n  B --> H[Controls]\n  B --> I[Options]\n  B --> J[Credits]\n  C --> K[SELECT]\n  D --> L[PLAY]\n  E --> M[Level Select Screen]\n  F --> N[Boss Rush Screen]\n  G --> O[Media Screen]\n  H --> P[REMAP]\n  I --> Q[Options Screen]",
+   "tasks": [
+    {
+     "number": "2.1",
+     "name": "Main menu state and routing",
+     "type": "feature",
+     "what": "Add MENU states for the main hub, options, level select, boss rush, and media screens, plus transition rules from HOME, PAUSE, and submenus.",
+     "why": "The existing state machine only supports HOME, SELECT, PLAY, PAUSE, OVER, WIN, REMAP, AREA_ENTRY, REWARD, and END_OF_GAME, so new menu destinations need explicit states.",
+     "files": [
+      "~ petal-panic/js/core/state.js"
+     ],
+     "snippet": [
+      "export const S = {\n  HOME: 0,\n  MENU: 10,\n  OPTIONS: 11,\n  LEVEL_SELECT: 12,\n  BOSS_RUSH: 13,\n  MEDIA: 14,\n};\n\nconst TRANSITIONS = {\n  [S.HOME]: [S.MENU, S.SELECT, S.PLAY, S.REMAP],\n  [S.MENU]: [S.SELECT, S.PLAY, S.LEVEL_SELECT, S.BOSS_RUSH, S.MEDIA, S.REMAP, S.OPTIONS],\n  [S.PAUSE]: [S.PLAY, S.HOME, S.MENU, S.REMAP, S.OPTIONS, S.AREA_ENTRY],\n  [S.OPTIONS]: [S.MENU, S.PAUSE],\n  [S.LEVEL_SELECT]: [S.MENU, S.PLAY, S.AREA_ENTRY],\n  [S.BOSS_RUSH]: [S.MENU, S.PLAY, S.AREA_ENTRY],\n  [S.MEDIA]: [S.MENU],\n};"
+     ],
+     "acceptance": [
+      "HOME can transition to MENU",
+      "MENU can transition to every top-level destination",
+      "PAUSE can open OPTIONS and return to MENU or PLAY",
+      "LEVEL_SELECT and BOSS_RUSH can start play through AREA_ENTRY"
+     ],
+     "verify": [
+      "node --input-type=module -e \"import('./petal-panic/js/core/state.js').then(m => console.log(Object.keys(m.S).length))\""
+     ]
+    },
+    {
+     "number": "2.2",
+     "name": "Main menu screen",
+     "type": "feature",
+     "what": "Add a canvas-drawn MENU screen with the same centered option list, focus pill, and nav bar style as Pause.",
+     "why": "The user wants a real entry point that feels like the existing menus instead of an extra HTML overlay.",
+     "files": [
+      "~ petal-panic/js/ui/screens.js"
+     ],
+     "snippet": [
+      "export const Menu = {\n  focus: 0,\n  options() {\n    return [\n      { label: 'New Game', enabled: true },\n      { label: hasSave() ? 'Continue' : 'No Save', enabled: hasSave() },\n      { label: 'Level Select', enabled: true },\n      { label: 'Boss Rush', enabled: true },\n      { label: 'Media', enabled: true },\n      { label: 'Controls', enabled: true },\n      { label: 'Options', enabled: true },\n      { label: 'Credits', enabled: true },\n    ];\n  },\n  draw(ctx) {},\n  onAction(action) {},\n  reset() {},\n};"
+     ],
+     "acceptance": [
+      "Menu draws all top-level options using the pause-style focus pill",
+      "Continue is disabled when no save exists",
+      "up/down moves focus and confirm routes to the selected destination",
+      "back from MENU returns HOME"
+     ],
+     "verify": [
+      "node --input-type=module -e \"import('./petal-panic/js/ui/screens.js').then(m => console.log(typeof m.Menu?.draw))\""
+     ]
+    },
+    {
+     "number": "2.3",
+     "name": "New Game and Continue flow",
+     "type": "feature",
+     "what": "Wire MENU New Game and Continue to the existing hero select/play lifecycle and persist a resumable save.",
+     "why": "The menu is only useful if it can start a fresh run or resume the last saved level/area safely.",
+     "files": [
+      "~ petal-panic/js/ui/screens.js",
+      "~ petal-panic/js/systems/lifecycle.js"
+     ],
+     "snippet": [
+      "// New Game:\n// clearRunSave()\n// tryTransition(S.SELECT)\n\n// Continue:\n// loadStore().saveMeta\n// set hero.currentLevel / currentArea from saveMeta\n// tryTransition(S.AREA_ENTRY)\n\n// Save & Quit:\n// updateProgress(() => {\n//   store.saveMeta = { level, area, score, timestamp };\n// });\n// tryTransition(S.MENU)"
+     ],
+     "acceptance": [
+      "New Game clears the active run save but preserves meta unlocks",
+      "Continue starts the saved level/area through AREA_ENTRY",
+      "Save & Quit writes saveMeta before returning to MENU",
+      "disabled Continue cannot be selected or confirmed"
+     ],
+     "verify": [
+      "node --input-type=module -e \"import('./petal-panic/js/systems/lifecycle.js').then(m => console.log(typeof m.startGame))\""
+     ]
+    }
+   ]
+  },
+  {
+   "number": "3",
+   "name": "Level Select and Boss Rush",
+   "pattern": [
+    "Data-Driven Grid + Locked Card UI"
+   ],
+   "objective": "Add Level Select and Boss Rush screens that show locked/unlocked content with hover-style tooltips on the right side.",
+   "success": "Level Select shows 8 zones \u00d7 5 stages, Boss Rush shows boss cards, and locked items explain what must be passed before unlocking.",
+   "diagram": "graph TD\n  A[LEVEL_SELECT] --> B[Zone Grid]\n  B --> C[Stage Cards]\n  C --> D[Locked Card]\n  C --> E[Unlocked Card]\n  C --> F[Completed Card]\n  G[BOSS_RUSH] --> H[Boss Cards]\n  H --> I[Locked Boss]\n  H --> J[Unlocked Boss]\n  D --> K[Right Side Tooltip]\n  I --> K\n  J --> L[Boss Name Tooltip]",
+   "tasks": [
+    {
+     "number": "3.1",
+     "name": "Level select model",
+     "type": "feature",
+     "what": "Add a pure model that turns LEVEL_CONFIGS and progress into 8 selectable levels plus 5 sub-area choices per selected level.",
+     "why": "Level Select needs stable data for the world map markers, sub-area chips under the selected level, locking, completion, and starting the correct level/zone.",
+     "files": [
+      "+ petal-panic/js/ui/levelSelectModel.js"
+     ],
+     "snippet": [
+      "export function buildLevelMap(progress) {\n  // returns 8 level markers:\n  // [\n  //   {\n  //     level: 1,\n  //     name: 'Big Top',\n  //     status: 'locked' | 'available' | 'completed',\n  //     selected: false,\n  //   }\n  // ]\n}\n\nexport function buildSubAreasForLevel(level, progress) {\n  // returns 5 sub-area choices for the selected level:\n  // [\n  //   {\n  //     level: 1,\n  //     zone: '1',\n  //     label: '1-1',\n  //     boss: false,\n  //     status: 'locked' | 'unlocked' | 'completed',\n  //     tooltip: 'Pass 1-4 to unlock',\n  //     start: { level: 1, area: 1 },\n  //   }\n  // ]\n}"
+     ],
+     "acceptance": [
+      "buildLevelMap returns exactly 8 level markers and never includes zone nodes in the map data",
+      "buildSubAreasForLevel returns exactly 5 sub-areas: X-1, X-2, X-3, X-4, X-B for the selected level",
+      "a sub-area is locked when its previous sub-area is not completed",
+      "the first sub-area of level 1 is unlocked by default"
+     ],
+     "verify": [
+      "node --input-type=module -e \"import('./petal-panic/js/ui/levelSelectModel.js').then(m => console.log(m.buildLevelSelectCards({ completedAreas: {} }).length))\""
+     ]
+    },
+    {
+     "number": "3.2",
+     "name": "Level select screen",
+     "type": "feature",
+     "what": "Add the LEVEL_SELECT canvas screen using the existing menu card/focus style and a right-side tooltip panel.",
+     "why": "The user specifically wants 8 columns, 5 rows, lock icons, and hover-style text explaining what unlocks each card.",
+     "files": [
+      "~ petal-panic/js/ui/screens.js"
+     ],
+     "snippet": [
+      "export const LevelSelect = {\n  focus: { level: 1, zone: '1' },\n  draw(ctx) {\n    // left: world map with 8 level markers only\n    // marker status: circle available, gold/star completed, lock locked\n    // selected level: pin above marker\n    // below map: 5 sub-area chips for selected level: X-1..X-4, X-B\n    // right: detail card for focused sub-area with lock hint / play hint\n  },\n  onAction(action) {\n    // up/down: change level\n    // left/right: change zone within selected level\n    // confirm: start focused unlocked zone through AREA_ENTRY\n  },\n  reset() {},\n};"
+     ],
+     "acceptance": [
+      "draws 8 columns and 5 rows without overflow at 960x540",
+      "locked cards show a lock icon and dimmed content",
+      "focused locked card shows 'Pass <previous stage> to unlock' on the right",
+      "confirm starts an unlocked stage through AREA_ENTRY"
+     ],
+     "verify": [
+      "node --input-type=module -e \"import('./petal-panic/js/ui/screens.js').then(m => console.log(typeof m.LevelSelect?.draw))\""
+     ]
+    },
+    {
+     "number": "3.3",
+     "name": "Boss rush model and screen",
+     "type": "feature",
+     "what": "Add Boss Rush data and a canvas screen showing boss cards with locked silhouettes and right-side unlock/name tooltips.",
+     "why": "Boss Rush should hide locked bosses completely while revealing the boss card image and name only after the required level is passed.",
+     "files": [
+      "+ petal-panic/js/ui/bossRushModel.js",
+      "~ petal-panic/js/ui/screens.js"
+     ],
+     "snippet": [
+      "export function buildBossRushCards(progress) {\n  // returns:\n  // [\n  //   {\n  //     index: 1,\n  //     bossId: 'tusko_wobble',\n  //     name: 'Tusko Wobble',\n  //     status: 'locked' | 'unlocked',\n  //     tooltip: 'Pass Level 1 to unlock this boss',\n  //     start: { level: 1, area: 5 },\n  //   }\n  // ]\n}\n\nexport const BossRush = {\n  focus: 0,\n  draw(ctx) {},\n  onAction(action) {},\n  reset() {},\n};"
+     ],
+     "acceptance": [
+      "returns one card per LEVEL_CONFIGS entry",
+      "locked boss cards show no boss image, only a lock icon",
+      "focused locked boss shows 'Pass Level X to unlock this boss' on the right",
+      "focused unlocked boss shows the boss name and boss card image",
+      "confirm starts an unlocked boss through AREA_ENTRY"
+     ],
+     "verify": [
+      "node --input-type=module -e \"import('./petal-panic/js/ui/bossRushModel.js').then(m => console.log(m.buildBossRushCards({ defeatedBosses: [] }).length))\""
+     ]
+    }
+   ]
+  },
+  {
+   "number": "4",
+   "name": "Options, Controls, and Pause Integration",
+   "pattern": [
+    "Shared Overlay + Persistent Settings"
+   ],
+   "objective": "Make Controls and Options reusable from both Main Menu and Pause, and add Save & Quit to Pause.",
+   "success": "Pause has Resume, Retry Level, Save & Quit, Controls, and Options; Options persists music/SFX/screen shake; Controls still opens the existing remap screen.",
+   "diagram": "graph TD\n  A[PAUSE] --> B[Resume]\n  A --> C[Retry Level]\n  A --> D[Save and Quit]\n  A --> E[Controls]\n  A --> F[Options]\n  G[MENU] --> E\n  G --> F\n  E --> H[REMAP]\n  F --> I[OPTIONS]\n  I --> J[progressStore.settings]",
+   "tasks": [
+    {
+     "number": "4.1",
+     "name": "Options screen and settings wiring",
+     "type": "feature",
+     "what": "Add an OPTIONS screen with Music, SFX, and Screen Shake toggles that persist through progressStore.",
+     "why": "The user wants Options in both menu and pause, and the game currently has no persistent options system.",
+     "files": [
+      "~ petal-panic/js/ui/screens.js"
+     ],
+     "snippet": [
+      "export const Options = {\n  focus: 0,\n  rows() {\n    const s = loadStore().settings;\n    return [\n      { label: 'Music', value: s.music },\n      { label: 'SFX', value: s.sfx },\n      { label: 'Screen Shake', value: s.screenShake },\n      { label: 'Vibration', value: s.vibration },\n    ];\n  },\n  draw(ctx) {},\n  onAction(action, origin) {},\n  reset() {},\n};"
+     ],
+     "acceptance": [
+      "OPTIONS draws three toggle rows using the same focus style as Pause",
+      "left/right toggles the focused option",
+      "changes persist immediately to localStorage",
+      "back returns to MENU or PAUSE based on origin"
+     ],
+     "verify": [
+      "node --input-type=module -e \"import('./petal-panic/js/ui/screens.js').then(m => console.log(typeof m.Options?.draw))\""
+     ]
+    },
+    {
+     "number": "4.2",
+     "name": "Pause menu Save and Quit integration",
+     "type": "feature",
+     "what": "Update Pause to include Save & Quit, Options, and Controls while preserving Resume and Retry behavior.",
+     "why": "The user explicitly wants pause to have save and quit plus options accessible during gameplay.",
+     "files": [
+      "~ petal-panic/js/ui/screens.js"
+     ],
+     "snippet": [
+      "const options = [\n  'Resume',\n  'Retry Level',\n  'Save & Quit',\n  'Controls',\n  'Options',\n];\n\n// execute:\n// case 2: saveCurrentRun(); tryTransition(S.MENU);\n// case 3: tryTransition(S.REMAP);\n// case 4: tryTransition(S.OPTIONS);"
+     ],
+     "acceptance": [
+      "Pause shows five options in the existing centered list style",
+      "Save & Quit writes progress/saveMeta and returns to MENU",
+      "Controls opens REMAP with parent PAUSE",
+      "Options opens OPTIONS with origin PAUSE"
+     ],
+     "verify": [
+      "node --input-type=module -e \"import('./petal-panic/js/ui/screens.js').then(m => console.log(typeof m.Pause?.draw))\""
+     ]
+    }
+   ]
+  },
+  {
+   "number": "5",
+   "name": "Media Menu and Unlock Rewards",
+   "pattern": [
+    "Collection Screen + Progress Gating"
+   ],
+   "objective": "Add a Media screen for intro, level clips, and ending content with locked/unlocked presentation.",
+   "success": "Media shows locked cards until the related intro/level/ending milestone is completed, then allows playback of sprite-loop or video placeholders.",
+   "diagram": "graph TD\n  A[MENU] --> B[MEDIA]\n  B --> C[Intro Card]\n  B --> D[Level Clip Cards]\n  B --> E[Ending Card]\n  F[progress.mediaUnlocked] --> C\n  F --> D\n  F --> E\n  C --> G[Locked or Playable]\n  D --> G\n  E --> G\n  G --> H[Playback Overlay]",
+   "tasks": [
+    {
+     "number": "5.1",
+     "name": "Media unlock model",
+     "type": "feature",
+     "what": "Add a media catalog and unlock rules for intro, per-level clips, and ending.",
+     "why": "The Media screen needs one source of truth for what exists, what is locked, and what unlocks it.",
+     "files": [
+      "+ petal-panic/js/ui/mediaModel.js"
+     ],
+     "snippet": [
+      "export function buildMediaCards(progress) {\n  // returns:\n  // [\n  //   {\n  //     id: 'intro',\n  //     title: 'Intro',\n  //     status: 'locked' | 'unlocked',\n  //     tooltip: 'Start a new game to unlock',\n  //     kind: 'sprite-loop' | 'video',\n  //     asset: null,\n  //   },\n  //   {\n  //     id: 'level-1',\n  //     title: 'Big Top Clip',\n  //     status: 'locked' | 'unlocked',\n  //     tooltip: 'Beat Boss 1 to unlock',\n  //   },\n  //   {\n  //     id: 'ending',\n  //     title: 'Ending',\n  //     status: 'locked' | 'unlocked',\n  //     tooltip: 'Beat the final boss to unlock',\n  //   }\n  // ]\n}\n\nexport function markMediaUnlocked(id) {}"
+     ],
+     "acceptance": [
+      "returns intro, eight level clips, and ending",
+      "intro unlocks after any New Game start",
+      "level clip unlocks after the matching boss is defeated",
+      "ending unlocks after the final boss is defeated"
+     ],
+     "verify": [
+      "node --input-type=module -e \"import('./petal-panic/js/ui/mediaModel.js').then(m => console.log(m.buildMediaCards({ mediaUnlocked: [] }).length))\""
+     ]
+    },
+    {
+     "number": "5.2",
+     "name": "Media screen and playback overlay",
+     "type": "feature",
+     "what": "Add the MEDIA canvas screen with locked cards, right-side tooltips, and a simple playback overlay for unlocked clips.",
+     "why": "The user wants media to be part of the menu and to remain locked until the intro/level/ending content is earned.",
+     "files": [
+      "~ petal-panic/js/ui/screens.js"
+     ],
+     "snippet": [
+      "export const Media = {\n  focus: 0,\n  playing: null,\n  draw(ctx) {\n    // grid of media cards\n    // locked card: dark + lock icon\n    // unlocked card: thumbnail or placeholder\n    // right side tooltip for focused card\n  },\n  onAction(action) {},\n  reset() {},\n};"
+     ],
+     "acceptance": [
+      "MEDIA draws all media cards using the same card/focus style as Level Select",
+      "locked media shows no preview image and an unlock requirement on the right",
+      "unlocked media can open a playback overlay",
+      "back closes playback first, then returns to MENU"
+     ],
+     "verify": [
+      "node --input-type=module -e \"import('./petal-panic/js/ui/screens.js').then(m => console.log(typeof m.Media?.draw))\""
+     ]
+    },
+    {
+     "number": "5.3",
+     "name": "Progress unlock hooks",
+     "type": "feature",
+     "what": "Hook gameplay milestones into progressStore so level completion, boss defeat, and ending completion unlock Level Select, Boss Rush, and Media.",
+     "why": "The menu screens need real unlock state instead of always showing everything as available.",
+     "files": [
+      "~ petal-panic/js/systems/lifecycle.js",
+      "~ petal-panic/js/boss/bossFlow.js"
+     ],
+     "snippet": [
+      "// On area completion:\n// updateProgress((store) => {\n//   store.completedAreas[areaId] = true;\n// });\n\n// On boss defeat:\n// updateProgress((store) => {\n//   if (!store.defeatedBosses.includes(bossId)) store.defeatedBosses.push(bossId);\n//   markMediaUnlocked(`level-${levelIndex}`);\n// });\n\n// On final boss defeat:\n// markMediaUnlocked('ending');"
+     ],
+     "acceptance": [
+      "completing a normal stage records completedAreas",
+      "defeating a boss records defeatedBosses",
+      "defeating a boss unlocks the matching media clip",
+      "defeating the final boss unlocks the ending media card"
+     ],
+     "verify": [
+      "node --input-type=module -e \"import('./petal-panic/js/systems/lifecycle.js').then(m => console.log(typeof m.showLevelReward))\""
+     ]
+    }
+   ]
+  }
+ ],
+ "reviewer_b_model": "openai-codex/gpt-6-astra"
 }

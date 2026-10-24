@@ -2,7 +2,7 @@
   "tasks": {
     "1.1": {
       "number": "1.1",
-      "status": "in_progress",
+      "status": "done",
       "name": "Persistent progress and settings store",
       "milestone": "Progress and Settings Persistence",
       "milestone_number": "1",
