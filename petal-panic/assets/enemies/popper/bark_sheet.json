@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/popper/bark_sheet.png",
+ "size": "1631x390",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "popper bark (5 frames)",
+ "entities": [
+  {
+   "name": "popper",
+   "anim": "bark",
+   "frames_dir": "petal-panic/assets/enemies/popper",
+   "frames": [
+    {
+     "file": "bark_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      337,
+      390
+     ]
+    },
+    {
+     "file": "bark_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      337,
+      16,
+      318,
+      357
+     ]
+    },
+    {
+     "file": "bark_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      655,
+      9,
+      282,
+      372
+     ]
+    },
+    {
+     "file": "bark_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      937,
+      1,
+      346,
+      387
+     ]
+    },
+    {
+     "file": "bark_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1283,
+      1,
+      348,
+      388
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-24"
+}

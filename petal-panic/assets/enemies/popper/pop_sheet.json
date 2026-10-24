@@ -1,0 +1,95 @@
+{
+ "file": "petal-panic/assets/enemies/popper/pop_sheet.png",
+ "size": "1807x464",
+ "rows": 1,
+ "cols": 7,
+ "kind": "animation",
+ "description": "popper pop (7 frames)",
+ "entities": [
+  {
+   "name": "popper",
+   "anim": "pop",
+   "frames_dir": "petal-panic/assets/enemies/popper",
+   "frames": [
+    {
+     "file": "pop_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      136,
+      249,
+      191
+     ]
+    },
+    {
+     "file": "pop_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      249,
+      107,
+      275,
+      250
+     ]
+    },
+    {
+     "file": "pop_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      524,
+      94,
+      275,
+      276
+     ]
+    },
+    {
+     "file": "pop_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      799,
+      59,
+      269,
+      346
+     ]
+    },
+    {
+     "file": "pop_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1068,
+      24,
+      251,
+      416
+     ]
+    },
+    {
+     "file": "pop_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1319,
+      5,
+      252,
+      453
+     ]
+    },
+    {
+     "file": "pop_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      1571,
+      0,
+      236,
+      464
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-24"
+}
