@@ -1,9 +1,9 @@
 // Petal Panic — Lane Sequence macro (attack-macros.md §27).
 //
 // A telegraphed sequence where the attacker enters from offscreen and attacks
-// completely across the screen through each configured Y lane exactly once.
-// Per lane: boundary marker → gap → attack (charge or beam) → exit/end →
-// interval → next lane.
+// completely across the screen through each configured Y lane. Per lane:
+// boundary marker → gap → attack (charge or beam) → exit/end → interval →
+// next lane. The whole sequence repeats `repeat` times.
 //
 // mode: 'charge'   → charge primitive (distanceType:infinit, announceMarker:true)
 // mode: 'beam'     → beam primitive (length:9999, announceMarker:true)
@@ -12,6 +12,21 @@
 // ACTIVE ROOM'S FLOOR (getActiveFloorY): lane 0 sits `laneOffset` px above the
 // floor and each next lane goes UP by laneSpacing. Override with an explicit
 // `lanes` array of absolute Y positions.
+//
+// Side modes:
+//   'same_side'    — every lane enters from startSide
+//   'zigzag'       — lanes alternate sides (L→R→L…), starting from startSide
+//   'sweep'        — each lane fires BOTH sides (startSide first, then other)
+//   'random'       — each lane picks a side independently
+//
+// startSide: 'left' | 'right' | 'random' (default 'random'). For 'random',
+// one pick is made at invoke time and held for the entire sequence (all
+// repeats), so the pattern stays readable mid-attack.
+//
+// repeat: x — the full lane sequence runs x times back-to-back. The pattern
+// CONTINUES across passes (zigzag doesn't reset; sweep's per-lane pair order
+// stays consistent). Interval between the last lane of pass N and the first
+// lane of pass N+1 uses the same `interval` param.
 //
 // The announcement is HARDCODED ON (not a param) — a lane sequence is by
 // definition a telegraphed attack. The announceDelay is passed to the
@@ -44,8 +59,9 @@ const DEFAULTS = Object.freeze({
   laneOffset: 0,                // px above the floor where lane 0's BOTTOM sits
   lanes: null,                  // explicit absolute Y positions override (if set, count/spacing/offset ignored)
   laneOrder: 'bottom_to_top',   // 'bottom_to_top' | 'top_to_bottom' | 'random'
-  sideMode: 'fixed_left',       // 'fixed_left' | 'fixed_right' | 'alternate' | 'random'
-  alternateStartSide: 'left',   // 'left' | 'right'
+  sideMode: 'zigzag',           // 'same_side' | 'zigzag' | 'sweep' | 'random'
+  startSide: 'random',          // 'left' | 'right' | 'random'
+  repeat: 1,                    // times the full lane sequence runs
   announceDelay: 0.5,           // s the boundary marker stays visible per lane (hardcoded ON)
   // Charge params:
   dashSpeed: 1200,              // px/s
@@ -100,16 +116,37 @@ function resolveLanes(params, ctx) {
   return [...raw].sort((a, b) => b - a); // bottom_to_top (default)
 }
 
-function resolveSide(sideMode, idx, altStart) {
+/** Resolve the concrete side ('left'|'right') for a given attack slot.
+ *  slotIdx is the GLOBAL index across all repeats (0-based), so zigzag
+ *  continues its alternation seamlessly across passes.
+ *  For 'sweep', sideInLane is 0 (startSide) or 1 (other side). */
+function resolveSide(sideMode, slotIdx, sideInLane, baseSide) {
   switch (sideMode) {
-    case 'fixed_right': return 'right';
-    case 'alternate': {
-      const start = altStart === 'right' ? 1 : 0;
-      return (start + idx) % 2 === 0 ? 'left' : 'right';
-    }
+    case 'same_side': return baseSide;
+    case 'zigzag': return slotIdx % 2 === 0 ? baseSide : otherSide(baseSide);
+    case 'sweep': return sideInLane === 0 ? baseSide : otherSide(baseSide);
     case 'random': return Math.random() < 0.5 ? 'left' : 'right';
-    default: return 'left';
+    default: return baseSide;
   }
+}
+
+function otherSide(s) { return s === 'left' ? 'right' : 'left'; }
+
+/** Build the flat list of attack slots: [{ laneIdx, sideInLane }] in firing
+ *  order. For 'sweep' each lane produces TWO slots; others produce one. */
+function buildSlots(laneCount, sideMode, repeat) {
+  const slots = [];
+  for (let r = 0; r < repeat; r++) {
+    for (let l = 0; l < laneCount; l++) {
+      if (sideMode === 'sweep') {
+        slots.push({ laneIdx: l, sideInLane: 0 });
+        slots.push({ laneIdx: l, sideInLane: 1 });
+      } else {
+        slots.push({ laneIdx: l, sideInLane: 0 });
+      }
+    }
+  }
+  return slots;
 }
 
 defineMacro('laneSequence', {
@@ -121,7 +158,7 @@ defineMacro('laneSequence', {
       { type: 'surface-target-marker', desc: 'boundary telegraph per lane (via primitive announceMarker)' },
       { type: 'beam', desc: 'full-screen beam per lane (mode: beam)' },
     ],
-    desc: 'Telegraphed offscreen attack across each Y lane exactly once. mode: charge (offscreen dash) or beam (static full-screen line). Lanes anchored to the active room floor: lane 0 BOTTOM at laneOffset above floor, stacked up by laneSpacing.',
+    desc: 'Telegraphed offscreen attack across each Y lane, repeated `repeat` times. mode: charge (offscreen dash) or beam (static full-screen line). sideMode: same_side / zigzag / sweep / random. Lanes anchored to the active room floor.',
     params: [
       { key: 'mode', desc: "'charge' | 'beam'" },
       { key: 'laneCount', desc: 'number of rows (default 3)' },
@@ -129,8 +166,9 @@ defineMacro('laneSequence', {
       { key: 'laneOffset', desc: 'px above the floor where lane 0 BOTTOM sits (default 0 = bottom on the ground)' },
       { key: 'lanes', desc: 'explicit absolute Y positions override (null = auto-calc from floor)' },
       { key: 'laneOrder', desc: "'bottom_to_top' | 'top_to_bottom' | 'random'" },
-      { key: 'sideMode', desc: "'fixed_left' | 'fixed_right' | 'alternate' | 'random'" },
-      { key: 'alternateStartSide', desc: "'left' | 'right'" },
+      { key: 'sideMode', desc: "'same_side' | 'zigzag' | 'sweep' | 'random'" },
+      { key: 'startSide', desc: "'left' | 'right' | 'random' — entry side (random = one pick held for the whole sequence)" },
+      { key: 'repeat', desc: 'times the full lane sequence runs (default 1)' },
       { key: 'announceDelay', desc: 's the boundary marker stays visible per lane (default 0.5)' },
       { key: 'dashSpeed', desc: 'px/s (charge mode, default 1200)' },
       { key: 'damage', desc: 'contact damage (charge) / per tick (beam)' },
@@ -144,16 +182,28 @@ defineMacro('laneSequence', {
     ],
   },
   impl(params, ctx) {
+    const p = { ...DEFAULTS, ...params };
     const h = new AttackHandle('laneSequence', null, declaredEffectsOf('laneSequence'));
-    const laneSeq = resolveLanes(params, ctx);
+    const laneSeq = resolveLanes(p, ctx);
     const n = laneSeq.length;
+    const totalRepeats = Math.max(1, Math.floor(p.repeat));
+
+    // Resolve startSide ONCE at invoke time (random → one pick, held forever).
+    const baseSide = p.startSide === 'random'
+      ? (Math.random() < 0.5 ? 'left' : 'right')
+      : p.startSide;
+
+    // Flat firing order across all repeats.
+    const slots = buildSlots(n, p.sideMode, totalRepeats);
+    const totalSlots = slots.length;
+
     // Charge is motion-only. This macro owns contact, once per victim per lane,
     // through the same physical hitbox/team routing used by beam.
-    const contact = makeHitbox({ owner: ctx.attacker, team: params.team,
-      box: null, damage: params.damage, method: 'contact' });
+    const contact = makeHitbox({ owner: ctx.attacker, team: p.team,
+      box: null, damage: p.damage, method: 'contact' });
 
     h.state = {
-      laneIdx: 0,
+      slotIdx: 0,
       phase: 'idle',       // 'idle' | 'attacking' | 'interval' | 'done'
       intervalTimer: 0,
       active: null,        // current charge/beam handle
@@ -169,28 +219,29 @@ defineMacro('laneSequence', {
       else a.x = VIEW_W + 60 - (a.w ?? 32);
     }
 
-    /** Start the attack for the current lane. */
+    /** Start the attack for the current slot. */
     function startAttack() {
       const s = h.state;
-      const y = laneSeq[s.laneIdx];
-      const side = resolveSide(params.sideMode, s.laneIdx, params.alternateStartSide);
+      const slot = slots[s.slotIdx];
+      const y = laneSeq[slot.laneIdx];
+      const side = resolveSide(p.sideMode, s.slotIdx, slot.sideInLane, baseSide);
       const direction = side === 'left' ? 0 : Math.PI;
 
       let handle;
-      if (params.mode === 'beam') {
+      if (p.mode === 'beam') {
         const originX = side === 'left' ? -10 : VIEW_W + 10;
         handle = invoke('beam', {
           origin: { x: originX, y },
           direction,
           length: 9999,
-          width: params.beamWidth,
-          duration: params.beamDuration,
-          damage: params.damage,
-          tickRate: params.tickRate,
-          team: params.team,
-          style: params.style,
+          width: p.beamWidth,
+          duration: p.beamDuration,
+          damage: p.damage,
+          tickRate: p.tickRate,
+          team: p.team,
+          style: p.style,
           announceMarker: true,
-          announceDelay: params.announceDelay,
+          announceDelay: p.announceDelay,
         }, ctx);
       } else {
         // charge
@@ -198,14 +249,14 @@ defineMacro('laneSequence', {
         resetHitbox(contact);
         handle = invoke('charge', {
           direction,
-          speed: params.dashSpeed,
+          speed: p.dashSpeed,
           distanceType: 'infinit',
           acceleration: 0,
           stopOnObstacle: false,
-          bodyDamageOverride: { damage: params.damage, ...(params.knockback ? { knockback: params.knockback } : {}) },
+          bodyDamageOverride: { damage: p.damage, ...(p.knockback ? { knockback: p.knockback } : {}) },
           announceMarker: true,
-          announceDelay: params.announceDelay,
-          team: params.team,
+          announceDelay: p.announceDelay,
+          team: p.team,
         }, ctx);
       }
 
@@ -214,7 +265,7 @@ defineMacro('laneSequence', {
         handle.on('complete', () => {
           // Interval starts ONLY after the attack fully ends.
           s.phase = 'interval';
-          s.intervalTimer = params.interval;
+          s.intervalTimer = p.interval;
         });
         s.active = handle;
       }
@@ -232,7 +283,7 @@ defineMacro('laneSequence', {
 
         case 'attacking':
           if (s.active) {
-            if (params.mode === 'beam') {
+            if (p.mode === 'beam') {
               s.active.step(dt, targets ?? []);
             } else {
               const before = s.active.state.traveled;
@@ -252,10 +303,10 @@ defineMacro('laneSequence', {
         case 'interval':
           s.intervalTimer -= dt;
           if (s.intervalTimer <= 0) {
-            s.laneIdx++;
-            if (s.laneIdx >= n) {
+            s.slotIdx++;
+            if (s.slotIdx >= totalSlots) {
               s.done = true;
-              h._complete({ lanes: n, mode: params.mode });
+              h._complete({ lanes: n, repeats: totalRepeats, slots: totalSlots, mode: p.mode });
               return true;
             }
             s.phase = 'idle';

@@ -117,7 +117,7 @@ const SANDBOX_PRESETS = {
   clusterBomb: { mineType: 'explosion', direction: -0.5, arc: 800, bounce: false, ttl: 3, damage: 20, radius: 40, count: 4, childAngle: 120 * DEG, childDirection: -Math.PI / 2, childForce: 300, childArc: 700, childTtl: 2, childDamage: 15, childRadius: 30 },
   targetedBeam: { duration: 1.2, lockTime: 0.5, color: '#ff5555', radius: 30, tracking: true, beamDuration: 1.0, beamWidth: 36, beamLength: 1000, damage: 15, tickRate: 8, team: 'ally' },
   sweepingBeam: { direction: 0, sweepAngle: 67.5 * DEG, length: 1000, width: 24, speed: 0, holdDuration: 0.4, sweepDuration: 1.0, endHoldDuration: 0.3, fadeOut: 0.5, damage: 20, tickRate: 8, team: 'ally', shimmerLow: 0.1, shimmerHigh: 0.35, announceMarker: true, announceDelay: 1.0 },
-  laneSequence: { mode: 'charge', laneCount: 2, laneSpacing: 120, laneOffset: 0, lanes: null, laneOrder: 'bottom_to_top', sideMode: 'fixed_left', alternateStartSide: 'left', announceDelay: 0.5, dashSpeed: 1200, damage: 20, knockback: null, beamDuration: 0.8, beamWidth: 36, tickRate: 8, interval: 0.15, team: 'ally', style: null },
+  laneSequence: { mode: 'charge', laneCount: 2, laneSpacing: 120, laneOffset: 0, lanes: null, laneOrder: 'bottom_to_top', sideMode: 'zigzag', startSide: 'random', repeat: 1, announceDelay: 0.5, dashSpeed: 1200, damage: 20, knockback: null, beamDuration: 0.8, beamWidth: 36, tickRate: 8, interval: 0.15, team: 'ally', style: null },
   surfaceWave: { x: ATTACKER_HOME.x + 16, y: GROUND_Y, direction: 'right', speed: 300, height: 24, width: 28, damage: 15, ttl: null, team: 'foe' },
   surfaceStrike: { x: (ATTACKER_HOME.x + TARGET_POS.x) / 2 + 16, y: GROUND_Y, width: Infinity, height: 30, reach: Infinity, duration: 0.35, damage: 25, team: 'neutral' },
   shockwave: { x: (ATTACKER_HOME.x + TARGET_POS.x) / 2 + 16, y: GROUND_Y - 24, radius: 300, damage: 70, duration: 1.2, easing: 'easeIn', knockbackIntensity: 8, shakeIntensity: 5, team: 'neutral' },
@@ -173,7 +173,7 @@ export const TWEAKABLE = {
   clusterBomb: [['mineType', 'enum', ['explosion', 'shockwave']], ['spawnType', 'enum', ['bomb', 'mine']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['childAngle', 'angle', 15 * DEG], ['childDirection', 'angle', 15 * DEG], ['childForce', 'num', 50], ['childArc', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
   targetedBeam: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['beamDuration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   sweepingBeam: [['direction', 'angle', 15 * DEG], ['sweepAngle', 'angle', 10 * DEG], ['speed', 'num', 20], ['holdDuration', 'num', 0.1], ['sweepDuration', 'num', 0.1], ['endHoldDuration', 'num', 0.05], ['fadeOut', 'num', 0.05], ['damage', 'num', 2], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
-  laneSequence: [['mode', 'enum', ['charge', 'beam']], ['laneCount', 'int', 1], ['laneSpacing', 'num', 20], ['laneOffset', 'num', 10], ['laneOrder', 'enum', ['bottom_to_top', 'top_to_bottom', 'random']], ['sideMode', 'enum', ['fixed_left', 'fixed_right', 'alternate', 'random']], ['announceDelay', 'num', 0.1], ['dashSpeed', 'num', 100], ['beamDuration', 'num', 0.1], ['damage', 'num', 5], ['tickRate', 'int', 1], ['interval', 'num', 0.05]],
+  laneSequence: [['mode', 'enum', ['charge', 'beam']], ['laneCount', 'int', 1], ['laneSpacing', 'num', 20], ['laneOffset', 'num', 10], ['laneOrder', 'enum', ['bottom_to_top', 'top_to_bottom', 'random']], ['sideMode', 'enum', ['same_side', 'zigzag', 'sweep', 'random']], ['startSide', 'enum', ['left', 'right', 'random']], ['repeat', 'int', 1], ['announceDelay', 'num', 0.1], ['dashSpeed', 'num', 100], ['beamDuration', 'num', 0.1], ['damage', 'num', 5], ['tickRate', 'int', 1], ['interval', 'num', 0.05]],
   surfaceWave: [['speed', 'num', 50], ['height', 'num', 4], ['width', 'num', 4], ['ttl', 'num', 0.25], ['damage', 'num', 5]],
   surfaceStrike: [['x', 'num', 20], ['width', 'num', 20], ['height', 'num', 4], ['reach', 'num', 20], ['duration', 'num', 0.1], ['damage', 'num', 5]],
   stomp: [['impact', 'enum', ['strike', 'radius', 'wave']], ['buildTime', 'num', 0.1], ['gapTime', 'num', 0.1], ['blinkTime', 'num', 0.1], ['impactDelay', 'num', 0.1], ['count', 'int', 1], ['interval', 'num', 0.1], ['damage', 'num', 5], ['shakeStrength', 'num', 1], ['radius', 'num', 10], ['strike.width', 'num', 20], ['strike.height', 'num', 4], ['strike.duration', 'num', 0.1], ['wave.sides', 'enum', ['left', 'right', 'both']], ['wave.speed', 'num', 50], ['wave.height', 'num', 4], ['wave.ttl', 'num', 0.25]],
@@ -775,7 +775,7 @@ export const AttackTheater = {
       if (!e.alive) continue;
       e.update?.(DT, this._target, this._world);
       if (e.gravity > 0) resolve(e, [this._floorSolid]);
-      if (typeof e.hostStep === 'function') e.hostStep(DT, [this._target]);
+      // BombAttackHost -> throwEnemy.step owns hostStep (TTL/contact), once.
     }
     // Off-screen cull (sandbox bounds instead of level zone).
     for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
@@ -835,7 +835,10 @@ export const AttackTheater = {
     for (let i = this._handles.length - 1; i >= 0; i--) {
       const h = this._handles[i];
       let finished = false;
-      if (h.id === 'meleeHitbox' && typeof h.step === 'function') {
+      if (BOMB_FAMILY.has(h.id)) {
+        // BombAttackHost already stepped this root and its children above.
+        finished = h._completed || h._cancelled;
+      } else if (h.id === 'meleeHitbox' && typeof h.step === 'function') {
         finished = h.step([this._target]);
       } else if (h.id === 'reticleShot') {
         // Dumb host: the macro owns track → lock → fire. The shot handle may

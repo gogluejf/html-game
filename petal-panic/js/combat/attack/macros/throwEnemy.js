@@ -32,8 +32,8 @@ export const THROW_ENEMY_DEFAULTS = Object.freeze({
   origin: null,          // marker label | {x,y} | null → attacker center
   // --- payload ---------------------------------------------------------------
   enemyType: 'explosive_monkey',
-  ttl: null,             // post-landing fuse seconds; null = contact only
-  settleDelay: 0.2,      // landing beat before the TTL clock starts
+  ttl: null,             // fuse seconds from enemy spawn; null = contact only
+  settleDelay: 0.2,      // legacy option; TTL starts at enemy spawn
   explodeOnContact: true,
   mineType: 'explosion', // explosion | shockwave
   team: 'neutral',       // ally | foe | neutral (who the blast hurts)
@@ -51,8 +51,8 @@ defineMacro('throwEnemy', {
       { key: 'arc', desc: 'gravity px/s²' }, { key: 'bounce', desc: 'bounce before settling' },
       { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' },
       { key: 'enemyType', desc: 'ENEMY_FACTORIES id materialized on landing' },
-      { key: 'ttl', desc: 'post-landing fuse seconds; null = contact only' },
-      { key: 'settleDelay', desc: 'seconds after landing before the TTL clock runs' },
+      { key: 'ttl', desc: 'fuse seconds from enemy spawn; null = contact only' },
+      { key: 'settleDelay', desc: 'legacy option; does not delay the spawn-based fuse' },
       { key: 'explodeOnContact', desc: 'detonate on first valid body contact' },
       { key: 'mineType', desc: 'explosion | shockwave payload subtype' },
       { key: 'team', desc: 'ally targets enemies; foe targets hero; neutral targets both' },

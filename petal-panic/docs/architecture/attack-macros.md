@@ -888,8 +888,8 @@ Entry flash/warning → dash across screen → exit → next lane warning → ne
 
 - **lanes** — configured Y positions.
 - **laneOrder** — `bottom_to_top` / `top_to_bottom` / `random`.
-- **sideMode** — `fixed_left` / `fixed_right` / `alternate` / `random`.
-- **alternateStartSide** — `left` or `right`.
+- **sideMode** — `same_side` / `zigzag` / `sweep` / `random`.
+- **startSide** — `left`, `right`, or `random`.
 - **telegraphDuration** — warning per lane.
 - **telegraphStyle** — visual.
 - **dashSpeed** — horizontal speed.
@@ -905,9 +905,10 @@ Entry flash/warning → dash across screen → exit → next lane warning → ne
   `laneSpacing`. No more sub-floor lanes. Falls back to ZONE_GROUND_Y (480)
   when no zone context exists (theater).
 - One complete sequence uses every configured Y lane exactly once.
-- Fixed side means every dash enters from that same side, including with random
+- Same side means every dash enters from that same side, including with random
   lane order.
-- Alternate side alternates left/right per lane; starting side is configurable.
+- Zigzag alternates left/right per lane; starting side is configurable.
+- Sweep fires each lane from both sides (startSide first, then other).
 - Random side independently chooses left/right for each lane.
 - Lane order and side selection are independent.
 - Every dash is telegraphed at its actual entry side and Y position before it
@@ -920,8 +921,9 @@ Entry flash/warning → dash across screen → exit → next lane warning → ne
 Damage → repeat for next lane**
 
 Examples:
-- `fixed_left + random lanes` → L/Y3 → L/Y1 → L/Y2
-- `alternate(left) + bottom_to_top` → L/Y1 → R/Y2 → L/Y3
+- `same_side + random lanes` → L/Y3 → L/Y1 → L/Y2
+- `zigzag(left) + bottom_to_top` → L/Y1 → R/Y2 → L/Y3
+- `sweep(right) + bottom_to_top` → R/Y1 → L/Y1 → R/Y2 → L/Y2 → R/Y3 → L/Y3
 - `random side + random lanes` → R/Y2 → L/Y1 → L/Y3
 
 ---
@@ -1227,17 +1229,17 @@ creating dozens of almost-identical custom implementations.
 
 ## 27. Lane Sequence (implemented — `laneSequence.js`)
 
-**Invokes:** Charge (mode: dash) OR Beam (mode: beam), per lane
+**Invokes:** Charge (mode: charge) OR Beam (mode: beam), per lane
 
 **Effects:** Surface Target Marker (boundary telegraph per lane, via primitive announceMarker) + Beam (beam mode)
 
 A telegraphed sequence where the attacker enters from offscreen and attacks
-completely across the screen through each configured Y lane exactly once.
-One macro, two modes via enum.
+completely across the screen through each configured Y lane. The whole
+sequence repeats `repeat` times. One macro, two modes via enum.
 
 ### Modes
 
-- **`dash`** — charge primitive (`distanceType: 'infinit'`, `announceMarker: true`).
+- **`charge`** — charge primitive (`distanceType: 'infinit'`, `announceMarker: true`).
   The attacker dashes across the screen at `dashSpeed`. Position-based dodge.
 - **`beam`** — beam primitive (`length: 9999`, `announceMarker: true`).
   A static full-screen beam stays hot for `beamDuration`. Timing-based dodge.
@@ -1257,13 +1259,16 @@ The interval starts ONLY after the current lane's attack fully completes
 - **laneOffset** — px above the active room's floor where lane 0's BOTTOM sits (default 0 = bottom on the ground).
 - **lanes** — array of absolute Y positions; overrides laneCount/laneSpacing/laneOffset.
 - **laneOrder** — `bottom_to_top` | `top_to_bottom` | `random`.
-- **sideMode** — `fixed_left` | `fixed_right` | `alternate` | `random`.
-- **alternateStartSide** — `left` or `right`.
+- **sideMode** — `same_side` | `zigzag` | `sweep` | `random`.
+- **startSide** — `left` | `right` | `random` (default `random`). For `random`,
+  one pick is made at invoke time and held for the entire sequence (all repeats).
+- **repeat** — times the full lane sequence runs back-to-back (default 1). The
+  pattern CONTINUES across passes (zigzag doesn't reset; sweep order stays consistent).
 - **announceDelay** — s the boundary marker stays visible per lane (default 0.5).
   Hardcoded ON — a lane sequence is by definition telegraphed.
-- **dashSpeed** — px/s (dash mode, default 1200).
-- **damage** — contact damage (dash) / per tick (beam).
-- **knockback** — `{x,y}` or null (dash only).
+- **dashSpeed** — px/s (charge mode, default 1200).
+- **damage** — contact damage (charge) / per tick (beam).
+- **knockback** — `{x,y}` or null (charge only).
 - **beamDuration** — s the beam stays hot (beam mode, default 0.8).
 - **beamWidth** — damaging thickness px (beam mode, default 24).
 - **tickRate** — damage ticks per second (beam mode, default 8).
@@ -1271,11 +1276,24 @@ The interval starts ONLY after the current lane's attack fully completes
 - **team** — ally | foe.
 - **style** — beam effect style override (beam only).
 
+### Side modes
+
+- **`same_side`** — every lane enters from `startSide`.
+- **`zigzag`** — lanes alternate sides (L→R→L…), starting from `startSide`.
+  Continues across repeats: with 3 lanes + repeat 2, the 4th attack (pass 2,
+  lane 0) continues the alternation, not restart it.
+- **`sweep`** — each lane fires BOTH sides: `startSide` first, then the other.
+  Lane 0: L→R, Lane 1: L→R, … (or R→L if startSide=right). Doubles the slot
+  count.
+- **`random`** — each lane picks a side independently (startSide ignored).
+
 ### Rules
 
-- One complete sequence uses every configured Y lane exactly once.
-- Fixed side means every attack enters from that same side.
-- Alternate side alternates left/right per lane; starting side configurable.
+- One complete pass uses every configured Y lane exactly once; `repeat` runs
+  the whole pass multiple times.
+- Same side means every attack enters from that same side.
+- Zigzag alternates left/right per lane; the pattern continues across repeats.
+- Sweep covers both sides per lane — no lane is "missed" from either direction.
 - Random side independently chooses left/right for each lane.
 - Lane order and side selection are independent.
 - The announcement is always on (not a param).

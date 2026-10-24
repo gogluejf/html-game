@@ -209,7 +209,7 @@ ok('molotov parity: identical zone placement across context shapes', () => {
 
 // Lane sequences use the ordinary host path, not direct child stepping.
 for (const mode of ['charge', 'beam']) {
-  for (const sideMode of ['fixed_left', 'fixed_right', 'alternate']) {
+  for (const sideMode of ['same_side', 'zigzag', 'sweep']) {
     ok(`laneSequence ${mode}/${sideMode}: both rows hit, other rows safe`, () => {
       const t = AttackTheater;
       t.open();
@@ -240,9 +240,11 @@ for (const mode of ['charge', 'beam']) {
         const initialX = t._attacker.x;
         for (let i = 0; i < 450; i++) t.update(DT);
         assert.equal(h.state.done, true, 'all configured rows finish');
-        assert.equal(h.state.laneIdx, t._params.laneCount);
-        assert.equal(hits.get(t._target), mode === 'charge' ? 1 : 6);
-        assert.equal(hits.get(upper), mode === 'charge' ? 1 : 6);
+        const expectedSlots = sideMode === 'sweep' ? t._params.laneCount * 2 : t._params.laneCount;
+        assert.equal(h.state.slotIdx, expectedSlots);
+        const mult = sideMode === 'sweep' ? 2 : 1;
+        assert.equal(hits.get(t._target), mode === 'charge' ? mult : 6 * mult);
+        assert.equal(hits.get(upper), mode === 'charge' ? mult : 6 * mult);
         assert.equal(safe.hp, safeHP, 'outside both attack volumes');
         assert.equal(upper.y + upper.h, platform.y, 'real platform supports victim');
         if (mode === 'beam') assert.equal(t._attacker.x, initialX, 'explicit beam origin does not move attacker');
@@ -281,5 +283,28 @@ for (const mode of ['charge', 'beam']) {
     assert.deepEqual(rows.map(t => t.hp), hp, 'completed sequence cannot damage');
   });
 }
+
+ok('throwEnemy: TTL counts once per frame from enemy spawn', () => {
+  const t = AttackTheater;
+  t.open();
+  try {
+    t.index = t.entries.indexOf('throwEnemy');
+    t._tweaks.throwEnemy = { ttl: 2, settleDelay: 5, explodeOnContact: false };
+    t._loadParams();
+    t._replay();
+    for (let i = 0; i < 600 && !t._thrownEnemies.length; i++) t.update(DT);
+    const e = t._thrownEnemies[0];
+    assert.ok(e, 'enemy materialized');
+    assert.ok(e._fuseLeft > 1.95, 'full fuse at spawn');
+    for (let i = 0; i < 60; i++) t.update(DT);
+    assert.equal(e._detonated, false, 'not exploded after one second');
+    assert.ok(Math.abs(e._fuseLeft - 1) < 0.04, 'one second consumed, not two');
+    for (let i = 0; i < 61; i++) t.update(DT);
+    assert.equal(e._detonated, true, 'explodes at two seconds, no settle delay');
+  } finally {
+    delete t._tweaks.throwEnemy;
+    t.close();
+  }
+});
 
 console.log(`\ntheaterParity: ${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

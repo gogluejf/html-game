@@ -52,8 +52,8 @@ export class ExplosiveMonkey extends Enemy {
    * @param {number} x spawn x (top-left)
    * @param {number} y spawn y
    * @param {object} [cfg] detonation config (set by makeEnemy / throwEnemy):
-   *   ttl              seconds until auto-detonation after settling; null = contact only
-   *   settleDelay      grace seconds before the TTL clock starts (landing beat)
+   *   ttl              seconds until auto-detonation from spawn; null = contact only
+   *   settleDelay      legacy option; does not delay the spawn-based fuse
    *   explodeOnContact detonate on first valid-body contact (default true)
    *   mineType         'explosion' | 'shockwave' payload subtype
    *   team             ally | foe | neutral (who the blast hurts)
@@ -75,7 +75,8 @@ export class ExplosiveMonkey extends Enemy {
     };
     this._detonated = false;   // latch: one blast per lifetime
     this._settled = false;     // ground contact reached (TTL clock may start)
-    this._fuseLeft = null;
+    this._settleTimer = 0;     // grace period before fuse arms
+    this._fuseLeft = this.cfg.ttl;
     this._payloadHandle = null;
     // Snappy death: a suicide unit shouldn't linger with a long shrink/fade.
     this.deathDuration = 0.25;
@@ -88,6 +89,7 @@ export class ExplosiveMonkey extends Enemy {
    */
   applyThrowConfig(cfg = {}) {
     Object.assign(this.cfg, cfg);
+    this._fuseLeft = this.cfg.ttl; // configured at materialization, before the first tick
   }
 
   /** Grounded? (feet within a hair of the floor — host resolve() snaps us there). */
@@ -127,14 +129,10 @@ export class ExplosiveMonkey extends Enemy {
    */
   hostStep(dt, targets = []) {
     if (!this.alive) return true;
-    // --- Settle + TTL fuse ---------------------------------------------------
-    if (!this._detonated && !this._settled && this.grounded) {
-      this._settled = true;
-      this._fuseLeft = this.cfg.ttl;
-    }
-    if (!this._detonated && this._settled && this.cfg.ttl != null && this._fuseLeft != null) {
+    // Spawn starts the fuse; throwEnemy owns the single tick per frame.
+    if (!this._detonated && this._fuseLeft != null) {
       this._fuseLeft -= dt;
-      if (this._fuseLeft <= 0) this.detonate(targets);
+      if (this._fuseLeft <= 1e-9) this.detonate(targets);
     }
     // --- Contact -------------------------------------------------------------
     if (!this._detonated && this.cfg.explodeOnContact) {
