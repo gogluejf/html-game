@@ -512,10 +512,11 @@ export const STAGING = {
 
   skyDiveStomp: {
     setup(t) {
-      // Sky Dive Stomp demo: the diver drops ONTO the target's spot and slams
-      // a stomp wave per side. Stage TWO victims flanking the impact point so
-      // each wave visibly catches its own side victim (same read as stompWave).
-      // No platform: every drop column resolves to the floor here.
+      // Sky Dive Stomp demo — ONE body. The attacker IS the diver: it walks
+      // off-screen (it's "in the sky"), then the SAME body drops in from above
+      // the marker, lands, stomps, lingers, and blinks out. No second box, no
+      // idle stand-in. Two victims flank the impact column so each stomp wave
+      // visibly catches its own side.
       const cx = VIEW_W / 2;
       t._params.x = cx;
       t._params.groundY = GROUND_Y;
@@ -524,9 +525,70 @@ export const STAGING = {
       t._stompVics = [new Enemy(STOMP_VIC_DEF, cx - 130 - 28, GROUND_Y - 28)];
       for (const v of t._stompVics) t._world.add(v);
       t._stompPlatforms = [];
-      return tagged({ kind: 'stompStage' }, STAGING.skyDiveStomp);
+      // Attacker at home, visible, facing left (walks off the left edge).
+      t._attacker.x = ATTACKER_HOME.x;
+      t._attacker.y = ATTACKER_HOME.y;
+      t._attacker.facing = -1;
+      t._attackerVisible = true;
+      return tagged({ kind: 'skyDiveWalkOff', t: 0, phase: 'walkOff', speed: 260 }, STAGING.skyDiveStomp);
     },
-    // Static staging — the macro owns warning → drop → waves.
+    update(t, c, dt) {
+      // Phase 1 — walk off the left edge, then hide (it's in the sky now) and
+      // fire the attack. The invoke is GATED here (theater skips auto-invoke for
+      // this kind) so the marker/drop only start AFTER the enemy has left.
+      if (c.phase === 'walkOff') {
+        t._attacker.x -= c.speed * DT;
+        t._attacker.facing = -1;
+        if (t._attacker.x + t._attacker.w < -40 && !c.invoked) {
+          c.invoked = true;
+          t._attackerVisible = false; // out of the collision world + not drawn
+          c.phase = 'diving';
+          t._log.unshift('ENEMY LEFT (sky)');
+          const h = invoke('skyDiveStomp', { ...t._params, target: t._target }, t._ctx());
+          h.on('hit', (i) => t._log.unshift(`HIT ${i.dealt ?? ''} dmg`.trim()));
+          h.on('complete', () => t._log.unshift('COMPLETE'));
+          t._handles.push(h);
+        }
+        return false;
+      }
+      // Phase 2 — hidden while the marker shows, then the SAME attacker body
+      // becomes the falling diver (driven by the macro's state.diverY). On
+      // impact it snaps onto the ground and reappears; on the blink-out it
+      // hides again. The theater draws this one body from _attacker.x/y.
+      if (c.phase === 'diving') {
+        const h = t._handles.find((x) => x.id === 'skyDiveStomp');
+        if (!h || h.state?.done) return false; // macro finished; leave it
+        const s = h.state;
+        if (s.phase === 'warning') {
+          // Still in the sky — stay hidden while the marker warns the spot.
+          return false;
+        }
+        if (s.phase === 'drop') {
+          // The attacker IS the diver: place its body at the macro's fall pos.
+          t._attackerVisible = true;
+          t._attacker.x = s.impact.x - t._attacker.w / 2;
+          t._attacker.y = s.diverY;
+          return false;
+        }
+        // Landed (waves/linger/vanish): sit on the impact point.
+        if (!c.landed) {
+          c.landed = true;
+          t._attacker.x = s.impact.x - t._attacker.w / 2;
+          t._attacker.y = s.impact.y - t._attacker.h;
+          t._attackerVisible = true;
+          t._log.unshift('LANDED');
+        }
+        // During the blink-out, HIDE the real body — the blink-transition
+        // effect IS the enemy now (it alternates its color / nothing). Drawing
+        // both would layer a second box over it.
+        if (s.phase === 'vanish') {
+          t._attackerVisible = false;
+          if (!c.vanishedLogged) { c.vanishedLogged = true; t._log.unshift('VANISHED'); }
+        }
+        return false;
+      }
+      return false;
+    },
   },
 
   missileRain: {

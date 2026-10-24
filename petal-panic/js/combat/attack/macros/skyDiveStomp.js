@@ -33,6 +33,8 @@
 //   state.impact        — { x, y } of the resolved impact point
 //   h.stomp             — the live stompWave handle (theater can render it)
 //   hit / complete      — hits forwarded from the stomp wave; complete { waves }
+//   land                — fired once at impact with { x, y } (host snaps the
+//                         real entity here + makes it visible)
 //   vanish              — fired once at the end of the blink with { x, y, linger }
 
 import { defineMacro } from '../defineMacro.js';
@@ -139,6 +141,11 @@ defineMacro('skyDiveStomp', {
       h.state.phase = 'waves';
       h.state.t = 0;
 
+      // Impact signal: the host snaps the real entity to this point and makes
+      // it visible HERE (it was hidden while "in the sky"). Fires once, before
+      // the stomp waves — mirrors throwEnemy's 'land' contract.
+      h._emit('land', { x: pt.x, y: pt.y });
+
       // Fire the REAL stompWave macro at the impact point. stompWave reads its
       // origin from ctx.attacker's feet, so give it a child context whose
       // attacker is a stand-in box sitting ON the impact line (bottom = pt.y).
@@ -202,7 +209,15 @@ defineMacro('skyDiveStomp', {
         // entity — it is host-agnostic; the host owns visible=false + reappear.
         if (s.t <= dt && !s.vanishFired) {
           s.vanishFired = true;
-          fireDeclared({ type: 'blink-transition', params: { box: { x: pt.x - p.size / 2, y: pt.y - p.size, w: p.size, h: p.size }, frameA: '#ffffff', frameB: '#7df3ff', duration: Math.max(0.1, p.vanishTime), speed: 6, endSpeed: 30, direction: 'forward', hold: false } }, h.declaredEffectTypes());
+          // The blink IS the enemy: size the box to the ATTACKER's real body
+          // (not the tiny falling carrier) so it reads as the enemy itself
+          // alternating visible / nothing, fast→slow, then gone. frameA = the
+          // enemy color, frameB = null (nothing). No separate small square.
+          const aw = ctx.attacker?.w ?? p.size;
+          const ah = ctx.attacker?.h ?? p.size;
+          const bx = pt.x - aw / 2;
+          const by = pt.y - ah; // feet on the impact line, body above
+          fireDeclared({ type: 'blink-transition', params: { box: { x: bx, y: by, w: aw, h: ah }, frameA: '#ff6ec7', frameB: null, duration: Math.max(0.1, p.vanishTime), speed: 6, endSpeed: 30, direction: 'forward', hold: false } }, h.declaredEffectTypes());
         }
         if (s.t >= p.vanishTime) {
           s.done = true;

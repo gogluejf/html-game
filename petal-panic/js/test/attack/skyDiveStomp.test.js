@@ -192,4 +192,17 @@ ok('vanish: false → enemy stays put (no linger/vanish phases, no event)', () =
   assert.ok(!vanished, 'no vanish event fired');
 });
 
+ok('land: fires once at impact with the impact point (before the waves)', () => {
+  const c = ctx();
+  const h = invoke('skyDiveStomp', { x: 500, timeToTarget: 0.1, dropHeight: 120, fallSpeed: 600, stomp: { ttl: 0.3 } }, c);
+  const lands = [];
+  h.on('land', (info) => lands.push({ ...info, phase: h.state.phase }));
+  let finished = false;
+  for (let i = 0; i < 900 && !finished; i++) finished = h.step(DT, []);
+  assert.ok(finished, 'completes');
+  assert.equal(lands.length, 1, 'landed exactly once');
+  assert.deepEqual({ x: lands[0].x, y: lands[0].y }, { x: 500, y: GROUND_Y }, 'land at the impact point');
+  assert.equal(lands[0].phase, 'waves', 'land fires as the waves phase begins');
+});
+
 console.log(`\nskyDiveStomp: ${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

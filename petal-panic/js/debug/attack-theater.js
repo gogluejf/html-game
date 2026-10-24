@@ -640,7 +640,7 @@ export const AttackTheater = {
     try {
       // Choreographed attacks gate the actual invoke:
       //  - punch (melee): starts once the attacker is beside the target
-      const gated = this._choreo?.kind === 'punch' || this._choreo?.kind === 'kamikaze';
+      const gated = this._choreo?.kind === 'punch' || this._choreo?.kind === 'kamikaze' || this._choreo?.kind === 'skyDiveWalkOff';
       if (!gated) {
         // Bomb-family attacks spawn through the shared BombAttackHost (same as
         // gameplay): it owns root lifecycle + child-payload promotion. Every
@@ -1303,23 +1303,10 @@ export const AttackTheater = {
       ctx.fillText('KAMIKAZE', this._kamikaze.x + this._kamikaze.w / 2, this._kamikaze.y - 8);
     }
 
-    // Sky Dive Stomp: the diver is macro-owned state (not a pool entity).
-    // Draw it from state.diverY while dropping; once landed (linger/vanish)
-    // it sits at the impact point until the blink-out hides it. The impact
-    // waves are the stompWave's ground-wave effect.
-    for (const h of this._handles) {
-      if (h.id !== 'skyDiveStomp' || h.state?.done) continue;
-      const s = h.state;
-      const size = this._params.size ?? 14;
-      const x = s.impact.x - size / 2;
-      const y = (s.phase === 'drop') ? s.diverY : (s.impact.y - size);
-      ctx.fillStyle = '#e67e22';
-      ctx.fillRect(x, y, size, size);
-      ctx.fillStyle = '#fff';
-      ctx.font = '9px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(s.phase === 'drop' ? 'DIVE' : (s.phase === 'vanish' ? 'BLINK' : 'IDLE'), s.impact.x, y - 6);
-    }
+    // Sky Dive Stomp: the attacker body IS the diver (driven by the staging
+    // choreo from the macro's state.diverY). No separate box — one body walks
+    // off-screen, drops in, lands, and blinks out. The impact waves are the
+    // stompWave's ground-wave effect.
 
     // Event log.
     ctx.textAlign = 'left';
