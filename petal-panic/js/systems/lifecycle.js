@@ -25,13 +25,13 @@
 
 import { GAME_RULES, createContinuePool, canSpend, spend, credit, resetLevelCoinTally, resetHeroInventory } from './gameRules.js';
 import { LEVELS, ZONE_ENTRY_X, ZONE_GROUND_Y } from '../world/level.js';
-import { getLevelConfig, LEVEL_CONFIGS } from '../world/levelConfigs.js';
+import { getLevelConfig, LEVEL_CONFIGS, AREA_BOSS } from '../world/levelConfigs.js';
 import { Hero, WEAPON_THORN } from '../hero/hero.js';
 import {createTrace, record, beginLife, beginContinue, calculateScore} from '../stats.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
 import { tryTransition, getState, setState, S } from '../core/state.js';
 import { TUNING } from '../tuning.js';
-import { loadStore, saveStore, clearRunSave, updateProgress } from './progressStore.js';
+import { loadStore, saveStore, clearRunSave, updateProgress, markMediaUnlocked } from './progressStore.js';
 
 // --- Area-entry accounting snapshot (game-rules.md §2/§4) -------------------
 //
@@ -372,6 +372,11 @@ export function startGame(ctx, heroDef) {
   // Swap the hero in the collision world (only when a world is provided).
   if (ctx.world) { ctx.world.remove(ctx.oldHero); ctx.world.add(h); }
   ctx.effects?.reset?.();
+  // Menu-hub plan §5.3: a New Game start unlocks the Intro media card. The
+  // store's markMediaUnlocked dedupes, so repeat starts are no-ops. This is
+  // the single 'intro' writer — the Media screen/model only READS
+  // progress.mediaUnlocked.
+  markMediaUnlocked('intro');
   // Register the fresh hero as the menu hub's Continue target (menu-hub plan
   // §2.3). lifecycle.js owns startGame — the only site that rebuilds the hero
   // for a new run — so the registration lives here, not in update.js. A later
@@ -425,6 +430,19 @@ export function startArea(h, level, areaIdx) {
  */
 export function startLife(h, ctx) {
   const c = ctx ?? ctxOf(h);
+  // Menu-hub plan §5.3: beginning an attempt records the area as completed in
+  // progress.completedAreas (Level Select / Boss Rush unlock state). This is
+  // the single milestone site — every normal entry (new game, next level,
+  // death-restart, continue, Level Select, Boss Rush) funnels through
+  // startLife — and updateProgress dedupes via the store's atomic API, so a
+  // re-entry of the same area never double-writes. The boss zone (AREA_BOSS)
+  // is NOT recorded here: its completion is the boss defeat, which showLevelReward
+  // records through defeatedBosses + the level media clip.
+  if (h.currentArea < AREA_BOSS) { // 1..4 are ordinary areas; AREA_BOSS is the boss zone
+    updateProgress((p) => {
+      p.completedAreas[formatAreaId(h.currentLevel, h.currentArea)] = true;
+    });
+  }
   // Trace: open a fresh life bucket for each NEW attempt. The very first
   // attempt after startGame/continueRun reuses the already-present bucket
   // (index 0 / activeContinue's scope); only subsequent death-restarts push.
@@ -928,10 +946,12 @@ export function showLevelReward(h) {
   // (TUNING.rewardMinDwell) is enforced before the confirm/pause is honored.
   _rewardShownAt = Date.now();
   if (_onRewardData) _onRewardData(data);
-  // Boss Rush hook (menu-hub plan §3.3): a boss defeat records the boss id in
-  // progress.defeatedBosses through the store's single atomic API. This is the
-  // one and only recording site — the screen/model only READ defeatedBosses,
-  // so there is nothing to duplicate. (completedAreas milestones are task 5.3.)
+  // Menu-hub plan §5.3: a boss defeat records the boss id in
+  // progress.defeatedBosses (Boss Rush unlock) AND unlocks the matching level
+  // media clip; defeating the FINAL level's boss also unlocks the ending card.
+  // All writes go through the store's atomic APIs — this is the one and only
+  // recording site, so there is nothing to duplicate elsewhere. markMediaUnlocked
+  // dedupes, so re-presenting the same reward never double-unlocks.
   // Resolve the config from the hero's current level instead of trusting
   // h.levelConfig: a boss started via startArea (e.g. Boss Rush) never has
   // levelConfig assigned — that field is only set on the REWARD→next-level
@@ -940,10 +960,16 @@ export function showLevelReward(h) {
   // already handles.
   const levelConfig = h.levelConfig ?? getLevelConfig(h.currentLevel);
   const bossId = levelConfig?.boss;
-  if (bossId) {
+  if (levelConfig) {
     updateProgress((p) => {
-      if (!p.defeatedBosses.includes(bossId)) p.defeatedBosses.push(bossId);
+      if (bossId && !p.defeatedBosses.includes(bossId)) p.defeatedBosses.push(bossId);
     });
+    markMediaUnlocked(`level-${levelConfig.index}`);
+    // Deliberately LEVEL_CONFIGS.length (not LEVELS.length like the sibling
+    // final-level sites): the media catalog spans all 8 configured levels, so
+    // the ending unlocks after boss 8; gameplay final-level logic keys off the
+    // playable LEVELS.
+    if (h.currentLevel >= LEVEL_CONFIGS.length) markMediaUnlocked('ending');
   }
   if (tryTransition(S.REWARD)) {
     console.log(`[lifecycle] → REWARD (level ${h.currentLevel}, coins: ${coins}, +${earned} continue${earned === 1 ? '' : 's'})`);

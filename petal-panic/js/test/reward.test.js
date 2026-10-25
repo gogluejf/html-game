@@ -43,7 +43,20 @@ globalThis.document = {
 };
 globalThis.window = { addEventListener: noop };
 
+// In-memory localStorage so progressStore (defeatedBosses / mediaUnlocked
+// writes from showLevelReward) works headlessly.
+const memStorage = (() => {
+  let map = new Map();
+  return {
+    getItem: (k) => (map.has(k) ? map.get(k) : null),
+    setItem: (k, v) => { map.set(k, String(v)); },
+    removeItem: (k) => { map.delete(k); },
+  };
+})();
+globalThis.localStorage = memStorage;
+
 const L = await import('../systems/lifecycle.js');
+const PS = await import('../systems/progressStore.js');
 const { S, getState, setState } = await import('../core/state.js');
 const { GAME_RULES } = await import('../systems/gameRules.js');
 const { Hero } = await import('../hero/hero.js');
@@ -554,6 +567,72 @@ test('end-of-game: no reference to a level beyond the last exists', () => {
   assert.equal(h.currentLevel, LEVELS.length, 'the final level did not advance past itself');
   assert.ok(h.currentLevel <= LEVELS.length, 'no reference to a level beyond the last');
   assert.equal(getState(), S.END_OF_GAME, 'the end-of-game screen takes over');
+});
+
+// --- Menu-hub plan §5.3 — boss-defeat progress hooks ---------------------------
+//
+// showLevelReward is the single milestone site for a boss defeat: it records
+// defeatedBosses (already verified by bossRushScreen.test.js) AND unlocks the
+// matching media clip; the FINAL boss also unlocks the ending card. These tests
+// pin the store contents after each milestone with fixed inputs.
+
+test('boss defeat unlocks the matching level media clip', () => {
+  PS.resetStore();
+  L._resetRewardForTest();
+  const h = makeTestHero(); // currentLevel = 1 → boss tusko_wobble
+  tally(h, { kills: { jester: 1 }, coins: 0 });
+  setState(S.PLAY);
+
+  L.showLevelReward(h);
+
+  const p = PS.loadStore().progress;
+  assert.deepEqual(p.mediaUnlocked, ['level-1'], 'level-1 clip unlocked on boss defeat');
+  assert.deepEqual(p.defeatedBosses, ['tusko_wobble'], 'boss still recorded (regression)');
+});
+
+test('a non-final boss does NOT unlock the ending card', () => {
+  PS.resetStore();
+  L._resetRewardForTest();
+  const h = makeTestHero();
+  h.currentLevel = 2; // level 2 of 8 in LEVEL_CONFIGS — not final
+  tally(h, { kills: { jester: 1 }, coins: 0 });
+  setState(S.PLAY);
+
+  L.showLevelReward(h);
+
+  const p = PS.loadStore().progress;
+  assert.deepEqual(p.mediaUnlocked, ['level-2'], 'only the level-2 clip unlocks');
+  assert.ok(!p.mediaUnlocked.includes('ending'), 'ending stays locked until the final boss');
+});
+
+test('final boss defeat unlocks the ending media card (and its level clip)', () => {
+  PS.resetStore();
+  L._resetRewardForTest();
+  const h = makeTestHero();
+  h.currentLevel = 8; // LEVEL_CONFIGS has 8 levels; 8 is the final one
+  tally(h, { kills: { jester: 1 }, coins: 0 });
+  setState(S.PLAY);
+
+  L.showLevelReward(h);
+
+  const p = PS.loadStore().progress;
+  assert.deepEqual(p.mediaUnlocked.sort(), ['ending', 'level-8'].sort(), 'final boss unlocks level-8 clip AND ending');
+  assert.deepEqual(p.defeatedBosses, ['colonel_carrot'], 'final boss id recorded');
+});
+
+test('re-presenting the same reward does not duplicate media unlocks or boss records', () => {
+  PS.resetStore();
+  L._resetRewardForTest();
+  const h = makeTestHero();
+  tally(h, { kills: { jester: 1 }, coins: 0 });
+  setState(S.PLAY);
+
+  L.showLevelReward(h);
+  L.showLevelReward(h); // redraw / animation re-presentation
+
+  const p = PS.loadStore().progress;
+  assert.deepEqual(p.mediaUnlocked, ['level-1'], 'media unlock deduped');
+  assert.deepEqual(p.defeatedBosses, ['tusko_wobble'], 'boss record deduped');
 });
 
 // --- Minimal area context for the next-level confirm path ---------------------

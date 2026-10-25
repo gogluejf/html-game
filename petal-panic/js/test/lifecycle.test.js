@@ -28,7 +28,20 @@ globalThis.document = {
 };
 globalThis.window = { addEventListener: noop };
 
+// In-memory localStorage so progressStore (completedAreas writes from
+// startLife, mediaUnlocked writes from startGame) works headlessly.
+const memStorage = (() => {
+  let map = new Map();
+  return {
+    getItem: (k) => (map.has(k) ? map.get(k) : null),
+    setItem: (k, v) => { map.set(k, String(v)); },
+    removeItem: (k) => { map.delete(k); },
+  };
+})();
+globalThis.localStorage = memStorage;
+
 const L = await import('../systems/lifecycle.js');
+const PS = await import('../systems/progressStore.js');
 const { S, getState, setState, tryTransition } = await import('../core/state.js');
 const { GAME_RULES } = await import('../systems/gameRules.js');
 const { Hero } = await import('../hero/hero.js');
@@ -508,4 +521,68 @@ test('integration: continue from 2-3 lands the hero at the level entry (area -1)
   L.areaEntryOnAction('confirm', hero);
   assert.equal(getState(), S.PLAY, 'back in PLAY after confirming the entry screen');
   assert.ok(Math.abs(hero.x - ZONE_ENTRY_X) < 1, `hero at level entry x=${hero.x} (not 6000)`);
+});
+
+// --- Menu-hub plan §5.3 — progress unlock hooks --------------------------------
+//
+// Milestone → progressStore wiring:
+//   startGame            → mediaUnlocked += 'intro' (New Game start)
+//   startLife (area 1..4) → completedAreas[`${level}-${area}`] = true
+//   showLevelReward      → defeatedBosses += bossId; mediaUnlocked += 'level-N';
+//                          final boss also unlocks 'ending'
+// These tests pin the store contents after each milestone with fixed inputs.
+
+test('startGame unlocks the intro media card exactly once (dedupe on repeat starts)', () => {
+  PS.resetStore();
+  const h = L.makeHero(HEROES.scarlet);
+  L.startGame({ oldHero: h }, HEROES.scarlet);
+  assert.deepEqual(PS.loadStore().progress.mediaUnlocked, ['intro'], 'first New Game unlocks intro');
+
+  // A second New Game must not duplicate the entry (markMediaUnlocked dedupes).
+  const h2 = L.makeHero(HEROES.scarlet);
+  L.startGame({ oldHero: h2 }, HEROES.scarlet);
+  assert.deepEqual(PS.loadStore().progress.mediaUnlocked, ['intro'], 'repeat start does not duplicate intro');
+});
+
+test('startLife records completedAreas for an ordinary area (1..4)', () => {
+  PS.resetStore();
+  const h = makeTestHero();
+  h.currentLevel = 2;
+  h.currentArea = 3;
+  const ctx = makeAreaContext(h);
+  setState(S.PLAY);
+  L.startLife(h, ctx);
+
+  const p = PS.loadStore().progress;
+  assert.equal(p.completedAreas['2-3'], true, 'area 2-3 recorded as completed');
+  assert.deepEqual(Object.keys(p.completedAreas), ['2-3'], 'only the started area is recorded');
+});
+
+test('startLife re-entry of the same area does not double-write completedAreas', () => {
+  PS.resetStore();
+  const h = makeTestHero();
+  h.currentLevel = 1;
+  h.currentArea = 1;
+  const ctx = makeAreaContext(h);
+  setState(S.PLAY);
+  L.startLife(h, ctx);
+  L.startLife(h, ctx); // death-restart of the same area
+
+  const p = PS.loadStore().progress;
+  assert.equal(p.completedAreas['1-1'], true, 'area 1-1 recorded');
+  assert.deepEqual(Object.keys(p.completedAreas), ['1-1'], 'no duplicate keys on re-entry');
+});
+
+test('startLife does NOT record the boss zone (AREA_BOSS = 5) as a completed area', () => {
+  PS.resetStore();
+  const h = makeTestHero();
+  h.currentLevel = 1;
+  h.currentArea = 5; // boss zone
+  const ctx = makeAreaContext(h);
+  setState(S.PLAY);
+  L.startLife(h, ctx);
+
+  const p = PS.loadStore().progress;
+  assert.equal(p.completedAreas['1-B'], undefined, 'boss zone completion belongs to the boss defeat, not area entry');
+  assert.deepEqual(p.completedAreas, {}, 'no areas recorded for a boss-zone start');
 });

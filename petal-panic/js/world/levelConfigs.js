@@ -246,6 +246,17 @@ function buildMacroWeights(tension) {
   return { easy, medium, hard, brutal };
 }
 
+// The zone-model currentArea value that maps to the boss zone (zone[4]).
+// AREA indices are positive (1..4 for the ordinary areas), so the boss zone
+// gets its own constant AFTER them (5) — it must not collide with area 4.
+// Canonical home: this pure data module is the lowest common ancestor of
+// every consumer (lifecycle.js, ui/levelSelectModel.js, systems/update.js all
+// import levelConfigs.js directly, while update.js also imports lifecycle.js —
+// so re-exporting from either of those would create a cycle). update.js and
+// ui/levelSelectModel.js keep their own `export const AREA_BOSS = 5` lines as
+// compatibility shims; they must stay in sync with this value.
+export const AREA_BOSS = 5;
+
 export const LEVEL_CONFIGS = [
   // -----------------------------------------------------------------------
   // Level 1 — Big Top (docs/story/levels.md)

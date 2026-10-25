@@ -144,17 +144,25 @@
     },
     "5.2": {
       "number": "5.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Media screen and playback overlay",
       "milestone": "Media Menu and Unlock Rewards",
       "milestone_number": "5"
     },
     "5.3": {
       "number": "5.3",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Progress unlock hooks",
       "milestone": "Media Menu and Unlock Rewards",
-      "milestone_number": "5"
+      "milestone_number": "5",
+      "summary": {
+        "tradeoffs": "completedAreas is written at attempt START (startLife) rather than a distinct area-exit event, because the engine has no separate 'area completed' hook \u2014 every normal entry funnels through startLife and the store dedupes re-entries. This means an area entered after a death-restart is also marked completed (acceptable: reaching the area IS passing it). The 'intro' unlock uses New Game start (startGame), matching mediaModel's tooltip 'Start a new game to unlock' and plan \u00a75.1 acceptance.",
+        "confidence": "high",
+        "failures": "None",
+        "done": "Wired all three milestone\u2192progress hooks in lifecycle.js (the real milestone sites): (1) startGame calls markMediaUnlocked('intro') \u2014 the single 'intro' writer, deduped by the store; (2) startLife records completedAreas[formatAreaId(level, area)] = true for ordinary areas 1..4 via updateProgress, skipping the boss zone (area 5) whose completion belongs to the boss defeat; (3) showLevelReward's existing defeatedBosses block (task 3.3) was extended in place \u2014 same atomic updateProgress mutator now also pushes nothing new (dedupe kept), plus markMediaUnlocked('level-N') for the defeated level and markMediaUnlocked('ending') when currentLevel >= LEVEL_CONFIGS.length. No changes needed in bossFlow.js \u2014 it only routes into showLevelReward, which is the single recording site. Tests: reward.test.js gained a localStorage stub + PS import and 4 fixed-input tests (level clip unlock, non-final boss does NOT unlock ending, final boss unlocks level-8 + ending with colonel_carrot recorded, re-presentation dedupes); lifecycle.test.js gained a localStorage stub + PS import and 4 tests (startGame intro unlock + dedupe, startLife records 2-3, re-entry no double-write, boss zone NOT recorded). All acceptance bullets covered.",
+        "decisions": "(1) Single recording-site discipline: extended the existing task-3.3 updateProgress block in showLevelReward instead of adding a parallel writer; guard widened from 'if (bossId)' to 'if (levelConfig)' so media unlock still fires even if a config ever lacks a boss id. (2) Final-boss check uses LEVEL_CONFIGS.length (8, the source of truth for the level model that owns bosses/media ids), not world/level.js LEVELS.length (currently 1 playable level) \u2014 otherwise 'ending' would unlock on level 1. (3) Boss zone (AREA_BOSS=5) excluded from completedAreas: its completion is the boss defeat, recorded via defeatedBosses + level clip; levelSelect/bossRush models gate on per-area keys anyway. (4) 'intro' unlocked at startGame (New Game start), the plan's stated rule for the intro card.",
+        "lessons_learned": "world/level.js LEVELS currently holds only level 1 while levelConfigs.js LEVEL_CONFIGS holds all 8 \u2014 any 'final level' logic must key off LEVEL_CONFIGS.length or it mis-fires on the first boss. progressStore resolves storage lazily, so test files that exercise progress writes need the in-memory localStorage stub installed BEFORE importing lifecycle.js (copied the pattern from bossRushScreen.test.js)."
+      }
     }
   }
 }
