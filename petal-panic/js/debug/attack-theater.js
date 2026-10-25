@@ -30,6 +30,7 @@ import { LAYER } from '../consts.js';
 import { ENEMY_TYPES } from '../world/build.js';
 import { ZONE_GROUND_Y } from '../world/level.js';
 import { VIEW_W, VIEW_H } from '../core/view.js';
+import { fillHubBackground } from '../core/layout.js';
 import { navLabelString, navLabels, input } from '../core/input.js';
 import { Effects } from '../effects.js';
 import { Debug } from '../debug/debug.js';
@@ -1017,8 +1018,9 @@ export const AttackTheater = {
     // offset around the whole demo pass — same engine read, no duplicate math.
     const sh = Effects.getShakeOffset();
     if (sh.x !== 0 || sh.y !== 0) ctx.translate(sh.x, sh.y);
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, w, h);
+    // Backdrop: hub gradient across the ENTIRE visible surface (fullscreen
+    // side strips included) — the theater never shows the frame beneath it.
+    fillHubBackground(ctx);
 
     const panelW = 280;
     const panelX = w - panelW;

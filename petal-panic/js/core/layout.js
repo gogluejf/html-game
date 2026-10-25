@@ -63,12 +63,35 @@ export function fillSurface(ctx) {
   const b = surfaceBounds();
   ctx.fillRect(b.x, b.y, b.w, b.h);
 }
+/** Clip to the visible surface (fullscreen side strips included). Callers
+ * must save/restore around this — used by the debug theaters so their opaque
+ * overlay covers the ENTIRE canvas and nothing from the frame beneath leaks
+ * into the letterbox strips. */
+export function clipSurface(ctx) {
+  const b = surfaceBounds();
+  ctx.beginPath();
+  ctx.rect(b.x, b.y, b.w, b.h);
+  ctx.clip();
+}
 /** Screen effects use a top-left origin and the full visible dimensions. */
 export function drawOnSurface(ctx, draw) {
   const b = surfaceBounds();
   ctx.save();
   try { ctx.translate(b.x, b.y); draw(b.w, b.h); }
   finally { ctx.restore(); }
+}
+
+/** Menu-style background gradient across the WHOLE visible surface (the
+ * hub's #0d0d1a → #1a1a2e). Debug theaters paint this as their backdrop so
+ * fullscreen side strips read as a continuation of the theater background —
+ * never as leaked gameplay pixels. */
+export function fillHubBackground(ctx, top = '#0d0d1a', bottom = '#1a1a2e') {
+  const b = surfaceBounds();
+  const g = ctx.createLinearGradient(0, b.y, 0, b.y + b.h);
+  g.addColorStop(0, top);
+  g.addColorStop(1, bottom);
+  ctx.fillStyle = g;
+  fillSurface(ctx);
 }
 
 /** Gameplay presentation bounds: horizontal expansion, normal 540 height. */

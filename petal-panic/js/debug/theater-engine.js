@@ -11,6 +11,7 @@
 // step, replay, update(dt), updateControls, draw(ctx,w,h).
 
 import { navLabelString, navLabels, input } from '../core/input.js';
+import { fillHubBackground } from '../core/layout.js';
 
 // --- Repeat cadence (fixed-step 60Hz) ----------------------------------------
 const REPEAT_DELAY_FRAMES = 13; // ~217ms before first auto-repeat
@@ -264,9 +265,10 @@ export function createTheater(provider) {
       if (!this.active) return;
       ctx.save();
 
-      // 1. Black fill.
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, w, h);
+      // 1. Backdrop: the hub gradient across the ENTIRE visible surface (in
+      // fullscreen layout that includes the side strips — a plain 960x540 fill
+      // would leave whatever frame was beneath showing through there).
+      fillHubBackground(ctx);
 
       const panelX = w - panelW;
       const demoW = panelX - 20;

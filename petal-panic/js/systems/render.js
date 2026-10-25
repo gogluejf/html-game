@@ -1,4 +1,4 @@
-import { fillSurface, fillGameplaySurface, gameplaySurfaceBounds, drawOnSurface } from '../core/layout.js';
+import { fillSurface, fillGameplaySurface, gameplaySurfaceBounds, drawOnSurface, clipSurface } from '../core/layout.js';
 // Petal Panic — render system. Draws in 960x540 logical coords; the
 // logical→screen transform is applied by main.js before this runs.
 // world entities are drawn under a camera translate so the level
@@ -34,22 +34,23 @@ export function render(ctx) {
   if (state === S.HOME || state === S.MENU || state === S.SELECT || state === S.REMAP || state === S.LEVEL_SELECT || state === S.BOSS_RUSH || state === S.MEDIA || state === S.OPTIONS) {
     screenUpdate(1 / 60); // advance parallax at fixed step
     drawScreen(ctx);
-    // Theater can be opened from any screen via F2.
-    if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
+    // Theater can be opened from any screen via F2 — clip to the visible
+    // surface so its opaque fill covers fullscreen side strips too.
+    if (Theater.active) { ctx.save(); clipSurface(ctx); Theater.draw(ctx, VIEW_W, VIEW_H); ctx.restore(); }
     return;
   }
   // AREA_ENTRY is an opaque full-screen presentation (checkpoints.md §3) —
   // the world is hidden behind it, so skip world rendering like HOME/SELECT.
   if (state === S.AREA_ENTRY) {
     drawScreen(ctx);
-    if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
+    if (Theater.active) { ctx.save(); clipSurface(ctx); Theater.draw(ctx, VIEW_W, VIEW_H); ctx.restore(); }
     return;
   }
   // END_OF_GAME is an opaque full-screen presentation (lifecycle.md §5) —
   // the world is hidden behind it, so skip world rendering like AREA_ENTRY.
   if (state === S.END_OF_GAME) {
     drawScreen(ctx);
-    if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
+    if (Theater.active) { ctx.save(); clipSurface(ctx); Theater.draw(ctx, VIEW_W, VIEW_H); ctx.restore(); }
     return;
   }
 
@@ -508,9 +509,12 @@ export function render(ctx) {
 
   // Effect Theater: debug-only black-screen overlay drawn LAST so it
   // covers everything (game world + HUD + state overlays). No-op when inactive.
-  if (Theater.active) Theater.draw(ctx, VIEW_W, VIEW_H);
+  // clipSurface() bounds the opaque fill to the VISIBLE surface — in fullscreen
+  // layout the canvas is larger than the 960x540 box, and without the clip the
+  // frozen frame beneath (world sprites, HUD) shows through the side strips.
+  if (Theater.active) { ctx.save(); clipSurface(ctx); Theater.draw(ctx, VIEW_W, VIEW_H); ctx.restore(); }
   // Attack Theater: same pattern — opaque overlay drawn last.
-  if (AttackTheater.active) AttackTheater.draw(ctx, VIEW_W, VIEW_H);
+  if (AttackTheater.active) { ctx.save(); clipSurface(ctx); AttackTheater.draw(ctx, VIEW_W, VIEW_H); ctx.restore(); }
 }
 
 /**
