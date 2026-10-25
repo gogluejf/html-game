@@ -22,8 +22,49 @@ const MACRO_DIR = 'macros/levels/';
  *   (same shape as the former inline MACROS constant; Object.freeze applied
  *   by the caller if desired)
  */
+/** Headless fallback: read the macro directory from disk (node tests have no
+ * HTTP server). Builds the same id→macro map as the HTTP path, with schema
+ * validation. Returns null when fs/path are unavailable (browser). */
+async function loadMacrosFromDisk() {
+  try {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    // Resolve relative to this file: petal-panic/macros/levels/
+    const dir = new URL(`../../macros/levels/`, import.meta.url);
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+    const macros = {};
+    for (const f of files) {
+      const macro = JSON.parse(fs.readFileSync(path.join(dir.pathname, f), 'utf8'));
+      const id = f.replace(/\.json$/, '');
+      assertMacroSchema(macro, { expectedId: id });
+      macros[id] = macro;
+    }
+    return macros;
+  } catch {
+    return null;
+  }
+}
+
 export async function loadMacros() {
-  const res = await fetch(MACRO_DIR);
+  // Headless (node tests): no HTTP server — read the macro directory from disk.
+  // Node 18+ HAS a global fetch, so probe for node:fs instead of fetch's absence.
+  // This runs BEFORE any other module import in main.js's boot, so it cannot be
+  // affected by circular-import TDZ states (see fullscreen-layout incident).
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    const fromDisk = await loadMacrosFromDisk();
+    if (fromDisk) return fromDisk;
+    console.warn('[macros] disk fallback failed — falling through to HTTP');
+  }
+  let res;
+  try {
+    res = await fetch(MACRO_DIR);
+  } catch {
+    // fetch exists but cannot resolve the relative URL (headless without a
+    // server root) — fall back to disk before giving up.
+    const fromDisk = await loadMacrosFromDisk();
+    if (fromDisk) return fromDisk;
+    throw new Error(`loadMacros: cannot list ${MACRO_DIR} and no disk fallback available`);
+  }
   if (!res.ok) {
     throw new Error(`loadMacros: cannot list ${MACRO_DIR} (HTTP ${res.status}) — is the server running?`);
   }

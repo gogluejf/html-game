@@ -13,8 +13,18 @@ const isTouchDevice = () =>
 
 let root = null;
 
+/* VIRTUAL GAMEPAD option (fullscreen-layout plan): default ON. On desktop the
+ * overlay never builds (no touch), so this flag is inert there by design. */
+let padEnabled = true;
+export function setVirtualPadEnabled(on) {
+  padEnabled = !!on;
+  if (root) root.classList.toggle('hidden', !padEnabled);
+}
+export function isVirtualPadEnabled() { return padEnabled; }
+
 export function initTouchControls() {
   if (!isTouchDevice()) return; // desktop: nothing rendered
+  if (!padEnabled) return;      // option OFF: no overlay at all
   if (root) return;             // already built
   buildOverlay();
 }

@@ -51,6 +51,10 @@
 </head>
 <body>
   <canvas id="game"></canvas>
-  <script type="module" src="js/main.js"></script>
+  <script type="module">
+    // Explicit boot (fullscreen-layout plan): main.js exports startGame so
+    // headless test imports never trigger the game boot sequence.
+    import('./js/main.js').then((m) => m.startGame());
+  </script>
 </body>
 </html>

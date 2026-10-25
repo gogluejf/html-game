@@ -26,6 +26,18 @@ export const DEFAULT_SETTINGS = {
   sfx: true,
   screenShake: true,
   vibration: true,
+  // Full Screen layout mode (fullscreen-layout plan): 'fit' = letterboxed
+  // 16:9 canvas (default), 'fullscreen' = canvas fills the window and the
+  // background bleeds into the side strips. String-typed setting.
+  layout: 'fit',
+  // Virtual gamepad overlay (touch devices; inert on desktop — the Options
+  // row is labeled "(MOBILE)"). Default ON.
+  virtualPad: true,
+};
+
+/** Allowed values for string-typed settings (layout). Booleans are unbounded. */
+const SETTING_ENUMS = {
+  layout: ['fit', 'fullscreen'],
 };
 
 let _storage = null; // resolved lazily so node tests can stub globalThis.localStorage
@@ -71,7 +83,13 @@ function normalize(raw) {
   const s = raw.settings;
   if (s && typeof s === 'object') {
     for (const key of Object.keys(DEFAULT_SETTINGS)) {
-      base.settings[key] = coerce(s[key], DEFAULT_SETTINGS[key], 'boolean');
+      const allowed = SETTING_ENUMS[key];
+      if (allowed) {
+        // String enum: accept only known values, else fall back to default.
+        base.settings[key] = allowed.includes(s[key]) ? s[key] : DEFAULT_SETTINGS[key];
+      } else {
+        base.settings[key] = coerce(s[key], DEFAULT_SETTINGS[key], 'boolean');
+      }
     }
   }
   // saveMeta: an empty object (e.g. persisted as {"saveMeta":{}}) carries

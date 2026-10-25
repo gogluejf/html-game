@@ -4,6 +4,17 @@
 // Debug mode toggles the unified debug overlay (orange/green/red/blue/pink by collision layer).
 
 import { VIEW_W, VIEW_H } from '../core/view.js';
+// core/layout.js is imported DYNAMICALLY (not statically) to keep the
+// screens.js -> render.js -> update.js chain free of a main.js cycle: every
+// layout read goes through this tiny lazy accessor.
+let _layoutMod = null;
+// Sync shim for draw-time reads: the module is preloaded at boot (main.js)
+// and by the first async warm-up below, so by draw time it is cached. The
+// fallback keeps headless tests safe even before warm-up resolves.
+const LAYOUT_FALLBACK = { getFitOffsetX: () => 0, getFitScale: () => 1, getLayoutMode: () => 'fit' };
+function layoutApi() { return _layoutMod ?? LAYOUT_FALLBACK; }
+// Warm up immediately so the first frame already has the real values.
+import('../core/layout.js').then(m => { _layoutMod = m; }).catch(() => {});
 import { LAYER } from '../consts.js';
 import { getHero, getSolids, getEnemies, getProjectiles, getSpecials, getPickups, getCamera, getParticles, getCoins, getBarrels, getShakeOffset, getPowerups, getCheckpoints, getFloatTexts, getRealEnemies, getBoss, getActiveZoneKind, getDeathFadeAlpha, getClearBanner, getClearFadeAlpha, getAreaEntryFadeAlpha, bossZone } from './update.js';
 import { Effects } from '../effects.js';
@@ -26,6 +37,59 @@ import { PLATFORM_DRAW_H } from '../world/macros.js';
 const IFRAME_BLINK_CYCLES = 6;       // full on/off cycles across the whole window
 const IFRAME_BLINK_ALPHA_ON = 0.8;   // "on" visibility
 const IFRAME_BLINK_ALPHA_OFF = 0.4;  // "off" visibility
+
+// =============================================================================
+// Full Screen layout support (fullscreen-layout plan)
+//
+// In 'fullscreen' mode main.js sizes the canvas to the whole window and
+// centers the 960x540 logical box inside it (device-pixel offsetX). These two
+// helpers let backgrounds paint PAST the logical box so no black bars show:
+//   - widenLogicalBox: temporarily scales the transform so logical x=-W/2..W/2
+//     covers the full canvas width (used by opaque menu screens whose gradient
+//     fillRects then run edge-to-edge).
+// Gameplay states keep the flat #101018 fill in BOTH layouts — no bg image
+// stretching to cover the strips (decided 2026-10-25).
+// =============================================================================
+
+/** Half-width (logical px) of extra space on each side in fullscreen mode. */
+function bleedHalfWidth() {
+  const api = layoutApi();
+  const scale = api.getFitScale();
+  if (!scale) return 0;
+  const canvasW = api.getFitOffsetX() * 2 + VIEW_W * scale; // full canvas device px
+  const extraDevice = Math.max(0, canvasW - VIEW_W * scale);
+  return extraDevice / (2 * scale);
+}
+
+/** Widen the logical coordinate space for ONE draw call: maps logical
+ * x in [0, VIEW_W + 2*hw] across the full canvas while keeping y identical to
+ * the normal transform. Screens use it ONLY around their background
+ * fillRect(0,0,VIEW_W,VIEW_H) so the gradient runs edge-to-edge; all other
+ * drawing keeps the normal centered transform (content stays put). */
+function widenLogicalBox(ctx) {
+  if (layoutApi().getLayoutMode() !== 'fullscreen') return false;
+  const api = layoutApi();
+  const hw = bleedHalfWidth();
+  if (hw <= 0) return false;
+  const s = api.getFitScale();
+  // Widen x only; keep the box's vertical centering (offsetY) untouched so
+  // portrait windows stay v-centered exactly like fit mode.
+  ctx.setTransform(s, 0, 0, s, api.getFitOffsetX() - hw * s, api.getFitOffsetY());
+  return true;
+}
+
+/** Restore the normal centered logical-box transform (undo widenLogicalBox).
+ * Screens call this after painting a full-bleed background so their content
+ * drawing lands exactly as in fit mode. No-op when not widened. */
+export function restoreCenteredTransform(ctx) {
+  if (layoutApi().getLayoutMode() !== 'fullscreen') return;
+  const api = layoutApi();
+  ctx.setTransform(api.getFitScale(), 0, 0, api.getFitScale(), api.getFitOffsetX(), api.getFitOffsetY());
+}
+
+/** Exported for screens.js: see widenLogicalBox. */
+export { widenLogicalBox };
+
 
 export function render(ctx) {
   // Home & Select are full-screen; skip world rendering entirely.
@@ -54,7 +118,9 @@ export function render(ctx) {
 
   const cam = getCamera();
 
-  // Background (viewport-space; not affected by the camera).
+  // Background (viewport-space; not affected by the camera). Flat fill in
+  // both layouts — the level bg art is gameplay scenery owned by the world
+  // layer, never stretched to paper over letterbox strips.
   ctx.fillStyle = '#101018';
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 

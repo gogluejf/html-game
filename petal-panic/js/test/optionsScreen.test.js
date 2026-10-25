@@ -111,18 +111,40 @@ test('left/right AND confirm toggle the focused option', () => {
   go(S.OPTIONS);
   assert.equal(PS.loadStore().settings.music, true, 'default: music on');
 
-  // Focus starts on Music (row 0), default ON. Left flips it off…
+  // Row 0 is now the LAYOUT enum row (fullscreen-layout plan) — focus starts
+  // there, so exercise the boolean rows explicitly at their new indices.
+  SC.Options.focus = 2; // Music
   assert.equal(SC.Options.onAction('left'), true, 'left handled');
   assert.equal(PS.loadStore().settings.music, false, 'music flipped OFF by left');
-  // …right flips it back on…
   assert.equal(SC.Options.onAction('right'), true, 'right handled');
   assert.equal(PS.loadStore().settings.music, true, 'music flipped ON by right');
-  // …and confirm does the same.
   assert.equal(SC.Options.onAction('confirm'), true, 'confirm handled');
   assert.equal(PS.loadStore().settings.music, false, 'music flipped OFF by confirm');
 });
 
-test('up/down move focus around the four rows (wrapping)', () => {
+test('enum rows cycle through their values (layout + virtualPad)', () => {
+  PS.resetStore();
+  setState(S.MENU);
+  go(S.OPTIONS);
+  assert.equal(PS.loadStore().settings.layout, 'fit', 'default layout: fit');
+  assert.equal(PS.loadStore().settings.virtualPad, true, 'default virtualPad: on');
+
+  // Row 0 = Layout: FIT → FULL SCREEN → FIT (wrap).
+  assert.equal(SC.Options.focus, 0, 'focus starts on the Layout row');
+  assert.equal(SC.Options.onAction('right'), true);
+  assert.equal(PS.loadStore().settings.layout, 'fullscreen', 'layout cycled to fullscreen');
+  assert.equal(SC.Options.onAction('right'), true);
+  assert.equal(PS.loadStore().settings.layout, 'fit', 'layout wrapped back to fit');
+
+  // Row 1 = Virtual Gamepad: ON → OFF → ON.
+  SC.Options.focus = 1;
+  assert.equal(SC.Options.onAction('left'), true);
+  assert.equal(PS.loadStore().settings.virtualPad, false, 'virtualPad cycled to off');
+  assert.equal(SC.Options.onAction('left'), true);
+  assert.equal(PS.loadStore().settings.virtualPad, true, 'virtualPad wrapped back to on');
+});
+
+test('up/down move focus around the six rows (wrapping)', () => {
   PS.resetStore();
   setState(S.MENU);
   go(S.OPTIONS);
@@ -130,10 +152,10 @@ test('up/down move focus around the four rows (wrapping)', () => {
 
   SC.Options.onAction('down');
   assert.equal(SC.Options.focus, 1, 'down advances focus');
-  for (let i = 0; i < 3; i++) SC.Options.onAction('down');
-  assert.equal(SC.Options.focus, 0, 'down wraps around the four rows');
+  for (let i = 0; i < 5; i++) SC.Options.onAction('down');
+  assert.equal(SC.Options.focus, 0, 'down wraps around the six rows');
   SC.Options.onAction('up');
-  assert.equal(SC.Options.focus, 3, 'up wraps to the last row');
+  assert.equal(SC.Options.focus, 5, 'up wraps to the last row');
 });
 
 test('a toggle persists immediately and survives a store reload (persistence round-trip)', () => {
@@ -141,8 +163,9 @@ test('a toggle persists immediately and survives a store reload (persistence rou
   setState(S.MENU);
   go(S.OPTIONS);
 
-  // Toggle Screen Shake (row 2) from its default ON to OFF.
-  SC.Options.focus = 2;
+  // Toggle Screen Shake (row 4 — two enum rows precede it now) from its
+  // default ON to OFF.
+  SC.Options.focus = 4;
   SC.Options.onAction('left');
 
   // Immediate persistence: the raw storage document already carries the flip.

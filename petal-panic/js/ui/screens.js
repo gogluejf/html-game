@@ -15,6 +15,80 @@ import { calculateScore } from '../stats.js';
 import { onTransition } from '../core/state.js';
 import {input, navHintEntries, navLabels, markNavPressed, clearNavFlash} from '../core/input.js';
 
+
+// render.js is imported LAZILY (not statically): a static import would drag
+// update.js (and its module-scope world build) into every consumer of this
+// module — including headless tests. The helpers are only needed when LAYOUT
+// is 'fullscreen', and by then render.js is already cached in the browser
+// (main.js imports it at boot).
+let _renderMod = null;
+const NO_WIDEN = { widenLogicalBox: () => false, restoreCenteredTransform: () => {} };
+function renderHelpers() { return _renderMod ?? NO_WIDEN; }
+import('../systems/render.js').then(m => { _renderMod = m; }).catch(() => {});
+
+// core/layout.js is a leaf module (no game imports) — lazy-load it once for
+// the fit-state reads in bleedW(). Safe headless: resolves to real values or
+// falls back to zeros.
+let _layoutMod = null;
+const LAYOUT_FALLBACK = { getLayoutMode: () => 'fit', getFitScale: () => 1, getFitOffsetX: () => 0, getFitOffsetY: () => 0 };
+function layoutApi() { return _layoutMod ?? LAYOUT_FALLBACK; }
+import('../core/layout.js').then(m => { _layoutMod = m; }).catch(() => {});
+
+/** Full-screen dark background for a hub screen. In FULL SCREEN layout the
+ * gradient is painted edge-to-edge across the whole canvas (widenLogicalBox);
+ * otherwise it fills the normal 960x540 logical box. */
+function drawHubBackground(ctx, top = '#0d0d1a', bottom = '#1a1a2e') {
+  const widened = renderHelpers().widenLogicalBox(ctx);
+  if (!widened) {
+    // FIT layout: plain logical-box fill.
+    const g = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+    g.addColorStop(0, top);
+    g.addColorStop(1, bottom);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    return;
+  }
+  // FULL SCREEN: paint edge-to-edge, then restore the centered transform so
+  // the screen's content drawing lands exactly as in fit mode.
+  const w = VIEW_W + bleedW();
+  const g = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+  g.addColorStop(0, top);
+  g.addColorStop(1, bottom);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, VIEW_H);
+  renderHelpers().restoreCenteredTransform(ctx);
+}
+/** Fill the ENTIRE visible area with a solid color: the 960x540 logical box
+ * in FIT mode, or the whole canvas (edge-to-edge) in FULL SCREEN mode. Used by
+ * the opaque presentation screens (area entry, reward, game over, ...) so
+ * none of them show letterbox bars in fullscreen layout. */
+function fillFullSurface(ctx, color) {
+  const widened = renderHelpers().widenLogicalBox(ctx);
+  if (!widened) {
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    return;
+  }
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, VIEW_W + bleedW(), VIEW_H);
+  renderHelpers().restoreCenteredTransform(ctx);
+}
+
+/** TOTAL extra width (logical px) beyond VIEW_W needed for a rect drawn from
+ * x=0 under the widened transform to reach the right canvas edge in FULL
+ * SCREEN mode. Equals both side strips combined (offsetX*2 device px →
+ * logical). Returns 0 in FIT mode. Computed per call — no cached value to go
+ * stale across rotations/toggles. */
+function bleedW() {
+  const api = layoutApi();
+  if (api.getLayoutMode() !== 'fullscreen') return 0;
+  const s = api.getFitScale();
+  if (!s) return 0;
+  // offsetX*2 is the total horizontal slack in device px; divide by scale
+  // once (NOT twice) to get logical px of extra width past the 960 box.
+  return (api.getFitOffsetX() * 2) / s;
+}
+
 // --- Image cache -------------------------------------------------------------
 import {
   FONT_TITLE, FONT_UI, CREAM, GOLD, RED, PINK, roundRect,
@@ -22,6 +96,8 @@ import {
 } from './fonts.js';
 
 import { Remap } from '../core/remap.js';
+import { setLayoutMode, requestRefit } from '../core/layout.js';
+import { setVirtualPadEnabled } from './touchControls.js';
 const images = {};
 let loadedCount = 0;
 let totalCount = 0;
@@ -125,12 +201,16 @@ export const Home = {
     ctx.imageSmoothingQuality = 'high';
 
     // --- Background (always black during intro, dark gradient after) ---------
+    // FULL SCREEN layout: the gradient runs edge-to-edge across the canvas.
+    const homeWidened = renderHelpers().widenLogicalBox(ctx);
+    const homeW = homeWidened ? VIEW_W + bleedW() : VIEW_W;
     const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
     grad.addColorStop(0, '#020208');
     grad.addColorStop(0.5, '#060312');
     grad.addColorStop(1, '#0a0518');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    ctx.fillRect(0, 0, homeW, VIEW_H);
+    if (homeWidened) renderHelpers().restoreCenteredTransform(ctx);
 
     // ========================================================================
     // INTRO SEQUENCE (t < 12s): text cards on black, then layer fades
@@ -374,11 +454,7 @@ export const Select = {
 
   draw(ctx) {
     // Background — deep midnight so the cream art cards pop.
-    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    grad.addColorStop(0, '#0d0d1a');
-    grad.addColorStop(1, '#1a1a2e');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    drawHubBackground(ctx, '#0d0d1a', '#1a1a2e');
 
     // Title.
     drawMarqueeTitle(ctx, 'SELECT YOUR PERFORMER', VIEW_W / 2, 46, 38, { color: CREAM });
@@ -706,11 +782,7 @@ export const Menu = {
   draw(ctx) {
     // Full-opaque dark background — like SELECT, the world is hidden behind
     // this full-screen hub.
-    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    grad.addColorStop(0, '#0d0d1a');
-    grad.addColorStop(1, '#1a1a2e');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    drawHubBackground(ctx, '#0d0d1a', '#1a1a2e');
 
     if (this.creditsOpen) {
       this.drawCredits(ctx);
@@ -930,11 +1002,7 @@ export const LevelSelect = {
 
   /** @param {CanvasRenderingContext2D} ctx */
   draw(ctx) {
-    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    grad.addColorStop(0, '#0d0d1a');
-    grad.addColorStop(1, '#1a1a2e');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    drawHubBackground(ctx, '#0d0d1a', '#1a1a2e');
 
     drawMarqueeTitle(ctx, 'LEVEL SELECT', VIEW_W / 2, LS_TITLE_Y, LS_TITLE_SIZE, { color: CREAM });
 
@@ -1240,11 +1308,7 @@ export const BossRush = {
 
   /** @param {CanvasRenderingContext2D} ctx */
   draw(ctx) {
-    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    grad.addColorStop(0, '#0d0d1a');
-    grad.addColorStop(1, '#1a1a2e');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    drawHubBackground(ctx, '#0d0d1a', '#1a1a2e');
 
     drawMarqueeTitle(ctx, 'BOSS RUSH', VIEW_W / 2, BR_TITLE_Y, BR_TITLE_SIZE, { color: CREAM });
 
@@ -1526,11 +1590,7 @@ export const Media = {
 
   /** @param {CanvasRenderingContext2D} ctx */
   draw(ctx) {
-    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    grad.addColorStop(0, '#0d0d1a');
-    grad.addColorStop(1, '#1a1a2e');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    drawHubBackground(ctx, '#0d0d1a', '#1a1a2e');
 
     drawMarqueeTitle(ctx, 'MEDIA', VIEW_W / 2, MD_TITLE_Y, MD_TITLE_SIZE, { color: CREAM });
 
@@ -1762,6 +1822,8 @@ export const Media = {
 // =============================================================================
 
 const OPT_ROWS = [
+  { key: 'layout',       label: 'Layout',           values: ['FIT', 'FULL SCREEN'] },
+  { key: 'virtualPad',   label: 'Virtual Gamepad',  values: ['ON (MOBILE)', 'OFF'] },
   { key: 'music',        label: 'Music' },
   { key: 'sfx',          label: 'SFX' },
   { key: 'screenShake',  label: 'Screen Shake' },
@@ -1771,26 +1833,35 @@ const OPT_ROWS = [
 export const Options = {
   focus: 0,
 
-  /** Live toggle rows straight from the persisted store (draw + onAction share this). */
+  /** Live toggle rows straight from the persisted store (draw + onAction share this).
+   * Boolean rows carry value=true/false; enum rows (layout, virtualPad) carry
+   * value=index into r.values. */
   rows() {
     const s = loadStore().settings;
-    return OPT_ROWS.map(r => ({ ...r, value: !!s[r.key] }));
+    return OPT_ROWS.map(r => {
+      if (r.values) {
+        const idx = r.values.indexOf(
+          r.key === 'layout'
+            ? (s.layout === 'fullscreen' ? 'FULL SCREEN' : 'FIT')
+            : (s.virtualPad ? 'ON (MOBILE)' : 'OFF'));
+        return { ...r, value: Math.max(0, idx) };
+      }
+      return { ...r, value: !!s[r.key] };
+    });
   },
 
   /** @param {CanvasRenderingContext2D} ctx */
   draw(ctx) {
     // Full-opaque dark background — like the menu hub, the world is hidden
     // behind this full-screen settings screen.
-    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    grad.addColorStop(0, '#0d0d1a');
-    grad.addColorStop(1, '#1a1a2e');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    drawHubBackground(ctx, '#0d0d1a', '#1a1a2e');
 
-    // Toggle state rides on the row label ("MUSIC  ON") so the shared
-    // pause-style list renderer (focus pill, colors, nav bar) is reused as-is.
+    // Toggle state rides on the row label ("MUSIC  ON" / "LAYOUT  FULL SCREEN")
+    // so the shared pause-style list renderer is reused as-is.
     const items = this.rows().map(r => ({
-      label: `${r.label.toUpperCase()}  ${r.value ? 'ON' : 'OFF'}`,
+      label: r.values
+        ? `${r.label.toUpperCase()}  ${r.values[r.value]}`
+        : `${r.label.toUpperCase()}  ${r.value ? 'ON' : 'OFF'}`,
       enabled: true,
     }));
     drawOptionList(ctx, {
@@ -1807,10 +1878,28 @@ export const Options = {
     });
   },
 
-  /** Flip the focused row's setting and persist immediately (atomic write). */
+  /** Advance the focused row and persist immediately (atomic write).
+   * Boolean rows flip; enum rows cycle through their values (wrap). Side
+   * effects (canvas re-fit, pad visibility) apply right away so the change is
+   * visible without a reload. */
   _toggle() {
     const row = OPT_ROWS[this.focus];
     if (!row) return;
+    if (row.values) {
+      updateSettings((settings) => {
+        if (row.key === 'layout') {
+          settings.layout = settings.layout === 'fit' ? 'fullscreen' : 'fit';
+        } else if (row.key === 'virtualPad') {
+          settings.virtualPad = !settings.virtualPad;
+        }
+      });
+      // Apply immediately.
+      setLayoutMode(loadStore().settings.layout);
+      requestRefit();
+      setVirtualPadEnabled(loadStore().settings.virtualPad);
+      console.log(`[screens] OPTIONS ${row.key} →`, loadStore().settings[row.key]);
+      return;
+    }
     updateSettings((settings) => { settings[row.key] = !settings[row.key]; });
   },
 
@@ -1981,8 +2070,7 @@ export const GameOver = {
   draw(ctx, hero) {
     // Full-opaque dark background (game over hides the world, unlike pause).
     ctx.save();
-    ctx.fillStyle = '#0d0d1a';
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    fillFullSurface(ctx, '#0d0d1a');
 
     const s = hero.traceStats?.total ?? {};
     const kills = Object.values(s.enemiesKilled ?? {}).reduce((a, b) => a + b, 0);
@@ -2078,11 +2166,7 @@ export const Win = {
   draw(ctx, hero) {
     // Celebratory background.
     ctx.save();
-    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    grad.addColorStop(0, '#1a0a2e');
-    grad.addColorStop(1, '#2e1a4e');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    drawHubBackground(ctx, '#1a0a2e', '#2e1a4e');
 
     const s = hero.traceStats?.total ?? {};
     const t = hero.traceStats ?? {};
@@ -2186,8 +2270,7 @@ export const AreaEntry = {
     // Full-opaque dark background — like Game Over, the world is hidden
     // behind this screen (it is a full-screen presentation, not a panel).
     ctx.save();
-    ctx.fillStyle = '#0d0d1a';
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    fillFullSurface(ctx, '#0d0d1a');
 
     // The entry view is a NON-interactive presentation: no menu, no options,
     // no navigation bar. It fades in fast, holds for TUNING.areaEntryHold,
@@ -2240,8 +2323,7 @@ export const Reward = {
     // Full-opaque dark background — like the area-entry and Game Over
     // screens, the world is hidden behind this full-screen presentation.
     ctx.save();
-    ctx.fillStyle = '#0d0d1a';
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    fillFullSurface(ctx, '#0d0d1a');
 
     drawMarqueeTitle(ctx, 'BOSS BEATEN', VIEW_W / 2, VIEW_H / 2 - 210, 52, { color: CREAM });
     drawMarqueeTitle(ctx, 'LEVEL PASSED', VIEW_W / 2, VIEW_H / 2 - 160, 34, { color: GOLD });
@@ -2308,8 +2390,7 @@ export const EndOfGame = {
     // Full-opaque dark background — like the reward and Game Over screens,
     // the world is hidden behind this full-screen presentation.
     ctx.save();
-    ctx.fillStyle = '#0d0d1a';
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    fillFullSurface(ctx, '#0d0d1a');
 
     // Congratulations — the screen's headline (lifecycle.md §5).
     drawMarqueeTitle(ctx, 'CONGRATULATIONS', VIEW_W / 2, VIEW_H / 2 - 140, 56, { color: CREAM });
