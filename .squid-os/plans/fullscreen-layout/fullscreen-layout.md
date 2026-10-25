@@ -1,5 +1,10 @@
 # Full Screen Layout + Virtual Gamepad Option
 
+> Historical implementation plan. Later decisions supersede parts of this document.
+> See [the fullscreen architecture guide](../../../petal-panic/docs/architecture/fullscreen-layout.md)
+> for current rules, including Home portrait cropping, full-surface effects, HUD anchors,
+> and the decision not to extend camera bounds or floors.
+
 Two new Options rows, always visible:
 
 ```

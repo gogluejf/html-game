@@ -3,6 +3,10 @@
 Human-readable spec of all entities, systems, and tunables.
 When code changes, update the corresponding YAML here.
 
+## Architecture guides
+
+- [Fullscreen layout](architecture/fullscreen-layout.md) — FIT/fullscreen rules, Home crop, menus, gameplay, HUD, effects, transitions, and future level backgrounds.
+
 ## Structure
 
 ```
