@@ -114,7 +114,7 @@
     },
     "4.2": {
       "number": "4.2",
-      "status": "in_progress",
+      "status": "done",
       "name": "Pause menu Save and Quit integration",
       "milestone": "Options, Controls, and Pause Integration",
       "milestone_number": "4",
@@ -129,10 +129,18 @@
     },
     "5.1": {
       "number": "5.1",
-      "status": "not_started",
+      "status": "in_progress",
       "name": "Media unlock model",
       "milestone": "Media Menu and Unlock Rewards",
-      "milestone_number": "5"
+      "milestone_number": "5",
+      "summary": {
+        "lessons_learned": "assets/interface/splash does not exist despite appearing in the file-tree listing; real interface art lives under assets/interface/{home,menu,select}. Level 1 background art (bg_f1.png) exists in assets/levels/level1 and was used as the one real asset path.",
+        "tradeoffs": "Asset paths are best-effort placeholders: only level 1 has real art (levels/level1/bg_f1.png verified on disk); other levels and intro/ending carry asset null with kind 'sprite-loop' per the plan's placeholder allowance. Tooltips use raw boss ids title-cased via underscore replacement rather than bossDisplayName (not imported to keep the media model decoupled from boss-rush naming).",
+        "done": "Added petal-panic/js/ui/mediaModel.js (pure model): buildMediaCards(progress) returns intro + 8 level clips + ending (10 cards), each {id,title,kind,level,status,tooltip,asset}; unlock state driven solely by progress.mediaUnlocked ids ('intro','level-N','ending'); exports MEDIA_IDS + isKnownMediaId. Added js/test/mediaModel.test.js (12 tests, all pass); plan verification command prints 10.",
+        "failures": "None",
+        "decisions": "Unlock state reads ONLY progress.mediaUnlocked (never completedAreas/defeatedBosses) so media rewards stay decoupled from playability gates \u2014 a boss defeated in Boss Rush unlocks its clip even before the level is passed; the milestone\u2192mediaUnlocked writers belong to task 5.3. Reused hasLevelContent() from levelSelectModel.js as the content gate for which level clips have real art.",
+        "confidence": "high"
+      }
     },
     "5.2": {
       "number": "5.2",
