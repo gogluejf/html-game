@@ -1782,8 +1782,9 @@ export const Media = {
 //     effects/cameraShake.js: update() skips its random re-roll when off, so
 //     getShakeOffset() stays {0,0} for EVERY camera-shake instance — legacy
 //     Effects.triggerShake AND declaratively fired instances alike.
-//   - vibration   → buzz() in ui/touchControls.js skips navigator.vibrate
-//     when off (the single haptics funnel).
+//   - vibration   → js/haptics.js haptic() funnel: virtual-pad nav ticks AND
+//     camera-shake impact rumbles both fast-exit when off; gamepad
+//     dual-rumble first, navigator.vibrate fallback on touch devices.
 //   - music / sfx → NO audio system exists yet (tuning.js §"deferred": audio
 //     is explicitly out of scope for the level engine v1). These rows persist
 //     their values honestly; there is nothing to consume them until an audio

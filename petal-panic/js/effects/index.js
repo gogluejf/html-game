@@ -132,6 +132,11 @@ function spawnFromConfig(cfg, carrier, trigger, ctx) {
   }
   const body = factory(cfg.params ?? {}, carrier, ctx);
   if (!body || typeof body !== 'object') return null;
+  // Haptics funnel: EVERY camera-shake instance rumbles when it fires —
+  // legacy Effects.triggerShake kicks AND declarative attack-engine fires
+  // (explosion/shockwave/surfaceStrike) both spawn through here, so one hook
+  // covers all paths. No-op when Vibration is off or no device exists.
+  if (cfg.type === 'camera-shake') hapticForShake(cfg.params?.intensity ?? 0);
   // The engine does not mutate the factory-returned body: the instance owns
   // the trigger record (inst.trigger), so effect-owned state stays untouched.
   const inst = new EffectInstance(cfg.type, body, carrier, trigger);
@@ -351,6 +356,7 @@ export function resetEffects() {
 // per-entry mutable clock exists. Fixed dt = 1/60 (project convention).
 
 import { particles } from './particles.js';
+import { hapticForShake } from '../haptics.js'; // camera-shake → rumble funnel (single attack-side haptic hookup)
 
 const DEMO_DT = 1 / 60;          // fixed step (project convention)
 export const DEMO_VIEW = { w: 320, h: 180 }; // neutral-stage viewport for screen-space overlays

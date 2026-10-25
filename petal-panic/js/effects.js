@@ -106,6 +106,9 @@ function kickCameraShake(mag) {
   if (cur) cur.complete();
   const next = fireManual({ type: 'camera-shake', params: { intensity: mag } }, null,
     { view: { w: VIEW_W, h: VIEW_H } });
+  // Haptics: fired from the effect engine's spawnFromConfig funnel
+  // (effects/index.js) — every camera-shake instance rumbles there, so this
+  // legacy kick path needs no separate hook.
   return next ?? cur;
 }
 
