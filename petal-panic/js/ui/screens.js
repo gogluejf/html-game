@@ -1200,6 +1200,7 @@ const BR_CARD_ART_H = 92;              // art box height inside a card
 const BR_DETAIL_X = 650;               // right detail-card left edge (grid end 632 + 18 gap)
 const BR_DETAIL_Y = 120;               // top matches first grid row top
 const BR_DETAIL_W = 290;               // fills to x=940 (20px viewport margin)
+const BR_DETAIL_ART_H = 190;           // ends at +268; status at +290 stays below art
 const BR_DETAIL_H = 358;               // 120..478: matches both grid rows' extent
 const BR_NAV_Y = 509;                 // keycap nav bar Y (centered in the bottom strip below the cards)
 
@@ -1347,16 +1348,16 @@ export const BossRush = {
       });
       const limg = bossCardImage(focused.bossId);
       if (limg?.complete && limg.naturalWidth > 0) {
-        drawBossCardCover(ctx, limg, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, 220, true);
+        drawBossCardCover(ctx, limg, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, BR_DETAIL_ART_H, true);
         ctx.globalAlpha = 0.35;
         ctx.fillStyle = '#0d0d1a';
-        roundRect(ctx, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, 220, 6);
+        roundRect(ctx, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, BR_DETAIL_ART_H, 6);
         ctx.fill();
         ctx.globalAlpha = 1;
-        drawLockIcon(ctx, ccx, BR_DETAIL_Y + 188, 34, '#e8e8f2');
+        drawLockIcon(ctx, ccx, BR_DETAIL_Y + 78 + BR_DETAIL_ART_H / 2, 34, '#e8e8f2');
       } else {
-        drawPlaceholder(ctx, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, 220, 'boss card');
-        drawLockIcon(ctx, ccx, BR_DETAIL_Y + 188, 34, '#8a8a9a');
+        drawPlaceholder(ctx, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, BR_DETAIL_ART_H, 'boss card');
+        drawLockIcon(ctx, ccx, BR_DETAIL_Y + 78 + BR_DETAIL_ART_H / 2, 34, '#8a8a9a');
       }
       ctx.font = `17px ${FONT_UI}`;
       ctx.fillStyle = '#ff9f9f';
@@ -1371,9 +1372,9 @@ export const BossRush = {
       });
       const img = bossCardImage(focused.bossId);
       if (img?.complete && img.naturalWidth > 0) {
-        drawBossCardCover(ctx, img, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, 220, false);
+        drawBossCardCover(ctx, img, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, BR_DETAIL_ART_H, false);
       } else {
-        drawPlaceholder(ctx, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, 220, 'boss card');
+        drawPlaceholder(ctx, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, BR_DETAIL_ART_H, 'boss card');
       }
       ctx.font = `17px ${FONT_UI}`;
       if (focused.status === 'defeated') {
