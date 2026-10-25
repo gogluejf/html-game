@@ -118,7 +118,7 @@ test('draws all 10 media cards within the 960x540 viewport', () => {
 
   // Each locked card draws a silhouette disc: arc(cx, cy, r=47, 0..2PI).
   // On fresh progress all 10 are locked, so all 10 hit.
-  const discs = calls.filter(c => c.fn === 'arc' && c.args[2] === 47 && c.args[3] === 0 && Math.abs(c.args[4] - Math.PI * 2) < 1e-9);
+  const discs = calls.filter(c => c.fn === 'arc' && c.args[2] === 38 && c.args[3] === 0 && Math.abs(c.args[4] - Math.PI * 2) < 1e-9);
   assert.equal(discs.length, 10, 'ten card discs drawn (fresh progress: all locked)');
   for (const c of discs) {
     const [x, y, r] = c.args;

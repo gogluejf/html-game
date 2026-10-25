@@ -887,9 +887,9 @@ const LS_TITLE_SIZE = 44;
 const LS_GRID_COLS = 5;              // zones per level row (1,2,3,4,B)
 const LS_GRID_ROWS = 8;              // levels 1..8
 const LS_CELL_W = 92;                // cell width
-const LS_CELL_H = 46;                // cell height
+const LS_CELL_H = 42;                // cell height (nav bar keeps a clear strip below)
 const LS_CELL_DX = 104;              // horizontal spacing between cell centers
-const LS_CELL_DY = 54;               // vertical spacing between cell centers
+const LS_CELL_DY = 44;               // vertical spacing between cell centers
 const LS_NAME_X = 34;                // level-name text center X (left of grid)
 const LS_GRID_CX0 = 170;             // first column center X
 const LS_GRID_CY0 = 138;             // first row center Y
@@ -897,7 +897,7 @@ const LS_CARD_X = 700;               // right detail-card left edge
 const LS_CARD_Y = 110;               // right detail-card top edge
 const LS_CARD_W = 240;
 const LS_CARD_H = 320;
-const LS_NAV_Y = 480;                // keycap nav bar Y
+const LS_NAV_Y = 502;                // keycap nav bar Y (centered in the bottom strip below the grid)
 
 /** Draw a small padlock glyph centered at (x, y) with `size` px body height. */
 function drawLockIcon(ctx, x, y, size, color) {
@@ -1166,19 +1166,19 @@ export const LevelSelect = {
 const BR_TITLE_Y = 60;                 // "BOSS RUSH" marquee baseline
 const BR_TITLE_SIZE = 44;
 const BR_CARD_W = 132;                 // card width
-const BR_CARD_H = 190;                 // card height
+const BR_CARD_H = 168;                 // card height (nav bar keeps a clear strip below)
 const BR_PAD_X = 16;                   // inner side padding (art box inset)
 const BR_GAP_X = 18;                   // horizontal gap between cards
 const BR_GAP_Y = 18;                   // vertical gap between rows
 const BR_COLS = 4;                     // 4 × 2 grid of 8 cards
 const BR_GRID_X = 50;                  // first card's left edge
 const BR_GRID_Y = 120;                 // first row's top edge
-const BR_CARD_ART_H = 110;             // art box height inside a card
+const BR_CARD_ART_H = 92;              // art box height inside a card
 const BR_DETAIL_X = 650;               // right detail-card left edge (grid end 632 + 18 gap)
 const BR_DETAIL_Y = 120;               // top matches first grid row top
 const BR_DETAIL_W = 290;               // fills to x=940 (20px viewport margin)
-const BR_DETAIL_H = 398;               // 120..518: matches both grid rows' extent
-const BR_NAV_Y = 480;                  // keycap nav bar Y
+const BR_DETAIL_H = 358;               // 120..478: matches both grid rows' extent
+const BR_NAV_Y = 509;                 // keycap nav bar Y (centered in the bottom strip below the cards)
 
 /** Boss card art cache (loaded lazily; drawFitted guards .complete). */
 const bossCardImages = {};
@@ -1341,10 +1341,10 @@ export const BossRush = {
       }
       ctx.font = `17px ${FONT_UI}`;
       ctx.fillStyle = '#ff9f9f';
-      ctx.fillText(focused.tooltip ?? '', ccx, BR_DETAIL_Y + 330);
+      ctx.fillText(focused.tooltip ?? '', ccx, BR_DETAIL_Y + 290);
       ctx.font = `13px ${FONT_UI}`;
       ctx.fillStyle = '#8a8a9a';
-      ctx.fillText('LOCKED', ccx, BR_DETAIL_Y + 362);
+      ctx.fillText('LOCKED', ccx, BR_DETAIL_Y + 322);
     } else {
       // Unlocked/defeated: boss name headline + COLOR card art + status line.
       drawMarqueeTitle(ctx, focused.name.toUpperCase(), ccx, BR_DETAIL_Y + 50, 26, {
@@ -1359,16 +1359,16 @@ export const BossRush = {
       ctx.font = `17px ${FONT_UI}`;
       if (focused.status === 'defeated') {
         ctx.fillStyle = GOLD;
-        ctx.fillText('DEFEATED ★', ccx, BR_DETAIL_Y + 330);
+        ctx.fillText('DEFEATED ★', ccx, BR_DETAIL_Y + 290);
         ctx.font = `14px ${FONT_UI}`;
         ctx.fillStyle = '#b9a98a';
-        ctx.fillText('Press Confirm to fight again', ccx, BR_DETAIL_Y + 362);
+        ctx.fillText('Press Confirm to fight again', ccx, BR_DETAIL_Y + 322);
       } else {
         ctx.fillStyle = COLOR_OPT_FOCUSED;
-        ctx.fillText('READY TO FIGHT', ccx, BR_DETAIL_Y + 330);
+        ctx.fillText('READY TO FIGHT', ccx, BR_DETAIL_Y + 290);
         ctx.font = `14px ${FONT_UI}`;
         ctx.fillStyle = '#b9a98a';
-        ctx.fillText('Press Confirm to start', ccx, BR_DETAIL_Y + 362);
+        ctx.fillText('Press Confirm to start', ccx, BR_DETAIL_Y + 322);
       }
     }
     ctx.restore();
@@ -1489,18 +1489,18 @@ import { buildMediaCards } from './mediaModel.js';
 const MD_TITLE_Y = 60;                 // "MEDIA" marquee baseline
 const MD_TITLE_SIZE = 44;
 const MD_CARD_W = 150;                 // card width (Boss Rush parity)
-const MD_CARD_H = 190;                 // card height
+const MD_CARD_H = 168;                 // card height (nav bar keeps a clear strip below)
 const MD_GAP_X = 18;                   // horizontal gap between cards
 const MD_GAP_Y = 18;                   // vertical gap between rows
 const MD_COLS = 5;                     // 5 × 2 grid of 10 cards
 const MD_GRID_X = 30;                  // first card's left edge
 const MD_GRID_Y = 120;                 // first row's top edge
-const MD_CARD_ART_H = 110;             // art box height inside a card
+const MD_CARD_ART_H = 92;              // art box height inside a card
 const MD_DETAIL_X = 700;               // right detail-card left edge
 const MD_DETAIL_Y = 120;               // right detail-card top edge
 const MD_DETAIL_W = 230;
-const MD_DETAIL_H = 300;
-const MD_NAV_Y = 480;                  // keycap nav bar Y
+const MD_DETAIL_H = 358;               // 120..478: matches both grid rows' extent
+const MD_NAV_Y = 509;                 // keycap nav bar Y (centered in the bottom strip below the cards)
 const MD_VIEW_W = 640;                 // playback overlay view width
 const MD_VIEW_H = 320;                 // playback overlay view height
 
@@ -1607,32 +1607,32 @@ export const Media = {
     ctx.textBaseline = 'middle';
     if (focused.status === 'locked') {
       // Locked: no preview image — lock glyph + the model's unlock requirement.
-      drawLockIcon(ctx, ccx, MD_DETAIL_Y + 80, 34, '#8a8a9a');
+      drawLockIcon(ctx, ccx, MD_DETAIL_Y + 105, 34, '#8a8a9a');
       ctx.font = `17px ${FONT_UI}`;
       ctx.fillStyle = '#ff9f9f';
-      ctx.fillText(focused.tooltip ?? '', ccx, MD_DETAIL_Y + 150);
+      ctx.fillText(focused.tooltip ?? '', ccx, MD_DETAIL_Y + 175);
       ctx.font = `13px ${FONT_UI}`;
       ctx.fillStyle = '#8a8a9a';
-      ctx.fillText('LOCKED', ccx, MD_DETAIL_Y + 185);
+      ctx.fillText('LOCKED', ccx, MD_DETAIL_Y + 210);
     } else {
       // Unlocked: title headline + clip art + play hint.
-      drawMarqueeTitle(ctx, focused.title.toUpperCase(), ccx, MD_DETAIL_Y + 45, 26, { color: CREAM });
+      drawMarqueeTitle(ctx, focused.title.toUpperCase(), ccx, MD_DETAIL_Y + 50, 26, { color: CREAM });
       if (focused.asset) {
         const img = mediaClipImage(focused.asset);
         if (img?.complete && img.naturalWidth > 0) {
-          drawFitted(ctx, img, MD_DETAIL_X + 25, MD_DETAIL_Y + 75, MD_DETAIL_W - 50, 140);
+          drawFitted(ctx, img, MD_DETAIL_X + 25, MD_DETAIL_Y + 80, MD_DETAIL_W - 50, 170);
         } else {
-          drawPlaceholder(ctx, MD_DETAIL_X + 25, MD_DETAIL_Y + 75, MD_DETAIL_W - 50, 140, 'clip');
+          drawPlaceholder(ctx, MD_DETAIL_X + 25, MD_DETAIL_Y + 80, MD_DETAIL_W - 50, 170, 'clip');
         }
       } else {
-        drawPlaceholder(ctx, MD_DETAIL_X + 25, MD_DETAIL_Y + 75, MD_DETAIL_W - 50, 140, 'coming soon');
+        drawPlaceholder(ctx, MD_DETAIL_X + 25, MD_DETAIL_Y + 80, MD_DETAIL_W - 50, 170, 'coming soon');
       }
       ctx.font = `17px ${FONT_UI}`;
       ctx.fillStyle = COLOR_OPT_FOCUSED;
-      ctx.fillText('READY TO PLAY', ccx, MD_DETAIL_Y + 245);
+      ctx.fillText('READY TO PLAY', ccx, MD_DETAIL_Y + 290);
       ctx.font = `14px ${FONT_UI}`;
       ctx.fillStyle = '#b9a98a';
-      ctx.fillText('Press Confirm to watch', ccx, MD_DETAIL_Y + 272);
+      ctx.fillText('Press Confirm to watch', ccx, MD_DETAIL_Y + 322);
     }
     ctx.restore();
 

@@ -41,9 +41,9 @@ const { buildSubAreasForLevel, hasLevelContent } = await import('../ui/levelSele
 
 // Cell geometry mirrored from screens.js's LevelSelect layout (test asserts
 // the drawn arcTo corners against these; keep in sync if the layout moves).
-const LS_CELL_W_TEST = 92, LS_CELL_H_TEST = 46;
+const LS_CELL_W_TEST = 92, LS_CELL_H_TEST = 42;
 const LS_GRID_CX0_TEST = 170, LS_GRID_CY0_TEST = 138;
-const LS_CELL_DX_TEST = 104, LS_CELL_DY_TEST = 54;
+const LS_CELL_DX_TEST = 104, LS_CELL_DY_TEST = 44;
 const LS_CARD_X_TEST = 700, LS_CARD_Y_TEST = 110, LS_CARD_W_TEST = 240;
 
 /** Drive a transition through the real onTransition hook (screenReset etc.). */
