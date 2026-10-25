@@ -56,7 +56,7 @@ let lastTime = 0;
 //   'fit'        — contain-fit the 960x540 box into the window (letterbox).
 //   'fullscreen' — canvas fills the ENTIRE window; the 960x540 logical box is
 //                  centered inside it. Menu/hub screens bleed their gradients
-//                  into the side strips (render.js widenLogicalBox); gameplay
+//                  into the side strips (core/layout.js surface helpers); gameplay
 //                  keeps the flat world fill in both layouts. The mode is read from settings each frame
 //                  (cheap object read) so toggling in Options takes effect
 //                  immediately without a reload.
@@ -172,6 +172,11 @@ export function refreshLayout() { fitCanvas(); }
 
 function applyTransform() {
   resolveCanvas();
+  // The fullscreen canvas is larger than the logical gameplay box. Clear ALL
+  // device pixels before drawing: clearing only 960x540 leaves old world
+  // sprites/HUD pixels in the side strips, accumulating trails every frame.
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   const s = fitScale();
   // 'fit': canvas aspect == 960x540 so s fills exactly and offsets are 0.
   // 'fullscreen': center the logical box inside the larger canvas (both axes).

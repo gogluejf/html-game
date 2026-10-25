@@ -16,77 +16,30 @@ import { onTransition } from '../core/state.js';
 import {input, navHintEntries, navLabels, markNavPressed, clearNavFlash} from '../core/input.js';
 
 
-// render.js is imported LAZILY (not statically): a static import would drag
-// update.js (and its module-scope world build) into every consumer of this
-// module — including headless tests. The helpers are only needed when LAYOUT
-// is 'fullscreen', and by then render.js is already cached in the browser
-// (main.js imports it at boot).
-let _renderMod = null;
-const NO_WIDEN = { widenLogicalBox: () => false, restoreCenteredTransform: () => {} };
-function renderHelpers() { return _renderMod ?? NO_WIDEN; }
-import('../systems/render.js').then(m => { _renderMod = m; }).catch(() => {});
+import { surfaceBounds, fillSurface } from '../core/layout.js';
 
-// core/layout.js is a leaf module (no game imports) — lazy-load it once for
-// the fit-state reads in bleedW(). Safe headless: resolves to real values or
-// falls back to zeros.
-let _layoutMod = null;
-const LAYOUT_FALLBACK = { getLayoutMode: () => 'fit', getFitScale: () => 1, getFitOffsetX: () => 0, getFitOffsetY: () => 0 };
-function layoutApi() { return _layoutMod ?? LAYOUT_FALLBACK; }
-import('../core/layout.js').then(m => { _layoutMod = m; }).catch(() => {});
-
-/** Full-screen dark background for a hub screen. In FULL SCREEN layout the
- * gradient is painted edge-to-edge across the whole canvas (widenLogicalBox);
- * otherwise it fills the normal 960x540 logical box. */
 function drawHubBackground(ctx, top = '#0d0d1a', bottom = '#1a1a2e') {
-  const widened = renderHelpers().widenLogicalBox(ctx);
-  if (!widened) {
-    // FIT layout: plain logical-box fill.
-    const g = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    g.addColorStop(0, top);
-    g.addColorStop(1, bottom);
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-    return;
-  }
-  // FULL SCREEN: paint edge-to-edge, then restore the centered transform so
-  // the screen's content drawing lands exactly as in fit mode.
-  const w = VIEW_W + bleedW();
-  const g = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+  const b = surfaceBounds();
+  const g = ctx.createLinearGradient(0, b.y, 0, b.y + b.h);
   g.addColorStop(0, top);
   g.addColorStop(1, bottom);
   ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, VIEW_H);
-  renderHelpers().restoreCenteredTransform(ctx);
+  fillSurface(ctx);
 }
-/** Fill the ENTIRE visible area with a solid color: the 960x540 logical box
- * in FIT mode, or the whole canvas (edge-to-edge) in FULL SCREEN mode. Used by
- * the opaque presentation screens (area entry, reward, game over, ...) so
- * none of them show letterbox bars in fullscreen layout. */
 function fillFullSurface(ctx, color) {
-  const widened = renderHelpers().widenLogicalBox(ctx);
-  if (!widened) {
-    ctx.fillStyle = color;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-    return;
-  }
   ctx.fillStyle = color;
-  ctx.fillRect(0, 0, VIEW_W + bleedW(), VIEW_H);
-  renderHelpers().restoreCenteredTransform(ctx);
+  fillSurface(ctx);
 }
-
-/** TOTAL extra width (logical px) beyond VIEW_W needed for a rect drawn from
- * x=0 under the widened transform to reach the right canvas edge in FULL
- * SCREEN mode. Equals both side strips combined (offsetX*2 device px →
- * logical). Returns 0 in FIT mode. Computed per call — no cached value to go
- * stale across rotations/toggles. */
-function bleedW() {
-  const api = layoutApi();
-  if (api.getLayoutMode() !== 'fullscreen') return 0;
-  const s = api.getFitScale();
-  if (!s) return 0;
-  // offsetX*2 is the total horizontal slack in device px; divide by scale
-  // once (NOT twice) to get logical px of extra width past the 960 box.
-  return (api.getFitOffsetX() * 2) / s;
+/** Home scenic layers expand for width only; portrait keeps authored sizing.
+ * Foreground portraits, logo, and input hints retain their authored layout. */
+function drawHomeScenery(ctx, img, x, y, w, h) {
+  const b = surfaceBounds();
+  // Portrait adds background above/below, never enlarges the stage to fill height.
+  if (b.w <= VIEW_W) { ctx.drawImage(img, x, y, w, h); return; }
+  const scale = Math.max(1, (b.w + 2 * Math.abs(x)) / w);
+  const dw = w * scale, dh = h * scale;
+  ctx.drawImage(img, b.x + (b.w - dw) / 2 + x,
+    b.y + (b.h - dh) / 2 + y, dw, dh);
 }
 
 // --- Image cache -------------------------------------------------------------
@@ -202,15 +155,16 @@ export const Home = {
 
     // --- Background (always black during intro, dark gradient after) ---------
     // FULL SCREEN layout: the gradient runs edge-to-edge across the canvas.
-    const homeWidened = renderHelpers().widenLogicalBox(ctx);
-    const homeW = homeWidened ? VIEW_W + bleedW() : VIEW_W;
-    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+    const homeBounds = surfaceBounds();
+    // Home scenery expands horizontally only. Portrait margins are not part
+    // of the scene: retain the authored 540-high crop, centered by main.js.
+    fillFullSurface(ctx, '#000');
+    const grad = ctx.createLinearGradient(0, 0, 0, HOME_H);
     grad.addColorStop(0, '#020208');
     grad.addColorStop(0.5, '#060312');
     grad.addColorStop(1, '#0a0518');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, homeW, VIEW_H);
-    if (homeWidened) renderHelpers().restoreCenteredTransform(ctx);
+    ctx.fillRect(homeBounds.x, HOME_Y, homeBounds.w, HOME_H);
 
     // ========================================================================
     // INTRO SEQUENCE (t < 12s): text cards on black, then layer fades
@@ -267,7 +221,8 @@ export const Home = {
     // Clip to the box and translate origin.
     ctx.save();
     ctx.beginPath();
-    ctx.rect(HOME_X, HOME_Y, HOME_W, HOME_H);
+    const surface = surfaceBounds();
+    ctx.rect(surface.x, HOME_Y, surface.w, HOME_H);
     ctx.clip();
     ctx.translate(HOME_X, HOME_Y);
 
@@ -296,7 +251,7 @@ export const Home = {
       if (src?.complete && src.naturalWidth > 0) {
         ctx.save();
         ctx.globalAlpha = 0.65 * bigtopAlpha;
-        ctx.drawImage(src, 0, vDrift, DW, DH);
+        drawHomeScenery(ctx, src, 0, vDrift, DW, DH);
         ctx.restore();
       } else {
         drawPlaceholder(ctx, 20, 130, HOME_W - 40, 280, 'bigtop');
@@ -314,7 +269,7 @@ export const Home = {
       if (ready) {
         ctx.save();
         ctx.globalAlpha = frontAlpha;
-        ctx.drawImage(src, -20, vDrift, DW, DH);
+        drawHomeScenery(ctx, src, -20, vDrift, DW, DH);
         ctx.restore();
       } else {
         drawPlaceholder(ctx, 0, 380, HOME_W, 160, 'stage');
@@ -335,7 +290,7 @@ export const Home = {
       if (src?.complete && src.naturalWidth > 0) {
         ctx.save();
         ctx.globalAlpha = frontAlpha;
-        ctx.drawImage(src, cx, cy, DW, DH);
+        drawHomeScenery(ctx, src, cx, cy, DW, DH);
         ctx.restore();
       } else {
         drawPlaceholder(ctx, 30, 380, HOME_W - 60, 140, 'crowd');
@@ -812,7 +767,7 @@ export const Menu = {
   drawCredits(ctx) {
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.85)';
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    fillSurface(ctx);
 
     drawMarqueeTitle(ctx, 'CREDITS', VIEW_W / 2, 110, 44, { color: CREAM });
 
@@ -1712,7 +1667,7 @@ export const Media = {
     const card = this._cards().find(c => c.id === this.playing) ?? null;
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.85)';
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    fillSurface(ctx);
 
     const vx = (VIEW_W - MD_VIEW_W) / 2;
     const vy = (VIEW_H - MD_VIEW_H) / 2 - 20;
@@ -1960,7 +1915,7 @@ export const Pause = {
   draw(ctx) {
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    fillSurface(ctx);
 
     // Shared option-list renderer (same layout as before extraction).
     drawOptionList(ctx, {

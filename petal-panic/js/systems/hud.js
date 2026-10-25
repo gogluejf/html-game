@@ -8,7 +8,7 @@
 //   - selected-hero portrait (32×32, top-right corner)
 // ES module, no frameworks. No DOM access beyond the passed ctx.
 
-import { VIEW_W } from '../core/view.js';
+import { surfaceBounds } from '../core/layout.js';
 import { FONT_UI, GOLD } from '../ui/fonts.js';
 import { specialById } from '../objects/specialWeapons.js';
 
@@ -27,20 +27,21 @@ export function drawHUD(ctx, hero, _camera, levelDef) {
   if (!hero || !levelDef) return;
   ctx.save();
   ctx.textBaseline = 'alphabetic';
+  const bounds = surfaceBounds();
 
-  drawEnergyBar(ctx, hero);
-  drawSuperMeter(ctx, hero);
-  drawAmmo(ctx, hero);
-  drawCoinsAndLives(ctx, hero);
-  drawPortrait(ctx, hero);
+  drawEnergyBar(ctx, hero, bounds);
+  drawSuperMeter(ctx, hero, bounds);
+  drawAmmo(ctx, hero, bounds);
+  drawCoinsAndLives(ctx, hero, bounds);
+  drawPortrait(ctx, hero, bounds);
 
   ctx.restore();
 }
 
 // --- Energy bar (top-left): red fill + cyan shield overlay -------------------
 
-function drawEnergyBar(ctx, hero) {
-  const barX = PAD, barY = PAD, barW = 200, barH = 16;
+function drawEnergyBar(ctx, hero, bounds) {
+  const barX = bounds.x + PAD, barY = bounds.y + PAD, barW = 200, barH = 16;
 
   // Energy fraction (0..1).
   const energyFrac = Math.max(0, Math.min(1, hero.energy / hero.maxEnergy));
@@ -78,8 +79,8 @@ function drawEnergyBar(ctx, hero) {
 
 // --- Super meter (below energy): purple fill, blinks when full ---------------
 
-function drawSuperMeter(ctx, hero) {
-  const barX = PAD, barY = PAD + 16 + 4, barW = 100, barH = 8; // half size of energy bar
+function drawSuperMeter(ctx, hero, bounds) {
+  const barX = bounds.x + PAD, barY = bounds.y + PAD + 16 + 4, barW = 100, barH = 8; // half size of energy bar
 
   // Background.
   ctx.fillStyle = '#2a2a3a';
@@ -112,15 +113,15 @@ function drawSuperMeter(ctx, hero) {
 
 // Icons are read from the SPECIAL_WEAPONS registry (specialWeapons.js).
 
-function drawAmmo(ctx, hero) {
-  const y = PAD + 16 + 19; // just below the energy bar (no label anymore)
+function drawAmmo(ctx, hero, bounds) {
+  const y = bounds.y + PAD + 16 + 19; // just below the energy bar (no label anymore)
   ctx.font = `15px ${FONT_UI}`;
   ctx.textAlign = 'left';
   const defaultSelected = !Number.isInteger(hero.selectedWeapon);
   const defMark = defaultSelected ? '> ' : '  ';
   ctx.fillStyle = defaultSelected ? '#2ecc71' : 'rgba(46, 204, 113, 0.45)';
-  ctx.fillText(`${defMark}🌿`, PAD, y);
-  let x = PAD + 56;
+  ctx.fillText(`${defMark}🌿`, bounds.x + PAD, y);
+  let x = bounds.x + PAD + 56;
   for (let i = 0; i < (hero.specialSlots?.length ?? 0); i++) {
     const type = hero.specialSlots[i];
     const sel = hero.selectedWeapon === i;
@@ -134,13 +135,13 @@ function drawAmmo(ctx, hero) {
 
 // --- Coins + lives (top-right) -----------------------------------------------
 
-function drawCoinsAndLives(ctx, hero) {
+function drawCoinsAndLives(ctx, hero, bounds) {
   ctx.textAlign = 'right';
   ctx.font = `17px ${FONT_UI}`;
   ctx.fillStyle = GOLD;
-  ctx.fillText(`💰 ${hero.coins ?? 0}`, VIEW_W - PAD, PAD + 16);
+  ctx.fillText(`💰 ${hero.coins ?? 0}`, bounds.x + bounds.w - PAD, bounds.y + PAD + 16);
   ctx.fillStyle = '#e74c3c';
-  ctx.fillText(`❤️ × ${hero.lives ?? 0}`, VIEW_W - PAD, PAD + 36);
+  ctx.fillText(`❤️ × ${hero.lives ?? 0}`, bounds.x + bounds.w - PAD, bounds.y + PAD + 36);
 }
 
 // --- Selected-hero portrait (32×32, top-right corner, above coins) -----------
@@ -165,10 +166,10 @@ function getPortraitImage(heroId) {
   return img;
 }
 
-function drawPortrait(ctx, hero) {
+function drawPortrait(ctx, hero, bounds) {
   const size = 32;
-  const x = VIEW_W - PAD - size;
-  const y = PAD + 44; // below the lives line
+  const x = bounds.x + bounds.w - PAD - size;
+  const y = bounds.y + PAD + 44; // below the lives line
 
   const img = getPortraitImage(hero.heroDef?.id);
   if (img && img.complete && img.naturalWidth > 0) {

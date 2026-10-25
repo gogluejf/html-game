@@ -9,7 +9,7 @@
 //   'fullscreen' — canvas fills the ENTIRE window; the logical box is centered
 //                  inside it and backgrounds bleed into the side strips.
 
-import { VIEW_W } from './view.js';
+import { VIEW_W, VIEW_H } from './view.js';
 import { loadStore } from '../systems/progressStore.js';
 
 let _layoutMode = 'fit';
@@ -50,3 +50,23 @@ export function getFitOffsetX() { return FIT_STATE.offsetX; }
 export function getFitOffsetY() { return FIT_STATE.offsetY; }
 /** Current uniform logical→device scale. */
 export function getFitScale() { return FIT_STATE.scale; }
+
+/** Visible surface in centered gameplay coordinates. Presentation only. */
+export function surfaceBounds() {
+  const s = getFitScale();
+  const x = getLayoutMode() === 'fullscreen' && s > 0 ? getFitOffsetX() / s : 0;
+  const y = getLayoutMode() === 'fullscreen' && s > 0 ? getFitOffsetY() / s : 0;
+  return { x: -x, y: -y, w: VIEW_W + 2 * x, h: VIEW_H + 2 * y };
+}
+/** Fill using the caller's style/alpha without touching its transform. */
+export function fillSurface(ctx) {
+  const b = surfaceBounds();
+  ctx.fillRect(b.x, b.y, b.w, b.h);
+}
+/** Screen effects use a top-left origin and the full visible dimensions. */
+export function drawOnSurface(ctx, draw) {
+  const b = surfaceBounds();
+  ctx.save();
+  try { ctx.translate(b.x, b.y); draw(b.w, b.h); }
+  finally { ctx.restore(); }
+}

@@ -1,3 +1,4 @@
+import { surfaceBounds, fillSurface } from './layout.js';
 // Petal Panic — Remap Controls Screen.
 //
 // A settings screen for reassigning gameplay action bindings per input source.
@@ -205,11 +206,12 @@ export const Remap = {
   /** @param {CanvasRenderingContext2D} ctx */
   draw(ctx) {
     // Background
-    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+    const surface = surfaceBounds();
+    const grad = ctx.createLinearGradient(0, surface.y, 0, surface.y + surface.h);
     grad.addColorStop(0, '#0d0d1a');
     grad.addColorStop(1, '#1a1a2e');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    fillSurface(ctx);
 
     // Title
     drawMarqueeTitle(ctx, 'CONTROLS', VIEW_W / 2, 34, 32, { color: CREAM });
