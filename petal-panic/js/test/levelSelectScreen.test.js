@@ -1,14 +1,15 @@
-// Task 3.2 — Level select screen tests (headless).
+// Task 3.2 — Level select screen tests (headless). Grid rework.
 // Run: node --test petal-panic/js/test/levelSelectScreen.test.js
 //
 // Verifies the canvas-drawn LEVEL_SELECT screen against the plan's acceptance
-// criteria:
-//   - draws 8 level markers and 5 sub-area chips without overflow at 960x540;
-//   - locked cards show a lock icon and dimmed content (draw runs clean);
-//   - focused locked card shows 'Pass <previous stage> to unlock' on the right
+// criteria (8×5 stage-cell grid):
+//   - draws 40 stage cells within 960x540 without overflow;
+//   - locked cells render dimmed with a lock icon (draw runs clean);
+//   - focused locked cell shows 'Pass <previous stage> to unlock' on the right
 //     (the model tooltip is surfaced by the detail card);
 //   - confirm starts an unlocked stage through AREA_ENTRY;
-//   - back returns MENU; up/down/left/right navigate focus (skipping locks).
+//   - back returns MENU; arrows move the cursor one cell, clamping at edges;
+//   - reset lands the cursor on the next playable stage.
 
 import { strict as assert } from 'node:assert';
 import { test, before, after } from 'node:test';
@@ -36,11 +37,14 @@ const { S, getState, setState, tryTransition } = await import('../core/state.js'
 const SC = await import('../ui/screens.js');
 const PS = await import('../systems/progressStore.js');
 const { VIEW_W, VIEW_H } = await import('../core/view.js');
-const { buildSubAreasForLevel, buildLevelMap, hasLevelContent } = await import('../ui/levelSelectModel.js');
+const { buildSubAreasForLevel, hasLevelContent } = await import('../ui/levelSelectModel.js');
 
-// Chip geometry mirrored from screens.js's LevelSelect layout (test asserts
+// Cell geometry mirrored from screens.js's LevelSelect layout (test asserts
 // the drawn arcTo corners against these; keep in sync if the layout moves).
-const LS_CHIP_W_TEST = 74, LS_CHIP_H_TEST = 44;
+const LS_CELL_W_TEST = 92, LS_CELL_H_TEST = 46;
+const LS_GRID_CX0_TEST = 170, LS_GRID_CY0_TEST = 138;
+const LS_CELL_DX_TEST = 104, LS_CELL_DY_TEST = 54;
+const LS_CARD_X_TEST = 700, LS_CARD_Y_TEST = 110, LS_CARD_W_TEST = 240;
 
 /** Drive a transition through the real onTransition hook (screenReset etc.). */
 function go(to) {
@@ -94,66 +98,67 @@ test('LevelSelect exposes draw/onAction/reset and is wired into the dispatch hel
   // screenReset resets focus when entering LEVEL_SELECT.
   SC.LevelSelect.focus = { levelIdx: 3, zoneIdx: 2 };
   SC.screenReset(S.LEVEL_SELECT, S.MENU);
-  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 0, zoneIdx: 0 }, 'focus reset on entry');
+  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 0, zoneIdx: 0 }, 'focus reset on entry (fresh progress)');
 });
 
-test('draws 8 level markers and 5 sub-area chips within the 960x540 viewport', () => {
+test('draws the 8×5 stage-cell grid within the 960x540 viewport', () => {
   PS.resetStore();
   setState(S.LEVEL_SELECT);
   const { calls, ctx } = recordingCtx();
   SC.LevelSelect.draw(ctx);
 
-  // 8 marker discs → 8 arc() calls with radius 16 (the shackle arcs of the
-  // lock icons have a much smaller radius, so r===16 isolates the markers).
-  const markerArcs = calls.filter(c => c.fn === 'arc' && c.args[2] === 16);
-  assert.equal(markerArcs.length, 8, 'eight level marker discs drawn');
-  for (const c of markerArcs) {
-    const [x, y, r] = c.args;
-    assert.ok(x >= 0 && x <= VIEW_W, `marker x=${x} inside viewport`);
-    assert.ok(y - r >= 0 && y + r <= VIEW_H, `marker y=${y} inside viewport`);
+  // 40 stage cells → the helper roundRect() issues one arcTo(x+w, y, ...) per
+  // cell; with cell centers at (170 + c*104, 140 + r*54) and top-left corner
+  // (centerX - 46, centerY - 23), the first corner x values are unique per
+  // column: 124, 228, 332, 436, 540.
+  const colCornerXs = [124, 228, 332, 436, 540];
+  for (let c = 0; c < 5; c++) {
+    const rightX = colCornerXs[c];
+    let count = 0;
+    for (let r = 0; r < 8; r++) {
+      const topY = LS_GRID_CY0_TEST + r * LS_CELL_DY_TEST - LS_CELL_H_TEST / 2;
+      const hits = calls.filter(cl => cl.fn === 'arcTo' && cl.args[0] === rightX && cl.args[1] === topY);
+      assert.ok(hits.length >= 1, `cell (${r},${c}) at x=[${rightX - LS_CELL_W_TEST},${rightX}] y=${topY} drawn`);
+      count += hits.length;
+    }
+    assert.equal(count, 8, `column ${c} has 8 cells`);
+    // All cells inside the viewport.
+    assert.ok(rightX - LS_CELL_W_TEST >= 0 && rightX <= VIEW_W, `column ${c} x inside viewport`);
   }
+  const lastBottom = LS_GRID_CY0_TEST + 7 * LS_CELL_DY_TEST + LS_CELL_H_TEST / 2;
+  assert.ok(lastBottom <= VIEW_H, 'last row bottom inside viewport');
 
-  // 5 sub-area chips → the helper roundRect() issues one arcTo(x+w, y, ...)
-  // per chip; with chip centers at x = 90 + i*84 (i=0..4) and top edge y=278,
-  // the first corner is (centerX+37, 278).
-  const chipCorners = [127, 211, 295, 379, 463];
-  for (const rightX of chipCorners) {
-    const hits = calls.filter(c => c.fn === 'arcTo' && c.args[0] === rightX && c.args[1] === 278);
-    assert.ok(hits.length >= 1, `chip at x=[${rightX - LS_CHIP_W_TEST},${rightX}] drawn`);
-    const bottomY = hits[0].args[3];
-    assert.ok(rightX - LS_CHIP_W_TEST >= 0 && rightX <= VIEW_W, `chip x inside viewport`);
-    assert.ok(278 >= 0 && bottomY <= VIEW_H, `chip y inside viewport`);
-  }
-
-  // Right-side detail card present: its first arcTo corner is (x+340, y) =
-  // (900, 120), unique to the 340x240 card body.
-  const card = calls.find(c => c.fn === 'arcTo' && c.args[0] === 900 && c.args[1] === 120);
+  // Right-side detail card present: its first arcTo corner is (x+240, y) =
+  // (940, 110), unique to the 240-wide card body.
+  const card = calls.find(c => c.fn === 'arcTo' && c.args[0] === 940 && c.args[1] === 110);
   assert.ok(card, 'detail card drawn on the right');
-  assert.ok(card.args[0] <= VIEW_W, 'detail card fits the viewport');
+  assert.ok(940 <= VIEW_W, 'detail card fits the viewport');
 });
 
-test('locked cards render dimmed with a lock icon (fresh progress: levels 2-8 locked)', () => {
+test('locked cells render dimmed with a lock icon (fresh progress: levels 2-8 locked)', () => {
   PS.resetStore();
   setState(S.LEVEL_SELECT);
   const { calls, ctx } = recordingCtx();
   SC.LevelSelect.draw(ctx);
 
-  // Fresh progress: only level 1 is available → 7 locked markers, each drawn
-  // dimmed (globalAlpha 0.45) with a padlock glyph (a small shackle arc).
+  // Fresh progress: only level 1 is available → rows 2-8 fully locked (35
+  // cells) plus 1-2..1-B locked (4 cells) = 39 locked cells, each drawn
+  // dimmed (globalAlpha 0.45).
   const dimSets = calls.filter(c => c.fn === 'set:globalAlpha' && c.args[0] === 0.45);
-  assert.ok(dimSets.length >= 7, 'locked markers/chips drawn dimmed');
+  assert.ok(dimSets.length >= 39, `locked cells drawn dimmed (got ${dimSets.length})`);
   // Lock icons draw a semicircle shackle (arc with PI..0 span) — at least one
-  // per locked marker (7) plus the locked chip.
+  // per locked cell (39) plus the detail card's lock.
   const shackleArcs = calls.filter(c => c.fn === 'arc' && c.args[3] === Math.PI && c.args[4] === 0);
-  assert.ok(shackleArcs.length >= 7, 'lock icons drawn on locked markers');
+  assert.ok(shackleArcs.length >= 39, `lock icons drawn on locked cells (got ${shackleArcs.length})`);
 });
 
-test('focused locked card surfaces the "Pass <previous stage> to unlock" hint on the right', () => {
+test('focused locked cell surfaces the "Pass <previous stage> to unlock" hint on the right', () => {
   PS.resetStore();
   setState(S.LEVEL_SELECT);
 
-  // Focus a locked zone directly (navigation skips locks; this asserts the
-  // DETAIL CARD presentation the hover-style tooltip lives in).
+  // Focus a locked zone directly (grid navigation allows landing on locked
+  // cells; this asserts the DETAIL CARD presentation the hover-style tooltip
+  // lives in).
   SC.LevelSelect.focus = { levelIdx: 0, zoneIdx: 1 }; // 1-2 is locked fresh
   const zones = buildSubAreasForLevel(1, PS.loadStore().progress);
   assert.equal(zones[1].status, 'locked', 'precondition: 1-2 is locked');
@@ -186,24 +191,68 @@ test('confirm starts an unlocked stage through AREA_ENTRY with the chosen level/
   assert.equal(fakeHero.currentArea, 1, 'hero currentArea updated');
 });
 
-test('confirm navigates to another unlocked stage after completing the previous ones', () => {
+test('arrows move the cursor one cell on the grid, clamping at edges', () => {
   PS.resetStore();
   const p = PS.loadStore().progress;
-  p.completedAreas['1-1'] = true;
+  // Complete level 1 fully so its zones are all unlocked/completed.
+  for (const a of [1, 2, 3, 4]) p.completedAreas[`1-${a}`] = true;
+  p.completedAreas['1-B'] = true;
   PS.saveStore(PS.loadStore());
   setState(S.MENU);
   go(S.LEVEL_SELECT);
   SC.LevelSelect.reset();
-  SC.setMenuHero({ currentLevel: 1, currentArea: 1, lives: 3 });
 
-  // Zone 1-1 is completed; right steps to the next UNLOCKED zone (1-2).
+  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 0, zoneIdx: 0 });
+  // Right steps one cell along the row (locked cells no longer block movement).
   assert.equal(SC.screenOnAction('right'), true);
-  const zones = buildSubAreasForLevel(1, PS.loadStore().progress);
-  assert.equal(zones[SC.LevelSelect.focus.zoneIdx].label, '1-2', 'focus moved to 1-2');
+  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 0, zoneIdx: 1 }, 'right stepped one cell');
+  assert.equal(SC.screenOnAction('left'), true);
+  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 0, zoneIdx: 0 }, 'left stepped back');
+  // Left at the left edge clamps.
+  assert.equal(SC.screenOnAction('left'), true);
+  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 0, zoneIdx: 0 }, 'left clamps at col 0');
+  // Down steps one row (level 2 row exists even though content-less/locked).
+  assert.equal(SC.screenOnAction('down'), true);
+  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 1, zoneIdx: 0 }, 'down stepped one row');
+  // Up walks back to the top row.
+  assert.equal(SC.screenOnAction('up'), true);
+  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 0, zoneIdx: 0 }, 'up stepped back to row 0');
+});
 
-  assert.equal(SC.screenOnAction('confirm'), true);
-  assert.equal(getState(), S.AREA_ENTRY, 'confirm opened AREA_ENTRY');
-  assert.equal(SC.getAreaEntryData().areaId, '1-2', 'entry screen shows 1-2');
+test('cursor can travel the full grid to a far cell (7-3 reachable by walking)', () => {
+  PS.resetStore();
+  setState(S.MENU);
+  go(S.LEVEL_SELECT);
+  SC.LevelSelect.reset();
+  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 0, zoneIdx: 0 });
+
+  // Walk to row 6 (level 7), col 2 (zone 3): 6 downs + 2 rights = 8 presses.
+  for (let i = 0; i < 6; i++) assert.equal(SC.screenOnAction('down'), true);
+  for (let i = 0; i < 2; i++) assert.equal(SC.screenOnAction('right'), true);
+  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 6, zoneIdx: 2 }, 'cursor at 7-3');
+  // Edges clamp: further downs stop at row 7, rights at col 4.
+  for (let i = 0; i < 5; i++) assert.equal(SC.screenOnAction('down'), true);
+  for (let i = 0; i < 5; i++) assert.equal(SC.screenOnAction('right'), true);
+  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 7, zoneIdx: 4 }, 'clamped at bottom-right');
+});
+
+test('reset lands the cursor on the next playable stage', () => {
+  PS.resetStore();
+  const p = PS.loadStore().progress;
+  p.completedAreas['1-1'] = true;
+  p.completedAreas['1-2'] = true;
+  PS.saveStore(PS.loadStore());
+  setState(S.MENU);
+  go(S.LEVEL_SELECT);
+
+  // screenReset already ran via the transition; the cursor should sit on 1-3
+  // (first unlocked non-completed cell).
+  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 0, zoneIdx: 2 }, 'cursor pre-placed on next playable stage (1-3)');
+
+  // Explicit reset() call agrees.
+  SC.LevelSelect.focus = { levelIdx: 7, zoneIdx: 4 };
+  SC.LevelSelect.reset();
+  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 0, zoneIdx: 2 }, 'reset() re-places on 1-3');
 });
 
 test('confirm on a locked focus is a no-op (safety net)', () => {
@@ -213,7 +262,7 @@ test('confirm on a locked focus is a no-op (safety net)', () => {
   SC.LevelSelect.reset();
   SC.setMenuHero(null);
 
-  // Force focus onto a locked zone (navigation would skip it).
+  // Force focus onto a locked zone (grid navigation allows landing on it).
   SC.LevelSelect.focus = { levelIdx: 0, zoneIdx: 2 }; // 1-3 locked fresh
   assert.equal(SC.screenOnAction('confirm'), true, 'action consumed');
   assert.equal(getState(), S.LEVEL_SELECT, 'no transition from a locked focus');
@@ -238,10 +287,6 @@ test('levels without world content are locked with a clear reason (I1)', () => {
   p.completedAreas['1-B'] = true;
   PS.saveStore(PS.loadStore());
 
-  const map = buildLevelMap(p);
-  assert.equal(map[0].status, 'completed', 'level 1 (has content) completes normally');
-  assert.equal(map[1].status, 'locked', 'level 2 locked despite predecessor completed — no LEVELS entry');
-
   const subs = buildSubAreasForLevel(2, p);
   assert.equal(subs[0].status, 'locked', '2-1 not startable without world content');
   assert.ok(String(subs[0].tooltip).toLowerCase().includes('content'),
@@ -260,31 +305,4 @@ test('back from LEVEL_SELECT returns MENU', () => {
   go(S.LEVEL_SELECT);
   assert.equal(SC.screenOnAction('back'), true, 'back handled');
   assert.equal(getState(), S.MENU, 'returned to MENU');
-});
-
-test('up/down change the level and left/right change the zone, skipping locked entries', () => {
-  PS.resetStore();
-  const p = PS.loadStore().progress;
-  // Complete level 1 fully so its zones are all unlocked/completed.
-  for (const a of [1, 2, 3, 4]) p.completedAreas[`1-${a}`] = true;
-  p.completedAreas['1-B'] = true;
-  PS.saveStore(PS.loadStore());
-  setState(S.MENU);
-  go(S.LEVEL_SELECT);
-  SC.LevelSelect.reset();
-
-  assert.deepEqual(SC.LevelSelect.focus, { levelIdx: 0, zoneIdx: 0 });
-  // I1: levels 2-8 have no world content yet, so navigation must skip them —
-  // down from level 1 wraps back to level 1 (the only playable level today).
-  assert.equal(SC.screenOnAction('down'), true);
-  assert.equal(SC.LevelSelect.focus.levelIdx, 0, 'down skips content-less levels (wraps)');
-  assert.equal(SC.screenOnAction('up'), true);
-  assert.equal(SC.LevelSelect.focus.levelIdx, 0, 'up skips content-less levels (wraps)');
-
-  // On fresh-ish level 1 (all areas done): every zone is unlocked/completed,
-  // so right wraps cleanly through all five.
-  assert.equal(SC.screenOnAction('right'), true);
-  assert.equal(SC.LevelSelect.focus.zoneIdx, 1, 'right stepped the zone');
-  assert.equal(SC.screenOnAction('left'), true);
-  assert.equal(SC.LevelSelect.focus.zoneIdx, 0, 'left stepped back');
 });

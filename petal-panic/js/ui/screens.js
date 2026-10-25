@@ -861,19 +861,22 @@ import { loadStore, updateSettings } from '../systems/progressStore.js';
 import { buildBossRushCards } from './bossRushModel.js';
 
 // =============================================================================
-// LEVEL SELECT SCREEN (menu-hub plan §3.2)
+// LEVEL SELECT SCREEN (menu-hub plan §3.2 — grid rework)
 //
 // Two-pane canvas screen in the hub's card/focus style:
-//   left  — world map: 8 level markers in one row (available = circle,
-//           completed = gold star, locked = lock icon; selected = pin above)
-//           plus a row of 5 sub-area chips for the selected level (X-1..X-4, X-B)
-//   right — detail card for the FOCUSED sub-area: status line, and for locked
+//   left  — classic GRID of stage cells: 8 rows (levels 1..8) × 5 columns
+//           (zones 1,2,3,4,B). Each cell keeps the sub-area chip look; locked
+//           cells are dimmed with a padlock, completed cells get a gold star.
+//           Level names sit to the left of each row. The cursor is one cell.
+//   right — detail card for the FOCUSED cell: status line, and for locked
 //           cards the "Pass <previous stage> to unlock" hint (the model's
 //           tooltip); for unlocked/completed cards a play/replay hint.
-// Navigation: up/down change the level, left/right change the zone within the
-// selected level, confirm starts the focused UNLOCKED zone through AREA_ENTRY
-// (startArea → showAreaEntry), back returns MENU. Locked levels/zones are
-// skipped by navigation so focus can only rest on playable content.
+// Navigation: up/down/left/right move the cursor one cell on the grid (edges
+// clamp, no wrap). Locked cells CAN be focused so you always see what blocks
+// them — confirm on a locked cell is a no-op. Confirm starts the focused
+// UNLOCKED zone through AREA_ENTRY (startArea → showAreaEntry), back returns
+// MENU. On entry the cursor lands on the next playable stage (first unlocked
+// non-completed cell, else first unlocked, else top-left).
 // The zone+checkpoint installation for the LEVEL_SELECT→AREA_ENTRY transition
 // is owned by update.js's area-entry install hook (generalized from MENU).
 // =============================================================================
@@ -881,19 +884,19 @@ import { buildBossRushCards } from './bossRushModel.js';
 // --- Level-select layout constants ------------------------------------------
 const LS_TITLE_Y = 60;               // "LEVEL SELECT" marquee baseline
 const LS_TITLE_SIZE = 44;
-const LS_MAP_Y = 170;                // world-map marker centers
-const LS_MARKER_R = 16;              // marker circle radius
-const LS_MAP_X0 = 90;                // first marker center X
-const LS_MAP_DX = 100;               // horizontal spacing between markers
-const LS_CHIP_Y = 300;               // sub-area chip centers
-const LS_CHIP_W = 74;                // chip width
-const LS_CHIP_H = 44;                // chip height
-const LS_CHIP_X0 = 90;               // first chip center X
-const LS_CHIP_DX = 84;               // horizontal spacing between chips
-const LS_CARD_X = 560;               // right detail-card left edge
-const LS_CARD_Y = 120;               // right detail-card top edge
-const LS_CARD_W = 340;
-const LS_CARD_H = 240;
+const LS_GRID_COLS = 5;              // zones per level row (1,2,3,4,B)
+const LS_GRID_ROWS = 8;              // levels 1..8
+const LS_CELL_W = 92;                // cell width
+const LS_CELL_H = 46;                // cell height
+const LS_CELL_DX = 104;              // horizontal spacing between cell centers
+const LS_CELL_DY = 54;               // vertical spacing between cell centers
+const LS_NAME_X = 34;                // level-name text center X (left of grid)
+const LS_GRID_CX0 = 170;             // first column center X
+const LS_GRID_CY0 = 138;             // first row center Y
+const LS_CARD_X = 700;               // right detail-card left edge
+const LS_CARD_Y = 110;               // right detail-card top edge
+const LS_CARD_W = 240;
+const LS_CARD_H = 320;
 const LS_NAV_Y = 480;                // keycap nav bar Y
 
 /** Draw a small padlock glyph centered at (x, y) with `size` px body height. */
@@ -914,12 +917,16 @@ function drawLockIcon(ctx, x, y, size, color) {
 }
 
 export const LevelSelect = {
-  /** Focus is an index into the model arrays: levelIdx (0..7), zoneIdx (0..4). */
+  /** Focus is a grid cell: levelIdx (0..7) × zoneIdx (0..4). */
   focus: { levelIdx: 0, zoneIdx: 0 },
 
   /** Live model data (rebuilt every draw + onAction so progress changes show). */
   _map() { return buildLevelMap(loadStore().progress); },
   _zones(levelIdx) { return buildSubAreasForLevel(this._map()[levelIdx].level, loadStore().progress); },
+
+  /** Cell center coordinates for (row, col). */
+  _cellX(col) { return LS_GRID_CX0 + col * LS_CELL_DX; },
+  _cellY(row) { return LS_GRID_CY0 + row * LS_CELL_DY; },
 
   /** @param {CanvasRenderingContext2D} ctx */
   draw(ctx) {
@@ -932,115 +939,69 @@ export const LevelSelect = {
     drawMarqueeTitle(ctx, 'LEVEL SELECT', VIEW_W / 2, LS_TITLE_Y, LS_TITLE_SIZE, { color: CREAM });
 
     const map = this._map();
-    const zones = this._zones(this.focus.levelIdx);
-    const selLevel = map[this.focus.levelIdx];
-    const focused = zones[this.focus.zoneIdx];
 
-    // --- Left pane: world map (8 level markers in one row) -------------------
-    map.forEach((m, i) => {
-      const x = LS_MAP_X0 + i * LS_MAP_DX;
-      const selected = i === this.focus.levelIdx;
-      if (selected) {
-        // Pin above the selected marker.
-        ctx.save();
-        ctx.fillStyle = PINK;
-        ctx.beginPath();
-        ctx.moveTo(x, LS_MAP_Y - LS_MARKER_R - 4);
-        ctx.lineTo(x - 8, LS_MAP_Y - LS_MARKER_R - 18);
-        ctx.lineTo(x + 8, LS_MAP_Y - LS_MARKER_R - 18);
-        ctx.closePath();
-        ctx.fill();
-        ctx.font = `bold 13px ${FONT_UI}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(m.name.toUpperCase(), x, LS_MAP_Y - LS_MARKER_R - 30);
-        ctx.restore();
-      }
+    // --- Left pane: 8×5 grid of stage cells ----------------------------------
+    for (let r = 0; r < LS_GRID_ROWS; r++) {
+      const m = map[r];
+      const y = this._cellY(r);
+      // Level name to the left of the row.
       ctx.save();
-      if (m.status === 'locked') {
-        // Dimmed disc + lock icon.
-        ctx.globalAlpha = 0.45;
-        ctx.fillStyle = '#2a2a3a';
-        ctx.beginPath();
-        ctx.arc(x, LS_MAP_Y, LS_MARKER_R, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        drawLockIcon(ctx, x, LS_MAP_Y, 14, '#8a8a9a');
-      } else if (m.status === 'completed') {
-        ctx.fillStyle = GOLD;
-        ctx.beginPath();
-        ctx.arc(x, LS_MAP_Y, LS_MARKER_R, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#1a1a2e';
-        ctx.font = `bold 16px ${FONT_UI}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('★', x, LS_MAP_Y + 1);
-      } else {
-        ctx.fillStyle = selected ? PINK : '#cfc4a8';
-        ctx.beginPath();
-        ctx.arc(x, LS_MAP_Y, LS_MARKER_R, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      // Level number under every marker.
       ctx.globalAlpha = m.status === 'locked' ? 0.45 : 1;
-      ctx.fillStyle = CREAM;
-      ctx.font = `12px ${FONT_UI}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText(String(m.level), x, LS_MAP_Y + LS_MARKER_R + 4);
-      ctx.restore();
-    });
-
-    // --- Left pane: 5 sub-area chips for the selected level ------------------
-    ctx.save();
-    ctx.font = `14px ${FONT_UI}`;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#b9a98a';
-    ctx.fillText(`${selLevel.level} · ${selLevel.name.toUpperCase()} — AREAS`, LS_MAP_X0 - 40, LS_CHIP_Y - 38);
-    ctx.restore();
-
-    zones.forEach((z, i) => {
-      const x = LS_CHIP_X0 + i * LS_CHIP_DX;
-      const cx = x - LS_CHIP_W / 2;
-      const cy = LS_CHIP_Y - LS_CHIP_H / 2;
-      const focusedChip = i === this.focus.zoneIdx;
-      ctx.save();
-      // Chip background — dimmed when locked, pink pill when focused.
-      if (focusedChip) {
-        ctx.fillStyle = COLOR_PILL_FILL;
-        roundRect(ctx, cx, cy, LS_CHIP_W, LS_CHIP_H, 8);
-        ctx.fill();
-        ctx.strokeStyle = COLOR_PILL_STROKE;
-        ctx.lineWidth = 2;
-        roundRect(ctx, cx, cy, LS_CHIP_W, LS_CHIP_H, 8);
-        ctx.stroke();
-      }
-      ctx.globalAlpha = z.status === 'locked' ? 0.45 : 1;
-      ctx.strokeStyle = z.boss ? GOLD : '#8a7f68';
-      ctx.lineWidth = 1.5;
-      roundRect(ctx, cx, cy, LS_CHIP_W, LS_CHIP_H, 8);
-      ctx.stroke();
-      // Label + status glyph.
-      ctx.fillStyle = focusedChip ? COLOR_OPT_FOCUSED : CREAM;
-      ctx.font = `bold 17px ${FONT_UI}`;
+      ctx.fillStyle = m.status === 'completed' ? GOLD : CREAM;
+      ctx.font = `bold 13px ${FONT_UI}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      if (z.status === 'locked') {
-        drawLockIcon(ctx, x, LS_CHIP_Y - 8, 12, '#8a8a9a');
-        ctx.globalAlpha = 0.45;
-        ctx.font = `13px ${FONT_UI}`;
-        ctx.fillText(z.label, x, LS_CHIP_Y + 12);
-      } else if (z.status === 'completed') {
-        ctx.fillText(`${z.label} ★`, x, LS_CHIP_Y);
-      } else {
-        ctx.fillText(z.label, x, LS_CHIP_Y);
-      }
+      ctx.fillText(m.name.toUpperCase(), LS_NAME_X, y - 9);
+      ctx.font = `11px ${FONT_UI}`;
+      ctx.fillStyle = '#b9a98a';
+      ctx.fillText(`LVL ${m.level}`, LS_NAME_X, y + 9);
       ctx.restore();
-    });
 
-    // --- Right pane: detail card for the focused sub-area --------------------
+      const zones = this._zones(r);
+      for (let c = 0; c < LS_GRID_COLS; c++) {
+        const z = zones[c];
+        const x = this._cellX(c);
+        const cx = x - LS_CELL_W / 2;
+        const cy = y - LS_CELL_H / 2;
+        const focusedCell = r === this.focus.levelIdx && c === this.focus.zoneIdx;
+        ctx.save();
+        // Focused cell: pink pill behind everything else.
+        if (focusedCell) {
+          ctx.fillStyle = COLOR_PILL_FILL;
+          roundRect(ctx, cx - 3, cy - 3, LS_CELL_W + 6, LS_CELL_H + 6, 10);
+          ctx.fill();
+          ctx.strokeStyle = COLOR_PILL_STROKE;
+          ctx.lineWidth = 2;
+          roundRect(ctx, cx - 3, cy - 3, LS_CELL_W + 6, LS_CELL_H + 6, 10);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = z.status === 'locked' ? 0.45 : 1;
+        ctx.strokeStyle = z.boss ? GOLD : '#8a7f68';
+        ctx.lineWidth = 1.5;
+        roundRect(ctx, cx, cy, LS_CELL_W, LS_CELL_H, 8);
+        ctx.stroke();
+        // Label + status glyph.
+        ctx.fillStyle = focusedCell ? COLOR_OPT_FOCUSED : CREAM;
+        ctx.font = `bold 17px ${FONT_UI}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (z.status === 'locked') {
+          drawLockIcon(ctx, x, y - 8, 12, '#8a8a9a');
+          ctx.globalAlpha = 0.45;
+          ctx.font = `13px ${FONT_UI}`;
+          ctx.fillText(z.label, x, y + 12);
+        } else if (z.status === 'completed') {
+          ctx.fillText(`${z.label} ★`, x, y);
+        } else {
+          ctx.fillText(z.label, x, y);
+        }
+        ctx.restore();
+      }
+    }
+
+    // --- Right pane: detail card for the focused cell ------------------------
+    const selLevel = map[this.focus.levelIdx];
+    const focused = this._zones(this.focus.levelIdx)[this.focus.zoneIdx];
     ctx.save();
     ctx.fillStyle = 'rgba(255,255,255,0.04)';
     roundRect(ctx, LS_CARD_X, LS_CARD_Y, LS_CARD_W, LS_CARD_H, 12);
@@ -1058,7 +1019,7 @@ export const LevelSelect = {
     drawMarqueeTitle(ctx, focused.label, ccx, LS_CARD_Y + 55, 40, {
       color: focused.status === 'completed' ? GOLD : CREAM,
     });
-    ctx.font = `16px ${FONT_UI}`;
+    ctx.font = `15px ${FONT_UI}`;
     ctx.fillStyle = '#b9a98a';
     ctx.fillText(focused.boss ? `${selLevel.name} — BOSS ZONE` : `${selLevel.name} — AREA ${focused.zone}`, ccx, LS_CARD_Y + 95);
 
@@ -1066,7 +1027,7 @@ export const LevelSelect = {
     if (focused.status === 'locked') {
       drawLockIcon(ctx, ccx, LS_CARD_Y + 140, 22, '#8a8a9a');
       ctx.globalAlpha = 1;
-      ctx.font = `17px ${FONT_UI}`;
+      ctx.font = `16px ${FONT_UI}`;
       ctx.fillStyle = '#ff9f9f';
       ctx.fillText(focused.tooltip ?? '', ccx, LS_CARD_Y + 175);
       ctx.font = `13px ${FONT_UI}`;
@@ -1091,65 +1052,38 @@ export const LevelSelect = {
 
     // --- Keycap nav bar -------------------------------------------------------
     drawNavBar(ctx, VIEW_W / 2, LS_NAV_Y, navHintEntries([
-      { actions: ['up', 'down'], label: 'Level', opts: { mode: 'select_layout' } },
-      { actions: ['left', 'right'], label: 'Area', opts: { mode: 'select_layout' } },
+      { actions: ['up', 'down', 'left', 'right'], label: 'Browse', opts: { mode: 'select_layout' } },
       { action: 'confirm', label: 'Start', opts: { mode: 'select_layout' } },
       { action: 'back', label: 'Menu', opts: { mode: 'select_layout' } },
     ]));
   },
 
-  /** Step the level focus by dir, skipping locked levels (wrap-around). */
-  _moveLevel(dir) {
-    const map = this._map();
-    let next = this.focus.levelIdx;
-    for (let step = 0; step < map.length; step++) {
-      next = (next + dir + map.length) % map.length;
-      if (map[next].status !== 'locked') {
-        this.focus.levelIdx = next;
-        this._clampZone();
-        return;
-      }
-    }
-  },
-
-  /** Step the zone focus by dir, skipping locked zones (wrap-around). */
-  _moveZone(dir) {
-    const zones = this._zones(this.focus.levelIdx);
-    let next = this.focus.zoneIdx;
-    for (let step = 0; step < zones.length; step++) {
-      next = (next + dir + zones.length) % zones.length;
-      if (zones[next].status !== 'locked') { this.focus.zoneIdx = next; return; }
-    }
-  },
-
-  /** Keep the zone focus on an unlocked entry after the level changes. */
-  _clampZone() {
-    const zones = this._zones(this.focus.levelIdx);
-    if (zones[this.focus.zoneIdx]?.status === 'locked') {
-      const open = zones.findIndex(z => z.status !== 'locked');
-      this.focus.zoneIdx = open >= 0 ? open : 0;
-    }
+  /** Move the cursor one cell on the grid; edges clamp (no wrap). */
+  _moveGrid(dRow, dCol) {
+    this.focus.levelIdx = Math.max(0, Math.min(LS_GRID_ROWS - 1, this.focus.levelIdx + dRow));
+    this.focus.zoneIdx = Math.max(0, Math.min(LS_GRID_COLS - 1, this.focus.zoneIdx + dCol));
   },
 
   /**
-   * Handle semantic input. Up/down change the level, left/right the zone,
-   * confirm starts the focused unlocked zone through AREA_ENTRY, back
-   * returns MENU.
+   * Handle semantic input. Arrows move the cursor one cell on the 8×5 grid
+   * (locked cells can be focused — they show their gate in the detail card),
+   * confirm starts the focused UNLOCKED zone through AREA_ENTRY, back returns
+   * MENU.
    * @returns {boolean} whether the action was handled
    */
   onAction(action) {
     switch (action) {
       case 'up':
-        this._moveLevel(-1);
+        this._moveGrid(-1, 0);
         return true;
       case 'down':
-        this._moveLevel(1);
+        this._moveGrid(1, 0);
         return true;
       case 'left':
-        this._moveZone(-1);
+        this._moveGrid(0, -1);
         return true;
       case 'right':
-        this._moveZone(1);
+        this._moveGrid(0, 1);
         return true;
       case 'back':
         if (tryTransition(S.MENU)) console.log('[screens] LEVEL_SELECT → MENU (back)');
@@ -1181,7 +1115,26 @@ export const LevelSelect = {
     return false;
   },
 
-  reset() { this.focus = { levelIdx: 0, zoneIdx: 0 }; },
+  /**
+   * Reset on entry: land the cursor on the next playable stage — first
+   * unlocked non-completed cell scanning rows top-to-bottom; if everything
+   * unlocked is already completed, the first unlocked cell; else top-left.
+   */
+  reset() {
+    let fallback = null;
+    outer:
+    for (let r = 0; r < LS_GRID_ROWS; r++) {
+      const zones = this._zones(r);
+      for (let c = 0; c < LS_GRID_COLS; c++) {
+        if (zones[c].status === 'unlocked') {
+          this.focus = { levelIdx: r, zoneIdx: c };
+          break outer;
+        }
+        if (fallback === null && zones[c].status !== 'locked') fallback = { levelIdx: r, zoneIdx: c };
+      }
+    }
+    if (fallback && !this.focus.levelIdx && !this.focus.zoneIdx) this.focus = fallback;
+  },
 };
 
 // =============================================================================
@@ -1212,18 +1165,19 @@ export const LevelSelect = {
 // --- Boss-rush layout constants ---------------------------------------------
 const BR_TITLE_Y = 60;                 // "BOSS RUSH" marquee baseline
 const BR_TITLE_SIZE = 44;
-const BR_CARD_W = 150;                 // card width
+const BR_CARD_W = 132;                 // card width
 const BR_CARD_H = 190;                 // card height
+const BR_PAD_X = 16;                   // inner side padding (art box inset)
 const BR_GAP_X = 18;                   // horizontal gap between cards
 const BR_GAP_Y = 18;                   // vertical gap between rows
 const BR_COLS = 4;                     // 4 × 2 grid of 8 cards
 const BR_GRID_X = 50;                  // first card's left edge
 const BR_GRID_Y = 120;                 // first row's top edge
 const BR_CARD_ART_H = 110;             // art box height inside a card
-const BR_DETAIL_X = 700;               // right detail-card left edge
-const BR_DETAIL_Y = 120;               // right detail-card top edge
-const BR_DETAIL_W = 230;
-const BR_DETAIL_H = 300;
+const BR_DETAIL_X = 650;               // right detail-card left edge (grid end 632 + 18 gap)
+const BR_DETAIL_Y = 120;               // top matches first grid row top
+const BR_DETAIL_W = 290;               // fills to x=940 (20px viewport margin)
+const BR_DETAIL_H = 398;               // 120..518: matches both grid rows' extent
 const BR_NAV_Y = 480;                  // keycap nav bar Y
 
 /** Boss card art cache (loaded lazily; drawFitted guards .complete). */
@@ -1235,6 +1189,46 @@ function bossCardImage(bossId) {
     bossCardImages[bossId] = img;
   }
   return bossCardImages[bossId];
+}
+
+/**
+ * Draw boss card art COVER-fit into a box: fit the height, center-crop the
+ * sides. The source rect is computed from the image's natural size so no
+ * asset changes are needed. `grayscale` renders B&W (unselected/locked look);
+ * false renders full color (selected). Falls back to plain color when the
+ * canvas has no filter support.
+ */
+function drawBossCardCover(ctx, img, x, y, w, h, grayscale) {
+  if (!img || !img.complete || img.naturalWidth === 0) return false;
+  const scale = h / img.naturalHeight;
+  const srcW = w / scale;
+  const srcX = (img.naturalWidth - srcW) / 2;
+  ctx.save();
+  if (grayscale && 'filter' in ctx) ctx.filter = 'grayscale(1)';
+  ctx.drawImage(img, srcX, 0, srcW, img.naturalHeight, x, y, w, h);
+  ctx.restore();
+  return true;
+}
+
+/**
+ * Draw `text` centered at (cx, cy) in bold FONT_UI, shrinking the font from
+ * `maxSize` down to `minSize` until it fits within `maxW` px. Returns the size
+ * used. (Lilita One is wider than typical UI fonts — long boss names like
+ * 'Ratchet Rumbelow' need this on the small grid cards.)
+ */
+function drawFittingText(ctx, text, cx, cy, maxW, maxSize, minSize, color) {
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  let size = maxSize;
+  while (size > minSize) {
+    ctx.font = `bold ${size}px ${FONT_UI}`;
+    if (ctx.measureText(text).width <= maxW) break;
+    size -= 0.5;
+  }
+  ctx.font = `bold ${size}px ${FONT_UI}`;
+  ctx.fillStyle = color;
+  ctx.fillText(text, cx, cy);
+  return size;
 }
 
 export const BossRush = {
@@ -1277,44 +1271,40 @@ export const BossRush = {
 
       const cx = x + BR_CARD_W / 2;
       const artY = y + 14;
+      // Boss art on EVERY card (spoilers accepted by design): cover-fit into
+      // the art box. Selected → full color; unselected → grayscale B&W.
+      const img = bossCardImage(card.bossId);
+      if (img?.complete && img.naturalWidth > 0) {
+        drawBossCardCover(ctx, img, x + BR_PAD_X, artY, BR_CARD_W - 2 * BR_PAD_X, BR_CARD_ART_H, !isFocused);
+      } else {
+        drawPlaceholder(ctx, x + BR_PAD_X, artY, BR_CARD_W - 2 * BR_PAD_X, BR_CARD_ART_H, 'boss card');
+      }
       if (locked) {
-        // Silhouette disc + lock icon — NO image, NO name (plan §3.3: hide
-        // locked bosses completely).
-        ctx.globalAlpha = 0.45;
-        ctx.fillStyle = '#2a2a3a';
-        ctx.beginPath();
-        ctx.arc(cx, artY + BR_CARD_ART_H / 2, BR_CARD_ART_H / 2 - 8, 0, Math.PI * 2);
+        // Locked overlay: dim wash + lock icon over the B&W art.
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = '#0d0d1a';
+        roundRect(ctx, x + BR_PAD_X, artY, BR_CARD_W - 2 * BR_PAD_X, BR_CARD_ART_H, 6);
         ctx.fill();
         ctx.globalAlpha = 1;
-        drawLockIcon(ctx, cx, artY + BR_CARD_ART_H / 2, 26, '#8a8a9a');
-        ctx.font = `13px ${FONT_UI}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#8a8a9a';
-        ctx.fillText(`LEVEL ${card.index}`, cx, y + BR_CARD_H - 22);
-      } else {
-        // Unlocked/defeated: boss card art + name.
-        const img = bossCardImage(card.bossId);
-        if (img?.complete && img.naturalWidth > 0) {
-          drawFitted(ctx, img, x + 10, artY, BR_CARD_W - 20, BR_CARD_ART_H);
-        } else {
-          drawPlaceholder(ctx, x + 10, artY, BR_CARD_W - 20, BR_CARD_ART_H, 'boss card');
-        }
-        if (defeated) {
-          ctx.globalAlpha = 0.75;
-          ctx.fillStyle = GOLD;
-          ctx.font = `bold 18px ${FONT_UI}`;
-          ctx.textAlign = 'right';
-          ctx.textBaseline = 'top';
-          ctx.fillText('★', x + BR_CARD_W - 12, y + 8);
-          ctx.globalAlpha = 1;
-        }
-        ctx.font = `bold 15px ${FONT_UI}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = isFocused ? COLOR_OPT_FOCUSED : CREAM;
-        ctx.fillText(card.name, cx, y + BR_CARD_H - 22);
+        drawLockIcon(ctx, cx, artY + BR_CARD_ART_H / 2, 26, '#c9c9d6');
       }
+      if (defeated) {
+        ctx.globalAlpha = 0.75;
+        ctx.fillStyle = GOLD;
+        ctx.font = `bold 18px ${FONT_UI}`;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText('★', x + BR_CARD_W - 14, y + 8);
+        ctx.globalAlpha = 1;
+      }
+      // "LEVEL n" thin white above the name.
+      ctx.font = `11px ${FONT_UI}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.fillText(`LEVEL ${card.index}`, cx, y + BR_CARD_H - 36);
+      drawFittingText(ctx, card.name, cx, y + BR_CARD_H - 18, BR_CARD_W - 2 * BR_PAD_X, 15, 10,
+        isFocused ? COLOR_OPT_FOCUSED : CREAM);
       ctx.restore();
     });
 
@@ -1332,38 +1322,53 @@ export const BossRush = {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     if (focused.status === 'locked') {
-      // Locked: identity hidden — lock glyph + the model's tooltip text.
-      drawLockIcon(ctx, ccx, BR_DETAIL_Y + 80, 34, '#8a8a9a');
+      // Locked: B&W boss art (spoilers accepted) + lock glyph + tooltip.
+      drawMarqueeTitle(ctx, focused.name.toUpperCase(), ccx, BR_DETAIL_Y + 50, 26, {
+        color: CREAM,
+      });
+      const limg = bossCardImage(focused.bossId);
+      if (limg?.complete && limg.naturalWidth > 0) {
+        drawBossCardCover(ctx, limg, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, 220, true);
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = '#0d0d1a';
+        roundRect(ctx, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, 220, 6);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        drawLockIcon(ctx, ccx, BR_DETAIL_Y + 188, 34, '#e8e8f2');
+      } else {
+        drawPlaceholder(ctx, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, 220, 'boss card');
+        drawLockIcon(ctx, ccx, BR_DETAIL_Y + 188, 34, '#8a8a9a');
+      }
       ctx.font = `17px ${FONT_UI}`;
       ctx.fillStyle = '#ff9f9f';
-      ctx.fillText(focused.tooltip ?? '', ccx, BR_DETAIL_Y + 150);
+      ctx.fillText(focused.tooltip ?? '', ccx, BR_DETAIL_Y + 330);
       ctx.font = `13px ${FONT_UI}`;
       ctx.fillStyle = '#8a8a9a';
-      ctx.fillText('LOCKED', ccx, BR_DETAIL_Y + 185);
+      ctx.fillText('LOCKED', ccx, BR_DETAIL_Y + 362);
     } else {
-      // Unlocked/defeated: boss name headline + card art + status line.
-      drawMarqueeTitle(ctx, focused.name.toUpperCase(), ccx, BR_DETAIL_Y + 45, 26, {
+      // Unlocked/defeated: boss name headline + COLOR card art + status line.
+      drawMarqueeTitle(ctx, focused.name.toUpperCase(), ccx, BR_DETAIL_Y + 50, 26, {
         color: focused.status === 'defeated' ? GOLD : CREAM,
       });
       const img = bossCardImage(focused.bossId);
       if (img?.complete && img.naturalWidth > 0) {
-        drawFitted(ctx, img, BR_DETAIL_X + 25, BR_DETAIL_Y + 75, BR_DETAIL_W - 50, 140);
+        drawBossCardCover(ctx, img, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, 220, false);
       } else {
-        drawPlaceholder(ctx, BR_DETAIL_X + 25, BR_DETAIL_Y + 75, BR_DETAIL_W - 50, 140, 'boss card');
+        drawPlaceholder(ctx, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, 220, 'boss card');
       }
       ctx.font = `17px ${FONT_UI}`;
       if (focused.status === 'defeated') {
         ctx.fillStyle = GOLD;
-        ctx.fillText('DEFEATED ★', ccx, BR_DETAIL_Y + 245);
+        ctx.fillText('DEFEATED ★', ccx, BR_DETAIL_Y + 330);
         ctx.font = `14px ${FONT_UI}`;
         ctx.fillStyle = '#b9a98a';
-        ctx.fillText('Press Confirm to fight again', ccx, BR_DETAIL_Y + 272);
+        ctx.fillText('Press Confirm to fight again', ccx, BR_DETAIL_Y + 362);
       } else {
         ctx.fillStyle = COLOR_OPT_FOCUSED;
-        ctx.fillText('READY TO FIGHT', ccx, BR_DETAIL_Y + 245);
+        ctx.fillText('READY TO FIGHT', ccx, BR_DETAIL_Y + 330);
         ctx.font = `14px ${FONT_UI}`;
         ctx.fillStyle = '#b9a98a';
-        ctx.fillText('Press Confirm to start', ccx, BR_DETAIL_Y + 272);
+        ctx.fillText('Press Confirm to start', ccx, BR_DETAIL_Y + 362);
       }
     }
     ctx.restore();
@@ -1371,6 +1376,7 @@ export const BossRush = {
     // --- Keycap nav bar -------------------------------------------------------
     drawNavBar(ctx, VIEW_W / 2, BR_NAV_Y, navHintEntries([
       { actions: ['left', 'right'], label: 'Boss', opts: { mode: 'select_layout' } },
+      { actions: ['up', 'down'], label: 'Row', opts: { mode: 'select_layout' } },
       { action: 'confirm', label: 'Fight', opts: { mode: 'select_layout' } },
       { action: 'back', label: 'Menu', opts: { mode: 'select_layout' } },
     ]));
@@ -1386,21 +1392,40 @@ export const BossRush = {
     }
   },
 
+  /** Move one ROW on the grid (up/down): same column, adjacent row. Clamps at
+   * the top/bottom rows; a locked card in the target cell is skipped to the
+   * next unlocked card in that row (leftmost first). */
+  _moveRow(dRow) {
+    const cards = this._cards();
+    const fromCol = this.focus % BR_COLS;
+    const targetRow = Math.max(0, Math.min(1, Math.floor(this.focus / BR_COLS) + dRow));
+    if (targetRow === Math.floor(this.focus / BR_COLS)) return; // clamped
+    for (let col = 0; col < BR_COLS; col++) {
+      const idx = targetRow * BR_COLS + ((fromCol + col) % BR_COLS);
+      if (cards[idx].status !== 'locked') { this.focus = idx; return; }
+    }
+  },
+
   /**
-   * Handle semantic input. Left/right AND up/down step the boss focus (skipping
-   * locked cards), confirm starts the focused unlocked boss through
+   * Handle semantic input. Left/right step along the row (skipping locked
+   * cards, wrap-around); up/down move one ROW on the grid (same column,
+   * clamped at the edges). Confirm starts the focused unlocked boss through
    * AREA_ENTRY, back returns MENU.
    * @returns {boolean} whether the action was handled
    */
   onAction(action) {
     switch (action) {
       case 'left':
-      case 'up':
         this._move(-1);
         return true;
       case 'right':
-      case 'down':
         this._move(1);
+        return true;
+      case 'up':
+        this._moveRow(-1);
+        return true;
+      case 'down':
+        this._moveRow(1);
         return true;
       case 'back':
         if (tryTransition(S.MENU)) console.log('[screens] BOSS_RUSH → MENU (back)');

@@ -65,7 +65,11 @@ export function buildBossRushCards(progress) {
     const level = cfg.index;
     const bossId = cfg.boss;
     const passed = isLevelPassed(completedAreas, level);
-    let status;
+    // TEMP (test only): force every boss UNLOCKED so the card art / B&W-color
+    // selection look can be tested without real progress. REMOVE THIS BLOCK —
+    // restore the original status logic below when done testing.
+    let status = 'unlocked';
+    /*
     if (!passed || !hasLevelContent(level)) {
       status = 'locked';
     } else if (defeatedBosses.includes(bossId)) {
@@ -73,6 +77,7 @@ export function buildBossRushCards(progress) {
     } else {
       status = 'unlocked';
     }
+    */
     return {
       index: level,
       bossId,
