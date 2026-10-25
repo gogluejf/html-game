@@ -236,3 +236,16 @@ Acceptance: defeating a boss records defeatedBosses
 Acceptance: defeating a boss unlocks the matching media clip
 Acceptance: defeating the final boss unlocks the ending media card
 Verification: node --input-type=module -e "import('./petal-panic/js/systems/lifecycle.js').then(m => console.log(typeof m.showLevelReward))"
+
+---
+
+## AS-BUILT ADDENDUM (2026-10-24, post-completion)
+
+Deviations/additions from execution that override the original spec where they conflict:
+
+1. **Boss Rush post-victory routing (§3.3):** after the normal victory summary (REWARD), the player returns to the BOSS_RUSH screen at the SAME focus position — NO auto-advance, defeated boss starred. Implemented via `_bossRushReturn` flag in lifecycle.js, consumed in rewardOnAction with priority over the final-level END_OF_GAME route. (User decision 2026-10-24.)
+2. **Autosave:** saveMeta is written automatically on AREA EXIT (next area as resume point) and on BOSS DEFEAT (next level's area 1), in addition to manual Save & Quit. Continue/hasSave() consume it unchanged.
+3. **Content gate:** levels without world content (LEVELS currently defines only Level 1) are visible-but-locked in Level Select / Boss Rush ("No content yet — coming soon") instead of starting Level 1 geometry.
+4. **Story mode caveat:** with single-level content, the Level 1 story boss currently routes to END_OF_GAME (final-level check keys off playable LEVELS). Media unlock correctly keys off LEVEL_CONFIGS (8). Corrects itself when levels 2–8 land.
+
+Living source of truth for the shipped flow: `petal-panic/docs/architecture/game-flow.md`.
