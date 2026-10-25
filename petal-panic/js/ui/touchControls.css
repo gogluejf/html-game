@@ -13,6 +13,11 @@
 
 .pp-touch.hidden { display: none; }
 
+/* Hide the debug bar + readout in landscape (gamepad stays visible). */
+@media (orientation: landscape) {
+  .pp-debugbar, .pp-readout { display: none !important; }
+}
+
 .pp-touch .pp-ctl { pointer-events: auto; touch-action: none; }
 
 /* --- Top debug bar ---------------------------------------------------------- */
