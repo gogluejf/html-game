@@ -103,6 +103,8 @@ defineMacro('skyMissile', {
       { type: 'surface-target-marker', desc: 'landing warning fixed at the impact point for the whole warning window' },
     ],
     params: [
+      { key: 'blastType', desc: 'explosion | shockwave | napalm | mine — payload on impact' },
+      { key: 'mineType', desc: 'explosion | shockwave (mine payload)' },
       { key: 'x', desc: 'impact x (world) — marker and drop share it' },
       { key: 'groundY', desc: 'fallback impact y; null → highest surface in the drop column' },
       { key: 'timeToTarget', desc: 'seconds between marker and impact (survival window)' },
@@ -112,7 +114,6 @@ defineMacro('skyMissile', {
       { key: 'team', desc: 'who the falling carrier hurts' },
       { key: 'blastTeam', desc: 'who the blast hurts' },
       { key: 'size', desc: 'carrier box size (px)' },
-      { key: 'mineType', desc: 'explosion | shockwave (mine payload)' },
       { key: 'mineTtl', desc: 'resting mine seconds; null = contact only' },
       { key: 'blinkDuration', desc: 'mine warning seconds' },
       { key: 'blastType', desc: 'explosion | shockwave | napalm | mine — payload on impact' },

@@ -132,6 +132,8 @@ defineMacro('missileRain', {
       { type: 'trail', desc: 'ascent visual riding each rocket while it leaves the play area' },
     ],
     params: [
+      { key: 'blastType', desc: "explosion | shockwave | napalm | mine — payload on impact (per missile)" },
+      { key: 'mineType', desc: 'explosion | shockwave (mine payload)' },
       { key: 'count', desc: 'missiles in the rain' },
       { key: 'xCoordinate', desc: 'center x (null → view center)' },
       { key: 'distanceType', desc: "'fixed' | 'relative'" },
@@ -146,7 +148,6 @@ defineMacro('missileRain', {
       { key: 'timeToTarget', desc: 'per-missile marker → impact window (s)' },
       { key: 'descentSpeed', desc: 'per-missile fall speed (px/s)' },
       { key: 'damage', desc: 'per-missile contact + blast damage' },
-      { key: 'mineType', desc: 'explosion | shockwave (mine payload)' },
       { key: 'mineTtl', desc: 'resting mine seconds; null = contact only' },
       { key: 'blinkDuration', desc: 'mine warning seconds' },
       { key: 'blastType', desc: "explosion | shockwave | napalm | mine — payload on impact (per missile)" },

@@ -11,9 +11,9 @@ export const MINE_DEFAULTS = Object.freeze({
   mineType: 'explosion', team: 'neutral', damage: 40, radius: 70,
 });
 export const MINE_PARAMS = [
+  { key: 'mineType', desc: 'explosion | shockwave' },
   { key: 'ttl', desc: 'seconds after settling; null = contact only' },
   { key: 'blinkDuration', desc: 'warning seconds before detonation' },
-  { key: 'mineType', desc: 'explosion | shockwave' },
   { key: 'team', desc: 'ally targets enemies; foe targets hero; neutral targets both' },
   { key: 'damage', desc: 'payload damage' },
   { key: 'radius', desc: 'payload radius (px)' },
@@ -98,6 +98,6 @@ defineMacro('mine', {
   params: { ...MINE_DEFAULTS },
   meta: { name: 'Mine', desc: 'Rectangular ground mine: hostile contact or TTL → red blink → payload.',
     effects: [{ type: 'blink-transition', desc: 'transparent to red overlay; base stays visible' }],
-    params: [{ key: 'x', desc: 'center x' }, { key: 'groundY', desc: 'surface top y' }, ...MINE_PARAMS] },
+    params: [...MINE_PARAMS, { key: 'x', desc: 'center x' }, { key: 'groundY', desc: 'surface top y' }] },
   impl: createMine,
 });

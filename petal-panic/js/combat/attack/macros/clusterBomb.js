@@ -44,6 +44,8 @@ defineMacro('clusterBomb', {
     effects: [],
     desc: 'Parent bomb detonates → spawns N smaller bombs in a fan. Each child explodes on its own impact/fuse.',
     params: [
+      { key: 'spawnType', desc: 'bomb | mine (children)' },
+      { key: 'mineType', desc: 'explosion | shockwave' },
       { key: 'speed', desc: 'parent launch force (px/s)' },
       { key: 'direction', desc: 'parent throw direction (radians)' },
       { key: 'arc', desc: 'gravity px/s²' },
@@ -53,8 +55,6 @@ defineMacro('clusterBomb', {
       { key: 'radius', desc: 'parent blast radius (px)' },
       { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' },
       { key: 'blastTeam', desc: 'foe | ally | neutral' },
-      { key: 'spawnType', desc: 'bomb | mine (children)' },
-      { key: 'mineType', desc: 'explosion | shockwave' },
       { key: 'mineTtl', desc: 'resting mine seconds; null = contact only' },
       { key: 'blinkDuration', desc: 'mine warning seconds' },
       { key: 'count', desc: 'number of child bombs' },

@@ -89,6 +89,24 @@ ok('every macro is registered with an invokes list (composition metadata)', () =
   }
 });
 
+// Sidebar contract: the discriminating param — blastType/mineType/enemyType —
+// must be the FIRST row of meta.params so the theater sidebar leads with it.
+ok('discriminating params lead meta.params in the sidebar order', () => {
+  const cases = [
+    ['mine', 'mineType'],
+    ['throwMine', 'mineType'],
+    ['throwEnemy', 'enemyType'],
+    ['spawnSplit', 'spawnType'],
+    ['clusterBomb', 'spawnType'],
+    ['skyMissile', 'blastType'],
+    ['missileRain', 'blastType'],
+  ];
+  for (const [id, first] of cases) {
+    const keys = (getMacro(id)?.meta?.params ?? []).map((p) => p.key);
+    assert.equal(keys[0], first, `${id}: first sidebar param is '${first}', got '${keys[0]}'`);
+  }
+});
+
 ok("resolveEffects: macros inherit invoked primitives' effects dynamically", () => {
   // homingMissile declares no native effects — its row must come from invoking projectile.
   const hm = resolveEffects('homingMissile').map((r) => r.type);
