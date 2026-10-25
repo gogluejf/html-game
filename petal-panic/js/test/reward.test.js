@@ -62,6 +62,7 @@ const { GAME_RULES } = await import('../systems/gameRules.js');
 const { Hero } = await import('../hero/hero.js');
 const { HEROES } = await import('../hero/heroDefs.js');
 const { LEVELS } = await import('../world/level.js');
+const { LEVEL_CONFIGS } = await import('../world/levelConfigs.js');
 const { createTrace } = await import('../stats.js');
 const SC = await import('../ui/screens.js');
 const U = await import('../systems/update.js');
@@ -633,6 +634,56 @@ test('re-presenting the same reward does not duplicate media unlocks or boss rec
   const p = PS.loadStore().progress;
   assert.deepEqual(p.mediaUnlocked, ['level-1'], 'media unlock deduped');
   assert.deepEqual(p.defeatedBosses, ['tusko_wobble'], 'boss record deduped');
+});
+
+// --- Autosave on level clear (game-flow.md Persistence) -----------------------
+//
+// Passing the boss IS passing an area: saveMeta must point at where a Continue
+// resumes — the NEXT level's area 1, exactly what rewardOnAction() establishes
+// on confirm (currentLevel += 1; currentArea = ENTRY_AREA). The final level
+// has no next level (rewardOnAction routes to END_OF_GAME), so nothing is saved.
+
+test('autosave: boss defeat saves the NEXT level\'s area 1 as the resume point', () => {
+  PS.resetStore();
+  L._resetRewardForTest();
+  const h = makeTestHero(); // currentLevel = 1
+  h.currentArea = 5; // the boss zone
+  tally(h, { kills: { jester: 3 }, coins: 250 });
+  setState(S.PLAY);
+
+  L.showLevelReward(h);
+
+  const sm = PS.loadStore().saveMeta;
+  assert.ok(sm, 'saveMeta was written on boss defeat');
+  assert.equal(sm.level, 2, 'level points at the NEXT level (mirrors rewardOnAction advance)');
+  assert.equal(sm.area, 1, 'area points at the next level\'s area 1 (fresh-level start)');
+  assert.equal(typeof sm.score, 'number', 'score is persisted');
+  assert.equal(typeof sm.timestamp, 'number', 'timestamp is persisted');
+  // The hero itself still names the just-cleared level/zone — only the saved
+  // resume point moved ahead.
+  assert.equal(h.currentLevel, 1, 'hero level unchanged until reward confirm');
+  assert.equal(h.currentArea, 5, 'hero area unchanged until reward confirm');
+});
+
+test('autosave: final-boss defeat writes NO saveMeta (no next level exists)', () => {
+  PS.resetStore();
+  L._resetRewardForTest();
+  const h = makeTestHero();
+  // The autosave keys off the configured catalog (LEVEL_CONFIGS), not the
+  // playable LEVELS array: the resume point is offered by Level Select /
+  // Continue, which are driven by LEVEL_CONFIGS. So the "no next level" case
+  // is the catalog's LAST level (8), where a +1 resume point would fall out of
+  // bounds. Gameplay end-of-run still keys off the playable LEVELS in
+  // rewardOnAction; this only asserts the persistence boundary.
+  h.currentLevel = LEVEL_CONFIGS.length; // the catalog's final level (8)
+  h.currentArea = 5;
+  tally(h, { kills: { jester: 1 }, coins: 0 });
+  setState(S.PLAY);
+
+  L.showLevelReward(h);
+
+  const sm = PS.loadStore().saveMeta;
+  assert.ok(!sm, 'no saveMeta for the final level (Continue would have nowhere valid to go)');
 });
 
 // --- Minimal area context for the next-level confirm path ---------------------

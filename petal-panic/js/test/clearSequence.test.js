@@ -36,9 +36,22 @@ globalThis.document = {
 };
 globalThis.window = { addEventListener: noop };
 
+// In-memory localStorage so progressStore (saveMeta autosave writes) works
+// headlessly. Must exist before the engine modules resolve.
+const memStorage = (() => {
+  let map = new Map();
+  return {
+    getItem: (k) => (map.has(k) ? map.get(k) : null),
+    setItem: (k, v) => { map.set(k, String(v)); },
+    removeItem: (k) => { map.delete(k); },
+  };
+})();
+globalThis.localStorage = memStorage;
+
 const U = await import('../systems/update.js');
 const { S, getState, setState } = await import('../core/state.js');
 const { ZONE_ENTRY_X, ZONE_GROUND_Y, buildLevelZones, LEVELS } = await import('../world/level.js');
+const PS = await import('../systems/progressStore.js');
 
 // --- Helpers -----------------------------------------------------------------
 
@@ -335,4 +348,51 @@ test('entry flag does not immediately re-trigger a clear (latched by startLife)'
   // startLife can latch the entry flag.
   assert.equal(hero.x, ZONE_ENTRY_X, 'hero at zone entry');
   assert.equal(hero.checkpoint.x, ZONE_ENTRY_X, 'checkpoint at zone entry (matches entry flag)');
+});
+
+// --- Autosave on area exit (game-flow.md Persistence) -------------------------
+//
+// Passing an area (exit flag hit) autosaves saveMeta pointing at the NEXT area
+// the player will continue into. The write happens exactly once, at the
+// trigger point (onExitFlagReached) — never per frame of the clear sequence,
+// never on death/retry or area ENTRY (entry writes completedAreas instead).
+
+test('autosave: passing an area writes saveMeta for the NEXT area (resume point)', () => {
+  PS.resetStore();
+  resetSeq();
+  const hero = U.getHero();
+  setState(S.PLAY);
+  hero.currentLevel = 1;
+  hero.currentArea = 2; // mid-level: standing in area 2
+
+  // Simulate the exit-flag collision path: clearing area 2 → next area 3.
+  U.onExitFlagReached('1-2', 3);
+
+  const sm = PS.loadStore().saveMeta;
+  assert.ok(sm, 'saveMeta was written on area pass');
+  assert.equal(sm.level, 1, 'level is unchanged (mid-level pass)');
+  assert.equal(sm.area, 3, 'area points at the NEXT area the run continues into');
+  assert.equal(typeof sm.score, 'number', 'score is persisted');
+  assert.equal(typeof sm.timestamp, 'number', 'timestamp is persisted');
+  // Exactly one write at the trigger: stepping through banner/fadeOut does not
+  // rewrite it (the timestamp survives untouched).
+  stepClear(DT, BANNER_STEPS + FADE_OUT_STEPS);
+  assert.equal(PS.loadStore().saveMeta.timestamp, sm.timestamp, 'no re-write during the clear sequence');
+});
+
+test('autosave: passing area 4 saves the boss zone as the resume point', () => {
+  PS.resetStore();
+  resetSeq();
+  const hero = U.getHero();
+  setState(S.PLAY);
+  hero.currentLevel = 1;
+  hero.currentArea = 4;
+
+  // Area 4's exit routes into the boss zone (AREA_BOSS = 5).
+  U.onExitFlagReached('1-4', 5);
+
+  const sm = PS.loadStore().saveMeta;
+  assert.ok(sm, 'saveMeta was written on area pass');
+  assert.equal(sm.level, 1, 'level unchanged');
+  assert.equal(sm.area, 5, 'resume point is the boss zone (AREA_BOSS), matching what Continue expects');
 });

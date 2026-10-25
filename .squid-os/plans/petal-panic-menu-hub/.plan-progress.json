@@ -151,7 +151,7 @@
     },
     "5.3": {
       "number": "5.3",
-      "status": "in_progress",
+      "status": "done",
       "name": "Progress unlock hooks",
       "milestone": "Media Menu and Unlock Rewards",
       "milestone_number": "5",

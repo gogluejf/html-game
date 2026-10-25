@@ -46,8 +46,8 @@ Notes:
 ```
 PLAY ⇄ PAUSE
 PLAY → death → OVER (retry / quit-to-MENU)
-PLAY → area clear → next AREA_ENTRY (mid-level)
-PLAY → boss defeated → REWARD (level-clear summary)
+PLAY → area exit flag → AUTOSAVE (saveMeta = next area) → next AREA_ENTRY (mid-level)
+PLAY → boss defeated → REWARD (level-clear summary; AUTOSAVE saveMeta = next level's area 1)
 ```
 
 ### Pause menu (five options)
@@ -83,7 +83,7 @@ started from the BOSS_RUSH screen, consumed in `rewardOnAction` — which takes
 
 | Key | Written by | Read by |
 |---|---|---|
-| `saveMeta` (top-level) | Save & Quit (`saveCurrentRun`) | Continue, hasSave() |
+| `saveMeta` (top-level) | **Autosave on area exit** (zoneLifecycle, points at the NEXT area) + **autosave on boss defeat** (`showLevelReward`, next level's area 1) + manual Save & Quit (`saveCurrentRun`) | Continue, hasSave() |
 | `progress.completedAreas` | `startLife` (area entry, ordinary areas only) | Level Select gating |
 | `progress.defeatedBosses` | `showLevelReward` (single writer) | Boss Rush presentation |
 | `progress.mediaUnlocked` | `markMediaUnlocked`: `intro` on New Game, `level-N` on boss N defeat, `ending` on final boss | Media grid |

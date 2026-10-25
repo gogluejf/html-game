@@ -616,14 +616,20 @@ export function continueFromMenu(h) {
  *
  * saveMeta lives at the TOP LEVEL of the store document (not under progress),
  * so it is set directly on the loaded document and flushed with saveStore().
+ *
+ * `overrides` lets a caller persist a resume point that differs from the hero's
+ * CURRENT position — the autosave on boss defeat (showLevelReward) saves the
+ * NEXT level's area 1, mirroring what rewardOnAction() does when the player
+ * confirms the reward screen. Save & Quit passes none (it saves the hero as-is).
  * @param {object} h the hero (currentLevel / currentArea / traceStats)
+ * @param {{level?:number, area?:number}} [overrides] resume-point overrides
  * @returns {{level:number, area:number, score:number, timestamp:number}|null}
  */
-export function saveCurrentRun(h) {
+export function saveCurrentRun(h, overrides = {}) {
   const tTotal = h?.traceStats?.total ?? {};
   const meta = {
-    level: h?.currentLevel ?? 1,
-    area: h?.currentArea ?? 1,
+    level: overrides.level ?? h?.currentLevel ?? 1,
+    area: overrides.area ?? h?.currentArea ?? 1,
     score: calculateScore(tTotal, h),
     timestamp: Date.now(),
   };
@@ -973,6 +979,26 @@ export function showLevelReward(h) {
   }
   if (tryTransition(S.REWARD)) {
     console.log(`[lifecycle] → REWARD (level ${h.currentLevel}, coins: ${coins}, +${earned} continue${earned === 1 ? '' : 's'})`);
+  }
+  // Autosave on level clear (game-flow.md Persistence): passing the boss IS
+  // passing an area, so saveMeta must point at where a Continue resumes — the
+  // NEXT level's area 1, exactly what rewardOnAction() establishes on confirm
+  // (currentLevel += 1; currentArea = ENTRY_AREA). The hero still names the
+  // just-cleared level here, so the resume point is passed as overrides.
+  //
+  // Deliberately LEVEL_CONFIGS.length (not LEVELS.length like the sibling
+  // gameplay sites above): media/progress treat LEVEL_CONFIGS as the catalog
+  // of all configured levels, and Continue resumes into the level-select /
+  // area-entry machinery which is driven by LEVEL_CONFIGS. So the autosave
+  // fires whenever a NEXT level exists in that catalog. Gameplay end-of-run
+  // still keys off the playable LEVELS in rewardOnAction (END_OF_GAME); until
+  // levels 2–8 land in LEVELS this saves a resume point that Level Select /
+  // Continue can offer even though normal story play would hit END_OF_GAME
+  // first. Only the catalog's last level (no next level) skips the save.
+  // This fires once per defeat (the S.REWARD transition latches it) and never
+  // on death/retry or area entry.
+  if (h.currentLevel < LEVEL_CONFIGS.length) {
+    saveCurrentRun(h, { level: h.currentLevel + 1, area: ENTRY_AREA });
   }
   return data;
 }

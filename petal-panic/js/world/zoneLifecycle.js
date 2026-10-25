@@ -11,7 +11,7 @@ import { S, getState, setState, tryTransition } from '../core/state.js';
 import { fireManual } from '../effects/index.js';
 import { Debug } from '../debug/debug.js';
 import { makeCheckpoint } from '../objects/object.js';
-import { showAreaEntry, formatAreaId, recordAreaEntrySnapshot, setAreaEntryFadeOutCallback, startLife, continueRun } from '../systems/lifecycle.js';
+import { showAreaEntry, formatAreaId, recordAreaEntrySnapshot, setAreaEntryFadeOutCallback, startLife, continueRun, saveCurrentRun } from '../systems/lifecycle.js';
 import { instantiateZone } from './build.js';
 import { restoreBossRunFloor } from '../boss/bossFlow.js';
 
@@ -99,6 +99,14 @@ export function onExitFlagReached(areaId, nextArea) {
   clearSeq.bannerText = `${areaId} CLEAR`;
   clearSeq.pendingArea = nextArea;
   clearSeq.pendingFadeIn = true;
+  // Autosave (game-flow.md Persistence): the exit flag is the single moment an
+  // area is PASSED — exactly once per pass (the flag latches), so saveMeta
+  // points at the NEXT area the player will continue into. The hero's
+  // currentLevel/currentArea still name the cleared area here (stepClearSequence
+  // advances them only when the fade-out completes), which is precisely what
+  // Continue expects to resume from. No-op without a live hero (bare unit tests
+  // call this directly).
+  if (ctx.hero) saveCurrentRun(ctx.hero, { area: nextArea });
 }
 
 /**
