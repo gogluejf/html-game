@@ -11,7 +11,10 @@
   -webkit-user-select: none;
 }
 
-.pp-touch.hidden { display: none; }
+.pp-touch.pp-pad-hidden .pp-pad {
+  opacity: 0;
+  pointer-events: auto; /* invisible but still touchable */
+}
 
 /* Hide the debug bar + readout in landscape (gamepad stays visible). */
 @media (orientation: landscape) {

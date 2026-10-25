@@ -18,15 +18,21 @@ let root = null;
 let padEnabled = true;
 export function setVirtualPadEnabled(on) {
   padEnabled = !!on;
-  if (root) root.classList.toggle('hidden', !padEnabled);
+  applyPadVisibility();
 }
 export function isVirtualPadEnabled() { return padEnabled; }
 
 export function initTouchControls() {
   if (!isTouchDevice()) return; // desktop: nothing rendered
-  if (!padEnabled) return;      // option OFF: no overlay at all
   if (root) return;             // already built
   buildOverlay();
+  applyPadVisibility();         // respect current setting immediately
+}
+
+/** Hide/show the visual pad elements without removing their touch handlers. */
+function applyPadVisibility() {
+  if (!root) return;
+  root.classList.toggle('pp-pad-hidden', !padEnabled);
 }
 
 // --- Synthetic keyboard events for the debug bar -----------------------------
