@@ -62,7 +62,7 @@ test('Menu exposes draw/onAction/reset and lists all eight top-level options', (
   const opts = SC.Menu.options();
   assert.deepEqual(
     opts.map(o => o.label),
-    ['New Game', 'Continue', 'Level Select', 'Boss Rush', 'Media', 'Controls', 'Options', 'Credits'],
+    ['Continue', 'New Game', 'Level Select', 'Boss Rush', 'Media', 'Controls', 'Options', 'Credits'],
     'all eight top-level options in order'
   );
 });
@@ -302,7 +302,7 @@ test('Menu.draw renders all eight options with the focus pill on the focused row
   const { rec, proxy } = makeRecordingCtx();
   SC.Menu.draw(proxy);
 
-  const labels = ['New Game', 'Continue', 'Level Select', 'Boss Rush',
+  const labels = ['Continue', 'New Game', 'Level Select', 'Boss Rush',
                   'Media', 'Controls', 'Options', 'Credits'];
   for (const label of labels) {
     const hits = rec.fillTexts.filter(([t]) => t.includes(label));
@@ -389,7 +389,7 @@ test('confirm on Continue routes to AREA_ENTRY when a save exists', () => {
   writeSave();
   setState(S.HOME);
   go(S.MENU);
-  SC.Menu.focus = 1; // Continue
+  SC.Menu.focus = 0; // Continue is first when a save exists
   const handled = SC.Menu.onAction('confirm');
   assert.equal(handled, true, 'confirm handled');
   assert.equal(getState(), S.AREA_ENTRY, 'state is now AREA_ENTRY (resume flow)');

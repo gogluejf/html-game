@@ -84,7 +84,7 @@ started from the BOSS_RUSH screen, consumed in `rewardOnAction` — which takes
 | Key | Written by | Read by |
 |---|---|---|
 | `saveMeta` (top-level) | **Autosave on area exit** (zoneLifecycle, points at the NEXT area) + **autosave on boss defeat** (`showLevelReward`, next level's area 1) + manual Save & Quit (`saveCurrentRun`) | Continue, hasSave() |
-| `progress.completedAreas` | `startLife` (area entry, ordinary areas only) | Level Select gating |
+| `progress.completedAreas` | Exit flag reached (ordinary area); boss defeat (boss area) | Level Select gating |
 | `progress.defeatedBosses` | `showLevelReward` (single writer) | Boss Rush presentation |
 | `progress.mediaUnlocked` | `markMediaUnlocked`: `intro` on New Game, `level-N` on boss N defeat, `ending` on final boss | Media grid |
 | `settings` | Options screen | screenShake gate (cameraShake `update()` funnel), vibration gate (`buzz()`); music/sfx persist for a future audio engine |
@@ -126,3 +126,7 @@ Key edges added by the menu hub:
    `consumedGeneration`; a general hardening belongs to an input task.
 5. **Shared helpers** — the three select models (level/boss/media) duplicate
    small predicates; extract when multi-level content lands.
+
+### Continue and manual-save rules
+
+When a run save exists, Continue is the first/default menu option, followed by New Game. Without a save, New Game is first. Save & Quit records the current level/area without completing it or unlocking its successor; Continue resumes that saved area through area entry (not an exact mid-area position). Successful area clears autosave the next area; successful boss clears autosave the next level where applicable. Starting, retrying, or continuing an area never records completion. Previously incorrect completion records are not silently erased.

@@ -430,19 +430,7 @@ export function startArea(h, level, areaIdx) {
  */
 export function startLife(h, ctx) {
   const c = ctx ?? ctxOf(h);
-  // Menu-hub plan §5.3: beginning an attempt records the area as completed in
-  // progress.completedAreas (Level Select / Boss Rush unlock state). This is
-  // the single milestone site — every normal entry (new game, next level,
-  // death-restart, continue, Level Select, Boss Rush) funnels through
-  // startLife — and updateProgress dedupes via the store's atomic API, so a
-  // re-entry of the same area never double-writes. The boss zone (AREA_BOSS)
-  // is NOT recorded here: its completion is the boss defeat, which showLevelReward
-  // records through defeatedBosses + the level media clip.
-  if (h.currentArea < AREA_BOSS) { // 1..4 are ordinary areas; AREA_BOSS is the boss zone
-    updateProgress((p) => {
-      p.completedAreas[formatAreaId(h.currentLevel, h.currentArea)] = true;
-    });
-  }
+  // Entry/retry is not completion. Only exit flags and boss defeat unlock progress.
   // Trace: open a fresh life bucket for each NEW attempt. The very first
   // attempt after startGame/continueRun reuses the already-present bucket
   // (index 0 / activeContinue's scope); only subsequent death-restarts push.
@@ -968,6 +956,7 @@ export function showLevelReward(h) {
   const bossId = levelConfig?.boss;
   if (levelConfig) {
     updateProgress((p) => {
+      p.completedAreas[formatAreaId(h.currentLevel, AREA_BOSS)] = true;
       if (bossId && !p.defeatedBosses.includes(bossId)) p.defeatedBosses.push(bossId);
     });
     markMediaUnlocked(`level-${levelConfig.index}`);

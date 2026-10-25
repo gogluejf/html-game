@@ -1,3 +1,4 @@
+import { updateProgress } from '../systems/progressStore.js';
 // Zone lifecycle — area-clear sequence, area-entry auto-advance, entry
 // positions, and retry/continue from game over.
 // All shared mutable state is read/written through ctx (world/context.js) to
@@ -106,7 +107,10 @@ export function onExitFlagReached(areaId, nextArea) {
   // advances them only when the fade-out completes), which is precisely what
   // Continue expects to resume from. No-op without a live hero (bare unit tests
   // call this directly).
-  if (ctx.hero) saveCurrentRun(ctx.hero, { area: nextArea });
+  if (ctx.hero) {
+    updateProgress(p => { p.completedAreas[areaId] = true; });
+    saveCurrentRun(ctx.hero, { area: nextArea });
+  }
 }
 
 /**

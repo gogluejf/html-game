@@ -544,7 +544,7 @@ test('startGame unlocks the intro media card exactly once (dedupe on repeat star
   assert.deepEqual(PS.loadStore().progress.mediaUnlocked, ['intro'], 'repeat start does not duplicate intro');
 });
 
-test('startLife records completedAreas for an ordinary area (1..4)', () => {
+test('startLife does not complete an ordinary area', () => {
   PS.resetStore();
   const h = makeTestHero();
   h.currentLevel = 2;
@@ -554,8 +554,8 @@ test('startLife records completedAreas for an ordinary area (1..4)', () => {
   L.startLife(h, ctx);
 
   const p = PS.loadStore().progress;
-  assert.equal(p.completedAreas['2-3'], true, 'area 2-3 recorded as completed');
-  assert.deepEqual(Object.keys(p.completedAreas), ['2-3'], 'only the started area is recorded');
+  assert.equal(p.completedAreas['2-3'], undefined, 'starting is not completion');
+  assert.deepEqual(p.completedAreas, {}, 'entry unlocks nothing');
 });
 
 test('startLife re-entry of the same area does not double-write completedAreas', () => {
@@ -569,8 +569,8 @@ test('startLife re-entry of the same area does not double-write completedAreas',
   L.startLife(h, ctx); // death-restart of the same area
 
   const p = PS.loadStore().progress;
-  assert.equal(p.completedAreas['1-1'], true, 'area 1-1 recorded');
-  assert.deepEqual(Object.keys(p.completedAreas), ['1-1'], 'no duplicate keys on re-entry');
+  assert.equal(p.completedAreas['1-1'], undefined, 'retry is not completion');
+  assert.deepEqual(p.completedAreas, {}, 'retry unlocks nothing');
 });
 
 test('startLife does NOT record the boss zone (AREA_BOSS = 5) as a completed area', () => {

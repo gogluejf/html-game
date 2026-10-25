@@ -104,6 +104,7 @@ test('Save & Quit writes saveMeta and returns to MENU (round-trip)', () => {
   assert.ok(stored, 'saveMeta persisted at top level of the store');
   assert.equal(stored.level, 3, 'level from the live hero');
   assert.equal(stored.area, 2, 'area from the live hero');
+  assert.deepEqual(PS.loadStore().progress.completedAreas, {}, 'manual save must not complete or unlock an area');
   // Exact score: replicate saveCurrentRun's argument construction — it calls
   // calculateScore(h.traceStats.total, h). For this fixed hero that is
   // 12 kills × 100 + 5 coins × 10 = 1250 (no boss/barrels in the trace).

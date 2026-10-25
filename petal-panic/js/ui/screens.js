@@ -722,8 +722,13 @@ export const Menu = {
   options() {
     const saved = hasSave();
     return [
-      { label: 'New Game',     enabled: true,  action: 'newGame' },
-      { label: saved ? 'Continue' : 'No Save', enabled: saved, action: 'continue' },
+      ...(saved ? [
+        { label: 'Continue', enabled: true, action: 'continue' },
+        { label: 'New Game', enabled: true, action: 'newGame' },
+      ] : [
+        { label: 'New Game', enabled: true, action: 'newGame' },
+        { label: 'No Save', enabled: false, action: 'continue' },
+      ]),
       { label: 'Level Select', enabled: true,  go: S.LEVEL_SELECT },
       { label: 'Boss Rush',    enabled: true,  go: S.BOSS_RUSH },
       { label: 'Media',        enabled: true,  go: S.MEDIA },
