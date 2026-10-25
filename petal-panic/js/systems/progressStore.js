@@ -22,7 +22,7 @@ export const DEFAULT_PROGRESS = {
 };
 
 export const DEFAULT_SETTINGS = {
-  music: false,
+  music: true,
   sfx: true,
   screenShake: true,
   vibration: true,

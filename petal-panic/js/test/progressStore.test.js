@@ -36,7 +36,7 @@ test('loadStore returns defaults when stored JSON is invalid or mistyped', () =>
   const s = loadStore();
   assert.deepEqual(s.progress.defeatedBosses, []);
   assert.deepEqual(s.progress.mediaUnlocked, []);
-  assert.equal(s.settings.music, false); // mistyped → default
+  assert.equal(s.settings.music, true); // mistyped → default
 });
 
 test('saveStore persists one JSON document under the stable key', () => {
@@ -220,7 +220,7 @@ test('defaults are the documented literals, not just self-referential', () => {
   // F5: hardcoded literal expectations so a wrong default can't silently pass.
   fixture();
   const s = loadStore();
-  assert.equal(s.settings.music, false);
+  assert.equal(s.settings.music, true);
   assert.equal(s.settings.sfx, true);
   assert.equal(s.settings.screenShake, true);
   assert.equal(s.settings.vibration, true);
@@ -338,16 +338,18 @@ test('S2: outer catches inner failure and continues — no resurrection of faile
     progress.completedAreas['a9'] = true; // outer keeps mutating after inner failure
   });
   assert.equal(ok, true);
-  // Memory: music was NEVER set (inner rolled back), a9 IS set (outer continued).
+  // Memory: the inner settings mutation was rolled back to its pre-call base
+  // (music default true — the inner `s.music = true` was a no-op change that
+  // got undone), a9 IS set (outer continued).
   const mem = loadStore();
-  assert.equal(mem.settings.music, false);
+  assert.equal(mem.settings.music, true);
   assert.equal(mem.progress.completedAreas['a9'], true);
   // Storage must equal memory exactly: no resurrection of the failed inner
   // settings change, and the outer change is present.
   _resetCache();
   const reloaded = loadStore();
   assert.deepEqual(reloaded, structuredClone(mem));
-  assert.equal(reloaded.settings.music, false);
+  assert.equal(reloaded.settings.music, true);
   assert.equal(reloaded.progress.completedAreas['a9'], true);
 });
 

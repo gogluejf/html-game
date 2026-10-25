@@ -96,7 +96,7 @@ test('OPTIONS draws four toggle rows with ON/OFF state in the pause-style list',
   // verbatim after stripping that prefix.
   const texts = calls.filter(c => c.fn === 'fillText')
     .map(c => String(c.args[0]).replace(/^(▸ |  )/, ''));
-  for (const t of ['MUSIC  OFF', 'SFX  ON', 'SCREEN SHAKE  ON', 'VIBRATION  ON']) {
+  for (const t of ['MUSIC  ON', 'SFX  ON', 'SCREEN SHAKE  ON', 'VIBRATION  ON']) {
     assert.ok(texts.includes(t), `row label "${t}" drawn`);
   }
   // Focus pill present: the focused row's label is drawn with the shared
@@ -109,17 +109,17 @@ test('left/right AND confirm toggle the focused option', () => {
   PS.resetStore();
   setState(S.MENU);
   go(S.OPTIONS);
-  assert.equal(PS.loadStore().settings.music, false, 'default: music off');
+  assert.equal(PS.loadStore().settings.music, true, 'default: music on');
 
-  // Focus starts on Music (row 0). Left flips it on…
+  // Focus starts on Music (row 0), default ON. Left flips it off…
   assert.equal(SC.Options.onAction('left'), true, 'left handled');
-  assert.equal(PS.loadStore().settings.music, true, 'music flipped ON by left');
-  // …right flips it back off…
+  assert.equal(PS.loadStore().settings.music, false, 'music flipped OFF by left');
+  // …right flips it back on…
   assert.equal(SC.Options.onAction('right'), true, 'right handled');
-  assert.equal(PS.loadStore().settings.music, false, 'music flipped OFF by right');
+  assert.equal(PS.loadStore().settings.music, true, 'music flipped ON by right');
   // …and confirm does the same.
   assert.equal(SC.Options.onAction('confirm'), true, 'confirm handled');
-  assert.equal(PS.loadStore().settings.music, true, 'music flipped ON by confirm');
+  assert.equal(PS.loadStore().settings.music, false, 'music flipped OFF by confirm');
 });
 
 test('up/down move focus around the four rows (wrapping)', () => {
