@@ -56,7 +56,7 @@ export function surfaceBounds() {
   const s = getFitScale();
   const x = getLayoutMode() === 'fullscreen' && s > 0 ? getFitOffsetX() / s : 0;
   const y = getLayoutMode() === 'fullscreen' && s > 0 ? getFitOffsetY() / s : 0;
-  return { x: -x, y: -y, w: VIEW_W + 2 * x, h: VIEW_H + 2 * y };
+  return { x: 0 - x, y: 0 - y, w: VIEW_W + 2 * x, h: VIEW_H + 2 * y };
 }
 /** Fill using the caller's style/alpha without touching its transform. */
 export function fillSurface(ctx) {
@@ -69,4 +69,15 @@ export function drawOnSurface(ctx, draw) {
   ctx.save();
   try { ctx.translate(b.x, b.y); draw(b.w, b.h); }
   finally { ctx.restore(); }
+}
+
+/** Gameplay presentation bounds: horizontal expansion, normal 540 height. */
+export function gameplaySurfaceBounds() {
+  const b = surfaceBounds();
+  return { x: 0 + b.x, y: 0, w: b.w, h: VIEW_H };
+}
+/** Fill the capped gameplay background with the caller's style. */
+export function fillGameplaySurface(ctx) {
+  const b = gameplaySurfaceBounds();
+  ctx.fillRect(b.x, b.y, b.w, b.h);
 }

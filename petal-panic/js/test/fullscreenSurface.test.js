@@ -5,9 +5,9 @@ import { vignette } from '../effects/vignette.js';
 import { screenFlash } from '../effects/screenFlash.js';
 
 for (const [name, mode, scale, ox, oy, expected] of [
-  ['fit', 'fit', 2, 0, 0, { x: -0, y: -0, w: 960, h: 540 }],
-  ['wide', 'fullscreen', 2, 640, 0, { x: -320, y: -0, w: 1600, h: 540 }],
-  ['portrait', 'fullscreen', 1, 0, 530, { x: -0, y: -530, w: 960, h: 1600 }],
+  ['fit', 'fit', 2, 0, 0, { x: 0, y: 0, w: 960, h: 540 }],
+  ['wide', 'fullscreen', 2, 640, 0, { x: -320, y: 0, w: 1600, h: 540 }],
+  ['portrait', 'fullscreen', 1, 0, 530, { x: 0, y: -530, w: 960, h: 1600 }],
 ]) {
   test(`${name}: backgrounds and screen effects cover the visible surface`, () => {
     setLayoutMode(mode);
@@ -63,4 +63,17 @@ test('Home portrait scenery retains authored size and placement', async () => {
     img: 'stage', ctx: { drawImage(...a) { calls.push(a); } },
   });
   assert.deepEqual(calls[0], ['stage', -20, -15, 960, 640]);
+});
+
+test('gameplay background and world clip expand horizontally but cap at 540', async () => {
+  const { gameplaySurfaceBounds } = await import('../core/layout.js');
+  setLayoutMode('fit'); setFitState(0, 0, 2);
+  assert.deepEqual(gameplaySurfaceBounds(), { x: 0, y: 0, w: 960, h: 540 });
+  assert.equal(Object.is(gameplaySurfaceBounds().x, -0), false);
+  setLayoutMode('fullscreen'); setFitState(320, 0, 2);
+  assert.deepEqual(gameplaySurfaceBounds(), { x: -160, y: 0, w: 1280, h: 540 });
+  setFitState(0, 530, 1);
+  assert.deepEqual(gameplaySurfaceBounds(), { x: 0, y: 0, w: 960, h: 540 });
+  assert.equal(Object.is(gameplaySurfaceBounds().x, -0), false);
+  setLayoutMode('fit'); setFitState(0, 0, 1);
 });

@@ -1,4 +1,4 @@
-import { fillSurface, drawOnSurface } from '../core/layout.js';
+import { fillSurface, fillGameplaySurface, gameplaySurfaceBounds, drawOnSurface } from '../core/layout.js';
 // Petal Panic — render system. Draws in 960x540 logical coords; the
 // logical→screen transform is applied by main.js before this runs.
 // world entities are drawn under a camera translate so the level
@@ -57,12 +57,17 @@ export function render(ctx) {
 
   // Background (viewport-space; not affected by the camera). Flat fill in
   // both layouts — the level bg art is gameplay scenery owned by the world
-  // layer, never stretched to paper over letterbox strips.
+  // layer, never stretched to paper over letterbox strips. Portrait keeps the
+  // normal 540-high scene centered; wide displays expand horizontally.
   ctx.fillStyle = '#101018';
-  fillSurface(ctx);
+  fillGameplaySurface(ctx);
 
   // --- World (camera-translated) -------------------------------------------
   ctx.save();
+  const gameplaySurface = gameplaySurfaceBounds();
+  ctx.beginPath();
+  ctx.rect(gameplaySurface.x, gameplaySurface.y, gameplaySurface.w, gameplaySurface.h);
+  ctx.clip();
   // explosion screen shake offsets the whole world by a decaying
   // random vector (getShakeOffset returns {x:0,y:0} when idle).
   const shake = getShakeOffset();
