@@ -1487,7 +1487,14 @@ export const BossRush = {
    * battle; the user decision requires landing back at the SAME card.
    */
   reset(from) {
-    if (from !== S.REWARD) this.focus = 0;
+    // Preserve the player's focus when returning from a boss battle (REWARD),
+    // otherwise land on the first non-locked card (theoretically always one —
+    // the highest unlocked/defeated level). If every card is locked, fall back
+    // to index 0 so the screen still renders.
+    if (from === S.REWARD) return;
+    const cards = this._cards();
+    const firstPlayable = cards.findIndex(c => c.status !== 'locked');
+    this.focus = firstPlayable >= 0 ? firstPlayable : 0;
   },
 };
 
