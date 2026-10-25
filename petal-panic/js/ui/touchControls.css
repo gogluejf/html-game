@@ -164,15 +164,18 @@
 .pp-face .b { grid-column: 3; grid-row: 2; background: rgba(200, 60, 60, 0.6); }
 .pp-face .a { grid-column: 2; grid-row: 3; background: rgba(60, 160, 80, 0.6); }
 
-/* Triggers: independent row, centered over the face, vertically aligned to the
-   stick's center. Sized to content (not constrained) so buttons don't overflow. */
+/* Triggers: 2x2 grid stacked over the face — L1 directly above L2, R1
+   directly above R2, same 42px cells + 2px gaps as the face diamond, so the
+   columns line up exactly. Flipped vs the old row: top row = L1/R1 (the
+   "shoulders"), bottom row = L2/R2 next to the face. */
 .pp-triggers {
   position: absolute;
   right: 8px;
-  bottom: 170px; /* vertical center ≈ stick center (193px) */
-  display: flex;
-  justify-content: flex-end;
-  gap: 5px;
+  bottom: 164px; /* bottom row aligns with the face's top edge */
+  display: grid;
+  grid-template-columns: repeat(2, 64px); /* 64+2+64 = 130px = face width */
+  grid-template-rows: repeat(2, 42px);
+  gap: 2px;
   pointer-events: auto;
   touch-action: none;
 }
@@ -189,8 +192,15 @@
   padding: 0 4px;
 }
 
-/* Extra gap between the left pair (L1/L2) and right pair (R1/R2) */
-.pp-triggers .pp-gap { margin-left: 14px; }
+/* Pin each button to its column edge so L1/L2 center exactly over the face's
+   □ (col 1) and R1/R2 over ○ (col 3): 42px button at the column's left/right
+   edge lands on the same 42px grid track as the face. */
+.pp-triggers .l1, .pp-triggers .l2 { justify-self: start; }
+.pp-triggers .r1, .pp-triggers .r2 { justify-self: end; }
+.pp-triggers .l1 { grid-column: 1; grid-row: 1; }
+.pp-triggers .r1 { grid-column: 2; grid-row: 1; }
+.pp-triggers .l2 { grid-column: 1; grid-row: 2; }
+.pp-triggers .r2 { grid-column: 2; grid-row: 2; }
 
 .pp-triggers button:active, .pp-triggers button.pp-pressed {
   background: rgba(240, 190, 90, 0.85);
