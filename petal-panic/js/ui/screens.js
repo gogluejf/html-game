@@ -1233,7 +1233,7 @@ function drawBossCardCover(ctx, img, x, y, w, h, grayscale) {
   const srcW = w / scale;
   const srcX = (img.naturalWidth - srcW) / 2;
   ctx.save();
-  if (grayscale && 'filter' in ctx) ctx.filter = 'grayscale(1)';
+  if (grayscale && 'filter' in ctx) ctx.filter = 'grayscale(1) blur(6px) brightness(0.75)';
   ctx.drawImage(img, srcX, 0, srcW, img.naturalHeight, x, y, w, h);
   ctx.restore();
   return true;
@@ -1300,7 +1300,7 @@ export const BossRush = {
       // the art box. Selected → full color; unselected → grayscale B&W.
       const img = bossCardImage(card.bossId);
       if (img?.complete && img.naturalWidth > 0) {
-        drawBossCardCover(ctx, img, x + BR_PAD_X, artY, BR_CARD_W - 2 * BR_PAD_X, BR_CARD_ART_H, !isFocused);
+        drawBossCardCover(ctx, img, x + BR_PAD_X, artY, BR_CARD_W - 2 * BR_PAD_X, BR_CARD_ART_H, !isFocused || locked);
       } else {
         drawPlaceholder(ctx, x + BR_PAD_X, artY, BR_CARD_W - 2 * BR_PAD_X, BR_CARD_ART_H, 'boss card');
       }
@@ -1328,7 +1328,8 @@ export const BossRush = {
       ctx.textBaseline = 'middle';
       ctx.fillStyle = 'rgba(255,255,255,0.75)';
       ctx.fillText(`LEVEL ${card.index}`, cx, y + BR_CARD_H - 36);
-      drawFittingText(ctx, card.name, cx, y + BR_CARD_H - 18, BR_CARD_W - 2 * BR_PAD_X, 15, 10,
+      const displayName = locked ? '???' : card.name;
+      drawFittingText(ctx, displayName, cx, y + BR_CARD_H - 18, BR_CARD_W - 2 * BR_PAD_X, 15, 10,
         isFocused ? COLOR_OPT_FOCUSED : CREAM);
       ctx.restore();
     });
@@ -1347,8 +1348,8 @@ export const BossRush = {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     if (focused.status === 'locked') {
-      // Locked: B&W boss art (spoilers accepted) + lock glyph + tooltip.
-      drawMarqueeTitle(ctx, focused.name.toUpperCase(), ccx, BR_DETAIL_Y + 50, 26, {
+      // Locked: blurred boss art + lock glyph + tooltip. Name hidden.
+      drawMarqueeTitle(ctx, '???', ccx, BR_DETAIL_Y + 50, 26, {
         color: CREAM,
       });
       const limg = bossCardImage(focused.bossId);
