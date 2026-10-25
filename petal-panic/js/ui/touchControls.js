@@ -112,8 +112,8 @@ function buildOverlay() {
         </div>
       </div>
       <div class="pp-triggers pp-ctl">
-        <button class="l1" data-btn="4">L1</button>
         <button class="r1" data-btn="5">R1</button>
+        <button class="l1" data-btn="4">L1</button>
         <button class="l2" data-btn="6">L2</button>
         <button class="r2" data-btn="7">R2</button>
       </div>
