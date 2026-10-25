@@ -30,7 +30,7 @@ const IFRAME_BLINK_ALPHA_OFF = 0.4;  // "off" visibility
 export function render(ctx) {
   // Home & Select are full-screen; skip world rendering entirely.
   const state = getState();
-  if (state === S.HOME || state === S.MENU || state === S.SELECT || state === S.REMAP || state === S.LEVEL_SELECT || state === S.BOSS_RUSH) {
+  if (state === S.HOME || state === S.MENU || state === S.SELECT || state === S.REMAP || state === S.LEVEL_SELECT || state === S.BOSS_RUSH || state === S.MEDIA) {
     screenUpdate(1 / 60); // advance parallax at fixed step
     drawScreen(ctx);
     // Theater can be opened from any screen via F2.

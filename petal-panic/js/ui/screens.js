@@ -1442,6 +1442,273 @@ export const BossRush = {
 };
 
 // =============================================================================
+// MEDIA SCREEN (menu-hub plan §5.2)
+//
+// Canvas screen of media cards — one per mediaModel entry (10: intro, eight
+// level clips, ending) in a 5 × 2 grid, laid out in the same card/focus style
+// as Boss Rush with a right-side detail card for the FOCUSED card (the shared
+// hover-style tooltip pattern):
+//   - locked   → silhouette disc + lock icon, NO preview image; the detail
+//                card shows the model's unlock-requirement tooltip
+//   - unlocked → clip art (level background still/pan) or placeholder panel +
+//                title; confirm opens the playback overlay
+// Playback overlay (in-screen flag, no new state — the Menu credits-overlay
+// pattern): large view of the focused clip + a back-to-grid prompt. Back from
+// the overlay closes it first; back from the grid returns MENU. Navigation
+// skips locked cards (wrap-around) so focus can only rest on playable content.
+// =============================================================================
+
+import { buildMediaCards } from './mediaModel.js';
+
+// --- Media layout constants ---------------------------------------------------
+const MD_TITLE_Y = 60;                 // "MEDIA" marquee baseline
+const MD_TITLE_SIZE = 44;
+const MD_CARD_W = 150;                 // card width (Boss Rush parity)
+const MD_CARD_H = 190;                 // card height
+const MD_GAP_X = 18;                   // horizontal gap between cards
+const MD_GAP_Y = 18;                   // vertical gap between rows
+const MD_COLS = 5;                     // 5 × 2 grid of 10 cards
+const MD_GRID_X = 30;                  // first card's left edge
+const MD_GRID_Y = 120;                 // first row's top edge
+const MD_CARD_ART_H = 110;             // art box height inside a card
+const MD_DETAIL_X = 700;               // right detail-card left edge
+const MD_DETAIL_Y = 120;               // right detail-card top edge
+const MD_DETAIL_W = 230;
+const MD_DETAIL_H = 300;
+const MD_NAV_Y = 480;                  // keycap nav bar Y
+const MD_VIEW_W = 640;                 // playback overlay view width
+const MD_VIEW_H = 320;                 // playback overlay view height
+
+/** Clip art cache for level backgrounds (loaded lazily; drawFitted guards .complete). */
+const mediaClipImages = {};
+function mediaClipImage(assetPath) {
+  if (!mediaClipImages[assetPath]) {
+    const img = new Image();
+    img.src = new URL(assetPath, import.meta.url).href;
+    mediaClipImages[assetPath] = img;
+  }
+  return mediaClipImages[assetPath];
+}
+
+export const Media = {
+  /** Focus is an index into buildMediaCards() (0..9). */
+  focus: 0,
+  /** The id of the clip open in the playback overlay (null = grid view). */
+  playing: null,
+
+  /** Live model data (rebuilt every draw + onAction so progress changes show). */
+  _cards() { return buildMediaCards(loadStore().progress); },
+
+  /** @param {CanvasRenderingContext2D} ctx */
+  draw(ctx) {
+    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+    grad.addColorStop(0, '#0d0d1a');
+    grad.addColorStop(1, '#1a1a2e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    drawMarqueeTitle(ctx, 'MEDIA', VIEW_W / 2, MD_TITLE_Y, MD_TITLE_SIZE, { color: CREAM });
+
+    const cards = this._cards();
+    const focused = cards[this.focus];
+
+    // --- Card grid (5 × 2) ----------------------------------------------------
+    cards.forEach((card, i) => {
+      const col = i % MD_COLS, row = Math.floor(i / MD_COLS);
+      const x = MD_GRID_X + col * (MD_CARD_W + MD_GAP_X);
+      const y = MD_GRID_Y + row * (MD_CARD_H + MD_GAP_Y);
+      const isFocused = i === this.focus;
+      const locked = card.status === 'locked';
+      ctx.save();
+      // Card body — same presentation language as Boss Rush.
+      ctx.fillStyle = isFocused ? COLOR_PILL_FILL : 'rgba(255,255,255,0.04)';
+      roundRect(ctx, x, y, MD_CARD_W, MD_CARD_H, 10);
+      ctx.fill();
+      ctx.strokeStyle = isFocused ? COLOR_PILL_STROKE : (locked ? 'rgba(138,138,154,0.35)' : '#8a7f68');
+      ctx.lineWidth = isFocused ? 2 : 1.5;
+      roundRect(ctx, x, y, MD_CARD_W, MD_CARD_H, 10);
+      ctx.stroke();
+
+      const cx = x + MD_CARD_W / 2;
+      const artY = y + 14;
+      if (locked) {
+        // Silhouette disc + lock icon — NO preview image (plan §5.2).
+        ctx.globalAlpha = 0.45;
+        ctx.fillStyle = '#2a2a3a';
+        ctx.beginPath();
+        ctx.arc(cx, artY + MD_CARD_ART_H / 2, MD_CARD_ART_H / 2 - 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        drawLockIcon(ctx, cx, artY + MD_CARD_ART_H / 2, 26, '#8a8a9a');
+        ctx.font = `13px ${FONT_UI}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#8a8a9a';
+        ctx.fillText(card.level !== null ? `LEVEL ${card.level}` : card.title.toUpperCase(), cx, y + MD_CARD_H - 22);
+      } else {
+        // Unlocked: clip art (or placeholder panel when the asset is null /
+        // not loaded) + title.
+        if (card.asset) {
+          const img = mediaClipImage(card.asset);
+          if (img?.complete && img.naturalWidth > 0) {
+            drawFitted(ctx, img, x + 10, artY, MD_CARD_W - 20, MD_CARD_ART_H);
+          } else {
+            drawPlaceholder(ctx, x + 10, artY, MD_CARD_W - 20, MD_CARD_ART_H, 'clip');
+          }
+        } else {
+          drawPlaceholder(ctx, x + 10, artY, MD_CARD_W - 20, MD_CARD_ART_H, 'coming soon');
+        }
+        ctx.font = `bold 15px ${FONT_UI}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = isFocused ? COLOR_OPT_FOCUSED : CREAM;
+        ctx.fillText(card.title, cx, y + MD_CARD_H - 22);
+      }
+      ctx.restore();
+    });
+
+    // --- Right pane: detail card for the focused clip -------------------------
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    roundRect(ctx, MD_DETAIL_X, MD_DETAIL_Y, MD_DETAIL_W, MD_DETAIL_H, 12);
+    ctx.fill();
+    ctx.strokeStyle = focused.status === 'locked' ? 'rgba(138,138,154,0.5)' : COLOR_PILL_STROKE;
+    ctx.lineWidth = 2;
+    roundRect(ctx, MD_DETAIL_X, MD_DETAIL_Y, MD_DETAIL_W, MD_DETAIL_H, 12);
+    ctx.stroke();
+
+    const ccx = MD_DETAIL_X + MD_DETAIL_W / 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (focused.status === 'locked') {
+      // Locked: no preview image — lock glyph + the model's unlock requirement.
+      drawLockIcon(ctx, ccx, MD_DETAIL_Y + 80, 34, '#8a8a9a');
+      ctx.font = `17px ${FONT_UI}`;
+      ctx.fillStyle = '#ff9f9f';
+      ctx.fillText(focused.tooltip ?? '', ccx, MD_DETAIL_Y + 150);
+      ctx.font = `13px ${FONT_UI}`;
+      ctx.fillStyle = '#8a8a9a';
+      ctx.fillText('LOCKED', ccx, MD_DETAIL_Y + 185);
+    } else {
+      // Unlocked: title headline + clip art + play hint.
+      drawMarqueeTitle(ctx, focused.title.toUpperCase(), ccx, MD_DETAIL_Y + 45, 26, { color: CREAM });
+      if (focused.asset) {
+        const img = mediaClipImage(focused.asset);
+        if (img?.complete && img.naturalWidth > 0) {
+          drawFitted(ctx, img, MD_DETAIL_X + 25, MD_DETAIL_Y + 75, MD_DETAIL_W - 50, 140);
+        } else {
+          drawPlaceholder(ctx, MD_DETAIL_X + 25, MD_DETAIL_Y + 75, MD_DETAIL_W - 50, 140, 'clip');
+        }
+      } else {
+        drawPlaceholder(ctx, MD_DETAIL_X + 25, MD_DETAIL_Y + 75, MD_DETAIL_W - 50, 140, 'coming soon');
+      }
+      ctx.font = `17px ${FONT_UI}`;
+      ctx.fillStyle = COLOR_OPT_FOCUSED;
+      ctx.fillText('READY TO PLAY', ccx, MD_DETAIL_Y + 245);
+      ctx.font = `14px ${FONT_UI}`;
+      ctx.fillStyle = '#b9a98a';
+      ctx.fillText('Press Confirm to watch', ccx, MD_DETAIL_Y + 272);
+    }
+    ctx.restore();
+
+    // --- Keycap nav bar -------------------------------------------------------
+    drawNavBar(ctx, VIEW_W / 2, MD_NAV_Y, navHintEntries([
+      { actions: ['left', 'right'], label: 'Clip', opts: { mode: 'select_layout' } },
+      { action: 'confirm', label: 'Watch', opts: { mode: 'select_layout' } },
+      { action: 'back', label: 'Menu', opts: { mode: 'select_layout' } },
+    ]));
+
+    if (this.playing !== null) this.drawPlayback(ctx);
+  },
+
+  /** Playback overlay (plan §5.2): dim layer + large view of the open clip +
+   * a back-to-grid prompt. In-screen flag — no new state (credits pattern). */
+  drawPlayback(ctx) {
+    const card = this._cards().find(c => c.id === this.playing) ?? null;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    const vx = (VIEW_W - MD_VIEW_W) / 2;
+    const vy = (VIEW_H - MD_VIEW_H) / 2 - 20;
+    ctx.fillStyle = '#0d0d1a';
+    roundRect(ctx, vx, vy, MD_VIEW_W, MD_VIEW_H, 12);
+    ctx.fill();
+    ctx.strokeStyle = COLOR_PILL_STROKE;
+    ctx.lineWidth = 2;
+    roundRect(ctx, vx, vy, MD_VIEW_W, MD_VIEW_H, 12);
+    ctx.stroke();
+
+    if (card) {
+      drawMarqueeTitle(ctx, card.title.toUpperCase(), VIEW_W / 2, vy - 24, 28, { color: CREAM });
+      if (card.asset) {
+        const img = mediaClipImage(card.asset);
+        if (img?.complete && img.naturalWidth > 0) {
+          drawFitted(ctx, img, vx + 20, vy + 20, MD_VIEW_W - 40, MD_VIEW_H - 40);
+        } else {
+          drawPlaceholder(ctx, vx + 20, vy + 20, MD_VIEW_W - 40, MD_VIEW_H - 40, 'clip');
+        }
+      } else {
+        // Null asset (intro/ending): placeholder panel until real clips land.
+        drawPlaceholder(ctx, vx + 20, vy + 20, MD_VIEW_W - 40, MD_VIEW_H - 40, 'coming soon');
+      }
+    }
+
+    drawPrompt(ctx, 'PRESS ESC TO CLOSE', VIEW_W / 2, VIEW_H - 40, 20, { blink: true });
+    ctx.restore();
+  },
+
+  /** Step the focus by dir (±1), skipping locked cards (wrap-around). */
+  _move(dir) {
+    const cards = this._cards();
+    let next = this.focus;
+    for (let step = 0; step < cards.length; step++) {
+      next = (next + dir + cards.length) % cards.length;
+      if (cards[next].status !== 'locked') { this.focus = next; return; }
+    }
+  },
+
+  /**
+   * Handle semantic input. While the playback overlay is open, ANY action
+   * closes it and consumes the whole input generation (same G2 rationale as
+   * the Menu credits overlay — Escape emits both 'back' and 'pause'). On the
+   * grid: left/right AND up/down step the clip focus (skipping locked cards),
+   * confirm opens the playback overlay for the focused unlocked clip, back
+   * returns MENU.
+   * @returns {boolean} whether the action was handled
+   */
+  onAction(action) {
+    if (this.playing !== null) {
+      this.playing = null;
+      consumedGeneration = true;
+      return true; // eat the whole generation — nothing else runs this frame
+    }
+    switch (action) {
+      case 'left':
+      case 'up':
+        this._move(-1);
+        return true;
+      case 'right':
+      case 'down':
+        this._move(1);
+        return true;
+      case 'back':
+        if (tryTransition(S.MENU)) console.log('[screens] MEDIA → MENU (back)');
+        return true;
+      case 'confirm': {
+        const focused = this._cards()[this.focus];
+        if (!focused || focused.status === 'locked') return true; // safety net
+        this.playing = focused.id;
+        return true;
+      }
+    }
+    return false;
+  },
+
+  reset() { this.focus = 0; this.playing = null; },
+};
+
+// =============================================================================
 // OPTIONS SCREEN (menu-hub plan §4.1)
 //
 // Shared settings screen reachable from BOTH the main menu hub and Pause:
@@ -2091,6 +2358,10 @@ export function drawScreen(ctx, hero) {
     BossRush.draw(ctx);
     return true;
   }
+  if (s === S.MEDIA) {
+    Media.draw(ctx);
+    return true;
+  }
   if (s === S.SELECT) {
     Select.draw(ctx);
     return true;
@@ -2148,6 +2419,10 @@ let optionsOrigin = S.MENU;
 // reopen the overlay. Cleared at the top of every dispatch tick so a stale
 // flag can never swallow actions from the NEXT generation.
 let consumedGeneration = false;
+/** Test hook: clear the one-shot generation-consumed flag (unit tests drive
+ * screenOnAction directly and never run dispatchScreenInput, which normally
+ * clears it each tick). */
+export function _resetConsumedGenerationForTest() { consumedGeneration = false; }
 export function screenOnAction(action, hero, actions = {}) {
   const s = getState();
   if (s === S.PLAY) {
@@ -2164,6 +2439,7 @@ export function screenOnAction(action, hero, actions = {}) {
   if (s === S.LEVEL_SELECT) return LevelSelect.onAction(action);
   if (s === S.OPTIONS) return Options.onAction(action);
   if (s === S.BOSS_RUSH) return BossRush.onAction(action);
+  if (s === S.MEDIA) return Media.onAction(action);
   if (s === S.SELECT) { Select.onAction(action); return true; }
   if (s === S.REMAP) {
     if (Remap.onAction(action) === 'exit') tryTransition(remapParent);
@@ -2209,6 +2485,7 @@ export function screenReset(s, from) {
   // post-battle boss-rush return, plan §3.3 user decision); fresh entries
   // (from MENU) reset to card 0.
   if (s === S.BOSS_RUSH) BossRush.reset(from);
+  if (s === S.MEDIA) Media.reset();
   if (s === S.PAUSE) Pause.reset();
   if (s === S.OVER) GameOver.focus = 0;
   // REMAP returns to wherever it was opened from: HOME, PAUSE, or MENU.
