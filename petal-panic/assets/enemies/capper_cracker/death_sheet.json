@@ -1,0 +1,29 @@
+{
+  "file": "petal-panic/assets/enemies/capper_cracker/death_sheet.png",
+  "size": "2172x724",
+  "rows": 2,
+  "cols": 5,
+  "kind": "animation",
+  "description": "Capper Cracker death explosion and debris",
+  "entities": [{
+    "name": "capper_cracker",
+    "anim": "death",
+    "frames": [
+      {"file": "death_f1.png", "row": 0, "col": 0, "bbox": [32, 8, 376, 363]},
+      {"file": "death_f2.png", "row": 0, "col": 1, "bbox": [425, 6, 331, 367]},
+      {"file": "death_f3.png", "row": 0, "col": 2, "bbox": [784, 0, 375, 378]},
+      {"file": "death_f4.png", "row": 0, "col": 3, "bbox": [1170, 9, 477, 374]},
+      {"file": "death_f5.png", "row": 0, "col": 4, "bbox": [1659, 31, 448, 361]},
+      {"file": "death_f6.png", "row": 1, "col": 0, "bbox": [19, 374, 421, 308]},
+      {"file": "death_f7.png", "row": 1, "col": 1, "bbox": [422, 381, 455, 315]},
+      {"file": "death_f8.png", "row": 1, "col": 2, "bbox": [854, 407, 444, 297]},
+      {"file": "death_f9.png", "row": 1, "col": 3, "bbox": [1299, 426, 423, 284]},
+      {"file": "death_f10.png", "row": 1, "col": 4, "bbox": [1706, 480, 457, 227]}
+    ]
+  }],
+  "updated": "2026-10-26T18:35:58",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/capper_cracker",
+    "pass": "/home/goglue/tmp/capper_cracker/death-v1"
+  }
+}

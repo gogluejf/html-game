@@ -1,0 +1,31 @@
+{
+  "file": "petal-panic/assets/enemies/capper_cracker/shoot_sheet.png",
+  "size": "2172x724",
+  "rows": 2,
+  "cols": 6,
+  "kind": "animation",
+  "description": "Capper Cracker shoot explosion and recovery",
+  "entities": [{
+    "name": "capper_cracker",
+    "anim": "shoot",
+    "frames": [
+      {"file": "shoot_f1.png", "row": 0, "col": 0, "bbox": [43, 19, 341, 387]},
+      {"file": "shoot_f2.png", "row": 0, "col": 1, "bbox": [410, 13, 339, 395]},
+      {"file": "shoot_f3.png", "row": 0, "col": 2, "bbox": [759, 25, 315, 383]},
+      {"file": "shoot_f4.png", "row": 0, "col": 3, "bbox": [1120, 19, 323, 391]},
+      {"file": "shoot_f5.png", "row": 0, "col": 4, "bbox": [1472, 25, 310, 382]},
+      {"file": "shoot_f6.png", "row": 0, "col": 5, "bbox": [1827, 57, 297, 353]},
+      {"file": "shoot_f7.png", "row": 1, "col": 0, "bbox": [21, 417, 336, 265]},
+      {"file": "shoot_f8.png", "row": 1, "col": 1, "bbox": [408, 418, 335, 264]},
+      {"file": "shoot_f9.png", "row": 1, "col": 2, "bbox": [772, 447, 313, 238]},
+      {"file": "shoot_f10.png", "row": 1, "col": 3, "bbox": [1125, 472, 300, 212]},
+      {"file": "shoot_f11.png", "row": 1, "col": 4, "bbox": [1478, 475, 301, 212]},
+      {"file": "shoot_f12.png", "row": 1, "col": 5, "bbox": [1833, 484, 298, 205]}
+    ]
+  }],
+  "updated": "2026-10-26T18:35:58",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/capper_cracker",
+    "pass": "/home/goglue/tmp/capper_cracker/shoot-v2"
+  }
+}
