@@ -3,7 +3,7 @@
  "size": "1536x1024",
  "rows": 1,
  "cols": 1,
- "kind": "static",
+ "kind": "tile_variant",
  "description": "World map background for the menu hub",
  "entities": [
   {

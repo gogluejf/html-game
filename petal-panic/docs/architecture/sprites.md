@@ -27,6 +27,7 @@ A sprite animation contains:
 - ordered frames
 - default animation FPS
 - playback mode
+- playback direction
 - animation-level collision box
 - animation-level pivot point
 - per-frame sprite data
@@ -40,7 +41,7 @@ The Animation Studio JSON is the source of truth.
 
 ## 2. Animation Playback
 
-Animations play frames sequentially.
+Animations traverse their ordered frames according to their playback direction.
 
 An animation has a default FPS.
 
@@ -65,22 +66,61 @@ Do not duplicate frames simply to create timing differences.
 
 ---
 
-## 3. Playback Mode
+## 3. Playback Mode and Direction
 
-Each animation must define its playback behavior.
+Playback mode and playback direction are independent settings:
 
-Minimum supported modes:
+- `mode` controls whether the sequence repeats.
+- `direction` controls the order in which frames are visited.
 
-- `loop`
-- `once`
+### Playback Mode
 
-`loop`
-- After the final frame, return to frame 0.
+Each animation must define its playback mode:
 
-`once`
-- Stop on the final frame when playback completes.
+- `loop` — repeat the sequence continuously.
+- `once` — play one complete sequence, then hold its ending frame.
 
-The engine must expose whether a non-looping animation has completed so AI/gameplay code can react to completion.
+The ending frame depends on direction; it is not necessarily the final frame in the stored frame list.
+
+The engine must expose whether a non-looping animation has completed so AI/gameplay code can react to completion. Completion occurs after the ending frame's duration has elapsed.
+
+### Playback Direction
+
+Supported directions:
+
+| Direction | One complete sequence (five frames, labeled 1–5) |
+|---|---|
+| `forward` | 1 → 2 → 3 → 4 → 5 |
+| `reverse` | 5 → 4 → 3 → 2 → 1 |
+| `ping_pong` | 1 → 2 → 3 → 4 → 5 → 4 → 3 → 2 → 1 |
+| `ping_pong_reverse` | 5 → 4 → 3 → 2 → 1 → 2 → 3 → 4 → 5 |
+
+If `direction` is omitted, default to `forward` to preserve existing playback behavior.
+
+`ping_pong` starts at the first frame, reaches the last frame, and returns to the first frame. `ping_pong_reverse` starts at the last frame, reaches the first frame, and returns to the last frame.
+
+With `once`, the entire round trip plays before completion:
+
+- `forward` and `ping_pong_reverse` finish on the last stored frame.
+- `reverse` and `ping_pong` finish on the first stored frame.
+
+With `loop`, ping-pong playback continues without duplicating endpoints, including at the sequence boundary:
+
+    ping_pong:         1 → 2 → 3 → 4 → 5 → 4 → 3 → 2 → 1 → 2 → 3 → …
+    ping_pong_reverse: 5 → 4 → 3 → 2 → 1 → 2 → 3 → 4 → 5 → 4 → 3 → …
+
+Never introduce an extra endpoint hold by playing `…4 → 5 → 5 → 4…` or `…2 → 1 → 1 → 2…`. Explicit per-frame duration is the mechanism for intentional holds.
+
+Per-frame durations apply on every visit, in either direction. A single-frame animation stays on that frame in every direction; `once` completes after its duration, while `loop` remains active.
+
+Example:
+
+```json
+{
+  "mode": "loop",
+  "direction": "ping_pong"
+}
+```
 
 ---
 
