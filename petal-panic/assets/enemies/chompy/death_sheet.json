@@ -1,0 +1,30 @@
+{
+  "file": "petal-panic/assets/enemies/chompy/death_sheet.png",
+  "size": "2171x724",
+  "rows": 2,
+  "cols": 6,
+  "kind": "animation",
+  "description": "Chompy death disintegration with debris",
+  "entities": [{
+    "name": "chompy",
+    "anim": "death",
+    "frames": [
+      {"file": "death_f1.png", "row": 0, "col": 0, "bbox": [22, 98, 343, 221]},
+      {"file": "death_f2.png", "row": 0, "col": 1, "bbox": [360, 70, 355, 258]},
+      {"file": "death_f3.png", "row": 0, "col": 2, "bbox": [741, 22, 312, 303]},
+      {"file": "death_f4.png", "row": 0, "col": 3, "bbox": [1101, 62, 346, 280]},
+      {"file": "death_f5.png", "row": 0, "col": 4, "bbox": [1509, 43, 342, 305]},
+      {"file": "death_f6.png", "row": 0, "col": 5, "bbox": [1855, 96, 301, 244]},
+      {"file": "death_f7.png", "row": 1, "col": 0, "bbox": [21, 370, 332, 291]},
+      {"file": "death_f8.png", "row": 1, "col": 1, "bbox": [362, 368, 365, 308]},
+      {"file": "death_f9.png", "row": 1, "col": 2, "bbox": [737, 387, 389, 280]},
+      {"file": "death_f10.png", "row": 1, "col": 3, "bbox": [1157, 420, 454, 245]},
+      {"file": "death_f11.png", "row": 1, "col": 4, "bbox": [1619, 382, 524, 283]}
+    ]
+  }],
+  "updated": "2026-10-26T18:45:13",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/chompy",
+    "pass": "/home/goglue/tmp/chompy/death-v7"
+  }
+}

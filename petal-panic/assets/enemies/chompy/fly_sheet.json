@@ -1,0 +1,29 @@
+{
+  "file": "petal-panic/assets/enemies/chompy/fly_sheet.png",
+  "size": "2170x725",
+  "rows": 2,
+  "cols": 5,
+  "kind": "animation",
+  "description": "Chompy flying attack cycle",
+  "entities": [{
+    "name": "chompy",
+    "anim": "fly",
+    "frames": [
+      {"file": "fly_f1.png", "row": 0, "col": 0, "bbox": [17, 148, 420, 206]},
+      {"file": "fly_f2.png", "row": 0, "col": 1, "bbox": [474, 143, 357, 217]},
+      {"file": "fly_f3.png", "row": 0, "col": 2, "bbox": [885, 41, 368, 342]},
+      {"file": "fly_f4.png", "row": 0, "col": 3, "bbox": [1304, 17, 414, 368]},
+      {"file": "fly_f5.png", "row": 0, "col": 4, "bbox": [1706, 16, 451, 390]},
+      {"file": "fly_f6.png", "row": 1, "col": 0, "bbox": [42, 373, 433, 335]},
+      {"file": "fly_f7.png", "row": 1, "col": 1, "bbox": [512, 398, 403, 292]},
+      {"file": "fly_f8.png", "row": 1, "col": 2, "bbox": [940, 449, 405, 231]},
+      {"file": "fly_f9.png", "row": 1, "col": 3, "bbox": [1367, 480, 387, 209]},
+      {"file": "fly_f10.png", "row": 1, "col": 4, "bbox": [1779, 479, 378, 197]}
+    ]
+  }],
+  "updated": "2026-10-26T18:45:13",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/chompy",
+    "pass": "/home/goglue/tmp/chompy/fly-v2"
+  }
+}
