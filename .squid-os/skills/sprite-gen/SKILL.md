@@ -175,7 +175,7 @@ python3 <skill-folder>/scripts/sprite_gen.py state \
   --state <working-dir>/.squid-os/sprite-sheets/<PROJECT>/ \
   --add-sheet cat=<category> entity=<entity_name> anim=<action> \
   src=<ANY path to the PNG, e.g. ~/Downloads/gpt_output.png or repo-relative> \
-  rows=<R> cols=<C> description="<what it is visually>" \
+  rows=<R> cols=<C> kind=animation description="<what it is visually>" \
   [--prompt-file /tmp/<entity>_<action>_prompt.txt]
 ```
 **Fully deterministic.** You supply `cat` + `entity` + `anim` + a source PNG from ANY path; the tool does the rest:
@@ -215,48 +215,19 @@ The category/entity folders mirror the assets tree and double as the editor's gr
 
 **Sheet file schema — pure visual asset data only (enforced by CLI):**
 
-```json
-{
-  "file": "petal-panic/assets/heroes/scarlet_vale/run_sheet.png",
-  "size": "1619x324",
-  "rows": 1,
-  "cols": 5,
-  "description": "Scarlet Vale run cycle",
-  "entities": [
-    {"name": "scarlet_vale", "anim": "run"}
-  ],
-  "original_prompt": "exact prompt sent to GPT or reverse-engineered",
-  "crop": {
-    "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
-    "pass": "<tmp crop dir>"
-  }
-}
-```
+Top-level: `file`, `size`, `rows`, `cols`, `kind`, `description`, `entities[]`
+(+ optional `original_prompt`, `crop`). Each entity is `{name, anim}` (+ optional
+`row` provenance); after cropping it gains `frames:[{file,row,col,bbox}]`.
+`kind` ∈ `animation | tile_variant | entity_variant`. The `crop` block is written
+by record_crop.py, not here.
 
-Field meanings:
-- `file` — sheet path relative to `<working-dir>` (twin JSON sits next to it)
-- `size` — actual image dimensions `WxH`
-- `rows` / `cols` — grid layout (one action per sheet → usually rows=1)
-- `description` — one-liner of what the sheet is visually
-- `entities[]` — `{name, anim}` (+ optional `row` provenance). After cropping, each entity gains `frames:[{file,row,col,bbox}]`.
-- `original_prompt` — exact prompt as sent to GPT, or reverse-engineered from image inspection
-- `crop` — written by `record_crop.py`, NOT hand-edited (`frames_dir` = the entity folder)
+**Full schema & layout: @skill:sprite-engine → references/CONVENTION.md (single
+source of truth).** Do not duplicate field details here.
 
-**Meta file schema** (`<sheets-root>/<project>.meta.json`):
-```json
-{
-  "project": "petal-panic",
-  "chat_url": "https://chatgpt.com/c/<uuid>",
-  "style_name": "hand-painted circus parchment",
-  "palette": ["crimson", "gold", "cream", "black"],
-  "assets_dir": "petal-panic/assets",
-  "updated": "2026-09-10T03:48:11"
-}
-```
-- `chat_url` — the ChatGPT conversation to resume (null if sheets were pre-existing)
-- `style_name` — human-readable style anchor for prompts
-- `palette` — dominant color names
-- `assets_dir` — project asset folder relative to `<working-dir>`
+**Meta file schema** (`<sheets-root>/<project>.meta.json`) — owned by this skill's
+`state`: `chat_url`, `style_name`, `palette`, `assets_dir` (+ `project`, `updated`).
+The registry holds ONLY meta files; sheet JSONs live as twins next to their PNGs
+in the assets tree (see CONVENTION.md).
 
 **Frame naming convention:** `<action>_f<N>.png` inside the entity folder (e.g. `assets/heroes/scarlet_vale/run_f1.png`). One sheet per entity+action: `<action>_sheet.png` + twin `<action>_sheet.json`.
 

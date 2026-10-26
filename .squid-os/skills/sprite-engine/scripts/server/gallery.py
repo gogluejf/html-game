@@ -8,7 +8,6 @@ Filters: three dropdowns — game (project), category, kind.
 Usage: python3 gallery.py --root <repo-root> [port]   (default port 8799)
 """
 import argparse
-import glob
 import html
 import json
 import os
@@ -32,9 +31,29 @@ def main():
 
 def collect_sheets():
     out = []
-    pats = ["*/assets/*/*/*_sheet.png", "*/assets/*/*/*/*_sheet.png"]
-    for pat in pats:
-        for p in glob.glob(os.path.join(ROOT, pat)):
+    seen = set()
+    for dirpath, dirs, files in os.walk(ROOT):
+        # Skip version-control noise and only consider assets subtrees.
+        if "/.git" in dirpath or os.path.basename(dirpath) == ".git":
+            continue
+        # The sheet must live under an `assets/` folder of some project:
+        # <root>/<project>/assets/<category>/<entity>/<anim>_sheet.png
+        parts = os.path.relpath(dirpath, ROOT).split(os.sep)
+        if "assets" not in parts:
+            continue
+        aidx = parts.index("assets")
+        game = parts[0]                                  # abyss-qwen | petal-panic
+        rel_assets = parts[aidx + 1:]                    # category/entity/...
+        cat = rel_assets[0] if len(rel_assets) > 1 else ""   # boss, enemies, levels...
+        entity = rel_assets[1] if len(rel_assets) > 2 else ""  # grim_vertigo, jester...
+        for f in files:
+            if not f.endswith("_sheet.png"):
+                continue
+            p = os.path.join(dirpath, f)
+            rel = os.path.relpath(p, ROOT)
+            if rel in seen:
+                continue
+            seen.add(rel)
             jf = p[:-4] + ".json"
             kind = "?"
             if os.path.exists(jf):
@@ -42,11 +61,6 @@ def collect_sheets():
                     kind = json.load(open(jf)).get("kind", "?")
                 except Exception:
                     pass
-            rel = os.path.relpath(p, ROOT)
-            parts = rel.split(os.sep)
-            game = parts[0]                          # abyss-qwen | petal-panic
-            cat = parts[2] if len(parts) > 4 else ""  # boss, enemies, levels...
-            entity = parts[3] if len(parts) > 4 else ""  # grim_vertigo, jester...
             out.append((rel, kind, game, cat, entity))
     return sorted(out)
 

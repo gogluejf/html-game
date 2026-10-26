@@ -4,6 +4,7 @@
 // collision + melee). Boxes are full-line half-opaque, no anchor handles. Cells
 // are separated by a dashed line; the playing frame gets a focus outline.
 
+import { seekSequence } from './sequence.js';
 import { app, FILM } from './state.js';
 import { $ } from './viewport.js';
 import { curFrameIdx } from './geometry.js';
@@ -39,7 +40,7 @@ export function drawFilm(){
     for (let i=0;i<n;i++){
       const cell=document.createElement('div'); cell.className='fcell';
       cell.title='go to frame '+(i+1);
-      cell.addEventListener('click', ()=>{ if(!app.cur||!app.cur.st) return; app.cur.st.frameIdx=i%app.cur.st.frames.length; app.acc=0; app._selectedBox=null; syncPanel(); mainDraw(); });
+      cell.addEventListener('click', ()=>{ if(!app.cur||!app.cur.st) return; seekSequence(app.cur.st, i%app.cur.st.frames.length); app.acc=0; app._selectedBox=null; syncPanel(); mainDraw(); });
       const num=document.createElement('span'); num.className='fnum'; num.textContent=i+1;
       const cv2=document.createElement('canvas');
       cell.appendChild(num); cell.appendChild(cv2);

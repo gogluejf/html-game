@@ -11,7 +11,7 @@
 # calling shell (and the agent session) never waits on it.
 set -uo pipefail
 
-# server.sh lives at <repo>/.squid-os/sprite-editor/server.sh → repo root is 2 levels up.
+# server.sh lives at <repo>/.squid-os/skills/sprite-engine/scripts/editor/server.sh → repo root is 5 levels up.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DIR="$(cd "$SCRIPT_DIR/../../../../.." && pwd)"
 PIDFILE="/tmp/sprite-editor-server.pid"

@@ -327,6 +327,7 @@ def cmd_state(args):
         meta_data = {
             "project": proj,
             "chat_url": args.chat_url or None,
+            "style_name": args.style_name or None,
             "palette": [],
             "assets_dir": args.assets_dir or "",
             "updated": time.strftime("%Y-%m-%dT%H:%M:%S"),

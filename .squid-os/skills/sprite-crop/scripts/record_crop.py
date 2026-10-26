@@ -2,11 +2,12 @@
 """
 record-crop — the ONLY writer of crop data into a sheet's json file.
 
-One-json-per-sheet model: each sheet lives at
-  .squid-os/sprite-sheets/<project>/<label>/<sheet>.json
-This CLI is pointed at that ONE file (--sheet) and rewrites only it. It never
-reads sibling sheets, so a single-sheet crop touches a few KB, not the whole
-project state.
+Twin-JSON model: each sheet's json lives NEXT TO its PNG in the assets tree at
+  <assets-dir>/<category>/<entity>/<anim>_sheet.json
+(never under .squid-os/sprite-sheets/ — that dir holds only <project>.meta.json).
+This CLI is pointed at that ONE file (--sheet, any path to the twin) and rewrites
+only it. It never reads sibling sheets, so a single-sheet crop touches a few KB,
+not the whole project state.
 
 Reads the extract_frames.py --json result and, for the given sheet file:
   1. REPLACES sheet.entities ENTIRELY from the result (idempotent full rewrite).
@@ -23,7 +24,7 @@ Nothing else may write crop data or frame lists. Agents never touch state;
 this CLI is called once per sheet after frames are verified + installed.
 
 Usage:
-  python3 record_crop.py --sheet <sprite-sheets/proj/label/sheet.json> \
+  python3 record_crop.py --sheet <assets-dir>/<category>/<entity>/<anim>_sheet.json \
                          --result <extract-result.json> [--frames-dir <dir>]
 
 Crop block written (legacy row_y/col_x/frame_size/bg_* are DROPPED; bbox now

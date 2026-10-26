@@ -1,4 +1,5 @@
 // ---------- playback: tick loop, play/pause, frame step, fps ----------
+import { advanceSequence, resumeSequence, seekSequence } from './sequence.js';
 import { app, ROT_MAX_VEL, ROT_ACCEL, ROT_DECEL } from './state.js';
 import { $ } from './viewport.js';
 import { curFrameIdx, editingLocked } from './geometry.js';
@@ -19,28 +20,13 @@ function tick(t){
   const dt = (t-app.lastT)/1000; app.lastT = t;
   // frame animation — unit-based accumulator
   if (app.cur.st.playing){
-    app.acc += dt * app.cur.st.speed;   // accumulate in UNITS (1 unit = 1/fps seconds)
-    const fi = curFrameIdx();
-    const units = app.cur.st.frames[fi].durUnits || 1;
-    if (app.acc >= units){
-      app.acc -= units;
-      const next = fi + 1;
-      if (next >= app.cur.st.frames.length){
-        if ((app.cur.st.playback || 'loop') === 'once'){
-          // stop at final frame
-          app.cur.st.frameIdx = app.cur.st.frames.length - 1;
-          setPlaying(false);
-          app.acc = 0;
-        } else {
-          app.cur.st.frameIdx = 0;
-        }
-      } else {
-        app.cur.st.frameIdx = next;
-      }
-      app._selectedBox = null;   // clear box selection on frame change
+    const changed = advanceSequence(app.cur.st, dt);
+    if (app.cur.st.completed) setPlaying(false);
+    if (changed){
+      app._selectedBox = null;
       syncPanel(); draw();
     }
-  } else { app.acc = 0; }
+  }
   // lightweight current-frame highlight update (avoids full table rebuild at 60fps)
   const _tbl = $('timingTable');
   if (_tbl){
@@ -83,7 +69,9 @@ export function setPlaying(p){
   if(!app.cur || !app.cur.st) return;
   app.cur.st.playing = !!p;
   app.isPlaying = !!p;
-  if (p) app.acc = 0;   // fresh start: no leftover accumulation
+  const restarting = !!p && !!app.cur.st.completed;
+  if (p) resumeSequence(app.cur.st);
+  if (restarting){ syncPanel(); draw(); }
   $('playIco').innerHTML = app.cur.st.playing ? '&#10074;&#10074;' : '&#9654;';
   syncPanelDisabled();   // lock/unlock side inputs with play state
   syncToggles();   // update MELEE ON disabled state immediately
@@ -91,7 +79,7 @@ export function setPlaying(p){
   // it made cross-tab storage sync reload sibling tabs on every press.
 }
 
-export function stepFrame(d){ if(!app.cur||!app.cur.st)return; const st=app.cur.st; st.frameIdx=(st.frameIdx+d+st.frames.length)%st.frames.length; app.acc=0; app._selectedBox=null; syncPanel(); draw(); }
+export function stepFrame(d){ if(!app.cur||!app.cur.st)return; const st=app.cur.st; seekSequence(st, (st.frameIdx+d+st.frames.length)%st.frames.length); app.acc=0; app._selectedBox=null; syncPanel(); draw(); }
 
 export function setSpeed(v){ if(!app.cur||!app.cur.st)return; app.cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = app.cur.st.speed+' fps'; $('p_speed').value = app.cur.st.speed; markGameDataChanged(); buildTimingTable(); }
 

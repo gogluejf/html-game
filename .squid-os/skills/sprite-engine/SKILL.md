@@ -5,7 +5,9 @@ allowed-tools: bash read_file write_file edit_file inspect_media open
 ---
 
 ## Overview
-Sheet tooling for the cat/entity/anim asset convention: audit (ground-truth checker over every *_sheet.json — structure, bboxes, pixel round-trip, frame gaps), reassemble (split mixed sheets into per-anim sheets by gluing existing frame PNGs — never re-cropping), carve_anim (cut frame ranges out of a per-anim sheet into new anims with full renumber + round-trip verify), glue (shared frames-to-sheet primitive), and a browsable gallery server (thumbnails + game/category/kind filters). All scripts are deterministic CLIs that take explicit paths — no hardcoded locations.
+Sheet tooling for the cat/entity/anim asset convention: audit (ground-truth checker over every *_sheet.json — structure, bboxes, pixel round-trip, frame gaps), reassemble (split mixed sheets into per-anim sheets by gluing existing frame PNGs — never re-cropping), carve_anim (cut frame ranges out of a per-anim sheet into new anims with full renumber + round-trip verify), glue (shared frames-to-sheet primitive), a browsable gallery server (thumbnails + game/category/kind filters), and the sprite EDITOR (tunes finished assets — hit boxes, collision, pivots, markers, playback). All scripts are deterministic CLIs that take explicit paths — no hardcoded locations.
+
+**Single source of truth for asset layout & sheet JSON schema: [references/CONVENTION.md](references/CONVENTION.md) — read it before any mutation.** This skill is the orchestrator/hub for the shared asset convention used by @skill:sprite-gen and @skill:sprite-crop.
 
 ## Variables
 - `<skill-folder>` — directory containing this skill's SKILL.md (scripts live in <skill-folder>/scripts/)
@@ -51,11 +53,23 @@ bash <skill-folder>/scripts/server/server.sh go [port] [root]
 
 Open http://localhost:8799 — thumbnail grid of every per-anim sheet with game/category/kind filter dropdowns; click a card for full-size view with its path. Scans the live assets tree on every request (no cache). root defaults to the repo root inferred from the script location. Stop: server.sh stop. If the page 404s, a stale process is serving from the wrong dir: server.sh stop, kill any orphan on the port (ss -tlnp | grep 8799), restart with server.sh go. Verify before opening: curl -s -o /dev/null -w "%{http_code}" http://localhost:8799/ must return 200.
 
+### 5. Sprite editor (tune finished assets)
+
+The editor edits FINISHED assets only — it writes **tuning data** (per-anim: speed, playback, direction, collision, pivot, markers; per-frame: offset, scale, boxes, durUnits). It never touches crop data (file/row/col/bbox). Every save goes through `record_tuning.py` (the single write path for tuning, shared by editor and agent).
+
+```bash
+bash <skill-folder>/scripts/editor/server.sh go [port]   # default 8766
+# → prints http://localhost:8766
+```
+
+Open: `http://localhost:8766/.squid-os/skills/sprite-engine/scripts/editor/index.html?project=<name>` (change `?project=` to switch projects instantly). The server serves the repo root and derives its writable prefixes from every `.squid-os/sprite-sheets/*.meta.json` `assets_dir` (+ legacy `.squid-os/sprite-sheets/`). Stop: `server.sh stop`. If it 404s, a stale process is mis-rooted: `server.sh stop`, kill any orphan on the port (`ss -tlnp | grep 8766`), restart with `server.sh go`. Verify before opening: `curl -s -o /dev/null -w "%{http_code}" "http://localhost:8766/.squid-os/skills/sprite-engine/scripts/editor/index.html"` must be 200.
+
 ## Rules
 - **Convention is strict:** {project}/assets/{cat}/{entity}/{anim}_sheet.{png,json} + {anim}_f{N}.png flat in the entity dir. One action per sheet. Twin JSON always next to its PNG with exact base-name parity.
 - **Sheet JSON schema:** file, size, rows, cols, kind, description, entities[] where each entity has name, anim, frames_dir, frames[{file,row,col,bbox}]. kind = animation | tile_variant | entity_variant (required).
 - **Glue, never re-crop:** when splitting or rebuilding sheets, work from existing verified frame PNGs — never re-run extraction over original AI sheets.
-- **State written only via CLI:** audit/reassemble/carve_anim (this skill) and sprite-gen --add-sheet / record_crop.py (@skill:sprite-gen, @skill:sprite-crop). NEVER hand-edit sheet or meta JSON.
+- **Two-writer partition (never hand-edit):** crop data (`file,row,col,bbox`, `frames[]`, `crop` block) is written ONLY by @skill:sprite-crop `record_crop.py`; tuning data (`speed,playback,direction,collision,pivot,markers` + per-frame `offset,scale,boxes,durUnits`) is written ONLY by this skill's `record_tuning.py`. Each writer never touches the other domain's fields. Sheet-level visual fields belong to @skill:sprite-gen `state --add-sheet`. See references/CONVENTION.md.
+- **State written only via CLI:** audit/reassemble/carve_anim (this skill), record_tuning.py (editor saves), and sprite-gen --add-sheet / record_crop.py (@skill:sprite-gen, @skill:sprite-crop). NEVER hand-edit sheet or meta JSON.
 - **Audit before mutating:** run audit.py first; hard errors abort reassemble. Carve always round-trip verifies at the end — a failed verification means stop and inspect.
 - **Scripts take explicit paths:** always pass --root <working-dir>; never rely on cwd or __file__ inference.
 - **Verify the gallery URL before opening it** (curl must return 200); 404 = stale/mis-rooted server process.
@@ -102,4 +116,12 @@ User: "show me the sheets"
 ## Resources
 
 ### References
+- [CONVENTION.md](references/CONVENTION.md) — **Single source of truth** for asset layout, sheet JSON schema, the two-writer data partition, registry, and pipeline stages. Read before any mutation.
+- [sheet-schema.json](references/sheet-schema.json) — Machine-checkable sheet schema (used by record_tuning.py validation).
 - [PLAN.md](references/PLAN.md) — Additional documentation
+
+### Scripts
+- [audit.py](scripts/audit.py), [reassemble.py](scripts/reassemble.py), [carve_anim.py](scripts/carve_anim.py), [glue.py](scripts/glue.py) — deterministic CLIs
+- [record_tuning.py](scripts/record_tuning.py) — the ONLY writer of tuning data into a sheet's twin JSON
+- [editor/](scripts/editor/) — served sprite editor app (multi-file ES modules + Python server, port 8766); saves delegate to record_tuning.py
+- [server/](scripts/server/) — browsable sheet gallery server (port 8799)

@@ -191,6 +191,12 @@
       <div class="row" style="flex-wrap:nowrap;"><span>Frames</span><span class="sp"></span><input type="number" id="p_acount" disabled><div class="timing-mode-inline">
         <button class="tbtn tsm tog on" id="pbLoop" title="loop playback">&#8635; Loop</button>
         <button class="tbtn tsm tog" id="pbOnce" title="play once then stop">&#9654; Once</button>
+        <select id="pbDirection" class="tbtn tsm" aria-label="Playback direction" title="Playback direction">
+          <option value="forward">Forward</option>
+          <option value="reverse">Reverse</option>
+          <option value="ping_pong">Ping-pong</option>
+          <option value="ping_pong_reverse">Ping-pong reverse</option>
+        </select>
       </div></div>
       <div class="row"><span>Speed (fps)</span><div class="pair"><div class="cell"><b>V</b><input type="number" id="p_speed" min="1" max="60" value="8"></div></div></div>
       <div class="timing-table" id="timingTable"></div>

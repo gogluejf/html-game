@@ -147,7 +147,16 @@
   /* ---------- timing section ---------- */
   #timingSection{margin-top:4px;}
   .timing-mode{display:flex;gap:8px;margin:6px 0 10px;}
-  .timing-mode-inline{display:flex;gap:6px;margin-left:12px;flex:none;}
+  .timing-mode-inline{display:flex;gap:3px;margin-left:3px;flex:none;align-items:center;}
+  #timingSection > .row:first-child{gap:4px;}
+  #timingSection > .row:first-child > span:first-child{width:44px;}
+  #timingSection > .row:first-child .sp{display:none;}
+  #timingSection > .row:first-child .numwrap{width:36px;flex:none;}
+  #timingSection > .row:first-child .numwrap .arr{display:none;}
+  #timingSection #p_acount{width:36px;padding:5px 3px;}
+  #pbDirection{width:116px;min-width:0;padding:3px 2px;font-size:10px;letter-spacing:0;}
+  #pbDirection:focus-visible{outline:1px solid var(--acc);}
+  #pbDirection option{background:var(--panel);color:var(--txt);}
   .timing-mode-inline .tbtn.tsm{padding:3px 8px;font-size:10px;white-space:nowrap;flex:none;}
   .tbtn.tsm{font-size:11px;padding:4px 14px;border-radius:8px;letter-spacing:.5px;background:none;border:1.5px solid var(--faint);color:var(--dim);cursor:pointer;font-family:inherit;transition:all .15s;font-weight:bold;}
   .tbtn.tsm:hover{border-color:var(--acc);color:var(--acc);}

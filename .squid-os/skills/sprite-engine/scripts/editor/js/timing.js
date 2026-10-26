@@ -1,4 +1,5 @@
 // ---------- timing table (per-frame duration units) ----------
+import { frameSequence, resetSequence } from './sequence.js';
 import { app } from './state.js';
 import { $ } from './viewport.js';
 import { curFrameIdx } from './geometry.js';
@@ -68,7 +69,7 @@ export function buildTimingTable(){
 export function updateTimingTotal(){
   if (!app.cur || !app.cur.st) return;
   const st = app.cur.st;
-  const totalUnits = st.frames.reduce((s, f) => s + (f.durUnits || 1), 0);
+  const totalUnits = frameSequence(st).reduce((s, i) => s + (st.frames[i].durUnits || 1), 0);
   const totalMs = Math.round(totalUnits * baseUnitMs());
   $('timingTotal').textContent = totalMs + 'ms (' + totalUnits + ' units @ ' + st.speed + 'fps)';
 }
@@ -77,13 +78,18 @@ export function updateTimingTotal(){
 export function initTimingControls(){
   $('pbLoop').addEventListener('click', () => {
     if (!app.cur || !app.cur.st) return;
-    commit(() => { app.cur.st.playback = 'loop'; });
+    commit(() => { app.cur.st.playback = 'loop'; resetSequence(app.cur.st); });
     syncPlaybackButtons();
   });
   $('pbOnce').addEventListener('click', () => {
     if (!app.cur || !app.cur.st) return;
-    commit(() => { app.cur.st.playback = 'once'; });
+    commit(() => { app.cur.st.playback = 'once'; resetSequence(app.cur.st); });
     syncPlaybackButtons();
+  });
+  $('pbDirection').addEventListener('change', () => {
+    if (!app.cur || !app.cur.st) return;
+    commit(() => { app.cur.st.direction = $('pbDirection').value; resetSequence(app.cur.st); });
+    $('pbDirection').blur();
   });
   // reset all timing
   $('timingResetBtn').addEventListener('click', () => {
@@ -102,6 +108,7 @@ export function initTimingControls(){
 export function syncPlaybackButtons(){
   if (!app.cur || !app.cur.st) return;
   const val = app.cur.st.playback || 'loop';
+  $('pbDirection').value = app.cur.st.direction || 'forward';
   $('pbLoop').classList.toggle('on', val === 'loop');
   $('pbOnce').classList.toggle('on', val === 'once');
 }

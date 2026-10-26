@@ -4,7 +4,7 @@
 //   { project, labels: [{ name, entities: [{ name, char, anim, row, frames:[{file,bbox}], sheetFile, framesDir }] }] }
 //
 // The server serves the repo root, so:
-//   /sprite-sheets/<project>/<label>/<sheet>.json  -> sheet data
+//   /{project}/assets/{cat}/{entity}/*.json  -> twin sheet JSONs (one per entity folder)
 //   /<framesDir>/<frameFile>                       -> cropped frame image
 //   /<sheetFile>                                   -> full sprite sheet image
 
@@ -70,6 +70,7 @@ function buildLabelEntities(labelName, sheets){
         tuning: {
           speed: e.speed ?? null,
           playback: e.playback ?? null,
+          direction: e.direction || 'forward',
           collision: e.collision ?? null,
           pivot: e.pivot ?? null,
           markers: e.markers ?? null,

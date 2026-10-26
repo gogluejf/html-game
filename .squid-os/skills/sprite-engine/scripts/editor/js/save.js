@@ -36,6 +36,7 @@ export function collectGameData(st){
   return {
     speed: st.speed,
     playback: st.playback || 'loop',
+    direction: st.direction || 'forward',
     collision: st.collision,
     pivot: st.pivot,
     markers: st.markers || [],
@@ -130,7 +131,7 @@ export async function clearTuning(){
   } catch(e) { /* server might be down — local clear still worked */ }
   // Mirror the disk clear into the in-memory manifest so in-app navigation
   // doesn't re-merge the now-deleted tuning until a page refresh.
-  en.tuning = { speed: null, playback: null, collision: null, pivot: null, markers: null,
+  en.tuning = { speed: null, playback: null, direction: null, collision: null, pivot: null, markers: null,
                 frames: en.frames.map(() => ({ offset:null, scale:null, boxes:null, durUnits:null })) };
   updateSaveButton();
   updateDirtyDots();
@@ -265,6 +266,7 @@ export async function saveToDisk(){
   en.tuning = {
     speed: gameData.speed,
     playback: gameData.playback,
+    direction: gameData.direction,
     collision: gameData.collision,
     pivot: gameData.pivot,
     markers: gameData.markers,

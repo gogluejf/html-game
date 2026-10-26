@@ -1,4 +1,5 @@
 // ---------- main: boot, orchestration, global event wiring ----------
+import { seekSequence } from './sequence.js';
 import { app, FILM, ROT_TAP_MS } from './state.js';
 import { $, cv, resizeCanvas, setZoom, evPos } from './viewport.js';
 import { loadProject, getProjectName } from './loader.js';
@@ -29,9 +30,6 @@ import { buildMarkerList } from './markers.js';
 function togglePlay(){
   if (!app.cur || !app.cur.st) return;
   const st = app.cur.st;
-  if (!st.playing && st.playback === 'once' && st.frames.length > 0 && curFrameIdx() === st.frames.length - 1){
-    stepFrame(1); // wrap to frame 1 only when replaying Once from the end
-  }
   setPlaying(!st.playing);
 }
 
@@ -259,7 +257,7 @@ function initKeyboard(){
       if (direct !== null && direct >= 0){
         e.preventDefault();
         const max = st.frames.length - 1;
-        st.frameIdx = Math.min(direct, max); app.acc=0; app._selectedBox=null;
+        seekSequence(st, Math.min(direct, max)); app.acc=0; app._selectedBox=null;
         syncPanel(); draw();
         return;
       }

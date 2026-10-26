@@ -8,7 +8,7 @@ allowed-tools: bash read_file write_file inspect_media open
 Crops animation frames from transparent-background sprite sheets by discovering which foreground pixels belong to each frame, then deriving rectangles — never the other way around. Pipeline: vision assessment of expected structure → alpha mask → connected components → row grouping → per-row frame clustering (constrained by expected counts) → component ownership including detached satellites → bounding-rect crops → deterministic validation (counts, edge-touching, orphans). Every stage emits a readable trace plus optional JSON for debugging and state recording. Vision is used only for the initial structural assessment and for flagged low-confidence cases; all pixel work is deterministic.
 
 ## Variables
-- `<skill-folder>` — directory containing this SKILL.md\n- `<working-dir>` — the REPO ROOT (e.g. ~/src/html-game), NOT the game subfolder\n- `<sheets-root>` — <working-dir>/.squid-os/sprite-sheets/ — one dir per project, each holding `<label>/<sheet>.json` (ONE file per sheet) plus a sibling `<project>.meta.json`\n- `<sheet-file>` — the single sheet json for the sheet being cropped, e.g. .squid-os/sprite-sheets/<PROJECT>/<label>/<sheet>.json (source of truth for that sheet's paths, rows/cols, entity names)\n- `<assets-dir>` — project asset folder from meta (assets_dir, e.g. petal-panic/assets)
+- `<skill-folder>` — directory containing this SKILL.md\n- `<working-dir>` — the REPO ROOT (e.g. ~/src/html-game), NOT the game subfolder\n- `<sheets-root>` — <working-dir>/.squid-os/sprite-sheets/ — the REGISTRY only: one `<project>.meta.json` per project (chat_url, style_name, palette, assets_dir). It holds NO sheet JSONs — those live as **twins next to their PNGs** in the assets tree.\n- `<sheet-file>` — the single sheet json for the sheet being cropped, a twin beside its PNG: `<assets-dir>/<category>/<entity>/<anim>_sheet.json` (source of truth for that sheet's paths, rows/cols, entity names)\n- `<assets-dir>` — project asset folder from meta (assets_dir, e.g. petal-panic/assets)
 
 ## Instructions
 **PRIMARY METHOD:** the deterministic CLI does all pixel math — you supply the structural assessment and do verification:
@@ -59,10 +59,10 @@ Read the full trace output. Exit code 0 = PASS, 2 = issues found (see VALIDATION
 
 ### 4. Install verified frames
 
-Copy the FINAL verified pass to the project (FLAT structure, no per-entity subfolders):
+Copy the FINAL verified pass into the project's entity folder (the `{category}/{entity}/` convention used everywhere else — frames land flat next to their sheet twin):
 ```bash
-mkdir -p <working-dir>/<assets-dir>/<label>
-cp <tmp-dir>-v<N>/*.png <working-dir>/<assets-dir>/<label>/
+mkdir -p <working-dir>/<assets-dir>/<category>/<entity>
+cp <tmp-dir>-v<N>/*.png <working-dir>/<assets-dir>/<category>/<entity>/
 ```
 Use @tool:open on the destination folder so the user can review.
 
@@ -72,9 +72,9 @@ The extract step MUST be run with `--json <out-dir>/result.json`. After frames a
 ```bash
 python3 <working-dir>/.squid-os/skills/sprite-crop/scripts/record_crop.py \
   --sheet <sheet-file> --result <out-dir>/result.json \
-  [--frames-dir "<assets-dir>/<label>"]
+  [--frames-dir "<assets-dir>/<category>/<entity>"]
 ```
-`--sheet` is the single sheet json (`.squid-os/sprite-sheets/<PROJECT>/<label>/<sheet>.json`). The CLI reads ONLY that file — it never loads sibling sheets — so a single-sheet crop touches a few KB, not the whole project. This is IDEMPOTENT: re-running for a re-cropped sheet REPLACES `entities` and the `crop` block (no duplicates). It writes only:
+`--sheet` is the single sheet json — a twin beside its PNG at `<assets-dir>/<category>/<entity>/<anim>_sheet.json`. The CLI reads ONLY that file — it never loads sibling sheets — so a single-sheet crop touches a few KB, not the whole project. This is IDEMPOTENT: re-running for a re-cropped sheet REPLACES `entities` and the `crop` block (no duplicates). It writes only:
 ```json
 "crop": {
   "frames_dir": "...",
@@ -83,28 +83,14 @@ python3 <working-dir>/.squid-os/skills/sprite-crop/scripts/record_crop.py \
 ```
 Each entity's frames carry their bbox inline: `{name, anim, frames:[{file,row,col,bbox}]}`. All legacy grid fields (`row_y`, `col_x`, `frame_size`, `bg_color`, `bg_tol`) are dropped on record.
 
-### 6. Sprite editor (served app)
+### 6. Sprite editor (served app) — now lives in @skill:sprite-engine
 
-The editor is a multi-file ES module app served by the local server. It loads
-per-sheet JSONs at runtime — no render step needed.
-
-```bash
-bash <working-dir>/.squid-os/skills/sprite-crop/scripts/server/server.sh go
-# → prints the ready URL, e.g. http://localhost:8766
-```
-
-Open: `http://localhost:8766/.squid-os/skills/sprite-crop/scripts/server/index.html?project=<name>`
-
-**If the editor 404s:** a stale server process is serving from the wrong directory (e.g. cwd = game subfolder instead of repo root). Fix:
-```bash
-bash <working-dir>/.squid-os/skills/sprite-crop/scripts/server/server.sh stop
-# kill any orphan on the port if stop says "not running":
-ss -tlnp | grep 8766   # → kill that PID, then:
-bash <working-dir>/.squid-os/skills/sprite-crop/scripts/server/server.sh go
-```
-Verify before opening: `curl -s -o /dev/null -w "%{http_code}" "<url>"` must return 200.
-
-Both projects load instantly by changing the `?project=` param. No re-render.
+The sprite editor (hit boxes, collision, pivots, markers, playback tuning) moved
+to **@skill:sprite-engine** — `scripts/editor/`, port **8766**. It edits finished
+assets and writes ONLY tuning data via `record_tuning.py`. See its SKILL.md for
+how to start it (`bash scripts/editor/server.sh go` →
+`http://localhost:8766/index.html?project=<name>`). This skill no longer ships the
+editor or its save backend.
 
 ## Rules
 - **Frames are clusters, not cells.** Ownership first, rectangles second. Never treat a virtual grid or measured separator as a clipping boundary — limbs/attacks may cross into neighbor territory and must stay whole.
@@ -117,8 +103,8 @@ Both projects load instantly by changing the `?project=` param. No re-render.
 - **Filenames are ALWAYS `<entity>_<action>_f<N>.png`.** Entity prefix on every file, one action word per row, _fN sequential within that row. Game code loads by this pattern. EXCEPTION: with `--span`, _fN runs continuously across all rows (one animation), so a 2×5 special yields `f1..f10` in a single sequence.
 - **Only verified frames reach the project.** Nothing is copied into <assets-dir> until its pass passed inspection AND validation reported PASS (or issues were explicitly accepted by the user).
 - **State is written ONLY via CLI** (record-crop). NEVER hand-edit the sheet JSON.
-- **Verify the editor URL before opening it.** `curl` the index.html path; 404 means a stale/mis-rooted server process — stop, kill the orphan on the port, restart via server.sh go.
-- **Flat frame structure.** Frames go directly in assets/<label>/ — NO per-entity subfolders.
+- **The editor lives in @skill:sprite-engine.** Hit boxes, collision, pivots, markers, and playback tuning are edited there (`scripts/editor/`, port 8766); its saves go through `record_tuning.py`. This skill owns crop data only.
+- **Flat frame structure.** Frames go directly in `<assets-dir>/<category>/<entity>/` — no per-frame subfolders.
 - **Single-image sheets** (backgrounds, single props, no animation): skip extract entirely — the image is already one transparent PNG; just copy it into <assets-dir>/ and register it in state like before.
 - **Vision resolves ambiguity, code moves pixels.** Low-confidence ownership flags get a vision look; never silently guess satellite ownership, and never use vision to guess pixel coordinates.
 
@@ -136,7 +122,7 @@ Both projects load instantly by changing the `?project=` param. No re-render.
 - **Validation:** [PASS — N/N frames / ISSUES — details]
 - **Adjustment passes:** [N] (params changed: [none / margin / satellite-radius / rows / ...])
 - **Verification:** [PASS — X crops inspected, 0 issues / FAIL — details]
-- **Frames installed:** <assets-dir>/<label>/ ([total] PNGs)
+- **Frames installed:** <assets-dir>/<category>/<entity>/ ([total] PNGs)
 - **State updated:** yes/no
 - **Status:** DONE / NEEDS USER DECISION (reason)
 ```
@@ -152,7 +138,7 @@ Skill actions:
 2. extract --rows 5,4,5 --names flower_dog --anims run,attack,death --json result.json
 3. Trace: row 1 gap-split finds only 3 clean separators for 4 expected → takes deepest 3; wide attack cluster spans ~2 normal cells; 6 petal satellites assigned to attack frame 3, 2 flagged low-confidence
 4. Inspect flower_dog_attack_f3, flower_dog_death_f5, flower_dog_run_f1 + 2 flagged → petals intact, no bleed
-5. Validation PASS 14/14 → install to assets/<label>/, record-crop
+5. Validation PASS 14/14 → install to assets/<category>/<entity>/, record-crop
 
 **Example 2: Clustering mismatch**
 
@@ -190,8 +176,11 @@ Skill actions:
 
 ### Scripts
 - [extract_frames.py](scripts/extract_frames.py) — Executable script
-- [server/](scripts/server/) — Served sprite editor app (multi-file ES modules + Python server)
-- [record_tuning.py](scripts/record_tuning.py) — CLI: read/write/list/clear tuning data in sheet JSONs
+- [record_crop.py](scripts/record_crop.py) — CLI: the ONLY writer of crop data (bboxes, frames) into a sheet's twin JSON
 
 ### References
 - [extraction-design.md](references/extraction-design.md) — Additional documentation
+- [sheet-schema.json](references/sheet-schema.json) — Machine-checkable sheet schema (full convention: @skill:sprite-engine → references/CONVENTION.md)
+
+### Deprecated
+- [_deprecated/](scripts/_deprecated/) — `migrate_state.py`, `normalize_sheets.py`: target the dead `.squid-os/sprite-sheets/<proj>/<label>/` registry layout; kept for history only. Do not use.

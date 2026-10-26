@@ -1,5 +1,6 @@
 // ---------- sidebar: class -> character (alpha) -> animations ----------
 import { app } from './state.js';
+import { resetSequence } from './sequence.js';
 import { $, tree, resizeCanvas } from './viewport.js';
 import { frameUrls } from './loader.js';
 import { syncPanel } from './panel.js';
@@ -131,7 +132,7 @@ export function defaultState(name, imgs, paths, crops){
   const W = f1 ? f1.naturalWidth : 1, H = f1 ? f1.naturalHeight : 1;
   const st = {
     key: name, speed: 8, playing: true, frameIdx: 0,
-    playback: 'loop',
+    playback: 'loop', direction: 'forward',
     collision: null, pivot: null, markers: [],
     rot: { angle: 0, speed: 360, playing: false },   // degrees, deg/s, independent of frame anim
     frames: paths.map((p, i) => ({
@@ -176,6 +177,7 @@ export async function selectEntity(li, ei, opts){
     const t = en.tuning;
     if (t.speed != null) st.speed = t.speed;
     if (t.playback) st.playback = t.playback;
+    if (t.direction) st.direction = t.direction;
     if (t.collision) st.collision = t.collision;
     if (t.pivot) st.pivot = t.pivot;
     if (Array.isArray(t.markers)) st.markers = t.markers;
@@ -194,6 +196,7 @@ export async function selectEntity(li, ei, opts){
     Object.assign(st, {
       speed: gd.speed ?? st.speed,
       playback: gd.playback || st.playback,
+      direction: gd.direction || 'forward',
       collision: gd.collision || st.collision,
       pivot: gd.pivot || st.pivot,
       markers: Array.isArray(gd.markers) ? gd.markers : [],
@@ -206,6 +209,7 @@ export async function selectEntity(li, ei, opts){
       if (gf.durUnits >= 1) st.frames[i].durUnits = gf.durUnits;
     });
   }
+  resetSequence(st);
   app.S.set(app.cur.name, st);
   app.cur.st = st;
   app.cur.st.playing = app.isPlaying;   // carry global play/pause across animations

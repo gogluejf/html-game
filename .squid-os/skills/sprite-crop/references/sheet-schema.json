@@ -10,6 +10,7 @@
     "size",
     "rows",
     "cols",
+    "kind",
     "description",
     "entities"
   ],
@@ -37,6 +38,11 @@
       "type": "integer",
       "minimum": 1,
       "description": "Number of columns in the sheet grid."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["animation", "tile_variant", "entity_variant"],
+      "description": "Sheet semantics: animation (temporal frames), tile_variant (1x1 tiles/backdrops/cards), or entity_variant (same entity, visual variants). Required."
     },
     "description": {
       "type": "string",
@@ -123,6 +129,12 @@
           "type": "string",
           "enum": ["loop", "once"],
           "description": "Whether the animation loops or plays once."
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["forward", "reverse", "ping_pong", "ping_pong_reverse"],
+          "default": "forward",
+          "description": "Frame traversal, independent of playback mode. Once includes the full round trip; loops never repeat endpoints."
         },
         "collision": {
           "type": "object",

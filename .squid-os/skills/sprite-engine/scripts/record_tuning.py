@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Read/write gameplay tuning data in sprite sheet JSON files.
 
-Tuning fields (per animation): speed, playback, collision, pivot, markers.
+Tuning fields (per animation): speed, playback, direction, collision, pivot, markers.
 Frame-level tuning fields: offset, scale, boxes, durUnits.
 
 Crop data (file, row, col, bbox, name, anim) is never modified by write/clear.
@@ -12,9 +12,8 @@ import json
 import os
 import sys
 
-ANIM_FIELDS = ("speed", "playback", "collision", "pivot", "markers")
+ANIM_FIELDS = ("speed", "playback", "direction", "collision", "pivot", "markers")
 FRAME_FIELDS = ("offset", "scale", "boxes", "durUnits")
-CROP_FIELDS = {"file", "row", "col", "bbox", "name", "anim"}
 
 SCHEMA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            '..', 'references', 'sheet-schema.json')
