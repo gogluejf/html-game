@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/enemies/zizag/base_jump_sheet.png",
+ "size": "1610x362",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "zizag base jump: idle->dive launch (from dive-attack strip f1-4)",
+ "entities": [
+  {
+   "name": "zizag",
+   "anim": "base_jump",
+   "frames_dir": "petal-panic/assets/enemies/zizag",
+   "frames": [
+    {
+     "file": "base_jump_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      13,
+      318,
+      336
+     ]
+    },
+    {
+     "file": "base_jump_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      318,
+      18,
+      394,
+      325
+     ]
+    },
+    {
+     "file": "base_jump_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      712,
+      0,
+      439,
+      362
+     ]
+    },
+    {
+     "file": "base_jump_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1151,
+      15,
+      459,
+      332
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-26"
+}

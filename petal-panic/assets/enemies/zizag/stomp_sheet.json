@@ -1,0 +1,29 @@
+{
+ "file": "petal-panic/assets/enemies/zizag/stomp_sheet.png",
+ "size": "275x403",
+ "rows": 1,
+ "cols": 1,
+ "kind": "animation",
+ "description": "zizag stomp impact with dust burst (from dive-attack strip f7)",
+ "entities": [
+  {
+   "name": "zizag",
+   "anim": "stomp",
+   "frames_dir": "petal-panic/assets/enemies/zizag",
+   "frames": [
+    {
+     "file": "stomp_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      275,
+      403
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-26"
+}

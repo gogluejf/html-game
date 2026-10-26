@@ -1,0 +1,33 @@
+{
+  "file": "petal-panic/assets/enemies/zizag/glide_sheet.png",
+  "size": "1983x793",
+  "rows": 2,
+  "cols": 7,
+  "kind": "animation",
+  "description": "zizag glide on membrane wings, 2 rows x7",
+  "entities": [{
+    "name": "zizag",
+    "anim": "glide",
+    "frames": [
+      {"file": "glide_f1.png", "row": 0, "col": 0, "bbox": [17, 150, 291, 197]},
+      {"file": "glide_f2.png", "row": 0, "col": 1, "bbox": [321, 140, 265, 193]},
+      {"file": "glide_f3.png", "row": 0, "col": 2, "bbox": [586, 148, 296, 202]},
+      {"file": "glide_f4.png", "row": 0, "col": 3, "bbox": [888, 161, 309, 218]},
+      {"file": "glide_f5.png", "row": 0, "col": 4, "bbox": [1184, 135, 262, 250]},
+      {"file": "glide_f6.png", "row": 0, "col": 5, "bbox": [1468, 123, 272, 283]},
+      {"file": "glide_f7.png", "row": 0, "col": 6, "bbox": [1717, 123, 245, 281]},
+      {"file": "glide_f8.png", "row": 1, "col": 0, "bbox": [13, 443, 296, 271]},
+      {"file": "glide_f9.png", "row": 1, "col": 1, "bbox": [252, 473, 281, 279]},
+      {"file": "glide_f10.png", "row": 1, "col": 2, "bbox": [538, 470, 265, 219]},
+      {"file": "glide_f11.png", "row": 1, "col": 3, "bbox": [799, 483, 310, 217]},
+      {"file": "glide_f12.png", "row": 1, "col": 4, "bbox": [1103, 478, 292, 192]},
+      {"file": "glide_f13.png", "row": 1, "col": 5, "bbox": [1386, 471, 274, 189]},
+      {"file": "glide_f14.png", "row": 1, "col": 6, "bbox": [1660, 488, 310, 204]}
+    ]
+  }],
+  "updated": "2026-10-26T15:42:08",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/zizag",
+    "pass": "/home/goglue/tmp/sprite-ingest/zizag_glide"
+  }
+}
