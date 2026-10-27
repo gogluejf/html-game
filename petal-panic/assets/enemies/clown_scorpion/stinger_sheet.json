@@ -1,0 +1,25 @@
+{
+  "file": "petal-panic/assets/enemies/clown_scorpion/stinger_sheet.png",
+  "size": "2172x724",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "Clown scorpion tail stinger whip attack with impact flash",
+  "entities": [{
+    "name": "clown_scorpion",
+    "anim": "stinger",
+    "frames_dir": "petal-panic/assets/enemies/clown_scorpion",
+    "frames": [
+      {"file": "stinger_f1.png", "row": 0, "col": 0, "bbox": [3, 205, 380, 349]},
+      {"file": "stinger_f2.png", "row": 0, "col": 1, "bbox": [402, 192, 441, 358]},
+      {"file": "stinger_f3.png", "row": 0, "col": 2, "bbox": [821, 229, 625, 320]},
+      {"file": "stinger_f4.png", "row": 0, "col": 3, "bbox": [1432, 193, 382, 363]},
+      {"file": "stinger_f5.png", "row": 0, "col": 4, "bbox": [1830, 210, 338, 346]}
+    ]
+  }],
+  "updated": "2026-10-27T18:24:58",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/clown_scorpion",
+    "pass": "/home/goglue/tmp/scorp_stinger_v1"
+  }
+}

@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/clown_scorpion/flip_sheet.png",
+ "size": "1961x524",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "Clown scorpion flip/fall tumble with motion trails",
+ "entities": [
+  {
+   "name": "clown_scorpion",
+   "anim": "flip",
+   "frames_dir": "petal-panic/assets/enemies/clown_scorpion",
+   "frames": [
+    {
+     "file": "flip_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      111,
+      353,
+      302
+     ]
+    },
+    {
+     "file": "flip_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      353,
+      0,
+      335,
+      524
+     ]
+    },
+    {
+     "file": "flip_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      688,
+      25,
+      388,
+      473
+     ]
+    },
+    {
+     "file": "flip_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1076,
+      52,
+      435,
+      420
+     ]
+    },
+    {
+     "file": "flip_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1511,
+      76,
+      450,
+      371
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-27"
+}
