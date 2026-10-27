@@ -1182,7 +1182,9 @@ export const AttackTheater = {
       }
     }
 
-    // Live projectiles/specials.
+    // Live projectiles/specials — specials delegate to their own renderer so
+    // the theater matches gameplay visuals (type-branched). Projectiles keep
+    // the flat debug box for now.
     if (this._pools) {
       for (const p of this._pools.projectilePool.activeItems) {
         ctx.fillStyle = '#ff6ec7';
@@ -1190,16 +1192,14 @@ export const AttackTheater = {
       }
       for (const s of this._pools.specialPool.activeItems) {
         if (s._attackVisualOwned) continue;
-        ctx.fillStyle = '#fa4';
-        ctx.fillRect(s.x, s.y, s.w, s.h);
+        s.draw(ctx);
       }
     }
 
     // Spawned enemies (spawnSplit spawnType='enemy').
     for (const e of this._spawnedEnemies ?? []) {
       if (!e.alive) continue;
-      ctx.fillStyle = e.hitFlash > 0 ? '#fff' : '#e74c3c';
-      ctx.fillRect(e.x, e.y, e.w, e.h);
+      e.draw(ctx);
       ctx.fillStyle = '#fff';
       ctx.font = '9px monospace';
       ctx.textAlign = 'center';
@@ -1209,8 +1209,7 @@ export const AttackTheater = {
     // Landed throwEnemy children (real enemy entities).
     for (const e of this._thrownEnemies ?? []) {
       if (!e.alive) continue;
-      ctx.fillStyle = e.hitFlash > 0 ? '#fff' : (e._detonated ? '#f80' : '#e67e22');
-      ctx.fillRect(e.x, e.y, e.w, e.h);
+      e.draw(ctx);
       ctx.fillStyle = '#fff';
       ctx.font = '9px monospace';
       ctx.textAlign = 'center';
