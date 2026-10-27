@@ -1,0 +1,105 @@
+{
+  "file": "petal-panic/assets/heroes/scarlet_vale/ribbon_storm_sheet.png",
+  "size": "4160x552",
+  "rows": 1,
+  "cols": 8,
+  "kind": "animation",
+  "description": "scarlet vale ribbon storm attack (8 frames)",
+  "entities": [
+    {
+      "name": "scarlet_vale",
+      "anim": "ribbon_storm",
+      "frames_dir": "petal-panic/assets/heroes/scarlet_vale",
+      "frames": [
+        {
+          "file": "ribbon_storm_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            146,
+            46,
+            260,
+            459
+          ]
+        },
+        {
+          "file": "ribbon_storm_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            668,
+            67,
+            255,
+            417
+          ]
+        },
+        {
+          "file": "ribbon_storm_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1186,
+            67,
+            259,
+            417
+          ]
+        },
+        {
+          "file": "ribbon_storm_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1673,
+            23,
+            325,
+            506
+          ]
+        },
+        {
+          "file": "ribbon_storm_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            2165,
+            56,
+            382,
+            440
+          ]
+        },
+        {
+          "file": "ribbon_storm_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            2694,
+            63,
+            364,
+            426
+          ]
+        },
+        {
+          "file": "ribbon_storm_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            3267,
+            57,
+            258,
+            438
+          ]
+        },
+        {
+          "file": "ribbon_storm_f8.png",
+          "row": 0,
+          "col": 7,
+          "bbox": [
+            3810,
+            53,
+            212,
+            446
+          ]
+        }
+      ]
+    }
+  ]
+}
