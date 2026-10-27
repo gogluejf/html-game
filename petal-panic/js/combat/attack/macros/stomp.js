@@ -294,15 +294,19 @@ defineMacro('stomp', {
 
         case 'impact': {
           // Children are live (strike window open / waves traveling). Step
-          // them; once ALL settle, move to the impact hold.
+          // them with the LIVE targets from this frame (not the pendingTargets
+          // snapshot): the old stompWave passed fresh targets every frame, so
+          // enemies walking into a traveling wave still got hit. The snapshot
+          // is only correct for the single-frame radius blast above.
+          const live = targets ?? pendingTargets;
           let allDone = true;
           if (h.strike) {
-            const fin = typeof h.strike.step === 'function' ? h.strike.step(dt, pendingTargets) : true;
+            const fin = typeof h.strike.step === 'function' ? h.strike.step(dt, live) : true;
             if (fin || h.strike._completed) { h.strike = null; } else allDone = false;
           }
           for (let i = h.waves.length - 1; i >= 0; i--) {
             const w = h.waves[i];
-            const finished = typeof w.step === 'function' ? w.step(dt, pendingTargets) : true;
+            const finished = typeof w.step === 'function' ? w.step(dt, live) : true;
             if (finished) h.waves.splice(i, 1);
             else allDone = false;
           }
