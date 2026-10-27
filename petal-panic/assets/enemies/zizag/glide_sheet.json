@@ -1,10 +1,10 @@
 {
-  "file": "petal-panic/assets/enemies/zizag/glide_sheet.png",
-  "size": "3600x832",
-  "rows": 2,
-  "cols": 9,
+  "file": "./glide_sheet.png",
+  "size": "1423x250",
+  "rows": 1,
+  "cols": 5,
   "kind": "animation",
-  "description": "zizag glide on membrane wings, 2 rows x7",
+  "description": "zizag glide (5 frames) \u2014 carved",
   "entities": [
     {
       "name": "zizag",
@@ -16,8 +16,8 @@
           "row": 0,
           "col": 0,
           "bbox": [
-            70,
-            117,
+            0,
+            26,
             291,
             197
           ]
@@ -27,8 +27,8 @@
           "row": 0,
           "col": 1,
           "bbox": [
-            483,
-            119,
+            291,
+            28,
             265,
             193
           ]
@@ -38,8 +38,8 @@
           "row": 0,
           "col": 2,
           "bbox": [
-            868,
-            115,
+            556,
+            24,
             296,
             202
           ]
@@ -49,8 +49,8 @@
           "row": 0,
           "col": 3,
           "bbox": [
-            1261,
-            107,
+            852,
+            16,
             309,
             218
           ]
@@ -60,161 +60,14 @@
           "row": 0,
           "col": 4,
           "bbox": [
-            1685,
-            91,
+            1161,
+            0,
             262,
             250
-          ]
-        },
-        {
-          "file": "glide_f6.png",
-          "row": 0,
-          "col": 5,
-          "bbox": [
-            2080,
-            74,
-            272,
-            283
-          ]
-        },
-        {
-          "file": "glide_f7.png",
-          "row": 0,
-          "col": 6,
-          "bbox": [
-            2493,
-            75,
-            245,
-            281
-          ]
-        },
-        {
-          "file": "glide_f8.png",
-          "row": 0,
-          "col": 7,
-          "bbox": [
-            2868,
-            80,
-            296,
-            271
-          ]
-        },
-        {
-          "file": "glide_f9.png",
-          "row": 0,
-          "col": 8,
-          "bbox": [
-            3275,
-            76,
-            281,
-            279
-          ]
-        },
-        {
-          "file": "glide_f10.png",
-          "row": 1,
-          "col": 0,
-          "bbox": [
-            83,
-            506,
-            265,
-            219
-          ]
-        },
-        {
-          "file": "glide_f11.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            461,
-            507,
-            310,
-            217
-          ]
-        },
-        {
-          "file": "glide_f12.png",
-          "row": 1,
-          "col": 2,
-          "bbox": [
-            870,
-            520,
-            292,
-            192
-          ]
-        },
-        {
-          "file": "glide_f13.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            1279,
-            521,
-            274,
-            189
-          ]
-        },
-        {
-          "file": "glide_f14.png",
-          "row": 1,
-          "col": 4,
-          "bbox": [
-            1661,
-            514,
-            310,
-            204
-          ]
-        },
-        {
-          "file": "glide_f15.png",
-          "row": 1,
-          "col": 5,
-          "bbox": [
-            2075,
-            476,
-            281,
-            279
-          ]
-        },
-        {
-          "file": "glide_f16.png",
-          "row": 1,
-          "col": 6,
-          "bbox": [
-            2468,
-            480,
-            296,
-            271
-          ]
-        },
-        {
-          "file": "glide_f17.png",
-          "row": 1,
-          "col": 7,
-          "bbox": [
-            2893,
-            475,
-            245,
-            281
-          ]
-        },
-        {
-          "file": "glide_f18.png",
-          "row": 1,
-          "col": 8,
-          "bbox": [
-            3280,
-            474,
-            272,
-            283
           ]
         }
       ]
     }
   ],
-  "updated": "2026-10-26T15:42:08",
-  "crop": {
-    "frames_dir": "petal-panic/assets/enemies/zizag",
-    "pass": "/home/goglue/tmp/sprite-ingest/zizag_glide"
-  }
+  "updated": "2026-10-27"
 }

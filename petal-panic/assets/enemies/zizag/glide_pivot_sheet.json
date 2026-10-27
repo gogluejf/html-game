@@ -1,0 +1,62 @@
+{
+  "file": "./glide_pivot_sheet.png",
+  "size": "1094x283",
+  "rows": 1,
+  "cols": 4,
+  "kind": "animation",
+  "description": "zizag glide_pivot (4 frames) \u2014 carved from glide",
+  "entities": [
+    {
+      "name": "zizag",
+      "anim": "glide_pivot",
+      "frames_dir": "petal-panic/assets/enemies/zizag",
+      "frames": [
+        {
+          "file": "glide_pivot_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            272,
+            283
+          ]
+        },
+        {
+          "file": "glide_pivot_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            272,
+            1,
+            245,
+            281
+          ]
+        },
+        {
+          "file": "glide_pivot_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            517,
+            6,
+            296,
+            271
+          ]
+        },
+        {
+          "file": "glide_pivot_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            813,
+            2,
+            281,
+            279
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-27"
+}
