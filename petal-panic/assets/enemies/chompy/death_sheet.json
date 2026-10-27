@@ -20,7 +20,8 @@
       {"file": "death_f9.png", "row": 1, "col": 2, "bbox": [737, 387, 389, 280]},
       {"file": "death_f10.png", "row": 1, "col": 3, "bbox": [1157, 420, 454, 245]},
       {"file": "death_f11.png", "row": 1, "col": 4, "bbox": [1619, 382, 524, 283]}
-    ]
+    ],
+    "frames_dir": "petal-panic/assets/enemies/chompy"
   }],
   "updated": "2026-10-26T18:45:13",
   "crop": {

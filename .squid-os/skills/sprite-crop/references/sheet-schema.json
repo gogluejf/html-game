@@ -83,6 +83,18 @@
       "items": {
         "$ref": "#/$defs/entity"
       }
+    },
+    "if": {
+      "required": ["crop"]
+    },
+    "then": {
+      "properties": {
+        "entities": {
+          "items": {
+            "required": ["name", "anim", "frames_dir"]
+          }
+        }
+      }
     }
   },
   "$defs": {

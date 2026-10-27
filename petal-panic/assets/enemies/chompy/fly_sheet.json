@@ -19,7 +19,8 @@
       {"file": "fly_f8.png", "row": 1, "col": 2, "bbox": [940, 449, 405, 231]},
       {"file": "fly_f9.png", "row": 1, "col": 3, "bbox": [1367, 480, 387, 209]},
       {"file": "fly_f10.png", "row": 1, "col": 4, "bbox": [1779, 479, 378, 197]}
-    ]
+    ],
+    "frames_dir": "petal-panic/assets/enemies/chompy"
   }],
   "updated": "2026-10-26T18:45:13",
   "crop": {

@@ -57,8 +57,13 @@ never touch the other domain's fields. Never hand-edit either.
 
 **Crop data** — written ONLY by @skill:sprite-crop `record_crop.py`:
 - per frame: `file`, `row`, `col`, `bbox`
-- per entity: `name`, `anim`, `frames[]`
+- per entity: `name`, `anim`, `frames_dir`, `frames[]`
 - sheet-level: the `crop` block (`frames_dir`, `pass`)
+
+The crop writer must preserve existing non-crop fields on matched entities
+(`name` + `anim`) and non-crop fields on matched frames (filename). It may add
+or update crop fields only; it must never silently discard tuning or other
+metadata, and it must validate all referenced frames before replacing the file.
 
 **Tuning data** — written ONLY by @skill:sprite-engine `record_tuning.py`
 (the sprite editor's save backend):

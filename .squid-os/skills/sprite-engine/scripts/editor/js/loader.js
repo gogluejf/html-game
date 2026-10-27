@@ -124,6 +124,7 @@ export async function loadProject(projectName){
 
 // Resolve the absolute URL for a cropped frame image.
 export function frameUrl(entity, frame){
+  if (!entity.framesDir) throw new Error(`frames_dir missing for ${entity.name}/${entity.anim}`);
   return `/${entity.framesDir}/${frame.file}`;
 }
 

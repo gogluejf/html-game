@@ -74,14 +74,20 @@ python3 <working-dir>/.squid-os/skills/sprite-crop/scripts/record_crop.py \
   --sheet <sheet-file> --result <out-dir>/result.json \
   [--frames-dir "<assets-dir>/<category>/<entity>"]
 ```
-`--sheet` is the single sheet json — a twin beside its PNG at `<assets-dir>/<category>/<entity>/<anim>_sheet.json`. The CLI reads ONLY that file — it never loads sibling sheets — so a single-sheet crop touches a few KB, not the whole project. This is IDEMPOTENT: re-running for a re-cropped sheet REPLACES `entities` and the `crop` block (no duplicates). It writes only:
+`--sheet` is the single sheet json — a twin beside its PNG at `<assets-dir>/<category>/<entity>/<anim>_sheet.json`. The CLI reads ONLY that file — it never loads sibling sheets — so a single-sheet crop touches a few KB, not the whole project. It is IDEMPOTENT: re-running for a re-cropped sheet REPLACES `entities` and the `crop` block (no duplicates) while preserving non-crop/tuning fields on matched entities and frames. It writes only:
 ```json
 "crop": {
   "frames_dir": "...",
   "pass": "<tmp dir>"
 }
 ```
-Each entity's frames carry their bbox inline: `{name, anim, frames:[{file,row,col,bbox}]}`. All legacy grid fields (`row_y`, `col_x`, `frame_size`, `bg_color`, `bg_tol`) are dropped on record.
+Each entity's frames carry their bbox inline: `{name, anim, frames_dir, frames:[{file,row,col,bbox}]}`. All legacy grid fields (`row_y`, `col_x`, `frame_size`, `bg_color`, `bg_tol`) are dropped on record.
+
+To repair missing entity-level `frames_dir` values without re-cropping or touching tuning:
+```bash
+python3 <working-dir>/.squid-os/skills/sprite-crop/scripts/record_crop.py \
+  --sheet <sheet-file> --repair-frames-dir
+```
 
 ### 6. Sprite editor (served app) — now lives in @skill:sprite-engine
 
@@ -89,7 +95,7 @@ The sprite editor (hit boxes, collision, pivots, markers, playback tuning) moved
 to **@skill:sprite-engine** — `scripts/editor/`, port **8766**. It edits finished
 assets and writes ONLY tuning data via `record_tuning.py`. See its SKILL.md for
 how to start it (`bash scripts/editor/server.sh go` →
-`http://localhost:8766/index.html?project=<name>`). This skill no longer ships the
+`http://localhost:8766/.squid-os/skills/sprite-engine/scripts/editor/index.html?project=<name>`). This skill no longer ships the
 editor or its save backend.
 
 ## Rules

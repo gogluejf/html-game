@@ -73,6 +73,8 @@ def main():
             fdir = e.get("frames_dir") or os.path.dirname(jf)
             if not os.path.isdir(fdir):
                 fdir = os.path.dirname(jf)
+            if "crop" in d and not e.get("frames_dir"):
+                print(f"X {rel} {e.get('name')}/{e.get('anim')}: cropped sheet missing entity frames_dir"); errs += 1
             for f in e["frames"]:
                 bbox = f.get("bbox")
                 if bbox is None:

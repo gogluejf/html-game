@@ -14,7 +14,8 @@
       {"file": "idle_f3.png", "row": 0, "col": 2, "bbox": [849, 173, 415, 357]},
       {"file": "idle_f4.png", "row": 0, "col": 3, "bbox": [1304, 183, 394, 349]},
       {"file": "idle_f5.png", "row": 0, "col": 4, "bbox": [1756, 167, 386, 366]}
-    ]
+    ],
+    "frames_dir": "petal-panic/assets/enemies/capper_cracker"
   }],
   "updated": "2026-10-26T18:35:58",
   "crop": {

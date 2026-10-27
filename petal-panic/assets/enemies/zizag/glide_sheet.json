@@ -23,7 +23,8 @@
       {"file": "glide_f12.png", "row": 1, "col": 4, "bbox": [1103, 478, 292, 192]},
       {"file": "glide_f13.png", "row": 1, "col": 5, "bbox": [1386, 471, 274, 189]},
       {"file": "glide_f14.png", "row": 1, "col": 6, "bbox": [1660, 488, 310, 204]}
-    ]
+    ],
+    "frames_dir": "petal-panic/assets/enemies/zizag"
   }],
   "updated": "2026-10-26T15:42:08",
   "crop": {
