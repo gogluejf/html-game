@@ -1,0 +1,26 @@
+{
+  "file": "petal-panic/assets/enemies/metal_head/shoot_sheet.png",
+  "size": "2172x724",
+  "rows": 1,
+  "cols": 6,
+  "kind": "animation",
+  "description": "Metal Head cannon fire \u2014 muzzle flash build, fire, smoke dissipate",
+  "entities": [{
+    "name": "metal_head",
+    "anim": "shoot",
+    "frames_dir": "petal-panic/assets/enemies/metal_head",
+    "frames": [
+      {"file": "shoot_f1.png", "row": 0, "col": 0, "bbox": [17, 232, 278, 346]},
+      {"file": "shoot_f2.png", "row": 0, "col": 1, "bbox": [346, 235, 287, 345]},
+      {"file": "shoot_f3.png", "row": 0, "col": 2, "bbox": [668, 234, 392, 346]},
+      {"file": "shoot_f4.png", "row": 0, "col": 3, "bbox": [1038, 231, 364, 350]},
+      {"file": "shoot_f5.png", "row": 0, "col": 4, "bbox": [1424, 236, 371, 343]},
+      {"file": "shoot_f6.png", "row": 0, "col": 5, "bbox": [1835, 178, 332, 403]}
+    ]
+  }],
+  "updated": "2026-10-27T18:14:57",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/metal_head",
+    "pass": "/home/goglue/tmp/metal_head_shoot_v1"
+  }
+}

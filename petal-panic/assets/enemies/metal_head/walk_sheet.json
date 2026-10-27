@@ -1,0 +1,26 @@
+{
+  "file": "petal-panic/assets/enemies/metal_head/walk_sheet.png",
+  "size": "2116x743",
+  "rows": 1,
+  "cols": 6,
+  "kind": "animation",
+  "description": "Metal Head walk cycle \u2014 6 frames stepping",
+  "entities": [{
+    "name": "metal_head",
+    "anim": "walk",
+    "frames_dir": "petal-panic/assets/enemies/metal_head",
+    "frames": [
+      {"file": "walk_f1.png", "row": 0, "col": 0, "bbox": [8, 163, 402, 491]},
+      {"file": "walk_f2.png", "row": 0, "col": 1, "bbox": [374, 165, 357, 479]},
+      {"file": "walk_f3.png", "row": 0, "col": 2, "bbox": [742, 167, 356, 486]},
+      {"file": "walk_f4.png", "row": 0, "col": 3, "bbox": [1091, 152, 360, 501]},
+      {"file": "walk_f5.png", "row": 0, "col": 4, "bbox": [1457, 163, 346, 494]},
+      {"file": "walk_f6.png", "row": 0, "col": 5, "bbox": [1796, 171, 320, 487]}
+    ]
+  }],
+  "updated": "2026-10-27T18:14:57",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/metal_head",
+    "pass": "/home/goglue/tmp/metal_head_walk_v1"
+  }
+}

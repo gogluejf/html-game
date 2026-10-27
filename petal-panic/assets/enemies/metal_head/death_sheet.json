@@ -1,0 +1,26 @@
+{
+  "file": "petal-panic/assets/enemies/metal_head/death_sheet.png",
+  "size": "2172x724",
+  "rows": 1,
+  "cols": 6,
+  "kind": "animation",
+  "description": "Metal Head death \u2014 stagger, fall, explode into parts + smoke",
+  "entities": [{
+    "name": "metal_head",
+    "anim": "death",
+    "frames_dir": "petal-panic/assets/enemies/metal_head",
+    "frames": [
+      {"file": "death_f1.png", "row": 0, "col": 0, "bbox": [20, 180, 336, 405]},
+      {"file": "death_f2.png", "row": 0, "col": 1, "bbox": [369, 195, 346, 402]},
+      {"file": "death_f3.png", "row": 0, "col": 2, "bbox": [698, 281, 380, 308]},
+      {"file": "death_f4.png", "row": 0, "col": 3, "bbox": [1058, 292, 397, 314]},
+      {"file": "death_f5.png", "row": 0, "col": 4, "bbox": [1430, 295, 362, 327]},
+      {"file": "death_f6.png", "row": 0, "col": 5, "bbox": [1791, 416, 359, 214]}
+    ]
+  }],
+  "updated": "2026-10-27T18:14:57",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/metal_head",
+    "pass": "/home/goglue/tmp/metal_head_death_v1"
+  }
+}

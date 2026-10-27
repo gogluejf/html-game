@@ -1,0 +1,25 @@
+{
+  "file": "petal-panic/assets/enemies/metal_head/idle_sheet.png",
+  "size": "2172x724",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "Metal Head idle \u2014 metal-helmet cannon-arm clown brute, subtle breathing bob",
+  "entities": [{
+    "name": "metal_head",
+    "anim": "idle",
+    "frames_dir": "petal-panic/assets/enemies/metal_head",
+    "frames": [
+      {"file": "idle_f1.png", "row": 0, "col": 0, "bbox": [18, 136, 455, 503]},
+      {"file": "idle_f2.png", "row": 0, "col": 1, "bbox": [464, 108, 430, 531]},
+      {"file": "idle_f3.png", "row": 0, "col": 2, "bbox": [891, 120, 436, 522]},
+      {"file": "idle_f4.png", "row": 0, "col": 3, "bbox": [1290, 140, 450, 500]},
+      {"file": "idle_f5.png", "row": 0, "col": 4, "bbox": [1734, 141, 438, 498]}
+    ]
+  }],
+  "updated": "2026-10-27T18:14:57",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/metal_head",
+    "pass": "/home/goglue/tmp/metal_head_idle_v3"
+  }
+}
