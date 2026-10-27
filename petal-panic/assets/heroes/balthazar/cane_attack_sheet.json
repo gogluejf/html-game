@@ -1,128 +1,83 @@
 {
- "file": "petal-panic/assets/heroes/balthazar/cane_attack_sheet.png",
- "size": "4580x373",
- "rows": 1,
- "cols": 10,
- "kind": "animation",
- "description": "balthazar cane_attack (10 frames)",
- "entities": [
-  {
-   "name": "balthazar",
-   "anim": "cane_attack",
-   "frames_dir": "petal-panic/assets/heroes/balthazar",
-   "frames": [
+  "file": "petal-panic/assets/heroes/balthazar/cane_attack_sheet.png",
+  "size": "3120x552",
+  "rows": 1,
+  "cols": 6,
+  "kind": "animation",
+  "description": "balthazar cane attack strike (f1-f6)",
+  "entities": [
     {
-     "file": "cane_attack_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      59,
-      36,
-      339,
-      301
-     ]
-    },
-    {
-     "file": "cane_attack_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      528,
-      0,
-      317,
-      373
-     ]
-    },
-    {
-     "file": "cane_attack_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      948,
-      16,
-      393,
-      341
-     ]
-    },
-    {
-     "file": "cane_attack_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1382,
-      29,
-      441,
-      314
-     ]
-    },
-    {
-     "file": "cane_attack_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1832,
-      15,
-      458,
-      342
-     ]
-    },
-    {
-     "file": "cane_attack_f6.png",
-     "row": 0,
-     "col": 5,
-     "bbox": [
-      2314,
-      34,
-      410,
-      304
-     ]
-    },
-    {
-     "file": "cane_attack_f7.png",
-     "row": 0,
-     "col": 6,
-     "bbox": [
-      2771,
-      28,
-      412,
-      317
-     ]
-    },
-    {
-     "file": "cane_attack_f8.png",
-     "row": 0,
-     "col": 7,
-     "bbox": [
-      3244,
-      32,
-      382,
-      309
-     ]
-    },
-    {
-     "file": "cane_attack_f9.png",
-     "row": 0,
-     "col": 8,
-     "bbox": [
-      3702,
-      26,
-      382,
-      321
-     ]
-    },
-    {
-     "file": "cane_attack_f10.png",
-     "row": 0,
-     "col": 9,
-     "bbox": [
-      4221,
-      22,
-      259,
-      329
-     ]
+      "name": "balthazar",
+      "anim": "cane_attack",
+      "frames_dir": "petal-panic/assets/heroes/balthazar",
+      "frames": [
+        {
+          "file": "cane_attack_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            106,
+            125,
+            339,
+            301
+          ]
+        },
+        {
+          "file": "cane_attack_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            637,
+            89,
+            317,
+            373
+          ]
+        },
+        {
+          "file": "cane_attack_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1119,
+            105,
+            393,
+            341
+          ]
+        },
+        {
+          "file": "cane_attack_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1615,
+            119,
+            441,
+            314
+          ]
+        },
+        {
+          "file": "cane_attack_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            2127,
+            105,
+            458,
+            342
+          ]
+        },
+        {
+          "file": "cane_attack_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            2671,
+            124,
+            410,
+            304
+          ]
+        }
+      ]
     }
-   ]
-  }
- ],
- "updated": "2026-10-22"
+  ]
 }
