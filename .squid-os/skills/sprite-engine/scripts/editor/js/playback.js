@@ -9,6 +9,7 @@ import { buildTimingTable } from './timing.js';
 import { saveState, markGameDataChanged } from './save.js';
 import { syncToggles } from './tools.js';
 import { pushUndo } from './undo.js';
+import { syncFilmFocus } from './filmstrip.js';
 
 export function startPlayback(){
   requestAnimationFrame(tick);
@@ -25,6 +26,7 @@ function tick(t){
     if (changed){
       app._selectedBox = null;
       syncPanel(); draw();
+      syncFilmFocus();
     }
   }
   // lightweight current-frame highlight update (avoids full table rebuild at 60fps)
@@ -79,7 +81,7 @@ export function setPlaying(p){
   // it made cross-tab storage sync reload sibling tabs on every press.
 }
 
-export function stepFrame(d){ if(!app.cur||!app.cur.st)return; const st=app.cur.st; seekSequence(st, (st.frameIdx+d+st.frames.length)%st.frames.length); app.acc=0; app._selectedBox=null; syncPanel(); draw(); }
+export function stepFrame(d){ if(!app.cur||!app.cur.st)return; const st=app.cur.st; seekSequence(st, (st.frameIdx+d+st.frames.length)%st.frames.length); app.acc=0; app._selectedBox=null; syncPanel(); draw(); syncFilmFocus(); }
 
 export function setSpeed(v){ if(!app.cur||!app.cur.st)return; app.cur.st.speed = Math.max(1, Math.min(60, v|0)); $('fpsval').textContent = app.cur.st.speed+' fps'; $('p_speed').value = app.cur.st.speed; markGameDataChanged(); buildTimingTable(); }
 

@@ -14,6 +14,7 @@ import { saveState } from './save.js';
 
 export { FILM };
 
+
 function filmBounds(st){
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   const c=st.collision;
@@ -40,7 +41,7 @@ export function drawFilm(){
     for (let i=0;i<n;i++){
       const cell=document.createElement('div'); cell.className='fcell';
       cell.title='go to frame '+(i+1);
-      cell.addEventListener('click', ()=>{ if(!app.cur||!app.cur.st) return; seekSequence(app.cur.st, i%app.cur.st.frames.length); app.acc=0; app._selectedBox=null; syncPanel(); mainDraw(); });
+      cell.addEventListener('click', ()=>{ if(!app.cur||!app.cur.st) return; seekSequence(app.cur.st, i%app.cur.st.frames.length); app.acc=0; app._selectedBox=null; syncPanel(); mainDraw(); syncFilmFocus(); });
       const num=document.createElement('span'); num.className='fnum'; num.textContent=i+1;
       const cv2=document.createElement('canvas');
       cell.appendChild(num); cell.appendChild(cv2);
@@ -117,6 +118,12 @@ export function drawFilm(){
       dw.style.width = target;
     }
   }
+}
+
+export function syncFilmFocus(){
+  if (!FILM.on || !app.cur || !app.cur.st) return;
+  const fi = curFrameIdx();
+  app.filmCells.forEach(({ el }, i) => el.classList.toggle('focus', i === fi));
 }
 
 // Size the drawer to fit the current filmstrip content (cells + handle).
