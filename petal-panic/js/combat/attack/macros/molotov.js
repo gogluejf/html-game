@@ -9,6 +9,7 @@ import { invoke } from '../engine.js';
 import { createCarrierHandle } from '../carrierMacro.js';
 import { FIRE_HEIGHT } from '../primitives/fireArea.js';
 import { resolveImpactPoint } from './skyMissile.js';
+import { molotovDrawer } from '../drawers/index.js';
 
 const DEFAULTS = Object.freeze({
   speed: 600,           // launch force (px/s)
@@ -100,6 +101,7 @@ defineMacro('molotov', {
       damage: p.damage,
       radius: 0,
       origin: p.origin,
+      drawer: molotovDrawer,
     }, ctx);
 
     if (!carrier?.entity) {

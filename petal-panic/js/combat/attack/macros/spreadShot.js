@@ -25,6 +25,7 @@
 
 import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
+import { spreadDrawer } from '../drawers/index.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -87,6 +88,7 @@ defineMacro('spreadShot', {
     const spawnOne = (a) => {
       const shot = invoke('projectile', {
         direction: a, speed: p.speed, ttl: p.ttl, damage: p.damage,
+        drawer: spreadDrawer,
       }, ctx);
       if (shot?.entity) {
         h.handles.push(shot);

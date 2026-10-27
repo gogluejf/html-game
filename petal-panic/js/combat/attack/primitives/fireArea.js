@@ -12,6 +12,7 @@
 import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { HazardZone } from '../../../objects/hazardZone.js';
+import { fireZoneDrawer } from '../drawers/index.js';
 
 function declaredEffectsOf(id) {
   const def = getPrimitive(id) ?? getMacro(id);
@@ -65,6 +66,7 @@ registerPrimitive('fireArea', {
       team: p.team, color: 'rgba(255,120,30,0.35)', label: 'fire',
     });
     zone.setOwner(ctx.attacker);
+    zone.drawer = fireZoneDrawer;
     const cancel = h.cancel.bind(h);
     h.cancel = () => { zone.alive = false; zone._hb.active = false; cancel(); };
     h.zone = zone; // expose for host drawing/world integration

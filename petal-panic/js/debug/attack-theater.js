@@ -24,6 +24,7 @@ import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
 import { resolveEffects, resolveInvokes } from '../combat/attack/effectsMeta.js';
 import { stepProjectile } from '../combat/attack/primitives/projectile.js';
 import { stepBomb, stepBombTerrain, retainBombContact } from '../combat/attack/primitives/bomb.js';
+import { spikeDrawer } from '../combat/attack/drawers/index.js';
 import { Pool, Projectile, Special } from '../objects/projectile.js';
 import { CollisionWorld, resolve } from '../core/collision.js';
 import { LAYER } from '../consts.js';
@@ -1182,13 +1183,12 @@ export const AttackTheater = {
       }
     }
 
-    // Live projectiles/specials — specials delegate to their own renderer so
-    // the theater matches gameplay visuals (type-branched). Projectiles keep
-    // the flat debug box for now.
+    // Live projectiles/specials — all delegate to their own .draw() so the
+    // theater matches gameplay visuals. Projectile.draw() uses the drawer
+    // override if set, else falls back to the debug rect.
     if (this._pools) {
       for (const p of this._pools.projectilePool.activeItems) {
-        ctx.fillStyle = '#ff6ec7';
-        ctx.fillRect(p.x, p.y, p.w, p.h);
+        p.draw(ctx);
       }
       for (const s of this._pools.specialPool.activeItems) {
         if (s._attackVisualOwned) continue;
@@ -1283,12 +1283,7 @@ export const AttackTheater = {
         // HazardZone-backed primitives: delegate to the zone's own draw().
         if (h.zone) { h.zone.draw(ctx); }
         else if (h.id === 'spike' && st.phase === 'visible') {
-          const sw = this._params.width;
-          const box = { x: this._params.x - sw / 2, y: this._params.y - 8, w: sw, h: 16 };
-          ctx.fillStyle = 'rgba(255,220,80,0.7)';
-          ctx.fillRect(box.x, box.y, box.w, box.h);
-          ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-          ctx.strokeRect(box.x, box.y, box.w, box.h);
+          spikeDrawer(ctx, this._params);
         }
       }
     }

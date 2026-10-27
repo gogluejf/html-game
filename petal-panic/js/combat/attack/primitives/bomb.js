@@ -19,6 +19,7 @@ import { registerPrimitive, getPrimitive, getMacro } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { LAYER } from '../../../consts.js';
 import { fireDeclared } from '../../../effects/index.js';
+import { bombDrawer, rockDrawer } from '../drawers/index.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -42,6 +43,7 @@ const DEFAULTS = Object.freeze({
   damage: 40,           // direct-contact damage
   radius: 70,           // reference size for host-side effects (macro-owned)
   origin: null,         // marker label | {x,y} | null → attacker center
+  drawer: null,         // (ctx, entity) => void — defaults to bombDrawer if null
 });
 
 /** Rebound below this (px/s) settles the bomb instead of bouncing again. */
@@ -80,6 +82,8 @@ export function spawnBomb(p, ctx, h = null) {
   ent._bombRetainOnSettle = p.retainOnSettle;
   ent._bombSettled = false;
   ent.solidBehavior = p.bounce ? 'reflect' : 'stop';
+  // Drawer: explicit param wins; default to rockDrawer (generic ballistic look).
+  ent.drawer = p.drawer ?? rockDrawer;
   ent._attackId = 'bomb';
   ent._attackDone = false;
   ent._attackHit = false;

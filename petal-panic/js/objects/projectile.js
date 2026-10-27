@@ -72,6 +72,25 @@ export class Projectile extends Entity {
     const angle = dirAngle(dir);
     this.vx = Math.cos(angle) * this.speed;
     this.vy = Math.sin(angle) * this.speed;
+
+    // Drawer: optional render override. Contract: (ctx, entity) => void.
+    // null = use default draw (debug rect). Set per-shot by the attack engine
+    // or weapon code to customize visuals without subclassing.
+    this.drawer = null;
+  }
+
+  /**
+   * Draw this projectile. Delegates to `this.drawer` if set; otherwise falls
+   * back to the Entity debug rect. The drawer receives (ctx, this) so it has
+   * full access to position, size, rotation, etc.
+   */
+  draw(ctx) {
+    if (this.visible === false) return;
+    if (typeof this.drawer === 'function') {
+      this.drawer(ctx, this);
+      return;
+    }
+    super.draw(ctx);
   }
 
   reflectVelocity(box) {
@@ -220,6 +239,11 @@ export class Special extends Entity {
     const angle = dirAngle(dir);
     this.vx = Math.cos(angle) * this.speed;
     this.vy = Math.sin(angle) * this.speed;
+
+    // Drawer: optional render override. Contract: (ctx, entity) => void.
+    // null = use default Special.draw (type-branched). Set per-shot to
+    // customize visuals without subclassing.
+    this.drawer = null;
   }
 
   reflectVelocity(box) {
@@ -250,6 +274,11 @@ export class Special extends Entity {
 
   draw(ctx) {
     if (!this.alive || this._attackVisualOwned) return;
+    // Drawer override: standalone (ctx, entity) => void.
+    if (typeof this.drawer === 'function') {
+      this.drawer(ctx, this);
+      return;
+    }
     const meta = specialById[this.type];
     const cx = this.x + this.w / 2;
     const cy = this.y + this.h / 2;

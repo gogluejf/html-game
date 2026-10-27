@@ -18,6 +18,7 @@ import { resolveMarker } from '../context.js';
 import { AttackHandle } from '../engine.js';
 import { dirAngle } from '../../../core/vec.js';
 import { fireDeclared } from '../../../effects/index.js';
+import { rockDrawer } from '../drawers/index.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -42,6 +43,7 @@ const DEFAULTS = Object.freeze({
                          // legacy friendly flag / PROJ_ALLY|PROJ_FOE layer.
   size: 12,              // box size (thorn = 12, specials ~16)
   type: null,            // special weapon type id when spawning a Special
+  drawer: null,          // (ctx, entity) => void — custom render override
 });
 
 /**
@@ -112,6 +114,10 @@ export function spawnProjectile(p, ctx, h) {
   // fresh instance, but a caller that omits solidBehavior must still get the
   // documented default ('phase') rather than inheriting a stale slot value.
   ent.solidBehavior = p.solidBehavior ?? 'phase';
+  // Custom render override (drawer contract: (ctx, entity) => void).
+  // Ballistic shots default to rockDrawer; explicit p.drawer wins.
+  if (p.drawer) ent.drawer = p.drawer;
+  else if (p.gravity > 0 && !ent.drawer) ent.drawer = rockDrawer;
   // Tag so the theater/debug can find primitives' shots among pool items.
   ent._attackId = 'projectile';
 

@@ -9,6 +9,7 @@ import { registerPrimitive, getPrimitive } from '../registry.js';
 import { AttackHandle } from '../engine.js';
 import { HazardZone } from '../../../objects/hazardZone.js';
 import { fireManual } from '../../../effects/index.js';
+import { dustZoneDrawer } from '../drawers/index.js';
 
 function declaredEffectsOf(id) {
   const def = getPrimitive(id);
@@ -65,6 +66,7 @@ registerPrimitive('dustZone', {
       team: p.team, color: 'rgba(57,255,20,0.15)', label: 'dust',
     });
     zone.setOwner(ctx.attacker);
+    zone.drawer = dustZoneDrawer;
     h.zone = zone;
     h.state = { done: false, t: 0, puffAcc: 0 };
     h._params = p;

@@ -39,6 +39,10 @@ export class HazardZone extends Entity {
     this.tickAcc = 0;
     this.alive = true;
 
+    // Drawer: optional render override. Contract: (ctx, zone) => void.
+    // null = use default HazardZone.draw (colored rect).
+    this.drawer = null;
+
     this._hb = makeHitbox({
       owner: null, // set by caller (the attacker who created the zone)
       team: this.team,
@@ -84,9 +88,13 @@ export class HazardZone extends Entity {
     return hits;
   }
 
-  /** Draw the zone. Override in subtypes for richer visuals. */
+  /** Draw the zone. Delegates to drawer if set; else debug rect. */
   draw(ctx) {
     if (!this.alive) return;
+    if (typeof this.drawer === 'function') {
+      this.drawer(ctx, this);
+      return;
+    }
     // Fade out during the last 20% of lifetime.
     const frac = 1 - this.t / this.duration;
     const alpha = frac < 0.2 ? frac / 0.2 : 1;
