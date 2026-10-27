@@ -24,7 +24,7 @@ import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
 import { resolveEffects, resolveInvokes } from '../combat/attack/effectsMeta.js';
 import { stepProjectile } from '../combat/attack/primitives/projectile.js';
 import { stepBomb, stepBombTerrain, retainBombContact } from '../combat/attack/primitives/bomb.js';
-import { spikeDrawer } from '../combat/attack/drawers/index.js';
+import { spikeDrawer, boomerangDrawer } from '../combat/attack/drawers/index.js';
 import { Pool, Projectile, Special } from '../objects/projectile.js';
 import { CollisionWorld, resolve } from '../core/collision.js';
 import { LAYER } from '../consts.js';
@@ -1148,12 +1148,7 @@ export const AttackTheater = {
       if (h.id !== 'boomerang' || h.states?.every((s) => s.done)) continue;
       for (const st of h.states ?? [h.state]) {
         if (st?.done) continue;
-        ctx.fillStyle = st.phase === 'outbound' ? '#7fd' : '#fd7';
-        ctx.save();
-        ctx.translate(st.x, st.y);
-        ctx.rotate(st.t * 10);
-        ctx.fillRect(-7, -7, 14, 14);
-        ctx.restore();
+        boomerangDrawer(ctx, st);
         ctx.fillStyle = '#fff';
         ctx.font = '9px monospace';
         ctx.textAlign = 'center';

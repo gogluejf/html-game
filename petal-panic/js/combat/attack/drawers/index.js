@@ -8,6 +8,7 @@
 
 // Projectile
 export { spreadDrawer } from './projectile/spread.js';
+export { boomerangDrawer } from './projectile/boomerang.js';
 
 // Ballistic
 export { rockDrawer } from './ballistic/rock.js';
