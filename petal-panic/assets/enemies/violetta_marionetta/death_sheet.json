@@ -1,117 +1,29 @@
 {
- "file": "petal-panic/assets/enemies/violetta_marionetta/death_sheet.png",
- "size": "4135x470",
- "rows": 1,
- "cols": 9,
- "kind": "animation",
- "description": "violetta_marionetta death (9 frames)",
- "entities": [
-  {
-   "name": "violetta_marionetta",
-   "anim": "death",
-   "frames_dir": "petal-panic/assets/enemies/violetta_marionetta",
-   "frames": [
-    {
-     "file": "death_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      386,
-      469
-     ]
-    },
-    {
-     "file": "death_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      386,
-      0,
-      390,
-      470
-     ]
-    },
-    {
-     "file": "death_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      776,
-      29,
-      477,
-      411
-     ]
-    },
-    {
-     "file": "death_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1253,
-      33,
-      491,
-      404
-     ]
-    },
-    {
-     "file": "death_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1744,
-      66,
-      345,
-      337
-     ]
-    },
-    {
-     "file": "death_f6.png",
-     "row": 0,
-     "col": 5,
-     "bbox": [
-      2089,
-      102,
-      426,
-      266
-     ]
-    },
-    {
-     "file": "death_f7.png",
-     "row": 0,
-     "col": 6,
-     "bbox": [
-      2515,
-      99,
-      495,
-      272
-     ]
-    },
-    {
-     "file": "death_f8.png",
-     "row": 0,
-     "col": 7,
-     "bbox": [
-      3010,
-      124,
-      568,
-      222
-     ]
-    },
-    {
-     "file": "death_f9.png",
-     "row": 0,
-     "col": 8,
-     "bbox": [
-      3578,
-      103,
-      557,
-      264
-     ]
-    }
-   ]
+  "file": "petal-panic/assets/enemies/violetta_marionetta/death_sheet.png",
+  "size": "4135x470",
+  "rows": 1,
+  "cols": 9,
+  "kind": "animation",
+  "description": "violetta_marionetta death (9 frames)",
+  "entities": [{
+    "name": "violetta_marionetta",
+    "anim": "death",
+    "frames_dir": "petal-panic/assets/enemies/violetta_marionetta",
+    "frames": [
+      {"file": "death_f1.png", "row": 0, "col": 0, "bbox": [0, 0, 386, 469]},
+      {"file": "death_f2.png", "row": 0, "col": 1, "bbox": [380, 0, 396, 470]},
+      {"file": "death_f3.png", "row": 0, "col": 2, "bbox": [776, 29, 477, 411]},
+      {"file": "death_f4.png", "row": 0, "col": 3, "bbox": [1252, 33, 492, 404]},
+      {"file": "death_f5.png", "row": 0, "col": 4, "bbox": [1744, 66, 345, 337]},
+      {"file": "death_f6.png", "row": 0, "col": 5, "bbox": [2087, 52, 428, 316]},
+      {"file": "death_f7.png", "row": 0, "col": 6, "bbox": [2515, 99, 496, 272]},
+      {"file": "death_f8.png", "row": 0, "col": 7, "bbox": [3009, 124, 572, 222]},
+      {"file": "death_f9.png", "row": 0, "col": 8, "bbox": [3585, 193, 550, 174]}
+    ]
+  }],
+  "updated": "2026-10-27T16:18:24",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/violetta_marionetta",
+    "pass": "/home/goglue/tmp/sprite-ingest/violetta_death-recrop-v2"
   }
- ],
- "updated": "2026-10-23"
 }
