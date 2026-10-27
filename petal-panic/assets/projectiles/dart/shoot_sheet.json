@@ -1,0 +1,84 @@
+{
+ "file": "petal-panic/assets/projectiles/dart/shoot_sheet.png",
+ "size": "2051x110",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "dart shoot (6 frames) \u2014 golden dart projectile with flame trail",
+ "entities": [
+  {
+   "name": "dart",
+   "anim": "shoot",
+   "frames_dir": "petal-panic/assets/projectiles/dart",
+   "frames": [
+    {
+     "file": "shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      427,
+      110
+     ]
+    },
+    {
+     "file": "shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      427,
+      0,
+      354,
+      110
+     ]
+    },
+    {
+     "file": "shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      781,
+      0,
+      350,
+      109
+     ]
+    },
+    {
+     "file": "shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1131,
+      0,
+      327,
+      109
+     ]
+    },
+    {
+     "file": "shoot_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1458,
+      1,
+      315,
+      107
+     ]
+    },
+    {
+     "file": "shoot_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1773,
+      2,
+      278,
+      106
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-27"
+}
