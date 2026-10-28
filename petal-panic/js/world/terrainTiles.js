@@ -91,6 +91,10 @@ export function loadTerrainFrames(level, kind) {
       return imgs;
     })().catch((e) => {
       console.warn(`[terrain-tiles] ${key} frames failed to load`, e);
+      // Evict the poisoned entry so the NEXT frame retries. Keeping a rejected
+      // promise cached forever blacked out terrain for the whole session once
+      // a load missed (the barrel-drawing bug class).
+      frameJobs.delete(key);
       return new Map();
     });
     frameJobs.set(key, job);
@@ -253,6 +257,8 @@ export function getFloorEntity(s, level) {
       return imgs;
     })().catch((err) => {
       console.warn('[terrain-tiles] fg frames failed to load', err);
+      // Evict so the next frame retries (see loadTerrainFrames catch).
+      frameJobs.delete(key);
       return new Map();
     }));
   }

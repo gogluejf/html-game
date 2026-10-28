@@ -94,7 +94,13 @@ export function render(ctx) {
   // never block-tiled — no double-draw.
   if (!(Debug.viewMode === 1)) {
     const seed = getLastWorldSeed() ?? 0;
-    const level = LEVELS[0].index ?? 1;
+    // BUGFIX (barrel-class cache bug): level must come from the ACTIVE ZONE,
+    // not LEVELS[0]. Hardcoding level 1 meant every later level fetched its
+    // own sheets fine but any code path still pinned to level 1 desynced;
+    // worse, a failed load poisoned the per-level cache for the rest of the
+    // session (including restarts). Same source as the parallax bg above.
+    const zone = getActiveZone(getHero());
+    const level = zone?.level ?? 1;
     for (const s of getSolids()) {
       if (s.kind === 'floor') {
         drawFloor(ctx, s, level);
