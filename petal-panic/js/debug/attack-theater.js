@@ -137,6 +137,7 @@ const SANDBOX_PRESETS = {
     startup: 0.2,
     recovery: 0.4,
     team: 'ally',
+    impactGhost: {}, // ON in the demo — planted gold ghost at each freeze connect
     segments: [
       { frame: 'a', speed: 380, duration: 0.18, freezeFrames: 0.12, hitbox: { w: 48, h: 40, offset: { x: 30, y: 0 } }, damage: 8, knockback: null, shove: 0.6 },
       { frame: 'b', speed: 460, duration: 0.18, freezeFrames: 0.12, hitbox: { w: 52, h: 44, offset: { x: 34, y: 0 } }, damage: 10, knockback: null, shove: 0.6 },

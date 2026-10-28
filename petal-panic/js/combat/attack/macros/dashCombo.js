@@ -55,7 +55,7 @@ const DEFAULTS = Object.freeze({
   team: 'ally',         // who the freeze hitboxes hurt
   method: 'melee',      // damage telemetry label
   afterimage: null,     // TRAVEL ghost override (count/spawnInterval/lifetime/opacity/color...); { count: 0 } disables
-  impactGhost: null,    // IMPACT ghost config fired at each freeze connect: { lifetime?, opacity?, color? }; null = off
+  impactGhost: {},       // IMPACT ghost config fired at each freeze connect: { lifetime?, opacity?, color? }; {} = on with defaults, null = off
   shakeStyle: null,     // victim sprite-shake override (amount scales w/ segmentIndex)
 });
 
@@ -135,7 +135,7 @@ defineMacro('dashCombo', {
       { key: 'recovery', desc: 'ONE punish window after the last freeze (s)' },
       { key: 'team', desc: 'who the freeze hitboxes hurt' },
       { key: 'afterimage', desc: 'travel-ghost override (count/spawnInterval/lifetime/opacity/color); { count: 0 } disables' },
-      { key: 'impactGhost', desc: 'per-freeze-connect planted ghost: { lifetime?, opacity?, color? }; null = off' },
+      { key: 'impactGhost', desc: 'per-freeze-connect planted ghost: { lifetime?, opacity?, color? }; {} = on (defaults), null = off' },
       { key: 'shakeStyle', desc: 'victim shake override' },
     ],
   },

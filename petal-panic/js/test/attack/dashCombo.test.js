@@ -301,14 +301,34 @@ ok('impact ghost: planted at each freeze connect, one per connection', () => {
   assert.ok(activeCount() > before, 'effect set grew by the impact ghosts');
 });
 
-ok('impact ghost OFF by default (null param spawns nothing extra)', () => {
+ok('impact ghost ON by default (no param → planted ghost per connect)', () => {
+  const a = attacker();
+  const e1 = dummyEnemy(260), e2 = dummyEnemy(330), e3 = dummyEnemy(540);
+  const c = ctx(a);
+  const beforeStandalones = new Set(activeInstances().filter((x) => x.type === 'afterimage' && !x.carrier));
+  const h = invoke('dashCombo', { segments: SEGS, direction: 0, startup: 0, recovery: 0 }, c);
+  const hits = [];
+  h.on('hit', (i) => hits.push(i));
+  let finished = false;
+  for (let i = 0; i < 600 && !finished; i++) {
+    finished = h.step(DT, [e1, e2, e3]);
+    for (const e of [e1, e2, e3]) { e.x += (e.vx ?? 0) * DT; e.vx *= 0.85; }
+  }
+  assert.ok(finished);
+  assert.ok(hits.length >= 1, 'combo connected');
+  // Default is ON: each connection spawned a NEW standalone no-carrier afterimage.
+  const newStandalones = activeInstances().filter((x) => x.type === 'afterimage' && !x.carrier && !beforeStandalones.has(x));
+  assert.ok(newStandalones.length >= hits.length, `one planted ghost per hit by default (${newStandalones.length} new, ${hits.length} hits)`);
+});
+
+ok('impact ghost OFF with explicit null (spawns nothing extra)', () => {
   const a = attacker();
   const e = dummyEnemy(260);
   const c = ctx(a);
   // Snapshot BEFORE: the effects active set is process-global, so instances
   // from earlier tests may still be fading. Only NEW standalones matter.
   const beforeStandalones = new Set(activeInstances().filter((x) => x.type === 'afterimage' && !x.carrier));
-  const h = invoke('dashCombo', { segments: SEGS, direction: 0, startup: 0, recovery: 0 }, c);
+  const h = invoke('dashCombo', { segments: SEGS, direction: 0, startup: 0, recovery: 0, impactGhost: null }, c);
   const hits = [];
   h.on('hit', (i) => hits.push(i));
   let finished = false;
