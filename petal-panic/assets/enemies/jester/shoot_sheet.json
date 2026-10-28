@@ -1,0 +1,137 @@
+{
+  "file": "petal-panic/assets/enemies/jester/shoot_sheet.png",
+  "size": "2198x472",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "jester shoot (5 frames) \u2014 pistol firing: idle, muzzle flash, fireball, smoke, clear",
+  "entities": [
+    {
+      "name": "jester",
+      "anim": "shoot",
+      "frames_dir": "petal-panic/assets/enemies/jester",
+      "frames": [
+        {
+          "file": "shoot_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            1,
+            383,
+            470
+          ],
+          "offset": {
+            "x": 191.5,
+            "y": -235
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "shoot_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            383,
+            1,
+            387,
+            469
+          ],
+          "offset": {
+            "x": 196,
+            "y": -235
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "shoot_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            770,
+            0,
+            469,
+            472
+          ],
+          "offset": {
+            "x": 234.5,
+            "y": -236
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "shoot_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1239,
+            1,
+            488,
+            469
+          ],
+          "offset": {
+            "x": 244,
+            "y": -234.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "shoot_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1727,
+            1,
+            471,
+            469
+          ],
+          "offset": {
+            "x": 209,
+            "y": -232
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 0,
+        "y": -462,
+        "w": 375,
+        "h": 462
+      },
+      "pivot": {
+        "x": 188,
+        "y": -231
+      },
+      "markers": []
+    }
+  ],
+  "updated": "2026-10-27"
+}
