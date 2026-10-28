@@ -1227,12 +1227,22 @@ function bossCardImage(bossId) {
  * false renders full color (selected). Falls back to plain color when the
  * canvas has no filter support.
  */
-function drawBossCardCover(ctx, img, x, y, w, h, grayscale) {
+function drawBossCardCover(ctx, img, x, y, w, h, grayscale, radius = 0) {
   if (!img || !img.complete || img.naturalWidth === 0) return false;
   const scale = h / img.naturalHeight;
   const srcW = w / scale;
   const srcX = (img.naturalWidth - srcW) / 2;
   ctx.save();
+  // Clip to the target box so the cover-crop can never spill past the card outline.
+  // Use a rounded-rect clip when a radius is given so the blur doesn't bleed
+  // out of the card's rounded corners.
+  if (radius > 0) {
+    roundRect(ctx, x, y, w, h, radius);
+  } else {
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+  }
+  ctx.clip();
   if (grayscale && 'filter' in ctx) ctx.filter = 'grayscale(1) blur(6px) brightness(0.75)';
   ctx.drawImage(img, srcX, 0, srcW, img.naturalHeight, x, y, w, h);
   ctx.restore();
@@ -1300,7 +1310,7 @@ export const BossRush = {
       // the art box. Selected → full color; unselected → grayscale B&W.
       const img = bossCardImage(card.bossId);
       if (img?.complete && img.naturalWidth > 0) {
-        drawBossCardCover(ctx, img, x + BR_PAD_X, artY, BR_CARD_W - 2 * BR_PAD_X, BR_CARD_ART_H, !isFocused || locked);
+        drawBossCardCover(ctx, img, x + BR_PAD_X, artY, BR_CARD_W - 2 * BR_PAD_X, BR_CARD_ART_H, !isFocused || locked, 8);
       } else {
         drawPlaceholder(ctx, x + BR_PAD_X, artY, BR_CARD_W - 2 * BR_PAD_X, BR_CARD_ART_H, 'boss card');
       }
@@ -1354,7 +1364,7 @@ export const BossRush = {
       });
       const limg = bossCardImage(focused.bossId);
       if (limg?.complete && limg.naturalWidth > 0) {
-        drawBossCardCover(ctx, limg, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, BR_DETAIL_ART_H, true);
+        drawBossCardCover(ctx, limg, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, BR_DETAIL_ART_H, true, 8);
         ctx.globalAlpha = 0.35;
         ctx.fillStyle = '#0d0d1a';
         roundRect(ctx, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, BR_DETAIL_ART_H, 6);
@@ -1378,7 +1388,7 @@ export const BossRush = {
       });
       const img = bossCardImage(focused.bossId);
       if (img?.complete && img.naturalWidth > 0) {
-        drawBossCardCover(ctx, img, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, BR_DETAIL_ART_H, false);
+        drawBossCardCover(ctx, img, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, BR_DETAIL_ART_H, false, 8);
       } else {
         drawPlaceholder(ctx, BR_DETAIL_X + 35, BR_DETAIL_Y + 78, BR_DETAIL_W - 70, BR_DETAIL_ART_H, 'boss card');
       }
