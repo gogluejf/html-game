@@ -18,7 +18,8 @@ import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../core/timers.js';
 import { drawScreen, screenUpdate } from '../ui/screens.js';
 import { drawHUD } from '../systems/hud.js';
 import { LEVELS, BOSS_TRIGGER_X, ZONE_GROUND_Y } from '../world/level.js';
-import { bombAttacks } from './update.js';
+import { drawParallaxBg } from '../world/parallax.js';
+import { bombAttacks, getActiveZone } from './update.js';
 import { PLATFORM_DRAW_H } from '../world/macros.js';
 
 // I-frame blink tuning (design §27): the flicker phase is derived from the
@@ -62,6 +63,14 @@ export function render(ctx) {
   // normal 540-high scene centered; wide displays expand horizontally.
   ctx.fillStyle = '#101018';
   fillGameplaySurface(ctx);
+
+  // Parallax level background (viewport space, behind the world): the active
+  // zone's bg art scaled to fit and tiled, drifting at 1/BG_PARALLAX_DIVISOR
+  // of camera speed. No-op while the image is still loading.
+  {
+    const zone = getActiveZone(getHero());
+    if (zone) drawParallaxBg(ctx, cam, zone.level, zone.orientation);
+  }
 
   // --- World (camera-translated) -------------------------------------------
   ctx.save();
