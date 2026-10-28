@@ -280,8 +280,12 @@ export class Entity {
         ctx.drawImage(img, frame.bbox.x + i * fw, frame.bbox.y - frame.bbox.h, frame.bbox.w, frame.bbox.h);
       }
     } else {
-      // Frame drawn in source-bbox units, bottom edge on the anchor line.
-      ctx.drawImage(img, frame.bbox.x, frame.bbox.y - frame.bbox.h, frame.bbox.w, frame.bbox.h);
+      // Frame drawn in source-bbox units, centered on the anchor (bottom-center
+      // physical anchor): the bbox's horizontal CENTER lands on the box center,
+      // and its bottom edge lands on the anchor line. Drawing at bbox.x raw
+      // would put the frame's LEFT edge at center — shifting every sprite half
+      // its width to the right (the barrel-offset bug).
+      ctx.drawImage(img, frame.bbox.x - frame.bbox.w / 2, frame.bbox.y - frame.bbox.h, frame.bbox.w, frame.bbox.h);
     }
     ctx.restore();
     return true;
