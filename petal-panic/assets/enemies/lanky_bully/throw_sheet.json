@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/lanky_bully/throw_sheet.png",
+ "size": "1961x741",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "lanky_bully throw (5f)",
+ "entities": [
+  {
+   "name": "lanky_bully",
+   "anim": "throw",
+   "frames_dir": "petal-panic/assets/enemies/lanky_bully",
+   "frames": [
+    {
+     "file": "throw_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      18,
+      314,
+      705
+     ]
+    },
+    {
+     "file": "throw_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      314,
+      38,
+      338,
+      665
+     ]
+    },
+    {
+     "file": "throw_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      652,
+      0,
+      369,
+      741
+     ]
+    },
+    {
+     "file": "throw_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1021,
+      46,
+      567,
+      649
+     ]
+    },
+    {
+     "file": "throw_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1588,
+      34,
+      373,
+      673
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-27"
+}
