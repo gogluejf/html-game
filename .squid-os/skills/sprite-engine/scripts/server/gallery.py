@@ -75,7 +75,28 @@ def build_html(sheets):
         <div class="kind k-{html.escape(kind)}">{html.escape(kind)}</div>
         <div class="path">{html.escape(rel)}</div>
       </div>""")
-    js_sheets = json.dumps([{"rel": s[0].replace(os.sep, "/"), "kind": s[1], "game": s[2], "cat": s[3], "entity": s[4]} for s in sheets])
+    # Load frame lists from twin JSONs so the detail view can show individual frames.
+    def load_frames(rel):
+        jf = os.path.join(ROOT, rel[:-4] + ".json")
+        if not os.path.exists(jf):
+            return []
+        try:
+            doc = json.load(open(jf))
+        except Exception:
+            return []
+        frames = []
+        for ent in doc.get("entities", []):
+            fdir = ent.get("frames_dir", "")
+            for fr in ent.get("frames", []):
+                fn = fr.get("file")
+                if fn and fdir:
+                    frames.append((fdir + "/" + fn).replace(os.sep, "/"))
+        return frames
+
+    js_sheets = json.dumps([
+        {"rel": s[0].replace(os.sep, "/"), "kind": s[1], "game": s[2], "cat": s[3], "entity": s[4], "frames": load_frames(s[0])}
+        for s in sheets
+    ])
     return f"""<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>sheet gallery</title>
 <style>
@@ -100,11 +121,17 @@ def build_html(sheets):
   .k-tile_variant {{ background:#332; color:#fa8; }}
   .k-entity_variant {{ background:#323; color:#f8a; }}
   .k-\? {{ background:#333; color:#aaa; }}
-  #overlay {{ position:fixed; inset:0; background:rgba(0,0,0,.92); display:none;
-    flex-direction:column; align-items:center; justify-content:center; z-index:10; cursor:zoom-out; }}
-  #overlay img {{ max-width:92vw; max-height:80vh; object-fit:contain;
+  #overlay {{ position:fixed; inset:0; background:rgba(0,0,0,.94); display:none;
+    flex-direction:column; align-items:center; justify-content:flex-start; z-index:10; cursor:zoom-out;
+    padding:20px 16px; overflow-y:auto; }}
+  #opath {{ color:#8ac; font:13px monospace; margin-bottom:12px; word-break:break-all; text-align:center; }}
+  #obig {{ max-width:92vw; max-height:52vh; object-fit:contain;
     background:repeating-conic-gradient(#222 0% 25%, #1a1a1a 0% 50%) 0 0/16px 16px; }}
-  #opath {{ color:#8ac; font:13px monospace; margin-top:12px; word-break:break-all; }}
+  #frames {{ display:flex; gap:18px; flex-wrap:wrap; justify-content:center; margin-top:18px; }}
+  #frames .fr {{ display:flex; flex-direction:column; align-items:center; gap:6px; }}
+  #frames .fr img {{ max-width:200px; max-height:220px; object-fit:contain;
+    background:repeating-conic-gradient(#222 0% 25%, #1a1a1a 0% 50%) 0 0/16px 16px; border:1px solid #333; border-radius:4px; }}
+  #frames .fr span {{ font:11px monospace; color:#7c9; }}
 </style></head><body>
 <h1>sheets — <span id="count"></span> (click to enlarge)</h1>
 <div class="filters">
@@ -114,8 +141,10 @@ def build_html(sheets):
   <label>kind <select id="fKind" onchange="cascade()"><option value="all">all</option></select></label>
 </div>
 <div class="grid">{''.join(cards)}</div>
-<div id="overlay" onclick="this.style.display='none'">
-  <img id="obig" src=""><div id="opath"></div>
+<div id="overlay" onclick="closeOverlay()">
+  <div id="opath"></div>
+  <img id="obig" src="">
+  <div id="frames"></div>
 </div>
 <script>
 const SHEETS = {js_sheets};
@@ -164,12 +193,28 @@ function cascade() {{
 }}
 
 function view(i){{
-  document.getElementById('obig').src = SHEETS[i].rel;
-  document.getElementById('opath').textContent = SHEETS[i].rel;
+  const s = SHEETS[i];
+  document.getElementById('obig').src = s.rel;
+  document.getElementById('opath').textContent = s.rel;
+  const fr = document.getElementById('frames');
+  fr.innerHTML = (s.frames||[]).map(f =>
+    '<div class="fr"><img src="'+f+'" alt=""><span>'+f.split('/').pop()+'</span></div>'
+  ).join('');
   document.getElementById('overlay').style.display = 'flex';
+  history.pushState({{view:i}}, '');
 }}
-document.addEventListener('keydown', e => {{ if (e.key === 'Escape')
-  document.getElementById('overlay').style.display = 'none'; }});
+window.addEventListener('popstate', () => {{
+  document.getElementById('overlay').style.display = 'none';
+}});
+function closeOverlay(){{
+  const ov = document.getElementById('overlay');
+  if (ov.style.display === 'flex') {{
+    // If we pushed a history entry for this view, go back; otherwise just hide.
+    if (history.state && history.state.view !== undefined) history.back();
+    else ov.style.display = 'none';
+  }}
+}}
+document.addEventListener('keydown', e => {{ if (e.key === 'Escape') closeOverlay(); }});
 cascade();
 </script></body></html>"""
 
