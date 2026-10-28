@@ -3,6 +3,7 @@ import { defineMacro } from '../defineMacro.js';
 import { AttackHandle, invoke } from '../engine.js';
 import { isValidTarget } from '../../explosion.js';
 import { fireDeclared } from '../../../effects/index.js';
+import { mineDrawer } from '../../attack/drawers/ballistic/mine.js';
 import '../primitives/explosion.js';
 import '../primitives/shockwave.js';
 
@@ -26,14 +27,10 @@ export function createMine(p, ctx) {
   h.state = { phase: 'idle', elapsed: 0, warningElapsed: 0, armed: false, settled: true, box };
   h.handles = [];
   // A real persistent base, independent of the transparent/red warning layer.
+  // Delegates to the shared mine drawer (same art as the flight phase).
   h.zone = { draw(c) {
     if (h._completed || h._cancelled || h.state.phase === 'payload') return;
-    c.save();
-    c.fillStyle = '#222b32'; c.fillRect(box.x, box.y, box.w, box.h);
-    c.fillStyle = '#879878'; c.fillRect(box.x + 2, box.y + 1, 20, 5);
-    c.fillStyle = '#c7d2ac'; c.fillRect(box.x + 3, box.y + 1, 18, 1);
-    c.fillStyle = '#e6bf55'; c.fillRect(box.x + 10, box.y + 2, 4, 3);
-    c.restore();
+    mineDrawer(c, box);
   } };
   const candidates = (targets) => [...new Set([...(targets ?? ctx.world?.targets ?? []), ctx.world?.hero, p.target ?? ctx.target].filter(Boolean))];
   h.validTarget = t => isValidTarget({ team: p.team, ctx: { hero: ctx.world?.hero } }, t, ctx.attacker);

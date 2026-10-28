@@ -24,7 +24,7 @@ import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
 import { resolveEffects, resolveInvokes } from '../combat/attack/effectsMeta.js';
 import { stepProjectile } from '../combat/attack/primitives/projectile.js';
 import { stepBomb, stepBombTerrain, retainBombContact } from '../combat/attack/primitives/ballistic.js';
-import { spikeDrawer, boomerangDrawer } from '../combat/attack/drawers/index.js';
+import { spikeDrawer, boomerangDrawer, mineDrawer } from '../combat/attack/drawers/index.js';
 import { Pool, Projectile, Special } from '../objects/projectile.js';
 import { CollisionWorld, resolve } from '../core/collision.js';
 import { LAYER } from '../consts.js';
@@ -1281,6 +1281,11 @@ export const AttackTheater = {
         else if (h.id === 'spike' && st.phase === 'visible') {
           spikeDrawer(ctx, this._params);
         }
+      } else if (h.id === 'throwMine' && !st.settled && h.entity && h.entity.alive !== false) {
+        // Throw Mine FLIGHT phase: the pooled carrier is visual-owned (the pool
+        // skips its draw), so the theater draws the mine body via the shared
+        // ballistic drawer at the carrier's live position.
+        mineDrawer(ctx, h.entity);
       }
     }
     // (No aim-point marker for predictiveShot: the demo is pure "shoot where it
