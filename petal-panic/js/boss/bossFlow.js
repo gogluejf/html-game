@@ -73,7 +73,7 @@ export function settleIntoBossRoom() {
   for (const e of oldSolids) ctx.collisionWorld.remove(e);
   ctx.solids.length = 0;
   ctx.solidEntities.length = 0;
-  const roomFloor = { x: arena.x, y: roomFloorTop(arena, 'boss'), w: arena.w, h: ZONE_FLOOR_H };
+  const roomFloor = { x: arena.x, y: roomFloorTop(arena, 'boss'), w: arena.w, h: ZONE_FLOOR_H, kind: 'floor' };
   ctx.solids.push(roomFloor);
   const se = new SolidBox(roomFloor);
   ctx.solidEntities.push(se);

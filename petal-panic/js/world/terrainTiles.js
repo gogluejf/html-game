@@ -203,6 +203,69 @@ export async function buildTerrainTiles(s, level, seed) {
   return tileSolid(s, level, seed);
 }
 
+// --- Floor (fg) entity ---------------------------------------------------------
+// The floor is a first-class sprite citizen (sprite-engine plan M7): ONE wide
+// Entity per zone spanning the full floor width, anim 'fg' from the per-level
+// fg_sheet.json, target height 1 Y-unit, tile=true so drawSprite() repeats the
+// frame across the span. Floors NEVER get block tiles — kind='floor' routes
+// them here instead of through tileSolid().
+import { Entity } from '../core/entity.js';
+
+/** @type {Map<number, Entity>} level → floor entity (rebuilt when width changes) */
+const floorEntities = new Map();
+
+/**
+ * Get (and lazily build) the floor Entity for a level+floor rect. The entity's
+ * collision box IS the floor solid; its sprite data comes from the fg sheet so
+ * scaling follows the uniform collision-box rule (§4) like every other entity.
+ * @param {{x:number,y:number,w:number,h:number}} s the floor solid (world px)
+ * @param {number} level 1-based level index
+ * @returns {Entity|null} null until the fg frames have loaded
+ */
+export function getFloorEntity(s, level) {
+  let e = floorEntities.get(level);
+  if (!e || e.w !== s.w || e.x !== s.x || e.y !== s.y) {
+    e = new Entity({ x: s.x, y: s.y, w: s.w, h: s.h, debugColor: '#8f6' });
+    e.sprite = { anchor: 'bottom-center', tile: true, anims: {}, frames: new Map() };
+    floorEntities.set(level, e);
+  }
+  // Lazy sheet parse + frame load (fire-and-forget; cached).
+  const key = `${level}:fg`;
+  if (!frameJobs.has(key)) {
+    frameJobs.set(key, (async () => {
+      const url = new URL(`../../assets/levels/level${level}/fg_sheet.json`, import.meta.url).href;
+      let json;
+      if (url.startsWith('file:') || typeof fetch === 'undefined') {
+        const { readFile } = await import('node:fs/promises');
+        const { fileURLToPath } = await import('node:url');
+        json = JSON.parse(await readFile(fileURLToPath(url), 'utf8'));
+      } else {
+        json = await (await fetch(url)).json();
+      }
+      const data = parseSheet(json);
+      const animName = Object.keys(data.anims)[0];
+      const baseDir = new URL(`../../assets/levels/level${level}/`, import.meta.url).href;
+      const imgs = await loadFrames(data, baseDir);
+      for (const [file, img] of imgs) imageCache.set(`${level}:fg:${file}`, img);
+      e.sprite.anims = data.anims;
+      e.sprite.frames = imgs;
+      e.setAnim(animName); // scale = ZONE_FLOOR_H / fg collision box h (§4)
+      return imgs;
+    })().catch((err) => {
+      console.warn('[terrain-tiles] fg frames failed to load', err);
+      return new Map();
+    }));
+  }
+  return e;
+}
+
+/** Synchronous render hook: draws the floor entity when its frames are ready. */
+export function drawFloor(ctx, s, level) {
+  const e = getFloorEntity(s, level);
+  if (!e?.sprite?.frames?.size) return false;
+  return e.drawSprite(ctx);
+}
+
 /**
  * Synchronous image lookup for the render loop (no awaits).
  * @param {number} level 1-based level index

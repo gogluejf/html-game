@@ -228,14 +228,14 @@ function zonePlatforms(zone) {
     const topPlatformW = VERTICAL_TOP_PLATFORM_WIDTH_UNITS * UNIT_PX_X;
     const topPlatformX = b.x + Math.floor((VERTICAL_ZONE_WIDTH_UNITS - VERTICAL_TOP_PLATFORM_WIDTH_UNITS) / 2) * UNIT_PX_X;
     return [
-      { x: b.x, y: bottomY, w: b.w, h: ZONE_FLOOR_H },
+      { x: b.x, y: bottomY, w: b.w, h: ZONE_FLOOR_H, kind: 'floor' },
       { x: topPlatformX, y: topY, w: topPlatformW, h: PLATFORM_DRAW_H, oneWay: true },
     ];
   }
   // Horizontal / boss: floor at the standard ground level (roomFloorTop of a
   // VIEW_H-tall room = the old ZONE_GROUND_Y).
   return [
-    { x: b.x, y: roomFloorTop(zone.rooms[0], zone.orientation), w: b.w, h: ZONE_FLOOR_H },
+    { x: b.x, y: roomFloorTop(zone.rooms[0], zone.orientation), w: b.w, h: ZONE_FLOOR_H, kind: 'floor' },
   ];
 }
 

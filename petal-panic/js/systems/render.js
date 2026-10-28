@@ -17,10 +17,10 @@ import { input, formatBinding } from '../core/input.js';
 import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../core/timers.js';
 import { drawScreen, screenUpdate } from '../ui/screens.js';
 import { drawHUD } from '../systems/hud.js';
-import { LEVELS, BOSS_TRIGGER_X, ZONE_GROUND_Y, ZONE_FLOOR_H } from '../world/level.js';
-import { tileSolid, loadTerrainFrames, getTerrainFrameImage } from '../world/terrainTiles.js';
+import { LEVELS, BOSS_TRIGGER_X, ZONE_GROUND_Y } from '../world/level.js';
+import { tileSolid, loadTerrainFrames, getTerrainFrameImage, drawFloor } from '../world/terrainTiles.js';
 import { getLastWorldSeed } from '../world/build.js';
-import { drawParallaxBg, drawFgGround } from '../world/parallax.js';
+import { drawParallaxBg } from '../world/parallax.js';
 import { bombAttacks, getActiveZone } from './update.js';
 import { PLATFORM_DRAW_H } from '../world/macros.js';
 
@@ -90,10 +90,16 @@ export function render(ctx) {
   // every other sprite; the engine's semitransparent SOLID box still overlays
   // them via drawDebugOverlay. Tiles whose images haven't loaded yet are
   // skipped (the flat fill behind shows through for one frame at most).
+  // The floor is its OWN kind (sprite-engine M7): one wide tiled fg entity,
+  // never block-tiled — no double-draw.
   if (!(Debug.viewMode === 1)) {
     const seed = getLastWorldSeed() ?? 0;
     const level = LEVELS[0].index ?? 1;
     for (const s of getSolids()) {
+      if (s.kind === 'floor') {
+        drawFloor(ctx, s, level);
+        continue;
+      }
       const kind = s.oneWay ? 'platform' : 'block';
       loadTerrainFrames(level, kind); // fire-and-forget; cached per level+kind
       const tiles = tileSolid(s, level, seed);
@@ -101,12 +107,6 @@ export function render(ctx) {
         const img = getTerrainFrameImage(level, kind, t.imgKey);
         if (!img) continue; // sheet not parsed / image not loaded yet
         ctx.drawImage(img, t.x, t.y, t.w, t.h);
-      }
-      // Ground floor: overlay the fg art on top of the block tiling so the
-      // ground reads as themed foreground, not raw blocks. The floor is the
-      // solid that spans the full zone width at the bottom (h = ZONE_FLOOR_H).
-      if (!s.oneWay && s.h === ZONE_FLOOR_H) {
-        drawFgGround(ctx, s, level);
       }
     }
   }

@@ -266,8 +266,23 @@ export class Entity {
     if (this.mirrorY) ctx.scale(1, -1);
     ctx.rotate(this.rotation);
     ctx.scale(s, s);
-    // Frame drawn in source-bbox units, bottom edge on the anchor line.
-    ctx.drawImage(img, frame.bbox.x, frame.bbox.y - frame.bbox.h, frame.bbox.w, frame.bbox.h);
+    if (this.sprite.tile) {
+      // Tile repeat: draw the frame bbox repeatedly across the entity width so
+      // one wide entity (e.g. a full-zone floor) fills its whole span with the
+      // same uniform scale — no stretching, no per-tile math. The frame's
+      // natural (scaled) width is the repeat period; start one period left of
+      // the left edge so coverage always begins at x = -w/2.
+      const fw = frame.bbox.w;
+      const left = -this.w / 2 / s; // entity left edge in scaled local units
+      const right = this.w / 2 / s; // entity right edge (local units)
+      const first = Math.floor(left / fw);
+      for (let i = first; i * fw < right; i++) {
+        ctx.drawImage(img, frame.bbox.x + i * fw, frame.bbox.y - frame.bbox.h, frame.bbox.w, frame.bbox.h);
+      }
+    } else {
+      // Frame drawn in source-bbox units, bottom edge on the anchor line.
+      ctx.drawImage(img, frame.bbox.x, frame.bbox.y - frame.bbox.h, frame.bbox.w, frame.bbox.h);
+    }
     ctx.restore();
     return true;
   }

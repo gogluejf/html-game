@@ -65,7 +65,7 @@ export function parseSheet(sheetJson) {
         frames,
         // Optional richer geometry (Animation Studio revision): per-anim
         // collision box + pivot in source coordinates. Null until exported.
-        collisionBox: parseBox(ent.collisionBox),
+        collisionBox: parseBox(ent.collision) ?? parseBox(ent.collisionBox),
         pivot: parsePoint(ent.pivot),
         // Per-frame optional extras (duration overrides, typed boxes,
         // point/radius markers) — carried through verbatim when present.
@@ -125,8 +125,18 @@ function enumIn(v, allowed, label) {
 /** Parse an optional [x,y,w,h] box; null when absent. */
 function parseBox(b) {
   if (b == null) return null;
-  if (!Array.isArray(b) || b.length !== 4) throw new Error('parseSheet: bad collisionBox');
-  const [x, y, w, h] = b.map(Number);
+  // Two on-disk shapes: legacy [x,y,w,h] arrays and Animation Studio editor
+  // saves as {x,y,w,h} objects. Normalize both.
+  let x, y, w, h;
+  if (Array.isArray(b)) {
+    if (b.length !== 4) throw new Error('parseSheet: bad collisionBox');
+    [x, y, w, h] = b.map(Number);
+  } else if (typeof b === 'object') {
+    ({ x, y, w, h } = b);
+    [x, y, w, h] = [x, y, w, h].map(Number);
+  } else {
+    throw new Error('parseSheet: bad collisionBox');
+  }
   if (!(h > 0)) throw new Error('parseSheet: collisionBox height must be nonzero (sprites.md §4)');
   return { x, y, w, h };
 }
