@@ -1,0 +1,88 @@
+{
+  "file": "petal-panic/assets/enemies/penny_heads/penny_heads_death_sheet.png",
+  "size": "2162x617",
+  "rows": 1,
+  "cols": 6,
+  "kind": "animation",
+  "description": "penny_heads death (6f) \u2014 shrink and collapse into heap",
+  "entities": [
+    {
+      "name": "penny_heads",
+      "anim": "death",
+      "frames_dir": "petal-panic/assets/enemies/penny_heads",
+      "frames": [
+        {
+          "file": "penny_heads_death_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            422,
+            617
+          ]
+        },
+        {
+          "file": "penny_heads_death_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            422,
+            36,
+            365,
+            545
+          ]
+        },
+        {
+          "file": "penny_heads_death_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            787,
+            64,
+            328,
+            488
+          ]
+        },
+        {
+          "file": "penny_heads_death_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1115,
+            88,
+            309,
+            441
+          ]
+        },
+        {
+          "file": "penny_heads_death_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1424,
+            97,
+            324,
+            423
+          ]
+        },
+        {
+          "file": "penny_heads_death_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1748,
+            218,
+            414,
+            181
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/penny_heads",
+    "pass": "/tmp/ph_vanish"
+  }
+}

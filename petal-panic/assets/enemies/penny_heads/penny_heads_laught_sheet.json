@@ -1,0 +1,77 @@
+{
+  "file": "petal-panic/assets/enemies/penny_heads/penny_heads_laught_sheet.png",
+  "size": "2324x646",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "penny_heads laught (5f) \u2014 laughing cycle",
+  "entities": [
+    {
+      "name": "penny_heads",
+      "anim": "laught",
+      "frames_dir": "petal-panic/assets/enemies/penny_heads",
+      "frames": [
+        {
+          "file": "penny_heads_laught_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            7,
+            449,
+            631
+          ]
+        },
+        {
+          "file": "penny_heads_laught_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            449,
+            9,
+            456,
+            627
+          ]
+        },
+        {
+          "file": "penny_heads_laught_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            905,
+            0,
+            497,
+            646
+          ]
+        },
+        {
+          "file": "penny_heads_laught_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1402,
+            3,
+            484,
+            640
+          ]
+        },
+        {
+          "file": "penny_heads_laught_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1886,
+            5,
+            438,
+            635
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/penny_heads",
+    "pass": "/tmp/ph_laught"
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "file": "petal-panic/assets/enemies/penny_heads/penny_heads_scream_sheet.png",
+  "size": "2091x593",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "penny_heads scream (5f) \u2014 open-mouth scream cycle",
+  "entities": [
+    {
+      "name": "penny_heads",
+      "anim": "scream",
+      "frames_dir": "petal-panic/assets/enemies/penny_heads",
+      "frames": [
+        {
+          "file": "penny_heads_scream_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            8,
+            434,
+            577
+          ]
+        },
+        {
+          "file": "penny_heads_scream_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            434,
+            13,
+            421,
+            567
+          ]
+        },
+        {
+          "file": "penny_heads_scream_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            855,
+            0,
+            398,
+            593
+          ]
+        },
+        {
+          "file": "penny_heads_scream_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1253,
+            6,
+            411,
+            580
+          ]
+        },
+        {
+          "file": "penny_heads_scream_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1664,
+            9,
+            427,
+            574
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/penny_heads",
+    "pass": "/tmp/ph_scream"
+  }
+}

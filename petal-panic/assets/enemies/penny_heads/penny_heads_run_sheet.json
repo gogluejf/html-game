@@ -1,0 +1,99 @@
+{
+  "file": "petal-panic/assets/enemies/penny_heads/penny_heads_run_sheet.png",
+  "size": "2254x430",
+  "rows": 1,
+  "cols": 7,
+  "kind": "animation",
+  "description": "penny_heads run (7f) \u2014 running cycle",
+  "entities": [
+    {
+      "name": "penny_heads",
+      "anim": "run",
+      "frames_dir": "petal-panic/assets/enemies/penny_heads",
+      "frames": [
+        {
+          "file": "penny_heads_run_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            3,
+            331,
+            424
+          ]
+        },
+        {
+          "file": "penny_heads_run_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            331,
+            2,
+            288,
+            425
+          ]
+        },
+        {
+          "file": "penny_heads_run_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            619,
+            7,
+            314,
+            416
+          ]
+        },
+        {
+          "file": "penny_heads_run_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            933,
+            0,
+            371,
+            430
+          ]
+        },
+        {
+          "file": "penny_heads_run_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1304,
+            4,
+            319,
+            422
+          ]
+        },
+        {
+          "file": "penny_heads_run_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1623,
+            20,
+            308,
+            389
+          ]
+        },
+        {
+          "file": "penny_heads_run_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            1931,
+            8,
+            323,
+            413
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/penny_heads",
+    "pass": "/tmp/ph_run"
+  }
+}

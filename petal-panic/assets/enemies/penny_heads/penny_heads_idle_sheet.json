@@ -1,0 +1,88 @@
+{
+  "file": "petal-panic/assets/enemies/penny_heads/penny_heads_idle_sheet.png",
+  "size": "2188x583",
+  "rows": 1,
+  "cols": 6,
+  "kind": "animation",
+  "description": "penny_heads idle (6f) \u2014 two-headed clown expression cycle",
+  "entities": [
+    {
+      "name": "penny_heads",
+      "anim": "idle",
+      "frames_dir": "petal-panic/assets/enemies/penny_heads",
+      "frames": [
+        {
+          "file": "penny_heads_idle_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            4,
+            382,
+            575
+          ]
+        },
+        {
+          "file": "penny_heads_idle_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            382,
+            3,
+            368,
+            576
+          ]
+        },
+        {
+          "file": "penny_heads_idle_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            750,
+            2,
+            356,
+            579
+          ]
+        },
+        {
+          "file": "penny_heads_idle_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1106,
+            7,
+            361,
+            568
+          ]
+        },
+        {
+          "file": "penny_heads_idle_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1467,
+            0,
+            383,
+            583
+          ]
+        },
+        {
+          "file": "penny_heads_idle_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1850,
+            0,
+            338,
+            583
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/penny_heads",
+    "pass": "/tmp/ph_idle"
+  }
+}

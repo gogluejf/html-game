@@ -1,0 +1,99 @@
+{
+  "file": "petal-panic/assets/enemies/penny_heads/penny_heads_crawl_sheet.png",
+  "size": "2217x362",
+  "rows": 1,
+  "cols": 7,
+  "kind": "animation",
+  "description": "penny_heads crawl (7f) \u2014 crouched hands-forward cycle",
+  "entities": [
+    {
+      "name": "penny_heads",
+      "anim": "crawl",
+      "frames_dir": "petal-panic/assets/enemies/penny_heads",
+      "frames": [
+        {
+          "file": "penny_heads_crawl_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            9,
+            308,
+            344
+          ]
+        },
+        {
+          "file": "penny_heads_crawl_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            308,
+            12,
+            314,
+            337
+          ]
+        },
+        {
+          "file": "penny_heads_crawl_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            622,
+            9,
+            329,
+            343
+          ]
+        },
+        {
+          "file": "penny_heads_crawl_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            951,
+            25,
+            354,
+            312
+          ]
+        },
+        {
+          "file": "penny_heads_crawl_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1305,
+            0,
+            288,
+            362
+          ]
+        },
+        {
+          "file": "penny_heads_crawl_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1593,
+            15,
+            318,
+            331
+          ]
+        },
+        {
+          "file": "penny_heads_crawl_f7.png",
+          "row": 0,
+          "col": 6,
+          "bbox": [
+            1911,
+            6,
+            306,
+            350
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/penny_heads",
+    "pass": "/tmp/ph_crawl"
+  }
+}
