@@ -15,6 +15,7 @@
 
 import { VIEW_W, VIEW_H } from '../core/view.js';
 import { gameplaySurfaceBounds } from '../core/layout.js';
+import { loadLevelAsset, getLevelAsset } from './levelAssets.js';
 
 /** Background drift speed relative to the camera (higher = slower drift). */
 export const BG_PARALLAX_DIVISOR = 4;
