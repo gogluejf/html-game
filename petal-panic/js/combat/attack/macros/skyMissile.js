@@ -218,7 +218,7 @@ defineMacro('skyMissile', {
         // 'hit' → the blast resolves at exactly the marked point. Marker and
         // blast share state.impact, so they can never drift apart.
         const ent = s.missile?.entity;
-        if (ent?.alive && ent._attackId !== 'bomb' && !ent._attackDone && ent.y + ent.h >= pt.y) {
+        if (ent?.alive && ent._attackId !== 'ballistic' && !ent._attackDone && ent.y + ent.h >= pt.y) {
           ent.alive = false;
           ent._attackHit = true;
         }

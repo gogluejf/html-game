@@ -138,7 +138,7 @@ export class Pool {
    */
   spawn(...args) {
     for (const item of this.items) {
-      if (!item.alive && !(item._attackId === 'bomb' && !item._attackDone &&
+      if (!item.alive && !(item._attackId === 'ballistic' && !item._attackDone &&
           item._attackHandle && !item._attackHandle._cancelled && !item._attackHandle._completed)) {
         // A collision can kill a slot AFTER updateAll's cleanup. Reusing it
         // must not append the same object a second time (double physics).

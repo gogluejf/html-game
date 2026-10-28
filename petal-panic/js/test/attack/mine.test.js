@@ -175,7 +175,7 @@ test('actual bomb composition: production wall dispatch reflects and contact ret
     const h = invoke('throwMine', { origin: { x: 88, y: 30 }, speed: 120,
       direction: 0, arc: 0, ttl: null, team }, c);
     const e = h.entity;
-    assert.equal(h.inner.id, 'bomb'); assert.ok(e instanceof Special);
+    assert.equal(h.inner.id, 'ballistic'); assert.ok(e instanceof Special);
     assert.equal(e._attackHandle, h.inner);
     assert.deepEqual(e.worldBox(), { x: 76, y: 26, w: 24, h: 8 });
     // Wall reflection is covered by the bomb primitive's own tests; here we

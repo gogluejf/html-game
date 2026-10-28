@@ -9,7 +9,7 @@
 // through the single context object (world/context.js) rather than importing
 // update.js directly — that keeps the dependency graph acyclic.
 
-import { retainBombContact } from './attack/primitives/bomb.js';
+import { retainBombContact } from './attack/primitives/ballistic.js';
 import { LAYER } from '../consts.js';
 import { damage, flashTarget } from './damage.js';
 import { applyKnockback } from './knockback.js';
@@ -210,7 +210,7 @@ export function registerCollisionHandlers(collisionWorld) {
       const victim = foeProj === a ? b : a;
       // Match ally bomb terrain without changing ordinary enemy shots or
       // allowing foe projectiles to damage barrels.
-      if (victim instanceof SolidBox && foeProj._attackId === 'bomb') {
+      if (victim instanceof SolidBox && foeProj._attackId === 'ballistic') {
         hitSolidTerrain(foeProj, victim);
         return;
       }

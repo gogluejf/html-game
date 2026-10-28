@@ -28,7 +28,7 @@ import { spreadAngles } from './spreadShot.js';
 import { makeEnemy } from '../../../world/build.js';
 import { GRAVITY } from '../../../consts.js';
 import { resolveCarrier } from '../carrierMacro.js';
-import { stepBomb, stepBombTerrain } from '../primitives/bomb.js';
+import { stepBomb, stepBombTerrain } from '../primitives/ballistic.js';
 import { stepProjectile } from '../primitives/projectile.js';
 
 // Declared effect types for THIS registration (single source of truth:
@@ -52,7 +52,7 @@ const DEFAULTS = Object.freeze({
   parentVx: 0,
   parentVy: 0,
   delay: 0,
-  spawnType: 'projectile', // 'projectile' | 'bomb' | 'enemy'
+  spawnType: 'projectile', // 'projectile' | 'ballistic' | 'enemy'
   mineType: 'explosion',
   mine: { ttl: 2, blinkDuration: 2 },
   enemyType: 'explosive_monkey',
@@ -76,7 +76,7 @@ export function splitChildren(p) {
     angle: a,
     spawnType: p.spawnType ?? 'projectile',
     enemyType: p.spawnType === 'enemy' ? (p.enemyType ?? 'explosive_monkey') : undefined,
-    bomb: p.spawnType === 'bomb' ? (p.bomb ?? {}) : undefined,
+    ballistic: p.spawnType === 'ballistic' ? (p.ballistic ?? {}) : undefined,
   }));
 }
 
@@ -119,7 +119,7 @@ defineMacro('spawnSplit', {
       { key: 'force', desc: 'launch speed (px/s)' },
       { key: 'mine', desc: 'throwMine params; ttl null = contact only' },
       { key: 'enemy', desc: 'nested throwEnemy config when spawnType=enemy (ttl, mineType, team, damage, radius, thrown…)' },
-      { key: 'bomb', desc: 'bomb params when spawnType=bomb' },
+      { key: 'ballistic', desc: 'ballistic params when spawnType=ballistic' },
     ],
   },
   impl(params, ctx) {
@@ -172,8 +172,8 @@ defineMacro('spawnSplit', {
           groundY: p.groundY, platforms: p.platforms,
         }, ctx);
         handles.push(child);
-      } else if (c.spawnType === 'bomb') {
-        const b = p.bomb ?? {};
+      } else if (c.spawnType === 'ballistic') {
+        const b = p.ballistic ?? {};
         // Classic exploding bomb → the explosiveBomb macro (composition:
         // bomb flight + explosion payload). Primitives don't compose, so the
         // "it explodes" behavior is a macro concern.
@@ -206,7 +206,7 @@ defineMacro('spawnSplit', {
         if (child._completed || child._cancelled) continue;
         if (child.step) { child.step(dt, targets); continue; }
         const inner = resolveCarrier(child);
-        if (inner.entity?._attackId === 'bomb') {
+        if (inner.entity?._attackId === 'ballistic') {
           const groundY = p.groundY ?? ctx.groundY;
           const platforms = p.platforms ?? ctx.platforms ?? [];
           if (groundY != null) stepBombTerrain(inner.entity, dt, groundY, platforms);

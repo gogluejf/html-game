@@ -14,11 +14,11 @@ import { AttackTheater } from '../../debug/attack-theater.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { Enemy } from '../../enemies/enemy.js';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
-import { stepBombTerrain } from '../../combat/attack/primitives/bomb.js';
+import { stepBombTerrain } from '../../combat/attack/primitives/ballistic.js';
 import { Pool, Special } from '../../objects/projectile.js';
 import { LAYER } from '../../consts.js';
 import '../../combat/attack/primitives/projectile.js';
-import '../../combat/attack/primitives/bomb.js';
+import '../../combat/attack/primitives/ballistic.js';
 import '../../combat/attack/macros/index.js';
 
 let passed = 0;
@@ -189,7 +189,7 @@ ok('molotov parity: identical zone placement across context shapes', () => {
     for (let i = 0; i < 180; i++) {
       pool.updateAll(DT);
       // Same external terrain stepping both hosts rely on (gameplay pattern).
-      for (const s of pool.items) if (s._attackId === 'bomb' && !s._attackDone) stepBombTerrain(s, DT, GROUND_Y);
+      for (const s of pool.items) if (s._attackId === 'ballistic' && !s._attackDone) stepBombTerrain(s, DT, GROUND_Y);
       host.step(DT);
       const z = collectZones([h]);
       if (z.length > 0) zones = z; // remember the last live zone

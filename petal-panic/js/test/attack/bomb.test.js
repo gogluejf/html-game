@@ -2,7 +2,7 @@
 // Run: node js/test/attack/bomb.test.js
 
 import { strict as assert } from 'node:assert';
-import { spawnBomb, stepBomb } from '../../combat/attack/primitives/bomb.js';
+import { spawnBomb, stepBomb } from '../../combat/attack/primitives/ballistic.js';
 import { invoke, AttackHandle } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { Pool, Special } from '../../objects/projectile.js';
@@ -48,14 +48,14 @@ ok('ttl becomes the fuse on the entity', () => {
 
 ok('stepBomb: alive bomb returns false (still in flight)', () => {
   const ctx = makeCtx();
-  const h = new AttackHandle('bomb');
+  const h = new AttackHandle('ballistic');
   const ent = spawnBomb(P, ctx);
   assert.equal(stepBomb(ent, P, ctx, h), false);
 });
 
 ok('detonation emits detonate with blast point + completes', () => {
   const ctx = makeCtx();
-  const h = new AttackHandle('bomb');
+  const h = new AttackHandle('ballistic');
   const ent = spawnBomb(P, ctx);
   const seen = [];
   h.on('detonate', (d) => seen.push(d));
@@ -71,7 +71,7 @@ ok('detonation emits detonate with blast point + completes', () => {
 
 ok('fuse expiry (no contact) still detonates, contact=false', () => {
   const ctx = makeCtx();
-  const h = new AttackHandle('bomb');
+  const h = new AttackHandle('ballistic');
   const ent = spawnBomb(P, ctx);
   const seen = [];
   h.on('detonate', (d) => seen.push(d.contact));
@@ -83,7 +83,7 @@ ok('fuse expiry (no contact) still detonates, contact=false', () => {
 
 ok('stepBomb is idempotent after detonation', () => {
   const ctx = makeCtx();
-  const h = new AttackHandle('bomb');
+  const h = new AttackHandle('ballistic');
   const ent = spawnBomb(P, ctx);
   ent.alive = false;
   stepBomb(ent, P, ctx, h);
@@ -98,7 +98,7 @@ ok('carrier contract: terminal detonate carries the death point (macros compose)
   // macros (explosiveBomb) subscribe to 'detonate' and fire the blast at the
   // carried death point.
   const ctx = makeCtx();
-  const h = invoke('bomb', P, ctx);
+  const h = invoke('ballistic', P, ctx);
   const ent = h.entity;
   ent._attackHit = true;
   ent.alive = false;
@@ -111,7 +111,7 @@ ok('carrier contract: terminal detonate carries the death point (macros compose)
 
 ok('no payload → fizzle: detonate emits, no crash', () => {
   const ctx = makeCtx();
-  const h = invoke('bomb', P, ctx);
+  const h = invoke('ballistic', P, ctx);
   const ent = h.entity;
   ent._attackHit = true;
   ent.alive = false;
@@ -123,9 +123,9 @@ ok('no payload → fizzle: detonate emits, no crash', () => {
 
 ok('pool exhaustion: spawn returns null, handle expires', () => {
   const ctx2 = makeContext(attacker(), { pools: { specialPool: new Pool(Special, 1) } });
-  const h1 = invoke('bomb', { ...P }, ctx2);
+  const h1 = invoke('ballistic', { ...P }, ctx2);
   assert.ok(h1.entity, 'first bomb spawns');
-  const h2 = invoke('bomb', { ...P }, ctx2);
+  const h2 = invoke('ballistic', { ...P }, ctx2);
   assert.equal(h2.entity, undefined, 'second bomb skipped (soft cap)');
 });
 

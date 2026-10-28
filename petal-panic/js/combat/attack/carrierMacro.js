@@ -23,7 +23,7 @@
 // No theater wiring, no manual innermost resolution, no orphaned children.
 
 import { AttackHandle } from './engine.js';
-import { stepBomb, stepBombTerrain } from './primitives/bomb.js';
+import { stepBomb, stepBombTerrain } from './primitives/ballistic.js';
 import { stepProjectile } from './primitives/projectile.js';
 import { getPrimitive, getMacro } from './registry.js';
 
@@ -75,7 +75,7 @@ export function createCarrierHandle(id, params, ctx, { onDetonate }) {
     // Step the innermost carrier.
     const ch = resolveCarrier(h);
     if (!parentDone && ch.entity) {
-      if (ch.entity._attackId === 'bomb') {
+      if (ch.entity._attackId === 'ballistic') {
         // Terrain: host supplies groundY via params or ctx.
         const groundY = params.groundY ?? ctx.groundY;
         const platforms = params.platforms ?? ctx.platforms ?? [];
@@ -91,7 +91,7 @@ export function createCarrierHandle(id, params, ctx, { onDetonate }) {
       if (child._completed || child._cancelled) continue;
       if (typeof child.step === 'function') {
         child.step(dt, targets);
-      } else if (child.entity?._attackId === 'bomb') {
+      } else if (child.entity?._attackId === 'ballistic') {
         // Child bomb carriers (clusterBomb splits).
         let inner = child;
         while (inner.inner?.entity) inner = inner.inner;

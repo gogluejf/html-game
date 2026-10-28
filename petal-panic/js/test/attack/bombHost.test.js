@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
 import { Pool, Special } from '../../objects/projectile.js';
-import { stepBombTerrain } from '../../combat/attack/primitives/bomb.js';
+import { stepBombTerrain } from '../../combat/attack/primitives/ballistic.js';
 import { LAYER } from '../../consts.js';
 
 const dt = 1 / 60;
@@ -50,7 +50,7 @@ for (const id of ['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread
   const { host, pool, frame } = setup(2);
   const h = host.spawn(id, { origin: { x: 400, y: 200 }, x: 400, y: 200,
     speed: 0, force: 0, arc: 0, ttl: dt, childTtl: dt, childForce: 0,
-    childArc: 0, count: 4, fireDuration: 0.1, spawnType: 'bomb',
+    childArc: 0, count: 4, fireDuration: 0.1, spawnType: 'ballistic',
     bomb: { ttl: dt, arc: 0, blastTeam: 'foe' } }, attacker);
   let completes = 0;
   h.on('complete', () => completes++);
@@ -120,7 +120,7 @@ for (const id of ['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread
 }
 for (const id of ['clusterBomb', 'bombSpread', 'spawnSplit']) {
   const { host, pool, frame } = setup();
-  const h = host.spawn(id, { ttl: dt, count: 3, spawnType: 'bomb',
+  const h = host.spawn(id, { ttl: dt, count: 3, spawnType: 'ballistic',
     blastTeam: 'foe', bomb: { blastTeam: 'foe' } }, attacker);
   frame();
   assert.ok(h.handles.every(ch => ch.entity.layer === LAYER.PROJ_FOE));

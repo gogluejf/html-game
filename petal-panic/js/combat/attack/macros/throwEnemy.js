@@ -20,7 +20,7 @@
 import { defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
 import { AttackHandle } from '../engine.js';
-import { stepBombTerrain } from '../primitives/bomb.js';
+import { stepBombTerrain } from '../primitives/ballistic.js';
 import { makeEnemy } from '../../../world/build.js';
 
 export const THROW_ENEMY_DEFAULTS = Object.freeze({
@@ -42,7 +42,7 @@ export const THROW_ENEMY_DEFAULTS = Object.freeze({
 });
 
 defineMacro('throwEnemy', {
-  attacks: [{ id: 'bomb', role: 'carrier' }, { id: 'explosion', role: 'payload' }, { id: 'shockwave', role: 'payload' }],
+  attacks: [{ id: 'ballistic', role: 'carrier' }, { id: 'explosion', role: 'payload' }, { id: 'shockwave', role: 'payload' }],
   params: { ...THROW_ENEMY_DEFAULTS },
   meta: { name: 'Throw Enemy', desc: 'Ballistic carrier that lands and BECOMES a real enemy (default: explosive monkey). Flight = bomb layer; landed = enemy layer/AI.',
     effects: [],
@@ -62,7 +62,7 @@ defineMacro('throwEnemy', {
   impl(p, ctx) {
     const h = new AttackHandle('throwEnemy', null, []);
     h._params = p;
-    const carrier = invoke('bomb', {
+    const carrier = invoke('ballistic', {
       speed: p.speed, direction: p.direction, arc: p.arc, bounce: p.bounce,
       origin: p.origin, team: p.team, damage: 0, ttl: null,
       retainOnContact: true, retainOnSettle: true,

@@ -1,7 +1,7 @@
 // Gameplay ownership for attack roots; children remain owned by their macros.
 import { invoke } from './engine.js';
 import { makeContext } from './context.js';
-import { stepBomb, stepBombTerrain } from './primitives/bomb.js';
+import { stepBomb, stepBombTerrain } from './primitives/ballistic.js';
 import './primitives/explosion.js';
 import './macros/index.js';
 
@@ -22,7 +22,7 @@ export class BombAttackHost {
       const { h, ctx } = entry;
       Object.assign(ctx, live);
       if (h.step) h.step(dt, live.world?.targets ?? []);
-      else if (h.entity?._attackId === 'bomb') {
+      else if (h.entity?._attackId === 'ballistic') {
         if (!ctx.bombTerrainStepped) stepBombTerrain(h.entity, dt, ctx.groundY, ctx.platforms);
         stepBomb(h.entity, h._params ?? {}, ctx, h);
       }

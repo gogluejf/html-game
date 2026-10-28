@@ -82,7 +82,7 @@ registerMacro('homingMissile', {
   (primitives or other macros). It is the machine-readable form of each doc
   section's **Invokes:** line. Macros only.
 - **`meta.effects`** is the list of Effect Engine types the attack fires —
-  declared by BOTH primitives and macros (a primitive like `bomb` owns only its
+  declared by BOTH primitives and macros (a primitive like `ballistic` owns only its
   landing puff; a macro like `explosiveBomb` declares none — its blast rows are
   inherited from the Explosion primitive it invokes). Each entry
   is `{ type, desc }` where `type` matches an Effect Engine catalog type.
@@ -947,7 +947,7 @@ children run their own normal rules.
 ### Main parameters
 
 - **spawnType** — what the children become: `projectile` (straight shots),
-  `bomb` (ballistic arc, bounce, detonate on impact — materialized as an
+  `ballistic` (ballistic arc, bounce, detonate on impact — materialized as an
   explosiveBomb macro), or `enemy` (a live enemy entity that continues acting
   toward the attacker).
 - **count** — number created.
@@ -956,7 +956,7 @@ children run their own normal rules.
 - **force** — launch speed.
 - **inheritVelocity** — optional fraction of parent velocity added to each child.
 - **enemyType** — enemy id when `spawnType` is `enemy`.
-- **bomb** — bomb params override when `spawnType` is `bomb`.
+- **ballistic** — ballistic params override when `spawnType` is `ballistic`.
 
 ### Rules
 
@@ -1409,7 +1409,7 @@ Explosion is the default primitive; shockwave invokes the primitive directly aft
 warning, with **no** additional telegraph/build/gap/blink/impact-delay phases.
 
 `throwMine` adds `origin` (center point or marker), `speed:500`, `direction:-0.5`,
-`arc:800`, `bounce:true`. It composes the actual `bomb` (Ballistic Arc)
+`arc:800`, `bounce:true`. It composes the actual `ballistic` primitive (Ballistic Arc)
 primitive: a pooled Special integrated only by the host's pool update, then
 shared bomb terrain resolution and CollisionWorld wall/block-side reflection.
 The bomb opts into `retainOnContact` and `retainOnSettle`, with `ttl:null`

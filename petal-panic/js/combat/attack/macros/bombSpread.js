@@ -16,7 +16,7 @@ import { defineMacro } from '../defineMacro.js';
 import { invoke, AttackHandle } from '../engine.js';
 import { spreadAngles } from './spreadShot.js';
 import { resolveCarrier } from '../carrierMacro.js';
-import { stepBomb, stepBombTerrain } from '../primitives/bomb.js';
+import { stepBomb, stepBombTerrain } from '../primitives/ballistic.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -108,7 +108,7 @@ defineMacro('bombSpread', {
         if (child._completed || child._cancelled) continue;
         if (child.step) { child.step(dt, targets); continue; }
         const inner = resolveCarrier(child);
-        if (inner.entity?._attackId === 'bomb') {
+        if (inner.entity?._attackId === 'ballistic') {
           const groundY = p.groundY ?? ctx.groundY;
           const platforms = p.platforms ?? ctx.platforms ?? [];
           if (groundY != null) stepBombTerrain(inner.entity, dt, groundY, platforms);

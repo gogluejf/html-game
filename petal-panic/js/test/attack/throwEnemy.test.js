@@ -8,7 +8,7 @@ import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { Pool, Special } from '../../objects/projectile.js';
 import { BombAttackHost } from '../../combat/attack/bombAttackHost.js';
-import { stepBombTerrain } from '../../combat/attack/primitives/bomb.js';
+import { stepBombTerrain } from '../../combat/attack/primitives/ballistic.js';
 import { getMacro } from '../../combat/attack/registry.js';
 import { ENEMY_TYPES, makeEnemy } from '../../world/build.js';
 import { ExplosiveMonkey } from '../../enemies/explosiveMonkey.js';
@@ -50,7 +50,7 @@ ok('explosive_monkey is registered in ENEMY_FACTORIES / ENEMY_TYPES', () => {
 ok('throwEnemy is a registered macro composing the bomb primitive', () => {
   const def = getMacro('throwEnemy');
   assert.ok(def, 'macro registered');
-  assert.deepEqual(def.attacks.map((a) => a.id), ['bomb', 'explosion', 'shockwave']);
+  assert.deepEqual(def.attacks.map((a) => a.id), ['ballistic', 'explosion', 'shockwave']);
   assert.equal(def.params.arc, 1000, 'default arc is 1000 (recent user preference)');
   assert.equal(def.params.enemyType, 'explosive_monkey');
   assert.equal(def.params.ttl, null, 'default TTL null = contact only');
@@ -61,7 +61,7 @@ ok('flight uses the real bomb carrier (Ballistic Arc) with retain flags', () => 
   const { host, attacker, frame } = setup();
   const h = host.spawn('throwEnemy', { origin: { x: 120, y: 300 }, direction: -0.35, speed: 420 }, attacker);
   const ent = h.entity;
-  assert.equal(ent._attackId, 'bomb', 'carrier is the bomb primitive entity');
+  assert.equal(ent._attackId, 'ballistic', 'carrier is the ballistic primitive entity');
   assert.equal(ent._bombRetainOnSettle, true);
   assert.equal(ent._bombFuseDisabled, true, 'no flight fuse (ttl null)');
   let landed = false;

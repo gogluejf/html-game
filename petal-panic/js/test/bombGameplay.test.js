@@ -75,14 +75,14 @@ U.getCollisionWorld().remove(target);
 U.loadActiveZone(zone, { solids: zone.platforms, enemies: [], barrels: [], powerups: [], checkpoints: [] });
 assert.equal(h._cancelled, true);
 assert.equal(U.bombAttacks.roots.size, 0);
-assert.ok(!specialPool.items.some(s => s.alive && s._attackId === 'bomb'));
+assert.ok(!specialPool.items.some(s => s.alive && s._attackId === 'ballistic'));
 console.log('PASS real collision dispatch and zone teardown');
 
 for (const id of ['bomb', 'explosiveBomb', 'clusterBomb', 'bombSpread', 'spawnSplit']) {
   reset();
   const h = U.spawnBombAttack(id, { origin: { x: 600, y: 200 }, x: 600, y: 200,
     speed: 0, force: 0, arc: 0, ttl: dt, childForce: 0, childArc: 0,
-    childTtl: dt, count: 3, spawnType: 'bomb', bomb: { ttl: dt, arc: 0 } });
+    childTtl: dt, count: 3, spawnType: 'ballistic', bomb: { ttl: dt, arc: 0 } });
   for (let i = 0; i < 10; i++) U.update(dt);
   assert.equal(h._completed, true, `${id}: real gameplay drains all payloads`);
   assert.equal(U.bombAttacks.roots.size, 0);

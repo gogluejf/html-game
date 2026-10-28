@@ -1,11 +1,11 @@
 // Ballistic Arc carrier → persistent mine. Hosts own all flight integration/collision.
 import {defineMacro } from '../defineMacro.js';
 import { invoke } from '../engine.js';
-import { stepBombTerrain } from '../primitives/bomb.js';
+import { stepBombTerrain } from '../primitives/ballistic.js';
 import { MINE_DEFAULTS, MINE_PARAMS } from './mine.js';
 
 defineMacro('throwMine', {
-  attacks: [{ id: 'bomb', role: 'carrier' }, { id: 'mine', role: 'payload' }],
+  attacks: [{ id: 'ballistic', role: 'carrier' }, { id: 'mine', role: 'payload' }],
   params: { ...MINE_DEFAULTS, speed: 500, direction: -0.5, arc: 1000, bounce: true, origin: null },
   meta: { name: 'Throw Mine', desc: 'Bouncing mine; fuse starts at rest. Airborne contact arms a warning that starts on landing.',
     effects: [{ type: 'blink-transition', desc: 'mine warning overlay' }],
@@ -15,7 +15,7 @@ defineMacro('throwMine', {
       { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' }],
   },
   impl(p, ctx) {
-    const carrier = invoke('bomb', {
+    const carrier = invoke('ballistic', {
       speed: p.speed, direction: p.direction, arc: p.arc, bounce: p.bounce,
       origin: p.origin, team: p.team, damage: 0, ttl: null,
       retainOnContact: true, retainOnSettle: true,

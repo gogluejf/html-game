@@ -18,7 +18,7 @@ import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { projectilePool, specialPool } from '../objects/projectile.js';
 import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
-import { stepBombTerrain, stepBomb } from '../combat/attack/primitives/bomb.js';
+import { stepBombTerrain, stepBomb } from '../combat/attack/primitives/ballistic.js';
 import { S, getState, tryTransition, onTransition } from '../core/state.js';
 import { dispatchScreenInput, setMenuHero } from '../ui/screens.js';
 import { makeElephant } from '../boss/boss.js';
@@ -979,7 +979,7 @@ export function update(dt) {
   const activeZone = getActiveZone(hero);
   const bombGroundY = roomFloorTop(activeZone.rooms[0], activeZone.orientation);
   for (const s of specialPool.activeItems) {
-    if (!s.alive || s.type !== 'bomb' || s._attackId === 'bomb') continue;
+    if (!s.alive || s.type !== 'bomb' || s._attackId === 'ballistic') continue;
     const settled = stepBombTerrain(s, dt, bombGroundY, SOLIDS.slice(1));
     if (settled && !s.exploded) {
       explodeSpecial(s);
@@ -989,7 +989,7 @@ export function update(dt) {
   // TTL expiry: check the FULL pool (not just activeItems, which already
   // spliced dead items) for specials that just died from TTL this frame.
   for (const s of specialPool.items) {
-    if (s._attackId !== 'bomb' && s.ttlExpired && !s.exploded) {
+    if (s._attackId !== 'ballistic' && s.ttlExpired && !s.exploded) {
       explodeSpecial(s);
       s.ttlExpired = false;
     }
@@ -1012,7 +1012,7 @@ export function update(dt) {
   });
   // Shared top-surface collision before broadphase; payloads after dispatch.
   for (const s of specialPool.items) {
-    if (s._attackId === 'bomb' && !s._attackDone) {
+    if (s._attackId === 'ballistic' && !s._attackDone) {
       stepBombTerrain(s, dt, bombGroundY, [...SOLIDS.slice(1), ...barrelSolidBoxes]);
     }
   }
@@ -1020,7 +1020,7 @@ export function update(dt) {
   bombAttacks.step(dt);
   // Compatibility for directly invoked primitives/macros without a host root.
   for (const s of specialPool.items) {
-    if (s._attackId === 'bomb' && !s._attackDone && s._attackHandle) {
+    if (s._attackId === 'ballistic' && !s._attackDone && s._attackHandle) {
       stepBomb(s, s._attackHandle._params ?? {}, ctx, s._attackHandle);
     }
   }

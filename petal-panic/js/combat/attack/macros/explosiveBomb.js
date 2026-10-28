@@ -23,7 +23,7 @@ const DEFAULTS = Object.freeze({
 
 defineMacro('explosiveBomb', {
   attacks: [
-    { id: 'bomb', role: 'carrier' },
+    { id: 'ballistic', role: 'carrier' },
     { id: 'explosion', role: 'payload', overrides: { 'screen-flash': false } },
   ],
   params: { ...DEFAULTS },
@@ -68,7 +68,7 @@ defineMacro('explosiveBomb', {
       },
     });
 
-    const carrier = invoke('bomb', {
+    const carrier = invoke('ballistic', {
       team: p.team ?? p.blastTeam,
       speed: p.speed,
       direction: p.direction,

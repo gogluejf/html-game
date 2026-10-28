@@ -19,7 +19,7 @@ const DEFAULTS = Object.freeze({
   origin: null,
   blastTeam: 'neutral',
   // Children
-  spawnType: 'bomb',
+  spawnType: 'ballistic',
   mineType: 'explosion',
   mineTtl: 2,
   blinkDuration: 2,
@@ -35,7 +35,7 @@ const DEFAULTS = Object.freeze({
 
 defineMacro('clusterBomb', {
   attacks: [
-    { id: 'bomb', role: 'carrier' },
+    { id: 'ballistic', role: 'carrier' },
     { id: 'spawnSplit', role: 'payload' },
   ],
   params: { ...DEFAULTS },
@@ -107,7 +107,7 @@ defineMacro('clusterBomb', {
       },
     });
 
-    const carrier = invoke('bomb', {
+    const carrier = invoke('ballistic', {
       team: p.team ?? p.blastTeam,
       speed: p.speed,
       direction: p.direction,

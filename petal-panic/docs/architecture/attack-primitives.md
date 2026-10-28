@@ -72,9 +72,9 @@ than the projectile defining the barrel's response.
 
 ---
 
-## 2. Bomb / Ballistic Arc
+## 2. Ballistic (Ballistic Arc)
 
-**Effects:** Debris (landing puff when the carrier dies on terrain) — a dumb ballistic carrier with NO blast VFX and NO composition. The classic exploding bomb is the **Explosive Bomb macro** (§11), which owns the blast.
+**Effects:** Debris (landing puff when the carrier dies on terrain) — a dumb ballistic carrier with NO blast VFX and NO composition. The primitive id is `ballistic` (formerly `bomb`). The classic exploding bomb is the **Explosive Bomb macro** (§11), which owns the blast.
 
 Creates a thrown object that follows a curved ballistic trajectory. It is a
 pure flight carrier: gravity arc, bounce or stop on impact, contact damage,
@@ -91,7 +91,7 @@ nothing else. Macros subscribe to that event to fire their aftermath
 - **bounce** — whether it can bounce on ground, blocks, or platform surfaces.
 - **explodeOnContact** — legacy flag (kept for param parity; the terminal
   event fires on any end regardless).
-- **ttl** — fuse time before the bomb ends, including while airborne.
+- **ttl** — fuse time before the carrier ends, including while airborne.
 - **damage** — direct-contact damage.
 - **radius** — reference size for composed effects (macros read it).
 - **origin** — marker label | {x,y} | null → attacker center.
@@ -103,7 +103,7 @@ macro concern:
 
 - Explosion → **Explosive Bomb** macro.
 - Fire / Persistent Area → future molotov-style macro.
-- Spawn / Split into smaller bombs → future cluster-bomb macro.
+- Spawn / Split into smaller carriers → **Cluster Bomb** macro.
 
 ---
 

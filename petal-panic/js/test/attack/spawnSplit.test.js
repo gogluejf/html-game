@@ -4,7 +4,7 @@
 import { strict as assert } from 'node:assert';
 import { splitChildren } from '../../combat/attack/macros/spawnSplit.js'; // also registers the macro
 import '../../combat/attack/primitives/projectile.js'; // for macro materialization
-import '../../combat/attack/primitives/bomb.js';       // throwEnemy carrier (enemy children)
+import '../../combat/attack/primitives/ballistic.js';       // throwEnemy carrier (enemy children)
 import '../../combat/attack/macros/throwEnemy.js';     // enemy children are thrown
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';

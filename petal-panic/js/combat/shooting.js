@@ -110,7 +110,7 @@ function fireSpecial(h, input) {
  */
 export function explodeSpecial(s) {
   // Engine payloads are owned by their macro and dispatched after collision.
-  if (s._attackId === 'bomb') {
+  if (s._attackId === 'ballistic') {
     s._attackHit = !s.ttlExpired;
     s.alive = false;
     return;

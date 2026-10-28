@@ -37,7 +37,7 @@ for (const death of ['impact', 'fuse']) {
   const directCtx = context();
   const direct = invoke('spawnSplit', {
     x, y, count: 4, centerDirection: -Math.PI / 2,
-    angle: Math.PI, force: 300, spawnType: 'bomb',
+    angle: Math.PI, force: 300, spawnType: 'ballistic',
     bomb: { arc: 700, bounce: false, ttl: 2, damage: 15, radius: 30 },
   }, directCtx);
   for (let frame = 0; frame < 30; frame++) {

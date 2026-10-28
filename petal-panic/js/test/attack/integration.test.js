@@ -16,7 +16,7 @@ import { resolveEffects } from '../../combat/attack/effectsMeta.js';
 
 // Import every primitive for its registration side effect.
 import '../../combat/attack/primitives/projectile.js';
-import '../../combat/attack/primitives/bomb.js';
+import '../../combat/attack/primitives/ballistic.js';
 import '../../combat/attack/primitives/explosion.js';
 import '../../combat/attack/primitives/meleeHitbox.js';
 import '../../combat/attack/primitives/movement.js'; // registers 'charge'

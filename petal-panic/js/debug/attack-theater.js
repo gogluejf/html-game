@@ -23,7 +23,7 @@ import { makeContext } from '../combat/attack/context.js';
 import { BombAttackHost } from '../combat/attack/bombAttackHost.js';
 import { resolveEffects, resolveInvokes } from '../combat/attack/effectsMeta.js';
 import { stepProjectile } from '../combat/attack/primitives/projectile.js';
-import { stepBomb, stepBombTerrain, retainBombContact } from '../combat/attack/primitives/bomb.js';
+import { stepBomb, stepBombTerrain, retainBombContact } from '../combat/attack/primitives/ballistic.js';
 import { spikeDrawer, boomerangDrawer } from '../combat/attack/drawers/index.js';
 import { Pool, Projectile, Special } from '../objects/projectile.js';
 import { CollisionWorld, resolve } from '../core/collision.js';
@@ -46,7 +46,7 @@ import { STAGING } from './attack-theater-staging.js';
 
 // Import every primitive module for its registration side effect.
 import '../combat/attack/primitives/projectile.js';
-import '../combat/attack/primitives/bomb.js';
+import '../combat/attack/primitives/ballistic.js';
 import '../combat/attack/primitives/explosion.js';
 import '../combat/attack/primitives/meleeHitbox.js';
 import '../combat/attack/primitives/movement.js';
@@ -80,7 +80,7 @@ const REPEAT_FRAMES = 5;        // ~83ms between repeats while held
 // gameplay) instead of raw invoke(): the host owns root lifecycle + child
 // payload promotion (carrier → fireArea / split bombs). Everything else stays
 // on the theater's direct handle path.
-const BOMB_FAMILY = new Set(['bomb', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit', 'throwMine', 'throwEnemy']);
+const BOMB_FAMILY = new Set(['ballistic', 'explosiveBomb', 'molotov', 'clusterBomb', 'bombSpread', 'spawnSplit', 'throwMine', 'throwEnemy']);
 
 /** Angle display helper: radians → "−45° ↗" style string. */
 function angleLabel(rad) {
@@ -109,7 +109,7 @@ const SANDBOX_PRESETS = {
   spike: { x: TARGET_POS.x + 16, y: GROUND_Y - 8, width: 144, warningTime: 0.5, visibleTTL: 0.8, hiddenTTL: 0.5, repeatCount: 2, damage: 15, tickRate: 10, team: 'ally' },
   orbit: { count: 3, minRadius: 40, maxRadius: 90, pulseSpeed: 1.5, speed: 1.5, ttl: null, damage: 10, ejectable: true, ejectTtl: 2 },
   boomerang: { direction: 0, speed: 500, returnSpeed: 700, outboundDuration: 0.7, outboundDistance: null, ttl: 4, damage: 12, count: 3 },
-  spawnSplit: { mineType: 'explosion', enemy: { mineType: 'explosion', ttl: null }, x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'bomb', enemyType: 'explosive_monkey' },
+  spawnSplit: { mineType: 'explosion', enemy: { mineType: 'explosion', ttl: null }, x: TARGET_POS.x + 16, y: GROUND_Y - 100, count: 4, centerDirection: -Math.PI / 2, angle: 120 * DEG, force: 300, inheritVelocity: 0, delay: 0, spawnType: 'ballistic', enemyType: 'explosive_monkey' },
   spreadShot: { count: 3, direction: 0, angle: 60 * DEG, speed: 500, ttl: 2, damage: 10 },
   radialShot: { count: 24, startAngle: -Math.PI / 2, speed: 400, ttl: 2.5, damage: 10, sequenceInterval: 0.15 },
   burstShot: { count: 3, interval: 0.12, direction: 0.5, speed: 600, ttl: 2, damage: 10 },
@@ -168,11 +168,11 @@ export const TWEAKABLE = {
   spike: [['x', 'num', 16], ['width', 'num', 8], ['warningTime', 'num', 0.1], ['visibleTTL', 'num', 0.1], ['hiddenTTL', 'num', 0.1], ['repeatCount', 'int', 1], ['damage', 'num', 2]],
   orbit: [['count', 'int', 1], ['minRadius', 'num', 10], ['maxRadius', 'num', 10], ['pulseSpeed', 'num', 0.25], ['speed', 'num', 0.25]],
   boomerang: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['returnSpeed', 'num', 50], ['outboundDuration', 'num', 0.1], ['count', 'int', 1]],
-  spawnSplit: [['spawnType', 'enum', ['projectile', 'bomb', 'mine', 'enemy']], ['mineType', 'enum', ['explosion', 'shockwave']], ['enemyType', 'enum', ENEMY_TYPES], ['mine.ttl', 'enum', [null, 1, 2, 4, 8]], ['mine.blinkDuration', 'num', 0.25], ['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['enemy.mineType', 'enum', ['explosion', 'shockwave']], ['enemy.ttl', 'enum', [null, 1, 2, 4, 8]]],
+  spawnSplit: [['spawnType', 'enum', ['projectile', 'ballistic', 'mine', 'enemy']], ['mineType', 'enum', ['explosion', 'shockwave']], ['enemyType', 'enum', ENEMY_TYPES], ['mine.ttl', 'enum', [null, 1, 2, 4, 8]], ['mine.blinkDuration', 'num', 0.25], ['count', 'int', 1], ['centerDirection', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['force', 'num', 50], ['enemy.mineType', 'enum', ['explosion', 'shockwave']], ['enemy.ttl', 'enum', [null, 1, 2, 4, 8]]],
   bodyExplosion: [['payloadDelay', 'num', 0.05]],
   bombSpread: [['count', 'int', 1], ['direction', 'angle', 15 * DEG], ['angle', 'angle', 15 * DEG], ['speed', 'num', 50], ['ttl', 'num', 0.5], ['damage', 'num', 5], ['radius', 'num', 10]],
   molotov: [['direction', 'angle', 15 * DEG], ['speed', 'num', 50], ['fireWidth', 'num', 16], ['fireDuration', 'num', 0.5], ['fireDamage', 'num', 2]],
-  clusterBomb: [['spawnType', 'enum', ['bomb', 'mine']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['childAngle', 'angle', 15 * DEG], ['childDirection', 'angle', 15 * DEG], ['childForce', 'num', 50], ['childArc', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
+  clusterBomb: [['spawnType', 'enum', ['ballistic', 'mine']], ['mineType', 'enum', ['explosion', 'shockwave']], ['mineTtl', 'enum', [null, 1, 2, 4, 8]], ['blinkDuration', 'num', 0.25], ['count', 'int', 1], ['childAngle', 'angle', 15 * DEG], ['childDirection', 'angle', 15 * DEG], ['childForce', 'num', 50], ['childArc', 'num', 50], ['childTtl', 'num', 0.3], ['childDamage', 'num', 3], ['childRadius', 'num', 8]],
   targetedBeam: [['duration', 'num', 0.1], ['lockTime', 'num', 0.1], ['beamDuration', 'num', 0.1], ['damage', 'num', 2], ['tickRate', 'int', 1]],
   sweepingBeam: [['direction', 'angle', 15 * DEG], ['sweepAngle', 'angle', 10 * DEG], ['speed', 'num', 20], ['holdDuration', 'num', 0.1], ['sweepDuration', 'num', 0.1], ['endHoldDuration', 'num', 0.05], ['fadeOut', 'num', 0.05], ['damage', 'num', 2], ['announceMarker', 'enum', [false, true]], ['announceDelay', 'num', 0.1]],
   laneSequence: [['mode', 'enum', ['charge', 'beam']], ['laneCount', 'int', 1], ['laneSpacing', 'num', 20], ['laneOffset', 'num', 10], ['laneOrder', 'enum', ['bottom_to_top', 'top_to_bottom', 'random']], ['sideMode', 'enum', ['same_side', 'zigzag', 'sweep', 'random']], ['startSide', 'enum', ['left', 'right', 'random']], ['repeat', 'int', 1], ['announceDelay', 'num', 0.1], ['dashSpeed', 'num', 100], ['beamDuration', 'num', 0.1], ['damage', 'num', 5], ['tickRate', 'int', 1], ['interval', 'num', 0.05]],
@@ -666,7 +666,7 @@ export const AttackTheater = {
             this._world.add(e);
           }
           const st = this._params.spawnType;
-          this._log.unshift(`split → ${h.children?.length ?? 0} ${st === 'bomb' ? 'bombs' : st === 'enemy' ? 'enemies' : 'shots'}`);
+          this._log.unshift(`split → ${h.children?.length ?? 0} ${st === 'ballistic' ? 'balls' : st === 'enemy' ? 'enemies' : 'shots'}`);
           if (st === 'enemy') {
             // Thrown children land asynchronously: register each as it does so
             // the _stepOnce host loop runs its update/hostStep.
@@ -788,7 +788,7 @@ export const AttackTheater = {
     // a flat floor + optional stomp platforms; check both.
     const solids = [this._floorSolid, ...(this._stompPlatforms ?? [])];
     for (const p of [...projectilePool.activeItems, ...specialPool.activeItems]) {
-      if (!p.alive || p.solidBehavior !== 'stop' || p._attackId === 'bomb') continue;
+      if (!p.alive || p.solidBehavior !== 'stop' || p._attackId === 'ballistic') continue;
       for (const s of solids) {
         if (p.x + p.w > s.x && p.x < s.x + s.w &&
             p.y + p.h > s.y && p.y + p.h < s.y + 12) {
@@ -820,7 +820,7 @@ export const AttackTheater = {
     // (systems/update.js): pool.updateAll → stepBombTerrain per entity →
     // bombAttacks.step(dt).
     for (const s of specialPool.items) {
-      if (s._attackId !== 'bomb' || s._attackDone) continue;
+      if (s._attackId !== 'ballistic' || s._attackDone) continue;
       stepBombTerrain(s, DT, GROUND_Y);
     }
 
