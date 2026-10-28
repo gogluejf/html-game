@@ -162,4 +162,18 @@ ok('collisionWorld.add is called when provided', () => {
   assert.deepEqual(added, [ent]);
 });
 
+
+ok('width/height override the square size box', () => {
+  const pools = makePools();
+  const ctx = makeContext(attacker(), { pools });
+  const h = new AttackHandle('projectile');
+  const ent = spawnProjectile({ speed: 100, direction: 0, ttl: 1, damage: 1, size: 12, width: 8, height: 40 }, ctx, h);
+  assert.equal(ent.w, 8, 'explicit width wins');
+  assert.equal(ent.h, 40, 'explicit height wins');
+  // Omitted → falls back to size (square).
+  const e2 = spawnProjectile({ speed: 100, direction: 0, ttl: 1, damage: 1, size: 20 }, ctx, h);
+  assert.equal(e2.w, 20);
+  assert.equal(e2.h, 20);
+});
+
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);

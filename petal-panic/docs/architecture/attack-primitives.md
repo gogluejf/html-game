@@ -94,6 +94,7 @@ nothing else. Macros subscribe to that event to fire their aftermath
 - **ttl** — fuse time before the carrier ends, including while airborne.
 - **damage** — direct-contact damage.
 - **radius** — reference size for composed effects (macros read it).
+- **width / height** — explicit collision box dimensions (override the carrier default); AABB, reflection and drawers all read the entity's live w/h.
 - **origin** — marker label | {x,y} | null → attacker center.
 
 ### Completion / payload
@@ -250,7 +251,8 @@ Creates a stationary damaging hazard that can appear and disappear.
 ### Main parameters
 
 - **x / y** — spike position (world coords).
-- **size** — collision dimensions.
+- **size** — square collision box (default 12).
+- **width / height** — explicit box dimensions (override `size`); everything downstream (AABB, reflection, drawers) reads the entity's live w/h.
 - **visibleTTL** — how long the spike is active/visible.
 - **hiddenTTL** — optional time hidden before repeating.
 - **repeatCount** — cycle behavior (-1 = infinite).

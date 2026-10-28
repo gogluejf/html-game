@@ -38,7 +38,9 @@ const DEFAULTS = Object.freeze({
   team: 'ally',          // ally | foe — who this shot hurts (engine-wide side
                          // vocabulary, same as hitbox/explosion). Maps to the
                          // legacy friendly flag / PROJ_ALLY|PROJ_FOE layer.
-  size: 12,              // box size (thorn = 12, specials ~16)
+  size: 12,              // box size (thorn = 12, specials ~16) — square default
+  width: null,           // explicit box width px (overrides size); null = size
+  height: null,          // explicit box height px (overrides size); null = size
   drawer: null,          // (ctx, entity) => void — custom render override
 });
 
@@ -85,6 +87,12 @@ export function spawnProjectile(p, ctx, h) {
     ent.life = p.ttl;
   }
   if (!ent) return null; // pool exhausted — caller skips this shot (soft cap)
+
+  // Explicit box dimensions (non-square shots). Everything downstream — AABB
+  // collision, reflectVelocity, drawers reading e.w/e.h — works off these.
+  const s = p.size ?? 12;
+  ent.w = p.width ?? s;
+  ent.h = p.height ?? s;
 
   // Data-only transport: the existing collision handler reads this flag.
   // Always set explicitly — pool slots are recycled via Object.assign from a
@@ -169,6 +177,9 @@ registerPrimitive('projectile', {
       { key: 'origin', desc: "marker label | {x,y} | null → attacker center" },
       { key: 'solidBehavior', desc: 'phase | stop | reflect (existing flag)' },
       { key: 'team', desc: "ally | foe — who this shot hurts (maps to PROJ_ALLY/PROJ_FOE layer)" },
+      { key: 'size', desc: 'square box size px (default 12)' },
+      { key: 'width', desc: 'explicit box width px (overrides size)' },
+      { key: 'height', desc: 'explicit box height px (overrides size)' },
     ],
   },
   impl(params, ctx) {

@@ -58,6 +58,8 @@ defineMacro('circusBall', {
       damage: p.damage,
       ttl: p.ttl,
       radius: p.size,
+      width: p.size,
+      height: p.size,
       origin: p.origin,
       team: p.team,
       drawer: circusBallDrawer,

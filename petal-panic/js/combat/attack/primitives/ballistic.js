@@ -47,6 +47,8 @@ const DEFAULTS = Object.freeze({
   ttl: 2,               // fuse seconds (runs while airborne AND resting)
   damage: 40,           // direct-contact damage
   radius: 70,           // reference size for host-side effects (macro-owned)
+  width: null,          // explicit collision box width px (overrides carrier default)
+  height: null,         // explicit collision box height px (overrides carrier default)
   origin: null,         // marker label | {x,y} | null → attacker center
   drawer: null,         // (ctx, entity) => void — defaults to bombDrawer if null
   bounceHeight: null,   // px — constant-apex rebound mode (see stepBombTerrain).
@@ -92,6 +94,10 @@ export function spawnBomb(p, ctx, h = null) {
   ent._bombRetainOnSettle = p.retainOnSettle;
   ent._bombSettled = false;
   ent.solidBehavior = p.bounce ? 'reflect' : 'stop';
+  // Explicit collision box (non-square carriers). AABB collision, reflection
+  // and drawers all read e.w/e.h, so setting these after spawn is enough.
+  if (p.width != null) ent.w = p.width;
+  if (p.height != null) ent.h = p.height;
   // Constant-apex rebound mode (circus-ball style infinite bounces). Stored on
   // the entity so stepBombTerrain() can recompute each rebound from a fixed
   // height instead of decaying impact velocity.
@@ -251,6 +257,8 @@ registerPrimitive('ballistic', {
       { key: 'ttl', desc: 'fuse seconds' },
       { key: 'damage', desc: 'contact damage' },
       { key: 'radius', desc: 'reference size for composed effects' },
+      { key: 'width', desc: 'collision box width px (overrides carrier default)' },
+      { key: 'height', desc: 'collision box height px (overrides carrier default)' },
       { key: 'origin', desc: 'marker label | {x,y} | null → attacker center' },
     ],
   },

@@ -163,4 +163,16 @@ ok('bounceHeight: legacy decay path unchanged when unset', () => {
   assert.ok(Math.abs(ent.vx - 140) < 1e-6, `legacy friction vx ${ent.vx}`);
 });
 
+
+ok('width/height override the carrier collision box', () => {
+  const ctx = makeCtx();
+  const h = invoke('ballistic', { ...P, width: 30, height: 22, ttl: null }, ctx);
+  const ent = h.entity;
+  assert.equal(ent.w, 30, 'explicit width wins');
+  assert.equal(ent.h, 22, 'explicit height wins');
+  // Omitted → carrier default box untouched.
+  const h2 = invoke('ballistic', { ...P, ttl: null }, makeCtx());
+  assert.ok(h2.entity.w > 0 && h2.entity.h > 0, 'default box intact');
+});
+
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);
