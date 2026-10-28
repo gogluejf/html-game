@@ -198,6 +198,15 @@ async function boot() {
   // Load screen assets (Home/Select) now that screens.js is fully evaluated.
   // Headless environments have no Image constructor — skip gracefully.
   if (typeof Image !== 'undefined') screens.loadImages();
+  // Sprite sheet boot (sprites.md runtime wiring v1): fetch barrel + checkpoint
+  // sheets AND frames BEFORE update.js loads. update.js builds zone 1's
+  // entities at module scope; if the sprite data isn't ready by then those
+  // entities are constructed with sprite=null and never rebuilt (the live
+  // frame map only helps entities that HAVE a sprite block). Awaiting here
+  // costs one short fetch round-trip at boot and makes every entity — in
+  // every zone, on every reload — construct with real sprite data.
+  const { initBarrelSprites, initCheckpointSprites } = await import('./objects/object.js');
+  await Promise.all([initBarrelSprites(), initCheckpointSprites()]);
   const { update } = await import('./systems/update.js');
   const { render } = await import('./systems/render.js');
   // VIRTUAL GAMEPAD option (fullscreen-layout plan): default ON; the pad only

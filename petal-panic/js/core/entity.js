@@ -11,6 +11,7 @@
 
 import { GRAVITY, MAX_FALL_SPEED } from '../consts.js';
 import { Timers } from './timers.js';
+import { uniformScale } from './spriteData.js';
 
 export class Entity {
   /**
@@ -48,6 +49,19 @@ export class Entity {
     // AnimationController ref (design §11). null = no sprite animation yet;
     // draw() falls back to a debug rect.
     this.anim = opts.anim ?? null;
+
+    // --- Sprite data (sprites.md runtime wiring, v1) -------------------------
+    // entity.sprite = {
+    //   anchor: 'bottom-center',          // physical anchor (§3); default bottom-center
+    //   anims: { [name]: AnimData },      // from parseSheet(); dict keyed by state name
+    //   frames: Map<file, HTMLImageElement>,  // filled by loadFrames() (may be empty)
+    // }
+    // When set, the ACTIVE anim is tracked in this._spriteAnim (name) and
+    // this._spriteScale (uniform scalar, §4). The legacy this.anim path still
+    // works for entities that never adopt sprite data.
+    this.sprite = opts.sprite ?? null;
+    this._spriteAnim = null;
+    this._spriteScale = 1;
 
     // --- Collision ----------------------------------------------------------
     this.layer = opts.layer ?? 0;       // bitmask (see LAYER in consts.js)
@@ -179,6 +193,86 @@ export class Entity {
   }
 
   /**
+   * Set the active sprite animation (sprites.md runtime wiring, v1).
+   *
+   * Looks up this.sprite.anims[name], computes the UNIFORM scale that fits the
+   * anim's reference box height (§4: collision box / first-frame bbox) onto
+   * this entity's collision-box height, and stores it. The entity's world
+   * position (physical anchor, default bottom-center) is NOT touched — only
+   * the rendered art size changes, so switching anims never teleports the
+   * entity (§3).
+   *
+   * @param {string} name key into this.sprite.anims
+   */
+  setAnim(name) {
+    if (!this.sprite?.anims) return;
+    const data = this.sprite.anims[name];
+    if (!data) throw new Error(`setAnim: unknown anim "${name}"`);
+    this._spriteAnim = name;
+    // §4 v1: target height = the entity's own collision-box height. One scalar
+    // for art + any future geometry; width follows uniformly (no forcing).
+    this._spriteScale = uniformScale(data, this.h);
+  }
+
+  /** Active sprite AnimData (or null when no sprite anim is set/known). */
+  get spriteAnimData() {
+    return this.sprite?.anims?.[this._spriteAnim] ?? null;
+  }
+
+  /** Current frame index of the active sprite anim (v1: static first frame;
+   *  the SpritePlayer milestone drives this for multi-frame anims). */
+  get spriteFrameIndex() {
+    const data = this.spriteAnimData;
+    if (!data) return 0;
+    return 0; // TODO(sprite-engine 3.1): SpritePlayer-driven traversal
+  }
+
+  /**
+   * Draw the active sprite frame through the transform pipeline (§22 v1):
+   * translate to physical anchor (bottom-center by default) → uniform scale →
+   * mirrorX/Y → rotate. The frame's bbox is fitted onto the collision box
+   * height, bottom-aligned to the anchor, so feet stay on the floor across
+   * anim switches. Falls back to the legacy path (anim frames or debug rect)
+   * when no sprite data is active or frames haven't loaded yet.
+   * @param {CanvasRenderingContext2D} ctx
+   */
+  drawSprite(ctx) {
+    const data = this.spriteAnimData;
+    const frames = this.sprite?.frames;
+    if (!data || !frames || frames.size === 0) {
+      // One-time diagnostic: tells us WHY the sprite fell back to the rect.
+      if (data && !this._spriteWarned) {
+        this._spriteWarned = true;
+        const frame = data.frames[0];
+        console.warn(`[sprite] ${this.type ?? 'entity'} anim "${this._spriteAnim}" has no loaded frames`,
+          { expectedFile: frame?.file, cacheSize: frames?.size });
+      }
+      return false;
+    }
+    const frame = data.frames[this.spriteFrameIndex % data.frames.length];
+    const img = frames.get(frame.file);
+    if (!img || !(img.complete && img.naturalWidth > 0)) return false;
+
+    const s = this._spriteScale;
+    const w = frame.bbox.w * s;
+    const h = frame.bbox.h * s;
+    // Anchor at bottom-center of the collision box (default physical anchor).
+    const ax = this.x + this.w / 2;
+    const ay = this.y + this.h;
+
+    ctx.save();
+    ctx.translate(ax, ay);
+    if (this.mirrorX) ctx.scale(-1, 1);
+    if (this.mirrorY) ctx.scale(1, -1);
+    ctx.rotate(this.rotation);
+    ctx.scale(s, s);
+    // Frame drawn in source-bbox units, bottom edge on the anchor line.
+    ctx.drawImage(img, frame.bbox.x, frame.bbox.y - frame.bbox.h, frame.bbox.w, frame.bbox.h);
+    ctx.restore();
+    return true;
+  }
+
+  /**
    * Basic integration step: apply gravity, clamp fall speed, move by velocity.
    * dt is in seconds (fixed 1/60 in the main loop).
    * Subclasses should call super.update(dt) then add their own logic.
@@ -201,6 +295,9 @@ export class Entity {
    */
   draw(ctx) {
     if (this.visible === false) return; // engine contract: invisible = not drawn
+    // Sprite data path first (§22 pipeline, anchor-based); legacy path below.
+    if (this.drawSprite(ctx)) return;
+
     ctx.save();
     // Pivot at the entity's visual center.
     ctx.translate(this.x + this.w / 2, this.y + this.h / 2);

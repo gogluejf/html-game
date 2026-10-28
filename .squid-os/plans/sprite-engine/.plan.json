@@ -1,0 +1,323 @@
+{
+  "plan_name": "sprite-engine",
+  "title": "Sprite Animation Engine \u2014 Runtime Wiring (v1)",
+  "why": "Entities currently render placeholder rects; the Animation Studio sheet JSONs (frames, bbox, timing) exist in assets but nothing in the game consumes them. The 2026-10-27 session proposed the entity.sprite contract (anchor + anims dict + setAnim) but it was never written down or built.",
+  "outcomes": "Real sprite frames on entities driven by sheet JSON; uniform per-animation scaling from target height (48px/Y-unit); fixed physical anchor with collision box re-resolution; playback mode/direction/timing per docs/architecture/sprites.md; every entity type wired through one generic setAnim() path.",
+  "milestones": [
+    {
+      "number": "1",
+      "name": "Sheet Loader",
+      "pattern": [
+        "Port & Adapter (pure data core + DOM adapter)"
+      ],
+      "objective": "Parse Animation Studio _sheet.json into a runtime-ready SpriteData model and load the frame PNGs, with zero game-state coupling.",
+      "success": "loadSpriteData() returns frames, bboxes, fps, mode/direction/timing for any sheet path; node-testable without DOM; all 189 petal-panic sheet paths parse.",
+      "diagram": "graph TD\n    A[assets levels/enemies */*_sheet.json] --> B[sheetLoader.parseSheet - pure]\n    B --> C[SpriteData: anims dict]\n    D[browser Image loader] --> E[frame cache keyed by path]\n    C --> F[SpriteData ready]\n    E --> F",
+      "tasks": [
+        {
+          "number": "1.1",
+          "name": "SpriteData model + sheet parser",
+          "type": "feature",
+          "what": "Add js/core/spriteData.js: pure parse of a _sheet.json into {anims: {name \u2192 {fps, mode, direction, timing, frames: [{file, bbox}], collisionBox, pivot}}} plus validation (nonzero source box height, frame count from JSON only).",
+          "why": "Single runtime shape every later milestone consumes; keeps Animation Studio JSON as source of truth per sprites.md \u00a72.",
+          "files": [
+            "+ petal-panic/js/core/spriteData.js",
+            "+ petal-panic/js/test/spriteData.test.js"
+          ],
+          "snippet": [
+            "// spriteData.js (pure \u2014 no DOM)\nexport function parseSheet(json) -> SpriteData\n// SpriteData = { anims: { [name]: AnimData } }\n// AnimData  = { fps, mode, direction, timing,\n//               frames: [{ file, bbox: [x,y,w,h] }],\n//               collisionBox, pivot }\n// rules: frame count ONLY from json.frames.length\n//        throw on zero-height source collision box (\u00a74)"
+          ],
+          "acceptance": [
+            "parseSheet on level1 block_single_sheet.json yields 1 anim with 2 frames and correct bboxes",
+            "parseSheet on a platform sheet yields 4 frames",
+            "frame count never defaults to 8 \u2014 comes from JSON only",
+            "zero-height collision box throws"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/spriteData.test.js"
+          ]
+        },
+        {
+          "number": "1.2",
+          "name": "Frame image loader + cache",
+          "type": "feature",
+          "what": "Add browser adapter loadFrames(spriteData, baseDir) that resolves each frame file to a PNG via new Image(), caches by path, and marks readiness; no-op safe in node.",
+          "why": "Separates DOM I/O from the pure model so tests stay headless and images load once per session.",
+          "files": [
+            "+ petal-panic/js/core/frameLoader.js",
+            "~ petal-panic/js/test/spriteData.test.js"
+          ],
+          "snippet": [
+            "// frameLoader.js (DOM adapter)\nexport function loadFrames(data, baseDir) -> Promise<Map<string, HTMLImageElement>>\n// key = frame.file path; cached module-level\n// resolve when every img.complete && naturalWidth > 0"
+          ],
+          "acceptance": [
+            "loading level1 block_single yields 2 complete images",
+            "second call for same sheet returns cache without new Image()"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/spriteData.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "2",
+      "name": "Scale + Anchor Transform",
+      "pattern": [
+        "Single transform pipeline (sprites.md \u00a722)"
+      ],
+      "objective": "Implement per-animation uniform scaling from target height and the fixed physical anchor, so sprite and geometry never drift apart.",
+      "success": "An entity with 1.0-unit idle and 0.6-unit crouch renders at coherent sizes; anchor stays world-fixed across setAnim; all geometry uses one pipeline: scale \u2192 anchor \u2192 pivot \u2192 mirror \u2192 rotate.",
+      "diagram": "graph LR\n    A[targetH units x 48px] --> B[scale = targetPx / sourceBoxH]\n    B --> C[uniform scalar on frames+boxes+markers]\n    C --> D[translate into anchor space]\n    D --> E[anchor fixed in world]\n    E --> F[pivot / mirror / rotate]",
+      "tasks": [
+        {
+          "number": "2.1",
+          "name": "entity.sprite contract + setAnim()",
+          "type": "feature",
+          "what": "Extend Entity with sprite = {anchor, anims: {name \u2192 {sheet|data, targetH, fps?, mode?, timing?}}} and generic loadSprite()/setAnim(name): compute uniform scale (targetH*48 / source box height), re-resolve collision box around the fixed anchor, swap active anim. Keep old this.anim working as fallback.",
+          "why": "The 2026-10-27 session contract, now codified; every entity type gets identical behavior from one code path and hand-rolled per-entity scaling dies.",
+          "files": [
+            "~ petal-panic/js/core/entity.js",
+            "+ petal-panic/js/test/spriteSetAnim.test.js"
+          ],
+          "snippet": [
+            "// entity.js additions\nthis.sprite = opts.sprite ?? null\n// sprite = { anchor: 'bottom-center',\n//             anims: { idle: { data, targetH: 1.0 }, ... } }\nloadSprite()      // resolve data+frames for all anims, pick default\nsetAnim(name)     // scale from targetH, re-resolve box around anchor,\n                  // swap this.anim; anchor world position unchanged (\u00a73, \u00a719)\n// draw(): if active sprite anim \u2192 transform pipeline \u00a722\n//         else legacy rect (unchanged)"
+          ],
+          "acceptance": [
+            "setAnim between two targetH values changes rendered size by exactly the ratio, width included (uniform)",
+            "entity world position (anchor) is identical before/after setAnim",
+            "collision box re-resolves around anchor, no teleport",
+            "entity without sprite block still draws legacy rect"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/spriteSetAnim.test.js"
+          ]
+        },
+        {
+          "number": "2.2",
+          "name": "Anchor + transform pipeline in draw()",
+          "type": "feature",
+          "what": "Replace Entity.draw()'s center-pivot translate with the \u00a722 pipeline: uniform scale \u2192 translate into physical-anchor space (default bottom-center) \u2192 pivot \u2192 mirrorX/Y \u2192 rotate. Collision box and any per-frame geometry use the same transforms.",
+          "why": "One pipeline for sprite AND geometry is the core invariant of sprites.md \u2014 rendered art and spatial metadata must never drift apart.",
+          "files": [
+            "~ petal-panic/js/core/entity.js",
+            "~ petal-panic/js/test/spriteSetAnim.test.js"
+          ],
+          "snippet": [
+            "// draw() pipeline (\u00a722, same order every time)\nctx.translate(anchorWorldX, anchorWorldY)   // fixed world point\nctx.scale(s, s)                              // \u00a74 uniform scalar\nctx.translate(-pivot.x, -pivot.y)           // \u00a711 per-anim pivot\nif (mirrorX) ctx.scale(-1, 1)\nif (mirrorY) ctx.scale(1, -1)\nctx.rotate(rotation)\n// frame drawn at its bbox offset; boxes/markers transformed identically"
+          ],
+          "acceptance": [
+            "mirrored entity keeps collision box symmetric and world-fixed",
+            "rotation about pivot moves sprite and its boxes together",
+            "bottom-center anchor: feet stay on floor across anim switch"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/spriteSetAnim.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "3",
+      "name": "Playback Engine",
+      "pattern": [
+        "State machine + strategy (timing mode)"
+      ],
+      "objective": "Replace the v1 Anim (single speed+loop) with full sprites.md \u00a75\u20137 playback: per-frame durations, loop/once, forward/reverse/ping_pong(_reverse), and fps vs relative timing.",
+      "success": "All four directions traverse correctly with no endpoint duplication; once-completion is exposed for gameplay; relative mode maps [0,1] progress to traversal ignoring per-frame durations.",
+      "diagram": "stateDiagram-v2\n    [*] --> Playing\n    Playing --> Playing : tick dt / setProgress p\n    Playing --> Completed : once + terminal frame elapsed\n    Completed --> Playing : replay from start",
+      "tasks": [
+        {
+          "number": "3.1",
+          "name": "SpritePlayer (mode/direction/timing)",
+          "type": "feature",
+          "what": "Add js/core/spritePlayer.js implementing \u00a75\u20137: frame traversal for forward/reverse/ping_pong/ping_pong_reverse, per-frame duration overrides, loop/once with completion flag, and fps vs relative (setProgress 0..1) timing.",
+          "why": "The existing Anim class only does constant-speed forward loop; the sheet JSONs already carry mode/direction/timing that must be honored exactly.",
+          "files": [
+            "+ petal-panic/js/core/spritePlayer.js",
+            "+ petal-panic/js/test/spritePlayer.test.js"
+          ],
+          "snippet": [
+            "// spritePlayer.js\nexport class SpritePlayer {\n  constructor(animData)          // frames + durations + fps + mode + direction + timing\n  tick(dt)                       // fps mode advance; per-frame duration override\n  setProgress(p)                 // relative mode: map [0,1] onto traversal\n  get frameIndex()               // current frame in stored order\n  get done()                     // once-completion (after terminal frame elapsed)\n}\n// ping_pong: 1\u21922\u21923\u21924\u21925\u21924\u21923\u21922\u21921\u21922\u2026 NO endpoint duplication (\u00a76)\n// relative mode ignores per-frame durations (\u00a77)"
+          ],
+          "acceptance": [
+            "ping_pong sequence over 5 frames visits 1,2,3,4,5,4,3,2,1,2 with no 5,5 or 1,1",
+            "reverse+once completes on frame 1; forward+once on last frame",
+            "frame with explicit duration holds longer than 1/fps neighbors",
+            "relative: progress 0.5 lands mid-traversal regardless of fps"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/spritePlayer.test.js"
+          ]
+        },
+        {
+          "number": "3.2",
+          "name": "Wire SpritePlayer into Entity, retire v1 Anim path",
+          "type": "refactor",
+          "what": "Entity.setAnim() now builds a SpritePlayer from the anim's data; tick(dt) advances it; relative-timing anims expose setProgress for gameplay (jump phase mapping later). Keep Anim class for legacy placeholder users until all entities migrate.",
+          "why": "One playback implementation everywhere; completion flag lets AI react to 'once' anims per \u00a76.",
+          "files": [
+            "~ petal-panic/js/core/entity.js",
+            "~ petal-panic/js/test/spriteSetAnim.test.js"
+          ],
+          "snippet": [
+            "// entity.js\nsetAnim(name) { this._player = new SpritePlayer(animData); ... }\ntickAnim(dt)   // called from update loop; no-op without sprite\nget animDone() // exposes player.done for gameplay reactions\n// relative anims: gameplay calls entity.setProgress(p)"
+          ],
+          "acceptance": [
+            "loop anim runs indefinitely; once anim stops and animDone=true after terminal duration",
+            "legacy entities using Anim still render (no regression)"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/spriteSetAnim.test.js petal-panic/js/test/spritePlayer.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "4",
+      "name": "First Wiring \u2014 Blocks & Platforms",
+      "pattern": [
+        "Vertical slice (data \u2192 render \u2192 verify in game)"
+      ],
+      "objective": "Render real block/platform art from their sheets through the new engine \u2014 the smallest safe first integration, building directly on today's parallax work.",
+      "success": "In-game horizontal + vertical areas show real single/double/triple block and platform frames instead of orange rects; collision boxes unchanged; debug view modes still work.",
+      "diagram": "graph TD\n    A[block_single/double/triple _sheet.json] --> B[SpriteData + frames]\n    C[level def: sprite blocks for solids] --> D[setAnim per width variant]\n    B --> E[Entity draw pipeline \u00a722]\n    D --> E\n    E --> F[render.js solid loop uses entity.draw]",
+      "tasks": [
+        {
+          "number": "4.1",
+          "name": "Terrain sprite defs + render integration",
+          "type": "feature",
+          "what": "Add per-level terrain sprite config (block_single/double/triple, platform_single/double/triple sheet paths + targetH in units) and make the solid/platform draw loop in render.js use entity.draw() with width-variant tiling (5-unit platform = triple+double) instead of fillRect.",
+          "why": "First real-sprite vertical slice; validates loader\u2192scale\u2192anchor\u2192playback end-to-end on static art before touching heroes/enemies.",
+          "files": [
+            "+ petal-panic/js/world/terrainSprites.js",
+            "~ petal-panic/js/systems/render.js"
+          ],
+          "snippet": [
+            "// terrainSprites.js\nexport function terrainSpriteDef(level, kind, widthUnits)\n// -> { data, targetH: 1.0, variant: 'single'|'double'|'triple', tiles: [...] }\n// render.js solid loop:\nif (!(Debug.viewMode === 1)) for (const s of getSolids()) {\n  const def = terrainSpriteDef(level, s.oneWay ? 'platform' : 'block', s.w);\n  drawTiled(ctx, def, s);   // \u00a722 pipeline per tile\n}"
+          ],
+          "acceptance": [
+            "horizontal area shows level-themed block art, not orange rects",
+            "one-way platforms show platform art as a thin strip anchored to the landing face (R5.1 rule kept)",
+            "width > 3 tiles variants without stretching (uniform scale preserved)",
+            "collision-only debug mode (viewMode 1) still hides sprites"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/spriteData.test.js"
+          ]
+        },
+        {
+          "number": "4.2",
+          "name": "In-browser visual verification harness",
+          "type": "test",
+          "what": "Add a debug spawn/test screen (or extend the existing debug keys) that walks a horizontal + vertical area with real terrain sprites and logs any frame-load failures or scale mismatches.",
+          "why": "Headless tests can't see pixels; a quick in-game pass is how we confirm the art actually looks right before wiring heroes.",
+          "files": [
+            "~ petal-panic/js/debug/debug.js"
+          ],
+          "snippet": [
+            "// debug: press key \u2192 jump to area 1 (horizontal) / vertical area\\n// HUD line: 'sprites: 12/12 frames loaded, 0 scale warnings'"
+          ],
+          "acceptance": [
+            "all terrain frames report loaded in both orientations",
+            "no console errors on zone transition with sprites active"
+          ],
+          "verify": [
+            "manual browser check (documented steps in task)"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "5",
+      "name": "Geometry Collections (boxes + markers)",
+      "pattern": [
+        "Query-by-type collections (sprites.md \u00a715\u201321)"
+      ],
+      "objective": "Expose per-frame boxes, point markers, and radius markers as typed collections with world-transformed queries, keeping gameplay logic out of the sprite engine.",
+      "success": "getBoxes('melee'), getPoint('beam-origin'), getRadii('explosion') return world-space geometry aligned to the rendered sprite; zero entries are legal; labels need not be unique.",
+      "diagram": "graph TD\n    A[frame.boxes / points / radii - typed] --> B[transform pipeline \u00a722]\n    B --> C[world-space collections]\n    C --> D[gameplay queries by type]\n    D --> E[AI / attack patterns interpret meaning]",
+      "tasks": [
+        {
+          "number": "5.1",
+          "name": "Per-frame boxes + point/radius markers",
+          "type": "feature",
+          "what": "Extend SpriteData parsing for per-frame boxes[]/points[]/radii[] (type, position, size/radius) and add Entity query methods returning world-transformed copies: getBoxes(type), getPoint(type), getRadii(type). All use the \u00a722 pipeline; zero entries legal.",
+          "why": "Melee damage stays frame-defined (\u00a716) and markers give attack patterns their WHERE without turning JSON into a scripting language (\u00a720).",
+          "files": [
+            "~ petal-panic/js/core/spriteData.js",
+            "~ petal-panic/js/core/entity.js",
+            "~ petal-panic/js/test/spriteData.test.js"
+          ],
+          "snippet": [
+            "// spriteData AnimData.frame gains:\n//   boxes:  [{ type, x, y, w, h }]\n//   points: [{ type, x, y }]\n//   radii:  [{ type, x, y, r }]\n// entity queries (world space, current frame):\ngetBoxes('melee')      -> [ {x,y,w,h} ]\ngetPoint('beam-origin')-> {x,y} | null\ngetRadii('explosion')  -> [ {x,y,r} ]"
+          ],
+          "acceptance": [
+            "marker world position matches rendered sprite pixel under mirror+rotation",
+            "frame with no boxes returns [] not error",
+            "duplicate labels both returned (no uniqueness assumption)"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/spriteData.test.js"
+          ]
+        },
+        {
+          "number": "5.2",
+          "name": "Transition safety (clamp-first)",
+          "type": "feature",
+          "what": "Implement \u00a719: on setAnim, if the new collision box overlaps solids, clamp the anchor along the smallest axis until clear; if no free direction, keep the old box and retry next frame.",
+          "why": "Standing up from crouch under a low ceiling must never force penetration \u2014 the doc's acceptance test requires it.",
+          "files": [
+            "~ petal-panic/js/core/entity.js",
+            "+ petal-panic/js/test/spriteTransition.test.js"
+          ],
+          "snippet": [
+            "// setAnim geometry expansion check (\u00a719)\nif (newBox overlaps any solid) {\n  clamp anchor on smallest-penetration axis\n  if (no axis free) { keep old box; this._pendingAnim = name }\n}\n// update(): retry pending anim each frame until space opens"
+          ],
+          "acceptance": [
+            "crouch\u2192stand under low ceiling clamps instead of penetrating",
+            "boxed-in entity keeps old box and transitions when space opens"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/spriteTransition.test.js"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "6",
+      "name": "First Wiring \u2014 Checkpoint & Barrels",
+      "pattern": [
+        "Vertical slice (data \u2192 render \u2192 verify in game)"
+      ],
+      "objective": "Render real checkpoint flag and barrel art from their sheets through the new engine \u2014 static single-anim entities, the smallest safe first integration.",
+      "success": "In-game checkpoints show level/boss flag art (triggered state swaps anim) and barrels show wooden/coin/explosive art; collision boxes unchanged; debug view modes still work.",
+      "diagram": "graph TD\n    A[objects/checkpoint + objects/barrel _sheet.json] --> B[SpriteData + frames]\n    C[entity defs: sprite blocks, bbox = scale reference] --> D[setAnim per type/state]\n    B --> E[Entity draw pipeline]\n    D --> E\n    E --> F[existing draw loops call entity.draw]",
+      "tasks": [
+        {
+          "number": "6.1",
+          "name": "Checkpoint + barrel sprite wiring",
+          "type": "feature",
+          "what": "Add sprite blocks to checkpoint and barrel entity defs (sheet paths per type/state; frame bbox as scale reference: scale = box.h / bbox.h) and make their draw() use the sprite pipeline with legacy rect fallback until frames load.",
+          "why": "First real sprites in-game on static entities \u2014 validates loader\u2192scale\u2192draw end-to-end with zero state-machine complexity.",
+          "files": [
+            "~ petal-panic/js/objects/checkpoint.js",
+            "~ petal-panic/js/objects/barrel.js"
+          ],
+          "snippet": [
+            "// checkpoint def\\nsprite: { anchor: 'bottom-center',\\n  anims: { level: { sheet: '.../checkpoint/level_sheet.json' },\\n           boss:  { sheet: '.../checkpoint/boss_sheet.json' } } }\\n// triggered state \u2192 setAnim(dimmed/triggered variant)\\n// barrel: one anim per type (wooden/coin/explosion)"
+          ],
+          "acceptance": [
+            "checkpoints render flag art sized to their collision box, bottom-anchored",
+            "boss-zone checkpoint uses boss flag art",
+            "all three barrel types render their own art",
+            "collision-only debug mode still hides sprites"
+          ],
+          "verify": [
+            "node --test petal-panic/js/test/spriteData.test.js"
+          ]
+        }
+      ]
+    }
+  ]
+}

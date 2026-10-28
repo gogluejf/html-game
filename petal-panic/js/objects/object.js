@@ -16,6 +16,8 @@ import { Entity } from '../core/entity.js';
 import { LAYER } from '../consts.js';
 import { BARREL_EXPLOSION_KNOCKBACK } from '../combat/explosion.js';
 import { flashTarget } from '../combat/damage.js';
+import { parseSheet } from '../core/spriteData.js';
+import { loadFrames } from '../core/frameLoader.js';
 
 // --- Tunables ----------------------------------------------------------------
 export const BARREL_DAMAGE = 25;        // AoE damage dealt by a barrel explosion
@@ -29,6 +31,7 @@ export const WOOD_BARREL_DEF = {
   hp: 40,
   explosion: null,   // no blast — just breaks into wood chips
   coinDrop: null,
+  spriteAnim: 'wooden',
 };
 
 /** Destructible solid that explodes on destruction (hurts everyone nearby). */
@@ -43,6 +46,7 @@ export const BARREL_DEF = {
     knockback: BARREL_EXPLOSION_KNOCKBACK,
   },
   coinDrop: null,
+  spriteAnim: 'explosion',
 };
 
 /** Same HP/destructible behavior, but bursts into coins instead of exploding. */
@@ -52,7 +56,62 @@ export const COIN_BARREL_DEF = {
   hp: 60,
   explosion: null,   // no damaging explosion — just a coin burst
   coinDrop: { min: 4, max: 6, chance: 1.0, types: { bronze: 0.7, silver: 0.25, gold: 0.05 } },
+  spriteAnim: 'coin',
 };
+
+// --- Sprite data (sprites.md runtime wiring, v1) ------------------------------
+// Barrel art: three single-frame sheets share one frames_dir. The frame bbox is
+// the scaling reference (§4 v1) — setAnim() fits it onto the 48px box height.
+//
+// Loading strategy: async boot (initBarrelSprites / initCheckpointSprites).
+// Why NOT static JSON imports: Chromium <189 rejects `import ... with { type:
+// 'json' }` as a SYNTAX ERROR (verified on 156 — kills the whole module graph),
+// and plain JSON imports fail in Node 24 (ERR_IMPORT_ATTRIBUTE_MISSING).
+// Browser: fetch(). Node: fs fallback (tests + headless probes).
+let barrelSpriteData = null;
+let barrelFrames = new Map(); // shared frame cache, filled by initBarrelSprites()
+export function getBarrelSpriteData() { return barrelSpriteData; }
+export function initBarrelSprites() {
+  if (barrelSpriteData || typeof fetch === 'undefined') return Promise.resolve();
+  const base = new URL('../../assets/objects/barrel/', import.meta.url).href;
+  const files = ['wooden_sheet.json', 'coin_sheet.json', 'explosion_sheet.json'];
+  const load = base.startsWith('file:')
+    ? Promise.all(files.map((f) => readFileJson(new URL(f, base))))
+    : Promise.all(files.map((f) => fetch(base + f).then((r) => r.json())));
+  return load
+    .then((sheets) => {
+      barrelSpriteData = parseSheet(sheets);
+      return loadFrames(barrelSpriteData, base);
+    })
+    .then((imgs) => { if (imgs && imgs.size > 0) barrelFrames = imgs; })
+    .catch((e) => console.warn('[sprite] barrel sheets failed to load', e));
+}
+
+let checkpointSpriteData = null;
+let checkpointFrames = new Map(); // shared frame cache, filled by initCheckpointSprites()
+export function getCheckpointSpriteData() { return checkpointSpriteData; }
+export function initCheckpointSprites() {
+  if (checkpointSpriteData || typeof fetch === 'undefined') return Promise.resolve();
+  const base = new URL('../../assets/objects/checkpoint/', import.meta.url).href;
+  const files = ['level_sheet.json', 'boss_sheet.json'];
+  const load = base.startsWith('file:')
+    ? Promise.all(files.map((f) => readFileJson(new URL(f, base))))
+    : Promise.all(files.map((f) => fetch(base + f).then((r) => r.json())));
+  return load
+    .then((sheets) => {
+      checkpointSpriteData = parseSheet(sheets);
+      return loadFrames(checkpointSpriteData, base);
+    })
+    .then((imgs) => { if (imgs && imgs.size > 0) checkpointFrames = imgs; })
+    .catch((e) => console.warn('[sprite] checkpoint sheets failed to load', e));
+}
+
+/** Node-only JSON reader for file: URLs (browser uses fetch instead). */
+async function readFileJson(url) {
+  const { readFile } = await import('node:fs/promises');
+  const { fileURLToPath } = await import('node:url');
+  return JSON.parse(await readFile(fileURLToPath(url), 'utf8'));
+}
 
 // ---------------------------------------------------------------------------
 // GameObj — Object base class
@@ -84,6 +143,18 @@ export class GameObj extends Entity {
     this.coinDrop = def.coinDrop ?? null;
     this.hitFlash = 0;             // white-flash timer when struck (render reads it)
     this.destroyed = false;        // latched once HP hits 0 (prevents double-explode)
+
+    // Sprite data (v1): one anim per barrel type, bbox-scaled to the box.
+    // `frames` is a LIVE accessor — it always reads the shared cache, so
+    // entities constructed before initBarrelSprites() resolves still pick up
+    // the images the moment they land. draw() falls back to the debug rect
+    // until then.
+    const spriteData = getBarrelSpriteData();
+    if (def.spriteAnim && spriteData?.anims[def.spriteAnim]) {
+      this.sprite = { anchor: 'bottom-center', anims: spriteData.anims };
+      Object.defineProperty(this.sprite, 'frames', { get: () => barrelFrames });
+      setAnimSafe(this, def.spriteAnim);
+    }
   }
 
   /** Derived flag for backward compat: true when this object carries a blast. */
@@ -218,6 +289,16 @@ export class Checkpoint extends Entity {
     this.checkpointId = id;
     this.triggered = false;
     this.flashTimer = 0; // brief white flash after triggering (render reads it)
+
+    // Sprite data (v1): level vs boss flag art, bbox-scaled to the box.
+    // `frames` is a LIVE accessor (see barrel above) so late-loaded images are
+    // picked up automatically.
+    const spriteData = getCheckpointSpriteData();
+    if (spriteData?.anims.level) {
+      this.sprite = { anchor: 'bottom-center', anims: spriteData.anims };
+      Object.defineProperty(this.sprite, 'frames', { get: () => checkpointFrames });
+      setAnimSafe(this, 'level');
+    }
   }
 
   /** Per-frame step: decay the trigger flash timer. */
@@ -277,11 +358,23 @@ export function makeCheckpoint(id, x, y, extra = {}) {
   const c = new Checkpoint(id, x, y);
   c.isEntry = extra.isEntry ?? false;
   c.appearance = extra.appearance ?? 'entry';
+  // Boss-zone flags use the boss flag art (2-anim dict: level/boss).
+  if (c.sprite && c.appearance === 'boss-checkpoint') setAnimSafe(c, 'boss');
   // Restart position stored on hero.checkpoint when this flag triggers:
   // feet-on-floor (y = floor top), so respawn() places the hero standing.
   // Entry flags never trigger (naive sprites) — their spawnPos is unused.
   c.spawnPos = extra.spawnPos ?? null;
   return c;
+}
+
+/** setAnim wrapper that degrades silently when sprite data is missing
+ *  (node tests / parse failure) so entity construction never hard-crashes. */
+function setAnimSafe(entity, name) {
+  try {
+    entity.setAnim(name);
+  } catch {
+    /* no sprite data — legacy rect path stays active */
+  }
 }
 
 // ---------------------------------------------------------------------------
