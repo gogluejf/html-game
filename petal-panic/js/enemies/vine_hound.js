@@ -14,6 +14,7 @@
 // routes through damage() on overlap (same pattern as the jester's whip).
 
 import { Enemy } from './enemy.js';
+import { UNIT_PX_X } from '../world/macros.js';
 
 export const VINE_HOUND_DEF = {
   id: 'vine_hound',
@@ -21,7 +22,7 @@ export const VINE_HOUND_DEF = {
   w: 40, h: 44,
   aggroRadius: 320,
   stats: {
-    weight: 1, speed: 180, attack: 18, defense: 1, stamina: 35,
+    weight: 1, speed: 180 / 72,  // X-units/s (exactly 180 px/s at current unit) attack: 18, defense: 1, stamina: 35,
     mjump: 0,
     melee: true, projectile: false, fly: false,
   },
@@ -31,7 +32,7 @@ export const VINE_HOUND_DEF = {
 const LUNGE_RANGE = 50;          // px — distance at which the hound lunges
 const LUNGE_DURATION = 0.35;     // seconds — total lunge anim length
 const LUNGE_ACTIVE_FRAC = [0.1, 0.7]; // fraction of lunge where the dash is live
-const LUNGE_SPEED = 420;         // px/s — forward dash speed while lunging
+const LUNGE_SPEED = 420 / 72;    // X-units/s — forward dash speed while lunging (exactly 420 px/s at current unit)
 const RECOVER_TIME = 0.3;        // seconds of wind-down after a lunge
 const LUNGE_COOLDOWN = 1.2;      // seconds between lunges
 const AGGRO_RELEASE_MULT = 1.5;  // deaggro when hero exceeds aggroRadius * this
@@ -84,7 +85,7 @@ export class VineHound extends Enemy {
           this.aiState = 'lunge';
           this.lungeActive = true;
           this.lungeTimer = LUNGE_DURATION;
-          this.vx = Math.sign(dx) * LUNGE_SPEED; // burst forward
+          this.vx = Math.sign(dx) * LUNGE_SPEED * UNIT_PX_X; // burst forward
         }
         break;
       }

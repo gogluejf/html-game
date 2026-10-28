@@ -19,6 +19,7 @@
 
 import { Entity } from '../core/entity.js';
 import { LAYER, GRAVITY, MAX_FALL_SPEED } from '../consts.js';
+import { UNIT_PX_X } from '../world/macros.js';
 import { damage, flashTarget } from '../combat/damage.js';
 
 export class Enemy extends Entity {
@@ -43,7 +44,9 @@ export class Enemy extends Entity {
     this.name = def.name ?? def.id;
     this.def = def;
     this.isBoss = def.isBoss ?? false;
-    this.stats = { ...def.stats };
+    // UNIT→PX conversion point (pixel-hardcode-audit.md Tier 2): enemy defs
+    // declare speed in X-units/s; physics downstream sees px as before.
+    this.stats = { ...def.stats, speed: def.stats.speed * UNIT_PX_X };
     this.hp = def.stats.stamina;
     this.maxHp = def.stats.stamina;
     this.coinDrop = def.coinDrop ?? { min: 1, max: 3, chance: 0.5 };

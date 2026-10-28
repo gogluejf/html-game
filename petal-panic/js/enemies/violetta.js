@@ -15,6 +15,7 @@
 // jab (one hit per swing) for very close targets.
 
 import { Enemy } from './enemy.js';
+import { UNIT_PX_X } from '../world/macros.js';
 import { projectilePool } from '../objects/projectile.js';
 
 export const VIOLETTA_DEF = {
@@ -23,14 +24,14 @@ export const VIOLETTA_DEF = {
   w: 36, h: 50,
   aggroRadius: 340,
   stats: {
-    weight: 1, speed: 90, attack: 14, defense: 2, stamina: 45,
+    weight: 1, speed: 90 / 72,   // X-units/s (exactly 90 px/s at current unit) attack: 14, defense: 2, stamina: 45,
     mjump: 0,
     melee: true, projectile: true, fly: false,
   },
   coinDrop: { min: 1, max: 3, chance: 1.0, types: { bronze: 1 } },
 };
 
-const PACING_SPEED = 80;        // px/s — walk speed while pacing
+const PACING_SPEED = 80 / 72;    // X-units/s — walk speed while pacing (exactly 80 px/s at current unit)
 const PACING_RANGE = 140;       // px — half-width of the pacing corridor
 const MELEE_RANGE = 40;         // px — distance at which the melee jab triggers
 const MELEE_DURATION = 0.3;     // seconds — total jab anim length
@@ -86,7 +87,7 @@ export class Violetta extends Enemy {
         const rightEdge = this.spawnX + PACING_RANGE;
         if (this.x <= leftEdge) { this.paceDir = 1; }
         else if (this.x >= rightEdge) { this.paceDir = -1; }
-        this.vx = this.paceDir * PACING_SPEED;
+        this.vx = this.paceDir * PACING_SPEED * UNIT_PX_X;
         this.facing = this.paceDir;
         this.syncMirror();
 

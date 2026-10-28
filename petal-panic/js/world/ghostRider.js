@@ -9,6 +9,7 @@ import { createHeadlessHero, stepHeadless } from '../hero/headless.js';
 import { HEROES } from '../hero/heroDefs.js';
 import { GRAVITY, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL } from '../consts.js';
 import { doubleJumpReachForStats, superAssistReachForStats } from './macros.js';
+import { UNIT_PX_X, UNIT_PX_Y } from './macros.js';
 
 const DT = 1 / 60;
 const MAX_ATTEMPTS = 8;
@@ -101,7 +102,8 @@ export function runGhostRide(macro, opts = {}) {
 export function rideOnce(world, attempt) {
   const { vertical, W, H, groundY, UX, UY, solids, landings } = world;
   const heroKey = 'balthazar'; // weakest hero governs
-  const stats = HEROES[heroKey].stats;
+  // UNIT→PX conversion point (pixel-hardcode-audit.md Tier 2): def stats are unit-native.
+  const stats = { ...HEROES[heroKey].stats, speed: HEROES[heroKey].stats.speed * UNIT_PX_X, jump: HEROES[heroKey].stats.jump * UNIT_PX_Y };
   const start = world._retryFrom ?? world.entry;
   const hero = createHeadlessHero(heroKey, { x: start.x - 8, y: start.y - 40 });
 

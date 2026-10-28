@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { runGhostRide, buildRideWorld } from '../world/ghostRider.js';
 import { createHeadlessHero, stepHeadless } from '../hero/headless.js';
 import { HEROES } from '../hero/heroDefs.js';
+import { UNIT_PX_X } from '../world/macros.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MACRO_DIR = path.join(__dirname, '../../macros/levels');
@@ -34,7 +35,7 @@ test('headless: hero runs right at full speed on flat ground', async () => {
   const hero = createHeadlessHero('balthazar', { x: 0, y: 400 });
   const solids = [{ x: 0, y: 500, w: 5000, h: 48 }];
   for (let i = 0; i < 30; i++) stepHeadless(hero, 1 / 60, { right: true }, solids);
-  assert.ok(Math.abs(hero.vx - HEROES.balthazar.stats.speed) < 5, `vx=${hero.vx}`);
+  assert.ok(Math.abs(hero.vx - HEROES.balthazar.stats.speed * UNIT_PX_X) < 5, `vx=${hero.vx}`);
 });
 
 test('headless: jump gives negative vy then lands', async () => {

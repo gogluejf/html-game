@@ -18,7 +18,7 @@ export const JESTER_DEF = {
   w: 36, h: 48,
   aggroRadius: 300,
   stats: {
-    weight: 1, speed: 120, attack: 15, defense: 2, stamina: 40,
+    weight: 1, speed: 120 / 72,  // X-units/s (exactly 120 px/s at current unit) attack: 15, defense: 2, stamina: 40,
     mjump: 0,
     melee: true, projectile: false, fly: false,
   },

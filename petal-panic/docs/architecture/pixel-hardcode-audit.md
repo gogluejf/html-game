@@ -61,29 +61,29 @@ Unit reference: 1 X-unit = 72px · 1 Y-unit = 48px (current).
 
 | # | File | Line | Item | Current (px) | Status |
 |---|------|------|------|--------------|--------|
-| 24 | js/hero/hero.js | 36 | AIR_REVERSAL_MIN_SPEED | 40 px/s | ❌ |
-| 25 | js/hero/hero.js | 53 | knockback contact strength | 260 px/s | ❌ |
-| 26 | js/hero/hero.js | 54 | knockback bossContact strength | 340 px/s | ❌ |
-| 27 | js/hero/hero.js | 55 | knockback projectile strength | 220 px/s | ❌ |
-| 28 | js/hero/hero.js | 56 | knockback heavyProj strength | 300 px/s | ❌ |
-| 29 | js/hero/hero.js | 57 | knockback explosion strength | 380 px/s | ❌ |
-| 30 | js/hero/heroDefs.js | 53 | hero move speed A | 250 px/s | ❌ |
-| 31 | js/hero/heroDefs.js | 84 | hero move speed B | 180 px/s | ❌ |
+| 24 | js/hero/hero.js | 36 | AIR_REVERSAL_MIN_SPEED | 40 px/s | ✅ |
+| 25 | js/hero/hero.js | 53 | knockback contact strength | 260 px/s | ✅ |
+| 26 | js/hero/hero.js | 54 | knockback bossContact strength | 340 px/s | ✅ |
+| 27 | js/hero/hero.js | 55 | knockback projectile strength | 220 px/s | ✅ |
+| 28 | js/hero/hero.js | 56 | knockback heavyProj strength | 300 px/s | ✅ |
+| 29 | js/hero/hero.js | 57 | knockback explosion strength | 380 px/s | ✅ |
+| 30 | js/hero/heroDefs.js | 53 | hero move speed A | 250 px/s | ✅ |
+| 31 | js/hero/heroDefs.js | 84 | hero move speed B | 180 px/s | ✅ |
 
 ### Enemy speeds (px/s)
 
 | # | File | Line | Item | Current (px/s) | Status |
 |---|------|------|------|----------------|--------|
-| 32 | js/enemies/boris_loon.js | 26 | boris_loon speed (form A) | 80 | ❌ |
-| 33 | js/enemies/boris_loon.js | 39 | boris_loon speed (form B) | 120 | ❌ |
-| 34 | js/enemies/explosiveMonkey.js | 37 | explosiveMonkey speed | 90 | ❌ |
-| 35 | js/enemies/jackolantern.js | 26 | jackolantern speed | 150 | ❌ |
-| 36 | js/enemies/jackolantern.js | 42 | ROLL_SPEED | 150 | ❌ |
-| 37 | js/enemies/jester.js | 21 | jester speed | 120 | ❌ |
-| 38 | js/enemies/vine_hound.js | 24 | vine_hound speed | 180 | ❌ |
-| 39 | js/enemies/vine_hound.js | 34 | LUNGE_SPEED | 420 | ❌ |
-| 40 | js/enemies/violetta.js | 26 | violetta speed | 90 | ❌ |
-| 41 | js/enemies/violetta.js | 33 | PACING_SPEED | 80 | ❌ |
+| 32 | js/enemies/boris_loon.js | 26 | boris_loon speed (form A) | 80 | ✅ |
+| 33 | js/enemies/boris_loon.js | 39 | boris_loon speed (form B) | 120 | ✅ |
+| 34 | js/enemies/explosiveMonkey.js | 37 | explosiveMonkey speed | 90 | ✅ |
+| 35 | js/enemies/jackolantern.js | 26 | jackolantern speed | 150 | ✅ |
+| 36 | js/enemies/jackolantern.js | 42 | ROLL_SPEED | 150 | ✅ |
+| 37 | js/enemies/jester.js | 21 | jester speed | 120 | ✅ |
+| 38 | js/enemies/vine_hound.js | 24 | vine_hound speed | 180 | ✅ |
+| 39 | js/enemies/vine_hound.js | 34 | LUNGE_SPEED | 420 | ✅ |
+| 40 | js/enemies/violetta.js | 26 | violetta speed | 90 | ✅ |
+| 41 | js/enemies/violetta.js | 33 | PACING_SPEED | 80 | ✅ |
 
 ## Tier 3 — Attack primitives & radii
 

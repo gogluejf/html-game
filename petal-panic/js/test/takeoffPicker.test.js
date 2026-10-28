@@ -10,9 +10,11 @@ import assert from 'node:assert/strict';
 import { buildRideWorld } from '../world/ghostRider.js';
 import { createHeadlessHero } from '../hero/headless.js';
 import { HEROES } from '../hero/heroDefs.js';
+import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 import { pickTakeoff, executePick } from '../world/takeoffPicker.js';
 
-const BALT = { ...HEROES.balthazar.stats, hasDoubleJump: true, canSuper: true };
+// UNIT→PX (pixel-hardcode-audit.md Tier 2): def stats are unit-native; picker math is px.
+const BALT = { ...HEROES.balthazar.stats, speed: HEROES.balthazar.stats.speed * UNIT_PX_X, jump: HEROES.balthazar.stats.jump * UNIT_PX_Y, hasDoubleJump: true, canSuper: true };
 
 function worldOf(units){ return buildRideWorld({ orientation: 'horizontal', units }); }
 

@@ -23,7 +23,7 @@ export const BORIS_DEF = {
   w: BASE_W, h: BASE_H,
   aggroRadius: 360,
   stats: {
-    weight: 1, speed: 80, attack: 12, defense: 1, stamina: 25,
+    weight: 1, speed: 80 / 72,   // X-units/s (exactly 80 px/s at current unit) attack: 12, defense: 1, stamina: 25,
     mjump: 0,
     melee: false, projectile: true, fly: true,
   },
@@ -36,7 +36,7 @@ export const BORIS_BABY_DEF = {
   w: Math.round(BASE_W * 0.6), h: Math.round(BASE_H * 0.6),
   aggroRadius: 320,
   stats: {
-    weight: 1, speed: 120, attack: 8, defense: 0, stamina: 15,
+    weight: 1, speed: 120 / 72,  // X-units/s (exactly 120 px/s at current unit) attack: 8, defense: 0, stamina: 15,
     mjump: 0,
     melee: false, projectile: true, fly: true,
   },

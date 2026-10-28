@@ -12,6 +12,7 @@
 import { buildRideWorld } from './ghostRider.js';
 import { createHeadlessHero, stepHeadless } from '../hero/headless.js';
 import { HEROES } from '../hero/heroDefs.js';
+import { UNIT_PX_X, UNIT_PX_Y } from './macros.js';
 import { traversalRoute } from './macros.js';
 import { createRideBrain } from './rideBrain.js';
 import { createRideState, stepRide } from './rideDriver.js';
@@ -20,7 +21,9 @@ const DT = 1 / 60;
 const DEFAULT_MAX_FRAMES = 60 * 90; // ~90 s per lap cap
 
 /** Balthazar governs (weakest hero). Ghost ride = infinite supers. */
-export const RIDE_PARAMS = { ...HEROES.balthazar.stats, hasDoubleJump: true, canSuper: true };
+// UNIT→PX conversion point (pixel-hardcode-audit.md Tier 2): def stats are unit-native;
+// the mover math is px-based.
+export const RIDE_PARAMS = { ...HEROES.balthazar.stats, speed: HEROES.balthazar.stats.speed * UNIT_PX_X, jump: HEROES.balthazar.stats.jump * UNIT_PX_Y, hasDoubleJump: true, canSuper: true };
 
 /** Build the ordered goal list for a ride world (mirrors ghost.js buildGoalList). */
 export function buildGoalList(world, st){

@@ -14,6 +14,7 @@
 // resolver; this class only latches the blast and fires onExplode().
 
 import { Enemy } from './enemy.js';
+import { UNIT_PX_X } from '../world/macros.js';
 
 import { JACKO_EXPLOSION_KNOCKBACK } from '../combat/explosion.js';
 
@@ -23,7 +24,7 @@ export const JACKO_DEF = {
   w: 40, h: 40,
   aggroRadius: 400,             // rolls once the hero gets this close
   stats: {
-    weight: 1, speed: 150, attack: 22, defense: 0, stamina: 30,
+    weight: 1, speed: 150 / 72,  // X-units/s (exactly 150 px/s at current unit) attack: 22, defense: 0, stamina: 30,
     mjump: 0,
     melee: false, projectile: false, fly: false,
   },
@@ -39,7 +40,7 @@ export const JACKO_DEF = {
   },
 };
 
-const ROLL_SPEED = 150;         // px/s while rolling toward the hero
+const ROLL_SPEED = 150 / 72;     // X-units/s while rolling toward the hero (exactly 150 px/s at current unit)
 const DETONATE_RANGE = 80;      // px — proximity that triggers detonation
 const FUSE_TIME = 3;            // seconds — auto-detonate after this long
 const LAUNCH_TIME = 0.4;        // seconds of "launch" telegraph before exploding
@@ -87,7 +88,7 @@ export class JackOLantern extends Enemy {
           break;
         }
         // Roll toward the hero and spin.
-        this.vx = Math.sign(dx) * ROLL_SPEED;
+        this.vx = Math.sign(dx) * ROLL_SPEED * UNIT_PX_X;
         this.facing = Math.sign(dx) || this.facing;
         this.syncMirror();
         this.rotation += SPIN_SPEED * dt;

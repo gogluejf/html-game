@@ -25,6 +25,7 @@ import {
   GRAVITY,
   DOUBLE_JUMP_FACTOR,
 } from '../world/terrain.js';
+import { UNIT_PX_Y } from '../world/macros.js';
 
 let passed = 0;
 function ok(name, fn) {
@@ -170,8 +171,10 @@ ok('makePlatform rejects non-positive or fractional width/tier', () => {
 console.log('Double-jump reach + tier spacing (generation.md §6, structure.md §5)');
 ok('doubleJumpReach matches the hero physics formula', () => {
   for (const [id, def] of Object.entries(HERO_REACH)) {
-    const groundApex = (def.jump * def.jump) / (2 * GRAVITY);
-    const doubleImpulse = DOUBLE_JUMP_FACTOR * def.jump;
+    // UNIT→PX (audit Tier 2): HERO_REACH carries unit-native jump; formula is px.
+    const jump = def.jump * UNIT_PX_Y;
+    const groundApex = (jump * jump) / (2 * GRAVITY);
+    const doubleImpulse = DOUBLE_JUMP_FACTOR * jump;
     const doubleApex = (doubleImpulse * doubleImpulse) / (2 * GRAVITY);
     assert.ok(Math.abs(doubleJumpReach(id) - (groundApex + doubleApex)) < 1e-9, id);
   }

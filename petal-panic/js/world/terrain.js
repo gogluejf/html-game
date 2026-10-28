@@ -19,6 +19,7 @@
 // values (not mirror copies) so that if hero physics change, tier
 // reachability stays in lockstep automatically.
 import { GRAVITY, DOUBLE_JUMP_FACTOR } from '../consts.js';
+import { UNIT_PX_Y } from './macros.js';
 import { HEROES } from '../hero/heroDefs.js';
 
 // Re-export for consumers that import these from terrain.js (e.g. the terrain
@@ -183,14 +184,18 @@ export const HERO_REACH = Object.freeze(
  * Full double-jump reach (px) for a hero, i.e. the height above the launch
  * surface that a held double jump can attain.
  *
+ * UNIT→PX conversion point (pixel-hardcode-audit.md Tier 2): hero defs declare
+ * jump in Y-units/s; the reachability math below is px-based, so convert here.
+ *
  * @param {'scarlet'|'balthazar'} heroId
  * @returns {number} reach in px
  */
 export function doubleJumpReach(heroId) {
   const def = HERO_REACH[heroId];
   if (!def) throw new Error(`doubleJumpReach: unknown hero "${heroId}"`);
-  const groundApex = (def.jump * def.jump) / (2 * GRAVITY);
-  const doubleImpulse = DOUBLE_JUMP_FACTOR * def.jump;
+  const jump = def.jump * UNIT_PX_Y; // Y-units/s → px/s
+  const groundApex = (jump * jump) / (2 * GRAVITY);
+  const doubleImpulse = DOUBLE_JUMP_FACTOR * jump;
   const doubleApex = (doubleImpulse * doubleImpulse) / (2 * GRAVITY);
   return groundApex + doubleApex;
 }

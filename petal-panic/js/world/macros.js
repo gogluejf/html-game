@@ -157,7 +157,9 @@ export const HORIZONTAL_MAX_SURFACE_UNITS = HORIZONTAL_PLAY_HEIGHT_UNITS - TOP_C
 export function minHeroGapClearPx() {
   let min = Infinity;
   for (const hero of Object.values(HEROES)) {
-    const { speed, jump } = hero.stats;
+    // UNIT→PX conversion point (pixel-hardcode-audit.md Tier 2): defs are unit-native.
+    const speed = hero.stats.speed * UNIT_PX_X;   // X-units/s → px/s
+    const jump = hero.stats.jump * UNIT_PX_Y;     // Y-units/s → px/s
     const singleAirtime = (2 * jump) / GRAVITY;
     const doubleAirtime = (2 * DOUBLE_JUMP_FACTOR * jump) / GRAVITY;
     const distance = speed * (singleAirtime + doubleAirtime);
@@ -201,7 +203,9 @@ export function doubleJumpReachForStats(stats, risePx) {
 export function minHeroDoubleJumpHorizontalReachPx(risePx) {
   let min = Infinity;
   for (const hero of Object.values(HEROES)) {
-    const r = doubleJumpReachForStats(hero.stats, risePx);
+    // UNIT→PX conversion point (pixel-hardcode-audit.md Tier 2): defs are unit-native.
+    const stats = { speed: hero.stats.speed * UNIT_PX_X, jump: hero.stats.jump * UNIT_PX_Y };
+    const r = doubleJumpReachForStats(stats, risePx);
     if (r < 0) return -1;
     min = Math.min(min, r);
   }
@@ -301,7 +305,9 @@ export function superAssistReachForStats(stats, risePx) {
 export function minHeroSuperAssistReachPx(risePx) {
   let min = Infinity;
   for (const hero of Object.values(HEROES)) {
-    const r = superAssistReachForStats(hero.stats, risePx);
+    // UNIT→PX conversion point (pixel-hardcode-audit.md Tier 2): defs are unit-native.
+    const stats = { speed: hero.stats.speed * UNIT_PX_X, jump: hero.stats.jump * UNIT_PX_Y };
+    const r = superAssistReachForStats(stats, risePx);
     if (r < 0) return -1;
     min = Math.min(min, r);
   }

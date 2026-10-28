@@ -34,7 +34,7 @@ export const EXPLOSIVE_MONKEY_DEF = {
   w: 28, h: 36,
   aggroRadius: Infinity, // always walks at its target — it IS the attack
   stats: {
-    weight: 1, speed: 90, attack: 0, defense: 0, stamina: 40,
+    weight: 1, speed: 90 / 72,   // X-units/s (exactly 90 px/s at current unit) attack: 0, defense: 0, stamina: 40,
     mjump: 0,
     melee: false, projectile: false, fly: false,
   },

@@ -11,6 +11,7 @@ import { GRAVITY, MAX_FALL_SPEED, LAYER, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPE
 import { aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } from '../objects/projectile.js';
 import { SPECIAL_TYPES } from '../objects/specialWeapons.js';
 import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from './heroDefs.js';
+import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 
 // Feel knobs (tune freely; these are not per-hero stats).
 const GROUND_FRICTION = 0.85;   // vx multiplier per fixed step when no input on ground
@@ -33,7 +34,7 @@ const AIR_ACCEL = 1400;         // px/s^2 ramp for airborne horizontal intent
 // velocity flips instantly while preserving its magnitude (no decel-to-zero).
 // Below this threshold the hero is "near rest" and uses the gradual ramp-up so
 // starting from stationary stays precise instead of lurching to full speed.
-const AIR_REVERSAL_MIN_SPEED = 40; // px/s — below this counts as near-zero
+const AIR_REVERSAL_MIN_SPEED = 0.56; // X-units/s (~40 px/s) — below this counts as near-zero
 // Blocked-on-ground (design §8 solid-obstacle case): resolve() stamps a
 // per-frame _blockedX flag when a solid actually cancelled horizontal motion.
 // A grounded hero pinned against a wall can never accumulate vx, so its held
@@ -93,7 +94,10 @@ export class Hero extends Entity {
     });
 
     this.heroDef = heroDef;
-    this.stats = { ...heroDef.stats };
+    // UNIT→PX conversion point (pixel-hardcode-audit.md Tier 2): defs declare
+    // speed in X-units/s and jump in Y-units/s impulse; everything downstream
+    // (physics, gap validation, ghost rider) sees px exactly as before.
+    this.stats = { ...heroDef.stats, speed: heroDef.stats.speed * UNIT_PX_X, jump: heroDef.stats.jump * UNIT_PX_Y };
 
     // ---------------------------------------------------------------------
     // WALLET — the single source of truth for "what I hold right now."
@@ -486,7 +490,7 @@ export class Hero extends Entity {
         //      preserved because we only approach, never overwrite, vx.
         const reversing =
           Math.sign(this.vx) === -moveDir &&
-          Math.abs(this.vx) >= AIR_REVERSAL_MIN_SPEED;
+          Math.abs(this.vx) >= AIR_REVERSAL_MIN_SPEED * UNIT_PX_X;
         if (reversing) {
           // Instant mirror: keep the exact speed we had, just flip its sign.
           this.vx = moveDir * Math.abs(this.vx);
@@ -1036,7 +1040,7 @@ export class Hero extends Entity {
     } else {
       // Windup + active: committed — the trajectory OWNS vx regardless of
       // held input; it cannot be reversed mid-attack.
-      this.vx = this.specialMeleeDir * cfg.travelSpeed;
+      this.vx = this.specialMeleeDir * cfg.travelSpeed * UNIT_PX_X; // X-units/s → px/s
     }
 
     if (this.anims.attack) {

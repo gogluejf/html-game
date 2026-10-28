@@ -5,6 +5,7 @@
 import { strict as assert } from 'node:assert';
 import { Hero } from '../hero/hero.js';
 import { HEROES } from '../hero/heroDefs.js';
+import { UNIT_PX_X } from '../world/macros.js';
 import { LAYER } from '../consts.js';
 import { Entity } from '../core/entity.js';
 import { damage } from '../combat/damage.js';
@@ -104,7 +105,7 @@ ok('balthazar vx = +travelSpeed during windup/active with no horizontal input', 
   h.facing = 1;
   h.startSpecialMelee();
   assert.equal(h.specialMeleeDir, 1);
-  const speed = HEROES.balthazar.specialMelee.travelSpeed;
+  const speed = HEROES.balthazar.specialMelee.travelSpeed * UNIT_PX_X; // def is unit-native (audit Tier 2)
   // Windup frame 0.
   h.update(DT, noInput());
   assert.equal(h.specialMeleePhase, 'windup');
@@ -126,7 +127,7 @@ ok('balthazar moves forward across the full committed window', () => {
   for (let i = 0; i < committedFrames; i++) {
     h.specialMeleeFrame = i;
     h.update(DT, noInput());
-    if (!approx(h.vx, cfg.travelSpeed)) allLocked = false;
+    if (!approx(h.vx, cfg.travelSpeed * UNIT_PX_X)) allLocked = false;
   }
   assert.ok(allLocked, 'vx must stay locked at travelSpeed every committed frame');
 });
@@ -137,7 +138,7 @@ ok('scarlet vx = -travelSpeed (opposite facing) while facing unchanged', () => {
   h.facing = 1;
   h.startSpecialMelee();
   assert.equal(h.specialMeleeDir, -1);
-  const speed = HEROES.scarlet.specialMelee.travelSpeed;
+  const speed = HEROES.scarlet.specialMelee.travelSpeed * UNIT_PX_X; // def is unit-native (audit Tier 2)
   h.update(DT, noInput());
   assert.ok(approx(h.vx, -speed), `vx=${h.vx}`);
   // Orientation preserved through the whole committed window.
@@ -151,7 +152,7 @@ ok('scarlet facing left retreats right (+vx), sprite still faces left', () => {
   h.syncMirror();
   h.startSpecialMelee();
   assert.equal(h.specialMeleeDir, 1); // -1 * -1
-  const speed = HEROES.scarlet.specialMelee.travelSpeed;
+  const speed = HEROES.scarlet.specialMelee.travelSpeed * UNIT_PX_X; // def is unit-native (audit Tier 2)
   h.update(DT, noInput());
   assert.ok(approx(h.vx, speed), `vx=${h.vx}`);
   assert.equal(h.facing, -1);
@@ -293,7 +294,7 @@ ok('holding opposite direction does not steer the committed sweep', () => {
   h.facing = 1; h.syncMirror();
   h.grounded = true;
   h.startSpecialMelee();
-  const speed = HEROES.balthazar.specialMelee.travelSpeed;
+  const speed = HEROES.balthazar.specialMelee.travelSpeed * UNIT_PX_X; // def is unit-native (audit Tier 2)
   // Hold LEFT the entire time — committed vx must stay +travelSpeed.
   for (let i = 0; i < 7; i++) {
     h.update(DT, { ...noInput(), left: true });
@@ -307,7 +308,7 @@ ok('scarlet retreat cannot be pushed back by held input', () => {
   h.facing = 1; h.syncMirror();
   h.grounded = true;
   h.startSpecialMelee();
-  const speed = HEROES.scarlet.specialMelee.travelSpeed;
+  const speed = HEROES.scarlet.specialMelee.travelSpeed * UNIT_PX_X; // def is unit-native (audit Tier 2)
   for (let i = 0; i < 7; i++) {
     h.update(DT, { ...noInput(), right: true });
     if (h.specialMeleePhase !== 'recovery') {
