@@ -1,5 +1,5 @@
 {
- "file": "petal-panic/assets/powerups_weapon/homing/fly_sheet.png",
+ "file": "petal-panic/assets/projectiles/homing/fly_sheet.png",
  "size": "2160x197",
  "rows": 1,
  "cols": 8,
@@ -9,7 +9,7 @@
   {
    "name": "homing",
    "anim": "fly",
-   "frames_dir": "petal-panic/assets/powerups_weapon/homing",
+   "frames_dir": "petal-panic/assets/projectiles/homing",
    "frames": [
     {
      "file": "fly_f1.png",
