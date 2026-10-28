@@ -206,7 +206,7 @@ pre { margin:5px 0 0 0; font-family:Consolas,monospace; color:#ce9178; font-size
 </style>
 <style>code[class*=language-],pre[class*=language-]{color:#ccc;background:0 0;font-family:Consolas,Monaco,'Andale Mono','Ubuntu Mono',monospace;font-size:1em;text-align:left;white-space:pre;word-spacing:normal;word-break:normal;word-wrap:normal;line-height:1.5;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-hyphens:none;-moz-hyphens:none;-ms-hyphens:none;hyphens:none}pre[class*=language-]{padding:1em;margin:.5em 0;overflow:auto}:not(pre)>code[class*=language-],pre[class*=language-]{background:#2d2d2d}:not(pre)>code[class*=language-]{padding:.1em;border-radius:.3em;white-space:normal}.token.block-comment,.token.cdata,.token.comment,.token.doctype,.token.prolog{color:#999}.token.punctuation{color:#ccc}.token.attr-name,.token.deleted,.token.namespace,.token.tag{color:#e2777a}.token.function-name{color:#6196cc}.token.boolean,.token.function,.token.number{color:#f08d49}.token.class-name,.token.constant,.token.property,.token.symbol{color:#f8c555}.token.atrule,.token.builtin,.token.important,.token.keyword,.token.selector{color:#cc99cd}.token.attr-value,.token.char,.token.regex,.token.string,.token.variable{color:#7ec699}.token.entity,.token.operator,.token.url{color:#67cdcc}.token.bold,.token.important{font-weight:700}.token.italic{font-style:italic}.token.entity{cursor:help}.token.inserted{color:green}</style>
 </head><body>
-    <nav><a href="#epic-overview" class="nav-item home always-visible">🏠 Epic</a><div class="nav-items" id="nav-items"><a href="#sheet-loader" class="nav-item">Sheet Loader</a><a href="#scale-+-anchor-transform" class="nav-item">Scale + Anchor Transform</a><a href="#playback-engine" class="nav-item">Playback Engine</a><a href="#first-wiring-—-blocks-&-platforms" class="nav-item">First Wiring — Blocks &amp; Platforms</a><a href="#geometry-collections-(boxes-+-markers)" class="nav-item">Geometry Collections (boxes + markers)</a><a href="#first-wiring-—-checkpoint-&-barrels" class="nav-item">First Wiring — Checkpoint &amp; Barrels</a></div><button class="hamburger" id="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button></nav>
+    <nav><a href="#epic-overview" class="nav-item home always-visible">🏠 Epic</a><div class="nav-items" id="nav-items"><a href="#sheet-loader" class="nav-item">Sheet Loader</a><a href="#scale-+-anchor-transform" class="nav-item">Scale + Anchor Transform</a><a href="#playback-engine" class="nav-item">Playback Engine</a><a href="#first-wiring-—-blocks-&-platforms" class="nav-item">First Wiring — Blocks &amp; Platforms</a><a href="#geometry-collections-(boxes-+-markers)" class="nav-item">Geometry Collections (boxes + markers)</a><a href="#first-wiring-—-checkpoint-&-barrels" class="nav-item">First Wiring — Checkpoint &amp; Barrels</a><a href="#7---floor-entity-+-tile-repeat" class="nav-item">7 - Floor Entity + Tile Repeat</a></div><button class="hamburger" id="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button></nav>
     <div class="container">
         
     <section id="epic-overview" class="epic-header">
@@ -287,6 +287,17 @@ pre { margin:5px 0 0 0; font-family:Consolas,monospace; color:#ce9178; font-size
                 <span class="pattern-tag">Vertical slice (data → render → verify in game)</span> 
                 <p class="ms-count">1 Task(s)</p>
                 <ul class="ms-task-list"><li>6.1 - Checkpoint + barrel sprite wiring</li></ul>
+            </div>
+        </a>
+        <a href="#7---floor-entity-+-tile-repeat" class="milestone-card-link">
+            <div class="milestone-card">
+                <div class="ms-header">
+                    <span class="ms-num">7</span>
+                    <span class="ms-name">7 - Floor Entity + Tile Repeat</span>
+                </div>
+                <span class="pattern-tag">Vertical slice (data → render → verify in game)</span> 
+                <p class="ms-count">1 Task(s)</p>
+                <ul class="ms-task-list"><li>7.1 - 7.1 - tile=true repeat in drawSprite + floor entity wiring</li></ul>
             </div>
         </a>
         </div>
@@ -923,6 +934,81 @@ sprite: { anchor: &#x27;bottom-center&#x27;,
                 </div>
                 </div>
                 <div class="task-footer"><span class="task-verify">✔ node --test petal-panic/js/test/spriteData.test.js</span> </div>
+            </div></div>
+        </section>
+        <section id="7---floor-entity-+-tile-repeat" class="milestone-section">
+            <div class="section-header">
+                <span class="section-num">7</span>
+                <h2>7 - Floor Entity + Tile Repeat</h2>
+                <span class="pattern-badge">Vertical slice (data → render → verify in game)</span> 
+            </div>
+            
+            <div class="ms-overview-box">
+                <span class="cell-label">Objective</span>
+                <div class="cell-value">Make the floor a first-class sprite entity using fg art, and add a tile=true repeat property to the sprite draw path so one wide entity can fill any width by repeating its frame.</div>
+            </div>
+            
+            <div class="ms-success-box">
+                <span class="cell-label success">Success Criteria</span>
+                <div class="cell-value">Floor renders ONLY fg art (no block tiles, no double-draw), scaled by the uniform collision-box rule; a tile=true entity wider than its frame repeats the frame to fill its width; drawFgGround and the h===ZONE_FLOOR_H special case are deleted.</div>
+            </div>
+            
+            <div class="diagram-canvas">
+                <div class="diagram-header">
+                    <span class="icon">📐</span>
+                    <span class="label">Architecture & Flow</span>
+                </div>
+                <pre class="mermaid">graph TD
+A[fg_sheet.json per level] --> B[SpriteData + frames]
+C[floor solid: one wide entity, kind=floor] --> D[setAnim fg, targetH 1u, tile=true]
+B --> E[drawSprite with tile repeat]
+D --> E
+E --> F[floor spans zone width, no block overlap]</pre>
+            </div>
+            <div class="task-list">
+            <div class="task-card">
+                <div class="task-header">
+                    <div class="task-title-row">
+                        <span class="task-num"># 7.1</span>
+                        <span class="task-name">7.1 - tile=true repeat in drawSprite + floor entity wiring</span>
+                        <span class="layer-badge" style="background:#569cd6">feature</span>
+                    </div>
+                </div>
+                <div class="task-grid">
+                    <div class="task-cell">
+                        <span class="cell-label">What</span>
+                        <span class="cell-value">Add a tile flag to the sprite contract: when true, drawSprite() repeats the active frame horizontally to fill the entity width (bottom-aligned, uniform scale) instead of drawing once bottom-centered. Make the floor a kind=floor entity using the per-level fg sheet (targetH 1u, tile=true); delete drawFgGround and the h===ZONE_FLOOR_H block-tile special case so floors never get block art.</span>
+                    </div>
+                    <div class="task-cell">
+                        <span class="cell-label">Why</span>
+                        <span class="cell-value">Floor becomes a first-class sprite citizen like blocks/platforms; one wide tiled entity replaces hand-rolled tiling math and kills the double-draw + wrong-scale bugs.</span>
+                    </div>
+                    
+                <div class="task-cell full-width">
+                    <span class="cell-label">Files</span>
+                    <ul class="files-list"><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/core/entity.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/world/terrainTiles.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/systems/render.js</li><li class="file-mod"><span class="action-sym">~</span>  petal-panic/js/world/parallax.js</li><li class="file-add"><span class="action-sym">+</span>  petal-panic/js/test/tileRepeat.test.js</li></ul>
+                </div>
+                    
+                <div class="task-cell full-width snippet-block">
+                    <span class="cell-label">Snippet</span>
+                    <pre><code class="language-js">// entity.js sprite contract gains:
+// sprite.tile = true  // repeat frame across this.w
+// drawSprite(): if tile → for x in steps of frameW*s: drawImage(frame bbox)
+//                bottom-aligned to anchor line, same uniform scale s
+//
+// terrain kinds: block | platform | floor
+// floor: one entity per zone spanning full width,
+//        anim &#x27;fg&#x27; from assets/levels/levelN/fg_sheet.json,
+//        targetH = 1 unit, tile = true
+// render.js solid loop: kind=floor skips tileSolid entirely</code></pre>
+                </div>
+                    
+                <div class="task-cell full-width">
+                    <span class="cell-label">Acceptance Criteria</span>
+                    <ul class="acceptance-list"><li>tile=true entity wider than its frame repeats the frame with no gaps or squashing (uniform scale preserved)</li><li>floor renders only fg art — no block tiles underneath, no double-draw</li><li>fg scaled by collision box from fg_sheet.json (48/box.h), not by raw image height</li><li>drawFgGround deleted; parallax.js has no fg ground code</li><li>blocks and platforms unaffected (still variant-tiled, collision boxes unchanged)</li></ul>
+                </div>
+                </div>
+                <div class="task-footer"><span class="task-verify">✔ node --test petal-panic/js/test/tileRepeat.test.js petal-panic/js/test/terrainTiles.test.js</span> </div>
             </div></div>
         </section>
     </div>

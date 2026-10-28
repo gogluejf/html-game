@@ -198,3 +198,31 @@ Acceptance: boss-zone checkpoint uses boss flag art
 Acceptance: all three barrel types render their own art
 Acceptance: collision-only debug mode still hides sprites
 Verification: node --test petal-panic/js/test/spriteData.test.js
+
+## MILESTONE: 7 - 7 - Floor Entity + Tile Repeat
+Pattern: Vertical slice (data → render → verify in game)
+Objective: Make the floor a first-class sprite entity using fg art, and add a tile=true repeat property to the sprite draw path so one wide entity can fill any width by repeating its frame.
+Success: Floor renders ONLY fg art (no block tiles, no double-draw), scaled by the uniform collision-box rule; a tile=true entity wider than its frame repeats the frame to fill its width; drawFgGround and the h===ZONE_FLOOR_H special case are deleted.
+Diagram: graph TD
+    A[fg_sheet.json per level] --> B[SpriteData + frames]
+    C[floor solid: one wide entity, kind=floor] --> D[setAnim fg, targetH 1u, tile=true]
+    B --> E[drawSprite with tile repeat]
+    D --> E
+    E --> F[floor spans zone width, no block overlap]
+
+### TASK: 7.1 - 7.1 - tile=true repeat in drawSprite + floor entity wiring
+Type: feature
+What: Add a tile flag to the sprite contract: when true, drawSprite() repeats the active frame horizontally to fill the entity width (bottom-aligned, uniform scale) instead of drawing once bottom-centered. Make the floor a kind=floor entity using the per-level fg sheet (targetH 1u, tile=true); delete drawFgGround and the h===ZONE_FLOOR_H block-tile special case so floors never get block art.
+Why: Floor becomes a first-class sprite citizen like blocks/platforms; one wide tiled entity replaces hand-rolled tiling math and kills the double-draw + wrong-scale bugs.
+Files: ~ petal-panic/js/core/entity.js
+Files: ~ petal-panic/js/world/terrainTiles.js
+Files: ~ petal-panic/js/systems/render.js
+Files: ~ petal-panic/js/world/parallax.js
+Files: + petal-panic/js/test/tileRepeat.test.js
+Snippet: // entity.js sprite contract gains:\n// sprite.tile = true  // repeat frame across this.w\n// drawSprite(): if tile → for x in steps of frameW*s: drawImage(frame bbox)\n//                bottom-aligned to anchor line, same uniform scale s\n//\n// terrain kinds: block | platform | floor\n// floor: one entity per zone spanning full width,\n//        anim 'fg' from assets/levels/levelN/fg_sheet.json,\n//        targetH = 1 unit, tile = true\n// render.js solid loop: kind=floor skips tileSolid entirely
+Acceptance: tile=true entity wider than its frame repeats the frame with no gaps or squashing (uniform scale preserved)
+Acceptance: floor renders only fg art — no block tiles underneath, no double-draw
+Acceptance: fg scaled by collision box from fg_sheet.json (48/box.h), not by raw image height
+Acceptance: drawFgGround deleted; parallax.js has no fg ground code
+Acceptance: blocks and platforms unaffected (still variant-tiled, collision boxes unchanged)
+Verification: node --test petal-panic/js/test/tileRepeat.test.js petal-panic/js/test/terrainTiles.test.js
