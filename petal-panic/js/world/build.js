@@ -274,6 +274,10 @@ export function buildWorld(levelDef, config, seed) {
 let _lastTerrain = null;
 let _lastSeed = null;
 
+/** The seed of the most recently built world (null before the first build).
+ *  Used by the terrain tiler for deterministic per-solid frame picks. */
+export function getLastWorldSeed() { return _lastSeed; }
+
 /**
  * The per-game generation seed. A genuinely new game rolls a fresh seed so its
  * terrain + population differ from the previous game (lifecycle.md §6). Death

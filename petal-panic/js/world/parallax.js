@@ -22,6 +22,55 @@ export const BG_PARALLAX_DIVISOR = 4;
 /** Cache of loaded bg images keyed by asset path. */
 const bgImages = new Map();
 
+/** Cache of loaded fg (ground) images keyed by level. */
+const fgImages = new Map();
+
+/**
+ * Get (and lazily load) the foreground/ground art for a level.
+ * @param {number} level 1-based level index
+ * @returns {HTMLImageElement|null} null when no DOM / not yet complete
+ */
+export function getFgImage(level) {
+  if (typeof Image === 'undefined') return null; // node tests
+  const path = `../../assets/levels/level${level}/fg_f1.png`;
+  let img = fgImages.get(path);
+  if (!img) {
+    img = new Image();
+    img.src = new URL(path, import.meta.url).href;
+    fgImages.set(path, img);
+  }
+  return (img.complete && img.naturalWidth > 0) ? img : null;
+}
+
+/**
+ * Draw the foreground ground strip along the floor of the active zone.
+ * Called INSIDE the camera translate (world space) so it scrolls with the
+ * world at full speed — the ground is gameplay geometry, not parallax.
+ *
+ * The fg art is scaled to the floor height (ZONE_FLOOR_H = 48px) and tiled
+ * horizontally across the visible zone width.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {{x:number,y:number,w:number,h:number}} floor world-px floor rect
+ * @param {number} level 1-based level index
+ */
+export function drawFgGround(ctx, floor, level) {
+  const img = getFgImage(level);
+  if (!img) return; // still loading — block tiling shows through underneath
+
+  const scale = floor.h / img.naturalHeight;
+  const w = Math.max(1, Math.round(img.naturalWidth * scale));
+  const h = floor.h;
+
+  // Tile across the floor's full width (world coords — caller is already
+  // inside the camera translate). Start one tile before floor.x so we always
+  // cover from the left edge.
+  const first = Math.floor(floor.x / w);
+  for (let i = first; i * w < floor.x + floor.w; i++) {
+    ctx.drawImage(img, i * w, floor.y, w, h);
+  }
+}
+
 /**
  * Get (and lazily load) a background image for a level + orientation.
  * @param {number} level 1-based level index (assets live under assets/levels/levelN/)
