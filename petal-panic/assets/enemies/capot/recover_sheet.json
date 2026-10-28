@@ -1,0 +1,132 @@
+{
+  "file": "petal-panic/assets/enemies/capot/recover_sheet.png",
+  "size": "2046x722",
+  "rows": 2,
+  "cols": 5,
+  "kind": "animation",
+  "description": "capot recover (10f, 2x5) \u2014 bounce back onto ball",
+  "entities": [
+    {
+      "name": "capot",
+      "anim": "recover",
+      "frames_dir": "petal-panic/assets/enemies/capot",
+      "frames": [
+        {
+          "file": "recover_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            34,
+            461,
+            231
+          ]
+        },
+        {
+          "file": "recover_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            481,
+            16,
+            456,
+            267
+          ]
+        },
+        {
+          "file": "recover_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            958,
+            39,
+            404,
+            221
+          ]
+        },
+        {
+          "file": "recover_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1362,
+            14,
+            373,
+            271
+          ]
+        },
+        {
+          "file": "recover_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1735,
+            0,
+            311,
+            299
+          ]
+        },
+        {
+          "file": "recover_f6.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            49,
+            355,
+            363,
+            310
+          ]
+        },
+        {
+          "file": "recover_f7.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            461,
+            326,
+            497,
+            369
+          ]
+        },
+        {
+          "file": "recover_f8.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            993,
+            312,
+            334,
+            396
+          ]
+        },
+        {
+          "file": "recover_f9.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1396,
+            325,
+            305,
+            370
+          ]
+        },
+        {
+          "file": "recover_f10.png",
+          "row": 1,
+          "col": 4,
+          "bbox": [
+            1735,
+            299,
+            310,
+            423
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/capot",
+    "pass": "/tmp/capot_recover-v2"
+  }
+}

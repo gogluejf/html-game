@@ -1,0 +1,154 @@
+{
+  "file": "petal-panic/assets/enemies/capot/shoot_sheet.png",
+  "size": "2549x717",
+  "rows": 2,
+  "cols": 6,
+  "kind": "animation",
+  "description": "capot shoot (12f, 2x6) \u2014 windup, throw, ball flight, follow-through",
+  "entities": [
+    {
+      "name": "capot",
+      "anim": "shoot",
+      "frames_dir": "petal-panic/assets/enemies/capot",
+      "frames": [
+        {
+          "file": "shoot_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            260,
+            374
+          ]
+        },
+        {
+          "file": "shoot_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            347,
+            16,
+            252,
+            342
+          ]
+        },
+        {
+          "file": "shoot_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            687,
+            18,
+            364,
+            337
+          ]
+        },
+        {
+          "file": "shoot_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1051,
+            15,
+            699,
+            343
+          ]
+        },
+        {
+          "file": "shoot_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1779,
+            43,
+            317,
+            287
+          ]
+        },
+        {
+          "file": "shoot_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            2194,
+            97,
+            286,
+            180
+          ]
+        },
+        {
+          "file": "shoot_f7.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            4,
+            452,
+            252,
+            186
+          ]
+        },
+        {
+          "file": "shoot_f8.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            260,
+            374,
+            427,
+            343
+          ]
+        },
+        {
+          "file": "shoot_f9.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            715,
+            430,
+            308,
+            230
+          ]
+        },
+        {
+          "file": "shoot_f10.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1231,
+            401,
+            338,
+            288
+          ]
+        },
+        {
+          "file": "shoot_f11.png",
+          "row": 1,
+          "col": 4,
+          "bbox": [
+            1750,
+            379,
+            375,
+            332
+          ]
+        },
+        {
+          "file": "shoot_f12.png",
+          "row": 1,
+          "col": 5,
+          "bbox": [
+            2125,
+            443,
+            424,
+            205
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/capot",
+    "pass": "/tmp/capot_shoot-v3"
+  }
+}

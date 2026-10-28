@@ -1,0 +1,88 @@
+{
+  "file": "petal-panic/assets/enemies/capot/death_sheet.png",
+  "size": "1063x251",
+  "rows": 1,
+  "cols": 6,
+  "kind": "animation",
+  "description": "capot death (6f) \u2014 pop-and-fall collapse",
+  "entities": [
+    {
+      "name": "capot",
+      "anim": "death",
+      "frames_dir": "petal-panic/assets/enemies/capot",
+      "frames": [
+        {
+          "file": "death_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            10,
+            143,
+            230
+          ]
+        },
+        {
+          "file": "death_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            143,
+            0,
+            166,
+            251
+          ]
+        },
+        {
+          "file": "death_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            309,
+            33,
+            170,
+            185
+          ]
+        },
+        {
+          "file": "death_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            479,
+            59,
+            184,
+            133
+          ]
+        },
+        {
+          "file": "death_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            663,
+            69,
+            200,
+            112
+          ]
+        },
+        {
+          "file": "death_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            863,
+            79,
+            200,
+            92
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/capot",
+    "pass": "/tmp/capot_death-v2"
+  }
+}
