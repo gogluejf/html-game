@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/mad_moth/shoot_sheet.png",
+ "size": "2273x387",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "mad_moth shoot (5f) \u2014 slime spit attack",
+ "entities": [
+  {
+   "name": "mad_moth",
+   "anim": "shoot",
+   "frames_dir": "petal-panic/assets/enemies/mad_moth",
+   "frames": [
+    {
+     "file": "shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      400,
+      387
+     ]
+    },
+    {
+     "file": "shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      400,
+      2,
+      424,
+      383
+     ]
+    },
+    {
+     "file": "shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      824,
+      3,
+      481,
+      381
+     ]
+    },
+    {
+     "file": "shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1305,
+      1,
+      508,
+      384
+     ]
+    },
+    {
+     "file": "shoot_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1813,
+      0,
+      460,
+      387
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-27"
+}

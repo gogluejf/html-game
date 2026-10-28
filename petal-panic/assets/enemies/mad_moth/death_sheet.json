@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/mad_moth/death_sheet.png",
+ "size": "2138x599",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "mad_moth death (5f) \u2014 collapse + steam + top hat",
+ "entities": [
+  {
+   "name": "mad_moth",
+   "anim": "death",
+   "frames_dir": "petal-panic/assets/enemies/mad_moth",
+   "frames": [
+    {
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      402,
+      599
+     ]
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      402,
+      73,
+      392,
+      453
+     ]
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      794,
+      105,
+      394,
+      389
+     ]
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1188,
+      139,
+      455,
+      321
+     ]
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1643,
+      181,
+      495,
+      236
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-27"
+}

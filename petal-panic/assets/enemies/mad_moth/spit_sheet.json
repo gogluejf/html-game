@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/enemies/mad_moth/spit_sheet.png",
+ "size": "1900x679",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "mad_moth spit (4f) \u2014 golden beak bolt attack",
+ "entities": [
+  {
+   "name": "mad_moth",
+   "anim": "spit",
+   "frames_dir": "petal-panic/assets/enemies/mad_moth",
+   "frames": [
+    {
+     "file": "spit_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      1,
+      408,
+      676
+     ]
+    },
+    {
+     "file": "spit_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      408,
+      19,
+      466,
+      640
+     ]
+    },
+    {
+     "file": "spit_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      874,
+      19,
+      611,
+      640
+     ]
+    },
+    {
+     "file": "spit_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1485,
+      0,
+      415,
+      679
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-27"
+}
