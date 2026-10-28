@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/projectiles/ribbon/shoot_sheet.png",
+ "size": "2177x269",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "ribbon shoot (4 frames) \u2014 crimson ribbon whip projectile",
+ "entities": [
+  {
+   "name": "ribbon",
+   "anim": "shoot",
+   "frames_dir": "petal-panic/assets/projectiles/ribbon",
+   "frames": [
+    {
+     "file": "shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      44,
+      395,
+      181
+     ]
+    },
+    {
+     "file": "shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      395,
+      21,
+      605,
+      226
+     ]
+    },
+    {
+     "file": "shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      1000,
+      0,
+      536,
+      269
+     ]
+    },
+    {
+     "file": "shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1536,
+      22,
+      641,
+      225
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-27"
+}
