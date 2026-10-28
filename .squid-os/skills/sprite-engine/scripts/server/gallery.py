@@ -44,8 +44,8 @@ def collect_sheets():
         aidx = parts.index("assets")
         game = parts[0]                                  # abyss-qwen | petal-panic
         rel_assets = parts[aidx + 1:]                    # category/entity/...
-        cat = rel_assets[0] if len(rel_assets) > 1 else ""   # boss, enemies, levels...
-        entity = rel_assets[1] if len(rel_assets) > 2 else ""  # grim_vertigo, jester...
+        cat = rel_assets[0] if len(rel_assets) >= 1 else ""   # boss, enemies, levels...
+        entity = rel_assets[1] if len(rel_assets) >= 2 else ""  # grim_vertigo, jester...
         for f in files:
             if not f.endswith("_sheet.png"):
                 continue
@@ -157,7 +157,10 @@ function populate(selectId, values) {{
   values.forEach(v => {{ counts[v] = (counts[v]||0)+1; }});
   const sorted = Object.keys(counts).sort();
   sel.innerHTML = '<option value="all">all ('+values.length+')</option>' +
-    sorted.map(v => '<option value="'+v+'">'+v+' ('+counts[v]+')</option>').join('');
+    sorted.map(v => {{
+      const n = counts[v];
+      return '<option value="'+v+'">'+v+(n>1 ? ' ('+n+' anims)' : '')+'</option>';
+    }}).join('');
   if (sorted.includes(cur)) sel.value = cur; else sel.value = 'all';
 }}
 
@@ -167,10 +170,14 @@ function cascade() {{
         E = document.getElementById('fEntity').value,
         K = document.getElementById('fKind').value;
 
-  // Build constrained option lists (each filter narrows the others)
-  const gOpts = [...new Set(SHEETS.filter(s => (C==='all'||s.cat===C)&&(E==='all'||s.entity===E)&&(K==='all'||s.kind===K)).map(s=>s.game))];
-  const cOpts = [...new Set(SHEETS.filter(s => (G==='all'||s.game===G)&&(E==='all'||s.entity===E)&&(K==='all'||s.kind===K)).map(s=>s.cat))];
-  const eOpts = [...new Set(SHEETS.filter(s => (G==='all'||s.game===G)&&(C==='all'||s.cat===C)&&(K==='all'||s.kind===K)).map(s=>s.entity))];
+  // Top-down hierarchy: each dropdown is constrained ONLY by the levels above it.
+  // game   <- (nothing)
+  // cat    <- game
+  // entity <- game + cat
+  // kind   <- game + cat + entity
+  const gOpts = [...new Set(SHEETS.map(s=>s.game))];
+  const cOpts = [...new Set(SHEETS.filter(s => G==='all'||s.game===G).map(s=>s.cat))];
+  const eOpts = [...new Set(SHEETS.filter(s => (G==='all'||s.game===G)&&(C==='all'||s.cat===C)).map(s=>s.entity))];
   const kOpts = [...new Set(SHEETS.filter(s => (G==='all'||s.game===G)&&(C==='all'||s.cat===C)&&(E==='all'||s.entity===E)).map(s=>s.kind))];
 
   populate('fGame', gOpts);
@@ -178,7 +185,7 @@ function cascade() {{
   populate('fEntity', eOpts);
   populate('fKind', kOpts);
 
-  // Apply visibility
+  // Apply visibility using the (possibly reset) values
   const g2 = document.getElementById('fGame').value,
         c2 = document.getElementById('fCat').value,
         e2 = document.getElementById('fEntity').value,
