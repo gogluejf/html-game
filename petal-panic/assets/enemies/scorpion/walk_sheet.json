@@ -1,0 +1,77 @@
+{
+  "file": "petal-panic/assets/enemies/scorpion/walk_sheet.png",
+  "size": "2179x412",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "scorpion walk (5f)",
+  "entities": [
+    {
+      "name": "scorpion",
+      "anim": "walk",
+      "frames_dir": "petal-panic/assets/enemies/scorpion",
+      "frames": [
+        {
+          "file": "walk_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            3,
+            442,
+            406
+          ]
+        },
+        {
+          "file": "walk_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            442,
+            9,
+            421,
+            393
+          ]
+        },
+        {
+          "file": "walk_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            863,
+            0,
+            458,
+            412
+          ]
+        },
+        {
+          "file": "walk_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1321,
+            0,
+            448,
+            411
+          ]
+        },
+        {
+          "file": "walk_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1769,
+            4,
+            410,
+            403
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/scorpion",
+    "pass": "re-glued after rename"
+  }
+}

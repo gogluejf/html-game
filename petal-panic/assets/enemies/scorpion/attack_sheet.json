@@ -1,0 +1,77 @@
+{
+  "file": "petal-panic/assets/enemies/scorpion/attack_sheet.png",
+  "size": "2172x361",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "scorpion attack (5f)",
+  "entities": [
+    {
+      "name": "scorpion",
+      "anim": "attack",
+      "frames_dir": "petal-panic/assets/enemies/scorpion",
+      "frames": [
+        {
+          "file": "attack_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            28,
+            311,
+            304
+          ]
+        },
+        {
+          "file": "attack_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            311,
+            41,
+            534,
+            278
+          ]
+        },
+        {
+          "file": "attack_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            845,
+            0,
+            534,
+            361
+          ]
+        },
+        {
+          "file": "attack_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1379,
+            33,
+            463,
+            294
+          ]
+        },
+        {
+          "file": "attack_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1842,
+            30,
+            330,
+            301
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/scorpion",
+    "pass": "re-glued after rename"
+  }
+}

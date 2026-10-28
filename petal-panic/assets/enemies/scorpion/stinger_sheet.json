@@ -1,0 +1,77 @@
+{
+  "file": "petal-panic/assets/enemies/scorpion/stinger_sheet.png",
+  "size": "2166x363",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "scorpion stinger (5f)",
+  "entities": [
+    {
+      "name": "scorpion",
+      "anim": "stinger",
+      "frames_dir": "petal-panic/assets/enemies/scorpion",
+      "frames": [
+        {
+          "file": "stinger_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            7,
+            380,
+            349
+          ]
+        },
+        {
+          "file": "stinger_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            380,
+            2,
+            441,
+            358
+          ]
+        },
+        {
+          "file": "stinger_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            821,
+            21,
+            625,
+            320
+          ]
+        },
+        {
+          "file": "stinger_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1446,
+            0,
+            382,
+            363
+          ]
+        },
+        {
+          "file": "stinger_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1828,
+            8,
+            338,
+            346
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-27",
+  "crop": {
+    "frames_dir": "petal-panic/assets/enemies/scorpion",
+    "pass": "re-glued after rename"
+  }
+}
