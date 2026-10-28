@@ -98,6 +98,7 @@ export function cullOffScreen(items) {
   const right = cam ? cam.x + cam.w + 40 : VIEW_W + 40;
   for (const p of items) {
     if (p.x + p.w < left || p.x > right || p.y + p.h < top || p.y > bottom) {
+      console.log('[dbg-cull] thorn culled off-screen at', p.x.toFixed(0), p.y.toFixed(0), 'cam:', cam && `${cam.x.toFixed(0)},${cam.y.toFixed(0)} ${cam.w}x${cam.h}`);
       p.alive = false;
     }
   }

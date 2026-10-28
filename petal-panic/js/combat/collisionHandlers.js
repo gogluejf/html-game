@@ -139,7 +139,7 @@ export function registerCollisionHandlers(collisionWorld) {
       }
 
       if (target.layer !== LAYER.ENEMY && target.layer !== LAYER.BOSS) return;
-      if (target.hp == null) return;       // non-target placeholder (e.g. anim test box)
+      if (target.hp == null) { console.warn('[dbg-hit] enemy target has no hp', target); return; }       // non-target placeholder (e.g. anim test box)
       // Boss zone flow (boss-arena.md §2): the boss cannot take damage before
       // COMBAT — the presentation must not imply it is attackable. The
       // projectile passes through (is consumed) but deals no damage.
@@ -171,6 +171,7 @@ export function registerCollisionHandlers(collisionWorld) {
       const dealt = isRealEnemy
         ? target.takeDamage(allyProj.damage, hero, 'projectile')
         : damage(hero, target, allyProj.damage, 'projectile');
+      console.log('[dbg-hit] thorn→enemy', target.type ?? target.name, 'dealt:', dealt, 'hp after:', target.hp, 'alive:', target.alive);
       if (dealt > 0 && !isRealEnemy) {
         // Placeholder targets (plain Entity, no takeDamage pipeline): the
         // central damage() call above did not own the flash for them.
