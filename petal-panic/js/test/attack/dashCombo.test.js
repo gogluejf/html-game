@@ -279,46 +279,47 @@ ok('afterimage instance exists during move, gone-of-new-points during freeze', (
   assert.ok(moveGhosts > 0, `trail recorded during move (got ${moveGhosts})`);
 });
 
-ok('impact ghost: planted at each freeze connect, one per connection', () => {
-  const a = attacker();
-  const e1 = dummyEnemy(260), e2 = dummyEnemy(330), e3 = dummyEnemy(540);
-  const c = ctx(a);
-  const before = activeCount();
-  const h = invoke('dashCombo', { segments: SEGS, direction: 0, startup: 0, recovery: 0, impactGhost: { color: '#ffe066' } }, c);
-  const hits = [];
-  h.on('hit', (i) => hits.push(i));
-  let finished = false;
-  for (let i = 0; i < 600 && !finished; i++) {
-    finished = h.step(DT, [e1, e2, e3]);
-    for (const e of [e1, e2, e3]) { e.x += (e.vx ?? 0) * DT; e.vx *= 0.85; }
-  }
-  assert.ok(finished);
-  assert.ok(hits.length >= 1, 'combo connected');
-  // Each connection spawned a discrete afterimage instance holding exactly
-  // one ghost (count-1 ring buffer). Count them among live instances.
-  const planted = activeInstances().filter((x) => x.type === 'afterimage' && x.body?.ghosts?.length === 1);
-  assert.ok(planted.length >= hits.length, `one planted ghost per hit (${planted.length} planted, ${hits.length} hits)`);
-  assert.ok(activeCount() > before, 'effect set grew by the impact ghosts');
-});
-
-ok('impact ghost ON by default (no param → planted ghost per connect)', () => {
+ok('impact ghost: planted at each freeze point, one per segment (hit or whiff)', () => {
   const a = attacker();
   const e1 = dummyEnemy(260), e2 = dummyEnemy(330), e3 = dummyEnemy(540);
   const c = ctx(a);
   const beforeStandalones = new Set(activeInstances().filter((x) => x.type === 'afterimage' && !x.carrier));
   const h = invoke('dashCombo', { segments: SEGS, direction: 0, startup: 0, recovery: 0 }, c);
-  const hits = [];
-  h.on('hit', (i) => hits.push(i));
   let finished = false;
   for (let i = 0; i < 600 && !finished; i++) {
     finished = h.step(DT, [e1, e2, e3]);
     for (const e of [e1, e2, e3]) { e.x += (e.vx ?? 0) * DT; e.vx *= 0.85; }
   }
   assert.ok(finished);
-  assert.ok(hits.length >= 1, 'combo connected');
-  // Default is ON: each connection spawned a NEW standalone no-carrier afterimage.
+  // One planted ghost per SEGMENT (the freeze point), regardless of connects.
   const newStandalones = activeInstances().filter((x) => x.type === 'afterimage' && !x.carrier && !beforeStandalones.has(x));
-  assert.ok(newStandalones.length >= hits.length, `one planted ghost per hit by default (${newStandalones.length} new, ${hits.length} hits)`);
+  assert.equal(newStandalones.length, SEGS.length, `one planted ghost per segment (${newStandalones.length} new, ${SEGS.length} segments)`);
+});
+
+ok('impact ghost plants on WHIFFED freezes too (no target in range)', () => {
+  const a = attacker();
+  // No targets at all — every freeze whiffs, but the path is still laid out.
+  const c = ctx(a);
+  const beforeStandalones = new Set(activeInstances().filter((x) => x.type === 'afterimage' && !x.carrier));
+  const h = invoke('dashCombo', { segments: SEGS, direction: 0, startup: 0, recovery: 0 }, c);
+  let finished = false;
+  for (let i = 0; i < 600 && !finished; i++) finished = h.step(DT, []);
+  assert.ok(finished);
+  const newStandalones = activeInstances().filter((x) => x.type === 'afterimage' && !x.carrier && !beforeStandalones.has(x));
+  assert.equal(newStandalones.length, SEGS.length, `ghosts planted at every freeze point even on full whiff (${newStandalones.length})`);
+});
+
+ok('impact ghost ON by default (no param → planted ghost per freeze point)', () => {
+  const a = attacker();
+  const c = ctx(a);
+  const beforeStandalones = new Set(activeInstances().filter((x) => x.type === 'afterimage' && !x.carrier));
+  const h = invoke('dashCombo', { segments: SEGS, direction: 0, startup: 0, recovery: 0 }, c);
+  let finished = false;
+  for (let i = 0; i < 600 && !finished; i++) finished = h.step(DT, []);
+  assert.ok(finished);
+  // Default is ON: each segment's freeze point spawned a NEW standalone no-carrier afterimage.
+  const newStandalones = activeInstances().filter((x) => x.type === 'afterimage' && !x.carrier && !beforeStandalones.has(x));
+  assert.equal(newStandalones.length, SEGS.length, `one planted ghost per freeze point by default (${newStandalones.length} new, ${SEGS.length} segments)`);
 });
 
 ok('impact ghost OFF with explicit null (spawns nothing extra)', () => {

@@ -55,15 +55,15 @@ const DEFAULTS = Object.freeze({
   team: 'ally',         // who the freeze hitboxes hurt
   method: 'melee',      // damage telemetry label
   afterimage: null,     // TRAVEL ghost override (count/spawnInterval/lifetime/opacity/color...); { count: 0 } disables
-  impactGhost: {},       // IMPACT ghost config fired at each freeze connect: { lifetime?, opacity?, color? }; {} = on with defaults, null = off
+  impactGhost: {},       // IMPACT ghost config planted at each freeze point (end of segment travel): { lifetime?, opacity?, color? }; {} = on with defaults, null = off
   shakeStyle: null,     // victim sprite-shake override (amount scales w/ segmentIndex)
 });
 
 // Defaults for the two ghost roles (overridable via the macro params above).
 // Travel = speed blur behind the moving body (continuous, per move phase).
-// Impact = single planted copy at the exact connect position (discrete, per
-// freeze hit) — lingers while the attacker blurs to the next frame, so the
-// combo's path is laid out in space (MK2 Johnny Cage read).
+// Impact = single planted copy at each FREEZE POINT — where the segment's
+// travel ended (hit or whiff) — lingering while the attacker blurs to the
+// next frame, so the combo's path is laid out in space (MK2 Johnny Cage read).
 const TRAVEL_GHOST_DEFAULTS = Object.freeze({
   spawnInterval: 0,     // per-frame ghosts while moving
   count: 10,            // longer trail — readable at dash speeds
@@ -124,7 +124,7 @@ defineMacro('dashCombo', {
     desc: 'Frame-scripted multi-hit dash: per segment, hold a frame and MOVE (afterimage trail, shoves overlapping victims), then FREEZE (hitbox live — this is the hit). Last freeze carries the knockback launch. One recovery window at the end.',
     effects: [
       { type: 'afterimage', desc: 'travel trail during each segment move phase' },
-      { type: 'afterimage', desc: 'impact ghost planted at each freeze connect position' },
+      { type: 'afterimage', desc: 'impact ghost planted at each freeze point (end of segment travel)' },
       { type: 'sprite-shake', desc: 'victim shake on connected freeze hits' },
       { type: 'hit-sparkle', desc: 'hit juice on connected freeze hits' },
     ],
@@ -135,7 +135,7 @@ defineMacro('dashCombo', {
       { key: 'recovery', desc: 'ONE punish window after the last freeze (s)' },
       { key: 'team', desc: 'who the freeze hitboxes hurt' },
       { key: 'afterimage', desc: 'travel-ghost override (count/spawnInterval/lifetime/opacity/color); { count: 0 } disables' },
-      { key: 'impactGhost', desc: 'per-freeze-connect planted ghost: { lifetime?, opacity?, color? }; {} = on (defaults), null = off' },
+      { key: 'impactGhost', desc: 'planted ghost at each freeze point (end of segment travel): { lifetime?, opacity?, color? }; {} = on (defaults), null = off' },
       { key: 'shakeStyle', desc: 'victim shake override' },
     ],
   },
@@ -271,6 +271,27 @@ defineMacro('dashCombo', {
       if (hitDistance || hitDuration) s.pendingFreeze = true;
     };
 
+    /** Plant the impact ghost at the attacker's CURRENT position — the spot
+     * where this segment's travel ended (the freeze point). Fires ONCE per
+     * segment, hit or whiff: it marks WHERE the frame stopped, laying the
+     * combo's path out in space (MK2 Johnny Cage read). Off when null. */
+    const plantImpactGhost = () => {
+      if (p.impactGhost === null) return;
+      const a = ctx.attacker;
+      const cx = a.x + a.w / 2, cy = a.y + a.h / 2;
+      const ig = fireDeclared({
+        type: 'afterimage',
+        params: {
+          ...IMPACT_GHOST_DEFAULTS,
+          ...(p.impactGhost ?? {}),
+          box: { x: cx - a.w / 2, y: cy - a.h / 2, w: a.w, h: a.h },
+        },
+      }, h.declaredEffectTypes());
+      // Seed the held position so the instance's first automatic roll
+      // snapshots HERE (not the default world origin).
+      ig?.body?.addGhost(cx, cy);
+    };
+
     /** Freeze phase: run the segment hitbox against targets until frames elapse. */
     const stepFreeze = () => {
       const s = h.state;
@@ -286,6 +307,9 @@ defineMacro('dashCombo', {
         s.hb.knockback = seg.knockback ?? null;
         resetHitbox(s.hb);
         s.hbFrames = Math.max(1, Math.round((seg.freezeFrames ?? 0.12) / (1 / 60)));
+        // IMPACT GHOST: planted at the freeze point (end of this segment's
+        // travel) — once per segment, regardless of whether the hit connects.
+        plantImpactGhost();
       }
       if (!s.hb) { nextAfterFreeze(s.segmentIndex); return; }
       s.hb.box = box;
@@ -317,23 +341,6 @@ defineMacro('dashCombo', {
         fireDeclared({ type: 'hit-sparkle', params: { x: tcx, y: tcy, count: 6 } }, h.declaredEffectTypes());
         const amount = (p.shakeStyle?.amount ?? 3) + s.segmentIndex;
         fireDeclared({ type: 'sprite-shake', params: { amount }, carrier: target }, h.declaredEffectTypes());
-        // IMPACT GHOST: one planted copy at the exact connect position. It
-        // lingers (its own lifetime clock) while the attacker blurs away to
-        // the next frame, laying the combo's path out in space. Discrete
-        // afterimage fire (count 1, no carrier) — off unless configured.
-        if (p.impactGhost !== null) {
-          const ig = fireDeclared({
-            type: 'afterimage',
-            params: {
-              ...IMPACT_GHOST_DEFAULTS,
-              ...(p.impactGhost ?? {}),
-              box: { x: tcx - 16, y: tcy - 24, w: 32, h: 48 },
-            },
-          }, h.declaredEffectTypes());
-          // Seed the held position so the instance's first automatic roll
-          // snapshots HERE (not the default world origin).
-          ig?.body?.addGhost(tcx, tcy);
-        }
       });
 
       if (s.hbFrame >= s.hbFrames) {
