@@ -1,0 +1,150 @@
+{
+ "file": "petal-panic/assets/enemies/goaty/spin_sheet.png",
+ "size": "4284x304",
+ "rows": 1,
+ "cols": 12,
+ "kind": "animation",
+ "description": "goaty spin (12f) \u2014 leaf tornado spin attack",
+ "entities": [
+  {
+   "name": "goaty",
+   "anim": "spin",
+   "frames_dir": "petal-panic/assets/enemies/goaty",
+   "frames": [
+    {
+     "file": "spin_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      20,
+      346,
+      264
+     ]
+    },
+    {
+     "file": "spin_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      346,
+      19,
+      366,
+      265
+     ]
+    },
+    {
+     "file": "spin_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      712,
+      6,
+      377,
+      292
+     ]
+    },
+    {
+     "file": "spin_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1089,
+      1,
+      364,
+      302
+     ]
+    },
+    {
+     "file": "spin_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1453,
+      3,
+      330,
+      297
+     ]
+    },
+    {
+     "file": "spin_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1783,
+      0,
+      350,
+      304
+     ]
+    },
+    {
+     "file": "spin_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      2133,
+      13,
+      345,
+      277
+     ]
+    },
+    {
+     "file": "spin_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      2478,
+      25,
+      348,
+      253
+     ]
+    },
+    {
+     "file": "spin_f9.png",
+     "row": 0,
+     "col": 8,
+     "bbox": [
+      2826,
+      25,
+      382,
+      253
+     ]
+    },
+    {
+     "file": "spin_f10.png",
+     "row": 0,
+     "col": 9,
+     "bbox": [
+      3208,
+      33,
+      402,
+      238
+     ]
+    },
+    {
+     "file": "spin_f11.png",
+     "row": 0,
+     "col": 10,
+     "bbox": [
+      3610,
+      28,
+      370,
+      248
+     ]
+    },
+    {
+     "file": "spin_f12.png",
+     "row": 0,
+     "col": 11,
+     "bbox": [
+      3980,
+      16,
+      304,
+      271
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-27"
+}

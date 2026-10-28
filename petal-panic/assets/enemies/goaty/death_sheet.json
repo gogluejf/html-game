@@ -1,0 +1,128 @@
+{
+ "file": "petal-panic/assets/enemies/goaty/death_sheet.png",
+ "size": "4249x411",
+ "rows": 1,
+ "cols": 10,
+ "kind": "animation",
+ "description": "goaty death (10f) \u2014 collapse into leaves",
+ "entities": [
+  {
+   "name": "goaty",
+   "anim": "death",
+   "frames_dir": "petal-panic/assets/enemies/goaty",
+   "frames": [
+    {
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      359,
+      411
+     ]
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      359,
+      2,
+      389,
+      407
+     ]
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      748,
+      3,
+      416,
+      405
+     ]
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1164,
+      31,
+      439,
+      349
+     ]
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1603,
+      55,
+      472,
+      300
+     ]
+    },
+    {
+     "file": "death_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      2075,
+      75,
+      424,
+      261
+     ]
+    },
+    {
+     "file": "death_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      2499,
+      78,
+      433,
+      255
+     ]
+    },
+    {
+     "file": "death_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      2932,
+      91,
+      387,
+      228
+     ]
+    },
+    {
+     "file": "death_f9.png",
+     "row": 0,
+     "col": 8,
+     "bbox": [
+      3319,
+      109,
+      461,
+      193
+     ]
+    },
+    {
+     "file": "death_f10.png",
+     "row": 0,
+     "col": 9,
+     "bbox": [
+      3780,
+      115,
+      469,
+      180
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-27"
+}
