@@ -54,8 +54,28 @@ const DEFAULTS = Object.freeze({
   recovery: 0.4,        // ONE window after the last freeze (punish zone)
   team: 'ally',         // who the freeze hitboxes hurt
   method: 'melee',      // damage telemetry label
-  afterimage: null,     // effect override (count/fadeRate/lifetime/color...)
+  afterimage: null,     // TRAVEL ghost override (count/spawnInterval/lifetime/opacity/color...); { count: 0 } disables
+  impactGhost: null,    // IMPACT ghost config fired at each freeze connect: { lifetime?, opacity?, color? }; null = off
   shakeStyle: null,     // victim sprite-shake override (amount scales w/ segmentIndex)
+});
+
+// Defaults for the two ghost roles (overridable via the macro params above).
+// Travel = speed blur behind the moving body (continuous, per move phase).
+// Impact = single planted copy at the exact connect position (discrete, per
+// freeze hit) — lingers while the attacker blurs to the next frame, so the
+// combo's path is laid out in space (MK2 Johnny Cage read).
+const TRAVEL_GHOST_DEFAULTS = Object.freeze({
+  spawnInterval: 0,     // per-frame ghosts while moving
+  count: 10,            // longer trail — readable at dash speeds
+  lifetime: 1.2,        // match the effect studio demo
+  opacity: 0.5,
+  color: '#ff0000',     // red, like the effect studio
+});
+const IMPACT_GHOST_DEFAULTS = Object.freeze({
+  count: 1,             // exactly one planted copy
+  lifetime: 0.3,        // lingers while the attacker travels to the next frame
+  opacity: 0.7,
+  color: '#ffe066',     // hot tint — reads as impact, distinct from the travel blur
 });
 
 /** Dash direction: radians, full 0–2π (same contract as the Movement
@@ -103,7 +123,8 @@ defineMacro('dashCombo', {
     name: 'Dash Combo',
     desc: 'Frame-scripted multi-hit dash: per segment, hold a frame and MOVE (afterimage trail, shoves overlapping victims), then FREEZE (hitbox live — this is the hit). Last freeze carries the knockback launch. One recovery window at the end.',
     effects: [
-      { type: 'afterimage', desc: 'trail during each segment move phase' },
+      { type: 'afterimage', desc: 'travel trail during each segment move phase' },
+      { type: 'afterimage', desc: 'impact ghost planted at each freeze connect position' },
       { type: 'sprite-shake', desc: 'victim shake on connected freeze hits' },
       { type: 'hit-sparkle', desc: 'hit juice on connected freeze hits' },
     ],
@@ -113,7 +134,8 @@ defineMacro('dashCombo', {
       { key: 'startup', desc: 's before the first segment moves (commitment tell)' },
       { key: 'recovery', desc: 'ONE punish window after the last freeze (s)' },
       { key: 'team', desc: 'who the freeze hitboxes hurt' },
-      { key: 'afterimage', desc: 'trail effect override' },
+      { key: 'afterimage', desc: 'travel-ghost override (count/spawnInterval/lifetime/opacity/color); { count: 0 } disables' },
+      { key: 'impactGhost', desc: 'per-freeze-connect planted ghost: { lifetime?, opacity?, color? }; null = off' },
       { key: 'shakeStyle', desc: 'victim shake override' },
     ],
   },
@@ -188,11 +210,7 @@ defineMacro('dashCombo', {
         type: 'afterimage',
         params: {
           box: { x: a.x, y: a.y, w: a.w, h: a.h },
-          spawnInterval: 0, // per-frame ghosts while moving
-          count: 10,        // longer trail — readable at dash speeds
-          lifetime: 1.2,    // match the effect studio demo
-          opacity: 0.5,     // match the effect studio demo
-          color: '#ff0000', // red, like the effect studio
+          ...TRAVEL_GHOST_DEFAULTS,
           ...(p.afterimage ?? {}),
         },
       }, h.declaredEffectTypes());
@@ -299,6 +317,23 @@ defineMacro('dashCombo', {
         fireDeclared({ type: 'hit-sparkle', params: { x: tcx, y: tcy, count: 6 } }, h.declaredEffectTypes());
         const amount = (p.shakeStyle?.amount ?? 3) + s.segmentIndex;
         fireDeclared({ type: 'sprite-shake', params: { amount }, carrier: target }, h.declaredEffectTypes());
+        // IMPACT GHOST: one planted copy at the exact connect position. It
+        // lingers (its own lifetime clock) while the attacker blurs away to
+        // the next frame, laying the combo's path out in space. Discrete
+        // afterimage fire (count 1, no carrier) — off unless configured.
+        if (p.impactGhost !== null) {
+          const ig = fireDeclared({
+            type: 'afterimage',
+            params: {
+              ...IMPACT_GHOST_DEFAULTS,
+              ...(p.impactGhost ?? {}),
+              box: { x: tcx - 16, y: tcy - 24, w: 32, h: 48 },
+            },
+          }, h.declaredEffectTypes());
+          // Seed the held position so the instance's first automatic roll
+          // snapshots HERE (not the default world origin).
+          ig?.body?.addGhost(tcx, tcy);
+        }
       });
 
       if (s.hbFrame >= s.hbFrames) {

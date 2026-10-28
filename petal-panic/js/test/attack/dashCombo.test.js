@@ -3,6 +3,7 @@
 
 import { strict as assert } from 'node:assert';
 import '../../effects/registry.js'; // side effect: registers afterimage/sprite-shake/hit-sparkle
+import { activeInstances, activeCount } from '../../effects/index.js';
 import { resolveDashDirection, normalizeSegment, segmentHitboxBox } from '../../combat/attack/macros/dashCombo.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
@@ -276,6 +277,68 @@ ok('afterimage instance exists during move, gone-of-new-points during freeze', (
   }
   assert.ok(finished);
   assert.ok(moveGhosts > 0, `trail recorded during move (got ${moveGhosts})`);
+});
+
+ok('impact ghost: planted at each freeze connect, one per connection', () => {
+  const a = attacker();
+  const e1 = dummyEnemy(260), e2 = dummyEnemy(330), e3 = dummyEnemy(540);
+  const c = ctx(a);
+  const before = activeCount();
+  const h = invoke('dashCombo', { segments: SEGS, direction: 0, startup: 0, recovery: 0, impactGhost: { color: '#ffe066' } }, c);
+  const hits = [];
+  h.on('hit', (i) => hits.push(i));
+  let finished = false;
+  for (let i = 0; i < 600 && !finished; i++) {
+    finished = h.step(DT, [e1, e2, e3]);
+    for (const e of [e1, e2, e3]) { e.x += (e.vx ?? 0) * DT; e.vx *= 0.85; }
+  }
+  assert.ok(finished);
+  assert.ok(hits.length >= 1, 'combo connected');
+  // Each connection spawned a discrete afterimage instance holding exactly
+  // one ghost (count-1 ring buffer). Count them among live instances.
+  const planted = activeInstances().filter((x) => x.type === 'afterimage' && x.body?.ghosts?.length === 1);
+  assert.ok(planted.length >= hits.length, `one planted ghost per hit (${planted.length} planted, ${hits.length} hits)`);
+  assert.ok(activeCount() > before, 'effect set grew by the impact ghosts');
+});
+
+ok('impact ghost OFF by default (null param spawns nothing extra)', () => {
+  const a = attacker();
+  const e = dummyEnemy(260);
+  const c = ctx(a);
+  // Snapshot BEFORE: the effects active set is process-global, so instances
+  // from earlier tests may still be fading. Only NEW standalones matter.
+  const beforeStandalones = new Set(activeInstances().filter((x) => x.type === 'afterimage' && !x.carrier));
+  const h = invoke('dashCombo', { segments: SEGS, direction: 0, startup: 0, recovery: 0 }, c);
+  const hits = [];
+  h.on('hit', (i) => hits.push(i));
+  let finished = false;
+  for (let i = 0; i < 600 && !finished; i++) {
+    finished = h.step(DT, [e]);
+    e.x += (e.vx ?? 0) * DT; e.vx *= 0.85;
+  }
+  assert.ok(finished);
+  assert.ok(hits.length >= 1, 'combo connected');
+  // No NEW impact-ghost instances: impact ghosts are standalone no-carrier
+  // afterimages; with impactGhost null none of those may appear.
+  const newStandalones = activeInstances().filter((x) => x.type === 'afterimage' && !x.carrier && !beforeStandalones.has(x));
+  assert.equal(newStandalones.length, 0, `no standalone impact ghosts when off (got ${newStandalones.length})`);
+});
+
+ok('travel ghost override: { count: 0 } disables the trail', () => {
+  const a = attacker();
+  const c = ctx(a);
+  const h = invoke('dashCombo', { segments: SEGS, direction: 0, startup: 0, recovery: 0, afterimage: { count: 0 } }, c);
+  let moveGhosts = 0;
+  let finished = false;
+  for (let i = 0; i < 600 && !finished; i++) {
+    finished = h.step(DT, []);
+    const inst = h._aiInst();
+    if (inst && !inst.done && h.state.phase === 'move') {
+      moveGhosts = Math.max(moveGhosts, inst.body.ghosts.length);
+    }
+  }
+  assert.ok(finished);
+  assert.equal(moveGhosts, 0, 'no travel ghosts with count: 0');
 });
 
 ok('victim death mid-combo completes cleanly', () => {
