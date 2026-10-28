@@ -14,6 +14,7 @@ export { boomerangDrawer } from './projectile/boomerang.js';
 export { rockDrawer } from './ballistic/rock.js';
 export { bombDrawer } from './ballistic/bomb.js';
 export { molotovDrawer } from './ballistic/molotov.js';
+export { circusBallDrawer } from './ballistic/circusBall.js';
 
 // Zone
 export { fireZoneDrawer } from './zone/fire.js';

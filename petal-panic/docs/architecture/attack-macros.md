@@ -1173,6 +1173,43 @@ surface in the impact column (floor OR platform).
 
 ---
 
+## Circus Ball (macro id: `circusBall`)
+
+`invoke('circusBall', { speed: 400, direction: -Math.PI / 3, bounceHeight: 80,
+  damage: 10, ttl: 6, size: 28, origin: null, team: 'ally' }, ctx)`
+
+A striped circus ball thrown on a ballistic arc that bounces **forever at a
+constant height with zero velocity loss**, rolling and ping-ponging off walls
+until its ttl runs out or it leaves the screen. Composes the `ballistic`
+primitive in constant-apex mode (`bounceHeight`) and renders the generated
+circus_ball bounce sheet via `circusBallDrawer` (squash on impact, flat roll
+low, round mid-air — phase-driven frame selection).
+
+### Constant-apex bouncing (the physics contract)
+
+Every ground rebound resets `vy = -sqrt(2 * gravity * bounceHeight)` instead of
+decaying impact velocity. The apex therefore lands at exactly `bounceHeight`
+each time — no drift, no settle-down, independent of frame timing. Horizontal
+velocity is never touched (no friction), so `speed` is exact for the whole
+life. Wall reflections are also lossless in this mode (restitution 1.0).
+Legacy carriers without `bounceHeight` keep the classic decay (0.5 restitution
++ 0.7 friction) — bombs still die after a few bounces.
+
+| Param | Default | Meaning |
+|---|---|---|
+| `speed` | `400` | horizontal px/s — constant for the whole life |
+| `direction` | `-Math.PI/3` | launch angle (radians; +angle = up-right) |
+| `arc` | `1800` | gravity px/s² — shapes the initial throw only |
+| `bounceHeight` | `80` | px apex of EVERY bounce (the main feel knob) |
+| `damage` | `10` | per enemy contact |
+| `ttl` | `6` | lifetime cap — the only thing that kills it |
+| `size` | `28` | collision box (visual follows via drawer scale) |
+| `origin` | `null` | marker label \| {x,y} \| null → attacker center |
+| `team` | `'ally'` | who the ball hurts |
+
+**Feel tuning:** heavy ball = low `speed` + low `bounceHeight` (thumpy, fast
+drop); light ball = high `speed` + high `bounceHeight` (floaty big hops).
+
 ## AI usage examples
 
 Attack Macros do not contain enemy decision-making.

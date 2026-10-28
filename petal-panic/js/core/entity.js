@@ -233,11 +233,14 @@ export class Entity {
     const ox = (this.w / 2 + box.w / 2) - Math.abs(cx - bx);
     const oy = (this.h / 2 + box.h / 2) - Math.abs(cy - by);
     if (ox <= 0 || oy <= 0) return;
+    // Constant-apex carriers (bounceHeight set) reflect with NO energy loss —
+    // they ping-pong at exact speed until ttl. Legacy entities keep 0.8.
+    const rest = this.bounceHeight != null ? 1.0 : 0.8;
     if (ox < oy) {
-      this.vx = -this.vx * 0.8;
+      this.vx = -this.vx * rest;
       this.x += (cx < bx ? -ox : ox);
     } else {
-      this.vy = -this.vy * 0.8;
+      this.vy = -this.vy * rest;
       this.y += (cy < by ? -oy : oy);
     }
   }

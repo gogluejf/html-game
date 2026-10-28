@@ -49,6 +49,11 @@ const DEFAULTS = Object.freeze({
   radius: 70,           // reference size for host-side effects (macro-owned)
   origin: null,         // marker label | {x,y} | null → attacker center
   drawer: null,         // (ctx, entity) => void — defaults to bombDrawer if null
+  bounceHeight: null,   // px — constant-apex rebound mode (see stepBombTerrain).
+                        // When set, every ground rebound resets vy from this
+                        // height (vy = -sqrt(2·g·h)) instead of decaying impact
+                        // velocity: zero loss, zero drift, bounces forever until
+                        // ttl. vx is untouched → horizontal speed stays exact.
 });
 
 /** Rebound below this (px/s) settles the bomb instead of bouncing again. */
@@ -87,6 +92,10 @@ export function spawnBomb(p, ctx, h = null) {
   ent._bombRetainOnSettle = p.retainOnSettle;
   ent._bombSettled = false;
   ent.solidBehavior = p.bounce ? 'reflect' : 'stop';
+  // Constant-apex rebound mode (circus-ball style infinite bounces). Stored on
+  // the entity so stepBombTerrain() can recompute each rebound from a fixed
+  // height instead of decaying impact velocity.
+  ent.bounceHeight = p.bounceHeight ?? null;
   // Drawer: explicit param wins; default to rockDrawer (generic ballistic look).
   ent.drawer = p.drawer ?? rockDrawer;
   ent._attackId = 'ballistic';
@@ -142,8 +151,16 @@ export function stepBombTerrain(ent, dt, groundY, platforms = []) {
   ent._bombSurfaceY = surface;
   if (!ent.alive) return false; // fuse expired on this landing frame
   if (ent.solidBehavior === 'reflect') {
-    ent.vy = -Math.abs(ent.vy) * 0.5; // restitution
-    ent.vx *= 0.7;                    // friction
+    if (ent.bounceHeight != null && ent.gravityValue > 0) {
+      // CONSTANT-APEX MODE: rebound velocity derived from a fixed height, NOT
+      // from impact velocity. vy = -sqrt(2·g·h) guarantees the apex lands at
+      // exactly bounceHeight every time — zero drift, zero loss, bounces
+      // forever until ttl. vx is untouched → horizontal speed stays exact.
+      ent.vy = -Math.sqrt(2 * ent.gravityValue * ent.bounceHeight);
+    } else {
+      ent.vy = -Math.abs(ent.vy) * 0.5; // legacy restitution (bombs decay)
+      ent.vx *= 0.7;                    // friction
+    }
     if (Math.abs(ent.vy) < BOMB_SETTLE_VY) {
       // Rest on the surface — do NOT kill. The fuse keeps running;
       // stepBomb() fires when TTL expires or contact occurs.

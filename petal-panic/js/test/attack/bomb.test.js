@@ -2,7 +2,7 @@
 // Run: node js/test/attack/bomb.test.js
 
 import { strict as assert } from 'node:assert';
-import { spawnBomb, stepBomb } from '../../combat/attack/primitives/ballistic.js';
+import { spawnBomb, stepBomb, stepBombTerrain } from '../../combat/attack/primitives/ballistic.js';
 import { invoke, AttackHandle } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { Pool, Special } from '../../objects/projectile.js';
@@ -127,6 +127,40 @@ ok('pool exhaustion: spawn returns null, handle expires', () => {
   assert.ok(h1.entity, 'first bomb spawns');
   const h2 = invoke('ballistic', { ...P }, ctx2);
   assert.equal(h2.entity, undefined, 'second bomb skipped (soft cap)');
+});
+
+
+ok('bounceHeight: constant-apex rebound, zero horizontal loss', () => {
+  const ctx = makeCtx();
+  const h = invoke('ballistic', { ...P, bounceHeight: 80, arc: 1000, ttl: null }, ctx);
+  const ent = h.entity;
+  assert.equal(ent.bounceHeight, 80, 'param stored on entity');
+  // Simulate a ground hit: place the entity straddling the ground plane (y=400)
+  // with downward velocity so the surface-crossing check fires.
+  ent.y = 390;    // bottom = 408 ≥ 400 → crossing
+  ent.vy = 900;   // falling
+  ent.vx = 250;   // horizontal speed to preserve
+  stepBombTerrain(ent, 1 / 60, 400, []);
+  const expectedVy = -Math.sqrt(2 * 1000 * 80);
+  assert.ok(Math.abs(ent.vy - expectedVy) < 1e-6, `vy ${ent.vy} vs ${expectedVy}`);
+  assert.equal(ent.vx, 250, 'vx untouched (no friction in constant-apex mode)');
+  // Second hit with a DIFFERENT impact velocity → identical rebound.
+  ent.y = 390;
+  ent.vy = 300;
+  stepBombTerrain(ent, 1 / 60, 400, []);
+  assert.ok(Math.abs(ent.vy - expectedVy) < 1e-6, 'rebound independent of impact velocity');
+});
+
+ok('bounceHeight: legacy decay path unchanged when unset', () => {
+  const ctx = makeCtx();
+  const h = invoke('ballistic', { ...P, arc: 800, ttl: null, bounce: true }, ctx);
+  const ent = h.entity;
+  assert.equal(ent.bounceHeight, null, 'default is legacy mode');
+  ent.y = 390;
+  ent.vy = 400; ent.vx = 200;
+  stepBombTerrain(ent, 1 / 60, 400, []);
+  assert.ok(Math.abs(ent.vy - (-200)) < 1e-6, `legacy restitution vy ${ent.vy}`);
+  assert.ok(Math.abs(ent.vx - 140) < 1e-6, `legacy friction vx ${ent.vx}`);
 });
 
 console.log(`\n${passed} passed${process.exitCode ? ' (WITH FAILURES)' : ''}`);
