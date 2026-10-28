@@ -1,10 +1,10 @@
 {
   "file": "petal-panic/assets/enemies/capot/shoot_sheet.png",
-  "size": "2549x717",
+  "size": "2409x717",
   "rows": 2,
-  "cols": 6,
+  "cols": 5,
   "kind": "animation",
-  "description": "capot shoot (12f, 2x6) \u2014 windup, throw, ball flight, follow-through",
+  "description": "capot shoot (10f, 2x5) \u2014 windup, throw, ball flight, follow-through",
   "entities": [
     {
       "name": "capot",
@@ -16,7 +16,7 @@
           "row": 0,
           "col": 0,
           "bbox": [
-            0,
+            83,
             0,
             260,
             374
@@ -27,7 +27,7 @@
           "row": 0,
           "col": 1,
           "bbox": [
-            347,
+            455,
             16,
             252,
             342
@@ -38,7 +38,7 @@
           "row": 0,
           "col": 2,
           "bbox": [
-            687,
+            735,
             18,
             364,
             337
@@ -49,7 +49,7 @@
           "row": 0,
           "col": 3,
           "bbox": [
-            1051,
+            1099,
             15,
             699,
             343
@@ -60,84 +60,62 @@
           "row": 0,
           "col": 4,
           "bbox": [
-            1779,
+            1798,
             43,
-            317,
+            611,
             287
           ]
         },
         {
           "file": "shoot_f6.png",
-          "row": 0,
-          "col": 5,
-          "bbox": [
-            2194,
-            97,
-            286,
-            180
-          ]
-        },
-        {
-          "file": "shoot_f7.png",
           "row": 1,
           "col": 0,
           "bbox": [
-            4,
-            452,
-            252,
-            186
-          ]
-        },
-        {
-          "file": "shoot_f8.png",
-          "row": 1,
-          "col": 1,
-          "bbox": [
-            260,
+            0,
             374,
             427,
             343
           ]
         },
         {
-          "file": "shoot_f9.png",
+          "file": "shoot_f7.png",
           "row": 1,
-          "col": 2,
+          "col": 1,
           "bbox": [
-            715,
+            427,
             430,
             308,
             230
           ]
         },
         {
-          "file": "shoot_f10.png",
+          "file": "shoot_f8.png",
           "row": 1,
-          "col": 3,
+          "col": 2,
           "bbox": [
-            1231,
+            748,
             401,
             338,
             288
           ]
         },
         {
-          "file": "shoot_f11.png",
+          "file": "shoot_f9.png",
           "row": 1,
-          "col": 4,
+          "col": 3,
           "bbox": [
-            1750,
+            1261,
             379,
             375,
             332
           ]
         },
         {
-          "file": "shoot_f12.png",
+          "file": "shoot_f10.png",
           "row": 1,
-          "col": 5,
+          "col": 4,
           "bbox": [
-            2125,
+            1891,
             443,
             424,
             205
