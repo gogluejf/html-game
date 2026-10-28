@@ -62,11 +62,11 @@ Unit reference: 1 X-unit = 72px · 1 Y-unit = 48px (current).
 | # | File | Line | Item | Current (px) | Status |
 |---|------|------|------|--------------|--------|
 | 24 | js/hero/hero.js | 36 | AIR_REVERSAL_MIN_SPEED | 40 px/s | ✅ |
-| 25 | js/hero/hero.js | 53 | knockback contact strength | 260 px/s | ✅ |
-| 26 | js/hero/hero.js | 54 | knockback bossContact strength | 340 px/s | ✅ |
-| 27 | js/hero/hero.js | 55 | knockback projectile strength | 220 px/s | ✅ |
-| 28 | js/hero/hero.js | 56 | knockback heavyProj strength | 300 px/s | ✅ |
-| 29 | js/hero/hero.js | 57 | knockback explosion strength | 380 px/s | ✅ |
+| 25 | js/hero/hero.js | 53 | knockback contact strength | 260 px/s | ❌ |
+| 26 | js/hero/hero.js | 54 | knockback bossContact strength | 340 px/s | ❌ |
+| 27 | js/hero/hero.js | 55 | knockback projectile strength | 220 px/s | ❌ |
+| 28 | js/hero/hero.js | 56 | knockback heavyProj strength | 300 px/s | ❌ |
+| 29 | js/hero/hero.js | 57 | knockback explosion strength | 380 px/s | ❌ |
 | 30 | js/hero/heroDefs.js | 53 | hero move speed A | 250 px/s | ✅ |
 | 31 | js/hero/heroDefs.js | 84 | hero move speed B | 180 px/s | ✅ |
 
