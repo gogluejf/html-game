@@ -47,18 +47,6 @@ ok('up-left angle produces correct signed velocity', () => {
   assert.ok(Math.abs(ent.vy + c) < 1e-6, `vy ${ent.vy}`);
 });
 
-ok('gravity > 0 routes to specialPool (ballistic path)', () => {
-  const pools = makePools();
-  const ctx = makeContext(attacker(), { pools });
-  const h = new AttackHandle('projectile');
-  const ent = spawnProjectile({ speed: 300, direction: -Math.PI / 4, ttl: 3, damage: 12, gravity: 800 }, ctx, h);
-  assert.ok(ent, 'should spawn');
-  assert.equal(pools.specialPool.active.length, 1, 'in special pool');
-  assert.equal(pools.projectilePool.active.length, 0, 'not in straight pool');
-  assert.equal(ent.gravityValue, 800, 'ballistic integrator armed');
-  assert.equal(ent.damage, 12);
-});
-
 ok('solidBehavior is transported as DATA onto the entity', () => {
   const pools = makePools();
   const ctx = makeContext(attacker(), { pools });

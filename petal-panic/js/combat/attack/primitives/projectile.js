@@ -1,12 +1,11 @@
 // Attack Engine — Projectile primitive (Task 1.2).
 //
-// Straight-line projectile: spawn into the EXISTING pools, set data, let the
-// existing systems do the work. This primitive NEVER implements wall physics,
-// damage math, or pooling itself:
+// Straight-line projectile ONLY: spawn into the existing projectile pool, set
+// data, let the existing systems do the work. Arcing bodies are the
+// `ballistic` primitive's job — this primitive has no gravity path.
+// This primitive NEVER implements wall physics, damage math, or pooling itself:
 //   - solidBehavior ('phase'|'stop'|'reflect') is mapped onto the entity flag
 //     that collisionHandlers.js already consumes. Data, not code.
-//   - gravity reuses the Special-class ballistic path (gravityValue + vy
-//     integration in its update()).
 //   - damage routing stays in damage()/takeDamage() via the existing handlers.
 //
 // What this file OWNS: param → pool-spawn translation, origin resolution
@@ -18,7 +17,6 @@ import { resolveMarker } from '../context.js';
 import { AttackHandle } from '../engine.js';
 import { dirAngle } from '../../../core/vec.js';
 import { fireDeclared } from '../../../effects/index.js';
-import { rockDrawer } from '../drawers/index.js';
 
 // Declared effect types for THIS registration (single source of truth:
 // the same meta.effects array the guard checks and the theater panel
@@ -37,12 +35,10 @@ const DEFAULTS = Object.freeze({
   damage: 10,
   origin: null,          // marker label (string) | {x,y} | null → attacker center
   solidBehavior: 'phase', // phase | stop | reflect (existing entity-flag contract)
-  gravity: 0,            // px/s²; >0 routes to the ballistic (Special) pool
   team: 'ally',          // ally | foe — who this shot hurts (engine-wide side
                          // vocabulary, same as hitbox/explosion). Maps to the
                          // legacy friendly flag / PROJ_ALLY|PROJ_FOE layer.
   size: 12,              // box size (thorn = 12, specials ~16)
-  type: null,            // special weapon type id when spawning a Special
   drawer: null,          // (ctx, entity) => void — custom render override
 });
 
@@ -78,34 +74,15 @@ export function spawnProjectile(p, ctx, h) {
   const angle = typeof p.direction === 'number' ? p.direction : dirAngle(p.direction);
   const cos = Math.cos(angle), sin = Math.sin(angle);
 
-  let ent = null;
-  if (p.gravity > 0 || p.type != null) {
-    // Ballistic / named-special path: the Special class owns gravityValue and
-    // the fuse/life relabeling. Pass 8-way dir 0 and fix vx/vy after spawn so
-    // arbitrary angles work (the class computes velocity from its dir arg).
-    // A typeless ballistic shot uses 'bomb' as the physics carrier — its
-    // registry entry provides gravity + size; our params override speed/ttl/
-    // damage/solidBehavior on top.
-    const carrierType = p.type ?? 'bomb';
-    ent = ctx.pools.specialPool?.spawn(pt.x, pt.y, 0, carrierType);
-    if (ent) {
-      ent.vx = cos * p.speed;
-      ent.vy = sin * p.speed;
-      ent.damage = p.damage;
-      ent.setLife?.(p.ttl);
-      // Arm the ballistic integrator even if the carrier's own gravity is 0.
-      ent.gravityValue = Math.max(p.gravity, ent.gravityValue ?? 0);
-    }
-  } else {
-    // Straight-line path: plain Projectile. The constructor takes an 8-way
-    // index; we spawn with dir 0 and overwrite velocity for exact angles.
-    ent = ctx.pools.projectilePool?.spawn(pt.x, pt.y, 0, p.team !== 'foe');
-    if (ent) {
-      ent.vx = cos * p.speed;
-      ent.vy = sin * p.speed;
-      ent.damage = p.damage;
-      ent.life = p.ttl;
-    }
+  // Straight-line path only: plain Projectile. The constructor takes an 8-way
+  // index; we spawn with dir 0 and overwrite velocity for exact angles.
+  // (Arcing bodies are the `ballistic` primitive's job — no gravity here.)
+  const ent = ctx.pools.projectilePool?.spawn(pt.x, pt.y, 0, p.team !== 'foe');
+  if (ent) {
+    ent.vx = cos * p.speed;
+    ent.vy = sin * p.speed;
+    ent.damage = p.damage;
+    ent.life = p.ttl;
   }
   if (!ent) return null; // pool exhausted — caller skips this shot (soft cap)
 
@@ -115,9 +92,7 @@ export function spawnProjectile(p, ctx, h) {
   // documented default ('phase') rather than inheriting a stale slot value.
   ent.solidBehavior = p.solidBehavior ?? 'phase';
   // Custom render override (drawer contract: (ctx, entity) => void).
-  // Ballistic shots default to rockDrawer; explicit p.drawer wins.
   if (p.drawer) ent.drawer = p.drawer;
-  else if (p.gravity > 0 && !ent.drawer) ent.drawer = rockDrawer;
   // Tag so the theater/debug can find primitives' shots among pool items.
   ent._attackId = 'projectile';
 
@@ -185,7 +160,7 @@ registerPrimitive('projectile', {
       { type: 'hit-sparkle', desc: 'blood sparkles on enemy impact (hit juice)' },
       { type: 'debris', desc: 'dusty grain puff when a solid-behavior shot dies on terrain' },
     ],
-    desc: 'Straight-line shot into the existing projectile/special pools. solidBehavior maps to the existing entity flag; gravity routes to the ballistic pool.',
+    desc: 'Straight-line shot into the existing projectile pool. solidBehavior maps to the existing entity flag. Arcing bodies belong to the `ballistic` primitive.',
     params: [
       { key: 'speed', desc: 'px/s travel speed' },
       { key: 'direction', desc: 'radians (0 = right)' },
@@ -193,7 +168,6 @@ registerPrimitive('projectile', {
       { key: 'damage', desc: 'damage on valid contact' },
       { key: 'origin', desc: "marker label | {x,y} | null → attacker center" },
       { key: 'solidBehavior', desc: 'phase | stop | reflect (existing flag)' },
-      { key: 'gravity', desc: 'px/s² (>0 = ballistic arc)' },
       { key: 'team', desc: "ally | foe — who this shot hurts (maps to PROJ_ALLY/PROJ_FOE layer)" },
     ],
   },
