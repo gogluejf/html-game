@@ -1,32 +1,56 @@
 {
- "label": "objects",
- "file": "petal-panic/assets/objects/barrel/wooden_sheet.png",
- "rows": 1,
- "cols": 1,
- "size": "305x386",
- "description": "Circus barrel prop (single image)",
- "entities": [
-  {
-   "name": "barrel",
-   "anim": "wooden",
-   "frames": [
+  "label": "objects",
+  "file": "petal-panic/assets/objects/barrel/wooden_sheet.png",
+  "rows": 1,
+  "cols": 1,
+  "size": "305x386",
+  "description": "Circus barrel prop (single image)",
+  "entities": [
     {
-     "file": "wooden_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      305,
-      386
-     ]
+      "name": "barrel",
+      "anim": "wooden",
+      "frames": [
+        {
+          "file": "wooden_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            305,
+            386
+          ],
+          "offset": {
+            "x": 160,
+            "y": -192
+          },
+          "scale": {
+            "sx": 1.0785271503020486,
+            "sy": 1.0200365436049217
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/objects/barrel",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 0,
+        "y": -382,
+        "w": 317,
+        "h": 382
+      },
+      "pivot": {
+        "x": 149,
+        "y": -189
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/objects/barrel"
-  }
- ],
- "crop": {
-  "pass": "/tmp/redo-single"
- },
- "kind": "entity_variant"
+  ],
+  "crop": {
+    "pass": "/tmp/redo-single"
+  },
+  "kind": "entity_variant"
 }

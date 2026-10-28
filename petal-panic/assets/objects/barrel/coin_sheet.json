@@ -1,32 +1,56 @@
 {
- "label": "objects",
- "file": "petal-panic/assets/objects/barrel/coin_sheet.png",
- "rows": 1,
- "cols": 1,
- "size": "356x385",
- "description": "Flower barrel / coin barrel prop (single image)",
- "entities": [
-  {
-   "name": "barrel",
-   "anim": "coin",
-   "frames": [
+  "label": "objects",
+  "file": "petal-panic/assets/objects/barrel/coin_sheet.png",
+  "rows": 1,
+  "cols": 1,
+  "size": "356x385",
+  "description": "Flower barrel / coin barrel prop (single image)",
+  "entities": [
     {
-     "file": "coin_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      356,
-      385
-     ]
+      "name": "barrel",
+      "anim": "coin",
+      "frames": [
+        {
+          "file": "coin_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            356,
+            385
+          ],
+          "offset": {
+            "x": 161,
+            "y": -194
+          },
+          "scale": {
+            "sx": 0.9948286660035108,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/objects/barrel",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 0,
+        "y": -389,
+        "w": 331,
+        "h": 389
+      },
+      "pivot": {
+        "x": 174,
+        "y": -188
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/objects/barrel"
-  }
- ],
- "crop": {
-  "pass": "/tmp/redo-single"
- },
- "kind": "entity_variant"
+  ],
+  "crop": {
+    "pass": "/tmp/redo-single"
+  },
+  "kind": "entity_variant"
 }

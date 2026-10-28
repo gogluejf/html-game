@@ -1,40 +1,74 @@
 {
- "file": "petal-panic/assets/levels/level1/block_triple_sheet.png",
- "size": "483x1459",
- "rows": 2,
- "cols": 1,
- "kind": "tile_variant",
- "description": "level1 block_triple (2 frames) \u2014 reassembled from frames",
- "entities": [
-  {
-   "name": "level1",
-   "anim": "block_triple",
-   "frames": [
+  "file": "petal-panic/assets/levels/level1/block_triple_sheet.png",
+  "size": "483x1459",
+  "rows": 2,
+  "cols": 1,
+  "kind": "tile_variant",
+  "description": "level1 block_triple (2 frames) \u2014 reassembled from frames",
+  "entities": [
     {
-     "file": "block_triple_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      2,
-      0,
-      479,
-      809
-     ]
-    },
-    {
-     "file": "block_triple_f2.png",
-     "row": 1,
-     "col": 0,
-     "bbox": [
-      0,
-      809,
-      483,
-      650
-     ]
+      "name": "level1",
+      "anim": "block_triple",
+      "frames": [
+        {
+          "file": "block_triple_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            2,
+            0,
+            479,
+            809
+          ],
+          "offset": {
+            "x": 239.5,
+            "y": -404.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "block_triple_f2.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            809,
+            483,
+            650
+          ],
+          "offset": {
+            "x": 241.5,
+            "y": -325
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/levels/level1",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 18,
+        "y": -638,
+        "w": 442,
+        "h": 630
+      },
+      "pivot": {
+        "x": 236,
+        "y": -400
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/levels/level1"
-  }
- ],
- "updated": "2026-10-21"
+  ],
+  "updated": "2026-10-21"
 }

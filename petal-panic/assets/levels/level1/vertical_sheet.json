@@ -1,32 +1,56 @@
 {
- "label": "levels",
- "file": "petal-panic/assets/levels/level1/vertical_sheet.png",
- "rows": 1,
- "cols": 1,
- "size": "820x1875",
- "description": "Vertical scroll level 1 (Big Top)",
- "entities": [
-  {
-   "name": "level1",
-   "anim": "vertical",
-   "frames": [
+  "label": "levels",
+  "file": "petal-panic/assets/levels/level1/vertical_sheet.png",
+  "rows": 1,
+  "cols": 1,
+  "size": "820x1875",
+  "description": "Vertical scroll level 1 (Big Top)",
+  "entities": [
     {
-     "file": "vertical_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      820,
-      1875
-     ]
+      "name": "level1",
+      "anim": "vertical",
+      "frames": [
+        {
+          "file": "vertical_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            820,
+            1875
+          ],
+          "offset": {
+            "x": 410,
+            "y": -937.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/levels/level1",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 4,
+        "y": -1871,
+        "w": 812,
+        "h": 1867
+      },
+      "pivot": {
+        "x": 410,
+        "y": -937
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/levels/level1"
-  }
- ],
- "crop": {
-  "pass": "/tmp/reg3-vertical_level1-v1"
- },
- "kind": "tile_variant"
+  ],
+  "crop": {
+    "pass": "/tmp/reg3-vertical_level1-v1"
+  },
+  "kind": "tile_variant"
 }

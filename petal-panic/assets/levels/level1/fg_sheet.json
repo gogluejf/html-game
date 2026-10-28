@@ -1,32 +1,56 @@
 {
- "label": "levels",
- "file": "petal-panic/assets/levels/level1/fg_sheet.png",
- "rows": 1,
- "cols": 1,
- "size": "2171x287",
- "description": "Foreground strip level 1 (Big Top)",
- "entities": [
-  {
-   "name": "level1",
-   "anim": "fg",
-   "frames": [
+  "label": "levels",
+  "file": "petal-panic/assets/levels/level1/fg_sheet.png",
+  "rows": 1,
+  "cols": 1,
+  "size": "2171x287",
+  "description": "Foreground strip level 1 (Big Top)",
+  "entities": [
     {
-     "file": "fg_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      2171,
-      287
-     ]
+      "name": "level1",
+      "anim": "fg",
+      "frames": [
+        {
+          "file": "fg_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            2171,
+            287
+          ],
+          "offset": {
+            "x": 1085.5,
+            "y": -143.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/levels/level1",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 0,
+        "y": -181,
+        "w": 2163,
+        "h": 175
+      },
+      "pivot": {
+        "x": 1082,
+        "y": -139
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/levels/level1"
-  }
- ],
- "crop": {
-  "pass": "/tmp/reproc-fg_level1-v1"
- },
- "kind": "tile_variant"
+  ],
+  "crop": {
+    "pass": "/tmp/reproc-fg_level1-v1"
+  },
+  "kind": "tile_variant"
 }

@@ -1,32 +1,56 @@
 {
- "label": "objects",
- "file": "petal-panic/assets/objects/barrel/explosion_sheet.png",
- "rows": 1,
- "cols": 1,
- "size": "322x495",
- "description": "Bomb barrel prop with lit fuse (single image)",
- "entities": [
-  {
-   "name": "barrel",
-   "anim": "explosion",
-   "frames": [
+  "label": "objects",
+  "file": "petal-panic/assets/objects/barrel/explosion_sheet.png",
+  "rows": 1,
+  "cols": 1,
+  "size": "322x495",
+  "description": "Bomb barrel prop with lit fuse (single image)",
+  "entities": [
     {
-     "file": "explosion_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      322,
-      495
-     ]
+      "name": "barrel",
+      "anim": "explosion",
+      "frames": [
+        {
+          "file": "explosion_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            322,
+            495
+          ],
+          "offset": {
+            "x": 161,
+            "y": -247.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "frames_dir": "petal-panic/assets/objects/barrel",
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": 0,
+        "y": -387,
+        "w": 324,
+        "h": 387
+      },
+      "pivot": {
+        "x": 157,
+        "y": -243
+      },
+      "markers": []
     }
-   ],
-   "frames_dir": "petal-panic/assets/objects/barrel"
-  }
- ],
- "crop": {
-  "pass": "/tmp/redo-single"
- },
- "kind": "entity_variant"
+  ],
+  "crop": {
+    "pass": "/tmp/redo-single"
+  },
+  "kind": "entity_variant"
 }
