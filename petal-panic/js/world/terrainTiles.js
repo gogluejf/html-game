@@ -7,15 +7,15 @@
 //   - frame selection: 75% "best" frame (platform f4 / block f2), 25% random
 //     (platform f1–f3 / block f1) — rolled from a per-solid seeded stream so
 //     choices are stable across death/Continue (lifecycle.md §6)
-//   - uniform scale per tile (§4): target row height / source bbox height
 //
 // Deterministic: same (solid, level, seed) → same tiles, every time.
-// Sheets parse lazily on first use; images load via loadTerrainFrames().
+// Asset loading (sheet JSON + frame PNGs) lives in levelAssets.js — this
+// module only decides WHICH tile goes WHERE and reads loaded frames back.
 
 import { UNIT_PX_X, UNIT_PX_Y } from './macros.js';
 import { createRng } from './terrain.js';
-import { parseSheet } from '../core/spriteData.js';
-import { loadFrames } from '../core/frameLoader.js';
+import { loadLevelAsset, getLevelAsset } from './levelAssets.js';
+import { Entity } from '../core/entity.js';
 
 // --- Frame selection (terrain-tiling.md §Frame selection) ----------------------
 const BEST_FRAME_WEIGHT = 0.75;
@@ -27,79 +27,9 @@ const RANDOM_POOL = { platform: [0, 1, 2], block: [0] };
 /** Width variants in descending order (longest first). */
 const WIDTH_VARIANTS = [3, 2, 1]; // triple, double, single
 
-// --- Sheet cache ----------------------------------------------------------------
-// key `${level}:${kind}:${variant}` → { data: SpriteData, baseDir, animName }
-const sheetCache = new Map();
-// key `${level}:${kind}` → Promise<Map<file, Image>>
-const frameJobs = new Map();
-
-function variantName(v) { return v === 1 ? 'single' : v === 2 ? 'double' : 'triple'; }
-
-/**
- * Parse (and cache) one terrain sheet. Synchronous once fetched; the fetch
- * itself is async — callers await ensureTerrainSheet() before tiling.
- */
-export async function ensureTerrainSheet(level, kind, variant) {
-  const key = `${level}:${kind}:${variant}`;
-  let entry = sheetCache.get(key);
-  if (!entry) {
-    const file = `assets/levels/level${level}/${kind}_${variantName(variant)}_sheet.json`;
-    entry = { file, baseDir: null, data: null, animName: null };
-    sheetCache.set(key, entry);
-  }
-  if (entry.data) return entry;
-  const url = new URL(`../../${entry.file}`, import.meta.url).href;
-  let json;
-  if (url.startsWith('file:') || typeof fetch === 'undefined') {
-    const { readFile } = await import('node:fs/promises');
-    const { fileURLToPath } = await import('node:url');
-    json = JSON.parse(await readFile(fileURLToPath(url), 'utf8'));
-  } else {
-    json = await (await fetch(url)).json();
-  }
-  entry.data = parseSheet(json);
-  entry.animName = Object.keys(entry.data.anims)[0];
-  entry.baseDir = new URL(`../../${entry.file}`, import.meta.url).href.replace(/_sheet\.json$/, '');
-  return entry;
-}
-
-/** Flat image cache for synchronous render-loop lookups: `${level}:${kind}:${file}` → Image. */
-const imageCache = new Map();
-
-/**
- * Load all terrain frames for a level+kind (shared job, cached).
- * @returns {Promise<Map<string, HTMLImageElement>>} file → image
- */
+/** Kick off (or join) the asset load for a terrain kind. Fire-and-forget. */
 export function loadTerrainFrames(level, kind) {
-  const key = `${level}:${kind}`;
-  if (!frameJobs.has(key)) {
-    const job = (async () => {
-      const entries = await Promise.all([1, 2, 3].map((v) => ensureTerrainSheet(level, kind, v)));
-      // Merge the three sheets into one SpriteData for a single loadFrames call.
-      const merged = parseSheet(entries.map((e) => ({
-        entities: [{
-          name: e.animName,
-          anim: e.animName,
-          frames: e.data.anims[e.animName].frames.map((f) => ({
-            file: f.file, bbox: [f.bbox.x, f.bbox.y, f.bbox.w, f.bbox.h],
-          })),
-        }],
-      })));
-      const imgs = await loadFrames(merged, entries[0].baseDir);
-      // Mirror into the flat cache for synchronous render-loop lookups.
-      for (const [file, img] of imgs) imageCache.set(`${level}:${kind}:${file}`, img);
-      return imgs;
-    })().catch((e) => {
-      console.warn(`[terrain-tiles] ${key} frames failed to load`, e);
-      // Evict the poisoned entry so the NEXT frame retries. Keeping a rejected
-      // promise cached forever blacked out terrain for the whole session once
-      // a load missed (the barrel-drawing bug class).
-      frameJobs.delete(key);
-      return new Map();
-    });
-    frameJobs.set(key, job);
-  }
-  return frameJobs.get(key);
+  return loadLevelAsset(level, kind);
 }
 
 // --- Tiling ---------------------------------------------------------------------
@@ -131,8 +61,6 @@ function pickFrame(rng, kind, frameCount) {
 
 /**
  * Tile one solid/platform AABB into draw commands (WORLD coordinates).
- * Sheets must already be parsed (call ensureTerrainSheet for each variant, or
- * just await loadTerrainFrames(level, kind) which parses all three).
  *
  * @param {{x:number,y:number,w:number,h:number,oneWay?:boolean}} s world-px box
  * @param {number} level 1-based level index
@@ -150,6 +78,9 @@ export function tileSolid(s, level, seed) {
 
   const widths = decompose(wUnits);
   const rows = kind === 'block' ? decompose(hUnits) : [1];
+  const asset = getLevelAsset(level, kind);
+  const anim = asset?.data?.anims[asset.animName];
+  const frameCount = anim?.frames.length ?? (kind === 'platform' ? 4 : 2);
 
   const tiles = [];
   let rowY = s.y + s.h; // bottom edge (screen coords: y grows down)
@@ -159,13 +90,10 @@ export function tileSolid(s, level, seed) {
     let colX = s.x;
     for (let c = 0; c < widths.length; c++) {
       const variant = widths[c];
-      const entry = sheetCache.get(`${level}:${kind}:${variant}`);
-      const anim = entry?.data?.anims[entry.animName];
-      const frameCount = anim?.frames.length ?? (kind === 'platform' ? 4 : 2);
       const frame = pickFrame(rng, kind, frameCount);
       // imgKey: resolved from the parsed sheet when available; otherwise a
       // deterministic placeholder that getTerrainFrameImage() can match once
-      // the sheet lands (frame file names follow the <kind>_<variant>_f<N>.png
+      // the asset lands (frame file names follow the <kind>_<variant>_f<N>.png
       // convention — see assets/levels/).
       let imgKey = null;
       if (anim) {
@@ -196,14 +124,13 @@ export function tileSolid(s, level, seed) {
 /**
  * Convenience: ensure sheets are parsed, compute tiles, kick off frame loading.
  * Tiles carry imgKey immediately (from parsed sheets); the image MAP fills in
- * when loadTerrainFrames() settles — the render loop skips tiles whose image
+ * when the asset load settles — the render loop skips tiles whose image
  * isn't loaded yet.
  *
  * @returns {Promise<Array>} tiles (same shape as tileSolid)
  */
 export async function buildTerrainTiles(s, level, seed) {
-  const kind = s.oneWay ? 'platform' : 'block';
-  await loadTerrainFrames(level, kind); // parses all 3 variants + loads images
+  await loadTerrainFrames(level, s.oneWay ? 'platform' : 'block');
   return tileSolid(s, level, seed);
 }
 
@@ -213,9 +140,8 @@ export async function buildTerrainTiles(s, level, seed) {
 // fg_sheet.json, target height 1 Y-unit, tile=true so drawSprite() repeats the
 // frame across the span. Floors NEVER get block tiles — kind='floor' routes
 // them here instead of through tileSolid().
-import { Entity } from '../core/entity.js';
 
-/** @type {Map<number, Entity>} level → floor entity (rebuilt when width changes) */
+/** @type {Map<number, Entity>} level → floor entity (rebuilt when rect changes) */
 const floorEntities = new Map();
 
 /**
@@ -224,7 +150,7 @@ const floorEntities = new Map();
  * scaling follows the uniform collision-box rule (§4) like every other entity.
  * @param {{x:number,y:number,w:number,h:number}} s the floor solid (world px)
  * @param {number} level 1-based level index
- * @returns {Entity|null} null until the fg frames have loaded
+ * @returns {Entity}
  */
 export function getFloorEntity(s, level) {
   let e = floorEntities.get(level);
@@ -233,35 +159,14 @@ export function getFloorEntity(s, level) {
     e.sprite = { anchor: 'bottom-center', tile: true, anims: {}, frames: new Map() };
     floorEntities.set(level, e);
   }
-  // Lazy sheet parse + frame load (fire-and-forget; cached).
-  const key = `${level}:fg`;
-  if (!frameJobs.has(key)) {
-    frameJobs.set(key, (async () => {
-      const url = new URL(`../../assets/levels/level${level}/fg_sheet.json`, import.meta.url).href;
-      let json;
-      if (url.startsWith('file:') || typeof fetch === 'undefined') {
-        const { readFile } = await import('node:fs/promises');
-        const { fileURLToPath } = await import('node:url');
-        json = JSON.parse(await readFile(fileURLToPath(url), 'utf8'));
-      } else {
-        json = await (await fetch(url)).json();
-      }
-      const data = parseSheet(json);
-      const animName = Object.keys(data.anims)[0];
-      const baseDir = new URL(`../../assets/levels/level${level}/`, import.meta.url).href;
-      const imgs = await loadFrames(data, baseDir);
-      for (const [file, img] of imgs) imageCache.set(`${level}:fg:${file}`, img);
-      e.sprite.anims = data.anims;
-      e.sprite.frames = imgs;
-      e.setAnim(animName); // scale = ZONE_FLOOR_H / fg collision box h (§4)
-      return imgs;
-    })().catch((err) => {
-      console.warn('[terrain-tiles] fg frames failed to load', err);
-      // Evict so the next frame retries (see loadTerrainFrames catch).
-      frameJobs.delete(key);
-      return new Map();
-    }));
-  }
+  // Wire sprite data once the shared fg asset has settled (fire-and-forget;
+  // the loader retries on failure — see levelAssets.js).
+  loadLevelAsset(level, 'fg').then(({ data, animName, frames }) => {
+    if (!data || e !== floorEntities.get(level)) return; // stale or failed
+    e.sprite.anims = data.anims;
+    e.sprite.frames = frames;
+    e.setAnim(animName); // scale = ZONE_FLOOR_H / fg collision box h (§4)
+  });
   return e;
 }
 
@@ -281,6 +186,6 @@ export function drawFloor(ctx, s, level) {
  */
 export function getTerrainFrameImage(level, kind, file) {
   if (!file) return null;
-  const img = imageCache.get(`${level}:${kind}:${file}`);
+  const img = getLevelAsset(level, kind)?.frames?.get(file);
   return img && img.complete && img.naturalWidth > 0 ? img : null;
 }

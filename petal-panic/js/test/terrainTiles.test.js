@@ -4,7 +4,7 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
-import { decompose, tileSolid, buildTerrainTiles, ensureTerrainSheet } from '../world/terrainTiles.js';
+import { decompose, tileSolid, buildTerrainTiles, loadTerrainFrames } from '../world/terrainTiles.js';
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 
 // --- Width decomposition (longest-first) ---------------------------------------
@@ -28,7 +28,7 @@ test('decompose: rejects non-positive / non-integer', () => {
 
 // --- Tiling geometry -------------------------------------------------------------
 test('tileSolid: 1x1 block → one triple-free single tile at full size', async () => {
-  await ensureTerrainSheet(1, 'block', 1);
+  await loadTerrainFrames(1, 'block');
   const s = { x: 0, y: 100, w: UNIT_PX_X, h: UNIT_PX_Y, oneWay: false };
   const tiles = tileSolid(s, 1, 42);
   assert.equal(tiles.length, 1);
@@ -43,7 +43,7 @@ test('tileSolid: 1x1 block → one triple-free single tile at full size', async 
 });
 
 test('tileSolid: 7-unit platform → triple+triple+single left-to-right', async () => {
-  await Promise.all([1, 2, 3].map((v) => ensureTerrainSheet(1, 'platform', v)));
+  await loadTerrainFrames(1, 'platform');
   const s = { x: 0, y: 200, w: 7 * UNIT_PX_X, h: UNIT_PX_Y, oneWay: true };
   const tiles = tileSolid(s, 1, 42);
   assert.deepEqual(tiles.map((t) => t.variant), [3, 3, 1]);
@@ -58,7 +58,7 @@ test('tileSolid: 7-unit platform → triple+triple+single left-to-right', async 
 });
 
 test('tileSolid: 4-tall block stacks rows bottom-up ([3,1] longest-first)', async () => {
-  await Promise.all([1, 2, 3].map((v) => ensureTerrainSheet(1, 'block', v)));
+  await loadTerrainFrames(1, 'block');
   const s = { x: 0, y: 0, w: UNIT_PX_X, h: 4 * UNIT_PX_Y, oneWay: false };
   const tiles = tileSolid(s, 1, 42);
   assert.equal(tiles.length, 2); // rows [3,1] × 1 column
@@ -70,7 +70,7 @@ test('tileSolid: 4-tall block stacks rows bottom-up ([3,1] longest-first)', asyn
 });
 
 test('tileSolid: deterministic per seed (same seed → same frames)', async () => {
-  await Promise.all([1, 2, 3].map((v) => ensureTerrainSheet(1, 'platform', v)));
+  await loadTerrainFrames(1, 'platform');
   const s = { x: 100, y: 300, w: 5 * UNIT_PX_X, h: UNIT_PX_Y, oneWay: true };
   const a = tileSolid(s, 1, 1234);
   const b = tileSolid(s, 1, 1234);
@@ -78,7 +78,7 @@ test('tileSolid: deterministic per seed (same seed → same frames)', async () =
 });
 
 test('tileSolid: different seeds can differ (frame variety)', async () => {
-  await Promise.all([1, 2, 3].map((v) => ensureTerrainSheet(1, 'platform', v)));
+  await loadTerrainFrames(1, 'platform');
   const s = { x: 100, y: 300, w: 9 * UNIT_PX_X, h: UNIT_PX_Y, oneWay: true };
   const a = tileSolid(s, 1, 111).map((t) => t.frame);
   const b = tileSolid(s, 1, 222).map((t) => t.frame);
@@ -89,8 +89,8 @@ test('tileSolid: different seeds can differ (frame variety)', async () => {
 });
 
 test('tileSolid: frame picks respect kind pools (block f1/f2 only, platform f1–f4)', async () => {
-  await Promise.all([1, 2, 3].map((v) => ensureTerrainSheet(1, 'block', v)));
-  await Promise.all([1, 2, 3].map((v) => ensureTerrainSheet(1, 'platform', v)));
+  await loadTerrainFrames(1, 'block');
+  await loadTerrainFrames(1, 'platform');
   const bs = { x: 0, y: 0, w: 9 * UNIT_PX_X, h: 3 * UNIT_PX_Y, oneWay: false };
   const ps = { x: 0, y: 0, w: 9 * UNIT_PX_X, h: UNIT_PX_Y, oneWay: true };
   for (const t of tileSolid(bs, 1, 7)) assert.ok(t.frame <= 1, `block frame ${t.frame}`);

@@ -19,26 +19,26 @@ import { gameplaySurfaceBounds } from '../core/layout.js';
 /** Background drift speed relative to the camera (higher = slower drift). */
 export const BG_PARALLAX_DIVISOR = 4;
 
-/** Cache of loaded bg images keyed by asset path. */
-const bgImages = new Map();
 
 /**
  * Get (and lazily load) a background image for a level + orientation.
+ * Rides the shared level-assets pipeline (levelAssets.js): the sheet JSON is
+ * parsed there and its single frame file resolved; we only track readiness.
  * @param {number} level 1-based level index (assets live under assets/levels/levelN/)
  * @param {'horizontal'|'vertical'} orientation which sheet variant to use
  * @returns {HTMLImageElement|null} null when no DOM / not yet complete
  */
 export function getBgImage(level, orientation) {
   if (typeof Image === 'undefined') return null; // node tests
-  const file = orientation === 'vertical' ? 'vertical_f1.png' : 'bg_f1.png';
-  const path = `../../assets/levels/level${level}/${file}`;
-  let img = bgImages.get(path);
-  if (!img) {
-    img = new Image();
-    img.src = new URL(path, import.meta.url).href;
-    bgImages.set(path, img);
+  const name = orientation === 'vertical' ? 'vertical' : 'bg';
+  const asset = getLevelAsset(level, name);
+  const frames = asset?.frames;
+  if (!frames || frames.size === 0) {
+    loadLevelAsset(level, name); // kick off (fire-and-forget; cached)
+    return null;
   }
-  return (img.complete && img.naturalWidth > 0) ? img : null;
+  const img = frames.values().next().value;
+  return (img && img.complete && img.naturalWidth > 0) ? img : null;
 }
 
 /**
