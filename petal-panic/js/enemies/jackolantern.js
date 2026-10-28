@@ -24,7 +24,8 @@ export const JACKO_DEF = {
   w: 40, h: 40,
   aggroRadius: 400,             // rolls once the hero gets this close
   stats: {
-    weight: 1, speed: 150 / 72,  // X-units/s (exactly 150 px/s at current unit) attack: 22, defense: 0, stamina: 30,
+    weight: 1, speed: 150 / 72,  // X-units/s (exactly 150 px/s at current unit)
+    attack: 22, defense: 0, stamina: 30,
     mjump: 0,
     melee: false, projectile: false, fly: false,
   },

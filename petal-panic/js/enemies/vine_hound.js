@@ -22,7 +22,8 @@ export const VINE_HOUND_DEF = {
   w: 40, h: 44,
   aggroRadius: 320,
   stats: {
-    weight: 1, speed: 180 / 72,  // X-units/s (exactly 180 px/s at current unit) attack: 18, defense: 1, stamina: 35,
+    weight: 1, speed: 180 / 72,  // X-units/s (exactly 180 px/s at current unit)
+    attack: 18, defense: 1, stamina: 35,
     mjump: 0,
     melee: true, projectile: false, fly: false,
   },

@@ -24,7 +24,8 @@ export const VIOLETTA_DEF = {
   w: 36, h: 50,
   aggroRadius: 340,
   stats: {
-    weight: 1, speed: 90 / 72,   // X-units/s (exactly 90 px/s at current unit) attack: 14, defense: 2, stamina: 45,
+    weight: 1, speed: 90 / 72,  // X-units/s (exactly 90 px/s at current unit)
+    attack: 14, defense: 2, stamina: 45,
     mjump: 0,
     melee: true, projectile: true, fly: false,
   },
