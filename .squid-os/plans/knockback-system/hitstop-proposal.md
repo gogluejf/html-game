@@ -3,6 +3,11 @@
 Status: **PROPOSAL — not in the current knockback plan.** Captured so the idea is not lost.
 Revisit only after the core knockback system ships and we have played it.
 
+> **Superseded/activated by** `.squid-os/plans/dash-combo-hitstop/HANDOFF.md` Part B,
+> which activates this proposal with a concrete implementation spec (module, loop
+> integration, scoped call sites incl. boss dash-combos). This file remains as the
+> design rationale; the HANDOFF is the execution brief.
+
 ---
 
 ## What hit-stop is
@@ -31,6 +36,13 @@ shake says *something big happened*. Only the freeze says *it landed with weight
 - **Sweep / cartwheel:** on the single connect frame only. One decisive commit = one stop.
 - **Supermove:** potentially on *each* connect if the super becomes a multi-hit combo
   sequence later (multiple hitboxes over time). That is a future design direction, not v1.
+- **Dash combos (`dashCombo` macro):** on the FINISHER freeze connect only — NOT per
+  segment. The macro is generic, so this covers both hero and boss usage:
+  - Boss dash-combo hitting the player → full stop (~5 frames). This is the
+    "boss attack landed with weight" money shot; bosses are expected to use the
+    `dashCombo` macro directly from their AI.
+  - Player hitting a boss mid-combo (punish attempt) → NO or 2–3 frames max, so the
+    boss's combo stays readable and spectacle doesn't become noise.
 
 ## Why it is deferred (honest reasoning)
 

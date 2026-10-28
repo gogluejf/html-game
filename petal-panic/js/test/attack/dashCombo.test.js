@@ -3,7 +3,7 @@
 
 import { strict as assert } from 'node:assert';
 import '../../effects/registry.js'; // side effect: registers afterimage/sprite-shake/hit-sparkle
-import { clampDashDirection, normalizeSegment, segmentHitboxBox } from '../../combat/attack/macros/dashCombo.js';
+import { resolveDashDirection, normalizeSegment, segmentHitboxBox } from '../../combat/attack/macros/dashCombo.js';
 import { invoke } from '../../combat/attack/engine.js';
 import { makeContext } from '../../combat/attack/context.js';
 import { LAYER } from '../../consts.js';
@@ -44,11 +44,12 @@ const SEGS = [
   { frame: 'c', speed: 520, duration: 0.16, freezeFrames: 0.14, hitbox: { w: 56, h: 48, offset: { x: 38, y: 0 } }, damage: 18, knockback: { base: 260, scaleBySpeed: 1.0, hitstun: 0.3, dirMode: 'fromAttacker' }, shove: 0.6 },
 ];
 
-ok('direction clamps to horizontal only', () => {
-  assert.equal(clampDashDirection(0), 0);
-  assert.equal(clampDashDirection(Math.PI / 2), 0);   // up → right (cos >= 0)
-  assert.equal(clampDashDirection(Math.PI), Math.PI);
-  assert.equal(clampDashDirection(-Math.PI / 3), 0);  // up-right → right (cos > 0)
+ok('direction is a full 0–2π param (no clamping, same contract as charge)', () => {
+  assert.equal(resolveDashDirection(0), 0);
+  assert.ok(Math.abs(resolveDashDirection(Math.PI / 2) - Math.PI / 2) < 1e-9); // up stays up
+  assert.equal(resolveDashDirection(Math.PI), Math.PI);
+  assert.ok(Math.abs(resolveDashDirection(-Math.PI / 3) + Math.PI / 3) < 1e-9); // up-right stays up-right
+  assert.equal(resolveDashDirection(NaN), 0); // invalid → default right
 });
 
 ok('segment normalization fills defaults', () => {

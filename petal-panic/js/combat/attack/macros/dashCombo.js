@@ -49,7 +49,7 @@ import { getPrimitive, getMacro } from '../registry.js';
 
 const DEFAULTS = Object.freeze({
   segments: null,       // REQUIRED — [{ frame, speed, duration, distance?, freezeFrames, hitbox, damage, knockback?, shove? }]
-  direction: 0,         // radians; horizontal only (clamp to 0 or π)
+  direction: 0,         // radians; full 0–2π (same contract as charge/Movement)
   startup: 0.2,         // s before the first segment moves (commitment tell)
   recovery: 0.4,        // ONE window after the last freeze (punish zone)
   team: 'ally',         // who the freeze hitboxes hurt
@@ -58,9 +58,10 @@ const DEFAULTS = Object.freeze({
   shakeStyle: null,     // victim sprite-shake override (amount scales w/ segmentIndex)
 });
 
-/** Horizontal-only clamp: 0 (right) or π (left). */
-export function clampDashDirection(rad) {
-  return Math.cos(rad) < 0 ? Math.PI : 0;
+/** Dash direction: radians, full 0–2π (same contract as the Movement
+ * primitive / charge). No clamping — the caller owns the angle. */
+export function resolveDashDirection(rad) {
+  return Number.isFinite(rad) ? rad : 0;
 }
 
 /** Per-segment defaults (merged over caller data). */
@@ -108,7 +109,7 @@ defineMacro('dashCombo', {
     ],
     params: [
       { key: 'segments', desc: 'timeline: [{ frame, speed, duration, distance?, freezeFrames, hitbox, damage, knockback?, shove? }]' },
-      { key: 'direction', desc: 'dash direction (radians; clamped horizontal)' },
+      { key: 'direction', desc: 'dash direction (radians, full 0–2π — same contract as charge/Movement)' },
       { key: 'startup', desc: 's before the first segment moves (commitment tell)' },
       { key: 'recovery', desc: 'ONE punish window after the last freeze (s)' },
       { key: 'team', desc: 'who the freeze hitboxes hurt' },
@@ -118,8 +119,10 @@ defineMacro('dashCombo', {
   },
   impl(params, ctx) {
     const p = { ...DEFAULTS, ...params };
-    const dir = clampDashDirection(p.direction);
-    const sign = Math.cos(dir); // +1 right, -1 left
+    const dir = resolveDashDirection(p.direction);
+    const dx = Math.cos(dir); // unit direction vector (full 0–2π)
+    const dy = Math.sin(dir);
+    const sign = dx >= 0 ? 1 : -1; // horizontal shove/knockback component
     const segs = (Array.isArray(p.segments) && p.segments.length > 0 ? p.segments : [{}]).map(normalizeSegment);
     const lastIdx = segs.length - 1;
 
@@ -138,7 +141,8 @@ defineMacro('dashCombo', {
       hbFrame: 0,
       done: false,
       broken: false,
-      dir: sign, // dash direction (+1 right, -1 left) — for host knockback routing
+      dir: sign, // dash horizontal component (+1 right, -1 left) — for host knockback routing
+      angle: dir, // full dash direction (radians) — host/tests can read the real vector
     };
 
     // Gravity hold (§13 defyGravity): while the timeline runs the host
@@ -151,8 +155,8 @@ defineMacro('dashCombo', {
       const fin = segs[lastIdx];
       const a = ctx.attacker;
       if (!a || typeof a.vx !== 'number') return;
-      a.vx = sign * fin.speed;
-      a.vy = 0;
+      a.vx = dx * fin.speed;
+      a.vy = dy * fin.speed;
       a.dashDefyingGravity = false;
     };
 
@@ -219,8 +223,8 @@ defineMacro('dashCombo', {
       const seg = segs[s.segmentIndex];
       const a = ctx.attacker;
       const dist = seg.speed * dt;
-      a.x += sign * dist;
-      a.vy = 0; // hold altitude (host gravity suspended while dashDefyingGravity)
+      a.x += dx * dist;
+      a.y += dy * dist;
 
       // Feed the afterimage trail with the attacker origin each frame.
       if (aiInst && !aiInst.done && typeof aiInst.body?.addGhost === 'function') {

@@ -166,6 +166,19 @@ Rules:
 | Special melee (sweep/cartwheel) | 5 | the single connect frame (hero.js specialMelee active→hit) |
 | Dash combo FINISHER (§13 last freeze) | 5 | that freeze's connect frame only — NOT per segment |
 | Supermove | 5 | its connect frame (wire when supermove lands; leave a TODO marker) |
+| **Boss dash-combo finisher** | 5 | boss-originated `dashCombo` last-freeze connect on the HERO (e.g. Tusko Wobble charge). Same call site as the hero row — it fires from the macro's connect path, so origin doesn't matter; just don't gate it to hero-only. This is the "boss hit landed with weight" money shot. |
+
+### Boss usage note (design intent)
+
+The `dashCombo` macro is generic and bosses are expected to use it directly from
+their AI once wired in. Hit-stop scarcity rules still apply:
+
+- **Boss combo hitting the player → YES, full 5 frames.** The freeze + knockback
+  launch is what makes a boss attack feel dangerous rather than just fast.
+- **Player hitting a boss mid-combo (punish attempt) → NO or 2–3 frames max.**
+  Freezing on every whiff-punish would break the boss's combo readability and
+  turn spectacle into noise. Default: no hit-stop for player-side connects on a
+  boss that is itself mid-dashCombo timeline.
 
 Explicitly NOT: basic melee, projectiles, bombs, stomps, explosions (they have
 their own juice channels; stacking = noise). If per-segment dash stops ever get
