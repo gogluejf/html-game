@@ -1,0 +1,73 @@
+{
+ "file": "petal-panic/assets/enemies/furnace/shoot_sheet.png",
+ "size": "2169x585",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "furnace shoot (5 frames) \u2014 fire breath attack",
+ "entities": [
+  {
+   "name": "furnace",
+   "anim": "shoot",
+   "frames_dir": "petal-panic/assets/enemies/furnace",
+   "frames": [
+    {
+     "file": "shoot_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      408,
+      585
+     ]
+    },
+    {
+     "file": "shoot_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      408,
+      33,
+      385,
+      518
+     ]
+    },
+    {
+     "file": "shoot_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      793,
+      14,
+      384,
+      556
+     ]
+    },
+    {
+     "file": "shoot_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1177,
+      10,
+      486,
+      565
+     ]
+    },
+    {
+     "file": "shoot_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1663,
+      5,
+      506,
+      574
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-28"
+}

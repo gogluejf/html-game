@@ -1,0 +1,128 @@
+{
+ "file": "petal-panic/assets/enemies/furnace/walk_sheet.png",
+ "size": "3666x362",
+ "rows": 1,
+ "cols": 10,
+ "kind": "animation",
+ "description": "furnace walk (10 frames) \u2014 walking cycle",
+ "entities": [
+  {
+   "name": "furnace",
+   "anim": "walk",
+   "frames_dir": "petal-panic/assets/enemies/furnace",
+   "frames": [
+    {
+     "file": "walk_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      340,
+      362
+     ]
+    },
+    {
+     "file": "walk_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      340,
+      1,
+      425,
+      359
+     ]
+    },
+    {
+     "file": "walk_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      765,
+      0,
+      323,
+      362
+     ]
+    },
+    {
+     "file": "walk_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1088,
+      0,
+      344,
+      362
+     ]
+    },
+    {
+     "file": "walk_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1432,
+      0,
+      320,
+      362
+     ]
+    },
+    {
+     "file": "walk_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1752,
+      1,
+      364,
+      360
+     ]
+    },
+    {
+     "file": "walk_f7.png",
+     "row": 0,
+     "col": 6,
+     "bbox": [
+      2116,
+      3,
+      352,
+      356
+     ]
+    },
+    {
+     "file": "walk_f8.png",
+     "row": 0,
+     "col": 7,
+     "bbox": [
+      2468,
+      6,
+      417,
+      350
+     ]
+    },
+    {
+     "file": "walk_f9.png",
+     "row": 0,
+     "col": 8,
+     "bbox": [
+      2885,
+      0,
+      354,
+      362
+     ]
+    },
+    {
+     "file": "walk_f10.png",
+     "row": 0,
+     "col": 9,
+     "bbox": [
+      3239,
+      2,
+      427,
+      357
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-28"
+}
