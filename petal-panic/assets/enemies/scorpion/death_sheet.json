@@ -1,77 +1,73 @@
 {
-  "file": "petal-panic/assets/enemies/scorpion/death_sheet.png",
-  "size": "2120x450",
-  "rows": 1,
-  "cols": 5,
-  "kind": "animation",
-  "description": "scorpion death (5f)",
-  "entities": [
+ "file": "petal-panic/assets/enemies/scorpion/death_sheet.png",
+ "size": "2121x450",
+ "rows": 1,
+ "cols": 5,
+ "kind": "animation",
+ "description": "scorpion death (5f)",
+ "entities": [
+  {
+   "name": "scorpion",
+   "anim": "death",
+   "frames_dir": "petal-panic/assets/enemies/scorpion",
+   "frames": [
     {
-      "name": "scorpion",
-      "anim": "death",
-      "frames_dir": "petal-panic/assets/enemies/scorpion",
-      "frames": [
-        {
-          "file": "death_f1.png",
-          "row": 0,
-          "col": 0,
-          "bbox": [
-            0,
-            17,
-            405,
-            416
-          ]
-        },
-        {
-          "file": "death_f2.png",
-          "row": 0,
-          "col": 1,
-          "bbox": [
-            405,
-            0,
-            784,
-            450
-          ]
-        },
-        {
-          "file": "death_f3.png",
-          "row": 0,
-          "col": 2,
-          "bbox": [
-            1189,
-            57,
-            433,
-            336
-          ]
-        },
-        {
-          "file": "death_f4.png",
-          "row": 0,
-          "col": 3,
-          "bbox": [
-            1622,
-            203,
-            40,
-            43
-          ]
-        },
-        {
-          "file": "death_f5.png",
-          "row": 0,
-          "col": 4,
-          "bbox": [
-            1662,
-            113,
-            458,
-            224
-          ]
-        }
-      ]
+     "file": "death_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      17,
+      405,
+      416
+     ]
+    },
+    {
+     "file": "death_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      405,
+      0,
+      380,
+      450
+     ]
+    },
+    {
+     "file": "death_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      785,
+      27,
+      437,
+      396
+     ]
+    },
+    {
+     "file": "death_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1222,
+      57,
+      437,
+      336
+     ]
+    },
+    {
+     "file": "death_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1659,
+      110,
+      462,
+      229
+     ]
     }
-  ],
-  "updated": "2026-10-27",
-  "crop": {
-    "frames_dir": "petal-panic/assets/enemies/scorpion",
-    "pass": "re-glued after rename"
+   ]
   }
+ ],
+ "updated": "2026-10-28"
 }
