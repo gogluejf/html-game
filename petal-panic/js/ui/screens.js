@@ -1965,11 +1965,15 @@ export const Pause = {
    * @param {object} [hero] the live hero (Save & Quit persists its run)
    */
   onAction(action, actions = {}, hero) {
-    // Back (○/Escape) ALWAYS exits the menu, regardless of focus.
-    if (action === 'back' || action === 'pause') {
+    // Back (○/Escape) ALWAYS exits the menu, regardless of focus. 'pause' is
+    // deliberately NOT an exit here: the gamepad Start button emits 'pause' on
+    // BOTH press and release, so treating it as back made releasing Start
+    // instantly resume the game (press to pause → release → back in play).
+    if (action === 'back') {
       if (tryTransition(S.PLAY)) console.log('[screens] PAUSE → PLAY (back)');
       return true;
     }
+    if (action === 'pause') return true; // consume: Start re-press/release is a no-op in the menu
     switch (action) {
       case 'up':
         this.focus = (this.focus + 4) % 5;
@@ -2555,7 +2559,12 @@ export function dispatchScreenInput(engine, hero, actions) {
     // G2: a screen that consumed the input generation (e.g. the credits
     // overlay dismissal) stops the batch here — remaining actions from the
     // SAME physical press (Escape emits both 'back' and 'pause') must not run.
-    if (!handled || consumedGeneration || engine.generation !== generation) break;
+    // NOTE: an UNHANDLED action does NOT break the batch — screens return
+    // false for actions they don't own (PLAY ignores 'back'), and Escape's
+    // sibling 'pause' edge must still reach its handler. Breaking on
+    // !handled is what starved keyboard Escape-to-pause (gamepad btn9 was
+    // unaffected: it emits 'pause' alone).
+    if (consumedGeneration || engine.generation !== generation) break;
   }
   consumedGeneration = false; // G2: batch done — clear so stale flag never leaks into next tick
 }
