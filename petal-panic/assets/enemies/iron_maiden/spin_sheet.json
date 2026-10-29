@@ -1,0 +1,116 @@
+{
+  "file": "petal-panic/assets/enemies/iron_maiden/spin_sheet.png",
+  "size": "3576x409",
+  "rows": 1,
+  "cols": 4,
+  "kind": "animation",
+  "description": "iron maiden spin (4 frames) \u2014 turnaround rotation",
+  "entities": [
+    {
+      "name": "iron_maiden",
+      "anim": "spin",
+      "frames_dir": "petal-panic/assets/enemies/iron_maiden",
+      "frames": [
+        {
+          "file": "spin_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            16,
+            1011,
+            376
+          ],
+          "offset": {
+            "x": 0,
+            "y": -188
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "spin_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            1011,
+            0,
+            725,
+            409
+          ],
+          "offset": {
+            "x": -65,
+            "y": -197
+          },
+          "scale": {
+            "sx": 0.932077897862069,
+            "sy": 0.9199215904645474
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "spin_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            1736,
+            20,
+            1015,
+            368
+          ],
+          "offset": {
+            "x": 0,
+            "y": -184
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "spin_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            2751,
+            2,
+            825,
+            404
+          ],
+          "offset": {
+            "x": 63,
+            "y": -188
+          },
+          "scale": {
+            "sx": 0.8622876237623764,
+            "sy": 0.8622876237623764
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "direction": "forward",
+      "collision": {
+        "x": -570,
+        "y": -369,
+        "w": 1035,
+        "h": 368
+      },
+      "pivot": {
+        "x": 0,
+        "y": -184
+      },
+      "markers": []
+    }
+  ],
+  "updated": "2026-10-28"
+}

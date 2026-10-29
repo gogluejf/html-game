@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/enemies/iron_maiden/glide_sheet.png",
+ "size": "1777x498",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "iron maiden glide (4 frames) \u2014 forward dash lunge",
+ "entities": [
+  {
+   "name": "iron_maiden",
+   "anim": "glide",
+   "frames_dir": "petal-panic/assets/enemies/iron_maiden",
+   "frames": [
+    {
+     "file": "glide_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      433,
+      497
+     ]
+    },
+    {
+     "file": "glide_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      433,
+      0,
+      424,
+      498
+     ]
+    },
+    {
+     "file": "glide_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      857,
+      5,
+      444,
+      487
+     ]
+    },
+    {
+     "file": "glide_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1301,
+      10,
+      476,
+      477
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-28"
+}

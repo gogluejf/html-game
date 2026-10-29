@@ -1,0 +1,84 @@
+{
+ "file": "petal-panic/assets/enemies/iron_maiden/thruster_sheet.png",
+ "size": "1959x682",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "iron maiden thruster (6 frames) \u2014 hovering jet-flame loop",
+ "entities": [
+  {
+   "name": "iron_maiden",
+   "anim": "thruster",
+   "frames_dir": "petal-panic/assets/enemies/iron_maiden",
+   "frames": [
+    {
+     "file": "thruster_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      288,
+      682
+     ]
+    },
+    {
+     "file": "thruster_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      288,
+      7,
+      326,
+      668
+     ]
+    },
+    {
+     "file": "thruster_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      614,
+      5,
+      348,
+      671
+     ]
+    },
+    {
+     "file": "thruster_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      962,
+      9,
+      360,
+      664
+     ]
+    },
+    {
+     "file": "thruster_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1322,
+      7,
+      330,
+      667
+     ]
+    },
+    {
+     "file": "thruster_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1652,
+      1,
+      307,
+      680
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-28"
+}

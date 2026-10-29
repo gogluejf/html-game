@@ -1,0 +1,62 @@
+{
+ "file": "petal-panic/assets/enemies/iron_maiden/idle_sheet.png",
+ "size": "1592x705",
+ "rows": 1,
+ "cols": 4,
+ "kind": "animation",
+ "description": "iron maiden idle (4 frames) \u2014 standing lineup micro-variations",
+ "entities": [
+  {
+   "name": "iron_maiden",
+   "anim": "idle",
+   "frames_dir": "petal-panic/assets/enemies/iron_maiden",
+   "frames": [
+    {
+     "file": "idle_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      0,
+      417,
+      705
+     ]
+    },
+    {
+     "file": "idle_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      417,
+      0,
+      406,
+      705
+     ]
+    },
+    {
+     "file": "idle_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      823,
+      0,
+      406,
+      704
+     ]
+    },
+    {
+     "file": "idle_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1229,
+      7,
+      363,
+      691
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-28"
+}
