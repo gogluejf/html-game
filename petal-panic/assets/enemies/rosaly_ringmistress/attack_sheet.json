@@ -4,7 +4,7 @@
   "rows": 2,
   "cols": 5,
   "kind": "animation",
-  "description": "rosaly_ringmistress attack (10 frames)",
+  "description": "rosaly_ringmistress attack (9 frames)",
   "entities": [
     {
       "name": "rosaly_ringmistress",
@@ -104,18 +104,7 @@
           "row": 1,
           "col": 3,
           "bbox": [
-            1381,
-            358,
-            354,
-            351
-          ]
-        },
-        {
-          "file": "attack_f10.png",
-          "row": 1,
-          "col": 4,
-          "bbox": [
-            2186,
+            1420,
             355,
             276,
             358
