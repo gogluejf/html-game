@@ -1,84 +1,73 @@
 {
- "file": "petal-panic/assets/enemies/furnace/heat_up_sheet.png",
- "size": "2192x538",
- "rows": 1,
- "cols": 6,
- "kind": "animation",
- "description": "furnace heat_up (6 frames) \u2014 furnace charging up",
- "entities": [
-  {
-   "name": "furnace",
-   "anim": "heat_up",
-   "frames_dir": "petal-panic/assets/enemies/furnace",
-   "frames": [
+  "file": "petal-panic/assets/enemies/furnace/heat_up_sheet.png",
+  "size": "2170x585",
+  "rows": 1,
+  "cols": 5,
+  "kind": "animation",
+  "description": "furnace heat_up (5 frames)",
+  "entities": [
     {
-     "file": "heat_up_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      364,
-      538
-     ]
-    },
-    {
-     "file": "heat_up_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      364,
-      1,
-      366,
-      535
-     ]
-    },
-    {
-     "file": "heat_up_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      730,
-      6,
-      366,
-      526
-     ]
-    },
-    {
-     "file": "heat_up_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1096,
-      4,
-      366,
-      529
-     ]
-    },
-    {
-     "file": "heat_up_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1462,
-      3,
-      366,
-      532
-     ]
-    },
-    {
-     "file": "heat_up_f6.png",
-     "row": 0,
-     "col": 5,
-     "bbox": [
-      1828,
-      0,
-      364,
-      538
-     ]
+      "name": "furnace",
+      "anim": "heat_up",
+      "frames_dir": "petal-panic/assets/enemies/furnace",
+      "frames": [
+        {
+          "file": "heat_up_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            408,
+            585
+          ]
+        },
+        {
+          "file": "heat_up_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            408,
+            33,
+            385,
+            518
+          ]
+        },
+        {
+          "file": "heat_up_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            793,
+            14,
+            384,
+            556
+          ]
+        },
+        {
+          "file": "heat_up_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1177,
+            10,
+            487,
+            565
+          ]
+        },
+        {
+          "file": "heat_up_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1664,
+            5,
+            506,
+            574
+          ]
+        }
+      ]
     }
-   ]
-  }
- ],
- "updated": "2026-10-28"
+  ],
+  "updated": "2026-10-28"
 }
