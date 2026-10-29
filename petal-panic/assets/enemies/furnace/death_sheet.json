@@ -1,128 +1,128 @@
 {
- "file": "petal-panic/assets/enemies/furnace/death_sheet.png",
- "size": "3465x446",
- "rows": 1,
- "cols": 10,
- "kind": "animation",
- "description": "furnace death (10 frames) \u2014 melting/disintegration",
- "entities": [
-  {
-   "name": "furnace",
-   "anim": "death",
-   "frames_dir": "petal-panic/assets/enemies/furnace",
-   "frames": [
+  "file": "petal-panic/assets/enemies/furnace/death_sheet.png",
+  "size": "1764x864",
+  "rows": 2,
+  "cols": 5,
+  "kind": "animation",
+  "description": "furnace death (10 frames)",
+  "entities": [
     {
-     "file": "death_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      11,
-      343,
-      424
-     ]
-    },
-    {
-     "file": "death_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      343,
-      6,
-      351,
-      434
-     ]
-    },
-    {
-     "file": "death_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      694,
-      0,
-      345,
-      446
-     ]
-    },
-    {
-     "file": "death_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1039,
-      5,
-      329,
-      435
-     ]
-    },
-    {
-     "file": "death_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1368,
-      21,
-      358,
-      404
-     ]
-    },
-    {
-     "file": "death_f6.png",
-     "row": 0,
-     "col": 5,
-     "bbox": [
-      1726,
-      53,
-      365,
-      340
-     ]
-    },
-    {
-     "file": "death_f7.png",
-     "row": 0,
-     "col": 6,
-     "bbox": [
-      2091,
-      55,
-      365,
-      336
-     ]
-    },
-    {
-     "file": "death_f8.png",
-     "row": 0,
-     "col": 7,
-     "bbox": [
-      2456,
-      57,
-      328,
-      331
-     ]
-    },
-    {
-     "file": "death_f9.png",
-     "row": 0,
-     "col": 8,
-     "bbox": [
-      2784,
-      14,
-      321,
-      418
-     ]
-    },
-    {
-     "file": "death_f10.png",
-     "row": 0,
-     "col": 9,
-     "bbox": [
-      3105,
-      70,
-      360,
-      305
-     ]
+      "name": "furnace",
+      "anim": "death",
+      "frames_dir": "petal-panic/assets/enemies/furnace",
+      "frames": [
+        {
+          "file": "death_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            11,
+            11,
+            343,
+            424
+          ]
+        },
+        {
+          "file": "death_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            372,
+            6,
+            351,
+            434
+          ]
+        },
+        {
+          "file": "death_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            730,
+            0,
+            345,
+            446
+          ]
+        },
+        {
+          "file": "death_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1075,
+            5,
+            329,
+            435
+          ]
+        },
+        {
+          "file": "death_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1405,
+            21,
+            358,
+            404
+          ]
+        },
+        {
+          "file": "death_f6.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            485,
+            365,
+            340
+          ]
+        },
+        {
+          "file": "death_f7.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            365,
+            487,
+            365,
+            336
+          ]
+        },
+        {
+          "file": "death_f8.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            738,
+            489,
+            328,
+            331
+          ]
+        },
+        {
+          "file": "death_f9.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1079,
+            446,
+            321,
+            418
+          ]
+        },
+        {
+          "file": "death_f10.png",
+          "row": 1,
+          "col": 4,
+          "bbox": [
+            1404,
+            502,
+            360,
+            305
+          ]
+        }
+      ]
     }
-   ]
-  }
- ],
- "updated": "2026-10-28"
+  ],
+  "updated": "2026-10-28"
 }
