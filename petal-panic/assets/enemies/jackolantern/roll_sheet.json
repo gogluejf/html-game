@@ -1,14 +1,15 @@
 {
  "file": "petal-panic/assets/enemies/jackolantern/roll_sheet.png",
- "size": "1409x290",
+ "size": "2005x286",
  "rows": 1,
- "cols": 5,
+ "cols": 6,
  "kind": "animation",
- "description": "jackolantern roll (5 frames) \u2014 reassembled from frames",
+ "description": "jackolantern roll (6 frames) \u2014 new sheet from Rolling Jack-o-Lantern",
  "entities": [
   {
    "name": "jackolantern",
    "anim": "roll",
+   "frames_dir": "petal-panic/assets/enemies/jackolantern",
    "frames": [
     {
      "file": "roll_f1.png",
@@ -16,9 +17,9 @@
      "col": 0,
      "bbox": [
       0,
-      0,
-      283,
-      290
+      5,
+      341,
+      275
      ]
     },
     {
@@ -26,10 +27,10 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      283,
-      23,
-      266,
-      244
+      341,
+      5,
+      348,
+      276
      ]
     },
     {
@@ -37,10 +38,10 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      549,
-      28,
-      267,
-      234
+      689,
+      2,
+      328,
+      281
      ]
     },
     {
@@ -48,10 +49,10 @@
      "row": 0,
      "col": 3,
      "bbox": [
-      816,
-      29,
-      296,
-      231
+      1017,
+      0,
+      292,
+      286
      ]
     },
     {
@@ -59,15 +60,25 @@
      "row": 0,
      "col": 4,
      "bbox": [
-      1112,
+      1309,
+      1,
+      362,
+      283
+     ]
+    },
+    {
+     "file": "roll_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1671,
       0,
-      297,
-      290
+      334,
+      285
      ]
     }
-   ],
-   "frames_dir": "petal-panic/assets/enemies/jackolantern"
+   ]
   }
  ],
- "updated": "2026-10-21"
+ "updated": "2026-10-29"
 }

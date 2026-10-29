@@ -1,14 +1,15 @@
 {
  "file": "petal-panic/assets/enemies/jackolantern/explode_sheet.png",
- "size": "1506x314",
- "rows": 1,
+ "size": "2009x680",
+ "rows": 2,
  "cols": 5,
  "kind": "animation",
- "description": "jackolantern explode (5 frames) \u2014 reassembled from frames",
+ "description": "jackolantern explode (10 frames) \u2014 new sheet from Pumpkin Clown Explodes",
  "entities": [
   {
    "name": "jackolantern",
    "anim": "explode",
+   "frames_dir": "petal-panic/assets/enemies/jackolantern",
    "frames": [
     {
      "file": "explode_f1.png",
@@ -16,9 +17,9 @@
      "col": 0,
      "bbox": [
       0,
-      10,
-      300,
-      294
+      7,
+      397,
+      382
      ]
     },
     {
@@ -26,10 +27,10 @@
      "row": 0,
      "col": 1,
      "bbox": [
-      300,
-      4,
-      290,
-      305
+      397,
+      0,
+      389,
+      397
      ]
     },
     {
@@ -37,10 +38,10 @@
      "row": 0,
      "col": 2,
      "bbox": [
-      590,
-      10,
-      305,
-      294
+      786,
+      9,
+      410,
+      379
      ]
     },
     {
@@ -48,10 +49,10 @@
      "row": 0,
      "col": 3,
      "bbox": [
-      895,
-      0,
-      310,
-      314
+      1196,
+      1,
+      412,
+      394
      ]
     },
     {
@@ -59,15 +60,69 @@
      "row": 0,
      "col": 4,
      "bbox": [
-      1205,
+      1609,
       21,
-      301,
-      271
+      398,
+      355
+     ]
+    },
+    {
+     "file": "explode_f6.png",
+     "row": 1,
+     "col": 0,
+     "bbox": [
+      1,
+      397,
+      394,
+      283
+     ]
+    },
+    {
+     "file": "explode_f7.png",
+     "row": 1,
+     "col": 1,
+     "bbox": [
+      407,
+      398,
+      368,
+      281
+     ]
+    },
+    {
+     "file": "explode_f8.png",
+     "row": 1,
+     "col": 2,
+     "bbox": [
+      795,
+      397,
+      391,
+      282
+     ]
+    },
+    {
+     "file": "explode_f9.png",
+     "row": 1,
+     "col": 3,
+     "bbox": [
+      1196,
+      403,
+      411,
+      270
+     ]
+    },
+    {
+     "file": "explode_f10.png",
+     "row": 1,
+     "col": 4,
+     "bbox": [
+      1608,
+      418,
+      401,
+      240
      ]
     }
-   ],
-   "frames_dir": "petal-panic/assets/enemies/jackolantern"
+   ]
   }
  ],
- "updated": "2026-10-21"
+ "updated": "2026-10-29"
 }

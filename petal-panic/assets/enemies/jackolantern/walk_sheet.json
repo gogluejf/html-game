@@ -1,0 +1,84 @@
+{
+ "file": "petal-panic/assets/enemies/jackolantern/walk_sheet.png",
+ "size": "2095x467",
+ "rows": 1,
+ "cols": 6,
+ "kind": "animation",
+ "description": "jackolantern walk (6 frames) \u2014 new sheet from Six-Frame Pumpkin Jester Walk Cycle",
+ "entities": [
+  {
+   "name": "jackolantern",
+   "anim": "walk",
+   "frames_dir": "petal-panic/assets/enemies/jackolantern",
+   "frames": [
+    {
+     "file": "walk_f1.png",
+     "row": 0,
+     "col": 0,
+     "bbox": [
+      0,
+      5,
+      377,
+      456
+     ]
+    },
+    {
+     "file": "walk_f2.png",
+     "row": 0,
+     "col": 1,
+     "bbox": [
+      377,
+      2,
+      323,
+      463
+     ]
+    },
+    {
+     "file": "walk_f3.png",
+     "row": 0,
+     "col": 2,
+     "bbox": [
+      700,
+      5,
+      340,
+      456
+     ]
+    },
+    {
+     "file": "walk_f4.png",
+     "row": 0,
+     "col": 3,
+     "bbox": [
+      1040,
+      5,
+      329,
+      456
+     ]
+    },
+    {
+     "file": "walk_f5.png",
+     "row": 0,
+     "col": 4,
+     "bbox": [
+      1369,
+      4,
+      389,
+      459
+     ]
+    },
+    {
+     "file": "walk_f6.png",
+     "row": 0,
+     "col": 5,
+     "bbox": [
+      1758,
+      0,
+      337,
+      467
+     ]
+    }
+   ]
+  }
+ ],
+ "updated": "2026-10-29"
+}
