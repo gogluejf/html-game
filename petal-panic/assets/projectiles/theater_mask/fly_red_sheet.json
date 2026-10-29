@@ -1,0 +1,62 @@
+{
+  "file": "petal-panic/assets/projectiles/theater_mask/fly_red_sheet.png",
+  "size": "1511x293",
+  "rows": 1,
+  "cols": 4,
+  "kind": "animation",
+  "description": "theater_mask fly_red (4 frames)",
+  "entities": [
+    {
+      "name": "theater_mask",
+      "anim": "fly_red",
+      "frames_dir": "petal-panic/assets/projectiles/theater_mask",
+      "frames": [
+        {
+          "file": "fly_red_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            351,
+            292
+          ]
+        },
+        {
+          "file": "fly_red_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            351,
+            0,
+            380,
+            293
+          ]
+        },
+        {
+          "file": "fly_red_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            731,
+            3,
+            404,
+            286
+          ]
+        },
+        {
+          "file": "fly_red_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1135,
+            6,
+            376,
+            280
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-28"
+}
