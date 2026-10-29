@@ -107,8 +107,11 @@ export const V_EXIT_CLEAR = EXIT_CLEAR;     // 3
  * pixel-scaling task (3.3 / 7.2); these are the working scales the composer
  * uses to translate physics-derived reach into unit space.
  */
-export const UNIT_PX_X = 72; // horizontal cell width (px)
-export const UNIT_PX_Y = 48; // vertical cell height (px)
+import { UNIT_PX_X, UNIT_PX_Y } from '../consts.js';
+// Re-exported from consts.js (single owner — see the cycle note there).
+// Kept so existing `import { UNIT_PX_X } from '../world/macros.js'` call
+// sites keep working; new code should import from consts.js.
+export { UNIT_PX_X, UNIT_PX_Y };
 /** @deprecated use UNIT_PX_X or UNIT_PX_Y — kept only as an elevation-step alias. */
 export const UNIT_PX = UNIT_PX_Y;
 

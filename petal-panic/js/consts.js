@@ -28,6 +28,15 @@ export let TTL_SPEED = 1;
 // Default coin lifetime in seconds before it fades out if uncollected.
 export const COIN_TTL = 8;
 
+// --- Unit grid (single pixel-conversion point, pixel-hardcode-audit.md) -----
+// Logical layout unit → px. X-unit = horizontal cell, Y-unit = vertical cell.
+// Lives in consts.js (NOT macros.js) because heroDefs.js imports these for
+// unit→px conversion at construction — and macros.js imports heroDefs.js, so
+// putting them in macros.js creates a heroDefs→macros→terrain→heroDefs cycle
+// that TDZ-crashes HEROES when terrain.js enters the graph first.
+export const UNIT_PX_X = 72; // horizontal cell width (px)
+export const UNIT_PX_Y = 48; // vertical cell height (px)
+
 // --- Collision layers (bitmask) --------------------------------------------
 // Each entity sets `layer` to one or more of these bits; collision rules in
 // js/collision.js AND the masks to decide whether a pair interacts.

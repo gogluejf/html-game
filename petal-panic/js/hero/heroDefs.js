@@ -24,7 +24,7 @@
 // attacks (normal melee, thorn/special projectiles) carry NO knockback field —
 // presence of the data is the only gate. Values are starting points tuned in 2.3.
 
-import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
+import { UNIT_PX_X, UNIT_PX_Y } from '../consts.js';
 
 export const ATTACK_MELEE = 'melee';
 export const ATTACK_SPECIAL_MELEE = 'specialMelee';
