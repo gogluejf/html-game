@@ -10,7 +10,7 @@ import { LAYER } from '../consts.js';
 import { Anim, makeTestFrame } from '../core/anim.js';
 import { S, getState, tryTransition, STATE_NAMES } from '../core/state.js';
 import { Hero } from '../hero/hero.js';
-import { HEROES } from '../hero/heroDefs.js';
+import { HEROES, resolveHeroStats } from '../hero/heroDefs.js';
 import { Jester } from '../enemies/jester.js';
 import { VineHound } from '../enemies/vine_hound.js';
 import { Violetta } from '../enemies/violetta.js';
@@ -96,6 +96,7 @@ function handleDebugToggle(e, source) {
   } else {
     Debug.toggle();
     Debug.reset();
+    setGraphicMode(GRAPHIC_MODE.HIGH); // leaving debug → always high-graphic
     // Closing debug also closes the theater (it's a debug overlay).
     if (Theater.active) Theater.close();
     Debug.logEvent(`${source}: debug OFF`);
@@ -207,11 +208,8 @@ function debugInjectPowerups() {
  * @param {KeyboardEvent} e
  */
 function handleDebugKeys(e) {
-  // F3 auto-enables debug if off, then cycles view on next press.
-  if (e.code === 'F3' && !Debug.enabled) {
-    handleDebugToggle(e, 'debug');
-    return;
-  }
+  // F3 only works while debug is active; no-op otherwise.
+  if (e.code === 'F3' && !Debug.enabled) return;
   if (!Debug.enabled) return;
 
   // Free-spawn hotkeys (1-9): spawn at hero position + small offset.
@@ -428,9 +426,9 @@ function swapHero() {
       nh.intangible = false;
     }
   }
-  // CRITICAL: restore the NEW hero's stats (Object.assign overwrote them
-  // with the old hero's stats object). Stats define speed/jump/special/etc.
-  nh.stats = def.stats;
+  // CRITICAL: restore the NEW hero's stats with px conversion. Uses the same
+  // resolveHeroStats() as the Hero constructor — single source of truth.
+  nh.stats = resolveHeroStats(def);
   nh.vx = saved.vx; nh.vy = saved.vy;
   // Wallet + trace are preserved via Object.assign(nh, saved) above (saved
   // carries hero.wallet / hero.traceStats), so no re-aliasing is needed.

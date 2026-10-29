@@ -11,7 +11,7 @@ import { isHighGraphic } from '../core/renderMode.js';
 import { GRAVITY, MAX_FALL_SPEED, LAYER, DOUBLE_JUMP_FACTOR, SUPERMOVE_DUR, SUPERMOVE_BURST_FRAC, SUPERMOVE_SPEED, SUPERMOVE_RESIDUAL } from '../consts.js';
 import { aimFromInput, DIR_RIGHT, DIR_LEFT, DIR_DOWN } from '../objects/projectile.js';
 import { SPECIAL_TYPES } from '../objects/specialWeapons.js';
-import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE } from './heroDefs.js';
+import { ATTACK_MELEE, ATTACK_SPECIAL_MELEE, ATTACK_SUPERMOVE, resolveHeroStats } from './heroDefs.js';
 import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
 
 // Feel knobs (tune freely; these are not per-hero stats).
@@ -98,7 +98,7 @@ export class Hero extends Entity {
     // UNIT→PX conversion point (pixel-hardcode-audit.md Tier 2): defs declare
     // speed in X-units/s and jump in Y-units/s impulse; everything downstream
     // (physics, gap validation, ghost rider) sees px exactly as before.
-    this.stats = { ...heroDef.stats, speed: heroDef.stats.speed * UNIT_PX_X, jump: heroDef.stats.jump * UNIT_PX_Y };
+    this.stats = resolveHeroStats(heroDef);
 
     // ---------------------------------------------------------------------
     // WALLET — the single source of truth for "what I hold right now."

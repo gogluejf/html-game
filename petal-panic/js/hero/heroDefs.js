@@ -24,9 +24,19 @@
 // attacks (normal melee, thorn/special projectiles) carry NO knockback field —
 // presence of the data is the only gate. Values are starting points tuned in 2.3.
 
+import { UNIT_PX_X, UNIT_PX_Y } from '../world/macros.js';
+
 export const ATTACK_MELEE = 'melee';
 export const ATTACK_SPECIAL_MELEE = 'specialMelee';
 export const ATTACK_SUPERMOVE = 'supermove';
+
+/**
+ * Convert a hero def's unit-native stats to px. Single conversion point —
+ * used by Hero constructor AND debug swapHero so they can never drift.
+ */
+export function resolveHeroStats(def) {
+  return { ...def.stats, speed: def.stats.speed * UNIT_PX_X, jump: def.stats.jump * UNIT_PX_Y };
+}
 
 /** Shared normal-melee frame table (both heroes swing identically today). */
 const MELEE_HITBOX_FRAMES = [null, null, null, { ox: 20, oy: 0, bw: 40, bh: 40 }, null];
