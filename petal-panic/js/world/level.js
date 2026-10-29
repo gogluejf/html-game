@@ -34,7 +34,7 @@ import {
   HORIZONTAL_ZONE_HEIGHT_UNITS,
 } from './macros.js';
 import { createRng } from './terrain.js';
-import { VIEW_W } from '../core/view.js';
+import { VIEW_W, VIEW_H } from '../core/view.js';
 
 // ---------------------------------------------------------------------------
 // Level definitions (declarative — WHAT, not WHERE)
@@ -128,8 +128,9 @@ export const ZONE_WIDTH = ZONE_WIDTH_VERTICAL;
  */
 export const GROUND_UNITS = HORIZONTAL_PLAY_HEIGHT_UNITS;
 export const ZONE_GROUND_Y = GROUND_UNITS * UNIT_PX_Y;   // 10 × 48 = 480
-/** Floor thickness — exactly ONE unit tall (grid-aligned). */
-export const ZONE_FLOOR_H = UNIT_PX_Y;          // 48
+/** Floor thickness in Y-units — fills the gap from ground line to viewport bottom. */
+export const ZONE_FLOOR_UNITS = VIEW_H / UNIT_PX_Y - GROUND_UNITS; // 1.25
+export const ZONE_FLOOR_H = ZONE_FLOOR_UNITS * UNIT_PX_Y;          // 60px
 /**
  * Single floor formula (REVISION-zones-as-data §1): floor top of any room =
  * its grid-anchored ground line. Horizontal rooms anchor at GROUND_UNITS

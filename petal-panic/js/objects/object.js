@@ -151,7 +151,7 @@ export class GameObj extends Entity {
     // until then.
     const spriteData = getBarrelSpriteData();
     if (def.spriteAnim && spriteData?.anims[def.spriteAnim]) {
-      this.sprite = { anchor: 'bottom-center', anims: spriteData.anims };
+      this.sprite = { anchor: 'bottom-center', targetH: 1.0, anims: spriteData.anims };
       Object.defineProperty(this.sprite, 'frames', { get: () => barrelFrames });
       setAnimSafe(this, def.spriteAnim);
     }
@@ -295,7 +295,7 @@ export class Checkpoint extends Entity {
     // picked up automatically.
     const spriteData = getCheckpointSpriteData();
     if (spriteData?.anims.level) {
-      this.sprite = { anchor: 'bottom-center', anims: spriteData.anims };
+      this.sprite = { anchor: 'bottom-center', targetH: 1.0, anims: spriteData.anims };
       Object.defineProperty(this.sprite, 'frames', { get: () => checkpointFrames });
       setAnimSafe(this, 'level');
     }

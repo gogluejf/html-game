@@ -15,6 +15,7 @@
 import { UNIT_PX_X, UNIT_PX_Y } from './macros.js';
 import { createRng } from './terrain.js';
 import { loadLevelAsset, getLevelAsset } from './levelAssets.js';
+import { ZONE_FLOOR_UNITS } from './level.js';
 import { Entity } from '../core/entity.js';
 
 // --- Frame selection (terrain-tiling.md §Frame selection) ----------------------
@@ -156,7 +157,7 @@ export function getFloorEntity(s, level) {
   let e = floorEntities.get(level);
   if (!e || e.w !== s.w || e.x !== s.x || e.y !== s.y) {
     e = new Entity({ x: s.x, y: s.y, w: s.w, h: s.h, debugColor: '#8f6' });
-    e.sprite = { anchor: 'bottom-center', tile: true, anims: {}, frames: new Map() };
+    e.sprite = { anchor: 'bottom-center', targetH: ZONE_FLOOR_UNITS, tile: true, anims: {}, frames: new Map() };
     floorEntities.set(level, e);
   }
   // Wire sprite data once the shared fg asset has settled (fire-and-forget;

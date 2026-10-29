@@ -55,7 +55,7 @@ export function getTileSprites(s, level, tiles) {
     let e = pool[i];
     if (!e) {
       e = new Entity({ x: t.x, y: t.y, w: t.w, h: t.h, debugColor: '#a86' });
-      e.sprite = { anchor: 'bottom-center', anims: asset.data.anims };
+      e.sprite = { anchor: 'bottom-center', targetH: 1.0, anims: asset.data.anims };
       Object.defineProperty(e.sprite, 'frames', { get: () => asset.frames });
       e.setAnim(animName);
       pool[i] = e;
