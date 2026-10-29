@@ -91,81 +91,66 @@ ok('update after done is a no-op (elapsed + radius frozen)', () => {
 });
 
 console.log('ring expansion');
-ok('starts at the declared startRadius and grows at the declared speed', () => {
-  const b = shockwave({ startRadius: 10, maxRadius: 200, expansionSpeed: 120, duration: 2 });
+ok('starts at the declared startRadius and grows (eased) after a step', () => {
+  const b = shockwave({ startRadius: 10, maxRadius: 200, duration: 2 });
   assert.ok(close(b.radius, 10), `initial radius == startRadius (${b.radius})`);
   b.update(DT);
-  assert.ok(close(b.radius, 10 + 120 * DT), `radius grew by expansionSpeed·dt (${b.radius})`);
+  // Default easing is easeIn (t²): radius interpolates start→max over the WHOLE
+  // duration — growth is slow at first, fast at the end. No constant speed.
+  const t = DT / 2;
+  const expected = 10 + (200 - 10) * t * t;
+  assert.ok(close(b.radius, expected, 1e-9), `radius follows the easeIn curve (${b.radius} vs ${expected})`);
+  assert.ok(b.radius > 10 && b.radius < 10 + (200 - 10) * t, 'eased growth starts slower than linear');
 });
-ok('reaches exactly the declared maxRadius at the declared arrival time', () => {
-  // travel time = (maxRadius − startRadius)/expansionSpeed = (100−10)/180 s
-  const startR = 10, maxR = 100, speed = 180;
-  const travelTime = (maxR - startR) / speed;
-  const b = shockwave({ startRadius: startR, maxRadius: maxR, expansionSpeed: speed, duration: travelTime });
-  const frames = Math.round(travelTime / DT);
-  for (let i = 0; i < frames - 1; i++) b.update(DT);
-  assert.ok(b.radius < maxR - 1e-6, 'ring short of maxRadius one frame early');
+ok('linear easing preserves the legacy constant-speed behavior', () => {
+  const b = shockwave({ startRadius: 10, maxRadius: 200, expansionSpeed: 120, duration: 2, easing: 'linear' });
   b.update(DT);
-  assert.ok(close(b.radius, maxR), `ring reached exactly maxRadius=${maxR} at t=${travelTime}s (${b.radius})`);
+  // Linear mode: uniform interpolation across duration (backward-compat path).
+  const expected = 10 + (200 - 10) * (DT / 2);
+  assert.ok(close(b.radius, expected, 1e-9), `linear radius at t=dt (${b.radius} vs ${expected})`);
+});
+ok('reaches exactly the declared maxRadius at completion', () => {
+  const b = shockwave({ startRadius: 10, maxRadius: 100, duration: 0.3 });
+  for (let i = 0; i < 17; i++) b.update(DT);
+  assert.ok(b.radius < 100 - 1e-6, 'ring short of maxRadius one frame early');
+  b.update(DT); // 18 frames = 0.3s
+  assert.ok(close(b.radius, 100), `ring reached exactly maxRadius=100 at t=duration (${b.radius})`);
   assert.equal(b.done, true, 'and completes at that same frame');
 });
-ok('duration longer than travel time: ring HOLDS at maxRadius until completion', () => {
-  const startR = 0, maxR = 60, speed = 300; // travel time = 0.2s = 12 frames
-  const b = shockwave({ startRadius: startR, maxRadius: maxR, expansionSpeed: speed, duration: 0.5 });
-  for (let i = 0; i < 12; i++) b.update(DT); // t = 0.2s — arrival frame
-  assert.ok(close(b.radius, maxR), 'ring at maxRadius at the travel time');
-  assert.equal(b.done, false, 'still alive past arrival');
-  for (let i = 0; i < 18; i++) b.update(DT); // 30 frames total = 0.5s
-  assert.ok(close(b.radius, maxR), 'ring held at maxRadius through completion');
-  assert.equal(b.done, true, 'completed at duration');
+ok('easeIn arrives late: ring lags linear progress mid-flight', () => {
+  const dur = 0.3;
+  const b = shockwave({ startRadius: 0, maxRadius: 300, duration: dur });
+  for (let i = 0; i < 9; i++) b.update(DT); // t = 0.15s = half the lifetime
+  // easeIn at t=0.5 → eased 0.25 → quarter of the way; linear would be half.
+  assert.ok(close(b.radius, 300 * 0.25, 1e-6), `easeIn radius at half life ≈ 25% of span (${b.radius})`);
+  assert.ok(b.radius < 150, 'well behind the linear midpoint (no early arrival)');
 });
-ok('duration < travel time: ring stops short of maxRadius (no teleport)', () => {
-  const startR = 0, maxR = 300, speed = 300; // travel time = 1s
-  const b = shockwave({ startRadius: startR, maxRadius: maxR, expansionSpeed: speed, duration: 0.3 });
-  for (let i = 0; i < 18; i++) b.update(DT); // 18 frames = 0.3s
-  assert.equal(b.done, true, 'completed at duration');
-  assert.ok(close(b.radius, speed * 0.3), `ring at speed·duration = 90 (got ${b.radius})`);
-  assert.ok(b.radius < maxR, 'ring did NOT reach declared maxRadius (no forced arrival)');
-});
-ok('sensible config (duration >= travel time): expands to maxRadius then fades to completion', () => {
-  // Pins the documented contract "expands to maxRadius at expansionSpeed then
-  // fades" for well-formed configs satisfying the header's Config precondition
-  // (duration >= travel time). Defaults: startRadius 4, maxRadius 60,
-  // expansionSpeed 300 → travel time = 56/300 ≈ 0.187s; default duration 0.4s
-  // comfortably exceeds it. Fixed dt = 1/60, exact within epsilon. The ring
-  // reaches maxRadius at the FIRST frame whose accumulated time covers the
-  // travel time (r(t) is derived from elapsed, so this is the arrival frame —
-  // one step past the exact real-valued travel time, per the fixed-dt grid),
-  // then holds while its alpha strictly decreases through completion.
-  const startR = 4, maxR = 60, speed = 300, dur = 0.4;
-  const travelTime = (maxR - startR) / speed; // 56/300 s
-  assert.ok(dur >= travelTime, 'precondition: duration >= travel time');
-  const b = shockwave({ startRadius: startR, maxRadius: maxR, expansionSpeed: speed, duration: dur });
+ok('sensible config: expands over the lifetime, alpha holds then fades at the end', () => {
+  // Eased model (b016b2c5): radius interpolates start→max across the WHOLE
+  // duration through the easing curve — there is no separate "arrival time"
+  // anymore. The ring reaches maxRadius exactly at completion, and its alpha
+  // holds full while expanding (t < 70%), then strictly decreases through the
+  // final fade window. Fixed dt = 1/60.
+  const startR = 4, maxR = 60, dur = 0.4;
+  const b = shockwave({ startRadius: startR, maxRadius: maxR, duration: dur });
   const totalFrames = Math.round(dur / DT); // 24 frames = 0.4s
-  let arrivedAtFrame = null;
   let prevAlpha = null;
   for (let i = 1; i <= totalFrames; i++) {
     b.update(DT);
-    if (arrivedAtFrame === null && b.radius >= maxR - EPS) {
-      arrivedAtFrame = i;
-      assert.ok(!b.done, 'arrival happens before completion (duration > travel time)');
-      assert.ok(close(b.radius, maxR), `ring reached exactly maxRadius at the arrival frame (${b.radius})`);
-    } else if (arrivedAtFrame !== null) {
-      assert.ok(close(b.radius, maxR), `ring held at maxRadius after arrival (frame ${i}, r=${b.radius})`);
-    }
     if (!b.done) {
       const ctx = makeCtx();
       b.render(ctx);
       const alpha = ctx.calls.find(c => c[0] === 'alpha')?.[1];
       assert.ok(alpha !== undefined, 'rendering while active');
       if (prevAlpha !== null) {
-        assert.ok(alpha < prevAlpha, `alpha decreased from frame ${i - 1} to ${i} (${prevAlpha} → ${alpha})`);
+        // Alpha is non-increasing overall; strictly decreasing once inside
+        // the last-30% fade window.
+        assert.ok(alpha <= prevAlpha + 1e-9, `alpha never increases (frame ${i}: ${prevAlpha} → ${alpha})`);
       }
       prevAlpha = alpha;
     }
   }
-  assert.ok(arrivedAtFrame !== null, 'ring reached maxRadius during its life');
-  assert.ok(arrivedAtFrame < totalFrames, `arrival frame ${arrivedAtFrame} precedes completion frame ${totalFrames}`);
+  assert.ok(close(b.radius, maxR), `ring reached maxRadius at completion (${b.radius})`);
   assert.equal(b.done, true, 'completed at duration');
   assert.ok(prevAlpha !== null && prevAlpha > 0, 'faded (but not fully gone) just before completion');
 });
@@ -212,32 +197,37 @@ ok('draws a stroked circle while active (save/restore bracketed)', () => {
   const lw = ctx.calls.find(c => c[0] === 'lineWidth');
   assert.ok(lw && close(lw[1], 8), `lineWidth == declared thickness (got ${lw && lw[1]})`);
 });
-ok('alpha fades linearly from the declared opacity toward 0 across the lifetime', () => {
+ok('alpha holds full until 70% of lifetime, then fades to 0', () => {
+  // Fade policy (shockwave.js render): full opacity while the ring is the
+  // expanding damage front (t < 0.7), linear fade over the last 30%.
   const dur = 0.3;
-  const b = shockwave({ duration: dur, opacity: 0.9, startRadius: 0, maxRadius: 60, expansionSpeed: 300 });
-  b.update(DT); // t = 1/60
-  const ctx = makeCtx();
-  b.render(ctx);
-  const alpha = ctx.calls.find(c => c[0] === 'alpha')?.[1];
-  assert.ok(alpha !== undefined, 'globalAlpha set during render');
-  assert.ok(close(alpha, 0.9 * (1 - DT / dur), 1e-6),
-    `alpha == opacity·(1 − t/duration) at t=dt (got ${alpha})`);
-  // Halfway through the lifetime the alpha should be ~half the peak.
-  const b2 = shockwave({ duration: dur, opacity: 0.9, startRadius: 0, maxRadius: 60, expansionSpeed: 300 });
-  for (let i = 0; i < 9; i++) b2.update(DT); // t = 0.15s = half of 0.3s
+  const b = shockwave({ duration: dur, opacity: 0.9, startRadius: 0, maxRadius: 60 });
+  for (let i = 0; i < 9; i++) b.update(DT); // t = 0.15s = half of 0.3s (< 70%)
   const ctx2 = makeCtx();
-  b2.render(ctx2);
+  b.render(ctx2);
   const alpha2 = ctx2.calls.find(c => c[0] === 'alpha')?.[1];
-  assert.ok(close(alpha2, 0.9 * 0.5, 1e-6), `alpha ≈ half peak at half lifetime (got ${alpha2})`);
+  assert.ok(close(alpha2, 0.9, 1e-6), `alpha at full peak before the fade window (got ${alpha2})`);
+  // Inside the fade window: alpha = opacity · (1 − (t−0.7)/0.3).
+  const b3 = shockwave({ duration: dur, opacity: 0.9, startRadius: 0, maxRadius: 60 });
+  for (let i = 0; i < 14; i++) b3.update(DT); // t = 14/60 ≈ 0.2333s
+  const ctx3 = makeCtx();
+  b3.render(ctx3);
+  const alpha3 = ctx3.calls.find(c => c[0] === 'alpha')?.[1];
+  const t = 14 / 60 / dur;
+  const expected3 = 0.9 * Math.max(0, 1 - (t - 0.7) / 0.3);
+  assert.ok(close(alpha3, expected3, 1e-6), `alpha fades linearly inside the last 30% (got ${alpha3} vs ${expected3})`);
 });
-ok('degenerate geometry (thickness 0 or opacity 0) draws nothing but still completes', () => {
+ok('degenerate geometry (thickness 0 or opacity 0) draws no ring but still completes', () => {
   const bT = shockwave({ thickness: 0, duration: 0.1 });
   const bO = shockwave({ opacity: 0, duration: 0.1 });
   bT.update(DT); bO.update(DT);
   const ctxT = makeCtx(), ctxO = makeCtx();
   bT.render(ctxT); bO.render(ctxO);
-  assert.equal(ctxT.calls.length, 0, 'thickness 0 → no draw');
+  // Opacity 0 early-returns before any draw call. Thickness 0 still pays the
+  // save/alpha/restore bracket (the gradient-fill path runs first) but draws
+  // NO ring: assert on the meaningful calls, not the raw count.
   assert.equal(ctxO.calls.length, 0, 'opacity 0 → no draw');
+  assert.ok(!ctxT.calls.some(c => c[0] === 'stroke'), 'thickness 0 → no stroked ring');
   for (let i = 0; i < 5; i++) { bT.update(DT); bO.update(DT); }
   assert.equal(bT.done, true, 'thickness-0 instance still completes at duration');
   assert.equal(bO.done, true, 'opacity-0 instance still completes at duration');

@@ -76,16 +76,18 @@ ok('cycles DUST_COLORS by index', () => {
 console.log('cluster and velocity envelope');
 ok('each puff speed is velocity * uniform[0.5,1] within the ±spread cluster', () => {
   drainPool();
-  // Stub rand: each puff consumes EXACTLY 5 Math.random calls — dustCloud dx,
-  // dustCloud angle, dustCloud speed, then spawnOne's Sparkle ctor (random
-  // angle + random speed, both overridden by the directed vector). For 4 puffs
-  // that's 20 draws; the sequence repeats [0.5, 0.5, 0.25, 0.5, 0.5] × 4 so
-  // every puff gets: dx multiplier 2*0.5-1 = 0 (on point), angle multiplier
-  // 2*0.5-1 = 0 (straight up), speed multiplier 0.5 + 0.25*0.5 = 0.625.
-  withRandomSeq([0.5, 0.5, 0.25, 0.5, 0.5,
-                 0.5, 0.5, 0.25, 0.5, 0.5,
-                 0.5, 0.5, 0.25, 0.5, 0.5,
-                 0.5, 0.5, 0.25, 0.5, 0.5], () => {
+  // Stub rand: each puff consumes EXACTLY 6 Math.random calls — dustCloud dx,
+  // dustCloud dy (height param, default 0 → no vertical offset), dustCloud
+  // angle, dustCloud speed, then spawnOne's Sparkle ctor (random angle +
+  // random speed, both overridden by the directed vector). For 4 puffs that's
+  // 24 draws; the sequence repeats [0.5, 0.5, 0.5, 0.25, 0.5, 0.5] × 4 so
+  // every puff gets: dx multiplier 2*0.5-1 = 0 (on point), dy multiplier 0
+  // (flat), angle multiplier 0 (straight up), speed multiplier
+  // 0.5 + 0.25*0.5 = 0.625.
+  withRandomSeq([0.5, 0.5, 0.5, 0.25, 0.5, 0.5,
+                 0.5, 0.5, 0.5, 0.25, 0.5, 0.5,
+                 0.5, 0.5, 0.5, 0.25, 0.5, 0.5,
+                 0.5, 0.5, 0.5, 0.25, 0.5, 0.5], () => {
     dustCloud({ x: 50, y: 80, particleCount: 4, velocity: 60, spread: 12 });
   });
   const items = particles.activeItems;
@@ -101,12 +103,13 @@ ok('each puff speed is velocity * uniform[0.5,1] within the ±spread cluster', (
 });
 ok('spread bounds: rand 0 → left edge, rand 1 → right edge of the cluster', () => {
   drainPool();
-  // Verified draw order per puff (5 randoms each): dustCloud dx (5k+0),
-  // dustCloud angle (5k+1), dustCloud speed (5k+2), then spawnOne's Sparkle
-  // ctor consumes 2 more (angle 5k+3, speed 5k+4 — both overridden by the
-  // directed vector). For 2 puffs that's 10 draws.
+  // Verified draw order per puff (6 randoms each): dustCloud dx (6k+0),
+  // dustCloud dy (6k+1, height 0 → flat), dustCloud angle (6k+2),
+  // dustCloud speed (6k+3), then spawnOne's Sparkle ctor consumes 2 more
+  // (angle 6k+4, speed 6k+5 — both overridden by the directed vector).
+  // For 2 puffs that's 12 draws.
   // dx multiplier 2*rand-1: rand 0 → −spread; rand 0.999999 → ≈ +spread.
-  withRandomSeq([0, 0.5, 0.5, 0.5, 0.5, 0.999999, 0.5, 0.5, 0.5, 0.5], () => {
+  withRandomSeq([0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.999999, 0.5, 0.5, 0.5, 0.5, 0.5], () => {
     dustCloud({ x: 100, y: 0, particleCount: 2, velocity: 40, spread: 10 });
   });
   const items = particles.activeItems;

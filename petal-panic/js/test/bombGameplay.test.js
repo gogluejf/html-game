@@ -2,7 +2,13 @@ import { loadTestMacros } from './_macroSetup.mjs';
 loadTestMacros();
 import { strict as assert } from 'node:assert';
 const noop = () => {};
-const canvas = new Proxy({}, { get: () => noop, set: () => true });
+// Gradient stub: the fire-zone drawer builds a linear gradient and calls
+// addColorStop on it — a bare Proxy returning `noop` would hand back undefined.
+const gradientStub = { addColorStop: noop };
+const canvas = new Proxy({}, {
+  get: (t, key) => key === 'createLinearGradient' || key === 'createRadialGradient' ? () => gradientStub : noop,
+  set: () => true,
+});
 globalThis.document = {
   createElement: () => ({ getContext: () => canvas, addEventListener: noop }),
 };
@@ -40,8 +46,12 @@ for (const platform of [null, { x: 350, y: 300, w: 100, h: 12, oneWay: true },
   assert.equal(h.handles[0].zone.y + 48, surface);
   assert.equal(h._completed, false);
   const rects = [];
-  const draw = new Proxy({}, { get: (_, key) => key === 'fillRect' ? (...r) => rects.push(r) : noop,
-    set: () => true });
+  const draw = new Proxy({}, {
+    get: (_, key) => key === 'fillRect' ? (...r) => rects.push(r)
+      : key === 'createLinearGradient' || key === 'createRadialGradient' ? () => gradientStub
+      : noop,
+    set: () => true,
+  });
   render(draw);
   assert.ok(rects.some(r => r.join(',') === [352, surface - 48, 96, 48].join(',')), 'real render draws fire');
   for (let i = 0; i < 40; i++) U.update(dt);
@@ -56,7 +66,10 @@ tryFire(hero, { shoot: true, aimX: 1, aimY: 0 }, dt);
 assert.equal(U.bombAttacks.roots.size, 1, 'real weapon input registers a root');
 const weapon = [...U.bombAttacks.roots][0].h;
 assert.equal(weapon.id, 'explosiveBomb');
-assert.equal(weapon.entity._attackId, 'bomb');
+// The macro's carrier is the ballistic primitive (renamed from 'bomb' in
+// d3c7571e) — the entity carries the PRIMITIVE id, the handle carries the
+// MACRO id ('explosiveBomb', asserted above).
+assert.equal(weapon.entity._attackId, 'ballistic');
 for (let i = 0; i < 100; i++) U.update(dt);
 assert.equal(weapon._completed, true);
 console.log('PASS real tryFire bomb → host → fuse detonation');

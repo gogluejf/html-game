@@ -158,8 +158,14 @@ test('Space jump and Circle super never pause; Escape/Options do; pause menu clo
   // Retry (focus 1) opens the shared area-entry screen first (checkpoints.md §3).
   assert.equal(getState(), S.AREA_ENTRY);
   confirmAreaEntry();
-  tap('Escape'); assert.equal(getState(), S.PAUSE); Pause.focus = 2; tap('Enter'); assert.equal(getState(), S.REMAP);
-  tap('Escape'); Pause.focus = 3; tap('Enter'); assert.equal(getState(), S.HOME);
+  tap('Escape'); assert.equal(getState(), S.PAUSE);
+  // Pause menu order (menu-hub plan §4.2): Resume / Retry Level / Save & Quit /
+  // Controls(REMAP) / Options — focus 3 is Controls.
+  Pause.focus = 3; tap('Enter'); assert.equal(getState(), S.REMAP);
+  // REMAP returns to its opener (remapParent, captured in screenReset on the
+  // transition). The test drove PAUSE→REMAP, so Escape goes back to PAUSE —
+  // not HOME as the pre-menu-hub version expected.
+  tap('Escape'); assert.equal(getState(), S.PAUSE);
   clean(S.OVER); const h = U.getHero(); h.coins = 1500; h.continuesUsed = 0; h.checkpoint = { x: 400, y: 100 }; GameOver.focus = 0;
   // Continue now shows the shared area-entry screen first (checkpoints.md §3);
   // confirming it starts the fresh attempt.
