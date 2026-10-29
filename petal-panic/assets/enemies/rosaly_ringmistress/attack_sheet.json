@@ -1,10 +1,10 @@
 {
   "file": "petal-panic/assets/enemies/rosaly_ringmistress/attack_sheet.png",
-  "size": "2816x713",
+  "size": "2749x713",
   "rows": 2,
   "cols": 5,
   "kind": "animation",
-  "description": "rosaly_ringmistress attack (9 frames)",
+  "description": "rosaly_ringmistress attack (8 frames)",
   "entities": [
     {
       "name": "rosaly_ringmistress",
@@ -38,7 +38,7 @@
           "row": 0,
           "col": 2,
           "bbox": [
-            982,
+            948,
             4,
             261,
             346
@@ -49,7 +49,7 @@
           "row": 0,
           "col": 3,
           "bbox": [
-            1284,
+            1217,
             0,
             549,
             354
@@ -60,7 +60,7 @@
           "row": 0,
           "col": 4,
           "bbox": [
-            1833,
+            1766,
             0,
             983,
             354
@@ -94,17 +94,6 @@
           "col": 2,
           "bbox": [
             941,
-            363,
-            343,
-            342
-          ]
-        },
-        {
-          "file": "attack_f9.png",
-          "row": 1,
-          "col": 3,
-          "bbox": [
-            1420,
             355,
             276,
             358
