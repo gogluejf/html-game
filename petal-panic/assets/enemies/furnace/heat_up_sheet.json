@@ -1,84 +1,158 @@
 {
- "file": "petal-panic/assets/enemies/furnace/heat_up_sheet.png",
- "size": "2173x534",
- "rows": 1,
- "cols": 6,
- "kind": "animation",
- "description": "furnace heat_up (6 frames)",
- "entities": [
-  {
-   "name": "furnace",
-   "anim": "heat_up",
-   "frames_dir": "petal-panic/assets/enemies/furnace",
-   "frames": [
+  "file": "petal-panic/assets/enemies/furnace/heat_up_sheet.png",
+  "size": "2173x534",
+  "rows": 1,
+  "cols": 6,
+  "kind": "animation",
+  "description": "furnace heat_up (6 frames)",
+  "entities": [
     {
-     "file": "heat_up_f1.png",
-     "row": 0,
-     "col": 0,
-     "bbox": [
-      0,
-      0,
-      367,
-      533
-     ]
-    },
-    {
-     "file": "heat_up_f2.png",
-     "row": 0,
-     "col": 1,
-     "bbox": [
-      367,
-      1,
-      357,
-      531
-     ]
-    },
-    {
-     "file": "heat_up_f3.png",
-     "row": 0,
-     "col": 2,
-     "bbox": [
-      724,
-      6,
-      361,
-      522
-     ]
-    },
-    {
-     "file": "heat_up_f4.png",
-     "row": 0,
-     "col": 3,
-     "bbox": [
-      1085,
-      4,
-      359,
-      525
-     ]
-    },
-    {
-     "file": "heat_up_f5.png",
-     "row": 0,
-     "col": 4,
-     "bbox": [
-      1444,
-      3,
-      362,
-      528
-     ]
-    },
-    {
-     "file": "heat_up_f6.png",
-     "row": 0,
-     "col": 5,
-     "bbox": [
-      1806,
-      0,
-      367,
-      534
-     ]
+      "name": "furnace",
+      "anim": "heat_up",
+      "frames_dir": "petal-panic/assets/enemies/furnace",
+      "frames": [
+        {
+          "file": "heat_up_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            367,
+            533
+          ],
+          "offset": {
+            "x": 183.5,
+            "y": -266.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "heat_up_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            367,
+            1,
+            357,
+            531
+          ],
+          "offset": {
+            "x": 178.5,
+            "y": -265.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "heat_up_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            724,
+            6,
+            361,
+            522
+          ],
+          "offset": {
+            "x": 180.5,
+            "y": -261
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "heat_up_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1085,
+            4,
+            359,
+            525
+          ],
+          "offset": {
+            "x": 179.5,
+            "y": -262.5
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "heat_up_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1444,
+            3,
+            362,
+            528
+          ],
+          "offset": {
+            "x": 181,
+            "y": -264
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        },
+        {
+          "file": "heat_up_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1806,
+            0,
+            367,
+            534
+          ],
+          "offset": {
+            "x": 177,
+            "y": -267
+          },
+          "scale": {
+            "sx": 1,
+            "sy": 1
+          },
+          "boxes": [],
+          "durUnits": 1
+        }
+      ],
+      "speed": 8,
+      "playback": "loop",
+      "direction": "ping_pong",
+      "collision": {
+        "x": 0,
+        "y": -525,
+        "w": 359,
+        "h": 525
+      },
+      "pivot": {
+        "x": 180,
+        "y": -262
+      },
+      "markers": []
     }
-   ]
-  }
- ],
- "updated": "2026-10-29"
+  ],
+  "updated": "2026-10-29"
 }
