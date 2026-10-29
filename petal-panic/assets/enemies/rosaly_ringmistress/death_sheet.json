@@ -1,0 +1,128 @@
+{
+  "file": "petal-panic/assets/enemies/rosaly_ringmistress/death_sheet.png",
+  "size": "1738x863",
+  "rows": 2,
+  "cols": 5,
+  "kind": "animation",
+  "description": "rosaly_ringmistress death (10 frames)",
+  "entities": [
+    {
+      "name": "rosaly_ringmistress",
+      "anim": "death",
+      "frames_dir": "petal-panic/assets/enemies/rosaly_ringmistress",
+      "frames": [
+        {
+          "file": "death_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            0,
+            342,
+            481
+          ]
+        },
+        {
+          "file": "death_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            342,
+            3,
+            354,
+            474
+          ]
+        },
+        {
+          "file": "death_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            696,
+            10,
+            360,
+            460
+          ]
+        },
+        {
+          "file": "death_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1056,
+            5,
+            354,
+            471
+          ]
+        },
+        {
+          "file": "death_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1410,
+            19,
+            328,
+            443
+          ]
+        },
+        {
+          "file": "death_f6.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            4,
+            488,
+            333,
+            368
+          ]
+        },
+        {
+          "file": "death_f7.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            378,
+            481,
+            282,
+            382
+          ]
+        },
+        {
+          "file": "death_f8.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            721,
+            481,
+            309,
+            381
+          ]
+        },
+        {
+          "file": "death_f9.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1078,
+            487,
+            309,
+            370
+          ]
+        },
+        {
+          "file": "death_f10.png",
+          "row": 1,
+          "col": 4,
+          "bbox": [
+            1441,
+            497,
+            266,
+            350
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-28"
+}

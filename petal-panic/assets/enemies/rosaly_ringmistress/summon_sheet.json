@@ -1,0 +1,84 @@
+{
+  "file": "petal-panic/assets/enemies/rosaly_ringmistress/summon_sheet.png",
+  "size": "2137x704",
+  "rows": 1,
+  "cols": 6,
+  "kind": "animation",
+  "description": "rosaly_ringmistress summon (6 frames)",
+  "entities": [
+    {
+      "name": "rosaly_ringmistress",
+      "anim": "summon",
+      "frames_dir": "petal-panic/assets/enemies/rosaly_ringmistress",
+      "frames": [
+        {
+          "file": "summon_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            0,
+            78,
+            337,
+            547
+          ]
+        },
+        {
+          "file": "summon_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            337,
+            60,
+            316,
+            583
+          ]
+        },
+        {
+          "file": "summon_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            653,
+            0,
+            339,
+            704
+          ]
+        },
+        {
+          "file": "summon_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            992,
+            84,
+            351,
+            535
+          ]
+        },
+        {
+          "file": "summon_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1343,
+            87,
+            464,
+            529
+          ]
+        },
+        {
+          "file": "summon_f6.png",
+          "row": 0,
+          "col": 5,
+          "bbox": [
+            1807,
+            83,
+            330,
+            537
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-28"
+}

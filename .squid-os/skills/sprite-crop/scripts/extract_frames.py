@@ -247,7 +247,7 @@ def cluster_row(row_mask, y0, y1, expected, trace, row_idx, row_comps=None):
     return spans
 
 
-def assign_components(comps, spans, y0, y1, sat_max_area, sat_radius, trace, row_idx, col_mode=False):
+def assign_components(comps, spans, y0, y1, sat_max_area, sat_radius, trace, row_idx, col_mode=False, reassign_edge=False):
     """Assign each component to a frame span.
 
     Primary: centroid falls inside a span.
@@ -270,6 +270,33 @@ def assign_components(comps, spans, y0, y1, sat_max_area, sat_radius, trace, row
                 hit = si
                 break
         if hit is not None:
+            # Edge-proximity guard: if this component's centroid sits close to
+            # a span boundary AND another span's center is clearly nearer, the
+            # centroid-in-span rule is likely misfiring (narrow manual spans +
+            # wide/fused components). Flag it; reassign when --reassign-edge is set.
+            a_h, b_h = spans[hit]
+            edge_dist = min(pos - a_h, b_h - pos)
+            if edge_dist <= 24:
+                best_other, best_od = None, None
+                for si, cc in enumerate(centers):
+                    d = abs(pos - cc)
+                    if best_od is None or d < best_od:
+                        best_other, best_od = si, d
+                own_c = centers[hit]
+                own_d = abs(pos - own_c)
+                if best_other != hit and best_od < own_d * 0.6:
+                    reason = (f"centroid in span {hit + 1} but {int(best_od)}px from "
+                              f"center of span {best_other + 1} vs {int(own_d)}px own — "
+                              f"possible mis-assignment")
+                    if reassign_edge:
+                        assignments[c["id"]] = best_other
+                        flags.append({"comp": c["id"], "area": c["area"],
+                                      "frame": best_other + 1, "reason": reason + " -> reassigned"})
+                    else:
+                        assignments[c["id"]] = hit
+                        flags.append({"comp": c["id"], "area": c["area"],
+                                      "frame": hit + 1, "reason": reason})
+                    continue
             assignments[c["id"]] = hit
             continue
         # satellite path
@@ -614,13 +641,13 @@ def cmd_extract(args):
             col_comps = [c for c in comps if b0 - 4 <= c["centroid"][0] < b1 + 4]
             a, fl = assign_components(col_comps, all_spans[r], b0, b1,
                                       args.satellite_max_area, args.satellite_radius,
-                                      trace, r, col_mode=True)
+                                      trace, r, col_mode=True, reassign_edge=args.reassign_edge)
         else:
             y0, y1 = b0, b1
             row_comps = [c for c in comps if rows_match(c, (y0, y1))]
             a, fl = assign_components(row_comps, all_spans[r], y0, y1,
                                       args.satellite_max_area, args.satellite_radius,
-                                      trace, r)
+                                      trace, r, reassign_edge=args.reassign_edge)
         all_assignments.update(a)
         all_flags.extend(fl)
 
@@ -708,6 +735,10 @@ def main():
                     help="components at/below this area may be assigned as satellites")
     ex.add_argument("--satellite-radius", type=int, default=160,
                     help="max distance from a frame center for satellite assignment")
+    ex.add_argument("--reassign-edge", action="store_true",
+                    help="when a component's centroid lands in a span but much closer to "
+                         "a neighbor span's center (edge mis-assignment), reassign it to "
+                         "the nearer span instead of flagging only")
     ex.add_argument("--min-comp", type=int, default=4, help="drop components smaller than this")
     ex.add_argument("--row-y", help="manual row bands y0-y1,y0-y1,... (skips auto-detection)")
     ex.add_argument("--col-x", help="manual column split points per row, e.g. '0:300,600;1:400,800' "

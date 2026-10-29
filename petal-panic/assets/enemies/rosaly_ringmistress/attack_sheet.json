@@ -1,0 +1,128 @@
+{
+  "file": "petal-panic/assets/enemies/rosaly_ringmistress/attack_sheet.png",
+  "size": "2839x713",
+  "rows": 2,
+  "cols": 5,
+  "kind": "animation",
+  "description": "rosaly_ringmistress attack (10 frames)",
+  "entities": [
+    {
+      "name": "rosaly_ringmistress",
+      "anim": "attack",
+      "frames_dir": "petal-panic/assets/enemies/rosaly_ringmistress",
+      "frames": [
+        {
+          "file": "attack_f1.png",
+          "row": 0,
+          "col": 0,
+          "bbox": [
+            190,
+            0,
+            247,
+            355
+          ]
+        },
+        {
+          "file": "attack_f2.png",
+          "row": 0,
+          "col": 1,
+          "bbox": [
+            655,
+            1,
+            282,
+            353
+          ]
+        },
+        {
+          "file": "attack_f3.png",
+          "row": 0,
+          "col": 2,
+          "bbox": [
+            998,
+            4,
+            275,
+            346
+          ]
+        },
+        {
+          "file": "attack_f4.png",
+          "row": 0,
+          "col": 3,
+          "bbox": [
+            1307,
+            0,
+            549,
+            354
+          ]
+        },
+        {
+          "file": "attack_f5.png",
+          "row": 0,
+          "col": 4,
+          "bbox": [
+            1856,
+            0,
+            983,
+            354
+          ]
+        },
+        {
+          "file": "attack_f6.png",
+          "row": 1,
+          "col": 0,
+          "bbox": [
+            0,
+            355,
+            628,
+            358
+          ]
+        },
+        {
+          "file": "attack_f7.png",
+          "row": 1,
+          "col": 1,
+          "bbox": [
+            628,
+            357,
+            336,
+            354
+          ]
+        },
+        {
+          "file": "attack_f8.png",
+          "row": 1,
+          "col": 2,
+          "bbox": [
+            964,
+            363,
+            343,
+            342
+          ]
+        },
+        {
+          "file": "attack_f9.png",
+          "row": 1,
+          "col": 3,
+          "bbox": [
+            1404,
+            355,
+            354,
+            358
+          ]
+        },
+        {
+          "file": "attack_f10.png",
+          "row": 1,
+          "col": 4,
+          "bbox": [
+            2209,
+            355,
+            276,
+            358
+          ]
+        }
+      ]
+    }
+  ],
+  "updated": "2026-10-28"
+}
