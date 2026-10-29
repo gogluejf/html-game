@@ -18,7 +18,8 @@ import { TIMER_COLORS, TIMER_COLOR_DEFAULT } from '../core/timers.js';
 import { drawScreen, screenUpdate } from '../ui/screens.js';
 import { drawHUD } from '../systems/hud.js';
 import { LEVELS, BOSS_TRIGGER_X, ZONE_GROUND_Y } from '../world/level.js';
-import { tileSolid, loadTerrainFrames, getTerrainFrameImage, drawFloor } from '../world/terrainTiles.js';
+import { tileSolid, loadTerrainFrames, drawFloor } from '../world/terrainTiles.js';
+import { getTileSprites, drawTileSprites } from '../world/tileSprite.js';
 import { getLastWorldSeed } from '../world/build.js';
 import { drawParallaxBg } from '../world/parallax.js';
 import { bombAttacks, getActiveZone } from './update.js';
@@ -109,11 +110,9 @@ export function render(ctx) {
       const kind = s.oneWay ? 'platform' : 'block';
       loadTerrainFrames(level, kind); // fire-and-forget; cached per level+kind
       const tiles = tileSolid(s, level, seed);
-      for (const t of tiles) {
-        const img = getTerrainFrameImage(level, kind, t.imgKey);
-        if (!img) continue; // sheet not parsed / image not loaded yet
-        ctx.drawImage(img, t.x, t.y, t.w, t.h);
-      }
+      // Tiles are REAL sprite entities (tileSprite.js): each scales from its
+      // variant sheet's authored collision box via setAnim() — no stretching.
+      drawTileSprites(ctx, getTileSprites(s, level, tiles));
     }
   }
 

@@ -224,6 +224,9 @@ export class Entity {
   get spriteFrameIndex() {
     const data = this.spriteAnimData;
     if (!data) return 0;
+    // Terrain tiles (tileSprite.js) pin a specific frame via _tileFrame;
+    // everything else uses v1 static first frame until SpritePlayer lands.
+    if (this._tileFrame != null) return this._tileFrame % data.frames.length;
     return 0; // TODO(sprite-engine 3.1): SpritePlayer-driven traversal
   }
 
